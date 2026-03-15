@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ScanType {
+  PICKUP
+  INBOUND
+  OUTBOUND
+}
+
+enum OutboxStatus {
+  PENDING
+  PUBLISHED
+  FAILED
+}
+
+model ScanEvent {
+  id             String   @id @default(cuid())
+  shipmentCode   String
+  scanType       ScanType
+  locationCode   String?
+  manifestCode   String?
+  actor          String?
+  note           String?
+  idempotencyKey String   @unique
+  occurredAt     DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model IdempotencyRecord {
+  id             String   @id @default(cuid())
+  idempotencyKey String   @unique
+  scope          String
+  responsePayload Json
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model CurrentLocation {
+  id             String    @id @default(cuid())
+  shipmentCode   String    @unique
+  locationCode   String?
+  lastScanType   ScanType?
+  lastScanEventId String?
+  lastScannedAt  DateTime?
+  manifestCode   String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model OutboxEvent {
+  id            String       @id @default(cuid())
+  eventId       String       @unique
+  eventType     String
+  routingKey    String
+  aggregateType String
+  aggregateId   String
+  payload       Json
+  status        OutboxStatus @default(PENDING)
+  retryCount    Int          @default(0)
+  occurredAt    DateTime
+  publishedAt   DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}

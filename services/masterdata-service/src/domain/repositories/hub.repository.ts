@@ -1,0 +1,8 @@
+import { Hub, HubWriteInput } from '../entities/hub.entity';
+
+export abstract class HubRepository {
+  abstract list(): Promise<Hub[]>;
+  abstract findById(id: string): Promise<Hub | null>;
+  abstract create(input: HubWriteInput): Promise<Hub>;
+  abstract update(id: string, input: Partial<HubWriteInput>): Promise<Hub>;
+}

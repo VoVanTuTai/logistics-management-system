@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PickupRequestStatus {
+  REQUESTED
+  CANCELLED
+  COMPLETED
+}
+
+enum OutboxStatus {
+  PENDING
+  PUBLISHED
+  FAILED
+}
+
+model PickupRequest {
+  id                String              @id @default(cuid())
+  pickupCode        String              @unique
+  status            PickupRequestStatus @default(REQUESTED)
+  requesterName     String?
+  contactPhone      String?
+  pickupAddress     String?
+  note              String?
+  cancellationReason String?
+  completedAt       DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  items             PickupItem[]
+
+  @@map("pickup_requests")
+}
+
+model PickupItem {
+  id              String        @id @default(cuid())
+  pickupRequestId String
+  shipmentCode    String
+  quantity        Int           @default(1)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  pickupRequest   PickupRequest @relation(fields: [pickupRequestId], references: [id])
+
+  @@index([pickupRequestId])
+  @@index([shipmentCode])
+  @@map("pickup_items")
+}
+
+model OutboxEvent {
+  id            String       @id @default(cuid())
+  eventId       String       @unique
+  eventType     String
+  routingKey    String
+  aggregateType String
+  aggregateId   String?
+  payload       Json
+  status        OutboxStatus @default(PENDING)
+  retryCount    Int          @default(0)
+  occurredAt    DateTime
+  publishedAt   DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([status, occurredAt])
+  @@map("outbox_events")
+}

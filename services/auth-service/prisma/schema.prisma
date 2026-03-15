@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum SessionStatus {
+  ACTIVE
+  REVOKED
+}
+
+enum OutboxStatus {
+  PENDING
+  PUBLISHED
+  FAILED
+}
+
+model UserAccount {
+  id           String        @id @default(cuid())
+  username     String        @unique
+  passwordHash String
+  status       UserStatus    @default(ACTIVE)
+  roles        String[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  sessions     AuthSession[]
+}
+
+model AuthSession {
+  id                    String        @id @default(cuid())
+  userId                String
+  accessTokenHash       String        @unique
+  refreshTokenHash      String        @unique
+  status                SessionStatus @default(ACTIVE)
+  issuedAt              DateTime
+  accessTokenExpiresAt  DateTime
+  refreshTokenExpiresAt DateTime
+  lastUsedAt            DateTime?
+  revokedAt             DateTime?
+  revokeReason          String?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  user                  UserAccount   @relation(fields: [userId], references: [id])
+}
+
+model OutboxEvent {
+  id            String       @id @default(cuid())
+  eventId       String       @unique
+  eventType     String
+  routingKey    String
+  aggregateType String
+  aggregateId   String
+  payload       Json
+  status        OutboxStatus @default(PENDING)
+  retryCount    Int          @default(0)
+  occurredAt    DateTime
+  publishedAt   DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}

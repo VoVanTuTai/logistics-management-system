@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model KpiDaily {
+  id                  String   @id @default(cuid())
+  metricDate          DateTime
+  courierCode         String   @default("ALL")
+  hubCode             String   @default("ALL")
+  zoneCode            String   @default("ALL")
+  shipmentsCreated    Int      @default(0)
+  pickupsCompleted    Int      @default(0)
+  deliveriesDelivered Int      @default(0)
+  deliveriesFailed    Int      @default(0)
+  ndrCreated          Int      @default(0)
+  scansInbound        Int      @default(0)
+  scansOutbound       Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([metricDate, courierCode, hubCode, zoneCode], name: "daily_dimension_unique")
+}
+
+model KpiMonthly {
+  id                  String   @id @default(cuid())
+  monthKey            String
+  courierCode         String   @default("ALL")
+  hubCode             String   @default("ALL")
+  zoneCode            String   @default("ALL")
+  shipmentsCreated    Int      @default(0)
+  pickupsCompleted    Int      @default(0)
+  deliveriesDelivered Int      @default(0)
+  deliveriesFailed    Int      @default(0)
+  ndrCreated          Int      @default(0)
+  scansInbound        Int      @default(0)
+  scansOutbound       Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([monthKey, courierCode, hubCode, zoneCode], name: "monthly_dimension_unique")
+}
+
+model AggregationJob {
+  id          String   @id @default(cuid())
+  jobType     String
+  jobKey      String   @unique
+  status      String
+  occurredAt  DateTime?
+  payload     Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

@@ -1,0 +1,43 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model TimelineEvent {
+  id             String   @id @default(cuid())
+  eventId        String   @unique
+  eventType      String
+  shipmentCode   String
+  actor          String?
+  locationCode   String?
+  payload        Json
+  occurredAt     DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model TrackingCurrent {
+  id                  String   @id @default(cuid())
+  shipmentCode        String   @unique
+  currentStatus       String?
+  currentLocationCode String?
+  lastEventId         String?
+  lastEventType       String?
+  lastEventAt         DateTime?
+  viewPayload         Json?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model TrackingIndex {
+  id              String   @id @default(cuid())
+  shipmentCode    String   @unique
+  latestEventType String?
+  latestEventAt   DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
