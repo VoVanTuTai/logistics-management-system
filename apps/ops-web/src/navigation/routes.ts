@@ -1,0 +1,23 @@
+export const routePaths = {
+  login: '/login',
+  appRoot: '/app',
+  dashboard: '/app/dashboard',
+  shipments: '/app/shipments',
+  shipmentDetail: (shipmentId: string) => `/app/shipments/${shipmentId}`,
+  pickups: '/app/pickups',
+  tasks: '/app/tasks',
+  manifests: '/app/manifests',
+  scans: '/app/scans',
+  ndr: '/app/ndr',
+  tracking: '/app/tracking',
+  dashboardLeaf: 'dashboard',
+  shipmentsLeaf: 'shipments',
+  shipmentDetailLeaf: 'shipments/:shipmentId',
+  pickupsLeaf: 'pickups',
+  tasksLeaf: 'tasks',
+  manifestsLeaf: 'manifests',
+  scansLeaf: 'scans',
+  ndrLeaf: 'ndr',
+  trackingLeaf: 'tracking',
+} as const;
+
