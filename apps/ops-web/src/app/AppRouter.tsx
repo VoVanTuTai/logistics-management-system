@@ -15,11 +15,16 @@ import { DashboardPage } from '../pages/dashboard/DashboardPage';
 import { ShipmentListPage } from '../pages/shipments/ShipmentListPage';
 import { ShipmentDetailPage } from '../pages/shipments/ShipmentDetailPage';
 import { PickupApprovalsPage } from '../pages/pickups/PickupApprovalsPage';
+import { PickupRequestDetailPage } from '../pages/pickups/PickupRequestDetailPage';
 import { TaskAssignmentPage } from '../pages/tasks/TaskAssignmentPage';
+import { TaskDetailPage } from '../pages/tasks/TaskDetailPage';
 import { ManifestManagementPage } from '../pages/manifests/ManifestManagementPage';
+import { ManifestDetailPage } from '../pages/manifests/ManifestDetailPage';
 import { HubScanPage } from '../pages/scans/HubScanPage';
 import { NdrHandlingPage } from '../pages/ndr/NdrHandlingPage';
+import { NdrCaseDetailPage } from '../pages/ndr/NdrCaseDetailPage';
 import { TrackingLookupPage } from '../pages/tracking/TrackingLookupPage';
+import { TrackingDetailPage } from '../pages/tracking/TrackingDetailPage';
 
 function AuthGuard(): React.JSX.Element {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -65,14 +70,25 @@ export function AppRouter(): React.JSX.Element {
               element={<ShipmentDetailPage />}
             />
             <Route path={routePaths.pickupsLeaf} element={<PickupApprovalsPage />} />
+            <Route
+              path={routePaths.pickupDetailLeaf}
+              element={<PickupRequestDetailPage />}
+            />
             <Route path={routePaths.tasksLeaf} element={<TaskAssignmentPage />} />
+            <Route path={routePaths.taskDetailLeaf} element={<TaskDetailPage />} />
             <Route
               path={routePaths.manifestsLeaf}
               element={<ManifestManagementPage />}
             />
+            <Route
+              path={routePaths.manifestDetailLeaf}
+              element={<ManifestDetailPage />}
+            />
             <Route path={routePaths.scansLeaf} element={<HubScanPage />} />
             <Route path={routePaths.ndrLeaf} element={<NdrHandlingPage />} />
+            <Route path={routePaths.ndrDetailLeaf} element={<NdrCaseDetailPage />} />
             <Route path={routePaths.trackingLeaf} element={<TrackingLookupPage />} />
+            <Route path={routePaths.trackingDetailLeaf} element={<TrackingDetailPage />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to={routePaths.login} replace />} />

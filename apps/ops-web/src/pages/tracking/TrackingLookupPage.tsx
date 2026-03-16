@@ -1,68 +1,69 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 
-import { useTrackingLookupMutation } from '../../features/tracking/tracking.api';
+import { useTrackingSearchQuery } from '../../features/tracking/tracking.api';
+import { routePaths } from '../../navigation/routes';
+import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
 import { formatDateTime } from '../../utils/format';
 
 export function TrackingLookupPage(): React.JSX.Element {
-  const [shipmentCode, setShipmentCode] = useState('');
   const accessToken = useAuthStore((state) => state.session?.tokens.accessToken ?? null);
-  const lookupMutation = useTrackingLookupMutation(accessToken);
+  const [shipmentCodeInput, setShipmentCodeInput] = useState('');
+  const [submittedShipmentCode, setSubmittedShipmentCode] = useState('');
+  const searchQuery = useTrackingSearchQuery(
+    accessToken,
+    submittedShipmentCode,
+    Boolean(submittedShipmentCode),
+  );
+
+  const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const nextCode = shipmentCodeInput.trim();
+
+    if (!nextCode) {
+      return;
+    }
+
+    setSubmittedShipmentCode(nextCode);
+  };
 
   return (
     <section>
-      <h2>Internal tracking lookup</h2>
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (!shipmentCode.trim()) {
-            return;
-          }
-          lookupMutation.mutate(shipmentCode.trim());
-        }}
-        style={styles.form}
-      >
+      <h2>Internal tracking search</h2>
+      <p style={{ color: '#2d3f99' }}>
+        Search reads tracking projection from server and does not derive status or location on
+        client.
+      </p>
+      <form onSubmit={onSubmit} style={styles.form}>
         <input
-          value={shipmentCode}
-          onChange={(event) => setShipmentCode(event.target.value)}
+          value={shipmentCodeInput}
+          onChange={(event) => setShipmentCodeInput(event.target.value)}
           placeholder="Shipment code"
         />
-        <button type="submit" disabled={lookupMutation.isPending}>
-          Lookup
+        <button type="submit" disabled={searchQuery.isLoading}>
+          Search
         </button>
       </form>
-      {!lookupMutation.data ? null : (
-        <>
-          <article style={styles.currentCard}>
-            <h3>Current</h3>
-            <p>Status: {lookupMutation.data.current?.currentStatus ?? 'N/A'}</p>
-            <p>Location: {lookupMutation.data.current?.currentLocation ?? 'N/A'}</p>
-            <p>Updated at: {formatDateTime(lookupMutation.data.current?.updatedAt)}</p>
-          </article>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th>Event</th>
-                <th>Source</th>
-                <th>Status after</th>
-                <th>Location</th>
-                <th>Occurred at</th>
-              </tr>
-            </thead>
-            <tbody>
-              {lookupMutation.data.timeline.map((event) => (
-                <tr key={event.id}>
-                  <td>{event.eventType}</td>
-                  <td>{event.eventSource}</td>
-                  <td>{event.statusAfterEvent ?? 'N/A'}</td>
-                  <td>{event.locationCode ?? 'N/A'}</td>
-                  <td>{formatDateTime(event.occurredAt)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </>
-      )}
+
+      {!submittedShipmentCode ? <p>Enter shipment code to start search.</p> : null}
+      {searchQuery.isLoading ? <p>Loading tracking search...</p> : null}
+      {searchQuery.isError ? (
+        <p style={styles.errorText}>{getErrorMessage(searchQuery.error)}</p>
+      ) : null}
+      {searchQuery.isSuccess && !searchQuery.data ? <p>No tracking data found.</p> : null}
+      {searchQuery.data ? (
+        <article style={styles.currentCard}>
+          <h3>Search result</h3>
+          <p>Shipment code: {searchQuery.data.shipmentCode}</p>
+          <p>Current status: {searchQuery.data.currentStatus ?? 'N/A'}</p>
+          <p>Current location: {searchQuery.data.currentLocation ?? 'N/A'}</p>
+          <p>Updated at: {formatDateTime(searchQuery.data.updatedAt)}</p>
+          <Link to={routePaths.trackingDetail(searchQuery.data.shipmentCode)}>
+            Open tracking detail
+          </Link>
+        </article>
+      ) : null}
     </section>
   );
 }
@@ -71,17 +72,17 @@ const styles: Record<string, React.CSSProperties> = {
   form: {
     display: 'flex',
     gap: 8,
+    marginTop: 12,
     marginBottom: 12,
+    flexWrap: 'wrap',
   },
   currentCard: {
     border: '1px solid #e7ebf8',
     borderRadius: 12,
     padding: 12,
-    marginBottom: 12,
+    maxWidth: 620,
   },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
+  errorText: {
+    color: '#b91c1c',
   },
 };
-

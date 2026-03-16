@@ -1,40 +1,23 @@
-import React from 'react';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
+import React, { useState } from 'react';
 
 import {
   useInboundScanMutation,
   useOutboundScanMutation,
 } from '../../features/scans/scans.api';
-import type { HubScanInput } from '../../features/scans/scans.types';
+import type { HubScanInput, HubScanResultDto, HubScanType } from '../../features/scans/scans.types';
+import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
 import { createIdempotencyKey } from '../../utils/idempotency';
-
-const scanSchema = z.object({
-  shipmentCode: z.string().min(1),
-  locationCode: z.string().min(1),
-  note: z.string().optional(),
-  scanType: z.enum(['INBOUND', 'OUTBOUND']),
-});
-
-type ScanFormValues = z.infer<typeof scanSchema>;
+import { HubScanForm, type HubScanFormValues } from './HubScanForm';
 
 export function HubScanPage(): React.JSX.Element {
   const accessToken = useAuthStore((state) => state.session?.tokens.accessToken ?? null);
   const inboundMutation = useInboundScanMutation(accessToken);
   const outboundMutation = useOutboundScanMutation(accessToken);
-  const form = useForm<ScanFormValues>({
-    resolver: zodResolver(scanSchema),
-    defaultValues: {
-      shipmentCode: '',
-      locationCode: '',
-      note: '',
-      scanType: 'INBOUND',
-    },
-  });
+  const [lastScanType, setLastScanType] = useState<HubScanType | null>(null);
+  const [lastScanResult, setLastScanResult] = useState<HubScanResultDto | null>(null);
 
-  const onSubmit = form.handleSubmit(async (values) => {
+  const onSubmit = async (values: HubScanFormValues) => {
     const payload: HubScanInput = {
       shipmentCode: values.shipmentCode,
       locationCode: values.locationCode,
@@ -44,40 +27,58 @@ export function HubScanPage(): React.JSX.Element {
     };
 
     if (values.scanType === 'INBOUND') {
-      await inboundMutation.mutateAsync(payload);
+      const result = await inboundMutation.mutateAsync(payload);
+      setLastScanType('INBOUND');
+      setLastScanResult(result);
       return;
     }
 
-    await outboundMutation.mutateAsync(payload);
-  });
+    const result = await outboundMutation.mutateAsync(payload);
+    setLastScanType('OUTBOUND');
+    setLastScanResult(result);
+  };
+
+  const isSubmitting = inboundMutation.isPending || outboundMutation.isPending;
+  const actionError = inboundMutation.error ?? outboundMutation.error;
 
   return (
     <section>
       <h2>Hub scan inbound/outbound</h2>
       <p style={{ color: '#2d3f99' }}>
-        Scan command always carries client-generated idempotencyKey.
+        Scan payload is sent to gateway-bff as entered and response is displayed directly from
+        server.
       </p>
-      <form onSubmit={onSubmit} style={styles.form}>
-        <input placeholder="Shipment code" {...form.register('shipmentCode')} />
-        <input placeholder="Hub location code" {...form.register('locationCode')} />
-        <select {...form.register('scanType')}>
-          <option value="INBOUND">INBOUND</option>
-          <option value="OUTBOUND">OUTBOUND</option>
-        </select>
-        <textarea rows={4} placeholder="Note" {...form.register('note')} />
-        <button type="submit" disabled={inboundMutation.isPending || outboundMutation.isPending}>
-          Submit scan
-        </button>
-      </form>
+      <HubScanForm isSubmitting={isSubmitting} onSubmit={onSubmit} />
+
+      {isSubmitting ? <p>Submitting scan...</p> : null}
+      {actionError ? <p style={styles.errorText}>{getErrorMessage(actionError)}</p> : null}
+      {!isSubmitting && !actionError && !lastScanResult ? <p>No scan result yet.</p> : null}
+      {lastScanResult ? (
+        <div style={styles.responseBox}>
+          <strong>Last scan response ({lastScanType ?? 'N/A'})</strong>
+          <pre style={styles.pre}>{JSON.stringify(lastScanResult, null, 2)}</pre>
+        </div>
+      ) : null}
     </section>
   );
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  form: {
-    display: 'grid',
-    gap: 8,
-    maxWidth: 520,
+  responseBox: {
+    marginTop: 12,
+    border: '1px solid #d9def3',
+    borderRadius: 12,
+    padding: 12,
+    backgroundColor: '#f8f9ff',
+    maxWidth: 920,
+  },
+  pre: {
+    marginTop: 8,
+    whiteSpace: 'pre-wrap',
+    wordBreak: 'break-word',
+    fontSize: 13,
+  },
+  errorText: {
+    color: '#b91c1c',
   },
 };
-

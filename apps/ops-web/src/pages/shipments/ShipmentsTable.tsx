@@ -24,7 +24,9 @@ export function ShipmentsTable({ items }: ShipmentsTableProps): React.JSX.Elemen
         {items.map((item) => (
           <tr key={item.id}>
             <td style={styles.cell}>
-              <Link to={routePaths.shipmentDetail(item.id)}>{item.shipmentCode}</Link>
+              <Link to={routePaths.shipmentDetail(item.shipmentCode)}>
+                {item.shipmentCode}
+              </Link>
             </td>
             <td style={styles.cell}>{item.currentStatus}</td>
             <td style={styles.cell}>{item.currentLocation ?? 'N/A'}</td>
@@ -52,4 +54,3 @@ const styles: Record<string, React.CSSProperties> = {
     borderBottom: '1px solid #e7ebf8',
   },
 };
-

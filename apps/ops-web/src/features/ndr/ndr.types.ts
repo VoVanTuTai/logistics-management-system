@@ -1,4 +1,4 @@
-export interface NdrCaseDto {
+export interface NdrCaseListItemDto {
   id: string;
   shipmentCode: string;
   status: string;
@@ -6,15 +6,23 @@ export interface NdrCaseDto {
   updatedAt: string;
 }
 
+export interface NdrCaseDetailDto {
+  id: string;
+  shipmentCode: string;
+  status: string;
+  reasonCode: string | null;
+  updatedAt: string;
+  note?: string | null;
+}
+
 export interface RescheduleInput {
-  ndrId: string;
   nextDeliveryAt: string;
   note?: string | null;
 }
 
 export interface ReturnDecisionInput {
-  ndrId: string;
   returnToSender: boolean;
   note?: string | null;
 }
 
+export type NdrActionResultDto = Record<string, unknown>;

@@ -19,3 +19,9 @@ export interface TrackingLookupResultDto {
   timeline: TrackingTimelineEventDto[];
 }
 
+export interface TrackingSearchResultDto {
+  shipmentCode: string;
+  currentStatus: string | null;
+  currentLocation: string | null;
+  updatedAt: string | null;
+}

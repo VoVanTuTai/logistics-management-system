@@ -10,6 +10,14 @@ import type {
   UpdateShipmentInput,
 } from './shipments.types';
 
+interface ShipmentApiResponse {
+  id: string;
+  code: string;
+  currentStatus: string;
+  metadata: Record<string, unknown> | null;
+  updatedAt: string;
+}
+
 function buildShipmentListPath(filters: ShipmentListFilters): string {
   const params = new URLSearchParams();
 
@@ -25,31 +33,64 @@ function buildShipmentListPath(filters: ShipmentListFilters): string {
   return queryString ? `${opsEndpoints.shipments.list}?${queryString}` : opsEndpoints.shipments.list;
 }
 
+function mapShipmentToListItem(payload: ShipmentApiResponse): ShipmentListItemDto {
+  return {
+    id: payload.id,
+    shipmentCode: payload.code,
+    currentStatus: payload.currentStatus,
+    currentLocation: null,
+    updatedAt: payload.updatedAt,
+  };
+}
+
+function mapShipmentToDetail(payload: ShipmentApiResponse): ShipmentDetailDto {
+  const metadata = payload.metadata ?? {};
+
+  return {
+    id: payload.id,
+    shipmentCode: payload.code,
+    currentStatus: payload.currentStatus,
+    currentLocation: null,
+    senderName:
+      typeof metadata.senderName === 'string' ? metadata.senderName : null,
+    receiverName:
+      typeof metadata.receiverName === 'string' ? metadata.receiverName : null,
+    note: typeof metadata.note === 'string' ? metadata.note : null,
+    updatedAt: payload.updatedAt,
+  };
+}
+
 export const shipmentsClient = {
   list: (
     accessToken: string | null,
     filters: ShipmentListFilters,
   ): Promise<ShipmentListItemDto[]> =>
-    opsApiClient.request<ShipmentListItemDto[]>(buildShipmentListPath(filters), {
-      accessToken,
-    }),
+    opsApiClient
+      .request<ShipmentApiResponse[]>(buildShipmentListPath(filters), {
+        accessToken,
+      })
+      .then((items) => items.map(mapShipmentToListItem)),
   detail: (
     accessToken: string | null,
     shipmentId: string,
   ): Promise<ShipmentDetailDto> =>
-    opsApiClient.request<ShipmentDetailDto>(opsEndpoints.shipments.detail(shipmentId), {
-      accessToken,
-    }),
+    opsApiClient
+      .request<ShipmentApiResponse>(opsEndpoints.shipments.detail(shipmentId), {
+        accessToken,
+      })
+      .then(mapShipmentToDetail),
   update: (
     accessToken: string | null,
     shipmentId: string,
     payload: UpdateShipmentInput,
   ): Promise<ShipmentDetailDto> =>
-    opsApiClient.request<ShipmentDetailDto>(opsEndpoints.shipments.detail(shipmentId), {
-      method: 'PATCH',
-      accessToken,
-      body: payload,
-    }),
+    opsApiClient
+      .request<ShipmentApiResponse>(opsEndpoints.shipments.detail(shipmentId), {
+        method: 'PATCH',
+        accessToken,
+        body: payload,
+      })
+      .then(mapShipmentToDetail),
   review: (
     accessToken: string | null,
     shipmentId: string,
@@ -79,4 +120,3 @@ export const shipmentsClient = {
       },
     ),
 };
-
