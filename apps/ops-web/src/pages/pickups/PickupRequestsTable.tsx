@@ -14,10 +14,10 @@ export function PickupRequestsTable({ items }: PickupRequestsTableProps): React.
     <table style={styles.table}>
       <thead>
         <tr>
-          <th style={styles.headerCell}>Request</th>
-          <th style={styles.headerCell}>Shipment</th>
-          <th style={styles.headerCell}>Status</th>
-          <th style={styles.headerCell}>Requested at</th>
+          <th style={styles.headerCell}>Yêu cầu</th>
+          <th style={styles.headerCell}>Vận đơn</th>
+          <th style={styles.headerCell}>Trạng thái</th>
+          <th style={styles.headerCell}>Thời điểm yêu cầu</th>
         </tr>
       </thead>
       <tbody>
@@ -26,7 +26,7 @@ export function PickupRequestsTable({ items }: PickupRequestsTableProps): React.
             <td style={styles.cell}>
               <Link to={routePaths.pickupDetail(item.id)}>{item.requestCode}</Link>
             </td>
-            <td style={styles.cell}>{item.shipmentCode ?? 'N/A'}</td>
+            <td style={styles.cell}>{item.shipmentCode ?? 'Không có'}</td>
             <td style={styles.cell}>{item.status}</td>
             <td style={styles.cell}>{formatDateTime(item.requestedAt)}</td>
           </tr>
@@ -52,4 +52,3 @@ const styles: Record<string, React.CSSProperties> = {
     borderBottom: '1px solid #e7ebf8',
   },
 };
-

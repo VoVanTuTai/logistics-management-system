@@ -14,11 +14,11 @@ export function TrackingTimelineTable({
     <table style={styles.table}>
       <thead>
         <tr>
-          <th style={styles.headerCell}>Event</th>
-          <th style={styles.headerCell}>Source</th>
-          <th style={styles.headerCell}>Status after</th>
-          <th style={styles.headerCell}>Location</th>
-          <th style={styles.headerCell}>Occurred at</th>
+          <th style={styles.headerCell}>Sự kiện</th>
+          <th style={styles.headerCell}>Nguồn</th>
+          <th style={styles.headerCell}>Trạng thái sau sự kiện</th>
+          <th style={styles.headerCell}>Vị trí</th>
+          <th style={styles.headerCell}>Thời điểm xảy ra</th>
         </tr>
       </thead>
       <tbody>
@@ -26,8 +26,8 @@ export function TrackingTimelineTable({
           <tr key={event.id}>
             <td style={styles.cell}>{event.eventType}</td>
             <td style={styles.cell}>{event.eventSource}</td>
-            <td style={styles.cell}>{event.statusAfterEvent ?? 'N/A'}</td>
-            <td style={styles.cell}>{event.locationCode ?? 'N/A'}</td>
+            <td style={styles.cell}>{event.statusAfterEvent ?? 'Không có'}</td>
+            <td style={styles.cell}>{event.locationCode ?? 'Không có'}</td>
             <td style={styles.cell}>{formatDateTime(event.occurredAt)}</td>
           </tr>
         ))}

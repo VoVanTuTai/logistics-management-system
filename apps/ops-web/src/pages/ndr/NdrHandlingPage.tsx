@@ -11,13 +11,13 @@ export function NdrHandlingPage(): React.JSX.Element {
 
   return (
     <div>
-      <h2>NDR handling</h2>
+      <h2>Xử lý NDR</h2>
       <p style={{ color: '#2d3f99' }}>
-        Status and case information are displayed directly from server payload.
+        Trạng thái và thông tin case được hiển thị trực tiếp từ payload server.
       </p>
-      {ndrQuery.isLoading ? <p>Loading NDR cases...</p> : null}
+      {ndrQuery.isLoading ? <p>Đang tải danh sách NDR...</p> : null}
       {ndrQuery.isError ? <p style={styles.errorText}>{getErrorMessage(ndrQuery.error)}</p> : null}
-      {ndrQuery.isSuccess && (ndrQuery.data?.length ?? 0) === 0 ? <p>No NDR cases found.</p> : null}
+      {ndrQuery.isSuccess && (ndrQuery.data?.length ?? 0) === 0 ? <p>Không có hồ sơ NDR.</p> : null}
       {ndrQuery.isSuccess && (ndrQuery.data?.length ?? 0) > 0 ? (
         <NdrCasesTable items={ndrQuery.data ?? []} />
       ) : null}

@@ -50,14 +50,14 @@ export function ShipmentListPage(): React.JSX.Element {
 
   return (
     <div>
-      <h2>Shipments</h2>
+      <h2>Vận đơn</h2>
       <p style={{ color: '#2d3f99' }}>
-        currentStatus/currentLocation are displayed exactly as API response.
+        currentStatus/currentLocation được hiển thị đúng theo phản hồi API.
       </p>
       <form onSubmit={onFilterSubmit} style={styles.filterForm}>
         <input
           name="q"
-          placeholder="Search shipment code"
+          placeholder="Tìm mã vận đơn"
           value={qInput}
           onChange={(event) => setQInput(event.target.value)}
           style={styles.input}
@@ -68,7 +68,7 @@ export function ShipmentListPage(): React.JSX.Element {
           onChange={(event) => setStatusInput(event.target.value)}
           style={styles.select}
         >
-          <option value="">All status</option>
+          <option value="">Tất cả trạng thái</option>
           <option value="CREATED">CREATED</option>
           <option value="ASSIGNED">ASSIGNED</option>
           <option value="IN_TRANSIT">IN_TRANSIT</option>
@@ -76,18 +76,18 @@ export function ShipmentListPage(): React.JSX.Element {
           <option value="FAILED">FAILED</option>
           <option value="RETURNED">RETURNED</option>
         </select>
-        <button type="submit">Apply</button>
+        <button type="submit">Áp dụng</button>
         <button type="button" onClick={onResetFilters}>
-          Reset
+          Đặt lại
         </button>
       </form>
 
-      {shipmentQuery.isLoading ? <p>Loading shipments...</p> : null}
+      {shipmentQuery.isLoading ? <p>Đang tải vận đơn...</p> : null}
       {shipmentQuery.isError ? (
         <p style={styles.errorText}>{getErrorMessage(shipmentQuery.error)}</p>
       ) : null}
       {shipmentQuery.isSuccess && (shipmentQuery.data?.length ?? 0) === 0 ? (
-        <p>No shipments found for current filters.</p>
+        <p>Không tìm thấy vận đơn theo bộ lọc hiện tại.</p>
       ) : null}
       {shipmentQuery.isSuccess && (shipmentQuery.data?.length ?? 0) > 0 ? (
         <ShipmentsTable items={shipmentQuery.data ?? []} />

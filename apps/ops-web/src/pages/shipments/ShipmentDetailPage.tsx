@@ -52,7 +52,7 @@ export function ShipmentDetailPage(): React.JSX.Element {
   });
 
   if (detailQuery.isLoading) {
-    return <p>Loading shipment detail...</p>;
+    return <p>Đang tải chi tiết vận đơn...</p>;
   }
 
   if (detailQuery.isError) {
@@ -60,42 +60,42 @@ export function ShipmentDetailPage(): React.JSX.Element {
   }
 
   if (!detailQuery.data) {
-    return <p>Shipment not found.</p>;
+    return <p>Không tìm thấy vận đơn.</p>;
   }
 
   return (
     <section>
-      <h2>Shipment detail</h2>
-      <p>Shipment code: {detailQuery.data.shipmentCode}</p>
-      <p>Current status: {detailQuery.data.currentStatus}</p>
-      <p>Current location: {detailQuery.data.currentLocation ?? 'N/A'}</p>
-      <p>Updated at: {formatDateTime(detailQuery.data.updatedAt)}</p>
+      <h2>Chi tiết vận đơn</h2>
+      <p>Mã vận đơn: {detailQuery.data.shipmentCode}</p>
+      <p>Trạng thái hiện tại: {detailQuery.data.currentStatus}</p>
+      <p>Vị trí hiện tại: {detailQuery.data.currentLocation ?? 'Không có'}</p>
+      <p>Cập nhật lúc: {formatDateTime(detailQuery.data.updatedAt)}</p>
 
       <div style={styles.entryPointGroup}>
-        <strong>Related operation entries</strong>
+        <strong>Điểm vào tác vụ liên quan</strong>
         <div style={styles.entryLinks}>
           <Link to={`${routePaths.tasks}?shipmentCode=${encodeURIComponent(detailQuery.data.shipmentCode)}`}>
-            Assign/Reassign task
+            Phân công/Phân công lại tác vụ
           </Link>
           <Link
             to={`${routePaths.manifests}?shipmentCode=${encodeURIComponent(detailQuery.data.shipmentCode)}`}
           >
-            Add to manifest
+            Thêm vào manifest
           </Link>
           <Link to={`${routePaths.scans}?shipmentCode=${encodeURIComponent(detailQuery.data.shipmentCode)}`}>
-            Hub scan
+            Quét hub
           </Link>
           <Link to={`${routePaths.ndr}?shipmentCode=${encodeURIComponent(detailQuery.data.shipmentCode)}`}>
-            NDR handling
+            Xử lý NDR
           </Link>
         </div>
       </div>
 
       <form onSubmit={onSubmit} style={styles.form}>
-        <label htmlFor="note">Ops note</label>
+        <label htmlFor="note">Ghi chú vận hành</label>
         <textarea id="note" rows={4} {...form.register('note')} />
         <button type="submit" disabled={updateMutation.isPending}>
-          {updateMutation.isPending ? 'Saving...' : 'Save'}
+          {updateMutation.isPending ? 'Đang lưu...' : 'Lưu'}
         </button>
         {updateMutation.isError ? (
           <small style={styles.errorText}>{getErrorMessage(updateMutation.error)}</small>
@@ -104,14 +104,14 @@ export function ShipmentDetailPage(): React.JSX.Element {
 
       <div style={styles.actionsGrid}>
         <form onSubmit={onReviewSubmit} style={styles.form}>
-          <h3 style={styles.actionTitle}>Review action skeleton</h3>
+          <h3 style={styles.actionTitle}>Khung thao tác rà soát</h3>
           <textarea
             rows={3}
-            placeholder="Review note"
+            placeholder="Ghi chú rà soát"
             {...reviewForm.register('note')}
           />
           <button type="submit" disabled={reviewMutation.isPending}>
-            {reviewMutation.isPending ? 'Submitting review...' : 'Submit review'}
+            {reviewMutation.isPending ? 'Đang gửi rà soát...' : 'Gửi rà soát'}
           </button>
           {reviewMutation.isError ? (
             <small style={styles.errorText}>{getErrorMessage(reviewMutation.error)}</small>
@@ -119,14 +119,14 @@ export function ShipmentDetailPage(): React.JSX.Element {
         </form>
 
         <form onSubmit={onApproveSubmit} style={styles.form}>
-          <h3 style={styles.actionTitle}>Approve action skeleton</h3>
+          <h3 style={styles.actionTitle}>Khung thao tác phê duyệt</h3>
           <textarea
             rows={3}
-            placeholder="Approval note"
+            placeholder="Ghi chú phê duyệt"
             {...approveForm.register('note')}
           />
           <button type="submit" disabled={approveMutation.isPending}>
-            {approveMutation.isPending ? 'Submitting approval...' : 'Submit approval'}
+            {approveMutation.isPending ? 'Đang gửi phê duyệt...' : 'Gửi phê duyệt'}
           </button>
           {approveMutation.isError ? (
             <small style={styles.errorText}>{getErrorMessage(approveMutation.error)}</small>

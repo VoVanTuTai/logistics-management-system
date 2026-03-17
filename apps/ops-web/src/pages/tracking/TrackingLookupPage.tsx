@@ -30,37 +30,37 @@ export function TrackingLookupPage(): React.JSX.Element {
 
   return (
     <section>
-      <h2>Internal tracking search</h2>
+      <h2>Tra cứu hành trình nội bộ</h2>
       <p style={{ color: '#2d3f99' }}>
-        Search reads tracking projection from server and does not derive status or location on
+        Tra cứu đọc read-model tracking từ server, không tự suy diễn trạng thái hoặc vị trí ở
         client.
       </p>
       <form onSubmit={onSubmit} style={styles.form}>
         <input
           value={shipmentCodeInput}
           onChange={(event) => setShipmentCodeInput(event.target.value)}
-          placeholder="Shipment code"
+          placeholder="Mã vận đơn"
         />
         <button type="submit" disabled={searchQuery.isLoading}>
-          Search
+          Tìm kiếm
         </button>
       </form>
 
-      {!submittedShipmentCode ? <p>Enter shipment code to start search.</p> : null}
-      {searchQuery.isLoading ? <p>Loading tracking search...</p> : null}
+      {!submittedShipmentCode ? <p>Nhập mã vận đơn để bắt đầu tra cứu.</p> : null}
+      {searchQuery.isLoading ? <p>Đang tải kết quả tra cứu...</p> : null}
       {searchQuery.isError ? (
         <p style={styles.errorText}>{getErrorMessage(searchQuery.error)}</p>
       ) : null}
-      {searchQuery.isSuccess && !searchQuery.data ? <p>No tracking data found.</p> : null}
+      {searchQuery.isSuccess && !searchQuery.data ? <p>Không tìm thấy dữ liệu tracking.</p> : null}
       {searchQuery.data ? (
         <article style={styles.currentCard}>
-          <h3>Search result</h3>
-          <p>Shipment code: {searchQuery.data.shipmentCode}</p>
-          <p>Current status: {searchQuery.data.currentStatus ?? 'N/A'}</p>
-          <p>Current location: {searchQuery.data.currentLocation ?? 'N/A'}</p>
-          <p>Updated at: {formatDateTime(searchQuery.data.updatedAt)}</p>
+          <h3>Kết quả tra cứu</h3>
+          <p>Mã vận đơn: {searchQuery.data.shipmentCode}</p>
+          <p>Trạng thái hiện tại: {searchQuery.data.currentStatus ?? 'Không có'}</p>
+          <p>Vị trí hiện tại: {searchQuery.data.currentLocation ?? 'Không có'}</p>
+          <p>Cập nhật lúc: {formatDateTime(searchQuery.data.updatedAt)}</p>
           <Link to={routePaths.trackingDetail(searchQuery.data.shipmentCode)}>
-            Open tracking detail
+            Mở chi tiết hành trình
           </Link>
         </article>
       ) : null}

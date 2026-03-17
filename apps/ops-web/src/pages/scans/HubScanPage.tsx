@@ -40,22 +40,28 @@ export function HubScanPage(): React.JSX.Element {
 
   const isSubmitting = inboundMutation.isPending || outboundMutation.isPending;
   const actionError = inboundMutation.error ?? outboundMutation.error;
+  const lastScanLabel =
+    lastScanType === 'INBOUND'
+      ? 'Nhập'
+      : lastScanType === 'OUTBOUND'
+        ? 'Xuất'
+        : 'Không có';
 
   return (
     <section>
-      <h2>Hub scan inbound/outbound</h2>
+      <h2>Quét hub nhập/xuất</h2>
       <p style={{ color: '#2d3f99' }}>
-        Scan payload is sent to gateway-bff as entered and response is displayed directly from
+        Payload quét được gửi lên gateway-bff đúng như nhập vào, và phản hồi hiển thị trực tiếp từ
         server.
       </p>
       <HubScanForm isSubmitting={isSubmitting} onSubmit={onSubmit} />
 
-      {isSubmitting ? <p>Submitting scan...</p> : null}
+      {isSubmitting ? <p>Đang gửi quét...</p> : null}
       {actionError ? <p style={styles.errorText}>{getErrorMessage(actionError)}</p> : null}
-      {!isSubmitting && !actionError && !lastScanResult ? <p>No scan result yet.</p> : null}
+      {!isSubmitting && !actionError && !lastScanResult ? <p>Chưa có kết quả quét.</p> : null}
       {lastScanResult ? (
         <div style={styles.responseBox}>
-          <strong>Last scan response ({lastScanType ?? 'N/A'})</strong>
+          <strong>Phản hồi quét gần nhất ({lastScanLabel})</strong>
           <pre style={styles.pre}>{JSON.stringify(lastScanResult, null, 2)}</pre>
         </div>
       ) : null}

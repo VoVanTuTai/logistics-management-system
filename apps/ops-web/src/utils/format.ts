@@ -1,6 +1,6 @@
 export function formatDateTime(value?: string | null): string {
   if (!value) {
-    return 'N/A';
+    return 'Không có';
   }
 
   const date = new Date(value);
@@ -10,4 +10,3 @@ export function formatDateTime(value?: string | null): string {
 
   return date.toLocaleString();
 }
-

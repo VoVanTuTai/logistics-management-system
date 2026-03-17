@@ -27,8 +27,8 @@ export function LoginPage(): React.JSX.Element {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <h2 style={styles.title}>Ops Login</h2>
-        <p style={styles.subtitle}>Internal access via gateway-bff only</p>
+        <h2 style={styles.title}>Đăng nhập Ops</h2>
+        <p style={styles.subtitle}>Truy cập nội bộ qua gateway-bff</p>
         <LoginForm
           isSubmitting={isSubmitting || loginMutation.isPending}
           errorMessage={authError}

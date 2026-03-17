@@ -7,7 +7,7 @@ import './app/theme.css';
 const rootNode = document.getElementById('root');
 
 if (!rootNode) {
-  throw new Error('Missing root element');
+  throw new Error('Không tìm thấy phần tử root');
 }
 
 createRoot(rootNode).render(

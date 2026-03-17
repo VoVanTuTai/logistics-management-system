@@ -61,16 +61,16 @@ export function NdrNextActionForm({
   if (mode === 'RESCHEDULE') {
     return (
       <form onSubmit={onSubmitReschedule} style={styles.form}>
-        <h3 style={styles.title}>Reschedule action</h3>
+        <h3 style={styles.title}>Thao tác dời lịch giao</h3>
         <input type="datetime-local" {...rescheduleForm.register('nextDeliveryAt')} />
         {rescheduleForm.formState.errors.nextDeliveryAt ? (
           <small style={styles.errorText}>
             {rescheduleForm.formState.errors.nextDeliveryAt.message}
           </small>
         ) : null}
-        <textarea rows={3} placeholder="Note" {...rescheduleForm.register('note')} />
+        <textarea rows={3} placeholder="Ghi chú" {...rescheduleForm.register('note')} />
         <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Submitting...' : 'Submit reschedule'}
+          {isSubmitting ? 'Đang gửi...' : 'Gửi dời lịch'}
         </button>
       </form>
     );
@@ -78,14 +78,14 @@ export function NdrNextActionForm({
 
   return (
     <form onSubmit={onSubmitReturn} style={styles.form}>
-      <h3 style={styles.title}>Return action</h3>
+      <h3 style={styles.title}>Thao tác hoàn hàng</h3>
       <label style={styles.checkbox}>
         <input type="checkbox" {...returnForm.register('returnToSender')} />
-        Return to sender
+        Hoàn về người gửi
       </label>
-      <textarea rows={3} placeholder="Note" {...returnForm.register('note')} />
+      <textarea rows={3} placeholder="Ghi chú" {...returnForm.register('note')} />
       <button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? 'Submitting...' : 'Submit return decision'}
+        {isSubmitting ? 'Đang gửi...' : 'Gửi quyết định hoàn hàng'}
       </button>
     </form>
   );

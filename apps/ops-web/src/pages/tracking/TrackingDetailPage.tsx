@@ -15,7 +15,7 @@ export function TrackingDetailPage(): React.JSX.Element {
   const detailQuery = useTrackingDetailQuery(accessToken, shipmentCode);
 
   if (detailQuery.isLoading) {
-    return <p>Loading tracking detail...</p>;
+    return <p>Đang tải chi tiết hành trình...</p>;
   }
 
   if (detailQuery.isError) {
@@ -23,26 +23,26 @@ export function TrackingDetailPage(): React.JSX.Element {
   }
 
   if (!detailQuery.data) {
-    return <p>Tracking detail not found.</p>;
+    return <p>Không tìm thấy chi tiết hành trình.</p>;
   }
 
   return (
     <section>
-      <h2>Shipment tracking detail</h2>
+      <h2>Chi tiết hành trình vận đơn</h2>
       <p>
-        <Link to={routePaths.tracking}>Back to tracking search</Link>
+        <Link to={routePaths.tracking}>Quay lại tra cứu hành trình</Link>
       </p>
 
       <article style={styles.currentCard}>
-        <h3>Current read model</h3>
-        <p>Shipment code: {detailQuery.data.current?.shipmentCode ?? shipmentCode}</p>
-        <p>Current status: {detailQuery.data.current?.currentStatus ?? 'N/A'}</p>
-        <p>Current location: {detailQuery.data.current?.currentLocation ?? 'N/A'}</p>
-        <p>Updated at: {formatDateTime(detailQuery.data.current?.updatedAt)}</p>
+        <h3>Mô hình đọc hiện tại</h3>
+        <p>Mã vận đơn: {detailQuery.data.current?.shipmentCode ?? shipmentCode}</p>
+        <p>Trạng thái hiện tại: {detailQuery.data.current?.currentStatus ?? 'Không có'}</p>
+        <p>Vị trí hiện tại: {detailQuery.data.current?.currentLocation ?? 'Không có'}</p>
+        <p>Cập nhật lúc: {formatDateTime(detailQuery.data.current?.updatedAt)}</p>
       </article>
 
-      <h3 style={styles.timelineHeading}>Timeline</h3>
-      {detailQuery.data.timeline.length === 0 ? <p>No timeline events.</p> : null}
+      <h3 style={styles.timelineHeading}>Dòng thời gian</h3>
+      {detailQuery.data.timeline.length === 0 ? <p>Không có sự kiện timeline.</p> : null}
       {detailQuery.data.timeline.length > 0 ? (
         <TrackingTimelineTable items={detailQuery.data.timeline} />
       ) : null}

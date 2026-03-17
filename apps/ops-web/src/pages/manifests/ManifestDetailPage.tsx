@@ -58,9 +58,19 @@ export function ManifestDetailPage(): React.JSX.Element {
     setLastActionName('receiveHandover');
     setLastActionResponse(response);
   };
+  const lastActionLabel =
+    lastActionName === 'addShipment'
+      ? 'thêm vận đơn'
+      : lastActionName === 'removeShipment'
+        ? 'gỡ vận đơn'
+        : lastActionName === 'seal'
+          ? 'niêm phong'
+          : lastActionName === 'receiveHandover'
+            ? 'nhận bàn giao'
+            : 'không có';
 
   if (detailQuery.isLoading) {
-    return <p>Loading manifest detail...</p>;
+    return <p>Đang tải chi tiết manifest...</p>;
   }
 
   if (detailQuery.isError) {
@@ -68,31 +78,31 @@ export function ManifestDetailPage(): React.JSX.Element {
   }
 
   if (!detailQuery.data) {
-    return <p>Manifest not found.</p>;
+    return <p>Không tìm thấy manifest.</p>;
   }
 
   return (
     <section>
-      <h2>Manifest detail</h2>
+      <h2>Chi tiết manifest</h2>
       <p>
-        <Link to={routePaths.manifests}>Back to manifests</Link>
+        <Link to={routePaths.manifests}>Quay lại danh sách manifest</Link>
       </p>
 
-      <p>Manifest code: {detailQuery.data.manifestCode}</p>
-      <p>Status: {detailQuery.data.status}</p>
-      <p>Origin hub: {detailQuery.data.originHubCode ?? 'N/A'}</p>
-      <p>Destination hub: {detailQuery.data.destinationHubCode ?? 'N/A'}</p>
-      <p>Sealed at: {formatDateTime(detailQuery.data.sealedAt)}</p>
+      <p>Mã manifest: {detailQuery.data.manifestCode}</p>
+      <p>Trạng thái: {detailQuery.data.status}</p>
+      <p>Hub đi: {detailQuery.data.originHubCode ?? 'Không có'}</p>
+      <p>Hub đến: {detailQuery.data.destinationHubCode ?? 'Không có'}</p>
+      <p>Niêm phong lúc: {formatDateTime(detailQuery.data.sealedAt)}</p>
       <p>
-        Updated at:{' '}
-        {detailQuery.data.updatedAt ? formatDateTime(detailQuery.data.updatedAt) : 'N/A'}
+        Cập nhật lúc:{' '}
+        {detailQuery.data.updatedAt ? formatDateTime(detailQuery.data.updatedAt) : 'Không có'}
       </p>
-      <p>Note: {detailQuery.data.note ?? 'N/A'}</p>
+      <p>Ghi chú: {detailQuery.data.note ?? 'Không có'}</p>
       <p>
-        Shipment codes:{' '}
+        Mã vận đơn:{' '}
         {detailQuery.data.shipmentCodes?.length
           ? detailQuery.data.shipmentCodes.join(', ')
-          : 'N/A'}
+          : 'Không có'}
       </p>
 
       <ManifestActionForms
@@ -122,7 +132,7 @@ export function ManifestDetailPage(): React.JSX.Element {
 
       {lastActionResponse ? (
         <div style={styles.responseBox}>
-          <strong>Last server response ({lastActionName})</strong>
+          <strong>Phản hồi server gần nhất ({lastActionLabel})</strong>
           <pre style={styles.pre}>{JSON.stringify(lastActionResponse, null, 2)}</pre>
         </div>
       ) : null}

@@ -14,12 +14,12 @@ export function TasksTable({ items }: TasksTableProps): React.JSX.Element {
     <table style={styles.table}>
       <thead>
         <tr>
-          <th style={styles.headerCell}>Task</th>
-          <th style={styles.headerCell}>Type</th>
-          <th style={styles.headerCell}>Status</th>
-          <th style={styles.headerCell}>Shipment</th>
-          <th style={styles.headerCell}>Courier</th>
-          <th style={styles.headerCell}>Updated at</th>
+          <th style={styles.headerCell}>Tác vụ</th>
+          <th style={styles.headerCell}>Loại</th>
+          <th style={styles.headerCell}>Trạng thái</th>
+          <th style={styles.headerCell}>Vận đơn</th>
+          <th style={styles.headerCell}>Mã courier</th>
+          <th style={styles.headerCell}>Cập nhật lúc</th>
         </tr>
       </thead>
       <tbody>
@@ -30,8 +30,8 @@ export function TasksTable({ items }: TasksTableProps): React.JSX.Element {
             </td>
             <td style={styles.cell}>{item.taskType}</td>
             <td style={styles.cell}>{item.status}</td>
-            <td style={styles.cell}>{item.shipmentCode ?? 'N/A'}</td>
-            <td style={styles.cell}>{item.assignedCourierId ?? 'N/A'}</td>
+            <td style={styles.cell}>{item.shipmentCode ?? 'Không có'}</td>
+            <td style={styles.cell}>{item.assignedCourierId ?? 'Không có'}</td>
             <td style={styles.cell}>{formatDateTime(item.updatedAt)}</td>
           </tr>
         ))}
@@ -56,4 +56,3 @@ const styles: Record<string, React.CSSProperties> = {
     borderBottom: '1px solid #e7ebf8',
   },
 };
-

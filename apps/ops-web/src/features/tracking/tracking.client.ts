@@ -71,7 +71,7 @@ export const trackingClient = {
       timeline: timeline.map((event) => ({
         id: event.id,
         eventType: event.eventType,
-        eventSource: event.actor ?? 'N/A',
+        eventSource: event.actor ?? 'Không có',
         statusAfterEvent: null,
         locationCode: event.locationCode,
         occurredAt: event.occurredAt,

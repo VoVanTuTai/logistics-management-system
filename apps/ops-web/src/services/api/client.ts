@@ -39,7 +39,7 @@ export class OpsApiClient {
       }
 
       throw new ApiClientError({
-        message: error instanceof Error ? error.message : 'Network request failed.',
+        message: error instanceof Error ? error.message : 'Yêu cầu mạng thất bại.',
         isNetworkError: true,
       });
     } finally {
@@ -66,8 +66,7 @@ function extractErrorMessage(payload: unknown, status: number): string {
     return payload.message;
   }
 
-  return `Request failed with status ${status}.`;
+  return `Yêu cầu thất bại với mã trạng thái ${status}.`;
 }
 
 export const opsApiClient = new OpsApiClient();
-

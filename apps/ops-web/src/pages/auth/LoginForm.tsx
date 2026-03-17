@@ -26,7 +26,7 @@ export function LoginForm({
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} style={styles.form}>
       <label style={styles.label} htmlFor="username">
-        Username
+        Tên đăng nhập
       </label>
       <input
         id="username"
@@ -39,7 +39,7 @@ export function LoginForm({
       ) : null}
 
       <label style={styles.label} htmlFor="password">
-        Password
+        Mật khẩu
       </label>
       <input
         id="password"
@@ -55,7 +55,7 @@ export function LoginForm({
       {errorMessage ? <div style={styles.errorBanner}>{errorMessage}</div> : null}
 
       <button type="submit" disabled={isSubmitting} style={styles.button}>
-        {isSubmitting ? 'Logging in...' : 'Login'}
+        {isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
       </button>
     </form>
   );
@@ -95,4 +95,3 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
   },
 };
-

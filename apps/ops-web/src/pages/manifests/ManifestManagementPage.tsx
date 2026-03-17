@@ -24,9 +24,9 @@ export function ManifestManagementPage(): React.JSX.Element {
 
   return (
     <div>
-      <h2>Manifest management</h2>
+      <h2>Quản lý manifest</h2>
       <p style={{ color: '#2d3f99' }}>
-        Manifest create workflow only sends payload to gateway and displays server response.
+        Luồng tạo manifest chỉ gửi payload lên gateway và hiển thị phản hồi server.
       </p>
 
       <CreateManifestForm
@@ -38,17 +38,17 @@ export function ManifestManagementPage(): React.JSX.Element {
       ) : null}
       {lastCreateResponse ? (
         <div style={styles.responseBox}>
-          <strong>Last create response</strong>
+          <strong>Phản hồi tạo gần nhất</strong>
           <pre style={styles.pre}>{JSON.stringify(lastCreateResponse, null, 2)}</pre>
         </div>
       ) : null}
 
-      {manifestsQuery.isLoading ? <p>Loading manifests...</p> : null}
+      {manifestsQuery.isLoading ? <p>Đang tải danh sách manifest...</p> : null}
       {manifestsQuery.isError ? (
         <p style={styles.errorText}>{getErrorMessage(manifestsQuery.error)}</p>
       ) : null}
       {manifestsQuery.isSuccess && (manifestsQuery.data?.length ?? 0) === 0 ? (
-        <p>No manifests found.</p>
+        <p>Không có manifest.</p>
       ) : null}
       {manifestsQuery.isSuccess && (manifestsQuery.data?.length ?? 0) > 0 ? (
         <ManifestsTable items={manifestsQuery.data ?? []} />
@@ -77,4 +77,3 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 13,
   },
 };
-

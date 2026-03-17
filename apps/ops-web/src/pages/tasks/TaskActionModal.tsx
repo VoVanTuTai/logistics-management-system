@@ -36,7 +36,7 @@ export function TaskActionModal({
     return null;
   }
 
-  const actionTitle = mode === 'assign' ? 'Assign task' : 'Reassign task';
+  const actionTitle = mode === 'assign' ? 'Phân công tác vụ' : 'Phân công lại tác vụ';
 
   const handleSubmit = form.handleSubmit(async (values) => {
     await onSubmit({
@@ -53,25 +53,25 @@ export function TaskActionModal({
       <div style={styles.modal}>
         <h3 style={styles.title}>{actionTitle}</h3>
         <form onSubmit={handleSubmit} style={styles.form}>
-          <label htmlFor={`${mode}-courier`}>Courier ID</label>
+          <label htmlFor={`${mode}-courier`}>Mã courier</label>
           <input
             id={`${mode}-courier`}
-            placeholder="Courier ID"
+            placeholder="Nhập mã courier"
             {...form.register('courierId', { required: true })}
           />
-          <label htmlFor={`${mode}-note`}>Note</label>
+          <label htmlFor={`${mode}-note`}>Ghi chú</label>
           <textarea
             id={`${mode}-note`}
             rows={3}
-            placeholder="Optional note"
+            placeholder="Ghi chú (không bắt buộc)"
             {...form.register('note')}
           />
           <div style={styles.actions}>
             <button type="button" onClick={onClose}>
-              Cancel
+              Hủy
             </button>
             <button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Submitting...' : actionTitle}
+              {isSubmitting ? 'Đang gửi...' : actionTitle}
             </button>
           </div>
         </form>
@@ -112,4 +112,3 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: 8,
   },
 };
-

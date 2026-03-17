@@ -39,9 +39,15 @@ export function TaskDetailPage(): React.JSX.Element {
     setLastActionName('reassign');
     setLastActionResponse(response);
   };
+  const lastActionLabel =
+    lastActionName === 'assign'
+      ? 'phân công'
+      : lastActionName === 'reassign'
+        ? 'phân công lại'
+        : 'không có';
 
   if (detailQuery.isLoading) {
-    return <p>Loading task detail...</p>;
+    return <p>Đang tải chi tiết tác vụ...</p>;
   }
 
   if (detailQuery.isError) {
@@ -49,30 +55,30 @@ export function TaskDetailPage(): React.JSX.Element {
   }
 
   if (!detailQuery.data) {
-    return <p>Task not found.</p>;
+    return <p>Không tìm thấy tác vụ.</p>;
   }
 
   return (
     <section>
-      <h2>Task detail</h2>
+      <h2>Chi tiết tác vụ</h2>
       <p>
-        <Link to={routePaths.tasks}>Back to task list</Link>
+        <Link to={routePaths.tasks}>Quay lại danh sách tác vụ</Link>
       </p>
 
-      <p>Task code: {detailQuery.data.taskCode}</p>
-      <p>Task type: {detailQuery.data.taskType}</p>
-      <p>Status: {detailQuery.data.status}</p>
-      <p>Shipment code: {detailQuery.data.shipmentCode ?? 'N/A'}</p>
-      <p>Assigned courier: {detailQuery.data.assignedCourierId ?? 'N/A'}</p>
-      <p>Updated at: {formatDateTime(detailQuery.data.updatedAt)}</p>
-      <p>Note: {detailQuery.data.note ?? 'N/A'}</p>
+      <p>Mã tác vụ: {detailQuery.data.taskCode}</p>
+      <p>Loại tác vụ: {detailQuery.data.taskType}</p>
+      <p>Trạng thái: {detailQuery.data.status}</p>
+      <p>Mã vận đơn: {detailQuery.data.shipmentCode ?? 'Không có'}</p>
+      <p>Courier đang gán: {detailQuery.data.assignedCourierId ?? 'Không có'}</p>
+      <p>Cập nhật lúc: {formatDateTime(detailQuery.data.updatedAt)}</p>
+      <p>Ghi chú: {detailQuery.data.note ?? 'Không có'}</p>
 
       <div style={styles.actionButtons}>
         <button type="button" onClick={() => setOpenModal('assign')}>
-          Open assign skeleton
+          Mở form phân công
         </button>
         <button type="button" onClick={() => setOpenModal('reassign')}>
-          Open reassign skeleton
+          Mở form phân công lại
         </button>
       </div>
 
@@ -85,7 +91,7 @@ export function TaskDetailPage(): React.JSX.Element {
 
       {lastActionResponse ? (
         <div style={styles.responseBox}>
-          <strong>Last server response ({lastActionName})</strong>
+          <strong>Phản hồi server gần nhất ({lastActionLabel})</strong>
           <pre style={styles.pre}>{JSON.stringify(lastActionResponse, null, 2)}</pre>
         </div>
       ) : null}
@@ -134,4 +140,3 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#b91c1c',
   },
 };
-

@@ -28,6 +28,5 @@ export function getErrorMessage(error: unknown): string {
     return error.message;
   }
 
-  return 'Unexpected error.';
+  return 'Đã xảy ra lỗi không mong đợi.';
 }
-

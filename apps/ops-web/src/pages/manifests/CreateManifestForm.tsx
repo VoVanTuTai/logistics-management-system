@@ -9,6 +9,7 @@ interface CreateManifestFormProps {
 }
 
 interface CreateManifestFormValues {
+  manifestCode: string;
   originHubCode: string;
   destinationHubCode: string;
   shipmentCodesText: string;
@@ -20,6 +21,7 @@ export function CreateManifestForm({
 }: CreateManifestFormProps): React.JSX.Element {
   const form = useForm<CreateManifestFormValues>({
     defaultValues: {
+      manifestCode: '',
       originHubCode: '',
       destinationHubCode: '',
       shipmentCodesText: '',
@@ -28,6 +30,7 @@ export function CreateManifestForm({
 
   const onFormSubmit = form.handleSubmit(async (values) => {
     await onSubmit({
+      manifestCode: values.manifestCode.trim(),
       originHubCode: values.originHubCode,
       destinationHubCode: values.destinationHubCode,
       shipmentCodes: values.shipmentCodesText
@@ -40,16 +43,20 @@ export function CreateManifestForm({
 
   return (
     <form onSubmit={onFormSubmit} style={styles.form}>
-      <h3 style={styles.title}>Create manifest</h3>
-      <input placeholder="Origin hub code" {...form.register('originHubCode')} />
-      <input placeholder="Destination hub code" {...form.register('destinationHubCode')} />
+      <h3 style={styles.title}>Tạo manifest</h3>
+      <input
+        placeholder="Mã manifest"
+        {...form.register('manifestCode', { required: true })}
+      />
+      <input placeholder="Mã hub đi" {...form.register('originHubCode')} />
+      <input placeholder="Mã hub đến" {...form.register('destinationHubCode')} />
       <textarea
         rows={3}
-        placeholder="Shipment codes (comma separated)"
+        placeholder="Mã vận đơn (phân tách bằng dấu phẩy)"
         {...form.register('shipmentCodesText')}
       />
       <button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? 'Creating...' : 'Create manifest'}
+        {isSubmitting ? 'Đang tạo...' : 'Tạo manifest'}
       </button>
     </form>
   );
@@ -66,4 +73,3 @@ const styles: Record<string, React.CSSProperties> = {
     margin: 0,
   },
 };
-

@@ -50,37 +50,37 @@ export function TaskAssignmentPage(): React.JSX.Element {
 
   return (
     <div>
-      <h2>Task assignment</h2>
+      <h2>Phân công tác vụ</h2>
       <p style={{ color: '#2d3f99' }}>
-        Task type/status are displayed and filtered from API payload only.
+        Loại task/trạng thái được hiển thị và lọc trực tiếp từ payload API.
       </p>
       <form onSubmit={onFilterSubmit} style={styles.filterForm}>
         <input
           name="taskType"
-          placeholder="Filter by task type"
+          placeholder="Lọc theo loại task"
           value={taskTypeInput}
           onChange={(event) => setTaskTypeInput(event.target.value)}
           style={styles.input}
         />
         <input
           name="status"
-          placeholder="Filter by status"
+          placeholder="Lọc theo trạng thái"
           value={statusInput}
           onChange={(event) => setStatusInput(event.target.value)}
           style={styles.input}
         />
-        <button type="submit">Apply</button>
+        <button type="submit">Áp dụng</button>
         <button type="button" onClick={onResetFilters}>
-          Reset
+          Đặt lại
         </button>
       </form>
 
-      {tasksQuery.isLoading ? <p>Loading tasks...</p> : null}
+      {tasksQuery.isLoading ? <p>Đang tải tác vụ...</p> : null}
       {tasksQuery.isError ? (
         <p style={styles.errorText}>{getErrorMessage(tasksQuery.error)}</p>
       ) : null}
       {tasksQuery.isSuccess && (tasksQuery.data?.length ?? 0) === 0 ? (
-        <p>No tasks found for current filters.</p>
+        <p>Không tìm thấy tác vụ phù hợp bộ lọc hiện tại.</p>
       ) : null}
       {tasksQuery.isSuccess && (tasksQuery.data?.length ?? 0) > 0 ? (
         <TasksTable items={tasksQuery.data ?? []} />
@@ -109,4 +109,3 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: 12,
   },
 };
-

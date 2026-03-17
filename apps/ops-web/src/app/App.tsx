@@ -11,7 +11,9 @@ export function App(): React.JSX.Element {
 
   useEffect(() => {
     void hydrateAuthSession().catch((error) => {
-      setGlobalError(error instanceof Error ? error.message : 'Unable to hydrate auth.');
+      setGlobalError(
+        error instanceof Error ? error.message : 'Không thể khôi phục phiên đăng nhập.',
+      );
     });
   }, [setGlobalError]);
 

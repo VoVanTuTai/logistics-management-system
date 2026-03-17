@@ -19,8 +19,8 @@ export function DashboardMetricsTable({
       <table className="ops-metrics-table">
         <thead>
           <tr>
-            <th>Label</th>
-            <th>Value</th>
+            <th>Nhãn</th>
+            <th>Giá trị</th>
           </tr>
         </thead>
         <tbody>

@@ -14,11 +14,11 @@ export function ManifestsTable({ items }: ManifestsTableProps): React.JSX.Elemen
     <table style={styles.table}>
       <thead>
         <tr>
-          <th style={styles.headerCell}>Manifest</th>
-          <th style={styles.headerCell}>Status</th>
-          <th style={styles.headerCell}>Origin</th>
-          <th style={styles.headerCell}>Destination</th>
-          <th style={styles.headerCell}>Sealed at</th>
+          <th style={styles.headerCell}>Mã manifest</th>
+          <th style={styles.headerCell}>Trạng thái</th>
+          <th style={styles.headerCell}>Hub đi</th>
+          <th style={styles.headerCell}>Hub đến</th>
+          <th style={styles.headerCell}>Niêm phong lúc</th>
         </tr>
       </thead>
       <tbody>
@@ -28,8 +28,8 @@ export function ManifestsTable({ items }: ManifestsTableProps): React.JSX.Elemen
               <Link to={routePaths.manifestDetail(item.id)}>{item.manifestCode}</Link>
             </td>
             <td style={styles.cell}>{item.status}</td>
-            <td style={styles.cell}>{item.originHubCode ?? 'N/A'}</td>
-            <td style={styles.cell}>{item.destinationHubCode ?? 'N/A'}</td>
+            <td style={styles.cell}>{item.originHubCode ?? 'Không có'}</td>
+            <td style={styles.cell}>{item.destinationHubCode ?? 'Không có'}</td>
             <td style={styles.cell}>{formatDateTime(item.sealedAt)}</td>
           </tr>
         ))}
@@ -54,4 +54,3 @@ const styles: Record<string, React.CSSProperties> = {
     borderBottom: '1px solid #e7ebf8',
   },
 };
-

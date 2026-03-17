@@ -70,14 +70,14 @@ function mapDailyMetrics(items: DashboardDailyResponse[]): DashboardMetricPointD
       item.courierCode ??
       item.hubCode ??
       item.zoneCode ??
-      'ALL',
+      'Tất cả',
     value: typeof item.shipmentsCreated === 'number' ? item.shipmentsCreated : 0,
   }));
 }
 
 function mapMonthlyMetrics(items: DashboardMonthlyResponse[]): DashboardMetricPointDto[] {
   return items.map((item) => ({
-    label: item.monthKey ?? 'N/A',
+    label: item.monthKey ?? 'Không có',
     value: typeof item.shipmentsCreated === 'number' ? item.shipmentsCreated : 0,
   }));
 }

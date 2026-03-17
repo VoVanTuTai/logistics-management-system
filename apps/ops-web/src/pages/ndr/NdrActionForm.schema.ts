@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const ndrActionModeSchema = z.enum(['RESCHEDULE', 'RETURN']);
 
 export const rescheduleNdrSchema = z.object({
-  nextDeliveryAt: z.string().trim().min(1, 'Next delivery time is required'),
+  nextDeliveryAt: z.string().trim().min(1, 'Thời gian giao lại là bắt buộc'),
   note: z.string().optional(),
 });
 

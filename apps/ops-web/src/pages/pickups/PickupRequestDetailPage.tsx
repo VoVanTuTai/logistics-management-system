@@ -47,9 +47,15 @@ export function PickupRequestDetailPage(): React.JSX.Element {
     setLastActionName('reject');
     setLastActionResponse(response);
   });
+  const lastActionLabel =
+    lastActionName === 'approve'
+      ? 'phê duyệt'
+      : lastActionName === 'reject'
+        ? 'từ chối'
+        : 'không có';
 
   if (detailQuery.isLoading) {
-    return <p>Loading pickup request detail...</p>;
+    return <p>Đang tải chi tiết yêu cầu lấy hàng...</p>;
   }
 
   if (detailQuery.isError) {
@@ -57,35 +63,35 @@ export function PickupRequestDetailPage(): React.JSX.Element {
   }
 
   if (!detailQuery.data) {
-    return <p>Pickup request not found.</p>;
+    return <p>Không tìm thấy yêu cầu lấy hàng.</p>;
   }
 
   return (
     <section>
-      <h2>Pickup request detail</h2>
+      <h2>Chi tiết yêu cầu lấy hàng</h2>
       <p>
-        <Link to={routePaths.pickups}>Back to pickup requests</Link>
+        <Link to={routePaths.pickups}>Quay lại danh sách yêu cầu lấy hàng</Link>
       </p>
-      <p>Request code: {detailQuery.data.requestCode}</p>
-      <p>Shipment code: {detailQuery.data.shipmentCode ?? 'N/A'}</p>
-      <p>Status: {detailQuery.data.status}</p>
-      <p>Requested at: {formatDateTime(detailQuery.data.requestedAt)}</p>
+      <p>Mã yêu cầu: {detailQuery.data.requestCode}</p>
+      <p>Mã vận đơn: {detailQuery.data.shipmentCode ?? 'Không có'}</p>
+      <p>Trạng thái: {detailQuery.data.status}</p>
+      <p>Thời điểm yêu cầu: {formatDateTime(detailQuery.data.requestedAt)}</p>
       <p>
-        Updated at:{' '}
-        {detailQuery.data.updatedAt ? formatDateTime(detailQuery.data.updatedAt) : 'N/A'}
+        Cập nhật lúc:{' '}
+        {detailQuery.data.updatedAt ? formatDateTime(detailQuery.data.updatedAt) : 'Không có'}
       </p>
-      <p>Note: {detailQuery.data.note ?? 'N/A'}</p>
+      <p>Ghi chú: {detailQuery.data.note ?? 'Không có'}</p>
 
       <div style={styles.actionsGrid}>
         <form onSubmit={onApproveSubmit} style={styles.form}>
-          <h3 style={styles.actionTitle}>Approve action skeleton</h3>
+          <h3 style={styles.actionTitle}>Khung thao tác phê duyệt</h3>
           <textarea
             rows={3}
-            placeholder="Approval note"
+            placeholder="Ghi chú phê duyệt"
             {...approveForm.register('note')}
           />
           <button type="submit" disabled={approveMutation.isPending}>
-            {approveMutation.isPending ? 'Submitting approval...' : 'Submit approval'}
+            {approveMutation.isPending ? 'Đang gửi phê duyệt...' : 'Gửi phê duyệt'}
           </button>
           {approveMutation.isError ? (
             <small style={styles.errorText}>{getErrorMessage(approveMutation.error)}</small>
@@ -93,14 +99,14 @@ export function PickupRequestDetailPage(): React.JSX.Element {
         </form>
 
         <form onSubmit={onRejectSubmit} style={styles.form}>
-          <h3 style={styles.actionTitle}>Reject action skeleton</h3>
+          <h3 style={styles.actionTitle}>Khung thao tác từ chối</h3>
           <textarea
             rows={3}
-            placeholder="Reject note"
+            placeholder="Lý do từ chối"
             {...rejectForm.register('note')}
           />
           <button type="submit" disabled={rejectMutation.isPending}>
-            {rejectMutation.isPending ? 'Submitting reject...' : 'Submit reject'}
+            {rejectMutation.isPending ? 'Đang gửi từ chối...' : 'Gửi từ chối'}
           </button>
           {rejectMutation.isError ? (
             <small style={styles.errorText}>{getErrorMessage(rejectMutation.error)}</small>
@@ -110,7 +116,7 @@ export function PickupRequestDetailPage(): React.JSX.Element {
 
       {lastActionResponse ? (
         <div style={styles.responseBox}>
-          <strong>Last server response ({lastActionName})</strong>
+          <strong>Phản hồi server gần nhất ({lastActionLabel})</strong>
           <pre style={styles.pre}>{JSON.stringify(lastActionResponse, null, 2)}</pre>
         </div>
       ) : null}
@@ -151,4 +157,3 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#b91c1c',
   },
 };
-

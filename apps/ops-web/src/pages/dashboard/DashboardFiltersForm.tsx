@@ -47,23 +47,23 @@ export function DashboardFiltersForm({
     <form onSubmit={onSubmit} className="ops-dashboard-filters">
       <input type="date" value={dateInput} onChange={(event) => setDateInput(event.target.value)} />
       <input
-        placeholder="Hub code"
+        placeholder="Mã hub"
         value={hubInput}
         onChange={(event) => setHubInput(event.target.value)}
       />
       <input
-        placeholder="Zone code"
+        placeholder="Mã zone"
         value={zoneInput}
         onChange={(event) => setZoneInput(event.target.value)}
       />
       <input
-        placeholder="Courier ID"
+        placeholder="Mã courier"
         value={courierInput}
         onChange={(event) => setCourierInput(event.target.value)}
       />
-      <button type="submit">Apply</button>
+      <button type="submit">Áp dụng</button>
       <button type="button" onClick={onResetClick}>
-        Reset
+        Đặt lại
       </button>
     </form>
   );

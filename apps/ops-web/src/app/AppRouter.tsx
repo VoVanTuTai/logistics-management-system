@@ -35,18 +35,18 @@ function DashboardLayout(): React.JSX.Element {
   return (
     <div style={layoutStyles.shell}>
       <header style={layoutStyles.header}>
-        <h1 style={layoutStyles.title}>JMS Ops Console</h1>
-        <small style={layoutStyles.subtitle}>Internal operations dashboard</small>
+        <h1 style={layoutStyles.title}>Bảng điều khiển JMS Ops</h1>
+        <small style={layoutStyles.subtitle}>Bảng điều hành vận hành nội bộ</small>
       </header>
       <nav style={layoutStyles.nav}>
-        <Link to={routePaths.dashboard}>Dashboard</Link>
-        <Link to={routePaths.shipments}>Shipments</Link>
-        <Link to={routePaths.pickups}>Pickups</Link>
-        <Link to={routePaths.tasks}>Tasks</Link>
-        <Link to={routePaths.manifests}>Manifests</Link>
-        <Link to={routePaths.scans}>Hub scan</Link>
+        <Link to={routePaths.dashboard}>Tổng quan</Link>
+        <Link to={routePaths.shipments}>Vận đơn</Link>
+        <Link to={routePaths.pickups}>Duyệt lấy hàng</Link>
+        <Link to={routePaths.tasks}>Phân công</Link>
+        <Link to={routePaths.manifests}>Manifest</Link>
+        <Link to={routePaths.scans}>Quét hub</Link>
         <Link to={routePaths.ndr}>NDR</Link>
-        <Link to={routePaths.tracking}>Tracking</Link>
+        <Link to={routePaths.tracking}>Tra cứu hành trình</Link>
       </nav>
       <main style={layoutStyles.main}>
         <Outlet />

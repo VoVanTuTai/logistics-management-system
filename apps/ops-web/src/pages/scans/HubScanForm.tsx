@@ -7,8 +7,8 @@ import type { HubScanType } from '../../features/scans/scans.types';
 
 const hubScanFormSchema = z.object({
   scanType: z.enum(['INBOUND', 'OUTBOUND']),
-  shipmentCode: z.string().trim().min(1, 'Shipment code is required'),
-  locationCode: z.string().trim().min(1, 'Hub location code is required'),
+  shipmentCode: z.string().trim().min(1, 'Mã vận đơn là bắt buộc'),
+  locationCode: z.string().trim().min(1, 'Mã vị trí hub là bắt buộc'),
   note: z.string().optional(),
 });
 
@@ -47,26 +47,26 @@ export function HubScanForm({
 
   return (
     <form onSubmit={onFormSubmit} style={styles.form}>
-      <h3 style={styles.title}>Scan action</h3>
+      <h3 style={styles.title}>Thao tác quét</h3>
       <select {...form.register('scanType')}>
         <option value="INBOUND">INBOUND</option>
         <option value="OUTBOUND">OUTBOUND</option>
       </select>
-      <input placeholder="Enter or scan shipment code" {...form.register('shipmentCode')} />
+      <input placeholder="Nhập hoặc quét mã vận đơn" {...form.register('shipmentCode')} />
       {form.formState.errors.shipmentCode ? (
         <small style={styles.errorText}>
           {form.formState.errors.shipmentCode.message}
         </small>
       ) : null}
-      <input placeholder="Hub location code" {...form.register('locationCode')} />
+      <input placeholder="Mã vị trí hub" {...form.register('locationCode')} />
       {form.formState.errors.locationCode ? (
         <small style={styles.errorText}>
           {form.formState.errors.locationCode.message}
         </small>
       ) : null}
-      <textarea rows={3} placeholder="Optional note" {...form.register('note')} />
+      <textarea rows={3} placeholder="Ghi chú (không bắt buộc)" {...form.register('note')} />
       <button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? 'Submitting scan...' : 'Submit scan'}
+        {isSubmitting ? 'Đang gửi quét...' : 'Gửi quét'}
       </button>
     </form>
   );

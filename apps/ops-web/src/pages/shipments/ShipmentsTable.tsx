@@ -14,10 +14,10 @@ export function ShipmentsTable({ items }: ShipmentsTableProps): React.JSX.Elemen
     <table style={styles.table}>
       <thead>
         <tr>
-          <th style={styles.headerCell}>Shipment</th>
-          <th style={styles.headerCell}>Status</th>
-          <th style={styles.headerCell}>Current location</th>
-          <th style={styles.headerCell}>Updated at</th>
+          <th style={styles.headerCell}>Vận đơn</th>
+          <th style={styles.headerCell}>Trạng thái</th>
+          <th style={styles.headerCell}>Vị trí hiện tại</th>
+          <th style={styles.headerCell}>Cập nhật lúc</th>
         </tr>
       </thead>
       <tbody>
@@ -29,7 +29,7 @@ export function ShipmentsTable({ items }: ShipmentsTableProps): React.JSX.Elemen
               </Link>
             </td>
             <td style={styles.cell}>{item.currentStatus}</td>
-            <td style={styles.cell}>{item.currentLocation ?? 'N/A'}</td>
+            <td style={styles.cell}>{item.currentLocation ?? 'Không có'}</td>
             <td style={styles.cell}>{formatDateTime(item.updatedAt)}</td>
           </tr>
         ))}

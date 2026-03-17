@@ -41,9 +41,15 @@ export function NdrCaseDetailPage(): React.JSX.Element {
     setLastActionName('return');
     setLastActionResponse(response);
   };
+  const lastActionLabel =
+    lastActionName === 'reschedule'
+      ? 'dời lịch giao'
+      : lastActionName === 'return'
+        ? 'hoàn hàng'
+        : 'không có';
 
   if (detailQuery.isLoading) {
-    return <p>Loading NDR detail...</p>;
+    return <p>Đang tải chi tiết NDR...</p>;
   }
 
   if (detailQuery.isError) {
@@ -51,32 +57,32 @@ export function NdrCaseDetailPage(): React.JSX.Element {
   }
 
   if (!detailQuery.data) {
-    return <p>NDR case not found.</p>;
+    return <p>Không tìm thấy case NDR.</p>;
   }
 
   return (
     <section>
-      <h2>NDR detail</h2>
+      <h2>Chi tiết NDR</h2>
       <p>
-        <Link to={routePaths.ndr}>Back to NDR list</Link>
+        <Link to={routePaths.ndr}>Quay lại danh sách NDR</Link>
       </p>
 
       <p>NDR ID: {detailQuery.data.id}</p>
-      <p>Shipment code: {detailQuery.data.shipmentCode}</p>
-      <p>Status: {detailQuery.data.status}</p>
-      <p>Reason code: {detailQuery.data.reasonCode ?? 'N/A'}</p>
-      <p>Updated at: {formatDateTime(detailQuery.data.updatedAt)}</p>
-      <p>Note: {detailQuery.data.note ?? 'N/A'}</p>
+      <p>Mã vận đơn: {detailQuery.data.shipmentCode}</p>
+      <p>Trạng thái: {detailQuery.data.status}</p>
+      <p>Mã lý do: {detailQuery.data.reasonCode ?? 'Không có'}</p>
+      <p>Cập nhật lúc: {formatDateTime(detailQuery.data.updatedAt)}</p>
+      <p>Ghi chú: {detailQuery.data.note ?? 'Không có'}</p>
 
-      <label htmlFor="ndr-next-action">Next action</label>
+      <label htmlFor="ndr-next-action">Hành động tiếp theo</label>
       <select
         id="ndr-next-action"
         value={actionMode}
         onChange={(event) => setActionMode(event.target.value as NdrActionMode)}
         style={styles.select}
       >
-        <option value="RESCHEDULE">RESCHEDULE</option>
-        <option value="RETURN">RETURN</option>
+        <option value="RESCHEDULE">Dời lịch giao</option>
+        <option value="RETURN">Hoàn hàng</option>
       </select>
 
       <NdrNextActionForm
@@ -95,7 +101,7 @@ export function NdrCaseDetailPage(): React.JSX.Element {
 
       {lastActionResponse ? (
         <div style={styles.responseBox}>
-          <strong>Last server response ({lastActionName})</strong>
+          <strong>Phản hồi server gần nhất ({lastActionLabel})</strong>
           <pre style={styles.pre}>{JSON.stringify(lastActionResponse, null, 2)}</pre>
         </div>
       ) : null}

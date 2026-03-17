@@ -62,72 +62,72 @@ export function DashboardPage(): React.JSX.Element {
   const monthlyData = monthlyMetricsQuery.data ?? [];
   const quickMenu = [
     {
-      title: 'Shipment list',
-      description: 'Track and review shipment flow.',
+      title: 'Danh sách vận đơn',
+      description: 'Theo dõi và rà soát luồng vận đơn.',
       to: routePaths.shipments,
       icon: 'S',
     },
     {
-      title: 'Pickup approvals',
-      description: 'Approve or reject pickup requests.',
+      title: 'Duyệt lấy hàng',
+      description: 'Duyệt hoặc từ chối yêu cầu lấy hàng.',
       to: routePaths.pickups,
       icon: 'P',
     },
     {
-      title: 'Task assignment',
-      description: 'Assign and reassign courier tasks.',
+      title: 'Phân công tác vụ',
+      description: 'Phân công và phân công lại tác vụ.',
       to: routePaths.tasks,
       icon: 'T',
     },
     {
-      title: 'Manifest center',
-      description: 'Create and operate manifests.',
+      title: 'Trung tâm manifest',
+      description: 'Tạo và xử lý manifest.',
       to: routePaths.manifests,
       icon: 'M',
     },
     {
-      title: 'Hub scan',
-      description: 'Submit inbound and outbound scans.',
+      title: 'Quét hub',
+      description: 'Gửi quét inbound và outbound.',
       to: routePaths.scans,
       icon: 'H',
     },
     {
-      title: 'NDR handling',
-      description: 'Process NDR follow-up actions.',
+      title: 'Xử lý NDR',
+      description: 'Xử lý các hành động tiếp theo của NDR.',
       to: routePaths.ndr,
       icon: 'N',
     },
     {
-      title: 'Tracking lookup',
-      description: 'Quick shipment status lookup.',
+      title: 'Tra cứu hành trình',
+      description: 'Tra cứu nhanh trạng thái vận đơn.',
       to: routePaths.tracking,
       icon: 'L',
     },
   ] as const;
   const notices = [
-    'KPI cards are rendered from reporting-service payload only.',
-    'Apply date, hub, zone, courier filters to refresh reports.',
-    'No client-side KPI calculation is applied on dashboard.',
+    'Thẻ KPI chỉ hiển thị đúng payload từ reporting-service.',
+    'Áp dụng bộ lọc ngày, hub, zone, courier để làm mới báo cáo.',
+    'Trang tổng quan không tự tính KPI ở phía client.',
   ] as const;
   const quickApps = [
-    { title: 'Dashboard', to: routePaths.dashboard },
-    { title: 'Shipments', to: routePaths.shipments },
-    { title: 'Pickups', to: routePaths.pickups },
+    { title: 'Tổng quan', to: routePaths.dashboard },
+    { title: 'Vận đơn', to: routePaths.shipments },
+    { title: 'Duyệt lấy hàng', to: routePaths.pickups },
   ] as const;
 
   return (
     <div className="ops-dashboard">
       <section className="ops-dashboard__hero">
         <div>
-          <p className="ops-dashboard__hero-kicker">Ops Command Center</p>
-          <h2 className="ops-dashboard__hero-title">JMS Operations Dashboard</h2>
+          <p className="ops-dashboard__hero-kicker">Trung tâm điều hành Ops</p>
+          <h2 className="ops-dashboard__hero-title">Trang tổng quan vận hành JMS</h2>
           <p className="ops-dashboard__hero-subtitle">
-            Reporting view from gateway-bff with lightweight filters and operational entry points.
+            Màn hình báo cáo qua gateway-bff với bộ lọc gọn nhẹ và các điểm vào tác vụ vận hành.
           </p>
         </div>
         <div className="ops-dashboard__hero-badge">
-          <small>Shift status</small>
-          <strong>Live Monitoring</strong>
+          <small>Trạng thái ca</small>
+          <strong>Giám sát thời gian thực</strong>
         </div>
       </section>
 
@@ -135,7 +135,7 @@ export function DashboardPage(): React.JSX.Element {
         <div className="ops-dashboard__main">
           <article className="ops-card">
             <header className="ops-card__header">
-              <h3>Main menu</h3>
+              <h3>Menu chính</h3>
             </header>
             <div className="ops-menu-grid">
               {quickMenu.map((item) => (
@@ -150,11 +150,11 @@ export function DashboardPage(): React.JSX.Element {
 
           <article className="ops-card">
             <header className="ops-card__header">
-              <h3>Reporting filters</h3>
+              <h3>Bộ lọc báo cáo</h3>
             </header>
             <p className="ops-dashboard__subtitle">
-              Dashboard displays reporting-service data via gateway-bff without local KPI
-              calculations.
+              Trang tổng quan hiển thị dữ liệu từ reporting-service qua gateway-bff, không tự
+              tính KPI cục bộ.
             </p>
             <DashboardFiltersForm
               filters={filters}
@@ -165,56 +165,60 @@ export function DashboardPage(): React.JSX.Element {
 
           <article className="ops-card">
             <header className="ops-card__header">
-              <h3>KPI cards</h3>
+              <h3>Thẻ KPI</h3>
             </header>
-            {kpiQuery.isLoading ? <p className="ops-state">Loading KPI...</p> : null}
+            {kpiQuery.isLoading ? <p className="ops-state">Đang tải KPI...</p> : null}
             {kpiQuery.isError ? (
               <p className="ops-state ops-state--error">{getErrorMessage(kpiQuery.error)}</p>
             ) : null}
             {kpiQuery.isSuccess && kpiEntries.length === 0 ? (
-              <p className="ops-state">No KPI data.</p>
+              <p className="ops-state">Không có dữ liệu KPI.</p>
             ) : null}
             {kpiEntries.length > 0 ? <KpiCards kpis={kpiData ?? {}} /> : null}
           </article>
 
           <section className="ops-dashboard__metric-block">
             <header className="ops-card__header">
-              <h3>Daily metrics</h3>
+              <h3>Chỉ số theo ngày</h3>
             </header>
-            {dailyMetricsQuery.isLoading ? <p className="ops-state">Loading daily metrics...</p> : null}
+            {dailyMetricsQuery.isLoading ? (
+              <p className="ops-state">Đang tải chỉ số ngày...</p>
+            ) : null}
             {dailyMetricsQuery.isError ? (
               <p className="ops-state ops-state--error">
                 {getErrorMessage(dailyMetricsQuery.error)}
               </p>
             ) : null}
             {dailyMetricsQuery.isSuccess && dailyData.length === 0 ? (
-              <p className="ops-state">No daily metrics.</p>
+              <p className="ops-state">Không có chỉ số theo ngày.</p>
             ) : null}
             {dailyData.length > 0 ? (
               <div className="ops-dashboard__metrics-grid">
-                <DashboardBarChart title="Daily metrics chart" points={dailyData} />
-                <DashboardMetricsTable title="Daily metrics table" rows={dailyData} />
+                <DashboardBarChart title="Biểu đồ chỉ số ngày" points={dailyData} />
+                <DashboardMetricsTable title="Bảng chỉ số ngày" rows={dailyData} />
               </div>
             ) : null}
           </section>
 
           <section className="ops-dashboard__metric-block">
             <header className="ops-card__header">
-              <h3>Monthly metrics</h3>
+              <h3>Chỉ số theo tháng</h3>
             </header>
-            {monthlyMetricsQuery.isLoading ? <p className="ops-state">Loading monthly metrics...</p> : null}
+            {monthlyMetricsQuery.isLoading ? (
+              <p className="ops-state">Đang tải chỉ số tháng...</p>
+            ) : null}
             {monthlyMetricsQuery.isError ? (
               <p className="ops-state ops-state--error">
                 {getErrorMessage(monthlyMetricsQuery.error)}
               </p>
             ) : null}
             {monthlyMetricsQuery.isSuccess && monthlyData.length === 0 ? (
-              <p className="ops-state">No monthly metrics.</p>
+              <p className="ops-state">Không có chỉ số theo tháng.</p>
             ) : null}
             {monthlyData.length > 0 ? (
               <div className="ops-dashboard__metrics-grid">
-                <DashboardTrendChart title="Monthly metrics chart" points={monthlyData} />
-                <DashboardMetricsTable title="Monthly metrics table" rows={monthlyData} />
+                <DashboardTrendChart title="Biểu đồ chỉ số tháng" points={monthlyData} />
+                <DashboardMetricsTable title="Bảng chỉ số tháng" rows={monthlyData} />
               </div>
             ) : null}
           </section>
@@ -223,7 +227,7 @@ export function DashboardPage(): React.JSX.Element {
         <aside className="ops-dashboard__side">
           <article className="ops-card">
             <header className="ops-card__header">
-              <h3>Notifications</h3>
+              <h3>Thông báo</h3>
             </header>
             <ul className="ops-notice-list">
               {notices.map((item) => (
@@ -234,7 +238,7 @@ export function DashboardPage(): React.JSX.Element {
 
           <article className="ops-card">
             <header className="ops-card__header">
-              <h3>Quick apps</h3>
+              <h3>Ứng dụng nhanh</h3>
             </header>
             <div className="ops-quickapps">
               {quickApps.map((item) => (

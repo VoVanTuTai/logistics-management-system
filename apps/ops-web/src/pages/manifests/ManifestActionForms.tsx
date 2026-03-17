@@ -117,43 +117,43 @@ export function ManifestActionForms({
   return (
     <section style={styles.wrapper}>
       <form onSubmit={onAddShipmentSubmit} style={styles.form}>
-        <h3 style={styles.title}>Add shipment skeleton</h3>
-        <input placeholder="Shipment code" {...addShipmentForm.register('shipmentCode')} />
-        <textarea rows={3} placeholder="Optional note" {...addShipmentForm.register('note')} />
+        <h3 style={styles.title}>Khung thêm vận đơn</h3>
+        <input placeholder="Mã vận đơn" {...addShipmentForm.register('shipmentCode')} />
+        <textarea rows={3} placeholder="Ghi chú (không bắt buộc)" {...addShipmentForm.register('note')} />
         <button type="submit" disabled={isAddingShipment}>
-          {isAddingShipment ? 'Submitting...' : 'Add shipment'}
+          {isAddingShipment ? 'Đang gửi...' : 'Thêm vận đơn'}
         </button>
       </form>
 
       <form onSubmit={onRemoveShipmentSubmit} style={styles.form}>
-        <h3 style={styles.title}>Remove shipment skeleton</h3>
-        <input placeholder="Shipment code" {...removeShipmentForm.register('shipmentCode')} />
+        <h3 style={styles.title}>Khung gỡ vận đơn</h3>
+        <input placeholder="Mã vận đơn" {...removeShipmentForm.register('shipmentCode')} />
         <textarea
           rows={3}
-          placeholder="Optional note"
+          placeholder="Ghi chú (không bắt buộc)"
           {...removeShipmentForm.register('note')}
         />
         <button type="submit" disabled={isRemovingShipment}>
-          {isRemovingShipment ? 'Submitting...' : 'Remove shipment'}
+          {isRemovingShipment ? 'Đang gửi...' : 'Gỡ vận đơn'}
         </button>
       </form>
 
       <form onSubmit={onSealSubmit} style={styles.form}>
-        <h3 style={styles.title}>Seal action skeleton</h3>
-        <input placeholder="Seal code" {...sealForm.register('sealCode')} />
-        <textarea rows={3} placeholder="Optional note" {...sealForm.register('note')} />
+        <h3 style={styles.title}>Khung thao tác niêm phong</h3>
+        <input placeholder="Mã niêm phong" {...sealForm.register('sealCode')} />
+        <textarea rows={3} placeholder="Ghi chú (không bắt buộc)" {...sealForm.register('note')} />
         <button type="submit" disabled={isSealingManifest}>
-          {isSealingManifest ? 'Submitting...' : 'Seal manifest'}
+          {isSealingManifest ? 'Đang gửi...' : 'Niêm phong manifest'}
         </button>
       </form>
 
       <form onSubmit={onReceiveSubmit} style={styles.form}>
-        <h3 style={styles.title}>Receive handover skeleton</h3>
-        <input placeholder="Manifest code" {...receiveForm.register('manifestCode')} />
-        <input placeholder="Receiver name" {...receiveForm.register('receiverName')} />
-        <textarea rows={3} placeholder="Optional note" {...receiveForm.register('note')} />
+        <h3 style={styles.title}>Khung thao tác nhận bàn giao</h3>
+        <input placeholder="Mã manifest" {...receiveForm.register('manifestCode')} />
+        <input placeholder="Tên người nhận" {...receiveForm.register('receiverName')} />
+        <textarea rows={3} placeholder="Ghi chú (không bắt buộc)" {...receiveForm.register('note')} />
         <button type="submit" disabled={isReceivingHandover}>
-          {isReceivingHandover ? 'Submitting...' : 'Receive handover'}
+          {isReceivingHandover ? 'Đang gửi...' : 'Nhận bàn giao'}
         </button>
       </form>
     </section>

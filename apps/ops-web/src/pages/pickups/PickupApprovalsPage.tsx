@@ -41,30 +41,30 @@ export function PickupApprovalsPage(): React.JSX.Element {
 
   return (
     <div>
-      <h2>Pickup approvals</h2>
+      <h2>Duyệt lấy hàng</h2>
       <p style={{ color: '#2d3f99' }}>
-        Status is displayed exactly as API response. Filter is sent to server as query param.
+        Trạng thái hiển thị đúng theo phản hồi API. Bộ lọc được gửi lên server bằng query param.
       </p>
       <form onSubmit={onFilterSubmit} style={styles.filterForm}>
         <input
           name="status"
-          placeholder="Filter by status"
+          placeholder="Lọc theo trạng thái"
           value={statusInput}
           onChange={(event) => setStatusInput(event.target.value)}
           style={styles.input}
         />
-        <button type="submit">Apply</button>
+        <button type="submit">Áp dụng</button>
         <button type="button" onClick={onResetFilters}>
-          Reset
+          Đặt lại
         </button>
       </form>
 
-      {pickupsQuery.isLoading ? <p>Loading pickup requests...</p> : null}
+      {pickupsQuery.isLoading ? <p>Đang tải yêu cầu lấy hàng...</p> : null}
       {pickupsQuery.isError ? (
         <p style={styles.errorText}>{getErrorMessage(pickupsQuery.error)}</p>
       ) : null}
       {pickupsQuery.isSuccess && (pickupsQuery.data?.length ?? 0) === 0 ? (
-        <p>No pickup requests found for current filters.</p>
+        <p>Không có yêu cầu lấy hàng phù hợp bộ lọc hiện tại.</p>
       ) : null}
       {pickupsQuery.isSuccess && (pickupsQuery.data?.length ?? 0) > 0 ? (
         <PickupRequestsTable items={pickupsQuery.data ?? []} />

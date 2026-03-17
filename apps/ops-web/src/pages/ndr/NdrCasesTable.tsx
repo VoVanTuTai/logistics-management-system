@@ -15,10 +15,10 @@ export function NdrCasesTable({ items }: NdrCasesTableProps): React.JSX.Element 
       <thead>
         <tr>
           <th style={styles.headerCell}>NDR ID</th>
-          <th style={styles.headerCell}>Shipment</th>
-          <th style={styles.headerCell}>Status</th>
-          <th style={styles.headerCell}>Reason</th>
-          <th style={styles.headerCell}>Updated at</th>
+          <th style={styles.headerCell}>Vận đơn</th>
+          <th style={styles.headerCell}>Trạng thái</th>
+          <th style={styles.headerCell}>Lý do</th>
+          <th style={styles.headerCell}>Cập nhật lúc</th>
         </tr>
       </thead>
       <tbody>
@@ -29,7 +29,7 @@ export function NdrCasesTable({ items }: NdrCasesTableProps): React.JSX.Element 
             </td>
             <td style={styles.cell}>{item.shipmentCode}</td>
             <td style={styles.cell}>{item.status}</td>
-            <td style={styles.cell}>{item.reasonCode ?? 'N/A'}</td>
+            <td style={styles.cell}>{item.reasonCode ?? 'Không có'}</td>
             <td style={styles.cell}>{formatDateTime(item.updatedAt)}</td>
           </tr>
         ))}
