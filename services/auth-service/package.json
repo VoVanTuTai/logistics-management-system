@@ -4,8 +4,10 @@
   "version": "0.1.0",
   "scripts": {
     "build": "prisma generate --schema prisma/schema.prisma && tsc -p tsconfig.json",
+    "db:prepare": "prisma generate --schema prisma/schema.prisma && prisma db push --schema prisma/schema.prisma && ts-node prisma/seed.ts",
+    "seed": "ts-node prisma/seed.ts",
     "start": "node dist/main.js",
-    "start:dev": "ts-node src/main.ts"
+    "start:dev": "npm run db:prepare && ts-node src/main.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",

@@ -1,0 +1,43 @@
+
+> @jms/shipment-service@0.1.0 start:dev
+> npm run db:prepare && ts-node src/main.ts
+
+
+> @jms/shipment-service@0.1.0 db:prepare
+> prisma generate --schema prisma/schema.prisma && prisma db push --schema prisma/schema.prisma && ts-node prisma/seed.ts
+
+Prisma schema loaded from prisma\schema.prisma
+
+✔ Generated Prisma Client (v6.19.2) to .\node_modules\@prisma\client in 1.75s
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "shipment_db", schema "public" at "localhost:15434"
+
+The database is already in sync with the Prisma schema.
+
+Running generate... (Use --skip-generate to skip the generators)
+[2K[1A[2K[GRunning generate... - Prisma Client
+[2K[1A[2K[G✔ Generated Prisma Client (v6.19.2) to .\node_modules\@prisma\client in 1.62s
+
+shipment-service seed completed
+[32m[Nest] 20460  - [39m03/16/2026, 12:01:27 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 20460  - [39m03/16/2026, 12:01:27 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mHealthModule dependencies initialized[39m[38;5;3m +147ms[39m
+[32m[Nest] 20460  - [39m03/16/2026, 12:01:27 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +2ms[39m
+[32m[Nest] 20460  - [39m03/16/2026, 12:01:27 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mShipmentController {/shipments}:[39m[38;5;3m +10ms[39m
+[32m[Nest] 20460  - [39m03/16/2026, 12:01:27 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/shipments, GET} route[39m[38;5;3m +3ms[39m
+[32m[Nest] 20460  - [39m03/16/2026, 12:01:27 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/shipments/:code, GET} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 20460  - [39m03/16/2026, 12:01:27 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/shipments, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 20460  - [39m03/16/2026, 12:01:27 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/shipments/:code, PATCH} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 20460  - [39m03/16/2026, 12:01:27 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/shipments/:code/cancel, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 20460  - [39m03/16/2026, 12:01:27 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mChangeRequestController {/change-requests}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 20460  - [39m03/16/2026, 12:01:27 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/change-requests, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 20460  - [39m03/16/2026, 12:01:27 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/change-requests/:id, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 20460  - [39m03/16/2026, 12:01:27 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/change-requests, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20460  - [39m03/16/2026, 12:01:27 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/change-requests/:id/approve, PATCH} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 20460  - [39m03/16/2026, 12:01:27 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mHealthController {/health}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 20460  - [39m03/16/2026, 12:01:27 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/health, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 20460  - [39m03/16/2026, 12:01:28 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +634ms[39m
