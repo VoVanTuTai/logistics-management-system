@@ -3,6 +3,20 @@ import type { Request, Response as ExpressResponse } from 'express';
 
 import { ApiGroup, ServiceRegistryClient } from './service-registry.client';
 
+const HOP_BY_HOP_HEADERS = new Set([
+  'connection',
+  'content-length',
+  'expect',
+  'host',
+  'keep-alive',
+  'proxy-authenticate',
+  'proxy-authorization',
+  'te',
+  'trailer',
+  'transfer-encoding',
+  'upgrade',
+]);
+
 @Injectable()
 export class GatewayProxyClient {
   constructor(private readonly serviceRegistryClient: ServiceRegistryClient) {}
@@ -85,9 +99,7 @@ export class GatewayProxyClient {
 
       if (
         value === undefined ||
-        normalizedKey === 'host' ||
-        normalizedKey === 'content-length' ||
-        normalizedKey === 'connection'
+        HOP_BY_HOP_HEADERS.has(normalizedKey)
       ) {
         continue;
       }

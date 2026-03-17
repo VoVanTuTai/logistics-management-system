@@ -20,6 +20,7 @@ export interface ManifestDetailDto {
 }
 
 export interface CreateManifestInput {
+  manifestCode: string;
   originHubCode: string;
   destinationHubCode: string;
   shipmentCodes: string[];
