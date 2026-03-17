@@ -1,5 +1,12 @@
-[31m[Nest] 11628  - [39m03/16/2026, 10:12:18 AM [31m  ERROR[39m [38;5;3m[NestApplicationContext] [39m[31mError happened during shutdown[39m
-Error: kill ENOSYS
-    at process.kill (node:internal/process/per_thread:235:13)
-    at process.cleanup (D:\University\Semester 2_Year 4\New Technology\logistics-management-system\services\pickup-service\node_modules\@nestjs\core\nest-application-context.js:203:25)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+Environment variables loaded from .env
+┌─────────────────────────────────────────────────────────┐
+│  Update available 6.19.2 -> 7.5.0                       │
+│                                                         │
+│  This is a major update - please follow the guide at    │
+│  https://pris.ly/d/major-version-upgrade                │
+│                                                         │
+│  Run the following to update                            │
+│    npm i --save-dev prisma@latest                       │
+│    npm i @prisma/client@latest                          │
+└─────────────────────────────────────────────────────────┘
+Environment variables loaded from .env

@@ -1,15 +1,38 @@
 
 > @jms/auth-service@0.1.0 start:dev
-> ts-node src/main.ts
+> npm run db:prepare && ts-node src/main.ts
 
-[32m[Nest] 7660  - [39m03/16/2026, 10:12:06 AM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
-[32m[Nest] 7660  - [39m03/16/2026, 10:12:06 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mHealthModule dependencies initialized[39m[38;5;3m +27ms[39m
-[32m[Nest] 7660  - [39m03/16/2026, 10:12:06 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +1ms[39m
-[32m[Nest] 7660  - [39m03/16/2026, 10:12:06 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +6ms[39m
-[32m[Nest] 7660  - [39m03/16/2026, 10:12:06 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/login, POST} route[39m[38;5;3m +3ms[39m
-[32m[Nest] 7660  - [39m03/16/2026, 10:12:06 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/refresh, POST} route[39m[38;5;3m +1ms[39m
-[32m[Nest] 7660  - [39m03/16/2026, 10:12:06 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/logout, POST} route[39m[38;5;3m +1ms[39m
-[32m[Nest] 7660  - [39m03/16/2026, 10:12:06 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/introspect, POST} route[39m[38;5;3m +0ms[39m
-[32m[Nest] 7660  - [39m03/16/2026, 10:12:06 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mHealthController {/health}:[39m[38;5;3m +1ms[39m
-[32m[Nest] 7660  - [39m03/16/2026, 10:12:06 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/health, GET} route[39m[38;5;3m +1ms[39m
-[32m[Nest] 7660  - [39m03/16/2026, 10:12:06 AM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +25ms[39m
+
+> @jms/auth-service@0.1.0 db:prepare
+> prisma generate --schema prisma/schema.prisma && prisma db push --schema prisma/schema.prisma && ts-node prisma/seed.ts
+
+Prisma schema loaded from prisma\schema.prisma
+
+✔ Generated Prisma Client (v6.19.2) to .\node_modules\.pnpm\@prisma+client@6.19.2_prism_6b2b1af085fe6797f5a5ea830937a8e3\node_modules\@prisma\client in 1.10s
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Want to turn off tips and other hints? https://pris.ly/tip-4-nohints
+
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "auth_db", schema "public" at "localhost:15432"
+
+The database is already in sync with the Prisma schema.
+
+Running generate... (Use --skip-generate to skip the generators)
+[2K[1A[2K[GRunning generate... - Prisma Client
+[2K[1A[2K[G✔ Generated Prisma Client (v6.19.2) to .\node_modules\.pnpm\@prisma+client@6.19
+.2_prism_6b2b1af085fe6797f5a5ea830937a8e3\node_modules\@prisma\client in 560ms
+
+auth-service seed completed
+[32m[Nest] 19576  - [39m03/17/2026, 7:04:04 AM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 19576  - [39m03/17/2026, 7:04:05 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mHealthModule dependencies initialized[39m[38;5;3m +142ms[39m
+[32m[Nest] 19576  - [39m03/17/2026, 7:04:05 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +3ms[39m
+[32m[Nest] 19576  - [39m03/17/2026, 7:04:05 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +28ms[39m
+[32m[Nest] 19576  - [39m03/17/2026, 7:04:05 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/login, POST} route[39m[38;5;3m +14ms[39m
+[32m[Nest] 19576  - [39m03/17/2026, 7:04:05 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/refresh, POST} route[39m[38;5;3m +3ms[39m
+[32m[Nest] 19576  - [39m03/17/2026, 7:04:05 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/logout, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 19576  - [39m03/17/2026, 7:04:05 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/introspect, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 19576  - [39m03/17/2026, 7:04:05 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mHealthController {/health}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 19576  - [39m03/17/2026, 7:04:05 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/health, GET} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 19576  - [39m03/17/2026, 7:04:05 AM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +148ms[39m
