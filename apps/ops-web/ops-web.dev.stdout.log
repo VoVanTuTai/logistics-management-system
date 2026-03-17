@@ -1,0 +1,74 @@
+
+> @jms/ops-web@0.1.0 dev
+> vite --host 127.0.0.1 --port 5173
+
+Port 5173 is in use, trying another one...
+
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m1070[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m: [2m8:02:17 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/app/App.tsx[22m
+[2m8:02:27 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/app/AppRouter.tsx[22m
+[2m8:02:33 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/auth/LoginPage.tsx[22m
+[2m8:02:38 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/auth/LoginForm.tsx[22m
+[2m8:02:43 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/auth/LoginForm.tsx[22m
+[2m8:02:47 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/app/AppProviders.tsx, /src/pages/manifests/ManifestManagementPage.tsx, /src/pages/scans/HubScanPage.tsx, /src/pages/tasks/TaskAssignmentPage.tsx, /src/pages/picku[2m8:02:47 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/app/AppProviders.tsx, /src/pages/pickups/PickupApprovalsPage.tsx, /src/pages/tracking/TrackingDetailPage.tsx, /src/pages/scans/HubScanPage.tsx, /src/pages/shipments/ShipmentDetailPage.tsx, /src/pages/pickups/PickupRequestDetailPage.tsx, /src/pages/ndr/NdrCaseDetailPage.tsx, /src/pages/ndr/NdrHandlingPage.tsx, /src/pages/manifests/ManifestDetailPage.tsx, /src/pages/dashboard/DashboardPage.tsx, /src/pages/[2m8:02:52 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/auth/LoginPage.tsx, /src/pages/manifests/ManifestManagementPage.tsx, /src/pages/manifests/ManifestDetailPage.tsx, /src/pages/scans/HubScanPage.tsx, /src/pages/shipments/ShipmentDetailPage.tsx, /src/pages/shipments/ShipmentListPage.tsx, /src/pages/tracking/TrackingDetailPage.tsx, /src/pages/tracking/TrackingLookupPage.tsx, /src/pages/pickups/PickupApprovalsPage.tsx, /src/pages/pickups/PickupRequestDetailPage.tsx, /src/pages/ndr/NdrHandlingPage.tsx, /src/pages/ndr/NdrCaseDetailPage.tsx, /src/pages/dashboard/DashboardPage.tsx, /src/pages/tasks/TaskAssignmentPage.tsx, /src/pages/tasks/TaskDetailPage.tsx[22m
+[2m8:02:58 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/main.tsx[22m
+[2m8:03:03 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/tasks/TaskDetailPage.tsx, /src/pages/ndr/NdrCaseDetailPage.tsx, /src/pages/tracking/TrackingDetailPage.tsx, /src/pages/shipments/ShipmentDetailPage.tsx, /src/pages/tracking/TrackingLookupPage.tsx, /src/pages/manifests/ManifestDetailPage.tsx, /src/pages/pickups/PickupRequestDetailPage.tsx, /src/pages/manifests/ManifestsTable.tsx, /src/pages/tasks/TasksTable.tsx, /src/pages/tracking/TrackingTimelineTable.tsx, /src/pages/ndr/NdrCasesTable.tsx, /src/pages/shipments/ShipmentsTable.tsx, /src/pages/pickups/PickupRequestsTable.tsx[22m
+[2m8:03:10 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ndr/NdrNextActionForm.tsx[22m
+[2m8:03:10 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ndr/NdrNextActionForm.tsx[22m
+[2m8:03:20 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/tracking/TrackingDetailPage.tsx, /src/pages/tracking/TrackingLookupPage.tsx[22m
+[2m8:04:01 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/dashboard/DashboardPage.tsx[22m
+[2m8:04:11 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/dashboard/DashboardFiltersForm.tsx[22m
+[2m8:04:18 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/dashboard/KpiCards.tsx[22m
+[2m8:04:23 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/dashboard/DashboardMetricsTable.tsx[22m
+[2m8:04:37 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/shipments/ShipmentListPage.tsx[22m
+[2m8:04:48 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/shipments/ShipmentsTable.tsx[22m
+[2m8:05:11 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/shipments/ShipmentDetailPage.tsx[22m
+[2m8:05:24 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/pickups/PickupApprovalsPage.tsx[22m
+[2m8:05:32 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/pickups/PickupRequestsTable.tsx[22m
+[2m8:05:53 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/pickups/PickupRequestDetailPage.tsx[22m
+[2m8:06:05 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/tasks/TaskAssignmentPage.tsx[22m
+[2m8:06:16 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/tasks/TasksTable.tsx[22m
+[2m8:06:28 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/tasks/TaskActionModal.tsx[22m
+[2m8:06:46 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/tasks/TaskDetailPage.tsx[22m
+[2m8:06:57 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/manifests/ManifestManagementPage.tsx[22m
+[2m8:07:09 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/manifests/CreateManifestForm.tsx[22m
+[2m8:07:23 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/manifests/ManifestsTable.tsx[22m
+[2m8:07:41 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/manifests/ManifestDetailPage.tsx[22m
+[2m8:08:03 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/manifests/ManifestActionForms.tsx[22m
+[2m8:08:15 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/scans/HubScanPage.tsx[22m
+[2m8:08:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/scans/HubScanForm.tsx[22m
+[2m8:08:41 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ndr/NdrHandlingPage.tsx[22m
+[2m8:08:52 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ndr/NdrCasesTable.tsx[22m
+[2m8:09:06 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ndr/NdrCaseDetailPage.tsx[22m
+[2m8:09:21 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ndr/NdrNextActionForm.tsx[22m
+[2m8:09:38 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/tracking/TrackingLookupPage.tsx[22m
+[2m8:09:54 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/tracking/TrackingDetailPage.tsx[22m
+[2m8:10:06 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/tracking/TrackingTimelineTable.tsx[22m
+[2m8:10:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ndr/NdrCaseDetailPage.tsx[22m
+[2m8:10:41 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/pickups/PickupRequestDetailPage.tsx[22m
+[2m8:10:55 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/tasks/TaskDetailPage.tsx[22m
+[2m8:11:07 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/manifests/ManifestDetailPage.tsx[22m
+[2m8:11:20 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ndr/NdrCaseDetailPage.tsx[22m
+[2m8:11:37 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/scans/HubScanPage.tsx[22m
+[2m8:12:08 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/dashboard/DashboardPage.tsx[22m
+[2m8:12:08 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/dashboard/DashboardPage.tsx[22m
+[2m8:12:51 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/app/AppRouter.tsx[22m
+[2m8:13:02 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/dashboard/DashboardPage.tsx[22m
+[2m8:13:13 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/dashboard/DashboardPage.tsx[22m
+[2m8:13:49 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/shipments/ShipmentDetailPage.tsx[22m
+[2m8:14:01 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/manifests/ManifestsTable.tsx[22m
+[2m8:14:10 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/scans/HubScanPage.tsx[22m
+[2m8:14:22 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/scans/HubScanForm.tsx[22m
+[2m8:14:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/tasks/TasksTable.tsx[22m
+[2m8:14:35 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/tracking/TrackingDetailPage.tsx[22m
+[2m8:14:45 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ndr/NdrHandlingPage.tsx[22m
+[2m8:14:57 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/scans/HubScanPage.tsx[22m
+update [39m[2m/src/pages/shipments/ShipmentDetailPage.tsx[22m
+[2m8:14:02 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/manifests/ManifestsTable.tsx[22m
+[2m8:14:10 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/scans/HubScanPage.tsx[22m
+[2m8:14:22 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/scans/HubScanForm.tsx[22m
+[2m8:14:29 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/tasks/TasksTable.tsx[22m
+[2m8:14:35 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/tracking/TrackingDetailPage.tsx[22m
+[2m8:14:45 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ndr/NdrHandlingPage.tsx[22m
+[2m8:14:57 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/scans/HubScanPage.tsx[22m
