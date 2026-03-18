@@ -4,6 +4,7 @@
 
 `pickup-service` quan ly pickup request lifecycle:
 - tao pickup request
+- ops duyet pickup request
 - cap nhat pickup request
 - huy pickup request
 - hoan tat pickup request
@@ -28,12 +29,14 @@ Khong co validation nghiep vu chi tiet.
 - `GET /pickups/:id`
 - `POST /pickups`
 - `PATCH /pickups/:id`
+- `POST /pickups/:id/approve`
 - `POST /pickups/:id/cancel`
 - `POST /pickups/:id/complete`
 
 ## Events publish
 
 - `pickup.requested`
+- `pickup.approved`
 - `pickup.updated`
 - `pickup.cancelled`
 - `pickup.completed`

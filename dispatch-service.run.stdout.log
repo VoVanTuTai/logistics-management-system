@@ -1,0 +1,42 @@
+
+> @jms/dispatch-service@0.1.0 start:dev
+> npm run db:prepare && ts-node src/main.ts
+
+
+> @jms/dispatch-service@0.1.0 db:prepare
+> prisma generate --schema prisma/schema.prisma && prisma db push --schema prisma/schema.prisma && ts-node prisma/seed.ts
+
+Prisma schema loaded from prisma\schema.prisma
+
+✔ Generated Prisma Client (v6.19.2) to .\node_modules\@prisma\client in 1.41s
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Interested in query caching in just a few lines of code? Try Accelerate today! https://pris.ly/tip-3-accelerate
+
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "dispatch_db", schema "public" at "localhost:15436"
+
+The database is already in sync with the Prisma schema.
+
+Running generate... (Use --skip-generate to skip the generators)
+[2K[1A[2K[GRunning generate... - Prisma Client
+[2K[1A[2K[G✔ Generated Prisma Client (v6.19.2) to .\node_modules\@prisma\client in 408ms
+
+dispatch-service seed completed
+[32m[Nest] 10512  - [39m03/17/2026, 11:08:16 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 10512  - [39m03/17/2026, 11:08:16 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mHealthModule dependencies initialized[39m[38;5;3m +44ms[39m
+[32m[Nest] 10512  - [39m03/17/2026, 11:08:16 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 10512  - [39m03/17/2026, 11:08:16 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mTasksController {/tasks}:[39m[38;5;3m +12ms[39m
+[32m[Nest] 10512  - [39m03/17/2026, 11:08:16 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/tasks, GET} route[39m[38;5;3m +3ms[39m
+[32m[Nest] 10512  - [39m03/17/2026, 11:08:16 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/tasks/couriers, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 10512  - [39m03/17/2026, 11:08:16 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/tasks/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 10512  - [39m03/17/2026, 11:08:16 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/tasks, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 10512  - [39m03/17/2026, 11:08:16 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/tasks/:id/assign, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 10512  - [39m03/17/2026, 11:08:16 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/tasks/:id/reassign, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 10512  - [39m03/17/2026, 11:08:16 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/tasks/:id/status, PATCH} route[39m[38;5;3m +6ms[39m
+[32m[Nest] 10512  - [39m03/17/2026, 11:08:16 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mHealthController {/health}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 10512  - [39m03/17/2026, 11:08:16 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/health, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 10512  - [39m03/17/2026, 11:08:16 PM [32m    LOG[39m [38;5;3m[DispatchOutboxRelayService] [39m[32mOutbox relay connected to exchange "domain.events" (batch=50).[39m
+[32m[Nest] 10512  - [39m03/17/2026, 11:08:16 PM [32m    LOG[39m [38;5;3m[DispatchRabbitmqConsumerService] [39m[32mDispatch consumer is listening queue "dispatch-service.q".[39m
+[32m[Nest] 10512  - [39m03/17/2026, 11:08:16 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +63ms[39m

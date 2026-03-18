@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom';
 
 import {
   useApprovePickupMutation,
+  useCompletePickupMutation,
   usePickupRequestDetailQuery,
   useRejectPickupMutation,
 } from '../../features/pickups/pickups.api';
@@ -21,6 +22,7 @@ export function PickupRequestDetailPage(): React.JSX.Element {
   const accessToken = useAuthStore((state) => state.session?.tokens.accessToken ?? null);
   const detailQuery = usePickupRequestDetailQuery(accessToken, pickupId);
   const approveMutation = useApprovePickupMutation(accessToken, pickupId);
+  const completeMutation = useCompletePickupMutation(accessToken, pickupId);
   const rejectMutation = useRejectPickupMutation(accessToken, pickupId);
   const approveForm = useForm<PickupReviewInput>({
     defaultValues: {
@@ -32,7 +34,9 @@ export function PickupRequestDetailPage(): React.JSX.Element {
       note: '',
     },
   });
-  const [lastActionName, setLastActionName] = useState<'approve' | 'reject' | null>(null);
+  const [lastActionName, setLastActionName] = useState<
+    'approve' | 'complete' | 'reject' | null
+  >(null);
   const [lastActionResponse, setLastActionResponse] =
     useState<PickupActionResultDto | null>(null);
 
@@ -47,15 +51,24 @@ export function PickupRequestDetailPage(): React.JSX.Element {
     setLastActionName('reject');
     setLastActionResponse(response);
   });
+
+  const onCompleteClick = async () => {
+    const response = await completeMutation.mutateAsync();
+    setLastActionName('complete');
+    setLastActionResponse(response);
+  };
+
   const lastActionLabel =
     lastActionName === 'approve'
-      ? 'phê duyệt'
-      : lastActionName === 'reject'
-        ? 'từ chối'
-        : 'không có';
+      ? 'approve'
+      : lastActionName === 'complete'
+        ? 'complete'
+        : lastActionName === 'reject'
+          ? 'reject'
+          : 'none';
 
   if (detailQuery.isLoading) {
-    return <p>Đang tải chi tiết yêu cầu lấy hàng...</p>;
+    return <p>Loading pickup request detail...</p>;
   }
 
   if (detailQuery.isError) {
@@ -63,35 +76,31 @@ export function PickupRequestDetailPage(): React.JSX.Element {
   }
 
   if (!detailQuery.data) {
-    return <p>Không tìm thấy yêu cầu lấy hàng.</p>;
+    return <p>Pickup request was not found.</p>;
   }
+
+  const canComplete =
+    detailQuery.data.status === 'APPROVED' || detailQuery.data.status === 'COMPLETED';
 
   return (
     <section>
-      <h2>Chi tiết yêu cầu lấy hàng</h2>
+      <h2>Pickup Request Detail</h2>
       <p>
-        <Link to={routePaths.pickups}>Quay lại danh sách yêu cầu lấy hàng</Link>
+        <Link to={routePaths.pickups}>Back to pickup requests</Link>
       </p>
-      <p>Mã yêu cầu: {detailQuery.data.requestCode}</p>
-      <p>Mã vận đơn: {detailQuery.data.shipmentCode ?? 'Không có'}</p>
-      <p>Trạng thái: {detailQuery.data.status}</p>
-      <p>Thời điểm yêu cầu: {formatDateTime(detailQuery.data.requestedAt)}</p>
-      <p>
-        Cập nhật lúc:{' '}
-        {detailQuery.data.updatedAt ? formatDateTime(detailQuery.data.updatedAt) : 'Không có'}
-      </p>
-      <p>Ghi chú: {detailQuery.data.note ?? 'Không có'}</p>
+      <p>Request code: {detailQuery.data.requestCode}</p>
+      <p>Shipment code: {detailQuery.data.shipmentCode ?? 'N/A'}</p>
+      <p>Status: {detailQuery.data.status}</p>
+      <p>Requested at: {formatDateTime(detailQuery.data.requestedAt)}</p>
+      <p>Updated at: {detailQuery.data.updatedAt ? formatDateTime(detailQuery.data.updatedAt) : 'N/A'}</p>
+      <p>Note: {detailQuery.data.note ?? 'N/A'}</p>
 
       <div style={styles.actionsGrid}>
         <form onSubmit={onApproveSubmit} style={styles.form}>
-          <h3 style={styles.actionTitle}>Khung thao tác phê duyệt</h3>
-          <textarea
-            rows={3}
-            placeholder="Ghi chú phê duyệt"
-            {...approveForm.register('note')}
-          />
+          <h3 style={styles.actionTitle}>Approve</h3>
+          <textarea rows={3} placeholder="Approval note" {...approveForm.register('note')} />
           <button type="submit" disabled={approveMutation.isPending}>
-            {approveMutation.isPending ? 'Đang gửi phê duyệt...' : 'Gửi phê duyệt'}
+            {approveMutation.isPending ? 'Submitting approval...' : 'Approve pickup'}
           </button>
           {approveMutation.isError ? (
             <small style={styles.errorText}>{getErrorMessage(approveMutation.error)}</small>
@@ -99,24 +108,37 @@ export function PickupRequestDetailPage(): React.JSX.Element {
         </form>
 
         <form onSubmit={onRejectSubmit} style={styles.form}>
-          <h3 style={styles.actionTitle}>Khung thao tác từ chối</h3>
-          <textarea
-            rows={3}
-            placeholder="Lý do từ chối"
-            {...rejectForm.register('note')}
-          />
+          <h3 style={styles.actionTitle}>Cancel</h3>
+          <textarea rows={3} placeholder="Cancellation reason" {...rejectForm.register('note')} />
           <button type="submit" disabled={rejectMutation.isPending}>
-            {rejectMutation.isPending ? 'Đang gửi từ chối...' : 'Gửi từ chối'}
+            {rejectMutation.isPending ? 'Submitting cancellation...' : 'Cancel pickup'}
           </button>
           {rejectMutation.isError ? (
             <small style={styles.errorText}>{getErrorMessage(rejectMutation.error)}</small>
           ) : null}
         </form>
+
+        <div style={styles.form}>
+          <h3 style={styles.actionTitle}>Complete</h3>
+          <button
+            type="button"
+            onClick={() => void onCompleteClick()}
+            disabled={completeMutation.isPending || !canComplete}
+          >
+            {completeMutation.isPending ? 'Submitting completion...' : 'Complete pickup'}
+          </button>
+          {!canComplete ? (
+            <small>Pickup can be completed only when status is APPROVED.</small>
+          ) : null}
+          {completeMutation.isError ? (
+            <small style={styles.errorText}>{getErrorMessage(completeMutation.error)}</small>
+          ) : null}
+        </div>
       </div>
 
       {lastActionResponse ? (
         <div style={styles.responseBox}>
-          <strong>Phản hồi server gần nhất ({lastActionLabel})</strong>
+          <strong>Latest server response ({lastActionLabel})</strong>
           <pre style={styles.pre}>{JSON.stringify(lastActionResponse, null, 2)}</pre>
         </div>
       ) : null}
@@ -135,7 +157,7 @@ const styles: Record<string, React.CSSProperties> = {
     gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
     gap: 12,
     marginTop: 8,
-    maxWidth: 800,
+    maxWidth: 900,
   },
   actionTitle: {
     margin: 0,

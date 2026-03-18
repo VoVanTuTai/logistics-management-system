@@ -1,5 +1,6 @@
 export type PickupPublishedEventType =
   | 'pickup.requested'
+  | 'pickup.approved'
   | 'pickup.updated'
   | 'pickup.cancelled'
   | 'pickup.completed';

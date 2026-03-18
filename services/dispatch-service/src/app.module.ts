@@ -10,6 +10,8 @@ import { OutboxEventPrismaRepository } from './infrastructure/prisma/outbox-even
 import { PrismaService } from './infrastructure/prisma/prisma.service';
 import { TaskPrismaRepository } from './infrastructure/prisma/task-prisma.repository';
 import { DispatchEventsConsumer } from './messaging/consumers/dispatch-events.consumer';
+import { DispatchRabbitmqConsumerService } from './messaging/consumers/dispatch-rabbitmq-consumer.service';
+import { DispatchOutboxRelayService } from './messaging/outbox/dispatch-outbox-relay.service';
 import { DispatchEventsProducer } from './messaging/producers/dispatch-events.producer';
 import { DispatchOutboxService } from './messaging/outbox/dispatch-outbox.service';
 
@@ -22,7 +24,9 @@ import { DispatchOutboxService } from './messaging/outbox/dispatch-outbox.servic
     DispatchEventHandlersService,
     DispatchEventsProducer,
     DispatchEventsConsumer,
+    DispatchRabbitmqConsumerService,
     DispatchOutboxService,
+    DispatchOutboxRelayService,
     {
       provide: TaskRepository,
       useClass: TaskPrismaRepository,

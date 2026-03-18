@@ -8,6 +8,7 @@ import { HealthModule } from './health/health.module';
 import { PrismaService } from './infrastructure/prisma/prisma.service';
 import { TrackingProjectionStore } from './infrastructure/prisma/tracking-projection.store';
 import { TrackingEventsConsumer } from './messaging/consumers/tracking-events.consumer';
+import { TrackingRabbitmqConsumerService } from './messaging/consumers/tracking-rabbitmq-consumer.service';
 
 @Module({
   imports: [HealthModule],
@@ -18,6 +19,7 @@ import { TrackingEventsConsumer } from './messaging/consumers/tracking-events.co
     TrackingReadProjection,
     TrackingQueryProjection,
     TrackingEventsConsumer,
+    TrackingRabbitmqConsumerService,
   ],
 })
 export class AppModule {}

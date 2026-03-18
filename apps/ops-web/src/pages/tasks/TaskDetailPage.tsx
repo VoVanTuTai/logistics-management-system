@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 
 import {
   useAssignTaskMutation,
+  useCourierOptionsQuery,
   useReassignTaskMutation,
   useTaskDetailQuery,
 } from '../../features/tasks/tasks.api';
@@ -21,33 +22,76 @@ export function TaskDetailPage(): React.JSX.Element {
   const { taskId = '' } = useParams();
   const accessToken = useAuthStore((state) => state.session?.tokens.accessToken ?? null);
   const detailQuery = useTaskDetailQuery(accessToken, taskId);
+  const courierOptionsQuery = useCourierOptionsQuery(accessToken);
   const assignMutation = useAssignTaskMutation(accessToken);
   const reassignMutation = useReassignTaskMutation(accessToken);
   const [openModal, setOpenModal] = useState<'assign' | 'reassign' | null>(null);
   const [lastActionName, setLastActionName] = useState<'assign' | 'reassign' | null>(null);
   const [lastActionResponse, setLastActionResponse] =
     useState<TaskActionResultDto | null>(null);
+  const [actionNotice, setActionNotice] = useState<{
+    tone: 'success' | 'error';
+    message: string;
+  } | null>(null);
+
+  React.useEffect(() => {
+    if (!actionNotice) {
+      return;
+    }
+
+    const clearTimeoutId = window.setTimeout(() => {
+      setActionNotice(null);
+    }, 5000);
+
+    return () => {
+      window.clearTimeout(clearTimeoutId);
+    };
+  }, [actionNotice]);
 
   const onAssignSubmit = async (payload: AssignTaskInput) => {
-    const response = await assignMutation.mutateAsync(payload);
-    setLastActionName('assign');
-    setLastActionResponse(response);
+    try {
+      const response = await assignMutation.mutateAsync(payload);
+      setLastActionName('assign');
+      setLastActionResponse(response);
+      setActionNotice({
+        tone: 'success',
+        message: `Assigned task to courier ${response.task.assignedCourierId ?? payload.courierId}.`,
+      });
+    } catch (error) {
+      setActionNotice({
+        tone: 'error',
+        message: getErrorMessage(error),
+      });
+      throw error;
+    }
   };
 
   const onReassignSubmit = async (payload: ReassignTaskInput) => {
-    const response = await reassignMutation.mutateAsync(payload);
-    setLastActionName('reassign');
-    setLastActionResponse(response);
+    try {
+      const response = await reassignMutation.mutateAsync(payload);
+      setLastActionName('reassign');
+      setLastActionResponse(response);
+      setActionNotice({
+        tone: 'success',
+        message: `Reassigned task to courier ${response.task.assignedCourierId ?? payload.courierId}.`,
+      });
+    } catch (error) {
+      setActionNotice({
+        tone: 'error',
+        message: getErrorMessage(error),
+      });
+      throw error;
+    }
   };
   const lastActionLabel =
     lastActionName === 'assign'
-      ? 'phân công'
+      ? 'assign'
       : lastActionName === 'reassign'
-        ? 'phân công lại'
-        : 'không có';
+        ? 'reassign'
+        : 'none';
 
   if (detailQuery.isLoading) {
-    return <p>Đang tải chi tiết tác vụ...</p>;
+    return <p>Loading task detail...</p>;
   }
 
   if (detailQuery.isError) {
@@ -55,43 +99,54 @@ export function TaskDetailPage(): React.JSX.Element {
   }
 
   if (!detailQuery.data) {
-    return <p>Không tìm thấy tác vụ.</p>;
+    return <p>Task was not found.</p>;
   }
 
   return (
     <section>
-      <h2>Chi tiết tác vụ</h2>
+      <h2>Task Detail</h2>
       <p>
-        <Link to={routePaths.tasks}>Quay lại danh sách tác vụ</Link>
+        <Link to={routePaths.tasks}>Back to task list</Link>
       </p>
 
-      <p>Mã tác vụ: {detailQuery.data.taskCode}</p>
-      <p>Loại tác vụ: {detailQuery.data.taskType}</p>
-      <p>Trạng thái: {detailQuery.data.status}</p>
-      <p>Mã vận đơn: {detailQuery.data.shipmentCode ?? 'Không có'}</p>
-      <p>Courier đang gán: {detailQuery.data.assignedCourierId ?? 'Không có'}</p>
-      <p>Cập nhật lúc: {formatDateTime(detailQuery.data.updatedAt)}</p>
-      <p>Ghi chú: {detailQuery.data.note ?? 'Không có'}</p>
+      <p>Task code: {detailQuery.data.taskCode}</p>
+      <p>Task type: {detailQuery.data.taskType}</p>
+      <p>Status: {detailQuery.data.status}</p>
+      <p>Shipment code: {detailQuery.data.shipmentCode ?? 'N/A'}</p>
+      <p>Assigned courier: {detailQuery.data.assignedCourierId ?? 'N/A'}</p>
+      <p>Updated at: {formatDateTime(detailQuery.data.updatedAt)}</p>
+      <p>Note: {detailQuery.data.note ?? 'N/A'}</p>
 
       <div style={styles.actionButtons}>
         <button type="button" onClick={() => setOpenModal('assign')}>
-          Mở form phân công
+          Open assign form
         </button>
         <button type="button" onClick={() => setOpenModal('reassign')}>
-          Mở form phân công lại
+          Open reassign form
         </button>
       </div>
 
-      {assignMutation.isError ? (
-        <p style={styles.errorText}>{getErrorMessage(assignMutation.error)}</p>
+      {courierOptionsQuery.isError ? (
+        <p style={styles.errorText}>{getErrorMessage(courierOptionsQuery.error)}</p>
       ) : null}
-      {reassignMutation.isError ? (
-        <p style={styles.errorText}>{getErrorMessage(reassignMutation.error)}</p>
+
+      {actionNotice ? (
+        <div
+          role={actionNotice.tone === 'error' ? 'alert' : 'status'}
+          style={{
+            ...styles.notice,
+            ...(actionNotice.tone === 'success'
+              ? styles.successNotice
+              : styles.errorNotice),
+          }}
+        >
+          {actionNotice.message}
+        </div>
       ) : null}
 
       {lastActionResponse ? (
         <div style={styles.responseBox}>
-          <strong>Phản hồi server gần nhất ({lastActionLabel})</strong>
+          <strong>Latest server response ({lastActionLabel})</strong>
           <pre style={styles.pre}>{JSON.stringify(lastActionResponse, null, 2)}</pre>
         </div>
       ) : null}
@@ -101,6 +156,8 @@ export function TaskDetailPage(): React.JSX.Element {
         mode="assign"
         isOpen={openModal === 'assign'}
         isSubmitting={assignMutation.isPending}
+        courierOptions={courierOptionsQuery.data ?? []}
+        courierOptionsLoading={courierOptionsQuery.isLoading}
         onClose={() => setOpenModal(null)}
         onSubmit={onAssignSubmit}
       />
@@ -109,6 +166,8 @@ export function TaskDetailPage(): React.JSX.Element {
         mode="reassign"
         isOpen={openModal === 'reassign'}
         isSubmitting={reassignMutation.isPending}
+        courierOptions={courierOptionsQuery.data ?? []}
+        courierOptionsLoading={courierOptionsQuery.isLoading}
         onClose={() => setOpenModal(null)}
         onSubmit={onReassignSubmit}
       />
@@ -135,6 +194,24 @@ const styles: Record<string, React.CSSProperties> = {
     whiteSpace: 'pre-wrap',
     wordBreak: 'break-word',
     fontSize: 13,
+  },
+  notice: {
+    marginTop: 12,
+    padding: '10px 12px',
+    borderRadius: 10,
+    border: '1px solid',
+    fontWeight: 600,
+    animation: 'ops-notice-in 0.22s ease-out',
+  },
+  successNotice: {
+    borderColor: '#86efac',
+    backgroundColor: '#dcfce7',
+    color: '#166534',
+  },
+  errorNotice: {
+    borderColor: '#fecaca',
+    backgroundColor: '#fee2e2',
+    color: '#991b1b',
   },
   errorText: {
     color: '#b91c1c',

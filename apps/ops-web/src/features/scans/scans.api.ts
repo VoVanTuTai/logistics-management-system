@@ -1,2 +1,6 @@
 export { scansClient } from './scans.client';
-export { useInboundScanMutation, useOutboundScanMutation } from './scans.hooks';
+export {
+  useInboundScanMutation,
+  useOutboundScanMutation,
+  usePickupScanMutation,
+} from './scans.hooks';

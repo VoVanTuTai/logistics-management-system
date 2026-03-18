@@ -1,17 +1,27 @@
 import {
+  BadRequestException,
   Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 
 import type {
+  ApprovePickupRequestInput,
   CancelPickupRequestInput,
   CreatePickupRequestInput,
   PickupRequest,
+  PickupRequestStatus,
   UpdatePickupRequestInput,
 } from '../../domain/entities/pickup-request.entity';
 import { PickupRequestRepository } from '../../domain/repositories/pickup-request.repository';
 import { PickupOutboxService } from '../../messaging/outbox/pickup-outbox.service';
+
+const PICKUP_REQUEST_STATUS_SET = new Set<PickupRequestStatus>([
+  'REQUESTED',
+  'APPROVED',
+  'CANCELLED',
+  'COMPLETED',
+]);
 
 @Injectable()
 export class PickupsService {
@@ -21,8 +31,22 @@ export class PickupsService {
     private readonly pickupOutboxService: PickupOutboxService,
   ) {}
 
-  list(): Promise<PickupRequest[]> {
-    return this.pickupRequestRepository.list();
+  list(status?: string): Promise<PickupRequest[]> {
+    const normalizedStatus = status?.trim().toUpperCase();
+
+    if (!normalizedStatus) {
+      return this.pickupRequestRepository.list();
+    }
+
+    if (!PICKUP_REQUEST_STATUS_SET.has(normalizedStatus as PickupRequestStatus)) {
+      throw new BadRequestException(
+        `Invalid pickup status filter "${status}". Expected one of REQUESTED, APPROVED, CANCELLED, COMPLETED.`,
+      );
+    }
+
+    return this.pickupRequestRepository.list(
+      normalizedStatus as PickupRequestStatus,
+    );
   }
 
   async getById(id: string): Promise<PickupRequest> {
@@ -62,7 +86,17 @@ export class PickupsService {
     id: string,
     input: CancelPickupRequestInput,
   ): Promise<PickupRequest> {
-    await this.getById(id);
+    const current = await this.getById(id);
+
+    if (current.status === 'CANCELLED') {
+      return current;
+    }
+
+    if (current.status === 'COMPLETED') {
+      throw new BadRequestException(
+        `Pickup request "${id}" was completed and cannot be cancelled.`,
+      );
+    }
 
     const pickupRequest = await this.pickupRequestRepository.cancel(
       id,
@@ -76,8 +110,56 @@ export class PickupsService {
     return pickupRequest;
   }
 
+  async approve(
+    id: string,
+    input: ApprovePickupRequestInput,
+  ): Promise<PickupRequest> {
+    const current = await this.getById(id);
+
+    if (current.status === 'APPROVED') {
+      return current;
+    }
+
+    if (current.status === 'CANCELLED' || current.status === 'COMPLETED') {
+      throw new BadRequestException(
+        `Pickup request "${id}" cannot be approved from status "${current.status}".`,
+      );
+    }
+
+    const approvedBy = input.approvedBy?.trim() || 'ops';
+    const note = input.note?.trim() ?? null;
+    const pickupRequest = await this.pickupRequestRepository.approve(
+      id,
+      approvedBy,
+      note,
+    );
+
+    await this.pickupOutboxService.enqueuePickupApproved(pickupRequest, {
+      approved_by: approvedBy,
+      note,
+    });
+
+    return pickupRequest;
+  }
+
   async complete(id: string): Promise<PickupRequest> {
-    await this.getById(id);
+    const current = await this.getById(id);
+
+    if (current.status === 'COMPLETED') {
+      return current;
+    }
+
+    if (current.status === 'CANCELLED') {
+      throw new BadRequestException(
+        `Pickup request "${id}" was cancelled and cannot be completed.`,
+      );
+    }
+
+    if (current.status !== 'APPROVED') {
+      throw new BadRequestException(
+        `Pickup request "${id}" must be approved before completion.`,
+      );
+    }
 
     const pickupRequest = await this.pickupRequestRepository.complete(id);
 
@@ -96,6 +178,13 @@ export class PickupsService {
 
     if (!pickupRequest) {
       return null;
+    }
+
+    if (
+      pickupRequest.status === 'CANCELLED' ||
+      pickupRequest.status === 'COMPLETED'
+    ) {
+      return pickupRequest;
     }
 
     const cancelledPickupRequest = await this.pickupRequestRepository.cancel(

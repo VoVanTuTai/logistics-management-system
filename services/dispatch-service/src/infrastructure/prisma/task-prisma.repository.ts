@@ -9,9 +9,12 @@ import type {
 import type {
   AssignTaskInput,
   CreateTaskInput,
+  ListTasksFilters,
   ReassignTaskInput,
   Task,
   TaskAssignment,
+  TaskStatus,
+  TaskType,
   UpdateTaskStatusInput,
 } from '../../domain/entities/task.entity';
 import { TaskRepository } from '../../domain/repositories/task.repository';
@@ -27,18 +30,39 @@ export class TaskPrismaRepository extends TaskRepository {
     super();
   }
 
-  async list(courierId?: string): Promise<Task[]> {
+  async list(filters: ListTasksFilters = {}): Promise<Task[]> {
+    const where: Prisma.TaskWhereInput = {};
+    const courierId = filters.courierId?.trim();
+    const shipmentCode = filters.shipmentCode?.trim();
+    const pickupRequestId = filters.pickupRequestId?.trim();
+
+    if (courierId) {
+      where.assignments = {
+        some: {
+          courierId,
+          unassignedAt: null,
+        },
+      };
+    }
+
+    if (shipmentCode) {
+      where.shipmentCode = shipmentCode;
+    }
+
+    if (pickupRequestId) {
+      where.pickupRequestId = pickupRequestId;
+    }
+
+    if (filters.taskType) {
+      where.taskType = filters.taskType as TaskType;
+    }
+
+    if (filters.status) {
+      where.status = filters.status as TaskStatus;
+    }
+
     const records = await this.prisma.task.findMany({
-      where: courierId
-        ? {
-            assignments: {
-              some: {
-                courierId,
-                unassignedAt: null,
-              },
-            },
-          }
-        : undefined,
+      where,
       include: {
         assignments: {
           orderBy: {
@@ -52,6 +76,42 @@ export class TaskPrismaRepository extends TaskRepository {
     });
 
     return records.map((record) => this.toEntity(record));
+  }
+
+  async findByPickupRequestId(pickupRequestId: string): Promise<Task | null> {
+    const record = await this.prisma.task.findFirst({
+      where: {
+        pickupRequestId,
+      },
+      include: {
+        assignments: {
+          orderBy: {
+            assignedAt: 'desc',
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return record ? this.toEntity(record) : null;
+  }
+
+  async listCourierIds(): Promise<string[]> {
+    const records = await this.prisma.taskAssignment.findMany({
+      select: {
+        courierId: true,
+      },
+      distinct: ['courierId'],
+      orderBy: {
+        courierId: 'asc',
+      },
+    });
+
+    return records
+      .map((record) => record.courierId.trim())
+      .filter((courierId) => courierId.length > 0);
   }
 
   async findById(id: string): Promise<Task | null> {

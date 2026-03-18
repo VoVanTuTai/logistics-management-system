@@ -6,9 +6,9 @@ import { z } from 'zod';
 import type { HubScanType } from '../../features/scans/scans.types';
 
 const hubScanFormSchema = z.object({
-  scanType: z.enum(['INBOUND', 'OUTBOUND']),
-  shipmentCode: z.string().trim().min(1, 'Mã vận đơn là bắt buộc'),
-  locationCode: z.string().trim().min(1, 'Mã vị trí hub là bắt buộc'),
+  scanType: z.enum(['PICKUP', 'INBOUND', 'OUTBOUND']),
+  shipmentCode: z.string().trim().min(1, 'Shipment code is required'),
+  locationCode: z.string().trim().min(1, 'Location code is required'),
   note: z.string().optional(),
 });
 
@@ -40,33 +40,30 @@ export function HubScanForm({
     form.reset({
       scanType: values.scanType,
       shipmentCode: '',
-      locationCode: '',
+      locationCode: values.locationCode,
       note: '',
     });
   });
 
   return (
     <form onSubmit={onFormSubmit} style={styles.form}>
-      <h3 style={styles.title}>Thao tác quét</h3>
+      <h3 style={styles.title}>Scan action</h3>
       <select {...form.register('scanType')}>
+        <option value="PICKUP">PICKUP</option>
         <option value="INBOUND">INBOUND</option>
         <option value="OUTBOUND">OUTBOUND</option>
       </select>
-      <input placeholder="Nhập hoặc quét mã vận đơn" {...form.register('shipmentCode')} />
+      <input placeholder="Scan or enter shipment code" {...form.register('shipmentCode')} />
       {form.formState.errors.shipmentCode ? (
-        <small style={styles.errorText}>
-          {form.formState.errors.shipmentCode.message}
-        </small>
+        <small style={styles.errorText}>{form.formState.errors.shipmentCode.message}</small>
       ) : null}
-      <input placeholder="Mã vị trí hub" {...form.register('locationCode')} />
+      <input placeholder="Hub/branch location code" {...form.register('locationCode')} />
       {form.formState.errors.locationCode ? (
-        <small style={styles.errorText}>
-          {form.formState.errors.locationCode.message}
-        </small>
+        <small style={styles.errorText}>{form.formState.errors.locationCode.message}</small>
       ) : null}
-      <textarea rows={3} placeholder="Ghi chú (không bắt buộc)" {...form.register('note')} />
+      <textarea rows={3} placeholder="Optional note" {...form.register('note')} />
       <button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? 'Đang gửi quét...' : 'Gửi quét'}
+        {isSubmitting ? 'Submitting scan...' : 'Submit scan'}
       </button>
     </form>
   );

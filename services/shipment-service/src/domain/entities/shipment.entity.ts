@@ -19,7 +19,7 @@ export interface Shipment {
 }
 
 export interface CreateShipmentInput {
-  code: string;
+  code?: string | null;
   metadata?: JsonValue | null;
 }
 

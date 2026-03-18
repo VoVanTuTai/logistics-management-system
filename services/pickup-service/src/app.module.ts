@@ -10,6 +10,7 @@ import { OutboxEventPrismaRepository } from './infrastructure/prisma/outbox-even
 import { PickupRequestPrismaRepository } from './infrastructure/prisma/pickup-request-prisma.repository';
 import { PrismaService } from './infrastructure/prisma/prisma.service';
 import { PickupEventsConsumer } from './messaging/consumers/pickup-events.consumer';
+import { PickupOutboxRelayService } from './messaging/outbox/pickup-outbox-relay.service';
 import { PickupEventsProducer } from './messaging/producers/pickup-events.producer';
 import { PickupOutboxService } from './messaging/outbox/pickup-outbox.service';
 
@@ -23,6 +24,7 @@ import { PickupOutboxService } from './messaging/outbox/pickup-outbox.service';
     PickupEventsProducer,
     PickupEventsConsumer,
     PickupOutboxService,
+    PickupOutboxRelayService,
     {
       provide: PickupRequestRepository,
       useClass: PickupRequestPrismaRepository,

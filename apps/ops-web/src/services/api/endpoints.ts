@@ -17,11 +17,13 @@ export const opsEndpoints = {
   pickups: {
     list: '/ops/pickup/pickups',
     detail: (pickupId: string) => `/ops/pickup/pickups/${pickupId}`,
-    approve: (pickupId: string) => `/ops/pickup/pickups/${pickupId}/complete`,
+    approve: (pickupId: string) => `/ops/pickup/pickups/${pickupId}/approve`,
+    complete: (pickupId: string) => `/ops/pickup/pickups/${pickupId}/complete`,
     reject: (pickupId: string) => `/ops/pickup/pickups/${pickupId}/cancel`,
   },
   tasks: {
     list: '/ops/dispatch/tasks',
+    couriers: '/ops/dispatch/tasks/couriers',
     detail: (taskId: string) => `/ops/dispatch/tasks/${taskId}`,
     assign: (taskId: string) => `/ops/dispatch/tasks/${taskId}/assign`,
     reassign: (taskId: string) => `/ops/dispatch/tasks/${taskId}/reassign`,
@@ -36,8 +38,10 @@ export const opsEndpoints = {
     receive: (manifestId: string) => `/ops/manifest/manifests/${manifestId}/receive`,
   },
   scans: {
+    pickup: '/ops/scan/scans/pickup',
     inbound: '/ops/scan/scans/inbound',
     outbound: '/ops/scan/scans/outbound',
+    location: (shipmentCode: string) => `/ops/scan/locations/${encodeURIComponent(shipmentCode)}`,
   },
   ndr: {
     list: '/ops/delivery/ndr',

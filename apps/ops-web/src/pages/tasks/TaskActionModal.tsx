@@ -1,13 +1,19 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 
-import type { AssignTaskInput, ReassignTaskInput } from '../../features/tasks/tasks.types';
+import type {
+  AssignTaskInput,
+  CourierOptionDto,
+  ReassignTaskInput,
+} from '../../features/tasks/tasks.types';
 
 interface TaskActionModalProps {
   taskId: string;
   mode: 'assign' | 'reassign';
   isOpen: boolean;
   isSubmitting: boolean;
+  courierOptions: CourierOptionDto[];
+  courierOptionsLoading: boolean;
   onClose: () => void;
   onSubmit: (payload: AssignTaskInput | ReassignTaskInput) => Promise<void>;
 }
@@ -22,6 +28,8 @@ export function TaskActionModal({
   mode,
   isOpen,
   isSubmitting,
+  courierOptions,
+  courierOptionsLoading,
   onClose,
   onSubmit,
 }: TaskActionModalProps): React.JSX.Element | null {
@@ -32,11 +40,24 @@ export function TaskActionModal({
     },
   });
 
+  useEffect(() => {
+    if (!isOpen || courierOptions.length === 0) {
+      return;
+    }
+
+    const currentCourierId = form.getValues('courierId')?.trim() ?? '';
+    if (!currentCourierId) {
+      form.setValue('courierId', courierOptions[0].courierId, {
+        shouldValidate: true,
+      });
+    }
+  }, [courierOptions, form, isOpen]);
+
   if (!isOpen) {
     return null;
   }
 
-  const actionTitle = mode === 'assign' ? 'Phân công tác vụ' : 'Phân công lại tác vụ';
+  const actionTitle = mode === 'assign' ? 'Assign task' : 'Reassign task';
 
   const handleSubmit = form.handleSubmit(async (values) => {
     await onSubmit({
@@ -53,25 +74,50 @@ export function TaskActionModal({
       <div style={styles.modal}>
         <h3 style={styles.title}>{actionTitle}</h3>
         <form onSubmit={handleSubmit} style={styles.form}>
-          <label htmlFor={`${mode}-courier`}>Mã courier</label>
-          <input
-            id={`${mode}-courier`}
-            placeholder="Nhập mã courier"
-            {...form.register('courierId', { required: true })}
-          />
-          <label htmlFor={`${mode}-note`}>Ghi chú</label>
+          <label htmlFor={`${mode}-courier`}>Courier</label>
+
+          {courierOptionsLoading ? (
+            <p style={styles.helperText}>Loading courier options...</p>
+          ) : courierOptions.length > 0 ? (
+            <select
+              id={`${mode}-courier`}
+              {...form.register('courierId', { required: true })}
+            >
+              {courierOptions.map((option) => (
+                <option key={option.courierId} value={option.courierId}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <>
+              <input
+                id={`${mode}-courier`}
+                placeholder="Enter courier id"
+                {...form.register('courierId', { required: true })}
+              />
+              <small style={styles.helperText}>
+                No courier options available yet. Enter courier id manually.
+              </small>
+            </>
+          )}
+
+          <label htmlFor={`${mode}-note`}>Note</label>
           <textarea
             id={`${mode}-note`}
             rows={3}
-            placeholder="Ghi chú (không bắt buộc)"
+            placeholder="Optional note"
             {...form.register('note')}
           />
           <div style={styles.actions}>
             <button type="button" onClick={onClose}>
-              Hủy
+              Cancel
             </button>
-            <button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Đang gửi...' : actionTitle}
+            <button
+              type="submit"
+              disabled={isSubmitting || courierOptionsLoading}
+            >
+              {isSubmitting ? 'Submitting...' : actionTitle}
             </button>
           </div>
         </form>
@@ -104,6 +150,11 @@ const styles: Record<string, React.CSSProperties> = {
   form: {
     display: 'grid',
     gap: 8,
+  },
+  helperText: {
+    margin: 0,
+    color: '#334155',
+    fontSize: 13,
   },
   actions: {
     display: 'flex',

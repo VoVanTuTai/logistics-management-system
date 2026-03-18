@@ -19,6 +19,7 @@ export type ShipmentCurrentStatus = (typeof SHIPMENT_CURRENT_STATUSES)[number];
 
 export const SHIPMENT_CONSUMED_EVENT_TYPES = [
   'pickup.completed',
+  'scan.pickup_confirmed',
   'task.assigned',
   'manifest.sealed',
   'manifest.received',

@@ -3,7 +3,7 @@ export interface TrackingEventEnvelope {
   event_type: string;
   occurred_at: string;
   shipment_code: string | null;
-  actor: string | null;
+  actor: string | Record<string, unknown> | null;
   location: Record<string, unknown> | null;
   data: Record<string, unknown>;
   idempotency_key: string;

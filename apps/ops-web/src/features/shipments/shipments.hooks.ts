@@ -4,6 +4,7 @@ import { queryKeys } from '../../utils/queryKeys';
 import { shipmentsClient } from './shipments.client';
 import type {
   ApproveShipmentInput,
+  CreateShipmentInput,
   ReviewShipmentInput,
   ShipmentListFilters,
   UpdateShipmentInput,
@@ -28,6 +29,18 @@ export function useShipmentDetailQuery(
     queryKey: [...queryKeys.shipments, 'detail', shipmentId],
     queryFn: () => shipmentsClient.detail(accessToken, shipmentId),
     enabled: Boolean(accessToken) && Boolean(shipmentId),
+  });
+}
+
+export function useCreateShipmentMutation(accessToken: string | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: CreateShipmentInput) =>
+      shipmentsClient.create(accessToken, payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
+    },
   });
 }
 

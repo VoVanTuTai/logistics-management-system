@@ -30,6 +30,14 @@ export function useTaskDetailQuery(
   });
 }
 
+export function useCourierOptionsQuery(accessToken: string | null) {
+  return useQuery({
+    queryKey: [...queryKeys.tasks, 'couriers'],
+    queryFn: () => tasksClient.listCouriers(accessToken),
+    enabled: Boolean(accessToken),
+  });
+}
+
 export function useAssignTaskMutation(accessToken: string | null) {
   const queryClient = useQueryClient();
 

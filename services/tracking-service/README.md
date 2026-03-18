@@ -38,4 +38,8 @@
 
 - khong publish event
 - khong co business logic write-side
-- current view o day la projection skeleton, khong co ownership domain
+- consume event tu RabbitMQ exchange `domain.events`
+- queue chinh: `tracking-service.q`
+- retry queue: `tracking-service.retry.10s`, `tracking-service.retry.1m`
+- dead-letter queue: `tracking-service.dlq`
+- current view o day la projection read-model, khong co ownership domain

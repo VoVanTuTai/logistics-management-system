@@ -15,6 +15,15 @@ export class ShipmentEventsConsumer {
   readonly queueName = 'shipment-service.q';
   readonly retryQueues = ['shipment-service.retry.10s', 'shipment-service.retry.1m'];
   readonly deadLetterQueue = 'shipment-service.dlq';
+  readonly routingPatterns = [
+    'pickup.*',
+    'task.*',
+    'manifest.*',
+    'scan.*',
+    'delivery.*',
+    'ndr.*',
+    'return.*',
+  ];
 
   constructor(
     private readonly shipmentEventHandlersService: ShipmentEventHandlersService,

@@ -20,12 +20,12 @@ Luu y:
 
 ## Pham vi scaffold
 
-Scaffold hien tai chi o muc CRUD skeleton:
+Pham vi hien tai:
 - route controller
 - application service
 - state machine skeleton
 - prisma repository
-- outbox skeleton
+- outbox relay publish den RabbitMQ exchange `domain.events`
 - consumer skeleton
 
 Khong co validation nghiep vu chi tiet.

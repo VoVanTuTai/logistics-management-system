@@ -3,8 +3,13 @@ import React, { useState } from 'react';
 import {
   useInboundScanMutation,
   useOutboundScanMutation,
+  usePickupScanMutation,
 } from '../../features/scans/scans.api';
-import type { HubScanInput, HubScanResultDto, HubScanType } from '../../features/scans/scans.types';
+import type {
+  HubScanInput,
+  HubScanResultDto,
+  HubScanType,
+} from '../../features/scans/scans.types';
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
 import { createIdempotencyKey } from '../../utils/idempotency';
@@ -12,6 +17,7 @@ import { HubScanForm, type HubScanFormValues } from './HubScanForm';
 
 export function HubScanPage(): React.JSX.Element {
   const accessToken = useAuthStore((state) => state.session?.tokens.accessToken ?? null);
+  const pickupMutation = usePickupScanMutation(accessToken);
   const inboundMutation = useInboundScanMutation(accessToken);
   const outboundMutation = useOutboundScanMutation(accessToken);
   const [lastScanType, setLastScanType] = useState<HubScanType | null>(null);
@@ -23,8 +29,15 @@ export function HubScanPage(): React.JSX.Element {
       locationCode: values.locationCode,
       note: values.note ?? null,
       scanType: values.scanType,
-      idempotencyKey: createIdempotencyKey('ops-hub-scan'),
+      idempotencyKey: createIdempotencyKey('ops-scan'),
     };
+
+    if (values.scanType === 'PICKUP') {
+      const result = await pickupMutation.mutateAsync(payload);
+      setLastScanType('PICKUP');
+      setLastScanResult(result);
+      return;
+    }
 
     if (values.scanType === 'INBOUND') {
       const result = await inboundMutation.mutateAsync(payload);
@@ -38,30 +51,27 @@ export function HubScanPage(): React.JSX.Element {
     setLastScanResult(result);
   };
 
-  const isSubmitting = inboundMutation.isPending || outboundMutation.isPending;
-  const actionError = inboundMutation.error ?? outboundMutation.error;
-  const lastScanLabel =
-    lastScanType === 'INBOUND'
-      ? 'Nhập'
-      : lastScanType === 'OUTBOUND'
-        ? 'Xuất'
-        : 'Không có';
+  const isSubmitting =
+    pickupMutation.isPending || inboundMutation.isPending || outboundMutation.isPending;
+  const actionError =
+    pickupMutation.error ?? inboundMutation.error ?? outboundMutation.error;
+  const lastScanLabel = lastScanType ?? 'none';
 
   return (
     <section>
-      <h2>Quét hub nhập/xuất</h2>
+      <h2>Scan Operations</h2>
       <p style={{ color: '#2d3f99' }}>
-        Payload quét được gửi lên gateway-bff đúng như nhập vào, và phản hồi hiển thị trực tiếp từ
-        server.
+        Use this screen for pickup, inbound, and outbound scans. Every accepted scan
+        updates current location and keeps idempotency by request key.
       </p>
       <HubScanForm isSubmitting={isSubmitting} onSubmit={onSubmit} />
 
-      {isSubmitting ? <p>Đang gửi quét...</p> : null}
+      {isSubmitting ? <p>Submitting scan...</p> : null}
       {actionError ? <p style={styles.errorText}>{getErrorMessage(actionError)}</p> : null}
-      {!isSubmitting && !actionError && !lastScanResult ? <p>Chưa có kết quả quét.</p> : null}
+      {!isSubmitting && !actionError && !lastScanResult ? <p>No scan result yet.</p> : null}
       {lastScanResult ? (
         <div style={styles.responseBox}>
-          <strong>Phản hồi quét gần nhất ({lastScanLabel})</strong>
+          <strong>Latest scan response ({lastScanLabel})</strong>
           <pre style={styles.pre}>{JSON.stringify(lastScanResult, null, 2)}</pre>
         </div>
       ) : null}

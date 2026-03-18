@@ -1,4 +1,6 @@
-﻿import { createHash } from 'crypto';
+﻿import 'dotenv/config';
+
+import { createHash } from 'crypto';
 
 import { PrismaClient } from '@prisma/client';
 
@@ -19,6 +21,11 @@ async function main(): Promise<void> {
       username: 'ops.viewer',
       plainPassword: 'ops123456',
       roles: ['OPS_VIEWER'],
+    },
+    {
+      username: 'merchant.demo',
+      plainPassword: 'merchant123456',
+      roles: ['MERCHANT'],
     },
   ] as const;
 
