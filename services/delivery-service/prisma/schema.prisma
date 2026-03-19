@@ -21,6 +21,7 @@ enum OtpStatus {
 enum NdrStatus {
   CREATED
   RESCHEDULED
+  RETURN_REQUESTED
 }
 
 enum ReturnStatus {

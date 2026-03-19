@@ -11,7 +11,9 @@ import { OutboxEventPrismaRepository } from './infrastructure/prisma/outbox-even
 import { PrismaService } from './infrastructure/prisma/prisma.service';
 import { ManifestEventsConsumer } from './messaging/consumers/manifest-events.consumer';
 import { ManifestEventsProducer } from './messaging/producers/manifest-events.producer';
+import { ManifestOutboxRelayService } from './messaging/outbox/manifest-outbox-relay.service';
 import { ManifestOutboxService } from './messaging/outbox/manifest-outbox.service';
+import { ManifestStateMachine } from './domain/state-machine/manifest-state-machine';
 
 @Module({
   imports: [HealthModule],
@@ -19,10 +21,12 @@ import { ManifestOutboxService } from './messaging/outbox/manifest-outbox.servic
   providers: [
     PrismaService,
     ManifestsService,
+    ManifestStateMachine,
     ManifestEventHandlersService,
     ManifestEventsProducer,
     ManifestEventsConsumer,
     ManifestOutboxService,
+    ManifestOutboxRelayService,
     {
       provide: ManifestRepository,
       useClass: ManifestPrismaRepository,

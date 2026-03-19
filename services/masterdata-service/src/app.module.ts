@@ -20,6 +20,7 @@ import { NdrReasonPrismaRepository } from './infrastructure/prisma/ndr-reason-pr
 import { OutboxEventPrismaRepository } from './infrastructure/prisma/outbox-event-prisma.repository';
 import { PrismaService } from './infrastructure/prisma/prisma.service';
 import { ZonePrismaRepository } from './infrastructure/prisma/zone-prisma.repository';
+import { MasterdataOutboxRelayService } from './messaging/outbox/masterdata-outbox-relay.service';
 import { MasterdataEventsProducer } from './messaging/producers/masterdata-events.producer';
 import { MasterdataOutboxService } from './messaging/outbox/masterdata-outbox.service';
 
@@ -39,6 +40,7 @@ import { MasterdataOutboxService } from './messaging/outbox/masterdata-outbox.se
     ConfigsService,
     MasterdataEventsProducer,
     MasterdataOutboxService,
+    MasterdataOutboxRelayService,
     {
       provide: HubRepository,
       useClass: HubPrismaRepository,

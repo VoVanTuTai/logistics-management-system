@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 
 import { HubsService } from '../../application/services/hubs.service';
 import type { Hub, HubWriteInput } from '../../domain/entities/hub.entity';
@@ -8,8 +16,20 @@ export class HubsController {
   constructor(private readonly hubsService: HubsService) {}
 
   @Get()
-  list(): Promise<Hub[]> {
-    return this.hubsService.list();
+  list(
+    @Query('code') code?: string,
+    @Query('name') name?: string,
+    @Query('zoneCode') zoneCode?: string,
+    @Query('isActive') isActive?: string,
+    @Query('q') q?: string,
+  ): Promise<Hub[]> {
+    return this.hubsService.list({
+      code,
+      name,
+      zoneCode,
+      isActive,
+      q,
+    });
   }
 
   @Get(':id')

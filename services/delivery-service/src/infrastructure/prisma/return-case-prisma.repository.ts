@@ -23,6 +23,17 @@ export class ReturnCasePrismaRepository extends ReturnCaseRepository {
     return record ? this.toEntity(record) : null;
   }
 
+  async findByNdrCaseId(ndrCaseId: string): Promise<ReturnCase | null> {
+    const record = await this.prisma.returnCase.findFirst({
+      where: { ndrCaseId },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return record ? this.toEntity(record) : null;
+  }
+
   async create(input: CreateReturnCaseInput): Promise<ReturnCase> {
     const data: Prisma.ReturnCaseCreateInput = {
       shipmentCode: input.shipmentCode,
@@ -45,7 +56,7 @@ export class ReturnCasePrismaRepository extends ReturnCaseRepository {
       where: { id },
       data: {
         status: 'COMPLETED',
-        note: input.note ?? null,
+        note: input.note !== undefined ? input.note : undefined,
         completedAt: new Date(),
       },
     });

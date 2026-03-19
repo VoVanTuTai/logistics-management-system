@@ -13,6 +13,11 @@ function sha256(value: string): string {
 async function main(): Promise<void> {
   const users = [
     {
+      username: 'admin.root',
+      plainPassword: 'admin123456',
+      roles: ['SYSTEM_ADMIN', 'OPS_ADMIN'],
+    },
+    {
       username: 'ops.admin',
       plainPassword: 'ops123456',
       roles: ['OPS_ADMIN'],

@@ -7,8 +7,11 @@
 - `POST /deliveries/attempts`
 - `POST /deliveries/success`
 - `POST /deliveries/fail`
+- `GET /ndr`
+- `GET /ndr/:id`
 - `POST /ndr`
 - `POST /ndr/:id/reschedule`
+- `POST /ndr/:id/return-decision`
 - `POST /returns`
 - `POST /returns/:id/complete`
 - `GET /health`
@@ -22,7 +25,8 @@
 ## Notes
 
 - Scaffold nay chi la skeleton
-- Khong co logic reporting/tracking trong service nay
+- Co outbox relay de publish `delivery.*`, `ndr.*`, `return.*` event len domain exchange
+- Khong co logic reporting/tracking trong service nay, tracking se consume event tu event bus
 - Khong co validation nghiep vu chi tiet
-- `task.assigned` moi duoc scaffold consumer hook
+- `task.assigned` moi duoc scaffold consumer hook (chua gom full orchestration)
 - OTP va POD duoc the hien trong flow delivery, khong mo them API group ngoai pham vi yeu cau

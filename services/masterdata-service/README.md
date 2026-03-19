@@ -1,79 +1,101 @@
 # masterdata-service
 
-## Muc tieu
+## Scope
 
-`masterdata-service` quan ly du lieu master dung chung:
-- `Hub`
-- `Zone`
-- `NdrReason`
-- `Config`
+`masterdata-service` provides admin CRUD for shared master data:
 
-Service so huu DB rieng `masterdata_db`.
+- Hubs
+- Zones
+- NDR reasons
+- Basic configs
 
-## Pham vi scaffold
+Service owns dedicated DB: `masterdata_db`.
 
-Ban scaffold hien tai chi o muc CRUD skeleton:
-- route controller
-- application service
-- repository abstraction
-- prisma repository
-- outbox record skeleton
+## Implemented capabilities
 
-Khong co validation nghiep vu chi tiet.
+- CRUD APIs for `hubs`, `zones`, `ndr-reasons`, `configs`
+- Input normalization:
+  - code fields normalized to uppercase
+  - config keys normalized to lowercase
+  - text fields are trimmed
+- Validation and business rules:
+  - duplicate `code` / `key` protection
+  - `hub.zoneCode` must exist
+  - `zone.parentCode` must exist and cannot create cycle
+- Admin list filters:
+  - `code`, `name`, `isActive`, `q`...
+- Outbox event persistence + relay publisher to RabbitMQ:
+  - `masterdata.updated`
+  - `ndr-reason.updated`
 
-## API groups
+## API
 
 - `GET /health`
-- `GET /hubs`
+
+### Hubs
+
+- `GET /hubs?code=&name=&zoneCode=&isActive=&q=`
 - `GET /hubs/:id`
 - `POST /hubs`
 - `PATCH /hubs/:id`
-- `GET /zones`
+
+### Zones
+
+- `GET /zones?code=&name=&parentCode=&isActive=&q=`
 - `GET /zones/:id`
 - `POST /zones`
 - `PATCH /zones/:id`
-- `GET /ndr-reasons`
+
+### NDR reasons
+
+- `GET /ndr-reasons?code=&description=&isActive=&q=`
 - `GET /ndr-reasons/:id`
 - `POST /ndr-reasons`
 - `PATCH /ndr-reasons/:id`
-- `GET /configs`
+
+### Configs
+
+- `GET /configs?key=&scope=&q=`
 - `GET /configs/:id`
 - `POST /configs`
 - `PATCH /configs/:id`
 
-## Events
+## Environment
 
-Write path ghi `OutboxEvent` cho:
-- `masterdata.updated`
-- `ndr-reason.updated`
+See `.env.example`.
 
-Luu y:
-- Scaffold hien tai chi persist outbox record
-- Chua co worker publish RabbitMQ thuc te
-
-## Bien moi truong
-
-Xem `.env.example`.
-
-Mac dinh:
+Default values:
 
 ```env
 PORT=3001
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/masterdata_db
+DATABASE_URL=postgresql://postgres:postgres@localhost:15433/masterdata_db
+RABBITMQ_URL=amqp://guest:guest@localhost:5672
+DOMAIN_EVENTS_EXCHANGE=domain.events
+OUTBOX_RELAY_INTERVAL_MS=1000
+OUTBOX_RELAY_BATCH_SIZE=50
 ```
 
-## Chay local
+## Local run
 
 ```bash
 cd services/masterdata-service
-pnpm install
-pnpm build
-pnpm start:dev
+npm install
+npm run db:prepare
+npm run start:dev
 ```
+
+## Seed data
+
+`npm run seed` will create base records for:
+
+- zones: `ZONE_HCM`, `ZONE_HCM_Q1`, `ZONE_HN`
+- hubs: `HUB_HCM_01`, `HUB_HN_01`
+- ndr reasons: `CUSTOMER_NOT_HOME`, `WRONG_ADDRESS`, `CUSTOMER_REFUSED`
+- configs: `pricing.base_fee`, `pickup.cutoff_hour`, `delivery.max_attempts`
 
 ## Docker
 
-Build context nen la thu muc `services/masterdata-service`.
+Build context should be `services/masterdata-service`.
 
 ```bash
 docker build -t masterdata-service .

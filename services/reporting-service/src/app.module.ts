@@ -7,6 +7,7 @@ import { HealthModule } from './health/health.module';
 import { PrismaService } from './infrastructure/prisma/prisma.service';
 import { ReportingProjectionStore } from './infrastructure/prisma/reporting-projection.store';
 import { ReportingEventsConsumer } from './messaging/consumers/reporting-events.consumer';
+import { ReportingRabbitmqConsumerService } from './messaging/consumers/reporting-rabbitmq-consumer.service';
 
 @Module({
   imports: [HealthModule],
@@ -17,6 +18,7 @@ import { ReportingEventsConsumer } from './messaging/consumers/reporting-events.
     ReportingProjectionService,
     ReportingQueryService,
     ReportingEventsConsumer,
+    ReportingRabbitmqConsumerService,
   ],
 })
 export class AppModule {}

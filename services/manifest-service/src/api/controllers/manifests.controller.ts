@@ -2,9 +2,11 @@ import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
 
 import { ManifestsService } from '../../application/services/manifests.service';
 import type {
+  AddShipmentsInput,
   CreateManifestInput,
   Manifest,
   ReceiveManifestInput,
+  RemoveShipmentsInput,
   SealManifestInput,
   UpdateManifestInput,
 } from '../../domain/entities/manifest.entity';
@@ -34,6 +36,22 @@ export class ManifestsController {
     @Body() body: UpdateManifestInput,
   ): Promise<Manifest> {
     return this.manifestsService.update(id, body);
+  }
+
+  @Post(':id/shipments/add')
+  addShipments(
+    @Param('id') id: string,
+    @Body() body: AddShipmentsInput,
+  ): Promise<Manifest> {
+    return this.manifestsService.addShipments(id, body);
+  }
+
+  @Post(':id/shipments/remove')
+  removeShipments(
+    @Param('id') id: string,
+    @Body() body: RemoveShipmentsInput,
+  ): Promise<Manifest> {
+    return this.manifestsService.removeShipments(id, body);
   }
 
   @Post(':id/seal')

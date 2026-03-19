@@ -1,33 +1,28 @@
 import { Injectable } from '@nestjs/common';
-import type {
-  AggregationJob,
-  KpiDaily,
-  KpiMonthly,
-  Prisma,
-} from '@prisma/client';
+import type { KpiDaily, KpiMonthly, Prisma } from '@prisma/client';
 import { Prisma as PrismaNamespace } from '@prisma/client';
 
 import type {
   ProjectionResult,
   ReportingEventEnvelope,
+  ShipmentStatusSummaryItem,
 } from '../../application/projections/reporting-event.types';
 import { PrismaService } from './prisma.service';
 
 const ALL = 'ALL';
 
-const METRIC_FIELDS: Record<
-  string,
-  keyof Pick<
-    KpiDaily,
-    | 'shipmentsCreated'
-    | 'pickupsCompleted'
-    | 'deliveriesDelivered'
-    | 'deliveriesFailed'
-    | 'ndrCreated'
-    | 'scansInbound'
-    | 'scansOutbound'
-  >
-> = {
+type MetricField = keyof Pick<
+  KpiDaily,
+  | 'shipmentsCreated'
+  | 'pickupsCompleted'
+  | 'deliveriesDelivered'
+  | 'deliveriesFailed'
+  | 'ndrCreated'
+  | 'scansInbound'
+  | 'scansOutbound'
+>;
+
+const METRIC_FIELDS: Record<string, MetricField> = {
   'shipment.created': 'shipmentsCreated',
   'pickup.completed': 'pickupsCompleted',
   'delivery.delivered': 'deliveriesDelivered',
@@ -35,6 +30,25 @@ const METRIC_FIELDS: Record<
   'ndr.created': 'ndrCreated',
   'scan.inbound': 'scansInbound',
   'scan.outbound': 'scansOutbound',
+};
+
+const STATUS_BY_EVENT: Record<string, string> = {
+  'shipment.created': 'CREATED',
+  'shipment.updated': 'UPDATED',
+  'shipment.cancelled': 'CANCELLED',
+  'pickup.completed': 'PICKUP_COMPLETED',
+  'scan.pickup_confirmed': 'PICKUP_COMPLETED',
+  'task.assigned': 'TASK_ASSIGNED',
+  'task.reassigned': 'TASK_ASSIGNED',
+  'manifest.sealed': 'MANIFEST_SEALED',
+  'manifest.received': 'MANIFEST_RECEIVED',
+  'scan.inbound': 'SCAN_INBOUND',
+  'scan.outbound': 'SCAN_OUTBOUND',
+  'delivery.delivered': 'DELIVERED',
+  'delivery.failed': 'DELIVERY_FAILED',
+  'ndr.created': 'NDR_CREATED',
+  'return.started': 'RETURN_STARTED',
+  'return.completed': 'RETURN_COMPLETED',
 };
 
 type DimensionKey = 'courier' | 'hub' | 'zone';
@@ -45,14 +59,21 @@ interface DimensionFilter {
   zoneCode?: string;
 }
 
+interface NormalizedDimensions {
+  courierCode: string;
+  hubCode: string;
+  zoneCode: string;
+}
+
 @Injectable()
 export class ReportingProjectionStore {
   constructor(private readonly prisma: PrismaService) {}
 
   async project(event: ReportingEventEnvelope): Promise<ProjectionResult> {
     const metricField = METRIC_FIELDS[event.event_type];
+    const status = STATUS_BY_EVENT[event.event_type];
 
-    if (!metricField) {
+    if (!metricField && !status) {
       return {
         projected: false,
         eventId: event.event_id,
@@ -61,7 +82,6 @@ export class ReportingProjectionStore {
     }
 
     const jobCreated = await this.createProjectionLedgerIfAbsent(event);
-
     if (!jobCreated) {
       return {
         projected: false,
@@ -71,58 +91,21 @@ export class ReportingProjectionStore {
     }
 
     const occurredAt = this.resolveOccurredAt(event.occurred_at);
-    const metricDate = this.resolveDate(event.occurred_at);
-    const monthKey = occurredAt.toISOString().slice(0, 7);
     const dimensions = this.extractDimensions(event);
 
-    await this.incrementDaily(metricDate, metricField, {
-      courierCode: ALL,
-      hubCode: ALL,
-      zoneCode: ALL,
-    });
-    await this.incrementMonthly(monthKey, metricField, {
-      courierCode: ALL,
-      hubCode: ALL,
-      zoneCode: ALL,
-    });
+    if (metricField) {
+      const metricDate = this.resolveDate(event.occurred_at);
+      const monthKey = occurredAt.toISOString().slice(0, 7);
+      const dimensionCombinations = this.buildDimensionCombinations(dimensions);
 
-    if (dimensions.courierCode !== ALL) {
-      await this.incrementDaily(metricDate, metricField, {
-        courierCode: dimensions.courierCode,
-        hubCode: ALL,
-        zoneCode: ALL,
-      });
-      await this.incrementMonthly(monthKey, metricField, {
-        courierCode: dimensions.courierCode,
-        hubCode: ALL,
-        zoneCode: ALL,
-      });
+      for (const combination of dimensionCombinations) {
+        await this.incrementDaily(metricDate, metricField, combination);
+        await this.incrementMonthly(monthKey, metricField, combination);
+      }
     }
 
-    if (dimensions.hubCode !== ALL) {
-      await this.incrementDaily(metricDate, metricField, {
-        courierCode: ALL,
-        hubCode: dimensions.hubCode,
-        zoneCode: ALL,
-      });
-      await this.incrementMonthly(monthKey, metricField, {
-        courierCode: ALL,
-        hubCode: dimensions.hubCode,
-        zoneCode: ALL,
-      });
-    }
-
-    if (dimensions.zoneCode !== ALL) {
-      await this.incrementDaily(metricDate, metricField, {
-        courierCode: ALL,
-        hubCode: ALL,
-        zoneCode: dimensions.zoneCode,
-      });
-      await this.incrementMonthly(monthKey, metricField, {
-        courierCode: ALL,
-        hubCode: ALL,
-        zoneCode: dimensions.zoneCode,
-      });
+    if (status) {
+      await this.upsertShipmentStatusProjection(event, status, occurredAt, dimensions);
     }
 
     return {
@@ -135,50 +118,53 @@ export class ReportingProjectionStore {
   resolveDate(date?: string): Date {
     const baseDate = date ? new Date(date) : new Date();
 
-    return new Date(Date.UTC(
-      baseDate.getUTCFullYear(),
-      baseDate.getUTCMonth(),
-      baseDate.getUTCDate(),
-    ));
+    return new Date(
+      Date.UTC(
+        baseDate.getUTCFullYear(),
+        baseDate.getUTCMonth(),
+        baseDate.getUTCDate(),
+      ),
+    );
   }
 
-  async getDaily(
-    date?: string,
-    filter?: DimensionFilter,
-  ): Promise<KpiDaily[]> {
+  async getDaily(date?: string, filter?: DimensionFilter): Promise<KpiDaily[]> {
+    const hasScopedFilter = this.hasAnyDimensionFilter(filter);
+
     return this.prisma.kpiDaily.findMany({
       where: {
         metricDate: this.resolveDate(date),
-        courierCode: filter?.courierCode ?? undefined,
-        hubCode: filter?.hubCode ?? undefined,
-        zoneCode: filter?.zoneCode ?? undefined,
+        courierCode: hasScopedFilter
+          ? this.normalizeDimensionValue(filter?.courierCode)
+          : this.toWhereDimensionValue(filter?.courierCode),
+        hubCode: hasScopedFilter
+          ? this.normalizeDimensionValue(filter?.hubCode)
+          : this.toWhereDimensionValue(filter?.hubCode),
+        zoneCode: hasScopedFilter
+          ? this.normalizeDimensionValue(filter?.zoneCode)
+          : this.toWhereDimensionValue(filter?.zoneCode),
       },
-      orderBy: [
-        { courierCode: 'asc' },
-        { hubCode: 'asc' },
-        { zoneCode: 'asc' },
-      ],
+      orderBy: [{ courierCode: 'asc' }, { hubCode: 'asc' }, { zoneCode: 'asc' }],
     });
   }
 
-  async getMonthly(
-    month?: string,
-    filter?: DimensionFilter,
-  ): Promise<KpiMonthly[]> {
+  async getMonthly(month?: string, filter?: DimensionFilter): Promise<KpiMonthly[]> {
     const monthKey = month ?? new Date().toISOString().slice(0, 7);
+    const hasScopedFilter = this.hasAnyDimensionFilter(filter);
 
     return this.prisma.kpiMonthly.findMany({
       where: {
         monthKey,
-        courierCode: filter?.courierCode ?? undefined,
-        hubCode: filter?.hubCode ?? undefined,
-        zoneCode: filter?.zoneCode ?? undefined,
+        courierCode: hasScopedFilter
+          ? this.normalizeDimensionValue(filter?.courierCode)
+          : this.toWhereDimensionValue(filter?.courierCode),
+        hubCode: hasScopedFilter
+          ? this.normalizeDimensionValue(filter?.hubCode)
+          : this.toWhereDimensionValue(filter?.hubCode),
+        zoneCode: hasScopedFilter
+          ? this.normalizeDimensionValue(filter?.zoneCode)
+          : this.toWhereDimensionValue(filter?.zoneCode),
       },
-      orderBy: [
-        { courierCode: 'asc' },
-        { hubCode: 'asc' },
-        { zoneCode: 'asc' },
-      ],
+      orderBy: [{ courierCode: 'asc' }, { hubCode: 'asc' }, { zoneCode: 'asc' }],
     });
   }
 
@@ -195,56 +181,117 @@ export class ReportingProjectionStore {
     });
   }
 
+  getDailyTotals(metricDate: Date, filter?: DimensionFilter): Promise<KpiDaily | null> {
+    const dimensions = this.normalizeDimensions(filter);
+
+    return this.prisma.kpiDaily.findUnique({
+      where: {
+        daily_dimension_unique: {
+          metricDate,
+          courierCode: dimensions.courierCode,
+          hubCode: dimensions.hubCode,
+          zoneCode: dimensions.zoneCode,
+        },
+      },
+    });
+  }
+
   getDailyByCourier(
     metricDate: Date,
     courierCode?: string,
+    scope?: Omit<DimensionFilter, 'courierCode'>,
   ): Promise<KpiDaily[]> {
-    return this.prisma.kpiDaily.findMany({
-      where: {
-        metricDate,
-        courierCode: courierCode ?? { not: ALL },
-        hubCode: ALL,
-        zoneCode: ALL,
-      },
-      orderBy: {
-        courierCode: 'asc',
-      },
+    return this.getDailyByDimension(metricDate, 'courier', {
+      ...scope,
+      courierCode,
+    });
+  }
+
+  getDailyByHub(
+    metricDate: Date,
+    hubCode?: string,
+    scope?: Omit<DimensionFilter, 'hubCode'>,
+  ): Promise<KpiDaily[]> {
+    return this.getDailyByDimension(metricDate, 'hub', {
+      ...scope,
+      hubCode,
     });
   }
 
   getDailyByDimension(
     metricDate: Date,
     dimension: DimensionKey,
+    scope?: DimensionFilter,
   ): Promise<KpiDaily[]> {
-    if (dimension === 'courier') {
-      return this.getDailyByCourier(metricDate);
-    }
+    const normalizedScope = this.normalizeDimensions(scope);
+    const hasCourierScope = this.hasScopeValue(scope?.courierCode);
+    const hasHubScope = this.hasScopeValue(scope?.hubCode);
+    const hasZoneScope = this.hasScopeValue(scope?.zoneCode);
 
-    if (dimension === 'hub') {
-      return this.prisma.kpiDaily.findMany({
-        where: {
-          metricDate,
-          courierCode: ALL,
-          hubCode: { not: ALL },
-          zoneCode: ALL,
-        },
-        orderBy: {
-          hubCode: 'asc',
-        },
-      });
-    }
+    const where: Prisma.KpiDailyWhereInput = {
+      metricDate,
+      courierCode:
+        dimension === 'courier'
+          ? hasCourierScope
+            ? normalizedScope.courierCode
+            : { not: ALL }
+          : normalizedScope.courierCode,
+      hubCode:
+        dimension === 'hub'
+          ? hasHubScope
+            ? normalizedScope.hubCode
+            : { not: ALL }
+          : normalizedScope.hubCode,
+      zoneCode:
+        dimension === 'zone'
+          ? hasZoneScope
+            ? normalizedScope.zoneCode
+            : { not: ALL }
+          : normalizedScope.zoneCode,
+    };
 
-    return this.prisma.kpiDaily.findMany({
-      where: {
-        metricDate,
-        courierCode: ALL,
-        hubCode: ALL,
-        zoneCode: { not: ALL },
+    const orderBy =
+      dimension === 'courier'
+        ? { courierCode: 'asc' as const }
+        : dimension === 'hub'
+          ? { hubCode: 'asc' as const }
+          : { zoneCode: 'asc' as const };
+
+    return this.prisma.kpiDaily.findMany({ where, orderBy });
+  }
+
+  async getShipmentStatusSummary(
+    date?: string,
+    filter?: DimensionFilter,
+  ): Promise<ShipmentStatusSummaryItem[]> {
+    const dateRange = this.resolveDateRange(date);
+    const where: Prisma.ShipmentStatusProjectionWhereInput = {
+      courierCode: this.toWhereDimensionValue(filter?.courierCode),
+      hubCode: this.toWhereDimensionValue(filter?.hubCode),
+      zoneCode: this.toWhereDimensionValue(filter?.zoneCode),
+      updatedAt: dateRange
+        ? {
+            gte: dateRange.start,
+            lt: dateRange.end,
+          }
+        : undefined,
+    };
+
+    const rows = await this.prisma.shipmentStatusProjection.groupBy({
+      by: ['currentStatus'],
+      where,
+      _count: {
+        _all: true,
       },
       orderBy: {
-        zoneCode: 'asc',
+        currentStatus: 'asc',
       },
     });
+
+    return rows.map((row) => ({
+      status: row.currentStatus,
+      count: row._count._all,
+    }));
   }
 
   private resolveOccurredAt(value: string): Date {
@@ -255,6 +302,89 @@ export class ReportingProjectionStore {
     }
 
     return parsed;
+  }
+
+  private resolveDateRange(date?: string): { start: Date; end: Date } | null {
+    if (!date) {
+      return null;
+    }
+
+    const start = this.resolveDate(date);
+    const end = new Date(start);
+    end.setUTCDate(end.getUTCDate() + 1);
+
+    return { start, end };
+  }
+
+  private toWhereDimensionValue(value?: string): string | undefined {
+    const trimmed = value?.trim();
+    return trimmed && trimmed.length > 0 ? trimmed : undefined;
+  }
+
+  private hasScopeValue(value?: string): boolean {
+    return Boolean(value && value.trim().length > 0);
+  }
+
+  private hasAnyDimensionFilter(filter?: DimensionFilter): boolean {
+    return (
+      this.hasScopeValue(filter?.courierCode) ||
+      this.hasScopeValue(filter?.hubCode) ||
+      this.hasScopeValue(filter?.zoneCode)
+    );
+  }
+
+  private normalizeDimensions(filter?: DimensionFilter): NormalizedDimensions {
+    return {
+      courierCode: this.normalizeDimensionValue(filter?.courierCode),
+      hubCode: this.normalizeDimensionValue(filter?.hubCode),
+      zoneCode: this.normalizeDimensionValue(filter?.zoneCode),
+    };
+  }
+
+  private normalizeDimensionValue(value?: string): string {
+    const trimmed = value?.trim();
+    return trimmed && trimmed.length > 0 ? trimmed : ALL;
+  }
+
+  private buildDimensionCombinations(
+    dimensions: NormalizedDimensions,
+  ): NormalizedDimensions[] {
+    const combinations: NormalizedDimensions[] = [
+      {
+        courierCode: ALL,
+        hubCode: ALL,
+        zoneCode: ALL,
+      },
+    ];
+
+    const dimensionCandidates: Array<[keyof NormalizedDimensions, string]> = [
+      ['courierCode', dimensions.courierCode],
+      ['hubCode', dimensions.hubCode],
+      ['zoneCode', dimensions.zoneCode],
+    ];
+
+    for (const [key, value] of dimensionCandidates) {
+      if (value === ALL) {
+        continue;
+      }
+
+      const next = combinations.map((item) => ({
+        ...item,
+        [key]: value,
+      }));
+
+      combinations.push(...next);
+    }
+
+    const unique = new Map<string, NormalizedDimensions>();
+    for (const item of combinations) {
+      const key = `${item.courierCode}|${item.hubCode}|${item.zoneCode}`;
+      if (!unique.has(key)) {
+        unique.set(key, item);
+      }
+    }
+
+    return Array.from(unique.values());
   }
 
   private async createProjectionLedgerIfAbsent(
@@ -283,11 +413,89 @@ export class ReportingProjectionStore {
     }
   }
 
-  private extractDimensions(event: ReportingEventEnvelope): {
-    courierCode: string;
-    hubCode: string;
-    zoneCode: string;
-  } {
+  private async upsertShipmentStatusProjection(
+    event: ReportingEventEnvelope,
+    status: string,
+    occurredAt: Date,
+    dimensions: NormalizedDimensions,
+  ): Promise<void> {
+    const shipmentCode = this.resolveShipmentCode(event);
+    if (!shipmentCode) {
+      return;
+    }
+
+    const existing = await this.prisma.shipmentStatusProjection.findUnique({
+      where: { shipmentCode },
+    });
+
+    const courierCode = this.resolveStatusDimensionValue(
+      existing?.courierCode,
+      dimensions.courierCode,
+    );
+    const hubCode = this.resolveStatusDimensionValue(
+      existing?.hubCode,
+      dimensions.hubCode,
+    );
+    const zoneCode = this.resolveStatusDimensionValue(
+      existing?.zoneCode,
+      dimensions.zoneCode,
+    );
+
+    await this.prisma.shipmentStatusProjection.upsert({
+      where: { shipmentCode },
+      update: {
+        currentStatus: status,
+        lastEventType: event.event_type,
+        lastEventAt: occurredAt,
+        courierCode,
+        hubCode,
+        zoneCode,
+      },
+      create: {
+        shipmentCode,
+        currentStatus: status,
+        lastEventType: event.event_type,
+        lastEventAt: occurredAt,
+        courierCode,
+        hubCode,
+        zoneCode,
+      },
+    });
+  }
+
+  private resolveStatusDimensionValue(
+    existingValue: string | null | undefined,
+    incomingValue: string,
+  ): string | null {
+    if (incomingValue !== ALL) {
+      return incomingValue;
+    }
+
+    return existingValue ?? null;
+  }
+
+  private resolveShipmentCode(event: ReportingEventEnvelope): string | null {
+    const directShipmentCode =
+      typeof event.shipment_code === 'string' ? event.shipment_code.trim() : '';
+    if (directShipmentCode.length > 0) {
+      return directShipmentCode;
+    }
+
+    return this.findString(event.data, [
+      ['shipmentCode'],
+      ['shipment', 'code'],
+      ['deliveryAttempt', 'shipmentCode'],
+      ['delivery_attempt', 'shipmentCode'],
+      ['ndrCase', 'shipmentCode'],
+      ['ndr_case', 'shipmentCode'],
+      ['returnCase', 'shipmentCode'],
+      ['return_case', 'shipmentCode'],
+      ['pickup_request', 'items', '0', 'shipmentCode'],
+      ['pickupRequest', 'items', '0', 'shipmentCode'],
+    ]);
+  }
+
+  private extractDimensions(event: ReportingEventEnvelope): NormalizedDimensions {
     return {
       courierCode:
         this.findString(event.data, [
@@ -296,7 +504,9 @@ export class ReportingProjectionStore {
           ['task', 'courierId'],
           ['task', 'courierCode'],
           ['deliveryAttempt', 'courierId'],
+          ['delivery_attempt', 'courierId'],
           ['pickupRequest', 'courierId'],
+          ['pickup_request', 'courierId'],
         ]) ?? ALL,
       hubCode:
         this.findString(event.data, [
@@ -306,7 +516,11 @@ export class ReportingProjectionStore {
           ['manifest', 'originHubCode'],
           ['manifest', 'destinationHubCode'],
           ['deliveryAttempt', 'locationCode'],
+          ['delivery_attempt', 'locationCode'],
           ['scanEvent', 'locationCode'],
+          ['scan_event', 'locationCode'],
+          ['pickupRequest', 'hubCode'],
+          ['pickup_request', 'hubCode'],
         ]) ??
         this.findString(event.location, [['location_code'], ['locationCode']]) ??
         ALL,
@@ -316,31 +530,31 @@ export class ReportingProjectionStore {
           ['zone_id'],
           ['zoneId'],
           ['shipment', 'zoneCode'],
+          ['shipment', 'receiverRegion'],
           ['pickupRequest', 'zoneCode'],
+          ['pickup_request', 'zoneCode'],
           ['ndrCase', 'zoneCode'],
+          ['ndr_case', 'zoneCode'],
         ]) ?? ALL,
     };
   }
 
-  private findString(
-    source: unknown,
-    paths: string[][],
-  ): string | null {
+  private findString(source: unknown, paths: string[][]): string | null {
     for (const path of paths) {
       const value = this.getNestedValue(source, path);
 
-      if (typeof value === 'string' && value.length > 0) {
-        return value;
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (trimmed.length > 0) {
+          return trimmed;
+        }
       }
     }
 
     return null;
   }
 
-  private getNestedValue(
-    source: unknown,
-    path: string[],
-  ): unknown {
+  private getNestedValue(source: unknown, path: string[]): unknown {
     let cursor: unknown = source;
 
     for (const segment of path) {
@@ -356,17 +570,8 @@ export class ReportingProjectionStore {
 
   private async incrementDaily(
     metricDate: Date,
-    field: keyof Pick<
-      KpiDaily,
-      | 'shipmentsCreated'
-      | 'pickupsCompleted'
-      | 'deliveriesDelivered'
-      | 'deliveriesFailed'
-      | 'ndrCreated'
-      | 'scansInbound'
-      | 'scansOutbound'
-    >,
-    dimensions: Required<DimensionFilter>,
+    field: MetricField,
+    dimensions: NormalizedDimensions,
   ): Promise<void> {
     const where = {
       daily_dimension_unique: {
@@ -376,33 +581,18 @@ export class ReportingProjectionStore {
         zoneCode: dimensions.zoneCode,
       },
     };
-    const incrementData = this.buildIncrementData<KpiDaily>(field);
-    const createData = this.buildCreateData<KpiDaily>(
-      metricDate,
-      dimensions,
-      field,
-    );
 
     await this.prisma.kpiDaily.upsert({
       where,
-      update: incrementData,
-      create: createData,
+      update: this.buildIncrementData(field),
+      create: this.buildCreateDailyData(metricDate, dimensions, field),
     });
   }
 
   private async incrementMonthly(
     monthKey: string,
-    field: keyof Pick<
-      KpiMonthly,
-      | 'shipmentsCreated'
-      | 'pickupsCompleted'
-      | 'deliveriesDelivered'
-      | 'deliveriesFailed'
-      | 'ndrCreated'
-      | 'scansInbound'
-      | 'scansOutbound'
-    >,
-    dimensions: Required<DimensionFilter>,
+    field: MetricField,
+    dimensions: NormalizedDimensions,
   ): Promise<void> {
     const where = {
       monthly_dimension_unique: {
@@ -412,32 +602,15 @@ export class ReportingProjectionStore {
         zoneCode: dimensions.zoneCode,
       },
     };
-    const incrementData = this.buildIncrementData<KpiMonthly>(field);
-    const createData = this.buildCreateMonthlyData(
-      monthKey,
-      dimensions,
-      field,
-    );
 
     await this.prisma.kpiMonthly.upsert({
       where,
-      update: incrementData,
-      create: createData,
+      update: this.buildIncrementData(field),
+      create: this.buildCreateMonthlyData(monthKey, dimensions, field),
     });
   }
 
-  private buildIncrementData<T extends KpiDaily | KpiMonthly>(
-    field: keyof Pick<
-      T,
-      | 'shipmentsCreated'
-      | 'pickupsCompleted'
-      | 'deliveriesDelivered'
-      | 'deliveriesFailed'
-      | 'ndrCreated'
-      | 'scansInbound'
-      | 'scansOutbound'
-    >,
-  ): Record<string, { increment: number }> {
+  private buildIncrementData(field: MetricField): Record<string, { increment: number }> {
     return {
       [field]: {
         increment: 1,
@@ -445,19 +618,10 @@ export class ReportingProjectionStore {
     };
   }
 
-  private buildCreateData<T extends KpiDaily>(
+  private buildCreateDailyData(
     metricDate: Date,
-    dimensions: Required<DimensionFilter>,
-    field: keyof Pick<
-      T,
-      | 'shipmentsCreated'
-      | 'pickupsCompleted'
-      | 'deliveriesDelivered'
-      | 'deliveriesFailed'
-      | 'ndrCreated'
-      | 'scansInbound'
-      | 'scansOutbound'
-    >,
+    dimensions: NormalizedDimensions,
+    field: MetricField,
   ): Prisma.KpiDailyCreateInput {
     return {
       metricDate,
@@ -476,17 +640,8 @@ export class ReportingProjectionStore {
 
   private buildCreateMonthlyData(
     monthKey: string,
-    dimensions: Required<DimensionFilter>,
-    field: keyof Pick<
-      KpiMonthly,
-      | 'shipmentsCreated'
-      | 'pickupsCompleted'
-      | 'deliveriesDelivered'
-      | 'deliveriesFailed'
-      | 'ndrCreated'
-      | 'scansInbound'
-      | 'scansOutbound'
-    >,
+    dimensions: NormalizedDimensions,
+    field: MetricField,
   ): Prisma.KpiMonthlyCreateInput {
     return {
       monthKey,

@@ -1,0 +1,93 @@
+:root {
+  --ops-bg: #ffffff;
+  --ops-surface: #ffffff;
+  --ops-surface-soft: #f7f9ff;
+  --ops-text: #000080;
+  --ops-text-muted: #2d3f99;
+  --ops-border: #d9def3;
+  --ops-primary: #000080;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--ops-bg);
+  color: var(--ops-text);
+  font-family: "IBM Plex Sans", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+
+a {
+  color: var(--ops-primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+  border: 1px solid var(--ops-border);
+  border-radius: 10px;
+  color: var(--ops-text);
+  background: var(--ops-surface);
+}
+
+input,
+select,
+textarea {
+  padding: 8px 10px;
+}
+
+button {
+  padding: 8px 12px;
+  background: var(--ops-primary);
+  border-color: var(--ops-primary);
+  color: #ffffff;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  border-bottom: 1px solid var(--ops-border);
+  padding: 8px 10px;
+  text-align: left;
+}
+
+::placeholder {
+  color: #5d6db0;
+}
+
+@keyframes ops-notice-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

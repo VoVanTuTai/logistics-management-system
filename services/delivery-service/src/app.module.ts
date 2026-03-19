@@ -25,6 +25,7 @@ import { PrismaService } from './infrastructure/prisma/prisma.service';
 import { ReturnCasePrismaRepository } from './infrastructure/prisma/return-case-prisma.repository';
 import { DeliveryEventsConsumer } from './messaging/consumers/delivery-events.consumer';
 import { DeliveryEventsProducer } from './messaging/producers/delivery-events.producer';
+import { DeliveryOutboxRelayService } from './messaging/outbox/delivery-outbox-relay.service';
 import { DeliveryOutboxService } from './messaging/outbox/delivery-outbox.service';
 
 @Module({
@@ -39,6 +40,7 @@ import { DeliveryOutboxService } from './messaging/outbox/delivery-outbox.servic
     DeliveryEventsProducer,
     DeliveryEventsConsumer,
     DeliveryOutboxService,
+    DeliveryOutboxRelayService,
     {
       provide: DeliveryAttemptRepository,
       useClass: DeliveryAttemptPrismaRepository,

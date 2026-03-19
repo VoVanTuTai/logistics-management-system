@@ -1,6 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 
-import type { OutboxEvent } from '../../domain/entities/outbox-event.entity';
+import type {
+  OutboxEvent,
+  QueueOutboxEventInput,
+} from '../../domain/entities/outbox-event.entity';
 import type { Manifest } from '../../domain/entities/manifest.entity';
 import { OutboxEventRepository } from '../../domain/repositories/outbox-event.repository';
 import { ManifestEventsProducer } from '../producers/manifest-events.producer';
@@ -13,30 +16,35 @@ export class ManifestOutboxService {
     private readonly manifestEventsProducer: ManifestEventsProducer,
   ) {}
 
-  enqueueManifestCreated(manifest: Manifest): Promise<OutboxEvent> {
-    return this.outboxEventRepository.create(
-      this.manifestEventsProducer.buildManifestCreatedEvent(manifest),
-    );
+  async enqueueManifestCreated(manifest: Manifest): Promise<OutboxEvent[]> {
+    const events = this.manifestEventsProducer.buildManifestCreatedEvents(manifest);
+    return this.enqueueMany(events);
   }
 
   enqueueManifestUpdated(
     manifest: Manifest,
-    _data: Record<string, unknown>,
-  ): Promise<OutboxEvent> {
-    return this.outboxEventRepository.create(
-      this.manifestEventsProducer.buildManifestUpdatedEvent(manifest),
+    data: Record<string, unknown>,
+    shipmentCodes?: string[],
+  ): Promise<OutboxEvent[]> {
+    const events = this.manifestEventsProducer.buildManifestUpdatedEvents(
+      manifest,
+      data,
+      shipmentCodes,
     );
+    return this.enqueueMany(events);
   }
 
-  enqueueManifestSealed(manifest: Manifest): Promise<OutboxEvent> {
-    return this.outboxEventRepository.create(
-      this.manifestEventsProducer.buildManifestSealedEvent(manifest),
-    );
+  async enqueueManifestSealed(manifest: Manifest): Promise<OutboxEvent[]> {
+    const events = this.manifestEventsProducer.buildManifestSealedEvents(manifest);
+    return this.enqueueMany(events);
   }
 
-  enqueueManifestReceived(manifest: Manifest): Promise<OutboxEvent> {
-    return this.outboxEventRepository.create(
-      this.manifestEventsProducer.buildManifestReceivedEvent(manifest),
-    );
+  async enqueueManifestReceived(manifest: Manifest): Promise<OutboxEvent[]> {
+    const events = this.manifestEventsProducer.buildManifestReceivedEvents(manifest);
+    return this.enqueueMany(events);
+  }
+
+  private enqueueMany(events: QueueOutboxEventInput[]): Promise<OutboxEvent[]> {
+    return Promise.all(events.map((event) => this.outboxEventRepository.create(event)));
   }
 }

@@ -1,0 +1,11 @@
+[32m[Nest] 17548  - [39m03/19/2026, 10:19:18 AM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 17548  - [39m03/19/2026, 10:19:24 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mHealthModule dependencies initialized[39m[38;5;3m +5731ms[39m
+[32m[Nest] 17548  - [39m03/19/2026, 10:19:24 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +106ms[39m
+[32m[Nest] 17548  - [39m03/19/2026, 10:19:24 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mReportsController {/reports}:[39m[38;5;3m +125ms[39m
+[32m[Nest] 17548  - [39m03/19/2026, 10:19:24 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/reports/daily, GET} route[39m[38;5;3m +11ms[39m
+[32m[Nest] 17548  - [39m03/19/2026, 10:19:24 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/reports/monthly, GET} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 17548  - [39m03/19/2026, 10:19:24 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/reports/ops-dashboard, GET} route[39m[38;5;3m +28ms[39m
+[32m[Nest] 17548  - [39m03/19/2026, 10:19:24 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/reports/courier, GET} route[39m[38;5;3m +3ms[39m
+[32m[Nest] 17548  - [39m03/19/2026, 10:19:24 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mHealthController {/health}:[39m[38;5;3m +2ms[39m
+[32m[Nest] 17548  - [39m03/19/2026, 10:19:24 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/health, GET} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 17548  - [39m03/19/2026, 10:19:27 AM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +2539ms[39m

@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import type { Hub as PrismaHubRecord, Prisma } from '@prisma/client';
 
-import { Hub, HubWriteInput } from '../../domain/entities/hub.entity';
+import {
+  Hub,
+  HubListFilters,
+  HubWriteInput,
+} from '../../domain/entities/hub.entity';
 import { HubRepository } from '../../domain/repositories/hub.repository';
 import { PrismaService } from './prisma.service';
 
@@ -11,8 +15,53 @@ export class HubPrismaRepository extends HubRepository {
     super();
   }
 
-  async list(): Promise<Hub[]> {
+  async list(filters: HubListFilters = {}): Promise<Hub[]> {
+    const where: Prisma.HubWhereInput = {};
+
+    if (filters.code) {
+      where.code = filters.code;
+    }
+
+    if (filters.zoneCode) {
+      where.zoneCode = filters.zoneCode;
+    }
+
+    if (filters.name) {
+      where.name = {
+        contains: filters.name,
+        mode: 'insensitive',
+      };
+    }
+
+    if (filters.isActive !== undefined) {
+      where.isActive = filters.isActive;
+    }
+
+    if (filters.q) {
+      where.OR = [
+        {
+          code: {
+            contains: filters.q,
+            mode: 'insensitive',
+          },
+        },
+        {
+          name: {
+            contains: filters.q,
+            mode: 'insensitive',
+          },
+        },
+        {
+          address: {
+            contains: filters.q,
+            mode: 'insensitive',
+          },
+        },
+      ];
+    }
+
     const records = await this.prisma.hub.findMany({
+      where,
       orderBy: {
         createdAt: 'desc',
       },
@@ -24,6 +73,14 @@ export class HubPrismaRepository extends HubRepository {
   async findById(id: string): Promise<Hub | null> {
     const record = await this.prisma.hub.findUnique({
       where: { id },
+    });
+
+    return record ? this.toEntity(record) : null;
+  }
+
+  async findByCode(code: string): Promise<Hub | null> {
+    const record = await this.prisma.hub.findUnique({
+      where: { code },
     });
 
     return record ? this.toEntity(record) : null;

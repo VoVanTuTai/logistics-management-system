@@ -14,3 +14,8 @@ export interface ProjectionResult {
   eventId: string;
   eventType: string;
 }
+
+export interface ShipmentStatusSummaryItem {
+  status: string;
+  count: number;
+}

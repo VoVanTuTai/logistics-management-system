@@ -6,6 +6,7 @@ import type {
 
 import {
   NdrReason,
+  NdrReasonListFilters,
   NdrReasonWriteInput,
 } from '../../domain/entities/ndr-reason.entity';
 import { NdrReasonRepository } from '../../domain/repositories/ndr-reason.repository';
@@ -17,8 +18,43 @@ export class NdrReasonPrismaRepository extends NdrReasonRepository {
     super();
   }
 
-  async list(): Promise<NdrReason[]> {
+  async list(filters: NdrReasonListFilters = {}): Promise<NdrReason[]> {
+    const where: Prisma.NdrReasonWhereInput = {};
+
+    if (filters.code) {
+      where.code = filters.code;
+    }
+
+    if (filters.description) {
+      where.description = {
+        contains: filters.description,
+        mode: 'insensitive',
+      };
+    }
+
+    if (filters.isActive !== undefined) {
+      where.isActive = filters.isActive;
+    }
+
+    if (filters.q) {
+      where.OR = [
+        {
+          code: {
+            contains: filters.q,
+            mode: 'insensitive',
+          },
+        },
+        {
+          description: {
+            contains: filters.q,
+            mode: 'insensitive',
+          },
+        },
+      ];
+    }
+
     const records = await this.prisma.ndrReason.findMany({
+      where,
       orderBy: {
         createdAt: 'desc',
       },
@@ -30,6 +66,14 @@ export class NdrReasonPrismaRepository extends NdrReasonRepository {
   async findById(id: string): Promise<NdrReason | null> {
     const record = await this.prisma.ndrReason.findUnique({
       where: { id },
+    });
+
+    return record ? this.toEntity(record) : null;
+  }
+
+  async findByCode(code: string): Promise<NdrReason | null> {
+    const record = await this.prisma.ndrReason.findUnique({
+      where: { code },
     });
 
     return record ? this.toEntity(record) : null;

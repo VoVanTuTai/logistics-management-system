@@ -89,12 +89,12 @@ export const manifestsClient = {
     payload: AddShipmentInput,
   ): Promise<ManifestActionResultDto> =>
     opsApiClient.request<ManifestActionResultDto>(
-      opsEndpoints.manifests.detail(manifestId),
+      opsEndpoints.manifests.addShipment(manifestId),
       {
-        method: 'PATCH',
+        method: 'POST',
         accessToken,
         body: {
-          addShipmentCodes: [payload.shipmentCode],
+          shipmentCodes: [payload.shipmentCode],
           note: payload.note ?? null,
         },
       },
@@ -105,12 +105,12 @@ export const manifestsClient = {
     payload: RemoveShipmentInput,
   ): Promise<ManifestActionResultDto> =>
     opsApiClient.request<ManifestActionResultDto>(
-      opsEndpoints.manifests.detail(manifestId),
+      opsEndpoints.manifests.removeShipment(manifestId),
       {
-        method: 'PATCH',
+        method: 'POST',
         accessToken,
         body: {
-          removeShipmentCodes: [payload.shipmentCode],
+          shipmentCodes: [payload.shipmentCode],
           note: payload.note ?? null,
         },
       },

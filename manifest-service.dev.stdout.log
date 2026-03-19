@@ -8,11 +8,11 @@
 
 Prisma schema loaded from prisma\schema.prisma
 
-✔ Generated Prisma Client (v6.19.2) to .\node_modules\@prisma\client in 807ms
+✔ Generated Prisma Client (v6.19.2) to .\node_modules\.pnpm\@prisma+client@6.19.2_prism_6b2b1af085fe6797f5a5ea830937a8e3\node_modules\@prisma\client in 8.39s
 
 Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
 
-Tip: Interested in query caching in just a few lines of code? Try Accelerate today! https://pris.ly/tip-3-accelerate
+Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
 
 Prisma schema loaded from prisma\schema.prisma
 Datasource "db": PostgreSQL database "manifest_db", schema "public" at "localhost:15437"
@@ -21,19 +21,20 @@ The database is already in sync with the Prisma schema.
 
 Running generate... (Use --skip-generate to skip the generators)
 [2K[1A[2K[GRunning generate... - Prisma Client
-[2K[1A[2K[G✔ Generated Prisma Client (v6.19.2) to .\node_modules\@prisma\client in 742ms
+[2K[1A[2K[G✔ Generated Prisma Client (v6.19.2) to .\node_modules\.pnpm\@prisma+client@6.19
+.2_prism_6b2b1af085fe6797f5a5ea830937a8e3\node_modules\@prisma\client in 6.80s
 
 manifest-service seed completed
-[32m[Nest] 14292  - [39m03/17/2026, 7:04:04 AM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
-[32m[Nest] 14292  - [39m03/17/2026, 7:04:05 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mHealthModule dependencies initialized[39m[38;5;3m +135ms[39m
-[32m[Nest] 14292  - [39m03/17/2026, 7:04:05 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +4ms[39m
-[32m[Nest] 14292  - [39m03/17/2026, 7:04:05 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mManifestsController {/manifests}:[39m[38;5;3m +32ms[39m
-[32m[Nest] 14292  - [39m03/17/2026, 7:04:05 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/manifests, GET} route[39m[38;5;3m +17ms[39m
-[32m[Nest] 14292  - [39m03/17/2026, 7:04:05 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/manifests/:id, GET} route[39m[38;5;3m +2ms[39m
-[32m[Nest] 14292  - [39m03/17/2026, 7:04:05 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/manifests, POST} route[39m[38;5;3m +4ms[39m
-[32m[Nest] 14292  - [39m03/17/2026, 7:04:05 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/manifests/:id, PATCH} route[39m[38;5;3m +5ms[39m
-[32m[Nest] 14292  - [39m03/17/2026, 7:04:05 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/manifests/:id/seal, POST} route[39m[38;5;3m +3ms[39m
-[32m[Nest] 14292  - [39m03/17/2026, 7:04:05 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/manifests/:id/receive, POST} route[39m[38;5;3m +1ms[39m
-[32m[Nest] 14292  - [39m03/17/2026, 7:04:05 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mHealthController {/health}:[39m[38;5;3m +1ms[39m
-[32m[Nest] 14292  - [39m03/17/2026, 7:04:05 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/health, GET} route[39m[38;5;3m +1ms[39m
-[32m[Nest] 14292  - [39m03/17/2026, 7:04:05 AM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +120ms[39m
+[32m[Nest] 21120  - [39m03/18/2026, 11:04:32 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 21120  - [39m03/18/2026, 11:04:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mHealthModule dependencies initialized[39m[38;5;3m +5047ms[39m
+[32m[Nest] 21120  - [39m03/18/2026, 11:04:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +2ms[39m
+[32m[Nest] 21120  - [39m03/18/2026, 11:04:37 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mManifestsController {/manifests}:[39m[38;5;3m +414ms[39m
+[32m[Nest] 21120  - [39m03/18/2026, 11:04:38 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/manifests, GET} route[39m[38;5;3m +423ms[39m
+[32m[Nest] 21120  - [39m03/18/2026, 11:04:38 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/manifests/:id, GET} route[39m[38;5;3m +4ms[39m
+[32m[Nest] 21120  - [39m03/18/2026, 11:04:38 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/manifests, POST} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 21120  - [39m03/18/2026, 11:04:38 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/manifests/:id, PATCH} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 21120  - [39m03/18/2026, 11:04:38 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/manifests/:id/seal, POST} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 21120  - [39m03/18/2026, 11:04:38 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/manifests/:id/receive, POST} route[39m[38;5;3m +124ms[39m
+[32m[Nest] 21120  - [39m03/18/2026, 11:04:38 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mHealthController {/health}:[39m[38;5;3m +9ms[39m
+[32m[Nest] 21120  - [39m03/18/2026, 11:04:38 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/health, GET} route[39m[38;5;3m +4ms[39m
+[32m[Nest] 21120  - [39m03/18/2026, 11:04:42 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +3608ms[39m

@@ -6,6 +6,7 @@ import type {
 
 import {
   Config,
+  ConfigListFilters,
   ConfigValue,
   ConfigWriteInput,
 } from '../../domain/entities/config.entity';
@@ -18,8 +19,42 @@ export class ConfigPrismaRepository extends ConfigRepository {
     super();
   }
 
-  async list(): Promise<Config[]> {
+  async list(filters: ConfigListFilters = {}): Promise<Config[]> {
+    const where: Prisma.ConfigWhereInput = {};
+
+    if (filters.key) {
+      where.key = filters.key;
+    }
+
+    if (filters.scope) {
+      where.scope = filters.scope;
+    }
+
+    if (filters.q) {
+      where.OR = [
+        {
+          key: {
+            contains: filters.q,
+            mode: 'insensitive',
+          },
+        },
+        {
+          scope: {
+            contains: filters.q,
+            mode: 'insensitive',
+          },
+        },
+        {
+          description: {
+            contains: filters.q,
+            mode: 'insensitive',
+          },
+        },
+      ];
+    }
+
     const records = await this.prisma.config.findMany({
+      where,
       orderBy: {
         createdAt: 'desc',
       },
@@ -31,6 +66,14 @@ export class ConfigPrismaRepository extends ConfigRepository {
   async findById(id: string): Promise<Config | null> {
     const record = await this.prisma.config.findUnique({
       where: { id },
+    });
+
+    return record ? this.toEntity(record) : null;
+  }
+
+  async findByKey(key: string): Promise<Config | null> {
+    const record = await this.prisma.config.findUnique({
+      where: { key },
     });
 
     return record ? this.toEntity(record) : null;

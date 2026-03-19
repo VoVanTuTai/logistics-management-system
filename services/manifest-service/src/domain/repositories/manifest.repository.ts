@@ -10,8 +10,14 @@ export abstract class ManifestRepository {
   abstract list(): Promise<Manifest[]>;
   abstract findById(id: string): Promise<Manifest | null>;
   abstract findByShipmentCode(shipmentCode: string): Promise<Manifest | null>;
+  abstract findActiveByShipmentCode(
+    shipmentCode: string,
+    excludeManifestId?: string,
+  ): Promise<Manifest | null>;
   abstract create(input: CreateManifestInput): Promise<Manifest>;
   abstract update(id: string, input: UpdateManifestInput): Promise<Manifest>;
+  abstract addShipments(id: string, shipmentCodes: string[]): Promise<Manifest>;
+  abstract removeShipments(id: string, shipmentCodes: string[]): Promise<Manifest>;
   abstract seal(id: string, input: SealManifestInput): Promise<Manifest>;
   abstract receive(id: string, input: ReceiveManifestInput): Promise<Manifest>;
 }

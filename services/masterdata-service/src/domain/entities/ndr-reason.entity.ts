@@ -12,3 +12,10 @@ export interface NdrReasonWriteInput {
   description: string;
   isActive?: boolean;
 }
+
+export interface NdrReasonListFilters {
+  code?: string;
+  description?: string;
+  isActive?: boolean;
+  q?: string;
+}

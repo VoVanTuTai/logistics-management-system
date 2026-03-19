@@ -1,4 +1,5 @@
 Environment variables loaded from .env
+Environment variables loaded from .env
 ┌─────────────────────────────────────────────────────────┐
 │  Update available 6.19.2 -> 7.5.0                       │
 │                                                         │
@@ -9,4 +10,3 @@ Environment variables loaded from .env
 │    npm i --save-dev prisma@latest                       │
 │    npm i @prisma/client@latest                          │
 └─────────────────────────────────────────────────────────┘
-Environment variables loaded from .env

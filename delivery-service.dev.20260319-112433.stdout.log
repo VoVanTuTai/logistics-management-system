@@ -1,0 +1,19 @@
+[32m[Nest] 14984  - [39m03/19/2026, 11:25:43 AM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 14984  - [39m03/19/2026, 11:25:44 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mHealthModule dependencies initialized[39m[38;5;3m +1123ms[39m
+[32m[Nest] 14984  - [39m03/19/2026, 11:25:45 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +66ms[39m
+[32m[Nest] 14984  - [39m03/19/2026, 11:25:45 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mDeliveryController {/deliveries}:[39m[38;5;3m +92ms[39m
+[32m[Nest] 14984  - [39m03/19/2026, 11:25:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/deliveries/attempts, POST} route[39m[38;5;3m +8ms[39m
+[32m[Nest] 14984  - [39m03/19/2026, 11:25:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/deliveries/success, POST} route[39m[38;5;3m +3ms[39m
+[32m[Nest] 14984  - [39m03/19/2026, 11:25:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/deliveries/fail, POST} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 14984  - [39m03/19/2026, 11:25:45 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mNdrController {/ndr}:[39m[38;5;3m +2ms[39m
+[32m[Nest] 14984  - [39m03/19/2026, 11:25:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/ndr, GET} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 14984  - [39m03/19/2026, 11:25:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/ndr/:id, GET} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 14984  - [39m03/19/2026, 11:25:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/ndr, POST} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 14984  - [39m03/19/2026, 11:25:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/ndr/:id/reschedule, POST} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 14984  - [39m03/19/2026, 11:25:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/ndr/:id/return-decision, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14984  - [39m03/19/2026, 11:25:45 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mReturnsController {/returns}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 14984  - [39m03/19/2026, 11:25:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/returns, POST} route[39m[38;5;3m +5ms[39m
+[32m[Nest] 14984  - [39m03/19/2026, 11:25:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/returns/:id/complete, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14984  - [39m03/19/2026, 11:25:45 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mHealthController {/health}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 14984  - [39m03/19/2026, 11:25:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/health, GET} route[39m[38;5;3m +3ms[39m
+[32m[Nest] 14984  - [39m03/19/2026, 11:25:46 AM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +1312ms[39m

@@ -1,8 +1,13 @@
-import { NdrReason, NdrReasonWriteInput } from '../entities/ndr-reason.entity';
+import {
+  NdrReason,
+  NdrReasonListFilters,
+  NdrReasonWriteInput,
+} from '../entities/ndr-reason.entity';
 
 export abstract class NdrReasonRepository {
-  abstract list(): Promise<NdrReason[]>;
+  abstract list(filters?: NdrReasonListFilters): Promise<NdrReason[]>;
   abstract findById(id: string): Promise<NdrReason | null>;
+  abstract findByCode(code: string): Promise<NdrReason | null>;
   abstract create(input: NdrReasonWriteInput): Promise<NdrReason>;
   abstract update(
     id: string,

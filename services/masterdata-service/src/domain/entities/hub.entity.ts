@@ -16,3 +16,11 @@ export interface HubWriteInput {
   address?: string | null;
   isActive?: boolean;
 }
+
+export interface HubListFilters {
+  code?: string;
+  name?: string;
+  zoneCode?: string;
+  isActive?: boolean;
+  q?: string;
+}
