@@ -1,0 +1,100 @@
+export const colors = {
+  primary: {
+    50: '#EEF5FF',
+    100: '#DDE9FF',
+    200: '#BED5FF',
+    300: '#96BCFF',
+    400: '#6FA2FA',
+    500: '#4F86E6',
+    600: '#366CC8',
+    700: '#24539E',
+    800: '#173A70',
+    900: '#0C2340',
+  },
+  secondary: {
+    50: '#E9FCFF',
+    100: '#D1F6FE',
+    200: '#A7ECFB',
+    300: '#75DFF5',
+    400: '#3BC9EA',
+    500: '#10B8DE',
+    600: '#0A90B4',
+    700: '#0A6E89',
+    800: '#0C5164',
+    900: '#0D3947',
+  },
+  background: {
+    default: '#F4F8FF',
+    subtle: '#EDF3FC',
+    elevated: '#E7EEF9',
+  },
+  surface: {
+    default: '#FFFFFF',
+    subtle: '#F8FBFF',
+    tint: '#EEF5FF',
+  },
+  text: {
+    primary: '#0F172A',
+    secondary: '#334155',
+    muted: '#64748B',
+    inverse: '#FFFFFF',
+  },
+  border: {
+    default: '#D6E0EF',
+    subtle: '#E2E8F0',
+    strong: '#B6C3D9',
+    focus: '#4F86E6',
+  },
+  success: {
+    soft: '#DCFCE7',
+    default: '#15803D',
+    strong: '#166534',
+  },
+  warning: {
+    soft: '#FFEDD5',
+    default: '#EA8A2F',
+    strong: '#C25B12',
+  },
+  danger: {
+    soft: '#FEE2E2',
+    default: '#DC3C3C',
+    strong: '#B42323',
+  },
+  info: {
+    soft: '#DBF2FF',
+    default: '#0EA5E9',
+    strong: '#0369A1',
+  },
+} as const;
+
+export const semanticColors = {
+  primary: colors.primary[900],
+  primarySoft: colors.primary[800],
+  primaryMuted: colors.primary[700],
+  secondary: colors.secondary[500],
+
+  background: colors.background.default,
+  backgroundSubtle: colors.background.subtle,
+  surface: colors.surface.default,
+  surfaceSubtle: colors.surface.subtle,
+  surfaceTint: colors.surface.tint,
+
+  textPrimary: colors.text.primary,
+  textSecondary: colors.text.secondary,
+  textMuted: colors.text.muted,
+  textInverse: colors.text.inverse,
+
+  border: colors.border.default,
+  borderSubtle: colors.border.subtle,
+  borderStrong: colors.border.strong,
+  borderFocus: colors.border.focus,
+
+  success: colors.success.default,
+  successSoft: colors.success.soft,
+  warning: colors.warning.default,
+  warningSoft: colors.warning.soft,
+  danger: colors.danger.default,
+  dangerSoft: colors.danger.soft,
+  info: colors.info.default,
+  infoSoft: colors.info.soft,
+} as const;

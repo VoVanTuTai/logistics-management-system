@@ -18,6 +18,7 @@ export const deliveryApi = {
       method: 'POST',
       accessToken,
       body: payload,
+      headers: { 'Idempotency-Key': payload.idempotencyKey },
     }),
   markFail: (
     accessToken: string,
@@ -27,6 +28,7 @@ export const deliveryApi = {
       method: 'POST',
       accessToken,
       body: payload,
+      headers: { 'Idempotency-Key': payload.idempotencyKey },
     }),
 };
 

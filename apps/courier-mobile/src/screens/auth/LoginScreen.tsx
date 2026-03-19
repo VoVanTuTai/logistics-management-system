@@ -1,156 +1,98 @@
 import React from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Controller, useForm } from 'react-hook-form';
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
-import { useLoginMutation } from '../../features/auth/auth.api';
-import { persistAuthSession } from '../../features/auth/auth.session';
-import {
-  loginSchema,
-  type LoginFormValues,
-} from '../../features/auth/auth.types';
-import { useAppStore } from '../../store/appStore';
+import { LoginForm } from '../../features/auth/LoginForm';
+import { useAuthStore } from '../../features/auth/auth.store';
+import type { LoginFormValues } from '../../features/auth/auth.types';
+import { Card } from '../../components/ui/Card';
+import { theme } from '../../theme';
 
 export function LoginScreen(): React.JSX.Element {
-  const setGlobalError = useAppStore((state) => state.setGlobalError);
-  const { control, handleSubmit, formState } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      username: '',
-      password: '',
-    },
-  });
-  const loginMutation = useLoginMutation();
+  const login = useAuthStore((state) => state.login);
+  const loading = useAuthStore((state) => state.isLoading);
+  const errorMessage = useAuthStore((state) => state.errorMessage);
 
-  const onSubmit = handleSubmit(async (values) => {
+  const handleLogin = async (values: LoginFormValues) => {
     try {
-      const result = await loginMutation.mutateAsync(values);
-      await persistAuthSession(result);
-    } catch (error) {
-      setGlobalError(error instanceof Error ? error.message : 'Login failed.');
+      await login(values);
+    } catch {
+      // Error state được auth store cập nhật.
     }
-  });
+  };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Courier login</Text>
-      <Text style={styles.description}>
-        App chi goi qua gateway-bff. CourierId hien tai la placeholder tu env
-        cho task query.
-      </Text>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={styles.container}
+    >
+      <View style={styles.hero}>
+        <View style={styles.heroIconWrap}>
+          <Ionicons name="cube-outline" size={26} color="#FFFFFF" />
+        </View>
+        <Text style={styles.heroTitle}>Courier Mobile</Text>
+        <Text style={styles.heroSubtitle}>Hệ thống vận hành giao nhận logistics</Text>
+      </View>
 
-      <Controller
-        control={control}
-        name="username"
-        render={({ field, fieldState }) => (
-          <View style={styles.fieldBlock}>
-            <Text style={styles.label}>Username</Text>
-            <TextInput
-              autoCapitalize="none"
-              value={field.value}
-              onChangeText={field.onChange}
-              style={styles.input}
-              placeholder="courier.username"
-            />
-            {fieldState.error ? (
-              <Text style={styles.errorText}>{fieldState.error.message}</Text>
-            ) : null}
-          </View>
-        )}
-      />
+      <Card style={styles.formCard}>
+        <Text style={styles.formTitle}>Đăng nhập tài khoản shipper</Text>
+        <Text style={styles.formDescription}>
+          App chỉ gọi gateway-bff. Session/token được lưu an toàn bởi auth module.
+        </Text>
 
-      <Controller
-        control={control}
-        name="password"
-        render={({ field, fieldState }) => (
-          <View style={styles.fieldBlock}>
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              secureTextEntry
-              value={field.value}
-              onChangeText={field.onChange}
-              style={styles.input}
-              placeholder="********"
-            />
-            {fieldState.error ? (
-              <Text style={styles.errorText}>{fieldState.error.message}</Text>
-            ) : null}
-          </View>
-        )}
-      />
-
-      <Pressable
-        disabled={loginMutation.isPending}
-        onPress={onSubmit}
-        style={styles.primaryButton}
-      >
-        {loginMutation.isPending ? (
-          <ActivityIndicator color="#ffffff" />
-        ) : (
-          <Text style={styles.primaryButtonText}>Login</Text>
-        )}
-      </Pressable>
-
-      {formState.isSubmitted && !formState.isValid ? (
-        <Text style={styles.errorText}>Form chua hop le.</Text>
-      ) : null}
-    </View>
+        <LoginForm
+          loading={loading}
+          errorMessage={errorMessage}
+          onSubmit={handleLogin}
+        />
+      </Card>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    justifyContent: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.background,
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.xxl,
+    paddingBottom: theme.spacing.lg,
+    gap: theme.spacing.lg,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#0f172a',
-    marginBottom: 8,
+  hero: {
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.radius.xl,
+    padding: theme.spacing.xl,
+    gap: theme.spacing.sm,
   },
-  description: {
-    color: '#475569',
-    marginBottom: 24,
-  },
-  fieldBlock: {
-    marginBottom: 16,
-  },
-  label: {
-    marginBottom: 6,
-    color: '#334155',
-    fontWeight: '600',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 10,
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  primaryButton: {
-    marginTop: 8,
-    backgroundColor: '#0f172a',
-    borderRadius: 10,
-    paddingVertical: 14,
+  heroIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.16)',
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  primaryButtonText: {
-    color: '#ffffff',
-    fontWeight: '700',
+  heroTitle: {
+    color: '#FFFFFF',
+    fontSize: 28,
+    fontWeight: '800',
   },
-  errorText: {
-    marginTop: 6,
-    color: '#b91c1c',
+  heroSubtitle: {
+    color: '#DDE8FF',
+  },
+  formCard: {
+    flex: 1,
+  },
+  formTitle: {
+    color: theme.colors.textPrimary,
+    fontSize: 20,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  formDescription: {
+    color: theme.colors.textMuted,
+    marginBottom: theme.spacing.lg,
+    lineHeight: 19,
   },
 });

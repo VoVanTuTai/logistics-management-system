@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import type { LoginResultDto } from '../features/auth/auth.types';
+import type { OfflineQueuePreviewItem } from '../offline/queue.types';
 
 type AuthStatus = 'booting' | 'authenticated' | 'guest';
 
@@ -10,6 +11,8 @@ interface AppStoreState {
   globalErrorMessage: string | null;
   globalLoadingMessage: string | null;
   offlinePendingCount: number;
+  offlineFailedCount: number;
+  offlineQueuePreview: OfflineQueuePreviewItem[];
   offlineSyncing: boolean;
   setGuest: () => void;
   setSession: (session: LoginResultDto) => void;
@@ -19,6 +22,11 @@ interface AppStoreState {
   setGlobalLoading: (message: string | null) => void;
   clearGlobalLoading: () => void;
   setOfflinePendingCount: (count: number) => void;
+  setOfflineQueueState: (input: {
+    pendingCount: number;
+    failedCount: number;
+    previewItems: OfflineQueuePreviewItem[];
+  }) => void;
   setOfflineSyncing: (isSyncing: boolean) => void;
 }
 
@@ -28,6 +36,8 @@ export const useAppStore = create<AppStoreState>((set) => ({
   globalErrorMessage: null,
   globalLoadingMessage: null,
   offlinePendingCount: 0,
+  offlineFailedCount: 0,
+  offlineQueuePreview: [],
   offlineSyncing: false,
   setGuest: () =>
     set({
@@ -63,6 +73,12 @@ export const useAppStore = create<AppStoreState>((set) => ({
   setOfflinePendingCount: (count) =>
     set({
       offlinePendingCount: count,
+    }),
+  setOfflineQueueState: (input) =>
+    set({
+      offlinePendingCount: input.pendingCount,
+      offlineFailedCount: input.failedCount,
+      offlineQueuePreview: input.previewItems,
     }),
   setOfflineSyncing: (isSyncing) =>
     set({

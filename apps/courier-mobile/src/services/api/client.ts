@@ -7,6 +7,7 @@ export interface RequestOptions {
   method?: HttpMethod;
   accessToken?: string | null;
   body?: unknown;
+  headers?: Record<string, string>;
   signal?: AbortSignal;
 }
 
@@ -51,6 +52,7 @@ export class CourierApiClient {
           ...(options.accessToken
             ? { Authorization: `Bearer ${options.accessToken}` }
             : {}),
+          ...(options.headers ?? {}),
         },
         body: options.body === undefined ? undefined : JSON.stringify(options.body),
         signal: options.signal ?? controller.signal,
@@ -113,7 +115,7 @@ export function shouldQueueOffline(error: unknown): boolean {
     return false;
   }
 
-  return error.isNetworkError || error.status === 408 || error.status === 429;
+  return error.isNetworkError || error.status === 408;
 }
 
 export const courierApiClient = new CourierApiClient(

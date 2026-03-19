@@ -1,0 +1,273 @@
+import React from 'react';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+
+import { theme } from '../../theme';
+import { useAppStore } from '../../store/appStore';
+import { appEnv } from '../../utils/env';
+import {
+  ScanActionGrid,
+} from '../../components/scan/ScanActionGrid';
+import type { ScanActionItemData } from '../../components/scan/ScanActionItem';
+
+const HEADER_GRADIENT_STOPS = [
+  '#0A1D36',
+  '#0C2340',
+  '#112C4F',
+  '#15345E',
+  '#1A406D',
+] as const;
+
+const actions: ScanActionItemData[] = [
+  {
+    id: 'ky-nhan',
+    label: 'Ký nhận',
+    iconName: 'document-text-outline',
+    iconColor: '#24539E',
+    iconBgColor: '#E6F0FF',
+  },
+  {
+    id: 'ky-nhan-chuyen-hoan',
+    label: 'Ký nhận chuyển hoàn',
+    iconName: 'return-up-back-outline',
+    iconColor: '#0A6E89',
+    iconBgColor: '#E1F8FA',
+  },
+  {
+    id: 'nhan-kien',
+    label: 'Nhận kiện',
+    iconName: 'cube-outline',
+    iconColor: '#1A6B4A',
+    iconBgColor: '#E6FAF1',
+  },
+  {
+    id: 'dong-bao',
+    label: 'Đóng bao',
+    iconName: 'archive-outline',
+    iconColor: '#8A5A0A',
+    iconBgColor: '#FFF4DD',
+  },
+  {
+    id: 'go-bao',
+    label: 'Gỡ bao',
+    iconName: 'folder-open-outline',
+    iconColor: '#24539E',
+    iconBgColor: '#E6F0FF',
+  },
+  {
+    id: 'phat-hang',
+    label: 'Phát hàng',
+    iconName: 'paper-plane-outline',
+    iconColor: '#0A6E89',
+    iconBgColor: '#E1F8FA',
+  },
+  {
+    id: 'van-de',
+    label: 'Vấn đề',
+    iconName: 'alert-circle-outline',
+    iconColor: '#C25B12',
+    iconBgColor: '#FFEDD5',
+  },
+  {
+    id: 'gui-kien',
+    label: 'Gửi kiện',
+    iconName: 'send-outline',
+    iconColor: '#1A6B4A',
+    iconBgColor: '#E6FAF1',
+  },
+  {
+    id: 'kien-den',
+    label: 'Kiện đến',
+    iconName: 'download-outline',
+    iconColor: '#24539E',
+    iconBgColor: '#E6F0FF',
+  },
+  {
+    id: 'xe-den',
+    label: 'Xe đến',
+    iconName: 'car-outline',
+    iconColor: '#0A6E89',
+    iconBgColor: '#E1F8FA',
+  },
+  {
+    id: 'xe-di',
+    label: 'Xe đi',
+    iconName: 'car-sport-outline',
+    iconColor: '#24539E',
+    iconBgColor: '#E6F0FF',
+  },
+  {
+    id: 'kiem-ton-kho',
+    label: 'Kiểm tồn kho',
+    iconName: 'clipboard-outline',
+    iconColor: '#8A5A0A',
+    iconBgColor: '#FFF4DD',
+  },
+  {
+    id: 'nhan-hang-cb',
+    label: 'Nhận hàng CB',
+    iconName: 'briefcase-outline',
+    iconColor: '#1A6B4A',
+    iconBgColor: '#E6FAF1',
+  },
+  {
+    id: 'tem-hang-gia-tri-cao',
+    label: 'Tem hàng giá trị cao',
+    iconName: 'pricetag-outline',
+    iconColor: '#24539E',
+    iconBgColor: '#E6F0FF',
+  },
+  {
+    id: 'kiem-tra-tem-gia-tri-cao',
+    label: 'Kiểm tra tem giá trị cao',
+    iconName: 'shield-checkmark-outline',
+    iconColor: '#0A6E89',
+    iconBgColor: '#E1F8FA',
+  },
+];
+
+export function ScanScreen(): React.JSX.Element {
+  const session = useAppStore((state) => state.session);
+  const displayName = session?.user.username ?? 'Courier';
+  const hubName = `Mã courier: ${appEnv.courierId}`;
+
+  return (
+    <SafeAreaView edges={['top']} style={styles.safeArea}>
+      <View style={styles.container}>
+        <View style={styles.headerWrap}>
+          <View style={styles.gradientLayer}>
+            {HEADER_GRADIENT_STOPS.map((color) => (
+              <View key={color} style={[styles.gradientBand, { backgroundColor: color }]} />
+            ))}
+          </View>
+
+          <View style={styles.headerContent}>
+            <View style={styles.headerTopRow}>
+              <View style={styles.userBlock}>
+                <Text style={styles.greeting}>Xin chào</Text>
+                <Text style={styles.userName}>{displayName}</Text>
+                <Text style={styles.hubName}>{hubName}</Text>
+              </View>
+
+              <View style={styles.scanBadge}>
+                <Ionicons name="scan" size={20} color="#D8E7FA" />
+                <Text style={styles.scanBadgeText}>Scan Ops</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Thao tác quét mã</Text>
+            <Text style={styles.sectionSubtitle}>
+              Chọn nhanh hành động cần xử lý trong ca.
+            </Text>
+          </View>
+
+          <ScanActionGrid
+            actions={actions}
+            onPressAction={(action) => {
+              Alert.alert('Scan action', action.label);
+            }}
+          />
+        </ScrollView>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  headerWrap: {
+    minHeight: 152,
+    borderBottomLeftRadius: 26,
+    borderBottomRightRadius: 26,
+    overflow: 'hidden',
+    ...theme.shadow.md,
+  },
+  gradientLayer: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  gradientBand: {
+    flex: 1,
+  },
+  headerContent: {
+    minHeight: 152,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.lg,
+    justifyContent: 'center',
+  },
+  headerTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  userBlock: {
+    flex: 1,
+    paddingRight: theme.spacing.xs,
+  },
+  greeting: {
+    ...theme.typography.body.md,
+    color: '#C2D8F8',
+  },
+  userName: {
+    ...theme.typography.title.sm,
+    color: theme.colors.textInverse,
+    marginTop: 2,
+  },
+  hubName: {
+    ...theme.typography.caption.md,
+    color: '#AFC5E8',
+    marginTop: 4,
+  },
+  scanBadge: {
+    minWidth: 94,
+    borderRadius: theme.radius.lg,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(176, 205, 241, 0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  scanBadgeText: {
+    ...theme.typography.caption.sm,
+    color: '#D8E7FA',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  content: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.md,
+    paddingBottom: theme.spacing.lg,
+  },
+  sectionHeader: {
+    marginBottom: theme.spacing.md,
+  },
+  sectionTitle: {
+    ...theme.typography.subtitle.lg,
+    color: theme.colors.textPrimary,
+  },
+  sectionSubtitle: {
+    ...theme.typography.body.md,
+    color: theme.colors.textMuted,
+    marginTop: 2,
+  },
+});

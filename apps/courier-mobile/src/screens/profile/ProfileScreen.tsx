@@ -1,200 +1,203 @@
 import React from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useLogoutMutation } from '../../features/auth/auth.api';
+import { theme } from '../../theme';
 import {
-  clearAuthSession,
-  persistAuthSession,
-} from '../../features/auth/auth.session';
-import { flushOfflineQueue } from '../../offline/queue.worker';
+  ProfileHeader,
+  type ProfileHeaderData,
+} from '../../components/profile/ProfileHeader';
+import { ProfileShortcutGrid } from '../../components/profile/ProfileShortcutGrid';
+import type { ProfileShortcutItemData } from '../../components/profile/ProfileShortcutItem';
+import { SettingsSection } from '../../components/profile/SettingsSection';
+import type { SettingsItemData } from '../../components/profile/SettingsItem';
 import { useAppStore } from '../../store/appStore';
+import { useAuthStore } from '../../features/auth/auth.store';
+import { appEnv } from '../../utils/env';
+
+const shortcutItems: ProfileShortcutItemData[] = [
+  {
+    id: 'shopping',
+    label: 'Mua sắm',
+    iconName: 'bag-handle-outline',
+    iconColor: '#24539E',
+    iconBgColor: '#E6F0FF',
+  },
+  {
+    id: 'stats',
+    label: 'Thống kê',
+    iconName: 'stats-chart-outline',
+    iconColor: '#0A6E89',
+    iconBgColor: '#E1F8FA',
+  },
+  {
+    id: 'qr-order',
+    label: 'QR lên đơn',
+    iconName: 'qr-code-outline',
+    iconColor: '#1A6B4A',
+    iconBgColor: '#E6FAF1',
+  },
+  {
+    id: 'extra-feature',
+    label: 'Chức năng bổ sung',
+    iconName: 'grid-outline',
+    iconColor: '#8A5A0A',
+    iconBgColor: '#FFF4DD',
+  },
+  {
+    id: 'weight-change',
+    label: 'Đăng ký đổi trọng lượng',
+    iconName: 'barbell-outline',
+    iconColor: '#24539E',
+    iconBgColor: '#E6F0FF',
+  },
+  {
+    id: 'learning-center',
+    label: 'Trung tâm học tập',
+    iconName: 'school-outline',
+    iconColor: '#0A6E89',
+    iconBgColor: '#E1F8FA',
+  },
+  {
+    id: 'uniform-check',
+    label: 'Kiểm tra đồng phục',
+    iconName: 'shirt-outline',
+    iconColor: '#1A6B4A',
+    iconBgColor: '#E6FAF1',
+  },
+];
+
+const settingsItems: SettingsItemData[] = [
+  {
+    id: 'print-setup',
+    label: 'Thiết lập in',
+    iconName: 'print-outline',
+  },
+  {
+    id: 'base-data',
+    label: 'Dữ liệu cơ bản',
+    iconName: 'file-tray-full-outline',
+  },
+  {
+    id: 'help-center',
+    label: 'Trung tâm trợ giúp',
+    iconName: 'help-circle-outline',
+  },
+  {
+    id: 'call-log-setup',
+    label: 'Thiết lập call log',
+    iconName: 'call-outline',
+  },
+  {
+    id: 'about-jnt',
+    label: 'Về J&T',
+    iconName: 'information-circle-outline',
+  },
+];
 
 export function ProfileScreen(): React.JSX.Element {
   const session = useAppStore((state) => state.session);
-  const offlinePendingCount = useAppStore((state) => state.offlinePendingCount);
-  const offlineSyncing = useAppStore((state) => state.offlineSyncing);
-  const setGlobalError = useAppStore((state) => state.setGlobalError);
-  const logoutMutation = useLogoutMutation();
+  const logout = useAuthStore((state) => state.logout);
+  const authLoading = useAuthStore((state) => state.isLoading);
 
-  const handleFlushQueue = async () => {
-    try {
-      await flushOfflineQueue(session?.tokens.accessToken ?? null);
-    } catch (error) {
-      setGlobalError(
-        error instanceof Error ? error.message : 'Offline queue retry failed.',
-      );
-    }
+  const roles = session?.user.roles ?? [];
+  const userData: ProfileHeaderData = {
+    fullName: session?.user.username ?? 'Courier',
+    branchName: roles.length > 0 ? `Vai trò: ${roles.join(', ')}` : 'Vai trò: courier',
+    employeeCode: session?.user.id ?? appEnv.courierId,
+    phoneNumber: '---',
+    starTierLabel: 'Đang cập nhật',
   };
 
-  const handleLogout = async () => {
-    try {
-      if (session) {
-        await logoutMutation.mutateAsync({
-          accessToken: session.tokens.accessToken,
-          refreshToken: session.tokens.refreshToken,
-        });
-      }
-    } catch (error) {
-      setGlobalError(
-        error instanceof Error ? error.message : 'Logout request failed.',
-      );
-    } finally {
-      await clearAuthSession();
-    }
-  };
-
-  const handleRefreshSession = async () => {
-    if (!session) {
-      return;
-    }
-
-    try {
-      await persistAuthSession(session);
-    } catch (error) {
-      setGlobalError(
-        error instanceof Error ? error.message : 'Session refresh failed.',
-      );
-    }
+  const handleLogout = () => {
+    void logout();
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Profile</Text>
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Session</Text>
-        <Text style={styles.meta}>User ID: {session?.user.id ?? 'N/A'}</Text>
-        <Text style={styles.meta}>
-          Username: {session?.user.username ?? 'N/A'}
-        </Text>
-        <Text style={styles.meta}>
-          Roles: {session?.user.roles.join(', ') ?? 'N/A'}
-        </Text>
-        <Text style={styles.meta}>
-          Access token expires: {session?.tokens.accessTokenExpiresAt ?? 'N/A'}
-        </Text>
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Offline queue</Text>
-        <Text style={styles.meta}>Pending jobs: {offlinePendingCount}</Text>
-        <Text style={styles.meta}>
-          Sync status: {offlineSyncing ? 'SYNCING' : 'IDLE'}
-        </Text>
-        <Text style={styles.helperText}>
-          Retry giu nguyen `idempotencyKey`, khong tao key moi khi resend.
-        </Text>
-
-        <Pressable
-          disabled={offlineSyncing}
-          onPress={handleFlushQueue}
-          style={styles.primaryButton}
+    <SafeAreaView edges={['top']} style={styles.safeArea}>
+      <View style={styles.container}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
         >
-          {offlineSyncing ? (
-            <ActivityIndicator color="#ffffff" />
-          ) : (
-            <Text style={styles.primaryButtonText}>Retry offline queue</Text>
-          )}
-        </Pressable>
+          <ProfileHeader
+            user={userData}
+            onPressStarDetail={() => {
+              Alert.alert('Hạng sao', 'Chi tiết hạng sao sẽ cập nhật theo API.');
+            }}
+          />
+
+          <ProfileShortcutGrid
+            items={shortcutItems}
+            onPressItem={(item) => {
+              Alert.alert('Tiện ích', item.label);
+            }}
+          />
+
+          <SettingsSection
+            title="Cài đặt và tiện ích"
+            items={settingsItems}
+            onPressItem={(item) => {
+              Alert.alert('Cài đặt', item.label);
+            }}
+          />
+
+          <Pressable
+            onPress={handleLogout}
+            disabled={authLoading}
+            style={({ pressed }) => [
+              styles.logoutButton,
+              pressed && styles.logoutButtonPressed,
+              authLoading && styles.logoutButtonDisabled,
+            ]}
+          >
+            {authLoading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.logoutButtonText}>Đăng xuất</Text>
+            )}
+          </Pressable>
+        </ScrollView>
       </View>
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Utilities</Text>
-        <Text style={styles.helperText}>
-          Session persistence hien tai luu local. TODO: bo sung refresh-token
-          flow khi app package va native runtime da duoc wiring day du.
-        </Text>
-
-        <Pressable onPress={handleRefreshSession} style={styles.secondaryButton}>
-          <Text style={styles.secondaryButtonText}>Re-persist session</Text>
-        </Pressable>
-
-        <Pressable
-          disabled={logoutMutation.isPending}
-          onPress={handleLogout}
-          style={styles.dangerButton}
-        >
-          {logoutMutation.isPending ? (
-            <ActivityIndicator color="#ffffff" />
-          ) : (
-            <Text style={styles.primaryButtonText}>Logout</Text>
-          )}
-        </Pressable>
-      </View>
-    </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#F4F8FF',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#F4F8FF',
   },
-  content: {
-    padding: 16,
+  scrollView: {
+    flex: 1,
   },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#0f172a',
-    marginBottom: 16,
+  scrollContent: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.md,
+    paddingBottom: theme.spacing.xl,
+    gap: theme.spacing.md,
   },
-  card: {
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0f172a',
-    marginBottom: 8,
-  },
-  meta: {
-    color: '#475569',
-    marginBottom: 6,
-  },
-  helperText: {
-    color: '#64748b',
-    marginBottom: 12,
-  },
-  primaryButton: {
-    backgroundColor: '#0f172a',
-    borderRadius: 10,
-    paddingVertical: 14,
+  logoutButton: {
+    borderRadius: theme.radius.lg,
+    backgroundColor: theme.colors.primary,
     alignItems: 'center',
-    marginTop: 4,
+    justifyContent: 'center',
+    minHeight: 50,
+    ...theme.shadow.card,
   },
-  secondaryButton: {
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginBottom: 12,
+  logoutButtonPressed: {
+    opacity: 0.9,
   },
-  dangerButton: {
-    backgroundColor: '#b91c1c',
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
+  logoutButtonDisabled: {
+    opacity: 0.65,
   },
-  primaryButtonText: {
-    color: '#ffffff',
-    fontWeight: '700',
-  },
-  secondaryButtonText: {
-    color: '#0f172a',
-    fontWeight: '700',
+  logoutButtonText: {
+    ...theme.typography.subtitle.md,
+    color: '#FFFFFF',
   },
 });

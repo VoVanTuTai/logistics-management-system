@@ -56,6 +56,7 @@ App duoc scaffold theo huong feature-first, tach ro:
   - `DELIVERY_SUCCESS`
   - `DELIVERY_FAIL`
 - Retry giu nguyen `idempotencyKey`
+- Khi goi gateway cho scan/delivery, app gui ca payload `idempotencyKey` va header `Idempotency-Key`
 - Queue worker khong tu orchestration workflow, chi resend command len gateway
 
 ## Env

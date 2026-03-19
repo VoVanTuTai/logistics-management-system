@@ -1,25 +1,21 @@
 import React from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Controller, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { useDeliverySuccessMutation } from '../../features/delivery/delivery.api';
+import { DeliverySuccessForm } from '../../features/delivery/DeliverySuccessForm';
+import { mapDeliverySuccessFormToPayload } from '../../features/delivery/delivery-success.mapper';
+import { useDeliverySuccessActionMutation } from '../../features/delivery/delivery-success.mutation';
+import { enqueueDeliverySuccessOffline } from '../../features/delivery/delivery-success.offline';
 import {
-  deliverySuccessSchema,
+  deliverySuccessFormSchema,
+  type DeliverySuccessMutationResult,
+  type DeliverySuccessSubmitState,
   type DeliverySuccessFormValues,
-} from '../../features/delivery/delivery.types';
-import { createDeliverySuccessOfflineJob } from '../../features/offline/offline.facade';
+} from '../../features/delivery/delivery-success.types';
+import type { DeliverySuccessPayload } from '../../features/delivery/delivery.types';
 import type { RootStackParamList } from '../../navigation/navigation.types';
-import { enqueueOfflineJob } from '../../offline/queue.storage';
 import { shouldQueueOffline } from '../../services/api/client';
 import { useAppStore } from '../../store/appStore';
 import { createIdempotencyKey } from '../../utils/idempotency';
@@ -27,16 +23,22 @@ import { createIdempotencyKey } from '../../utils/idempotency';
 type Props = NativeStackScreenProps<RootStackParamList, 'DeliverySuccess'>;
 
 export function DeliverySuccessScreen({
-  navigation,
   route,
 }: Props): React.JSX.Element {
   const session = useAppStore((state) => state.session);
   const setGlobalError = useAppStore((state) => state.setGlobalError);
-  const mutation = useDeliverySuccessMutation(
+  const mutation = useDeliverySuccessActionMutation(
     session?.tokens.accessToken ?? null,
   );
-  const { control, handleSubmit } = useForm<DeliverySuccessFormValues>({
-    resolver: zodResolver(deliverySuccessSchema),
+  const [submitState, setSubmitState] =
+    React.useState<DeliverySuccessSubmitState>('IDLE');
+  const [submitMessage, setSubmitMessage] = React.useState<string | null>(null);
+  const [lastPayload, setLastPayload] =
+    React.useState<DeliverySuccessPayload | null>(null);
+  const [lastResult, setLastResult] =
+    React.useState<DeliverySuccessMutationResult | null>(null);
+  const { control, handleSubmit, setValue } = useForm<DeliverySuccessFormValues>({
+    resolver: zodResolver(deliverySuccessFormSchema),
     defaultValues: {
       shipmentCode: route.params.shipmentCode ?? '',
       locationCode: '',
@@ -44,160 +46,139 @@ export function DeliverySuccessScreen({
       podNote: '',
       otpCode: '',
       note: '',
+      idempotencyKey: '',
     },
   });
 
-  const onSubmit = handleSubmit(async (values) => {
-    const payload = {
-      shipmentCode: values.shipmentCode,
-      taskId: route.params.taskId ?? null,
-      courierId: null,
-      locationCode: values.locationCode || null,
-      actor: session?.user.username ?? null,
-      note: values.note || null,
-      occurredAt: new Date().toISOString(),
-      idempotencyKey: createIdempotencyKey('delivery-success'),
-      podImageUrl: values.podImageUrl || null,
-      podNote: values.podNote || null,
-      podCapturedBy: session?.user.username ?? null,
-      otpCode: values.otpCode || null,
-    };
+  const executeSubmit = async (payload: DeliverySuccessPayload) => {
+    setSubmitState('SUBMITTING');
+    setSubmitMessage(null);
+    setLastPayload(payload);
+    setLastResult(null);
 
     try {
-      await mutation.mutateAsync(payload);
-      navigation.goBack();
+      const result = await mutation.mutateAsync(payload);
+      setLastResult(result);
+      setSubmitState('SUCCESS');
+
+      if (result.source === 'DUPLICATE_REPLAY') {
+        setSubmitMessage(
+          'Server da tra lai ket qua cu cho idempotencyKey trung lap.',
+        );
+      } else {
+        setSubmitMessage('Submit delivery success thanh cong.');
+      }
     } catch (error) {
       if (shouldQueueOffline(error)) {
-        await enqueueOfflineJob(createDeliverySuccessOfflineJob(payload));
-        navigation.goBack();
+        await enqueueDeliverySuccessOffline(payload);
+        setSubmitState('SUCCESS');
+        setSubmitMessage('Mat mang: action duoc enqueue va se retry sau.');
         return;
       }
 
+      setSubmitState('FAILED');
+      setSubmitMessage(
+        error instanceof Error ? error.message : 'Delivery success failed.',
+      );
       setGlobalError(
         error instanceof Error ? error.message : 'Delivery success failed.',
       );
     }
+  };
+
+  const onSubmit = handleSubmit(async (values) => {
+    const resolvedIdempotencyKey =
+      values.idempotencyKey.trim().length > 0
+        ? values.idempotencyKey.trim()
+        : createIdempotencyKey('delivery-success');
+
+    setValue('idempotencyKey', resolvedIdempotencyKey, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+
+    const payload = mapDeliverySuccessFormToPayload(values, {
+      taskId: route.params.taskId,
+      actor: session?.user.username ?? null,
+      occurredAt: new Date().toISOString(),
+      idempotencyKey: resolvedIdempotencyKey,
+    });
+
+    await executeSubmit(payload);
   });
+
+  const handleGenerateIdempotencyKey = () => {
+    setValue('idempotencyKey', createIdempotencyKey('delivery-success'), {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  };
+
+  const handleRetryLastSubmit = async () => {
+    if (!lastPayload) {
+      return;
+    }
+
+    await executeSubmit(lastPayload);
+  };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Delivery success</Text>
       <Text style={styles.helperText}>
-        TODO: POD upload contract chua ro. Hien tai app chi gui `podImageUrl`
-        placeholder qua gateway.
+        Chuan bi payload va hien thi response server. Khong xu ly
+        `pod.captured`, `otp.verified`, `delivery.delivered` o client.
+      </Text>
+      <Text style={styles.helperText}>
+        TODO: ket noi media stack de upload anh POD that, hien tai chi dung
+        `podImageUrl` placeholder.
       </Text>
 
-      <Controller
-        control={control}
-        name="shipmentCode"
-        render={({ field, fieldState }) => (
-          <View style={styles.fieldBlock}>
-            <Text style={styles.label}>Shipment code</Text>
-            <TextInput
-              value={field.value}
-              onChangeText={field.onChange}
-              style={styles.input}
-              placeholder="SHP123"
-            />
-            {fieldState.error ? (
-              <Text style={styles.errorText}>{fieldState.error.message}</Text>
-            ) : null}
-          </View>
-        )}
-      />
+      {submitMessage ? (
+        <Text
+          style={submitState === 'FAILED' ? styles.errorText : styles.successText}
+        >
+          {submitMessage}
+        </Text>
+      ) : null}
 
-      <Controller
-        control={control}
-        name="locationCode"
-        render={({ field }) => (
-          <View style={styles.fieldBlock}>
-            <Text style={styles.label}>Location code</Text>
-            <TextInput
-              value={field.value}
-              onChangeText={field.onChange}
-              style={styles.input}
-              placeholder="HCM-HUB-01"
-            />
-          </View>
-        )}
-      />
+      {lastResult ? (
+        <View style={styles.resultCard}>
+          <Text style={styles.resultTitle}>
+            Server response ({lastResult.source})
+          </Text>
+          <Text style={styles.resultText}>
+            Attempt: {lastResult.result.deliveryAttempt.id}
+          </Text>
+          <Text style={styles.resultText}>
+            Status: {lastResult.result.deliveryAttempt.status}
+          </Text>
+          <Text style={styles.resultText}>
+            POD record: {lastResult.result.pod ? 'AVAILABLE' : 'N/A'}
+          </Text>
+          <Text style={styles.resultText}>
+            OTP record: {lastResult.result.otpRecord ? 'AVAILABLE' : 'N/A'}
+          </Text>
+        </View>
+      ) : null}
 
-      <Controller
+      <DeliverySuccessForm
         control={control}
-        name="otpCode"
-        render={({ field }) => (
-          <View style={styles.fieldBlock}>
-            <Text style={styles.label}>OTP code</Text>
-            <TextInput
-              value={field.value}
-              onChangeText={field.onChange}
-              style={styles.input}
-              placeholder="123456"
-            />
-          </View>
-        )}
-      />
-
-      <Controller
-        control={control}
-        name="podImageUrl"
-        render={({ field }) => (
-          <View style={styles.fieldBlock}>
-            <Text style={styles.label}>POD image URL</Text>
-            <TextInput
-              value={field.value}
-              onChangeText={field.onChange}
-              style={styles.input}
-              placeholder="https://..."
-            />
-          </View>
-        )}
-      />
-
-      <Controller
-        control={control}
-        name="podNote"
-        render={({ field }) => (
-          <View style={styles.fieldBlock}>
-            <Text style={styles.label}>POD note</Text>
-            <TextInput
-              multiline
-              value={field.value}
-              onChangeText={field.onChange}
-              style={[styles.input, styles.multilineInput]}
-              placeholder="Receiver note"
-            />
-          </View>
-        )}
-      />
-
-      <Controller
-        control={control}
-        name="note"
-        render={({ field }) => (
-          <View style={styles.fieldBlock}>
-            <Text style={styles.label}>Internal note</Text>
-            <TextInput
-              multiline
-              value={field.value}
-              onChangeText={field.onChange}
-              style={[styles.input, styles.multilineInput]}
-              placeholder="Optional note"
-            />
-          </View>
-        )}
+        submitting={submitState === 'SUBMITTING'}
+        onGenerateIdempotencyKey={handleGenerateIdempotencyKey}
+        onSubmit={() => {
+          void onSubmit();
+        }}
       />
 
       <Pressable
-        disabled={mutation.isPending}
-        onPress={onSubmit}
-        style={styles.primaryButton}
+        disabled={submitState === 'SUBMITTING' || !lastPayload}
+        onPress={() => {
+          void handleRetryLastSubmit();
+        }}
+        style={styles.retryButton}
       >
-        {mutation.isPending ? (
-          <ActivityIndicator color="#ffffff" />
-        ) : (
-          <Text style={styles.primaryButtonText}>Confirm delivery success</Text>
-        )}
+        <Text style={styles.retryButtonText}>Retry last submit</Text>
       </Pressable>
     </ScrollView>
   );
@@ -219,40 +200,46 @@ const styles = StyleSheet.create({
   },
   helperText: {
     color: '#64748b',
-    marginBottom: 20,
+    marginBottom: 8,
   },
-  fieldBlock: {
-    marginBottom: 16,
+  successText: {
+    marginTop: 8,
+    marginBottom: 12,
+    color: '#0f766e',
   },
-  label: {
+  resultCard: {
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+    backgroundColor: '#f0fdf4',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 14,
+  },
+  resultTitle: {
+    color: '#166534',
+    fontWeight: '700',
     marginBottom: 6,
-    color: '#334155',
-    fontWeight: '600',
   },
-  input: {
+  resultText: {
+    color: '#166534',
+    marginBottom: 4,
+  },
+  retryButton: {
+    marginTop: 12,
+    backgroundColor: '#ffffff',
     borderWidth: 1,
     borderColor: '#cbd5e1',
     borderRadius: 10,
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  multilineInput: {
-    minHeight: 100,
-    textAlignVertical: 'top',
-  },
-  primaryButton: {
-    backgroundColor: '#0f172a',
-    paddingVertical: 14,
-    borderRadius: 10,
+    paddingVertical: 12,
     alignItems: 'center',
   },
-  primaryButtonText: {
-    color: '#ffffff',
+  retryButtonText: {
+    color: '#0f172a',
     fontWeight: '700',
   },
   errorText: {
-    marginTop: 6,
+    marginTop: 8,
+    marginBottom: 12,
     color: '#b91c1c',
   },
 });

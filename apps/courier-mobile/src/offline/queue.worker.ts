@@ -1,86 +1,45 @@
-import type {
-  DeliveryFailPayload,
-  DeliverySuccessPayload,
-} from '../features/delivery/delivery.types';
-import { deliveryApi } from '../features/delivery/delivery.api';
-import type { RecordScanPayload } from '../features/scan/scan.types';
-import { scanApi } from '../features/scan/scan.api';
-import { useAppStore } from '../store/appStore';
-import {
-  getOfflineQueue,
-  removeOfflineJob,
-  updateOfflineJob,
-} from './queue.storage';
-import type { OfflineJob } from './queue.types';
+import { submitDeliveryFailAction } from '../features/delivery/delivery-fail.api';
+import { submitDeliverySuccessAction } from '../features/delivery/delivery-success.api';
+import type { DeliveryFailPayload, DeliverySuccessPayload } from '../features/delivery/delivery.types';
+import { submitHubScanAction } from '../features/scan/hub.api';
+import type { HubScanCommand } from '../features/scan/hub.types';
+import { submitPickupScanAction } from '../features/scan/pickup.api';
+import type { PickupScanCommand } from '../features/scan/pickup.types';
+import type { OfflineQueueItem } from './queue.types';
 
-export async function flushOfflineQueue(
-  accessToken: string | null,
-): Promise<void> {
-  if (!accessToken) {
-    return;
-  }
-
-  useAppStore.getState().setOfflineSyncing(true);
-  const queue = await getOfflineQueue();
-
-  try {
-    for (const job of queue) {
-      const processingJob: OfflineJob = {
-        ...job,
-        status: 'PROCESSING',
-        retryCount: job.retryCount + 1,
-        lastAttemptAt: new Date().toISOString(),
-      };
-
-      await updateOfflineJob(processingJob);
-
-      try {
-        await executeOfflineJob(accessToken, processingJob);
-        await removeOfflineJob(processingJob.id);
-      } catch (error) {
-        await updateOfflineJob({
-          ...processingJob,
-          status: 'FAILED',
-          lastError:
-            error instanceof Error ? error.message : 'Offline retry failed.',
-        });
-      }
-    }
-  } finally {
-    useAppStore.getState().setOfflineSyncing(false);
-  }
-}
-
-async function executeOfflineJob(
+export async function executeOfflineQueueItem(
   accessToken: string,
-  job: OfflineJob,
+  item: OfflineQueueItem,
 ): Promise<void> {
-  switch (job.type) {
+  switch (item.actionType) {
     case 'SCAN_PICKUP':
-      await scanApi.recordPickup(accessToken, job.payload as RecordScanPayload);
+      await submitPickupScanAction(accessToken, item.payload as PickupScanCommand);
       return;
     case 'SCAN_INBOUND':
-      await scanApi.recordInbound(accessToken, job.payload as RecordScanPayload);
+      await submitHubScanAction(accessToken, {
+        ...(item.payload as HubScanCommand),
+        mode: 'INBOUND',
+      });
       return;
     case 'SCAN_OUTBOUND':
-      await scanApi.recordOutbound(
-        accessToken,
-        job.payload as RecordScanPayload,
-      );
+      await submitHubScanAction(accessToken, {
+        ...(item.payload as HubScanCommand),
+        mode: 'OUTBOUND',
+      });
       return;
     case 'DELIVERY_SUCCESS':
-      await deliveryApi.markSuccess(
+      await submitDeliverySuccessAction(
         accessToken,
-        job.payload as DeliverySuccessPayload,
+        item.payload as DeliverySuccessPayload,
       );
       return;
     case 'DELIVERY_FAIL':
-      await deliveryApi.markFail(
+      await submitDeliveryFailAction(
         accessToken,
-        job.payload as DeliveryFailPayload,
+        item.payload as DeliveryFailPayload,
       );
       return;
     default:
-      throw new Error(`Unsupported offline job type: ${job.type}`);
+      throw new Error(`Unsupported offline queue action: ${item.actionType}`);
   }
 }

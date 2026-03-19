@@ -4,20 +4,24 @@ import type { DeliveryFailPayload, DeliverySuccessPayload } from '../delivery/de
 import type { RecordScanPayload } from '../scan/scan.types';
 
 function createOfflineJob<TPayload>(
-  type: OfflineJob['type'],
+  actionType: OfflineJob['actionType'],
   endpoint: string,
   payload: TPayload,
   idempotencyKey: string,
 ): OfflineJob<TPayload> {
+  const now = new Date().toISOString();
+
   return {
-    id: idempotencyKey,
-    type,
+    id: `${actionType}:${idempotencyKey}`,
+    actionType,
     endpoint,
+    method: 'POST',
     payload,
     idempotencyKey,
-    status: 'PENDING',
-    retryCount: 0,
-    createdAt: new Date().toISOString(),
+    status: 'QUEUED',
+    attemptCount: 0,
+    createdAt: now,
+    updatedAt: now,
     lastAttemptAt: null,
     lastError: null,
   };

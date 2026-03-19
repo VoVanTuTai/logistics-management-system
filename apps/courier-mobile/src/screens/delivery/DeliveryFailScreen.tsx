@@ -1,26 +1,21 @@
 import React from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Controller, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { useDeliveryFailMutation } from '../../features/delivery/delivery.api';
+import { DeliveryFailForm } from '../../features/delivery/DeliveryFailForm';
+import { useDeliveryFailActionMutation } from '../../features/delivery/delivery-fail.mutation';
+import { enqueueDeliveryFailOffline } from '../../features/delivery/delivery-fail.offline';
 import {
-  deliveryFailSchema,
+  deliveryFailFormSchema,
+  type DeliveryFailMutationResult,
+  type DeliveryFailNextAction,
+  type DeliveryFailSubmitState,
   type DeliveryFailFormValues,
-} from '../../features/delivery/delivery.types';
-import { createDeliveryFailOfflineJob } from '../../features/offline/offline.facade';
+} from '../../features/delivery/delivery-fail.types';
+import type { DeliveryFailPayload } from '../../features/delivery/delivery.types';
 import type { RootStackParamList } from '../../navigation/navigation.types';
-import { enqueueOfflineJob } from '../../offline/queue.storage';
 import { shouldQueueOffline } from '../../services/api/client';
 import { useAppStore } from '../../store/appStore';
 import { createIdempotencyKey } from '../../utils/idempotency';
@@ -28,26 +23,80 @@ import { createIdempotencyKey } from '../../utils/idempotency';
 type Props = NativeStackScreenProps<RootStackParamList, 'DeliveryFail'>;
 
 export function DeliveryFailScreen({
-  navigation,
   route,
 }: Props): React.JSX.Element {
   const session = useAppStore((state) => state.session);
   const setGlobalError = useAppStore((state) => state.setGlobalError);
-  const mutation = useDeliveryFailMutation(session?.tokens.accessToken ?? null);
-  const { control, handleSubmit } = useForm<DeliveryFailFormValues>({
-    resolver: zodResolver(deliveryFailSchema),
+  const mutation = useDeliveryFailActionMutation(
+    session?.tokens.accessToken ?? null,
+  );
+  const [submitState, setSubmitState] =
+    React.useState<DeliveryFailSubmitState>('IDLE');
+  const [submitMessage, setSubmitMessage] = React.useState<string | null>(null);
+  const [selectedNextAction, setSelectedNextAction] =
+    React.useState<DeliveryFailNextAction>('CREATE_NDR');
+  const [lastPayload, setLastPayload] =
+    React.useState<DeliveryFailPayload | null>(null);
+  const [lastResult, setLastResult] =
+    React.useState<DeliveryFailMutationResult | null>(null);
+  const { control, handleSubmit, setValue } = useForm<DeliveryFailFormValues>({
+    resolver: zodResolver(deliveryFailFormSchema),
     defaultValues: {
       shipmentCode: route.params.shipmentCode ?? '',
       locationCode: '',
-      failReasonCode: '',
+      reasonCode: '',
+      nextAction: 'CREATE_NDR',
       note: '',
-      createNdr: true,
-      startReturn: false,
+      idempotencyKey: '',
     },
   });
 
+  const executeSubmit = async (payload: DeliveryFailPayload) => {
+    setSubmitState('SUBMITTING');
+    setSubmitMessage(null);
+    setLastPayload(payload);
+    setLastResult(null);
+
+    try {
+      const result = await mutation.mutateAsync(payload);
+      setLastResult(result);
+      setSubmitState('SUCCESS');
+
+      if (result.source === 'DUPLICATE_REPLAY') {
+        setSubmitMessage(
+          'Server da tra lai ket qua cu cho idempotencyKey trung lap.',
+        );
+      } else {
+        setSubmitMessage('Submit delivery fail thanh cong.');
+      }
+    } catch (error) {
+      if (shouldQueueOffline(error)) {
+        await enqueueDeliveryFailOffline(payload);
+        setSubmitState('SUCCESS');
+        setSubmitMessage('Mat mang: action duoc enqueue va se retry sau.');
+        return;
+      }
+
+      setSubmitState('FAILED');
+      setSubmitMessage(
+        error instanceof Error ? error.message : 'Delivery fail failed.',
+      );
+      setGlobalError(error instanceof Error ? error.message : 'Delivery fail failed.');
+    }
+  };
+
   const onSubmit = handleSubmit(async (values) => {
-    const payload = {
+    const resolvedIdempotencyKey =
+      values.idempotencyKey.trim().length > 0
+        ? values.idempotencyKey.trim()
+        : createIdempotencyKey('delivery-fail');
+
+    setValue('idempotencyKey', resolvedIdempotencyKey, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+
+    const payload: DeliveryFailPayload = {
       shipmentCode: values.shipmentCode,
       taskId: route.params.taskId ?? null,
       courierId: null,
@@ -55,146 +104,96 @@ export function DeliveryFailScreen({
       actor: session?.user.username ?? null,
       note: values.note || null,
       occurredAt: new Date().toISOString(),
-      idempotencyKey: createIdempotencyKey('delivery-fail'),
-      failReasonCode: values.failReasonCode || null,
-      createNdr: values.createNdr,
-      startReturn: values.startReturn,
+      idempotencyKey: resolvedIdempotencyKey,
+      failReasonCode: values.reasonCode,
+      createNdr: values.nextAction === 'CREATE_NDR',
+      startReturn: values.nextAction === 'START_RETURN',
     };
 
-    try {
-      await mutation.mutateAsync(payload);
-      navigation.goBack();
-    } catch (error) {
-      if (shouldQueueOffline(error)) {
-        await enqueueOfflineJob(createDeliveryFailOfflineJob(payload));
-        navigation.goBack();
-        return;
-      }
-
-      setGlobalError(
-        error instanceof Error ? error.message : 'Delivery fail failed.',
-      );
-    }
+    await executeSubmit(payload);
   });
+
+  const handleSelectNextAction = (nextAction: DeliveryFailNextAction) => {
+    setSelectedNextAction(nextAction);
+    setValue('nextAction', nextAction, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  };
+
+  const handleGenerateIdempotencyKey = () => {
+    setValue('idempotencyKey', createIdempotencyKey('delivery-fail'), {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  };
+
+  const handleRetryLastSubmit = async () => {
+    if (!lastPayload) {
+      return;
+    }
+
+    await executeSubmit(lastPayload);
+  };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Delivery fail / NDR</Text>
       <Text style={styles.helperText}>
-        `createNdr` va `startReturn` chi la command flag gui len server, app
-        khong tu orchestration workflow.
+        Chi gui payload theo reasonCode va nextAction nguoi dung chon. App khong
+        tu suy dien luong reschedule/return.
+      </Text>
+      <Text style={styles.helperText}>
+        Khong xu ly event `ndr.created` hoac `return.started` o client.
       </Text>
 
-      <Controller
-        control={control}
-        name="shipmentCode"
-        render={({ field, fieldState }) => (
-          <View style={styles.fieldBlock}>
-            <Text style={styles.label}>Shipment code</Text>
-            <TextInput
-              value={field.value}
-              onChangeText={field.onChange}
-              style={styles.input}
-              placeholder="SHP123"
-            />
-            {fieldState.error ? (
-              <Text style={styles.errorText}>{fieldState.error.message}</Text>
-            ) : null}
-          </View>
-        )}
-      />
+      {submitMessage ? (
+        <Text
+          style={submitState === 'FAILED' ? styles.errorText : styles.successText}
+        >
+          {submitMessage}
+        </Text>
+      ) : null}
 
-      <Controller
-        control={control}
-        name="locationCode"
-        render={({ field }) => (
-          <View style={styles.fieldBlock}>
-            <Text style={styles.label}>Location code</Text>
-            <TextInput
-              value={field.value}
-              onChangeText={field.onChange}
-              style={styles.input}
-              placeholder="HCM-HUB-01"
-            />
-          </View>
-        )}
-      />
+      {lastResult ? (
+        <View style={styles.resultCard}>
+          <Text style={styles.resultTitle}>
+            Server response ({lastResult.source})
+          </Text>
+          <Text style={styles.resultText}>
+            Attempt: {lastResult.result.deliveryAttempt.id}
+          </Text>
+          <Text style={styles.resultText}>
+            Status: {lastResult.result.deliveryAttempt.status}
+          </Text>
+          <Text style={styles.resultText}>
+            NDR case: {lastResult.result.ndrCase ? 'AVAILABLE' : 'N/A'}
+          </Text>
+          <Text style={styles.resultText}>
+            Return case: {lastResult.result.returnCase ? 'AVAILABLE' : 'N/A'}
+          </Text>
+        </View>
+      ) : null}
 
-      <Controller
+      <DeliveryFailForm
         control={control}
-        name="failReasonCode"
-        render={({ field }) => (
-          <View style={styles.fieldBlock}>
-            <Text style={styles.label}>Fail reason code</Text>
-            <TextInput
-              value={field.value}
-              onChangeText={field.onChange}
-              style={styles.input}
-              placeholder="CUSTOMER_UNREACHABLE"
-            />
-          </View>
-        )}
-      />
-
-      <Controller
-        control={control}
-        name="note"
-        render={({ field }) => (
-          <View style={styles.fieldBlock}>
-            <Text style={styles.label}>Note</Text>
-            <TextInput
-              multiline
-              value={field.value}
-              onChangeText={field.onChange}
-              style={[styles.input, styles.multilineInput]}
-              placeholder="Failure note"
-            />
-          </View>
-        )}
-      />
-
-      <Controller
-        control={control}
-        name="createNdr"
-        render={({ field }) => (
-          <View style={styles.switchRow}>
-            <View>
-              <Text style={styles.label}>Create NDR</Text>
-              <Text style={styles.switchHint}>
-                Bat de server tao NDR case neu contract ho tro.
-              </Text>
-            </View>
-            <Switch value={field.value} onValueChange={field.onChange} />
-          </View>
-        )}
-      />
-
-      <Controller
-        control={control}
-        name="startReturn"
-        render={({ field }) => (
-          <View style={styles.switchRow}>
-            <View>
-              <Text style={styles.label}>Start return</Text>
-              <Text style={styles.switchHint}>
-                TODO: xac nhan contract `startReturn` voi BFF/backend.
-              </Text>
-            </View>
-            <Switch value={field.value} onValueChange={field.onChange} />
-          </View>
-        )}
+        selectedNextAction={selectedNextAction}
+        submitting={submitState === 'SUBMITTING'}
+        onSelectNextAction={handleSelectNextAction}
+        onGenerateIdempotencyKey={handleGenerateIdempotencyKey}
+        onSubmit={() => {
+          void onSubmit();
+        }}
       />
 
       <Pressable
-        disabled={mutation.isPending}
-        onPress={onSubmit}
-        style={styles.primaryButton}
+        disabled={submitState === 'SUBMITTING' || !lastPayload}
+        onPress={() => {
+          void handleRetryLastSubmit();
+        }}
+        style={styles.retryButton}
       >
-        {mutation.isPending ? (
-          <ActivityIndicator color="#ffffff" />
-        ) : (
-          <Text style={styles.primaryButtonText}>Submit delivery failure</Text>
-        )}
+        <Text style={styles.retryButtonText}>Retry last submit</Text>
       </Pressable>
     </ScrollView>
   );
@@ -216,56 +215,46 @@ const styles = StyleSheet.create({
   },
   helperText: {
     color: '#64748b',
-    marginBottom: 20,
+    marginBottom: 8,
   },
-  fieldBlock: {
-    marginBottom: 16,
+  successText: {
+    marginTop: 8,
+    marginBottom: 12,
+    color: '#0f766e',
   },
-  label: {
-    color: '#334155',
-    fontWeight: '600',
+  resultCard: {
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    backgroundColor: '#fef2f2',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 14,
+  },
+  resultTitle: {
+    color: '#991b1b',
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  resultText: {
+    color: '#991b1b',
     marginBottom: 4,
   },
-  input: {
+  retryButton: {
+    marginTop: 12,
+    backgroundColor: '#ffffff',
     borderWidth: 1,
     borderColor: '#cbd5e1',
     borderRadius: 10,
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  multilineInput: {
-    minHeight: 100,
-    textAlignVertical: 'top',
-  },
-  switchRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 14,
-    marginBottom: 16,
-  },
-  switchHint: {
-    color: '#64748b',
-    maxWidth: 240,
-  },
-  primaryButton: {
-    backgroundColor: '#0f172a',
-    paddingVertical: 14,
-    borderRadius: 10,
+    paddingVertical: 12,
     alignItems: 'center',
   },
-  primaryButtonText: {
-    color: '#ffffff',
+  retryButtonText: {
+    color: '#0f172a',
     fontWeight: '700',
   },
   errorText: {
-    marginTop: 6,
+    marginTop: 8,
+    marginBottom: 12,
     color: '#b91c1c',
   },
 });

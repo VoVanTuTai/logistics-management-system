@@ -2,16 +2,20 @@ import React from 'react';
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
 
-import { useTaskDetailQuery } from '../../features/tasks/tasks.api';
+import { Card } from '../../components/ui/Card';
+import { Screen } from '../../components/ui/Screen';
+import { StatusBadge } from '../../components/ui/StatusBadge';
+import { useTaskDetailQuery } from '../../features/tasks/tasks.queries';
 import type { RootStackParamList } from '../../navigation/navigation.types';
 import { useAppStore } from '../../store/appStore';
+import { theme } from '../../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'TaskDetail'>;
 
@@ -24,9 +28,29 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
 
   if (taskQuery.isLoading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator />
-      </View>
+      <Screen scroll={false}>
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={styles.centeredText}>Dang tai chi tiet...</Text>
+        </View>
+      </Screen>
+    );
+  }
+
+  if (taskQuery.isError) {
+    return (
+      <Screen scroll={false}>
+        <View style={styles.centered}>
+          <Text style={styles.errorText}>
+            {taskQuery.error instanceof Error
+              ? taskQuery.error.message
+              : 'Tai task detail that bai.'}
+          </Text>
+          <Pressable onPress={() => void taskQuery.refetch()} style={styles.retryButton}>
+            <Text style={styles.retryButtonText}>Thu lai</Text>
+          </Pressable>
+        </View>
+      </Screen>
     );
   }
 
@@ -34,178 +58,219 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
 
   if (!task) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.errorText}>Khong tim thay task.</Text>
-      </View>
+      <Screen scroll={false}>
+        <View style={styles.centered}>
+          <Text style={styles.errorText}>Khong tim thay task.</Text>
+        </View>
+      </Screen>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>{task.taskCode}</Text>
-      <Text style={styles.meta}>Task type: {task.taskType}</Text>
-      <Text style={styles.meta}>Task status: {task.status}</Text>
-      <Text style={styles.meta}>
-        Shipment code: {task.shipmentCode ?? 'N/A'}
-      </Text>
-      <Text style={styles.meta}>
-        Pickup request: {task.pickupRequestId ?? 'N/A'}
-      </Text>
-      <Text style={styles.meta}>Note: {task.note ?? 'N/A'}</Text>
+    <Screen contentContainerStyle={styles.content}>
+      <Card style={styles.heroCard}>
+        <Text style={styles.taskCode}>{task.taskCode}</Text>
+        <View style={styles.heroMetaRow}>
+          <StatusBadge label={task.status} variant="info" />
+          <StatusBadge label={task.taskType} variant="neutral" />
+        </View>
+        <Text style={styles.shipmentText}>
+          Shipment code: {task.shipmentCode ?? 'N/A'}
+        </Text>
+      </Card>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Assignments</Text>
-        {task.assignments.length === 0 ? (
-          <Text style={styles.meta}>Khong co assignment.</Text>
-        ) : (
-          task.assignments.map((assignment) => (
-            <Text key={assignment.id} style={styles.meta}>
-              {assignment.courierId} - assignedAt {assignment.assignedAt}
-            </Text>
-          ))
-        )}
-      </View>
+      <Card>
+        <Text style={styles.sectionTitle}>Thong tin chi tiet</Text>
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Pickup request</Text>
+          <Text style={styles.infoValue}>{task.pickupRequestId ?? 'N/A'}</Text>
+        </View>
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Note</Text>
+          <Text style={styles.infoValue}>{task.note ?? 'N/A'}</Text>
+        </View>
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Assignments</Text>
+          <Text style={styles.infoValue}>{task.assignments.length}</Text>
+        </View>
+      </Card>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Actions</Text>
-        <Text style={styles.helperText}>
-          TODO: action availability nen duoc BFF/backend tra ve ro rang, mobile
-          khong tu suy dien workflow.
+      <Card>
+        <Text style={styles.sectionTitle}>Tac vu nhanh</Text>
+        <Text style={styles.sectionHint}>
+          Mobile chi navigate va gui action; khong tu suy dien workflow backend.
         </Text>
 
-        <Pressable
-          onPress={() =>
-            navigation.navigate('PickupScan', {
-              taskId: task.id,
-              shipmentCode: task.shipmentCode ?? undefined,
-            })
-          }
-          style={styles.primaryButton}
-        >
-          <Text style={styles.primaryButtonText}>Scan pickup</Text>
-        </Pressable>
+        <View style={styles.actionGrid}>
+          <Pressable
+            onPress={() =>
+              navigation.navigate('PickupScan', {
+                taskId: task.id,
+                shipmentCode: task.shipmentCode ?? undefined,
+              })
+            }
+            style={styles.primaryActionBtn}
+          >
+            <Ionicons name="scan" size={18} color="#FFFFFF" />
+            <Text style={styles.primaryActionText}>Pickup scan</Text>
+          </Pressable>
 
-        <Pressable
-          onPress={() =>
-            navigation.navigate('HubScan', {
-              mode: 'INBOUND',
-              taskId: task.id,
-              shipmentCode: task.shipmentCode ?? undefined,
-            })
-          }
-          style={styles.secondaryButton}
-        >
-          <Text style={styles.secondaryButtonText}>Hub inbound</Text>
-        </Pressable>
+          <Pressable
+            onPress={() =>
+              navigation.navigate('HubScan', {
+                mode: 'INBOUND',
+                taskId: task.id,
+                shipmentCode: task.shipmentCode ?? undefined,
+              })
+            }
+            style={styles.secondaryActionBtn}
+          >
+            <Text style={styles.secondaryActionText}>Hub inbound</Text>
+          </Pressable>
 
-        <Pressable
-          onPress={() =>
-            navigation.navigate('HubScan', {
-              mode: 'OUTBOUND',
-              taskId: task.id,
-              shipmentCode: task.shipmentCode ?? undefined,
-            })
-          }
-          style={styles.secondaryButton}
-        >
-          <Text style={styles.secondaryButtonText}>Hub outbound</Text>
-        </Pressable>
+          <Pressable
+            onPress={() =>
+              navigation.navigate('HubScan', {
+                mode: 'OUTBOUND',
+                taskId: task.id,
+                shipmentCode: task.shipmentCode ?? undefined,
+              })
+            }
+            style={styles.secondaryActionBtn}
+          >
+            <Text style={styles.secondaryActionText}>Hub outbound</Text>
+          </Pressable>
 
-        <Pressable
-          onPress={() =>
-            navigation.navigate('DeliverySuccess', {
-              taskId: task.id,
-              shipmentCode: task.shipmentCode ?? undefined,
-            })
-          }
-          style={styles.secondaryButton}
-        >
-          <Text style={styles.secondaryButtonText}>Delivery success</Text>
-        </Pressable>
+          <Pressable
+            onPress={() =>
+              navigation.navigate('DeliverySuccess', {
+                taskId: task.id,
+                shipmentCode: task.shipmentCode ?? undefined,
+              })
+            }
+            style={styles.secondaryActionBtn}
+          >
+            <Text style={styles.secondaryActionText}>Delivery success</Text>
+          </Pressable>
 
-        <Pressable
-          onPress={() =>
-            navigation.navigate('DeliveryFail', {
-              taskId: task.id,
-              shipmentCode: task.shipmentCode ?? undefined,
-            })
-          }
-          style={styles.secondaryButton}
-        >
-          <Text style={styles.secondaryButtonText}>Delivery fail / NDR</Text>
-        </Pressable>
-      </View>
-    </ScrollView>
+          <Pressable
+            onPress={() =>
+              navigation.navigate('DeliveryFail', {
+                taskId: task.id,
+                shipmentCode: task.shipmentCode ?? undefined,
+              })
+            }
+            style={styles.secondaryActionBtn}
+          >
+            <Text style={styles.secondaryActionText}>Delivery fail / NDR</Text>
+          </Pressable>
+        </View>
+      </Card>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-  },
   content: {
-    padding: 16,
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.lg,
+    gap: theme.spacing.md,
   },
   centered: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    justifyContent: 'center',
+    padding: theme.spacing.xl,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#0f172a',
-    marginBottom: 12,
+  centeredText: {
+    marginTop: theme.spacing.sm,
+    color: theme.colors.textMuted,
   },
-  meta: {
-    color: '#475569',
-    marginBottom: 6,
+  heroCard: {
+    backgroundColor: '#EDF4FF',
+    borderColor: '#CDE0FF',
+    gap: theme.spacing.sm,
   },
-  section: {
-    marginTop: 20,
-    padding: 16,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+  taskCode: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: theme.colors.primary,
+  },
+  heroMetaRow: {
+    flexDirection: 'row',
+    gap: theme.spacing.sm,
+  },
+  shipmentText: {
+    color: theme.colors.textSecondary,
+    marginTop: 4,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#0f172a',
-    marginBottom: 8,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.sm,
   },
-  helperText: {
-    color: '#64748b',
-    marginBottom: 12,
+  sectionHint: {
+    color: theme.colors.textMuted,
+    marginBottom: theme.spacing.md,
   },
-  primaryButton: {
-    backgroundColor: '#0f172a',
-    paddingVertical: 12,
-    borderRadius: 10,
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
+  },
+  infoLabel: {
+    color: theme.colors.textMuted,
+    flex: 1,
+  },
+  infoValue: {
+    color: theme.colors.textSecondary,
+    flex: 2,
+    textAlign: 'right',
+  },
+  actionGrid: {
+    gap: theme.spacing.sm,
+  },
+  primaryActionBtn: {
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.radius.md,
+    paddingVertical: 14,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    justifyContent: 'center',
+    gap: 8,
   },
-  primaryButtonText: {
-    color: '#ffffff',
+  primaryActionText: {
+    color: '#FFFFFF',
     fontWeight: '700',
   },
-  secondaryButton: {
-    backgroundColor: '#ffffff',
+  secondaryActionBtn: {
     borderWidth: 1,
-    borderColor: '#cbd5e1',
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.md,
     paddingVertical: 12,
-    borderRadius: 10,
     alignItems: 'center',
-    marginBottom: 10,
+    backgroundColor: '#FFFFFF',
   },
-  secondaryButtonText: {
-    color: '#0f172a',
+  secondaryActionText: {
+    color: theme.colors.textPrimary,
     fontWeight: '700',
   },
   errorText: {
-    color: '#b91c1c',
+    color: theme.colors.danger,
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: theme.spacing.md,
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.radius.md,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
 });

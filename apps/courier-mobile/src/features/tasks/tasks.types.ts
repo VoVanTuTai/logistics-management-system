@@ -8,11 +8,15 @@ export interface TaskAssignmentDto {
   updatedAt: string;
 }
 
+export type TaskType = 'PICKUP' | 'DELIVERY' | 'RETURN';
+export type TaskStatus = 'CREATED' | 'ASSIGNED' | 'COMPLETED' | 'CANCELLED';
+export type TaskListFilter = 'ALL' | TaskType;
+
 export interface TaskDto {
   id: string;
   taskCode: string;
-  taskType: 'PICKUP' | 'DELIVERY' | 'RETURN';
-  status: 'CREATED' | 'ASSIGNED' | 'COMPLETED' | 'CANCELLED';
+  taskType: TaskType;
+  status: TaskStatus;
   shipmentCode: string | null;
   pickupRequestId: string | null;
   note: string | null;

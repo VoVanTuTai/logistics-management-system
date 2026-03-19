@@ -23,5 +23,10 @@ export type RootStackParamList = {
 
 export type MainTabParamList = {
   Tasks: undefined;
+  Stats: undefined;
+  Scan: undefined;
+  Chat: undefined;
   Profile: undefined;
 };
+
+
