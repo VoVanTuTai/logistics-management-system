@@ -3,6 +3,8 @@ export interface ShipmentListItemDto {
   shipmentCode: string;
   currentStatus: string;
   currentLocation: string | null;
+  parcelType: string | null;
+  shippingFee: number | null;
   receiverRegion: string | null;
   senderName: string | null;
   senderPhone: string | null;
@@ -23,6 +25,8 @@ export interface ShipmentDetailDto {
   shipmentCode: string;
   currentStatus: string;
   currentLocation: string | null;
+  parcelType: string | null;
+  shippingFee: number | null;
   senderName: string | null;
   senderPhone: string | null;
   senderAddress: string | null;

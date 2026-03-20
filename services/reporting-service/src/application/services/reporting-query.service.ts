@@ -78,9 +78,16 @@ export class ReportingQueryService {
       hubCode: query.hubCode,
       zoneCode: query.zoneCode,
     };
+    const hasScopedFilter = this.hasScopedDimensionFilter(query);
+    const scopedTotals = await this.reportingProjectionStore.getDailyTotals(
+      metricDate,
+      filter,
+    );
     const totals =
-      (await this.reportingProjectionStore.getDailyTotals(metricDate, filter)) ??
-      (await this.reportingProjectionStore.getDailyGlobal(metricDate));
+      scopedTotals ??
+      (hasScopedFilter
+        ? null
+        : await this.reportingProjectionStore.getDailyGlobal(metricDate));
     const totalDelivered = totals?.deliveriesDelivered ?? 0;
     const totalFailed = totals?.deliveriesFailed ?? 0;
     const totalDeliveryAttempts = totalDelivered + totalFailed;
@@ -128,6 +135,7 @@ export class ReportingQueryService {
         'hub',
         {
           courierCode: query.courierCode,
+          hubCode: query.hubCode,
           zoneCode: query.zoneCode,
         },
       ),
@@ -141,6 +149,14 @@ export class ReportingQueryService {
       ),
       sourceType: 'read_model',
     };
+  }
+
+  private hasScopedDimensionFilter(
+    query: Pick<DailyReportQuery, 'courierCode' | 'hubCode' | 'zoneCode'>,
+  ): boolean {
+    return [query.courierCode, query.hubCode, query.zoneCode].some(
+      (value) => typeof value === 'string' && value.trim().length > 0,
+    );
   }
 
   getCourier(query: CourierReportQuery): Promise<KpiDaily[]> {

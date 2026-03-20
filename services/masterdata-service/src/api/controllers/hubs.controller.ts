@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -48,5 +49,10 @@ export class HubsController {
     @Body() body: Partial<HubWriteInput>,
   ): Promise<Hub> {
     return this.hubsService.update(id, body);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string): Promise<{ deleted: boolean; hubId: string | null }> {
+    return this.hubsService.remove(id);
   }
 }

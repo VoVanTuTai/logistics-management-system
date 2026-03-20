@@ -36,10 +36,11 @@ export function LoginPage(): React.JSX.Element {
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h2 style={styles.title}>Admin Login</h2>
-        <p style={styles.subtitle}>Masterdata administration portal</p>
+    <div className="auth-page auth-page-admin">
+      <div className="auth-card">
+        <p className="auth-kicker">Admin Portal</p>
+        <h2 className="auth-title">Sign In To System Governance</h2>
+        <p className="auth-subtitle">Manage RBAC, hubs, zones, NDR reasons, and shared configs.</p>
         <LoginForm
           isSubmitting={isSubmitting || loginMutation.isPending}
           errorMessage={authError}
@@ -50,29 +51,3 @@ export function LoginPage(): React.JSX.Element {
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    minHeight: '100vh',
-    display: 'grid',
-    placeItems: 'center',
-    padding: 16,
-  },
-  card: {
-    width: '100%',
-    maxWidth: 420,
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    border: '1px solid #d9def3',
-    padding: 20,
-  },
-  title: {
-    marginTop: 0,
-    marginBottom: 4,
-  },
-  subtitle: {
-    marginTop: 0,
-    marginBottom: 16,
-    color: '#2d3f99',
-  },
-};

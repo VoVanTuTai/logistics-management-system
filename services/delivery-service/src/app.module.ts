@@ -24,6 +24,7 @@ import { PodPrismaRepository } from './infrastructure/prisma/pod-prisma.reposito
 import { PrismaService } from './infrastructure/prisma/prisma.service';
 import { ReturnCasePrismaRepository } from './infrastructure/prisma/return-case-prisma.repository';
 import { DeliveryEventsConsumer } from './messaging/consumers/delivery-events.consumer';
+import { DeliveryRabbitmqConsumerService } from './messaging/consumers/delivery-rabbitmq-consumer.service';
 import { DeliveryEventsProducer } from './messaging/producers/delivery-events.producer';
 import { DeliveryOutboxRelayService } from './messaging/outbox/delivery-outbox-relay.service';
 import { DeliveryOutboxService } from './messaging/outbox/delivery-outbox.service';
@@ -39,6 +40,7 @@ import { DeliveryOutboxService } from './messaging/outbox/delivery-outbox.servic
     DeliveryEventHandlersService,
     DeliveryEventsProducer,
     DeliveryEventsConsumer,
+    DeliveryRabbitmqConsumerService,
     DeliveryOutboxService,
     DeliveryOutboxRelayService,
     {

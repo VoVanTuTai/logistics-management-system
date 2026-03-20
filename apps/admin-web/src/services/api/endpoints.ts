@@ -4,6 +4,8 @@ export const opsEndpoints = {
     login: '/ops/auth/auth/login',
     refresh: '/ops/auth/auth/refresh',
     logout: '/ops/auth/auth/logout',
+    users: '/ops/auth/auth/users',
+    userDetail: (userId: string) => `/ops/auth/auth/users/${userId}`,
   },
   dashboard: {
     kpis: '/ops/reporting/reports/ops-dashboard',

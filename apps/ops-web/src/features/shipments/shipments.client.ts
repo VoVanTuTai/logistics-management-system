@@ -54,7 +54,10 @@ function resolveReceiverRegion(metadata: Record<string, unknown> | null): string
   }
 
   const receiver = asRecord(metadata.receiver);
-  const region = asString(receiver?.region) ?? asString(metadata.receiverRegion);
+  const region =
+    asString(receiver?.region) ??
+    asString(receiver?.province) ??
+    asString(metadata.receiverRegion);
 
   if (region) {
     return region;
@@ -154,12 +157,49 @@ function resolveServiceType(metadata: Record<string, unknown> | null): string | 
   return asString(service?.type) ?? asString(metadata.serviceType);
 }
 
+function resolveParcelType(metadata: Record<string, unknown> | null): string | null {
+  if (!metadata) {
+    return null;
+  }
+
+  const parcel = asRecord(metadata.parcel);
+  const item = asRecord(metadata.item);
+
+  return (
+    asString(parcel?.type) ??
+    asString(item?.type) ??
+    asString(metadata.parcelType) ??
+    asString(metadata.itemType) ??
+    asString(metadata.goodsType) ??
+    asString(metadata.productType)
+  );
+}
+
 function resolveCodAmount(metadata: Record<string, unknown> | null): number | null {
   if (!metadata) {
     return null;
   }
 
   return asNumber(metadata.codAmount);
+}
+
+function resolveShippingFee(metadata: Record<string, unknown> | null): number | null {
+  if (!metadata) {
+    return null;
+  }
+
+  const pricing = asRecord(metadata.pricing);
+
+  return (
+    asNumber(metadata.shippingFee) ??
+    asNumber(metadata.deliveryFee) ??
+    asNumber(metadata.estimatedFee) ??
+    asNumber(metadata.fee) ??
+    asNumber(pricing?.shippingFee) ??
+    asNumber(pricing?.deliveryFee) ??
+    asNumber(pricing?.estimatedFee) ??
+    asNumber(pricing?.fee)
+  );
 }
 
 function resolveDeliveryNote(metadata: Record<string, unknown> | null): string | null {
@@ -193,6 +233,8 @@ function mapShipmentToListItem(payload: ShipmentApiResponse): ShipmentListItemDt
     shipmentCode: payload.code,
     currentStatus: payload.currentStatus,
     currentLocation: null,
+    parcelType: resolveParcelType(metadata),
+    shippingFee: resolveShippingFee(metadata),
     receiverRegion: resolveReceiverRegion(metadata),
     senderName: resolveSenderName(metadata),
     senderPhone: resolveSenderPhone(metadata),
@@ -217,6 +259,8 @@ function mapShipmentToDetail(payload: ShipmentApiResponse): ShipmentDetailDto {
     shipmentCode: payload.code,
     currentStatus: payload.currentStatus,
     currentLocation: null,
+    parcelType: resolveParcelType(metadata),
+    shippingFee: resolveShippingFee(metadata),
     senderName: resolveSenderName(metadata),
     senderPhone: resolveSenderPhone(metadata),
     senderAddress: resolveSenderAddress(metadata),

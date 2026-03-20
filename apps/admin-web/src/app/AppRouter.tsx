@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   BrowserRouter,
-  Link,
+  NavLink,
   Navigate,
   Outlet,
   Route,
@@ -19,6 +19,8 @@ import { ConfigManagementPage } from '../pages/masterdata/ConfigManagementPage';
 import { HubManagementPage } from '../pages/masterdata/HubManagementPage';
 import { NdrReasonManagementPage } from '../pages/masterdata/NdrReasonManagementPage';
 import { ZoneManagementPage } from '../pages/masterdata/ZoneManagementPage';
+import { OpsUsersPage } from '../pages/users/OpsUsersPage';
+import { ShipperUsersPage } from '../pages/users/ShipperUsersPage';
 
 function AdminGuard(): React.JSX.Element {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -41,38 +43,69 @@ function AdminLayout(): React.JSX.Element {
   const accessToken = session?.tokens.accessToken ?? null;
   const logoutMutation = useLogoutMutation(accessToken);
 
+  const navItems = useMemo(
+    () => [
+      { label: 'Overview', to: routePaths.dashboard },
+      { label: 'Ops Accounts', to: routePaths.opsUsers },
+      { label: 'Shipper Accounts', to: routePaths.shipperUsers },
+      { label: 'Hubs', to: routePaths.masterdataHubs },
+      { label: 'Zones', to: routePaths.masterdataZones },
+      { label: 'NDR Reasons', to: routePaths.masterdataNdrReasons },
+      { label: 'Configs', to: routePaths.masterdataConfigs },
+    ],
+    [],
+  );
+
   const onLogout = async () => {
     await logoutMutation.mutateAsync();
     navigate(routePaths.login, { replace: true });
   };
 
   return (
-    <div style={layoutStyles.shell}>
-      <header style={layoutStyles.header}>
+    <div className="admin-layout">
+      <aside className="admin-sidebar">
         <div>
-          <h1 style={layoutStyles.title}>JMS Admin Console</h1>
-          <small style={layoutStyles.subtitle}>
-            Higher-privilege administration workspace
-          </small>
+          <h1>Admin Core</h1>
+          <p>System and masterdata governance</p>
         </div>
-        <div style={layoutStyles.userCard}>
+
+        <div className="admin-user-card">
           <strong>{session?.user.username ?? 'admin'}</strong>
           <small>roles: {(session?.user.roles ?? []).join(', ')}</small>
           <button type="button" onClick={() => void onLogout()}>
             Logout
           </button>
         </div>
-      </header>
-      <nav style={layoutStyles.nav}>
-        <Link to={routePaths.dashboard}>Overview</Link>
-        <Link to={routePaths.masterdataHubs}>Master Data / Hubs</Link>
-        <Link to={routePaths.masterdataZones}>Master Data / Zones</Link>
-        <Link to={routePaths.masterdataNdrReasons}>Master Data / NDR Reasons</Link>
-        <Link to={routePaths.masterdataConfigs}>Master Data / Configs</Link>
-      </nav>
-      <main style={layoutStyles.main}>
-        <Outlet />
-      </main>
+
+        <nav className="admin-nav-group">
+          <h2>Master Data</h2>
+          {navItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) =>
+                isActive ? 'admin-nav-link admin-nav-link-active' : 'admin-nav-link'
+              }
+            >
+              {item.label}
+            </NavLink>
+          ))}
+        </nav>
+      </aside>
+
+      <div className="admin-workspace">
+        <header className="admin-topbar">
+          <div>
+            <h2>JMS Admin Console</h2>
+            <p>Higher-privilege workspace for shared catalogs and system controls.</p>
+          </div>
+          <span className="admin-tag">SYSTEM_ADMIN</span>
+        </header>
+
+        <main className="admin-main-panel">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }
@@ -86,16 +119,12 @@ export function AppRouter(): React.JSX.Element {
           <Route path={routePaths.appRoot} element={<AdminLayout />}>
             <Route index element={<Navigate to={routePaths.dashboard} replace />} />
             <Route path={routePaths.dashboardLeaf} element={<AdminDashboardPage />} />
+            <Route path={routePaths.opsUsersLeaf} element={<OpsUsersPage />} />
+            <Route path={routePaths.shipperUsersLeaf} element={<ShipperUsersPage />} />
             <Route path={routePaths.masterdataHubsLeaf} element={<HubManagementPage />} />
             <Route path={routePaths.masterdataZonesLeaf} element={<ZoneManagementPage />} />
-            <Route
-              path={routePaths.masterdataNdrReasonsLeaf}
-              element={<NdrReasonManagementPage />}
-            />
-            <Route
-              path={routePaths.masterdataConfigsLeaf}
-              element={<ConfigManagementPage />}
-            />
+            <Route path={routePaths.masterdataNdrReasonsLeaf} element={<NdrReasonManagementPage />} />
+            <Route path={routePaths.masterdataConfigsLeaf} element={<ConfigManagementPage />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to={routePaths.login} replace />} />
@@ -103,53 +132,3 @@ export function AppRouter(): React.JSX.Element {
     </BrowserRouter>
   );
 }
-
-const layoutStyles: Record<string, React.CSSProperties> = {
-  shell: {
-    display: 'grid',
-    gridTemplateRows: 'auto auto 1fr',
-    gap: 12,
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    gap: 12,
-    alignItems: 'flex-start',
-    padding: '8px 4px',
-  },
-  title: {
-    margin: 0,
-    fontSize: 28,
-    letterSpacing: 0.2,
-  },
-  subtitle: {
-    color: '#2d3f99',
-    marginTop: 4,
-    display: 'block',
-  },
-  userCard: {
-    display: 'grid',
-    gap: 4,
-    padding: 10,
-    border: '1px solid #d9def3',
-    borderRadius: 12,
-    backgroundColor: '#ffffff',
-    minWidth: 250,
-  },
-  nav: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: 10,
-    padding: '10px 12px',
-    borderRadius: 12,
-    border: '1px solid #d9def3',
-    backgroundColor: '#ffffff',
-  },
-  main: {
-    borderRadius: 14,
-    border: '1px solid #e7ebf8',
-    backgroundColor: '#ffffff',
-    padding: '14px 16px',
-    minHeight: 500,
-  },
-};

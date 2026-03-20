@@ -12,45 +12,16 @@ export function AppShell({ children }: AppShellProps): React.JSX.Element {
   const clearGlobalError = useUiStore((state) => state.clearGlobalError);
 
   return (
-    <div style={styles.root}>
+    <div className="app-root-shell">
       {globalError ? (
-        <button type="button" onClick={clearGlobalError} style={styles.errorBanner}>
+        <button type="button" onClick={clearGlobalError} className="global-banner global-banner-error">
           {globalError}
         </button>
       ) : null}
-      {globalLoading ? <div style={styles.loadingBanner}>{globalLoading}</div> : null}
-      <div style={styles.content}>{children}</div>
+      {globalLoading ? (
+        <div className="global-banner global-banner-info">{globalLoading}</div>
+      ) : null}
+      <div className="app-root-content">{children}</div>
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  root: {
-    minHeight: '100vh',
-    background:
-      '#ffffff',
-    color: '#000080',
-    fontFamily:
-      '"IBM Plex Sans", "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif',
-  },
-  content: {
-    padding: '16px 20px',
-  },
-  errorBanner: {
-    width: '100%',
-    border: 'none',
-    textAlign: 'left',
-    backgroundColor: '#fee2e2',
-    color: '#7f1d1d',
-    padding: '10px 16px',
-    fontWeight: 600,
-    cursor: 'pointer',
-  },
-  loadingBanner: {
-    backgroundColor: '#eef2ff',
-    color: '#000080',
-    padding: '8px 16px',
-    fontWeight: 600,
-  },
-};
-

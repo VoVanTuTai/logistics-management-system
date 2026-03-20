@@ -2,11 +2,13 @@ import { useQueryClient } from '@tanstack/react-query';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
+import { useHubsQuery } from '../../features/masterdata/masterdata.api';
 import { useShipmentsQuery } from '../../features/shipments/shipments.api';
 import { tasksClient, useCourierOptionsQuery, useTasksQuery } from '../../features/tasks/tasks.api';
 import type { TaskListFilters, TaskListItemDto } from '../../features/tasks/tasks.types';
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
+import { deriveHubScopeTokens, isShipmentInScope } from '../../utils/locationScope';
 import { queryKeys } from '../../utils/queryKeys';
 import { TasksTable } from './TasksTable';
 
@@ -17,7 +19,11 @@ function canBulkAssignTask(task: TaskListItemDto): boolean {
 export function TaskAssignmentPage(): React.JSX.Element {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
-  const accessToken = useAuthStore((state) => state.session?.tokens.accessToken ?? null);
+  const session = useAuthStore((state) => state.session);
+  const accessToken = session?.tokens.accessToken ?? null;
+  const currentUserRoles = session?.user.roles ?? [];
+  const assignedHubCodes = session?.user.hubCodes ?? [];
+  const canViewAllHubAreas = currentUserRoles.includes('SYSTEM_ADMIN');
 
   const filters: TaskListFilters = {
     taskType: searchParams.get('taskType') ?? undefined,
@@ -36,7 +42,30 @@ export function TaskAssignmentPage(): React.JSX.Element {
 
   const tasksQuery = useTasksQuery(accessToken, filters);
   const shipmentsQuery = useShipmentsQuery(accessToken, {});
+  const hubsQuery = useHubsQuery(accessToken, {});
   const courierOptionsQuery = useCourierOptionsQuery(accessToken);
+  const hubScopeTokens = useMemo(
+    () => deriveHubScopeTokens(hubsQuery.data ?? [], assignedHubCodes),
+    [assignedHubCodes, hubsQuery.data],
+  );
+  const scopedShipments = useMemo(() => {
+    if (canViewAllHubAreas) {
+      return shipmentsQuery.data ?? [];
+    }
+
+    if (assignedHubCodes.length === 0) {
+      return [];
+    }
+
+    return (shipmentsQuery.data ?? []).filter((shipment) =>
+      isShipmentInScope(shipment, hubScopeTokens),
+    );
+  }, [
+    assignedHubCodes.length,
+    canViewAllHubAreas,
+    hubScopeTokens,
+    shipmentsQuery.data,
+  ]);
 
   useEffect(() => {
     setTaskTypeInput(filters.taskType ?? '');
@@ -78,7 +107,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
       }
     >();
 
-    for (const shipment of shipmentsQuery.data ?? []) {
+    for (const shipment of scopedShipments) {
       if (!shipment.shipmentCode) {
         continue;
       }
@@ -92,7 +121,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
     }
 
     return map;
-  }, [shipmentsQuery.data]);
+  }, [scopedShipments]);
 
   const tasksWithArea = useMemo(() => {
     return (tasksQuery.data ?? []).map((task) => {
@@ -112,26 +141,60 @@ export function TaskAssignmentPage(): React.JSX.Element {
   }, [shipmentLookupByCode, tasksQuery.data]);
 
   const areaOptions = useMemo(() => {
+    const sourceTasks = canViewAllHubAreas
+      ? tasksWithArea
+      : tasksWithArea.filter((task) =>
+          task.shipmentCode ? shipmentLookupByCode.has(task.shipmentCode) : false,
+        );
+
     return Array.from(
       new Set(
-        tasksWithArea
+        sourceTasks
           .map((task) => task.deliveryArea?.trim() ?? '')
           .filter((area) => area.length > 0),
       ),
     ).sort((left, right) => left.localeCompare(right));
-  }, [tasksWithArea]);
+  }, [
+    assignedHubCodes.length,
+    canViewAllHubAreas,
+    shipmentLookupByCode,
+    tasksWithArea,
+  ]);
+
+  const scopedTasks = useMemo(() => {
+    if (canViewAllHubAreas) {
+      return tasksWithArea;
+    }
+
+    if (assignedHubCodes.length === 0) {
+      return [];
+    }
+
+    return tasksWithArea.filter((task) => {
+      if (!task.shipmentCode) {
+        return false;
+      }
+
+      return shipmentLookupByCode.has(task.shipmentCode);
+    });
+  }, [
+    assignedHubCodes.length,
+    canViewAllHubAreas,
+    shipmentLookupByCode,
+    tasksWithArea,
+  ]);
 
   const filteredTasks = useMemo(() => {
     const normalizedDeliveryArea = deliveryAreaInput.trim().toLowerCase();
 
     if (!normalizedDeliveryArea) {
-      return tasksWithArea;
+      return scopedTasks;
     }
 
-    return tasksWithArea.filter(
+    return scopedTasks.filter(
       (task) => task.deliveryArea?.toLowerCase() === normalizedDeliveryArea,
     );
-  }, [deliveryAreaInput, tasksWithArea]);
+  }, [deliveryAreaInput, scopedTasks]);
 
   const selectableTaskIds = useMemo(
     () => filteredTasks.filter((task) => task.isSelectable).map((task) => task.id),
@@ -291,6 +354,14 @@ export function TaskAssignmentPage(): React.JSX.Element {
       <p style={styles.helperText}>
         Filter by task type, status, and delivery area. Select multiple tasks and assign one courier.
       </p>
+      {!canViewAllHubAreas ? (
+        <div style={styles.scopeNotice}>
+          <strong>Hub scope:</strong>{' '}
+          {assignedHubCodes.length > 0
+            ? assignedHubCodes.join(', ')
+            : 'No hub assigned. Contact admin to assign this OPS account.'}
+        </div>
+      ) : null}
 
       <form onSubmit={onFilterSubmit} style={styles.filterForm}>
         <select
@@ -390,12 +461,19 @@ export function TaskAssignmentPage(): React.JSX.Element {
       {shipmentsQuery.isError ? (
         <p style={styles.errorText}>{getErrorMessage(shipmentsQuery.error)}</p>
       ) : null}
+      {hubsQuery.isError ? (
+        <p style={styles.errorText}>{getErrorMessage(hubsQuery.error)}</p>
+      ) : null}
       {courierOptionsQuery.isError ? (
         <p style={styles.errorText}>{getErrorMessage(courierOptionsQuery.error)}</p>
       ) : null}
 
       {tasksQuery.isSuccess && filteredTasks.length === 0 ? (
-        <p>No tasks match current filters.</p>
+        <p>
+          {assignedHubCodes.length === 0 && !canViewAllHubAreas
+            ? 'No task is visible because this OPS account is not assigned to any hub.'
+            : 'No tasks match current filters.'}
+        </p>
       ) : null}
 
       {tasksQuery.isSuccess && filteredTasks.length > 0 ? (
@@ -428,6 +506,15 @@ const styles: Record<string, React.CSSProperties> = {
   },
   helperText: {
     color: '#2d3f99',
+  },
+  scopeNotice: {
+    marginTop: 10,
+    marginBottom: 12,
+    border: '1px solid #d9def3',
+    borderRadius: 10,
+    padding: '8px 12px',
+    backgroundColor: '#f8faff',
+    color: '#1f2b6f',
   },
   bulkPanel: {
     border: '1px solid #d9def3',

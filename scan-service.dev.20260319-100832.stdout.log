@@ -1,0 +1,17 @@
+[32m[Nest] 17496  - [39m03/19/2026, 10:19:18 AM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 17496  - [39m03/19/2026, 10:19:21 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mHealthModule dependencies initialized[39m[38;5;3m +3111ms[39m
+[32m[Nest] 17496  - [39m03/19/2026, 10:19:21 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +89ms[39m
+[32m[Nest] 17496  - [39m03/19/2026, 10:19:22 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mScanController {/scans}:[39m[38;5;3m +188ms[39m
+[32m[Nest] 17496  - [39m03/19/2026, 10:19:22 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/scans/pickup, POST} route[39m[38;5;3m +9ms[39m
+[32m[Nest] 17496  - [39m03/19/2026, 10:19:22 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/scans/inbound, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 17496  - [39m03/19/2026, 10:19:22 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/scans/outbound, POST} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 17496  - [39m03/19/2026, 10:19:22 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mLocationController {/locations}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 17496  - [39m03/19/2026, 10:19:22 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/locations/:shipmentCode, GET} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 17496  - [39m03/19/2026, 10:19:22 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mHealthController {/health}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 17496  - [39m03/19/2026, 10:19:22 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/health, GET} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 17496  - [39m03/19/2026, 10:19:28 AM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +6306ms[39m
+[33m[Nest] 17496  - [39m03/19/2026, 12:50:49 PM [33m   WARN[39m [38;5;3m[ScanOutboxRelayService] [39m[33mEvent "location.updated" with routing key "location.updated" was not routed by exchange "domain.events".[39m
+[33m[Nest] 17496  - [39m03/19/2026, 12:50:52 PM [33m   WARN[39m [38;5;3m[ScanOutboxRelayService] [39m[33mEvent "location.updated" with routing key "location.updated" was not routed by exchange "domain.events".[39m
+[33m[Nest] 17496  - [39m03/19/2026, 12:50:53 PM [33m   WARN[39m [38;5;3m[ScanOutboxRelayService] [39m[33mEvent "location.updated" with routing key "location.updated" was not routed by exchange "domain.events".[39m
+[33m[Nest] 17496  - [39m03/19/2026, 11:40:07 PM [33m   WARN[39m [38;5;3m[ScanOutboxRelayService] [39m[33mEvent "location.updated" with routing key "location.updated" was not routed by exchange "domain.events".[39m
+[33m[Nest] 17496  - [39m03/20/2026, 12:08:58 AM [33m   WARN[39m [38;5;3m[ScanOutboxRelayService] [39m[33mEvent "location.updated" with routing key "location.updated" was not routed by exchange "domain.events".[39m

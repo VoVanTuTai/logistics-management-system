@@ -1,0 +1,105 @@
+[31m[Nest] 5764  - [39m03/19/2026, 2:17:17 PM [31m  ERROR[39m [38;5;3m[ReportingRabbitmqConsumerService] [39m[31mFailed to poll reporting queue: fetch failed[39m
+[31m[Nest] 5764  - [39m03/19/2026, 2:22:31 PM [31m  ERROR[39m [38;5;3m[ReportingRabbitmqConsumerService] [39m[31mFailed to poll reporting queue: fetch failed[39m
+[31m[Nest] 5764  - [39m03/19/2026, 2:22:32 PM [31m  ERROR[39m [38;5;3m[ReportingRabbitmqConsumerService] [39m[31mFailed to poll reporting queue: fetch failed[39m
+[31m[Nest] 5764  - [39m03/19/2026, 2:22:33 PM [31m  ERROR[39m [38;5;3m[ReportingRabbitmqConsumerService] [39m[31mFailed to poll reporting queue: fetch failed[39m
+[31m[Nest] 5764  - [39m03/19/2026, 2:22:34 PM [31m  ERROR[39m [38;5;3m[ReportingRabbitmqConsumerService] [39m[31mFailed to poll reporting queue: fetch failed[39m
+[31m[Nest] 5764  - [39m03/19/2026, 2:22:35 PM [31m  ERROR[39m [38;5;3m[ReportingRabbitmqConsumerService] [39m[31mFailed to poll reporting queue: fetch failed[39m
+[31m[Nest] 5764  - [39m03/19/2026, 2:22:36 PM [31m  ERROR[39m [38;5;3m[ReportingRabbitmqConsumerService] [39m[31mFailed to poll reporting queue: fetch failed[39m
+[31m[Nest] 5764  - [39m03/19/2026, 2:22:37 PM [31m  ERROR[39m [38;5;3m[ReportingRabbitmqConsumerService] [39m[31mFailed to poll reporting queue: fetch failed[39m
+[31m[Nest] 5764  - [39m03/19/2026, 2:22:38 PM [31m  ERROR[39m [38;5;3m[ReportingRabbitmqConsumerService] [39m[31mFailed to poll reporting queue: fetch failed[39m
+[31m[Nest] 5764  - [39m03/19/2026, 2:22:39 PM [31m  ERROR[39m [38;5;3m[ReportingRabbitmqConsumerService] [39m[31mFailed to poll reporting queue: fetch failed[39m
+[31m[Nest] 5764  - [39m03/19/2026, 2:22:40 PM [31m  ERROR[39m [38;5;3m[ReportingRabbitmqConsumerService] [39m[31mFailed to poll reporting queue: fetch failed[39m
+[31m[Nest] 5764  - [39m03/19/2026, 2:22:41 PM [31m  ERROR[39m [38;5;3m[ReportingRabbitmqConsumerService] [39m[31mFailed to poll reporting queue: fetch failed[39m
+[31m[Nest] 5764  - [39m03/19/2026, 2:22:42 PM [31m  ERROR[39m [38;5;3m[ReportingRabbitmqConsumerService] [39m[31mFailed to poll reporting queue: fetch failed[39m
+[31m[Nest] 5764  - [39m03/19/2026, 2:22:43 PM [31m  ERROR[39m [38;5;3m[ReportingRabbitmqConsumerService] [39m[31mFailed to poll reporting queue: fetch failed[39m
+[31m[Nest] 5764  - [39m03/19/2026, 2:22:44 PM [31m  ERROR[39m [38;5;3m[ReportingRabbitmqConsumerService] [39m[31mFailed to poll reporting queue: fetch failed[39m
+[31m[Nest] 5764  - [39m03/19/2026, 2:22:45 PM [31m  ERROR[39m [38;5;3m[ReportingRabbitmqConsumerService] [39m[31mFailed to poll reporting queue: fetch failed[39m
+[31m[Nest] 5764  - [39m03/19/2026, 2:22:46 PM [31m  ERROR[39m [38;5;3m[ReportingRabbitmqConsumerService] [39m[31mFailed to poll reporting queue: fetch failed[39m
+[31m[Nest] 5764  - [39m03/19/2026, 10:27:06 PM [31m  ERROR[39m [38;5;3m[ReportingRabbitmqConsumerService] [39m[31mFailed to poll reporting queue: fetch failed[39m
+[31m[Nest] 5764  - [39m03/19/2026, 10:39:06 PM [31m  ERROR[39m [38;5;3m[ReportingRabbitmqConsumerService] [39m[31mFailed to poll reporting queue: fetch failed[39m
+[31m[Nest] 5764  - [39m03/19/2026, 10:41:49 PM [31m  ERROR[39m [38;5;3m[ExceptionsHandler] [39m[31m
+Invalid `this.prisma.kpiMonthly.findMany()` invocation in
+F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\reporting-service\src\infrastructure\prisma\reporting-projection.store.ts:154:35
+
+  151 const monthKey = month ?? new Date().toISOString().slice(0, 7);
+  152 const hasScopedFilter = this.hasAnyDimensionFilter(filter);
+  153 
+→ 154 return this.prisma.kpiMonthly.findMany(
+Can't reach database server at `localhost:15441`
+
+Please make sure your database server is running at `localhost:15441`.[39m
+PrismaClientKnownRequestError: 
+Invalid `this.prisma.kpiMonthly.findMany()` invocation in
+F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\reporting-service\src\infrastructure\prisma\reporting-projection.store.ts:154:35
+
+  151 const monthKey = month ?? new Date().toISOString().slice(0, 7);
+  152 const hasScopedFilter = this.hasAnyDimensionFilter(filter);
+  153 
+→ 154 return this.prisma.kpiMonthly.findMany(
+Can't reach database server at `localhost:15441`
+
+Please make sure your database server is running at `localhost:15441`.
+    at ei.handleRequestError (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\reporting-service\node_modules\.pnpm\@prisma+client@6.19.2_prism_6b2b1af085fe6797f5a5ea830937a8e3\node_modules\@prisma\client\src\runtime\RequestHandler.ts:228:13)
+    at ei.handleAndLogRequestError (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\reporting-service\node_modules\.pnpm\@prisma+client@6.19.2_prism_6b2b1af085fe6797f5a5ea830937a8e3\node_modules\@prisma\client\src\runtime\RequestHandler.ts:174:12)
+    at ei.request (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\reporting-service\node_modules\.pnpm\@prisma+client@6.19.2_prism_6b2b1af085fe6797f5a5ea830937a8e3\node_modules\@prisma\client\src\runtime\RequestHandler.ts:143:12)
+    at async a (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\reporting-service\node_modules\.pnpm\@prisma+client@6.19.2_prism_6b2b1af085fe6797f5a5ea830937a8e3\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:833:24)
+    at async F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\reporting-service\node_modules\.pnpm\@nestjs+core@10.4.22_@nestj_d72e6898080a56e0cd820ab783d920cd\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\reporting-service\node_modules\.pnpm\@nestjs+core@10.4.22_@nestj_d72e6898080a56e0cd820ab783d920cd\node_modules\@nestjs\core\router\router-proxy.js:9:17
+[31m[Nest] 5764  - [39m03/19/2026, 10:41:49 PM [31m  ERROR[39m [38;5;3m[ExceptionsHandler] [39m[31m
+Invalid `this.prisma.kpiDaily.findUnique()` invocation in
+F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\reporting-service\src\infrastructure\prisma\reporting-projection.store.ts:187:33
+
+  184 getDailyTotals(metricDate: Date, filter?: DimensionFilter): Promise<KpiDaily | null> {
+  185   const dimensions = this.normalizeDimensions(filter);
+  186 
+→ 187   return this.prisma.kpiDaily.findUnique(
+Can't reach database server at `localhost:15441`
+
+Please make sure your database server is running at `localhost:15441`.[39m
+PrismaClientKnownRequestError: 
+Invalid `this.prisma.kpiDaily.findUnique()` invocation in
+F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\reporting-service\src\infrastructure\prisma\reporting-projection.store.ts:187:33
+
+  184 getDailyTotals(metricDate: Date, filter?: DimensionFilter): Promise<KpiDaily | null> {
+  185   const dimensions = this.normalizeDimensions(filter);
+  186 
+→ 187   return this.prisma.kpiDaily.findUnique(
+Can't reach database server at `localhost:15441`
+
+Please make sure your database server is running at `localhost:15441`.
+    at ei.handleRequestError (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\reporting-service\node_modules\.pnpm\@prisma+client@6.19.2_prism_6b2b1af085fe6797f5a5ea830937a8e3\node_modules\@prisma\client\src\runtime\RequestHandler.ts:228:13)
+    at ei.handleAndLogRequestError (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\reporting-service\node_modules\.pnpm\@prisma+client@6.19.2_prism_6b2b1af085fe6797f5a5ea830937a8e3\node_modules\@prisma\client\src\runtime\RequestHandler.ts:174:12)
+    at ei.request (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\reporting-service\node_modules\.pnpm\@prisma+client@6.19.2_prism_6b2b1af085fe6797f5a5ea830937a8e3\node_modules\@prisma\client\src\runtime\RequestHandler.ts:143:12)
+    at async a (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\reporting-service\node_modules\.pnpm\@prisma+client@6.19.2_prism_6b2b1af085fe6797f5a5ea830937a8e3\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:833:24)
+    at async ReportingQueryService.getOpsDashboard (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\reporting-service\src\application\services\reporting-query.service.ts:82:8)
+    at async F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\reporting-service\node_modules\.pnpm\@nestjs+core@10.4.22_@nestj_d72e6898080a56e0cd820ab783d920cd\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\reporting-service\node_modules\.pnpm\@nestjs+core@10.4.22_@nestj_d72e6898080a56e0cd820ab783d920cd\node_modules\@nestjs\core\router\router-proxy.js:9:17
+[31m[Nest] 5764  - [39m03/19/2026, 10:41:49 PM [31m  ERROR[39m [38;5;3m[ExceptionsHandler] [39m[31m
+Invalid `this.prisma.kpiDaily.findMany()` invocation in
+F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\reporting-service\src\infrastructure\prisma\reporting-projection.store.ts:133:33
+
+  130 async getDaily(date?: string, filter?: DimensionFilter): Promise<KpiDaily[]> {
+  131   const hasScopedFilter = this.hasAnyDimensionFilter(filter);
+  132 
+→ 133   return this.prisma.kpiDaily.findMany(
+Can't reach database server at `localhost:15441`
+
+Please make sure your database server is running at `localhost:15441`.[39m
+PrismaClientKnownRequestError: 
+Invalid `this.prisma.kpiDaily.findMany()` invocation in
+F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\reporting-service\src\infrastructure\prisma\reporting-projection.store.ts:133:33
+
+  130 async getDaily(date?: string, filter?: DimensionFilter): Promise<KpiDaily[]> {
+  131   const hasScopedFilter = this.hasAnyDimensionFilter(filter);
+  132 
+→ 133   return this.prisma.kpiDaily.findMany(
+Can't reach database server at `localhost:15441`
+
+Please make sure your database server is running at `localhost:15441`.
+    at ei.handleRequestError (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\reporting-service\node_modules\.pnpm\@prisma+client@6.19.2_prism_6b2b1af085fe6797f5a5ea830937a8e3\node_modules\@prisma\client\src\runtime\RequestHandler.ts:228:13)
+    at ei.handleAndLogRequestError (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\reporting-service\node_modules\.pnpm\@prisma+client@6.19.2_prism_6b2b1af085fe6797f5a5ea830937a8e3\node_modules\@prisma\client\src\runtime\RequestHandler.ts:174:12)
+    at ei.request (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\reporting-service\node_modules\.pnpm\@prisma+client@6.19.2_prism_6b2b1af085fe6797f5a5ea830937a8e3\node_modules\@prisma\client\src\runtime\RequestHandler.ts:143:12)
+    at async a (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\reporting-service\node_modules\.pnpm\@prisma+client@6.19.2_prism_6b2b1af085fe6797f5a5ea830937a8e3\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:833:24)
+    at async F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\reporting-service\node_modules\.pnpm\@nestjs+core@10.4.22_@nestj_d72e6898080a56e0cd820ab783d920cd\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\reporting-service\node_modules\.pnpm\@nestjs+core@10.4.22_@nestj_d72e6898080a56e0cd820ab783d920cd\node_modules\@nestjs\core\router\router-proxy.js:9:17
+[31m[Nest] 5764  - [39m03/19/2026, 10:45:17 PM [31m  ERROR[39m [38;5;3m[ReportingRabbitmqConsumerService] [39m[31mFailed to poll reporting queue: fetch failed[39m

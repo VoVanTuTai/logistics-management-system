@@ -128,9 +128,31 @@ export class HubsService {
     return hub;
   }
 
+  async remove(id: string): Promise<{ deleted: boolean; hubId: string | null }> {
+    const hub = await this.getById(id);
+    const deleted = await this.hubRepository.delete(id);
+
+    if (deleted) {
+      await this.masterdataOutboxService.enqueueMasterdataUpdated(
+        'hub',
+        hub.id,
+        {
+          action: 'deleted',
+          entity: 'hub',
+          record: hub,
+        },
+      );
+    }
+
+    return {
+      deleted,
+      hubId: deleted ? hub.id : null,
+    };
+  }
+
   private normalizeCreateInput(input: HubWriteInput): HubWriteInput {
     const zoneCode = normalizeOptionalCode(input.zoneCode, 'zoneCode');
-    const address = normalizeOptionalText(input.address, 'address', 255);
+    const address = normalizeOptionalText(input.address, 'address', 2000);
 
     return {
       code: normalizeRequiredCode(input.code, 'code'),
@@ -162,7 +184,7 @@ export class HubsService {
       normalizedInput.address = normalizeOptionalText(
         input.address,
         'address',
-        255,
+        2000,
       );
     }
 

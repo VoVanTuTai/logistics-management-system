@@ -15,6 +15,7 @@ export interface AuthUser {
   id: string;
   username: string;
   roles: string[];
+  hubCodes?: string[];
 }
 
 export interface LoginResponse {
@@ -201,4 +202,3 @@ export const DEFAULT_PROFILE: MerchantProfile = {
   email: 'merchant.demo@example.com',
   defaultPickupAddress: '',
 };
-

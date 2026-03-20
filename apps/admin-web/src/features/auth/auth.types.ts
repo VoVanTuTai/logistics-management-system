@@ -4,6 +4,49 @@ export interface AuthUserDto {
   id: string;
   username: string;
   roles: string[];
+  hubCodes?: string[];
+}
+
+export type UserStatus = 'ACTIVE' | 'DISABLED';
+export type UserRoleGroup = 'OPS' | 'SHIPPER';
+
+export interface AdminUserDto {
+  id: string;
+  username: string;
+  status: UserStatus;
+  roles: string[];
+  displayName: string | null;
+  phone: string | null;
+  hubCodes: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminUserFilters {
+  roleGroup: UserRoleGroup;
+  status?: UserStatus | '';
+  hubCode?: string;
+  q?: string;
+}
+
+export interface AdminUserCreateInput {
+  username: string;
+  password: string;
+  roles: string[];
+  status?: UserStatus;
+  displayName?: string | null;
+  phone?: string | null;
+  hubCodes?: string[];
+}
+
+export interface AdminUserUpdateInput {
+  username?: string;
+  password?: string;
+  roles?: string[];
+  status?: UserStatus;
+  displayName?: string | null;
+  phone?: string | null;
+  hubCodes?: string[];
 }
 
 export interface AuthTokensDto {

@@ -213,6 +213,7 @@ export function buildShipmentMetadata(
       phone: form.receiverPhone.trim() || null,
       address: form.receiverAddress.trim() || null,
       region: form.receiverRegion.trim() || null,
+      province: form.receiverRegion.trim() || null,
     },
     package: {
       itemType: form.itemType.trim() || null,
@@ -310,4 +311,3 @@ export function extractErrorMessage(error: unknown): string {
 
   return 'Unknown error';
 }
-

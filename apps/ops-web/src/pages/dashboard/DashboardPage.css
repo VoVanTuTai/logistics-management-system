@@ -228,6 +228,20 @@
   color: var(--dash-text);
 }
 
+.ops-dashboard-filters select {
+  border: 1px solid #c7d3fb;
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: var(--dash-surface);
+  color: var(--dash-text);
+}
+
+.ops-dashboard-filters input:disabled,
+.ops-dashboard-filters select:disabled {
+  background: #f1f5ff;
+  color: #5a6fae;
+}
+
 .ops-dashboard-filters button {
   border: 1px solid #96abff;
   border-radius: 10px;
@@ -362,6 +376,66 @@
 
 .ops-state--error {
   color: #b91c1c;
+}
+
+.ops-hub-card {
+  border: 1px solid #d2ddff;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.ops-hub-card small {
+  display: block;
+  color: var(--dash-muted);
+  margin-bottom: 4px;
+}
+
+.ops-hub-card strong {
+  color: var(--dash-text);
+  line-height: 1.35;
+}
+
+.ops-shipper-tools {
+  margin-bottom: 10px;
+}
+
+.ops-shipper-tools input {
+  width: min(360px, 100%);
+  border: 1px solid #c7d3fb;
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: #ffffff;
+  color: var(--dash-text);
+}
+
+.ops-shipper-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #d4dffd;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.ops-shipper-table th,
+.ops-shipper-table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid #e7ebf8;
+}
+
+.ops-shipper-table thead th {
+  background: #f3f7ff;
+  color: #253e86;
+  font-size: 13px;
+}
+
+.ops-shipper-table tbody tr:hover {
+  background: #f9fbff;
 }
 
 @keyframes pulseBadge {

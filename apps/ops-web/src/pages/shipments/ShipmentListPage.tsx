@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
+import { useHubsQuery } from '../../features/masterdata/masterdata.api';
 import { useInboundScanMutation, useOutboundScanMutation, usePickupScanMutation } from '../../features/scans/scans.api';
 import type { HubScanInput, HubScanType } from '../../features/scans/scans.types';
 import { useCreateShipmentMutation, useShipmentsQuery } from '../../features/shipments/shipments.api';
@@ -9,6 +10,11 @@ import type { ShipmentListFilters, ShipmentListItemDto } from '../../features/sh
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
 import { createIdempotencyKey } from '../../utils/idempotency';
+import {
+  PROVINCE_CITY_OPTIONS,
+  deriveHubScopeTokens,
+  isShipmentInScope,
+} from '../../utils/locationScope';
 import { queryKeys } from '../../utils/queryKeys';
 import { ShipmentsTable } from './ShipmentsTable';
 
@@ -118,6 +124,7 @@ function buildWalkInMetadata(
       phone: form.receiverPhone.trim() || null,
       address: form.receiverAddress.trim() || null,
       region: form.receiverRegion.trim() || null,
+      province: form.receiverRegion.trim() || null,
     },
     package: {
       itemType: form.itemType.trim() || null,
@@ -200,7 +207,11 @@ function printWaybill(shipment: ShipmentListItemDto): void {
 export function ShipmentListPage(): React.JSX.Element {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
-  const accessToken = useAuthStore((state) => state.session?.tokens.accessToken ?? null);
+  const session = useAuthStore((state) => state.session);
+  const accessToken = session?.tokens.accessToken ?? null;
+  const currentUserRoles = session?.user.roles ?? [];
+  const assignedHubCodes = session?.user.hubCodes ?? [];
+  const canViewAllHubAreas = currentUserRoles.includes('SYSTEM_ADMIN');
   const filters: ShipmentListFilters = {
     q: searchParams.get('q') ?? undefined,
     status: searchParams.get('status') ?? undefined,
@@ -220,17 +231,40 @@ export function ShipmentListPage(): React.JSX.Element {
   const [walkInError, setWalkInError] = useState<string | null>(null);
 
   const shipmentQuery = useShipmentsQuery(accessToken, {});
+  const hubsQuery = useHubsQuery(accessToken, {});
   const createShipmentMutation = useCreateShipmentMutation(accessToken);
   const pickupScanMutation = usePickupScanMutation(accessToken);
   const inboundScanMutation = useInboundScanMutation(accessToken);
   const outboundScanMutation = useOutboundScanMutation(accessToken);
 
   const estimatedFee = useMemo(() => estimateFee(walkInForm), [walkInForm]);
+  const hubScopeTokens = useMemo(
+    () => deriveHubScopeTokens(hubsQuery.data ?? [], assignedHubCodes),
+    [assignedHubCodes, hubsQuery.data],
+  );
+  const scopedShipments = useMemo(() => {
+    if (canViewAllHubAreas) {
+      return shipmentQuery.data ?? [];
+    }
+
+    if (assignedHubCodes.length === 0) {
+      return [];
+    }
+
+    return (shipmentQuery.data ?? []).filter((item) =>
+      isShipmentInScope(item, hubScopeTokens),
+    );
+  }, [
+    assignedHubCodes.length,
+    canViewAllHubAreas,
+    hubScopeTokens,
+    shipmentQuery.data,
+  ]);
   const visibleShipments = useMemo(() => {
     const keyword = (filters.q ?? '').trim().toLowerCase();
     const status = (filters.status ?? '').trim().toLowerCase();
 
-    return (shipmentQuery.data ?? []).filter((item) => {
+    return scopedShipments.filter((item) => {
       const keywordMatched =
         keyword.length === 0 ||
         item.shipmentCode.toLowerCase().includes(keyword) ||
@@ -245,7 +279,7 @@ export function ShipmentListPage(): React.JSX.Element {
 
       return keywordMatched && statusMatched;
     });
-  }, [filters.q, filters.status, shipmentQuery.data]);
+  }, [filters.q, filters.status, scopedShipments]);
   const isScanSubmitting =
     pickupScanMutation.isPending || inboundScanMutation.isPending || outboundScanMutation.isPending;
   const isWalkInSubmitting = createShipmentMutation.isPending || isScanSubmitting;
@@ -337,6 +371,16 @@ export function ShipmentListPage(): React.JSX.Element {
       return;
     }
 
+    if (!walkInForm.receiverRegion.trim()) {
+      setWalkInError('Receiver province / city is required.');
+      return;
+    }
+
+    if (!walkInForm.receiverAddress.trim()) {
+      setWalkInError('Receiver detail address is required.');
+      return;
+    }
+
     setWalkInMessage(null);
     setWalkInError(null);
 
@@ -408,6 +452,15 @@ export function ShipmentListPage(): React.JSX.Element {
           Reset
         </button>
       </form>
+
+      {!canViewAllHubAreas ? (
+        <div style={styles.scopeNotice}>
+          <strong>Hub scope:</strong>{' '}
+          {assignedHubCodes.length > 0
+            ? assignedHubCodes.join(', ')
+            : 'No hub assigned. Contact admin to assign a hub account.'}
+        </div>
+      ) : null}
 
       <section style={styles.operationGrid}>
         <div style={styles.card}>
@@ -493,13 +546,21 @@ export function ShipmentListPage(): React.JSX.Element {
               value={walkInForm.receiverPhone}
               onChange={(event) => setWalkInForm((prev) => ({ ...prev, receiverPhone: event.target.value }))}
             />
-            <input
-              placeholder="Receiver region"
+            <select
               value={walkInForm.receiverRegion}
-              onChange={(event) => setWalkInForm((prev) => ({ ...prev, receiverRegion: event.target.value }))}
-            />
+              onChange={(event) =>
+                setWalkInForm((prev) => ({ ...prev, receiverRegion: event.target.value }))
+              }
+            >
+              <option value="">Receiver province / city</option>
+              {PROVINCE_CITY_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
             <input
-              placeholder="Receiver address"
+              placeholder="Receiver street + detail address"
               value={walkInForm.receiverAddress}
               onChange={(event) => setWalkInForm((prev) => ({ ...prev, receiverAddress: event.target.value }))}
             />
@@ -601,8 +662,15 @@ export function ShipmentListPage(): React.JSX.Element {
       {shipmentQuery.isError ? (
         <p style={styles.errorText}>{getErrorMessage(shipmentQuery.error)}</p>
       ) : null}
+      {hubsQuery.isError ? (
+        <p style={styles.errorText}>{getErrorMessage(hubsQuery.error)}</p>
+      ) : null}
       {shipmentQuery.isSuccess && visibleShipments.length === 0 ? (
-        <p>No shipments found for current filters.</p>
+        <p>
+          {assignedHubCodes.length === 0 && !canViewAllHubAreas
+            ? 'No shipment is visible because this OPS account is not assigned to any hub.'
+            : 'No shipments found for current filters.'}
+        </p>
       ) : null}
       {shipmentQuery.isSuccess && visibleShipments.length > 0 ? (
         <ShipmentsTable
@@ -618,6 +686,14 @@ export function ShipmentListPage(): React.JSX.Element {
 const styles: Record<string, React.CSSProperties> = {
   helperText: {
     color: '#2d3f99',
+  },
+  scopeNotice: {
+    marginBottom: 12,
+    border: '1px solid #d9def3',
+    borderRadius: 10,
+    padding: '8px 12px',
+    backgroundColor: '#f8faff',
+    color: '#1f2b6f',
   },
   filterForm: {
     display: 'flex',

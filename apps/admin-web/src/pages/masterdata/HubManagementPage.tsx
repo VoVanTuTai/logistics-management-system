@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 
 import {
   useCreateHubMutation,
+  useDeleteHubMutation,
   useHubsQuery,
   useUpdateHubMutation,
 } from '../../features/masterdata/masterdata.api';
@@ -10,6 +11,10 @@ import type {
   HubFilters,
   HubWriteInput,
 } from '../../features/masterdata/masterdata.types';
+import {
+  PROVINCE_OPTIONS,
+  getDistrictOptions,
+} from '../../constants/vnLocations';
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
 import { formatDateTime } from '../../utils/format';
@@ -27,6 +32,10 @@ interface HubAddressPayload {
   contactName: string;
   type: HubType;
   description: string;
+  latitude: string;
+  longitude: string;
+  workingRadiusKm: string;
+  serviceAreas: string;
 }
 
 interface HubFormState extends HubAddressPayload {
@@ -49,6 +58,10 @@ const EMPTY_HUB_FORM: HubFormState = {
   contactName: '',
   type: '',
   description: '',
+  latitude: '',
+  longitude: '',
+  workingRadiusKm: '',
+  serviceAreas: '',
 };
 
 function normalizeText(value: string): string | undefined {
@@ -67,11 +80,22 @@ function parseHubAddress(address: string | null): HubAddressPayload {
       contactName: '',
       type: '',
       description: '',
+      latitude: '',
+      longitude: '',
+      workingRadiusKm: '',
+      serviceAreas: '',
     };
   }
 
   try {
     const parsed = JSON.parse(address) as Record<string, unknown>;
+    const serviceAreas = Array.isArray(parsed.serviceAreas)
+      ? parsed.serviceAreas
+          .filter((value): value is string => typeof value === 'string')
+          .join(', ')
+      : typeof parsed.serviceAreas === 'string'
+      ? parsed.serviceAreas
+      : '';
 
     return {
       addressLine:
@@ -88,6 +112,13 @@ function parseHubAddress(address: string | null): HubAddressPayload {
           : '',
       description:
         typeof parsed.description === 'string' ? parsed.description : '',
+      latitude:
+        typeof parsed.latitude === 'string' ? parsed.latitude : '',
+      longitude:
+        typeof parsed.longitude === 'string' ? parsed.longitude : '',
+      workingRadiusKm:
+        typeof parsed.workingRadiusKm === 'string' ? parsed.workingRadiusKm : '',
+      serviceAreas,
     };
   } catch {
     return {
@@ -99,11 +130,20 @@ function parseHubAddress(address: string | null): HubAddressPayload {
       contactName: '',
       type: '',
       description: '',
+      latitude: '',
+      longitude: '',
+      workingRadiusKm: '',
+      serviceAreas: '',
     };
   }
 }
 
 function serializeHubAddress(form: HubFormState): string | null {
+  const serviceAreas = form.serviceAreas
+    .split(',')
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
+
   const payload = {
     addressLine: form.addressLine.trim(),
     ward: form.ward.trim(),
@@ -113,6 +153,10 @@ function serializeHubAddress(form: HubFormState): string | null {
     contactName: form.contactName.trim(),
     type: form.type,
     description: form.description.trim(),
+    latitude: form.latitude.trim(),
+    longitude: form.longitude.trim(),
+    workingRadiusKm: form.workingRadiusKm.trim(),
+    serviceAreas,
   };
 
   const hasExtendedFields = Boolean(
@@ -122,7 +166,11 @@ function serializeHubAddress(form: HubFormState): string | null {
       payload.phone ||
       payload.contactName ||
       payload.type ||
-      payload.description,
+      payload.description ||
+      payload.latitude ||
+      payload.longitude ||
+      payload.workingRadiusKm ||
+      payload.serviceAreas.length,
   );
 
   if (!payload.addressLine && !hasExtendedFields) {
@@ -149,6 +197,20 @@ function formatAddressSummary(payload: HubAddressPayload): string {
   return parts.length > 0 ? parts.join(', ') : 'N/A';
 }
 
+function formatScopeSummary(payload: HubAddressPayload): string {
+  const scopeParts: string[] = [];
+
+  if (payload.workingRadiusKm.trim()) {
+    scopeParts.push(`${payload.workingRadiusKm.trim()}km radius`);
+  }
+
+  if (payload.serviceAreas.trim()) {
+    scopeParts.push(payload.serviceAreas.trim());
+  }
+
+  return scopeParts.length > 0 ? scopeParts.join(' | ') : 'N/A';
+}
+
 export function HubManagementPage(): React.JSX.Element {
   const accessToken = useAuthStore((state) => state.session?.tokens.accessToken ?? null);
 
@@ -165,6 +227,7 @@ export function HubManagementPage(): React.JSX.Element {
   const hubsQuery = useHubsQuery(accessToken, appliedFilters);
   const createMutation = useCreateHubMutation(accessToken);
   const updateMutation = useUpdateHubMutation(accessToken);
+  const deleteMutation = useDeleteHubMutation(accessToken);
 
   const selectedHub = useMemo(
     () => (hubsQuery.data ?? []).find((hub) => hub.id === selectedHubId) ?? null,
@@ -267,13 +330,57 @@ export function HubManagementPage(): React.JSX.Element {
     }
   };
 
-  const isSaving = createMutation.isPending || updateMutation.isPending;
+  const onDeleteHub = async (hub: HubDto) => {
+    if (!window.confirm(`Delete hub ${hub.code}?`)) {
+      return;
+    }
+
+    setActionMessage(null);
+    setActionError(null);
+
+    try {
+      await deleteMutation.mutateAsync(hub.id);
+      setActionMessage(`Hub "${hub.code}" deleted.`);
+
+      if (selectedHubId === hub.id) {
+        setSelectedHubId('');
+      }
+    } catch (error) {
+      setActionError(getErrorMessage(error));
+    }
+  };
+
+  const isSaving =
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    deleteMutation.isPending;
+  const provinceOptions = useMemo(() => {
+    if (
+      form.province &&
+      !PROVINCE_OPTIONS.some((province) => province.label === form.province)
+    ) {
+      return [
+        { code: `LEGACY_${form.province}`, label: form.province, districts: [] },
+        ...PROVINCE_OPTIONS,
+      ];
+    }
+
+    return PROVINCE_OPTIONS;
+  }, [form.province]);
+  const districtOptions = useMemo(() => {
+    const options = getDistrictOptions(form.province);
+    if (form.district && !options.includes(form.district)) {
+      return [form.district, ...options];
+    }
+
+    return options;
+  }, [form.district, form.province]);
 
   return (
     <div>
       <h2>Master Data - Hub Management</h2>
       <p style={styles.helperText}>
-        Manage shared hubs used by operations and routing.
+        Manage hub location, working scope, and operating metadata.
       </p>
 
       <form onSubmit={onApplyFilters} style={styles.filterForm}>
@@ -372,6 +479,7 @@ export function HubManagementPage(): React.JSX.Element {
               <th style={styles.headerCell}>Type</th>
               <th style={styles.headerCell}>Zone</th>
               <th style={styles.headerCell}>Address</th>
+              <th style={styles.headerCell}>Working Scope</th>
               <th style={styles.headerCell}>Contact</th>
               <th style={styles.headerCell}>Status</th>
               <th style={styles.headerCell}>Updated</th>
@@ -393,6 +501,7 @@ export function HubManagementPage(): React.JSX.Element {
                   <td style={styles.cell}>{addressPayload.type || 'N/A'}</td>
                   <td style={styles.cell}>{hub.zoneCode ?? 'N/A'}</td>
                   <td style={styles.cell}>{formatAddressSummary(addressPayload)}</td>
+                  <td style={styles.cell}>{formatScopeSummary(addressPayload)}</td>
                   <td style={styles.cell}>{contactSummary || 'N/A'}</td>
                   <td style={styles.cell}>
                     <MasterdataStatusPill isActive={hub.isActive} />
@@ -409,6 +518,9 @@ export function HubManagementPage(): React.JSX.Element {
                       <button type="button" onClick={() => void onToggleStatus(hub)}>
                         {hub.isActive ? 'Deactivate' : 'Activate'}
                       </button>
+                      <button type="button" onClick={() => void onDeleteHub(hub)}>
+                        Delete
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -421,21 +533,37 @@ export function HubManagementPage(): React.JSX.Element {
       {selectedHub ? (
         <section style={styles.detailCard}>
           <h3 style={styles.detailTitle}>Hub Detail: {selectedHub.code}</h3>
-          <p>
-            <strong>Name:</strong> {selectedHub.name}
-          </p>
-          <p>
-            <strong>Zone:</strong> {selectedHub.zoneCode ?? 'N/A'}
-          </p>
-          <p>
-            <strong>Status:</strong> {selectedHub.isActive ? 'ACTIVE' : 'INACTIVE'}
-          </p>
-          <p>
-            <strong>Created:</strong> {formatDateTime(selectedHub.createdAt)}
-          </p>
-          <p>
-            <strong>Updated:</strong> {formatDateTime(selectedHub.updatedAt)}
-          </p>
+          {(() => {
+            const payload = parseHubAddress(selectedHub.address);
+            return (
+              <>
+                <p>
+                  <strong>Name:</strong> {selectedHub.name}
+                </p>
+                <p>
+                  <strong>Zone:</strong> {selectedHub.zoneCode ?? 'N/A'}
+                </p>
+                <p>
+                  <strong>Address:</strong> {formatAddressSummary(payload)}
+                </p>
+                <p>
+                  <strong>Location:</strong> {payload.latitude || 'N/A'} / {payload.longitude || 'N/A'}
+                </p>
+                <p>
+                  <strong>Working scope:</strong> {formatScopeSummary(payload)}
+                </p>
+                <p>
+                  <strong>Status:</strong> {selectedHub.isActive ? 'ACTIVE' : 'INACTIVE'}
+                </p>
+                <p>
+                  <strong>Created:</strong> {formatDateTime(selectedHub.createdAt)}
+                </p>
+                <p>
+                  <strong>Updated:</strong> {formatDateTime(selectedHub.updatedAt)}
+                </p>
+              </>
+            );
+          })()}
         </section>
       ) : null}
 
@@ -511,7 +639,7 @@ export function HubManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Address line
+            Street / detail address
             <input
               value={form.addressLine}
               onChange={(event) =>
@@ -538,7 +666,7 @@ export function HubManagementPage(): React.JSX.Element {
           </label>
           <label style={styles.fieldLabel}>
             District
-            <input
+            <select
               value={form.district}
               onChange={(event) =>
                 setForm((previous) => ({
@@ -546,19 +674,96 @@ export function HubManagementPage(): React.JSX.Element {
                   district: event.target.value,
                 }))
               }
+              disabled={!form.province}
               style={styles.input}
-            />
+            >
+              <option value="">
+                {form.province ? 'Select district' : 'Select province first'}
+              </option>
+              {districtOptions.map((district) => (
+                <option key={district} value={district}>
+                  {district}
+                </option>
+              ))}
+            </select>
           </label>
           <label style={styles.fieldLabel}>
             Province
-            <input
+            <select
               value={form.province}
               onChange={(event) =>
                 setForm((previous) => ({
                   ...previous,
                   province: event.target.value,
+                  district: getDistrictOptions(event.target.value).includes(previous.district)
+                    ? previous.district
+                    : '',
                 }))
               }
+              required
+              style={styles.input}
+            >
+              <option value="">Select province / city</option>
+              {provinceOptions.map((province) => (
+                <option key={province.code} value={province.label}>
+                  {province.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label style={styles.fieldLabel}>
+            Latitude
+            <input
+              value={form.latitude}
+              onChange={(event) =>
+                setForm((previous) => ({
+                  ...previous,
+                  latitude: event.target.value,
+                }))
+              }
+              placeholder="10.7769"
+              style={styles.input}
+            />
+          </label>
+          <label style={styles.fieldLabel}>
+            Longitude
+            <input
+              value={form.longitude}
+              onChange={(event) =>
+                setForm((previous) => ({
+                  ...previous,
+                  longitude: event.target.value,
+                }))
+              }
+              placeholder="106.7009"
+              style={styles.input}
+            />
+          </label>
+          <label style={styles.fieldLabel}>
+            Working radius (km)
+            <input
+              value={form.workingRadiusKm}
+              onChange={(event) =>
+                setForm((previous) => ({
+                  ...previous,
+                  workingRadiusKm: event.target.value,
+                }))
+              }
+              placeholder="25"
+              style={styles.input}
+            />
+          </label>
+          <label style={styles.fieldLabel}>
+            Service areas (comma separated)
+            <input
+              value={form.serviceAreas}
+              onChange={(event) =>
+                setForm((previous) => ({
+                  ...previous,
+                  serviceAreas: event.target.value,
+                }))
+              }
+              placeholder="District 1, District 3, Thu Duc"
               style={styles.input}
             />
           </label>

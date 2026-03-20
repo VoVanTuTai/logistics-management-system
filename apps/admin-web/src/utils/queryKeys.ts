@@ -10,5 +10,6 @@ export const queryKeys = {
   masterdataZones: ['masterdata', 'zones'],
   masterdataNdrReasons: ['masterdata', 'ndr-reasons'],
   masterdataConfigs: ['masterdata', 'configs'],
+  adminUsers: ['admin', 'users'],
 } as const;
 

@@ -131,6 +131,14 @@ export class HubPrismaRepository extends HubRepository {
     return this.toEntity(record);
   }
 
+  async delete(id: string): Promise<boolean> {
+    const result = await this.prisma.hub.deleteMany({
+      where: { id },
+    });
+
+    return result.count > 0;
+  }
+
   private toEntity(record: PrismaHubRecord): Hub {
     return {
       id: record.id,

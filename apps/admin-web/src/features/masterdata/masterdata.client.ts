@@ -63,6 +63,17 @@ export const masterdataClient = {
       accessToken,
       body: payload,
     }),
+  deleteHub: (
+    accessToken: string | null,
+    hubId: string,
+  ): Promise<{ deleted: boolean; hubId: string | null }> =>
+    opsApiClient.request<{ deleted: boolean; hubId: string | null }>(
+      opsEndpoints.masterdata.hubDetail(hubId),
+      {
+        method: 'DELETE',
+        accessToken,
+      },
+    ),
   listZones: (
     accessToken: string | null,
     filters: ZoneFilters,

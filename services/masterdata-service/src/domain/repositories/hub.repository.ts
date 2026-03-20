@@ -6,4 +6,5 @@ export abstract class HubRepository {
   abstract findByCode(code: string): Promise<Hub | null>;
   abstract create(input: HubWriteInput): Promise<Hub>;
   abstract update(id: string, input: Partial<HubWriteInput>): Promise<Hub>;
+  abstract delete(id: string): Promise<boolean>;
 }

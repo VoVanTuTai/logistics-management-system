@@ -5,6 +5,7 @@ export {
   useCreateHubMutation,
   useCreateNdrReasonMutation,
   useCreateZoneMutation,
+  useDeleteHubMutation,
   useHubsQuery,
   useNdrReasonsQuery,
   useUpdateConfigMutation,

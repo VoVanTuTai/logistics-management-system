@@ -52,6 +52,17 @@ export function useUpdateHubMutation(accessToken: string | null) {
   });
 }
 
+export function useDeleteHubMutation(accessToken: string | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (hubId: string) => masterdataClient.deleteHub(accessToken, hubId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.masterdataHubs });
+    },
+  });
+}
+
 export function useZonesQuery(accessToken: string | null, filters: ZoneFilters) {
   return useQuery({
     queryKey: [

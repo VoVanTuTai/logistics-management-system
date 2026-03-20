@@ -12,6 +12,7 @@ export interface TaskAssignedEnvelope extends TaskAssignedPayload {
 @Injectable()
 export class DeliveryEventsConsumer {
   readonly queueName = 'delivery-service.q';
+  readonly routingPatterns = ['task.assigned'];
   readonly retryQueue10s = 'delivery-service.retry.10s';
   readonly retryQueue1m = 'delivery-service.retry.1m';
   readonly dlqName = 'delivery-service.dlq';
