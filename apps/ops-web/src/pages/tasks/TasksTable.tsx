@@ -32,16 +32,16 @@ export function TasksTable({
               onChange={(event) => onToggleSelectAll?.(event.currentTarget.checked)}
             />
           </th>
-          <th style={styles.headerCell}>Task</th>
-          <th style={styles.headerCell}>Type</th>
-          <th style={styles.headerCell}>Status</th>
-          <th style={styles.headerCell}>Shipment</th>
-          <th style={styles.headerCell}>Sender</th>
-          <th style={styles.headerCell}>Receiver</th>
-          <th style={styles.headerCell}>Platform</th>
-          <th style={styles.headerCell}>Delivery Area</th>
-          <th style={styles.headerCell}>Courier</th>
-          <th style={styles.headerCell}>Updated At</th>
+          <th style={styles.headerCell}>Tac vu</th>
+          <th style={styles.headerCell}>Loai</th>
+          <th style={styles.headerCell}>Trang thai</th>
+          <th style={styles.headerCell}>Van don</th>
+          <th style={styles.headerCell}>Nguoi gui</th>
+          <th style={styles.headerCell}>Nguoi nhan</th>
+          <th style={styles.headerCell}>Nen tang</th>
+          <th style={styles.headerCell}>Khu vuc giao</th>
+          <th style={styles.headerCell}>Shipper</th>
+          <th style={styles.headerCell}>Cap nhat luc</th>
         </tr>
       </thead>
       <tbody>
@@ -62,14 +62,14 @@ export function TasksTable({
             </td>
             <td style={styles.cell}>{item.taskType}</td>
             <td style={styles.cell}>{item.status}</td>
-            <td style={styles.cell}>{item.shipmentCode ?? 'N/A'}</td>
-            <td style={styles.cell}>{item.senderName ?? 'N/A'}</td>
-            <td style={styles.cell}>{item.receiverName ?? 'N/A'}</td>
+            <td style={styles.cell}>{item.shipmentCode ?? 'Khong co'}</td>
+            <td style={styles.cell}>{item.senderName ?? 'Khong co'}</td>
+            <td style={styles.cell}>{item.receiverName ?? 'Khong co'}</td>
             <td style={styles.cell}>
-              <span style={styles.platformTag}>{item.platform ?? 'N/A'}</span>
+              <span style={styles.platformTag}>{item.platform ?? 'Khong co'}</span>
             </td>
-            <td style={styles.cell}>{item.deliveryArea ?? 'Unknown'}</td>
-            <td style={styles.cell}>{item.assignedCourierId ?? 'N/A'}</td>
+            <td style={styles.cell}>{item.deliveryArea ?? 'Khong xac dinh'}</td>
+            <td style={styles.cell}>{item.assignedCourierId ?? 'Khong co'}</td>
             <td style={styles.cell}>{formatDateTime(item.updatedAt)}</td>
           </tr>
         ))}

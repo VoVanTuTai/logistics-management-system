@@ -60,15 +60,15 @@ export function PickupRequestDetailPage(): React.JSX.Element {
 
   const lastActionLabel =
     lastActionName === 'approve'
-      ? 'approve'
+      ? 'duyet'
       : lastActionName === 'complete'
-        ? 'complete'
+        ? 'hoan tat'
         : lastActionName === 'reject'
-          ? 'reject'
-          : 'none';
+          ? 'tu choi'
+          : 'chua-co';
 
   if (detailQuery.isLoading) {
-    return <p>Loading pickup request detail...</p>;
+    return <p>Dang tai chi tiet yeu cau lay hang...</p>;
   }
 
   if (detailQuery.isError) {
@@ -76,7 +76,7 @@ export function PickupRequestDetailPage(): React.JSX.Element {
   }
 
   if (!detailQuery.data) {
-    return <p>Pickup request was not found.</p>;
+    return <p>Khong tim thay yeu cau lay hang.</p>;
   }
 
   const canComplete =
@@ -84,23 +84,23 @@ export function PickupRequestDetailPage(): React.JSX.Element {
 
   return (
     <section>
-      <h2>Pickup Request Detail</h2>
+      <h2>Chi tiet yeu cau lay hang</h2>
       <p>
-        <Link to={routePaths.pickups}>Back to pickup requests</Link>
+        <Link to={routePaths.pickups}>Quay lai danh sach yeu cau lay hang</Link>
       </p>
-      <p>Request code: {detailQuery.data.requestCode}</p>
-      <p>Shipment code: {detailQuery.data.shipmentCode ?? 'N/A'}</p>
-      <p>Status: {detailQuery.data.status}</p>
-      <p>Requested at: {formatDateTime(detailQuery.data.requestedAt)}</p>
-      <p>Updated at: {detailQuery.data.updatedAt ? formatDateTime(detailQuery.data.updatedAt) : 'N/A'}</p>
-      <p>Note: {detailQuery.data.note ?? 'N/A'}</p>
+      <p>Ma yeu cau: {detailQuery.data.requestCode}</p>
+      <p>Ma van don: {detailQuery.data.shipmentCode ?? 'Khong co'}</p>
+      <p>Trang thai: {detailQuery.data.status}</p>
+      <p>Thoi diem tao: {formatDateTime(detailQuery.data.requestedAt)}</p>
+      <p>Cap nhat luc: {detailQuery.data.updatedAt ? formatDateTime(detailQuery.data.updatedAt) : 'Khong co'}</p>
+      <p>Ghi chu: {detailQuery.data.note ?? 'Khong co'}</p>
 
       <div style={styles.actionsGrid}>
         <form onSubmit={onApproveSubmit} style={styles.form}>
-          <h3 style={styles.actionTitle}>Approve</h3>
-          <textarea rows={3} placeholder="Approval note" {...approveForm.register('note')} />
+          <h3 style={styles.actionTitle}>Duyet</h3>
+          <textarea rows={3} placeholder="Ghi chu duyet" {...approveForm.register('note')} />
           <button type="submit" disabled={approveMutation.isPending}>
-            {approveMutation.isPending ? 'Submitting approval...' : 'Approve pickup'}
+            {approveMutation.isPending ? 'Dang gui duyet...' : 'Duyet lay hang'}
           </button>
           {approveMutation.isError ? (
             <small style={styles.errorText}>{getErrorMessage(approveMutation.error)}</small>
@@ -108,10 +108,10 @@ export function PickupRequestDetailPage(): React.JSX.Element {
         </form>
 
         <form onSubmit={onRejectSubmit} style={styles.form}>
-          <h3 style={styles.actionTitle}>Cancel</h3>
-          <textarea rows={3} placeholder="Cancellation reason" {...rejectForm.register('note')} />
+          <h3 style={styles.actionTitle}>Tu choi</h3>
+          <textarea rows={3} placeholder="Ly do tu choi" {...rejectForm.register('note')} />
           <button type="submit" disabled={rejectMutation.isPending}>
-            {rejectMutation.isPending ? 'Submitting cancellation...' : 'Cancel pickup'}
+            {rejectMutation.isPending ? 'Dang gui tu choi...' : 'Tu choi lay hang'}
           </button>
           {rejectMutation.isError ? (
             <small style={styles.errorText}>{getErrorMessage(rejectMutation.error)}</small>
@@ -119,16 +119,16 @@ export function PickupRequestDetailPage(): React.JSX.Element {
         </form>
 
         <div style={styles.form}>
-          <h3 style={styles.actionTitle}>Complete</h3>
+          <h3 style={styles.actionTitle}>Hoan tat</h3>
           <button
             type="button"
             onClick={() => void onCompleteClick()}
             disabled={completeMutation.isPending || !canComplete}
           >
-            {completeMutation.isPending ? 'Submitting completion...' : 'Complete pickup'}
+            {completeMutation.isPending ? 'Dang gui hoan tat...' : 'Hoan tat lay hang'}
           </button>
           {!canComplete ? (
-            <small>Pickup can be completed only when status is APPROVED.</small>
+            <small>Chi hoan tat lay hang khi trang thai la APPROVED.</small>
           ) : null}
           {completeMutation.isError ? (
             <small style={styles.errorText}>{getErrorMessage(completeMutation.error)}</small>
@@ -138,7 +138,7 @@ export function PickupRequestDetailPage(): React.JSX.Element {
 
       {lastActionResponse ? (
         <div style={styles.responseBox}>
-          <strong>Latest server response ({lastActionLabel})</strong>
+          <strong>Phan hoi server moi nhat ({lastActionLabel})</strong>
           <pre style={styles.pre}>{JSON.stringify(lastActionResponse, null, 2)}</pre>
         </div>
       ) : null}

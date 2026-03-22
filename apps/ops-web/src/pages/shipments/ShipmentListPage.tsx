@@ -149,7 +149,7 @@ function buildWalkInMetadata(
 
 function formatCurrency(value: number | null): string {
   if (value === null) {
-    return 'N/A';
+    return 'Khong co';
   }
 
   return `${new Intl.NumberFormat('en-US').format(value)} VND`;
@@ -181,19 +181,19 @@ function printWaybill(shipment: ShipmentListItemDto): void {
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Waybill ${escapeHtml(shipment.shipmentCode)}</title>
+    <title>Phieu Van Don ${escapeHtml(shipment.shipmentCode)}</title>
   </head>
   <body style="font-family: Arial, sans-serif; padding: 16px;">
-    <h2>Waybill ${escapeHtml(shipment.shipmentCode)}</h2>
-    <p><strong>Status:</strong> ${escapeHtml(shipment.currentStatus)}</p>
-    <p><strong>Platform:</strong> ${escapeHtml(shipment.platform ?? 'N/A')}</p>
-    <p><strong>Service:</strong> ${escapeHtml(shipment.serviceType ?? 'N/A')}</p>
+    <h2>Phieu Van Don ${escapeHtml(shipment.shipmentCode)}</h2>
+    <p><strong>Trang thai:</strong> ${escapeHtml(shipment.currentStatus)}</p>
+    <p><strong>Nen tang:</strong> ${escapeHtml(shipment.platform ?? 'Khong co')}</p>
+    <p><strong>Dich vu:</strong> ${escapeHtml(shipment.serviceType ?? 'Khong co')}</p>
     <p><strong>COD:</strong> ${escapeHtml(formatCurrency(shipment.codAmount))}</p>
     <hr />
-    <p><strong>Sender:</strong> ${escapeHtml(senderText || 'N/A')}</p>
-    <p><strong>Receiver:</strong> ${escapeHtml(receiverText || 'N/A')}</p>
-    <p><strong>Area:</strong> ${escapeHtml(shipment.receiverRegion ?? 'N/A')}</p>
-    <p><strong>Delivery note:</strong> ${escapeHtml(shipment.deliveryNote ?? 'N/A')}</p>
+    <p><strong>Nguoi gui:</strong> ${escapeHtml(senderText || 'Khong co')}</p>
+    <p><strong>Nguoi nhan:</strong> ${escapeHtml(receiverText || 'Khong co')}</p>
+    <p><strong>Khu vuc:</strong> ${escapeHtml(shipment.receiverRegion ?? 'Khong co')}</p>
+    <p><strong>Ghi chu giao hang:</strong> ${escapeHtml(shipment.deliveryNote ?? 'Khong co')}</p>
     <script>window.onload = function () { window.print(); };</script>
   </body>
 </html>
@@ -322,12 +322,12 @@ export function ShipmentListPage(): React.JSX.Element {
     const locationCode = counterLocationCode.trim().toUpperCase();
 
     if (!shipmentCode) {
-      setCounterError('Shipment code is required for scan.');
+      setCounterError('Can ma van don de quet.');
       return;
     }
 
     if (!locationCode) {
-      setCounterError('Location code is required for scan.');
+      setCounterError('Can ma vi tri de quet.');
       return;
     }
 
@@ -352,7 +352,7 @@ export function ShipmentListPage(): React.JSX.Element {
       }
 
       await queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
-      setCounterMessage(`${counterScanType} scan accepted for ${shipmentCode}.`);
+      setCounterMessage(`Quet ${counterScanType} da ghi nhan cho ${shipmentCode}.`);
       setCounterShipmentCode('');
       setCounterNote('');
     } catch (error) {
@@ -367,17 +367,17 @@ export function ShipmentListPage(): React.JSX.Element {
 
     const pickupLocationCode = walkInForm.pickupLocationCode.trim().toUpperCase();
     if (createAndScanPickup && !pickupLocationCode) {
-      setWalkInError('Pickup location code is required for "Create + pickup scan".');
+      setWalkInError('Can ma vi tri lay hang cho thao tac "Tao + quet pickup".');
       return;
     }
 
     if (!walkInForm.receiverRegion.trim()) {
-      setWalkInError('Receiver province / city is required.');
+      setWalkInError('Can tinh/thanh nguoi nhan.');
       return;
     }
 
     if (!walkInForm.receiverAddress.trim()) {
-      setWalkInError('Receiver detail address is required.');
+      setWalkInError('Can dia chi chi tiet nguoi nhan.');
       return;
     }
 
@@ -390,17 +390,17 @@ export function ShipmentListPage(): React.JSX.Element {
         metadata: buildWalkInMetadata(walkInForm, estimatedFee),
       });
 
-      let successMessage = `Shipment ${createdShipment.shipmentCode} created.`;
+      let successMessage = `Da tao van don ${createdShipment.shipmentCode}.`;
 
       if (createAndScanPickup) {
         await pickupScanMutation.mutateAsync({
           shipmentCode: createdShipment.shipmentCode,
           locationCode: pickupLocationCode,
           scanType: 'PICKUP',
-          note: 'walk-in shipment received at post office',
+          note: 'van don walk-in tiep nhan tai quay',
           idempotencyKey: createIdempotencyKey('ops-walk-in-pickup'),
         });
-        successMessage += ' Pickup scan recorded.';
+        successMessage += ' Da ghi nhan quet pickup.';
         setCounterShipmentCode(createdShipment.shipmentCode);
       }
 
@@ -420,16 +420,16 @@ export function ShipmentListPage(): React.JSX.Element {
 
   return (
     <div>
-      <h2>Shipments</h2>
+      <h2>Danh sach van don</h2>
       <p style={styles.helperText}>
-        This screen supports walk-in shipment intake at post office counters, branch scan operations,
-        and waybill printing.
+        Man hinh nay ho tro tiep nhan van don walk-in tai quầy, thao tac quet tai chi nhanh
+        va in phieu van don.
       </p>
 
       <form onSubmit={onFilterSubmit} style={styles.filterForm}>
         <input
           name="q"
-          placeholder="Search shipment code"
+          placeholder="Tim ma van don"
           value={qInput}
           onChange={(event) => setQInput(event.target.value)}
           style={styles.input}
@@ -440,33 +440,33 @@ export function ShipmentListPage(): React.JSX.Element {
           onChange={(event) => setStatusInput(event.target.value)}
           style={styles.select}
         >
-          <option value="">All statuses</option>
+          <option value="">Tat ca trang thai</option>
           {SHIPMENT_STATUS_OPTIONS.map((status) => (
             <option key={status} value={status}>
               {status}
             </option>
           ))}
         </select>
-        <button type="submit">Apply</button>
+        <button type="submit">Ap dung</button>
         <button type="button" onClick={onResetFilters}>
-          Reset
+          Dat lai
         </button>
       </form>
 
       {!canViewAllHubAreas ? (
         <div style={styles.scopeNotice}>
-          <strong>Hub scope:</strong>{' '}
+          <strong>Pham vi hub:</strong>{' '}
           {assignedHubCodes.length > 0
             ? assignedHubCodes.join(', ')
-            : 'No hub assigned. Contact admin to assign a hub account.'}
+            : 'Chua duoc gan hub. Vui long lien he admin de cap hub cho tai khoan.'}
         </div>
       ) : null}
 
       <section style={styles.operationGrid}>
         <div style={styles.card}>
-          <h3 style={styles.cardTitle}>Receive Shipment At Branch</h3>
+          <h3 style={styles.cardTitle}>Tiep Nhan Van Don Tai Chi Nhanh</h3>
           <p style={styles.mutedText}>
-            Scan or enter shipment code when customers bring packages to post office.
+            Quet hoac nhap ma van don khi khach mang hang den buu cuc.
           </p>
           <div style={styles.formGrid}>
             <select
@@ -478,23 +478,23 @@ export function ShipmentListPage(): React.JSX.Element {
               <option value="OUTBOUND">OUTBOUND</option>
             </select>
             <input
-              placeholder="Shipment code"
+              placeholder="Ma van don"
               value={counterShipmentCode}
               onChange={(event) => setCounterShipmentCode(event.target.value)}
             />
             <input
-              placeholder="Branch location code"
+              placeholder="Ma vi tri chi nhanh"
               value={counterLocationCode}
               onChange={(event) => setCounterLocationCode(event.target.value)}
             />
             <textarea
               rows={3}
-              placeholder="Optional note"
+              placeholder="Ghi chu (khong bat buoc)"
               value={counterNote}
               onChange={(event) => setCounterNote(event.target.value)}
             />
             <button type="button" disabled={isScanSubmitting} onClick={() => void submitCounterScan()}>
-              {isScanSubmitting ? 'Submitting scan...' : 'Submit scan'}
+              {isScanSubmitting ? 'Dang gui quet...' : 'Gui quet'}
             </button>
           </div>
           {counterMessage ? (
@@ -510,39 +510,39 @@ export function ShipmentListPage(): React.JSX.Element {
         </div>
 
         <div style={styles.card}>
-          <h3 style={styles.cardTitle}>Create Walk-in Shipment</h3>
+          <h3 style={styles.cardTitle}>Tao Van Don Walk-in</h3>
           <p style={styles.mutedText}>
-            Ops staff can create shipments for walk-in customers with the same metadata structure
-            used by merchant-web.
+            Nhan vien Ops co the tao van don cho khach walk-in voi cau truc metadata
+            dong bo voi merchant-web.
           </p>
           <div style={styles.formGridMulti}>
             <input
-              placeholder="Manual shipment code (optional)"
+              placeholder="Ma van don tu nhap (khong bat buoc)"
               value={walkInForm.manualCode}
               onChange={(event) => setWalkInForm((prev) => ({ ...prev, manualCode: event.target.value }))}
             />
             <input
-              placeholder="Sender name"
+              placeholder="Ten nguoi gui"
               value={walkInForm.senderName}
               onChange={(event) => setWalkInForm((prev) => ({ ...prev, senderName: event.target.value }))}
             />
             <input
-              placeholder="Sender phone"
+              placeholder="SDT nguoi gui"
               value={walkInForm.senderPhone}
               onChange={(event) => setWalkInForm((prev) => ({ ...prev, senderPhone: event.target.value }))}
             />
             <input
-              placeholder="Sender address"
+              placeholder="Dia chi nguoi gui"
               value={walkInForm.senderAddress}
               onChange={(event) => setWalkInForm((prev) => ({ ...prev, senderAddress: event.target.value }))}
             />
             <input
-              placeholder="Receiver name"
+              placeholder="Ten nguoi nhan"
               value={walkInForm.receiverName}
               onChange={(event) => setWalkInForm((prev) => ({ ...prev, receiverName: event.target.value }))}
             />
             <input
-              placeholder="Receiver phone"
+              placeholder="SDT nguoi nhan"
               value={walkInForm.receiverPhone}
               onChange={(event) => setWalkInForm((prev) => ({ ...prev, receiverPhone: event.target.value }))}
             />
@@ -552,7 +552,7 @@ export function ShipmentListPage(): React.JSX.Element {
                 setWalkInForm((prev) => ({ ...prev, receiverRegion: event.target.value }))
               }
             >
-              <option value="">Receiver province / city</option>
+              <option value="">Tinh/Thanh nguoi nhan</option>
               {PROVINCE_CITY_OPTIONS.map((option) => (
                 <option key={option} value={option}>
                   {option}
@@ -560,37 +560,37 @@ export function ShipmentListPage(): React.JSX.Element {
               ))}
             </select>
             <input
-              placeholder="Receiver street + detail address"
+              placeholder="Duong + dia chi chi tiet nguoi nhan"
               value={walkInForm.receiverAddress}
               onChange={(event) => setWalkInForm((prev) => ({ ...prev, receiverAddress: event.target.value }))}
             />
             <input
-              placeholder="Item type"
+              placeholder="Loai hang"
               value={walkInForm.itemType}
               onChange={(event) => setWalkInForm((prev) => ({ ...prev, itemType: event.target.value }))}
             />
             <input
-              placeholder="Weight (kg)"
+              placeholder="Khoi luong (kg)"
               value={walkInForm.weightKg}
               onChange={(event) => setWalkInForm((prev) => ({ ...prev, weightKg: event.target.value }))}
             />
             <input
-              placeholder="Length (cm)"
+              placeholder="Dai (cm)"
               value={walkInForm.lengthCm}
               onChange={(event) => setWalkInForm((prev) => ({ ...prev, lengthCm: event.target.value }))}
             />
             <input
-              placeholder="Width (cm)"
+              placeholder="Rong (cm)"
               value={walkInForm.widthCm}
               onChange={(event) => setWalkInForm((prev) => ({ ...prev, widthCm: event.target.value }))}
             />
             <input
-              placeholder="Height (cm)"
+              placeholder="Cao (cm)"
               value={walkInForm.heightCm}
               onChange={(event) => setWalkInForm((prev) => ({ ...prev, heightCm: event.target.value }))}
             />
             <input
-              placeholder="Declared value"
+              placeholder="Gia tri khai bao"
               value={walkInForm.declaredValue}
               onChange={(event) => setWalkInForm((prev) => ({ ...prev, declaredValue: event.target.value }))}
             />
@@ -605,17 +605,17 @@ export function ShipmentListPage(): React.JSX.Element {
               <option value="SAME_DAY">SAME_DAY</option>
             </select>
             <input
-              placeholder="COD amount"
+              placeholder="So tien COD"
               value={walkInForm.codAmount}
               onChange={(event) => setWalkInForm((prev) => ({ ...prev, codAmount: event.target.value }))}
             />
             <input
-              placeholder="Platform (Shopee, TikTokShop, WalkIn...)"
+              placeholder="Nen tang (Shopee, TikTokShop, WalkIn...)"
               value={walkInForm.platform}
               onChange={(event) => setWalkInForm((prev) => ({ ...prev, platform: event.target.value }))}
             />
             <input
-              placeholder="Pickup location code (for create + pickup scan)"
+              placeholder="Ma vi tri pickup (cho tao + quet pickup)"
               value={walkInForm.pickupLocationCode}
               onChange={(event) =>
                 setWalkInForm((prev) => ({ ...prev, pickupLocationCode: event.target.value }))
@@ -624,25 +624,25 @@ export function ShipmentListPage(): React.JSX.Element {
           </div>
           <textarea
             rows={3}
-            placeholder="Delivery note"
+            placeholder="Ghi chu giao hang"
             value={walkInForm.deliveryNote}
             onChange={(event) => setWalkInForm((prev) => ({ ...prev, deliveryNote: event.target.value }))}
           />
-          <p style={styles.mutedText}>Estimated fee: {formatCurrency(estimatedFee)}</p>
+          <p style={styles.mutedText}>Cuoc phi du kien: {formatCurrency(estimatedFee)}</p>
           <div style={styles.buttonRow}>
             <button
               type="button"
               disabled={isWalkInSubmitting}
               onClick={() => void submitWalkInShipment(false)}
             >
-              {isWalkInSubmitting ? 'Submitting...' : 'Create shipment'}
+              {isWalkInSubmitting ? 'Dang gui...' : 'Tao van don'}
             </button>
             <button
               type="button"
               disabled={isWalkInSubmitting}
               onClick={() => void submitWalkInShipment(true)}
             >
-              {isWalkInSubmitting ? 'Submitting...' : 'Create + pickup scan'}
+              {isWalkInSubmitting ? 'Dang gui...' : 'Tao + quet pickup'}
             </button>
           </div>
           {walkInMessage ? (
@@ -658,7 +658,7 @@ export function ShipmentListPage(): React.JSX.Element {
         </div>
       </section>
 
-      {shipmentQuery.isLoading ? <p>Loading shipments...</p> : null}
+      {shipmentQuery.isLoading ? <p>Dang tai van don...</p> : null}
       {shipmentQuery.isError ? (
         <p style={styles.errorText}>{getErrorMessage(shipmentQuery.error)}</p>
       ) : null}
@@ -668,8 +668,8 @@ export function ShipmentListPage(): React.JSX.Element {
       {shipmentQuery.isSuccess && visibleShipments.length === 0 ? (
         <p>
           {assignedHubCodes.length === 0 && !canViewAllHubAreas
-            ? 'No shipment is visible because this OPS account is not assigned to any hub.'
-            : 'No shipments found for current filters.'}
+            ? 'Khong hien thi duoc van don vi tai khoan OPS chua duoc gan hub.'
+            : 'Khong tim thay van don phu hop bo loc hien tai.'}
         </p>
       ) : null}
       {shipmentQuery.isSuccess && visibleShipments.length > 0 ? (

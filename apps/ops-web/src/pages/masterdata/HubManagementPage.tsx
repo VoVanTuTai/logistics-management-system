@@ -146,7 +146,7 @@ function formatAddressSummary(payload: HubAddressPayload): string {
     .map((value) => value.trim())
     .filter((value) => value.length > 0);
 
-  return parts.length > 0 ? parts.join(', ') : 'N/A';
+  return parts.length > 0 ? parts.join(', ') : 'Khong co';
 }
 
 export function HubManagementPage(): React.JSX.Element {
@@ -235,10 +235,10 @@ export function HubManagementPage(): React.JSX.Element {
           hubId: editingHub.id,
           payload,
         });
-        setActionMessage(`Hub "${payload.code}" updated.`);
+        setActionMessage(`Da cap nhat hub "${payload.code}".`);
       } else {
         await createMutation.mutateAsync(payload);
-        setActionMessage(`Hub "${payload.code}" created.`);
+        setActionMessage(`Da tao hub "${payload.code}".`);
       }
 
       setEditorOpen(false);
@@ -260,7 +260,7 @@ export function HubManagementPage(): React.JSX.Element {
       });
 
       setActionMessage(
-        `Hub "${hub.code}" switched to ${hub.isActive ? 'INACTIVE' : 'ACTIVE'}.`,
+        `Hub "${hub.code}" da chuyen sang ${hub.isActive ? 'INACTIVE' : 'ACTIVE'}.`,
       );
     } catch (error) {
       setActionError(getErrorMessage(error));
@@ -271,14 +271,14 @@ export function HubManagementPage(): React.JSX.Element {
 
   return (
     <div>
-      <h2>Master Data - Hub Management</h2>
+      <h2>Du Lieu Danh Muc - Quan Ly Hub</h2>
       <p style={styles.helperText}>
-        Manage shared hubs used by operations and routing.
+        Quan ly danh muc hub dung chung cho van hanh va dieu phoi.
       </p>
 
       <form onSubmit={onApplyFilters} style={styles.filterForm}>
         <input
-          placeholder="Code"
+          placeholder="Ma hub"
           value={draftFilters.code ?? ''}
           onChange={(event) =>
             setDraftFilters((previous) => ({
@@ -289,7 +289,7 @@ export function HubManagementPage(): React.JSX.Element {
           style={styles.input}
         />
         <input
-          placeholder="Name"
+          placeholder="Ten hub"
           value={draftFilters.name ?? ''}
           onChange={(event) =>
             setDraftFilters((previous) => ({
@@ -300,7 +300,7 @@ export function HubManagementPage(): React.JSX.Element {
           style={styles.input}
         />
         <input
-          placeholder="Zone code"
+          placeholder="Ma zone"
           value={draftFilters.zoneCode ?? ''}
           onChange={(event) =>
             setDraftFilters((previous) => ({
@@ -320,12 +320,12 @@ export function HubManagementPage(): React.JSX.Element {
           }
           style={styles.input}
         >
-          <option value="">All statuses</option>
+          <option value="">Tat ca trang thai</option>
           <option value="true">ACTIVE</option>
           <option value="false">INACTIVE</option>
         </select>
         <input
-          placeholder="Quick search"
+          placeholder="Tim nhanh"
           value={draftFilters.q ?? ''}
           onChange={(event) =>
             setDraftFilters((previous) => ({
@@ -335,12 +335,12 @@ export function HubManagementPage(): React.JSX.Element {
           }
           style={styles.input}
         />
-        <button type="submit">Apply</button>
+        <button type="submit">Ap dung</button>
         <button type="button" onClick={onResetFilters}>
-          Reset
+          Dat lai
         </button>
         <button type="button" onClick={openCreateModal}>
-          Create Hub
+          Tao hub
         </button>
       </form>
 
@@ -355,27 +355,27 @@ export function HubManagementPage(): React.JSX.Element {
         </p>
       ) : null}
 
-      {hubsQuery.isLoading ? <p>Loading hubs...</p> : null}
+      {hubsQuery.isLoading ? <p>Dang tai hub...</p> : null}
       {hubsQuery.isError ? (
         <p style={styles.errorText}>{getErrorMessage(hubsQuery.error)}</p>
       ) : null}
       {hubsQuery.isSuccess && (hubsQuery.data?.length ?? 0) === 0 ? (
-        <p>No hubs found.</p>
+        <p>Khong tim thay hub.</p>
       ) : null}
 
       {hubsQuery.isSuccess && (hubsQuery.data?.length ?? 0) > 0 ? (
         <table style={styles.table}>
           <thead>
             <tr>
-              <th style={styles.headerCell}>Code</th>
-              <th style={styles.headerCell}>Name</th>
-              <th style={styles.headerCell}>Type</th>
+              <th style={styles.headerCell}>Ma</th>
+              <th style={styles.headerCell}>Ten</th>
+              <th style={styles.headerCell}>Loai</th>
               <th style={styles.headerCell}>Zone</th>
-              <th style={styles.headerCell}>Address</th>
-              <th style={styles.headerCell}>Contact</th>
-              <th style={styles.headerCell}>Status</th>
-              <th style={styles.headerCell}>Updated</th>
-              <th style={styles.headerCell}>Actions</th>
+              <th style={styles.headerCell}>Dia chi</th>
+              <th style={styles.headerCell}>Lien he</th>
+              <th style={styles.headerCell}>Trang thai</th>
+              <th style={styles.headerCell}>Cap nhat</th>
+              <th style={styles.headerCell}>Hanh dong</th>
             </tr>
           </thead>
           <tbody>
@@ -390,10 +390,10 @@ export function HubManagementPage(): React.JSX.Element {
                 <tr key={hub.id}>
                   <td style={styles.cell}>{hub.code}</td>
                   <td style={styles.cell}>{hub.name}</td>
-                  <td style={styles.cell}>{addressPayload.type || 'N/A'}</td>
-                  <td style={styles.cell}>{hub.zoneCode ?? 'N/A'}</td>
+                  <td style={styles.cell}>{addressPayload.type || 'Khong co'}</td>
+                  <td style={styles.cell}>{hub.zoneCode ?? 'Khong co'}</td>
                   <td style={styles.cell}>{formatAddressSummary(addressPayload)}</td>
-                  <td style={styles.cell}>{contactSummary || 'N/A'}</td>
+                  <td style={styles.cell}>{contactSummary || 'Khong co'}</td>
                   <td style={styles.cell}>
                     <MasterdataStatusPill isActive={hub.isActive} />
                   </td>
@@ -401,13 +401,13 @@ export function HubManagementPage(): React.JSX.Element {
                   <td style={styles.cell}>
                     <div style={styles.actionsCell}>
                       <button type="button" onClick={() => setSelectedHubId(hub.id)}>
-                        Detail
+                        Chi tiet
                       </button>
                       <button type="button" onClick={() => openEditModal(hub)}>
-                        Edit
+                        Sua
                       </button>
                       <button type="button" onClick={() => void onToggleStatus(hub)}>
-                        {hub.isActive ? 'Deactivate' : 'Activate'}
+                        {hub.isActive ? 'Tat' : 'Bat'}
                       </button>
                     </div>
                   </td>
@@ -420,36 +420,36 @@ export function HubManagementPage(): React.JSX.Element {
 
       {selectedHub ? (
         <section style={styles.detailCard}>
-          <h3 style={styles.detailTitle}>Hub Detail: {selectedHub.code}</h3>
+          <h3 style={styles.detailTitle}>Chi tiet hub: {selectedHub.code}</h3>
           <p>
-            <strong>Name:</strong> {selectedHub.name}
+            <strong>Ten:</strong> {selectedHub.name}
           </p>
           <p>
-            <strong>Zone:</strong> {selectedHub.zoneCode ?? 'N/A'}
+            <strong>Zone:</strong> {selectedHub.zoneCode ?? 'Khong co'}
           </p>
           <p>
-            <strong>Status:</strong> {selectedHub.isActive ? 'ACTIVE' : 'INACTIVE'}
+            <strong>Trang thai:</strong> {selectedHub.isActive ? 'ACTIVE' : 'INACTIVE'}
           </p>
           <p>
-            <strong>Created:</strong> {formatDateTime(selectedHub.createdAt)}
+            <strong>Tao luc:</strong> {formatDateTime(selectedHub.createdAt)}
           </p>
           <p>
-            <strong>Updated:</strong> {formatDateTime(selectedHub.updatedAt)}
+            <strong>Cap nhat luc:</strong> {formatDateTime(selectedHub.updatedAt)}
           </p>
         </section>
       ) : null}
 
       <MasterdataEditorModal
         open={editorOpen}
-        title={editingHub ? `Edit Hub ${editingHub.code}` : 'Create Hub'}
-        submitLabel={editingHub ? 'Save changes' : 'Create hub'}
+        title={editingHub ? `Sua hub ${editingHub.code}` : 'Tao hub'}
+        submitLabel={editingHub ? 'Luu thay doi' : 'Tao hub'}
         isSubmitting={isSaving}
         onClose={closeModal}
         onSubmit={onSubmitForm}
       >
         <div style={styles.formGrid}>
           <label style={styles.fieldLabel}>
-            Hub code
+            Ma hub
             <input
               value={form.code}
               onChange={(event) =>
@@ -465,7 +465,7 @@ export function HubManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Hub name
+            Ten hub
             <input
               value={form.name}
               onChange={(event) =>
@@ -479,7 +479,7 @@ export function HubManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Hub type
+            Loai hub
             <select
               value={form.type}
               onChange={(event) =>
@@ -490,14 +490,14 @@ export function HubManagementPage(): React.JSX.Element {
               }
               style={styles.input}
             >
-              <option value="">Select type</option>
+              <option value="">Chon loai</option>
               <option value="BRANCH">BRANCH</option>
               <option value="SORTING_CENTER">SORTING_CENTER</option>
               <option value="TRANSIT_HUB">TRANSIT_HUB</option>
             </select>
           </label>
           <label style={styles.fieldLabel}>
-            Zone code
+            Ma zone
             <input
               value={form.zoneCode}
               onChange={(event) =>
@@ -511,7 +511,7 @@ export function HubManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Address line
+            Dia chi
             <input
               value={form.addressLine}
               onChange={(event) =>
@@ -524,7 +524,7 @@ export function HubManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Ward
+            Phuong/Xa
             <input
               value={form.ward}
               onChange={(event) =>
@@ -537,7 +537,7 @@ export function HubManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            District
+            Quan/Huyen
             <input
               value={form.district}
               onChange={(event) =>
@@ -550,7 +550,7 @@ export function HubManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Province
+            Tinh/Thanh
             <input
               value={form.province}
               onChange={(event) =>
@@ -563,7 +563,7 @@ export function HubManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Phone
+            So dien thoai
             <input
               value={form.phone}
               onChange={(event) =>
@@ -576,7 +576,7 @@ export function HubManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Contact name
+            Ten lien he
             <input
               value={form.contactName}
               onChange={(event) =>
@@ -589,7 +589,7 @@ export function HubManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Description
+            Mo ta
             <input
               value={form.description}
               onChange={(event) =>

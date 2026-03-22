@@ -27,9 +27,9 @@ export function LoginPage(): React.JSX.Element {
   return (
     <div className="auth-page auth-page-ops">
       <div className="auth-card">
-        <p className="auth-kicker">Ops Portal</p>
-        <h2 className="auth-title">Sign In To JMS Ops</h2>
-        <p className="auth-subtitle">Internal control center for pickup, scan, dispatch, and manifest operations.</p>
+        <p className="auth-kicker">Cong Ops</p>
+        <h2 className="auth-title">Dang Nhap JMS Ops</h2>
+        <p className="auth-subtitle">Trung tam dieu hanh noi bo cho lay hang, quet, phan cong va manifest.</p>
         <LoginForm
           isSubmitting={isSubmitting || loginMutation.isPending}
           errorMessage={authError}
