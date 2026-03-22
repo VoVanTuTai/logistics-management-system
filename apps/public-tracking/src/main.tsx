@@ -27,11 +27,11 @@ interface TimelineItem {
 const gatewayBaseUrl = import.meta.env.VITE_GATEWAY_BFF_URL ?? '';
 
 const FLOW_STEPS = [
-  'Created',
-  'Picked Up',
-  'In Transit',
-  'Out For Delivery',
-  'Delivered',
+  'Tao don',
+  'Da lay hang',
+  'Dang van chuyen',
+  'Dang giao hang',
+  'Da giao',
 ] as const;
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -51,7 +51,7 @@ function getErrorMessage(error: unknown): string {
     return error.message;
   }
 
-  return 'Unknown error';
+  return 'Loi khong xac dinh';
 }
 
 function mapStatusToStep(status: string): number {
@@ -104,8 +104,8 @@ function buildTimeline(shipment: ShipmentResponse): TimelineItem[] {
   const items: TimelineItem[] = [
     {
       id: `${shipment.code}-created`,
-      title: 'Shipment Created',
-      description: `Shipment ${shipment.code} was created in system.`,
+      title: 'Don hang duoc tao',
+      description: `Van don ${shipment.code} da duoc tao tren he thong.`,
       at: shipment.createdAt,
       tone: 'info',
     },
@@ -114,8 +114,8 @@ function buildTimeline(shipment: ShipmentResponse): TimelineItem[] {
   if (shipment.updatedAt !== shipment.createdAt) {
     items.push({
       id: `${shipment.code}-updated`,
-      title: 'Status Updated',
-      description: `Current status changed to ${shipment.currentStatus}.`,
+      title: 'Cap nhat trang thai',
+      description: `Trang thai hien tai da doi sang ${shipment.currentStatus}.`,
       at: shipment.updatedAt,
       tone: statusTone(shipment.currentStatus),
     });
@@ -124,7 +124,7 @@ function buildTimeline(shipment: ShipmentResponse): TimelineItem[] {
   if (shipment.cancellationReason) {
     items.push({
       id: `${shipment.code}-cancelled`,
-      title: 'Shipment Cancelled',
+      title: 'Van don bi huy',
       description: shipment.cancellationReason,
       at: shipment.updatedAt,
       tone: 'danger',
@@ -138,24 +138,24 @@ function buildTimeline(shipment: ShipmentResponse): TimelineItem[] {
 
 function deriveEtaLabel(status: string, updatedAt: string): string {
   if (status === 'DELIVERED') {
-    return `Delivered at ${formatDate(updatedAt)}`;
+    return `Da giao luc ${formatDate(updatedAt)}`;
   }
 
   if (status === 'OUT_FOR_DELIVERY') {
-    return 'Expected today';
+    return 'Du kien giao trong ngay';
   }
 
   if (['DELIVERY_FAILED', 'NDR_CREATED', 'RETURN_STARTED', 'RETURN_COMPLETED', 'CANCELLED'].includes(status)) {
-    return 'Delivery exception';
+    return 'Don hang dang gap su co giao';
   }
 
-  return 'Expected in 1-3 days';
+  return 'Du kien giao trong 1-3 ngay';
 }
 
 function maskPhone(value: string): string {
   const digits = value.replace(/\D+/g, '');
   if (digits.length < 6) {
-    return 'Hidden';
+    return 'Da an';
   }
 
   return `${digits.slice(0, 3)}***${digits.slice(-3)}`;
@@ -163,7 +163,7 @@ function maskPhone(value: string): string {
 
 function maskName(value: string): string {
   if (!value) {
-    return 'Hidden';
+    return 'Da an';
   }
 
   if (value.length <= 2) {
@@ -181,7 +181,7 @@ async function request<T>(path: string, options: RequestInit): Promise<T> {
 
   if (!response.ok) {
     const maybeError = payload as ApiErrorPayload | null;
-    throw new Error(maybeError?.message ?? `Request failed (${response.status})`);
+    throw new Error(maybeError?.message ?? `Yeu cau that bai (${response.status})`);
   }
 
   return payload as T;
@@ -202,7 +202,7 @@ function PublicTrackingApp(): React.JSX.Element {
       const trackingCode = code.trim().toUpperCase();
 
       if (!trackingCode) {
-        throw new Error('Tracking code is required.');
+        throw new Error('Vui long nhap ma van don.');
       }
 
       const detail = await request<ShipmentResponse>(
@@ -230,26 +230,26 @@ function PublicTrackingApp(): React.JSX.Element {
   const receiver = useMemo(() => asRecord(metadata?.receiver), [metadata]);
   const receiverName = maskName(asString(receiver?.name));
   const receiverPhone = maskPhone(asString(receiver?.phone));
-  const receiverRegion = asString(receiver?.region) || 'N/A';
-  const eta = shipment ? deriveEtaLabel(shipment.currentStatus, shipment.updatedAt) : 'N/A';
+  const receiverRegion = asString(receiver?.region) || 'Chua co';
+  const eta = shipment ? deriveEtaLabel(shipment.currentStatus, shipment.updatedAt) : 'Chua co';
 
   return (
     <main className="tracking-page">
       <section className="tracking-hero">
-        <p className="tracking-kicker">Public Tracking</p>
-        <h1>Track Shipment In Real Time</h1>
-        <p>Enter shipment code to view status, ETA, and event timeline.</p>
+        <p className="tracking-kicker">Theo doi van don cong khai</p>
+        <h1>Theo doi van don theo thoi gian thuc</h1>
+        <p>Nhap ma van don de xem trang thai, du kien giao va lich su su kien.</p>
 
         <form className="tracking-form" onSubmit={onSubmit}>
           <input
             type="text"
             value={code}
             onChange={(event) => setCode(event.target.value)}
-            placeholder="Example: SHP260317A1B2C3"
-            aria-label="Tracking code"
+            placeholder="Vi du: SHP260317A1B2C3"
+            aria-label="Ma van don"
           />
           <button type="submit" disabled={loading}>
-            {loading ? 'Checking...' : 'Track'}
+            {loading ? 'Dang kiem tra...' : 'Tra cuu'}
           </button>
         </form>
         {error ? <p className="tracking-error">{error}</p> : null}
@@ -265,7 +265,7 @@ function PublicTrackingApp(): React.JSX.Element {
               </span>
             </header>
 
-            <ol className="tracking-steps" aria-label="Shipment progress">
+            <ol className="tracking-steps" aria-label="Tien trinh van don">
               {FLOW_STEPS.map((step, index) => {
                 const stateClass =
                   index < activeStep
@@ -286,52 +286,52 @@ function PublicTrackingApp(): React.JSX.Element {
 
           <section className="tracking-grid">
             <article className="tracking-card">
-              <h3>Current Summary</h3>
+              <h3>Tong quan hien tai</h3>
               <dl className="summary-grid">
                 <div>
-                  <dt>Status</dt>
+                  <dt>Trang thai</dt>
                   <dd>{shipment.currentStatus}</dd>
                 </div>
                 <div>
-                  <dt>ETA</dt>
+                  <dt>Du kien giao</dt>
                   <dd>{eta}</dd>
                 </div>
                 <div>
-                  <dt>Current Region</dt>
+                  <dt>Khu vuc hien tai</dt>
                   <dd>{receiverRegion}</dd>
                 </div>
                 <div>
-                  <dt>Updated At</dt>
+                  <dt>Cap nhat luc</dt>
                   <dd>{formatDate(shipment.updatedAt)}</dd>
                 </div>
               </dl>
             </article>
 
             <article className="tracking-card">
-              <h3>Receiver (masked)</h3>
+              <h3>Nguoi nhan (da an thong tin)</h3>
               <dl className="summary-grid">
                 <div>
-                  <dt>Name</dt>
+                  <dt>Ten</dt>
                   <dd>{receiverName}</dd>
                 </div>
                 <div>
-                  <dt>Phone</dt>
+                  <dt>So dien thoai</dt>
                   <dd>{receiverPhone}</dd>
                 </div>
                 <div>
-                  <dt>Created At</dt>
+                  <dt>Tao luc</dt>
                   <dd>{formatDate(shipment.createdAt)}</dd>
                 </div>
                 <div>
-                  <dt>Cancellation</dt>
-                  <dd>{shipment.cancellationReason ?? 'N/A'}</dd>
+                  <dt>Ly do huy</dt>
+                  <dd>{shipment.cancellationReason ?? 'Khong co'}</dd>
                 </div>
               </dl>
             </article>
           </section>
 
           <section className="tracking-card">
-            <h3>Timeline</h3>
+            <h3>Lich su su kien</h3>
             <div className="tracking-timeline">
               {timeline.map((item) => (
                 <div key={item.id} className="timeline-item">
@@ -354,7 +354,7 @@ function PublicTrackingApp(): React.JSX.Element {
 const rootElement = document.getElementById('root');
 
 if (!rootElement) {
-  throw new Error('Missing #root element');
+  throw new Error('Khong tim thay phan tu #root');
 }
 
 createRoot(rootElement).render(
