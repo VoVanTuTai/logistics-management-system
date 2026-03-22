@@ -1,0 +1,10 @@
+CREATE DATABASE auth_db;
+CREATE DATABASE masterdata_db;
+CREATE DATABASE shipment_db;
+CREATE DATABASE pickup_db;
+CREATE DATABASE dispatch_db;
+CREATE DATABASE manifest_db;
+CREATE DATABASE scan_db;
+CREATE DATABASE delivery_db;
+CREATE DATABASE tracking_db;
+CREATE DATABASE reporting_db;

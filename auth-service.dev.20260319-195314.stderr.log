@@ -1,0 +1,19 @@
+F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\auth-service\node_modules\.pnpm\@prisma+client@6.19.2_prism_6b2b1af085fe6797f5a5ea830937a8e3\node_modules\@prisma\client\src\runtime\core\engines\common\accelerate\getUrlAndApiKey.ts:44
+    throw new InvalidDatasourceError(
+          ^
+InvalidDatasourceError: Error validating datasource `db`: the URL must start with the protocol `prisma://` or `prisma+postgres://`
+    at getUrlAndApiKey (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\auth-service\node_modules\.pnpm\@prisma+client@6.19.2_prism_6b2b1af085fe6797f5a5ea830937a8e3\node_modules\@prisma\client\src\runtime\core\engines\common\accelerate\getUrlAndApiKey.ts:44:11)
+    at qt.getURLAndAPIKey (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\auth-service\node_modules\.pnpm\@prisma+client@6.19.2_prism_6b2b1af085fe6797f5a5ea830937a8e3\node_modules\@prisma\client\src\runtime\core\engines\data-proxy\DataProxyEngine.ts:422:12)
+    at F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\auth-service\node_modules\.pnpm\@prisma+client@6.19.2_prism_6b2b1af085fe6797f5a5ea830937a8e3\node_modules\@prisma\client\src\runtime\core\engines\data-proxy\DataProxyEngine.ts:127:36
+    at qt.start (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\auth-service\node_modules\.pnpm\@prisma+client@6.19.2_prism_6b2b1af085fe6797f5a5ea830937a8e3\node_modules\@prisma\client\src\runtime\core\engines\data-proxy\DataProxyEngine.ts:143:5)
+    at Proxy.$connect (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\auth-service\node_modules\.pnpm\@prisma+client@6.19.2_prism_6b2b1af085fe6797f5a5ea830937a8e3\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:461:29)
+    at Proxy.onModuleInit (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\auth-service\src\infrastructure\prisma\prisma.service.ts:14:16)
+    at MapIterator.iteratee (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\auth-service\node_modules\.pnpm\@nestjs+core@10.4.22_@nestj_d72e6898080a56e0cd820ab783d920cd\node_modules\@nestjs\core\hooks\on-module-init.hook.js:22:43)
+    at MapIterator.next (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\auth-service\node_modules\.pnpm\iterare@1.2.1\node_modules\iterare\src\map.ts:9:39)
+    at IteratorWithOperators.next (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\auth-service\node_modules\.pnpm\iterare@1.2.1\node_modules\iterare\src\iterate.ts:19:28)
+    at Function.from (<anonymous>) {
+  clientVersion: '6.19.2',
+  cause: undefined,
+  isRetryable: false,
+  code: 'P6001'
+}

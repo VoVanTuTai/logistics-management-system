@@ -1,0 +1,18 @@
+export const routePaths = {
+  login: '/login',
+  appRoot: '/app',
+  dashboard: '/app/dashboard',
+  opsUsers: '/app/users/ops',
+  shipperUsers: '/app/users/shippers',
+  masterdataHubs: '/app/masterdata/hubs',
+  masterdataZones: '/app/masterdata/zones',
+  masterdataNdrReasons: '/app/masterdata/ndr-reasons',
+  masterdataConfigs: '/app/masterdata/configs',
+  dashboardLeaf: 'dashboard',
+  opsUsersLeaf: 'users/ops',
+  shipperUsersLeaf: 'users/shippers',
+  masterdataHubsLeaf: 'masterdata/hubs',
+  masterdataZonesLeaf: 'masterdata/zones',
+  masterdataNdrReasonsLeaf: 'masterdata/ndr-reasons',
+  masterdataConfigsLeaf: 'masterdata/configs',
+} as const;

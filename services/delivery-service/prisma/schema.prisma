@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DeliveryAttemptStatus {
+  ATTEMPTED
+  DELIVERED
+  FAILED
+}
+
+enum OtpStatus {
+  SENT
+  VERIFIED
+}
+
+enum NdrStatus {
+  CREATED
+  RESCHEDULED
+  RETURN_REQUESTED
+}
+
+enum ReturnStatus {
+  STARTED
+  COMPLETED
+}
+
+enum OutboxStatus {
+  PENDING
+  PUBLISHED
+  FAILED
+}
+
+model DeliveryAttempt {
+  id             String                @id @default(cuid())
+  shipmentCode   String
+  taskId         String?
+  courierId      String?
+  locationCode   String?
+  actor          String?
+  note           String?
+  status         DeliveryAttemptStatus
+  failReasonCode String?
+  occurredAt     DateTime
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  pod            Pod?
+  ndrCases       NdrCase[]
+}
+
+model Pod {
+  id                String          @id @default(cuid())
+  deliveryAttemptId String          @unique
+  imageUrl          String?
+  note              String?
+  capturedBy        String?
+  capturedAt        DateTime
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  deliveryAttempt   DeliveryAttempt @relation(fields: [deliveryAttemptId], references: [id])
+}
+
+model OtpRecord {
+  id           String    @id @default(cuid())
+  shipmentCode String
+  otpCode      String?
+  status       OtpStatus
+  sentBy       String?
+  verifiedBy   String?
+  sentAt       DateTime?
+  verifiedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model NdrCase {
+  id                String          @id @default(cuid())
+  shipmentCode      String
+  deliveryAttemptId String?
+  reasonCode        String?
+  note              String?
+  status            NdrStatus
+  rescheduleAt      DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  deliveryAttempt   DeliveryAttempt? @relation(fields: [deliveryAttemptId], references: [id])
+}
+
+model ReturnCase {
+  id           String       @id @default(cuid())
+  shipmentCode String
+  ndrCaseId    String?
+  note         String?
+  status       ReturnStatus
+  startedAt    DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+model IdempotencyRecord {
+  id              String   @id @default(cuid())
+  idempotencyKey  String   @unique
+  scope           String
+  responsePayload Json
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model OutboxEvent {
+  id            String       @id @default(cuid())
+  eventId       String       @unique
+  eventType     String
+  routingKey    String
+  aggregateType String
+  aggregateId   String
+  payload       Json
+  status        OutboxStatus @default(PENDING)
+  retryCount    Int          @default(0)
+  occurredAt    DateTime
+  publishedAt   DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}

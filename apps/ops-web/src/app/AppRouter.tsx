@@ -1,0 +1,173 @@
+import React, { useMemo, useState } from 'react';
+import {
+  BrowserRouter,
+  NavLink,
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+  useNavigate,
+} from 'react-router-dom';
+
+import { useLogoutMutation } from '../features/auth/auth.api';
+import { routePaths } from '../navigation/routes';
+import { useAuthStore } from '../store/authStore';
+import { LoginPage } from '../pages/auth/LoginPage';
+import { DashboardPage } from '../pages/dashboard/DashboardPage';
+import { ManifestDetailPage } from '../pages/manifests/ManifestDetailPage';
+import { ManifestManagementPage } from '../pages/manifests/ManifestManagementPage';
+import { NdrCaseDetailPage } from '../pages/ndr/NdrCaseDetailPage';
+import { NdrHandlingPage } from '../pages/ndr/NdrHandlingPage';
+import { PickupApprovalsPage } from '../pages/pickups/PickupApprovalsPage';
+import { PickupRequestDetailPage } from '../pages/pickups/PickupRequestDetailPage';
+import { HubScanPage } from '../pages/scans/HubScanPage';
+import { ShipmentDetailPage } from '../pages/shipments/ShipmentDetailPage';
+import { ShipmentListPage } from '../pages/shipments/ShipmentListPage';
+import { TaskAssignmentPage } from '../pages/tasks/TaskAssignmentPage';
+import { TaskDetailPage } from '../pages/tasks/TaskDetailPage';
+import { TrackingDetailPage } from '../pages/tracking/TrackingDetailPage';
+import { TrackingLookupPage } from '../pages/tracking/TrackingLookupPage';
+
+function AuthGuard(): React.JSX.Element {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  return isAuthenticated ? <Outlet /> : <Navigate to={routePaths.login} replace />;
+}
+
+interface NavItem {
+  label: string;
+  to: string;
+}
+
+function DashboardLayout(): React.JSX.Element {
+  const session = useAuthStore((state) => state.session);
+  const accessToken = session?.tokens.accessToken ?? null;
+  const navigate = useNavigate();
+  const logoutMutation = useLogoutMutation(accessToken);
+  const [quickSearchCode, setQuickSearchCode] = useState('');
+
+  const primaryNav = useMemo<NavItem[]>(
+    () => [
+      { label: 'Dashboard', to: routePaths.dashboard },
+      { label: 'Shipments', to: routePaths.shipments },
+      { label: 'Pickup Approval', to: routePaths.pickups },
+      { label: 'Dispatch Tasks', to: routePaths.tasks },
+      { label: 'Manifest', to: routePaths.manifests },
+      { label: 'Hub Scan', to: routePaths.scans },
+      { label: 'NDR', to: routePaths.ndr },
+      { label: 'Tracking', to: routePaths.tracking },
+    ],
+    [],
+  );
+
+  const onQuickSearch = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const normalized = quickSearchCode.trim().toUpperCase();
+    if (!normalized) {
+      return;
+    }
+
+    navigate(routePaths.trackingDetail(normalized));
+  };
+
+  const onLogout = async () => {
+    await logoutMutation.mutateAsync();
+    navigate(routePaths.login, { replace: true });
+  };
+
+  return (
+    <div className="ops-layout">
+      <aside className="ops-sidebar">
+        <div>
+          <h1>Ops Control</h1>
+          <p>Logistics operation center</p>
+        </div>
+
+        <div className="ops-sidebar-session">
+          <strong>{session?.user.username ?? 'ops.user'}</strong>
+          <small>roles: {(session?.user.roles ?? []).join(', ') || 'OPS'}</small>
+          <button
+            type="button"
+            className="ops-logout-btn"
+            disabled={logoutMutation.isPending}
+            onClick={() => void onLogout()}
+          >
+            {logoutMutation.isPending ? 'Signing out...' : 'Logout'}
+          </button>
+        </div>
+
+        <nav className="ops-nav-group">
+          <h2>Operations</h2>
+          {primaryNav.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) =>
+                isActive ? 'ops-nav-link ops-nav-link-active' : 'ops-nav-link'
+              }
+            >
+              {item.label}
+            </NavLink>
+          ))}
+        </nav>
+
+      </aside>
+
+      <div className="ops-workspace">
+        <header className="ops-topbar">
+          <div>
+            <h2>JMS Ops Console</h2>
+            <p>Fast actions, filter-heavy tables, event-driven timeline visibility.</p>
+          </div>
+
+          <div className="ops-topbar-actions">
+            <form onSubmit={onQuickSearch} className="ops-quick-search" role="search">
+              <input
+                type="text"
+                value={quickSearchCode}
+                onChange={(event) => setQuickSearchCode(event.target.value)}
+                placeholder="Quick search shipment code"
+                aria-label="Quick search shipment code"
+              />
+              <button type="submit">Search</button>
+            </form>
+            <span className="ops-notify-pill">Notifications</span>
+          </div>
+        </header>
+
+        <main className="ops-main-panel">
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
+}
+
+export function AppRouter(): React.JSX.Element {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path={routePaths.login} element={<LoginPage />} />
+        <Route element={<AuthGuard />}>
+          <Route path={routePaths.appRoot} element={<DashboardLayout />}>
+            <Route index element={<Navigate to={routePaths.dashboard} replace />} />
+            <Route path={routePaths.dashboardLeaf} element={<DashboardPage />} />
+            <Route path={routePaths.shipmentsLeaf} element={<ShipmentListPage />} />
+            <Route path={routePaths.shipmentDetailLeaf} element={<ShipmentDetailPage />} />
+            <Route path={routePaths.pickupsLeaf} element={<PickupApprovalsPage />} />
+            <Route path={routePaths.pickupDetailLeaf} element={<PickupRequestDetailPage />} />
+            <Route path={routePaths.tasksLeaf} element={<TaskAssignmentPage />} />
+            <Route path={routePaths.taskDetailLeaf} element={<TaskDetailPage />} />
+            <Route path={routePaths.manifestsLeaf} element={<ManifestManagementPage />} />
+            <Route path={routePaths.manifestDetailLeaf} element={<ManifestDetailPage />} />
+            <Route path={routePaths.scansLeaf} element={<HubScanPage />} />
+            <Route path={routePaths.ndrLeaf} element={<NdrHandlingPage />} />
+            <Route path={routePaths.ndrDetailLeaf} element={<NdrCaseDetailPage />} />
+            <Route path={routePaths.trackingLeaf} element={<TrackingLookupPage />} />
+            <Route path={routePaths.trackingDetailLeaf} element={<TrackingDetailPage />} />
+          </Route>
+        </Route>
+        <Route path="*" element={<Navigate to={routePaths.login} replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}

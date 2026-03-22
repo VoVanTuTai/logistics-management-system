@@ -1,0 +1,29 @@
+
+> @jms/ops-web@0.1.0 dev
+> vite
+
+
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m993[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m5173[22m/[39m
+[2m[32m  ➜[39m[22m[2m  press [22m[1mh + enter[22m[2m to show help[22m
+[2m8:50:44 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/main.tsx[22m
+[2m8:50:57 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/app/AppRouter.tsx[22m
+[2m8:50:58 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/app/AppShell.tsx[22m
+[2m8:50:58 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/auth/LoginForm.tsx[22m
+[2m8:50:58 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/dashboard/DashboardPage.tsx[22m
+[2m8:50:58 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/manifests/ManifestManagementPage.tsx[22m
+[2m8:50:58 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ndr/NdrHandlingPage.tsx[22m
+[2m8:50:58 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/pickups/PickupApprovalsPage.tsx[22m
+[2m8:50:58 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/scans/HubScanPage.tsx[22m
+[2m8:50:58 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/shipments/ShipmentDetailPage.tsx[22m
+[2m8:50:58 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/tasks/TaskAssignmentPage.tsx[22m
+[2m8:50:58 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/tracking/TrackingLookupPage.tsx[22m
+[2m8:50:58 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/app/AppShell.tsx[22m
+[2m8:50:58 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/auth/LoginForm.tsx[22m
+[2m8:50:58 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/auth/LoginPage.tsx[22m
+[2m8:50:58 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/dashboard/DashboardPage.tsx[22m
+[2m8:50:58 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/manifests/ManifestManagementPage.tsx[22m
+[2m8:50:58 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/shipments/ShipmentListPage.tsx[22m
+[2m8:50:58 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/shipments/ShipmentsTable.tsx[22m
+^C^C

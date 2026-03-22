@@ -1,0 +1,41 @@
+
+> @jms/pickup-service@0.1.0 start:dev
+> npm run db:prepare && ts-node src/main.ts
+
+
+> @jms/pickup-service@0.1.0 db:prepare
+> prisma generate --schema prisma/schema.prisma && prisma db push --schema prisma/schema.prisma && ts-node prisma/seed.ts
+
+Prisma schema loaded from prisma\schema.prisma
+
+✔ Generated Prisma Client (v6.19.2) to .\node_modules\@prisma\client in 7.07s
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "pickup_db", schema "public" at "localhost:15435"
+
+The database is already in sync with the Prisma schema.
+
+Running generate... (Use --skip-generate to skip the generators)
+[2K[1A[2K[GRunning generate... - Prisma Client
+[2K[1A[2K[G✔ Generated Prisma Client (v6.19.2) to .\node_modules\@prisma\client in 6.24s
+
+pickup-service seed completed
+[32m[Nest] 14836  - [39m03/18/2026, 11:02:00 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 14836  - [39m03/18/2026, 11:02:07 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mHealthModule dependencies initialized[39m[38;5;3m +7648ms[39m
+[32m[Nest] 14836  - [39m03/18/2026, 11:02:07 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +157ms[39m
+[32m[Nest] 14836  - [39m03/18/2026, 11:02:07 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mPickupsController {/pickups}:[39m[38;5;3m +23ms[39m
+[32m[Nest] 14836  - [39m03/18/2026, 11:02:07 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/pickups, GET} route[39m[38;5;3m +62ms[39m
+[32m[Nest] 14836  - [39m03/18/2026, 11:02:08 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/pickups/:id, GET} route[39m[38;5;3m +442ms[39m
+[32m[Nest] 14836  - [39m03/18/2026, 11:02:08 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/pickups, POST} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 14836  - [39m03/18/2026, 11:02:08 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/pickups/:id, PATCH} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14836  - [39m03/18/2026, 11:02:08 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/pickups/:id/cancel, POST} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 14836  - [39m03/18/2026, 11:02:08 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/pickups/:id/approve, POST} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 14836  - [39m03/18/2026, 11:02:08 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/pickups/:id/complete, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14836  - [39m03/18/2026, 11:02:08 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mHealthController {/health}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 14836  - [39m03/18/2026, 11:02:08 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/health, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14836  - [39m03/18/2026, 11:02:12 PM [32m    LOG[39m [38;5;3m[PickupOutboxRelayService] [39m[32mOutbox relay connected to exchange "domain.events" (batch=50).[39m
+[32m[Nest] 14836  - [39m03/18/2026, 11:02:15 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +2670ms[39m
