@@ -57,7 +57,7 @@ export function TaskActionModal({
     return null;
   }
 
-  const actionTitle = mode === 'assign' ? 'Assign task' : 'Reassign task';
+  const actionTitle = mode === 'assign' ? 'Phan cong tac vu' : 'Phan cong lai tac vu';
 
   const handleSubmit = form.handleSubmit(async (values) => {
     await onSubmit({
@@ -74,10 +74,10 @@ export function TaskActionModal({
       <div style={styles.modal}>
         <h3 style={styles.title}>{actionTitle}</h3>
         <form onSubmit={handleSubmit} style={styles.form}>
-          <label htmlFor={`${mode}-courier`}>Courier</label>
+          <label htmlFor={`${mode}-courier`}>Shipper</label>
 
           {courierOptionsLoading ? (
-            <p style={styles.helperText}>Loading courier options...</p>
+            <p style={styles.helperText}>Dang tai danh sach shipper...</p>
           ) : courierOptions.length > 0 ? (
             <select
               id={`${mode}-courier`}
@@ -93,31 +93,31 @@ export function TaskActionModal({
             <>
               <input
                 id={`${mode}-courier`}
-                placeholder="Enter courier id"
+                placeholder="Nhap ma shipper"
                 {...form.register('courierId', { required: true })}
               />
               <small style={styles.helperText}>
-                No courier options available yet. Enter courier id manually.
+                Chua co danh sach shipper. Vui long nhap ma shipper thu cong.
               </small>
             </>
           )}
 
-          <label htmlFor={`${mode}-note`}>Note</label>
+          <label htmlFor={`${mode}-note`}>Ghi chu</label>
           <textarea
             id={`${mode}-note`}
             rows={3}
-            placeholder="Optional note"
+            placeholder="Ghi chu (khong bat buoc)"
             {...form.register('note')}
           />
           <div style={styles.actions}>
             <button type="button" onClick={onClose}>
-              Cancel
+              Huy
             </button>
             <button
               type="submit"
               disabled={isSubmitting || courierOptionsLoading}
             >
-              {isSubmitting ? 'Submitting...' : actionTitle}
+              {isSubmitting ? 'Dang gui...' : actionTitle}
             </button>
           </div>
         </form>

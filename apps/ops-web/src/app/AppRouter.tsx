@@ -47,14 +47,14 @@ function DashboardLayout(): React.JSX.Element {
 
   const primaryNav = useMemo<NavItem[]>(
     () => [
-      { label: 'Dashboard', to: routePaths.dashboard },
-      { label: 'Shipments', to: routePaths.shipments },
-      { label: 'Pickup Approval', to: routePaths.pickups },
-      { label: 'Dispatch Tasks', to: routePaths.tasks },
+      { label: 'Tong quan', to: routePaths.dashboard },
+      { label: 'Van don', to: routePaths.shipments },
+      { label: 'Duyet lay hang', to: routePaths.pickups },
+      { label: 'Phan cong tac vu', to: routePaths.tasks },
       { label: 'Manifest', to: routePaths.manifests },
-      { label: 'Hub Scan', to: routePaths.scans },
+      { label: 'Quet hub', to: routePaths.scans },
       { label: 'NDR', to: routePaths.ndr },
-      { label: 'Tracking', to: routePaths.tracking },
+      { label: 'Tra cuu', to: routePaths.tracking },
     ],
     [],
   );
@@ -78,25 +78,25 @@ function DashboardLayout(): React.JSX.Element {
     <div className="ops-layout">
       <aside className="ops-sidebar">
         <div>
-          <h1>Ops Control</h1>
-          <p>Logistics operation center</p>
+          <h1>Dieu hanh Ops</h1>
+          <p>Trung tam van hanh logistics</p>
         </div>
 
         <div className="ops-sidebar-session">
           <strong>{session?.user.username ?? 'ops.user'}</strong>
-          <small>roles: {(session?.user.roles ?? []).join(', ') || 'OPS'}</small>
+          <small>vai tro: {(session?.user.roles ?? []).join(', ') || 'OPS'}</small>
           <button
             type="button"
             className="ops-logout-btn"
             disabled={logoutMutation.isPending}
             onClick={() => void onLogout()}
           >
-            {logoutMutation.isPending ? 'Signing out...' : 'Logout'}
+            {logoutMutation.isPending ? 'Dang dang xuat...' : 'Dang xuat'}
           </button>
         </div>
 
         <nav className="ops-nav-group">
-          <h2>Operations</h2>
+          <h2>Van hanh</h2>
           {primaryNav.map((item) => (
             <NavLink
               key={item.to}
@@ -115,8 +115,8 @@ function DashboardLayout(): React.JSX.Element {
       <div className="ops-workspace">
         <header className="ops-topbar">
           <div>
-            <h2>JMS Ops Console</h2>
-            <p>Fast actions, filter-heavy tables, event-driven timeline visibility.</p>
+            <h2>Bang dieu hanh JMS Ops</h2>
+            <p>Tac vu nhanh, bo loc linh hoat, theo doi dong su kien theo thoi gian thuc.</p>
           </div>
 
           <div className="ops-topbar-actions">
@@ -125,12 +125,12 @@ function DashboardLayout(): React.JSX.Element {
                 type="text"
                 value={quickSearchCode}
                 onChange={(event) => setQuickSearchCode(event.target.value)}
-                placeholder="Quick search shipment code"
-                aria-label="Quick search shipment code"
+                placeholder="Tim nhanh ma van don"
+                aria-label="Tim nhanh ma van don"
               />
-              <button type="submit">Search</button>
+              <button type="submit">Tim</button>
             </form>
-            <span className="ops-notify-pill">Notifications</span>
+            <span className="ops-notify-pill">Thong bao</span>
           </div>
         </header>
 

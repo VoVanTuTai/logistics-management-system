@@ -26,7 +26,7 @@ export function LoginForm({
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="auth-form">
       <label className="auth-label" htmlFor="username">
-        Username
+        Ten dang nhap
       </label>
       <input
         id="username"
@@ -39,7 +39,7 @@ export function LoginForm({
       ) : null}
 
       <label className="auth-label" htmlFor="password">
-        Password
+        Mat khau
       </label>
       <input
         id="password"
@@ -55,7 +55,7 @@ export function LoginForm({
       {errorMessage ? <div className="auth-error-banner">{errorMessage}</div> : null}
 
       <button type="submit" disabled={isSubmitting} className="auth-submit">
-        {isSubmitting ? 'Signing in...' : 'Sign in'}
+        {isSubmitting ? 'Dang dang nhap...' : 'Dang nhap'}
       </button>
     </form>
   );

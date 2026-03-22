@@ -277,7 +277,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
 
     const courierId = bulkCourierId.trim();
     if (!courierId) {
-      setBulkAssignError('Please select a courier before assigning.');
+      setBulkAssignError('Vui long chon shipper truoc khi phan cong.');
       return;
     }
 
@@ -285,7 +285,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
       selectedTaskIds.includes(task.id),
     );
     if (selectedTasks.length === 0) {
-      setBulkAssignError('Please select at least one task.');
+      setBulkAssignError('Vui long chon it nhat 1 tac vu.');
       return;
     }
 
@@ -314,7 +314,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
           await tasksClient.reassign(accessToken, {
             taskId: task.id,
             courierId,
-            note: 'bulk assign from ops task page',
+            note: 'phan cong hang loat tu man hinh ops',
           });
           reassignedCount += 1;
           continue;
@@ -323,7 +323,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
         await tasksClient.assign(accessToken, {
           taskId: task.id,
           courierId,
-          note: 'bulk assign from ops task page',
+          note: 'phan cong hang loat tu man hinh ops',
         });
         assignedCount += 1;
       } catch (error) {
@@ -338,11 +338,11 @@ export function TaskAssignmentPage(): React.JSX.Element {
     }
 
     setBulkAssignMessage(
-      `Assigned ${assignedCount}, reassigned ${reassignedCount}, skipped ${skippedCount}.`,
+      `Da phan cong ${assignedCount}, phan cong lai ${reassignedCount}, bo qua ${skippedCount}.`,
     );
 
     if (failedTasks.length > 0) {
-      setBulkAssignError(`Failed ${failedTasks.length}: ${failedTasks.slice(0, 3).join(' | ')}`);
+      setBulkAssignError(`That bai ${failedTasks.length}: ${failedTasks.slice(0, 3).join(' | ')}`);
     }
 
     setBulkAssignLoading(false);
@@ -350,16 +350,16 @@ export function TaskAssignmentPage(): React.JSX.Element {
 
   return (
     <div>
-      <h2>Task Assignment</h2>
+      <h2>Phan cong tac vu</h2>
       <p style={styles.helperText}>
-        Filter by task type, status, and delivery area. Select multiple tasks and assign one courier.
+        Loc theo loai tac vu, trang thai va khu vuc giao. Chon nhieu tac vu de phan cong cho 1 shipper.
       </p>
       {!canViewAllHubAreas ? (
         <div style={styles.scopeNotice}>
-          <strong>Hub scope:</strong>{' '}
+          <strong>Pham vi hub:</strong>{' '}
           {assignedHubCodes.length > 0
             ? assignedHubCodes.join(', ')
-            : 'No hub assigned. Contact admin to assign this OPS account.'}
+            : 'Chua duoc gan hub. Vui long lien he admin de cap hub cho tai khoan OPS nay.'}
         </div>
       ) : null}
 
@@ -370,7 +370,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
           onChange={(event) => setTaskTypeInput(event.target.value)}
           style={styles.select}
         >
-          <option value="">All task types</option>
+          <option value="">Tat ca loai tac vu</option>
           <option value="PICKUP">PICKUP</option>
           <option value="DELIVERY">DELIVERY</option>
           <option value="RETURN">RETURN</option>
@@ -382,7 +382,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
           onChange={(event) => setStatusInput(event.target.value)}
           style={styles.select}
         >
-          <option value="">All statuses</option>
+          <option value="">Tat ca trang thai</option>
           <option value="CREATED">CREATED</option>
           <option value="ASSIGNED">ASSIGNED</option>
           <option value="COMPLETED">COMPLETED</option>
@@ -395,7 +395,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
           onChange={(event) => setDeliveryAreaInput(event.target.value)}
           style={styles.select}
         >
-          <option value="">All delivery areas</option>
+          <option value="">Tat ca khu vuc giao</option>
           {areaOptions.map((area) => (
             <option key={area} value={area}>
               {area}
@@ -403,16 +403,16 @@ export function TaskAssignmentPage(): React.JSX.Element {
           ))}
         </select>
 
-        <button type="submit">Apply</button>
+        <button type="submit">Ap dung</button>
         <button type="button" onClick={onResetFilters}>
-          Reset
+          Dat lai
         </button>
       </form>
 
       <section style={styles.bulkPanel}>
         <div style={styles.bulkHeaderRow}>
-          <strong>Bulk Assign</strong>
-          <small>Selected: {selectedTaskIds.length}</small>
+          <strong>Phan cong hang loat</strong>
+          <small>Da chon: {selectedTaskIds.length}</small>
         </div>
 
         <div style={styles.bulkActionsRow}>
@@ -422,7 +422,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
             style={styles.select}
             disabled={courierOptionsQuery.isLoading || bulkAssignLoading}
           >
-            <option value="">Select courier</option>
+            <option value="">Chon shipper</option>
             {(courierOptionsQuery.data ?? []).map((courier) => (
               <option key={courier.courierId} value={courier.courierId}>
                 {courier.label}
@@ -434,12 +434,12 @@ export function TaskAssignmentPage(): React.JSX.Element {
             onClick={() => void onBulkAssign()}
             disabled={bulkAssignLoading || selectedTaskIds.length === 0}
           >
-            {bulkAssignLoading ? 'Assigning...' : 'Assign selected tasks'}
+            {bulkAssignLoading ? 'Dang phan cong...' : 'Phan cong cac tac vu da chon'}
           </button>
         </div>
 
         <small style={styles.helperText}>
-          Only tasks in status CREATED or ASSIGNED can be selected for bulk assignment.
+          Chi cac tac vu co trang thai CREATED hoac ASSIGNED moi duoc chon de phan cong hang loat.
         </small>
 
         {bulkAssignMessage ? (
@@ -454,7 +454,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
         ) : null}
       </section>
 
-      {tasksQuery.isLoading ? <p>Loading tasks...</p> : null}
+      {tasksQuery.isLoading ? <p>Dang tai tac vu...</p> : null}
       {tasksQuery.isError ? (
         <p style={styles.errorText}>{getErrorMessage(tasksQuery.error)}</p>
       ) : null}
@@ -471,8 +471,8 @@ export function TaskAssignmentPage(): React.JSX.Element {
       {tasksQuery.isSuccess && filteredTasks.length === 0 ? (
         <p>
           {assignedHubCodes.length === 0 && !canViewAllHubAreas
-            ? 'No task is visible because this OPS account is not assigned to any hub.'
-            : 'No tasks match current filters.'}
+            ? 'Khong hien thi duoc tac vu vi tai khoan OPS chua duoc gan hub.'
+            : 'Khong co tac vu phu hop bo loc hien tai.'}
         </p>
       ) : null}
 

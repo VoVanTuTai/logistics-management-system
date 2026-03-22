@@ -195,7 +195,7 @@ export function DashboardPage(): React.JSX.Element {
     .join(', ');
   const currentHubScopeText = [
     currentHubAddress.workingRadiusKm
-      ? `${currentHubAddress.workingRadiusKm.trim()} km radius`
+      ? `Ban kinh ${currentHubAddress.workingRadiusKm.trim()} km`
       : '',
     currentHubAddress.serviceAreas.join(', '),
   ]
@@ -313,7 +313,7 @@ export function DashboardPage(): React.JSX.Element {
         </div>
         <div className="ops-dashboard__hero-badge">
           <small>Hub dang theo doi</small>
-          <strong>{currentHub?.code ?? effectiveHubCode ?? 'UNASSIGNED'}</strong>
+          <strong>{currentHub?.code ?? effectiveHubCode ?? 'CHUA_GAN'}</strong>
         </div>
       </section>
 
@@ -366,24 +366,24 @@ export function DashboardPage(): React.JSX.Element {
             {currentHub ? (
               <div className="ops-hub-card">
                 <div>
-                  <small>Hub code</small>
+                  <small>Ma hub</small>
                   <strong>{currentHub.code}</strong>
                 </div>
                 <div>
-                  <small>Hub name</small>
+                  <small>Ten hub</small>
                   <strong>{currentHub.name}</strong>
                 </div>
                 <div>
                   <small>Zone</small>
-                  <strong>{currentHub.zoneCode ?? 'N/A'}</strong>
+                  <strong>{currentHub.zoneCode ?? 'Khong co'}</strong>
                 </div>
                 <div>
-                  <small>Address</small>
-                  <strong>{currentHubAddressText || 'N/A'}</strong>
+                  <small>Dia chi</small>
+                  <strong>{currentHubAddressText || 'Khong co'}</strong>
                 </div>
                 <div>
-                  <small>Service scope</small>
-                  <strong>{currentHubScopeText || 'N/A'}</strong>
+                  <small>Pham vi phuc vu</small>
+                  <strong>{currentHubScopeText || 'Khong co'}</strong>
                 </div>
               </div>
             ) : null}
@@ -395,7 +395,7 @@ export function DashboardPage(): React.JSX.Element {
             </header>
             <div className="ops-shipper-tools">
               <input
-                placeholder="Search username / display name / phone"
+                placeholder="Tim username / ten hien thi / so dien thoai"
                 value={shipperSearch}
                 onChange={(event) => setShipperSearch(event.target.value)}
               />
@@ -416,10 +416,10 @@ export function DashboardPage(): React.JSX.Element {
               <table className="ops-shipper-table">
                 <thead>
                   <tr>
-                    <th>Username</th>
-                    <th>Display name</th>
-                    <th>Phone</th>
-                    <th>Status</th>
+                    <th>Ten dang nhap</th>
+                    <th>Ten hien thi</th>
+                    <th>So dien thoai</th>
+                    <th>Trang thai</th>
                     <th>Hubs</th>
                   </tr>
                 </thead>
@@ -440,7 +440,7 @@ export function DashboardPage(): React.JSX.Element {
 
           <article className="ops-card">
             <header className="ops-card__header">
-              <h3>The KPI</h3>
+              <h3>Bo KPI</h3>
             </header>
             {kpiQuery.isLoading ? <p className="ops-state">Dang tai KPI...</p> : null}
             {kpiQuery.isError ? (

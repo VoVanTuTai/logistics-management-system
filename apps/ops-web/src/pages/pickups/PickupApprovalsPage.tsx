@@ -46,7 +46,7 @@ export function PickupApprovalsPage(): React.JSX.Element {
   const bulkApproveMutation = useMutation({
     mutationFn: async (pickupIds: string[]): Promise<BulkApproveResult> => {
       if (!accessToken) {
-        throw new Error('Access token is missing.');
+        throw new Error('Thieu access token.');
       }
 
       const settled = await Promise.allSettled(
@@ -193,7 +193,7 @@ export function PickupApprovalsPage(): React.JSX.Element {
     setActionMessage(null);
     setActionError(null);
 
-    const confirmed = window.confirm(`Approve ${selectedIds.length} selected pickup request(s)?`);
+    const confirmed = window.confirm(`Xac nhan duyet ${selectedIds.length} yeu cau lay hang da chon?`);
     if (!confirmed) {
       return;
     }
@@ -202,12 +202,12 @@ export function PickupApprovalsPage(): React.JSX.Element {
       const result = await bulkApproveMutation.mutateAsync(selectedIds);
 
       if (result.successIds.length > 0) {
-        setActionMessage(`Approved ${result.successIds.length} request(s) successfully.`);
+        setActionMessage(`Da duyet thanh cong ${result.successIds.length} yeu cau.`);
       }
 
       if (result.failed.length > 0) {
         setActionError(
-          `Failed ${result.failed.length} request(s). Example: ${result.failed[0].message}`,
+          `That bai ${result.failed.length} yeu cau. Vi du: ${result.failed[0].message}`,
         );
       }
 
@@ -232,7 +232,7 @@ export function PickupApprovalsPage(): React.JSX.Element {
           onChange={(event) => setStatusInput(event.target.value)}
           style={styles.input}
         >
-          <option value="">Tat ca pickup status</option>
+          <option value="">Tat ca trang thai pickup</option>
           {PICKUP_STATUS_OPTIONS.map((option) => (
             <option key={option} value={option}>
               {option}
@@ -267,7 +267,7 @@ export function PickupApprovalsPage(): React.JSX.Element {
       {pickupsQuery.isError ? <p style={styles.errorText}>{getErrorMessage(pickupsQuery.error)}</p> : null}
       {shipmentsQuery.isLoading ? <p>Dang tai thong tin shipment...</p> : null}
       {shipmentsQuery.isError ? (
-        <p style={styles.errorText}>Khong the tai thong tin shipment: {getErrorMessage(shipmentsQuery.error)}</p>
+        <p style={styles.errorText}>Khong the tai thong tin van don: {getErrorMessage(shipmentsQuery.error)}</p>
       ) : null}
 
       {pickupsQuery.isSuccess && (pickupsQuery.data?.length ?? 0) === 0 ? (

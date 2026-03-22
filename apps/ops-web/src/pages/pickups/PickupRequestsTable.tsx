@@ -53,14 +53,14 @@ export function PickupRequestsTable({
               onChange={(event) => onToggleAll(event.target.checked)}
             />
           </th>
-          <th style={styles.headerCell}>Shipment</th>
-          <th style={styles.headerCell}>Pickup status</th>
-          <th style={styles.headerCell}>Sender</th>
-          <th style={styles.headerCell}>Receiver</th>
-          <th style={styles.headerCell}>Phone</th>
-          <th style={styles.headerCell}>Item type</th>
-          <th style={styles.headerCell}>COD value</th>
-          <th style={styles.headerCell}>Shipping fee</th>
+          <th style={styles.headerCell}>Van don</th>
+          <th style={styles.headerCell}>Trang thai pickup</th>
+          <th style={styles.headerCell}>Nguoi gui</th>
+          <th style={styles.headerCell}>Nguoi nhan</th>
+          <th style={styles.headerCell}>So dien thoai</th>
+          <th style={styles.headerCell}>Loai hang</th>
+          <th style={styles.headerCell}>Gia tri COD</th>
+          <th style={styles.headerCell}>Phi van chuyen</th>
         </tr>
       </thead>
       <tbody>
