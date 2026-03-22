@@ -72,8 +72,9 @@ export interface RefreshTokenInputDto {
 }
 
 export const loginSchema = z.object({
-  username: z.string().min(1, 'Tên đăng nhập là bắt buộc.'),
-  password: z.string().min(1, 'Mật khẩu là bắt buộc.'),
+  username: z.string().min(1, 'Ten dang nhap la bat buoc.'),
+  password: z.string().min(1, 'Mat khau la bat buoc.'),
 });
 
 export type LoginFormValues = z.infer<typeof loginSchema>;
+

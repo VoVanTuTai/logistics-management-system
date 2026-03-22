@@ -15,14 +15,14 @@ export async function hydrateAuthSession(): Promise<void> {
   try {
     const session = JSON.parse(raw) as AuthSessionDto;
     if (!hasAdminRole(session)) {
-      throw new Error('Current account has no admin role.');
+      throw new Error('Tai khoan hien tai khong co vai tro admin.');
     }
     // TODO(refresh-flow): verify token expiry and refresh before restoring authenticated session.
     useAuthStore.getState().setSession(session);
   } catch {
     localStorage.removeItem(AUTH_STORAGE_KEY);
     useAuthStore.getState().clearSession();
-    useAuthStore.getState().setAuthError('Invalid session data. Please login again.');
+    useAuthStore.getState().setAuthError('Du lieu phien dang nhap khong hop le. Vui long dang nhap lai.');
   } finally {
     if (!useAuthStore.getState().isAuthenticated) {
       useAuthStore.getState().setStatus('guest');

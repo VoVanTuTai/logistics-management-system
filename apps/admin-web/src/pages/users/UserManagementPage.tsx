@@ -51,8 +51,8 @@ function roleOptionsByGroup(roleGroup: UserRoleGroup): string[] {
 
 function pageTitleByGroup(roleGroup: UserRoleGroup): string {
   return roleGroup === 'SHIPPER'
-    ? 'Admin - Shipper Account Management'
-    : 'Admin - Ops Account Management';
+    ? 'Quan tri - Quan ly tai khoan Shipper'
+    : 'Quan tri - Quan ly tai khoan Ops';
 }
 
 export function UserManagementPage({ roleGroup }: UserManagementPageProps): React.JSX.Element {
@@ -137,12 +137,12 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
           payload,
         });
 
-        setActionMessage(`Updated account ${payloadBase.username}.`);
+        setActionMessage(`Da cap nhat tai khoan ${payloadBase.username}.`);
       } else {
         const password = form.password.trim();
 
         if (!password) {
-          throw new Error('Password is required when creating a user.');
+          throw new Error('Can mat khau khi tao nguoi dung.');
         }
 
         await createMutation.mutateAsync({
@@ -150,7 +150,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
           password,
         });
 
-        setActionMessage(`Created account ${payloadBase.username}.`);
+        setActionMessage(`Da tao tai khoan ${payloadBase.username}.`);
       }
 
       resetForm();
@@ -160,7 +160,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
   };
 
   const onDeleteUser = async (user: AdminUserDto) => {
-    if (!window.confirm(`Delete account ${user.username}?`)) {
+    if (!window.confirm(`Xoa tai khoan ${user.username}?`)) {
       return;
     }
 
@@ -169,7 +169,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
 
     try {
       await deleteMutation.mutateAsync(user.id);
-      setActionMessage(`Deleted account ${user.username}.`);
+      setActionMessage(`Da xoa tai khoan ${user.username}.`);
 
       if (editingUser?.id === user.id) {
         resetForm();
@@ -190,14 +190,14 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
     <div>
       <h2>{pageTitleByGroup(roleGroup)}</h2>
       <p style={styles.helperText}>
-        Create, update, delete accounts and assign each account to a working hub.
+        Tao, cap nhat, xoa tai khoan va gan hub lam viec cho tung tai khoan.
       </p>
 
       <form style={styles.filterForm} onSubmit={(event) => event.preventDefault()}>
         <input
           value={q}
           onChange={(event) => setQ(event.target.value)}
-          placeholder="Search username / name / phone"
+          placeholder="Tim ten dang nhap / ten / so dien thoai"
           style={styles.input}
         />
         <select
@@ -205,7 +205,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
           onChange={(event) => setStatus(event.target.value as UserStatus | '')}
           style={styles.input}
         >
-          <option value="">All status</option>
+          <option value="">Tat ca trang thai</option>
           <option value="ACTIVE">ACTIVE</option>
           <option value="DISABLED">DISABLED</option>
         </select>
@@ -214,7 +214,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
           onChange={(event) => setHubCode(event.target.value)}
           style={styles.input}
         >
-          <option value="">All hubs</option>
+          <option value="">Tat ca hub</option>
           {(hubsQuery.data ?? []).map((hub) => (
             <option key={hub.id} value={hub.code}>
               {hub.code} - {hub.name}
@@ -236,11 +236,11 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
 
       <section style={styles.editorCard}>
         <h3 style={styles.editorTitle}>
-          {editingUser ? `Edit ${editingUser.username}` : 'Create new account'}
+          {editingUser ? `Sua ${editingUser.username}` : 'Tao tai khoan moi'}
         </h3>
         <form onSubmit={onSubmitForm} style={styles.formGrid}>
           <label style={styles.fieldLabel}>
-            Username
+            Ten dang nhap
             <input
               required
               value={form.username}
@@ -251,7 +251,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
             />
           </label>
           <label style={styles.fieldLabel}>
-            Password {editingUser ? '(optional)' : ''}
+            Mat khau {editingUser ? '(khong bat buoc)' : ''}
             <input
               type="password"
               required={!editingUser}
@@ -263,7 +263,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
             />
           </label>
           <label style={styles.fieldLabel}>
-            Display name
+            Ten hien thi
             <input
               value={form.displayName}
               onChange={(event) =>
@@ -273,7 +273,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
             />
           </label>
           <label style={styles.fieldLabel}>
-            Phone
+            So dien thoai
             <input
               value={form.phone}
               onChange={(event) =>
@@ -283,7 +283,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
             />
           </label>
           <label style={styles.fieldLabel}>
-            Role
+            Vai tro
             <select
               value={form.role}
               onChange={(event) =>
@@ -299,7 +299,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
             </select>
           </label>
           <label style={styles.fieldLabel}>
-            Assigned hub
+            Hub duoc gan
             <select
               value={form.hubCode}
               onChange={(event) =>
@@ -307,7 +307,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
               }
               style={styles.input}
             >
-              <option value="">Unassigned</option>
+              <option value="">Chua gan</option>
               {(hubsQuery.data ?? []).map((hub) => (
                 <option key={hub.id} value={hub.code}>
                   {hub.code} - {hub.name}
@@ -316,7 +316,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
             </select>
           </label>
           <label style={styles.fieldLabel}>
-            Status
+            Trang thai
             <select
               value={form.status}
               onChange={(event) =>
@@ -334,56 +334,56 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
 
           <div style={styles.actionsCell}>
             <button type="submit" disabled={isSaving}>
-              {editingUser ? 'Save account' : 'Create account'}
+              {editingUser ? 'Luu tai khoan' : 'Tao tai khoan'}
             </button>
             {editingUser ? (
               <button type="button" onClick={onCancelEdit}>
-                Cancel edit
+                Huy sua
               </button>
             ) : null}
           </div>
         </form>
       </section>
 
-      {usersQuery.isLoading ? <p>Loading users...</p> : null}
+      {usersQuery.isLoading ? <p>Dang tai nguoi dung...</p> : null}
       {usersQuery.isError ? (
         <p style={styles.errorText}>{getErrorMessage(usersQuery.error)}</p>
       ) : null}
       {usersQuery.isSuccess && (usersQuery.data?.length ?? 0) === 0 ? (
-        <p>No users found.</p>
+        <p>Khong tim thay nguoi dung.</p>
       ) : null}
 
       {usersQuery.isSuccess && (usersQuery.data?.length ?? 0) > 0 ? (
         <table style={styles.table}>
           <thead>
             <tr>
-              <th style={styles.headerCell}>Username</th>
-              <th style={styles.headerCell}>Display name</th>
-              <th style={styles.headerCell}>Phone</th>
-              <th style={styles.headerCell}>Role</th>
-              <th style={styles.headerCell}>Hub assignment</th>
-              <th style={styles.headerCell}>Status</th>
-              <th style={styles.headerCell}>Updated</th>
-              <th style={styles.headerCell}>Actions</th>
+              <th style={styles.headerCell}>Ten dang nhap</th>
+              <th style={styles.headerCell}>Ten hien thi</th>
+              <th style={styles.headerCell}>So dien thoai</th>
+              <th style={styles.headerCell}>Vai tro</th>
+              <th style={styles.headerCell}>Gan hub</th>
+              <th style={styles.headerCell}>Trang thai</th>
+              <th style={styles.headerCell}>Cap nhat</th>
+              <th style={styles.headerCell}>Hanh dong</th>
             </tr>
           </thead>
           <tbody>
             {(usersQuery.data ?? []).map((user) => (
               <tr key={user.id}>
                 <td style={styles.cell}>{user.username}</td>
-                <td style={styles.cell}>{user.displayName ?? 'N/A'}</td>
-                <td style={styles.cell}>{user.phone ?? 'N/A'}</td>
+                <td style={styles.cell}>{user.displayName ?? 'Khong co'}</td>
+                <td style={styles.cell}>{user.phone ?? 'Khong co'}</td>
                 <td style={styles.cell}>{user.roles.join(', ')}</td>
-                <td style={styles.cell}>{user.hubCodes.join(', ') || 'Unassigned'}</td>
+                <td style={styles.cell}>{user.hubCodes.join(', ') || 'Chua gan'}</td>
                 <td style={styles.cell}>{user.status}</td>
                 <td style={styles.cell}>{formatDateTime(user.updatedAt)}</td>
                 <td style={styles.cell}>
                   <div style={styles.actionsCell}>
                     <button type="button" onClick={() => onEditUser(user)}>
-                      Edit
+                      Sua
                     </button>
                     <button type="button" onClick={() => void onDeleteUser(user)}>
-                      Delete
+                      Xoa
                     </button>
                   </div>
                 </td>

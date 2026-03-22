@@ -11,7 +11,7 @@ export const queryClient = new QueryClient({
   }),
   mutationCache: new MutationCache({
     onMutate: () => {
-      useUiStore.getState().setGlobalLoading('Processing request...');
+      useUiStore.getState().setGlobalLoading('Dang xu ly yeu cau...');
     },
     onError: (error) => {
       useUiStore.getState().setGlobalError(getErrorMessage(error));
