@@ -1,8 +1,27 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 
 import { Config, ConfigWriteInput } from '../../domain/entities/config.entity';
 import { ConfigRepository } from '../../domain/repositories/config.repository';
 import { MasterdataOutboxService } from '../../messaging/outbox/masterdata-outbox.service';
+import {
+  normalizeConfigKeyQuery,
+  normalizeOptionalConfigKey,
+  normalizeOptionalText,
+  normalizeRequiredConfigKey,
+  normalizeTextQuery,
+} from './masterdata-normalizers';
+
+interface ListConfigsQuery {
+  key?: string;
+  scope?: string;
+  q?: string;
+}
 
 @Injectable()
 export class ConfigsService {
@@ -12,8 +31,12 @@ export class ConfigsService {
     private readonly masterdataOutboxService: MasterdataOutboxService,
   ) {}
 
-  list(): Promise<Config[]> {
-    return this.configRepository.list();
+  list(query: ListConfigsQuery = {}): Promise<Config[]> {
+    return this.configRepository.list({
+      key: normalizeConfigKeyQuery(query.key, 'key'),
+      scope: normalizeTextQuery(query.scope, 'scope', 80),
+      q: normalizeTextQuery(query.q, 'q', 120),
+    });
   }
 
   async getById(id: string): Promise<Config> {
@@ -27,8 +50,18 @@ export class ConfigsService {
   }
 
   async create(input: ConfigWriteInput): Promise<Config> {
-    // TODO: add config key namespace and schema validation.
-    const config = await this.configRepository.create(input);
+    const normalizedInput = this.normalizeCreateInput(input);
+    const existingConfig = await this.configRepository.findByKey(
+      normalizedInput.key,
+    );
+
+    if (existingConfig) {
+      throw new ConflictException(
+        `Config key "${normalizedInput.key}" already exists.`,
+      );
+    }
+
+    const config = await this.configRepository.create(normalizedInput);
 
     await this.masterdataOutboxService.enqueueMasterdataUpdated(
       'config',
@@ -44,9 +77,26 @@ export class ConfigsService {
   }
 
   async update(id: string, input: Partial<ConfigWriteInput>): Promise<Config> {
-    await this.getById(id);
+    const currentConfig = await this.getById(id);
+    const normalizedInput = this.normalizeUpdateInput(input);
 
-    const config = await this.configRepository.update(id, input);
+    if (Object.keys(normalizedInput).length === 0) {
+      return currentConfig;
+    }
+
+    if (normalizedInput.key && normalizedInput.key !== currentConfig.key) {
+      const existingConfig = await this.configRepository.findByKey(
+        normalizedInput.key,
+      );
+
+      if (existingConfig) {
+        throw new ConflictException(
+          `Config key "${normalizedInput.key}" already exists.`,
+        );
+      }
+    }
+
+    const config = await this.configRepository.update(id, normalizedInput);
 
     await this.masterdataOutboxService.enqueueMasterdataUpdated(
       'config',
@@ -59,5 +109,53 @@ export class ConfigsService {
     );
 
     return config;
+  }
+
+  private normalizeCreateInput(input: ConfigWriteInput): ConfigWriteInput {
+    if (input.value === undefined) {
+      throw new BadRequestException('value is required.');
+    }
+
+    const scope = normalizeOptionalText(input.scope, 'scope', 80);
+    const description = normalizeOptionalText(
+      input.description,
+      'description',
+      255,
+    );
+
+    return {
+      key: normalizeRequiredConfigKey(input.key, 'key'),
+      value: input.value,
+      scope: scope === undefined ? null : scope,
+      description: description === undefined ? null : description,
+    };
+  }
+
+  private normalizeUpdateInput(
+    input: Partial<ConfigWriteInput>,
+  ): Partial<ConfigWriteInput> {
+    const normalizedInput: Partial<ConfigWriteInput> = {};
+
+    if (input.key !== undefined) {
+      normalizedInput.key = normalizeOptionalConfigKey(input.key, 'key');
+    }
+
+    if (input.value !== undefined) {
+      normalizedInput.value = input.value;
+    }
+
+    if (input.scope !== undefined) {
+      normalizedInput.scope = normalizeOptionalText(input.scope, 'scope', 80);
+    }
+
+    if (input.description !== undefined) {
+      normalizedInput.description = normalizeOptionalText(
+        input.description,
+        'description',
+        255,
+      );
+    }
+
+    return normalizedInput;
   }
 }

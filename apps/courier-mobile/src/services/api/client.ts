@@ -7,6 +7,7 @@ export interface RequestOptions {
   method?: HttpMethod;
   accessToken?: string | null;
   body?: unknown;
+  headers?: Record<string, string>;
   signal?: AbortSignal;
 }
 
@@ -30,20 +31,62 @@ export class ApiClientError extends Error implements ApiProblem {
 }
 
 export class CourierApiClient {
+  private readonly gatewayCandidates: string[];
+
   constructor(
     private readonly baseUrl: string,
     private readonly timeoutMs: number,
-  ) {}
+    fallbackBaseUrls: string[] = [],
+  ) {
+    this.gatewayCandidates = [baseUrl, ...fallbackBaseUrls].filter(
+      (candidateBaseUrl, index, array) =>
+        candidateBaseUrl.length > 0 && array.indexOf(candidateBaseUrl) === index,
+    );
+  }
 
   async request<T>(
     path: string,
     options: RequestOptions = {},
   ): Promise<T> {
+    let lastNetworkError: unknown = null;
+
+    for (const candidateBaseUrl of this.gatewayCandidates) {
+      try {
+        return await this.requestWithCandidateBaseUrl(
+          candidateBaseUrl,
+          path,
+          options,
+        );
+      } catch (error) {
+        if (error instanceof ApiClientError && !error.isNetworkError) {
+          throw error;
+        }
+
+        lastNetworkError = error;
+      }
+    }
+
+    const fallbackMessage =
+      lastNetworkError instanceof Error
+        ? lastNetworkError.message
+        : 'Network request failed.';
+
+    throw new ApiClientError({
+      message: `${fallbackMessage} (gateway candidates: ${this.gatewayCandidates.join(', ')})`,
+      isNetworkError: true,
+    });
+  }
+
+  private async requestWithCandidateBaseUrl<T>(
+    candidateBaseUrl: string,
+    path: string,
+    options: RequestOptions,
+  ): Promise<T> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
 
     try {
-      const response = await fetch(`${this.baseUrl}${path}`, {
+      const response = await fetch(`${candidateBaseUrl}${path}`, {
         method: options.method ?? 'GET',
         headers: {
           Accept: 'application/json',
@@ -51,6 +94,7 @@ export class CourierApiClient {
           ...(options.accessToken
             ? { Authorization: `Bearer ${options.accessToken}` }
             : {}),
+          ...(options.headers ?? {}),
         },
         body: options.body === undefined ? undefined : JSON.stringify(options.body),
         signal: options.signal ?? controller.signal,
@@ -73,8 +117,11 @@ export class CourierApiClient {
         throw error;
       }
 
+      const baseMessage =
+        error instanceof Error ? error.message : 'Network request failed.';
+
       throw new ApiClientError({
-        message: error instanceof Error ? error.message : 'Network request failed.',
+        message: `${baseMessage} (gateway: ${candidateBaseUrl})`,
         isNetworkError: true,
       });
     } finally {
@@ -113,10 +160,11 @@ export function shouldQueueOffline(error: unknown): boolean {
     return false;
   }
 
-  return error.isNetworkError || error.status === 408 || error.status === 429;
+  return error.isNetworkError || error.status === 408;
 }
 
 export const courierApiClient = new CourierApiClient(
   appEnv.gatewayBaseUrl,
   appEnv.requestTimeoutMs,
+  appEnv.gatewayFallbackBaseUrls,
 );

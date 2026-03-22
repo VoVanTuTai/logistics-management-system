@@ -1,7 +1,8 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 
 import { PickupsService } from '../../application/services/pickups.service';
 import type {
+  ApprovePickupRequestInput,
   CancelPickupRequestInput,
   CreatePickupRequestInput,
   PickupRequest,
@@ -13,8 +14,8 @@ export class PickupsController {
   constructor(private readonly pickupsService: PickupsService) {}
 
   @Get()
-  list(): Promise<PickupRequest[]> {
-    return this.pickupsService.list();
+  list(@Query('status') status?: string): Promise<PickupRequest[]> {
+    return this.pickupsService.list(status);
   }
 
   @Get(':id')
@@ -41,6 +42,14 @@ export class PickupsController {
     @Body() body: CancelPickupRequestInput,
   ): Promise<PickupRequest> {
     return this.pickupsService.cancel(id, body);
+  }
+
+  @Post(':id/approve')
+  approve(
+    @Param('id') id: string,
+    @Body() body: ApprovePickupRequestInput,
+  ): Promise<PickupRequest> {
+    return this.pickupsService.approve(id, body);
   }
 
   @Post(':id/complete')

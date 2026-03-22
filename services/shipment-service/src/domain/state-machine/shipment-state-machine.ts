@@ -8,6 +8,7 @@ import type {
 const EVENT_TO_STATUS: Record<ShipmentConsumedEventType, ShipmentCurrentStatus> =
   {
     'pickup.completed': 'PICKUP_COMPLETED',
+    'scan.pickup_confirmed': 'PICKUP_COMPLETED',
     'task.assigned': 'TASK_ASSIGNED',
     'manifest.sealed': 'MANIFEST_SEALED',
     'manifest.received': 'MANIFEST_RECEIVED',

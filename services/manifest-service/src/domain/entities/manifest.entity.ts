@@ -60,6 +60,16 @@ export interface UpdateManifestInput {
   removeShipmentCodes?: string[];
 }
 
+export interface AddShipmentsInput {
+  shipmentCodes: string[];
+  note?: string | null;
+}
+
+export interface RemoveShipmentsInput {
+  shipmentCodes: string[];
+  note?: string | null;
+}
+
 export interface SealManifestInput {
   sealedBy?: string | null;
   note?: string | null;

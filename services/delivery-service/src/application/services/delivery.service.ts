@@ -241,9 +241,30 @@ export class DeliveryService {
     shipment_code?: string | null;
     data?: Record<string, unknown>;
   }): Promise<{ accepted: boolean; shipmentCode: string | null }> {
+    const task = this.readObject(payload.data?.task);
+    const taskType = this.readString(task?.taskType)?.toUpperCase() ?? null;
+    const shipmentCode =
+      payload.shipment_code ??
+      this.readString(task?.shipmentCode) ??
+      null;
+
+    if (!shipmentCode) {
+      return {
+        accepted: false,
+        shipmentCode: null,
+      };
+    }
+
+    if (taskType && taskType !== 'DELIVERY') {
+      return {
+        accepted: false,
+        shipmentCode,
+      };
+    }
+
     return {
       accepted: true,
-      shipmentCode: payload.shipment_code ?? null,
+      shipmentCode,
     };
   }
 
@@ -348,6 +369,18 @@ export class DeliveryService {
     }
 
     return new Date(value);
+  }
+
+  private readString(value: unknown): string | null {
+    return typeof value === 'string' && value.trim().length > 0 ? value : null;
+  }
+
+  private readObject(value: unknown): Record<string, unknown> | null {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return null;
+    }
+
+    return value as Record<string, unknown>;
   }
 
   private toSuccessResult(record: IdempotencyRecord): DeliverySuccessResult {

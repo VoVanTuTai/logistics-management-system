@@ -22,3 +22,9 @@ export interface ConfigWriteInput {
   scope?: string | null;
   description?: string | null;
 }
+
+export interface ConfigListFilters {
+  key?: string;
+  scope?: string;
+  q?: string;
+}

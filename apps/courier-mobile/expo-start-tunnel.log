@@ -1,0 +1,101 @@
+Starting project at D:\University\Semester 2_Year 4\New Technology\logistics-management-system\apps\courier-mobile
+Using src/app as the root directory for Expo Router.
+Starting Metro Bundler
+
+warning: Bundler cache is empty, rebuilding (this may take a minute)
+Tunnel connected.
+Tunnel URL not found (it might not be ready yet), falling back to LAN URL.
+Tunnel URL not found (it might not be ready yet), falling back to LAN URL.
+Tunnel URL not found (it might not be ready yet), falling back to LAN URL.
+Tunnel ready.
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Waiting on http://localhost:8091
+Logs for your project will appear below.
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  1.0% (1/1)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS node_modules\expo\AppEntry.js ▓▓▓▓░░░░░░░░░░░░ 27.0% (22/53)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS node_modules\expo\AppEntry.js ▓▓▓▓░░░░░░░░░░░░ 27.0% ( 49/187)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS node_modules\expo\AppEntry.js ▓▓▓▓░░░░░░░░░░░░ 27.0% (104/234)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS node_modules\expo\AppEntry.js ▓▓▓▓░░░░░░░░░░░░ 27.0% (130/283)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS node_modules\expo\AppEntry.js ▓▓▓▓░░░░░░░░░░░░ 27.0% (167/324)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS node_modules\expo\AppEntry.js ▓▓▓▓▓░░░░░░░░░░░ 36.1% (219/382)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS node_modules\expo\AppEntry.js ▓▓▓▓▓░░░░░░░░░░░ 36.1% (243/453)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS node_modules\expo\AppEntry.js ▓▓▓▓▓░░░░░░░░░░░ 36.1% (285/505)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS node_modules\expo\AppEntry.js ▓▓▓▓▓░░░░░░░░░░░ 36.1% (321/552)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS node_modules\expo\AppEntry.js ▓▓▓▓▓▓░░░░░░░░░░ 42.1% (382/589)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓░░░░░░░░░ 45.6% (415/621)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓░░░░░░░░░ 49.1% (463/684)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓░░░░░░░ 57.4% (538/710)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓░░░░░░ 64.0% (580/755)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓░░░░░░ 64.0% (605/798)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓░░░░░░ 64.0% (661/843)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓░░░░░░ 66.5% (717/880)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 73.9% (764/890)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 73.9% (787/962)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% (858/993)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓▓░░░░ 75.5% ( 893/1028)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 86.0% ( 963/1049)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 86.0% ( 971/1097)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 87.2% (1045/1119)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 98.8% (1126/1148)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 98.8% (1155/1184)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.7% (1203/1211)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (1212/1212)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS Bundled 135911ms node_modules\expo\AppEntry.js (1212 modules)
+iOS Bundled 118851ms node_modules\expo\AppEntry.js (1 module)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS Bundled 118ms node_modules\expo\AppEntry.js (1 module)
+iOS node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS Bundled 84ms node_modules\expo\AppEntry.js (1 module)
+D:\University\Semester 2_Year 4\New Technology\logistics-management-system\apps\courier-mobile\node_modules\expo\node_modules\@expo\cli\build\src\utils\errors.js:130
+    throw error;
+    ^
+
+Error: ENOENT: no such file or directory, watch 'D:\University\Semester 2_Year 4\New Technology\logistics-management-system\apps\courier-mobile\node_modules\@expo\xcpretty\node_modules\.js-yaml-IgKs4NJk\lib\schema'
+    at FSWatcher.<computed> (node:internal/fs/watchers:254:19)
+    at Object.watch (node:fs:2549:36)
+    at FallbackWatcher._watchdir (D:\University\Semester 2_Year 4\New Technology\logistics-management-system\apps\courier-mobile\node_modules\metro-file-map\src\watchers\FallbackWatcher.js:119:33)
+    at D:\University\Semester 2_Year 4\New Technology\logistics-management-system\apps\courier-mobile\node_modules\metro-file-map\src\watchers\FallbackWatcher.js:219:22
+    at Walker.<anonymous> (D:\University\Semester 2_Year 4\New Technology\logistics-management-system\apps\courier-mobile\node_modules\metro-file-map\src\watchers\FallbackWatcher.js:358:5)
+    at Walker.emit (node:events:518:28)
+    at D:\University\Semester 2_Year 4\New Technology\logistics-management-system\apps\courier-mobile\node_modules\walker\lib\walker.js:69:16
+    at FSReqCallback.oncomplete (node:fs:187:23) {
+  errno: -4058,
+  syscall: 'watch',
+  code: 'ENOENT',
+  path: 'D:\\University\\Semester 2_Year 4\\New Technology\\logistics-management-system\\apps\\courier-mobile\\node_modules\\@expo\\xcpretty\\node_modules\\.js-yaml-IgKs4NJk\\lib\\schema',
+  filename: 'D:\\University\\Semester 2_Year 4\\New Technology\\logistics-management-system\\apps\\courier-mobile\\node_modules\\@expo\\xcpretty\\node_modules\\.js-yaml-IgKs4NJk\\lib\\schema'
+}
+
+Node.js v22.18.0

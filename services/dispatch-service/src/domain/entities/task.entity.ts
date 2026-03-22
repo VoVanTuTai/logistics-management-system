@@ -46,3 +46,11 @@ export interface ReassignTaskInput {
 export interface UpdateTaskStatusInput {
   status: Extract<TaskStatus, 'COMPLETED' | 'CANCELLED'>;
 }
+
+export interface ListTasksFilters {
+  courierId?: string;
+  taskType?: TaskType;
+  status?: TaskStatus;
+  shipmentCode?: string;
+  pickupRequestId?: string;
+}

@@ -9,6 +9,7 @@ import type {
   CreatePickupRequestInput,
   PickupItem,
   PickupRequest,
+  PickupRequestStatus,
   UpdatePickupRequestInput,
 } from '../../domain/entities/pickup-request.entity';
 import { PickupRequestRepository } from '../../domain/repositories/pickup-request.repository';
@@ -24,8 +25,13 @@ export class PickupRequestPrismaRepository extends PickupRequestRepository {
     super();
   }
 
-  async list(): Promise<PickupRequest[]> {
+  async list(status?: PickupRequestStatus): Promise<PickupRequest[]> {
     const records = await this.prisma.pickupRequest.findMany({
+      where: status
+        ? {
+            status,
+          }
+        : undefined,
       include: {
         items: true,
       },
@@ -75,6 +81,8 @@ export class PickupRequestPrismaRepository extends PickupRequestRepository {
       contactPhone: input.contactPhone ?? null,
       pickupAddress: input.pickupAddress ?? null,
       note: input.note ?? null,
+      approvedBy: null,
+      approvedAt: null,
       items: {
         create:
           input.items?.map((item) => ({
@@ -127,11 +135,38 @@ export class PickupRequestPrismaRepository extends PickupRequestRepository {
     return this.toEntity(record);
   }
 
+  async approve(
+    id: string,
+    approvedBy: string | null,
+    note: string | null,
+  ): Promise<PickupRequest> {
+    const data: Prisma.PickupRequestUpdateInput = {
+      status: 'APPROVED',
+      approvedBy,
+      approvedAt: new Date(),
+    };
+
+    if (note !== null) {
+      data.note = note;
+    }
+
+    const record = await this.prisma.pickupRequest.update({
+      where: { id },
+      data,
+      include: {
+        items: true,
+      },
+    });
+
+    return this.toEntity(record);
+  }
+
   async cancel(id: string, reason: string | null): Promise<PickupRequest> {
     const record = await this.prisma.pickupRequest.update({
       where: { id },
       data: {
         status: 'CANCELLED',
+        approvedAt: null,
         cancellationReason: reason,
       },
       include: {
@@ -147,6 +182,7 @@ export class PickupRequestPrismaRepository extends PickupRequestRepository {
       where: { id },
       data: {
         status: 'COMPLETED',
+        cancellationReason: null,
         completedAt: new Date(),
       },
       include: {
@@ -166,6 +202,8 @@ export class PickupRequestPrismaRepository extends PickupRequestRepository {
       contactPhone: record.contactPhone,
       pickupAddress: record.pickupAddress,
       note: record.note,
+      approvedBy: record.approvedBy,
+      approvedAt: record.approvedAt,
       cancellationReason: record.cancellationReason,
       completedAt: record.completedAt,
       createdAt: record.createdAt,

@@ -7,6 +7,8 @@ import type {
 export abstract class ReturnCaseRepository {
   abstract findById(id: string): Promise<ReturnCase | null>;
 
+  abstract findByNdrCaseId(ndrCaseId: string): Promise<ReturnCase | null>;
+
   abstract create(input: CreateReturnCaseInput): Promise<ReturnCase>;
 
   abstract complete(

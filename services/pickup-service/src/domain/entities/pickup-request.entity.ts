@@ -6,7 +6,11 @@ export type JsonValue =
   | JsonValue[]
   | { [key: string]: JsonValue };
 
-export type PickupRequestStatus = 'REQUESTED' | 'CANCELLED' | 'COMPLETED';
+export type PickupRequestStatus =
+  | 'REQUESTED'
+  | 'APPROVED'
+  | 'CANCELLED'
+  | 'COMPLETED';
 
 export interface PickupRequest {
   id: string;
@@ -16,6 +20,8 @@ export interface PickupRequest {
   contactPhone: string | null;
   pickupAddress: string | null;
   note: string | null;
+  approvedBy: string | null;
+  approvedAt: Date | null;
   cancellationReason: string | null;
   completedAt: Date | null;
   createdAt: Date;
@@ -55,4 +61,9 @@ export interface UpdatePickupRequestInput {
 
 export interface CancelPickupRequestInput {
   reason?: string | null;
+}
+
+export interface ApprovePickupRequestInput {
+  approvedBy?: string | null;
+  note?: string | null;
 }

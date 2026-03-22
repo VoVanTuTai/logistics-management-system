@@ -82,6 +82,18 @@ export const pickupsClient = {
     opsApiClient.request<PickupActionResultDto>(opsEndpoints.pickups.approve(pickupId), {
       method: 'POST',
       accessToken,
+      body: {
+        approvedBy: 'ops-web',
+        note: payload.note ?? null,
+      },
+    }),
+  complete: (
+    accessToken: string | null,
+    pickupId: string,
+  ): Promise<PickupActionResultDto> =>
+    opsApiClient.request<PickupActionResultDto>(opsEndpoints.pickups.complete(pickupId), {
+      method: 'POST',
+      accessToken,
     }),
   reject: (
     accessToken: string | null,

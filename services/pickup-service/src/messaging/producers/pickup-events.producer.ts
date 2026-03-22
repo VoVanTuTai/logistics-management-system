@@ -31,6 +31,21 @@ export class PickupEventsProducer {
     });
   }
 
+  buildPickupApprovedEvent(
+    pickupRequest: PickupRequest,
+    data: Record<string, unknown>,
+  ): QueueOutboxEventInput {
+    return this.buildEvent({
+      eventType: 'pickup.approved',
+      aggregateId: pickupRequest.id,
+      shipmentCode: pickupRequest.items[0]?.shipmentCode ?? null,
+      data: {
+        pickup_request: pickupRequest,
+        ...data,
+      },
+    });
+  }
+
   buildPickupUpdatedEvent(
     pickupRequest: PickupRequest,
     data: Record<string, unknown>,

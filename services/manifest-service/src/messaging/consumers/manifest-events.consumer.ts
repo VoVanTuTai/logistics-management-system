@@ -14,6 +14,7 @@ export class ManifestEventsConsumer {
   readonly queueName = 'manifest-service.q';
   readonly retryQueues = ['manifest-service.retry.10s', 'manifest-service.retry.1m'];
   readonly deadLetterQueue = 'manifest-service.dlq';
+  readonly routingPatterns = ['scan.outbound'];
 
   constructor(
     private readonly manifestEventHandlersService: ManifestEventHandlersService,

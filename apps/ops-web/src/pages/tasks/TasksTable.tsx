@@ -7,31 +7,69 @@ import { formatDateTime } from '../../utils/format';
 
 interface TasksTableProps {
   items: TaskListItemDto[];
+  selectedTaskIds?: string[];
+  allSelectableSelected?: boolean;
+  onToggleTaskSelection?: (taskId: string, checked: boolean) => void;
+  onToggleSelectAll?: (checked: boolean) => void;
 }
 
-export function TasksTable({ items }: TasksTableProps): React.JSX.Element {
+export function TasksTable({
+  items,
+  selectedTaskIds = [],
+  allSelectableSelected = false,
+  onToggleTaskSelection,
+  onToggleSelectAll,
+}: TasksTableProps): React.JSX.Element {
   return (
     <table style={styles.table}>
       <thead>
         <tr>
-          <th style={styles.headerCell}>Tác vụ</th>
-          <th style={styles.headerCell}>Loại</th>
-          <th style={styles.headerCell}>Trạng thái</th>
-          <th style={styles.headerCell}>Vận đơn</th>
-          <th style={styles.headerCell}>Mã courier</th>
-          <th style={styles.headerCell}>Cập nhật lúc</th>
+          <th style={styles.headerCell}>
+            <input
+              type="checkbox"
+              checked={allSelectableSelected}
+              disabled={!onToggleSelectAll}
+              onChange={(event) => onToggleSelectAll?.(event.currentTarget.checked)}
+            />
+          </th>
+          <th style={styles.headerCell}>Task</th>
+          <th style={styles.headerCell}>Type</th>
+          <th style={styles.headerCell}>Status</th>
+          <th style={styles.headerCell}>Shipment</th>
+          <th style={styles.headerCell}>Sender</th>
+          <th style={styles.headerCell}>Receiver</th>
+          <th style={styles.headerCell}>Platform</th>
+          <th style={styles.headerCell}>Delivery Area</th>
+          <th style={styles.headerCell}>Courier</th>
+          <th style={styles.headerCell}>Updated At</th>
         </tr>
       </thead>
       <tbody>
         {items.map((item) => (
           <tr key={item.id}>
             <td style={styles.cell}>
+              <input
+                type="checkbox"
+                checked={selectedTaskIds.includes(item.id)}
+                disabled={!item.isSelectable || !onToggleTaskSelection}
+                onChange={(event) =>
+                  onToggleTaskSelection?.(item.id, event.currentTarget.checked)
+                }
+              />
+            </td>
+            <td style={styles.cell}>
               <Link to={routePaths.taskDetail(item.id)}>{item.taskCode}</Link>
             </td>
             <td style={styles.cell}>{item.taskType}</td>
             <td style={styles.cell}>{item.status}</td>
-            <td style={styles.cell}>{item.shipmentCode ?? 'Không có'}</td>
-            <td style={styles.cell}>{item.assignedCourierId ?? 'Không có'}</td>
+            <td style={styles.cell}>{item.shipmentCode ?? 'N/A'}</td>
+            <td style={styles.cell}>{item.senderName ?? 'N/A'}</td>
+            <td style={styles.cell}>{item.receiverName ?? 'N/A'}</td>
+            <td style={styles.cell}>
+              <span style={styles.platformTag}>{item.platform ?? 'N/A'}</span>
+            </td>
+            <td style={styles.cell}>{item.deliveryArea ?? 'Unknown'}</td>
+            <td style={styles.cell}>{item.assignedCourierId ?? 'N/A'}</td>
             <td style={styles.cell}>{formatDateTime(item.updatedAt)}</td>
           </tr>
         ))}
@@ -54,5 +92,18 @@ const styles: Record<string, React.CSSProperties> = {
   cell: {
     padding: '8px 10px',
     borderBottom: '1px solid #e7ebf8',
+  },
+  platformTag: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '2px 8px',
+    borderRadius: 999,
+    border: '1px solid #d9def3',
+    backgroundColor: '#f3f6ff',
+    color: '#1e3a8a',
+    fontSize: 12,
+    fontWeight: 600,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
 };

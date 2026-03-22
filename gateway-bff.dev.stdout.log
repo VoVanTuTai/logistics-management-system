@@ -2,25 +2,25 @@
 > @jms/gateway-bff@0.1.0 start:dev
 > ts-node src/main.ts
 
-[32m[Nest] 3132  - [39m03/17/2026, 7:50:29 AM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
-[32m[Nest] 3132  - [39m03/17/2026, 7:50:29 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +21ms[39m
-[32m[Nest] 3132  - [39m03/17/2026, 7:50:29 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mHealthModule dependencies initialized[39m[38;5;3m +2ms[39m
-[32m[Nest] 3132  - [39m03/17/2026, 7:50:29 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPublicModule dependencies initialized[39m[38;5;3m +1ms[39m
-[32m[Nest] 3132  - [39m03/17/2026, 7:50:29 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMerchantModule dependencies initialized[39m[38;5;3m +0ms[39m
-[32m[Nest] 3132  - [39m03/17/2026, 7:50:29 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mOpsModule dependencies initialized[39m[38;5;3m +1ms[39m
-[32m[Nest] 3132  - [39m03/17/2026, 7:50:29 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mCourierModule dependencies initialized[39m[38;5;3m +0ms[39m
-[32m[Nest] 3132  - [39m03/17/2026, 7:50:29 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mHealthController {/health}:[39m[38;5;3m +13ms[39m
-[32m[Nest] 3132  - [39m03/17/2026, 7:50:29 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/health, GET} route[39m[38;5;3m +5ms[39m
-[32m[Nest] 3132  - [39m03/17/2026, 7:50:29 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mPublicController {/public}:[39m[38;5;3m +1ms[39m
-[32m[Nest] 3132  - [39m03/17/2026, 7:50:29 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public, ALL} route[39m[38;5;3m +2ms[39m
-[32m[Nest] 3132  - [39m03/17/2026, 7:50:29 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/*, ALL} route[39m[38;5;3m +1ms[39m
-[32m[Nest] 3132  - [39m03/17/2026, 7:50:29 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mMerchantController {/merchant}:[39m[38;5;3m +1ms[39m
-[32m[Nest] 3132  - [39m03/17/2026, 7:50:29 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/merchant, ALL} route[39m[38;5;3m +1ms[39m
-[32m[Nest] 3132  - [39m03/17/2026, 7:50:29 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/merchant/*, ALL} route[39m[38;5;3m +1ms[39m
-[32m[Nest] 3132  - [39m03/17/2026, 7:50:29 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mOpsController {/ops}:[39m[38;5;3m +0ms[39m
-[32m[Nest] 3132  - [39m03/17/2026, 7:50:29 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/ops, ALL} route[39m[38;5;3m +1ms[39m
-[32m[Nest] 3132  - [39m03/17/2026, 7:50:29 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/ops/*, ALL} route[39m[38;5;3m +1ms[39m
-[32m[Nest] 3132  - [39m03/17/2026, 7:50:29 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mCourierController {/courier}:[39m[38;5;3m +0ms[39m
-[32m[Nest] 3132  - [39m03/17/2026, 7:50:29 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/courier, ALL} route[39m[38;5;3m +1ms[39m
-[32m[Nest] 3132  - [39m03/17/2026, 7:50:29 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/courier/*, ALL} route[39m[38;5;3m +1ms[39m
-[32m[Nest] 3132  - [39m03/17/2026, 7:50:29 AM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +4ms[39m
+[32m[Nest] 17236  - [39m03/18/2026, 10:24:59 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 17236  - [39m03/18/2026, 10:25:00 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +342ms[39m
+[32m[Nest] 17236  - [39m03/18/2026, 10:25:00 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mHealthModule dependencies initialized[39m[38;5;3m +128ms[39m
+[32m[Nest] 17236  - [39m03/18/2026, 10:25:00 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPublicModule dependencies initialized[39m[38;5;3m +178ms[39m
+[32m[Nest] 17236  - [39m03/18/2026, 10:25:00 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMerchantModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 17236  - [39m03/18/2026, 10:25:00 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mOpsModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 17236  - [39m03/18/2026, 10:25:00 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mCourierModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 17236  - [39m03/18/2026, 10:25:00 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mHealthController {/health}:[39m[38;5;3m +20ms[39m
+[32m[Nest] 17236  - [39m03/18/2026, 10:25:00 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/health, GET} route[39m[38;5;3m +7ms[39m
+[32m[Nest] 17236  - [39m03/18/2026, 10:25:00 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mPublicController {/public}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 17236  - [39m03/18/2026, 10:25:00 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public, ALL} route[39m[38;5;3m +3ms[39m
+[32m[Nest] 17236  - [39m03/18/2026, 10:25:00 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/*, ALL} route[39m[38;5;3m +3ms[39m
+[32m[Nest] 17236  - [39m03/18/2026, 10:25:00 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mMerchantController {/merchant}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 17236  - [39m03/18/2026, 10:25:00 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/merchant, ALL} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 17236  - [39m03/18/2026, 10:25:00 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/merchant/*, ALL} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 17236  - [39m03/18/2026, 10:25:00 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mOpsController {/ops}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 17236  - [39m03/18/2026, 10:25:00 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/ops, ALL} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 17236  - [39m03/18/2026, 10:25:00 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/ops/*, ALL} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 17236  - [39m03/18/2026, 10:25:00 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mCourierController {/courier}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 17236  - [39m03/18/2026, 10:25:00 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/courier, ALL} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 17236  - [39m03/18/2026, 10:25:00 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/courier/*, ALL} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 17236  - [39m03/18/2026, 10:25:00 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +5ms[39m

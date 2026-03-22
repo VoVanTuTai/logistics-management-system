@@ -2,6 +2,7 @@ import { opsApiClient } from '../../services/api/client';
 import { opsEndpoints } from '../../services/api/endpoints';
 import type {
   AssignTaskInput,
+  CourierOptionDto,
   ReassignTaskInput,
   TaskActionResultDto,
   TaskDetailDto,
@@ -76,6 +77,17 @@ export const tasksClient = {
         accessToken,
       })
       .then(mapTask),
+  listCouriers: (accessToken: string | null): Promise<CourierOptionDto[]> =>
+    opsApiClient
+      .request<string[]>(opsEndpoints.tasks.couriers, {
+        accessToken,
+      })
+      .then((items) =>
+        items.map((courierId) => ({
+          courierId,
+          label: courierId,
+        })),
+      ),
   assign: (
     accessToken: string | null,
     payload: AssignTaskInput,

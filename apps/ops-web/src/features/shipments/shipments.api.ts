@@ -1,6 +1,7 @@
 export { shipmentsClient } from './shipments.client';
 export {
   useApproveShipmentMutation,
+  useCreateShipmentMutation,
   useReviewShipmentMutation,
   useShipmentDetailQuery,
   useShipmentsQuery,

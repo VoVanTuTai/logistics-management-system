@@ -17,6 +17,7 @@ import { PrismaService } from './infrastructure/prisma/prisma.service';
 import { ScanEventPrismaRepository } from './infrastructure/prisma/scan-event-prisma.repository';
 import { ScanEventsConsumer } from './messaging/consumers/scan-events.consumer';
 import { ScanEventsProducer } from './messaging/producers/scan-events.producer';
+import { ScanOutboxRelayService } from './messaging/outbox/scan-outbox-relay.service';
 import { ScanOutboxService } from './messaging/outbox/scan-outbox.service';
 
 @Module({
@@ -30,6 +31,7 @@ import { ScanOutboxService } from './messaging/outbox/scan-outbox.service';
     ScanEventsProducer,
     ScanEventsConsumer,
     ScanOutboxService,
+    ScanOutboxRelayService,
     {
       provide: ScanEventRepository,
       useClass: ScanEventPrismaRepository,

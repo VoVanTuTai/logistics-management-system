@@ -55,3 +55,22 @@ model AggregationJob {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+model ShipmentStatusProjection {
+  id            String   @id @default(cuid())
+  shipmentCode  String   @unique
+  currentStatus String
+  lastEventType String
+  lastEventAt   DateTime
+  courierCode   String?
+  hubCode       String?
+  zoneCode      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([currentStatus], map: "shipment_status_current_status_idx")
+  @@index([courierCode], map: "shipment_status_courier_idx")
+  @@index([hubCode], map: "shipment_status_hub_idx")
+  @@index([zoneCode], map: "shipment_status_zone_idx")
+  @@index([updatedAt], map: "shipment_status_updated_at_idx")
+}

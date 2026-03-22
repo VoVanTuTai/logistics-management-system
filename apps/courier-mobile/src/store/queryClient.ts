@@ -7,12 +7,14 @@ export const queryClient = new QueryClient({
     onError: (error) => {
       useAppStore
         .getState()
-        .setGlobalError(error instanceof Error ? error.message : 'Query failed.');
+        .setGlobalError(
+          error instanceof Error ? error.message : 'Tải dữ liệu thất bại.',
+        );
     },
   }),
   mutationCache: new MutationCache({
     onMutate: () => {
-      useAppStore.getState().setGlobalLoading('Dang xu ly...');
+      useAppStore.getState().setGlobalLoading('Đang xử lý...');
     },
     onSettled: () => {
       useAppStore.getState().clearGlobalLoading();
@@ -21,7 +23,7 @@ export const queryClient = new QueryClient({
       useAppStore
         .getState()
         .setGlobalError(
-          error instanceof Error ? error.message : 'Mutation failed.',
+          error instanceof Error ? error.message : 'Gửi yêu cầu thất bại.',
         );
     },
   }),

@@ -22,8 +22,25 @@ export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
 
   @Get()
-  list(@Query('courierId') courierId?: string): Promise<Task[]> {
-    return this.tasksService.list(courierId);
+  list(
+    @Query('courierId') courierId?: string,
+    @Query('taskType') taskType?: string,
+    @Query('status') status?: string,
+    @Query('shipmentCode') shipmentCode?: string,
+    @Query('pickupRequestId') pickupRequestId?: string,
+  ): Promise<Task[]> {
+    return this.tasksService.list({
+      courierId,
+      taskType,
+      status,
+      shipmentCode,
+      pickupRequestId,
+    });
+  }
+
+  @Get('couriers')
+  listCouriers(): Promise<string[]> {
+    return this.tasksService.listCouriers();
   }
 
   @Get(':id')

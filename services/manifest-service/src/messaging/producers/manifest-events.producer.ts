@@ -13,39 +13,61 @@ import type { Manifest } from '../../domain/entities/manifest.entity';
 export class ManifestEventsProducer {
   readonly exchangeName = process.env.DOMAIN_EVENTS_EXCHANGE ?? 'domain.events';
 
-  buildManifestCreatedEvent(manifest: Manifest): QueueOutboxEventInput {
-    return this.buildEvent('manifest.created', manifest);
+  buildManifestCreatedEvents(manifest: Manifest): QueueOutboxEventInput[] {
+    return this.buildEvents('manifest.created', manifest);
   }
 
-  buildManifestUpdatedEvent(manifest: Manifest): QueueOutboxEventInput {
-    return this.buildEvent('manifest.updated', manifest);
+  buildManifestUpdatedEvents(
+    manifest: Manifest,
+    metadata: Record<string, unknown>,
+    shipmentCodes?: string[],
+  ): QueueOutboxEventInput[] {
+    return this.buildEvents('manifest.updated', manifest, metadata, shipmentCodes);
   }
 
-  buildManifestSealedEvent(manifest: Manifest): QueueOutboxEventInput {
-    return this.buildEvent('manifest.sealed', manifest);
+  buildManifestSealedEvents(manifest: Manifest): QueueOutboxEventInput[] {
+    return this.buildEvents('manifest.sealed', manifest);
   }
 
-  buildManifestReceivedEvent(manifest: Manifest): QueueOutboxEventInput {
-    return this.buildEvent('manifest.received', manifest);
+  buildManifestReceivedEvents(manifest: Manifest): QueueOutboxEventInput[] {
+    return this.buildEvents('manifest.received', manifest);
+  }
+
+  private buildEvents(
+    eventType: ManifestPublishedEventType,
+    manifest: Manifest,
+    metadata?: Record<string, unknown>,
+    shipmentCodes?: string[],
+  ): QueueOutboxEventInput[] {
+    const targets = this.resolveTargetShipmentCodes(manifest, shipmentCodes);
+
+    return targets.map((shipmentCode) =>
+      this.buildEvent(eventType, manifest, shipmentCode, metadata),
+    );
   }
 
   private buildEvent(
     eventType: ManifestPublishedEventType,
     manifest: Manifest,
+    shipmentCode: string | null,
+    metadata?: Record<string, unknown>,
   ): QueueOutboxEventInput {
     const eventId = randomUUID();
     const occurredAt = new Date();
+    const normalizedMetadata = metadata ?? {};
+    const idempotencyShipmentCode = shipmentCode ?? 'none';
     const payload: ManifestEventEnvelope = {
       event_id: eventId,
       event_type: eventType,
       occurred_at: occurredAt.toISOString(),
-      shipment_code: manifest.items[0]?.shipmentCode ?? null,
+      shipment_code: shipmentCode,
       actor: null,
       location: null,
       data: {
         manifest,
+        ...normalizedMetadata,
       },
-      idempotency_key: `${eventType}:manifest:${manifest.id}:${occurredAt.toISOString()}`,
+      idempotency_key: `${eventType}:manifest:${manifest.id}:${idempotencyShipmentCode}:${occurredAt.toISOString()}`,
     };
 
     return {
@@ -57,5 +79,30 @@ export class ManifestEventsProducer {
       payload,
       occurredAt,
     };
+  }
+
+  private resolveTargetShipmentCodes(
+    manifest: Manifest,
+    shipmentCodes?: string[],
+  ): Array<string | null> {
+    const normalizedCodes = this.normalizeShipmentCodes(
+      shipmentCodes ?? manifest.items.map((item) => item.shipmentCode),
+    );
+
+    if (normalizedCodes.length === 0) {
+      return [null];
+    }
+
+    return normalizedCodes;
+  }
+
+  private normalizeShipmentCodes(shipmentCodes: string[]): string[] {
+    return Array.from(
+      new Set(
+        shipmentCodes
+          .map((shipmentCode) => shipmentCode?.trim())
+          .filter((shipmentCode): shipmentCode is string => Boolean(shipmentCode)),
+      ),
+    );
   }
 }

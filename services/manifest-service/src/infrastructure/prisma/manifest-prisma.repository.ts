@@ -82,17 +82,53 @@ export class ManifestPrismaRepository extends ManifestRepository {
     return record ? this.toEntity(record) : null;
   }
 
+  async findActiveByShipmentCode(
+    shipmentCode: string,
+    excludeManifestId?: string,
+  ): Promise<Manifest | null> {
+    const record = await this.prisma.manifest.findFirst({
+      where: {
+        ...(excludeManifestId
+          ? {
+              id: {
+                not: excludeManifestId,
+              },
+            }
+          : {}),
+        status: {
+          in: ['CREATED', 'SEALED'],
+        },
+        items: {
+          some: {
+            shipmentCode,
+          },
+        },
+      },
+      include: {
+        items: true,
+        sealRecord: true,
+        receiveRecord: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return record ? this.toEntity(record) : null;
+  }
+
   async create(input: CreateManifestInput): Promise<Manifest> {
+    const shipmentCodes = this.normalizeShipmentCodes(input.shipmentCodes);
+
     const data: Prisma.ManifestCreateInput = {
       manifestCode: input.manifestCode,
       originHubCode: input.originHubCode ?? null,
       destinationHubCode: input.destinationHubCode ?? null,
       note: input.note ?? null,
       items: {
-        create:
-          input.shipmentCodes?.map((shipmentCode) => ({
-            shipmentCode,
-          })) ?? [],
+        create: shipmentCodes.map((shipmentCode) => ({
+          shipmentCode,
+        })),
       },
     };
 
@@ -123,21 +159,27 @@ export class ManifestPrismaRepository extends ManifestRepository {
       data.note = input.note;
     }
 
-    if (input.addShipmentCodes?.length) {
+    const addShipmentCodes = this.normalizeShipmentCodes(input.addShipmentCodes);
+    if (addShipmentCodes.length) {
       data.items = {
         ...(data.items ?? {}),
-        create: input.addShipmentCodes.map((shipmentCode) => ({
+        create: addShipmentCodes.map((shipmentCode) => ({
           shipmentCode,
         })),
       };
     }
 
-    if (input.removeShipmentCodes?.length) {
+    const removeShipmentCodes = this.normalizeShipmentCodes(
+      input.removeShipmentCodes,
+    );
+    if (removeShipmentCodes.length) {
       data.items = {
         ...(data.items ?? {}),
-        deleteMany: input.removeShipmentCodes.map((shipmentCode) => ({
-          shipmentCode,
-        })),
+        deleteMany: {
+          shipmentCode: {
+            in: removeShipmentCodes,
+          },
+        },
       };
     }
 
@@ -149,6 +191,104 @@ export class ManifestPrismaRepository extends ManifestRepository {
         sealRecord: true,
         receiveRecord: true,
       },
+    });
+
+    return this.toEntity(record);
+  }
+
+  async addShipments(id: string, shipmentCodes: string[]): Promise<Manifest> {
+    const uniqueCodes = this.normalizeShipmentCodes(shipmentCodes);
+    if (uniqueCodes.length === 0) {
+      const manifest = await this.findById(id);
+      if (!manifest) {
+        throw new Error(`Manifest "${id}" was not found.`);
+      }
+
+      return manifest;
+    }
+
+    const record = await this.prisma.$transaction(async (tx) => {
+      const manifest = await tx.manifest.findUnique({
+        where: { id },
+        include: {
+          items: true,
+          sealRecord: true,
+          receiveRecord: true,
+        },
+      });
+
+      if (!manifest) {
+        throw new Error(`Manifest "${id}" was not found.`);
+      }
+
+      const existingCodes = new Set(
+        manifest.items.map((item) => item.shipmentCode),
+      );
+      const codesToCreate = uniqueCodes.filter((code) => !existingCodes.has(code));
+
+      if (codesToCreate.length > 0) {
+        await tx.manifestItem.createMany({
+          data: codesToCreate.map((shipmentCode) => ({
+            manifestId: id,
+            shipmentCode,
+          })),
+        });
+      }
+
+      const refreshed = await tx.manifest.findUnique({
+        where: { id },
+        include: {
+          items: true,
+          sealRecord: true,
+          receiveRecord: true,
+        },
+      });
+
+      if (!refreshed) {
+        throw new Error(`Manifest "${id}" was not found.`);
+      }
+
+      return refreshed;
+    });
+
+    return this.toEntity(record);
+  }
+
+  async removeShipments(id: string, shipmentCodes: string[]): Promise<Manifest> {
+    const uniqueCodes = this.normalizeShipmentCodes(shipmentCodes);
+    if (uniqueCodes.length === 0) {
+      const manifest = await this.findById(id);
+      if (!manifest) {
+        throw new Error(`Manifest "${id}" was not found.`);
+      }
+
+      return manifest;
+    }
+
+    const record = await this.prisma.$transaction(async (tx) => {
+      await tx.manifestItem.deleteMany({
+        where: {
+          manifestId: id,
+          shipmentCode: {
+            in: uniqueCodes,
+          },
+        },
+      });
+
+      const refreshed = await tx.manifest.findUnique({
+        where: { id },
+        include: {
+          items: true,
+          sealRecord: true,
+          receiveRecord: true,
+        },
+      });
+
+      if (!refreshed) {
+        throw new Error(`Manifest "${id}" was not found.`);
+      }
+
+      return refreshed;
     });
 
     return this.toEntity(record);
@@ -234,6 +374,22 @@ export class ManifestPrismaRepository extends ManifestRepository {
         ? this.toReceiveRecordEntity(record.receiveRecord)
         : null,
     };
+  }
+
+  private normalizeShipmentCodes(
+    shipmentCodes: string[] | undefined,
+  ): string[] {
+    if (!shipmentCodes?.length) {
+      return [];
+    }
+
+    return Array.from(
+      new Set(
+        shipmentCodes
+          .map((shipmentCode) => shipmentCode?.trim())
+          .filter((shipmentCode): shipmentCode is string => Boolean(shipmentCode)),
+      ),
+    );
   }
 
   private toItemEntity(record: PrismaManifestItemRecord): ManifestItem {

@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 
 import { ZonesService } from '../../application/services/zones.service';
 import type { Zone, ZoneWriteInput } from '../../domain/entities/zone.entity';
@@ -8,8 +16,20 @@ export class ZonesController {
   constructor(private readonly zonesService: ZonesService) {}
 
   @Get()
-  list(): Promise<Zone[]> {
-    return this.zonesService.list();
+  list(
+    @Query('code') code?: string,
+    @Query('name') name?: string,
+    @Query('parentCode') parentCode?: string,
+    @Query('isActive') isActive?: string,
+    @Query('q') q?: string,
+  ): Promise<Zone[]> {
+    return this.zonesService.list({
+      code,
+      name,
+      parentCode,
+      isActive,
+      q,
+    });
   }
 
   @Get(':id')

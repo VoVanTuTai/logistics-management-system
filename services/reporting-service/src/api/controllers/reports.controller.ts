@@ -4,10 +4,13 @@ import type { KpiDaily, KpiMonthly } from '@prisma/client';
 import {
   type CourierReportQuery,
   type DailyReportQuery,
+  type HubReportQuery,
   type MonthlyReportQuery,
   type OpsDashboardView,
+  type ShipmentStatusReportQuery,
   ReportingQueryService,
 } from '../../application/services/reporting-query.service';
+import type { ShipmentStatusSummaryItem } from '../../application/projections/reporting-event.types';
 
 @Controller('reports')
 export class ReportsController {
@@ -26,14 +29,24 @@ export class ReportsController {
   }
 
   @Get('ops-dashboard')
-  getOpsDashboard(
-    @Query('date') date?: string,
-  ): Promise<OpsDashboardView> {
-    return this.reportingQueryService.getOpsDashboard(date);
+  getOpsDashboard(@Query() query: DailyReportQuery): Promise<OpsDashboardView> {
+    return this.reportingQueryService.getOpsDashboard(query);
   }
 
   @Get('courier')
   getCourier(@Query() query: CourierReportQuery): Promise<KpiDaily[]> {
     return this.reportingQueryService.getCourier(query);
+  }
+
+  @Get('hub')
+  getHub(@Query() query: HubReportQuery): Promise<KpiDaily[]> {
+    return this.reportingQueryService.getHub(query);
+  }
+
+  @Get('shipment-status')
+  getShipmentStatus(
+    @Query() query: ShipmentStatusReportQuery,
+  ): Promise<ShipmentStatusSummaryItem[]> {
+    return this.reportingQueryService.getShipmentStatusSummary(query);
   }
 }

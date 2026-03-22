@@ -13,6 +13,7 @@ export const scanApi = {
       method: 'POST',
       accessToken,
       body: payload,
+      headers: { 'Idempotency-Key': payload.idempotencyKey },
     }),
   recordInbound: (
     accessToken: string,
@@ -22,6 +23,7 @@ export const scanApi = {
       method: 'POST',
       accessToken,
       body: payload,
+      headers: { 'Idempotency-Key': payload.idempotencyKey },
     }),
   recordOutbound: (
     accessToken: string,
@@ -31,6 +33,7 @@ export const scanApi = {
       method: 'POST',
       accessToken,
       body: payload,
+      headers: { 'Idempotency-Key': payload.idempotencyKey },
     }),
 };
 

@@ -9,6 +9,7 @@ datasource db {
 
 enum PickupRequestStatus {
   REQUESTED
+  APPROVED
   CANCELLED
   COMPLETED
 }
@@ -27,6 +28,8 @@ model PickupRequest {
   contactPhone      String?
   pickupAddress     String?
   note              String?
+  approvedBy        String?
+  approvedAt        DateTime?
   cancellationReason String?
   completedAt       DateTime?
   createdAt         DateTime            @default(now())

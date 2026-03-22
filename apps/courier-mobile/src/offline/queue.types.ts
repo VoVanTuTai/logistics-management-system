@@ -1,18 +1,51 @@
-import type { QueueableActionPayloadMap } from '../features/offline/offline.types';
+import type {
+  QueueableActionPayloadMap,
+  QueueableActionType,
+} from '../features/offline/offline.types';
 
-export type OfflineJobType = keyof QueueableActionPayloadMap;
+export type OfflineQueueActionType = QueueableActionType;
+export type OfflineQueueStatus = 'QUEUED' | 'PROCESSING' | 'FAILED';
 
-export interface OfflineJob<
-  TPayload = QueueableActionPayloadMap[OfflineJobType],
+export interface OfflineQueueItem<
+  TActionType extends OfflineQueueActionType = OfflineQueueActionType,
 > {
   id: string;
-  type: OfflineJobType;
+  actionType: TActionType;
   endpoint: string;
-  payload: TPayload;
+  method: 'POST';
+  payload: QueueableActionPayloadMap[TActionType];
   idempotencyKey: string;
-  status: 'PENDING' | 'PROCESSING' | 'FAILED';
-  retryCount: number;
+  status: OfflineQueueStatus;
+  attemptCount: number;
   createdAt: string;
+  updatedAt: string;
   lastAttemptAt: string | null;
   lastError: string | null;
 }
+
+export interface OfflineQueueStats {
+  total: number;
+  queued: number;
+  processing: number;
+  failed: number;
+}
+
+export interface OfflineQueueSnapshot {
+  items: OfflineQueueItem[];
+  stats: OfflineQueueStats;
+}
+
+export interface OfflineQueuePreviewItem {
+  id: string;
+  actionType: OfflineQueueActionType;
+  status: OfflineQueueStatus;
+  attemptCount: number;
+  lastError: string | null;
+}
+
+// Backward-compatible aliases for existing feature helpers.
+export type OfflineJob<TPayload = OfflineQueueItem['payload']> = Omit<
+  OfflineQueueItem,
+  'payload'
+> & { payload: TPayload };
+export type OfflineJobType = OfflineQueueActionType;

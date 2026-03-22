@@ -24,74 +24,39 @@ export function LoginForm({
   });
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} style={styles.form}>
-      <label style={styles.label} htmlFor="username">
-        Tên đăng nhập
+    <form onSubmit={form.handleSubmit(onSubmit)} className="auth-form">
+      <label className="auth-label" htmlFor="username">
+        Username
       </label>
       <input
         id="username"
         {...form.register('username')}
-        style={styles.input}
+        className="auth-input"
         placeholder="ops.username"
       />
       {form.formState.errors.username ? (
-        <small style={styles.errorText}>{form.formState.errors.username.message}</small>
+        <small className="auth-error">{form.formState.errors.username.message}</small>
       ) : null}
 
-      <label style={styles.label} htmlFor="password">
-        Mật khẩu
+      <label className="auth-label" htmlFor="password">
+        Password
       </label>
       <input
         id="password"
         type="password"
         {...form.register('password')}
-        style={styles.input}
+        className="auth-input"
         placeholder="********"
       />
       {form.formState.errors.password ? (
-        <small style={styles.errorText}>{form.formState.errors.password.message}</small>
+        <small className="auth-error">{form.formState.errors.password.message}</small>
       ) : null}
 
-      {errorMessage ? <div style={styles.errorBanner}>{errorMessage}</div> : null}
+      {errorMessage ? <div className="auth-error-banner">{errorMessage}</div> : null}
 
-      <button type="submit" disabled={isSubmitting} style={styles.button}>
-        {isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
+      <button type="submit" disabled={isSubmitting} className="auth-submit">
+        {isSubmitting ? 'Signing in...' : 'Sign in'}
       </button>
     </form>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  form: {
-    display: 'grid',
-    gap: 8,
-  },
-  label: {
-    fontWeight: 600,
-  },
-  input: {
-    border: '1px solid #d9def3',
-    borderRadius: 10,
-    padding: '10px 12px',
-  },
-  errorText: {
-    color: '#b91c1c',
-  },
-  errorBanner: {
-    border: '1px solid #fecaca',
-    backgroundColor: '#fef2f2',
-    color: '#991b1b',
-    borderRadius: 10,
-    padding: '8px 10px',
-  },
-  button: {
-    marginTop: 8,
-    border: 'none',
-    borderRadius: 10,
-    backgroundColor: '#000080',
-    color: '#ffffff',
-    padding: '10px 14px',
-    fontWeight: 600,
-    cursor: 'pointer',
-  },
-};

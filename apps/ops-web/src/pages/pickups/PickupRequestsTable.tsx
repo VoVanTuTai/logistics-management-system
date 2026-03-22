@@ -1,34 +1,93 @@
-import React from 'react';
+﻿import React from 'react';
 import { Link } from 'react-router-dom';
 
-import type { PickupRequestListItemDto } from '../../features/pickups/pickups.types';
 import { routePaths } from '../../navigation/routes';
-import { formatDateTime } from '../../utils/format';
 
 interface PickupRequestsTableProps {
-  items: PickupRequestListItemDto[];
+  items: PickupApprovalRow[];
+  selectedIds: string[];
+  onToggleRow: (pickupId: string, checked: boolean) => void;
+  onToggleAll: (checked: boolean) => void;
 }
 
-export function PickupRequestsTable({ items }: PickupRequestsTableProps): React.JSX.Element {
+export interface PickupApprovalRow {
+  pickupId: string;
+  shipmentCode: string | null;
+  status: string;
+  senderName: string | null;
+  receiverName: string | null;
+  receiverPhone: string | null;
+  itemType: string | null;
+  codAmount: number | null;
+  shippingFee: number | null;
+  selectable: boolean;
+}
+
+function formatCurrency(value: number | null): string {
+  if (value === null || Number.isNaN(value)) {
+    return '-';
+  }
+
+  return `${new Intl.NumberFormat('vi-VN').format(value)} VND`;
+}
+
+export function PickupRequestsTable({
+  items,
+  selectedIds,
+  onToggleRow,
+  onToggleAll,
+}: PickupRequestsTableProps): React.JSX.Element {
+  const selectableIds = items.filter((item) => item.selectable).map((item) => item.pickupId);
+  const allSelected =
+    selectableIds.length > 0 && selectableIds.every((pickupId) => selectedIds.includes(pickupId));
+
   return (
     <table style={styles.table}>
       <thead>
         <tr>
-          <th style={styles.headerCell}>Yêu cầu</th>
-          <th style={styles.headerCell}>Vận đơn</th>
-          <th style={styles.headerCell}>Trạng thái</th>
-          <th style={styles.headerCell}>Thời điểm yêu cầu</th>
+          <th style={styles.headerCellCheckbox}>
+            <input
+              type="checkbox"
+              checked={allSelected}
+              disabled={selectableIds.length === 0}
+              onChange={(event) => onToggleAll(event.target.checked)}
+            />
+          </th>
+          <th style={styles.headerCell}>Shipment</th>
+          <th style={styles.headerCell}>Pickup status</th>
+          <th style={styles.headerCell}>Sender</th>
+          <th style={styles.headerCell}>Receiver</th>
+          <th style={styles.headerCell}>Phone</th>
+          <th style={styles.headerCell}>Item type</th>
+          <th style={styles.headerCell}>COD value</th>
+          <th style={styles.headerCell}>Shipping fee</th>
         </tr>
       </thead>
       <tbody>
         {items.map((item) => (
-          <tr key={item.id}>
-            <td style={styles.cell}>
-              <Link to={routePaths.pickupDetail(item.id)}>{item.requestCode}</Link>
+          <tr key={item.pickupId}>
+            <td style={styles.cellCheckbox}>
+              <input
+                type="checkbox"
+                checked={selectedIds.includes(item.pickupId)}
+                disabled={!item.selectable}
+                onChange={(event) => onToggleRow(item.pickupId, event.target.checked)}
+              />
             </td>
-            <td style={styles.cell}>{item.shipmentCode ?? 'Không có'}</td>
+            <td style={styles.cell}>
+              {item.shipmentCode ? (
+                <Link to={routePaths.pickupDetail(item.pickupId)}>{item.shipmentCode}</Link>
+              ) : (
+                '-'
+              )}
+            </td>
             <td style={styles.cell}>{item.status}</td>
-            <td style={styles.cell}>{formatDateTime(item.requestedAt)}</td>
+            <td style={styles.cell}>{item.senderName ?? '-'}</td>
+            <td style={styles.cell}>{item.receiverName ?? '-'}</td>
+            <td style={styles.cell}>{item.receiverPhone ?? '-'}</td>
+            <td style={styles.cell}>{item.itemType ?? '-'}</td>
+            <td style={styles.cell}>{formatCurrency(item.codAmount)}</td>
+            <td style={styles.cell}>{formatCurrency(item.shippingFee)}</td>
           </tr>
         ))}
       </tbody>
@@ -47,8 +106,20 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '8px 10px',
     borderBottom: '1px solid #d9def3',
   },
+  headerCellCheckbox: {
+    width: 36,
+    textAlign: 'center',
+    padding: '8px 4px',
+    borderBottom: '1px solid #d9def3',
+  },
   cell: {
     padding: '8px 10px',
+    borderBottom: '1px solid #e7ebf8',
+  },
+  cellCheckbox: {
+    width: 36,
+    textAlign: 'center',
+    padding: '8px 4px',
     borderBottom: '1px solid #e7ebf8',
   },
 };

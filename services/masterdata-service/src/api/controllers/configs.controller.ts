@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 
 import { ConfigsService } from '../../application/services/configs.service';
 import type { Config, ConfigWriteInput } from '../../domain/entities/config.entity';
@@ -8,8 +16,16 @@ export class ConfigsController {
   constructor(private readonly configsService: ConfigsService) {}
 
   @Get()
-  list(): Promise<Config[]> {
-    return this.configsService.list();
+  list(
+    @Query('key') key?: string,
+    @Query('scope') scope?: string,
+    @Query('q') q?: string,
+  ): Promise<Config[]> {
+    return this.configsService.list({
+      key,
+      scope,
+      q,
+    });
   }
 
   @Get(':id')

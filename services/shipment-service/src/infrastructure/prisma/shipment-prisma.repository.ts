@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
+import { Prisma as PrismaNamespace } from '@prisma/client';
 import type {
   Prisma,
   Shipment as PrismaShipmentRecord,
@@ -40,15 +41,34 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
   }
 
   async create(input: CreateShipmentInput): Promise<Shipment> {
+    if (!input.code) {
+      throw new Error(
+        'Shipment code must be generated or provided before persistence.',
+      );
+    }
+
     const data: Prisma.ShipmentCreateInput = {
       code: input.code,
       metadata: (input.metadata ?? null) as unknown as Prisma.InputJsonValue,
       currentStatus: 'CREATED',
     };
 
-    const record = await this.prisma.shipment.create({ data });
+    try {
+      const record = await this.prisma.shipment.create({ data });
 
-    return this.toEntity(record);
+      return this.toEntity(record);
+    } catch (error) {
+      if (
+        error instanceof PrismaNamespace.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          `Shipment code "${input.code}" already exists.`,
+        );
+      }
+
+      throw error;
+    }
   }
 
   async update(code: string, input: UpdateShipmentInput): Promise<Shipment> {

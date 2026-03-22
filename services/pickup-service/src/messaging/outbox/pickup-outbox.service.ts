@@ -19,6 +19,15 @@ export class PickupOutboxService {
     );
   }
 
+  enqueuePickupApproved(
+    pickupRequest: PickupRequest,
+    data: Record<string, unknown>,
+  ): Promise<OutboxEvent> {
+    return this.outboxEventRepository.create(
+      this.pickupEventsProducer.buildPickupApprovedEvent(pickupRequest, data),
+    );
+  }
+
   enqueuePickupUpdated(
     pickupRequest: PickupRequest,
     data: Record<string, unknown>,

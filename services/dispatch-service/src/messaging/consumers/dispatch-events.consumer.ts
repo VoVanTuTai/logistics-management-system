@@ -3,11 +3,11 @@ import { Injectable } from '@nestjs/common';
 import {
   DeliveryFailedPayload,
   DispatchEventHandlersService,
-  PickupRequestedPayload,
+  PickupApprovedPayload,
 } from '../../application/services/dispatch-event-handlers.service';
 
 export interface DispatchConsumerEnvelope {
-  event_type: 'pickup.requested' | 'delivery.failed';
+  event_type: 'pickup.approved' | 'delivery.failed';
   shipment_code?: string | null;
   data?: Record<string, unknown>;
 }
@@ -15,6 +15,7 @@ export interface DispatchConsumerEnvelope {
 @Injectable()
 export class DispatchEventsConsumer {
   readonly queueName = 'dispatch-service.q';
+  readonly routingPatterns = ['pickup.approved', 'delivery.failed'];
   readonly retryQueues = ['dispatch-service.retry.10s', 'dispatch-service.retry.1m'];
   readonly deadLetterQueue = 'dispatch-service.dlq';
 
@@ -23,9 +24,9 @@ export class DispatchEventsConsumer {
   ) {}
 
   async handle(payload: DispatchConsumerEnvelope): Promise<void> {
-    if (payload.event_type === 'pickup.requested') {
-      await this.dispatchEventHandlersService.handlePickupRequested(
-        payload as PickupRequestedPayload,
+    if (payload.event_type === 'pickup.approved') {
+      await this.dispatchEventHandlersService.handlePickupApproved(
+        payload as PickupApprovedPayload,
       );
       return;
     }

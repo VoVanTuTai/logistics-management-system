@@ -1,30 +1,33 @@
 # scan-service
 
-`scan-service` la source of truth cua scan events va `current_location`.
+`scan-service` is the source of truth for scan events and `current_location`.
 
 ## Scope
 
-- Ghi nhan `pickup`, `inbound`, `outbound` scan
-- Idempotency cho scan request
-- Luu va expose `current_location`
-- Ghi outbox event cho:
+- Record scan flows:
+  - `pickup`
+  - `inbound`
+  - `outbound`
+- Store and expose `current_location`
+- Enforce idempotency for scan requests
+- Publish outbox domain events:
   - `scan.pickup_confirmed`
   - `scan.inbound`
   - `scan.outbound`
   - `location.updated`
-- Consume skeleton cho `manifest.sealed`
+- Consume `manifest.sealed` event contract (application handler scaffold)
 
 ## Ownership
 
-- `scan-service` la canonical owner cua `current_location`
-- `shipment-service` khong so huu `current_location`
-- `tracking-service` chi la read model, khong so huu `current_location`
+- `scan-service` is the canonical owner of `current_location`
+- `shipment-service` owns `current_status`
+- `tracking-service` is a read model (does not own source-of-truth state)
 
 ## Idempotency
 
-- API scan nhan `idempotencyKey` trong body
-- Service luu `IdempotencyRecord` kem response snapshot
-- Request trung `idempotencyKey` se tra lai ket qua cu, khong tao them scan event moi
+- Scan APIs require `idempotencyKey` in request body
+- Service stores `IdempotencyRecord` with response snapshot
+- Duplicate idempotency requests return the existing response and do not create extra scan rows
 
 ## APIs
 
@@ -34,9 +37,11 @@
 - `GET /locations/:shipmentCode`
 - `GET /health`
 
-## Notes
+## Messaging
 
-- Scaffold nay chi o muc skeleton
-- Khong co validation nghiep vu chi tiet
-- Chua co RabbitMQ publisher worker thuc te
-- `manifest.sealed` moi duoc scaffold hook xu ly, de `TODO` cho business flow sau
+- Scan APIs enqueue outbox rows for:
+  - `scan.pickup_confirmed`
+  - `scan.inbound`
+  - `scan.outbound`
+  - `location.updated`
+- `manifest.sealed` handling contract is scaffolded in `ScanEventsConsumer`

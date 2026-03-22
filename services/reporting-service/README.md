@@ -20,20 +20,31 @@
 - `GET /reports/monthly`
 - `GET /reports/ops-dashboard`
 - `GET /reports/courier`
+- `GET /reports/hub`
+- `GET /reports/shipment-status`
 - `GET /health`
 
 ## Events consume
 
 - `shipment.created`
+- `shipment.updated`
+- `shipment.cancelled`
 - `pickup.completed`
+- `task.assigned`
+- `task.reassigned`
+- `manifest.sealed`
+- `manifest.received`
+- `scan.pickup_confirmed`
 - `delivery.delivered`
 - `delivery.failed`
 - `ndr.created`
+- `return.started`
+- `return.completed`
 - `scan.inbound`
 - `scan.outbound`
 
 ## Notes
 
 - khong publish event
-- projection hien tai la skeleton
+- projection cap nhat KPI daily/monthly + shipment current status summary
 - duplicate event duoc chan o muc projection ledger bang `AggregationJob`

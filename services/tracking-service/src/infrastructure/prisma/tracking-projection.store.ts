@@ -19,7 +19,10 @@ const STATUS_BY_EVENT_TYPE: Record<string, string> = {
   'shipment.created': 'CREATED',
   'shipment.updated': 'UPDATED',
   'shipment.cancelled': 'CANCELLED',
+  'shipment.change_requested': 'CHANGE_REQUESTED',
+  'shipment.change_approved': 'UPDATED',
   'pickup.requested': 'PICKUP_REQUESTED',
+  'pickup.approved': 'PICKUP_APPROVED',
   'pickup.completed': 'PICKED_UP',
   'task.created': 'TASK_CREATED',
   'task.assigned': 'TASK_ASSIGNED',
@@ -49,15 +52,16 @@ export class TrackingProjectionStore {
   async project(
     event: TrackingEventEnvelope,
   ): Promise<{ projected: boolean; shipmentCode: string | null }> {
-    if (!event.shipment_code) {
+    const shipmentCode = this.extractShipmentCode(event);
+    if (!shipmentCode) {
       return {
         projected: false,
         shipmentCode: null,
       };
     }
 
-    const shipmentCode = event.shipment_code;
     const occurredAt = new Date(event.occurred_at);
+    const actor = this.extractActor(event);
     const locationCode = this.extractLocationCode(event);
     const existingCurrent = await this.prisma.trackingCurrent.findUnique({
       where: {
@@ -72,7 +76,7 @@ export class TrackingProjectionStore {
       eventId: event.event_id,
       eventType: event.event_type,
       shipmentCode,
-      actor: event.actor,
+      actor,
       locationCode,
       payload: event as unknown as Prisma.InputJsonValue,
       occurredAt,
@@ -206,6 +210,35 @@ export class TrackingProjectionStore {
       this.getNestedString(event.data, ['currentLocation', 'locationCode']) ??
       this.getNestedString(event.data, ['currentLocation', 'location_code']) ??
       this.getNestedString(event.data, ['scanEvent', 'locationCode']) ??
+      null
+    );
+  }
+
+  private extractShipmentCode(event: TrackingEventEnvelope): string | null {
+    if (typeof event.shipment_code === 'string' && event.shipment_code.trim()) {
+      return event.shipment_code;
+    }
+
+    return (
+      this.getNestedString(event.data, ['shipment', 'code']) ??
+      this.getNestedString(event.data, ['shipmentCode']) ??
+      null
+    );
+  }
+
+  private extractActor(event: TrackingEventEnvelope): string | null {
+    if (typeof event.actor === 'string' && event.actor.trim()) {
+      return event.actor;
+    }
+
+    if (!event.actor || typeof event.actor !== 'object' || Array.isArray(event.actor)) {
+      return null;
+    }
+
+    return (
+      this.getNestedString(event.actor, ['service']) ??
+      this.getNestedString(event.actor, ['name']) ??
+      this.getNestedString(event.actor, ['id']) ??
       null
     );
   }

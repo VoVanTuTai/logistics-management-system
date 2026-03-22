@@ -14,3 +14,11 @@ export interface ZoneWriteInput {
   parentCode?: string | null;
   isActive?: boolean;
 }
+
+export interface ZoneListFilters {
+  code?: string;
+  name?: string;
+  parentCode?: string;
+  isActive?: boolean;
+  q?: string;
+}

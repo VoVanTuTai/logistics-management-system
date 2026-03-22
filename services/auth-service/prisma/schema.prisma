@@ -29,6 +29,9 @@ model UserAccount {
   passwordHash String
   status       UserStatus    @default(ACTIVE)
   roles        String[]
+  displayName  String?
+  phone        String?
+  hubCodes     String[]      @default([])
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   sessions     AuthSession[]

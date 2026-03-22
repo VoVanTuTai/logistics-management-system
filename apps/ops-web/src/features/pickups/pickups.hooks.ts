@@ -56,3 +56,17 @@ export function useRejectPickupMutation(
   });
 }
 
+export function useCompletePickupMutation(
+  accessToken: string | null,
+  pickupId: string,
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => pickupsClient.complete(accessToken, pickupId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.pickups });
+    },
+  });
+}
+
