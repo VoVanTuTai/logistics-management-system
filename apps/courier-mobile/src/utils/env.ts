@@ -47,7 +47,7 @@ function resolveGatewayBaseUrls(): string[] {
     appendUnique(gatewayBaseUrls, configuredBaseUrl.replace(/\/+$/, ''));
   }
 
-  // Fallback cho Expo dev runtime: lay host tu JS bundle URL.
+  // Expo runtime fallback: resolve host from JS bundle URL.
   const sourceCode = NativeModules.SourceCode as { scriptURL?: string } | undefined;
   const scriptUrl = sourceCode?.scriptURL ?? '';
   const host = resolveHostFromScriptUrl(scriptUrl);
@@ -70,7 +70,8 @@ function resolveGatewayBaseUrls(): string[] {
 const resolvedGatewayBaseUrls = resolveGatewayBaseUrls();
 
 export const appEnv = {
-  gatewayBaseUrl: resolvedGatewayBaseUrls[0] ?? `http://localhost:${DEFAULT_GATEWAY_PORT}`,
+  gatewayBaseUrl:
+    resolvedGatewayBaseUrls[0] ?? `http://localhost:${DEFAULT_GATEWAY_PORT}`,
   gatewayFallbackBaseUrls: resolvedGatewayBaseUrls.slice(1),
   requestTimeoutMs: Number(
     process.env.EXPO_PUBLIC_REQUEST_TIMEOUT_MS ??
