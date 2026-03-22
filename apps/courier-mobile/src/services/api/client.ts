@@ -49,6 +49,7 @@ export class CourierApiClient {
     options: RequestOptions = {},
   ): Promise<T> {
     let lastNetworkError: unknown = null;
+    let lastHttpError: ApiClientError | null = null;
 
     for (const candidateBaseUrl of this.gatewayCandidates) {
       try {
@@ -59,11 +60,18 @@ export class CourierApiClient {
         );
       } catch (error) {
         if (error instanceof ApiClientError && !error.isNetworkError) {
-          throw error;
+          // Candidate may point to a reachable but wrong host.
+          // Continue trying other candidates before failing.
+          lastHttpError = error;
+          continue;
         }
 
         lastNetworkError = error;
       }
+    }
+
+    if (lastHttpError) {
+      throw lastHttpError;
     }
 
     const fallbackMessage =
