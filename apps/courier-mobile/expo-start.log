@@ -1,0 +1,11 @@
+Starting project at D:\University\Semester 2_Year 4\New Technology\logistics-management-system\apps\courier-mobile
+Using src/app as the root directory for Expo Router.
+Starting Metro Bundler
+
+warning: Bundler cache is empty, rebuilding (this may take a minute)
+The following packages should be updated for best compatibility with the installed expo version:
+  react@19.2.4 - expected version: 19.2.0
+  react-native@0.84.1 - expected version: 0.83.2
+Your project may not work correctly until you install the expected versions of the packages.
+Waiting on http://localhost:8090
+Logs for your project will appear below.
