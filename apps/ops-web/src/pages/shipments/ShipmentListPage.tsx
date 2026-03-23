@@ -7,6 +7,7 @@ import { useInboundScanMutation, useOutboundScanMutation, usePickupScanMutation 
 import type { HubScanInput, HubScanType } from '../../features/scans/scans.types';
 import { useCreateShipmentMutation, useShipmentsQuery } from '../../features/shipments/shipments.api';
 import type { ShipmentListFilters, ShipmentListItemDto } from '../../features/shipments/shipments.types';
+import { openShippingLabelPrint } from '../../printing/shippingLabelPrint';
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
 import { createIdempotencyKey } from '../../utils/idempotency';
@@ -155,53 +156,76 @@ function formatCurrency(value: number | null): string {
   return `${new Intl.NumberFormat('en-US').format(value)} VND`;
 }
 
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
+function formatDateTime(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).format(date);
+}
+
+function compactCode(value: string, fallback: string): string {
+  const normalized = value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+  return normalized.length > 0 ? normalized.slice(0, 10) : fallback;
 }
 
 function printWaybill(shipment: ShipmentListItemDto): void {
-  const popup = window.open('', '_blank', 'width=960,height=720');
-  if (!popup) {
-    return;
+  const senderName = shipment.senderName?.trim() || 'Người gửi';
+  const senderPhone = shipment.senderPhone?.trim() || '-';
+  const senderAddress = shipment.senderAddress?.trim() || '-';
+  const receiverName = shipment.receiverName?.trim() || 'Người nhận';
+  const receiverPhone = shipment.receiverPhone?.trim() || '-';
+  const receiverAddress = shipment.receiverAddress?.trim() || '-';
+
+  const hubCode = shipment.currentLocation?.trim() || shipment.receiverRegion?.trim() || 'HUB-NA';
+  const zoneCode = shipment.receiverRegion?.trim() || 'ZONE-NA';
+  const routeTag = compactCode(hubCode || shipment.shipmentCode, 'ROUTE');
+  const sortCode = [`Hub đích: ${hubCode || 'N/A'}`, `Khu vực: ${zoneCode || 'N/A'}`].join('\n');
+  const itemDescription = shipment.parcelType?.trim() || shipment.serviceType?.trim() || '-';
+  const parcelNote = [
+    `Dịch vụ: ${shipment.serviceType?.trim() || '-'}`,
+    `Loại hàng: ${shipment.parcelType?.trim() || '-'}`,
+    `Phí: ${formatCurrency(shipment.shippingFee)}`,
+    `COD: ${formatCurrency(shipment.codAmount)}`,
+  ].join(' | ');
+  const deliveryInstruction =
+    shipment.deliveryNote?.trim() || 'Gọi trước khi giao. Không cho thử hàng.';
+
+  const opened = openShippingLabelPrint({
+    brandName: 'JMS LOGISTICS',
+    serviceName: shipment.serviceType?.trim() || 'STANDARD',
+    shipmentCode: shipment.shipmentCode,
+    senderName,
+    senderPhone,
+    senderAddress,
+    receiverName,
+    receiverPhone,
+    receiverAddress,
+    hubCode,
+    zoneCode,
+    itemDescription,
+    parcelNote,
+    qrValue: shipment.shipmentCode,
+    routeTag,
+    sortCode,
+    codAmountText: formatCurrency(shipment.codAmount),
+    createdAtText: formatDateTime(shipment.createdAt),
+    deliveryInstruction,
+    hotlineText: 'Hotline vận hành: 1900-1234',
+  });
+
+  if (!opened) {
+    window.alert('Trình duyệt đang chặn popup in. Hãy cho phép popup rồi thử lại.');
   }
-
-  const senderText = [shipment.senderName, shipment.senderPhone, shipment.senderAddress]
-    .filter((value) => Boolean(value))
-    .join(' | ');
-  const receiverText = [shipment.receiverName, shipment.receiverPhone, shipment.receiverAddress]
-    .filter((value) => Boolean(value))
-    .join(' | ');
-  const html = `
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>Phieu Van Don ${escapeHtml(shipment.shipmentCode)}</title>
-  </head>
-  <body style="font-family: Arial, sans-serif; padding: 16px;">
-    <h2>Phieu Van Don ${escapeHtml(shipment.shipmentCode)}</h2>
-    <p><strong>Trang thai:</strong> ${escapeHtml(shipment.currentStatus)}</p>
-    <p><strong>Nen tang:</strong> ${escapeHtml(shipment.platform ?? 'Không có')}</p>
-    <p><strong>Dich vu:</strong> ${escapeHtml(shipment.serviceType ?? 'Không có')}</p>
-    <p><strong>COD:</strong> ${escapeHtml(formatCurrency(shipment.codAmount))}</p>
-    <hr />
-    <p><strong>Nguoi gui:</strong> ${escapeHtml(senderText || 'Không có')}</p>
-    <p><strong>Nguoi nhan:</strong> ${escapeHtml(receiverText || 'Không có')}</p>
-    <p><strong>Khu vuc:</strong> ${escapeHtml(shipment.receiverRegion ?? 'Không có')}</p>
-    <p><strong>Ghi chu giao hang:</strong> ${escapeHtml(shipment.deliveryNote ?? 'Không có')}</p>
-    <script>window.onload = function () { window.print(); };</script>
-  </body>
-</html>
-`;
-
-  popup.document.open();
-  popup.document.write(html);
-  popup.document.close();
 }
 
 export function ShipmentListPage(): React.JSX.Element {

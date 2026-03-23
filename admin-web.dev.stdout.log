@@ -1,0 +1,18 @@
+
+> @jms/admin-web@0.1.0 dev
+> vite --host 0.0.0.0 --port 5175
+
+
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m4002[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5175[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://172.28.224.1:[1m5175[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://192.168.56.1:[1m5175[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://192.168.1.87:[1m5175[22m/[39m
+[2m4:30:48 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/masterdata/HubManagementPage.tsx[22m
+[2m4:30:48 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/masterdata/HubManagementPage.tsx[22m
+[2m4:30:48 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/masterdata/components/MasterdataEditorModal.tsx[22m
+[2m4:31:00 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/masterdata/HubManagementPage.tsx[22m
+[2m4:31:00 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/masterdata/HubManagementPage.tsx[22m
+[2m4:31:00 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/masterdata/components/MasterdataEditorModal.tsx[22m
+[2m4:31:00 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/masterdata/components/MasterdataEditorModal.tsx[22m

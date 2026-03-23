@@ -1,0 +1,667 @@
+[2m3:20:43 PM[22m [31m[1m[vite][22m[39m [31mInternal server error: F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\src\main.tsx: Unterminated string constant. (834:11)
+
+[0m [90m 832 |[31m       [32m`Hub ??ch: ${receiverHubCode || destinationHubCode || 'N/A'}`[31m[33m,[31m
+ [90m 833 |[31m       [32m`Khu v?c: ${zoneCode || 'N/A'}`[31m[33m,[31m
+[31m[1m>[22m[31m[90m 834 |[31m     ][33m.[31mjoin([32m'[31m
+ [90m     |[31m            [31m[1m^[22m[31m
+ [90m 835 |[31m [32m');[31m
+ [90m 836 |[31m     [36mconst[31m deliveryInstruction [33m=[31m
+ [90m 837 |[31m       row[33m.[31mdeliveryNote [33m&&[31m row[33m.[31mdeliveryNote [33m!==[31m [32m'-'[31m[0m[39m
+  Plugin: [35mvite:react-babel[39m
+  File: [36mF:/Nam4_Ky2/CongNgheMoi/DoAnLogisticManagementSystem/logistics-management-system/apps/merchant-web/src/main.tsx[39m:834:11
+[33m  857|        zoneCode,
+  858|        itemDescription: row.itemType,
+  859|        parcelNote,
+     |                ^
+  860|        qrValue: row.shipment.code,
+  861|        routeTag,[39m
+      at constructor (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:365:19)
+      at TypeScriptParserMixin.raise (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:6599:19)
+      at Object.unterminated (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5664:20)
+      at readStringContents (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5406:16)
+      at TypeScriptParserMixin.readString (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:6498:9)
+      at TypeScriptParserMixin.getTokenFromCode (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:6258:14)
+      at TypeScriptParserMixin.getTokenFromCode (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:4797:11)
+      at TypeScriptParserMixin.getTokenFromCode (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9987:11)
+      at TypeScriptParserMixin.nextToken (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5782:10)
+      at TypeScriptParserMixin.next (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5692:10)
+      at TypeScriptParserMixin.parseCoverCallAndAsyncArrowHead (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11169:10)
+      at TypeScriptParserMixin.parseSubscript (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11120:19)
+      at TypeScriptParserMixin.parseSubscript (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9272:18)
+      at TypeScriptParserMixin.parseSubscripts (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11094:19)
+      at TypeScriptParserMixin.parseExprSubscripts (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11085:17)
+      at TypeScriptParserMixin.parseUpdate (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11066:21)
+      at TypeScriptParserMixin.parseMaybeUnary (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11046:23)
+      at TypeScriptParserMixin.parseMaybeUnary (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9837:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10899:61)
+      at TypeScriptParserMixin.parseExprOps (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10904:23)
+      at TypeScriptParserMixin.parseMaybeConditional (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10881:23)
+      at TypeScriptParserMixin.parseMaybeAssign (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10831:21)
+      at TypeScriptParserMixin.parseMaybeAssign (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9786:20)
+      at F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10800:39
+      at TypeScriptParserMixin.allowInAnd (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12421:16)
+      at TypeScriptParserMixin.parseMaybeAssignAllowIn (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10800:17)
+      at TypeScriptParserMixin.parseVar (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13384:91)
+      at TypeScriptParserMixin.parseVarStatement (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13230:10)
+      at TypeScriptParserMixin.parseVarStatement (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9408:31)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12851:23)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9508:18)
+      at TypeScriptParserMixin.parseStatementLike (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12767:17)
+      at TypeScriptParserMixin.parseStatementListItem (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12747:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13316:61)
+      at TypeScriptParserMixin.parseBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13309:10)
+      at TypeScriptParserMixin.parseBlock (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13297:10)
+      at TypeScriptParserMixin.parseFunctionBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12100:24)
+      at TypeScriptParserMixin.parseFunctionBodyAndFinish (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12086:10)
+      at TypeScriptParserMixin.parseFunctionBodyAndFinish (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9172:18)
+      at F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13445:12
+      at TypeScriptParserMixin.withSmartMixTopicForbiddingContext (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12403:14)
+      at TypeScriptParserMixin.parseFunction (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13444:10)
+      at TypeScriptParserMixin.parseFunctionStatement (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13125:17)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12791:21)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9508:18)
+      at TypeScriptParserMixin.parseStatementLike (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12767:17)
+      at TypeScriptParserMixin.parseStatementListItem (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12747:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13316:61)
+      at TypeScriptParserMixin.parseBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13309:10)
+      at TypeScriptParserMixin.parseBlock (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13297:10)
+[2m3:23:27 PM[22m [31m[1m[vite][22m[39m [31mInternal server error: F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\src\main.tsx: Unterminated string constant. (834:11)
+
+[0m [90m 832 |[31m       [32m`Hub ÄÃ­ch: ${receiverHubCode || destinationHubCode || 'N/A'}`[31m[33m,[31m
+ [90m 833 |[31m       [32m`Khu vá»±c: ${zoneCode || 'N/A'}`[31m[33m,[31m
+[31m[1m>[22m[31m[90m 834 |[31m     ][33m.[31mjoin([32m'[31m
+ [90m     |[31m            [31m[1m^[22m[31m
+ [90m 835 |[31m [32m');[31m
+ [90m 836 |[31m     [36mconst[31m deliveryInstruction [33m=[31m
+ [90m 837 |[31m       row[33m.[31mdeliveryNote [33m&&[31m row[33m.[31mdeliveryNote [33m!==[31m [32m'-'[31m[0m[39m
+  Plugin: [35mvite:react-babel[39m
+  File: [36mF:/Nam4_Ky2/CongNgheMoi/DoAnLogisticManagementSystem/logistics-management-system/apps/merchant-web/src/main.tsx[39m:834:11
+[33m  856|        hubCode: routeMainCode,
+  857|        zoneCode,
+  858|        itemDescription: row.itemType,
+     |                                    ^
+  859|        parcelNote,
+  860|        qrValue: row.shipment.code,[39m
+      at constructor (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:365:19)
+      at TypeScriptParserMixin.raise (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:6599:19)
+      at Object.unterminated (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5664:20)
+      at readStringContents (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5406:16)
+      at TypeScriptParserMixin.readString (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:6498:9)
+      at TypeScriptParserMixin.getTokenFromCode (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:6258:14)
+      at TypeScriptParserMixin.getTokenFromCode (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:4797:11)
+      at TypeScriptParserMixin.getTokenFromCode (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9987:11)
+      at TypeScriptParserMixin.nextToken (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5782:10)
+      at TypeScriptParserMixin.next (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5692:10)
+      at TypeScriptParserMixin.parseCoverCallAndAsyncArrowHead (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11169:10)
+      at TypeScriptParserMixin.parseSubscript (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11120:19)
+      at TypeScriptParserMixin.parseSubscript (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9272:18)
+      at TypeScriptParserMixin.parseSubscripts (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11094:19)
+      at TypeScriptParserMixin.parseExprSubscripts (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11085:17)
+      at TypeScriptParserMixin.parseUpdate (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11066:21)
+      at TypeScriptParserMixin.parseMaybeUnary (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11046:23)
+      at TypeScriptParserMixin.parseMaybeUnary (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9837:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10899:61)
+      at TypeScriptParserMixin.parseExprOps (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10904:23)
+      at TypeScriptParserMixin.parseMaybeConditional (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10881:23)
+      at TypeScriptParserMixin.parseMaybeAssign (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10831:21)
+      at TypeScriptParserMixin.parseMaybeAssign (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9786:20)
+      at F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10800:39
+      at TypeScriptParserMixin.allowInAnd (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12421:16)
+      at TypeScriptParserMixin.parseMaybeAssignAllowIn (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10800:17)
+      at TypeScriptParserMixin.parseVar (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13384:91)
+      at TypeScriptParserMixin.parseVarStatement (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13230:10)
+      at TypeScriptParserMixin.parseVarStatement (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9408:31)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12851:23)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9508:18)
+      at TypeScriptParserMixin.parseStatementLike (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12767:17)
+      at TypeScriptParserMixin.parseStatementListItem (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12747:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13316:61)
+      at TypeScriptParserMixin.parseBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13309:10)
+      at TypeScriptParserMixin.parseBlock (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13297:10)
+      at TypeScriptParserMixin.parseFunctionBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12100:24)
+      at TypeScriptParserMixin.parseFunctionBodyAndFinish (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12086:10)
+      at TypeScriptParserMixin.parseFunctionBodyAndFinish (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9172:18)
+      at F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13445:12
+      at TypeScriptParserMixin.withSmartMixTopicForbiddingContext (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12403:14)
+      at TypeScriptParserMixin.parseFunction (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13444:10)
+      at TypeScriptParserMixin.parseFunctionStatement (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13125:17)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12791:21)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9508:18)
+      at TypeScriptParserMixin.parseStatementLike (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12767:17)
+      at TypeScriptParserMixin.parseStatementListItem (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12747:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13316:61)
+      at TypeScriptParserMixin.parseBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13309:10)
+      at TypeScriptParserMixin.parseBlock (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13297:10)
+[2m3:25:46 PM[22m [31m[1m[vite][22m[39m Pre-transform error: F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\src\main.tsx: Unterminated string constant. (834:11)
+
+[0m [90m 832 |[39m       [32m`Hub ÄÃ­ch: ${receiverHubCode || destinationHubCode || 'N/A'}`[39m[33m,[39m
+ [90m 833 |[39m       [32m`Khu vá»±c: ${zoneCode || 'N/A'}`[39m[33m,[39m
+[31m[1m>[22m[39m[90m 834 |[39m     ][33m.[39mjoin([32m'[39m
+ [90m     |[39m            [31m[1m^[22m[39m
+ [90m 835 |[39m [32m');[39m
+ [90m 836 |[39m     [36mconst[39m deliveryInstruction [33m=[39m
+ [90m 837 |[39m       row[33m.[39mdeliveryNote [33m&&[39m row[33m.[39mdeliveryNote [33m!==[39m [32m'-'[39m[0m
+[2m3:25:46 PM[22m [31m[1m[vite][22m[39m [31mInternal server error: F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\src\main.tsx: Unterminated string constant. (834:11)
+
+[0m [90m 832 |[31m       [32m`Hub ÄÃ­ch: ${receiverHubCode || destinationHubCode || 'N/A'}`[31m[33m,[31m
+ [90m 833 |[31m       [32m`Khu vá»±c: ${zoneCode || 'N/A'}`[31m[33m,[31m
+[31m[1m>[22m[31m[90m 834 |[31m     ][33m.[31mjoin([32m'[31m
+ [90m     |[31m            [31m[1m^[22m[31m
+ [90m 835 |[31m [32m');[31m
+ [90m 836 |[31m     [36mconst[31m deliveryInstruction [33m=[31m
+ [90m 837 |[31m       row[33m.[31mdeliveryNote [33m&&[31m row[33m.[31mdeliveryNote [33m!==[31m [32m'-'[31m[0m[39m
+  Plugin: [35mvite:react-babel[39m
+  File: [36mF:/Nam4_Ky2/CongNgheMoi/DoAnLogisticManagementSystem/logistics-management-system/apps/merchant-web/src/main.tsx[39m:834:11
+[33m  856|        hubCode: routeMainCode,
+  857|        zoneCode,
+  858|        itemDescription: row.itemType,
+     |                                    ^
+  859|        parcelNote,
+  860|        qrValue: row.shipment.code,[39m
+      at constructor (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:365:19)
+      at TypeScriptParserMixin.raise (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:6599:19)
+      at Object.unterminated (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5664:20)
+      at readStringContents (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5406:16)
+      at TypeScriptParserMixin.readString (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:6498:9)
+      at TypeScriptParserMixin.getTokenFromCode (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:6258:14)
+      at TypeScriptParserMixin.getTokenFromCode (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:4797:11)
+      at TypeScriptParserMixin.getTokenFromCode (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9987:11)
+      at TypeScriptParserMixin.nextToken (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5782:10)
+      at TypeScriptParserMixin.next (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5692:10)
+      at TypeScriptParserMixin.parseCoverCallAndAsyncArrowHead (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11169:10)
+      at TypeScriptParserMixin.parseSubscript (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11120:19)
+      at TypeScriptParserMixin.parseSubscript (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9272:18)
+      at TypeScriptParserMixin.parseSubscripts (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11094:19)
+      at TypeScriptParserMixin.parseExprSubscripts (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11085:17)
+      at TypeScriptParserMixin.parseUpdate (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11066:21)
+      at TypeScriptParserMixin.parseMaybeUnary (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11046:23)
+      at TypeScriptParserMixin.parseMaybeUnary (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9837:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10899:61)
+      at TypeScriptParserMixin.parseExprOps (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10904:23)
+      at TypeScriptParserMixin.parseMaybeConditional (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10881:23)
+      at TypeScriptParserMixin.parseMaybeAssign (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10831:21)
+      at TypeScriptParserMixin.parseMaybeAssign (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9786:20)
+      at F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10800:39
+      at TypeScriptParserMixin.allowInAnd (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12421:16)
+      at TypeScriptParserMixin.parseMaybeAssignAllowIn (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10800:17)
+      at TypeScriptParserMixin.parseVar (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13384:91)
+      at TypeScriptParserMixin.parseVarStatement (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13230:10)
+      at TypeScriptParserMixin.parseVarStatement (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9408:31)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12851:23)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9508:18)
+      at TypeScriptParserMixin.parseStatementLike (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12767:17)
+      at TypeScriptParserMixin.parseStatementListItem (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12747:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13316:61)
+      at TypeScriptParserMixin.parseBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13309:10)
+      at TypeScriptParserMixin.parseBlock (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13297:10)
+      at TypeScriptParserMixin.parseFunctionBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12100:24)
+      at TypeScriptParserMixin.parseFunctionBodyAndFinish (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12086:10)
+      at TypeScriptParserMixin.parseFunctionBodyAndFinish (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9172:18)
+      at F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13445:12
+      at TypeScriptParserMixin.withSmartMixTopicForbiddingContext (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12403:14)
+      at TypeScriptParserMixin.parseFunction (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13444:10)
+      at TypeScriptParserMixin.parseFunctionStatement (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13125:17)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12791:21)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9508:18)
+      at TypeScriptParserMixin.parseStatementLike (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12767:17)
+      at TypeScriptParserMixin.parseStatementListItem (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12747:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13316:61)
+      at TypeScriptParserMixin.parseBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13309:10)
+      at TypeScriptParserMixin.parseBlock (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13297:10)
+[2m3:26:12 PM[22m [31m[1m[vite][22m[39m Pre-transform error: F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\src\main.tsx: Unterminated string constant. (834:11)
+
+[0m [90m 832 |[39m       [32m`Hub đích: ${receiverHubCode || destinationHubCode || 'N/A'}`[39m[33m,[39m
+ [90m 833 |[39m       [32m`Khu vá»±c: ${zoneCode || 'N/A'}`[39m[33m,[39m
+[31m[1m>[22m[39m[90m 834 |[39m     ][33m.[39mjoin([32m'[39m
+ [90m     |[39m            [31m[1m^[22m[39m
+ [90m 835 |[39m [32m');[39m
+ [90m 836 |[39m     [36mconst[39m deliveryInstruction [33m=[39m
+ [90m 837 |[39m       row[33m.[39mdeliveryNote [33m&&[39m row[33m.[39mdeliveryNote [33m!==[39m [32m'-'[39m[0m
+[2m3:26:12 PM[22m [31m[1m[vite][22m[39m [31mInternal server error: F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\src\main.tsx: Unterminated string constant. (834:11)
+
+[0m [90m 832 |[31m       [32m`Hub đích: ${receiverHubCode || destinationHubCode || 'N/A'}`[31m[33m,[31m
+ [90m 833 |[31m       [32m`Khu vá»±c: ${zoneCode || 'N/A'}`[31m[33m,[31m
+[31m[1m>[22m[31m[90m 834 |[31m     ][33m.[31mjoin([32m'[31m
+ [90m     |[31m            [31m[1m^[22m[31m
+ [90m 835 |[31m [32m');[31m
+ [90m 836 |[31m     [36mconst[31m deliveryInstruction [33m=[31m
+ [90m 837 |[31m       row[33m.[31mdeliveryNote [33m&&[31m row[33m.[31mdeliveryNote [33m!==[31m [32m'-'[31m[0m[39m
+  Plugin: [35mvite:react-babel[39m
+  File: [36mF:/Nam4_Ky2/CongNgheMoi/DoAnLogisticManagementSystem/logistics-management-system/apps/merchant-web/src/main.tsx[39m:834:11
+[33m  857|        zoneCode,
+  858|        itemDescription: row.itemType,
+  859|        parcelNote,
+     |                ^
+  860|        qrValue: row.shipment.code,
+  861|        routeTag,[39m
+      at constructor (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:365:19)
+      at TypeScriptParserMixin.raise (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:6599:19)
+      at Object.unterminated (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5664:20)
+      at readStringContents (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5406:16)
+      at TypeScriptParserMixin.readString (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:6498:9)
+      at TypeScriptParserMixin.getTokenFromCode (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:6258:14)
+      at TypeScriptParserMixin.getTokenFromCode (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:4797:11)
+      at TypeScriptParserMixin.getTokenFromCode (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9987:11)
+      at TypeScriptParserMixin.nextToken (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5782:10)
+      at TypeScriptParserMixin.next (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5692:10)
+      at TypeScriptParserMixin.parseCoverCallAndAsyncArrowHead (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11169:10)
+      at TypeScriptParserMixin.parseSubscript (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11120:19)
+      at TypeScriptParserMixin.parseSubscript (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9272:18)
+      at TypeScriptParserMixin.parseSubscripts (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11094:19)
+      at TypeScriptParserMixin.parseExprSubscripts (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11085:17)
+      at TypeScriptParserMixin.parseUpdate (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11066:21)
+      at TypeScriptParserMixin.parseMaybeUnary (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11046:23)
+      at TypeScriptParserMixin.parseMaybeUnary (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9837:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10899:61)
+      at TypeScriptParserMixin.parseExprOps (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10904:23)
+      at TypeScriptParserMixin.parseMaybeConditional (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10881:23)
+      at TypeScriptParserMixin.parseMaybeAssign (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10831:21)
+      at TypeScriptParserMixin.parseMaybeAssign (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9786:20)
+      at F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10800:39
+      at TypeScriptParserMixin.allowInAnd (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12421:16)
+      at TypeScriptParserMixin.parseMaybeAssignAllowIn (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10800:17)
+      at TypeScriptParserMixin.parseVar (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13384:91)
+      at TypeScriptParserMixin.parseVarStatement (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13230:10)
+      at TypeScriptParserMixin.parseVarStatement (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9408:31)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12851:23)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9508:18)
+      at TypeScriptParserMixin.parseStatementLike (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12767:17)
+      at TypeScriptParserMixin.parseStatementListItem (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12747:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13316:61)
+      at TypeScriptParserMixin.parseBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13309:10)
+      at TypeScriptParserMixin.parseBlock (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13297:10)
+      at TypeScriptParserMixin.parseFunctionBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12100:24)
+      at TypeScriptParserMixin.parseFunctionBodyAndFinish (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12086:10)
+      at TypeScriptParserMixin.parseFunctionBodyAndFinish (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9172:18)
+      at F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13445:12
+      at TypeScriptParserMixin.withSmartMixTopicForbiddingContext (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12403:14)
+      at TypeScriptParserMixin.parseFunction (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13444:10)
+      at TypeScriptParserMixin.parseFunctionStatement (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13125:17)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12791:21)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9508:18)
+      at TypeScriptParserMixin.parseStatementLike (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12767:17)
+      at TypeScriptParserMixin.parseStatementListItem (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12747:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13316:61)
+      at TypeScriptParserMixin.parseBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13309:10)
+      at TypeScriptParserMixin.parseBlock (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13297:10)
+[2m3:26:54 PM[22m [31m[1m[vite][22m[39m Pre-transform error: F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\src\main.tsx: Unterminated string constant. (834:11)
+
+[0m [90m 832 |[39m       [32m`Hub đích: ${receiverHubCode || destinationHubCode || 'N/A'}`[39m[33m,[39m
+ [90m 833 |[39m       [32m`Khu vá»±c: ${zoneCode || 'N/A'}`[39m[33m,[39m
+[31m[1m>[22m[39m[90m 834 |[39m     ][33m.[39mjoin([32m'[39m
+ [90m     |[39m            [31m[1m^[22m[39m
+ [90m 835 |[39m [32m');[39m
+ [90m 836 |[39m     [36mconst[39m deliveryInstruction [33m=[39m
+ [90m 837 |[39m       row[33m.[39mdeliveryNote [33m&&[39m row[33m.[39mdeliveryNote [33m!==[39m [32m'-'[39m[0m
+[2m3:26:54 PM[22m [31m[1m[vite][22m[39m [31mInternal server error: F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\src\main.tsx: Unterminated string constant. (834:11)
+
+[0m [90m 832 |[31m       [32m`Hub đích: ${receiverHubCode || destinationHubCode || 'N/A'}`[31m[33m,[31m
+ [90m 833 |[31m       [32m`Khu vá»±c: ${zoneCode || 'N/A'}`[31m[33m,[31m
+[31m[1m>[22m[31m[90m 834 |[31m     ][33m.[31mjoin([32m'[31m
+ [90m     |[31m            [31m[1m^[22m[31m
+ [90m 835 |[31m [32m');[31m
+ [90m 836 |[31m     [36mconst[31m deliveryInstruction [33m=[31m
+ [90m 837 |[31m       row[33m.[31mdeliveryNote [33m&&[31m row[33m.[31mdeliveryNote [33m!==[31m [32m'-'[31m[0m[39m
+  Plugin: [35mvite:react-babel[39m
+  File: [36mF:/Nam4_Ky2/CongNgheMoi/DoAnLogisticManagementSystem/logistics-management-system/apps/merchant-web/src/main.tsx[39m:834:11
+[33m  857|        zoneCode,
+  858|        itemDescription: row.itemType,
+  859|        parcelNote,
+     |                ^
+  860|        qrValue: row.shipment.code,
+  861|        routeTag,[39m
+      at constructor (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:365:19)
+      at TypeScriptParserMixin.raise (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:6599:19)
+      at Object.unterminated (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5664:20)
+      at readStringContents (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5406:16)
+      at TypeScriptParserMixin.readString (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:6498:9)
+      at TypeScriptParserMixin.getTokenFromCode (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:6258:14)
+      at TypeScriptParserMixin.getTokenFromCode (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:4797:11)
+      at TypeScriptParserMixin.getTokenFromCode (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9987:11)
+      at TypeScriptParserMixin.nextToken (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5782:10)
+      at TypeScriptParserMixin.next (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5692:10)
+      at TypeScriptParserMixin.parseCoverCallAndAsyncArrowHead (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11169:10)
+      at TypeScriptParserMixin.parseSubscript (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11120:19)
+      at TypeScriptParserMixin.parseSubscript (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9272:18)
+      at TypeScriptParserMixin.parseSubscripts (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11094:19)
+      at TypeScriptParserMixin.parseExprSubscripts (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11085:17)
+      at TypeScriptParserMixin.parseUpdate (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11066:21)
+      at TypeScriptParserMixin.parseMaybeUnary (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11046:23)
+      at TypeScriptParserMixin.parseMaybeUnary (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9837:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10899:61)
+      at TypeScriptParserMixin.parseExprOps (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10904:23)
+      at TypeScriptParserMixin.parseMaybeConditional (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10881:23)
+      at TypeScriptParserMixin.parseMaybeAssign (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10831:21)
+      at TypeScriptParserMixin.parseMaybeAssign (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9786:20)
+      at F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10800:39
+      at TypeScriptParserMixin.allowInAnd (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12421:16)
+      at TypeScriptParserMixin.parseMaybeAssignAllowIn (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10800:17)
+      at TypeScriptParserMixin.parseVar (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13384:91)
+      at TypeScriptParserMixin.parseVarStatement (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13230:10)
+      at TypeScriptParserMixin.parseVarStatement (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9408:31)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12851:23)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9508:18)
+      at TypeScriptParserMixin.parseStatementLike (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12767:17)
+      at TypeScriptParserMixin.parseStatementListItem (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12747:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13316:61)
+      at TypeScriptParserMixin.parseBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13309:10)
+      at TypeScriptParserMixin.parseBlock (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13297:10)
+      at TypeScriptParserMixin.parseFunctionBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12100:24)
+      at TypeScriptParserMixin.parseFunctionBodyAndFinish (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12086:10)
+      at TypeScriptParserMixin.parseFunctionBodyAndFinish (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9172:18)
+      at F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13445:12
+      at TypeScriptParserMixin.withSmartMixTopicForbiddingContext (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12403:14)
+      at TypeScriptParserMixin.parseFunction (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13444:10)
+      at TypeScriptParserMixin.parseFunctionStatement (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13125:17)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12791:21)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9508:18)
+      at TypeScriptParserMixin.parseStatementLike (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12767:17)
+      at TypeScriptParserMixin.parseStatementListItem (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12747:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13316:61)
+      at TypeScriptParserMixin.parseBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13309:10)
+      at TypeScriptParserMixin.parseBlock (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13297:10)
+[2m3:28:15 PM[22m [31m[1m[vite][22m[39m Pre-transform error: F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\src\main.tsx: Unterminated string constant. (834:11)
+
+[0m [90m 832 |[39m       [32m`Hub đích: ${receiverHubCode || destinationHubCode || 'N/A'}`[39m[33m,[39m
+ [90m 833 |[39m       [32m`Khu vá»±c: ${zoneCode || 'N/A'}`[39m[33m,[39m
+[31m[1m>[22m[39m[90m 834 |[39m     ][33m.[39mjoin([32m'[39m
+ [90m     |[39m            [31m[1m^[22m[39m
+ [90m 835 |[39m [32m');[39m
+ [90m 836 |[39m     [36mconst[39m deliveryInstruction [33m=[39m
+ [90m 837 |[39m       row[33m.[39mdeliveryNote [33m&&[39m row[33m.[39mdeliveryNote [33m!==[39m [32m'-'[39m[0m
+[2m3:28:15 PM[22m [31m[1m[vite][22m[39m [31mInternal server error: F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\src\main.tsx: Unterminated string constant. (834:11)
+
+[0m [90m 832 |[31m       [32m`Hub đích: ${receiverHubCode || destinationHubCode || 'N/A'}`[31m[33m,[31m
+ [90m 833 |[31m       [32m`Khu vá»±c: ${zoneCode || 'N/A'}`[31m[33m,[31m
+[31m[1m>[22m[31m[90m 834 |[31m     ][33m.[31mjoin([32m'[31m
+ [90m     |[31m            [31m[1m^[22m[31m
+ [90m 835 |[31m [32m');[31m
+ [90m 836 |[31m     [36mconst[31m deliveryInstruction [33m=[31m
+ [90m 837 |[31m       row[33m.[31mdeliveryNote [33m&&[31m row[33m.[31mdeliveryNote [33m!==[31m [32m'-'[31m[0m[39m
+  Plugin: [35mvite:react-babel[39m
+  File: [36mF:/Nam4_Ky2/CongNgheMoi/DoAnLogisticManagementSystem/logistics-management-system/apps/merchant-web/src/main.tsx[39m:834:11
+[33m  857|        zoneCode,
+  858|        itemDescription: row.itemType,
+  859|        parcelNote,
+     |                ^
+  860|        qrValue: row.shipment.code,
+  861|        routeTag,[39m
+      at constructor (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:365:19)
+      at TypeScriptParserMixin.raise (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:6599:19)
+      at Object.unterminated (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5664:20)
+      at readStringContents (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5406:16)
+      at TypeScriptParserMixin.readString (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:6498:9)
+      at TypeScriptParserMixin.getTokenFromCode (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:6258:14)
+      at TypeScriptParserMixin.getTokenFromCode (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:4797:11)
+      at TypeScriptParserMixin.getTokenFromCode (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9987:11)
+      at TypeScriptParserMixin.nextToken (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5782:10)
+      at TypeScriptParserMixin.next (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5692:10)
+      at TypeScriptParserMixin.parseCoverCallAndAsyncArrowHead (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11169:10)
+      at TypeScriptParserMixin.parseSubscript (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11120:19)
+      at TypeScriptParserMixin.parseSubscript (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9272:18)
+      at TypeScriptParserMixin.parseSubscripts (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11094:19)
+      at TypeScriptParserMixin.parseExprSubscripts (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11085:17)
+      at TypeScriptParserMixin.parseUpdate (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11066:21)
+      at TypeScriptParserMixin.parseMaybeUnary (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11046:23)
+      at TypeScriptParserMixin.parseMaybeUnary (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9837:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10899:61)
+      at TypeScriptParserMixin.parseExprOps (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10904:23)
+      at TypeScriptParserMixin.parseMaybeConditional (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10881:23)
+      at TypeScriptParserMixin.parseMaybeAssign (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10831:21)
+      at TypeScriptParserMixin.parseMaybeAssign (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9786:20)
+      at F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10800:39
+      at TypeScriptParserMixin.allowInAnd (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12421:16)
+      at TypeScriptParserMixin.parseMaybeAssignAllowIn (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10800:17)
+      at TypeScriptParserMixin.parseVar (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13384:91)
+      at TypeScriptParserMixin.parseVarStatement (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13230:10)
+      at TypeScriptParserMixin.parseVarStatement (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9408:31)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12851:23)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9508:18)
+      at TypeScriptParserMixin.parseStatementLike (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12767:17)
+      at TypeScriptParserMixin.parseStatementListItem (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12747:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13316:61)
+      at TypeScriptParserMixin.parseBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13309:10)
+      at TypeScriptParserMixin.parseBlock (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13297:10)
+      at TypeScriptParserMixin.parseFunctionBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12100:24)
+      at TypeScriptParserMixin.parseFunctionBodyAndFinish (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12086:10)
+      at TypeScriptParserMixin.parseFunctionBodyAndFinish (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9172:18)
+      at F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13445:12
+      at TypeScriptParserMixin.withSmartMixTopicForbiddingContext (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12403:14)
+      at TypeScriptParserMixin.parseFunction (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13444:10)
+      at TypeScriptParserMixin.parseFunctionStatement (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13125:17)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12791:21)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9508:18)
+      at TypeScriptParserMixin.parseStatementLike (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12767:17)
+      at TypeScriptParserMixin.parseStatementListItem (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12747:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13316:61)
+      at TypeScriptParserMixin.parseBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13309:10)
+      at TypeScriptParserMixin.parseBlock (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13297:10)
+[2m3:29:18 PM[22m [31m[1m[vite][22m[39m Pre-transform error: F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\src\main.tsx: Unterminated string constant. (834:11)
+
+[0m [90m 832 |[39m       [32m`Hub đích: ${receiverHubCode || destinationHubCode || 'N/A'}`[39m[33m,[39m
+ [90m 833 |[39m       [32m`Khu vá»±c: ${zoneCode || 'N/A'}`[39m[33m,[39m
+[31m[1m>[22m[39m[90m 834 |[39m     ][33m.[39mjoin([32m'[39m
+ [90m     |[39m            [31m[1m^[22m[39m
+ [90m 835 |[39m [32m');[39m
+ [90m 836 |[39m     [36mconst[39m deliveryInstruction [33m=[39m
+ [90m 837 |[39m       row[33m.[39mdeliveryNote [33m&&[39m row[33m.[39mdeliveryNote [33m!==[39m [32m'-'[39m[0m
+[2m3:29:18 PM[22m [31m[1m[vite][22m[39m [31mInternal server error: F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\src\main.tsx: Unterminated string constant. (834:11)
+
+[0m [90m 832 |[31m       [32m`Hub đích: ${receiverHubCode || destinationHubCode || 'N/A'}`[31m[33m,[31m
+ [90m 833 |[31m       [32m`Khu vá»±c: ${zoneCode || 'N/A'}`[31m[33m,[31m
+[31m[1m>[22m[31m[90m 834 |[31m     ][33m.[31mjoin([32m'[31m
+ [90m     |[31m            [31m[1m^[22m[31m
+ [90m 835 |[31m [32m');[31m
+ [90m 836 |[31m     [36mconst[31m deliveryInstruction [33m=[31m
+ [90m 837 |[31m       row[33m.[31mdeliveryNote [33m&&[31m row[33m.[31mdeliveryNote [33m!==[31m [32m'-'[31m[0m[39m
+  Plugin: [35mvite:react-babel[39m
+  File: [36mF:/Nam4_Ky2/CongNgheMoi/DoAnLogisticManagementSystem/logistics-management-system/apps/merchant-web/src/main.tsx[39m:834:11
+[33m  857|        zoneCode,
+  858|        itemDescription: row.itemType,
+  859|        parcelNote,
+     |                ^
+  860|        qrValue: row.shipment.code,
+  861|        routeTag,[39m
+      at constructor (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:365:19)
+      at TypeScriptParserMixin.raise (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:6599:19)
+      at Object.unterminated (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5664:20)
+      at readStringContents (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5406:16)
+      at TypeScriptParserMixin.readString (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:6498:9)
+      at TypeScriptParserMixin.getTokenFromCode (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:6258:14)
+      at TypeScriptParserMixin.getTokenFromCode (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:4797:11)
+      at TypeScriptParserMixin.getTokenFromCode (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9987:11)
+      at TypeScriptParserMixin.nextToken (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5782:10)
+      at TypeScriptParserMixin.next (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5692:10)
+      at TypeScriptParserMixin.parseCoverCallAndAsyncArrowHead (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11169:10)
+      at TypeScriptParserMixin.parseSubscript (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11120:19)
+      at TypeScriptParserMixin.parseSubscript (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9272:18)
+      at TypeScriptParserMixin.parseSubscripts (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11094:19)
+      at TypeScriptParserMixin.parseExprSubscripts (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11085:17)
+      at TypeScriptParserMixin.parseUpdate (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11066:21)
+      at TypeScriptParserMixin.parseMaybeUnary (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11046:23)
+      at TypeScriptParserMixin.parseMaybeUnary (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9837:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10899:61)
+      at TypeScriptParserMixin.parseExprOps (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10904:23)
+      at TypeScriptParserMixin.parseMaybeConditional (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10881:23)
+      at TypeScriptParserMixin.parseMaybeAssign (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10831:21)
+      at TypeScriptParserMixin.parseMaybeAssign (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9786:20)
+      at F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10800:39
+      at TypeScriptParserMixin.allowInAnd (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12421:16)
+      at TypeScriptParserMixin.parseMaybeAssignAllowIn (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10800:17)
+      at TypeScriptParserMixin.parseVar (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13384:91)
+      at TypeScriptParserMixin.parseVarStatement (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13230:10)
+      at TypeScriptParserMixin.parseVarStatement (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9408:31)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12851:23)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9508:18)
+      at TypeScriptParserMixin.parseStatementLike (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12767:17)
+      at TypeScriptParserMixin.parseStatementListItem (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12747:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13316:61)
+      at TypeScriptParserMixin.parseBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13309:10)
+      at TypeScriptParserMixin.parseBlock (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13297:10)
+      at TypeScriptParserMixin.parseFunctionBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12100:24)
+      at TypeScriptParserMixin.parseFunctionBodyAndFinish (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12086:10)
+      at TypeScriptParserMixin.parseFunctionBodyAndFinish (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9172:18)
+      at F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13445:12
+      at TypeScriptParserMixin.withSmartMixTopicForbiddingContext (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12403:14)
+      at TypeScriptParserMixin.parseFunction (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13444:10)
+      at TypeScriptParserMixin.parseFunctionStatement (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13125:17)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12791:21)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9508:18)
+      at TypeScriptParserMixin.parseStatementLike (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12767:17)
+      at TypeScriptParserMixin.parseStatementListItem (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12747:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13316:61)
+      at TypeScriptParserMixin.parseBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13309:10)
+      at TypeScriptParserMixin.parseBlock (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13297:10)
+[2m3:30:39 PM[22m [31m[1m[vite][22m[39m Pre-transform error: F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\src\main.tsx: Unterminated string constant. (834:11)
+
+[0m [90m 832 |[39m       [32m`Hub đích: ${receiverHubCode || destinationHubCode || 'N/A'}`[39m[33m,[39m
+ [90m 833 |[39m       [32m`Khu vá»±c: ${zoneCode || 'N/A'}`[39m[33m,[39m
+[31m[1m>[22m[39m[90m 834 |[39m     ][33m.[39mjoin([32m'[39m
+ [90m     |[39m            [31m[1m^[22m[39m
+ [90m 835 |[39m [32m');[39m
+ [90m 836 |[39m     [36mconst[39m deliveryInstruction [33m=[39m
+ [90m 837 |[39m       row[33m.[39mdeliveryNote [33m&&[39m row[33m.[39mdeliveryNote [33m!==[39m [32m'-'[39m[0m
+[2m3:30:40 PM[22m [31m[1m[vite][22m[39m [31mInternal server error: F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\src\main.tsx: Unterminated string constant. (834:11)
+
+[0m [90m 832 |[31m       [32m`Hub đích: ${receiverHubCode || destinationHubCode || 'N/A'}`[31m[33m,[31m
+ [90m 833 |[31m       [32m`Khu vá»±c: ${zoneCode || 'N/A'}`[31m[33m,[31m
+[31m[1m>[22m[31m[90m 834 |[31m     ][33m.[31mjoin([32m'[31m
+ [90m     |[31m            [31m[1m^[22m[31m
+ [90m 835 |[31m [32m');[31m
+ [90m 836 |[31m     [36mconst[31m deliveryInstruction [33m=[31m
+ [90m 837 |[31m       row[33m.[31mdeliveryNote [33m&&[31m row[33m.[31mdeliveryNote [33m!==[31m [32m'-'[31m[0m[39m
+  Plugin: [35mvite:react-babel[39m
+  File: [36mF:/Nam4_Ky2/CongNgheMoi/DoAnLogisticManagementSystem/logistics-management-system/apps/merchant-web/src/main.tsx[39m:834:11
+[33m  857|        zoneCode,
+  858|        itemDescription: row.itemType,
+  859|        parcelNote,
+     |                ^
+  860|        qrValue: row.shipment.code,
+  861|        routeTag,[39m
+      at constructor (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:365:19)
+      at TypeScriptParserMixin.raise (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:6599:19)
+      at Object.unterminated (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5664:20)
+      at readStringContents (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5406:16)
+      at TypeScriptParserMixin.readString (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:6498:9)
+      at TypeScriptParserMixin.getTokenFromCode (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:6258:14)
+      at TypeScriptParserMixin.getTokenFromCode (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:4797:11)
+      at TypeScriptParserMixin.getTokenFromCode (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9987:11)
+      at TypeScriptParserMixin.nextToken (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5782:10)
+      at TypeScriptParserMixin.next (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5692:10)
+      at TypeScriptParserMixin.parseCoverCallAndAsyncArrowHead (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11169:10)
+      at TypeScriptParserMixin.parseSubscript (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11120:19)
+      at TypeScriptParserMixin.parseSubscript (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9272:18)
+      at TypeScriptParserMixin.parseSubscripts (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11094:19)
+      at TypeScriptParserMixin.parseExprSubscripts (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11085:17)
+      at TypeScriptParserMixin.parseUpdate (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11066:21)
+      at TypeScriptParserMixin.parseMaybeUnary (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11046:23)
+      at TypeScriptParserMixin.parseMaybeUnary (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9837:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10899:61)
+      at TypeScriptParserMixin.parseExprOps (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10904:23)
+      at TypeScriptParserMixin.parseMaybeConditional (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10881:23)
+      at TypeScriptParserMixin.parseMaybeAssign (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10831:21)
+      at TypeScriptParserMixin.parseMaybeAssign (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9786:20)
+      at F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10800:39
+      at TypeScriptParserMixin.allowInAnd (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12421:16)
+      at TypeScriptParserMixin.parseMaybeAssignAllowIn (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10800:17)
+      at TypeScriptParserMixin.parseVar (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13384:91)
+      at TypeScriptParserMixin.parseVarStatement (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13230:10)
+      at TypeScriptParserMixin.parseVarStatement (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9408:31)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12851:23)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9508:18)
+      at TypeScriptParserMixin.parseStatementLike (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12767:17)
+      at TypeScriptParserMixin.parseStatementListItem (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12747:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13316:61)
+      at TypeScriptParserMixin.parseBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13309:10)
+      at TypeScriptParserMixin.parseBlock (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13297:10)
+      at TypeScriptParserMixin.parseFunctionBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12100:24)
+      at TypeScriptParserMixin.parseFunctionBodyAndFinish (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12086:10)
+      at TypeScriptParserMixin.parseFunctionBodyAndFinish (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9172:18)
+      at F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13445:12
+      at TypeScriptParserMixin.withSmartMixTopicForbiddingContext (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12403:14)
+      at TypeScriptParserMixin.parseFunction (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13444:10)
+      at TypeScriptParserMixin.parseFunctionStatement (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13125:17)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12791:21)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9508:18)
+      at TypeScriptParserMixin.parseStatementLike (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12767:17)
+      at TypeScriptParserMixin.parseStatementListItem (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12747:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13316:61)
+      at TypeScriptParserMixin.parseBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13309:10)
+      at TypeScriptParserMixin.parseBlock (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13297:10)
+[2m3:31:06 PM[22m [31m[1m[vite][22m[39m Pre-transform error: F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\src\main.tsx: Unterminated string constant. (834:11)
+
+[0m [90m 832 |[39m       [32m`Hub đích: ${receiverHubCode || destinationHubCode || 'N/A'}`[39m[33m,[39m
+ [90m 833 |[39m       [32m`Khu vá»±c: ${zoneCode || 'N/A'}`[39m[33m,[39m
+[31m[1m>[22m[39m[90m 834 |[39m     ][33m.[39mjoin([32m'[39m
+ [90m     |[39m            [31m[1m^[22m[39m
+ [90m 835 |[39m [32m');[39m
+ [90m 836 |[39m     [36mconst[39m deliveryInstruction [33m=[39m
+ [90m 837 |[39m       row[33m.[39mdeliveryNote [33m&&[39m row[33m.[39mdeliveryNote [33m!==[39m [32m'-'[39m[0m
+[2m3:31:06 PM[22m [31m[1m[vite][22m[39m [31mInternal server error: F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\src\main.tsx: Unterminated string constant. (834:11)
+
+[0m [90m 832 |[31m       [32m`Hub đích: ${receiverHubCode || destinationHubCode || 'N/A'}`[31m[33m,[31m
+ [90m 833 |[31m       [32m`Khu vá»±c: ${zoneCode || 'N/A'}`[31m[33m,[31m
+[31m[1m>[22m[31m[90m 834 |[31m     ][33m.[31mjoin([32m'[31m
+ [90m     |[31m            [31m[1m^[22m[31m
+ [90m 835 |[31m [32m');[31m
+ [90m 836 |[31m     [36mconst[31m deliveryInstruction [33m=[31m
+ [90m 837 |[31m       row[33m.[31mdeliveryNote [33m&&[31m row[33m.[31mdeliveryNote [33m!==[31m [32m'-'[31m[0m[39m
+  Plugin: [35mvite:react-babel[39m
+  File: [36mF:/Nam4_Ky2/CongNgheMoi/DoAnLogisticManagementSystem/logistics-management-system/apps/merchant-web/src/main.tsx[39m:834:11
+[33m  857|        zoneCode,
+  858|        itemDescription: row.itemType,
+  859|        parcelNote,
+     |                ^
+  860|        qrValue: row.shipment.code,
+  861|        routeTag,[39m
+      at constructor (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:365:19)
+      at TypeScriptParserMixin.raise (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:6599:19)
+      at Object.unterminated (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5664:20)
+      at readStringContents (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5406:16)
+      at TypeScriptParserMixin.readString (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:6498:9)
+      at TypeScriptParserMixin.getTokenFromCode (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:6258:14)
+      at TypeScriptParserMixin.getTokenFromCode (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:4797:11)
+      at TypeScriptParserMixin.getTokenFromCode (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9987:11)
+      at TypeScriptParserMixin.nextToken (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5782:10)
+      at TypeScriptParserMixin.next (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:5692:10)
+      at TypeScriptParserMixin.parseCoverCallAndAsyncArrowHead (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11169:10)
+      at TypeScriptParserMixin.parseSubscript (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11120:19)
+      at TypeScriptParserMixin.parseSubscript (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9272:18)
+      at TypeScriptParserMixin.parseSubscripts (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11094:19)
+      at TypeScriptParserMixin.parseExprSubscripts (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11085:17)
+      at TypeScriptParserMixin.parseUpdate (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11066:21)
+      at TypeScriptParserMixin.parseMaybeUnary (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:11046:23)
+      at TypeScriptParserMixin.parseMaybeUnary (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9837:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10899:61)
+      at TypeScriptParserMixin.parseExprOps (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10904:23)
+      at TypeScriptParserMixin.parseMaybeConditional (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10881:23)
+      at TypeScriptParserMixin.parseMaybeAssign (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10831:21)
+      at TypeScriptParserMixin.parseMaybeAssign (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9786:20)
+      at F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10800:39
+      at TypeScriptParserMixin.allowInAnd (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12421:16)
+      at TypeScriptParserMixin.parseMaybeAssignAllowIn (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:10800:17)
+      at TypeScriptParserMixin.parseVar (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13384:91)
+      at TypeScriptParserMixin.parseVarStatement (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13230:10)
+      at TypeScriptParserMixin.parseVarStatement (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9408:31)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12851:23)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9508:18)
+      at TypeScriptParserMixin.parseStatementLike (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12767:17)
+      at TypeScriptParserMixin.parseStatementListItem (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12747:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13316:61)
+      at TypeScriptParserMixin.parseBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13309:10)
+      at TypeScriptParserMixin.parseBlock (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13297:10)
+      at TypeScriptParserMixin.parseFunctionBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12100:24)
+      at TypeScriptParserMixin.parseFunctionBodyAndFinish (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12086:10)
+      at TypeScriptParserMixin.parseFunctionBodyAndFinish (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9172:18)
+      at F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13445:12
+      at TypeScriptParserMixin.withSmartMixTopicForbiddingContext (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12403:14)
+      at TypeScriptParserMixin.parseFunction (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13444:10)
+      at TypeScriptParserMixin.parseFunctionStatement (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13125:17)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12791:21)
+      at TypeScriptParserMixin.parseStatementContent (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:9508:18)
+      at TypeScriptParserMixin.parseStatementLike (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12767:17)
+      at TypeScriptParserMixin.parseStatementListItem (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:12747:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13316:61)
+      at TypeScriptParserMixin.parseBlockBody (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13309:10)
+      at TypeScriptParserMixin.parseBlock (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\merchant-web\node_modules\@babel\parser\lib\index.js:13297:10)
+[2m4:34:16 PM[22m [31m[1m[vite][22m[39m Pre-transform error: Failed to load url /src/printing/shippingLabelPrint.ts (resolved id: F:/Nam4_Ky2/CongNgheMoi/DoAnLogisticManagementSystem/logistics-management-system/apps/merchant-web/src/printing/shippingLabelPrint.ts) in F:/Nam4_Ky2/CongNgheMoi/DoAnLogisticManagementSystem/logistics-management-system/apps/merchant-web/src/main.tsx. Does the file exist?
