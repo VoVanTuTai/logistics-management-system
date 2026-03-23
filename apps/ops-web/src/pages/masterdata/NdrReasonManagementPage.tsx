@@ -261,7 +261,7 @@ export function NdrReasonManagementPage(): React.JSX.Element {
           }
           style={styles.input}
         >
-          <option value="">Tat ca trang thai</option>
+          <option value="">Tất cả trang thai</option>
           <option value="true">ACTIVE</option>
           <option value="false">INACTIVE</option>
         </select>
@@ -285,12 +285,12 @@ export function NdrReasonManagementPage(): React.JSX.Element {
         </p>
       ) : null}
 
-      {reasonsQuery.isLoading ? <p>Dang tai ly do NDR...</p> : null}
+      {reasonsQuery.isLoading ? <p>Đang tải ly do NDR...</p> : null}
       {reasonsQuery.isError ? (
         <p style={styles.errorText}>{getErrorMessage(reasonsQuery.error)}</p>
       ) : null}
       {reasonsQuery.isSuccess && (reasonsQuery.data?.length ?? 0) === 0 ? (
-        <p>Khong tim thay ly do NDR.</p>
+        <p>Không tìm thấy ly do NDR.</p>
       ) : null}
 
       {reasonsQuery.isSuccess && (reasonsQuery.data?.length ?? 0) > 0 ? (

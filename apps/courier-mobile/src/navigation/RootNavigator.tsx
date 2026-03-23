@@ -98,21 +98,21 @@ function MainTabs(): React.JSX.Element {
         name="Tasks"
         component={TaskListScreen}
         options={{
-          tabBarLabel: 'Nhiem vu',
+          tabBarLabel: 'Nhiệm vụ',
         }}
       />
       <MainTab.Screen
         name="Stats"
         component={StatsScreen}
         options={{
-          tabBarLabel: 'Thong ke',
+          tabBarLabel: 'Thống kê',
         }}
       />
       <MainTab.Screen
         name="Scan"
         component={ScanHomeScreen}
         options={{
-          tabBarLabel: 'Quet ma',
+          tabBarLabel: 'Quét mã',
         }}
       />
       <MainTab.Screen
@@ -126,7 +126,7 @@ function MainTabs(): React.JSX.Element {
         name="Profile"
         component={ProfileScreen}
         options={{
-          tabBarLabel: 'Ca nhan',
+          tabBarLabel: 'Cá nhân',
           tabBarBadge: offlinePendingCount > 0 ? offlinePendingCount : undefined,
           tabBarBadgeStyle: styles.badge,
         }}
@@ -168,12 +168,12 @@ export function RootNavigator(): React.JSX.Element {
           <RootStack.Screen
             name="PickupScan"
             component={PickupScanScreen}
-            options={{ title: 'Quet pickup' }}
+            options={{ title: 'Quét pickup' }}
           />
           <RootStack.Screen
             name="HubScan"
             component={HubScanScreen}
-            options={{ title: 'Quet hub' }}
+            options={{ title: 'Quét hub' }}
           />
           <RootStack.Screen
             name="DeliverySuccess"

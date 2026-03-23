@@ -31,7 +31,7 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
       <Screen scroll={false}>
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.centeredText}>Dang tai chi tiet...</Text>
+          <Text style={styles.centeredText}>Đang tải chi tiet...</Text>
         </View>
       </Screen>
     );
@@ -47,7 +47,7 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
               : 'Tai task detail that bai.'}
           </Text>
           <Pressable onPress={() => void taskQuery.refetch()} style={styles.retryButton}>
-            <Text style={styles.retryButtonText}>Thu lai</Text>
+            <Text style={styles.retryButtonText}>Thử lại</Text>
           </Pressable>
         </View>
       </Screen>
@@ -60,7 +60,7 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
     return (
       <Screen scroll={false}>
         <View style={styles.centered}>
-          <Text style={styles.errorText}>Khong tim thay task.</Text>
+          <Text style={styles.errorText}>Không tìm thấy task.</Text>
         </View>
       </Screen>
     );

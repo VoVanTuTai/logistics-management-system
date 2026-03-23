@@ -272,8 +272,8 @@ export function DashboardPage(): React.JSX.Element {
       icon: 'M',
     },
     {
-      title: 'Quet hub',
-      description: 'Gui quet inbound va outbound.',
+      title: 'Quét hub',
+      description: 'Gửi quét inbound va outbound.',
       to: routePaths.scans,
       icon: 'H',
     },
@@ -284,15 +284,15 @@ export function DashboardPage(): React.JSX.Element {
       icon: 'N',
     },
     {
-      title: 'Tra cuu hanh trinh',
-      description: 'Tra cuu nhanh trang thai van don.',
+      title: 'Tra cứu hanh trinh',
+      description: 'Tra cứu nhanh trang thai van don.',
       to: routePaths.tracking,
       icon: 'L',
     },
   ] as const;
   const notices = [
     'Dashboard chi lay du lieu qua reporting-service, khong tinh KPI client-side.',
-    'Tai khoan OPS duoc gioi han theo hub da gan.',
+    'Tài khoản OPS duoc gioi han theo hub da gan.',
     'Neu can thay doi pham vi hub, cap nhat hubCodes trong admin.',
   ] as const;
   const quickApps = [
@@ -354,13 +354,13 @@ export function DashboardPage(): React.JSX.Element {
             <header className="ops-card__header">
               <h3>Hub dang quan ly</h3>
             </header>
-            {hubsQuery.isLoading ? <p className="ops-state">Dang tai thong tin hub...</p> : null}
+            {hubsQuery.isLoading ? <p className="ops-state">Đang tải thong tin hub...</p> : null}
             {hubsQuery.isError ? (
               <p className="ops-state ops-state--error">{getErrorMessage(hubsQuery.error)}</p>
             ) : null}
             {hubsQuery.isSuccess && !currentHub ? (
               <p className="ops-state">
-                Tai khoan chua duoc gan hub. Vui long gan hub trong Admin.
+                Tài khoản chua duoc gan hub. Vui long gan hub trong Admin.
               </p>
             ) : null}
             {currentHub ? (
@@ -375,15 +375,15 @@ export function DashboardPage(): React.JSX.Element {
                 </div>
                 <div>
                   <small>Zone</small>
-                  <strong>{currentHub.zoneCode ?? 'Khong co'}</strong>
+                  <strong>{currentHub.zoneCode ?? 'Không có'}</strong>
                 </div>
                 <div>
                   <small>Dia chi</small>
-                  <strong>{currentHubAddressText || 'Khong co'}</strong>
+                  <strong>{currentHubAddressText || 'Không có'}</strong>
                 </div>
                 <div>
                   <small>Pham vi phuc vu</small>
-                  <strong>{currentHubScopeText || 'Khong co'}</strong>
+                  <strong>{currentHubScopeText || 'Không có'}</strong>
                 </div>
               </div>
             ) : null}
@@ -402,15 +402,15 @@ export function DashboardPage(): React.JSX.Element {
             </div>
             {!effectiveHubCode ? (
               <p className="ops-state">
-                Tai khoan chua duoc gan hub, nen chua the tai danh sach shipper.
+                Tài khoản chua duoc gan hub, nen chua the tai danh sach shipper.
               </p>
             ) : null}
-            {shipperQuery.isLoading ? <p className="ops-state">Dang tai shipper...</p> : null}
+            {shipperQuery.isLoading ? <p className="ops-state">Đang tải shipper...</p> : null}
             {shipperQuery.isError ? (
               <p className="ops-state ops-state--error">{getErrorMessage(shipperQuery.error)}</p>
             ) : null}
             {shipperQuery.isSuccess && shippers.length === 0 ? (
-              <p className="ops-state">Khong co shipper nao thuoc hub hien tai.</p>
+              <p className="ops-state">Không có shipper nao thuoc hub hien tai.</p>
             ) : null}
             {shippers.length > 0 ? (
               <table className="ops-shipper-table">
@@ -442,12 +442,12 @@ export function DashboardPage(): React.JSX.Element {
             <header className="ops-card__header">
               <h3>Bo KPI</h3>
             </header>
-            {kpiQuery.isLoading ? <p className="ops-state">Dang tai KPI...</p> : null}
+            {kpiQuery.isLoading ? <p className="ops-state">Đang tải KPI...</p> : null}
             {kpiQuery.isError ? (
               <p className="ops-state ops-state--error">{getErrorMessage(kpiQuery.error)}</p>
             ) : null}
             {kpiQuery.isSuccess && kpiEntries.length === 0 ? (
-              <p className="ops-state">Khong co du lieu KPI.</p>
+              <p className="ops-state">Không có du lieu KPI.</p>
             ) : null}
             {kpiEntries.length > 0 ? <KpiCards kpis={kpiData ?? {}} /> : null}
           </article>
@@ -457,7 +457,7 @@ export function DashboardPage(): React.JSX.Element {
               <h3>Chi so theo ngay</h3>
             </header>
             {dailyMetricsQuery.isLoading ? (
-              <p className="ops-state">Dang tai chi so ngay...</p>
+              <p className="ops-state">Đang tải chi so ngay...</p>
             ) : null}
             {dailyMetricsQuery.isError ? (
               <p className="ops-state ops-state--error">
@@ -465,7 +465,7 @@ export function DashboardPage(): React.JSX.Element {
               </p>
             ) : null}
             {dailyMetricsQuery.isSuccess && dailyData.length === 0 ? (
-              <p className="ops-state">Khong co chi so theo ngay.</p>
+              <p className="ops-state">Không có chi so theo ngay.</p>
             ) : null}
             {dailyData.length > 0 ? (
               <div className="ops-dashboard__metrics-grid">
@@ -480,7 +480,7 @@ export function DashboardPage(): React.JSX.Element {
               <h3>Chi so theo thang</h3>
             </header>
             {monthlyMetricsQuery.isLoading ? (
-              <p className="ops-state">Dang tai chi so thang...</p>
+              <p className="ops-state">Đang tải chi so thang...</p>
             ) : null}
             {monthlyMetricsQuery.isError ? (
               <p className="ops-state ops-state--error">
@@ -488,7 +488,7 @@ export function DashboardPage(): React.JSX.Element {
               </p>
             ) : null}
             {monthlyMetricsQuery.isSuccess && monthlyData.length === 0 ? (
-              <p className="ops-state">Khong co chi so theo thang.</p>
+              <p className="ops-state">Không có chi so theo thang.</p>
             ) : null}
             {monthlyData.length > 0 ? (
               <div className="ops-dashboard__metrics-grid">

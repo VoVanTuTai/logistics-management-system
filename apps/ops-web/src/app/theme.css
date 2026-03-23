@@ -161,7 +161,7 @@ th {
   margin: 0;
   font-size: 30px;
   line-height: 1.05;
-  font-family: 'Space Grotesk', 'Manrope', sans-serif;
+  font-family: 'Manrope', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 }
 
 .ops-sidebar p {
@@ -249,7 +249,7 @@ th {
   margin: 0;
   font-size: 28px;
   line-height: 1.05;
-  font-family: 'Space Grotesk', 'Manrope', sans-serif;
+  font-family: 'Manrope', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 }
 
 .ops-topbar p {
@@ -325,7 +325,7 @@ th {
   margin: 10px 0 4px;
   font-size: 28px;
   line-height: 1.08;
-  font-family: 'Space Grotesk', 'Manrope', sans-serif;
+  font-family: 'Manrope', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 }
 
 .auth-subtitle {

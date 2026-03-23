@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+﻿import React, { useMemo } from 'react';
 import {
   BrowserRouter,
   NavLink,
@@ -46,8 +46,8 @@ function AdminLayout(): React.JSX.Element {
   const navItems = useMemo(
     () => [
       { label: 'Tong quan', to: routePaths.dashboard },
-      { label: 'Tai khoan Ops', to: routePaths.opsUsers },
-      { label: 'Tai khoan Shipper', to: routePaths.shipperUsers },
+      { label: 'Tài khoản Ops', to: routePaths.opsUsers },
+      { label: 'Tài khoản Shipper', to: routePaths.shipperUsers },
       { label: 'Hub', to: routePaths.masterdataHubs },
       { label: 'Zone', to: routePaths.masterdataZones },
       { label: 'Ly do NDR', to: routePaths.masterdataNdrReasons },
@@ -73,7 +73,7 @@ function AdminLayout(): React.JSX.Element {
           <strong>{session?.user.username ?? 'admin'}</strong>
           <small>vai tro: {(session?.user.roles ?? []).join(', ')}</small>
           <button type="button" onClick={() => void onLogout()}>
-            Dang xuat
+            Đăng xuất
           </button>
         </div>
 
@@ -132,3 +132,4 @@ export function AppRouter(): React.JSX.Element {
     </BrowserRouter>
   );
 }
+

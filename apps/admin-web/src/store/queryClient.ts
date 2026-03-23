@@ -1,4 +1,4 @@
-import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
+﻿import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
 
 import { getErrorMessage } from '../services/api/errors';
 import { useUiStore } from './uiStore';
@@ -11,7 +11,7 @@ export const queryClient = new QueryClient({
   }),
   mutationCache: new MutationCache({
     onMutate: () => {
-      useUiStore.getState().setGlobalLoading('Dang xu ly yeu cau...');
+      useUiStore.getState().setGlobalLoading('Đang xử lý yeu cau...');
     },
     onError: (error) => {
       useUiStore.getState().setGlobalError(getErrorMessage(error));
@@ -31,4 +31,5 @@ export const queryClient = new QueryClient({
     },
   },
 });
+
 
