@@ -40,7 +40,7 @@ export function LoginScreen(): React.JSX.Element {
           App chỉ gọi gateway-bff. Session/token được lưu an toàn bởi auth module.
         </Text>
         <Text style={styles.seedHint}>
-          Tài khoản seed local: courier.cr001 / courier123
+          Tài khoản seed local: courier.hcm1 / courier123456
         </Text>
 
         <LoginForm
