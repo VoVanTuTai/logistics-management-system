@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+﻿import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 
 import { routePaths } from '../../navigation/routes';
@@ -9,7 +9,7 @@ export function AdminDashboardPage(): React.JSX.Element {
 
   const stats = useMemo(
     () => [
-      { label: 'Nguoi dung', value: 'Khong co' },
+      { label: 'Nguoi dung', value: 'Không có' },
       { label: 'Vai tro', value: `${session?.user.roles.length ?? 0}` },
       { label: 'Hub', value: 'Quan ly tai Hub' },
       { label: 'Zone', value: 'Quan ly tai Zone' },
@@ -36,8 +36,8 @@ export function AdminDashboardPage(): React.JSX.Element {
           <p>Dieu phoi tap trung cho danh muc dung chung va cau hinh cap he thong.</p>
         </div>
         <div className="admin-user-summary">
-          <strong>{session?.user.username ?? 'Khong co'}</strong>
-          <small>vai tro: {(session?.user.roles ?? []).join(', ') || 'Khong co'}</small>
+          <strong>{session?.user.username ?? 'Không có'}</strong>
+          <small>vai tro: {(session?.user.roles ?? []).join(', ') || 'Không có'}</small>
         </div>
       </section>
 
@@ -61,3 +61,4 @@ export function AdminDashboardPage(): React.JSX.Element {
     </div>
   );
 }
+

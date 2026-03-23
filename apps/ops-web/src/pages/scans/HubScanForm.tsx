@@ -63,7 +63,7 @@ export function HubScanForm({
       ) : null}
       <textarea rows={3} placeholder="Ghi chu (khong bat buoc)" {...form.register('note')} />
       <button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? 'Dang gui quet...' : 'Gui quet'}
+        {isSubmitting ? 'Đang gửi quét...' : 'Gửi quét'}
       </button>
     </form>
   );

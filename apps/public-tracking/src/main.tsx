@@ -29,8 +29,8 @@ const gatewayBaseUrl = import.meta.env.VITE_GATEWAY_BFF_URL ?? '';
 const FLOW_STEPS = [
   'Tao don',
   'Da lay hang',
-  'Dang van chuyen',
-  'Dang giao hang',
+  'Đang vận chuyển',
+  'Đang giao hàng',
   'Da giao',
 ] as const;
 
@@ -249,7 +249,7 @@ function PublicTrackingApp(): React.JSX.Element {
             aria-label="Ma van don"
           />
           <button type="submit" disabled={loading}>
-            {loading ? 'Dang kiem tra...' : 'Tra cuu'}
+            {loading ? 'Đang kiểm tra...' : 'Tra cứu'}
           </button>
         </form>
         {error ? <p className="tracking-error">{error}</p> : null}
@@ -324,7 +324,7 @@ function PublicTrackingApp(): React.JSX.Element {
                 </div>
                 <div>
                   <dt>Ly do huy</dt>
-                  <dd>{shipment.cancellationReason ?? 'Khong co'}</dd>
+                  <dd>{shipment.cancellationReason ?? 'Không có'}</dd>
                 </div>
               </dl>
             </article>
@@ -354,7 +354,7 @@ function PublicTrackingApp(): React.JSX.Element {
 const rootElement = document.getElementById('root');
 
 if (!rootElement) {
-  throw new Error('Khong tim thay phan tu #root');
+  throw new Error('Không tìm thấy phần tử #root');
 }
 
 createRoot(rootElement).render(

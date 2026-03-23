@@ -370,7 +370,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
           onChange={(event) => setTaskTypeInput(event.target.value)}
           style={styles.select}
         >
-          <option value="">Tat ca loai tac vu</option>
+          <option value="">Tất cả loai tac vu</option>
           <option value="PICKUP">PICKUP</option>
           <option value="DELIVERY">DELIVERY</option>
           <option value="RETURN">RETURN</option>
@@ -382,7 +382,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
           onChange={(event) => setStatusInput(event.target.value)}
           style={styles.select}
         >
-          <option value="">Tat ca trang thai</option>
+          <option value="">Tất cả trang thai</option>
           <option value="CREATED">CREATED</option>
           <option value="ASSIGNED">ASSIGNED</option>
           <option value="COMPLETED">COMPLETED</option>
@@ -395,7 +395,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
           onChange={(event) => setDeliveryAreaInput(event.target.value)}
           style={styles.select}
         >
-          <option value="">Tat ca khu vuc giao</option>
+          <option value="">Tất cả khu vuc giao</option>
           {areaOptions.map((area) => (
             <option key={area} value={area}>
               {area}
@@ -434,7 +434,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
             onClick={() => void onBulkAssign()}
             disabled={bulkAssignLoading || selectedTaskIds.length === 0}
           >
-            {bulkAssignLoading ? 'Dang phan cong...' : 'Phan cong cac tac vu da chon'}
+            {bulkAssignLoading ? 'Đang phân công...' : 'Phan cong cac tac vu da chon'}
           </button>
         </div>
 
@@ -454,7 +454,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
         ) : null}
       </section>
 
-      {tasksQuery.isLoading ? <p>Dang tai tac vu...</p> : null}
+      {tasksQuery.isLoading ? <p>Đang tải tac vu...</p> : null}
       {tasksQuery.isError ? (
         <p style={styles.errorText}>{getErrorMessage(tasksQuery.error)}</p>
       ) : null}
@@ -471,8 +471,8 @@ export function TaskAssignmentPage(): React.JSX.Element {
       {tasksQuery.isSuccess && filteredTasks.length === 0 ? (
         <p>
           {assignedHubCodes.length === 0 && !canViewAllHubAreas
-            ? 'Khong hien thi duoc tac vu vi tai khoan OPS chua duoc gan hub.'
-            : 'Khong co tac vu phu hop bo loc hien tai.'}
+            ? 'Không hiển thị được tac vu vi tai khoan OPS chua duoc gan hub.'
+            : 'Không có tac vu phu hop bo loc hien tai.'}
         </p>
       ) : null}
 

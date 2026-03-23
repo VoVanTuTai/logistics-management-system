@@ -146,7 +146,7 @@ function formatAddressSummary(payload: HubAddressPayload): string {
     .map((value) => value.trim())
     .filter((value) => value.length > 0);
 
-  return parts.length > 0 ? parts.join(', ') : 'Khong co';
+  return parts.length > 0 ? parts.join(', ') : 'Không có';
 }
 
 export function HubManagementPage(): React.JSX.Element {
@@ -320,7 +320,7 @@ export function HubManagementPage(): React.JSX.Element {
           }
           style={styles.input}
         >
-          <option value="">Tat ca trang thai</option>
+          <option value="">Tất cả trang thai</option>
           <option value="true">ACTIVE</option>
           <option value="false">INACTIVE</option>
         </select>
@@ -355,12 +355,12 @@ export function HubManagementPage(): React.JSX.Element {
         </p>
       ) : null}
 
-      {hubsQuery.isLoading ? <p>Dang tai hub...</p> : null}
+      {hubsQuery.isLoading ? <p>Đang tải hub...</p> : null}
       {hubsQuery.isError ? (
         <p style={styles.errorText}>{getErrorMessage(hubsQuery.error)}</p>
       ) : null}
       {hubsQuery.isSuccess && (hubsQuery.data?.length ?? 0) === 0 ? (
-        <p>Khong tim thay hub.</p>
+        <p>Không tìm thấy hub.</p>
       ) : null}
 
       {hubsQuery.isSuccess && (hubsQuery.data?.length ?? 0) > 0 ? (
@@ -390,10 +390,10 @@ export function HubManagementPage(): React.JSX.Element {
                 <tr key={hub.id}>
                   <td style={styles.cell}>{hub.code}</td>
                   <td style={styles.cell}>{hub.name}</td>
-                  <td style={styles.cell}>{addressPayload.type || 'Khong co'}</td>
-                  <td style={styles.cell}>{hub.zoneCode ?? 'Khong co'}</td>
+                  <td style={styles.cell}>{addressPayload.type || 'Không có'}</td>
+                  <td style={styles.cell}>{hub.zoneCode ?? 'Không có'}</td>
                   <td style={styles.cell}>{formatAddressSummary(addressPayload)}</td>
-                  <td style={styles.cell}>{contactSummary || 'Khong co'}</td>
+                  <td style={styles.cell}>{contactSummary || 'Không có'}</td>
                   <td style={styles.cell}>
                     <MasterdataStatusPill isActive={hub.isActive} />
                   </td>
@@ -425,7 +425,7 @@ export function HubManagementPage(): React.JSX.Element {
             <strong>Ten:</strong> {selectedHub.name}
           </p>
           <p>
-            <strong>Zone:</strong> {selectedHub.zoneCode ?? 'Khong co'}
+            <strong>Zone:</strong> {selectedHub.zoneCode ?? 'Không có'}
           </p>
           <p>
             <strong>Trang thai:</strong> {selectedHub.isActive ? 'ACTIVE' : 'INACTIVE'}

@@ -149,7 +149,7 @@ function buildWalkInMetadata(
 
 function formatCurrency(value: number | null): string {
   if (value === null) {
-    return 'Khong co';
+    return 'Không có';
   }
 
   return `${new Intl.NumberFormat('en-US').format(value)} VND`;
@@ -186,14 +186,14 @@ function printWaybill(shipment: ShipmentListItemDto): void {
   <body style="font-family: Arial, sans-serif; padding: 16px;">
     <h2>Phieu Van Don ${escapeHtml(shipment.shipmentCode)}</h2>
     <p><strong>Trang thai:</strong> ${escapeHtml(shipment.currentStatus)}</p>
-    <p><strong>Nen tang:</strong> ${escapeHtml(shipment.platform ?? 'Khong co')}</p>
-    <p><strong>Dich vu:</strong> ${escapeHtml(shipment.serviceType ?? 'Khong co')}</p>
+    <p><strong>Nen tang:</strong> ${escapeHtml(shipment.platform ?? 'Không có')}</p>
+    <p><strong>Dich vu:</strong> ${escapeHtml(shipment.serviceType ?? 'Không có')}</p>
     <p><strong>COD:</strong> ${escapeHtml(formatCurrency(shipment.codAmount))}</p>
     <hr />
-    <p><strong>Nguoi gui:</strong> ${escapeHtml(senderText || 'Khong co')}</p>
-    <p><strong>Nguoi nhan:</strong> ${escapeHtml(receiverText || 'Khong co')}</p>
-    <p><strong>Khu vuc:</strong> ${escapeHtml(shipment.receiverRegion ?? 'Khong co')}</p>
-    <p><strong>Ghi chu giao hang:</strong> ${escapeHtml(shipment.deliveryNote ?? 'Khong co')}</p>
+    <p><strong>Nguoi gui:</strong> ${escapeHtml(senderText || 'Không có')}</p>
+    <p><strong>Nguoi nhan:</strong> ${escapeHtml(receiverText || 'Không có')}</p>
+    <p><strong>Khu vuc:</strong> ${escapeHtml(shipment.receiverRegion ?? 'Không có')}</p>
+    <p><strong>Ghi chu giao hang:</strong> ${escapeHtml(shipment.deliveryNote ?? 'Không có')}</p>
     <script>window.onload = function () { window.print(); };</script>
   </body>
 </html>
@@ -440,7 +440,7 @@ export function ShipmentListPage(): React.JSX.Element {
           onChange={(event) => setStatusInput(event.target.value)}
           style={styles.select}
         >
-          <option value="">Tat ca trang thai</option>
+          <option value="">Tất cả trang thai</option>
           {SHIPMENT_STATUS_OPTIONS.map((status) => (
             <option key={status} value={status}>
               {status}
@@ -494,7 +494,7 @@ export function ShipmentListPage(): React.JSX.Element {
               onChange={(event) => setCounterNote(event.target.value)}
             />
             <button type="button" disabled={isScanSubmitting} onClick={() => void submitCounterScan()}>
-              {isScanSubmitting ? 'Dang gui quet...' : 'Gui quet'}
+              {isScanSubmitting ? 'Đang gửi quét...' : 'Gửi quét'}
             </button>
           </div>
           {counterMessage ? (
@@ -635,14 +635,14 @@ export function ShipmentListPage(): React.JSX.Element {
               disabled={isWalkInSubmitting}
               onClick={() => void submitWalkInShipment(false)}
             >
-              {isWalkInSubmitting ? 'Dang gui...' : 'Tao van don'}
+              {isWalkInSubmitting ? 'Đang gửi...' : 'Tao van don'}
             </button>
             <button
               type="button"
               disabled={isWalkInSubmitting}
               onClick={() => void submitWalkInShipment(true)}
             >
-              {isWalkInSubmitting ? 'Dang gui...' : 'Tao + quet pickup'}
+              {isWalkInSubmitting ? 'Đang gửi...' : 'Tao + quet pickup'}
             </button>
           </div>
           {walkInMessage ? (
@@ -658,7 +658,7 @@ export function ShipmentListPage(): React.JSX.Element {
         </div>
       </section>
 
-      {shipmentQuery.isLoading ? <p>Dang tai van don...</p> : null}
+      {shipmentQuery.isLoading ? <p>Đang tải van don...</p> : null}
       {shipmentQuery.isError ? (
         <p style={styles.errorText}>{getErrorMessage(shipmentQuery.error)}</p>
       ) : null}
@@ -668,8 +668,8 @@ export function ShipmentListPage(): React.JSX.Element {
       {shipmentQuery.isSuccess && visibleShipments.length === 0 ? (
         <p>
           {assignedHubCodes.length === 0 && !canViewAllHubAreas
-            ? 'Khong hien thi duoc van don vi tai khoan OPS chua duoc gan hub.'
-            : 'Khong tim thay van don phu hop bo loc hien tai.'}
+            ? 'Không hiển thị được van don vi tai khoan OPS chua duoc gan hub.'
+            : 'Không tìm thấy van don phu hop bo loc hien tai.'}
         </p>
       ) : null}
       {shipmentQuery.isSuccess && visibleShipments.length > 0 ? (

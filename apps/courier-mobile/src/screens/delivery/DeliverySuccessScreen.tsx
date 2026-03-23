@@ -126,7 +126,7 @@ export function DeliverySuccessScreen({
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Delivery success</Text>
       <Text style={styles.helperText}>
-        Chuan bi payload va hien thi response server. Khong xu ly
+        Chuan bi payload va hien thi response server. Không xử lý
         `pod.captured`, `otp.verified`, `delivery.delivered` o client.
       </Text>
       <Text style={styles.helperText}>

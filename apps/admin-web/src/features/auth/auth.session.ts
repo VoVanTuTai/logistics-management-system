@@ -1,4 +1,4 @@
-import { useAuthStore } from '../../store/authStore';
+﻿import { useAuthStore } from '../../store/authStore';
 import type { AuthSessionDto } from './auth.types';
 import { hasAdminRole } from './auth.roles';
 
@@ -15,7 +15,7 @@ export async function hydrateAuthSession(): Promise<void> {
   try {
     const session = JSON.parse(raw) as AuthSessionDto;
     if (!hasAdminRole(session)) {
-      throw new Error('Tai khoan hien tai khong co vai tro admin.');
+      throw new Error('Tài khoản hien tai khong co vai tro admin.');
     }
     // TODO(refresh-flow): verify token expiry and refresh before restoring authenticated session.
     useAuthStore.getState().setSession(session);
@@ -52,3 +52,4 @@ export function getStoredAuthSession(): AuthSessionDto | null {
     return null;
   }
 }
+

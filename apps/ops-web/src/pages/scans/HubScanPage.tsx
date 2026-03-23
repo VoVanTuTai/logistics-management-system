@@ -66,7 +66,7 @@ export function HubScanPage(): React.JSX.Element {
       </p>
       <HubScanForm isSubmitting={isSubmitting} onSubmit={onSubmit} />
 
-      {isSubmitting ? <p>Dang gui quet...</p> : null}
+      {isSubmitting ? <p>Đang gửi quét...</p> : null}
       {actionError ? <p style={styles.errorText}>{getErrorMessage(actionError)}</p> : null}
       {!isSubmitting && !actionError && !lastScanResult ? <p>Chua co ket qua quet.</p> : null}
       {lastScanResult ? (

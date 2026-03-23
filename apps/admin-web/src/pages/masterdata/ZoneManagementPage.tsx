@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+﻿import React, { useMemo, useState } from 'react';
 
 import {
   useCreateZoneMutation,
@@ -197,7 +197,7 @@ export function ZoneManagementPage(): React.JSX.Element {
           }
           style={styles.input}
         >
-          <option value="">Tat ca trang thai</option>
+          <option value="">Tất cả trang thai</option>
           <option value="true">ACTIVE</option>
           <option value="false">INACTIVE</option>
         </select>
@@ -232,12 +232,12 @@ export function ZoneManagementPage(): React.JSX.Element {
         </p>
       ) : null}
 
-      {zonesQuery.isLoading ? <p>Dang tai zone...</p> : null}
+      {zonesQuery.isLoading ? <p>Đang tải zone...</p> : null}
       {zonesQuery.isError ? (
         <p style={styles.errorText}>{getErrorMessage(zonesQuery.error)}</p>
       ) : null}
       {zonesQuery.isSuccess && (zonesQuery.data?.length ?? 0) === 0 ? (
-        <p>Khong tim thay zone.</p>
+        <p>Không tìm thấy zone.</p>
       ) : null}
 
       {zonesQuery.isSuccess && (zonesQuery.data?.length ?? 0) > 0 ? (
@@ -257,7 +257,7 @@ export function ZoneManagementPage(): React.JSX.Element {
               <tr key={zone.id}>
                 <td style={styles.cell}>{zone.code}</td>
                 <td style={styles.cell}>{zone.name}</td>
-                <td style={styles.cell}>{zone.parentCode ?? 'Khong co'}</td>
+                <td style={styles.cell}>{zone.parentCode ?? 'Không có'}</td>
                 <td style={styles.cell}>
                   <MasterdataStatusPill isActive={zone.isActive} />
                 </td>
@@ -288,7 +288,7 @@ export function ZoneManagementPage(): React.JSX.Element {
             <strong>Ten:</strong> {selectedZone.name}
           </p>
           <p>
-            <strong>Zone cha:</strong> {selectedZone.parentCode ?? 'Khong co'}
+            <strong>Zone cha:</strong> {selectedZone.parentCode ?? 'Không có'}
           </p>
           <p>
             <strong>Trang thai:</strong> {selectedZone.isActive ? 'ACTIVE' : 'INACTIVE'}
@@ -452,3 +452,4 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
   },
 };
+

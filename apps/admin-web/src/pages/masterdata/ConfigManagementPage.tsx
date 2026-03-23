@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+﻿import React, { useMemo, useState } from 'react';
 
 import {
   useConfigsQuery,
@@ -379,7 +379,7 @@ export function ConfigManagementPage(): React.JSX.Element {
           }
           style={styles.input}
         >
-          <option value="all">Tat ca trang thai</option>
+          <option value="all">Tất cả trang thai</option>
           <option value="active">ACTIVE</option>
           <option value="inactive">INACTIVE</option>
         </select>
@@ -403,12 +403,12 @@ export function ConfigManagementPage(): React.JSX.Element {
         </p>
       ) : null}
 
-      {configsQuery.isLoading ? <p>Dang tai config...</p> : null}
+      {configsQuery.isLoading ? <p>Đang tải config...</p> : null}
       {configsQuery.isError ? (
         <p style={styles.errorText}>{getErrorMessage(configsQuery.error)}</p>
       ) : null}
       {configsQuery.isSuccess && visibleConfigs.length === 0 ? (
-        <p>Khong tim thay config.</p>
+        <p>Không tìm thấy config.</p>
       ) : null}
 
       {configsQuery.isSuccess && visibleConfigs.length > 0 ? (
@@ -433,8 +433,8 @@ export function ConfigManagementPage(): React.JSX.Element {
                 <tr key={config.id}>
                   <td style={styles.cell}>{config.key}</td>
                   <td style={styles.cell}>{envelope.name}</td>
-                  <td style={styles.cell}>{config.scope ?? 'Khong co'}</td>
-                  <td style={styles.cell}>{stringifyValue(envelope.value) || 'Khong co'}</td>
+                  <td style={styles.cell}>{config.scope ?? 'Không có'}</td>
+                  <td style={styles.cell}>{stringifyValue(envelope.value) || 'Không có'}</td>
                   <td style={styles.cell}>{envelope.valueType}</td>
                   <td style={styles.cell}>
                     <MasterdataStatusPill isActive={envelope.isActive} />
@@ -472,7 +472,7 @@ export function ConfigManagementPage(): React.JSX.Element {
                   <strong>Ten:</strong> {envelope.name}
                 </p>
                 <p>
-                  <strong>Nhom:</strong> {selectedConfig.scope ?? 'Khong co'}
+                  <strong>Nhom:</strong> {selectedConfig.scope ?? 'Không có'}
                 </p>
                 <p>
                   <strong>Kieu:</strong> {envelope.valueType}
@@ -482,7 +482,7 @@ export function ConfigManagementPage(): React.JSX.Element {
                 </p>
                 <p>
                   <strong>Gia tri mac dinh:</strong>{' '}
-                  {stringifyValue(envelope.defaultValue) || 'Khong co'}
+                  {stringifyValue(envelope.defaultValue) || 'Không có'}
                 </p>
                 <p>
                   <strong>Cho phep sua:</strong> {envelope.isEditable ? 'CO' : 'KHONG'}
@@ -732,3 +732,4 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
   },
 };
+

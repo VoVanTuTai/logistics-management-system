@@ -62,14 +62,14 @@ export function TasksTable({
             </td>
             <td style={styles.cell}>{item.taskType}</td>
             <td style={styles.cell}>{item.status}</td>
-            <td style={styles.cell}>{item.shipmentCode ?? 'Khong co'}</td>
-            <td style={styles.cell}>{item.senderName ?? 'Khong co'}</td>
-            <td style={styles.cell}>{item.receiverName ?? 'Khong co'}</td>
+            <td style={styles.cell}>{item.shipmentCode ?? 'Không có'}</td>
+            <td style={styles.cell}>{item.senderName ?? 'Không có'}</td>
+            <td style={styles.cell}>{item.receiverName ?? 'Không có'}</td>
             <td style={styles.cell}>
-              <span style={styles.platformTag}>{item.platform ?? 'Khong co'}</span>
+              <span style={styles.platformTag}>{item.platform ?? 'Không có'}</span>
             </td>
-            <td style={styles.cell}>{item.deliveryArea ?? 'Khong xac dinh'}</td>
-            <td style={styles.cell}>{item.assignedCourierId ?? 'Khong co'}</td>
+            <td style={styles.cell}>{item.deliveryArea ?? 'Không xác định'}</td>
+            <td style={styles.cell}>{item.assignedCourierId ?? 'Không có'}</td>
             <td style={styles.cell}>{formatDateTime(item.updatedAt)}</td>
           </tr>
         ))}

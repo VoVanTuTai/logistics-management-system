@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+﻿import React, { useMemo, useState } from 'react';
 
 import {
   useAdminUsersQuery,
@@ -205,7 +205,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
           onChange={(event) => setStatus(event.target.value as UserStatus | '')}
           style={styles.input}
         >
-          <option value="">Tat ca trang thai</option>
+          <option value="">Tất cả trang thai</option>
           <option value="ACTIVE">ACTIVE</option>
           <option value="DISABLED">DISABLED</option>
         </select>
@@ -214,7 +214,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
           onChange={(event) => setHubCode(event.target.value)}
           style={styles.input}
         >
-          <option value="">Tat ca hub</option>
+          <option value="">Tất cả hub</option>
           {(hubsQuery.data ?? []).map((hub) => (
             <option key={hub.id} value={hub.code}>
               {hub.code} - {hub.name}
@@ -251,7 +251,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
             />
           </label>
           <label style={styles.fieldLabel}>
-            Mat khau {editingUser ? '(khong bat buoc)' : ''}
+            Mật khẩu {editingUser ? '(khong bat buoc)' : ''}
             <input
               type="password"
               required={!editingUser}
@@ -345,12 +345,12 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
         </form>
       </section>
 
-      {usersQuery.isLoading ? <p>Dang tai nguoi dung...</p> : null}
+      {usersQuery.isLoading ? <p>Đang tải nguoi dung...</p> : null}
       {usersQuery.isError ? (
         <p style={styles.errorText}>{getErrorMessage(usersQuery.error)}</p>
       ) : null}
       {usersQuery.isSuccess && (usersQuery.data?.length ?? 0) === 0 ? (
-        <p>Khong tim thay nguoi dung.</p>
+        <p>Không tìm thấy nguoi dung.</p>
       ) : null}
 
       {usersQuery.isSuccess && (usersQuery.data?.length ?? 0) > 0 ? (
@@ -371,8 +371,8 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
             {(usersQuery.data ?? []).map((user) => (
               <tr key={user.id}>
                 <td style={styles.cell}>{user.username}</td>
-                <td style={styles.cell}>{user.displayName ?? 'Khong co'}</td>
-                <td style={styles.cell}>{user.phone ?? 'Khong co'}</td>
+                <td style={styles.cell}>{user.displayName ?? 'Không có'}</td>
+                <td style={styles.cell}>{user.phone ?? 'Không có'}</td>
                 <td style={styles.cell}>{user.roles.join(', ')}</td>
                 <td style={styles.cell}>{user.hubCodes.join(', ') || 'Chua gan'}</td>
                 <td style={styles.cell}>{user.status}</td>
@@ -469,3 +469,4 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
   },
 };
+

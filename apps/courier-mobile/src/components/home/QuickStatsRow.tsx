@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { theme } from '../../theme';
@@ -7,6 +7,9 @@ import { theme } from '../../theme';
 interface QuickStatsRowProps {
   waitingPickup: number;
   waitingDelivery: number;
+  activeStat?: 'PICKUP' | 'DELIVERY' | null;
+  onPressWaitingPickup?: () => void;
+  onPressWaitingDelivery?: () => void;
 }
 
 interface StatCardProps {
@@ -15,6 +18,8 @@ interface StatCardProps {
   iconName: React.ComponentProps<typeof Ionicons>['name'];
   iconBgColor: string;
   iconColor: string;
+  active?: boolean;
+  onPress?: () => void;
 }
 
 function StatCard({
@@ -23,9 +28,19 @@ function StatCard({
   iconName,
   iconBgColor,
   iconColor,
+  active = false,
+  onPress,
 }: StatCardProps): React.JSX.Element {
   return (
-    <View style={styles.card}>
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
+      style={({ pressed }) => [
+        styles.card,
+        active && styles.cardActive,
+        pressed && onPress && styles.cardPressed,
+      ]}
+    >
       <View style={styles.cardTop}>
         <View style={[styles.iconWrap, { backgroundColor: iconBgColor }]}>
           <Ionicons name={iconName} size={18} color={iconColor} />
@@ -33,13 +48,16 @@ function StatCard({
         <Text style={styles.value}>{value}</Text>
       </View>
       <Text style={styles.label}>{label}</Text>
-    </View>
+    </Pressable>
   );
 }
 
 export function QuickStatsRow({
   waitingPickup,
   waitingDelivery,
+  activeStat = null,
+  onPressWaitingPickup,
+  onPressWaitingDelivery,
 }: QuickStatsRowProps): React.JSX.Element {
   return (
     <View style={styles.row}>
@@ -49,6 +67,8 @@ export function QuickStatsRow({
         iconName="cube-outline"
         iconBgColor="#E4F0FF"
         iconColor="#24539E"
+        active={activeStat === 'PICKUP'}
+        onPress={onPressWaitingPickup}
       />
       <StatCard
         label="Đợi phát"
@@ -56,6 +76,8 @@ export function QuickStatsRow({
         iconName="paper-plane-outline"
         iconBgColor="#E1F8FA"
         iconColor="#0A6E89"
+        active={activeStat === 'DELIVERY'}
+        onPress={onPressWaitingDelivery}
       />
     </View>
   );
@@ -74,6 +96,12 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.lg,
     padding: theme.spacing.md,
     ...theme.shadow.card,
+  },
+  cardActive: {
+    borderColor: theme.colors.primary,
+  },
+  cardPressed: {
+    opacity: 0.9,
   },
   cardTop: {
     flexDirection: 'row',
