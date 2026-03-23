@@ -3,6 +3,7 @@ import type { Hub as PrismaHubRecord, Prisma } from '@prisma/client';
 
 import {
   Hub,
+  HubCreateInput,
   HubListFilters,
   HubWriteInput,
 } from '../../domain/entities/hub.entity';
@@ -86,7 +87,7 @@ export class HubPrismaRepository extends HubRepository {
     return record ? this.toEntity(record) : null;
   }
 
-  async create(input: HubWriteInput): Promise<Hub> {
+  async create(input: HubCreateInput): Promise<Hub> {
     const data: Prisma.HubCreateInput = {
       code: input.code,
       name: input.name,
