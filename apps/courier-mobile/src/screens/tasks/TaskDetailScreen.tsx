@@ -117,6 +117,16 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
   const shipmentNote =
     readMetadataString(shipmentMetadata, ['note', 'shipmentNote']) ?? 'N/A';
 
+  const handleReloadStatus = React.useCallback(async () => {
+    const requests: Array<Promise<unknown>> = [taskQuery.refetch()];
+
+    if (task?.shipmentCode) {
+      requests.push(shipmentQuery.refetch());
+    }
+
+    await Promise.all(requests);
+  }, [shipmentQuery, task?.shipmentCode, taskQuery]);
+
   const handleContactAction = React.useCallback(
     async (kind: 'call' | 'sms', rawPhone: string | null) => {
       setCallOptionsVisible(false);
@@ -186,6 +196,7 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
   }
 
   const hasShipmentCode = Boolean(task.shipmentCode);
+  const isReloadingStatus = taskQuery.isRefetching || shipmentQuery.isRefetching;
 
   return (
     <Screen scroll={false}>
@@ -195,7 +206,25 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
           showsVerticalScrollIndicator={false}
         >
           <Card style={styles.heroCard}>
-            <Text style={styles.taskCode}>{task.taskCode}</Text>
+            <View style={styles.heroTopRow}>
+              <Text style={styles.taskCode}>{task.taskCode}</Text>
+              <Pressable
+                onPress={() => {
+                  void handleReloadStatus();
+                }}
+                disabled={isReloadingStatus}
+                style={[styles.reloadButton, isReloadingStatus && styles.reloadButtonDisabled]}
+              >
+                {isReloadingStatus ? (
+                  <ActivityIndicator size="small" color={theme.colors.primary} />
+                ) : (
+                  <Ionicons name="refresh-outline" size={14} color={theme.colors.primary} />
+                )}
+                <Text style={styles.reloadButtonText}>
+                  {isReloadingStatus ? 'Reloading...' : 'Reload'}
+                </Text>
+              </Pressable>
+            </View>
             <View style={styles.heroMetaRow}>
               <StatusBadge label={task.status} variant="info" />
               <StatusBadge label={task.taskType} variant="neutral" />
@@ -414,9 +443,37 @@ const styles = StyleSheet.create({
     borderColor: '#CDE0FF',
     gap: theme.spacing.sm,
   },
+  heroTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: theme.spacing.sm,
+  },
   taskCode: {
     ...theme.typography.title.lg,
     color: theme.colors.primary,
+    flex: 1,
+  },
+  reloadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    borderWidth: 1,
+    borderColor: '#BFD6FF',
+    borderRadius: theme.radius.md,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 6,
+    minWidth: 92,
+    justifyContent: 'center',
+  },
+  reloadButtonDisabled: {
+    opacity: 0.7,
+  },
+  reloadButtonText: {
+    ...theme.typography.caption.md,
+    color: theme.colors.primary,
+    fontWeight: '700',
   },
   heroMetaRow: {
     flexDirection: 'row',
