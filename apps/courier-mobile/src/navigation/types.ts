@@ -29,4 +29,14 @@ export type AppNavigatorParamList = {
     taskId?: string;
     shipmentCode?: string;
   };
+  DeliveryProof: {
+    taskId?: string;
+    taskCode?: string;
+    shipmentCode?: string;
+  };
+  TaskIssue: {
+    taskId?: string;
+    taskCode?: string;
+    shipmentCode?: string;
+  };
 };

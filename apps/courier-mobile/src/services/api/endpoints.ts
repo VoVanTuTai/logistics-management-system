@@ -15,6 +15,10 @@ export const courierEndpoints = {
       )}`,
     detail: (taskId: string) => `${COURIER_PREFIX}/dispatch/tasks/${taskId}`,
   },
+  shipment: {
+    detail: (shipmentCode: string) =>
+      `${COURIER_PREFIX}/shipment/shipments/${encodeURIComponent(shipmentCode)}`,
+  },
   scan: {
     pickup: `${COURIER_PREFIX}/scan/scans/pickup`,
     inbound: `${COURIER_PREFIX}/scan/scans/inbound`,

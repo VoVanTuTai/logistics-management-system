@@ -5,10 +5,11 @@
   "main": "expo/AppEntry",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web",
+    "start": "node ./scripts/start-with-gateway.js",
+    "start:raw": "expo start",
+    "android": "node ./scripts/start-with-gateway.js --android",
+    "ios": "node ./scripts/start-with-gateway.js --ios",
+    "web": "node ./scripts/start-with-gateway.js --web",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [],
