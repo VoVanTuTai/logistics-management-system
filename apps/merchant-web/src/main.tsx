@@ -37,6 +37,7 @@ import type {
   ViewId,
 } from './types';
 import { DEFAULT_CREATE_FORM, DEFAULT_PROFILE } from './types';
+import { openShippingLabelPrint } from './printing/shippingLabelPrint';
 
 const STORAGE_KEY_SESSION = 'merchant-web.session.v1';
 const STORAGE_KEY_DRAFTS = 'merchant-web.shipment-drafts.v1';
@@ -247,11 +248,11 @@ function MerchantApp(): React.JSX.Element {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
   const navItems: Array<{ id: ViewId; label: string }> = [
-    { id: 'dashboard', label: 'Tong quan' },
+    { id: 'dashboard', label: 'Tổng quan' },
     { id: 'create-shipment', label: 'Tạo đơn hàng' },
     { id: 'shipments', label: 'Danh sách đơn hàng' },
-    { id: 'pickups', label: 'Yeu cau lay hang' },
-    { id: 'tracking', label: 'Tra cứu van don' },
+    { id: 'pickups', label: 'Yêu cầu lấy hàng' },
+    { id: 'tracking', label: 'Tra cứu vận đơn' },
     { id: 'change-requests', label: 'Yêu cầu đổi thông tin giao' },
     { id: 'returns', label: 'Yêu cầu hoàn hàng' },
     { id: 'print', label: 'In vận đơn' },
@@ -518,7 +519,7 @@ function MerchantApp(): React.JSX.Element {
   async function submitCreateShipment(withPickup: boolean): Promise<void> {
     if (!session) return;
     if (hubLocations.length === 0) {
-      setCreateError('Chua co vi tri hub hoat dong. Vui long nhap hub o admin.');
+      setCreateError('Chưa có vị trí hub hoạt động. Vui lòng nhập hub ở admin.');
       return;
     }
 
@@ -793,10 +794,80 @@ function MerchantApp(): React.JSX.Element {
   }
 
   function printShipment(row: ShipmentRow): void {
-    const popup = window.open('', '_blank', 'width=900,height=700');
-    if (!popup) return;
-    popup.document.write(`<html><head><title>${row.shipment.code}</title></head><body style="font-family:Arial;padding:20px"><h2>Vận đơn ${row.shipment.code}</h2><p>Người gửi: ${row.senderName} - ${row.senderPhone}</p><p>Người nhận: ${row.receiverName} - ${row.receiverPhone}</p><p>Dịch vụ: ${row.serviceType}</p><p>COD: ${formatCurrency(row.codAmount)}</p><p>Trạng thái: ${row.shipment.currentStatus}</p><script>window.onload=function(){window.print();}<\/script></body></html>`);
-    popup.document.close();
+    const readText = (value: unknown, fallback = ''): string => {
+      if (typeof value !== 'string') {
+        return fallback;
+      }
+      const trimmed = value.trim();
+      return trimmed.length > 0 ? trimmed : fallback;
+    };
+    const compactCode = (value: string, fallback: string): string => {
+      const normalized = value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+      return normalized.length > 0 ? normalized.slice(0, 9) : fallback;
+    };
+
+    const metadata = asRecord(row.shipment.metadata);
+    const senderMeta = asRecord(metadata?.sender);
+    const receiverMeta = asRecord(metadata?.receiver);
+    const routingMeta = asRecord(metadata?.routing);
+
+    const senderHubCode = readText(senderMeta?.hubCode);
+    const receiverHubCode = readText(receiverMeta?.hubCode);
+    const originHubCode = readText(routingMeta?.originHubCode);
+    const destinationHubCode = readText(routingMeta?.destinationHubCode);
+
+    const routeMainCode =
+      receiverHubCode ||
+      destinationHubCode ||
+      senderHubCode ||
+      originHubCode ||
+      readText(row.receiverRegion, 'HUB-NA');
+
+    const zoneCode = readText(row.receiverRegion, 'ZONE-NA');
+    const routeTag = compactCode(
+      receiverHubCode || destinationHubCode || zoneCode,
+      'ROUTE',
+    );
+    const sortCode = [
+      `Hub đích: ${receiverHubCode || destinationHubCode || 'N/A'}`,
+      `Khu vá»±c: ${zoneCode || 'N/A'}`,
+    ].join('\n');
+    const deliveryInstruction =
+      row.deliveryNote && row.deliveryNote !== '-'
+        ? row.deliveryNote
+        : 'Gọi trước khi giao. Không cho thử hàng.';
+    const parcelNote = [
+      `Loại hàng: ${row.itemType}`,
+      `Khối lượng: ${row.weightKg} kg`,
+      `COD: ${formatCurrency(row.codAmount)}`,
+    ].join(' | ');
+
+    const opened = openShippingLabelPrint({
+      brandName: 'JMS LOGISTICS',
+      serviceName: row.serviceType || 'STANDARD',
+      shipmentCode: row.shipment.code,
+      senderName: row.senderName,
+      senderPhone: row.senderPhone,
+      senderAddress: row.senderAddress,
+      receiverName: row.receiverName,
+      receiverPhone: row.receiverPhone,
+      receiverAddress: row.receiverAddress,
+      hubCode: routeMainCode,
+      zoneCode,
+      itemDescription: row.itemType,
+      parcelNote,
+      qrValue: row.shipment.code,
+      routeTag,
+      sortCode,
+      codAmountText: formatCurrency(row.codAmount),
+      createdAtText: formatDate(row.shipment.createdAt),
+      deliveryInstruction,
+      hotlineText: 'Hotline vận hành: 1900-1234',
+    });
+
+    if (!opened) {
+      setPrintMessage('Trình duyệt đang chặn popup in. Hãy cho phép popup rồi thử lại.');
+    }
   }
 
   function downloadCsv(): void {
@@ -848,21 +919,21 @@ function MerchantApp(): React.JSX.Element {
         <main className="content">
           {dataError ? <p className="message error">{dataError}</p> : null}
 
-          {activeView === 'dashboard' ? <><section className="card"><h3>Tong quan</h3><div className="metric-grid"><div className="metric"><div className="metric-title">Tổng số đơn hôm nay</div><div className="metric-value">{dashboardStats.totalToday}</div></div><div className="metric"><div className="metric-title">Đơn chờ pickup</div><div className="metric-value">{dashboardStats.waitingPickup}</div></div><div className="metric"><div className="metric-title">Đơn đang giao</div><div className="metric-value">{dashboardStats.inTransit}</div></div><div className="metric"><div className="metric-title">Đơn giao thành công</div><div className="metric-value">{dashboardStats.delivered}</div></div><div className="metric"><div className="metric-title">Thất bại / hoàn</div><div className="metric-value">{dashboardStats.failedOrReturn}</div></div></div></section><section className="card"><h3>Tìm nhanh theo mã vận đơn</h3><form className="btn-row" onSubmit={(e) => { void quickTrackFromDashboard(e); }}><input className="input" style={{ maxWidth: 320 }} value={dashboardSearchCode} onChange={(e) => setDashboardSearchCode(e.target.value)} placeholder="SHP..." /><button className="btn btn-primary" type="submit">Tra cứu van don</button></form></section><section className="card"><h3>Đơn mới tạo gần đây</h3>{recentRows.length === 0 ? <div className="empty">Chua co don hang.</div> : <div className="table-wrap"><table><thead><tr><th>Mã</th><th>Người nhận</th><th>SĐT</th><th>Trạng thái</th><th>Ngày tạo</th><th>Xem</th></tr></thead><tbody>{recentRows.map((row) => <tr key={row.shipment.id}><td>{row.shipment.code}</td><td>{row.receiverName}</td><td>{row.receiverPhone}</td><td><span className={statusClass(row.shipment.currentStatus)}>{row.shipment.currentStatus}</span></td><td>{formatDate(row.shipment.createdAt)}</td><td><button className="btn btn-ghost" onClick={() => { void openShipmentDetail(row.shipment.code); }}>Xem</button></td></tr>)}</tbody></table></div>}</section></> : null}
+          {activeView === 'dashboard' ? <><section className="card"><h3>Tổng quan</h3><div className="metric-grid"><div className="metric"><div className="metric-title">Tổng số đơn hôm nay</div><div className="metric-value">{dashboardStats.totalToday}</div></div><div className="metric"><div className="metric-title">Đơn chờ pickup</div><div className="metric-value">{dashboardStats.waitingPickup}</div></div><div className="metric"><div className="metric-title">Đơn đang giao</div><div className="metric-value">{dashboardStats.inTransit}</div></div><div className="metric"><div className="metric-title">Đơn giao thành công</div><div className="metric-value">{dashboardStats.delivered}</div></div><div className="metric"><div className="metric-title">Thất bại / hoàn</div><div className="metric-value">{dashboardStats.failedOrReturn}</div></div></div></section><section className="card"><h3>Tìm nhanh theo mã vận đơn</h3><form className="btn-row" onSubmit={(e) => { void quickTrackFromDashboard(e); }}><input className="input" style={{ maxWidth: 320 }} value={dashboardSearchCode} onChange={(e) => setDashboardSearchCode(e.target.value)} placeholder="SHP..." /><button className="btn btn-primary" type="submit">Tra cứu vận đơn</button></form></section><section className="card"><h3>Đơn mới tạo gần đây</h3>{recentRows.length === 0 ? <div className="empty">Chưa có đơn hàng.</div> : <div className="table-wrap"><table><thead><tr><th>Mã</th><th>Người nhận</th><th>SĐT</th><th>Trạng thái</th><th>Ngày tạo</th><th>Xem</th></tr></thead><tbody>{recentRows.map((row) => <tr key={row.shipment.id}><td>{row.shipment.code}</td><td>{row.receiverName}</td><td>{row.receiverPhone}</td><td><span className={statusClass(row.shipment.currentStatus)}>{row.shipment.currentStatus}</span></td><td>{formatDate(row.shipment.createdAt)}</td><td><button className="btn btn-ghost" onClick={() => { void openShipmentDetail(row.shipment.code); }}>Xem</button></td></tr>)}</tbody></table></div>}</section></> : null}
 
           {activeView === 'create-shipment' ? (
             <section className="split-layout">
               <div className="card grid">
-                <h3>Tao don hang</h3>
+                <h3>Tạo đơn hàng</h3>
                 {hubLocations.length === 0 ? (
                   <p className="message error">
-                    Chua co hub hop le. Admin can tao hub voi province/district truoc.
+                    Chưa có hub hợp lệ. Admin cần tạo hub với tỉnh/thành và quận/huyện trước.
                   </p>
                 ) : null}
                 <div className="grid grid-4">
                   <input
                     className="input"
-                    placeholder="Ma don (khong bat buoc)"
+                    placeholder="Mã đơn (không bắt buộc)"
                     value={createForm.manualCode}
                     onChange={(event) =>
                       setCreateForm((previous) => ({
@@ -873,7 +944,7 @@ function MerchantApp(): React.JSX.Element {
                   />
                   <input
                     className="input"
-                    placeholder="Ten nguoi gui"
+                    placeholder="Tên người gửi"
                     value={createForm.senderName}
                     onChange={(event) =>
                       setCreateForm((previous) => ({
@@ -884,7 +955,7 @@ function MerchantApp(): React.JSX.Element {
                   />
                   <input
                     className="input"
-                    placeholder="SDT nguoi gui"
+                    placeholder="SĐT người gửi"
                     value={createForm.senderPhone}
                     onChange={(event) =>
                       setCreateForm((previous) => ({
@@ -906,7 +977,7 @@ function MerchantApp(): React.JSX.Element {
                       }));
                     }}
                   >
-                    <option value="">Chon vi tri gui (hub)</option>
+                    <option value="">Chá»n vá» trÃ­ gá»­i (hub)</option>
                     {hubLocations.map((location) => (
                       <option key={location.hubCode} value={location.hubCode}>
                         {location.label}
@@ -915,13 +986,13 @@ function MerchantApp(): React.JSX.Element {
                   </select>
                   <input
                     className="input"
-                    placeholder="Dia chi gui (tu hub)"
+                    placeholder="Địa chỉ gửi (từ hub)"
                     value={createForm.senderAddress}
                     readOnly
                   />
                   <input
                     className="input"
-                    placeholder="Ten nguoi nhan"
+                    placeholder="Tên người nhận"
                     value={createForm.receiverName}
                     onChange={(event) =>
                       setCreateForm((previous) => ({
@@ -932,7 +1003,7 @@ function MerchantApp(): React.JSX.Element {
                   />
                   <input
                     className="input"
-                    placeholder="SDT nguoi nhan"
+                    placeholder="SĐT người nhận"
                     value={createForm.receiverPhone}
                     onChange={(event) =>
                       setCreateForm((previous) => ({
@@ -955,7 +1026,7 @@ function MerchantApp(): React.JSX.Element {
                       }));
                     }}
                   >
-                    <option value="">Chon vi tri nhan (hub)</option>
+                    <option value="">Chá»n vá» trÃ­ nháº­n (hub)</option>
                     {hubLocations.map((location) => (
                       <option key={`receiver-${location.hubCode}`} value={location.hubCode}>
                         {location.label}
@@ -964,19 +1035,19 @@ function MerchantApp(): React.JSX.Element {
                   </select>
                   <input
                     className="input"
-                    placeholder="Tinh/Thanh nguoi nhan (tu hub)"
+                    placeholder="Tỉnh/Thành người nhận (từ hub)"
                     value={createForm.receiverRegion}
                     readOnly
                   />
                   <input
                     className="input"
-                    placeholder="Dia chi nhan (tu hub)"
+                    placeholder="Địa chỉ nhận (từ hub)"
                     value={createForm.receiverAddress}
                     readOnly
                   />
                   <input
                     className="input"
-                    placeholder="Loai hang"
+                    placeholder="Loại hàng"
                     value={createForm.itemType}
                     onChange={(event) =>
                       setCreateForm((previous) => ({
@@ -1079,10 +1150,10 @@ function MerchantApp(): React.JSX.Element {
                 />
                 <div className="btn-row">
                   <button className="btn btn-secondary" onClick={() => setQuotedFee(autoEstimatedFee)}>
-                    Tinh phi tam tinh
+                    TÃ­nh phÃ­ táº¡m tÃ­nh
                   </button>
                   <button className="btn btn-ghost" onClick={saveDraft}>
-                    Luu nhap
+                    LÆ°u nhÃ¡p
                   </button>
                   <button
                     className="btn btn-primary"
@@ -1091,7 +1162,7 @@ function MerchantApp(): React.JSX.Element {
                       void submitCreateShipment(false);
                     }}
                   >
-                    {createLoading ? 'Dang tao...' : 'Tao don'}
+                    {createLoading ? 'Đang tạo...' : 'Tạo đơn'}
                   </button>
                   <button
                     className="btn btn-primary"
@@ -1100,7 +1171,7 @@ function MerchantApp(): React.JSX.Element {
                       void submitCreateShipment(true);
                     }}
                   >
-                    Tao va yeu cau pickup ngay
+                    Tạo và yêu cầu pickup ngay
                   </button>
                 </div>
                 {createError ? <p className="message error">{createError}</p> : null}
@@ -1108,16 +1179,16 @@ function MerchantApp(): React.JSX.Element {
               </div>
               <div className="grid">
                 <div className="card">
-                  <h3>Tom tat phi</h3>
+                  <h3>TÃ³m táº¯t phÃ­</h3>
                   <p className="muted">
-                    Phi tam tinh: <strong>{formatCurrency(effectiveFee)}</strong>
+                    PhÃ­ táº¡m tÃ­nh: <strong>{formatCurrency(effectiveFee)}</strong>
                   </p>
                   <p className="muted">Dich vu: {createForm.serviceType}</p>
-                  <p className="muted">Hub gui: {createForm.senderHubCode || 'Chua chon'}</p>
-                  <p className="muted">Hub nhan: {createForm.receiverHubCode || 'Chua chon'}</p>
+                  <p className="muted">Hub gửi: {createForm.senderHubCode || 'Chưa chọn'}</p>
+                  <p className="muted">Hub nhận: {createForm.receiverHubCode || 'Chưa chọn'}</p>
                 </div>
                 <div className="card grid">
-                  <h3>Draft da luu</h3>
+                  <h3>Draft ÄÃ£ lÆ°u</h3>
                   <input
                     className="input"
                     value={draftName}
@@ -1125,7 +1196,7 @@ function MerchantApp(): React.JSX.Element {
                     placeholder="Ten draft"
                   />
                   {drafts.length === 0 ? (
-                    <div className="empty">Chua co draft.</div>
+                    <div className="empty">Chưa có nháp.</div>
                   ) : (
                     drafts.slice(0, 6).map((draft) => (
                       <div className="detail-box" key={draft.id}>
@@ -1139,7 +1210,7 @@ function MerchantApp(): React.JSX.Element {
                               setQuotedFee(draft.quoteFee);
                             }}
                           >
-                            Tai lai
+                            Táº£i láº¡i
                           </button>
                           <button
                             className="btn btn-danger"
@@ -1149,7 +1220,7 @@ function MerchantApp(): React.JSX.Element {
                               )
                             }
                           >
-                            Xoa
+                            XÃ³a
                           </button>
                         </div>
                       </div>
@@ -1160,17 +1231,17 @@ function MerchantApp(): React.JSX.Element {
             </section>
           ) : null}
 
-          {activeView === 'shipments' ? <><section className="card grid"><h3>Danh sách shipment</h3><div className="grid grid-4"><input className="input" placeholder="Tim ma / ten / SDT" value={listSearch} onChange={(e) => setListSearch(e.target.value)} /><select className="select" value={listStatus} onChange={(e) => setListStatus(e.target.value)}><option value="ALL">Tất cả trang thai</option><option value="CREATED">CREATED</option><option value="UPDATED">UPDATED</option><option value="DELIVERED">DELIVERED</option><option value="DELIVERY_FAILED">DELIVERY_FAILED</option><option value="RETURN_STARTED">RETURN_STARTED</option><option value="RETURN_COMPLETED">RETURN_COMPLETED</option><option value="CANCELLED">CANCELLED</option></select><select className="select" value={listService} onChange={(e) => setListService(e.target.value)}><option value="ALL">Tất cả dich vu</option>{serviceOptions.map((o) => <option key={o}>{o}</option>)}</select><select className="select" value={listRegion} onChange={(e) => setListRegion(e.target.value)}><option value="ALL">Tất cả khu vuc</option>{regionOptions.map((o) => <option key={o}>{o}</option>)}</select><input className="input" type="date" value={listFromDate} onChange={(e) => setListFromDate(e.target.value)} /><input className="input" type="date" value={listToDate} onChange={(e) => setListToDate(e.target.value)} /></div></section><section className="card"><div className="table-wrap"><table><thead><tr><th>Mã vận đơn</th><th>Người nhận</th><th>SĐT</th><th>Trạng thái</th><th>COD</th><th>Phí</th><th>Dịch vụ</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead><tbody>{visibleRows.map((row) => <tr key={row.shipment.id}><td>{row.shipment.code}</td><td>{row.receiverName}</td><td>{row.receiverPhone}</td><td><span className={statusClass(row.shipment.currentStatus)}>{row.shipment.currentStatus}</span></td><td>{formatCurrency(row.codAmount)}</td><td>{formatCurrency(row.feeEstimate)}</td><td>{row.serviceType}</td><td>{formatDate(row.shipment.createdAt)}</td><td><div className="btn-row"><button className="btn btn-ghost" onClick={() => { void openShipmentDetail(row.shipment.code); }}>Xem</button><button className="btn btn-secondary" onClick={() => { void openShipmentDetail(row.shipment.code); }}>Cập nhật</button><button className="btn btn-danger" onClick={() => { const reason = window.prompt('Lý do hủy đơn', '') ?? ''; void cancelShipment(row.shipment.code, reason); }}>Hủy</button><button className="btn btn-secondary" onClick={() => { void createPickupForShipment(row.shipment.code, `manual pickup ${row.shipment.code}`); }}>Tạo pickup</button><button className="btn btn-ghost" onClick={() => printShipment(row)}>In</button></div></td></tr>)}</tbody></table></div>{visibleRows.length === 0 ? <div className="empty">Không có dữ liệu.</div> : null}<div className="btn-row" style={{ marginTop: 8 }}><button className="btn btn-ghost" disabled={listPage <= 1} onClick={() => setListPage((p) => Math.max(p - 1, 1))}>Truoc</button><span className="badge">Trang {listPage}/{totalPages}</span><button className="btn btn-ghost" disabled={listPage >= totalPages} onClick={() => setListPage((p) => Math.min(p + 1, totalPages))}>Sau</button></div></section></> : null}
+          {activeView === 'shipments' ? <><section className="card grid"><h3>Danh sách shipment</h3><div className="grid grid-4"><input className="input" placeholder="Tìm mã / tên / SĐT" value={listSearch} onChange={(e) => setListSearch(e.target.value)} /><select className="select" value={listStatus} onChange={(e) => setListStatus(e.target.value)}><option value="ALL">Tất cả trạng thái</option><option value="CREATED">CREATED</option><option value="UPDATED">UPDATED</option><option value="DELIVERED">DELIVERED</option><option value="DELIVERY_FAILED">DELIVERY_FAILED</option><option value="RETURN_STARTED">RETURN_STARTED</option><option value="RETURN_COMPLETED">RETURN_COMPLETED</option><option value="CANCELLED">CANCELLED</option></select><select className="select" value={listService} onChange={(e) => setListService(e.target.value)}><option value="ALL">Tất cả dịch vụ</option>{serviceOptions.map((o) => <option key={o}>{o}</option>)}</select><select className="select" value={listRegion} onChange={(e) => setListRegion(e.target.value)}><option value="ALL">Tất cả khu vực</option>{regionOptions.map((o) => <option key={o}>{o}</option>)}</select><input className="input" type="date" value={listFromDate} onChange={(e) => setListFromDate(e.target.value)} /><input className="input" type="date" value={listToDate} onChange={(e) => setListToDate(e.target.value)} /></div></section><section className="card"><div className="table-wrap"><table><thead><tr><th>Mã vận đơn</th><th>Người nhận</th><th>SĐT</th><th>Trạng thái</th><th>COD</th><th>Phí</th><th>Dịch vụ</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead><tbody>{visibleRows.map((row) => <tr key={row.shipment.id}><td>{row.shipment.code}</td><td>{row.receiverName}</td><td>{row.receiverPhone}</td><td><span className={statusClass(row.shipment.currentStatus)}>{row.shipment.currentStatus}</span></td><td>{formatCurrency(row.codAmount)}</td><td>{formatCurrency(row.feeEstimate)}</td><td>{row.serviceType}</td><td>{formatDate(row.shipment.createdAt)}</td><td><div className="btn-row"><button className="btn btn-ghost" onClick={() => { void openShipmentDetail(row.shipment.code); }}>Xem</button><button className="btn btn-secondary" onClick={() => { void openShipmentDetail(row.shipment.code); }}>Cập nhật</button><button className="btn btn-danger" onClick={() => { const reason = window.prompt('Lý do hủy đơn', '') ?? ''; void cancelShipment(row.shipment.code, reason); }}>Hủy</button><button className="btn btn-secondary" onClick={() => { void createPickupForShipment(row.shipment.code, `manual pickup ${row.shipment.code}`); }}>Tạo pickup</button><button className="btn btn-ghost" onClick={() => printShipment(row)}>In</button></div></td></tr>)}</tbody></table></div>{visibleRows.length === 0 ? <div className="empty">Không có dữ liệu.</div> : null}<div className="btn-row" style={{ marginTop: 8 }}><button className="btn btn-ghost" disabled={listPage <= 1} onClick={() => setListPage((p) => Math.max(p - 1, 1))}>Trước</button><span className="badge">Trang {listPage}/{totalPages}</span><button className="btn btn-ghost" disabled={listPage >= totalPages} onClick={() => setListPage((p) => Math.min(p + 1, totalPages))}>Sau</button></div></section></> : null}
 
           {activeView === 'shipment-detail' ? <section className="grid">{!selectedShipment ? <div className="card"><div className="empty">Chưa chọn shipment.</div></div> : <><div className="card"><h3>Chi tiết shipment {selectedShipment.shipment.code}</h3><div className="details-grid"><div className="detail-box"><div className="label">Người gửi</div><div>{selectedShipment.senderName}<br />{selectedShipment.senderPhone}</div></div><div className="detail-box"><div className="label">Người nhận</div><div>{selectedShipment.receiverName}<br />{selectedShipment.receiverPhone}</div></div><div className="detail-box"><div className="label">Hàng hóa</div><div>{selectedShipment.itemType}<br />{selectedShipment.weightKg}kg</div></div><div className="detail-box"><div className="label">COD / Phí</div><div>{formatCurrency(selectedShipment.codAmount)}<br />{formatCurrency(selectedShipment.feeEstimate)}</div></div></div><div className="btn-row" style={{ marginTop: 8 }}><span className={statusClass(selectedShipment.shipment.currentStatus)}>{selectedShipment.shipment.currentStatus}</span><button className="btn btn-danger" onClick={() => { const reason = window.prompt('Lý do hủy đơn', '') ?? ''; void cancelShipment(selectedShipment.shipment.code, reason); }}>Hủy đơn</button><button className="btn btn-ghost" onClick={() => printShipment(selectedShipment)}>In vận đơn</button></div></div><div className="card grid"><h3>Sửa đơn nếu còn cho phép</h3><div className="grid grid-3"><input className="input" value={detailReceiverPhone} onChange={(e) => setDetailReceiverPhone(e.target.value)} placeholder="SĐT người nhận" /><input className="input" value={detailReceiverAddress} onChange={(e) => setDetailReceiverAddress(e.target.value)} placeholder="Địa chỉ người nhận" /><input className="input" value={detailDeliveryNote} onChange={(e) => setDetailDeliveryNote(e.target.value)} placeholder="Ghi chú giao hàng" /></div><div className="btn-row"><button className="btn btn-primary" disabled={detailUpdating} onClick={() => { void saveDetailUpdate(); }}>{detailUpdating ? 'Đang cập nhật...' : 'Sửa đơn'}</button><button className="btn btn-secondary" onClick={() => { setChangeCode(selectedShipment.shipment.code); setActiveView('change-requests'); }}>Yêu cầu đổi thông tin giao</button><button className="btn btn-secondary" onClick={() => { setReturnCode(selectedShipment.shipment.code); setActiveView('returns'); }}>Yêu cầu hoàn hàng</button></div>{detailError ? <p className="message error">{detailError}</p> : null}{detailSuccess ? <p className="message success">{detailSuccess}</p> : null}</div><div className="card"><h3>Timeline xử lý đơn</h3>{detailTrackError ? <p className="message error">{detailTrackError}</p> : null}<div className="timeline">{detailTrackTimeline.length === 0 ? <div className="empty">Chưa có tracking event.</div> : detailTrackTimeline.map((ev) => <div key={ev.id} className="timeline-item"><strong>{ev.eventType}</strong><div className="muted">{formatDate(ev.occurredAt)} | actor={ev.actor ?? 'system'} | loc={ev.locationCode ?? 'N/A'}</div></div>)}</div>{detailTrackCurrent ? <p className="muted">Current: {detailTrackCurrent.currentStatus ?? 'N/A'} | Last event: {detailTrackCurrent.lastEventType ?? 'N/A'}</p> : null}</div></>}</section> : null}
 
-          {activeView === 'pickups' ? <><section className="card"><h3>Tao va quan ly yeu cau lay hang</h3><form className="grid" onSubmit={(e) => { void submitPickupRequest(e); }}><div className="grid grid-3"><textarea className="textarea" value={pickupShipmentCodes} onChange={(e) => setPickupShipmentCodes(e.target.value)} placeholder="Danh sach ma van don" /><input className="input" value={pickupRequesterName} onChange={(e) => setPickupRequesterName(e.target.value)} placeholder="Người yêu cầu" /><input className="input" value={pickupContactPhone} onChange={(e) => setPickupContactPhone(e.target.value)} placeholder="SĐT liên hệ" /><input className="input" value={pickupAddress} onChange={(e) => setPickupAddress(e.target.value)} placeholder="Dia chi lay hang" /><input className="input" value={pickupDesiredTime} onChange={(e) => setPickupDesiredTime(e.target.value)} placeholder="Thời gian mong muốn" /><input className="input" value={pickupNote} onChange={(e) => setPickupNote(e.target.value)} placeholder="Ghi chú courier" /></div><button className="btn btn-primary" type="submit" disabled={pickupLoading}>{pickupLoading ? 'Đang tạo...' : 'Tao yeu cau lay hang'}</button></form>{pickupMessage ? <p className="message">{pickupMessage}</p> : null}</section><section className="card"><div className="btn-row"><select className="select" style={{ maxWidth: 220 }} value={pickupStatusFilter} onChange={(e) => setPickupStatusFilter(e.target.value)}><option value="ALL">Tất cả</option><option value="REQUESTED">cho duyet</option><option value="COMPLETED">da lay/hoan tat</option><option value="CANCELLED">da huy</option></select></div><div className="table-wrap"><table><thead><tr><th>Ma lay hang</th><th>Van don</th><th>Trạng thái</th><th>Shipper</th><th>Ngày tạo</th><th>Hành động</th></tr></thead><tbody>{pickupRows.map((item) => <tr key={item.id}><td>{item.pickupCode}</td><td>{item.items.map((it) => it.shipmentCode).join(', ') || '-'}</td><td><span className={statusClass(item.status)}>{item.status}</span></td><td>Chưa gán</td><td>{formatDate(item.createdAt)}</td><td><button className="btn btn-danger" disabled={item.status !== 'REQUESTED'} onClick={() => { if (!session) return; const reason = window.prompt('Lý do hủy pickup', '') ?? ''; void request<PickupRequest>(`/merchant/pickup/pickups/${encodeURIComponent(item.id)}/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason: reason.trim() || null }) }, session.accessToken).then((cancelled) => setPickups((prev) => prev.map((pickup) => pickup.id === item.id ? cancelled : pickup))); }}>Hủy pickup</button></td></tr>)}</tbody></table></div></section></> : null}
+          {activeView === 'pickups' ? <><section className="card"><h3>Tạo và quản lý yêu cầu lấy hàng</h3><form className="grid" onSubmit={(e) => { void submitPickupRequest(e); }}><div className="grid grid-3"><textarea className="textarea" value={pickupShipmentCodes} onChange={(e) => setPickupShipmentCodes(e.target.value)} placeholder="Danh sách mã vận đơn" /><input className="input" value={pickupRequesterName} onChange={(e) => setPickupRequesterName(e.target.value)} placeholder="Người yêu cầu" /><input className="input" value={pickupContactPhone} onChange={(e) => setPickupContactPhone(e.target.value)} placeholder="SĐT liên hệ" /><input className="input" value={pickupAddress} onChange={(e) => setPickupAddress(e.target.value)} placeholder="Địa chỉ lấy hàng" /><input className="input" value={pickupDesiredTime} onChange={(e) => setPickupDesiredTime(e.target.value)} placeholder="Thời gian mong muốn" /><input className="input" value={pickupNote} onChange={(e) => setPickupNote(e.target.value)} placeholder="Ghi chú courier" /></div><button className="btn btn-primary" type="submit" disabled={pickupLoading}>{pickupLoading ? 'Đang tạo...' : 'Tạo yêu cầu lấy hàng'}</button></form>{pickupMessage ? <p className="message">{pickupMessage}</p> : null}</section><section className="card"><div className="btn-row"><select className="select" style={{ maxWidth: 220 }} value={pickupStatusFilter} onChange={(e) => setPickupStatusFilter(e.target.value)}><option value="ALL">Tất cả</option><option value="REQUESTED">chờ duyệt</option><option value="COMPLETED">đã lấy/hoàn tất</option><option value="CANCELLED">đã há»§y</option></select></div><div className="table-wrap"><table><thead><tr><th>Mã lấy hàng</th><th>Vận đơn</th><th>Trạng thái</th><th>Shipper</th><th>Ngày tạo</th><th>Hành động</th></tr></thead><tbody>{pickupRows.map((item) => <tr key={item.id}><td>{item.pickupCode}</td><td>{item.items.map((it) => it.shipmentCode).join(', ') || '-'}</td><td><span className={statusClass(item.status)}>{item.status}</span></td><td>Chưa gán</td><td>{formatDate(item.createdAt)}</td><td><button className="btn btn-danger" disabled={item.status !== 'REQUESTED'} onClick={() => { if (!session) return; const reason = window.prompt('Lý do hủy pickup', '') ?? ''; void request<PickupRequest>(`/merchant/pickup/pickups/${encodeURIComponent(item.id)}/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason: reason.trim() || null }) }, session.accessToken).then((cancelled) => setPickups((prev) => prev.map((pickup) => pickup.id === item.id ? cancelled : pickup))); }}>Hủy pickup</button></td></tr>)}</tbody></table></div></section></> : null}
 
-          {activeView === 'tracking' ? <><section className="card"><h3>Tra cứu noi bo</h3><form className="btn-row" onSubmit={(e) => { void lookupTracking(e); }}><input className="input" style={{ maxWidth: 320 }} value={trackingCode} onChange={(e) => setTrackingCode(e.target.value)} placeholder="Ma van don" /><button className="btn btn-primary" type="submit" disabled={trackingLoading}>{trackingLoading ? 'Đang tải...' : 'Tra cứu'}</button></form>{trackingError ? <p className="message error">{trackingError}</p> : null}</section><section className="card"><div className="details-grid"><div className="detail-box"><div className="label">Trang thai hien tai</div><div>{trackingCurrent?.currentStatus ?? 'N/A'}</div></div><div className="detail-box"><div className="label">Vi tri hien tai</div><div>{trackingCurrent?.currentLocationCode ?? 'N/A'}</div></div><div className="detail-box"><div className="label">Su kien cuoi</div><div>{trackingCurrent?.lastEventType ?? 'N/A'}</div></div><div className="detail-box"><div className="label">Thoi diem su kien cuoi</div><div>{formatDate(trackingCurrent?.lastEventAt ?? null)}</div></div></div><div className="timeline" style={{ marginTop: 8 }}>{trackingTimeline.length === 0 ? <div className="empty">Chưa có timeline event.</div> : trackingTimeline.map((ev) => <div key={ev.id} className="timeline-item"><strong>{ev.eventType}</strong><div className="muted">{formatDate(ev.occurredAt)} | actor={ev.actor ?? 'system'} | vi_tri={ev.locationCode ?? 'N/A'}</div></div>)}</div></section></> : null}
+          {activeView === 'tracking' ? <><section className="card"><h3>Tra cứu nội bộ</h3><form className="btn-row" onSubmit={(e) => { void lookupTracking(e); }}><input className="input" style={{ maxWidth: 320 }} value={trackingCode} onChange={(e) => setTrackingCode(e.target.value)} placeholder="Mã vận đơn" /><button className="btn btn-primary" type="submit" disabled={trackingLoading}>{trackingLoading ? 'Đang tải...' : 'Tra cứu'}</button></form>{trackingError ? <p className="message error">{trackingError}</p> : null}</section><section className="card"><div className="details-grid"><div className="detail-box"><div className="label">Trạng thái hiện tại</div><div>{trackingCurrent?.currentStatus ?? 'N/A'}</div></div><div className="detail-box"><div className="label">Vị trí hiện tại</div><div>{trackingCurrent?.currentLocationCode ?? 'N/A'}</div></div><div className="detail-box"><div className="label">Sá»± kiện cuối</div><div>{trackingCurrent?.lastEventType ?? 'N/A'}</div></div><div className="detail-box"><div className="label">Thời điểm sá»± kiện cuối</div><div>{formatDate(trackingCurrent?.lastEventAt ?? null)}</div></div></div><div className="timeline" style={{ marginTop: 8 }}>{trackingTimeline.length === 0 ? <div className="empty">Chưa có timeline event.</div> : trackingTimeline.map((ev) => <div key={ev.id} className="timeline-item"><strong>{ev.eventType}</strong><div className="muted">{formatDate(ev.occurredAt)} | actor={ev.actor ?? 'system'} | vá»_trÃ­={ev.locationCode ?? 'N/A'}</div></div>)}</div></section></> : null}
 
-          {activeView === 'change-requests' ? <><section className="card"><h3>Quản lý yêu cầu thay đổi giao hàng</h3><form className="grid" onSubmit={(e) => { void submitChangeRequest(e); }}><div className="grid grid-3"><input className="input" value={changeCode} onChange={(e) => setChangeCode(e.target.value)} placeholder="Ma van don" /><select className="select" value={changeType} onChange={(e) => setChangeType(e.target.value)}><option value="change.phone">Đổi số điện thoại</option><option value="change.address">Đổi địa chỉ giao</option><option value="change.note">Đổi ghi chú giao</option></select><input className="input" value={changeValue} onChange={(e) => setChangeValue(e.target.value)} placeholder="Giá trị mới" /></div><button className="btn btn-primary" type="submit" disabled={changeLoading}>{changeLoading ? 'Đang gửi...' : 'Tạo yêu cầu thay đổi'}</button></form>{changeMessage ? <p className="message">{changeMessage}</p> : null}</section><section className="card"><div className="btn-row"><select className="select" style={{ maxWidth: 220 }} value={changeStatusFilter} onChange={(e) => setChangeStatusFilter(e.target.value)}><option value="ALL">Tất cả</option><option value="PENDING">PENDING</option><option value="APPROVED">APPROVED</option><option value="REJECTED">REJECTED</option></select></div><div className="table-wrap"><table><thead><tr><th>ID</th><th>Van don</th><th>Loai</th><th>Trang thai</th><th>Nguoi yeu cau</th><th>Ngay tao</th></tr></thead><tbody>{changeRows.map((item) => <tr key={item.id}><td>{item.id}</td><td>{item.shipmentCode}</td><td>{item.requestType}</td><td><span className={statusClass(item.status)}>{item.status}</span></td><td>{item.requestedBy ?? '-'}</td><td>{formatDate(item.createdAt)}</td></tr>)}</tbody></table></div></section></> : null}
+          {activeView === 'change-requests' ? <><section className="card"><h3>Quản lý yêu cầu thay đổi giao hàng</h3><form className="grid" onSubmit={(e) => { void submitChangeRequest(e); }}><div className="grid grid-3"><input className="input" value={changeCode} onChange={(e) => setChangeCode(e.target.value)} placeholder="Mã vận đơn" /><select className="select" value={changeType} onChange={(e) => setChangeType(e.target.value)}><option value="change.phone">Đổi số điện thoại</option><option value="change.address">Đổi địa chỉ giao</option><option value="change.note">Đổi ghi chú giao</option></select><input className="input" value={changeValue} onChange={(e) => setChangeValue(e.target.value)} placeholder="Giá trị mới" /></div><button className="btn btn-primary" type="submit" disabled={changeLoading}>{changeLoading ? 'Đang gửi...' : 'Tạo yêu cầu thay đổi'}</button></form>{changeMessage ? <p className="message">{changeMessage}</p> : null}</section><section className="card"><div className="btn-row"><select className="select" style={{ maxWidth: 220 }} value={changeStatusFilter} onChange={(e) => setChangeStatusFilter(e.target.value)}><option value="ALL">Tất cả</option><option value="PENDING">PENDING</option><option value="APPROVED">APPROVED</option><option value="REJECTED">REJECTED</option></select></div><div className="table-wrap"><table><thead><tr><th>ID</th><th>Vận đơn</th><th>Loại</th><th>Trạng thái</th><th>Người yêu cầu</th><th>Ngày tạo</th></tr></thead><tbody>{changeRows.map((item) => <tr key={item.id}><td>{item.id}</td><td>{item.shipmentCode}</td><td>{item.requestType}</td><td><span className={statusClass(item.status)}>{item.status}</span></td><td>{item.requestedBy ?? '-'}</td><td>{formatDate(item.createdAt)}</td></tr>)}</tbody></table></div></section></> : null}
 
-          {activeView === 'returns' ? <><section className="card"><h3>Quản lý yêu cầu hoàn hàng</h3><form className="grid" onSubmit={createReturnRequest}><div className="grid grid-3"><input className="input" value={returnCode} onChange={(e) => setReturnCode(e.target.value)} placeholder="Ma van don" /><input className="input" value={returnReason} onChange={(e) => setReturnReason(e.target.value)} placeholder="Lý do hoàn" /><input className="input" type="date" value={returnExpectedDate} onChange={(e) => setReturnExpectedDate(e.target.value)} /></div><button className="btn btn-primary" type="submit">Tạo yêu cầu hoàn hàng</button></form></section><section className="card"><div className="btn-row"><select className="select" style={{ maxWidth: 220 }} value={returnStatusFilter} onChange={(e) => setReturnStatusFilter(e.target.value)}><option value="ALL">Tất cả</option><option value="PENDING">PENDING</option><option value="IN_TRANSIT">IN_TRANSIT</option><option value="COMPLETED">COMPLETED</option><option value="CANCELLED">CANCELLED</option></select></div><div className="table-wrap"><table><thead><tr><th>Van don</th><th>Lý do</th><th>Dự kiến hoàn</th><th>Trạng thái</th><th>Ngày tạo</th><th>Hành động</th></tr></thead><tbody>{returnRows.map((item) => <tr key={item.id}><td>{item.shipmentCode}</td><td>{item.reason}</td><td>{item.expectedReturnAt}</td><td><span className={statusClass(item.status)}>{item.status}</span></td><td>{formatDate(item.createdAt)}</td><td><div className="btn-row"><button className="btn btn-ghost" onClick={() => setReturnRequests((prev) => prev.map((r) => r.id === item.id ? { ...r, status: 'IN_TRANSIT' } : r))}>Đang hoàn</button><button className="btn btn-secondary" onClick={() => setReturnRequests((prev) => prev.map((r) => r.id === item.id ? { ...r, status: 'COMPLETED' } : r))}>Hoàn tất</button><button className="btn btn-danger" onClick={() => setReturnRequests((prev) => prev.map((r) => r.id === item.id ? { ...r, status: 'CANCELLED' } : r))}>Huy</button></div></td></tr>)}</tbody></table></div></section></> : null}
+          {activeView === 'returns' ? <><section className="card"><h3>Quản lý yêu cầu hoàn hàng</h3><form className="grid" onSubmit={createReturnRequest}><div className="grid grid-3"><input className="input" value={returnCode} onChange={(e) => setReturnCode(e.target.value)} placeholder="Mã vận đơn" /><input className="input" value={returnReason} onChange={(e) => setReturnReason(e.target.value)} placeholder="Lý do hoàn" /><input className="input" type="date" value={returnExpectedDate} onChange={(e) => setReturnExpectedDate(e.target.value)} /></div><button className="btn btn-primary" type="submit">Tạo yêu cầu hoàn hàng</button></form></section><section className="card"><div className="btn-row"><select className="select" style={{ maxWidth: 220 }} value={returnStatusFilter} onChange={(e) => setReturnStatusFilter(e.target.value)}><option value="ALL">Tất cả</option><option value="PENDING">PENDING</option><option value="IN_TRANSIT">IN_TRANSIT</option><option value="COMPLETED">COMPLETED</option><option value="CANCELLED">CANCELLED</option></select></div><div className="table-wrap"><table><thead><tr><th>Vận đơn</th><th>Lý do</th><th>Dự kiến hoàn</th><th>Trạng thái</th><th>Ngày tạo</th><th>Hành động</th></tr></thead><tbody>{returnRows.map((item) => <tr key={item.id}><td>{item.shipmentCode}</td><td>{item.reason}</td><td>{item.expectedReturnAt}</td><td><span className={statusClass(item.status)}>{item.status}</span></td><td>{formatDate(item.createdAt)}</td><td><div className="btn-row"><button className="btn btn-ghost" onClick={() => setReturnRequests((prev) => prev.map((r) => r.id === item.id ? { ...r, status: 'IN_TRANSIT' } : r))}>Đang hoàn</button><button className="btn btn-secondary" onClick={() => setReturnRequests((prev) => prev.map((r) => r.id === item.id ? { ...r, status: 'COMPLETED' } : r))}>Hoàn tất</button><button className="btn btn-danger" onClick={() => setReturnRequests((prev) => prev.map((r) => r.id === item.id ? { ...r, status: 'CANCELLED' } : r))}>Hãy</button></div></td></tr>)}</tbody></table></div></section></> : null}
 
           {activeView === 'print' ? <section className="card grid"><h3>In vận đơn / chứng từ</h3><div className="grid grid-2"><div className="grid"><input className="input" value={printSingleCode} onChange={(e) => setPrintSingleCode(e.target.value)} placeholder="In 1 vận đơn" /><button className="btn btn-primary" onClick={() => { const row = shipmentRows.find((r) => r.shipment.code === normalizeCode(printSingleCode)); if (!row) { setPrintMessage('Không tìm thấy shipment trong danh sách hiện tại.'); return; } printShipment(row); setPrintMessage(`Đã mở popup in cho ${row.shipment.code}`); }}>In 1 vận đơn</button></div><div className="grid"><textarea className="textarea" value={printBulkCodes} onChange={(e) => setPrintBulkCodes(e.target.value)} placeholder="In nhiều vận đơn" /><button className="btn btn-secondary" onClick={() => { const codes = printBulkCodes.split(/[\s,;\n]+/).map((c) => normalizeCode(c)).filter(Boolean); codes.forEach((c) => { const row = shipmentRows.find((r) => r.shipment.code === c); if (row) printShipment(row); }); setPrintMessage(`Đã mở popup in cho ${codes.length} code.`); }}>In nhiều vận đơn</button></div></div><div className="btn-row"><button className="btn btn-ghost" onClick={downloadCsv}>Tải danh sách đơn</button><button className="btn btn-ghost" onClick={() => window.print()}>Xuất PDF (print dialog)</button></div>{printMessage ? <p className="message">{printMessage}</p> : null}</section> : null}
 
