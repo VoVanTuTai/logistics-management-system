@@ -91,7 +91,7 @@ export function TaskDetailPage(): React.JSX.Element {
         : 'chua-co';
 
   if (detailQuery.isLoading) {
-    return <p>Dang tai chi tiet tac vu...</p>;
+    return <p>Đang tải chi tiet tac vu...</p>;
   }
 
   if (detailQuery.isError) {
@@ -99,7 +99,7 @@ export function TaskDetailPage(): React.JSX.Element {
   }
 
   if (!detailQuery.data) {
-    return <p>Khong tim thay tac vu.</p>;
+    return <p>Không tìm thấy tac vu.</p>;
   }
 
   return (
@@ -112,10 +112,10 @@ export function TaskDetailPage(): React.JSX.Element {
       <p>Ma tac vu: {detailQuery.data.taskCode}</p>
       <p>Loai tac vu: {detailQuery.data.taskType}</p>
       <p>Trang thai: {detailQuery.data.status}</p>
-      <p>Ma van don: {detailQuery.data.shipmentCode ?? 'Khong co'}</p>
-      <p>Shipper duoc gan: {detailQuery.data.assignedCourierId ?? 'Khong co'}</p>
+      <p>Ma van don: {detailQuery.data.shipmentCode ?? 'Không có'}</p>
+      <p>Shipper duoc gan: {detailQuery.data.assignedCourierId ?? 'Không có'}</p>
       <p>Cap nhat luc: {formatDateTime(detailQuery.data.updatedAt)}</p>
-      <p>Ghi chu: {detailQuery.data.note ?? 'Khong co'}</p>
+      <p>Ghi chu: {detailQuery.data.note ?? 'Không có'}</p>
 
       <div style={styles.actionButtons}>
         <button type="button" onClick={() => setOpenModal('assign')}>

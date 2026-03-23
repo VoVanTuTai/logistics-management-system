@@ -80,7 +80,7 @@ body {
 
 .brand-title {
   margin: 0;
-  font-family: 'Plus Jakarta Sans', 'Manrope', sans-serif;
+  font-family: 'Manrope', 'Segoe UI', sans-serif;
   font-size: 38px;
   line-height: 1.05;
 }
@@ -148,7 +148,7 @@ body {
 
 .topbar h2 {
   margin: 0;
-  font-family: 'Plus Jakarta Sans', 'Manrope', sans-serif;
+  font-family: 'Manrope', 'Segoe UI', sans-serif;
   font-size: 34px;
   line-height: 1.05;
 }
@@ -338,7 +338,7 @@ body {
   margin-top: 6px;
   font-size: clamp(28px, 4vw, 34px);
   line-height: 1;
-  font-family: 'Plus Jakarta Sans', 'Manrope', sans-serif;
+  font-family: 'Manrope', 'Segoe UI', sans-serif;
 }
 
 .table-wrap {

@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
@@ -41,7 +41,7 @@ export function LoginForm({
       ) : null}
 
       <label className="auth-label" htmlFor="password">
-        Mat khau
+        Mật khẩu
       </label>
       <input
         id="password"
@@ -57,8 +57,9 @@ export function LoginForm({
       {errorMessage ? <div className="auth-error-banner">{errorMessage}</div> : null}
 
       <button type="submit" disabled={isSubmitting} className="auth-submit">
-        {isSubmitting ? 'Dang dang nhap...' : 'Dang nhap'}
+        {isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
       </button>
     </form>
   );
 }
+

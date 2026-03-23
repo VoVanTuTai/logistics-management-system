@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -15,7 +15,7 @@ import { Card } from '../../components/ui/Card';
 import { Screen } from '../../components/ui/Screen';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { useAssignedTasksQuery } from '../../features/tasks/tasks.queries';
-import type { TaskListFilter, TaskStatus } from '../../features/tasks/tasks.types';
+import type { TaskDto, TaskStatus } from '../../features/tasks/tasks.types';
 import type {
   MainTabParamList,
   RootStackParamList,
@@ -27,12 +27,7 @@ import { theme } from '../../theme';
 
 type Props = BottomTabScreenProps<MainTabParamList, 'Tasks'>;
 
-const FILTER_OPTIONS: Array<{ value: TaskListFilter; label: string }> = [
-  { value: 'ALL', label: 'Tat ca' },
-  { value: 'PICKUP', label: 'Pickup' },
-  { value: 'DELIVERY', label: 'Delivery' },
-  { value: 'RETURN', label: 'Return' },
-];
+const WAITING_TASK_STATUSES: ReadonlySet<TaskStatus> = new Set(['CREATED', 'ASSIGNED']);
 
 function mapTaskStatusVariant(status: TaskStatus):
   | 'neutral'
@@ -55,29 +50,32 @@ function mapTaskStatusVariant(status: TaskStatus):
   return 'info';
 }
 
+function isWaitingTask(task: TaskDto): boolean {
+  return WAITING_TASK_STATUSES.has(task.status);
+}
+
 export function TaskListScreen(_: Props): React.JSX.Element {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const session = useAppStore((state) => state.session);
   const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
   const offlinePendingCount = useAppStore((state) => state.offlinePendingCount);
-  const [selectedFilter, setSelectedFilter] = useState<TaskListFilter>('ALL');
   const tasksQuery = useAssignedTasksQuery({
     accessToken: session?.tokens.accessToken ?? null,
     courierId,
   });
 
   const tasks = tasksQuery.data ?? [];
-  const filteredTasks = useMemo(
-    () =>
-      selectedFilter === 'ALL'
-        ? tasks
-        : tasks.filter((task) => task.taskType === selectedFilter),
-    [selectedFilter, tasks],
+  const waitingPickupTasks = useMemo(
+    () => tasks.filter((task) => task.taskType === 'PICKUP' && isWaitingTask(task)),
+    [tasks],
+  );
+  const waitingDeliveryTasks = useMemo(
+    () => tasks.filter((task) => task.taskType === 'DELIVERY' && isWaitingTask(task)),
+    [tasks],
   );
 
-  const totalTaskCount = tasks.length;
-  const assignedTaskCount = tasks.filter((task) => task.status === 'ASSIGNED').length;
+  const waitingTaskCount = waitingPickupTasks.length + waitingDeliveryTasks.length;
   const completedTaskCount = tasks.filter((task) => task.status === 'COMPLETED').length;
 
   return (
@@ -85,19 +83,19 @@ export function TaskListScreen(_: Props): React.JSX.Element {
       <View style={styles.heroCard}>
         <View>
           <Text style={styles.greeting}>Chao {session?.user.username ?? 'Courier'}</Text>
-          <Text style={styles.heroSubtitle}>Ban co {totalTaskCount} nhiem vu trong ca</Text>
+          <Text style={styles.heroSubtitle}>Ban co {waitingTaskCount} nhiem vu can xu ly</Text>
         </View>
         <Ionicons name="bicycle" size={28} color="#FFFFFF" />
       </View>
 
       <View style={styles.kpiGrid}>
         <Card style={styles.kpiCard}>
-          <Text style={styles.kpiLabel}>Tong task</Text>
-          <Text style={styles.kpiValue}>{totalTaskCount}</Text>
+          <Text style={styles.kpiLabel}>Doi lay</Text>
+          <Text style={styles.kpiValue}>{waitingPickupTasks.length}</Text>
         </Card>
         <Card style={styles.kpiCard}>
-          <Text style={styles.kpiLabel}>Dang xu ly</Text>
-          <Text style={styles.kpiValue}>{assignedTaskCount}</Text>
+          <Text style={styles.kpiLabel}>Doi phat</Text>
+          <Text style={styles.kpiValue}>{waitingDeliveryTasks.length}</Text>
         </Card>
         <Card style={styles.kpiCard}>
           <Text style={styles.kpiLabel}>Da xong</Text>
@@ -107,9 +105,9 @@ export function TaskListScreen(_: Props): React.JSX.Element {
 
       {offlinePendingCount > 0 ? (
         <Card style={styles.offlineBanner}>
-          <Text style={styles.offlineBannerTitle}>Dang co action cho retry offline</Text>
+          <Text style={styles.offlineBannerTitle}>Đang có thao tác chờ đồng bộ offline</Text>
           <Text style={styles.offlineBannerText}>
-            {offlinePendingCount} action dang queue. Vao tab Ca nhan de retry thu cong.
+            {offlinePendingCount} thao tác đang trong hàng đợi. Vào tab Cá nhân để thử lại thủ công.
           </Text>
         </Card>
       ) : null}
@@ -143,33 +141,14 @@ export function TaskListScreen(_: Props): React.JSX.Element {
       </View>
 
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Danh sach nhiem vu</Text>
-        <Text style={styles.sectionMeta}>Filter theo payload server</Text>
-      </View>
-
-      <View style={styles.filterRow}>
-        {FILTER_OPTIONS.map((filterOption) => {
-          const active = filterOption.value === selectedFilter;
-          return (
-            <Pressable
-              key={filterOption.value}
-              onPress={() => setSelectedFilter(filterOption.value)}
-              style={[styles.filterChip, active && styles.filterChipActive]}
-            >
-              <Text
-                style={[styles.filterChipText, active && styles.filterChipTextActive]}
-              >
-                {filterOption.label}
-              </Text>
-            </Pressable>
-          );
-        })}
+        <Text style={styles.sectionTitle}>Nhiệm vụ theo luong</Text>
+        <Text style={styles.sectionMeta}>Hien thi 2 list: doi lay va doi phat</Text>
       </View>
 
       {tasksQuery.isLoading ? (
         <View style={styles.centeredState}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.stateText}>Dang tai nhiem vu...</Text>
+          <Text style={styles.stateText}>Đang tải nhiem vu...</Text>
         </View>
       ) : null}
 
@@ -181,42 +160,94 @@ export function TaskListScreen(_: Props): React.JSX.Element {
               : 'Tai task that bai.'}
           </Text>
           <Pressable onPress={() => void tasksQuery.refetch()} style={styles.retryButton}>
-            <Text style={styles.retryText}>Thu lai</Text>
+            <Text style={styles.retryText}>Thử lại</Text>
           </Pressable>
         </Card>
       ) : null}
 
-      {!tasksQuery.isLoading && !tasksQuery.isError && filteredTasks.length === 0 ? (
+      {!tasksQuery.isLoading &&
+      !tasksQuery.isError &&
+      waitingPickupTasks.length === 0 &&
+      waitingDeliveryTasks.length === 0 ? (
         <Card style={styles.emptyCard}>
-          <Text style={styles.emptyTitle}>Khong co task phu hop</Text>
-          <Text style={styles.stateText}>Thu doi filter hoac lam moi du lieu.</Text>
+          <Text style={styles.emptyTitle}>Không có task cho xu ly</Text>
+          <Text style={styles.stateText}>Thu lam moi du lieu hoac doi dieu phoi moi.</Text>
         </Card>
       ) : null}
 
-      {!tasksQuery.isLoading && !tasksQuery.isError
-        ? filteredTasks.map((task) => (
-            <Card
-              key={task.id}
-              onPress={() => navigation.navigate('TaskDetail', { taskId: task.id })}
-              style={styles.taskCard}
-            >
-              <View style={styles.taskTopRow}>
-                <Text style={styles.taskCode}>{task.taskCode}</Text>
-                <StatusBadge
-                  label={task.status}
-                  variant={mapTaskStatusVariant(task.status)}
-                />
-              </View>
+      {!tasksQuery.isLoading && !tasksQuery.isError ? (
+        <Card style={styles.taskSectionCard}>
+          <View style={styles.taskSectionHeader}>
+            <View style={styles.taskSectionTitleRow}>
+              <Ionicons name="cube-outline" size={18} color={theme.colors.primary} />
+              <Text style={styles.taskSectionTitle}>List doi lay</Text>
+            </View>
+            <StatusBadge label={String(waitingPickupTasks.length)} variant="warning" />
+          </View>
+          <Text style={styles.taskSectionMeta}>Task PICKUP trang thai CREATED/ASSIGNED</Text>
 
-              <View style={styles.taskMetaRow}>
-                <StatusBadge label={task.taskType} variant="neutral" />
-                <Text style={styles.taskShipment}>
-                  Shipment: {task.shipmentCode ?? 'N/A'}
-                </Text>
-              </View>
-            </Card>
-          ))
-        : null}
+          {waitingPickupTasks.length === 0 ? (
+            <Text style={styles.taskSectionEmptyText}>Chua co task doi lay.</Text>
+          ) : (
+            waitingPickupTasks.map((task, index) => (
+              <Pressable
+                key={task.id}
+                onPress={() => navigation.navigate('TaskDetail', { taskId: task.id })}
+                style={[styles.taskRow, index > 0 && styles.taskRowSeparated]}
+              >
+                <View style={styles.taskTopRow}>
+                  <Text style={styles.taskCode}>{task.taskCode}</Text>
+                  <StatusBadge
+                    label={task.status}
+                    variant={mapTaskStatusVariant(task.status)}
+                  />
+                </View>
+                <View style={styles.taskMetaRow}>
+                  <StatusBadge label={task.taskType} variant="neutral" />
+                  <Text style={styles.taskShipment}>Shipment: {task.shipmentCode ?? 'N/A'}</Text>
+                </View>
+              </Pressable>
+            ))
+          )}
+        </Card>
+      ) : null}
+
+      {!tasksQuery.isLoading && !tasksQuery.isError ? (
+        <Card style={styles.taskSectionCard}>
+          <View style={styles.taskSectionHeader}>
+            <View style={styles.taskSectionTitleRow}>
+              <Ionicons name="paper-plane-outline" size={18} color={theme.colors.primary} />
+              <Text style={styles.taskSectionTitle}>List doi phat</Text>
+            </View>
+            <StatusBadge label={String(waitingDeliveryTasks.length)} variant="info" />
+          </View>
+          <Text style={styles.taskSectionMeta}>Task DELIVERY trang thai CREATED/ASSIGNED</Text>
+
+          {waitingDeliveryTasks.length === 0 ? (
+            <Text style={styles.taskSectionEmptyText}>Chua co task doi phat.</Text>
+          ) : (
+            waitingDeliveryTasks.map((task, index) => (
+              <Pressable
+                key={task.id}
+                onPress={() => navigation.navigate('TaskDetail', { taskId: task.id })}
+                style={[styles.taskRow, index > 0 && styles.taskRowSeparated]}
+              >
+                <View style={styles.taskTopRow}>
+                  <Text style={styles.taskCode}>{task.taskCode}</Text>
+                  <StatusBadge
+                    label={task.status}
+                    variant={mapTaskStatusVariant(task.status)}
+                  />
+                </View>
+                <View style={styles.taskMetaRow}>
+                  <StatusBadge label={task.taskType} variant="neutral" />
+                  <Text style={styles.taskShipment}>Shipment: {task.shipmentCode ?? 'N/A'}</Text>
+                </View>
+              </Pressable>
+            ))
+          )}
+        </Card>
+      ) : null}
     </Screen>
   );
 }
@@ -303,31 +334,6 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
     fontSize: 13,
   },
-  filterRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: theme.spacing.sm,
-  },
-  filterChip: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radius.pill,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  filterChipActive: {
-    borderColor: theme.colors.primary,
-    backgroundColor: theme.colors.primary,
-  },
-  filterChipText: {
-    color: theme.colors.textSecondary,
-    fontWeight: '600',
-    fontSize: 13,
-  },
-  filterChipTextActive: {
-    color: '#FFFFFF',
-  },
   centeredState: {
     paddingVertical: theme.spacing.xl,
     alignItems: 'center',
@@ -364,8 +370,42 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 16,
   },
-  taskCard: {
+  taskSectionCard: {
     gap: theme.spacing.sm,
+  },
+  taskSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: theme.spacing.sm,
+  },
+  taskSectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+  },
+  taskSectionTitle: {
+    color: theme.colors.textPrimary,
+    fontWeight: '800',
+    fontSize: 16,
+  },
+  taskSectionMeta: {
+    color: theme.colors.textMuted,
+    fontSize: 12,
+    marginTop: -2,
+  },
+  taskSectionEmptyText: {
+    color: theme.colors.textMuted,
+    fontSize: 13,
+    fontStyle: 'italic',
+  },
+  taskRow: {
+    gap: theme.spacing.xs,
+    paddingTop: theme.spacing.sm,
+  },
+  taskRowSeparated: {
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
   },
   taskTopRow: {
     flexDirection: 'row',

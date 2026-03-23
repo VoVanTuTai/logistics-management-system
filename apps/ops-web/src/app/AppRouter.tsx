@@ -52,9 +52,9 @@ function DashboardLayout(): React.JSX.Element {
       { label: 'Duyet lay hang', to: routePaths.pickups },
       { label: 'Phan cong tac vu', to: routePaths.tasks },
       { label: 'Manifest', to: routePaths.manifests },
-      { label: 'Quet hub', to: routePaths.scans },
+      { label: 'Quét hub', to: routePaths.scans },
       { label: 'NDR', to: routePaths.ndr },
-      { label: 'Tra cuu', to: routePaths.tracking },
+      { label: 'Tra cứu', to: routePaths.tracking },
     ],
     [],
   );
@@ -91,7 +91,7 @@ function DashboardLayout(): React.JSX.Element {
             disabled={logoutMutation.isPending}
             onClick={() => void onLogout()}
           >
-            {logoutMutation.isPending ? 'Dang dang xuat...' : 'Dang xuat'}
+            {logoutMutation.isPending ? 'Đang đăng xuất...' : 'Đăng xuất'}
           </button>
         </div>
 

@@ -45,7 +45,7 @@ export function MasterdataEditorModal({
               Huy
             </button>
             <button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Dang luu...' : submitLabel}
+              {isSubmitting ? 'Đang lưu...' : submitLabel}
             </button>
           </div>
         </form>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -9,6 +9,8 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
 import { theme } from '../../theme';
@@ -18,8 +20,9 @@ import { QuickStatsRow } from '../../components/home/QuickStatsRow';
 import { OverdueCard } from '../../components/home/OverdueCard';
 import { AppGrid, type HomeAppGridItem } from '../../components/home/AppGrid';
 import { StatusBadge } from '../../components/ui/StatusBadge';
-import type { TaskStatus } from '../../features/tasks/tasks.types';
+import type { TaskDto, TaskStatus } from '../../features/tasks/tasks.types';
 import { useAssignedTasksQuery } from '../../features/tasks/tasks.queries';
+import type { AppNavigatorParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
 import { appEnv } from '../../utils/env';
 import { resolveCourierId } from '../../utils/courier';
@@ -83,6 +86,8 @@ const appItems: HomeAppGridItem[] = [
   },
 ];
 
+const WAITING_TASK_STATUSES: ReadonlySet<TaskStatus> = new Set(['CREATED', 'ASSIGNED']);
+
 function mapTaskStatusVariant(
   status: TaskStatus,
 ): 'neutral' | 'success' | 'warning' | 'danger' | 'info' {
@@ -101,19 +106,44 @@ function mapTaskStatusVariant(
   return 'info';
 }
 
+function isWaitingTask(task: TaskDto): boolean {
+  return WAITING_TASK_STATUSES.has(task.status);
+}
+
 export function HomeScreen(): React.JSX.Element {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<AppNavigatorParamList>>();
   const session = useAppStore((state) => state.session);
   const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
+  const [selectedQueue, setSelectedQueue] = useState<'PICKUP' | 'DELIVERY' | null>(
+    null,
+  );
   const tasksQuery = useAssignedTasksQuery({
     accessToken: session?.tokens.accessToken ?? null,
     courierId,
   });
 
   const tasks = tasksQuery.data ?? [];
-  const pickupCount = tasks.filter((task) => task.taskType === 'PICKUP').length;
-  const deliveryCount = tasks.filter((task) => task.taskType === 'DELIVERY').length;
+  const waitingPickupTasks = useMemo(
+    () => tasks.filter((task) => task.taskType === 'PICKUP' && isWaitingTask(task)),
+    [tasks],
+  );
+  const waitingDeliveryTasks = useMemo(
+    () => tasks.filter((task) => task.taskType === 'DELIVERY' && isWaitingTask(task)),
+    [tasks],
+  );
+
+  const pickupCount = waitingPickupTasks.length;
+  const deliveryCount = waitingDeliveryTasks.length;
   const processingCount = tasks.filter((task) => task.status === 'ASSIGNED').length;
   const recentTasks = tasks.slice(0, 3);
+  const selectedQueueTasks = selectedQueue === 'PICKUP'
+    ? waitingPickupTasks
+    : selectedQueue === 'DELIVERY'
+      ? waitingDeliveryTasks
+      : [];
+  const selectedQueueTitle =
+    selectedQueue === 'PICKUP' ? 'Danh sách đợi lấy' : 'Danh sách đợi phát';
 
   const displayName = session?.user.username ?? 'Courier';
   const hubLabel = `Mã courier: ${courierId}`;
@@ -140,7 +170,54 @@ export function HomeScreen(): React.JSX.Element {
             onPress={() => Alert.alert('Thông báo', 'Chi tiết thông báo vận hành')}
           />
 
-          <QuickStatsRow waitingPickup={pickupCount} waitingDelivery={deliveryCount} />
+          <QuickStatsRow
+            waitingPickup={pickupCount}
+            waitingDelivery={deliveryCount}
+            activeStat={selectedQueue}
+            onPressWaitingPickup={() =>
+              setSelectedQueue((current) => (current === 'PICKUP' ? null : 'PICKUP'))
+            }
+            onPressWaitingDelivery={() =>
+              setSelectedQueue((current) => (current === 'DELIVERY' ? null : 'DELIVERY'))
+            }
+          />
+
+          {selectedQueue ? (
+            <View style={styles.recentCard}>
+              <View style={styles.queueHeaderRow}>
+                <Text style={styles.recentTitle}>{selectedQueueTitle}</Text>
+                <Pressable
+                  onPress={() => setSelectedQueue(null)}
+                  style={styles.queueCloseButton}
+                >
+                  <Text style={styles.queueCloseText}>Đóng</Text>
+                </Pressable>
+              </View>
+
+              {selectedQueueTasks.length === 0 ? (
+                <Text style={styles.stateText}>Chưa có nhiệm vụ trong danh sách này.</Text>
+              ) : (
+                selectedQueueTasks.map((task) => (
+                  <Pressable
+                    key={task.id}
+                    onPress={() => navigation.navigate('TaskDetail', { taskId: task.id })}
+                    style={styles.queueTaskRow}
+                  >
+                    <View style={styles.recentTaskInfo}>
+                      <Text style={styles.recentTaskCode}>{task.taskCode}</Text>
+                      <Text style={styles.recentTaskMeta}>
+                        {task.taskType} • {task.shipmentCode ?? 'N/A'}
+                      </Text>
+                    </View>
+                    <StatusBadge
+                      label={task.status}
+                      variant={mapTaskStatusVariant(task.status)}
+                    />
+                  </Pressable>
+                ))
+              )}
+            </View>
+          ) : null}
 
           <OverdueCard
             title="Đơn đang xử lý"
@@ -309,5 +386,31 @@ const styles = StyleSheet.create({
     ...theme.typography.caption.md,
     color: theme.colors.textMuted,
     marginTop: 2,
+  },
+  queueHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  queueCloseButton: {
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.pill,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 4,
+  },
+  queueCloseText: {
+    ...theme.typography.caption.md,
+    color: theme.colors.textSecondary,
+  },
+  queueTaskRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: theme.spacing.sm,
+    paddingTop: theme.spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
   },
 });

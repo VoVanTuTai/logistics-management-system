@@ -77,7 +77,7 @@ export function TaskActionModal({
           <label htmlFor={`${mode}-courier`}>Shipper</label>
 
           {courierOptionsLoading ? (
-            <p style={styles.helperText}>Dang tai danh sach shipper...</p>
+            <p style={styles.helperText}>Đang tải danh sach shipper...</p>
           ) : courierOptions.length > 0 ? (
             <select
               id={`${mode}-courier`}
@@ -117,7 +117,7 @@ export function TaskActionModal({
               type="submit"
               disabled={isSubmitting || courierOptionsLoading}
             >
-              {isSubmitting ? 'Dang gui...' : actionTitle}
+              {isSubmitting ? 'Đang gửi...' : actionTitle}
             </button>
           </div>
         </form>

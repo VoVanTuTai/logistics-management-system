@@ -68,7 +68,7 @@ export function PickupRequestDetailPage(): React.JSX.Element {
           : 'chua-co';
 
   if (detailQuery.isLoading) {
-    return <p>Dang tai chi tiet yeu cau lay hang...</p>;
+    return <p>Đang tải chi tiet yeu cau lay hang...</p>;
   }
 
   if (detailQuery.isError) {
@@ -76,7 +76,7 @@ export function PickupRequestDetailPage(): React.JSX.Element {
   }
 
   if (!detailQuery.data) {
-    return <p>Khong tim thay yeu cau lay hang.</p>;
+    return <p>Không tìm thấy yeu cau lay hang.</p>;
   }
 
   const canComplete =
@@ -89,18 +89,18 @@ export function PickupRequestDetailPage(): React.JSX.Element {
         <Link to={routePaths.pickups}>Quay lai danh sach yeu cau lay hang</Link>
       </p>
       <p>Ma yeu cau: {detailQuery.data.requestCode}</p>
-      <p>Ma van don: {detailQuery.data.shipmentCode ?? 'Khong co'}</p>
+      <p>Ma van don: {detailQuery.data.shipmentCode ?? 'Không có'}</p>
       <p>Trang thai: {detailQuery.data.status}</p>
       <p>Thoi diem tao: {formatDateTime(detailQuery.data.requestedAt)}</p>
-      <p>Cap nhat luc: {detailQuery.data.updatedAt ? formatDateTime(detailQuery.data.updatedAt) : 'Khong co'}</p>
-      <p>Ghi chu: {detailQuery.data.note ?? 'Khong co'}</p>
+      <p>Cap nhat luc: {detailQuery.data.updatedAt ? formatDateTime(detailQuery.data.updatedAt) : 'Không có'}</p>
+      <p>Ghi chu: {detailQuery.data.note ?? 'Không có'}</p>
 
       <div style={styles.actionsGrid}>
         <form onSubmit={onApproveSubmit} style={styles.form}>
           <h3 style={styles.actionTitle}>Duyet</h3>
           <textarea rows={3} placeholder="Ghi chu duyet" {...approveForm.register('note')} />
           <button type="submit" disabled={approveMutation.isPending}>
-            {approveMutation.isPending ? 'Dang gui duyet...' : 'Duyet lay hang'}
+            {approveMutation.isPending ? 'Đang gửi duyệt...' : 'Duyet lay hang'}
           </button>
           {approveMutation.isError ? (
             <small style={styles.errorText}>{getErrorMessage(approveMutation.error)}</small>
@@ -111,7 +111,7 @@ export function PickupRequestDetailPage(): React.JSX.Element {
           <h3 style={styles.actionTitle}>Tu choi</h3>
           <textarea rows={3} placeholder="Ly do tu choi" {...rejectForm.register('note')} />
           <button type="submit" disabled={rejectMutation.isPending}>
-            {rejectMutation.isPending ? 'Dang gui tu choi...' : 'Tu choi lay hang'}
+            {rejectMutation.isPending ? 'Đang gửi từ chối...' : 'Tu choi lay hang'}
           </button>
           {rejectMutation.isError ? (
             <small style={styles.errorText}>{getErrorMessage(rejectMutation.error)}</small>
@@ -119,13 +119,13 @@ export function PickupRequestDetailPage(): React.JSX.Element {
         </form>
 
         <div style={styles.form}>
-          <h3 style={styles.actionTitle}>Hoan tat</h3>
+          <h3 style={styles.actionTitle}>Hoàn tất</h3>
           <button
             type="button"
             onClick={() => void onCompleteClick()}
             disabled={completeMutation.isPending || !canComplete}
           >
-            {completeMutation.isPending ? 'Dang gui hoan tat...' : 'Hoan tat lay hang'}
+            {completeMutation.isPending ? 'Đang gửi hoàn tất...' : 'Hoàn tất lay hang'}
           </button>
           {!canComplete ? (
             <small>Chi hoan tat lay hang khi trang thai la APPROVED.</small>

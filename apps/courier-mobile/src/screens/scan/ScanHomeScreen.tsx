@@ -70,7 +70,7 @@ export function ScanHomeScreen(_: Props): React.JSX.Element {
           {offlinePendingCount > 0 ? (
             <StatusBadge label={`${offlinePendingCount} cho retry`} variant="warning" />
           ) : (
-            <StatusBadge label="Khong co queue" variant="success" />
+            <StatusBadge label="Không có queue" variant="success" />
           )}
         </View>
         <Text style={styles.statusHint}>

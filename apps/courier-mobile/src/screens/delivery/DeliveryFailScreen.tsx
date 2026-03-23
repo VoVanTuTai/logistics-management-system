@@ -144,7 +144,7 @@ export function DeliveryFailScreen({
         tu suy dien luong reschedule/return.
       </Text>
       <Text style={styles.helperText}>
-        Khong xu ly event `ndr.created` hoac `return.started` o client.
+        Không xử lý event `ndr.created` hoac `return.started` o client.
       </Text>
 
       {submitMessage ? (
