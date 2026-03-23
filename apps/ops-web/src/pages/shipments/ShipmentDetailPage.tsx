@@ -80,7 +80,7 @@ export function ShipmentDetailPage(): React.JSX.Element {
           <Link
             to={`${routePaths.manifests}?shipmentCode=${encodeURIComponent(detailQuery.data.shipmentCode)}`}
           >
-            Thêm vào manifest
+            Thêm vào bao tải
           </Link>
           <Link to={`${routePaths.scans}?shipmentCode=${encodeURIComponent(detailQuery.data.shipmentCode)}`}>
             Quét hub

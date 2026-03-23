@@ -146,6 +146,11 @@ export function ScanScreen(): React.JSX.Element {
   const [lastScanMessage, setLastScanMessage] = React.useState<string | null>(null);
 
   const handlePressAction = (action: ScanActionItemData) => {
+    if (action.id === 'dong-bao') {
+      navigation.navigate('BagSeal');
+      return;
+    }
+
     setScannerError(null);
     setPendingAction(action);
     setScannerVisible(true);

@@ -21,6 +21,7 @@ export type AppNavigatorParamList = {
     taskId?: string;
     shipmentCode?: string;
   };
+  BagSeal: undefined;
   DeliverySuccess: {
     taskId?: string;
     shipmentCode?: string;

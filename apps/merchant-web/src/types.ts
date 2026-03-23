@@ -133,13 +133,18 @@ export interface NotificationItem {
 }
 
 export interface CreateShipmentForm {
-  manualCode: string;
   senderName: string;
   senderPhone: string;
+  senderProvince: string;
+  senderWard: string;
+  senderAddressDetail: string;
   senderHubCode: string;
   senderAddress: string;
   receiverName: string;
   receiverPhone: string;
+  receiverProvince: string;
+  receiverWard: string;
+  receiverAddressDetail: string;
   receiverHubCode: string;
   receiverAddress: string;
   receiverRegion: string;
@@ -150,7 +155,6 @@ export interface CreateShipmentForm {
   heightCm: string;
   declaredValue: string;
   serviceType: 'STANDARD' | 'EXPRESS' | 'SAME_DAY';
-  codAmount: string;
   deliveryNote: string;
 }
 
@@ -179,13 +183,18 @@ export interface MerchantProfile {
 }
 
 export const DEFAULT_CREATE_FORM: CreateShipmentForm = {
-  manualCode: '',
   senderName: '',
   senderPhone: '',
+  senderProvince: '',
+  senderWard: '',
+  senderAddressDetail: '',
   senderHubCode: '',
   senderAddress: '',
   receiverName: '',
   receiverPhone: '',
+  receiverProvince: '',
+  receiverWard: '',
+  receiverAddressDetail: '',
   receiverHubCode: '',
   receiverAddress: '',
   receiverRegion: '',
@@ -196,7 +205,6 @@ export const DEFAULT_CREATE_FORM: CreateShipmentForm = {
   heightCm: '',
   declaredValue: '',
   serviceType: 'STANDARD',
-  codAmount: '',
   deliveryNote: '',
 };
 

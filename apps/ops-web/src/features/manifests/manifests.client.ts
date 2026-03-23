@@ -3,6 +3,7 @@ import { opsEndpoints } from '../../services/api/endpoints';
 import type {
   AddShipmentInput,
   CreateManifestInput,
+  GenerateBagCodesInput,
   ManifestActionResultDto,
   ManifestDetailDto,
   ManifestListItemDto,
@@ -21,6 +22,7 @@ interface ManifestApiResponse {
   status: string;
   originHubCode: string | null;
   destinationHubCode: string | null;
+  createdAt?: string | null;
   sealedAt: string | null;
   updatedAt?: string | null;
   note?: string | null;
@@ -34,6 +36,7 @@ function mapManifestListItem(payload: ManifestApiResponse): ManifestListItemDto 
     status: payload.status,
     originHubCode: payload.originHubCode,
     destinationHubCode: payload.destinationHubCode,
+    createdAt: payload.createdAt ?? null,
     sealedAt: payload.sealedAt,
   };
 }
@@ -83,6 +86,33 @@ export const manifestsClient = {
         shipmentCodes: payload.shipmentCodes,
       },
     }),
+  generateBagCodes: (
+    accessToken: string | null,
+    payload: GenerateBagCodesInput,
+  ): Promise<ManifestListItemDto[]> =>
+    opsApiClient
+      .request<ManifestApiResponse[]>(opsEndpoints.manifests.generateBags, {
+        method: 'POST',
+        accessToken,
+        body: {
+          originHubCode: payload.originHubCode || null,
+          destinationHubCode: payload.destinationHubCode,
+          quantity: payload.quantity,
+          note: payload.note ?? null,
+        },
+      })
+      .then((items) => items.map(mapManifestListItem)),
+  delete: (
+    accessToken: string | null,
+    manifestId: string,
+  ): Promise<ManifestActionResultDto> =>
+    opsApiClient.request<ManifestActionResultDto>(
+      opsEndpoints.manifests.delete(manifestId),
+      {
+        method: 'DELETE',
+        accessToken,
+      },
+    ),
   addShipment: (
     accessToken: string | null,
     manifestId: string,

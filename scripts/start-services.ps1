@@ -21,11 +21,36 @@ function Test-PortListening([int]$port) {
   return [bool](Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue)
 }
 
+function Test-DockerContainerHealthy([string]$containerName) {
+  try {
+    $status = & docker inspect --format "{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}" $containerName 2>$null
+    if ($LASTEXITCODE -ne 0) { return $false }
+    return ($status -and $status.Trim() -eq 'healthy')
+  } catch {
+    return $false
+  }
+}
+
 Push-Location $rootDir
 try {
   $runTag = Get-Date -Format 'yyyyMMdd-HHmmss'
 
-  $infraPorts = @(15432, 5672)
+  $infraPorts = @(5672, 15432, 15433, 15434, 15435, 15436, 15437, 15438, 15439, 15440, 15441)
+  $infraContainers = @(
+    'jms-dev-rabbitmq',
+    'jms-dev-postgres-auth',
+    'jms-dev-postgres-masterdata',
+    'jms-dev-postgres-shipment',
+    'jms-dev-postgres-pickup',
+    'jms-dev-postgres-dispatch',
+    'jms-dev-postgres-manifest',
+    'jms-dev-postgres-scan',
+    'jms-dev-postgres-delivery',
+    'jms-dev-postgres-tracking',
+    'jms-dev-postgres-reporting'
+  )
+  $dockerAvailable = $null -ne (Get-Command docker -ErrorAction SilentlyContinue)
+
   $infraReady = $true
   foreach ($infraPort in $infraPorts) {
     if (-not (Test-PortListening $infraPort)) {
@@ -38,26 +63,47 @@ try {
     Write-Host '[infra] docker ports missing, starting infra/dev docker-compose'
     try {
       docker compose -f infra/dev/docker-compose.yml up -d
-      if ($LASTEXITCODE -eq 0) {
-        $infraDeadline = (Get-Date).AddMinutes(2)
-        while ((Get-Date) -lt $infraDeadline) {
-          $allInfraUp = $true
-          foreach ($infraPort in $infraPorts) {
-            if (-not (Test-PortListening $infraPort)) {
-              $allInfraUp = $false
-              break
-            }
-          }
-
-          if ($allInfraUp) { break }
-          Start-Sleep -Seconds 2
-        }
-      } else {
+      if ($LASTEXITCODE -ne 0) {
         Write-Host '[infra] docker compose failed, continue starting services anyway.' -ForegroundColor Yellow
       }
     } catch {
       Write-Host "[infra] cannot run docker compose ($($_.Exception.Message)), continue starting services anyway." -ForegroundColor Yellow
     }
+  }
+
+  $infraDeadline = (Get-Date).AddMinutes(3)
+  $infraReady = $false
+  while ((Get-Date) -lt $infraDeadline) {
+    $allInfraPortsUp = $true
+    foreach ($infraPort in $infraPorts) {
+      if (-not (Test-PortListening $infraPort)) {
+        $allInfraPortsUp = $false
+        break
+      }
+    }
+
+    $allInfraHealthy = $true
+    if ($dockerAvailable) {
+      foreach ($containerName in $infraContainers) {
+        if (-not (Test-DockerContainerHealthy $containerName)) {
+          $allInfraHealthy = $false
+          break
+        }
+      }
+    }
+
+    if ($allInfraPortsUp -and $allInfraHealthy) {
+      $infraReady = $true
+      break
+    }
+
+    Start-Sleep -Seconds 2
+  }
+
+  if ($infraReady) {
+    Write-Host '[infra] dependencies are ready (ports + health).'
+  } else {
+    Write-Host '[infra] dependencies not fully ready after timeout, continue starting services anyway.' -ForegroundColor Yellow
   }
 
   Write-Host "[services] starting $($services.Count) backend services"

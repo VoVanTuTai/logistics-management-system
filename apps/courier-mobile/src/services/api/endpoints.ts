@@ -19,6 +19,13 @@ export const courierEndpoints = {
     detail: (shipmentCode: string) =>
       `${COURIER_PREFIX}/shipment/shipments/${encodeURIComponent(shipmentCode)}`,
   },
+  manifest: {
+    list: `${COURIER_PREFIX}/manifest/manifests`,
+    addShipments: (manifestId: string) =>
+      `${COURIER_PREFIX}/manifest/manifests/${encodeURIComponent(
+        manifestId,
+      )}/shipments/add`,
+  },
   scan: {
     pickup: `${COURIER_PREFIX}/scan/scans/pickup`,
     inbound: `${COURIER_PREFIX}/scan/scans/inbound`,

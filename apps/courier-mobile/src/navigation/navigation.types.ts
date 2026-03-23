@@ -11,6 +11,7 @@ export type RootStackParamList = {
     taskId?: string;
     shipmentCode?: string;
   };
+  BagSeal: undefined;
   DeliverySuccess: {
     taskId?: string;
     shipmentCode?: string;
