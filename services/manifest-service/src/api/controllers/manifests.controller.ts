@@ -1,9 +1,10 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 
 import { ManifestsService } from '../../application/services/manifests.service';
 import type {
   AddShipmentsInput,
   CreateManifestInput,
+  GenerateBagCodesInput,
   Manifest,
   ReceiveManifestInput,
   RemoveShipmentsInput,
@@ -30,12 +31,22 @@ export class ManifestsController {
     return this.manifestsService.create(body);
   }
 
+  @Post('bags/generate')
+  generateBagCodes(@Body() body: GenerateBagCodesInput): Promise<Manifest[]> {
+    return this.manifestsService.generateBagCodes(body);
+  }
+
   @Patch(':id')
   update(
     @Param('id') id: string,
     @Body() body: UpdateManifestInput,
   ): Promise<Manifest> {
     return this.manifestsService.update(id, body);
+  }
+
+  @Delete(':id')
+  delete(@Param('id') id: string): Promise<Manifest> {
+    return this.manifestsService.delete(id);
   }
 
   @Post(':id/shipments/add')

@@ -187,15 +187,13 @@ export function computeEstimatedFee(form: CreateShipmentForm): number {
   const width = Math.max(asNumber(form.widthCm, 0), 0);
   const height = Math.max(asNumber(form.heightCm, 0), 0);
   const declaredValue = Math.max(asNumber(form.declaredValue, 0), 0);
-  const codAmount = Math.max(asNumber(form.codAmount, 0), 0);
 
   const weightFee = weightKg * 4500;
   const volumetricWeight = (length * width * height) / 6000;
   const volumeFee = volumetricWeight * 3200;
   const insuredFee = declaredValue * 0.002;
-  const codFee = Math.min(codAmount * 0.005, 35000);
 
-  return Math.round(serviceBase + weightFee + volumeFee + insuredFee + codFee);
+  return Math.round(serviceBase + weightFee + volumeFee + insuredFee);
 }
 
 export function buildShipmentMetadata(
@@ -207,14 +205,19 @@ export function buildShipmentMetadata(
       name: form.senderName.trim() || null,
       phone: form.senderPhone.trim() || null,
       address: form.senderAddress.trim() || null,
+      addressDetail: form.senderAddressDetail.trim() || null,
+      province: form.senderProvince.trim() || null,
+      ward: form.senderWard.trim() || null,
       hubCode: form.senderHubCode.trim() || null,
     },
     receiver: {
       name: form.receiverName.trim() || null,
       phone: form.receiverPhone.trim() || null,
       address: form.receiverAddress.trim() || null,
+      addressDetail: form.receiverAddressDetail.trim() || null,
       region: form.receiverRegion.trim() || null,
-      province: form.receiverRegion.trim() || null,
+      province: form.receiverProvince.trim() || null,
+      ward: form.receiverWard.trim() || null,
       hubCode: form.receiverHubCode.trim() || null,
     },
     package: {
@@ -230,7 +233,7 @@ export function buildShipmentMetadata(
     service: {
       type: form.serviceType,
     },
-    codAmount: asNumber(form.codAmount, 0),
+    codAmount: 0,
     deliveryNote: form.deliveryNote.trim() || null,
     estimatedFee,
     routing: {

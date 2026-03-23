@@ -51,7 +51,7 @@ function DashboardLayout(): React.JSX.Element {
       { label: 'Van don', to: routePaths.shipments },
       { label: 'Duyet lay hang', to: routePaths.pickups },
       { label: 'Phan cong tac vu', to: routePaths.tasks },
-      { label: 'Manifest', to: routePaths.manifests },
+      { label: 'Quan ly bao tai', to: routePaths.manifests },
       { label: 'Quét hub', to: routePaths.scans },
       { label: 'NDR', to: routePaths.ndr },
       { label: 'Tra cứu', to: routePaths.tracking },

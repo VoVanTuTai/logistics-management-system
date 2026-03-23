@@ -266,8 +266,8 @@ export function DashboardPage(): React.JSX.Element {
       icon: 'T',
     },
     {
-      title: 'Trung tam manifest',
-      description: 'Tao va xu ly manifest.',
+      title: 'Quan ly bao tai',
+      description: 'Tao va xu ly bao tai trung chuyen.',
       to: routePaths.manifests,
       icon: 'M',
     },

@@ -14,6 +14,7 @@ import { TaskListScreen } from '../screens/tasks/TaskListScreen';
 import { TaskDetailScreen } from '../screens/tasks/TaskDetailScreen';
 import { PickupScanScreen } from '../screens/scan/PickupScanScreen';
 import { HubScanScreen } from '../screens/scan/HubScanScreen';
+import { BagSealScreen } from '../screens/scan/BagSealScreen';
 import { DeliverySuccessScreen } from '../screens/delivery/DeliverySuccessScreen';
 import { DeliveryFailScreen } from '../screens/delivery/DeliveryFailScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
@@ -98,21 +99,21 @@ function MainTabs(): React.JSX.Element {
         name="Tasks"
         component={TaskListScreen}
         options={{
-          tabBarLabel: 'Nhiệm vụ',
+          tabBarLabel: 'Nhiem vu',
         }}
       />
       <MainTab.Screen
         name="Stats"
         component={StatsScreen}
         options={{
-          tabBarLabel: 'Thống kê',
+          tabBarLabel: 'Thong ke',
         }}
       />
       <MainTab.Screen
         name="Scan"
         component={ScanHomeScreen}
         options={{
-          tabBarLabel: 'Quét mã',
+          tabBarLabel: 'Quet ma',
         }}
       />
       <MainTab.Screen
@@ -126,7 +127,7 @@ function MainTabs(): React.JSX.Element {
         name="Profile"
         component={ProfileScreen}
         options={{
-          tabBarLabel: 'Cá nhân',
+          tabBarLabel: 'Ca nhan',
           tabBarBadge: offlinePendingCount > 0 ? offlinePendingCount : undefined,
           tabBarBadgeStyle: styles.badge,
         }}
@@ -168,12 +169,17 @@ export function RootNavigator(): React.JSX.Element {
           <RootStack.Screen
             name="PickupScan"
             component={PickupScanScreen}
-            options={{ title: 'Quét pickup' }}
+            options={{ title: 'Quet pickup' }}
           />
           <RootStack.Screen
             name="HubScan"
             component={HubScanScreen}
-            options={{ title: 'Quét hub' }}
+            options={{ title: 'Quet hub' }}
+          />
+          <RootStack.Screen
+            name="BagSeal"
+            component={BagSealScreen}
+            options={{ title: 'Dong bao tui tai che' }}
           />
           <RootStack.Screen
             name="DeliverySuccess"
@@ -227,5 +233,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
-
 

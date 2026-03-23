@@ -2,11 +2,20 @@
 > @jms/ops-web@0.1.0 dev
 > vite --host 0.0.0.0 --port 5173
 
+Re-optimizing dependencies because lockfile has changed
 
-  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m3436[22m[2m[0m ms[22m
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m18416[22m[2m[0m ms[22m
 
   [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5173[22m/[39m
   [32m➜[39m  [1mNetwork[22m: [36mhttp://172.28.224.1:[1m5173[22m/[39m
   [32m➜[39m  [1mNetwork[22m: [36mhttp://192.168.56.1:[1m5173[22m/[39m
   [32m➜[39m  [1mNetwork[22m: [36mhttp://192.168.1.87:[1m5173[22m/[39m
-[2m4:34:16 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/shipments/ShipmentListPage.tsx[22m
+[2m7:41:04 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/app/AppRouter.tsx, /src/pages/auth/LoginPage.tsx, /src/pages/dashboard/DashboardPage.tsx, /src/pages/scans/HubScanPage.tsx, /src/pages/shipments/ShipmentListPage.tsx, /src/pages/ndr/NdrHandlingPage.tsx, /src/pages/ndr/NdrCaseDetailPage.tsx, /src/pages/manifests/ManifestManagementPage.tsx, /src/pages/tasks/TaskAssignmentPage.tsx, /src/pages/manifests/ManifestDetailPage.tsx, /src/pages/pickups/PickupApprovalsPage.tsx, /src/pages/pickups/PickupRequestDetailPage.tsx, /src/pages/tasks/TaskDetailPage.tsx, /src/pages/shipments/ShipmentDetailPage.tsx, /src/pages/tracking/TrackingLookupPage.tsx, /src/pages/tracking/TrackingDetailPage.tsx[22m
+[2m7:41:19 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/manifests/ManifestManagementPage.tsx, /src/pages/manifests/ManifestDetailPage.tsx[22m
+[2m7:41:32 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/manifests/ManifestManagementPage.tsx, /src/pages/manifests/ManifestDetailPage.tsx[22m
+[2m7:41:43 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/manifests/ManifestManagementPage.tsx, /src/pages/manifests/ManifestDetailPage.tsx[22m
+[2m7:42:33 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/manifests/ManifestsTable.tsx[22m
+[2m7:43:02 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/manifests/ManifestsTable.tsx[22m
+[2m7:43:18 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/manifests/ManifestManagementPage.tsx[22m
+[2m7:44:05 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/manifests/ManifestManagementPage.tsx[22m
+[2m7:51:11 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/manifests/ManifestsTable.tsx[22m

@@ -1,0 +1,15 @@
+[32m[Nest] 14572  - [39m03/23/2026, 6:00:46 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 14572  - [39m03/23/2026, 6:00:51 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mHealthModule dependencies initialized[39m[38;5;3m +4420ms[39m
+[32m[Nest] 14572  - [39m03/23/2026, 6:00:51 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +85ms[39m
+[32m[Nest] 14572  - [39m03/23/2026, 6:00:51 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +114ms[39m
+[32m[Nest] 14572  - [39m03/23/2026, 6:00:51 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/login, POST} route[39m[38;5;3m +12ms[39m
+[32m[Nest] 14572  - [39m03/23/2026, 6:00:51 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/refresh, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14572  - [39m03/23/2026, 6:00:51 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/logout, POST} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 14572  - [39m03/23/2026, 6:00:51 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/introspect, POST} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 14572  - [39m03/23/2026, 6:00:51 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/users, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14572  - [39m03/23/2026, 6:00:51 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/users, POST} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 14572  - [39m03/23/2026, 6:00:51 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/users/:id, PATCH} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14572  - [39m03/23/2026, 6:00:51 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/users/:id, DELETE} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 14572  - [39m03/23/2026, 6:00:51 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mHealthController {/health}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 14572  - [39m03/23/2026, 6:00:51 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/health, GET} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 14572  - [39m03/23/2026, 6:00:53 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +2191ms[39m

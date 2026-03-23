@@ -29,7 +29,7 @@ export function LoginPage(): React.JSX.Element {
       <div className="auth-card">
         <p className="auth-kicker">Cong Ops</p>
         <h2 className="auth-title">Đăng nhập JMS Ops</h2>
-        <p className="auth-subtitle">Trung tam dieu hanh noi bo cho lay hang, quet, phan cong va manifest.</p>
+        <p className="auth-subtitle">Trung tam dieu hanh noi bo cho lay hang, quet, phan cong va bao tai.</p>
         <LoginForm
           isSubmitting={isSubmitting || loginMutation.isPending}
           errorMessage={authError}

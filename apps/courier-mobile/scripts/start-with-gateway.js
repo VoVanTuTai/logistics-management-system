@@ -102,6 +102,12 @@ function run() {
     process.env.EXPO_PUBLIC_GATEWAY_BASE_URL = gatewayBaseUrl;
   }
 
+  // Avoid blocking `expo start` when the CLI cannot reach Expo version endpoints
+  // (common in restricted networks / unstable DNS / campus Wi-Fi).
+  if (!process.env.EXPO_NO_DEPENDENCY_VALIDATION) {
+    process.env.EXPO_NO_DEPENDENCY_VALIDATION = '1';
+  }
+
   const extraArgs = process.argv.slice(2);
   const hasHostArg = extraArgs.some(
     (arg) => arg === '--host' || arg.startsWith('--host='),

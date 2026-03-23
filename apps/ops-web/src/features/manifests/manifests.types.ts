@@ -5,6 +5,7 @@ export interface ManifestListItemDto {
   originHubCode: string | null;
   destinationHubCode: string | null;
   sealedAt: string | null;
+  createdAt?: string | null;
 }
 
 export interface ManifestDetailDto {
@@ -24,6 +25,13 @@ export interface CreateManifestInput {
   originHubCode: string;
   destinationHubCode: string;
   shipmentCodes: string[];
+}
+
+export interface GenerateBagCodesInput {
+  originHubCode?: string | null;
+  destinationHubCode: string;
+  quantity: number;
+  note?: string | null;
 }
 
 export interface AddShipmentInput {
