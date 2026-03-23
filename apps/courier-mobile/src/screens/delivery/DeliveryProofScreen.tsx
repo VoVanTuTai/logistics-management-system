@@ -23,6 +23,7 @@ import { useDeliverySuccessActionMutation } from '../../features/delivery/delive
 import type { DeliverySuccessPayload } from '../../features/delivery/delivery.types';
 import { useShipmentDetailQuery } from '../../features/shipment/shipment.queries';
 import type { ShipmentMetadata } from '../../features/shipment/shipment.types';
+import { tasksApi } from '../../features/tasks/tasks.api';
 import { useTaskDetailQuery } from '../../features/tasks/tasks.queries';
 import type { AppNavigatorParamList } from '../../navigation/types';
 import { shouldQueueOffline } from '../../services/api/client';
@@ -181,16 +182,36 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
 
     try {
       const result = await mutation.mutateAsync(payload);
+      const taskId = route.params.taskId ?? null;
+      const accessToken = session?.tokens.accessToken ?? null;
+      let taskStatusUpdated = false;
+
+      if (taskId && accessToken) {
+        try {
+          await tasksApi.updateTaskStatus(accessToken, taskId, 'COMPLETED');
+          taskStatusUpdated = true;
+        } catch {
+          taskStatusUpdated = false;
+        }
+      }
+
       setSubmitMessage(
         result.source === 'DUPLICATE_REPLAY'
           ? 'Server da tra lai ket qua cu cho idempotencyKey trung lap.'
-          : 'Ky nhan thanh cong. Trang thai don da duoc cap nhat.',
+          : taskStatusUpdated
+            ? 'Ky nhan thanh cong. Task da chuyen COMPLETED.'
+            : 'Ky nhan thanh cong. Trang thai don da duoc cap nhat.',
       );
 
       await queryClient.invalidateQueries({ queryKey: ['tasks'] });
       if (route.params.taskId) {
         await queryClient.invalidateQueries({
           queryKey: ['tasks', 'detail', route.params.taskId],
+        });
+      }
+      if (resolvedShipmentCode) {
+        await queryClient.invalidateQueries({
+          queryKey: ['shipment', 'detail', resolvedShipmentCode],
         });
       }
 
@@ -218,6 +239,7 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
     queryClient,
     resolvedShipmentCode,
     route.params.taskId,
+    session?.tokens.accessToken,
     session?.user.username,
     setGlobalError,
   ]);

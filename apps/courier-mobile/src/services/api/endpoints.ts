@@ -14,6 +14,8 @@ export const courierEndpoints = {
         courierId,
       )}`,
     detail: (taskId: string) => `${COURIER_PREFIX}/dispatch/tasks/${taskId}`,
+    updateStatus: (taskId: string) =>
+      `${COURIER_PREFIX}/dispatch/tasks/${taskId}/status`,
   },
   shipment: {
     detail: (shipmentCode: string) =>
