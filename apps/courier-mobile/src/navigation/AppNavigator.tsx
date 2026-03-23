@@ -9,6 +9,8 @@ import { PickupScanScreen } from '../screens/scan/PickupScanScreen';
 import { HubScanScreen } from '../screens/scan/HubScanScreen';
 import { DeliverySuccessScreen } from '../screens/delivery/DeliverySuccessScreen';
 import { DeliveryFailScreen } from '../screens/delivery/DeliveryFailScreen';
+import { DeliveryProofScreen } from '../screens/delivery/DeliveryProofScreen';
+import { TaskIssueScreen } from '../screens/delivery/TaskIssueScreen';
 import { useAuthStore } from '../features/auth/auth.store';
 import { theme } from '../theme';
 
@@ -59,6 +61,16 @@ export function AppNavigator(): React.JSX.Element {
             name="DeliveryFail"
             component={DeliveryFailScreen}
             options={{ title: 'Giao that bai / NDR' }}
+          />
+          <Stack.Screen
+            name="DeliveryProof"
+            component={DeliveryProofScreen}
+            options={{ title: 'Ky nhan giao hang' }}
+          />
+          <Stack.Screen
+            name="TaskIssue"
+            component={TaskIssueScreen}
+            options={{ title: 'Van de don hang' }}
           />
         </>
       ) : (
