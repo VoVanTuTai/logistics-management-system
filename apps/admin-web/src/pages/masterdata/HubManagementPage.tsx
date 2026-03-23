@@ -1,10 +1,16 @@
 import React, { useMemo, useState } from 'react';
 
 import {
+  useAdminUsersQuery,
+  useUpdateAdminUserMutation,
+} from '../../features/auth/auth.api';
+import type { AdminUserDto } from '../../features/auth/auth.types';
+import {
   useCreateHubMutation,
   useDeleteHubMutation,
   useHubsQuery,
   useUpdateHubMutation,
+  useZonesQuery,
 } from '../../features/masterdata/masterdata.api';
 import type {
   HubDto,
@@ -21,8 +27,6 @@ import { formatDateTime } from '../../utils/format';
 import { MasterdataEditorModal } from './components/MasterdataEditorModal';
 import { MasterdataStatusPill } from './components/MasterdataStatusPill';
 
-type HubType = 'BRANCH' | 'SORTING_CENTER' | 'TRANSIT_HUB' | '';
-
 interface HubAddressPayload {
   addressLine: string;
   ward: string;
@@ -30,12 +34,7 @@ interface HubAddressPayload {
   province: string;
   phone: string;
   contactName: string;
-  type: HubType;
   description: string;
-  latitude: string;
-  longitude: string;
-  workingRadiusKm: string;
-  serviceAreas: string;
 }
 
 interface HubFormState extends HubAddressPayload {
@@ -43,6 +42,8 @@ interface HubFormState extends HubAddressPayload {
   name: string;
   zoneCode: string;
   isActive: boolean;
+  opsUserIds: string[];
+  courierUserIds: string[];
 }
 
 const EMPTY_HUB_FORM: HubFormState = {
@@ -56,12 +57,9 @@ const EMPTY_HUB_FORM: HubFormState = {
   province: '',
   phone: '',
   contactName: '',
-  type: '',
   description: '',
-  latitude: '',
-  longitude: '',
-  workingRadiusKm: '',
-  serviceAreas: '',
+  opsUserIds: [],
+  courierUserIds: [],
 };
 
 function normalizeText(value: string): string | undefined {
@@ -78,25 +76,12 @@ function parseHubAddress(address: string | null): HubAddressPayload {
       province: '',
       phone: '',
       contactName: '',
-      type: '',
       description: '',
-      latitude: '',
-      longitude: '',
-      workingRadiusKm: '',
-      serviceAreas: '',
     };
   }
 
   try {
     const parsed = JSON.parse(address) as Record<string, unknown>;
-    const serviceAreas = Array.isArray(parsed.serviceAreas)
-      ? parsed.serviceAreas
-          .filter((value): value is string => typeof value === 'string')
-          .join(', ')
-      : typeof parsed.serviceAreas === 'string'
-      ? parsed.serviceAreas
-      : '';
-
     return {
       addressLine:
         typeof parsed.addressLine === 'string' ? parsed.addressLine : '',
@@ -104,21 +89,10 @@ function parseHubAddress(address: string | null): HubAddressPayload {
       district: typeof parsed.district === 'string' ? parsed.district : '',
       province: typeof parsed.province === 'string' ? parsed.province : '',
       phone: typeof parsed.phone === 'string' ? parsed.phone : '',
-      contactName: typeof parsed.contactName === 'string' ? parsed.contactName : '',
-      type:
-        typeof parsed.type === 'string' &&
-        ['BRANCH', 'SORTING_CENTER', 'TRANSIT_HUB'].includes(parsed.type)
-          ? (parsed.type as HubType)
-          : '',
+      contactName:
+        typeof parsed.contactName === 'string' ? parsed.contactName : '',
       description:
         typeof parsed.description === 'string' ? parsed.description : '',
-      latitude:
-        typeof parsed.latitude === 'string' ? parsed.latitude : '',
-      longitude:
-        typeof parsed.longitude === 'string' ? parsed.longitude : '',
-      workingRadiusKm:
-        typeof parsed.workingRadiusKm === 'string' ? parsed.workingRadiusKm : '',
-      serviceAreas,
     };
   } catch {
     return {
@@ -128,22 +102,12 @@ function parseHubAddress(address: string | null): HubAddressPayload {
       province: '',
       phone: '',
       contactName: '',
-      type: '',
       description: '',
-      latitude: '',
-      longitude: '',
-      workingRadiusKm: '',
-      serviceAreas: '',
     };
   }
 }
 
 function serializeHubAddress(form: HubFormState): string | null {
-  const serviceAreas = form.serviceAreas
-    .split(',')
-    .map((value) => value.trim())
-    .filter((value) => value.length > 0);
-
   const payload = {
     addressLine: form.addressLine.trim(),
     ward: form.ward.trim(),
@@ -151,34 +115,21 @@ function serializeHubAddress(form: HubFormState): string | null {
     province: form.province.trim(),
     phone: form.phone.trim(),
     contactName: form.contactName.trim(),
-    type: form.type,
     description: form.description.trim(),
-    latitude: form.latitude.trim(),
-    longitude: form.longitude.trim(),
-    workingRadiusKm: form.workingRadiusKm.trim(),
-    serviceAreas,
   };
 
-  const hasExtendedFields = Boolean(
-    payload.ward ||
+  const hasAnyValue = Boolean(
+    payload.addressLine ||
+      payload.ward ||
       payload.district ||
       payload.province ||
       payload.phone ||
       payload.contactName ||
-      payload.type ||
-      payload.description ||
-      payload.latitude ||
-      payload.longitude ||
-      payload.workingRadiusKm ||
-      payload.serviceAreas.length,
+      payload.description,
   );
 
-  if (!payload.addressLine && !hasExtendedFields) {
+  if (!hasAnyValue) {
     return null;
-  }
-
-  if (!hasExtendedFields) {
-    return payload.addressLine || null;
   }
 
   return JSON.stringify(payload);
@@ -194,21 +145,51 @@ function formatAddressSummary(payload: HubAddressPayload): string {
     .map((value) => value.trim())
     .filter((value) => value.length > 0);
 
-  return parts.length > 0 ? parts.join(', ') : 'Khong co';
+  return parts.length > 0 ? parts.join(', ') : 'Không có';
 }
 
-function formatScopeSummary(payload: HubAddressPayload): string {
-  const scopeParts: string[] = [];
+function formatContactSummary(payload: HubAddressPayload): string {
+  const parts = [payload.contactName, payload.phone]
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
 
-  if (payload.workingRadiusKm.trim()) {
-    scopeParts.push(`Ban kinh ${payload.workingRadiusKm.trim()}km`);
+  return parts.length > 0 ? parts.join(' - ') : 'Không có';
+}
+
+function formatUserLabel(user: AdminUserDto): string {
+  const displayName = user.displayName?.trim();
+  return displayName ? `${user.username} - ${displayName}` : user.username;
+}
+
+function findAssignedUserIdsByHub(users: AdminUserDto[], hubCode: string): string[] {
+  return users
+    .filter((user) => user.hubCodes.includes(hubCode))
+    .map((user) => user.id);
+}
+
+function collectAssignedUsersByHub(users: AdminUserDto[]): Map<string, string[]> {
+  const result = new Map<string, string[]>();
+
+  for (const user of users) {
+    for (const hubCode of user.hubCodes) {
+      const current = result.get(hubCode) ?? [];
+      current.push(formatUserLabel(user));
+      result.set(hubCode, current);
+    }
   }
 
-  if (payload.serviceAreas.trim()) {
-    scopeParts.push(payload.serviceAreas.trim());
-  }
+  return result;
+}
 
-  return scopeParts.length > 0 ? scopeParts.join(' | ') : 'Khong co';
+function toggleId(list: string[], id: string): string[] {
+  if (list.includes(id)) {
+    return list.filter((item) => item !== id);
+  }
+  return [...list, id];
+}
+
+function normalizeHubCodes(codes: string[]): string[] {
+  return Array.from(new Set(codes.map((code) => code.trim().toUpperCase()).filter(Boolean)));
 }
 
 export function HubManagementPage(): React.JSX.Element {
@@ -225,18 +206,81 @@ export function HubManagementPage(): React.JSX.Element {
   const [actionError, setActionError] = useState<string | null>(null);
 
   const hubsQuery = useHubsQuery(accessToken, appliedFilters);
+  const zonesQuery = useZonesQuery(accessToken, { isActive: 'true' });
+  const opsUsersQuery = useAdminUsersQuery(accessToken, {
+    roleGroup: 'OPS',
+    status: 'ACTIVE',
+    hubCode: '',
+    q: '',
+  });
+  const courierUsersQuery = useAdminUsersQuery(accessToken, {
+    roleGroup: 'SHIPPER',
+    status: 'ACTIVE',
+    hubCode: '',
+    q: '',
+  });
+
   const createMutation = useCreateHubMutation(accessToken);
   const updateMutation = useUpdateHubMutation(accessToken);
   const deleteMutation = useDeleteHubMutation(accessToken);
+  const updateUserMutation = useUpdateAdminUserMutation(accessToken);
 
   const selectedHub = useMemo(
     () => (hubsQuery.data ?? []).find((hub) => hub.id === selectedHubId) ?? null,
     [hubsQuery.data, selectedHubId],
   );
+  const opsUsers = opsUsersQuery.data ?? [];
+  const courierUsers = courierUsersQuery.data ?? [];
+
+  const availableZones = useMemo(() => {
+    const zones = zonesQuery.data ?? [];
+    if (form.zoneCode && !zones.some((zone) => zone.code === form.zoneCode)) {
+      return [
+        { id: `legacy-${form.zoneCode}`, code: form.zoneCode, name: form.zoneCode },
+        ...zones,
+      ];
+    }
+    return zones;
+  }, [form.zoneCode, zonesQuery.data]);
+
+  const availableOpsUsers = useMemo(
+    () =>
+      opsUsers
+        .filter((user) => {
+          if (editingHub && user.hubCodes.includes(editingHub.code)) {
+            return true;
+          }
+          return user.hubCodes.length === 0;
+        })
+        .sort((left, right) =>
+          formatUserLabel(left).localeCompare(formatUserLabel(right), 'vi'),
+        ),
+    [editingHub, opsUsers],
+  );
+
+  const availableCourierUsers = useMemo(
+    () =>
+      courierUsers
+        .filter((user) => {
+          if (editingHub && user.hubCodes.includes(editingHub.code)) {
+            return true;
+          }
+          return user.hubCodes.length === 0;
+        })
+        .sort((left, right) =>
+          formatUserLabel(left).localeCompare(formatUserLabel(right), 'vi'),
+        ),
+    [courierUsers, editingHub],
+  );
+
+  const opsByHub = useMemo(() => collectAssignedUsersByHub(opsUsers), [opsUsers]);
+  const couriersByHub = useMemo(
+    () => collectAssignedUsersByHub(courierUsers),
+    [courierUsers],
+  );
 
   const onApplyFilters = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
     setAppliedFilters({
       code: normalizeText(draftFilters.code ?? ''),
       name: normalizeText(draftFilters.name ?? ''),
@@ -261,13 +305,14 @@ export function HubManagementPage(): React.JSX.Element {
 
   const openEditModal = (hub: HubDto) => {
     const addressPayload = parseHubAddress(hub.address);
-
     setEditingHub(hub);
     setForm({
       code: hub.code,
       name: hub.name,
       zoneCode: hub.zoneCode ?? '',
       isActive: hub.isActive,
+      opsUserIds: findAssignedUserIdsByHub(opsUsers, hub.code),
+      courierUserIds: findAssignedUserIdsByHub(courierUsers, hub.code),
       ...addressPayload,
     });
     setActionError(null);
@@ -279,31 +324,74 @@ export function HubManagementPage(): React.JSX.Element {
     setEditorOpen(false);
   };
 
+  const syncHubAssignments = async (
+    users: AdminUserDto[],
+    selectedUserIds: string[],
+    hubCode: string,
+  ): Promise<void> => {
+    const selectedSet = new Set(selectedUserIds);
+    const relatedUsers = users.filter(
+      (user) => user.hubCodes.includes(hubCode) || selectedSet.has(user.id),
+    );
+
+    for (const user of relatedUsers) {
+      const nextHubCodes = normalizeHubCodes(
+        user.hubCodes.filter((code) => code !== hubCode),
+      );
+      if (selectedSet.has(user.id)) {
+        nextHubCodes.push(hubCode);
+      }
+
+      const normalizedNextHubCodes = normalizeHubCodes(nextHubCodes);
+      const normalizedCurrentHubCodes = normalizeHubCodes(user.hubCodes);
+
+      if (
+        normalizedNextHubCodes.join('|') === normalizedCurrentHubCodes.join('|')
+      ) {
+        continue;
+      }
+
+      await updateUserMutation.mutateAsync({
+        userId: user.id,
+        payload: {
+          hubCodes: normalizedNextHubCodes,
+        },
+      });
+    }
+  };
+
   const onSubmitForm = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setActionMessage(null);
     setActionError(null);
 
     const payload: HubWriteInput = {
-      code: form.code,
       name: form.name,
       zoneCode: normalizeText(form.zoneCode) ?? null,
       address: serializeHubAddress(form),
       isActive: form.isActive,
     };
 
-    try {
-      if (editingHub) {
-        await updateMutation.mutateAsync({
-          hubId: editingHub.id,
-          payload,
-        });
-        setActionMessage(`Da cap nhat hub "${payload.code}".`);
-      } else {
-        await createMutation.mutateAsync(payload);
-        setActionMessage(`Da tao hub "${payload.code}".`);
-      }
+    if (editingHub && form.code.trim()) {
+      payload.code = form.code.trim();
+    }
 
+    try {
+      const savedHub = editingHub
+        ? await updateMutation.mutateAsync({
+            hubId: editingHub.id,
+            payload,
+          })
+        : await createMutation.mutateAsync(payload);
+
+      await syncHubAssignments(opsUsers, form.opsUserIds, savedHub.code);
+      await syncHubAssignments(courierUsers, form.courierUserIds, savedHub.code);
+
+      setActionMessage(
+        editingHub
+          ? `Đã cập nhật bưu cục "${savedHub.code}".`
+          : `Đã tạo bưu cục "${savedHub.code}".`,
+      );
       setEditorOpen(false);
     } catch (error) {
       setActionError(getErrorMessage(error));
@@ -323,7 +411,7 @@ export function HubManagementPage(): React.JSX.Element {
       });
 
       setActionMessage(
-        `Hub "${hub.code}" da chuyen sang ${hub.isActive ? 'INACTIVE' : 'ACTIVE'}.`,
+        `Bưu cục "${hub.code}" đã chuyển sang ${hub.isActive ? 'INACTIVE' : 'ACTIVE'}.`,
       );
     } catch (error) {
       setActionError(getErrorMessage(error));
@@ -331,7 +419,7 @@ export function HubManagementPage(): React.JSX.Element {
   };
 
   const onDeleteHub = async (hub: HubDto) => {
-    if (!window.confirm(`Xoa hub ${hub.code}?`)) {
+    if (!window.confirm(`Xóa bưu cục ${hub.code}?`)) {
       return;
     }
 
@@ -340,7 +428,7 @@ export function HubManagementPage(): React.JSX.Element {
 
     try {
       await deleteMutation.mutateAsync(hub.id);
-      setActionMessage(`Da xoa hub "${hub.code}".`);
+      setActionMessage(`Đã xóa bưu cục "${hub.code}".`);
 
       if (selectedHubId === hub.id) {
         setSelectedHubId('');
@@ -353,7 +441,8 @@ export function HubManagementPage(): React.JSX.Element {
   const isSaving =
     createMutation.isPending ||
     updateMutation.isPending ||
-    deleteMutation.isPending;
+    deleteMutation.isPending ||
+    updateUserMutation.isPending;
   const provinceOptions = useMemo(() => {
     if (
       form.province &&
@@ -364,7 +453,6 @@ export function HubManagementPage(): React.JSX.Element {
         ...PROVINCE_OPTIONS,
       ];
     }
-
     return PROVINCE_OPTIONS;
   }, [form.province]);
   const districtOptions = useMemo(() => {
@@ -372,20 +460,19 @@ export function HubManagementPage(): React.JSX.Element {
     if (form.district && !options.includes(form.district)) {
       return [form.district, ...options];
     }
-
     return options;
   }, [form.district, form.province]);
 
   return (
     <div>
-      <h2>Du Lieu Danh Muc - Quan Ly Hub</h2>
+      <h2>Dữ Liệu Danh Mục - Quản Lý Bưu Cục</h2>
       <p style={styles.helperText}>
-        Quan ly vi tri hub, pham vi phuc vu va metadata van hanh.
+        Quản lý bưu cục theo vùng hoạt động và gán nhân sự vận hành.
       </p>
 
       <form onSubmit={onApplyFilters} style={styles.filterForm}>
         <input
-          placeholder="Ma hub"
+          placeholder="Mã bưu cục"
           value={draftFilters.code ?? ''}
           onChange={(event) =>
             setDraftFilters((previous) => ({
@@ -396,7 +483,7 @@ export function HubManagementPage(): React.JSX.Element {
           style={styles.input}
         />
         <input
-          placeholder="Ten hub"
+          placeholder="Tên bưu cục"
           value={draftFilters.name ?? ''}
           onChange={(event) =>
             setDraftFilters((previous) => ({
@@ -407,7 +494,7 @@ export function HubManagementPage(): React.JSX.Element {
           style={styles.input}
         />
         <input
-          placeholder="Ma zone"
+          placeholder="Mã zone"
           value={draftFilters.zoneCode ?? ''}
           onChange={(event) =>
             setDraftFilters((previous) => ({
@@ -427,12 +514,12 @@ export function HubManagementPage(): React.JSX.Element {
           }
           style={styles.input}
         >
-          <option value="">Tat ca trang thai</option>
+          <option value="">Tất cả trạng thái</option>
           <option value="true">ACTIVE</option>
           <option value="false">INACTIVE</option>
         </select>
         <input
-          placeholder="Tim nhanh"
+          placeholder="Tìm nhanh"
           value={draftFilters.q ?? ''}
           onChange={(event) =>
             setDraftFilters((previous) => ({
@@ -442,12 +529,12 @@ export function HubManagementPage(): React.JSX.Element {
           }
           style={styles.input}
         />
-        <button type="submit">Ap dung</button>
+        <button type="submit">Áp dụng</button>
         <button type="button" onClick={onResetFilters}>
-          Dat lai
+          Đặt lại
         </button>
         <button type="button" onClick={openCreateModal}>
-          Tao hub
+          Tạo bưu cục
         </button>
       </form>
 
@@ -462,47 +549,49 @@ export function HubManagementPage(): React.JSX.Element {
         </p>
       ) : null}
 
-      {hubsQuery.isLoading ? <p>Dang tai hub...</p> : null}
+      {hubsQuery.isLoading ? <p>Đang tải bưu cục...</p> : null}
       {hubsQuery.isError ? (
         <p style={styles.errorText}>{getErrorMessage(hubsQuery.error)}</p>
       ) : null}
       {hubsQuery.isSuccess && (hubsQuery.data?.length ?? 0) === 0 ? (
-        <p>Khong tim thay hub.</p>
+        <p>Không tìm thấy bưu cục.</p>
       ) : null}
 
       {hubsQuery.isSuccess && (hubsQuery.data?.length ?? 0) > 0 ? (
         <table style={styles.table}>
           <thead>
             <tr>
-              <th style={styles.headerCell}>Ma</th>
-              <th style={styles.headerCell}>Ten</th>
-              <th style={styles.headerCell}>Loai</th>
-              <th style={styles.headerCell}>Zone</th>
-              <th style={styles.headerCell}>Dia chi</th>
-              <th style={styles.headerCell}>Pham vi phuc vu</th>
-              <th style={styles.headerCell}>Lien he</th>
-              <th style={styles.headerCell}>Trang thai</th>
-              <th style={styles.headerCell}>Cap nhat</th>
-              <th style={styles.headerCell}>Hanh dong</th>
+              <th style={styles.headerCell}>Mã hub</th>
+              <th style={styles.headerCell}>Tên hub</th>
+              <th style={styles.headerCell}>Mã zone</th>
+              <th style={styles.headerCell}>Địa chỉ</th>
+              <th style={styles.headerCell}>Liên hệ</th>
+              <th style={styles.headerCell}>Nhân viên Ops</th>
+              <th style={styles.headerCell}>Courier</th>
+              <th style={styles.headerCell}>Trạng thái</th>
+              <th style={styles.headerCell}>Cập nhật</th>
+              <th style={styles.headerCell}>Hành động</th>
             </tr>
           </thead>
           <tbody>
             {(hubsQuery.data ?? []).map((hub) => {
               const addressPayload = parseHubAddress(hub.address);
-              const contactSummary = [addressPayload.contactName, addressPayload.phone]
-                .map((value) => value.trim())
-                .filter((value) => value.length > 0)
-                .join(' - ');
+              const assignedOps = opsByHub.get(hub.code) ?? [];
+              const assignedCouriers = couriersByHub.get(hub.code) ?? [];
 
               return (
                 <tr key={hub.id}>
                   <td style={styles.cell}>{hub.code}</td>
                   <td style={styles.cell}>{hub.name}</td>
-                  <td style={styles.cell}>{addressPayload.type || 'Khong co'}</td>
-                  <td style={styles.cell}>{hub.zoneCode ?? 'Khong co'}</td>
+                  <td style={styles.cell}>{hub.zoneCode ?? 'Không có'}</td>
                   <td style={styles.cell}>{formatAddressSummary(addressPayload)}</td>
-                  <td style={styles.cell}>{formatScopeSummary(addressPayload)}</td>
-                  <td style={styles.cell}>{contactSummary || 'Khong co'}</td>
+                  <td style={styles.cell}>{formatContactSummary(addressPayload)}</td>
+                  <td style={styles.cell}>
+                    {assignedOps.length > 0 ? assignedOps.join(', ') : 'Chưa gán'}
+                  </td>
+                  <td style={styles.cell}>
+                    {assignedCouriers.length > 0 ? assignedCouriers.join(', ') : 'Chưa gán'}
+                  </td>
                   <td style={styles.cell}>
                     <MasterdataStatusPill isActive={hub.isActive} />
                   </td>
@@ -510,16 +599,16 @@ export function HubManagementPage(): React.JSX.Element {
                   <td style={styles.cell}>
                     <div style={styles.actionsCell}>
                       <button type="button" onClick={() => setSelectedHubId(hub.id)}>
-                        Chi tiet
+                        Chi tiết
                       </button>
                       <button type="button" onClick={() => openEditModal(hub)}>
-                        Sua
+                        Sửa
                       </button>
                       <button type="button" onClick={() => void onToggleStatus(hub)}>
-                        {hub.isActive ? 'Tat' : 'Bat'}
+                        {hub.isActive ? 'Tắt' : 'Bật'}
                       </button>
                       <button type="button" onClick={() => void onDeleteHub(hub)}>
-                        Xoa
+                        Xóa
                       </button>
                     </div>
                   </td>
@@ -532,34 +621,40 @@ export function HubManagementPage(): React.JSX.Element {
 
       {selectedHub ? (
         <section style={styles.detailCard}>
-          <h3 style={styles.detailTitle}>Chi tiet hub: {selectedHub.code}</h3>
+          <h3 style={styles.detailTitle}>Chi tiết hub: {selectedHub.code}</h3>
           {(() => {
             const payload = parseHubAddress(selectedHub.address);
+            const assignedOps = opsByHub.get(selectedHub.code) ?? [];
+            const assignedCouriers = couriersByHub.get(selectedHub.code) ?? [];
+
             return (
               <>
                 <p>
-                  <strong>Ten:</strong> {selectedHub.name}
+                  <strong>Tên:</strong> {selectedHub.name}
                 </p>
                 <p>
-                  <strong>Zone:</strong> {selectedHub.zoneCode ?? 'Khong co'}
+                  <strong>Zone:</strong> {selectedHub.zoneCode ?? 'Không có'}
                 </p>
                 <p>
-                  <strong>Dia chi:</strong> {formatAddressSummary(payload)}
+                  <strong>Địa chỉ:</strong> {formatAddressSummary(payload)}
                 </p>
                 <p>
-                  <strong>Toa do:</strong> {payload.latitude || 'Khong co'} / {payload.longitude || 'Khong co'}
+                  <strong>Nhân viên Ops:</strong>{' '}
+                  {assignedOps.length > 0 ? assignedOps.join(', ') : 'Chưa gán'}
                 </p>
                 <p>
-                  <strong>Pham vi phuc vu:</strong> {formatScopeSummary(payload)}
+                  <strong>Courier:</strong>{' '}
+                  {assignedCouriers.length > 0 ? assignedCouriers.join(', ') : 'Chưa gán'}
                 </p>
                 <p>
-                  <strong>Trang thai:</strong> {selectedHub.isActive ? 'ACTIVE' : 'INACTIVE'}
+                  <strong>Trạng thái:</strong>{' '}
+                  {selectedHub.isActive ? 'ACTIVE' : 'INACTIVE'}
                 </p>
                 <p>
-                  <strong>Tao luc:</strong> {formatDateTime(selectedHub.createdAt)}
+                  <strong>Tạo lúc:</strong> {formatDateTime(selectedHub.createdAt)}
                 </p>
                 <p>
-                  <strong>Cap nhat luc:</strong> {formatDateTime(selectedHub.updatedAt)}
+                  <strong>Cập nhật lúc:</strong> {formatDateTime(selectedHub.updatedAt)}
                 </p>
               </>
             );
@@ -569,31 +664,15 @@ export function HubManagementPage(): React.JSX.Element {
 
       <MasterdataEditorModal
         open={editorOpen}
-        title={editingHub ? `Sua hub ${editingHub.code}` : 'Tao hub'}
-        submitLabel={editingHub ? 'Luu thay doi' : 'Tao hub'}
+        title={editingHub ? 'Sửa hub' : 'Tạo hub'}
+        submitLabel={editingHub ? 'Lưu thay đổi' : 'Tạo hub'}
         isSubmitting={isSaving}
         onClose={closeModal}
         onSubmit={onSubmitForm}
       >
         <div style={styles.formGrid}>
           <label style={styles.fieldLabel}>
-            Ma hub
-            <input
-              value={form.code}
-              onChange={(event) =>
-                setForm((previous) => ({
-                  ...previous,
-                  code: event.target.value,
-                }))
-              }
-              placeholder="HUB_HCM_01"
-              disabled={Boolean(editingHub)}
-              required
-              style={styles.input}
-            />
-          </label>
-          <label style={styles.fieldLabel}>
-            Ten hub
+            Tên hub
             <input
               value={form.name}
               onChange={(event) =>
@@ -607,26 +686,8 @@ export function HubManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Loai hub
+            Mã zone
             <select
-              value={form.type}
-              onChange={(event) =>
-                setForm((previous) => ({
-                  ...previous,
-                  type: event.target.value as HubType,
-                }))
-              }
-              style={styles.input}
-            >
-              <option value="">Chon loai</option>
-              <option value="BRANCH">BRANCH</option>
-              <option value="SORTING_CENTER">SORTING_CENTER</option>
-              <option value="TRANSIT_HUB">TRANSIT_HUB</option>
-            </select>
-          </label>
-          <label style={styles.fieldLabel}>
-            Ma zone
-            <input
               value={form.zoneCode}
               onChange={(event) =>
                 setForm((previous) => ({
@@ -634,12 +695,69 @@ export function HubManagementPage(): React.JSX.Element {
                   zoneCode: event.target.value,
                 }))
               }
-              placeholder="ZONE_HCM"
+              required
               style={styles.input}
-            />
+            >
+              <option value="">Chọn mã zone</option>
+              {availableZones.map((zone) => (
+                <option key={zone.id} value={zone.code}>
+                  {zone.code} - {zone.name}
+                </option>
+              ))}
+            </select>
           </label>
           <label style={styles.fieldLabel}>
-            Duong / dia chi chi tiet
+            Tỉnh/Thành
+            <select
+              value={form.province}
+              onChange={(event) =>
+                setForm((previous) => ({
+                  ...previous,
+                  province: event.target.value,
+                  district: getDistrictOptions(event.target.value).includes(
+                    previous.district,
+                  )
+                    ? previous.district
+                    : '',
+                }))
+              }
+              required
+              style={styles.input}
+            >
+              <option value="">Chọn tỉnh / thành</option>
+              {provinceOptions.map((province) => (
+                <option key={province.code} value={province.label}>
+                  {province.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label style={styles.fieldLabel}>
+            Quận/Huyện
+            <select
+              value={form.district}
+              onChange={(event) =>
+                setForm((previous) => ({
+                  ...previous,
+                  district: event.target.value,
+                }))
+              }
+              disabled={!form.province}
+              required
+              style={styles.input}
+            >
+              <option value="">
+                {form.province ? 'Chọn quận/huyện' : 'Chọn tỉnh/thành trước'}
+              </option>
+              {districtOptions.map((district) => (
+                <option key={district} value={district}>
+                  {district}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label style={styles.fieldLabel}>
+            Đường / địa chỉ chi tiết
             <input
               value={form.addressLine}
               onChange={(event) =>
@@ -652,7 +770,7 @@ export function HubManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Phuong/Xa
+            Phường/Xã
             <input
               value={form.ward}
               onChange={(event) =>
@@ -665,110 +783,7 @@ export function HubManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Quan/Huyen
-            <select
-              value={form.district}
-              onChange={(event) =>
-                setForm((previous) => ({
-                  ...previous,
-                  district: event.target.value,
-                }))
-              }
-              disabled={!form.province}
-              style={styles.input}
-            >
-              <option value="">
-                {form.province ? 'Chon quan/huyen' : 'Chon tinh/thanh truoc'}
-              </option>
-              {districtOptions.map((district) => (
-                <option key={district} value={district}>
-                  {district}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label style={styles.fieldLabel}>
-            Tinh/Thanh
-            <select
-              value={form.province}
-              onChange={(event) =>
-                setForm((previous) => ({
-                  ...previous,
-                  province: event.target.value,
-                  district: getDistrictOptions(event.target.value).includes(previous.district)
-                    ? previous.district
-                    : '',
-                }))
-              }
-              required
-              style={styles.input}
-            >
-              <option value="">Chon tinh / thanh</option>
-              {provinceOptions.map((province) => (
-                <option key={province.code} value={province.label}>
-                  {province.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label style={styles.fieldLabel}>
-            Latitude
-            <input
-              value={form.latitude}
-              onChange={(event) =>
-                setForm((previous) => ({
-                  ...previous,
-                  latitude: event.target.value,
-                }))
-              }
-              placeholder="10.7769"
-              style={styles.input}
-            />
-          </label>
-          <label style={styles.fieldLabel}>
-            Longitude
-            <input
-              value={form.longitude}
-              onChange={(event) =>
-                setForm((previous) => ({
-                  ...previous,
-                  longitude: event.target.value,
-                }))
-              }
-              placeholder="106.7009"
-              style={styles.input}
-            />
-          </label>
-          <label style={styles.fieldLabel}>
-            Ban kinh phuc vu (km)
-            <input
-              value={form.workingRadiusKm}
-              onChange={(event) =>
-                setForm((previous) => ({
-                  ...previous,
-                  workingRadiusKm: event.target.value,
-                }))
-              }
-              placeholder="25"
-              style={styles.input}
-            />
-          </label>
-          <label style={styles.fieldLabel}>
-            Khu vuc phuc vu (tach boi dau phay)
-            <input
-              value={form.serviceAreas}
-              onChange={(event) =>
-                setForm((previous) => ({
-                  ...previous,
-                  serviceAreas: event.target.value,
-                }))
-              }
-              placeholder="District 1, District 3, Thu Duc"
-              style={styles.input}
-            />
-          </label>
-          <label style={styles.fieldLabel}>
-            So dien thoai
+            Số điện thoại
             <input
               value={form.phone}
               onChange={(event) =>
@@ -781,7 +796,7 @@ export function HubManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Ten lien he
+            Tên liên hệ
             <input
               value={form.contactName}
               onChange={(event) =>
@@ -794,7 +809,7 @@ export function HubManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Mo ta
+            Mô tả
             <input
               value={form.description}
               onChange={(event) =>
@@ -806,6 +821,54 @@ export function HubManagementPage(): React.JSX.Element {
               style={styles.input}
             />
           </label>
+          <div style={styles.selectionCard}>
+            <strong>Nhân viên Ops (tích để gán / bỏ tích để bỏ gán)</strong>
+            <div style={styles.selectionList}>
+              {availableOpsUsers.length === 0 ? (
+                <span style={styles.selectionEmpty}>Không có nhân viên Ops khả dụng.</span>
+              ) : (
+                availableOpsUsers.map((user) => (
+                  <label key={user.id} style={styles.choiceItem}>
+                    <input
+                      type="checkbox"
+                      checked={form.opsUserIds.includes(user.id)}
+                      onChange={() =>
+                        setForm((previous) => ({
+                          ...previous,
+                          opsUserIds: toggleId(previous.opsUserIds, user.id),
+                        }))
+                      }
+                    />
+                    {formatUserLabel(user)}
+                  </label>
+                ))
+              )}
+            </div>
+          </div>
+          <div style={styles.selectionCard}>
+            <strong>Nhân viên Courier (tích để gán / bỏ tích để bỏ gán)</strong>
+            <div style={styles.selectionList}>
+              {availableCourierUsers.length === 0 ? (
+                <span style={styles.selectionEmpty}>Không có courier khả dụng.</span>
+              ) : (
+                availableCourierUsers.map((user) => (
+                  <label key={user.id} style={styles.choiceItem}>
+                    <input
+                      type="checkbox"
+                      checked={form.courierUserIds.includes(user.id)}
+                      onChange={() =>
+                        setForm((previous) => ({
+                          ...previous,
+                          courierUserIds: toggleId(previous.courierUserIds, user.id),
+                        }))
+                      }
+                    />
+                    {formatUserLabel(user)}
+                  </label>
+                ))
+              )}
+            </div>
+          </div>
           <label style={styles.checkboxLabel}>
             <input
               type="checkbox"
@@ -883,6 +946,30 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 6,
     fontSize: 13,
     fontWeight: 600,
+  },
+  selectionCard: {
+    display: 'grid',
+    gap: 8,
+    padding: 10,
+    border: '1px solid #d9def3',
+    borderRadius: 10,
+    backgroundColor: '#f8faff',
+  },
+  selectionList: {
+    display: 'grid',
+    gap: 6,
+    maxHeight: 180,
+    overflowY: 'auto',
+  },
+  choiceItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    fontSize: 13,
+  },
+  selectionEmpty: {
+    color: '#556096',
+    fontSize: 13,
   },
   checkboxLabel: {
     display: 'flex',

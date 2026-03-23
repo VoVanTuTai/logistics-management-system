@@ -207,6 +207,7 @@ export function buildShipmentMetadata(
       name: form.senderName.trim() || null,
       phone: form.senderPhone.trim() || null,
       address: form.senderAddress.trim() || null,
+      hubCode: form.senderHubCode.trim() || null,
     },
     receiver: {
       name: form.receiverName.trim() || null,
@@ -214,6 +215,7 @@ export function buildShipmentMetadata(
       address: form.receiverAddress.trim() || null,
       region: form.receiverRegion.trim() || null,
       province: form.receiverRegion.trim() || null,
+      hubCode: form.receiverHubCode.trim() || null,
     },
     package: {
       itemType: form.itemType.trim() || null,
@@ -231,6 +233,10 @@ export function buildShipmentMetadata(
     codAmount: asNumber(form.codAmount, 0),
     deliveryNote: form.deliveryNote.trim() || null,
     estimatedFee,
+    routing: {
+      originHubCode: form.senderHubCode.trim() || null,
+      destinationHubCode: form.receiverHubCode.trim() || null,
+    },
     source: 'merchant-web',
   };
 }

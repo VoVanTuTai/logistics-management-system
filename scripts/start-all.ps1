@@ -14,6 +14,22 @@ function Test-PortListening([int]$port) {
   return [bool](Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue)
 }
 
+function Wait-PortListening(
+  [int]$port,
+  [int]$timeoutSeconds = 30,
+  [int]$sleepSeconds = 2
+) {
+  $deadline = (Get-Date).AddSeconds($timeoutSeconds)
+  while ((Get-Date) -lt $deadline) {
+    if (Test-PortListening $port) {
+      return $true
+    }
+    Start-Sleep -Seconds $sleepSeconds
+  }
+
+  return $false
+}
+
 function Resolve-LanIp() {
   $defaultRoute = Get-NetRoute -AddressFamily IPv4 -DestinationPrefix '0.0.0.0/0' -ErrorAction SilentlyContinue |
     Sort-Object -Property RouteMetric, InterfaceMetric |
@@ -90,6 +106,20 @@ function Start-CourierMobileProcess([string]$mode) {
     return
   }
 
+  $expoBin = Join-Path $workingDir 'node_modules\.bin\expo.cmd'
+  if (-not (Test-Path $expoBin)) {
+    Write-Host '[mobile] expo not found in courier-mobile/node_modules, running npm install...' -ForegroundColor Yellow
+    Push-Location $workingDir
+    try {
+      & cmd.exe /c 'npm install'
+      if ($LASTEXITCODE -ne 0) {
+        throw 'npm install failed for courier-mobile'
+      }
+    } finally {
+      Pop-Location
+    }
+  }
+
   $gatewayBaseUrl = if ($mode -eq 'emulator') {
     'http://10.0.2.2:3000'
   } else {
@@ -147,6 +177,11 @@ try {
   if (-not $SkipMobile) {
     Write-Host '[ui] starting courier-mobile'
     Start-CourierMobileProcess -mode $MobileMode
+    Write-Host '[ui] waiting for courier-mobile Metro (port 8081)...'
+    $mobileReady = Wait-PortListening -port 8081 -timeoutSeconds 90 -sleepSeconds 2
+    if (-not $mobileReady) {
+      Write-Host '[ui] courier-mobile is not listening yet (Metro may still be starting).' -ForegroundColor Yellow
+    }
   } else {
     Write-Host '[ui] skipped courier-mobile by flag'
   }

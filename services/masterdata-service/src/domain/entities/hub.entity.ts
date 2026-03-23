@@ -10,11 +10,15 @@ export interface Hub {
 }
 
 export interface HubWriteInput {
-  code: string;
+  code?: string;
   name: string;
   zoneCode?: string | null;
   address?: string | null;
   isActive?: boolean;
+}
+
+export interface HubCreateInput extends HubWriteInput {
+  code: string;
 }
 
 export interface HubListFilters {

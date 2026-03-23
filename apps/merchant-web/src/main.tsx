@@ -2,7 +2,6 @@
 import { createRoot } from 'react-dom/client';
 
 import './styles.css';
-import { PROVINCE_CITY_OPTIONS } from './location-options';
 import {
   asRecord,
   buildShipmentMetadata,
@@ -46,6 +45,119 @@ const STORAGE_KEY_RETURNS = 'merchant-web.return-requests.v1';
 const STORAGE_KEY_PROFILE = 'merchant-web.profile.v1';
 const SHIPMENT_PAGE_SIZE = 8;
 
+interface HubApiRecord {
+  id: string;
+  code: string;
+  name: string;
+  address: string | null;
+  isActive: boolean;
+}
+
+interface HubLocationOption {
+  hubCode: string;
+  hubName: string;
+  province: string;
+  district: string;
+  fullAddress: string;
+  label: string;
+}
+
+function normalizeLocationKey(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .toUpperCase();
+}
+
+function resolveProvinceLabel(rawProvince: string): string | null {
+  const normalized = normalizeLocationKey(rawProvince);
+  if (['HOCHIMINH', 'HCM', 'TPHOCHIMINH', 'THANHPHOHOCHIMINH'].includes(normalized)) {
+    return 'Ho Chi Minh';
+  }
+  if (['DANANG', 'DN', 'TPDANANG', 'THANHPHODANANG'].includes(normalized)) {
+    return 'Da Nang';
+  }
+  if (['HANOI', 'HN', 'TPHANOI', 'THANHPHOHANOI'].includes(normalized)) {
+    return 'Ha Noi';
+  }
+
+  return null;
+}
+
+function parseHubLocation(hub: HubApiRecord): HubLocationOption | null {
+  if (!hub.address) {
+    return null;
+  }
+
+  let province = '';
+  let district = '';
+  let fullAddress = '';
+
+  try {
+    const payload = JSON.parse(hub.address) as Record<string, unknown>;
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+      return null;
+    }
+
+    const addressLine =
+      typeof payload.addressLine === 'string' ? payload.addressLine.trim() : '';
+    const ward = typeof payload.ward === 'string' ? payload.ward.trim() : '';
+    province = typeof payload.province === 'string' ? payload.province.trim() : '';
+    district = typeof payload.district === 'string' ? payload.district.trim() : '';
+    fullAddress = [addressLine, ward, district, province]
+      .filter((part) => part.length > 0)
+      .join(', ');
+  } catch {
+    const segments = hub.address.split(',').map((segment) => segment.trim());
+    province = segments.length > 0 ? segments[segments.length - 1] : '';
+    district = segments.length > 1 ? segments[segments.length - 2] : '';
+    fullAddress = hub.address.trim();
+  }
+
+  const normalizedProvince = resolveProvinceLabel(province);
+  if (!normalizedProvince || !district || !fullAddress) {
+    return null;
+  }
+
+  return {
+    hubCode: hub.code,
+    hubName: hub.name,
+    province: normalizedProvince,
+    district,
+    fullAddress,
+    label: `${hub.name} (${district}, ${normalizedProvince})`,
+  };
+}
+
+function normalizeCreateForm(
+  form: Partial<CreateShipmentForm> | null | undefined,
+): CreateShipmentForm {
+  return {
+    ...DEFAULT_CREATE_FORM,
+    ...form,
+    manualCode: form?.manualCode ?? '',
+    senderName: form?.senderName ?? '',
+    senderPhone: form?.senderPhone ?? '',
+    senderHubCode: form?.senderHubCode ?? '',
+    senderAddress: form?.senderAddress ?? '',
+    receiverName: form?.receiverName ?? '',
+    receiverPhone: form?.receiverPhone ?? '',
+    receiverHubCode: form?.receiverHubCode ?? '',
+    receiverAddress: form?.receiverAddress ?? '',
+    receiverRegion: form?.receiverRegion ?? '',
+    itemType: form?.itemType ?? '',
+    weightKg: form?.weightKg ?? '',
+    lengthCm: form?.lengthCm ?? '',
+    widthCm: form?.widthCm ?? '',
+    heightCm: form?.heightCm ?? '',
+    declaredValue: form?.declaredValue ?? '',
+    serviceType: form?.serviceType ?? 'STANDARD',
+    codAmount: form?.codAmount ?? '',
+    deliveryNote: form?.deliveryNote ?? '',
+  };
+}
+
 function MerchantApp(): React.JSX.Element {
   const [booting, setBooting] = useState(true);
   const [session, setSession] = useState<MerchantSession | null>(null);
@@ -69,6 +181,7 @@ function MerchantApp(): React.JSX.Element {
   const [createSuccess, setCreateSuccess] = useState<string | null>(null);
   const [draftName, setDraftName] = useState('');
   const [drafts, setDrafts] = useState<ShipmentDraft[]>([]);
+  const [hubLocations, setHubLocations] = useState<HubLocationOption[]>([]);
 
   const [selectedShipmentCode, setSelectedShipmentCode] = useState('');
   const [dashboardSearchCode, setDashboardSearchCode] = useState('');
@@ -154,6 +267,10 @@ function MerchantApp(): React.JSX.Element {
   const unreadNotifications = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
   const autoEstimatedFee = useMemo(() => computeEstimatedFee(createForm), [createForm]);
   const effectiveFee = quotedFee ?? autoEstimatedFee;
+  const hubLocationMap = useMemo(
+    () => new Map(hubLocations.map((location) => [location.hubCode, location])),
+    [hubLocations],
+  );
 
   const dashboardStats = useMemo(
     () => ({
@@ -202,7 +319,16 @@ function MerchantApp(): React.JSX.Element {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    setDrafts(parseStorage(window.localStorage.getItem(STORAGE_KEY_DRAFTS), []));
+    const storedDrafts = parseStorage<ShipmentDraft[]>(
+      window.localStorage.getItem(STORAGE_KEY_DRAFTS),
+      [],
+    );
+    setDrafts(
+      storedDrafts.map((draft) => ({
+        ...draft,
+        form: normalizeCreateForm(draft.form),
+      })),
+    );
     setNotifications(parseStorage(window.localStorage.getItem(STORAGE_KEY_NOTIFICATIONS), []));
     setReturnRequests(parseStorage(window.localStorage.getItem(STORAGE_KEY_RETURNS), []));
     setProfile(parseStorage(window.localStorage.getItem(STORAGE_KEY_PROFILE), DEFAULT_PROFILE));
@@ -296,17 +422,31 @@ function MerchantApp(): React.JSX.Element {
   async function refreshAllData(accessToken: string): Promise<void> {
     setDataLoading(true);
     setDataError(null);
-    const [shipRes, pickupRes, changeRes] = await Promise.allSettled([
+    const [shipRes, pickupRes, changeRes, hubsRes] = await Promise.allSettled([
       request<ShipmentResponse[]>('/merchant/shipment/shipments', { method: 'GET' }, accessToken),
       request<PickupRequest[]>('/merchant/pickup/pickups', { method: 'GET' }, accessToken),
       request<ChangeRequest[]>('/merchant/shipment/change-requests', { method: 'GET' }, accessToken),
+      request<HubApiRecord[]>('/merchant/masterdata/hubs?isActive=true', { method: 'GET' }, accessToken),
     ]);
 
     if (shipRes.status === 'fulfilled') setShipments(shipRes.value);
     if (pickupRes.status === 'fulfilled') setPickups(pickupRes.value);
     if (changeRes.status === 'fulfilled') setChangeRequests(changeRes.value);
+    if (hubsRes.status === 'fulfilled') {
+      const locations = hubsRes.value
+        .filter((hub) => hub.isActive)
+        .map(parseHubLocation)
+        .filter((location): location is HubLocationOption => Boolean(location))
+        .sort((left, right) => left.label.localeCompare(right.label, 'vi'));
+      setHubLocations(locations);
+    } else {
+      setHubLocations([]);
+    }
 
     if (shipRes.status === 'rejected') setDataError(extractErrorMessage(shipRes.reason));
+    if (hubsRes.status === 'rejected') {
+      setDataError((previous) => previous ?? extractErrorMessage(hubsRes.reason));
+    }
     setDataLoading(false);
   }
 
@@ -353,6 +493,7 @@ function MerchantApp(): React.JSX.Element {
     setShipments([]);
     setPickups([]);
     setChangeRequests([]);
+    setHubLocations([]);
     setActiveView('dashboard');
   }
 
@@ -376,21 +517,37 @@ function MerchantApp(): React.JSX.Element {
 
   async function submitCreateShipment(withPickup: boolean): Promise<void> {
     if (!session) return;
-    if (!createForm.receiverRegion.trim()) {
-      setCreateError('Vui long chon tinh / thanh pho nguoi nhan.');
+    if (hubLocations.length === 0) {
+      setCreateError('Chua co vi tri hub hoat dong. Vui long nhap hub o admin.');
       return;
     }
 
-    if (!createForm.receiverAddress.trim()) {
-      setCreateError('Vui long nhap dia chi chi tiet nguoi nhan.');
+    const senderHub = hubLocationMap.get(createForm.senderHubCode);
+    if (!senderHub) {
+      setCreateError('Vui long chon vi tri hub gui hang.');
       return;
     }
+
+    const receiverHub = hubLocationMap.get(createForm.receiverHubCode);
+    if (!receiverHub) {
+      setCreateError('Vui long chon vi tri hub nhan hang.');
+      return;
+    }
+
+    const normalizedForm: CreateShipmentForm = {
+      ...createForm,
+      senderAddress: senderHub.fullAddress,
+      receiverAddress: receiverHub.fullAddress,
+      receiverRegion: receiverHub.province,
+    };
 
     setCreateLoading(true);
     setCreateError(null);
     setCreateSuccess(null);
     try {
-      const payload: Record<string, unknown> = { metadata: buildShipmentMetadata(createForm, effectiveFee) };
+      const payload: Record<string, unknown> = {
+        metadata: buildShipmentMetadata(normalizedForm, effectiveFee),
+      };
       const code = normalizeCode(createForm.manualCode);
       if (code) payload.code = code;
       const created = await request<ShipmentResponse>('/merchant/shipment/shipments', {
@@ -693,7 +850,315 @@ function MerchantApp(): React.JSX.Element {
 
           {activeView === 'dashboard' ? <><section className="card"><h3>Tong quan</h3><div className="metric-grid"><div className="metric"><div className="metric-title">Tổng số đơn hôm nay</div><div className="metric-value">{dashboardStats.totalToday}</div></div><div className="metric"><div className="metric-title">Đơn chờ pickup</div><div className="metric-value">{dashboardStats.waitingPickup}</div></div><div className="metric"><div className="metric-title">Đơn đang giao</div><div className="metric-value">{dashboardStats.inTransit}</div></div><div className="metric"><div className="metric-title">Đơn giao thành công</div><div className="metric-value">{dashboardStats.delivered}</div></div><div className="metric"><div className="metric-title">Thất bại / hoàn</div><div className="metric-value">{dashboardStats.failedOrReturn}</div></div></div></section><section className="card"><h3>Tìm nhanh theo mã vận đơn</h3><form className="btn-row" onSubmit={(e) => { void quickTrackFromDashboard(e); }}><input className="input" style={{ maxWidth: 320 }} value={dashboardSearchCode} onChange={(e) => setDashboardSearchCode(e.target.value)} placeholder="SHP..." /><button className="btn btn-primary" type="submit">Tra cuu van don</button></form></section><section className="card"><h3>Đơn mới tạo gần đây</h3>{recentRows.length === 0 ? <div className="empty">Chua co don hang.</div> : <div className="table-wrap"><table><thead><tr><th>Mã</th><th>Người nhận</th><th>SĐT</th><th>Trạng thái</th><th>Ngày tạo</th><th>Xem</th></tr></thead><tbody>{recentRows.map((row) => <tr key={row.shipment.id}><td>{row.shipment.code}</td><td>{row.receiverName}</td><td>{row.receiverPhone}</td><td><span className={statusClass(row.shipment.currentStatus)}>{row.shipment.currentStatus}</span></td><td>{formatDate(row.shipment.createdAt)}</td><td><button className="btn btn-ghost" onClick={() => { void openShipmentDetail(row.shipment.code); }}>Xem</button></td></tr>)}</tbody></table></div>}</section></> : null}
 
-          {activeView === 'create-shipment' ? <section className="split-layout"><div className="card grid"><h3>Tao don hang</h3><div className="grid grid-4"><input className="input" placeholder="Ma don (khong bat buoc)" value={createForm.manualCode} onChange={(e) => setCreateForm((p) => ({ ...p, manualCode: e.target.value }))} /><input className="input" placeholder="Tên người gửi" value={createForm.senderName} onChange={(e) => setCreateForm((p) => ({ ...p, senderName: e.target.value }))} /><input className="input" placeholder="SĐT người gửi" value={createForm.senderPhone} onChange={(e) => setCreateForm((p) => ({ ...p, senderPhone: e.target.value }))} /><input className="input" placeholder="Địa chỉ gửi" value={createForm.senderAddress} onChange={(e) => setCreateForm((p) => ({ ...p, senderAddress: e.target.value }))} /><input className="input" placeholder="Tên người nhận" value={createForm.receiverName} onChange={(e) => setCreateForm((p) => ({ ...p, receiverName: e.target.value }))} /><input className="input" placeholder="SĐT người nhận" value={createForm.receiverPhone} onChange={(e) => setCreateForm((p) => ({ ...p, receiverPhone: e.target.value }))} /><select className="select" value={createForm.receiverRegion} onChange={(e) => setCreateForm((p) => ({ ...p, receiverRegion: e.target.value }))}><option value="">Tỉnh / Thành phố nhận</option>{PROVINCE_CITY_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}</select><input className="input" placeholder="Số nhà + tên đường + chi tiết" value={createForm.receiverAddress} onChange={(e) => setCreateForm((p) => ({ ...p, receiverAddress: e.target.value }))} /><input className="input" placeholder="Loại hàng" value={createForm.itemType} onChange={(e) => setCreateForm((p) => ({ ...p, itemType: e.target.value }))} /><input className="input" placeholder="Khối lượng" value={createForm.weightKg} onChange={(e) => setCreateForm((p) => ({ ...p, weightKg: e.target.value }))} /><input className="input" placeholder="Dài" value={createForm.lengthCm} onChange={(e) => setCreateForm((p) => ({ ...p, lengthCm: e.target.value }))} /><input className="input" placeholder="Rộng" value={createForm.widthCm} onChange={(e) => setCreateForm((p) => ({ ...p, widthCm: e.target.value }))} /><input className="input" placeholder="Cao" value={createForm.heightCm} onChange={(e) => setCreateForm((p) => ({ ...p, heightCm: e.target.value }))} /><input className="input" placeholder="Giá trị hàng" value={createForm.declaredValue} onChange={(e) => setCreateForm((p) => ({ ...p, declaredValue: e.target.value }))} /><select className="select" value={createForm.serviceType} onChange={(e) => setCreateForm((p) => ({ ...p, serviceType: e.target.value as CreateShipmentForm['serviceType'] }))}><option value="STANDARD">STANDARD</option><option value="EXPRESS">EXPRESS</option><option value="SAME_DAY">SAME_DAY</option></select><input className="input" placeholder="COD" value={createForm.codAmount} onChange={(e) => setCreateForm((p) => ({ ...p, codAmount: e.target.value }))} /></div><textarea className="textarea" placeholder="Ghi chú giao" value={createForm.deliveryNote} onChange={(e) => setCreateForm((p) => ({ ...p, deliveryNote: e.target.value }))} /><div className="btn-row"><button className="btn btn-secondary" onClick={() => setQuotedFee(autoEstimatedFee)}>Tính phí tạm tính</button><button className="btn btn-ghost" onClick={saveDraft}>Lưu nháp</button><button className="btn btn-primary" disabled={createLoading} onClick={() => { void submitCreateShipment(false); }}>{createLoading ? 'Đang tạo...' : 'Tạo đơn'}</button><button className="btn btn-primary" disabled={createLoading} onClick={() => { void submitCreateShipment(true); }}>Tạo và yêu cầu pickup ngay</button></div>{createError ? <p className="message error">{createError}</p> : null}{createSuccess ? <p className="message success">{createSuccess}</p> : null}</div><div className="grid"><div className="card"><h3>Tóm tắt phí</h3><p className="muted">Phí tạm tính: <strong>{formatCurrency(effectiveFee)}</strong></p><p className="muted">Dịch vụ: {createForm.serviceType}</p></div><div className="card grid"><h3>Draft đã lưu</h3><input className="input" value={draftName} onChange={(e) => setDraftName(e.target.value)} placeholder="Tên draft" />{drafts.length === 0 ? <div className="empty">Chưa có draft.</div> : drafts.slice(0, 6).map((d) => <div className="detail-box" key={d.id}><strong>{d.name}</strong><div className="muted">{formatDate(d.createdAt)}</div><div className="btn-row"><button className="btn btn-ghost" onClick={() => { setCreateForm(d.form); setQuotedFee(d.quoteFee); }}>Tải lại</button><button className="btn btn-danger" onClick={() => setDrafts((p) => p.filter((item) => item.id !== d.id))}>Xóa</button></div></div>)}</div></div></section> : null}
+          {activeView === 'create-shipment' ? (
+            <section className="split-layout">
+              <div className="card grid">
+                <h3>Tao don hang</h3>
+                {hubLocations.length === 0 ? (
+                  <p className="message error">
+                    Chua co hub hop le. Admin can tao hub voi province/district truoc.
+                  </p>
+                ) : null}
+                <div className="grid grid-4">
+                  <input
+                    className="input"
+                    placeholder="Ma don (khong bat buoc)"
+                    value={createForm.manualCode}
+                    onChange={(event) =>
+                      setCreateForm((previous) => ({
+                        ...previous,
+                        manualCode: event.target.value,
+                      }))
+                    }
+                  />
+                  <input
+                    className="input"
+                    placeholder="Ten nguoi gui"
+                    value={createForm.senderName}
+                    onChange={(event) =>
+                      setCreateForm((previous) => ({
+                        ...previous,
+                        senderName: event.target.value,
+                      }))
+                    }
+                  />
+                  <input
+                    className="input"
+                    placeholder="SDT nguoi gui"
+                    value={createForm.senderPhone}
+                    onChange={(event) =>
+                      setCreateForm((previous) => ({
+                        ...previous,
+                        senderPhone: event.target.value,
+                      }))
+                    }
+                  />
+                  <select
+                    className="select"
+                    value={createForm.senderHubCode}
+                    onChange={(event) => {
+                      const selectedHubCode = event.target.value;
+                      const selectedLocation = hubLocationMap.get(selectedHubCode);
+                      setCreateForm((previous) => ({
+                        ...previous,
+                        senderHubCode: selectedHubCode,
+                        senderAddress: selectedLocation?.fullAddress ?? '',
+                      }));
+                    }}
+                  >
+                    <option value="">Chon vi tri gui (hub)</option>
+                    {hubLocations.map((location) => (
+                      <option key={location.hubCode} value={location.hubCode}>
+                        {location.label}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    className="input"
+                    placeholder="Dia chi gui (tu hub)"
+                    value={createForm.senderAddress}
+                    readOnly
+                  />
+                  <input
+                    className="input"
+                    placeholder="Ten nguoi nhan"
+                    value={createForm.receiverName}
+                    onChange={(event) =>
+                      setCreateForm((previous) => ({
+                        ...previous,
+                        receiverName: event.target.value,
+                      }))
+                    }
+                  />
+                  <input
+                    className="input"
+                    placeholder="SDT nguoi nhan"
+                    value={createForm.receiverPhone}
+                    onChange={(event) =>
+                      setCreateForm((previous) => ({
+                        ...previous,
+                        receiverPhone: event.target.value,
+                      }))
+                    }
+                  />
+                  <select
+                    className="select"
+                    value={createForm.receiverHubCode}
+                    onChange={(event) => {
+                      const selectedHubCode = event.target.value;
+                      const selectedLocation = hubLocationMap.get(selectedHubCode);
+                      setCreateForm((previous) => ({
+                        ...previous,
+                        receiverHubCode: selectedHubCode,
+                        receiverAddress: selectedLocation?.fullAddress ?? '',
+                        receiverRegion: selectedLocation?.province ?? '',
+                      }));
+                    }}
+                  >
+                    <option value="">Chon vi tri nhan (hub)</option>
+                    {hubLocations.map((location) => (
+                      <option key={`receiver-${location.hubCode}`} value={location.hubCode}>
+                        {location.label}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    className="input"
+                    placeholder="Tinh/Thanh nguoi nhan (tu hub)"
+                    value={createForm.receiverRegion}
+                    readOnly
+                  />
+                  <input
+                    className="input"
+                    placeholder="Dia chi nhan (tu hub)"
+                    value={createForm.receiverAddress}
+                    readOnly
+                  />
+                  <input
+                    className="input"
+                    placeholder="Loai hang"
+                    value={createForm.itemType}
+                    onChange={(event) =>
+                      setCreateForm((previous) => ({
+                        ...previous,
+                        itemType: event.target.value,
+                      }))
+                    }
+                  />
+                  <input
+                    className="input"
+                    placeholder="Khoi luong"
+                    value={createForm.weightKg}
+                    onChange={(event) =>
+                      setCreateForm((previous) => ({
+                        ...previous,
+                        weightKg: event.target.value,
+                      }))
+                    }
+                  />
+                  <input
+                    className="input"
+                    placeholder="Dai"
+                    value={createForm.lengthCm}
+                    onChange={(event) =>
+                      setCreateForm((previous) => ({
+                        ...previous,
+                        lengthCm: event.target.value,
+                      }))
+                    }
+                  />
+                  <input
+                    className="input"
+                    placeholder="Rong"
+                    value={createForm.widthCm}
+                    onChange={(event) =>
+                      setCreateForm((previous) => ({
+                        ...previous,
+                        widthCm: event.target.value,
+                      }))
+                    }
+                  />
+                  <input
+                    className="input"
+                    placeholder="Cao"
+                    value={createForm.heightCm}
+                    onChange={(event) =>
+                      setCreateForm((previous) => ({
+                        ...previous,
+                        heightCm: event.target.value,
+                      }))
+                    }
+                  />
+                  <input
+                    className="input"
+                    placeholder="Gia tri hang"
+                    value={createForm.declaredValue}
+                    onChange={(event) =>
+                      setCreateForm((previous) => ({
+                        ...previous,
+                        declaredValue: event.target.value,
+                      }))
+                    }
+                  />
+                  <select
+                    className="select"
+                    value={createForm.serviceType}
+                    onChange={(event) =>
+                      setCreateForm((previous) => ({
+                        ...previous,
+                        serviceType: event.target.value as CreateShipmentForm['serviceType'],
+                      }))
+                    }
+                  >
+                    <option value="STANDARD">STANDARD</option>
+                    <option value="EXPRESS">EXPRESS</option>
+                    <option value="SAME_DAY">SAME_DAY</option>
+                  </select>
+                  <input
+                    className="input"
+                    placeholder="COD"
+                    value={createForm.codAmount}
+                    onChange={(event) =>
+                      setCreateForm((previous) => ({
+                        ...previous,
+                        codAmount: event.target.value,
+                      }))
+                    }
+                  />
+                </div>
+                <textarea
+                  className="textarea"
+                  placeholder="Ghi chu giao"
+                  value={createForm.deliveryNote}
+                  onChange={(event) =>
+                    setCreateForm((previous) => ({
+                      ...previous,
+                      deliveryNote: event.target.value,
+                    }))
+                  }
+                />
+                <div className="btn-row">
+                  <button className="btn btn-secondary" onClick={() => setQuotedFee(autoEstimatedFee)}>
+                    Tinh phi tam tinh
+                  </button>
+                  <button className="btn btn-ghost" onClick={saveDraft}>
+                    Luu nhap
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    disabled={createLoading || hubLocations.length === 0}
+                    onClick={() => {
+                      void submitCreateShipment(false);
+                    }}
+                  >
+                    {createLoading ? 'Dang tao...' : 'Tao don'}
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    disabled={createLoading || hubLocations.length === 0}
+                    onClick={() => {
+                      void submitCreateShipment(true);
+                    }}
+                  >
+                    Tao va yeu cau pickup ngay
+                  </button>
+                </div>
+                {createError ? <p className="message error">{createError}</p> : null}
+                {createSuccess ? <p className="message success">{createSuccess}</p> : null}
+              </div>
+              <div className="grid">
+                <div className="card">
+                  <h3>Tom tat phi</h3>
+                  <p className="muted">
+                    Phi tam tinh: <strong>{formatCurrency(effectiveFee)}</strong>
+                  </p>
+                  <p className="muted">Dich vu: {createForm.serviceType}</p>
+                  <p className="muted">Hub gui: {createForm.senderHubCode || 'Chua chon'}</p>
+                  <p className="muted">Hub nhan: {createForm.receiverHubCode || 'Chua chon'}</p>
+                </div>
+                <div className="card grid">
+                  <h3>Draft da luu</h3>
+                  <input
+                    className="input"
+                    value={draftName}
+                    onChange={(event) => setDraftName(event.target.value)}
+                    placeholder="Ten draft"
+                  />
+                  {drafts.length === 0 ? (
+                    <div className="empty">Chua co draft.</div>
+                  ) : (
+                    drafts.slice(0, 6).map((draft) => (
+                      <div className="detail-box" key={draft.id}>
+                        <strong>{draft.name}</strong>
+                        <div className="muted">{formatDate(draft.createdAt)}</div>
+                        <div className="btn-row">
+                          <button
+                            className="btn btn-ghost"
+                            onClick={() => {
+                              setCreateForm(normalizeCreateForm(draft.form));
+                              setQuotedFee(draft.quoteFee);
+                            }}
+                          >
+                            Tai lai
+                          </button>
+                          <button
+                            className="btn btn-danger"
+                            onClick={() =>
+                              setDrafts((previous) =>
+                                previous.filter((item) => item.id !== draft.id),
+                              )
+                            }
+                          >
+                            Xoa
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </section>
+          ) : null}
 
           {activeView === 'shipments' ? <><section className="card grid"><h3>Danh sách shipment</h3><div className="grid grid-4"><input className="input" placeholder="Tim ma / ten / SDT" value={listSearch} onChange={(e) => setListSearch(e.target.value)} /><select className="select" value={listStatus} onChange={(e) => setListStatus(e.target.value)}><option value="ALL">Tat ca trang thai</option><option value="CREATED">CREATED</option><option value="UPDATED">UPDATED</option><option value="DELIVERED">DELIVERED</option><option value="DELIVERY_FAILED">DELIVERY_FAILED</option><option value="RETURN_STARTED">RETURN_STARTED</option><option value="RETURN_COMPLETED">RETURN_COMPLETED</option><option value="CANCELLED">CANCELLED</option></select><select className="select" value={listService} onChange={(e) => setListService(e.target.value)}><option value="ALL">Tat ca dich vu</option>{serviceOptions.map((o) => <option key={o}>{o}</option>)}</select><select className="select" value={listRegion} onChange={(e) => setListRegion(e.target.value)}><option value="ALL">Tat ca khu vuc</option>{regionOptions.map((o) => <option key={o}>{o}</option>)}</select><input className="input" type="date" value={listFromDate} onChange={(e) => setListFromDate(e.target.value)} /><input className="input" type="date" value={listToDate} onChange={(e) => setListToDate(e.target.value)} /></div></section><section className="card"><div className="table-wrap"><table><thead><tr><th>Mã vận đơn</th><th>Người nhận</th><th>SĐT</th><th>Trạng thái</th><th>COD</th><th>Phí</th><th>Dịch vụ</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead><tbody>{visibleRows.map((row) => <tr key={row.shipment.id}><td>{row.shipment.code}</td><td>{row.receiverName}</td><td>{row.receiverPhone}</td><td><span className={statusClass(row.shipment.currentStatus)}>{row.shipment.currentStatus}</span></td><td>{formatCurrency(row.codAmount)}</td><td>{formatCurrency(row.feeEstimate)}</td><td>{row.serviceType}</td><td>{formatDate(row.shipment.createdAt)}</td><td><div className="btn-row"><button className="btn btn-ghost" onClick={() => { void openShipmentDetail(row.shipment.code); }}>Xem</button><button className="btn btn-secondary" onClick={() => { void openShipmentDetail(row.shipment.code); }}>Cập nhật</button><button className="btn btn-danger" onClick={() => { const reason = window.prompt('Lý do hủy đơn', '') ?? ''; void cancelShipment(row.shipment.code, reason); }}>Hủy</button><button className="btn btn-secondary" onClick={() => { void createPickupForShipment(row.shipment.code, `manual pickup ${row.shipment.code}`); }}>Tạo pickup</button><button className="btn btn-ghost" onClick={() => printShipment(row)}>In</button></div></td></tr>)}</tbody></table></div>{visibleRows.length === 0 ? <div className="empty">Không có dữ liệu.</div> : null}<div className="btn-row" style={{ marginTop: 8 }}><button className="btn btn-ghost" disabled={listPage <= 1} onClick={() => setListPage((p) => Math.max(p - 1, 1))}>Truoc</button><span className="badge">Trang {listPage}/{totalPages}</span><button className="btn btn-ghost" disabled={listPage >= totalPages} onClick={() => setListPage((p) => Math.min(p + 1, totalPages))}>Sau</button></div></section></> : null}
 

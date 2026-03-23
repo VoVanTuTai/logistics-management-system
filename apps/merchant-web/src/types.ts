@@ -136,9 +136,11 @@ export interface CreateShipmentForm {
   manualCode: string;
   senderName: string;
   senderPhone: string;
+  senderHubCode: string;
   senderAddress: string;
   receiverName: string;
   receiverPhone: string;
+  receiverHubCode: string;
   receiverAddress: string;
   receiverRegion: string;
   itemType: string;
@@ -180,9 +182,11 @@ export const DEFAULT_CREATE_FORM: CreateShipmentForm = {
   manualCode: '',
   senderName: '',
   senderPhone: '',
+  senderHubCode: '',
   senderAddress: '',
   receiverName: '',
   receiverPhone: '',
+  receiverHubCode: '',
   receiverAddress: '',
   receiverRegion: '',
   itemType: '',
