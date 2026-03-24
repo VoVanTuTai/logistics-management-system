@@ -2,6 +2,11 @@ import React from 'react';
 
 import type { TrackingTimelineEventDto } from '../../features/tracking/tracking.types';
 import { formatDateTime } from '../../utils/format';
+import {
+  formatShipmentStatusLabel,
+  formatTrackingEventSourceLabel,
+  formatTrackingEventTypeLabel,
+} from '../../utils/logisticsLabels';
 
 interface TrackingTimelineTableProps {
   items: TrackingTimelineEventDto[];
@@ -14,20 +19,20 @@ export function TrackingTimelineTable({
     <table style={styles.table}>
       <thead>
         <tr>
-          <th style={styles.headerCell}>Sự kiện</th>
-          <th style={styles.headerCell}>Nguồn</th>
-          <th style={styles.headerCell}>Trạng thái sau sự kiện</th>
-          <th style={styles.headerCell}>Vị trí</th>
-          <th style={styles.headerCell}>Thời điểm xảy ra</th>
+          <th style={styles.headerCell}>Su kien</th>
+          <th style={styles.headerCell}>Nguon</th>
+          <th style={styles.headerCell}>Trang thai sau su kien</th>
+          <th style={styles.headerCell}>Vi tri</th>
+          <th style={styles.headerCell}>Thoi diem xay ra</th>
         </tr>
       </thead>
       <tbody>
         {items.map((event) => (
           <tr key={event.id}>
-            <td style={styles.cell}>{event.eventType}</td>
-            <td style={styles.cell}>{event.eventSource}</td>
-            <td style={styles.cell}>{event.statusAfterEvent ?? 'Không có'}</td>
-            <td style={styles.cell}>{event.locationCode ?? 'Không có'}</td>
+            <td style={styles.cell}>{formatTrackingEventTypeLabel(event.eventType)}</td>
+            <td style={styles.cell}>{formatTrackingEventSourceLabel(event.eventSource)}</td>
+            <td style={styles.cell}>{formatShipmentStatusLabel(event.statusAfterEvent)}</td>
+            <td style={styles.cell}>{event.locationCode ?? 'Khong co'}</td>
             <td style={styles.cell}>{formatDateTime(event.occurredAt)}</td>
           </tr>
         ))}

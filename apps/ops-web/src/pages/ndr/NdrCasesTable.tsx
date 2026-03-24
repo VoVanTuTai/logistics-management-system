@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import type { NdrCaseListItemDto } from '../../features/ndr/ndr.types';
 import { routePaths } from '../../navigation/routes';
 import { formatDateTime } from '../../utils/format';
+import { formatAnyCodeLabel, formatNdrStatusLabel } from '../../utils/logisticsLabels';
 
 interface NdrCasesTableProps {
   items: NdrCaseListItemDto[];
@@ -14,11 +15,11 @@ export function NdrCasesTable({ items }: NdrCasesTableProps): React.JSX.Element 
     <table style={styles.table}>
       <thead>
         <tr>
-          <th style={styles.headerCell}>NDR ID</th>
-          <th style={styles.headerCell}>Vận đơn</th>
-          <th style={styles.headerCell}>Trạng thái</th>
-          <th style={styles.headerCell}>Lý do</th>
-          <th style={styles.headerCell}>Cập nhật lúc</th>
+          <th style={styles.headerCell}>Ma NDR</th>
+          <th style={styles.headerCell}>Van don</th>
+          <th style={styles.headerCell}>Trang thai</th>
+          <th style={styles.headerCell}>Ly do</th>
+          <th style={styles.headerCell}>Cap nhat luc</th>
         </tr>
       </thead>
       <tbody>
@@ -28,8 +29,8 @@ export function NdrCasesTable({ items }: NdrCasesTableProps): React.JSX.Element 
               <Link to={routePaths.ndrDetail(item.id)}>{item.id}</Link>
             </td>
             <td style={styles.cell}>{item.shipmentCode}</td>
-            <td style={styles.cell}>{item.status}</td>
-            <td style={styles.cell}>{item.reasonCode ?? 'Không có'}</td>
+            <td style={styles.cell}>{formatNdrStatusLabel(item.status)}</td>
+            <td style={styles.cell}>{formatAnyCodeLabel(item.reasonCode)}</td>
             <td style={styles.cell}>{formatDateTime(item.updatedAt)}</td>
           </tr>
         ))}

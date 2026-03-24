@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+﻿import { useMutation, useQueryClient } from '@tanstack/react-query';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
@@ -7,6 +7,7 @@ import type { PickupRequestListFilters } from '../../features/pickups/pickups.ty
 import { useShipmentsQuery } from '../../features/shipments/shipments.api';
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
+import { formatPickupStatusLabel } from '../../utils/logisticsLabels';
 import { queryKeys } from '../../utils/queryKeys';
 import { PickupRequestsTable, type PickupApprovalRow } from './PickupRequestsTable';
 
@@ -223,7 +224,7 @@ export function PickupApprovalsPage(): React.JSX.Element {
     <div>
       <h2>Duyet lay hang</h2>
       <p style={{ color: '#2d3f99' }}>
-        Bo cot ma yeu cau. Chon nhieu don REQUESTED de duyet 1 lan.
+        Bo cot ma yeu cau. Chon nhieu don cho duyet de duyet 1 lan.
       </p>
       <form onSubmit={onFilterSubmit} style={styles.filterForm}>
         <select
@@ -232,10 +233,10 @@ export function PickupApprovalsPage(): React.JSX.Element {
           onChange={(event) => setStatusInput(event.target.value)}
           style={styles.input}
         >
-          <option value="">Tất cả trang thai pickup</option>
+          <option value="">Tat ca trang thai lay hang</option>
           {PICKUP_STATUS_OPTIONS.map((option) => (
             <option key={option} value={option}>
-              {option}
+              {formatPickupStatusLabel(option)}
             </option>
           ))}
         </select>
@@ -252,26 +253,26 @@ export function PickupApprovalsPage(): React.JSX.Element {
           disabled={selectedIds.length === 0 || bulkApproveMutation.isPending}
         >
           {bulkApproveMutation.isPending
-            ? 'Đang duyệt...'
+            ? 'Dang duyet...'
             : `Duyet da chon (${selectedIds.length})`}
         </button>
         <small style={styles.hintText}>
-          Chi dong co trang thai REQUESTED moi co the tick chon.
+          Chi dong co trang thai {formatPickupStatusLabel('REQUESTED')} moi co the tick chon.
         </small>
       </div>
 
       {actionMessage ? <p style={styles.successText}>{actionMessage}</p> : null}
       {actionError ? <p style={styles.errorText}>{actionError}</p> : null}
 
-      {pickupsQuery.isLoading ? <p>Đang tải yeu cau lay hang...</p> : null}
+      {pickupsQuery.isLoading ? <p>Dang tai yeu cau lay hang...</p> : null}
       {pickupsQuery.isError ? <p style={styles.errorText}>{getErrorMessage(pickupsQuery.error)}</p> : null}
-      {shipmentsQuery.isLoading ? <p>Đang tải thong tin shipment...</p> : null}
+      {shipmentsQuery.isLoading ? <p>Dang tai thong tin van don...</p> : null}
       {shipmentsQuery.isError ? (
-        <p style={styles.errorText}>Không thể tải thong tin van don: {getErrorMessage(shipmentsQuery.error)}</p>
+        <p style={styles.errorText}>Khong the tai thong tin van don: {getErrorMessage(shipmentsQuery.error)}</p>
       ) : null}
 
       {pickupsQuery.isSuccess && (pickupsQuery.data?.length ?? 0) === 0 ? (
-        <p>Không có yeu cau lay hang phu hop bo loc hien tai.</p>
+        <p>Khong co yeu cau lay hang phu hop bo loc hien tai.</p>
       ) : null}
 
       {pickupsQuery.isSuccess && (pickupsQuery.data?.length ?? 0) > 0 ? (
@@ -323,3 +324,5 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: 8,
   },
 };
+
+

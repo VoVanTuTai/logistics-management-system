@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+﻿import React, { useMemo, useState } from 'react';
 
 import { useHubsQuery } from '../../features/masterdata/masterdata.api';
 import {
@@ -14,6 +14,7 @@ import { openBagLabelPrint } from '../../printing/bagLabelPrint';
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
 import { formatDateTime } from '../../utils/format';
+import { formatManifestStatusLabel } from '../../utils/logisticsLabels';
 import { CreateManifestForm } from './CreateManifestForm';
 import { ManifestsTable } from './ManifestsTable';
 
@@ -43,16 +44,16 @@ export function ManifestManagementPage(): React.JSX.Element {
   const onGenerateBagCodes = async (payload: GenerateBagCodesInput) => {
     const createdBags = await generateBagCodesMutation.mutateAsync(payload);
     setLastGeneratedBags(createdBags);
-    setActionMessage(`Đã tạo ${createdBags.length} mã bao trống.`);
+    setActionMessage(`Da tao ${createdBags.length} ma bao trong.`);
   };
 
   const onDeleteManifest = async (item: ManifestListItemDto) => {
     if (item.status !== 'CREATED') {
-      setActionMessage('Chỉ xóa được bao đang ở trạng thái CREATED.');
+      setActionMessage(`Chi xoa duoc bao dang o trang thai ${formatManifestStatusLabel('CREATED')}.`);
       return;
     }
 
-    const ok = window.confirm(`Xóa mã bao ${item.manifestCode}?`);
+    const ok = window.confirm(`Xoa ma bao ${item.manifestCode}?`);
     if (!ok) {
       return;
     }
@@ -61,7 +62,7 @@ export function ManifestManagementPage(): React.JSX.Element {
     setDeletingManifestId(item.id);
     try {
       await deleteManifestMutation.mutateAsync(item.id);
-      setActionMessage(`Đã xóa mã bao ${item.manifestCode}.`);
+      setActionMessage(`Da xoa ma bao ${item.manifestCode}.`);
     } catch (error) {
       setActionMessage(getErrorMessage(error));
     } finally {
@@ -72,35 +73,35 @@ export function ManifestManagementPage(): React.JSX.Element {
   const onPrintManifest = (item: ManifestListItemDto) => {
     const opened = openBagLabelPrint({
       bagCode: item.manifestCode,
-      originHubCode: item.originHubCode ?? 'N/A',
-      destinationHubCode: item.destinationHubCode ?? 'N/A',
-      status: item.status,
+      originHubCode: item.originHubCode ?? 'Khong co',
+      destinationHubCode: item.destinationHubCode ?? 'Khong co',
+      status: formatManifestStatusLabel(item.status),
       createdAtText: formatDateTime(item.createdAt ?? null),
     });
 
     if (!opened) {
-      setActionMessage('Trình duyệt đang chặn popup in. Hãy cho phép popup rồi thử lại.');
+      setActionMessage('Trinh duyet dang chan cua so in. Hay cho phep cua so in roi thu lai.');
       return;
     }
 
-    setActionMessage(`Đã mở nhãn in QR cho mã bao ${item.manifestCode}.`);
+    setActionMessage(`Da mo nhan in QR cho ma bao ${item.manifestCode}.`);
   };
 
   return (
     <div>
-      <h2>Quản lý bao tải</h2>
+      <h2>Quan ly bao tai</h2>
       <p style={{ color: '#2d3f99' }}>
-        Tạo mã bao trống theo hub đích để Ops dùng khi đóng bao trung chuyển giữa
-        các hub.
+        Tao ma bao trong theo hub dich de bo phan dieu hanh dung khi dong bao trung chuyen giua
+        cac hub.
       </p>
 
       {originHubCode ? (
         <p style={styles.scopeText}>
-          Hub hiện tại của bạn: <strong>{originHubCode}</strong>
+          Hub hien tai cua ban: <strong>{originHubCode}</strong>
         </p>
       ) : (
         <p style={styles.warningText}>
-          Tài khoản Ops chưa được gán hub nguồn, chưa thể tạo mã bao.
+          Tai khoan dieu hanh chua duoc gan hub nguon, chua the tao ma bao.
         </p>
       )}
 
@@ -115,7 +116,7 @@ export function ManifestManagementPage(): React.JSX.Element {
         <p
           style={{
             ...styles.actionText,
-            ...(actionMessage.startsWith('Đã')
+            ...(actionMessage.startsWith('Da')
               ? styles.successText
               : styles.errorText),
           }}
@@ -136,7 +137,7 @@ export function ManifestManagementPage(): React.JSX.Element {
       {lastGeneratedBags.length > 0 ? (
         <div style={styles.responseBox}>
           <strong>
-            Đã tạo {lastGeneratedBags.length} mã bao trống lúc{' '}
+            Da tao {lastGeneratedBags.length} ma bao trong luc{' '}
             {formatDateTime(new Date().toISOString())}
           </strong>
           <div style={styles.tagsWrap}>
@@ -149,12 +150,12 @@ export function ManifestManagementPage(): React.JSX.Element {
         </div>
       ) : null}
 
-      {manifestsQuery.isLoading ? <p>Đang tải danh sách bao...</p> : null}
+      {manifestsQuery.isLoading ? <p>Dang tai danh sach bao...</p> : null}
       {manifestsQuery.isError ? (
         <p style={styles.errorText}>{getErrorMessage(manifestsQuery.error)}</p>
       ) : null}
       {manifestsQuery.isSuccess && (manifestsQuery.data?.length ?? 0) === 0 ? (
-        <p>Chưa có bao nào.</p>
+        <p>Chua co bao nao.</p>
       ) : null}
       {manifestsQuery.isSuccess && (manifestsQuery.data?.length ?? 0) > 0 ? (
         <ManifestsTable
@@ -219,4 +220,5 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
   },
 };
+
 

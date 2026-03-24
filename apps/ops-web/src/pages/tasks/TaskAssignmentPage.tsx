@@ -1,4 +1,4 @@
-import { useQueryClient } from '@tanstack/react-query';
+﻿import { useQueryClient } from '@tanstack/react-query';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
@@ -9,6 +9,7 @@ import type { TaskListFilters, TaskListItemDto } from '../../features/tasks/task
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
 import { deriveHubScopeTokens, isShipmentInScope } from '../../utils/locationScope';
+import { formatTaskStatusLabel, formatTaskTypeLabel } from '../../utils/logisticsLabels';
 import { queryKeys } from '../../utils/queryKeys';
 import { TasksTable } from './TasksTable';
 
@@ -277,7 +278,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
 
     const courierId = bulkCourierId.trim();
     if (!courierId) {
-      setBulkAssignError('Vui long chon shipper truoc khi phan cong.');
+      setBulkAssignError('Vui long chon nhan vien giao truoc khi phan cong.');
       return;
     }
 
@@ -352,14 +353,14 @@ export function TaskAssignmentPage(): React.JSX.Element {
     <div>
       <h2>Phan cong tac vu</h2>
       <p style={styles.helperText}>
-        Loc theo loai tac vu, trang thai va khu vuc giao. Chon nhieu tac vu de phan cong cho 1 shipper.
+        Loc theo loai tac vu, trang thai va khu vuc giao. Chon nhieu tac vu de phan cong cho 1 nhan vien giao.
       </p>
       {!canViewAllHubAreas ? (
         <div style={styles.scopeNotice}>
           <strong>Pham vi hub:</strong>{' '}
           {assignedHubCodes.length > 0
             ? assignedHubCodes.join(', ')
-            : 'Chua duoc gan hub. Vui long lien he admin de cap hub cho tai khoan OPS nay.'}
+            : 'Chua duoc gan hub. Vui long lien he quan tri de cap hub cho tai khoan dieu hanh nay.'}
         </div>
       ) : null}
 
@@ -370,10 +371,10 @@ export function TaskAssignmentPage(): React.JSX.Element {
           onChange={(event) => setTaskTypeInput(event.target.value)}
           style={styles.select}
         >
-          <option value="">Tất cả loai tac vu</option>
-          <option value="PICKUP">PICKUP</option>
-          <option value="DELIVERY">DELIVERY</option>
-          <option value="RETURN">RETURN</option>
+          <option value="">Tat ca loai tac vu</option>
+          <option value="PICKUP">{formatTaskTypeLabel('PICKUP')}</option>
+          <option value="DELIVERY">{formatTaskTypeLabel('DELIVERY')}</option>
+          <option value="RETURN">{formatTaskTypeLabel('RETURN')}</option>
         </select>
 
         <select
@@ -382,11 +383,11 @@ export function TaskAssignmentPage(): React.JSX.Element {
           onChange={(event) => setStatusInput(event.target.value)}
           style={styles.select}
         >
-          <option value="">Tất cả trang thai</option>
-          <option value="CREATED">CREATED</option>
-          <option value="ASSIGNED">ASSIGNED</option>
-          <option value="COMPLETED">COMPLETED</option>
-          <option value="CANCELLED">CANCELLED</option>
+          <option value="">Tat ca trang thai</option>
+          <option value="CREATED">{formatTaskStatusLabel('CREATED')}</option>
+          <option value="ASSIGNED">{formatTaskStatusLabel('ASSIGNED')}</option>
+          <option value="COMPLETED">{formatTaskStatusLabel('COMPLETED')}</option>
+          <option value="CANCELLED">{formatTaskStatusLabel('CANCELLED')}</option>
         </select>
 
         <select
@@ -395,7 +396,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
           onChange={(event) => setDeliveryAreaInput(event.target.value)}
           style={styles.select}
         >
-          <option value="">Tất cả khu vuc giao</option>
+          <option value="">Tat ca khu vuc giao</option>
           {areaOptions.map((area) => (
             <option key={area} value={area}>
               {area}
@@ -422,7 +423,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
             style={styles.select}
             disabled={courierOptionsQuery.isLoading || bulkAssignLoading}
           >
-            <option value="">Chon shipper</option>
+            <option value="">Chon nhan vien giao</option>
             {(courierOptionsQuery.data ?? []).map((courier) => (
               <option key={courier.courierId} value={courier.courierId}>
                 {courier.label}
@@ -434,12 +435,12 @@ export function TaskAssignmentPage(): React.JSX.Element {
             onClick={() => void onBulkAssign()}
             disabled={bulkAssignLoading || selectedTaskIds.length === 0}
           >
-            {bulkAssignLoading ? 'Đang phân công...' : 'Phan cong cac tac vu da chon'}
+            {bulkAssignLoading ? 'Dang phan cong...' : 'Phan cong cac tac vu da chon'}
           </button>
         </div>
 
         <small style={styles.helperText}>
-          Chi cac tac vu co trang thai CREATED hoac ASSIGNED moi duoc chon de phan cong hang loat.
+          Chi cac tac vu co trang thai {formatTaskStatusLabel('CREATED')} hoac {formatTaskStatusLabel('ASSIGNED')} moi duoc chon de phan cong hang loat.
         </small>
 
         {bulkAssignMessage ? (
@@ -454,7 +455,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
         ) : null}
       </section>
 
-      {tasksQuery.isLoading ? <p>Đang tải tac vu...</p> : null}
+      {tasksQuery.isLoading ? <p>Dang tai tac vu...</p> : null}
       {tasksQuery.isError ? (
         <p style={styles.errorText}>{getErrorMessage(tasksQuery.error)}</p>
       ) : null}
@@ -471,8 +472,8 @@ export function TaskAssignmentPage(): React.JSX.Element {
       {tasksQuery.isSuccess && filteredTasks.length === 0 ? (
         <p>
           {assignedHubCodes.length === 0 && !canViewAllHubAreas
-            ? 'Không hiển thị được tac vu vi tai khoan OPS chua duoc gan hub.'
-            : 'Không có tac vu phu hop bo loc hien tai.'}
+            ? 'Khong hien thi duoc tac vu vi tai khoan dieu hanh chua duoc gan hub.'
+            : 'Khong co tac vu phu hop bo loc hien tai.'}
         </p>
       ) : null}
 
@@ -559,3 +560,4 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: 8,
   },
 };
+

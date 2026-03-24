@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import type { TaskListItemDto } from '../../features/tasks/tasks.types';
 import { routePaths } from '../../navigation/routes';
 import { formatDateTime } from '../../utils/format';
+import { formatTaskStatusLabel, formatTaskTypeLabel } from '../../utils/logisticsLabels';
 
 interface TasksTableProps {
   items: TaskListItemDto[];
@@ -40,7 +41,7 @@ export function TasksTable({
           <th style={styles.headerCell}>Nguoi nhan</th>
           <th style={styles.headerCell}>Nen tang</th>
           <th style={styles.headerCell}>Khu vuc giao</th>
-          <th style={styles.headerCell}>Shipper</th>
+          <th style={styles.headerCell}>Nhan vien giao</th>
           <th style={styles.headerCell}>Cap nhat luc</th>
         </tr>
       </thead>
@@ -60,16 +61,16 @@ export function TasksTable({
             <td style={styles.cell}>
               <Link to={routePaths.taskDetail(item.id)}>{item.taskCode}</Link>
             </td>
-            <td style={styles.cell}>{item.taskType}</td>
-            <td style={styles.cell}>{item.status}</td>
-            <td style={styles.cell}>{item.shipmentCode ?? 'Không có'}</td>
-            <td style={styles.cell}>{item.senderName ?? 'Không có'}</td>
-            <td style={styles.cell}>{item.receiverName ?? 'Không có'}</td>
+            <td style={styles.cell}>{formatTaskTypeLabel(item.taskType)}</td>
+            <td style={styles.cell}>{formatTaskStatusLabel(item.status)}</td>
+            <td style={styles.cell}>{item.shipmentCode ?? 'Khong co'}</td>
+            <td style={styles.cell}>{item.senderName ?? 'Khong co'}</td>
+            <td style={styles.cell}>{item.receiverName ?? 'Khong co'}</td>
             <td style={styles.cell}>
-              <span style={styles.platformTag}>{item.platform ?? 'Không có'}</span>
+              <span style={styles.platformTag}>{item.platform ?? 'Khong co'}</span>
             </td>
-            <td style={styles.cell}>{item.deliveryArea ?? 'Không xác định'}</td>
-            <td style={styles.cell}>{item.assignedCourierId ?? 'Không có'}</td>
+            <td style={styles.cell}>{item.deliveryArea ?? 'Khong xac dinh'}</td>
+            <td style={styles.cell}>{item.assignedCourierId ?? 'Khong co'}</td>
             <td style={styles.cell}>{formatDateTime(item.updatedAt)}</td>
           </tr>
         ))}

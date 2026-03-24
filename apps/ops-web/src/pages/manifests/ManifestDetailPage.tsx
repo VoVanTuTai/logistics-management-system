@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import {
@@ -19,6 +19,7 @@ import { routePaths } from '../../navigation/routes';
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
 import { formatDateTime } from '../../utils/format';
+import { formatManifestStatusLabel } from '../../utils/logisticsLabels';
 import { ManifestActionForms } from './ManifestActionForms';
 
 export function ManifestDetailPage(): React.JSX.Element {
@@ -60,17 +61,17 @@ export function ManifestDetailPage(): React.JSX.Element {
   };
   const lastActionLabel =
     lastActionName === 'addShipment'
-      ? 'thêm vận đơn'
+      ? 'them van don'
       : lastActionName === 'removeShipment'
-        ? 'gỡ vận đơn'
+        ? 'go van don'
         : lastActionName === 'seal'
-          ? 'niêm phong'
+          ? 'niem phong'
           : lastActionName === 'receiveHandover'
-            ? 'nhận bàn giao'
-            : 'không có';
+            ? 'nhan ban giao'
+            : 'khong co';
 
   if (detailQuery.isLoading) {
-    return <p>Đang tải chi tiết manifest...</p>;
+    return <p>Dang tai chi tiet bao tai...</p>;
   }
 
   if (detailQuery.isError) {
@@ -78,31 +79,31 @@ export function ManifestDetailPage(): React.JSX.Element {
   }
 
   if (!detailQuery.data) {
-    return <p>Không tìm thấy manifest.</p>;
+    return <p>Khong tim thay bao tai.</p>;
   }
 
   return (
     <section>
-      <h2>Chi tiết manifest</h2>
+      <h2>Chi tiet bao tai</h2>
       <p>
-        <Link to={routePaths.manifests}>Quay lại danh sách manifest</Link>
+        <Link to={routePaths.manifests}>Quay lai danh sach bao tai</Link>
       </p>
 
-      <p>Mã manifest: {detailQuery.data.manifestCode}</p>
-      <p>Trạng thái: {detailQuery.data.status}</p>
-      <p>Hub đi: {detailQuery.data.originHubCode ?? 'Không có'}</p>
-      <p>Hub đến: {detailQuery.data.destinationHubCode ?? 'Không có'}</p>
-      <p>Niêm phong lúc: {formatDateTime(detailQuery.data.sealedAt)}</p>
+      <p>Ma bao tai: {detailQuery.data.manifestCode}</p>
+      <p>Trang thai: {formatManifestStatusLabel(detailQuery.data.status)}</p>
+      <p>Hub di: {detailQuery.data.originHubCode ?? 'Khong co'}</p>
+      <p>Hub den: {detailQuery.data.destinationHubCode ?? 'Khong co'}</p>
+      <p>Niem phong luc: {formatDateTime(detailQuery.data.sealedAt)}</p>
       <p>
-        Cập nhật lúc:{' '}
-        {detailQuery.data.updatedAt ? formatDateTime(detailQuery.data.updatedAt) : 'Không có'}
+        Cap nhat luc:{' '}
+        {detailQuery.data.updatedAt ? formatDateTime(detailQuery.data.updatedAt) : 'Khong co'}
       </p>
-      <p>Ghi chú: {detailQuery.data.note ?? 'Không có'}</p>
+      <p>Ghi chu: {detailQuery.data.note ?? 'Khong co'}</p>
       <p>
-        Mã vận đơn:{' '}
+        Ma van don:{' '}
         {detailQuery.data.shipmentCodes?.length
           ? detailQuery.data.shipmentCodes.join(', ')
-          : 'Không có'}
+          : 'Khong co'}
       </p>
 
       <ManifestActionForms
@@ -132,7 +133,7 @@ export function ManifestDetailPage(): React.JSX.Element {
 
       {lastActionResponse ? (
         <div style={styles.responseBox}>
-          <strong>Phản hồi server gần nhất ({lastActionLabel})</strong>
+          <strong>Phan hoi he thong gan nhat ({lastActionLabel})</strong>
           <pre style={styles.pre}>{JSON.stringify(lastActionResponse, null, 2)}</pre>
         </div>
       ) : null}
@@ -158,3 +159,4 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#b91c1c',
   },
 };
+

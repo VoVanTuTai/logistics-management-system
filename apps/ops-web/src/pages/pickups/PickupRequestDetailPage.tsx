@@ -16,6 +16,7 @@ import { routePaths } from '../../navigation/routes';
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
 import { formatDateTime } from '../../utils/format';
+import { formatPickupStatusLabel } from '../../utils/logisticsLabels';
 
 export function PickupRequestDetailPage(): React.JSX.Element {
   const { pickupId = '' } = useParams();
@@ -90,7 +91,7 @@ export function PickupRequestDetailPage(): React.JSX.Element {
       </p>
       <p>Ma yeu cau: {detailQuery.data.requestCode}</p>
       <p>Ma van don: {detailQuery.data.shipmentCode ?? 'Không có'}</p>
-      <p>Trang thai: {detailQuery.data.status}</p>
+      <p>Trang thai: {formatPickupStatusLabel(detailQuery.data.status)}</p>
       <p>Thoi diem tao: {formatDateTime(detailQuery.data.requestedAt)}</p>
       <p>Cap nhat luc: {detailQuery.data.updatedAt ? formatDateTime(detailQuery.data.updatedAt) : 'Không có'}</p>
       <p>Ghi chu: {detailQuery.data.note ?? 'Không có'}</p>
@@ -128,7 +129,9 @@ export function PickupRequestDetailPage(): React.JSX.Element {
             {completeMutation.isPending ? 'Đang gửi hoàn tất...' : 'Hoàn tất lay hang'}
           </button>
           {!canComplete ? (
-            <small>Chi hoan tat lay hang khi trang thai la APPROVED.</small>
+            <small>
+              Chi hoan tat lay hang khi trang thai la {formatPickupStatusLabel('APPROVED')}.
+            </small>
           ) : null}
           {completeMutation.isError ? (
             <small style={styles.errorText}>{getErrorMessage(completeMutation.error)}</small>
@@ -138,7 +141,7 @@ export function PickupRequestDetailPage(): React.JSX.Element {
 
       {lastActionResponse ? (
         <div style={styles.responseBox}>
-          <strong>Phan hoi server moi nhat ({lastActionLabel})</strong>
+          <strong>Phan hoi he thong moi nhat ({lastActionLabel})</strong>
           <pre style={styles.pre}>{JSON.stringify(lastActionResponse, null, 2)}</pre>
         </div>
       ) : null}

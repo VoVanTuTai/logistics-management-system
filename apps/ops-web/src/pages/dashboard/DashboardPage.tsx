@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+﻿import { useQuery } from '@tanstack/react-query';
 import React, { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
@@ -14,6 +14,7 @@ import { useHubsQuery } from '../../features/masterdata/masterdata.api';
 import { routePaths } from '../../navigation/routes';
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
+import { formatUserStatusLabel } from '../../utils/logisticsLabels';
 import { DashboardFiltersForm } from './DashboardFiltersForm';
 import { DashboardMetricsTable } from './DashboardMetricsTable';
 import { KpiCards } from './KpiCards';
@@ -272,8 +273,8 @@ export function DashboardPage(): React.JSX.Element {
       icon: 'M',
     },
     {
-      title: 'Quét hub',
-      description: 'Gửi quét inbound va outbound.',
+      title: 'Quet hub',
+      description: 'Gui quet nhap hub va xuat hub.',
       to: routePaths.scans,
       icon: 'H',
     },
@@ -284,16 +285,16 @@ export function DashboardPage(): React.JSX.Element {
       icon: 'N',
     },
     {
-      title: 'Tra cứu hanh trinh',
-      description: 'Tra cứu nhanh trang thai van don.',
+      title: 'Tra cuu hanh trinh',
+      description: 'Tra cuu nhanh trang thai van don.',
       to: routePaths.tracking,
       icon: 'L',
     },
   ] as const;
   const notices = [
-    'Dashboard chi lay du lieu qua reporting-service, khong tinh KPI client-side.',
-    'Tài khoản OPS duoc gioi han theo hub da gan.',
-    'Neu can thay doi pham vi hub, cap nhat hubCodes trong admin.',
+    'Bang tong quan chi hien thi du lieu tong hop tu backend.',
+    'Tai khoan dieu hanh duoc gioi han theo hub da gan.',
+    'Neu can thay doi pham vi hub, vui long cap nhat trong trang quan tri.',
   ] as const;
   const quickApps = [
     { title: 'Tong quan', to: routePaths.dashboard },
@@ -305,15 +306,15 @@ export function DashboardPage(): React.JSX.Element {
     <div className="ops-dashboard">
       <section className="ops-dashboard__hero">
         <div>
-          <p className="ops-dashboard__hero-kicker">Trung tam dieu hanh Ops</p>
+          <p className="ops-dashboard__hero-kicker">Trung tam dieu hanh OPS</p>
           <h2 className="ops-dashboard__hero-title">Trang tong quan van hanh JMS</h2>
           <p className="ops-dashboard__hero-subtitle">
-            Bao cao KPI theo hub duoc gan cho tai khoan OPS va cac diem vao tac vu van hanh.
+            Bao cao KPI theo hub duoc gan cho tai khoan dieu hanh va cac diem vao tac vu van hanh.
           </p>
         </div>
         <div className="ops-dashboard__hero-badge">
           <small>Hub dang theo doi</small>
-          <strong>{currentHub?.code ?? effectiveHubCode ?? 'CHUA_GAN'}</strong>
+          <strong>{currentHub?.code ?? effectiveHubCode ?? 'Chua gan'}</strong>
         </div>
       </section>
 
@@ -321,7 +322,7 @@ export function DashboardPage(): React.JSX.Element {
         <div className="ops-dashboard__main">
           <article className="ops-card">
             <header className="ops-card__header">
-              <h3>Menu chinh</h3>
+              <h3>Danh muc chinh</h3>
             </header>
             <div className="ops-menu-grid">
               {quickMenu.map((item) => (
@@ -339,7 +340,7 @@ export function DashboardPage(): React.JSX.Element {
               <h3>Bo loc bao cao</h3>
             </header>
             <p className="ops-dashboard__subtitle">
-              Du lieu bao cao luon duoc scope theo hub cua tai khoan OPS.
+              Du lieu bao cao luon duoc gioi han theo hub cua tai khoan dieu hanh.
             </p>
             <DashboardFiltersForm
               filters={effectiveFilters}
@@ -354,13 +355,13 @@ export function DashboardPage(): React.JSX.Element {
             <header className="ops-card__header">
               <h3>Hub dang quan ly</h3>
             </header>
-            {hubsQuery.isLoading ? <p className="ops-state">Đang tải thong tin hub...</p> : null}
+            {hubsQuery.isLoading ? <p className="ops-state">Dang tai thong tin hub...</p> : null}
             {hubsQuery.isError ? (
               <p className="ops-state ops-state--error">{getErrorMessage(hubsQuery.error)}</p>
             ) : null}
             {hubsQuery.isSuccess && !currentHub ? (
               <p className="ops-state">
-                Tài khoản chua duoc gan hub. Vui long gan hub trong Admin.
+                Tai khoan chua duoc gan hub. Vui long gan hub trong trang quan tri.
               </p>
             ) : null}
             {currentHub ? (
@@ -374,16 +375,16 @@ export function DashboardPage(): React.JSX.Element {
                   <strong>{currentHub.name}</strong>
                 </div>
                 <div>
-                  <small>Zone</small>
-                  <strong>{currentHub.zoneCode ?? 'Không có'}</strong>
+                  <small>Khu vuc</small>
+                  <strong>{currentHub.zoneCode ?? 'Khong co'}</strong>
                 </div>
                 <div>
                   <small>Dia chi</small>
-                  <strong>{currentHubAddressText || 'Không có'}</strong>
+                  <strong>{currentHubAddressText || 'Khong co'}</strong>
                 </div>
                 <div>
                   <small>Pham vi phuc vu</small>
-                  <strong>{currentHubScopeText || 'Không có'}</strong>
+                  <strong>{currentHubScopeText || 'Khong co'}</strong>
                 </div>
               </div>
             ) : null}
@@ -391,26 +392,25 @@ export function DashboardPage(): React.JSX.Element {
 
           <article className="ops-card">
             <header className="ops-card__header">
-              <h3>Danh sach shipper theo hub</h3>
+              <h3>Danh sach nhan vien giao theo hub</h3>
             </header>
             <div className="ops-shipper-tools">
               <input
-                placeholder="Tim username / ten hien thi / so dien thoai"
+                placeholder="Tim ten dang nhap / ten hien thi / so dien thoai"
                 value={shipperSearch}
                 onChange={(event) => setShipperSearch(event.target.value)}
               />
             </div>
             {!effectiveHubCode ? (
-              <p className="ops-state">
-                Tài khoản chua duoc gan hub, nen chua the tai danh sach shipper.
+              <p className="ops-state">Tai khoan chua duoc gan hub, nen chua the tai danh sach nhan vien giao.
               </p>
             ) : null}
-            {shipperQuery.isLoading ? <p className="ops-state">Đang tải shipper...</p> : null}
+            {shipperQuery.isLoading ? <p className="ops-state">Dang tai danh sach nhan vien giao...</p> : null}
             {shipperQuery.isError ? (
               <p className="ops-state ops-state--error">{getErrorMessage(shipperQuery.error)}</p>
             ) : null}
             {shipperQuery.isSuccess && shippers.length === 0 ? (
-              <p className="ops-state">Không có shipper nao thuoc hub hien tai.</p>
+              <p className="ops-state">Khong co nhan vien giao nao thuoc hub hien tai.</p>
             ) : null}
             {shippers.length > 0 ? (
               <table className="ops-shipper-table">
@@ -420,7 +420,7 @@ export function DashboardPage(): React.JSX.Element {
                     <th>Ten hien thi</th>
                     <th>So dien thoai</th>
                     <th>Trang thai</th>
-                    <th>Hubs</th>
+                    <th>Danh sach hub</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -429,7 +429,7 @@ export function DashboardPage(): React.JSX.Element {
                       <td>{shipper.username}</td>
                       <td>{shipper.displayName ?? '-'}</td>
                       <td>{shipper.phone ?? '-'}</td>
-                      <td>{shipper.status}</td>
+                      <td>{formatUserStatusLabel(shipper.status)}</td>
                       <td>{shipper.hubCodes.join(', ') || '-'}</td>
                     </tr>
                   ))}
@@ -442,12 +442,12 @@ export function DashboardPage(): React.JSX.Element {
             <header className="ops-card__header">
               <h3>Bo KPI</h3>
             </header>
-            {kpiQuery.isLoading ? <p className="ops-state">Đang tải KPI...</p> : null}
+            {kpiQuery.isLoading ? <p className="ops-state">Dang tai KPI...</p> : null}
             {kpiQuery.isError ? (
               <p className="ops-state ops-state--error">{getErrorMessage(kpiQuery.error)}</p>
             ) : null}
             {kpiQuery.isSuccess && kpiEntries.length === 0 ? (
-              <p className="ops-state">Không có du lieu KPI.</p>
+              <p className="ops-state">Khong co du lieu KPI.</p>
             ) : null}
             {kpiEntries.length > 0 ? <KpiCards kpis={kpiData ?? {}} /> : null}
           </article>
@@ -457,7 +457,7 @@ export function DashboardPage(): React.JSX.Element {
               <h3>Chi so theo ngay</h3>
             </header>
             {dailyMetricsQuery.isLoading ? (
-              <p className="ops-state">Đang tải chi so ngay...</p>
+              <p className="ops-state">Dang tai chi so ngay...</p>
             ) : null}
             {dailyMetricsQuery.isError ? (
               <p className="ops-state ops-state--error">
@@ -465,7 +465,7 @@ export function DashboardPage(): React.JSX.Element {
               </p>
             ) : null}
             {dailyMetricsQuery.isSuccess && dailyData.length === 0 ? (
-              <p className="ops-state">Không có chi so theo ngay.</p>
+              <p className="ops-state">Khong co chi so theo ngay.</p>
             ) : null}
             {dailyData.length > 0 ? (
               <div className="ops-dashboard__metrics-grid">
@@ -480,7 +480,7 @@ export function DashboardPage(): React.JSX.Element {
               <h3>Chi so theo thang</h3>
             </header>
             {monthlyMetricsQuery.isLoading ? (
-              <p className="ops-state">Đang tải chi so thang...</p>
+              <p className="ops-state">Dang tai chi so thang...</p>
             ) : null}
             {monthlyMetricsQuery.isError ? (
               <p className="ops-state ops-state--error">
@@ -488,7 +488,7 @@ export function DashboardPage(): React.JSX.Element {
               </p>
             ) : null}
             {monthlyMetricsQuery.isSuccess && monthlyData.length === 0 ? (
-              <p className="ops-state">Không có chi so theo thang.</p>
+              <p className="ops-state">Khong co chi so theo thang.</p>
             ) : null}
             {monthlyData.length > 0 ? (
               <div className="ops-dashboard__metrics-grid">
@@ -528,3 +528,5 @@ export function DashboardPage(): React.JSX.Element {
     </div>
   );
 }
+
+

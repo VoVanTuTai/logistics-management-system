@@ -1,6 +1,7 @@
 import React from 'react';
 
 import type { DashboardMetricPointDto } from '../../../features/dashboard/dashboard.types';
+import { formatKpiLabel } from '../../../utils/logisticsLabels';
 
 interface DashboardTrendChartProps {
   title: string;
@@ -42,7 +43,7 @@ export function DashboardTrendChart({
       <div className="ops-trend-labels">
         {points.map((point) => (
           <span key={`${point.label}-${point.value}`}>
-            {point.label}: {point.value}
+            {formatKpiLabel(point.label)}: {point.value}
           </span>
         ))}
       </div>

@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import type { ManifestListItemDto } from '../../features/manifests/manifests.types';
 import { routePaths } from '../../navigation/routes';
 import { formatDateTime } from '../../utils/format';
+import { formatManifestStatusLabel } from '../../utils/logisticsLabels';
 
 interface ManifestsTableProps {
   items: ManifestListItemDto[];
@@ -22,12 +23,12 @@ export function ManifestsTable({
     <table style={styles.table}>
       <thead>
         <tr>
-          <th style={styles.headerCell}>Mã bao</th>
-          <th style={styles.headerCell}>Trạng thái</th>
-          <th style={styles.headerCell}>Hub đi</th>
-          <th style={styles.headerCell}>Hub đích</th>
-          <th style={styles.headerCell}>Niêm phong lúc</th>
-          <th style={styles.headerCell}>Hành động</th>
+          <th style={styles.headerCell}>Ma bao</th>
+          <th style={styles.headerCell}>Trang thai</th>
+          <th style={styles.headerCell}>Hub di</th>
+          <th style={styles.headerCell}>Hub dich</th>
+          <th style={styles.headerCell}>Niem phong luc</th>
+          <th style={styles.headerCell}>Hanh dong</th>
         </tr>
       </thead>
       <tbody>
@@ -40,9 +41,9 @@ export function ManifestsTable({
               <td style={styles.cell}>
                 <Link to={routePaths.manifestDetail(item.id)}>{item.manifestCode}</Link>
               </td>
-              <td style={styles.cell}>{item.status}</td>
-              <td style={styles.cell}>{item.originHubCode ?? 'Không có'}</td>
-              <td style={styles.cell}>{item.destinationHubCode ?? 'Không có'}</td>
+              <td style={styles.cell}>{formatManifestStatusLabel(item.status)}</td>
+              <td style={styles.cell}>{item.originHubCode ?? 'Khong co'}</td>
+              <td style={styles.cell}>{item.destinationHubCode ?? 'Khong co'}</td>
               <td style={styles.cell}>{formatDateTime(item.sealedAt)}</td>
               <td style={styles.cell}>
                 <div style={styles.actions}>
@@ -51,7 +52,7 @@ export function ManifestsTable({
                     onClick={() => onPrintManifest(item)}
                     style={styles.printButton}
                   >
-                    In mã bao
+                    In ma bao
                   </button>
                   <button
                     type="button"
@@ -64,11 +65,11 @@ export function ManifestsTable({
                     }}
                     title={
                       canDelete
-                        ? 'Xóa mã bao'
-                        : 'Chỉ xóa được bao đang ở trạng thái CREATED'
+                        ? 'Xoa ma bao'
+                        : `Chi xoa duoc bao dang o trang thai ${formatManifestStatusLabel('CREATED')}`
                     }
                   >
-                    {deleting ? 'Đang xóa...' : 'Xóa mã bao'}
+                    {deleting ? 'Dang xoa...' : 'Xoa ma bao'}
                   </button>
                 </div>
               </td>

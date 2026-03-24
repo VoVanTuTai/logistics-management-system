@@ -15,6 +15,7 @@ import { routePaths } from '../../navigation/routes';
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
 import { formatDateTime } from '../../utils/format';
+import { formatAnyCodeLabel, formatNdrStatusLabel } from '../../utils/logisticsLabels';
 import { type NdrActionMode } from './NdrActionForm.schema';
 import { NdrNextActionForm } from './NdrNextActionForm';
 
@@ -69,8 +70,8 @@ export function NdrCaseDetailPage(): React.JSX.Element {
 
       <p>NDR ID: {detailQuery.data.id}</p>
       <p>Mã vận đơn: {detailQuery.data.shipmentCode}</p>
-      <p>Trạng thái: {detailQuery.data.status}</p>
-      <p>Mã lý do: {detailQuery.data.reasonCode ?? 'Không có'}</p>
+      <p>Trạng thái: {formatNdrStatusLabel(detailQuery.data.status)}</p>
+      <p>Mã lý do: {formatAnyCodeLabel(detailQuery.data.reasonCode)}</p>
       <p>Cập nhật lúc: {formatDateTime(detailQuery.data.updatedAt)}</p>
       <p>Ghi chú: {detailQuery.data.note ?? 'Không có'}</p>
 
@@ -101,7 +102,7 @@ export function NdrCaseDetailPage(): React.JSX.Element {
 
       {lastActionResponse ? (
         <div style={styles.responseBox}>
-          <strong>Phản hồi server gần nhất ({lastActionLabel})</strong>
+          <strong>Phan hoi he thong gan nhat ({lastActionLabel})</strong>
           <pre style={styles.pre}>{JSON.stringify(lastActionResponse, null, 2)}</pre>
         </div>
       ) : null}

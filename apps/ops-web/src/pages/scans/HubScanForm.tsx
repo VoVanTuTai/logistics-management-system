@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import type { HubScanType } from '../../features/scans/scans.types';
+import { formatScanTypeLabel } from '../../utils/logisticsLabels';
 
 const hubScanFormSchema = z.object({
   scanType: z.enum(['PICKUP', 'INBOUND', 'OUTBOUND']),
@@ -49,9 +50,9 @@ export function HubScanForm({
     <form onSubmit={onFormSubmit} style={styles.form}>
       <h3 style={styles.title}>Tac vu quet</h3>
       <select {...form.register('scanType')}>
-        <option value="PICKUP">PICKUP</option>
-        <option value="INBOUND">INBOUND</option>
-        <option value="OUTBOUND">OUTBOUND</option>
+        <option value="PICKUP">{formatScanTypeLabel('PICKUP')}</option>
+        <option value="INBOUND">{formatScanTypeLabel('INBOUND')}</option>
+        <option value="OUTBOUND">{formatScanTypeLabel('OUTBOUND')}</option>
       </select>
       <input placeholder="Quet hoac nhap ma van don" {...form.register('shipmentCode')} />
       {form.formState.errors.shipmentCode ? (
@@ -63,7 +64,7 @@ export function HubScanForm({
       ) : null}
       <textarea rows={3} placeholder="Ghi chu (khong bat buoc)" {...form.register('note')} />
       <button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? 'Đang gửi quét...' : 'Gửi quét'}
+        {isSubmitting ? 'Dang gui quet...' : 'Gui quet'}
       </button>
     </form>
   );

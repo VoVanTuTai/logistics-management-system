@@ -74,10 +74,10 @@ export function TaskActionModal({
       <div style={styles.modal}>
         <h3 style={styles.title}>{actionTitle}</h3>
         <form onSubmit={handleSubmit} style={styles.form}>
-          <label htmlFor={`${mode}-courier`}>Shipper</label>
+          <label htmlFor={`${mode}-courier`}>Nhan vien giao</label>
 
           {courierOptionsLoading ? (
-            <p style={styles.helperText}>Đang tải danh sach shipper...</p>
+            <p style={styles.helperText}>Dang tai danh sach nhan vien giao...</p>
           ) : courierOptions.length > 0 ? (
             <select
               id={`${mode}-courier`}
@@ -93,11 +93,11 @@ export function TaskActionModal({
             <>
               <input
                 id={`${mode}-courier`}
-                placeholder="Nhap ma shipper"
+                placeholder="Nhap ma nhan vien giao"
                 {...form.register('courierId', { required: true })}
               />
               <small style={styles.helperText}>
-                Chua co danh sach shipper. Vui long nhap ma shipper thu cong.
+                Chua co danh sach nhan vien giao. Vui long nhap ma thu cong.
               </small>
             </>
           )}
@@ -113,11 +113,8 @@ export function TaskActionModal({
             <button type="button" onClick={onClose}>
               Huy
             </button>
-            <button
-              type="submit"
-              disabled={isSubmitting || courierOptionsLoading}
-            >
-              {isSubmitting ? 'Đang gửi...' : actionTitle}
+            <button type="submit" disabled={isSubmitting || courierOptionsLoading}>
+              {isSubmitting ? 'Dang gui...' : actionTitle}
             </button>
           </div>
         </form>

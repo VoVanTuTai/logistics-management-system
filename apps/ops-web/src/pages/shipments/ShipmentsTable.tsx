@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import type { ShipmentListItemDto } from '../../features/shipments/shipments.types';
 import { routePaths } from '../../navigation/routes';
 import { formatDateTime } from '../../utils/format';
+import { formatShipmentStatusLabel } from '../../utils/logisticsLabels';
 
 interface ShipmentsTableProps {
   items: ShipmentListItemDto[];
@@ -20,16 +21,16 @@ export function ShipmentsTable({
     <table style={styles.table}>
       <thead>
         <tr>
-          <th style={styles.headerCell}>Shipment</th>
-          <th style={styles.headerCell}>Status</th>
-          <th style={styles.headerCell}>Platform</th>
-          <th style={styles.headerCell}>Sender</th>
-          <th style={styles.headerCell}>Receiver</th>
-          <th style={styles.headerCell}>Area</th>
-          <th style={styles.headerCell}>Current Location</th>
-          <th style={styles.headerCell}>Created</th>
-          <th style={styles.headerCell}>Updated</th>
-          <th style={styles.headerCell}>Actions</th>
+          <th style={styles.headerCell}>Van don</th>
+          <th style={styles.headerCell}>Trang thai</th>
+          <th style={styles.headerCell}>Nen tang</th>
+          <th style={styles.headerCell}>Nguoi gui</th>
+          <th style={styles.headerCell}>Nguoi nhan</th>
+          <th style={styles.headerCell}>Khu vuc</th>
+          <th style={styles.headerCell}>Vi tri hien tai</th>
+          <th style={styles.headerCell}>Tao luc</th>
+          <th style={styles.headerCell}>Cap nhat luc</th>
+          <th style={styles.headerCell}>Hanh dong</th>
         </tr>
       </thead>
       <tbody>
@@ -38,27 +39,27 @@ export function ShipmentsTable({
             <td style={styles.cell}>
               <Link to={routePaths.shipmentDetail(item.shipmentCode)}>{item.shipmentCode}</Link>
             </td>
-            <td style={styles.cell}>{item.currentStatus}</td>
-            <td style={styles.cell}>{item.platform ?? 'N/A'}</td>
+            <td style={styles.cell}>{formatShipmentStatusLabel(item.currentStatus)}</td>
+            <td style={styles.cell}>{item.platform ?? 'Khong co'}</td>
             <td style={styles.cell}>
-              <div>{item.senderName ?? 'N/A'}</div>
+              <div>{item.senderName ?? 'Khong co'}</div>
               <small style={styles.subText}>{item.senderPhone ?? '-'}</small>
             </td>
             <td style={styles.cell}>
-              <div>{item.receiverName ?? 'N/A'}</div>
+              <div>{item.receiverName ?? 'Khong co'}</div>
               <small style={styles.subText}>{item.receiverPhone ?? '-'}</small>
             </td>
-            <td style={styles.cell}>{item.receiverRegion ?? 'N/A'}</td>
-            <td style={styles.cell}>{item.currentLocation ?? 'N/A'}</td>
+            <td style={styles.cell}>{item.receiverRegion ?? 'Khong co'}</td>
+            <td style={styles.cell}>{item.currentLocation ?? 'Khong co'}</td>
             <td style={styles.cell}>{formatDateTime(item.createdAt)}</td>
             <td style={styles.cell}>{formatDateTime(item.updatedAt)}</td>
             <td style={styles.cell}>
               <div style={styles.actionGroup}>
                 <button type="button" onClick={() => onPrepareReceive?.(item.shipmentCode)}>
-                  Receive
+                  Quet nhan
                 </button>
                 <button type="button" onClick={() => onPrint?.(item)}>
-                  Print waybill
+                  In van don
                 </button>
               </div>
             </td>

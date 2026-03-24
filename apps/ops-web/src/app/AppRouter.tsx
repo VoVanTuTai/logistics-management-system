@@ -9,9 +9,6 @@ import {
   useNavigate,
 } from 'react-router-dom';
 
-import { useLogoutMutation } from '../features/auth/auth.api';
-import { routePaths } from '../navigation/routes';
-import { useAuthStore } from '../store/authStore';
 import { LoginPage } from '../pages/auth/LoginPage';
 import { DashboardPage } from '../pages/dashboard/DashboardPage';
 import { ManifestDetailPage } from '../pages/manifests/ManifestDetailPage';
@@ -27,6 +24,10 @@ import { TaskAssignmentPage } from '../pages/tasks/TaskAssignmentPage';
 import { TaskDetailPage } from '../pages/tasks/TaskDetailPage';
 import { TrackingDetailPage } from '../pages/tracking/TrackingDetailPage';
 import { TrackingLookupPage } from '../pages/tracking/TrackingLookupPage';
+import { useLogoutMutation } from '../features/auth/auth.api';
+import { routePaths } from '../navigation/routes';
+import { useAuthStore } from '../store/authStore';
+import { formatRoleLabel } from '../utils/logisticsLabels';
 
 function AuthGuard(): React.JSX.Element {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -52,12 +53,16 @@ function DashboardLayout(): React.JSX.Element {
       { label: 'Duyet lay hang', to: routePaths.pickups },
       { label: 'Phan cong tac vu', to: routePaths.tasks },
       { label: 'Quan ly bao tai', to: routePaths.manifests },
-      { label: 'Quét hub', to: routePaths.scans },
-      { label: 'NDR', to: routePaths.ndr },
-      { label: 'Tra cứu', to: routePaths.tracking },
+      { label: 'Quet hub', to: routePaths.scans },
+      { label: 'Xu ly NDR', to: routePaths.ndr },
+      { label: 'Tra cuu hanh trinh', to: routePaths.tracking },
     ],
     [],
   );
+
+  const roleText =
+    (session?.user.roles ?? []).map((role) => formatRoleLabel(role)).join(', ') ||
+    'Nhan vien dieu hanh';
 
   const onQuickSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -78,25 +83,25 @@ function DashboardLayout(): React.JSX.Element {
     <div className="ops-layout">
       <aside className="ops-sidebar">
         <div>
-          <h1>Dieu hanh Ops</h1>
+          <h1>Dieu hanh OPS</h1>
           <p>Trung tam van hanh logistics</p>
         </div>
 
         <div className="ops-sidebar-session">
-          <strong>{session?.user.username ?? 'ops.user'}</strong>
-          <small>vai tro: {(session?.user.roles ?? []).join(', ') || 'OPS'}</small>
+          <strong>{session?.user.username ?? 'tai_khoan_ops'}</strong>
+          <small>Vai tro: {roleText}</small>
           <button
             type="button"
             className="ops-logout-btn"
             disabled={logoutMutation.isPending}
             onClick={() => void onLogout()}
           >
-            {logoutMutation.isPending ? 'Đang đăng xuất...' : 'Đăng xuất'}
+            {logoutMutation.isPending ? 'Dang dang xuat...' : 'Dang xuat'}
           </button>
         </div>
 
         <nav className="ops-nav-group">
-          <h2>Van hanh</h2>
+          <h2>Nghiep vu</h2>
           {primaryNav.map((item) => (
             <NavLink
               key={item.to}
@@ -109,14 +114,13 @@ function DashboardLayout(): React.JSX.Element {
             </NavLink>
           ))}
         </nav>
-
       </aside>
 
       <div className="ops-workspace">
         <header className="ops-topbar">
           <div>
-            <h2>Bang dieu hanh JMS Ops</h2>
-            <p>Tac vu nhanh, bo loc linh hoat, theo doi dong su kien theo thoi gian thuc.</p>
+            <h2>Bang dieu hanh JMS OPS</h2>
+            <p>Tac vu nhanh, bo loc linh hoat, theo doi su kien theo thoi gian thuc.</p>
           </div>
 
           <div className="ops-topbar-actions">

@@ -16,6 +16,7 @@ import { routePaths } from '../../navigation/routes';
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
 import { formatDateTime } from '../../utils/format';
+import { formatTaskStatusLabel, formatTaskTypeLabel } from '../../utils/logisticsLabels';
 import { TaskActionModal } from './TaskActionModal';
 
 export function TaskDetailPage(): React.JSX.Element {
@@ -55,7 +56,7 @@ export function TaskDetailPage(): React.JSX.Element {
       setLastActionResponse(response);
       setActionNotice({
         tone: 'success',
-        message: `Da phan cong tac vu cho shipper ${response.task.assignedCourierId ?? payload.courierId}.`,
+        message: `Da phan cong tac vu cho nhan vien giao ${response.task.assignedCourierId ?? payload.courierId}.`,
       });
     } catch (error) {
       setActionNotice({
@@ -73,7 +74,7 @@ export function TaskDetailPage(): React.JSX.Element {
       setLastActionResponse(response);
       setActionNotice({
         tone: 'success',
-        message: `Da phan cong lai tac vu cho shipper ${response.task.assignedCourierId ?? payload.courierId}.`,
+        message: `Da phan cong lai tac vu cho nhan vien giao ${response.task.assignedCourierId ?? payload.courierId}.`,
       });
     } catch (error) {
       setActionNotice({
@@ -91,7 +92,7 @@ export function TaskDetailPage(): React.JSX.Element {
         : 'chua-co';
 
   if (detailQuery.isLoading) {
-    return <p>Đang tải chi tiet tac vu...</p>;
+    return <p>Dang tai chi tiet tac vu...</p>;
   }
 
   if (detailQuery.isError) {
@@ -99,7 +100,7 @@ export function TaskDetailPage(): React.JSX.Element {
   }
 
   if (!detailQuery.data) {
-    return <p>Không tìm thấy tac vu.</p>;
+    return <p>Khong tim thay tac vu.</p>;
   }
 
   return (
@@ -110,12 +111,12 @@ export function TaskDetailPage(): React.JSX.Element {
       </p>
 
       <p>Ma tac vu: {detailQuery.data.taskCode}</p>
-      <p>Loai tac vu: {detailQuery.data.taskType}</p>
-      <p>Trang thai: {detailQuery.data.status}</p>
-      <p>Ma van don: {detailQuery.data.shipmentCode ?? 'Không có'}</p>
-      <p>Shipper duoc gan: {detailQuery.data.assignedCourierId ?? 'Không có'}</p>
+      <p>Loai tac vu: {formatTaskTypeLabel(detailQuery.data.taskType)}</p>
+      <p>Trang thai: {formatTaskStatusLabel(detailQuery.data.status)}</p>
+      <p>Ma van don: {detailQuery.data.shipmentCode ?? 'Khong co'}</p>
+      <p>Nhan vien giao duoc gan: {detailQuery.data.assignedCourierId ?? 'Khong co'}</p>
       <p>Cap nhat luc: {formatDateTime(detailQuery.data.updatedAt)}</p>
-      <p>Ghi chu: {detailQuery.data.note ?? 'Không có'}</p>
+      <p>Ghi chu: {detailQuery.data.note ?? 'Khong co'}</p>
 
       <div style={styles.actionButtons}>
         <button type="button" onClick={() => setOpenModal('assign')}>
@@ -146,7 +147,7 @@ export function TaskDetailPage(): React.JSX.Element {
 
       {lastActionResponse ? (
         <div style={styles.responseBox}>
-          <strong>Phan hoi server moi nhat ({lastActionLabel})</strong>
+          <strong>Phan hoi backend gan nhat ({lastActionLabel})</strong>
           <pre style={styles.pre}>{JSON.stringify(lastActionResponse, null, 2)}</pre>
         </div>
       ) : null}

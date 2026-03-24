@@ -61,7 +61,7 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Shipping Label ${codeText}</title>
+    <title>Nhan in van don ${codeText}</title>
     <style>
       @page { size: 100mm 150mm; margin: 0; }
       * { box-sizing: border-box; }
@@ -188,7 +188,7 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
           <div class="service">${escapeHtml(payload.serviceName)}</div>
         </div>
         <div class="barcode-wrap">
-          <div class="barcode" role="img" aria-label="Barcode"></div>
+          <div class="barcode" role="img" aria-label="Ma vach"></div>
           <div class="ship-code">Mã vận đơn: ${codeText}</div>
         </div>
       </section>
@@ -210,7 +210,7 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
 
       <section class="route">
         <div class="route-main">${escapeHtml(payload.hubCode || 'HUB-NA')}</div>
-        <div class="route-sub">${escapeHtml(payload.zoneCode || 'ZONE')}</div>
+        <div class="route-sub">${escapeHtml(payload.zoneCode || 'KV')}</div>
       </section>
 
       <section class="item-qr">
@@ -226,7 +226,7 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
       </section>
 
       <section class="big-row">
-        <div class="route-tag">${escapeHtml(payload.routeTag || 'ROUTE')}</div>
+        <div class="route-tag">${escapeHtml(payload.routeTag || 'TUYEN')}</div>
         <div class="meta">
           <div class="label">Ngày đặt hàng</div>
           <div class="text">${escapeHtml(payload.createdAtText)}</div>

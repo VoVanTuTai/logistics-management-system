@@ -1,7 +1,8 @@
-﻿import React from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 
 import { routePaths } from '../../navigation/routes';
+import { formatPickupStatusLabel } from '../../utils/logisticsLabels';
 
 interface PickupRequestsTableProps {
   items: PickupApprovalRow[];
@@ -54,12 +55,12 @@ export function PickupRequestsTable({
             />
           </th>
           <th style={styles.headerCell}>Van don</th>
-          <th style={styles.headerCell}>Trang thai pickup</th>
+          <th style={styles.headerCell}>Trang thai lay hang</th>
           <th style={styles.headerCell}>Nguoi gui</th>
           <th style={styles.headerCell}>Nguoi nhan</th>
           <th style={styles.headerCell}>So dien thoai</th>
           <th style={styles.headerCell}>Loai hang</th>
-          <th style={styles.headerCell}>Gia tri COD</th>
+          <th style={styles.headerCell}>Tien thu ho (COD)</th>
           <th style={styles.headerCell}>Phi van chuyen</th>
         </tr>
       </thead>
@@ -81,7 +82,7 @@ export function PickupRequestsTable({
                 '-'
               )}
             </td>
-            <td style={styles.cell}>{item.status}</td>
+            <td style={styles.cell}>{formatPickupStatusLabel(item.status)}</td>
             <td style={styles.cell}>{item.senderName ?? '-'}</td>
             <td style={styles.cell}>{item.receiverName ?? '-'}</td>
             <td style={styles.cell}>{item.receiverPhone ?? '-'}</td>
