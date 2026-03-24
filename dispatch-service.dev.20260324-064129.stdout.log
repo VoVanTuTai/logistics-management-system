@@ -1,0 +1,18 @@
+[32m[Nest] 8552  - [39m03/24/2026, 6:43:22 AM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 8552  - [39m03/24/2026, 6:43:23 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mHealthModule dependencies initialized[39m[38;5;3m +783ms[39m
+[32m[Nest] 8552  - [39m03/24/2026, 6:43:23 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +2ms[39m
+[32m[Nest] 8552  - [39m03/24/2026, 6:43:23 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mTasksController {/tasks}:[39m[38;5;3m +8ms[39m
+[32m[Nest] 8552  - [39m03/24/2026, 6:43:23 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/tasks, GET} route[39m[38;5;3m +5ms[39m
+[32m[Nest] 8552  - [39m03/24/2026, 6:43:23 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/tasks/couriers, GET} route[39m[38;5;3m +9ms[39m
+[32m[Nest] 8552  - [39m03/24/2026, 6:43:23 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/tasks/:id, GET} route[39m[38;5;3m +5ms[39m
+[32m[Nest] 8552  - [39m03/24/2026, 6:43:23 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/tasks, POST} route[39m[38;5;3m +4ms[39m
+[32m[Nest] 8552  - [39m03/24/2026, 6:43:23 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/tasks/:id/assign, POST} route[39m[38;5;3m +3ms[39m
+[32m[Nest] 8552  - [39m03/24/2026, 6:43:23 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/tasks/:id/reassign, POST} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 8552  - [39m03/24/2026, 6:43:23 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/tasks/:id/status, PATCH} route[39m[38;5;3m +4ms[39m
+[32m[Nest] 8552  - [39m03/24/2026, 6:43:23 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mHealthController {/health}:[39m[38;5;3m +4ms[39m
+[32m[Nest] 8552  - [39m03/24/2026, 6:43:23 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/health, GET} route[39m[38;5;3m +7ms[39m
+[32m[Nest] 8552  - [39m03/24/2026, 6:43:23 AM [32m    LOG[39m [38;5;3m[DispatchOutboxRelayService] [39m[32mOutbox relay connected to exchange "domain.events" (batch=50).[39m
+[32m[Nest] 8552  - [39m03/24/2026, 6:43:23 AM [32m    LOG[39m [38;5;3m[DispatchRabbitmqConsumerService] [39m[32mDispatch consumer is listening queue "dispatch-service.q".[39m
+[32m[Nest] 8552  - [39m03/24/2026, 6:43:24 AM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +201ms[39m
+[33m[Nest] 8552  - [39m03/24/2026, 7:50:31 AM [33m   WARN[39m [38;5;3m[DispatchOutboxRelayService] [39m[33mRabbitMQ connection closed, scheduling reconnect.[39m
+[33m[Nest] 8552  - [39m03/24/2026, 7:50:32 AM [33m   WARN[39m [38;5;3m[DispatchRabbitmqConsumerService] [39m[33mRabbitMQ connection closed, scheduling reconnect.[39m

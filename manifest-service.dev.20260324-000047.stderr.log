@@ -1,0 +1,86 @@
+[31m[Nest] 17344  - [39m03/24/2026, 5:27:45 AM [31m  ERROR[39m [38;5;3m[ManifestOutboxRelayService] [39m[31mManifest outbox relay failed while publishing events: 
+Invalid `this.prisma.outboxEvent.findMany()` invocation in
+D:\University\Semester 2_Year 4\New Technology\logistics-management-system\services\manifest-service\src\infrastructure\prisma\outbox-event-prisma.repository.ts:38:51
+
+  35 }
+  36 
+  37 async listPending(limit: number): Promise<OutboxEvent[]> {
+→ 38   const records = await this.prisma.outboxEvent.findMany(
+Server has closed the connection.[39m
+[31m[Nest] 17344  - [39m03/24/2026, 5:27:47 AM [31m  ERROR[39m [38;5;3m[ManifestOutboxRelayService] [39m[31mManifest outbox relay failed while publishing events: 
+Invalid `this.prisma.outboxEvent.findMany()` invocation in
+D:\University\Semester 2_Year 4\New Technology\logistics-management-system\services\manifest-service\src\infrastructure\prisma\outbox-event-prisma.repository.ts:38:51
+
+  35 }
+  36 
+  37 async listPending(limit: number): Promise<OutboxEvent[]> {
+→ 38   const records = await this.prisma.outboxEvent.findMany(
+Can't reach database server at `localhost:15437`
+
+Please make sure your database server is running at `localhost:15437`.[39m
+[31m[Nest] 17344  - [39m03/24/2026, 5:27:48 AM [31m  ERROR[39m [38;5;3m[ManifestOutboxRelayService] [39m[31mManifest outbox relay failed while publishing events: 
+Invalid `this.prisma.outboxEvent.findMany()` invocation in
+D:\University\Semester 2_Year 4\New Technology\logistics-management-system\services\manifest-service\src\infrastructure\prisma\outbox-event-prisma.repository.ts:38:51
+
+  35 }
+  36 
+  37 async listPending(limit: number): Promise<OutboxEvent[]> {
+→ 38   const records = await this.prisma.outboxEvent.findMany(
+Can't reach database server at `localhost:15437`
+
+Please make sure your database server is running at `localhost:15437`.[39m
+[31m[Nest] 17344  - [39m03/24/2026, 5:27:48 AM [31m  ERROR[39m [38;5;3m[ManifestOutboxRelayService] [39m[31mManifest outbox relay failed while publishing events: 
+Invalid `this.prisma.outboxEvent.findMany()` invocation in
+D:\University\Semester 2_Year 4\New Technology\logistics-management-system\services\manifest-service\src\infrastructure\prisma\outbox-event-prisma.repository.ts:38:51
+
+  35 }
+  36 
+  37 async listPending(limit: number): Promise<OutboxEvent[]> {
+→ 38   const records = await this.prisma.outboxEvent.findMany(
+Can't reach database server at `localhost:15437`
+
+Please make sure your database server is running at `localhost:15437`.[39m
+[31m[Nest] 17344  - [39m03/24/2026, 5:27:49 AM [31m  ERROR[39m [38;5;3m[ManifestOutboxRelayService] [39m[31mManifest outbox relay failed while publishing events: 
+Invalid `this.prisma.outboxEvent.findMany()` invocation in
+D:\University\Semester 2_Year 4\New Technology\logistics-management-system\services\manifest-service\src\infrastructure\prisma\outbox-event-prisma.repository.ts:38:51
+
+  35 }
+  36 
+  37 async listPending(limit: number): Promise<OutboxEvent[]> {
+→ 38   const records = await this.prisma.outboxEvent.findMany(
+Can't reach database server at `localhost:15437`
+
+Please make sure your database server is running at `localhost:15437`.[39m
+[31m[Nest] 17344  - [39m03/24/2026, 5:27:50 AM [31m  ERROR[39m [38;5;3m[ManifestOutboxRelayService] [39m[31mManifest outbox relay failed while publishing events: 
+Invalid `this.prisma.outboxEvent.findMany()` invocation in
+D:\University\Semester 2_Year 4\New Technology\logistics-management-system\services\manifest-service\src\infrastructure\prisma\outbox-event-prisma.repository.ts:38:51
+
+  35 }
+  36 
+  37 async listPending(limit: number): Promise<OutboxEvent[]> {
+→ 38   const records = await this.prisma.outboxEvent.findMany(
+Can't reach database server at `localhost:15437`
+
+Please make sure your database server is running at `localhost:15437`.[39m
+[31m[Nest] 17344  - [39m03/24/2026, 5:27:56 AM [31m  ERROR[39m [38;5;3m[ManifestOutboxRelayService] [39m[31mManifest outbox relay failed while publishing events: 
+Invalid `this.prisma.outboxEvent.findMany()` invocation in
+D:\University\Semester 2_Year 4\New Technology\logistics-management-system\services\manifest-service\src\infrastructure\prisma\outbox-event-prisma.repository.ts:38:51
+
+  35 }
+  36 
+  37 async listPending(limit: number): Promise<OutboxEvent[]> {
+→ 38   const records = await this.prisma.outboxEvent.findMany(
+Can't reach database server at `localhost:15437`
+
+Please make sure your database server is running at `localhost:15437`.[39m
+[31m[Nest] 17344  - [39m03/24/2026, 5:28:00 AM [31m  ERROR[39m [38;5;3m[ManifestOutboxRelayService] [39m[31mManifest outbox relay failed while publishing events: 
+Invalid `this.prisma.outboxEvent.findMany()` invocation in
+D:\University\Semester 2_Year 4\New Technology\logistics-management-system\services\manifest-service\src\infrastructure\prisma\outbox-event-prisma.repository.ts:38:51
+
+  35 }
+  36 
+  37 async listPending(limit: number): Promise<OutboxEvent[]> {
+→ 38   const records = await this.prisma.outboxEvent.findMany(
+Can't reach database server at `localhost:15437`
+
+Please make sure your database server is running at `localhost:15437`.[39m

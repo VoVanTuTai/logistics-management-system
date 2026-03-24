@@ -1,0 +1,12 @@
+[32m[Nest] 5724  - [39m03/24/2026, 12:02:28 AM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 5724  - [39m03/24/2026, 12:02:29 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mHealthModule dependencies initialized[39m[38;5;3m +970ms[39m
+[32m[Nest] 5724  - [39m03/24/2026, 12:02:29 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +4ms[39m
+[32m[Nest] 5724  - [39m03/24/2026, 12:02:29 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mScanController {/scans}:[39m[38;5;3m +15ms[39m
+[32m[Nest] 5724  - [39m03/24/2026, 12:02:29 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/scans/pickup, POST} route[39m[38;5;3m +7ms[39m
+[32m[Nest] 5724  - [39m03/24/2026, 12:02:29 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/scans/inbound, POST} route[39m[38;5;3m +4ms[39m
+[32m[Nest] 5724  - [39m03/24/2026, 12:02:29 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/scans/outbound, POST} route[39m[38;5;3m +3ms[39m
+[32m[Nest] 5724  - [39m03/24/2026, 12:02:29 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mLocationController {/locations}:[39m[38;5;3m +3ms[39m
+[32m[Nest] 5724  - [39m03/24/2026, 12:02:29 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/locations/:shipmentCode, GET} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 5724  - [39m03/24/2026, 12:02:29 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mHealthController {/health}:[39m[38;5;3m +4ms[39m
+[32m[Nest] 5724  - [39m03/24/2026, 12:02:29 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/health, GET} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 5724  - [39m03/24/2026, 12:02:30 AM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +800ms[39m
