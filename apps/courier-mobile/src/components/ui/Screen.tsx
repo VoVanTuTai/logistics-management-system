@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  RefreshControl,
   ScrollView,
   StyleSheet,
   View,
@@ -16,6 +17,8 @@ interface ScreenProps {
   scroll?: boolean;
   style?: StyleProp<ViewStyle>;
   contentContainerStyle?: ScrollViewProps['contentContainerStyle'];
+  refreshing?: boolean;
+  onRefresh?: () => void;
 }
 
 export function Screen({
@@ -23,13 +26,25 @@ export function Screen({
   scroll = true,
   style,
   contentContainerStyle,
+  refreshing = false,
+  onRefresh,
 }: ScreenProps): React.JSX.Element {
   return (
-    <SafeAreaView edges={['top']} style={[styles.safeArea, style]}>
+    <SafeAreaView edges={['left', 'right', 'bottom']} style={[styles.safeArea, style]}>
       {scroll ? (
         <ScrollView
           contentContainerStyle={[styles.scrollContent, contentContainerStyle]}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            onRefresh
+              ? (
+                  <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={onRefresh}
+                  />
+                )
+              : undefined
+          }
         >
           {children}
         </ScrollView>

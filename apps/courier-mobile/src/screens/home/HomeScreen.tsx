@@ -1,8 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -115,13 +116,12 @@ export function HomeScreen(): React.JSX.Element {
     useNavigation<NativeStackNavigationProp<AppNavigatorParamList>>();
   const session = useAppStore((state) => state.session);
   const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
-  const [selectedQueue, setSelectedQueue] = useState<'PICKUP' | 'DELIVERY' | null>(
-    null,
-  );
   const tasksQuery = useAssignedTasksQuery({
     accessToken: session?.tokens.accessToken ?? null,
     courierId,
   });
+  const onRefresh = () => void tasksQuery.refetch();
+  const refreshing = tasksQuery.isRefetching;
 
   const tasks = tasksQuery.data ?? [];
   const waitingPickupTasks = useMemo(
@@ -137,13 +137,6 @@ export function HomeScreen(): React.JSX.Element {
   const deliveryCount = waitingDeliveryTasks.length;
   const processingCount = tasks.filter((task) => task.status === 'ASSIGNED').length;
   const recentTasks = tasks.slice(0, 3);
-  const selectedQueueTasks = selectedQueue === 'PICKUP'
-    ? waitingPickupTasks
-    : selectedQueue === 'DELIVERY'
-      ? waitingDeliveryTasks
-      : [];
-  const selectedQueueTitle =
-    selectedQueue === 'PICKUP' ? 'Danh sách đợi lấy' : 'Danh sách đợi phát';
 
   const displayName = session?.user.username ?? 'Courier';
   const hubLabel = `Mã courier: ${courierId}`;
@@ -163,6 +156,9 @@ export function HomeScreen(): React.JSX.Element {
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
         >
           <NotificationBanner
             title="Thông báo vận hành"
@@ -173,51 +169,20 @@ export function HomeScreen(): React.JSX.Element {
           <QuickStatsRow
             waitingPickup={pickupCount}
             waitingDelivery={deliveryCount}
-            activeStat={selectedQueue}
+            activeStat={null}
             onPressWaitingPickup={() =>
-              setSelectedQueue((current) => (current === 'PICKUP' ? null : 'PICKUP'))
+              navigation.navigate('TaskList', {
+                initialTaskType: 'PICKUP',
+                initialStatus: 'ASSIGNED',
+              })
             }
             onPressWaitingDelivery={() =>
-              setSelectedQueue((current) => (current === 'DELIVERY' ? null : 'DELIVERY'))
+              navigation.navigate('TaskList', {
+                initialTaskType: 'DELIVERY',
+                initialStatus: 'ASSIGNED',
+              })
             }
           />
-
-          {selectedQueue ? (
-            <View style={styles.recentCard}>
-              <View style={styles.queueHeaderRow}>
-                <Text style={styles.recentTitle}>{selectedQueueTitle}</Text>
-                <Pressable
-                  onPress={() => setSelectedQueue(null)}
-                  style={styles.queueCloseButton}
-                >
-                  <Text style={styles.queueCloseText}>Đóng</Text>
-                </Pressable>
-              </View>
-
-              {selectedQueueTasks.length === 0 ? (
-                <Text style={styles.stateText}>Chưa có nhiệm vụ trong danh sách này.</Text>
-              ) : (
-                selectedQueueTasks.map((task) => (
-                  <Pressable
-                    key={task.id}
-                    onPress={() => navigation.navigate('TaskDetail', { taskId: task.id })}
-                    style={styles.queueTaskRow}
-                  >
-                    <View style={styles.recentTaskInfo}>
-                      <Text style={styles.recentTaskCode}>{task.taskCode}</Text>
-                      <Text style={styles.recentTaskMeta}>
-                        {task.taskType} • {task.shipmentCode ?? 'N/A'}
-                      </Text>
-                    </View>
-                    <StatusBadge
-                      label={task.status}
-                      variant={mapTaskStatusVariant(task.status)}
-                    />
-                  </Pressable>
-                ))
-              )}
-            </View>
-          ) : null}
 
           <OverdueCard
             title="Đơn đang xử lý"
@@ -246,32 +211,7 @@ export function HomeScreen(): React.JSX.Element {
             </View>
           ) : null}
 
-          {!tasksQuery.isLoading && !tasksQuery.isError && recentTasks.length === 0 ? (
-            <View style={styles.emptyCard}>
-              <Text style={styles.emptyTitle}>Chưa có nhiệm vụ</Text>
-              <Text style={styles.stateText}>Bạn có thể kéo để làm mới dữ liệu.</Text>
-            </View>
-          ) : null}
-
-          {!tasksQuery.isLoading && !tasksQuery.isError && recentTasks.length > 0 ? (
-            <View style={styles.recentCard}>
-              <Text style={styles.recentTitle}>Nhiệm vụ gần đây</Text>
-              {recentTasks.map((task) => (
-                <View key={task.id} style={styles.recentTaskRow}>
-                  <View style={styles.recentTaskInfo}>
-                    <Text style={styles.recentTaskCode}>{task.taskCode}</Text>
-                    <Text style={styles.recentTaskMeta}>
-                      {task.taskType} • {task.shipmentCode ?? 'N/A'}
-                    </Text>
-                  </View>
-                  <StatusBadge
-                    label={task.status}
-                    variant={mapTaskStatusVariant(task.status)}
-                  />
-                </View>
-              ))}
-            </View>
-          ) : null}
+          {/* Ẩn block "nhiệm vụ gần đây" theo yêu cầu */}
 
           <AppGrid
             items={appItems}

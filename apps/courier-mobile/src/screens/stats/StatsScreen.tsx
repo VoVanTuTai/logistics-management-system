@@ -1,5 +1,13 @@
 import React from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { StatsShortcutCard } from '../../components/stats/StatsShortcutCard';
@@ -7,14 +15,18 @@ import { StatsOverviewCard } from '../../components/stats/StatsOverviewCard';
 import { useAssignedTasksQuery } from '../../features/tasks/tasks.queries';
 import { useAppStore } from '../../store/appStore';
 import { appEnv } from '../../utils/env';
+import { resolveCourierId } from '../../utils/courier';
 import { theme } from '../../theme';
 
 export function StatsScreen(): React.JSX.Element {
   const session = useAppStore((state) => state.session);
+  const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
   const tasksQuery = useAssignedTasksQuery({
     accessToken: session?.tokens.accessToken ?? null,
-    courierId: appEnv.courierId,
+    courierId,
   });
+  const onRefresh = () => void tasksQuery.refetch();
+  const refreshing = tasksQuery.isRefetching;
 
   const tasks = tasksQuery.data ?? [];
   const totalCount = tasks.length;
@@ -56,6 +68,9 @@ export function StatsScreen(): React.JSX.Element {
         <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
         >
           <View>
             <Text style={styles.headerTitle}>Thống kê</Text>

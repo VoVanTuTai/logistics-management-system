@@ -5,6 +5,7 @@ import type { AppNavigatorParamList } from './types';
 import { AppTabs } from './AppTabs';
 import { useAuthStore } from '../features/auth/auth.store';
 import { LoginScreen } from '../screens/auth/LoginScreen';
+import { TaskListScreen } from '../screens/tasks/TaskListScreen';
 import { DeliveryFailScreen } from '../screens/delivery/DeliveryFailScreen';
 import { DeliveryProofScreen } from '../screens/delivery/DeliveryProofScreen';
 import { DeliverySuccessScreen } from '../screens/delivery/DeliverySuccessScreen';
@@ -41,12 +42,17 @@ export function AppNavigator(): React.JSX.Element {
           <Stack.Screen
             name="TaskDetail"
             component={TaskDetailScreen}
-            options={{ title: 'Chi tiet nhiem vu' }}
+            options={{ title: 'Chi tiết nhiệm vụ' }}
+          />
+          <Stack.Screen
+            name="TaskList"
+            component={TaskListScreen}
+            options={{ title: 'Danh sách nhiệm vụ' }}
           />
           <Stack.Screen
             name="PickupScan"
             component={PickupScanScreen}
-            options={{ title: 'Quet pickup' }}
+            options={{ title: 'Quét nhận' }}
           />
           <Stack.Screen
             name="HubScan"
@@ -56,27 +62,27 @@ export function AppNavigator(): React.JSX.Element {
           <Stack.Screen
             name="BagSeal"
             component={BagSealScreen}
-            options={{ title: 'Dong bao tui tai che' }}
+            options={{ title: 'Đóng bao' }}
           />
           <Stack.Screen
             name="DeliverySuccess"
             component={DeliverySuccessScreen}
-            options={{ title: 'Giao thanh cong' }}
+            options={{ title: 'Giao thành công' }}
           />
           <Stack.Screen
             name="DeliveryFail"
             component={DeliveryFailScreen}
-            options={{ title: 'Giao that bai / NDR' }}
+            options={{ title: 'Giao thất bại / NDR' }}
           />
           <Stack.Screen
             name="DeliveryProof"
             component={DeliveryProofScreen}
-            options={{ title: 'Ky nhan giao hang' }}
+            options={{ title: 'Ký nhận giao hàng' }}
           />
           <Stack.Screen
             name="TaskIssue"
             component={TaskIssueScreen}
-            options={{ title: 'Van de don hang' }}
+         
           />
         </>
       ) : (
@@ -88,5 +94,6 @@ export function AppNavigator(): React.JSX.Element {
       )}
     </Stack.Navigator>
   );
+
 }
 

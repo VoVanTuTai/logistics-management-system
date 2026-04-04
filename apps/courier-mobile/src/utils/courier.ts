@@ -1,50 +1,32 @@
-const DEFAULT_COURIER_ID = 'CR001';
+const DEFAULT_COURIER_ID = 'courier.hcm';
 
-function normalizeCourierId(value: string): string {
-  const trimmed = value.trim();
+function normalizeCourierId(rawValue: string | null | undefined): string {
+  const trimmed = (rawValue ?? '').trim();
   if (!trimmed) {
     return '';
   }
 
+  // Legacy numeric formats (CR001 or 001)
   if (/^cr\d+$/i.test(trimmed)) {
     return trimmed.toUpperCase();
   }
-
   if (/^\d+$/.test(trimmed)) {
     return `CR${trimmed}`;
   }
 
-  return trimmed.toUpperCase();
-}
-
-function extractCourierIdFromUsername(username: string): string {
-  const directMatch = username.match(/\bcr\d+\b/i);
-  if (directMatch?.[0]) {
-    return normalizeCourierId(directMatch[0]);
-  }
-
-  const digitMatches = username.match(/\d+/g);
-  const lastDigits = digitMatches?.[digitMatches.length - 1];
-  if (lastDigits) {
-    return normalizeCourierId(lastDigits);
-  }
-
-  return '';
+  // Otherwise, keep developer / username provided id; normalize to lower for consistency.
+  return trimmed.toLowerCase();
 }
 
 export function resolveCourierId(
   configuredCourierId: string | null | undefined,
   username: string | null | undefined,
 ): string {
-  const fromConfig = normalizeCourierId(configuredCourierId ?? '');
-  if (fromConfig) {
-    return fromConfig;
-  }
+  const fromConfig = normalizeCourierId(configuredCourierId);
+  if (fromConfig) return fromConfig;
 
-  const fromUsername = extractCourierIdFromUsername((username ?? '').trim());
-  if (fromUsername) {
-    return fromUsername;
-  }
+  const fromUsername = normalizeCourierId(username);
+  if (fromUsername) return fromUsername;
 
   return DEFAULT_COURIER_ID;
 }
