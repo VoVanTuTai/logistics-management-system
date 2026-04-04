@@ -33,7 +33,6 @@ function Test-DockerContainerHealthy([string]$containerName) {
 
 Push-Location $rootDir
 try {
-  $runTag = Get-Date -Format 'yyyyMMdd-HHmmss'
 
   $infraPorts = @(5672, 15432, 15433, 15434, 15435, 15436, 15437, 15438, 15439, 15440, 15441)
   $infraContainers = @(
