@@ -34,7 +34,6 @@ function Test-DockerContainerHealthy([string]$containerName) {
 function Start-ServiceIfDown(
   [hashtable]$service,
   [string]$rootDir,
-  [string]$runTag,
   [ref]$started
 ) {
   if (Test-PortListening $service.Port) {
@@ -47,23 +46,17 @@ function Start-ServiceIfDown(
     return
   }
 
-  $stdoutLog = Join-Path $rootDir "$($service.Name).dev.$runTag.stdout.log"
-  $stderrLog = Join-Path $rootDir "$($service.Name).dev.$runTag.stderr.log"
-
   $launcher = Start-Process `
     -FilePath 'cmd.exe' `
     -ArgumentList '/c', 'npx ts-node src/main.ts' `
     -WorkingDirectory $workingDir `
     -WindowStyle Hidden `
-    -RedirectStandardOutput $stdoutLog `
-    -RedirectStandardError $stderrLog `
     -PassThru
 
   $started.Value += [pscustomobject]@{
     Service = $service.Name
     Port = $service.Port
     LauncherPid = $launcher.Id
-    StderrLog = [System.IO.Path]::GetFileName($stderrLog)
   }
 
   Write-Host "[start] $($service.Name) launcher pid=$($launcher.Id)"
@@ -72,8 +65,6 @@ function Start-ServiceIfDown(
 
 Push-Location $rootDir
 try {
-  $runTag = Get-Date -Format 'yyyyMMdd-HHmmss'
-
   $infraPorts = @(5672, 15432, 15433, 15434, 15435, 15436, 15437, 15438, 15439, 15440, 15441)
   $infraContainers = @(
     'jms-dev-rabbitmq',
@@ -156,7 +147,7 @@ try {
     }
 
     foreach ($service in $services) {
-      Start-ServiceIfDown -service $service -rootDir $rootDir -runTag $runTag -started ([ref]$started)
+    Start-ServiceIfDown -service $service -rootDir $rootDir -started ([ref]$started)
     }
 
     $waitDeadline = (Get-Date).AddSeconds(75)
@@ -213,7 +204,7 @@ try {
   $downCount = @($statusRows | Where-Object { $_.Status -eq 'DOWN' }).Count
   if ($downCount -gt 0) {
     Write-Host ''
-    Write-Host "Some services are DOWN. Check *.dev.*.stderr.log in $rootDir (run=$runTag)." -ForegroundColor Yellow
+    Write-Host 'Some services are DOWN. Check console output above.' -ForegroundColor Yellow
     exit 1
   }
 

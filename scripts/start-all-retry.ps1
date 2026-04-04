@@ -80,16 +80,11 @@ function Start-WebUiProcess(
     throw "Missing app path for ${name}: $workingDir"
   }
 
-  $stdoutLog = Join-Path $rootDir "$name.dev.stdout.log"
-  $stderrLog = Join-Path $rootDir "$name.dev.stderr.log"
-
   $launcher = Start-Process `
     -FilePath 'cmd.exe' `
     -ArgumentList '/c', "npm run dev -- --host 0.0.0.0 --port $port" `
     -WorkingDirectory $workingDir `
     -WindowStyle Hidden `
-    -RedirectStandardOutput $stdoutLog `
-    -RedirectStandardError $stderrLog `
     -PassThru
 
   Write-Host "[start] $name pid=$($launcher.Id) port=$port"

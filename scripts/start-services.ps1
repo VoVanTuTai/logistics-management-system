@@ -121,23 +121,17 @@ try {
       continue
     }
 
-    $stdoutLog = Join-Path $rootDir "$($service.Name).dev.$runTag.stdout.log"
-    $stderrLog = Join-Path $rootDir "$($service.Name).dev.$runTag.stderr.log"
-
     $launcher = Start-Process `
       -FilePath 'cmd.exe' `
       -ArgumentList '/c', 'npx ts-node src/main.ts' `
       -WorkingDirectory $workingDir `
       -WindowStyle Hidden `
-      -RedirectStandardOutput $stdoutLog `
-      -RedirectStandardError $stderrLog `
       -PassThru
 
     $started += [pscustomobject]@{
       Service = $service.Name
       Port = $service.Port
       LauncherPid = $launcher.Id
-      StderrLog = [System.IO.Path]::GetFileName($stderrLog)
     }
 
     Write-Host "[start] $($service.Name) launcher pid=$($launcher.Id)"
@@ -185,7 +179,7 @@ try {
   $downCount = @($statusRows | Where-Object { $_.Status -eq 'DOWN' }).Count
   if ($downCount -gt 0) {
     Write-Host ''
-    Write-Host "Some services are DOWN. Check *.dev.*.stderr.log in $rootDir (run=$runTag)." -ForegroundColor Yellow
+    Write-Host 'Some services are DOWN. Check console output above.' -ForegroundColor Yellow
     exit 1
   }
 
