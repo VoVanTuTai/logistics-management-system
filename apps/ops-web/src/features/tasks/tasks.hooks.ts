@@ -16,6 +16,8 @@ export function useTasksQuery(
     queryKey: [...queryKeys.tasks, filters.taskType ?? '', filters.status ?? ''],
     queryFn: () => tasksClient.list(accessToken, filters),
     enabled: Boolean(accessToken),
+    refetchInterval: 5000,
+    refetchOnWindowFocus: true,
   });
 }
 

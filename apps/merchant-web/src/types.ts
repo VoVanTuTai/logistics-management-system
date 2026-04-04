@@ -89,18 +89,26 @@ export interface ChangeRequest {
 
 export interface TrackingCurrent {
   shipmentCode: string;
+  currentStatusCode?: string | null;
   currentStatus: string | null;
   currentLocationCode: string | null;
+  currentLocationText?: string | null;
+  lastEventTypeCode?: string | null;
   lastEventType: string | null;
   lastEventAt: string | null;
 }
 
 export interface TimelineEvent {
   id: string;
+  eventTypeCode?: string;
   eventType: string;
+  eventSource?: string;
+  statusAfterEventCode?: string | null;
+  statusAfterEvent?: string | null;
   shipmentCode: string;
   actor: string | null;
   locationCode: string | null;
+  locationText?: string | null;
   occurredAt: string;
 }
 

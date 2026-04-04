@@ -1,12 +1,8 @@
-export type DeliveryPublishedEventType =
+﻿export type DeliveryPublishedEventType =
   | 'delivery.attempted'
   | 'delivery.delivered'
   | 'delivery.failed'
-  | 'pod.captured'
-  | 'otp.sent'
-  | 'otp.verified'
   | 'ndr.created'
-  | 'ndr.rescheduled'
   | 'return.started'
   | 'return.completed';
 

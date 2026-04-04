@@ -1,12 +1,9 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 
-import {
-  PickupEventHandlersService,
-  type ShipmentCancelledPayload,
-} from '../../application/services/pickup-event-handlers.service';
-
-export interface PickupConsumerEnvelope extends ShipmentCancelledPayload {
-  event_type: 'shipment.cancelled';
+export interface PickupConsumerEnvelope {
+  event_type: string;
+  shipment_code?: string;
+  data?: Record<string, unknown>;
 }
 
 @Injectable()
@@ -14,12 +11,9 @@ export class PickupEventsConsumer {
   readonly queueName = 'pickup-service.q';
   readonly retryQueues = ['pickup-service.retry.10s', 'pickup-service.retry.1m'];
   readonly deadLetterQueue = 'pickup-service.dlq';
+  readonly routingPatterns: string[] = [];
 
-  constructor(
-    private readonly pickupEventHandlersService: PickupEventHandlersService,
-  ) {}
-
-  async handle(payload: PickupConsumerEnvelope): Promise<void> {
-    await this.pickupEventHandlersService.handleShipmentCancelled(payload);
+  async handle(_payload: PickupConsumerEnvelope): Promise<void> {
+    // No inbound domain events are required for pickup-service in the slim event model.
   }
 }

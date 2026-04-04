@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+﻿import { randomUUID } from 'crypto';
 
 import { Injectable } from '@nestjs/common';
 
@@ -13,24 +13,8 @@ import type { Task } from '../../domain/entities/task.entity';
 export class DispatchEventsProducer {
   readonly exchangeName = process.env.DOMAIN_EVENTS_EXCHANGE ?? 'domain.events';
 
-  buildTaskCreatedEvent(task: Task): QueueOutboxEventInput {
-    return this.buildEvent('task.created', task);
-  }
-
   buildTaskAssignedEvent(task: Task): QueueOutboxEventInput {
     return this.buildEvent('task.assigned', task);
-  }
-
-  buildTaskReassignedEvent(task: Task): QueueOutboxEventInput {
-    return this.buildEvent('task.reassigned', task);
-  }
-
-  buildTaskCompletedEvent(task: Task): QueueOutboxEventInput {
-    return this.buildEvent('task.completed', task);
-  }
-
-  buildTaskCancelledEvent(task: Task): QueueOutboxEventInput {
-    return this.buildEvent('task.cancelled', task);
   }
 
   private buildEvent(

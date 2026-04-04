@@ -8,7 +8,7 @@ async function main(): Promise<void> {
   const shipmentCurrents = [
     {
       shipmentCode: 'SHP1001',
-      currentStatus: 'SCAN_INBOUND',
+      currentStatus: 'INBOUND_AT_HUB',
       currentLocationCode: 'HN-01',
       lastEventId: 'seed-track-shp1001-scan-inbound',
       lastEventType: 'scan.inbound',
@@ -19,7 +19,7 @@ async function main(): Promise<void> {
     },
     {
       shipmentCode: 'SHP1002',
-      currentStatus: 'NDR_CREATED',
+      currentStatus: 'DELIVERY_FAILED',
       currentLocationCode: 'SG-01',
       lastEventId: 'seed-track-shp1002-ndr-created',
       lastEventType: 'ndr.created',
@@ -82,7 +82,7 @@ async function main(): Promise<void> {
       shipmentCode: 'SHP1001',
       actor: 'ops.admin',
       locationCode: 'HN-01',
-      payload: { statusAfterEvent: 'SCAN_INBOUND' },
+      payload: { statusAfterEvent: 'INBOUND_AT_HUB' },
       occurredAt: new Date(now.getTime() - 60 * 60 * 1000),
     },
     {
@@ -100,7 +100,7 @@ async function main(): Promise<void> {
       shipmentCode: 'SHP1002',
       actor: 'delivery-service',
       locationCode: 'SG-01',
-      payload: { statusAfterEvent: 'NDR_CREATED' },
+      payload: { statusAfterEvent: 'DELIVERY_FAILED' },
       occurredAt: new Date(now.getTime() - 30 * 60 * 1000),
     },
   ] as const;

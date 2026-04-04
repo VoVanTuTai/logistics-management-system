@@ -14,21 +14,20 @@ export class ReportingEventsConsumer {
   readonly dlqName = 'reporting-service.dlq';
   readonly routingPatterns = [
     'shipment.created',
-    'shipment.updated',
-    'shipment.cancelled',
-    'pickup.completed',
+    'pickup.requested',
+    'pickup.approved',
     'task.assigned',
-    'task.reassigned',
     'manifest.sealed',
     'manifest.received',
     'scan.pickup_confirmed',
+    'scan.outbound',
+    'scan.inbound',
+    'delivery.attempted',
     'delivery.delivered',
     'delivery.failed',
     'ndr.created',
     'return.started',
     'return.completed',
-    'scan.inbound',
-    'scan.outbound',
   ];
 
   constructor(

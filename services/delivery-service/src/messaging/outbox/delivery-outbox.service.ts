@@ -1,10 +1,8 @@
-import { Inject, Injectable } from '@nestjs/common';
+﻿import { Inject, Injectable } from '@nestjs/common';
 
 import type { DeliveryAttempt } from '../../domain/entities/delivery-attempt.entity';
 import type { NdrCase } from '../../domain/entities/ndr-case.entity';
-import type { OtpRecord } from '../../domain/entities/otp-record.entity';
 import { OutboxEventRepository } from '../../domain/repositories/outbox-event.repository';
-import type { Pod } from '../../domain/entities/pod.entity';
 import type { ReturnCase } from '../../domain/entities/return-case.entity';
 import { DeliveryEventsProducer } from '../producers/delivery-events.producer';
 
@@ -34,49 +32,9 @@ export class DeliveryOutboxService {
     );
   }
 
-  async enqueuePodCaptured(
-    pod: Pod,
-    shipmentCode: string,
-    actor: string | null,
-    locationCode: string | null,
-  ): Promise<void> {
-    await this.outboxEventRepository.create(
-      this.deliveryEventsProducer.buildPodCapturedEvent(
-        pod,
-        shipmentCode,
-        actor,
-        locationCode,
-      ),
-    );
-  }
-
-  async enqueueOtpSent(
-    otpRecord: OtpRecord,
-    shipmentCode: string,
-  ): Promise<void> {
-    await this.outboxEventRepository.create(
-      this.deliveryEventsProducer.buildOtpSentEvent(otpRecord, shipmentCode),
-    );
-  }
-
-  async enqueueOtpVerified(
-    otpRecord: OtpRecord,
-    shipmentCode: string,
-  ): Promise<void> {
-    await this.outboxEventRepository.create(
-      this.deliveryEventsProducer.buildOtpVerifiedEvent(otpRecord, shipmentCode),
-    );
-  }
-
   async enqueueNdrCreated(ndrCase: NdrCase): Promise<void> {
     await this.outboxEventRepository.create(
       this.deliveryEventsProducer.buildNdrCreatedEvent(ndrCase),
-    );
-  }
-
-  async enqueueNdrRescheduled(ndrCase: NdrCase): Promise<void> {
-    await this.outboxEventRepository.create(
-      this.deliveryEventsProducer.buildNdrRescheduledEvent(ndrCase),
     );
   }
 

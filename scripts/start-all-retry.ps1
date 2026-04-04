@@ -1,4 +1,4 @@
-param(
+﻿param(
   [ValidateSet('lan', 'emulator')]
   [string]$MobileMode = 'lan',
   [switch]$SkipInfra,
@@ -124,7 +124,6 @@ function Start-CourierMobileProcess([string]$mode) {
 
   $expoHost = if ($mode -eq 'emulator') { 'localhost' } else { 'lan' }
 
-  # Use /k so QR + Metro logs stay visible in a separate terminal window.
   $command = "set EXPO_PUBLIC_GATEWAY_BASE_URL=$gatewayBaseUrl && npm run start -- --host $expoHost --port 8081"
 
   $launcher = Start-Process `
@@ -153,14 +152,14 @@ try {
     Write-Host '[infra] skipped dev-up by flag'
   }
 
-  Write-Host '[services] running start-services'
+  Write-Host '[services] running start-services-retry'
   $LASTEXITCODE = 0
-  & (Join-Path $PSScriptRoot 'start-services.ps1')
+  & (Join-Path $PSScriptRoot 'start-services-retry.ps1')
   if (-not $?) {
-    throw 'start-services failed'
+    throw 'start-services-retry failed'
   }
   if ($LASTEXITCODE -ne 0) {
-    throw 'start-services failed'
+    throw 'start-services-retry failed'
   }
 
   Write-Host '[ui] starting web apps'

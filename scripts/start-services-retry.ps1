@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
 $rootDir = Resolve-Path (Join-Path $PSScriptRoot '..')
@@ -31,10 +31,40 @@ function Test-DockerContainerHealthy([string]$containerName) {
   }
 }
 
+function Start-ServiceIfDown(
+  [hashtable]$service,
+  [string]$rootDir,
+  [ref]$started
+) {
+  if (Test-PortListening $service.Port) {
+    return
+  }
+
+  $workingDir = Join-Path $rootDir $service.Path
+  if (-not (Test-Path $workingDir)) {
+    Write-Host "[missing] $($service.Name) path not found: $workingDir" -ForegroundColor Yellow
+    return
+  }
+
+  $launcher = Start-Process `
+    -FilePath 'cmd.exe' `
+    -ArgumentList '/c', 'npx ts-node src/main.ts' `
+    -WorkingDirectory $workingDir `
+    -WindowStyle Hidden `
+    -PassThru
+
+  $started.Value += [pscustomobject]@{
+    Service = $service.Name
+    Port = $service.Port
+    LauncherPid = $launcher.Id
+  }
+
+  Write-Host "[start] $($service.Name) launcher pid=$($launcher.Id)"
+  Start-Sleep -Milliseconds 250
+}
+
 Push-Location $rootDir
 try {
-  $runTag = Get-Date -Format 'yyyyMMdd-HHmmss'
-
   $infraPorts = @(5672, 15432, 15433, 15434, 15435, 15436, 15437, 15438, 15439, 15440, 15441)
   $infraContainers = @(
     'jms-dev-rabbitmq',
@@ -109,41 +139,36 @@ try {
   Write-Host "[services] starting $($services.Count) backend services"
 
   $started = @()
-  foreach ($service in $services) {
-    if (Test-PortListening $service.Port) {
-      Write-Host "[skip] $($service.Name) already listening on port $($service.Port)"
-      continue
+  $maxAttempts = 3
+  $attempt = 1
+  do {
+    if ($attempt -gt 1) {
+      Write-Host "[retry] attempt $attempt/$maxAttempts for services still DOWN..." -ForegroundColor Yellow
     }
 
-    $workingDir = Join-Path $rootDir $service.Path
-    if (-not (Test-Path $workingDir)) {
-      Write-Host "[missing] $($service.Name) path not found: $workingDir"
-      continue
+    foreach ($service in $services) {
+    Start-ServiceIfDown -service $service -rootDir $rootDir -started ([ref]$started)
     }
 
-    $launcher = Start-Process `
-      -FilePath 'cmd.exe' `
-      -ArgumentList '/c', 'npx ts-node src/main.ts' `
-      -WorkingDirectory $workingDir `
-      -WindowStyle Hidden `
-      -PassThru
-
-    $started += [pscustomobject]@{
-      Service = $service.Name
-      Port = $service.Port
-      LauncherPid = $launcher.Id
+    $waitDeadline = (Get-Date).AddSeconds(75)
+    while ((Get-Date) -lt $waitDeadline) {
+      $downNow = $services | Where-Object { -not (Test-PortListening $_.Port) }
+      if ($downNow.Count -eq 0) { break }
+      Start-Sleep -Seconds 3
     }
 
-    Write-Host "[start] $($service.Name) launcher pid=$($launcher.Id)"
-    Start-Sleep -Milliseconds 250
-  }
+    $remainingDown = $services | Where-Object { -not (Test-PortListening $_.Port) }
+    if ($remainingDown.Count -eq 0) {
+      break
+    }
 
-  $deadline = (Get-Date).AddMinutes(4)
-  while ((Get-Date) -lt $deadline) {
-    $downServices = $services | Where-Object { -not (Test-PortListening $_.Port) }
-    if ($downServices.Count -eq 0) { break }
-    Start-Sleep -Seconds 3
-  }
+    if ($attempt -lt $maxAttempts) {
+      Write-Host ("[retry] still down: " + (($remainingDown | ForEach-Object { $_.Name }) -join ', ')) -ForegroundColor Yellow
+      Start-Sleep -Seconds 5
+    }
+
+    $attempt += 1
+  } while ($attempt -le $maxAttempts)
 
   Write-Host ''
   Write-Host '=== STARTED ==='

@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+﻿import { randomUUID } from 'crypto';
 
 import { Injectable } from '@nestjs/common';
 
@@ -42,47 +42,6 @@ export class PickupEventsProducer {
       data: {
         pickup_request: pickupRequest,
         ...data,
-      },
-    });
-  }
-
-  buildPickupUpdatedEvent(
-    pickupRequest: PickupRequest,
-    data: Record<string, unknown>,
-  ): QueueOutboxEventInput {
-    return this.buildEvent({
-      eventType: 'pickup.updated',
-      aggregateId: pickupRequest.id,
-      shipmentCode: pickupRequest.items[0]?.shipmentCode ?? null,
-      data: {
-        pickup_request: pickupRequest,
-        ...data,
-      },
-    });
-  }
-
-  buildPickupCancelledEvent(
-    pickupRequest: PickupRequest,
-    data: Record<string, unknown>,
-  ): QueueOutboxEventInput {
-    return this.buildEvent({
-      eventType: 'pickup.cancelled',
-      aggregateId: pickupRequest.id,
-      shipmentCode: pickupRequest.items[0]?.shipmentCode ?? null,
-      data: {
-        pickup_request: pickupRequest,
-        ...data,
-      },
-    });
-  }
-
-  buildPickupCompletedEvent(pickupRequest: PickupRequest): QueueOutboxEventInput {
-    return this.buildEvent({
-      eventType: 'pickup.completed',
-      aggregateId: pickupRequest.id,
-      shipmentCode: pickupRequest.items[0]?.shipmentCode ?? null,
-      data: {
-        pickup_request: pickupRequest,
       },
     });
   }
