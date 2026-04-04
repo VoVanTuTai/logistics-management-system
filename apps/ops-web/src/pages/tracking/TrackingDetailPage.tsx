@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import { useTrackingDetailQuery } from '../../features/tracking/tracking.api';
@@ -34,10 +34,16 @@ export function TrackingDetailPage(): React.JSX.Element {
       </p>
 
       <article style={styles.currentCard}>
-        <h3>Mô hình đọc hiện tại</h3>
+        <h3>Trạng thái hiện tại</h3>
         <p>Mã vận đơn: {detailQuery.data.current?.shipmentCode ?? shipmentCode}</p>
         <p>Trạng thái hiện tại: {detailQuery.data.current?.currentStatus ?? 'Không có'}</p>
-        <p>Vị trí hiện tại: {detailQuery.data.current?.currentLocation ?? 'Không có'}</p>
+        <p>
+          Vị trí hiện tại:{' '}
+          {detailQuery.data.current?.currentLocationText ??
+            detailQuery.data.current?.currentLocation ??
+            'Không có'}
+        </p>
+        <p>Sự kiện cuối: {detailQuery.data.current?.lastEventType ?? 'Không có'}</p>
         <p>Cập nhật lúc: {formatDateTime(detailQuery.data.current?.updatedAt)}</p>
       </article>
 

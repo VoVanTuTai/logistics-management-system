@@ -1,8 +1,10 @@
 import { Controller, Get, Param } from '@nestjs/common';
 
-import { TrackingQueryProjection } from '../../application/projections/tracking-query.projection';
-import type { TimelineEvent } from '../../domain/entities/timeline-event.entity';
-import type { TrackingCurrent } from '../../domain/entities/tracking-current.entity';
+import {
+  type TimelineEventView,
+  type TrackingCurrentView,
+  TrackingQueryProjection,
+} from '../../application/projections/tracking-query.projection';
 
 @Controller('tracking')
 export class InternalTrackingController {
@@ -13,14 +15,14 @@ export class InternalTrackingController {
   @Get(':shipmentCode/timeline')
   getTimeline(
     @Param('shipmentCode') shipmentCode: string,
-  ): Promise<TimelineEvent[]> {
+  ): Promise<TimelineEventView[]> {
     return this.trackingQueryProjection.getTimeline(shipmentCode);
   }
 
   @Get(':shipmentCode/current')
   getCurrent(
     @Param('shipmentCode') shipmentCode: string,
-  ): Promise<TrackingCurrent> {
+  ): Promise<TrackingCurrentView> {
     return this.trackingQueryProjection.getCurrent(shipmentCode);
   }
 }

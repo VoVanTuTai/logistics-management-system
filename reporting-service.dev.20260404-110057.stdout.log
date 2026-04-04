@@ -1,0 +1,14 @@
+[32m[Nest] 16388  - [39m04/04/2026, 11:09:31 AM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 16388  - [39m04/04/2026, 11:09:39 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mHealthModule dependencies initialized[39m[38;5;3m +8135ms[39m
+[32m[Nest] 16388  - [39m04/04/2026, 11:09:40 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +493ms[39m
+[32m[Nest] 16388  - [39m04/04/2026, 11:09:40 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mReportsController {/reports}:[39m[38;5;3m +214ms[39m
+[32m[Nest] 16388  - [39m04/04/2026, 11:09:40 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/reports/daily, GET} route[39m[38;5;3m +387ms[39m
+[32m[Nest] 16388  - [39m04/04/2026, 11:09:40 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/reports/monthly, GET} route[39m[38;5;3m +230ms[39m
+[32m[Nest] 16388  - [39m04/04/2026, 11:09:40 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/reports/ops-dashboard, GET} route[39m[38;5;3m +3ms[39m
+[32m[Nest] 16388  - [39m04/04/2026, 11:09:40 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/reports/courier, GET} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 16388  - [39m04/04/2026, 11:09:40 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/reports/hub, GET} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 16388  - [39m04/04/2026, 11:09:40 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/reports/shipment-status, GET} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 16388  - [39m04/04/2026, 11:09:40 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mHealthController {/health}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 16388  - [39m04/04/2026, 11:09:40 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/health, GET} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 16388  - [39m04/04/2026, 11:10:02 AM [32m    LOG[39m [38;5;3m[ReportingRabbitmqConsumerService] [39m[32mReporting consumer polling "reporting-service.q" every 1000ms.[39m
+[32m[Nest] 16388  - [39m04/04/2026, 11:10:02 AM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +4ms[39m

@@ -1,0 +1,22 @@
+[31m[Nest] 2220  - [39m04/04/2026, 11:09:50 AM [31m  ERROR[39m [38;5;3m[ScanOutboxRelayService] [39m[31mScan outbox relay failed while publishing events: 
+Invalid `this.prisma.outboxEvent.findMany()` invocation in
+F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\scan-service\src\infrastructure\prisma\outbox-event-prisma.repository.ts:38:51
+
+  35 }
+  36 
+  37 async listPending(limit: number): Promise<OutboxEvent[]> {
+→ 38   const records = await this.prisma.outboxEvent.findMany(
+Can't reach database server at `127.0.0.1:15438`
+
+Please make sure your database server is running at `127.0.0.1:15438`.[39m
+F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\scan-service\node_modules\.pnpm\@prisma+client@6.19.2_prism_6b2b1af085fe6797f5a5ea830937a8e3\node_modules\@prisma\client\src\runtime\core\engines\library\LibraryEngine.ts:440
+          throw new PrismaClientInitializationError(error.message, this.config.clientVersion!, error.error_code)
+                ^
+PrismaClientInitializationError: Can't reach database server at `127.0.0.1:15438`
+
+Please make sure your database server is running at `127.0.0.1:15438`.
+    at r (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\scan-service\node_modules\.pnpm\@prisma+client@6.19.2_prism_6b2b1af085fe6797f5a5ea830937a8e3\node_modules\@prisma\client\src\runtime\core\engines\library\LibraryEngine.ts:440:17) {
+  clientVersion: '6.19.2',
+  errorCode: 'P1001',
+  retryable: undefined
+}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { useTrackingSearchQuery } from '../../features/tracking/tracking.api';
@@ -32,8 +32,7 @@ export function TrackingLookupPage(): React.JSX.Element {
     <section>
       <h2>Tra cứu hành trình nội bộ</h2>
       <p style={{ color: '#2d3f99' }}>
-        Tra cứu đọc read-model tracking từ server, không tự suy diễn trạng thái hoặc vị trí ở
-        client.
+        Dữ liệu timeline lấy từ tracking-service, đã map trạng thái tiếng Việt để Ops theo dõi nhanh.
       </p>
       <form onSubmit={onSubmit} style={styles.form}>
         <input
@@ -57,7 +56,11 @@ export function TrackingLookupPage(): React.JSX.Element {
           <h3>Kết quả tra cứu</h3>
           <p>Mã vận đơn: {searchQuery.data.shipmentCode}</p>
           <p>Trạng thái hiện tại: {searchQuery.data.currentStatus ?? 'Không có'}</p>
-          <p>Vị trí hiện tại: {searchQuery.data.currentLocation ?? 'Không có'}</p>
+          <p>
+            Vị trí hiện tại:{' '}
+            {searchQuery.data.currentLocationText ?? searchQuery.data.currentLocation ?? 'Không có'}
+          </p>
+          <p>Sự kiện cuối: {searchQuery.data.lastEventType ?? 'Không có'}</p>
           <p>Cập nhật lúc: {formatDateTime(searchQuery.data.updatedAt)}</p>
           <Link to={routePaths.trackingDetail(searchQuery.data.shipmentCode)}>
             Mở chi tiết hành trình

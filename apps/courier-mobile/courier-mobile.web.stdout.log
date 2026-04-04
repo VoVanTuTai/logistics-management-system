@@ -1,0 +1,297 @@
+
+> courier-mobile@1.0.0 web
+> node ./scripts/start-with-gateway.js --web
+
+Starting project at F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\apps\courier-mobile
+Using src/app as the root directory for Expo Router.
+Starting Metro Bundler
+Waiting on http://localhost:8081
+Logs for your project will appear below.
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  1.0% (1/1)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓░░░░░░░░ 54.6% (17/23)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓░░░░░░ 67.8% (34/50)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% (51/85)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% ( 72/109)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% ( 85/146)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% ( 94/181)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+| 
+| 
+| #
+| # Fatal error in , line 0
+| # Fatal process out of memory: Zone
+| #
+| #
+| #
+| #FailureMessage Object: 00000078067F58C0
+| ----- Native stack trace -----
+| 
+| 
+| 
+| #
+| # Fatal error in , line 0
+| # Fatal process out of memory: Zone
+| #
+| #
+| #
+| #FailureMessage Object: 0000007806FF58A0
+| ----- Native stack trace -----
+| 
+| 
+| 
+| #
+| # Fatal error in , line 0
+| # Fatal process out of memory: Zone
+| #
+| #
+| #
+| #FailureMessage Object: 0000007805FF5930
+| ----- Native stack trace -----
+| 
+|  1: 00007FF61781A62B 
+|  2: 00007FF61770CE9F 
+|  3: 00007FF61862A022 
+|  4: 00007FF6181EDEF3 
+|  5: 00007FF617CD0914 
+|  6: 00007FF61873EA2C 
+|  7: 00007FF61874DE0E 
+|  8: 00007FF618742953 
+|  9: 00007FF6186EA1C2 
+| 10: 00007FF6186F6751 
+| 11: 00007FF6186F0BDF 
+| 12: 00007FF6186EBB6A 
+| 13: 00007FF61815C701 
+| 14: 00007FF618129621 
+| 15: 00007FF61770F97D 
+| 16: 00007FF61786E28D 
+| 17: 00007FF618A4D630 
+| 18: 00007FF98F9A7374 
+| 19: 00007FF9900BCC91 
+| 
+| 
+| #
+| # Fatal error in , line 0
+| # Fatal process out of memory: Zone
+| #
+| #
+| #
+| #FailureMessage Object: 00000080BA3F5B20
+| ----- Native stack trace -----
+| 
+| 
+| <--- Last few GCs --->
+| 
+| [11824:00000261098D10B0]    43710 ms: Mark-Compact 37.9 (64.7) -> 22.7 (63.0) MB, 37.25 / 0.06 ms  (+ 25.0 ms in 135 steps since start of marking, biggest step 3.5 ms, walltime since start of marking 68 ms) (average mu = 0.993, current mu = 0.989) finaliz[11824:00000261098D10B0]    45628 ms: Mark-Compact 31.0 (63.2) -> 23.0 (61.7) MB, 36.92 / 0.49 ms  (average mu = 0.991, current mu = 0.981) external memory pressure; GC in old space requested
+| 
+| 
+| <--- JS stacktrace --->
+| 
+| 
+| 
+| #
+| # Fatal error in , line 0
+| # Fatal process out of memory: Zone
+| #
+| #
+| #
+| #FailureMessage Object: 00000080B93F5930
+| ----- Native stack trace -----
+| 
+| FATAL ERROR: Zone Allocation failed - process out of memory
+| ----- Native stack trace -----
+| 
+|  1: 00007FF61781A62B 
+|  2: 00007FF61770CE9F 
+|  3: 00007FF61862A022 
+|  4: 00007FF6181EDEF3 
+|  5: 00007FF617CD0914 
+|  6: 00007FF617AF7670 
+|  7: 00007FF61874EDD2 
+|  8: 00007FF618741DBE 
+|  9: 00007FF6186EA27F 
+| 10: 00007FF6186F6751 
+| 11: 00007FF6186F0BDF 
+| 12: 00007FF6186EBB6A 
+| 13: 00007FF61815C701 
+| 14: 00007FF618129621 
+| 15: 00007FF61770F97D 
+| 16: 00007FF61786E28D 
+| 17: 00007FF618A4D630 
+| 18: 00007FF98F9A7374 
+| 19: 00007FF9900BCC91 
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% (116/201)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% (140/220)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+| 
+| <--- Last few GCs --->
+| 
+| [13640:000001A208AB1C00]     4446 ms: Scavenge 27.4 (46.0) -> 21.3 (52.2) MB, 7.98 / 0.00 ms  (average mu = 1.000, current mu = 1.000) allocation failure; 
+| [13640:000001A208AB1C00]     5917 ms: Scavenge 36.6 (54.3) -> 26.4 (57.5) MB, 5.77 / 0.00 ms  (average mu = 1.000, current mu = 1.000) allocation failure; 
+| 
+| 
+| <--- JS stacktrace --->
+| 
+| FATAL ERROR: NewSpace::EnsureCurrentCapacity Allocation failed - JavaScript heap out of memory
+| ----- Native stack trace -----
+| 
+| 
+| 
+| #
+| # Fatal error in , line 0
+| # Fatal process out of memory: Zone
+| #
+| #
+| #
+| #FailureMessage Object: 000000C9C89F5620
+| ----- Native stack trace -----
+| 
+| 
+| 
+| #
+| # Fatal error in , line 0
+| # Fatal process out of memory: Zone
+| #
+| #
+| #
+| #FailureMessage Object: 000000C9C81F5740
+| ----- Native stack trace -----
+| 
+|  1: 00007FF61781A62B 
+|  2: 00007FF61770CE9F 
+|  3: 00007FF61862A022 
+|  4: 00007FF6181EDEF3 
+|  5: 00007FF617CD0914 
+|  6: 00007FF617AF7670 
+|  7: 00007FF61866F05A 
+|  8: 00007FF61866C88A 
+|  9: 00007FF618801602 
+| 10: 00007FF61880A881 
+| 11: 00007FF61880C2FA 
+| 12: 00007FF618808839 
+| 13: 00007FF618802486 
+| 14: 00007FF61873CDE7 
+| 15: 00007FF6186F1E31 
+| 16: 00007FF61873C9F4 
+| 17: 00007FF61873D166 
+| 18: 00007FF61873CE72 
+| 19: 00007FF6186F32F4 
+| 20: 00007FF6186EAFEF 
+| 21: 00007FF6186EBB45 
+| 22: 00007FF61815C701 
+| 23: 00007FF618129621 
+| 24: 00007FF61770F97D 
+| 25: 00007FF61786E28D 
+| 26: 00007FF618A4D630 
+| 27: 00007FF98F9A7374 
+| 28: 00007FF9900BCC91 
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% (165/253)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+| 
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% (170/276)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+| 
+| #
+| # Fatal error in , line 0
+| # Fatal process out of memory: Zone
+| #
+| #
+| #
+| #FailureMessage Object: 0000007640FF5F10
+| ----- Native stack trace -----
+| 
+|  1: 00007FF61781A62B 
+|  2: 00007FF61770CE9F 
+|  3: 00007FF61862A022 
+|  4: 00007FF6181EDEF3 
+|  5: 00007FF617CD0914 
+|  6: 00007FF618818A8D 
+|  7: 00007FF61881F962 
+|  8: 00007FF61881EE21 
+|  9: 00007FF61881D061 
+| 10: 00007FF61873CDE7 
+| 11: 00007FF6186F1E31 
+| 12: 00007FF61873C9F4 
+| 13: 00007FF61873D166 
+| 14: 00007FF61873CE72 
+| 15: 00007FF6186F3FD6 
+| 16: 00007FF6186EFA1A 
+| 17: 00007FF6186EBB6A 
+| 18: 00007FF61815C701 
+| 19: 00007FF618129621 
+| 20: 00007FF61770F97D 
+| 21: 00007FF61786E28D 
+| 22: 00007FF618A4D630 
+| 23: 00007FF98F9A7374 
+| 24: 00007FF9900BCC91 
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% (170/276)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% (171/276)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% (177/297)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% (188/341)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% (231/365)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% (249/413)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% (272/442)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% (305/487)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% (340/532)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% (353/581)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% (378/628)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% (390/671)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% (410/686)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% (422/707)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% (443/737)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% (472/754)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% (512/782)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% (556/835)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% (579/877)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% (697/947)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% (740/971)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% (812/991)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% ( 864/1041)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 74.7% ( 898/1102)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 81.7% (1014/1122)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 91.6% (1092/1141)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 92.7% (1136/1202)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 95.7% (1222/1261)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 98.2% (1296/1311)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundling failed 166853ms node_modules\expo\AppEntry.js (1 module)
+ ERROR  node_modules\react\jsx-runtime.js: A jest worker process (pid=13640) was terminated by another process: signal=SIGTERM, exitCode=null. Operating system logs may contain more information on why this occurred.
+Web Bundling failed 178154ms node_modules\expo\AppEntry.js (1319 modules)
+ ERROR  node_modules\react\jsx-runtime.js: A jest worker process (pid=13640) was terminated by another process: signal=SIGTERM, exitCode=null. Operating system logs may contain more information on why this occurred.

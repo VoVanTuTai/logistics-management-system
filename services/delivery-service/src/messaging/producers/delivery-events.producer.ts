@@ -1,15 +1,13 @@
-import { randomUUID } from 'crypto';
+﻿import { randomUUID } from 'crypto';
 
 import { Injectable } from '@nestjs/common';
 
 import type { DeliveryAttempt } from '../../domain/entities/delivery-attempt.entity';
 import type { NdrCase } from '../../domain/entities/ndr-case.entity';
-import type { OtpRecord } from '../../domain/entities/otp-record.entity';
 import type {
   DeliveryPublishedEventType,
   QueueOutboxEventInput,
 } from '../../domain/entities/outbox-event.entity';
-import type { Pod } from '../../domain/entities/pod.entity';
 import type { ReturnCase } from '../../domain/entities/return-case.entity';
 
 @Injectable()
@@ -61,56 +59,6 @@ export class DeliveryEventsProducer {
     );
   }
 
-  buildPodCapturedEvent(
-    pod: Pod,
-    shipmentCode: string,
-    actor: string | null,
-    locationCode: string | null,
-  ): QueueOutboxEventInput {
-    return this.buildEvent(
-      'pod.captured',
-      'pod',
-      pod.id,
-      shipmentCode,
-      actor,
-      locationCode,
-      { pod },
-      `pod.captured:${pod.id}`,
-    );
-  }
-
-  buildOtpSentEvent(
-    otpRecord: OtpRecord,
-    shipmentCode: string,
-  ): QueueOutboxEventInput {
-    return this.buildEvent(
-      'otp.sent',
-      'otp_record',
-      otpRecord.id,
-      shipmentCode,
-      otpRecord.sentBy,
-      null,
-      { otpRecord },
-      `otp.sent:${otpRecord.id}`,
-    );
-  }
-
-  buildOtpVerifiedEvent(
-    otpRecord: OtpRecord,
-    shipmentCode: string,
-  ): QueueOutboxEventInput {
-    return this.buildEvent(
-      'otp.verified',
-      'otp_record',
-      otpRecord.id,
-      shipmentCode,
-      otpRecord.verifiedBy,
-      null,
-      { otpRecord },
-      `otp.verified:${otpRecord.id}`,
-    );
-  }
-
   buildNdrCreatedEvent(ndrCase: NdrCase): QueueOutboxEventInput {
     return this.buildEvent(
       'ndr.created',
@@ -121,19 +69,6 @@ export class DeliveryEventsProducer {
       null,
       { ndrCase },
       `ndr.created:${ndrCase.id}`,
-    );
-  }
-
-  buildNdrRescheduledEvent(ndrCase: NdrCase): QueueOutboxEventInput {
-    return this.buildEvent(
-      'ndr.rescheduled',
-      'ndr_case',
-      ndrCase.id,
-      ndrCase.shipmentCode,
-      null,
-      null,
-      { ndrCase },
-      `ndr.rescheduled:${ndrCase.id}`,
     );
   }
 

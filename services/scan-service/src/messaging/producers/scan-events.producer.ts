@@ -1,9 +1,8 @@
-import { randomUUID } from 'crypto';
+﻿import { randomUUID } from 'crypto';
 
 import { Injectable } from '@nestjs/common';
 
 import type {
-  BuildLocationUpdatedEventInput,
   BuildScanPublishedEventInput,
   QueueOutboxEventInput,
 } from '../../domain/entities/outbox-event.entity';
@@ -37,36 +36,6 @@ export class ScanEventsProducer {
       eventType: 'scan.outbound',
       scanEvent,
     });
-  }
-
-  buildLocationUpdatedEvent(
-    input: BuildLocationUpdatedEventInput,
-  ): QueueOutboxEventInput {
-    const eventId = randomUUID();
-    const occurredAt = new Date();
-
-    return {
-      eventId,
-      eventType: 'location.updated',
-      routingKey: 'location.updated',
-      aggregateType: 'current_location',
-      aggregateId: input.currentLocation.shipmentCode,
-      payload: {
-        event_id: eventId,
-        event_type: 'location.updated',
-        occurred_at: occurredAt.toISOString(),
-        shipment_code: input.currentLocation.shipmentCode,
-        actor: null,
-        location: input.currentLocation.locationCode
-          ? { location_code: input.currentLocation.locationCode }
-          : null,
-        data: {
-          currentLocation: input.currentLocation,
-        },
-        idempotency_key: input.idempotencyKey,
-      },
-      occurredAt,
-    };
   }
 
   private buildScanEvent(

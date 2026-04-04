@@ -1,9 +1,4 @@
-export type DispatchPublishedEventType =
-  | 'task.created'
-  | 'task.assigned'
-  | 'task.reassigned'
-  | 'task.completed'
-  | 'task.cancelled';
+﻿export type DispatchPublishedEventType = 'task.assigned';
 
 export type OutboxStatus = 'PENDING' | 'PUBLISHED' | 'FAILED';
 

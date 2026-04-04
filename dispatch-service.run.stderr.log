@@ -1,7 +1,0 @@
-Environment variables loaded from .env
-Environment variables loaded from .env
-[31m[Nest] 10512  - [39m03/18/2026, 12:13:19 AM [31m  ERROR[39m [38;5;3m[NestApplicationContext] [39m[31mError happened during shutdown[39m
-Error: kill ENOSYS
-    at process.kill (node:internal/process/per_thread:225:13)
-    at process.cleanup (F:\Nam4_Ky2\CongNgheMoi\DoAnLogisticManagementSystem\logistics-management-system\services\dispatch-service\node_modules\@nestjs\core\nest-application-context.js:203:25)
-    at processTicksAndRejections (node:internal/process/task_queues:95:5)

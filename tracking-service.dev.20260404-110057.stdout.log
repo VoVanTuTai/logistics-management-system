@@ -1,0 +1,10 @@
+[32m[Nest] 20392  - [39m04/04/2026, 11:06:55 AM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 20392  - [39m04/04/2026, 11:07:45 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mHealthModule dependencies initialized[39m[38;5;3m +50344ms[39m
+[32m[Nest] 20392  - [39m04/04/2026, 11:07:46 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +228ms[39m
+[32m[Nest] 20392  - [39m04/04/2026, 11:07:46 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mPublicTrackingController {/public/track}:[39m[38;5;3m +216ms[39m
+[32m[Nest] 20392  - [39m04/04/2026, 11:07:46 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/track/:shipmentCode, GET} route[39m[38;5;3m +9ms[39m
+[32m[Nest] 20392  - [39m04/04/2026, 11:07:46 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mInternalTrackingController {/tracking}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 20392  - [39m04/04/2026, 11:07:46 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/tracking/:shipmentCode/timeline, GET} route[39m[38;5;3m +3ms[39m
+[32m[Nest] 20392  - [39m04/04/2026, 11:07:46 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/tracking/:shipmentCode/current, GET} route[39m[38;5;3m +3ms[39m
+[32m[Nest] 20392  - [39m04/04/2026, 11:07:46 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mHealthController {/health}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 20392  - [39m04/04/2026, 11:07:46 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/health, GET} route[39m[38;5;3m +1ms[39m

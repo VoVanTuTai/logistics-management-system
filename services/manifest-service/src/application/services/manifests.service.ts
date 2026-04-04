@@ -59,8 +59,6 @@ export class ManifestsService {
       shipmentCodes,
     });
 
-    await this.manifestOutboxService.enqueueManifestCreated(manifest);
-
     return manifest;
   }
 
@@ -97,7 +95,6 @@ export class ManifestsService {
         note,
         shipmentCodes: [],
       });
-      await this.manifestOutboxService.enqueueManifestCreated(manifest);
       createdBags.push(manifest);
     }
 
@@ -164,19 +161,6 @@ export class ManifestsService {
       }
     }
 
-    if (hasMetadataMutation || changedShipmentCodes.length > 0) {
-      await this.manifestOutboxService.enqueueManifestUpdated(
-        manifest,
-        {
-          source: 'api',
-          add_shipment_codes: addShipmentCodes,
-          remove_shipment_codes: removeShipmentCodes,
-          changed_shipment_codes: changedShipmentCodes,
-        },
-        changedShipmentCodes.length > 0 ? changedShipmentCodes : undefined,
-      );
-    }
-
     return manifest;
   }
 
@@ -226,16 +210,6 @@ export class ManifestsService {
         ? await this.manifestRepository.update(id, { note: input.note })
         : updatedManifest;
 
-    await this.manifestOutboxService.enqueueManifestUpdated(
-      finalizedManifest,
-      {
-        source: 'api',
-        action: 'add_shipments',
-        add_shipment_codes: codesToAdd,
-      },
-      codesToAdd,
-    );
-
     return finalizedManifest;
   }
 
@@ -272,16 +246,6 @@ export class ManifestsService {
       input.note !== undefined
         ? await this.manifestRepository.update(id, { note: input.note })
         : updatedManifest;
-
-    await this.manifestOutboxService.enqueueManifestUpdated(
-      finalizedManifest,
-      {
-        source: 'api',
-        action: 'remove_shipments',
-        remove_shipment_codes: codesToRemove,
-      },
-      codesToRemove,
-    );
 
     return finalizedManifest;
   }

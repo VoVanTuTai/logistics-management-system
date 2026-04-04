@@ -80,13 +80,6 @@ export class DeliveryService {
 
     await this.deliveryOutboxService.enqueueDeliveryAttempted(deliveryAttempt);
 
-    if (otpRecord) {
-      await this.deliveryOutboxService.enqueueOtpSent(
-        otpRecord,
-        deliveryAttempt.shipmentCode,
-      );
-    }
-
     return {
       deliveryAttempt,
       otpRecord,
@@ -146,22 +139,6 @@ export class DeliveryService {
     };
 
     await this.deliveryOutboxService.enqueueDeliveryDelivered(deliveryAttempt);
-
-    if (pod) {
-      await this.deliveryOutboxService.enqueuePodCaptured(
-        pod,
-        deliveryAttempt.shipmentCode,
-        deliveryAttempt.actor,
-        deliveryAttempt.locationCode,
-      );
-    }
-
-    if (otpRecord) {
-      await this.deliveryOutboxService.enqueueOtpVerified(
-        otpRecord,
-        deliveryAttempt.shipmentCode,
-      );
-    }
 
     await this.idempotencyRecordRepository.createIfAbsent({
       idempotencyKey: scopedIdempotencyKey,

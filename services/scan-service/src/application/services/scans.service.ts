@@ -190,11 +190,6 @@ export class ScansService {
     if (flow === 'scan.outbound') {
       await this.scanOutboxService.enqueueOutbound(result.scanEvent);
     }
-
-    await this.scanOutboxService.enqueueLocationUpdated(
-      result.currentLocation,
-      result.scanEvent.idempotencyKey,
-    );
   }
 
   private toScanResult(record: IdempotencyRecord): RecordScanResult {

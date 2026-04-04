@@ -152,8 +152,7 @@ function formatCurrency(value: number | null): string {
   if (value === null) {
     return 'Không có';
   }
-
-  return `${new Intl.NumberFormat('en-US').format(value)} VND`;
+  return `${new Intl.NumberFormat('vi-VN').format(value)} đ`;
 }
 
 function formatDateTime(value: string): string {
@@ -176,6 +175,21 @@ function formatDateTime(value: string): string {
 function compactCode(value: string, fallback: string): string {
   const normalized = value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
   return normalized.length > 0 ? normalized.slice(0, 10) : fallback;
+}
+
+function toDateInputValue(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function toDateKey(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+  return toDateInputValue(date);
 }
 
 function printWaybill(shipment: ShipmentListItemDto): void {
@@ -236,12 +250,16 @@ export function ShipmentListPage(): React.JSX.Element {
   const currentUserRoles = session?.user.roles ?? [];
   const assignedHubCodes = session?.user.hubCodes ?? [];
   const canViewAllHubAreas = currentUserRoles.includes('SYSTEM_ADMIN');
+
+  const today = useMemo(() => toDateInputValue(new Date()), []);
   const filters: ShipmentListFilters = {
     q: searchParams.get('q') ?? undefined,
     status: searchParams.get('status') ?? undefined,
   };
+  const initialDate = searchParams.get('date') || today;
   const [qInput, setQInput] = useState(filters.q ?? '');
   const [statusInput, setStatusInput] = useState(filters.status ?? '');
+  const [dateInput, setDateInput] = useState(initialDate);
 
   const [counterShipmentCode, setCounterShipmentCode] = useState('');
   const [counterLocationCode, setCounterLocationCode] = useState('');
@@ -253,6 +271,8 @@ export function ShipmentListPage(): React.JSX.Element {
   const [walkInForm, setWalkInForm] = useState<WalkInShipmentFormState>(DEFAULT_WALK_IN_FORM);
   const [walkInMessage, setWalkInMessage] = useState<string | null>(null);
   const [walkInError, setWalkInError] = useState<string | null>(null);
+  const [isCounterModalOpen, setIsCounterModalOpen] = useState(false);
+  const [isWalkInModalOpen, setIsWalkInModalOpen] = useState(false);
 
   const shipmentQuery = useShipmentsQuery(accessToken, {});
   const hubsQuery = useHubsQuery(accessToken, {});
@@ -275,15 +295,15 @@ export function ShipmentListPage(): React.JSX.Element {
       return [];
     }
 
-    return (shipmentQuery.data ?? []).filter((item) =>
-      isShipmentInScope(item, hubScopeTokens),
-    );
+    return (shipmentQuery.data ?? []).filter((item) => isShipmentInScope(item, hubScopeTokens));
   }, [
     assignedHubCodes.length,
     canViewAllHubAreas,
     hubScopeTokens,
     shipmentQuery.data,
   ]);
+  const selectedDate = searchParams.get('date') || today;
+
   const visibleShipments = useMemo(() => {
     const keyword = (filters.q ?? '').trim().toLowerCase();
     const status = (filters.status ?? '').trim().toLowerCase();
@@ -298,12 +318,13 @@ export function ShipmentListPage(): React.JSX.Element {
         (item.receiverPhone ?? '').toLowerCase().includes(keyword) ||
         (item.platform ?? '').toLowerCase().includes(keyword);
 
-      const statusMatched =
-        status.length === 0 || item.currentStatus.toLowerCase() === status;
+      const statusMatched = status.length === 0 || item.currentStatus.toLowerCase() === status;
+      const dateMatched = toDateKey(item.createdAt) === selectedDate;
 
-      return keywordMatched && statusMatched;
+      return keywordMatched && statusMatched && dateMatched;
     });
-  }, [filters.q, filters.status, scopedShipments]);
+  }, [filters.q, filters.status, scopedShipments, selectedDate]);
+
   const isScanSubmitting =
     pickupScanMutation.isPending || inboundScanMutation.isPending || outboundScanMutation.isPending;
   const isWalkInSubmitting = createShipmentMutation.isPending || isScanSubmitting;
@@ -311,19 +332,21 @@ export function ShipmentListPage(): React.JSX.Element {
   useEffect(() => {
     setQInput(filters.q ?? '');
     setStatusInput(filters.status ?? '');
-  }, [filters.q, filters.status]);
+    setDateInput(searchParams.get('date') || today);
+  }, [filters.q, filters.status, searchParams, today]);
 
   const onFilterSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const q = String(formData.get('q') ?? '').trim();
     const status = String(formData.get('status') ?? '').trim();
+    const date = String(formData.get('date') ?? '').trim() || today;
     const next = new URLSearchParams();
 
+    next.set('date', date);
     if (q) {
       next.set('q', q);
     }
-
     if (status) {
       next.set('status', status);
     }
@@ -332,9 +355,12 @@ export function ShipmentListPage(): React.JSX.Element {
   };
 
   const onResetFilters = () => {
-    setSearchParams(new URLSearchParams(), { replace: true });
+    const next = new URLSearchParams();
+    next.set('date', today);
+    setSearchParams(next, { replace: true });
     setQInput('');
     setStatusInput('');
+    setDateInput(today);
   };
 
   const submitCounterScan = async () => {
@@ -346,12 +372,11 @@ export function ShipmentListPage(): React.JSX.Element {
     const locationCode = counterLocationCode.trim().toUpperCase();
 
     if (!shipmentCode) {
-      setCounterError('Can ma van don de quet.');
+      setCounterError('Cần mã vận đơn để quét.');
       return;
     }
-
     if (!locationCode) {
-      setCounterError('Can ma vi tri de quet.');
+      setCounterError('Cần mã vị trí để quét.');
       return;
     }
 
@@ -376,7 +401,7 @@ export function ShipmentListPage(): React.JSX.Element {
       }
 
       await queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
-      setCounterMessage(`Quet ${counterScanType} da ghi nhan cho ${shipmentCode}.`);
+      setCounterMessage(`Quét ${counterScanType} đã ghi nhận cho ${shipmentCode}.`);
       setCounterShipmentCode('');
       setCounterNote('');
     } catch (error) {
@@ -391,17 +416,15 @@ export function ShipmentListPage(): React.JSX.Element {
 
     const pickupLocationCode = walkInForm.pickupLocationCode.trim().toUpperCase();
     if (createAndScanPickup && !pickupLocationCode) {
-      setWalkInError('Can ma vi tri lay hang cho thao tac "Tao + quet pickup".');
+      setWalkInError('Cần mã vị trí lấy hàng cho thao tác "Tạo + quét pickup".');
       return;
     }
-
     if (!walkInForm.receiverRegion.trim()) {
-      setWalkInError('Can tinh/thanh nguoi nhan.');
+      setWalkInError('Cần tỉnh/thành người nhận.');
       return;
     }
-
     if (!walkInForm.receiverAddress.trim()) {
-      setWalkInError('Can dia chi chi tiet nguoi nhan.');
+      setWalkInError('Cần địa chỉ chi tiết người nhận.');
       return;
     }
 
@@ -414,17 +437,17 @@ export function ShipmentListPage(): React.JSX.Element {
         metadata: buildWalkInMetadata(walkInForm, estimatedFee),
       });
 
-      let successMessage = `Da tao van don ${createdShipment.shipmentCode}.`;
+      let successMessage = `Đã tạo vận đơn ${createdShipment.shipmentCode}.`;
 
       if (createAndScanPickup) {
         await pickupScanMutation.mutateAsync({
           shipmentCode: createdShipment.shipmentCode,
           locationCode: pickupLocationCode,
           scanType: 'PICKUP',
-          note: 'van don walk-in tiep nhan tai quay',
+          note: 'vận đơn walk-in tiếp nhận tại quầy',
           idempotencyKey: createIdempotencyKey('ops-walk-in-pickup'),
         });
-        successMessage += ' Da ghi nhan quet pickup.';
+        successMessage += ' Đã ghi nhận quét pickup.';
         setCounterShipmentCode(createdShipment.shipmentCode);
       }
 
@@ -444,245 +467,275 @@ export function ShipmentListPage(): React.JSX.Element {
 
   return (
     <div>
-      <h2>Danh sach van don</h2>
+      <h2>Danh sách vận đơn</h2>
       <p style={styles.helperText}>
-        Man hinh nay ho tro tiep nhan van don walk-in tai quầy, thao tac quet tai chi nhanh
-        va in phieu van don.
+        Màn hình này hỗ trợ tiếp nhận vận đơn walk-in tại quầy, thao tác quét tại chi nhánh và in phiếu vận đơn.
       </p>
 
       <form onSubmit={onFilterSubmit} style={styles.filterForm}>
-        <input
-          name="q"
-          placeholder="Tim ma van don"
-          value={qInput}
-          onChange={(event) => setQInput(event.target.value)}
-          style={styles.input}
-        />
-        <select
-          name="status"
-          value={statusInput}
-          onChange={(event) => setStatusInput(event.target.value)}
-          style={styles.select}
-        >
-          <option value="">Tất cả trang thai</option>
-          {SHIPMENT_STATUS_OPTIONS.map((status) => (
-            <option key={status} value={status}>
-              {status}
-            </option>
-          ))}
-        </select>
-        <button type="submit">Ap dung</button>
-        <button type="button" onClick={onResetFilters}>
-          Dat lai
-        </button>
+        <div style={styles.filterControls}>
+          <input
+            name="q"
+            placeholder="Tìm mã vận đơn"
+            value={qInput}
+            onChange={(event) => setQInput(event.target.value)}
+            style={styles.input}
+          />
+          <select
+            name="status"
+            value={statusInput}
+            onChange={(event) => setStatusInput(event.target.value)}
+            style={styles.select}
+          >
+            <option value="">Tất cả trạng thái</option>
+            {SHIPMENT_STATUS_OPTIONS.map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
+            ))}
+          </select>
+          <input
+            type="date"
+            name="date"
+            value={dateInput}
+            onChange={(event) => setDateInput(event.target.value)}
+            style={styles.dateInput}
+          />
+          <button type="submit">Áp dụng</button>
+          <button type="button" onClick={onResetFilters}>
+            Đặt lại
+          </button>
+        </div>
+
+        <div style={styles.filterActions}>
+          <button type="button" style={styles.actionButton} onClick={() => setIsCounterModalOpen(true)}>
+            Tiếp nhận đơn hàng
+          </button>
+          <button type="button" style={styles.actionButton} onClick={() => setIsWalkInModalOpen(true)}>
+            Tạo đơn hàng
+          </button>
+        </div>
       </form>
 
       {!canViewAllHubAreas ? (
         <div style={styles.scopeNotice}>
-          <strong>Pham vi hub:</strong>{' '}
+          <strong>Phạm vi hub:</strong>{' '}
           {assignedHubCodes.length > 0
             ? assignedHubCodes.join(', ')
-            : 'Chua duoc gan hub. Vui long lien he admin de cap hub cho tai khoan.'}
+            : 'Chưa được gán hub. Vui lòng liên hệ admin để cấp hub cho tài khoản.'}
         </div>
       ) : null}
 
-      <section style={styles.operationGrid}>
-        <div style={styles.card}>
-          <h3 style={styles.cardTitle}>Tiep Nhan Van Don Tai Chi Nhanh</h3>
-          <p style={styles.mutedText}>
-            Quet hoac nhap ma van don khi khach mang hang den buu cuc.
-          </p>
-          <div style={styles.formGrid}>
-            <select
-              value={counterScanType}
-              onChange={(event) => setCounterScanType(event.target.value as HubScanType)}
-            >
-              <option value="PICKUP">PICKUP</option>
-              <option value="INBOUND">INBOUND</option>
-              <option value="OUTBOUND">OUTBOUND</option>
-            </select>
-            <input
-              placeholder="Ma van don"
-              value={counterShipmentCode}
-              onChange={(event) => setCounterShipmentCode(event.target.value)}
-            />
-            <input
-              placeholder="Ma vi tri chi nhanh"
-              value={counterLocationCode}
-              onChange={(event) => setCounterLocationCode(event.target.value)}
-            />
+      {isCounterModalOpen ? (
+        <div style={styles.modalOverlay} onClick={() => setIsCounterModalOpen(false)}>
+          <div style={styles.modalCard} onClick={(event) => event.stopPropagation()}>
+            <div style={styles.modalHeader}>
+              <h3 style={styles.cardTitle}>Tiếp nhận đơn hàng tại chi nhánh</h3>
+              <button type="button" style={styles.modalCloseButton} onClick={() => setIsCounterModalOpen(false)}>
+                Đóng
+              </button>
+            </div>
+            <p style={styles.mutedText}>Quét hoặc nhập mã vận đơn khi khách mang hàng đến bưu cục.</p>
+            <div style={styles.formGrid}>
+              <select
+                value={counterScanType}
+                onChange={(event) => setCounterScanType(event.target.value as HubScanType)}
+              >
+                <option value="PICKUP">PICKUP</option>
+                <option value="INBOUND">INBOUND</option>
+                <option value="OUTBOUND">OUTBOUND</option>
+              </select>
+              <input
+                placeholder="Mã vận đơn"
+                value={counterShipmentCode}
+                onChange={(event) => setCounterShipmentCode(event.target.value)}
+              />
+              <input
+                placeholder="Mã vị trí chi nhánh"
+                value={counterLocationCode}
+                onChange={(event) => setCounterLocationCode(event.target.value)}
+              />
+              <textarea
+                rows={3}
+                placeholder="Ghi chú (không bắt buộc)"
+                value={counterNote}
+                onChange={(event) => setCounterNote(event.target.value)}
+              />
+              <button type="button" disabled={isScanSubmitting} onClick={() => void submitCounterScan()}>
+                {isScanSubmitting ? 'Đang gửi quét...' : 'Gửi quét'}
+              </button>
+            </div>
+            {counterMessage ? (
+              <div role="status" style={{ ...styles.notice, ...styles.successNotice }}>
+                {counterMessage}
+              </div>
+            ) : null}
+            {counterError ? (
+              <div role="alert" style={{ ...styles.notice, ...styles.errorNotice }}>
+                {counterError}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {isWalkInModalOpen ? (
+        <div style={styles.modalOverlay} onClick={() => setIsWalkInModalOpen(false)}>
+          <div style={styles.modalCard} onClick={(event) => event.stopPropagation()}>
+            <div style={styles.modalHeader}>
+              <h3 style={styles.cardTitle}>Tạo đơn hàng Walk-in</h3>
+              <button type="button" style={styles.modalCloseButton} onClick={() => setIsWalkInModalOpen(false)}>
+                Đóng
+              </button>
+            </div>
+            <p style={styles.mutedText}>
+              Nhân viên Ops có thể tạo vận đơn cho khách walk-in với cấu trúc metadata đồng bộ với merchant-web.
+            </p>
+            <div style={styles.formGridMulti}>
+              <input
+                placeholder="Mã vận đơn tự nhập (không bắt buộc)"
+                value={walkInForm.manualCode}
+                onChange={(event) => setWalkInForm((prev) => ({ ...prev, manualCode: event.target.value }))}
+              />
+              <input
+                placeholder="Tên người gửi"
+                value={walkInForm.senderName}
+                onChange={(event) => setWalkInForm((prev) => ({ ...prev, senderName: event.target.value }))}
+              />
+              <input
+                placeholder="SĐT người gửi"
+                value={walkInForm.senderPhone}
+                onChange={(event) => setWalkInForm((prev) => ({ ...prev, senderPhone: event.target.value }))}
+              />
+              <input
+                placeholder="Địa chỉ người gửi"
+                value={walkInForm.senderAddress}
+                onChange={(event) => setWalkInForm((prev) => ({ ...prev, senderAddress: event.target.value }))}
+              />
+              <input
+                placeholder="Tên người nhận"
+                value={walkInForm.receiverName}
+                onChange={(event) => setWalkInForm((prev) => ({ ...prev, receiverName: event.target.value }))}
+              />
+              <input
+                placeholder="SĐT người nhận"
+                value={walkInForm.receiverPhone}
+                onChange={(event) => setWalkInForm((prev) => ({ ...prev, receiverPhone: event.target.value }))}
+              />
+              <select
+                value={walkInForm.receiverRegion}
+                onChange={(event) =>
+                  setWalkInForm((prev) => ({ ...prev, receiverRegion: event.target.value }))
+                }
+              >
+                <option value="">Tỉnh/Thành người nhận</option>
+                {PROVINCE_CITY_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+              <input
+                placeholder="Đường + địa chỉ chi tiết người nhận"
+                value={walkInForm.receiverAddress}
+                onChange={(event) => setWalkInForm((prev) => ({ ...prev, receiverAddress: event.target.value }))}
+              />
+              <input
+                placeholder="Loại hàng"
+                value={walkInForm.itemType}
+                onChange={(event) => setWalkInForm((prev) => ({ ...prev, itemType: event.target.value }))}
+              />
+              <input
+                placeholder="Khối lượng (kg)"
+                value={walkInForm.weightKg}
+                onChange={(event) => setWalkInForm((prev) => ({ ...prev, weightKg: event.target.value }))}
+              />
+              <input
+                placeholder="Dài (cm)"
+                value={walkInForm.lengthCm}
+                onChange={(event) => setWalkInForm((prev) => ({ ...prev, lengthCm: event.target.value }))}
+              />
+              <input
+                placeholder="Rộng (cm)"
+                value={walkInForm.widthCm}
+                onChange={(event) => setWalkInForm((prev) => ({ ...prev, widthCm: event.target.value }))}
+              />
+              <input
+                placeholder="Cao (cm)"
+                value={walkInForm.heightCm}
+                onChange={(event) => setWalkInForm((prev) => ({ ...prev, heightCm: event.target.value }))}
+              />
+              <input
+                placeholder="Giá trị khai báo"
+                value={walkInForm.declaredValue}
+                onChange={(event) => setWalkInForm((prev) => ({ ...prev, declaredValue: event.target.value }))}
+              />
+              <select
+                value={walkInForm.serviceType}
+                onChange={(event) =>
+                  setWalkInForm((prev) => ({ ...prev, serviceType: event.target.value as ServiceType }))
+                }
+              >
+                <option value="STANDARD">STANDARD</option>
+                <option value="EXPRESS">EXPRESS</option>
+                <option value="SAME_DAY">SAME_DAY</option>
+              </select>
+              <input
+                placeholder="Số tiền COD"
+                value={walkInForm.codAmount}
+                onChange={(event) => setWalkInForm((prev) => ({ ...prev, codAmount: event.target.value }))}
+              />
+              <input
+                placeholder="Nền tảng (Shopee, TikTokShop, WalkIn...)"
+                value={walkInForm.platform}
+                onChange={(event) => setWalkInForm((prev) => ({ ...prev, platform: event.target.value }))}
+              />
+              <input
+                placeholder="Mã vị trí pickup (cho tạo + quét pickup)"
+                value={walkInForm.pickupLocationCode}
+                onChange={(event) =>
+                  setWalkInForm((prev) => ({ ...prev, pickupLocationCode: event.target.value }))
+                }
+              />
+            </div>
             <textarea
               rows={3}
-              placeholder="Ghi chu (khong bat buoc)"
-              value={counterNote}
-              onChange={(event) => setCounterNote(event.target.value)}
+              placeholder="Ghi chú giao hàng"
+              value={walkInForm.deliveryNote}
+              onChange={(event) => setWalkInForm((prev) => ({ ...prev, deliveryNote: event.target.value }))}
             />
-            <button type="button" disabled={isScanSubmitting} onClick={() => void submitCounterScan()}>
-              {isScanSubmitting ? 'Đang gửi quét...' : 'Gửi quét'}
-            </button>
+            <p style={styles.mutedText}>Cước phí dự kiến: {formatCurrency(estimatedFee)}</p>
+            <div style={styles.buttonRow}>
+              <button
+                type="button"
+                disabled={isWalkInSubmitting}
+                onClick={() => void submitWalkInShipment(false)}
+              >
+                {isWalkInSubmitting ? 'Đang gửi...' : 'Tạo vận đơn'}
+              </button>
+              <button
+                type="button"
+                disabled={isWalkInSubmitting}
+                onClick={() => void submitWalkInShipment(true)}
+              >
+                {isWalkInSubmitting ? 'Đang gửi...' : 'Tạo + quét pickup'}
+              </button>
+            </div>
+            {walkInMessage ? (
+              <div role="status" style={{ ...styles.notice, ...styles.successNotice }}>
+                {walkInMessage}
+              </div>
+            ) : null}
+            {walkInError ? (
+              <div role="alert" style={{ ...styles.notice, ...styles.errorNotice }}>
+                {walkInError}
+              </div>
+            ) : null}
           </div>
-          {counterMessage ? (
-            <div role="status" style={{ ...styles.notice, ...styles.successNotice }}>
-              {counterMessage}
-            </div>
-          ) : null}
-          {counterError ? (
-            <div role="alert" style={{ ...styles.notice, ...styles.errorNotice }}>
-              {counterError}
-            </div>
-          ) : null}
         </div>
+      ) : null}
 
-        <div style={styles.card}>
-          <h3 style={styles.cardTitle}>Tao Van Don Walk-in</h3>
-          <p style={styles.mutedText}>
-            Nhan vien Ops co the tao van don cho khach walk-in voi cau truc metadata
-            dong bo voi merchant-web.
-          </p>
-          <div style={styles.formGridMulti}>
-            <input
-              placeholder="Ma van don tu nhap (khong bat buoc)"
-              value={walkInForm.manualCode}
-              onChange={(event) => setWalkInForm((prev) => ({ ...prev, manualCode: event.target.value }))}
-            />
-            <input
-              placeholder="Ten nguoi gui"
-              value={walkInForm.senderName}
-              onChange={(event) => setWalkInForm((prev) => ({ ...prev, senderName: event.target.value }))}
-            />
-            <input
-              placeholder="SDT nguoi gui"
-              value={walkInForm.senderPhone}
-              onChange={(event) => setWalkInForm((prev) => ({ ...prev, senderPhone: event.target.value }))}
-            />
-            <input
-              placeholder="Dia chi nguoi gui"
-              value={walkInForm.senderAddress}
-              onChange={(event) => setWalkInForm((prev) => ({ ...prev, senderAddress: event.target.value }))}
-            />
-            <input
-              placeholder="Ten nguoi nhan"
-              value={walkInForm.receiverName}
-              onChange={(event) => setWalkInForm((prev) => ({ ...prev, receiverName: event.target.value }))}
-            />
-            <input
-              placeholder="SDT nguoi nhan"
-              value={walkInForm.receiverPhone}
-              onChange={(event) => setWalkInForm((prev) => ({ ...prev, receiverPhone: event.target.value }))}
-            />
-            <select
-              value={walkInForm.receiverRegion}
-              onChange={(event) =>
-                setWalkInForm((prev) => ({ ...prev, receiverRegion: event.target.value }))
-              }
-            >
-              <option value="">Tinh/Thanh nguoi nhan</option>
-              {PROVINCE_CITY_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-            <input
-              placeholder="Duong + dia chi chi tiet nguoi nhan"
-              value={walkInForm.receiverAddress}
-              onChange={(event) => setWalkInForm((prev) => ({ ...prev, receiverAddress: event.target.value }))}
-            />
-            <input
-              placeholder="Loai hang"
-              value={walkInForm.itemType}
-              onChange={(event) => setWalkInForm((prev) => ({ ...prev, itemType: event.target.value }))}
-            />
-            <input
-              placeholder="Khoi luong (kg)"
-              value={walkInForm.weightKg}
-              onChange={(event) => setWalkInForm((prev) => ({ ...prev, weightKg: event.target.value }))}
-            />
-            <input
-              placeholder="Dai (cm)"
-              value={walkInForm.lengthCm}
-              onChange={(event) => setWalkInForm((prev) => ({ ...prev, lengthCm: event.target.value }))}
-            />
-            <input
-              placeholder="Rong (cm)"
-              value={walkInForm.widthCm}
-              onChange={(event) => setWalkInForm((prev) => ({ ...prev, widthCm: event.target.value }))}
-            />
-            <input
-              placeholder="Cao (cm)"
-              value={walkInForm.heightCm}
-              onChange={(event) => setWalkInForm((prev) => ({ ...prev, heightCm: event.target.value }))}
-            />
-            <input
-              placeholder="Gia tri khai bao"
-              value={walkInForm.declaredValue}
-              onChange={(event) => setWalkInForm((prev) => ({ ...prev, declaredValue: event.target.value }))}
-            />
-            <select
-              value={walkInForm.serviceType}
-              onChange={(event) =>
-                setWalkInForm((prev) => ({ ...prev, serviceType: event.target.value as ServiceType }))
-              }
-            >
-              <option value="STANDARD">STANDARD</option>
-              <option value="EXPRESS">EXPRESS</option>
-              <option value="SAME_DAY">SAME_DAY</option>
-            </select>
-            <input
-              placeholder="So tien COD"
-              value={walkInForm.codAmount}
-              onChange={(event) => setWalkInForm((prev) => ({ ...prev, codAmount: event.target.value }))}
-            />
-            <input
-              placeholder="Nen tang (Shopee, TikTokShop, WalkIn...)"
-              value={walkInForm.platform}
-              onChange={(event) => setWalkInForm((prev) => ({ ...prev, platform: event.target.value }))}
-            />
-            <input
-              placeholder="Ma vi tri pickup (cho tao + quet pickup)"
-              value={walkInForm.pickupLocationCode}
-              onChange={(event) =>
-                setWalkInForm((prev) => ({ ...prev, pickupLocationCode: event.target.value }))
-              }
-            />
-          </div>
-          <textarea
-            rows={3}
-            placeholder="Ghi chu giao hang"
-            value={walkInForm.deliveryNote}
-            onChange={(event) => setWalkInForm((prev) => ({ ...prev, deliveryNote: event.target.value }))}
-          />
-          <p style={styles.mutedText}>Cuoc phi du kien: {formatCurrency(estimatedFee)}</p>
-          <div style={styles.buttonRow}>
-            <button
-              type="button"
-              disabled={isWalkInSubmitting}
-              onClick={() => void submitWalkInShipment(false)}
-            >
-              {isWalkInSubmitting ? 'Đang gửi...' : 'Tao van don'}
-            </button>
-            <button
-              type="button"
-              disabled={isWalkInSubmitting}
-              onClick={() => void submitWalkInShipment(true)}
-            >
-              {isWalkInSubmitting ? 'Đang gửi...' : 'Tao + quet pickup'}
-            </button>
-          </div>
-          {walkInMessage ? (
-            <div role="status" style={{ ...styles.notice, ...styles.successNotice }}>
-              {walkInMessage}
-            </div>
-          ) : null}
-          {walkInError ? (
-            <div role="alert" style={{ ...styles.notice, ...styles.errorNotice }}>
-              {walkInError}
-            </div>
-          ) : null}
-        </div>
-      </section>
-
-      {shipmentQuery.isLoading ? <p>Đang tải van don...</p> : null}
+      {shipmentQuery.isLoading ? <p>Đang tải vận đơn...</p> : null}
       {shipmentQuery.isError ? (
         <p style={styles.errorText}>{getErrorMessage(shipmentQuery.error)}</p>
       ) : null}
@@ -692,14 +745,17 @@ export function ShipmentListPage(): React.JSX.Element {
       {shipmentQuery.isSuccess && visibleShipments.length === 0 ? (
         <p>
           {assignedHubCodes.length === 0 && !canViewAllHubAreas
-            ? 'Không hiển thị được van don vi tai khoan OPS chua duoc gan hub.'
-            : 'Không tìm thấy van don phu hop bo loc hien tai.'}
+            ? 'Không hiển thị được vận đơn vì tài khoản OPS chưa được gán hub.'
+            : 'Không tìm thấy vận đơn phù hợp ngày hoặc bộ lọc hiện tại.'}
         </p>
       ) : null}
       {shipmentQuery.isSuccess && visibleShipments.length > 0 ? (
         <ShipmentsTable
           items={visibleShipments}
-          onPrepareReceive={(shipmentCode) => setCounterShipmentCode(shipmentCode)}
+          onPrepareReceive={(shipmentCode) => {
+            setCounterShipmentCode(shipmentCode);
+            setIsCounterModalOpen(true);
+          }}
           onPrint={printWaybill}
         />
       ) : null}
@@ -721,31 +777,65 @@ const styles: Record<string, React.CSSProperties> = {
   },
   filterForm: {
     display: 'flex',
-    gap: 8,
+    justifyContent: 'space-between',
+    gap: 12,
     alignItems: 'center',
     flexWrap: 'wrap',
     marginTop: 12,
     marginBottom: 8,
   },
+  filterControls: {
+    display: 'flex',
+    gap: 8,
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
   input: {
     border: '1px solid #d9def3',
     borderRadius: 10,
     padding: '8px 10px',
-    minWidth: 240,
+    minWidth: 320,
   },
   select: {
     border: '1px solid #d9def3',
     borderRadius: 10,
     padding: '8px 10px',
+    minWidth: 220,
   },
-  operationGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
-    gap: 12,
-    marginTop: 12,
-    marginBottom: 12,
+  dateInput: {
+    border: '1px solid #d9def3',
+    borderRadius: 10,
+    padding: '8px 10px',
+    minWidth: 170,
   },
-  card: {
+  filterActions: {
+    marginLeft: 'auto',
+    display: 'flex',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  actionButton: {
+    border: '1px solid #0f4c81',
+    borderRadius: 10,
+    padding: '8px 12px',
+    backgroundColor: '#0f4c81',
+    color: '#ffffff',
+    fontWeight: 700,
+  },
+  modalOverlay: {
+    position: 'fixed',
+    inset: 0,
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    padding: '48px 16px',
+    zIndex: 1200,
+  },
+  modalCard: {
+    width: 'min(980px, 100%)',
+    maxHeight: 'calc(100vh - 96px)',
+    overflowY: 'auto',
     border: '1px solid #d9def3',
     borderRadius: 12,
     padding: 12,
@@ -753,6 +843,20 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'grid',
     gap: 8,
     alignContent: 'start',
+  },
+  modalHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  modalCloseButton: {
+    border: '1px solid #d9def3',
+    borderRadius: 10,
+    padding: '8px 12px',
+    backgroundColor: '#ffffff',
+    color: '#0f4c81',
+    fontWeight: 700,
   },
   cardTitle: {
     margin: 0,
@@ -798,3 +902,4 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: 12,
   },
 };
+

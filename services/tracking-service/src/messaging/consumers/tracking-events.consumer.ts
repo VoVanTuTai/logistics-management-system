@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import { TRACKING_BUSINESS_EVENTS } from '../../application/mappers/tracking-display.mapper';
 import { TrackingReadProjection } from '../../application/projections/tracking-read.projection';
 import type { TrackingEventEnvelope } from '../../domain/entities/timeline-event.entity';
 
@@ -9,16 +10,7 @@ export class TrackingEventsConsumer {
   readonly retryQueue10s = 'tracking-service.retry.10s';
   readonly retryQueue1m = 'tracking-service.retry.1m';
   readonly dlqName = 'tracking-service.dlq';
-  readonly routingPatterns = [
-    'shipment.*',
-    'pickup.*',
-    'task.*',
-    'manifest.*',
-    'scan.*',
-    'delivery.*',
-    'ndr.*',
-    'return.*',
-  ];
+  readonly routingPatterns = [...TRACKING_BUSINESS_EVENTS];
 
   constructor(
     private readonly trackingReadProjection: TrackingReadProjection,

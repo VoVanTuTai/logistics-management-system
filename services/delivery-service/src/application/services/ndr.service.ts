@@ -91,11 +91,7 @@ export class NdrService {
       throw new NotFoundException(`NDR case "${id}" was not found.`);
     }
 
-    const ndrCase = await this.ndrCaseRepository.reschedule(id, input);
-
-    await this.deliveryOutboxService.enqueueNdrRescheduled(ndrCase);
-
-    return ndrCase;
+    return this.ndrCaseRepository.reschedule(id, input);
   }
 
   async returnDecision(

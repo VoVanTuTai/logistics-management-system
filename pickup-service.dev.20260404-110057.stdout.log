@@ -1,0 +1,13 @@
+[32m[Nest] 11248  - [39m04/04/2026, 11:06:57 AM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 11248  - [39m04/04/2026, 11:07:55 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mHealthModule dependencies initialized[39m[38;5;3m +57674ms[39m
+[32m[Nest] 11248  - [39m04/04/2026, 11:07:55 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +203ms[39m
+[32m[Nest] 11248  - [39m04/04/2026, 11:07:56 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mPickupsController {/pickups}:[39m[38;5;3m +227ms[39m
+[32m[Nest] 11248  - [39m04/04/2026, 11:07:56 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/pickups, GET} route[39m[38;5;3m +118ms[39m
+[32m[Nest] 11248  - [39m04/04/2026, 11:07:56 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/pickups/:id, GET} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 11248  - [39m04/04/2026, 11:07:56 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/pickups, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 11248  - [39m04/04/2026, 11:07:56 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/pickups/:id, PATCH} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 11248  - [39m04/04/2026, 11:07:56 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/pickups/:id/cancel, POST} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 11248  - [39m04/04/2026, 11:07:56 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/pickups/:id/approve, POST} route[39m[38;5;3m +3ms[39m
+[32m[Nest] 11248  - [39m04/04/2026, 11:07:56 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/pickups/:id/complete, POST} route[39m[38;5;3m +3ms[39m
+[32m[Nest] 11248  - [39m04/04/2026, 11:07:56 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mHealthController {/health}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 11248  - [39m04/04/2026, 11:07:56 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/health, GET} route[39m[38;5;3m +1ms[39m
