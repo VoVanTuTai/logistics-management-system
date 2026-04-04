@@ -1,11 +1,9 @@
-import type { CurrentLocation } from './current-location.entity';
-import type { ScanEvent } from './scan-event.entity';
+﻿import type { ScanEvent } from './scan-event.entity';
 
 export type ScanPublishedEventType =
   | 'scan.pickup_confirmed'
   | 'scan.inbound'
-  | 'scan.outbound'
-  | 'location.updated';
+  | 'scan.outbound';
 
 export interface ScanEventEnvelope {
   event_id: string;
@@ -44,15 +42,7 @@ export interface QueueOutboxEventInput {
   occurredAt: Date;
 }
 
-export interface BuildLocationUpdatedEventInput {
-  currentLocation: CurrentLocation;
-  idempotencyKey: string;
-}
-
 export interface BuildScanPublishedEventInput {
-  eventType: Extract<
-    ScanPublishedEventType,
-    'scan.pickup_confirmed' | 'scan.inbound' | 'scan.outbound'
-  >;
+  eventType: ScanPublishedEventType;
   scanEvent: ScanEvent;
 }

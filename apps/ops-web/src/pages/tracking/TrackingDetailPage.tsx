@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import { useTrackingDetailQuery } from '../../features/tracking/tracking.api';
@@ -6,7 +6,6 @@ import { routePaths } from '../../navigation/routes';
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
 import { formatDateTime } from '../../utils/format';
-import { formatShipmentStatusLabel } from '../../utils/logisticsLabels';
 import { TrackingTimelineTable } from './TrackingTimelineTable';
 
 export function TrackingDetailPage(): React.JSX.Element {
@@ -16,7 +15,7 @@ export function TrackingDetailPage(): React.JSX.Element {
   const detailQuery = useTrackingDetailQuery(accessToken, shipmentCode);
 
   if (detailQuery.isLoading) {
-    return <p>Dang tai chi tiet hanh trinh...</p>;
+    return <p>Đang tải chi tiết hành trình...</p>;
   }
 
   if (detailQuery.isError) {
@@ -24,29 +23,32 @@ export function TrackingDetailPage(): React.JSX.Element {
   }
 
   if (!detailQuery.data) {
-    return <p>Khong tim thay chi tiet hanh trinh.</p>;
+    return <p>Không tìm thấy chi tiết hành trình.</p>;
   }
 
   return (
     <section>
-      <h2>Chi tiet hanh trinh van don</h2>
+      <h2>Chi tiết hành trình vận đơn</h2>
       <p>
-        <Link to={routePaths.tracking}>Quay lai tra cuu hanh trinh</Link>
+        <Link to={routePaths.tracking}>Quay lại tra cứu hành trình</Link>
       </p>
 
       <article style={styles.currentCard}>
-        <h3>Du lieu hanh trinh hien tai</h3>
-        <p>Ma van don: {detailQuery.data.current?.shipmentCode ?? shipmentCode}</p>
+        <h3>Trạng thái hiện tại</h3>
+        <p>Mã vận đơn: {detailQuery.data.current?.shipmentCode ?? shipmentCode}</p>
+        <p>Trạng thái hiện tại: {detailQuery.data.current?.currentStatus ?? 'Không có'}</p>
         <p>
-          Trang thai hien tai:{' '}
-          {formatShipmentStatusLabel(detailQuery.data.current?.currentStatus)}
+          Vị trí hiện tại:{' '}
+          {detailQuery.data.current?.currentLocationText ??
+            detailQuery.data.current?.currentLocation ??
+            'Không có'}
         </p>
-        <p>Vi tri hien tai: {detailQuery.data.current?.currentLocation ?? 'Khong co'}</p>
-        <p>Cap nhat luc: {formatDateTime(detailQuery.data.current?.updatedAt)}</p>
+        <p>Sự kiện cuối: {detailQuery.data.current?.lastEventType ?? 'Không có'}</p>
+        <p>Cập nhật lúc: {formatDateTime(detailQuery.data.current?.updatedAt)}</p>
       </article>
 
-      <h3 style={styles.timelineHeading}>Dong thoi gian</h3>
-      {detailQuery.data.timeline.length === 0 ? <p>Khong co su kien hanh trinh.</p> : null}
+      <h3 style={styles.timelineHeading}>Dòng thời gian</h3>
+      {detailQuery.data.timeline.length === 0 ? <p>Không có sự kiện timeline.</p> : null}
       {detailQuery.data.timeline.length > 0 ? (
         <TrackingTimelineTable items={detailQuery.data.timeline} />
       ) : null}

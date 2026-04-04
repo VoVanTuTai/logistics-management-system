@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
 import {
   useAdminUsersQuery,
@@ -357,6 +357,9 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
         <table style={styles.table}>
           <thead>
             <tr>
+              <th style={styles.headerCell}>
+                {roleGroup === 'SHIPPER' ? 'ID Courier' : 'ID User'}
+              </th>
               <th style={styles.headerCell}>Ten dang nhap</th>
               <th style={styles.headerCell}>Ten hien thi</th>
               <th style={styles.headerCell}>So dien thoai</th>
@@ -370,6 +373,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
           <tbody>
             {(usersQuery.data ?? []).map((user) => (
               <tr key={user.id}>
+                <td style={styles.cell}>{user.id}</td>
                 <td style={styles.cell}>{user.username}</td>
                 <td style={styles.cell}>{user.displayName ?? 'Không có'}</td>
                 <td style={styles.cell}>{user.phone ?? 'Không có'}</td>

@@ -1,8 +1,4 @@
-export type ManifestPublishedEventType =
-  | 'manifest.created'
-  | 'manifest.updated'
-  | 'manifest.sealed'
-  | 'manifest.received';
+﻿export type ManifestPublishedEventType = 'manifest.sealed' | 'manifest.received';
 
 export type OutboxStatus = 'PENDING' | 'PUBLISHED' | 'FAILED';
 

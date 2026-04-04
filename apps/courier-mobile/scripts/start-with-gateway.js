@@ -3,6 +3,7 @@ const { spawn } = require('child_process');
 
 const DEFAULT_GATEWAY_PORT = 3000;
 const DEFAULT_EXPO_PORT = 8081;
+const DEFAULT_NODE_MAX_OLD_SPACE_MB = 4096;
 
 function isValidLanAddress(addressInfo) {
   if (!addressInfo) {
@@ -107,6 +108,23 @@ function run() {
   if (!process.env.EXPO_NO_DEPENDENCY_VALIDATION) {
     process.env.EXPO_NO_DEPENDENCY_VALIDATION = '1';
   }
+  if (!process.env.EXPO_NO_DOCTOR) {
+    process.env.EXPO_NO_DOCTOR = '1';
+  }
+
+  // Keep Metro scoped to this app; workspace-root mode can watch the whole monorepo
+  // and trigger unstable watcher/OOM failures on Windows.
+  if (!process.env.EXPO_NO_METRO_WORKSPACE_ROOT) {
+    process.env.EXPO_NO_METRO_WORKSPACE_ROOT = '1';
+  }
+
+  // Increase Node heap for Metro to reduce "process out of memory" crashes.
+  const nodeOptions = process.env.NODE_OPTIONS ?? '';
+  if (!/--max-old-space-size=\d+/i.test(nodeOptions)) {
+    const separator = nodeOptions.trim().length > 0 ? ' ' : '';
+    process.env.NODE_OPTIONS =
+      `${nodeOptions}${separator}--max-old-space-size=${DEFAULT_NODE_MAX_OLD_SPACE_MB}`.trim();
+  }
 
   const extraArgs = process.argv.slice(2);
   const hasHostArg = extraArgs.some(
@@ -129,6 +147,12 @@ function run() {
       JSON.stringify(
         {
           gatewayBaseUrl: process.env.EXPO_PUBLIC_GATEWAY_BASE_URL || null,
+          nodeOptions: process.env.NODE_OPTIONS || null,
+          noDoctor: process.env.EXPO_NO_DOCTOR || null,
+          noDependencyValidation:
+            process.env.EXPO_NO_DEPENDENCY_VALIDATION || null,
+          noMetroWorkspaceRoot:
+            process.env.EXPO_NO_METRO_WORKSPACE_ROOT || null,
           expoArgs,
         },
         null,

@@ -18,13 +18,15 @@ export const SHIPMENT_CURRENT_STATUSES = [
 export type ShipmentCurrentStatus = (typeof SHIPMENT_CURRENT_STATUSES)[number];
 
 export const SHIPMENT_CONSUMED_EVENT_TYPES = [
-  'pickup.completed',
+  'pickup.requested',
+  'pickup.approved',
   'scan.pickup_confirmed',
   'task.assigned',
   'manifest.sealed',
   'manifest.received',
   'scan.inbound',
   'scan.outbound',
+  'delivery.attempted',
   'delivery.delivered',
   'delivery.failed',
   'ndr.created',

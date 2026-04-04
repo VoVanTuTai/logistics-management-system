@@ -1,4 +1,4 @@
-﻿import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
@@ -9,12 +9,34 @@ import type { TaskListFilters, TaskListItemDto } from '../../features/tasks/task
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
 import { deriveHubScopeTokens, isShipmentInScope } from '../../utils/locationScope';
-import { formatTaskStatusLabel, formatTaskTypeLabel } from '../../utils/logisticsLabels';
 import { queryKeys } from '../../utils/queryKeys';
 import { TasksTable } from './TasksTable';
 
 function canBulkAssignTask(task: TaskListItemDto): boolean {
   return task.status === 'CREATED' || task.status === 'ASSIGNED';
+}
+
+function toDateInputValue(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function toDateKey(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+  return toDateInputValue(date);
+}
+
+function isValidDateInput(value: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+function normalizeCode(value: string | null | undefined): string {
+  return (value ?? '').trim().toUpperCase();
 }
 
 export function TaskAssignmentPage(): React.JSX.Element {
@@ -25,16 +47,20 @@ export function TaskAssignmentPage(): React.JSX.Element {
   const currentUserRoles = session?.user.roles ?? [];
   const assignedHubCodes = session?.user.hubCodes ?? [];
   const canViewAllHubAreas = currentUserRoles.includes('SYSTEM_ADMIN');
+  const today = useMemo(() => toDateInputValue(new Date()), []);
 
   const filters: TaskListFilters = {
     taskType: searchParams.get('taskType') ?? undefined,
     status: searchParams.get('status') ?? undefined,
   };
   const defaultDeliveryArea = searchParams.get('deliveryArea') ?? '';
+  const rawDateFilter = searchParams.get('date') ?? '';
+  const selectedDate = isValidDateInput(rawDateFilter) ? rawDateFilter : today;
 
   const [taskTypeInput, setTaskTypeInput] = useState(filters.taskType ?? '');
   const [statusInput, setStatusInput] = useState(filters.status ?? '');
   const [deliveryAreaInput, setDeliveryAreaInput] = useState(defaultDeliveryArea);
+  const [dateInput, setDateInput] = useState(selectedDate);
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [bulkCourierId, setBulkCourierId] = useState('');
   const [bulkAssignLoading, setBulkAssignLoading] = useState(false);
@@ -49,6 +75,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
     () => deriveHubScopeTokens(hubsQuery.data ?? [], assignedHubCodes),
     [assignedHubCodes, hubsQuery.data],
   );
+
   const scopedShipments = useMemo(() => {
     if (canViewAllHubAreas) {
       return shipmentsQuery.data ?? [];
@@ -72,7 +99,8 @@ export function TaskAssignmentPage(): React.JSX.Element {
     setTaskTypeInput(filters.taskType ?? '');
     setStatusInput(filters.status ?? '');
     setDeliveryAreaInput(defaultDeliveryArea);
-  }, [defaultDeliveryArea, filters.status, filters.taskType]);
+    setDateInput(selectedDate);
+  }, [defaultDeliveryArea, filters.status, filters.taskType, selectedDate]);
 
   useEffect(() => {
     if (bulkCourierId || !courierOptionsQuery.data?.length) {
@@ -97,7 +125,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
     };
   }, [bulkAssignError, bulkAssignMessage]);
 
-  const shipmentLookupByCode = useMemo(() => {
+  const allShipmentLookupByCode = useMemo(() => {
     const map = new Map<
       string,
       {
@@ -108,12 +136,13 @@ export function TaskAssignmentPage(): React.JSX.Element {
       }
     >();
 
-    for (const shipment of scopedShipments) {
-      if (!shipment.shipmentCode) {
+    for (const shipment of shipmentsQuery.data ?? []) {
+      const shipmentCode = normalizeCode(shipment.shipmentCode);
+      if (!shipmentCode) {
         continue;
       }
 
-      map.set(shipment.shipmentCode, {
+      map.set(shipmentCode, {
         deliveryArea: shipment.receiverRegion ?? null,
         senderName: shipment.senderName ?? null,
         receiverName: shipment.receiverName ?? null,
@@ -122,12 +151,21 @@ export function TaskAssignmentPage(): React.JSX.Element {
     }
 
     return map;
+  }, [shipmentsQuery.data]);
+
+  const scopedShipmentCodeSet = useMemo(() => {
+    return new Set(
+      scopedShipments
+        .map((shipment) => normalizeCode(shipment.shipmentCode))
+        .filter((code) => code.length > 0),
+    );
   }, [scopedShipments]);
 
   const tasksWithArea = useMemo(() => {
     return (tasksQuery.data ?? []).map((task) => {
-      const shipmentLookup = task.shipmentCode
-        ? shipmentLookupByCode.get(task.shipmentCode) ?? null
+      const shipmentCode = normalizeCode(task.shipmentCode);
+      const shipmentLookup = shipmentCode
+        ? allShipmentLookupByCode.get(shipmentCode) ?? null
         : null;
 
       return {
@@ -139,13 +177,13 @@ export function TaskAssignmentPage(): React.JSX.Element {
         isSelectable: canBulkAssignTask(task),
       } satisfies TaskListItemDto;
     });
-  }, [shipmentLookupByCode, tasksQuery.data]);
+  }, [allShipmentLookupByCode, tasksQuery.data]);
 
   const areaOptions = useMemo(() => {
     const sourceTasks = canViewAllHubAreas
       ? tasksWithArea
       : tasksWithArea.filter((task) =>
-          task.shipmentCode ? shipmentLookupByCode.has(task.shipmentCode) : false,
+          task.shipmentCode ? scopedShipmentCodeSet.has(normalizeCode(task.shipmentCode)) : false,
         );
 
     return Array.from(
@@ -156,9 +194,8 @@ export function TaskAssignmentPage(): React.JSX.Element {
       ),
     ).sort((left, right) => left.localeCompare(right));
   }, [
-    assignedHubCodes.length,
     canViewAllHubAreas,
-    shipmentLookupByCode,
+    scopedShipmentCodeSet,
     tasksWithArea,
   ]);
 
@@ -171,31 +208,39 @@ export function TaskAssignmentPage(): React.JSX.Element {
       return [];
     }
 
+    // Fallback: vẫn giữ task PICKUP mới dù shipment chưa đủ metadata khu vực,
+    // để Ops luôn nhìn thấy đơn vừa duyệt và phân công kịp thời.
     return tasksWithArea.filter((task) => {
-      if (!task.shipmentCode) {
-        return false;
+      if (task.shipmentCode && scopedShipmentCodeSet.has(normalizeCode(task.shipmentCode))) {
+        return true;
       }
 
-      return shipmentLookupByCode.has(task.shipmentCode);
+      return task.taskType === 'PICKUP';
     });
   }, [
     assignedHubCodes.length,
     canViewAllHubAreas,
-    shipmentLookupByCode,
+    scopedShipmentCodeSet,
     tasksWithArea,
   ]);
 
   const filteredTasks = useMemo(() => {
     const normalizedDeliveryArea = deliveryAreaInput.trim().toLowerCase();
 
-    if (!normalizedDeliveryArea) {
-      return scopedTasks;
-    }
+    const result = scopedTasks.filter((task) => {
+      const areaMatched =
+        !normalizedDeliveryArea ||
+        task.deliveryArea?.toLowerCase() === normalizedDeliveryArea;
+      const dateMatched = toDateKey(task.updatedAt) === selectedDate;
 
-    return scopedTasks.filter(
-      (task) => task.deliveryArea?.toLowerCase() === normalizedDeliveryArea,
+      return areaMatched && dateMatched;
+    });
+
+    return result.sort(
+      (left, right) =>
+        new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime(),
     );
-  }, [deliveryAreaInput, scopedTasks]);
+  }, [deliveryAreaInput, scopedTasks, selectedDate]);
 
   const selectableTaskIds = useMemo(
     () => filteredTasks.filter((task) => task.isSelectable).map((task) => task.id),
@@ -220,7 +265,11 @@ export function TaskAssignmentPage(): React.JSX.Element {
     const taskType = String(formData.get('taskType') ?? '').trim();
     const status = String(formData.get('status') ?? '').trim();
     const deliveryArea = String(formData.get('deliveryArea') ?? '').trim();
+    const date = String(formData.get('date') ?? '').trim();
+    const normalizedDate = isValidDateInput(date) ? date : today;
     const next = new URLSearchParams();
+
+    next.set('date', normalizedDate);
 
     if (taskType) {
       next.set('taskType', taskType);
@@ -241,10 +290,13 @@ export function TaskAssignmentPage(): React.JSX.Element {
   };
 
   const onResetFilters = () => {
-    setSearchParams(new URLSearchParams(), { replace: true });
+    const next = new URLSearchParams();
+    next.set('date', today);
+    setSearchParams(next, { replace: true });
     setTaskTypeInput('');
     setStatusInput('');
     setDeliveryAreaInput('');
+    setDateInput(today);
     setSelectedTaskIds([]);
     setBulkAssignMessage(null);
     setBulkAssignError(null);
@@ -278,7 +330,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
 
     const courierId = bulkCourierId.trim();
     if (!courierId) {
-      setBulkAssignError('Vui long chon nhan vien giao truoc khi phan cong.');
+      setBulkAssignError('Vui lòng chọn shipper trước khi phân công.');
       return;
     }
 
@@ -286,7 +338,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
       selectedTaskIds.includes(task.id),
     );
     if (selectedTasks.length === 0) {
-      setBulkAssignError('Vui long chon it nhat 1 tac vu.');
+      setBulkAssignError('Vui lòng chọn ít nhất 1 tác vụ.');
       return;
     }
 
@@ -315,7 +367,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
           await tasksClient.reassign(accessToken, {
             taskId: task.id,
             courierId,
-            note: 'phan cong hang loat tu man hinh ops',
+            note: 'phân công hàng loạt từ màn hình ops',
           });
           reassignedCount += 1;
           continue;
@@ -324,11 +376,12 @@ export function TaskAssignmentPage(): React.JSX.Element {
         await tasksClient.assign(accessToken, {
           taskId: task.id,
           courierId,
-          note: 'phan cong hang loat tu man hinh ops',
+          note: 'phân công hàng loạt từ màn hình ops',
         });
         assignedCount += 1;
       } catch (error) {
-        failedTasks.push(`${task.taskCode}: ${getErrorMessage(error)}`);
+        const displayCode = task.shipmentCode ?? task.id;
+        failedTasks.push(`${displayCode}: ${getErrorMessage(error)}`);
       }
     }
 
@@ -339,11 +392,11 @@ export function TaskAssignmentPage(): React.JSX.Element {
     }
 
     setBulkAssignMessage(
-      `Da phan cong ${assignedCount}, phan cong lai ${reassignedCount}, bo qua ${skippedCount}.`,
+      `Đã phân công ${assignedCount}, phân công lại ${reassignedCount}, bỏ qua ${skippedCount}.`,
     );
 
     if (failedTasks.length > 0) {
-      setBulkAssignError(`That bai ${failedTasks.length}: ${failedTasks.slice(0, 3).join(' | ')}`);
+      setBulkAssignError(`Thất bại ${failedTasks.length}: ${failedTasks.slice(0, 3).join(' | ')}`);
     }
 
     setBulkAssignLoading(false);
@@ -351,30 +404,38 @@ export function TaskAssignmentPage(): React.JSX.Element {
 
   return (
     <div>
-      <h2>Phan cong tac vu</h2>
+      <h2>Phân công tác vụ</h2>
       <p style={styles.helperText}>
-        Loc theo loai tac vu, trang thai va khu vuc giao. Chon nhieu tac vu de phan cong cho 1 nhan vien giao.
+        Lọc theo ngày, loại tác vụ, trạng thái và khu vực giao. Chọn nhiều tác vụ để phân công cho 1 shipper.
       </p>
       {!canViewAllHubAreas ? (
         <div style={styles.scopeNotice}>
-          <strong>Pham vi hub:</strong>{' '}
+          <strong>Phạm vi hub:</strong>{' '}
           {assignedHubCodes.length > 0
             ? assignedHubCodes.join(', ')
-            : 'Chua duoc gan hub. Vui long lien he quan tri de cap hub cho tai khoan dieu hanh nay.'}
+            : 'Chưa được gán hub. Vui lòng liên hệ admin để cấp hub cho tài khoản OPS này.'}
         </div>
       ) : null}
 
       <form onSubmit={onFilterSubmit} style={styles.filterForm}>
+        <input
+          type="date"
+          name="date"
+          value={dateInput}
+          onChange={(event) => setDateInput(event.target.value)}
+          style={styles.dateInput}
+        />
+
         <select
           name="taskType"
           value={taskTypeInput}
           onChange={(event) => setTaskTypeInput(event.target.value)}
           style={styles.select}
         >
-          <option value="">Tat ca loai tac vu</option>
-          <option value="PICKUP">{formatTaskTypeLabel('PICKUP')}</option>
-          <option value="DELIVERY">{formatTaskTypeLabel('DELIVERY')}</option>
-          <option value="RETURN">{formatTaskTypeLabel('RETURN')}</option>
+          <option value="">Tất cả loại tác vụ</option>
+          <option value="PICKUP">PICKUP</option>
+          <option value="DELIVERY">DELIVERY</option>
+          <option value="RETURN">RETURN</option>
         </select>
 
         <select
@@ -383,11 +444,11 @@ export function TaskAssignmentPage(): React.JSX.Element {
           onChange={(event) => setStatusInput(event.target.value)}
           style={styles.select}
         >
-          <option value="">Tat ca trang thai</option>
-          <option value="CREATED">{formatTaskStatusLabel('CREATED')}</option>
-          <option value="ASSIGNED">{formatTaskStatusLabel('ASSIGNED')}</option>
-          <option value="COMPLETED">{formatTaskStatusLabel('COMPLETED')}</option>
-          <option value="CANCELLED">{formatTaskStatusLabel('CANCELLED')}</option>
+          <option value="">Tất cả trạng thái</option>
+          <option value="CREATED">CREATED</option>
+          <option value="ASSIGNED">ASSIGNED</option>
+          <option value="COMPLETED">COMPLETED</option>
+          <option value="CANCELLED">CANCELLED</option>
         </select>
 
         <select
@@ -396,7 +457,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
           onChange={(event) => setDeliveryAreaInput(event.target.value)}
           style={styles.select}
         >
-          <option value="">Tat ca khu vuc giao</option>
+          <option value="">Tất cả khu vực giao</option>
           {areaOptions.map((area) => (
             <option key={area} value={area}>
               {area}
@@ -404,16 +465,16 @@ export function TaskAssignmentPage(): React.JSX.Element {
           ))}
         </select>
 
-        <button type="submit">Ap dung</button>
+        <button type="submit">Áp dụng</button>
         <button type="button" onClick={onResetFilters}>
-          Dat lai
+          Đặt lại
         </button>
       </form>
 
       <section style={styles.bulkPanel}>
         <div style={styles.bulkHeaderRow}>
-          <strong>Phan cong hang loat</strong>
-          <small>Da chon: {selectedTaskIds.length}</small>
+          <strong>Phân công hàng loạt</strong>
+          <small>Đã chọn: {selectedTaskIds.length}</small>
         </div>
 
         <div style={styles.bulkActionsRow}>
@@ -423,7 +484,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
             style={styles.select}
             disabled={courierOptionsQuery.isLoading || bulkAssignLoading}
           >
-            <option value="">Chon nhan vien giao</option>
+            <option value="">Chọn shipper</option>
             {(courierOptionsQuery.data ?? []).map((courier) => (
               <option key={courier.courierId} value={courier.courierId}>
                 {courier.label}
@@ -435,12 +496,12 @@ export function TaskAssignmentPage(): React.JSX.Element {
             onClick={() => void onBulkAssign()}
             disabled={bulkAssignLoading || selectedTaskIds.length === 0}
           >
-            {bulkAssignLoading ? 'Dang phan cong...' : 'Phan cong cac tac vu da chon'}
+            {bulkAssignLoading ? 'Đang phân công...' : 'Phân công các tác vụ đã chọn'}
           </button>
         </div>
 
         <small style={styles.helperText}>
-          Chi cac tac vu co trang thai {formatTaskStatusLabel('CREATED')} hoac {formatTaskStatusLabel('ASSIGNED')} moi duoc chon de phan cong hang loat.
+          Chỉ các tác vụ có trạng thái CREATED hoặc ASSIGNED mới được chọn để phân công hàng loạt.
         </small>
 
         {bulkAssignMessage ? (
@@ -455,7 +516,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
         ) : null}
       </section>
 
-      {tasksQuery.isLoading ? <p>Dang tai tac vu...</p> : null}
+      {tasksQuery.isLoading ? <p>Đang tải tác vụ...</p> : null}
       {tasksQuery.isError ? (
         <p style={styles.errorText}>{getErrorMessage(tasksQuery.error)}</p>
       ) : null}
@@ -472,8 +533,8 @@ export function TaskAssignmentPage(): React.JSX.Element {
       {tasksQuery.isSuccess && filteredTasks.length === 0 ? (
         <p>
           {assignedHubCodes.length === 0 && !canViewAllHubAreas
-            ? 'Khong hien thi duoc tac vu vi tai khoan dieu hanh chua duoc gan hub.'
-            : 'Khong co tac vu phu hop bo loc hien tai.'}
+            ? 'Không hiển thị được tác vụ vì tài khoản OPS chưa được gán hub.'
+            : 'Không có tác vụ phù hợp theo ngày và bộ lọc hiện tại.'}
         </p>
       ) : null}
 
@@ -504,6 +565,12 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 10,
     padding: '8px 10px',
     minWidth: 180,
+  },
+  dateInput: {
+    border: '1px solid #d9def3',
+    borderRadius: 10,
+    padding: '8px 10px',
+    minWidth: 170,
   },
   helperText: {
     color: '#2d3f99',
@@ -560,4 +627,3 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: 8,
   },
 };
-

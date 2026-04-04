@@ -29,6 +29,7 @@ export interface UserAccountListFilters {
 }
 
 export interface UserAccountCreateInput {
+  id?: string;
   username: string;
   passwordHash: string;
   status: UserStatus;

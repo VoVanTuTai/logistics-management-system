@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+﻿import { Inject, Injectable } from '@nestjs/common';
 
 import type {
   OutboxEvent,
@@ -15,24 +15,6 @@ export class ManifestOutboxService {
     private readonly outboxEventRepository: OutboxEventRepository,
     private readonly manifestEventsProducer: ManifestEventsProducer,
   ) {}
-
-  async enqueueManifestCreated(manifest: Manifest): Promise<OutboxEvent[]> {
-    const events = this.manifestEventsProducer.buildManifestCreatedEvents(manifest);
-    return this.enqueueMany(events);
-  }
-
-  enqueueManifestUpdated(
-    manifest: Manifest,
-    data: Record<string, unknown>,
-    shipmentCodes?: string[],
-  ): Promise<OutboxEvent[]> {
-    const events = this.manifestEventsProducer.buildManifestUpdatedEvents(
-      manifest,
-      data,
-      shipmentCodes,
-    );
-    return this.enqueueMany(events);
-  }
 
   async enqueueManifestSealed(manifest: Manifest): Promise<OutboxEvent[]> {
     const events = this.manifestEventsProducer.buildManifestSealedEvents(manifest);
