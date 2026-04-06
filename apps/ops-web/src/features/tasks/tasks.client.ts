@@ -2,6 +2,7 @@ import { opsApiClient } from '../../services/api/client';
 import { opsEndpoints } from '../../services/api/endpoints';
 import type {
   AssignTaskInput,
+  CreateTaskInput,
   CourierOptionDto,
   ReassignTaskInput,
   TaskActionResultDto,
@@ -36,6 +37,9 @@ function buildTaskListPath(filters: TaskListFilters): string {
   if (filters.status?.trim()) {
     params.set('status', filters.status.trim());
   }
+  if (filters.shipmentCode?.trim()) {
+    params.set('shipmentCode', filters.shipmentCode.trim());
+  }
 
   const queryString = params.toString();
   return queryString ? `${opsEndpoints.tasks.list}?${queryString}` : opsEndpoints.tasks.list;
@@ -58,6 +62,12 @@ function mapTask(payload: TaskApiResponse): TaskDetailDto {
   };
 }
 
+function mapTaskActionResult(payload: TaskApiResponse): TaskActionResultDto {
+  return {
+    task: mapTask(payload),
+  };
+}
+
 export const tasksClient = {
   list: (
     accessToken: string | null,
@@ -77,6 +87,17 @@ export const tasksClient = {
         accessToken,
       })
       .then(mapTask),
+  create: (
+    accessToken: string | null,
+    payload: CreateTaskInput,
+  ): Promise<TaskDetailDto> =>
+    opsApiClient
+      .request<TaskApiResponse>(opsEndpoints.tasks.list, {
+        method: 'POST',
+        accessToken,
+        body: payload,
+      })
+      .then(mapTask),
   listCouriers: (accessToken: string | null): Promise<CourierOptionDto[]> =>
     opsApiClient
       .request<string[]>(opsEndpoints.tasks.couriers, {
@@ -92,22 +113,26 @@ export const tasksClient = {
     accessToken: string | null,
     payload: AssignTaskInput,
   ): Promise<TaskActionResultDto> =>
-    opsApiClient.request<TaskActionResultDto>(opsEndpoints.tasks.assign(payload.taskId), {
-      method: 'POST',
-      accessToken,
-      body: {
-        courierId: payload.courierId,
-      },
-    }),
+    opsApiClient
+      .request<TaskApiResponse>(opsEndpoints.tasks.assign(payload.taskId), {
+        method: 'POST',
+        accessToken,
+        body: {
+          courierId: payload.courierId,
+        },
+      })
+      .then(mapTaskActionResult),
   reassign: (
     accessToken: string | null,
     payload: ReassignTaskInput,
   ): Promise<TaskActionResultDto> =>
-    opsApiClient.request<TaskActionResultDto>(opsEndpoints.tasks.reassign(payload.taskId), {
-      method: 'POST',
-      accessToken,
-      body: {
-        courierId: payload.courierId,
-      },
-    }),
+    opsApiClient
+      .request<TaskApiResponse>(opsEndpoints.tasks.reassign(payload.taskId), {
+        method: 'POST',
+        accessToken,
+        body: {
+          courierId: payload.courierId,
+        },
+      })
+      .then(mapTaskActionResult),
 };

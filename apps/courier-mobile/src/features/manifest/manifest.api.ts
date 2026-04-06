@@ -26,5 +26,21 @@ export const manifestApi = {
         },
       },
     ),
+  removeShipments: (
+    accessToken: string,
+    manifestId: string,
+    payload: AddBagShipmentsPayload,
+  ): Promise<BagManifestDto> =>
+    courierApiClient.request<BagManifestDto>(
+      courierEndpoints.manifest.removeShipments(manifestId),
+      {
+        method: 'POST',
+        accessToken,
+        body: {
+          shipmentCodes: payload.shipmentCodes,
+          note: payload.note ?? null,
+        },
+      },
+    ),
 };
 

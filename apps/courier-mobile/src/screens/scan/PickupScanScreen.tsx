@@ -5,398 +5,567 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Controller, useForm } from 'react-hook-form';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { BarcodeScanningResult } from 'expo-camera';
-
 import {
-  pickupScanFormSchema,
-  type PickupScanCommand,
-  type PickupScanFormValues,
-  type PickupScanMutationResult,
-} from '../../features/scan/pickup.types';
-import { usePickupScanMutation } from '../../features/scan/pickup.mutation';
+  CameraView,
+  type BarcodeScanningResult,
+  useCameraPermissions,
+} from 'expo-camera';
+
+import { submitPickupScanAction } from '../../features/scan/pickup.api';
 import { enqueuePickupScanOffline } from '../../features/scan/pickup.offline';
 import { parsePickupScannedCode } from '../../features/scan/pickup.scanner.adapter';
-import { useAppStore } from '../../store/appStore';
+import type { PickupScanCommand } from '../../features/scan/pickup.types';
+import { shipmentApi } from '../../features/shipment/shipment.api';
 import type { AppNavigatorParamList } from '../../navigation/types';
 import { shouldQueueOffline } from '../../services/api/client';
+import { useAppStore } from '../../store/appStore';
+import { theme } from '../../theme';
 import { createIdempotencyKey } from '../../utils/idempotency';
-import { CameraScannerModal } from '../../components/scan/CameraScannerModal';
 
 type Props = NativeStackScreenProps<AppNavigatorParamList, 'PickupScan'>;
+
+interface PickedShipmentItem {
+  code: string;
+  verifiedAt: string;
+}
+
+function normalizeCode(value: string): string {
+  return value.trim().toUpperCase();
+}
+
+function formatScannedAt(isoTime: string): string {
+  const parsed = new Date(isoTime);
+  if (Number.isNaN(parsed.getTime())) {
+    return isoTime;
+  }
+
+  return parsed.toLocaleTimeString('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+}
+
+function toErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Co loi xay ra.';
+}
 
 export function PickupScanScreen({ route }: Props): React.JSX.Element {
   const session = useAppStore((state) => state.session);
   const setGlobalError = useAppStore((state) => state.setGlobalError);
-  const mutation = usePickupScanMutation(session?.tokens.accessToken ?? null);
-  const [lastCommand, setLastCommand] = React.useState<PickupScanCommand | null>(
-    null,
-  );
-  const [scannerError, setScannerError] = React.useState<string | null>(null);
-  const [isScannerVisible, setScannerVisible] = React.useState(false);
-  const [localInfoMessage, setLocalInfoMessage] = React.useState<string | null>(
-    null,
-  );
-  const [lastServerResult, setLastServerResult] =
-    React.useState<PickupScanMutationResult | null>(null);
-  const { control, handleSubmit, setValue } = useForm<PickupScanFormValues>({
-    resolver: zodResolver(pickupScanFormSchema),
-    defaultValues: {
-      shipmentCode: route.params.shipmentCode ?? '',
-      locationCode: '',
-      note: '',
-      idempotencyKey: '',
-    },
-  });
+  const [permission, requestPermission] = useCameraPermissions();
 
-  const executeSubmit = async (command: PickupScanCommand) => {
-    setLastCommand(command);
-    setLocalInfoMessage(null);
-    setLastServerResult(null);
+  const accessToken = session?.tokens.accessToken ?? null;
 
-    try {
-      const result = await mutation.mutateAsync(command);
-      setLastServerResult(result);
-      if (result.source === 'DUPLICATE_REPLAY') {
-        setLocalInfoMessage(
-          'Server da tra lai ket qua cu cho idempotencyKey trung lap.',
-        );
-      } else {
-        setLocalInfoMessage('Pickup scan submit thanh cong.');
+  const [pickedShipments, setPickedShipments] = React.useState<PickedShipmentItem[]>([]);
+  const [isVerifyingScan, setIsVerifyingScan] = React.useState(false);
+  const [isUploading, setIsUploading] = React.useState(false);
+  const [scanLocked, setScanLocked] = React.useState(false);
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+  const [infoMessage, setInfoMessage] = React.useState<string | null>(null);
+
+  const scanCooldownRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initialRouteCodeHandledRef = React.useRef(false);
+
+  React.useEffect(() => {
+    return () => {
+      if (scanCooldownRef.current) {
+        clearTimeout(scanCooldownRef.current);
       }
-    } catch (error) {
-      if (shouldQueueOffline(error)) {
-        await enqueuePickupScanOffline(command);
-        setLocalInfoMessage('Mat mang: action duoc enqueue va se retry sau.');
+    };
+  }, []);
+
+  const lockScanner = React.useCallback(() => {
+    setScanLocked(true);
+
+    if (scanCooldownRef.current) {
+      clearTimeout(scanCooldownRef.current);
+    }
+
+    scanCooldownRef.current = setTimeout(() => {
+      setScanLocked(false);
+    }, 850);
+  }, []);
+
+  const verifyAndAppendShipmentCode = React.useCallback(
+    async (rawCode: string) => {
+      const shipmentCode = normalizeCode(rawCode);
+
+      if (!shipmentCode) {
+        setErrorMessage('Ma van don khong hop le.');
         return;
       }
 
-      setGlobalError(
-        error instanceof Error ? error.message : 'Pickup scan failed.',
+      if (!accessToken) {
+        setGlobalError('Phien dang nhap da het han. Vui long dang nhap lai.');
+        return;
+      }
+
+      const hasAlreadyScanned = pickedShipments.some(
+        (item) => normalizeCode(item.code) === shipmentCode,
       );
+      if (hasAlreadyScanned) {
+        setInfoMessage(`Ma van don ${shipmentCode} da ton tai trong danh sach.`);
+        return;
+      }
+
+      setIsVerifyingScan(true);
+      setErrorMessage(null);
+
+      try {
+        await shipmentApi.getShipmentDetail(accessToken, shipmentCode);
+
+        setPickedShipments((currentItems) => {
+          if (
+            currentItems.some(
+              (item) => normalizeCode(item.code) === shipmentCode,
+            )
+          ) {
+            return currentItems;
+          }
+
+          return [
+            {
+              code: shipmentCode,
+              verifiedAt: new Date().toISOString(),
+            },
+            ...currentItems,
+          ];
+        });
+
+        setInfoMessage(`Da xac nhan ton tai va them ${shipmentCode} vao danh sach.`);
+      } catch (error) {
+        setErrorMessage(
+          `Khong tim thay hoac khong xac minh duoc ma ${shipmentCode}: ${toErrorMessage(error)}`,
+        );
+      } finally {
+        setIsVerifyingScan(false);
+      }
+    },
+    [accessToken, pickedShipments, setGlobalError],
+  );
+
+  React.useEffect(() => {
+    if (initialRouteCodeHandledRef.current) {
+      return;
     }
-  };
 
-  const onSubmit = handleSubmit(async (values) => {
-    const resolvedIdempotencyKey =
-      values.idempotencyKey.trim().length > 0
-        ? values.idempotencyKey.trim()
-        : createIdempotencyKey('pickup-scan');
+    initialRouteCodeHandledRef.current = true;
 
-    setValue('idempotencyKey', resolvedIdempotencyKey, {
-      shouldDirty: true,
-      shouldValidate: true,
-    });
+    if (route.params?.shipmentCode) {
+      void verifyAndAppendShipmentCode(route.params.shipmentCode);
+    }
+  }, [route.params?.shipmentCode, verifyAndAppendShipmentCode]);
 
-    const command: PickupScanCommand = {
-      shipmentCode: values.shipmentCode,
-      locationCode: values.locationCode || null,
-      note: values.note || null,
-      actor: session?.user.username ?? null,
-      occurredAt: new Date().toISOString(),
-      idempotencyKey: resolvedIdempotencyKey,
-    };
+  const handleBarCodeScanned = (result: BarcodeScanningResult) => {
+    if (scanLocked || isVerifyingScan || isUploading) {
+      return;
+    }
 
-    await executeSubmit(command);
-  });
+    lockScanner();
 
-  const handleGenerateIdempotencyKey = () => {
-    setValue('idempotencyKey', createIdempotencyKey('pickup-scan'), {
-      shouldDirty: true,
-      shouldValidate: true,
-    });
-  };
-
-  const handleScanQrOrBarcode = () => {
-    setScannerError(null);
-    setScannerVisible(true);
-  };
-
-  const handleBarcodeScanned = (result: BarcodeScanningResult) => {
     const parsed = parsePickupScannedCode({
       data: result.data,
       type: result.type,
     });
 
     if (!parsed) {
-      setScannerError('Không đọc được mã hợp lệ. Vui lòng thử lại.');
+      setErrorMessage('Khong doc duoc ma hop le. Vui long thu lai.');
       return;
     }
 
-    setValue('shipmentCode', parsed.value, {
-      shouldDirty: true,
-      shouldValidate: true,
-    });
-    setLocalInfoMessage(`Đã nhận mã ${parsed.format}: ${parsed.value}`);
-    setScannerVisible(false);
+    void verifyAndAppendShipmentCode(parsed.value);
   };
 
-  const handleRetryLast = async () => {
-    if (!lastCommand) {
+  const clearList = () => {
+    setPickedShipments([]);
+    setErrorMessage(null);
+    setInfoMessage('Da xoa danh sach ma van don da quet.');
+  };
+
+  const uploadAll = async () => {
+    if (!accessToken) {
+      setGlobalError('Phien dang nhap da het han. Vui long dang nhap lai.');
       return;
     }
 
-    await executeSubmit(lastCommand);
+    if (pickedShipments.length === 0) {
+      setErrorMessage('Chua co ma van don de tai len.');
+      return;
+    }
+
+    setIsUploading(true);
+    setErrorMessage(null);
+    setInfoMessage(null);
+
+    const successCodes: string[] = [];
+    const queuedCodes: string[] = [];
+    const failedCodes: Array<{ code: string; reason: string }> = [];
+
+    for (const item of pickedShipments) {
+      const command: PickupScanCommand = {
+        shipmentCode: item.code,
+        locationCode: null,
+        note: 'PICKUP_CONFIRMED_FROM_SCAN_PAGE',
+        actor: session?.user.username ?? null,
+        occurredAt: new Date().toISOString(),
+        idempotencyKey: createIdempotencyKey('pickup-scan-batch'),
+      };
+
+      try {
+        await submitPickupScanAction(accessToken, command);
+        successCodes.push(item.code);
+      } catch (error) {
+        if (shouldQueueOffline(error)) {
+          await enqueuePickupScanOffline(command);
+          queuedCodes.push(item.code);
+          continue;
+        }
+
+        failedCodes.push({
+          code: item.code,
+          reason: toErrorMessage(error),
+        });
+      }
+    }
+
+    if (failedCodes.length === 0) {
+      setPickedShipments([]);
+      setInfoMessage(
+        `Da cap nhat nhan kien ${successCodes.length} ma` +
+          (queuedCodes.length > 0
+            ? `, ${queuedCodes.length} ma duoc queue offline.`
+            : '.'),
+      );
+      setIsUploading(false);
+      return;
+    }
+
+    const failedCodeSet = new Set(failedCodes.map((item) => item.code));
+    setPickedShipments((currentItems) =>
+      currentItems.filter((item) => failedCodeSet.has(item.code)),
+    );
+
+    setErrorMessage(
+      `Co ${failedCodes.length} ma tai len that bai: ${failedCodes
+        .map((item) => `${item.code} (${item.reason})`)
+        .join(', ')}`,
+    );
+
+    setInfoMessage(
+      `Da cap nhat nhan kien ${successCodes.length} ma` +
+        (queuedCodes.length > 0
+          ? `, ${queuedCodes.length} ma duoc queue offline.`
+          : '.'),
+    );
+
+    setIsUploading(false);
   };
+
+  const cameraIsReady = permission?.granted === true;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <CameraScannerModal
-        visible={isScannerVisible}
-        title="Quét mã pickup"
-        helperText="Hỗ trợ quét QR và barcode cho shipment code."
-        onClose={() => setScannerVisible(false)}
-        onScanned={handleBarcodeScanned}
-      />
+    <View style={styles.container}>
+      <View style={styles.cameraSection}>
+        <Text style={styles.cameraTitle}>Quet nhan kien</Text>
+        <View style={styles.cameraFrame}>
+          {!permission ? (
+            <View style={styles.cameraPlaceholder}>
+              <ActivityIndicator size="small" color="#E2E8F0" />
+              <Text style={styles.cameraPlaceholderText}>Dang kiem tra quyen camera...</Text>
+            </View>
+          ) : null}
 
-      <Text style={styles.title}>Pickup scan</Text>
-      <Text style={styles.helperText}>
-        Scanner adapter duoc truu tuong hoa. Co the nhap tay shipment code va
-        idempotencyKey khi can.
-      </Text>
+          {permission && !cameraIsReady ? (
+            <View style={styles.cameraPlaceholder}>
+              <Text style={styles.cameraPlaceholderText}>
+                Can cap quyen camera de quet ma van don.
+              </Text>
+              {permission.canAskAgain ? (
+                <Pressable onPress={requestPermission} style={styles.permissionButton}>
+                  <Text style={styles.permissionButtonText}>Cap quyen camera</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          ) : null}
 
-      <Pressable onPress={handleScanQrOrBarcode} style={styles.secondaryButton}>
-        <Text style={styles.secondaryButtonText}>Scan QR / Barcode</Text>
-      </Pressable>
+          {permission && cameraIsReady ? (
+            <CameraView
+              style={styles.camera}
+              facing="back"
+              barcodeScannerSettings={{
+                barcodeTypes: [
+                  'qr',
+                  'ean13',
+                  'ean8',
+                  'code39',
+                  'code93',
+                  'code128',
+                  'upc_a',
+                  'upc_e',
+                ],
+              }}
+              onBarcodeScanned={handleBarCodeScanned}
+            />
+          ) : null}
 
-      {scannerError ? <Text style={styles.errorText}>{scannerError}</Text> : null}
-      {localInfoMessage ? (
-        <Text style={styles.infoText}>{localInfoMessage}</Text>
-      ) : null}
-      {lastServerResult ? (
-        <View style={styles.resultCard}>
-          <Text style={styles.resultTitle}>
-            Server response ({lastServerResult.source})
-          </Text>
-          <Text style={styles.resultText}>
-            Shipment: {lastServerResult.result.scanEvent.shipmentCode}
-          </Text>
-          <Text style={styles.resultText}>
-            Scan event: {lastServerResult.result.scanEvent.id}
-          </Text>
-          <Text style={styles.resultText}>
-            Current location updatedAt:{' '}
-            {lastServerResult.result.currentLocation.updatedAt}
-          </Text>
+          {isVerifyingScan || isUploading ? (
+            <View style={styles.cameraOverlay}>
+              <ActivityIndicator size="small" color="#FFFFFF" />
+              <Text style={styles.cameraOverlayText}>
+                {isUploading ? 'Dang tai len...' : 'Dang xac minh ma...'}
+              </Text>
+            </View>
+          ) : null}
         </View>
-      ) : null}
-
-      <Controller
-        control={control}
-        name="shipmentCode"
-        render={({ field, fieldState }) => (
-          <View style={styles.fieldBlock}>
-            <Text style={styles.label}>Shipment code</Text>
-            <TextInput
-              value={field.value}
-              onChangeText={field.onChange}
-              style={styles.input}
-              placeholder="SHP123"
-            />
-            {fieldState.error ? (
-              <Text style={styles.errorText}>{fieldState.error.message}</Text>
-            ) : null}
-          </View>
-        )}
-      />
-
-      <View style={styles.fieldBlock}>
-        <Text style={styles.label}>Idempotency key</Text>
-        <Controller
-          control={control}
-          name="idempotencyKey"
-          render={({ field }) => (
-            <TextInput
-              autoCapitalize="none"
-              autoCorrect={false}
-              value={field.value}
-              onChangeText={field.onChange}
-              style={styles.input}
-              placeholder="Neu bo trong se tu sinh key"
-            />
-          )}
-        />
-        <Pressable
-          onPress={handleGenerateIdempotencyKey}
-          style={styles.inlineButton}
-        >
-          <Text style={styles.inlineButtonText}>Generate idempotency key</Text>
-        </Pressable>
+        <Text style={styles.cameraHint}>
+          Camera tu mo. Quet ma van don, he thong se kiem tra ton tai roi tu them vao danh sach.
+        </Text>
       </View>
 
-      <Controller
-        control={control}
-        name="locationCode"
-        render={({ field }) => (
-          <View style={styles.fieldBlock}>
-            <Text style={styles.label}>Location code</Text>
-            <TextInput
-              value={field.value}
-              onChangeText={field.onChange}
-              style={styles.input}
-              placeholder="HCM-HUB-01"
-            />
-          </View>
-        )}
-      />
+      <View style={styles.listSection}>
+        <View style={styles.listHeaderRow}>
+          <Text style={styles.listTitle}>Danh sach van don ({pickedShipments.length})</Text>
+          <Pressable onPress={clearList} disabled={pickedShipments.length === 0}>
+            <Text style={styles.clearText}>Lam moi</Text>
+          </Pressable>
+        </View>
 
-      <Controller
-        control={control}
-        name="note"
-        render={({ field }) => (
-          <View style={styles.fieldBlock}>
-            <Text style={styles.label}>Note</Text>
-            <TextInput
-              multiline
-              value={field.value}
-              onChangeText={field.onChange}
-              style={[styles.input, styles.multilineInput]}
-              placeholder="Optional note"
-            />
-          </View>
-        )}
-      />
+        {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+        {infoMessage ? <Text style={styles.infoText}>{infoMessage}</Text> : null}
 
-      <Pressable
-        disabled={mutation.isPending}
-        onPress={onSubmit}
-        style={styles.primaryButton}
-      >
-        {mutation.isPending ? (
-          <ActivityIndicator color="#ffffff" />
-        ) : (
-          <Text style={styles.primaryButtonText}>Submit pickup scan</Text>
-        )}
-      </Pressable>
+        <ScrollView
+          style={styles.listScroll}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {pickedShipments.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>Chua co ma van don nao duoc quet.</Text>
+            </View>
+          ) : (
+            pickedShipments.map((item, index) => (
+              <View key={`${item.code}-${item.verifiedAt}`} style={styles.listItem}>
+                <View style={styles.listIndex}>
+                  <Text style={styles.listIndexText}>{index + 1}</Text>
+                </View>
+                <View style={styles.listBody}>
+                  <Text style={styles.listCode}>{item.code}</Text>
+                  <Text style={styles.listTime}>Quet luc {formatScannedAt(item.verifiedAt)}</Text>
+                </View>
+                <Text style={styles.verifiedBadge}>Da xac minh</Text>
+              </View>
+            ))
+          )}
+        </ScrollView>
 
-      <Pressable
-        disabled={mutation.isPending || !lastCommand}
-        onPress={handleRetryLast}
-        style={styles.retryButton}
-      >
-        <Text style={styles.retryButtonText}>Retry last submit</Text>
-      </Pressable>
-    </ScrollView>
+        <Pressable
+          disabled={isUploading || isVerifyingScan || pickedShipments.length === 0}
+          onPress={() => {
+            void uploadAll();
+          }}
+          style={[
+            styles.uploadButton,
+            (isUploading || isVerifyingScan || pickedShipments.length === 0) &&
+              styles.uploadButtonDisabled,
+          ]}
+        >
+          {isUploading ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text style={styles.uploadButtonText}>Tai len va cap nhat trang thai nhan kien</Text>
+          )}
+        </Pressable>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
-  },
-  content: {
-    padding: 16,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#0f172a',
-    marginBottom: 6,
-  },
-  helperText: {
-    color: '#64748b',
-    marginBottom: 20,
-  },
-  fieldBlock: {
-    marginBottom: 16,
-  },
-  label: {
-    marginBottom: 6,
-    color: '#334155',
-    fontWeight: '600',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 10,
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  multilineInput: {
-    minHeight: 100,
-    textAlignVertical: 'top',
-  },
-  primaryButton: {
-    backgroundColor: '#0f172a',
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 6,
-  },
-  primaryButtonText: {
-    color: '#ffffff',
-    fontWeight: '700',
-  },
-  secondaryButton: {
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  secondaryButtonText: {
-    color: '#0f172a',
-    fontWeight: '700',
-  },
-  inlineButton: {
-    alignSelf: 'flex-start',
-    marginTop: 8,
-    backgroundColor: '#e2e8f0',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  inlineButtonText: {
-    color: '#0f172a',
-    fontWeight: '600',
-  },
-  infoText: {
-    marginBottom: 12,
-    color: '#0f766e',
-  },
-  resultCard: {
-    borderWidth: 1,
-    borderColor: '#99f6e4',
-    backgroundColor: '#f0fdfa',
-    borderRadius: 10,
+    backgroundColor: '#F3F4F6',
     padding: 12,
-    marginBottom: 12,
+    gap: 10,
   },
-  resultTitle: {
-    color: '#115e59',
+  cameraSection: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    padding: 10,
+    ...theme.shadow.sm,
+  },
+  cameraTitle: {
+    fontSize: 18,
     fontWeight: '700',
-    marginBottom: 6,
+    color: '#0F172A',
   },
-  resultText: {
-    color: '#134e4a',
-    marginBottom: 4,
+  cameraFrame: {
+    flex: 1,
+    marginTop: 8,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: '#0F172A',
+    position: 'relative',
+  },
+  camera: {
+    flex: 1,
+  },
+  cameraOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(2, 6, 23, 0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  cameraOverlayText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  cameraPlaceholder: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+  },
+  cameraPlaceholderText: {
+    color: '#E2E8F0',
+    textAlign: 'center',
+  },
+  permissionButton: {
+    marginTop: 6,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: '#FFFFFF',
+  },
+  permissionButtonText: {
+    color: '#0F172A',
+    fontWeight: '700',
+  },
+  cameraHint: {
+    marginTop: 8,
+    color: '#475569',
+    fontSize: 12,
+  },
+  listSection: {
+    flex: 2,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    padding: 10,
+    ...theme.shadow.sm,
+  },
+  listHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 10,
+  },
+  listTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  clearText: {
+    color: '#B91C1C',
+    fontWeight: '700',
   },
   errorText: {
-    marginTop: 6,
-    color: '#b91c1c',
+    marginTop: 8,
+    color: '#B91C1C',
+    fontSize: 13,
   },
-  retryButton: {
+  infoText: {
+    marginTop: 8,
+    color: '#0F766E',
+    fontSize: 13,
+  },
+  listScroll: {
+    flex: 1,
     marginTop: 10,
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
   },
-  retryButtonText: {
-    color: '#0f172a',
+  listContent: {
+    gap: 8,
+    paddingBottom: 12,
+  },
+  emptyState: {
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#CBD5E1',
+    borderRadius: 10,
+    minHeight: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  emptyText: {
+    color: '#64748B',
+  },
+  listItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 10,
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+  },
+  listIndex: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  listIndexText: {
+    color: '#0F172A',
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  listBody: {
+    flex: 1,
+  },
+  listCode: {
+    color: '#0F172A',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  listTime: {
+    color: '#64748B',
+    marginTop: 2,
+    fontSize: 12,
+  },
+  verifiedBadge: {
+    color: '#0F766E',
+    fontSize: 12,
     fontWeight: '700',
   },
+  uploadButton: {
+    minHeight: 48,
+    marginTop: 10,
+    borderRadius: 10,
+    backgroundColor: '#0F172A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  uploadButtonDisabled: {
+    opacity: 0.45,
+  },
+  uploadButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    textAlign: 'center',
+  },
 });
-
-

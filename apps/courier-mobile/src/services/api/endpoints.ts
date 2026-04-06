@@ -21,12 +21,22 @@ export const courierEndpoints = {
     detail: (shipmentCode: string) =>
       `${COURIER_PREFIX}/shipment/shipments/${encodeURIComponent(shipmentCode)}`,
   },
+  tracking: {
+    current: (shipmentCode: string) =>
+      `${COURIER_PREFIX}/tracking/tracking/${encodeURIComponent(shipmentCode)}/current`,
+    timeline: (shipmentCode: string) =>
+      `${COURIER_PREFIX}/tracking/tracking/${encodeURIComponent(shipmentCode)}/timeline`,
+  },
   manifest: {
     list: `${COURIER_PREFIX}/manifest/manifests`,
     addShipments: (manifestId: string) =>
       `${COURIER_PREFIX}/manifest/manifests/${encodeURIComponent(
         manifestId,
       )}/shipments/add`,
+    removeShipments: (manifestId: string) =>
+      `${COURIER_PREFIX}/manifest/manifests/${encodeURIComponent(
+        manifestId,
+      )}/shipments/remove`,
   },
   scan: {
     pickup: `${COURIER_PREFIX}/scan/scans/pickup`,

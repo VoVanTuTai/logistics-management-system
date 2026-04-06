@@ -215,9 +215,10 @@ try {
 
   Write-Host ''
   Write-Host '=== SAMPLE ACCOUNTS ==='
-  Write-Host 'ops/admin:       ops.admin / ops123456'
-  Write-Host 'merchant:        merchant.demo / merchant123456'
-  Write-Host 'courier:         courier.hcm1 / courier123456'
+  Write-Host 'admin-web:       admin.hcm / admin123456'
+  Write-Host 'ops-web:         ops.hcm / ops123456'
+  Write-Host 'merchant-web:    merchant.hcm / merchant123456'
+  Write-Host 'courier-mobile:  courier.hcm / courier123456'
 }
 finally {
   Pop-Location

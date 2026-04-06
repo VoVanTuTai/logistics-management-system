@@ -7,6 +7,7 @@ import { useInboundScanMutation, useOutboundScanMutation, usePickupScanMutation 
 import type { HubScanInput, HubScanType } from '../../features/scans/scans.types';
 import { useCreateShipmentMutation, useShipmentsQuery } from '../../features/shipments/shipments.api';
 import type { ShipmentListFilters, ShipmentListItemDto } from '../../features/shipments/shipments.types';
+import { tasksClient, useCourierOptionsQuery } from '../../features/tasks/tasks.api';
 import { openShippingLabelPrint } from '../../printing/shippingLabelPrint';
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
@@ -192,6 +193,15 @@ function toDateKey(value: string): string {
   return toDateInputValue(date);
 }
 
+function generateDeliveryTaskCode(shipmentCode: string): string {
+  const timestamp = Date.now().toString().slice(-6);
+  const normalizedShipmentCode = shipmentCode
+    .replace(/[^A-Za-z0-9]/g, '')
+    .toUpperCase()
+    .slice(-6);
+  return `DLV-${normalizedShipmentCode || 'SHIP'}-${timestamp}`;
+}
+
 function printWaybill(shipment: ShipmentListItemDto): void {
   const senderName = shipment.senderName?.trim() || 'Người gửi';
   const senderPhone = shipment.senderPhone?.trim() || '-';
@@ -273,6 +283,13 @@ export function ShipmentListPage(): React.JSX.Element {
   const [walkInError, setWalkInError] = useState<string | null>(null);
   const [isCounterModalOpen, setIsCounterModalOpen] = useState(false);
   const [isWalkInModalOpen, setIsWalkInModalOpen] = useState(false);
+  const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
+  const [dispatchShipmentCode, setDispatchShipmentCode] = useState('');
+  const [dispatchCourierId, setDispatchCourierId] = useState('');
+  const [dispatchNote, setDispatchNote] = useState('');
+  const [dispatchMessage, setDispatchMessage] = useState<string | null>(null);
+  const [dispatchError, setDispatchError] = useState<string | null>(null);
+  const [dispatchLoading, setDispatchLoading] = useState(false);
 
   const shipmentQuery = useShipmentsQuery(accessToken, {});
   const hubsQuery = useHubsQuery(accessToken, {});
@@ -280,6 +297,7 @@ export function ShipmentListPage(): React.JSX.Element {
   const pickupScanMutation = usePickupScanMutation(accessToken);
   const inboundScanMutation = useInboundScanMutation(accessToken);
   const outboundScanMutation = useOutboundScanMutation(accessToken);
+  const courierOptionsQuery = useCourierOptionsQuery(accessToken);
 
   const estimatedFee = useMemo(() => estimateFee(walkInForm), [walkInForm]);
   const hubScopeTokens = useMemo(
@@ -334,6 +352,14 @@ export function ShipmentListPage(): React.JSX.Element {
     setStatusInput(filters.status ?? '');
     setDateInput(searchParams.get('date') || today);
   }, [filters.q, filters.status, searchParams, today]);
+
+  useEffect(() => {
+    if (dispatchCourierId || !courierOptionsQuery.data?.length) {
+      return;
+    }
+
+    setDispatchCourierId(courierOptionsQuery.data[0].courierId);
+  }, [courierOptionsQuery.data, dispatchCourierId]);
 
   const onFilterSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -406,6 +432,76 @@ export function ShipmentListPage(): React.JSX.Element {
       setCounterNote('');
     } catch (error) {
       setCounterError(getErrorMessage(error));
+    }
+  };
+
+  const submitDispatchScan = async () => {
+    if (!accessToken || dispatchLoading) {
+      return;
+    }
+
+    const shipmentCode = dispatchShipmentCode.trim().toUpperCase();
+    const courierId = dispatchCourierId.trim();
+
+    if (!shipmentCode) {
+      setDispatchError('Cần mã vận đơn để quét phát.');
+      return;
+    }
+    if (!courierId) {
+      setDispatchError('Cần chọn courier để phân công giao.');
+      return;
+    }
+
+    setDispatchMessage(null);
+    setDispatchError(null);
+    setDispatchLoading(true);
+
+    try {
+      const deliveryTasks = await tasksClient.list(accessToken, {
+        taskType: 'DELIVERY',
+        shipmentCode,
+      });
+
+      let targetTask =
+        deliveryTasks.find(
+          (task) => task.status !== 'COMPLETED' && task.status !== 'CANCELLED',
+        ) ?? null;
+
+      if (!targetTask) {
+        targetTask = await tasksClient.create(accessToken, {
+          taskCode: generateDeliveryTaskCode(shipmentCode),
+          taskType: 'DELIVERY',
+          shipmentCode,
+          note: dispatchNote.trim() || 'quet phat tu man hinh van don ops',
+        });
+      }
+
+      if (targetTask.assignedCourierId) {
+        if (targetTask.assignedCourierId !== courierId) {
+          await tasksClient.reassign(accessToken, {
+            taskId: targetTask.id,
+            courierId,
+          });
+        }
+      } else {
+        await tasksClient.assign(accessToken, {
+          taskId: targetTask.id,
+          courierId,
+        });
+      }
+
+      await queryClient.invalidateQueries({ queryKey: queryKeys.tasks });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
+
+      setDispatchMessage(
+        `Đã quét phát vận đơn ${shipmentCode} và phân công cho ${courierId}.`,
+      );
+      setDispatchNote('');
+      setIsDispatchModalOpen(false);
+    } catch (error) {
+      setDispatchError(getErrorMessage(error));
+    } finally {
+      setDispatchLoading(false);
     }
   };
 
@@ -526,6 +622,12 @@ export function ShipmentListPage(): React.JSX.Element {
         </div>
       ) : null}
 
+      {dispatchMessage ? (
+        <div role="status" style={{ ...styles.notice, ...styles.successNotice }}>
+          {dispatchMessage}
+        </div>
+      ) : null}
+
       {isCounterModalOpen ? (
         <div style={styles.modalOverlay} onClick={() => setIsCounterModalOpen(false)}>
           <div style={styles.modalCard} onClick={(event) => event.stopPropagation()}>
@@ -573,6 +675,60 @@ export function ShipmentListPage(): React.JSX.Element {
             {counterError ? (
               <div role="alert" style={{ ...styles.notice, ...styles.errorNotice }}>
                 {counterError}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {isDispatchModalOpen ? (
+        <div style={styles.modalOverlay} onClick={() => setIsDispatchModalOpen(false)}>
+          <div style={styles.modalCard} onClick={(event) => event.stopPropagation()}>
+            <div style={styles.modalHeader}>
+              <h3 style={styles.cardTitle}>Quét phát và phân công courier</h3>
+              <button type="button" style={styles.modalCloseButton} onClick={() => setIsDispatchModalOpen(false)}>
+                Đóng
+              </button>
+            </div>
+            <p style={styles.mutedText}>
+              Hàng đã đến bưu cục thì thao tác quét phát sẽ gắn trực tiếp nhiệm vụ DELIVERY cho courier.
+            </p>
+            <div style={styles.formGrid}>
+              <input
+                placeholder="Mã vận đơn"
+                value={dispatchShipmentCode}
+                onChange={(event) => setDispatchShipmentCode(event.target.value)}
+              />
+              <select
+                value={dispatchCourierId}
+                onChange={(event) => setDispatchCourierId(event.target.value)}
+                disabled={dispatchLoading || courierOptionsQuery.isLoading}
+              >
+                <option value="">Chọn courier</option>
+                {(courierOptionsQuery.data ?? []).map((courier) => (
+                  <option key={courier.courierId} value={courier.courierId}>
+                    {courier.label}
+                  </option>
+                ))}
+              </select>
+              <textarea
+                rows={3}
+                placeholder="Ghi chú quét phát (không bắt buộc)"
+                value={dispatchNote}
+                onChange={(event) => setDispatchNote(event.target.value)}
+              />
+              <button type="button" disabled={dispatchLoading} onClick={() => void submitDispatchScan()}>
+                {dispatchLoading ? 'Đang quét phát...' : 'Xác nhận quét phát'}
+              </button>
+            </div>
+            {courierOptionsQuery.isError ? (
+              <div role="alert" style={{ ...styles.notice, ...styles.errorNotice }}>
+                {getErrorMessage(courierOptionsQuery.error)}
+              </div>
+            ) : null}
+            {dispatchError ? (
+              <div role="alert" style={{ ...styles.notice, ...styles.errorNotice }}>
+                {dispatchError}
               </div>
             ) : null}
           </div>
@@ -752,9 +908,11 @@ export function ShipmentListPage(): React.JSX.Element {
       {shipmentQuery.isSuccess && visibleShipments.length > 0 ? (
         <ShipmentsTable
           items={visibleShipments}
-          onPrepareReceive={(shipmentCode) => {
-            setCounterShipmentCode(shipmentCode);
-            setIsCounterModalOpen(true);
+          onPrepareDispatch={(shipment) => {
+            setDispatchShipmentCode(shipment.shipmentCode);
+            setDispatchMessage(null);
+            setDispatchError(null);
+            setIsDispatchModalOpen(true);
           }}
           onPrint={printWaybill}
         />

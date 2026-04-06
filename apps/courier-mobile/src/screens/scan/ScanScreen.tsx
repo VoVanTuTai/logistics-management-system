@@ -151,6 +151,16 @@ export function ScanScreen(): React.JSX.Element {
       return;
     }
 
+    if (action.id === 'nhan-kien') {
+      navigation.navigate('PickupScan', {});
+      return;
+    }
+
+    if (action.id === 'go-bao') {
+      navigation.navigate('BagUnseal');
+      return;
+    }
+
     setScannerError(null);
     setPendingAction(action);
     setScannerVisible(true);

@@ -216,6 +216,11 @@ export function HomeScreen(): React.JSX.Element {
           <AppGrid
             items={appItems}
             onPressItem={(item) => {
+              if (item.id === 'tracking') {
+                navigation.navigate('TrackingLookup');
+                return;
+              }
+
               Alert.alert('Ứng dụng', item.label);
             }}
           />
@@ -354,3 +359,4 @@ const styles = StyleSheet.create({
     borderTopColor: theme.colors.border,
   },
 });
+

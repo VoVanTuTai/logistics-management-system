@@ -13,7 +13,12 @@ export function useTasksQuery(
   filters: TaskListFilters,
 ) {
   return useQuery({
-    queryKey: [...queryKeys.tasks, filters.taskType ?? '', filters.status ?? ''],
+    queryKey: [
+      ...queryKeys.tasks,
+      filters.taskType ?? '',
+      filters.status ?? '',
+      filters.shipmentCode ?? '',
+    ],
     queryFn: () => tasksClient.list(accessToken, filters),
     enabled: Boolean(accessToken),
     refetchInterval: 5000,

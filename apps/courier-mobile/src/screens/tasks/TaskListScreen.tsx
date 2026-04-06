@@ -102,7 +102,13 @@ export function TaskListScreen({ route }: Props): React.JSX.Element {
           <Text style={styles.headerSubtitle}>
             {courierId} • {filteredTasks.length} nhiệm vụ
           </Text>
-          <Ionicons name="bicycle" size={18} color={theme.colors.textPrimary} />
+          <Pressable
+            onPress={() => navigation.navigate('TrackingLookup')}
+            style={({ pressed }) => [styles.trackButton, pressed && { opacity: 0.85 }]}
+          >
+            <Ionicons name="locate-outline" size={14} color={theme.colors.primary} />
+            <Text style={styles.trackButtonText}>Theo doi don</Text>
+          </Pressable>
         </View>
 
         <View style={styles.selectRow}>
@@ -264,6 +270,22 @@ const styles = StyleSheet.create({
     color: theme.colors.textPrimary,
     fontWeight: '800',
     fontSize: 14,
+  },
+  trackButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    borderWidth: 1,
+    borderColor: '#BFD6FF',
+    borderRadius: theme.radius.md,
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 6,
+  },
+  trackButtonText: {
+    color: theme.colors.primary,
+    fontWeight: '700',
+    fontSize: 12,
   },
   selectRow: {
     flexDirection: 'row',

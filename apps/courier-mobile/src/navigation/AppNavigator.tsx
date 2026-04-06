@@ -13,7 +13,9 @@ import { TaskIssueScreen } from '../screens/delivery/TaskIssueScreen';
 import { HubScanScreen } from '../screens/scan/HubScanScreen';
 import { PickupScanScreen } from '../screens/scan/PickupScanScreen';
 import { BagSealScreen } from '../screens/scan/BagSealScreen';
+import { BagUnsealScreen } from '../screens/scan/BagUnsealScreen';
 import { TaskDetailScreen } from '../screens/tasks/TaskDetailScreen';
+import { TrackingLookupScreen } from '../screens/tasks/TrackingLookupScreen';
 import { theme } from '../theme';
 
 const Stack = createNativeStackNavigator<AppNavigatorParamList>();
@@ -65,6 +67,11 @@ export function AppNavigator(): React.JSX.Element {
             options={{ title: 'Đóng bao' }}
           />
           <Stack.Screen
+            name="BagUnseal"
+            component={BagUnsealScreen}
+            options={{ title: 'Go bao' }}
+          />
+          <Stack.Screen
             name="DeliverySuccess"
             component={DeliverySuccessScreen}
             options={{ title: 'Giao thành công' }}
@@ -83,6 +90,11 @@ export function AppNavigator(): React.JSX.Element {
             name="TaskIssue"
             component={TaskIssueScreen}
          
+          />
+          <Stack.Screen
+            name="TrackingLookup"
+            component={TrackingLookupScreen}
+            options={{ title: 'Theo doi don hang' }}
           />
         </>
       ) : (

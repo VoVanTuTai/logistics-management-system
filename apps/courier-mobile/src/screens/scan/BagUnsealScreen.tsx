@@ -19,7 +19,7 @@ import { theme } from '../../theme';
 
 type ScannerMode = 'BAG' | 'SHIPMENT';
 
-interface SealedShipmentItem {
+interface RemovedShipmentItem {
   code: string;
   scannedAt: string;
 }
@@ -47,13 +47,13 @@ function formatScannedAt(isoTime: string): string {
   });
 }
 
-export function BagSealScreen(): React.JSX.Element {
+export function BagUnsealScreen(): React.JSX.Element {
   const session = useAppStore((state) => state.session);
   const setGlobalError = useAppStore((state) => state.setGlobalError);
 
   const [bagCode, setBagCode] = React.useState('');
   const [shipmentCodeInput, setShipmentCodeInput] = React.useState('');
-  const [shipments, setShipments] = React.useState<SealedShipmentItem[]>([]);
+  const [removedShipments, setRemovedShipments] = React.useState<RemovedShipmentItem[]>([]);
   const [scannerMode, setScannerMode] = React.useState<ScannerMode | null>(null);
   const [scannerVisible, setScannerVisible] = React.useState(false);
   const [screenMessage, setScreenMessage] = React.useState<string | null>(null);
@@ -85,7 +85,7 @@ export function BagSealScreen(): React.JSX.Element {
     setScannerVisible(true);
   };
 
-  const appendShipmentCode = React.useCallback(
+  const appendRemovedShipmentCode = React.useCallback(
     (rawCode: string) => {
       if (!hasValidBagCode) {
         setScreenMessage(
@@ -100,16 +100,18 @@ export function BagSealScreen(): React.JSX.Element {
         return;
       }
 
-      setShipments((currentItems) => {
+      setRemovedShipments((currentItems) => {
         const duplicated = currentItems.some(
           (item) => normalizeCode(item.code) === normalizedCode,
         );
+
         if (duplicated) {
-          setScreenMessage(`Ma van don ${normalizedCode} da co trong danh sach.`);
+          setScreenMessage(`Ma van don ${normalizedCode} da co trong danh sach go bao.`);
           return currentItems;
         }
 
-        setScreenMessage(`Da them ma van don ${normalizedCode}.`);
+        setScreenMessage(`Da them ma van don ${normalizedCode} vao danh sach go bao.`);
+
         return [
           ...currentItems,
           {
@@ -154,14 +156,14 @@ export function BagSealScreen(): React.JSX.Element {
         return;
       }
 
-      appendShipmentCode(parsed.value);
+      appendRemovedShipmentCode(parsed.value);
       closeScanner();
     }
   };
 
   const removeShipmentCode = (shipmentCode: string) => {
     const normalizedTarget = normalizeCode(shipmentCode);
-    setShipments((currentItems) =>
+    setRemovedShipments((currentItems) =>
       currentItems.filter((item) => normalizeCode(item.code) !== normalizedTarget),
     );
   };
@@ -174,22 +176,22 @@ export function BagSealScreen(): React.JSX.Element {
       return;
     }
 
-    appendShipmentCode(shipmentCodeInput);
+    appendRemovedShipmentCode(shipmentCodeInput);
     setShipmentCodeInput('');
   };
 
   const clearAll = () => {
     setBagCode('');
-    setShipments([]);
+    setRemovedShipments([]);
     setShipmentCodeInput('');
-    setScreenMessage('Da lam moi man hinh dong bao.');
+    setScreenMessage('Da lam moi man hinh go bao.');
   };
 
   const resolveBagManifest = (
     manifests: BagManifestDto[],
-    sealedBagCode: string,
+    scannedBagCode: string,
   ): BagManifestDto | null => {
-    const normalizedCode = normalizeCode(sealedBagCode);
+    const normalizedCode = normalizeCode(scannedBagCode);
 
     return (
       manifests.find(
@@ -198,7 +200,7 @@ export function BagSealScreen(): React.JSX.Element {
     );
   };
 
-  const uploadBagManifest = async () => {
+  const submitRemoveShipments = async () => {
     if (!accessToken) {
       setGlobalError('Phien dang nhap da het han. Vui long dang nhap lai.');
       return;
@@ -209,8 +211,8 @@ export function BagSealScreen(): React.JSX.Element {
       return;
     }
 
-    if (shipments.length === 0) {
-      setScreenMessage('Vui long quet it nhat mot ma van don.');
+    if (removedShipments.length === 0) {
+      setScreenMessage('Vui long quet it nhat mot ma van don can go khoi bao.');
       return;
     }
 
@@ -220,24 +222,25 @@ export function BagSealScreen(): React.JSX.Element {
     try {
       const manifests = await manifestApi.list(accessToken);
       const bagManifest = resolveBagManifest(manifests, normalizedBagCode);
+
       if (!bagManifest) {
         setScreenMessage(`Khong tim thay ma bao ${normalizedBagCode} tren he thong.`);
         return;
       }
 
-      const shipmentCodes = shipments.map((item) => item.code);
-      await manifestApi.addShipments(accessToken, bagManifest.id, {
+      const shipmentCodes = removedShipments.map((item) => item.code);
+      await manifestApi.removeShipments(accessToken, bagManifest.id, {
         shipmentCodes,
-        note: 'BAGGED_FROM_COURIER_APP',
+        note: 'UNBAGGED_FROM_COURIER_APP',
       });
 
       setScreenMessage(
-        `Tai len thanh cong ${shipmentCodes.length} ma van don vao bao ${bagManifest.manifestCode}.`,
+        `Da go ${shipmentCodes.length} ma van don khoi bao ${bagManifest.manifestCode}.`,
       );
-      setShipments([]);
+      setRemovedShipments([]);
       setShipmentCodeInput('');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Tai len that bai.';
+      const message = error instanceof Error ? error.message : 'Go bao that bai.';
       setScreenMessage(message);
       setGlobalError(message);
     } finally {
@@ -249,7 +252,7 @@ export function BagSealScreen(): React.JSX.Element {
     <View style={styles.container}>
       <CameraScannerModal
         visible={scannerVisible}
-        title={scannerMode === 'BAG' ? 'Quet ma bao' : 'Quet ma van don'}
+        title={scannerMode === 'BAG' ? 'Quet ma bao' : 'Quet ma van don can go'}
         helperText={
           scannerMode === 'BAG'
             ? 'Quet lan dau ma bao theo dinh dang MB + 10 chu so.'
@@ -260,9 +263,9 @@ export function BagSealScreen(): React.JSX.Element {
       />
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.screenTitle}>Dong bao tui tai che</Text>
+        <Text style={styles.screenTitle}>Go bao</Text>
         <Text style={styles.screenHint}>
-          Quet lan dau la ma bao (MB + 10 chu so), sau do quet tung ma van don bo vao bao.
+          Quet lan dau la ma bao (MB + 10 chu so), sau do quet tung ma van don de lay ra ngoai.
         </Text>
 
         <View style={styles.formCard}>
@@ -287,7 +290,7 @@ export function BagSealScreen(): React.JSX.Element {
           <View style={styles.separator} />
 
           <View style={styles.fieldRow}>
-            <Text style={styles.fieldLabel}>Ma van don</Text>
+            <Text style={styles.fieldLabel}>Ma van don lay ra</Text>
             <TextInput
               value={shipmentCodeInput}
               onChangeText={setShipmentCodeInput}
@@ -334,19 +337,19 @@ export function BagSealScreen(): React.JSX.Element {
 
         <View style={styles.listCard}>
           <View style={styles.listHeader}>
-            <Text style={styles.listTitle}>Danh sach ma van don ({shipments.length})</Text>
+            <Text style={styles.listTitle}>Danh sach ma van don go ({removedShipments.length})</Text>
             <Pressable onPress={clearAll}>
               <Text style={styles.clearText}>Lam moi</Text>
             </Pressable>
           </View>
 
-          {shipments.length === 0 ? (
+          {removedShipments.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyText}>Chua co ma van don nao.</Text>
             </View>
           ) : (
             <View style={styles.chipWrap}>
-              {shipments.map((item) => (
+              {removedShipments.map((item) => (
                 <View key={`${item.code}-${item.scannedAt}`} style={styles.shipmentChip}>
                   <View style={styles.shipmentChipBody}>
                     <Text style={styles.shipmentCodeText}>{item.code}</Text>
@@ -367,20 +370,20 @@ export function BagSealScreen(): React.JSX.Element {
 
       <View style={styles.footer}>
         <Pressable
-          disabled={isSubmitting || !hasValidBagCode || shipments.length === 0}
+          disabled={isSubmitting || !hasValidBagCode || removedShipments.length === 0}
           onPress={() => {
-            void uploadBagManifest();
+            void submitRemoveShipments();
           }}
           style={[
             styles.uploadButton,
-            (isSubmitting || !hasValidBagCode || shipments.length === 0) &&
+            (isSubmitting || !hasValidBagCode || removedShipments.length === 0) &&
               styles.uploadButtonDisabled,
           ]}
         >
           {isSubmitting ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
-            <Text style={styles.uploadButtonText}>Tai len</Text>
+            <Text style={styles.uploadButtonText}>Xac nhan go bao</Text>
           )}
         </Pressable>
       </View>
@@ -602,7 +605,7 @@ const styles = StyleSheet.create({
   uploadButton: {
     minHeight: 52,
     borderRadius: 12,
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#0F766E',
     alignItems: 'center',
     justifyContent: 'center',
     ...theme.shadow.md,
@@ -612,7 +615,7 @@ const styles = StyleSheet.create({
   },
   uploadButtonText: {
     color: '#FFFFFF',
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '700',
   },
 });

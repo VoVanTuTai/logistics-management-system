@@ -34,6 +34,7 @@ export type AppNavigatorParamList = {
     shipmentCode?: string;
   };
   BagSeal: undefined;
+  BagUnseal: undefined;
   DeliverySuccess: {
     taskId?: string;
     shipmentCode?: string;
@@ -52,4 +53,5 @@ export type AppNavigatorParamList = {
     taskCode?: string;
     shipmentCode?: string;
   };
+  TrackingLookup: undefined;
 };
