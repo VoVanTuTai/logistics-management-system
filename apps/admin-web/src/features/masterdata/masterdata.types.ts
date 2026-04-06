@@ -69,7 +69,7 @@ export interface ConfigFilters {
 }
 
 export interface HubWriteInput {
-  code: string;
+  code?: string;
   name: string;
   zoneCode?: string | null;
   address?: string | null;

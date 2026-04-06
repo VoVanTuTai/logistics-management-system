@@ -13,6 +13,7 @@ import type {
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
 import { createIdempotencyKey } from '../../utils/idempotency';
+import { formatScanTypeLabel } from '../../utils/logisticsLabels';
 import { HubScanForm, type HubScanFormValues } from './HubScanForm';
 
 export function HubScanPage(): React.JSX.Element {
@@ -55,23 +56,23 @@ export function HubScanPage(): React.JSX.Element {
     pickupMutation.isPending || inboundMutation.isPending || outboundMutation.isPending;
   const actionError =
     pickupMutation.error ?? inboundMutation.error ?? outboundMutation.error;
-  const lastScanLabel = lastScanType ?? 'none';
+  const lastScanLabel = formatScanTypeLabel(lastScanType);
 
   return (
     <section>
-      <h2>Scan Operations</h2>
+      <h2>Van hanh quet</h2>
       <p style={{ color: '#2d3f99' }}>
-        Use this screen for pickup, inbound, and outbound scans. Every accepted scan
-        updates current location and keeps idempotency by request key.
+        Dung man hinh nay cho quet lay hang, nhap hub va xuat hub. Moi quet hop le
+        se cap nhat vi tri hien tai va dam bao idempotency theo request key.
       </p>
       <HubScanForm isSubmitting={isSubmitting} onSubmit={onSubmit} />
 
-      {isSubmitting ? <p>Submitting scan...</p> : null}
+      {isSubmitting ? <p>Dang gui quet...</p> : null}
       {actionError ? <p style={styles.errorText}>{getErrorMessage(actionError)}</p> : null}
-      {!isSubmitting && !actionError && !lastScanResult ? <p>No scan result yet.</p> : null}
+      {!isSubmitting && !actionError && !lastScanResult ? <p>Chua co ket qua quet.</p> : null}
       {lastScanResult ? (
         <div style={styles.responseBox}>
-          <strong>Latest scan response ({lastScanLabel})</strong>
+          <strong>Phan hoi quet gan nhat ({lastScanLabel})</strong>
           <pre style={styles.pre}>{JSON.stringify(lastScanResult, null, 2)}</pre>
         </div>
       ) : null}

@@ -1,6 +1,7 @@
 import React from 'react';
 
 import type { DashboardMetricPointDto } from '../../../features/dashboard/dashboard.types';
+import { formatKpiLabel } from '../../../utils/logisticsLabels';
 
 interface DashboardBarChartProps {
   title: string;
@@ -24,7 +25,7 @@ export function DashboardBarChart({
 
           return (
             <div key={`${point.label}-${point.value}`} className="ops-bar-chart__row">
-              <span>{point.label}</span>
+              <span>{formatKpiLabel(point.label)}</span>
               <div className="ops-bar-chart__track">
                 <div className="ops-bar-chart__fill" style={{ width: `${widthPercent}%` }} />
               </div>

@@ -9,6 +9,7 @@ import {
 import type {
   AddShipmentsInput,
   CreateManifestInput,
+  GenerateBagCodesInput,
   Manifest,
   ReceiveManifestInput,
   RemoveShipmentsInput,
@@ -58,9 +59,46 @@ export class ManifestsService {
       shipmentCodes,
     });
 
-    await this.manifestOutboxService.enqueueManifestCreated(manifest);
-
     return manifest;
+  }
+
+  async generateBagCodes(input: GenerateBagCodesInput): Promise<Manifest[]> {
+    const destinationHubCode = this.normalizeHubCode(input.destinationHubCode);
+    const originHubCode = this.normalizeHubCode(input.originHubCode);
+    const quantity = this.normalizeQuantity(input.quantity);
+
+    if (!destinationHubCode) {
+      throw new BadRequestException('destinationHubCode is required.');
+    }
+
+    if (quantity < 1 || quantity > 200) {
+      throw new BadRequestException('quantity must be between 1 and 200.');
+    }
+
+    if (originHubCode && originHubCode === destinationHubCode) {
+      throw new BadRequestException(
+        'originHubCode must be different from destinationHubCode.',
+      );
+    }
+
+    const createdBags: Manifest[] = [];
+    const generatedCodes = new Set<string>();
+    const prefix = this.buildBagCodePrefix(originHubCode, destinationHubCode);
+    const note = input.note?.trim() || 'EMPTY_BAG';
+
+    for (let index = 0; index < quantity; index += 1) {
+      const manifestCode = this.generateBagCode(prefix, index + 1, generatedCodes);
+      const manifest = await this.manifestRepository.create({
+        manifestCode,
+        originHubCode: originHubCode || null,
+        destinationHubCode,
+        note,
+        shipmentCodes: [],
+      });
+      createdBags.push(manifest);
+    }
+
+    return createdBags;
   }
 
   async update(id: string, input: UpdateManifestInput): Promise<Manifest> {
@@ -123,20 +161,25 @@ export class ManifestsService {
       }
     }
 
-    if (hasMetadataMutation || changedShipmentCodes.length > 0) {
-      await this.manifestOutboxService.enqueueManifestUpdated(
-        manifest,
-        {
-          source: 'api',
-          add_shipment_codes: addShipmentCodes,
-          remove_shipment_codes: removeShipmentCodes,
-          changed_shipment_codes: changedShipmentCodes,
-        },
-        changedShipmentCodes.length > 0 ? changedShipmentCodes : undefined,
+    return manifest;
+  }
+
+  async delete(id: string): Promise<Manifest> {
+    const manifest = await this.getById(id);
+
+    if (manifest.status !== 'CREATED') {
+      throw new BadRequestException(
+        `Manifest "${manifest.manifestCode}" is ${manifest.status} and cannot be deleted.`,
       );
     }
 
-    return manifest;
+    if (manifest.items.length > 0) {
+      throw new BadRequestException(
+        `Manifest "${manifest.manifestCode}" has shipments and cannot be deleted.`,
+      );
+    }
+
+    return this.manifestRepository.delete(id);
   }
 
   async addShipments(id: string, input: AddShipmentsInput): Promise<Manifest> {
@@ -166,16 +209,6 @@ export class ManifestsService {
       input.note !== undefined
         ? await this.manifestRepository.update(id, { note: input.note })
         : updatedManifest;
-
-    await this.manifestOutboxService.enqueueManifestUpdated(
-      finalizedManifest,
-      {
-        source: 'api',
-        action: 'add_shipments',
-        add_shipment_codes: codesToAdd,
-      },
-      codesToAdd,
-    );
 
     return finalizedManifest;
   }
@@ -213,16 +246,6 @@ export class ManifestsService {
       input.note !== undefined
         ? await this.manifestRepository.update(id, { note: input.note })
         : updatedManifest;
-
-    await this.manifestOutboxService.enqueueManifestUpdated(
-      finalizedManifest,
-      {
-        source: 'api',
-        action: 'remove_shipments',
-        remove_shipment_codes: codesToRemove,
-      },
-      codesToRemove,
-    );
 
     return finalizedManifest;
   }
@@ -296,6 +319,53 @@ export class ManifestsService {
 
   private normalizeManifestCode(manifestCode: string | undefined): string {
     return manifestCode?.trim() ?? '';
+  }
+
+  private normalizeHubCode(hubCode: string | null | undefined): string {
+    return hubCode?.trim().toUpperCase() ?? '';
+  }
+
+  private normalizeQuantity(quantity: number | string | undefined): number {
+    const parsed =
+      typeof quantity === 'number'
+        ? quantity
+        : Number.parseInt(String(quantity ?? ''), 10);
+
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  private buildBagCodePrefix(
+    originHubCode: string,
+    destinationHubCode: string,
+  ): string {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mi = String(now.getMinutes()).padStart(2, '0');
+    const ss = String(now.getSeconds()).padStart(2, '0');
+    const ms = String(now.getMilliseconds()).padStart(3, '0');
+    const from = originHubCode || 'OPS';
+    const to = destinationHubCode || 'DST';
+    return `BAG-${yyyy}${mm}${dd}${hh}${mi}${ss}${ms}-${from}-${to}`;
+  }
+
+  private generateBagCode(
+    prefix: string,
+    sequence: number,
+    generatedCodes: Set<string>,
+  ): string {
+    const seq = String(sequence).padStart(3, '0');
+    const code = `${prefix}-${seq}`;
+    if (!generatedCodes.has(code)) {
+      generatedCodes.add(code);
+      return code;
+    }
+
+    const fallbackCode = `${prefix}-${seq}-${Math.floor(Math.random() * 900 + 100)}`;
+    generatedCodes.add(fallbackCode);
+    return fallbackCode;
   }
 
   private normalizeShipmentCodes(shipmentCodes: string[] | undefined): string[] {

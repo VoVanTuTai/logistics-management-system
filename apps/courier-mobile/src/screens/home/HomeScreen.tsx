@@ -1,14 +1,17 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
 import { theme } from '../../theme';
@@ -18,8 +21,9 @@ import { QuickStatsRow } from '../../components/home/QuickStatsRow';
 import { OverdueCard } from '../../components/home/OverdueCard';
 import { AppGrid, type HomeAppGridItem } from '../../components/home/AppGrid';
 import { StatusBadge } from '../../components/ui/StatusBadge';
-import type { TaskStatus } from '../../features/tasks/tasks.types';
+import type { TaskDto, TaskStatus } from '../../features/tasks/tasks.types';
 import { useAssignedTasksQuery } from '../../features/tasks/tasks.queries';
+import type { AppNavigatorParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
 import { appEnv } from '../../utils/env';
 import { resolveCourierId } from '../../utils/courier';
@@ -83,6 +87,8 @@ const appItems: HomeAppGridItem[] = [
   },
 ];
 
+const WAITING_TASK_STATUSES: ReadonlySet<TaskStatus> = new Set(['CREATED', 'ASSIGNED']);
+
 function mapTaskStatusVariant(
   status: TaskStatus,
 ): 'neutral' | 'success' | 'warning' | 'danger' | 'info' {
@@ -101,17 +107,34 @@ function mapTaskStatusVariant(
   return 'info';
 }
 
+function isWaitingTask(task: TaskDto): boolean {
+  return WAITING_TASK_STATUSES.has(task.status);
+}
+
 export function HomeScreen(): React.JSX.Element {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<AppNavigatorParamList>>();
   const session = useAppStore((state) => state.session);
   const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
   const tasksQuery = useAssignedTasksQuery({
     accessToken: session?.tokens.accessToken ?? null,
     courierId,
   });
+  const onRefresh = () => void tasksQuery.refetch();
+  const refreshing = tasksQuery.isRefetching;
 
   const tasks = tasksQuery.data ?? [];
-  const pickupCount = tasks.filter((task) => task.taskType === 'PICKUP').length;
-  const deliveryCount = tasks.filter((task) => task.taskType === 'DELIVERY').length;
+  const waitingPickupTasks = useMemo(
+    () => tasks.filter((task) => task.taskType === 'PICKUP' && isWaitingTask(task)),
+    [tasks],
+  );
+  const waitingDeliveryTasks = useMemo(
+    () => tasks.filter((task) => task.taskType === 'DELIVERY' && isWaitingTask(task)),
+    [tasks],
+  );
+
+  const pickupCount = waitingPickupTasks.length;
+  const deliveryCount = waitingDeliveryTasks.length;
   const processingCount = tasks.filter((task) => task.status === 'ASSIGNED').length;
   const recentTasks = tasks.slice(0, 3);
 
@@ -133,6 +156,9 @@ export function HomeScreen(): React.JSX.Element {
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
         >
           <NotificationBanner
             title="Thông báo vận hành"
@@ -140,7 +166,23 @@ export function HomeScreen(): React.JSX.Element {
             onPress={() => Alert.alert('Thông báo', 'Chi tiết thông báo vận hành')}
           />
 
-          <QuickStatsRow waitingPickup={pickupCount} waitingDelivery={deliveryCount} />
+          <QuickStatsRow
+            waitingPickup={pickupCount}
+            waitingDelivery={deliveryCount}
+            activeStat={null}
+            onPressWaitingPickup={() =>
+              navigation.navigate('TaskList', {
+                initialTaskType: 'PICKUP',
+                initialStatus: 'ASSIGNED',
+              })
+            }
+            onPressWaitingDelivery={() =>
+              navigation.navigate('TaskList', {
+                initialTaskType: 'DELIVERY',
+                initialStatus: 'ASSIGNED',
+              })
+            }
+          />
 
           <OverdueCard
             title="Đơn đang xử lý"
@@ -169,36 +211,16 @@ export function HomeScreen(): React.JSX.Element {
             </View>
           ) : null}
 
-          {!tasksQuery.isLoading && !tasksQuery.isError && recentTasks.length === 0 ? (
-            <View style={styles.emptyCard}>
-              <Text style={styles.emptyTitle}>Chưa có nhiệm vụ</Text>
-              <Text style={styles.stateText}>Bạn có thể kéo để làm mới dữ liệu.</Text>
-            </View>
-          ) : null}
-
-          {!tasksQuery.isLoading && !tasksQuery.isError && recentTasks.length > 0 ? (
-            <View style={styles.recentCard}>
-              <Text style={styles.recentTitle}>Nhiệm vụ gần đây</Text>
-              {recentTasks.map((task) => (
-                <View key={task.id} style={styles.recentTaskRow}>
-                  <View style={styles.recentTaskInfo}>
-                    <Text style={styles.recentTaskCode}>{task.taskCode}</Text>
-                    <Text style={styles.recentTaskMeta}>
-                      {task.taskType} • {task.shipmentCode ?? 'N/A'}
-                    </Text>
-                  </View>
-                  <StatusBadge
-                    label={task.status}
-                    variant={mapTaskStatusVariant(task.status)}
-                  />
-                </View>
-              ))}
-            </View>
-          ) : null}
+          {/* Ẩn block "nhiệm vụ gần đây" theo yêu cầu */}
 
           <AppGrid
             items={appItems}
             onPressItem={(item) => {
+              if (item.id === 'tracking') {
+                navigation.navigate('TrackingLookup');
+                return;
+              }
+
               Alert.alert('Ứng dụng', item.label);
             }}
           />
@@ -310,4 +332,31 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
     marginTop: 2,
   },
+  queueHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  queueCloseButton: {
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.pill,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 4,
+  },
+  queueCloseText: {
+    ...theme.typography.caption.md,
+    color: theme.colors.textSecondary,
+  },
+  queueTaskRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: theme.spacing.sm,
+    paddingTop: theme.spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+  },
 });
+

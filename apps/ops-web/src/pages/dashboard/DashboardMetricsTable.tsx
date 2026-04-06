@@ -1,6 +1,7 @@
 import React from 'react';
 
 import type { DashboardMetricPointDto } from '../../features/dashboard/dashboard.types';
+import { formatKpiLabel } from '../../utils/logisticsLabels';
 
 interface DashboardMetricsTableProps {
   title: string;
@@ -19,14 +20,14 @@ export function DashboardMetricsTable({
       <table className="ops-metrics-table">
         <thead>
           <tr>
-            <th>Nhãn</th>
-            <th>Giá trị</th>
+            <th>Nhan</th>
+            <th>Gia tri</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((item) => (
             <tr key={`${item.label}-${item.value}`}>
-              <td>{item.label}</td>
+              <td>{formatKpiLabel(item.label)}</td>
               <td>{item.value}</td>
             </tr>
           ))}

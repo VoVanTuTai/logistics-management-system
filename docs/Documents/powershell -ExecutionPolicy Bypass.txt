@@ -1,0 +1,23 @@
+powershell -ExecutionPolicy Bypass -File scripts/start-all.ps1 -MobileMode lan
+
+Mở PowerShell tại thư mục project:
+cd "d:\University\Semester 2_Year 4\New Technology\logistics-management-system"
+Khởi động toàn bộ backend + web + courier mobile (LAN):
+powershell -ExecutionPolicy Bypass -File scripts/start-all.ps1 -SkipInfra -MobileMode lan
+Chờ log hiện courier-mobile và QR code.
+
+Mở Expo Go trên điện thoại, quét QR.
+
+Đăng nhập:
+
+courier.hcm1
+courier123456
+Lưu ý quan trọng:
+
+Máy tính và điện thoại phải cùng Wi‑Fi.
+Không bấm a (máy bạn chưa cài Android SDK/adb).
+Nếu đổi mạng Wi‑Fi, phải tắt và chạy lại lệnh ở bước 2 để cập nhật IP LAN mới.
+Khi bị network request failed, chạy lại riêng courier mobile:
+
+cd "d:\University\Semester 2_Year 4\New Technology\logistics-management-system\apps\courier-mobile"
+npm run start -- --host lan --port 8081

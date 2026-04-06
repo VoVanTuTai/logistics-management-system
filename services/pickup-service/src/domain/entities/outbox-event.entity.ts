@@ -1,9 +1,4 @@
-export type PickupPublishedEventType =
-  | 'pickup.requested'
-  | 'pickup.approved'
-  | 'pickup.updated'
-  | 'pickup.cancelled'
-  | 'pickup.completed';
+﻿export type PickupPublishedEventType = 'pickup.requested' | 'pickup.approved';
 
 export type OutboxStatus = 'PENDING' | 'PUBLISHED' | 'FAILED';
 

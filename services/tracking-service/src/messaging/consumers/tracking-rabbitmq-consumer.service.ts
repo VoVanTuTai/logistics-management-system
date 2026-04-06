@@ -7,6 +7,7 @@ import {
   type Options,
 } from 'amqplib';
 
+import { isTrackingBusinessEventType } from '../../application/mappers/tracking-display.mapper';
 import type { TrackingEventEnvelope } from '../../domain/entities/timeline-event.entity';
 import { TrackingEventsConsumer } from './tracking-events.consumer';
 
@@ -232,7 +233,13 @@ export class TrackingRabbitmqConsumerService
     const occurredAt = this.readString(record.occurred_at);
     const idempotencyKey = this.readString(record.idempotency_key);
 
-    if (!eventId || !eventType || !occurredAt || !idempotencyKey) {
+    if (
+      !eventId ||
+      !eventType ||
+      !occurredAt ||
+      !idempotencyKey ||
+      !isTrackingBusinessEventType(eventType)
+    ) {
       return null;
     }
 

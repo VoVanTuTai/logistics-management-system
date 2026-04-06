@@ -196,6 +196,43 @@ export class ManifestPrismaRepository extends ManifestRepository {
     return this.toEntity(record);
   }
 
+  async delete(id: string): Promise<Manifest> {
+    const record = await this.prisma.$transaction(async (tx) => {
+      const manifest = await tx.manifest.findUnique({
+        where: { id },
+        include: {
+          items: true,
+          sealRecord: true,
+          receiveRecord: true,
+        },
+      });
+
+      if (!manifest) {
+        throw new Error(`Manifest "${id}" was not found.`);
+      }
+
+      await tx.manifestItem.deleteMany({
+        where: { manifestId: id },
+      });
+
+      await tx.sealRecord.deleteMany({
+        where: { manifestId: id },
+      });
+
+      await tx.receiveRecord.deleteMany({
+        where: { manifestId: id },
+      });
+
+      await tx.manifest.delete({
+        where: { id },
+      });
+
+      return manifest;
+    });
+
+    return this.toEntity(record);
+  }
+
   async addShipments(id: string, shipmentCodes: string[]): Promise<Manifest> {
     const uniqueCodes = this.normalizeShipmentCodes(shipmentCodes);
     if (uniqueCodes.length === 0) {

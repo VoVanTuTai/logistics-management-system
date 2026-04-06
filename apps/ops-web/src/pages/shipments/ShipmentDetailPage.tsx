@@ -17,6 +17,7 @@ import { routePaths } from '../../navigation/routes';
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
 import { formatDateTime } from '../../utils/format';
+import { formatShipmentStatusLabel } from '../../utils/logisticsLabels';
 
 export function ShipmentDetailPage(): React.JSX.Element {
   const { shipmentId = '' } = useParams();
@@ -52,7 +53,7 @@ export function ShipmentDetailPage(): React.JSX.Element {
   });
 
   if (detailQuery.isLoading) {
-    return <p>Đang tải chi tiết vận đơn...</p>;
+    return <p>Dang tai chi tiet van don...</p>;
   }
 
   if (detailQuery.isError) {
@@ -60,42 +61,42 @@ export function ShipmentDetailPage(): React.JSX.Element {
   }
 
   if (!detailQuery.data) {
-    return <p>Không tìm thấy vận đơn.</p>;
+    return <p>Khong tim thay van don.</p>;
   }
 
   return (
     <section>
-      <h2>Chi tiết vận đơn</h2>
-      <p>Mã vận đơn: {detailQuery.data.shipmentCode}</p>
-      <p>Trạng thái hiện tại: {detailQuery.data.currentStatus}</p>
-      <p>Vị trí hiện tại: {detailQuery.data.currentLocation ?? 'Không có'}</p>
-      <p>Cập nhật lúc: {formatDateTime(detailQuery.data.updatedAt)}</p>
+      <h2>Chi tiet van don</h2>
+      <p>Ma van don: {detailQuery.data.shipmentCode}</p>
+      <p>Trang thai hien tai: {formatShipmentStatusLabel(detailQuery.data.currentStatus)}</p>
+      <p>Vi tri hien tai: {detailQuery.data.currentLocation ?? 'Khong co'}</p>
+      <p>Cap nhat luc: {formatDateTime(detailQuery.data.updatedAt)}</p>
 
       <div style={styles.entryPointGroup}>
-        <strong>Điểm vào tác vụ liên quan</strong>
+        <strong>Diem vao nghiep vu lien quan</strong>
         <div style={styles.entryLinks}>
           <Link to={`${routePaths.tasks}?shipmentCode=${encodeURIComponent(detailQuery.data.shipmentCode)}`}>
-            Phân công/Phân công lại tác vụ
+            Phan cong/phan cong lai tac vu
           </Link>
           <Link
             to={`${routePaths.manifests}?shipmentCode=${encodeURIComponent(detailQuery.data.shipmentCode)}`}
           >
-            Thêm vào manifest
+            Them vao bao tai
           </Link>
           <Link to={`${routePaths.scans}?shipmentCode=${encodeURIComponent(detailQuery.data.shipmentCode)}`}>
-            Quét hub
+            Quet hub
           </Link>
           <Link to={`${routePaths.ndr}?shipmentCode=${encodeURIComponent(detailQuery.data.shipmentCode)}`}>
-            Xử lý NDR
+            Xu ly NDR
           </Link>
         </div>
       </div>
 
       <form onSubmit={onSubmit} style={styles.form}>
-        <label htmlFor="note">Ghi chú vận hành</label>
+        <label htmlFor="note">Ghi chu van hanh</label>
         <textarea id="note" rows={4} {...form.register('note')} />
         <button type="submit" disabled={updateMutation.isPending}>
-          {updateMutation.isPending ? 'Đang lưu...' : 'Lưu'}
+          {updateMutation.isPending ? 'Dang luu...' : 'Luu'}
         </button>
         {updateMutation.isError ? (
           <small style={styles.errorText}>{getErrorMessage(updateMutation.error)}</small>
@@ -104,14 +105,10 @@ export function ShipmentDetailPage(): React.JSX.Element {
 
       <div style={styles.actionsGrid}>
         <form onSubmit={onReviewSubmit} style={styles.form}>
-          <h3 style={styles.actionTitle}>Khung thao tác rà soát</h3>
-          <textarea
-            rows={3}
-            placeholder="Ghi chú rà soát"
-            {...reviewForm.register('note')}
-          />
+          <h3 style={styles.actionTitle}>Ra soat</h3>
+          <textarea rows={3} placeholder="Ghi chu ra soat" {...reviewForm.register('note')} />
           <button type="submit" disabled={reviewMutation.isPending}>
-            {reviewMutation.isPending ? 'Đang gửi rà soát...' : 'Gửi rà soát'}
+            {reviewMutation.isPending ? 'Dang gui ra soat...' : 'Gui ra soat'}
           </button>
           {reviewMutation.isError ? (
             <small style={styles.errorText}>{getErrorMessage(reviewMutation.error)}</small>
@@ -119,14 +116,10 @@ export function ShipmentDetailPage(): React.JSX.Element {
         </form>
 
         <form onSubmit={onApproveSubmit} style={styles.form}>
-          <h3 style={styles.actionTitle}>Khung thao tác phê duyệt</h3>
-          <textarea
-            rows={3}
-            placeholder="Ghi chú phê duyệt"
-            {...approveForm.register('note')}
-          />
+          <h3 style={styles.actionTitle}>Phe duyet</h3>
+          <textarea rows={3} placeholder="Ghi chu phe duyet" {...approveForm.register('note')} />
           <button type="submit" disabled={approveMutation.isPending}>
-            {approveMutation.isPending ? 'Đang gửi phê duyệt...' : 'Gửi phê duyệt'}
+            {approveMutation.isPending ? 'Dang gui phe duyet...' : 'Gui phe duyet'}
           </button>
           {approveMutation.isError ? (
             <small style={styles.errorText}>{getErrorMessage(approveMutation.error)}</small>

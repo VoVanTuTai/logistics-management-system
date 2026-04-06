@@ -5,6 +5,7 @@ import { manifestsClient } from './manifests.client';
 import type {
   AddShipmentInput,
   CreateManifestInput,
+  GenerateBagCodesInput,
   ReceiveHandoverInput,
   RemoveShipmentInput,
   SealManifestInput,
@@ -35,6 +36,29 @@ export function useCreateManifestMutation(accessToken: string | null) {
   return useMutation({
     mutationFn: (payload: CreateManifestInput) =>
       manifestsClient.create(accessToken, payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.manifests });
+    },
+  });
+}
+
+export function useGenerateBagCodesMutation(accessToken: string | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: GenerateBagCodesInput) =>
+      manifestsClient.generateBagCodes(accessToken, payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.manifests });
+    },
+  });
+}
+
+export function useDeleteManifestMutation(accessToken: string | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (manifestId: string) => manifestsClient.delete(accessToken, manifestId),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.manifests });
     },

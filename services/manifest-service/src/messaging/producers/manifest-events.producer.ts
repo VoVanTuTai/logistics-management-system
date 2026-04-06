@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+﻿import { randomUUID } from 'crypto';
 
 import { Injectable } from '@nestjs/common';
 
@@ -13,18 +13,6 @@ import type { Manifest } from '../../domain/entities/manifest.entity';
 export class ManifestEventsProducer {
   readonly exchangeName = process.env.DOMAIN_EVENTS_EXCHANGE ?? 'domain.events';
 
-  buildManifestCreatedEvents(manifest: Manifest): QueueOutboxEventInput[] {
-    return this.buildEvents('manifest.created', manifest);
-  }
-
-  buildManifestUpdatedEvents(
-    manifest: Manifest,
-    metadata: Record<string, unknown>,
-    shipmentCodes?: string[],
-  ): QueueOutboxEventInput[] {
-    return this.buildEvents('manifest.updated', manifest, metadata, shipmentCodes);
-  }
-
   buildManifestSealedEvents(manifest: Manifest): QueueOutboxEventInput[] {
     return this.buildEvents('manifest.sealed', manifest);
   }
@@ -36,13 +24,11 @@ export class ManifestEventsProducer {
   private buildEvents(
     eventType: ManifestPublishedEventType,
     manifest: Manifest,
-    metadata?: Record<string, unknown>,
-    shipmentCodes?: string[],
   ): QueueOutboxEventInput[] {
-    const targets = this.resolveTargetShipmentCodes(manifest, shipmentCodes);
+    const targets = this.resolveTargetShipmentCodes(manifest);
 
     return targets.map((shipmentCode) =>
-      this.buildEvent(eventType, manifest, shipmentCode, metadata),
+      this.buildEvent(eventType, manifest, shipmentCode),
     );
   }
 
@@ -50,11 +36,9 @@ export class ManifestEventsProducer {
     eventType: ManifestPublishedEventType,
     manifest: Manifest,
     shipmentCode: string | null,
-    metadata?: Record<string, unknown>,
   ): QueueOutboxEventInput {
     const eventId = randomUUID();
     const occurredAt = new Date();
-    const normalizedMetadata = metadata ?? {};
     const idempotencyShipmentCode = shipmentCode ?? 'none';
     const payload: ManifestEventEnvelope = {
       event_id: eventId,
@@ -65,7 +49,6 @@ export class ManifestEventsProducer {
       location: null,
       data: {
         manifest,
-        ...normalizedMetadata,
       },
       idempotency_key: `${eventType}:manifest:${manifest.id}:${idempotencyShipmentCode}:${occurredAt.toISOString()}`,
     };
@@ -81,12 +64,9 @@ export class ManifestEventsProducer {
     };
   }
 
-  private resolveTargetShipmentCodes(
-    manifest: Manifest,
-    shipmentCodes?: string[],
-  ): Array<string | null> {
+  private resolveTargetShipmentCodes(manifest: Manifest): Array<string | null> {
     const normalizedCodes = this.normalizeShipmentCodes(
-      shipmentCodes ?? manifest.items.map((item) => item.shipmentCode),
+      manifest.items.map((item) => item.shipmentCode),
     );
 
     if (normalizedCodes.length === 0) {

@@ -1,9 +1,4 @@
-export type ShipmentPublishedEventType =
-  | 'shipment.created'
-  | 'shipment.updated'
-  | 'shipment.cancelled'
-  | 'shipment.change_requested'
-  | 'shipment.change_approved';
+﻿export type ShipmentPublishedEventType = 'shipment.created';
 
 export type OutboxStatus = 'PENDING' | 'PUBLISHED' | 'FAILED';
 

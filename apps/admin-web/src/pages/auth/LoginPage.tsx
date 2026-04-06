@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useLoginMutation } from '../../features/auth/auth.api';
@@ -25,7 +25,7 @@ export function LoginPage(): React.JSX.Element {
 
       if (!hasAdminRole(session)) {
         await clearAuthSession();
-        setAuthError('Account must include SYSTEM_ADMIN role.');
+        setAuthError('Tài khoản phai co vai tro SYSTEM_ADMIN.');
         return;
       }
 
@@ -38,9 +38,9 @@ export function LoginPage(): React.JSX.Element {
   return (
     <div className="auth-page auth-page-admin">
       <div className="auth-card">
-        <p className="auth-kicker">Admin Portal</p>
-        <h2 className="auth-title">Sign In To System Governance</h2>
-        <p className="auth-subtitle">Manage RBAC, hubs, zones, NDR reasons, and shared configs.</p>
+        <p className="auth-kicker">Cong Admin</p>
+        <h2 className="auth-title">Đăng nhập He Thong Quan Tri</h2>
+        <p className="auth-subtitle">Quan ly RBAC, hub, zone, ly do NDR va cau hinh dung chung.</p>
         <LoginForm
           isSubmitting={isSubmitting || loginMutation.isPending}
           errorMessage={authError}
@@ -51,3 +51,4 @@ export function LoginPage(): React.JSX.Element {
     </div>
   );
 }
+

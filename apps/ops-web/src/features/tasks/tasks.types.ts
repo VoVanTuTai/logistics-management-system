@@ -27,6 +27,15 @@ export interface TaskDetailDto {
 export interface TaskListFilters {
   taskType?: string;
   status?: string;
+  shipmentCode?: string;
+}
+
+export interface CreateTaskInput {
+  taskCode: string;
+  taskType: 'PICKUP' | 'DELIVERY' | 'RETURN';
+  shipmentCode?: string | null;
+  pickupRequestId?: string | null;
+  note?: string | null;
 }
 
 export interface AssignTaskInput {

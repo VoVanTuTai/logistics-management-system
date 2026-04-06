@@ -7,6 +7,12 @@ import type {
 } from '@prisma/client';
 import { Prisma as PrismaNamespace } from '@prisma/client';
 
+import {
+  isTrackingBusinessEventType,
+  resolveTrackingStatusFromEvent,
+  toTimelineTextVi,
+  toTrackingStatusLabelVi,
+} from '../../application/mappers/tracking-display.mapper';
 import type {
   TimelineEvent,
   TrackingEventEnvelope,
@@ -15,36 +21,6 @@ import type { TrackingCurrent } from '../../domain/entities/tracking-current.ent
 import type { TrackingIndex } from '../../domain/entities/tracking-index.entity';
 import { PrismaService } from './prisma.service';
 
-const STATUS_BY_EVENT_TYPE: Record<string, string> = {
-  'shipment.created': 'CREATED',
-  'shipment.updated': 'UPDATED',
-  'shipment.cancelled': 'CANCELLED',
-  'shipment.change_requested': 'CHANGE_REQUESTED',
-  'shipment.change_approved': 'UPDATED',
-  'pickup.requested': 'PICKUP_REQUESTED',
-  'pickup.approved': 'PICKUP_APPROVED',
-  'pickup.completed': 'PICKED_UP',
-  'task.created': 'TASK_CREATED',
-  'task.assigned': 'TASK_ASSIGNED',
-  'task.reassigned': 'TASK_REASSIGNED',
-  'task.completed': 'TASK_COMPLETED',
-  'task.cancelled': 'TASK_CANCELLED',
-  'manifest.created': 'MANIFEST_CREATED',
-  'manifest.updated': 'MANIFEST_UPDATED',
-  'manifest.sealed': 'MANIFEST_SEALED',
-  'manifest.received': 'MANIFEST_RECEIVED',
-  'scan.pickup_confirmed': 'PICKUP_CONFIRMED',
-  'scan.inbound': 'INBOUND',
-  'scan.outbound': 'OUTBOUND',
-  'delivery.attempted': 'DELIVERY_ATTEMPTED',
-  'delivery.delivered': 'DELIVERED',
-  'delivery.failed': 'DELIVERY_FAILED',
-  'ndr.created': 'NDR_CREATED',
-  'ndr.rescheduled': 'NDR_RESCHEDULED',
-  'return.started': 'RETURN_STARTED',
-  'return.completed': 'RETURN_COMPLETED',
-};
-
 @Injectable()
 export class TrackingProjectionStore {
   constructor(private readonly prisma: PrismaService) {}
@@ -52,6 +28,13 @@ export class TrackingProjectionStore {
   async project(
     event: TrackingEventEnvelope,
   ): Promise<{ projected: boolean; shipmentCode: string | null }> {
+    if (!isTrackingBusinessEventType(event.event_type)) {
+      return {
+        projected: false,
+        shipmentCode: null,
+      };
+    }
+
     const shipmentCode = this.extractShipmentCode(event);
     if (!shipmentCode) {
       return {
@@ -69,6 +52,8 @@ export class TrackingProjectionStore {
       },
     });
     const currentStatus = this.deriveCurrentStatus(event, existingCurrent);
+    const currentStatusLabelVi = toTrackingStatusLabelVi(currentStatus);
+    const timelineTextVi = toTimelineTextVi(event, locationCode);
     const currentLocationCode =
       locationCode ?? existingCurrent?.currentLocationCode ?? null;
 
@@ -97,6 +82,10 @@ export class TrackingProjectionStore {
             current_status: 'shipment-service',
             current_location: 'scan-service',
           },
+          display: {
+            timeline_text_vi: timelineTextVi,
+            current_status_label_vi: currentStatusLabelVi,
+          },
           event_data: event.data,
         } as unknown as Prisma.InputJsonValue,
       },
@@ -111,6 +100,10 @@ export class TrackingProjectionStore {
           source_of_truth: {
             current_status: 'shipment-service',
             current_location: 'scan-service',
+          },
+          display: {
+            timeline_text_vi: timelineTextVi,
+            current_status_label_vi: currentStatusLabelVi,
           },
           event_data: event.data,
         } as unknown as Prisma.InputJsonValue,
@@ -193,13 +186,15 @@ export class TrackingProjectionStore {
     event: TrackingEventEnvelope,
     existingCurrent: PrismaTrackingCurrentRecord | null,
   ): string | null {
-    return (
+    const currentFromPayload =
       this.getNestedString(event.data, ['shipment', 'currentStatus']) ??
       this.getNestedString(event.data, ['shipment', 'status']) ??
       this.getNestedString(event.data, ['trackingCurrent', 'currentStatus']) ??
-      STATUS_BY_EVENT_TYPE[event.event_type] ??
-      existingCurrent?.currentStatus ??
-      null
+      null;
+
+    return resolveTrackingStatusFromEvent(
+      event,
+      currentFromPayload ?? existingCurrent?.currentStatus ?? null,
     );
   }
 

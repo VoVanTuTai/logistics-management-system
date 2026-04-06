@@ -1,8 +1,7 @@
-import { randomUUID } from 'crypto';
+﻿import { randomUUID } from 'crypto';
 
 import { Injectable } from '@nestjs/common';
 
-import type { ChangeRequest } from '../../domain/entities/change-request.entity';
 import type {
   QueueOutboxEventInput,
   ShipmentEventEnvelope,
@@ -30,66 +29,6 @@ export class ShipmentEventsProducer {
       aggregateId: shipment.id,
       data: {
         shipment,
-      },
-    });
-  }
-
-  buildShipmentUpdatedEvent(
-    shipment: Shipment,
-    data: Record<string, unknown>,
-  ): QueueOutboxEventInput {
-    return this.buildEvent({
-      eventType: 'shipment.updated',
-      shipmentCode: shipment.code,
-      aggregateType: 'shipment',
-      aggregateId: shipment.id,
-      data: {
-        shipment,
-        ...data,
-      },
-    });
-  }
-
-  buildShipmentCancelledEvent(
-    shipment: Shipment,
-    data: Record<string, unknown>,
-  ): QueueOutboxEventInput {
-    return this.buildEvent({
-      eventType: 'shipment.cancelled',
-      shipmentCode: shipment.code,
-      aggregateType: 'shipment',
-      aggregateId: shipment.id,
-      data: {
-        shipment,
-        ...data,
-      },
-    });
-  }
-
-  buildChangeRequestedEvent(
-    changeRequest: ChangeRequest,
-  ): QueueOutboxEventInput {
-    return this.buildEvent({
-      eventType: 'shipment.change_requested',
-      shipmentCode: changeRequest.shipmentCode,
-      aggregateType: 'change-request',
-      aggregateId: changeRequest.id,
-      data: {
-        change_request: changeRequest,
-      },
-    });
-  }
-
-  buildChangeApprovedEvent(
-    changeRequest: ChangeRequest,
-  ): QueueOutboxEventInput {
-    return this.buildEvent({
-      eventType: 'shipment.change_approved',
-      shipmentCode: changeRequest.shipmentCode,
-      aggregateType: 'change-request',
-      aggregateId: changeRequest.id,
-      data: {
-        change_request: changeRequest,
       },
     });
   }

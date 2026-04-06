@@ -89,18 +89,26 @@ export interface ChangeRequest {
 
 export interface TrackingCurrent {
   shipmentCode: string;
+  currentStatusCode?: string | null;
   currentStatus: string | null;
   currentLocationCode: string | null;
+  currentLocationText?: string | null;
+  lastEventTypeCode?: string | null;
   lastEventType: string | null;
   lastEventAt: string | null;
 }
 
 export interface TimelineEvent {
   id: string;
+  eventTypeCode?: string;
   eventType: string;
+  eventSource?: string;
+  statusAfterEventCode?: string | null;
+  statusAfterEvent?: string | null;
   shipmentCode: string;
   actor: string | null;
   locationCode: string | null;
+  locationText?: string | null;
   occurredAt: string;
 }
 
@@ -133,12 +141,19 @@ export interface NotificationItem {
 }
 
 export interface CreateShipmentForm {
-  manualCode: string;
   senderName: string;
   senderPhone: string;
+  senderProvince: string;
+  senderWard: string;
+  senderAddressDetail: string;
+  senderHubCode: string;
   senderAddress: string;
   receiverName: string;
   receiverPhone: string;
+  receiverProvince: string;
+  receiverWard: string;
+  receiverAddressDetail: string;
+  receiverHubCode: string;
   receiverAddress: string;
   receiverRegion: string;
   itemType: string;
@@ -148,7 +163,6 @@ export interface CreateShipmentForm {
   heightCm: string;
   declaredValue: string;
   serviceType: 'STANDARD' | 'EXPRESS' | 'SAME_DAY';
-  codAmount: string;
   deliveryNote: string;
 }
 
@@ -177,12 +191,19 @@ export interface MerchantProfile {
 }
 
 export const DEFAULT_CREATE_FORM: CreateShipmentForm = {
-  manualCode: '',
   senderName: '',
   senderPhone: '',
+  senderProvince: '',
+  senderWard: '',
+  senderAddressDetail: '',
+  senderHubCode: '',
   senderAddress: '',
   receiverName: '',
   receiverPhone: '',
+  receiverProvince: '',
+  receiverWard: '',
+  receiverAddressDetail: '',
+  receiverHubCode: '',
   receiverAddress: '',
   receiverRegion: '',
   itemType: '',
@@ -192,7 +213,6 @@ export const DEFAULT_CREATE_FORM: CreateShipmentForm = {
   heightCm: '',
   declaredValue: '',
   serviceType: 'STANDARD',
-  codAmount: '',
   deliveryNote: '',
 };
 

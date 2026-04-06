@@ -6,170 +6,199 @@ import {
   Text,
   View,
 } from 'react-native';
-import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type {
+  NativeStackNavigationProp,
+  NativeStackScreenProps,
+} from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Card } from '../../components/ui/Card';
 import { Screen } from '../../components/ui/Screen';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { useAssignedTasksQuery } from '../../features/tasks/tasks.queries';
-import type { TaskListFilter, TaskStatus } from '../../features/tasks/tasks.types';
-import type {
-  MainTabParamList,
-  RootStackParamList,
-} from '../../navigation/navigation.types';
+import type { TaskDto, TaskStatus, TaskType } from '../../features/tasks/tasks.types';
+import type { AppNavigatorParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
 import { appEnv } from '../../utils/env';
 import { resolveCourierId } from '../../utils/courier';
 import { theme } from '../../theme';
 
-type Props = BottomTabScreenProps<MainTabParamList, 'Tasks'>;
+type Props = NativeStackScreenProps<AppNavigatorParamList, 'TaskList'>;
 
-const FILTER_OPTIONS: Array<{ value: TaskListFilter; label: string }> = [
-  { value: 'ALL', label: 'Tat ca' },
-  { value: 'PICKUP', label: 'Pickup' },
-  { value: 'DELIVERY', label: 'Delivery' },
-  { value: 'RETURN', label: 'Return' },
-];
-
-function mapTaskStatusVariant(status: TaskStatus):
+function statusVariant(status: TaskStatus):
   | 'neutral'
   | 'success'
   | 'warning'
   | 'danger'
   | 'info' {
-  if (status === 'COMPLETED') {
-    return 'success';
-  }
-
-  if (status === 'CANCELLED') {
-    return 'danger';
-  }
-
-  if (status === 'CREATED') {
-    return 'warning';
-  }
-
+  if (status === 'COMPLETED') return 'success';
+  if (status === 'CANCELLED') return 'danger';
+  if (status === 'CREATED') return 'warning';
   return 'info';
 }
 
-export function TaskListScreen(_: Props): React.JSX.Element {
+export function TaskListScreen({ route }: Props): React.JSX.Element {
   const navigation =
-    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+    useNavigation<NativeStackNavigationProp<AppNavigatorParamList>>();
   const session = useAppStore((state) => state.session);
   const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
   const offlinePendingCount = useAppStore((state) => state.offlinePendingCount);
-  const [selectedFilter, setSelectedFilter] = useState<TaskListFilter>('ALL');
+
   const tasksQuery = useAssignedTasksQuery({
     accessToken: session?.tokens.accessToken ?? null,
     courierId,
   });
+  const onRefresh = () => void tasksQuery.refetch();
+
+  const [taskTypeFilter, setTaskTypeFilter] = useState<TaskType | 'ALL'>(
+    route.params?.initialTaskType ?? 'ALL',
+  );
+  const [statusFilter, setStatusFilter] = useState<
+    'ALL' | 'CREATED' | 'ASSIGNED' | 'COMPLETED' | 'CANCELLED'
+  >(route.params?.initialStatus ?? 'ALL');
+  const [typeMenuOpen, setTypeMenuOpen] = useState(false);
+  const [statusMenuOpen, setStatusMenuOpen] = useState(false);
 
   const tasks = tasksQuery.data ?? [];
+
   const filteredTasks = useMemo(
     () =>
-      selectedFilter === 'ALL'
-        ? tasks
-        : tasks.filter((task) => task.taskType === selectedFilter),
-    [selectedFilter, tasks],
+      tasks.filter(
+        (task) =>
+          (taskTypeFilter === 'ALL' || task.taskType === taskTypeFilter) &&
+          (statusFilter === 'ALL' || task.status === statusFilter),
+      ),
+    [tasks, taskTypeFilter, statusFilter],
   );
 
-  const totalTaskCount = tasks.length;
-  const assignedTaskCount = tasks.filter((task) => task.status === 'ASSIGNED').length;
-  const completedTaskCount = tasks.filter((task) => task.status === 'COMPLETED').length;
+  const typeOptions: { value: TaskType | 'ALL'; label: string }[] = [
+    { value: 'ALL', label: 'Tất cả' },
+    { value: 'PICKUP', label: 'Đợi lấy' },
+    { value: 'DELIVERY', label: 'Đợi phát' },
+    { value: 'RETURN', label: 'Hoàn hàng' },
+  ];
+
+  const statusOptions: {
+    value: 'ALL' | 'CREATED' | 'ASSIGNED' | 'COMPLETED' | 'CANCELLED';
+    label: string;
+  }[] = [
+    { value: 'ALL', label: 'Tất cả' },
+    { value: 'CREATED', label: 'Chờ nhận' },
+    { value: 'ASSIGNED', label: 'Đang giao' },
+    { value: 'COMPLETED', label: 'Hoàn thành' },
+    { value: 'CANCELLED', label: 'Đã hủy' },
+  ];
 
   return (
-    <Screen contentContainerStyle={styles.content}>
-      <View style={styles.heroCard}>
-        <View>
-          <Text style={styles.greeting}>Chao {session?.user.username ?? 'Courier'}</Text>
-          <Text style={styles.heroSubtitle}>Ban co {totalTaskCount} nhiem vu trong ca</Text>
+    <Screen
+      style={{ backgroundColor: theme.colors.background }}
+      contentContainerStyle={styles.content}
+      onRefresh={onRefresh}
+      refreshing={tasksQuery.isRefetching}
+    >
+      <View style={styles.headerBlock}>
+        <View style={styles.headerTop}>
+          <Text style={styles.headerSubtitle}>
+            {courierId} • {filteredTasks.length} nhiệm vụ
+          </Text>
+          <Pressable
+            onPress={() => navigation.navigate('TrackingLookup')}
+            style={({ pressed }) => [styles.trackButton, pressed && { opacity: 0.85 }]}
+          >
+            <Ionicons name="locate-outline" size={14} color={theme.colors.primary} />
+            <Text style={styles.trackButtonText}>Theo doi don</Text>
+          </Pressable>
         </View>
-        <Ionicons name="bicycle" size={28} color="#FFFFFF" />
-      </View>
 
-      <View style={styles.kpiGrid}>
-        <Card style={styles.kpiCard}>
-          <Text style={styles.kpiLabel}>Tong task</Text>
-          <Text style={styles.kpiValue}>{totalTaskCount}</Text>
-        </Card>
-        <Card style={styles.kpiCard}>
-          <Text style={styles.kpiLabel}>Dang xu ly</Text>
-          <Text style={styles.kpiValue}>{assignedTaskCount}</Text>
-        </Card>
-        <Card style={styles.kpiCard}>
-          <Text style={styles.kpiLabel}>Da xong</Text>
-          <Text style={styles.kpiValue}>{completedTaskCount}</Text>
-        </Card>
+        <View style={styles.selectRow}>
+          <View style={styles.selectColumn}>
+            <Pressable
+              style={styles.selectButton}
+              onPress={() => {
+                setTypeMenuOpen((prev) => !prev);
+                setStatusMenuOpen(false);
+              }}
+            >
+              <Text style={styles.selectLabel}>Loại</Text>
+              <Text style={styles.selectValue}>
+                {typeOptions.find((o) => o.value === taskTypeFilter)?.label ?? 'Tất cả'}
+              </Text>
+              <Ionicons
+                name={typeMenuOpen ? 'chevron-up' : 'chevron-down'}
+                size={12}
+                color="#E7F0FF"
+              />
+            </Pressable>
+            {typeMenuOpen ? (
+              <View style={styles.dropdown}>
+                {typeOptions.map((option) => (
+                  <Pressable
+                    key={option.value}
+                    style={styles.dropdownItem}
+                    onPress={() => {
+                      setTaskTypeFilter(option.value);
+                      setTypeMenuOpen(false);
+                    }}
+                  >
+                    <Text style={styles.dropdownText}>{option.label}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
+          </View>
+
+          <View style={styles.selectColumn}>
+            <Pressable
+              style={styles.selectButton}
+              onPress={() => {
+                setStatusMenuOpen((prev) => !prev);
+                setTypeMenuOpen(false);
+              }}
+            >
+              <Text style={styles.selectLabel}>Trạng thái</Text>
+              <Text style={styles.selectValue}>
+                {statusOptions.find((o) => o.value === statusFilter)?.label ?? 'Tất cả'}
+              </Text>
+              <Ionicons
+                name={statusMenuOpen ? 'chevron-up' : 'chevron-down'}
+                size={12}
+                color="#E7F0FF"
+              />
+            </Pressable>
+            {statusMenuOpen ? (
+              <View style={styles.dropdown}>
+                {statusOptions.map((option) => (
+                  <Pressable
+                    key={option.value}
+                    style={styles.dropdownItem}
+                    onPress={() => {
+                      setStatusFilter(option.value);
+                      setStatusMenuOpen(false);
+                    }}
+                  >
+                    <Text style={styles.dropdownText}>{option.label}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
+          </View>
+        </View>
       </View>
 
       {offlinePendingCount > 0 ? (
         <Card style={styles.offlineBanner}>
-          <Text style={styles.offlineBannerTitle}>Dang co action cho retry offline</Text>
+          <Text style={styles.offlineBannerTitle}>Đang có thao tác chờ đồng bộ offline</Text>
           <Text style={styles.offlineBannerText}>
-            {offlinePendingCount} action dang queue. Vao tab Ca nhan de retry thu cong.
+            {offlinePendingCount} thao tác đang trong hàng đợi. Vào tab Cá nhân để thử lại thủ công.
           </Text>
         </Card>
       ) : null}
 
-      <View style={styles.quickGrid}>
-        <Card style={styles.quickCard} onPress={() => navigation.navigate('PickupScan', {})}>
-          <Ionicons name="scan-circle-outline" size={22} color={theme.colors.primary} />
-          <Text style={styles.quickTitle}>Pickup scan</Text>
-        </Card>
-
-        <Card
-          style={styles.quickCard}
-          onPress={() => navigation.navigate('HubScan', { mode: 'INBOUND' })}
-        >
-          <Ionicons name="arrow-down-circle-outline" size={22} color={theme.colors.primary} />
-          <Text style={styles.quickTitle}>Hub inbound</Text>
-        </Card>
-
-        <Card
-          style={styles.quickCard}
-          onPress={() => navigation.navigate('HubScan', { mode: 'OUTBOUND' })}
-        >
-          <Ionicons name="arrow-up-circle-outline" size={22} color={theme.colors.primary} />
-          <Text style={styles.quickTitle}>Hub outbound</Text>
-        </Card>
-
-        <Card style={styles.quickCard} onPress={() => void tasksQuery.refetch()}>
-          <Ionicons name="refresh-circle-outline" size={22} color={theme.colors.primary} />
-          <Text style={styles.quickTitle}>Lam moi task</Text>
-        </Card>
-      </View>
-
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Danh sach nhiem vu</Text>
-        <Text style={styles.sectionMeta}>Filter theo payload server</Text>
-      </View>
-
-      <View style={styles.filterRow}>
-        {FILTER_OPTIONS.map((filterOption) => {
-          const active = filterOption.value === selectedFilter;
-          return (
-            <Pressable
-              key={filterOption.value}
-              onPress={() => setSelectedFilter(filterOption.value)}
-              style={[styles.filterChip, active && styles.filterChipActive]}
-            >
-              <Text
-                style={[styles.filterChipText, active && styles.filterChipTextActive]}
-              >
-                {filterOption.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
       {tasksQuery.isLoading ? (
         <View style={styles.centeredState}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.stateText}>Dang tai nhiem vu...</Text>
+          <Text style={styles.stateText}>Đang tải nhiệm vụ...</Text>
         </View>
       ) : null}
 
@@ -178,42 +207,37 @@ export function TaskListScreen(_: Props): React.JSX.Element {
           <Text style={styles.errorText}>
             {tasksQuery.error instanceof Error
               ? tasksQuery.error.message
-              : 'Tai task that bai.'}
+              : 'Tải nhiệm vụ thất bại.'}
           </Text>
           <Pressable onPress={() => void tasksQuery.refetch()} style={styles.retryButton}>
-            <Text style={styles.retryText}>Thu lai</Text>
+            <Text style={styles.retryText}>Thử lại</Text>
           </Pressable>
         </Card>
       ) : null}
 
       {!tasksQuery.isLoading && !tasksQuery.isError && filteredTasks.length === 0 ? (
         <Card style={styles.emptyCard}>
-          <Text style={styles.emptyTitle}>Khong co task phu hop</Text>
-          <Text style={styles.stateText}>Thu doi filter hoac lam moi du lieu.</Text>
+          <Text style={styles.emptyTitle}>Không có nhiệm vụ phù hợp</Text>
+          <Text style={styles.stateText}>Thử đổi bộ lọc hoặc kéo để làm mới.</Text>
         </Card>
       ) : null}
 
       {!tasksQuery.isLoading && !tasksQuery.isError
-        ? filteredTasks.map((task) => (
+        ? filteredTasks.map((task, index) => (
             <Card
               key={task.id}
+              style={[styles.taskCard, index === 0 && { marginTop: theme.spacing.xs }]}
               onPress={() => navigation.navigate('TaskDetail', { taskId: task.id })}
-              style={styles.taskCard}
             >
               <View style={styles.taskTopRow}>
                 <Text style={styles.taskCode}>{task.taskCode}</Text>
-                <StatusBadge
-                  label={task.status}
-                  variant={mapTaskStatusVariant(task.status)}
-                />
+                <StatusBadge label={task.status} variant={statusVariant(task.status)} />
               </View>
-
               <View style={styles.taskMetaRow}>
                 <StatusBadge label={task.taskType} variant="neutral" />
-                <Text style={styles.taskShipment}>
-                  Shipment: {task.shipmentCode ?? 'N/A'}
-                </Text>
+                <Text style={styles.taskShipment}>Shipment: {task.shipmentCode ?? 'N/A'}</Text>
               </View>
+              <Text style={styles.taskNote}>{task.note ?? 'Không có ghi chú.'}</Text>
             </Card>
           ))
         : null}
@@ -223,46 +247,95 @@ export function TaskListScreen(_: Props): React.JSX.Element {
 
 const styles = StyleSheet.create({
   content: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.lg,
-    gap: theme.spacing.md,
+    paddingBottom: theme.spacing.xl,
+    gap: theme.spacing.sm,
   },
-  heroCard: {
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.radius.xl,
-    padding: theme.spacing.xl,
+  headerBlock: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xxs,
+    gap: theme.spacing.xs,
+    borderBottomLeftRadius: theme.radius.md,
+    borderBottomRightRadius: theme.radius.md,
+    ...theme.shadow.sm,
+    marginTop: 0
+    
+  },
+  headerTop: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  greeting: {
-    color: '#FFFFFF',
-    fontSize: 22,
+  headerSubtitle: {
+    color: theme.colors.textPrimary,
     fontWeight: '800',
+    fontSize: 14,
   },
-  heroSubtitle: {
-    color: '#DDE8FF',
-    marginTop: 4,
+  trackButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    borderWidth: 1,
+    borderColor: '#BFD6FF',
+    borderRadius: theme.radius.md,
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 6,
   },
-  kpiGrid: {
+  trackButtonText: {
+    color: theme.colors.primary,
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  selectRow: {
     flexDirection: 'row',
     gap: theme.spacing.sm,
   },
-  kpiCard: {
+  selectColumn: {
     flex: 1,
-    minHeight: 100,
+  },
+  selectButton: {
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    paddingHorizontal: 1,
+    paddingVertical: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
+    gap: theme.spacing.xs,
   },
-  kpiLabel: {
-    color: theme.colors.textMuted,
+  selectLabel: {
+    color: theme.colors.textPrimary,
     fontSize: 12,
+    fontWeight: '700',
+    marginRight: 0,
   },
-  kpiValue: {
-    fontSize: 28,
+  selectValue: {
+    color: theme.colors.textPrimary,
     fontWeight: '800',
-    color: theme.colors.primary,
+    fontSize: 12,
+    flex: 1,
+    textAlign: 'right',
+    marginRight: theme.spacing.xs,
+  },
+  dropdown: {
+    marginTop: 4,
+    borderRadius: theme.radius.md,
+    backgroundColor: '#FFFFFF',
+    ...theme.shadow.card,
+  },
+  dropdownItem: {
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: 10,
+  },
+  dropdownText: {
+    color: theme.colors.textPrimary,
+    fontWeight: '700',
   },
   offlineBanner: {
+    marginHorizontal: theme.spacing.lg,
     backgroundColor: '#FFF7ED',
     borderColor: '#FED7AA',
   },
@@ -275,59 +348,6 @@ const styles = StyleSheet.create({
     color: '#7C2D12',
     lineHeight: 19,
   },
-  quickGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: theme.spacing.md,
-  },
-  quickCard: {
-    width: '47%',
-    gap: theme.spacing.sm,
-    minHeight: 96,
-    justifyContent: 'center',
-  },
-  quickTitle: {
-    color: theme.colors.textPrimary,
-    fontWeight: '700',
-  },
-  sectionHeader: {
-    marginTop: theme.spacing.sm,
-    gap: 2,
-  },
-  sectionTitle: {
-    color: theme.colors.textPrimary,
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  sectionMeta: {
-    color: theme.colors.textMuted,
-    fontSize: 13,
-  },
-  filterRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: theme.spacing.sm,
-  },
-  filterChip: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radius.pill,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  filterChipActive: {
-    borderColor: theme.colors.primary,
-    backgroundColor: theme.colors.primary,
-  },
-  filterChipText: {
-    color: theme.colors.textSecondary,
-    fontWeight: '600',
-    fontSize: 13,
-  },
-  filterChipTextActive: {
-    color: '#FFFFFF',
-  },
   centeredState: {
     paddingVertical: theme.spacing.xl,
     alignItems: 'center',
@@ -339,6 +359,7 @@ const styles = StyleSheet.create({
   errorCard: {
     borderColor: '#FECACA',
     backgroundColor: '#FEF2F2',
+    marginHorizontal: theme.spacing.lg,
   },
   errorText: {
     color: theme.colors.danger,
@@ -358,6 +379,7 @@ const styles = StyleSheet.create({
   emptyCard: {
     alignItems: 'center',
     paddingVertical: theme.spacing.xl,
+    marginHorizontal: theme.spacing.lg,
   },
   emptyTitle: {
     color: theme.colors.textPrimary,
@@ -365,7 +387,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   taskCard: {
-    gap: theme.spacing.sm,
+    marginHorizontal: theme.spacing.lg,
+    gap: theme.spacing.xs,
   },
   taskTopRow: {
     flexDirection: 'row',
@@ -391,5 +414,8 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     fontSize: 13,
   },
+  taskNote: {
+    color: theme.colors.textMuted,
+    fontSize: 12,
+  },
 });
-

@@ -11,7 +11,8 @@ async function main(): Promise<void> {
       shipmentCode: 'SHP1001',
       pickupRequestId: null,
       note: 'Seed assigned pickup task',
-      assignmentCourierId: 'CR001',
+      // Align with auth-service seed user "courier.hcm"
+      assignmentCourierId: 'courier.hcm',
     },
     {
       taskCode: 'TSK1002',
@@ -29,7 +30,8 @@ async function main(): Promise<void> {
       shipmentCode: 'SHP1003',
       pickupRequestId: null,
       note: 'Seed assigned return task',
-      assignmentCourierId: 'CR002',
+      // Align with auth-service seed user "courier.hn"
+      assignmentCourierId: 'courier.hn',
     },
   ] as const;
 

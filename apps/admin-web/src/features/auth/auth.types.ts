@@ -1,4 +1,4 @@
-import { z } from 'zod';
+﻿import { z } from 'zod';
 
 export interface AuthUserDto {
   id: string;
@@ -72,8 +72,10 @@ export interface RefreshTokenInputDto {
 }
 
 export const loginSchema = z.object({
-  username: z.string().min(1, 'Tên đăng nhập là bắt buộc.'),
-  password: z.string().min(1, 'Mật khẩu là bắt buộc.'),
+  username: z.string().min(1, 'Ten dang nhap la bat buoc.'),
+  password: z.string().min(1, 'Mật khẩu la bat buoc.'),
 });
 
 export type LoginFormValues = z.infer<typeof loginSchema>;
+
+

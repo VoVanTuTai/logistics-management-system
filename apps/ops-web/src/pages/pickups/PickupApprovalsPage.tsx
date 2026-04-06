@@ -7,6 +7,7 @@ import type { PickupRequestListFilters } from '../../features/pickups/pickups.ty
 import { useShipmentsQuery } from '../../features/shipments/shipments.api';
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
+import { formatPickupStatusLabel } from '../../utils/logisticsLabels';
 import { queryKeys } from '../../utils/queryKeys';
 import { PickupRequestsTable, type PickupApprovalRow } from './PickupRequestsTable';
 
@@ -46,7 +47,7 @@ export function PickupApprovalsPage(): React.JSX.Element {
   const bulkApproveMutation = useMutation({
     mutationFn: async (pickupIds: string[]): Promise<BulkApproveResult> => {
       if (!accessToken) {
-        throw new Error('Access token is missing.');
+        throw new Error('Thieu access token.');
       }
 
       const settled = await Promise.allSettled(
@@ -193,7 +194,7 @@ export function PickupApprovalsPage(): React.JSX.Element {
     setActionMessage(null);
     setActionError(null);
 
-    const confirmed = window.confirm(`Approve ${selectedIds.length} selected pickup request(s)?`);
+    const confirmed = window.confirm(`Xac nhan duyet ${selectedIds.length} yeu cau lay hang da chon?`);
     if (!confirmed) {
       return;
     }
@@ -202,12 +203,12 @@ export function PickupApprovalsPage(): React.JSX.Element {
       const result = await bulkApproveMutation.mutateAsync(selectedIds);
 
       if (result.successIds.length > 0) {
-        setActionMessage(`Approved ${result.successIds.length} request(s) successfully.`);
+        setActionMessage(`Da duyet thanh cong ${result.successIds.length} yeu cau.`);
       }
 
       if (result.failed.length > 0) {
         setActionError(
-          `Failed ${result.failed.length} request(s). Example: ${result.failed[0].message}`,
+          `That bai ${result.failed.length} yeu cau. Vi du: ${result.failed[0].message}`,
         );
       }
 
@@ -223,7 +224,7 @@ export function PickupApprovalsPage(): React.JSX.Element {
     <div>
       <h2>Duyet lay hang</h2>
       <p style={{ color: '#2d3f99' }}>
-        Bo cot ma yeu cau. Chon nhieu don REQUESTED de duyet 1 lan.
+        Bo cot ma yeu cau. Chon nhieu don cho duyet de duyet 1 lan.
       </p>
       <form onSubmit={onFilterSubmit} style={styles.filterForm}>
         <select
@@ -232,10 +233,10 @@ export function PickupApprovalsPage(): React.JSX.Element {
           onChange={(event) => setStatusInput(event.target.value)}
           style={styles.input}
         >
-          <option value="">Tat ca pickup status</option>
+          <option value="">Tat ca trang thai lay hang</option>
           {PICKUP_STATUS_OPTIONS.map((option) => (
             <option key={option} value={option}>
-              {option}
+              {formatPickupStatusLabel(option)}
             </option>
           ))}
         </select>
@@ -256,7 +257,7 @@ export function PickupApprovalsPage(): React.JSX.Element {
             : `Duyet da chon (${selectedIds.length})`}
         </button>
         <small style={styles.hintText}>
-          Chi dong co trang thai REQUESTED moi co the tick chon.
+          Chi dong co trang thai {formatPickupStatusLabel('REQUESTED')} moi co the tick chon.
         </small>
       </div>
 
@@ -265,9 +266,9 @@ export function PickupApprovalsPage(): React.JSX.Element {
 
       {pickupsQuery.isLoading ? <p>Dang tai yeu cau lay hang...</p> : null}
       {pickupsQuery.isError ? <p style={styles.errorText}>{getErrorMessage(pickupsQuery.error)}</p> : null}
-      {shipmentsQuery.isLoading ? <p>Dang tai thong tin shipment...</p> : null}
+      {shipmentsQuery.isLoading ? <p>Dang tai thong tin van don...</p> : null}
       {shipmentsQuery.isError ? (
-        <p style={styles.errorText}>Khong the tai thong tin shipment: {getErrorMessage(shipmentsQuery.error)}</p>
+        <p style={styles.errorText}>Khong the tai thong tin van don: {getErrorMessage(shipmentsQuery.error)}</p>
       ) : null}
 
       {pickupsQuery.isSuccess && (pickupsQuery.data?.length ?? 0) === 0 ? (
@@ -323,3 +324,5 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: 8,
   },
 };
+
+

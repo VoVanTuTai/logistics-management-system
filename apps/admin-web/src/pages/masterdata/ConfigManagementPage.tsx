@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+﻿import React, { useMemo, useState } from 'react';
 
 import {
   useConfigsQuery,
@@ -137,7 +137,7 @@ function parseInputByType(valueType: ConfigValueType, input: string): ConfigValu
     const value = Number(normalizedInput);
 
     if (!Number.isFinite(value)) {
-      throw new Error('Number value is invalid.');
+      throw new Error('Gia tri so khong hop le.');
     }
 
     return value;
@@ -154,7 +154,7 @@ function parseInputByType(valueType: ConfigValueType, input: string): ConfigValu
       return false;
     }
 
-    throw new Error('Boolean value must be true/false.');
+    throw new Error('Gia tri boolean phai la true/false.');
   }
 
   if (!normalizedInput) {
@@ -291,10 +291,10 @@ export function ConfigManagementPage(): React.JSX.Element {
           configId: editingConfig.id,
           payload,
         });
-        setActionMessage(`Config "${payload.key}" updated.`);
+        setActionMessage(`Da cap nhat config "${payload.key}".`);
       } else {
         await createMutation.mutateAsync(payload);
-        setActionMessage(`Config "${payload.key}" created.`);
+        setActionMessage(`Da tao config "${payload.key}".`);
       }
 
       setEditorOpen(false);
@@ -322,7 +322,7 @@ export function ConfigManagementPage(): React.JSX.Element {
       });
 
       setActionMessage(
-        `Config "${config.key}" switched to ${currentEnvelope.isActive ? 'INACTIVE' : 'ACTIVE'}.`,
+        `Config "${config.key}" da chuyen sang ${currentEnvelope.isActive ? 'INACTIVE' : 'ACTIVE'}.`,
       );
     } catch (error) {
       setActionError(getErrorMessage(error));
@@ -333,14 +333,14 @@ export function ConfigManagementPage(): React.JSX.Element {
 
   return (
     <div>
-      <h2>Master Data - Config Management</h2>
+      <h2>Du Lieu Danh Muc - Quan Ly Config</h2>
       <p style={styles.helperText}>
-        Manage shared key-value system configuration for operations.
+        Quan ly cau hinh he thong dang key-value dung chung cho van hanh.
       </p>
 
       <form onSubmit={onApplyFilters} style={styles.filterForm}>
         <input
-          placeholder="Config key"
+          placeholder="Key config"
           value={draftFilters.key ?? ''}
           onChange={(event) =>
             setDraftFilters((previous) => ({
@@ -351,7 +351,7 @@ export function ConfigManagementPage(): React.JSX.Element {
           style={styles.input}
         />
         <input
-          placeholder="Group (scope)"
+          placeholder="Nhom (scope)"
           value={draftFilters.scope ?? ''}
           onChange={(event) =>
             setDraftFilters((previous) => ({
@@ -362,7 +362,7 @@ export function ConfigManagementPage(): React.JSX.Element {
           style={styles.input}
         />
         <input
-          placeholder="Search by key/name"
+          placeholder="Tim theo key/ten"
           value={draftFilters.q ?? ''}
           onChange={(event) =>
             setDraftFilters((previous) => ({
@@ -379,16 +379,16 @@ export function ConfigManagementPage(): React.JSX.Element {
           }
           style={styles.input}
         >
-          <option value="all">All statuses</option>
+          <option value="all">Tất cả trang thai</option>
           <option value="active">ACTIVE</option>
           <option value="inactive">INACTIVE</option>
         </select>
-        <button type="submit">Apply</button>
+        <button type="submit">Ap dung</button>
         <button type="button" onClick={onResetFilters}>
-          Reset
+          Dat lai
         </button>
         <button type="button" onClick={openCreateModal}>
-          Create Config
+          Tao config
         </button>
       </form>
 
@@ -403,12 +403,12 @@ export function ConfigManagementPage(): React.JSX.Element {
         </p>
       ) : null}
 
-      {configsQuery.isLoading ? <p>Loading configs...</p> : null}
+      {configsQuery.isLoading ? <p>Đang tải config...</p> : null}
       {configsQuery.isError ? (
         <p style={styles.errorText}>{getErrorMessage(configsQuery.error)}</p>
       ) : null}
       {configsQuery.isSuccess && visibleConfigs.length === 0 ? (
-        <p>No configs found.</p>
+        <p>Không tìm thấy config.</p>
       ) : null}
 
       {configsQuery.isSuccess && visibleConfigs.length > 0 ? (
@@ -416,13 +416,13 @@ export function ConfigManagementPage(): React.JSX.Element {
           <thead>
             <tr>
               <th style={styles.headerCell}>Key</th>
-              <th style={styles.headerCell}>Name</th>
-              <th style={styles.headerCell}>Group</th>
-              <th style={styles.headerCell}>Value</th>
-              <th style={styles.headerCell}>Type</th>
-              <th style={styles.headerCell}>Status</th>
-              <th style={styles.headerCell}>Updated</th>
-              <th style={styles.headerCell}>Actions</th>
+              <th style={styles.headerCell}>Ten</th>
+              <th style={styles.headerCell}>Nhom</th>
+              <th style={styles.headerCell}>Gia tri</th>
+              <th style={styles.headerCell}>Kieu</th>
+              <th style={styles.headerCell}>Trang thai</th>
+              <th style={styles.headerCell}>Cap nhat</th>
+              <th style={styles.headerCell}>Hanh dong</th>
             </tr>
           </thead>
           <tbody>
@@ -433,8 +433,8 @@ export function ConfigManagementPage(): React.JSX.Element {
                 <tr key={config.id}>
                   <td style={styles.cell}>{config.key}</td>
                   <td style={styles.cell}>{envelope.name}</td>
-                  <td style={styles.cell}>{config.scope ?? 'N/A'}</td>
-                  <td style={styles.cell}>{stringifyValue(envelope.value) || 'N/A'}</td>
+                  <td style={styles.cell}>{config.scope ?? 'Không có'}</td>
+                  <td style={styles.cell}>{stringifyValue(envelope.value) || 'Không có'}</td>
                   <td style={styles.cell}>{envelope.valueType}</td>
                   <td style={styles.cell}>
                     <MasterdataStatusPill isActive={envelope.isActive} />
@@ -443,13 +443,13 @@ export function ConfigManagementPage(): React.JSX.Element {
                   <td style={styles.cell}>
                     <div style={styles.actionsCell}>
                       <button type="button" onClick={() => setSelectedConfigId(config.id)}>
-                        Detail
+                        Chi tiet
                       </button>
                       <button type="button" onClick={() => openEditModal(config)}>
-                        Edit
+                        Sua
                       </button>
                       <button type="button" onClick={() => void onToggleActive(config)}>
-                        {envelope.isActive ? 'Deactivate' : 'Activate'}
+                        {envelope.isActive ? 'Tat' : 'Bat'}
                       </button>
                     </div>
                   </td>
@@ -467,31 +467,31 @@ export function ConfigManagementPage(): React.JSX.Element {
 
             return (
               <>
-                <h3 style={styles.detailTitle}>Config Detail: {selectedConfig.key}</h3>
+                <h3 style={styles.detailTitle}>Chi tiet config: {selectedConfig.key}</h3>
                 <p>
-                  <strong>Name:</strong> {envelope.name}
+                  <strong>Ten:</strong> {envelope.name}
                 </p>
                 <p>
-                  <strong>Group:</strong> {selectedConfig.scope ?? 'N/A'}
+                  <strong>Nhom:</strong> {selectedConfig.scope ?? 'Không có'}
                 </p>
                 <p>
-                  <strong>Type:</strong> {envelope.valueType}
+                  <strong>Kieu:</strong> {envelope.valueType}
                 </p>
                 <p>
-                  <strong>Value:</strong> {stringifyValue(envelope.value)}
+                  <strong>Gia tri:</strong> {stringifyValue(envelope.value)}
                 </p>
                 <p>
-                  <strong>Default value:</strong>{' '}
-                  {stringifyValue(envelope.defaultValue) || 'N/A'}
+                  <strong>Gia tri mac dinh:</strong>{' '}
+                  {stringifyValue(envelope.defaultValue) || 'Không có'}
                 </p>
                 <p>
-                  <strong>Editable:</strong> {envelope.isEditable ? 'YES' : 'NO'}
+                  <strong>Cho phep sua:</strong> {envelope.isEditable ? 'CO' : 'KHONG'}
                 </p>
                 <p>
-                  <strong>Status:</strong> {envelope.isActive ? 'ACTIVE' : 'INACTIVE'}
+                  <strong>Trang thai:</strong> {envelope.isActive ? 'ACTIVE' : 'INACTIVE'}
                 </p>
                 <p>
-                  <strong>Updated:</strong> {formatDateTime(selectedConfig.updatedAt)}
+                  <strong>Cap nhat:</strong> {formatDateTime(selectedConfig.updatedAt)}
                 </p>
               </>
             );
@@ -501,8 +501,8 @@ export function ConfigManagementPage(): React.JSX.Element {
 
       <MasterdataEditorModal
         open={editorOpen}
-        title={editingConfig ? `Edit Config ${editingConfig.key}` : 'Create Config'}
-        submitLabel={editingConfig ? 'Save changes' : 'Create config'}
+        title={editingConfig ? `Sua config ${editingConfig.key}` : 'Tao config'}
+        submitLabel={editingConfig ? 'Luu thay doi' : 'Tao config'}
         isSubmitting={isSaving}
         onClose={() => setEditorOpen(false)}
         onSubmit={onSubmitForm}
@@ -525,7 +525,7 @@ export function ConfigManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Name
+            Ten
             <input
               value={form.name}
               onChange={(event) =>
@@ -539,7 +539,7 @@ export function ConfigManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Group
+            Nhom
             <input
               value={form.group}
               onChange={(event) =>
@@ -553,7 +553,7 @@ export function ConfigManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Value type
+            Kieu gia tri
             <select
               value={form.valueType}
               onChange={(event) =>
@@ -571,7 +571,7 @@ export function ConfigManagementPage(): React.JSX.Element {
             </select>
           </label>
           <label style={{ ...styles.fieldLabel, gridColumn: '1 / -1' }}>
-            Value
+            Gia tri
             <textarea
               value={form.valueInput}
               onChange={(event) =>
@@ -585,7 +585,7 @@ export function ConfigManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={{ ...styles.fieldLabel, gridColumn: '1 / -1' }}>
-            Default value
+            Gia tri mac dinh
             <textarea
               value={form.defaultValueInput}
               onChange={(event) =>
@@ -599,7 +599,7 @@ export function ConfigManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={{ ...styles.fieldLabel, gridColumn: '1 / -1' }}>
-            Description
+            Mo ta
             <textarea
               value={form.description}
               onChange={(event) =>
@@ -732,3 +732,4 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
   },
 };
+

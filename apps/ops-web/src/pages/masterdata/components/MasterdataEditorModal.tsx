@@ -35,17 +35,17 @@ export function MasterdataEditorModal({
         <div style={styles.header}>
           <h3 style={styles.title}>{title}</h3>
           <button type="button" onClick={onClose} style={styles.closeButton}>
-            Close
+            Dong
           </button>
         </div>
         <form onSubmit={onSubmit} style={styles.form}>
           <div style={styles.body}>{children}</div>
           <div style={styles.actions}>
             <button type="button" onClick={onClose}>
-              Cancel
+              Huy
             </button>
             <button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : submitLabel}
+              {isSubmitting ? 'Đang lưu...' : submitLabel}
             </button>
           </div>
         </form>

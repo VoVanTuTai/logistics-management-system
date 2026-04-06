@@ -24,7 +24,7 @@ type MetricField = keyof Pick<
 
 const METRIC_FIELDS: Record<string, MetricField> = {
   'shipment.created': 'shipmentsCreated',
-  'pickup.completed': 'pickupsCompleted',
+  'scan.pickup_confirmed': 'pickupsCompleted',
   'delivery.delivered': 'deliveriesDelivered',
   'delivery.failed': 'deliveriesFailed',
   'ndr.created': 'ndrCreated',
@@ -34,21 +34,19 @@ const METRIC_FIELDS: Record<string, MetricField> = {
 
 const STATUS_BY_EVENT: Record<string, string> = {
   'shipment.created': 'CREATED',
-  'shipment.updated': 'UPDATED',
-  'shipment.cancelled': 'CANCELLED',
-  'pickup.completed': 'PICKUP_COMPLETED',
-  'scan.pickup_confirmed': 'PICKUP_COMPLETED',
-  'task.assigned': 'TASK_ASSIGNED',
-  'task.reassigned': 'TASK_ASSIGNED',
-  'manifest.sealed': 'MANIFEST_SEALED',
-  'manifest.received': 'MANIFEST_RECEIVED',
-  'scan.inbound': 'SCAN_INBOUND',
-  'scan.outbound': 'SCAN_OUTBOUND',
+  'pickup.requested': 'PICKUP_REQUESTED',
+  'pickup.approved': 'PICKUP_ASSIGNED',
+  'scan.pickup_confirmed': 'PICKED_UP',
+  'manifest.sealed': 'IN_TRANSIT',
+  'manifest.received': 'INBOUND_AT_HUB',
+  'scan.inbound': 'INBOUND_AT_HUB',
+  'scan.outbound': 'OUTBOUND_FROM_HUB',
+  'delivery.attempted': 'DELIVERING',
   'delivery.delivered': 'DELIVERED',
   'delivery.failed': 'DELIVERY_FAILED',
-  'ndr.created': 'NDR_CREATED',
-  'return.started': 'RETURN_STARTED',
-  'return.completed': 'RETURN_COMPLETED',
+  'ndr.created': 'DELIVERY_FAILED',
+  'return.started': 'RETURNING',
+  'return.completed': 'RETURNED',
 };
 
 type DimensionKey = 'courier' | 'hub' | 'zone';
@@ -71,7 +69,7 @@ export class ReportingProjectionStore {
 
   async project(event: ReportingEventEnvelope): Promise<ProjectionResult> {
     const metricField = METRIC_FIELDS[event.event_type];
-    const status = STATUS_BY_EVENT[event.event_type];
+    const status = this.resolveStatusByEvent(event);
 
     if (!metricField && !status) {
       return {
@@ -113,6 +111,26 @@ export class ReportingProjectionStore {
       eventId: event.event_id,
       eventType: event.event_type,
     };
+  }
+
+  private resolveStatusByEvent(event: ReportingEventEnvelope): string | null {
+    if (event.event_type === 'task.assigned') {
+      const taskType =
+        this.findString(event.data, [
+          ['task', 'taskType'],
+          ['task', 'task_type'],
+        ])?.toUpperCase() ?? null;
+
+      if (taskType === 'DELIVERY') {
+        return 'OUT_FOR_DELIVERY';
+      }
+
+      if (taskType === 'PICKUP') {
+        return 'PICKUP_ASSIGNED';
+      }
+    }
+
+    return STATUS_BY_EVENT[event.event_type] ?? null;
   }
 
   resolveDate(date?: string): Date {

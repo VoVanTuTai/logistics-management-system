@@ -32,16 +32,15 @@ export function TasksTable({
               onChange={(event) => onToggleSelectAll?.(event.currentTarget.checked)}
             />
           </th>
-          <th style={styles.headerCell}>Task</th>
-          <th style={styles.headerCell}>Type</th>
-          <th style={styles.headerCell}>Status</th>
-          <th style={styles.headerCell}>Shipment</th>
-          <th style={styles.headerCell}>Sender</th>
-          <th style={styles.headerCell}>Receiver</th>
-          <th style={styles.headerCell}>Platform</th>
-          <th style={styles.headerCell}>Delivery Area</th>
-          <th style={styles.headerCell}>Courier</th>
-          <th style={styles.headerCell}>Updated At</th>
+          <th style={styles.headerCell}>Vận đơn</th>
+          <th style={styles.headerCell}>Loại</th>
+          <th style={styles.headerCell}>Trạng thái</th>
+          <th style={styles.headerCell}>Người gửi</th>
+          <th style={styles.headerCell}>Người nhận</th>
+          <th style={styles.headerCell}>Nền tảng</th>
+          <th style={styles.headerCell}>Khu vực giao</th>
+          <th style={styles.headerCell}>Shipper</th>
+          <th style={styles.headerCell}>Cập nhật lúc</th>
         </tr>
       </thead>
       <tbody>
@@ -58,18 +57,19 @@ export function TasksTable({
               />
             </td>
             <td style={styles.cell}>
-              <Link to={routePaths.taskDetail(item.id)}>{item.taskCode}</Link>
+              <Link to={routePaths.taskDetail(item.id)}>
+                {item.shipmentCode ?? 'Không có'}
+              </Link>
             </td>
             <td style={styles.cell}>{item.taskType}</td>
             <td style={styles.cell}>{item.status}</td>
-            <td style={styles.cell}>{item.shipmentCode ?? 'N/A'}</td>
-            <td style={styles.cell}>{item.senderName ?? 'N/A'}</td>
-            <td style={styles.cell}>{item.receiverName ?? 'N/A'}</td>
+            <td style={styles.cell}>{item.senderName ?? 'Không có'}</td>
+            <td style={styles.cell}>{item.receiverName ?? 'Không có'}</td>
             <td style={styles.cell}>
-              <span style={styles.platformTag}>{item.platform ?? 'N/A'}</span>
+              <span style={styles.platformTag}>{item.platform ?? 'Không có'}</span>
             </td>
-            <td style={styles.cell}>{item.deliveryArea ?? 'Unknown'}</td>
-            <td style={styles.cell}>{item.assignedCourierId ?? 'N/A'}</td>
+            <td style={styles.cell}>{item.deliveryArea ?? 'Không xác định'}</td>
+            <td style={styles.cell}>{item.assignedCourierId ?? 'Không có'}</td>
             <td style={styles.cell}>{formatDateTime(item.updatedAt)}</td>
           </tr>
         ))}
@@ -107,3 +107,4 @@ const styles: Record<string, React.CSSProperties> = {
     letterSpacing: 0.3,
   },
 };
+

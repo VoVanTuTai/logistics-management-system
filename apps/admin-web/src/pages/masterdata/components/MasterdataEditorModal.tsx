@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 
 interface MasterdataEditorModalProps {
   open: boolean;
@@ -19,6 +19,23 @@ export function MasterdataEditorModal({
   onSubmit,
   children,
 }: MasterdataEditorModalProps): React.JSX.Element | null {
+  React.useEffect(() => {
+    if (!open) {
+      return undefined;
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open, onClose]);
+
   if (!open) {
     return null;
   }
@@ -35,17 +52,17 @@ export function MasterdataEditorModal({
         <div style={styles.header}>
           <h3 style={styles.title}>{title}</h3>
           <button type="button" onClick={onClose} style={styles.closeButton}>
-            Close
+            Dong
           </button>
         </div>
         <form onSubmit={onSubmit} style={styles.form}>
           <div style={styles.body}>{children}</div>
           <div style={styles.actions}>
             <button type="button" onClick={onClose}>
-              Cancel
+              Huy
             </button>
             <button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : submitLabel}
+              {isSubmitting ? 'Đang lưu...' : submitLabel}
             </button>
           </div>
         </form>
@@ -108,3 +125,4 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '10px 14px',
   },
 };
+

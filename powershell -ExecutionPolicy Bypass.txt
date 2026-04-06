@@ -1,0 +1,15 @@
+powershell -ExecutionPolicy Bypass -File .\scripts\seed-hcm-delivery-orders.ps1
+
+Mã bao: MB<10 chữ số>
+Mã vận đơn: <12 chữ số>
+	Đơn từ sàn TMDT: 111<9 chữ số>
+	Đơn từ SHOP:   : 101<9 chữ số>
+	Đơn thu hồi từ khách trả hàng: 222<9 chữ số>
+	Đơn khách lẻ   : 333<9 chữ số>
+
+Mã nhân viên: <8 chữ số> yêu cầu đăng nhập [tài khoản là mã nhân viên mật khẩu auto là password]
+	Admin: 10000<3 chữ số>
+	Ops  : 20000<3 chữ số>
+	Courieer: 3000<4 chữ số>
+Mã Mechant: 411<5 chữ số>
+Mã tem xe :XT<10 chữ số>

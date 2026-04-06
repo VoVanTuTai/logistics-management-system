@@ -210,6 +210,24 @@ function resolveDeliveryNote(metadata: Record<string, unknown> | null): string |
   return asString(metadata.deliveryNote) ?? asString(metadata.note);
 }
 
+function resolveCurrentLocation(metadata: Record<string, unknown> | null): string | null {
+  if (!metadata) {
+    return null;
+  }
+
+  const location = asRecord(metadata.location);
+  const hub = asRecord(metadata.hub);
+
+  return (
+    asString(metadata.currentLocation) ??
+    asString(metadata.currentHubCode) ??
+    asString(location?.current) ??
+    asString(location?.hubCode) ??
+    asString(hub?.code) ??
+    asString(hub?.currentCode)
+  );
+}
+
 function buildShipmentListPath(filters: ShipmentListFilters): string {
   const params = new URLSearchParams();
 
@@ -232,7 +250,7 @@ function mapShipmentToListItem(payload: ShipmentApiResponse): ShipmentListItemDt
     id: payload.id,
     shipmentCode: payload.code,
     currentStatus: payload.currentStatus,
-    currentLocation: null,
+    currentLocation: resolveCurrentLocation(metadata),
     parcelType: resolveParcelType(metadata),
     shippingFee: resolveShippingFee(metadata),
     receiverRegion: resolveReceiverRegion(metadata),
@@ -258,7 +276,7 @@ function mapShipmentToDetail(payload: ShipmentApiResponse): ShipmentDetailDto {
     id: payload.id,
     shipmentCode: payload.code,
     currentStatus: payload.currentStatus,
-    currentLocation: null,
+    currentLocation: resolveCurrentLocation(metadata),
     parcelType: resolveParcelType(metadata),
     shippingFee: resolveShippingFee(metadata),
     senderName: resolveSenderName(metadata),

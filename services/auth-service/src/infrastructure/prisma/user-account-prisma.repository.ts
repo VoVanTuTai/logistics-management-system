@@ -95,6 +95,7 @@ export class UserAccountPrismaRepository extends UserAccountRepository {
 
   async create(input: UserAccountCreateInput): Promise<UserAccount> {
     const data: Prisma.UserAccountCreateInput = {
+      id: input.id,
       username: input.username,
       passwordHash: input.passwordHash,
       status: input.status,

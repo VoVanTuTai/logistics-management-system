@@ -73,13 +73,7 @@ export class PickupsService {
   ): Promise<PickupRequest> {
     await this.getById(id);
 
-    const pickupRequest = await this.pickupRequestRepository.update(id, input);
-
-    await this.pickupOutboxService.enqueuePickupUpdated(pickupRequest, {
-      source: 'api',
-    });
-
-    return pickupRequest;
+    return this.pickupRequestRepository.update(id, input);
   }
 
   async cancel(
@@ -98,16 +92,10 @@ export class PickupsService {
       );
     }
 
-    const pickupRequest = await this.pickupRequestRepository.cancel(
+    return this.pickupRequestRepository.cancel(
       id,
       input.reason ?? null,
     );
-
-    await this.pickupOutboxService.enqueuePickupCancelled(pickupRequest, {
-      reason: input.reason ?? null,
-    });
-
-    return pickupRequest;
   }
 
   async approve(
@@ -161,11 +149,7 @@ export class PickupsService {
       );
     }
 
-    const pickupRequest = await this.pickupRequestRepository.complete(id);
-
-    await this.pickupOutboxService.enqueuePickupCompleted(pickupRequest);
-
-    return pickupRequest;
+    return this.pickupRequestRepository.complete(id);
   }
 
   async cancelByShipmentCode(
@@ -187,19 +171,9 @@ export class PickupsService {
       return pickupRequest;
     }
 
-    const cancelledPickupRequest = await this.pickupRequestRepository.cancel(
+    return this.pickupRequestRepository.cancel(
       pickupRequest.id,
       reason,
     );
-
-    await this.pickupOutboxService.enqueuePickupCancelled(
-      cancelledPickupRequest,
-      {
-        source_event: 'shipment.cancelled',
-        shipment_code: shipmentCode,
-      },
-    );
-
-    return cancelledPickupRequest;
   }
 }

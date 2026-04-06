@@ -73,11 +73,7 @@ export class TasksService {
   }
 
   async create(input: CreateTaskInput): Promise<Task> {
-    const task = await this.taskRepository.create(input);
-
-    await this.dispatchOutboxService.enqueueTaskCreated(task);
-
-    return task;
+    return this.taskRepository.create(input);
   }
 
   async assign(id: string, input: AssignTaskInput): Promise<Task> {
@@ -121,7 +117,7 @@ export class TasksService {
 
     const task = await this.taskRepository.reassign(id, { courierId });
 
-    await this.dispatchOutboxService.enqueueTaskReassigned(task);
+    await this.dispatchOutboxService.enqueueTaskAssigned(task);
 
     return task;
   }
@@ -152,15 +148,6 @@ export class TasksService {
     }
 
     const task = await this.taskRepository.updateStatus(id, input);
-
-    if (input.status === 'COMPLETED') {
-      await this.dispatchOutboxService.enqueueTaskCompleted(task);
-    }
-
-    if (input.status === 'CANCELLED') {
-      await this.dispatchOutboxService.enqueueTaskCancelled(task);
-    }
-
     return task;
   }
 
@@ -188,8 +175,6 @@ export class TasksService {
       note: payload.note ?? null,
     });
 
-    await this.dispatchOutboxService.enqueueTaskCreated(task);
-
     return task;
   }
 
@@ -205,8 +190,6 @@ export class TasksService {
       shipmentCode: payload.shipment_code ?? null,
       note: payload.note ?? 'generated_from_delivery_failed',
     });
-
-    await this.dispatchOutboxService.enqueueTaskCreated(task);
 
     return task;
   }

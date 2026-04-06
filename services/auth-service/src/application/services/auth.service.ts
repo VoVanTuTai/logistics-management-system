@@ -6,6 +6,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import * as crypto from 'crypto';
 
 import type {
   AuthSession,
@@ -224,7 +225,13 @@ export class AuthService {
       );
     }
 
+    let customId: string | undefined;
+    if (normalizedInput.roles.includes('COURIER')) {
+      customId = `CR-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+    }
+
     const user = await this.userAccountRepository.create({
+      id: customId,
       username: normalizedInput.username,
       passwordHash: this.hashService.digest(normalizedInput.password),
       roles: normalizedInput.roles,

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+﻿import React, { useMemo } from 'react';
 import {
   BrowserRouter,
   NavLink,
@@ -45,13 +45,13 @@ function AdminLayout(): React.JSX.Element {
 
   const navItems = useMemo(
     () => [
-      { label: 'Overview', to: routePaths.dashboard },
-      { label: 'Ops Accounts', to: routePaths.opsUsers },
-      { label: 'Shipper Accounts', to: routePaths.shipperUsers },
-      { label: 'Hubs', to: routePaths.masterdataHubs },
-      { label: 'Zones', to: routePaths.masterdataZones },
-      { label: 'NDR Reasons', to: routePaths.masterdataNdrReasons },
-      { label: 'Configs', to: routePaths.masterdataConfigs },
+      { label: 'Tong quan', to: routePaths.dashboard },
+      { label: 'Tài khoản Ops', to: routePaths.opsUsers },
+      { label: 'Tài khoản Shipper', to: routePaths.shipperUsers },
+      { label: 'Hub', to: routePaths.masterdataHubs },
+      { label: 'Zone', to: routePaths.masterdataZones },
+      { label: 'Ly do NDR', to: routePaths.masterdataNdrReasons },
+      { label: 'Cau hinh', to: routePaths.masterdataConfigs },
     ],
     [],
   );
@@ -65,20 +65,20 @@ function AdminLayout(): React.JSX.Element {
     <div className="admin-layout">
       <aside className="admin-sidebar">
         <div>
-          <h1>Admin Core</h1>
-          <p>System and masterdata governance</p>
+          <h1>Quan tri he thong</h1>
+          <p>Quan tri he thong va du lieu danh muc</p>
         </div>
 
         <div className="admin-user-card">
           <strong>{session?.user.username ?? 'admin'}</strong>
-          <small>roles: {(session?.user.roles ?? []).join(', ')}</small>
+          <small>vai tro: {(session?.user.roles ?? []).join(', ')}</small>
           <button type="button" onClick={() => void onLogout()}>
-            Logout
+            Đăng xuất
           </button>
         </div>
 
         <nav className="admin-nav-group">
-          <h2>Master Data</h2>
+          <h2>Du lieu danh muc</h2>
           {navItems.map((item) => (
             <NavLink
               key={item.to}
@@ -96,8 +96,8 @@ function AdminLayout(): React.JSX.Element {
       <div className="admin-workspace">
         <header className="admin-topbar">
           <div>
-            <h2>JMS Admin Console</h2>
-            <p>Higher-privilege workspace for shared catalogs and system controls.</p>
+            <h2>Bang dieu hanh JMS Admin</h2>
+            <p>Khu vuc dac quyen de quan ly danh muc dung chung va cau hinh he thong.</p>
           </div>
           <span className="admin-tag">SYSTEM_ADMIN</span>
         </header>
@@ -132,3 +132,4 @@ export function AppRouter(): React.JSX.Element {
     </BrowserRouter>
   );
 }
+

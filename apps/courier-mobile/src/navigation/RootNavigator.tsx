@@ -14,6 +14,7 @@ import { TaskListScreen } from '../screens/tasks/TaskListScreen';
 import { TaskDetailScreen } from '../screens/tasks/TaskDetailScreen';
 import { PickupScanScreen } from '../screens/scan/PickupScanScreen';
 import { HubScanScreen } from '../screens/scan/HubScanScreen';
+import { BagSealScreen } from '../screens/scan/BagSealScreen';
 import { DeliverySuccessScreen } from '../screens/delivery/DeliverySuccessScreen';
 import { DeliveryFailScreen } from '../screens/delivery/DeliveryFailScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
@@ -176,6 +177,11 @@ export function RootNavigator(): React.JSX.Element {
             options={{ title: 'Quet hub' }}
           />
           <RootStack.Screen
+            name="BagSeal"
+            component={BagSealScreen}
+            options={{ title: 'Dong bao tui tai che' }}
+          />
+          <RootStack.Screen
             name="DeliverySuccess"
             component={DeliverySuccessScreen}
             options={{ title: 'Giao thanh cong' }}
@@ -227,5 +233,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
-
 

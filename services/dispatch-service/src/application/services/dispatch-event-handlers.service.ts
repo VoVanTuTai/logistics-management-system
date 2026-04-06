@@ -12,6 +12,11 @@ export interface DeliveryFailedPayload {
   data?: Record<string, unknown>;
 }
 
+export interface DeliveryDeliveredPayload {
+  shipment_code?: string | null;
+  data?: Record<string, unknown>;
+}
+
 @Injectable()
 export class DispatchEventHandlersService {
   constructor(private readonly tasksService: TasksService) {}
@@ -44,6 +49,70 @@ export class DispatchEventHandlersService {
           ? payload.data.note
           : null,
     });
+  }
+
+  async handleDeliveryDelivered(payload: DeliveryDeliveredPayload): Promise<void> {
+    const taskId = this.readDeliveryTaskId(payload.data);
+    if (taskId) {
+      await this.tasksService.updateStatus(taskId, { status: 'COMPLETED' });
+      return;
+    }
+
+    const shipmentCode =
+      payload.shipment_code ?? this.readDeliveryShipmentCode(payload.data);
+    if (!shipmentCode) {
+      return;
+    }
+
+    const assignedDeliveryTasks = await this.tasksService.list({
+      shipmentCode,
+      taskType: 'DELIVERY',
+      status: 'ASSIGNED',
+    });
+
+    const taskToComplete = assignedDeliveryTasks[0];
+    if (!taskToComplete) {
+      return;
+    }
+
+    await this.tasksService.updateStatus(taskToComplete.id, {
+      status: 'COMPLETED',
+    });
+  }
+
+  private readDeliveryTaskId(data: Record<string, unknown> | undefined): string | null {
+    const deliveryAttempt = this.readDeliveryAttempt(data);
+    if (!deliveryAttempt) {
+      return null;
+    }
+
+    return this.readString(deliveryAttempt.taskId) ?? this.readString(deliveryAttempt.task_id);
+  }
+
+  private readDeliveryShipmentCode(
+    data: Record<string, unknown> | undefined,
+  ): string | null {
+    const deliveryAttempt = this.readDeliveryAttempt(data);
+    if (!deliveryAttempt) {
+      return null;
+    }
+
+    return (
+      this.readString(deliveryAttempt.shipmentCode) ??
+      this.readString(deliveryAttempt.shipment_code)
+    );
+  }
+
+  private readDeliveryAttempt(
+    data: Record<string, unknown> | undefined,
+  ): Record<string, unknown> | null {
+    if (!data) {
+      return null;
+    }
+
+    return (
+      this.readObject(data.deliveryAttempt) ?? this.readObject(data.delivery_attempt)
+    );
   }
 
   private readString(value: unknown): string | null {

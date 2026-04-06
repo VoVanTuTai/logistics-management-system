@@ -1,5 +1,8 @@
 export type AppTabsParamList = {
-  Tasks: undefined;
+  Tasks: {
+    initialTaskType?: 'PICKUP' | 'DELIVERY' | 'RETURN' | 'ALL';
+    initialStatus?: 'ALL' | 'CREATED' | 'ASSIGNED' | 'COMPLETED' | 'CANCELLED';
+  } | undefined;
   Stats: undefined;
   Scan: undefined;
   Chat: undefined;
@@ -8,7 +11,19 @@ export type AppTabsParamList = {
 
 export type AppNavigatorParamList = {
   Login: undefined;
-  MainTabs: undefined;
+  MainTabs: {
+    screen?: keyof AppTabsParamList;
+    params?: AppTabsParamList[keyof AppTabsParamList];
+  } | undefined;
+  TaskList:
+    | {
+        initialTaskType?: 'PICKUP' | 'DELIVERY' | 'RETURN' | 'ALL';
+        initialStatus?: 'ALL' | 'CREATED' | 'ASSIGNED' | 'COMPLETED' | 'CANCELLED';
+      }
+    | undefined;
+  TaskDetail: {
+    taskId: string;
+  };
   PickupScan: {
     taskId?: string;
     shipmentCode?: string;
@@ -18,4 +33,25 @@ export type AppNavigatorParamList = {
     taskId?: string;
     shipmentCode?: string;
   };
+  BagSeal: undefined;
+  BagUnseal: undefined;
+  DeliverySuccess: {
+    taskId?: string;
+    shipmentCode?: string;
+  };
+  DeliveryFail: {
+    taskId?: string;
+    shipmentCode?: string;
+  };
+  DeliveryProof: {
+    taskId?: string;
+    taskCode?: string;
+    shipmentCode?: string;
+  };
+  TaskIssue: {
+    taskId?: string;
+    taskCode?: string;
+    shipmentCode?: string;
+  };
+  TrackingLookup: undefined;
 };

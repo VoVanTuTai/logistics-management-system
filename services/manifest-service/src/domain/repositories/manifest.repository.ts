@@ -16,6 +16,7 @@ export abstract class ManifestRepository {
   ): Promise<Manifest | null>;
   abstract create(input: CreateManifestInput): Promise<Manifest>;
   abstract update(id: string, input: UpdateManifestInput): Promise<Manifest>;
+  abstract delete(id: string): Promise<Manifest>;
   abstract addShipments(id: string, shipmentCodes: string[]): Promise<Manifest>;
   abstract removeShipments(id: string, shipmentCodes: string[]): Promise<Manifest>;
   abstract seal(id: string, input: SealManifestInput): Promise<Manifest>;

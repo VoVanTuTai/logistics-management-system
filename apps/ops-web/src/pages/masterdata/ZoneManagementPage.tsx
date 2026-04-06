@@ -112,10 +112,10 @@ export function ZoneManagementPage(): React.JSX.Element {
           zoneId: editingZone.id,
           payload,
         });
-        setActionMessage(`Zone "${payload.code}" updated.`);
+        setActionMessage(`Da cap nhat zone "${payload.code}".`);
       } else {
         await createMutation.mutateAsync(payload);
-        setActionMessage(`Zone "${payload.code}" created.`);
+        setActionMessage(`Da tao zone "${payload.code}".`);
       }
 
       setEditorOpen(false);
@@ -137,7 +137,7 @@ export function ZoneManagementPage(): React.JSX.Element {
       });
 
       setActionMessage(
-        `Zone "${zone.code}" switched to ${zone.isActive ? 'INACTIVE' : 'ACTIVE'}.`,
+        `Zone "${zone.code}" da chuyen sang ${zone.isActive ? 'INACTIVE' : 'ACTIVE'}.`,
       );
     } catch (error) {
       setActionError(getErrorMessage(error));
@@ -148,14 +148,14 @@ export function ZoneManagementPage(): React.JSX.Element {
 
   return (
     <div>
-      <h2>Master Data - Zone Management</h2>
+      <h2>Du Lieu Danh Muc - Quan Ly Zone</h2>
       <p style={styles.helperText}>
-        Manage operation zones for pickup and delivery routing.
+        Quan ly zone van hanh cho luong lay hang va dieu huong giao hang.
       </p>
 
       <form onSubmit={onApplyFilters} style={styles.filterForm}>
         <input
-          placeholder="Code"
+          placeholder="Ma zone"
           value={draftFilters.code ?? ''}
           onChange={(event) =>
             setDraftFilters((previous) => ({
@@ -166,7 +166,7 @@ export function ZoneManagementPage(): React.JSX.Element {
           style={styles.input}
         />
         <input
-          placeholder="Name"
+          placeholder="Ten zone"
           value={draftFilters.name ?? ''}
           onChange={(event) =>
             setDraftFilters((previous) => ({
@@ -177,7 +177,7 @@ export function ZoneManagementPage(): React.JSX.Element {
           style={styles.input}
         />
         <input
-          placeholder="Parent code"
+          placeholder="Ma zone cha"
           value={draftFilters.parentCode ?? ''}
           onChange={(event) =>
             setDraftFilters((previous) => ({
@@ -197,12 +197,12 @@ export function ZoneManagementPage(): React.JSX.Element {
           }
           style={styles.input}
         >
-          <option value="">All statuses</option>
+          <option value="">Tất cả trang thai</option>
           <option value="true">ACTIVE</option>
           <option value="false">INACTIVE</option>
         </select>
         <input
-          placeholder="Quick search"
+          placeholder="Tim nhanh"
           value={draftFilters.q ?? ''}
           onChange={(event) =>
             setDraftFilters((previous) => ({
@@ -212,12 +212,12 @@ export function ZoneManagementPage(): React.JSX.Element {
           }
           style={styles.input}
         />
-        <button type="submit">Apply</button>
+        <button type="submit">Ap dung</button>
         <button type="button" onClick={onResetFilters}>
-          Reset
+          Dat lai
         </button>
         <button type="button" onClick={openCreateModal}>
-          Create Zone
+          Tao zone
         </button>
       </form>
 
@@ -232,24 +232,24 @@ export function ZoneManagementPage(): React.JSX.Element {
         </p>
       ) : null}
 
-      {zonesQuery.isLoading ? <p>Loading zones...</p> : null}
+      {zonesQuery.isLoading ? <p>Đang tải zone...</p> : null}
       {zonesQuery.isError ? (
         <p style={styles.errorText}>{getErrorMessage(zonesQuery.error)}</p>
       ) : null}
       {zonesQuery.isSuccess && (zonesQuery.data?.length ?? 0) === 0 ? (
-        <p>No zones found.</p>
+        <p>Không tìm thấy zone.</p>
       ) : null}
 
       {zonesQuery.isSuccess && (zonesQuery.data?.length ?? 0) > 0 ? (
         <table style={styles.table}>
           <thead>
             <tr>
-              <th style={styles.headerCell}>Code</th>
-              <th style={styles.headerCell}>Name</th>
-              <th style={styles.headerCell}>Parent zone</th>
-              <th style={styles.headerCell}>Status</th>
-              <th style={styles.headerCell}>Updated</th>
-              <th style={styles.headerCell}>Actions</th>
+              <th style={styles.headerCell}>Ma</th>
+              <th style={styles.headerCell}>Ten</th>
+              <th style={styles.headerCell}>Zone cha</th>
+              <th style={styles.headerCell}>Trang thai</th>
+              <th style={styles.headerCell}>Cap nhat</th>
+              <th style={styles.headerCell}>Hanh dong</th>
             </tr>
           </thead>
           <tbody>
@@ -257,7 +257,7 @@ export function ZoneManagementPage(): React.JSX.Element {
               <tr key={zone.id}>
                 <td style={styles.cell}>{zone.code}</td>
                 <td style={styles.cell}>{zone.name}</td>
-                <td style={styles.cell}>{zone.parentCode ?? 'N/A'}</td>
+                <td style={styles.cell}>{zone.parentCode ?? 'Không có'}</td>
                 <td style={styles.cell}>
                   <MasterdataStatusPill isActive={zone.isActive} />
                 </td>
@@ -265,13 +265,13 @@ export function ZoneManagementPage(): React.JSX.Element {
                 <td style={styles.cell}>
                   <div style={styles.actionsCell}>
                     <button type="button" onClick={() => setSelectedZoneId(zone.id)}>
-                      Detail
+                      Chi tiet
                     </button>
                     <button type="button" onClick={() => openEditModal(zone)}>
-                      Edit
+                      Sua
                     </button>
                     <button type="button" onClick={() => void onToggleStatus(zone)}>
-                      {zone.isActive ? 'Deactivate' : 'Activate'}
+                      {zone.isActive ? 'Tat' : 'Bat'}
                     </button>
                   </div>
                 </td>
@@ -283,36 +283,36 @@ export function ZoneManagementPage(): React.JSX.Element {
 
       {selectedZone ? (
         <section style={styles.detailCard}>
-          <h3 style={styles.detailTitle}>Zone Detail: {selectedZone.code}</h3>
+          <h3 style={styles.detailTitle}>Chi tiet zone: {selectedZone.code}</h3>
           <p>
-            <strong>Name:</strong> {selectedZone.name}
+            <strong>Ten:</strong> {selectedZone.name}
           </p>
           <p>
-            <strong>Parent zone:</strong> {selectedZone.parentCode ?? 'N/A'}
+            <strong>Zone cha:</strong> {selectedZone.parentCode ?? 'Không có'}
           </p>
           <p>
-            <strong>Status:</strong> {selectedZone.isActive ? 'ACTIVE' : 'INACTIVE'}
+            <strong>Trang thai:</strong> {selectedZone.isActive ? 'ACTIVE' : 'INACTIVE'}
           </p>
           <p>
-            <strong>Created:</strong> {formatDateTime(selectedZone.createdAt)}
+            <strong>Tao luc:</strong> {formatDateTime(selectedZone.createdAt)}
           </p>
           <p>
-            <strong>Updated:</strong> {formatDateTime(selectedZone.updatedAt)}
+            <strong>Cap nhat luc:</strong> {formatDateTime(selectedZone.updatedAt)}
           </p>
         </section>
       ) : null}
 
       <MasterdataEditorModal
         open={editorOpen}
-        title={editingZone ? `Edit Zone ${editingZone.code}` : 'Create Zone'}
-        submitLabel={editingZone ? 'Save changes' : 'Create zone'}
+        title={editingZone ? `Sua zone ${editingZone.code}` : 'Tao zone'}
+        submitLabel={editingZone ? 'Luu thay doi' : 'Tao zone'}
         isSubmitting={isSaving}
         onClose={() => setEditorOpen(false)}
         onSubmit={onSubmitForm}
       >
         <div style={styles.formGrid}>
           <label style={styles.fieldLabel}>
-            Zone code
+            Ma zone
             <input
               value={form.code}
               onChange={(event) =>
@@ -328,7 +328,7 @@ export function ZoneManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Zone name
+            Ten zone
             <input
               value={form.name}
               onChange={(event) =>
@@ -342,7 +342,7 @@ export function ZoneManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Parent zone code
+            Ma zone cha
             <input
               value={form.parentCode}
               onChange={(event) =>

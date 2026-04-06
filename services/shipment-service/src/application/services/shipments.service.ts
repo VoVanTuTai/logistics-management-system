@@ -61,13 +61,7 @@ export class ShipmentsService {
     const normalizedCode = this.normalizeRequiredCode(code);
     await this.getByCode(normalizedCode);
 
-    const shipment = await this.shipmentRepository.update(normalizedCode, input);
-
-    await this.shipmentOutboxService.enqueueShipmentUpdated(shipment, {
-      source: 'api',
-    });
-
-    return shipment;
+    return this.shipmentRepository.update(normalizedCode, input);
   }
 
   async cancel(code: string, input: CancelShipmentInput): Promise<Shipment> {
@@ -80,16 +74,10 @@ export class ShipmentsService {
       );
     }
 
-    const cancelledShipment = await this.shipmentRepository.cancel(
+    return this.shipmentRepository.cancel(
       normalizedCode,
       input.reason ?? null,
     );
-
-    await this.shipmentOutboxService.enqueueShipmentCancelled(cancelledShipment, {
-      reason: input.reason ?? null,
-    });
-
-    return cancelledShipment;
   }
 
   async applyExternalEvent(
@@ -102,18 +90,12 @@ export class ShipmentsService {
     const nextStatus = this.shipmentStateMachine.resolveNextStatus(
       shipment.currentStatus,
       eventType,
+      data,
     );
-    const updatedShipment = await this.shipmentRepository.updateCurrentStatus(
+    return this.shipmentRepository.updateCurrentStatus(
       normalizedCode,
       nextStatus,
     );
-
-    await this.shipmentOutboxService.enqueueShipmentUpdated(updatedShipment, {
-      source_event: eventType,
-      payload: data,
-    });
-
-    return updatedShipment;
   }
 
   private async createWithRequestedCode(

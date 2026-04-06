@@ -9,9 +9,6 @@ import {
   useNavigate,
 } from 'react-router-dom';
 
-import { useLogoutMutation } from '../features/auth/auth.api';
-import { routePaths } from '../navigation/routes';
-import { useAuthStore } from '../store/authStore';
 import { LoginPage } from '../pages/auth/LoginPage';
 import { DashboardPage } from '../pages/dashboard/DashboardPage';
 import { ManifestDetailPage } from '../pages/manifests/ManifestDetailPage';
@@ -27,6 +24,10 @@ import { TaskAssignmentPage } from '../pages/tasks/TaskAssignmentPage';
 import { TaskDetailPage } from '../pages/tasks/TaskDetailPage';
 import { TrackingDetailPage } from '../pages/tracking/TrackingDetailPage';
 import { TrackingLookupPage } from '../pages/tracking/TrackingLookupPage';
+import { useLogoutMutation } from '../features/auth/auth.api';
+import { routePaths } from '../navigation/routes';
+import { useAuthStore } from '../store/authStore';
+import { formatRoleLabel } from '../utils/logisticsLabels';
 
 function AuthGuard(): React.JSX.Element {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -47,17 +48,21 @@ function DashboardLayout(): React.JSX.Element {
 
   const primaryNav = useMemo<NavItem[]>(
     () => [
-      { label: 'Dashboard', to: routePaths.dashboard },
-      { label: 'Shipments', to: routePaths.shipments },
-      { label: 'Pickup Approval', to: routePaths.pickups },
-      { label: 'Dispatch Tasks', to: routePaths.tasks },
-      { label: 'Manifest', to: routePaths.manifests },
-      { label: 'Hub Scan', to: routePaths.scans },
-      { label: 'NDR', to: routePaths.ndr },
-      { label: 'Tracking', to: routePaths.tracking },
+      { label: 'Tong quan', to: routePaths.dashboard },
+      { label: 'Van don', to: routePaths.shipments },
+      { label: 'Duyet lay hang', to: routePaths.pickups },
+      { label: 'Phan cong tac vu', to: routePaths.tasks },
+      { label: 'Quan ly bao tai', to: routePaths.manifests },
+      { label: 'Quet hub', to: routePaths.scans },
+      { label: 'Xu ly NDR', to: routePaths.ndr },
+      { label: 'Tra cuu hanh trinh', to: routePaths.tracking },
     ],
     [],
   );
+
+  const roleText =
+    (session?.user.roles ?? []).map((role) => formatRoleLabel(role)).join(', ') ||
+    'Nhan vien dieu hanh';
 
   const onQuickSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -78,25 +83,25 @@ function DashboardLayout(): React.JSX.Element {
     <div className="ops-layout">
       <aside className="ops-sidebar">
         <div>
-          <h1>Ops Control</h1>
-          <p>Logistics operation center</p>
+          <h1>Dieu hanh OPS</h1>
+          <p>Trung tam van hanh logistics</p>
         </div>
 
         <div className="ops-sidebar-session">
-          <strong>{session?.user.username ?? 'ops.user'}</strong>
-          <small>roles: {(session?.user.roles ?? []).join(', ') || 'OPS'}</small>
+          <strong>{session?.user.username ?? 'tai_khoan_ops'}</strong>
+          <small>Vai tro: {roleText}</small>
           <button
             type="button"
             className="ops-logout-btn"
             disabled={logoutMutation.isPending}
             onClick={() => void onLogout()}
           >
-            {logoutMutation.isPending ? 'Signing out...' : 'Logout'}
+            {logoutMutation.isPending ? 'Dang dang xuat...' : 'Dang xuat'}
           </button>
         </div>
 
         <nav className="ops-nav-group">
-          <h2>Operations</h2>
+          <h2>Nghiep vu</h2>
           {primaryNav.map((item) => (
             <NavLink
               key={item.to}
@@ -109,14 +114,13 @@ function DashboardLayout(): React.JSX.Element {
             </NavLink>
           ))}
         </nav>
-
       </aside>
 
       <div className="ops-workspace">
         <header className="ops-topbar">
           <div>
-            <h2>JMS Ops Console</h2>
-            <p>Fast actions, filter-heavy tables, event-driven timeline visibility.</p>
+            <h2>Bang dieu hanh JMS OPS</h2>
+            <p>Tac vu nhanh, bo loc linh hoat, theo doi su kien theo thoi gian thuc.</p>
           </div>
 
           <div className="ops-topbar-actions">
@@ -125,12 +129,12 @@ function DashboardLayout(): React.JSX.Element {
                 type="text"
                 value={quickSearchCode}
                 onChange={(event) => setQuickSearchCode(event.target.value)}
-                placeholder="Quick search shipment code"
-                aria-label="Quick search shipment code"
+                placeholder="Tim nhanh ma van don"
+                aria-label="Tim nhanh ma van don"
               />
-              <button type="submit">Search</button>
+              <button type="submit">Tim</button>
             </form>
-            <span className="ops-notify-pill">Notifications</span>
+            <span className="ops-notify-pill">Thong bao</span>
           </div>
         </header>
 

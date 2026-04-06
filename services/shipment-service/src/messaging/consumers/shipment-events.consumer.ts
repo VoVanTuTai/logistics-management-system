@@ -16,13 +16,20 @@ export class ShipmentEventsConsumer {
   readonly retryQueues = ['shipment-service.retry.10s', 'shipment-service.retry.1m'];
   readonly deadLetterQueue = 'shipment-service.dlq';
   readonly routingPatterns = [
-    'pickup.*',
-    'task.*',
-    'manifest.*',
-    'scan.*',
-    'delivery.*',
-    'ndr.*',
-    'return.*',
+    'pickup.requested',
+    'pickup.approved',
+    'task.assigned',
+    'scan.pickup_confirmed',
+    'manifest.sealed',
+    'manifest.received',
+    'scan.outbound',
+    'scan.inbound',
+    'delivery.attempted',
+    'delivery.delivered',
+    'delivery.failed',
+    'ndr.created',
+    'return.started',
+    'return.completed',
   ];
 
   constructor(
