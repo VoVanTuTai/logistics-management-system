@@ -250,6 +250,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
               required
               pattern="\d{8}"
               title="Ma dang nhap gom 8 chu so."
+              disabled={Boolean(editingUser)}
               value={form.username}
               onChange={(event) =>
                 setForm((previous) => ({ ...previous, username: event.target.value }))

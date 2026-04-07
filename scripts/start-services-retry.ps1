@@ -21,6 +21,18 @@ function Test-PortListening([int]$port) {
   return $null -ne (Get-ListeningPid -port $port)
 }
 
+function Test-HttpOk(
+  [string]$url,
+  [int]$timeoutSeconds = 5
+) {
+  try {
+    $response = Invoke-WebRequest -Uri $url -Method Get -UseBasicParsing -TimeoutSec $timeoutSeconds
+    return ($response.StatusCode -ge 200 -and $response.StatusCode -lt 300)
+  } catch {
+    return $false
+  }
+}
+
 function Get-ListeningPid([int]$port) {
   try {
     $listener = Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -First 1
@@ -239,6 +251,18 @@ try {
     Write-Host ''
     Write-Host 'Some services are DOWN. Check console output above.' -ForegroundColor Yellow
     exit 1
+  }
+
+  $gatewayHealthy = Test-HttpOk -url 'http://localhost:3000/health' -timeoutSeconds 5
+  $authHealthy = Test-HttpOk -url 'http://localhost:3010/health' -timeoutSeconds 5
+
+  Write-Host ''
+  Write-Host '=== HEALTH CHECK ==='
+  Write-Host ("gateway-bff /health: " + ($(if ($gatewayHealthy) { 'OK' } else { 'FAILED' })))
+  Write-Host ("auth-service /health: " + ($(if ($authHealthy) { 'OK' } else { 'FAILED' })))
+
+  if (-not $authHealthy) {
+    Write-Host '[warn] auth-service khong health-check duoc. Gateway login co the tra ve "fetch failed".' -ForegroundColor Yellow
   }
 
   Write-Host ''

@@ -40,6 +40,17 @@ async function ensureAuthCodeRules(): Promise<void> {
       END
     ) NOT VALID;
   `);
+
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "UserAccount"
+    DROP CONSTRAINT IF EXISTS user_account_id_equals_username_chk;
+  `);
+
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "UserAccount"
+    ADD CONSTRAINT user_account_id_equals_username_chk
+    CHECK ("id" = "username") NOT VALID;
+  `);
 }
 
 async function main(): Promise<void> {
@@ -74,6 +85,14 @@ async function main(): Promise<void> {
       data: { username: to },
     });
   }
+
+  await prisma.authSession.deleteMany({});
+
+  await prisma.$executeRawUnsafe(`
+    UPDATE "UserAccount"
+    SET "id" = "username"
+    WHERE "id" <> "username";
+  `);
 
   const users = [
     // Admins
@@ -158,6 +177,7 @@ async function main(): Promise<void> {
         hubCodes: [...user.hubCodes],
       },
       create: {
+        id: user.username,
         username: user.username,
         passwordHash: sha256(user.plainPassword),
         roles: [...user.roles],

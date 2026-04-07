@@ -6,7 +6,6 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import * as crypto from 'crypto';
 
 import type {
   AuthSession,
@@ -21,7 +20,6 @@ import type {
 import type {
   AuthenticatedUser,
   UserAccount,
-  UserAccountCreateInput,
   UserAccountListFilters,
   UserAccountUpdateInput,
   UserAccountView,
@@ -237,13 +235,8 @@ export class AuthService {
       );
     }
 
-    let customId: string | undefined;
-    if (normalizedInput.roles.includes('COURIER')) {
-      customId = `CR-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
-    }
-
     const user = await this.userAccountRepository.create({
-      id: customId,
+      id: normalizedInput.username,
       username: normalizedInput.username,
       passwordHash: this.hashService.digest(normalizedInput.password),
       roles: normalizedInput.roles,
@@ -264,19 +257,10 @@ export class AuthService {
       return this.toUserAccountView(currentUser);
     }
 
-    if (
-      normalizedInput.username &&
-      normalizedInput.username !== currentUser.username
-    ) {
-      const existingUser = await this.userAccountRepository.findByUsername(
-        normalizedInput.username,
+    if (normalizedInput.username && normalizedInput.username !== currentUser.username) {
+      throw new BadRequestException(
+        'username is employee/merchant code and cannot be changed after creation.',
       );
-
-      if (existingUser) {
-        throw new ConflictException(
-          `Username "${normalizedInput.username}" already exists.`,
-        );
-      }
     }
 
     const effectiveUsername = normalizedInput.username ?? currentUser.username;
@@ -284,7 +268,6 @@ export class AuthService {
     this.assertUsernameRoleCompatibility(effectiveUsername, effectiveRoles);
 
     const payload: UserAccountUpdateInput = {
-      username: normalizedInput.username,
       roles: normalizedInput.roles,
       status: normalizedInput.status,
       displayName: normalizedInput.displayName,

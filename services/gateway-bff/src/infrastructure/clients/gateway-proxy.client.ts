@@ -1,4 +1,4 @@
-import { BadGatewayException, Injectable } from '@nestjs/common';
+import { BadGatewayException, Injectable, Logger } from '@nestjs/common';
 import type { Request, Response as ExpressResponse } from 'express';
 
 import { ApiGroup, ServiceRegistryClient } from './service-registry.client';
@@ -19,6 +19,8 @@ const HOP_BY_HOP_HEADERS = new Set([
 
 @Injectable()
 export class GatewayProxyClient {
+  private readonly logger = new Logger(GatewayProxyClient.name);
+
   constructor(private readonly serviceRegistryClient: ServiceRegistryClient) {}
 
   rejectMissingService(group: ApiGroup, response: ExpressResponse): void {
@@ -66,8 +68,15 @@ export class GatewayProxyClient {
       const responseBody = Buffer.from(await upstreamResponse.arrayBuffer());
       response.send(responseBody);
     } catch (error) {
+      const upstreamMessage =
+        error instanceof Error ? error.message : 'Unable to reach upstream service.';
+
+      this.logger.error(
+        `Proxy request failed for service "${serviceName}" -> ${targetUrl}: ${upstreamMessage}`,
+      );
+
       throw new BadGatewayException(
-        error instanceof Error ? error.message : 'Unable to reach upstream service.',
+        `Upstream "${serviceName}" unavailable at ${targetUrl}. ${upstreamMessage}`,
       );
     }
   }

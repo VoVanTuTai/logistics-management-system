@@ -27,6 +27,13 @@ CHECK (
   END
 ) NOT VALID;
 
+ALTER TABLE "UserAccount"
+DROP CONSTRAINT IF EXISTS user_account_id_equals_username_chk;
+
+ALTER TABLE "UserAccount"
+ADD CONSTRAINT user_account_id_equals_username_chk
+CHECK ("id" = "username") NOT VALID;
+
 /* =====================
    masterdata_db
    ===================== */
