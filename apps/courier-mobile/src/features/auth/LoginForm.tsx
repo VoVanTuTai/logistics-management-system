@@ -47,7 +47,7 @@ export function LoginForm({
               value={field.value}
               onChangeText={field.onChange}
               style={styles.input}
-              placeholder="courier.username"
+              placeholder="30000001"
               placeholderTextColor="#8EA1BA"
             />
             {fieldState.error ? (

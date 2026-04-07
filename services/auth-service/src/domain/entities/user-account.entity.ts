@@ -29,7 +29,7 @@ export interface UserAccountListFilters {
 }
 
 export interface UserAccountCreateInput {
-  id?: string;
+  id: string;
   username: string;
   passwordHash: string;
   status: UserStatus;
@@ -63,7 +63,7 @@ export interface UserAccountView {
 
 export interface UserCreateInput {
   username: string;
-  password: string;
+  password?: string;
   roles: string[];
   status?: UserStatus;
   displayName?: string | null;

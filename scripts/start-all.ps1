@@ -11,7 +11,27 @@ $PSNativeCommandUseErrorActionPreference = $true
 $rootDir = Resolve-Path (Join-Path $PSScriptRoot '..')
 
 function Test-PortListening([int]$port) {
-  return [bool](Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue)
+  return $null -ne (Get-ListeningPid -port $port)
+}
+
+function Get-ListeningPid([int]$port) {
+  try {
+    $listener = Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($listener) {
+      return [int]$listener.OwningProcess
+    }
+  } catch {
+    # Fallback handled below.
+  }
+
+  $pattern = "^\s*TCP\s+\S+:$port\s+\S+\s+LISTENING\s+(\d+)\s*$"
+  foreach ($line in (netstat -ano -p tcp 2>$null)) {
+    if ($line -match $pattern) {
+      return [int]$Matches[1]
+    }
+  }
+
+  return $null
 }
 
 function Wait-PortListening(
@@ -194,12 +214,12 @@ try {
   )
 
   $uiRows = foreach ($uiPort in $uiPorts) {
-    $listener = Get-NetTCPConnection -State Listen -LocalPort $uiPort.Port -ErrorAction SilentlyContinue | Select-Object -First 1
+    $listenerPid = Get-ListeningPid -port $uiPort.Port
     [pscustomobject]@{
       App = $uiPort.Name
       Port = $uiPort.Port
-      Status = if ($listener) { 'UP' } else { 'DOWN' }
-      Pid = if ($listener) { $listener.OwningProcess } else { $null }
+      Status = if ($null -ne $listenerPid) { 'UP' } else { 'DOWN' }
+      Pid = $listenerPid
     }
   }
 
@@ -215,10 +235,10 @@ try {
 
   Write-Host ''
   Write-Host '=== SAMPLE ACCOUNTS ==='
-  Write-Host 'admin-web:       admin.hcm / admin123456'
-  Write-Host 'ops-web:         ops.hcm / ops123456'
-  Write-Host 'merchant-web:    merchant.hcm / merchant123456'
-  Write-Host 'courier-mobile:  courier.hcm / courier123456'
+  Write-Host 'admin-web:       10000001 / password'
+  Write-Host 'ops-web:         20000001 / password'
+  Write-Host 'merchant-web:    41100001 / merchant123456'
+  Write-Host 'courier-mobile:  30000001 / password'
 }
 finally {
   Pop-Location

@@ -45,7 +45,7 @@ export function LoginPage(): React.JSX.Element {
           isSubmitting={isSubmitting || loginMutation.isPending}
           errorMessage={authError}
           onSubmit={onSubmit}
-          usernamePlaceholder="admin.root"
+          usernamePlaceholder="10000001"
         />
       </div>
     </div>

@@ -18,7 +18,39 @@ $services = @(
 )
 
 function Test-PortListening([int]$port) {
-  return [bool](Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue)
+  return $null -ne (Get-ListeningPid -port $port)
+}
+
+function Test-HttpOk(
+  [string]$url,
+  [int]$timeoutSeconds = 5
+) {
+  try {
+    $response = Invoke-WebRequest -Uri $url -Method Get -UseBasicParsing -TimeoutSec $timeoutSeconds
+    return ($response.StatusCode -ge 200 -and $response.StatusCode -lt 300)
+  } catch {
+    return $false
+  }
+}
+
+function Get-ListeningPid([int]$port) {
+  try {
+    $listener = Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($listener) {
+      return [int]$listener.OwningProcess
+    }
+  } catch {
+    # Fallback handled below.
+  }
+
+  $pattern = "^\s*TCP\s+\S+:$port\s+\S+\s+LISTENING\s+(\d+)\s*$"
+  foreach ($line in (netstat -ano -p tcp 2>$null)) {
+    if ($line -match $pattern) {
+      return [int]$Matches[1]
+    }
+  }
+
+  return $null
 }
 
 function Test-DockerContainerHealthy([string]$containerName) {
@@ -26,6 +58,15 @@ function Test-DockerContainerHealthy([string]$containerName) {
     $status = & docker inspect --format "{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}" $containerName 2>$null
     if ($LASTEXITCODE -ne 0) { return $false }
     return ($status -and $status.Trim() -eq 'healthy')
+  } catch {
+    return $false
+  }
+}
+
+function Test-DockerHealthAccess() {
+  try {
+    & docker ps --format "{{.ID}}" 1>$null 2>$null
+    return ($LASTEXITCODE -eq 0)
   } catch {
     return $false
   }
@@ -49,6 +90,10 @@ try {
     'jms-dev-postgres-reporting'
   )
   $dockerAvailable = $null -ne (Get-Command docker -ErrorAction SilentlyContinue)
+  $dockerHealthAccess = $dockerAvailable -and (Test-DockerHealthAccess)
+  if ($dockerAvailable -and -not $dockerHealthAccess) {
+    Write-Host '[infra] docker CLI detected but no inspect permission. Falling back to port-only readiness checks.' -ForegroundColor Yellow
+  }
 
   $infraReady = $true
   foreach ($infraPort in $infraPorts) {
@@ -82,7 +127,7 @@ try {
     }
 
     $allInfraHealthy = $true
-    if ($dockerAvailable) {
+    if ($dockerHealthAccess) {
       foreach ($containerName in $infraContainers) {
         if (-not (Test-DockerContainerHealthy $containerName)) {
           $allInfraHealthy = $false
@@ -155,13 +200,13 @@ try {
   Write-Host ''
   Write-Host '=== PORT STATUS ==='
   $statusRows = foreach ($service in $services) {
-    $listener = Get-NetTCPConnection -State Listen -LocalPort $service.Port -ErrorAction SilentlyContinue | Select-Object -First 1
-    if ($listener) {
+    $listenerPid = Get-ListeningPid -port $service.Port
+    if ($null -ne $listenerPid) {
       [pscustomobject]@{
         Service = $service.Name
         Port = $service.Port
         Status = 'UP'
-        Pid = $listener.OwningProcess
+        Pid = $listenerPid
       }
     } else {
       [pscustomobject]@{
@@ -180,6 +225,18 @@ try {
     Write-Host ''
     Write-Host 'Some services are DOWN. Check console output above.' -ForegroundColor Yellow
     exit 1
+  }
+
+  $gatewayHealthy = Test-HttpOk -url 'http://localhost:3000/health' -timeoutSeconds 5
+  $authHealthy = Test-HttpOk -url 'http://localhost:3010/health' -timeoutSeconds 5
+
+  Write-Host ''
+  Write-Host '=== HEALTH CHECK ==='
+  Write-Host ("gateway-bff /health: " + ($(if ($gatewayHealthy) { 'OK' } else { 'FAILED' })))
+  Write-Host ("auth-service /health: " + ($(if ($authHealthy) { 'OK' } else { 'FAILED' })))
+
+  if (-not $authHealthy) {
+    Write-Host '[warn] auth-service khong health-check duoc. Gateway login co the tra ve "fetch failed".' -ForegroundColor Yellow
   }
 
   Write-Host ''

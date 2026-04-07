@@ -31,7 +31,7 @@ export interface AdminUserFilters {
 
 export interface AdminUserCreateInput {
   username: string;
-  password: string;
+  password?: string;
   roles: string[];
   status?: UserStatus;
   displayName?: string | null;
@@ -72,7 +72,9 @@ export interface RefreshTokenInputDto {
 }
 
 export const loginSchema = z.object({
-  username: z.string().min(1, 'Ten dang nhap la bat buoc.'),
+  username: z
+    .string()
+    .regex(/^\d{8}$/, 'Tai khoan phai la ma 8 chu so.'),
   password: z.string().min(1, 'Mật khẩu la bat buoc.'),
 });
 

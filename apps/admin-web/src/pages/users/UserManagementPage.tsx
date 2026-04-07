@@ -141,14 +141,14 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
       } else {
         const password = form.password.trim();
 
-        if (!password) {
-          throw new Error('Can mat khau khi tao nguoi dung.');
-        }
+        const payload = password
+          ? {
+              ...payloadBase,
+              password,
+            }
+          : payloadBase;
 
-        await createMutation.mutateAsync({
-          ...payloadBase,
-          password,
-        });
+        await createMutation.mutateAsync(payload);
 
         setActionMessage(`Da tao tai khoan ${payloadBase.username}.`);
       }
@@ -238,23 +238,31 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
         <h3 style={styles.editorTitle}>
           {editingUser ? `Sua ${editingUser.username}` : 'Tao tai khoan moi'}
         </h3>
+        {!editingUser ? (
+          <p style={styles.helperText}>
+            Neu de trong truong mat khau, he thong se tao mac dinh la "password" cho tai khoan nhan vien.
+          </p>
+        ) : null}
         <form onSubmit={onSubmitForm} style={styles.formGrid}>
           <label style={styles.fieldLabel}>
             Ten dang nhap
             <input
               required
+              pattern="\d{8}"
+              title="Ma dang nhap gom 8 chu so."
+              disabled={Boolean(editingUser)}
               value={form.username}
               onChange={(event) =>
                 setForm((previous) => ({ ...previous, username: event.target.value }))
               }
               style={styles.input}
+              placeholder="20000001"
             />
           </label>
           <label style={styles.fieldLabel}>
             Mật khẩu {editingUser ? '(khong bat buoc)' : ''}
             <input
               type="password"
-              required={!editingUser}
               value={form.password}
               onChange={(event) =>
                 setForm((previous) => ({ ...previous, password: event.target.value }))
