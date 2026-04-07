@@ -36,6 +36,18 @@ import { HashService } from '../../infrastructure/security/hash.service';
 import { OpaqueTokenService } from '../../infrastructure/security/opaque-token.service';
 import { AuthOutboxService } from '../../messaging/outbox/auth-outbox.service';
 
+const EMPLOYEE_LOGIN_CODE_PATTERN = /^\d{8}$/;
+const ADMIN_CODE_PATTERN = /^10000\d{3}$/;
+const OPS_CODE_PATTERN = /^20000\d{3}$/;
+const COURIER_CODE_PATTERN = /^3000\d{4}$/;
+const MERCHANT_CODE_PATTERN = /^411\d{5}$/;
+const DEFAULT_EMPLOYEE_PASSWORD = 'password';
+
+const OPS_ROLE_SET = new Set(['OPS_ADMIN', 'OPS_VIEWER']);
+const ADMIN_ROLE_SET = new Set(['SYSTEM_ADMIN']);
+const COURIER_ROLE_SET = new Set(['COURIER']);
+const MERCHANT_ROLE_SET = new Set(['MERCHANT']);
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -267,6 +279,10 @@ export class AuthService {
       }
     }
 
+    const effectiveUsername = normalizedInput.username ?? currentUser.username;
+    const effectiveRoles = normalizedInput.roles ?? currentUser.roles;
+    this.assertUsernameRoleCompatibility(effectiveUsername, effectiveRoles);
+
     const payload: UserAccountUpdateInput = {
       username: normalizedInput.username,
       roles: normalizedInput.roles,
@@ -359,9 +375,12 @@ export class AuthService {
     phone: string | null;
     hubCodes: string[];
   } {
-    const username = this.normalizeRequiredText(input.username, 'username', 64);
-    const password = this.normalizeRequiredText(input.password, 'password', 128);
+    const username = this.normalizeLoginCode(input.username, 'username');
+    const optionalPassword = this.normalizeOptionalPassword(input.password);
     const roles = this.normalizeRoles(input.roles);
+    const password = this.resolveCreatePassword(optionalPassword, roles);
+
+    this.assertUsernameRoleCompatibility(username, roles);
 
     return {
       username,
@@ -394,10 +413,9 @@ export class AuthService {
     } = {};
 
     if (input.username !== undefined) {
-      normalizedInput.username = this.normalizeRequiredText(
+      normalizedInput.username = this.normalizeLoginCode(
         input.username,
         'username',
-        64,
       );
     }
 
@@ -459,6 +477,21 @@ export class AuthService {
     return normalizedValue;
   }
 
+  private normalizeLoginCode(value: unknown, field: string): string {
+    const normalizedValue = this.normalizeRequiredText(value, field, 8);
+
+    if (!EMPLOYEE_LOGIN_CODE_PATTERN.test(normalizedValue)) {
+      throw new BadRequestException(`${field} must be exactly 8 digits.`);
+    }
+
+    return normalizedValue;
+  }
+
+  private normalizeOptionalPassword(value: unknown): string | undefined {
+    const normalizedValue = this.normalizeOptionalText(value, 128);
+    return normalizedValue && normalizedValue.length > 0 ? normalizedValue : undefined;
+  }
+
   private normalizeOptionalText(value: unknown, maxLength: number): string | undefined {
     if (value === undefined || value === null) {
       return undefined;
@@ -481,6 +514,70 @@ export class AuthService {
     }
 
     return normalizedValue;
+  }
+
+  private resolveCreatePassword(
+    password: string | undefined,
+    roles: string[],
+  ): string {
+    if (this.isEmployeeRoleSet(roles)) {
+      return DEFAULT_EMPLOYEE_PASSWORD;
+    }
+
+    if (!password) {
+      throw new BadRequestException('password is required for non-employee accounts.');
+    }
+
+    return password;
+  }
+
+  private assertUsernameRoleCompatibility(username: string, roles: string[]): void {
+    if (roles.some((role) => ADMIN_ROLE_SET.has(role))) {
+      if (!ADMIN_CODE_PATTERN.test(username)) {
+        throw new BadRequestException(
+          'Admin account code must match 10000xxx.',
+        );
+      }
+      return;
+    }
+
+    if (roles.some((role) => OPS_ROLE_SET.has(role))) {
+      if (!OPS_CODE_PATTERN.test(username)) {
+        throw new BadRequestException(
+          'Ops account code must match 20000xxx.',
+        );
+      }
+      return;
+    }
+
+    if (roles.some((role) => COURIER_ROLE_SET.has(role))) {
+      if (!COURIER_CODE_PATTERN.test(username)) {
+        throw new BadRequestException(
+          'Courier account code must match 3000xxxx.',
+        );
+      }
+      return;
+    }
+
+    if (roles.some((role) => MERCHANT_ROLE_SET.has(role))) {
+      if (!MERCHANT_CODE_PATTERN.test(username)) {
+        throw new BadRequestException(
+          'Merchant account code must match 411xxxxx.',
+        );
+      }
+      return;
+    }
+
+    if (!EMPLOYEE_LOGIN_CODE_PATTERN.test(username)) {
+      throw new BadRequestException('username must be exactly 8 digits.');
+    }
+  }
+
+  private isEmployeeRoleSet(roles: string[]): boolean {
+    return roles.some(
+      (role) =>
+        ADMIN_ROLE_SET.has(role) || OPS_ROLE_SET.has(role) || COURIER_ROLE_SET.has(role),
+    );
   }
 
   private normalizeStatus(value: unknown, defaultValue: UserStatus): UserStatus {

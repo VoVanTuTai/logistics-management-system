@@ -32,7 +32,7 @@ export function LoginForm({
         id="username"
         {...form.register('username')}
         className="auth-input"
-        placeholder="ten.dang.nhap"
+        placeholder="20000001"
       />
       {form.formState.errors.username ? (
         <small className="auth-error">{form.formState.errors.username.message}</small>

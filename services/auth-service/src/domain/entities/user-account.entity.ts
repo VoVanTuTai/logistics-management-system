@@ -63,7 +63,7 @@ export interface UserAccountView {
 
 export interface UserCreateInput {
   username: string;
-  password: string;
+  password?: string;
   roles: string[];
   status?: UserStatus;
   displayName?: string | null;
