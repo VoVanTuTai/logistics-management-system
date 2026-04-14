@@ -1,9 +1,10 @@
-powershell -ExecutionPolicy Bypass -File scripts/start-all.ps1 -MobileMode lan
+
+powershell -ExecutionPolicy Bypass -File .\run-all.ps1 -MobileMode lan
 
 Mở PowerShell tại thư mục project:
 cd "d:\University\Semester 2_Year 4\New Technology\logistics-management-system"
 Khởi động toàn bộ backend + web + courier mobile (LAN):
-powershell -ExecutionPolicy Bypass -File scripts/start-all.ps1 -SkipInfra -MobileMode lan
+powershell -ExecutionPolicy Bypass -File scripts/start-all-retry.ps1 -SkipInfra -MobileMode lan
 Chờ log hiện courier-mobile và QR code.
 
 Mở Expo Go trên điện thoại, quét QR.

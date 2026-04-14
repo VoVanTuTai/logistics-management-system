@@ -106,19 +106,10 @@ function Start-ServiceIfDown(
 
 Push-Location $rootDir
 try {
-  $infraPorts = @(5672, 15432, 15433, 15434, 15435, 15436, 15437, 15438, 15439, 15440, 15441)
+  $infraPorts = @(5672, 15432)
   $infraContainers = @(
     'jms-dev-rabbitmq',
-    'jms-dev-postgres-auth',
-    'jms-dev-postgres-masterdata',
-    'jms-dev-postgres-shipment',
-    'jms-dev-postgres-pickup',
-    'jms-dev-postgres-dispatch',
-    'jms-dev-postgres-manifest',
-    'jms-dev-postgres-scan',
-    'jms-dev-postgres-delivery',
-    'jms-dev-postgres-tracking',
-    'jms-dev-postgres-reporting'
+    'jms-dev-postgres'
   )
   $dockerAvailable = $null -ne (Get-Command docker -ErrorAction SilentlyContinue)
   $dockerHealthAccess = $dockerAvailable -and (Test-DockerHealthAccess)
@@ -137,7 +128,7 @@ try {
   if (-not $infraReady) {
     Write-Host '[infra] docker ports missing, starting infra/dev docker-compose'
     try {
-      docker compose -f infra/dev/docker-compose.yml up -d
+      docker compose -f infra/dev/docker-compose.yml up -d --remove-orphans
       if ($LASTEXITCODE -ne 0) {
         Write-Host '[infra] docker compose failed, continue starting services anyway.' -ForegroundColor Yellow
       }

@@ -4,6 +4,7 @@ $PSNativeCommandUseErrorActionPreference = $true
 $rootDir = Resolve-Path (Join-Path $PSScriptRoot '..')
 $services = @(
   'auth-service',
+  'masterdata-service',
   'shipment-service',
   'pickup-service',
   'dispatch-service',
