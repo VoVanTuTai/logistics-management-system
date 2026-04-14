@@ -1,180 +1,19 @@
 services:
-  postgres-auth:
+  postgres:
     image: postgres:16-alpine
-    container_name: jms-dev-postgres-auth
+    container_name: jms-dev-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: auth_db
+      POSTGRES_DB: postgres
     ports:
       - "15432:5432"
     volumes:
-      - postgres_auth_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init-multiple-dbs.sql:/docker-entrypoint-initdb.d/01-init-multiple-dbs.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d auth_db"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
-  postgres-masterdata:
-    image: postgres:16-alpine
-    container_name: jms-dev-postgres-masterdata
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: masterdata_db
-    ports:
-      - "15433:5432"
-    volumes:
-      - postgres_masterdata_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d masterdata_db"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
-  postgres-shipment:
-    image: postgres:16-alpine
-    container_name: jms-dev-postgres-shipment
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: shipment_db
-    ports:
-      - "15434:5432"
-    volumes:
-      - postgres_shipment_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d shipment_db"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
-  postgres-pickup:
-    image: postgres:16-alpine
-    container_name: jms-dev-postgres-pickup
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: pickup_db
-    ports:
-      - "15435:5432"
-    volumes:
-      - postgres_pickup_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d pickup_db"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
-  postgres-dispatch:
-    image: postgres:16-alpine
-    container_name: jms-dev-postgres-dispatch
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: dispatch_db
-    ports:
-      - "15436:5432"
-    volumes:
-      - postgres_dispatch_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d dispatch_db"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
-  postgres-manifest:
-    image: postgres:16-alpine
-    container_name: jms-dev-postgres-manifest
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: manifest_db
-    ports:
-      - "15437:5432"
-    volumes:
-      - postgres_manifest_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d manifest_db"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
-  postgres-scan:
-    image: postgres:16-alpine
-    container_name: jms-dev-postgres-scan
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: scan_db
-    ports:
-      - "15438:5432"
-    volumes:
-      - postgres_scan_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d scan_db"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
-  postgres-delivery:
-    image: postgres:16-alpine
-    container_name: jms-dev-postgres-delivery
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: delivery_db
-    ports:
-      - "15439:5432"
-    volumes:
-      - postgres_delivery_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d delivery_db"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
-  postgres-tracking:
-    image: postgres:16-alpine
-    container_name: jms-dev-postgres-tracking
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: tracking_db
-    ports:
-      - "15440:5432"
-    volumes:
-      - postgres_tracking_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d tracking_db"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
-  postgres-reporting:
-    image: postgres:16-alpine
-    container_name: jms-dev-postgres-reporting
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: reporting_db
-    ports:
-      - "15441:5432"
-    volumes:
-      - postgres_reporting_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d reporting_db"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -193,13 +32,4 @@ services:
       retries: 10
 
 volumes:
-  postgres_auth_data:
-  postgres_masterdata_data:
-  postgres_shipment_data:
-  postgres_pickup_data:
-  postgres_dispatch_data:
-  postgres_manifest_data:
-  postgres_scan_data:
-  postgres_delivery_data:
-  postgres_tracking_data:
-  postgres_reporting_data:
+  postgres_data:

@@ -1,4 +1,4 @@
-powershell -ExecutionPolicy Bypass -File .\scripts\seed-hcm-delivery-orders.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\dev-up.ps1
 Thiết kế mã đoạn vùng:
 	Có 3 HUB Tổng ở 3 miền (mã của HUB miền là mã đoạn 1)
 		Miền Bắc mã đoạn là 001
