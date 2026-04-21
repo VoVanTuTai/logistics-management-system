@@ -304,7 +304,7 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
                   <Text style={styles.infoValue}>{receiverPhone ?? 'N/A'}</Text>
                 </View>
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Dia chi giao</Text>
+                  <Text style={styles.infoLabel}>Địa chỉ giao</Text>
                   <Text style={styles.infoValue}>{deliveryAddress}</Text>
                 </View>
                 <View style={styles.infoRow}>
@@ -439,8 +439,8 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
   },
   heroCard: {
-    backgroundColor: '#EDF4FF',
-    borderColor: '#CDE0FF',
+    backgroundColor: '#EEF2FF',
+    borderColor: '#C7D2FE',
     gap: theme.spacing.sm,
   },
   heroTopRow: {
@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: theme.spacing.xs,
     borderWidth: 1,
-    borderColor: '#BFD6FF',
+    borderColor: '#C7D2FE',
     borderRadius: theme.radius.md,
     backgroundColor: '#FFFFFF',
     paddingHorizontal: theme.spacing.sm,
@@ -618,3 +618,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+

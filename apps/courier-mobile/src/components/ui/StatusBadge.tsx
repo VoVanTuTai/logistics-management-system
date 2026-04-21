@@ -28,7 +28,7 @@ const variantStyles: Record<StatusVariant, { backgroundColor: string; color: str
     color: '#991B1B',
   },
   info: {
-    backgroundColor: '#DBEAFE',
+    backgroundColor: '#EEF2FF',
     color: '#1E3A8A',
   },
 };
@@ -58,3 +58,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
+

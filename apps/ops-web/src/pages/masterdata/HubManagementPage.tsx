@@ -371,7 +371,7 @@ export function HubManagementPage(): React.JSX.Element {
               <th style={styles.headerCell}>Ten</th>
               <th style={styles.headerCell}>Loai</th>
               <th style={styles.headerCell}>Zone</th>
-              <th style={styles.headerCell}>Dia chi</th>
+              <th style={styles.headerCell}>Địa chỉ</th>
               <th style={styles.headerCell}>Lien he</th>
               <th style={styles.headerCell}>Trạng thái</th>
               <th style={styles.headerCell}>Cập nhật</th>
@@ -511,7 +511,7 @@ export function HubManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Dia chi
+            Địa chỉ
             <input
               value={form.addressLine}
               onChange={(event) =>

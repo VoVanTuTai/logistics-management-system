@@ -42,7 +42,7 @@ export function ShipmentsTable({
           <th style={styles.headerCell}>Nen tang</th>
           <th style={styles.headerCell}>Nguoi gui</th>
           <th style={styles.headerCell}>Nguoi nhan</th>
-          <th style={styles.headerCell}>Khu vuc</th>
+          <th style={styles.headerCell}>Khu vực</th>
           <th style={styles.headerCell}>Vị trí hiện tại</th>
           <th style={styles.headerCell}>Tao luc</th>
           <th style={styles.headerCell}>Cập nhật lúc</th>

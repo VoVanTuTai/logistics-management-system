@@ -55,7 +55,7 @@ function resolveTabIcon(
   if (routeName === 'Scan') {
     return (
       <View style={styles.scanTabIconShell}>
-        <Ionicons name="scan" size={24} color="#FFFFFF" />
+        <Ionicons name="scan" size={24} color={theme.colors.textInverse} />
       </View>
     );
   }
@@ -87,7 +87,7 @@ function MainTabs(): React.JSX.Element {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: '#8DA0B7',
+        tabBarInactiveTintColor: theme.colors.textMuted,
         tabBarLabelStyle: styles.tabLabel,
         tabBarStyle: styles.tabBar,
         tabBarItemStyle: styles.tabItem,
@@ -148,7 +148,7 @@ export function RootNavigator(): React.JSX.Element {
         headerStyle: {
           backgroundColor: theme.colors.primary,
         },
-        headerTintColor: '#FFFFFF',
+        headerTintColor: theme.colors.textInverse,
         headerTitleStyle: {
           fontWeight: '700',
         },
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
     height: 74,
     paddingBottom: 10,
     paddingTop: 8,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface,
   },
   tabItem: {
     paddingTop: 2,
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   },
   badge: {
     backgroundColor: theme.colors.warning,
-    color: '#FFFFFF',
+    color: theme.colors.textInverse,
     fontWeight: '700',
   },
 });

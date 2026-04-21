@@ -17,7 +17,7 @@ Gateway local: `http://localhost:3000`
 
 ## 2) Day du cac tai khoan seed
 
-| Vai tro | Khu vuc | Username | Password |
+| Vai tro | Khu vực | Username | Password |
 |---|---|---|---|
 | Admin | HCM | `10000001` | `password` |
 | Admin | HN | `10000002` | `password` |

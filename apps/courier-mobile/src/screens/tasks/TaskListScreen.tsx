@@ -127,7 +127,7 @@ export function TaskListScreen({ route }: Props): React.JSX.Element {
               <Ionicons
                 name={typeMenuOpen ? 'chevron-up' : 'chevron-down'}
                 size={12}
-                color="#E7F0FF"
+                color="#EEF2FF"
               />
             </Pressable>
             {typeMenuOpen ? (
@@ -163,7 +163,7 @@ export function TaskListScreen({ route }: Props): React.JSX.Element {
               <Ionicons
                 name={statusMenuOpen ? 'chevron-up' : 'chevron-down'}
                 size={12}
-                color="#E7F0FF"
+                color="#EEF2FF"
               />
             </Pressable>
             {statusMenuOpen ? (
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
   },
   headerSubtitle: {
     color: theme.colors.textPrimary,
-    fontWeight: '800',
+    fontWeight: '700',
     fontSize: 14,
   },
   trackButton: {
@@ -276,9 +276,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: theme.spacing.xs,
     borderWidth: 1,
-    borderColor: '#BFD6FF',
+    borderColor: '#C7D2FE',
     borderRadius: theme.radius.md,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#EEF2FF',
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: 6,
   },
@@ -314,7 +314,7 @@ const styles = StyleSheet.create({
   },
   selectValue: {
     color: theme.colors.textPrimary,
-    fontWeight: '800',
+    fontWeight: '700',
     fontSize: 12,
     flex: 1,
     textAlign: 'right',
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
   taskCode: {
     color: theme.colors.textPrimary,
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '700',
     flex: 1,
   },
   taskMetaRow: {
@@ -419,3 +419,4 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 });
+

@@ -144,23 +144,33 @@ const ROLE_LABELS: LabelMap = {
 };
 
 const KPI_LABELS: LabelMap = {
-  CANCELLED_COUNT: 'Don đã hủy',
-  COMPLETED_COUNT: 'Don hoàn tất',
-  CREATED_COUNT: 'Don mới tạo',
-  DAILY_SHIPMENTS: 'Vận đơn trong ngay',
-  DELIVERED_COUNT: 'Don giao thành công',
-  DELIVERY_FAILED_COUNT: 'Don giao thất bại',
-  INBOUND_COUNT: 'Don nhập hub',
-  MONTHLY_SHIPMENTS: 'Vận đơn trong thang',
-  NDR_COUNT: 'Don can xu ly giao thất bại',
-  OUTBOUND_COUNT: 'Don xuất hub',
-  PICKUP_COUNT: 'Don lấy hàng',
-  PICKUP_PENDING_COUNT: 'Don cho lấy hàng',
-  RETURNING_COUNT: 'Don đang hoàn',
+  DELIVERY_ATTEMPTS: 'Lần giao hàng',
+  DELIVERIES_DELIVERED: 'Đơn giao thành công',
+  DELIVERIES_FAILED: 'Đơn giao thất bại',
+  FAILURE_RATE: 'Tỷ lệ thất bại (%)',
+  NDR_CREATED: 'Đơn cần xử lý NDR',
+  PICKUPS_COMPLETED: 'Đơn lấy hàng thành công',
+  SCANS_INBOUND: 'Đơn nhập hub',
+  SCANS_OUTBOUND: 'Đơn xuất hub',
+  SHIPMENTS_CREATED: 'Đơn mới tạo',
+  SUCCESS_RATE: 'Tỷ lệ thành công (%)',
+  CANCELLED_COUNT: 'Đơn đã hủy',
+  COMPLETED_COUNT: 'Đơn hoàn tất',
+  CREATED_COUNT: 'Đơn mới tạo',
+  DAILY_SHIPMENTS: 'Vận đơn trong ngày',
+  DELIVERED_COUNT: 'Đơn giao thành công',
+  DELIVERY_FAILED_COUNT: 'Đơn giao thất bại',
+  INBOUND_COUNT: 'Đơn nhập hub',
+  MONTHLY_SHIPMENTS: 'Vận đơn trong tháng',
+  NDR_COUNT: 'Đơn cần xử lý giao thất bại',
+  OUTBOUND_COUNT: 'Đơn xuất hub',
+  PICKUP_COUNT: 'Đơn lấy hàng',
+  PICKUP_PENDING_COUNT: 'Đơn chờ lấy hàng',
+  RETURNING_COUNT: 'Đơn đang hoàn',
   RETURN_COUNT: 'Đơn hoàn trả',
-  SHIPMENT_COUNT: 'Tong vận đơn',
+  SHIPMENT_COUNT: 'Tổng vận đơn',
   TOTAL_ORDERS: 'Tổng đơn hàng',
-  TOTAL_SHIPMENTS: 'Tong vận đơn',
+  TOTAL_SHIPMENTS: 'Tổng vận đơn',
 };
 
 const TRACKING_EVENT_SOURCE_LABELS: LabelMap = {
@@ -199,8 +209,9 @@ const TRACKING_EVENT_TYPE_LABELS: LabelMap = {
 function normalizeCode(value: string): string {
   return value
     .trim()
-    .toUpperCase()
-    .replace(/\s+/g, '_');
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    .replace(/[\s.-]+/g, '_')
+    .toUpperCase();
 }
 
 function capitalizeWords(value: string): string {

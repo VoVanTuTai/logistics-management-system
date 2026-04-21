@@ -1,0 +1,200 @@
+.ops-tracking-lookup {
+  display: grid;
+  gap: 14px;
+}
+
+.ops-tracking-lookup__heading h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.ops-tracking-lookup__heading p {
+  margin: 6px 0 0;
+  color: #64748b;
+}
+
+.ops-tracking-lookup__grid {
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.ops-tracking-lookup__left-column {
+  display: grid;
+  gap: 14px;
+}
+
+.ops-tracking-lookup__panel {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 12px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.ops-tracking-lookup__panel h3 {
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+
+.ops-tracking-lookup__form {
+  display: grid;
+  gap: 10px;
+}
+
+.ops-tracking-lookup__form textarea {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid #d6dce8;
+  border-radius: 10px;
+  padding: 10px;
+  min-height: 120px;
+}
+
+.ops-tracking-lookup__form-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ops-tracking-lookup__form-actions button {
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+
+.ops-tracking-lookup__ghost-btn {
+  border-color: #d6dce8;
+  background: #ffffff;
+  color: #334155;
+}
+
+.ops-tracking-lookup__list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.ops-tracking-lookup__list-header h3 {
+  margin: 0;
+}
+
+.ops-tracking-lookup__list-header span {
+  border: 1px solid #c7d2fe;
+  background: #eef2ff;
+  color: #4338ca;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ops-tracking-lookup__code-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  max-height: 410px;
+  overflow: auto;
+}
+
+.ops-tracking-lookup__code-btn {
+  width: 100%;
+  border: 1px solid #d6dce8;
+  border-radius: 10px;
+  padding: 10px;
+  background: #ffffff;
+  color: #334155;
+  text-align: left;
+  font-weight: 600;
+}
+
+.ops-tracking-lookup__code-btn:hover {
+  border-color: #a5b4fc;
+  background: #f8faff;
+}
+
+.ops-tracking-lookup__code-btn--active {
+  border-color: #4f46e5;
+  background: #eef2ff;
+  color: #312e81;
+}
+
+.ops-tracking-lookup__right-column {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 12px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  min-width: 0;
+}
+
+.ops-tracking-lookup__log-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.ops-tracking-lookup__log-header h3 {
+  margin: 0;
+}
+
+.ops-tracking-lookup__log-header strong {
+  color: #4f46e5;
+}
+
+.ops-tracking-lookup__summary-grid {
+  margin-top: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px;
+  background: #f8faff;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ops-tracking-lookup__summary-grid small {
+  display: block;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.ops-tracking-lookup__summary-grid strong {
+  color: #334155;
+}
+
+.ops-tracking-lookup__detail-link {
+  margin: 12px 0 0;
+}
+
+.ops-tracking-lookup__error {
+  margin: 8px 0 0;
+  color: #b91c1c;
+}
+
+.ops-tracking-lookup__empty {
+  margin: 8px 0 0;
+  color: #64748b;
+}
+
+@media (max-width: 1100px) {
+  .ops-tracking-lookup__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ops-tracking-lookup__code-list {
+    max-height: 260px;
+  }
+}
+
+@media (max-width: 640px) {
+  .ops-tracking-lookup__summary-grid {
+    grid-template-columns: 1fr;
+  }
+}

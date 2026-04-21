@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
   heroTitle: {
     color: '#FFFFFF',
     fontSize: 28,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   heroSubtitle: {
     color: '#DDE8FF',
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
   formTitle: {
     color: theme.colors.textPrimary,
     fontSize: 20,
-    fontWeight: '800',
+    fontWeight: '700',
     marginBottom: 4,
   },
   formDescription: {

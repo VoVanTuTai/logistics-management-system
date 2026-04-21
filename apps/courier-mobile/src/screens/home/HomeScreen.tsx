@@ -33,15 +33,15 @@ const appItems: HomeAppGridItem[] = [
     id: 'create-order',
     label: 'Lên đơn',
     iconName: 'add-circle-outline',
-    iconColor: '#24539E',
-    iconBgColor: '#E6F0FF',
+    iconColor: '#4F46E5',
+    iconBgColor: '#EEF2FF',
   },
   {
     id: 'scan-history',
     label: 'Lịch sử quét',
     iconName: 'scan-outline',
-    iconColor: '#0A6E89',
-    iconBgColor: '#E1F8FA',
+    iconColor: '#4338CA',
+    iconBgColor: '#EEF2FF',
   },
   {
     id: 'cash-stats',
@@ -61,15 +61,15 @@ const appItems: HomeAppGridItem[] = [
     id: 'tracking',
     label: 'Theo dõi đơn',
     iconName: 'locate-outline',
-    iconColor: '#24539E',
-    iconBgColor: '#E6F0FF',
+    iconColor: '#4F46E5',
+    iconBgColor: '#EEF2FF',
   },
   {
     id: 'uniform-check',
     label: 'Kiểm tra đồng phục',
     iconName: 'shirt-outline',
-    iconColor: '#0A6E89',
-    iconBgColor: '#E1F8FA',
+    iconColor: '#4338CA',
+    iconBgColor: '#EEF2FF',
   },
   {
     id: 'referral',
@@ -359,4 +359,5 @@ const styles = StyleSheet.create({
     borderTopColor: theme.colors.border,
   },
 });
+
 

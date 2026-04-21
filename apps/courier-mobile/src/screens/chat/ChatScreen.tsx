@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: '800',
+    fontWeight: '700',
     color: theme.colors.textPrimary,
   },
   subtitle: {
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
   },
   noticeCard: {
     backgroundColor: theme.colors.infoSurface,
-    borderColor: '#C7DAFF',
+    borderColor: '#C7D2FE',
   },
   noticeTitle: {
     color: theme.colors.primary,
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
   },
   unreadPill: {
     alignSelf: 'flex-start',
-    backgroundColor: '#DBEAFE',
+    backgroundColor: '#EEF2FF',
     borderRadius: theme.radius.pill,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -157,3 +157,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
+

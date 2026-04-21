@@ -76,9 +76,9 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#EAF3FF',
+    backgroundColor: '#EEF2FF',
     borderWidth: 1,
-    borderColor: '#D6E6FA',
+    borderColor: '#C7D2FE',
     marginBottom: theme.spacing.md,
   },
   title: {
@@ -132,3 +132,4 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
 });
+
