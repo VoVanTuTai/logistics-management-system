@@ -13,7 +13,7 @@ export function KpiCards({ kpis }: KpiCardsProps): React.JSX.Element {
       {Object.entries(kpis).map(([key, value]) => (
         <article key={key} className="ops-kpi-card">
           <small>{formatKpiLabel(key)}</small>
-          <strong>{value ?? 'Khong co'}</strong>
+          <strong>{value ?? 'Không có'}</strong>
         </article>
       ))}
     </div>

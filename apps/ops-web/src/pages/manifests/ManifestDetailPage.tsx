@@ -61,17 +61,17 @@ export function ManifestDetailPage(): React.JSX.Element {
   };
   const lastActionLabel =
     lastActionName === 'addShipment'
-      ? 'them van don'
+      ? 'thêm vận đơn'
       : lastActionName === 'removeShipment'
-        ? 'go van don'
+        ? 'gỡ vận đơn'
         : lastActionName === 'seal'
-          ? 'niem phong'
+          ? 'niêm phong'
           : lastActionName === 'receiveHandover'
-            ? 'nhan ban giao'
-            : 'khong co';
+            ? 'nhận bàn giao'
+            : 'không có';
 
   if (detailQuery.isLoading) {
-    return <p>Dang tai chi tiet bao tai...</p>;
+    return <p>Đang tải chi tiet bao tải...</p>;
   }
 
   if (detailQuery.isError) {
@@ -79,31 +79,31 @@ export function ManifestDetailPage(): React.JSX.Element {
   }
 
   if (!detailQuery.data) {
-    return <p>Khong tim thay bao tai.</p>;
+    return <p>Không tìm thấy bao tải.</p>;
   }
 
   return (
     <section>
-      <h2>Chi tiet bao tai</h2>
+      <h2>Chi tiết bao tải</h2>
       <p>
-        <Link to={routePaths.manifests}>Quay lai danh sach bao tai</Link>
+        <Link to={routePaths.manifests}>Quay lại danh sach bao tải</Link>
       </p>
 
-      <p>Ma bao tai: {detailQuery.data.manifestCode}</p>
-      <p>Trang thai: {formatManifestStatusLabel(detailQuery.data.status)}</p>
-      <p>Hub di: {detailQuery.data.originHubCode ?? 'Khong co'}</p>
-      <p>Hub den: {detailQuery.data.destinationHubCode ?? 'Khong co'}</p>
+      <p>Mã bao tải: {detailQuery.data.manifestCode}</p>
+      <p>Trạng thái: {formatManifestStatusLabel(detailQuery.data.status)}</p>
+      <p>Hub di: {detailQuery.data.originHubCode ?? 'Không có'}</p>
+      <p>Hub den: {detailQuery.data.destinationHubCode ?? 'Không có'}</p>
       <p>Niem phong luc: {formatDateTime(detailQuery.data.sealedAt)}</p>
       <p>
-        Cap nhat luc:{' '}
-        {detailQuery.data.updatedAt ? formatDateTime(detailQuery.data.updatedAt) : 'Khong co'}
+        Cập nhật lúc:{' '}
+        {detailQuery.data.updatedAt ? formatDateTime(detailQuery.data.updatedAt) : 'Không có'}
       </p>
-      <p>Ghi chu: {detailQuery.data.note ?? 'Khong co'}</p>
+      <p>Ghi chu: {detailQuery.data.note ?? 'Không có'}</p>
       <p>
-        Ma van don:{' '}
+        Ma vận đơn:{' '}
         {detailQuery.data.shipmentCodes?.length
           ? detailQuery.data.shipmentCodes.join(', ')
-          : 'Khong co'}
+          : 'Không có'}
       </p>
 
       <ManifestActionForms
@@ -133,7 +133,7 @@ export function ManifestDetailPage(): React.JSX.Element {
 
       {lastActionResponse ? (
         <div style={styles.responseBox}>
-          <strong>Phan hoi he thong gan nhat ({lastActionLabel})</strong>
+          <strong>Phan hoi hệ thống gan nhat ({lastActionLabel})</strong>
           <pre style={styles.pre}>{JSON.stringify(lastActionResponse, null, 2)}</pre>
         </div>
       ) : null}

@@ -47,7 +47,7 @@ export function PickupApprovalsPage(): React.JSX.Element {
   const bulkApproveMutation = useMutation({
     mutationFn: async (pickupIds: string[]): Promise<BulkApproveResult> => {
       if (!accessToken) {
-        throw new Error('Thieu access token.');
+        throw new Error('Thiếu access token.');
       }
 
       const settled = await Promise.allSettled(
@@ -194,7 +194,7 @@ export function PickupApprovalsPage(): React.JSX.Element {
     setActionMessage(null);
     setActionError(null);
 
-    const confirmed = window.confirm(`Xac nhan duyet ${selectedIds.length} yeu cau lay hang da chon?`);
+    const confirmed = window.confirm(`Xác nhận duyệt ${selectedIds.length} yêu cầu lấy hàng đã chọn?`);
     if (!confirmed) {
       return;
     }
@@ -203,12 +203,12 @@ export function PickupApprovalsPage(): React.JSX.Element {
       const result = await bulkApproveMutation.mutateAsync(selectedIds);
 
       if (result.successIds.length > 0) {
-        setActionMessage(`Da duyet thanh cong ${result.successIds.length} yeu cau.`);
+        setActionMessage(`Da duyệt thành công ${result.successIds.length} yêu cầu.`);
       }
 
       if (result.failed.length > 0) {
         setActionError(
-          `That bai ${result.failed.length} yeu cau. Vi du: ${result.failed[0].message}`,
+          `Thất bại ${result.failed.length} yêu cầu. Ví dụ: ${result.failed[0].message}`,
         );
       }
 
@@ -222,9 +222,9 @@ export function PickupApprovalsPage(): React.JSX.Element {
 
   return (
     <div>
-      <h2>Duyet lay hang</h2>
+      <h2>Duyệt lấy hàng</h2>
       <p style={{ color: '#2d3f99' }}>
-        Bo cot ma yeu cau. Chon nhieu don cho duyet de duyet 1 lan.
+        Bo cot ma yêu cầu. Chon nhieu don cho duyệt de duyệt 1 lan.
       </p>
       <form onSubmit={onFilterSubmit} style={styles.filterForm}>
         <select
@@ -233,7 +233,7 @@ export function PickupApprovalsPage(): React.JSX.Element {
           onChange={(event) => setStatusInput(event.target.value)}
           style={styles.input}
         >
-          <option value="">Tat ca trang thai lay hang</option>
+          <option value="">Tat ca trạng thái lấy hàng</option>
           {PICKUP_STATUS_OPTIONS.map((option) => (
             <option key={option} value={option}>
               {formatPickupStatusLabel(option)}
@@ -253,26 +253,26 @@ export function PickupApprovalsPage(): React.JSX.Element {
           disabled={selectedIds.length === 0 || bulkApproveMutation.isPending}
         >
           {bulkApproveMutation.isPending
-            ? 'Dang duyet...'
-            : `Duyet da chon (${selectedIds.length})`}
+            ? 'Đang duyệt...'
+            : `Duyệt đã chọn (${selectedIds.length})`}
         </button>
         <small style={styles.hintText}>
-          Chi dong co trang thai {formatPickupStatusLabel('REQUESTED')} moi co the tick chon.
+          Chi dong co trạng thái {formatPickupStatusLabel('REQUESTED')} moi co the tick chon.
         </small>
       </div>
 
       {actionMessage ? <p style={styles.successText}>{actionMessage}</p> : null}
       {actionError ? <p style={styles.errorText}>{actionError}</p> : null}
 
-      {pickupsQuery.isLoading ? <p>Dang tai yeu cau lay hang...</p> : null}
+      {pickupsQuery.isLoading ? <p>Đang tải yêu cầu lấy hàng...</p> : null}
       {pickupsQuery.isError ? <p style={styles.errorText}>{getErrorMessage(pickupsQuery.error)}</p> : null}
-      {shipmentsQuery.isLoading ? <p>Dang tai thong tin van don...</p> : null}
+      {shipmentsQuery.isLoading ? <p>Đang tải thong tin vận đơn...</p> : null}
       {shipmentsQuery.isError ? (
-        <p style={styles.errorText}>Khong the tai thong tin van don: {getErrorMessage(shipmentsQuery.error)}</p>
+        <p style={styles.errorText}>Khong the tai thong tin vận đơn: {getErrorMessage(shipmentsQuery.error)}</p>
       ) : null}
 
       {pickupsQuery.isSuccess && (pickupsQuery.data?.length ?? 0) === 0 ? (
-        <p>Khong co yeu cau lay hang phu hop bo loc hien tai.</p>
+        <p>Không có yêu cầu lấy hàng phù hợp bộ lọc hiện tại.</p>
       ) : null}
 
       {pickupsQuery.isSuccess && (pickupsQuery.data?.length ?? 0) > 0 ? (

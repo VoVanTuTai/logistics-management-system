@@ -54,8 +54,8 @@ export function PickupRequestsTable({
               onChange={(event) => onToggleAll(event.target.checked)}
             />
           </th>
-          <th style={styles.headerCell}>Van don</th>
-          <th style={styles.headerCell}>Trang thai lay hang</th>
+          <th style={styles.headerCell}>Vận đơn</th>
+          <th style={styles.headerCell}>Trạng thái lấy hàng</th>
           <th style={styles.headerCell}>Nguoi gui</th>
           <th style={styles.headerCell}>Nguoi nhan</th>
           <th style={styles.headerCell}>So dien thoai</th>

@@ -112,10 +112,10 @@ export function ZoneManagementPage(): React.JSX.Element {
           zoneId: editingZone.id,
           payload,
         });
-        setActionMessage(`Da cap nhat zone "${payload.code}".`);
+        setActionMessage(`Đã cập nhật zone "${payload.code}".`);
       } else {
         await createMutation.mutateAsync(payload);
-        setActionMessage(`Da tao zone "${payload.code}".`);
+        setActionMessage(`Đã tạo zone "${payload.code}".`);
       }
 
       setEditorOpen(false);
@@ -137,7 +137,7 @@ export function ZoneManagementPage(): React.JSX.Element {
       });
 
       setActionMessage(
-        `Zone "${zone.code}" da chuyen sang ${zone.isActive ? 'INACTIVE' : 'ACTIVE'}.`,
+        `Zone "${zone.code}" đã chuyển sang ${zone.isActive ? 'INACTIVE' : 'ACTIVE'}.`,
       );
     } catch (error) {
       setActionError(getErrorMessage(error));
@@ -150,12 +150,12 @@ export function ZoneManagementPage(): React.JSX.Element {
     <div>
       <h2>Du Lieu Danh Muc - Quan Ly Zone</h2>
       <p style={styles.helperText}>
-        Quan ly zone van hanh cho luong lay hang va dieu huong giao hang.
+        Quan ly zone van hanh cho luong lấy hàng va dieu huong giao hàng.
       </p>
 
       <form onSubmit={onApplyFilters} style={styles.filterForm}>
         <input
-          placeholder="Ma zone"
+          placeholder="Mã zone"
           value={draftFilters.code ?? ''}
           onChange={(event) =>
             setDraftFilters((previous) => ({
@@ -166,7 +166,7 @@ export function ZoneManagementPage(): React.JSX.Element {
           style={styles.input}
         />
         <input
-          placeholder="Ten zone"
+          placeholder="Tên zone"
           value={draftFilters.name ?? ''}
           onChange={(event) =>
             setDraftFilters((previous) => ({
@@ -177,7 +177,7 @@ export function ZoneManagementPage(): React.JSX.Element {
           style={styles.input}
         />
         <input
-          placeholder="Ma zone cha"
+          placeholder="Mã zone cha"
           value={draftFilters.parentCode ?? ''}
           onChange={(event) =>
             setDraftFilters((previous) => ({
@@ -197,12 +197,12 @@ export function ZoneManagementPage(): React.JSX.Element {
           }
           style={styles.input}
         >
-          <option value="">Tất cả trang thai</option>
+          <option value="">Tất cả trạng thái</option>
           <option value="true">ACTIVE</option>
           <option value="false">INACTIVE</option>
         </select>
         <input
-          placeholder="Tim nhanh"
+          placeholder="Tìm nhanh"
           value={draftFilters.q ?? ''}
           onChange={(event) =>
             setDraftFilters((previous) => ({
@@ -217,7 +217,7 @@ export function ZoneManagementPage(): React.JSX.Element {
           Dat lai
         </button>
         <button type="button" onClick={openCreateModal}>
-          Tao zone
+          Tạo zone
         </button>
       </form>
 
@@ -247,8 +247,8 @@ export function ZoneManagementPage(): React.JSX.Element {
               <th style={styles.headerCell}>Ma</th>
               <th style={styles.headerCell}>Ten</th>
               <th style={styles.headerCell}>Zone cha</th>
-              <th style={styles.headerCell}>Trang thai</th>
-              <th style={styles.headerCell}>Cap nhat</th>
+              <th style={styles.headerCell}>Trạng thái</th>
+              <th style={styles.headerCell}>Cập nhật</th>
               <th style={styles.headerCell}>Hanh dong</th>
             </tr>
           </thead>
@@ -265,13 +265,13 @@ export function ZoneManagementPage(): React.JSX.Element {
                 <td style={styles.cell}>
                   <div style={styles.actionsCell}>
                     <button type="button" onClick={() => setSelectedZoneId(zone.id)}>
-                      Chi tiet
+                      Chi tiết
                     </button>
                     <button type="button" onClick={() => openEditModal(zone)}>
-                      Sua
+                      Sửa
                     </button>
                     <button type="button" onClick={() => void onToggleStatus(zone)}>
-                      {zone.isActive ? 'Tat' : 'Bat'}
+                      {zone.isActive ? 'Tắt' : 'Bật'}
                     </button>
                   </div>
                 </td>
@@ -283,36 +283,36 @@ export function ZoneManagementPage(): React.JSX.Element {
 
       {selectedZone ? (
         <section style={styles.detailCard}>
-          <h3 style={styles.detailTitle}>Chi tiet zone: {selectedZone.code}</h3>
+          <h3 style={styles.detailTitle}>Chi tiết zone: {selectedZone.code}</h3>
           <p>
-            <strong>Ten:</strong> {selectedZone.name}
+            <strong>Tên:</strong> {selectedZone.name}
           </p>
           <p>
             <strong>Zone cha:</strong> {selectedZone.parentCode ?? 'Không có'}
           </p>
           <p>
-            <strong>Trang thai:</strong> {selectedZone.isActive ? 'ACTIVE' : 'INACTIVE'}
+            <strong>Trạng thái:</strong> {selectedZone.isActive ? 'ACTIVE' : 'INACTIVE'}
           </p>
           <p>
             <strong>Tao luc:</strong> {formatDateTime(selectedZone.createdAt)}
           </p>
           <p>
-            <strong>Cap nhat luc:</strong> {formatDateTime(selectedZone.updatedAt)}
+            <strong>Cập nhật lúc:</strong> {formatDateTime(selectedZone.updatedAt)}
           </p>
         </section>
       ) : null}
 
       <MasterdataEditorModal
         open={editorOpen}
-        title={editingZone ? `Sua zone ${editingZone.code}` : 'Tao zone'}
-        submitLabel={editingZone ? 'Luu thay doi' : 'Tao zone'}
+        title={editingZone ? `Sửa zone ${editingZone.code}` : 'Tạo zone'}
+        submitLabel={editingZone ? 'Lưu thay đổi' : 'Tạo zone'}
         isSubmitting={isSaving}
         onClose={() => setEditorOpen(false)}
         onSubmit={onSubmitForm}
       >
         <div style={styles.formGrid}>
           <label style={styles.fieldLabel}>
-            Ma zone
+            Mã zone
             <input
               value={form.code}
               onChange={(event) =>
@@ -328,7 +328,7 @@ export function ZoneManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Ten zone
+            Tên zone
             <input
               value={form.name}
               onChange={(event) =>
@@ -342,7 +342,7 @@ export function ZoneManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Ma zone cha
+            Mã zone cha
             <input
               value={form.parentCode}
               onChange={(event) =>

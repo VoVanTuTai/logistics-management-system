@@ -16,7 +16,7 @@ function resolveShipmentStatusLabel(item: ShipmentListItemDto): string {
   const deliveryNote = (item.deliveryNote ?? '').trim();
   if (
     item.currentStatus === 'SCAN_INBOUND' &&
-    deliveryNote.toLowerCase().startsWith('xuong hang kien den')
+    deliveryNote.toLowerCase().startsWith('xuống hàng kiện đến')
   ) {
     return deliveryNote;
   }
@@ -37,15 +37,15 @@ export function ShipmentsTable({
     <table style={styles.table}>
       <thead>
         <tr>
-          <th style={styles.headerCell}>Van don</th>
-          <th style={styles.headerCell}>Trang thai</th>
+          <th style={styles.headerCell}>Vận đơn</th>
+          <th style={styles.headerCell}>Trạng thái</th>
           <th style={styles.headerCell}>Nen tang</th>
           <th style={styles.headerCell}>Nguoi gui</th>
           <th style={styles.headerCell}>Nguoi nhan</th>
           <th style={styles.headerCell}>Khu vuc</th>
-          <th style={styles.headerCell}>Vi tri hien tai</th>
+          <th style={styles.headerCell}>Vị trí hiện tại</th>
           <th style={styles.headerCell}>Tao luc</th>
-          <th style={styles.headerCell}>Cap nhat luc</th>
+          <th style={styles.headerCell}>Cập nhật lúc</th>
           <th style={styles.headerCell}>Hanh dong</th>
         </tr>
       </thead>
@@ -59,17 +59,17 @@ export function ShipmentsTable({
                 <Link to={routePaths.shipmentDetail(item.shipmentCode)}>{item.shipmentCode}</Link>
               </td>
               <td style={styles.cell}>{resolveShipmentStatusLabel(item)}</td>
-              <td style={styles.cell}>{item.platform ?? 'Khong co'}</td>
+              <td style={styles.cell}>{item.platform ?? 'Không có'}</td>
               <td style={styles.cell}>
-                <div>{item.senderName ?? 'Khong co'}</div>
+                <div>{item.senderName ?? 'Không có'}</div>
                 <small style={styles.subText}>{item.senderPhone ?? '-'}</small>
               </td>
               <td style={styles.cell}>
-                <div>{item.receiverName ?? 'Khong co'}</div>
+                <div>{item.receiverName ?? 'Không có'}</div>
                 <small style={styles.subText}>{item.receiverPhone ?? '-'}</small>
               </td>
-              <td style={styles.cell}>{item.receiverRegion ?? 'Khong co'}</td>
-              <td style={styles.cell}>{item.currentLocation ?? 'Khong co'}</td>
+              <td style={styles.cell}>{item.receiverRegion ?? 'Không có'}</td>
+              <td style={styles.cell}>{item.currentLocation ?? 'Không có'}</td>
               <td style={styles.cell}>{formatDateTime(item.createdAt)}</td>
               <td style={styles.cell}>{formatDateTime(item.updatedAt)}</td>
               <td style={styles.cell}>
@@ -80,14 +80,14 @@ export function ShipmentsTable({
                     disabled={!canDispatch}
                     title={
                       canDispatch
-                        ? 'Quet phat va phan cong courier giao hang'
-                        : 'Chi quet phat khi kien da xuong buu cuc (SCAN_INBOUND)'
+                        ? 'Quét phát và phân công courier giao hàng'
+                        : 'Chỉ quét phát khi kiện đã xuống bưu cục (SCAN_INBOUND)'
                     }
                   >
                     Quet phat
                   </button>
                   <button type="button" onClick={() => onPrint?.(item)}>
-                    In van don
+                    In vận đơn
                   </button>
                 </div>
               </td>

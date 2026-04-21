@@ -53,7 +53,7 @@ export function ShipmentDetailPage(): React.JSX.Element {
   });
 
   if (detailQuery.isLoading) {
-    return <p>Dang tai chi tiet van don...</p>;
+    return <p>Đang tải chi tiet vận đơn...</p>;
   }
 
   if (detailQuery.isError) {
@@ -61,33 +61,33 @@ export function ShipmentDetailPage(): React.JSX.Element {
   }
 
   if (!detailQuery.data) {
-    return <p>Khong tim thay van don.</p>;
+    return <p>Không tìm thấy vận đơn.</p>;
   }
 
   return (
     <section>
-      <h2>Chi tiet van don</h2>
-      <p>Ma van don: {detailQuery.data.shipmentCode}</p>
-      <p>Trang thai hien tai: {formatShipmentStatusLabel(detailQuery.data.currentStatus)}</p>
-      <p>Vi tri hien tai: {detailQuery.data.currentLocation ?? 'Khong co'}</p>
-      <p>Cap nhat luc: {formatDateTime(detailQuery.data.updatedAt)}</p>
+      <h2>Chi tiết vận đơn</h2>
+      <p>Ma vận đơn: {detailQuery.data.shipmentCode}</p>
+      <p>Trạng thái hien tai: {formatShipmentStatusLabel(detailQuery.data.currentStatus)}</p>
+      <p>Vị trí hiện tại: {detailQuery.data.currentLocation ?? 'Không có'}</p>
+      <p>Cập nhật lúc: {formatDateTime(detailQuery.data.updatedAt)}</p>
 
       <div style={styles.entryPointGroup}>
-        <strong>Diem vao nghiep vu lien quan</strong>
+        <strong>Điểm vào nghiệp vụ liên quan</strong>
         <div style={styles.entryLinks}>
           <Link to={`${routePaths.tasks}?shipmentCode=${encodeURIComponent(detailQuery.data.shipmentCode)}`}>
-            Phan cong/phan cong lai tac vu
+            Phan cong/phan cong lai tác vụ
           </Link>
           <Link
             to={`${routePaths.manifests}?shipmentCode=${encodeURIComponent(detailQuery.data.shipmentCode)}`}
           >
-            Them vao bao tai
+            Them vao bao tải
           </Link>
           <Link to={`${routePaths.scans}?shipmentCode=${encodeURIComponent(detailQuery.data.shipmentCode)}`}>
-            Quet hub
+            Quét hub
           </Link>
           <Link to={`${routePaths.ndr}?shipmentCode=${encodeURIComponent(detailQuery.data.shipmentCode)}`}>
-            Xu ly NDR
+            Xử lý NDR
           </Link>
         </div>
       </div>
@@ -96,7 +96,7 @@ export function ShipmentDetailPage(): React.JSX.Element {
         <label htmlFor="note">Ghi chu van hanh</label>
         <textarea id="note" rows={4} {...form.register('note')} />
         <button type="submit" disabled={updateMutation.isPending}>
-          {updateMutation.isPending ? 'Dang luu...' : 'Luu'}
+          {updateMutation.isPending ? 'Đang lưu...' : 'Lưu'}
         </button>
         {updateMutation.isError ? (
           <small style={styles.errorText}>{getErrorMessage(updateMutation.error)}</small>
@@ -105,10 +105,10 @@ export function ShipmentDetailPage(): React.JSX.Element {
 
       <div style={styles.actionsGrid}>
         <form onSubmit={onReviewSubmit} style={styles.form}>
-          <h3 style={styles.actionTitle}>Ra soat</h3>
-          <textarea rows={3} placeholder="Ghi chu ra soat" {...reviewForm.register('note')} />
+          <h3 style={styles.actionTitle}>Rà soát</h3>
+          <textarea rows={3} placeholder="Ghi chú rà soát" {...reviewForm.register('note')} />
           <button type="submit" disabled={reviewMutation.isPending}>
-            {reviewMutation.isPending ? 'Dang gui ra soat...' : 'Gui ra soat'}
+            {reviewMutation.isPending ? 'Đang gửi rà soát...' : 'Gửi rà soát'}
           </button>
           {reviewMutation.isError ? (
             <small style={styles.errorText}>{getErrorMessage(reviewMutation.error)}</small>
@@ -116,10 +116,10 @@ export function ShipmentDetailPage(): React.JSX.Element {
         </form>
 
         <form onSubmit={onApproveSubmit} style={styles.form}>
-          <h3 style={styles.actionTitle}>Phe duyet</h3>
-          <textarea rows={3} placeholder="Ghi chu phe duyet" {...approveForm.register('note')} />
+          <h3 style={styles.actionTitle}>Phê duyệt</h3>
+          <textarea rows={3} placeholder="Ghi chú phê duyệt" {...approveForm.register('note')} />
           <button type="submit" disabled={approveMutation.isPending}>
-            {approveMutation.isPending ? 'Dang gui phe duyet...' : 'Gui phe duyet'}
+            {approveMutation.isPending ? 'Đang gửi phê duyệt...' : 'Gửi phê duyệt'}
           </button>
           {approveMutation.isError ? (
             <small style={styles.errorText}>{getErrorMessage(approveMutation.error)}</small>

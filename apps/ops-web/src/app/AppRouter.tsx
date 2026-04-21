@@ -48,21 +48,21 @@ function DashboardLayout(): React.JSX.Element {
 
   const primaryNav = useMemo<NavItem[]>(
     () => [
-      { label: 'Tong quan', to: routePaths.dashboard },
-      { label: 'Van don', to: routePaths.shipments },
-      { label: 'Duyet lay hang', to: routePaths.pickups },
-      { label: 'Phan cong tac vu', to: routePaths.tasks },
-      { label: 'Quan ly bao tai', to: routePaths.manifests },
-      { label: 'Quet hub', to: routePaths.scans },
-      { label: 'Xu ly NDR', to: routePaths.ndr },
-      { label: 'Tra cuu hanh trinh', to: routePaths.tracking },
+      { label: 'Tổng quan', to: routePaths.dashboard },
+      { label: 'Vận đơn', to: routePaths.shipments },
+      { label: 'Duyệt lấy hàng', to: routePaths.pickups },
+      { label: 'Phân công tác vụ', to: routePaths.tasks },
+      { label: 'Quản lý bao tải', to: routePaths.manifests },
+      { label: 'Quét hub', to: routePaths.scans },
+      { label: 'Xử lý NDR', to: routePaths.ndr },
+      { label: 'Tra cứu hành trình', to: routePaths.tracking },
     ],
     [],
   );
 
   const roleText =
     (session?.user.roles ?? []).map((role) => formatRoleLabel(role)).join(', ') ||
-    'Nhan vien dieu hanh';
+    'Nhân viên điều hành';
 
   const onQuickSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -83,8 +83,8 @@ function DashboardLayout(): React.JSX.Element {
     <div className="ops-layout">
       <aside className="ops-sidebar">
         <div>
-          <h1>Dieu hanh OPS</h1>
-          <p>Trung tam van hanh logistics</p>
+          <h1>Điều hành OPS</h1>
+          <p>Trung tâm vận hành logistics</p>
         </div>
 
         <div className="ops-sidebar-session">
@@ -96,7 +96,7 @@ function DashboardLayout(): React.JSX.Element {
             disabled={logoutMutation.isPending}
             onClick={() => void onLogout()}
           >
-            {logoutMutation.isPending ? 'Dang dang xuat...' : 'Dang xuat'}
+            {logoutMutation.isPending ? 'Đang đăng xuất...' : 'Đăng xuất'}
           </button>
         </div>
 
@@ -119,8 +119,8 @@ function DashboardLayout(): React.JSX.Element {
       <div className="ops-workspace">
         <header className="ops-topbar">
           <div>
-            <h2>Bang dieu hanh JMS OPS</h2>
-            <p>Tac vu nhanh, bo loc linh hoat, theo doi su kien theo thoi gian thuc.</p>
+            <h2>Bảng điều hành JMS OPS</h2>
+            <p>Tac vu nhanh, bo loc linh hoat, theo doi sự kiện theo thoi gian thuc.</p>
           </div>
 
           <div className="ops-topbar-actions">
@@ -129,8 +129,8 @@ function DashboardLayout(): React.JSX.Element {
                 type="text"
                 value={quickSearchCode}
                 onChange={(event) => setQuickSearchCode(event.target.value)}
-                placeholder="Tim nhanh ma van don"
-                aria-label="Tim nhanh ma van don"
+                placeholder="Tìm nhanh mã vận đơn"
+                aria-label="Tìm nhanh mã vận đơn"
               />
               <button type="submit">Tim</button>
             </form>

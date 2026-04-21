@@ -61,7 +61,7 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Nhan in van don ${codeText}</title>
+    <title>Nhan in vận đơn ${codeText}</title>
     <style>
       @page { size: 100mm 150mm; margin: 0; }
       * { box-sizing: border-box; }
@@ -188,7 +188,7 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
           <div class="service">${escapeHtml(payload.serviceName)}</div>
         </div>
         <div class="barcode-wrap">
-          <div class="barcode" role="img" aria-label="Ma vach"></div>
+          <div class="barcode" role="img" aria-label="Mã vạch"></div>
           <div class="ship-code">Mã vận đơn: ${codeText}</div>
         </div>
       </section>
