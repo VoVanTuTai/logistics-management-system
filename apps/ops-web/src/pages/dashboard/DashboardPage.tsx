@@ -448,21 +448,7 @@ export function DashboardPage(): React.JSX.Element {
       to: routePaths.groupServiceQuality,
       icon: 'service_quality',
     },
-    {
-      title: 'Co so du lieu',
-      to: routePaths.groupDatabase,
-      icon: 'database',
-    },
-    {
-      title: 'Thiet bi thong minh',
-      to: routePaths.groupSmartDevices,
-      icon: 'smart_devices',
-    },
-    {
-      title: 'Nen tang quy hoach',
-      to: routePaths.groupPlanningPlatform,
-      icon: 'planning_platform',
-    },
+    // Tam an theo yeu cau: Co so du lieu, Thiet bi thong minh, Nen tang quy hoach.
   ];
   const notices = [
     {
@@ -801,5 +787,4 @@ export function DashboardPage(): React.JSX.Element {
     </div>
   );
 }
-
 

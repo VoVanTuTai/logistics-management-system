@@ -795,6 +795,16 @@ th {
   font-weight: 600;
 }
 
+.ops-func-sidebar--ops-metrics .ops-func-sidebar-title span {
+  background: #dc2626;
+}
+
+.ops-func-sidebar--ops-metrics .ops-func-sidebar-item--active {
+  background: #fff1f2;
+  color: #b91c1c;
+}
+
+
 .ops-func-sidebar-icon {
   width: 18px;
   height: 18px;
@@ -823,6 +833,7 @@ th {
   flex-basis: 108px;
   max-width: 108px;
 }
+
 
 .ops-func-sidebar-chevron {
   width: 16px;
@@ -888,6 +899,13 @@ th {
   background: #eff6ff;
   color: #1d4ed8;
 }
+
+.ops-func-sidebar--ops-metrics .ops-func-sidebar-secondary-item--active {
+  border-color: #fda4af;
+  background: #fff1f2;
+  color: #b91c1c;
+}
+
 
 .ops-func-main {
   flex: 1;
