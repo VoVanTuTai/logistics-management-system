@@ -538,6 +538,13 @@ th {
   letter-spacing: 0.01em;
 }
 
+.ops-func-logo--button {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
 .ops-func-main-nav {
   height: 100%;
   display: flex;
@@ -690,7 +697,7 @@ th {
 }
 
 .ops-func-sidebar--expanded {
-  width: 28rem;
+  width: 22rem;
 }
 
 .ops-func-sidebar-search {
@@ -747,7 +754,7 @@ th {
 }
 
 .ops-func-sidebar-nav--two-cols {
-  grid-template-columns: minmax(0, 1fr) minmax(170px, 30%);
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 26%);
   column-gap: 10px;
   align-items: start;
 }
@@ -768,7 +775,7 @@ th {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 10px;
+  padding: 7px 8px;
   transition: background-color 0.2s ease, color 0.2s ease;
   width: 100%;
   border: 0;
@@ -802,7 +809,19 @@ th {
 }
 
 .ops-func-sidebar-label {
-  flex: 1;
+  flex: 0 1 130px;
+  max-width: 130px;
+  min-width: 0;
+  font-size: 13px;
+  padding: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ops-func-sidebar-nav--two-cols .ops-func-sidebar-label {
+  flex-basis: 108px;
+  max-width: 108px;
 }
 
 .ops-func-sidebar-chevron {
@@ -828,11 +847,11 @@ th {
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   background: #f8fafc;
-  padding: 5px;
+  padding: 3px;
   display: grid;
-  gap: 5px;
+  gap: 3px;
   width: 100%;
-  max-width: 30vw;
+  max-width: 22vw;
   justify-self: end;
 }
 

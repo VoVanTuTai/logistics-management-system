@@ -148,29 +148,57 @@
   color: #4f46e5;
 }
 
-.ops-tracking-lookup__summary-grid {
+.ops-tracking-lookup__history-table-wrap {
   margin-top: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #d8e0ec;
   border-radius: 10px;
-  padding: 10px;
-  background: #f8faff;
-  display: grid;
-  gap: 10px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  overflow: auto;
+  max-width: 100%;
 }
 
-.ops-tracking-lookup__summary-grid small {
-  display: block;
-  color: #64748b;
-  margin-bottom: 4px;
+.ops-tracking-lookup__history-table {
+  width: 100%;
+  min-width: 1160px;
+  border-collapse: collapse;
+  background: #ffffff;
 }
 
-.ops-tracking-lookup__summary-grid strong {
+.ops-tracking-lookup__history-table th,
+.ops-tracking-lookup__history-table td {
+  border: 1px solid #e2e8f0;
+  padding: 10px 9px;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.35;
+  vertical-align: top;
+}
+
+.ops-tracking-lookup__history-table th {
+  background: #f8fafc;
   color: #334155;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
-.ops-tracking-lookup__detail-link {
-  margin: 12px 0 0;
+.ops-tracking-lookup__history-table th:first-child,
+.ops-tracking-lookup__history-table td:first-child {
+  width: 54px;
+  text-align: center;
+}
+
+.ops-tracking-lookup__history-table td:nth-child(2),
+.ops-tracking-lookup__history-table td:nth-child(3),
+.ops-tracking-lookup__history-table td:nth-child(4) {
+  white-space: nowrap;
+}
+
+.ops-tracking-lookup__history-description-col {
+  min-width: 500px;
+}
+
+.ops-tracking-lookup__history-description-cell {
+  color: #334155;
+  white-space: normal;
 }
 
 .ops-tracking-lookup__error {
@@ -190,11 +218,5 @@
 
   .ops-tracking-lookup__code-list {
     max-height: 260px;
-  }
-}
-
-@media (max-width: 640px) {
-  .ops-tracking-lookup__summary-grid {
-    grid-template-columns: 1fr;
   }
 }

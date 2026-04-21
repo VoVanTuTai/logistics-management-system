@@ -149,9 +149,6 @@ export function MonitorDataHangNhanPage(): React.JSX.Element {
           <span>Ma khach hang:</span>
           <input type="text" placeholder="Vui long nhap noi dung" />
         </label>
-        <button type="button" className="ops-monitor-hang-nhan__summary-btn">
-          So don khong quet gui (38)
-        </button>
       </section>
 
       <section className="ops-monitor-hang-nhan__table-wrap">

@@ -12,6 +12,10 @@ export const routePaths = {
   groupCapabilityPlatform: '/app/function-groups/capability-platform',
   groupOperationsMetrics: '/app/function-groups/operations-metrics',
   groupServiceQuality: '/app/function-groups/service-quality',
+  serviceQualityProactiveInbound:
+    '/app/function-groups/service-quality/proactive/monitor-received',
+  serviceQualityProactiveDelivered:
+    '/app/function-groups/service-quality/proactive/monitor-delivered',
   groupDatabase: '/app/function-groups/database',
   groupSmartDevices: '/app/function-groups/smart-devices',
   groupPlanningPlatform: '/app/function-groups/planning-platform',
@@ -54,6 +58,10 @@ export const routePaths = {
   groupCapabilityPlatformLeaf: 'function-groups/capability-platform',
   groupOperationsMetricsLeaf: 'function-groups/operations-metrics',
   groupServiceQualityLeaf: 'function-groups/service-quality',
+  serviceQualityProactiveInboundLeaf:
+    'function-groups/service-quality/proactive/monitor-received',
+  serviceQualityProactiveDeliveredLeaf:
+    'function-groups/service-quality/proactive/monitor-delivered',
   groupDatabaseLeaf: 'function-groups/database',
   groupSmartDevicesLeaf: 'function-groups/smart-devices',
   groupPlanningPlatformLeaf: 'function-groups/planning-platform',

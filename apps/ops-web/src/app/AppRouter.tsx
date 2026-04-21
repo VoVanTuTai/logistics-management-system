@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import {
   BrowserRouter,
   Navigate,
@@ -32,6 +32,8 @@ import { ThermalLabelManagementPage } from '../pages/function-groups/operations-
 import { ThermalLabelPrintPage } from '../pages/function-groups/operations-platform/thermal-label/ThermalLabelPrintPage';
 import { PlanningPlatformGroupPage } from '../pages/function-groups/planning-platform/PlanningPlatformGroupPage';
 import { ServiceQualityGroupPage } from '../pages/function-groups/service-quality/ServiceQualityGroupPage';
+import { ServiceQualityMonitorDeliveredPage } from '../pages/function-groups/service-quality/proactive/ServiceQualityMonitorDeliveredPage';
+import { ServiceQualityMonitorReceivedPage } from '../pages/function-groups/service-quality/proactive/ServiceQualityMonitorReceivedPage';
 import { SmartDevicesGroupPage } from '../pages/function-groups/smart-devices/SmartDevicesGroupPage';
 import { ManifestDetailPage } from '../pages/manifests/ManifestDetailPage';
 import { ManifestManagementPage } from '../pages/manifests/ManifestManagementPage';
@@ -61,7 +63,12 @@ type SidebarIconName =
   | 'return_block'
   | 'monitor_data'
   | 'proof_management'
-  | 'operation_report';
+  | 'operation_report'
+  | 'service_lookup'
+  | 'service_proactive'
+  | 'service_care'
+  | 'service_weight'
+  | 'service_abnormal';
 
 interface TopNavItem {
   label: string;
@@ -73,7 +80,7 @@ interface SidebarItem {
   label: string;
   icon: SidebarIconName;
   to?: string;
-  kind?: 'default' | 'thermal_label' | 'monitor_data';
+  kind?: 'default' | 'thermal_label' | 'monitor_data' | 'service_proactive';
 }
 
 function pathMatches(pathname: string, basePath: string): boolean {
@@ -131,6 +138,45 @@ function SidebarIcon({ name }: { name: SidebarIconName }): React.JSX.Element {
           <path d="m8.5 13 2 2 4-4" {...common} />
         </svg>
       );
+    case 'service_lookup':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="6.5" {...common} />
+          <path d="m16 16 4 4" {...common} />
+        </svg>
+      );
+    case 'service_proactive':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="4.5" y="4.5" width="15" height="15" rx="2.2" {...common} />
+          <path d="M8 12h8" {...common} />
+          <path d="M8 8.5h5" {...common} />
+          <path d="M8 15.5h6" {...common} />
+        </svg>
+      );
+    case 'service_care':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="8.5" r="3" {...common} />
+          <path d="M5 19a7 7 0 0 1 14 0" {...common} />
+        </svg>
+      );
+    case 'service_weight':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 19h12" {...common} />
+          <path d="M9 19v-7h6v7" {...common} />
+          <circle cx="12" cy="8" r="2" {...common} />
+        </svg>
+      );
+    case 'service_abnormal':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 3.5 4.5 7v5.5c0 4.2 3.2 7.6 7.5 8.4 4.3-.8 7.5-4.2 7.5-8.4V7L12 3.5Z" {...common} />
+          <path d="m12 8.3 0 5.2" {...common} />
+          <circle cx="12" cy="16.8" r="0.9" {...common} />
+        </svg>
+      );
     default:
       return (
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -169,7 +215,7 @@ function DashboardLayout(): React.JSX.Element {
         pathMatches(location.pathname, routePaths.pickups),
     },
     {
-      label: 'Nen tang dieu hanh',
+      label: 'Nền tảng điều hành',
       to: routePaths.groupOperationsPlatform,
       isActive:
         pathMatches(location.pathname, routePaths.groupOperationsPlatform) ||
@@ -195,14 +241,22 @@ function DashboardLayout(): React.JSX.Element {
     },
   ];
 
-  const sidebarItems: SidebarItem[] = [
-    { label: 'Tra cuu hanh trinh', icon: 'tracking_lookup', to: routePaths.tracking },
-    { label: 'Tem bao in nhiet', icon: 'thermal_label', kind: 'thermal_label' },
-    { label: 'Chuyen hoan / Chan kien', icon: 'return_block' },
-    { label: 'Giam sat du lieu', icon: 'monitor_data', kind: 'monitor_data' },
-    { label: 'Quan ly ky nhan', icon: 'proof_management' },
-    { label: 'Bao bieu thao tac', icon: 'operation_report' },
+  const isServiceQualitySection = pathMatches(location.pathname, routePaths.groupServiceQuality);
+  const operationsSidebarItems: SidebarItem[] = [
+    { label: 'Tra cứu hành trình', icon: 'tracking_lookup', to: routePaths.tracking },
+    { label: 'Tem bao in nhiệt', icon: 'thermal_label', kind: 'thermal_label' },
+    { label: 'Chuyển hoàn', icon: 'return_block' },
+    { label: 'Giám sát dữ liệu', icon: 'monitor_data', kind: 'monitor_data' },
+    // Tam an theo yeu cau: Quan ly ky nhan, Bao bieu thao tac
   ];
+  const serviceQualitySidebarItems: SidebarItem[] = [
+    { label: 'Tra cứu tích', icon: 'service_lookup' },
+    { label: 'Giám sát chủ động', icon: 'service_proactive', kind: 'service_proactive' },
+    { label: 'CSKH', icon: 'service_care' },
+    { label: 'Trọng tải', icon: 'service_weight' },
+    { label: 'Quản lý hàng bất thường', icon: 'service_abnormal' },
+  ];
+  const sidebarItems = isServiceQualitySection ? serviceQualitySidebarItems : operationsSidebarItems;
 
   const monitorDataChildItems = [
     { label: 'Giam sat hang nhan', to: routePaths.monitorDataHangNhan },
@@ -217,46 +271,92 @@ function DashboardLayout(): React.JSX.Element {
     { label: 'Quan li tem bao', to: routePaths.thermalLabelManagement },
     { label: 'In tem bao', to: routePaths.thermalLabelPrint },
   ] as const;
+  const serviceQualityProactiveChildItems = [
+    { label: 'Giam sat don nhan', to: routePaths.serviceQualityProactiveInbound },
+    { label: 'Giam sat don phat', to: routePaths.serviceQualityProactiveDelivered },
+  ] as const;
   const isMonitorDataRoute = monitorDataChildItems.some((item) =>
     pathMatches(location.pathname, item.to),
   );
-
   const isThermalLabelRoute =
     pathMatches(location.pathname, routePaths.thermalLabelManagement) ||
     pathMatches(location.pathname, routePaths.thermalLabelPrint);
+  const isServiceQualityProactiveRoute = serviceQualityProactiveChildItems.some((item) =>
+    pathMatches(location.pathname, item.to),
+  );
   const [isThermalLabelSelectOpen, setIsThermalLabelSelectOpen] = useState(
     isThermalLabelRoute,
   );
   const [isMonitorDataPanelOpen, setIsMonitorDataPanelOpen] = useState(isMonitorDataRoute);
-  const isSidebarSecondaryOpen = isThermalLabelSelectOpen || isMonitorDataPanelOpen;
-  const sidebarSecondaryItems = isThermalLabelSelectOpen
+  const [isServiceQualityProactivePanelOpen, setIsServiceQualityProactivePanelOpen] = useState(
+    isServiceQualityProactiveRoute,
+  );
+  const isSidebarSecondaryOpen = isServiceQualitySection
+    ? isServiceQualityProactivePanelOpen
+    : isThermalLabelSelectOpen || isMonitorDataPanelOpen;
+  const sidebarSecondaryItems = isServiceQualitySection
+    ? isServiceQualityProactivePanelOpen
+      ? serviceQualityProactiveChildItems
+      : []
+    : isThermalLabelSelectOpen
     ? thermalLabelChildItems
     : isMonitorDataPanelOpen
     ? monitorDataChildItems
     : [];
-  const sidebarSecondaryTitle = isThermalLabelSelectOpen
-    ? 'Tem bao in nhiet'
+  const sidebarSecondaryTitle = isServiceQualitySection
+    ? isServiceQualityProactivePanelOpen
+      ? 'Giám sát chủ động'
+      : ''
+    : isThermalLabelSelectOpen
+    ? 'Tem bao in nhiệt'
     : isMonitorDataPanelOpen
-    ? 'Giam sat du lieu'
+    ? 'Giám sát dữ liệu'
     : '';
+  const sidebarTitle = isServiceQualitySection ? 'Chất lượng dịch vụ' : 'Nền tảng điều hành';
 
   useEffect(() => {
     if (isThermalLabelRoute) {
       setIsThermalLabelSelectOpen(true);
       setIsMonitorDataPanelOpen(false);
+      setIsServiceQualityProactivePanelOpen(false);
+      return;
     }
     if (isMonitorDataRoute) {
       setIsMonitorDataPanelOpen(true);
       setIsThermalLabelSelectOpen(false);
+      setIsServiceQualityProactivePanelOpen(false);
+      return;
     }
-  }, [isMonitorDataRoute, isThermalLabelRoute]);
+    if (isServiceQualityProactiveRoute) {
+      setIsServiceQualityProactivePanelOpen(true);
+      setIsThermalLabelSelectOpen(false);
+      setIsMonitorDataPanelOpen(false);
+      return;
+    }
+
+    if (isServiceQualitySection) {
+      setIsThermalLabelSelectOpen(false);
+      setIsMonitorDataPanelOpen(false);
+    } else {
+      setIsServiceQualityProactivePanelOpen(false);
+    }
+  }, [
+    isMonitorDataRoute,
+    isServiceQualityProactiveRoute,
+    isServiceQualitySection,
+    isThermalLabelRoute,
+  ]);
 
   const activeTabLabel = pathMatches(location.pathname, routePaths.tracking)
-    ? 'Tra cuu hanh trinh'
+    ? 'Tra cứu hành trình'
     : isMonitorDataRoute
-    ? 'Giam sat du lieu'
+    ? 'Giám sát dữ liệu'
     : isThermalLabelRoute
-    ? 'Tem bao in nhiet'
+    ? 'Tem bao in nhiệt'
+    : isServiceQualityProactiveRoute
+    ? 'Giám sát chủ động'
+    : pathMatches(location.pathname, routePaths.groupServiceQuality)
+    ? 'Chất lượng dịch vụ'
     : 'Trang chu';
 
   const onQuickSearch = (event: React.FormEvent<HTMLFormElement>) => {
@@ -304,8 +404,8 @@ function DashboardLayout(): React.JSX.Element {
                   type="text"
                   value={quickSearchCode}
                   onChange={(event) => setQuickSearchCode(event.target.value)}
-                  placeholder="Tra cuu hanh trinh don"
-                  aria-label="Tra cuu hanh trinh don"
+                  placeholder="Tra cứu hành trình don"
+                  aria-label="Tra cứu hành trình don"
                 />
                 <button type="submit" className="ops-topbar-search-submit">
                   Tim
@@ -345,9 +445,16 @@ function DashboardLayout(): React.JSX.Element {
   }
 
   return (
-    <div className="ops-func-shell">
-      <header className="ops-func-header">
-        <div className="ops-func-logo">JMS VN</div>
+      <div className="ops-func-shell">
+        <header className="ops-func-header">
+          <button
+            type="button"
+            className="ops-func-logo ops-func-logo--button"
+            onClick={() => navigate(routePaths.dashboard)}
+            aria-label="Go to dashboard"
+          >
+            JMS VN
+          </button>
 
         <nav className="ops-func-main-nav" aria-label="Main navigation">
           {topNavItems.map((item) => {
@@ -374,8 +481,8 @@ function DashboardLayout(): React.JSX.Element {
               type="text"
               value={quickSearchCode}
               onChange={(event) => setQuickSearchCode(event.target.value)}
-              placeholder="Tra cuu hanh trinh don"
-              aria-label="Tra cuu hanh trinh don"
+              placeholder="Tra cứu hành trình don"
+              aria-label="Tra cứu hành trình don"
             />
           </form>
 
@@ -411,7 +518,7 @@ function DashboardLayout(): React.JSX.Element {
 
           <div className="ops-func-sidebar-title">
             <span />
-            Nen tang dieu hanh
+            {sidebarTitle}
           </div>
 
           <nav
@@ -429,6 +536,8 @@ function DashboardLayout(): React.JSX.Element {
                     ? isThermalLabelRoute
                     : item.kind === 'monitor_data'
                     ? isMonitorDataRoute
+                    : item.kind === 'service_proactive'
+                    ? isServiceQualityProactiveRoute
                     : item.to
                     ? pathMatches(location.pathname, item.to)
                     : false;
@@ -441,6 +550,7 @@ function DashboardLayout(): React.JSX.Element {
                         onClick={() => {
                           setIsThermalLabelSelectOpen((isOpen) => !isOpen);
                           setIsMonitorDataPanelOpen(false);
+                          setIsServiceQualityProactivePanelOpen(false);
                         }}
                         className={
                           isActive
@@ -470,6 +580,7 @@ function DashboardLayout(): React.JSX.Element {
                       onClick={() => {
                         setIsMonitorDataPanelOpen((isOpen) => !isOpen);
                         setIsThermalLabelSelectOpen(false);
+                        setIsServiceQualityProactivePanelOpen(false);
                       }}
                       className={
                         isActive
@@ -484,6 +595,41 @@ function DashboardLayout(): React.JSX.Element {
                       <span className="ops-func-sidebar-chevron" aria-hidden="true">
                         <svg viewBox="0 0 24 24">
                           <path d={isMonitorDataPanelOpen ? 'm7 14 5-5 5 5' : 'm7 10 5 5 5-5'} />
+                        </svg>
+                      </span>
+                    </button>
+                  );
+                }
+
+                if (item.kind === 'service_proactive') {
+                  return (
+                    <button
+                      key={item.label}
+                      type="button"
+                      onClick={() => {
+                        setIsServiceQualityProactivePanelOpen((isOpen) => !isOpen);
+                        setIsThermalLabelSelectOpen(false);
+                        setIsMonitorDataPanelOpen(false);
+                      }}
+                      className={
+                        isActive
+                          ? 'ops-func-sidebar-item ops-func-sidebar-item--active'
+                          : 'ops-func-sidebar-item'
+                      }
+                    >
+                      <span className="ops-func-sidebar-icon">
+                        <SidebarIcon name={item.icon} />
+                      </span>
+                      <span className="ops-func-sidebar-label">{item.label}</span>
+                      <span className="ops-func-sidebar-chevron" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                          <path
+                            d={
+                              isServiceQualityProactivePanelOpen
+                                ? 'm7 14 5-5 5 5'
+                                : 'm7 10 5 5 5-5'
+                            }
+                          />
                         </svg>
                       </span>
                     </button>
@@ -632,6 +778,14 @@ export function AppRouter(): React.JSX.Element {
               path={routePaths.groupServiceQualityLeaf}
               element={<ServiceQualityGroupPage />}
             />
+            <Route
+              path={routePaths.serviceQualityProactiveInboundLeaf}
+              element={<ServiceQualityMonitorReceivedPage />}
+            />
+            <Route
+              path={routePaths.serviceQualityProactiveDeliveredLeaf}
+              element={<ServiceQualityMonitorDeliveredPage />}
+            />
             <Route path={routePaths.groupDatabaseLeaf} element={<DatabaseGroupPage />} />
             <Route path={routePaths.groupSmartDevicesLeaf} element={<SmartDevicesGroupPage />} />
             <Route
@@ -658,5 +812,3 @@ export function AppRouter(): React.JSX.Element {
     </BrowserRouter>
   );
 }
-
-

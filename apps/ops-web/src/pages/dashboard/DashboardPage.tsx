@@ -409,7 +409,7 @@ export function DashboardPage(): React.JSX.Element {
       icon: 'basic_data',
     },
     {
-      title: 'Nen tang dieu hanh',
+      title: 'Nền tảng điều hành',
       to: routePaths.groupOperationsPlatform,
       icon: 'operations_platform',
     },

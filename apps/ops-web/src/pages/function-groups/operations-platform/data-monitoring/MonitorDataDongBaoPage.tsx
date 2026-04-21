@@ -7,7 +7,7 @@ export function MonitorDataDongBaoPage(): React.JSX.Element {
     <FunctionGroupLandingPage
       groupCode="MONITOR_DATA_DONG_BAO"
       title="Giam sat dong bao"
-      summary="Chuc nang con thuoc Giam sat du lieu trong cum Nen tang dieu hanh."
+      summary="Chuc nang con thuoc Giám sát dữ liệu trong cum Nền tảng điều hành."
     />
   );
 }
