@@ -26,7 +26,7 @@ export function LoginForm({
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="auth-form">
       <label className="auth-label" htmlFor="username">
-        Ten dang nhap
+        Tên đăng nhập
       </label>
       <input
         id="username"

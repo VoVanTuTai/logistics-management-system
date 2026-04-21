@@ -61,15 +61,15 @@ export function PickupRequestDetailPage(): React.JSX.Element {
 
   const lastActionLabel =
     lastActionName === 'approve'
-      ? 'duyet'
+      ? 'duyệt'
       : lastActionName === 'complete'
-        ? 'hoan tat'
+        ? 'hoàn tất'
         : lastActionName === 'reject'
-          ? 'tu choi'
-          : 'chua-co';
+          ? 'từ chối'
+          : 'chưa-có';
 
   if (detailQuery.isLoading) {
-    return <p>Đang tải chi tiet yeu cau lay hang...</p>;
+    return <p>Đang tải chi tiet yêu cầu lấy hàng...</p>;
   }
 
   if (detailQuery.isError) {
@@ -77,7 +77,7 @@ export function PickupRequestDetailPage(): React.JSX.Element {
   }
 
   if (!detailQuery.data) {
-    return <p>Không tìm thấy yeu cau lay hang.</p>;
+    return <p>Không tìm thấy yêu cầu lấy hàng.</p>;
   }
 
   const canComplete =
@@ -85,23 +85,23 @@ export function PickupRequestDetailPage(): React.JSX.Element {
 
   return (
     <section>
-      <h2>Chi tiet yeu cau lay hang</h2>
+      <h2>Chi tiết yêu cầu lấy hàng</h2>
       <p>
-        <Link to={routePaths.pickups}>Quay lai danh sach yeu cau lay hang</Link>
+        <Link to={routePaths.pickups}>Quay lại danh sach yêu cầu lấy hàng</Link>
       </p>
-      <p>Ma yeu cau: {detailQuery.data.requestCode}</p>
-      <p>Ma van don: {detailQuery.data.shipmentCode ?? 'Không có'}</p>
-      <p>Trang thai: {formatPickupStatusLabel(detailQuery.data.status)}</p>
+      <p>Ma yêu cầu: {detailQuery.data.requestCode}</p>
+      <p>Ma vận đơn: {detailQuery.data.shipmentCode ?? 'Không có'}</p>
+      <p>Trạng thái: {formatPickupStatusLabel(detailQuery.data.status)}</p>
       <p>Thoi diem tao: {formatDateTime(detailQuery.data.requestedAt)}</p>
-      <p>Cap nhat luc: {detailQuery.data.updatedAt ? formatDateTime(detailQuery.data.updatedAt) : 'Không có'}</p>
+      <p>Cập nhật lúc: {detailQuery.data.updatedAt ? formatDateTime(detailQuery.data.updatedAt) : 'Không có'}</p>
       <p>Ghi chu: {detailQuery.data.note ?? 'Không có'}</p>
 
       <div style={styles.actionsGrid}>
         <form onSubmit={onApproveSubmit} style={styles.form}>
           <h3 style={styles.actionTitle}>Duyet</h3>
-          <textarea rows={3} placeholder="Ghi chu duyet" {...approveForm.register('note')} />
+          <textarea rows={3} placeholder="Ghi chú duyệt" {...approveForm.register('note')} />
           <button type="submit" disabled={approveMutation.isPending}>
-            {approveMutation.isPending ? 'Đang gửi duyệt...' : 'Duyet lay hang'}
+            {approveMutation.isPending ? 'Đang gửi duyệt...' : 'Duyệt lấy hàng'}
           </button>
           {approveMutation.isError ? (
             <small style={styles.errorText}>{getErrorMessage(approveMutation.error)}</small>
@@ -110,9 +110,9 @@ export function PickupRequestDetailPage(): React.JSX.Element {
 
         <form onSubmit={onRejectSubmit} style={styles.form}>
           <h3 style={styles.actionTitle}>Tu choi</h3>
-          <textarea rows={3} placeholder="Ly do tu choi" {...rejectForm.register('note')} />
+          <textarea rows={3} placeholder="Lý do từ chối" {...rejectForm.register('note')} />
           <button type="submit" disabled={rejectMutation.isPending}>
-            {rejectMutation.isPending ? 'Đang gửi từ chối...' : 'Tu choi lay hang'}
+            {rejectMutation.isPending ? 'Đang gửi từ chối...' : 'Từ chối lấy hàng'}
           </button>
           {rejectMutation.isError ? (
             <small style={styles.errorText}>{getErrorMessage(rejectMutation.error)}</small>
@@ -126,11 +126,11 @@ export function PickupRequestDetailPage(): React.JSX.Element {
             onClick={() => void onCompleteClick()}
             disabled={completeMutation.isPending || !canComplete}
           >
-            {completeMutation.isPending ? 'Đang gửi hoàn tất...' : 'Hoàn tất lay hang'}
+            {completeMutation.isPending ? 'Đang gửi hoàn tất...' : 'Hoàn tất lấy hàng'}
           </button>
           {!canComplete ? (
             <small>
-              Chi hoan tat lay hang khi trang thai la {formatPickupStatusLabel('APPROVED')}.
+              Chi hoàn tất lấy hàng khi trạng thái la {formatPickupStatusLabel('APPROVED')}.
             </small>
           ) : null}
           {completeMutation.isError ? (
@@ -141,7 +141,7 @@ export function PickupRequestDetailPage(): React.JSX.Element {
 
       {lastActionResponse ? (
         <div style={styles.responseBox}>
-          <strong>Phan hoi he thong moi nhat ({lastActionLabel})</strong>
+          <strong>Phan hoi hệ thống moi nhat ({lastActionLabel})</strong>
           <pre style={styles.pre}>{JSON.stringify(lastActionResponse, null, 2)}</pre>
         </div>
       ) : null}

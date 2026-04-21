@@ -38,7 +38,7 @@ function buildHtml(payload: BagLabelPrintPayload): string {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Nhan in bao tai ${bagCode}</title>
+    <title>Nhan in bao tải ${bagCode}</title>
     <style>
       @page { size: 100mm 100mm; margin: 0; }
       * { box-sizing: border-box; }

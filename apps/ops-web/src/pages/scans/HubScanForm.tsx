@@ -8,8 +8,8 @@ import { formatScanTypeLabel } from '../../utils/logisticsLabels';
 
 const hubScanFormSchema = z.object({
   scanType: z.enum(['PICKUP', 'INBOUND', 'OUTBOUND']),
-  shipmentCode: z.string().trim().min(1, 'Ma van don la bat buoc'),
-  locationCode: z.string().trim().min(1, 'Ma vi tri la bat buoc'),
+  shipmentCode: z.string().trim().min(1, 'Mã vận đơn là bắt buộc'),
+  locationCode: z.string().trim().min(1, 'Mã vị trí là bắt buộc'),
   note: z.string().optional(),
 });
 
@@ -48,23 +48,23 @@ export function HubScanForm({
 
   return (
     <form onSubmit={onFormSubmit} style={styles.form}>
-      <h3 style={styles.title}>Tac vu quet</h3>
+      <h3 style={styles.title}>Tac vu quét</h3>
       <select {...form.register('scanType')}>
         <option value="PICKUP">{formatScanTypeLabel('PICKUP')}</option>
         <option value="INBOUND">{formatScanTypeLabel('INBOUND')}</option>
         <option value="OUTBOUND">{formatScanTypeLabel('OUTBOUND')}</option>
       </select>
-      <input placeholder="Quet hoac nhap ma van don" {...form.register('shipmentCode')} />
+      <input placeholder="Quét hoặc nhập mã vận đơn" {...form.register('shipmentCode')} />
       {form.formState.errors.shipmentCode ? (
         <small style={styles.errorText}>{form.formState.errors.shipmentCode.message}</small>
       ) : null}
-      <input placeholder="Ma vi tri hub/chi nhanh" {...form.register('locationCode')} />
+      <input placeholder="Mã vị trí hub/chi nhánh" {...form.register('locationCode')} />
       {form.formState.errors.locationCode ? (
         <small style={styles.errorText}>{form.formState.errors.locationCode.message}</small>
       ) : null}
-      <textarea rows={3} placeholder="Ghi chu (khong bat buoc)" {...form.register('note')} />
+      <textarea rows={3} placeholder="Ghi chú (không bắt buộc)" {...form.register('note')} />
       <button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? 'Dang gui quet...' : 'Gui quet'}
+        {isSubmitting ? 'Đang gửi quét...' : 'Gửi quét'}
       </button>
     </form>
   );

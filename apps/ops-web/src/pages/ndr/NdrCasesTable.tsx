@@ -16,10 +16,10 @@ export function NdrCasesTable({ items }: NdrCasesTableProps): React.JSX.Element 
       <thead>
         <tr>
           <th style={styles.headerCell}>Ma NDR</th>
-          <th style={styles.headerCell}>Van don</th>
-          <th style={styles.headerCell}>Trang thai</th>
+          <th style={styles.headerCell}>Vận đơn</th>
+          <th style={styles.headerCell}>Trạng thái</th>
           <th style={styles.headerCell}>Ly do</th>
-          <th style={styles.headerCell}>Cap nhat luc</th>
+          <th style={styles.headerCell}>Cập nhật lúc</th>
         </tr>
       </thead>
       <tbody>

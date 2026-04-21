@@ -1,16 +1,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
 
 :root {
-  --admin-bg: #edf0f7;
+  --admin-bg: #eef3f9;
   --admin-surface: #ffffff;
-  --admin-text: #1a1f3c;
-  --admin-muted: #5a628e;
-  --admin-border: #d7dbef;
-  --admin-primary: #2f3d8f;
-  --admin-primary-dark: #1e2b73;
-  --admin-success: #1f7a58;
-  --admin-danger: #b32a3d;
-  --admin-shadow: 0 10px 26px rgba(26, 31, 60, 0.1);
+  --admin-text: #11233a;
+  --admin-muted: #5c728d;
+  --admin-border: #d5e2f0;
+  --admin-primary: #1f65a6;
+  --admin-primary-dark: #0f3d67;
+  --admin-success: #137f5d;
+  --admin-danger: #b12233;
+  --admin-shadow: 0 10px 26px rgba(12, 40, 70, 0.1);
 }
 
 * {
@@ -26,8 +26,8 @@ body,
 
 body {
   background:
-    radial-gradient(circle at 8% 0%, rgba(202, 214, 255, 0.62), transparent 35%),
-    radial-gradient(circle at 94% 0%, rgba(227, 219, 255, 0.54), transparent 42%),
+    radial-gradient(circle at 8% 0%, rgba(186, 213, 250, 0.62), transparent 35%),
+    radial-gradient(circle at 95% 0%, rgba(255, 222, 189, 0.6), transparent 42%),
     var(--admin-bg);
   color: var(--admin-text);
   font-family: 'Manrope', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
@@ -54,7 +54,7 @@ button {
 input,
 select,
 textarea {
-  border: 1px solid #c7cdeb;
+  border: 1px solid #c7d8ea;
   color: var(--admin-text);
   background: var(--admin-surface);
   padding: 9px 11px;
@@ -64,8 +64,8 @@ input:focus,
 select:focus,
 textarea:focus {
   outline: none;
-  border-color: #5b66b2;
-  box-shadow: 0 0 0 3px rgba(91, 102, 178, 0.14);
+  border-color: #2f79bc;
+  box-shadow: 0 0 0 3px rgba(47, 121, 188, 0.14);
 }
 
 button {
@@ -90,7 +90,7 @@ table {
 
 th,
 td {
-  border-bottom: 1px solid #e4e8f7;
+  border-bottom: 1px solid #e2ecf7;
   padding: 8px 10px;
   text-align: left;
   vertical-align: top;
@@ -101,7 +101,7 @@ th {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--admin-muted);
-  background: #f5f7fe;
+  background: #f4f8fd;
 }
 
 .app-root-shell {
@@ -123,13 +123,13 @@ th {
 }
 
 .global-banner-error {
-  background: #ffe7eb;
-  color: #952437;
+  background: #ffe5e9;
+  color: #8f1e2d;
 }
 
 .global-banner-info {
-  background: #edf0ff;
-  color: #2d3e8a;
+  background: #eaf4ff;
+  color: #1f5f97;
 }
 
 .admin-layout {
@@ -147,8 +147,8 @@ th {
   display: grid;
   align-content: start;
   gap: 12px;
-  background: linear-gradient(180deg, #1d265f 0%, #26357a 60%, #33489b 100%);
-  color: #f0f4ff;
+  background: linear-gradient(180deg, #0f2f54 0%, #15466f 60%, #1c598c 100%);
+  color: #eff7ff;
 }
 
 .admin-sidebar h1 {
@@ -160,12 +160,12 @@ th {
 
 .admin-sidebar p {
   margin: 4px 0 0;
-  color: rgba(233, 240, 255, 0.76);
+  color: rgba(237, 246, 255, 0.74);
   font-size: 12px;
 }
 
 .admin-user-card {
-  border: 1px solid rgba(255, 255, 255, 0.24);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 12px;
   padding: 10px;
   background: rgba(255, 255, 255, 0.06);
@@ -178,14 +178,14 @@ th {
 }
 
 .admin-user-card small {
-  color: rgba(230, 239, 255, 0.84);
+  color: rgba(233, 244, 255, 0.82);
   font-size: 11px;
 }
 
 .admin-user-card button {
   margin-top: 4px;
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.25);
 }
 
 .admin-nav-group {
@@ -198,13 +198,13 @@ th {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: rgba(230, 238, 255, 0.74);
+  color: rgba(229, 241, 255, 0.74);
 }
 
 .admin-nav-link {
   border-radius: 11px;
   padding: 8px 10px;
-  color: #ecf2ff;
+  color: #ecf5ff;
   font-weight: 800;
   transition: background-color 0.2s ease;
 }
@@ -215,7 +215,7 @@ th {
 }
 
 .admin-nav-link-active {
-  background: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.25);
 }
 
 .admin-workspace {
@@ -229,7 +229,7 @@ th {
 .admin-topbar {
   border: 1px solid var(--admin-border);
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.93);
+  background: rgba(255, 255, 255, 0.92);
   box-shadow: var(--admin-shadow);
   padding: 12px 14px;
   display: flex;
@@ -251,13 +251,13 @@ th {
 }
 
 .admin-tag {
-  border: 1px solid #c8ceef;
+  border: 1px solid #c4d8ec;
   border-radius: 999px;
   padding: 6px 10px;
   font-size: 12px;
   font-weight: 800;
-  color: #3a488f;
-  background: #f4f6ff;
+  color: #295a8a;
+  background: #f5faff;
 }
 
 .admin-main-panel {
@@ -290,7 +290,7 @@ th {
   text-transform: uppercase;
   letter-spacing: 0.12em;
   font-size: 11px;
-  color: #525fa0;
+  color: #46698e;
   font-weight: 800;
 }
 
@@ -316,7 +316,7 @@ th {
 }
 
 .auth-input {
-  border: 1px solid #c7cdeb;
+  border: 1px solid #c7d8ea;
   border-radius: 11px;
   padding: 10px 12px;
 }
@@ -327,9 +327,9 @@ th {
 }
 
 .auth-error-banner {
-  border: 1px solid #f4c3ca;
+  border: 1px solid #f4bec6;
   background: #ffedf0;
-  color: #a1283b;
+  color: #a32030;
   border-radius: 11px;
   padding: 8px 10px;
   font-size: 13px;
@@ -347,10 +347,10 @@ th {
 }
 
 .admin-dashboard-hero {
-  border: 1px solid #cfd5f2;
+  border: 1px solid #c4d8ec;
   border-radius: 16px;
-  background: linear-gradient(125deg, #243177, #3e4fa8);
-  color: #f7f9ff;
+  background: linear-gradient(125deg, #1f65a6, #0f3d67);
+  color: #f1f7ff;
   padding: 14px;
   display: flex;
   align-items: center;
@@ -363,7 +363,7 @@ th {
   text-transform: uppercase;
   letter-spacing: 0.15em;
   font-size: 11px;
-  color: rgba(227, 236, 255, 0.82);
+  color: rgba(229, 241, 255, 0.74);
 }
 
 .admin-dashboard-hero h2 {
@@ -373,13 +373,13 @@ th {
 
 .admin-dashboard-hero p {
   margin: 0;
-  color: rgba(237, 244, 255, 0.9);
+  color: rgba(233, 244, 255, 0.82);
 }
 
 .admin-user-summary {
-  border: 1px solid rgba(255, 255, 255, 0.26);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
   padding: 10px;
   min-width: 220px;
   display: grid;
@@ -387,7 +387,7 @@ th {
 }
 
 .admin-user-summary small {
-  color: rgba(232, 241, 255, 0.85);
+  color: rgba(233, 244, 255, 0.82);
 }
 
 .admin-stats-grid {
@@ -399,7 +399,7 @@ th {
 .admin-stat-card {
   border: 1px solid var(--admin-border);
   border-radius: 14px;
-  background: #f7f9ff;
+  background: #f7fbff;
   padding: 10px;
   display: grid;
   gap: 6px;
@@ -421,7 +421,7 @@ th {
 }
 
 .admin-link-tile {
-  border: 1px solid #cfd5f2;
+  border: 1px solid #c4d8ec;
   border-radius: 14px;
   background: #ffffff;
   padding: 12px;
@@ -434,7 +434,7 @@ th {
 .admin-link-tile:hover {
   text-decoration: none;
   transform: translateY(-2px);
-  box-shadow: 0 8px 18px rgba(44, 56, 126, 0.16);
+  box-shadow: 0 8px 18px rgba(12, 40, 70, 0.16);
 }
 
 .admin-link-tile span {

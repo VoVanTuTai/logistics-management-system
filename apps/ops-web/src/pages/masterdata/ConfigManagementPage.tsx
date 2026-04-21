@@ -137,7 +137,7 @@ function parseInputByType(valueType: ConfigValueType, input: string): ConfigValu
     const value = Number(normalizedInput);
 
     if (!Number.isFinite(value)) {
-      throw new Error('Gia tri so khong hop le.');
+      throw new Error('Giá trị số không hợp lệ.');
     }
 
     return value;
@@ -154,7 +154,7 @@ function parseInputByType(valueType: ConfigValueType, input: string): ConfigValu
       return false;
     }
 
-    throw new Error('Gia tri boolean phai la true/false.');
+    throw new Error('Giá trị boolean phải là true/false.');
   }
 
   if (!normalizedInput) {
@@ -291,10 +291,10 @@ export function ConfigManagementPage(): React.JSX.Element {
           configId: editingConfig.id,
           payload,
         });
-        setActionMessage(`Da cap nhat config "${payload.key}".`);
+        setActionMessage(`Đã cập nhật config "${payload.key}".`);
       } else {
         await createMutation.mutateAsync(payload);
-        setActionMessage(`Da tao config "${payload.key}".`);
+        setActionMessage(`Đã tạo config "${payload.key}".`);
       }
 
       setEditorOpen(false);
@@ -322,7 +322,7 @@ export function ConfigManagementPage(): React.JSX.Element {
       });
 
       setActionMessage(
-        `Config "${config.key}" da chuyen sang ${currentEnvelope.isActive ? 'INACTIVE' : 'ACTIVE'}.`,
+        `Config "${config.key}" đã chuyển sang ${currentEnvelope.isActive ? 'INACTIVE' : 'ACTIVE'}.`,
       );
     } catch (error) {
       setActionError(getErrorMessage(error));
@@ -335,12 +335,12 @@ export function ConfigManagementPage(): React.JSX.Element {
     <div>
       <h2>Du Lieu Danh Muc - Quan Ly Config</h2>
       <p style={styles.helperText}>
-        Quan ly cau hinh he thong dang key-value dung chung cho van hanh.
+        Quan ly cau hinh hệ thống dang key-value dung chung cho van hanh.
       </p>
 
       <form onSubmit={onApplyFilters} style={styles.filterForm}>
         <input
-          placeholder="Key config"
+          placeholder="Khóa config"
           value={draftFilters.key ?? ''}
           onChange={(event) =>
             setDraftFilters((previous) => ({
@@ -351,7 +351,7 @@ export function ConfigManagementPage(): React.JSX.Element {
           style={styles.input}
         />
         <input
-          placeholder="Nhom (scope)"
+          placeholder="Nhóm (scope)"
           value={draftFilters.scope ?? ''}
           onChange={(event) =>
             setDraftFilters((previous) => ({
@@ -362,7 +362,7 @@ export function ConfigManagementPage(): React.JSX.Element {
           style={styles.input}
         />
         <input
-          placeholder="Tim theo key/ten"
+          placeholder="Tìm theo key/tên"
           value={draftFilters.q ?? ''}
           onChange={(event) =>
             setDraftFilters((previous) => ({
@@ -379,7 +379,7 @@ export function ConfigManagementPage(): React.JSX.Element {
           }
           style={styles.input}
         >
-          <option value="all">Tất cả trang thai</option>
+          <option value="all">Tất cả trạng thái</option>
           <option value="active">ACTIVE</option>
           <option value="inactive">INACTIVE</option>
         </select>
@@ -388,7 +388,7 @@ export function ConfigManagementPage(): React.JSX.Element {
           Dat lai
         </button>
         <button type="button" onClick={openCreateModal}>
-          Tao config
+          Tạo config
         </button>
       </form>
 
@@ -418,10 +418,10 @@ export function ConfigManagementPage(): React.JSX.Element {
               <th style={styles.headerCell}>Key</th>
               <th style={styles.headerCell}>Ten</th>
               <th style={styles.headerCell}>Nhom</th>
-              <th style={styles.headerCell}>Gia tri</th>
-              <th style={styles.headerCell}>Kieu</th>
-              <th style={styles.headerCell}>Trang thai</th>
-              <th style={styles.headerCell}>Cap nhat</th>
+              <th style={styles.headerCell}>Giá trị</th>
+              <th style={styles.headerCell}>Kiểu</th>
+              <th style={styles.headerCell}>Trạng thái</th>
+              <th style={styles.headerCell}>Cập nhật</th>
               <th style={styles.headerCell}>Hanh dong</th>
             </tr>
           </thead>
@@ -443,13 +443,13 @@ export function ConfigManagementPage(): React.JSX.Element {
                   <td style={styles.cell}>
                     <div style={styles.actionsCell}>
                       <button type="button" onClick={() => setSelectedConfigId(config.id)}>
-                        Chi tiet
+                        Chi tiết
                       </button>
                       <button type="button" onClick={() => openEditModal(config)}>
-                        Sua
+                        Sửa
                       </button>
                       <button type="button" onClick={() => void onToggleActive(config)}>
-                        {envelope.isActive ? 'Tat' : 'Bat'}
+                        {envelope.isActive ? 'Tắt' : 'Bật'}
                       </button>
                     </div>
                   </td>
@@ -467,31 +467,31 @@ export function ConfigManagementPage(): React.JSX.Element {
 
             return (
               <>
-                <h3 style={styles.detailTitle}>Chi tiet config: {selectedConfig.key}</h3>
+                <h3 style={styles.detailTitle}>Chi tiết config: {selectedConfig.key}</h3>
                 <p>
-                  <strong>Ten:</strong> {envelope.name}
+                  <strong>Tên:</strong> {envelope.name}
                 </p>
                 <p>
-                  <strong>Nhom:</strong> {selectedConfig.scope ?? 'Không có'}
+                  <strong>Nhóm:</strong> {selectedConfig.scope ?? 'Không có'}
                 </p>
                 <p>
-                  <strong>Kieu:</strong> {envelope.valueType}
+                  <strong>Kiểu:</strong> {envelope.valueType}
                 </p>
                 <p>
-                  <strong>Gia tri:</strong> {stringifyValue(envelope.value)}
+                  <strong>Giá trị:</strong> {stringifyValue(envelope.value)}
                 </p>
                 <p>
-                  <strong>Gia tri mac dinh:</strong>{' '}
+                  <strong>Giá trị mặc định:</strong>{' '}
                   {stringifyValue(envelope.defaultValue) || 'Không có'}
                 </p>
                 <p>
-                  <strong>Cho phep sua:</strong> {envelope.isEditable ? 'CO' : 'KHONG'}
+                  <strong>Cho phép sửa:</strong> {envelope.isEditable ? 'CÓ' : 'KHÔNG'}
                 </p>
                 <p>
-                  <strong>Trang thai:</strong> {envelope.isActive ? 'ACTIVE' : 'INACTIVE'}
+                  <strong>Trạng thái:</strong> {envelope.isActive ? 'ACTIVE' : 'INACTIVE'}
                 </p>
                 <p>
-                  <strong>Cap nhat:</strong> {formatDateTime(selectedConfig.updatedAt)}
+                  <strong>Cập nhật:</strong> {formatDateTime(selectedConfig.updatedAt)}
                 </p>
               </>
             );
@@ -501,8 +501,8 @@ export function ConfigManagementPage(): React.JSX.Element {
 
       <MasterdataEditorModal
         open={editorOpen}
-        title={editingConfig ? `Sua config ${editingConfig.key}` : 'Tao config'}
-        submitLabel={editingConfig ? 'Luu thay doi' : 'Tao config'}
+        title={editingConfig ? `Sửa config ${editingConfig.key}` : 'Tạo config'}
+        submitLabel={editingConfig ? 'Lưu thay đổi' : 'Tạo config'}
         isSubmitting={isSaving}
         onClose={() => setEditorOpen(false)}
         onSubmit={onSubmitForm}
@@ -553,7 +553,7 @@ export function ConfigManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Kieu gia tri
+            Kiểu giá trị
             <select
               value={form.valueType}
               onChange={(event) =>
@@ -571,7 +571,7 @@ export function ConfigManagementPage(): React.JSX.Element {
             </select>
           </label>
           <label style={{ ...styles.fieldLabel, gridColumn: '1 / -1' }}>
-            Gia tri
+            Giá trị
             <textarea
               value={form.valueInput}
               onChange={(event) =>
@@ -585,7 +585,7 @@ export function ConfigManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={{ ...styles.fieldLabel, gridColumn: '1 / -1' }}>
-            Gia tri mac dinh
+            Giá trị mặc định
             <textarea
               value={form.defaultValueInput}
               onChange={(event) =>

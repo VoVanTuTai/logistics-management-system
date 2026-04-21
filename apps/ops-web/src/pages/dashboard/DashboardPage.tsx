@@ -196,7 +196,7 @@ export function DashboardPage(): React.JSX.Element {
     .join(', ');
   const currentHubScopeText = [
     currentHubAddress.workingRadiusKm
-      ? `Ban kinh ${currentHubAddress.workingRadiusKm.trim()} km`
+      ? `Bán kính ${currentHubAddress.workingRadiusKm.trim()} km`
       : '',
     currentHubAddress.serviceAreas.join(', '),
   ]
@@ -249,72 +249,72 @@ export function DashboardPage(): React.JSX.Element {
   const shippers = shipperQuery.data ?? [];
   const quickMenu = [
     {
-      title: 'Danh sach van don',
-      description: 'Theo doi va ra soat luong van don.',
+      title: 'Danh sách vận đơn',
+      description: 'Theo dõi và rà soát lượng vận đơn.',
       to: routePaths.shipments,
       icon: 'S',
     },
     {
-      title: 'Duyet lay hang',
-      description: 'Duyet hoac tu choi yeu cau lay hang.',
+      title: 'Duyệt lấy hàng',
+      description: 'Duyệt hoặc từ chối yêu cầu lấy hàng.',
       to: routePaths.pickups,
       icon: 'P',
     },
     {
-      title: 'Phan cong tac vu',
-      description: 'Phan cong va phan cong lai tac vu.',
+      title: 'Phân công tác vụ',
+      description: 'Phân công và phân công lại tác vụ.',
       to: routePaths.tasks,
       icon: 'T',
     },
     {
-      title: 'Quan ly bao tai',
-      description: 'Tao va xu ly bao tai trung chuyen.',
+      title: 'Quản lý bao tải',
+      description: 'Tạo và xử lý bao tải trung chuyển.',
       to: routePaths.manifests,
       icon: 'M',
     },
     {
-      title: 'Quet hub',
-      description: 'Gui quet nhap hub va xuat hub.',
+      title: 'Quét hub',
+      description: 'Gửi quét nhập hub và xuất hub.',
       to: routePaths.scans,
       icon: 'H',
     },
     {
-      title: 'Xu ly NDR',
-      description: 'Xu ly cac hanh dong tiep theo cua NDR.',
+      title: 'Xử lý NDR',
+      description: 'Xử lý các hành động tiếp theo của NDR.',
       to: routePaths.ndr,
       icon: 'N',
     },
     {
-      title: 'Tra cuu hanh trinh',
-      description: 'Tra cuu nhanh trang thai van don.',
+      title: 'Tra cứu hành trình',
+      description: 'Tra cứu nhanh trạng thái vận đơn.',
       to: routePaths.tracking,
       icon: 'L',
     },
   ] as const;
   const notices = [
-    'Bang tong quan chi hien thi du lieu tong hop tu backend.',
-    'Tai khoan dieu hanh duoc gioi han theo hub da gan.',
-    'Neu can thay doi pham vi hub, vui long cap nhat trong trang quan tri.',
+    'Bảng tổng quan chỉ hiển thị dữ liệu tổng hợp từ backend.',
+    'Tài khoản điều hành được giới hạn theo hub đã gán.',
+    'Nếu cần thay đổi phạm vi hub, vui lòng cập nhật trong trang quản trị.',
   ] as const;
   const quickApps = [
-    { title: 'Tong quan', to: routePaths.dashboard },
-    { title: 'Van don', to: routePaths.shipments },
-    { title: 'Duyet lay hang', to: routePaths.pickups },
+    { title: 'Tổng quan', to: routePaths.dashboard },
+    { title: 'Vận đơn', to: routePaths.shipments },
+    { title: 'Duyệt lấy hàng', to: routePaths.pickups },
   ] as const;
 
   return (
     <div className="ops-dashboard">
       <section className="ops-dashboard__hero">
         <div>
-          <p className="ops-dashboard__hero-kicker">Trung tam dieu hanh OPS</p>
-          <h2 className="ops-dashboard__hero-title">Trang tong quan van hanh JMS</h2>
+          <p className="ops-dashboard__hero-kicker">Trung tâm điều hành OPS</p>
+          <h2 className="ops-dashboard__hero-title">Trang tổng quan vận hàng JMS</h2>
           <p className="ops-dashboard__hero-subtitle">
-            Bao cao KPI theo hub duoc gan cho tai khoan dieu hanh va cac diem vao tac vu van hanh.
+            Báo cáo KPI theo HUB được gắn cho tài khoản điều hành và các điểm vào tác vụ vận hành.
           </p>
         </div>
         <div className="ops-dashboard__hero-badge">
           <small>Hub dang theo doi</small>
-          <strong>{currentHub?.code ?? effectiveHubCode ?? 'Chua gan'}</strong>
+          <strong>{currentHub?.code ?? effectiveHubCode ?? 'Chưa gán'}</strong>
         </div>
       </section>
 
@@ -340,7 +340,7 @@ export function DashboardPage(): React.JSX.Element {
               <h3>Bo loc bao cao</h3>
             </header>
             <p className="ops-dashboard__subtitle">
-              Du lieu bao cao luon duoc gioi han theo hub cua tai khoan dieu hanh.
+              Du lieu bao cao luon duoc gioi han theo hub cua tai khoan điều hành.
             </p>
             <DashboardFiltersForm
               filters={effectiveFilters}
@@ -355,36 +355,36 @@ export function DashboardPage(): React.JSX.Element {
             <header className="ops-card__header">
               <h3>Hub dang quan ly</h3>
             </header>
-            {hubsQuery.isLoading ? <p className="ops-state">Dang tai thong tin hub...</p> : null}
+            {hubsQuery.isLoading ? <p className="ops-state">Đang tải thong tin hub...</p> : null}
             {hubsQuery.isError ? (
               <p className="ops-state ops-state--error">{getErrorMessage(hubsQuery.error)}</p>
             ) : null}
             {hubsQuery.isSuccess && !currentHub ? (
               <p className="ops-state">
-                Tai khoan chua duoc gan hub. Vui long gan hub trong trang quan tri.
+                Tai khoan chua duoc gan hub. Vui long gan hub trong trang quản trị.
               </p>
             ) : null}
             {currentHub ? (
               <div className="ops-hub-card">
                 <div>
-                  <small>Ma hub</small>
+                  <small>Mã hub</small>
                   <strong>{currentHub.code}</strong>
                 </div>
                 <div>
-                  <small>Ten hub</small>
+                  <small>Tên hub</small>
                   <strong>{currentHub.name}</strong>
                 </div>
                 <div>
                   <small>Khu vuc</small>
-                  <strong>{currentHub.zoneCode ?? 'Khong co'}</strong>
+                  <strong>{currentHub.zoneCode ?? 'Không có'}</strong>
                 </div>
                 <div>
                   <small>Dia chi</small>
-                  <strong>{currentHubAddressText || 'Khong co'}</strong>
+                  <strong>{currentHubAddressText || 'Không có'}</strong>
                 </div>
                 <div>
                   <small>Pham vi phuc vu</small>
-                  <strong>{currentHubScopeText || 'Khong co'}</strong>
+                  <strong>{currentHubScopeText || 'Không có'}</strong>
                 </div>
               </div>
             ) : null}
@@ -396,7 +396,7 @@ export function DashboardPage(): React.JSX.Element {
             </header>
             <div className="ops-shipper-tools">
               <input
-                placeholder="Tim ten dang nhap / ten hien thi / so dien thoai"
+                placeholder="Tìm tên đăng nhập / tên hiển thị / số điện thoại"
                 value={shipperSearch}
                 onChange={(event) => setShipperSearch(event.target.value)}
               />
@@ -405,21 +405,21 @@ export function DashboardPage(): React.JSX.Element {
               <p className="ops-state">Tai khoan chua duoc gan hub, nen chua the tai danh sach nhan vien giao.
               </p>
             ) : null}
-            {shipperQuery.isLoading ? <p className="ops-state">Dang tai danh sach nhan vien giao...</p> : null}
+            {shipperQuery.isLoading ? <p className="ops-state">Đang tải danh sach nhan vien giao...</p> : null}
             {shipperQuery.isError ? (
               <p className="ops-state ops-state--error">{getErrorMessage(shipperQuery.error)}</p>
             ) : null}
             {shipperQuery.isSuccess && shippers.length === 0 ? (
-              <p className="ops-state">Khong co nhan vien giao nao thuoc hub hien tai.</p>
+              <p className="ops-state">Không có nhan vien giao nao thuoc hub hien tai.</p>
             ) : null}
             {shippers.length > 0 ? (
               <table className="ops-shipper-table">
                 <thead>
                   <tr>
-                    <th>Ten dang nhap</th>
+                    <th>Tên đăng nhập</th>
                     <th>Ten hien thi</th>
                     <th>So dien thoai</th>
-                    <th>Trang thai</th>
+                    <th>Trạng thái</th>
                     <th>Danh sach hub</th>
                   </tr>
                 </thead>
@@ -442,12 +442,12 @@ export function DashboardPage(): React.JSX.Element {
             <header className="ops-card__header">
               <h3>Bo KPI</h3>
             </header>
-            {kpiQuery.isLoading ? <p className="ops-state">Dang tai KPI...</p> : null}
+            {kpiQuery.isLoading ? <p className="ops-state">Đang tải KPI...</p> : null}
             {kpiQuery.isError ? (
               <p className="ops-state ops-state--error">{getErrorMessage(kpiQuery.error)}</p>
             ) : null}
             {kpiQuery.isSuccess && kpiEntries.length === 0 ? (
-              <p className="ops-state">Khong co du lieu KPI.</p>
+              <p className="ops-state">Không có du lieu KPI.</p>
             ) : null}
             {kpiEntries.length > 0 ? <KpiCards kpis={kpiData ?? {}} /> : null}
           </article>
@@ -457,7 +457,7 @@ export function DashboardPage(): React.JSX.Element {
               <h3>Chi so theo ngay</h3>
             </header>
             {dailyMetricsQuery.isLoading ? (
-              <p className="ops-state">Dang tai chi so ngay...</p>
+              <p className="ops-state">Đang tải chi so ngay...</p>
             ) : null}
             {dailyMetricsQuery.isError ? (
               <p className="ops-state ops-state--error">
@@ -465,12 +465,12 @@ export function DashboardPage(): React.JSX.Element {
               </p>
             ) : null}
             {dailyMetricsQuery.isSuccess && dailyData.length === 0 ? (
-              <p className="ops-state">Khong co chi so theo ngay.</p>
+              <p className="ops-state">Không có chi so theo ngay.</p>
             ) : null}
             {dailyData.length > 0 ? (
               <div className="ops-dashboard__metrics-grid">
-                <DashboardBarChart title="Bieu do chi so ngay" points={dailyData} />
-                <DashboardMetricsTable title="Bang chi so ngay" rows={dailyData} />
+                <DashboardBarChart title="Biểu đồ chỉ số ngày" points={dailyData} />
+                <DashboardMetricsTable title="Bảng chỉ số ngày" rows={dailyData} />
               </div>
             ) : null}
           </section>
@@ -480,7 +480,7 @@ export function DashboardPage(): React.JSX.Element {
               <h3>Chi so theo thang</h3>
             </header>
             {monthlyMetricsQuery.isLoading ? (
-              <p className="ops-state">Dang tai chi so thang...</p>
+              <p className="ops-state">Đang tải chi so thang...</p>
             ) : null}
             {monthlyMetricsQuery.isError ? (
               <p className="ops-state ops-state--error">
@@ -488,12 +488,12 @@ export function DashboardPage(): React.JSX.Element {
               </p>
             ) : null}
             {monthlyMetricsQuery.isSuccess && monthlyData.length === 0 ? (
-              <p className="ops-state">Khong co chi so theo thang.</p>
+              <p className="ops-state">Không có chi so theo thang.</p>
             ) : null}
             {monthlyData.length > 0 ? (
               <div className="ops-dashboard__metrics-grid">
-                <DashboardTrendChart title="Bieu do chi so thang" points={monthlyData} />
-                <DashboardMetricsTable title="Bang chi so thang" rows={monthlyData} />
+                <DashboardTrendChart title="Biểu đồ chỉ số tháng" points={monthlyData} />
+                <DashboardMetricsTable title="Bảng chỉ số tháng" rows={monthlyData} />
               </div>
             ) : null}
           </section>

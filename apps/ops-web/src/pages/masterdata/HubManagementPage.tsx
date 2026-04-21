@@ -235,10 +235,10 @@ export function HubManagementPage(): React.JSX.Element {
           hubId: editingHub.id,
           payload,
         });
-        setActionMessage(`Da cap nhat hub "${payload.code}".`);
+        setActionMessage(`Đã cập nhật hub "${payload.code}".`);
       } else {
         await createMutation.mutateAsync(payload);
-        setActionMessage(`Da tao hub "${payload.code}".`);
+        setActionMessage(`Đã tạo hub "${payload.code}".`);
       }
 
       setEditorOpen(false);
@@ -260,7 +260,7 @@ export function HubManagementPage(): React.JSX.Element {
       });
 
       setActionMessage(
-        `Hub "${hub.code}" da chuyen sang ${hub.isActive ? 'INACTIVE' : 'ACTIVE'}.`,
+        `Hub "${hub.code}" đã chuyển sang ${hub.isActive ? 'INACTIVE' : 'ACTIVE'}.`,
       );
     } catch (error) {
       setActionError(getErrorMessage(error));
@@ -278,7 +278,7 @@ export function HubManagementPage(): React.JSX.Element {
 
       <form onSubmit={onApplyFilters} style={styles.filterForm}>
         <input
-          placeholder="Ma hub"
+          placeholder="Mã hub"
           value={draftFilters.code ?? ''}
           onChange={(event) =>
             setDraftFilters((previous) => ({
@@ -289,7 +289,7 @@ export function HubManagementPage(): React.JSX.Element {
           style={styles.input}
         />
         <input
-          placeholder="Ten hub"
+          placeholder="Tên hub"
           value={draftFilters.name ?? ''}
           onChange={(event) =>
             setDraftFilters((previous) => ({
@@ -300,7 +300,7 @@ export function HubManagementPage(): React.JSX.Element {
           style={styles.input}
         />
         <input
-          placeholder="Ma zone"
+          placeholder="Mã zone"
           value={draftFilters.zoneCode ?? ''}
           onChange={(event) =>
             setDraftFilters((previous) => ({
@@ -320,12 +320,12 @@ export function HubManagementPage(): React.JSX.Element {
           }
           style={styles.input}
         >
-          <option value="">Tất cả trang thai</option>
+          <option value="">Tất cả trạng thái</option>
           <option value="true">ACTIVE</option>
           <option value="false">INACTIVE</option>
         </select>
         <input
-          placeholder="Tim nhanh"
+          placeholder="Tìm nhanh"
           value={draftFilters.q ?? ''}
           onChange={(event) =>
             setDraftFilters((previous) => ({
@@ -340,7 +340,7 @@ export function HubManagementPage(): React.JSX.Element {
           Dat lai
         </button>
         <button type="button" onClick={openCreateModal}>
-          Tao hub
+          Tạo hub
         </button>
       </form>
 
@@ -373,8 +373,8 @@ export function HubManagementPage(): React.JSX.Element {
               <th style={styles.headerCell}>Zone</th>
               <th style={styles.headerCell}>Dia chi</th>
               <th style={styles.headerCell}>Lien he</th>
-              <th style={styles.headerCell}>Trang thai</th>
-              <th style={styles.headerCell}>Cap nhat</th>
+              <th style={styles.headerCell}>Trạng thái</th>
+              <th style={styles.headerCell}>Cập nhật</th>
               <th style={styles.headerCell}>Hanh dong</th>
             </tr>
           </thead>
@@ -401,13 +401,13 @@ export function HubManagementPage(): React.JSX.Element {
                   <td style={styles.cell}>
                     <div style={styles.actionsCell}>
                       <button type="button" onClick={() => setSelectedHubId(hub.id)}>
-                        Chi tiet
+                        Chi tiết
                       </button>
                       <button type="button" onClick={() => openEditModal(hub)}>
-                        Sua
+                        Sửa
                       </button>
                       <button type="button" onClick={() => void onToggleStatus(hub)}>
-                        {hub.isActive ? 'Tat' : 'Bat'}
+                        {hub.isActive ? 'Tắt' : 'Bật'}
                       </button>
                     </div>
                   </td>
@@ -420,36 +420,36 @@ export function HubManagementPage(): React.JSX.Element {
 
       {selectedHub ? (
         <section style={styles.detailCard}>
-          <h3 style={styles.detailTitle}>Chi tiet hub: {selectedHub.code}</h3>
+          <h3 style={styles.detailTitle}>Chi tiết hub: {selectedHub.code}</h3>
           <p>
-            <strong>Ten:</strong> {selectedHub.name}
+            <strong>Tên:</strong> {selectedHub.name}
           </p>
           <p>
             <strong>Zone:</strong> {selectedHub.zoneCode ?? 'Không có'}
           </p>
           <p>
-            <strong>Trang thai:</strong> {selectedHub.isActive ? 'ACTIVE' : 'INACTIVE'}
+            <strong>Trạng thái:</strong> {selectedHub.isActive ? 'ACTIVE' : 'INACTIVE'}
           </p>
           <p>
             <strong>Tao luc:</strong> {formatDateTime(selectedHub.createdAt)}
           </p>
           <p>
-            <strong>Cap nhat luc:</strong> {formatDateTime(selectedHub.updatedAt)}
+            <strong>Cập nhật lúc:</strong> {formatDateTime(selectedHub.updatedAt)}
           </p>
         </section>
       ) : null}
 
       <MasterdataEditorModal
         open={editorOpen}
-        title={editingHub ? `Sua hub ${editingHub.code}` : 'Tao hub'}
-        submitLabel={editingHub ? 'Luu thay doi' : 'Tao hub'}
+        title={editingHub ? `Sửa hub ${editingHub.code}` : 'Tạo hub'}
+        submitLabel={editingHub ? 'Lưu thay đổi' : 'Tạo hub'}
         isSubmitting={isSaving}
         onClose={closeModal}
         onSubmit={onSubmitForm}
       >
         <div style={styles.formGrid}>
           <label style={styles.fieldLabel}>
-            Ma hub
+            Mã hub
             <input
               value={form.code}
               onChange={(event) =>
@@ -465,7 +465,7 @@ export function HubManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Ten hub
+            Tên hub
             <input
               value={form.name}
               onChange={(event) =>
@@ -497,7 +497,7 @@ export function HubManagementPage(): React.JSX.Element {
             </select>
           </label>
           <label style={styles.fieldLabel}>
-            Ma zone
+            Mã zone
             <input
               value={form.zoneCode}
               onChange={(event) =>

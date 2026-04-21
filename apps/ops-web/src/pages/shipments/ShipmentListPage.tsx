@@ -472,7 +472,7 @@ export function ShipmentListPage(): React.JSX.Element {
           taskCode: generateDeliveryTaskCode(shipmentCode),
           taskType: 'DELIVERY',
           shipmentCode,
-          note: dispatchNote.trim() || 'quet phat tu man hinh van don ops',
+          note: dispatchNote.trim() || 'quét phát từ màn hình vận đơn OPS',
         });
       }
 

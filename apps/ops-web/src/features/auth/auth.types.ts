@@ -54,8 +54,8 @@ export interface RefreshTokenInputDto {
 export const loginSchema = z.object({
   username: z
     .string()
-    .regex(/^\d{8}$/, 'Tai khoan phai la ma 8 chu so.'),
-  password: z.string().min(1, 'Mat khau la bat buoc.'),
+    .regex(/^\d{8}$/, 'Tài khoản phải là mã 8 chữ số.'),
+  password: z.string().min(1, 'Mật khẩu là bắt buộc.'),
 });
 
 export type LoginFormValues = z.infer<typeof loginSchema>;
