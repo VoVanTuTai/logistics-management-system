@@ -20,8 +20,8 @@ export function DashboardMetricsTable({
       <table className="ops-metrics-table">
         <thead>
           <tr>
-            <th>Nhan</th>
-            <th>Gia tri</th>
+            <th>Nhãn</th>
+            <th>Giá trị</th>
           </tr>
         </thead>
         <tbody>

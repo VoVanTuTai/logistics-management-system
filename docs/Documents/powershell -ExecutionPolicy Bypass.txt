@@ -11,8 +11,6 @@ Mở Expo Go trên điện thoại, quét QR.
 
 Đăng nhập:
 
-courier.hcm1
-courier123456
 Lưu ý quan trọng:
 
 Máy tính và điện thoại phải cùng Wi‑Fi.

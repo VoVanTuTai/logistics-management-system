@@ -24,12 +24,12 @@ export function TrackingStatusHistoryTable({
         <thead>
           <tr>
             <th>STT</th>
-            <th>Thoi gian quet</th>
-            <th>Thoi gian tai len</th>
-            <th>Phan loai quet</th>
-            <th className="ops-tracking-lookup__history-description-col">Mo ta lich su hanh trinh</th>
-            <th>Trong luong</th>
-            <th>Trong luong tinh cuoc</th>
+            <th>Thời gian quét</th>
+            <th>Thời gian tải lên</th>
+            <th>Phân loại quét</th>
+            <th className="ops-tracking-lookup__history-description-col">Mô tả lịch sử hành trình</th>
+            <th>Trọng lượng</th>
+            <th>Trọng lượng tính cước</th>
           </tr>
         </thead>
         <tbody>

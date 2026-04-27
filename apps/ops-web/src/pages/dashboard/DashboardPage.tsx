@@ -404,7 +404,7 @@ export function DashboardPage(): React.JSX.Element {
     disabled?: boolean;
   }> = [
     {
-      title: 'Du lieu co ban',
+      title: 'Dữ liệu cơ bản',
       to: routePaths.groupBasicData,
       icon: 'basic_data',
     },
@@ -414,66 +414,66 @@ export function DashboardPage(): React.JSX.Element {
       icon: 'operations_platform',
     },
     {
-      title: 'Dich vu tich hop',
+      title: 'Dịch vụ tích hợp',
       to: routePaths.groupIntegrationServices,
       icon: 'integration_services',
     },
     {
-      title: 'Nen tang khach hang',
+      title: 'Nền tảng khách hàng',
       to: routePaths.groupCustomerPlatform,
       icon: 'customer_platform',
     },
     {
-      title: 'Kinh doanh buu cuc',
+      title: 'Kinh doanh bưu cục',
       to: routePaths.groupBranchBusiness,
       icon: 'branch_business',
     },
     {
-      title: 'Quyet toan tai chinh',
+      title: 'Quyết toán tài chính',
       to: routePaths.groupFinanceSettlement,
       icon: 'finance_settlement',
     },
     {
-      title: 'Nen tang nang luc',
+      title: 'Nền tảng năng lực',
       to: routePaths.groupCapabilityPlatform,
       icon: 'capability_platform',
     },
     {
-      title: 'Chi so van hanh',
+      title: 'Chỉ số vận hành',
       to: routePaths.groupOperationsMetrics,
       icon: 'operations_metrics',
     },
     {
-      title: 'Chat luong dich vu',
+      title: 'Chất lượng dịch vụ',
       to: routePaths.groupServiceQuality,
       icon: 'service_quality',
     },
-    // Tam an theo yeu cau: Co so du lieu, Thiet bi thong minh, Nen tang quy hoach.
+    // Tạm ẩn theo yêu cầu: Cơ sở dữ liệu, Thiết bị thông minh, Nền tảng quy hoạch.
   ];
   const notices = [
     {
       id: 'notice-1',
-      tags: ['Ghim', 'Quan trong'],
+      tags: ['Ghim', 'Quan trọng'],
       content:
-        'Hoan tat dong bo zone moi truoc 18:00 de tranh lech route tai khung cao diem.',
+        'Hoàn tất đồng bộ zone mới trước 18:00 để tránh lệch route tại khung cao điểm.',
     },
     {
       id: 'notice-2',
-      tags: ['Moi'],
+      tags: ['Mới'],
       content:
-        'Nhom hub HCM01-HCM03 da kich hoat quy trinh scan vao/ra phien ban moi.',
+        'Nhóm hub HCM01-HCM03 đã kích hoạt quy trình scan vào/ra phiên bản mới.',
     },
     {
       id: 'notice-3',
-      tags: ['Can xu ly'],
+      tags: ['Cần xử lý'],
       content:
-        'Ti le giao that bai tang tai khu vuc Dong Bac, uu tien kiem tra NDR reason.',
+        'Tỉ lệ giao thất bại tăng tại khu vực Đông Bắc, ưu tiên kiểm tra NDR reason.',
     },
     {
       id: 'notice-4',
-      tags: ['Lich he thong'],
+      tags: ['Lịch hệ thống'],
       content:
-        'Bao tri dich vu bao cao KPI du kien 23:00-23:30, du lieu se cap nhat tre.',
+        'Bảo trì dịch vụ báo cáo KPI dự kiến 23:00-23:30, dữ liệu sẽ cập nhật trễ.',
     },
   ] as const;
   const heroSlides = [
@@ -482,21 +482,21 @@ export function DashboardPage(): React.JSX.Element {
       title: 'J&T EXPRESS',
       slogan: 'DIGITIZATION • AUTOMATION • INTELLIGENCE',
       description:
-        'Van hanh tap trung, theo doi trang thai theo thoi gian thuc va ket noi da kenh.',
+        'Vận hành tập trung, theo dõi trạng thái theo thời gian thực và kết nối đa kênh.',
     },
     {
       id: 'slide-2',
       title: 'J&T OPS CENTER',
       slogan: 'FAST RESPONSE • HUB VISIBILITY • SMART DISPATCH',
       description:
-        'Tang toc phan cong tac vu, canh bao nghen hub va toi uu luong dieu phoi.',
+        'Tăng tốc phân công tác vụ, cảnh báo nghẽn hub và tối ưu luồng điều phối.',
     },
     {
       id: 'slide-3',
       title: 'J&T NETWORK',
       slogan: 'DATA DRIVEN • CONTROL TOWER • RELIABILITY',
       description:
-        'Dong bo du lieu dau-cuoi de giam sai lech, tang do tin cay cho van hanh.',
+        'Đồng bộ dữ liệu đầu-cuối để giảm sai lệch, tăng độ tin cậy cho vận hành.',
     },
   ] as const;
   const [activeHeroIndex, setActiveHeroIndex] = useState(0);
@@ -520,7 +520,7 @@ export function DashboardPage(): React.JSX.Element {
         <button
           type="button"
           className="ops-dashboard__hero-nav"
-          aria-label="Trang truoc"
+          aria-label="Trang trước"
           onClick={onPrevHero}
         >
           <span aria-hidden="true">&#x2039;</span>
@@ -550,16 +550,16 @@ export function DashboardPage(): React.JSX.Element {
         >
           <span aria-hidden="true">&#x203A;</span>
         </button>
-        <div className="ops-dashboard__hero-badge" aria-label="Hub dang theo doi">
-          <small>Hub dang theo doi</small>
+        <div className="ops-dashboard__hero-badge" aria-label="Hub đang theo dõi">
+          <small>Hub đang theo dõi</small>
           <strong>{currentHub?.code ?? effectiveHubCode ?? 'Chưa gán'}</strong>
         </div>
       </section>
 
       <section className="ops-dashboard__menu-layout">
-        <section className="ops-dashboard__function-groups" aria-label="Nhom chuc nang">
+        <section className="ops-dashboard__function-groups" aria-label="Nhóm chức năng">
           <header className="ops-dashboard__section-header">
-            <h3>Menu chinh</h3>
+            <h3>Menu chính</h3>
           </header>
           <div className="ops-menu-grid">
             {quickMenu.map((item) => {
@@ -597,7 +597,7 @@ export function DashboardPage(): React.JSX.Element {
             <header className="ops-card__header">
               <h3>Thông báo</h3>
               <Link to={routePaths.ndr} className="ops-card__header-link">
-                Xem tat ca &gt;
+                Xem tất cả &gt;
               </Link>
             </header>
             <ul className="ops-notification-list">
@@ -622,10 +622,10 @@ export function DashboardPage(): React.JSX.Element {
         <div className="ops-dashboard__main">
           <article className="ops-card">
             <header className="ops-card__header">
-              <h3>Bo loc bao cao</h3>
+              <h3>Bộ lọc báo cáo</h3>
             </header>
             <p className="ops-dashboard__subtitle">
-              Du lieu bao cao luon duoc gioi han theo hub cua tai khoan điều hành.
+              Dữ liệu báo cáo luôn được giới hạn theo hub của tài khoản điều hành.
             </p>
             <DashboardFiltersForm
               filters={effectiveFilters}
@@ -638,15 +638,15 @@ export function DashboardPage(): React.JSX.Element {
 
           <article className="ops-card">
             <header className="ops-card__header">
-              <h3>Hub dang quan ly</h3>
+              <h3>Hub đang quản lý</h3>
             </header>
-            {hubsQuery.isLoading ? <p className="ops-state">Đang tải thong tin hub...</p> : null}
+            {hubsQuery.isLoading ? <p className="ops-state">Đang tải thông tin hub...</p> : null}
             {hubsQuery.isError ? (
               <p className="ops-state ops-state--error">{getErrorMessage(hubsQuery.error)}</p>
             ) : null}
             {hubsQuery.isSuccess && !currentHub ? (
               <p className="ops-state">
-                Tai khoan chua duoc gan hub. Vui long gan hub trong trang quản trị.
+                Tài khoản chưa được gán hub. Vui lòng gán hub trong trang quản trị.
               </p>
             ) : null}
             {currentHub ? (
@@ -668,7 +668,7 @@ export function DashboardPage(): React.JSX.Element {
                   <strong>{currentHubAddressText || 'Không có'}</strong>
                 </div>
                 <div>
-                  <small>Pham vi phuc vu</small>
+                  <small>Phạm vi phục vụ</small>
                   <strong>{currentHubScopeText || 'Không có'}</strong>
                 </div>
               </div>
@@ -677,7 +677,7 @@ export function DashboardPage(): React.JSX.Element {
 
           <article className="ops-card">
             <header className="ops-card__header">
-              <h3>Danh sach nhan vien giao theo hub</h3>
+              <h3>Danh sách nhân viên giao theo hub</h3>
             </header>
             <div className="ops-shipper-tools">
               <input
@@ -687,25 +687,25 @@ export function DashboardPage(): React.JSX.Element {
               />
             </div>
             {!effectiveHubCode ? (
-              <p className="ops-state">Tai khoan chua duoc gan hub, nen chua the tai danh sach nhan vien giao.
+              <p className="ops-state">Tài khoản chưa được gán hub, nên chưa thể tải danh sách nhân viên giao.
               </p>
             ) : null}
-            {shipperQuery.isLoading ? <p className="ops-state">Đang tải danh sach nhan vien giao...</p> : null}
+            {shipperQuery.isLoading ? <p className="ops-state">Đang tải danh sách nhân viên giao...</p> : null}
             {shipperQuery.isError ? (
               <p className="ops-state ops-state--error">{getErrorMessage(shipperQuery.error)}</p>
             ) : null}
             {shipperQuery.isSuccess && shippers.length === 0 ? (
-              <p className="ops-state">Không có nhan vien giao nao thuoc hub hien tai.</p>
+              <p className="ops-state">Không có nhân viên giao nào thuộc hub hiện tại.</p>
             ) : null}
             {shippers.length > 0 ? (
               <table className="ops-shipper-table">
                 <thead>
                   <tr>
                     <th>Tên đăng nhập</th>
-                    <th>Ten hien thi</th>
-                    <th>So dien thoai</th>
+                    <th>Tên hiển thị</th>
+                    <th>Số điện thoại</th>
                     <th>Trạng thái</th>
-                    <th>Danh sach hub</th>
+                    <th>Danh sách hub</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -765,7 +765,7 @@ export function DashboardPage(): React.JSX.Element {
               <h3>Chỉ số theo tháng</h3>
             </header>
             {monthlyMetricsQuery.isLoading ? (
-              <p className="ops-state">Đang tải chi số tháng...</p>
+              <p className="ops-state">Đang tải chỉ số tháng...</p>
             ) : null}
             {monthlyMetricsQuery.isError ? (
               <p className="ops-state ops-state--error">
@@ -787,4 +787,3 @@ export function DashboardPage(): React.JSX.Element {
     </div>
   );
 }
-

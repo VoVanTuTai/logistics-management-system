@@ -23,12 +23,12 @@ export function ManifestsTable({
     <table style={styles.table}>
       <thead>
         <tr>
-          <th style={styles.headerCell}>Ma bao</th>
+          <th style={styles.headerCell}>Mã bao</th>
           <th style={styles.headerCell}>Trạng thái</th>
-          <th style={styles.headerCell}>Hub di</th>
-          <th style={styles.headerCell}>Hub dich</th>
-          <th style={styles.headerCell}>Niem phong luc</th>
-          <th style={styles.headerCell}>Hanh dong</th>
+          <th style={styles.headerCell}>Hub đi</th>
+          <th style={styles.headerCell}>Hub đích</th>
+          <th style={styles.headerCell}>Niêm phong lúc</th>
+          <th style={styles.headerCell}>Hành động</th>
         </tr>
       </thead>
       <tbody>
@@ -52,7 +52,7 @@ export function ManifestsTable({
                     onClick={() => onPrintManifest(item)}
                     style={styles.printButton}
                   >
-                    In ma bao
+                    In mã bao
                   </button>
                   <button
                     type="button"

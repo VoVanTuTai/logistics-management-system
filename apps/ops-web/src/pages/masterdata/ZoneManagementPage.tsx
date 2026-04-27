@@ -148,9 +148,9 @@ export function ZoneManagementPage(): React.JSX.Element {
 
   return (
     <div>
-      <h2>Du Lieu Danh Muc - Quan Ly Zone</h2>
+      <h2>Dữ liệu danh mục - Quản lý Zone</h2>
       <p style={styles.helperText}>
-        Quan ly zone van hanh cho luong lấy hàng va dieu huong giao hàng.
+        Quản lý zone vận hành cho luồng lấy hàng và điều hướng giao hàng.
       </p>
 
       <form onSubmit={onApplyFilters} style={styles.filterForm}>
@@ -212,9 +212,9 @@ export function ZoneManagementPage(): React.JSX.Element {
           }
           style={styles.input}
         />
-        <button type="submit">Ap dung</button>
+        <button type="submit">Áp dụng</button>
         <button type="button" onClick={onResetFilters}>
-          Dat lai
+          Đặt lại
         </button>
         <button type="button" onClick={openCreateModal}>
           Tạo zone
@@ -244,12 +244,12 @@ export function ZoneManagementPage(): React.JSX.Element {
         <table style={styles.table}>
           <thead>
             <tr>
-              <th style={styles.headerCell}>Ma</th>
-              <th style={styles.headerCell}>Ten</th>
+              <th style={styles.headerCell}>Mã</th>
+              <th style={styles.headerCell}>Tên</th>
               <th style={styles.headerCell}>Zone cha</th>
               <th style={styles.headerCell}>Trạng thái</th>
               <th style={styles.headerCell}>Cập nhật</th>
-              <th style={styles.headerCell}>Hanh dong</th>
+              <th style={styles.headerCell}>Hành động</th>
             </tr>
           </thead>
           <tbody>
@@ -294,7 +294,7 @@ export function ZoneManagementPage(): React.JSX.Element {
             <strong>Trạng thái:</strong> {selectedZone.isActive ? 'ACTIVE' : 'INACTIVE'}
           </p>
           <p>
-            <strong>Tao luc:</strong> {formatDateTime(selectedZone.createdAt)}
+            <strong>Tạo lúc:</strong> {formatDateTime(selectedZone.createdAt)}
           </p>
           <p>
             <strong>Cập nhật lúc:</strong> {formatDateTime(selectedZone.updatedAt)}

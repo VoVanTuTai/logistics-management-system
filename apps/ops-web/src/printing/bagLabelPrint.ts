@@ -123,7 +123,7 @@ function buildSheetHtml(payload: BagLabelPrintPayload): string {
     <article class="sheet">
       <div class="top-row">
         <div class="top-text">
-          <div>TTC dong bao: ${escapeHtml(display.packingHubCode)}</div>
+          <div>TTC đóng bao: ${escapeHtml(display.packingHubCode)}</div>
           <div>In: ${escapeHtml(display.printedAtText)}</div>
         </div>
         <div class="method-letter">${escapeHtml(display.methodLetter)}</div>
@@ -137,7 +137,7 @@ function buildSheetHtml(payload: BagLabelPrintPayload): string {
       <div class="route-code">${escapeHtml(display.routeCode)}</div>
       <div class="barcode" aria-hidden="true"></div>
       <div class="barcode-text">${escapeHtml(display.barcodeText)}</div>
-      <div class="destination-line">Dich den: ${escapeHtml(display.destinationText)}</div>
+      <div class="destination-line">Đích đến: ${escapeHtml(display.destinationText)}</div>
     </article>
   `;
 }
@@ -300,4 +300,3 @@ export function openBagLabelBatchPrint(payloads: BagLabelPrintPayload[]): boolea
 export function openBagLabelPrint(payload: BagLabelPrintPayload): boolean {
   return openBagLabelBatchPrint([payload]);
 }
-

@@ -6,7 +6,7 @@ const UNKNOWN_LABEL = 'Không xác định';
 const TOKEN_LABELS: LabelMap = {
   ACTIVE: 'hoạt động',
   ADMIN: 'quản trị',
-  APPROVED: 'da duyệt',
+  APPROVED: 'đã duyệt',
   ASSIGNED: 'đã phân công',
   AUTH: 'xác thực',
   BAG: 'bao tải',
@@ -39,11 +39,11 @@ const TOKEN_LABELS: LabelMap = {
   RETURNED: 'đã hoàn',
   RETURNING: 'đang hoàn',
   SCAN: 'quét',
-  SEALED: 'da niêm phong',
+  SEALED: 'đã niêm phong',
   SERVICE: 'dịch vụ',
   SHIPMENT: 'vận đơn',
   SHIPPER: 'shipper',
-  SOURCE: 'nguon',
+  SOURCE: 'nguồn',
   STANDARD: 'tiêu chuẩn',
   STATUS: 'trạng thái',
   SUCCESS: 'thành công',
@@ -61,14 +61,14 @@ const SHIPMENT_STATUS_LABELS: LabelMap = {
   DELIVERY_FAILED: 'Giao thất bại',
   IN_TRANSIT: 'Đang trung chuyển',
   MANIFEST_RECEIVED: 'Đã nhận bao',
-  MANIFEST_SEALED: 'Da niêm phong bao',
-  NDR_CREATED: 'Can xu ly giao thất bại',
-  OUT_FOR_DELIVERY: 'Dang giao hàng',
-  PICKUP_COMPLETED: 'Da lấy hàng',
-  RETURN_COMPLETED: 'Hoan hang thành công',
-  RETURN_STARTED: 'Bat dau hoàn hàng',
-  SCAN_INBOUND: 'Da quét nhập hub',
-  SCAN_OUTBOUND: 'Da quét xuất hub',
+  MANIFEST_SEALED: 'Đã niêm phong bao',
+  NDR_CREATED: 'Cần xử lý giao thất bại',
+  OUT_FOR_DELIVERY: 'Đang giao hàng',
+  PICKUP_COMPLETED: 'Đã lấy hàng',
+  RETURN_COMPLETED: 'Hoàn hàng thành công',
+  RETURN_STARTED: 'Bắt đầu hoàn hàng',
+  SCAN_INBOUND: 'Đã quét nhập hub',
+  SCAN_OUTBOUND: 'Đã quét xuất hub',
   TASK_ASSIGNED: 'Đã phân công giao',
   UPDATED: 'Đã cập nhật',
 };
@@ -85,17 +85,17 @@ const TASK_STATUS_LABELS: LabelMap = {
 
 const TASK_TYPE_LABELS: LabelMap = {
   DELIVERY: 'Giao hàng',
-  NDR: 'Xu ly giao thất bại',
+  NDR: 'Xử lý giao thất bại',
   PICKUP: 'Lấy hàng',
   RETURN: 'Hoàn hàng',
 };
 
 const PICKUP_STATUS_LABELS: LabelMap = {
-  APPROVED: 'Da duyệt',
+  APPROVED: 'Đã duyệt',
   CANCELLED: 'Đã hủy',
   COMPLETED: 'Hoàn tất',
   REJECTED: 'Từ chối',
-  REQUESTED: 'Cho duyệt',
+  REQUESTED: 'Chờ duyệt',
 };
 
 const MANIFEST_STATUS_LABELS: LabelMap = {
@@ -104,16 +104,16 @@ const MANIFEST_STATUS_LABELS: LabelMap = {
   CREATED: 'Mới tạo',
   IN_TRANSIT: 'Đang trung chuyển',
   OPEN: 'Đang mở',
-  RECEIVED: 'Da nhận bàn giao',
-  SEALED: 'Da niêm phong',
+  RECEIVED: 'Đã nhận bàn giao',
+  SEALED: 'Đã niêm phong',
 };
 
 const NDR_STATUS_LABELS: LabelMap = {
   CLOSED: 'Đã đóng',
   OPEN: 'Đang xử lý',
-  RESCHEDULED: 'Da đổi lịch giao',
-  RESOLVED: 'Da xu ly',
-  RETURNING: 'Dang hoàn hàng',
+  RESCHEDULED: 'Đã đổi lịch giao',
+  RESOLVED: 'Đã xử lý',
+  RETURNING: 'Đang hoàn hàng',
 };
 
 const SCAN_TYPE_LABELS: LabelMap = {
@@ -137,7 +137,7 @@ const USER_STATUS_LABELS: LabelMap = {
 const ROLE_LABELS: LabelMap = {
   ADMIN: 'Quản trị',
   OPS: 'Điều hành',
-  OPS_MANAGER: 'Quan ly điều hành',
+  OPS_MANAGER: 'Quản lý điều hành',
   OPS_STAFF: 'Nhân viên điều hành',
   SHIPPER: 'Shipper',
   SYSTEM_ADMIN: 'Quản trị hệ thống',
@@ -174,36 +174,36 @@ const KPI_LABELS: LabelMap = {
 };
 
 const TRACKING_EVENT_SOURCE_LABELS: LabelMap = {
-  AUTH_SERVICE: 'Dich vu xác thực',
-  DELIVERY_SERVICE: 'Dich vu giao hàng',
+  AUTH_SERVICE: 'Dịch vụ xác thực',
+  DELIVERY_SERVICE: 'Dịch vụ giao hàng',
   DISPATCH_SERVICE: 'Dịch vụ điều phối',
   GATEWAY_BFF: 'Cổng kết nối',
   HUB_SCAN: 'Quét hub',
-  MANIFEST_SERVICE: 'Dich vu bao tải',
+  MANIFEST_SERVICE: 'Dịch vụ bao tải',
   MASTERDATA_SERVICE: 'Dịch vụ dữ liệu gốc',
-  OPS_WEB: 'Cong điều hành',
-  PICKUP_SERVICE: 'Dich vu lấy hàng',
+  OPS_WEB: 'Cổng điều hành',
+  PICKUP_SERVICE: 'Dịch vụ lấy hàng',
   REPORTING_SERVICE: 'Dịch vụ báo cáo',
-  SCAN_SERVICE: 'Dich vu quét',
-  SHIPMENT_SERVICE: 'Dich vu vận đơn',
+  SCAN_SERVICE: 'Dịch vụ quét',
+  SHIPMENT_SERVICE: 'Dịch vụ vận đơn',
   SYSTEM: 'Hệ thống',
-  TASK_SERVICE: 'Dich vu tác vụ',
+  TASK_SERVICE: 'Dịch vụ tác vụ',
   TRACKING_SERVICE: 'Dịch vụ hành trình',
 };
 
 const TRACKING_EVENT_TYPE_LABELS: LabelMap = {
   DELIVERY_FAILED: 'Giao thất bại',
   DELIVERY_SUCCESS: 'Giao thành công',
-  MANIFEST_RECEIVED: 'Nhan bao tải',
-  MANIFEST_SEALED: 'Niem phong bao tải',
+  MANIFEST_RECEIVED: 'Nhận bao tải',
+  MANIFEST_SEALED: 'Niêm phong bao tải',
   PICKUP_CONFIRMED: 'Lấy hàng thành công',
-  PICKUP_REQUESTED: 'Yeu cau lấy hàng',
-  SCAN_INBOUND: 'Quet nhập hub',
-  SCAN_OUTBOUND: 'Quet xuất hub',
-  SHIPMENT_CREATED: 'Tao vận đơn',
-  SHIPMENT_UPDATED: 'Cap nhat vận đơn',
+  PICKUP_REQUESTED: 'Yêu cầu lấy hàng',
+  SCAN_INBOUND: 'Quét nhập hub',
+  SCAN_OUTBOUND: 'Quét xuất hub',
+  SHIPMENT_CREATED: 'Tạo vận đơn',
+  SHIPMENT_UPDATED: 'Cập nhật vận đơn',
   TASK_ASSIGNED: 'Phân công tác vụ',
-  TASK_REASSIGNED: 'Phan cong lai tác vụ',
+  TASK_REASSIGNED: 'Phân công lại tác vụ',
 };
 
 function normalizeCode(value: string): string {

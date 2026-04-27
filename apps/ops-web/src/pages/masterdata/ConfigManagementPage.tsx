@@ -333,9 +333,9 @@ export function ConfigManagementPage(): React.JSX.Element {
 
   return (
     <div>
-      <h2>Du Lieu Danh Muc - Quan Ly Config</h2>
+      <h2>Dữ liệu danh mục - Quản lý Config</h2>
       <p style={styles.helperText}>
-        Quan ly cau hinh hệ thống dang key-value dung chung cho van hanh.
+        Quản lý cấu hình hệ thống dạng key-value dùng chung cho vận hành.
       </p>
 
       <form onSubmit={onApplyFilters} style={styles.filterForm}>
@@ -383,9 +383,9 @@ export function ConfigManagementPage(): React.JSX.Element {
           <option value="active">ACTIVE</option>
           <option value="inactive">INACTIVE</option>
         </select>
-        <button type="submit">Ap dung</button>
+        <button type="submit">Áp dụng</button>
         <button type="button" onClick={onResetFilters}>
-          Dat lai
+          Đặt lại
         </button>
         <button type="button" onClick={openCreateModal}>
           Tạo config
@@ -416,13 +416,13 @@ export function ConfigManagementPage(): React.JSX.Element {
           <thead>
             <tr>
               <th style={styles.headerCell}>Key</th>
-              <th style={styles.headerCell}>Ten</th>
+              <th style={styles.headerCell}>Tên</th>
               <th style={styles.headerCell}>Nhom</th>
               <th style={styles.headerCell}>Giá trị</th>
               <th style={styles.headerCell}>Kiểu</th>
               <th style={styles.headerCell}>Trạng thái</th>
               <th style={styles.headerCell}>Cập nhật</th>
-              <th style={styles.headerCell}>Hanh dong</th>
+              <th style={styles.headerCell}>Hành động</th>
             </tr>
           </thead>
           <tbody>
@@ -525,7 +525,7 @@ export function ConfigManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Ten
+            Tên
             <input
               value={form.name}
               onChange={(event) =>
@@ -599,7 +599,7 @@ export function ConfigManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={{ ...styles.fieldLabel, gridColumn: '1 / -1' }}>
-            Mo ta
+            Mô tả
             <textarea
               value={form.description}
               onChange={(event) =>

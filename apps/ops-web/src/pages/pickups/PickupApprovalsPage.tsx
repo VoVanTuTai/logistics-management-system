@@ -203,7 +203,7 @@ export function PickupApprovalsPage(): React.JSX.Element {
       const result = await bulkApproveMutation.mutateAsync(selectedIds);
 
       if (result.successIds.length > 0) {
-        setActionMessage(`Da duyệt thành công ${result.successIds.length} yêu cầu.`);
+        setActionMessage(`Đã duyệt thành công ${result.successIds.length} yêu cầu.`);
       }
 
       if (result.failed.length > 0) {
@@ -224,7 +224,7 @@ export function PickupApprovalsPage(): React.JSX.Element {
     <div>
       <h2>Duyệt lấy hàng</h2>
       <p style={{ color: '#2d3f99' }}>
-        Bo cot ma yêu cầu. Chon nhieu don cho duyệt de duyệt 1 lan.
+        Bỏ cột mã yêu cầu. Chọn nhiều đơn chờ duyệt để duyệt 1 lần.
       </p>
       <form onSubmit={onFilterSubmit} style={styles.filterForm}>
         <select
@@ -233,16 +233,16 @@ export function PickupApprovalsPage(): React.JSX.Element {
           onChange={(event) => setStatusInput(event.target.value)}
           style={styles.input}
         >
-          <option value="">Tat ca trạng thái lấy hàng</option>
+          <option value="">Tất cả trạng thái lấy hàng</option>
           {PICKUP_STATUS_OPTIONS.map((option) => (
             <option key={option} value={option}>
               {formatPickupStatusLabel(option)}
             </option>
           ))}
         </select>
-        <button type="submit">Ap dung</button>
+        <button type="submit">Áp dụng</button>
         <button type="button" onClick={onResetFilters}>
-          Dat lai
+          Đặt lại
         </button>
       </form>
 
@@ -257,7 +257,7 @@ export function PickupApprovalsPage(): React.JSX.Element {
             : `Duyệt đã chọn (${selectedIds.length})`}
         </button>
         <small style={styles.hintText}>
-          Chi dong co trạng thái {formatPickupStatusLabel('REQUESTED')} moi co the tick chon.
+          Chỉ dòng có trạng thái {formatPickupStatusLabel('REQUESTED')} mới có thể tick chọn.
         </small>
       </div>
 
@@ -266,9 +266,9 @@ export function PickupApprovalsPage(): React.JSX.Element {
 
       {pickupsQuery.isLoading ? <p>Đang tải yêu cầu lấy hàng...</p> : null}
       {pickupsQuery.isError ? <p style={styles.errorText}>{getErrorMessage(pickupsQuery.error)}</p> : null}
-      {shipmentsQuery.isLoading ? <p>Đang tải thong tin vận đơn...</p> : null}
+      {shipmentsQuery.isLoading ? <p>Đang tải thông tin vận đơn...</p> : null}
       {shipmentsQuery.isError ? (
-        <p style={styles.errorText}>Khong the tai thong tin vận đơn: {getErrorMessage(shipmentsQuery.error)}</p>
+        <p style={styles.errorText}>Không thể tải thông tin vận đơn: {getErrorMessage(shipmentsQuery.error)}</p>
       ) : null}
 
       {pickupsQuery.isSuccess && (pickupsQuery.data?.length ?? 0) === 0 ? (
