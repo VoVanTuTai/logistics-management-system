@@ -16,52 +16,52 @@ const MOCK_ROWS: InventoryMonitorRow[] = [
     thoiGianTttc: '2023-07',
     tongKienTon: 321,
     tonQuaHan: 14,
-    canhBao: 'Muc 2',
+    canhBao: 'Mức 2',
   },
   {
     stt: 2,
     thoiGianTttc: '2023-08',
     tongKienTon: 298,
     tonQuaHan: 9,
-    canhBao: 'Muc 1',
+    canhBao: 'Mức 1',
   },
   {
     stt: 3,
     thoiGianTttc: '2023-09',
     tongKienTon: 344,
     tonQuaHan: 17,
-    canhBao: 'Muc 3',
+    canhBao: 'Mức 3',
   },
   {
     stt: 4,
     thoiGianTttc: '2023-10',
     tongKienTon: 280,
     tonQuaHan: 8,
-    canhBao: 'Muc 1',
+    canhBao: 'Mức 1',
   },
   {
     stt: 5,
     thoiGianTttc: '2023-11',
     tongKienTon: 306,
     tonQuaHan: 12,
-    canhBao: 'Muc 2',
+    canhBao: 'Mức 2',
   },
 ];
 
 export function OpsMetricsInventoryMonitorPage(): React.JSX.Element {
   return (
     <section className="ops-metrics-inventory">
-      <header className="ops-metrics-inventory__tabs" role="tablist" aria-label="Tong hop ton kho">
+      <header className="ops-metrics-inventory__tabs" role="tablist" aria-label="Tổng hợp tồn kho">
         <button
           type="button"
           role="tab"
           aria-selected="true"
           className="ops-metrics-inventory__tab ops-metrics-inventory__tab--active"
         >
-          Tong
+          Tổng
         </button>
         <button type="button" role="tab" aria-selected="false" className="ops-metrics-inventory__tab">
-          Chi tiet
+          Chi tiết
         </button>
       </header>
 
@@ -73,21 +73,21 @@ export function OpsMetricsInventoryMonitorPage(): React.JSX.Element {
               <path d="m16 16 4 4" />
             </svg>
           </span>
-          Tim kiem
+          Tìm kiếm
         </button>
 
         <button type="button" className="ops-metrics-inventory__export-btn">
-          Xuat du lieu
+          Xuất dữ liệu
         </button>
       </div>
 
       <div className="ops-metrics-inventory__filters">
         <label className="ops-metrics-inventory__filter-field">
-          <span>Pham vi lua chon:</span>
+          <span>Phạm vi lựa chọn:</span>
           <select defaultValue="tttc-quet-gui-kien">
-            <option value="tttc-quet-gui-kien">Theo TTTC quet gui kien</option>
-            <option value="hub-vung">Theo hub/vung</option>
-            <option value="chi-nhanh">Theo chi nhanh</option>
+            <option value="tttc-quet-gui-kien">Theo TTTC quét gửi kiện</option>
+            <option value="hub-vung">Theo hub/vùng</option>
+            <option value="chi-nhanh">Theo chi nhánh</option>
           </select>
         </label>
       </div>
@@ -97,10 +97,10 @@ export function OpsMetricsInventoryMonitorPage(): React.JSX.Element {
           <thead>
             <tr>
               <th>STT</th>
-              <th>Thoi gian TTTC phat hang</th>
-              <th>Tong kien ton</th>
-              <th>Ton qua han</th>
-              <th>Muc canh bao</th>
+              <th>Thời gian TTTC phát hàng</th>
+              <th>Tổng kiện tồn</th>
+              <th>Tồn quá hạn</th>
+              <th>Mức cảnh báo</th>
             </tr>
           </thead>
           <tbody>

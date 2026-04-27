@@ -6,8 +6,8 @@ export function CapabilityPlatformGroupPage(): React.JSX.Element {
   return (
     <FunctionGroupLandingPage
       groupCode="CAPABILITY_PLATFORM"
-      title="Nen tang nang luc"
-      summary="Cum quan ly nang luc van hanh, tai nguyen va kha nang dap ung."
+      title="Nền tảng năng lực"
+      summary="Cụm quản lý năng lực vận hành, tài nguyên và khả năng đáp ứng."
     />
   );
 }

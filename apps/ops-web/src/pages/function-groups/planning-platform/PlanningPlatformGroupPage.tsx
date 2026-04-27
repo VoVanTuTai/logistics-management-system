@@ -6,8 +6,8 @@ export function PlanningPlatformGroupPage(): React.JSX.Element {
   return (
     <FunctionGroupLandingPage
       groupCode="PLANNING_PLATFORM"
-      title="Nen tang quy hoach"
-      summary="Cum quy hoach mang luoi, khu vuc va tai nguyen van hanh."
+      title="Nền tảng quy hoạch"
+      summary="Cụm quy hoạch mạng lưới, khu vực và tài nguyên vận hành."
     />
   );
 }

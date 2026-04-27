@@ -1,9 +1,9 @@
-.ops-monitor-hang-nhan {
+.ops-monitor-hang-gui {
   display: grid;
   gap: 12px;
 }
 
-.ops-monitor-hang-nhan__page-header {
+.ops-monitor-hang-gui__page-header {
   display: flex;
   justify-content: space-between;
   gap: 14px;
@@ -13,32 +13,32 @@
   padding: 14px;
 }
 
-.ops-monitor-hang-nhan__page-header small {
+.ops-monitor-hang-gui__page-header small {
   color: #64748b;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
 }
 
-.ops-monitor-hang-nhan__page-header h2 {
+.ops-monitor-hang-gui__page-header h2 {
   margin: 6px 0 4px;
   color: #1e293b;
   font-size: 22px;
 }
 
-.ops-monitor-hang-nhan__page-header p {
+.ops-monitor-hang-gui__page-header p {
   margin: 0;
   color: #64748b;
   font-size: 13px;
 }
 
-.ops-monitor-hang-nhan__summary {
+.ops-monitor-hang-gui__summary {
   display: grid;
   grid-template-columns: repeat(2, 130px);
   gap: 8px;
 }
 
-.ops-monitor-hang-nhan__summary article {
+.ops-monitor-hang-gui__summary article {
   border: 1px solid #dbe3ef;
   border-radius: 8px;
   background: #f8fafc;
@@ -47,41 +47,19 @@
   gap: 4px;
 }
 
-.ops-monitor-hang-nhan__summary span {
+.ops-monitor-hang-gui__summary span {
   color: #64748b;
   font-size: 12px;
   font-weight: 700;
 }
 
-.ops-monitor-hang-nhan__summary strong {
+.ops-monitor-hang-gui__summary strong {
   color: #1d4ed8;
   font-size: 24px;
   line-height: 1;
 }
 
-.ops-monitor-hang-nhan__tabs {
-  border-bottom: 1px solid #dbe3ef;
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
-}
-
-.ops-monitor-hang-nhan__tab {
-  border: 0;
-  background: transparent;
-  color: #64748b;
-  padding: 8px 2px 9px;
-  border-bottom: 2px solid transparent;
-  border-radius: 0;
-  font-weight: 600;
-}
-
-.ops-monitor-hang-nhan__tab--active {
-  color: #1d4ed8;
-  border-bottom-color: #1d4ed8;
-}
-
-.ops-monitor-hang-nhan__toolbar {
+.ops-monitor-hang-gui__toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -89,14 +67,14 @@
   flex-wrap: wrap;
 }
 
-.ops-monitor-hang-nhan__actions {
+.ops-monitor-hang-gui__actions {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.ops-monitor-hang-nhan__action-btn {
+.ops-monitor-hang-gui__action-btn {
   border: 1px solid #d0d9e6;
   border-radius: 8px;
   background: #ffffff;
@@ -105,12 +83,12 @@
   font-weight: 600;
 }
 
-.ops-monitor-hang-nhan__action-btn:hover {
+.ops-monitor-hang-gui__action-btn:hover {
   border-color: #b9c5d8;
   background: #f8fafc;
 }
 
-.ops-monitor-hang-nhan__collapse-btn {
+.ops-monitor-hang-gui__collapse-btn {
   border: 0;
   background: transparent;
   color: #64748b;
@@ -118,26 +96,26 @@
   font-weight: 600;
 }
 
-.ops-monitor-hang-nhan__filters {
+.ops-monitor-hang-gui__filters {
   display: grid;
-  grid-template-columns: repeat(6, minmax(120px, 1fr));
+  grid-template-columns: repeat(5, minmax(140px, 1fr));
   gap: 8px 10px;
   align-items: end;
 }
 
-.ops-monitor-hang-nhan__filter-field {
+.ops-monitor-hang-gui__filter-field {
   display: grid;
   gap: 5px;
 }
 
-.ops-monitor-hang-nhan__filter-field span {
+.ops-monitor-hang-gui__filter-field span {
   color: #475569;
   font-size: 12px;
   font-weight: 600;
 }
 
-.ops-monitor-hang-nhan__filter-field input,
-.ops-monitor-hang-nhan__filter-field select {
+.ops-monitor-hang-gui__filter-field input,
+.ops-monitor-hang-gui__filter-field select {
   border: 1px solid #d0d9e6;
   border-radius: 8px;
   background: #ffffff;
@@ -146,22 +124,22 @@
   height: 34px;
 }
 
-.ops-monitor-hang-nhan__table-wrap {
+.ops-monitor-hang-gui__table-wrap {
   border: 1px solid #d8e0ec;
   border-radius: 10px;
   overflow: auto;
   max-width: 100%;
 }
 
-.ops-monitor-hang-nhan__table {
+.ops-monitor-hang-gui__table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 1050px;
+  min-width: 1080px;
   background: #ffffff;
 }
 
-.ops-monitor-hang-nhan__table th,
-.ops-monitor-hang-nhan__table td {
+.ops-monitor-hang-gui__table th,
+.ops-monitor-hang-gui__table td {
   border: 1px solid #e1e7f0;
   padding: 9px 10px;
   text-align: center;
@@ -169,31 +147,44 @@
   white-space: nowrap;
 }
 
-.ops-monitor-hang-nhan__table th {
+.ops-monitor-hang-gui__table th {
   color: #334155;
   background: #f8fafc;
   font-weight: 700;
 }
 
-.ops-monitor-hang-nhan__metric-cell {
+.ops-monitor-hang-gui__code,
+.ops-monitor-hang-gui__wait {
   color: #1d4ed8 !important;
   font-weight: 700;
 }
 
+.ops-monitor-hang-gui__status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border-radius: 999px;
+  background: #fff7ed;
+  color: #c2410c;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 @media (max-width: 1300px) {
-  .ops-monitor-hang-nhan__filters {
+  .ops-monitor-hang-gui__filters {
     grid-template-columns: repeat(3, minmax(150px, 1fr));
   }
 }
 
 @media (max-width: 900px) {
-  .ops-monitor-hang-nhan__filters {
+  .ops-monitor-hang-gui__filters {
     grid-template-columns: repeat(2, minmax(140px, 1fr));
   }
 }
 
 @media (max-width: 640px) {
-  .ops-monitor-hang-nhan__filters {
+  .ops-monitor-hang-gui__filters {
     grid-template-columns: 1fr;
   }
 }

@@ -6,8 +6,8 @@ export function SmartDevicesGroupPage(): React.JSX.Element {
   return (
     <FunctionGroupLandingPage
       groupCode="SMART_DEVICES"
-      title="Thiet bi thong minh"
-      summary="Cum chuc nang ket noi, quan ly va van hanh thiet bi."
+      title="Thiết bị thông minh"
+      summary="Cụm chức năng kết nối, quản lý và vận hành thiết bị."
     />
   );
 }

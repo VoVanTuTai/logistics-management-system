@@ -59,14 +59,14 @@ export function ThermalLabelPrintPage(): React.JSX.Element {
       setPreviewItems([]);
       setNotice(null);
       setFormError(
-        `Vui long nhap du thong tin. So luong phai tu 1 den ${MAX_PREVIEW_LABELS}, ma hub den khong de trong.`,
+        `Vui lòng nhập đủ thông tin. Số lượng phải từ 1 đến ${MAX_PREVIEW_LABELS}, mã hub đến không để trống.`,
       );
       return;
     }
 
     setPreviewItems(nextPreviewItems);
     setFormError(null);
-    setNotice(`Da tao ${nextPreviewItems.length} tem bao mau de xem truoc.`);
+    setNotice(`Đã tạo ${nextPreviewItems.length} tem bao mẫu để xem trước.`);
   };
 
   const onPrint = () => {
@@ -82,7 +82,7 @@ export function ThermalLabelPrintPage(): React.JSX.Element {
 
     if (!itemsForPrint || itemsForPrint.length === 0) {
       setFormError(
-        `Khong the in vi thieu thong tin. So luong hop le: 1-${MAX_PREVIEW_LABELS}, can co ma hub den.`,
+        `Không thể in vì thiếu thông tin. Số lượng hợp lệ: 1-${MAX_PREVIEW_LABELS}, cần có mã hub đến.`,
       );
       setNotice(null);
       return;
@@ -94,13 +94,13 @@ export function ThermalLabelPrintPage(): React.JSX.Element {
 
     const opened = openBagLabelBatchPrint(itemsForPrint);
     if (!opened) {
-      setFormError('Trinh duyet dang chan cua so in. Hay cho phep popup roi thu lai.');
+      setFormError('Trình duyệt đang chặn cửa sổ in. Hãy cho phép popup rồi thử lại.');
       setNotice(null);
       return;
     }
 
     setFormError(null);
-    setNotice(`Da mo cua so in ${itemsForPrint.length} tem bao.`);
+    setNotice(`Đã mở cửa sổ in ${itemsForPrint.length} tem bao.`);
   };
 
   return (
@@ -109,22 +109,22 @@ export function ThermalLabelPrintPage(): React.JSX.Element {
         <small>THERMAL_LABEL_PRINT</small>
         <h2>In tem bao</h2>
         <p>
-          Chon so luong, ma hub den, phuong thuc van chuyen T (trucking) hoac A (air), sau do
-          xem truoc tem bao truoc khi in.
+          Chọn số lượng, mã hub đến, phương thức vận chuyển T (trucking) hoặc A (air), sau đó
+          xem trước tem bao trước khi in.
         </p>
       </header>
 
       <div className="ops-thermal-print__layout">
         <article className="ops-thermal-print__form-card">
-          <h3>Thong tin in</h3>
+          <h3>Thông tin in</h3>
           <form onSubmit={onGeneratePreview} className="ops-thermal-print__form">
             <label className="ops-thermal-print__field">
-              <span>Hub di</span>
-              <input type="text" value={originHubCode || 'CHUA_GAN_HUB'} disabled />
+              <span>Hub đi</span>
+              <input type="text" value={originHubCode || 'CHƯA_GÁN_HUB'} disabled />
             </label>
 
             <label className="ops-thermal-print__field">
-              <span>So luong tem bao</span>
+              <span>Số lượng tem bao</span>
               <input
                 type="number"
                 min={1}
@@ -135,13 +135,13 @@ export function ThermalLabelPrintPage(): React.JSX.Element {
             </label>
 
             <label className="ops-thermal-print__field">
-              <span>Ma hub den</span>
+              <span>Mã hub đến</span>
               <input
                 type="text"
                 list="ops-thermal-destination-hubs"
                 value={destinationHubCode}
                 onChange={(event) => setDestinationHubCode(normalizeHubCode(event.target.value))}
-                placeholder="Nhap ma hub den"
+                placeholder="Nhập mã hub đến"
               />
               <datalist id="ops-thermal-destination-hubs">
                 {destinationHubOptions.map((hub) => (
@@ -153,7 +153,7 @@ export function ThermalLabelPrintPage(): React.JSX.Element {
             </label>
 
             <fieldset className="ops-thermal-print__field ops-thermal-print__field--method">
-              <legend>Phuong thuc</legend>
+              <legend>Phương thức</legend>
               <label className="ops-thermal-print__radio">
                 <input
                   type="radio"
@@ -177,7 +177,7 @@ export function ThermalLabelPrintPage(): React.JSX.Element {
             </fieldset>
 
             <div className="ops-thermal-print__actions">
-              <button type="submit">Tao xem truoc</button>
+              <button type="submit">Tạo xem trước</button>
               <button type="button" className="ops-thermal-print__secondary-btn" onClick={onPrint}>
                 In tem bao
               </button>
@@ -185,10 +185,10 @@ export function ThermalLabelPrintPage(): React.JSX.Element {
           </form>
 
           {hubsQuery.isError ? (
-            <p className="ops-thermal-print__hint">Khong tai duoc danh sach hub. Ban van co the nhap ma hub den tay.</p>
+            <p className="ops-thermal-print__hint">Không tải được danh sách hub. Bạn vẫn có thể nhập mã hub đến tay.</p>
           ) : (
             <p className="ops-thermal-print__hint">
-              Co the nhap tay ma hub den hoac chon tu danh sach goi y.
+              Có thể nhập tay mã hub đến hoặc chọn từ danh sách gợi ý.
             </p>
           )}
           {formError ? <p className="ops-thermal-print__error">{formError}</p> : null}
@@ -197,13 +197,13 @@ export function ThermalLabelPrintPage(): React.JSX.Element {
 
         <article className="ops-thermal-print__preview">
           <div className="ops-thermal-print__preview-header">
-            <h3>Hinh anh tem bao xem truoc</h3>
+            <h3>Hình ảnh tem bao xem trước</h3>
             <span>{previewItems.length}</span>
           </div>
 
           {previewItems.length === 0 ? (
             <p className="ops-thermal-print__preview-empty">
-              Chua co tem bao mau. Nhap form ben trai va bam "Tao xem truoc".
+              Chưa có tem bao mẫu. Nhập form bên trái và bấm "Tạo xem trước".
             </p>
           ) : (
             <div className="ops-thermal-print__preview-grid">
@@ -298,7 +298,7 @@ function BagLabelStickerPreview({ item }: { item: BagLabelPreviewItem }): React.
     <>
       <div className="ops-thermal-print__sticker-top">
         <div className="ops-thermal-print__sticker-top-text">
-          <div>TTC dong bao: {display.packingHubCode}</div>
+          <div>TTC đóng bao: {display.packingHubCode}</div>
           <div>In: {display.printedAtText}</div>
         </div>
         <div className="ops-thermal-print__sticker-method">{display.methodLetter}</div>
@@ -319,7 +319,7 @@ function BagLabelStickerPreview({ item }: { item: BagLabelPreviewItem }): React.
       <div className="ops-thermal-print__sticker-barcode" aria-hidden="true" />
       <div className="ops-thermal-print__sticker-barcode-text">{display.barcodeText}</div>
       <div className="ops-thermal-print__sticker-destination">
-        Dich den: {display.destinationText}
+        Đích đến: {display.destinationText}
       </div>
     </>
   );

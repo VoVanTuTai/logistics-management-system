@@ -6,9 +6,8 @@ export function ServiceQualityMonitorReceivedPage(): React.JSX.Element {
   return (
     <FunctionGroupLandingPage
       groupCode="SERVICE_QUALITY_MONITOR_RECEIVED"
-      title="Giam sat don nhan"
-      summary="Chuc nang con thuoc Giam sat chu dong trong cum Chat luong dich vu."
+      title="Giám sát đơn nhận"
+      summary="Chức năng con thuộc Giám sát chủ động trong cụm Chất lượng dịch vụ."
     />
   );
 }
-

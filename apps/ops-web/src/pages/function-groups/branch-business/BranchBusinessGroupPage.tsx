@@ -6,8 +6,8 @@ export function BranchBusinessGroupPage(): React.JSX.Element {
   return (
     <FunctionGroupLandingPage
       groupCode="BRANCH_BUSINESS"
-      title="Kinh doanh buu cuc"
-      summary="Cum chuc nang ho tro van hanh va kinh doanh tai buu cuc."
+      title="Kinh doanh bưu cục"
+      summary="Cụm chức năng hỗ trợ vận hành và kinh doanh tại bưu cục."
     />
   );
 }

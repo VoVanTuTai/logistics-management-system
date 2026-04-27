@@ -6,8 +6,8 @@ export function BasicDataGroupPage(): React.JSX.Element {
   return (
     <FunctionGroupLandingPage
       groupCode="BASIC_DATA"
-      title="Du lieu co ban"
-      summary="Cum danh muc du lieu goc, cau hinh chung va thong tin nen."
+      title="Dữ liệu cơ bản"
+      summary="Cụm danh mục dữ liệu gốc, cấu hình chung và thông tin nền."
     />
   );
 }

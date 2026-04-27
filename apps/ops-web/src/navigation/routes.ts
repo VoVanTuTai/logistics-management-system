@@ -7,11 +7,33 @@ export const routePaths = {
   groupOperationsPlatform: '/app/function-groups/operations-platform',
   groupIntegrationServices: '/app/function-groups/integration-services',
   groupCustomerPlatform: '/app/function-groups/customer-platform',
+  customerPlatformOrderManagementRoot:
+    '/app/function-groups/customer-platform/quan-ly-don-dat',
+  customerPlatformOrderDispatchRoot:
+    '/app/function-groups/customer-platform/dieu-phoi-don-dat',
+  customerPlatformOrderDispatch:
+    '/app/function-groups/customer-platform/dieu-phoi-don-dat/dieu-phoi',
+  customerPlatformOrderLookup:
+    '/app/function-groups/customer-platform/dieu-phoi-don-dat/tra-cuu-don-dat',
+  customerPlatformOrderMonitor:
+    '/app/function-groups/customer-platform/dieu-phoi-don-dat/giam-sat-don-da-tao',
   groupBranchBusiness: '/app/function-groups/branch-business',
   branchBusinessOrderManagementRoot:
     '/app/function-groups/branch-business/quan-ly-van-don',
   branchBusinessFinanceSettlementRoot:
     '/app/function-groups/branch-business/quyet-toan-tai-chinh',
+  branchBusinessLocalOrdersRoot:
+    '/app/function-groups/branch-business/don-tai-buu-cuc',
+  branchBusinessLocalOverview:
+    '/app/function-groups/branch-business/don-tai-buu-cuc/tong-quan',
+  branchBusinessLocalOrders:
+    '/app/function-groups/branch-business/don-tai-buu-cuc/quan-ly-don-tai-buu-cuc',
+  branchBusinessCourierHandoff:
+    '/app/function-groups/branch-business/don-tai-buu-cuc/phat-hang',
+  branchBusinessBranchInventory:
+    '/app/function-groups/branch-business/don-tai-buu-cuc/don-ton-buu-cuc',
+  branchBusinessShiftClosing:
+    '/app/function-groups/branch-business/don-tai-buu-cuc/chot-ca',
   branchBusinessOrderCreate:
     '/app/function-groups/branch-business/quan-ly-van-don/them-moi-van-don',
   branchBusinessOrderOutbound:
@@ -63,6 +85,11 @@ export const routePaths = {
     '/app/function-groups/operations-metrics/thao-tac/ban-dieu-phoi-thao-tac',
   thermalLabelManagement: '/app/function-groups/operations-platform/thermal-label/management',
   thermalLabelPrint: '/app/function-groups/operations-platform/thermal-label/print',
+  returnBlockRoot: '/app/function-groups/operations-platform/chuyen-hoan',
+  returnBlockManagement:
+    '/app/function-groups/operations-platform/chuyen-hoan/quan-ly-chuyen-hoan',
+  returnForwardManagement:
+    '/app/function-groups/operations-platform/chuyen-hoan/quan-ly-chuyen-tiep',
   monitorDataRoot: '/app/function-groups/operations-platform/data-monitoring',
   monitorDataHangNhan: '/app/function-groups/operations-platform/data-monitoring/hang-nhan',
   monitorDataHangDen: '/app/function-groups/operations-platform/data-monitoring/hang-den',
@@ -95,7 +122,27 @@ export const routePaths = {
   groupOperationsPlatformLeaf: 'function-groups/operations-platform',
   groupIntegrationServicesLeaf: 'function-groups/integration-services',
   groupCustomerPlatformLeaf: 'function-groups/customer-platform',
+  customerPlatformOrderManagementLeaf:
+    'function-groups/customer-platform/quan-ly-don-dat',
+  customerPlatformOrderDispatchRootLeaf:
+    'function-groups/customer-platform/dieu-phoi-don-dat',
+  customerPlatformOrderDispatchLeaf:
+    'function-groups/customer-platform/dieu-phoi-don-dat/dieu-phoi',
+  customerPlatformOrderLookupLeaf:
+    'function-groups/customer-platform/dieu-phoi-don-dat/tra-cuu-don-dat',
+  customerPlatformOrderMonitorLeaf:
+    'function-groups/customer-platform/dieu-phoi-don-dat/giam-sat-don-da-tao',
   groupBranchBusinessLeaf: 'function-groups/branch-business',
+  branchBusinessLocalOverviewLeaf:
+    'function-groups/branch-business/don-tai-buu-cuc/tong-quan',
+  branchBusinessLocalOrdersLeaf:
+    'function-groups/branch-business/don-tai-buu-cuc/quan-ly-don-tai-buu-cuc',
+  branchBusinessCourierHandoffLeaf:
+    'function-groups/branch-business/don-tai-buu-cuc/phat-hang',
+  branchBusinessBranchInventoryLeaf:
+    'function-groups/branch-business/don-tai-buu-cuc/don-ton-buu-cuc',
+  branchBusinessShiftClosingLeaf:
+    'function-groups/branch-business/don-tai-buu-cuc/chot-ca',
   branchBusinessOrderCreateLeaf:
     'function-groups/branch-business/quan-ly-van-don/them-moi-van-don',
   branchBusinessOrderOutboundLeaf:
@@ -143,6 +190,10 @@ export const routePaths = {
     'function-groups/operations-metrics/thao-tac/ban-dieu-phoi-thao-tac',
   thermalLabelManagementLeaf: 'function-groups/operations-platform/thermal-label/management',
   thermalLabelPrintLeaf: 'function-groups/operations-platform/thermal-label/print',
+  returnBlockManagementLeaf:
+    'function-groups/operations-platform/chuyen-hoan/quan-ly-chuyen-hoan',
+  returnForwardManagementLeaf:
+    'function-groups/operations-platform/chuyen-hoan/quan-ly-chuyen-tiep',
   monitorDataHangNhanLeaf: 'function-groups/operations-platform/data-monitoring/hang-nhan',
   monitorDataHangDenLeaf: 'function-groups/operations-platform/data-monitoring/hang-den',
   monitorDataHangGuiLeaf: 'function-groups/operations-platform/data-monitoring/hang-gui',

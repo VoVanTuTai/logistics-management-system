@@ -6,8 +6,8 @@ export function MonitorDataHangPhatPage(): React.JSX.Element {
   return (
     <FunctionGroupLandingPage
       groupCode="MONITOR_DATA_HANG_PHAT"
-      title="Giam sat hang phat"
-      summary="Chuc nang con thuoc Giám sát dữ liệu trong cum Nền tảng điều hành."
+      title="Giám sát hàng phát"
+      summary="Chức năng con thuộc Giám sát dữ liệu trong cụm Nền tảng điều hành."
     />
   );
 }

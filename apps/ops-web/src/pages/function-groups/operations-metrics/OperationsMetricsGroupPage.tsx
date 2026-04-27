@@ -6,8 +6,8 @@ export function OperationsMetricsGroupPage(): React.JSX.Element {
   return (
     <FunctionGroupLandingPage
       groupCode="OPERATIONS_METRICS"
-      title="Chi so van hanh"
-      summary="Cum theo doi KPI, bao cao va chi so van hanh."
+      title="Chỉ số vận hành"
+      summary="Cụm theo dõi KPI, báo cáo và chỉ số vận hành."
     />
   );
 }

@@ -22,8 +22,8 @@ export function FunctionGroupLandingPage({
       </header>
 
       <article className="ops-function-group-page__children">
-        <h3>Danh sach chuc nang trong cum</h3>
-        <p>Ban co the them cac chuc nang con vao thu muc cua cum nay sau.</p>
+        <h3>Danh sách chức năng trong cụm</h3>
+        <p>Bạn có thể thêm các chức năng con vào thư mục của cụm này sau.</p>
       </article>
     </section>
   );

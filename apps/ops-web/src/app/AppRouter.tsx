@@ -13,10 +13,13 @@ import { useLogoutMutation } from '../features/auth/auth.api';
 import { LoginPage } from '../pages/auth/LoginPage';
 import { DashboardPage } from '../pages/dashboard/DashboardPage';
 import { BasicDataGroupPage } from '../pages/function-groups/basic-data/BasicDataGroupPage';
+import { BranchLocalOrderOverviewPage } from '../pages/function-groups/branch-business/local-orders/BranchLocalOrderOverviewPage';
+import { BranchDeliveryDispatchPage } from '../pages/function-groups/branch-business/delivery-dispatch/BranchDeliveryDispatchPage';
 import { BranchBusinessOrderCreatePage } from '../pages/function-groups/branch-business/order-create/BranchBusinessOrderCreatePage';
 import { BranchBusinessFeaturePlaceholderPage } from '../pages/function-groups/branch-business/shared/BranchBusinessFeaturePlaceholderPage';
 import { CapabilityPlatformGroupPage } from '../pages/function-groups/capability-platform/CapabilityPlatformGroupPage';
 import { CustomerPlatformGroupPage } from '../pages/function-groups/customer-platform/CustomerPlatformGroupPage';
+import { CustomerOrderDispatchPage } from '../pages/function-groups/customer-platform/order-dispatch/CustomerOrderDispatchPage';
 import { DatabaseGroupPage } from '../pages/function-groups/database/DatabaseGroupPage';
 import { FinanceSettlementGroupPage } from '../pages/function-groups/finance-settlement/FinanceSettlementGroupPage';
 import { IntegrationServicesGroupPage } from '../pages/function-groups/integration-services/IntegrationServicesGroupPage';
@@ -31,12 +34,14 @@ import { MonitorDataHangGuiPage } from '../pages/function-groups/operations-plat
 import { MonitorDataHangNhanPage } from '../pages/function-groups/operations-platform/data-monitoring/MonitorDataHangNhanPage';
 import { MonitorDataHangPhatPage } from '../pages/function-groups/operations-platform/data-monitoring/MonitorDataHangPhatPage';
 import { MonitorDataTheoDoiTamUngPage } from '../pages/function-groups/operations-platform/data-monitoring/MonitorDataTheoDoiTamUngPage';
+import { ReturnBlockManagementPage } from '../pages/function-groups/operations-platform/return-block/ReturnBlockManagementPage';
 import { ThermalLabelManagementPage } from '../pages/function-groups/operations-platform/thermal-label/ThermalLabelManagementPage';
 import { ThermalLabelPrintPage } from '../pages/function-groups/operations-platform/thermal-label/ThermalLabelPrintPage';
 import { PlanningPlatformGroupPage } from '../pages/function-groups/planning-platform/PlanningPlatformGroupPage';
 import { ServiceQualityGroupPage } from '../pages/function-groups/service-quality/ServiceQualityGroupPage';
 import { ServiceQualityMonitorDeliveredPage } from '../pages/function-groups/service-quality/proactive/ServiceQualityMonitorDeliveredPage';
 import { ServiceQualityMonitorReceivedPage } from '../pages/function-groups/service-quality/proactive/ServiceQualityMonitorReceivedPage';
+import { FunctionGroupLandingPage } from '../pages/function-groups/shared/FunctionGroupLandingPage';
 import { SmartDevicesGroupPage } from '../pages/function-groups/smart-devices/SmartDevicesGroupPage';
 import { ManifestDetailPage } from '../pages/manifests/ManifestDetailPage';
 import { ManifestManagementPage } from '../pages/manifests/ManifestManagementPage';
@@ -76,17 +81,24 @@ type SidebarIconName =
   | 'metrics_deadline'
   | 'metrics_planning'
   | 'metrics_action'
+  | 'customer_order_management'
+  | 'customer_order_dispatch'
+  | 'branch_local_orders'
   | 'branch_order_management'
   | 'branch_finance_settlement';
 
 type SidebarPanelKind =
   | 'thermal_label'
+  | 'return_block'
   | 'monitor_data'
   | 'service_proactive'
   | 'metrics_abnormal'
   | 'metrics_deadline'
   | 'metrics_planning'
   | 'metrics_action'
+  | 'customer_order_management'
+  | 'customer_order_dispatch'
+  | 'branch_local_orders'
   | 'branch_order_management'
   | 'branch_finance_settlement';
 
@@ -228,6 +240,24 @@ function SidebarIcon({ name }: { name: SidebarIconName }): React.JSX.Element {
           <path d="m8.3 12 2.1 2.2 5.3-5.4" {...common} />
         </svg>
       );
+    case 'customer_order_management':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M7 7.2h10l1.2 12.1H5.8z" {...common} />
+          <path d="M9.2 7.2a2.8 2.8 0 0 1 5.6 0" {...common} />
+          <path d="M9 12h6" {...common} />
+          <path d="M9 15.2h4.5" {...common} />
+        </svg>
+      );
+    case 'customer_order_dispatch':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4.8 7.2h9.4v8.9H4.8z" {...common} />
+          <path d="M14.2 10.1h3.2l2 2.5v3.5h-5.2z" {...common} />
+          <circle cx="8.1" cy="18" r="1.4" {...common} />
+          <circle cx="17.2" cy="18" r="1.4" {...common} />
+        </svg>
+      );
     case 'branch_order_management':
       return (
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -235,6 +265,16 @@ function SidebarIcon({ name }: { name: SidebarIconName }): React.JSX.Element {
           <path d="M9 9.2h6" {...common} />
           <path d="M9 12.3h6" {...common} />
           <path d="M9 15.4h4.2" {...common} />
+        </svg>
+      );
+    case 'branch_local_orders':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M5.5 6.5h13v11h-13z" {...common} />
+          <path d="M8.2 10h7.6" {...common} />
+          <path d="M8.2 13h4.4" {...common} />
+          <circle cx="16" cy="15.2" r="2.3" {...common} />
+          <path d="m14.8 15.2.8.8 1.5-1.7" {...common} />
         </svg>
       );
     case 'branch_finance_settlement':
@@ -269,7 +309,7 @@ function DashboardLayout(): React.JSX.Element {
 
   const roleText =
     (session?.user.roles ?? []).map((role) => formatRoleLabel(role)).join(', ') ||
-    'Nhan vien dieu hanh';
+    'Nhân viên điều hành';
   const operatorName = session?.user.username ?? 'OPS User';
   const operatorInitial = operatorName.trim().charAt(0).toUpperCase() || 'O';
   const isDashboardRoute = pathMatches(location.pathname, routePaths.dashboard);
@@ -283,10 +323,14 @@ function DashboardLayout(): React.JSX.Element {
     location.pathname,
     routePaths.groupBranchBusiness,
   );
+  const isCustomerPlatformSection = pathMatches(
+    location.pathname,
+    routePaths.groupCustomerPlatform,
+  );
 
   const topNavItems: TopNavItem[] = [
     {
-      label: 'Du lieu co ban',
+      label: 'Dữ liệu cơ bản',
       to: routePaths.groupBasicData,
       isActive:
         pathMatches(location.pathname, routePaths.groupBasicData) ||
@@ -294,12 +338,13 @@ function DashboardLayout(): React.JSX.Element {
         pathMatches(location.pathname, routePaths.pickups),
     },
     {
-      label: 'Nen tang dieu hanh',
+      label: 'Nền tảng điều hành',
       to: routePaths.groupOperationsPlatform,
       isActive:
         pathMatches(location.pathname, routePaths.groupOperationsPlatform) ||
         pathMatches(location.pathname, routePaths.thermalLabelManagement) ||
         pathMatches(location.pathname, routePaths.thermalLabelPrint) ||
+        pathMatches(location.pathname, routePaths.returnBlockRoot) ||
         pathMatches(location.pathname, routePaths.monitorDataRoot) ||
         pathMatches(location.pathname, routePaths.tasks) ||
         pathMatches(location.pathname, routePaths.scans) ||
@@ -307,138 +352,185 @@ function DashboardLayout(): React.JSX.Element {
         pathMatches(location.pathname, routePaths.tracking),
     },
     {
-      label: 'Chi so van hanh',
+      label: 'Chỉ số vận hành',
       to: routePaths.groupOperationsMetrics,
       isActive: isOperationsMetricsSection,
     },
     {
-      label: 'Dich vu tich hop',
+      label: 'Dịch vụ tích hợp',
       to: routePaths.groupIntegrationServices,
       isActive:
         pathMatches(location.pathname, routePaths.groupIntegrationServices) ||
         pathMatches(location.pathname, routePaths.manifests),
     },
     {
-      label: 'Nen tang khach hang',
+      label: 'Nền tảng khách hàng',
       to: routePaths.groupCustomerPlatform,
       isActive: pathMatches(location.pathname, routePaths.groupCustomerPlatform),
     },
     {
-      label: 'Kinh doanh buu cuc',
+      label: 'Kinh doanh bưu cục',
       to: routePaths.groupBranchBusiness,
       isActive: isBranchBusinessSection,
     },
   ];
 
   const operationsSidebarItems: SidebarItem[] = [
-    { label: 'Tra cuu hanh trinh', icon: 'tracking_lookup', to: routePaths.tracking },
-    { label: 'Tem bao in nhiet', icon: 'thermal_label', kind: 'thermal_label' },
-    { label: 'Chuyen hoan', icon: 'return_block' },
-    { label: 'Giam sat du lieu', icon: 'monitor_data', kind: 'monitor_data' },
-    // Tam an theo yeu cau: Quan ly ky nhan, Bao bieu thao tac
+    { label: 'Tra cứu hành trình', icon: 'tracking_lookup', to: routePaths.tracking },
+    { label: 'Tem bao in nhiệt', icon: 'thermal_label', kind: 'thermal_label' },
+    { label: 'Chuyển hoàn', icon: 'return_block', kind: 'return_block' },
+    { label: 'Giám sát dữ liệu', icon: 'monitor_data', kind: 'monitor_data' },
+    // Tạm ẩn theo yêu cầu: Quản lý ký nhận, Báo biểu thao tác
   ];
   const serviceQualitySidebarItems: SidebarItem[] = [
-    { label: 'Tra cuu tich', icon: 'service_lookup' },
-    { label: 'Giam sat chu dong', icon: 'service_proactive', kind: 'service_proactive' },
+    { label: 'Tra cứu tích', icon: 'service_lookup' },
+    { label: 'Giám sát chủ động', icon: 'service_proactive', kind: 'service_proactive' },
     { label: 'CSKH', icon: 'service_care' },
-    { label: 'Trong tai', icon: 'service_weight' },
-    { label: 'Quan ly hang bat thuong', icon: 'service_abnormal' },
+    { label: 'Trọng tải', icon: 'service_weight' },
+    { label: 'Quản lý hàng bất thường', icon: 'service_abnormal' },
   ];
   const operationsMetricsSidebarItems: SidebarItem[] = [
-    { label: 'Kien bat thuong', icon: 'metrics_abnormal', kind: 'metrics_abnormal' },
-    { label: 'Thoi hieu', icon: 'metrics_deadline', kind: 'metrics_deadline' },
-    { label: 'Quy hoach', icon: 'metrics_planning', kind: 'metrics_planning' },
-    { label: 'Thao tac', icon: 'metrics_action', kind: 'metrics_action' },
+    { label: 'Kiện bất thường', icon: 'metrics_abnormal', kind: 'metrics_abnormal' },
+    { label: 'Thời hiệu', icon: 'metrics_deadline', kind: 'metrics_deadline' },
+    { label: 'Quy hoạch', icon: 'metrics_planning', kind: 'metrics_planning' },
+    { label: 'Thao tác', icon: 'metrics_action', kind: 'metrics_action' },
   ];
   const branchBusinessSidebarItems: SidebarItem[] = [
     {
-      label: 'Quan ly van don',
+      label: 'Quản lý đơn tại bưu cục',
+      icon: 'branch_local_orders',
+      kind: 'branch_local_orders',
+    },
+    {
+      label: 'Quản lý vận đơn',
       icon: 'branch_order_management',
       kind: 'branch_order_management',
     },
     {
-      label: 'Quyet toan tai chinh',
+      label: 'Quyết toán tài chính',
       icon: 'branch_finance_settlement',
       kind: 'branch_finance_settlement',
+    },
+  ];
+  const customerPlatformSidebarItems: SidebarItem[] = [
+    {
+      label: 'Quản lý đơn đặt',
+      icon: 'customer_order_management',
+      kind: 'customer_order_management',
+    },
+    {
+      label: 'Điều phối đơn đặt',
+      icon: 'customer_order_dispatch',
+      kind: 'customer_order_dispatch',
     },
   ];
   const sidebarItems = isServiceQualitySection
     ? serviceQualitySidebarItems
     : isOperationsMetricsSection
     ? operationsMetricsSidebarItems
+    : isCustomerPlatformSection
+    ? customerPlatformSidebarItems
     : isBranchBusinessSection
     ? branchBusinessSidebarItems
     : operationsSidebarItems;
 
   const monitorDataChildItems = [
-    { label: 'Giam sat hang nhan', to: routePaths.monitorDataHangNhan },
-    { label: 'Giam sat hang den', to: routePaths.monitorDataHangDen },
-    { label: 'Giam sat hang gui', to: routePaths.monitorDataHangGui },
-    { label: 'Giam sat hang phat', to: routePaths.monitorDataHangPhat },
-    { label: 'Giam sat 2in1', to: routePaths.monitorData2In1 },
-    { label: 'Theo doi tam ung', to: routePaths.monitorDataTheoDoiTamUng },
-    { label: 'Giam sat dong bao', to: routePaths.monitorDataDongBao },
+    { label: 'Giám sát hàng nhận', to: routePaths.monitorDataHangNhan },
+    { label: 'Giám sát hàng đến', to: routePaths.monitorDataHangDen },
+    { label: 'Giám sát hàng gửi', to: routePaths.monitorDataHangGui },
+    { label: 'Giám sát hàng phát', to: routePaths.monitorDataHangPhat },
+    { label: 'Giám sát 2in1', to: routePaths.monitorData2In1 },
+    { label: 'Theo dõi tạm ứng', to: routePaths.monitorDataTheoDoiTamUng },
+    { label: 'Giám sát đóng bao', to: routePaths.monitorDataDongBao },
   ] as const;
   const thermalLabelChildItems = [
-    { label: 'Quan li tem bao', to: routePaths.thermalLabelManagement },
+    { label: 'Quản lý tem bao', to: routePaths.thermalLabelManagement },
     { label: 'In tem bao', to: routePaths.thermalLabelPrint },
   ] as const;
+  const returnBlockChildItems = [
+    { label: 'Quản lý chuyển hoàn', to: routePaths.returnBlockManagement },
+    { label: 'Quản lý chuyển tiếp', to: routePaths.returnForwardManagement },
+  ] as const;
   const serviceQualityProactiveChildItems = [
-    { label: 'Giam sat don nhan', to: routePaths.serviceQualityProactiveInbound },
-    { label: 'Giam sat don phat', to: routePaths.serviceQualityProactiveDelivered },
+    { label: 'Giám sát đơn nhận', to: routePaths.serviceQualityProactiveInbound },
+    { label: 'Giám sát đơn phát', to: routePaths.serviceQualityProactiveDelivered },
   ] as const;
   const operationsMetricsAbnormalChildItems = [
-    { label: 'Tong quan kien bat thuong', to: routePaths.opsMetricsAbnormalOverview },
-    { label: 'Theo doi xu ly kien', to: routePaths.opsMetricsAbnormalHandling },
+    { label: 'Tổng quan kiện bất thường', to: routePaths.opsMetricsAbnormalOverview },
+    { label: 'Theo dõi xử lý kiện', to: routePaths.opsMetricsAbnormalHandling },
   ] as const;
   const operationsMetricsDeadlineChildItems = [
-    { label: 'Giam sat ton kho', to: routePaths.opsMetricsDeadlineInventory },
-    { label: 'Bao bieu ty le nhan hang kip', to: routePaths.opsMetricsDeadlineOntimePickupRatio },
-    { label: 'Giam sat thoi hieu hang phat', to: routePaths.opsMetricsDeadlineDeliverySla },
-    { label: 'Ky nhan thuc te (T-1)', to: routePaths.opsMetricsDeadlineActualSignT1 },
-    { label: 'Ty le gui kien dung gio', to: routePaths.opsMetricsDeadlineOntimeSendRatio },
-    { label: 'Giam sat leadtime phat (Moi)', to: routePaths.opsMetricsDeadlineDeliveryLeadtime },
-    { label: 'Giam sat leadtime nhan', to: routePaths.opsMetricsDeadlineInboundLeadtime },
-    { label: 'He thong canh bao qua han', to: routePaths.opsMetricsDeadlineOverdueAlerts },
+    { label: 'Giám sát tồn kho', to: routePaths.opsMetricsDeadlineInventory },
+    { label: 'Báo biểu tỷ lệ nhận hàng kịp', to: routePaths.opsMetricsDeadlineOntimePickupRatio },
+    { label: 'Giám sát thời hiệu hàng phát', to: routePaths.opsMetricsDeadlineDeliverySla },
+    { label: 'Ký nhận thực tế (T-1)', to: routePaths.opsMetricsDeadlineActualSignT1 },
+    { label: 'Tỷ lệ gửi kiện đúng giờ', to: routePaths.opsMetricsDeadlineOntimeSendRatio },
+    { label: 'Giám sát leadtime phát (Mới)', to: routePaths.opsMetricsDeadlineDeliveryLeadtime },
+    { label: 'Giám sát leadtime nhận', to: routePaths.opsMetricsDeadlineInboundLeadtime },
+    { label: 'Hệ thống cảnh báo quá hạn', to: routePaths.opsMetricsDeadlineOverdueAlerts },
   ] as const;
   const operationsMetricsPlanningChildItems = [
-    { label: 'Giam sat KPI mang luoi', to: routePaths.opsMetricsPlanningNetworkKpi },
+    { label: 'Giám sát KPI mạng lưới', to: routePaths.opsMetricsPlanningNetworkKpi },
   ] as const;
   const operationsMetricsActionChildItems = [
-    { label: 'Ban dieu phoi thao tac', to: routePaths.opsMetricsActionExecutionBoard },
+    { label: 'Bàn điều phối thao tác', to: routePaths.opsMetricsActionExecutionBoard },
   ] as const;
   const branchBusinessOrderManagementChildItems = [
-    { label: 'Them moi van don', to: routePaths.branchBusinessOrderCreate },
-    { label: 'Quan ly van don gui', to: routePaths.branchBusinessOrderOutbound },
-    { label: 'Quan ly van don phat', to: routePaths.branchBusinessOrderDelivery },
+    { label: 'Thêm mới vận đơn', to: routePaths.branchBusinessOrderCreate },
+    { label: 'Quản lý vận đơn gửi', to: routePaths.branchBusinessOrderOutbound },
+    { label: 'Quản lý vận đơn phát', to: routePaths.branchBusinessOrderDelivery },
+  ] as const;
+  const branchBusinessLocalOrdersChildItems = [
+    { label: 'Tổng quan đơn tại bưu cục', to: routePaths.branchBusinessLocalOverview },
+    { label: 'Quản lý đơn tại bưu cục', to: routePaths.branchBusinessLocalOrders },
+    { label: 'Phát hàng', to: routePaths.branchBusinessCourierHandoff },
+    { label: 'Đơn tồn bưu cục', to: routePaths.branchBusinessBranchInventory },
+    { label: 'Chốt ca', to: routePaths.branchBusinessShiftClosing },
   ] as const;
   const branchBusinessFinanceSettlementChildItems = [
-    { label: 'Quyet toan thu ho', to: routePaths.branchBusinessFinanceCod },
-    { label: 'Doi soat cong no', to: routePaths.branchBusinessFinanceReconcile },
+    { label: 'Quyết toán thu hộ', to: routePaths.branchBusinessFinanceCod },
+    { label: 'Đối soát công nợ', to: routePaths.branchBusinessFinanceReconcile },
+  ] as const;
+  const customerPlatformOrderManagementChildItems = [
+    { label: 'Tra cứu đơn đặt', to: routePaths.customerPlatformOrderLookup },
+    { label: 'Giám sát đơn đã tạo', to: routePaths.customerPlatformOrderMonitor },
+  ] as const;
+  const customerPlatformOrderDispatchChildItems = [
+    { label: 'Điều phối', to: routePaths.customerPlatformOrderDispatch },
+    { label: 'Tra cứu đơn đặt', to: routePaths.customerPlatformOrderLookup },
+    { label: 'Giám sát đơn đã tạo', to: routePaths.customerPlatformOrderMonitor },
   ] as const;
 
   const panelItemsMap: Record<SidebarPanelKind, ReadonlyArray<{ label: string; to: string }>> = {
     thermal_label: thermalLabelChildItems,
+    return_block: returnBlockChildItems,
     monitor_data: monitorDataChildItems,
     service_proactive: serviceQualityProactiveChildItems,
     metrics_abnormal: operationsMetricsAbnormalChildItems,
     metrics_deadline: operationsMetricsDeadlineChildItems,
     metrics_planning: operationsMetricsPlanningChildItems,
     metrics_action: operationsMetricsActionChildItems,
+    customer_order_management: customerPlatformOrderManagementChildItems,
+    customer_order_dispatch: customerPlatformOrderDispatchChildItems,
+    branch_local_orders: branchBusinessLocalOrdersChildItems,
     branch_order_management: branchBusinessOrderManagementChildItems,
     branch_finance_settlement: branchBusinessFinanceSettlementChildItems,
   };
 
   const panelTitleMap: Record<SidebarPanelKind, string> = {
-    thermal_label: 'Tem bao in nhiet',
-    monitor_data: 'Giam sat du lieu',
-    service_proactive: 'Giam sat chu dong',
-    metrics_abnormal: 'Kien bat thuong',
-    metrics_deadline: 'Thoi hieu',
-    metrics_planning: 'Quy hoach',
-    metrics_action: 'Thao tac',
-    branch_order_management: 'Quan ly van don',
-    branch_finance_settlement: 'Quyet toan tai chinh',
+    thermal_label: 'Tem bao in nhiệt',
+    return_block: 'Chuyển hoàn',
+    monitor_data: 'Giám sát dữ liệu',
+    service_proactive: 'Giám sát chủ động',
+    metrics_abnormal: 'Kiện bất thường',
+    metrics_deadline: 'Thời hiệu',
+    metrics_planning: 'Quy hoạch',
+    metrics_action: 'Thao tác',
+    customer_order_management: 'Quản lý đơn đặt',
+    customer_order_dispatch: 'Điều phối đơn đặt',
+    branch_local_orders: 'Quản lý đơn tại bưu cục',
+    branch_order_management: 'Quản lý vận đơn',
+    branch_finance_settlement: 'Quyết toán tài chính',
   };
 
   const isMonitorDataRoute = monitorDataChildItems.some((item) =>
@@ -447,6 +539,9 @@ function DashboardLayout(): React.JSX.Element {
   const isThermalLabelRoute =
     pathMatches(location.pathname, routePaths.thermalLabelManagement) ||
     pathMatches(location.pathname, routePaths.thermalLabelPrint);
+  const isReturnBlockRoute =
+    pathMatches(location.pathname, routePaths.returnBlockRoot) ||
+    returnBlockChildItems.some((item) => pathMatches(location.pathname, item.to));
   const isServiceQualityProactiveRoute = serviceQualityProactiveChildItems.some((item) =>
     pathMatches(location.pathname, item.to),
   );
@@ -468,9 +563,25 @@ function DashboardLayout(): React.JSX.Element {
   const isBranchFinanceSettlementRoute = branchBusinessFinanceSettlementChildItems.some((item) =>
     pathMatches(location.pathname, item.to),
   );
+  const isBranchLocalOrdersRoute =
+    pathMatches(location.pathname, routePaths.branchBusinessLocalOrdersRoot) ||
+    branchBusinessLocalOrdersChildItems.some((item) => pathMatches(location.pathname, item.to));
+  const isCustomerOrderManagementRoute =
+    pathMatches(location.pathname, routePaths.customerPlatformOrderManagementRoot) ||
+    customerPlatformOrderManagementChildItems.some((item) =>
+      pathMatches(location.pathname, item.to),
+    );
+  const isCustomerOrderDispatchRoute =
+    pathMatches(location.pathname, routePaths.customerPlatformOrderDispatchRoot) ||
+    pathMatches(location.pathname, routePaths.customerPlatformOrderDispatch) ||
+    customerPlatformOrderDispatchChildItems.some((item) =>
+      pathMatches(location.pathname, item.to),
+    );
 
   const routeDrivenPanel: SidebarPanelKind | null = isThermalLabelRoute
     ? 'thermal_label'
+    : isReturnBlockRoute
+    ? 'return_block'
     : isMonitorDataRoute
     ? 'monitor_data'
     : isServiceQualityProactiveRoute
@@ -487,10 +598,18 @@ function DashboardLayout(): React.JSX.Element {
     ? 'branch_order_management'
     : isBranchFinanceSettlementRoute
     ? 'branch_finance_settlement'
+    : isBranchLocalOrdersRoute
+    ? 'branch_local_orders'
+    : isCustomerOrderDispatchRoute
+    ? 'customer_order_dispatch'
+    : isCustomerOrderManagementRoute
+    ? 'customer_order_management'
     : pathMatches(location.pathname, routePaths.groupOperationsMetrics)
     ? 'metrics_deadline'
+    : pathMatches(location.pathname, routePaths.groupCustomerPlatform)
+    ? 'customer_order_dispatch'
     : pathMatches(location.pathname, routePaths.groupBranchBusiness)
-    ? 'branch_order_management'
+    ? 'branch_local_orders'
     : null;
 
   const [activeSidebarPanel, setActiveSidebarPanel] = useState<SidebarPanelKind | null>(
@@ -507,9 +626,11 @@ function DashboardLayout(): React.JSX.Element {
     ? ['service_proactive']
     : isOperationsMetricsSection
     ? ['metrics_abnormal', 'metrics_deadline', 'metrics_planning', 'metrics_action']
+    : isCustomerPlatformSection
+    ? ['customer_order_management', 'customer_order_dispatch']
     : isBranchBusinessSection
-    ? ['branch_order_management', 'branch_finance_settlement']
-    : ['thermal_label', 'monitor_data'];
+    ? ['branch_local_orders', 'branch_order_management', 'branch_finance_settlement']
+    : ['thermal_label', 'return_block', 'monitor_data'];
 
   const activeSidebarPanelInSection =
     activeSidebarPanel &&
@@ -525,12 +646,14 @@ function DashboardLayout(): React.JSX.Element {
     ? panelTitleMap[activeSidebarPanelInSection]
     : '';
   const sidebarTitle = isServiceQualitySection
-    ? 'Chat luong dich vu'
+    ? 'Chất lượng dịch vụ'
     : isOperationsMetricsSection
-    ? 'Chi so van hanh'
+    ? 'Chỉ số vận hành'
+    : isCustomerPlatformSection
+    ? 'Nền tảng khách hàng'
     : isBranchBusinessSection
-    ? 'Kinh doanh buu cuc'
-    : 'Nen tang dieu hanh';
+    ? 'Kinh doanh bưu cục'
+    : 'Nền tảng điều hành';
 
   const operationsMetricsAllChildItems = [
     ...operationsMetricsAbnormalChildItems,
@@ -540,32 +663,49 @@ function DashboardLayout(): React.JSX.Element {
   ];
   const activeOperationsMetricsItem =
     operationsMetricsAllChildItems.find((item) => pathMatches(location.pathname, item.to)) ?? null;
+  const activeReturnBlockItem =
+    returnBlockChildItems.find((item) => pathMatches(location.pathname, item.to)) ?? null;
   const branchBusinessAllChildItems = [
+    ...branchBusinessLocalOrdersChildItems,
     ...branchBusinessOrderManagementChildItems,
     ...branchBusinessFinanceSettlementChildItems,
   ];
   const activeBranchBusinessItem =
     branchBusinessAllChildItems.find((item) => pathMatches(location.pathname, item.to)) ?? null;
+  const customerPlatformAllChildItems = [
+    ...customerPlatformOrderDispatchChildItems,
+    ...customerPlatformOrderManagementChildItems,
+  ];
+  const activeCustomerPlatformItem =
+    customerPlatformAllChildItems.find((item) => pathMatches(location.pathname, item.to)) ?? null;
 
   const activeTabLabel = pathMatches(location.pathname, routePaths.tracking)
-    ? 'Tra cuu hanh trinh'
+    ? 'Tra cứu hành trình'
     : isMonitorDataRoute
-    ? 'Giam sat du lieu'
+    ? 'Giám sát dữ liệu'
     : isThermalLabelRoute
-    ? 'Tem bao in nhiet'
+    ? 'Tem bao in nhiệt'
+    : activeReturnBlockItem
+    ? activeReturnBlockItem.label
+    : isReturnBlockRoute
+    ? 'Chuyển hoàn'
     : isServiceQualityProactiveRoute
-    ? 'Giam sat chu dong'
+    ? 'Giám sát chủ động'
     : activeOperationsMetricsItem
     ? activeOperationsMetricsItem.label
     : isOperationsMetricsSection
-    ? 'Chi so van hanh'
+    ? 'Chỉ số vận hành'
     : activeBranchBusinessItem
     ? activeBranchBusinessItem.label
     : isBranchBusinessSection
-    ? 'Kinh doanh buu cuc'
+    ? 'Kinh doanh bưu cục'
+    : activeCustomerPlatformItem
+    ? activeCustomerPlatformItem.label
+    : isCustomerPlatformSection
+    ? 'Nền tảng khách hàng'
     : pathMatches(location.pathname, routePaths.groupServiceQuality)
-    ? 'Chat luong dich vu'
-    : 'Trang chu';
+    ? 'Chất lượng dịch vụ'
+    : 'Trang chủ';
   const sidebarClassName = [
     'ops-func-sidebar',
     isSidebarSecondaryOpen ? 'ops-func-sidebar--expanded' : '',
@@ -619,22 +759,22 @@ function DashboardLayout(): React.JSX.Element {
                   type="text"
                   value={quickSearchCode}
                   onChange={(event) => setQuickSearchCode(event.target.value)}
-                  placeholder="Tra cứu hành trình don"
-                  aria-label="Tra cứu hành trình don"
+                  placeholder="Tra cứu hành trình đơn"
+                  aria-label="Tra cứu hành trình đơn"
                 />
                 <button type="submit" className="ops-topbar-search-submit">
-                  Tim
+                  Tìm
                 </button>
               </form>
 
-              <button type="button" className="ops-topbar-icon-btn" aria-label="Thong bao">
+              <button type="button" className="ops-topbar-icon-btn" aria-label="Thông báo">
                 <svg viewBox="0 0 24 24">
                   <path d="M12 4.5a4.5 4.5 0 0 0-4.5 4.5v2.5c0 .9-.36 1.77-1 2.4l-1.2 1.2h13.4l-1.2-1.2a3.4 3.4 0 0 1-1-2.4V9A4.5 4.5 0 0 0 12 4.5Z" />
                   <path d="M10 17.5a2 2 0 0 0 4 0" />
                 </svg>
               </button>
 
-              <div className="ops-topbar-profile" aria-label="Tai khoan">
+              <div className="ops-topbar-profile" aria-label="Tài khoản">
                 <span className="ops-topbar-avatar">{operatorInitial}</span>
                 <span className="ops-topbar-user">{operatorName}</span>
                 <span className="ops-topbar-role">{roleText}</span>
@@ -646,7 +786,7 @@ function DashboardLayout(): React.JSX.Element {
                 disabled={logoutMutation.isPending}
                 onClick={() => void onLogout()}
               >
-                {logoutMutation.isPending ? 'Dang dang xuat...' : 'Dang xuat'}
+                {logoutMutation.isPending ? 'Đang đăng xuất...' : 'Đăng xuất'}
               </button>
             </div>
           </header>
@@ -696,19 +836,19 @@ function DashboardLayout(): React.JSX.Element {
               type="text"
               value={quickSearchCode}
               onChange={(event) => setQuickSearchCode(event.target.value)}
-              placeholder="Tra cứu hành trình don"
-              aria-label="Tra cứu hành trình don"
+              placeholder="Tra cứu hành trình đơn"
+              aria-label="Tra cứu hành trình đơn"
             />
           </form>
 
-          <button type="button" className="ops-func-bell" aria-label="Thong bao">
+          <button type="button" className="ops-func-bell" aria-label="Thông báo">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 4.5a4.5 4.5 0 0 0-4.5 4.5v2.5c0 .9-.36 1.77-1 2.4l-1.2 1.2h13.4l-1.2-1.2a3.4 3.4 0 0 1-1-2.4V9A4.5 4.5 0 0 0 12 4.5Z" />
               <path d="M10 17.5a2 2 0 0 0 4 0" />
             </svg>
           </button>
 
-          <div className="ops-func-user" aria-label="Tai khoan">
+          <div className="ops-func-user" aria-label="Tài khoản">
             <span className="ops-func-user-avatar">{operatorInitial}</span>
             <span className="ops-func-user-name">{operatorName}</span>
           </div>
@@ -724,7 +864,7 @@ function DashboardLayout(): React.JSX.Element {
               <circle cx="11" cy="11" r="6.5" />
               <path d="m16 16 4 4" />
             </svg>
-            <input type="text" placeholder="Tra cuu menu" aria-label="Tra cuu menu" />
+            <input type="text" placeholder="Tra cứu menu" aria-label="Tra cứu menu" />
           </label>
 
           <div className="ops-func-sidebar-title">
@@ -745,6 +885,8 @@ function DashboardLayout(): React.JSX.Element {
                 const isActive =
                   item.kind === 'thermal_label'
                     ? isThermalLabelRoute
+                    : item.kind === 'return_block'
+                    ? isReturnBlockRoute
                     : item.kind === 'monitor_data'
                     ? isMonitorDataRoute
                     : item.kind === 'service_proactive'
@@ -761,6 +903,12 @@ function DashboardLayout(): React.JSX.Element {
                     ? isBranchOrderManagementRoute
                     : item.kind === 'branch_finance_settlement'
                     ? isBranchFinanceSettlementRoute
+                    : item.kind === 'branch_local_orders'
+                    ? isBranchLocalOrdersRoute
+                    : item.kind === 'customer_order_management'
+                    ? isCustomerOrderManagementRoute && !isCustomerOrderDispatchRoute
+                    : item.kind === 'customer_order_dispatch'
+                    ? isCustomerOrderDispatchRoute
                     : item.to
                     ? pathMatches(location.pathname, item.to)
                     : false;
@@ -885,6 +1033,20 @@ export function AppRouter(): React.JSX.Element {
               element={<ThermalLabelPrintPage />}
             />
             <Route
+              path={routePaths.returnBlockManagementLeaf}
+              element={<ReturnBlockManagementPage />}
+            />
+            <Route
+              path={routePaths.returnForwardManagementLeaf}
+              element={
+                <FunctionGroupLandingPage
+                  groupCode="RETURN_FORWARD_MANAGEMENT"
+                  title="Quản lý chuyển tiếp"
+                  summary="Màn hình quản lý chuyển tiếp trong nhóm Chuyển hoàn."
+                />
+              }
+            />
+            <Route
               path={routePaths.monitorDataHangNhanLeaf}
               element={<MonitorDataHangNhanPage />}
             />
@@ -918,8 +1080,78 @@ export function AppRouter(): React.JSX.Element {
               element={<CustomerPlatformGroupPage />}
             />
             <Route
+              path={routePaths.customerPlatformOrderManagementLeaf}
+              element={<Navigate to={routePaths.customerPlatformOrderLookup} replace />}
+            />
+            <Route
+              path={routePaths.customerPlatformOrderDispatchRootLeaf}
+              element={<Navigate to={routePaths.customerPlatformOrderDispatch} replace />}
+            />
+            <Route
+              path={routePaths.customerPlatformOrderDispatchLeaf}
+              element={<CustomerOrderDispatchPage />}
+            />
+            <Route
+              path={routePaths.customerPlatformOrderLookupLeaf}
+              element={
+                <FunctionGroupLandingPage
+                  groupCode="CUSTOMER_ORDER_LOOKUP"
+                  title="Tra cứu đơn đặt"
+                  summary="Màn hình tra cứu đơn đặt theo mã đơn, mã vận đơn và thông tin khách hàng."
+                />
+              }
+            />
+            <Route
+              path={routePaths.customerPlatformOrderMonitorLeaf}
+              element={
+                <FunctionGroupLandingPage
+                  groupCode="CUSTOMER_ORDER_MONITOR"
+                  title="Giám sát đơn đã tạo"
+                  summary="Màn hình giám sát các đơn đặt đã tạo và trạng thái xử lý hiện tại."
+                />
+              }
+            />
+            <Route
               path={routePaths.groupBranchBusinessLeaf}
-              element={<Navigate to={routePaths.branchBusinessOrderCreate} replace />}
+              element={<Navigate to={routePaths.branchBusinessLocalOverview} replace />}
+            />
+            <Route
+              path={routePaths.branchBusinessLocalOverviewLeaf}
+              element={<BranchLocalOrderOverviewPage />}
+            />
+            <Route
+              path={routePaths.branchBusinessLocalOrdersLeaf}
+              element={
+                <BranchBusinessFeaturePlaceholderPage
+                  groupCode="BRANCH_LOCAL_ORDER_MANAGEMENT"
+                  title="Quản lý đơn tại bưu cục"
+                  summary="Danh sách đơn đang nằm trong phạm vi bưu cục, hỗ trợ lọc theo trạng thái xử lý nội bộ."
+                />
+              }
+            />
+            <Route
+              path={routePaths.branchBusinessCourierHandoffLeaf}
+              element={<BranchDeliveryDispatchPage />}
+            />
+            <Route
+              path={routePaths.branchBusinessBranchInventoryLeaf}
+              element={
+                <BranchBusinessFeaturePlaceholderPage
+                  groupCode="BRANCH_ORDER_INVENTORY"
+                  title="Đơn tồn bưu cục"
+                  summary="Theo dõi các đơn lưu tại bưu cục quá thời gian mục tiêu hoặc có cảnh báo bất thường."
+                />
+              }
+            />
+            <Route
+              path={routePaths.branchBusinessShiftClosingLeaf}
+              element={
+                <BranchBusinessFeaturePlaceholderPage
+                  groupCode="BRANCH_SHIFT_CLOSING"
+                  title="Chốt ca"
+                  summary="Tổng hợp đơn nhận, đơn phát, đơn gửi đi và đơn tồn cuối ca của bưu cục."
+                />
+              }
             />
             <Route
               path={routePaths.branchBusinessOrderCreateLeaf}
@@ -930,8 +1162,8 @@ export function AppRouter(): React.JSX.Element {
               element={
                 <BranchBusinessFeaturePlaceholderPage
                   groupCode="BRANCH_ORDER_OUTBOUND_MANAGEMENT"
-                  title="Quan ly van don gui"
-                  summary="Theo doi van don gui, cap nhat trang thai va xu ly cac van don cho duyet."
+                  title="Quản lý vận đơn gửi"
+                  summary="Theo dõi vận đơn gửi, cập nhật trạng thái và xử lý các vận đơn chờ duyệt."
                 />
               }
             />
@@ -940,8 +1172,8 @@ export function AppRouter(): React.JSX.Element {
               element={
                 <BranchBusinessFeaturePlaceholderPage
                   groupCode="BRANCH_ORDER_DELIVERY_MANAGEMENT"
-                  title="Quan ly van don phat"
-                  summary="Quan ly van don phat tai buu cuc, gom tien do phat va canh bao tre han."
+                  title="Quản lý vận đơn phát"
+                  summary="Quản lý vận đơn phát tại bưu cục, gồm tiến độ phát và cảnh báo trễ hạn."
                 />
               }
             />
@@ -950,8 +1182,8 @@ export function AppRouter(): React.JSX.Element {
               element={
                 <BranchBusinessFeaturePlaceholderPage
                   groupCode="BRANCH_FINANCE_COD_SETTLEMENT"
-                  title="Quyet toan thu ho"
-                  summary="Tong hop doi soat thu ho COD va phan bo chenh lech theo ngay."
+                  title="Quyết toán thu hộ"
+                  summary="Tổng hợp đối soát thu hộ COD và phân bổ chênh lệch theo ngày."
                 />
               }
             />
@@ -960,8 +1192,8 @@ export function AppRouter(): React.JSX.Element {
               element={
                 <BranchBusinessFeaturePlaceholderPage
                   groupCode="BRANCH_FINANCE_RECONCILE"
-                  title="Doi soat cong no"
-                  summary="Bao cao doi soat cong no buu cuc, ho tro chot so theo chu ky."
+                  title="Đối soát công nợ"
+                  summary="Báo cáo đối soát công nợ bưu cục, hỗ trợ chốt số theo chu kỳ."
                 />
               }
             />
@@ -982,8 +1214,8 @@ export function AppRouter(): React.JSX.Element {
               element={
                 <OperationsMetricsFeaturePlaceholderPage
                   groupCode="OPS_METRICS_ABNORMAL_OVERVIEW"
-                  title="Tong quan kien bat thuong"
-                  summary="Theo doi tong quan kien bat thuong theo khu vuc va trang thai xu ly."
+                  title="Tổng quan kiện bất thường"
+                  summary="Theo dõi tổng quan kiện bất thường theo khu vực và trạng thái xử lý."
                 />
               }
             />
@@ -992,8 +1224,8 @@ export function AppRouter(): React.JSX.Element {
               element={
                 <OperationsMetricsFeaturePlaceholderPage
                   groupCode="OPS_METRICS_ABNORMAL_HANDLING"
-                  title="Theo doi xu ly kien"
-                  summary="Giam sat tien do xu ly kien bat thuong theo tung don vi van hanh."
+                  title="Theo dõi xử lý kiện"
+                  summary="Giám sát tiến độ xử lý kiện bất thường theo từng đơn vị vận hành."
                 />
               }
             />
@@ -1006,8 +1238,8 @@ export function AppRouter(): React.JSX.Element {
               element={
                 <OperationsMetricsFeaturePlaceholderPage
                   groupCode="OPS_METRICS_DEADLINE_PICKUP_RATIO"
-                  title="Bao bieu ty le nhan hang kip"
-                  summary="Bao cao ty le nhan hang kip theo khung gio va TTTC."
+                  title="Báo biểu tỷ lệ nhận hàng kịp"
+                  summary="Báo cáo tỷ lệ nhận hàng kịp theo khung giờ và TTTC."
                 />
               }
             />
@@ -1016,8 +1248,8 @@ export function AppRouter(): React.JSX.Element {
               element={
                 <OperationsMetricsFeaturePlaceholderPage
                   groupCode="OPS_METRICS_DEADLINE_DELIVERY_SLA"
-                  title="Giam sat thoi hieu hang phat"
-                  summary="Theo doi SLA phat hang va danh sach don co nguy co tre han."
+                  title="Giám sát thời hiệu hàng phát"
+                  summary="Theo dõi SLA phát hàng và danh sách đơn có nguy cơ trễ hạn."
                 />
               }
             />
@@ -1026,8 +1258,8 @@ export function AppRouter(): React.JSX.Element {
               element={
                 <OperationsMetricsFeaturePlaceholderPage
                   groupCode="OPS_METRICS_DEADLINE_SIGN_T1"
-                  title="Ky nhan thuc te (T-1)"
-                  summary="Tong hop du lieu ky nhan thuc te va so sanh voi muc tieu T-1."
+                  title="Ký nhận thực tế (T-1)"
+                  summary="Tổng hợp dữ liệu ký nhận thực tế và so sánh với mục tiêu T-1."
                 />
               }
             />
@@ -1036,8 +1268,8 @@ export function AppRouter(): React.JSX.Element {
               element={
                 <OperationsMetricsFeaturePlaceholderPage
                   groupCode="OPS_METRICS_DEADLINE_SEND_RATIO"
-                  title="Ty le gui kien dung gio"
-                  summary="Bao cao ty le gui kien dung gio theo hub, chi nhanh va ca van hanh."
+                  title="Tỷ lệ gửi kiện đúng giờ"
+                  summary="Báo cáo tỷ lệ gửi kiện đúng giờ theo hub, chi nhánh và ca vận hành."
                 />
               }
             />
@@ -1046,8 +1278,8 @@ export function AppRouter(): React.JSX.Element {
               element={
                 <OperationsMetricsFeaturePlaceholderPage
                   groupCode="OPS_METRICS_DEADLINE_DELIVERY_LEADTIME"
-                  title="Giam sat leadtime phat (Moi)"
-                  summary="Phan tich leadtime phat theo tuyen va gom canh bao tre han moi."
+                  title="Giám sát leadtime phát (Mới)"
+                  summary="Phân tích leadtime phát theo tuyến và gom cảnh báo trễ hạn mới."
                 />
               }
             />
@@ -1056,8 +1288,8 @@ export function AppRouter(): React.JSX.Element {
               element={
                 <OperationsMetricsFeaturePlaceholderPage
                   groupCode="OPS_METRICS_DEADLINE_INBOUND_LEADTIME"
-                  title="Giam sat leadtime nhan"
-                  summary="Giam sat leadtime nhan hang theo diem nhan va theo doi diem nghen."
+                  title="Giám sát leadtime nhận"
+                  summary="Giám sát leadtime nhận hàng theo điểm nhận và theo dõi điểm nghẽn."
                 />
               }
             />
@@ -1066,8 +1298,8 @@ export function AppRouter(): React.JSX.Element {
               element={
                 <OperationsMetricsFeaturePlaceholderPage
                   groupCode="OPS_METRICS_DEADLINE_OVERDUE_ALERTS"
-                  title="He thong canh bao qua han"
-                  summary="Tap trung canh bao qua han de uu tien xu ly theo muc do rui ro."
+                  title="Hệ thống cảnh báo quá hạn"
+                  summary="Tập trung cảnh báo quá hạn để ưu tiên xử lý theo mức độ rủi ro."
                 />
               }
             />
@@ -1076,8 +1308,8 @@ export function AppRouter(): React.JSX.Element {
               element={
                 <OperationsMetricsFeaturePlaceholderPage
                   groupCode="OPS_METRICS_PLANNING_NETWORK_KPI"
-                  title="Giam sat KPI mang luoi"
-                  summary="Tong hop KPI quy hoach mang luoi va danh gia muc do dap ung nang luc."
+                  title="Giám sát KPI mạng lưới"
+                  summary="Tổng hợp KPI quy hoạch mạng lưới và đánh giá mức độ đáp ứng năng lực."
                 />
               }
             />
@@ -1086,8 +1318,8 @@ export function AppRouter(): React.JSX.Element {
               element={
                 <OperationsMetricsFeaturePlaceholderPage
                   groupCode="OPS_METRICS_ACTION_EXECUTION_BOARD"
-                  title="Ban dieu phoi thao tac"
-                  summary="Quan ly tac vu thao tac va trang thai hoan thanh theo ngay."
+                  title="Bàn điều phối thao tác"
+                  summary="Quản lý tác vụ thao tác và trạng thái hoàn thành theo ngày."
                 />
               }
             />

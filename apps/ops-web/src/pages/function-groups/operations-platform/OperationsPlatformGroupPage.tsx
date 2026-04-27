@@ -7,7 +7,7 @@ export function OperationsPlatformGroupPage(): React.JSX.Element {
     <FunctionGroupLandingPage
       groupCode="OPERATIONS_PLATFORM"
       title="Nền tảng điều hành"
-      summary="Cum nghiep vu dieu hanh va cac chuc nang van hanh noi bo."
+      summary="Cụm nghiệp vụ điều hành và các chức năng vận hành nội bộ."
     />
   );
 }

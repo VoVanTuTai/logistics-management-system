@@ -70,19 +70,19 @@ export function ThermalLabelManagementPage(): React.JSX.Element {
     <section className="ops-thermal-management">
       <header className="ops-thermal-management__header">
         <small>THERMAL_LABEL_MANAGEMENT</small>
-        <h2>Quan li tem bao da su dung</h2>
+        <h2>Quản lý tem bao đã sử dụng</h2>
         <p>
-          Danh sach ben duoi la cac tem bao da co thao tac dong bao va da tai len he thong.
+          Danh sách bên dưới là các tem bao đã có thao tác đóng bao và đã tải lên hệ thống.
         </p>
       </header>
 
       <section className="ops-thermal-management__summary">
         <article className="ops-thermal-management__summary-card">
-          <span>Tong tem bao da su dung</span>
+          <span>Tổng tem bao đã sử dụng</span>
           <strong>{MOCK_USED_BAG_LABELS.length}</strong>
         </article>
         <article className="ops-thermal-management__summary-card">
-          <span>Tong so don trong cac bao</span>
+          <span>Tổng số đơn trong các bao</span>
           <strong>{totalShipments}</strong>
         </article>
       </section>
@@ -91,12 +91,12 @@ export function ThermalLabelManagementPage(): React.JSX.Element {
         <table className="ops-thermal-management__table">
           <thead>
             <tr>
-              <th>Ma bao</th>
-              <th>So luong don trong bao</th>
-              <th>Ngay gio thao tac</th>
-              <th>Ngay gio tai len</th>
-              <th>Ma hub di</th>
-              <th>Ma hub den</th>
+              <th>Mã bao</th>
+              <th>Số lượng đơn trong bao</th>
+              <th>Ngày giờ thao tác</th>
+              <th>Ngày giờ tải lên</th>
+              <th>Mã hub đi</th>
+              <th>Mã hub đến</th>
             </tr>
           </thead>
           <tbody>
@@ -116,4 +116,3 @@ export function ThermalLabelManagementPage(): React.JSX.Element {
     </section>
   );
 }
-
