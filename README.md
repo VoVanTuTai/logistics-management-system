@@ -1,4 +1,4 @@
-﻿# Logistics Management System
+﻿# Nexus Express System
 
 > A production-oriented logistics platform built with microservices to manage the full shipment lifecycle across pickup, hub operations, delivery, tracking, and operational reporting.
 
