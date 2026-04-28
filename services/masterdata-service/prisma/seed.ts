@@ -4,11 +4,38 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+async function ensureAuxiliaryCodeTables(): Promise<void> {
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS hub_routes (
+      id bigserial PRIMARY KEY,
+      hub_code text NOT NULL REFERENCES hubs(code) ON DELETE CASCADE,
+      route_code text NOT NULL,
+      is_active boolean NOT NULL DEFAULT true,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now(),
+      CONSTRAINT hub_routes_route_code_chk CHECK (route_code ~ '^(0[1-9]|10)$'),
+      CONSTRAINT hub_routes_hub_route_unique UNIQUE (hub_code, route_code)
+    );
+  `);
+
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS vehicle_tags (
+      id bigserial PRIMARY KEY,
+      tag_code text NOT NULL UNIQUE,
+      hub_code text NULL REFERENCES hubs(code),
+      is_active boolean NOT NULL DEFAULT true,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now(),
+      CONSTRAINT vehicle_tags_code_chk CHECK (tag_code ~ '^XT[0-9]{10}$')
+    );
+  `);
+}
+
 async function main(): Promise<void> {
   const zones = [
-    { code: 'ZONE_HCM', name: 'Ho Chi Minh', parentCode: null },
-    { code: 'ZONE_HCM_Q1', name: 'Ho Chi Minh - District 1', parentCode: 'ZONE_HCM' },
-    { code: 'ZONE_HN', name: 'Ha Noi', parentCode: null },
+    { code: '001', name: 'Miền Bắc', parentCode: null },
+    { code: '002', name: 'Miền Trung', parentCode: null },
+    { code: '003', name: 'Miền Nam', parentCode: null },
   ] as const;
 
   for (const zone of zones) {
@@ -30,16 +57,34 @@ async function main(): Promise<void> {
 
   const hubs = [
     {
-      code: 'HUB_HCM_01',
-      name: 'HCM Central Hub',
-      zoneCode: 'ZONE_HCM',
-      address: 'District 1, Ho Chi Minh City',
+      code: '001A001',
+      name: 'BC Hà Đông',
+      zoneCode: '001',
+      address: 'Hà Đông, Hà Nội',
     },
     {
-      code: 'HUB_HN_01',
-      name: 'HN Central Hub',
-      zoneCode: 'ZONE_HN',
-      address: 'Cau Giay, Ha Noi',
+      code: '001B001',
+      name: 'BC Cầu Giấy',
+      zoneCode: '001',
+      address: 'Cầu Giấy, Hà Nội',
+    },
+    {
+      code: '001C001',
+      name: 'BC Nam Từ Liêm',
+      zoneCode: '001',
+      address: 'Nam Từ Liêm, Hà Nội',
+    },
+    {
+      code: '002A001',
+      name: 'BC Đà Nẵng',
+      zoneCode: '002',
+      address: 'Hải Châu, Đà Nẵng',
+    },
+    {
+      code: '003A001',
+      name: 'BC Quận 1',
+      zoneCode: '003',
+      address: 'Quận 1, Thành phố Hồ Chí Minh',
     },
   ] as const;
 
@@ -62,10 +107,45 @@ async function main(): Promise<void> {
     });
   }
 
+  await ensureAuxiliaryCodeTables();
+
+  for (const hub of hubs) {
+    for (let routeNumber = 1; routeNumber <= 10; routeNumber += 1) {
+      const routeCode = String(routeNumber).padStart(2, '0');
+      await prisma.$executeRaw`
+        INSERT INTO hub_routes (hub_code, route_code)
+        VALUES (${hub.code}, ${routeCode})
+        ON CONFLICT (hub_code, route_code) DO UPDATE SET
+          is_active = true,
+          updated_at = now();
+      `;
+    }
+  }
+
+  const vehicleTags = [
+    { tagCode: 'XT0010000001', hubCode: '001A001' },
+    { tagCode: 'XT0010000002', hubCode: '001B001' },
+    { tagCode: 'XT0020000001', hubCode: '002A001' },
+    { tagCode: 'XT0030000001', hubCode: '003A001' },
+  ] as const;
+
+  for (const vehicleTag of vehicleTags) {
+    await prisma.$executeRaw`
+      INSERT INTO vehicle_tags (tag_code, hub_code)
+      VALUES (${vehicleTag.tagCode}, ${vehicleTag.hubCode})
+      ON CONFLICT (tag_code) DO UPDATE SET
+        hub_code = EXCLUDED.hub_code,
+        is_active = true,
+        updated_at = now();
+    `;
+  }
+
   const ndrReasons = [
-    { code: 'CUSTOMER_NOT_HOME', description: 'Customer not at home' },
-    { code: 'WRONG_ADDRESS', description: 'Wrong or incomplete address' },
-    { code: 'CUSTOMER_REFUSED', description: 'Customer refused shipment' },
+    { code: 'CUSTOMER_NOT_HOME', description: 'Khách không có ở địa chỉ nhận' },
+    { code: 'WRONG_ADDRESS', description: 'Sai hoặc thiếu địa chỉ nhận' },
+    { code: 'CUSTOMER_REFUSED', description: 'Khách từ chối nhận hàng' },
+    { code: 'NO_ANSWER', description: 'Không liên lạc được với khách hàng' },
+    { code: 'CUSTOMER_RESCHEDULE', description: 'Khách hẹn lại ngày nhận' },
   ] as const;
 
   for (const ndrReason of ndrReasons) {
@@ -86,21 +166,37 @@ async function main(): Promise<void> {
   const configs = [
     {
       key: 'pricing.base_fee',
-      value: { vn: 15000 },
+      value: { vnd: 15000 },
       scope: 'shipping',
-      description: 'Default base shipping fee in VND',
+      description: 'Phí vận chuyển cơ bản mặc định',
     },
     {
       key: 'pickup.cutoff_hour',
       value: 17,
       scope: 'pickup',
-      description: 'Cutoff hour for same-day pickup request',
+      description: 'Giờ chốt yêu cầu lấy hàng trong ngày',
     },
     {
       key: 'delivery.max_attempts',
       value: 3,
       scope: 'delivery',
-      description: 'Maximum delivery attempts before NDR escalation',
+      description: 'Số lần phát tối đa trước khi tạo NDR',
+    },
+    {
+      key: 'code_rules.version',
+      value: {
+        hubSegment1: ['001', '002', '003'],
+        hubSegment2Pattern: '<segment1><area[A-Z]><3 digits>',
+        hubRouteCodes: ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10'],
+        shipmentPrefixes: {
+          marketplace: '111',
+          shop: '101',
+          returnPickup: '222',
+          walkIn: '333',
+        },
+      },
+      scope: 'code-rules',
+      description: 'Quy luật mã dùng cho seed API thật',
     },
   ] as const;
 

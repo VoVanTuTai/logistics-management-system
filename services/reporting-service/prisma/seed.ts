@@ -1,4 +1,4 @@
-﻿import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -117,201 +117,139 @@ async function main(): Promise<void> {
   const today = toUtcDateAtMidnight(new Date());
   const monthKey = toMonthKey(today);
 
-  await upsertDaily(today, 'ALL', 'ALL', 'ALL', {
-    shipmentsCreated: 18,
-    pickupsCompleted: 11,
-    deliveriesDelivered: 9,
-    deliveriesFailed: 2,
-    ndrCreated: 3,
-    scansInbound: 15,
-    scansOutbound: 12,
-  });
+  const allValues = {
+    shipmentsCreated: 7,
+    pickupsCompleted: 2,
+    deliveriesDelivered: 1,
+    deliveriesFailed: 1,
+    ndrCreated: 1,
+    scansInbound: 5,
+    scansOutbound: 3,
+  };
 
-  await upsertDaily(today, 'CR001', 'HN-01', 'NORTH', {
-    shipmentsCreated: 8,
-    pickupsCompleted: 5,
-    deliveriesDelivered: 4,
+  await upsertDaily(today, 'ALL', 'ALL', 'ALL', allValues);
+  await upsertDaily(today, 'ALL', '001A001', '001', {
+    shipmentsCreated: 4,
+    pickupsCompleted: 1,
+    deliveriesDelivered: 0,
     deliveriesFailed: 1,
     ndrCreated: 1,
-    scansInbound: 6,
-    scansOutbound: 5,
+    scansInbound: 3,
+    scansOutbound: 1,
   });
-
-  await upsertDaily(today, 'CR002', 'SG-01', 'SOUTH', {
-    shipmentsCreated: 10,
-    pickupsCompleted: 6,
-    deliveriesDelivered: 5,
-    deliveriesFailed: 1,
-    ndrCreated: 2,
-    scansInbound: 9,
-    scansOutbound: 7,
-  });
-
-  await upsertDaily(today, 'CR001', 'ALL', 'ALL', {
-    shipmentsCreated: 8,
-    pickupsCompleted: 5,
-    deliveriesDelivered: 4,
+  await upsertDaily(today, '30000001', '001A001', '001', {
+    shipmentsCreated: 0,
+    pickupsCompleted: 1,
+    deliveriesDelivered: 0,
     deliveriesFailed: 1,
     ndrCreated: 1,
-    scansInbound: 6,
-    scansOutbound: 5,
+    scansInbound: 0,
+    scansOutbound: 0,
   });
-  await upsertDaily(today, 'CR002', 'ALL', 'ALL', {
-    shipmentsCreated: 10,
-    pickupsCompleted: 6,
-    deliveriesDelivered: 5,
-    deliveriesFailed: 1,
-    ndrCreated: 2,
-    scansInbound: 9,
-    scansOutbound: 7,
+  await upsertDaily(today, '30000002', '001A001', '001', {
+    shipmentsCreated: 0,
+    pickupsCompleted: 0,
+    deliveriesDelivered: 0,
+    deliveriesFailed: 0,
+    ndrCreated: 0,
+    scansInbound: 0,
+    scansOutbound: 0,
   });
-  await upsertDaily(today, 'CR001', 'HN-01', 'ALL', {
-    shipmentsCreated: 8,
-    pickupsCompleted: 5,
-    deliveriesDelivered: 4,
-    deliveriesFailed: 1,
-    ndrCreated: 1,
-    scansInbound: 6,
-    scansOutbound: 5,
-  });
-  await upsertDaily(today, 'CR002', 'SG-01', 'ALL', {
-    shipmentsCreated: 10,
-    pickupsCompleted: 6,
-    deliveriesDelivered: 5,
-    deliveriesFailed: 1,
-    ndrCreated: 2,
-    scansInbound: 9,
-    scansOutbound: 7,
-  });
-  await upsertDaily(today, 'CR001', 'ALL', 'NORTH', {
-    shipmentsCreated: 8,
-    pickupsCompleted: 5,
-    deliveriesDelivered: 4,
-    deliveriesFailed: 1,
-    ndrCreated: 1,
-    scansInbound: 6,
-    scansOutbound: 5,
-  });
-  await upsertDaily(today, 'CR002', 'ALL', 'SOUTH', {
-    shipmentsCreated: 10,
-    pickupsCompleted: 6,
-    deliveriesDelivered: 5,
-    deliveriesFailed: 1,
-    ndrCreated: 2,
-    scansInbound: 9,
-    scansOutbound: 7,
-  });
-  await upsertDaily(today, 'ALL', 'HN-01', 'ALL', {
-    shipmentsCreated: 8,
-    pickupsCompleted: 5,
-    deliveriesDelivered: 4,
-    deliveriesFailed: 1,
-    ndrCreated: 1,
-    scansInbound: 6,
-    scansOutbound: 5,
-  });
-  await upsertDaily(today, 'ALL', 'SG-01', 'ALL', {
-    shipmentsCreated: 10,
-    pickupsCompleted: 6,
-    deliveriesDelivered: 5,
-    deliveriesFailed: 1,
-    ndrCreated: 2,
-    scansInbound: 9,
-    scansOutbound: 7,
-  });
-  await upsertDaily(today, 'ALL', 'ALL', 'NORTH', {
-    shipmentsCreated: 8,
-    pickupsCompleted: 5,
-    deliveriesDelivered: 4,
-    deliveriesFailed: 1,
-    ndrCreated: 1,
-    scansInbound: 6,
-    scansOutbound: 5,
-  });
-  await upsertDaily(today, 'ALL', 'ALL', 'SOUTH', {
-    shipmentsCreated: 10,
-    pickupsCompleted: 6,
-    deliveriesDelivered: 5,
-    deliveriesFailed: 1,
-    ndrCreated: 2,
-    scansInbound: 9,
-    scansOutbound: 7,
+  await upsertDaily(today, '30000004', '002A001', '002', {
+    shipmentsCreated: 1,
+    pickupsCompleted: 0,
+    deliveriesDelivered: 1,
+    deliveriesFailed: 0,
+    ndrCreated: 0,
+    scansInbound: 1,
+    scansOutbound: 0,
   });
 
   await upsertMonthly(monthKey, 'ALL', 'ALL', 'ALL', {
-    shipmentsCreated: 420,
-    pickupsCompleted: 310,
-    deliveriesDelivered: 270,
-    deliveriesFailed: 35,
-    ndrCreated: 58,
-    scansInbound: 390,
-    scansOutbound: 360,
+    shipmentsCreated: 210,
+    pickupsCompleted: 96,
+    deliveriesDelivered: 78,
+    deliveriesFailed: 12,
+    ndrCreated: 18,
+    scansInbound: 145,
+    scansOutbound: 122,
+  });
+  await upsertMonthly(monthKey, 'ALL', '001A001', '001', {
+    shipmentsCreated: 126,
+    pickupsCompleted: 58,
+    deliveriesDelivered: 44,
+    deliveriesFailed: 8,
+    ndrCreated: 12,
+    scansInbound: 86,
+    scansOutbound: 70,
   });
 
-  await upsertMonthly(monthKey, 'CR001', 'HN-01', 'NORTH', {
-    shipmentsCreated: 180,
-    pickupsCompleted: 140,
-    deliveriesDelivered: 120,
-    deliveriesFailed: 16,
-    ndrCreated: 24,
-    scansInbound: 170,
-    scansOutbound: 155,
-  });
-  await upsertMonthly(monthKey, 'CR001', 'ALL', 'ALL', {
-    shipmentsCreated: 180,
-    pickupsCompleted: 140,
-    deliveriesDelivered: 120,
-    deliveriesFailed: 16,
-    ndrCreated: 24,
-    scansInbound: 170,
-    scansOutbound: 155,
-  });
-  await upsertMonthly(monthKey, 'ALL', 'HN-01', 'ALL', {
-    shipmentsCreated: 180,
-    pickupsCompleted: 140,
-    deliveriesDelivered: 120,
-    deliveriesFailed: 16,
-    ndrCreated: 24,
-    scansInbound: 170,
-    scansOutbound: 155,
-  });
-  await upsertMonthly(monthKey, 'ALL', 'ALL', 'NORTH', {
-    shipmentsCreated: 180,
-    pickupsCompleted: 140,
-    deliveriesDelivered: 120,
-    deliveriesFailed: 16,
-    ndrCreated: 24,
-    scansInbound: 170,
-    scansOutbound: 155,
-  });
+  const now = new Date();
+  const projections = [
+    {
+      shipmentCode: '101000000001',
+      currentStatus: 'PICKUP_COMPLETED',
+      lastEventType: 'scan.pickup',
+      courierCode: '30000001',
+      hubCode: '001A001',
+      zoneCode: '001',
+    },
+    {
+      shipmentCode: '101000000002',
+      currentStatus: 'SCAN_OUTBOUND',
+      lastEventType: 'scan.outbound',
+      courierCode: null,
+      hubCode: '001A001',
+      zoneCode: '001',
+    },
+    {
+      shipmentCode: '111000000001',
+      currentStatus: 'SCAN_INBOUND',
+      lastEventType: 'scan.inbound',
+      courierCode: null,
+      hubCode: '001A001',
+      zoneCode: '001',
+    },
+    {
+      shipmentCode: '333000000001',
+      currentStatus: 'SCAN_INBOUND',
+      lastEventType: 'scan.inbound',
+      courierCode: '30000002',
+      hubCode: '001A001',
+      zoneCode: '001',
+    },
+    {
+      shipmentCode: '222000000001',
+      currentStatus: 'RETURN_STARTED',
+      lastEventType: 'return.started',
+      courierCode: '30000003',
+      hubCode: '001C001',
+      zoneCode: '001',
+    },
+    {
+      shipmentCode: '111000000002',
+      currentStatus: 'NDR_CREATED',
+      lastEventType: 'ndr.created',
+      courierCode: '30000001',
+      hubCode: '001A001',
+      zoneCode: '001',
+    },
+    {
+      shipmentCode: '333000000002',
+      currentStatus: 'DELIVERED',
+      lastEventType: 'delivery.delivered',
+      courierCode: '30000004',
+      hubCode: '002A001',
+      zoneCode: '002',
+    },
+  ] as const;
 
-  await upsertShipmentStatusProjection({
-    shipmentCode: 'SHP1001',
-    currentStatus: 'DELIVERED',
-    lastEventType: 'delivery.delivered',
-    lastEventAt: new Date(),
-    courierCode: 'CR001',
-    hubCode: 'HN-01',
-    zoneCode: 'NORTH',
-  });
-  await upsertShipmentStatusProjection({
-    shipmentCode: 'SHP1002',
-    currentStatus: 'DELIVERY_FAILED',
-    lastEventType: 'delivery.failed',
-    lastEventAt: new Date(),
-    courierCode: 'CR002',
-    hubCode: 'SG-01',
-    zoneCode: 'SOUTH',
-  });
-  await upsertShipmentStatusProjection({
-    shipmentCode: 'SHP1003',
-    currentStatus: 'NDR_CREATED',
-    lastEventType: 'ndr.created',
-    lastEventAt: new Date(),
-    courierCode: 'CR002',
-    hubCode: 'SG-01',
-    zoneCode: 'SOUTH',
-  });
+  for (const projection of projections) {
+    await upsertShipmentStatusProjection({
+      ...projection,
+      lastEventAt: now,
+    });
+  }
 
   console.log('reporting-service seed completed');
 }

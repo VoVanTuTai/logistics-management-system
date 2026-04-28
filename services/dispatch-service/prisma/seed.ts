@@ -1,37 +1,53 @@
-﻿import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 async function main(): Promise<void> {
   const tasks = [
     {
-      taskCode: 'TSK1001',
+      taskCode: 'TASK001A001001',
       taskType: 'PICKUP' as const,
       status: 'ASSIGNED' as const,
-      shipmentCode: 'SHP1001',
+      shipmentCode: '101000000001',
       pickupRequestId: null,
-      note: 'Seed assigned pickup task',
-      // Align with auth-service seed user "30000001"
+      note: 'Điều phối courier đi lấy hàng shop, route 001A00101.',
       assignmentCourierId: '30000001',
     },
     {
-      taskCode: 'TSK1002',
+      taskCode: 'TASK001A001002',
       taskType: 'DELIVERY' as const,
-      status: 'CREATED' as const,
-      shipmentCode: 'SHP1002',
+      status: 'ASSIGNED' as const,
+      shipmentCode: '333000000001',
       pickupRequestId: null,
-      note: 'Seed created delivery task',
-      assignmentCourierId: null,
+      note: 'Phát hàng từ BC Hà Đông sang app courier.',
+      assignmentCourierId: '30000002',
     },
     {
-      taskCode: 'TSK1003',
+      taskCode: 'TASK001C001001',
       taskType: 'RETURN' as const,
       status: 'ASSIGNED' as const,
-      shipmentCode: 'SHP1003',
+      shipmentCode: '222000000001',
       pickupRequestId: null,
-      note: 'Seed assigned return task',
-      // Align with auth-service seed user "30000002"
-      assignmentCourierId: '30000002',
+      note: 'Điều phối thu hồi hàng trả, route 001C00101.',
+      assignmentCourierId: '30000003',
+    },
+    {
+      taskCode: 'TASK002A001001',
+      taskType: 'DELIVERY' as const,
+      status: 'COMPLETED' as const,
+      shipmentCode: '333000000002',
+      pickupRequestId: null,
+      note: 'Đơn khách lẻ đã phát thành công tại Đà Nẵng.',
+      assignmentCourierId: '30000004',
+    },
+    {
+      taskCode: 'TASK001A001003',
+      taskType: 'DELIVERY' as const,
+      status: 'CREATED' as const,
+      shipmentCode: '111000000001',
+      pickupRequestId: null,
+      note: 'Đơn đã quét hàng đến, chờ phát hàng.',
+      assignmentCourierId: null,
     },
   ] as const;
 
