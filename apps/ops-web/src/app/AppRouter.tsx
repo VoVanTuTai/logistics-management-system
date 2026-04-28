@@ -16,6 +16,7 @@ import { BasicDataGroupPage } from '../pages/function-groups/basic-data/BasicDat
 import { BranchLocalOrderOverviewPage } from '../pages/function-groups/branch-business/local-orders/BranchLocalOrderOverviewPage';
 import { BranchDeliveryDispatchPage } from '../pages/function-groups/branch-business/delivery-dispatch/BranchDeliveryDispatchPage';
 import { BranchBusinessOrderCreatePage } from '../pages/function-groups/branch-business/order-create/BranchBusinessOrderCreatePage';
+import { BranchDeliveryOrderManagementPage } from '../pages/function-groups/branch-business/order-delivery/BranchDeliveryOrderManagementPage';
 import { BranchBusinessFeaturePlaceholderPage } from '../pages/function-groups/branch-business/shared/BranchBusinessFeaturePlaceholderPage';
 import { CapabilityPlatformGroupPage } from '../pages/function-groups/capability-platform/CapabilityPlatformGroupPage';
 import { CustomerPlatformGroupPage } from '../pages/function-groups/customer-platform/CustomerPlatformGroupPage';
@@ -1121,13 +1122,7 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.branchBusinessLocalOrdersLeaf}
-              element={
-                <BranchBusinessFeaturePlaceholderPage
-                  groupCode="BRANCH_LOCAL_ORDER_MANAGEMENT"
-                  title="Quản lý đơn tại bưu cục"
-                  summary="Danh sách đơn đang nằm trong phạm vi bưu cục, hỗ trợ lọc theo trạng thái xử lý nội bộ."
-                />
-              }
+              element={<BranchLocalOrderOverviewPage mode="management" />}
             />
             <Route
               path={routePaths.branchBusinessCourierHandoffLeaf}
@@ -1169,13 +1164,7 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.branchBusinessOrderDeliveryLeaf}
-              element={
-                <BranchBusinessFeaturePlaceholderPage
-                  groupCode="BRANCH_ORDER_DELIVERY_MANAGEMENT"
-                  title="Quản lý vận đơn phát"
-                  summary="Quản lý vận đơn phát tại bưu cục, gồm tiến độ phát và cảnh báo trễ hạn."
-                />
-              }
+              element={<BranchDeliveryOrderManagementPage />}
             />
             <Route
               path={routePaths.branchBusinessFinanceCodLeaf}
