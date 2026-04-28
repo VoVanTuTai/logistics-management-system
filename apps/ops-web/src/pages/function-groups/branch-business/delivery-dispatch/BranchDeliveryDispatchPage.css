@@ -180,6 +180,13 @@
   font-weight: 700;
 }
 
+.ops-branch-delivery__empty {
+  margin: 0;
+  padding: 12px;
+  color: #64748b;
+  font-size: 13px;
+}
+
 .ops-branch-delivery__table-wrap {
   overflow: auto;
 }
@@ -270,6 +277,23 @@
   color: #1d4ed8;
 }
 
+.ops-branch-delivery__notice {
+  margin: 0;
+  border: 1px solid #86efac;
+  border-radius: 8px;
+  background: #dcfce7;
+  color: #166534;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ops-branch-delivery__notice--error {
+  border-color: #fecaca;
+  background: #fee2e2;
+  color: #991b1b;
+}
+
 .ops-branch-delivery__assign-btn {
   height: 40px;
   border-color: #1d4ed8;
@@ -282,6 +306,11 @@
   gap: 8px;
   font-size: 13px;
   font-weight: 700;
+}
+
+.ops-branch-delivery__assign-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
 }
 
 @media (max-width: 1180px) {
