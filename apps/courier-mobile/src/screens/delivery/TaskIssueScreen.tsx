@@ -48,8 +48,8 @@ const ISSUE_OPTIONS: IssueOption[] = [
   },
   {
     id: 'wrong-address',
-    title: 'Thong tin dia chi sai',
-    description: 'Dia chi giao khong ton tai hoac sai thong tin khu vuc.',
+    title: 'Thong tin Địa chỉ sai',
+    description: 'Địa chỉ giao khong ton tai hoac sai thong tin Khu vực.',
     reasonCode: 'WRONG_ADDRESS',
     createNdr: true,
     startReturn: false,
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
   },
   optionItemSelected: {
     borderColor: '#93C5FD',
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#EEF2FF',
   },
   optionTitleRow: {
     flexDirection: 'row',
@@ -440,3 +440,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
+

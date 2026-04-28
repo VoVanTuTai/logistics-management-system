@@ -1,35 +1,60 @@
 import 'dotenv/config';
+
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 async function main(): Promise<void> {
+  const now = new Date();
+
   const manifests = [
     {
-      manifestCode: 'MNF1001',
-      status: 'CREATED' as const,
-      originHubCode: 'HN-01',
-      destinationHubCode: 'HN-02',
-      note: 'Seed manifest created',
-      sealedAt: null,
-      receivedAt: null,
-      shipmentCodes: ['SHP1001'],
-      sealRecord: null,
+      manifestCode: 'MB0010000001',
+      status: 'RECEIVED' as const,
+      originHubCode: '002A001',
+      destinationHubCode: '001A001',
+      note: 'Bao Đà Nẵng -> Hà Đông đã nhận.',
+      sealedAt: new Date(now.getTime() - 8 * 60 * 60 * 1000),
+      receivedAt: new Date(now.getTime() - 2 * 60 * 60 * 1000),
+      shipmentCodes: ['111000000001'],
+      sealRecord: {
+        sealedBy: '20000003',
+        note: 'Đóng bao đi miền Bắc.',
+        sealedAt: new Date(now.getTime() - 8 * 60 * 60 * 1000),
+      },
+      receiveRecord: {
+        receivedBy: '20000001',
+        note: 'BC Hà Đông đã nhận bao.',
+        receivedAt: new Date(now.getTime() - 2 * 60 * 60 * 1000),
+      },
     },
     {
-      manifestCode: 'MNF1002',
+      manifestCode: 'MB0010000002',
       status: 'SEALED' as const,
-      originHubCode: 'SG-01',
-      destinationHubCode: 'SG-02',
-      note: 'Seed manifest sealed',
-      sealedAt: new Date(),
+      originHubCode: '001A001',
+      destinationHubCode: '001B001',
+      note: 'Bao Hà Đông -> Cầu Giấy, đích chưa nhận.',
+      sealedAt: new Date(now.getTime() - 3 * 60 * 60 * 1000),
       receivedAt: null,
-      shipmentCodes: ['SHP1002', 'SHP1003'],
+      shipmentCodes: ['101000000002'],
       sealRecord: {
-        sealedBy: 'ops.admin',
-        note: 'Seed seal',
-        sealedAt: new Date(),
+        sealedBy: '20000001',
+        note: 'Quét gửi sang BC Cầu Giấy.',
+        sealedAt: new Date(now.getTime() - 3 * 60 * 60 * 1000),
       },
+      receiveRecord: null,
+    },
+    {
+      manifestCode: 'MB0030000001',
+      status: 'CREATED' as const,
+      originHubCode: '003A001',
+      destinationHubCode: '002A001',
+      note: 'Bao Quận 1 -> Đà Nẵng đang tạo.',
+      sealedAt: null,
+      receivedAt: null,
+      shipmentCodes: ['333000000002'],
+      sealRecord: null,
+      receiveRecord: null,
     },
   ] as const;
 
@@ -82,7 +107,24 @@ async function main(): Promise<void> {
       await prisma.sealRecord.deleteMany({ where: { manifestId: record.id } });
     }
 
-    await prisma.receiveRecord.deleteMany({ where: { manifestId: record.id } });
+    if (manifest.receiveRecord) {
+      await prisma.receiveRecord.upsert({
+        where: { manifestId: record.id },
+        update: {
+          receivedBy: manifest.receiveRecord.receivedBy,
+          note: manifest.receiveRecord.note,
+          receivedAt: manifest.receiveRecord.receivedAt,
+        },
+        create: {
+          manifestId: record.id,
+          receivedBy: manifest.receiveRecord.receivedBy,
+          note: manifest.receiveRecord.note,
+          receivedAt: manifest.receiveRecord.receivedAt,
+        },
+      });
+    } else {
+      await prisma.receiveRecord.deleteMany({ where: { manifestId: record.id } });
+    }
   }
 
   console.log('manifest-service seed completed');
@@ -96,4 +138,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-

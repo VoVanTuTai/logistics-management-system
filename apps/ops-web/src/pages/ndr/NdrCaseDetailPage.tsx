@@ -102,7 +102,7 @@ export function NdrCaseDetailPage(): React.JSX.Element {
 
       {lastActionResponse ? (
         <div style={styles.responseBox}>
-          <strong>Phan hoi hệ thống gan nhat ({lastActionLabel})</strong>
+          <strong>Phản hồi hệ thống gần nhất ({lastActionLabel})</strong>
           <pre style={styles.pre}>{JSON.stringify(lastActionResponse, null, 2)}</pre>
         </div>
       ) : null}

@@ -1,12 +1,16 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700&display=swap');
 
 :root {
-  --trk-bg: #f2f6fc;
+  --trk-font-family: 'Manrope', 'Segoe UI', sans-serif;
+  --trk-font-weight-regular: 500;
+  --trk-font-weight-medium: 600;
+  --trk-font-weight-bold: 700;
+  --trk-bg: #eef2ff;
   --trk-surface: #ffffff;
-  --trk-border: #d8e4f2;
-  --trk-text: #132037;
-  --trk-muted: #556b87;
-  --trk-primary: #1f62a3;
+  --trk-border: #e2e8f0;
+  --trk-text: #334155;
+  --trk-muted: #64748b;
+  --trk-primary: #4f46e5;
   --trk-success: #13835f;
   --trk-warning: #a66d00;
   --trk-danger: #b62331;
@@ -18,12 +22,21 @@
 
 body {
   margin: 0;
-  font-family: 'Manrope', 'Segoe UI', sans-serif;
+  font-family: var(--trk-font-family);
+  font-weight: var(--trk-font-weight-regular);
   color: var(--trk-text);
-  background:
-    radial-gradient(circle at 10% 0%, rgba(198, 222, 255, 0.7), transparent 35%),
-    radial-gradient(circle at 90% 0%, rgba(255, 225, 188, 0.62), transparent 42%),
-    var(--trk-bg);
+  background: var(--trk-bg);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--trk-font-family);
+  font-weight: var(--trk-font-weight-bold);
+  letter-spacing: 0.01em;
 }
 
 .tracking-page {
@@ -46,20 +59,18 @@ body {
 
 .tracking-hero {
   padding: 24px;
-  background:
-    linear-gradient(130deg, rgba(8, 35, 67, 0.95), rgba(24, 76, 122, 0.9)),
-    var(--trk-surface);
-  border-color: rgba(35, 89, 143, 0.7);
-  color: #f8fbff;
+  background: var(--trk-surface);
+  border-left: 4px solid var(--trk-primary);
+  color: var(--trk-text);
 }
 
 .tracking-kicker {
   margin: 0;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  font-weight: 700;
+  font-weight: var(--trk-font-weight-bold);
   font-size: 11px;
-  color: rgba(240, 248, 255, 0.72);
+  color: var(--trk-primary);
 }
 
 .tracking-hero h1 {
@@ -71,7 +82,7 @@ body {
 .tracking-hero p {
   margin: 0;
   max-width: 620px;
-  color: rgba(245, 250, 255, 0.9);
+  color: var(--trk-muted);
 }
 
 .tracking-form {
@@ -82,28 +93,28 @@ body {
 }
 
 .tracking-form input {
-  border: 1px solid rgba(218, 235, 255, 0.6);
+  border: 1px solid var(--trk-border);
   border-radius: 14px;
   padding: 14px 16px;
   font-size: 15px;
-  background: rgba(243, 249, 255, 0.92);
-  color: #0e2038;
+  background: #ffffff;
+  color: var(--trk-text);
 }
 
 .tracking-form button {
-  border: 0;
+  border: 1px solid var(--trk-primary);
   border-radius: 14px;
   padding: 14px 22px;
-  font-weight: 800;
-  color: #0e2038;
-  background: linear-gradient(125deg, #ffddab, #f7b95f);
+  font-weight: var(--trk-font-weight-medium);
+  color: #ffffff;
+  background: var(--trk-primary);
   cursor: pointer;
 }
 
 .tracking-error {
   margin: 12px 0 0;
-  color: #ffd4db;
-  font-weight: 700;
+  color: var(--trk-danger);
+  font-weight: var(--trk-font-weight-medium);
 }
 
 .tracking-progress-card {
@@ -127,14 +138,14 @@ body {
   border-radius: 999px;
   padding: 6px 10px;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: var(--trk-font-weight-bold);
   border: 1px solid transparent;
 }
 
 .status-info {
-  color: #1f62a3;
-  border-color: #b8d4ef;
-  background: #eaf4ff;
+  color: var(--trk-primary);
+  border-color: #c7d2fe;
+  background: #eef2ff;
 }
 
 .status-success {
@@ -179,14 +190,14 @@ body {
   left: calc(50% + 14px);
   width: calc(100% - 18px);
   height: 2px;
-  background: #d4dfed;
+  background: var(--trk-border);
 }
 
 .step-dot {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  border: 2px solid #9fb2c9;
+  border: 2px solid #a5b4fc;
   background: #ffffff;
   position: relative;
   z-index: 1;
@@ -194,7 +205,7 @@ body {
 
 .step-label {
   font-size: 12px;
-  font-weight: 700;
+  font-weight: var(--trk-font-weight-medium);
   color: var(--trk-muted);
 }
 
@@ -237,12 +248,12 @@ body {
   letter-spacing: 0.05em;
   color: var(--trk-muted);
   margin-bottom: 4px;
-  font-weight: 700;
+  font-weight: var(--trk-font-weight-medium);
 }
 
 .summary-grid dd {
   margin: 0;
-  font-weight: 700;
+  font-weight: var(--trk-font-weight-medium);
   word-break: break-word;
 }
 
@@ -323,3 +334,4 @@ body {
     grid-template-columns: 1fr;
   }
 }
+

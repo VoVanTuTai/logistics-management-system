@@ -39,14 +39,14 @@ export function ShipmentsTable({
         <tr>
           <th style={styles.headerCell}>Vận đơn</th>
           <th style={styles.headerCell}>Trạng thái</th>
-          <th style={styles.headerCell}>Nen tang</th>
-          <th style={styles.headerCell}>Nguoi gui</th>
-          <th style={styles.headerCell}>Nguoi nhan</th>
-          <th style={styles.headerCell}>Khu vuc</th>
+          <th style={styles.headerCell}>Nền tảng</th>
+          <th style={styles.headerCell}>Người gửi</th>
+          <th style={styles.headerCell}>Người nhận</th>
+          <th style={styles.headerCell}>Khu vực</th>
           <th style={styles.headerCell}>Vị trí hiện tại</th>
-          <th style={styles.headerCell}>Tao luc</th>
+          <th style={styles.headerCell}>Tạo lúc</th>
           <th style={styles.headerCell}>Cập nhật lúc</th>
-          <th style={styles.headerCell}>Hanh dong</th>
+          <th style={styles.headerCell}>Hành động</th>
         </tr>
       </thead>
       <tbody>
@@ -84,7 +84,7 @@ export function ShipmentsTable({
                         : 'Chỉ quét phát khi kiện đã xuống bưu cục (SCAN_INBOUND)'
                     }
                   >
-                    Quet phat
+                    Quét phát
                   </button>
                   <button type="button" onClick={() => onPrint?.(item)}>
                     In vận đơn

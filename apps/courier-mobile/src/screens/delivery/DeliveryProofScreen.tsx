@@ -275,7 +275,7 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
               <Text style={styles.infoValue}>{receiverPhone}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Dia chi giao</Text>
+              <Text style={styles.infoLabel}>Địa chỉ giao</Text>
               <Text style={styles.infoValue}>{deliveryAddress}</Text>
             </View>
             {shipmentQuery.isLoading ? (
@@ -533,8 +533,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   messageCardNeutral: {
-    borderColor: '#BFDBFE',
-    backgroundColor: '#EFF6FF',
+    borderColor: '#C7D2FE',
+    backgroundColor: '#EEF2FF',
   },
   messageCardResult: {
     borderColor: '#BBF7D0',
@@ -636,3 +636,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
+

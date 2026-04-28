@@ -15,11 +15,11 @@ interface HomeHeaderProps {
 }
 
 const GRADIENT_STOPS = [
-  '#0A1D36',
-  '#0C2340',
-  '#112C4F',
-  '#15345E',
-  '#1A406D',
+  '#3730A3',
+  '#4338CA',
+  '#4F46E5',
+  '#6366F1',
+  '#818CF8',
 ] as const;
 
 function HeaderIconButton({
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
   },
   greeting: {
     ...theme.typography.body.md,
-    color: '#C2D8F8',
+    color: '#C7D2FE',
   },
   userName: {
     ...theme.typography.title.sm,
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   },
   hubName: {
     ...theme.typography.caption.md,
-    color: '#AFC5E8',
+    color: '#A5B4FC',
     marginTop: theme.spacing.xs,
   },
   actionsRow: {
@@ -166,6 +166,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     ...theme.typography.caption.md,
-    color: '#D8E7FA',
+    color: '#E0E7FF',
   },
 });
+

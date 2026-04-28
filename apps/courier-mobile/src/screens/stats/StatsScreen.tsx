@@ -41,8 +41,8 @@ export function StatsScreen(): React.JSX.Element {
       subtitle: 'Yêu cầu hỗ trợ',
       value: `${assignedCount} phiên`,
       iconName: 'headset-outline' as const,
-      iconColor: '#0A6E89',
-      iconBgColor: '#E1F8FA',
+      iconColor: '#4338CA',
+      iconBgColor: '#EEF2FF',
     },
     {
       id: 'efficiency',
@@ -50,8 +50,8 @@ export function StatsScreen(): React.JSX.Element {
       subtitle: 'Tỷ lệ hoàn thành',
       value: totalCount > 0 ? `${Math.round((completedCount / totalCount) * 100)}%` : '0%',
       iconName: 'trending-up-outline' as const,
-      iconColor: '#24539E',
-      iconBgColor: '#E6F0FF',
+      iconColor: '#4F46E5',
+      iconBgColor: '#EEF2FF',
     },
   ];
 
@@ -257,3 +257,4 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
   },
 });
+

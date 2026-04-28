@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: '800',
+    fontWeight: '700',
     color: theme.colors.textPrimary,
   },
   subtitle: {
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
   primaryActionTitle: {
     color: '#FFFFFF',
     fontSize: 19,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   primaryActionHint: {
     color: '#DDE8FF',

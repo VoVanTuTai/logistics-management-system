@@ -48,7 +48,7 @@ export function HubScanForm({
 
   return (
     <form onSubmit={onFormSubmit} style={styles.form}>
-      <h3 style={styles.title}>Tac vu quét</h3>
+      <h3 style={styles.title}>Tác vụ quét</h3>
       <select {...form.register('scanType')}>
         <option value="PICKUP">{formatScanTypeLabel('PICKUP')}</option>
         <option value="INBOUND">{formatScanTypeLabel('INBOUND')}</option>

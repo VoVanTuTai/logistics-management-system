@@ -16,11 +16,11 @@ import type { AppNavigatorParamList } from '../../navigation/types';
 import { parsePickupScannedCode } from '../../features/scan/pickup.scanner.adapter';
 
 const HEADER_GRADIENT_STOPS = [
-  '#0A1D36',
-  '#0C2340',
-  '#112C4F',
-  '#15345E',
-  '#1A406D',
+  '#3730A3',
+  '#4338CA',
+  '#4F46E5',
+  '#6366F1',
+  '#818CF8',
 ] as const;
 
 const actions: ScanActionItemData[] = [
@@ -28,15 +28,15 @@ const actions: ScanActionItemData[] = [
     id: 'ky-nhan',
     label: 'Ký nhận',
     iconName: 'document-text-outline',
-    iconColor: '#24539E',
-    iconBgColor: '#E6F0FF',
+    iconColor: '#4F46E5',
+    iconBgColor: '#EEF2FF',
   },
   {
     id: 'ky-nhan-chuyen-hoan',
     label: 'Ký nhận chuyển hoàn',
     iconName: 'return-up-back-outline',
-    iconColor: '#0A6E89',
-    iconBgColor: '#E1F8FA',
+    iconColor: '#4338CA',
+    iconBgColor: '#EEF2FF',
   },
   {
     id: 'nhan-kien',
@@ -56,15 +56,15 @@ const actions: ScanActionItemData[] = [
     id: 'go-bao',
     label: 'Gỡ bao',
     iconName: 'folder-open-outline',
-    iconColor: '#24539E',
-    iconBgColor: '#E6F0FF',
+    iconColor: '#4F46E5',
+    iconBgColor: '#EEF2FF',
   },
   {
     id: 'phat-hang',
     label: 'Phát hàng',
     iconName: 'paper-plane-outline',
-    iconColor: '#0A6E89',
-    iconBgColor: '#E1F8FA',
+    iconColor: '#4338CA',
+    iconBgColor: '#EEF2FF',
   },
   {
     id: 'van-de',
@@ -84,22 +84,22 @@ const actions: ScanActionItemData[] = [
     id: 'kien-den',
     label: 'Kiện đến',
     iconName: 'download-outline',
-    iconColor: '#24539E',
-    iconBgColor: '#E6F0FF',
+    iconColor: '#4F46E5',
+    iconBgColor: '#EEF2FF',
   },
   {
     id: 'xe-den',
     label: 'Xe đến',
     iconName: 'car-outline',
-    iconColor: '#0A6E89',
-    iconBgColor: '#E1F8FA',
+    iconColor: '#4338CA',
+    iconBgColor: '#EEF2FF',
   },
   {
     id: 'xe-di',
     label: 'Xe đi',
     iconName: 'car-sport-outline',
-    iconColor: '#24539E',
-    iconBgColor: '#E6F0FF',
+    iconColor: '#4F46E5',
+    iconBgColor: '#EEF2FF',
   },
   {
     id: 'kiem-ton-kho',
@@ -119,15 +119,15 @@ const actions: ScanActionItemData[] = [
     id: 'tem-hang-gia-tri-cao',
     label: 'Tem hàng giá trị cao',
     iconName: 'pricetag-outline',
-    iconColor: '#24539E',
-    iconBgColor: '#E6F0FF',
+    iconColor: '#4F46E5',
+    iconBgColor: '#EEF2FF',
   },
   {
     id: 'kiem-tra-tem-gia-tri-cao',
     label: 'Kiểm tra tem giá trị cao',
     iconName: 'shield-checkmark-outline',
-    iconColor: '#0A6E89',
-    iconBgColor: '#E1F8FA',
+    iconColor: '#4338CA',
+    iconBgColor: '#EEF2FF',
   },
 ];
 
@@ -251,7 +251,7 @@ export function ScanScreen(): React.JSX.Element {
               </View>
 
               <View style={styles.scanBadge}>
-                <Ionicons name="scan" size={20} color="#D8E7FA" />
+                <Ionicons name="scan" size={20} color="#E0E7FF" />
                 <Text style={styles.scanBadgeText}>Scan Ops</Text>
               </View>
             </View>
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
   },
   greeting: {
     ...theme.typography.body.md,
-    color: '#C2D8F8',
+    color: '#C7D2FE',
   },
   userName: {
     ...theme.typography.title.sm,
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
   },
   hubName: {
     ...theme.typography.caption.md,
-    color: '#AFC5E8',
+    color: '#A5B4FC',
     marginTop: 4,
   },
   scanBadge: {
@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
   },
   scanBadgeText: {
     ...theme.typography.caption.sm,
-    color: '#D8E7FA',
+    color: '#E0E7FF',
   },
   scrollView: {
     flex: 1,
@@ -379,3 +379,4 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.sm,
   },
 });
+

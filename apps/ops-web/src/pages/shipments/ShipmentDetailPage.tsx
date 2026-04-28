@@ -53,7 +53,7 @@ export function ShipmentDetailPage(): React.JSX.Element {
   });
 
   if (detailQuery.isLoading) {
-    return <p>Đang tải chi tiet vận đơn...</p>;
+    return <p>Đang tải chi tiết vận đơn...</p>;
   }
 
   if (detailQuery.isError) {
@@ -67,8 +67,8 @@ export function ShipmentDetailPage(): React.JSX.Element {
   return (
     <section>
       <h2>Chi tiết vận đơn</h2>
-      <p>Ma vận đơn: {detailQuery.data.shipmentCode}</p>
-      <p>Trạng thái hien tai: {formatShipmentStatusLabel(detailQuery.data.currentStatus)}</p>
+      <p>Mã vận đơn: {detailQuery.data.shipmentCode}</p>
+      <p>Trạng thái hiện tại: {formatShipmentStatusLabel(detailQuery.data.currentStatus)}</p>
       <p>Vị trí hiện tại: {detailQuery.data.currentLocation ?? 'Không có'}</p>
       <p>Cập nhật lúc: {formatDateTime(detailQuery.data.updatedAt)}</p>
 
@@ -76,12 +76,12 @@ export function ShipmentDetailPage(): React.JSX.Element {
         <strong>Điểm vào nghiệp vụ liên quan</strong>
         <div style={styles.entryLinks}>
           <Link to={`${routePaths.tasks}?shipmentCode=${encodeURIComponent(detailQuery.data.shipmentCode)}`}>
-            Phan cong/phan cong lai tác vụ
+            Phân công/phân công lại tác vụ
           </Link>
           <Link
             to={`${routePaths.manifests}?shipmentCode=${encodeURIComponent(detailQuery.data.shipmentCode)}`}
           >
-            Them vao bao tải
+            Thêm vào bao tải
           </Link>
           <Link to={`${routePaths.scans}?shipmentCode=${encodeURIComponent(detailQuery.data.shipmentCode)}`}>
             Quét hub
@@ -93,7 +93,7 @@ export function ShipmentDetailPage(): React.JSX.Element {
       </div>
 
       <form onSubmit={onSubmit} style={styles.form}>
-        <label htmlFor="note">Ghi chu van hanh</label>
+        <label htmlFor="note">Ghi chú vận hành</label>
         <textarea id="note" rows={4} {...form.register('note')} />
         <button type="submit" disabled={updateMutation.isPending}>
           {updateMutation.isPending ? 'Đang lưu...' : 'Lưu'}
