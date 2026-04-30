@@ -13,72 +13,11 @@ interface MonitorReceiveRow {
   soDonChuaQuetGui: number;
 }
 
-const MOCK_ROWS: MonitorReceiveRow[] = [
-  {
-    stt: 1,
-    ngay: '2026-04-28',
-    bcNhan: '(NAA) Nghi Lộc 2',
-    maBcNhan: '238K02',
-    tenKhachHang: '-',
-    maKhachHang: '-',
-    tongDonNhan: 1,
-    soDonChuaQuetGui: 1,
-  },
-  {
-    stt: 2,
-    ngay: '2026-04-28',
-    bcNhan: '(NAA) Nghi Lộc 2',
-    maBcNhan: '238K02',
-    tenKhachHang: 'CÔNG TY TNHH SHOP M...',
-    maKhachHang: '084LC00005',
-    tongDonNhan: 2,
-    soDonChuaQuetGui: 2,
-  },
-  {
-    stt: 3,
-    ngay: '2026-04-28',
-    bcNhan: '(NAA) Nghi Lộc 2',
-    maBcNhan: '238K02',
-    tenKhachHang: 'TikTok Pte. Ltd.',
-    maKhachHang: '084LC00076',
-    tongDonNhan: 25,
-    soDonChuaQuetGui: 25,
-  },
-  {
-    stt: 4,
-    ngay: '2026-04-28',
-    bcNhan: '(NAA) Nghi Lộc 2',
-    maBcNhan: '238K02',
-    tenKhachHang: 'NGUYỄN THỊ KIM NG...',
-    maKhachHang: '262LC06159',
-    tongDonNhan: 1,
-    soDonChuaQuetGui: 1,
-  },
-  {
-    stt: 5,
-    ngay: '2026-04-28',
-    bcNhan: '(NAA) Nghi Lộc 2',
-    maBcNhan: '238K02',
-    tenKhachHang: 'NGUYỄN THỊ ĐÀO',
-    maKhachHang: '238LC07166',
-    tongDonNhan: 1,
-    soDonChuaQuetGui: 1,
-  },
-  {
-    stt: 6,
-    ngay: '2026-04-28',
-    bcNhan: '(NAA) Nghi Lộc 2',
-    maBcNhan: '238K02',
-    tenKhachHang: 'TRẦN VĂN HÒA',
-    maKhachHang: '238LC21035',
-    tongDonNhan: 7,
-    soDonChuaQuetGui: 7,
-  },
-];
+const rows: MonitorReceiveRow[] = [];
 
 export function MonitorDataHangNhanPage(): React.JSX.Element {
-  const totalReceived = MOCK_ROWS.reduce((sum, row) => sum + row.tongDonNhan, 0);
-  const totalPendingOutboundScan = MOCK_ROWS.reduce(
+  const totalReceived = rows.reduce((sum, row) => sum + row.tongDonNhan, 0);
+  const totalPendingOutboundScan = rows.reduce(
     (sum, row) => sum + row.soDonChuaQuetGui,
     0,
   );
@@ -180,7 +119,7 @@ export function MonitorDataHangNhanPage(): React.JSX.Element {
             </tr>
           </thead>
           <tbody>
-            {MOCK_ROWS.map((row) => (
+            {rows.map((row) => (
               <tr key={row.stt}>
                 <td>{row.stt}</td>
                 <td>{row.ngay}</td>
@@ -194,6 +133,11 @@ export function MonitorDataHangNhanPage(): React.JSX.Element {
                 </td>
               </tr>
             ))}
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={8}>Chưa có dữ liệu hàng nhận từ server.</td>
+              </tr>
+            ) : null}
           </tbody>
         </table>
       </section>

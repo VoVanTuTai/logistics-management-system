@@ -4,8 +4,7 @@
   "version": "0.1.0",
   "scripts": {
     "build": "prisma generate --schema prisma/schema.prisma && tsc -p tsconfig.json",
-    "db:prepare": "prisma generate --schema prisma/schema.prisma && prisma db push --schema prisma/schema.prisma && ts-node prisma/seed.ts",
-    "seed": "ts-node prisma/seed.ts",
+    "db:prepare": "prisma generate --schema prisma/schema.prisma && prisma db push --schema prisma/schema.prisma",
     "start": "node dist/main.js",
     "start:dev": "npm run db:prepare && ts-node src/main.ts"
   },

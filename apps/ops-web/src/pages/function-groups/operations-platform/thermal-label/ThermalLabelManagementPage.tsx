@@ -12,56 +12,10 @@ interface UsedBagLabelRow {
   destinationHubCode: string;
 }
 
-const MOCK_USED_BAG_LABELS: UsedBagLabelRow[] = [
-  {
-    id: 'bag-001',
-    bagCode: 'MB0286521001',
-    shipmentCount: 26,
-    operationAt: '2026-04-21 08:13:42',
-    uploadedAt: '2026-04-21 08:14:03',
-    originHubCode: '028C01',
-    destinationHubCode: '030C02',
-  },
-  {
-    id: 'bag-002',
-    bagCode: 'MB0286521002',
-    shipmentCount: 31,
-    operationAt: '2026-04-21 08:27:11',
-    uploadedAt: '2026-04-21 08:27:45',
-    originHubCode: '028C01',
-    destinationHubCode: '030C02',
-  },
-  {
-    id: 'bag-003',
-    bagCode: 'MB0026521003',
-    shipmentCount: 19,
-    operationAt: '2026-04-21 09:05:23',
-    uploadedAt: '2026-04-21 09:05:58',
-    originHubCode: '002A15',
-    destinationHubCode: '003B09',
-  },
-  {
-    id: 'bag-004',
-    bagCode: 'MB0036521004',
-    shipmentCount: 42,
-    operationAt: '2026-04-21 09:41:08',
-    uploadedAt: '2026-04-21 09:41:39',
-    originHubCode: '003B09',
-    destinationHubCode: '001A01',
-  },
-  {
-    id: 'bag-005',
-    bagCode: 'MB0016521005',
-    shipmentCount: 14,
-    operationAt: '2026-04-21 10:12:57',
-    uploadedAt: '2026-04-21 10:13:22',
-    originHubCode: '001A01',
-    destinationHubCode: '002A15',
-  },
-];
+const usedBagLabels: UsedBagLabelRow[] = [];
 
 export function ThermalLabelManagementPage(): React.JSX.Element {
-  const totalShipments = MOCK_USED_BAG_LABELS.reduce(
+  const totalShipments = usedBagLabels.reduce(
     (sum, item) => sum + item.shipmentCount,
     0,
   );
@@ -79,7 +33,7 @@ export function ThermalLabelManagementPage(): React.JSX.Element {
       <section className="ops-thermal-management__summary">
         <article className="ops-thermal-management__summary-card">
           <span>Tổng tem bao đã sử dụng</span>
-          <strong>{MOCK_USED_BAG_LABELS.length}</strong>
+          <strong>{usedBagLabels.length}</strong>
         </article>
         <article className="ops-thermal-management__summary-card">
           <span>Tổng số đơn trong các bao</span>
@@ -100,7 +54,7 @@ export function ThermalLabelManagementPage(): React.JSX.Element {
             </tr>
           </thead>
           <tbody>
-            {MOCK_USED_BAG_LABELS.map((item) => (
+            {usedBagLabels.map((item) => (
               <tr key={item.id}>
                 <td className="ops-thermal-management__bag-code">{item.bagCode}</td>
                 <td>{item.shipmentCount}</td>
@@ -110,6 +64,11 @@ export function ThermalLabelManagementPage(): React.JSX.Element {
                 <td>{item.destinationHubCode}</td>
               </tr>
             ))}
+            {usedBagLabels.length === 0 ? (
+              <tr>
+                <td colSpan={6}>Chưa có dữ liệu tem bao từ server.</td>
+              </tr>
+            ) : null}
           </tbody>
         </table>
       </section>

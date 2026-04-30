@@ -12,10 +12,8 @@ try {
   Write-Host '[db] applying schema'
   & (Join-Path $PSScriptRoot 'migrate-all.ps1')
 
-  Write-Host '[db] seeding test data'
-  & (Join-Path $PSScriptRoot 'seed-all.ps1')
-
   Write-Host 'dev-up completed'
+  Write-Host 'Schema is ready. Seed data is no longer loaded automatically.'
   Write-Host 'Now start services with npm run start:dev in each service you need.'
 }
 finally {

@@ -39,8 +39,6 @@ export function LoginScreen(): React.JSX.Element {
         <Text style={styles.formDescription}>
           App chi goi gateway-bff. Session/token duoc luu an toan boi auth module.
         </Text>
-        <Text style={styles.seedHint}>Tai khoan seed local: 30000001 / password</Text>
-
         <LoginForm
           loading={loading}
           errorMessage={errorMessage}
@@ -95,10 +93,5 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
     marginBottom: theme.spacing.sm,
     lineHeight: 19,
-  },
-  seedHint: {
-    ...theme.typography.caption.md,
-    color: theme.colors.info,
-    marginBottom: theme.spacing.lg,
   },
 });

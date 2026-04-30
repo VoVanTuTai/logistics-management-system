@@ -21,8 +21,6 @@ npm run dev
 
 Default dev URL: `http://127.0.0.1:5175`
 
-## Seeded admin account
+## Admin account
 
-- username: `admin.root`
-- password: `admin123456`
-- roles: `SYSTEM_ADMIN`, `OPS_ADMIN`
+Use a real `SYSTEM_ADMIN` account that already exists in auth-service.

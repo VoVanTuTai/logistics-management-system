@@ -243,10 +243,10 @@ function buildPreviewItems(options: BuildPreviewOptions): BagLabelPreviewItem[] 
 
   const createdAtText = formatDateTime(new Date().toISOString());
   const hubTriplet = getHubTriplet(destinationHubCode);
-  const batchSeed = Date.now().toString();
+  const batchTimestamp = Date.now().toString();
 
   return Array.from({ length: quantity }, (_, index) => {
-    const bagCode = `MB${createBagCodeDigits(hubTriplet, batchSeed, index)}`;
+    const bagCode = `MB${createBagCodeDigits(hubTriplet, batchTimestamp, index)}`;
 
     return {
       bagCode,
@@ -273,8 +273,8 @@ function getHubTriplet(hubCode: string): string {
   return digits.padStart(3, '0');
 }
 
-function createBagCodeDigits(hubTriplet: string, batchSeed: string, index: number): string {
-  const timePart = batchSeed.slice(-4).padStart(4, '0');
+function createBagCodeDigits(hubTriplet: string, batchTimestamp: string, index: number): string {
+  const timePart = batchTimestamp.slice(-4).padStart(4, '0');
   const sequencePart = String(index + 1).padStart(3, '0');
   return `${hubTriplet}${timePart}${sequencePart}`;
 }

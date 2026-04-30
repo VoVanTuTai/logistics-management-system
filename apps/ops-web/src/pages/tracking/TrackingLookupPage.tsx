@@ -27,10 +27,8 @@ export function TrackingLookupPage(): React.JSX.Element {
 
   const detailQuery = useTrackingDetailQuery(accessToken, selectedShipmentCode);
   const statusHistoryRows = selectedShipmentCode
-    ? buildTrackingStatusHistoryRows(detailQuery.data?.timeline ?? [], selectedShipmentCode)
+    ? buildTrackingStatusHistoryRows(detailQuery.data?.timeline ?? [])
     : [];
-  const isUsingMockHistory =
-    Boolean(selectedShipmentCode) && (detailQuery.data?.timeline.length ?? 0) === 0;
 
   const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -129,15 +127,11 @@ export function TrackingLookupPage(): React.JSX.Element {
 
           {selectedShipmentCode && detailQuery.isError ? (
             <p className="ops-tracking-lookup__error">
-              Chưa lấy được timeline từ API. Đang hiển thị khung dữ liệu mẫu.
+              Chưa lấy được timeline từ API.
             </p>
           ) : null}
 
           {selectedShipmentCode ? <TrackingStatusHistoryTable rows={statusHistoryRows} /> : null}
-
-          {isUsingMockHistory ? (
-            <p className="ops-tracking-lookup__empty">Đang hiển thị dữ liệu mẫu cho giao diện.</p>
-          ) : null}
         </article>
       </div>
     </section>
@@ -167,10 +161,9 @@ function mergeShipmentCodes(currentCodes: string[], incomingCodes: string[]): st
 
 function buildTrackingStatusHistoryRows(
   timeline: TrackingTimelineEventDto[],
-  shipmentCode: string,
 ): TrackingStatusHistoryRow[] {
   if (timeline.length === 0) {
-    return buildMockTrackingStatusHistoryRows(shipmentCode);
+    return [];
   }
 
   return timeline.map((event, index) => ({
@@ -192,87 +185,3 @@ function buildTimelineDescription(event: TrackingTimelineEventDto): string {
   return `[${location}] ${status} (${event.eventSource})`;
 }
 
-function buildMockTrackingStatusHistoryRows(shipmentCode: string): TrackingStatusHistoryRow[] {
-  const baseRows = [
-    {
-      scanTime: '2023-07-20 10:36:56',
-      uploadedTime: '2023-07-20 10:53:43',
-      scanCategory: 'Lấy hàng',
-      description:
-        '[(NAA) Nghi Lộc 2] Tiến hành quét [Lấy hàng]. Nhân viên quét mã [Võ Văn Thức].',
-      actualWeight: '--',
-      chargedWeight: '--',
-    },
-    {
-      scanTime: '2023-07-20 10:51:27',
-      uploadedTime: '2023-07-20 10:51:54',
-      scanCategory: 'Lấy hàng',
-      description: `[(NAA) Nghi Lộc 2] Tiến hành quét [Lấy hàng]. Mã vận đơn [${shipmentCode}].`,
-      actualWeight: '--',
-      chargedWeight: '--',
-    },
-    {
-      scanTime: '2023-07-20 10:51:56',
-      uploadedTime: '2023-07-20 10:52:26',
-      scanCategory: 'Quét mã nhập kho',
-      description: '[(NAA) Nghi Lộc 2] Đã nhập kho. Nhân viên quét mã [Võ Văn Thức].',
-      actualWeight: '--',
-      chargedWeight: '--',
-    },
-    {
-      scanTime: '2023-07-20 20:58:58',
-      uploadedTime: '2023-07-20 20:58:58',
-      scanCategory: 'TT hàng đến',
-      description:
-        'Chuyển phát nhanh đến [(TTKT NGHỆ AN)], trạm trước là []. Nhân viên quét mã [Nguyễn Thị Thùy].',
-      actualWeight: '0.05',
-      chargedWeight: '--',
-    },
-    {
-      scanTime: '2023-07-20 20:59:44',
-      uploadedTime: '2023-07-20 20:59:45',
-      scanCategory: 'Đóng bao',
-      description: 'Hàng chuyển nhanh tại [(TTKT NGHỆ AN)] đã tiến hành đóng bao [B001826128].',
-      actualWeight: '--',
-      chargedWeight: '--',
-    },
-    {
-      scanTime: '2023-07-20 21:04:33',
-      uploadedTime: '2023-07-20 21:14:29',
-      scanCategory: 'Nhận hàng',
-      description: '[(NAA) Nghi Lộc 2] của [HQ1] đã lấy hàng. Nhân viên quét mã [HQ].',
-      actualWeight: '--',
-      chargedWeight: '--',
-    },
-    {
-      scanTime: '2023-07-20 21:11:33',
-      uploadedTime: '2023-07-20 21:14:30',
-      scanCategory: 'Gửi hàng',
-      description: 'Hàng chuyển nhanh tại [(TTKT NGHỆ AN)] quét xe đi, gửi đến [(TTKT ĐÀ NẴNG)].',
-      actualWeight: '--',
-      chargedWeight: '--',
-    },
-    {
-      scanTime: '2023-07-21 01:24:11',
-      uploadedTime: '2023-07-21 01:24:17',
-      scanCategory: 'Xe đi',
-      description: 'Mã tuyến đường [238GW0236GW00130]. Biển số xe [37H05713]. Tem xe [DKGX23072100178].',
-      actualWeight: '--',
-      chargedWeight: '--',
-    },
-    {
-      scanTime: '2023-07-21 11:21:26',
-      uploadedTime: '2023-07-21 11:21:30',
-      scanCategory: 'Xe đến',
-      description: 'Mã tuyến đường [238GW0236GW00130]. Biển số xe [37H05713] đến [(TTKT ĐÀ NẴNG)].',
-      actualWeight: '--',
-      chargedWeight: '--',
-    },
-  ] as const;
-
-  return baseRows.map((row, index) => ({
-    id: `mock-${index + 1}`,
-    stt: index + 1,
-    ...row,
-  }));
-}

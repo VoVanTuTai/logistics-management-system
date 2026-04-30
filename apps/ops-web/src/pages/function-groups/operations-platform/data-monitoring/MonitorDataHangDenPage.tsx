@@ -13,48 +13,7 @@ interface ArrivalMonitorRow {
   nguoiQuet: string;
 }
 
-const MOCK_ARRIVAL_ROWS: ArrivalMonitorRow[] = [
-  {
-    stt: 1,
-    maVanDon: '842502785302',
-    thoiGianQuetDen: '2026-04-28 08:12:35',
-    bcDen: '(HNI) Hà Đông',
-    maBcDen: '001K03',
-    bcGui: '(NAA) Nghi Lộc 2',
-    trangThai: 'Đã quét hàng đến',
-    nguoiQuet: 'OPS_HAD_01',
-  },
-  {
-    stt: 2,
-    maVanDon: '842502785319',
-    thoiGianQuetDen: '2026-04-28 08:18:11',
-    bcDen: '(HNI) Hà Đông',
-    maBcDen: '001K03',
-    bcGui: '(NAA) Nghi Lộc 2',
-    trangThai: 'Đã quét hàng đến',
-    nguoiQuet: 'OPS_HAD_01',
-  },
-  {
-    stt: 3,
-    maVanDon: '842502785326',
-    thoiGianQuetDen: '2026-04-28 09:04:27',
-    bcDen: '(HNI) Nam Từ Liêm',
-    maBcDen: '001K07',
-    bcGui: '(THA) Bỉm Sơn',
-    trangThai: 'Đã quét hàng đến',
-    nguoiQuet: 'OPS_NTL_02',
-  },
-  {
-    stt: 4,
-    maVanDon: '842502785333',
-    thoiGianQuetDen: '2026-04-28 09:21:09',
-    bcDen: '(HNI) Cầu Giấy',
-    maBcDen: '001K05',
-    bcGui: '(NAA) Vinh',
-    trangThai: 'Đã quét hàng đến',
-    nguoiQuet: 'OPS_CG_03',
-  },
-];
+const arrivalRows: ArrivalMonitorRow[] = [];
 
 export function MonitorDataHangDenPage(): React.JSX.Element {
   return (
@@ -68,11 +27,11 @@ export function MonitorDataHangDenPage(): React.JSX.Element {
         <div className="ops-monitor-hang-den__summary">
           <article>
             <span>Đã quét đến</span>
-            <strong>{MOCK_ARRIVAL_ROWS.length}</strong>
+            <strong>{arrivalRows.length}</strong>
           </article>
           <article>
             <span>Bưu cục đến</span>
-            <strong>3</strong>
+            <strong>0</strong>
           </article>
         </div>
       </header>
@@ -132,7 +91,7 @@ export function MonitorDataHangDenPage(): React.JSX.Element {
             </tr>
           </thead>
           <tbody>
-            {MOCK_ARRIVAL_ROWS.map((row) => (
+            {arrivalRows.map((row) => (
               <tr key={row.maVanDon}>
                 <td>{row.stt}</td>
                 <td className="ops-monitor-hang-den__code">{row.maVanDon}</td>
@@ -146,6 +105,11 @@ export function MonitorDataHangDenPage(): React.JSX.Element {
                 <td>{row.nguoiQuet}</td>
               </tr>
             ))}
+            {arrivalRows.length === 0 ? (
+              <tr>
+                <td colSpan={8}>Chưa có dữ liệu hàng đến từ server.</td>
+              </tr>
+            ) : null}
           </tbody>
         </table>
       </section>

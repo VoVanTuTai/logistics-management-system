@@ -486,14 +486,14 @@ export function DashboardPage(): React.JSX.Element {
     },
     {
       id: 'slide-2',
-      title: 'J&T OPS CENTER',
+      title: 'NEXUS OPS CENTER',
       slogan: 'FAST RESPONSE • HUB VISIBILITY • SMART DISPATCH',
       description:
         'Tăng tốc phân công tác vụ, cảnh báo nghẽn hub và tối ưu luồng điều phối.',
     },
     {
       id: 'slide-3',
-      title: 'J&T NETWORK',
+      title: 'NEXUS NETWORK',
       slogan: 'DATA DRIVEN • CONTROL TOWER • RELIABILITY',
       description:
         'Đồng bộ dữ liệu đầu-cuối để giảm sai lệch, tăng độ tin cậy cho vận hành.',

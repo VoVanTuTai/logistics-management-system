@@ -1,9 +1,11 @@
-const DEFAULT_COURIER_ID = 'courier.hcm';
-
 function normalizeCourierId(rawValue: string | null | undefined): string {
   const trimmed = (rawValue ?? '').trim();
   if (!trimmed) {
     return '';
+  }
+
+  if (/^3000\d{4}$/.test(trimmed)) {
+    return trimmed;
   }
 
   // Legacy numeric formats (CR001 or 001)
@@ -28,5 +30,5 @@ export function resolveCourierId(
   const fromUsername = normalizeCourierId(username);
   if (fromUsername) return fromUsername;
 
-  return DEFAULT_COURIER_ID;
+  return '';
 }

@@ -4,7 +4,7 @@
   --dash-border: #e2e8f0;
   --dash-text: #334155;
   --dash-muted: #64748b;
-  --dash-primary: #4f46e5;
+  --dash-primary: #2563eb;
   --dash-primary-soft: #eef2ff;
   --dash-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
   display: grid;
@@ -12,10 +12,10 @@
 }
 
 .ops-dashboard__hero {
-  border: 1px solid #6366f1;
+  border: 1px solid var(--dash-primary);
   border-radius: 16px;
   padding: 18px;
-  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 55%, #3730a3 100%);
+  background: var(--dash-primary);
   color: #ffffff;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;

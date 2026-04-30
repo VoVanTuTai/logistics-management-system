@@ -4,12 +4,15 @@ export interface TaskListItemDto {
   taskType: string;
   status: string;
   shipmentCode: string | null;
+  pickupRequestId?: string | null;
   deliveryArea?: string | null;
   senderName?: string | null;
   receiverName?: string | null;
   platform?: string | null;
   isSelectable?: boolean;
   assignedCourierId: string | null;
+  note?: string | null;
+  createdAt?: string | null;
   updatedAt: string;
 }
 
@@ -19,8 +22,10 @@ export interface TaskDetailDto {
   taskType: string;
   status: string;
   shipmentCode: string | null;
+  pickupRequestId?: string | null;
   assignedCourierId: string | null;
   note?: string | null;
+  createdAt?: string | null;
   updatedAt: string;
 }
 
