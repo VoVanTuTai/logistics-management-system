@@ -42,6 +42,10 @@ const DEFAULT_FORM: UserFormState = {
 };
 
 function roleOptionsByGroup(roleGroup: UserRoleGroup): string[] {
+  if (roleGroup === 'MERCHANT') {
+    return ['MERCHANT'];
+  }
+
   if (roleGroup === 'SHIPPER') {
     return ['COURIER'];
   }
@@ -50,6 +54,10 @@ function roleOptionsByGroup(roleGroup: UserRoleGroup): string[] {
 }
 
 function pageTitleByGroup(roleGroup: UserRoleGroup): string {
+  if (roleGroup === 'MERCHANT') {
+    return 'Quan tri - Quan ly tai khoan Merchant';
+  }
+
   return roleGroup === 'SHIPPER'
     ? 'Quan tri - Quan ly tai khoan Shipper'
     : 'Quan tri - Quan ly tai khoan Ops';
@@ -238,7 +246,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
         <h3 style={styles.editorTitle}>
           {editingUser ? `Sua ${editingUser.username}` : 'Tao tai khoan moi'}
         </h3>
-        {!editingUser ? (
+        {!editingUser && roleGroup !== 'MERCHANT' ? (
           <p style={styles.helperText}>
             Neu de trong truong mat khau, he thong se tao mac dinh la "password" cho tai khoan nhan vien.
           </p>

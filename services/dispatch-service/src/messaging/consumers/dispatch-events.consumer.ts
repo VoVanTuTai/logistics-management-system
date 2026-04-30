@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import {
+  ShipmentCreatedPayload,
   DeliveryDeliveredPayload,
   DeliveryFailedPayload,
   DispatchEventHandlersService,
@@ -8,7 +9,12 @@ import {
 } from '../../application/services/dispatch-event-handlers.service';
 
 export interface DispatchConsumerEnvelope {
-  event_type: 'pickup.approved' | 'delivery.delivered' | 'delivery.failed';
+  event_type:
+    | 'shipment.created'
+    | 'pickup.requested'
+    | 'pickup.approved'
+    | 'delivery.delivered'
+    | 'delivery.failed';
   shipment_code?: string | null;
   data?: Record<string, unknown>;
 }
@@ -17,6 +23,8 @@ export interface DispatchConsumerEnvelope {
 export class DispatchEventsConsumer {
   readonly queueName = 'dispatch-service.q';
   readonly routingPatterns = [
+    'shipment.created',
+    'pickup.requested',
     'pickup.approved',
     'delivery.delivered',
     'delivery.failed',
@@ -29,6 +37,20 @@ export class DispatchEventsConsumer {
   ) {}
 
   async handle(payload: DispatchConsumerEnvelope): Promise<void> {
+    if (payload.event_type === 'shipment.created') {
+      await this.dispatchEventHandlersService.handleShipmentCreated(
+        payload as ShipmentCreatedPayload,
+      );
+      return;
+    }
+
+    if (payload.event_type === 'pickup.requested') {
+      await this.dispatchEventHandlersService.handlePickupRequested(
+        payload as PickupApprovedPayload,
+      );
+      return;
+    }
+
     if (payload.event_type === 'pickup.approved') {
       await this.dispatchEventHandlersService.handlePickupApproved(
         payload as PickupApprovedPayload,

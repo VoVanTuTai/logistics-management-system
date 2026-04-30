@@ -13,9 +13,10 @@ import type {
 import { UserAccountRepository } from '../../domain/repositories/user-account.repository';
 import { PrismaService } from './prisma.service';
 
-const ROLE_GROUPS: Record<'OPS' | 'SHIPPER', string[]> = {
+const ROLE_GROUPS: Record<'OPS' | 'SHIPPER' | 'MERCHANT', string[]> = {
   OPS: ['OPS_ADMIN', 'OPS_VIEWER'],
   SHIPPER: ['COURIER'],
+  MERCHANT: ['MERCHANT'],
 };
 
 @Injectable()

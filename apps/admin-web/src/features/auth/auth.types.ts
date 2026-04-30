@@ -3,12 +3,14 @@
 export interface AuthUserDto {
   id: string;
   username: string;
+  displayName: string | null;
+  phone: string | null;
   roles: string[];
   hubCodes?: string[];
 }
 
 export type UserStatus = 'ACTIVE' | 'DISABLED';
-export type UserRoleGroup = 'OPS' | 'SHIPPER';
+export type UserRoleGroup = 'OPS' | 'SHIPPER' | 'MERCHANT';
 
 export interface AdminUserDto {
   id: string;
