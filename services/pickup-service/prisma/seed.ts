@@ -2,56 +2,122 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+const taskStatusPattern = [
+  'CREATED',
+  'CREATED',
+  'CREATED',
+  'ASSIGNED',
+  'ASSIGNED',
+  'ASSIGNED',
+  'COMPLETED',
+  'COMPLETED',
+  'CANCELLED',
+  'CANCELLED',
+] as const;
+
+const hubFixtures = [
+  {
+    key: 'hn',
+    hubCode: '001A001',
+    opsUser: '20000001',
+    merchants: [
+      {
+        code: '41100001',
+        name: 'Shop Minh Anh Hà Nội',
+        phone: '0900003001',
+        address: '15 Nguyễn Văn Lộc, Mộ Lao, Hà Đông, Hà Nội',
+      },
+      {
+        code: '41100002',
+        name: 'Thời trang Bảo Ngọc Hà Nội',
+        phone: '0900003002',
+        address: '88 Trần Duy Hưng, Trung Hòa, Cầu Giấy, Hà Nội',
+      },
+    ],
+  },
+  {
+    key: 'hcm',
+    hubCode: '003A001',
+    opsUser: '20000002',
+    merchants: [
+      {
+        code: '41100003',
+        name: 'Shop Sài Gòn Fresh',
+        phone: '0900003003',
+        address: '24 Lê Lợi, Bến Nghé, Quận 1, Thành phố Hồ Chí Minh',
+      },
+      {
+        code: '41100004',
+        name: 'Mỹ phẩm An Nhiên HCM',
+        phone: '0900003004',
+        address: '70 Nguyễn Trãi, Bến Thành, Quận 1, Thành phố Hồ Chí Minh',
+      },
+    ],
+  },
+] as const;
+
+type TaskSeedStatus = (typeof taskStatusPattern)[number];
+
+function buildShipmentCode(hubCode: string, index: number): string {
+  const hubSegment = hubCode.slice(0, 3);
+  return `101${hubSegment}20${String(index).padStart(4, '0')}`;
+}
+
+function mapPickupRequestStatus(status: TaskSeedStatus) {
+  if (status === 'CREATED') {
+    return 'REQUESTED' as const;
+  }
+
+  if (status === 'COMPLETED') {
+    return 'COMPLETED' as const;
+  }
+
+  if (status === 'CANCELLED') {
+    return 'CANCELLED' as const;
+  }
+
+  return 'APPROVED' as const;
+}
+
+function buildPickupRequests(now: Date) {
+  return hubFixtures.flatMap((hub) =>
+    taskStatusPattern.map((taskStatus, itemIndex) => {
+      const index = itemIndex + 1;
+      const merchant = hub.merchants[itemIndex % hub.merchants.length];
+      const status = mapPickupRequestStatus(taskStatus);
+      const offsetHours = 24 + itemIndex;
+
+      return {
+        id: `seed-pickup-${hub.key}-${String(index).padStart(2, '0')}`,
+        pickupCode: `PU${hub.hubCode}${String(index).padStart(3, '0')}`,
+        status,
+        requesterName: merchant.name,
+        contactPhone: merchant.phone,
+        pickupAddress: merchant.address,
+        note:
+          status === 'CANCELLED'
+            ? `Seed ${hub.hubCode}: lấy hàng thất bại cho ${merchant.code}.`
+            : `Seed ${hub.hubCode}: yêu cầu lấy hàng ${index} của ${merchant.code}.`,
+        approvedBy: status === 'REQUESTED' ? null : hub.opsUser,
+        approvedAt:
+          status === 'REQUESTED'
+            ? null
+            : new Date(now.getTime() - offsetHours * 60 * 60 * 1000),
+        cancellationReason:
+          status === 'CANCELLED' ? 'Seed test: lấy hàng thất bại' : null,
+        completedAt:
+          status === 'COMPLETED'
+            ? new Date(now.getTime() - (offsetHours - 1) * 60 * 60 * 1000)
+            : null,
+        items: [{ shipmentCode: buildShipmentCode(hub.hubCode, index), quantity: 1 }],
+      };
+    }),
+  );
+}
+
 async function main(): Promise<void> {
   const now = new Date();
-
-  const pickupRequests = [
-    {
-      pickupCode: 'PU001A001001',
-      status: 'COMPLETED' as const,
-      requesterName: 'Shop Minh Anh',
-      contactPhone: '0900003001',
-      pickupAddress: '15 Nguyễn Văn Lộc, Mộ Lao, Hà Đông, Hà Nội',
-      note: 'Lấy hàng shop, tuyến 001A00101.',
-      approvedBy: '20000001',
-      approvedAt: new Date(now.getTime() - 5 * 60 * 60 * 1000),
-      cancellationReason: null,
-      completedAt: new Date(now.getTime() - 4 * 60 * 60 * 1000),
-      items: [
-        { shipmentCode: '101000000001', quantity: 1 },
-        { shipmentCode: '101000000002', quantity: 1 },
-      ],
-    },
-    {
-      pickupCode: 'PU001C001001',
-      status: 'APPROVED' as const,
-      requesterName: 'Kho trả hàng Shopee',
-      contactPhone: '0900003003',
-      pickupAddress: 'Hàm Nghi, Nam Từ Liêm, Hà Nội',
-      note: 'Điều phối lấy hàng trả, tuyến 001C00101.',
-      approvedBy: '20000002',
-      approvedAt: new Date(now.getTime() - 2 * 60 * 60 * 1000),
-      cancellationReason: null,
-      completedAt: null,
-      items: [{ shipmentCode: '222000000001', quantity: 1 }],
-    },
-    {
-      pickupCode: 'PU002A001001',
-      status: 'REQUESTED' as const,
-      requesterName: 'TikTok Pte. Ltd.',
-      contactPhone: '0900003002',
-      pickupAddress: 'Hải Châu, Đà Nẵng',
-      note: 'Yêu cầu lấy hàng sàn TMDT.',
-      approvedBy: null,
-      approvedAt: null,
-      cancellationReason: null,
-      completedAt: null,
-      items: [
-        { shipmentCode: '111000000001', quantity: 1 },
-        { shipmentCode: '111000000002', quantity: 1 },
-      ],
-    },
-  ] as const;
+  const pickupRequests = buildPickupRequests(now);
 
   for (const request of pickupRequests) {
     const record = await prisma.pickupRequest.upsert({
@@ -68,6 +134,7 @@ async function main(): Promise<void> {
         completedAt: request.completedAt,
       },
       create: {
+        id: request.id,
         pickupCode: request.pickupCode,
         status: request.status,
         requesterName: request.requesterName,
@@ -91,7 +158,7 @@ async function main(): Promise<void> {
     });
   }
 
-  console.log('pickup-service seed completed');
+  console.log(`pickup-service seed completed: ${pickupRequests.length} requests`);
 }
 
 main()

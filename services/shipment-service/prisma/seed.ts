@@ -2,7 +2,224 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-const LEGACY_SEED_CODES = ['SHP1001', 'SHP1002', 'SHP1003', 'SHP1004'];
+const LEGACY_SEED_CODES = [
+  'SHP1001',
+  'SHP1002',
+  'SHP1003',
+  'SHP1004',
+  '101000000001',
+  '101000000002',
+  '111000000001',
+  '111000000002',
+  '222000000001',
+  '333000000001',
+  '333000000002',
+];
+
+const taskStatusPattern = [
+  'CREATED',
+  'CREATED',
+  'CREATED',
+  'ASSIGNED',
+  'ASSIGNED',
+  'ASSIGNED',
+  'COMPLETED',
+  'COMPLETED',
+  'CANCELLED',
+  'CANCELLED',
+] as const;
+
+const hubFixtures = [
+  {
+    key: 'hn',
+    hubCode: '001A001',
+    hubName: 'Hub Hà Nội',
+    city: 'Hà Nội',
+    routeCode: '001A00101',
+    merchants: [
+      {
+        code: '41100001',
+        name: 'Shop Minh Anh Hà Nội',
+        phone: '0900003001',
+        address: '15 Nguyễn Văn Lộc, Mộ Lao, Hà Đông, Hà Nội',
+      },
+      {
+        code: '41100002',
+        name: 'Thời trang Bảo Ngọc Hà Nội',
+        phone: '0900003002',
+        address: '88 Trần Duy Hưng, Trung Hòa, Cầu Giấy, Hà Nội',
+      },
+    ],
+    receivers: [
+      'Nguyễn Minh Tâm',
+      'Trần Hoài An',
+      'Phạm Thanh Huyền',
+      'Lê Quốc Việt',
+      'Nguyễn Thị Đào',
+      'Đỗ Minh Quân',
+      'Bùi Hà Phương',
+      'Vũ Hải Nam',
+      'Đặng Hoàng Linh',
+      'Phan Anh Tú',
+    ],
+    receiverAddress: '12 Tố Hữu, La Khê, Hà Đông, Hà Nội',
+  },
+  {
+    key: 'hcm',
+    hubCode: '003A001',
+    hubName: 'Hub Hồ Chí Minh',
+    city: 'Thành phố Hồ Chí Minh',
+    routeCode: '003A00101',
+    merchants: [
+      {
+        code: '41100003',
+        name: 'Shop Sài Gòn Fresh',
+        phone: '0900003003',
+        address: '24 Lê Lợi, Bến Nghé, Quận 1, Thành phố Hồ Chí Minh',
+      },
+      {
+        code: '41100004',
+        name: 'Mỹ phẩm An Nhiên HCM',
+        phone: '0900003004',
+        address: '70 Nguyễn Trãi, Bến Thành, Quận 1, Thành phố Hồ Chí Minh',
+      },
+    ],
+    receivers: [
+      'Võ Minh Đức',
+      'Nguyễn Hồng Ngọc',
+      'Trần Gia Bảo',
+      'Lê Phương Uyên',
+      'Hoàng Tuấn Kiệt',
+      'Mai Thanh Trúc',
+      'Đinh Khánh Linh',
+      'Phạm Quốc Dũng',
+      'Lâm Nhật Minh',
+      'Cao Bảo Châu',
+    ],
+    receiverAddress: '18 Cộng Hòa, Phường 4, Tân Bình, Thành phố Hồ Chí Minh',
+  },
+] as const;
+
+type TaskSeedStatus = (typeof taskStatusPattern)[number];
+
+function buildShipmentCode(
+  hubCode: string,
+  flow: 'delivery' | 'pickup',
+  index: number,
+): string {
+  const hubSegment = hubCode.slice(0, 3);
+  const flowSegment = flow === 'delivery' ? '10' : '20';
+  return `101${hubSegment}${flowSegment}${String(index).padStart(4, '0')}`;
+}
+
+function mapDeliveryStatus(status: TaskSeedStatus, index: number) {
+  if (status === 'CREATED') {
+    return 'SCAN_INBOUND' as const;
+  }
+
+  if (status === 'ASSIGNED') {
+    return 'TASK_ASSIGNED' as const;
+  }
+
+  if (status === 'COMPLETED') {
+    return 'DELIVERED' as const;
+  }
+
+  return index % 2 === 0 ? ('DELIVERY_FAILED' as const) : ('CANCELLED' as const);
+}
+
+function mapPickupStatus(status: TaskSeedStatus) {
+  if (status === 'CREATED') {
+    return 'CREATED' as const;
+  }
+
+  if (status === 'ASSIGNED') {
+    return 'TASK_ASSIGNED' as const;
+  }
+
+  if (status === 'COMPLETED') {
+    return 'PICKUP_COMPLETED' as const;
+  }
+
+  return 'CANCELLED' as const;
+}
+
+function buildShipments() {
+  return hubFixtures.flatMap((hub) => {
+    const deliveryShipments = taskStatusPattern.map((taskStatus, itemIndex) => {
+      const merchant = hub.merchants[itemIndex % hub.merchants.length];
+      const index = itemIndex + 1;
+
+      return {
+        code: buildShipmentCode(hub.hubCode, 'delivery', index),
+        currentStatus: mapDeliveryStatus(taskStatus, index),
+        metadata: {
+          sourceType: 'SHOP',
+          flow: 'DELIVERY',
+          seedHub: hub.key,
+          merchantCode: merchant.code,
+          merchantName: merchant.name,
+          senderName: merchant.name,
+          senderPhone: merchant.phone,
+          senderAddress: merchant.address,
+          receiverName: hub.receivers[itemIndex],
+          receiverPhone: `091${String(itemIndex + 1).padStart(7, '0')}`,
+          receiverAddress: hub.receiverAddress,
+          receiverRegion: hub.city,
+          platform: 'Merchant Portal',
+          serviceType: 'Giao hàng tiêu chuẩn',
+          originHubCode: hub.hubCode,
+          destinationHubCode: hub.hubCode,
+          currentHubCode: hub.hubCode,
+          currentLocation: hub.hubCode,
+          routeCode: hub.routeCode,
+          taskSeedStatus: taskStatus,
+          note: `Seed ${hub.hubName}: đơn giao ${index} trạng thái ${taskStatus}.`,
+        },
+        cancellationReason:
+          taskStatus === 'CANCELLED' ? 'Seed test: khách hủy đơn giao' : null,
+      };
+    });
+
+    const pickupShipments = taskStatusPattern.map((taskStatus, itemIndex) => {
+      const merchant = hub.merchants[itemIndex % hub.merchants.length];
+      const index = itemIndex + 1;
+
+      return {
+        code: buildShipmentCode(hub.hubCode, 'pickup', index),
+        currentStatus: mapPickupStatus(taskStatus),
+        metadata: {
+          sourceType: 'SHOP',
+          flow: 'PICKUP',
+          seedHub: hub.key,
+          merchantCode: merchant.code,
+          merchantName: merchant.name,
+          senderName: merchant.name,
+          senderPhone: merchant.phone,
+          senderAddress: merchant.address,
+          receiverName: hub.receivers[(itemIndex + 3) % hub.receivers.length],
+          receiverPhone: `092${String(itemIndex + 1).padStart(7, '0')}`,
+          receiverAddress: hub.receiverAddress,
+          receiverRegion: hub.city,
+          platform: 'Merchant Portal',
+          serviceType: 'Lấy hàng tại nhà',
+          originHubCode: hub.hubCode,
+          destinationHubCode: hub.hubCode,
+          currentHubCode: hub.hubCode,
+          currentLocation: hub.hubCode,
+          routeCode: hub.routeCode,
+          pickupRequestId: `seed-pickup-${hub.key}-${String(index).padStart(2, '0')}`,
+          taskSeedStatus: taskStatus,
+          note: `Seed ${hub.hubName}: đơn lấy ${index} trạng thái ${taskStatus}.`,
+        },
+        cancellationReason:
+          taskStatus === 'CANCELLED' ? 'Seed test: lấy hàng thất bại' : null,
+      };
+    });
+
+    return [...deliveryShipments, ...pickupShipments];
+  });
+}
 
 async function main(): Promise<void> {
   await prisma.changeRequest.deleteMany({
@@ -12,147 +229,7 @@ async function main(): Promise<void> {
     where: { code: { in: LEGACY_SEED_CODES } },
   });
 
-  const shipments = [
-    {
-      code: '101000000001',
-      currentStatus: 'PICKUP_COMPLETED' as const,
-      metadata: {
-        sourceType: 'SHOP',
-        merchantCode: '41100001',
-        merchantName: 'Shop Minh Anh',
-        senderName: 'Shop Minh Anh',
-        senderPhone: '0900003001',
-        senderAddress: '15 Nguyễn Văn Lộc, Mộ Lao, Hà Đông, Hà Nội',
-        receiverName: 'Nguyễn Minh Tâm',
-        receiverPhone: '0903123241',
-        receiverAddress: '88 Trần Phú, Văn Quán, Hà Đông, Hà Nội',
-        originHubCode: '001A001',
-        destinationHubCode: '001A001',
-        routeCode: '001A00101',
-        note: 'Đã nhận tại bưu cục, chưa quét gửi ra khỏi bưu cục.',
-      },
-      cancellationReason: null,
-    },
-    {
-      code: '111000000001',
-      currentStatus: 'SCAN_INBOUND' as const,
-      metadata: {
-        sourceType: 'MARKETPLACE',
-        merchantCode: '41100002',
-        merchantName: 'TikTok Pte. Ltd.',
-        senderName: 'TikTok Pte. Ltd.',
-        senderPhone: '0900003002',
-        senderAddress: 'Hải Châu, Đà Nẵng',
-        receiverName: 'Trần Hoài An',
-        receiverPhone: '0912775775',
-        receiverAddress: 'KĐT Geleximco, Dương Nội, Hà Đông, Hà Nội',
-        originHubCode: '002A001',
-        destinationHubCode: '001A001',
-        routeCode: '001A00102',
-        bagCode: 'MB0010000001',
-        note: 'Đã quét hàng đến bưu cục đích.',
-      },
-      cancellationReason: null,
-    },
-    {
-      code: '101000000002',
-      currentStatus: 'SCAN_OUTBOUND' as const,
-      metadata: {
-        sourceType: 'SHOP',
-        merchantCode: '41100001',
-        merchantName: 'Shop Minh Anh',
-        senderName: 'Shop Minh Anh',
-        senderPhone: '0900003001',
-        senderAddress: '15 Nguyễn Văn Lộc, Mộ Lao, Hà Đông, Hà Nội',
-        receiverName: 'Phạm Thanh Huyền',
-        receiverPhone: '0986103103',
-        receiverAddress: '88 Trần Duy Hưng, Trung Hòa, Cầu Giấy, Hà Nội',
-        originHubCode: '001A001',
-        destinationHubCode: '001B001',
-        routeCode: '001B00101',
-        bagCode: 'MB0010000002',
-        note: 'Đã quét gửi, bưu cục đích chưa quét hàng nhận.',
-      },
-      cancellationReason: null,
-    },
-    {
-      code: '333000000001',
-      currentStatus: 'SCAN_INBOUND' as const,
-      metadata: {
-        sourceType: 'WALK_IN',
-        senderName: 'Khách lẻ Lê Quốc Việt',
-        senderPhone: '0968520520',
-        senderAddress: '12 Tố Hữu, La Khê, Hà Đông, Hà Nội',
-        receiverName: 'Lê Quốc Việt',
-        receiverPhone: '0968520520',
-        receiverAddress: '12 Tố Hữu, La Khê, Hà Đông, Hà Nội',
-        originHubCode: '001A001',
-        destinationHubCode: '001A001',
-        routeCode: '001A00103',
-        codAmount: 180000,
-        note: 'Đơn khách lẻ đang chờ phát tại bưu cục.',
-      },
-      cancellationReason: null,
-    },
-    {
-      code: '222000000001',
-      currentStatus: 'RETURN_STARTED' as const,
-      metadata: {
-        sourceType: 'RETURN_PICKUP',
-        merchantCode: '41100003',
-        merchantName: 'Kho trả hàng Shopee',
-        senderName: 'Người mua trả hàng',
-        senderPhone: '0908123456',
-        senderAddress: 'Mỹ Đình 2, Nam Từ Liêm, Hà Nội',
-        receiverName: 'Kho trả hàng Shopee',
-        receiverPhone: '0900003003',
-        receiverAddress: 'Hàm Nghi, Nam Từ Liêm, Hà Nội',
-        originHubCode: '001C001',
-        destinationHubCode: '001B001',
-        routeCode: '001B00102',
-        note: 'Đơn thu hồi từ khách trả hàng, đã bắt đầu chuyển hoàn.',
-      },
-      cancellationReason: null,
-    },
-    {
-      code: '111000000002',
-      currentStatus: 'NDR_CREATED' as const,
-      metadata: {
-        sourceType: 'MARKETPLACE',
-        merchantCode: '41100002',
-        merchantName: 'TikTok Pte. Ltd.',
-        senderName: 'TikTok Pte. Ltd.',
-        senderPhone: '0900003002',
-        senderAddress: 'Hải Châu, Đà Nẵng',
-        receiverName: 'Nguyễn Thị Đào',
-        receiverPhone: '0909988776',
-        receiverAddress: 'Mộ Lao, Hà Đông, Hà Nội',
-        originHubCode: '002A001',
-        destinationHubCode: '001A001',
-        routeCode: '001A00104',
-        note: 'Phát thất bại, đã tạo NDR.',
-      },
-      cancellationReason: null,
-    },
-    {
-      code: '333000000002',
-      currentStatus: 'DELIVERED' as const,
-      metadata: {
-        sourceType: 'WALK_IN',
-        senderName: 'Khách lẻ Đỗ Minh',
-        senderPhone: '0911222333',
-        senderAddress: 'Quận 1, Thành phố Hồ Chí Minh',
-        receiverName: 'Võ Minh Đức',
-        receiverPhone: '0904555666',
-        receiverAddress: 'Hải Châu, Đà Nẵng',
-        originHubCode: '003A001',
-        destinationHubCode: '002A001',
-        routeCode: '002A00101',
-        note: 'Đơn khách lẻ đã phát thành công.',
-      },
-      cancellationReason: null,
-    },
-  ] as const;
+  const shipments = buildShipments();
 
   for (const shipment of shipments) {
     await prisma.shipment.upsert({
@@ -171,32 +248,7 @@ async function main(): Promise<void> {
     });
   }
 
-  await prisma.changeRequest.upsert({
-    where: { id: 'seed-change-222000000001-return-address' },
-    update: {
-      shipmentCode: '222000000001',
-      requestType: 'RETURN_ADDRESS_CHANGE',
-      payload: {
-        reason: 'Người gửi yêu cầu chuyển hoàn',
-        destinationHubCode: '001B001',
-      },
-      status: 'PENDING',
-      requestedBy: '20000001',
-    },
-    create: {
-      id: 'seed-change-222000000001-return-address',
-      shipmentCode: '222000000001',
-      requestType: 'RETURN_ADDRESS_CHANGE',
-      payload: {
-        reason: 'Người gửi yêu cầu chuyển hoàn',
-        destinationHubCode: '001B001',
-      },
-      status: 'PENDING',
-      requestedBy: '20000001',
-    },
-  });
-
-  console.log('shipment-service seed completed');
+  console.log(`shipment-service seed completed: ${shipments.length} shipments`);
 }
 
 main()

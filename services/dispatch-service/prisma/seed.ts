@@ -2,54 +2,107 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+const taskStatusPattern = [
+  'CREATED',
+  'CREATED',
+  'CREATED',
+  'ASSIGNED',
+  'ASSIGNED',
+  'ASSIGNED',
+  'COMPLETED',
+  'COMPLETED',
+  'CANCELLED',
+  'CANCELLED',
+] as const;
+
+const hubFixtures = [
+  {
+    key: 'hn',
+    hubCode: '001A001',
+    hubName: 'Hub Hà Nội',
+    couriers: ['30000001', '30000002'],
+  },
+  {
+    key: 'hcm',
+    hubCode: '003A001',
+    hubName: 'Hub Hồ Chí Minh',
+    couriers: ['30000003', '30000004'],
+  },
+] as const;
+
+type TaskSeedStatus = (typeof taskStatusPattern)[number];
+type TaskSeedType = 'DELIVERY' | 'PICKUP';
+
+function buildShipmentCode(
+  hubCode: string,
+  flow: 'delivery' | 'pickup',
+  index: number,
+): string {
+  const hubSegment = hubCode.slice(0, 3);
+  const flowSegment = flow === 'delivery' ? '10' : '20';
+  return `101${hubSegment}${flowSegment}${String(index).padStart(4, '0')}`;
+}
+
+function buildTaskCode(
+  hubCode: string,
+  taskType: TaskSeedType,
+  index: number,
+): string {
+  const typeSegment = taskType === 'DELIVERY' ? 'D' : 'P';
+  return `TASK${typeSegment}${hubCode}${String(index).padStart(3, '0')}`;
+}
+
+function resolveCourierId(
+  status: TaskSeedStatus,
+  couriers: readonly string[],
+  index: number,
+): string | null {
+  if (status === 'ASSIGNED' || status === 'COMPLETED') {
+    return couriers[index % couriers.length];
+  }
+
+  return null;
+}
+
+function buildTasks() {
+  return hubFixtures.flatMap((hub) => {
+    const deliveryTasks = taskStatusPattern.map((status, itemIndex) => {
+      const index = itemIndex + 1;
+
+      return {
+        taskCode: buildTaskCode(hub.hubCode, 'DELIVERY', index),
+        taskType: 'DELIVERY' as const,
+        status,
+        shipmentCode: buildShipmentCode(hub.hubCode, 'delivery', index),
+        pickupRequestId: null,
+        note: `Seed ${hub.hubName}: đơn giao ${index} trạng thái ${status}.`,
+        assignmentCourierId: resolveCourierId(status, hub.couriers, itemIndex),
+      };
+    });
+
+    const pickupTasks = taskStatusPattern.map((status, itemIndex) => {
+      const index = itemIndex + 1;
+
+      return {
+        taskCode: buildTaskCode(hub.hubCode, 'PICKUP', index),
+        taskType: 'PICKUP' as const,
+        status,
+        shipmentCode: buildShipmentCode(hub.hubCode, 'pickup', index),
+        pickupRequestId: `seed-pickup-${hub.key}-${String(index).padStart(2, '0')}`,
+        note:
+          status === 'CANCELLED'
+            ? `Seed ${hub.hubName}: lấy hàng thất bại đơn ${index}.`
+            : `Seed ${hub.hubName}: đơn lấy ${index} trạng thái ${status}.`,
+        assignmentCourierId: resolveCourierId(status, hub.couriers, itemIndex),
+      };
+    });
+
+    return [...deliveryTasks, ...pickupTasks];
+  });
+}
+
 async function main(): Promise<void> {
-  const tasks = [
-    {
-      taskCode: 'TASK001A001001',
-      taskType: 'PICKUP' as const,
-      status: 'ASSIGNED' as const,
-      shipmentCode: '101000000001',
-      pickupRequestId: null,
-      note: 'Điều phối courier đi lấy hàng shop, route 001A00101.',
-      assignmentCourierId: '30000001',
-    },
-    {
-      taskCode: 'TASK001A001002',
-      taskType: 'DELIVERY' as const,
-      status: 'ASSIGNED' as const,
-      shipmentCode: '333000000001',
-      pickupRequestId: null,
-      note: 'Phát hàng từ BC Hà Đông sang app courier.',
-      assignmentCourierId: '30000002',
-    },
-    {
-      taskCode: 'TASK001C001001',
-      taskType: 'RETURN' as const,
-      status: 'ASSIGNED' as const,
-      shipmentCode: '222000000001',
-      pickupRequestId: null,
-      note: 'Điều phối thu hồi hàng trả, route 001C00101.',
-      assignmentCourierId: '30000003',
-    },
-    {
-      taskCode: 'TASK002A001001',
-      taskType: 'DELIVERY' as const,
-      status: 'COMPLETED' as const,
-      shipmentCode: '333000000002',
-      pickupRequestId: null,
-      note: 'Đơn khách lẻ đã phát thành công tại Đà Nẵng.',
-      assignmentCourierId: '30000004',
-    },
-    {
-      taskCode: 'TASK001A001003',
-      taskType: 'DELIVERY' as const,
-      status: 'CREATED' as const,
-      shipmentCode: '111000000001',
-      pickupRequestId: null,
-      note: 'Đơn đã quét hàng đến, chờ phát hàng.',
-      assignmentCourierId: null,
-    },
-  ] as const;
+  const tasks = buildTasks();
 
   for (const task of tasks) {
     const record = await prisma.task.upsert({
@@ -83,7 +136,7 @@ async function main(): Promise<void> {
     }
   }
 
-  console.log('dispatch-service seed completed');
+  console.log(`dispatch-service seed completed: ${tasks.length} tasks`);
 }
 
 main()

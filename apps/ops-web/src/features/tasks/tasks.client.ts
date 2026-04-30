@@ -22,7 +22,9 @@ interface TaskApiResponse {
   taskType: string;
   status: string;
   shipmentCode: string | null;
+  pickupRequestId: string | null;
   note: string | null;
+  createdAt: string;
   updatedAt: string;
   assignments?: TaskAssignmentApiResponse[];
 }
@@ -56,8 +58,10 @@ function mapTask(payload: TaskApiResponse): TaskDetailDto {
     taskType: payload.taskType,
     status: payload.status,
     shipmentCode: payload.shipmentCode,
+    pickupRequestId: payload.pickupRequestId,
     assignedCourierId: currentAssignment?.courierId ?? null,
     note: payload.note,
+    createdAt: payload.createdAt,
     updatedAt: payload.updatedAt,
   };
 }

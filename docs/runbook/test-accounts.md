@@ -1,6 +1,6 @@
-# Tai khoan test local
+# Tài khoản test local
 
-Cap nhat: 2026-04-07
+Cập nhật: 2026-04-30
 
 Tai khoan duoc seed tai `services/auth-service/prisma/seed.ts`.
 
@@ -11,24 +11,35 @@ Tai khoan duoc seed tai `services/auth-service/prisma/seed.ts`.
 | Admin | `10000001` | `password` | `/ops/auth/auth/login` |
 | Ops | `20000001` | `password` | `/ops/auth/auth/login` |
 | Courier | `30000001` | `password` | `/courier/auth/auth/login` |
-| Merchant | `41100001` | `merchant123456` | `/merchant/auth/auth/login` |
+| Merchant | `41100001` | `password` | `/merchant/auth/auth/login` |
 
 Gateway local: `http://localhost:3000`
 
 ## 2) Day du cac tai khoan seed
 
-| Vai tro | Khu vực | Username | Password |
-|---|---|---|---|
-| Admin | HCM | `10000001` | `password` |
-| Admin | HN | `10000002` | `password` |
-| Ops | HCM | `20000001` | `password` |
-| Ops | HN | `20000002` | `password` |
-| Merchant | HCM | `41100001` | `merchant123456` |
-| Merchant | HN | `41100002` | `merchant123456` |
-| Courier | HCM | `30000001` | `password` |
-| Courier | HN | `30000002` | `password` |
+| Vai trò | Khu vực | Username | Password | Ghi chú |
+|---|---|---|---|---|
+| Admin | Toàn hệ thống | `10000001` | `password` | Hub HN + HCM |
+| Ops | Hà Nội | `20000001` | `password` | Hub `001A001` |
+| Ops | HCM | `20000002` | `password` | Hub `003A001` |
+| Merchant | Hà Nội | `41100001` | `password` | Shop Minh Anh Hà Nội |
+| Merchant | Hà Nội | `41100002` | `password` | Thời trang Bảo Ngọc Hà Nội |
+| Merchant | HCM | `41100003` | `password` | Shop Sài Gòn Fresh |
+| Merchant | HCM | `41100004` | `password` | Mỹ phẩm An Nhiên HCM |
+| Courier | Hà Nội | `30000001` | `password` | Nguyễn Văn Hùng |
+| Courier | Hà Nội | `30000002` | `password` | Trần Quốc Bảo |
+| Courier | HCM | `30000003` | `password` | Võ Văn Tú Tài |
+| Courier | HCM | `30000004` | `password` | Lê Minh Tuấn |
 
-## 3) Luat ma username/user id
+## 3) Dữ liệu vận hành seed
+
+- Hub Hà Nội: `001A001`.
+- Hub Hồ Chí Minh: `003A001`.
+- Mỗi hub có 10 task giao hàng `DELIVERY` và 10 task lấy hàng `PICKUP`.
+- Các task được chia theo trạng thái `CREATED`, `ASSIGNED`, `COMPLETED`, `CANCELLED`.
+- Pickup request có id cố định dạng `seed-pickup-hn-01` và `seed-pickup-hcm-01` để dispatch task trỏ đúng dữ liệu.
+
+## 4) Luat ma username/user id
 
 - User id bang username.
 - Username phai la 8 chu so.
@@ -38,14 +49,14 @@ Gateway local: `http://localhost:3000`
   - Courier: `3000xxxx`
   - Merchant: `411xxxxx`
 
-## 4) URL dang nhap giao dien
+## 5) URL dang nhap giao dien
 
 - Ops web: `http://localhost:5173`
 - Merchant web: `http://localhost:5174`
 - Admin web: `http://localhost:5175`
 - Gateway API: `http://localhost:3000`
 
-## 5) Lenh thao tac nhanh
+## 6) Lenh thao tac nhanh
 
 Khoi dong backend:
 

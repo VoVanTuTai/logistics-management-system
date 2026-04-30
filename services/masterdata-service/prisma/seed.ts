@@ -34,7 +34,6 @@ async function ensureAuxiliaryCodeTables(): Promise<void> {
 async function main(): Promise<void> {
   const zones = [
     { code: '001', name: 'Miền Bắc', parentCode: null },
-    { code: '002', name: 'Miền Trung', parentCode: null },
     { code: '003', name: 'Miền Nam', parentCode: null },
   ] as const;
 
@@ -58,33 +57,15 @@ async function main(): Promise<void> {
   const hubs = [
     {
       code: '001A001',
-      name: 'BC Hà Đông',
+      name: 'Hub Hà Nội',
       zoneCode: '001',
-      address: 'Hà Đông, Hà Nội',
-    },
-    {
-      code: '001B001',
-      name: 'BC Cầu Giấy',
-      zoneCode: '001',
-      address: 'Cầu Giấy, Hà Nội',
-    },
-    {
-      code: '001C001',
-      name: 'BC Nam Từ Liêm',
-      zoneCode: '001',
-      address: 'Nam Từ Liêm, Hà Nội',
-    },
-    {
-      code: '002A001',
-      name: 'BC Đà Nẵng',
-      zoneCode: '002',
-      address: 'Hải Châu, Đà Nẵng',
+      address: 'Số 15 Nguyễn Văn Lộc, Mộ Lao, Hà Đông, Hà Nội',
     },
     {
       code: '003A001',
-      name: 'BC Quận 1',
+      name: 'Hub Hồ Chí Minh',
       zoneCode: '003',
-      address: 'Quận 1, Thành phố Hồ Chí Minh',
+      address: 'Số 12 Nguyễn Huệ, Bến Nghé, Quận 1, Thành phố Hồ Chí Minh',
     },
   ] as const;
 
@@ -124,9 +105,9 @@ async function main(): Promise<void> {
 
   const vehicleTags = [
     { tagCode: 'XT0010000001', hubCode: '001A001' },
-    { tagCode: 'XT0010000002', hubCode: '001B001' },
-    { tagCode: 'XT0020000001', hubCode: '002A001' },
+    { tagCode: 'XT0010000002', hubCode: '001A001' },
     { tagCode: 'XT0030000001', hubCode: '003A001' },
+    { tagCode: 'XT0030000002', hubCode: '003A001' },
   ] as const;
 
   for (const vehicleTag of vehicleTags) {
