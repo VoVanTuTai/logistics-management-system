@@ -14,6 +14,8 @@ export type ViewId =
 export interface AuthUser {
   id: string;
   username: string;
+  displayName: string | null;
+  phone: string | null;
   roles: string[];
   hubCodes?: string[];
 }
@@ -117,9 +119,15 @@ export interface ShipmentRow {
   senderName: string;
   senderPhone: string;
   senderAddress: string;
+  senderProvince: string;
+  senderWard: string;
+  senderHubCode: string;
   receiverName: string;
   receiverPhone: string;
   receiverAddress: string;
+  receiverProvince: string;
+  receiverWard: string;
+  receiverHubCode: string;
   receiverRegion: string;
   serviceType: string;
   itemType: string;
