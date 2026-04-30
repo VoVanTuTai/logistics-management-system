@@ -28,7 +28,7 @@ const variantStyles: Record<StatusVariant, { backgroundColor: string; color: str
     color: '#991B1B',
   },
   info: {
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#EFF6FF',
     color: '#1E3A8A',
   },
 };

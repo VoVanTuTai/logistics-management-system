@@ -486,7 +486,7 @@ export function DashboardPage(): React.JSX.Element {
     },
     {
       id: 'slide-2',
-      title: 'NEXUS OPS CENTER',
+      title: 'NXS OPS CENTER',
       slogan: 'FAST RESPONSE • HUB VISIBILITY • SMART DISPATCH',
       description:
         'Tăng tốc phân công tác vụ, cảnh báo nghẽn hub và tối ưu luồng điều phối.',

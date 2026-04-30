@@ -66,7 +66,7 @@ export function QuickStatsRow({
         value={waitingPickup}
         iconName="cube-outline"
         iconBgColor="#E4F0FF"
-        iconColor="#4F46E5"
+        iconColor="#1D4ED8"
         active={activeStat === 'PICKUP'}
         onPress={onPressWaitingPickup}
       />
@@ -74,8 +74,8 @@ export function QuickStatsRow({
         label="Đợi phát"
         value={waitingDelivery}
         iconName="paper-plane-outline"
-        iconBgColor="#EEF2FF"
-        iconColor="#4338CA"
+        iconBgColor="#EFF6FF"
+        iconColor="#1D4ED8"
         active={activeStat === 'DELIVERY'}
         onPress={onPressWaitingDelivery}
       />

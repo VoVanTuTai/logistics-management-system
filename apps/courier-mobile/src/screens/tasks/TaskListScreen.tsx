@@ -21,7 +21,7 @@ import { appEnv } from '../../utils/env';
 import { resolveCourierId } from '../../utils/courier';
 import { theme } from '../../theme';
 
-type TaskListRouteParams = NonNullable<AppNavigatorParamList['TaskList']>;
+type TaskListRouteParams = AppNavigatorParamList['TaskList'];
 
 interface Props {
   route?: {
@@ -130,7 +130,7 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
               <Ionicons
                 name={typeMenuOpen ? 'chevron-up' : 'chevron-down'}
                 size={12}
-                color="#EEF2FF"
+                color="#EFF6FF"
               />
             </Pressable>
             {typeMenuOpen ? (
@@ -166,7 +166,7 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
               <Ionicons
                 name={statusMenuOpen ? 'chevron-up' : 'chevron-down'}
                 size={12}
-                color="#EEF2FF"
+                color="#EFF6FF"
               />
             </Pressable>
             {statusMenuOpen ? (
@@ -279,9 +279,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: theme.spacing.xs,
     borderWidth: 1,
-    borderColor: '#C7D2FE',
+    borderColor: '#BFDBFE',
     borderRadius: theme.radius.md,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#EFF6FF',
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: 6,
   },

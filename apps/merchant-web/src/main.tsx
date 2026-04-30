@@ -147,6 +147,73 @@ function parseHubLocation(hub: HubApiRecord): HubLocationOption | null {
   };
 }
 
+function findHubByCode(
+  hubLocations: HubLocationOption[],
+  hubCode: string,
+): HubLocationOption | null {
+  const normalizedHubCode = normalizeCode(hubCode);
+
+  if (!normalizedHubCode) {
+    return null;
+  }
+
+  return (
+    hubLocations.find((location) => normalizeCode(location.hubCode) === normalizedHubCode) ??
+    null
+  );
+}
+
+function findHubByProvinceWard(
+  hubLocations: HubLocationOption[],
+  province: string,
+  ward: string,
+): HubLocationOption | null {
+  const normalizedProvince = normalizeLocationKey(province);
+  const normalizedWard = normalizeLocationKey(ward);
+
+  if (!normalizedProvince || !normalizedWard) {
+    return null;
+  }
+
+  return (
+    hubLocations.find(
+      (location) =>
+        normalizeLocationKey(location.province) === normalizedProvince &&
+        normalizeLocationKey(location.ward) === normalizedWard,
+    ) ?? null
+  );
+}
+
+function resolveSelectedHub(
+  hubLocations: HubLocationOption[],
+  hubCode: string,
+  province: string,
+  ward: string,
+): HubLocationOption | null {
+  const hubByCode = findHubByCode(hubLocations, hubCode);
+  if (hubByCode) {
+    const provinceMatches =
+      !province || normalizeLocationKey(hubByCode.province) === normalizeLocationKey(province);
+    const wardMatches =
+      !ward || normalizeLocationKey(hubByCode.ward) === normalizeLocationKey(ward);
+
+    if (provinceMatches && wardMatches) {
+      return hubByCode;
+    }
+  }
+
+  const hubByProvinceWard = findHubByProvinceWard(hubLocations, province, ward);
+  if (hubByProvinceWard) {
+    return hubByProvinceWard;
+  }
+
+  if (hubByCode) {
+    return hubByCode;
+  }
+
+  return null;
+}
+
 function normalizeCreateForm(
   form: Partial<CreateShipmentForm> | null | undefined,
 ): CreateShipmentForm {
@@ -312,6 +379,31 @@ function MerchantApp(): React.JSX.Element {
         .filter((location) => location.province === createForm.receiverProvince)
         .sort((left, right) => left.label.localeCompare(right.label, 'vi')),
     [hubLocations, createForm.receiverProvince],
+  );
+  const selectedSenderHub = useMemo(
+    () =>
+      resolveSelectedHub(
+        hubLocations,
+        createForm.senderHubCode,
+        createForm.senderProvince,
+        createForm.senderWard,
+      ),
+    [hubLocations, createForm.senderHubCode, createForm.senderProvince, createForm.senderWard],
+  );
+  const selectedReceiverHub = useMemo(
+    () =>
+      resolveSelectedHub(
+        hubLocations,
+        createForm.receiverHubCode,
+        createForm.receiverProvince,
+        createForm.receiverWard,
+      ),
+    [
+      hubLocations,
+      createForm.receiverHubCode,
+      createForm.receiverProvince,
+      createForm.receiverWard,
+    ],
   );
   const senderComposedAddress = useMemo(
     () =>
@@ -593,7 +685,12 @@ function MerchantApp(): React.JSX.Element {
       return;
     }
 
-    const senderHub = hubLocationMap.get(createForm.senderHubCode);
+    const senderHub = resolveSelectedHub(
+      hubLocations,
+      createForm.senderHubCode,
+      createForm.senderProvince,
+      createForm.senderWard,
+    );
     if (!senderHub) {
       setCreateError('Vui lòng chọn bưu cục gửi.');
       return;
@@ -603,7 +700,12 @@ function MerchantApp(): React.JSX.Element {
       return;
     }
 
-    const receiverHub = hubLocationMap.get(createForm.receiverHubCode);
+    const receiverHub = resolveSelectedHub(
+      hubLocations,
+      createForm.receiverHubCode,
+      createForm.receiverProvince,
+      createForm.receiverWard,
+    );
     if (!receiverHub) {
       setCreateError('Vui lòng chọn bưu cục nhận.');
       return;
@@ -615,12 +717,26 @@ function MerchantApp(): React.JSX.Element {
 
     const normalizedForm: CreateShipmentForm = {
       ...createForm,
+      senderProvince: senderHub.province,
       senderWard: senderHub.ward,
-      receiverWard: receiverHub.ward,
       senderHubCode: senderHub.hubCode,
+      receiverProvince: receiverHub.province,
+      receiverWard: receiverHub.ward,
       receiverHubCode: receiverHub.hubCode,
-      senderAddress: senderComposedAddress,
-      receiverAddress: receiverComposedAddress,
+      senderAddress: [
+        createForm.senderAddressDetail.trim(),
+        senderHub.ward,
+        senderHub.province,
+      ]
+        .filter(Boolean)
+        .join(', '),
+      receiverAddress: [
+        createForm.receiverAddressDetail.trim(),
+        receiverHub.ward,
+        receiverHub.province,
+      ]
+        .filter(Boolean)
+        .join(', '),
       receiverRegion: receiverHub.province,
     };
 
@@ -1056,24 +1172,21 @@ function MerchantApp(): React.JSX.Element {
                   </select>
                   <select
                     className="select"
-                    value={createForm.senderHubCode}
+                    value={selectedSenderHub?.hubCode ?? ''}
                     disabled={!createForm.senderProvince}
                     onChange={(event) => {
-                      const senderHubCode = event.target.value;
-                      const selectedHub = hubLocationMap.get(senderHubCode);
+                      const selectedHub = findHubByCode(hubLocations, event.target.value);
                       setCreateForm((previous) => ({
                         ...previous,
                         senderWard: selectedHub?.ward ?? '',
-                        senderProvince: selectedHub?.province ?? previous.senderProvince,
-                        senderHubCode,
-                        senderAddress: selectedHub?.fullAddress ?? '',
+                        senderHubCode: selectedHub?.hubCode ?? '',
                       }));
                     }}
                   >
-                    <option value="">{'Chọn bưu cục gửi'}</option>
-                    {senderHubOptions.map((hub) => (
-                      <option key={hub.hubCode} value={hub.hubCode}>
-                        {`${hub.label} - ${hub.hubCode}`}
+                    <option value="">{'Ch\u1ecdn ph\u01b0\u1eddng/x\u00e3 g\u1eedi'}</option>
+                    {senderHubOptions.map((location) => (
+                      <option key={location.hubCode} value={location.hubCode}>
+                        {location.ward} - {location.hubName} ({location.hubCode})
                       </option>
                     ))}
                   </select>
@@ -1135,25 +1248,22 @@ function MerchantApp(): React.JSX.Element {
                   </select>
                   <select
                     className="select"
-                    value={createForm.receiverHubCode}
+                    value={selectedReceiverHub?.hubCode ?? ''}
                     disabled={!createForm.receiverProvince}
                     onChange={(event) => {
-                      const receiverHubCode = event.target.value;
-                      const selectedHub = hubLocationMap.get(receiverHubCode);
+                      const selectedHub = findHubByCode(hubLocations, event.target.value);
                       setCreateForm((previous) => ({
                         ...previous,
                         receiverWard: selectedHub?.ward ?? '',
-                        receiverProvince: selectedHub?.province ?? previous.receiverProvince,
-                        receiverHubCode,
-                        receiverRegion: selectedHub?.province ?? previous.receiverRegion,
-                        receiverAddress: selectedHub?.fullAddress ?? '',
+                        receiverHubCode: selectedHub?.hubCode ?? '',
+                        receiverRegion: createForm.receiverProvince,
                       }));
                     }}
                   >
-                    <option value="">{'Chọn bưu cục nhận'}</option>
-                    {receiverHubOptions.map((hub) => (
-                      <option key={'receiver-hub-' + hub.hubCode} value={hub.hubCode}>
-                        {`${hub.label} - ${hub.hubCode}`}
+                    <option value="">{'Ch\u1ecdn ph\u01b0\u1eddng/x\u00e3 nh\u1eadn'}</option>
+                    {receiverHubOptions.map((location) => (
+                      <option key={'receiver-hub-' + location.hubCode} value={location.hubCode}>
+                        {location.ward} - {location.hubName} ({location.hubCode})
                       </option>
                     ))}
                   </select>

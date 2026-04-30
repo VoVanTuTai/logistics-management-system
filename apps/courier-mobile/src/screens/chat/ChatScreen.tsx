@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
   },
   noticeCard: {
     backgroundColor: theme.colors.infoSurface,
-    borderColor: '#C7D2FE',
+    borderColor: '#BFDBFE',
   },
   noticeTitle: {
     color: theme.colors.primary,
@@ -72,6 +72,39 @@ const styles = StyleSheet.create({
   },
   noticeText: {
     color: '#1F3B63',
+  },
+  chatCard: {
+    gap: theme.spacing.sm,
+  },
+  chatTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  chatTitle: {
+    color: theme.colors.textPrimary,
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  timeText: {
+    color: theme.colors.textMuted,
+    fontSize: 12,
+  },
+  chatMessage: {
+    color: theme.colors.textSecondary,
+    lineHeight: 20,
+  },
+  unreadPill: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#EFF6FF',
+    borderRadius: theme.radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  unreadText: {
+    color: '#1E40AF',
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
 

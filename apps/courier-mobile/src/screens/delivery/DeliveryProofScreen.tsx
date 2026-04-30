@@ -533,8 +533,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   messageCardNeutral: {
-    borderColor: '#C7D2FE',
-    backgroundColor: '#EEF2FF',
+    borderColor: '#BFDBFE',
+    backgroundColor: '#EFF6FF',
   },
   messageCardResult: {
     borderColor: '#BBF7D0',

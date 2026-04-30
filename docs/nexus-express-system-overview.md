@@ -6,7 +6,7 @@
 
 **Ten de tai:** Thiet ke va xay dung he thong quan ly kho va luan chuyen buu kien cho doanh nghiep chuyen phat nhanh theo kien truc microservices.
 
-**Nguon tham khao nghiep vu:** He thong duoc xay dung dua tren cach van hanh tham khao tu JMS cua J&T Express. Muc tieu la mo phong cac nghiep vu cot loi cua doanh nghiep chuyen phat nhanh, bao gom tiep nhan don, lay hang, nhap/xuat kho hub, tao va niem phong bang ke trung chuyen, giao hang, xu ly giao that bai, hoan hang, tracking va bao cao van hanh.
+**Nguon tham khao nghiep vu:** He thong duoc xay dung dua tren cach van hanh tham khao tu JMS cua NEXUS EXPRESS SYSTEM. Muc tieu la mo phong cac nghiep vu cot loi cua doanh nghiep chuyen phat nhanh, bao gom tiep nhan don, lay hang, nhap/xuat kho hub, tao va niem phong bang ke trung chuyen, giao hang, xu ly giao that bai, hoan hang, tracking va bao cao van hanh.
 
 **Muc dich tai lieu:** Tai lieu nay dung de:
 

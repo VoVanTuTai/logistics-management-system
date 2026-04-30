@@ -7,492 +7,603 @@ import { usePickupRequestsQuery } from '../../../../features/pickups/pickups.api
 import type { PickupRequestListItemDto } from '../../../../features/pickups/pickups.types';
 import { useShipmentsQuery } from '../../../../features/shipments/shipments.api';
 import type { ShipmentListItemDto } from '../../../../features/shipments/shipments.types';
-import { tasksClient, useCourierOptionsQuery, useTasksQuery } from '../../../../features/tasks/tasks.api';
+import { tasksClient, useTasksQuery } from '../../../../features/tasks/tasks.api';
 import type { TaskListItemDto } from '../../../../features/tasks/tasks.types';
 import { getErrorMessage } from '../../../../services/api/errors';
 import { useAuthStore } from '../../../../store/authStore';
-import { formatDateTime } from '../../../../utils/format';
 import { queryKeys } from '../../../../utils/queryKeys';
 import './CustomerOrderDispatchPage.css';
 
-type SearchMode = 'orderCode' | 'shipmentCode';
-
-interface DispatchFilters {
-  searchMode: SearchMode;
-  keyword: string;
-  fromDate: string;
-  toDate: string;
-  ward: string;
-  pickupHub: string;
-  source: string;
-  status: string;
-  customer: string;
-  courierId: string;
-  serviceType: string;
-}
+type DispatchStatus = 'CREATED' | 'ASSIGNED' | 'COMPLETED' | 'CANCELLED';
 
 interface DispatchOrderRow {
   id: string;
+  taskCode: string;
   orderCode: string;
   shipmentCode: string;
   senderName: string;
   senderPhone: string;
   pickupAddress: string;
-  pickupWard: string;
-  pickupHub: string;
-  status: string;
+  ward: string;
+  district: string;
+  status: DispatchStatus;
   source: string;
   serviceType: string;
+  pickupHub: string;
   assignedCourierId: string | null;
-  createdAt: string | null;
-  updatedAt: string;
-  note: string | null;
-  selectable: boolean;
+  assignedCourierName: string | null;
+  scheduledAt: string | null;
+  requestedAt: string | null;
+  parcelCount: number;
+  note: string;
+  pickupStatus: string | null;
 }
 
-interface CourierDisplayOption {
-  courierId: string;
-  label: string;
-  searchText: string;
+interface CourierOption {
+  id: string;
+  name: string;
+  hub: string;
+  activeTasks: number;
 }
 
-const emptyFilters: DispatchFilters = {
-  searchMode: 'orderCode',
-  keyword: '',
-  fromDate: '',
-  toDate: '',
-  ward: '',
-  pickupHub: '',
-  source: '',
-  status: '',
-  customer: '',
-  courierId: '',
-  serviceType: '',
-};
-
-const statusLabels: Record<string, string> = {
-  CREATED: 'Chưa điều phát',
-  ASSIGNED: 'Đã điều phối bưu cục',
-  COMPLETED: 'Đã lấy hàng',
-  CANCELLED: 'Đã hủy',
-};
-
-const statusFilterOptions = [
-  { value: '', label: 'Toàn bộ' },
-  { value: 'CREATED', label: 'Chưa điều phát' },
-  { value: 'DISPATCHED_BRANCH', label: 'Đã điều phối chi nhánh' },
-  { value: 'DISPATCHED_HUB', label: 'Đã điều phối bưu cục' },
-  { value: 'DISPATCHED_COURIER', label: 'Đã điều phối NVGN' },
+const STATUS_OPTIONS: Array<{ value: 'ALL' | DispatchStatus; label: string }> = [
+  { value: 'ALL', label: 'Toàn bộ' },
+  { value: 'CREATED', label: 'Chưa điều phối' },
+  { value: 'ASSIGNED', label: 'Đã điều phối NVGN' },
   { value: 'COMPLETED', label: 'Đã lấy hàng' },
-  { value: 'CANCELLED', label: 'Đã hủy' },
-  { value: 'PICKUP_FAILED', label: 'Lấy hàng thất bại' },
+  { value: 'CANCELLED', label: 'Đã hủy / thất bại' },
 ];
 
-function normalize(value: string | null | undefined): string {
-  return (value ?? '').trim();
+const SERVICE_LABELS: Record<string, string> = {
+  STANDARD: 'Tiêu chuẩn',
+  EXPRESS: 'Nhanh',
+  SAME_DAY: 'Trong ngày',
+};
+
+const SOURCE_LABELS: Record<string, string> = {
+  'merchant-web': 'Merchant web',
+  MERCHANT_WEB: 'Merchant web',
+  MARKETPLACE: 'Sàn TMĐT',
+  RETURN_PORTAL: 'Cổng hàng trả',
+};
+
+function statusLabel(status: string): string {
+  return STATUS_OPTIONS.find((option) => option.value === status)?.label ?? status;
 }
 
-function normalizeLower(value: string | null | undefined): string {
-  return normalize(value).toLowerCase();
+function sourceLabel(source: string): string {
+  return SOURCE_LABELS[source] ?? (source || 'Không rõ');
 }
 
-function formatStatus(status: string): string {
-  return statusLabels[status] ?? status;
+function serviceLabel(serviceType: string): string {
+  return SERVICE_LABELS[serviceType] ?? (serviceType || 'Không rõ');
 }
 
-function formatRowStatus(row: DispatchOrderRow): string {
-  if (row.status === 'ASSIGNED' && row.assignedCourierId) {
-    return 'Đã điều phối NVGN';
-  }
-
-  return formatStatus(row.status);
+function normalizeCode(value: string | null | undefined): string {
+  return (value ?? '').trim().toUpperCase();
 }
 
-function matchesStatusFilter(row: DispatchOrderRow, statusFilter: string): boolean {
-  switch (statusFilter) {
-    case '':
-      return true;
-    case 'CREATED':
-      return row.status === 'CREATED';
-    case 'DISPATCHED_BRANCH':
-      return row.status === 'ASSIGNED' && !row.assignedCourierId;
-    case 'DISPATCHED_HUB':
-      return row.status === 'ASSIGNED';
-    case 'DISPATCHED_COURIER':
-      return row.status === 'ASSIGNED' && Boolean(row.assignedCourierId);
-    case 'COMPLETED':
-      return row.status === 'COMPLETED';
-    case 'CANCELLED':
-      return row.status === 'CANCELLED';
-    case 'PICKUP_FAILED':
-      return row.status === 'CANCELLED' && normalizeLower(row.note).includes('thất bại');
-    default:
-      return row.status === statusFilter;
-  }
+function normalizeText(value: string | null | undefined): string {
+  return (value ?? '').trim().toLowerCase();
 }
 
-function formatCourierLabel(user: OpsUserDto | null, fallbackId: string): string {
-  if (!user) {
-    return fallbackId;
-  }
-
-  const displayName = normalize(user.displayName) || user.username;
-  return `${displayName}-${user.username}`;
+function toDateTimeInputValue(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hour = String(date.getHours()).padStart(2, '0');
+  const minute = String(date.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hour}:${minute}`;
 }
 
-function buildCourierDisplayOptions(
-  courierIds: string[],
-  shipperUsers: OpsUserDto[],
-): CourierDisplayOption[] {
-  const userByCode = new Map<string, OpsUserDto>();
-  const allIds = new Set<string>();
-
-  for (const user of shipperUsers) {
-    userByCode.set(user.username, user);
-    userByCode.set(user.id, user);
-    allIds.add(user.username);
-  }
-
-  for (const courierId of courierIds) {
-    allIds.add(courierId);
-  }
-
-  return Array.from(allIds)
-    .map((courierId) => {
-      const user = userByCode.get(courierId) ?? null;
-      const label = formatCourierLabel(user, courierId);
-
-      return {
-        courierId,
-        label,
-        searchText: normalizeLower(`${label} ${courierId} ${user?.displayName ?? ''} ${user?.phone ?? ''}`),
-      };
-    })
-    .sort((left, right) => left.label.localeCompare(right.label, 'vi'));
+function startOfTodayInputValue(): string {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  return toDateTimeInputValue(date);
 }
 
-function matchesCourierFilter(
-  assignedCourierId: string | null,
-  filterValue: string,
-  courierLookup: Map<string, CourierDisplayOption>,
-): boolean {
-  const query = normalizeLower(filterValue);
-  if (!query) {
-    return true;
-  }
-
-  if (!assignedCourierId) {
-    return false;
-  }
-
-  const option = courierLookup.get(assignedCourierId);
-  const searchText = option?.searchText ?? normalizeLower(assignedCourierId);
-
-  return searchText.includes(query);
+function endOfTodayInputValue(): string {
+  const date = new Date();
+  date.setHours(23, 59, 0, 0);
+  return toDateTimeInputValue(date);
 }
 
-function isDateInRange(value: string | null, fromDate: string, toDate: string): boolean {
-  if (!fromDate && !toDate) {
-    return true;
-  }
-
+function formatDateTime(value: string | null | undefined): string {
   if (!value) {
-    return false;
+    return '-';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    day: '2-digit',
+    month: '2-digit',
+  });
+}
+
+function isWithinInputRange(value: string | null, fromValue: string, toValue: string): boolean {
+  if (!value) {
+    return true;
   }
 
   const time = new Date(value).getTime();
   if (Number.isNaN(time)) {
-    return false;
+    return true;
   }
 
-  if (fromDate) {
-    const from = new Date(`${fromDate}T00:00:00`).getTime();
-    if (time < from) {
-      return false;
-    }
-  }
+  const fromTime = fromValue ? new Date(fromValue).getTime() : Number.NaN;
+  const toTime = toValue ? new Date(toValue).getTime() : Number.NaN;
 
-  if (toDate) {
-    const to = new Date(`${toDate}T23:59:59.999`).getTime();
-    if (time > to) {
-      return false;
-    }
-  }
-
-  return true;
+  return (
+    (Number.isNaN(fromTime) || time >= fromTime) &&
+    (Number.isNaN(toTime) || time <= toTime)
+  );
 }
 
-function pickAddressPart(address: string | null | undefined, fallback: string): string {
-  const parts = normalize(address)
-    .split(',')
-    .map((part) => part.trim())
-    .filter(Boolean);
-
-  if (parts.length >= 3) {
-    return parts[parts.length - 3];
-  }
-
-  if (parts.length >= 2) {
-    return parts[parts.length - 2];
-  }
-
-  return fallback;
+function isDispatchStatus(value: string): value is DispatchStatus {
+  return value === 'CREATED' || value === 'ASSIGNED' || value === 'COMPLETED' || value === 'CANCELLED';
 }
 
-function buildLookupByShipmentCode(shipments: ShipmentListItemDto[]): Map<string, ShipmentListItemDto> {
+function canAssign(row: DispatchOrderRow): boolean {
+  return row.status === 'CREATED' || row.status === 'ASSIGNED';
+}
+
+function buildShipmentLookup(shipments: ShipmentListItemDto[]): Map<string, ShipmentListItemDto> {
   const lookup = new Map<string, ShipmentListItemDto>();
 
   for (const shipment of shipments) {
-    const shipmentCode = normalize(shipment.shipmentCode).toUpperCase();
-    if (shipmentCode) {
-      lookup.set(shipmentCode, shipment);
+    const code = normalizeCode(shipment.shipmentCode);
+    if (code) {
+      lookup.set(code, shipment);
     }
   }
 
   return lookup;
 }
 
-function buildLookupByPickupId(pickups: PickupRequestListItemDto[]): Map<string, PickupRequestListItemDto> {
+function buildPickupLookup(pickups: PickupRequestListItemDto[]): Map<string, PickupRequestListItemDto> {
   const lookup = new Map<string, PickupRequestListItemDto>();
 
   for (const pickup of pickups) {
-    lookup.set(pickup.id, pickup);
+    const code = normalizeCode(pickup.shipmentCode);
+    if (code && !lookup.has(code)) {
+      lookup.set(code, pickup);
+    }
   }
 
   return lookup;
 }
 
-function buildDispatchRows(
-  tasks: TaskListItemDto[],
-  shipmentLookup: Map<string, ShipmentListItemDto>,
-  pickupLookup: Map<string, PickupRequestListItemDto>,
-): DispatchOrderRow[] {
-  return tasks
-    .filter((task) => task.taskType === 'PICKUP')
-    .map((task) => {
-      const shipmentCode = normalize(task.shipmentCode).toUpperCase();
-      const shipment = shipmentCode ? shipmentLookup.get(shipmentCode) ?? null : null;
-      const pickup = task.pickupRequestId ? pickupLookup.get(task.pickupRequestId) ?? null : null;
-      const pickupAddress = shipment?.senderAddress ?? 'Chưa có địa chỉ lấy';
-      const senderName = shipment?.senderName ?? 'Khách hàng';
-
-      return {
-        id: task.id,
-        orderCode: pickup?.requestCode ?? task.taskCode,
-        shipmentCode: task.shipmentCode ?? pickup?.shipmentCode ?? '',
-        senderName,
-        senderPhone: shipment?.senderPhone ?? '',
-        pickupAddress,
-        pickupWard: pickAddressPart(pickupAddress, shipment?.receiverRegion ?? 'Chưa rõ'),
-        pickupHub: shipment?.currentLocation ?? 'Chưa gán bưu cục',
-        status: task.status,
-        source: shipment?.platform ?? 'OPS',
-        serviceType: shipment?.serviceType ?? 'Lấy hàng tại nhà',
-        assignedCourierId: task.assignedCourierId,
-        createdAt: task.createdAt ?? task.updatedAt,
-        updatedAt: task.updatedAt,
-        note: task.note ?? null,
-        selectable: task.status === 'CREATED' || task.status === 'ASSIGNED',
-      };
-    });
-}
-
-function SearchIcon(): React.JSX.Element {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="11" cy="11" r="6.5" />
-      <path d="m16 16 4 4" />
-    </svg>
+function resolvePickupHub(shipment: ShipmentListItemDto | null): string {
+  return normalizeCode(
+    shipment?.senderHubCode ??
+      shipment?.originHubCode ??
+      shipment?.currentLocation ??
+      null,
   );
 }
 
-function RefreshIcon(): React.JSX.Element {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M20 12a8 8 0 1 1-2.34-5.66" />
-      <path d="M20 4.5v5h-5" />
-    </svg>
-  );
-}
+function mapTaskToDispatchRow(
+  task: TaskListItemDto,
+  shipment: ShipmentListItemDto | null,
+  pickup: PickupRequestListItemDto | null,
+  courierLookup: Map<string, OpsUserDto>,
+): DispatchOrderRow | null {
+  if (!isDispatchStatus(task.status)) {
+    return null;
+  }
 
-function SendIcon(): React.JSX.Element {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="m4 12 15-7-4 15-3-6z" />
-      <path d="m12 14 7-9" />
-    </svg>
-  );
-}
+  const pickupHub = resolvePickupHub(shipment);
+  if (!pickupHub) {
+    return null;
+  }
 
-function DownloadIcon(): React.JSX.Element {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 4v10" />
-      <path d="m8 10 4 4 4-4" />
-      <path d="M5 20h14" />
-    </svg>
-  );
+  const assignedCourier = task.assignedCourierId
+    ? courierLookup.get(normalizeCode(task.assignedCourierId)) ?? null
+    : null;
+
+  return {
+    id: task.id,
+    taskCode: task.taskCode,
+    orderCode: pickup?.requestCode ?? task.taskCode,
+    shipmentCode: task.shipmentCode ?? '-',
+    senderName: shipment?.senderName ?? task.senderName ?? 'Không có tên',
+    senderPhone: shipment?.senderPhone ?? '-',
+    pickupAddress: shipment?.senderAddress ?? 'Chưa có địa chỉ lấy',
+    ward: shipment?.senderWard ?? '-',
+    district: shipment?.senderDistrict ?? shipment?.senderProvince ?? '-',
+    status: task.status,
+    source: shipment?.platform ?? 'merchant-web',
+    serviceType: shipment?.serviceType ?? 'STANDARD',
+    pickupHub,
+    assignedCourierId: task.assignedCourierId,
+    assignedCourierName: assignedCourier?.displayName ?? null,
+    scheduledAt: task.status === 'ASSIGNED' ? task.updatedAt : null,
+    requestedAt: pickup?.requestedAt ?? task.updatedAt,
+    parcelCount: 1,
+    note: shipment?.deliveryNote ?? '-',
+    pickupStatus: pickup?.status ?? null,
+  };
 }
 
 export function CustomerOrderDispatchPage(): React.JSX.Element {
   const queryClient = useQueryClient();
   const session = useAuthStore((state) => state.session);
   const accessToken = session?.tokens.accessToken ?? null;
-  const [draftFilters, setDraftFilters] = useState<DispatchFilters>(emptyFilters);
-  const [appliedFilters, setAppliedFilters] = useState<DispatchFilters>(draftFilters);
+  const assignedHubCodes = useMemo(
+    () => (session?.user.hubCodes ?? []).map((code) => normalizeCode(code)).filter(Boolean),
+    [session?.user.hubCodes],
+  );
+  const processingHubCode = assignedHubCodes[0] ?? '';
+
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  const [statusFilter, setStatusFilter] = useState<'ALL' | DispatchStatus>('CREATED');
+  const [searchBy, setSearchBy] = useState<'order' | 'shipment'>('order');
+  const [keyword, setKeyword] = useState('');
+  const [fromTime, setFromTime] = useState(startOfTodayInputValue);
+  const [toTime, setToTime] = useState(endOfTodayInputValue);
+  const [wardFilter, setWardFilter] = useState('ALL');
+  const [sourceFilter, setSourceFilter] = useState('ALL');
+  const [serviceFilter, setServiceFilter] = useState('ALL');
+  const [courierFilter, setCourierFilter] = useState('');
   const [selectedCourierId, setSelectedCourierId] = useState('');
-  const [assignNote, setAssignNote] = useState('Ưu tiên lấy hàng theo cùng tuyến, cập nhật ảnh nhận hàng khi hoàn tất.');
-  const [assignLoading, setAssignLoading] = useState(false);
-  const [isDispatchPanelOpen, setIsDispatchPanelOpen] = useState(false);
+  const [courierSearch, setCourierSearch] = useState('');
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [isAssigning, setIsAssigning] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const tasksQuery = useTasksQuery(accessToken, { taskType: 'PICKUP' });
   const shipmentsQuery = useShipmentsQuery(accessToken, {});
   const pickupsQuery = usePickupRequestsQuery(accessToken, {});
-  const courierOptionsQuery = useCourierOptionsQuery(accessToken);
-  const shipperUsersQuery = useQuery({
-    queryKey: ['customer-order-dispatch', 'shipper-users'],
+  const shippersQuery = useQuery({
+    queryKey: [
+      ...queryKeys.tasks,
+      'dispatch-shippers',
+      processingHubCode,
+    ],
     queryFn: () =>
       authClient.listUsers(accessToken, {
         roleGroup: 'SHIPPER',
+        hubCode: processingHubCode,
         status: 'ACTIVE',
       }),
-    enabled: Boolean(accessToken),
+    enabled: Boolean(accessToken && processingHubCode),
   });
 
-  useEffect(() => {
-    if (!notice && !errorMessage) {
-      return;
+  const courierLookup = useMemo(() => {
+    const lookup = new Map<string, OpsUserDto>();
+
+    for (const shipper of shippersQuery.data ?? []) {
+      lookup.set(normalizeCode(shipper.username), shipper);
     }
 
-    const timeoutId = window.setTimeout(() => {
-      setNotice(null);
-      setErrorMessage(null);
-    }, 6000);
+    return lookup;
+  }, [shippersQuery.data]);
 
-    return () => window.clearTimeout(timeoutId);
-  }, [errorMessage, notice]);
+  const dispatchRows = useMemo(() => {
+    const shipmentLookup = buildShipmentLookup(shipmentsQuery.data ?? []);
+    const pickupLookup = buildPickupLookup(pickupsQuery.data ?? []);
 
-  const shipmentLookup = useMemo(
-    () => buildLookupByShipmentCode(shipmentsQuery.data ?? []),
-    [shipmentsQuery.data],
-  );
-  const pickupLookup = useMemo(
-    () => buildLookupByPickupId(pickupsQuery.data ?? []),
-    [pickupsQuery.data],
-  );
-  const rows = useMemo(
-    () => buildDispatchRows(tasksQuery.data ?? [], shipmentLookup, pickupLookup),
-    [pickupLookup, shipmentLookup, tasksQuery.data],
-  );
-  const courierDisplayOptions = useMemo(
-    () =>
-      buildCourierDisplayOptions(
-        (courierOptionsQuery.data ?? []).map((courier) => courier.courierId),
-        shipperUsersQuery.data ?? [],
-      ),
-    [courierOptionsQuery.data, shipperUsersQuery.data],
-  );
-  const courierDisplayLookup = useMemo(
-    () =>
-      new Map(
-        courierDisplayOptions.map((option) => [option.courierId, option]),
-      ),
-    [courierDisplayOptions],
-  );
-  const formatAssignedCourier = (courierId: string | null): string =>
-    courierId ? courierDisplayLookup.get(courierId)?.label ?? courierId : '-';
-
-  useEffect(() => {
-    if (selectedCourierId || courierDisplayOptions.length === 0) {
-      return;
-    }
-
-    setSelectedCourierId(courierDisplayOptions[0].courierId);
-  }, [courierDisplayOptions, selectedCourierId]);
-
-  const filterOptions = useMemo(() => {
-    const wards = new Set<string>();
-    const hubs = new Set<string>();
-    const sources = new Set<string>();
-    const services = new Set<string>();
-
-    for (const row of rows) {
-      if (row.pickupWard) wards.add(row.pickupWard);
-      if (row.pickupHub) hubs.add(row.pickupHub);
-      if (row.source) sources.add(row.source);
-      if (row.serviceType) services.add(row.serviceType);
-    }
-
-    const sort = (items: Set<string>) => Array.from(items).sort((left, right) => left.localeCompare(right, 'vi'));
-
-    return {
-      wards: sort(wards),
-      hubs: sort(hubs),
-      sources: sort(sources),
-      services: sort(services),
-    };
-  }, [rows]);
-
-  const filteredRows = useMemo(() => {
-    const keyword = normalizeLower(appliedFilters.keyword);
-    const customer = normalizeLower(appliedFilters.customer);
-
-    return rows.filter((row) => {
-      const keywordSource =
-        appliedFilters.searchMode === 'orderCode' ? row.orderCode : row.shipmentCode;
-      const keywordMatched = !keyword || normalizeLower(keywordSource).includes(keyword);
-      const dateMatched = isDateInRange(row.createdAt ?? row.updatedAt, appliedFilters.fromDate, appliedFilters.toDate);
-      const wardMatched = !appliedFilters.ward || row.pickupWard === appliedFilters.ward;
-      const hubMatched = !appliedFilters.pickupHub || row.pickupHub === appliedFilters.pickupHub;
-      const sourceMatched = !appliedFilters.source || row.source === appliedFilters.source;
-      const statusMatched = matchesStatusFilter(row, appliedFilters.status);
-      const courierMatched = matchesCourierFilter(
-        row.assignedCourierId,
-        appliedFilters.courierId,
-        courierDisplayLookup,
+    return (tasksQuery.data ?? [])
+      .map((task) => {
+        const shipmentCode = normalizeCode(task.shipmentCode);
+        const shipment = shipmentCode ? shipmentLookup.get(shipmentCode) ?? null : null;
+        const pickup = shipmentCode ? pickupLookup.get(shipmentCode) ?? null : null;
+        return mapTaskToDispatchRow(task, shipment, pickup, courierLookup);
+      })
+      .filter((row): row is DispatchOrderRow => Boolean(row))
+      .filter((row) => row.pickupHub === processingHubCode)
+      .sort(
+        (left, right) =>
+          new Date(right.requestedAt ?? '').getTime() - new Date(left.requestedAt ?? '').getTime(),
       );
-      const serviceMatched =
-        !appliedFilters.serviceType || row.serviceType === appliedFilters.serviceType;
-      const customerMatched =
-        !customer ||
-        normalizeLower(row.senderName).includes(customer) ||
-        normalizeLower(row.senderPhone).includes(customer);
+  }, [
+    courierLookup,
+    pickupsQuery.data,
+    processingHubCode,
+    shipmentsQuery.data,
+    tasksQuery.data,
+  ]);
+
+  const courierActiveTaskCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+
+    for (const row of dispatchRows) {
+      if (row.assignedCourierId && row.status !== 'COMPLETED' && row.status !== 'CANCELLED') {
+        const key = normalizeCode(row.assignedCourierId);
+        counts.set(key, (counts.get(key) ?? 0) + 1);
+      }
+    }
+
+    return counts;
+  }, [dispatchRows]);
+
+  const courierOptions = useMemo<CourierOption[]>(
+    () =>
+      (shippersQuery.data ?? []).map((shipper) => ({
+        id: shipper.username,
+        name: shipper.displayName ?? shipper.username,
+        hub: shipper.hubCodes.join(', ') || processingHubCode,
+        activeTasks: courierActiveTaskCounts.get(normalizeCode(shipper.username)) ?? 0,
+      })),
+    [courierActiveTaskCounts, processingHubCode, shippersQuery.data],
+  );
+  const searchedCouriers = useMemo(() => {
+    const normalizedCourierSearch = normalizeText(courierSearch);
+
+    return courierOptions.filter(
+      (courier) =>
+        !normalizedCourierSearch ||
+        normalizeText(courier.name).includes(normalizedCourierSearch) ||
+        normalizeText(courier.id).includes(normalizedCourierSearch),
+    );
+  }, [courierOptions, courierSearch]);
+
+  const wardOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(dispatchRows.map((order) => order.ward).filter((ward) => ward !== '-')),
+      ).sort(),
+    [dispatchRows],
+  );
+  const sourceOptions = useMemo(
+    () => Array.from(new Set(dispatchRows.map((order) => order.source))).sort(),
+    [dispatchRows],
+  );
+  const serviceOptions = useMemo(
+    () => Array.from(new Set(dispatchRows.map((order) => order.serviceType))).sort(),
+    [dispatchRows],
+  );
+
+  const filteredOrders = useMemo(() => {
+    const normalizedKeyword = normalizeText(keyword);
+    const normalizedCourier = normalizeText(courierFilter);
+
+    return dispatchRows.filter((order) => {
+      const keywordSource = searchBy === 'order' ? order.orderCode : order.shipmentCode;
+      const keywordMatched =
+        !normalizedKeyword ||
+        normalizeText(keywordSource).includes(normalizedKeyword) ||
+        normalizeText(order.senderName).includes(normalizedKeyword) ||
+        normalizeText(order.taskCode).includes(normalizedKeyword);
+      const courierMatched =
+        !normalizedCourier ||
+        normalizeText(order.assignedCourierName ?? order.assignedCourierId ?? '').includes(
+          normalizedCourier,
+        );
 
       return (
         keywordMatched &&
-        dateMatched &&
-        wardMatched &&
-        hubMatched &&
-        sourceMatched &&
-        statusMatched &&
         courierMatched &&
-        serviceMatched &&
-        customerMatched
+        isWithinInputRange(order.requestedAt, fromTime, toTime) &&
+        (statusFilter === 'ALL' || order.status === statusFilter) &&
+        (wardFilter === 'ALL' || order.ward === wardFilter) &&
+        (sourceFilter === 'ALL' || order.source === sourceFilter) &&
+        (serviceFilter === 'ALL' || order.serviceType === serviceFilter)
       );
     });
-  }, [appliedFilters, courierDisplayLookup, rows]);
+  }, [
+    courierFilter,
+    dispatchRows,
+    fromTime,
+    keyword,
+    searchBy,
+    serviceFilter,
+    sourceFilter,
+    statusFilter,
+    toTime,
+    wardFilter,
+  ]);
 
-  const selectedRows = useMemo(
-    () => filteredRows.filter((row) => selectedOrderIds.includes(row.id)),
-    [filteredRows, selectedOrderIds],
+  const selectedOrders = useMemo(
+    () => dispatchRows.filter((order) => selectedOrderIds.includes(order.id)),
+    [dispatchRows, selectedOrderIds],
   );
-  const selectedSelectableCount = selectedRows.filter((row) => row.selectable).length;
-  const selectableRows = filteredRows.filter((row) => row.selectable);
-  const allSelectableSelected =
-    selectableRows.length > 0 && selectableRows.every((row) => selectedOrderIds.includes(row.id));
-  const createdCount = rows.filter((row) => row.status === 'CREATED').length;
-  const assignedCount = rows.filter((row) => row.status === 'ASSIGNED').length;
+  const selectedParcelCount = selectedOrders.reduce((sum, order) => sum + order.parcelCount, 0);
+  const selectedHubCodes = useMemo(
+    () => Array.from(new Set(selectedOrders.map((order) => order.pickupHub))).sort(),
+    [selectedOrders],
+  );
+  const selectedCourier =
+    courierOptions.find((courier) => courier.id === selectedCourierId) ?? null;
+  const allVisibleSelected =
+    filteredOrders.length > 0 &&
+    filteredOrders.every((order) => selectedOrderIds.includes(order.id));
+  const loadError =
+    tasksQuery.error ?? shipmentsQuery.error ?? pickupsQuery.error ?? shippersQuery.error ?? null;
 
   useEffect(() => {
-    const visibleIds = new Set(filteredRows.map((row) => row.id));
-    setSelectedOrderIds((previous) => previous.filter((id) => visibleIds.has(id)));
-  }, [filteredRows]);
+    const existingIds = new Set(dispatchRows.map((row) => row.id));
+    setSelectedOrderIds((current) => current.filter((orderId) => existingIds.has(orderId)));
+  }, [dispatchRows]);
 
-  const setDraftFilter = <K extends keyof DispatchFilters>(key: K, value: DispatchFilters[K]) => {
-    setDraftFilters((current) => ({ ...current, [key]: value }));
+  useEffect(() => {
+    if (!isAssignModalOpen || selectedCourierId || searchedCouriers.length === 0) {
+      return;
+    }
+
+    setSelectedCourierId(searchedCouriers[0].id);
+  }, [isAssignModalOpen, searchedCouriers, selectedCourierId]);
+
+  useEffect(() => {
+    if (!isAssignModalOpen || !selectedCourierId) {
+      return;
+    }
+
+    if (
+      searchedCouriers.length > 0 &&
+      !searchedCouriers.some((courier) => courier.id === selectedCourierId)
+    ) {
+      setSelectedCourierId(searchedCouriers[0].id);
+    }
+  }, [isAssignModalOpen, searchedCouriers, selectedCourierId]);
+
+  const toggleOrder = (orderId: string, checked: boolean) => {
+    setSelectedOrderIds((current) => {
+      if (checked) {
+        return current.includes(orderId) ? current : [...current, orderId];
+      }
+
+      return current.filter((selectedId) => selectedId !== orderId);
+    });
+  };
+
+  const toggleAllVisible = (checked: boolean) => {
+    if (!checked) {
+      const visibleIdSet = new Set(filteredOrders.map((order) => order.id));
+      setSelectedOrderIds((current) => current.filter((orderId) => !visibleIdSet.has(orderId)));
+      return;
+    }
+
+    setSelectedOrderIds((current) =>
+      Array.from(new Set([...current, ...filteredOrders.map((order) => order.id)])),
+    );
+  };
+
+  const resetFilters = () => {
+    setStatusFilter('CREATED');
+    setSearchBy('order');
+    setKeyword('');
+    setFromTime(startOfTodayInputValue());
+    setToTime(endOfTodayInputValue());
+    setWardFilter('ALL');
+    setSourceFilter('ALL');
+    setServiceFilter('ALL');
+    setCourierFilter('');
+    setNotice('Đã làm mới bộ lọc điều phối.');
+  };
+
+  const openAssignModal = () => {
+    if (!processingHubCode) {
+      setNotice('Tài khoản Ops chưa được gán bưu cục xử lý.');
+      return;
+    }
+
+    if (selectedOrderIds.length === 0) {
+      setNotice('Vui lòng chọn ít nhất một đơn để điều phối shipper.');
+      return;
+    }
+
+    const assignableSelectedOrders = selectedOrders.filter(canAssign);
+    if (assignableSelectedOrders.length === 0) {
+      setNotice('Chỉ các đơn chưa điều phối hoặc đã điều phối mới có thể gán nhân viên.');
+      return;
+    }
+
+    setCourierSearch('');
+    setSelectedCourierId('');
+    setIsAssignModalOpen(true);
+  };
+
+  const assignSelectedOrders = async () => {
+    if (!accessToken || isAssigning) {
+      return;
+    }
+
+    if (!selectedCourier) {
+      setNotice('Vui lòng chọn nhân viên giao nhận thuộc bưu cục xử lý.');
+      return;
+    }
+
+    const assignableSelectedOrders = selectedOrders.filter(canAssign);
+    if (assignableSelectedOrders.length === 0) {
+      setNotice('Không có đơn phù hợp để điều phối.');
+      return;
+    }
+
+    setIsAssigning(true);
+    let assignedCount = 0;
+    let reassignedCount = 0;
+    let skippedCount = 0;
+    const failedRows: string[] = [];
+
+    for (const order of assignableSelectedOrders) {
+      try {
+        if (order.assignedCourierId) {
+          if (order.assignedCourierId === selectedCourier.id) {
+            skippedCount += 1;
+            continue;
+          }
+
+          await tasksClient.reassign(accessToken, {
+            taskId: order.id,
+            courierId: selectedCourier.id,
+            note: 'điều phối từ màn điều phối đơn đặt',
+          });
+          reassignedCount += 1;
+          continue;
+        }
+
+        await tasksClient.assign(accessToken, {
+          taskId: order.id,
+          courierId: selectedCourier.id,
+          note: 'điều phối từ màn điều phối đơn đặt',
+        });
+        assignedCount += 1;
+      } catch (error) {
+        failedRows.push(`${order.shipmentCode}: ${getErrorMessage(error)}`);
+      }
+    }
+
+    await queryClient.invalidateQueries({ queryKey: queryKeys.tasks });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
+    setIsAssigning(false);
+
+    if (failedRows.length === 0) {
+      setSelectedOrderIds([]);
+      setIsAssignModalOpen(false);
+    }
+
+    setNotice(
+      failedRows.length > 0
+        ? `Điều phối lỗi ${failedRows.length} đơn: ${failedRows.slice(0, 2).join(' | ')}`
+        : `Đã điều phối ${assignedCount} đơn, phân công lại ${reassignedCount}, bỏ qua ${skippedCount}.`,
+    );
+  };
+
+  const markPickupFailed = async () => {
+    if (!accessToken || isCancelling) {
+      return;
+    }
+
+    const cancellableOrders = selectedOrders.filter(canAssign);
+    if (cancellableOrders.length === 0) {
+      setNotice('Vui lòng chọn đơn lấy hàng đang mở để ghi nhận thất bại.');
+      return;
+    }
+
+    setIsCancelling(true);
+    const failedRows: string[] = [];
+
+    for (const order of cancellableOrders) {
+      try {
+        await tasksClient.updateStatus(accessToken, {
+          taskId: order.id,
+          status: 'CANCELLED',
+        });
+      } catch (error) {
+        failedRows.push(`${order.shipmentCode}: ${getErrorMessage(error)}`);
+      }
+    }
+
+    await queryClient.invalidateQueries({ queryKey: queryKeys.tasks });
+    setIsCancelling(false);
+
+    if (failedRows.length === 0) {
+      setSelectedOrderIds([]);
+    }
+
+    setNotice(
+      failedRows.length > 0
+        ? `Không thể cập nhật ${failedRows.length} đơn: ${failedRows.slice(0, 2).join(' | ')}`
+        : `Đã ghi nhận lấy hàng thất bại cho ${cancellableOrders.length} đơn.`,
+    );
   };
 
   const applySearch = () => {
@@ -684,387 +795,388 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
 
   return (
     <section className="ops-customer-dispatch">
-      <header className="ops-customer-dispatch__toolbar">
-        <button type="button" className="ops-customer-dispatch__action ops-customer-dispatch__action--danger" onClick={applySearch}>
-          <SearchIcon />
-          Tìm kiếm
-        </button>
-        <button type="button" className="ops-customer-dispatch__action" onClick={exportFilteredRows}>
-          <DownloadIcon />
-          Xuất dữ liệu
-        </button>
-        <button type="button" className="ops-customer-dispatch__action" onClick={() => void refreshData()}>
-          <RefreshIcon />
-          Làm mới
-        </button>
-        <button type="button" className="ops-customer-dispatch__action" onClick={resetFilters}>
-          Rút đơn đặt
-        </button>
-        <button
-          type="button"
-          className="ops-customer-dispatch__action ops-customer-dispatch__action--primary"
-          disabled={assignLoading || selectedSelectableCount === 0}
-          onClick={() => openDispatchPanel(selectedRows)}
-        >
-          <SendIcon />
-          Điều phối shipper
-        </button>
-        <span className="ops-customer-dispatch__toolbar-spacer" />
-        <button type="button" className="ops-customer-dispatch__action">
-          Trung tâm tải xuống
-        </button>
-        <button type="button" className="ops-customer-dispatch__action">
-          Lấy hàng thất bại
+      <header className="ops-customer-dispatch__top">
+        <div>
+          <h2>Điều phối đơn đặt</h2>
+          <p>Quản lý task lấy hàng thật theo bưu cục Ops được gán và phân công nhân viên giao nhận.</p>
+        </div>
+        <button type="button" className="ops-customer-dispatch__collapse-btn">
+          Thu gọn
         </button>
       </header>
 
-      <section className="ops-customer-dispatch__filters" aria-label="Bộ lọc điều phối đơn đặt">
-        <div className="ops-customer-dispatch__radio-row">
+      <section className="ops-customer-dispatch__toolbar" aria-label="Thao tác điều phối">
+        <button type="button" className="ops-customer-dispatch__primary-action">
+          Tìm kiếm
+        </button>
+        <button type="button" disabled>
+          Xuất dữ liệu
+        </button>
+        <button type="button" onClick={resetFilters}>
+          Làm mới
+        </button>
+        <button type="button" disabled>
+          Rút đơn đặt
+        </button>
+        <button type="button" onClick={openAssignModal}>
+          Điều phối shipper
+        </button>
+        <button type="button" disabled>
+          Trung tâm tải xuống
+        </button>
+        <button
+          type="button"
+          onClick={() => void markPickupFailed()}
+          disabled={selectedOrderIds.length === 0 || isCancelling}
+        >
+          {isCancelling ? 'Đang cập nhật...' : 'Lấy hàng thất bại'}
+        </button>
+      </section>
+
+      <section className="ops-customer-dispatch__filters" aria-label="Bộ lọc điều phối">
+        <fieldset className="ops-customer-dispatch__radio-field">
+          <legend>Tìm theo</legend>
           <label>
             <input
               type="radio"
-              checked={draftFilters.searchMode === 'orderCode'}
-              onChange={() => setDraftFilter('searchMode', 'orderCode')}
+              name="dispatch-search-by"
+              checked={searchBy === 'order'}
+              onChange={() => setSearchBy('order')}
             />
-            Mã đơn đặt
+            <span>Mã đơn đặt</span>
           </label>
           <label>
             <input
               type="radio"
-              checked={draftFilters.searchMode === 'shipmentCode'}
-              onChange={() => setDraftFilter('searchMode', 'shipmentCode')}
+              name="dispatch-search-by"
+              checked={searchBy === 'shipment'}
+              onChange={() => setSearchBy('shipment')}
             />
-            Mã vận đơn
+            <span>Mã vận đơn</span>
           </label>
-        </div>
+        </fieldset>
 
         <label>
-          <span>Từ ngày nhập đơn đặt</span>
+          <span>Từ giờ bắt đầu nhập đơn đặt</span>
           <input
             type="datetime-local"
-            value={draftFilters.fromDate ? `${draftFilters.fromDate}T00:00` : ''}
-            onChange={(event) => setDraftFilter('fromDate', event.target.value.slice(0, 10))}
+            value={fromTime}
+            onChange={(event) => setFromTime(event.target.value)}
           />
         </label>
+
         <label>
-          <span>Đến ngày nhập đơn đặt</span>
+          <span>Đến giờ kết thúc nhập đơn đặt</span>
           <input
             type="datetime-local"
-            value={draftFilters.toDate ? `${draftFilters.toDate}T23:59` : ''}
-            onChange={(event) => setDraftFilter('toDate', event.target.value.slice(0, 10))}
+            value={toTime}
+            onChange={(event) => setToTime(event.target.value)}
           />
         </label>
+
         <label>
           <span>Phường xã lấy</span>
-          <select value={draftFilters.ward} onChange={(event) => setDraftFilter('ward', event.target.value)}>
-            <option value="">Vui lòng chọn phường/xã</option>
-            {filterOptions.wards.map((ward) => (
+          <select value={wardFilter} onChange={(event) => setWardFilter(event.target.value)}>
+            <option value="ALL">Vui lòng chọn phường xã</option>
+            {wardOptions.map((ward) => (
               <option key={ward} value={ward}>
                 {ward}
               </option>
             ))}
           </select>
         </label>
+
         <label>
-          <span>Bưu cục lấy hàng</span>
-          <select value={draftFilters.pickupHub} onChange={(event) => setDraftFilter('pickupHub', event.target.value)}>
-            <option value="">Tất cả bưu cục</option>
-            {filterOptions.hubs.map((hub) => (
-              <option key={hub} value={hub}>
-                {hub}
-              </option>
-            ))}
-          </select>
+          <span>Mã bưu cục xử lý</span>
+          <input
+            type="text"
+            value={processingHubCode || 'Chưa được gán bưu cục'}
+            disabled
+            readOnly
+          />
         </label>
+
         <label>
           <span>Nguồn đơn đặt</span>
-          <select value={draftFilters.source} onChange={(event) => setDraftFilter('source', event.target.value)}>
-            <option value="">Vui lòng chọn nguồn đơn đặt</option>
-            {filterOptions.sources.map((source) => (
+          <select value={sourceFilter} onChange={(event) => setSourceFilter(event.target.value)}>
+            <option value="ALL">Vui lòng chọn nguồn đơn</option>
+            {sourceOptions.map((source) => (
               <option key={source} value={source}>
-                {source}
+                {sourceLabel(source)}
               </option>
             ))}
           </select>
         </label>
+
         <label>
           <span>Trạng thái đơn đặt</span>
-          <select value={draftFilters.status} onChange={(event) => setDraftFilter('status', event.target.value)}>
-            {statusFilterOptions.map((option) => (
-              <option key={option.value || 'ALL'} value={option.value}>
+          <select
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value as 'ALL' | DispatchStatus)}
+          >
+            {STATUS_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
           </select>
         </label>
+
         <label>
-          <span>Khách hàng thương mại</span>
+          <span>Từ khóa</span>
           <input
-            type="text"
-            value={draftFilters.customer}
-            onChange={(event) => setDraftFilter('customer', event.target.value)}
-            placeholder="Tên hoặc số điện thoại"
+            value={keyword}
+            onChange={(event) => setKeyword(event.target.value)}
+            placeholder="Nhập mã hoặc tên shop"
           />
         </label>
+
         <label>
           <span>Nhân viên giao nhận</span>
           <input
-            type="text"
-            list="ops-customer-dispatch-couriers"
-            value={draftFilters.courierId}
-            onChange={(event) => setDraftFilter('courierId', event.target.value)}
+            value={courierFilter}
+            onChange={(event) => setCourierFilter(event.target.value)}
             placeholder="Nhập tên hoặc mã NVGN"
           />
-          <datalist id="ops-customer-dispatch-couriers">
-            {courierDisplayOptions.map((courier) => (
-              <option key={courier.courierId} value={courier.label} />
-            ))}
-          </datalist>
         </label>
+
         <label>
           <span>Loại dịch vụ</span>
-          <select value={draftFilters.serviceType} onChange={(event) => setDraftFilter('serviceType', event.target.value)}>
-            <option value="">Lấy hàng tại nhà</option>
-            {filterOptions.services.map((service) => (
-              <option key={service} value={service}>
-                {service}
+          <select value={serviceFilter} onChange={(event) => setServiceFilter(event.target.value)}>
+            <option value="ALL">Toàn bộ</option>
+            {serviceOptions.map((serviceType) => (
+              <option key={serviceType} value={serviceType}>
+                {serviceLabel(serviceType)}
               </option>
             ))}
           </select>
         </label>
+
         <label>
           <span>Mã khách hàng</span>
-          <div className="ops-customer-dispatch__keyword">
-            <SearchIcon />
-            <input
-              type="text"
-              value={draftFilters.keyword}
-              onChange={(event) => setDraftFilter('keyword', event.target.value)}
-              placeholder="Tối đa 500 đơn, phân biệt bằng dấu phẩy"
-            />
-          </div>
+          <input placeholder="Vui lòng nhập tên hoặc mã KH" disabled />
         </label>
       </section>
 
-      <section className="ops-customer-dispatch__summary" aria-label="Tổng quan điều phối">
-        <article>
-          <span>Chờ điều phối</span>
-          <strong>{createdCount}</strong>
-        </article>
-        <article>
-          <span>Đã điều phối</span>
-          <strong>{assignedCount}</strong>
-        </article>
-        <article>
-          <span>Đang hiển thị</span>
-          <strong>{filteredRows.length}</strong>
-        </article>
-        <article>
-          <span>Đã chọn</span>
+      <section className="ops-customer-dispatch__assign-strip">
+        <div>
           <strong>{selectedOrderIds.length}</strong>
-        </article>
+          <span>đơn đã chọn</span>
+        </div>
+        <div>
+          <strong>{selectedParcelCount}</strong>
+          <span>kiện cần lấy</span>
+        </div>
+        <div>
+          <strong>{selectedHubCodes.length ? selectedHubCodes.join(', ') : '-'}</strong>
+          <span>bưu cục xử lý</span>
+        </div>
+        <button type="button" onClick={openAssignModal}>
+          Điều phối đã chọn
+        </button>
+        {notice ? <p role="status">{notice}</p> : null}
       </section>
 
-      {queryError ? <div className="ops-customer-dispatch__alert ops-customer-dispatch__alert--error">{getErrorMessage(queryError)}</div> : null}
-      {notice ? <div className="ops-customer-dispatch__alert ops-customer-dispatch__alert--success">{notice}</div> : null}
-      {errorMessage ? <div className="ops-customer-dispatch__alert ops-customer-dispatch__alert--error">{errorMessage}</div> : null}
+      {loadError ? (
+        <div className="ops-customer-dispatch__error" role="alert">
+          {getErrorMessage(loadError)}
+        </div>
+      ) : null}
 
-      <div className="ops-customer-dispatch__content">
-        <section className="ops-customer-dispatch__table-card">
-          <div className="ops-customer-dispatch__table-title">
-            <h3>Danh sách đơn điều phối</h3>
-            <span>{isLoading ? 'Đang tải...' : `${filteredRows.length} đơn`}</span>
-          </div>
-          <div className="ops-customer-dispatch__table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th className="ops-customer-dispatch__select-col">
+      <section className="ops-customer-dispatch__table-panel">
+        <div className="ops-customer-dispatch__table-head">
+          <h3>Danh sách đơn đặt cần điều phối</h3>
+          <span>
+            {tasksQuery.isLoading || shipmentsQuery.isLoading || pickupsQuery.isLoading
+              ? 'Đang tải...'
+              : `${filteredOrders.length} dòng`}
+          </span>
+        </div>
+
+        <div className="ops-customer-dispatch__table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>
+                  <input
+                    type="checkbox"
+                    checked={allVisibleSelected}
+                    onChange={(event) => toggleAllVisible(event.target.checked)}
+                    aria-label="Chọn tất cả đơn đang hiển thị"
+                  />
+                </th>
+                <th>Mã đơn đặt</th>
+                <th>Mã vận đơn</th>
+                <th>Người gửi</th>
+                <th>Địa chỉ lấy</th>
+                <th>Phường xã</th>
+                <th>Trạng thái đơn đặt</th>
+                <th>Thông tin</th>
+                <th>Bưu cục lấy</th>
+                <th>Thời gian điều phối shipper</th>
+                <th>Nhân viên</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredOrders.map((order) => (
+                <tr key={order.id}>
+                  <td>
                     <input
                       type="checkbox"
-                      checked={allSelectableSelected}
-                      disabled={selectableRows.length === 0}
-                      onChange={(event) => toggleAll(event.target.checked)}
-                      aria-label="Chọn tất cả đơn có thể điều phối"
+                      checked={selectedOrderIds.includes(order.id)}
+                      onChange={(event) => toggleOrder(order.id, event.target.checked)}
+                      aria-label={`Chọn ${order.orderCode}`}
                     />
-                  </th>
-                  <th>STT</th>
-                  <th>Thời gian</th>
-                  <th>Mã vận đơn</th>
-                  <th>Người gửi</th>
-                  <th>Địa chỉ lấy</th>
-                  <th>Phường xã lấy</th>
-                  <th>Trạng thái đơn đặt</th>
-                  <th>Thông tin</th>
-                  <th>Bưu cục lấy</th>
-                  <th>Thời gian điều phối shipper</th>
-                  <th>Nhãn</th>
-                  <th>Thao tác</th>
+                  </td>
+                  <td className="ops-customer-dispatch__code">
+                    {order.orderCode}
+                    <small>{order.taskCode}</small>
+                  </td>
+                  <td>{order.shipmentCode}</td>
+                  <td>
+                    <strong>{order.senderName}</strong>
+                    <small>{order.senderPhone}</small>
+                  </td>
+                  <td>
+                    {order.pickupAddress}
+                    <small>{order.district}</small>
+                  </td>
+                  <td>{order.ward}</td>
+                  <td>
+                    <span
+                      className={`ops-customer-dispatch__status ops-customer-dispatch__status--${order.status.toLowerCase()}`}
+                    >
+                      {statusLabel(order.status)}
+                    </span>
+                  </td>
+                  <td>
+                    <strong>{serviceLabel(order.serviceType)}</strong>
+                    <small>
+                      {sourceLabel(order.source)} · {order.parcelCount} kiện
+                    </small>
+                    <small>Pickup: {order.pickupStatus ?? '-'}</small>
+                  </td>
+                  <td>{order.pickupHub}</td>
+                  <td>{order.scheduledAt ? formatDateTime(order.scheduledAt) : 'Chưa điều phối'}</td>
+                  <td>
+                    {order.assignedCourierId ? (
+                      <>
+                        <strong>{order.assignedCourierName ?? order.assignedCourierId}</strong>
+                        <small>{order.assignedCourierId}</small>
+                      </>
+                    ) : (
+                      'Chưa gán'
+                    )}
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      className="ops-customer-dispatch__row-action"
+                      onClick={() => toggleOrder(order.id, !selectedOrderIds.includes(order.id))}
+                    >
+                      {selectedOrderIds.includes(order.id) ? 'Bỏ chọn' : 'Chọn'}
+                    </button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {filteredRows.map((row, index) => (
-                  <tr key={row.id}>
-                    <td>
-                      <input
-                        type="checkbox"
-                        checked={selectedOrderIds.includes(row.id)}
-                        disabled={!row.selectable}
-                        onChange={(event) => toggleOrder(row.id, event.target.checked)}
-                        aria-label={`Chọn ${row.orderCode}`}
-                      />
-                    </td>
-                    <td>{index + 1}</td>
-                    <td>{formatDateTime(row.createdAt)}</td>
-                    <td>
-                      <strong className="ops-customer-dispatch__code">{row.shipmentCode || row.orderCode}</strong>
-                      <small>{row.orderCode}</small>
-                    </td>
-                    <td>
-                      <strong>{row.senderName}</strong>
-                      <small>{row.senderPhone || 'Chưa có SĐT'}</small>
-                    </td>
-                    <td>{row.pickupAddress}</td>
-                    <td>{row.pickupWard}</td>
-                    <td>
-                      <span className={`ops-customer-dispatch__status ops-customer-dispatch__status--${row.status.toLowerCase()}`}>
-                        {formatRowStatus(row)}
-                      </span>
-                    </td>
-                    <td>
-                      <span>{row.source}</span>
-                      <small>{row.serviceType}</small>
-                    </td>
-                    <td>{row.pickupHub}</td>
-                    <td>{row.assignedCourierId ? formatDateTime(row.updatedAt) : 'Chưa điều phối'}</td>
-                    <td>{formatAssignedCourier(row.assignedCourierId)}</td>
-                    <td>
-                      <button
-                        type="button"
-                        className="ops-customer-dispatch__row-action"
-                        disabled={!row.selectable || assignLoading}
-                        onClick={() => openDispatchPanel([row])}
-                      >
-                        Điều phối
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {!isLoading && filteredRows.length === 0 ? (
-                  <tr>
-                    <td colSpan={13} className="ops-customer-dispatch__empty">
-                      Không có đơn phù hợp với bộ lọc hiện tại.
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </div>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
-      {isDispatchPanelOpen ? (
-        <div className="ops-customer-dispatch__modal" role="dialog" aria-modal="true" aria-label="Điều phối shipper">
-          <button
-            type="button"
-            className="ops-customer-dispatch__modal-backdrop"
-            aria-label="Đóng điều phối shipper"
-            onClick={() => setIsDispatchPanelOpen(false)}
-          />
-          <aside className="ops-customer-dispatch__drawer">
-            <header className="ops-customer-dispatch__drawer-header">
+        {filteredOrders.length === 0 ? (
+          <div className="ops-customer-dispatch__empty">
+            {processingHubCode
+              ? 'Không có đơn phù hợp bộ lọc hiện tại.'
+              : 'Tài khoản Ops chưa được gán bưu cục xử lý.'}
+          </div>
+        ) : null}
+      </section>
+
+      {isAssignModalOpen ? (
+        <div className="ops-customer-dispatch__modal" role="presentation">
+          <aside
+            className="ops-customer-dispatch__drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dispatch-assign-title"
+          >
+            <header className="ops-customer-dispatch__drawer-head">
               <div>
-                <span>Điều phối shipper</span>
-                <h3>Chọn nhân viên giao hàng</h3>
+                <h3 id="dispatch-assign-title">Điều phối nhân viên giao nhận</h3>
+                <span>
+                  {selectedOrderIds.length} đơn / {selectedParcelCount} kiện
+                </span>
               </div>
               <button
                 type="button"
                 className="ops-customer-dispatch__drawer-close"
-                onClick={() => setIsDispatchPanelOpen(false)}
-                aria-label="Đóng"
+                onClick={() => setIsAssignModalOpen(false)}
+                aria-label="Đóng modal điều phối"
               >
-                x
+                ×
               </button>
             </header>
 
             <section className="ops-customer-dispatch__drawer-summary">
-              <article>
-                <span>Đơn đã chọn</span>
-                <strong>{selectedSelectableCount}</strong>
-              </article>
-              <article>
-                <span>Đang điều phối lại</span>
-                <strong>{selectedRows.filter((row) => row.assignedCourierId).length}</strong>
-              </article>
+              <span>Mã bưu cục xử lý</span>
+              <strong>{processingHubCode}</strong>
             </section>
 
-            <div className="ops-customer-dispatch__selected-list">
-              {selectedRows.slice(0, 5).map((row) => (
-                <article key={row.id}>
-                  <strong>{row.shipmentCode || row.orderCode}</strong>
-                  <span>{row.senderName}</span>
-                </article>
-              ))}
-              {selectedRows.length > 5 ? <small>+{selectedRows.length - 5} đơn khác</small> : null}
-            </div>
+            <label className="ops-customer-dispatch__courier-search">
+              <span>Tìm nhân viên giao nhận</span>
+              <input
+                value={courierSearch}
+                onChange={(event) => setCourierSearch(event.target.value)}
+                placeholder="Nhập tên hoặc mã nhân viên"
+                autoFocus
+              />
+            </label>
 
-            <section className="ops-customer-dispatch__courier-picker" aria-label="Danh sách nhân viên giao hàng">
-              {courierDisplayOptions.map((courier) => {
-                const load = rows.filter((row) => row.assignedCourierId === courier.courierId).length;
-                const checked = selectedCourierId === courier.courierId;
+            <div className="ops-customer-dispatch__courier-list" role="listbox">
+              {shippersQuery.isLoading ? (
+                <div className="ops-customer-dispatch__courier-empty">Đang tải nhân viên...</div>
+              ) : null}
+              {searchedCouriers.map((courier) => {
+                const isSelected = selectedCourierId === courier.id;
 
                 return (
-                  <label
-                    key={courier.courierId}
-                    className={
-                      checked
-                        ? 'ops-customer-dispatch__courier-option ops-customer-dispatch__courier-option--active'
-                        : 'ops-customer-dispatch__courier-option'
-                    }
+                  <button
+                    key={courier.id}
+                    type="button"
+                    className={`ops-customer-dispatch__courier-option${
+                      isSelected ? ' ops-customer-dispatch__courier-option--active' : ''
+                    }`}
+                    onClick={() => setSelectedCourierId(courier.id)}
+                    role="option"
+                    aria-selected={isSelected}
                   >
-                    <input
-                      type="radio"
-                      name="dispatchCourier"
-                      checked={checked}
-                      onChange={() => setSelectedCourierId(courier.courierId)}
-                    />
                     <span>
-                      <strong>{courier.label}</strong>
-                      <small>{load} việc đang nhận</small>
+                      <strong>{courier.name}</strong>
+                      <small>{courier.id}</small>
                     </span>
-                  </label>
+                    <em>{courier.activeTasks} task</em>
+                  </button>
                 );
               })}
-              {courierDisplayOptions.length === 0 ? (
-                <p className="ops-customer-dispatch__drawer-empty">Chưa có nhân viên giao hàng để điều phối.</p>
+              {!shippersQuery.isLoading && searchedCouriers.length === 0 ? (
+                <div className="ops-customer-dispatch__courier-empty">
+                  Không có nhân viên giao nhận ACTIVE thuộc bưu cục {processingHubCode}.
+                </div>
               ) : null}
-            </section>
+            </div>
 
-            <label className="ops-customer-dispatch__drawer-field">
-              <span>Hạn hoàn thành</span>
-              <select defaultValue="today">
-                <option value="2h">Trong 2 giờ</option>
-                <option value="4h">Trong 4 giờ</option>
-                <option value="today">Trong ngày</option>
-              </select>
-            </label>
-            <label className="ops-customer-dispatch__drawer-field">
-              <span>Ghi chú cho shipper</span>
-              <textarea value={assignNote} onChange={(event) => setAssignNote(event.target.value)} />
-            </label>
-
-            <footer className="ops-customer-dispatch__drawer-footer">
-              <button type="button" className="ops-customer-dispatch__ghost-btn" onClick={() => setIsDispatchPanelOpen(false)}>
+            <footer className="ops-customer-dispatch__drawer-actions">
+              <button type="button" onClick={() => setIsAssignModalOpen(false)}>
                 Hủy
               </button>
               <button
                 type="button"
-                className="ops-customer-dispatch__assign-btn"
-                disabled={assignLoading || selectedSelectableCount === 0 || !selectedCourierId}
-                onClick={() => void dispatchSelectedOrders()}
+                className="ops-customer-dispatch__confirm-assign"
+                onClick={() => void assignSelectedOrders()}
+                disabled={!selectedCourier || isAssigning}
               >
-                <SendIcon />
-                {assignLoading ? 'Đang điều phối...' : `Xác nhận ${selectedSelectableCount} đơn`}
+                {isAssigning ? 'Đang điều phối...' : 'Điều phối'}
               </button>
             </footer>
           </aside>

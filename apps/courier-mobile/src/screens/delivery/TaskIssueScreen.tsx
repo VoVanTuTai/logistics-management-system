@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
   },
   optionItemSelected: {
     borderColor: '#93C5FD',
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#EFF6FF',
   },
   optionTitleRow: {
     flexDirection: 'row',

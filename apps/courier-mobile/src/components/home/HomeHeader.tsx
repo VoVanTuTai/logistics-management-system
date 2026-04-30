@@ -14,14 +14,6 @@ interface HomeHeaderProps {
   onPressNotification?: () => void;
 }
 
-const GRADIENT_STOPS = [
-  '#3730A3',
-  '#4338CA',
-  '#4F46E5',
-  '#6366F1',
-  '#818CF8',
-] as const;
-
 function HeaderIconButton({
   icon,
   onPress,
@@ -49,12 +41,6 @@ export function HomeHeader({
 }: HomeHeaderProps): React.JSX.Element {
   return (
     <View style={styles.container}>
-      <View style={styles.gradientLayer}>
-        {GRADIENT_STOPS.map((color) => (
-          <View key={color} style={[styles.gradientBand, { backgroundColor: color }]} />
-        ))}
-      </View>
-
       <View style={styles.content}>
         <View style={styles.topRow}>
           <View style={styles.welcomeBlock}>
@@ -91,15 +77,10 @@ const styles = StyleSheet.create({
   container: {
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
+    backgroundColor: theme.colors.primary,
     overflow: 'hidden',
     minHeight: 180,
     ...theme.shadow.md,
-  },
-  gradientLayer: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  gradientBand: {
-    flex: 1,
   },
   content: {
     paddingHorizontal: theme.spacing.lg,
@@ -120,7 +101,7 @@ const styles = StyleSheet.create({
   },
   greeting: {
     ...theme.typography.body.md,
-    color: '#C7D2FE',
+    color: '#DBEAFE',
   },
   userName: {
     ...theme.typography.title.sm,
@@ -129,7 +110,7 @@ const styles = StyleSheet.create({
   },
   hubName: {
     ...theme.typography.caption.md,
-    color: '#A5B4FC',
+    color: '#BFDBFE',
     marginTop: theme.spacing.xs,
   },
   actionsRow: {
@@ -160,13 +141,13 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.pill,
     backgroundColor: 'rgba(12, 34, 64, 0.36)',
     borderWidth: 1,
-    borderColor: 'rgba(159, 199, 247, 0.35)',
+    borderColor: 'rgba(191, 219, 254, 0.45)',
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: 6,
   },
   statusText: {
     ...theme.typography.caption.md,
-    color: '#E0E7FF',
+    color: '#DBEAFE',
   },
 });
 
