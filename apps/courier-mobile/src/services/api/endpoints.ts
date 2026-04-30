@@ -42,6 +42,8 @@ export const courierEndpoints = {
     pickup: `${COURIER_PREFIX}/scan/scans/pickup`,
     inbound: `${COURIER_PREFIX}/scan/scans/inbound`,
     outbound: `${COURIER_PREFIX}/scan/scans/outbound`,
+    location: (shipmentCode: string) =>
+      `${COURIER_PREFIX}/scan/locations/${encodeURIComponent(shipmentCode)}`,
   },
   delivery: {
     attempts: `${COURIER_PREFIX}/delivery/deliveries/attempts`,

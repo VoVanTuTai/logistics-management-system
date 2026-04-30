@@ -33,7 +33,7 @@ const actions: ScanActionItemData[] = [
   },
   {
     id: 'nhan-kien',
-    label: 'Nhận kiện',
+    label: 'Nhận hàng',
     iconName: 'cube-outline',
     iconColor: '#1A6B4A',
     iconBgColor: '#E6FAF1',
@@ -144,6 +144,11 @@ export function ScanScreen(): React.JSX.Element {
   const [lastScanMessage, setLastScanMessage] = React.useState<string | null>(null);
 
   const handlePressAction = (action: ScanActionItemData) => {
+    if (action.id === 'ky-nhan') {
+      navigation.navigate('DeliverySignScan');
+      return;
+    }
+
     if (action.id === 'dong-bao') {
       navigation.navigate('BagSeal');
       return;
@@ -366,4 +371,3 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.sm,
   },
 });
-

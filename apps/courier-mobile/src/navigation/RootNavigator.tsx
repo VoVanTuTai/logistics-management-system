@@ -169,7 +169,7 @@ export function RootNavigator(): React.JSX.Element {
           <RootStack.Screen
             name="PickupScan"
             component={PickupScanScreen}
-            options={{ title: 'Quet pickup' }}
+            options={{ title: 'Nhận hàng' }}
           />
           <RootStack.Screen
             name="HubScan"
@@ -233,4 +233,3 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
-
