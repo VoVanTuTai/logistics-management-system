@@ -51,13 +51,13 @@ export class TasksService {
   }
 
   async listCouriers(): Promise<string[]> {
-    const seededCouriers = (process.env.DISPATCH_COURIER_OPTIONS ?? '')
+    const configuredCouriers = (process.env.DISPATCH_COURIER_OPTIONS ?? '')
       .split(',')
       .map((value) => value.trim())
       .filter((value) => value.length > 0);
     const assignedCouriers = await this.taskRepository.listCourierIds();
 
-    return Array.from(new Set([...seededCouriers, ...assignedCouriers])).sort(
+    return Array.from(new Set([...configuredCouriers, ...assignedCouriers])).sort(
       (left, right) => left.localeCompare(right),
     );
   }

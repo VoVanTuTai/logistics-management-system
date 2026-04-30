@@ -14,52 +14,7 @@ interface SentMonitorRow {
   trangThai: string;
 }
 
-const MOCK_SENT_ROWS: SentMonitorRow[] = [
-  {
-    stt: 1,
-    maVanDon: '842502786101',
-    thoiGianQuetGui: '2026-04-28 07:45:21',
-    bcGui: '(NAA) Nghi Lộc 2',
-    maBcGui: '238K02',
-    bcDich: '(HNI) Hà Đông',
-    maBcDich: '001K03',
-    thoiGianCho: '3 giờ 20 phút',
-    trangThai: 'Đích chưa quét nhận',
-  },
-  {
-    stt: 2,
-    maVanDon: '842502786118',
-    thoiGianQuetGui: '2026-04-28 08:02:10',
-    bcGui: '(NAA) Vinh',
-    maBcGui: '238K01',
-    bcDich: '(HNI) Cầu Giấy',
-    maBcDich: '001K05',
-    thoiGianCho: '3 giờ 03 phút',
-    trangThai: 'Đích chưa quét nhận',
-  },
-  {
-    stt: 3,
-    maVanDon: '842502786125',
-    thoiGianQuetGui: '2026-04-28 08:44:36',
-    bcGui: '(THA) Bỉm Sơn',
-    maBcGui: '280K04',
-    bcDich: '(HNI) Nam Từ Liêm',
-    maBcDich: '001K07',
-    thoiGianCho: '2 giờ 21 phút',
-    trangThai: 'Đích chưa quét nhận',
-  },
-  {
-    stt: 4,
-    maVanDon: '842502786132',
-    thoiGianQuetGui: '2026-04-28 09:11:58',
-    bcGui: '(NAA) Nghi Lộc 2',
-    maBcGui: '238K02',
-    bcDich: '(HNI) Long Biên',
-    maBcDich: '001K09',
-    thoiGianCho: '1 giờ 54 phút',
-    trangThai: 'Đích chưa quét nhận',
-  },
-];
+const sentRows: SentMonitorRow[] = [];
 
 export function MonitorDataHangGuiPage(): React.JSX.Element {
   return (
@@ -73,11 +28,11 @@ export function MonitorDataHangGuiPage(): React.JSX.Element {
         <div className="ops-monitor-hang-gui__summary">
           <article>
             <span>Đã quét gửi</span>
-            <strong>{MOCK_SENT_ROWS.length}</strong>
+            <strong>{sentRows.length}</strong>
           </article>
           <article>
             <span>Đích chưa nhận</span>
-            <strong>{MOCK_SENT_ROWS.length}</strong>
+            <strong>{sentRows.length}</strong>
           </article>
         </div>
       </header>
@@ -138,7 +93,7 @@ export function MonitorDataHangGuiPage(): React.JSX.Element {
             </tr>
           </thead>
           <tbody>
-            {MOCK_SENT_ROWS.map((row) => (
+            {sentRows.map((row) => (
               <tr key={row.maVanDon}>
                 <td>{row.stt}</td>
                 <td className="ops-monitor-hang-gui__code">{row.maVanDon}</td>
@@ -153,6 +108,11 @@ export function MonitorDataHangGuiPage(): React.JSX.Element {
                 </td>
               </tr>
             ))}
+            {sentRows.length === 0 ? (
+              <tr>
+                <td colSpan={9}>Chưa có dữ liệu hàng gửi từ server.</td>
+              </tr>
+            ) : null}
           </tbody>
         </table>
       </section>

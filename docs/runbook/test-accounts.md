@@ -1,45 +1,16 @@
-# Tài khoản test local
+# Tai khoan va du lieu local
 
-Cập nhật: 2026-04-30
+Cap nhat: 2026-04-30
 
-Tai khoan duoc seed tai `services/auth-service/prisma/seed.ts`.
+Seed du lieu da duoc tat. Local/dev hien dung du lieu that co san trong database hoac du lieu duoc tao/import qua API.
 
-## 1) Tai khoan theo vai tro (de dang nhap nhanh)
+## Dang nhap
 
-| Vai tro | Username | Password | Login route |
-|---|---|---|---|
-| Admin | `10000001` | `password` | `/ops/auth/auth/login` |
-| Ops | `20000001` | `password` | `/ops/auth/auth/login` |
-| Courier | `30000001` | `password` | `/courier/auth/auth/login` |
-| Merchant | `41100001` | `password` | `/merchant/auth/auth/login` |
+Khong con tai khoan seed mac dinh. Tao tai khoan that bang auth-service users API hoac import tu nguon du lieu duoc phe duyet.
 
 Gateway local: `http://localhost:3000`
 
-## 2) Day du cac tai khoan seed
-
-| Vai trò | Khu vực | Username | Password | Ghi chú |
-|---|---|---|---|---|
-| Admin | Toàn hệ thống | `10000001` | `password` | Hub HN + HCM |
-| Ops | Hà Nội | `20000001` | `password` | Hub `001A001` |
-| Ops | HCM | `20000002` | `password` | Hub `003A001` |
-| Merchant | Hà Nội | `41100001` | `password` | Shop Minh Anh Hà Nội |
-| Merchant | Hà Nội | `41100002` | `password` | Thời trang Bảo Ngọc Hà Nội |
-| Merchant | HCM | `41100003` | `password` | Shop Sài Gòn Fresh |
-| Merchant | HCM | `41100004` | `password` | Mỹ phẩm An Nhiên HCM |
-| Courier | Hà Nội | `30000001` | `password` | Nguyễn Văn Hùng |
-| Courier | Hà Nội | `30000002` | `password` | Trần Quốc Bảo |
-| Courier | HCM | `30000003` | `password` | Võ Văn Tú Tài |
-| Courier | HCM | `30000004` | `password` | Lê Minh Tuấn |
-
-## 3) Dữ liệu vận hành seed
-
-- Hub Hà Nội: `001A001`.
-- Hub Hồ Chí Minh: `003A001`.
-- Mỗi hub có 10 task giao hàng `DELIVERY` và 10 task lấy hàng `PICKUP`.
-- Các task được chia theo trạng thái `CREATED`, `ASSIGNED`, `COMPLETED`, `CANCELLED`.
-- Pickup request có id cố định dạng `seed-pickup-hn-01` và `seed-pickup-hcm-01` để dispatch task trỏ đúng dữ liệu.
-
-## 4) Luat ma username/user id
+## Luat ma username/user id
 
 - User id bang username.
 - Username phai la 8 chu so.
@@ -49,14 +20,14 @@ Gateway local: `http://localhost:3000`
   - Courier: `3000xxxx`
   - Merchant: `411xxxxx`
 
-## 5) URL dang nhap giao dien
+## URL giao dien
 
 - Ops web: `http://localhost:5173`
 - Merchant web: `http://localhost:5174`
 - Admin web: `http://localhost:5175`
 - Gateway API: `http://localhost:3000`
 
-## 6) Lenh thao tac nhanh
+## Khoi dong
 
 Khoi dong backend:
 
@@ -64,15 +35,10 @@ Khoi dong backend:
 powershell -ExecutionPolicy Bypass -File scripts/start-services-retry.ps1
 ```
 
-Khoi dong full local (web + backend):
+Khoi dong full local:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/start-all-retry.ps1 -SkipInfra -SkipMobile
+powershell -ExecutionPolicy Bypass -File scripts/start-all-retry.ps1
 ```
 
-Re-seed auth accounts:
-
-```powershell
-cd services/auth-service
-npm run seed
-```
+Lenh `scripts/seed-all.ps1` hien chi in thong bao disabled va khong tao fixture.

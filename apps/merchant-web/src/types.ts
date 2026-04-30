@@ -217,8 +217,8 @@ export const DEFAULT_CREATE_FORM: CreateShipmentForm = {
 };
 
 export const DEFAULT_PROFILE: MerchantProfile = {
-  shopName: 'Merchant Demo Store',
-  contactPhone: '0900000000',
-  email: 'merchant.demo@example.com',
+  shopName: '',
+  contactPhone: '',
+  email: '',
   defaultPickupAddress: '',
 };

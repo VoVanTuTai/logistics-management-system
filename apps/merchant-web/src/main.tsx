@@ -180,8 +180,8 @@ function MerchantApp(): React.JSX.Element {
   const [session, setSession] = useState<MerchantSession | null>(null);
   const [activeView, setActiveView] = useState<ViewId>('dashboard');
 
-  const [loginUsername, setLoginUsername] = useState('merchant.demo');
-  const [loginPassword, setLoginPassword] = useState('merchant123456');
+  const [loginUsername, setLoginUsername] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
 
@@ -982,7 +982,6 @@ function MerchantApp(): React.JSX.Element {
             <button className="btn btn-primary" type="submit" disabled={loginLoading}>{loginLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}</button>
           </form>
           {loginError ? <p className="message error">{loginError}</p> : null}
-          <p className="muted">Seed account: merchant.demo / merchant123456</p>
         </div>
       </div>
     );

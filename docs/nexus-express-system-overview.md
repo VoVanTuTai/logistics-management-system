@@ -128,7 +128,7 @@ Each service owns its own PostgreSQL database/schema through Prisma.
 ### 5.4 DevOps va cong cu
 
 - **Docker / Docker Compose:** Chay PostgreSQL va RabbitMQ local.
-- **PowerShell scripts:** Script khoi dong, migrate, seed va start nhieu service tren Windows.
+- **PowerShell scripts:** Script khoi dong, migrate va start nhieu service tren Windows.
 - **Makefile:** Shortcut cho mot so lenh phat trien.
 - **Package manager:** Repo hien co ca `package-lock.json`, `pnpm-lock.yaml` o mot so service/app; khi phat trien nen thong nhat cach cai dat theo tung module hien co.
 
@@ -167,7 +167,7 @@ logistics-management-system/
   infra/
     dev/                Docker Compose va script init database
 
-  scripts/              PowerShell scripts de dev, migrate, seed, start services
+  scripts/              PowerShell scripts de dev, migrate, start services
 ```
 
 ## 7. Mo ta cac ung dung client
@@ -329,7 +329,7 @@ Tai lieu bao cao co the trien khai theo cac chuong:
 3. **Khao sat va phan tich nghiep vu:** Vai tro nguoi dung, quy trinh tao don, pickup, kho hub, manifest, delivery, NDR, return va tracking.
 4. **Thiet ke he thong:** Kien truc tong quan, so do service, data ownership, domain events, database schema theo service, API convention.
 5. **Thiet ke giao dien va chuc nang:** Admin/Ops/Merchant/Public/Courier app, cac man hinh chinh va luong thao tac.
-6. **Cai dat va hien thuc:** Cong nghe, cau truc source code, mo ta tung service, cach chay local, seed data.
+6. **Cai dat va hien thuc:** Cong nghe, cau truc source code, mo ta tung service, cach chay local, du lieu that.
 7. **Kiem thu va danh gia:** Test case theo luong nghiep vu, kiem thu API, kiem thu UI, danh gia uu/nhuoc diem.
 8. **Ket luan va huong phat trien:** Tong ket ket qua, han che, de xuat mo rong nhu route optimization, realtime notification, map, barcode/QR nang cao, CI/CD va observability.
 

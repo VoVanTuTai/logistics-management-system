@@ -41,8 +41,8 @@ App duoc scaffold theo huong feature-first, tach ro:
   - `/courier/scan/scans/*`
   - `/courier/delivery/deliveries/*`
   - `/courier/delivery/ndr`
-- `courierId` de query task chua duoc suy ra chac chan tu auth contract.
-  Hien tai app uu tien `EXPO_PUBLIC_COURIER_ID` va fallback `CR001`.
+- `courierId` de query task uu tien `EXPO_PUBLIC_COURIER_ID`, sau do fallback
+  theo username dang nhap.
 - POD upload contract chua ro. Hien tai UI chi gui `podImageUrl` string placeholder.
 - `delivery attempts` chua dua vao offline queue vi contract hien tai chua co `idempotencyKey`.
 
@@ -66,7 +66,7 @@ Sao chep `.env.example` thanh `.env` hoac env file phu hop voi runtime:
 ```env
 EXPO_PUBLIC_GATEWAY_BASE_URL=http://192.168.1.10:3000
 EXPO_PUBLIC_REQUEST_TIMEOUT_MS=15000
-EXPO_PUBLIC_COURIER_ID=CR001
+EXPO_PUBLIC_COURIER_ID=
 ```
 
 Neu bo trong `EXPO_PUBLIC_GATEWAY_BASE_URL`, app se tu detect host tu `scriptURL`
@@ -83,10 +83,9 @@ Luu y:
 - Thiet bi that khong truy cap duoc `localhost` cua may dev.
 - Android emulator can backend local qua `http://10.0.2.2:3000`.
 
-## Seed Accounts (local)
+## Accounts
 
-- `courier.cr001` / `courier123`
-- `courier.cr002` / `courier123`
+Dung tai khoan courier that da ton tai trong auth-service.
 
 ## Run Notes
 

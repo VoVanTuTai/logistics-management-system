@@ -84,14 +84,9 @@ npm run db:prepare
 npm run start:dev
 ```
 
-## Seed data
+## Data
 
-`npm run seed` will create base records for:
-
-- zones: `ZONE_HCM`, `ZONE_HCM_Q1`, `ZONE_HN`
-- hubs: `HUB_HCM_01`, `HUB_HN_01`
-- ndr reasons: `CUSTOMER_NOT_HOME`, `WRONG_ADDRESS`, `CUSTOMER_REFUSED`
-- configs: `pricing.base_fee`, `pickup.cutoff_hour`, `delivery.max_attempts`
+Seed data is disabled. Import real zones, hubs, NDR reasons, and configs from a trusted source or create them through the service API.
 
 ## Docker
 

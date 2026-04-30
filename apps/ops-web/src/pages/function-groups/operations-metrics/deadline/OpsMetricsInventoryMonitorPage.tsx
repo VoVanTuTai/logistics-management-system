@@ -10,43 +10,7 @@ interface InventoryMonitorRow {
   canhBao: string;
 }
 
-const MOCK_ROWS: InventoryMonitorRow[] = [
-  {
-    stt: 1,
-    thoiGianTttc: '2023-07',
-    tongKienTon: 321,
-    tonQuaHan: 14,
-    canhBao: 'Mức 2',
-  },
-  {
-    stt: 2,
-    thoiGianTttc: '2023-08',
-    tongKienTon: 298,
-    tonQuaHan: 9,
-    canhBao: 'Mức 1',
-  },
-  {
-    stt: 3,
-    thoiGianTttc: '2023-09',
-    tongKienTon: 344,
-    tonQuaHan: 17,
-    canhBao: 'Mức 3',
-  },
-  {
-    stt: 4,
-    thoiGianTttc: '2023-10',
-    tongKienTon: 280,
-    tonQuaHan: 8,
-    canhBao: 'Mức 1',
-  },
-  {
-    stt: 5,
-    thoiGianTttc: '2023-11',
-    tongKienTon: 306,
-    tonQuaHan: 12,
-    canhBao: 'Mức 2',
-  },
-];
+const rows: InventoryMonitorRow[] = [];
 
 export function OpsMetricsInventoryMonitorPage(): React.JSX.Element {
   return (
@@ -104,7 +68,7 @@ export function OpsMetricsInventoryMonitorPage(): React.JSX.Element {
             </tr>
           </thead>
           <tbody>
-            {MOCK_ROWS.map((row) => (
+            {rows.map((row) => (
               <tr key={row.stt}>
                 <td>{row.stt}</td>
                 <td>{row.thoiGianTttc}</td>
@@ -113,6 +77,11 @@ export function OpsMetricsInventoryMonitorPage(): React.JSX.Element {
                 <td>{row.canhBao}</td>
               </tr>
             ))}
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={5}>Chưa có dữ liệu tồn kho từ server.</td>
+              </tr>
+            ) : null}
           </tbody>
         </table>
       </div>
