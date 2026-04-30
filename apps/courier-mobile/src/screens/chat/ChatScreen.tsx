@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
   },
   noticeCard: {
     backgroundColor: theme.colors.infoSurface,
-    borderColor: '#C7D2FE',
+    borderColor: '#BFDBFE',
   },
   noticeTitle: {
     color: theme.colors.primary,
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
   },
   unreadPill: {
     alignSelf: 'flex-start',
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#EFF6FF',
     borderRadius: theme.radius.pill,
     paddingHorizontal: 10,
     paddingVertical: 4,

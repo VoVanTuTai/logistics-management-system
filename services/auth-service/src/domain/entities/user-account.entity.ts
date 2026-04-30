@@ -17,6 +17,7 @@ export interface UserAccount {
 export interface AuthenticatedUser {
   id: string;
   username: string;
+  displayName: string | null;
   roles: string[];
   hubCodes: string[];
 }

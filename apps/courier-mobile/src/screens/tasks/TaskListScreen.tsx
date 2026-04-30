@@ -7,10 +7,7 @@ import {
   View,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import type {
-  NativeStackNavigationProp,
-  NativeStackScreenProps,
-} from '@react-navigation/native-stack';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Card } from '../../components/ui/Card';
@@ -24,7 +21,13 @@ import { appEnv } from '../../utils/env';
 import { resolveCourierId } from '../../utils/courier';
 import { theme } from '../../theme';
 
-type Props = NativeStackScreenProps<AppNavigatorParamList, 'TaskList'>;
+type TaskListRouteParams = AppNavigatorParamList['TaskList'];
+
+interface Props {
+  route?: {
+    params?: TaskListRouteParams;
+  };
+}
 
 function statusVariant(status: TaskStatus):
   | 'neutral'
@@ -52,11 +55,11 @@ export function TaskListScreen({ route }: Props): React.JSX.Element {
   const onRefresh = () => void tasksQuery.refetch();
 
   const [taskTypeFilter, setTaskTypeFilter] = useState<TaskType | 'ALL'>(
-    route.params?.initialTaskType ?? 'ALL',
+    route?.params?.initialTaskType ?? 'ALL',
   );
   const [statusFilter, setStatusFilter] = useState<
     'ALL' | 'CREATED' | 'ASSIGNED' | 'COMPLETED' | 'CANCELLED'
-  >(route.params?.initialStatus ?? 'ALL');
+  >(route?.params?.initialStatus ?? 'ALL');
   const [typeMenuOpen, setTypeMenuOpen] = useState(false);
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
 
@@ -127,7 +130,7 @@ export function TaskListScreen({ route }: Props): React.JSX.Element {
               <Ionicons
                 name={typeMenuOpen ? 'chevron-up' : 'chevron-down'}
                 size={12}
-                color="#EEF2FF"
+                color="#EFF6FF"
               />
             </Pressable>
             {typeMenuOpen ? (
@@ -163,7 +166,7 @@ export function TaskListScreen({ route }: Props): React.JSX.Element {
               <Ionicons
                 name={statusMenuOpen ? 'chevron-up' : 'chevron-down'}
                 size={12}
-                color="#EEF2FF"
+                color="#EFF6FF"
               />
             </Pressable>
             {statusMenuOpen ? (
@@ -276,9 +279,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: theme.spacing.xs,
     borderWidth: 1,
-    borderColor: '#C7D2FE',
+    borderColor: '#BFDBFE',
     borderRadius: theme.radius.md,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#EFF6FF',
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: 6,
   },

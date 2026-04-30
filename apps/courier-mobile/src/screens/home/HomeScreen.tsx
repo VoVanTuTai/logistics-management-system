@@ -26,64 +26,64 @@ import { useAssignedTasksQuery } from '../../features/tasks/tasks.queries';
 import type { AppNavigatorParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
 import { appEnv } from '../../utils/env';
-import { resolveCourierId } from '../../utils/courier';
+import { resolveCourierDisplayName, resolveCourierId } from '../../utils/courier';
 
 const appItems: HomeAppGridItem[] = [
   {
     id: 'create-order',
     label: 'Lên đơn',
     iconName: 'add-circle-outline',
-    iconColor: '#4F46E5',
-    iconBgColor: '#EEF2FF',
+    iconColor: theme.colors.primary,
+    iconBgColor: theme.colors.infoSurface,
   },
   {
     id: 'scan-history',
     label: 'Lịch sử quét',
     iconName: 'scan-outline',
-    iconColor: '#4338CA',
-    iconBgColor: '#EEF2FF',
+    iconColor: theme.colors.primary,
+    iconBgColor: theme.colors.infoSurface,
   },
   {
     id: 'cash-stats',
     label: 'Thống kê tiền hàng',
     iconName: 'wallet-outline',
-    iconColor: '#1A6B4A',
-    iconBgColor: '#E6FAF1',
+    iconColor: theme.colors.primary,
+    iconBgColor: theme.colors.infoSurface,
   },
   {
     id: 'shipping-fee',
     label: 'Tính vận phí',
     iconName: 'calculator-outline',
-    iconColor: '#8A5A0A',
-    iconBgColor: '#FFF4DD',
+    iconColor: theme.colors.primary,
+    iconBgColor: theme.colors.infoSurface,
   },
   {
     id: 'tracking',
     label: 'Theo dõi đơn',
     iconName: 'locate-outline',
-    iconColor: '#4F46E5',
-    iconBgColor: '#EEF2FF',
+    iconColor: theme.colors.primary,
+    iconBgColor: theme.colors.infoSurface,
   },
   {
     id: 'uniform-check',
     label: 'Kiểm tra đồng phục',
     iconName: 'shirt-outline',
-    iconColor: '#4338CA',
-    iconBgColor: '#EEF2FF',
+    iconColor: theme.colors.primary,
+    iconBgColor: theme.colors.infoSurface,
   },
   {
     id: 'referral',
     label: 'Giới thiệu khách hàng',
     iconName: 'people-outline',
-    iconColor: '#1A6B4A',
-    iconBgColor: '#E6FAF1',
+    iconColor: theme.colors.primary,
+    iconBgColor: theme.colors.infoSurface,
   },
   {
     id: 'weight-change',
     label: 'Đăng ký đổi trọng lượng',
     iconName: 'barbell-outline',
-    iconColor: '#8A5A0A',
-    iconBgColor: '#FFF4DD',
+    iconColor: theme.colors.primary,
+    iconBgColor: theme.colors.infoSurface,
   },
 ];
 
@@ -138,8 +138,12 @@ export function HomeScreen(): React.JSX.Element {
   const processingCount = tasks.filter((task) => task.status === 'ASSIGNED').length;
   const recentTasks = tasks.slice(0, 3);
 
-  const displayName = session?.user.username ?? 'Courier';
-  const hubLabel = `Mã courier: ${courierId}`;
+  const displayName = resolveCourierDisplayName({
+    displayName: session?.user.displayName,
+    username: session?.user.username,
+    courierId,
+  });
+  const hubLabel = `Mã nhân viên: ${courierId}`;
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>

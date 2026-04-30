@@ -28,6 +28,7 @@ export const opsEndpoints = {
     detail: (taskId: string) => `/ops/dispatch/tasks/${taskId}`,
     assign: (taskId: string) => `/ops/dispatch/tasks/${taskId}/assign`,
     reassign: (taskId: string) => `/ops/dispatch/tasks/${taskId}/reassign`,
+    status: (taskId: string) => `/ops/dispatch/tasks/${taskId}/status`,
   },
   manifests: {
     list: '/ops/manifest/manifests',

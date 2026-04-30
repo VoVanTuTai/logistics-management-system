@@ -1,4 +1,11 @@
-const DEFAULT_COURIER_ID = 'courier.hcm';
+const DEFAULT_COURIER_ID = '30000001';
+
+const SEEDED_COURIER_NAMES: Record<string, string> = {
+  '30000001': 'Nguyễn Văn Hùng',
+  '30000002': 'Trần Quốc Bảo',
+  '30000003': 'Lê Minh Tuấn',
+  '30000004': 'Phạm Quốc Dũng',
+};
 
 function normalizeCourierId(rawValue: string | null | undefined): string {
   const trimmed = (rawValue ?? '').trim();
@@ -6,12 +13,14 @@ function normalizeCourierId(rawValue: string | null | undefined): string {
     return '';
   }
 
-  // Legacy numeric formats (CR001 or 001)
+  // Auth usernames / employee codes are the canonical courier ids in the backend.
+  if (/^\d+$/.test(trimmed)) {
+    return trimmed;
+  }
+
+  // Keep explicit legacy ids for old local data, but never add a CR prefix automatically.
   if (/^cr\d+$/i.test(trimmed)) {
     return trimmed.toUpperCase();
-  }
-  if (/^\d+$/.test(trimmed)) {
-    return `CR${trimmed}`;
   }
 
   // Otherwise, keep developer / username provided id; normalize to lower for consistency.
@@ -29,4 +38,18 @@ export function resolveCourierId(
   if (fromUsername) return fromUsername;
 
   return DEFAULT_COURIER_ID;
+}
+
+export function resolveCourierDisplayName(input: {
+  displayName?: string | null;
+  username?: string | null;
+  courierId?: string | null;
+}): string {
+  const normalizedDisplayName = input.displayName?.trim();
+  if (normalizedDisplayName) {
+    return normalizedDisplayName;
+  }
+
+  const courierId = resolveCourierId(input.courierId, input.username);
+  return SEEDED_COURIER_NAMES[courierId] ?? input.username ?? 'Courier';
 }

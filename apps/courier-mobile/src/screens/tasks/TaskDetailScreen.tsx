@@ -439,8 +439,8 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
   },
   heroCard: {
-    backgroundColor: '#EEF2FF',
-    borderColor: '#C7D2FE',
+    backgroundColor: '#EFF6FF',
+    borderColor: '#BFDBFE',
     gap: theme.spacing.sm,
   },
   heroTopRow: {
@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: theme.spacing.xs,
     borderWidth: 1,
-    borderColor: '#C7D2FE',
+    borderColor: '#BFDBFE',
     borderRadius: theme.radius.md,
     backgroundColor: '#FFFFFF',
     paddingHorizontal: theme.spacing.sm,

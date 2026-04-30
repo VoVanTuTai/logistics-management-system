@@ -46,6 +46,11 @@ export interface AssignTaskInput {
 
 export interface ReassignTaskInput extends AssignTaskInput {}
 
+export interface UpdateTaskStatusInput {
+  taskId: string;
+  status: 'COMPLETED' | 'CANCELLED';
+}
+
 export interface TaskActionResultDto {
   task: TaskDetailDto;
   // TODO(contract): add action metadata when task assignment contract is finalized.

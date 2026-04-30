@@ -9,6 +9,7 @@ import type {
   TaskDetailDto,
   TaskListFilters,
   TaskListItemDto,
+  UpdateTaskStatusInput,
 } from './tasks.types';
 
 interface TaskAssignmentApiResponse {
@@ -132,6 +133,19 @@ export const tasksClient = {
         accessToken,
         body: {
           courierId: payload.courierId,
+        },
+      })
+      .then(mapTaskActionResult),
+  updateStatus: (
+    accessToken: string | null,
+    payload: UpdateTaskStatusInput,
+  ): Promise<TaskActionResultDto> =>
+    opsApiClient
+      .request<TaskApiResponse>(opsEndpoints.tasks.status(payload.taskId), {
+        method: 'PATCH',
+        accessToken,
+        body: {
+          status: payload.status,
         },
       })
       .then(mapTaskActionResult),

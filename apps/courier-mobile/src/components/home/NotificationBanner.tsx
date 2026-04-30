@@ -21,7 +21,7 @@ export function NotificationBanner({
       style={({ pressed }) => [styles.container, pressed && styles.pressed]}
     >
       <View style={styles.iconWrap}>
-        <Ionicons name="megaphone-outline" size={18} color="#4338CA" />
+        <Ionicons name="megaphone-outline" size={18} color="#1D4ED8" />
       </View>
 
       <View style={styles.textWrap}>
@@ -40,10 +40,10 @@ export function NotificationBanner({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#EFF6FF',
     borderRadius: theme.radius.lg,
     borderWidth: 1,
-    borderColor: '#C7D2FE',
+    borderColor: '#BFDBFE',
     padding: theme.spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',

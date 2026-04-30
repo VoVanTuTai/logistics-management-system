@@ -9,34 +9,27 @@ import type { BarcodeScanningResult } from 'expo-camera';
 import { theme } from '../../theme';
 import { useAppStore } from '../../store/appStore';
 import { appEnv } from '../../utils/env';
+import { resolveCourierDisplayName, resolveCourierId } from '../../utils/courier';
 import { ScanActionGrid } from '../../components/scan/ScanActionGrid';
 import type { ScanActionItemData } from '../../components/scan/ScanActionItem';
 import { CameraScannerModal } from '../../components/scan/CameraScannerModal';
 import type { AppNavigatorParamList } from '../../navigation/types';
 import { parsePickupScannedCode } from '../../features/scan/pickup.scanner.adapter';
 
-const HEADER_GRADIENT_STOPS = [
-  '#3730A3',
-  '#4338CA',
-  '#4F46E5',
-  '#6366F1',
-  '#818CF8',
-] as const;
-
 const actions: ScanActionItemData[] = [
   {
     id: 'ky-nhan',
     label: 'Ký nhận',
     iconName: 'document-text-outline',
-    iconColor: '#4F46E5',
-    iconBgColor: '#EEF2FF',
+    iconColor: theme.colors.primary,
+    iconBgColor: theme.colors.infoSurface,
   },
   {
     id: 'ky-nhan-chuyen-hoan',
     label: 'Ký nhận chuyển hoàn',
     iconName: 'return-up-back-outline',
-    iconColor: '#4338CA',
-    iconBgColor: '#EEF2FF',
+    iconColor: theme.colors.primary,
+    iconBgColor: theme.colors.infoSurface,
   },
   {
     id: 'nhan-kien',
@@ -56,15 +49,15 @@ const actions: ScanActionItemData[] = [
     id: 'go-bao',
     label: 'Gỡ bao',
     iconName: 'folder-open-outline',
-    iconColor: '#4F46E5',
-    iconBgColor: '#EEF2FF',
+    iconColor: theme.colors.primary,
+    iconBgColor: theme.colors.infoSurface,
   },
   {
     id: 'phat-hang',
     label: 'Phát hàng',
     iconName: 'paper-plane-outline',
-    iconColor: '#4338CA',
-    iconBgColor: '#EEF2FF',
+    iconColor: theme.colors.primary,
+    iconBgColor: theme.colors.infoSurface,
   },
   {
     id: 'van-de',
@@ -84,22 +77,22 @@ const actions: ScanActionItemData[] = [
     id: 'kien-den',
     label: 'Kiện đến',
     iconName: 'download-outline',
-    iconColor: '#4F46E5',
-    iconBgColor: '#EEF2FF',
+    iconColor: theme.colors.primary,
+    iconBgColor: theme.colors.infoSurface,
   },
   {
     id: 'xe-den',
     label: 'Xe đến',
     iconName: 'car-outline',
-    iconColor: '#4338CA',
-    iconBgColor: '#EEF2FF',
+    iconColor: theme.colors.primary,
+    iconBgColor: theme.colors.infoSurface,
   },
   {
     id: 'xe-di',
     label: 'Xe đi',
     iconName: 'car-sport-outline',
-    iconColor: '#4F46E5',
-    iconBgColor: '#EEF2FF',
+    iconColor: theme.colors.primary,
+    iconBgColor: theme.colors.infoSurface,
   },
   {
     id: 'kiem-ton-kho',
@@ -119,15 +112,15 @@ const actions: ScanActionItemData[] = [
     id: 'tem-hang-gia-tri-cao',
     label: 'Tem hàng giá trị cao',
     iconName: 'pricetag-outline',
-    iconColor: '#4F46E5',
-    iconBgColor: '#EEF2FF',
+    iconColor: theme.colors.primary,
+    iconBgColor: theme.colors.infoSurface,
   },
   {
     id: 'kiem-tra-tem-gia-tri-cao',
     label: 'Kiểm tra tem giá trị cao',
     iconName: 'shield-checkmark-outline',
-    iconColor: '#4338CA',
-    iconBgColor: '#EEF2FF',
+    iconColor: theme.colors.primary,
+    iconBgColor: theme.colors.infoSurface,
   },
 ];
 
@@ -135,8 +128,13 @@ export function ScanScreen(): React.JSX.Element {
   const navigation =
     useNavigation<NativeStackNavigationProp<AppNavigatorParamList>>();
   const session = useAppStore((state) => state.session);
-  const displayName = session?.user.username ?? 'Courier';
-  const hubName = `Mã courier: ${appEnv.courierId}`;
+  const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
+  const displayName = resolveCourierDisplayName({
+    displayName: session?.user.displayName,
+    username: session?.user.username,
+    courierId,
+  });
+  const hubName = `Mã nhân viên: ${courierId}`;
 
   const [scannerVisible, setScannerVisible] = React.useState(false);
   const [pendingAction, setPendingAction] = React.useState<ScanActionItemData | null>(
@@ -236,12 +234,6 @@ export function ScanScreen(): React.JSX.Element {
         />
 
         <View style={styles.headerWrap}>
-          <View style={styles.gradientLayer}>
-            {HEADER_GRADIENT_STOPS.map((color) => (
-              <View key={color} style={[styles.gradientBand, { backgroundColor: color }]} />
-            ))}
-          </View>
-
           <View style={styles.headerContent}>
             <View style={styles.headerTopRow}>
               <View style={styles.userBlock}>
@@ -251,7 +243,7 @@ export function ScanScreen(): React.JSX.Element {
               </View>
 
               <View style={styles.scanBadge}>
-                <Ionicons name="scan" size={20} color="#E0E7FF" />
+                <Ionicons name="scan" size={20} color="#DBEAFE" />
                 <Text style={styles.scanBadgeText}>Scan Ops</Text>
               </View>
             </View>
@@ -293,14 +285,9 @@ const styles = StyleSheet.create({
     minHeight: 152,
     borderBottomLeftRadius: 26,
     borderBottomRightRadius: 26,
+    backgroundColor: theme.colors.primary,
     overflow: 'hidden',
     ...theme.shadow.md,
-  },
-  gradientLayer: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  gradientBand: {
-    flex: 1,
   },
   headerContent: {
     minHeight: 152,
@@ -320,7 +307,7 @@ const styles = StyleSheet.create({
   },
   greeting: {
     ...theme.typography.body.md,
-    color: '#C7D2FE',
+    color: '#DBEAFE',
   },
   userName: {
     ...theme.typography.title.sm,
@@ -329,7 +316,7 @@ const styles = StyleSheet.create({
   },
   hubName: {
     ...theme.typography.caption.md,
-    color: '#A5B4FC',
+    color: '#BFDBFE',
     marginTop: 4,
   },
   scanBadge: {
@@ -346,7 +333,7 @@ const styles = StyleSheet.create({
   },
   scanBadgeText: {
     ...theme.typography.caption.sm,
-    color: '#E0E7FF',
+    color: '#DBEAFE',
   },
   scrollView: {
     flex: 1,

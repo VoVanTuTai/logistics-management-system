@@ -479,14 +479,14 @@ export function DashboardPage(): React.JSX.Element {
   const heroSlides = [
     {
       id: 'slide-1',
-      title: 'J&T EXPRESS',
+      title: 'NEXUS EXPRESS SYSTEM',
       slogan: 'DIGITIZATION • AUTOMATION • INTELLIGENCE',
       description:
         'Vận hành tập trung, theo dõi trạng thái theo thời gian thực và kết nối đa kênh.',
     },
     {
       id: 'slide-2',
-      title: 'J&T OPS CENTER',
+      title: 'NXS OPS CENTER',
       slogan: 'FAST RESPONSE • HUB VISIBILITY • SMART DISPATCH',
       description:
         'Tăng tốc phân công tác vụ, cảnh báo nghẽn hub và tối ưu luồng điều phối.',

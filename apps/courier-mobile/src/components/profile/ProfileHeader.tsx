@@ -68,7 +68,7 @@ export function ProfileHeader({
         style={({ pressed }) => [styles.starLink, pressed && styles.pressed]}
       >
         <View style={styles.starPill}>
-          <Ionicons name="star-outline" size={14} color="#4F46E5" />
+          <Ionicons name="star-outline" size={14} color="#1D4ED8" />
           <Text style={styles.starTierText}>{user.starTierLabel}</Text>
         </View>
 
@@ -97,9 +97,9 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 20,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#EFF6FF',
     borderWidth: 1,
-    borderColor: '#C7D2FE',
+    borderColor: '#BFDBFE',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.md,
     borderRadius: theme.radius.md,
     borderWidth: 1,
-    borderColor: '#C7D2FE',
+    borderColor: '#BFDBFE',
     backgroundColor: '#F4F8FF',
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: theme.spacing.xs,
@@ -150,9 +150,9 @@ const styles = StyleSheet.create({
   },
   starPill: {
     borderRadius: theme.radius.pill,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#EFF6FF',
     borderWidth: 1,
-    borderColor: '#C7D2FE',
+    borderColor: '#BFDBFE',
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: 4,
     flexDirection: 'row',
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
   },
   starTierText: {
     ...theme.typography.caption.sm,
-    color: '#4F46E5',
+    color: '#1D4ED8',
     fontWeight: '700',
   },
   starLinkText: {

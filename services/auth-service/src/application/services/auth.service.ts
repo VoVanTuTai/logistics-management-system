@@ -330,6 +330,7 @@ export class AuthService {
     return {
       id: user.id,
       username: user.username,
+      displayName: user.displayName,
       roles: user.roles,
       hubCodes: user.hubCodes,
     };

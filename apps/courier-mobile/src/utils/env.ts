@@ -2,7 +2,7 @@ import { NativeModules, Platform } from 'react-native';
 
 const DEFAULT_GATEWAY_PORT = 3000;
 const DEFAULT_TIMEOUT_MS = 15000;
-const DEFAULT_COURIER_ID = 'CR001';
+const DEFAULT_COURIER_ID = '';
 const LOCALHOST_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '0.0.0.0']);
 const HOST_HINT_KEYS = new Set([
   'scriptURL',
