@@ -17,6 +17,7 @@ import { BranchLocalOrderOverviewPage } from '../pages/function-groups/branch-bu
 import { BranchDeliveryDispatchPage } from '../pages/function-groups/branch-business/delivery-dispatch/BranchDeliveryDispatchPage';
 import { BranchBusinessOrderCreatePage } from '../pages/function-groups/branch-business/order-create/BranchBusinessOrderCreatePage';
 import { BranchDeliveryOrderManagementPage } from '../pages/function-groups/branch-business/order-delivery/BranchDeliveryOrderManagementPage';
+import { BranchOutboundOrderManagementPage } from '../pages/function-groups/branch-business/order-outbound/BranchOutboundOrderManagementPage';
 import { BranchBusinessFeaturePlaceholderPage } from '../pages/function-groups/branch-business/shared/BranchBusinessFeaturePlaceholderPage';
 import { CapabilityPlatformGroupPage } from '../pages/function-groups/capability-platform/CapabilityPlatformGroupPage';
 import { CustomerPlatformGroupPage } from '../pages/function-groups/customer-platform/CustomerPlatformGroupPage';
@@ -1154,13 +1155,7 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.branchBusinessOrderOutboundLeaf}
-              element={
-                <BranchBusinessFeaturePlaceholderPage
-                  groupCode="BRANCH_ORDER_OUTBOUND_MANAGEMENT"
-                  title="Quản lý vận đơn gửi"
-                  summary="Theo dõi vận đơn gửi, cập nhật trạng thái và xử lý các vận đơn chờ duyệt."
-                />
-              }
+              element={<BranchOutboundOrderManagementPage />}
             />
             <Route
               path={routePaths.branchBusinessOrderDeliveryLeaf}
