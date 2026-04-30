@@ -28,6 +28,9 @@ export type AppNavigatorParamList = {
     taskId?: string;
     shipmentCode?: string;
   };
+  DeliverySignScan: {
+    shipmentCode?: string;
+  } | undefined;
   HubScan: {
     mode: 'INBOUND' | 'OUTBOUND';
     taskId?: string;

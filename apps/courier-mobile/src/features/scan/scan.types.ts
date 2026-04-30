@@ -1,8 +1,14 @@
 import { z } from 'zod';
 
 export interface CurrentLocationDto {
+  id?: string;
   shipmentCode: string;
   locationCode: string | null;
+  lastScanType?: 'PICKUP' | 'INBOUND' | 'OUTBOUND' | null;
+  lastScanEventId?: string | null;
+  lastScannedAt?: string | null;
+  manifestCode?: string | null;
+  createdAt?: string;
   updatedAt: string;
 }
 

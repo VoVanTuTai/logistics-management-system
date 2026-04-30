@@ -12,6 +12,7 @@ import { DeliverySuccessScreen } from '../screens/delivery/DeliverySuccessScreen
 import { TaskIssueScreen } from '../screens/delivery/TaskIssueScreen';
 import { HubScanScreen } from '../screens/scan/HubScanScreen';
 import { PickupScanScreen } from '../screens/scan/PickupScanScreen';
+import { DeliverySignScanScreen } from '../screens/scan/DeliverySignScanScreen';
 import { BagSealScreen } from '../screens/scan/BagSealScreen';
 import { BagUnsealScreen } from '../screens/scan/BagUnsealScreen';
 import { TaskDetailScreen } from '../screens/tasks/TaskDetailScreen';
@@ -54,7 +55,12 @@ export function AppNavigator(): React.JSX.Element {
           <Stack.Screen
             name="PickupScan"
             component={PickupScanScreen}
-            options={{ title: 'Quét nhận' }}
+            options={{ title: 'Nhận hàng' }}
+          />
+          <Stack.Screen
+            name="DeliverySignScan"
+            component={DeliverySignScanScreen}
+            options={{ title: 'Quét ký nhận' }}
           />
           <Stack.Screen
             name="HubScan"
@@ -108,4 +114,3 @@ export function AppNavigator(): React.JSX.Element {
   );
 
 }
-
