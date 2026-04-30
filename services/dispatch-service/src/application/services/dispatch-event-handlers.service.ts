@@ -7,6 +7,11 @@ export interface PickupApprovedPayload {
   data?: Record<string, unknown>;
 }
 
+export interface ShipmentCreatedPayload {
+  shipment_code?: string | null;
+  data?: Record<string, unknown>;
+}
+
 export interface DeliveryFailedPayload {
   shipment_code?: string | null;
   data?: Record<string, unknown>;
@@ -21,7 +26,22 @@ export interface DeliveryDeliveredPayload {
 export class DispatchEventHandlersService {
   constructor(private readonly tasksService: TasksService) {}
 
+  async handleShipmentCreated(payload: ShipmentCreatedPayload): Promise<void> {
+    await this.tasksService.createTaskFromPickupApproved({
+      shipment_code: payload.shipment_code ?? null,
+      note: this.readString(payload.data?.note),
+    });
+  }
+
+  async handlePickupRequested(payload: PickupApprovedPayload): Promise<void> {
+    await this.createPickupTask(payload);
+  }
+
   async handlePickupApproved(payload: PickupApprovedPayload): Promise<void> {
+    await this.createPickupTask(payload);
+  }
+
+  private async createPickupTask(payload: PickupApprovedPayload): Promise<void> {
     const pickupRequest = this.readObject(payload.data?.pickup_request);
     const pickupRequestId =
       this.readString(payload.data?.pickup_request_id) ??

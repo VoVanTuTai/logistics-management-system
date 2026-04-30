@@ -19,6 +19,7 @@ import { ConfigManagementPage } from '../pages/masterdata/ConfigManagementPage';
 import { HubManagementPage } from '../pages/masterdata/HubManagementPage';
 import { NdrReasonManagementPage } from '../pages/masterdata/NdrReasonManagementPage';
 import { ZoneManagementPage } from '../pages/masterdata/ZoneManagementPage';
+import { MerchantUsersPage } from '../pages/users/MerchantUsersPage';
 import { OpsUsersPage } from '../pages/users/OpsUsersPage';
 import { ShipperUsersPage } from '../pages/users/ShipperUsersPage';
 
@@ -48,6 +49,7 @@ function AdminLayout(): React.JSX.Element {
       { label: 'Tong quan', to: routePaths.dashboard },
       { label: 'Tài khoản Ops', to: routePaths.opsUsers },
       { label: 'Tài khoản Shipper', to: routePaths.shipperUsers },
+      { label: 'Tai khoan Merchant', to: routePaths.merchantUsers },
       { label: 'Hub', to: routePaths.masterdataHubs },
       { label: 'Zone', to: routePaths.masterdataZones },
       { label: 'Ly do NDR', to: routePaths.masterdataNdrReasons },
@@ -121,6 +123,7 @@ export function AppRouter(): React.JSX.Element {
             <Route path={routePaths.dashboardLeaf} element={<AdminDashboardPage />} />
             <Route path={routePaths.opsUsersLeaf} element={<OpsUsersPage />} />
             <Route path={routePaths.shipperUsersLeaf} element={<ShipperUsersPage />} />
+            <Route path={routePaths.merchantUsersLeaf} element={<MerchantUsersPage />} />
             <Route path={routePaths.masterdataHubsLeaf} element={<HubManagementPage />} />
             <Route path={routePaths.masterdataZonesLeaf} element={<ZoneManagementPage />} />
             <Route path={routePaths.masterdataNdrReasonsLeaf} element={<NdrReasonManagementPage />} />
