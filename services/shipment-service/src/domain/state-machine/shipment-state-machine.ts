@@ -29,10 +29,14 @@ export class ShipmentStateMachine {
   resolveNextStatus(
     currentStatus: ShipmentCurrentStatus,
     eventType: ShipmentConsumedEventType,
-    _eventData: Record<string, unknown> = {},
+    eventData: Record<string, unknown> = {},
   ): ShipmentCurrentStatus {
     // shipment-service is the only writer of current_status.
     // tracking-service and scan-service must not own or mutate this field.
+    if (eventType === 'scan.outbound' && isSendGoodsEventData(eventData)) {
+      return 'SEND_GOODS';
+    }
+
     const nextStatus = EVENT_TO_STATUS[eventType];
 
     if (!nextStatus) {
@@ -48,4 +52,14 @@ export class ShipmentStateMachine {
       currentStatus,
     );
   }
+}
+
+function isSendGoodsEventData(eventData: Record<string, unknown>): boolean {
+  const scanEvent = eventData.scanEvent;
+  if (!scanEvent || typeof scanEvent !== 'object') {
+    return false;
+  }
+
+  const note = (scanEvent as Record<string, unknown>).note;
+  return typeof note === 'string' && note.trim().startsWith('SEND_GOODS');
 }

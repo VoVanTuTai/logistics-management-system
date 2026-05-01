@@ -21,6 +21,7 @@ import { submitHubScanAction } from '../../features/scan/hub.api';
 import { parsePickupScannedCode } from '../../features/scan/pickup.scanner.adapter';
 import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
+import { resolveCourierDisplayName } from '../../utils/courier';
 import { createIdempotencyKey } from '../../utils/idempotency';
 
 type SendItemType = 'BAG' | 'SHIPMENT';
@@ -151,6 +152,13 @@ function resolveBagManifest(
   );
 }
 
+function appendNoteSegment(segments: string[], key: string, value: string | null | undefined) {
+  const normalizedValue = value?.trim();
+  if (normalizedValue) {
+    segments.push(`${key}=${normalizedValue}`);
+  }
+}
+
 export function SendGoodsScreen(): React.JSX.Element {
   const session = useAppStore((state) => state.session);
   const setGlobalError = useAppStore((state) => state.setGlobalError);
@@ -168,10 +176,37 @@ export function SendGoodsScreen(): React.JSX.Element {
   const scanCooldownRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const accessToken = session?.tokens.accessToken ?? null;
-  const actor = session?.user.username ?? null;
+  const employeeCode = session?.user.username ?? session?.user.id ?? null;
+  const employeeName = resolveCourierDisplayName({
+    displayName: session?.user.displayName,
+    username: session?.user.username,
+    courierId: session?.user.id,
+  });
+  const employeeHubCode = session?.user.hubCodes?.[0] ?? vehicleInfo?.originHubCode ?? null;
+  const actor = employeeCode;
   const cameraIsReady = permission?.granted === true;
   const hasVehicleInfo = Boolean(vehicleInfo);
   const selectedCount = selectedCodes.size;
+
+  const buildSendGoodsNote = React.useCallback(
+    (input: {
+      prefix: 'SEND_GOODS' | 'SEND_GOODS_BAG';
+      vehicle: VehicleLabelInfo;
+      bagCode?: string | null;
+    }): string => {
+      const segments = [input.prefix];
+      appendNoteSegment(segments, 'employeeCode', employeeCode);
+      appendNoteSegment(segments, 'employeeName', employeeName);
+      appendNoteSegment(segments, 'hubCode', employeeHubCode);
+      appendNoteSegment(segments, 'vehicle', input.vehicle.vehicleCode);
+      appendNoteSegment(segments, 'plate', input.vehicle.licensePlate);
+      appendNoteSegment(segments, 'from', input.vehicle.originHubCode);
+      appendNoteSegment(segments, 'to', input.vehicle.destinationHubCode);
+      appendNoteSegment(segments, 'bag', input.bagCode);
+      return segments.join('; ');
+    },
+    [employeeCode, employeeHubCode, employeeName],
+  );
 
   React.useEffect(() => {
     return () => {
@@ -337,7 +372,10 @@ export function SendGoodsScreen(): React.JSX.Element {
               locationCode: vehicleInfo.originHubCode,
               manifestCode: null,
               actor,
-              note: `SEND_GOODS; vehicle=${vehicleInfo.vehicleCode}; plate=${vehicleInfo.licensePlate}; to=${vehicleInfo.destinationHubCode}`,
+              note: buildSendGoodsNote({
+                prefix: 'SEND_GOODS',
+                vehicle: vehicleInfo,
+              }),
               occurredAt: new Date().toISOString(),
               idempotencyKey: createIdempotencyKey('send-goods-shipment'),
             });
@@ -376,7 +414,11 @@ export function SendGoodsScreen(): React.JSX.Element {
               locationCode: vehicleInfo.originHubCode,
               manifestCode: manifest.manifestCode,
               actor,
-              note: `SEND_GOODS_BAG; bag=${manifest.manifestCode}; vehicle=${vehicleInfo.vehicleCode}; plate=${vehicleInfo.licensePlate}; to=${vehicleInfo.destinationHubCode}`,
+              note: buildSendGoodsNote({
+                prefix: 'SEND_GOODS_BAG',
+                vehicle: vehicleInfo,
+                bagCode: manifest.manifestCode,
+              }),
               occurredAt: new Date().toISOString(),
               idempotencyKey: createIdempotencyKey('send-goods-bag'),
             });

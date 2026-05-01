@@ -51,6 +51,7 @@ const STATUS_LABELS_VI: Record<string, string> = {
   IN_TRANSIT: 'Đang trung chuyển',
   INBOUND_AT_HUB: 'Đã đến kho',
   OUTBOUND_FROM_HUB: 'Đã rời kho',
+  SEND_GOODS: 'Đã gửi hàng',
   OUT_FOR_DELIVERY: 'Đang giao hàng',
   DELIVERING: 'Shipper đang giao hàng',
   DELIVERED: 'Giao hàng thành công',
@@ -118,6 +119,10 @@ export function resolveTrackingStatusFromEvent(
     }
   }
 
+  if (event.event_type === 'scan.outbound' && isSendGoodsEvent(event)) {
+    return 'SEND_GOODS';
+  }
+
   return TRACKING_STATUS_BY_EVENT[event.event_type] ?? currentStatus;
 }
 
@@ -152,6 +157,10 @@ export function toTimelineTextVi(
   }
 
   if (event.event_type === 'scan.outbound') {
+    if (isSendGoodsEvent(event)) {
+      return withLocationSuffix('Hàng đã được gửi lên xe', locationCode);
+    }
+
     return withLocationSuffix(EVENT_LABELS_VI['scan.outbound'], locationCode);
   }
 
@@ -201,6 +210,11 @@ function readHubCode(
   path: string[],
 ): string | null {
   return readNestedString(data, path) ?? null;
+}
+
+function isSendGoodsEvent(event: TrackingEventEnvelope): boolean {
+  const note = readNestedString(event.data, ['scanEvent', 'note']);
+  return note?.startsWith('SEND_GOODS') ?? false;
 }
 
 function readNestedString(source: unknown, path: string[]): string | null {
