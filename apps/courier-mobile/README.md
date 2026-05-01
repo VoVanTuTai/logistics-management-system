@@ -27,9 +27,9 @@ App duoc scaffold theo huong feature-first, tach ro:
 
 ## API Boundary
 
-- Mobile chi goi `gateway-bff`
+- Mobile chi gọi `gateway-bff`
 - Prefix client-facing la `/courier`
-- Khong goi truc tiep `scan-service`, `delivery-service`, `dispatch-service`
+- Khong gọi truc tiep `scan-service`, `delivery-service`, `dispatch-service`
 - Mobile khong tu suy dien `current_status` hay `current_location`
 - Scan/delivery actions tu tao `idempotencyKey` o client de ho tro replay an toan
 
@@ -56,7 +56,7 @@ App duoc scaffold theo huong feature-first, tach ro:
   - `DELIVERY_SUCCESS`
   - `DELIVERY_FAIL`
 - Retry giu nguyen `idempotencyKey`
-- Khi goi gateway cho scan/delivery, app gui ca payload `idempotencyKey` va header `Idempotency-Key`
+- Khi gọi gateway cho scan/delivery, app gui ca payload `idempotencyKey` va header `Idempotency-Key`
 - Queue worker khong tu orchestration workflow, chi resend command len gateway
 
 ## Env
@@ -89,7 +89,7 @@ Dung tai khoan courier that da ton tai trong auth-service.
 
 ## Run Notes
 
-- Scaffold nay chua dong goi `package.json`/native wiring vi yeu cau hien tai chi cho phep tao cac file trong `src/*`, `README.md`, `.env.example`.
+- Scaffold nay chua dong gọi `package.json`/native wiring vi yeu cau hien tai chi cho phep tao cac file trong `src/*`, `README.md`, `.env.example`.
 - Sau khi package manager/runtime duoc bo sung, can cai toi thieu:
   - `react-navigation`
   - `zustand`

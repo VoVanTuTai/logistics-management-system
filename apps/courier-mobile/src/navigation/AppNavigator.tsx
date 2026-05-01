@@ -66,7 +66,9 @@ export function AppNavigator(): React.JSX.Element {
           <Stack.Screen
             name="HubScan"
             component={HubScanScreen}
-            options={{ title: 'Quet hub' }}
+            options={({ route }) => ({
+              title: route.params.mode === 'INBOUND' ? 'Hàng đến' : 'Quet hub',
+            })}
           />
           <Stack.Screen
             name="BagSeal"

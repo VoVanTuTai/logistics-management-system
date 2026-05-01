@@ -174,7 +174,9 @@ export function RootNavigator(): React.JSX.Element {
           <RootStack.Screen
             name="HubScan"
             component={HubScanScreen}
-            options={{ title: 'Quet hub' }}
+            options={({ route }) => ({
+              title: route.params.mode === 'INBOUND' ? 'Hàng đến' : 'Quet hub',
+            })}
           />
           <RootStack.Screen
             name="BagSeal"

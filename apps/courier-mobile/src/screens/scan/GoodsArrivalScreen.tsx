@@ -25,15 +25,24 @@ import {
 } from '../../features/scan/vehicle-label';
 import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
-import { resolveCourierDisplayName } from '../../utils/courier';
+import {
+  buildGoodsArrivalAuditNote,
+  resolveCourierDisplayName,
+  resolveCourierId,
+} from '../../utils/courier';
+import { appEnv } from '../../utils/env';
 import { createIdempotencyKey } from '../../utils/idempotency';
 
-type SendItemType = 'BAG' | 'SHIPMENT';
+type ArrivalItemType = 'BAG' | 'SHIPMENT';
 
-interface SendGoodsItem {
-  type: SendItemType;
+interface ArrivalItem {
+  type: ArrivalItemType;
   code: string;
   scannedAt: string;
+}
+
+interface GoodsArrivalScreenProps {
+  initialShipmentCode?: string;
 }
 
 const BAG_CODE_REGEX = /^MB\d{10}$/;
@@ -72,14 +81,9 @@ function resolveBagManifest(
   );
 }
 
-function appendNoteSegment(segments: string[], key: string, value: string | null | undefined) {
-  const normalizedValue = value?.trim();
-  if (normalizedValue) {
-    segments.push(`${key}=${normalizedValue}`);
-  }
-}
-
-export function SendGoodsScreen(): React.JSX.Element {
+export function GoodsArrivalScreen({
+  initialShipmentCode,
+}: GoodsArrivalScreenProps): React.JSX.Element {
   const session = useAppStore((state) => state.session);
   const setGlobalError = useAppStore((state) => state.setGlobalError);
   const [permission, requestPermission] = useCameraPermissions();
@@ -87,7 +91,7 @@ export function SendGoodsScreen(): React.JSX.Element {
   const [vehicleInfo, setVehicleInfo] = React.useState<VehicleLabelInfo | null>(null);
   const [manualVehicleInput, setManualVehicleInput] = React.useState('');
   const [manualCodeInput, setManualCodeInput] = React.useState('');
-  const [items, setItems] = React.useState<SendGoodsItem[]>([]);
+  const [items, setItems] = React.useState<ArrivalItem[]>([]);
   const [selectedCodes, setSelectedCodes] = React.useState<Set<string>>(
     () => new Set(),
   );
@@ -95,64 +99,27 @@ export function SendGoodsScreen(): React.JSX.Element {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [scanLocked, setScanLocked] = React.useState(false);
   const scanCooldownRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initialCodeHandledRef = React.useRef(false);
 
   const accessToken = session?.tokens.accessToken ?? null;
-  const employeeCode = session?.user.username ?? session?.user.id ?? null;
+  const employeeCode = resolveCourierId(appEnv.courierId, session?.user.username);
   const employeeName = resolveCourierDisplayName({
     displayName: session?.user.displayName,
     username: session?.user.username,
-    courierId: session?.user.id,
+    courierId: employeeCode || session?.user.id,
   });
-  const employeeHubCode = session?.user.hubCodes?.[0] ?? vehicleInfo?.originHubCode ?? null;
-  const actor = employeeCode;
+  const employeeHubCode = session?.user.hubCodes?.[0]?.trim().toUpperCase() ?? '';
+  const receiveHubCode = employeeHubCode || vehicleInfo?.destinationHubCode || '';
+  const actor = (employeeCode || session?.user.username) ?? null;
   const cameraIsReady = permission?.granted === true;
   const hasVehicleInfo = Boolean(vehicleInfo);
   const selectedCount = selectedCodes.size;
+  const canReceiveAtHub = hasVehicleInfo && receiveHubCode.length > 0;
 
-  const buildSendGoodsNote = React.useCallback(
-    (input: {
-      prefix: 'SEND_GOODS' | 'SEND_GOODS_BAG';
-      vehicle: VehicleLabelInfo;
-      bagCode?: string | null;
-    }): string => {
-      const segments = [input.prefix];
-      appendNoteSegment(segments, 'employeeCode', employeeCode);
-      appendNoteSegment(segments, 'employeeName', employeeName);
-      appendNoteSegment(segments, 'hubCode', employeeHubCode);
-      appendNoteSegment(segments, 'vehicle', input.vehicle.vehicleCode);
-      appendNoteSegment(segments, 'plate', input.vehicle.licensePlate);
-      appendNoteSegment(segments, 'from', input.vehicle.originHubCode);
-      appendNoteSegment(segments, 'to', input.vehicle.destinationHubCode);
-      appendNoteSegment(segments, 'bag', input.bagCode);
-      return segments.join('; ');
-    },
-    [employeeCode, employeeHubCode, employeeName],
-  );
-
-  React.useEffect(() => {
-    return () => {
-      if (scanCooldownRef.current) {
-        clearTimeout(scanCooldownRef.current);
-      }
-    };
-  }, []);
-
-  const lockScanner = React.useCallback(() => {
-    setScanLocked(true);
-
-    if (scanCooldownRef.current) {
-      clearTimeout(scanCooldownRef.current);
-    }
-
-    scanCooldownRef.current = setTimeout(() => {
-      setScanLocked(false);
-    }, 850);
-  }, []);
-
-  const appendSendItem = React.useCallback(
+  const appendArrivalItem = React.useCallback(
     (rawCode: string) => {
       if (!hasVehicleInfo) {
-        setScreenMessage('Vui lòng quét tem xe trước khi quét tem bao hoặc mã kiện.');
+        setScreenMessage('Vui lòng quét hoặc nhập tem xe trước khi quét bao hoặc hàng.');
         return;
       }
 
@@ -162,19 +129,19 @@ export function SendGoodsScreen(): React.JSX.Element {
         return;
       }
 
-      const itemType: SendItemType = isBagCode(normalizedCode) ? 'BAG' : 'SHIPMENT';
+      const itemType: ArrivalItemType = isBagCode(normalizedCode) ? 'BAG' : 'SHIPMENT';
 
       setItems((currentItems) => {
         const duplicated = currentItems.some((item) => item.code === normalizedCode);
         if (duplicated) {
-          setScreenMessage(`${normalizedCode} đã có trong danh sách gửi hàng.`);
+          setScreenMessage(`${normalizedCode} đã có trong danh sách hàng đến.`);
           return currentItems;
         }
 
         setManualCodeInput('');
         setScreenMessage(
           itemType === 'BAG'
-            ? `Đã thêm tem bao ${normalizedCode}.`
+            ? `Đã thêm bao hàng ${normalizedCode}.`
             : `Đã thêm kiện rời ${normalizedCode}.`,
         );
 
@@ -203,6 +170,38 @@ export function SendGoodsScreen(): React.JSX.Element {
     setScreenMessage(`Đã nhận tem xe ${nextVehicleInfo.vehicleCode}.`);
   }, []);
 
+  React.useEffect(() => {
+    return () => {
+      if (scanCooldownRef.current) {
+        clearTimeout(scanCooldownRef.current);
+      }
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (initialCodeHandledRef.current) {
+      return;
+    }
+
+    initialCodeHandledRef.current = true;
+    if (initialShipmentCode) {
+      setManualCodeInput(normalizeCode(initialShipmentCode));
+      setScreenMessage('Vui lòng quét hoặc nhập tem xe trước khi thêm bao hoặc hàng.');
+    }
+  }, [initialShipmentCode]);
+
+  const lockScanner = React.useCallback(() => {
+    setScanLocked(true);
+
+    if (scanCooldownRef.current) {
+      clearTimeout(scanCooldownRef.current);
+    }
+
+    scanCooldownRef.current = setTimeout(() => {
+      setScanLocked(false);
+    }, 850);
+  }, []);
+
   const handleBarCodeScanned = (result: BarcodeScanningResult) => {
     if (scanLocked || isSubmitting) {
       return;
@@ -222,15 +221,15 @@ export function SendGoodsScreen(): React.JSX.Element {
     }
 
     if (!parsed) {
-      setScreenMessage('Không đọc được mã tem bao/kiện hợp lệ. Vui lòng thử lại.');
+      setScreenMessage('Không đọc được mã bao/kiện hợp lệ. Vui lòng thử lại.');
       return;
     }
 
-    appendSendItem(parsed.value);
+    appendArrivalItem(parsed.value);
   };
 
   const addItemManually = () => {
-    appendSendItem(manualCodeInput);
+    appendArrivalItem(manualCodeInput);
   };
 
   const addVehicleManually = () => {
@@ -243,7 +242,7 @@ export function SendGoodsScreen(): React.JSX.Element {
     setSelectedCodes(new Set());
     setManualVehicleInput('');
     setManualCodeInput('');
-    setScreenMessage('Đã làm mới tem xe và danh sách gửi hàng.');
+    setScreenMessage('Đã làm mới tem xe và danh sách hàng đến.');
   };
 
   const toggleSelected = (itemCode: string) => {
@@ -268,19 +267,24 @@ export function SendGoodsScreen(): React.JSX.Element {
     setSelectedCodes(new Set());
   };
 
-  const submitSendGoods = async () => {
+  const submitGoodsArrival = async () => {
     if (!accessToken) {
       setGlobalError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
       return;
     }
 
     if (!vehicleInfo) {
-      setScreenMessage('Vui lòng quét tem xe trước khi xác nhận gửi hàng.');
+      setScreenMessage('Vui lòng quét hoặc nhập tem xe trước khi xác nhận hàng đến.');
+      return;
+    }
+
+    if (!receiveHubCode) {
+      setScreenMessage('Tem xe hoặc tài khoản chưa có mã hub đến.');
       return;
     }
 
     if (items.length === 0) {
-      setScreenMessage('Vui lòng quét ít nhất một tem bao hoặc kiện rời.');
+      setScreenMessage('Vui lòng quét ít nhất một bao hàng hoặc kiện rời.');
       return;
     }
 
@@ -298,23 +302,29 @@ export function SendGoodsScreen(): React.JSX.Element {
         if (item.type === 'SHIPMENT') {
           try {
             await submitHubScanAction(accessToken, {
-              mode: 'OUTBOUND',
+              mode: 'INBOUND',
               shipmentCode: item.code,
-              locationCode: vehicleInfo.originHubCode,
+              locationCode: receiveHubCode,
               manifestCode: null,
               actor,
-              note: buildSendGoodsNote({
-                prefix: 'SEND_GOODS',
-                vehicle: vehicleInfo,
+              note: buildGoodsArrivalAuditNote({
+                displayName: session?.user.displayName,
+                username: session?.user.username,
+                courierId: employeeCode,
+                hubCode: receiveHubCode,
+                vehicleCode: vehicleInfo.vehicleCode,
+                licensePlate: vehicleInfo.licensePlate,
+                originHubCode: vehicleInfo.originHubCode,
+                destinationHubCode: vehicleInfo.destinationHubCode,
               }),
               occurredAt: new Date().toISOString(),
-              idempotencyKey: createIdempotencyKey('send-goods-shipment'),
+              idempotencyKey: createIdempotencyKey('goods-arrival-shipment'),
             });
             successCodes.push(item.code);
           } catch (error) {
             failedCodes.push({
               code: item.code,
-              reason: error instanceof Error ? error.message : 'Không gửi được kiện rời.',
+              reason: error instanceof Error ? error.message : 'Không xác nhận được kiện rời.',
             });
           }
           continue;
@@ -324,7 +334,7 @@ export function SendGoodsScreen(): React.JSX.Element {
         if (!manifest) {
           failedCodes.push({
             code: item.code,
-            reason: 'Không tìm thấy tem bao trên hệ thống.',
+            reason: 'Không tìm thấy bao hàng trên hệ thống.',
           });
           continue;
         }
@@ -340,24 +350,30 @@ export function SendGoodsScreen(): React.JSX.Element {
         for (const manifestItem of manifest.items) {
           try {
             await submitHubScanAction(accessToken, {
-              mode: 'OUTBOUND',
+              mode: 'INBOUND',
               shipmentCode: manifestItem.shipmentCode,
-              locationCode: vehicleInfo.originHubCode,
+              locationCode: receiveHubCode,
               manifestCode: manifest.manifestCode,
               actor,
-              note: buildSendGoodsNote({
-                prefix: 'SEND_GOODS_BAG',
-                vehicle: vehicleInfo,
+              note: buildGoodsArrivalAuditNote({
+                displayName: session?.user.displayName,
+                username: session?.user.username,
+                courierId: employeeCode,
+                hubCode: receiveHubCode,
+                vehicleCode: vehicleInfo.vehicleCode,
+                licensePlate: vehicleInfo.licensePlate,
+                originHubCode: vehicleInfo.originHubCode,
+                destinationHubCode: vehicleInfo.destinationHubCode,
                 bagCode: manifest.manifestCode,
               }),
               occurredAt: new Date().toISOString(),
-              idempotencyKey: createIdempotencyKey('send-goods-bag'),
+              idempotencyKey: createIdempotencyKey('goods-arrival-bag'),
             });
             successCodes.push(manifestItem.shipmentCode);
           } catch (error) {
             failedCodes.push({
               code: `${item.code}/${manifestItem.shipmentCode}`,
-              reason: error instanceof Error ? error.message : 'Không gửi được kiện trong bao.',
+              reason: error instanceof Error ? error.message : 'Không xác nhận được kiện trong bao.',
             });
           }
         }
@@ -365,7 +381,7 @@ export function SendGoodsScreen(): React.JSX.Element {
 
       if (failedCodes.length > 0) {
         setScreenMessage(
-          `Đã gửi ${successCodes.length} kiện, lỗi ${failedCodes.length}: ${failedCodes
+          `Đã xác nhận hàng đến ${successCodes.length} kiện, lỗi ${failedCodes.length}: ${failedCodes
             .slice(0, 2)
             .map((item) => `${item.code} (${item.reason})`)
             .join('; ')}`,
@@ -373,14 +389,12 @@ export function SendGoodsScreen(): React.JSX.Element {
         return;
       }
 
-      setScreenMessage(
-        `Đã gửi hàng thành công: ${successCodes.length} kiện lên xe ${vehicleInfo.vehicleCode}.`,
-      );
+      setScreenMessage(`Đã xác nhận hàng đến thành công: ${successCodes.length} kiện tại hub ${receiveHubCode}.`);
       setItems([]);
       setSelectedCodes(new Set());
       setManualCodeInput('');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Gửi hàng thất bại.';
+      const message = error instanceof Error ? error.message : 'Xác nhận hàng đến thất bại.';
       setScreenMessage(message);
       setGlobalError(message);
     } finally {
@@ -402,7 +416,7 @@ export function SendGoodsScreen(): React.JSX.Element {
           {permission && !cameraIsReady ? (
             <View style={styles.cameraPlaceholder}>
               <Text style={styles.cameraPlaceholderText}>
-                Cần cấp quyền camera để quét tem xe, tem bao và mã kiện.
+                Cần cấp quyền camera để quét tem xe, bao hàng và mã kiện.
               </Text>
               {permission.canAskAgain ? (
                 <Pressable onPress={requestPermission} style={styles.permissionButton}>
@@ -435,18 +449,18 @@ export function SendGoodsScreen(): React.JSX.Element {
           {isSubmitting ? (
             <View style={styles.cameraOverlay}>
               <ActivityIndicator size="small" color="#FFFFFF" />
-              <Text style={styles.cameraOverlayText}>Đang xác nhận gửi hàng...</Text>
+              <Text style={styles.cameraOverlayText}>Đang xác nhận hàng đến...</Text>
             </View>
           ) : null}
         </View>
         <Text style={styles.cameraHint}>
-          Quét tem xe trước, sau đó quét tem bao hoặc kiện rời để đưa vào danh sách.
+          Quét tem xe trước để bắt hành trình, sau đó quét bao hàng hoặc kiện rời.
         </Text>
       </View>
 
       <View style={styles.workSection}>
         <View style={styles.headerRow}>
-          <Text style={styles.screenTitle}>Gửi hàng</Text>
+          <Text style={styles.screenTitle}>Hàng đến</Text>
           <Pressable
             disabled={selectedCount === 0}
             onPress={deleteSelectedItems}
@@ -503,13 +517,13 @@ export function SendGoodsScreen(): React.JSX.Element {
             </View>
           ) : (
             <Text style={styles.vehicleEmptyText}>
-              Chưa có tem xe. Tem xe có thể là QR JSON hoặc chuỗi VEH|Mã xe|Hub đi|Hub đến|Biển số.
+              Chưa có tem xe. Nhập hoặc quét tem xe trước khi nhận bao và hàng.
             </Text>
           )}
         </View>
 
         <View style={styles.fieldRow}>
-          <Text style={styles.fieldLabel}>Tem bao hoặc mã kiện rời</Text>
+          <Text style={styles.fieldLabel}>Bao hàng hoặc mã kiện rời</Text>
           <View style={styles.inputRow}>
             <TextInput
               value={manualCodeInput}
@@ -537,7 +551,7 @@ export function SendGoodsScreen(): React.JSX.Element {
         {screenMessage ? <Text style={styles.messageText}>{screenMessage}</Text> : null}
 
         <View style={styles.listHeaderRow}>
-          <Text style={styles.listTitle}>Danh sách gửi hàng ({items.length})</Text>
+          <Text style={styles.listTitle}>Danh sách hàng đến ({items.length})</Text>
         </View>
 
         <ScrollView
@@ -547,7 +561,7 @@ export function SendGoodsScreen(): React.JSX.Element {
         >
           {items.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>Chưa có tem bao hoặc kiện rời nào.</Text>
+              <Text style={styles.emptyText}>Chưa có bao hàng hoặc kiện rời nào.</Text>
             </View>
           ) : (
             items.map((item, index) => {
@@ -592,20 +606,20 @@ export function SendGoodsScreen(): React.JSX.Element {
 
       <View style={styles.footer}>
         <Pressable
-          disabled={isSubmitting || !hasVehicleInfo || items.length === 0}
+          disabled={isSubmitting || !canReceiveAtHub || items.length === 0}
           onPress={() => {
-            void submitSendGoods();
+            void submitGoodsArrival();
           }}
           style={[
             styles.uploadButton,
-            (isSubmitting || !hasVehicleInfo || items.length === 0) &&
+            (isSubmitting || !canReceiveAtHub || items.length === 0) &&
               styles.uploadButtonDisabled,
           ]}
         >
           {isSubmitting ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
-            <Text style={styles.uploadButtonText}>Xác nhận gửi hàng</Text>
+            <Text style={styles.uploadButtonText}>Xác nhận hàng đến</Text>
           )}
         </Pressable>
       </View>
@@ -925,30 +939,35 @@ const styles = StyleSheet.create({
     backgroundColor: '#D1FAE5',
   },
   itemTimeText: {
+    marginTop: 4,
     color: '#64748B',
     fontSize: 12,
-    marginTop: 2,
   },
   footer: {
     position: 'absolute',
     left: 12,
     right: 12,
     bottom: 12,
+    backgroundColor: 'rgba(255,255,255,0.96)',
+    borderRadius: 14,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    ...theme.shadow.md,
   },
   uploadButton: {
-    minHeight: 52,
+    minHeight: 48,
     borderRadius: 12,
     backgroundColor: theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    ...theme.shadow.md,
   },
   uploadButtonDisabled: {
-    opacity: 0.4,
+    opacity: 0.45,
   },
   uploadButtonText: {
     color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '800',
+    fontSize: 15,
   },
 });

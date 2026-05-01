@@ -50,8 +50,8 @@ export function ScanHomeScreen(_: Props): React.JSX.Element {
           style={styles.gridCard}
         >
           <Ionicons name="arrow-down-circle-outline" size={24} color={theme.colors.primary} />
-          <Text style={styles.gridTitle}>Hub inbound</Text>
-          <Text style={styles.gridHint}>Nhap kho / nhan hub</Text>
+          <Text style={styles.gridTitle}>Hàng đến</Text>
+          <Text style={styles.gridHint}>Xác nhận hàng đến hub</Text>
         </Card>
 
         <Card

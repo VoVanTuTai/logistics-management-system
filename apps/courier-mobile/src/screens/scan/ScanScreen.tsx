@@ -92,7 +92,7 @@ const actions: PermissionedScanAction[] = [
   },
   {
     id: 'kien-den',
-    label: 'Kiện đến',
+    label: 'Hàng đến',
     permission: 'scan.inbound',
     iconName: 'download-outline',
     iconColor: theme.colors.primary,
@@ -201,6 +201,13 @@ export function ScanScreen(): React.JSX.Element {
 
     if (action.id === 'gui-kien') {
       navigation.navigate('SendGoods');
+      return;
+    }
+
+    if (action.id === 'kien-den') {
+      navigation.navigate('HubScan', {
+        mode: 'INBOUND',
+      });
       return;
     }
 

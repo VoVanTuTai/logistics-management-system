@@ -53,3 +53,65 @@ export function resolveCourierDisplayName(input: {
   const courierId = resolveCourierId(input.courierId, input.username);
   return SEEDED_COURIER_NAMES[courierId] ?? input.username ?? 'Courier';
 }
+
+export function buildPickupReceiveAuditNote(input: {
+  displayName?: string | null;
+  username?: string | null;
+  courierId?: string | null;
+  hubCode?: string | null;
+}): string {
+  const employeeId =
+    resolveCourierId(input.courierId, input.username) ||
+    input.username?.trim() ||
+    'N/A';
+  const employeeName = resolveCourierDisplayName({
+    displayName: input.displayName,
+    username: input.username,
+    courierId: employeeId,
+  });
+  const hubCode = input.hubCode?.trim().toUpperCase() || 'N/A';
+
+  return `Nhận hàng về hub | Nhân viên: ${employeeName} | Mã NV: ${employeeId} | Mã hub: ${hubCode}`;
+}
+
+export function buildGoodsArrivalAuditNote(input: {
+  displayName?: string | null;
+  username?: string | null;
+  courierId?: string | null;
+  hubCode?: string | null;
+  vehicleCode?: string | null;
+  licensePlate?: string | null;
+  originHubCode?: string | null;
+  destinationHubCode?: string | null;
+  bagCode?: string | null;
+}): string {
+  const employeeId =
+    resolveCourierId(input.courierId, input.username) ||
+    input.username?.trim() ||
+    'N/A';
+  const employeeName = resolveCourierDisplayName({
+    displayName: input.displayName,
+    username: input.username,
+    courierId: employeeId,
+  });
+  const hubCode = input.hubCode?.trim().toUpperCase() || 'N/A';
+  const bagCode = input.bagCode?.trim().toUpperCase();
+  const vehicleCode = input.vehicleCode?.trim().toUpperCase();
+  const licensePlate = input.licensePlate?.trim().toUpperCase();
+  const originHubCode = input.originHubCode?.trim().toUpperCase();
+  const destinationHubCode = input.destinationHubCode?.trim().toUpperCase();
+
+  return [
+    'Hàng đến',
+    `Nhân viên: ${employeeName}`,
+    `Mã NV: ${employeeId}`,
+    `Mã hub: ${hubCode}`,
+    vehicleCode ? `Mã xe: ${vehicleCode}` : null,
+    licensePlate ? `Biển số: ${licensePlate}` : null,
+    originHubCode ? `Hub đi: ${originHubCode}` : null,
+    destinationHubCode ? `Hub đến: ${destinationHubCode}` : null,
+    bagCode ? `Mã bao: ${bagCode}` : null,
+  ]
+    .filter(Boolean)
+    .join(' | ');
+}

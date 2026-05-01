@@ -47,9 +47,9 @@ const STATUS_LABELS_VI: Record<string, string> = {
   CREATED: 'Đơn hàng đã được tạo',
   PICKUP_REQUESTED: 'Đang chờ lấy hàng',
   PICKUP_ASSIGNED: 'Đã phân công lấy hàng',
-  PICKED_UP: 'Đã lấy hàng',
+  PICKED_UP: 'Nhận hàng',
   IN_TRANSIT: 'Đang trung chuyển',
-  INBOUND_AT_HUB: 'Đã đến kho',
+  INBOUND_AT_HUB: 'Hàng đến',
   OUTBOUND_FROM_HUB: 'Đã rời kho',
   SEND_GOODS: 'Đã gửi hàng',
   OUT_FOR_DELIVERY: 'Đang giao hàng',
@@ -61,12 +61,12 @@ const STATUS_LABELS_VI: Record<string, string> = {
 
   // Backward-compatible labels for existing legacy shipment statuses.
   UPDATED: 'Đang chờ lấy hàng',
-  PICKUP_COMPLETED: 'Đã lấy hàng',
+  PICKUP_COMPLETED: 'Nhận hàng',
   TASK_ASSIGNED: 'Đã phân công tác vụ',
   MANIFEST_SEALED: 'Đang trung chuyển',
   MANIFEST_RECEIVED: 'Đã đến kho trung chuyển',
   MANIFEST_UNSEALED: 'Đã gỡ bao',
-  SCAN_INBOUND: 'Đã đến kho',
+  SCAN_INBOUND: 'Hàng đến',
   SCAN_OUTBOUND: 'Đã rời kho',
   NDR_CREATED: 'Đơn hàng đang được xử lý lại',
   RETURN_STARTED: 'Đang hoàn hàng',
@@ -79,12 +79,12 @@ const EVENT_LABELS_VI: Record<TrackingBusinessEventType, string> = {
   'pickup.requested': 'Đã yêu cầu lấy hàng',
   'pickup.approved': 'Yêu cầu lấy hàng đã được xác nhận',
   'task.assigned': 'Shipper đã được phân công lấy hàng',
-  'scan.pickup_confirmed': 'Shipper đã lấy hàng',
+  'scan.pickup_confirmed': 'Nhận hàng',
   'manifest.sealed': 'Hàng đã được đóng bao và chuẩn bị vận chuyển',
   'manifest.received': 'Hàng đã đến kho trung chuyển',
   'manifest.unsealed': 'Hàng đã được gỡ khỏi bao',
   'scan.outbound': 'Hàng đã rời kho',
-  'scan.inbound': 'Hàng đã đến kho',
+  'scan.inbound': 'Hàng đến',
   'delivery.attempted': 'Shipper đang giao hàng',
   'delivery.delivered': 'Giao hàng thành công',
   'delivery.failed': 'Giao hàng không thành công',
@@ -152,8 +152,18 @@ export function toTimelineTextVi(
     return EVENT_LABELS_VI['task.assigned'];
   }
 
+  if (event.event_type === 'scan.pickup_confirmed') {
+    const note = readNestedString(event.data, ['scanEvent', 'note']);
+    const text = note ? `Nhận hàng - ${note}` : EVENT_LABELS_VI['scan.pickup_confirmed'];
+
+    return withLocationSuffix(text, locationCode);
+  }
+
   if (event.event_type === 'scan.inbound') {
-    return withLocationSuffix(EVENT_LABELS_VI['scan.inbound'], locationCode);
+    const note = readNestedString(event.data, ['scanEvent', 'note']);
+    const text = note ? `Hàng đến - ${note}` : EVENT_LABELS_VI['scan.inbound'];
+
+    return withLocationSuffix(text, locationCode);
   }
 
   if (event.event_type === 'scan.outbound') {

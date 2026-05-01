@@ -40,7 +40,7 @@ interface IssueOption {
 const ISSUE_OPTIONS: IssueOption[] = [
   {
     id: 'customer-unreachable',
-    title: 'Khong goi duoc khach',
+    title: 'Khong gọi duoc khach',
     description: 'Da lien he nhieu lan nhung khach khong nghe may.',
     reasonCode: 'CUSTOMER_UNREACHABLE',
     createNdr: true,
@@ -170,7 +170,7 @@ export function TaskIssueScreen({ navigation, route }: Props): React.JSX.Element
       setSubmitMessage(
         result.source === 'DUPLICATE_REPLAY'
           ? 'Server da tra lai ket qua cu cho idempotencyKey trung lap.'
-          : 'Da ghi nhan van de thanh cong va cap nhat trang thai don.',
+          : 'Da ghi nhan Vấn đề thanh cong va cap nhat trang thai don.',
       );
 
       await queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -189,7 +189,7 @@ export function TaskIssueScreen({ navigation, route }: Props): React.JSX.Element
         setSubmitMessage('Mat mang: thao tac da duoc luu offline va se tu dong dong bo.');
       } else {
         const message =
-          error instanceof Error ? error.message : 'Cap nhat van de that bai.';
+          error instanceof Error ? error.message : 'Cap nhat Vấn đề that bai.';
         setSubmitMessage(message);
         setGlobalError(message);
       }
@@ -219,7 +219,7 @@ export function TaskIssueScreen({ navigation, route }: Props): React.JSX.Element
           showsVerticalScrollIndicator={false}
         >
           <Card>
-            <Text style={styles.sectionTitle}>Xu ly van de don hang</Text>
+            <Text style={styles.sectionTitle}>Xu ly Vấn đề don hang</Text>
             <Text style={styles.sectionHint}>
               Chon dung ly do de he thong tao NDR/tra hang theo quy trinh.
             </Text>
@@ -250,7 +250,7 @@ export function TaskIssueScreen({ navigation, route }: Props): React.JSX.Element
           </Card>
 
           <Card>
-            <Text style={styles.sectionTitle}>Lua chon van de</Text>
+            <Text style={styles.sectionTitle}>Lua chon Vấn đề</Text>
             <View style={styles.optionList}>
               {ISSUE_OPTIONS.map((option) => {
                 const selected = option.id === selectedIssueId;
@@ -309,7 +309,7 @@ export function TaskIssueScreen({ navigation, route }: Props): React.JSX.Element
             {isSubmitting ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Text style={styles.submitButtonText}>Xac nhan van de</Text>
+              <Text style={styles.submitButtonText}>Xac nhan Vấn đề</Text>
             )}
           </Pressable>
         </View>

@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   CameraView,
   type BarcodeScanningResult,
@@ -29,7 +30,7 @@ import type { AppNavigatorParamList } from '../../navigation/types';
 import { ApiClientError, shouldQueueOffline } from '../../services/api/client';
 import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
-import { resolveCourierId } from '../../utils/courier';
+import { buildPickupReceiveAuditNote, resolveCourierId } from '../../utils/courier';
 import { appEnv } from '../../utils/env';
 import { createIdempotencyKey } from '../../utils/idempotency';
 
@@ -219,6 +220,7 @@ function toErrorMessage(error: unknown): string {
 export function PickupScanScreen({ route }: Props): React.JSX.Element {
   const session = useAppStore((state) => state.session);
   const setGlobalError = useAppStore((state) => state.setGlobalError);
+  const queryClient = useQueryClient();
   const [permission, requestPermission] = useCameraPermissions();
 
   const accessToken = session?.tokens.accessToken ?? null;
@@ -227,6 +229,7 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
     () => (session?.user.hubCodes ?? []).map((hubCode) => normalizeCode(hubCode)),
     [session?.user.hubCodes],
   );
+  const receiveHubCode = assignedHubCodes[0] ?? null;
 
   const [pickedShipments, setPickedShipments] = React.useState<PickedShipmentItem[]>([]);
   const [selectedCodes, setSelectedCodes] = React.useState<Set<string>>(
@@ -412,13 +415,23 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
     const successCodes: string[] = [];
     const queuedCodes: string[] = [];
     const failedCodes: Array<{ code: string; reason: string }> = [];
+    const routeShipmentCode = route.params?.shipmentCode
+      ? normalizeCode(route.params.shipmentCode)
+      : null;
+    let routeTaskCompleted = false;
+    let routeTaskCompleteFailed = false;
 
     for (const item of pickedShipments) {
       const command: PickupScanCommand = {
         shipmentCode: item.code,
-        locationCode: assignedHubCodes[0] ?? null,
-        note: 'RECEIVE_GOODS_FROM_SCAN_PAGE',
-        actor: session?.user.username ?? null,
+        locationCode: receiveHubCode,
+        note: buildPickupReceiveAuditNote({
+          displayName: session?.user.displayName,
+          username: session?.user.username,
+          courierId,
+          hubCode: receiveHubCode,
+        }),
+        actor: (courierId || session?.user.username) ?? null,
         occurredAt: new Date().toISOString(),
         idempotencyKey: createIdempotencyKey('pickup-scan-batch'),
       };
@@ -446,6 +459,19 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
 
         await submitPickupScanAction(accessToken, command);
         successCodes.push(item.code);
+
+        const shouldCompleteRouteTask =
+          route.params?.taskId &&
+          (!routeShipmentCode || normalizeCode(item.code) === routeShipmentCode);
+
+        if (shouldCompleteRouteTask && !routeTaskCompleted) {
+          try {
+            await tasksApi.updateTaskStatus(accessToken, route.params.taskId, 'COMPLETED');
+            routeTaskCompleted = true;
+          } catch {
+            routeTaskCompleteFailed = true;
+          }
+        }
       } catch (error) {
         if (shouldQueueOffline(error)) {
           await enqueuePickupScanOffline(command);
@@ -467,8 +493,24 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
         `Đã cập nhật nhận hàng ${successCodes.length} mã` +
           (queuedCodes.length > 0
             ? `, ${queuedCodes.length} ma duoc queue offline.`
-            : '.'),
+            : '.') +
+          (routeTaskCompleted
+            ? ' Task Đợi lấy đã chuyển hoàn tất.'
+            : routeTaskCompleteFailed
+              ? ' Chưa cập nhật được trạng thái task, vui lòng tải lại và thử lại.'
+              : ''),
       );
+      await queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      if (route.params?.taskId) {
+        await queryClient.invalidateQueries({
+          queryKey: ['tasks', 'detail', route.params.taskId],
+        });
+      }
+      successCodes.forEach((shipmentCode) => {
+        void queryClient.invalidateQueries({
+          queryKey: ['shipment', 'detail', shipmentCode],
+        });
+      });
       setIsUploading(false);
       return;
     }
@@ -497,8 +539,24 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
       `Đã cập nhật nhận hàng ${successCodes.length} mã` +
         (queuedCodes.length > 0
           ? `, ${queuedCodes.length} ma duoc queue offline.`
-          : '.'),
+          : '.') +
+        (routeTaskCompleted
+          ? ' Task Đợi lấy đã chuyển hoàn tất.'
+          : routeTaskCompleteFailed
+            ? ' Chưa cập nhật được trạng thái task, vui lòng tải lại và thử lại.'
+            : ''),
     );
+    await queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    if (route.params?.taskId) {
+      await queryClient.invalidateQueries({
+        queryKey: ['tasks', 'detail', route.params.taskId],
+      });
+    }
+    successCodes.forEach((shipmentCode) => {
+      void queryClient.invalidateQueries({
+        queryKey: ['shipment', 'detail', shipmentCode],
+      });
+    });
 
     setIsUploading(false);
   };
