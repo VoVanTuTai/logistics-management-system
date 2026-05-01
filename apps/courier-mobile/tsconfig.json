@@ -3,8 +3,7 @@
   "compilerOptions": {
     "strict": true,
     "noEmit": true,
-    "ignoreDeprecations": "5.0",
-    "baseUrl": "."
+    "ignoreDeprecations": "5.0"
   },
   "include": [
     "**/*.ts",

@@ -23,6 +23,11 @@ import {
   parseVehicleLabel,
   type VehicleLabelInfo,
 } from '../../features/scan/vehicle-label';
+import {
+  upsertVehicleLoadRecord,
+  type VehicleLoadedBag,
+  type VehicleLoadedLooseShipment,
+} from '../../features/scan/vehicle-load.storage';
 import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
 import { resolveCourierDisplayName } from '../../utils/courier';
@@ -289,6 +294,8 @@ export function SendGoodsScreen(): React.JSX.Element {
 
     const successCodes: string[] = [];
     const failedCodes: Array<{ code: string; reason: string }> = [];
+    const loadedLooseShipments: VehicleLoadedLooseShipment[] = [];
+    const loadedBagByCode = new Map<string, VehicleLoadedBag>();
 
     try {
       const bagItems = items.filter((item) => item.type === 'BAG');
@@ -311,6 +318,10 @@ export function SendGoodsScreen(): React.JSX.Element {
               idempotencyKey: createIdempotencyKey('send-goods-shipment'),
             });
             successCodes.push(item.code);
+            loadedLooseShipments.push({
+              shipmentCode: item.code,
+              loadedAt: new Date().toISOString(),
+            });
           } catch (error) {
             failedCodes.push({
               code: item.code,
@@ -354,6 +365,15 @@ export function SendGoodsScreen(): React.JSX.Element {
               idempotencyKey: createIdempotencyKey('send-goods-bag'),
             });
             successCodes.push(manifestItem.shipmentCode);
+            const existingBag = loadedBagByCode.get(manifest.manifestCode);
+            loadedBagByCode.set(manifest.manifestCode, {
+              bagCode: manifest.manifestCode,
+              shipmentCodes: [
+                ...(existingBag?.shipmentCodes ?? []),
+                manifestItem.shipmentCode,
+              ],
+              loadedAt: existingBag?.loadedAt ?? new Date().toISOString(),
+            });
           } catch (error) {
             failedCodes.push({
               code: `${item.code}/${manifestItem.shipmentCode}`,
@@ -361,6 +381,17 @@ export function SendGoodsScreen(): React.JSX.Element {
             });
           }
         }
+      }
+
+      if (successCodes.length > 0) {
+        await upsertVehicleLoadRecord({
+          vehicle: vehicleInfo,
+          bagItems: Array.from(loadedBagByCode.values()),
+          looseShipments: loadedLooseShipments,
+          employeeCode,
+          employeeName,
+          hubCode: employeeHubCode,
+        });
       }
 
       if (failedCodes.length > 0) {

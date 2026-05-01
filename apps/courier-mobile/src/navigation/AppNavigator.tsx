@@ -15,7 +15,9 @@ import { PickupScanScreen } from '../screens/scan/PickupScanScreen';
 import { DeliverySignScanScreen } from '../screens/scan/DeliverySignScanScreen';
 import { BagSealScreen } from '../screens/scan/BagSealScreen';
 import { BagUnsealScreen } from '../screens/scan/BagUnsealScreen';
+import { InventoryCheckScreen } from '../screens/scan/InventoryCheckScreen';
 import { SendGoodsScreen } from '../screens/scan/SendGoodsScreen';
+import { VehicleOutboundScreen } from '../screens/scan/VehicleOutboundScreen';
 import { TaskDetailScreen } from '../screens/tasks/TaskDetailScreen';
 import { TrackingLookupScreen } from '../screens/tasks/TrackingLookupScreen';
 import { theme } from '../theme';
@@ -84,6 +86,16 @@ export function AppNavigator(): React.JSX.Element {
             name="SendGoods"
             component={SendGoodsScreen}
             options={{ title: 'Gửi hàng' }}
+          />
+          <Stack.Screen
+            name="InventoryCheck"
+            component={InventoryCheckScreen}
+            options={{ title: 'Kiểm tồn kho' }}
+          />
+          <Stack.Screen
+            name="VehicleOutbound"
+            component={VehicleOutboundScreen}
+            options={{ title: 'Xe đi' }}
           />
           <Stack.Screen
             name="DeliverySuccess"

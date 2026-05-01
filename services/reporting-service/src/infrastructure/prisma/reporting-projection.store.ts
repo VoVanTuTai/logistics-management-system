@@ -135,6 +135,14 @@ export class ReportingProjectionStore {
       return 'SEND_GOODS';
     }
 
+    if (event.event_type === 'scan.outbound' && this.isVehicleOutboundEvent(event)) {
+      return 'IN_TRANSIT';
+    }
+
+    if (event.event_type === 'scan.inbound' && this.isInventoryCheckEvent(event)) {
+      return 'INVENTORY_CHECK';
+    }
+
     return STATUS_BY_EVENT[event.event_type] ?? null;
   }
 
@@ -565,6 +573,16 @@ export class ReportingProjectionStore {
   private isSendGoodsEvent(event: ReportingEventEnvelope): boolean {
     const note = this.findString(event.data, [['scanEvent', 'note']]);
     return note?.startsWith('SEND_GOODS') ?? false;
+  }
+
+  private isVehicleOutboundEvent(event: ReportingEventEnvelope): boolean {
+    const note = this.findString(event.data, [['scanEvent', 'note']]);
+    return note?.startsWith('VEHICLE_OUTBOUND') ?? false;
+  }
+
+  private isInventoryCheckEvent(event: ReportingEventEnvelope): boolean {
+    const note = this.findString(event.data, [['scanEvent', 'note']]);
+    return note?.startsWith('INVENTORY_CHECK') ?? false;
   }
 
   private findString(source: unknown, paths: string[][]): string | null {

@@ -48,10 +48,11 @@ const STATUS_LABELS_VI: Record<string, string> = {
   PICKUP_REQUESTED: 'Đang chờ lấy hàng',
   PICKUP_ASSIGNED: 'Đã phân công lấy hàng',
   PICKED_UP: 'Nhận hàng',
-  IN_TRANSIT: 'Đang trung chuyển',
+  IN_TRANSIT: 'Đang luân chuyển',
   INBOUND_AT_HUB: 'Hàng đến',
   OUTBOUND_FROM_HUB: 'Đã rời kho',
   SEND_GOODS: 'Đã gửi hàng',
+  INVENTORY_CHECK: 'Kiểm tra hàng tồn',
   OUT_FOR_DELIVERY: 'Đang giao hàng',
   DELIVERING: 'Shipper đang giao hàng',
   DELIVERED: 'Giao hàng thành công',
@@ -123,6 +124,14 @@ export function resolveTrackingStatusFromEvent(
     return 'SEND_GOODS';
   }
 
+  if (event.event_type === 'scan.outbound' && isVehicleOutboundEvent(event)) {
+    return 'IN_TRANSIT';
+  }
+
+  if (event.event_type === 'scan.inbound' && isInventoryCheckEvent(event)) {
+    return 'INVENTORY_CHECK';
+  }
+
   return TRACKING_STATUS_BY_EVENT[event.event_type] ?? currentStatus;
 }
 
@@ -161,12 +170,22 @@ export function toTimelineTextVi(
 
   if (event.event_type === 'scan.inbound') {
     const note = readNestedString(event.data, ['scanEvent', 'note']);
-    const text = note ? `Hàng đến - ${note}` : EVENT_LABELS_VI['scan.inbound'];
+    const baseText = isInventoryCheckEvent(event)
+      ? 'Kiểm tra hàng tồn'
+      : EVENT_LABELS_VI['scan.inbound'];
+    const text = note ? `${baseText} - ${note}` : baseText;
 
     return withLocationSuffix(text, locationCode);
   }
 
   if (event.event_type === 'scan.outbound') {
+    if (isVehicleOutboundEvent(event)) {
+      const note = readNestedString(event.data, ['scanEvent', 'note']);
+      const text = note ? `Xe đi - ${note}` : 'Xe đi - Đang luân chuyển';
+
+      return withLocationSuffix(text, locationCode);
+    }
+
     if (isSendGoodsEvent(event)) {
       return withLocationSuffix('Hàng đã được gửi lên xe', locationCode);
     }
@@ -225,6 +244,16 @@ function readHubCode(
 function isSendGoodsEvent(event: TrackingEventEnvelope): boolean {
   const note = readNestedString(event.data, ['scanEvent', 'note']);
   return note?.startsWith('SEND_GOODS') ?? false;
+}
+
+function isVehicleOutboundEvent(event: TrackingEventEnvelope): boolean {
+  const note = readNestedString(event.data, ['scanEvent', 'note']);
+  return note?.startsWith('VEHICLE_OUTBOUND') ?? false;
+}
+
+function isInventoryCheckEvent(event: TrackingEventEnvelope): boolean {
+  const note = readNestedString(event.data, ['scanEvent', 'note']);
+  return note?.startsWith('INVENTORY_CHECK') ?? false;
 }
 
 function readNestedString(source: unknown, path: string[]): string | null {
