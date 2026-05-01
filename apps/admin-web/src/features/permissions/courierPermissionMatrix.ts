@@ -124,9 +124,9 @@ export const COURIER_PERMISSION_FEATURES: CourierPermissionFeatureDefinition[] =
   },
   {
     id: 'scan.outbound',
-    label: 'Gửi kiện',
+    label: 'Gửi hàng',
     category: 'hub',
-    description: 'Quét xuất hub hoặc gửi kiện sang tuyến tiếp theo.',
+    description: 'Quét tem xe trước, sau đó quét tem bao hoặc kiện rời để gửi lên xe.',
     riskLevel: 'Trung bình',
   },
   {

@@ -15,6 +15,7 @@ import { PickupScanScreen } from '../screens/scan/PickupScanScreen';
 import { DeliverySignScanScreen } from '../screens/scan/DeliverySignScanScreen';
 import { BagSealScreen } from '../screens/scan/BagSealScreen';
 import { BagUnsealScreen } from '../screens/scan/BagUnsealScreen';
+import { SendGoodsScreen } from '../screens/scan/SendGoodsScreen';
 import { TaskDetailScreen } from '../screens/tasks/TaskDetailScreen';
 import { TrackingLookupScreen } from '../screens/tasks/TrackingLookupScreen';
 import { theme } from '../theme';
@@ -76,6 +77,11 @@ export function AppNavigator(): React.JSX.Element {
             name="BagUnseal"
             component={BagUnsealScreen}
             options={{ title: 'Go bao' }}
+          />
+          <Stack.Screen
+            name="SendGoods"
+            component={SendGoodsScreen}
+            options={{ title: 'Gửi hàng' }}
           />
           <Stack.Screen
             name="DeliverySuccess"
