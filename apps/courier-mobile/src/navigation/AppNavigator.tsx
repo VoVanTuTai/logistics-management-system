@@ -17,6 +17,7 @@ import { BagSealScreen } from '../screens/scan/BagSealScreen';
 import { BagUnsealScreen } from '../screens/scan/BagUnsealScreen';
 import { InventoryCheckScreen } from '../screens/scan/InventoryCheckScreen';
 import { SendGoodsScreen } from '../screens/scan/SendGoodsScreen';
+import { ScanIssueScreen } from '../screens/scan/ScanIssueScreen';
 import { VehicleInboundScreen } from '../screens/scan/VehicleInboundScreen';
 import { VehicleOutboundScreen } from '../screens/scan/VehicleOutboundScreen';
 import { TaskDetailScreen } from '../screens/tasks/TaskDetailScreen';
@@ -102,6 +103,11 @@ export function AppNavigator(): React.JSX.Element {
             name="VehicleInbound"
             component={VehicleInboundScreen}
             options={{ title: 'Xe đến' }}
+          />
+          <Stack.Screen
+            name="ScanIssue"
+            component={ScanIssueScreen}
+            options={{ title: 'Vấn đề' }}
           />
           <Stack.Screen
             name="DeliverySuccess"

@@ -202,6 +202,11 @@ export function ScanScreen(): React.JSX.Element {
       return;
     }
 
+    if (action.id === 'van-de') {
+      navigation.navigate('ScanIssue');
+      return;
+    }
+
     setScannerError(null);
     setPendingAction(action);
     setScannerVisible(true);
@@ -252,6 +257,14 @@ export function ScanScreen(): React.JSX.Element {
     if (pendingAction.id === 'xe-di') {
       navigation.navigate('HubScan', {
         mode: 'OUTBOUND',
+        shipmentCode: parsed.value,
+      });
+      setPendingAction(null);
+      return;
+    }
+
+    if (pendingAction.id === 'van-de') {
+      navigation.navigate('ScanIssue', {
         shipmentCode: parsed.value,
       });
       setPendingAction(null);

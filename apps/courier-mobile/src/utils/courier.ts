@@ -136,6 +136,42 @@ export function buildInventoryCheckAuditNote(input: {
   return `INVENTORY_CHECK | Kiểm tra hàng tồn | Nhân viên: ${employeeName} | Mã NV: ${employeeId} | Mã hub: ${hubCode}`;
 }
 
+export function buildShipmentIssueAuditNote(input: {
+  displayName?: string | null;
+  username?: string | null;
+  courierId?: string | null;
+  hubCode?: string | null;
+  issueType?: string | null;
+  issueTitle?: string | null;
+  note?: string | null;
+}): string {
+  const employeeId =
+    resolveCourierId(input.courierId, input.username) ||
+    input.username?.trim() ||
+    'N/A';
+  const employeeName = resolveCourierDisplayName({
+    displayName: input.displayName,
+    username: input.username,
+    courierId: employeeId,
+  });
+  const hubCode = input.hubCode?.trim().toUpperCase() || 'N/A';
+  const issueType = input.issueType?.trim().toUpperCase() || 'N/A';
+  const issueTitle = input.issueTitle?.trim();
+  const note = input.note?.trim();
+
+  return [
+    'Vấn đề đơn hàng',
+    `Loại: ${issueTitle || issueType}`,
+    issueTitle ? `Mã lỗi: ${issueType}` : null,
+    `Nhân viên: ${employeeName}`,
+    `Mã NV: ${employeeId}`,
+    `Mã hub: ${hubCode}`,
+    note ? `Ghi chú: ${note}` : null,
+  ]
+    .filter(Boolean)
+    .join(' | ');
+}
+
 export function buildVehicleOutboundAuditNote(input: {
   displayName?: string | null;
   username?: string | null;

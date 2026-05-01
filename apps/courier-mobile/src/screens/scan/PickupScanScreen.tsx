@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   ActivityIndicator,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -222,6 +223,7 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
   const setGlobalError = useAppStore((state) => state.setGlobalError);
   const queryClient = useQueryClient();
   const [permission, requestPermission] = useCameraPermissions();
+  const proofCameraRef = React.useRef<CameraView | null>(null);
 
   const accessToken = session?.tokens.accessToken ?? null;
   const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
@@ -230,6 +232,8 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
     [session?.user.hubCodes],
   );
   const receiveHubCode = assignedHubCodes[0] ?? null;
+  const routeShipmentCode = normalizeOptionalCode(route.params?.shipmentCode);
+  const isTaskReceiveMode = Boolean(route.params?.taskId && routeShipmentCode);
 
   const [pickedShipments, setPickedShipments] = React.useState<PickedShipmentItem[]>([]);
   const [selectedCodes, setSelectedCodes] = React.useState<Set<string>>(
@@ -237,6 +241,8 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
   );
   const [isVerifyingScan, setIsVerifyingScan] = React.useState(false);
   const [isUploading, setIsUploading] = React.useState(false);
+  const [isCapturingProof, setIsCapturingProof] = React.useState(false);
+  const [proofPhotoUri, setProofPhotoUri] = React.useState<string | null>(null);
   const [scanLocked, setScanLocked] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const [infoMessage, setInfoMessage] = React.useState<string | null>(null);
@@ -346,10 +352,23 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
 
     initialRouteCodeHandledRef.current = true;
 
-    if (route.params?.shipmentCode) {
-      void verifyAndAppendShipmentCode(route.params.shipmentCode);
+    if (routeShipmentCode && isTaskReceiveMode) {
+      setPickedShipments([
+        {
+          code: routeShipmentCode,
+          verifiedAt: new Date().toISOString(),
+        },
+      ]);
+      setInfoMessage(
+        `Đã lấy mã ${routeShipmentCode} từ nhiệm vụ Đợi lấy. Không cần quét lại, bấm xác nhận để nhận hàng.`,
+      );
+      return;
     }
-  }, [route.params?.shipmentCode, verifyAndAppendShipmentCode]);
+
+    if (routeShipmentCode) {
+      void verifyAndAppendShipmentCode(routeShipmentCode);
+    }
+  }, [isTaskReceiveMode, routeShipmentCode, verifyAndAppendShipmentCode]);
 
   const handleBarCodeScanned = (result: BarcodeScanningResult) => {
     if (scanLocked || isVerifyingScan || isUploading) {
@@ -397,6 +416,37 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
     setSelectedCodes(new Set());
   };
 
+  const capturePickupProof = React.useCallback(async () => {
+    if (!isTaskReceiveMode) {
+      return;
+    }
+
+    if (!proofCameraRef.current) {
+      setErrorMessage('Camera chưa sẵn sàng để chụp minh chứng.');
+      return;
+    }
+
+    setIsCapturingProof(true);
+    setErrorMessage(null);
+
+    try {
+      const picture = await proofCameraRef.current.takePictureAsync({
+        quality: 0.6,
+      });
+
+      if (!picture.uri) {
+        throw new Error('Không chụp được minh chứng.');
+      }
+
+      setProofPhotoUri(picture.uri);
+      setInfoMessage('Đã chụp minh chứng nhận hàng.');
+    } catch (error) {
+      setErrorMessage(toErrorMessage(error));
+    } finally {
+      setIsCapturingProof(false);
+    }
+  }, [isTaskReceiveMode]);
+
   const uploadAll = async () => {
     if (!accessToken) {
       setGlobalError('Phien dang nhap da het han. Vui long dang nhap lai.');
@@ -408,6 +458,11 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
       return;
     }
 
+    if (isTaskReceiveMode && !proofPhotoUri) {
+      setErrorMessage('Vui lòng chụp minh chứng trước khi xác nhận nhận hàng.');
+      return;
+    }
+
     setIsUploading(true);
     setErrorMessage(null);
     setInfoMessage(null);
@@ -415,22 +470,23 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
     const successCodes: string[] = [];
     const queuedCodes: string[] = [];
     const failedCodes: Array<{ code: string; reason: string }> = [];
-    const routeShipmentCode = route.params?.shipmentCode
-      ? normalizeCode(route.params.shipmentCode)
-      : null;
     let routeTaskCompleted = false;
     let routeTaskCompleteFailed = false;
 
     for (const item of pickedShipments) {
+      const baseNote = buildPickupReceiveAuditNote({
+        displayName: session?.user.displayName,
+        username: session?.user.username,
+        courierId,
+        hubCode: receiveHubCode,
+      });
       const command: PickupScanCommand = {
         shipmentCode: item.code,
         locationCode: receiveHubCode,
-        note: buildPickupReceiveAuditNote({
-          displayName: session?.user.displayName,
-          username: session?.user.username,
-          courierId,
-          hubCode: receiveHubCode,
-        }),
+        note:
+          isTaskReceiveMode && proofPhotoUri
+            ? `${baseNote} | Minh chứng: ${proofPhotoUri}`
+            : baseNote,
         actor: (courierId || session?.user.username) ?? null,
         occurredAt: new Date().toISOString(),
         idempotencyKey: createIdempotencyKey('pickup-scan-batch'),
@@ -488,6 +544,7 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
 
     if (failedCodes.length === 0) {
       setPickedShipments([]);
+      setProofPhotoUri(null);
       setSelectedCodes(new Set());
       setInfoMessage(
         `Đã cập nhật nhận hàng ${successCodes.length} mã` +
@@ -565,78 +622,163 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
 
   return (
     <View style={styles.container}>
-      <View style={styles.cameraSection}>
-        <View style={styles.cameraFrame}>
-          {!permission ? (
-            <View style={styles.cameraPlaceholder}>
-              <ActivityIndicator size="small" color="#E2E8F0" />
-              <Text style={styles.cameraPlaceholderText}>Dang kiem tra quyen camera...</Text>
+      {isTaskReceiveMode ? (
+        <View style={styles.taskModePanel}>
+          <View style={styles.taskReceiveSection}>
+            <View style={styles.taskReceiveIcon}>
+              <Ionicons name="cube-outline" size={24} color={theme.colors.primary} />
             </View>
-          ) : null}
-
-          {permission && !cameraIsReady ? (
-            <View style={styles.cameraPlaceholder}>
-              <Text style={styles.cameraPlaceholderText}>
-                Can cap quyen camera de quet ma van don.
+            <View style={styles.taskReceiveBody}>
+              <Text style={styles.taskReceiveTitle}>Nhận hàng từ nhiệm vụ Đợi lấy</Text>
+              <Text style={styles.taskReceiveText}>
+                Mã vận đơn đã có trong nhiệm vụ nên không cần quét lại. Chụp minh chứng rồi bấm xác nhận.
               </Text>
-              {permission.canAskAgain ? (
-                <Pressable onPress={requestPermission} style={styles.permissionButton}>
-                  <Text style={styles.permissionButtonText}>Cap quyen camera</Text>
-                </Pressable>
+            </View>
+          </View>
+
+          <View style={styles.proofSection}>
+            <View style={styles.proofHeader}>
+              <View>
+                <Text style={styles.proofTitle}>Minh chứng nhận hàng</Text>
+                <Text style={styles.proofHint}>Bắt buộc chụp ảnh hàng đã lấy trước khi xác nhận.</Text>
+              </View>
+              {proofPhotoUri ? (
+                <Ionicons name="checkmark-circle" size={22} color="#0F766E" />
+              ) : (
+                <Ionicons name="camera-outline" size={22} color={theme.colors.primary} />
+              )}
+            </View>
+
+            <View style={styles.proofCameraFrame}>
+              {!permission ? (
+                <View style={styles.cameraPlaceholder}>
+                  <ActivityIndicator size="small" color="#E2E8F0" />
+                  <Text style={styles.cameraPlaceholderText}>Dang kiem tra quyen camera...</Text>
+                </View>
+              ) : null}
+
+              {permission && !cameraIsReady ? (
+                <View style={styles.cameraPlaceholder}>
+                  <Text style={styles.cameraPlaceholderText}>
+                    Cần cấp quyền camera để chụp minh chứng nhận hàng.
+                  </Text>
+                  {permission.canAskAgain ? (
+                    <Pressable onPress={requestPermission} style={styles.permissionButton}>
+                      <Text style={styles.permissionButtonText}>Cấp quyền camera</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+              ) : null}
+
+              {permission && cameraIsReady && !proofPhotoUri ? (
+                <CameraView ref={proofCameraRef} style={styles.camera} facing="back" />
+              ) : null}
+
+              {proofPhotoUri ? (
+                <Image source={{ uri: proofPhotoUri }} style={styles.proofImage} />
               ) : null}
             </View>
-          ) : null}
 
-          {permission && cameraIsReady ? (
-            <CameraView
-              style={styles.camera}
-              facing="back"
-              barcodeScannerSettings={{
-                barcodeTypes: [
-                  'qr',
-                  'ean13',
-                  'ean8',
-                  'code39',
-                  'code93',
-                  'code128',
-                  'upc_a',
-                  'upc_e',
-                ],
+            <Pressable
+              disabled={!cameraIsReady || isCapturingProof || isUploading}
+              onPress={() => {
+                void capturePickupProof();
               }}
-              onBarcodeScanned={handleBarCodeScanned}
-            />
-          ) : null}
-
-          {isVerifyingScan || isUploading ? (
-            <View style={styles.cameraOverlay}>
-              <ActivityIndicator size="small" color="#FFFFFF" />
-              <Text style={styles.cameraOverlayText}>
-                {isUploading ? 'Dang tai len...' : 'Dang xac minh ma...'}
-              </Text>
-            </View>
-          ) : null}
+              style={[
+                styles.captureProofButton,
+                (!cameraIsReady || isCapturingProof || isUploading) &&
+                  styles.captureProofButtonDisabled,
+              ]}
+            >
+              {isCapturingProof ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <Ionicons name="camera-outline" size={18} color="#FFFFFF" />
+                  <Text style={styles.captureProofButtonText}>
+                    {proofPhotoUri ? 'Chụp lại minh chứng' : 'Chụp minh chứng'}
+                  </Text>
+                </>
+              )}
+            </Pressable>
+          </View>
         </View>
-        <Text style={styles.cameraHint}>
-          Camera tự mở. Quét mã vận đơn, hệ thống sẽ kiểm tra điều kiện rồi tự thêm vào danh sách.
-        </Text>
-      </View>
+      ) : (
+        <View style={styles.cameraSection}>
+          <View style={styles.cameraFrame}>
+            {!permission ? (
+              <View style={styles.cameraPlaceholder}>
+                <ActivityIndicator size="small" color="#E2E8F0" />
+                <Text style={styles.cameraPlaceholderText}>Dang kiem tra quyen camera...</Text>
+              </View>
+            ) : null}
+
+            {permission && !cameraIsReady ? (
+              <View style={styles.cameraPlaceholder}>
+                <Text style={styles.cameraPlaceholderText}>
+                  Can cap quyen camera de quet ma van don.
+                </Text>
+                {permission.canAskAgain ? (
+                  <Pressable onPress={requestPermission} style={styles.permissionButton}>
+                    <Text style={styles.permissionButtonText}>Cap quyen camera</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            ) : null}
+
+            {permission && cameraIsReady ? (
+              <CameraView
+                style={styles.camera}
+                facing="back"
+                barcodeScannerSettings={{
+                  barcodeTypes: [
+                    'qr',
+                    'ean13',
+                    'ean8',
+                    'code39',
+                    'code93',
+                    'code128',
+                    'upc_a',
+                    'upc_e',
+                  ],
+                }}
+                onBarcodeScanned={handleBarCodeScanned}
+              />
+            ) : null}
+
+            {isVerifyingScan || isUploading ? (
+              <View style={styles.cameraOverlay}>
+                <ActivityIndicator size="small" color="#FFFFFF" />
+                <Text style={styles.cameraOverlayText}>
+                  {isUploading ? 'Dang tai len...' : 'Dang xac minh ma...'}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+          <Text style={styles.cameraHint}>
+            Camera tự mở. Quét mã vận đơn, hệ thống sẽ kiểm tra điều kiện rồi tự thêm vào danh sách.
+          </Text>
+        </View>
+      )}
 
       <View style={styles.listSection}>
         <View style={styles.listHeaderRow}>
           <Text style={styles.screenTitle}>Nhận hàng</Text>
-          <Pressable
-            disabled={selectedCount === 0}
-            onPress={deleteSelectedShipments}
-            style={[
-              styles.deleteButton,
-              selectedCount === 0 && styles.deleteButtonDisabled,
-            ]}
-          >
-            <Ionicons name="trash-outline" size={16} color="#B91C1C" />
-            <Text style={styles.deleteButtonText}>
-              Xóa{selectedCount > 0 ? ` ${selectedCount}` : ''}
-            </Text>
-          </Pressable>
+          {!isTaskReceiveMode ? (
+            <Pressable
+              disabled={selectedCount === 0}
+              onPress={deleteSelectedShipments}
+              style={[
+                styles.deleteButton,
+                selectedCount === 0 && styles.deleteButtonDisabled,
+              ]}
+            >
+              <Ionicons name="trash-outline" size={16} color="#B91C1C" />
+              <Text style={styles.deleteButtonText}>
+                Xóa{selectedCount > 0 ? ` ${selectedCount}` : ''}
+              </Text>
+            </Pressable>
+          ) : null}
         </View>
 
         {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
@@ -658,14 +800,20 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
               return (
                 <Pressable
                   key={`${item.code}-${item.verifiedAt}`}
+                  disabled={isTaskReceiveMode}
                   onPress={() => toggleSelected(item.code)}
-                  style={[styles.listItem, selected && styles.listItemSelected]}
+                  style={[
+                    styles.listItem,
+                    selected && !isTaskReceiveMode && styles.listItemSelected,
+                  ]}
                 >
-                  <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
-                    {selected ? (
-                      <Ionicons name="checkmark" size={14} color="#FFFFFF" />
-                    ) : null}
-                  </View>
+                  {!isTaskReceiveMode ? (
+                    <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
+                      {selected ? (
+                        <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+                      ) : null}
+                    </View>
+                  ) : null}
                   <View style={styles.listIndex}>
                     <Text style={styles.listIndexText}>{index + 1}</Text>
                   </View>
@@ -683,13 +831,21 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
         </ScrollView>
 
         <Pressable
-          disabled={isUploading || isVerifyingScan || pickedShipments.length === 0}
+          disabled={
+            isUploading ||
+            isVerifyingScan ||
+            pickedShipments.length === 0 ||
+            (isTaskReceiveMode && !proofPhotoUri)
+          }
           onPress={() => {
             void uploadAll();
           }}
           style={[
             styles.uploadButton,
-            (isUploading || isVerifyingScan || pickedShipments.length === 0) &&
+            (isUploading ||
+              isVerifyingScan ||
+              pickedShipments.length === 0 ||
+              (isTaskReceiveMode && !proofPhotoUri)) &&
               styles.uploadButtonDisabled,
           ]}
         >
@@ -767,6 +923,94 @@ const styles = StyleSheet.create({
     marginTop: 8,
     color: '#475569',
     fontSize: 12,
+  },
+  taskModePanel: {
+    gap: 10,
+  },
+  taskReceiveSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    borderRadius: 12,
+    padding: 14,
+    ...theme.shadow.sm,
+  },
+  taskReceiveIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EFF6FF',
+  },
+  taskReceiveBody: {
+    flex: 1,
+  },
+  taskReceiveTitle: {
+    color: '#0F172A',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  taskReceiveText: {
+    color: '#475569',
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 3,
+  },
+  proofSection: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    padding: 12,
+    gap: 10,
+    ...theme.shadow.sm,
+  },
+  proofHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  proofTitle: {
+    color: '#0F172A',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  proofHint: {
+    color: '#64748B',
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 2,
+  },
+  proofCameraFrame: {
+    height: 180,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: '#0F172A',
+  },
+  proofImage: {
+    width: '100%',
+    height: '100%',
+  },
+  captureProofButton: {
+    minHeight: 44,
+    borderRadius: 10,
+    backgroundColor: theme.colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  captureProofButtonDisabled: {
+    opacity: 0.45,
+  },
+  captureProofButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
   listSection: {
     flex: 2,

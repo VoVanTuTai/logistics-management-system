@@ -42,6 +42,9 @@ export type AppNavigatorParamList = {
   InventoryCheck: undefined;
   VehicleOutbound: undefined;
   VehicleInbound: undefined;
+  ScanIssue: {
+    shipmentCode?: string;
+  } | undefined;
   DeliverySuccess: {
     taskId?: string;
     shipmentCode?: string;
