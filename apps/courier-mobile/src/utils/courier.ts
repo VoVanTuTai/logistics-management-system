@@ -172,3 +172,42 @@ export function buildVehicleOutboundAuditNote(input: {
     .filter(Boolean)
     .join(' | ');
 }
+
+export function buildVehicleInboundAuditNote(input: {
+  displayName?: string | null;
+  username?: string | null;
+  courierId?: string | null;
+  hubCode?: string | null;
+  vehicleCode?: string | null;
+  licensePlate?: string | null;
+  sealCodes?: string[];
+  sealMatched?: boolean;
+}): string {
+  const employeeId =
+    resolveCourierId(input.courierId, input.username) ||
+    input.username?.trim() ||
+    'N/A';
+  const employeeName = resolveCourierDisplayName({
+    displayName: input.displayName,
+    username: input.username,
+    courierId: employeeId,
+  });
+  const hubCode = input.hubCode?.trim().toUpperCase() || 'N/A';
+  const vehicleCode = input.vehicleCode?.trim().toUpperCase() || 'N/A';
+  const licensePlate = input.licensePlate?.trim().toUpperCase() || 'N/A';
+  const seals = input.sealCodes?.map((code) => code.trim().toUpperCase()).filter(Boolean);
+
+  return [
+    'VEHICLE_INBOUND',
+    'Xe đến',
+    `Nhân viên: ${employeeName}`,
+    `Mã NV: ${employeeId}`,
+    `Mã hub: ${hubCode}`,
+    `Tem xe: ${vehicleCode}`,
+    `Biển số: ${licensePlate}`,
+    seals && seals.length > 0 ? `Seal xe: ${seals.join(',')}` : null,
+    input.sealMatched === true ? 'Đối chứng seal: Khớp' : 'Đối chứng seal: Cần kiểm tra',
+  ]
+    .filter(Boolean)
+    .join(' | ');
+}

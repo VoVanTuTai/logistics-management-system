@@ -57,6 +57,7 @@ const STATUS_LABELS_VI: Record<string, string> = {
   DELIVERING: 'Shipper đang giao hàng',
   DELIVERED: 'Giao hàng thành công',
   DELIVERY_FAILED: 'Giao hàng không thành công',
+  EXCEPTION: 'Đơn hàng đang gặp sự cố',
   RETURNING: 'Đang hoàn hàng',
   RETURNED: 'Đã hoàn hàng',
 
@@ -70,6 +71,7 @@ const STATUS_LABELS_VI: Record<string, string> = {
   SCAN_INBOUND: 'Hàng đến',
   SCAN_OUTBOUND: 'Đã rời kho',
   NDR_CREATED: 'Đơn hàng đang được xử lý lại',
+  PENDING_RESOLUTION: 'Đơn hàng đang gặp sự cố',
   RETURN_STARTED: 'Đang hoàn hàng',
   RETURN_COMPLETED: 'Đã hoàn hàng',
   CANCELLED: 'Đơn hàng đã hủy',
@@ -122,6 +124,10 @@ export function resolveTrackingStatusFromEvent(
 
   if (event.event_type === 'scan.outbound' && isSendGoodsEvent(event)) {
     return 'SEND_GOODS';
+  }
+
+  if (event.event_type === 'ndr.created' && isExceptionNdrEvent(event)) {
+    return 'EXCEPTION';
   }
 
   if (event.event_type === 'scan.outbound' && isVehicleOutboundEvent(event)) {
@@ -207,6 +213,15 @@ export function toTimelineTextVi(
     );
   }
 
+  if (event.event_type === 'ndr.created' && isExceptionNdrEvent(event)) {
+    const issueName =
+      readNestedString(event.data, ['ndrCase', 'issueType']) ??
+      readNestedString(event.data, ['ndrCase', 'reasonCode']) ??
+      'Sự cố';
+
+    return `Đơn hàng đang gặp sự cố: ${issueName}. Đang chờ xử lý`;
+  }
+
   return EVENT_LABELS_VI[event.event_type];
 }
 
@@ -249,6 +264,12 @@ function isSendGoodsEvent(event: TrackingEventEnvelope): boolean {
 function isVehicleOutboundEvent(event: TrackingEventEnvelope): boolean {
   const note = readNestedString(event.data, ['scanEvent', 'note']);
   return note?.startsWith('VEHICLE_OUTBOUND') ?? false;
+}
+
+function isExceptionNdrEvent(event: TrackingEventEnvelope): boolean {
+  const status = readNestedString(event.data, ['ndrCase', 'status']);
+  const issueType = readNestedString(event.data, ['ndrCase', 'issueType']);
+  return status === 'PENDING_RESOLUTION' || Boolean(issueType);
 }
 
 function isInventoryCheckEvent(event: TrackingEventEnvelope): boolean {

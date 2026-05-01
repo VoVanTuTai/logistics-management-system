@@ -23,6 +23,7 @@ enum ShipmentCurrentStatus {
   DELIVERED
   DELIVERY_FAILED
   NDR_CREATED
+  EXCEPTION
   RETURN_STARTED
   RETURN_COMPLETED
   CANCELLED
@@ -45,6 +46,7 @@ model Shipment {
   code               String                @unique
   /// shipment-service is the canonical owner of current_status.
   currentStatus      ShipmentCurrentStatus @default(CREATED)
+  isLocked           Boolean               @default(false)
   metadata           Json?
   cancellationReason String?
   createdAt          DateTime              @default(now())

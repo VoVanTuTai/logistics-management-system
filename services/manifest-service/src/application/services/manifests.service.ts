@@ -288,6 +288,10 @@ export class ManifestsService {
       throw new BadRequestException('Cannot seal manifest without shipments.');
     }
 
+    for (const item of manifest.items) {
+      await this.assertShipmentNotLocked(item.shipmentCode);
+    }
+
     const sealedManifest = await this.manifestRepository.seal(id, input);
 
     await this.manifestOutboxService.enqueueManifestSealed(sealedManifest);
@@ -421,6 +425,8 @@ export class ManifestsService {
     excludeManifestId?: string,
   ): Promise<void> {
     for (const shipmentCode of shipmentCodes) {
+      await this.assertShipmentNotLocked(shipmentCode);
+
       const activeManifest = await this.manifestRepository.findActiveByShipmentCode(
         shipmentCode,
         excludeManifestId,
@@ -431,6 +437,29 @@ export class ManifestsService {
           `Shipment "${shipmentCode}" already belongs to active manifest "${activeManifest.manifestCode}".`,
         );
       }
+    }
+  }
+
+  private async assertShipmentNotLocked(shipmentCode: string): Promise<void> {
+    const shipmentServiceUrl =
+      process.env.SHIPMENT_SERVICE_URL ?? 'http://localhost:3002';
+    const response = await fetch(
+      `${shipmentServiceUrl}/shipments/${encodeURIComponent(shipmentCode)}`,
+    );
+
+    if (!response.ok) {
+      return;
+    }
+
+    const shipment = (await response.json()) as {
+      isLocked?: boolean;
+      currentStatus?: string;
+    };
+
+    if (shipment.isLocked) {
+      throw new BadRequestException(
+        `Block: Shipment "${shipmentCode}" is locked by issue workflow (${shipment.currentStatus ?? 'UNKNOWN'}).`,
+      );
     }
   }
 }

@@ -84,6 +84,7 @@ function toShipmentStatusLabelVi(status: string | null | undefined): string {
     CREATED: 'Mới tạo',
     DELIVERED: 'Giao thành công',
     DELIVERY_FAILED: 'Giao thất bại',
+    EXCEPTION: 'Ngoại lệ',
     MANIFEST_RECEIVED: 'Đã nhận bao',
     MANIFEST_SEALED: 'Đã niêm phong bao',
     MANIFEST_UNSEALED: 'Đã gỡ bao',

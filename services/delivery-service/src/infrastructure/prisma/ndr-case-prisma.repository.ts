@@ -44,8 +44,16 @@ export class NdrCasePrismaRepository extends NdrCaseRepository {
     const data: Prisma.NdrCaseCreateInput = {
       shipmentCode: input.shipmentCode,
       reasonCode: input.reasonCode ?? null,
+      issueType: input.issueType ?? null,
+      issueCategory: input.issueCategory ?? null,
+      attachments:
+        input.attachments === undefined
+          ? undefined
+          : (input.attachments as Prisma.InputJsonValue),
+      reportedBy: input.reportedBy ?? null,
+      reportedHubCode: input.reportedHubCode ?? null,
       note: input.note ?? null,
-      status: 'CREATED',
+      status: input.status ?? 'CREATED',
       deliveryAttempt: input.deliveryAttemptId
         ? {
             connect: {
@@ -102,6 +110,11 @@ export class NdrCasePrismaRepository extends NdrCaseRepository {
       shipmentCode: record.shipmentCode,
       deliveryAttemptId: record.deliveryAttemptId,
       reasonCode: record.reasonCode,
+      issueType: record.issueType,
+      issueCategory: record.issueCategory,
+      attachments: record.attachments,
+      reportedBy: record.reportedBy,
+      reportedHubCode: record.reportedHubCode,
       note: record.note,
       status: record.status,
       rescheduleAt: record.rescheduleAt,

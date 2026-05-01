@@ -37,6 +37,10 @@ export class ShipmentStateMachine {
       return 'SEND_GOODS';
     }
 
+    if (eventType === 'ndr.created' && isExceptionNdrEventData(eventData)) {
+      return 'EXCEPTION';
+    }
+
     if (eventType === 'scan.outbound' && isVehicleOutboundEventData(eventData)) {
       return 'IN_TRANSIT';
     }
@@ -70,6 +74,17 @@ function isSendGoodsEventData(eventData: Record<string, unknown>): boolean {
 
   const note = (scanEvent as Record<string, unknown>).note;
   return typeof note === 'string' && note.trim().startsWith('SEND_GOODS');
+}
+
+function isExceptionNdrEventData(eventData: Record<string, unknown>): boolean {
+  const ndrCase = eventData.ndrCase;
+  if (!ndrCase || typeof ndrCase !== 'object') {
+    return false;
+  }
+
+  const status = (ndrCase as Record<string, unknown>).status;
+  const issueType = (ndrCase as Record<string, unknown>).issueType;
+  return status === 'PENDING_RESOLUTION' || typeof issueType === 'string';
 }
 
 function isVehicleOutboundEventData(eventData: Record<string, unknown>): boolean {

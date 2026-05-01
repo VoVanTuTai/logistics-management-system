@@ -12,6 +12,7 @@ export interface Shipment {
   id: string;
   code: string;
   currentStatus: ShipmentCurrentStatus;
+  isLocked: boolean;
   metadata: JsonValue | null;
   cancellationReason: string | null;
   createdAt: Date;

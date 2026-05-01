@@ -16,6 +16,7 @@ import { PickupScanScreen } from '../screens/scan/PickupScanScreen';
 import { HubScanScreen } from '../screens/scan/HubScanScreen';
 import { BagSealScreen } from '../screens/scan/BagSealScreen';
 import { InventoryCheckScreen } from '../screens/scan/InventoryCheckScreen';
+import { VehicleInboundScreen } from '../screens/scan/VehicleInboundScreen';
 import { VehicleOutboundScreen } from '../screens/scan/VehicleOutboundScreen';
 import { DeliverySuccessScreen } from '../screens/delivery/DeliverySuccessScreen';
 import { DeliveryFailScreen } from '../screens/delivery/DeliveryFailScreen';
@@ -194,6 +195,11 @@ export function RootNavigator(): React.JSX.Element {
             name="VehicleOutbound"
             component={VehicleOutboundScreen}
             options={{ title: 'Xe đi' }}
+          />
+          <RootStack.Screen
+            name="VehicleInbound"
+            component={VehicleInboundScreen}
+            options={{ title: 'Xe đến' }}
           />
           <RootStack.Screen
             name="DeliverySuccess"

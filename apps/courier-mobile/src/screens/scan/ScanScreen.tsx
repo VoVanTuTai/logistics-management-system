@@ -187,6 +187,11 @@ export function ScanScreen(): React.JSX.Element {
       return;
     }
 
+    if (action.id === 'xe-den') {
+      navigation.navigate('VehicleInbound');
+      return;
+    }
+
     if (action.id === 'kiem-ton-kho') {
       navigation.navigate('InventoryCheck');
       return;

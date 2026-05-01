@@ -4,7 +4,7 @@ import type { VehicleLabelInfo } from './vehicle-label';
 
 const VEHICLE_LOAD_STORAGE_KEY = 'courier-mobile.vehicle-loads';
 
-export type VehicleLoadStatus = 'OPEN' | 'IN_TRANSIT';
+export type VehicleLoadStatus = 'OPEN' | 'IN_TRANSIT' | 'ARRIVED_AT_HUB';
 
 export interface VehicleLoadedBag {
   bagCode: string;
@@ -28,6 +28,8 @@ export interface VehicleLoadRecord {
   createdAt: string;
   updatedAt: string;
   departedAt: string | null;
+  arrivedAt: string | null;
+  arrivedHubCode: string | null;
 }
 
 export async function readVehicleLoadRecords(): Promise<VehicleLoadRecord[]> {
@@ -64,7 +66,10 @@ export async function findVehicleLoadRecord(
 }
 
 export async function upsertVehicleLoadRecord(
-  input: Omit<VehicleLoadRecord, 'status' | 'createdAt' | 'updatedAt' | 'departedAt'>,
+  input: Omit<
+    VehicleLoadRecord,
+    'status' | 'createdAt' | 'updatedAt' | 'departedAt' | 'arrivedAt' | 'arrivedHubCode'
+  >,
 ): Promise<VehicleLoadRecord> {
   const records = await readVehicleLoadRecords();
   const normalizedVehicleCode = normalizeCode(input.vehicle.vehicleCode);
@@ -87,6 +92,8 @@ export async function upsertVehicleLoadRecord(
     createdAt: existingRecord?.createdAt ?? now,
     updatedAt: now,
     departedAt: existingRecord?.departedAt ?? null,
+    arrivedAt: existingRecord?.arrivedAt ?? null,
+    arrivedHubCode: existingRecord?.arrivedHubCode ?? null,
   };
 
   await writeVehicleLoadRecords([
@@ -117,6 +124,41 @@ export async function markVehicleLoadInTransit(
     status: 'IN_TRANSIT',
     updatedAt: new Date().toISOString(),
     departedAt: new Date().toISOString(),
+    arrivedAt: null,
+    arrivedHubCode: null,
+  };
+
+  await writeVehicleLoadRecords([
+    nextRecord,
+    ...records.filter(
+      (record) => normalizeCode(record.vehicle.vehicleCode) !== normalizedVehicleCode,
+    ),
+  ]);
+
+  return nextRecord;
+}
+
+export async function markVehicleLoadArrivedAtHub(
+  vehicleCode: string,
+  hubCode: string | null,
+): Promise<VehicleLoadRecord | null> {
+  const records = await readVehicleLoadRecords();
+  const normalizedVehicleCode = normalizeCode(vehicleCode);
+  const existingRecord = records.find(
+    (record) => normalizeCode(record.vehicle.vehicleCode) === normalizedVehicleCode,
+  );
+
+  if (!existingRecord) {
+    return null;
+  }
+
+  const now = new Date().toISOString();
+  const nextRecord: VehicleLoadRecord = {
+    ...existingRecord,
+    status: 'ARRIVED_AT_HUB',
+    updatedAt: now,
+    arrivedAt: now,
+    arrivedHubCode: hubCode?.trim().toUpperCase() || null,
   };
 
   await writeVehicleLoadRecords([
@@ -219,7 +261,12 @@ function normalizeRecord(value: unknown): VehicleLoadRecord | null {
       destinationHubCode,
       licensePlate,
     },
-    status: value.status === 'IN_TRANSIT' ? 'IN_TRANSIT' : 'OPEN',
+    status:
+      value.status === 'ARRIVED_AT_HUB'
+        ? 'ARRIVED_AT_HUB'
+        : value.status === 'IN_TRANSIT'
+          ? 'IN_TRANSIT'
+          : 'OPEN',
     bagItems: Array.isArray(value.bagItems)
       ? value.bagItems
           .map((item) => normalizeBagItem(item))
@@ -236,6 +283,8 @@ function normalizeRecord(value: unknown): VehicleLoadRecord | null {
     createdAt,
     updatedAt,
     departedAt: stringValue(value.departedAt),
+    arrivedAt: stringValue(value.arrivedAt),
+    arrivedHubCode: stringValue(value.arrivedHubCode),
   };
 }
 

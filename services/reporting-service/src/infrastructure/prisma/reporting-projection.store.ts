@@ -135,6 +135,10 @@ export class ReportingProjectionStore {
       return 'SEND_GOODS';
     }
 
+    if (event.event_type === 'ndr.created' && this.isExceptionNdrEvent(event)) {
+      return 'EXCEPTION';
+    }
+
     if (event.event_type === 'scan.outbound' && this.isVehicleOutboundEvent(event)) {
       return 'IN_TRANSIT';
     }
@@ -578,6 +582,12 @@ export class ReportingProjectionStore {
   private isVehicleOutboundEvent(event: ReportingEventEnvelope): boolean {
     const note = this.findString(event.data, [['scanEvent', 'note']]);
     return note?.startsWith('VEHICLE_OUTBOUND') ?? false;
+  }
+
+  private isExceptionNdrEvent(event: ReportingEventEnvelope): boolean {
+    const status = this.findString(event.data, [['ndrCase', 'status']]);
+    const issueType = this.findString(event.data, [['ndrCase', 'issueType']]);
+    return status === 'PENDING_RESOLUTION' || Boolean(issueType);
   }
 
   private isInventoryCheckEvent(event: ReportingEventEnvelope): boolean {

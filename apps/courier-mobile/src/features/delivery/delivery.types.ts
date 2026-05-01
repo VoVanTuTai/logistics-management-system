@@ -46,6 +46,41 @@ export interface DeliveryFailPayload {
   startReturn?: boolean;
 }
 
+export interface IssueAttachmentPayload {
+  uri?: string | null;
+  url?: string | null;
+  type?: string | null;
+  name?: string | null;
+}
+
+export interface ShipmentExceptionPayload {
+  shipmentCode: string;
+  currentHubCode: string;
+  issueType: string;
+  issueCategory?: 'PHYSICAL' | 'INFORMATION' | 'SYSTEM' | string | null;
+  attachments?: IssueAttachmentPayload[];
+  note?: string | null;
+  actor?: string | null;
+  occurredAt?: string | null;
+}
+
+export interface NdrCaseDto {
+  id: string;
+  shipmentCode: string;
+  deliveryAttemptId: string | null;
+  reasonCode: string | null;
+  issueType?: string | null;
+  issueCategory?: string | null;
+  attachments?: unknown;
+  reportedBy?: string | null;
+  reportedHubCode?: string | null;
+  note: string | null;
+  status: string;
+  rescheduleAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface DeliverySuccessResultDto {
   kind: 'success';
   deliveryAttempt: DeliveryAttemptDto;

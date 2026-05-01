@@ -50,5 +50,6 @@ export const courierEndpoints = {
     success: `${COURIER_PREFIX}/delivery/deliveries/success`,
     fail: `${COURIER_PREFIX}/delivery/deliveries/fail`,
     ndr: `${COURIER_PREFIX}/delivery/ndr`,
+    exception: `${COURIER_PREFIX}/delivery/ndr/exception`,
   },
 } as const;

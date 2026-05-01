@@ -65,8 +65,8 @@ export class DeliveryEventsProducer {
       'ndr_case',
       ndrCase.id,
       ndrCase.shipmentCode,
-      null,
-      null,
+      ndrCase.reportedBy,
+      ndrCase.reportedHubCode,
       { ndrCase },
       `ndr.created:${ndrCase.id}`,
     );
