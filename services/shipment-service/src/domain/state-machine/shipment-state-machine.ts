@@ -13,6 +13,7 @@ const EVENT_TO_STATUS: Record<ShipmentConsumedEventType, ShipmentCurrentStatus> 
     'task.assigned': 'TASK_ASSIGNED',
     'manifest.sealed': 'MANIFEST_SEALED',
     'manifest.received': 'MANIFEST_RECEIVED',
+    'manifest.unsealed': 'MANIFEST_UNSEALED',
     'scan.inbound': 'SCAN_INBOUND',
     'scan.outbound': 'SCAN_OUTBOUND',
     'delivery.attempted': 'TASK_ASSIGNED',

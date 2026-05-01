@@ -31,7 +31,12 @@ interface DeliveryOrderRow {
   task: TaskListItemDto | null;
 }
 
-const WAITING_DELIVERY_STATUSES = new Set(['MANIFEST_RECEIVED', 'SCAN_INBOUND', 'TASK_ASSIGNED']);
+const WAITING_DELIVERY_STATUSES = new Set([
+  'MANIFEST_RECEIVED',
+  'MANIFEST_UNSEALED',
+  'SCAN_INBOUND',
+  'TASK_ASSIGNED',
+]);
 
 function SendIcon(): React.JSX.Element {
   return (

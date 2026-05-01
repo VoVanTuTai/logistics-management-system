@@ -39,6 +39,7 @@ const STATUS_BY_EVENT: Record<string, string> = {
   'scan.pickup_confirmed': 'PICKED_UP',
   'manifest.sealed': 'IN_TRANSIT',
   'manifest.received': 'INBOUND_AT_HUB',
+  'manifest.unsealed': 'MANIFEST_UNSEALED',
   'scan.inbound': 'INBOUND_AT_HUB',
   'scan.outbound': 'OUTBOUND_FROM_HUB',
   'delivery.attempted': 'DELIVERING',
