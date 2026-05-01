@@ -3,6 +3,7 @@ import { courierEndpoints } from '../../services/api/endpoints';
 import type {
   AddBagShipmentsPayload,
   BagManifestDto,
+  RemoveBagShipmentsPayload,
 } from './manifest.types';
 
 export const manifestApi = {
@@ -29,7 +30,7 @@ export const manifestApi = {
   removeShipments: (
     accessToken: string,
     manifestId: string,
-    payload: AddBagShipmentsPayload,
+    payload: RemoveBagShipmentsPayload,
   ): Promise<BagManifestDto> =>
     courierApiClient.request<BagManifestDto>(
       courierEndpoints.manifest.removeShipments(manifestId),
@@ -39,8 +40,10 @@ export const manifestApi = {
         body: {
           shipmentCodes: payload.shipmentCodes,
           note: payload.note ?? null,
+          unsealedBy: payload.unsealedBy ?? null,
+          unsealedByName: payload.unsealedByName ?? null,
+          processingHubCode: payload.processingHubCode ?? null,
         },
       },
     ),
 };
-

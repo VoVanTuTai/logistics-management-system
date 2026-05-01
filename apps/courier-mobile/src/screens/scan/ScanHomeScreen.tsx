@@ -35,9 +35,9 @@ export function ScanHomeScreen(_: Props): React.JSX.Element {
       >
         <View style={styles.rowBetween}>
           <View>
-            <Text style={styles.primaryActionTitle}>Quet Pickup</Text>
+            <Text style={styles.primaryActionTitle}>Nhận hàng</Text>
             <Text style={styles.primaryActionHint}>
-              Quet QR/barcode va gui scan pickup
+              Quét QR/barcode và gửi scan nhận hàng
             </Text>
           </View>
           <Ionicons name="scan" size={30} color="#FFFFFF" />
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: '800',
+    fontWeight: '700',
     color: theme.colors.textPrimary,
   },
   subtitle: {
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
   primaryActionTitle: {
     color: '#FFFFFF',
     fontSize: 19,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   primaryActionHint: {
     color: '#DDE8FF',
@@ -147,4 +147,3 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
 });
-

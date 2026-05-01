@@ -71,7 +71,7 @@ export function ManifestDetailPage(): React.JSX.Element {
             : 'không có';
 
   if (detailQuery.isLoading) {
-    return <p>Đang tải chi tiet bao tải...</p>;
+    return <p>Đang tải chi tiết bao tải...</p>;
   }
 
   if (detailQuery.isError) {
@@ -86,21 +86,21 @@ export function ManifestDetailPage(): React.JSX.Element {
     <section>
       <h2>Chi tiết bao tải</h2>
       <p>
-        <Link to={routePaths.manifests}>Quay lại danh sach bao tải</Link>
+        <Link to={routePaths.manifests}>Quay lại danh sách bao tải</Link>
       </p>
 
       <p>Mã bao tải: {detailQuery.data.manifestCode}</p>
       <p>Trạng thái: {formatManifestStatusLabel(detailQuery.data.status)}</p>
-      <p>Hub di: {detailQuery.data.originHubCode ?? 'Không có'}</p>
-      <p>Hub den: {detailQuery.data.destinationHubCode ?? 'Không có'}</p>
-      <p>Niem phong luc: {formatDateTime(detailQuery.data.sealedAt)}</p>
+      <p>Hub đi: {detailQuery.data.originHubCode ?? 'Không có'}</p>
+      <p>Hub đến: {detailQuery.data.destinationHubCode ?? 'Không có'}</p>
+      <p>Niêm phong lúc: {formatDateTime(detailQuery.data.sealedAt)}</p>
       <p>
         Cập nhật lúc:{' '}
         {detailQuery.data.updatedAt ? formatDateTime(detailQuery.data.updatedAt) : 'Không có'}
       </p>
-      <p>Ghi chu: {detailQuery.data.note ?? 'Không có'}</p>
+      <p>Ghi chú: {detailQuery.data.note ?? 'Không có'}</p>
       <p>
-        Ma vận đơn:{' '}
+        Mã vận đơn:{' '}
         {detailQuery.data.shipmentCodes?.length
           ? detailQuery.data.shipmentCodes.join(', ')
           : 'Không có'}
@@ -133,7 +133,7 @@ export function ManifestDetailPage(): React.JSX.Element {
 
       {lastActionResponse ? (
         <div style={styles.responseBox}>
-          <strong>Phan hoi hệ thống gan nhat ({lastActionLabel})</strong>
+          <strong>Phản hồi hệ thống gần nhất ({lastActionLabel})</strong>
           <pre style={styles.pre}>{JSON.stringify(lastActionResponse, null, 2)}</pre>
         </div>
       ) : null}

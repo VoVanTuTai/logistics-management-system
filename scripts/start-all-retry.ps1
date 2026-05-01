@@ -159,7 +159,7 @@ function Start-CourierMobileProcess([string]$mode) {
 Push-Location $rootDir
 try {
   if (-not $SkipInfra) {
-    Write-Host '[infra] running dev-up (docker + migrate + seed)'
+    Write-Host '[infra] running dev-up (docker + migrate)'
     $LASTEXITCODE = 0
     & (Join-Path $PSScriptRoot 'dev-up.ps1')
     if (-not $?) {
@@ -233,11 +233,8 @@ try {
   Write-Host 'courier-mobile:  http://localhost:8081'
 
   Write-Host ''
-  Write-Host '=== SAMPLE ACCOUNTS ==='
-  Write-Host 'admin-web:       10000001 / password'
-  Write-Host 'ops-web:         20000001 / password'
-  Write-Host 'merchant-web:    41100001 / merchant123456'
-  Write-Host 'courier-mobile:  30000001 / password'
+  Write-Host '=== DATA MODE ==='
+  Write-Host 'Seed data is disabled. Use real accounts and operational data from the database.'
 }
 finally {
   Pop-Location

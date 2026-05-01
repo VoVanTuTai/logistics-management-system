@@ -20,15 +20,15 @@ const shortcutItems: ProfileShortcutItemData[] = [
     id: 'shopping',
     label: 'Mua sắm',
     iconName: 'bag-handle-outline',
-    iconColor: '#24539E',
-    iconBgColor: '#E6F0FF',
+    iconColor: '#1D4ED8',
+    iconBgColor: '#EFF6FF',
   },
   {
     id: 'stats',
     label: 'Thống kê',
     iconName: 'stats-chart-outline',
-    iconColor: '#0A6E89',
-    iconBgColor: '#E1F8FA',
+    iconColor: '#1D4ED8',
+    iconBgColor: '#EFF6FF',
   },
   {
     id: 'qr-order',
@@ -48,15 +48,15 @@ const shortcutItems: ProfileShortcutItemData[] = [
     id: 'weight-change',
     label: 'Đăng ký đổi trọng lượng',
     iconName: 'barbell-outline',
-    iconColor: '#24539E',
-    iconBgColor: '#E6F0FF',
+    iconColor: '#1D4ED8',
+    iconBgColor: '#EFF6FF',
   },
   {
     id: 'learning-center',
     label: 'Trung tâm học tập',
     iconName: 'school-outline',
-    iconColor: '#0A6E89',
-    iconBgColor: '#E1F8FA',
+    iconColor: '#1D4ED8',
+    iconBgColor: '#EFF6FF',
   },
   {
     id: 'uniform-check',
@@ -201,3 +201,4 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 });
+

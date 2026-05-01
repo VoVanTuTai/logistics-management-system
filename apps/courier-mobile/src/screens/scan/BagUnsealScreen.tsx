@@ -8,16 +8,19 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import type { BarcodeScanningResult } from 'expo-camera';
+import { Ionicons } from '@expo/vector-icons';
+import {
+  CameraView,
+  type BarcodeScanningResult,
+  useCameraPermissions,
+} from 'expo-camera';
 
-import { CameraScannerModal } from '../../components/scan/CameraScannerModal';
 import { manifestApi } from '../../features/manifest/manifest.api';
 import type { BagManifestDto } from '../../features/manifest/manifest.types';
 import { parsePickupScannedCode } from '../../features/scan/pickup.scanner.adapter';
 import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
-
-type ScannerMode = 'BAG' | 'SHIPMENT';
+import { resolveCourierDisplayName } from '../../utils/courier';
 
 interface RemovedShipmentItem {
   code: string;
@@ -50,53 +53,66 @@ function formatScannedAt(isoTime: string): string {
 export function BagUnsealScreen(): React.JSX.Element {
   const session = useAppStore((state) => state.session);
   const setGlobalError = useAppStore((state) => state.setGlobalError);
+  const [permission, requestPermission] = useCameraPermissions();
 
   const [bagCode, setBagCode] = React.useState('');
   const [shipmentCodeInput, setShipmentCodeInput] = React.useState('');
   const [removedShipments, setRemovedShipments] = React.useState<RemovedShipmentItem[]>([]);
-  const [scannerMode, setScannerMode] = React.useState<ScannerMode | null>(null);
-  const [scannerVisible, setScannerVisible] = React.useState(false);
+  const [selectedCodes, setSelectedCodes] = React.useState<Set<string>>(
+    () => new Set(),
+  );
   const [screenMessage, setScreenMessage] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [scanLocked, setScanLocked] = React.useState(false);
+  const scanCooldownRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const accessToken = session?.tokens.accessToken ?? null;
+  const employeeCode = session?.user.username ?? session?.user.id ?? null;
+  const employeeName = resolveCourierDisplayName({
+    displayName: session?.user.displayName,
+    username: session?.user.username,
+    courierId: session?.user.id,
+  });
+  const processingHubCode = session?.user.hubCodes?.[0] ?? null;
   const normalizedBagCode = normalizeCode(bagCode);
   const hasValidBagCode = isValidBagCode(normalizedBagCode);
+  const cameraIsReady = permission?.granted === true;
+  const selectedCount = selectedCodes.size;
   const bagCodeError =
     normalizedBagCode.length > 0 && !hasValidBagCode
-      ? 'Ma bao phai dung dinh dang MB + 10 chu so (vi du: MB1234567890).'
+      ? 'Tem bao phải đúng định dạng MB + 10 chữ số.'
       : null;
 
-  const closeScanner = () => {
-    setScannerVisible(false);
-    setScannerMode(null);
-  };
+  React.useEffect(() => {
+    return () => {
+      if (scanCooldownRef.current) {
+        clearTimeout(scanCooldownRef.current);
+      }
+    };
+  }, []);
 
-  const openScanner = (mode: ScannerMode) => {
-    if (mode === 'SHIPMENT' && !hasValidBagCode) {
-      setScreenMessage(
-        'Vui long quet ma bao hop le (MB + 10 chu so) truoc khi quet ma van don.',
-      );
-      return;
+  const lockScanner = React.useCallback(() => {
+    setScanLocked(true);
+
+    if (scanCooldownRef.current) {
+      clearTimeout(scanCooldownRef.current);
     }
 
-    setScreenMessage(null);
-    setScannerMode(mode);
-    setScannerVisible(true);
-  };
+    scanCooldownRef.current = setTimeout(() => {
+      setScanLocked(false);
+    }, 850);
+  }, []);
 
   const appendRemovedShipmentCode = React.useCallback(
     (rawCode: string) => {
       if (!hasValidBagCode) {
-        setScreenMessage(
-          'Vui long quet ma bao hop le (MB + 10 chu so) truoc khi them ma van don.',
-        );
+        setScreenMessage('Vui lòng quét hoặc nhập tem bao hợp lệ trước khi quét mã vận đơn.');
         return;
       }
 
       const normalizedCode = normalizeCode(rawCode);
       if (!normalizedCode) {
-        setScreenMessage('Ma van don khong hop le.');
+        setScreenMessage('Mã vận đơn không hợp lệ.');
         return;
       }
 
@@ -106,85 +122,79 @@ export function BagUnsealScreen(): React.JSX.Element {
         );
 
         if (duplicated) {
-          setScreenMessage(`Ma van don ${normalizedCode} da co trong danh sach go bao.`);
+          setScreenMessage(`Mã vận đơn ${normalizedCode} đã có trong danh sách gỡ bao.`);
           return currentItems;
         }
 
-        setScreenMessage(`Da them ma van don ${normalizedCode} vao danh sach go bao.`);
+        setShipmentCodeInput('');
+        setScreenMessage(`Đã thêm mã vận đơn ${normalizedCode} vào danh sách gỡ bao.`);
 
         return [
-          ...currentItems,
           {
             code: normalizedCode,
             scannedAt: new Date().toISOString(),
           },
+          ...currentItems,
         ];
       });
     },
     [hasValidBagCode],
   );
 
-  const onScanned = (result: BarcodeScanningResult) => {
+  const handleBarCodeScanned = (result: BarcodeScanningResult) => {
+    if (scanLocked || isSubmitting) {
+      return;
+    }
+
+    lockScanner();
+
     const parsed = parsePickupScannedCode({
       data: result.data,
       type: result.type,
     });
 
     if (!parsed) {
-      setScreenMessage('Khong doc duoc ma hop le. Vui long thu lai.');
+      setScreenMessage('Không đọc được mã hợp lệ. Vui lòng thử lại.');
       return;
     }
 
-    if (scannerMode === 'BAG') {
-      const nextBagCode = normalizeCode(parsed.value);
-      if (!isValidBagCode(nextBagCode)) {
-        setScreenMessage('Ma bao khong hop le. Vui long quet dung MB + 10 chu so.');
-        return;
-      }
-
-      setBagCode(nextBagCode);
-      setScreenMessage(`Da nhan ma bao: ${nextBagCode}`);
-      closeScanner();
+    const normalizedValue = normalizeCode(parsed.value);
+    if (isValidBagCode(normalizedValue)) {
+      setBagCode(normalizedValue);
+      setScreenMessage(`Đã nhận tem bao ${normalizedValue}.`);
       return;
     }
 
-    if (scannerMode === 'SHIPMENT') {
-      if (!hasValidBagCode) {
-        setScreenMessage(
-          'Vui long quet ma bao hop le (MB + 10 chu so) truoc khi quet ma van don.',
-        );
-        return;
-      }
-
-      appendRemovedShipmentCode(parsed.value);
-      closeScanner();
-    }
-  };
-
-  const removeShipmentCode = (shipmentCode: string) => {
-    const normalizedTarget = normalizeCode(shipmentCode);
-    setRemovedShipments((currentItems) =>
-      currentItems.filter((item) => normalizeCode(item.code) !== normalizedTarget),
-    );
+    appendRemovedShipmentCode(normalizedValue);
   };
 
   const addShipmentManually = () => {
-    if (!hasValidBagCode) {
-      setScreenMessage(
-        'Vui long quet ma bao hop le (MB + 10 chu so) truoc khi them ma van don.',
-      );
+    appendRemovedShipmentCode(shipmentCodeInput);
+  };
+
+  const toggleSelected = (shipmentCode: string) => {
+    const normalizedCode = normalizeCode(shipmentCode);
+    setSelectedCodes((current) => {
+      const next = new Set(current);
+      if (next.has(normalizedCode)) {
+        next.delete(normalizedCode);
+      } else {
+        next.add(normalizedCode);
+      }
+      return next;
+    });
+  };
+
+  const deleteSelectedShipments = () => {
+    if (selectedCodes.size === 0) {
       return;
     }
 
-    appendRemovedShipmentCode(shipmentCodeInput);
-    setShipmentCodeInput('');
-  };
-
-  const clearAll = () => {
-    setBagCode('');
-    setRemovedShipments([]);
-    setShipmentCodeInput('');
-    setScreenMessage('Da lam moi man hinh go bao.');
+    setRemovedShipments((currentItems) =>
+      currentItems.filter((item) => !selectedCodes.has(normalizeCode(item.code))),
+    );
+    setScreenMessage(`Đã xoá ${selectedCodes.size} mã vận đơn khỏi danh sách.`);
+    setSelectedCodes(new Set());
   };
 
   const resolveBagManifest = (
@@ -202,17 +212,17 @@ export function BagUnsealScreen(): React.JSX.Element {
 
   const submitRemoveShipments = async () => {
     if (!accessToken) {
-      setGlobalError('Phien dang nhap da het han. Vui long dang nhap lai.');
+      setGlobalError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
       return;
     }
 
     if (!hasValidBagCode) {
-      setScreenMessage('Vui long quet ma bao hop le (MB + 10 chu so) truoc khi tai len.');
+      setScreenMessage('Vui lòng quét hoặc nhập tem bao hợp lệ trước khi tải lên.');
       return;
     }
 
     if (removedShipments.length === 0) {
-      setScreenMessage('Vui long quet it nhat mot ma van don can go khoi bao.');
+      setScreenMessage('Vui lòng quét ít nhất một mã vận đơn cần gỡ khỏi bao.');
       return;
     }
 
@@ -224,23 +234,34 @@ export function BagUnsealScreen(): React.JSX.Element {
       const bagManifest = resolveBagManifest(manifests, normalizedBagCode);
 
       if (!bagManifest) {
-        setScreenMessage(`Khong tim thay ma bao ${normalizedBagCode} tren he thong.`);
+        setScreenMessage(`Không tìm thấy tem bao ${normalizedBagCode} trên hệ thống.`);
         return;
       }
 
       const shipmentCodes = removedShipments.map((item) => item.code);
+      const accountabilityNote = [
+        'UNBAGGED_FROM_COURIER_APP',
+        `employeeCode=${employeeCode ?? 'UNKNOWN'}`,
+        `employeeName=${employeeName}`,
+        `hubCode=${processingHubCode ?? 'UNKNOWN'}`,
+      ].join('; ');
+
       await manifestApi.removeShipments(accessToken, bagManifest.id, {
         shipmentCodes,
-        note: 'UNBAGGED_FROM_COURIER_APP',
+        note: accountabilityNote,
+        unsealedBy: employeeCode,
+        unsealedByName: employeeName,
+        processingHubCode,
       });
 
       setScreenMessage(
-        `Da go ${shipmentCodes.length} ma van don khoi bao ${bagManifest.manifestCode}.`,
+        `Đã gỡ ${shipmentCodes.length} mã vận đơn khỏi bao ${bagManifest.manifestCode}.`,
       );
       setRemovedShipments([]);
+      setSelectedCodes(new Set());
       setShipmentCodeInput('');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Go bao that bai.';
+      const message = error instanceof Error ? error.message : 'Gỡ bao thất bại.';
       setScreenMessage(message);
       setGlobalError(message);
     } finally {
@@ -250,123 +271,167 @@ export function BagUnsealScreen(): React.JSX.Element {
 
   return (
     <View style={styles.container}>
-      <CameraScannerModal
-        visible={scannerVisible}
-        title={scannerMode === 'BAG' ? 'Quet ma bao' : 'Quet ma van don can go'}
-        helperText={
-          scannerMode === 'BAG'
-            ? 'Quet lan dau ma bao theo dinh dang MB + 10 chu so.'
-            : 'Chi quet ma van don sau khi da co ma bao hop le.'
-        }
-        onClose={closeScanner}
-        onScanned={onScanned}
-      />
+      <View style={styles.cameraSection}>
+        <View style={styles.cameraFrame}>
+          {!permission ? (
+            <View style={styles.cameraPlaceholder}>
+              <ActivityIndicator size="small" color="#E2E8F0" />
+              <Text style={styles.cameraPlaceholderText}>Đang kiểm tra quyền camera...</Text>
+            </View>
+          ) : null}
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.screenTitle}>Go bao</Text>
-        <Text style={styles.screenHint}>
-          Quet lan dau la ma bao (MB + 10 chu so), sau do quet tung ma van don de lay ra ngoai.
-        </Text>
+          {permission && !cameraIsReady ? (
+            <View style={styles.cameraPlaceholder}>
+              <Text style={styles.cameraPlaceholderText}>
+                Cần cấp quyền camera để quét tem bao và mã vận đơn.
+              </Text>
+              {permission.canAskAgain ? (
+                <Pressable onPress={requestPermission} style={styles.permissionButton}>
+                  <Text style={styles.permissionButtonText}>Cấp quyền camera</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          ) : null}
 
-        <View style={styles.formCard}>
-          <View style={styles.fieldRow}>
-            <Text style={styles.fieldLabel}>Ma bao</Text>
-            <TextInput
-              value={normalizedBagCode}
-              onChangeText={(value) => setBagCode(normalizeCode(value))}
-              placeholder="MB1234567890"
-              placeholderTextColor="#9CA3AF"
-              style={styles.fieldInput}
-              autoCapitalize="characters"
+          {permission && cameraIsReady ? (
+            <CameraView
+              style={styles.camera}
+              facing="back"
+              barcodeScannerSettings={{
+                barcodeTypes: [
+                  'qr',
+                  'ean13',
+                  'ean8',
+                  'code39',
+                  'code93',
+                  'code128',
+                  'upc_a',
+                  'upc_e',
+                ],
+              }}
+              onBarcodeScanned={handleBarCodeScanned}
             />
-            <Text style={styles.hintText}>Dinh dang: MB + 10 chu so.</Text>
-            {bagCodeError ? <Text style={styles.errorHintText}>{bagCodeError}</Text> : null}
-          </View>
+          ) : null}
 
-          <Pressable onPress={() => openScanner('BAG')} style={styles.secondaryButton}>
-            <Text style={styles.secondaryButtonText}>Quet ma bao (lan dau)</Text>
+          {isSubmitting ? (
+            <View style={styles.cameraOverlay}>
+              <ActivityIndicator size="small" color="#FFFFFF" />
+              <Text style={styles.cameraOverlayText}>Đang xác nhận gỡ bao...</Text>
+            </View>
+          ) : null}
+        </View>
+        <Text style={styles.cameraHint}>
+          Quét tem bao trước. Sau đó quét mã vận đơn, mã hợp lệ sẽ chuyển xuống danh sách.
+        </Text>
+      </View>
+
+      <View style={styles.workSection}>
+        <View style={styles.headerRow}>
+          <Text style={styles.screenTitle}>Gỡ bao</Text>
+          <Pressable
+            disabled={selectedCount === 0}
+            onPress={deleteSelectedShipments}
+            style={[
+              styles.deleteButton,
+              selectedCount === 0 && styles.deleteButtonDisabled,
+            ]}
+          >
+            <Ionicons name="trash-outline" size={16} color="#B91C1C" />
+            <Text style={styles.deleteButtonText}>
+              Xóa{selectedCount > 0 ? ` ${selectedCount}` : ''}
+            </Text>
           </Pressable>
+        </View>
 
-          <View style={styles.separator} />
+        <View style={styles.fieldRow}>
+          <Text style={styles.fieldLabel}>Tem bao</Text>
+          <TextInput
+            value={normalizedBagCode}
+            onChangeText={(value) => setBagCode(normalizeCode(value))}
+            placeholder="MB1234567890"
+            placeholderTextColor="#9CA3AF"
+            style={styles.fieldInput}
+            autoCapitalize="characters"
+          />
+          {bagCodeError ? <Text style={styles.errorText}>{bagCodeError}</Text> : null}
+        </View>
 
-          <View style={styles.fieldRow}>
-            <Text style={styles.fieldLabel}>Ma van don lay ra</Text>
+        <View style={styles.fieldRow}>
+          <Text style={styles.fieldLabel}>Mã vận đơn cần gỡ</Text>
+          <View style={styles.shipmentInputRow}>
             <TextInput
               value={shipmentCodeInput}
               onChangeText={setShipmentCodeInput}
-              placeholder="Nhap ma van don"
+              placeholder="Nhập hoặc quét mã vận đơn"
               placeholderTextColor="#9CA3AF"
-              style={[styles.fieldInput, !hasValidBagCode && styles.fieldInputDisabled]}
+              style={[
+                styles.fieldInput,
+                styles.shipmentInput,
+                !hasValidBagCode && styles.fieldInputDisabled,
+              ]}
               autoCapitalize="characters"
               editable={hasValidBagCode}
             />
-            {!hasValidBagCode ? (
-              <Text style={styles.lockHintText}>
-                Can co ma bao hop le truoc khi quet/them ma van don.
-              </Text>
-            ) : null}
-          </View>
-
-          <View style={styles.inlineActionRow}>
             <Pressable
               disabled={!hasValidBagCode}
               onPress={addShipmentManually}
               style={[
-                styles.inlineActionButton,
-                styles.inlinePrimaryAction,
-                !hasValidBagCode && styles.inlineActionDisabled,
+                styles.addButton,
+                !hasValidBagCode && styles.addButtonDisabled,
               ]}
             >
-              <Text style={styles.inlineActionText}>Them ma</Text>
-            </Pressable>
-            <Pressable
-              disabled={!hasValidBagCode}
-              onPress={() => openScanner('SHIPMENT')}
-              style={[
-                styles.inlineActionButton,
-                styles.inlineSecondaryAction,
-                !hasValidBagCode && styles.inlineActionDisabled,
-              ]}
-            >
-              <Text style={styles.inlineActionSecondaryText}>Quet ma van don</Text>
+              <Text style={styles.addButtonText}>Thêm</Text>
             </Pressable>
           </View>
-
-          {screenMessage ? <Text style={styles.messageText}>{screenMessage}</Text> : null}
         </View>
 
-        <View style={styles.listCard}>
-          <View style={styles.listHeader}>
-            <Text style={styles.listTitle}>Danh sach ma van don go ({removedShipments.length})</Text>
-            <Pressable onPress={clearAll}>
-              <Text style={styles.clearText}>Lam moi</Text>
-            </Pressable>
-          </View>
+        {screenMessage ? <Text style={styles.messageText}>{screenMessage}</Text> : null}
 
+        <View style={styles.listHeaderRow}>
+          <Text style={styles.listTitle}>
+            Danh sách mã vận đơn cần gỡ ({removedShipments.length})
+          </Text>
+        </View>
+
+        <ScrollView
+          style={styles.listScroll}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+        >
           {removedShipments.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>Chua co ma van don nao.</Text>
+              <Text style={styles.emptyText}>Chưa có mã vận đơn nào.</Text>
             </View>
           ) : (
-            <View style={styles.chipWrap}>
-              {removedShipments.map((item) => (
-                <View key={`${item.code}-${item.scannedAt}`} style={styles.shipmentChip}>
-                  <View style={styles.shipmentChipBody}>
-                    <Text style={styles.shipmentCodeText}>{item.code}</Text>
-                    <Text style={styles.shipmentTimeText}>{formatScannedAt(item.scannedAt)}</Text>
+            removedShipments.map((item, index) => {
+              const selected = selectedCodes.has(normalizeCode(item.code));
+
+              return (
+                <Pressable
+                  key={`${item.code}-${item.scannedAt}`}
+                  onPress={() => toggleSelected(item.code)}
+                  style={[styles.listItem, selected && styles.listItemSelected]}
+                >
+                  <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
+                    {selected ? (
+                      <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+                    ) : null}
                   </View>
-                  <Pressable
-                    onPress={() => removeShipmentCode(item.code)}
-                    style={styles.removeButton}
-                  >
-                    <Text style={styles.removeButtonText}>x</Text>
-                  </Pressable>
-                </View>
-              ))}
-            </View>
+                  <View style={styles.listIndex}>
+                    <Text style={styles.listIndexText}>{index + 1}</Text>
+                  </View>
+                  <View style={styles.listBody}>
+                    <Text style={styles.shipmentCodeText}>{item.code}</Text>
+                    <Text style={styles.shipmentTimeText}>
+                      Quét lúc {formatScannedAt(item.scannedAt)}
+                    </Text>
+                  </View>
+                </Pressable>
+              );
+            })
           )}
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </View>
 
       <View style={styles.footer}>
         <Pressable
@@ -383,7 +448,7 @@ export function BagUnsealScreen(): React.JSX.Element {
           {isSubmitting ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
-            <Text style={styles.uploadButtonText}>Xac nhan go bao</Text>
+            <Text style={styles.uploadButtonText}>Xác nhận gỡ bao</Text>
           )}
         </Pressable>
       </View>
@@ -395,183 +460,234 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F3F4F6',
-  },
-  content: {
-    paddingHorizontal: 14,
-    paddingTop: 14,
-    paddingBottom: 108,
-    gap: 12,
-  },
-  screenTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  screenHint: {
-    fontSize: 14,
-    color: '#4B5563',
-    marginTop: -4,
-  },
-  formCard: {
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
     padding: 12,
     gap: 10,
   },
+  cameraSection: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    padding: 10,
+    ...theme.shadow.sm,
+  },
+  cameraFrame: {
+    flex: 1,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: '#0F172A',
+    position: 'relative',
+  },
+  camera: {
+    flex: 1,
+  },
+  cameraOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(2, 6, 23, 0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  cameraOverlayText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  cameraPlaceholder: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+  },
+  cameraPlaceholderText: {
+    color: '#E2E8F0',
+    textAlign: 'center',
+  },
+  permissionButton: {
+    marginTop: 6,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: '#FFFFFF',
+  },
+  permissionButtonText: {
+    color: '#0F172A',
+    fontWeight: '700',
+  },
+  cameraHint: {
+    marginTop: 8,
+    color: '#475569',
+    fontSize: 12,
+  },
+  workSection: {
+    flex: 2,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    padding: 12,
+    paddingBottom: 78,
+    ...theme.shadow.sm,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  screenTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  deleteButton: {
+    minHeight: 36,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    backgroundColor: '#FEF2F2',
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  deleteButtonDisabled: {
+    opacity: 0.42,
+  },
+  deleteButtonText: {
+    color: '#B91C1C',
+    fontWeight: '700',
+  },
   fieldRow: {
+    marginTop: 10,
     gap: 6,
   },
   fieldLabel: {
-    fontSize: 20,
+    fontSize: 14,
     fontWeight: '700',
-    color: '#111827',
+    color: '#334155',
   },
   fieldInput: {
-    minHeight: 46,
+    minHeight: 44,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#D1D5DB',
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 12,
-    fontSize: 18,
+    fontSize: 16,
     color: '#111827',
   },
   fieldInputDisabled: {
     backgroundColor: '#F3F4F6',
     color: '#9CA3AF',
   },
-  hintText: {
-    color: '#4B5563',
-    fontSize: 13,
-    marginTop: 2,
+  shipmentInputRow: {
+    flexDirection: 'row',
+    gap: 8,
   },
-  errorHintText: {
+  shipmentInput: {
+    flex: 1,
+  },
+  addButton: {
+    minWidth: 72,
+    minHeight: 44,
+    borderRadius: 10,
+    backgroundColor: theme.colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addButtonDisabled: {
+    opacity: 0.45,
+  },
+  addButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  errorText: {
     color: '#B91C1C',
     fontSize: 13,
     fontWeight: '600',
-    marginTop: 2,
-  },
-  separator: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-    marginVertical: 4,
-  },
-  secondaryButton: {
-    minHeight: 42,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    backgroundColor: '#F8FAFC',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  secondaryButtonText: {
-    color: '#1F2937',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  inlineActionRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  inlineActionButton: {
-    flex: 1,
-    minHeight: 44,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  inlineActionDisabled: {
-    opacity: 0.45,
-  },
-  inlinePrimaryAction: {
-    backgroundColor: theme.colors.primary,
-  },
-  inlineSecondaryAction: {
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    backgroundColor: '#F8FAFC',
-  },
-  inlineActionText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  inlineActionSecondaryText: {
-    color: '#1F2937',
-    fontSize: 16,
-    fontWeight: '700',
   },
   messageText: {
-    marginTop: 2,
+    marginTop: 10,
     color: '#1E3A8A',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
   },
-  lockHintText: {
-    color: '#92400E',
-    fontSize: 13,
-    marginTop: 2,
-  },
-  listCard: {
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
-    padding: 12,
-    gap: 10,
-  },
-  listHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  listHeaderRow: {
+    marginTop: 12,
   },
   listTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
-    color: '#111827',
+    color: '#0F172A',
   },
-  clearText: {
-    color: '#DC2626',
-    fontSize: 14,
-    fontWeight: '700',
+  listScroll: {
+    flex: 1,
+    marginTop: 8,
+  },
+  listContent: {
+    gap: 8,
+    paddingBottom: 10,
   },
   emptyState: {
     borderWidth: 1,
     borderStyle: 'dashed',
-    borderColor: '#D1D5DB',
+    borderColor: '#CBD5E1',
+    borderRadius: 10,
+    minHeight: 94,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  emptyText: {
+    color: '#64748B',
+  },
+  listItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 10,
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+  },
+  listItemSelected: {
+    borderColor: '#93C5FD',
+    backgroundColor: '#EFF6FF',
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#94A3B8',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  checkboxSelected: {
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primary,
+  },
+  listIndex: {
+    width: 24,
+    height: 24,
     borderRadius: 12,
-    minHeight: 84,
+    backgroundColor: '#E2E8F0',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  emptyText: {
-    color: '#6B7280',
-    fontSize: 15,
+  listIndexText: {
+    color: '#0F172A',
+    fontWeight: '700',
+    fontSize: 12,
   },
-  chipWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  shipmentChip: {
-    minWidth: '48%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    gap: 8,
-  },
-  shipmentChipBody: {
+  listBody: {
     flex: 1,
-    gap: 2,
   },
   shipmentCodeText: {
     color: '#111827',
@@ -579,33 +695,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   shipmentTimeText: {
-    color: '#6B7280',
+    color: '#64748B',
     fontSize: 12,
-  },
-  removeButton: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#FEE2E2',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  removeButtonText: {
-    color: '#B91C1C',
-    fontSize: 15,
-    fontWeight: '700',
-    lineHeight: 18,
+    marginTop: 2,
   },
   footer: {
     position: 'absolute',
-    left: 14,
-    right: 14,
-    bottom: 14,
+    left: 12,
+    right: 12,
+    bottom: 12,
   },
   uploadButton: {
     minHeight: 52,
     borderRadius: 12,
-    backgroundColor: '#0F766E',
+    backgroundColor: theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     ...theme.shadow.md,
@@ -615,7 +718,7 @@ const styles = StyleSheet.create({
   },
   uploadButtonText: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
   },
 });

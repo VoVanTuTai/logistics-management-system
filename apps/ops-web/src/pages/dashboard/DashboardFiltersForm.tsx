@@ -85,9 +85,9 @@ export function DashboardFiltersForm({
         value={courierInput}
         onChange={(event) => setCourierInput(event.target.value)}
       />
-      <button type="submit">Ap dung</button>
+      <button type="submit">Áp dụng</button>
       <button type="button" onClick={onResetClick}>
-        Dat lai
+        Đặt lại
       </button>
     </form>
   );

@@ -73,6 +73,7 @@ const SHIPMENT_STATUS_OPTIONS = [
   'TASK_ASSIGNED',
   'MANIFEST_SEALED',
   'MANIFEST_RECEIVED',
+  'MANIFEST_UNSEALED',
   'SCAN_INBOUND',
   'SCAN_OUTBOUND',
   'DELIVERED',
@@ -1060,4 +1061,3 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: 12,
   },
 };
-

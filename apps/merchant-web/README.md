@@ -22,9 +22,6 @@ npm run dev
 
 Mac dinh chay tai `http://127.0.0.1:5174`.
 
-## Login seed
+## Login
 
-Sau khi chay seed auth-service:
-
-- username: `merchant.demo`
-- password: `merchant123456`
+Dung tai khoan merchant that da ton tai trong auth-service.

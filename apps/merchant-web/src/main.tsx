@@ -46,6 +46,8 @@ const STORAGE_KEY_NOTIFICATIONS = 'merchant-web.notifications.v1';
 const STORAGE_KEY_RETURNS = 'merchant-web.return-requests.v1';
 const STORAGE_KEY_PROFILE = 'merchant-web.profile.v1';
 const SHIPMENT_PAGE_SIZE = 8;
+const MERCHANT_PROFILE_SCOPE = 'MERCHANT_PROFILE';
+const MERCHANT_PROFILE_KEY_PREFIX = 'merchant.profile.';
 
 interface HubApiRecord {
   id: string;
@@ -63,6 +65,25 @@ interface HubLocationOption {
   district: string;
   fullAddress: string;
   label: string;
+}
+
+type MerchantRegionCode = 'HA_NOI' | 'DA_NANG' | 'HO_CHI_MINH';
+
+interface ConfigApiRecord {
+  id: string;
+  key: string;
+  value: unknown;
+  scope: string | null;
+}
+
+interface MerchantProfileConfigPayload {
+  username: string;
+  citizenId: string;
+  regionCode: MerchantRegionCode;
+  regionLabel: string;
+  defaultHubCode: string | null;
+  defaultHubName: string | null;
+  defaultSenderAddress: string | null;
 }
 
 function normalizeLocationKey(value: string): string {
@@ -91,6 +112,85 @@ function resolveProvinceLabel(rawProvince: string): string | null {
   }
 
   return trimmedProvince;
+}
+
+function resolveRegionCode(rawProvince: string): MerchantRegionCode | null {
+  const normalized = normalizeLocationKey(rawProvince);
+
+  if (!normalized) {
+    return null;
+  }
+
+  if (['HANOI', 'HN', 'TPHANOI', 'THANHPHOHANOI'].includes(normalized)) {
+    return 'HA_NOI';
+  }
+  if (['DANANG', 'DN', 'TPDANANG', 'THANHPHODANANG'].includes(normalized)) {
+    return 'DA_NANG';
+  }
+  if (['HOCHIMINH', 'HCM', 'TPHOCHIMINH', 'THANHPHOHOCHIMINH'].includes(normalized)) {
+    return 'HO_CHI_MINH';
+  }
+
+  return null;
+}
+
+function buildMerchantProfileKey(username: string): string {
+  return `${MERCHANT_PROFILE_KEY_PREFIX}${username.trim().toUpperCase()}`;
+}
+
+function parseMerchantProfileConfig(
+  records: ConfigApiRecord[],
+  username: string,
+): MerchantProfileConfigPayload | null {
+  const normalizedUsername = username.trim().toUpperCase();
+  if (!normalizedUsername) {
+    return null;
+  }
+
+  const targetKey = buildMerchantProfileKey(normalizedUsername);
+  const record =
+    records.find((item) => item.key === targetKey) ??
+    records.find((item) => item.key.endsWith(`.${normalizedUsername}`));
+
+  if (!record || !record.value || typeof record.value !== 'object' || Array.isArray(record.value)) {
+    return null;
+  }
+
+  const payload = record.value as Record<string, unknown>;
+  const regionCode = payload.regionCode;
+
+  if (
+    typeof payload.username !== 'string' ||
+    typeof payload.citizenId !== 'string' ||
+    typeof regionCode !== 'string' ||
+    typeof payload.regionLabel !== 'string'
+  ) {
+    return null;
+  }
+
+  const normalizedRegionCode = regionCode as MerchantRegionCode;
+  if (!['HA_NOI', 'DA_NANG', 'HO_CHI_MINH'].includes(normalizedRegionCode)) {
+    return null;
+  }
+
+  return {
+    username: payload.username.trim().toUpperCase(),
+    citizenId: payload.citizenId.trim(),
+    regionCode: normalizedRegionCode,
+    regionLabel: payload.regionLabel.trim(),
+    defaultHubCode:
+      typeof payload.defaultHubCode === 'string' && payload.defaultHubCode.trim()
+        ? payload.defaultHubCode.trim().toUpperCase()
+        : null,
+    defaultHubName:
+      typeof payload.defaultHubName === 'string' && payload.defaultHubName.trim()
+        ? payload.defaultHubName.trim()
+        : null,
+    defaultSenderAddress:
+      typeof payload.defaultSenderAddress === 'string' && payload.defaultSenderAddress.trim()
+        ? payload.defaultSenderAddress.trim()
+        : null,
+  };
 }
 
 function parseHubLocation(hub: HubApiRecord): HubLocationOption | null {
@@ -127,10 +227,14 @@ function parseHubLocation(hub: HubApiRecord): HubLocationOption | null {
   }
 
   const normalizedProvince = resolveProvinceLabel(province);
-  const wardOrDistrict = ward || district;
-  if (!normalizedProvince || !wardOrDistrict || !fullAddress) {
+  if (!normalizedProvince) {
     return null;
   }
+
+  const wardOrDistrict = ward || district || normalizedProvince;
+  const normalizedFullAddress =
+    fullAddress ||
+    [ward, district, normalizedProvince].filter((part) => part.length > 0).join(', ');
 
   return {
     hubCode: hub.code,
@@ -138,9 +242,91 @@ function parseHubLocation(hub: HubApiRecord): HubLocationOption | null {
     province: normalizedProvince,
     ward: wardOrDistrict,
     district,
-    fullAddress,
+    fullAddress: normalizedFullAddress || hub.name,
     label: `${hub.name} (${wardOrDistrict}, ${normalizedProvince})`,
   };
+}
+
+function findHubByCode(
+  hubLocations: HubLocationOption[],
+  hubCode: string,
+): HubLocationOption | null {
+  const normalizedHubCode = normalizeCode(hubCode);
+
+  if (!normalizedHubCode) {
+    return null;
+  }
+
+  return (
+    hubLocations.find((location) => normalizeCode(location.hubCode) === normalizedHubCode) ??
+    null
+  );
+}
+
+function findHubByProvinceWard(
+  hubLocations: HubLocationOption[],
+  province: string,
+  ward: string,
+): HubLocationOption | null {
+  const normalizedProvince = normalizeLocationKey(province);
+  const normalizedWard = normalizeLocationKey(ward);
+
+  if (!normalizedProvince || !normalizedWard) {
+    return null;
+  }
+
+  return (
+    hubLocations.find(
+      (location) =>
+        normalizeLocationKey(location.province) === normalizedProvince &&
+        normalizeLocationKey(location.ward) === normalizedWard,
+    ) ?? null
+  );
+}
+
+function resolveSelectedHub(
+  hubLocations: HubLocationOption[],
+  hubCode: string,
+  province: string,
+  ward: string,
+): HubLocationOption | null {
+  const hubByCode = findHubByCode(hubLocations, hubCode);
+  if (hubByCode) {
+    const provinceMatches =
+      !province || normalizeLocationKey(hubByCode.province) === normalizeLocationKey(province);
+    const wardMatches =
+      !ward || normalizeLocationKey(hubByCode.ward) === normalizeLocationKey(ward);
+
+    if (provinceMatches && wardMatches) {
+      return hubByCode;
+    }
+  }
+
+  const hubByProvinceWard = findHubByProvinceWard(hubLocations, province, ward);
+  if (hubByProvinceWard) {
+    return hubByProvinceWard;
+  }
+
+  if (hubByCode) {
+    return hubByCode;
+  }
+
+  return null;
+}
+
+function resolveHubByRegion(
+  hubLocations: HubLocationOption[],
+  regionCode: MerchantRegionCode,
+): HubLocationOption | null {
+  const matchedLocations = hubLocations.filter(
+    (location) => resolveRegionCode(location.province) === regionCode,
+  );
+
+  if (matchedLocations.length === 0) {
+    return null;
+  }
+
+  return matchedLocations.sort((left, right) => left.label.localeCompare(right.label, 'vi'))[0];
 }
 
 function normalizeCreateForm(
@@ -175,13 +361,69 @@ function normalizeCreateForm(
   };
 }
 
+function normalizeMerchantIdentity(value: unknown): string {
+  return typeof value === 'string' ? value.trim().toUpperCase() : '';
+}
+
+function normalizePhone(value: unknown): string {
+  return typeof value === 'string' ? value.replace(/\D/g, '') : '';
+}
+
+function isShipmentOwnedByUser(
+  shipment: ShipmentResponse,
+  user: MerchantSession['user'] | null,
+): boolean {
+  if (!user) {
+    return false;
+  }
+
+  const metadata = asRecord(shipment.metadata) ?? {};
+  const createdByMeta = asRecord(metadata.createdBy);
+  const ownerCandidates = [
+    metadata.createdBy,
+    metadata.createdByUsername,
+    metadata.createdByUserId,
+    metadata.merchantCode,
+    metadata.merchantUsername,
+    createdByMeta?.username,
+    createdByMeta?.userId,
+    createdByMeta?.id,
+    createdByMeta?.merchantCode,
+  ]
+    .map(normalizeMerchantIdentity)
+    .filter((value) => value.length > 0);
+
+  const normalizedUsername = normalizeMerchantIdentity(user.username);
+  const normalizedUserId = normalizeMerchantIdentity(user.id);
+
+  if (
+    ownerCandidates.some(
+      (candidate) =>
+        candidate === normalizedUsername ||
+        (normalizedUserId.length > 0 && candidate === normalizedUserId),
+    )
+  ) {
+    return true;
+  }
+
+  const senderMeta = asRecord(metadata.sender);
+  const senderPhone = normalizePhone(senderMeta?.phone);
+  const merchantPhone = normalizePhone(user.phone ?? '');
+
+  return (
+    senderPhone.length > 0 &&
+    merchantPhone.length > 0 &&
+    senderPhone === merchantPhone
+  );
+}
+
 function MerchantApp(): React.JSX.Element {
   const [booting, setBooting] = useState(true);
   const [session, setSession] = useState<MerchantSession | null>(null);
   const [activeView, setActiveView] = useState<ViewId>('dashboard');
 
-  const [loginUsername, setLoginUsername] = useState('merchant.demo');
-  const [loginPassword, setLoginPassword] = useState('merchant123456');
+  const [loginUsername, setLoginUsername] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
 
@@ -199,6 +441,8 @@ function MerchantApp(): React.JSX.Element {
   const [draftName, setDraftName] = useState('');
   const [drafts, setDrafts] = useState<ShipmentDraft[]>([]);
   const [hubLocations, setHubLocations] = useState<HubLocationOption[]>([]);
+  const [merchantProfileConfig, setMerchantProfileConfig] =
+    useState<MerchantProfileConfigPayload | null>(null);
 
   const [selectedShipmentCode, setSelectedShipmentCode] = useState('');
   const [dashboardSearchCode, setDashboardSearchCode] = useState('');
@@ -295,27 +539,45 @@ function MerchantApp(): React.JSX.Element {
       ),
     [hubLocations],
   );
-  const senderWardOptions = useMemo(
+  const lockedSenderHub = useMemo(() => {
+    if (!session || hubLocations.length === 0) {
+      return null;
+    }
+
+    const defaultHubByProfileCode = merchantProfileConfig?.defaultHubCode
+      ? findHubByCode(hubLocations, merchantProfileConfig.defaultHubCode)
+      : null;
+    const defaultHubByAccountCode =
+      session.user.hubCodes && session.user.hubCodes.length > 0
+        ? findHubByCode(hubLocations, session.user.hubCodes[0] ?? '')
+        : null;
+    const defaultHubByRegion = merchantProfileConfig?.regionCode
+      ? resolveHubByRegion(hubLocations, merchantProfileConfig.regionCode)
+      : null;
+
+    return defaultHubByProfileCode ?? defaultHubByAccountCode ?? defaultHubByRegion;
+  }, [session, hubLocations, merchantProfileConfig]);
+  const receiverHubOptions = useMemo(
     () =>
-      Array.from(
-        new Set(
-          hubLocations
-            .filter((location) => location.province === createForm.senderProvince)
-            .map((location) => location.ward),
-        ),
-      ).sort((left, right) => left.localeCompare(right, 'vi')),
-    [hubLocations, createForm.senderProvince],
-  );
-  const receiverWardOptions = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          hubLocations
-            .filter((location) => location.province === createForm.receiverProvince)
-            .map((location) => location.ward),
-        ),
-      ).sort((left, right) => left.localeCompare(right, 'vi')),
+      hubLocations
+        .filter((location) => location.province === createForm.receiverProvince)
+        .sort((left, right) => left.label.localeCompare(right.label, 'vi')),
     [hubLocations, createForm.receiverProvince],
+  );
+  const selectedReceiverHub = useMemo(
+    () =>
+      resolveSelectedHub(
+        hubLocations,
+        createForm.receiverHubCode,
+        createForm.receiverProvince,
+        createForm.receiverWard,
+      ),
+    [
+      hubLocations,
+      createForm.receiverHubCode,
+      createForm.receiverProvince,
+      createForm.receiverWard,
+    ],
   );
   const senderComposedAddress = useMemo(
     () =>
@@ -338,33 +600,40 @@ function MerchantApp(): React.JSX.Element {
   const codAmount = 0;
   const totalOrderAmount = declaredValueAmount + effectiveFee;
 
-  const dashboardStats = useMemo(
-    () => ({
-      totalToday: shipments.filter((s) => isToday(s.createdAt)).length,
-      waitingPickup: shipments.filter((s) => ['CREATED', 'UPDATED'].includes(s.currentStatus)).length,
-      inTransit: shipments.filter((s) => ['PICKUP_COMPLETED', 'TASK_ASSIGNED', 'MANIFEST_SEALED', 'MANIFEST_RECEIVED', 'SCAN_INBOUND', 'SCAN_OUTBOUND'].includes(s.currentStatus)).length,
-      delivered: shipments.filter((s) => s.currentStatus === 'DELIVERED').length,
-      failedOrReturn: shipments.filter((s) => ['DELIVERY_FAILED', 'NDR_CREATED', 'RETURN_STARTED', 'RETURN_COMPLETED', 'CANCELLED'].includes(s.currentStatus)).length,
-    }),
-    [shipments],
-  );
-
   const serviceOptions = useMemo(() => Array.from(new Set(shipmentRows.map((r) => r.serviceType).filter(Boolean))), [shipmentRows]);
   const regionOptions = useMemo(() => Array.from(new Set(shipmentRows.map((r) => r.receiverRegion).filter((r) => r && r !== '-'))), [shipmentRows]);
+  const pickupByShipmentCode = useMemo(() => {
+    const map = new Map<string, PickupRequest>();
+
+    for (const pickup of pickups) {
+      for (const item of pickup.items) {
+        const shipmentCode = normalizeCode(item.shipmentCode);
+        if (!shipmentCode || map.has(shipmentCode)) {
+          continue;
+        }
+
+        map.set(shipmentCode, pickup);
+      }
+    }
+
+    return map;
+  }, [pickups]);
 
   const filteredRows = useMemo(() => {
     const keyword = listSearch.trim().toLowerCase();
     return shipmentRows.filter((row) => {
       const created = new Date(row.shipment.createdAt);
       const textOk = !keyword || row.shipment.code.toLowerCase().includes(keyword) || row.receiverName.toLowerCase().includes(keyword) || row.receiverPhone.toLowerCase().includes(keyword);
-      const statusOk = listStatus === 'ALL' || row.shipment.currentStatus === listStatus;
+      const statusOk =
+        listStatus === 'ALL' ||
+        resolveShipmentStatusCode(row.shipment) === listStatus;
       const serviceOk = listService === 'ALL' || row.serviceType === listService;
       const regionOk = listRegion === 'ALL' || row.receiverRegion === listRegion;
       const fromOk = !listFromDate || created >= new Date(`${listFromDate}T00:00:00`);
       const toOk = !listToDate || created <= new Date(`${listToDate}T23:59:59`);
       return textOk && statusOk && serviceOk && regionOk && fromOk && toOk;
     });
-  }, [shipmentRows, listSearch, listStatus, listService, listRegion, listFromDate, listToDate]);
+  }, [shipmentRows, listSearch, listStatus, listService, listRegion, listFromDate, listToDate, pickupByShipmentCode]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / SHIPMENT_PAGE_SIZE));
   const visibleRows = useMemo(() => filteredRows.slice((listPage - 1) * SHIPMENT_PAGE_SIZE, listPage * SHIPMENT_PAGE_SIZE), [filteredRows, listPage]);
@@ -372,6 +641,43 @@ function MerchantApp(): React.JSX.Element {
   const pickupRows = useMemo(() => pickups.filter((p) => (pickupStatusFilter === 'ALL' ? true : p.status === pickupStatusFilter)), [pickups, pickupStatusFilter]);
   const changeRows = useMemo(() => changeRequests.filter((c) => (changeStatusFilter === 'ALL' ? true : c.status === changeStatusFilter)), [changeRequests, changeStatusFilter]);
   const returnRows = useMemo(() => returnRequests.filter((r) => (returnStatusFilter === 'ALL' ? true : r.status === returnStatusFilter)), [returnRequests, returnStatusFilter]);
+
+  function resolveShipmentStatusCode(shipment: ShipmentResponse): string {
+    const normalizedCode = normalizeCode(shipment.code);
+    if (
+      pickupByShipmentCode.has(normalizedCode) &&
+      (shipment.currentStatus === 'CREATED' || shipment.currentStatus === 'UPDATED')
+    ) {
+      return 'WAITING_PICKUP';
+    }
+
+    return shipment.currentStatus;
+  }
+
+  function resolveShipmentStatusLabel(shipment: ShipmentResponse): string {
+    if (resolveShipmentStatusCode(shipment) === 'WAITING_PICKUP') {
+      return 'Chờ lấy hàng';
+    }
+
+    return shipment.currentStatus;
+  }
+
+  function resolveShipmentStatusClass(shipment: ShipmentResponse): string {
+    return resolveShipmentStatusCode(shipment) === 'WAITING_PICKUP'
+      ? statusClass('UPDATED')
+      : statusClass(shipment.currentStatus);
+  }
+
+  const dashboardStats = useMemo(
+    () => ({
+      totalToday: shipments.filter((s) => isToday(s.createdAt)).length,
+      waitingPickup: shipments.filter((s) => resolveShipmentStatusCode(s) === 'WAITING_PICKUP').length,
+      inTransit: shipments.filter((s) => ['PICKUP_COMPLETED', 'TASK_ASSIGNED', 'MANIFEST_SEALED', 'MANIFEST_RECEIVED', 'MANIFEST_UNSEALED', 'SCAN_INBOUND', 'SCAN_OUTBOUND'].includes(s.currentStatus)).length,
+      delivered: shipments.filter((s) => s.currentStatus === 'DELIVERED').length,
+      failedOrReturn: shipments.filter((s) => ['DELIVERY_FAILED', 'NDR_CREATED', 'RETURN_STARTED', 'RETURN_COMPLETED', 'CANCELLED'].includes(s.currentStatus)).length,
+    }),
+    [shipments, pickupByShipmentCode],
+  );
 
   useEffect(() => setListPage(1), [listSearch, listStatus, listService, listRegion, listFromDate, listToDate]);
 
@@ -381,6 +687,103 @@ function MerchantApp(): React.JSX.Element {
     setDetailReceiverAddress(selectedShipment.receiverAddress === '-' ? '' : selectedShipment.receiverAddress);
     setDetailDeliveryNote(selectedShipment.deliveryNote === '-' ? '' : selectedShipment.deliveryNote);
   }, [selectedShipment?.shipment.code, selectedShipment?.shipment.updatedAt]);
+
+  useEffect(() => {
+    if (!session || !lockedSenderHub) {
+      return;
+    }
+
+    const defaultSenderName = session.user.displayName?.trim() ?? '';
+    const defaultSenderPhone =
+      session.user.phone?.trim() ?? profile.contactPhone.trim();
+    const defaultAddress =
+      merchantProfileConfig?.defaultSenderAddress?.trim() ??
+      profile.defaultPickupAddress.trim();
+
+    setCreateForm((previous) => {
+      const next = { ...previous };
+      let hasChanges = false;
+
+      if (!next.senderName.trim() && defaultSenderName) {
+        next.senderName = defaultSenderName;
+        hasChanges = true;
+      }
+      if (!next.senderPhone.trim() && defaultSenderPhone) {
+        next.senderPhone = defaultSenderPhone;
+        hasChanges = true;
+      }
+      if (next.senderProvince !== lockedSenderHub.province) {
+        next.senderProvince = lockedSenderHub.province;
+        hasChanges = true;
+      }
+      if (next.senderWard !== lockedSenderHub.ward) {
+        next.senderWard = lockedSenderHub.ward;
+        hasChanges = true;
+      }
+      if (next.senderHubCode !== lockedSenderHub.hubCode) {
+        next.senderHubCode = lockedSenderHub.hubCode;
+        hasChanges = true;
+      }
+      if (!next.senderAddressDetail.trim() && defaultAddress) {
+        next.senderAddressDetail = defaultAddress;
+        hasChanges = true;
+      }
+      if (!next.senderAddress.trim()) {
+        const composedAddress = [
+          next.senderAddressDetail.trim(),
+          next.senderWard,
+          next.senderProvince,
+        ]
+          .filter(Boolean)
+          .join(', ');
+        if (composedAddress) {
+          next.senderAddress = composedAddress;
+          hasChanges = true;
+        }
+      }
+
+      return hasChanges ? next : previous;
+    });
+
+    setPickupRequesterName((previous) =>
+      previous.trim() ? previous : defaultSenderName || session.user.username,
+    );
+    setPickupContactPhone((previous) =>
+      previous.trim() ? previous : defaultSenderPhone,
+    );
+    setPickupAddress((previous) =>
+      previous.trim()
+        ? previous
+        : defaultAddress || lockedSenderHub.fullAddress || '',
+    );
+    setProfile((previous) => {
+      const nextProfile = {
+        ...previous,
+        shopName: previous.shopName || defaultSenderName,
+        contactPhone: previous.contactPhone || defaultSenderPhone,
+        defaultPickupAddress:
+          previous.defaultPickupAddress ||
+          defaultAddress ||
+          lockedSenderHub.fullAddress,
+      };
+
+      if (
+        nextProfile.shopName === previous.shopName &&
+        nextProfile.contactPhone === previous.contactPhone &&
+        nextProfile.defaultPickupAddress === previous.defaultPickupAddress
+      ) {
+        return previous;
+      }
+
+      return nextProfile;
+    });
+  }, [
+    session,
+    lockedSenderHub,
+    merchantProfileConfig,
+    profile.contactPhone,
+    profile.defaultPickupAddress,
+  ]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -427,7 +830,7 @@ function MerchantApp(): React.JSX.Element {
         };
 
         setSession(nextSession);
-        await refreshAllData(nextSession.accessToken);
+        await refreshAllData(nextSession.accessToken, nextSession.user);
       } catch {
         window.localStorage.removeItem(STORAGE_KEY_SESSION);
         setSession(null);
@@ -476,6 +879,10 @@ function MerchantApp(): React.JSX.Element {
   }
 
   function upsertShipment(shipment: ShipmentResponse): void {
+    if (!session || !isShipmentOwnedByUser(shipment, session.user)) {
+      return;
+    }
+
     setShipments((prev) => {
       const idx = prev.findIndex((item) => item.code === shipment.code);
       if (idx === -1) return [shipment, ...prev];
@@ -485,17 +892,30 @@ function MerchantApp(): React.JSX.Element {
     });
   }
 
-  async function refreshAllData(accessToken: string): Promise<void> {
+  async function refreshAllData(
+    accessToken: string,
+    user: MerchantSession['user'],
+  ): Promise<void> {
     setDataLoading(true);
     setDataError(null);
-    const [shipRes, pickupRes, changeRes, hubsRes] = await Promise.allSettled([
+    const merchantProfileKey = buildMerchantProfileKey(user.username);
+    const [shipRes, pickupRes, changeRes, hubsRes, profileRes] = await Promise.allSettled([
       request<ShipmentResponse[]>('/merchant/shipment/shipments', { method: 'GET' }, accessToken),
       request<PickupRequest[]>('/merchant/pickup/pickups', { method: 'GET' }, accessToken),
       request<ChangeRequest[]>('/merchant/shipment/change-requests', { method: 'GET' }, accessToken),
       request<HubApiRecord[]>('/merchant/masterdata/hubs?isActive=true', { method: 'GET' }, accessToken),
+      request<ConfigApiRecord[]>(
+        `/merchant/masterdata/configs?scope=${encodeURIComponent(MERCHANT_PROFILE_SCOPE)}&key=${encodeURIComponent(merchantProfileKey)}`,
+        { method: 'GET' },
+        accessToken,
+      ),
     ]);
 
-    if (shipRes.status === 'fulfilled') setShipments(shipRes.value);
+    if (shipRes.status === 'fulfilled') {
+      setShipments(
+        shipRes.value.filter((shipment) => isShipmentOwnedByUser(shipment, user)),
+      );
+    }
     if (pickupRes.status === 'fulfilled') setPickups(pickupRes.value);
     if (changeRes.status === 'fulfilled') setChangeRequests(changeRes.value);
     if (hubsRes.status === 'fulfilled') {
@@ -507,6 +927,12 @@ function MerchantApp(): React.JSX.Element {
       setHubLocations(locations);
     } else {
       setHubLocations([]);
+    }
+    if (profileRes.status === 'fulfilled') {
+      const resolvedProfile = parseMerchantProfileConfig(profileRes.value, user.username);
+      setMerchantProfileConfig(resolvedProfile);
+    } else {
+      setMerchantProfileConfig(null);
     }
 
     if (shipRes.status === 'rejected') setDataError(extractErrorMessage(shipRes.reason));
@@ -534,7 +960,7 @@ function MerchantApp(): React.JSX.Element {
         refreshTokenExpiresAt: result.tokens.refreshTokenExpiresAt,
       };
       setSession(nextSession);
-      await refreshAllData(nextSession.accessToken);
+      await refreshAllData(nextSession.accessToken, nextSession.user);
       setActiveView('dashboard');
       pushNotification('success', 'Đăng nhập thành công', `Xin chào ${nextSession.user.username}`);
     } catch (error) {
@@ -560,11 +986,20 @@ function MerchantApp(): React.JSX.Element {
     setPickups([]);
     setChangeRequests([]);
     setHubLocations([]);
+    setMerchantProfileConfig(null);
     setActiveView('dashboard');
   }
 
   async function createPickupForShipment(code: string, note: string): Promise<PickupRequest> {
     if (!session) throw new Error('Session is required');
+    const normalizedShipmentCode = normalizeCode(code);
+    const existingPickup = pickupByShipmentCode.get(normalizedShipmentCode);
+    if (existingPickup) {
+      throw new Error(
+        `Shipment ${normalizedShipmentCode} đã có pickup ${existingPickup.pickupCode}.`,
+      );
+    }
+
     const pickup = await request<PickupRequest>('/merchant/pickup/pickups', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -574,7 +1009,7 @@ function MerchantApp(): React.JSX.Element {
         contactPhone: pickupContactPhone.trim() || createForm.senderPhone.trim() || profile.contactPhone || null,
         pickupAddress: pickupAddress.trim() || senderComposedAddress || profile.defaultPickupAddress || null,
         note: `${note} | desired=${pickupDesiredTime || 'N/A'}`,
-        items: [{ shipmentCode: normalizeCode(code), quantity: 1 }],
+        items: [{ shipmentCode: normalizedShipmentCode, quantity: 1 }],
       }),
     }, session.accessToken);
     setPickups((prev) => [pickup, ...prev]);
@@ -597,32 +1032,49 @@ function MerchantApp(): React.JSX.Element {
       return;
     }
 
-    const senderHub = hubLocations.find(
-      (location) =>
-        location.province === createForm.senderProvince &&
-        location.ward === createForm.senderWard,
-    );
+    const senderHub = lockedSenderHub;
     if (!senderHub) {
-      setCreateError('Vui lòng chọn đúng thành phố và phường/xã của địa chỉ gửi.');
+      setCreateError('Tài khoản merchant chưa được admin gán khu vực/bưu cục gửi. Vui lòng liên hệ admin.');
       return;
     }
 
-    const receiverHub = hubLocations.find(
-      (location) =>
-        location.province === createForm.receiverProvince &&
-        location.ward === createForm.receiverWard,
+    const receiverHub = resolveSelectedHub(
+      hubLocations,
+      createForm.receiverHubCode,
+      createForm.receiverProvince,
+      createForm.receiverWard,
     );
     if (!receiverHub) {
-      setCreateError('Vui lòng chọn đúng thành phố và phường/xã của địa chỉ nhận.');
+      setCreateError('Vui lòng chọn bưu cục nhận.');
+      return;
+    }
+    if (receiverHub.province !== createForm.receiverProvince) {
+      setCreateError('Bưu cục nhận không thuộc khu vực đã chọn.');
       return;
     }
 
     const normalizedForm: CreateShipmentForm = {
       ...createForm,
+      senderProvince: senderHub.province,
+      senderWard: senderHub.ward,
       senderHubCode: senderHub.hubCode,
+      receiverProvince: receiverHub.province,
+      receiverWard: receiverHub.ward,
       receiverHubCode: receiverHub.hubCode,
-      senderAddress: senderComposedAddress,
-      receiverAddress: receiverComposedAddress,
+      senderAddress: [
+        createForm.senderAddressDetail.trim(),
+        senderHub.ward,
+        senderHub.province,
+      ]
+        .filter(Boolean)
+        .join(', '),
+      receiverAddress: [
+        createForm.receiverAddressDetail.trim(),
+        receiverHub.ward,
+        receiverHub.province,
+      ]
+        .filter(Boolean)
+        .join(', '),
       receiverRegion: receiverHub.province,
     };
 
@@ -631,7 +1083,10 @@ function MerchantApp(): React.JSX.Element {
     setCreateSuccess(null);
     try {
       const payload: Record<string, unknown> = {
-        metadata: buildShipmentMetadata(normalizedForm, effectiveFee),
+        metadata: buildShipmentMetadata(normalizedForm, effectiveFee, {
+          username: session.user.username,
+          userId: session.user.id,
+        }),
       };
 
       const created = await request<ShipmentResponse>('/merchant/shipment/shipments', {
@@ -647,7 +1102,22 @@ function MerchantApp(): React.JSX.Element {
         const pickup = await createPickupForShipment(created.code, `auto pickup ${created.code}`);
         setCreateSuccess(`Đã tạo shipment ${created.code} và pickup ${pickup.pickupCode}`);
       }
-      setCreateForm(DEFAULT_CREATE_FORM);
+      setCreateForm({
+        ...DEFAULT_CREATE_FORM,
+        senderName: normalizedForm.senderName,
+        senderPhone: normalizedForm.senderPhone,
+        senderProvince: senderHub.province,
+        senderWard: senderHub.ward,
+        senderHubCode: senderHub.hubCode,
+        senderAddressDetail: normalizedForm.senderAddressDetail,
+        senderAddress: [
+          normalizedForm.senderAddressDetail.trim(),
+          senderHub.ward,
+          senderHub.province,
+        ]
+          .filter(Boolean)
+          .join(', '),
+      });
       setQuotedFee(null);
       setActiveView('shipment-detail');
     } catch (error) {
@@ -660,6 +1130,9 @@ function MerchantApp(): React.JSX.Element {
   async function fetchShipmentByCode(code: string): Promise<ShipmentResponse> {
     if (!session) throw new Error('Session is required');
     const shipment = await request<ShipmentResponse>(`/merchant/shipment/shipments/${encodeURIComponent(normalizeCode(code))}`, { method: 'GET' }, session.accessToken);
+    if (!isShipmentOwnedByUser(shipment, session.user)) {
+      throw new Error('Bạn không có quyền xem shipment này.');
+    }
     upsertShipment(shipment);
     return shipment;
   }
@@ -913,7 +1386,7 @@ function MerchantApp(): React.JSX.Element {
     );
     const sortCode = [
       `Hub đích: ${receiverHubCode || destinationHubCode || 'N/A'}`,
-      `Khu vá»±c: ${zoneCode || 'N/A'}`,
+      `Khu vực: ${zoneCode || 'N/A'}`,
     ].join('\n');
     const deliveryInstruction =
       row.deliveryNote && row.deliveryNote !== '-'
@@ -955,7 +1428,7 @@ function MerchantApp(): React.JSX.Element {
 
   function downloadCsv(): void {
     const header = ['tracking_code', 'receiver_name', 'receiver_phone', 'status', 'cod', 'fee', 'created_at'];
-    const rows = shipmentRows.map((row) => [row.shipment.code, row.receiverName, row.receiverPhone, row.shipment.currentStatus, row.codAmount, row.feeEstimate, row.shipment.createdAt]);
+    const rows = shipmentRows.map((row) => [row.shipment.code, row.receiverName, row.receiverPhone, resolveShipmentStatusLabel(row.shipment), row.codAmount, row.feeEstimate, row.shipment.createdAt]);
     const csv = [header, ...rows].map((line) => line.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -982,7 +1455,6 @@ function MerchantApp(): React.JSX.Element {
             <button className="btn btn-primary" type="submit" disabled={loginLoading}>{loginLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}</button>
           </form>
           {loginError ? <p className="message error">{loginError}</p> : null}
-          <p className="muted">Seed account: merchant.demo / merchant123456</p>
         </div>
       </div>
     );
@@ -994,7 +1466,7 @@ function MerchantApp(): React.JSX.Element {
         <div><h2 className="brand-title">Merchant Hub</h2><p className="brand-subtitle">Logistics Management System</p></div>
         <div className="session-box"><div>{session.user.username}</div><div>roles: {session.user.roles.join(', ')}</div><div>token exp: {formatDate(session.accessTokenExpiresAt)}</div></div>
         <nav className="nav-list">{navItems.map((item) => <button key={item.id} className={`nav-btn ${activeView === item.id ? 'active' : ''}`} onClick={() => setActiveView(item.id)}>{item.label}{item.id === 'notifications' && unreadNotifications > 0 ? ` [${unreadNotifications}]` : ''}</button>)}</nav>
-        <div className="btn-row"><button className="btn btn-secondary" onClick={() => void refreshAllData(session.accessToken)} disabled={dataLoading}>{dataLoading ? 'Đang tải lại...' : 'Tải lại'}</button><button className="btn btn-danger" onClick={() => void handleLogout()}>Logout</button></div>
+        <div className="btn-row"><button className="btn btn-secondary" onClick={() => void refreshAllData(session.accessToken, session.user)} disabled={dataLoading}>{dataLoading ? 'Đang tải lại...' : 'Tải lại'}</button><button className="btn btn-danger" onClick={() => void handleLogout()}>Logout</button></div>
       </aside>
 
       <div className="main">
@@ -1002,7 +1474,7 @@ function MerchantApp(): React.JSX.Element {
         <main className="content">
           {dataError ? <p className="message error">{dataError}</p> : null}
 
-          {activeView === 'dashboard' ? <><section className="card"><h3>Tổng quan</h3><div className="metric-grid"><div className="metric"><div className="metric-title">Tổng số đơn hôm nay</div><div className="metric-value">{dashboardStats.totalToday}</div></div><div className="metric"><div className="metric-title">Đơn chờ pickup</div><div className="metric-value">{dashboardStats.waitingPickup}</div></div><div className="metric"><div className="metric-title">Đơn đang giao</div><div className="metric-value">{dashboardStats.inTransit}</div></div><div className="metric"><div className="metric-title">Đơn giao thành công</div><div className="metric-value">{dashboardStats.delivered}</div></div><div className="metric"><div className="metric-title">Thất bại / hoàn</div><div className="metric-value">{dashboardStats.failedOrReturn}</div></div></div></section><section className="card"><h3>Tìm nhanh theo mã vận đơn</h3><form className="btn-row" onSubmit={(e) => { void quickTrackFromDashboard(e); }}><input className="input" style={{ maxWidth: 320 }} value={dashboardSearchCode} onChange={(e) => setDashboardSearchCode(e.target.value)} placeholder="SHP..." /><button className="btn btn-primary" type="submit">Tra cứu vận đơn</button></form></section><section className="card"><h3>Đơn mới tạo gần đây</h3>{recentRows.length === 0 ? <div className="empty">Chưa có đơn hàng.</div> : <div className="table-wrap"><table><thead><tr><th>Mã</th><th>Người nhận</th><th>SĐT</th><th>Trạng thái</th><th>Ngày tạo</th><th>Xem</th></tr></thead><tbody>{recentRows.map((row) => <tr key={row.shipment.id}><td>{row.shipment.code}</td><td>{row.receiverName}</td><td>{row.receiverPhone}</td><td><span className={statusClass(row.shipment.currentStatus)}>{row.shipment.currentStatus}</span></td><td>{formatDate(row.shipment.createdAt)}</td><td><button className="btn btn-ghost" onClick={() => { void openShipmentDetail(row.shipment.code); }}>Xem</button></td></tr>)}</tbody></table></div>}</section></> : null}
+          {activeView === 'dashboard' ? <><section className="card"><h3>Tổng quan</h3><div className="metric-grid"><div className="metric"><div className="metric-title">Tổng số đơn hôm nay</div><div className="metric-value">{dashboardStats.totalToday}</div></div><div className="metric"><div className="metric-title">Đơn chờ pickup</div><div className="metric-value">{dashboardStats.waitingPickup}</div></div><div className="metric"><div className="metric-title">Đơn đang giao</div><div className="metric-value">{dashboardStats.inTransit}</div></div><div className="metric"><div className="metric-title">Đơn giao thành công</div><div className="metric-value">{dashboardStats.delivered}</div></div><div className="metric"><div className="metric-title">Thất bại / hoàn</div><div className="metric-value">{dashboardStats.failedOrReturn}</div></div></div></section><section className="card"><h3>Tìm nhanh theo mã vận đơn</h3><form className="btn-row" onSubmit={(e) => { void quickTrackFromDashboard(e); }}><input className="input" style={{ maxWidth: 320 }} value={dashboardSearchCode} onChange={(e) => setDashboardSearchCode(e.target.value)} placeholder="SHP..." /><button className="btn btn-primary" type="submit">Tra cứu vận đơn</button></form></section><section className="card"><h3>Đơn mới tạo gần đây</h3>{recentRows.length === 0 ? <div className="empty">Chưa có đơn hàng.</div> : <div className="table-wrap"><table><thead><tr><th>Mã</th><th>Người nhận</th><th>SĐT</th><th>Trạng thái</th><th>Ngày tạo</th><th>Xem</th></tr></thead><tbody>{recentRows.map((row) => <tr key={row.shipment.id}><td>{row.shipment.code}</td><td>{row.receiverName}</td><td>{row.receiverPhone}</td><td><span className={resolveShipmentStatusClass(row.shipment)}>{resolveShipmentStatusLabel(row.shipment)}</span></td><td>{formatDate(row.shipment.createdAt)}</td><td><button className="btn btn-ghost" onClick={() => { void openShipmentDetail(row.shipment.code); }}>Xem</button></td></tr>)}</tbody></table></div>}</section></> : null}
 
           {activeView === 'create-shipment' ? (
             <section className="split-layout">
@@ -1011,6 +1483,11 @@ function MerchantApp(): React.JSX.Element {
                 {hubLocations.length === 0 ? (
                   <p className="message error">
                     {'Ch\u01b0a c\u00f3 hub h\u1ee3p l\u1ec7. Admin c\u1ea7n t\u1ea1o hub tr\u01b0\u1edbc \u0111\u1ec3 merchant ch\u1ecdn \u0111\u1ecba ch\u1ec9 g\u1eedi/nh\u1eadn.'}
+                  </p>
+                ) : null}
+                {hubLocations.length > 0 && !lockedSenderHub ? (
+                  <p className="message error">
+                    {'T\u00e0i kho\u1ea3n n\u00e0y ch\u01b0a \u0111\u01b0\u1ee3c admin g\u00e1n khu v\u1ef1c/b\u01b0u c\u1ee5c g\u1eedi. Vui l\u00f2ng li\u00ean h\u1ec7 admin \u0111\u1ec3 c\u1eadp nh\u1eadt.'}
                   </p>
                 ) : null}
                 <div className="grid grid-4">
@@ -1036,52 +1513,24 @@ function MerchantApp(): React.JSX.Element {
                       }))
                     }
                   />
-                  <select
-                    className="select"
-                    value={createForm.senderProvince}
-                    onChange={(event) => {
-                      const senderProvince = event.target.value;
-                      setCreateForm((previous) => ({
-                        ...previous,
-                        senderProvince,
-                        senderWard: '',
-                        senderHubCode: '',
-                        senderAddress: '',
-                      }));
-                    }}
-                  >
-                    <option value="">{'Ch\u1ecdn t\u1ec9nh/th\u00e0nh g\u1eedi'}</option>
-                    {provinceOptions.map((province) => (
-                      <option key={province} value={province}>
-                        {province}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    className="select"
-                    value={createForm.senderWard}
-                    disabled={!createForm.senderProvince}
-                    onChange={(event) => {
-                      const senderWard = event.target.value;
-                      const selectedHub = hubLocations.find(
-                        (location) =>
-                          location.province === createForm.senderProvince &&
-                          location.ward === senderWard,
-                      );
-                      setCreateForm((previous) => ({
-                        ...previous,
-                        senderWard,
-                        senderHubCode: selectedHub?.hubCode ?? '',
-                      }));
-                    }}
-                  >
-                    <option value="">{'Ch\u1ecdn ph\u01b0\u1eddng/x\u00e3 g\u1eedi'}</option>
-                    {senderWardOptions.map((ward) => (
-                      <option key={ward} value={ward}>
-                        {ward}
-                      </option>
-                    ))}
-                  </select>
+                  <input
+                    className="input"
+                    value={lockedSenderHub?.province ?? createForm.senderProvince}
+                    readOnly
+                    disabled
+                    placeholder={'Khu v\u1ef1c g\u1eedi do admin c\u1ea5u h\u00ecnh'}
+                  />
+                  <input
+                    className="input"
+                    value={
+                      lockedSenderHub
+                        ? `${lockedSenderHub.hubCode} - ${lockedSenderHub.hubName}`
+                        : createForm.senderHubCode
+                    }
+                    readOnly
+                    disabled
+                    placeholder={'B\u01b0u c\u1ee5c g\u1eedi do admin c\u1ea5u h\u00ecnh'}
+                  />
                   <input
                     className="input"
                     placeholder={'\u0110\u1ecba ch\u1ec9 chi ti\u1ebft ng\u01b0\u1eddi g\u1eedi'}
@@ -1140,27 +1589,22 @@ function MerchantApp(): React.JSX.Element {
                   </select>
                   <select
                     className="select"
-                    value={createForm.receiverWard}
+                    value={selectedReceiverHub?.hubCode ?? ''}
                     disabled={!createForm.receiverProvince}
                     onChange={(event) => {
-                      const receiverWard = event.target.value;
-                      const selectedHub = hubLocations.find(
-                        (location) =>
-                          location.province === createForm.receiverProvince &&
-                          location.ward === receiverWard,
-                      );
+                      const selectedHub = findHubByCode(hubLocations, event.target.value);
                       setCreateForm((previous) => ({
                         ...previous,
-                        receiverWard,
+                        receiverWard: selectedHub?.ward ?? '',
                         receiverHubCode: selectedHub?.hubCode ?? '',
                         receiverRegion: createForm.receiverProvince,
                       }));
                     }}
                   >
                     <option value="">{'Ch\u1ecdn ph\u01b0\u1eddng/x\u00e3 nh\u1eadn'}</option>
-                    {receiverWardOptions.map((ward) => (
-                      <option key={'receiver-ward-' + ward} value={ward}>
-                        {ward}
+                    {receiverHubOptions.map((location) => (
+                      <option key={'receiver-hub-' + location.hubCode} value={location.hubCode}>
+                        {location.ward} - {location.hubName} ({location.hubCode})
                       </option>
                     ))}
                   </select>
@@ -1281,7 +1725,7 @@ function MerchantApp(): React.JSX.Element {
                   </button>
                   <button
                     className="btn btn-primary"
-                    disabled={createLoading || hubLocations.length === 0}
+                    disabled={createLoading || hubLocations.length === 0 || !lockedSenderHub}
                     onClick={() => {
                       void submitCreateShipment(false);
                     }}
@@ -1290,7 +1734,7 @@ function MerchantApp(): React.JSX.Element {
                   </button>
                   <button
                     className="btn btn-primary"
-                    disabled={createLoading || hubLocations.length === 0}
+                    disabled={createLoading || hubLocations.length === 0 || !lockedSenderHub}
                     onClick={() => {
                       void submitCreateShipment(true);
                     }}
@@ -1334,7 +1778,22 @@ function MerchantApp(): React.JSX.Element {
                           <button
                             className="btn btn-ghost"
                             onClick={() => {
-                              setCreateForm(normalizeCreateForm(draft.form));
+                              const draftForm = normalizeCreateForm(draft.form);
+                              const senderProvince = lockedSenderHub?.province ?? draftForm.senderProvince;
+                              const senderWard = lockedSenderHub?.ward ?? draftForm.senderWard;
+                              setCreateForm({
+                                ...draftForm,
+                                senderProvince,
+                                senderWard,
+                                senderHubCode: lockedSenderHub?.hubCode ?? draftForm.senderHubCode,
+                                senderAddress: [
+                                  draftForm.senderAddressDetail.trim(),
+                                  senderWard,
+                                  senderProvince,
+                                ]
+                                  .filter(Boolean)
+                                  .join(', '),
+                              });
                               setQuotedFee(draft.quoteFee);
                             }}
                           >
@@ -1358,13 +1817,13 @@ function MerchantApp(): React.JSX.Element {
               </div>
             </section>
           ) : null}
-          {activeView === 'shipments' ? <><section className="card grid"><h3>Danh sách shipment</h3><div className="grid grid-4"><input className="input" placeholder="Tìm mã / tên / SĐT" value={listSearch} onChange={(e) => setListSearch(e.target.value)} /><select className="select" value={listStatus} onChange={(e) => setListStatus(e.target.value)}><option value="ALL">Tất cả trạng thái</option><option value="CREATED">CREATED</option><option value="UPDATED">UPDATED</option><option value="DELIVERED">DELIVERED</option><option value="DELIVERY_FAILED">DELIVERY_FAILED</option><option value="RETURN_STARTED">RETURN_STARTED</option><option value="RETURN_COMPLETED">RETURN_COMPLETED</option><option value="CANCELLED">CANCELLED</option></select><select className="select" value={listService} onChange={(e) => setListService(e.target.value)}><option value="ALL">Tất cả dịch vụ</option>{serviceOptions.map((o) => <option key={o}>{o}</option>)}</select><select className="select" value={listRegion} onChange={(e) => setListRegion(e.target.value)}><option value="ALL">Tất cả khu vực</option>{regionOptions.map((o) => <option key={o}>{o}</option>)}</select><input className="input" type="date" value={listFromDate} onChange={(e) => setListFromDate(e.target.value)} /><input className="input" type="date" value={listToDate} onChange={(e) => setListToDate(e.target.value)} /></div></section><section className="card"><div className="table-wrap"><table><thead><tr><th>Mã vận đơn</th><th>Người nhận</th><th>SĐT</th><th>Trạng thái</th><th>COD</th><th>Phí</th><th>Dịch vụ</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead><tbody>{visibleRows.map((row) => <tr key={row.shipment.id}><td>{row.shipment.code}</td><td>{row.receiverName}</td><td>{row.receiverPhone}</td><td><span className={statusClass(row.shipment.currentStatus)}>{row.shipment.currentStatus}</span></td><td>{formatCurrency(row.codAmount)}</td><td>{formatCurrency(row.feeEstimate)}</td><td>{row.serviceType}</td><td>{formatDate(row.shipment.createdAt)}</td><td><div className="btn-row"><button className="btn btn-ghost" onClick={() => { void openShipmentDetail(row.shipment.code); }}>Xem</button><button className="btn btn-secondary" onClick={() => { void openShipmentDetail(row.shipment.code); }}>Cập nhật</button><button className="btn btn-danger" onClick={() => { const reason = window.prompt('Lý do hủy đơn', '') ?? ''; void cancelShipment(row.shipment.code, reason); }}>Hủy</button><button className="btn btn-secondary" onClick={() => { void createPickupForShipment(row.shipment.code, `manual pickup ${row.shipment.code}`); }}>Tạo pickup</button><button className="btn btn-ghost" onClick={() => printShipment(row)}>In</button></div></td></tr>)}</tbody></table></div>{visibleRows.length === 0 ? <div className="empty">Không có dữ liệu.</div> : null}<div className="btn-row" style={{ marginTop: 8 }}><button className="btn btn-ghost" disabled={listPage <= 1} onClick={() => setListPage((p) => Math.max(p - 1, 1))}>Trước</button><span className="badge">Trang {listPage}/{totalPages}</span><button className="btn btn-ghost" disabled={listPage >= totalPages} onClick={() => setListPage((p) => Math.min(p + 1, totalPages))}>Sau</button></div></section></> : null}
+          {activeView === 'shipments' ? <><section className="card grid"><h3>Danh sách shipment</h3><div className="grid grid-4"><input className="input" placeholder="Tìm mã / tên / SĐT" value={listSearch} onChange={(e) => setListSearch(e.target.value)} /><select className="select" value={listStatus} onChange={(e) => setListStatus(e.target.value)}><option value="ALL">Tất cả trạng thái</option><option value="CREATED">CREATED</option><option value="UPDATED">UPDATED</option><option value="WAITING_PICKUP">CHO_LAY_HANG</option><option value="DELIVERED">DELIVERED</option><option value="DELIVERY_FAILED">DELIVERY_FAILED</option><option value="RETURN_STARTED">RETURN_STARTED</option><option value="RETURN_COMPLETED">RETURN_COMPLETED</option><option value="CANCELLED">CANCELLED</option></select><select className="select" value={listService} onChange={(e) => setListService(e.target.value)}><option value="ALL">Tất cả dịch vụ</option>{serviceOptions.map((o) => <option key={o}>{o}</option>)}</select><select className="select" value={listRegion} onChange={(e) => setListRegion(e.target.value)}><option value="ALL">Tất cả khu vực</option>{regionOptions.map((o) => <option key={o}>{o}</option>)}</select><input className="input" type="date" value={listFromDate} onChange={(e) => setListFromDate(e.target.value)} /><input className="input" type="date" value={listToDate} onChange={(e) => setListToDate(e.target.value)} /></div></section><section className="card"><div className="table-wrap"><table><thead><tr><th>Mã vận đơn</th><th>Người nhận</th><th>SĐT</th><th>Trạng thái</th><th>COD</th><th>Phí</th><th>Dịch vụ</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead><tbody>{visibleRows.map((row) => <tr key={row.shipment.id}><td>{row.shipment.code}</td><td>{row.receiverName}</td><td>{row.receiverPhone}</td><td><span className={resolveShipmentStatusClass(row.shipment)}>{resolveShipmentStatusLabel(row.shipment)}</span></td><td>{formatCurrency(row.codAmount)}</td><td>{formatCurrency(row.feeEstimate)}</td><td>{row.serviceType}</td><td>{formatDate(row.shipment.createdAt)}</td><td><div className="btn-row"><button className="btn btn-ghost" onClick={() => { void openShipmentDetail(row.shipment.code); }}>Xem</button><button className="btn btn-secondary" onClick={() => { void openShipmentDetail(row.shipment.code); }}>Cập nhật</button><button className="btn btn-danger" onClick={() => { const reason = window.prompt('Lý do hủy đơn', '') ?? ''; void cancelShipment(row.shipment.code, reason); }}>Hủy</button><button className="btn btn-secondary" disabled={pickupByShipmentCode.has(normalizeCode(row.shipment.code))} onClick={() => { const normalizedShipmentCode = normalizeCode(row.shipment.code); if (pickupByShipmentCode.has(normalizedShipmentCode)) return; void createPickupForShipment(row.shipment.code, `manual pickup ${row.shipment.code}`).then((createdPickup) => { pushNotification('success', 'Đã tạo pickup', `Pickup ${createdPickup.pickupCode} cho ${row.shipment.code}`); }).catch((error) => { pushNotification('error', 'Không tạo được pickup', extractErrorMessage(error)); }); }}>{pickupByShipmentCode.has(normalizeCode(row.shipment.code)) ? 'Đã tạo pickup' : 'Tạo pickup'}</button><button className="btn btn-ghost" onClick={() => printShipment(row)}>In</button></div></td></tr>)}</tbody></table></div>{visibleRows.length === 0 ? <div className="empty">Không có dữ liệu.</div> : null}<div className="btn-row" style={{ marginTop: 8 }}><button className="btn btn-ghost" disabled={listPage <= 1} onClick={() => setListPage((p) => Math.max(p - 1, 1))}>Trước</button><span className="badge">Trang {listPage}/{totalPages}</span><button className="btn btn-ghost" disabled={listPage >= totalPages} onClick={() => setListPage((p) => Math.min(p + 1, totalPages))}>Sau</button></div></section></> : null}
 
-          {activeView === 'shipment-detail' ? <section className="grid">{!selectedShipment ? <div className="card"><div className="empty">Chưa chọn shipment.</div></div> : <><div className="card"><h3>Chi tiết shipment {selectedShipment.shipment.code}</h3><div className="details-grid"><div className="detail-box"><div className="label">Người gửi</div><div>{selectedShipment.senderName}<br />{selectedShipment.senderPhone}</div></div><div className="detail-box"><div className="label">Người nhận</div><div>{selectedShipment.receiverName}<br />{selectedShipment.receiverPhone}</div></div><div className="detail-box"><div className="label">Hàng hóa</div><div>{selectedShipment.itemType}<br />{selectedShipment.weightKg}kg</div></div><div className="detail-box"><div className="label">COD / Phí</div><div>{formatCurrency(selectedShipment.codAmount)}<br />{formatCurrency(selectedShipment.feeEstimate)}</div></div></div><div className="btn-row" style={{ marginTop: 8 }}><span className={statusClass(selectedShipment.shipment.currentStatus)}>{selectedShipment.shipment.currentStatus}</span><button className="btn btn-danger" onClick={() => { const reason = window.prompt('Lý do hủy đơn', '') ?? ''; void cancelShipment(selectedShipment.shipment.code, reason); }}>Hủy đơn</button><button className="btn btn-ghost" onClick={() => printShipment(selectedShipment)}>In vận đơn</button></div></div><div className="card grid"><h3>Sửa đơn nếu còn cho phép</h3><div className="grid grid-3"><input className="input" value={detailReceiverPhone} onChange={(e) => setDetailReceiverPhone(e.target.value)} placeholder="SĐT người nhận" /><input className="input" value={detailReceiverAddress} onChange={(e) => setDetailReceiverAddress(e.target.value)} placeholder="Địa chỉ người nhận" /><input className="input" value={detailDeliveryNote} onChange={(e) => setDetailDeliveryNote(e.target.value)} placeholder="Ghi chú giao hàng" /></div><div className="btn-row"><button className="btn btn-primary" disabled={detailUpdating} onClick={() => { void saveDetailUpdate(); }}>{detailUpdating ? 'Đang cập nhật...' : 'Sửa đơn'}</button><button className="btn btn-secondary" onClick={() => { setChangeCode(selectedShipment.shipment.code); setActiveView('change-requests'); }}>Yêu cầu đổi thông tin giao</button><button className="btn btn-secondary" onClick={() => { setReturnCode(selectedShipment.shipment.code); setActiveView('returns'); }}>Yêu cầu hoàn hàng</button></div>{detailError ? <p className="message error">{detailError}</p> : null}{detailSuccess ? <p className="message success">{detailSuccess}</p> : null}</div><div className="card"><h3>Timeline xử lý đơn</h3>{detailTrackError ? <p className="message error">{detailTrackError}</p> : null}<div className="timeline">{detailTrackTimeline.length === 0 ? <div className="empty">Chưa có tracking event.</div> : detailTrackTimeline.map((ev) => <div key={ev.id} className="timeline-item"><strong>{ev.eventType}</strong><div className="muted">{formatDate(ev.occurredAt)} | actor={ev.actor ?? 'system'} | loc={ev.locationCode ?? 'N/A'}</div></div>)}</div>{detailTrackCurrent ? <p className="muted">Current: {detailTrackCurrent.currentStatus ?? 'N/A'} | Last event: {detailTrackCurrent.lastEventType ?? 'N/A'}</p> : null}</div></>}</section> : null}
+          {activeView === 'shipment-detail' ? <section className="grid">{!selectedShipment ? <div className="card"><div className="empty">Chưa chọn shipment.</div></div> : <><div className="card"><h3>Chi tiết shipment {selectedShipment.shipment.code}</h3><div className="details-grid"><div className="detail-box"><div className="label">Người gửi</div><div>{selectedShipment.senderName}<br />{selectedShipment.senderPhone}<br />{selectedShipment.senderAddress}</div></div><div className="detail-box"><div className="label">Hub gửi</div><div>{selectedShipment.senderHubCode}<br />{selectedShipment.senderWard}, {selectedShipment.senderProvince}</div></div><div className="detail-box"><div className="label">Người nhận</div><div>{selectedShipment.receiverName}<br />{selectedShipment.receiverPhone}<br />{selectedShipment.receiverAddress}</div></div><div className="detail-box"><div className="label">Hub nhận</div><div>{selectedShipment.receiverHubCode}<br />{selectedShipment.receiverWard}, {selectedShipment.receiverProvince}</div></div><div className="detail-box"><div className="label">Hàng hóa</div><div>{selectedShipment.itemType}<br />{selectedShipment.weightKg}kg</div></div><div className="detail-box"><div className="label">COD / Phí</div><div>{formatCurrency(selectedShipment.codAmount)}<br />{formatCurrency(selectedShipment.feeEstimate)}</div></div><div className="detail-box"><div className="label">Dịch vụ</div><div>{selectedShipment.serviceType}</div></div><div className="detail-box"><div className="label">Pickup</div><div>{pickupByShipmentCode.get(normalizeCode(selectedShipment.shipment.code))?.pickupCode ?? 'Chưa tạo pickup'}</div></div></div><div className="btn-row" style={{ marginTop: 8 }}><span className={resolveShipmentStatusClass(selectedShipment.shipment)}>{resolveShipmentStatusLabel(selectedShipment.shipment)}</span><button className="btn btn-danger" onClick={() => { const reason = window.prompt('Lý do hủy đơn', '') ?? ''; void cancelShipment(selectedShipment.shipment.code, reason); }}>Hủy đơn</button><button className="btn btn-ghost" onClick={() => printShipment(selectedShipment)}>In vận đơn</button></div></div><div className="card grid"><h3>Sửa đơn nếu còn cho phép</h3><div className="grid grid-3"><input className="input" value={detailReceiverPhone} onChange={(e) => setDetailReceiverPhone(e.target.value)} placeholder="SĐT người nhận" /><input className="input" value={detailReceiverAddress} onChange={(e) => setDetailReceiverAddress(e.target.value)} placeholder="Địa chỉ người nhận" /><input className="input" value={detailDeliveryNote} onChange={(e) => setDetailDeliveryNote(e.target.value)} placeholder="Ghi chú giao hàng" /></div><div className="btn-row"><button className="btn btn-primary" disabled={detailUpdating} onClick={() => { void saveDetailUpdate(); }}>{detailUpdating ? 'Đang cập nhật...' : 'Sửa đơn'}</button><button className="btn btn-secondary" onClick={() => { setChangeCode(selectedShipment.shipment.code); setActiveView('change-requests'); }}>Yêu cầu đổi thông tin giao</button><button className="btn btn-secondary" onClick={() => { setReturnCode(selectedShipment.shipment.code); setActiveView('returns'); }}>Yêu cầu hoàn hàng</button></div>{detailError ? <p className="message error">{detailError}</p> : null}{detailSuccess ? <p className="message success">{detailSuccess}</p> : null}</div><div className="card"><h3>Timeline xử lý đơn</h3>{detailTrackError ? <p className="message error">{detailTrackError}</p> : null}<div className="timeline">{detailTrackTimeline.length === 0 ? <div className="empty">Chưa có tracking event.</div> : detailTrackTimeline.map((ev) => <div key={ev.id} className="timeline-item"><strong>{ev.eventType}</strong><div className="muted">{formatDate(ev.occurredAt)} | actor={ev.actor ?? 'system'} | loc={ev.locationCode ?? 'N/A'}</div></div>)}</div>{detailTrackCurrent ? <p className="muted">Current: {detailTrackCurrent.currentStatus ?? 'N/A'} | Last event: {detailTrackCurrent.lastEventType ?? 'N/A'}</p> : null}</div></>}</section> : null}
 
-          {activeView === 'pickups' ? <><section className="card"><h3>Tạo và quản lý yêu cầu lấy hàng</h3><form className="grid" onSubmit={(e) => { void submitPickupRequest(e); }}><div className="grid grid-3"><textarea className="textarea" value={pickupShipmentCodes} onChange={(e) => setPickupShipmentCodes(e.target.value)} placeholder="Danh sách mã vận đơn" /><input className="input" value={pickupRequesterName} onChange={(e) => setPickupRequesterName(e.target.value)} placeholder="Người yêu cầu" /><input className="input" value={pickupContactPhone} onChange={(e) => setPickupContactPhone(e.target.value)} placeholder="SĐT liên hệ" /><input className="input" value={pickupAddress} onChange={(e) => setPickupAddress(e.target.value)} placeholder="Địa chỉ lấy hàng" /><input className="input" value={pickupDesiredTime} onChange={(e) => setPickupDesiredTime(e.target.value)} placeholder="Thời gian mong muốn" /><input className="input" value={pickupNote} onChange={(e) => setPickupNote(e.target.value)} placeholder="Ghi chú courier" /></div><button className="btn btn-primary" type="submit" disabled={pickupLoading}>{pickupLoading ? 'Đang tạo...' : 'Tạo yêu cầu lấy hàng'}</button></form>{pickupMessage ? <p className="message">{pickupMessage}</p> : null}</section><section className="card"><div className="btn-row"><select className="select" style={{ maxWidth: 220 }} value={pickupStatusFilter} onChange={(e) => setPickupStatusFilter(e.target.value)}><option value="ALL">Tất cả</option><option value="REQUESTED">chờ duyệt</option><option value="COMPLETED">đã lấy/hoàn tất</option><option value="CANCELLED">đã há»§y</option></select></div><div className="table-wrap"><table><thead><tr><th>Mã lấy hàng</th><th>Vận đơn</th><th>Trạng thái</th><th>Shipper</th><th>Ngày tạo</th><th>Hành động</th></tr></thead><tbody>{pickupRows.map((item) => <tr key={item.id}><td>{item.pickupCode}</td><td>{item.items.map((it) => it.shipmentCode).join(', ') || '-'}</td><td><span className={statusClass(item.status)}>{item.status}</span></td><td>Chưa gán</td><td>{formatDate(item.createdAt)}</td><td><button className="btn btn-danger" disabled={item.status !== 'REQUESTED'} onClick={() => { if (!session) return; const reason = window.prompt('Lý do hủy pickup', '') ?? ''; void request<PickupRequest>(`/merchant/pickup/pickups/${encodeURIComponent(item.id)}/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason: reason.trim() || null }) }, session.accessToken).then((cancelled) => setPickups((prev) => prev.map((pickup) => pickup.id === item.id ? cancelled : pickup))); }}>Hủy pickup</button></td></tr>)}</tbody></table></div></section></> : null}
+          {activeView === 'pickups' ? <><section className="card"><h3>Tạo và quản lý yêu cầu lấy hàng</h3><form className="grid" onSubmit={(e) => { void submitPickupRequest(e); }}><div className="grid grid-3"><textarea className="textarea" value={pickupShipmentCodes} onChange={(e) => setPickupShipmentCodes(e.target.value)} placeholder="Danh sách mã vận đơn" /><input className="input" value={pickupRequesterName} onChange={(e) => setPickupRequesterName(e.target.value)} placeholder="Người yêu cầu" /><input className="input" value={pickupContactPhone} onChange={(e) => setPickupContactPhone(e.target.value)} placeholder="SĐT liên hệ" /><input className="input" value={pickupAddress} onChange={(e) => setPickupAddress(e.target.value)} placeholder="Địa chỉ lấy hàng" /><input className="input" value={pickupDesiredTime} onChange={(e) => setPickupDesiredTime(e.target.value)} placeholder="Thời gian mong muốn" /><input className="input" value={pickupNote} onChange={(e) => setPickupNote(e.target.value)} placeholder="Ghi chú courier" /></div><button className="btn btn-primary" type="submit" disabled={pickupLoading}>{pickupLoading ? 'Đang tạo...' : 'Tạo yêu cầu lấy hàng'}</button></form>{pickupMessage ? <p className="message">{pickupMessage}</p> : null}</section><section className="card"><div className="btn-row"><select className="select" style={{ maxWidth: 220 }} value={pickupStatusFilter} onChange={(e) => setPickupStatusFilter(e.target.value)}><option value="ALL">Tất cả</option><option value="REQUESTED">chờ duyệt</option><option value="COMPLETED">đã lấy/hoàn tất</option><option value="CANCELLED">đã hủy</option></select></div><div className="table-wrap"><table><thead><tr><th>Mã lấy hàng</th><th>Vận đơn</th><th>Trạng thái</th><th>Shipper</th><th>Ngày tạo</th><th>Hành động</th></tr></thead><tbody>{pickupRows.map((item) => <tr key={item.id}><td>{item.pickupCode}</td><td>{item.items.map((it) => it.shipmentCode).join(', ') || '-'}</td><td><span className={statusClass(item.status)}>{item.status}</span></td><td>Chưa gán</td><td>{formatDate(item.createdAt)}</td><td><button className="btn btn-danger" disabled={item.status !== 'REQUESTED'} onClick={() => { if (!session) return; const reason = window.prompt('Lý do hủy pickup', '') ?? ''; void request<PickupRequest>(`/merchant/pickup/pickups/${encodeURIComponent(item.id)}/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason: reason.trim() || null }) }, session.accessToken).then((cancelled) => setPickups((prev) => prev.map((pickup) => pickup.id === item.id ? cancelled : pickup))); }}>Hủy pickup</button></td></tr>)}</tbody></table></div></section></> : null}
 
-          {activeView === 'tracking' ? <><section className="card"><h3>Tra cứu nội bộ</h3><form className="btn-row" onSubmit={(e) => { void lookupTracking(e); }}><input className="input" style={{ maxWidth: 320 }} value={trackingCode} onChange={(e) => setTrackingCode(e.target.value)} placeholder="Mã vận đơn" /><button className="btn btn-primary" type="submit" disabled={trackingLoading}>{trackingLoading ? 'Đang tải...' : 'Tra cứu'}</button></form>{trackingError ? <p className="message error">{trackingError}</p> : null}</section><section className="card"><div className="details-grid"><div className="detail-box"><div className="label">Trạng thái hiện tại</div><div>{trackingCurrent?.currentStatus ?? 'N/A'}</div></div><div className="detail-box"><div className="label">Vị trí hiện tại</div><div>{trackingCurrent?.currentLocationCode ?? 'N/A'}</div></div><div className="detail-box"><div className="label">Sá»± kiện cuối</div><div>{trackingCurrent?.lastEventType ?? 'N/A'}</div></div><div className="detail-box"><div className="label">Thời điểm sá»± kiện cuối</div><div>{formatDate(trackingCurrent?.lastEventAt ?? null)}</div></div></div><div className="timeline" style={{ marginTop: 8 }}>{trackingTimeline.length === 0 ? <div className="empty">Chưa có timeline event.</div> : trackingTimeline.map((ev) => <div key={ev.id} className="timeline-item"><strong>{ev.eventType}</strong><div className="muted">{formatDate(ev.occurredAt)} | actor={ev.actor ?? 'system'} | vá»_trÃ­={ev.locationCode ?? 'N/A'}</div></div>)}</div></section></> : null}
+          {activeView === 'tracking' ? <><section className="card"><h3>Tra cứu nội bộ</h3><form className="btn-row" onSubmit={(e) => { void lookupTracking(e); }}><input className="input" style={{ maxWidth: 320 }} value={trackingCode} onChange={(e) => setTrackingCode(e.target.value)} placeholder="Mã vận đơn" /><button className="btn btn-primary" type="submit" disabled={trackingLoading}>{trackingLoading ? 'Đang tải...' : 'Tra cứu'}</button></form>{trackingError ? <p className="message error">{trackingError}</p> : null}</section><section className="card"><div className="details-grid"><div className="detail-box"><div className="label">Trạng thái hiện tại</div><div>{trackingCurrent?.currentStatus ?? 'N/A'}</div></div><div className="detail-box"><div className="label">Vị trí hiện tại</div><div>{trackingCurrent?.currentLocationCode ?? 'N/A'}</div></div><div className="detail-box"><div className="label">Sự kiện cuối</div><div>{trackingCurrent?.lastEventType ?? 'N/A'}</div></div><div className="detail-box"><div className="label">Thời điểm sự kiện cuối</div><div>{formatDate(trackingCurrent?.lastEventAt ?? null)}</div></div></div><div className="timeline" style={{ marginTop: 8 }}>{trackingTimeline.length === 0 ? <div className="empty">Chưa có timeline event.</div> : trackingTimeline.map((ev) => <div key={ev.id} className="timeline-item"><strong>{ev.eventType}</strong><div className="muted">{formatDate(ev.occurredAt)} | actor={ev.actor ?? 'system'} | vị_trí={ev.locationCode ?? 'N/A'}</div></div>)}</div></section></> : null}
 
           {activeView === 'change-requests' ? <><section className="card"><h3>Quản lý yêu cầu thay đổi giao hàng</h3><form className="grid" onSubmit={(e) => { void submitChangeRequest(e); }}><div className="grid grid-3"><input className="input" value={changeCode} onChange={(e) => setChangeCode(e.target.value)} placeholder="Mã vận đơn" /><select className="select" value={changeType} onChange={(e) => setChangeType(e.target.value)}><option value="change.phone">Đổi số điện thoại</option><option value="change.address">Đổi địa chỉ giao</option><option value="change.note">Đổi ghi chú giao</option></select><input className="input" value={changeValue} onChange={(e) => setChangeValue(e.target.value)} placeholder="Giá trị mới" /></div><button className="btn btn-primary" type="submit" disabled={changeLoading}>{changeLoading ? 'Đang gửi...' : 'Tạo yêu cầu thay đổi'}</button></form>{changeMessage ? <p className="message">{changeMessage}</p> : null}</section><section className="card"><div className="btn-row"><select className="select" style={{ maxWidth: 220 }} value={changeStatusFilter} onChange={(e) => setChangeStatusFilter(e.target.value)}><option value="ALL">Tất cả</option><option value="PENDING">PENDING</option><option value="APPROVED">APPROVED</option><option value="REJECTED">REJECTED</option></select></div><div className="table-wrap"><table><thead><tr><th>ID</th><th>Vận đơn</th><th>Loại</th><th>Trạng thái</th><th>Người yêu cầu</th><th>Ngày tạo</th></tr></thead><tbody>{changeRows.map((item) => <tr key={item.id}><td>{item.id}</td><td>{item.shipmentCode}</td><td>{item.requestType}</td><td><span className={statusClass(item.status)}>{item.status}</span></td><td>{item.requestedBy ?? '-'}</td><td>{formatDate(item.createdAt)}</td></tr>)}</tbody></table></div></section></> : null}
 
@@ -1392,4 +1851,8 @@ createRoot(rootElement).render(
     <MerchantApp />
   </React.StrictMode>,
 );
+
+
+
+
 

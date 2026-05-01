@@ -80,7 +80,7 @@ export function TrackingLookupScreen(): React.JSX.Element {
       refreshing={trackingQuery.isRefetching}
     >
       <Card style={styles.lookupCard}>
-        <Text style={styles.lookupTitle}>Tra cuu hanh trinh don hang</Text>
+        <Text style={styles.lookupTitle}>Tra cứu hành trình don hang</Text>
         <Text style={styles.lookupSubtitle}>
           Nhap ma van don de xem toan bo lich su tu luc nhan hang den khi giao thanh cong.
         </Text>
@@ -113,7 +113,7 @@ export function TrackingLookupScreen(): React.JSX.Element {
             <Ionicons name="search-outline" size={16} color="#FFFFFF" />
           )}
           <Text style={styles.searchButtonText}>
-            {trackingQuery.isLoading ? 'Dang tra cuu...' : 'Tra cuu hanh trinh'}
+            {trackingQuery.isLoading ? 'Dang tra cuu...' : 'Tra cứu hành trình'}
           </Text>
         </Pressable>
       </Card>

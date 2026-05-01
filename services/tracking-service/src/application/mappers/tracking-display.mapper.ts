@@ -8,6 +8,7 @@ export const TRACKING_BUSINESS_EVENTS = [
   'scan.pickup_confirmed',
   'manifest.sealed',
   'manifest.received',
+  'manifest.unsealed',
   'scan.outbound',
   'scan.inbound',
   'delivery.attempted',
@@ -31,6 +32,7 @@ export const TRACKING_STATUS_BY_EVENT: Record<
   'scan.pickup_confirmed': 'PICKED_UP',
   'manifest.sealed': 'IN_TRANSIT',
   'manifest.received': 'INBOUND_AT_HUB',
+  'manifest.unsealed': 'MANIFEST_UNSEALED',
   'scan.outbound': 'OUTBOUND_FROM_HUB',
   'scan.inbound': 'INBOUND_AT_HUB',
   'delivery.attempted': 'DELIVERING',
@@ -62,6 +64,7 @@ const STATUS_LABELS_VI: Record<string, string> = {
   TASK_ASSIGNED: 'Đã phân công tác vụ',
   MANIFEST_SEALED: 'Đang trung chuyển',
   MANIFEST_RECEIVED: 'Đã đến kho trung chuyển',
+  MANIFEST_UNSEALED: 'Đã gỡ bao',
   SCAN_INBOUND: 'Đã đến kho',
   SCAN_OUTBOUND: 'Đã rời kho',
   NDR_CREATED: 'Đơn hàng đang được xử lý lại',
@@ -78,6 +81,7 @@ const EVENT_LABELS_VI: Record<TrackingBusinessEventType, string> = {
   'scan.pickup_confirmed': 'Shipper đã lấy hàng',
   'manifest.sealed': 'Hàng đã được đóng bao và chuẩn bị vận chuyển',
   'manifest.received': 'Hàng đã đến kho trung chuyển',
+  'manifest.unsealed': 'Hàng đã được gỡ khỏi bao',
   'scan.outbound': 'Hàng đã rời kho',
   'scan.inbound': 'Hàng đã đến kho',
   'delivery.attempted': 'Shipper đang giao hàng',
@@ -155,6 +159,13 @@ export function toTimelineTextVi(
     return withLocationSuffix(
       EVENT_LABELS_VI['manifest.received'],
       locationCode ?? readHubCode(event.data, ['manifest', 'destinationHubCode']),
+    );
+  }
+
+  if (event.event_type === 'manifest.unsealed') {
+    return withLocationSuffix(
+      EVENT_LABELS_VI['manifest.unsealed'],
+      locationCode ?? readHubCode(event.data, ['unseal', 'processingHubCode']),
     );
   }
 

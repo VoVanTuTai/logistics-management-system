@@ -223,9 +223,9 @@ export function NdrReasonManagementPage(): React.JSX.Element {
 
   return (
     <div>
-      <h2>Du Lieu Danh Muc - Quan Ly Ly Do NDR</h2>
+      <h2>Dữ liệu danh mục - Quản lý lý do NDR</h2>
       <p style={styles.helperText}>
-        Quan ly bo ly do thất bại chuan hoa dung cho giao hàng va van hanh.
+        Quản lý bộ lý do thất bại chuẩn hóa dùng cho giao hàng và vận hành.
       </p>
 
       <form onSubmit={onApplyFilters} style={styles.filterForm}>
@@ -265,9 +265,9 @@ export function NdrReasonManagementPage(): React.JSX.Element {
           <option value="true">ACTIVE</option>
           <option value="false">INACTIVE</option>
         </select>
-        <button type="submit">Ap dung</button>
+        <button type="submit">Áp dụng</button>
         <button type="button" onClick={onResetFilters}>
-          Dat lai
+          Đặt lại
         </button>
         <button type="button" onClick={openCreateModal}>
           Tạo lý do
@@ -298,13 +298,13 @@ export function NdrReasonManagementPage(): React.JSX.Element {
           <thead>
             <tr>
               <th style={styles.headerCell}>Code</th>
-              <th style={styles.headerCell}>Ten</th>
+              <th style={styles.headerCell}>Tên</th>
               <th style={styles.headerCell}>Nhom</th>
               <th style={styles.headerCell}>Hen lai</th>
-              <th style={styles.headerCell}>Hoan</th>
+              <th style={styles.headerCell}>Hoàn</th>
               <th style={styles.headerCell}>Trạng thái</th>
               <th style={styles.headerCell}>Cập nhật</th>
-              <th style={styles.headerCell}>Hanh dong</th>
+              <th style={styles.headerCell}>Hành động</th>
             </tr>
           </thead>
           <tbody>
@@ -369,7 +369,7 @@ export function NdrReasonManagementPage(): React.JSX.Element {
                   <strong>Cho phép hoàn:</strong> {payload.allowReturn ? 'CÓ' : 'KHÔNG'}
                 </p>
                 <p>
-                  <strong>Thu tu:</strong> {payload.sortOrder}
+                  <strong>Thứ tự:</strong> {payload.sortOrder}
                 </p>
                 <p>
                   <strong>Trạng thái:</strong>{' '}
@@ -447,7 +447,7 @@ export function NdrReasonManagementPage(): React.JSX.Element {
             </select>
           </label>
           <label style={styles.fieldLabel}>
-            Thu tu
+            Thứ tự
             <input
               type="number"
               value={form.sortOrder}
@@ -461,7 +461,7 @@ export function NdrReasonManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={{ ...styles.fieldLabel, gridColumn: '1 / -1' }}>
-            Mo ta
+            Mô tả
             <textarea
               value={form.description}
               onChange={(event) =>

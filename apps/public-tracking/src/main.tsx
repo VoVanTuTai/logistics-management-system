@@ -81,6 +81,7 @@ function mapStatusToStep(statusCode: string | null): number {
     statusCode === 'OUTBOUND_FROM_HUB' ||
     statusCode === 'MANIFEST_SEALED' ||
     statusCode === 'MANIFEST_RECEIVED' ||
+    statusCode === 'MANIFEST_UNSEALED' ||
     statusCode === 'SCAN_INBOUND' ||
     statusCode === 'SCAN_OUTBOUND'
   ) {

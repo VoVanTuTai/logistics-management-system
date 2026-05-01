@@ -69,7 +69,7 @@ export function PickupRequestDetailPage(): React.JSX.Element {
           : 'chưa-có';
 
   if (detailQuery.isLoading) {
-    return <p>Đang tải chi tiet yêu cầu lấy hàng...</p>;
+    return <p>Đang tải chi tiết yêu cầu lấy hàng...</p>;
   }
 
   if (detailQuery.isError) {
@@ -87,18 +87,18 @@ export function PickupRequestDetailPage(): React.JSX.Element {
     <section>
       <h2>Chi tiết yêu cầu lấy hàng</h2>
       <p>
-        <Link to={routePaths.pickups}>Quay lại danh sach yêu cầu lấy hàng</Link>
+        <Link to={routePaths.pickups}>Quay lại danh sách yêu cầu lấy hàng</Link>
       </p>
-      <p>Ma yêu cầu: {detailQuery.data.requestCode}</p>
-      <p>Ma vận đơn: {detailQuery.data.shipmentCode ?? 'Không có'}</p>
+      <p>Mã yêu cầu: {detailQuery.data.requestCode}</p>
+      <p>Mã vận đơn: {detailQuery.data.shipmentCode ?? 'Không có'}</p>
       <p>Trạng thái: {formatPickupStatusLabel(detailQuery.data.status)}</p>
-      <p>Thoi diem tao: {formatDateTime(detailQuery.data.requestedAt)}</p>
+      <p>Thời điểm tạo: {formatDateTime(detailQuery.data.requestedAt)}</p>
       <p>Cập nhật lúc: {detailQuery.data.updatedAt ? formatDateTime(detailQuery.data.updatedAt) : 'Không có'}</p>
-      <p>Ghi chu: {detailQuery.data.note ?? 'Không có'}</p>
+      <p>Ghi chú: {detailQuery.data.note ?? 'Không có'}</p>
 
       <div style={styles.actionsGrid}>
         <form onSubmit={onApproveSubmit} style={styles.form}>
-          <h3 style={styles.actionTitle}>Duyet</h3>
+          <h3 style={styles.actionTitle}>Duyệt</h3>
           <textarea rows={3} placeholder="Ghi chú duyệt" {...approveForm.register('note')} />
           <button type="submit" disabled={approveMutation.isPending}>
             {approveMutation.isPending ? 'Đang gửi duyệt...' : 'Duyệt lấy hàng'}
@@ -109,7 +109,7 @@ export function PickupRequestDetailPage(): React.JSX.Element {
         </form>
 
         <form onSubmit={onRejectSubmit} style={styles.form}>
-          <h3 style={styles.actionTitle}>Tu choi</h3>
+          <h3 style={styles.actionTitle}>Từ chối</h3>
           <textarea rows={3} placeholder="Lý do từ chối" {...rejectForm.register('note')} />
           <button type="submit" disabled={rejectMutation.isPending}>
             {rejectMutation.isPending ? 'Đang gửi từ chối...' : 'Từ chối lấy hàng'}
@@ -130,7 +130,7 @@ export function PickupRequestDetailPage(): React.JSX.Element {
           </button>
           {!canComplete ? (
             <small>
-              Chi hoàn tất lấy hàng khi trạng thái la {formatPickupStatusLabel('APPROVED')}.
+              Chỉ hoàn tất lấy hàng khi trạng thái là {formatPickupStatusLabel('APPROVED')}.
             </small>
           ) : null}
           {completeMutation.isError ? (
@@ -141,7 +141,7 @@ export function PickupRequestDetailPage(): React.JSX.Element {
 
       {lastActionResponse ? (
         <div style={styles.responseBox}>
-          <strong>Phan hoi hệ thống moi nhat ({lastActionLabel})</strong>
+          <strong>Phản hồi hệ thống mới nhất ({lastActionLabel})</strong>
           <pre style={styles.pre}>{JSON.stringify(lastActionResponse, null, 2)}</pre>
         </div>
       ) : null}

@@ -26,6 +26,24 @@ export class ManifestOutboxService {
     return this.enqueueMany(events);
   }
 
+  async enqueueManifestUnsealed(
+    manifest: Manifest,
+    shipmentCodes: string[],
+    actorInput: {
+      unsealedBy?: string | null;
+      unsealedByName?: string | null;
+      processingHubCode?: string | null;
+      note?: string | null;
+    },
+  ): Promise<OutboxEvent[]> {
+    const events = this.manifestEventsProducer.buildManifestUnsealedEvents(
+      manifest,
+      shipmentCodes,
+      actorInput,
+    );
+    return this.enqueueMany(events);
+  }
+
   private enqueueMany(events: QueueOutboxEventInput[]): Promise<OutboxEvent[]> {
     return Promise.all(events.map((event) => this.outboxEventRepository.create(event)));
   }

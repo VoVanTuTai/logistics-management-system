@@ -1,0 +1,100 @@
+.ops-thermal-management {
+  display: grid;
+  gap: 12px;
+}
+
+.ops-thermal-management__header {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 14px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.ops-thermal-management__header small {
+  color: #64748b;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.ops-thermal-management__header h2 {
+  margin: 8px 0 4px;
+  color: #334155;
+  font-size: 24px;
+}
+
+.ops-thermal-management__header p {
+  margin: 0;
+  color: #64748b;
+}
+
+.ops-thermal-management__summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ops-thermal-management__summary-card {
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 10px 12px;
+  display: grid;
+  gap: 4px;
+}
+
+.ops-thermal-management__summary-card span {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ops-thermal-management__summary-card strong {
+  color: #1e3a8a;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.ops-thermal-management__table-wrap {
+  border: 1px solid #d8e0ec;
+  border-radius: 10px;
+  overflow: auto;
+  max-width: 100%;
+}
+
+.ops-thermal-management__table {
+  width: 100%;
+  min-width: 920px;
+  border-collapse: collapse;
+  background: #ffffff;
+}
+
+.ops-thermal-management__table th,
+.ops-thermal-management__table td {
+  border: 1px solid #e2e8f0;
+  padding: 10px 10px;
+  text-align: center;
+  color: #475569;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.ops-thermal-management__table th {
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 700;
+}
+
+.ops-thermal-management__bag-code {
+  color: #1d4ed8 !important;
+  font-weight: 700;
+}
+
+@media (max-width: 860px) {
+  .ops-thermal-management__summary {
+    grid-template-columns: 1fr;
+  }
+}
+

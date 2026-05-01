@@ -61,7 +61,7 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Nhan in vận đơn ${codeText}</title>
+    <title>Nhãn in vận đơn ${codeText}</title>
     <style>
       @page { size: 100mm 150mm; margin: 0; }
       * { box-sizing: border-box; }

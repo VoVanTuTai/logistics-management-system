@@ -3,7 +3,9 @@ import { z } from 'zod';
 export interface AuthenticatedUserDto {
   id: string;
   username: string;
+  displayName?: string | null;
   roles: string[];
+  hubCodes?: string[];
 }
 
 export interface AuthTokensDto {

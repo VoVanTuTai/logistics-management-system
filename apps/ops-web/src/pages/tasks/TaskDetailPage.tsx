@@ -56,7 +56,7 @@ export function TaskDetailPage(): React.JSX.Element {
       setLastActionResponse(response);
       setActionNotice({
         tone: 'success',
-        message: `Đã phân công tác vụ cho nhan vien giao ${response.task.assignedCourierId ?? payload.courierId}.`,
+        message: `Đã phân công tác vụ cho nhân viên giao ${response.task.assignedCourierId ?? payload.courierId}.`,
       });
     } catch (error) {
       setActionNotice({
@@ -74,7 +74,7 @@ export function TaskDetailPage(): React.JSX.Element {
       setLastActionResponse(response);
       setActionNotice({
         tone: 'success',
-        message: `Đã phân công lai tác vụ cho nhan vien giao ${response.task.assignedCourierId ?? payload.courierId}.`,
+        message: `Đã phân công lại tác vụ cho nhân viên giao ${response.task.assignedCourierId ?? payload.courierId}.`,
       });
     } catch (error) {
       setActionNotice({
@@ -92,7 +92,7 @@ export function TaskDetailPage(): React.JSX.Element {
         : 'chưa-có';
 
   if (detailQuery.isLoading) {
-    return <p>Đang tải chi tiet tác vụ...</p>;
+    return <p>Đang tải chi tiết tác vụ...</p>;
   }
 
   if (detailQuery.isError) {
@@ -107,23 +107,23 @@ export function TaskDetailPage(): React.JSX.Element {
     <section>
       <h2>Chi tiết tác vụ</h2>
       <p>
-        <Link to={routePaths.tasks}>Quay lại danh sach tác vụ</Link>
+        <Link to={routePaths.tasks}>Quay lại danh sách tác vụ</Link>
       </p>
 
-      <p>Ma tác vụ: {detailQuery.data.taskCode}</p>
-      <p>Loai tác vụ: {formatTaskTypeLabel(detailQuery.data.taskType)}</p>
+      <p>Mã tác vụ: {detailQuery.data.taskCode}</p>
+      <p>Loại tác vụ: {formatTaskTypeLabel(detailQuery.data.taskType)}</p>
       <p>Trạng thái: {formatTaskStatusLabel(detailQuery.data.status)}</p>
-      <p>Ma vận đơn: {detailQuery.data.shipmentCode ?? 'Không có'}</p>
-      <p>Nhan vien giao duoc gan: {detailQuery.data.assignedCourierId ?? 'Không có'}</p>
+      <p>Mã vận đơn: {detailQuery.data.shipmentCode ?? 'Không có'}</p>
+      <p>Nhân viên giao được gán: {detailQuery.data.assignedCourierId ?? 'Không có'}</p>
       <p>Cập nhật lúc: {formatDateTime(detailQuery.data.updatedAt)}</p>
-      <p>Ghi chu: {detailQuery.data.note ?? 'Không có'}</p>
+      <p>Ghi chú: {detailQuery.data.note ?? 'Không có'}</p>
 
       <div style={styles.actionButtons}>
         <button type="button" onClick={() => setOpenModal('assign')}>
-          Mo form phan cong
+          Mở form phân công
         </button>
         <button type="button" onClick={() => setOpenModal('reassign')}>
-          Mo form phan cong lai
+          Mở form phân công lại
         </button>
       </div>
 
@@ -147,7 +147,7 @@ export function TaskDetailPage(): React.JSX.Element {
 
       {lastActionResponse ? (
         <div style={styles.responseBox}>
-          <strong>Phan hoi backend gan nhat ({lastActionLabel})</strong>
+          <strong>Phản hồi backend gần nhất ({lastActionLabel})</strong>
           <pre style={styles.pre}>{JSON.stringify(lastActionResponse, null, 2)}</pre>
         </div>
       ) : null}

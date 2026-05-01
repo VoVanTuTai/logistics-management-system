@@ -1,5 +1,5 @@
 export type UserStatus = 'ACTIVE' | 'DISABLED';
-export type UserRoleGroup = 'OPS' | 'SHIPPER';
+export type UserRoleGroup = 'OPS' | 'SHIPPER' | 'MERCHANT';
 
 export interface UserAccount {
   id: string;
@@ -17,6 +17,8 @@ export interface UserAccount {
 export interface AuthenticatedUser {
   id: string;
   username: string;
+  displayName: string | null;
+  phone: string | null;
   roles: string[];
   hubCodes: string[];
 }

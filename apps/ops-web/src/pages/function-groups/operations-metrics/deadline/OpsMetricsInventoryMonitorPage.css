@@ -1,0 +1,136 @@
+﻿.ops-metrics-inventory {
+  display: grid;
+  gap: 12px;
+}
+
+.ops-metrics-inventory__tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  border-bottom: 1px solid #dbe3ef;
+}
+
+.ops-metrics-inventory__tab {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: #64748b;
+  font-weight: 600;
+  padding: 8px 4px;
+}
+
+.ops-metrics-inventory__tab--active {
+  color: #c1121f;
+  border-bottom-color: #dc2626;
+}
+
+.ops-metrics-inventory__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ops-metrics-inventory__search-btn,
+.ops-metrics-inventory__export-btn {
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1;
+  padding: 8px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ops-metrics-inventory__search-btn {
+  border: 1px solid #dc2626;
+  background: #ffffff;
+  color: #b91c1c;
+}
+
+.ops-metrics-inventory__search-btn span {
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+}
+
+.ops-metrics-inventory__search-btn svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ops-metrics-inventory__export-btn {
+  border: 1px solid #d8e0ec;
+  background: #ffffff;
+  color: #475569;
+}
+
+.ops-metrics-inventory__filters {
+  display: grid;
+  grid-template-columns: minmax(220px, 320px);
+  gap: 8px;
+}
+
+.ops-metrics-inventory__filter-field {
+  display: grid;
+  gap: 5px;
+}
+
+.ops-metrics-inventory__filter-field span {
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ops-metrics-inventory__filter-field select {
+  border: 1px solid #d0d9e6;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #334155;
+  height: 38px;
+  padding: 8px 10px;
+}
+
+.ops-metrics-inventory__table-wrap {
+  border: 1px solid #d8e0ec;
+  border-radius: 10px;
+  overflow: auto;
+}
+
+.ops-metrics-inventory__table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 700px;
+}
+
+.ops-metrics-inventory__table th,
+.ops-metrics-inventory__table td {
+  border: 1px solid #e2e8f0;
+  padding: 10px;
+  text-align: center;
+  white-space: nowrap;
+  color: #475569;
+}
+
+.ops-metrics-inventory__table th {
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 700;
+}
+
+.ops-metrics-inventory__danger-cell {
+  color: #be123c !important;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .ops-metrics-inventory__filters {
+    grid-template-columns: 1fr;
+  }
+}

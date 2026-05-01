@@ -271,9 +271,9 @@ export function HubManagementPage(): React.JSX.Element {
 
   return (
     <div>
-      <h2>Du Lieu Danh Muc - Quan Ly Hub</h2>
+      <h2>Dữ liệu danh mục - Quản lý Hub</h2>
       <p style={styles.helperText}>
-        Quan ly danh muc hub dung chung cho van hanh va dieu phoi.
+        Quản lý danh mục hub dùng chung cho vận hành và điều phối.
       </p>
 
       <form onSubmit={onApplyFilters} style={styles.filterForm}>
@@ -335,9 +335,9 @@ export function HubManagementPage(): React.JSX.Element {
           }
           style={styles.input}
         />
-        <button type="submit">Ap dung</button>
+        <button type="submit">Áp dụng</button>
         <button type="button" onClick={onResetFilters}>
-          Dat lai
+          Đặt lại
         </button>
         <button type="button" onClick={openCreateModal}>
           Tạo hub
@@ -367,15 +367,15 @@ export function HubManagementPage(): React.JSX.Element {
         <table style={styles.table}>
           <thead>
             <tr>
-              <th style={styles.headerCell}>Ma</th>
-              <th style={styles.headerCell}>Ten</th>
+              <th style={styles.headerCell}>Mã</th>
+              <th style={styles.headerCell}>Tên</th>
               <th style={styles.headerCell}>Loai</th>
               <th style={styles.headerCell}>Zone</th>
-              <th style={styles.headerCell}>Dia chi</th>
+              <th style={styles.headerCell}>Địa chỉ</th>
               <th style={styles.headerCell}>Lien he</th>
               <th style={styles.headerCell}>Trạng thái</th>
               <th style={styles.headerCell}>Cập nhật</th>
-              <th style={styles.headerCell}>Hanh dong</th>
+              <th style={styles.headerCell}>Hành động</th>
             </tr>
           </thead>
           <tbody>
@@ -431,7 +431,7 @@ export function HubManagementPage(): React.JSX.Element {
             <strong>Trạng thái:</strong> {selectedHub.isActive ? 'ACTIVE' : 'INACTIVE'}
           </p>
           <p>
-            <strong>Tao luc:</strong> {formatDateTime(selectedHub.createdAt)}
+            <strong>Tạo lúc:</strong> {formatDateTime(selectedHub.createdAt)}
           </p>
           <p>
             <strong>Cập nhật lúc:</strong> {formatDateTime(selectedHub.updatedAt)}
@@ -490,7 +490,7 @@ export function HubManagementPage(): React.JSX.Element {
               }
               style={styles.input}
             >
-              <option value="">Chon loai</option>
+              <option value="">Chọn loại</option>
               <option value="BRANCH">BRANCH</option>
               <option value="SORTING_CENTER">SORTING_CENTER</option>
               <option value="TRANSIT_HUB">TRANSIT_HUB</option>
@@ -511,7 +511,7 @@ export function HubManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Dia chi
+            Địa chỉ
             <input
               value={form.addressLine}
               onChange={(event) =>
@@ -524,7 +524,7 @@ export function HubManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Phuong/Xa
+            Phường/Xã
             <input
               value={form.ward}
               onChange={(event) =>
@@ -537,7 +537,7 @@ export function HubManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Quan/Huyen
+            Quận/Huyện
             <input
               value={form.district}
               onChange={(event) =>
@@ -550,7 +550,7 @@ export function HubManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Tinh/Thanh
+            Tỉnh/Thành
             <input
               value={form.province}
               onChange={(event) =>
@@ -563,7 +563,7 @@ export function HubManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            So dien thoai
+            Số điện thoại
             <input
               value={form.phone}
               onChange={(event) =>
@@ -576,7 +576,7 @@ export function HubManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Ten lien he
+            Tên liên hệ
             <input
               value={form.contactName}
               onChange={(event) =>
@@ -589,7 +589,7 @@ export function HubManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Mo ta
+            Mô tả
             <input
               value={form.description}
               onChange={(event) =>

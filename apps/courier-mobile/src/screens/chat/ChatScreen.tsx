@@ -10,38 +10,6 @@ import { theme } from '../../theme';
 
 type Props = BottomTabScreenProps<MainTabParamList, 'Chat'>;
 
-interface ChatPreviewItem {
-  id: string;
-  title: string;
-  message: string;
-  unread: number;
-  updatedAtText: string;
-}
-
-const mockConversations: ChatPreviewItem[] = [
-  {
-    id: 'dispatch-room',
-    title: 'Dieu phoi ca',
-    message: 'Cap nhat route truoc 14:00.',
-    unread: 2,
-    updatedAtText: '2p',
-  },
-  {
-    id: 'hub-team',
-    title: 'Hub HCM-01',
-    message: 'Inbound line 3 dang dong, chuyen qua line 1.',
-    unread: 0,
-    updatedAtText: '15p',
-  },
-  {
-    id: 'support',
-    title: 'Hotline ho tro',
-    message: 'Neu app loi scan, gui ma shipment + screenshot.',
-    unread: 1,
-    updatedAtText: '1h',
-  },
-];
-
 export function ChatScreen(_: Props): React.JSX.Element {
   return (
     <Screen contentContainerStyle={styles.content}>
@@ -58,27 +26,9 @@ export function ChatScreen(_: Props): React.JSX.Element {
       <Card style={styles.noticeCard}>
         <Text style={styles.noticeTitle}>Trang thai tin nhan</Text>
         <Text style={styles.noticeText}>
-          TODO: tich hop realtime socket/push sau. Hien tai dung mock de scaffold UI.
+          Chua co kenh chat tu server.
         </Text>
       </Card>
-
-      {mockConversations.map((item) => (
-        <Card key={item.id} onPress={() => {}} style={styles.chatCard}>
-          <View style={styles.chatTopRow}>
-            <Text style={styles.chatTitle}>{item.title}</Text>
-            <Text style={styles.timeText}>{item.updatedAtText}</Text>
-          </View>
-          <Text numberOfLines={2} style={styles.chatMessage}>
-            {item.message}
-          </Text>
-
-          {item.unread > 0 ? (
-            <View style={styles.unreadPill}>
-              <Text style={styles.unreadText}>{item.unread} moi</Text>
-            </View>
-          ) : null}
-        </Card>
-      ))}
     </Screen>
   );
 }
@@ -96,7 +46,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: '800',
+    fontWeight: '700',
     color: theme.colors.textPrimary,
   },
   subtitle: {
@@ -113,7 +63,7 @@ const styles = StyleSheet.create({
   },
   noticeCard: {
     backgroundColor: theme.colors.infoSurface,
-    borderColor: '#C7DAFF',
+    borderColor: '#BFDBFE',
   },
   noticeTitle: {
     color: theme.colors.primary,
@@ -146,7 +96,7 @@ const styles = StyleSheet.create({
   },
   unreadPill: {
     alignSelf: 'flex-start',
-    backgroundColor: '#DBEAFE',
+    backgroundColor: '#EFF6FF',
     borderRadius: theme.radius.pill,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -157,3 +107,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
+

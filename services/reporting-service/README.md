@@ -34,6 +34,7 @@
 - `task.reassigned`
 - `manifest.sealed`
 - `manifest.received`
+- `manifest.unsealed`
 - `scan.pickup_confirmed`
 - `delivery.delivered`
 - `delivery.failed`

@@ -51,13 +51,13 @@ export class TasksService {
   }
 
   async listCouriers(): Promise<string[]> {
-    const seededCouriers = (process.env.DISPATCH_COURIER_OPTIONS ?? '')
+    const configuredCouriers = (process.env.DISPATCH_COURIER_OPTIONS ?? '')
       .split(',')
       .map((value) => value.trim())
       .filter((value) => value.length > 0);
     const assignedCouriers = await this.taskRepository.listCourierIds();
 
-    return Array.from(new Set([...seededCouriers, ...assignedCouriers])).sort(
+    return Array.from(new Set([...configuredCouriers, ...assignedCouriers])).sort(
       (left, right) => left.localeCompare(right),
     );
   }
@@ -157,6 +157,7 @@ export class TasksService {
     note?: string | null;
   }): Promise<Task> {
     const pickupRequestId = payload.pickup_request_id?.trim() ?? null;
+    const shipmentCode = payload.shipment_code?.trim() ?? null;
 
     if (pickupRequestId) {
       const existingTask = await this.taskRepository.findByPickupRequestId(
@@ -167,11 +168,21 @@ export class TasksService {
       }
     }
 
+    if (shipmentCode) {
+      const existingPickupTask = await this.taskRepository.list({
+        shipmentCode,
+        taskType: 'PICKUP',
+      });
+      if (existingPickupTask.length > 0) {
+        return existingPickupTask[0];
+      }
+    }
+
     const task = await this.taskRepository.create({
       taskCode: `task-${randomUUID()}`,
       taskType: 'PICKUP',
       pickupRequestId,
-      shipmentCode: payload.shipment_code ?? null,
+      shipmentCode,
       note: payload.note ?? null,
     });
 

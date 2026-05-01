@@ -330,6 +330,8 @@ export class AuthService {
     return {
       id: user.id,
       username: user.username,
+      displayName: user.displayName,
+      phone: user.phone,
       roles: user.roles,
       hubCodes: user.hubCodes,
     };
@@ -643,10 +645,10 @@ export class AuthService {
       return undefined;
     }
 
-    if (value === 'OPS' || value === 'SHIPPER') {
+    if (value === 'OPS' || value === 'SHIPPER' || value === 'MERCHANT') {
       return value;
     }
 
-    throw new BadRequestException('roleGroup must be OPS or SHIPPER.');
+    throw new BadRequestException('roleGroup must be OPS, SHIPPER, or MERCHANT.');
   }
 }

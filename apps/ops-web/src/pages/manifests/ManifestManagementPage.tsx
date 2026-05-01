@@ -91,17 +91,17 @@ export function ManifestManagementPage(): React.JSX.Element {
     <div>
       <h2>Quản lý bao tải</h2>
       <p style={{ color: '#2d3f99' }}>
-        Tao ma bao trong theo hub dich de bo phan điều hành dung khi dong bao trung chuyen giua
-        cac hub.
+        Tạo mã bao trống theo hub đích để bộ phận điều hành dùng khi đóng bao trung chuyển giữa
+        các hub.
       </p>
 
       {originHubCode ? (
         <p style={styles.scopeText}>
-          Hub hien tai cua ban: <strong>{originHubCode}</strong>
+          Hub hiện tại của bạn: <strong>{originHubCode}</strong>
         </p>
       ) : (
         <p style={styles.warningText}>
-          Tai khoan điều hành chua duoc gan hub nguon, chua the tao ma bao.
+          Tài khoản điều hành chưa được gán hub nguồn, chưa thể tạo mã bao.
         </p>
       )}
 
@@ -116,7 +116,7 @@ export function ManifestManagementPage(): React.JSX.Element {
         <p
           style={{
             ...styles.actionText,
-            ...(actionMessage.startsWith('Da')
+            ...(actionMessage.startsWith('Đã')
               ? styles.successText
               : styles.errorText),
           }}
@@ -150,12 +150,12 @@ export function ManifestManagementPage(): React.JSX.Element {
         </div>
       ) : null}
 
-      {manifestsQuery.isLoading ? <p>Đang tải danh sach bao...</p> : null}
+      {manifestsQuery.isLoading ? <p>Đang tải danh sách bao...</p> : null}
       {manifestsQuery.isError ? (
         <p style={styles.errorText}>{getErrorMessage(manifestsQuery.error)}</p>
       ) : null}
       {manifestsQuery.isSuccess && (manifestsQuery.data?.length ?? 0) === 0 ? (
-        <p>Chua co bao nao.</p>
+        <p>Chưa có bao nào.</p>
       ) : null}
       {manifestsQuery.isSuccess && (manifestsQuery.data?.length ?? 0) > 0 ? (
         <ManifestsTable
