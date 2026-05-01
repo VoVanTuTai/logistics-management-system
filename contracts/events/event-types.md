@@ -10,15 +10,16 @@ Each event represents a business milestone in shipment lifecycle.
 5. `scan.pickup_confirmed`
 6. `manifest.sealed`
 7. `manifest.received`
-8. `scan.outbound`
-9. `scan.inbound`
-10. `task.assigned` (taskType=`DELIVERY`)
-11. `delivery.attempted`
-12. `delivery.delivered`
-13. `delivery.failed`
-14. `ndr.created`
-15. `return.started`
-16. `return.completed`
+8. `manifest.unsealed`
+9. `scan.outbound`
+10. `scan.inbound`
+11. `task.assigned` (taskType=`DELIVERY`)
+12. `delivery.attempted`
+13. `delivery.delivered`
+14. `delivery.failed`
+15. `ndr.created`
+16. `return.started`
+17. `return.completed`
 
 ## Removed Public Bus Events
 

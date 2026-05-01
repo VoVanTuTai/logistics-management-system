@@ -219,7 +219,7 @@ export class ManifestsService {
   ): Promise<Manifest> {
     const manifest = await this.getById(id);
 
-    if (!this.manifestStateMachine.canEdit(manifest.status)) {
+    if (!this.manifestStateMachine.canRemoveShipments(manifest.status)) {
       throw new BadRequestException(
         `Manifest "${manifest.manifestCode}" is ${manifest.status} and cannot change shipments.`,
       );
@@ -246,6 +246,19 @@ export class ManifestsService {
       input.note !== undefined
         ? await this.manifestRepository.update(id, { note: input.note })
         : updatedManifest;
+
+    if (this.shouldPublishManifestUnsealed(manifest.status, input)) {
+      await this.manifestOutboxService.enqueueManifestUnsealed(
+        finalizedManifest,
+        codesToRemove,
+        {
+          unsealedBy: this.normalizeOptionalText(input.unsealedBy),
+          unsealedByName: this.normalizeOptionalText(input.unsealedByName),
+          processingHubCode: this.normalizeHubCode(input.processingHubCode),
+          note: this.normalizeOptionalText(input.note),
+        },
+      );
+    }
 
     return finalizedManifest;
   }
@@ -323,6 +336,27 @@ export class ManifestsService {
 
   private normalizeHubCode(hubCode: string | null | undefined): string {
     return hubCode?.trim().toUpperCase() ?? '';
+  }
+
+  private normalizeOptionalText(value: string | null | undefined): string | null {
+    const normalizedValue = value?.trim() ?? '';
+    return normalizedValue.length > 0 ? normalizedValue : null;
+  }
+
+  private shouldPublishManifestUnsealed(
+    manifestStatus: Manifest['status'],
+    input: RemoveShipmentsInput,
+  ): boolean {
+    if (manifestStatus !== 'CREATED') {
+      return true;
+    }
+
+    return Boolean(
+      this.normalizeOptionalText(input.unsealedBy) ||
+        this.normalizeOptionalText(input.unsealedByName) ||
+        this.normalizeOptionalText(input.processingHubCode) ||
+        input.note?.includes('UNBAGGED'),
+    );
   }
 
   private normalizeQuantity(quantity: number | string | undefined): number {

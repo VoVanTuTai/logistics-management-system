@@ -10,7 +10,8 @@
 
 ## Rule nghiep vu
 
-- Manifest chi cho phep sua shipment khi status = `CREATED`.
+- Manifest chi cho phep add shipment khi status = `CREATED`.
+- Gỡ shipment khoi bao duoc phep khi status = `CREATED`, `SEALED` hoac `RECEIVED`; request go bao co thong tin nhan vien/hub hoac bao da dong/da nhan se publish `manifest.unsealed`.
 - Khong cho add shipment da nam trong manifest active khac (`CREATED`/`SEALED`).
 - Chi seal khi:
   - Manifest dang `CREATED`
@@ -36,6 +37,7 @@
 - `manifest.updated`
 - `manifest.sealed`
 - `manifest.received`
+- `manifest.unsealed`
 
 Event duoc publish theo tung shipment trong manifest de shipment-service/tracking-service co the cap nhat read model day du.
 

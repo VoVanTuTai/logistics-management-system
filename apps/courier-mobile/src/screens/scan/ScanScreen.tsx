@@ -15,11 +15,21 @@ import type { ScanActionItemData } from '../../components/scan/ScanActionItem';
 import { CameraScannerModal } from '../../components/scan/CameraScannerModal';
 import type { AppNavigatorParamList } from '../../navigation/types';
 import { parsePickupScannedCode } from '../../features/scan/pickup.scanner.adapter';
+import {
+  canAccessCourierFeature,
+  filterPermittedCourierFeatures,
+  type CourierPermissionFeature,
+} from '../../features/permissions/courier-permissions';
 
-const actions: ScanActionItemData[] = [
+type PermissionedScanAction = ScanActionItemData & {
+  permission: CourierPermissionFeature;
+};
+
+const actions: PermissionedScanAction[] = [
   {
     id: 'ky-nhan',
     label: 'Ký nhận',
+    permission: 'scan.delivery-sign',
     iconName: 'document-text-outline',
     iconColor: theme.colors.primary,
     iconBgColor: theme.colors.infoSurface,
@@ -27,6 +37,7 @@ const actions: ScanActionItemData[] = [
   {
     id: 'ky-nhan-chuyen-hoan',
     label: 'Ký nhận chuyển hoàn',
+    permission: 'scan.return-sign',
     iconName: 'return-up-back-outline',
     iconColor: theme.colors.primary,
     iconBgColor: theme.colors.infoSurface,
@@ -34,6 +45,7 @@ const actions: ScanActionItemData[] = [
   {
     id: 'nhan-kien',
     label: 'Nhận hàng',
+    permission: 'scan.pickup',
     iconName: 'cube-outline',
     iconColor: '#1A6B4A',
     iconBgColor: '#E6FAF1',
@@ -41,6 +53,7 @@ const actions: ScanActionItemData[] = [
   {
     id: 'dong-bao',
     label: 'Đóng bao',
+    permission: 'scan.bag-seal',
     iconName: 'archive-outline',
     iconColor: '#8A5A0A',
     iconBgColor: '#FFF4DD',
@@ -48,6 +61,7 @@ const actions: ScanActionItemData[] = [
   {
     id: 'go-bao',
     label: 'Gỡ bao',
+    permission: 'scan.bag-unseal',
     iconName: 'folder-open-outline',
     iconColor: theme.colors.primary,
     iconBgColor: theme.colors.infoSurface,
@@ -55,6 +69,7 @@ const actions: ScanActionItemData[] = [
   {
     id: 'phat-hang',
     label: 'Phát hàng',
+    permission: 'scan.delivery',
     iconName: 'paper-plane-outline',
     iconColor: theme.colors.primary,
     iconBgColor: theme.colors.infoSurface,
@@ -62,6 +77,7 @@ const actions: ScanActionItemData[] = [
   {
     id: 'van-de',
     label: 'Vấn đề',
+    permission: 'scan.issue',
     iconName: 'alert-circle-outline',
     iconColor: '#C25B12',
     iconBgColor: '#FFEDD5',
@@ -69,6 +85,7 @@ const actions: ScanActionItemData[] = [
   {
     id: 'gui-kien',
     label: 'Gửi kiện',
+    permission: 'scan.outbound',
     iconName: 'send-outline',
     iconColor: '#1A6B4A',
     iconBgColor: '#E6FAF1',
@@ -76,6 +93,7 @@ const actions: ScanActionItemData[] = [
   {
     id: 'kien-den',
     label: 'Kiện đến',
+    permission: 'scan.inbound',
     iconName: 'download-outline',
     iconColor: theme.colors.primary,
     iconBgColor: theme.colors.infoSurface,
@@ -83,6 +101,7 @@ const actions: ScanActionItemData[] = [
   {
     id: 'xe-den',
     label: 'Xe đến',
+    permission: 'scan.vehicle-inbound',
     iconName: 'car-outline',
     iconColor: theme.colors.primary,
     iconBgColor: theme.colors.infoSurface,
@@ -90,6 +109,7 @@ const actions: ScanActionItemData[] = [
   {
     id: 'xe-di',
     label: 'Xe đi',
+    permission: 'scan.vehicle-outbound',
     iconName: 'car-sport-outline',
     iconColor: theme.colors.primary,
     iconBgColor: theme.colors.infoSurface,
@@ -97,6 +117,7 @@ const actions: ScanActionItemData[] = [
   {
     id: 'kiem-ton-kho',
     label: 'Kiểm tồn kho',
+    permission: 'scan.inventory-check',
     iconName: 'clipboard-outline',
     iconColor: '#8A5A0A',
     iconBgColor: '#FFF4DD',
@@ -104,6 +125,7 @@ const actions: ScanActionItemData[] = [
   {
     id: 'nhan-hang-cb',
     label: 'Nhận hàng CB',
+    permission: 'scan.branch-pickup',
     iconName: 'briefcase-outline',
     iconColor: '#1A6B4A',
     iconBgColor: '#E6FAF1',
@@ -111,6 +133,7 @@ const actions: ScanActionItemData[] = [
   {
     id: 'tem-hang-gia-tri-cao',
     label: 'Tem hàng giá trị cao',
+    permission: 'scan.high-value-label',
     iconName: 'pricetag-outline',
     iconColor: theme.colors.primary,
     iconBgColor: theme.colors.infoSurface,
@@ -118,6 +141,7 @@ const actions: ScanActionItemData[] = [
   {
     id: 'kiem-tra-tem-gia-tri-cao',
     label: 'Kiểm tra tem giá trị cao',
+    permission: 'scan.high-value-check',
     iconName: 'shield-checkmark-outline',
     iconColor: theme.colors.primary,
     iconBgColor: theme.colors.infoSurface,
@@ -142,8 +166,19 @@ export function ScanScreen(): React.JSX.Element {
   );
   const [scannerError, setScannerError] = React.useState<string | null>(null);
   const [lastScanMessage, setLastScanMessage] = React.useState<string | null>(null);
+  const permittedActions = React.useMemo(
+    () => filterPermittedCourierFeatures(session?.user, actions),
+    [session?.user],
+  );
 
   const handlePressAction = (action: ScanActionItemData) => {
+    const permission = actions.find((item) => item.id === action.id)?.permission;
+
+    if (!permission || !canAccessCourierFeature(session?.user, permission)) {
+      Alert.alert('Không có quyền', 'Tài khoản hiện tại chưa được phân quyền thao tác này.');
+      return;
+    }
+
     if (action.id === 'ky-nhan') {
       navigation.navigate('DeliverySignScan');
       return;
@@ -270,7 +305,7 @@ export function ScanScreen(): React.JSX.Element {
           {scannerError ? <Text style={styles.errorText}>{scannerError}</Text> : null}
           {lastScanMessage ? <Text style={styles.infoText}>{lastScanMessage}</Text> : null}
 
-          <ScanActionGrid actions={actions} onPressAction={handlePressAction} />
+          <ScanActionGrid actions={permittedActions} onPressAction={handlePressAction} />
         </ScrollView>
       </View>
     </SafeAreaView>

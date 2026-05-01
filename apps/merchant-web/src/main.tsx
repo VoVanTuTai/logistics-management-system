@@ -672,7 +672,7 @@ function MerchantApp(): React.JSX.Element {
     () => ({
       totalToday: shipments.filter((s) => isToday(s.createdAt)).length,
       waitingPickup: shipments.filter((s) => resolveShipmentStatusCode(s) === 'WAITING_PICKUP').length,
-      inTransit: shipments.filter((s) => ['PICKUP_COMPLETED', 'TASK_ASSIGNED', 'MANIFEST_SEALED', 'MANIFEST_RECEIVED', 'SCAN_INBOUND', 'SCAN_OUTBOUND'].includes(s.currentStatus)).length,
+      inTransit: shipments.filter((s) => ['PICKUP_COMPLETED', 'TASK_ASSIGNED', 'MANIFEST_SEALED', 'MANIFEST_RECEIVED', 'MANIFEST_UNSEALED', 'SCAN_INBOUND', 'SCAN_OUTBOUND'].includes(s.currentStatus)).length,
       delivered: shipments.filter((s) => s.currentStatus === 'DELIVERED').length,
       failedOrReturn: shipments.filter((s) => ['DELIVERY_FAILED', 'NDR_CREATED', 'RETURN_STARTED', 'RETURN_COMPLETED', 'CANCELLED'].includes(s.currentStatus)).length,
     }),

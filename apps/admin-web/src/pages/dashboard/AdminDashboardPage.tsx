@@ -21,6 +21,7 @@ export function AdminDashboardPage(): React.JSX.Element {
   const quickLinks = [
     { label: 'Quan ly tai khoan Ops', to: routePaths.opsUsers },
     { label: 'Quan ly tai khoan Shipper', to: routePaths.shipperUsers },
+    { label: 'Quan ly phan quyen mobile', to: routePaths.courierPermissions },
     { label: 'Quan ly Hub', to: routePaths.masterdataHubs },
     { label: 'Quan ly Zone', to: routePaths.masterdataZones },
     { label: 'Quan ly ly do NDR', to: routePaths.masterdataNdrReasons },
@@ -61,4 +62,3 @@ export function AdminDashboardPage(): React.JSX.Element {
     </div>
   );
 }
-

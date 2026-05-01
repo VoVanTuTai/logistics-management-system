@@ -75,6 +75,9 @@ export interface AddShipmentsInput {
 export interface RemoveShipmentsInput {
   shipmentCodes: string[];
   note?: string | null;
+  unsealedBy?: string | null;
+  unsealedByName?: string | null;
+  processingHubCode?: string | null;
 }
 
 export interface SealManifestInput {

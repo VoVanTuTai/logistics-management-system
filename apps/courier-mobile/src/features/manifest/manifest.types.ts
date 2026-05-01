@@ -19,3 +19,8 @@ export interface AddBagShipmentsPayload {
   note?: string | null;
 }
 
+export interface RemoveBagShipmentsPayload extends AddBagShipmentsPayload {
+  unsealedBy?: string | null;
+  unsealedByName?: string | null;
+  processingHubCode?: string | null;
+}
