@@ -82,6 +82,7 @@ function mapStatusToStep(statusCode: string | null): number {
     statusCode === 'MANIFEST_SEALED' ||
     statusCode === 'MANIFEST_RECEIVED' ||
     statusCode === 'MANIFEST_UNSEALED' ||
+    statusCode === 'SEND_GOODS' ||
     statusCode === 'SCAN_INBOUND' ||
     statusCode === 'SCAN_OUTBOUND'
   ) {

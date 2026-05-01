@@ -84,7 +84,7 @@ const actions: PermissionedScanAction[] = [
   },
   {
     id: 'gui-kien',
-    label: 'Gửi kiện',
+    label: 'Gửi hàng',
     permission: 'scan.outbound',
     iconName: 'send-outline',
     iconColor: '#1A6B4A',
@@ -199,6 +199,11 @@ export function ScanScreen(): React.JSX.Element {
       return;
     }
 
+    if (action.id === 'gui-kien') {
+      navigation.navigate('SendGoods');
+      return;
+    }
+
     setScannerError(null);
     setPendingAction(action);
     setScannerVisible(true);
@@ -246,7 +251,7 @@ export function ScanScreen(): React.JSX.Element {
       return;
     }
 
-    if (pendingAction.id === 'xe-di' || pendingAction.id === 'gui-kien') {
+    if (pendingAction.id === 'xe-di') {
       navigation.navigate('HubScan', {
         mode: 'OUTBOUND',
         shipmentCode: parsed.value,

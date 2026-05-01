@@ -38,6 +38,7 @@ export type AppNavigatorParamList = {
   };
   BagSeal: undefined;
   BagUnseal: undefined;
+  SendGoods: undefined;
   DeliverySuccess: {
     taskId?: string;
     shipmentCode?: string;

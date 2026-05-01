@@ -131,6 +131,10 @@ export class ReportingProjectionStore {
       }
     }
 
+    if (event.event_type === 'scan.outbound' && this.isSendGoodsEvent(event)) {
+      return 'SEND_GOODS';
+    }
+
     return STATUS_BY_EVENT[event.event_type] ?? null;
   }
 
@@ -556,6 +560,11 @@ export class ReportingProjectionStore {
           ['ndr_case', 'zoneCode'],
         ]) ?? ALL,
     };
+  }
+
+  private isSendGoodsEvent(event: ReportingEventEnvelope): boolean {
+    const note = this.findString(event.data, [['scanEvent', 'note']]);
+    return note?.startsWith('SEND_GOODS') ?? false;
   }
 
   private findString(source: unknown, paths: string[][]): string | null {
