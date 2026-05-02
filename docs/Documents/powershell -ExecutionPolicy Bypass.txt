@@ -25,3 +25,15 @@ Nếu chỉ cần infra:
 
 powershell -ExecutionPolicy Bypass -File .\scripts\dev-up.ps1
 Lưu ý: mình vừa sửa start-services-retry.ps1 để nó start service kiểu dev, chạy Prisma prepare trước rồi mới chạy ts-node. Không có bước Docker build service trong đó.
+cd "d:\University\Semester 2_Year 4\New Technology\logistics-management-system\apps\courier-mobile"
+npm run start -- --host lan --port 8081
+
+chạy riêng service bị down
+powershell -ExecutionPolicy Bypass -File .\scripts\start-services-retry.ps1
+
+chạy đúng service mình mong muốn
+# start riêng shipment-service (3002)
+Start-Process cmd.exe -ArgumentList '/k','npm run start:dev' -WorkingDirectory '.\services\shipment-service'
+
+# start riêng delivery-service (3007)
+Start-Process cmd.exe -ArgumentList '/k','npm run start:dev' -WorkingDirectory '.\services\delivery-service'
