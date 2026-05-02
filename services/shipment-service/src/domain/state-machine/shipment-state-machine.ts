@@ -37,6 +37,18 @@ export class ShipmentStateMachine {
       return 'SEND_GOODS';
     }
 
+    if (eventType === 'ndr.created' && isExceptionNdrEventData(eventData)) {
+      return 'EXCEPTION';
+    }
+
+    if (eventType === 'scan.outbound' && isVehicleOutboundEventData(eventData)) {
+      return 'IN_TRANSIT';
+    }
+
+    if (eventType === 'scan.inbound' && isInventoryCheckEventData(eventData)) {
+      return 'INVENTORY_CHECK';
+    }
+
     const nextStatus = EVENT_TO_STATUS[eventType];
 
     if (!nextStatus) {
@@ -62,4 +74,35 @@ function isSendGoodsEventData(eventData: Record<string, unknown>): boolean {
 
   const note = (scanEvent as Record<string, unknown>).note;
   return typeof note === 'string' && note.trim().startsWith('SEND_GOODS');
+}
+
+function isExceptionNdrEventData(eventData: Record<string, unknown>): boolean {
+  const ndrCase = eventData.ndrCase;
+  if (!ndrCase || typeof ndrCase !== 'object') {
+    return false;
+  }
+
+  const status = (ndrCase as Record<string, unknown>).status;
+  const issueType = (ndrCase as Record<string, unknown>).issueType;
+  return status === 'PENDING_RESOLUTION' || typeof issueType === 'string';
+}
+
+function isVehicleOutboundEventData(eventData: Record<string, unknown>): boolean {
+  const scanEvent = eventData.scanEvent;
+  if (!scanEvent || typeof scanEvent !== 'object') {
+    return false;
+  }
+
+  const note = (scanEvent as Record<string, unknown>).note;
+  return typeof note === 'string' && note.trim().startsWith('VEHICLE_OUTBOUND');
+}
+
+function isInventoryCheckEventData(eventData: Record<string, unknown>): boolean {
+  const scanEvent = eventData.scanEvent;
+  if (!scanEvent || typeof scanEvent !== 'object') {
+    return false;
+  }
+
+  const note = (scanEvent as Record<string, unknown>).note;
+  return typeof note === 'string' && note.trim().startsWith('INVENTORY_CHECK');
 }

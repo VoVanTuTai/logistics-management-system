@@ -89,6 +89,8 @@ export class ScansService {
       throw new BadRequestException('occurredAt must be a valid ISO date.');
     }
 
+    await this.assertShipmentNotLocked(input.shipmentCode);
+
     const scopedIdempotencyKey = `${flow}:${input.idempotencyKey}`;
     const existingRecord = await this.idempotencyRecordRepository.findByKey(
       scopedIdempotencyKey,
@@ -189,6 +191,29 @@ export class ScansService {
 
     if (flow === 'scan.outbound') {
       await this.scanOutboxService.enqueueOutbound(result.scanEvent);
+    }
+  }
+
+  private async assertShipmentNotLocked(shipmentCode: string): Promise<void> {
+    const shipmentServiceUrl =
+      process.env.SHIPMENT_SERVICE_URL ?? 'http://localhost:3002';
+    const response = await fetch(
+      `${shipmentServiceUrl}/shipments/${encodeURIComponent(shipmentCode)}`,
+    );
+
+    if (!response.ok) {
+      return;
+    }
+
+    const shipment = (await response.json()) as {
+      isLocked?: boolean;
+      currentStatus?: string;
+    };
+
+    if (shipment.isLocked) {
+      throw new BadRequestException(
+        `Block: Shipment "${shipmentCode}" is locked by issue workflow (${shipment.currentStatus ?? 'UNKNOWN'}).`,
+      );
     }
   }
 

@@ -92,7 +92,7 @@ const actions: PermissionedScanAction[] = [
   },
   {
     id: 'kien-den',
-    label: 'Kiện đến',
+    label: 'Hàng đến',
     permission: 'scan.inbound',
     iconName: 'download-outline',
     iconColor: theme.colors.primary,
@@ -121,30 +121,6 @@ const actions: PermissionedScanAction[] = [
     iconName: 'clipboard-outline',
     iconColor: '#8A5A0A',
     iconBgColor: '#FFF4DD',
-  },
-  {
-    id: 'nhan-hang-cb',
-    label: 'Nhận hàng CB',
-    permission: 'scan.branch-pickup',
-    iconName: 'briefcase-outline',
-    iconColor: '#1A6B4A',
-    iconBgColor: '#E6FAF1',
-  },
-  {
-    id: 'tem-hang-gia-tri-cao',
-    label: 'Tem hàng giá trị cao',
-    permission: 'scan.high-value-label',
-    iconName: 'pricetag-outline',
-    iconColor: theme.colors.primary,
-    iconBgColor: theme.colors.infoSurface,
-  },
-  {
-    id: 'kiem-tra-tem-gia-tri-cao',
-    label: 'Kiểm tra tem giá trị cao',
-    permission: 'scan.high-value-check',
-    iconName: 'shield-checkmark-outline',
-    iconColor: theme.colors.primary,
-    iconBgColor: theme.colors.infoSurface,
   },
 ];
 
@@ -204,6 +180,33 @@ export function ScanScreen(): React.JSX.Element {
       return;
     }
 
+    if (action.id === 'kien-den') {
+      navigation.navigate('HubScan', {
+        mode: 'INBOUND',
+      });
+      return;
+    }
+
+    if (action.id === 'xe-den') {
+      navigation.navigate('VehicleInbound');
+      return;
+    }
+
+    if (action.id === 'kiem-ton-kho') {
+      navigation.navigate('InventoryCheck');
+      return;
+    }
+
+    if (action.id === 'xe-di') {
+      navigation.navigate('VehicleOutbound');
+      return;
+    }
+
+    if (action.id === 'van-de') {
+      navigation.navigate('ScanIssue');
+      return;
+    }
+
     setScannerError(null);
     setPendingAction(action);
     setScannerVisible(true);
@@ -254,6 +257,14 @@ export function ScanScreen(): React.JSX.Element {
     if (pendingAction.id === 'xe-di') {
       navigation.navigate('HubScan', {
         mode: 'OUTBOUND',
+        shipmentCode: parsed.value,
+      });
+      setPendingAction(null);
+      return;
+    }
+
+    if (pendingAction.id === 'van-de') {
+      navigation.navigate('ScanIssue', {
         shipmentCode: parsed.value,
       });
       setPendingAction(null);

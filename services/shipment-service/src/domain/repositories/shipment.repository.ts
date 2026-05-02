@@ -14,5 +14,10 @@ export abstract class ShipmentRepository {
     code: string,
     currentStatus: ShipmentCurrentStatus,
   ): Promise<Shipment>;
+  abstract updateCurrentStatusAndLock(
+    code: string,
+    currentStatus: ShipmentCurrentStatus,
+    isLocked: boolean,
+  ): Promise<Shipment>;
   abstract cancel(code: string, reason: string | null): Promise<Shipment>;
 }

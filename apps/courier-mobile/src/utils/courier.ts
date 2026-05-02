@@ -53,3 +53,197 @@ export function resolveCourierDisplayName(input: {
   const courierId = resolveCourierId(input.courierId, input.username);
   return SEEDED_COURIER_NAMES[courierId] ?? input.username ?? 'Courier';
 }
+
+export function buildPickupReceiveAuditNote(input: {
+  displayName?: string | null;
+  username?: string | null;
+  courierId?: string | null;
+  hubCode?: string | null;
+}): string {
+  const employeeId =
+    resolveCourierId(input.courierId, input.username) ||
+    input.username?.trim() ||
+    'N/A';
+  const employeeName = resolveCourierDisplayName({
+    displayName: input.displayName,
+    username: input.username,
+    courierId: employeeId,
+  });
+  const hubCode = input.hubCode?.trim().toUpperCase() || 'N/A';
+
+  return `Nhận hàng về hub | Nhân viên: ${employeeName} | Mã NV: ${employeeId} | Mã hub: ${hubCode}`;
+}
+
+export function buildGoodsArrivalAuditNote(input: {
+  displayName?: string | null;
+  username?: string | null;
+  courierId?: string | null;
+  hubCode?: string | null;
+  vehicleCode?: string | null;
+  licensePlate?: string | null;
+  originHubCode?: string | null;
+  destinationHubCode?: string | null;
+  bagCode?: string | null;
+}): string {
+  const employeeId =
+    resolveCourierId(input.courierId, input.username) ||
+    input.username?.trim() ||
+    'N/A';
+  const employeeName = resolveCourierDisplayName({
+    displayName: input.displayName,
+    username: input.username,
+    courierId: employeeId,
+  });
+  const hubCode = input.hubCode?.trim().toUpperCase() || 'N/A';
+  const bagCode = input.bagCode?.trim().toUpperCase();
+  const vehicleCode = input.vehicleCode?.trim().toUpperCase();
+  const licensePlate = input.licensePlate?.trim().toUpperCase();
+  const originHubCode = input.originHubCode?.trim().toUpperCase();
+  const destinationHubCode = input.destinationHubCode?.trim().toUpperCase();
+
+  return [
+    'Hàng đến',
+    `Nhân viên: ${employeeName}`,
+    `Mã NV: ${employeeId}`,
+    `Mã hub: ${hubCode}`,
+    vehicleCode ? `Mã xe: ${vehicleCode}` : null,
+    licensePlate ? `Biển số: ${licensePlate}` : null,
+    originHubCode ? `Hub đi: ${originHubCode}` : null,
+    destinationHubCode ? `Hub đến: ${destinationHubCode}` : null,
+    bagCode ? `Mã bao: ${bagCode}` : null,
+  ]
+    .filter(Boolean)
+    .join(' | ');
+}
+
+export function buildInventoryCheckAuditNote(input: {
+  displayName?: string | null;
+  username?: string | null;
+  courierId?: string | null;
+  hubCode?: string | null;
+}): string {
+  const employeeId =
+    resolveCourierId(input.courierId, input.username) ||
+    input.username?.trim() ||
+    'N/A';
+  const employeeName = resolveCourierDisplayName({
+    displayName: input.displayName,
+    username: input.username,
+    courierId: employeeId,
+  });
+  const hubCode = input.hubCode?.trim().toUpperCase() || 'N/A';
+
+  return `INVENTORY_CHECK | Kiểm tra hàng tồn | Nhân viên: ${employeeName} | Mã NV: ${employeeId} | Mã hub: ${hubCode}`;
+}
+
+export function buildShipmentIssueAuditNote(input: {
+  displayName?: string | null;
+  username?: string | null;
+  courierId?: string | null;
+  hubCode?: string | null;
+  issueType?: string | null;
+  issueTitle?: string | null;
+  note?: string | null;
+}): string {
+  const employeeId =
+    resolveCourierId(input.courierId, input.username) ||
+    input.username?.trim() ||
+    'N/A';
+  const employeeName = resolveCourierDisplayName({
+    displayName: input.displayName,
+    username: input.username,
+    courierId: employeeId,
+  });
+  const hubCode = input.hubCode?.trim().toUpperCase() || 'N/A';
+  const issueType = input.issueType?.trim().toUpperCase() || 'N/A';
+  const issueTitle = input.issueTitle?.trim();
+  const note = input.note?.trim();
+
+  return [
+    'Vấn đề đơn hàng',
+    `Loại: ${issueTitle || issueType}`,
+    issueTitle ? `Mã lỗi: ${issueType}` : null,
+    `Nhân viên: ${employeeName}`,
+    `Mã NV: ${employeeId}`,
+    `Mã hub: ${hubCode}`,
+    note ? `Ghi chú: ${note}` : null,
+  ]
+    .filter(Boolean)
+    .join(' | ');
+}
+
+export function buildVehicleOutboundAuditNote(input: {
+  displayName?: string | null;
+  username?: string | null;
+  courierId?: string | null;
+  hubCode?: string | null;
+  vehicleCode?: string | null;
+  licensePlate?: string | null;
+  sealCodes?: string[];
+}): string {
+  const employeeId =
+    resolveCourierId(input.courierId, input.username) ||
+    input.username?.trim() ||
+    'N/A';
+  const employeeName = resolveCourierDisplayName({
+    displayName: input.displayName,
+    username: input.username,
+    courierId: employeeId,
+  });
+  const hubCode = input.hubCode?.trim().toUpperCase() || 'N/A';
+  const vehicleCode = input.vehicleCode?.trim().toUpperCase() || 'N/A';
+  const licensePlate = input.licensePlate?.trim().toUpperCase() || 'N/A';
+  const seals = input.sealCodes?.map((code) => code.trim().toUpperCase()).filter(Boolean);
+
+  return [
+    'VEHICLE_OUTBOUND',
+    'Xe đi - Đang luân chuyển',
+    `Nhân viên: ${employeeName}`,
+    `Mã NV: ${employeeId}`,
+    `Mã hub: ${hubCode}`,
+    `Tem xe: ${vehicleCode}`,
+    `Biển số: ${licensePlate}`,
+    seals && seals.length > 0 ? `Seal xe: ${seals.join(',')}` : null,
+  ]
+    .filter(Boolean)
+    .join(' | ');
+}
+
+export function buildVehicleInboundAuditNote(input: {
+  displayName?: string | null;
+  username?: string | null;
+  courierId?: string | null;
+  hubCode?: string | null;
+  vehicleCode?: string | null;
+  licensePlate?: string | null;
+  sealCodes?: string[];
+  sealMatched?: boolean;
+}): string {
+  const employeeId =
+    resolveCourierId(input.courierId, input.username) ||
+    input.username?.trim() ||
+    'N/A';
+  const employeeName = resolveCourierDisplayName({
+    displayName: input.displayName,
+    username: input.username,
+    courierId: employeeId,
+  });
+  const hubCode = input.hubCode?.trim().toUpperCase() || 'N/A';
+  const vehicleCode = input.vehicleCode?.trim().toUpperCase() || 'N/A';
+  const licensePlate = input.licensePlate?.trim().toUpperCase() || 'N/A';
+  const seals = input.sealCodes?.map((code) => code.trim().toUpperCase()).filter(Boolean);
+
+  return [
+    'VEHICLE_INBOUND',
+    'Xe đến',
+    `Nhân viên: ${employeeName}`,
+    `Mã NV: ${employeeId}`,
+    `Mã hub: ${hubCode}`,
+    `Tem xe: ${vehicleCode}`,
+    `Biển số: ${licensePlate}`,
+    seals && seals.length > 0 ? `Seal xe: ${seals.join(',')}` : null,
+    input.sealMatched === true ? 'Đối chứng seal: Khớp' : 'Đối chứng seal: Cần kiểm tra',
+  ]
+    .filter(Boolean)
+    .join(' | ');
+}

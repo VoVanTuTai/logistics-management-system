@@ -15,6 +15,9 @@ import { TaskDetailScreen } from '../screens/tasks/TaskDetailScreen';
 import { PickupScanScreen } from '../screens/scan/PickupScanScreen';
 import { HubScanScreen } from '../screens/scan/HubScanScreen';
 import { BagSealScreen } from '../screens/scan/BagSealScreen';
+import { InventoryCheckScreen } from '../screens/scan/InventoryCheckScreen';
+import { VehicleInboundScreen } from '../screens/scan/VehicleInboundScreen';
+import { VehicleOutboundScreen } from '../screens/scan/VehicleOutboundScreen';
 import { DeliverySuccessScreen } from '../screens/delivery/DeliverySuccessScreen';
 import { DeliveryFailScreen } from '../screens/delivery/DeliveryFailScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
@@ -174,12 +177,29 @@ export function RootNavigator(): React.JSX.Element {
           <RootStack.Screen
             name="HubScan"
             component={HubScanScreen}
-            options={{ title: 'Quet hub' }}
+            options={({ route }) => ({
+              title: route.params.mode === 'INBOUND' ? 'Hàng đến' : 'Quet hub',
+            })}
           />
           <RootStack.Screen
             name="BagSeal"
             component={BagSealScreen}
             options={{ title: 'Dong bao tui tai che' }}
+          />
+          <RootStack.Screen
+            name="InventoryCheck"
+            component={InventoryCheckScreen}
+            options={{ title: 'Kiểm tồn kho' }}
+          />
+          <RootStack.Screen
+            name="VehicleOutbound"
+            component={VehicleOutboundScreen}
+            options={{ title: 'Xe đi' }}
+          />
+          <RootStack.Screen
+            name="VehicleInbound"
+            component={VehicleInboundScreen}
+            options={{ title: 'Xe đến' }}
           />
           <RootStack.Screen
             name="DeliverySuccess"

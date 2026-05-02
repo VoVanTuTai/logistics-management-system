@@ -102,6 +102,22 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
     return this.toEntity(record);
   }
 
+  async updateCurrentStatusAndLock(
+    code: string,
+    currentStatus: ShipmentCurrentStatus,
+    isLocked: boolean,
+  ): Promise<Shipment> {
+    const record = await this.prisma.shipment.update({
+      where: { code },
+      data: {
+        currentStatus: currentStatus as PrismaShipmentCurrentStatus,
+        isLocked,
+      },
+    });
+
+    return this.toEntity(record);
+  }
+
   async cancel(code: string, reason: string | null): Promise<Shipment> {
     const record = await this.prisma.shipment.update({
       where: { code },
@@ -119,6 +135,7 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
       id: record.id,
       code: record.code,
       currentStatus: record.currentStatus as ShipmentCurrentStatus,
+      isLocked: record.isLocked,
       metadata: record.metadata as JsonValue | null,
       cancellationReason: record.cancellationReason,
       createdAt: record.createdAt,

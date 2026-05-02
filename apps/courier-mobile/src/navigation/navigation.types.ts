@@ -12,6 +12,9 @@ export type RootStackParamList = {
     shipmentCode?: string;
   };
   BagSeal: undefined;
+  InventoryCheck: undefined;
+  VehicleOutbound: undefined;
+  VehicleInbound: undefined;
   DeliverySuccess: {
     taskId?: string;
     shipmentCode?: string;
@@ -29,5 +32,3 @@ export type MainTabParamList = {
   Chat: undefined;
   Profile: undefined;
 };
-
-

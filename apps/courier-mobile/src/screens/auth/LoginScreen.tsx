@@ -37,7 +37,7 @@ export function LoginScreen(): React.JSX.Element {
       <Card style={styles.formCard}>
         <Text style={styles.formTitle}>Dang nhap tai khoan shipper</Text>
         <Text style={styles.formDescription}>
-          App chi goi gateway-bff. Session/token duoc luu an toan boi auth module.
+          App chi gọi gateway-bff. Session/token duoc luu an toan boi auth module.
         </Text>
         <LoginForm
           loading={loading}

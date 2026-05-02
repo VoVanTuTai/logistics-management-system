@@ -39,6 +39,12 @@ export type AppNavigatorParamList = {
   BagSeal: undefined;
   BagUnseal: undefined;
   SendGoods: undefined;
+  InventoryCheck: undefined;
+  VehicleOutbound: undefined;
+  VehicleInbound: undefined;
+  ScanIssue: {
+    shipmentCode?: string;
+  } | undefined;
   DeliverySuccess: {
     taskId?: string;
     shipmentCode?: string;

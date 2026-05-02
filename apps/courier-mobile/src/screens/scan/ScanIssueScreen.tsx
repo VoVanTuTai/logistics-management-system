@@ -12,17 +12,20 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import {
+  CameraView,
+  type BarcodeScanningResult,
+  useCameraPermissions,
+} from 'expo-camera';
 import { useQueryClient } from '@tanstack/react-query';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
+import { CameraScannerModal } from '../../components/scan/CameraScannerModal';
 import { Card } from '../../components/ui/Card';
 import { Screen } from '../../components/ui/Screen';
 import { reportShipmentException } from '../../features/delivery/shipment-exception.api';
 import type { IssueAttachmentPayload } from '../../features/delivery/delivery.types';
-import { useShipmentDetailQuery } from '../../features/shipment/shipment.queries';
-import type { ShipmentMetadata } from '../../features/shipment/shipment.types';
-import { useTaskDetailQuery } from '../../features/tasks/tasks.queries';
+import { parsePickupScannedCode } from '../../features/scan/pickup.scanner.adapter';
 import type { AppNavigatorParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
@@ -33,7 +36,7 @@ import {
   resolveCourierId,
 } from '../../utils/courier';
 
-type Props = NativeStackScreenProps<AppNavigatorParamList, 'TaskIssue'>;
+type Props = NativeStackScreenProps<AppNavigatorParamList, 'ScanIssue'>;
 
 interface IssueOption {
   id: string;
@@ -87,77 +90,25 @@ interface LocalAttachment {
   name: string;
 }
 
-function readMetadataPath(
-  metadata: ShipmentMetadata | null,
-  path: string,
-): unknown {
-  if (!metadata) {
-    return null;
-  }
-
-  const keys = path.split('.');
-  let current: unknown = metadata;
-
-  for (const key of keys) {
-    if (!current || typeof current !== 'object' || !(key in current)) {
-      return null;
-    }
-
-    current = (current as Record<string, unknown>)[key];
-  }
-
-  return current;
-}
-
-function readMetadataString(
-  metadata: ShipmentMetadata | null,
-  paths: string[],
-): string | null {
-  for (const path of paths) {
-    const value = readMetadataPath(metadata, path);
-    if (typeof value === 'string' && value.trim().length > 0) {
-      return value.trim();
-    }
-  }
-
-  return null;
-}
-
-export function TaskIssueScreen({ navigation, route }: Props): React.JSX.Element {
+export function ScanIssueScreen({ navigation, route }: Props): React.JSX.Element {
   const session = useAppStore((state) => state.session);
   const setGlobalError = useAppStore((state) => state.setGlobalError);
   const queryClient = useQueryClient();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = React.useRef<CameraView | null>(null);
-  const taskQuery = useTaskDetailQuery({
-    accessToken: session?.tokens.accessToken ?? null,
-    taskId: route.params.taskId ?? '',
-  });
-  const resolvedShipmentCode = route.params.shipmentCode ?? taskQuery.data?.shipmentCode ?? null;
-  const shipmentQuery = useShipmentDetailQuery({
-    accessToken: session?.tokens.accessToken ?? null,
-    shipmentCode: resolvedShipmentCode,
-  });
+  const [shipmentCode, setShipmentCode] = React.useState(route.params?.shipmentCode ?? '');
   const [selectedIssueId, setSelectedIssueId] = React.useState(ISSUE_OPTIONS[0].id);
   const [note, setNote] = React.useState('');
   const [attachments, setAttachments] = React.useState<LocalAttachment[]>([]);
+  const [scannerVisible, setScannerVisible] = React.useState(false);
+  const [scannerError, setScannerError] = React.useState<string | null>(null);
   const [cameraVisible, setCameraVisible] = React.useState(false);
   const [capturing, setCapturing] = React.useState(false);
-  const [submitMessage, setSubmitMessage] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [message, setMessage] = React.useState<string | null>(null);
 
   const selectedIssue =
     ISSUE_OPTIONS.find((option) => option.id === selectedIssueId) ?? ISSUE_OPTIONS[0];
-  const shipmentMetadata = shipmentQuery.data?.metadata ?? null;
-  const receiverName =
-    readMetadataString(shipmentMetadata, ['receiverName', 'receiver.name']) ?? 'N/A';
-  const receiverPhone =
-    readMetadataString(shipmentMetadata, [
-      'receiverPhone',
-      'receiver.phone',
-      'recipientPhone',
-      'recipient.phone',
-    ]) ?? 'N/A';
   const accessToken = session?.tokens.accessToken ?? null;
   const hubCode = session?.user.hubCodes?.[0]?.trim().toUpperCase() ?? '';
   const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
@@ -167,6 +118,23 @@ export function TaskIssueScreen({ navigation, route }: Props): React.JSX.Element
     courierId,
   });
   const isPhysicalIssue = selectedIssue.issueCategory === 'PHYSICAL';
+
+  const handleScanned = React.useCallback((result: BarcodeScanningResult) => {
+    const parsed = parsePickupScannedCode({
+      data: result.data,
+      type: result.type,
+    });
+
+    if (!parsed) {
+      setScannerError('Không đọc được mã hợp lệ. Vui lòng thử lại.');
+      return;
+    }
+
+    setShipmentCode(parsed.value);
+    setScannerError(null);
+    setScannerVisible(false);
+    setMessage(`Đã quét mã vận đơn ${parsed.value}.`);
+  }, []);
 
   const openCamera = React.useCallback(async () => {
     if (!permission?.granted) {
@@ -200,13 +168,13 @@ export function TaskIssueScreen({ navigation, route }: Props): React.JSX.Element
         {
           uri: picture.uri,
           type: 'image',
-          name: `issue-${Date.now()}.jpg`,
+          name: `scan-issue-${Date.now()}.jpg`,
         },
       ]);
       setCameraVisible(false);
-      setSubmitMessage(null);
+      setMessage(null);
     } catch (error) {
-      setSubmitMessage(error instanceof Error ? error.message : 'Không chụp được minh chứng.');
+      setMessage(error instanceof Error ? error.message : 'Không chụp được minh chứng.');
     } finally {
       setCapturing(false);
     }
@@ -217,8 +185,11 @@ export function TaskIssueScreen({ navigation, route }: Props): React.JSX.Element
   };
 
   const handleSubmit = React.useCallback(async () => {
-    if (!resolvedShipmentCode) {
-      setSubmitMessage('Không có mã shipment cho nhiệm vụ này.');
+    const normalizedShipmentCode = shipmentCode.trim().toUpperCase();
+    const rawNote = note.trim();
+
+    if (!normalizedShipmentCode) {
+      setMessage('Vui lòng quét hoặc nhập mã vận đơn.');
       return;
     }
 
@@ -228,136 +199,126 @@ export function TaskIssueScreen({ navigation, route }: Props): React.JSX.Element
     }
 
     if (!hubCode) {
-      setSubmitMessage('Tài khoản chưa có mã hub nên không thể ghi nhận vấn đề.');
+      setMessage('Tài khoản chưa có mã hub nên không thể ghi nhận vấn đề.');
       return;
     }
 
     if (isPhysicalIssue && attachments.length === 0) {
-      setSubmitMessage('Vấn đề ngoại quan bắt buộc có ít nhất một ảnh/video minh chứng.');
+      setMessage('Vấn đề ngoại quan bắt buộc có ít nhất một ảnh/video minh chứng.');
       return;
     }
 
-    if (!isPhysicalIssue && note.trim().length === 0) {
-      setSubmitMessage('Vấn đề thông tin/hệ thống bắt buộc có ghi chú.');
+    if (!isPhysicalIssue && rawNote.length === 0) {
+      setMessage('Vấn đề thông tin/hệ thống bắt buộc có ghi chú.');
       return;
     }
-
-    const rawNote = note.trim().length > 0 ? note.trim() : selectedIssue.description;
-    const payload = {
-      shipmentCode: resolvedShipmentCode,
-      currentHubCode: hubCode,
-      issueType: selectedIssue.issueType,
-      issueCategory: selectedIssue.issueCategory,
-      attachments: attachments.map<IssueAttachmentPayload>((attachment) => ({
-        uri: attachment.uri,
-        type: attachment.type,
-        name: attachment.name,
-      })),
-      actor: `${employeeName} (${courierId || session?.user.username || 'N/A'})`,
-      note: buildShipmentIssueAuditNote({
-        displayName: session?.user.displayName,
-        username: session?.user.username,
-        courierId,
-        hubCode,
-        issueType: selectedIssue.issueType,
-        issueTitle: selectedIssue.title,
-        note: rawNote,
-      }),
-      occurredAt: new Date().toISOString(),
-    };
 
     setIsSubmitting(true);
-    setSubmitMessage(null);
+    setMessage(null);
 
     try {
-      const result = await reportShipmentException(accessToken, payload);
-      setSubmitMessage(
-        `Đã ghi nhận vấn đề ${result.id}. Đơn đã chuyển sang ngoại lệ và bị khóa luân chuyển.`,
-      );
+      const result = await reportShipmentException(accessToken, {
+        shipmentCode: normalizedShipmentCode,
+        currentHubCode: hubCode,
+        issueType: selectedIssue.issueType,
+        issueCategory: selectedIssue.issueCategory,
+        attachments: attachments.map<IssueAttachmentPayload>((attachment) => ({
+          uri: attachment.uri,
+          type: attachment.type,
+          name: attachment.name,
+        })),
+        actor: `${employeeName} (${courierId || session?.user.username || 'N/A'})`,
+        note: buildShipmentIssueAuditNote({
+          displayName: session?.user.displayName,
+          username: session?.user.username,
+          courierId,
+          hubCode,
+          issueType: selectedIssue.issueType,
+          issueTitle: selectedIssue.title,
+          note: rawNote || selectedIssue.description,
+        }),
+        occurredAt: new Date().toISOString(),
+      });
 
+      setMessage(`Đã ghi nhận vấn đề ${result.id}. Đơn đã chuyển sang ngoại lệ và bị khóa.`);
+      setShipmentCode('');
+      setNote('');
+      setAttachments([]);
       await queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      if (route.params.taskId) {
-        await queryClient.invalidateQueries({
-          queryKey: ['tasks', 'detail', route.params.taskId],
-        });
-      }
-      if (resolvedShipmentCode) {
-        await queryClient.invalidateQueries({
-          queryKey: ['shipment', 'detail', resolvedShipmentCode],
-        });
-      }
-
-      setTimeout(() => {
-        navigation.goBack();
-      }, 600);
+      await queryClient.invalidateQueries({
+        queryKey: ['shipment', 'detail', normalizedShipmentCode],
+      });
     } catch (error) {
-      const message =
+      const errorMessage =
         error instanceof Error ? error.message : 'Cập nhật vấn đề thất bại.';
-      setSubmitMessage(message);
-      setGlobalError(message);
+      setMessage(errorMessage);
+      setGlobalError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
   }, [
     accessToken,
     attachments,
-    hubCode,
-    isPhysicalIssue,
     courierId,
     employeeName,
-    navigation,
+    hubCode,
+    isPhysicalIssue,
     note,
     queryClient,
-    resolvedShipmentCode,
-    route.params.taskId,
-    selectedIssue.title,
     selectedIssue.description,
     selectedIssue.issueCategory,
     selectedIssue.issueType,
+    selectedIssue.title,
+    session?.user.displayName,
     session?.user.username,
     setGlobalError,
+    shipmentCode,
   ]);
 
   return (
     <Screen scroll={false}>
+      <CameraScannerModal
+        visible={scannerVisible}
+        title="Quét mã vận đơn"
+        helperText="Quét QR/barcode trên bưu kiện cần ghi nhận vấn đề."
+        onClose={() => setScannerVisible(false)}
+        onScanned={handleScanned}
+      />
+
       <View style={styles.layout}>
         <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
           <Card>
-            <Text style={styles.sectionTitle}>Xử lý vấn đề đơn hàng</Text>
+            <Text style={styles.sectionTitle}>Vấn đề từ quét mã</Text>
             <Text style={styles.sectionHint}>
-              Hệ thống sẽ kiểm tra vị trí hiện tại khớp hub thao tác, tạo hồ sơ vấn đề và khóa bưu kiện.
+              Quét hoặc nhập mã vận đơn, hệ thống sẽ kiểm tra vị trí hiện tại khớp hub thao tác trước khi khóa đơn.
             </Text>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Task code</Text>
-              <Text style={styles.infoValue}>
-                {route.params.taskCode ?? taskQuery.data?.taskCode ?? 'N/A'}
-              </Text>
+            <View style={styles.inputRow}>
+              <TextInput
+                value={shipmentCode}
+                onChangeText={setShipmentCode}
+                placeholder="Mã vận đơn"
+                placeholderTextColor="#94A3B8"
+                autoCapitalize="characters"
+                style={styles.shipmentInput}
+              />
+              <Pressable
+                onPress={() => {
+                  setScannerError(null);
+                  setScannerVisible(true);
+                }}
+                style={styles.iconButton}
+              >
+                <Ionicons name="scan" size={20} color="#FFFFFF" />
+              </Pressable>
             </View>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Shipment</Text>
-              <Text style={styles.infoValue}>{resolvedShipmentCode ?? 'N/A'}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Người nhận</Text>
-              <Text style={styles.infoValue}>{receiverName}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Số điện thoại</Text>
-              <Text style={styles.infoValue}>{receiverPhone}</Text>
-            </View>
+            {scannerError ? <Text style={styles.errorText}>{scannerError}</Text> : null}
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Hub thao tác</Text>
               <Text style={styles.infoValue}>{hubCode || 'N/A'}</Text>
             </View>
-            {shipmentQuery.isLoading ? (
-              <View style={styles.inlineStateRow}>
-                <ActivityIndicator size="small" color={theme.colors.primary} />
-                <Text style={styles.inlineStateText}>Đang tải thông tin đơn hàng...</Text>
-              </View>
-            ) : null}
           </Card>
 
           <Card>
@@ -407,10 +368,10 @@ export function TaskIssueScreen({ navigation, route }: Props): React.JSX.Element
 
           <Card>
             <View style={styles.evidenceHeader}>
-              <View>
+              <View style={styles.evidenceTextBlock}>
                 <Text style={styles.sectionTitle}>Minh chứng</Text>
                 <Text style={styles.sectionHint}>
-                  Ảnh/video ngoại quan dùng để điều phối xử lý hồ sơ.
+                  Chụp ảnh/video ngoại quan nếu vấn đề thuộc nhóm vật lý.
                 </Text>
               </View>
               <Pressable onPress={() => void openCamera()} style={styles.secondaryButton}>
@@ -437,9 +398,9 @@ export function TaskIssueScreen({ navigation, route }: Props): React.JSX.Element
             )}
           </Card>
 
-          {submitMessage ? (
+          {message ? (
             <Card style={styles.messageCard}>
-              <Text style={styles.messageText}>{submitMessage}</Text>
+              <Text style={styles.messageText}>{message}</Text>
             </Card>
           ) : null}
         </ScrollView>
@@ -524,33 +485,44 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
     marginBottom: theme.spacing.sm,
   },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  shipmentInput: {
+    flex: 1,
+    minHeight: 46,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.md,
+    paddingHorizontal: theme.spacing.md,
+    ...theme.typography.body.md,
+    color: theme.colors.textPrimary,
+    backgroundColor: '#FFFFFF',
+  },
+  iconButton: {
+    width: 46,
+    height: 46,
+    borderRadius: theme.radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.primary,
+  },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: theme.spacing.sm,
-    marginBottom: theme.spacing.xs,
+    alignItems: 'center',
+    marginTop: theme.spacing.sm,
   },
   infoLabel: {
     ...theme.typography.caption.md,
     color: theme.colors.textMuted,
-    flex: 1,
   },
   infoValue: {
     ...theme.typography.body.sm,
     color: theme.colors.textSecondary,
-    flex: 2,
-    textAlign: 'right',
-  },
-  inlineStateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.xs,
-    marginTop: theme.spacing.xs,
-  },
-  inlineStateText: {
-    ...theme.typography.caption.md,
-    color: theme.colors.textMuted,
+    fontWeight: '700',
   },
   optionList: {
     gap: theme.spacing.sm,
@@ -601,6 +573,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: theme.spacing.sm,
   },
+  evidenceTextBlock: {
+    flex: 1,
+  },
   secondaryButton: {
     minHeight: 38,
     borderRadius: theme.radius.md,
@@ -648,35 +623,44 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(15, 23, 42, 0.72)',
+    backgroundColor: 'rgba(15, 23, 42, 0.78)',
   },
   messageCard: {
-    borderColor: '#BBF7D0',
-    backgroundColor: '#F0FDF4',
+    borderColor: '#BFDBFE',
+    backgroundColor: '#EFF6FF',
   },
   messageText: {
-    ...theme.typography.body.md,
-    color: '#166534',
+    ...theme.typography.body.sm,
+    color: theme.colors.primary,
+    fontWeight: '700',
+  },
+  errorText: {
+    ...theme.typography.caption.md,
+    color: theme.colors.danger,
+    marginTop: theme.spacing.xs,
   },
   footer: {
     position: 'absolute',
-    left: theme.spacing.lg,
-    right: theme.spacing.lg,
-    bottom: theme.spacing.lg,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    padding: theme.spacing.lg,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
   },
   submitButton: {
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.radius.lg,
-    minHeight: 52,
+    minHeight: 48,
+    borderRadius: theme.radius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    ...theme.shadow.md,
+    backgroundColor: theme.colors.primary,
   },
   submitButtonDisabled: {
-    opacity: 0.55,
+    opacity: 0.7,
   },
   submitButtonText: {
-    ...theme.typography.body.lg,
+    ...theme.typography.body.md,
     color: '#FFFFFF',
     fontWeight: '700',
   },
@@ -700,22 +684,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   cameraFooter: {
-    position: 'absolute',
-    left: theme.spacing.lg,
-    right: theme.spacing.lg,
-    bottom: theme.spacing.xl,
     flexDirection: 'row',
     gap: theme.spacing.md,
+    padding: theme.spacing.lg,
+    backgroundColor: '#020617',
   },
   cameraActionButton: {
     flex: 1,
-    minHeight: 50,
-    borderRadius: theme.radius.lg,
+    minHeight: 48,
+    borderRadius: theme.radius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cameraCancelButton: {
-    backgroundColor: 'rgba(15, 23, 42, 0.78)',
+    backgroundColor: '#334155',
   },
   cameraCaptureButton: {
     backgroundColor: theme.colors.primary,

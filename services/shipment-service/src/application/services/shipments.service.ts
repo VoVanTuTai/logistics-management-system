@@ -92,6 +92,15 @@ export class ShipmentsService {
       eventType,
       data,
     );
+
+    if (nextStatus === 'EXCEPTION') {
+      return this.shipmentRepository.updateCurrentStatusAndLock(
+        normalizedCode,
+        nextStatus,
+        true,
+      );
+    }
+
     return this.shipmentRepository.updateCurrentStatus(
       normalizedCode,
       nextStatus,

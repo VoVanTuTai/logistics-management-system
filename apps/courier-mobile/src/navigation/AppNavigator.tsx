@@ -15,7 +15,11 @@ import { PickupScanScreen } from '../screens/scan/PickupScanScreen';
 import { DeliverySignScanScreen } from '../screens/scan/DeliverySignScanScreen';
 import { BagSealScreen } from '../screens/scan/BagSealScreen';
 import { BagUnsealScreen } from '../screens/scan/BagUnsealScreen';
+import { InventoryCheckScreen } from '../screens/scan/InventoryCheckScreen';
 import { SendGoodsScreen } from '../screens/scan/SendGoodsScreen';
+import { ScanIssueScreen } from '../screens/scan/ScanIssueScreen';
+import { VehicleInboundScreen } from '../screens/scan/VehicleInboundScreen';
+import { VehicleOutboundScreen } from '../screens/scan/VehicleOutboundScreen';
 import { TaskDetailScreen } from '../screens/tasks/TaskDetailScreen';
 import { TrackingLookupScreen } from '../screens/tasks/TrackingLookupScreen';
 import { theme } from '../theme';
@@ -66,7 +70,9 @@ export function AppNavigator(): React.JSX.Element {
           <Stack.Screen
             name="HubScan"
             component={HubScanScreen}
-            options={{ title: 'Quet hub' }}
+            options={({ route }) => ({
+              title: route.params.mode === 'INBOUND' ? 'Hàng đến' : 'Quet hub',
+            })}
           />
           <Stack.Screen
             name="BagSeal"
@@ -82,6 +88,26 @@ export function AppNavigator(): React.JSX.Element {
             name="SendGoods"
             component={SendGoodsScreen}
             options={{ title: 'Gửi hàng' }}
+          />
+          <Stack.Screen
+            name="InventoryCheck"
+            component={InventoryCheckScreen}
+            options={{ title: 'Kiểm tồn kho' }}
+          />
+          <Stack.Screen
+            name="VehicleOutbound"
+            component={VehicleOutboundScreen}
+            options={{ title: 'Xe đi' }}
+          />
+          <Stack.Screen
+            name="VehicleInbound"
+            component={VehicleInboundScreen}
+            options={{ title: 'Xe đến' }}
+          />
+          <Stack.Screen
+            name="ScanIssue"
+            component={ScanIssueScreen}
+            options={{ title: 'Vấn đề' }}
           />
           <Stack.Screen
             name="DeliverySuccess"

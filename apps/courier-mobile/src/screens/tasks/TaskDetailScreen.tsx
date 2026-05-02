@@ -74,6 +74,36 @@ function normalizePhone(phone: string): string {
   return phone.replace(/[^\d+]/g, '');
 }
 
+function toShipmentStatusLabelVi(status: string | null | undefined): string {
+  if (!status) {
+    return 'N/A';
+  }
+
+  const labels: Record<string, string> = {
+    CANCELLED: 'Đã hủy',
+    CREATED: 'Mới tạo',
+    DELIVERED: 'Giao thành công',
+    DELIVERY_FAILED: 'Giao thất bại',
+    EXCEPTION: 'Ngoại lệ',
+    MANIFEST_RECEIVED: 'Đã nhận bao',
+    MANIFEST_SEALED: 'Đã niêm phong bao',
+    MANIFEST_UNSEALED: 'Đã gỡ bao',
+    NDR_CREATED: 'Cần xử lý giao thất bại',
+    PICKUP_COMPLETED: 'Nhận hàng',
+    IN_TRANSIT: 'Đang luân chuyển',
+    RETURN_COMPLETED: 'Hoàn hàng thành công',
+    RETURN_STARTED: 'Bắt đầu hoàn hàng',
+    SEND_GOODS: 'Đã gửi hàng',
+    INVENTORY_CHECK: 'Kiểm tra hàng tồn',
+    SCAN_INBOUND: 'Hàng đến',
+    SCAN_OUTBOUND: 'Đã quét xuất hub',
+    TASK_ASSIGNED: 'Đã phân công',
+    UPDATED: 'Đã cập nhật',
+  };
+
+  return labels[status] ?? status;
+}
+
 export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Element {
   const session = useAppStore((state) => state.session);
   const taskQuery = useTaskDetailQuery({
@@ -150,7 +180,7 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
       } catch (error) {
         Alert.alert(
           'Thao tac that bai',
-          error instanceof Error ? error.message : 'Khong the mo lien ket goi dien.',
+          error instanceof Error ? error.message : 'Khong the mo lien ket gọi dien.',
         );
       }
     },
@@ -196,6 +226,7 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
   }
 
   const hasShipmentCode = Boolean(task.shipmentCode);
+  const isPickupTask = task.taskType === 'PICKUP';
   const isReloadingStatus = taskQuery.isRefetching || shipmentQuery.isRefetching;
 
   return (
@@ -284,7 +315,7 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>Trang thai don</Text>
                   <Text style={styles.infoValue}>
-                    {shipmentQuery.data?.currentStatus ?? 'N/A'}
+                    {toShipmentStatusLabelVi(shipmentQuery.data?.currentStatus)}
                   </Text>
                 </View>
                 <View style={styles.infoRow}>
@@ -322,26 +353,40 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
             style={[styles.actionButton, styles.callActionButton]}
           >
             <Ionicons name="call-outline" size={18} color="#FFFFFF" />
-            <Text style={styles.actionButtonText}>Goi</Text>
+            <Text style={styles.actionButtonText}>gọi</Text>
           </Pressable>
 
           <Pressable
             disabled={!hasShipmentCode}
-            onPress={() =>
+            onPress={() => {
+              if (isPickupTask) {
+                navigation.navigate('PickupScan', {
+                  taskId: task.id,
+                  shipmentCode: task.shipmentCode ?? undefined,
+                });
+                return;
+              }
+
               navigation.navigate('DeliveryProof', {
                 taskId: task.id,
                 taskCode: task.taskCode,
                 shipmentCode: task.shipmentCode ?? undefined,
-              })
-            }
+              });
+            }}
             style={[
               styles.actionButton,
               styles.midActionButton,
               !hasShipmentCode && styles.actionButtonDisabled,
             ]}
           >
-            <Ionicons name="document-text-outline" size={18} color="#FFFFFF" />
-            <Text style={styles.actionButtonText}>Ky nhan</Text>
+            <Ionicons
+              name={isPickupTask ? 'cube-outline' : 'document-text-outline'}
+              size={18}
+              color="#FFFFFF"
+            />
+            <Text style={styles.actionButtonText}>
+              {isPickupTask ? 'Nhận hàng' : 'Ky nhan'}
+            </Text>
           </Pressable>
 
           <Pressable
@@ -360,7 +405,7 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
             ]}
           >
             <Ionicons name="alert-circle-outline" size={18} color="#FFFFFF" />
-            <Text style={styles.actionButtonText}>Van de</Text>
+            <Text style={styles.actionButtonText}>Vấn đề</Text>
           </Pressable>
         </View>
       </View>
@@ -385,7 +430,7 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
               style={styles.modalAction}
             >
               <Ionicons name="call-outline" size={18} color={theme.colors.primary} />
-              <Text style={styles.modalActionText}>Goi nguoi nhan</Text>
+              <Text style={styles.modalActionText}>gọi nguoi nhan</Text>
             </Pressable>
             <Pressable
               onPress={() => {
@@ -394,7 +439,7 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
               style={styles.modalAction}
             >
               <Ionicons name="person-outline" size={18} color={theme.colors.primary} />
-              <Text style={styles.modalActionText}>Goi nguoi gui</Text>
+              <Text style={styles.modalActionText}>gọi nguoi gui</Text>
             </Pressable>
             <Pressable
               onPress={() => {
@@ -618,4 +663,3 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
-
