@@ -4,7 +4,12 @@ import { useSearchParams } from 'react-router-dom';
 
 import { useHubsQuery } from '../../features/masterdata/masterdata.api';
 import { useShipmentsQuery } from '../../features/shipments/shipments.api';
-import { tasksClient, useCourierOptionsQuery, useTasksQuery } from '../../features/tasks/tasks.api';
+import {
+  tasksClient,
+  useCourierOptionsQuery,
+  useDispatchTasksRealtime,
+  useTasksQuery,
+} from '../../features/tasks/tasks.api';
 import type { TaskListFilters, TaskListItemDto } from '../../features/tasks/tasks.types';
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
@@ -68,6 +73,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
   const [bulkAssignError, setBulkAssignError] = useState<string | null>(null);
 
   const tasksQuery = useTasksQuery(accessToken, filters);
+  const realtimeStatus = useDispatchTasksRealtime(Boolean(accessToken));
   const shipmentsQuery = useShipmentsQuery(accessToken, {});
   const hubsQuery = useHubsQuery(accessToken, {});
   const courierOptionsQuery = useCourierOptionsQuery(accessToken);
@@ -408,6 +414,12 @@ export function TaskAssignmentPage(): React.JSX.Element {
       <p style={styles.helperText}>
         Lọc theo ngày, loại tác vụ, trạng thái và khu vực giao. Chọn nhiều tác vụ để phân công cho 1 shipper.
       </p>
+      <div style={styles.realtimeRow}>
+        <span style={styles.realtimeLabel}>Realtime:</span>
+        <strong style={realtimeStatus === 'connected' ? styles.realtimeOk : styles.realtimeWarn}>
+          {realtimeStatus === 'connected' ? 'WebSocket connected' : 'Reconnecting...'}
+        </strong>
+      </div>
       {!canViewAllHubAreas ? (
         <div style={styles.scopeNotice}>
           <strong>Phạm vi hub:</strong>{' '}
@@ -574,6 +586,24 @@ const styles: Record<string, React.CSSProperties> = {
   },
   helperText: {
     color: '#2d3f99',
+  },
+  realtimeRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  realtimeLabel: {
+    color: '#334155',
+    fontSize: 13,
+  },
+  realtimeOk: {
+    color: '#166534',
+    fontSize: 13,
+  },
+  realtimeWarn: {
+    color: '#9a3412',
+    fontSize: 13,
   },
   scopeNotice: {
     marginTop: 10,

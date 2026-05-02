@@ -43,10 +43,12 @@ function Get-ListeningPid([int]$port) {
     # Fallback handled below.
   }
 
-  $pattern = "^\s*TCP\s+\S+:$port\s+\S+\s+LISTENING\s+(\d+)\s*$"
-  foreach ($line in (netstat -ano -p tcp 2>$null)) {
-    if ($line -match $pattern) {
-      return [int]$Matches[1]
+  if (Get-Command netstat -ErrorAction SilentlyContinue) {
+    $pattern = "^\s*TCP\s+\S+:$port\s+\S+\s+LISTENING\s+(\d+)\s*$"
+    foreach ($line in (netstat -ano -p tcp 2>$null)) {
+      if ($line -match $pattern) {
+        return [int]$Matches[1]
+      }
     }
   }
 
@@ -72,6 +74,80 @@ function Test-DockerHealthAccess() {
   }
 }
 
+function Resolve-NpmCommand() {
+  $npmCmd = Get-Command npm.cmd -ErrorAction SilentlyContinue
+  if ($npmCmd) {
+    return $npmCmd.Source
+  }
+
+  $npm = Get-Command npm -ErrorAction SilentlyContinue
+  if ($npm) {
+    return $npm.Source
+  }
+
+  return 'npm'
+}
+
+function Resolve-NodeCommand() {
+  $nodeExe = Get-Command node.exe -ErrorAction SilentlyContinue
+  if ($nodeExe) {
+    return $nodeExe.Source
+  }
+
+  $node = Get-Command node -ErrorAction SilentlyContinue
+  if ($node) {
+    return $node.Source
+  }
+
+  return 'node'
+}
+
+function Resolve-TsNodeCommand([string]$workingDir) {
+  $localTsNodeCmd = Join-Path $workingDir 'node_modules\.bin\ts-node.cmd'
+  if (Test-Path $localTsNodeCmd) {
+    return $localTsNodeCmd
+  }
+
+  $localTsNode = Join-Path $workingDir 'node_modules\.bin\ts-node'
+  if (Test-Path $localTsNode) {
+    return $localTsNode
+  }
+
+  return 'ts-node'
+}
+
+function Resolve-TsNodeEntrypoint([string]$workingDir) {
+  $localTsNodeEntrypoint = Join-Path $workingDir 'node_modules\ts-node\dist\bin.js'
+  if (Test-Path $localTsNodeEntrypoint) {
+    return $localTsNodeEntrypoint
+  }
+
+  return $null
+}
+
+function Resolve-PrismaCommand([string]$workingDir) {
+  $localPrismaCmd = Join-Path $workingDir 'node_modules\.bin\prisma.cmd'
+  if (Test-Path $localPrismaCmd) {
+    return $localPrismaCmd
+  }
+
+  $localPrisma = Join-Path $workingDir 'node_modules\.bin\prisma'
+  if (Test-Path $localPrisma) {
+    return $localPrisma
+  }
+
+  return 'prisma'
+}
+
+function Resolve-PrismaEntrypoint([string]$workingDir) {
+  $localPrismaEntrypoint = Join-Path $workingDir 'node_modules\prisma\build\index.js'
+  if (Test-Path $localPrismaEntrypoint) {
+    return $localPrismaEntrypoint
+  }
+
+  return $null
+}
+
 function Start-ServiceIfDown(
   [hashtable]$service,
   [string]$rootDir,
@@ -81,16 +157,77 @@ function Start-ServiceIfDown(
     return
   }
 
+  $activeLauncher = @($started.Value | Where-Object {
+    $_.Service -eq $service.Name -and
+    $null -ne (Get-Process -Id $_.LauncherPid -ErrorAction SilentlyContinue)
+  } | Select-Object -Last 1)
+
+  if ($activeLauncher.Count -gt 0) {
+    Write-Host "[wait] $($service.Name) launcher still running pid=$($activeLauncher[0].LauncherPid)"
+    return
+  }
+
   $workingDir = Join-Path $rootDir $service.Path
   if (-not (Test-Path $workingDir)) {
     Write-Host "[missing] $($service.Name) path not found: $workingDir" -ForegroundColor Yellow
     return
   }
 
+  $logsDir = Join-Path $rootDir '.tmp/service-logs'
+  if (-not (Test-Path $logsDir)) {
+    New-Item -ItemType Directory -Path $logsDir -Force | Out-Null
+  }
+
+  $logId = Get-Date -Format 'yyyyMMdd-HHmmss-fff'
+  $stdoutPath = Join-Path $logsDir "$($service.Name)-$logId.out.log"
+  $stderrPath = Join-Path $logsDir "$($service.Name)-$logId.err.log"
+  $runnerPath = Join-Path $logsDir "$($service.Name)-$logId.run.cmd"
+  $npmCommand = Resolve-NpmCommand
+  $npmDir = Split-Path -Parent $npmCommand
+  if ($npmDir -and (($env:PATH -split ';') -notcontains $npmDir)) {
+    $env:PATH = "$npmDir;$env:PATH"
+    $env:Path = "$npmDir;$env:Path"
+  }
+  $nodeCommand = Resolve-NodeCommand
+  $tsNodeCommand = Resolve-TsNodeCommand -workingDir $workingDir
+  $tsNodeEntrypoint = Resolve-TsNodeEntrypoint -workingDir $workingDir
+  $prismaCommand = Resolve-PrismaCommand -workingDir $workingDir
+  $prismaEntrypoint = Resolve-PrismaEntrypoint -workingDir $workingDir
+  $prismaSchema = Join-Path $workingDir 'prisma\schema.prisma'
+
+  $runnerLines = @(
+    '@echo off'
+  )
+  if ($npmDir) {
+    $runnerLines += "set `"PATH=$npmDir;%PATH%`""
+  }
+  $runnerLines += "cd /d `"$workingDir`""
+  if (Test-Path $prismaSchema) {
+    if ($prismaEntrypoint) {
+      $runnerLines += "`"$nodeCommand`" `"$prismaEntrypoint`" generate --schema prisma/schema.prisma"
+    } else {
+      $runnerLines += "`"$prismaCommand`" generate --schema prisma/schema.prisma"
+    }
+    $runnerLines += 'if errorlevel 1 exit /b %errorlevel%'
+    if ($prismaEntrypoint) {
+      $runnerLines += "`"$nodeCommand`" `"$prismaEntrypoint`" db push --schema prisma/schema.prisma"
+    } else {
+      $runnerLines += "`"$prismaCommand`" db push --schema prisma/schema.prisma"
+    }
+    $runnerLines += 'if errorlevel 1 exit /b %errorlevel%'
+  }
+  if ($tsNodeEntrypoint) {
+    $runnerLines += "`"$nodeCommand`" `"$tsNodeEntrypoint`" src/main.ts"
+  } else {
+    $runnerLines += "`"$tsNodeCommand`" src/main.ts"
+  }
+  Set-Content -Path $runnerPath -Value $runnerLines -Encoding ASCII
+
   $launcher = Start-Process `
-    -FilePath 'cmd.exe' `
-    -ArgumentList '/c', 'npx ts-node src/main.ts' `
+    -FilePath $runnerPath `
     -WorkingDirectory $workingDir `
+    -RedirectStandardOutput $stdoutPath `
+    -RedirectStandardError $stderrPath `
     -WindowStyle Hidden `
     -PassThru
 
@@ -98,9 +235,10 @@ function Start-ServiceIfDown(
     Service = $service.Name
     Port = $service.Port
     LauncherPid = $launcher.Id
+    Logs = ".tmp/service-logs/$($service.Name)-$logId.*.log"
   }
 
-  Write-Host "[start] $($service.Name) launcher pid=$($launcher.Id)"
+  Write-Host "[start] $($service.Name) launcher pid=$($launcher.Id) logs=.tmp/service-logs/$($service.Name)-$logId.*.log"
   Start-Sleep -Milliseconds 250
 }
 
@@ -240,7 +378,36 @@ try {
   $downCount = @($statusRows | Where-Object { $_.Status -eq 'DOWN' }).Count
   if ($downCount -gt 0) {
     Write-Host ''
-    Write-Host 'Some services are DOWN. Check console output above.' -ForegroundColor Yellow
+    Write-Host 'Some services are DOWN. Recent logs:' -ForegroundColor Yellow
+
+    $logsDir = Join-Path $rootDir '.tmp/service-logs'
+    foreach ($downService in @($statusRows | Where-Object { $_.Status -eq 'DOWN' })) {
+      Write-Host ''
+      Write-Host "[$($downService.Service)]" -ForegroundColor Yellow
+
+      if (-not (Test-Path $logsDir)) {
+        Write-Host 'No service log directory found.'
+        continue
+      }
+
+      $latestErrorLog = Get-ChildItem -Path $logsDir -Filter "$($downService.Service)-*.err.log" -ErrorAction SilentlyContinue |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object -First 1
+      $latestOutputLog = Get-ChildItem -Path $logsDir -Filter "$($downService.Service)-*.out.log" -ErrorAction SilentlyContinue |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object -First 1
+
+      if ($latestErrorLog) {
+        Write-Host "stderr: $($latestErrorLog.FullName)"
+        Get-Content -Path $latestErrorLog.FullName -Tail 40 -ErrorAction SilentlyContinue
+      }
+
+      if ($latestOutputLog) {
+        Write-Host "stdout: $($latestOutputLog.FullName)"
+        Get-Content -Path $latestOutputLog.FullName -Tail 40 -ErrorAction SilentlyContinue
+      }
+    }
+
     exit 1
   }
 

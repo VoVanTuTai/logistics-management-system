@@ -45,6 +45,7 @@ const STORAGE_KEY_DRAFTS = 'merchant-web.shipment-drafts.v1';
 const STORAGE_KEY_NOTIFICATIONS = 'merchant-web.notifications.v1';
 const STORAGE_KEY_RETURNS = 'merchant-web.return-requests.v1';
 const STORAGE_KEY_PROFILE = 'merchant-web.profile.v1';
+const STORAGE_KEY_PROFILE_PREFIX = 'merchant-web.profile.v2.';
 const SHIPMENT_PAGE_SIZE = 8;
 const MERCHANT_PROFILE_SCOPE = 'MERCHANT_PROFILE';
 const MERCHANT_PROFILE_KEY_PREFIX = 'merchant.profile.';
@@ -84,6 +85,12 @@ interface MerchantProfileConfigPayload {
   defaultHubCode: string | null;
   defaultHubName: string | null;
   defaultSenderAddress: string | null;
+}
+
+interface PublicTrackingSnapshotResponse {
+  shipmentCode: string;
+  current: TrackingCurrent | null;
+  timeline: TimelineEvent[];
 }
 
 function normalizeLocationKey(value: string): string {
@@ -136,6 +143,10 @@ function resolveRegionCode(rawProvince: string): MerchantRegionCode | null {
 
 function buildMerchantProfileKey(username: string): string {
   return `${MERCHANT_PROFILE_KEY_PREFIX}${username.trim().toUpperCase()}`;
+}
+
+function buildProfileStorageKey(username: string): string {
+  return `${STORAGE_KEY_PROFILE_PREFIX}${username.trim().toUpperCase()}`;
 }
 
 function parseMerchantProfileConfig(
@@ -356,6 +367,7 @@ function normalizeCreateForm(
     widthCm: form?.widthCm ?? '',
     heightCm: form?.heightCm ?? '',
     declaredValue: form?.declaredValue ?? '',
+    codAmount: form?.codAmount ?? '',
     serviceType: form?.serviceType ?? 'STANDARD',
     deliveryNote: form?.deliveryNote ?? '',
   };
@@ -597,7 +609,10 @@ function MerchantApp(): React.JSX.Element {
     () => Math.max(asNumber(createForm.declaredValue, 0), 0),
     [createForm.declaredValue],
   );
-  const codAmount = 0;
+  const codAmount = useMemo(
+    () => Math.max(asNumber(createForm.codAmount, 0), 0),
+    [createForm.codAmount],
+  );
   const totalOrderAmount = declaredValueAmount + effectiveFee;
 
   const serviceOptions = useMemo(() => Array.from(new Set(shipmentRows.map((r) => r.serviceType).filter(Boolean))), [shipmentRows]);
@@ -618,6 +633,12 @@ function MerchantApp(): React.JSX.Element {
 
     return map;
   }, [pickups]);
+  const selectedPickupUpdatedAt = useMemo(
+    () =>
+      pickupByShipmentCode.get(normalizeCode(selectedShipmentCode))?.updatedAt ??
+      '',
+    [pickupByShipmentCode, selectedShipmentCode],
+  );
 
   const filteredRows = useMemo(() => {
     const keyword = listSearch.trim().toLowerCase();
@@ -668,6 +689,118 @@ function MerchantApp(): React.JSX.Element {
       : statusClass(shipment.currentStatus);
   }
 
+  function buildFallbackTrackingSnapshot(code: string): {
+    current: TrackingCurrent | null;
+    timeline: TimelineEvent[];
+  } {
+    const normalizedCode = normalizeCode(code);
+    const row =
+      shipmentRows.find(
+        (item) => normalizeCode(item.shipment.code) === normalizedCode,
+      ) ?? null;
+
+    if (!row) {
+      return { current: null, timeline: [] };
+    }
+
+    const normalizedSenderHubCode =
+      row.senderHubCode && row.senderHubCode !== '-' ? row.senderHubCode : null;
+    const metadata = asRecord(row.shipment.metadata) ?? {};
+    const createdBy = asRecord(metadata.createdBy);
+    const createdByActor =
+      typeof createdBy?.username === 'string' && createdBy.username.trim()
+        ? createdBy.username.trim()
+        : typeof metadata.createdByUsername === 'string' &&
+            metadata.createdByUsername.trim()
+          ? metadata.createdByUsername.trim()
+          : row.senderName !== '-'
+            ? row.senderName
+            : null;
+
+    const timeline: TimelineEvent[] = [
+      {
+        id: `${normalizedCode}-created`,
+        eventTypeCode: 'shipment.created',
+        eventType: 'Đơn hàng đã được tạo',
+        shipmentCode: normalizedCode,
+        actor: createdByActor,
+        locationCode: normalizedSenderHubCode,
+        occurredAt: row.shipment.createdAt,
+      },
+    ];
+
+    const pickup = pickupByShipmentCode.get(normalizedCode);
+    if (pickup) {
+      const pickupEventTypeByStatus: Record<PickupRequest['status'], string> = {
+        REQUESTED: 'Đã yêu cầu lấy hàng',
+        COMPLETED: 'Đã lấy hàng',
+        CANCELLED: 'Yêu cầu lấy hàng đã hủy',
+      };
+
+      timeline.push({
+        id: `${pickup.id}-pickup`,
+        eventTypeCode: `pickup.${pickup.status.toLowerCase()}`,
+        eventType: pickupEventTypeByStatus[pickup.status],
+        shipmentCode: normalizedCode,
+        actor: pickup.requesterName ?? null,
+        locationCode: normalizedSenderHubCode,
+        occurredAt:
+          pickup.completedAt ?? pickup.updatedAt ?? pickup.createdAt,
+      });
+    }
+
+    const currentStatusCode = resolveShipmentStatusCode(row.shipment);
+    const currentStatusLabel = resolveShipmentStatusLabel(row.shipment);
+
+    if (
+      currentStatusCode !== 'CREATED' &&
+      currentStatusCode !== 'UPDATED' &&
+      currentStatusCode !== 'WAITING_PICKUP'
+    ) {
+      timeline.push({
+        id: `${row.shipment.id}-status-${currentStatusCode}`,
+        eventTypeCode: currentStatusCode,
+        eventType: currentStatusLabel,
+        shipmentCode: normalizedCode,
+        actor: null,
+        locationCode:
+          row.receiverHubCode && row.receiverHubCode !== '-'
+            ? row.receiverHubCode
+            : normalizedSenderHubCode,
+        occurredAt: row.shipment.updatedAt,
+      });
+    } else if (!pickup) {
+      timeline.push({
+        id: `${row.shipment.id}-waiting-pickup`,
+        eventTypeCode: 'pickup.requested',
+        eventType: 'Đang chờ lấy hàng',
+        shipmentCode: normalizedCode,
+        actor: null,
+        locationCode: normalizedSenderHubCode,
+        occurredAt: row.shipment.updatedAt,
+      });
+    }
+
+    timeline.sort(
+      (left, right) =>
+        new Date(left.occurredAt).getTime() - new Date(right.occurredAt).getTime(),
+    );
+
+    const latest = timeline[timeline.length - 1] ?? null;
+    const current: TrackingCurrent = {
+      shipmentCode: normalizedCode,
+      currentStatusCode,
+      currentStatus: currentStatusLabel,
+      currentLocationCode:
+        latest?.locationCode ?? normalizedSenderHubCode ?? null,
+      lastEventTypeCode: latest?.eventTypeCode ?? null,
+      lastEventType: latest?.eventType ?? null,
+      lastEventAt: latest?.occurredAt ?? row.shipment.updatedAt,
+    };
+
+    return { current, timeline };
+  }
+
   const dashboardStats = useMemo(
     () => ({
       totalToday: shipments.filter((s) => isToday(s.createdAt)).length,
@@ -694,11 +827,9 @@ function MerchantApp(): React.JSX.Element {
     }
 
     const defaultSenderName = session.user.displayName?.trim() ?? '';
-    const defaultSenderPhone =
-      session.user.phone?.trim() ?? profile.contactPhone.trim();
+    const defaultSenderPhone = session.user.phone?.trim() ?? '';
     const defaultAddress =
-      merchantProfileConfig?.defaultSenderAddress?.trim() ??
-      profile.defaultPickupAddress.trim();
+      merchantProfileConfig?.defaultSenderAddress?.trim() ?? '';
 
     setCreateForm((previous) => {
       const next = { ...previous };
@@ -759,11 +890,12 @@ function MerchantApp(): React.JSX.Element {
     setProfile((previous) => {
       const nextProfile = {
         ...previous,
-        shopName: previous.shopName || defaultSenderName,
-        contactPhone: previous.contactPhone || defaultSenderPhone,
+        // Keep account view aligned with admin-managed auth data.
+        shopName: defaultSenderName || previous.shopName,
+        contactPhone: defaultSenderPhone || previous.contactPhone,
         defaultPickupAddress:
-          previous.defaultPickupAddress ||
           defaultAddress ||
+          previous.defaultPickupAddress ||
           lockedSenderHub.fullAddress,
       };
 
@@ -781,8 +913,6 @@ function MerchantApp(): React.JSX.Element {
     session,
     lockedSenderHub,
     merchantProfileConfig,
-    profile.contactPhone,
-    profile.defaultPickupAddress,
   ]);
 
   useEffect(() => {
@@ -800,7 +930,8 @@ function MerchantApp(): React.JSX.Element {
     );
     setNotifications(parseStorage(window.localStorage.getItem(STORAGE_KEY_NOTIFICATIONS), []));
     setReturnRequests(parseStorage(window.localStorage.getItem(STORAGE_KEY_RETURNS), []));
-    setProfile(parseStorage(window.localStorage.getItem(STORAGE_KEY_PROFILE), DEFAULT_PROFILE));
+    // Legacy shared profile key caused data leakage between merchant accounts.
+    window.localStorage.removeItem(STORAGE_KEY_PROFILE);
 
     const storedSession = parseStorage<MerchantSession | null>(window.localStorage.getItem(STORAGE_KEY_SESSION), null);
     if (!storedSession) {
@@ -866,13 +997,38 @@ function MerchantApp(): React.JSX.Element {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    window.localStorage.setItem(STORAGE_KEY_PROFILE, JSON.stringify(profile));
-  }, [profile]);
+    if (!session) {
+      setProfile(DEFAULT_PROFILE);
+      return;
+    }
+
+    const profileStorageKey = buildProfileStorageKey(session.user.username);
+    const storedProfile = parseStorage<MerchantProfile>(
+      window.localStorage.getItem(profileStorageKey),
+      DEFAULT_PROFILE,
+    );
+    setProfile({
+      ...DEFAULT_PROFILE,
+      ...storedProfile,
+    });
+  }, [session?.user.username]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !session) return;
+    const profileStorageKey = buildProfileStorageKey(session.user.username);
+    window.localStorage.setItem(profileStorageKey, JSON.stringify(profile));
+  }, [profile, session?.user.username]);
 
   useEffect(() => {
     if (!session || !selectedShipmentCode || activeView !== 'shipment-detail') return;
     void loadDetailTracking(selectedShipmentCode);
-  }, [session?.accessToken, selectedShipmentCode, activeView]);
+  }, [
+    session?.accessToken,
+    selectedShipmentCode,
+    activeView,
+    selectedShipment?.shipment.updatedAt,
+    selectedPickupUpdatedAt,
+  ]);
 
   function pushNotification(level: NotificationItem['level'], title: string, description: string): void {
     setNotifications((prev) => [{ id: generateLocalId('notify'), level, title, description, createdAt: new Date().toISOString(), read: false }, ...prev].slice(0, 120));
@@ -1206,13 +1362,54 @@ function MerchantApp(): React.JSX.Element {
       ),
     ]);
 
+    if (currentRes.status === 'fulfilled' || timelineRes.status === 'fulfilled') {
+      return {
+        current: currentRes.status === 'fulfilled' ? currentRes.value : null,
+        timeline: timelineRes.status === 'fulfilled' ? timelineRes.value : [],
+        error: null,
+      };
+    }
+
+    const internalErrors = [
+      currentRes.status === 'rejected'
+        ? extractErrorMessage(currentRes.reason)
+        : null,
+      timelineRes.status === 'rejected'
+        ? extractErrorMessage(timelineRes.reason)
+        : null,
+    ].filter((message): message is string => Boolean(message));
+
+    try {
+      const publicSnapshot = await request<PublicTrackingSnapshotResponse>(
+        `/public/tracking/public/track/${encodeURIComponent(normalizedCode)}`,
+        { method: 'GET' },
+        session.accessToken,
+      );
+
+      if (publicSnapshot.current || publicSnapshot.timeline.length > 0) {
+        return {
+          current: publicSnapshot.current,
+          timeline: publicSnapshot.timeline,
+          error: null,
+        };
+      }
+    } catch (publicError) {
+      internalErrors.push(extractErrorMessage(publicError));
+    }
+
+    const fallback = buildFallbackTrackingSnapshot(normalizedCode);
+    if (fallback.current || fallback.timeline.length > 0) {
+      return {
+        current: fallback.current,
+        timeline: fallback.timeline,
+        error: null,
+      };
+    }
+
     return {
-      current: currentRes.status === 'fulfilled' ? currentRes.value : null,
-      timeline: timelineRes.status === 'fulfilled' ? timelineRes.value : [],
-      error:
-        currentRes.status === 'rejected' && timelineRes.status === 'rejected'
-          ? `${extractErrorMessage(currentRes.reason)} | ${extractErrorMessage(timelineRes.reason)}`
-          : null,
+      current: null,
+      timeline: [],
+      error: internalErrors.join(' | '),
     };
   }
 
@@ -1686,6 +1883,17 @@ function MerchantApp(): React.JSX.Element {
                       setCreateForm((previous) => ({
                         ...previous,
                         declaredValue: event.target.value,
+                      }))
+                    }
+                  />
+                  <input
+                    className="input"
+                    placeholder={'Ti\u1ec1n thu h\u1ed9 COD'}
+                    value={createForm.codAmount}
+                    onChange={(event) =>
+                      setCreateForm((previous) => ({
+                        ...previous,
+                        codAmount: event.target.value,
                       }))
                     }
                   />

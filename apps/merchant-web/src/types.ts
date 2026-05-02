@@ -170,6 +170,7 @@ export interface CreateShipmentForm {
   widthCm: string;
   heightCm: string;
   declaredValue: string;
+  codAmount: string;
   serviceType: 'STANDARD' | 'EXPRESS' | 'SAME_DAY';
   deliveryNote: string;
 }
@@ -220,6 +221,7 @@ export const DEFAULT_CREATE_FORM: CreateShipmentForm = {
   widthCm: '',
   heightCm: '',
   declaredValue: '',
+  codAmount: '',
   serviceType: 'STANDARD',
   deliveryNote: '',
 };
