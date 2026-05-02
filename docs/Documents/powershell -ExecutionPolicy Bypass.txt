@@ -20,3 +20,13 @@ Khi bị network request failed, chạy lại riêng courier mobile:
 
 cd "d:\University\Semester 2_Year 4\New Technology\logistics-management-system\apps\courier-mobile"
 npm run start -- --host lan --port 8081
+
+chạy riêng service bị down
+powershell -ExecutionPolicy Bypass -File .\scripts\start-services-retry.ps1
+
+chạy đúng service mình mong muốn
+# start riêng shipment-service (3002)
+Start-Process cmd.exe -ArgumentList '/k','npm run start:dev' -WorkingDirectory '.\services\shipment-service'
+
+# start riêng delivery-service (3007)
+Start-Process cmd.exe -ArgumentList '/k','npm run start:dev' -WorkingDirectory '.\services\delivery-service'

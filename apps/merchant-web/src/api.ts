@@ -246,7 +246,7 @@ export function buildShipmentMetadata(
     service: {
       type: form.serviceType,
     },
-    codAmount: 0,
+    codAmount: asNumber(form.codAmount, 0),
     deliveryNote: form.deliveryNote.trim() || null,
     estimatedFee,
     routing: {
