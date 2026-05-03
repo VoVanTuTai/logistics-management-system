@@ -5,6 +5,7 @@ export interface ShipmentDto {
   code: string;
   currentStatus: string;
   metadata: ShipmentMetadata | null;
+  codAmount: number | null;
   cancellationReason: string | null;
   createdAt: string;
   updatedAt: string;
