@@ -59,9 +59,20 @@ export function useDispatchTasksRealtime(
           return;
         }
 
-        void queryClient.invalidateQueries({
-          queryKey: queryKeys.tasks,
-        });
+        void Promise.all([
+          queryClient.refetchQueries({
+            queryKey: queryKeys.tasks,
+            type: 'active',
+          }),
+          queryClient.refetchQueries({
+            queryKey: queryKeys.shipments,
+            type: 'active',
+          }),
+          queryClient.refetchQueries({
+            queryKey: queryKeys.pickups,
+            type: 'active',
+          }),
+        ]);
       };
 
       socket.onerror = () => {

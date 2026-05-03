@@ -264,8 +264,8 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
 
   const tasksQuery = useTasksQuery(accessToken, { taskType: 'PICKUP' });
   const realtimeStatus = useDispatchTasksRealtime(Boolean(accessToken));
-  const shipmentsQuery = useShipmentsQuery(accessToken, {});
-  const pickupsQuery = usePickupRequestsQuery(accessToken, {});
+  const shipmentsQuery = useShipmentsQuery(accessToken, {}, { refetchInterval: 5000 });
+  const pickupsQuery = usePickupRequestsQuery(accessToken, {}, { refetchInterval: 5000 });
   const shippersQuery = useQuery({
     queryKey: [
       ...queryKeys.tasks,
