@@ -7,11 +7,15 @@ import type { PickupRequestListFilters, PickupReviewInput } from './pickups.type
 export function usePickupRequestsQuery(
   accessToken: string | null,
   filters: PickupRequestListFilters,
+  options?: {
+    refetchInterval?: number | false;
+  },
 ) {
   return useQuery({
     queryKey: [...queryKeys.pickups, filters.status ?? ''],
     queryFn: () => pickupsClient.list(accessToken, filters),
     enabled: Boolean(accessToken),
+    refetchInterval: options?.refetchInterval,
   });
 }
 

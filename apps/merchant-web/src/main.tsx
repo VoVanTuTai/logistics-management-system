@@ -366,7 +366,6 @@ function normalizeCreateForm(
     lengthCm: form?.lengthCm ?? '',
     widthCm: form?.widthCm ?? '',
     heightCm: form?.heightCm ?? '',
-    declaredValue: form?.declaredValue ?? '',
     codAmount: form?.codAmount ?? '',
     serviceType: form?.serviceType ?? 'STANDARD',
     deliveryNote: form?.deliveryNote ?? '',
@@ -605,15 +604,10 @@ function MerchantApp(): React.JSX.Element {
         .join(', '),
     [createForm.receiverAddressDetail, createForm.receiverWard, createForm.receiverProvince],
   );
-  const declaredValueAmount = useMemo(
-    () => Math.max(asNumber(createForm.declaredValue, 0), 0),
-    [createForm.declaredValue],
-  );
   const codAmount = useMemo(
     () => Math.max(asNumber(createForm.codAmount, 0), 0),
     [createForm.codAmount],
   );
-  const totalOrderAmount = declaredValueAmount + effectiveFee;
 
   const serviceOptions = useMemo(() => Array.from(new Set(shipmentRows.map((r) => r.serviceType).filter(Boolean))), [shipmentRows]);
   const regionOptions = useMemo(() => Array.from(new Set(shipmentRows.map((r) => r.receiverRegion).filter((r) => r && r !== '-'))), [shipmentRows]);
@@ -1251,12 +1245,25 @@ function MerchantApp(): React.JSX.Element {
         body: JSON.stringify(payload),
       }, session.accessToken);
 
-      upsertShipment(created);
-      setSelectedShipmentCode(created.code);
-      setCreateSuccess(`Đã tạo shipment ${created.code}`);
+      const clientMetadataFallback = asRecord(payload.metadata) ?? {};
+      const createdMetadata = {
+        ...clientMetadataFallback,
+        ...(asRecord(created.metadata) ?? {}),
+      };
+      const createdForUi: ShipmentResponse = {
+        ...created,
+        metadata: createdMetadata,
+      };
+
+      upsertShipment(createdForUi);
+      setSelectedShipmentCode(createdForUi.code);
+      setCreateSuccess(`Đã tạo shipment ${createdForUi.code}`);
       if (withPickup) {
-        const pickup = await createPickupForShipment(created.code, `auto pickup ${created.code}`);
-        setCreateSuccess(`Đã tạo shipment ${created.code} và pickup ${pickup.pickupCode}`);
+        const pickup = await createPickupForShipment(
+          createdForUi.code,
+          `auto pickup ${createdForUi.code}`,
+        );
+        setCreateSuccess(`Đã tạo shipment ${createdForUi.code} và pickup ${pickup.pickupCode}`);
       }
       setCreateForm({
         ...DEFAULT_CREATE_FORM,
@@ -1877,17 +1884,6 @@ function MerchantApp(): React.JSX.Element {
                   />
                   <input
                     className="input"
-                    placeholder={'Gi\u00e1 tr\u1ecb h\u00e0ng'}
-                    value={createForm.declaredValue}
-                    onChange={(event) =>
-                      setCreateForm((previous) => ({
-                        ...previous,
-                        declaredValue: event.target.value,
-                      }))
-                    }
-                  />
-                  <input
-                    className="input"
                     placeholder={'Ti\u1ec1n thu h\u1ed9 COD'}
                     value={createForm.codAmount}
                     onChange={(event) =>
@@ -1959,11 +1955,7 @@ function MerchantApp(): React.JSX.Element {
                   <p className="muted">
                     {'Ph\u00ed t\u1ea1m t\u00ednh: '}<strong>{formatCurrency(effectiveFee)}</strong>
                   </p>
-                  <p className="muted">{'Gi\u00e1 tr\u1ecb h\u00e0ng: '}{formatCurrency(declaredValueAmount)}</p>
                   <p className="muted">COD: {formatCurrency(codAmount)}</p>
-                  <p className="muted">
-                    {'T\u1ed5ng gi\u00e1 tr\u1ecb \u0111\u01a1n (Gi\u00e1 tr\u1ecb h\u00e0ng + Ph\u00ed): '}<strong>{formatCurrency(totalOrderAmount)}</strong>
-                  </p>
                   <p className="muted">{'Hub g\u1eedi: '}{createForm.senderHubCode || 'Ch\u01b0a ch\u1ecdn'}</p>
                   <p className="muted">{'Hub nh\u1eadn: '}{createForm.receiverHubCode || 'Ch\u01b0a ch\u1ecdn'}</p>
                 </div>

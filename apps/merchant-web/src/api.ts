@@ -186,14 +186,12 @@ export function computeEstimatedFee(form: CreateShipmentForm): number {
   const length = Math.max(asNumber(form.lengthCm, 0), 0);
   const width = Math.max(asNumber(form.widthCm, 0), 0);
   const height = Math.max(asNumber(form.heightCm, 0), 0);
-  const declaredValue = Math.max(asNumber(form.declaredValue, 0), 0);
 
   const weightFee = weightKg * 4500;
   const volumetricWeight = (length * width * height) / 6000;
   const volumeFee = volumetricWeight * 3200;
-  const insuredFee = declaredValue * 0.002;
 
-  return Math.round(serviceBase + weightFee + volumeFee + insuredFee);
+  return Math.round(serviceBase + weightFee + volumeFee);
 }
 
 export function buildShipmentMetadata(
@@ -241,7 +239,7 @@ export function buildShipmentMetadata(
         width: asNumber(form.widthCm, 0),
         height: asNumber(form.heightCm, 0),
       },
-      declaredValue: asNumber(form.declaredValue, 0),
+      declaredValue: 0,
     },
     service: {
       type: form.serviceType,
