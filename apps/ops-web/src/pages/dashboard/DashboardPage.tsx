@@ -1,4 +1,4 @@
-﻿import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import React, { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
@@ -403,11 +403,11 @@ export function DashboardPage(): React.JSX.Element {
     icon: DashboardMenuIcon;
     disabled?: boolean;
   }> = [
-    {
-      title: 'Dữ liệu cơ bản',
-      to: routePaths.groupBasicData,
-      icon: 'basic_data',
-    },
+    // {
+    //   title: 'Dữ liệu cơ bản',
+    //   to: routePaths.groupBasicData,
+    //   icon: 'basic_data',
+    // },
     {
       title: 'Nền tảng điều hành',
       to: routePaths.groupOperationsPlatform,
