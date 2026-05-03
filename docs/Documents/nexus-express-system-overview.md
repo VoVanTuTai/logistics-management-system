@@ -155,6 +155,7 @@ logistics-management-system/
     delivery-service/   Delivery attempt, POD, NDR, return
     tracking-service/   Tracking timeline va current tracking read model
     reporting-service/  KPI, dashboard va bao cao van hanh
+    payment-service/    Quan ly thanh toan COD, chuyen khoan, tien mat
 
   contracts/
     events/             Danh sach event, naming convention va event contracts
@@ -195,6 +196,7 @@ logistics-management-system/
 | `delivery-service` | 3007 | Delivery attempt, success/fail, POD, NDR, return | `delivery_db` |
 | `tracking-service` | 3008 | Public/internal tracking read model, timeline, current view | `tracking_db` |
 | `reporting-service` | 3009 | KPI, dashboard, aggregate theo courier/hub/zone/status | `reporting_db` |
+| `payment-service` | 3011 | Quan ly thu ho COD, VietQR, cash remit | `payment_db` |
 
 ## 9. Domain data ownership
 
@@ -210,6 +212,7 @@ logistics-management-system/
 | Delivery attempt, NDR, return | `delivery-service` | Source of truth cho ket qua giao va xu ly ngoai le giao hang |
 | Tracking timeline/current view | `tracking-service` | Read model tao tu event, khong phai source of truth |
 | KPI/reporting | `reporting-service` | Read model/aggregate tao tu event |
+| COD, Bank transfer, Prepaid | `payment-service` | Source of truth cho phieu thu tien COD, remit |
 
 ## 10. Domain events chinh
 
@@ -233,6 +236,9 @@ Danh sach event milestone dang duoc dinh huong su dung:
 14. `ndr.created`
 15. `return.started`
 16. `return.completed`
+17. `cod.collected`
+18. `cod.collection_failed`
+19. `cod.remitted`
 
 Cac event nay giup tracking-service tao timeline, reporting-service tao KPI va cac service khac cap nhat state lien quan.
 
@@ -264,12 +270,12 @@ Cac event nay giup tracking-service tao timeline, reporting-service tao KPI va c
 ### 11.3 Giao hang va NDR/return
 
 1. `dispatch-service` tao hoac assign delivery task.
-2. Courier giao hang va cap nhat ket qua tren mobile.
-3. Neu thanh cong, `delivery-service` ghi attempt/POD va publish `delivery.delivered`.
-4. Neu that bai, `delivery-service` ghi attempt fail va publish `delivery.failed`.
+2. Courier giao hang, thu tien COD (neu co) va cap nhat ket qua tren mobile.
+3. Neu thanh cong, `delivery-service` ghi attempt/POD va publish `delivery.delivered`. Nhan vien xac nhan thu COD (goi `payment-service`), he thong publish `cod.collected`.
+4. Neu that bai, `delivery-service` ghi attempt fail va publish `delivery.failed`. Nhan vien bao cao that bai thu COD (neu co), he thong publish `cod.collection_failed`.
 5. He thong tao NDR case khi can xu ly giao lai hoac hoan hang.
 6. Neu hoan hang, service publish `return.started` va `return.completed` khi hoan tat.
-7. Tracking va reporting duoc cap nhat tu domain events.
+7. Tracking va reporting duoc cap nhat tu domain events. `payment-service` cung se cho xu ly cash remit neu nhan vien nop tien.
 
 ## 12. API entry convention
 

@@ -15,12 +15,12 @@ import {
   type DeliveryFailFormValues,
 } from '../../features/delivery/delivery-fail.types';
 import type { DeliveryFailPayload } from '../../features/delivery/delivery.types';
-import type { RootStackParamList } from '../../navigation/navigation.types';
+import type { AppNavigatorParamList } from '../../navigation/types';
 import { shouldQueueOffline } from '../../services/api/client';
 import { useAppStore } from '../../store/appStore';
 import { createIdempotencyKey } from '../../utils/idempotency';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'DeliveryFail'>;
+type Props = NativeStackScreenProps<AppNavigatorParamList, 'DeliveryFail'>;
 
 export function DeliveryFailScreen({
   route,

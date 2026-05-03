@@ -52,4 +52,17 @@ export const courierEndpoints = {
     ndr: `${COURIER_PREFIX}/delivery/ndr`,
     exception: `${COURIER_PREFIX}/delivery/ndr/exception`,
   },
+  cod: {
+    collect: `${COURIER_PREFIX}/payment/cod/collect`,
+    records: (courierId: string) =>
+      `${COURIER_PREFIX}/payment/cod/courier/${encodeURIComponent(courierId)}`,
+    summary: (courierId: string) =>
+      `${COURIER_PREFIX}/payment/cod/summary/${encodeURIComponent(courierId)}`,
+    shipment: (shipmentCode: string) =>
+      `${COURIER_PREFIX}/payment/cod/shipment/${encodeURIComponent(shipmentCode)}`,
+    bankInfo: `${COURIER_PREFIX}/payment/cod/bank-info`,
+    qr: (amount: number, memo: string) =>
+      `${COURIER_PREFIX}/payment/cod/qr?amount=${amount}&memo=${encodeURIComponent(memo)}`,
+    remit: `${COURIER_PREFIX}/payment/cod/remit`,
+  },
 } as const;
