@@ -22,6 +22,8 @@ import { VehicleInboundScreen } from '../screens/scan/VehicleInboundScreen';
 import { VehicleOutboundScreen } from '../screens/scan/VehicleOutboundScreen';
 import { TaskDetailScreen } from '../screens/tasks/TaskDetailScreen';
 import { TrackingLookupScreen } from '../screens/tasks/TrackingLookupScreen';
+import { CodStatsScreen } from '../screens/cod/CodStatsScreen';
+import { CodCollectScreen } from '../screens/cod/CodCollectScreen';
 import { theme } from '../theme';
 
 const Stack = createNativeStackNavigator<AppNavigatorParamList>();
@@ -133,6 +135,16 @@ export function AppNavigator(): React.JSX.Element {
             name="TrackingLookup"
             component={TrackingLookupScreen}
             options={{ title: 'Theo doi don hang' }}
+          />
+          <Stack.Screen
+            name="CodStats"
+            component={CodStatsScreen}
+            options={{ title: 'Tiền hàng COD' }}
+          />
+          <Stack.Screen
+            name="CodCollect"
+            component={CodCollectScreen}
+            options={{ title: 'Thu tiền COD' }}
           />
         </>
       ) : (

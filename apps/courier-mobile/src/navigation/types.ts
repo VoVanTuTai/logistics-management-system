@@ -64,4 +64,9 @@ export type AppNavigatorParamList = {
     shipmentCode?: string;
   };
   TrackingLookup: undefined;
+  CodStats: undefined;
+  CodCollect: {
+    shipmentCode?: string;
+    codAmount?: number;
+  };
 };

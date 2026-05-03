@@ -20,6 +20,8 @@ import { VehicleInboundScreen } from '../screens/scan/VehicleInboundScreen';
 import { VehicleOutboundScreen } from '../screens/scan/VehicleOutboundScreen';
 import { DeliverySuccessScreen } from '../screens/delivery/DeliverySuccessScreen';
 import { DeliveryFailScreen } from '../screens/delivery/DeliveryFailScreen';
+import { CodStatsScreen } from '../screens/cod/CodStatsScreen';
+import { CodCollectScreen } from '../screens/cod/CodCollectScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import { StatsScreen } from '../screens/stats/StatsScreen';
 import { ScanHomeScreen } from '../screens/scan/ScanHomeScreen';
@@ -210,6 +212,16 @@ export function RootNavigator(): React.JSX.Element {
             name="DeliveryFail"
             component={DeliveryFailScreen}
             options={{ title: 'Giao that bai / NDR' }}
+          />
+          <RootStack.Screen
+            name="CodStats"
+            component={CodStatsScreen}
+            options={{ title: 'Tiền hàng COD' }}
+          />
+          <RootStack.Screen
+            name="CodCollect"
+            component={CodCollectScreen}
+            options={{ title: 'Thu tiền COD' }}
           />
         </>
       ) : (

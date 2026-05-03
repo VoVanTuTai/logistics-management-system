@@ -23,6 +23,11 @@ export type RootStackParamList = {
     taskId?: string;
     shipmentCode?: string;
   };
+  CodStats: undefined;
+  CodCollect: {
+    shipmentCode?: string;
+    codAmount?: number;
+  };
 };
 
 export type MainTabParamList = {

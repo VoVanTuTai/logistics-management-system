@@ -1,4 +1,4 @@
-﻿$ErrorActionPreference = 'Stop'
+$ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
 $rootDir = Resolve-Path (Join-Path $PSScriptRoot '..')
@@ -14,7 +14,8 @@ $services = @(
   @{ Name = 'delivery-service'; Path = 'services/delivery-service'; Port = 3007 },
   @{ Name = 'tracking-service'; Path = 'services/tracking-service'; Port = 3008 },
   @{ Name = 'reporting-service'; Path = 'services/reporting-service'; Port = 3009 },
-  @{ Name = 'auth-service'; Path = 'services/auth-service'; Port = 3010 }
+  @{ Name = 'auth-service'; Path = 'services/auth-service'; Port = 3010 },
+  @{ Name = 'payment-service'; Path = 'services/payment-service'; Port = 3011 }
 )
 
 function Test-PortListening([int]$port) {
@@ -424,7 +425,7 @@ try {
   }
 
   Write-Host ''
-  Write-Host 'All 11 services are running.' -ForegroundColor Green
+  Write-Host 'All 12 services are running.' -ForegroundColor Green
 }
 finally {
   Pop-Location

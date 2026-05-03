@@ -15,12 +15,12 @@ import {
   type DeliverySuccessFormValues,
 } from '../../features/delivery/delivery-success.types';
 import type { DeliverySuccessPayload } from '../../features/delivery/delivery.types';
-import type { RootStackParamList } from '../../navigation/navigation.types';
+import type { AppNavigatorParamList } from '../../navigation/types';
 import { shouldQueueOffline } from '../../services/api/client';
 import { useAppStore } from '../../store/appStore';
 import { createIdempotencyKey } from '../../utils/idempotency';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'DeliverySuccess'>;
+type Props = NativeStackScreenProps<AppNavigatorParamList, 'DeliverySuccess'>;
 
 export function DeliverySuccessScreen({
   route,

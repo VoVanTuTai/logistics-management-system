@@ -9,24 +9,34 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { StatsShortcutCard } from '../../components/stats/StatsShortcutCard';
 import { StatsOverviewCard } from '../../components/stats/StatsOverviewCard';
 import { useAssignedTasksQuery } from '../../features/tasks/tasks.queries';
+import { useCodSummaryQuery } from '../../features/cod/cod.queries';
+import type { AppNavigatorParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
 import { appEnv } from '../../utils/env';
 import { resolveCourierId } from '../../utils/courier';
 import { theme } from '../../theme';
 
 export function StatsScreen(): React.JSX.Element {
+  const navigation = useNavigation<NativeStackNavigationProp<AppNavigatorParamList>>();
   const session = useAppStore((state) => state.session);
   const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
+  const accessToken = session?.tokens.accessToken ?? null;
   const tasksQuery = useAssignedTasksQuery({
-    accessToken: session?.tokens.accessToken ?? null,
+    accessToken,
     courierId,
   });
-  const onRefresh = () => void tasksQuery.refetch();
-  const refreshing = tasksQuery.isRefetching;
+  const codSummaryQuery = useCodSummaryQuery({ courierId, accessToken });
+  const onRefresh = () => {
+    void tasksQuery.refetch();
+    void codSummaryQuery.refetch();
+  };
+  const refreshing = tasksQuery.isRefetching || codSummaryQuery.isRefetching;
 
   const tasks = tasksQuery.data ?? [];
   const totalCount = tasks.length;
@@ -34,15 +44,21 @@ export function StatsScreen(): React.JSX.Element {
   const assignedCount = tasks.filter((task) => task.status === 'ASSIGNED').length;
   const cancelledCount = tasks.filter((task) => task.status === 'CANCELLED').length;
 
+  const codSummary = codSummaryQuery.data;
+  const codTotalDisplay = codSummary
+    ? (codSummary.collectedAmount + codSummary.remittedAmount + codSummary.pendingAmount).toLocaleString('vi-VN') + 'đ'
+    : '...';
+
   const shortcutData = [
     {
-      id: 'support',
-      title: 'CS',
-      subtitle: 'Yêu cầu hỗ trợ',
-      value: `${assignedCount} phiên`,
-      iconName: 'headset-outline' as const,
-      iconColor: '#1D4ED8',
-      iconBgColor: '#EFF6FF',
+      id: 'cod',
+      title: 'Tiền hàng',
+      subtitle: 'Tổng COD hôm nay',
+      value: codTotalDisplay,
+      iconName: 'cash-outline' as const,
+      iconColor: '#059669',
+      iconBgColor: '#D1FAE5',
+      onPress: () => navigation.navigate('CodStats'),
     },
     {
       id: 'efficiency',
@@ -52,6 +68,7 @@ export function StatsScreen(): React.JSX.Element {
       iconName: 'trending-up-outline' as const,
       iconColor: '#1D4ED8',
       iconBgColor: '#EFF6FF',
+      onPress: () => Alert.alert('Hiệu suất', 'Đang mở shortcut'),
     },
   ];
 
@@ -91,7 +108,7 @@ export function StatsScreen(): React.JSX.Element {
                   iconName={item.iconName}
                   iconColor={item.iconColor}
                   iconBgColor={item.iconBgColor}
-                  onPress={() => Alert.alert(item.title, 'Đang mở shortcut')}
+                  onPress={(item as { onPress?: () => void }).onPress ?? (() => Alert.alert(item.title, 'Đang mở shortcut'))}
                 />
               ))}
             </View>
