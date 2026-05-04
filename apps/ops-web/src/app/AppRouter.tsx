@@ -343,6 +343,10 @@ function DashboardLayout(): React.JSX.Element {
     location.pathname,
     routePaths.groupCustomerPlatform,
   );
+  const isCapabilityPlatformSection = pathMatches(
+    location.pathname,
+    routePaths.groupCapabilityPlatform,
+  );
 
   const topNavItems: TopNavItem[] = [
     // {
@@ -394,7 +398,6 @@ function DashboardLayout(): React.JSX.Element {
   const operationsSidebarItems: SidebarItem[] = [
     { label: 'Tra cứu hành trình', icon: 'tracking_lookup', to: routePaths.tracking },
     { label: 'Tem bao in nhiệt', icon: 'thermal_label', kind: 'thermal_label' },
-    { label: 'Vận chuyển tuyến nhánh', icon: 'linehaul_transport', kind: 'linehaul_transport' },
     { label: 'Chuyển hoàn', icon: 'return_block', kind: 'return_block' },
     { label: 'Giám sát dữ liệu', icon: 'monitor_data', kind: 'monitor_data' },
     // Tạm ẩn theo yêu cầu: Quản lý ký nhận, Báo biểu thao tác
@@ -441,6 +444,9 @@ function DashboardLayout(): React.JSX.Element {
       kind: 'customer_order_dispatch',
     },
   ];
+  const capabilityPlatformSidebarItems: SidebarItem[] = [
+    { label: 'Vận chuyển tuyến nhánh', icon: 'linehaul_transport', kind: 'linehaul_transport' },
+  ];
   const sidebarItems = isServiceQualitySection
     ? serviceQualitySidebarItems
     : isOperationsMetricsSection
@@ -449,6 +455,8 @@ function DashboardLayout(): React.JSX.Element {
     ? customerPlatformSidebarItems
     : isBranchBusinessSection
     ? branchBusinessSidebarItems
+    : isCapabilityPlatformSection
+    ? capabilityPlatformSidebarItems
     : operationsSidebarItems;
 
   const monitorDataChildItems = [
@@ -466,7 +474,7 @@ function DashboardLayout(): React.JSX.Element {
   ] as const;
   const linehaulChildItems = [
     { label: 'Quản lý chuyến xe', to: routePaths.linehaulTripManagement },
-    { label: 'In tem xe', to: routePaths.linehaulVehicleSeal },
+    { label: 'Tạo tem xe', to: routePaths.linehaulVehicleSeal },
   ] as const;
   const returnBlockChildItems = [
     { label: 'Quản lý chuyển hoàn', to: routePaths.returnBlockManagement },
@@ -658,7 +666,9 @@ function DashboardLayout(): React.JSX.Element {
     ? ['customer_order_management', 'customer_order_dispatch']
     : isBranchBusinessSection
     ? ['branch_local_orders', 'branch_order_management', 'branch_finance_settlement']
-    : ['thermal_label', 'linehaul_transport', 'return_block', 'monitor_data'];
+    : isCapabilityPlatformSection
+    ? ['linehaul_transport']
+    : ['thermal_label', 'return_block', 'monitor_data'];
 
   const activeSidebarPanelInSection =
     activeSidebarPanel &&
@@ -681,6 +691,8 @@ function DashboardLayout(): React.JSX.Element {
     ? 'Nền tảng khách hàng'
     : isBranchBusinessSection
     ? 'Kinh doanh bưu cục'
+    : isCapabilityPlatformSection
+    ? 'Quản lý vận chuyển'
     : 'Nền tảng điều hành';
 
   const operationsMetricsAllChildItems = [

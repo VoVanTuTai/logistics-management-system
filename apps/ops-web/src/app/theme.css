@@ -795,14 +795,7 @@ th {
   font-weight: 600;
 }
 
-.ops-func-sidebar--ops-metrics .ops-func-sidebar-title span {
-  background: #dc2626;
-}
-
-.ops-func-sidebar--ops-metrics .ops-func-sidebar-item--active {
-  background: #fff1f2;
-  color: #b91c1c;
-}
+/* Đã xóa override màu đỏ cho ops-metrics */
 
 
 .ops-func-sidebar-icon {
@@ -900,11 +893,7 @@ th {
   color: #1d4ed8;
 }
 
-.ops-func-sidebar--ops-metrics .ops-func-sidebar-secondary-item--active {
-  border-color: #fda4af;
-  background: #fff1f2;
-  color: #b91c1c;
-}
+/* Đã xóa override màu đỏ cho ops-metrics secondary */
 
 
 .ops-func-main {

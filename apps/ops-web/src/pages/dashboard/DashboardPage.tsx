@@ -113,9 +113,9 @@ function DashboardMenuOutlineIcon({
   };
   const accentStrokeProps = {
     ...outlineProps,
-    stroke: 'var(--ops-menu-accent, #dc2626)',
+    stroke: 'var(--ops-menu-accent, #2563eb)',
   };
-  const accentFill = 'var(--ops-menu-accent, #dc2626)';
+  const accentFill = 'var(--ops-menu-accent, #2563eb)';
 
   switch (icon) {
     case 'basic_data':
@@ -434,7 +434,7 @@ export function DashboardPage(): React.JSX.Element {
       icon: 'finance_settlement',
     },
     {
-      title: 'Nền tảng năng lực',
+      title: 'Quản lý vận chuyển',
       to: routePaths.groupCapabilityPlatform,
       icon: 'capability_platform',
     },
