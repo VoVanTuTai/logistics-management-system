@@ -35,6 +35,7 @@ export const opsEndpoints = {
     create: '/ops/manifest/manifests',
     generateBags: '/ops/manifest/manifests/bags/generate',
     detail: (manifestId: string) => `/ops/manifest/manifests/${manifestId}`,
+    update: (manifestId: string) => `/ops/manifest/manifests/${manifestId}`,
     delete: (manifestId: string) => `/ops/manifest/manifests/${manifestId}`,
     addShipment: (manifestId: string) => `/ops/manifest/manifests/${manifestId}/shipments/add`,
     removeShipment: (manifestId: string) => `/ops/manifest/manifests/${manifestId}/shipments/remove`,
