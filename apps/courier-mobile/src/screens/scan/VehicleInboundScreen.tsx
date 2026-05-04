@@ -367,19 +367,15 @@ export function VehicleInboundScreen(): React.JSX.Element {
         hubCode,
       );
 
-      try {
-        const manifests = await manifestApi.list(session?.tokens.accessToken as string);
-        const manifest = manifests.find(m => m.manifestCode === vehicleInfo.vehicleCode);
-        if (manifest) {
-          await manifestApi.receive(session?.tokens.accessToken as string, manifest.id, {
-            receivedBy: courierId,
-            receivedByName: employeeName,
-            processingHubCode: hubCode,
-            note: `Xe đến: ${vehicleInfo.vehicleCode} | Biển số: ${vehicleInfo.licensePlate} | Khớp seal: ${sealMatched}`,
-          });
-        }
-      } catch (manifestError) {
-        console.warn('Could not receive manifest on server:', manifestError);
+      const manifests = await manifestApi.list(session?.tokens.accessToken as string);
+      const manifest = manifests.find(m => m.manifestCode === vehicleInfo.vehicleCode);
+      if (manifest) {
+        await manifestApi.receive(session?.tokens.accessToken as string, manifest.id, {
+          receivedBy: courierId,
+          receivedByName: employeeName,
+          processingHubCode: hubCode,
+          note: `Xe đến: ${vehicleInfo.vehicleCode} | Biển số: ${vehicleInfo.licensePlate} | Khớp seal: ${sealMatched}`,
+        });
       }
 
       setVehicleLoadRecord(nextLoadRecord ?? vehicleLoadRecord);

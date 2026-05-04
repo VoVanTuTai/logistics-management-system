@@ -139,8 +139,8 @@ export function LinehaulTripManagementPage() {
         return {
           id: m.id,
           status: m.status === 'CREATED' || m.status === 'PENDING' ? 'Chờ xuất phát' :
-                  m.status === 'SEALED' ? 'Đang di chuyển' :
-                  m.status === 'RECEIVED' ? 'Đã hoàn thành' : m.status,
+                  m.status === 'SEALED' ? 'Đang luân chuyển' :
+                  m.status === 'RECEIVED' ? 'Đã đến' : m.status,
           type: noteData.taskAttribute || 'Tuyến trục',
           sealCode: m.manifestCode,
           taskName: noteData.taskName || `Chuyến xe ${m.originHubCode} - ${m.destinationHubCode}`,
@@ -429,7 +429,7 @@ export function LinehaulTripManagementPage() {
                   </td>
                   <td>{index + 1}</td>
                   <td>
-                    <span className={`ops-badge ops-badge--${task.status === 'Đã hoàn thành' ? 'success' : task.status === 'Đang di chuyển' ? 'info' : 'default'}`}>
+                    <span className={`ops-badge ops-badge--${task.status === 'Đã đến' ? 'success' : task.status === 'Đang luân chuyển' ? 'info' : 'default'}`}>
                       {task.status}
                     </span>
                   </td>

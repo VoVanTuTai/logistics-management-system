@@ -12,7 +12,10 @@ interface TrackingStatusHistoryRow {
   stt: number;
   scanTime: string;
   uploadedTime: string;
-  scanCategory: string;
+  action: string;
+  status: string;
+  location: string;
+  source: string;
   description: string;
   actualWeight: string;
   chargedWeight: string;
@@ -167,25 +170,19 @@ function buildTrackingStatusHistoryRows(
   }
 
   return timeline.map((event, index) => {
-    const description = buildTimelineDescription(event);
     return {
       id: event.id,
       stt: index + 1,
       scanTime: formatDateTime(event.occurredAt),
       uploadedTime: formatDateTime(event.occurredAt),
-      // Nếu có note thì hiển thị note ở cột Phân loại quét, nếu không thì dùng eventType
-      scanCategory: event.note || event.eventType,
-      description: description,
+      action: event.eventType,
+      status: event.statusAfterEvent ?? '--',
+      location: event.locationText ?? event.locationCode ?? 'Không xác định',
+      source: event.eventSource,
+      description: event.note || '--',
       actualWeight: '--',
       chargedWeight: '--',
     };
   });
-}
-
-function buildTimelineDescription(event: TrackingTimelineEventDto): string {
-  const location = event.locationText ?? event.locationCode ?? 'Không xác định vị trí';
-  const status = event.statusAfterEvent ?? event.eventType;
-
-  return `[${location}] ${status} (${event.eventSource})`;
 }
 
