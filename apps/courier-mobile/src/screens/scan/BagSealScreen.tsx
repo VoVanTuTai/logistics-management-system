@@ -39,7 +39,6 @@ const BAG_CODE_REGEX = /^MB\d{10}$/;
 const BAG_BLOCKED_STATUSES = new Set([
   'MANIFEST_SEALED',
   'MANIFEST_RECEIVED',
-  'SCAN_INBOUND',
   'SCAN_OUTBOUND',
   'DELIVERED',
   'DELIVERY_FAILED',
@@ -192,8 +191,14 @@ function validateShipmentForBagSeal(
     return `Đơn ${shipmentCode} đã qua trạng thái đóng bao/xử lý sau đó (${shipment.currentStatus}).`;
   }
 
-  if (!input.currentLocation?.lastScanType && status !== 'PICKUP_COMPLETED') {
-    return `Đơn ${shipmentCode} chưa có trạng thái nhận hàng, không thể đóng bao.`;
+  const isAtHub =
+    status === 'PICKUP_COMPLETED' ||
+    status === 'SCAN_INBOUND' ||
+    status === 'INVENTORY_CHECK' ||
+    Boolean(input.currentLocation?.lastScanType);
+
+  if (!isAtHub) {
+    return `Đơn ${shipmentCode} chưa có trạng thái nhận hàng (Pickup/Inbound), không thể đóng bao.`;
   }
 
   if (
@@ -214,6 +219,7 @@ function validateShipmentForBagSeal(
   }
 
   if (
+    !isAtHub &&
     isHomePickupShipment(shipment.metadata) &&
     !hasAssignedPickupTask(input.assignedPickupTasks, shipmentCode)
   ) {
@@ -447,6 +453,17 @@ export function BagSealScreen(): React.JSX.Element {
       const shipmentCodes = shipments.map((item) => item.code);
       await manifestApi.addShipments(accessToken, bagManifest.id, {
         shipmentCodes,
+        note: 'BAGGED_FROM_COURIER_APP',
+      });
+
+      const hubCode = (session?.user?.hubCodes && session.user.hubCodes.length > 0) 
+        ? session.user.hubCodes[0] 
+        : 'SYSTEM';
+      
+      await manifestApi.seal(accessToken, bagManifest.id, {
+        sealedBy: courierId,
+        sealedByName: session?.user?.displayName || session?.user?.username,
+        processingHubCode: hubCode,
         note: 'BAGGED_FROM_COURIER_APP',
       });
 

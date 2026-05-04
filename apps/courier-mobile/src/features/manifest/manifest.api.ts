@@ -46,4 +46,27 @@ export const manifestApi = {
         },
       },
     ),
+  seal: (
+    accessToken: string,
+    manifestId: string,
+    payload: {
+      sealedBy?: string | null;
+      sealedByName?: string | null;
+      processingHubCode?: string | null;
+      note?: string | null;
+    },
+  ): Promise<BagManifestDto> =>
+    courierApiClient.request<BagManifestDto>(
+      courierEndpoints.manifest.seal(manifestId),
+      {
+        method: 'POST',
+        accessToken,
+        body: {
+          sealedBy: payload.sealedBy ?? null,
+          sealedByName: payload.sealedByName ?? null,
+          processingHubCode: payload.processingHubCode ?? null,
+          note: payload.note ?? null,
+        },
+      },
+    ),
 };

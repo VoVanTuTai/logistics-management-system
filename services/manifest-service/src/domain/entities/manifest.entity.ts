@@ -82,6 +82,8 @@ export interface RemoveShipmentsInput {
 
 export interface SealManifestInput {
   sealedBy?: string | null;
+  sealedByName?: string | null;
+  processingHubCode?: string | null;
   note?: string | null;
 }
 

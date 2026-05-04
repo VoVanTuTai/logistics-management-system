@@ -1,4 +1,4 @@
-﻿import { randomUUID } from 'crypto';
+import { randomUUID } from 'crypto';
 
 import { Injectable } from '@nestjs/common';
 
@@ -16,12 +16,23 @@ interface ManifestUnsealedActorInput {
   note?: string | null;
 }
 
+export interface ManifestSealedActorInput {
+  sealedBy?: string | null;
+  sealedByName?: string | null;
+  processingHubCode?: string | null;
+  note?: string | null;
+}
+
 @Injectable()
 export class ManifestEventsProducer {
   readonly exchangeName = process.env.DOMAIN_EVENTS_EXCHANGE ?? 'domain.events';
 
-  buildManifestSealedEvents(manifest: Manifest): QueueOutboxEventInput[] {
-    return this.buildEvents('manifest.sealed', manifest);
+  buildManifestSealedEvents(manifest: Manifest, actorInput?: ManifestSealedActorInput): QueueOutboxEventInput[] {
+    const targets = this.resolveTargetShipmentCodes(manifest);
+
+    return targets.map((shipmentCode) =>
+      this.buildEvent('manifest.sealed', manifest, shipmentCode, undefined, actorInput),
+    );
   }
 
   buildManifestReceivedEvents(manifest: Manifest): QueueOutboxEventInput[] {
@@ -57,12 +68,13 @@ export class ManifestEventsProducer {
     manifest: Manifest,
     shipmentCode: string | null,
     actorInput?: ManifestUnsealedActorInput,
+    sealedActorInput?: ManifestSealedActorInput,
   ): QueueOutboxEventInput {
     const eventId = randomUUID();
     const occurredAt = new Date();
     const idempotencyShipmentCode = shipmentCode ?? 'none';
-    const actor = this.buildActor(actorInput);
-    const location = this.buildLocation(actorInput);
+    const actor = this.buildActor(actorInput) || this.buildSealedActor(sealedActorInput);
+    const location = this.buildLocation(actorInput) || this.buildSealedLocation(sealedActorInput);
     const payload: ManifestEventEnvelope = {
       event_id: eventId,
       event_type: eventType,
@@ -80,6 +92,16 @@ export class ManifestEventsProducer {
                 employeeCode: actorInput?.unsealedBy ?? null,
                 employeeName: actorInput?.unsealedByName ?? null,
                 processingHubCode: actorInput?.processingHubCode ?? null,
+              },
+            }
+          : eventType === 'manifest.sealed'
+          ? {
+              seal: {
+                shipmentCode,
+                note: sealedActorInput?.note ?? null,
+                employeeCode: sealedActorInput?.sealedBy ?? null,
+                employeeName: sealedActorInput?.sealedByName ?? null,
+                processingHubCode: sealedActorInput?.processingHubCode ?? null,
               },
             }
           : {}),
@@ -140,6 +162,38 @@ export class ManifestEventsProducer {
 
   private buildLocation(
     input: ManifestUnsealedActorInput | undefined,
+  ): Record<string, unknown> | null {
+    const hubCode = input?.processingHubCode?.trim() ?? '';
+
+    if (!hubCode) {
+      return null;
+    }
+
+    return {
+      location_code: hubCode,
+    };
+  }
+
+  private buildSealedActor(
+    input: ManifestSealedActorInput | undefined,
+  ): Record<string, unknown> | null {
+    const employeeCode = input?.sealedBy?.trim() ?? '';
+    const employeeName = input?.sealedByName?.trim() ?? '';
+    const hubCode = input?.processingHubCode?.trim() ?? '';
+
+    if (!employeeCode && !employeeName && !hubCode) {
+      return null;
+    }
+
+    return {
+      id: employeeCode || null,
+      name: employeeName || null,
+      hub_code: hubCode || null,
+    };
+  }
+
+  private buildSealedLocation(
+    input: ManifestSealedActorInput | undefined,
   ): Record<string, unknown> | null {
     const hubCode = input?.processingHubCode?.trim() ?? '';
 

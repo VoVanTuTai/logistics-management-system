@@ -37,6 +37,10 @@ export const courierEndpoints = {
       `${COURIER_PREFIX}/manifest/manifests/${encodeURIComponent(
         manifestId,
       )}/shipments/remove`,
+    seal: (manifestId: string) =>
+      `${COURIER_PREFIX}/manifest/manifests/${encodeURIComponent(
+        manifestId,
+      )}/seal`,
   },
   scan: {
     pickup: `${COURIER_PREFIX}/scan/scans/pickup`,

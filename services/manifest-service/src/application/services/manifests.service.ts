@@ -294,7 +294,12 @@ export class ManifestsService {
 
     const sealedManifest = await this.manifestRepository.seal(id, input);
 
-    await this.manifestOutboxService.enqueueManifestSealed(sealedManifest);
+    await this.manifestOutboxService.enqueueManifestSealed(sealedManifest, {
+      sealedBy: input.sealedBy,
+      sealedByName: input.sealedByName,
+      processingHubCode: input.processingHubCode,
+      note: input.note,
+    });
 
     return sealedManifest;
   }
