@@ -11,6 +11,7 @@ import { formatDateTime } from '../../../../utils/format';
 import {
   deriveHubScopeTokens,
   isShipmentInScope,
+  normalizeLocationToken,
 } from '../../../../utils/locationScope';
 import { formatShipmentStatusLabel } from '../../../../utils/logisticsLabels';
 import './BranchOutboundOrderManagementPage.css';
@@ -35,6 +36,8 @@ interface OutboundSearchFilters {
 }
 
 const ACCEPTED_OUTBOUND_STATUSES = new Set([
+  'CREATED',
+  'UPDATED',
   'PICKUP_COMPLETED',
   'MANIFEST_SEALED',
   'MANIFEST_RECEIVED',
@@ -49,6 +52,33 @@ const ACCEPTED_OUTBOUND_STATUSES = new Set([
   'RETURN_STARTED',
   'RETURN_COMPLETED',
 ]);
+
+function splitAddressTokens(address: string | null): string[] {
+  if (!address) {
+    return [];
+  }
+
+  return address
+    .split(',')
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0);
+}
+
+function hasScopeTokenMatch(tokens: Iterable<string>, scopeTokens: Set<string>): boolean {
+  for (const token of tokens) {
+    for (const scopeToken of scopeTokens) {
+      if (
+        token === scopeToken ||
+        token.includes(scopeToken) ||
+        scopeToken.includes(token)
+      ) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
 
 function formatCurrency(value: number | null): string {
   if (value === null) {
@@ -107,6 +137,35 @@ function isShipmentInBranchScope(
 
   const currentLocation = (shipment.currentLocation ?? '').trim().toUpperCase();
   if (currentLocation && assignedHubCodes.includes(currentLocation)) {
+    return true;
+  }
+
+  const senderHubCandidates = [
+    shipment.senderHubCode,
+    shipment.originHubCode,
+  ]
+    .map((code) => (code ?? '').trim().toUpperCase())
+    .filter(Boolean);
+  if (senderHubCandidates.some((code) => assignedHubCodes.includes(code))) {
+    return true;
+  }
+
+  // Outbound flow should prefer origin/sender scope before receiver scope.
+  const senderScopeTokens = new Set<string>();
+  if (shipment.senderWard) {
+    senderScopeTokens.add(normalizeLocationToken(shipment.senderWard));
+  }
+  if (shipment.senderDistrict) {
+    senderScopeTokens.add(normalizeLocationToken(shipment.senderDistrict));
+  }
+  if (shipment.senderProvince) {
+    senderScopeTokens.add(normalizeLocationToken(shipment.senderProvince));
+  }
+  for (const part of splitAddressTokens(shipment.senderAddress)) {
+    senderScopeTokens.add(normalizeLocationToken(part));
+  }
+
+  if (hasScopeTokenMatch(senderScopeTokens, scopeTokens)) {
     return true;
   }
 

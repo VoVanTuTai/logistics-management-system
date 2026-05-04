@@ -372,21 +372,22 @@ export class ManifestsService {
     return Number.isFinite(parsed) ? parsed : 0;
   }
 
+  private getHubTriplet(hubCode: string): string {
+    const digits = (hubCode.match(/\d/g) ?? []).join('');
+    if (digits.length >= 3) {
+      return digits.slice(0, 3);
+    }
+    return digits.padStart(3, '0');
+  }
+
   private buildBagCodePrefix(
     originHubCode: string,
     destinationHubCode: string,
   ): string {
-    const now = new Date();
-    const yyyy = now.getFullYear();
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const dd = String(now.getDate()).padStart(2, '0');
-    const hh = String(now.getHours()).padStart(2, '0');
-    const mi = String(now.getMinutes()).padStart(2, '0');
-    const ss = String(now.getSeconds()).padStart(2, '0');
-    const ms = String(now.getMilliseconds()).padStart(3, '0');
-    const from = originHubCode || 'OPS';
-    const to = destinationHubCode || 'DST';
-    return `BAG-${yyyy}${mm}${dd}${hh}${mi}${ss}${ms}-${from}-${to}`;
+    const hubTriplet = this.getHubTriplet(destinationHubCode || originHubCode);
+    const batchTimestamp = Date.now().toString();
+    const timePart = batchTimestamp.slice(-4).padStart(4, '0');
+    return `MB${hubTriplet}${timePart}`;
   }
 
   private generateBagCode(
@@ -395,13 +396,13 @@ export class ManifestsService {
     generatedCodes: Set<string>,
   ): string {
     const seq = String(sequence).padStart(3, '0');
-    const code = `${prefix}-${seq}`;
+    const code = `${prefix}${seq}`;
     if (!generatedCodes.has(code)) {
       generatedCodes.add(code);
       return code;
     }
 
-    const fallbackCode = `${prefix}-${seq}-${Math.floor(Math.random() * 900 + 100)}`;
+    const fallbackCode = `${prefix}${String(Math.floor(Math.random() * 900 + 100))}`;
     generatedCodes.add(fallbackCode);
     return fallbackCode;
   }

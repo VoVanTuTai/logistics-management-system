@@ -669,9 +669,37 @@ function MerchantApp(): React.JSX.Element {
     return shipment.currentStatus;
   }
 
+  function resolveShipmentOriginHubCode(shipment: ShipmentResponse): string | null {
+    const metadata = asRecord(shipment.metadata) ?? {};
+    const sender = asRecord(metadata.sender);
+    const routing = asRecord(metadata.routing);
+    const rawHubCode =
+      (typeof sender?.hubCode === 'string' && sender.hubCode.trim()) ||
+      (typeof routing?.originHubCode === 'string' && routing.originHubCode.trim()) ||
+      null;
+
+    return rawHubCode ? rawHubCode.toUpperCase() : null;
+  }
+
   function resolveShipmentStatusLabel(shipment: ShipmentResponse): string {
-    if (resolveShipmentStatusCode(shipment) === 'WAITING_PICKUP') {
+    const resolvedStatus = resolveShipmentStatusCode(shipment);
+
+    if (resolvedStatus === 'WAITING_PICKUP') {
       return 'Chờ lấy hàng';
+    }
+
+    if (resolvedStatus === 'CREATED' || resolvedStatus === 'UPDATED') {
+      return 'Đã tạo đơn';
+    }
+
+    if (
+      resolvedStatus === 'PICKUP_COMPLETED' ||
+      resolvedStatus === 'PICKED_UP' ||
+      resolvedStatus === 'INBOUND_AT_HUB' ||
+      resolvedStatus === 'SCAN_INBOUND'
+    ) {
+      const hubCode = resolveShipmentOriginHubCode(shipment) ?? 'N/A';
+      return `Đã nhận tại bưu cục ${hubCode}`;
     }
 
     return shipment.currentStatus;
@@ -681,6 +709,35 @@ function MerchantApp(): React.JSX.Element {
     return resolveShipmentStatusCode(shipment) === 'WAITING_PICKUP'
       ? statusClass('UPDATED')
       : statusClass(shipment.currentStatus);
+  }
+
+  function resolvePickupCancelBlockReason(pickup: PickupRequest): string | null {
+    if (pickup.status !== 'REQUESTED') {
+      return 'Chỉ pickup đang REQUESTED mới được hủy';
+    }
+
+    const shipmentByCode = new Map(
+      shipmentRows.map((row) => [normalizeCode(row.shipment.code), row.shipment]),
+    );
+    const shipmentStatuses = pickup.items
+      .map((item) => shipmentByCode.get(normalizeCode(item.shipmentCode))?.currentStatus)
+      .filter((status): status is string => Boolean(status));
+
+    const hasAssignedCourier = shipmentStatuses.some(
+      (status) => status === 'TASK_ASSIGNED' || status === 'PICKUP_ASSIGNED',
+    );
+    if (hasAssignedCourier) {
+      return 'Đơn đã được phân công courier đi lấy, không thể hủy pickup';
+    }
+
+    const hasReceivedAtHub = shipmentStatuses.some((status) =>
+      ['PICKUP_COMPLETED', 'PICKED_UP', 'INBOUND_AT_HUB', 'SCAN_INBOUND'].includes(status),
+    );
+    if (hasReceivedAtHub) {
+      return 'Đơn đã nhận từ courier tại bưu cục, không thể hủy pickup';
+    }
+
+    return null;
   }
 
   function buildFallbackTrackingSnapshot(code: string): {
@@ -2021,7 +2078,7 @@ function MerchantApp(): React.JSX.Element {
 
           {activeView === 'shipment-detail' ? <section className="grid">{!selectedShipment ? <div className="card"><div className="empty">Chưa chọn shipment.</div></div> : <><div className="card"><h3>Chi tiết shipment {selectedShipment.shipment.code}</h3><div className="details-grid"><div className="detail-box"><div className="label">Người gửi</div><div>{selectedShipment.senderName}<br />{selectedShipment.senderPhone}<br />{selectedShipment.senderAddress}</div></div><div className="detail-box"><div className="label">Hub gửi</div><div>{selectedShipment.senderHubCode}<br />{selectedShipment.senderWard}, {selectedShipment.senderProvince}</div></div><div className="detail-box"><div className="label">Người nhận</div><div>{selectedShipment.receiverName}<br />{selectedShipment.receiverPhone}<br />{selectedShipment.receiverAddress}</div></div><div className="detail-box"><div className="label">Hub nhận</div><div>{selectedShipment.receiverHubCode}<br />{selectedShipment.receiverWard}, {selectedShipment.receiverProvince}</div></div><div className="detail-box"><div className="label">Hàng hóa</div><div>{selectedShipment.itemType}<br />{selectedShipment.weightKg}kg</div></div><div className="detail-box"><div className="label">COD / Phí</div><div>{formatCurrency(selectedShipment.codAmount)}<br />{formatCurrency(selectedShipment.feeEstimate)}</div></div><div className="detail-box"><div className="label">Dịch vụ</div><div>{selectedShipment.serviceType}</div></div><div className="detail-box"><div className="label">Pickup</div><div>{pickupByShipmentCode.get(normalizeCode(selectedShipment.shipment.code))?.pickupCode ?? 'Chưa tạo pickup'}</div></div></div><div className="btn-row" style={{ marginTop: 8 }}><span className={resolveShipmentStatusClass(selectedShipment.shipment)}>{resolveShipmentStatusLabel(selectedShipment.shipment)}</span><button className="btn btn-danger" onClick={() => { const reason = window.prompt('Lý do hủy đơn', '') ?? ''; void cancelShipment(selectedShipment.shipment.code, reason); }}>Hủy đơn</button><button className="btn btn-ghost" onClick={() => printShipment(selectedShipment)}>In vận đơn</button></div></div><div className="card grid"><h3>Sửa đơn nếu còn cho phép</h3><div className="grid grid-3"><input className="input" value={detailReceiverPhone} onChange={(e) => setDetailReceiverPhone(e.target.value)} placeholder="SĐT người nhận" /><input className="input" value={detailReceiverAddress} onChange={(e) => setDetailReceiverAddress(e.target.value)} placeholder="Địa chỉ người nhận" /><input className="input" value={detailDeliveryNote} onChange={(e) => setDetailDeliveryNote(e.target.value)} placeholder="Ghi chú giao hàng" /></div><div className="btn-row"><button className="btn btn-primary" disabled={detailUpdating} onClick={() => { void saveDetailUpdate(); }}>{detailUpdating ? 'Đang cập nhật...' : 'Sửa đơn'}</button><button className="btn btn-secondary" onClick={() => { setChangeCode(selectedShipment.shipment.code); setActiveView('change-requests'); }}>Yêu cầu đổi thông tin giao</button><button className="btn btn-secondary" onClick={() => { setReturnCode(selectedShipment.shipment.code); setActiveView('returns'); }}>Yêu cầu hoàn hàng</button></div>{detailError ? <p className="message error">{detailError}</p> : null}{detailSuccess ? <p className="message success">{detailSuccess}</p> : null}</div><div className="card"><h3>Timeline xử lý đơn</h3>{detailTrackError ? <p className="message error">{detailTrackError}</p> : null}<div className="timeline">{detailTrackTimeline.length === 0 ? <div className="empty">Chưa có tracking event.</div> : detailTrackTimeline.map((ev) => <div key={ev.id} className="timeline-item"><strong>{ev.eventType}</strong><div className="muted">{formatDate(ev.occurredAt)} | actor={ev.actor ?? 'system'} | loc={ev.locationCode ?? 'N/A'}</div></div>)}</div>{detailTrackCurrent ? <p className="muted">Current: {detailTrackCurrent.currentStatus ?? 'N/A'} | Last event: {detailTrackCurrent.lastEventType ?? 'N/A'}</p> : null}</div></>}</section> : null}
 
-          {activeView === 'pickups' ? <><section className="card"><h3>Tạo và quản lý yêu cầu lấy hàng</h3><form className="grid" onSubmit={(e) => { void submitPickupRequest(e); }}><div className="grid grid-3"><textarea className="textarea" value={pickupShipmentCodes} onChange={(e) => setPickupShipmentCodes(e.target.value)} placeholder="Danh sách mã vận đơn" /><input className="input" value={pickupRequesterName} onChange={(e) => setPickupRequesterName(e.target.value)} placeholder="Người yêu cầu" /><input className="input" value={pickupContactPhone} onChange={(e) => setPickupContactPhone(e.target.value)} placeholder="SĐT liên hệ" /><input className="input" value={pickupAddress} onChange={(e) => setPickupAddress(e.target.value)} placeholder="Địa chỉ lấy hàng" /><input className="input" value={pickupDesiredTime} onChange={(e) => setPickupDesiredTime(e.target.value)} placeholder="Thời gian mong muốn" /><input className="input" value={pickupNote} onChange={(e) => setPickupNote(e.target.value)} placeholder="Ghi chú courier" /></div><button className="btn btn-primary" type="submit" disabled={pickupLoading}>{pickupLoading ? 'Đang tạo...' : 'Tạo yêu cầu lấy hàng'}</button></form>{pickupMessage ? <p className="message">{pickupMessage}</p> : null}</section><section className="card"><div className="btn-row"><select className="select" style={{ maxWidth: 220 }} value={pickupStatusFilter} onChange={(e) => setPickupStatusFilter(e.target.value)}><option value="ALL">Tất cả</option><option value="REQUESTED">chờ duyệt</option><option value="COMPLETED">đã lấy/hoàn tất</option><option value="CANCELLED">đã hủy</option></select></div><div className="table-wrap"><table><thead><tr><th>Mã lấy hàng</th><th>Vận đơn</th><th>Trạng thái</th><th>Shipper</th><th>Ngày tạo</th><th>Hành động</th></tr></thead><tbody>{pickupRows.map((item) => <tr key={item.id}><td>{item.pickupCode}</td><td>{item.items.map((it) => it.shipmentCode).join(', ') || '-'}</td><td><span className={statusClass(item.status)}>{item.status}</span></td><td>Chưa gán</td><td>{formatDate(item.createdAt)}</td><td><button className="btn btn-danger" disabled={item.status !== 'REQUESTED'} onClick={() => { if (!session) return; const reason = window.prompt('Lý do hủy pickup', '') ?? ''; void request<PickupRequest>(`/merchant/pickup/pickups/${encodeURIComponent(item.id)}/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason: reason.trim() || null }) }, session.accessToken).then((cancelled) => setPickups((prev) => prev.map((pickup) => pickup.id === item.id ? cancelled : pickup))); }}>Hủy pickup</button></td></tr>)}</tbody></table></div></section></> : null}
+          {activeView === 'pickups' ? <><section className="card"><h3>Tạo và quản lý yêu cầu lấy hàng</h3><form className="grid" onSubmit={(e) => { void submitPickupRequest(e); }}><div className="grid grid-3"><textarea className="textarea" value={pickupShipmentCodes} onChange={(e) => setPickupShipmentCodes(e.target.value)} placeholder="Danh sách mã vận đơn" /><input className="input" value={pickupRequesterName} onChange={(e) => setPickupRequesterName(e.target.value)} placeholder="Người yêu cầu" /><input className="input" value={pickupContactPhone} onChange={(e) => setPickupContactPhone(e.target.value)} placeholder="SĐT liên hệ" /><input className="input" value={pickupAddress} onChange={(e) => setPickupAddress(e.target.value)} placeholder="Địa chỉ lấy hàng" /><input className="input" value={pickupDesiredTime} onChange={(e) => setPickupDesiredTime(e.target.value)} placeholder="Thời gian mong muốn" /><input className="input" value={pickupNote} onChange={(e) => setPickupNote(e.target.value)} placeholder="Ghi chú courier" /></div><button className="btn btn-primary" type="submit" disabled={pickupLoading}>{pickupLoading ? 'Đang tạo...' : 'Tạo yêu cầu lấy hàng'}</button></form>{pickupMessage ? <p className="message">{pickupMessage}</p> : null}</section><section className="card"><div className="btn-row"><select className="select" style={{ maxWidth: 220 }} value={pickupStatusFilter} onChange={(e) => setPickupStatusFilter(e.target.value)}><option value="ALL">Tất cả</option><option value="REQUESTED">chờ duyệt</option><option value="COMPLETED">đã lấy/hoàn tất</option><option value="CANCELLED">đã hủy</option></select></div><div className="table-wrap"><table><thead><tr><th>Mã lấy hàng</th><th>Vận đơn</th><th>Trạng thái</th><th>Shipper</th><th>Ngày tạo</th><th>Hành động</th></tr></thead><tbody>{pickupRows.map((item) => { const cancelBlockReason = resolvePickupCancelBlockReason(item); return <tr key={item.id}><td>{item.pickupCode}</td><td>{item.items.map((it) => it.shipmentCode).join(', ') || '-'}</td><td><span className={statusClass(item.status)}>{item.status}</span></td><td>Chưa gán</td><td>{formatDate(item.createdAt)}</td><td><button className="btn btn-danger" title={cancelBlockReason ?? undefined} disabled={Boolean(cancelBlockReason)} onClick={() => { if (!session || cancelBlockReason) return; const reason = window.prompt('Lý do hủy pickup', '') ?? ''; void request<PickupRequest>(`/merchant/pickup/pickups/${encodeURIComponent(item.id)}/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason: reason.trim() || null }) }, session.accessToken).then((cancelled) => setPickups((prev) => prev.map((pickup) => pickup.id === item.id ? cancelled : pickup))); }}>Hủy pickup</button>{cancelBlockReason ? <div className="muted" style={{ marginTop: 4 }}>{cancelBlockReason}</div> : null}</td></tr>; })}</tbody></table></div></section></> : null}
 
           {activeView === 'tracking' ? <><section className="card"><h3>Tra cứu nội bộ</h3><form className="btn-row" onSubmit={(e) => { void lookupTracking(e); }}><input className="input" style={{ maxWidth: 320 }} value={trackingCode} onChange={(e) => setTrackingCode(e.target.value)} placeholder="Mã vận đơn" /><button className="btn btn-primary" type="submit" disabled={trackingLoading}>{trackingLoading ? 'Đang tải...' : 'Tra cứu'}</button></form>{trackingError ? <p className="message error">{trackingError}</p> : null}</section><section className="card"><div className="details-grid"><div className="detail-box"><div className="label">Trạng thái hiện tại</div><div>{trackingCurrent?.currentStatus ?? 'N/A'}</div></div><div className="detail-box"><div className="label">Vị trí hiện tại</div><div>{trackingCurrent?.currentLocationCode ?? 'N/A'}</div></div><div className="detail-box"><div className="label">Sự kiện cuối</div><div>{trackingCurrent?.lastEventType ?? 'N/A'}</div></div><div className="detail-box"><div className="label">Thời điểm sự kiện cuối</div><div>{formatDate(trackingCurrent?.lastEventAt ?? null)}</div></div></div><div className="timeline" style={{ marginTop: 8 }}>{trackingTimeline.length === 0 ? <div className="empty">Chưa có timeline event.</div> : trackingTimeline.map((ev) => <div key={ev.id} className="timeline-item"><strong>{ev.eventType}</strong><div className="muted">{formatDate(ev.occurredAt)} | actor={ev.actor ?? 'system'} | vị_trí={ev.locationCode ?? 'N/A'}</div></div>)}</div></section></> : null}
 
