@@ -100,6 +100,9 @@ export const routePaths = {
     '/app/function-groups/operations-platform/data-monitoring/theo-doi-tam-ung',
   monitorDataDongBao:
     '/app/function-groups/operations-platform/data-monitoring/giam-sat-dong-bao',
+  linehaulRoot: '/app/function-groups/operations-platform/van-chuyen-tuyen-nhanh',
+  linehaulTripManagement: '/app/function-groups/operations-platform/van-chuyen-tuyen-nhanh/quan-ly-chuyen-xe',
+  linehaulVehicleSeal: '/app/function-groups/operations-platform/van-chuyen-tuyen-nhanh/tem-xe',
   shipments: '/app/shipments',
   shipmentDetail: (shipmentId: string) => `/app/shipments/${shipmentId}`,
   pickups: '/app/pickups',
@@ -203,6 +206,8 @@ export const routePaths = {
     'function-groups/operations-platform/data-monitoring/theo-doi-tam-ung',
   monitorDataDongBaoLeaf:
     'function-groups/operations-platform/data-monitoring/giam-sat-dong-bao',
+  linehaulTripManagementLeaf: 'function-groups/operations-platform/van-chuyen-tuyen-nhanh/quan-ly-chuyen-xe',
+  linehaulVehicleSealLeaf: 'function-groups/operations-platform/van-chuyen-tuyen-nhanh/tem-xe',
   shipmentsLeaf: 'shipments',
   shipmentDetailLeaf: 'shipments/:shipmentId',
   pickupsLeaf: 'pickups',
