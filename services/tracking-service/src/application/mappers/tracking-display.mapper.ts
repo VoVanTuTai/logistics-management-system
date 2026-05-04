@@ -1,4 +1,4 @@
-﻿import type { TrackingEventEnvelope } from '../../domain/entities/timeline-event.entity';
+import type { TrackingEventEnvelope } from '../../domain/entities/timeline-event.entity';
 
 export const TRACKING_BUSINESS_EVENTS = [
   'shipment.created',
@@ -197,6 +197,15 @@ export function toTimelineTextVi(
     }
 
     return withLocationSuffix(EVENT_LABELS_VI['scan.outbound'], locationCode);
+  }
+
+  if (event.event_type === 'manifest.sealed') {
+    const bagCode = readNestedString(event.data, ['manifest', 'manifestCode']) ?? 'N/A';
+    const employeeName = readNestedString(event.data, ['seal', 'employeeName']) ?? 'N/A';
+    const employeeCode = readNestedString(event.data, ['seal', 'employeeCode']) ?? 'N/A';
+    const hubCode = locationCode ?? readNestedString(event.data, ['seal', 'processingHubCode']) ?? 'N/A';
+
+    return `Đã đóng bao ${bagCode} ${employeeName} - ${employeeCode} - ${hubCode}`;
   }
 
   if (event.event_type === 'manifest.received') {

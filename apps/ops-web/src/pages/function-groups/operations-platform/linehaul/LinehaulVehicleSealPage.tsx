@@ -1,21 +1,22 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Server, Settings, FileText, Info, ArrowLeft, CheckCircle } from 'lucide-react';
 import { routePaths } from '../../../../navigation/routes';
 import { useAuthStore } from '../../../../store/authStore';
+import { opsApiClient } from '../../../../services/api/client';
+import { opsEndpoints } from '../../../../services/api/endpoints';
 import './LinehaulStyles.css';
 
-interface ManifestPayload {
-  manifestCode: string;
-  originHubCode: string;
-  destinationHubCode: string;
-  status: string;
+interface ExtraManifestData {
   routeCode: string;
   routeType: string;
   taskAttribute: string;
   expectedDepartureTime: string;
   expectedArrivalTime?: string;
-  vehiclePlate?: string;
   taskName?: string;
+  vehiclePlate?: string;
+  driverName?: string;
+  driverPhone?: string;
 }
 
 export function LinehaulVehicleSealPage(): React.JSX.Element {
@@ -36,7 +37,6 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
 
   // Tùy chọn
   const [expectedArrivalTime, setExpectedArrivalTime] = useState('');
-  const [vehiclePlate, setVehiclePlate] = useState('');
   const [taskName, setTaskName] = useState('');
 
   const [errorMsg, setErrorMsg] = useState('');
@@ -64,30 +64,35 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
     }
 
     // Tạo Payload API
-    const payload: ManifestPayload = {
-      manifestCode: generatedManifestCode,
-      originHubCode: userHubCode,
-      destinationHubCode: destinationHubCode,
-      status: 'PENDING', // Đợi điều phối
+    const extraData: ExtraManifestData = {
       routeCode,
       routeType,
       taskAttribute,
       expectedDepartureTime: new Date(expectedDepartureTime).toISOString(),
       expectedArrivalTime: expectedArrivalTime ? new Date(expectedArrivalTime).toISOString() : undefined,
-      vehiclePlate: vehiclePlate || undefined,
       taskName: taskName || undefined,
     };
 
-    console.log('--- GỌI API POST /manifests ---');
-    console.log(JSON.stringify(payload, null, 2));
+    try {
+      await opsApiClient.request(opsEndpoints.manifests.create, {
+        method: 'POST',
+        body: {
+          manifestCode: generatedManifestCode,
+          originHubCode: userHubCode,
+          destinationHubCode: destinationHubCode,
+          note: JSON.stringify(extraData),
+          shipmentCodes: [], // Vật chứa rỗng
+        },
+      });
 
-    // Rule 3: Bản chất Tem xe là "Vật chứa rỗng" trạng thái PENDING
-    // Giả lập gọi API thành công
-    setTimeout(() => {
       setSuccessMsg(`Tạo Tem xe ${generatedManifestCode} thành công! Hệ thống đang chờ điều phối.`);
-      // Tự động chuyển hướng hoặc reset form
-      // navigate(routePaths.linehaulTripManagement);
-    }, 800);
+      setTimeout(() => {
+        navigate(routePaths.linehaulTripManagement);
+      }, 1500);
+    } catch (error: any) {
+      console.error(error);
+      setErrorMsg(error.message || 'Lỗi hệ thống khi tạo tem xe');
+    }
   };
 
   return (
@@ -96,10 +101,10 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
         <div className="ops-page-header__title">
           <button 
             type="button" 
-            className="ops-btn ops-btn--text ops-btn--back"
+            className="ops-btn ops-btn--back"
             onClick={() => navigate(routePaths.linehaulTripManagement)}
           >
-            &larr; Quay lại
+            <ArrowLeft size={16} /> Quay lại
           </button>
           <h2>Thêm mới Tem xe (Khởi tạo chuyến Linehaul)</h2>
         </div>
@@ -110,30 +115,36 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
           <form onSubmit={onSubmit}>
             
             {/* Nhóm A: Thông tin tự sinh (Readonly) */}
-            <h3 style={{ marginBottom: '1rem', borderBottom: '1px solid #eee', paddingBottom: '0.5rem' }}>A. Thông tin hệ thống</h3>
+            <h3 className="ops-section-title">
+              <Server size={20} className="ops-icon-blue" />
+              A. Thông tin hệ thống
+            </h3>
             <div className="ops-form-row">
               <div className="ops-form-group">
                 <label>Mã Tem xe</label>
-                <input type="text" className="ops-input" value={generatedManifestCode} disabled style={{ backgroundColor: '#f8fafc', fontWeight: 'bold' }} />
+                <input type="text" className="ops-input ops-input--readonly" value={generatedManifestCode} disabled style={{ fontWeight: 'bold', color: '#0f172a' }} />
               </div>
               <div className="ops-form-group">
-                <label>Bưu cục xe đi (Source Hub)</label>
-                <input type="text" className="ops-input" value={userHubCode} disabled style={{ backgroundColor: '#f8fafc' }} />
+                <label>Bưu cục xuất phát (Source Hub)</label>
+                <input type="text" className="ops-input ops-input--readonly" value={userHubCode} disabled />
               </div>
               <div className="ops-form-group">
                 <label>Trạng thái</label>
-                <input type="text" className="ops-input" value="Đợi điều phối" disabled style={{ backgroundColor: '#f8fafc', color: '#f97316' }} />
+                <input type="text" className="ops-input ops-input--highlight" value="Đợi điều phối" disabled />
               </div>
             </div>
             <div className="ops-form-row" style={{ marginTop: '0.5rem' }}>
               <div className="ops-form-group">
                 <label>Người tạo</label>
-                <input type="text" className="ops-input" value={userName} disabled style={{ backgroundColor: '#f8fafc' }} />
+                <input type="text" className="ops-input ops-input--readonly" value={userName} disabled />
               </div>
             </div>
 
             {/* Nhóm B: Bắt buộc */}
-            <h3 style={{ marginTop: '1.5rem', marginBottom: '1rem', borderBottom: '1px solid #eee', paddingBottom: '0.5rem' }}>B. Thông tin nghiệp vụ (* Bắt buộc)</h3>
+            <h3 className="ops-section-title">
+              <Settings size={20} className="ops-icon-orange" />
+              B. Thông tin nghiệp vụ (* Bắt buộc)
+            </h3>
             <div className="ops-form-row">
               <div className="ops-form-group">
                 <label>Bưu cục xe đến (Dest Hub) *</label>
@@ -189,7 +200,10 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
             </div>
 
             {/* Nhóm C: Tùy chọn */}
-            <h3 style={{ marginTop: '1.5rem', marginBottom: '1rem', borderBottom: '1px solid #eee', paddingBottom: '0.5rem' }}>C. Thông tin bổ sung (Tùy chọn)</h3>
+            <h3 className="ops-section-title">
+              <FileText size={20} className="ops-icon-emerald" />
+              C. Thông tin bổ sung (Tùy chọn)
+            </h3>
             <div className="ops-form-row">
               <div className="ops-form-group">
                 <label>Kết thúc dự kiến (ETA)</label>
@@ -201,36 +215,28 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
                 />
               </div>
               <div className="ops-form-group">
-                <label>Biển số xe (Có thể bổ sung sau)</label>
+                <label>Tên tác vụ / Ghi chú chuyến xe</label>
                 <input 
                   type="text" 
                   className="ops-input" 
-                  placeholder="VD: 51C-123.45"
-                  value={vehiclePlate}
-                  onChange={(e) => setVehiclePlate(e.target.value)}
+                  placeholder="VD: Chuyến tăng cường chở hàng sale 12/12"
+                  value={taskName}
+                  onChange={(e) => setTaskName(e.target.value)}
                 />
               </div>
             </div>
-            <div className="ops-form-group" style={{ marginTop: '1rem' }}>
-              <label>Tên tác vụ / Ghi chú chuyến xe</label>
-              <input 
-                type="text" 
-                className="ops-input" 
-                placeholder="VD: Chuyến tăng cường chở hàng sale 12/12"
-                value={taskName}
-                onChange={(e) => setTaskName(e.target.value)}
-              />
-            </div>
 
             {errorMsg && (
-              <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: '#fee2e2', color: '#b91c1c', borderRadius: '4px', borderLeft: '4px solid #ef4444' }}>
-                <strong>Lỗi: </strong> {errorMsg}
+              <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: '#fee2e2', color: '#b91c1c', borderRadius: '6px', borderLeft: '4px solid #ef4444', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Info size={18} />
+                <span><strong>Lỗi: </strong> {errorMsg}</span>
               </div>
             )}
             
             {successMsg && (
-              <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: '#dcfce7', color: '#15803d', borderRadius: '4px', borderLeft: '4px solid #22c55e' }}>
-                <strong>Thành công: </strong> {successMsg}
+              <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: '#dcfce7', color: '#15803d', borderRadius: '6px', borderLeft: '4px solid #22c55e', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <CheckCircle size={18} />
+                <span><strong>Thành công: </strong> {successMsg}</span>
               </div>
             )}
 
@@ -244,13 +250,16 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
 
         {/* Cột hướng dẫn */}
         <aside className="ops-linehaul-preview" style={{ flex: 1 }}>
-          <div className="ops-card" style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}>
-            <h4 style={{ margin: '0 0 1rem 0', color: '#0f172a' }}>ℹ️ Hướng dẫn vận hành</h4>
-            <ul style={{ margin: 0, paddingLeft: '1.2rem', color: '#475569', fontSize: '0.9rem', lineHeight: '1.6' }}>
-              <li style={{ marginBottom: '0.5rem' }}>Tem xe sau khi tạo sẽ mang trạng thái <strong>"Đợi điều phối"</strong>.</li>
-              <li style={{ marginBottom: '0.5rem' }}>Lúc này tem xe là một "Vật chứa rỗng", chưa chứa đơn hàng.</li>
-              <li style={{ marginBottom: '0.5rem' }}>Bộ phận điều phối sẽ quét mã Tem xe này để bắt đầu gán các Bao hàng/Kiện hàng lên xe.</li>
-              <li>Bạn có thể để trống <strong>Biển số xe</strong> nếu chưa chốt được xe chạy thực tế.</li>
+          <div className="ops-hint-card">
+            <h4>
+              <Info size={20} className="ops-icon-blue" />
+              Hướng dẫn vận hành
+            </h4>
+            <ul className="ops-hint-list">
+              <li>Tem xe sau khi tạo sẽ mang trạng thái <strong>"Đợi điều phối"</strong>.</li>
+              <li>Lúc này tem xe là một "Vật chứa rỗng", chưa chứa đơn hàng.</li>
+              <li>Bộ phận điều phối sẽ quét mã Tem xe này để bắt đầu gán các Bao hàng/Kiện hàng lên xe.</li>
+              <li>Thông tin <strong>Biển số xe và Tài xế</strong> sẽ được bổ sung sau tại màn hình Quản lý chuyến xe.</li>
             </ul>
           </div>
         </aside>

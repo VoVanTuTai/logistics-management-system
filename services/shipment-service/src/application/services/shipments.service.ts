@@ -12,6 +12,7 @@ import type {
   CancelShipmentInput,
   CreateShipmentInput,
   Shipment,
+  ShipmentListFilters,
   UpdateShipmentInput,
 } from '../../domain/entities/shipment.entity';
 import type { ShipmentConsumedEventType } from '../../domain/entities/shipment-status.entity';
@@ -31,8 +32,8 @@ export class ShipmentsService {
     private readonly shipmentOutboxService: ShipmentOutboxService,
   ) {}
 
-  list(): Promise<Shipment[]> {
-    return this.shipmentRepository.list();
+  list(filters: ShipmentListFilters = {}): Promise<Shipment[]> {
+    return this.shipmentRepository.list(filters);
   }
 
   async getByCode(code: string): Promise<Shipment> {

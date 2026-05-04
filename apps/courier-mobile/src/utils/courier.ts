@@ -101,19 +101,11 @@ export function buildGoodsArrivalAuditNote(input: {
   const originHubCode = input.originHubCode?.trim().toUpperCase();
   const destinationHubCode = input.destinationHubCode?.trim().toUpperCase();
 
-  return [
-    'Hàng đến',
-    `Nhân viên: ${employeeName}`,
-    `Mã NV: ${employeeId}`,
-    `Mã hub: ${hubCode}`,
-    vehicleCode ? `Mã xe: ${vehicleCode}` : null,
-    licensePlate ? `Biển số: ${licensePlate}` : null,
-    originHubCode ? `Hub đi: ${originHubCode}` : null,
-    destinationHubCode ? `Hub đến: ${destinationHubCode}` : null,
-    bagCode ? `Mã bao: ${bagCode}` : null,
-  ]
-    .filter(Boolean)
-    .join(' | ');
+  const label = bagCode ? `Bao hàng đến (${bagCode})` : 'Kiện rời đến';
+  const journey = originHubCode && destinationHubCode ? ` | [${originHubCode}] -> [${destinationHubCode}]` : '';
+  const vehicle = vehicleCode ? ` | Xe: ${vehicleCode}${licensePlate ? ` (${licensePlate})` : ''}` : '';
+
+  return `${label}${journey} | Nhân viên: ${employeeName} | Mã NV: ${employeeId} | Mã hub: ${hubCode}${vehicle}`;
 }
 
 export function buildInventoryCheckAuditNote(input: {

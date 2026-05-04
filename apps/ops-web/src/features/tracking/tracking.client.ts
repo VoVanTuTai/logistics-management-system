@@ -1,4 +1,4 @@
-﻿import { opsApiClient } from '../../services/api/client';
+import { opsApiClient } from '../../services/api/client';
 import { ApiClientError } from '../../services/api/errors';
 import { opsEndpoints } from '../../services/api/endpoints';
 import type { TrackingLookupResultDto, TrackingSearchResultDto } from './tracking.types';
@@ -24,6 +24,7 @@ interface TrackingTimelineApiResponse {
   locationCode: string | null;
   locationText: string | null;
   occurredAt: string;
+  note?: string | null;
 }
 
 function mapCurrent(payload: TrackingCurrentApiResponse) {
@@ -94,6 +95,7 @@ export const trackingClient = {
         locationCode: event.locationCode,
         locationText: event.locationText,
         occurredAt: event.occurredAt,
+        note: event.note,
       })),
     })),
 };

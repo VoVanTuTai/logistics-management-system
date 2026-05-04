@@ -73,7 +73,9 @@ function isSendGoodsEventData(eventData: Record<string, unknown>): boolean {
   }
 
   const note = (scanEvent as Record<string, unknown>).note;
-  return typeof note === 'string' && note.trim().startsWith('SEND_GOODS');
+  if (typeof note !== 'string') return false;
+  const trimmed = note.trim();
+  return trimmed.startsWith('SEND_GOODS') || trimmed.startsWith('Gửi bao hàng') || trimmed.startsWith('Gửi kiện rời');
 }
 
 function isExceptionNdrEventData(eventData: Record<string, unknown>): boolean {
@@ -94,7 +96,9 @@ function isVehicleOutboundEventData(eventData: Record<string, unknown>): boolean
   }
 
   const note = (scanEvent as Record<string, unknown>).note;
-  return typeof note === 'string' && note.trim().startsWith('VEHICLE_OUTBOUND');
+  if (typeof note !== 'string') return false;
+  const trimmed = note.trim();
+  return trimmed.startsWith('VEHICLE_OUTBOUND') || trimmed.startsWith('Rời kho');
 }
 
 function isInventoryCheckEventData(eventData: Record<string, unknown>): boolean {
@@ -104,5 +108,7 @@ function isInventoryCheckEventData(eventData: Record<string, unknown>): boolean 
   }
 
   const note = (scanEvent as Record<string, unknown>).note;
-  return typeof note === 'string' && note.trim().startsWith('INVENTORY_CHECK');
+  if (typeof note !== 'string') return false;
+  const trimmed = note.trim();
+  return trimmed.startsWith('INVENTORY_CHECK') || trimmed.startsWith('Kiểm tồn kho');
 }
