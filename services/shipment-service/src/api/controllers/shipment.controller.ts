@@ -1,10 +1,11 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 
 import { ShipmentsService } from '../../application/services/shipments.service';
 import type {
   CancelShipmentInput,
   CreateShipmentInput,
   Shipment,
+  ShipmentListFilters,
   UpdateShipmentInput,
 } from '../../domain/entities/shipment.entity';
 
@@ -13,8 +14,8 @@ export class ShipmentController {
   constructor(private readonly shipmentsService: ShipmentsService) {}
 
   @Get()
-  list(): Promise<Shipment[]> {
-    return this.shipmentsService.list();
+  list(@Query() filters: ShipmentListFilters): Promise<Shipment[]> {
+    return this.shipmentsService.list(filters);
   }
 
   @Get(':code')

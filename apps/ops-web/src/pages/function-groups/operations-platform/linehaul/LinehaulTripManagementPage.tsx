@@ -30,10 +30,39 @@ interface TaskRecord {
   routeCode: string;
   roadType: string;
   departure: string;
+  destinationHubCode?: string;
   vehiclePlate?: string;
   driverName?: string;
   driverPhone?: string;
 }
+
+/**
+ * Helper to generate a simple Code 128 Barcode SVG path
+ * Note: This is a simplified version for demonstration. 
+ * In production, consider using a full library like bwip-js.
+ */
+const generateBarcodeSvg = (code: string) => {
+  // Simple representation: each char is a set of bars
+  // We'll use a placeholder logic that looks like a barcode for now
+  // since a full Code 128 implementation is complex.
+  const hash = code.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const pattern = (hash % 100).toString(2).padStart(8, '0').repeat(4);
+  
+  return (
+    <svg width="100%" height="50" viewBox="0 0 100 50" preserveAspectRatio="none">
+      <rect width="100" height="50" fill="white" />
+      {pattern.split('').map((bit, i) => (
+        bit === '1' ? <rect key={i} x={i * (100 / pattern.length)} y="0" width="1.5" height="50" fill="black" /> : null
+      ))}
+      {/* Real barcodes usually have start/stop bits and varied widths. 
+          For a "valid" look, we add some static bars at start/end. */}
+      <rect x="0" y="0" width="2" height="50" fill="black" />
+      <rect x="3" y="0" width="1" height="50" fill="black" />
+      <rect x="96" y="0" width="1" height="50" fill="black" />
+      <rect x="98" y="0" width="2" height="50" fill="black" />
+    </svg>
+  );
+};
 
 const MOCK_DATA: TaskRecord[] = [
   {
@@ -71,12 +100,13 @@ const MOCK_DATA: TaskRecord[] = [
   }
 ];
 
-const getQrDataUrl = (code: string) => {
+const getQrDataUrl = (data: any) => {
   try {
     const qr = qrcode(0, 'M');
-    qr.addData(code);
+    const qrContent = typeof data === 'string' ? data : JSON.stringify(data);
+    qr.addData(qrContent);
     qr.make();
-    return qr.createDataURL(4);
+    return qr.createDataURL(5);
   } catch(e) {
     return '';
   }
@@ -116,6 +146,7 @@ export function LinehaulTripManagementPage() {
           routeCode: noteData.routeCode || '-',
           roadType: noteData.routeType || 'Quốc lộ',
           departure: m.originHubCode || '-',
+          destinationHubCode: m.destinationHubCode || '-',
           vehiclePlate: noteData.vehiclePlate,
           driverName: noteData.driverName,
           driverPhone: noteData.driverPhone,
@@ -517,69 +548,77 @@ export function LinehaulTripManagementPage() {
       <div style={{ display: 'none' }}>
         {printingTask && (
           <div id="print-seal-section">
-            <div style={{ width: '100%', padding: '0', border: '2px solid #000', borderRadius: '0', color: '#000', fontFamily: 'Arial, sans-serif', maxWidth: '450px' }}>
-              {/* Header: Company & Routing */}
-              <div style={{ display: 'flex', borderBottom: '2px solid #000' }}>
-                <div style={{ padding: '12px', flex: 1, borderRight: '2px solid #000', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <h2 style={{ margin: 0, fontSize: '22px', fontWeight: '900', letterSpacing: '1px' }}>NEXUS EXPRESS</h2>
-                  <div style={{ fontSize: '11px', fontWeight: 'bold', marginTop: '4px' }}>LOGISTICS & LINEHAUL</div>
+            <div style={{ width: '100mm', minHeight: '150mm', padding: '5mm', border: '2px solid #000', color: '#000', fontFamily: 'Arial, sans-serif', backgroundColor: '#fff', boxSizing: 'border-box' }}>
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '3px solid #000', paddingBottom: '3mm', marginBottom: '4mm' }}>
+                <div>
+                  <h1 style={{ margin: 0, fontSize: '24px', fontWeight: '900' }}>NEXUS EXPRESS</h1>
+                  <div style={{ fontSize: '12px', fontWeight: 'bold' }}>LINEHAUL VEHICLE SEAL</div>
                 </div>
-                <div style={{ padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000', color: '#fff', width: '110px' }}>
-                  <h3 style={{ margin: 0, fontSize: '16px', textAlign: 'center' }}>LINEHAUL</h3>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '10px' }}>Ngày in / Print Date</div>
+                  <div style={{ fontSize: '12px', fontWeight: 'bold' }}>{new Date().toLocaleDateString('vi-VN')}</div>
                 </div>
               </div>
 
-              {/* Main Info: Route & QR */}
-              <div style={{ display: 'flex', borderBottom: '2px solid #000' }}>
-                <div style={{ flex: 1, padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              {/* Barcode Section (Mã tem xe) */}
+              <div style={{ textAlign: 'center', marginBottom: '5mm', border: '1px solid #eee', padding: '2mm' }}>
+                <div style={{ fontSize: '11px', fontWeight: 'bold', marginBottom: '2mm' }}>MÃ VẠCH TEM XE (BARCODE)</div>
+                <div style={{ height: '60px', width: '100%', display: 'flex', justifyContent: 'center' }}>
+                  {generateBarcodeSvg(printingTask.sealCode)}
+                </div>
+                <div style={{ fontSize: '18px', fontWeight: '900', marginTop: '1mm', letterSpacing: '2px' }}>{printingTask.sealCode}</div>
+              </div>
+
+              {/* Journey Section (Hub Đi -> Hub Đến) */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4mm', marginBottom: '5mm' }}>
+                <div style={{ border: '2px solid #000', padding: '3mm', textAlign: 'center' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#555' }}>HUB ĐI (SOURCE)</div>
+                  <div style={{ fontSize: '24px', fontWeight: '900', margin: '2mm 0' }}>{printingTask.departure}</div>
+                </div>
+                <div style={{ border: '2px solid #000', padding: '3mm', textAlign: 'center' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#555' }}>HUB ĐẾN (DEST)</div>
+                  <div style={{ fontSize: '24px', fontWeight: '900', margin: '2mm 0' }}>{printingTask.destinationHubCode || 'N/A'}</div>
+                </div>
+              </div>
+
+              {/* Vehicle & QR Section */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '4mm', borderTop: '2px solid #000', borderBottom: '2px solid #000', padding: '4mm 0', marginBottom: '4mm' }}>
+                <div>
+                  <div style={{ marginBottom: '4mm' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#555' }}>BIỂN SỐ XE (PLATE)</div>
+                    <div style={{ fontSize: '28px', fontWeight: '900' }}>{printingTask.vehiclePlate || 'CHƯA CÓ'}</div>
+                  </div>
                   <div>
-                    <div style={{ fontSize: '11px', color: '#555', textTransform: 'uppercase', fontWeight: 'bold' }}>Tuyến đường / Route</div>
-                    <div style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '4px' }}>{printingTask.routeRef} ({printingTask.routeCode})</div>
-                  </div>
-                  <div style={{ marginTop: '16px' }}>
-                    <div style={{ fontSize: '11px', color: '#555', textTransform: 'uppercase', fontWeight: 'bold' }}>Hành trình / Journey</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
-                      <div style={{ fontSize: '20px', fontWeight: '900' }}>{printingTask.departure.split('-')[1] || printingTask.departure}</div>
-                      <div style={{ fontSize: '20px' }}>➔</div>
-                      <div style={{ fontSize: '20px', fontWeight: '900' }}>{printingTask.taskName.split(' - ')[1] || 'ĐÍCH'}</div>
-                    </div>
+                    <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#555' }}>TÀI XẾ (DRIVER)</div>
+                    <div style={{ fontSize: '16px', fontWeight: 'bold' }}>{printingTask.driverName || '---'}</div>
+                    <div style={{ fontSize: '14px' }}>{printingTask.driverPhone || '---'}</div>
                   </div>
                 </div>
-                
-                <div style={{ padding: '16px', borderLeft: '2px solid #000', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                  <img src={getQrDataUrl(printingTask.sealCode)} alt="QR Code" style={{ width: '80px', height: '80px' }} />
-                  <div style={{ marginTop: '8px', fontWeight: 'bold', fontSize: '13px', letterSpacing: '1px' }}>{printingTask.sealCode}</div>
+                <div style={{ textAlign: 'center', paddingLeft: '4mm', borderLeft: '1px dashed #ccc' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 'bold', marginBottom: '2mm' }}>QR DATA (JSON)</div>
+                  <img 
+                    src={getQrDataUrl({
+                      seal: printingTask.sealCode,
+                      from: printingTask.departure,
+                      to: printingTask.destinationHubCode || 'N/A',
+                      plate: printingTask.vehiclePlate || 'N/A'
+                    })} 
+                    alt="QR Code" 
+                    style={{ width: '100px', height: '100px', border: '1px solid #000' }} 
+                  />
                 </div>
               </div>
 
-              {/* Vehicle Info Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '2px solid #000' }}>
-                <div style={{ padding: '12px', borderRight: '2px solid #000' }}>
-                  <div style={{ fontSize: '10px', color: '#555', textTransform: 'uppercase', fontWeight: 'bold' }}>Biển số xe / Plate</div>
-                  <div style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '4px' }}>{printingTask.vehiclePlate || 'CHƯA CẬP NHẬT'}</div>
+              {/* Footer info */}
+              <div style={{ fontSize: '11px', lineHeight: '1.5' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span>Loại tuyến: <strong>{printingTask.roadType}</strong></span>
+                  <span>Tác vụ: <strong>{printingTask.type}</strong></span>
                 </div>
-                <div style={{ padding: '12px' }}>
-                  <div style={{ fontSize: '10px', color: '#555', textTransform: 'uppercase', fontWeight: 'bold' }}>Tài xế / Driver</div>
-                  <div style={{ fontSize: '14px', fontWeight: 'bold', marginTop: '4px' }}>{printingTask.driverName || '---'}</div>
-                  <div style={{ fontSize: '12px', marginTop: '2px' }}>{printingTask.driverPhone || '---'}</div>
+                <div style={{ marginTop: '3mm', fontStyle: 'italic', color: '#444' }}>
+                  * Lưu ý: Tài xế cần mang theo tem này để thực hiện quét xác nhận tại các trạm trung chuyển.
                 </div>
-              </div>
-
-              {/* Footer details */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '2px solid #000' }}>
-                <div style={{ padding: '12px', borderRight: '2px solid #000' }}>
-                  <div style={{ fontSize: '10px', color: '#555', textTransform: 'uppercase', fontWeight: 'bold' }}>Loại đường</div>
-                  <div style={{ fontSize: '12px', fontWeight: 'bold', marginTop: '4px' }}>{printingTask.roadType}</div>
-                </div>
-                <div style={{ padding: '12px' }}>
-                  <div style={{ fontSize: '10px', color: '#555', textTransform: 'uppercase', fontWeight: 'bold' }}>Thuộc tính chuyến</div>
-                  <div style={{ fontSize: '12px', fontWeight: 'bold', marginTop: '4px' }}>{printingTask.type}</div>
-                </div>
-              </div>
-
-              <div style={{ padding: '12px', textAlign: 'center', fontSize: '10px' }}>
-                <div>Sử dụng mã QR này để bộ phận kho tiến hành quét và xác nhận nhận xe.</div>
-                <div style={{ marginTop: '4px', fontWeight: 'bold' }}>Ngày in: {new Date().toLocaleString('vi-VN')}</div>
               </div>
             </div>
           </div>

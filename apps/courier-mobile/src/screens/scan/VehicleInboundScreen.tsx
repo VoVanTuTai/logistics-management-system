@@ -23,6 +23,7 @@ import {
 import {
   saveVehicleArrivalRecord,
 } from '../../features/scan/vehicle-arrival.storage';
+import { manifestApi } from '../../features/manifest/manifest.api';
 import {
   parseVehicleLabel,
   type VehicleLabelInfo,
@@ -366,6 +367,21 @@ export function VehicleInboundScreen(): React.JSX.Element {
         hubCode,
       );
 
+      try {
+        const manifests = await manifestApi.list(session?.tokens.accessToken as string);
+        const manifest = manifests.find(m => m.manifestCode === vehicleInfo.vehicleCode);
+        if (manifest) {
+          await manifestApi.receive(session?.tokens.accessToken as string, manifest.id, {
+            receivedBy: courierId,
+            receivedByName: employeeName,
+            processingHubCode: hubCode,
+            note: `Xe đến: ${vehicleInfo.vehicleCode} | Biển số: ${vehicleInfo.licensePlate} | Khớp seal: ${sealMatched}`,
+          });
+        }
+      } catch (manifestError) {
+        console.warn('Could not receive manifest on server:', manifestError);
+      }
+
       setVehicleLoadRecord(nextLoadRecord ?? vehicleLoadRecord);
       setScreenMessage(
         `Đã xác nhận xe đến ${vehicleInfo.vehicleCode}. Tem xe chuyển sang Đã đến hub.` +
@@ -489,7 +505,7 @@ export function VehicleInboundScreen(): React.JSX.Element {
             <>
               <View style={styles.vehicleGrid}>
                 <View style={styles.vehicleInfoCell}>
-                  <Text style={styles.infoLabel}>Mã xe</Text>
+                  <Text style={styles.infoLabel}>Mã tem xe</Text>
                   <Text style={styles.infoValue}>{vehicleInfo.vehicleCode}</Text>
                 </View>
                 <View style={styles.vehicleInfoCell}>

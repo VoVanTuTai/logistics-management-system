@@ -36,6 +36,10 @@ const WAITING_DELIVERY_STATUSES = new Set([
   'MANIFEST_UNSEALED',
   'SCAN_INBOUND',
   'TASK_ASSIGNED',
+  'PICKUP_COMPLETED',
+  'INVENTORY_CHECK',
+  'NDR_CREATED',
+  'DELIVERY_FAILED',
 ]);
 
 function SendIcon(): React.JSX.Element {

@@ -20,6 +20,7 @@ import {
   type VehicleDepartureSeal,
 } from '../../features/scan/vehicle-departure.storage';
 import { submitHubScanAction } from '../../features/scan/hub.api';
+import { manifestApi } from '../../features/manifest/manifest.api';
 import { enqueueHubScanOffline } from '../../features/scan/hub.offline';
 import {
   parseVehicleLabel,
@@ -308,6 +309,23 @@ export function VehicleOutboundScreen(): React.JSX.Element {
     });
 
     try {
+      const manifests = await manifestApi.list(accessToken);
+      const manifest = manifests.find(m => m.manifestCode === vehicleInfo.vehicleCode);
+      
+      if (manifest) {
+        try {
+          await manifestApi.seal(accessToken, manifest.id, {
+            sealedBy: courierId,
+            sealedByName: employeeName,
+            processingHubCode: hubCode,
+            note: `Xe đi: ${vehicleInfo.vehicleCode} | Biển số: ${vehicleInfo.licensePlate}`,
+          });
+        } catch (manifestError) {
+          console.warn('Could not seal manifest on server:', manifestError);
+          // We continue even if manifest sealing fails, as shipments might have been updated
+        }
+      }
+
       for (const target of loadedShipmentTargets) {
         const command = {
           mode: 'OUTBOUND' as const,
@@ -483,7 +501,7 @@ export function VehicleOutboundScreen(): React.JSX.Element {
             <>
               <View style={styles.vehicleGrid}>
                 <View style={styles.vehicleInfoCell}>
-                  <Text style={styles.infoLabel}>Mã xe</Text>
+                  <Text style={styles.infoLabel}>Mã tem xe</Text>
                   <Text style={styles.infoValue}>{vehicleInfo.vehicleCode}</Text>
                 </View>
                 <View style={styles.vehicleInfoCell}>

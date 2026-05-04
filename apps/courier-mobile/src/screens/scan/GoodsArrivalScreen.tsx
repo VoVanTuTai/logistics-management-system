@@ -161,7 +161,7 @@ export function GoodsArrivalScreen({
   const applyVehicleLabel = React.useCallback((rawValue: string) => {
     const nextVehicleInfo = parseVehicleLabel(rawValue);
     if (!nextVehicleInfo) {
-      setScreenMessage('Tem xe không hợp lệ. Cần QR JSON hoặc VEH|Mã xe|Hub đi|Hub đến|Biển số.');
+      setScreenMessage('Tem xe không hợp lệ. Cần QR JSON hoặc VEH|Mã tem xe|Hub đi|Hub đến|Biển số.');
       return;
     }
 
@@ -487,7 +487,7 @@ export function GoodsArrivalScreen({
             <TextInput
               value={manualVehicleInput}
               onChangeText={setManualVehicleInput}
-              placeholder="VEH|Mã xe|Hub đi|Hub đến|Biển số"
+              placeholder="VEH|Mã tem xe|Hub đi|Hub đến|Biển số"
               placeholderTextColor="#9CA3AF"
               style={[styles.fieldInput, styles.codeInput]}
               autoCapitalize="characters"
@@ -499,7 +499,7 @@ export function GoodsArrivalScreen({
           {vehicleInfo ? (
             <View style={styles.vehicleGrid}>
               <View style={styles.vehicleInfoCell}>
-                <Text style={styles.infoLabel}>Mã xe</Text>
+                <Text style={styles.infoLabel}>Mã tem xe</Text>
                 <Text style={styles.infoValue}>{vehicleInfo.vehicleCode}</Text>
               </View>
               <View style={styles.vehicleInfoCell}>

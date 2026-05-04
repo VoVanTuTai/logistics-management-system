@@ -31,3 +31,8 @@ export interface UpdateShipmentInput {
 export interface CancelShipmentInput {
   reason?: string | null;
 }
+
+export interface ShipmentListFilters {
+  q?: string | null;
+  status?: string | null;
+}

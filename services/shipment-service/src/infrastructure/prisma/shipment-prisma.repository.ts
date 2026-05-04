@@ -10,6 +10,7 @@ import type {
   CreateShipmentInput,
   JsonValue,
   Shipment,
+  ShipmentListFilters,
   UpdateShipmentInput,
 } from '../../domain/entities/shipment.entity';
 import type { ShipmentCurrentStatus } from '../../domain/entities/shipment-status.entity';
@@ -22,8 +23,22 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
     super();
   }
 
-  async list(): Promise<Shipment[]> {
+  async list(filters: ShipmentListFilters): Promise<Shipment[]> {
+    const where: Prisma.ShipmentWhereInput = {};
+
+    if (filters.status) {
+      where.currentStatus = filters.status as PrismaShipmentCurrentStatus;
+    }
+
+    if (filters.q) {
+      where.code = {
+        contains: filters.q,
+        mode: 'insensitive',
+      };
+    }
+
     const records = await this.prisma.shipment.findMany({
+      where,
       orderBy: {
         createdAt: 'desc',
       },

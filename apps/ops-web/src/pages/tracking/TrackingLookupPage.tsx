@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 
 import { useTrackingDetailQuery } from '../../features/tracking/tracking.api';
 import type { TrackingTimelineEventDto } from '../../features/tracking/tracking.types';
@@ -166,16 +166,20 @@ function buildTrackingStatusHistoryRows(
     return [];
   }
 
-  return timeline.map((event, index) => ({
-    id: event.id,
-    stt: index + 1,
-    scanTime: formatDateTime(event.occurredAt),
-    uploadedTime: formatDateTime(event.occurredAt),
-    scanCategory: event.eventType,
-    description: buildTimelineDescription(event),
-    actualWeight: '--',
-    chargedWeight: '--',
-  }));
+  return timeline.map((event, index) => {
+    const description = buildTimelineDescription(event);
+    return {
+      id: event.id,
+      stt: index + 1,
+      scanTime: formatDateTime(event.occurredAt),
+      uploadedTime: formatDateTime(event.occurredAt),
+      // Nếu có note thì hiển thị note ở cột Phân loại quét, nếu không thì dùng eventType
+      scanCategory: event.note || event.eventType,
+      description: description,
+      actualWeight: '--',
+      chargedWeight: '--',
+    };
+  });
 }
 
 function buildTimelineDescription(event: TrackingTimelineEventDto): string {

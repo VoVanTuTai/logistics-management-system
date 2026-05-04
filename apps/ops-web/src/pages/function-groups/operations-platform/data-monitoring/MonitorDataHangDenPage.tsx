@@ -1,4 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useAuthStore } from '../../../../store/authStore';
+import { shipmentsClient } from '../../../../features/shipments/shipments.client';
+import type { ShipmentListItemDto } from '../../../../features/shipments/shipments.types';
 
 import './MonitorDataHangDenPage.css';
 
@@ -13,9 +16,41 @@ interface ArrivalMonitorRow {
   nguoiQuet: string;
 }
 
-const arrivalRows: ArrivalMonitorRow[] = [];
-
 export function MonitorDataHangDenPage(): React.JSX.Element {
+  const session = useAuthStore((state) => state.session);
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState<ShipmentListItemDto[]>([]);
+  const [filterCode, setFilterCode] = useState('');
+
+  const fetchData = useCallback(async () => {
+    if (!session?.tokens.accessToken) return;
+    
+    setLoading(true);
+    try {
+      const result = await shipmentsClient.list(session.tokens.accessToken, {
+        status: 'SCAN_INBOUND',
+        q: filterCode || undefined,
+      });
+      setData(result);
+    } catch (error) {
+      console.error('Failed to fetch arrival data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [session?.tokens.accessToken, filterCode]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const handleRefresh = () => {
+    fetchData();
+  };
+
+  const handleSearch = () => {
+    fetchData();
+  };
+
   return (
     <section className="ops-monitor-hang-den">
       <header className="ops-monitor-hang-den__page-header">
@@ -27,24 +62,24 @@ export function MonitorDataHangDenPage(): React.JSX.Element {
         <div className="ops-monitor-hang-den__summary">
           <article>
             <span>Đã quét đến</span>
-            <strong>{arrivalRows.length}</strong>
+            <strong>{data.length}</strong>
           </article>
           <article>
             <span>Bưu cục đến</span>
-            <strong>0</strong>
+            <strong>{new Set(data.map(d => d.currentLocation).filter(Boolean)).size}</strong>
           </article>
         </div>
       </header>
 
       <section className="ops-monitor-hang-den__toolbar">
         <div className="ops-monitor-hang-den__actions">
-          <button type="button" className="ops-monitor-hang-den__action-btn">
+          <button type="button" className="ops-monitor-hang-den__action-btn" onClick={handleSearch}>
             Tìm kiếm
           </button>
           <button type="button" className="ops-monitor-hang-den__action-btn">
             Xuất dữ liệu
           </button>
-          <button type="button" className="ops-monitor-hang-den__action-btn">
+          <button type="button" className="ops-monitor-hang-den__action-btn" onClick={handleRefresh}>
             Làm mới
           </button>
         </div>
@@ -72,11 +107,17 @@ export function MonitorDataHangDenPage(): React.JSX.Element {
         </label>
         <label className="ops-monitor-hang-den__filter-field">
           <span>Mã vận đơn:</span>
-          <input type="text" placeholder="Vui lòng nhập mã vận đơn" />
+          <input 
+            type="text" 
+            placeholder="Vui lòng nhập mã vận đơn" 
+            value={filterCode}
+            onChange={(e) => setFilterCode(e.target.value)}
+          />
         </label>
       </section>
 
       <section className="ops-monitor-hang-den__table-wrap">
+        {loading && <div className="ops-loading-overlay">Đang tải dữ liệu...</div>}
         <table className="ops-monitor-hang-den__table">
           <thead>
             <tr>
@@ -91,23 +132,23 @@ export function MonitorDataHangDenPage(): React.JSX.Element {
             </tr>
           </thead>
           <tbody>
-            {arrivalRows.map((row) => (
-              <tr key={row.maVanDon}>
-                <td>{row.stt}</td>
-                <td className="ops-monitor-hang-den__code">{row.maVanDon}</td>
-                <td>{row.thoiGianQuetDen}</td>
-                <td>{row.bcDen}</td>
-                <td>{row.maBcDen}</td>
-                <td>{row.bcGui}</td>
+            {data.map((row, index) => (
+              <tr key={row.shipmentCode}>
+                <td>{index + 1}</td>
+                <td className="ops-monitor-hang-den__code">{row.shipmentCode}</td>
+                <td>{new Date(row.updatedAt).toLocaleString('vi-VN')}</td>
+                <td>{row.currentLocation || '---'}</td>
+                <td>{row.currentLocation || '---'}</td>
+                <td>{row.originHubCode || '---'}</td>
                 <td>
-                  <span className="ops-monitor-hang-den__status">{row.trangThai}</span>
+                  <span className="ops-monitor-hang-den__status">Hàng đến</span>
                 </td>
-                <td>{row.nguoiQuet}</td>
+                <td>Hệ thống</td>
               </tr>
             ))}
-            {arrivalRows.length === 0 ? (
+            {!loading && data.length === 0 ? (
               <tr>
-                <td colSpan={8}>Chưa có dữ liệu hàng đến từ server.</td>
+                <td colSpan={8} style={{ textAlign: 'center', padding: '2rem' }}>Chưa có dữ liệu hàng đến từ server.</td>
               </tr>
             ) : null}
           </tbody>

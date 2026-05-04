@@ -120,16 +120,10 @@ export function SendGoodsScreen(): React.JSX.Element {
       vehicle: VehicleLabelInfo;
       bagCode?: string | null;
     }): string => {
-      const segments = [input.prefix];
-      appendNoteSegment(segments, 'employeeCode', employeeCode);
-      appendNoteSegment(segments, 'employeeName', employeeName);
-      appendNoteSegment(segments, 'hubCode', employeeHubCode);
-      appendNoteSegment(segments, 'vehicle', input.vehicle.vehicleCode);
-      appendNoteSegment(segments, 'plate', input.vehicle.licensePlate);
-      appendNoteSegment(segments, 'from', input.vehicle.originHubCode);
-      appendNoteSegment(segments, 'to', input.vehicle.destinationHubCode);
-      appendNoteSegment(segments, 'bag', input.bagCode);
-      return segments.join('; ');
+      const typeLabel = input.prefix === 'SEND_GOODS' ? 'Gửi kiện rời' : 'Gửi bao hàng';
+      const bagInfo = input.bagCode ? ` | Bao: ${input.bagCode}` : '';
+      
+      return `${typeLabel}: [${input.vehicle.originHubCode}] -> [${input.vehicle.destinationHubCode}] | Nhân viên: ${employeeName} | Mã NV: ${employeeCode} | Mã hub: ${employeeHubCode} | Xe: ${input.vehicle.vehicleCode} (${input.vehicle.licensePlate})${bagInfo}`;
     },
     [employeeCode, employeeHubCode, employeeName],
   );
@@ -199,7 +193,7 @@ export function SendGoodsScreen(): React.JSX.Element {
   const applyVehicleLabel = React.useCallback((rawValue: string) => {
     const nextVehicleInfo = parseVehicleLabel(rawValue);
     if (!nextVehicleInfo) {
-      setScreenMessage('Tem xe không hợp lệ. Cần QR JSON hoặc VEH|Mã xe|Hub đi|Hub đến|Biển số.');
+      setScreenMessage('Tem xe không hợp lệ. Cần QR JSON hoặc VEH|Mã tem xe|Hub đi|Hub đến|Biển số.');
       return;
     }
 
@@ -504,7 +498,7 @@ export function SendGoodsScreen(): React.JSX.Element {
             <TextInput
               value={manualVehicleInput}
               onChangeText={setManualVehicleInput}
-              placeholder="VEH|Mã xe|Hub đi|Hub đến|Biển số"
+              placeholder="VEH|Mã tem xe|Hub đi|Hub đến|Biển số"
               placeholderTextColor="#9CA3AF"
               style={[styles.fieldInput, styles.codeInput]}
               autoCapitalize="characters"
@@ -516,7 +510,7 @@ export function SendGoodsScreen(): React.JSX.Element {
           {vehicleInfo ? (
             <View style={styles.vehicleGrid}>
               <View style={styles.vehicleInfoCell}>
-                <Text style={styles.infoLabel}>Mã xe</Text>
+                <Text style={styles.infoLabel}>Mã tem xe</Text>
                 <Text style={styles.infoValue}>{vehicleInfo.vehicleCode}</Text>
               </View>
               <View style={styles.vehicleInfoCell}>
@@ -534,7 +528,7 @@ export function SendGoodsScreen(): React.JSX.Element {
             </View>
           ) : (
             <Text style={styles.vehicleEmptyText}>
-              Chưa có tem xe. Tem xe có thể là QR JSON hoặc chuỗi VEH|Mã xe|Hub đi|Hub đến|Biển số.
+              Chưa có tem xe. Tem xe có thể là QR JSON hoặc chuỗi VEH|Mã tem xe|Hub đi|Hub đến|Biển số.
             </Text>
           )}
         </View>

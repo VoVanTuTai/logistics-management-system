@@ -32,7 +32,7 @@ export function parseVehicleLabel(rawValue: string): VehicleLabelInfo | null {
     const payload = JSON.parse(trimmed) as unknown;
     if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
       const record = payload as Record<string, unknown>;
-      const vehicleCode = readString(record, ['vehicleCode', 'vehicle_code', 'truckCode', 'code']);
+      const vehicleCode = readString(record, ['seal', 'vehicleCode', 'vehicle_code', 'truckCode', 'code']);
       const originHubCode = readString(record, [
         'originHubCode',
         'origin_hub_code',
