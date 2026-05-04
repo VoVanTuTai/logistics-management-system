@@ -92,6 +92,21 @@
   font-weight: 700;
 }
 
+.ops-thermal-management__qr-btn {
+  border: 1px solid #93c5fd;
+  border-radius: 6px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ops-thermal-management__qr-btn:hover {
+  background: #dbeafe;
+}
+
 @media (max-width: 860px) {
   .ops-thermal-management__summary {
     grid-template-columns: 1fr;
@@ -130,6 +145,10 @@
   overflow: hidden;
 }
 
+.ops-thermal-management__qr-modal-content {
+  max-width: 360px;
+}
+
 .ops-thermal-management__modal-header {
   padding: 16px 20px;
   border-bottom: 1px solid #e2e8f0;
@@ -160,6 +179,21 @@
 .ops-thermal-management__modal-body {
   padding: 20px;
   overflow-y: auto;
+}
+
+.ops-thermal-management__qr-modal-body {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+}
+
+.ops-thermal-management__qr-image {
+  width: 220px;
+  height: 220px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 8px;
 }
 
 .ops-thermal-management__modal-info {

@@ -17,6 +17,8 @@ const MAX_PREVIEW_LABELS = 30;
 
 interface BagLabelPreviewItem extends BagLabelPrintPayload {
   id?: string;
+  shipmentCount?: number;
+  createdAtRaw?: string | null;
   qrPreviewSrc: string | null;
 }
 
@@ -57,6 +59,8 @@ export function ThermalLabelPrintPage(): React.JSX.Element {
         originHubCode: m.originHubCode || 'HUB-NA',
         destinationHubCode: m.destinationHubCode || 'HUB-NA',
         status: m.status,
+        shipmentCount: m.shipmentCount ?? 0,
+        createdAtRaw: m.createdAt ?? null,
         createdAtText: m.createdAt ? formatDateTime(m.createdAt) : '',
         transportMethod: 'T' as BagTransportMethod, // Default if not stored
         qrPreviewSrc: buildQrPreviewSrc(m.manifestCode),
@@ -68,7 +72,13 @@ export function ThermalLabelPrintPage(): React.JSX.Element {
     // Filter out local previews that have the same bagCode as a real manifest
     const realCodes = new Set(realManifests.map(m => m.bagCode));
     const filteredPreviews = previewItems.filter(p => !p.id && !realCodes.has(p.bagCode));
-    return [...realManifests, ...filteredPreviews].sort((a, b) => b.bagCode.localeCompare(a.bagCode));
+    return [...realManifests, ...filteredPreviews].sort((a, b) => {
+      const byCreatedAt = getDateSortValue(b.createdAtRaw ?? b.createdAtText) - getDateSortValue(a.createdAtRaw ?? a.createdAtText);
+      if (byCreatedAt !== 0) {
+        return byCreatedAt;
+      }
+      return b.bagCode.localeCompare(a.bagCode);
+    });
   }, [realManifests, previewItems]);
 
   useEffect(() => {
@@ -162,6 +172,8 @@ export function ThermalLabelPrintPage(): React.JSX.Element {
         originHubCode: item.originHubCode ?? 'HUB-NA',
         destinationHubCode: item.destinationHubCode ?? 'HUB-NA',
         status: item.status,
+        shipmentCount: item.shipmentCount ?? 0,
+        createdAtRaw: item.createdAt ?? null,
         createdAtText: item.createdAt ? formatDateTime(item.createdAt) : formatDateTime(new Date().toISOString()),
         transportMethod: transportMethod,
         qrPreviewSrc: buildQrPreviewSrc(item.manifestCode),
@@ -334,6 +346,7 @@ export function ThermalLabelPrintPage(): React.JSX.Element {
                   <tr>
                     <th>Mã bao</th>
                     <th>Ngày tạo</th>
+                    <th>Số đơn trong bao</th>
                     <th>Mã Hub đến</th>
                     <th>Phương thức</th>
                     <th>Trạng thái</th>
@@ -345,6 +358,7 @@ export function ThermalLabelPrintPage(): React.JSX.Element {
                     <tr key={item.bagCode}>
                       <td><strong>{item.bagCode}</strong></td>
                       <td>{item.createdAtText}</td>
+                      <td>{item.shipmentCount ?? 0}</td>
                       <td>{item.destinationHubCode}</td>
                       <td>{item.transportMethod === 'T' ? 'Trucking' : 'Air'}</td>
                       <td>
@@ -418,11 +432,21 @@ function buildPreviewItems(options: BuildPreviewOptions): BagLabelPreviewItem[] 
       originHubCode,
       destinationHubCode,
       status: 'CHO_IN',
+      shipmentCount: 0,
+      createdAtRaw: new Date().toISOString(),
       createdAtText,
       transportMethod: options.transportMethod,
       qrPreviewSrc: buildQrPreviewSrc(bagCode),
     };
   });
+}
+
+function getDateSortValue(value: string | null | undefined): number {
+  if (!value) {
+    return 0;
+  }
+  const parsed = new Date(value).getTime();
+  return Number.isNaN(parsed) ? 0 : parsed;
 }
 
 function normalizeHubCode(value: string): string {
