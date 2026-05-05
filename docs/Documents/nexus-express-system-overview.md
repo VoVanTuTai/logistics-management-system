@@ -10,7 +10,7 @@
 
 **Muc dich tai lieu:** Tai lieu nay dung de:
 
-- Giai thich tong quan de tai cho giang vien, nguoi review hoac thanh vien moi.
+- Giai thich Tổng quan de tai cho giang vien, nguoi review hoac thanh vien moi.
 - Lam boi canh cho AI hieu dung pham vi, kien truc va nghiep vu khi ho tro phat trien he thong.
 - Lam khung noi dung de viet bao cao, thuyet minh thiet ke va mo ta hien thuc.
 - Giu thong nhat ve ten mien nghiep vu, service, luong du lieu va quy tac phat trien.
@@ -57,7 +57,7 @@ Muc tieu chinh:
 - Public tracking va internal tracking timeline.
 - Bao cao KPI theo ngay/thang, courier, hub, zone va trang thai van don.
 
-## 4. Kien truc tong quan
+## 4. Kien truc Tổng quan
 
 He thong theo mo hinh microservices ket hop BFF gateway va event-driven communication.
 
@@ -137,7 +137,7 @@ Each service owns its own PostgreSQL database/schema through Prisma.
 ```text
 logistics-management-system/
   apps/
-    admin-web/          Web quan tri he thong va danh muc
+    admin-web/          Web Quản trị hệ thống va danh muc
     ops-web/            Web van hanh kho, shipment, pickup, manifest, task
     merchant-web/       Web cho merchant tao va theo doi don
     courier-mobile/     Ung dung mobile cho shipper/courier
@@ -333,7 +333,7 @@ Tai lieu bao cao co the trien khai theo cac chuong:
 1. **Gioi thieu de tai:** Ly do chon de tai, bai toan doanh nghiep chuyen phat nhanh, muc tieu va pham vi.
 2. **Co so ly thuyet:** Microservices, API Gateway/BFF, event-driven architecture, RabbitMQ, database per service, outbox pattern, eventual consistency.
 3. **Khao sat va phan tich nghiep vu:** Vai tro nguoi dung, quy trinh tao don, pickup, kho hub, manifest, delivery, NDR, return va tracking.
-4. **Thiet ke he thong:** Kien truc tong quan, so do service, data ownership, domain events, database schema theo service, API convention.
+4. **Thiet ke he thong:** Kien truc Tổng quan, so do service, data ownership, domain events, database schema theo service, API convention.
 5. **Thiet ke giao dien va chuc nang:** Admin/Ops/Merchant/Public/Courier app, cac man hinh chinh va luong thao tac.
 6. **Cai dat va hien thuc:** Cong nghe, cau truc source code, mo ta tung service, cach chay local, seed data.
 7. **Kiem thu va danh gia:** Test case theo luong nghiep vu, kiem thu API, kiem thu UI, danh gia uu/nhuoc diem.
