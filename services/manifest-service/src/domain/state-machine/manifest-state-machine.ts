@@ -17,6 +17,6 @@ export class ManifestStateMachine {
   }
 
   canReceive(status: ManifestStatus): boolean {
-    return status === 'SEALED';
+    return ['CREATED', 'SEALED'].includes(status);
   }
 }

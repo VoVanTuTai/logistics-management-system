@@ -689,20 +689,32 @@ function MerchantApp(): React.JSX.Element {
     }
 
     if (resolvedStatus === 'CREATED' || resolvedStatus === 'UPDATED') {
-      return 'Đã tạo đơn';
+      return 'Đã tạo';
     }
 
     if (
       resolvedStatus === 'PICKUP_COMPLETED' ||
-      resolvedStatus === 'PICKED_UP' ||
-      resolvedStatus === 'INBOUND_AT_HUB' ||
-      resolvedStatus === 'SCAN_INBOUND'
+      resolvedStatus === 'PICKED_UP'
     ) {
-      const hubCode = resolveShipmentOriginHubCode(shipment) ?? 'N/A';
-      return `Đã nhận tại bưu cục ${hubCode}`;
+      return 'Đã nhận hàng';
     }
 
-    return shipment.currentStatus;
+    switch (resolvedStatus) {
+      case 'IN_TRANSIT':
+      case 'MANIFEST_SEALED':
+      case 'MANIFEST_RECEIVED':
+        return 'Đang luân chuyển';
+      case 'SCAN_INBOUND':
+        return 'Hàng đến';
+      case 'OUT_FOR_DELIVERY':
+        return 'Phát hàng';
+      case 'DELIVERED':
+        return 'Ký nhận';
+      case 'DELIVERY_FAILED':
+        return 'Ghi nhận vấn đề';
+      default:
+        return shipment.currentStatus;
+    }
   }
 
   function resolveShipmentStatusClass(shipment: ShipmentResponse): string {

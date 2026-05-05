@@ -109,8 +109,7 @@ export function VehicleOutboundScreen(): React.JSX.Element {
     accessToken &&
       vehicleInfo &&
       proofPhotoUri &&
-      sealCodes.length > 0 &&
-      loadedShipmentTargets.length > 0,
+      sealCodes.length > 0
   );
 
   React.useEffect(() => {
@@ -287,10 +286,7 @@ export function VehicleOutboundScreen(): React.JSX.Element {
       return;
     }
 
-    if (!vehicleLoadRecord || loadedShipmentTargets.length === 0) {
-      setScreenMessage('Không có danh sách tem bao/kiện đã lên xe để chuyển sang đang luân chuyển.');
-      return;
-    }
+    // Removed validation for loadedShipmentTargets to allow dispatching empty vehicles or vehicles loaded by others.
 
     setIsSaving(true);
     setScreenMessage(null);
@@ -313,17 +309,12 @@ export function VehicleOutboundScreen(): React.JSX.Element {
       const manifest = manifests.find(m => m.manifestCode === vehicleInfo.vehicleCode);
       
       if (manifest) {
-        try {
-          await manifestApi.seal(accessToken, manifest.id, {
-            sealedBy: courierId,
-            sealedByName: employeeName,
-            processingHubCode: hubCode,
-            note: `Xe đi: ${vehicleInfo.vehicleCode} | Biển số: ${vehicleInfo.licensePlate}`,
-          });
-        } catch (manifestError) {
-          console.warn('Could not seal manifest on server:', manifestError);
-          // We continue even if manifest sealing fails, as shipments might have been updated
-        }
+        await manifestApi.seal(accessToken, manifest.id, {
+          sealedBy: courierId,
+          sealedByName: employeeName,
+          processingHubCode: hubCode,
+          note: `Xe đi: ${vehicleInfo.vehicleCode} | Biển số: ${vehicleInfo.licensePlate}`,
+        });
       }
 
       for (const target of loadedShipmentTargets) {
@@ -375,8 +366,8 @@ export function VehicleOutboundScreen(): React.JSX.Element {
         employeeName,
         hubCode,
         vehicleStatus: 'IN_TRANSIT',
-        bagItems: vehicleLoadRecord.bagItems,
-        looseShipments: vehicleLoadRecord.looseShipments,
+        bagItems: vehicleLoadRecord?.bagItems || [],
+        looseShipments: vehicleLoadRecord?.looseShipments || [],
         createdAt: new Date().toISOString(),
       });
 

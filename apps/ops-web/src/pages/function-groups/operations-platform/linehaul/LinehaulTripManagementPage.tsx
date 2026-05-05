@@ -138,7 +138,9 @@ export function LinehaulTripManagementPage() {
 
         return {
           id: m.id,
-          status: m.status === 'PENDING' || m.status === 'CREATED' ? 'Chờ xuất phát' : m.status,
+          status: m.status === 'CREATED' || m.status === 'PENDING' ? 'Chờ xuất phát' :
+                  m.status === 'SEALED' ? 'Đang luân chuyển' :
+                  m.status === 'RECEIVED' ? 'Đã đến' : m.status,
           type: noteData.taskAttribute || 'Tuyến trục',
           sealCode: m.manifestCode,
           taskName: noteData.taskName || `Chuyến xe ${m.originHubCode} - ${m.destinationHubCode}`,
@@ -292,7 +294,7 @@ export function LinehaulTripManagementPage() {
               <span>Tìm kiếm</span>
             </button>
             
-            <button className="ops-btn ops-btn--outline">
+            <button className="ops-btn ops-btn--outline" onClick={fetchManifests}>
               <RefreshCw size={16} className="ops-icon-blue" />
               <span>Làm mới</span>
             </button>
@@ -427,7 +429,7 @@ export function LinehaulTripManagementPage() {
                   </td>
                   <td>{index + 1}</td>
                   <td>
-                    <span className={`ops-badge ops-badge--${task.status === 'Đã hoàn thành' ? 'success' : task.status === 'Đang di chuyển' ? 'info' : 'default'}`}>
+                    <span className={`ops-badge ops-badge--${task.status === 'Đã đến' ? 'success' : task.status === 'Đang luân chuyển' ? 'info' : 'default'}`}>
                       {task.status}
                     </span>
                   </td>

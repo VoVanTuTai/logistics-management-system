@@ -284,9 +284,7 @@ export class ManifestsService {
       );
     }
 
-    if (manifest.items.length === 0) {
-      throw new BadRequestException('Cannot seal manifest without shipments.');
-    }
+    // Removed validation to allow sealing empty linehaul vehicle manifests
 
     for (const item of manifest.items) {
       await this.assertShipmentNotLocked(item.shipmentCode);
