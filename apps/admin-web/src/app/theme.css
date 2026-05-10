@@ -1,16 +1,21 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700&display=swap');
 
 :root {
-  --admin-bg: #eef3f9;
+  --admin-font-family: 'Manrope', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --admin-font-weight-regular: 500;
+  --admin-font-weight-medium: 600;
+  --admin-font-weight-bold: 700;
+  --admin-bg: #eef2ff;
   --admin-surface: #ffffff;
-  --admin-text: #11233a;
-  --admin-muted: #5c728d;
-  --admin-border: #d5e2f0;
-  --admin-primary: #1f65a6;
-  --admin-primary-dark: #0f3d67;
+  --admin-surface-soft: #eef2ff;
+  --admin-text: #334155;
+  --admin-muted: #64748b;
+  --admin-border: #e2e8f0;
+  --admin-primary: #4f46e5;
+  --admin-primary-dark: #4338ca;
   --admin-success: #137f5d;
   --admin-danger: #b12233;
-  --admin-shadow: 0 10px 26px rgba(12, 40, 70, 0.1);
+  --admin-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
 }
 
 * {
@@ -25,18 +30,27 @@ body,
 }
 
 body {
-  background:
-    radial-gradient(circle at 8% 0%, rgba(186, 213, 250, 0.62), transparent 35%),
-    radial-gradient(circle at 95% 0%, rgba(255, 222, 189, 0.6), transparent 42%),
-    var(--admin-bg);
+  background: var(--admin-bg);
   color: var(--admin-text);
-  font-family: 'Manrope', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  font-family: var(--admin-font-family);
+  font-weight: var(--admin-font-weight-regular);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--admin-font-family);
+  font-weight: var(--admin-font-weight-bold);
+  letter-spacing: 0.01em;
 }
 
 a {
   color: var(--admin-primary);
   text-decoration: none;
-  font-weight: 700;
+  font-weight: var(--admin-font-weight-medium);
 }
 
 a:hover {
@@ -54,7 +68,7 @@ button {
 input,
 select,
 textarea {
-  border: 1px solid #c7d8ea;
+  border: 1px solid var(--admin-border);
   color: var(--admin-text);
   background: var(--admin-surface);
   padding: 9px 11px;
@@ -64,16 +78,16 @@ input:focus,
 select:focus,
 textarea:focus {
   outline: none;
-  border-color: #2f79bc;
-  box-shadow: 0 0 0 3px rgba(47, 121, 188, 0.14);
+  border-color: var(--admin-primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.16);
 }
 
 button {
-  border: 1px solid transparent;
+  border: 1px solid var(--admin-primary);
   padding: 8px 12px;
-  background: linear-gradient(120deg, var(--admin-primary), var(--admin-primary-dark));
+  background: var(--admin-primary);
   color: #ffffff;
-  font-weight: 700;
+  font-weight: var(--admin-font-weight-medium);
   cursor: pointer;
 }
 
@@ -90,7 +104,7 @@ table {
 
 th,
 td {
-  border-bottom: 1px solid #e2ecf7;
+  border-bottom: 1px solid var(--admin-border);
   padding: 8px 10px;
   text-align: left;
   vertical-align: top;
@@ -101,7 +115,11 @@ th {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--admin-muted);
-  background: #f4f8fd;
+  background: var(--admin-surface-soft);
+}
+
+::placeholder {
+  color: var(--admin-muted);
 }
 
 .app-root-shell {
@@ -147,28 +165,29 @@ th {
   display: grid;
   align-content: start;
   gap: 12px;
-  background: linear-gradient(180deg, #0f2f54 0%, #15466f 60%, #1c598c 100%);
-  color: #eff7ff;
+  background: #ffffff;
+  color: var(--admin-text);
+  border-right: 1px solid var(--admin-border);
 }
 
 .admin-sidebar h1 {
   margin: 0;
   font-size: 30px;
   line-height: 1.05;
-  font-family: 'Manrope', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  font-family: var(--admin-font-family);
 }
 
 .admin-sidebar p {
   margin: 4px 0 0;
-  color: rgba(237, 246, 255, 0.74);
+  color: var(--admin-muted);
   font-size: 12px;
 }
 
 .admin-user-card {
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid var(--admin-border);
   border-radius: 12px;
   padding: 10px;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--admin-surface-soft);
   display: grid;
   gap: 4px;
 }
@@ -178,14 +197,22 @@ th {
 }
 
 .admin-user-card small {
-  color: rgba(233, 244, 255, 0.82);
+  color: var(--admin-muted);
   font-size: 11px;
 }
 
 .admin-user-card button {
   margin-top: 4px;
-  background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(255, 255, 255, 0.25);
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #475569;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.admin-user-card button:hover {
+  background: var(--admin-surface-soft);
+  border-color: #a5b4fc;
+  color: var(--admin-primary-dark);
 }
 
 .admin-nav-group {
@@ -198,24 +225,28 @@ th {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: rgba(229, 241, 255, 0.74);
+  color: var(--admin-muted);
 }
 
 .admin-nav-link {
   border-radius: 11px;
+  border-left: 3px solid transparent;
   padding: 8px 10px;
-  color: #ecf5ff;
-  font-weight: 800;
-  transition: background-color 0.2s ease;
+  color: var(--admin-text);
+  font-weight: var(--admin-font-weight-regular);
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
 .admin-nav-link:hover {
   text-decoration: none;
-  background: rgba(255, 255, 255, 0.18);
+  background: var(--admin-surface-soft);
 }
 
 .admin-nav-link-active {
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--admin-surface-soft);
+  border-left-color: var(--admin-primary);
+  color: var(--admin-primary);
+  font-weight: var(--admin-font-weight-medium);
 }
 
 .admin-workspace {
@@ -229,7 +260,7 @@ th {
 .admin-topbar {
   border: 1px solid var(--admin-border);
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.92);
+  background: #ffffff;
   box-shadow: var(--admin-shadow);
   padding: 12px 14px;
   display: flex;
@@ -242,7 +273,7 @@ th {
   margin: 0;
   font-size: 28px;
   line-height: 1.05;
-  font-family: 'Manrope', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  font-family: var(--admin-font-family);
 }
 
 .admin-topbar p {
@@ -251,13 +282,13 @@ th {
 }
 
 .admin-tag {
-  border: 1px solid #c4d8ec;
+  border: 1px solid #c7d2fe;
   border-radius: 999px;
   padding: 6px 10px;
   font-size: 12px;
   font-weight: 800;
-  color: #295a8a;
-  background: #f5faff;
+  color: var(--admin-primary-dark);
+  background: var(--admin-surface-soft);
 }
 
 .admin-main-panel {
@@ -280,7 +311,7 @@ th {
   width: min(460px, 100%);
   border: 1px solid var(--admin-border);
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.95);
+  background: #ffffff;
   padding: 22px;
   box-shadow: var(--admin-shadow);
 }
@@ -290,7 +321,7 @@ th {
   text-transform: uppercase;
   letter-spacing: 0.12em;
   font-size: 11px;
-  color: #46698e;
+  color: var(--admin-primary);
   font-weight: 800;
 }
 
@@ -298,7 +329,7 @@ th {
   margin: 10px 0 4px;
   font-size: 28px;
   line-height: 1.08;
-  font-family: 'Manrope', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  font-family: var(--admin-font-family);
 }
 
 .auth-subtitle {
@@ -316,7 +347,7 @@ th {
 }
 
 .auth-input {
-  border: 1px solid #c7d8ea;
+  border: 1px solid var(--admin-border);
   border-radius: 11px;
   padding: 10px 12px;
 }
@@ -347,10 +378,11 @@ th {
 }
 
 .admin-dashboard-hero {
-  border: 1px solid #c4d8ec;
+  border: 1px solid var(--admin-border);
+  border-left: 4px solid var(--admin-primary);
   border-radius: 16px;
-  background: linear-gradient(125deg, #1f65a6, #0f3d67);
-  color: #f1f7ff;
+  background: #ffffff;
+  color: var(--admin-text);
   padding: 14px;
   display: flex;
   align-items: center;
@@ -363,7 +395,7 @@ th {
   text-transform: uppercase;
   letter-spacing: 0.15em;
   font-size: 11px;
-  color: rgba(229, 241, 255, 0.74);
+  color: var(--admin-primary);
 }
 
 .admin-dashboard-hero h2 {
@@ -373,13 +405,13 @@ th {
 
 .admin-dashboard-hero p {
   margin: 0;
-  color: rgba(233, 244, 255, 0.82);
+  color: var(--admin-muted);
 }
 
 .admin-user-summary {
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid var(--admin-border);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--admin-surface-soft);
   padding: 10px;
   min-width: 220px;
   display: grid;
@@ -387,7 +419,7 @@ th {
 }
 
 .admin-user-summary small {
-  color: rgba(233, 244, 255, 0.82);
+  color: var(--admin-muted);
 }
 
 .admin-stats-grid {
@@ -399,7 +431,7 @@ th {
 .admin-stat-card {
   border: 1px solid var(--admin-border);
   border-radius: 14px;
-  background: #f7fbff;
+  background: var(--admin-surface-soft);
   padding: 10px;
   display: grid;
   gap: 6px;
@@ -421,7 +453,7 @@ th {
 }
 
 .admin-link-tile {
-  border: 1px solid #c4d8ec;
+  border: 1px solid var(--admin-border);
   border-radius: 14px;
   background: #ffffff;
   padding: 12px;
@@ -434,7 +466,7 @@ th {
 .admin-link-tile:hover {
   text-decoration: none;
   transform: translateY(-2px);
-  box-shadow: 0 8px 18px rgba(12, 40, 70, 0.16);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
 }
 
 .admin-link-tile span {

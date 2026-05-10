@@ -376,7 +376,7 @@ export function ZoneManagementPage(): React.JSX.Element {
 
 const styles: Record<string, React.CSSProperties> = {
   helperText: {
-    color: '#2d3f99',
+    color: 'var(--admin-primary)',
   },
   filterForm: {
     display: 'flex',
@@ -387,7 +387,7 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: 12,
   },
   input: {
-    border: '1px solid #d9def3',
+    border: '1px solid var(--admin-border)',
     borderRadius: 10,
     padding: '8px 10px',
     minWidth: 150,
@@ -400,11 +400,11 @@ const styles: Record<string, React.CSSProperties> = {
   headerCell: {
     textAlign: 'left',
     padding: '8px 10px',
-    borderBottom: '1px solid #d9def3',
+    borderBottom: '1px solid var(--admin-border)',
   },
   cell: {
     padding: '8px 10px',
-    borderBottom: '1px solid #e7ebf8',
+    borderBottom: '1px solid var(--admin-border)',
   },
   actionsCell: {
     display: 'flex',
@@ -413,10 +413,10 @@ const styles: Record<string, React.CSSProperties> = {
   },
   detailCard: {
     marginTop: 14,
-    border: '1px solid #d9def3',
+    border: '1px solid var(--admin-border)',
     borderRadius: 12,
     padding: 12,
-    backgroundColor: '#f8faff',
+    backgroundColor: 'var(--admin-surface-soft)',
   },
   detailTitle: {
     marginTop: 0,
