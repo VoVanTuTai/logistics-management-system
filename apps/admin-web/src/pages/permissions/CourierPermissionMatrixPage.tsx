@@ -350,9 +350,9 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 14,
   },
   hero: {
-    border: '1px solid #c4d8ec',
+    border: '1px solid #c7d2fe',
     borderRadius: 16,
-    background: '#f7fbff',
+    background: 'var(--admin-surface-soft)',
     padding: 14,
     display: 'flex',
     alignItems: 'flex-start',
@@ -364,7 +364,7 @@ const styles: Record<string, React.CSSProperties> = {
     textTransform: 'uppercase',
     letterSpacing: '0.12em',
     fontSize: 11,
-    color: '#46698e',
+    color: 'var(--admin-primary)',
     fontWeight: 800,
   },
   title: {
@@ -447,7 +447,7 @@ const styles: Record<string, React.CSSProperties> = {
   secondaryButton: {
     background: '#ffffff',
     color: 'var(--admin-primary)',
-    borderColor: '#c4d8ec',
+    borderColor: '#c7d2fe',
   },
   dangerGhostButton: {
     background: '#ffffff',
@@ -456,9 +456,9 @@ const styles: Record<string, React.CSSProperties> = {
   },
   noticeText: {
     margin: 0,
-    border: '1px solid #bfdbfe',
-    background: '#eff6ff',
-    color: '#1d4ed8',
+    border: '1px solid #c7d2fe',
+    background: 'var(--admin-surface-soft)',
+    color: 'var(--admin-primary)',
     borderRadius: 12,
     padding: '8px 10px',
     fontWeight: 700,
@@ -506,7 +506,7 @@ const styles: Record<string, React.CSSProperties> = {
   jsonPanel: {
     border: '1px solid var(--admin-border)',
     borderRadius: 14,
-    background: '#f8fbff',
+    background: 'var(--admin-surface-soft)',
     padding: 12,
     display: 'grid',
     gap: 8,
@@ -515,7 +515,7 @@ const styles: Record<string, React.CSSProperties> = {
     margin: 0,
     maxHeight: 260,
     overflow: 'auto',
-    border: '1px solid #dbe8f5',
+    border: '1px solid var(--admin-border)',
     borderRadius: 12,
     background: '#0f172a',
     color: '#e2e8f0',

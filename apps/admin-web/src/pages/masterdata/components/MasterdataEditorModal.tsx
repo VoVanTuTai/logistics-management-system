@@ -87,7 +87,7 @@ const styles: Record<string, React.CSSProperties> = {
     maxHeight: '92vh',
     overflow: 'auto',
     borderRadius: 14,
-    border: '1px solid #d9def3',
+    border: '1px solid var(--admin-border)',
     backgroundColor: '#ffffff',
     boxShadow: '0 20px 60px rgba(0, 0, 0, 0.2)',
   },
@@ -95,7 +95,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderBottom: '1px solid #e7ebf8',
+    borderBottom: '1px solid var(--admin-border)',
     padding: '12px 14px',
   },
   title: {
@@ -103,7 +103,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 18,
   },
   closeButton: {
-    border: '1px solid #d9def3',
+    border: '1px solid var(--admin-border)',
     borderRadius: 8,
     padding: '6px 10px',
     backgroundColor: '#ffffff',
@@ -121,7 +121,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     justifyContent: 'flex-end',
     gap: 8,
-    borderTop: '1px solid #e7ebf8',
+    borderTop: '1px solid var(--admin-border)',
     padding: '10px 14px',
   },
 };
