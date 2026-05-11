@@ -1,4 +1,4 @@
-﻿import React, { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import {
   BrowserRouter,
   NavLink,
@@ -138,4 +138,3 @@ export function AppRouter(): React.JSX.Element {
     </BrowserRouter>
   );
 }
-
