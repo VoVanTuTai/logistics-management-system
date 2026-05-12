@@ -86,10 +86,10 @@ export const routePaths = {
   thermalLabelManagement: '/app/function-groups/operations-platform/thermal-label/management',
   thermalLabelPrint: '/app/function-groups/operations-platform/thermal-label/print',
   returnBlockRoot: '/app/function-groups/operations-platform/chuyen-hoan',
+  returnBlockRegistration:
+    '/app/function-groups/operations-platform/chuyen-hoan/dang-ky-chuyen-hoan',
   returnBlockManagement:
     '/app/function-groups/operations-platform/chuyen-hoan/quan-ly-chuyen-hoan',
-  returnForwardManagement:
-    '/app/function-groups/operations-platform/chuyen-hoan/quan-ly-chuyen-tiep',
   monitorDataRoot: '/app/function-groups/operations-platform/data-monitoring',
   monitorDataHangNhan: '/app/function-groups/operations-platform/data-monitoring/hang-nhan',
   monitorDataHangDen: '/app/function-groups/operations-platform/data-monitoring/hang-den',
@@ -193,10 +193,10 @@ export const routePaths = {
     'function-groups/operations-metrics/thao-tac/ban-dieu-phoi-thao-tac',
   thermalLabelManagementLeaf: 'function-groups/operations-platform/thermal-label/management',
   thermalLabelPrintLeaf: 'function-groups/operations-platform/thermal-label/print',
+  returnBlockRegistrationLeaf:
+    'function-groups/operations-platform/chuyen-hoan/dang-ky-chuyen-hoan',
   returnBlockManagementLeaf:
     'function-groups/operations-platform/chuyen-hoan/quan-ly-chuyen-hoan',
-  returnForwardManagementLeaf:
-    'function-groups/operations-platform/chuyen-hoan/quan-ly-chuyen-tiep',
   monitorDataHangNhanLeaf: 'function-groups/operations-platform/data-monitoring/hang-nhan',
   monitorDataHangDenLeaf: 'function-groups/operations-platform/data-monitoring/hang-den',
   monitorDataHangGuiLeaf: 'function-groups/operations-platform/data-monitoring/hang-gui',
