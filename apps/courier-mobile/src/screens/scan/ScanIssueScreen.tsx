@@ -240,7 +240,7 @@ export function ScanIssueScreen({ navigation, route }: Props): React.JSX.Element
         occurredAt: new Date().toISOString(),
       });
 
-      setMessage(`Đã ghi nhận vấn đề ${result.id}. Đơn đã chuyển sang ngoại lệ và bị khóa.`);
+      setMessage(`Đã ghi nhận vấn đề ${result.id}. Đơn đã chuyển sang trạng thái kiện vấn đề và bị khóa.`);
       setShipmentCode('');
       setNote('');
       setAttachments([]);
