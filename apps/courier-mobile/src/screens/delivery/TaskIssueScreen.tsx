@@ -272,7 +272,7 @@ export function TaskIssueScreen({ navigation, route }: Props): React.JSX.Element
     try {
       const result = await reportShipmentException(accessToken, payload);
       setSubmitMessage(
-        `Đã ghi nhận vấn đề ${result.id}. Đơn đã chuyển sang ngoại lệ và bị khóa luân chuyển.`,
+        `Đã ghi nhận vấn đề ${result.id}. Đơn đã chuyển sang trạng thái kiện vấn đề và bị khóa luân chuyển.`,
       );
 
       await queryClient.invalidateQueries({ queryKey: ['tasks'] });

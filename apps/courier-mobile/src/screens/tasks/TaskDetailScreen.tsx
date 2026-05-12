@@ -84,7 +84,7 @@ function toShipmentStatusLabelVi(status: string | null | undefined): string {
     CREATED: 'Mới tạo',
     DELIVERED: 'Giao thành công',
     DELIVERY_FAILED: 'Giao thất bại',
-    EXCEPTION: 'Ngoại lệ',
+    EXCEPTION: 'Kiện vấn đề',
     MANIFEST_RECEIVED: 'Đã nhận bao',
     MANIFEST_SEALED: 'Đã niêm phong bao',
     MANIFEST_UNSEALED: 'Đã gỡ bao',
@@ -146,6 +146,23 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
     ]) ?? 'N/A';
   const shipmentNote =
     readMetadataString(shipmentMetadata, ['note', 'shipmentNote']) ?? 'N/A';
+
+  const issueReason = readMetadataString(shipmentMetadata, ['issueReason', 'exceptionReason', 'ndrReason', 'ndrCase.issueType']);
+  const issueEmployeeName = readMetadataString(shipmentMetadata, ['issueEmployeeName', 'exceptionEmployeeName', 'ndrCase.reportedByName', 'reportedBy']);
+  const issueEmployeeCode = readMetadataString(shipmentMetadata, ['issueEmployeeCode', 'exceptionEmployeeCode', 'ndrCase.reportedById', 'reportedById']);
+  const issueHubCode = readMetadataString(shipmentMetadata, ['issueHubCode', 'exceptionHubCode', 'ndrCase.reportedHubCode', 'reportedHubCode']);
+  const issueNoteFull = readMetadataString(shipmentMetadata, ['issueNote', 'exceptionNote', 'ndrCase.note', 'note']);
+
+  let displayStatus = toShipmentStatusLabelVi(shipmentQuery.data?.currentStatus);
+  if (shipmentQuery.data?.currentStatus === 'EXCEPTION') {
+    const reasonText = issueReason ?? 'Không rõ lý do';
+    displayStatus = `${displayStatus} (Lý do: ${reasonText})`;
+    if (issueEmployeeName || issueEmployeeCode || issueHubCode) {
+      displayStatus += `\nNV: ${issueEmployeeName || 'N/A'} (${issueEmployeeCode || 'N/A'}) - Hub: ${issueHubCode || 'N/A'}`;
+    } else if (issueNoteFull) {
+      displayStatus += `\nGhi chú: ${issueNoteFull}`;
+    }
+  }
 
   const handleReloadStatus = React.useCallback(async () => {
     const requests: Array<Promise<unknown>> = [taskQuery.refetch()];
@@ -315,7 +332,7 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>Trang thai don</Text>
                   <Text style={styles.infoValue}>
-                    {toShipmentStatusLabelVi(shipmentQuery.data?.currentStatus)}
+                    {displayStatus}
                   </Text>
                 </View>
                 <View style={styles.infoRow}>

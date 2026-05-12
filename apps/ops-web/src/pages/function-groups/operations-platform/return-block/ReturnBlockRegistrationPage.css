@@ -1,0 +1,410 @@
+.ops-return-management {
+  min-width: 1120px;
+  display: grid;
+  gap: 12px;
+  color: #334155;
+}
+
+.ops-return-management__tabs {
+  display: flex;
+  align-items: stretch;
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+}
+
+.ops-return-management__tab {
+  min-height: 42px;
+  border: 0;
+  border-right: 1px solid #e2e8f0;
+  border-radius: 0;
+  background: #ffffff;
+  color: #64748b;
+  padding: 0 18px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ops-return-management__tab:hover {
+  background: #f8fafc;
+  color: #1d4ed8;
+}
+
+.ops-return-management__tab--active {
+  color: #1d4ed8;
+  font-weight: 700;
+  background: #eff6ff;
+}
+
+.ops-return-management__panel {
+  border: 1px solid #dbe3ef;
+  background: #ffffff;
+}
+
+.ops-return-management__panel-header {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid #e2e8f0;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  padding: 0 14px;
+}
+
+.ops-return-management__panel-header h3 {
+  margin: 0;
+  color: #1e293b;
+  font-size: 15px;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.ops-return-management__panel-header h3::before {
+  content: "";
+  display: inline-block;
+  width: 3px;
+  height: 15px;
+  margin-right: 8px;
+  vertical-align: -2px;
+  background: #334155;
+}
+
+.ops-return-management__panel-header span {
+  color: #94a3b8;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.ops-return-management__panel-body {
+  padding: 18px 18px 22px;
+}
+
+.ops-return-management__proposal {
+  display: grid;
+  grid-template-columns: 220px 220px auto;
+  align-items: end;
+  gap: 18px;
+  max-width: 780px;
+}
+
+.ops-return-management__field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ops-return-management__field span {
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ops-return-management__field--required span::before {
+  content: "* ";
+  color: #ef4444;
+}
+
+.ops-return-management__field em {
+  margin-left: 4px;
+  color: #ef4444;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.ops-return-management__field input,
+.ops-return-management__field select,
+.ops-return-management__field textarea {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #475569;
+  font-size: 13px;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+.ops-return-management__field input,
+.ops-return-management__field select {
+  height: 36px;
+  padding: 0 12px;
+}
+
+.ops-return-management__field textarea {
+  min-height: 120px;
+  resize: vertical;
+  padding: 10px 12px;
+}
+
+.ops-return-management__field select {
+  appearance: auto;
+}
+
+.ops-return-management__field--invalid .ops-return-management__mock-select-control {
+  border-color: #ef4444;
+}
+
+.ops-return-management__field small {
+  color: #ef4444;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.ops-return-management__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 1px;
+}
+
+.ops-return-management__search-btn,
+.ops-return-management__reset-btn {
+  height: 36px;
+  min-width: 118px;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ops-return-management__search-btn {
+  border-color: #1d4ed8;
+  background: #1d4ed8;
+  color: #ffffff;
+}
+
+.ops-return-management__reset-btn {
+  border-color: #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+}
+
+.ops-return-management__search-btn svg,
+.ops-return-management__reset-btn svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ops-return-management__address-list {
+  display: grid;
+  gap: 34px;
+}
+
+.ops-return-management__address-row {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 18px;
+  align-items: center;
+}
+
+.ops-return-management__address-row + .ops-return-management__address-row {
+  position: relative;
+}
+
+.ops-return-management__address-row + .ops-return-management__address-row::before {
+  content: "";
+  position: absolute;
+  left: 90px;
+  top: -32px;
+  width: 1px;
+  height: 32px;
+  border-left: 1px dashed #cbd5e1;
+}
+
+.ops-return-management__address-badge {
+  width: 38px;
+  height: 38px;
+  justify-self: center;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ops-return-management__address-badge--sender {
+  border: 2px solid #f59e0b;
+  color: #f59e0b;
+}
+
+.ops-return-management__address-badge--receiver {
+  border: 2px solid #dc2626;
+  color: #dc2626;
+}
+
+.ops-return-management__address-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(160px, 1fr));
+  gap: 18px 18px;
+}
+
+.ops-return-management__field--wide {
+  grid-column: span 2;
+}
+
+.ops-return-management__request {
+  display: grid;
+  grid-template-columns: 220px 450px;
+  align-items: start;
+  gap: 20px;
+  min-height: 170px;
+}
+
+.ops-return-management__mock-select {
+  position: relative;
+}
+
+.ops-return-management__mock-select-control {
+  width: 100%;
+  height: 36px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ops-return-management__mock-select-control svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: #64748b;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ops-return-management__mock-select-menu {
+  position: absolute;
+  left: 0;
+  top: 42px;
+  z-index: 5;
+  width: 420px;
+  max-height: 230px;
+  overflow-y: auto;
+  border: 1px solid #dbe3ef;
+  border-radius: 4px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
+  padding: 6px 0;
+}
+
+.ops-return-management__mock-select-menu button {
+  width: 100%;
+  min-height: 36px;
+  border: 0;
+  border-radius: 0;
+  background: #ffffff;
+  color: #64748b;
+  text-align: left;
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ops-return-management__mock-select-menu button:hover {
+  background: #f8fafc;
+  color: #334155;
+}
+
+.ops-return-management__reason {
+  grid-column: span 1;
+}
+
+.ops-return-management__footer-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  border-top: 1px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.96);
+  padding: 12px 0 0;
+}
+
+.ops-return-management__save-more-btn,
+.ops-return-management__cancel-btn,
+.ops-return-management__save-btn {
+  height: 36px;
+  min-width: 88px;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 18px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ops-return-management__save-more-btn,
+.ops-return-management__save-btn {
+  border-color: #1d4ed8;
+  background: #1d4ed8;
+  color: #ffffff;
+}
+
+.ops-return-management__save-more-btn {
+  min-width: 150px;
+}
+
+.ops-return-management__cancel-btn {
+  border-color: #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+}
+
+.ops-return-management__save-more-btn svg,
+.ops-return-management__cancel-btn svg,
+.ops-return-management__save-btn svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (max-width: 1180px) {
+  .ops-return-management {
+    min-width: 960px;
+  }
+
+  .ops-return-management__address-row {
+    grid-template-columns: 90px minmax(0, 1fr);
+  }
+
+  .ops-return-management__address-row + .ops-return-management__address-row::before {
+    left: 45px;
+  }
+
+  .ops-return-management__address-grid {
+    grid-template-columns: repeat(3, minmax(170px, 1fr));
+  }
+
+  .ops-return-management__request {
+    grid-template-columns: 220px 420px;
+  }
+}

@@ -37,6 +37,7 @@ import { MonitorDataHangNhanPage } from '../pages/function-groups/operations-pla
 import { MonitorDataHangPhatPage } from '../pages/function-groups/operations-platform/data-monitoring/MonitorDataHangPhatPage';
 import { MonitorDataTheoDoiTamUngPage } from '../pages/function-groups/operations-platform/data-monitoring/MonitorDataTheoDoiTamUngPage';
 import { ReturnBlockManagementPage } from '../pages/function-groups/operations-platform/return-block/ReturnBlockManagementPage';
+import { ReturnBlockRegistrationPage } from '../pages/function-groups/operations-platform/return-block/ReturnBlockRegistrationPage';
 import { ThermalLabelManagementPage } from '../pages/function-groups/operations-platform/thermal-label/ThermalLabelManagementPage';
 import { ThermalLabelPrintPage } from '../pages/function-groups/operations-platform/thermal-label/ThermalLabelPrintPage';
 import { LinehaulTripManagementPage } from '../pages/function-groups/operations-platform/linehaul/LinehaulTripManagementPage';
@@ -477,8 +478,8 @@ function DashboardLayout(): React.JSX.Element {
     { label: 'Tạo tem xe', to: routePaths.linehaulVehicleSeal },
   ] as const;
   const returnBlockChildItems = [
+    { label: 'Đăng ký chuyển hoàn', to: routePaths.returnBlockRegistration },
     { label: 'Quản lý chuyển hoàn', to: routePaths.returnBlockManagement },
-    { label: 'Quản lý chuyển tiếp', to: routePaths.returnForwardManagement },
   ] as const;
   const serviceQualityProactiveChildItems = [
     { label: 'Giám sát đơn nhận', to: routePaths.serviceQualityProactiveInbound },
@@ -1083,14 +1084,8 @@ export function AppRouter(): React.JSX.Element {
               element={<ReturnBlockManagementPage />}
             />
             <Route
-              path={routePaths.returnForwardManagementLeaf}
-              element={
-                <FunctionGroupLandingPage
-                  groupCode="RETURN_FORWARD_MANAGEMENT"
-                  title="Quản lý chuyển tiếp"
-                  summary="Màn hình quản lý chuyển tiếp trong nhóm Chuyển hoàn."
-                />
-              }
+              path={routePaths.returnBlockRegistrationLeaf}
+              element={<ReturnBlockRegistrationPage />}
             />
             <Route
               path={routePaths.monitorDataHangNhanLeaf}
