@@ -103,6 +103,8 @@ export class DeliveryService {
       return this.toSuccessResult(existingRecord);
     }
 
+    await this.assertShipmentNotLocked(input.shipmentCode);
+
     let deliveryAttempt = await this.getOrCreateAttemptForSuccess(input);
 
     let pod: Pod | null = null;
@@ -165,6 +167,8 @@ export class DeliveryService {
     if (existingRecord) {
       return this.toFailResult(existingRecord);
     }
+
+    await this.assertShipmentNotLocked(input.shipmentCode);
 
     const deliveryAttempt = await this.getOrCreateAttemptForFail(input);
 
@@ -277,6 +281,29 @@ export class DeliveryService {
       occurredAt: this.parseDate(input.occurredAt),
       status: 'DELIVERED',
     });
+  }
+
+  private async assertShipmentNotLocked(shipmentCode: string): Promise<void> {
+    const shipmentServiceUrl =
+      process.env.SHIPMENT_SERVICE_URL ?? 'http://localhost:3002';
+    const response = await fetch(
+      `${shipmentServiceUrl}/shipments/${encodeURIComponent(shipmentCode)}`,
+    );
+
+    if (!response.ok) {
+      return;
+    }
+
+    const shipment = (await response.json()) as {
+      isLocked?: boolean;
+      currentStatus?: string;
+    };
+
+    if (shipment.isLocked) {
+      throw new BadRequestException(
+        `Block: Shipment "${shipmentCode}" is locked by issue workflow (${shipment.currentStatus ?? 'UNKNOWN'}).`,
+      );
+    }
   }
 
   private async getOrCreateAttemptForFail(
@@ -465,6 +492,11 @@ export class DeliveryService {
       shipmentCode: ndrCase.shipmentCode,
       deliveryAttemptId: ndrCase.deliveryAttemptId,
       reasonCode: ndrCase.reasonCode,
+      issueType: ndrCase.issueType,
+      issueCategory: ndrCase.issueCategory,
+      attachments: ndrCase.attachments,
+      reportedBy: ndrCase.reportedBy,
+      reportedHubCode: ndrCase.reportedHubCode,
       note: ndrCase.note,
       status: ndrCase.status,
       rescheduleAt: ndrCase.rescheduleAt
@@ -542,6 +574,11 @@ export class DeliveryService {
       shipmentCode: snapshot.shipmentCode,
       deliveryAttemptId: snapshot.deliveryAttemptId,
       reasonCode: snapshot.reasonCode,
+      issueType: snapshot.issueType,
+      issueCategory: snapshot.issueCategory,
+      attachments: snapshot.attachments,
+      reportedBy: snapshot.reportedBy,
+      reportedHubCode: snapshot.reportedHubCode,
       note: snapshot.note,
       status: snapshot.status,
       rescheduleAt: snapshot.rescheduleAt ? new Date(snapshot.rescheduleAt) : null,

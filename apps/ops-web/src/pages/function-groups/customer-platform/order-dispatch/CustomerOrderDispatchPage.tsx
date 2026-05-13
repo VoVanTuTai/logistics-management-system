@@ -7,7 +7,11 @@ import { usePickupRequestsQuery } from '../../../../features/pickups/pickups.api
 import type { PickupRequestListItemDto } from '../../../../features/pickups/pickups.types';
 import { useShipmentsQuery } from '../../../../features/shipments/shipments.api';
 import type { ShipmentListItemDto } from '../../../../features/shipments/shipments.types';
-import { tasksClient, useTasksQuery } from '../../../../features/tasks/tasks.api';
+import {
+  tasksClient,
+  useDispatchTasksRealtime,
+  useTasksQuery,
+} from '../../../../features/tasks/tasks.api';
 import type { TaskListItemDto } from '../../../../features/tasks/tasks.types';
 import { getErrorMessage } from '../../../../services/api/errors';
 import { useAuthStore } from '../../../../store/authStore';
@@ -259,8 +263,9 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
   const [notice, setNotice] = useState<string | null>(null);
 
   const tasksQuery = useTasksQuery(accessToken, { taskType: 'PICKUP' });
-  const shipmentsQuery = useShipmentsQuery(accessToken, {});
-  const pickupsQuery = usePickupRequestsQuery(accessToken, {});
+  const realtimeStatus = useDispatchTasksRealtime(Boolean(accessToken));
+  const shipmentsQuery = useShipmentsQuery(accessToken, {}, { refetchInterval: 5000 });
+  const pickupsQuery = usePickupRequestsQuery(accessToken, {}, { refetchInterval: 5000 });
   const shippersQuery = useQuery({
     queryKey: [
       ...queryKeys.tasks,
@@ -613,6 +618,12 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
         <div>
           <h2>Điều phối đơn đặt</h2>
           <p>Quản lý task lấy hàng thật theo bưu cục Ops được gán và phân công nhân viên giao nhận.</p>
+          <div className="ops-customer-dispatch__realtime">
+            Realtime:
+            <strong data-state={realtimeStatus === 'connected' ? 'connected' : 'disconnected'}>
+              {realtimeStatus === 'connected' ? ' WebSocket connected' : ' reconnecting...'}
+            </strong>
+          </div>
         </div>
         <button type="button" className="ops-customer-dispatch__collapse-btn">
           Thu gọn

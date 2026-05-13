@@ -10,12 +10,12 @@
 
 **Muc dich tai lieu:** Tai lieu nay dung de:
 
-- Giai thich tong quan de tai cho giang vien, nguoi review hoac thanh vien moi.
+- Giai thich Tổng quan de tai cho giang vien, nguoi review hoac thanh vien moi.
 - Lam boi canh cho AI hieu dung pham vi, kien truc va nghiep vu khi ho tro phat trien he thong.
 - Lam khung noi dung de viet bao cao, thuyet minh thiet ke va mo ta hien thuc.
 - Giu thong nhat ve ten mien nghiep vu, service, luong du lieu va quy tac phat trien.
 
-Luu y: Trong ma nguon hien tai van con mot so ten goi noi bo dang tien to `jms` hoac package name `@jms/...` do lich su scaffold ban dau. Khi viet bao cao va giao dien, ten san pham chinh nen dung la **Nexus Express System**.
+Luu y: Trong ma nguon hien tai van con mot so ten gọi noi bo dang tien to `jms` hoac package name `@jms/...` do lich su scaffold ban dau. Khi viet bao cao va giao dien, ten san pham chinh nen dung la **Nexus Express System**.
 
 ## 2. Bai toan va muc tieu
 
@@ -29,7 +29,7 @@ Muc tieu chinh:
 - Quan ly pickup request, task giao cho courier, scan tai cac diem van hanh va manifest trung chuyen giua hub.
 - Cung cap cong thong tin rieng cho merchant, ops/admin, courier va khach hang tra cuu cong khai.
 - Ap dung event-driven architecture de dong bo tracking, reporting va trang thai lien quan.
-- Ap dung database-per-service, outbox pattern va idempotency cho cac thao tac de bi goi lap.
+- Ap dung database-per-service, outbox pattern va idempotency cho cac thao tac de bi gọi lap.
 - Tao nen tang de viet bao cao ve microservices, domain decomposition, event-driven workflow va logistics process.
 
 ## 3. Pham vi chuc nang
@@ -57,7 +57,7 @@ Muc tieu chinh:
 - Public tracking va internal tracking timeline.
 - Bao cao KPI theo ngay/thang, courier, hub, zone va trang thai van don.
 
-## 4. Kien truc tong quan
+## 4. Kien truc Tổng quan
 
 He thong theo mo hinh microservices ket hop BFF gateway va event-driven communication.
 
@@ -88,7 +88,7 @@ Each service owns its own PostgreSQL database/schema through Prisma.
 
 - **Database per service:** Moi service co database rieng, khong truy cap truc tiep database cua service khac.
 - **Service ownership ro rang:** Shipment service so huu `current_status`, scan service so huu scan event va `current_location`, tracking/reporting chi la read model.
-- **Gateway as entry point:** Client goi Gateway BFF, Gateway forward request den service phu hop.
+- **Gateway as entry point:** Client gọi Gateway BFF, Gateway forward request den service phu hop.
 - **Event-driven synchronization:** Cac thay doi nghiep vu quan trong duoc publish thanh domain event len RabbitMQ.
 - **Outbox pattern:** Service ghi event vao bang outbox trong cung transaction voi thay doi nghiep vu, sau do relay publish sang RabbitMQ.
 - **Idempotency:** Cac thao tac scan va delivery success/fail su dung `idempotencyKey` de tranh tao trung event khi client retry.
@@ -137,7 +137,7 @@ Each service owns its own PostgreSQL database/schema through Prisma.
 ```text
 logistics-management-system/
   apps/
-    admin-web/          Web quan tri he thong va danh muc
+    admin-web/          Web Quản trị hệ thống va danh muc
     ops-web/            Web van hanh kho, shipment, pickup, manifest, task
     merchant-web/       Web cho merchant tao va theo doi don
     courier-mobile/     Ung dung mobile cho shipper/courier
@@ -155,6 +155,7 @@ logistics-management-system/
     delivery-service/   Delivery attempt, POD, NDR, return
     tracking-service/   Tracking timeline va current tracking read model
     reporting-service/  KPI, dashboard va bao cao van hanh
+    payment-service/    Quan ly thanh toan COD, chuyen khoan, tien mat
 
   contracts/
     events/             Danh sach event, naming convention va event contracts
@@ -195,6 +196,7 @@ logistics-management-system/
 | `delivery-service` | 3007 | Delivery attempt, success/fail, POD, NDR, return | `delivery_db` |
 | `tracking-service` | 3008 | Public/internal tracking read model, timeline, current view | `tracking_db` |
 | `reporting-service` | 3009 | KPI, dashboard, aggregate theo courier/hub/zone/status | `reporting_db` |
+| `payment-service` | 3011 | Quan ly thu ho COD, VietQR, cash remit | `payment_db` |
 
 ## 9. Domain data ownership
 
@@ -210,6 +212,7 @@ logistics-management-system/
 | Delivery attempt, NDR, return | `delivery-service` | Source of truth cho ket qua giao va xu ly ngoai le giao hang |
 | Tracking timeline/current view | `tracking-service` | Read model tao tu event, khong phai source of truth |
 | KPI/reporting | `reporting-service` | Read model/aggregate tao tu event |
+| COD, Bank transfer, Prepaid | `payment-service` | Source of truth cho phieu thu tien COD, remit |
 
 ## 10. Domain events chinh
 
@@ -233,6 +236,9 @@ Danh sach event milestone dang duoc dinh huong su dung:
 14. `ndr.created`
 15. `return.started`
 16. `return.completed`
+17. `cod.collected`
+18. `cod.collection_failed`
+19. `cod.remitted`
 
 Cac event nay giup tracking-service tao timeline, reporting-service tao KPI va cac service khac cap nhat state lien quan.
 
@@ -264,16 +270,16 @@ Cac event nay giup tracking-service tao timeline, reporting-service tao KPI va c
 ### 11.3 Giao hang va NDR/return
 
 1. `dispatch-service` tao hoac assign delivery task.
-2. Courier giao hang va cap nhat ket qua tren mobile.
-3. Neu thanh cong, `delivery-service` ghi attempt/POD va publish `delivery.delivered`.
-4. Neu that bai, `delivery-service` ghi attempt fail va publish `delivery.failed`.
+2. Courier giao hang, thu tien COD (neu co) va cap nhat ket qua tren mobile.
+3. Neu thanh cong, `delivery-service` ghi attempt/POD va publish `delivery.delivered`. Nhan vien xac nhan thu COD (goi `payment-service`), he thong publish `cod.collected`.
+4. Neu that bai, `delivery-service` ghi attempt fail va publish `delivery.failed`. Nhan vien bao cao that bai thu COD (neu co), he thong publish `cod.collection_failed`.
 5. He thong tao NDR case khi can xu ly giao lai hoac hoan hang.
 6. Neu hoan hang, service publish `return.started` va `return.completed` khi hoan tat.
-7. Tracking va reporting duoc cap nhat tu domain events.
+7. Tracking va reporting duoc cap nhat tu domain events. `payment-service` cung se cho xu ly cash remit neu nhan vien nop tien.
 
 ## 12. API entry convention
 
-Client khong nen goi truc tiep domain service trong moi truong tich hop. Client goi qua `gateway-bff`.
+Client khong nen gọi truc tiep domain service trong moi truong tich hop. Client gọi qua `gateway-bff`.
 
 Gateway forward theo nhom:
 
@@ -315,19 +321,19 @@ Khi AI ho tro sua code, viet bao cao hoac thiet ke tinh nang cho Nexus Express S
 - Neu tinh nang lam thay doi trang thai nghiep vu, can xac dinh service nao la source of truth.
 - Neu thay doi can duoc tracking/reporting nhin thay, can xem co can publish/consume domain event khong.
 - Cac thao tac co nguy co retry nhu scan, delivery success/fail nen co `idempotencyKey`.
-- Gateway BFF la entry point cho client; client-side API nen goi gateway URL.
+- Gateway BFF la entry point cho client; client-side API nen gọi gateway URL.
 - Tracking-service va reporting-service la read model, khong nen chua business logic write-side.
 - Nen giu route, DTO, type va event naming nhat quan voi cac file trong `contracts/events`.
 - Khi viet bao cao, nen nhan manh ly do dung microservices: tach mien nghiep vu, doc lap du lieu, bat dong bo, scale doc lap va de mo phong chuoi van hanh thuc te.
 
-## 15. Goi y cau truc bao cao
+## 15. gọi y cau truc bao cao
 
 Tai lieu bao cao co the trien khai theo cac chuong:
 
 1. **Gioi thieu de tai:** Ly do chon de tai, bai toan doanh nghiep chuyen phat nhanh, muc tieu va pham vi.
 2. **Co so ly thuyet:** Microservices, API Gateway/BFF, event-driven architecture, RabbitMQ, database per service, outbox pattern, eventual consistency.
 3. **Khao sat va phan tich nghiep vu:** Vai tro nguoi dung, quy trinh tao don, pickup, kho hub, manifest, delivery, NDR, return va tracking.
-4. **Thiet ke he thong:** Kien truc tong quan, so do service, data ownership, domain events, database schema theo service, API convention.
+4. **Thiet ke he thong:** Kien truc Tổng quan, so do service, data ownership, domain events, database schema theo service, API convention.
 5. **Thiet ke giao dien va chuc nang:** Admin/Ops/Merchant/Public/Courier app, cac man hinh chinh va luong thao tac.
 6. **Cai dat va hien thuc:** Cong nghe, cau truc source code, mo ta tung service, cach chay local, seed data.
 7. **Kiem thu va danh gia:** Test case theo luong nghiep vu, kiem thu API, kiem thu UI, danh gia uu/nhuoc diem.

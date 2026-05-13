@@ -9,17 +9,17 @@ import { Screen } from '../../components/ui/Screen';
 import { Card } from '../../components/ui/Card';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import type {
-  MainTabParamList,
-  RootStackParamList,
-} from '../../navigation/navigation.types';
+  AppTabsParamList,
+  AppNavigatorParamList,
+} from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
 
-type Props = BottomTabScreenProps<MainTabParamList, 'Scan'>;
+type Props = BottomTabScreenProps<AppTabsParamList, 'Scan'>;
 
 export function ScanHomeScreen(_: Props): React.JSX.Element {
   const navigation =
-    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+    useNavigation<NativeStackNavigationProp<AppNavigatorParamList>>();
   const offlinePendingCount = useAppStore((state) => state.offlinePendingCount);
 
   return (
@@ -50,8 +50,8 @@ export function ScanHomeScreen(_: Props): React.JSX.Element {
           style={styles.gridCard}
         >
           <Ionicons name="arrow-down-circle-outline" size={24} color={theme.colors.primary} />
-          <Text style={styles.gridTitle}>Hub inbound</Text>
-          <Text style={styles.gridHint}>Nhap kho / nhan hub</Text>
+          <Text style={styles.gridTitle}>Hàng đến</Text>
+          <Text style={styles.gridHint}>Xác nhận hàng đến hub</Text>
         </Card>
 
         <Card

@@ -1,4 +1,4 @@
-﻿import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import React, { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
@@ -20,6 +20,8 @@ import { DashboardMetricsTable } from './DashboardMetricsTable';
 import { KpiCards } from './KpiCards';
 import { DashboardBarChart } from './charts/DashboardBarChart';
 import { DashboardTrendChart } from './charts/DashboardTrendChart';
+import { DashboardPieChart } from './charts/DashboardPieChart';
+import { DashboardProgressChart } from './charts/DashboardProgressChart';
 import './DashboardPage.css';
 
 interface HubAddressPayload {
@@ -113,9 +115,9 @@ function DashboardMenuOutlineIcon({
   };
   const accentStrokeProps = {
     ...outlineProps,
-    stroke: 'var(--ops-menu-accent, #dc2626)',
+    stroke: 'var(--ops-menu-accent, #2563eb)',
   };
-  const accentFill = 'var(--ops-menu-accent, #dc2626)';
+  const accentFill = 'var(--ops-menu-accent, #2563eb)';
 
   switch (icon) {
     case 'basic_data':
@@ -397,17 +399,32 @@ export function DashboardPage(): React.JSX.Element {
   const dailyData = dailyMetricsQuery.data ?? [];
   const monthlyData = monthlyMetricsQuery.data ?? [];
   const shippers = shipperQuery.data ?? [];
+
+  // Sử dụng dữ liệu thật từ Database (kpiData), mặc định 0
+  const deliveryStatusPoints = [
+    { label: 'deliveriesDelivered', value: Number(kpiData?.deliveriesDelivered) || 0 },
+    { label: 'deliveriesFailed', value: Number(kpiData?.deliveriesFailed) || 0 },
+    { label: 'ndrCreated', value: Number(kpiData?.ndrCreated) || 0 },
+  ].filter((p) => p.value > 0);
+
+  const hubFlowPoints = [
+    { label: 'scansInbound', value: Number(kpiData?.scansInbound) || 0 },
+    { label: 'scansOutbound', value: Number(kpiData?.scansOutbound) || 0 },
+  ];
+
+  const totalAttempts = Number(kpiData?.deliveryAttempts) || 0;
+  const totalDelivered = Number(kpiData?.deliveriesDelivered) || 0;
   const quickMenu: ReadonlyArray<{
     title: string;
     to?: string;
     icon: DashboardMenuIcon;
     disabled?: boolean;
   }> = [
-    {
-      title: 'Dữ liệu cơ bản',
-      to: routePaths.groupBasicData,
-      icon: 'basic_data',
-    },
+    // {
+    //   title: 'Dữ liệu cơ bản',
+    //   to: routePaths.groupBasicData,
+    //   icon: 'basic_data',
+    // },
     {
       title: 'Nền tảng điều hành',
       to: routePaths.groupOperationsPlatform,
@@ -434,7 +451,7 @@ export function DashboardPage(): React.JSX.Element {
       icon: 'finance_settlement',
     },
     {
-      title: 'Nền tảng năng lực',
+      title: 'Quản lý vận chuyển',
       to: routePaths.groupCapabilityPlatform,
       icon: 'capability_platform',
     },
@@ -779,6 +796,34 @@ export function DashboardPage(): React.JSX.Element {
               <div className="ops-dashboard__metrics-grid">
                 <DashboardTrendChart title="Biểu đồ chỉ số tháng" points={monthlyData} />
                 <DashboardMetricsTable title="Bảng chỉ số tháng" rows={monthlyData} />
+              </div>
+            ) : null}
+          </section>
+
+          <section className="ops-dashboard__metric-block">
+            <header className="ops-card__header">
+              <h3>Giám sát Hiệu suất Giao hàng & Lưu lượng (Real-time)</h3>
+            </header>
+            <div className="ops-dashboard__metrics-grid">
+              <DashboardProgressChart 
+                title="Tỷ lệ Giao thành công / Lượt giao" 
+                value={totalDelivered} 
+                total={totalAttempts} 
+                color="#10b981"
+                suffix="lượt"
+              />
+              <DashboardBarChart 
+                title="Cân bằng Lưu lượng Kho (Inbound vs Outbound)" 
+                points={hubFlowPoints} 
+              />
+            </div>
+            
+            {deliveryStatusPoints.length > 0 ? (
+              <div className="ops-dashboard__metrics-grid" style={{ marginTop: '1.5rem' }}>
+                <DashboardPieChart 
+                  title="Phân bổ Kết quả Giao hàng (Outcomes)" 
+                  points={deliveryStatusPoints} 
+                />
               </div>
             ) : null}
           </section>

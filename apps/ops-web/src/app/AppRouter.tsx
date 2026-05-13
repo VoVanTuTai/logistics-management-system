@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   BrowserRouter,
   Navigate,
@@ -37,8 +37,11 @@ import { MonitorDataHangNhanPage } from '../pages/function-groups/operations-pla
 import { MonitorDataHangPhatPage } from '../pages/function-groups/operations-platform/data-monitoring/MonitorDataHangPhatPage';
 import { MonitorDataTheoDoiTamUngPage } from '../pages/function-groups/operations-platform/data-monitoring/MonitorDataTheoDoiTamUngPage';
 import { ReturnBlockManagementPage } from '../pages/function-groups/operations-platform/return-block/ReturnBlockManagementPage';
+import { ReturnBlockRegistrationPage } from '../pages/function-groups/operations-platform/return-block/ReturnBlockRegistrationPage';
 import { ThermalLabelManagementPage } from '../pages/function-groups/operations-platform/thermal-label/ThermalLabelManagementPage';
 import { ThermalLabelPrintPage } from '../pages/function-groups/operations-platform/thermal-label/ThermalLabelPrintPage';
+import { LinehaulTripManagementPage } from '../pages/function-groups/operations-platform/linehaul/LinehaulTripManagementPage';
+import { LinehaulVehicleSealPage } from '../pages/function-groups/operations-platform/linehaul/LinehaulVehicleSealPage';
 import { PlanningPlatformGroupPage } from '../pages/function-groups/planning-platform/PlanningPlatformGroupPage';
 import { ServiceQualityGroupPage } from '../pages/function-groups/service-quality/ServiceQualityGroupPage';
 import { ServiceQualityMonitorDeliveredPage } from '../pages/function-groups/service-quality/proactive/ServiceQualityMonitorDeliveredPage';
@@ -87,7 +90,8 @@ type SidebarIconName =
   | 'customer_order_dispatch'
   | 'branch_local_orders'
   | 'branch_order_management'
-  | 'branch_finance_settlement';
+  | 'branch_finance_settlement'
+  | 'linehaul_transport';
 
 type SidebarPanelKind =
   | 'thermal_label'
@@ -102,7 +106,8 @@ type SidebarPanelKind =
   | 'customer_order_dispatch'
   | 'branch_local_orders'
   | 'branch_order_management'
-  | 'branch_finance_settlement';
+  | 'branch_finance_settlement'
+  | 'linehaul_transport';
 
 interface TopNavItem {
   label: string;
@@ -288,6 +293,16 @@ function SidebarIcon({ name }: { name: SidebarIconName }): React.JSX.Element {
           <path d="M13 13.3h2.2" {...common} />
         </svg>
       );
+    case 'linehaul_transport':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 17h16" {...common} />
+          <rect x="4" y="7" width="11" height="8" rx="1" {...common} />
+          <path d="M15 7h3.5l2.5 3v5h-6" {...common} />
+          <circle cx="7.5" cy="17" r="2" {...common} fill="#fff" />
+          <circle cx="16.5" cy="17" r="2" {...common} fill="#fff" />
+        </svg>
+      );
     default:
       return (
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -329,16 +344,20 @@ function DashboardLayout(): React.JSX.Element {
     location.pathname,
     routePaths.groupCustomerPlatform,
   );
+  const isCapabilityPlatformSection = pathMatches(
+    location.pathname,
+    routePaths.groupCapabilityPlatform,
+  );
 
   const topNavItems: TopNavItem[] = [
-    {
-      label: 'Dữ liệu cơ bản',
-      to: routePaths.groupBasicData,
-      isActive:
-        pathMatches(location.pathname, routePaths.groupBasicData) ||
-        pathMatches(location.pathname, routePaths.shipments) ||
-        pathMatches(location.pathname, routePaths.pickups),
-    },
+    // {
+    //   label: 'Dữ liệu cơ bản',
+    //   to: routePaths.groupBasicData,
+    //   isActive:
+    //     pathMatches(location.pathname, routePaths.groupBasicData) ||
+    //     pathMatches(location.pathname, routePaths.shipments) ||
+    //     pathMatches(location.pathname, routePaths.pickups),
+    // },
     {
       label: 'Nền tảng điều hành',
       to: routePaths.groupOperationsPlatform,
@@ -426,6 +445,9 @@ function DashboardLayout(): React.JSX.Element {
       kind: 'customer_order_dispatch',
     },
   ];
+  const capabilityPlatformSidebarItems: SidebarItem[] = [
+    { label: 'Vận chuyển tuyến nhánh', icon: 'linehaul_transport', kind: 'linehaul_transport' },
+  ];
   const sidebarItems = isServiceQualitySection
     ? serviceQualitySidebarItems
     : isOperationsMetricsSection
@@ -434,6 +456,8 @@ function DashboardLayout(): React.JSX.Element {
     ? customerPlatformSidebarItems
     : isBranchBusinessSection
     ? branchBusinessSidebarItems
+    : isCapabilityPlatformSection
+    ? capabilityPlatformSidebarItems
     : operationsSidebarItems;
 
   const monitorDataChildItems = [
@@ -449,9 +473,13 @@ function DashboardLayout(): React.JSX.Element {
     { label: 'Quản lý tem bao', to: routePaths.thermalLabelManagement },
     { label: 'In tem bao', to: routePaths.thermalLabelPrint },
   ] as const;
+  const linehaulChildItems = [
+    { label: 'Quản lý chuyến xe', to: routePaths.linehaulTripManagement },
+    { label: 'Tạo tem xe', to: routePaths.linehaulVehicleSeal },
+  ] as const;
   const returnBlockChildItems = [
+    { label: 'Đăng ký chuyển hoàn', to: routePaths.returnBlockRegistration },
     { label: 'Quản lý chuyển hoàn', to: routePaths.returnBlockManagement },
-    { label: 'Quản lý chuyển tiếp', to: routePaths.returnForwardManagement },
   ] as const;
   const serviceQualityProactiveChildItems = [
     { label: 'Giám sát đơn nhận', to: routePaths.serviceQualityProactiveInbound },
@@ -505,6 +533,7 @@ function DashboardLayout(): React.JSX.Element {
 
   const panelItemsMap: Record<SidebarPanelKind, ReadonlyArray<{ label: string; to: string }>> = {
     thermal_label: thermalLabelChildItems,
+    linehaul_transport: linehaulChildItems,
     return_block: returnBlockChildItems,
     monitor_data: monitorDataChildItems,
     service_proactive: serviceQualityProactiveChildItems,
@@ -521,6 +550,7 @@ function DashboardLayout(): React.JSX.Element {
 
   const panelTitleMap: Record<SidebarPanelKind, string> = {
     thermal_label: 'Tem bao in nhiệt',
+    linehaul_transport: 'Vận chuyển tuyến nhánh',
     return_block: 'Chuyển hoàn',
     monitor_data: 'Giám sát dữ liệu',
     service_proactive: 'Giám sát chủ động',
@@ -541,6 +571,9 @@ function DashboardLayout(): React.JSX.Element {
   const isThermalLabelRoute =
     pathMatches(location.pathname, routePaths.thermalLabelManagement) ||
     pathMatches(location.pathname, routePaths.thermalLabelPrint);
+  const isLinehaulRoute =
+    pathMatches(location.pathname, routePaths.linehaulRoot) ||
+    linehaulChildItems.some((item) => pathMatches(location.pathname, item.to));
   const isReturnBlockRoute =
     pathMatches(location.pathname, routePaths.returnBlockRoot) ||
     returnBlockChildItems.some((item) => pathMatches(location.pathname, item.to));
@@ -582,6 +615,8 @@ function DashboardLayout(): React.JSX.Element {
 
   const routeDrivenPanel: SidebarPanelKind | null = isThermalLabelRoute
     ? 'thermal_label'
+    : isLinehaulRoute
+    ? 'linehaul_transport'
     : isReturnBlockRoute
     ? 'return_block'
     : isMonitorDataRoute
@@ -632,6 +667,8 @@ function DashboardLayout(): React.JSX.Element {
     ? ['customer_order_management', 'customer_order_dispatch']
     : isBranchBusinessSection
     ? ['branch_local_orders', 'branch_order_management', 'branch_finance_settlement']
+    : isCapabilityPlatformSection
+    ? ['linehaul_transport']
     : ['thermal_label', 'return_block', 'monitor_data'];
 
   const activeSidebarPanelInSection =
@@ -655,6 +692,8 @@ function DashboardLayout(): React.JSX.Element {
     ? 'Nền tảng khách hàng'
     : isBranchBusinessSection
     ? 'Kinh doanh bưu cục'
+    : isCapabilityPlatformSection
+    ? 'Quản lý vận chuyển'
     : 'Nền tảng điều hành';
 
   const operationsMetricsAllChildItems = [
@@ -680,6 +719,8 @@ function DashboardLayout(): React.JSX.Element {
   ];
   const activeCustomerPlatformItem =
     customerPlatformAllChildItems.find((item) => pathMatches(location.pathname, item.to)) ?? null;
+  const activeLinehaulItem =
+    linehaulChildItems.find((item) => pathMatches(location.pathname, item.to)) ?? null;
 
   const activeTabLabel = pathMatches(location.pathname, routePaths.tracking)
     ? 'Tra cứu hành trình'
@@ -687,6 +728,10 @@ function DashboardLayout(): React.JSX.Element {
     ? 'Giám sát dữ liệu'
     : isThermalLabelRoute
     ? 'Tem bao in nhiệt'
+    : activeLinehaulItem
+    ? activeLinehaulItem.label
+    : isLinehaulRoute
+    ? 'Vận chuyển tuyến nhánh'
     : activeReturnBlockItem
     ? activeReturnBlockItem.label
     : isReturnBlockRoute
@@ -1039,14 +1084,8 @@ export function AppRouter(): React.JSX.Element {
               element={<ReturnBlockManagementPage />}
             />
             <Route
-              path={routePaths.returnForwardManagementLeaf}
-              element={
-                <FunctionGroupLandingPage
-                  groupCode="RETURN_FORWARD_MANAGEMENT"
-                  title="Quản lý chuyển tiếp"
-                  summary="Màn hình quản lý chuyển tiếp trong nhóm Chuyển hoàn."
-                />
-              }
+              path={routePaths.returnBlockRegistrationLeaf}
+              element={<ReturnBlockRegistrationPage />}
             />
             <Route
               path={routePaths.monitorDataHangNhanLeaf}
@@ -1072,6 +1111,14 @@ export function AppRouter(): React.JSX.Element {
             <Route
               path={routePaths.monitorDataDongBaoLeaf}
               element={<MonitorDataDongBaoPage />}
+            />
+            <Route
+              path={routePaths.linehaulTripManagementLeaf}
+              element={<LinehaulTripManagementPage />}
+            />
+            <Route
+              path={routePaths.linehaulVehicleSealLeaf}
+              element={<LinehaulVehicleSealPage />}
             />
             <Route
               path={routePaths.groupIntegrationServicesLeaf}

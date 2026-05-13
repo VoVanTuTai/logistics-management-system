@@ -131,6 +131,22 @@ export class ReportingProjectionStore {
       }
     }
 
+    if (event.event_type === 'scan.outbound' && this.isSendGoodsEvent(event)) {
+      return 'SEND_GOODS';
+    }
+
+    if (event.event_type === 'ndr.created' && this.isExceptionNdrEvent(event)) {
+      return 'EXCEPTION';
+    }
+
+    if (event.event_type === 'scan.outbound' && this.isVehicleOutboundEvent(event)) {
+      return 'IN_TRANSIT';
+    }
+
+    if (event.event_type === 'scan.inbound' && this.isInventoryCheckEvent(event)) {
+      return 'INVENTORY_CHECK';
+    }
+
     return STATUS_BY_EVENT[event.event_type] ?? null;
   }
 
@@ -556,6 +572,27 @@ export class ReportingProjectionStore {
           ['ndr_case', 'zoneCode'],
         ]) ?? ALL,
     };
+  }
+
+  private isSendGoodsEvent(event: ReportingEventEnvelope): boolean {
+    const note = this.findString(event.data, [['scanEvent', 'note']]);
+    return note?.startsWith('SEND_GOODS') ?? false;
+  }
+
+  private isVehicleOutboundEvent(event: ReportingEventEnvelope): boolean {
+    const note = this.findString(event.data, [['scanEvent', 'note']]);
+    return note?.startsWith('VEHICLE_OUTBOUND') ?? false;
+  }
+
+  private isExceptionNdrEvent(event: ReportingEventEnvelope): boolean {
+    const status = this.findString(event.data, [['ndrCase', 'status']]);
+    const issueType = this.findString(event.data, [['ndrCase', 'issueType']]);
+    return status === 'PENDING_RESOLUTION' || Boolean(issueType);
+  }
+
+  private isInventoryCheckEvent(event: ReportingEventEnvelope): boolean {
+    const note = this.findString(event.data, [['scanEvent', 'note']]);
+    return note?.startsWith('INVENTORY_CHECK') ?? false;
   }
 
   private findString(source: unknown, paths: string[][]): string | null {

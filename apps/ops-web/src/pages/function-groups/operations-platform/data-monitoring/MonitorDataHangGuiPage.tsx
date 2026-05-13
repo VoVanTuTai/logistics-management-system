@@ -1,22 +1,45 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useAuthStore } from '../../../../store/authStore';
+import { shipmentsClient } from '../../../../features/shipments/shipments.client';
+import type { ShipmentListItemDto } from '../../../../features/shipments/shipments.types';
 
 import './MonitorDataHangGuiPage.css';
 
-interface SentMonitorRow {
-  stt: number;
-  maVanDon: string;
-  thoiGianQuetGui: string;
-  bcGui: string;
-  maBcGui: string;
-  bcDich: string;
-  maBcDich: string;
-  thoiGianCho: string;
-  trangThai: string;
-}
-
-const sentRows: SentMonitorRow[] = [];
-
 export function MonitorDataHangGuiPage(): React.JSX.Element {
+  const session = useAuthStore((state) => state.session);
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState<ShipmentListItemDto[]>([]);
+  const [filterCode, setFilterCode] = useState('');
+
+  const fetchData = useCallback(async () => {
+    if (!session?.tokens.accessToken) return;
+    
+    setLoading(true);
+    try {
+      const result = await shipmentsClient.list(session.tokens.accessToken, {
+        status: 'SCAN_OUTBOUND',
+        q: filterCode || undefined,
+      });
+      setData(result);
+    } catch (error) {
+      console.error('Failed to fetch outbound data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [session?.tokens.accessToken, filterCode]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const handleRefresh = () => {
+    fetchData();
+  };
+
+  const handleSearch = () => {
+    fetchData();
+  };
+
   return (
     <section className="ops-monitor-hang-gui">
       <header className="ops-monitor-hang-gui__page-header">
@@ -28,24 +51,24 @@ export function MonitorDataHangGuiPage(): React.JSX.Element {
         <div className="ops-monitor-hang-gui__summary">
           <article>
             <span>Đã quét gửi</span>
-            <strong>{sentRows.length}</strong>
+            <strong>{data.length}</strong>
           </article>
           <article>
             <span>Đích chưa nhận</span>
-            <strong>{sentRows.length}</strong>
+            <strong>{data.length}</strong>
           </article>
         </div>
       </header>
 
       <section className="ops-monitor-hang-gui__toolbar">
         <div className="ops-monitor-hang-gui__actions">
-          <button type="button" className="ops-monitor-hang-gui__action-btn">
+          <button type="button" className="ops-monitor-hang-gui__action-btn" onClick={handleSearch}>
             Tìm kiếm
           </button>
           <button type="button" className="ops-monitor-hang-gui__action-btn">
             Xuất dữ liệu
           </button>
-          <button type="button" className="ops-monitor-hang-gui__action-btn">
+          <button type="button" className="ops-monitor-hang-gui__action-btn" onClick={handleRefresh}>
             Làm mới
           </button>
         </div>
@@ -73,11 +96,17 @@ export function MonitorDataHangGuiPage(): React.JSX.Element {
         </label>
         <label className="ops-monitor-hang-gui__filter-field">
           <span>Mã vận đơn:</span>
-          <input type="text" placeholder="Vui lòng nhập mã vận đơn" />
+          <input 
+            type="text" 
+            placeholder="Vui lòng nhập mã vận đơn" 
+            value={filterCode}
+            onChange={(e) => setFilterCode(e.target.value)}
+          />
         </label>
       </section>
 
       <section className="ops-monitor-hang-gui__table-wrap">
+        {loading && <div className="ops-loading-overlay">Đang tải dữ liệu...</div>}
         <table className="ops-monitor-hang-gui__table">
           <thead>
             <tr>
@@ -93,24 +122,26 @@ export function MonitorDataHangGuiPage(): React.JSX.Element {
             </tr>
           </thead>
           <tbody>
-            {sentRows.map((row) => (
-              <tr key={row.maVanDon}>
-                <td>{row.stt}</td>
-                <td className="ops-monitor-hang-gui__code">{row.maVanDon}</td>
-                <td>{row.thoiGianQuetGui}</td>
-                <td>{row.bcGui}</td>
-                <td>{row.maBcGui}</td>
-                <td>{row.bcDich}</td>
-                <td>{row.maBcDich}</td>
-                <td className="ops-monitor-hang-gui__wait">{row.thoiGianCho}</td>
+            {data.map((row, index) => (
+              <tr key={row.shipmentCode}>
+                <td>{index + 1}</td>
+                <td className="ops-monitor-hang-gui__code">{row.shipmentCode}</td>
+                <td>{new Date(row.updatedAt).toLocaleString('vi-VN')}</td>
+                <td>{row.currentLocation || '---'}</td>
+                <td>{row.currentLocation || '---'}</td>
+                <td>{row.destinationHubCode || '---'}</td>
+                <td>{row.destinationHubCode || '---'}</td>
+                <td className="ops-monitor-hang-gui__wait">
+                  {Math.floor((new Date().getTime() - new Date(row.updatedAt).getTime()) / (1000 * 60))} phút
+                </td>
                 <td>
-                  <span className="ops-monitor-hang-gui__status">{row.trangThai}</span>
+                  <span className="ops-monitor-hang-gui__status">Đang vận chuyển</span>
                 </td>
               </tr>
             ))}
-            {sentRows.length === 0 ? (
+            {!loading && data.length === 0 ? (
               <tr>
-                <td colSpan={9}>Chưa có dữ liệu hàng gửi từ server.</td>
+                <td colSpan={9} style={{ textAlign: 'center', padding: '2rem' }}>Chưa có dữ liệu hàng gửi từ server.</td>
               </tr>
             ) : null}
           </tbody>

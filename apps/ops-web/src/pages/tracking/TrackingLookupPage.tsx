@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 
 import { useTrackingDetailQuery } from '../../features/tracking/tracking.api';
 import type { TrackingTimelineEventDto } from '../../features/tracking/tracking.types';
@@ -12,7 +12,10 @@ interface TrackingStatusHistoryRow {
   stt: number;
   scanTime: string;
   uploadedTime: string;
-  scanCategory: string;
+  action: string;
+  status: string;
+  location: string;
+  source: string;
   description: string;
   actualWeight: string;
   chargedWeight: string;
@@ -166,22 +169,20 @@ function buildTrackingStatusHistoryRows(
     return [];
   }
 
-  return timeline.map((event, index) => ({
-    id: event.id,
-    stt: index + 1,
-    scanTime: formatDateTime(event.occurredAt),
-    uploadedTime: formatDateTime(event.occurredAt),
-    scanCategory: event.eventType,
-    description: buildTimelineDescription(event),
-    actualWeight: '--',
-    chargedWeight: '--',
-  }));
-}
-
-function buildTimelineDescription(event: TrackingTimelineEventDto): string {
-  const location = event.locationText ?? event.locationCode ?? 'Không xác định vị trí';
-  const status = event.statusAfterEvent ?? event.eventType;
-
-  return `[${location}] ${status} (${event.eventSource})`;
+  return timeline.map((event, index) => {
+    return {
+      id: event.id,
+      stt: index + 1,
+      scanTime: formatDateTime(event.occurredAt),
+      uploadedTime: formatDateTime(event.occurredAt),
+      action: event.eventType,
+      status: event.statusAfterEvent ?? '--',
+      location: event.locationText ?? event.locationCode ?? 'Không xác định',
+      source: event.eventSource,
+      description: event.note || '--',
+      actualWeight: '--',
+      chargedWeight: '--',
+    };
+  });
 }
 

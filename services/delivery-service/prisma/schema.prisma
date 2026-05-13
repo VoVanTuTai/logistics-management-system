@@ -20,6 +20,7 @@ enum OtpStatus {
 }
 
 enum NdrStatus {
+  PENDING_RESOLUTION
   CREATED
   RESCHEDULED
   RETURN_REQUESTED
@@ -83,6 +84,11 @@ model NdrCase {
   shipmentCode      String
   deliveryAttemptId String?
   reasonCode        String?
+  issueType         String?
+  issueCategory     String?
+  attachments       Json?
+  reportedBy        String?
+  reportedHubCode   String?
   note              String?
   status            NdrStatus
   rescheduleAt      DateTime?

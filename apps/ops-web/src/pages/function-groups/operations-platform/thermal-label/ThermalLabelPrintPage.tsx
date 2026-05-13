@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import qrcode from 'qrcode-generator';
 
 import { useHubsQuery } from '../../../../features/masterdata/masterdata.api';
+import { useDeleteManifestMutation, useGenerateBagCodesMutation, useManifestsQuery } from '../../../../features/manifests/manifests.hooks';
 import {
   buildBagLabelDisplayModel,
   openBagLabelBatchPrint,
@@ -15,6 +16,9 @@ import './ThermalLabelPrintPage.css';
 const MAX_PREVIEW_LABELS = 30;
 
 interface BagLabelPreviewItem extends BagLabelPrintPayload {
+  id?: string;
+  shipmentCount?: number;
+  createdAtRaw?: string | null;
   qrPreviewSrc: string | null;
 }
 
@@ -22,7 +26,10 @@ export function ThermalLabelPrintPage(): React.JSX.Element {
   const session = useAuthStore((state) => state.session);
   const accessToken = session?.tokens.accessToken ?? null;
   const hubsQuery = useHubsQuery(accessToken, {});
+  const generateMutation = useGenerateBagCodesMutation(accessToken);
+  const deleteMutation = useDeleteManifestMutation(accessToken);
   const originHubCode = normalizeHubCode(session?.user.hubCodes?.[0] ?? '');
+  const manifestsQuery = useManifestsQuery(accessToken);
 
   const [quantityInput, setQuantityInput] = useState('1');
   const [destinationHubCode, setDestinationHubCode] = useState('');
@@ -30,6 +37,9 @@ export function ThermalLabelPrintPage(): React.JSX.Element {
   const [previewItems, setPreviewItems] = useState<BagLabelPreviewItem[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  
+  const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [activeQrItem, setActiveQrItem] = useState<BagLabelPreviewItem | null>(null);
 
   const destinationHubOptions = useMemo(
     () =>
@@ -38,6 +48,38 @@ export function ThermalLabelPrintPage(): React.JSX.Element {
         .sort((a, b) => a.code.localeCompare(b.code)),
     [hubsQuery.data, originHubCode],
   );
+
+  const realManifests = useMemo(() => {
+    if (!manifestsQuery.data) return [];
+    return manifestsQuery.data
+      .filter((m) => m.status === 'CREATED' && normalizeHubCode(m.originHubCode || '') === originHubCode)
+      .map((m) => ({
+        id: m.id,
+        bagCode: m.manifestCode,
+        originHubCode: m.originHubCode || 'HUB-NA',
+        destinationHubCode: m.destinationHubCode || 'HUB-NA',
+        status: m.status,
+        shipmentCount: m.shipmentCount ?? 0,
+        createdAtRaw: m.createdAt ?? null,
+        createdAtText: m.createdAt ? formatDateTime(m.createdAt) : '',
+        transportMethod: 'T' as BagTransportMethod, // Default if not stored
+        qrPreviewSrc: buildQrPreviewSrc(m.manifestCode),
+      }));
+  }, [manifestsQuery.data, originHubCode]);
+
+  const allItems = useMemo(() => {
+    // Combine real manifests with local previews that haven't been created yet
+    // Filter out local previews that have the same bagCode as a real manifest
+    const realCodes = new Set(realManifests.map(m => m.bagCode));
+    const filteredPreviews = previewItems.filter(p => !p.id && !realCodes.has(p.bagCode));
+    return [...realManifests, ...filteredPreviews].sort((a, b) => {
+      const byCreatedAt = getDateSortValue(b.createdAtRaw ?? b.createdAtText) - getDateSortValue(a.createdAtRaw ?? a.createdAtText);
+      if (byCreatedAt !== 0) {
+        return byCreatedAt;
+      }
+      return b.bagCode.localeCompare(a.bagCode);
+    });
+  }, [realManifests, previewItems]);
 
   useEffect(() => {
     if (!destinationHubCode && destinationHubOptions.length > 0) {
@@ -103,6 +145,88 @@ export function ThermalLabelPrintPage(): React.JSX.Element {
     setNotice(`Đã mở cửa sổ in ${itemsForPrint.length} tem bao.`);
   };
 
+  const onCreateRealLabels = async () => {
+    const quantity = Number.parseInt(quantityInput, 10);
+    if (!destinationHubCode || !Number.isFinite(quantity) || quantity < 1 || quantity > MAX_PREVIEW_LABELS) {
+      setFormError(
+        `Vui lòng nhập đủ thông tin. Số lượng hợp lệ: 1-${MAX_PREVIEW_LABELS}, cần có mã hub đến.`
+      );
+      setNotice(null);
+      return;
+    }
+
+    try {
+      setFormError(null);
+      setNotice('Đang tạo tem bao trên hệ thống...');
+      
+      const response = await generateMutation.mutateAsync({
+        originHubCode,
+        destinationHubCode,
+        quantity,
+        note: `Created from print page - Method ${transportMethod}`,
+      });
+
+      const nextPreviewItems = response.map((item) => ({
+        id: item.id,
+        bagCode: item.manifestCode,
+        originHubCode: item.originHubCode ?? 'HUB-NA',
+        destinationHubCode: item.destinationHubCode ?? 'HUB-NA',
+        status: item.status,
+        shipmentCount: item.shipmentCount ?? 0,
+        createdAtRaw: item.createdAt ?? null,
+        createdAtText: item.createdAt ? formatDateTime(item.createdAt) : formatDateTime(new Date().toISOString()),
+        transportMethod: transportMethod,
+        qrPreviewSrc: buildQrPreviewSrc(item.manifestCode),
+      }));
+
+      setPreviewItems([]); // Clear local previews as they are now on server
+      setNotice(`Thành công! Đã tạo ${response.length} tem bao trên hệ thống.`);
+    } catch (err) {
+      setFormError('Lỗi khi tạo tem bao trên hệ thống. Vui lòng thử lại sau.');
+      setNotice(null);
+    }
+  };
+
+  const onDeleteLabel = async (bagCode: string) => {
+    // Note: bagCode could be used directly as manifestId depending on implementation.
+    // If our API expects the internal ID, we need to have it in the previewItem.
+    // Let's assume we can fetch list of manifests and delete by manifestId, or the preview item holds manifestCode and we can pass it if the backend supports deletion by manifestCode or id.
+    // We'll delete by manifestCode via API (the hooks delete by ID but typically code works if backend handles it, but since we generate we don't know ID unless returned).
+    // Wait, generateMutation returns Manifest[], so we have the ID! We should map ID.
+    const item = allItems.find((i) => i.bagCode === bagCode);
+    if (!item || !item.id) {
+      setPreviewItems((prev) => prev.filter((i) => i.bagCode !== bagCode));
+      setNotice(`Đã xóa tem bao mẫu ${bagCode}.`);
+      return;
+    }
+    if (window.confirm(`Bạn có chắc muốn xóa mã bao ${bagCode}?`)) {
+      try {
+        await deleteMutation.mutateAsync(item.id);
+        // No need to manually filter if using react-query as it will re-fetch
+        setNotice(`Đã xóa tem bao ${bagCode}.`);
+      } catch (err) {
+        setFormError(`Lỗi khi xóa tem bao ${bagCode}.`);
+      }
+    }
+  };
+
+  const openQrModal = (item: BagLabelPreviewItem) => {
+    setActiveQrItem(item);
+    setQrModalOpen(true);
+  };
+
+  const closeQrModal = () => {
+    setQrModalOpen(false);
+    setActiveQrItem(null);
+  };
+
+  const onPrintSingle = (item: BagLabelPreviewItem) => {
+    const opened = openBagLabelBatchPrint([item]);
+    if (!opened) {
+      alert('Trình duyệt đang chặn cửa sổ in. Hãy cho phép popup rồi thử lại.');
+    }
+  };
+
   return (
     <section className="ops-thermal-print">
       <header className="ops-thermal-print__header">
@@ -136,20 +260,22 @@ export function ThermalLabelPrintPage(): React.JSX.Element {
 
             <label className="ops-thermal-print__field">
               <span>Mã hub đến</span>
-              <input
-                type="text"
-                list="ops-thermal-destination-hubs"
+              <select
                 value={destinationHubCode}
                 onChange={(event) => setDestinationHubCode(normalizeHubCode(event.target.value))}
-                placeholder="Nhập mã hub đến"
-              />
-              <datalist id="ops-thermal-destination-hubs">
+                className="ops-thermal-print__select"
+              >
+                {destinationHubCode === '' && (
+                  <option value="" disabled>
+                    -- Chọn mã hub đến --
+                  </option>
+                )}
                 {destinationHubOptions.map((hub) => (
                   <option key={hub.id} value={normalizeHubCode(hub.code)}>
-                    {hub.name}
+                    {normalizeHubCode(hub.code)} - {hub.name}
                   </option>
                 ))}
-              </datalist>
+              </select>
             </label>
 
             <fieldset className="ops-thermal-print__field ops-thermal-print__field--method">
@@ -178,6 +304,14 @@ export function ThermalLabelPrintPage(): React.JSX.Element {
 
             <div className="ops-thermal-print__actions">
               <button type="submit">Tạo xem trước</button>
+              <button 
+                type="button" 
+                className="ops-thermal-print__secondary-btn" 
+                onClick={onCreateRealLabels}
+                disabled={generateMutation.isPending}
+              >
+                {generateMutation.isPending ? 'Đang tạo...' : 'Tạo trên hệ thống'}
+              </button>
               <button type="button" className="ops-thermal-print__secondary-btn" onClick={onPrint}>
                 In tem bao
               </button>
@@ -197,25 +331,70 @@ export function ThermalLabelPrintPage(): React.JSX.Element {
 
         <article className="ops-thermal-print__preview">
           <div className="ops-thermal-print__preview-header">
-            <h3>Hình ảnh tem bao xem trước</h3>
+            <h3>Danh sách tem bao</h3>
             <span>{previewItems.length}</span>
           </div>
 
-          {previewItems.length === 0 ? (
+          {allItems.length === 0 ? (
             <p className="ops-thermal-print__preview-empty">
-              Chưa có tem bao mẫu. Nhập form bên trái và bấm "Tạo xem trước".
+              Chưa có tem bao "Đang mở". Nhập form bên trái và bấm "Tạo trên hệ thống" để lưu vào DB.
             </p>
           ) : (
-            <div className="ops-thermal-print__preview-grid">
-              {previewItems.map((item) => (
-                <article key={item.bagCode} className="ops-thermal-print__sticker">
-                  <BagLabelStickerPreview item={item} />
-                </article>
-              ))}
+            <div className="ops-thermal-print__list">
+              <table className="ops-thermal-print__table">
+                <thead>
+                  <tr>
+                    <th>Mã bao</th>
+                    <th>Ngày tạo</th>
+                    <th>Số đơn trong bao</th>
+                    <th>Mã Hub đến</th>
+                    <th>Phương thức</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allItems.map((item) => (
+                    <tr key={item.bagCode}>
+                      <td><strong>{item.bagCode}</strong></td>
+                      <td>{item.createdAtText}</td>
+                      <td>{item.shipmentCount ?? 0}</td>
+                      <td>{item.destinationHubCode}</td>
+                      <td>{item.transportMethod === 'T' ? 'Trucking' : 'Air'}</td>
+                      <td>
+                        <span className={`ops-thermal-print__status-tag ${item.id ? 'ops-thermal-print__status-tag--open' : 'ops-thermal-print__status-tag--preview'}`}>
+                          {item.id ? 'Đang mở' : 'Xem trước'}
+                        </span>
+                      </td>
+                      <td>
+                        <button type="button" onClick={() => openQrModal(item)} className="ops-thermal-print__link-btn">Mã QR</button>
+                        <button type="button" onClick={() => onPrintSingle(item)} className="ops-thermal-print__link-btn">In</button>
+                        <button type="button" onClick={() => onDeleteLabel(item.bagCode)} className="ops-thermal-print__link-btn ops-thermal-print__link-btn--danger">Xóa</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </article>
       </div>
+
+      {qrModalOpen && activeQrItem && (
+        <div className="ops-thermal-print__qr-modal" onClick={closeQrModal}>
+          <div className="ops-thermal-print__qr-content" onClick={(e) => e.stopPropagation()}>
+            <h4>Mã QR: {activeQrItem.bagCode}</h4>
+            <div className="ops-thermal-print__qr-image">
+              {activeQrItem.qrPreviewSrc ? (
+                <img src={activeQrItem.qrPreviewSrc} alt={`QR ${activeQrItem.bagCode}`} />
+              ) : (
+                <div>Lỗi tạo QR</div>
+              )}
+            </div>
+            <button type="button" onClick={closeQrModal} className="ops-thermal-print__secondary-btn">Đóng</button>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -253,11 +432,21 @@ function buildPreviewItems(options: BuildPreviewOptions): BagLabelPreviewItem[] 
       originHubCode,
       destinationHubCode,
       status: 'CHO_IN',
+      shipmentCount: 0,
+      createdAtRaw: new Date().toISOString(),
       createdAtText,
       transportMethod: options.transportMethod,
       qrPreviewSrc: buildQrPreviewSrc(bagCode),
     };
   });
+}
+
+function getDateSortValue(value: string | null | undefined): number {
+  if (!value) {
+    return 0;
+  }
+  const parsed = new Date(value).getTime();
+  return Number.isNaN(parsed) ? 0 : parsed;
 }
 
 function normalizeHubCode(value: string): string {

@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom';
 import {
   useAssignTaskMutation,
   useCourierOptionsQuery,
+  useDispatchTasksRealtime,
   useReassignTaskMutation,
   useTaskDetailQuery,
 } from '../../features/tasks/tasks.api';
@@ -22,6 +23,7 @@ import { TaskActionModal } from './TaskActionModal';
 export function TaskDetailPage(): React.JSX.Element {
   const { taskId = '' } = useParams();
   const accessToken = useAuthStore((state) => state.session?.tokens.accessToken ?? null);
+  useDispatchTasksRealtime(Boolean(accessToken));
   const detailQuery = useTaskDetailQuery(accessToken, taskId);
   const courierOptionsQuery = useCourierOptionsQuery(accessToken);
   const assignMutation = useAssignTaskMutation(accessToken);

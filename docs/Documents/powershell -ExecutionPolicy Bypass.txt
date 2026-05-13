@@ -1,22 +1,39 @@
+Cách chạy đúng bây giờ vẫn là dev mode:
 
 powershell -ExecutionPolicy Bypass -File .\run-all.ps1 -MobileMode lan
+Hoặc nếu infra đã chạy rồi và chỉ muốn start lại service/UI:
 
-Mở PowerShell tại thư mục project:
-cd "d:\University\Semester 2_Year 4\New Technology\logistics-management-system"
-Khởi động toàn bộ backend + web + courier mobile (LAN):
-powershell -ExecutionPolicy Bypass -File scripts/start-all-retry.ps1 -SkipInfra -MobileMode lan
-Chờ log hiện courier-mobile và QR code.
+powershell -ExecutionPolicy Bypass -File .\run-all.ps1 -MobileMode lan -SkipInfra
+Script này không build Docker image cho 11 backend services. Nó chỉ:
 
-Mở Expo Go trên điện thoại, quét QR.
+chạy Docker cho infra dev: PostgreSQL + RabbitMQ
+chạy migration / db push
+start backend bằng Node/TypeScript dev runtime
+start web/mobile dev servers
+Phần container hiện tại chỉ dùng cho infra dependency, không phải build từng service.
 
-Đăng nhập:
+Tóm lại:
 
-Lưu ý quan trọng:
+Postgres/RabbitMQ  -> chạy bằng Docker Compose
+Backend services   -> chạy dev bằng node/ts-node
+Frontend apps      -> chạy dev server
+Không build image service
+Nếu chỉ cần start backend services, dùng:
 
-Máy tính và điện thoại phải cùng Wi‑Fi.
-Không bấm a (máy bạn chưa cài Android SDK/adb).
-Nếu đổi mạng Wi‑Fi, phải tắt và chạy lại lệnh ở bước 2 để cập nhật IP LAN mới.
-Khi bị network request failed, chạy lại riêng courier mobile:
+powershell -ExecutionPolicy Bypass -File .\scripts\start-services-retry.ps1
+Nếu chỉ cần infra:
 
+powershell -ExecutionPolicy Bypass -File .\scripts\dev-up.ps1
+Lưu ý: mình vừa sửa start-services-retry.ps1 để nó start service kiểu dev, chạy Prisma prepare trước rồi mới chạy ts-node. Không có bước Docker build service trong đó.
 cd "d:\University\Semester 2_Year 4\New Technology\logistics-management-system\apps\courier-mobile"
 npm run start -- --host lan --port 8081
+
+chạy riêng service bị down
+powershell -ExecutionPolicy Bypass -File .\scripts\start-services-retry.ps1
+
+chạy đúng service mình mong muốn
+# start riêng shipment-service (3002)
+Start-Process cmd.exe -ArgumentList '/k','npm run start:dev' -WorkingDirectory '.\services\shipment-service'
+
+# start riêng delivery-service (3007)
+Start-Process cmd.exe -ArgumentList '/k','npm run start:dev' -WorkingDirectory '.\services\delivery-service'

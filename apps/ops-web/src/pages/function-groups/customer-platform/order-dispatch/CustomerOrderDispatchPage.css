@@ -30,6 +30,20 @@
   font-size: 13px;
 }
 
+.ops-customer-dispatch__realtime {
+  margin-top: 6px;
+  color: #475569;
+  font-size: 12px;
+}
+
+.ops-customer-dispatch__realtime strong[data-state='connected'] {
+  color: #166534;
+}
+
+.ops-customer-dispatch__realtime strong[data-state='disconnected'] {
+  color: #9a3412;
+}
+
 .ops-customer-dispatch__collapse-btn,
 .ops-customer-dispatch button {
   min-height: 32px;

@@ -1,4 +1,4 @@
-﻿import React, { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import {
   BrowserRouter,
   NavLink,
@@ -47,11 +47,11 @@ function AdminLayout(): React.JSX.Element {
 
   const navItems = useMemo(
     () => [
-      { label: 'Tong quan', to: routePaths.dashboard },
+      { label: 'Tổng quan', to: routePaths.dashboard },
       { label: 'Tài khoản Ops', to: routePaths.opsUsers },
       { label: 'Tài khoản Shipper', to: routePaths.shipperUsers },
       { label: 'Tai khoan Merchant', to: routePaths.merchantUsers },
-      { label: 'Phan quyen mobile', to: routePaths.courierPermissions },
+      { label: 'Phân quyền mobile', to: routePaths.courierPermissions },
       { label: 'Hub', to: routePaths.masterdataHubs },
       { label: 'Zone', to: routePaths.masterdataZones },
       { label: 'Ly do NDR', to: routePaths.masterdataNdrReasons },
@@ -69,8 +69,8 @@ function AdminLayout(): React.JSX.Element {
     <div className="admin-layout">
       <aside className="admin-sidebar">
         <div>
-          <h1>Quan tri he thong</h1>
-          <p>Quan tri he thong va du lieu danh muc</p>
+          <h1>Quản trị hệ thống</h1>
+          <p>Quản trị hệ thống va du lieu danh muc</p>
         </div>
 
         <div className="admin-user-card">
@@ -100,8 +100,8 @@ function AdminLayout(): React.JSX.Element {
       <div className="admin-workspace">
         <header className="admin-topbar">
           <div>
-            <h2>Bang dieu hanh JMS Admin</h2>
-            <p>Khu vuc dac quyen de quan ly danh muc dung chung va cau hinh he thong.</p>
+            <h2>Bảng điều hành NEXUS Admin</h2>
+            <p>Khu vực đặc quyền để quản lý danh mục dùng chung và cấu hình hệ thống.</p>
           </div>
           <span className="admin-tag">SYSTEM_ADMIN</span>
         </header>
@@ -138,4 +138,3 @@ export function AppRouter(): React.JSX.Element {
     </BrowserRouter>
   );
 }
-

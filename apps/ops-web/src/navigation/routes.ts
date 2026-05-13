@@ -86,10 +86,10 @@ export const routePaths = {
   thermalLabelManagement: '/app/function-groups/operations-platform/thermal-label/management',
   thermalLabelPrint: '/app/function-groups/operations-platform/thermal-label/print',
   returnBlockRoot: '/app/function-groups/operations-platform/chuyen-hoan',
+  returnBlockRegistration:
+    '/app/function-groups/operations-platform/chuyen-hoan/dang-ky-chuyen-hoan',
   returnBlockManagement:
     '/app/function-groups/operations-platform/chuyen-hoan/quan-ly-chuyen-hoan',
-  returnForwardManagement:
-    '/app/function-groups/operations-platform/chuyen-hoan/quan-ly-chuyen-tiep',
   monitorDataRoot: '/app/function-groups/operations-platform/data-monitoring',
   monitorDataHangNhan: '/app/function-groups/operations-platform/data-monitoring/hang-nhan',
   monitorDataHangDen: '/app/function-groups/operations-platform/data-monitoring/hang-den',
@@ -100,6 +100,9 @@ export const routePaths = {
     '/app/function-groups/operations-platform/data-monitoring/theo-doi-tam-ung',
   monitorDataDongBao:
     '/app/function-groups/operations-platform/data-monitoring/giam-sat-dong-bao',
+  linehaulRoot: '/app/function-groups/capability-platform/van-chuyen-tuyen-nhanh',
+  linehaulTripManagement: '/app/function-groups/capability-platform/van-chuyen-tuyen-nhanh/quan-ly-chuyen-xe',
+  linehaulVehicleSeal: '/app/function-groups/capability-platform/van-chuyen-tuyen-nhanh/tem-xe',
   shipments: '/app/shipments',
   shipmentDetail: (shipmentId: string) => `/app/shipments/${shipmentId}`,
   pickups: '/app/pickups',
@@ -190,10 +193,10 @@ export const routePaths = {
     'function-groups/operations-metrics/thao-tac/ban-dieu-phoi-thao-tac',
   thermalLabelManagementLeaf: 'function-groups/operations-platform/thermal-label/management',
   thermalLabelPrintLeaf: 'function-groups/operations-platform/thermal-label/print',
+  returnBlockRegistrationLeaf:
+    'function-groups/operations-platform/chuyen-hoan/dang-ky-chuyen-hoan',
   returnBlockManagementLeaf:
     'function-groups/operations-platform/chuyen-hoan/quan-ly-chuyen-hoan',
-  returnForwardManagementLeaf:
-    'function-groups/operations-platform/chuyen-hoan/quan-ly-chuyen-tiep',
   monitorDataHangNhanLeaf: 'function-groups/operations-platform/data-monitoring/hang-nhan',
   monitorDataHangDenLeaf: 'function-groups/operations-platform/data-monitoring/hang-den',
   monitorDataHangGuiLeaf: 'function-groups/operations-platform/data-monitoring/hang-gui',
@@ -203,6 +206,8 @@ export const routePaths = {
     'function-groups/operations-platform/data-monitoring/theo-doi-tam-ung',
   monitorDataDongBaoLeaf:
     'function-groups/operations-platform/data-monitoring/giam-sat-dong-bao',
+  linehaulTripManagementLeaf: 'function-groups/capability-platform/van-chuyen-tuyen-nhanh/quan-ly-chuyen-xe',
+  linehaulVehicleSealLeaf: 'function-groups/capability-platform/van-chuyen-tuyen-nhanh/tem-xe',
   shipmentsLeaf: 'shipments',
   shipmentDetailLeaf: 'shipments/:shipmentId',
   pickupsLeaf: 'pickups',

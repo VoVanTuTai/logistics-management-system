@@ -23,6 +23,7 @@ import {
 } from '../../domain/entities/task.entity';
 import { TaskRepository } from '../../domain/repositories/task.repository';
 import { DispatchOutboxService } from '../../messaging/outbox/dispatch-outbox.service';
+import { TasksRealtimeGateway } from '../../realtime/tasks-realtime.gateway';
 
 @Injectable()
 export class TasksService {
@@ -30,6 +31,7 @@ export class TasksService {
     @Inject(TaskRepository)
     private readonly taskRepository: TaskRepository,
     private readonly dispatchOutboxService: DispatchOutboxService,
+    private readonly tasksRealtimeGateway: TasksRealtimeGateway,
   ) {}
 
   list(filters: {
@@ -73,7 +75,9 @@ export class TasksService {
   }
 
   async create(input: CreateTaskInput): Promise<Task> {
-    return this.taskRepository.create(input);
+    const task = await this.taskRepository.create(input);
+    this.tasksRealtimeGateway.publishTaskChanged('created', task);
+    return task;
   }
 
   async assign(id: string, input: AssignTaskInput): Promise<Task> {
@@ -95,6 +99,7 @@ export class TasksService {
     const task = await this.taskRepository.assign(id, { courierId });
 
     await this.dispatchOutboxService.enqueueTaskAssigned(task);
+    this.tasksRealtimeGateway.publishTaskChanged('assigned', task);
 
     return task;
   }
@@ -118,6 +123,7 @@ export class TasksService {
     const task = await this.taskRepository.reassign(id, { courierId });
 
     await this.dispatchOutboxService.enqueueTaskAssigned(task);
+    this.tasksRealtimeGateway.publishTaskChanged('reassigned', task);
 
     return task;
   }
@@ -148,6 +154,7 @@ export class TasksService {
     }
 
     const task = await this.taskRepository.updateStatus(id, input);
+    this.tasksRealtimeGateway.publishTaskChanged('status_updated', task);
     return task;
   }
 
@@ -178,7 +185,7 @@ export class TasksService {
       }
     }
 
-    const task = await this.taskRepository.create({
+    const task = await this.create({
       taskCode: `task-${randomUUID()}`,
       taskType: 'PICKUP',
       pickupRequestId,
@@ -195,7 +202,7 @@ export class TasksService {
   }): Promise<Task> {
     // TODO: replace this placeholder with explicit return-task policy when business rules are defined.
     const taskType: TaskType = 'RETURN';
-    const task = await this.taskRepository.create({
+    const task = await this.create({
       taskCode: `task-${randomUUID()}`,
       taskType,
       shipmentCode: payload.shipment_code ?? null,

@@ -6,7 +6,7 @@ export function CapabilityPlatformGroupPage(): React.JSX.Element {
   return (
     <FunctionGroupLandingPage
       groupCode="CAPABILITY_PLATFORM"
-      title="Nền tảng năng lực"
+      title="Quản lý vận chuyển"
       summary="Cụm quản lý năng lực vận hành, tài nguyên và khả năng đáp ứng."
     />
   );

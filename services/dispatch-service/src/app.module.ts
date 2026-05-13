@@ -14,6 +14,7 @@ import { DispatchRabbitmqConsumerService } from './messaging/consumers/dispatch-
 import { DispatchOutboxRelayService } from './messaging/outbox/dispatch-outbox-relay.service';
 import { DispatchEventsProducer } from './messaging/producers/dispatch-events.producer';
 import { DispatchOutboxService } from './messaging/outbox/dispatch-outbox.service';
+import { TasksRealtimeGateway } from './realtime/tasks-realtime.gateway';
 
 @Module({
   imports: [HealthModule],
@@ -27,6 +28,7 @@ import { DispatchOutboxService } from './messaging/outbox/dispatch-outbox.servic
     DispatchRabbitmqConsumerService,
     DispatchOutboxService,
     DispatchOutboxRelayService,
+    TasksRealtimeGateway,
     {
       provide: TaskRepository,
       useClass: TaskPrismaRepository,

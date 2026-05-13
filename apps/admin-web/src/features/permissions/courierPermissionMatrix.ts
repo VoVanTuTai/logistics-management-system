@@ -37,6 +37,12 @@ export type CourierPermissionMatrix = Record<
   Record<CourierPermissionFeature, boolean>
 >;
 
+/** Per-feature permission map for a single user. */
+export type UserPermissionMap = Record<CourierPermissionFeature, boolean>;
+
+/** All per-user overrides keyed by userId/username. */
+export type UserPermissionOverrides = Record<string, UserPermissionMap>;
+
 export const COURIER_PERMISSION_ACTORS: Array<{
   id: CourierPermissionActor;
   label: string;
@@ -124,9 +130,9 @@ export const COURIER_PERMISSION_FEATURES: CourierPermissionFeatureDefinition[] =
   },
   {
     id: 'scan.outbound',
-    label: 'Gửi kiện',
+    label: 'Gửi hàng',
     category: 'hub',
-    description: 'Quét xuất hub hoặc gửi kiện sang tuyến tiếp theo.',
+    description: 'Quét tem xe trước, sau đó quét tem bao hoặc kiện rời để gửi lên xe.',
     riskLevel: 'Trung bình',
   },
   {
@@ -186,6 +192,9 @@ export const DEFAULT_COURIER_PERMISSION_MATRIX: CourierPermissionMatrix =
 export const COURIER_PERMISSION_STORAGE_KEY =
   'admin-web.courier-mobile-permission-matrix';
 
+export const USER_PERMISSION_OVERRIDES_STORAGE_KEY =
+  'admin-web.courier-user-permission-overrides';
+
 export function normalizeCourierPermissionMatrix(
   value: unknown,
 ): CourierPermissionMatrix {
@@ -212,4 +221,66 @@ export function countActorEnabledPermissions(
   actor: CourierPermissionActor,
 ): number {
   return COURIER_PERMISSION_FEATURES.filter((feature) => matrix[actor][feature.id]).length;
+}
+
+// ─── Per-user permission helpers ────────────────────────────────────────────
+
+/** Create a default all-enabled permission map for a single user. */
+export function createDefaultUserPermissionMap(): UserPermissionMap {
+  return COURIER_PERMISSION_FEATURES.reduce((acc, feature) => {
+    acc[feature.id] = true;
+    return acc;
+  }, {} as UserPermissionMap);
+}
+
+/** Normalize an unknown value into a valid UserPermissionMap. */
+export function normalizeUserPermissionMap(value: unknown): UserPermissionMap {
+  const source =
+    value && typeof value === 'object' && !Array.isArray(value)
+      ? (value as Partial<UserPermissionMap>)
+      : {};
+
+  return COURIER_PERMISSION_FEATURES.reduce((acc, feature) => {
+    acc[feature.id] =
+      typeof source[feature.id] === 'boolean' ? source[feature.id] : true;
+    return acc;
+  }, {} as UserPermissionMap);
+}
+
+/** Count enabled permissions in a UserPermissionMap. */
+export function countUserEnabledPermissions(map: UserPermissionMap): number {
+  return COURIER_PERMISSION_FEATURES.filter((f) => map[f.id]).length;
+}
+
+/** Load all user overrides from localStorage. */
+export function loadUserPermissionOverrides(): UserPermissionOverrides {
+  const raw = window.localStorage.getItem(USER_PERMISSION_OVERRIDES_STORAGE_KEY);
+  if (!raw) return {};
+
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const result: UserPermissionOverrides = {};
+    for (const [userId, val] of Object.entries(parsed)) {
+      result[userId] = normalizeUserPermissionMap(val);
+    }
+    return result;
+  } catch {
+    return {};
+  }
+}
+
+/** Save all user overrides to localStorage. */
+export function saveUserPermissionOverrides(overrides: UserPermissionOverrides): void {
+  window.localStorage.setItem(
+    USER_PERMISSION_OVERRIDES_STORAGE_KEY,
+    JSON.stringify(overrides),
+  );
+}
+
+/** Get the permission map for one user, or null if not overridden. */
+export function getUserPermissionMap(
+  overrides: UserPermissionOverrides,
+  userId: string,
+): UserPermissionMap | null {
+  return overrides[userId] ?? null;
 }

@@ -6,6 +6,8 @@ export interface ManifestListItemDto {
   destinationHubCode: string | null;
   sealedAt: string | null;
   createdAt?: string | null;
+  updatedAt?: string | null;
+  shipmentCount?: number;
 }
 
 export interface ManifestDetailDto {

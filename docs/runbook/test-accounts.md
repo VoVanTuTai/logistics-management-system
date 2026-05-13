@@ -41,4 +41,4 @@ Khoi dong full local:
 powershell -ExecutionPolicy Bypass -File scripts/start-all-retry.ps1
 ```
 
-Lenh `scripts/seed-all.ps1` hien chi in thong bao disabled va khong tao fixture.
+
