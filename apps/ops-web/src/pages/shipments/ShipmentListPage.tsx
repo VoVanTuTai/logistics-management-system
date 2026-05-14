@@ -227,7 +227,7 @@ function printWaybill(shipment: ShipmentListItemDto): void {
     shipment.deliveryNote?.trim() || 'Gọi trước khi giao. Không cho thử hàng.';
 
   const opened = openShippingLabelPrint({
-    brandName: 'JMS LOGISTICS',
+    brandName: 'NEXUS LOGISTICS',
     serviceName: shipment.serviceType?.trim() || 'STANDARD',
     shipmentCode: shipment.shipmentCode,
     senderName,

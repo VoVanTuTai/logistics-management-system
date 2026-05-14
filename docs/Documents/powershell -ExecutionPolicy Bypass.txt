@@ -11,6 +11,7 @@ chạy migration / db push
 start backend bằng Node/TypeScript dev runtime
 start web/mobile dev servers
 Phần container hiện tại chỉ dùng cho infra dependency, không phải build từng service.
+Stop-Process -Name "node" -Force
 
 Tóm lại:
 

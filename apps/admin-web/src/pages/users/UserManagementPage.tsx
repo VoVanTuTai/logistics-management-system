@@ -60,7 +60,7 @@ function pageTitleByGroup(roleGroup: UserRoleGroup): string {
 
   return roleGroup === 'SHIPPER'
     ? 'Quan tri - Quan ly tai khoan Shipper'
-    : 'Quan tri - Quan ly tai khoan Ops';
+    : 'Quản lý tài khoản Ops';
 }
 
 export function UserManagementPage({ roleGroup }: UserManagementPageProps): React.JSX.Element {
@@ -151,9 +151,9 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
 
         const payload = password
           ? {
-              ...payloadBase,
-              password,
-            }
+            ...payloadBase,
+            password,
+          }
           : payloadBase;
 
         await createMutation.mutateAsync(payload);
@@ -198,7 +198,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
     <div>
       <h2>{pageTitleByGroup(roleGroup)}</h2>
       <p style={styles.helperText}>
-        Tao, cap nhat, xoa tai khoan va gan hub lam viec cho tung tai khoan.
+        Tạo, cập nhật và gán HUB làm việc cho từng tài khoản.
       </p>
 
       <form style={styles.filterForm} onSubmit={(event) => event.preventDefault()}>
@@ -244,11 +244,11 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
 
       <section style={styles.editorCard}>
         <h3 style={styles.editorTitle}>
-          {editingUser ? `Sua ${editingUser.username}` : 'Tao tai khoan moi'}
+          {editingUser ? `Sua ${editingUser.username}` : 'Tạo tài khoản mới'}
         </h3>
         {!editingUser && roleGroup !== 'MERCHANT' ? (
           <p style={styles.helperText}>
-            Neu de trong truong mat khau, he thong se tao mac dinh la "password" cho tai khoan nhan vien.
+            Nếu để trống trường mật khẩu, hệ thống sẽ tạo mặc định là "password" cho tài khoản nhân viên.
           </p>
         ) : null}
         <form onSubmit={onSubmitForm} style={styles.formGrid}>

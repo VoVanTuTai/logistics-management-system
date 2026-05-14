@@ -28,7 +28,7 @@ export function LoginPage(): React.JSX.Element {
     <div className="auth-page auth-page-ops">
       <div className="auth-card">
         <p className="auth-kicker">Cổng Ops</p>
-        <h2 className="auth-title">Đăng nhập JMS Ops</h2>
+        <h2 className="auth-title">Đăng nhập NEXUS Ops</h2>
         <p className="auth-subtitle">Trung tâm điều hành nội bộ cho lấy hàng, quét, phân công và bao tải.</p>
         <LoginForm
           isSubmitting={isSubmitting || loginMutation.isPending}
