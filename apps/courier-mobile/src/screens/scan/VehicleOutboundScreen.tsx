@@ -313,7 +313,7 @@ export function VehicleOutboundScreen(): React.JSX.Element {
           sealedBy: courierId,
           sealedByName: employeeName,
           processingHubCode: hubCode,
-          note: `Xe đi: ${vehicleInfo.vehicleCode} | Biển số: ${vehicleInfo.licensePlate}`,
+          note,
         });
       }
 

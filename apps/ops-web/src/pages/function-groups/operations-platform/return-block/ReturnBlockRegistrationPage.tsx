@@ -186,7 +186,13 @@ export function ReturnBlockRegistrationPage(): React.JSX.Element {
       alert('Vui lòng tìm kiếm mã vận đơn trước khi đăng ký chuyển hoàn.');
       return;
     }
-    alert(`Đã đăng ký chuyển hoàn thành công cho vận đơn ${queryCode}!`);
+
+    const employeeName = session?.user.displayName || session?.user.username || 'N/A';
+    const employeeId = session?.user.username || 'N/A';
+    const hubCode = session?.user.hubCodes?.[0] || 'N/A';
+    const finalNote = `Đăng ký chuyển hoàn | Nhân viên: ${employeeName} | Mã NV: ${employeeId} | Mã hub: ${hubCode} | Ghi chú: ${returnReasonText}`;
+
+    alert(`Đã đăng ký chuyển hoàn thành công cho vận đơn ${queryCode}!\nGhi chú nội bộ: ${finalNote}`);
     handleReset();
   };
 

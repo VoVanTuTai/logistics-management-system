@@ -31,7 +31,7 @@ import { shouldQueueOffline } from '../../services/api/client';
 import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
 import { createIdempotencyKey } from '../../utils/idempotency';
-import { resolveCourierId } from '../../utils/courier';
+import { resolveCourierId, buildDeliverySuccessAuditNote } from '../../utils/courier';
 import { appEnv } from '../../utils/env';
 
 type Props = NativeStackScreenProps<AppNavigatorParamList, 'DeliveryProof'>;
@@ -172,17 +172,25 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
       return;
     }
 
+    const auditNote = buildDeliverySuccessAuditNote({
+      displayName: session?.user.displayName,
+      username: session?.user.username,
+      courierId,
+      hubCode: session?.user.hubCodes?.[0] ?? null,
+      note: note.trim().length > 0 ? note.trim() : 'Ky nhan giao hang tu courier app.',
+    });
+
     const payload: DeliverySuccessPayload = {
       shipmentCode: resolvedShipmentCode,
       taskId: route.params.taskId ?? null,
       courierId: null,
       locationCode: null,
       actor: session?.user.username ?? null,
-      note: note.trim().length > 0 ? note.trim() : 'Ky nhan giao hang tu courier app.',
+      note: auditNote,
       occurredAt: new Date().toISOString(),
       idempotencyKey: createIdempotencyKey('delivery-success'),
       podImageUrl: photoUri,
-      podNote: note.trim().length > 0 ? note.trim() : null,
+      podNote: auditNote,
       podCapturedBy: session?.user.username ?? null,
       otpCode: null,
     };

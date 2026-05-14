@@ -20,7 +20,8 @@ import type { BagManifestDto } from '../../features/manifest/manifest.types';
 import { parsePickupScannedCode } from '../../features/scan/pickup.scanner.adapter';
 import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
-import { resolveCourierDisplayName } from '../../utils/courier';
+import { resolveCourierDisplayName, resolveCourierId, buildBagUnsealAuditNote } from '../../utils/courier';
+import { appEnv } from '../../utils/env';
 
 interface RemovedShipmentItem {
   code: string;
@@ -239,16 +240,18 @@ export function BagUnsealScreen(): React.JSX.Element {
       }
 
       const shipmentCodes = removedShipments.map((item) => item.code);
-      const accountabilityNote = [
-        'UNBAGGED_FROM_COURIER_APP',
-        `employeeCode=${employeeCode ?? 'UNKNOWN'}`,
-        `employeeName=${employeeName}`,
-        `hubCode=${processingHubCode ?? 'UNKNOWN'}`,
-      ].join('; ');
+      const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
+      const note = buildBagUnsealAuditNote({
+        displayName: session?.user?.displayName,
+        username: session?.user?.username,
+        courierId,
+        hubCode: processingHubCode,
+        bagCode: bagManifest.manifestCode,
+      });
 
       await manifestApi.removeShipments(accessToken, bagManifest.id, {
         shipmentCodes,
-        note: accountabilityNote,
+        note,
         unsealedBy: employeeCode,
         unsealedByName: employeeName,
         processingHubCode,
