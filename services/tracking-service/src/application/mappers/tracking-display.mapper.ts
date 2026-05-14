@@ -177,28 +177,20 @@ export function toTimelineTextVi(
   }
 
   if (event.event_type === 'scan.pickup_confirmed') {
-    const note = readNestedString(event.data, ['scanEvent', 'note']);
-    const text = note ? `Nhận hàng - ${note}` : EVENT_LABELS_VI['scan.pickup_confirmed'];
-
-    return withLocationSuffix(text, locationCode);
+    return withLocationSuffix(EVENT_LABELS_VI['scan.pickup_confirmed'], locationCode);
   }
 
   if (event.event_type === 'scan.inbound') {
-    const note = readNestedString(event.data, ['scanEvent', 'note']);
     const baseText = isInventoryCheckEvent(event)
       ? 'Kiểm tra hàng tồn'
       : EVENT_LABELS_VI['scan.inbound'];
-    const text = note ? `${baseText} - ${note}` : baseText;
 
-    return withLocationSuffix(text, locationCode);
+    return withLocationSuffix(baseText, locationCode);
   }
 
   if (event.event_type === 'scan.outbound') {
     if (isVehicleOutboundEvent(event)) {
-      const note = readNestedString(event.data, ['scanEvent', 'note']);
-      const text = note ? `Xe đi - ${note}` : 'Xe đi - Đang luân chuyển';
-
-      return withLocationSuffix(text, locationCode);
+      return withLocationSuffix('Xe đi - Đang luân chuyển', locationCode);
     }
 
     return withLocationSuffix(EVENT_LABELS_VI['scan.outbound'], locationCode);
@@ -209,7 +201,7 @@ export function toTimelineTextVi(
     const note = readNestedString(event.data, ['seal', 'note']);
 
     if (note?.startsWith('Xe đi:')) {
-      return note;
+      return 'Xe đi - Đang luân chuyển';
     }
 
     return `Đóng bao ${bagCode}`;
@@ -218,7 +210,7 @@ export function toTimelineTextVi(
   if (event.event_type === 'manifest.received') {
     const note = readNestedString(event.data, ['receive', 'note']);
     if (note?.startsWith('Xe đến:')) {
-      return note;
+      return 'Xe đến';
     }
     return EVENT_LABELS_VI['manifest.received'];
   }
