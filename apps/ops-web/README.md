@@ -1,6 +1,6 @@
 # ops-web
 
-Minimal production-oriented scaffold for Ops/Operation Staff in `jms-logistics`.
+Minimal production-oriented scaffold for Ops/Operation Staff in `NEXUS-logistics`.
 
 ## Scope
 

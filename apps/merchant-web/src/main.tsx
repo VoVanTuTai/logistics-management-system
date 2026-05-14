@@ -1672,7 +1672,7 @@ function MerchantApp(): React.JSX.Element {
     ].join(' | ');
 
     const opened = openShippingLabelPrint({
-      brandName: 'JMS LOGISTICS',
+      brandName: 'NEXUS LOGISTICS',
       serviceName: row.serviceType || 'STANDARD',
       shipmentCode: row.shipment.code,
       senderName: row.senderName,

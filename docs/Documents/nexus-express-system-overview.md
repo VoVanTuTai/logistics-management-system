@@ -6,7 +6,7 @@
 
 **Ten de tai:** Thiet ke va xay dung he thong quan ly kho va luan chuyen buu kien cho doanh nghiep chuyen phat nhanh theo kien truc microservices.
 
-**Nguon tham khao nghiep vu:** He thong duoc xay dung dua tren cach van hanh tham khao tu JMS cua J&T Express. Muc tieu la mo phong cac nghiep vu cot loi cua doanh nghiep chuyen phat nhanh, bao gom tiep nhan don, lay hang, nhap/xuat kho hub, tao va niem phong bang ke trung chuyen, giao hang, xu ly giao that bai, hoan hang, tracking va bao cao van hanh.
+**Nguon tham khao nghiep vu:** He thong duoc xay dung dua tren cach van hanh tham khao tu NEXUS cua J&T Express. Muc tieu la mo phong cac nghiep vu cot loi cua doanh nghiep chuyen phat nhanh, bao gom tiep nhan don, lay hang, nhap/xuat kho hub, tao va niem phong bang ke trung chuyen, giao hang, xu ly giao that bai, hoan hang, tracking va bao cao van hanh.
 
 **Muc dich tai lieu:** Tai lieu nay dung de:
 
@@ -15,7 +15,7 @@
 - Lam khung noi dung de viet bao cao, thuyet minh thiet ke va mo ta hien thuc.
 - Giu thong nhat ve ten mien nghiep vu, service, luong du lieu va quy tac phat trien.
 
-Luu y: Trong ma nguon hien tai van con mot so ten gọi noi bo dang tien to `jms` hoac package name `@jms/...` do lich su scaffold ban dau. Khi viet bao cao va giao dien, ten san pham chinh nen dung la **Nexus Express System**.
+Luu y: Trong ma nguon hien tai van con mot so ten gọi noi bo dang tien to `NEXUS` hoac package name `@NEXUS/...` do lich su scaffold ban dau. Khi viet bao cao va giao dien, ten san pham chinh nen dung la **Nexus Express System**.
 
 ## 2. Bai toan va muc tieu
 
@@ -316,7 +316,7 @@ Quy tac nay giup tach contract theo tung loai client va de bo sung auth/authoriz
 Khi AI ho tro sua code, viet bao cao hoac thiet ke tinh nang cho Nexus Express System, can tuan thu cac nguyen tac sau:
 
 - Dung ten he thong la **Nexus Express System** trong tai lieu, UI va bao cao.
-- Hieu day la he thong logistics/chuyen phat nhanh tham khao JMS cua J&T, khong phai clone chinh thuc hay tich hop noi bo voi J&T.
+- Hieu day la he thong logistics/chuyen phat nhanh tham khao NEXUS cua J&T, khong phai clone chinh thuc hay tich hop noi bo voi J&T.
 - Khong de service doc/ghi truc tiep database cua service khac.
 - Neu tinh nang lam thay doi trang thai nghiep vu, can xac dinh service nao la source of truth.
 - Neu thay doi can duoc tracking/reporting nhin thay, can xem co can publish/consume domain event khong.
@@ -341,7 +341,7 @@ Tai lieu bao cao co the trien khai theo cac chuong:
 
 ## 16. Huong phat trien tiep theo
 
-- Chuan hoa branding tu `jms` sang `nexus` trong UI, README va package khi can.
+- Chuan hoa branding tu `NEXUS` sang `nexus` trong UI, README va package khi can.
 - Bo sung authentication/authorization day du tai gateway va tung service noi bo.
 - Bo sung contract test cho API va event payload.
 - Bo sung observability: structured logging, tracing, metrics va dashboard health.

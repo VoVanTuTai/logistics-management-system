@@ -1,5 +1,5 @@
 {
-  "name": "@jms/auth-service",
+  "name": "@NEXUS/auth-service",
   "private": true,
   "version": "0.1.0",
   "scripts": {

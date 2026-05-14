@@ -247,8 +247,8 @@ Push-Location $rootDir
 try {
   $infraPorts = @(5672, 15432)
   $infraContainers = @(
-    'jms-dev-rabbitmq',
-    'jms-dev-postgres'
+    'NEXUS-dev-rabbitmq',
+    'NEXUS-dev-postgres'
   )
   $dockerAvailable = $null -ne (Get-Command docker -ErrorAction SilentlyContinue)
   $dockerHealthAccess = $dockerAvailable -and (Test-DockerHealthAccess)

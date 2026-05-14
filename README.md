@@ -350,7 +350,7 @@ Purpose:
 ## Monorepo Structure
 
 ```text
-jms-logistics/
+NEXUS-logistics/
 |- apps/
 |  |- backend/
 |  |  |- gateway-bff/
