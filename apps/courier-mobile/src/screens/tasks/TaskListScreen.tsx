@@ -18,7 +18,7 @@ import type { TaskDto, TaskStatus, TaskType } from '../../features/tasks/tasks.t
 import type { AppNavigatorParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
 import { appEnv } from '../../utils/env';
-import { resolveCourierId } from '../../utils/courier';
+import { resolveCourierId, resolveCourierDisplayName } from '../../utils/courier';
 import { theme } from '../../theme';
 
 type TaskListRouteParams = AppNavigatorParamList['TaskList'];
@@ -46,6 +46,11 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
     useNavigation<NativeStackNavigationProp<AppNavigatorParamList>>();
   const session = useAppStore((state) => state.session);
   const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
+  const courierName = resolveCourierDisplayName({
+    displayName: session?.user.displayName,
+    username: session?.user.username,
+    courierId,
+  });
   const offlinePendingCount = useAppStore((state) => state.offlinePendingCount);
 
   const tasksQuery = useAssignedTasksQuery({
@@ -103,7 +108,7 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
       <View style={styles.headerBlock}>
         <View style={styles.headerTop}>
           <Text style={styles.headerSubtitle}>
-            {courierId} • {filteredTasks.length} nhiệm vụ
+            {courierName} - {courierId} • {filteredTasks.length} nhiệm vụ
           </Text>
           <Pressable
             onPress={() => navigation.navigate('TrackingLookup')}
