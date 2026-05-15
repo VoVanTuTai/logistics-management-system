@@ -14,6 +14,7 @@ import type { SettingsItemData } from '../../components/profile/SettingsItem';
 import { useAppStore } from '../../store/appStore';
 import { useAuthStore } from '../../features/auth/auth.store';
 import { appEnv } from '../../utils/env';
+import { resolveCourierId, resolveCourierDisplayName } from '../../utils/courier';
 
 const shortcutItems: ProfileShortcutItemData[] = [
   {
@@ -100,11 +101,18 @@ export function ProfileScreen(): React.JSX.Element {
   const logout = useAuthStore((state) => state.logout);
   const authLoading = useAuthStore((state) => state.isLoading);
 
+  const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
+  const courierName = resolveCourierDisplayName({
+    displayName: session?.user.displayName,
+    username: session?.user.username,
+    courierId,
+  });
+
   const roles = session?.user.roles ?? [];
   const userData: ProfileHeaderData = {
-    fullName: session?.user.username ?? 'Courier',
+    fullName: courierName,
     branchName: roles.length > 0 ? `Vai trò: ${roles.join(', ')}` : 'Vai trò: courier',
-    employeeCode: session?.user.id ?? appEnv.courierId,
+    employeeCode: courierId,
     phoneNumber: '---',
     starTierLabel: 'Đang cập nhật',
   };

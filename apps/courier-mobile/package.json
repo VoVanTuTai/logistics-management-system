@@ -2,7 +2,7 @@
   "name": "courier-mobile",
   "version": "1.0.0",
   "description": "Scaffold toi thieu cho app shipper/courier trong monorepo `NEXUS-logistics`.",
-  "main": "expo/AppEntry",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node ./scripts/start-with-gateway.js",
