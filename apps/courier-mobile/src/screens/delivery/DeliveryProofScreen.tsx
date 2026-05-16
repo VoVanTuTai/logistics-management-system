@@ -97,6 +97,7 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
   const [submitMessage, setSubmitMessage] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [paymentMethod, setPaymentMethod] = React.useState<'COD' | 'BANK_TRANSFER'>('COD');
+  const [receiverNameInput, setReceiverNameInput] = React.useState('');
 
   const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
   const bankInfoQuery = useCompanyBankInfoQuery({ accessToken: session?.tokens.accessToken ?? null });
@@ -124,11 +125,27 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
       'address',
     ]) ?? 'N/A';
 
+  // Financial calculations
+  const shippingFee = (() => {
+    const raw = readMetadataPath(shipmentMetadata, 'shippingFee');
+    if (typeof raw === 'number') return raw;
+    if (typeof raw === 'string') { const n = Number(raw); return Number.isNaN(n) ? 0 : n; }
+    return 0;
+  })();
+  const prepaidAmount = (() => {
+    const raw = readMetadataPath(shipmentMetadata, 'prepaidAmount');
+    if (typeof raw === 'number') return raw;
+    if (typeof raw === 'string') { const n = Number(raw); return Number.isNaN(n) ? 0 : n; }
+    return 0;
+  })();
+  const totalAmountDue = codAmount + shippingFee - prepaidAmount;
+  const hasAmountToPay = totalAmountDue > 0;
+
   const openCamera = React.useCallback(async () => {
     if (!permission?.granted) {
       const result = await requestPermission();
       if (!result.granted) {
-        Alert.alert('Can quyen camera', 'Vui long cap quyen camera de chup anh giao hang.');
+        Alert.alert('Cần quyền camera', 'Vui lòng cấp quyền camera để chụp ảnh giao hàng.');
         return;
       }
     }
@@ -148,14 +165,14 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
       });
 
       if (!picture.uri) {
-        throw new Error('Khong chup duoc anh.');
+        throw new Error('Không chụp được ảnh.');
       }
 
       setPhotoUri(picture.uri);
       setCameraVisible(false);
       setSubmitMessage(null);
     } catch (error) {
-      setSubmitMessage(error instanceof Error ? error.message : 'Khong chup duoc anh.');
+      setSubmitMessage(error instanceof Error ? error.message : 'Không chụp được ảnh.');
     } finally {
       setCapturing(false);
     }
@@ -163,12 +180,22 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
 
   const handleSubmit = React.useCallback(async () => {
     if (!resolvedShipmentCode) {
-      setSubmitMessage('Khong co ma shipment cho nhiem vu nay.');
+      setSubmitMessage('Không có mã shipment cho nhiệm vụ này.');
       return;
     }
 
     if (!photoUri) {
-      setSubmitMessage('Can chup 1 anh chung minh giao hang truoc khi ky nhan.');
+      setSubmitMessage('Cần chụp 1 ảnh chứng minh giao hàng trước khi ký nhận.');
+      return;
+    }
+
+    if (!receiverNameInput.trim()) {
+      setSubmitMessage('Vui lòng nhập tên người nhận hàng.');
+      return;
+    }
+
+    if (hasAmountToPay && !paymentMethod) {
+      setSubmitMessage('Vui lòng chọn phương thức thanh toán.');
       return;
     }
 
@@ -177,7 +204,7 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
       username: session?.user.username,
       courierId,
       hubCode: session?.user.hubCodes?.[0] ?? null,
-      note: note.trim().length > 0 ? note.trim() : 'Ky nhan giao hang tu courier app.',
+      note: note.trim().length > 0 ? note.trim() : `Ký nhận giao hàng. Người nhận: ${receiverNameInput.trim()}`,
     });
 
     const payload: DeliverySuccessPayload = {
@@ -233,10 +260,10 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
 
       setSubmitMessage(
         result.source === 'DUPLICATE_REPLAY'
-          ? 'Server da tra lai ket qua cu cho idempotencyKey trung lap.'
+          ? 'Server đã trả lại kết quả cũ cho idempotencyKey trùng lặp.'
           : taskStatusUpdated
-            ? 'Ky nhan thanh cong. Task da chuyen COMPLETED.'
-            : 'Ky nhan thanh cong. Trang thai don da duoc cap nhat.',
+            ? `✓ Ký nhận thành công! Người nhận: ${receiverNameInput.trim()}. Task đã chuyển COMPLETED.`
+            : '✓ Ký nhận thành công. Trạng thái đơn đã được cập nhật.',
       );
 
       await queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -257,10 +284,10 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
     } catch (error) {
       if (shouldQueueOffline(error)) {
         await enqueueDeliverySuccessOffline(payload);
-        setSubmitMessage('Mat mang: thao tac da duoc luu offline va se tu dong dong bo.');
+        setSubmitMessage('Mất mạng: thao tác đã được lưu offline và sẽ tự động đồng bộ.');
       } else {
         const message =
-          error instanceof Error ? error.message : 'Ky nhan that bai.';
+          error instanceof Error ? error.message : 'Ký nhận thất bại.';
         setSubmitMessage(message);
         setGlobalError(message);
       }
@@ -288,9 +315,9 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
           showsVerticalScrollIndicator={false}
         >
           <Card>
-            <Text style={styles.sectionTitle}>Xac nhan ky nhan</Text>
+            <Text style={styles.sectionTitle}>Xác nhận ký nhận</Text>
             <Text style={styles.sectionHint}>
-              Can chup 1 tam hinh chung minh giao hang truoc khi gui len he thong.
+              Cần chụp 1 tấm hình chứng minh giao hàng trước khi gửi lên hệ thống.
             </Text>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Task code</Text>
@@ -303,11 +330,11 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
               <Text style={styles.infoValue}>{resolvedShipmentCode ?? 'N/A'}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Nguoi nhan</Text>
+              <Text style={styles.infoLabel}>Người nhận</Text>
               <Text style={styles.infoValue}>{receiverName}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>So dien thoai</Text>
+              <Text style={styles.infoLabel}>Số điện thoại</Text>
               <Text style={styles.infoValue}>{receiverPhone}</Text>
             </View>
             <View style={styles.infoRow}>
@@ -317,24 +344,44 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
             {shipmentQuery.isLoading ? (
               <View style={styles.inlineStateRow}>
                 <ActivityIndicator size="small" color={theme.colors.primary} />
-                <Text style={styles.inlineStateText}>Dang tai thong tin don hang...</Text>
+                <Text style={styles.inlineStateText}>Đang tải thông tin đơn hàng...</Text>
               </View>
             ) : null}
           </Card>
 
           {codAmount > 0 ? (
-            <Card>
-              <Text style={styles.sectionTitle}>Thu tiền COD</Text>
+            <Card style={styles.financialCard}>
+              <Text style={styles.sectionTitle}>💰 Tổng tiền phải thu</Text>
               <Text style={styles.sectionHint}>
-                Đơn hàng có thu hộ. Vui lòng chọn phương thức thanh toán.
+                Đơn hàng có thu hộ. Vui lòng thu đủ tiền trước khi ký nhận.
               </Text>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Số tiền cần thu:</Text>
-                <Text style={styles.codAmountText}>
-                  {codAmount.toLocaleString('vi-VN')}đ
-                </Text>
+
+              {/* Financial breakdown */}
+              <View style={styles.financialBreakdown}>
+                <View style={styles.finRow}>
+                  <Text style={styles.finLabel}>Tiền thu hộ (COD)</Text>
+                  <Text style={styles.finValue}>{codAmount.toLocaleString('vi-VN')}đ</Text>
+                </View>
+                {shippingFee > 0 ? (
+                  <View style={styles.finRow}>
+                    <Text style={styles.finLabel}>Phí vận chuyển</Text>
+                    <Text style={styles.finValue}>{shippingFee.toLocaleString('vi-VN')}đ</Text>
+                  </View>
+                ) : null}
+                {prepaidAmount > 0 ? (
+                  <View style={styles.finRow}>
+                    <Text style={styles.finLabel}>Đã trả trước</Text>
+                    <Text style={[styles.finValue, { color: '#059669' }]}>-{prepaidAmount.toLocaleString('vi-VN')}đ</Text>
+                  </View>
+                ) : null}
+                <View style={styles.finTotalRow}>
+                  <Text style={styles.finTotalLabel}>TỔNG PHẢI THU</Text>
+                  <Text style={styles.finTotalValue}>{totalAmountDue.toLocaleString('vi-VN')}đ</Text>
+                </View>
               </View>
 
+              {/* Payment method toggle */}
+              <Text style={[styles.sectionHint, { marginTop: 12, marginBottom: 4 }]}>Phương thức thanh toán:</Text>
               <View style={styles.toggleRow}>
                 <Pressable
                   style={[
@@ -370,36 +417,55 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
                 </Pressable>
               </View>
 
+              {/* Cash confirmation */}
+              {paymentMethod === 'COD' ? (
+                <View style={styles.cashConfirmBox}>
+                  <Ionicons name="cash-outline" size={20} color="#059669" />
+                  <Text style={styles.cashConfirmText}>
+                    Xác nhận đã thu đủ {totalAmountDue.toLocaleString('vi-VN')}đ tiền mặt từ người nhận.
+                  </Text>
+                </View>
+              ) : null}
+
+              {/* QR code */}
               {paymentMethod === 'BANK_TRANSFER' && bankInfo ? (
                 <View style={styles.qrContainer}>
-                  <Text style={styles.qrHint}>Cho khách hàng quét mã QR này</Text>
+                  <Text style={styles.qrHint}>Cho khách hàng quét mã QR này để thanh toán</Text>
                   <Image
                     source={{
-                      uri: `https://img.vietqr.io/image/${bankInfo.bin}-${bankInfo.accountNumber}-compact2.png?amount=${codAmount}&addInfo=${encodeURIComponent(`Thanh toan don ${resolvedShipmentCode}`)}&accountName=${encodeURIComponent(bankInfo.accountName)}`,
+                      uri: `https://img.vietqr.io/image/${bankInfo.bin}-${bankInfo.accountNumber}-compact2.png?amount=${totalAmountDue}&addInfo=${encodeURIComponent(`Thanh toan don ${resolvedShipmentCode}`)}&accountName=${encodeURIComponent(bankInfo.accountName)}`,
                     }}
                     style={styles.qrImage}
                     resizeMode="contain"
                   />
+                  <View style={styles.bankDetailBox}>
+                    <Text style={styles.bankDetailText}>Ngân hàng: {bankInfo.bankName ?? bankInfo.bin}</Text>
+                    <Text style={styles.bankDetailText}>STK: {bankInfo.accountNumber}</Text>
+                    <Text style={styles.bankDetailText}>Chủ TK: {bankInfo.accountName}</Text>
+                    <Text style={[styles.bankDetailText, { fontWeight: '700', color: '#B91C1C' }]}>
+                      Số tiền: {totalAmountDue.toLocaleString('vi-VN')}đ
+                    </Text>
+                  </View>
                 </View>
               ) : null}
             </Card>
           ) : null}
 
           <Card>
-            <Text style={styles.sectionTitle}>Anh chung minh</Text>
+            <Text style={styles.sectionTitle}>Ảnh chứng minh giao hàng</Text>
             {photoUri ? (
               <Image source={{ uri: photoUri }} style={styles.photoPreview} />
             ) : (
               <View style={styles.photoPlaceholder}>
                 <Ionicons name="image-outline" size={30} color={theme.colors.textMuted} />
-                <Text style={styles.photoPlaceholderText}>Chua co anh giao hang</Text>
+                <Text style={styles.photoPlaceholderText}>Chưa có ảnh giao hàng</Text>
               </View>
             )}
 
             <View style={styles.photoActionsRow}>
               <Pressable onPress={() => void openCamera()} style={styles.secondaryButton}>
                 <Text style={styles.secondaryButtonText}>
-                  {photoUri ? 'Chup lai anh' : 'Chup anh chung minh'}
+                  {photoUri ? 'Chụp lại ảnh' : 'Chụp ảnh chứng minh'}
                 </Text>
               </Pressable>
               {photoUri ? (
@@ -407,16 +473,27 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
                   onPress={() => setPhotoUri(null)}
                   style={styles.clearButton}
                 >
-                  <Text style={styles.clearButtonText}>Xoa anh</Text>
+                  <Text style={styles.clearButtonText}>Xóa ảnh</Text>
                 </Pressable>
               ) : null}
             </View>
           </Card>
 
           <Card>
-            <Text style={styles.sectionTitle}>Ghi chu giao hang</Text>
+            <Text style={styles.sectionTitle}>Tên người nhận hàng</Text>
             <TextInput
-              placeholder="Nhap ghi chu bo sung (neu can)"
+              placeholder="Nhập tên người nhận (bắt buộc)"
+              placeholderTextColor="#94A3B8"
+              style={styles.noteInput}
+              value={receiverNameInput}
+              onChangeText={setReceiverNameInput}
+            />
+          </Card>
+
+          <Card>
+            <Text style={styles.sectionTitle}>Ghi chú giao hàng</Text>
+            <TextInput
+              placeholder="Nhập ghi chú bổ sung (nếu cần)"
               placeholderTextColor="#94A3B8"
               style={styles.noteInput}
               multiline
@@ -446,7 +523,11 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
             {isSubmitting ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Text style={styles.submitButtonText}>Xac nhan ky nhan</Text>
+              <Text style={styles.submitButtonText}>
+                {hasAmountToPay
+                  ? `Xác nhận ký nhận — Thu ${totalAmountDue.toLocaleString('vi-VN')}đ`
+                  : 'Xác nhận ký nhận giao hàng'}
+              </Text>
             )}
           </Pressable>
         </View>
@@ -461,7 +542,7 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
         <View style={styles.cameraOverlay}>
           <View style={styles.cameraCard}>
             <View style={styles.cameraHeader}>
-              <Text style={styles.cameraTitle}>Chup anh minh chung</Text>
+              <Text style={styles.cameraTitle}>Chụp ảnh minh chứng</Text>
               <Pressable onPress={() => setCameraVisible(false)}>
                 <Ionicons name="close" size={22} color={theme.colors.textPrimary} />
               </Pressable>
@@ -472,7 +553,7 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
             ) : (
               <View style={styles.permissionFallback}>
                 <Text style={styles.permissionText}>
-                  Chua co quyen camera. Vui long cap quyen de tiep tuc.
+                  Chưa có quyền camera. Vui lòng cấp quyền để tiếp tục.
                 </Text>
                 <Pressable
                   onPress={() => {
@@ -480,7 +561,7 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
                   }}
                   style={styles.secondaryButton}
                 >
-                  <Text style={styles.secondaryButtonText}>Cap quyen</Text>
+                  <Text style={styles.secondaryButtonText}>Cấp quyền</Text>
                 </Pressable>
               </View>
             )}
@@ -490,7 +571,7 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
                 onPress={() => setCameraVisible(false)}
                 style={styles.cameraSecondaryButton}
               >
-                <Text style={styles.cameraSecondaryButtonText}>Dong</Text>
+                <Text style={styles.cameraSecondaryButtonText}>Đóng</Text>
               </Pressable>
               <Pressable
                 disabled={!permission?.granted || capturing}
@@ -505,7 +586,7 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
                 {capturing ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
-                  <Text style={styles.cameraPrimaryButtonText}>Chup</Text>
+                  <Text style={styles.cameraPrimaryButtonText}>Chụp</Text>
                 )}
               </Pressable>
             </View>
@@ -672,6 +753,83 @@ const styles = StyleSheet.create({
     ...theme.typography.subtitle.md,
     color: theme.colors.danger,
     fontWeight: '700',
+  },
+  financialCard: {
+    borderWidth: 1.5,
+    borderColor: '#FBBF24',
+    backgroundColor: '#FFFBEB',
+  },
+  financialBreakdown: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: theme.radius.md,
+    backgroundColor: '#FFFFFF',
+    overflow: 'hidden',
+  },
+  finRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  finLabel: {
+    ...theme.typography.body.sm,
+    color: theme.colors.textSecondary,
+  },
+  finValue: {
+    ...theme.typography.body.sm,
+    color: theme.colors.textPrimary,
+    fontWeight: '600',
+  },
+  finTotalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#FEF2F2',
+  },
+  finTotalLabel: {
+    ...theme.typography.body.sm,
+    color: '#991B1B',
+    fontWeight: '800',
+  },
+  finTotalValue: {
+    ...theme.typography.subtitle.md,
+    color: '#B91C1C',
+    fontWeight: '800',
+  },
+  cashConfirmBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+    padding: 12,
+    borderRadius: theme.radius.md,
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#6EE7B7',
+  },
+  cashConfirmText: {
+    ...theme.typography.body.sm,
+    color: '#065F46',
+    fontWeight: '600',
+    flex: 1,
+  },
+  bankDetailBox: {
+    marginTop: 12,
+    padding: 12,
+    borderRadius: theme.radius.md,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 4,
+  },
+  bankDetailText: {
+    ...theme.typography.caption.md,
+    color: theme.colors.textSecondary,
   },
   qrContainer: {
     marginTop: 16,
