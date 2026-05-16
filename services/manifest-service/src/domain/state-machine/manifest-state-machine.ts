@@ -8,11 +8,15 @@ export class ManifestStateMachine {
     return status === 'CREATED';
   }
 
+  canRemoveShipments(status: ManifestStatus): boolean {
+    return ['CREATED', 'SEALED', 'RECEIVED'].includes(status);
+  }
+
   canSeal(status: ManifestStatus): boolean {
     return status === 'CREATED';
   }
 
   canReceive(status: ManifestStatus): boolean {
-    return status === 'SEALED';
+    return ['CREATED', 'SEALED'].includes(status);
   }
 }

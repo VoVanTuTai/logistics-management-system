@@ -1,4 +1,4 @@
-﻿import type { TrackingEventEnvelope } from '../../domain/entities/timeline-event.entity';
+import type { TrackingEventEnvelope } from '../../domain/entities/timeline-event.entity';
 
 export const TRACKING_BUSINESS_EVENTS = [
   'shipment.created',
@@ -8,6 +8,7 @@ export const TRACKING_BUSINESS_EVENTS = [
   'scan.pickup_confirmed',
   'manifest.sealed',
   'manifest.received',
+  'manifest.unsealed',
   'scan.outbound',
   'scan.inbound',
   'delivery.attempted',
@@ -31,6 +32,7 @@ export const TRACKING_STATUS_BY_EVENT: Record<
   'scan.pickup_confirmed': 'PICKED_UP',
   'manifest.sealed': 'IN_TRANSIT',
   'manifest.received': 'INBOUND_AT_HUB',
+  'manifest.unsealed': 'MANIFEST_UNSEALED',
   'scan.outbound': 'OUTBOUND_FROM_HUB',
   'scan.inbound': 'INBOUND_AT_HUB',
   'delivery.attempted': 'DELIVERING',
@@ -42,50 +44,57 @@ export const TRACKING_STATUS_BY_EVENT: Record<
 };
 
 const STATUS_LABELS_VI: Record<string, string> = {
-  CREATED: 'Đơn hàng đã được tạo',
-  PICKUP_REQUESTED: 'Đang chờ lấy hàng',
-  PICKUP_ASSIGNED: 'Đã phân công lấy hàng',
-  PICKED_UP: 'Đã lấy hàng',
-  IN_TRANSIT: 'Đang trung chuyển',
-  INBOUND_AT_HUB: 'Đã đến kho',
-  OUTBOUND_FROM_HUB: 'Đã rời kho',
-  OUT_FOR_DELIVERY: 'Đang giao hàng',
-  DELIVERING: 'Shipper đang giao hàng',
-  DELIVERED: 'Giao hàng thành công',
-  DELIVERY_FAILED: 'Giao hàng không thành công',
+  CREATED: 'Đã tạo',
+  BAGGED: 'Đóng bao',
+  PICKUP_REQUESTED: 'Chờ lấy hàng',
+  PICKUP_ASSIGNED: 'Chờ lấy hàng',
+  PICKED_UP: 'Đã nhận hàng',
+  IN_TRANSIT: 'Đang luân chuyển',
+  INBOUND_AT_HUB: 'Hàng đến',
+  OUTBOUND_FROM_HUB: 'Gửi hàng',
+  SEND_GOODS: 'Gửi hàng',
+  INVENTORY_CHECK: 'Quét tồn kho',
+  OUT_FOR_DELIVERY: 'Phát hàng',
+  DELIVERING: 'Phát hàng',
+  DELIVERED: 'Ký nhận',
+  DELIVERY_FAILED: 'Ghi nhận vấn đề',
+  EXCEPTION: 'Ghi nhận vấn đề',
   RETURNING: 'Đang hoàn hàng',
   RETURNED: 'Đã hoàn hàng',
 
   // Backward-compatible labels for existing legacy shipment statuses.
-  UPDATED: 'Đang chờ lấy hàng',
-  PICKUP_COMPLETED: 'Đã lấy hàng',
-  TASK_ASSIGNED: 'Đã phân công tác vụ',
-  MANIFEST_SEALED: 'Đang trung chuyển',
-  MANIFEST_RECEIVED: 'Đã đến kho trung chuyển',
-  SCAN_INBOUND: 'Đã đến kho',
-  SCAN_OUTBOUND: 'Đã rời kho',
-  NDR_CREATED: 'Đơn hàng đang được xử lý lại',
+  UPDATED: 'Chờ lấy hàng',
+  PICKUP_COMPLETED: 'Đã nhận hàng',
+  TASK_ASSIGNED: 'Chờ lấy hàng',
+  MANIFEST_SEALED: 'Đang luân chuyển',
+  MANIFEST_RECEIVED: 'Xe đến',
+  MANIFEST_UNSEALED: 'Gỡ bao',
+  SCAN_INBOUND: 'Hàng đến',
+  SCAN_OUTBOUND: 'Gửi hàng',
+  NDR_CREATED: 'Ghi nhận vấn đề',
+  PENDING_RESOLUTION: 'Ghi nhận vấn đề',
   RETURN_STARTED: 'Đang hoàn hàng',
   RETURN_COMPLETED: 'Đã hoàn hàng',
   CANCELLED: 'Đơn hàng đã hủy',
 };
 
 const EVENT_LABELS_VI: Record<TrackingBusinessEventType, string> = {
-  'shipment.created': 'Đơn hàng đã được tạo',
-  'pickup.requested': 'Đã yêu cầu lấy hàng',
-  'pickup.approved': 'Yêu cầu lấy hàng đã được xác nhận',
-  'task.assigned': 'Shipper đã được phân công lấy hàng',
-  'scan.pickup_confirmed': 'Shipper đã lấy hàng',
-  'manifest.sealed': 'Hàng đã được đóng bao và chuẩn bị vận chuyển',
-  'manifest.received': 'Hàng đã đến kho trung chuyển',
-  'scan.outbound': 'Hàng đã rời kho',
-  'scan.inbound': 'Hàng đã đến kho',
-  'delivery.attempted': 'Shipper đang giao hàng',
-  'delivery.delivered': 'Giao hàng thành công',
-  'delivery.failed': 'Giao hàng không thành công',
-  'ndr.created': 'Đơn hàng đang được xử lý lại',
-  'return.started': 'Đơn hàng đang được hoàn trả',
-  'return.completed': 'Đơn hàng đã được hoàn trả',
+  'shipment.created': 'Tạo đơn hàng',
+  'pickup.requested': 'Yêu cầu pickup',
+  'pickup.approved': 'Điều phối cho Courier',
+  'task.assigned': 'Điều phối cho Courier',
+  'scan.pickup_confirmed': 'Nhận hàng',
+  'manifest.sealed': 'Xe đi',
+  'manifest.received': 'Xe đến',
+  'manifest.unsealed': 'Gỡ bao',
+  'scan.outbound': 'Gửi hàng',
+  'scan.inbound': 'Hàng đến',
+  'delivery.attempted': 'Phát hàng',
+  'delivery.delivered': 'Ký nhận',
+  'delivery.failed': 'Ghi nhận vấn đề',
+  'ndr.created': 'Ghi nhận vấn đề',
+  'return.started': 'Bắt đầu hoàn hàng',
+  'return.completed': 'Hoàn hàng thành công',
 };
 
 export function isTrackingBusinessEventType(
@@ -112,6 +121,30 @@ export function resolveTrackingStatusFromEvent(
     if (taskType === 'PICKUP') {
       return 'PICKUP_ASSIGNED';
     }
+  }
+
+  if (event.event_type === 'scan.outbound' && isSendGoodsEvent(event)) {
+    return 'SEND_GOODS';
+  }
+
+  if (event.event_type === 'ndr.created' && isExceptionNdrEvent(event)) {
+    return 'EXCEPTION';
+  }
+
+  if (event.event_type === 'scan.outbound' && isVehicleOutboundEvent(event)) {
+    return 'IN_TRANSIT';
+  }
+
+  if (event.event_type === 'scan.inbound' && isInventoryCheckEvent(event)) {
+    return 'INVENTORY_CHECK';
+  }
+
+  if (event.event_type === 'manifest.sealed') {
+    const note = readNestedString(event.data, ['seal', 'note']);
+    if (note?.startsWith('Xe đi:')) {
+      return 'IN_TRANSIT';
+    }
+    return 'BAGGED';
   }
 
   return TRACKING_STATUS_BY_EVENT[event.event_type] ?? currentStatus;
@@ -143,22 +176,88 @@ export function toTimelineTextVi(
     return EVENT_LABELS_VI['task.assigned'];
   }
 
+  if (event.event_type === 'scan.pickup_confirmed') {
+    return withLocationSuffix(EVENT_LABELS_VI['scan.pickup_confirmed'], locationCode);
+  }
+
   if (event.event_type === 'scan.inbound') {
-    return withLocationSuffix(EVENT_LABELS_VI['scan.inbound'], locationCode);
+    const baseText = isInventoryCheckEvent(event)
+      ? 'Kiểm tra hàng tồn'
+      : EVENT_LABELS_VI['scan.inbound'];
+
+    return withLocationSuffix(baseText, locationCode);
   }
 
   if (event.event_type === 'scan.outbound') {
+    if (isVehicleOutboundEvent(event)) {
+      return withLocationSuffix('Xe đi - Đang luân chuyển', locationCode);
+    }
+
     return withLocationSuffix(EVENT_LABELS_VI['scan.outbound'], locationCode);
   }
 
+  if (event.event_type === 'manifest.sealed') {
+    const bagCode = readNestedString(event.data, ['manifest', 'manifestCode']) ?? 'N/A';
+    const note = readNestedString(event.data, ['seal', 'note']);
+
+    if (note?.startsWith('Xe đi:')) {
+      return 'Xe đi - Đang luân chuyển';
+    }
+
+    return `Đóng bao ${bagCode}`;
+  }
+
   if (event.event_type === 'manifest.received') {
-    return withLocationSuffix(
-      EVENT_LABELS_VI['manifest.received'],
-      locationCode ?? readHubCode(event.data, ['manifest', 'destinationHubCode']),
-    );
+    const note = readNestedString(event.data, ['receive', 'note']);
+    if (note?.startsWith('Xe đến:')) {
+      return 'Xe đến';
+    }
+    return EVENT_LABELS_VI['manifest.received'];
+  }
+
+  if (event.event_type === 'manifest.unsealed') {
+    return EVENT_LABELS_VI['manifest.unsealed'];
+  }
+
+  if (event.event_type === 'ndr.created' && isExceptionNdrEvent(event)) {
+    const issueName =
+      readNestedString(event.data, ['ndrCase', 'issueType']) ??
+      readNestedString(event.data, ['ndrCase', 'reasonCode']) ??
+      'Sự cố';
+
+    return `Đơn hàng đang gặp sự cố: ${issueName}. Đang chờ xử lý`;
   }
 
   return EVENT_LABELS_VI[event.event_type];
+}
+
+export function extractTimelineNote(event: TrackingEventEnvelope): string | null {
+  if (event.event_type === 'manifest.sealed') {
+    const employeeName = readNestedString(event.data, ['seal', 'employeeName']) ?? 'N/A';
+    const employeeCode = readNestedString(event.data, ['seal', 'employeeCode']) ?? 'N/A';
+    const hubCode = readNestedString(event.data, ['seal', 'processingHubCode']) ?? 'N/A';
+    return `${employeeName} - ${employeeCode} - ${hubCode}`;
+  }
+  
+  if (event.event_type === 'manifest.received') {
+    const employeeName = readNestedString(event.data, ['receive', 'receivedByName']) ?? 'N/A';
+    const employeeCode = readNestedString(event.data, ['receive', 'receivedBy']) ?? 'N/A';
+    const hubCode = readNestedString(event.data, ['receive', 'processingHubCode']) ?? 'N/A';
+    return `${employeeName} - ${employeeCode} - ${hubCode}`;
+  }
+
+  if (event.event_type === 'manifest.unsealed') {
+    const employeeName = readNestedString(event.data, ['unseal', 'unsealedByName']) ?? readNestedString(event.data, ['unseal', 'employeeName']) ?? 'N/A';
+    const employeeCode = readNestedString(event.data, ['unseal', 'unsealedBy']) ?? readNestedString(event.data, ['unseal', 'employeeCode']) ?? 'N/A';
+    const hubCode = readNestedString(event.data, ['unseal', 'processingHubCode']) ?? 'N/A';
+    return `${employeeName} - ${employeeCode} - ${hubCode}`;
+  }
+
+  if (event.event_type === 'scan.outbound' || event.event_type === 'scan.inbound' || event.event_type === 'scan.pickup_confirmed') {
+    return readNestedString(event.data, ['scanEvent', 'note']);
+  }
+
+  return null;
 }
 
 function withLocationSuffix(baseText: string, locationCode: string | null): string {
@@ -190,6 +289,27 @@ function readHubCode(
   path: string[],
 ): string | null {
   return readNestedString(data, path) ?? null;
+}
+
+function isSendGoodsEvent(event: TrackingEventEnvelope): boolean {
+  const note = readNestedString(event.data, ['scanEvent', 'note']);
+  return note?.startsWith('SEND_GOODS') ?? false;
+}
+
+function isVehicleOutboundEvent(event: TrackingEventEnvelope): boolean {
+  const note = readNestedString(event.data, ['scanEvent', 'note']);
+  return note?.startsWith('VEHICLE_OUTBOUND') ?? false;
+}
+
+function isExceptionNdrEvent(event: TrackingEventEnvelope): boolean {
+  const status = readNestedString(event.data, ['ndrCase', 'status']);
+  const issueType = readNestedString(event.data, ['ndrCase', 'issueType']);
+  return status === 'PENDING_RESOLUTION' || Boolean(issueType);
+}
+
+function isInventoryCheckEvent(event: TrackingEventEnvelope): boolean {
+  const note = readNestedString(event.data, ['scanEvent', 'note']);
+  return note?.startsWith('INVENTORY_CHECK') ?? false;
 }
 
 function readNestedString(source: unknown, path: string[]): string | null {

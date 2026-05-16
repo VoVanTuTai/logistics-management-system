@@ -74,6 +74,36 @@ function normalizePhone(phone: string): string {
   return phone.replace(/[^\d+]/g, '');
 }
 
+function toShipmentStatusLabelVi(status: string | null | undefined): string {
+  if (!status) {
+    return 'N/A';
+  }
+
+  const labels: Record<string, string> = {
+    CANCELLED: 'Đã hủy',
+    CREATED: 'Mới tạo',
+    DELIVERED: 'Giao thành công',
+    DELIVERY_FAILED: 'Giao thất bại',
+    EXCEPTION: 'Kiện vấn đề',
+    MANIFEST_RECEIVED: 'Đã nhận bao',
+    MANIFEST_SEALED: 'Đã niêm phong bao',
+    MANIFEST_UNSEALED: 'Đã gỡ bao',
+    NDR_CREATED: 'Cần xử lý giao thất bại',
+    PICKUP_COMPLETED: 'Nhận hàng',
+    IN_TRANSIT: 'Đang luân chuyển',
+    RETURN_COMPLETED: 'Hoàn hàng thành công',
+    RETURN_STARTED: 'Bắt đầu hoàn hàng',
+    SEND_GOODS: 'Đã gửi hàng',
+    INVENTORY_CHECK: 'Kiểm tra hàng tồn',
+    SCAN_INBOUND: 'Hàng đến',
+    SCAN_OUTBOUND: 'Đã quét xuất hub',
+    TASK_ASSIGNED: 'Đã phân công',
+    UPDATED: 'Đã cập nhật',
+  };
+
+  return labels[status] ?? status;
+}
+
 export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Element {
   const session = useAppStore((state) => state.session);
   const taskQuery = useTaskDetailQuery({
@@ -117,6 +147,23 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
   const shipmentNote =
     readMetadataString(shipmentMetadata, ['note', 'shipmentNote']) ?? 'N/A';
 
+  const issueReason = readMetadataString(shipmentMetadata, ['issueReason', 'exceptionReason', 'ndrReason', 'ndrCase.issueType']);
+  const issueEmployeeName = readMetadataString(shipmentMetadata, ['issueEmployeeName', 'exceptionEmployeeName', 'ndrCase.reportedByName', 'reportedBy']);
+  const issueEmployeeCode = readMetadataString(shipmentMetadata, ['issueEmployeeCode', 'exceptionEmployeeCode', 'ndrCase.reportedById', 'reportedById']);
+  const issueHubCode = readMetadataString(shipmentMetadata, ['issueHubCode', 'exceptionHubCode', 'ndrCase.reportedHubCode', 'reportedHubCode']);
+  const issueNoteFull = readMetadataString(shipmentMetadata, ['issueNote', 'exceptionNote', 'ndrCase.note', 'note']);
+
+  let displayStatus = toShipmentStatusLabelVi(shipmentQuery.data?.currentStatus);
+  if (shipmentQuery.data?.currentStatus === 'EXCEPTION') {
+    const reasonText = issueReason ?? 'Không rõ lý do';
+    displayStatus = `${displayStatus} (Lý do: ${reasonText})`;
+    if (issueEmployeeName || issueEmployeeCode || issueHubCode) {
+      displayStatus += `\nNV: ${issueEmployeeName || 'N/A'} (${issueEmployeeCode || 'N/A'}) - Hub: ${issueHubCode || 'N/A'}`;
+    } else if (issueNoteFull) {
+      displayStatus += `\nGhi chú: ${issueNoteFull}`;
+    }
+  }
+
   const handleReloadStatus = React.useCallback(async () => {
     const requests: Array<Promise<unknown>> = [taskQuery.refetch()];
 
@@ -132,7 +179,7 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
       setCallOptionsVisible(false);
 
       if (!rawPhone) {
-        Alert.alert('Khong co so dien thoai', 'Don hang chua co thong tin so lien he.');
+        Alert.alert('Không có số điện thoại', 'Đơn hàng chưa có thông tin số liên hệ.');
         return;
       }
 
@@ -142,15 +189,15 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
       try {
         const supported = await Linking.canOpenURL(targetUrl);
         if (!supported) {
-          Alert.alert('Khong mo duoc ung dung', `Khong the xu ly: ${targetUrl}`);
+          Alert.alert('Không mở được ứng dụng', `Không thể xử lý: ${targetUrl}`);
           return;
         }
 
         await Linking.openURL(targetUrl);
       } catch (error) {
         Alert.alert(
-          'Thao tac that bai',
-          error instanceof Error ? error.message : 'Khong the mo lien ket goi dien.',
+          'Thao tác thất bại',
+          error instanceof Error ? error.message : 'Không thể mở liên kết gọi điện.',
         );
       }
     },
@@ -162,7 +209,7 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
       <Screen scroll={false}>
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.centeredText}>Dang tai chi tiet nhiem vu...</Text>
+          <Text style={styles.centeredText}>Đang tải chi tiết nhiệm vụ...</Text>
         </View>
       </Screen>
     );
@@ -175,10 +222,10 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
           <Text style={styles.errorText}>
             {taskQuery.error instanceof Error
               ? taskQuery.error.message
-              : 'Tai chi tiet nhiem vu that bai.'}
+              : 'Tải chi tiết nhiệm vụ thất bại.'}
           </Text>
           <Pressable onPress={() => void taskQuery.refetch()} style={styles.retryButton}>
-            <Text style={styles.retryButtonText}>Thu lai</Text>
+            <Text style={styles.retryButtonText}>Thử lại</Text>
           </Pressable>
         </View>
       </Screen>
@@ -189,13 +236,14 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
     return (
       <Screen scroll={false}>
         <View style={styles.centered}>
-          <Text style={styles.errorText}>Khong tim thay nhiem vu.</Text>
+          <Text style={styles.errorText}>Không tìm thấy nhiệm vụ.</Text>
         </View>
       </Screen>
     );
   }
 
   const hasShipmentCode = Boolean(task.shipmentCode);
+  const isPickupTask = task.taskType === 'PICKUP';
   const isReloadingStatus = taskQuery.isRefetching || shipmentQuery.isRefetching;
 
   return (
@@ -230,44 +278,44 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
               <StatusBadge label={task.taskType} variant="neutral" />
             </View>
             <Text style={styles.shipmentText}>
-              Ma don: {task.shipmentCode ?? 'N/A'}
+              Mã đơn: {task.shipmentCode ?? 'N/A'}
             </Text>
           </Card>
 
           <Card>
-            <Text style={styles.sectionTitle}>Thong tin nhiem vu</Text>
+            <Text style={styles.sectionTitle}>Thông tin nhiệm vụ</Text>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Ma nhiem vu</Text>
+              <Text style={styles.infoLabel}>Mã nhiệm vụ</Text>
               <Text style={styles.infoValue}>{task.id}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Pickup request</Text>
+              <Text style={styles.infoLabel}>Yêu cầu lấy hàng</Text>
               <Text style={styles.infoValue}>{task.pickupRequestId ?? 'N/A'}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>So lan phan cong</Text>
+              <Text style={styles.infoLabel}>Số lần phân công</Text>
               <Text style={styles.infoValue}>{String(task.assignments.length)}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Tao luc</Text>
+              <Text style={styles.infoLabel}>Tạo lúc</Text>
               <Text style={styles.infoValue}>{formatDateTime(task.createdAt)}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Cap nhat luc</Text>
+              <Text style={styles.infoLabel}>Cập nhật lúc</Text>
               <Text style={styles.infoValue}>{formatDateTime(task.updatedAt)}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Ghi chu nhiem vu</Text>
+              <Text style={styles.infoLabel}>Ghi chú nhiệm vụ</Text>
               <Text style={styles.infoValue}>{task.note ?? 'N/A'}</Text>
             </View>
           </Card>
 
           <Card>
-            <Text style={styles.sectionTitle}>Thong tin don hang</Text>
+            <Text style={styles.sectionTitle}>Thông tin đơn hàng</Text>
             {shipmentQuery.isLoading ? (
               <View style={styles.loadingRow}>
                 <ActivityIndicator size="small" color={theme.colors.primary} />
-                <Text style={styles.loadingText}>Dang tai thong tin don hang...</Text>
+                <Text style={styles.loadingText}>Đang tải thông tin đơn hàng...</Text>
               </View>
             ) : null}
 
@@ -275,40 +323,40 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
               <Text style={styles.errorInlineText}>
                 {shipmentQuery.error instanceof Error
                   ? shipmentQuery.error.message
-                  : 'Khong tai duoc thong tin don hang.'}
+                  : 'Không tải được thông tin đơn hàng.'}
               </Text>
             ) : null}
 
             {!shipmentQuery.isLoading && !shipmentQuery.isError ? (
               <>
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Trang thai don</Text>
+                  <Text style={styles.infoLabel}>Trạng thái đơn</Text>
                   <Text style={styles.infoValue}>
-                    {shipmentQuery.data?.currentStatus ?? 'N/A'}
+                    {displayStatus}
                   </Text>
                 </View>
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Nguoi gui</Text>
+                  <Text style={styles.infoLabel}>Người gửi</Text>
                   <Text style={styles.infoValue}>{senderName}</Text>
                 </View>
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>So dien thoai gui</Text>
+                  <Text style={styles.infoLabel}>Số điện thoại gửi</Text>
                   <Text style={styles.infoValue}>{senderPhone ?? 'N/A'}</Text>
                 </View>
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Nguoi nhan</Text>
+                  <Text style={styles.infoLabel}>Người nhận</Text>
                   <Text style={styles.infoValue}>{receiverName}</Text>
                 </View>
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>So dien thoai nhan</Text>
+                  <Text style={styles.infoLabel}>Số điện thoại nhận</Text>
                   <Text style={styles.infoValue}>{receiverPhone ?? 'N/A'}</Text>
                 </View>
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Dia chi giao</Text>
+                  <Text style={styles.infoLabel}>Địa chỉ giao</Text>
                   <Text style={styles.infoValue}>{deliveryAddress}</Text>
                 </View>
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Ghi chu don</Text>
+                  <Text style={styles.infoLabel}>Ghi chú đơn</Text>
                   <Text style={styles.infoValue}>{shipmentNote}</Text>
                 </View>
               </>
@@ -322,26 +370,40 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
             style={[styles.actionButton, styles.callActionButton]}
           >
             <Ionicons name="call-outline" size={18} color="#FFFFFF" />
-            <Text style={styles.actionButtonText}>Goi</Text>
+            <Text style={styles.actionButtonText}>gọi</Text>
           </Pressable>
 
           <Pressable
             disabled={!hasShipmentCode}
-            onPress={() =>
+            onPress={() => {
+              if (isPickupTask) {
+                navigation.navigate('PickupScan', {
+                  taskId: task.id,
+                  shipmentCode: task.shipmentCode ?? undefined,
+                });
+                return;
+              }
+
               navigation.navigate('DeliveryProof', {
                 taskId: task.id,
                 taskCode: task.taskCode,
                 shipmentCode: task.shipmentCode ?? undefined,
-              })
-            }
+              });
+            }}
             style={[
               styles.actionButton,
               styles.midActionButton,
               !hasShipmentCode && styles.actionButtonDisabled,
             ]}
           >
-            <Ionicons name="document-text-outline" size={18} color="#FFFFFF" />
-            <Text style={styles.actionButtonText}>Ky nhan</Text>
+            <Ionicons
+              name={isPickupTask ? 'cube-outline' : 'document-text-outline'}
+              size={18}
+              color="#FFFFFF"
+            />
+            <Text style={styles.actionButtonText}>
+              {isPickupTask ? 'Nhận hàng' : 'Ký nhận'}
+            </Text>
           </Pressable>
 
           <Pressable
@@ -360,7 +422,7 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
             ]}
           >
             <Ionicons name="alert-circle-outline" size={18} color="#FFFFFF" />
-            <Text style={styles.actionButtonText}>Van de</Text>
+            <Text style={styles.actionButtonText}>Vấn đề</Text>
           </Pressable>
         </View>
       </View>
@@ -377,7 +439,7 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
             onPress={() => setCallOptionsVisible(false)}
           />
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Thao tac lien he</Text>
+            <Text style={styles.modalTitle}>Thao tác liên hệ</Text>
             <Pressable
               onPress={() => {
                 void handleContactAction('call', receiverPhone);
@@ -385,7 +447,7 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
               style={styles.modalAction}
             >
               <Ionicons name="call-outline" size={18} color={theme.colors.primary} />
-              <Text style={styles.modalActionText}>Goi nguoi nhan</Text>
+              <Text style={styles.modalActionText}>Gọi người nhận</Text>
             </Pressable>
             <Pressable
               onPress={() => {
@@ -394,7 +456,7 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
               style={styles.modalAction}
             >
               <Ionicons name="person-outline" size={18} color={theme.colors.primary} />
-              <Text style={styles.modalActionText}>Goi nguoi gui</Text>
+              <Text style={styles.modalActionText}>Gọi người gửi</Text>
             </Pressable>
             <Pressable
               onPress={() => {
@@ -403,13 +465,13 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
               style={styles.modalAction}
             >
               <Ionicons name="chatbubble-ellipses-outline" size={18} color={theme.colors.primary} />
-              <Text style={styles.modalActionText}>Nhan tin nguoi nhan</Text>
+              <Text style={styles.modalActionText}>Nhắn tin người nhận</Text>
             </Pressable>
             <Pressable
               onPress={() => setCallOptionsVisible(false)}
               style={styles.modalCancel}
             >
-              <Text style={styles.modalCancelText}>Dong</Text>
+              <Text style={styles.modalCancelText}>Đóng</Text>
             </Pressable>
           </View>
         </View>
@@ -439,8 +501,8 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
   },
   heroCard: {
-    backgroundColor: '#EDF4FF',
-    borderColor: '#CDE0FF',
+    backgroundColor: '#EFF6FF',
+    borderColor: '#BFDBFE',
     gap: theme.spacing.sm,
   },
   heroTopRow: {
@@ -459,7 +521,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: theme.spacing.xs,
     borderWidth: 1,
-    borderColor: '#BFD6FF',
+    borderColor: '#BFDBFE',
     borderRadius: theme.radius.md,
     backgroundColor: '#FFFFFF',
     paddingHorizontal: theme.spacing.sm,

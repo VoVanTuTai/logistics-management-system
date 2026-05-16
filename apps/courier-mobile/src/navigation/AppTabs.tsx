@@ -72,7 +72,7 @@ export function AppTabs(): React.JSX.Element {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: '#8EA1BA',
+        tabBarInactiveTintColor: theme.colors.textMuted,
         tabBarStyle: styles.tabBar,
         tabBarLabelStyle: styles.tabLabel,
         tabBarItemStyle: styles.tabItem,

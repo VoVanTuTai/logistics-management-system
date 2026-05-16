@@ -13,11 +13,15 @@ import type {
 export function useShipmentsQuery(
   accessToken: string | null,
   filters: ShipmentListFilters,
+  options?: {
+    refetchInterval?: number | false;
+  },
 ) {
   return useQuery({
     queryKey: [...queryKeys.shipments, filters.q ?? '', filters.status ?? ''],
     queryFn: () => shipmentsClient.list(accessToken, filters),
     enabled: Boolean(accessToken),
+    refetchInterval: options?.refetchInterval,
   });
 }
 

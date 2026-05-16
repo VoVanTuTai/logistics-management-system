@@ -28,6 +28,7 @@ import type { AppNavigatorParamList } from '../../navigation/types';
 import { shouldQueueOffline } from '../../services/api/client';
 import { createIdempotencyKey } from '../../utils/idempotency';
 import { CameraScannerModal } from '../../components/scan/CameraScannerModal';
+import { GoodsArrivalScreen } from './GoodsArrivalScreen';
 
 type Props = NativeStackScreenProps<AppNavigatorParamList, 'HubScan'>;
 
@@ -37,6 +38,14 @@ const HUB_SCAN_MODE_OPTIONS: Array<{ value: HubScanMode; label: string }> = [
 ];
 
 export function HubScanScreen({ route }: Props): React.JSX.Element {
+  if (route.params.mode === 'INBOUND') {
+    return <GoodsArrivalScreen initialShipmentCode={route.params.shipmentCode} />;
+  }
+
+  return <LegacyHubScanForm route={route} />;
+}
+
+function LegacyHubScanForm({ route }: Pick<Props, 'route'>): React.JSX.Element {
   const session = useAppStore((state) => state.session);
   const setGlobalError = useAppStore((state) => state.setGlobalError);
   const mutation = useHubScanMutation(session?.tokens.accessToken ?? null);

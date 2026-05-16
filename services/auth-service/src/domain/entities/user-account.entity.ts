@@ -1,5 +1,5 @@
 export type UserStatus = 'ACTIVE' | 'DISABLED';
-export type UserRoleGroup = 'OPS' | 'SHIPPER';
+export type UserRoleGroup = 'OPS' | 'SHIPPER' | 'MERCHANT';
 
 export interface UserAccount {
   id: string;
@@ -17,6 +17,8 @@ export interface UserAccount {
 export interface AuthenticatedUser {
   id: string;
   username: string;
+  displayName: string | null;
+  phone: string | null;
   roles: string[];
   hubCodes: string[];
 }
@@ -29,7 +31,7 @@ export interface UserAccountListFilters {
 }
 
 export interface UserAccountCreateInput {
-  id?: string;
+  id: string;
   username: string;
   passwordHash: string;
   status: UserStatus;
@@ -63,7 +65,7 @@ export interface UserAccountView {
 
 export interface UserCreateInput {
   username: string;
-  password: string;
+  password?: string;
   roles: string[];
   status?: UserStatus;
   displayName?: string | null;

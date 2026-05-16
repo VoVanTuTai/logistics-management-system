@@ -8,14 +8,14 @@ interface HubAddressPayload {
 }
 
 export const PROVINCE_CITY_OPTIONS = [
-  'Ha Noi',
-  'Ho Chi Minh',
-  'Da Nang',
-  'Hai Phong',
-  'Can Tho',
-  'Binh Duong',
-  'Dong Nai',
-  'Bac Ninh',
+  'Hà Nội',
+  'Hồ Chí Minh',
+  'Đà Nẵng',
+  'Hải Phòng',
+  'Cần Thơ',
+  'Bình Dương',
+  'Đồng Nai',
+  'Bắc Ninh',
 ] as const;
 
 function asRecord(value: unknown): Record<string, unknown> | null {

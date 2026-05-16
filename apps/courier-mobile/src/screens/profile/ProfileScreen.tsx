@@ -14,21 +14,22 @@ import type { SettingsItemData } from '../../components/profile/SettingsItem';
 import { useAppStore } from '../../store/appStore';
 import { useAuthStore } from '../../features/auth/auth.store';
 import { appEnv } from '../../utils/env';
+import { resolveCourierId, resolveCourierDisplayName } from '../../utils/courier';
 
 const shortcutItems: ProfileShortcutItemData[] = [
   {
     id: 'shopping',
     label: 'Mua sắm',
     iconName: 'bag-handle-outline',
-    iconColor: '#24539E',
-    iconBgColor: '#E6F0FF',
+    iconColor: '#1D4ED8',
+    iconBgColor: '#EFF6FF',
   },
   {
     id: 'stats',
     label: 'Thống kê',
     iconName: 'stats-chart-outline',
-    iconColor: '#0A6E89',
-    iconBgColor: '#E1F8FA',
+    iconColor: '#1D4ED8',
+    iconBgColor: '#EFF6FF',
   },
   {
     id: 'qr-order',
@@ -48,15 +49,15 @@ const shortcutItems: ProfileShortcutItemData[] = [
     id: 'weight-change',
     label: 'Đăng ký đổi trọng lượng',
     iconName: 'barbell-outline',
-    iconColor: '#24539E',
-    iconBgColor: '#E6F0FF',
+    iconColor: '#1D4ED8',
+    iconBgColor: '#EFF6FF',
   },
   {
     id: 'learning-center',
     label: 'Trung tâm học tập',
     iconName: 'school-outline',
-    iconColor: '#0A6E89',
-    iconBgColor: '#E1F8FA',
+    iconColor: '#1D4ED8',
+    iconBgColor: '#EFF6FF',
   },
   {
     id: 'uniform-check',
@@ -100,11 +101,18 @@ export function ProfileScreen(): React.JSX.Element {
   const logout = useAuthStore((state) => state.logout);
   const authLoading = useAuthStore((state) => state.isLoading);
 
+  const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
+  const courierName = resolveCourierDisplayName({
+    displayName: session?.user.displayName,
+    username: session?.user.username,
+    courierId,
+  });
+
   const roles = session?.user.roles ?? [];
   const userData: ProfileHeaderData = {
-    fullName: session?.user.username ?? 'Courier',
+    fullName: courierName,
     branchName: roles.length > 0 ? `Vai trò: ${roles.join(', ')}` : 'Vai trò: courier',
-    employeeCode: session?.user.id ?? appEnv.courierId,
+    employeeCode: courierId,
     phoneNumber: '---',
     starTierLabel: 'Đang cập nhật',
   };
@@ -201,3 +209,4 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 });
+

@@ -4,6 +4,7 @@ import {
   resolveTrackingStatusFromEvent,
   toTimelineTextVi,
   toTrackingStatusLabelVi,
+  extractTimelineNote,
 } from '../mappers/tracking-display.mapper';
 import type { TimelineEvent } from '../../domain/entities/timeline-event.entity';
 import type { TrackingCurrent } from '../../domain/entities/tracking-current.entity';
@@ -23,6 +24,7 @@ export interface TimelineEventView {
   statusAfterEvent: string | null;
   occurredAt: Date;
   payload: TimelineEvent['payload'];
+  note: string | null;
 }
 
 export interface TrackingCurrentView {
@@ -137,6 +139,7 @@ export class TrackingQueryProjection {
         statusAfterEvent: statusLabel,
         occurredAt: event.occurredAt,
         payload: event.payload,
+        note: extractTimelineNote(event.payload),
       };
     });
   }

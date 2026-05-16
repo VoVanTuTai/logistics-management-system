@@ -15,12 +15,14 @@ import {
   type DeliveryFailFormValues,
 } from '../../features/delivery/delivery-fail.types';
 import type { DeliveryFailPayload } from '../../features/delivery/delivery.types';
-import type { RootStackParamList } from '../../navigation/navigation.types';
+import type { AppNavigatorParamList } from '../../navigation/types';
 import { shouldQueueOffline } from '../../services/api/client';
 import { useAppStore } from '../../store/appStore';
 import { createIdempotencyKey } from '../../utils/idempotency';
+import { resolveCourierId, buildDeliveryFailAuditNote } from '../../utils/courier';
+import { appEnv } from '../../utils/env';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'DeliveryFail'>;
+type Props = NativeStackScreenProps<AppNavigatorParamList, 'DeliveryFail'>;
 
 export function DeliveryFailScreen({
   route,
@@ -96,13 +98,23 @@ export function DeliveryFailScreen({
       shouldValidate: true,
     });
 
+    const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
+    const auditNote = buildDeliveryFailAuditNote({
+      displayName: session?.user.displayName,
+      username: session?.user.username,
+      courierId,
+      hubCode: session?.user.hubCodes?.[0] ?? null,
+      reasonCode: values.reasonCode,
+      note: values.note,
+    });
+
     const payload: DeliveryFailPayload = {
       shipmentCode: values.shipmentCode,
       taskId: route.params.taskId ?? null,
       courierId: null,
       locationCode: values.locationCode || null,
       actor: session?.user.username ?? null,
-      note: values.note || null,
+      note: auditNote,
       occurredAt: new Date().toISOString(),
       idempotencyKey: resolvedIdempotencyKey,
       failReasonCode: values.reasonCode,

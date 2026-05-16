@@ -14,7 +14,7 @@ Service nay ho tro:
 - complete task
 - cancel task
 - cung cap task list cho courier
-- auto tao pickup task tu event pickup da duoc duyet
+- auto tao pickup task tu event shipment moi tao hoac pickup moi tao/duoc duyet
 
 ## Pham vi scaffold
 
@@ -57,6 +57,8 @@ Khong co thuat toan toi uu phan cong.
 
 ## Events consume
 
+- `shipment.created`
+- `pickup.requested`
 - `pickup.approved`
 - `delivery.failed`
 

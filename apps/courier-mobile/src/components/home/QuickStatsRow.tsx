@@ -66,7 +66,7 @@ export function QuickStatsRow({
         value={waitingPickup}
         iconName="cube-outline"
         iconBgColor="#E4F0FF"
-        iconColor="#24539E"
+        iconColor="#1D4ED8"
         active={activeStat === 'PICKUP'}
         onPress={onPressWaitingPickup}
       />
@@ -74,8 +74,8 @@ export function QuickStatsRow({
         label="Đợi phát"
         value={waitingDelivery}
         iconName="paper-plane-outline"
-        iconBgColor="#E1F8FA"
-        iconColor="#0A6E89"
+        iconBgColor="#EFF6FF"
+        iconColor="#1D4ED8"
         active={activeStat === 'DELIVERY'}
         onPress={onPressWaitingDelivery}
       />
@@ -125,3 +125,4 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.sm,
   },
 });
+

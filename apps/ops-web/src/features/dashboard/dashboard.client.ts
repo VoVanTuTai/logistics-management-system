@@ -7,9 +7,9 @@ import type {
 } from './dashboard.types';
 
 interface DashboardOpsViewResponse {
-  metricDate: string;
-  sourceType: string;
-  totals: Record<string, unknown> | null;
+  metricDate?: string;
+  sourceType?: string;
+  totals?: Record<string, unknown> | null;
 }
 
 interface DashboardDailyResponse {
@@ -22,6 +22,53 @@ interface DashboardDailyResponse {
 interface DashboardMonthlyResponse {
   monthKey?: string;
   shipmentsCreated?: number;
+}
+
+const KPI_FIELD_ALIASES: Record<string, string[]> = {
+  shipmentsCreated: ['shipmentsCreated', 'shipments', 'shipmentCount', 'totalShipments', 'createdCount'],
+  pickupsCompleted: ['pickupsCompleted', 'pickupCount', 'pickupCompletedCount'],
+  deliveriesDelivered: ['deliveriesDelivered', 'deliveredCount', 'completedCount'],
+  deliveriesFailed: ['deliveriesFailed', 'deliveryFailedCount', 'failedCount'],
+  ndrCreated: ['ndrCreated', 'ndrCount'],
+  scansInbound: ['scansInbound', 'inboundCount'],
+  scansOutbound: ['scansOutbound', 'outboundCount'],
+  deliveryAttempts: ['deliveryAttempts'],
+  successRate: ['successRate'],
+  failureRate: ['failureRate'],
+};
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value !== null && typeof value === 'object' ? (value as Record<string, unknown>) : null;
+}
+
+function toNumber(value: unknown): number {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return 0;
+}
+
+function pickMetricValue(payload: Record<string, unknown>, aliases: string[]): number {
+  for (const alias of aliases) {
+    if (!(alias in payload)) {
+      continue;
+    }
+
+    const value = toNumber(payload[alias]);
+    if (value !== 0 || payload[alias] === 0 || payload[alias] === '0') {
+      return value;
+    }
+  }
+
+  return 0;
 }
 
 function buildDashboardPath(
@@ -57,11 +104,17 @@ function buildDashboardPath(
 }
 
 function mapKpis(payload: DashboardOpsViewResponse): DashboardKpiDto {
-  return {
-    metricDate: payload.metricDate,
-    sourceType: payload.sourceType,
-    ...(payload.totals ?? {}),
-  };
+  const payloadRecord = asRecord(payload);
+  const totalsRecord =
+    asRecord(payloadRecord?.totals) ??
+    asRecord(payloadRecord?.data) ??
+    payloadRecord ??
+    {};
+
+  return Object.entries(KPI_FIELD_ALIASES).reduce<DashboardKpiDto>((acc, [key, aliases]) => {
+    acc[key] = pickMetricValue(totalsRecord, aliases);
+    return acc;
+  }, {});
 }
 
 function mapDailyMetrics(items: DashboardDailyResponse[]): DashboardMetricPointDto[] {

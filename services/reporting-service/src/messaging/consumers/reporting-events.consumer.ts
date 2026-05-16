@@ -19,6 +19,7 @@ export class ReportingEventsConsumer {
     'task.assigned',
     'manifest.sealed',
     'manifest.received',
+    'manifest.unsealed',
     'scan.pickup_confirmed',
     'scan.outbound',
     'scan.inbound',

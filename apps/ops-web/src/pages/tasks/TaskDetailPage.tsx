@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom';
 import {
   useAssignTaskMutation,
   useCourierOptionsQuery,
+  useDispatchTasksRealtime,
   useReassignTaskMutation,
   useTaskDetailQuery,
 } from '../../features/tasks/tasks.api';
@@ -22,6 +23,7 @@ import { TaskActionModal } from './TaskActionModal';
 export function TaskDetailPage(): React.JSX.Element {
   const { taskId = '' } = useParams();
   const accessToken = useAuthStore((state) => state.session?.tokens.accessToken ?? null);
+  useDispatchTasksRealtime(Boolean(accessToken));
   const detailQuery = useTaskDetailQuery(accessToken, taskId);
   const courierOptionsQuery = useCourierOptionsQuery(accessToken);
   const assignMutation = useAssignTaskMutation(accessToken);
@@ -56,7 +58,7 @@ export function TaskDetailPage(): React.JSX.Element {
       setLastActionResponse(response);
       setActionNotice({
         tone: 'success',
-        message: `Da phan cong tac vu cho nhan vien giao ${response.task.assignedCourierId ?? payload.courierId}.`,
+        message: `Đã phân công tác vụ cho nhân viên giao ${response.task.assignedCourierId ?? payload.courierId}.`,
       });
     } catch (error) {
       setActionNotice({
@@ -74,7 +76,7 @@ export function TaskDetailPage(): React.JSX.Element {
       setLastActionResponse(response);
       setActionNotice({
         tone: 'success',
-        message: `Da phan cong lai tac vu cho nhan vien giao ${response.task.assignedCourierId ?? payload.courierId}.`,
+        message: `Đã phân công lại tác vụ cho nhân viên giao ${response.task.assignedCourierId ?? payload.courierId}.`,
       });
     } catch (error) {
       setActionNotice({
@@ -89,10 +91,10 @@ export function TaskDetailPage(): React.JSX.Element {
       ? 'phan-cong'
       : lastActionName === 'reassign'
         ? 'phan-cong-lai'
-        : 'chua-co';
+        : 'chưa-có';
 
   if (detailQuery.isLoading) {
-    return <p>Dang tai chi tiet tac vu...</p>;
+    return <p>Đang tải chi tiết tác vụ...</p>;
   }
 
   if (detailQuery.isError) {
@@ -100,30 +102,30 @@ export function TaskDetailPage(): React.JSX.Element {
   }
 
   if (!detailQuery.data) {
-    return <p>Khong tim thay tac vu.</p>;
+    return <p>Không tìm thấy tác vụ.</p>;
   }
 
   return (
     <section>
-      <h2>Chi tiet tac vu</h2>
+      <h2>Chi tiết tác vụ</h2>
       <p>
-        <Link to={routePaths.tasks}>Quay lai danh sach tac vu</Link>
+        <Link to={routePaths.tasks}>Quay lại danh sách tác vụ</Link>
       </p>
 
-      <p>Ma tac vu: {detailQuery.data.taskCode}</p>
-      <p>Loai tac vu: {formatTaskTypeLabel(detailQuery.data.taskType)}</p>
-      <p>Trang thai: {formatTaskStatusLabel(detailQuery.data.status)}</p>
-      <p>Ma van don: {detailQuery.data.shipmentCode ?? 'Khong co'}</p>
-      <p>Nhan vien giao duoc gan: {detailQuery.data.assignedCourierId ?? 'Khong co'}</p>
-      <p>Cap nhat luc: {formatDateTime(detailQuery.data.updatedAt)}</p>
-      <p>Ghi chu: {detailQuery.data.note ?? 'Khong co'}</p>
+      <p>Mã tác vụ: {detailQuery.data.taskCode}</p>
+      <p>Loại tác vụ: {formatTaskTypeLabel(detailQuery.data.taskType)}</p>
+      <p>Trạng thái: {formatTaskStatusLabel(detailQuery.data.status)}</p>
+      <p>Mã vận đơn: {detailQuery.data.shipmentCode ?? 'Không có'}</p>
+      <p>Nhân viên giao được gán: {detailQuery.data.assignedCourierId ?? 'Không có'}</p>
+      <p>Cập nhật lúc: {formatDateTime(detailQuery.data.updatedAt)}</p>
+      <p>Ghi chú: {detailQuery.data.note ?? 'Không có'}</p>
 
       <div style={styles.actionButtons}>
         <button type="button" onClick={() => setOpenModal('assign')}>
-          Mo form phan cong
+          Mở form phân công
         </button>
         <button type="button" onClick={() => setOpenModal('reassign')}>
-          Mo form phan cong lai
+          Mở form phân công lại
         </button>
       </div>
 
@@ -147,7 +149,7 @@ export function TaskDetailPage(): React.JSX.Element {
 
       {lastActionResponse ? (
         <div style={styles.responseBox}>
-          <strong>Phan hoi backend gan nhat ({lastActionLabel})</strong>
+          <strong>Phản hồi backend gần nhất ({lastActionLabel})</strong>
           <pre style={styles.pre}>{JSON.stringify(lastActionResponse, null, 2)}</pre>
         </div>
       ) : null}

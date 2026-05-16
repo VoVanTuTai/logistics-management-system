@@ -1,4 +1,4 @@
-﻿import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import React, { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
@@ -20,6 +20,8 @@ import { DashboardMetricsTable } from './DashboardMetricsTable';
 import { KpiCards } from './KpiCards';
 import { DashboardBarChart } from './charts/DashboardBarChart';
 import { DashboardTrendChart } from './charts/DashboardTrendChart';
+import { DashboardPieChart } from './charts/DashboardPieChart';
+import { DashboardProgressChart } from './charts/DashboardProgressChart';
 import './DashboardPage.css';
 
 interface HubAddressPayload {
@@ -83,6 +85,156 @@ function dedupeCodes(codes: string[]): string[] {
         .filter((code) => code.length > 0),
     ),
   );
+}
+
+type DashboardMenuIcon =
+  | 'basic_data'
+  | 'operations_platform'
+  | 'integration_services'
+  | 'customer_platform'
+  | 'branch_business'
+  | 'finance_settlement'
+  | 'capability_platform'
+  | 'operations_metrics'
+  | 'service_quality'
+  | 'database'
+  | 'smart_devices'
+  | 'planning_platform';
+
+function DashboardMenuOutlineIcon({
+  icon,
+}: {
+  icon: DashboardMenuIcon;
+}): React.JSX.Element {
+  const outlineProps = {
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.85,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+  };
+  const accentStrokeProps = {
+    ...outlineProps,
+    stroke: 'var(--ops-menu-accent, #2563eb)',
+  };
+  const accentFill = 'var(--ops-menu-accent, #2563eb)';
+
+  switch (icon) {
+    case 'basic_data':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M7 3.5h8l3 3V20H7z" {...outlineProps} />
+          <path d="M15 3.5v3h3" {...outlineProps} />
+          <path d="M9 11h6" {...accentStrokeProps} />
+          <path d="M9 14.5h5.2" {...accentStrokeProps} />
+        </svg>
+      );
+    case 'operations_platform':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="4.5" y="5" width="15" height="10" rx="1.5" {...outlineProps} />
+          <path d="M8.5 18.5h7" {...outlineProps} />
+          <path d="M10 8.5 14.4 10.2 10 12.4z" fill={accentFill} />
+        </svg>
+      );
+    case 'integration_services':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="4.5" y="4.5" width="6" height="6" rx="1.2" {...outlineProps} />
+          <rect x="13.5" y="13.5" width="6" height="6" rx="1.2" {...outlineProps} />
+          <rect x="4.5" y="13.5" width="6" height="6" rx="1.2" {...outlineProps} />
+          <circle cx="16.5" cy="7.5" r="3.4" {...accentStrokeProps} />
+        </svg>
+      );
+    case 'customer_platform':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="7.3" r="3" {...outlineProps} />
+          <path d="M6 19.5c.8-3.4 3.1-5.2 6-5.2s5.2 1.8 6 5.2z" {...outlineProps} />
+          <path d="M12 13.9v4.5" {...accentStrokeProps} />
+          <circle cx="12" cy="18.8" r="1.1" fill={accentFill} />
+        </svg>
+      );
+    case 'branch_business':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 20c3.8-3.5 5.8-6 5.8-8.8A5.8 5.8 0 0 0 12 5.4a5.8 5.8 0 0 0-5.8 5.8c0 2.8 2 5.3 5.8 8.8Z" {...outlineProps} />
+          <circle cx="12" cy="11.1" r="1.9" fill={accentFill} />
+        </svg>
+      );
+    case 'finance_settlement':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="4.5" y="6.2" width="15" height="11.6" rx="1.8" {...outlineProps} />
+          <path d="M4.5 10h15" {...outlineProps} />
+          <rect x="7.2" y="12.4" width="3.8" height="2.4" rx=".5" {...accentStrokeProps} />
+        </svg>
+      );
+    case 'capability_platform':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M5 8h9v7H5z" {...outlineProps} />
+          <path d="M14 10h3l2 2v3h-5z" {...outlineProps} />
+          <circle cx="8" cy="17.2" r="1.6" {...outlineProps} />
+          <circle cx="16.8" cy="17.2" r="1.6" {...outlineProps} />
+          <path d="M15.5 10.8h2.2v2h-2.2z" {...accentStrokeProps} />
+        </svg>
+      );
+    case 'operations_metrics':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="4.5" y="5.5" width="15" height="11" rx="1.4" {...outlineProps} />
+          <path d="M8 19h8" {...outlineProps} />
+          <path d="m7.5 13 2.2-2.4 2.1 1.5 3.1-3.7" {...accentStrokeProps} />
+        </svg>
+      );
+    case 'service_quality':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 12.8V11a6 6 0 0 1 12 0v1.8" {...outlineProps} />
+          <rect x="5" y="12.2" width="2.7" height="5.2" rx="1" {...outlineProps} />
+          <rect x="16.3" y="12.2" width="2.7" height="5.2" rx="1" {...outlineProps} />
+          <path d="M9 18.2h3.2" {...outlineProps} />
+          <circle cx="13.7" cy="18.2" r="1.1" fill={accentFill} />
+        </svg>
+      );
+    case 'database':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 5a7 7 0 1 0 7 7" {...outlineProps} />
+          <path d="M12 5v7h7" {...outlineProps} />
+          <rect x="14.5" y="6.5" width="4.2" height="4.2" rx=".7" {...accentStrokeProps} />
+        </svg>
+      );
+    case 'smart_devices':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="7" y="6.5" width="10" height="11.5" rx="2" {...outlineProps} />
+          <path d="M10.2 11h3.6" {...accentStrokeProps} />
+          <path d="M8.8 4.6 7.4 3.2" {...accentStrokeProps} />
+          <path d="m15.2 4.6 1.4-1.4" {...accentStrokeProps} />
+          <rect x="5.2" y="10.2" width="1.8" height="4" rx=".6" {...outlineProps} />
+          <rect x="17" y="10.2" width="1.8" height="4" rx=".6" {...outlineProps} />
+        </svg>
+      );
+    case 'planning_platform':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="4.5" y="5.2" width="15" height="10.8" rx="1.4" {...outlineProps} />
+          <path d="M8.5 19h7" {...outlineProps} />
+          <circle cx="9" cy="10.2" r="1.2" {...accentStrokeProps} />
+          <circle cx="15" cy="8.8" r="1.2" {...accentStrokeProps} />
+          <circle cx="12" cy="12.8" r="1.2" {...accentStrokeProps} />
+          <path d="m10.2 10 3.6-.9-2 2.9" {...accentStrokeProps} />
+        </svg>
+      );
+    default:
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="6" y="6" width="12" height="12" rx="2" {...outlineProps} />
+        </svg>
+      );
+  }
 }
 
 export function DashboardPage(): React.JSX.Element {
@@ -196,7 +348,7 @@ export function DashboardPage(): React.JSX.Element {
     .join(', ');
   const currentHubScopeText = [
     currentHubAddress.workingRadiusKm
-      ? `Ban kinh ${currentHubAddress.workingRadiusKm.trim()} km`
+      ? `Bán kính ${currentHubAddress.workingRadiusKm.trim()} km`
       : '',
     currentHubAddress.serviceAreas.join(', '),
   ]
@@ -247,100 +399,250 @@ export function DashboardPage(): React.JSX.Element {
   const dailyData = dailyMetricsQuery.data ?? [];
   const monthlyData = monthlyMetricsQuery.data ?? [];
   const shippers = shipperQuery.data ?? [];
-  const quickMenu = [
+
+  // Sử dụng dữ liệu thật từ Database (kpiData), mặc định 0
+  const deliveryStatusPoints = [
+    { label: 'deliveriesDelivered', value: Number(kpiData?.deliveriesDelivered) || 0 },
+    { label: 'deliveriesFailed', value: Number(kpiData?.deliveriesFailed) || 0 },
+    { label: 'ndrCreated', value: Number(kpiData?.ndrCreated) || 0 },
+  ].filter((p) => p.value > 0);
+
+  const hubFlowPoints = [
+    { label: 'scansInbound', value: Number(kpiData?.scansInbound) || 0 },
+    { label: 'scansOutbound', value: Number(kpiData?.scansOutbound) || 0 },
+  ];
+
+  const totalAttempts = Number(kpiData?.deliveryAttempts) || 0;
+  const totalDelivered = Number(kpiData?.deliveriesDelivered) || 0;
+  const quickMenu: ReadonlyArray<{
+    title: string;
+    to?: string;
+    icon: DashboardMenuIcon;
+    disabled?: boolean;
+  }> = [
+    // {
+    //   title: 'Dữ liệu cơ bản',
+    //   to: routePaths.groupBasicData,
+    //   icon: 'basic_data',
+    // },
     {
-      title: 'Danh sach van don',
-      description: 'Theo doi va ra soat luong van don.',
-      to: routePaths.shipments,
-      icon: 'S',
+      title: 'Nền tảng điều hành',
+      to: routePaths.groupOperationsPlatform,
+      icon: 'operations_platform',
     },
     {
-      title: 'Duyet lay hang',
-      description: 'Duyet hoac tu choi yeu cau lay hang.',
-      to: routePaths.pickups,
-      icon: 'P',
+      title: 'Dịch vụ tích hợp',
+      to: routePaths.groupIntegrationServices,
+      icon: 'integration_services',
     },
     {
-      title: 'Phan cong tac vu',
-      description: 'Phan cong va phan cong lai tac vu.',
-      to: routePaths.tasks,
-      icon: 'T',
+      title: 'Nền tảng khách hàng',
+      to: routePaths.groupCustomerPlatform,
+      icon: 'customer_platform',
     },
     {
-      title: 'Quan ly bao tai',
-      description: 'Tao va xu ly bao tai trung chuyen.',
-      to: routePaths.manifests,
-      icon: 'M',
+      title: 'Kinh doanh bưu cục',
+      to: routePaths.groupBranchBusiness,
+      icon: 'branch_business',
     },
     {
-      title: 'Quet hub',
-      description: 'Gui quet nhap hub va xuat hub.',
-      to: routePaths.scans,
-      icon: 'H',
+      title: 'Quyết toán tài chính',
+      to: routePaths.groupFinanceSettlement,
+      icon: 'finance_settlement',
     },
     {
-      title: 'Xu ly NDR',
-      description: 'Xu ly cac hanh dong tiep theo cua NDR.',
-      to: routePaths.ndr,
-      icon: 'N',
+      title: 'Quản lý vận chuyển',
+      to: routePaths.groupCapabilityPlatform,
+      icon: 'capability_platform',
     },
     {
-      title: 'Tra cuu hanh trinh',
-      description: 'Tra cuu nhanh trang thai van don.',
-      to: routePaths.tracking,
-      icon: 'L',
+      title: 'Chỉ số vận hành',
+      to: routePaths.groupOperationsMetrics,
+      icon: 'operations_metrics',
     },
-  ] as const;
+    {
+      title: 'Chất lượng dịch vụ',
+      to: routePaths.groupServiceQuality,
+      icon: 'service_quality',
+    },
+    // Tạm ẩn theo yêu cầu: Cơ sở dữ liệu, Thiết bị thông minh, Nền tảng quy hoạch.
+  ];
   const notices = [
-    'Bang tong quan chi hien thi du lieu tong hop tu backend.',
-    'Tai khoan dieu hanh duoc gioi han theo hub da gan.',
-    'Neu can thay doi pham vi hub, vui long cap nhat trong trang quan tri.',
+    {
+      id: 'notice-1',
+      tags: ['Ghim', 'Quan trọng'],
+      content:
+        'Hoàn tất đồng bộ zone mới trước 18:00 để tránh lệch route tại khung cao điểm.',
+    },
+    {
+      id: 'notice-2',
+      tags: ['Mới'],
+      content:
+        'Nhóm hub HCM01-HCM03 đã kích hoạt quy trình scan vào/ra phiên bản mới.',
+    },
+    {
+      id: 'notice-3',
+      tags: ['Cần xử lý'],
+      content:
+        'Tỉ lệ giao thất bại tăng tại khu vực Đông Bắc, ưu tiên kiểm tra NDR reason.',
+    },
+    {
+      id: 'notice-4',
+      tags: ['Lịch hệ thống'],
+      content:
+        'Bảo trì dịch vụ báo cáo KPI dự kiến 23:00-23:30, dữ liệu sẽ cập nhật trễ.',
+    },
   ] as const;
-  const quickApps = [
-    { title: 'Tong quan', to: routePaths.dashboard },
-    { title: 'Van don', to: routePaths.shipments },
-    { title: 'Duyet lay hang', to: routePaths.pickups },
+  const heroSlides = [
+    {
+      id: 'slide-1',
+      title: 'NEXUS EXPRESS SYSTEM',
+      slogan: 'DIGITIZATION • AUTOMATION • INTELLIGENCE',
+      description:
+        'Vận hành tập trung, theo dõi trạng thái theo thời gian thực và kết nối đa kênh.',
+    },
+    {
+      id: 'slide-2',
+      title: 'NXS OPS CENTER',
+      slogan: 'FAST RESPONSE • HUB VISIBILITY • SMART DISPATCH',
+      description:
+        'Tăng tốc phân công tác vụ, cảnh báo nghẽn hub và tối ưu luồng điều phối.',
+    },
+    {
+      id: 'slide-3',
+      title: 'NEXUS NETWORK',
+      slogan: 'DATA DRIVEN • CONTROL TOWER • RELIABILITY',
+      description:
+        'Đồng bộ dữ liệu đầu-cuối để giảm sai lệch, tăng độ tin cậy cho vận hành.',
+    },
   ] as const;
+  const [activeHeroIndex, setActiveHeroIndex] = useState(0);
+  const activeHeroSlide = heroSlides[activeHeroIndex];
+
+  const onPrevHero = () => {
+    setActiveHeroIndex((currentIndex) =>
+      currentIndex === 0 ? heroSlides.length - 1 : currentIndex - 1,
+    );
+  };
+
+  const onNextHero = () => {
+    setActiveHeroIndex((currentIndex) =>
+      currentIndex === heroSlides.length - 1 ? 0 : currentIndex + 1,
+    );
+  };
 
   return (
     <div className="ops-dashboard">
-      <section className="ops-dashboard__hero">
-        <div>
-          <p className="ops-dashboard__hero-kicker">Trung tam dieu hanh OPS</p>
-          <h2 className="ops-dashboard__hero-title">Trang tong quan van hanh JMS</h2>
-          <p className="ops-dashboard__hero-subtitle">
-            Bao cao KPI theo hub duoc gan cho tai khoan dieu hanh va cac diem vao tac vu van hanh.
-          </p>
+      <section className="ops-dashboard__hero" aria-label="Hero carousel">
+        <button
+          type="button"
+          className="ops-dashboard__hero-nav"
+          aria-label="Trang trước"
+          onClick={onPrevHero}
+        >
+          <span aria-hidden="true">&#x2039;</span>
+        </button>
+        <div className="ops-dashboard__hero-content">
+          <p className="ops-dashboard__hero-company">{activeHeroSlide.title}</p>
+          <h2 className="ops-dashboard__hero-title">{activeHeroSlide.slogan}</h2>
+          <p className="ops-dashboard__hero-subtitle">{activeHeroSlide.description}</p>
+          <div className="ops-dashboard__hero-dots" aria-hidden="true">
+            {heroSlides.map((slide, index) => (
+              <span
+                key={slide.id}
+                className={
+                  index === activeHeroIndex
+                    ? 'ops-dashboard__hero-dot ops-dashboard__hero-dot--active'
+                    : 'ops-dashboard__hero-dot'
+                }
+              />
+            ))}
+          </div>
         </div>
-        <div className="ops-dashboard__hero-badge">
-          <small>Hub dang theo doi</small>
-          <strong>{currentHub?.code ?? effectiveHubCode ?? 'Chua gan'}</strong>
+        <button
+          type="button"
+          className="ops-dashboard__hero-nav"
+          aria-label="Trang sau"
+          onClick={onNextHero}
+        >
+          <span aria-hidden="true">&#x203A;</span>
+        </button>
+        <div className="ops-dashboard__hero-badge" aria-label="Hub đang theo dõi">
+          <small>Hub đang theo dõi</small>
+          <strong>{currentHub?.code ?? effectiveHubCode ?? 'Chưa gán'}</strong>
         </div>
+      </section>
+
+      <section className="ops-dashboard__menu-layout">
+        <section className="ops-dashboard__function-groups" aria-label="Nhóm chức năng">
+          <header className="ops-dashboard__section-header">
+            <h3>Menu chính</h3>
+          </header>
+          <div className="ops-menu-grid">
+            {quickMenu.map((item) => {
+              const iconNode = (
+                <span className="ops-menu-tile__icon">
+                  <DashboardMenuOutlineIcon icon={item.icon} />
+                </span>
+              );
+
+              if (item.disabled || !item.to) {
+                return (
+                  <div
+                    key={item.title}
+                    className="ops-menu-tile ops-menu-tile--disabled"
+                    aria-disabled="true"
+                  >
+                    {iconNode}
+                    <strong>{item.title}</strong>
+                  </div>
+                );
+              }
+
+              return (
+                <Link key={item.title} to={item.to} className="ops-menu-tile">
+                  {iconNode}
+                  <strong>{item.title}</strong>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+
+        <aside className="ops-dashboard__menu-side">
+          <article className="ops-card">
+            <header className="ops-card__header">
+              <h3>Thông báo</h3>
+              <Link to={routePaths.ndr} className="ops-card__header-link">
+                Xem tất cả &gt;
+              </Link>
+            </header>
+            <ul className="ops-notification-list">
+              {notices.map((item) => (
+                <li key={item.id} className="ops-notification-item">
+                  <div className="ops-notification-tags">
+                    {item.tags.map((tag) => (
+                      <span key={tag} className="ops-notification-tag">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                  <p>{item.content}</p>
+                </li>
+              ))}
+            </ul>
+          </article>
+        </aside>
       </section>
 
       <section className="ops-dashboard__content">
         <div className="ops-dashboard__main">
           <article className="ops-card">
             <header className="ops-card__header">
-              <h3>Danh muc chinh</h3>
-            </header>
-            <div className="ops-menu-grid">
-              {quickMenu.map((item) => (
-                <Link key={item.title} to={item.to} className="ops-menu-tile">
-                  <span className="ops-menu-tile__icon">{item.icon}</span>
-                  <strong>{item.title}</strong>
-                  <small>{item.description}</small>
-                </Link>
-              ))}
-            </div>
-          </article>
-
-          <article className="ops-card">
-            <header className="ops-card__header">
-              <h3>Bo loc bao cao</h3>
+              <h3>Bộ lọc báo cáo</h3>
             </header>
             <p className="ops-dashboard__subtitle">
-              Du lieu bao cao luon duoc gioi han theo hub cua tai khoan dieu hanh.
+              Dữ liệu báo cáo luôn được giới hạn theo hub của tài khoản điều hành.
             </p>
             <DashboardFiltersForm
               filters={effectiveFilters}
@@ -353,38 +655,38 @@ export function DashboardPage(): React.JSX.Element {
 
           <article className="ops-card">
             <header className="ops-card__header">
-              <h3>Hub dang quan ly</h3>
+              <h3>Hub đang quản lý</h3>
             </header>
-            {hubsQuery.isLoading ? <p className="ops-state">Dang tai thong tin hub...</p> : null}
+            {hubsQuery.isLoading ? <p className="ops-state">Đang tải thông tin hub...</p> : null}
             {hubsQuery.isError ? (
               <p className="ops-state ops-state--error">{getErrorMessage(hubsQuery.error)}</p>
             ) : null}
             {hubsQuery.isSuccess && !currentHub ? (
               <p className="ops-state">
-                Tai khoan chua duoc gan hub. Vui long gan hub trong trang quan tri.
+                Tài khoản chưa được gán hub. Vui lòng gán hub trong trang quản trị.
               </p>
             ) : null}
             {currentHub ? (
               <div className="ops-hub-card">
                 <div>
-                  <small>Ma hub</small>
+                  <small>Mã hub</small>
                   <strong>{currentHub.code}</strong>
                 </div>
                 <div>
-                  <small>Ten hub</small>
+                  <small>Tên hub</small>
                   <strong>{currentHub.name}</strong>
                 </div>
                 <div>
-                  <small>Khu vuc</small>
-                  <strong>{currentHub.zoneCode ?? 'Khong co'}</strong>
+                  <small>Khu vực</small>
+                  <strong>{currentHub.zoneCode ?? 'Không có'}</strong>
                 </div>
                 <div>
-                  <small>Dia chi</small>
-                  <strong>{currentHubAddressText || 'Khong co'}</strong>
+                  <small>Địa chỉ</small>
+                  <strong>{currentHubAddressText || 'Không có'}</strong>
                 </div>
                 <div>
-                  <small>Pham vi phuc vu</small>
-                  <strong>{currentHubScopeText || 'Khong co'}</strong>
+                  <small>Phạm vi phục vụ</small>
+                  <strong>{currentHubScopeText || 'Không có'}</strong>
                 </div>
               </div>
             ) : null}
@@ -392,35 +694,35 @@ export function DashboardPage(): React.JSX.Element {
 
           <article className="ops-card">
             <header className="ops-card__header">
-              <h3>Danh sach nhan vien giao theo hub</h3>
+              <h3>Danh sách nhân viên giao theo hub</h3>
             </header>
             <div className="ops-shipper-tools">
               <input
-                placeholder="Tim ten dang nhap / ten hien thi / so dien thoai"
+                placeholder="Tìm tên đăng nhập / tên hiển thị / số điện thoại"
                 value={shipperSearch}
                 onChange={(event) => setShipperSearch(event.target.value)}
               />
             </div>
             {!effectiveHubCode ? (
-              <p className="ops-state">Tai khoan chua duoc gan hub, nen chua the tai danh sach nhan vien giao.
+              <p className="ops-state">Tài khoản chưa được gán hub, nên chưa thể tải danh sách nhân viên giao.
               </p>
             ) : null}
-            {shipperQuery.isLoading ? <p className="ops-state">Dang tai danh sach nhan vien giao...</p> : null}
+            {shipperQuery.isLoading ? <p className="ops-state">Đang tải danh sách nhân viên giao...</p> : null}
             {shipperQuery.isError ? (
               <p className="ops-state ops-state--error">{getErrorMessage(shipperQuery.error)}</p>
             ) : null}
             {shipperQuery.isSuccess && shippers.length === 0 ? (
-              <p className="ops-state">Khong co nhan vien giao nao thuoc hub hien tai.</p>
+              <p className="ops-state">Không có nhân viên giao nào thuộc hub hiện tại.</p>
             ) : null}
             {shippers.length > 0 ? (
               <table className="ops-shipper-table">
                 <thead>
                   <tr>
-                    <th>Ten dang nhap</th>
-                    <th>Ten hien thi</th>
-                    <th>So dien thoai</th>
-                    <th>Trang thai</th>
-                    <th>Danh sach hub</th>
+                    <th>Tên đăng nhập</th>
+                    <th>Tên hiển thị</th>
+                    <th>Số điện thoại</th>
+                    <th>Trạng thái</th>
+                    <th>Danh sách hub</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -440,24 +742,24 @@ export function DashboardPage(): React.JSX.Element {
 
           <article className="ops-card">
             <header className="ops-card__header">
-              <h3>Bo KPI</h3>
+              <h3>Bộ KPI</h3>
             </header>
-            {kpiQuery.isLoading ? <p className="ops-state">Dang tai KPI...</p> : null}
+            {kpiQuery.isLoading ? <p className="ops-state">Đang tải KPI...</p> : null}
             {kpiQuery.isError ? (
               <p className="ops-state ops-state--error">{getErrorMessage(kpiQuery.error)}</p>
             ) : null}
             {kpiQuery.isSuccess && kpiEntries.length === 0 ? (
-              <p className="ops-state">Khong co du lieu KPI.</p>
+              <p className="ops-state">Không có dữ liệu KPI.</p>
             ) : null}
             {kpiEntries.length > 0 ? <KpiCards kpis={kpiData ?? {}} /> : null}
           </article>
 
           <section className="ops-dashboard__metric-block">
             <header className="ops-card__header">
-              <h3>Chi so theo ngay</h3>
+              <h3>Chỉ số theo ngày</h3>
             </header>
             {dailyMetricsQuery.isLoading ? (
-              <p className="ops-state">Dang tai chi so ngay...</p>
+              <p className="ops-state">Đang tải chỉ số ngày...</p>
             ) : null}
             {dailyMetricsQuery.isError ? (
               <p className="ops-state ops-state--error">
@@ -465,22 +767,22 @@ export function DashboardPage(): React.JSX.Element {
               </p>
             ) : null}
             {dailyMetricsQuery.isSuccess && dailyData.length === 0 ? (
-              <p className="ops-state">Khong co chi so theo ngay.</p>
+              <p className="ops-state">Không có chỉ số ngày.</p>
             ) : null}
             {dailyData.length > 0 ? (
               <div className="ops-dashboard__metrics-grid">
-                <DashboardBarChart title="Bieu do chi so ngay" points={dailyData} />
-                <DashboardMetricsTable title="Bang chi so ngay" rows={dailyData} />
+                <DashboardBarChart title="Biểu đồ chỉ số ngày" points={dailyData} />
+                <DashboardMetricsTable title="Bảng chỉ số ngày" rows={dailyData} />
               </div>
             ) : null}
           </section>
 
           <section className="ops-dashboard__metric-block">
             <header className="ops-card__header">
-              <h3>Chi so theo thang</h3>
+              <h3>Chỉ số theo tháng</h3>
             </header>
             {monthlyMetricsQuery.isLoading ? (
-              <p className="ops-state">Dang tai chi so thang...</p>
+              <p className="ops-state">Đang tải chỉ số tháng...</p>
             ) : null}
             {monthlyMetricsQuery.isError ? (
               <p className="ops-state ops-state--error">
@@ -488,45 +790,45 @@ export function DashboardPage(): React.JSX.Element {
               </p>
             ) : null}
             {monthlyMetricsQuery.isSuccess && monthlyData.length === 0 ? (
-              <p className="ops-state">Khong co chi so theo thang.</p>
+              <p className="ops-state">Không có chỉ số theo tháng.</p>
             ) : null}
             {monthlyData.length > 0 ? (
               <div className="ops-dashboard__metrics-grid">
-                <DashboardTrendChart title="Bieu do chi so thang" points={monthlyData} />
-                <DashboardMetricsTable title="Bang chi so thang" rows={monthlyData} />
+                <DashboardTrendChart title="Biểu đồ chỉ số tháng" points={monthlyData} />
+                <DashboardMetricsTable title="Bảng chỉ số tháng" rows={monthlyData} />
+              </div>
+            ) : null}
+          </section>
+
+          <section className="ops-dashboard__metric-block">
+            <header className="ops-card__header">
+              <h3>Giám sát Hiệu suất Giao hàng & Lưu lượng (Real-time)</h3>
+            </header>
+            <div className="ops-dashboard__metrics-grid">
+              <DashboardProgressChart 
+                title="Tỷ lệ Giao thành công / Lượt giao" 
+                value={totalDelivered} 
+                total={totalAttempts} 
+                color="#10b981"
+                suffix="lượt"
+              />
+              <DashboardBarChart 
+                title="Cân bằng Lưu lượng Kho (Inbound vs Outbound)" 
+                points={hubFlowPoints} 
+              />
+            </div>
+            
+            {deliveryStatusPoints.length > 0 ? (
+              <div className="ops-dashboard__metrics-grid" style={{ marginTop: '1.5rem' }}>
+                <DashboardPieChart 
+                  title="Phân bổ Kết quả Giao hàng (Outcomes)" 
+                  points={deliveryStatusPoints} 
+                />
               </div>
             ) : null}
           </section>
         </div>
-
-        <aside className="ops-dashboard__side">
-          <article className="ops-card">
-            <header className="ops-card__header">
-              <h3>Thong bao</h3>
-            </header>
-            <ul className="ops-notice-list">
-              {notices.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </article>
-
-          <article className="ops-card">
-            <header className="ops-card__header">
-              <h3>Ung dung nhanh</h3>
-            </header>
-            <div className="ops-quickapps">
-              {quickApps.map((item) => (
-                <Link key={item.title} to={item.to} className="ops-quickapps__link">
-                  {item.title}
-                </Link>
-              ))}
-            </div>
-          </article>
-        </aside>
       </section>
     </div>
   );
 }
-
-

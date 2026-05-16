@@ -42,6 +42,10 @@ const DEFAULT_FORM: UserFormState = {
 };
 
 function roleOptionsByGroup(roleGroup: UserRoleGroup): string[] {
+  if (roleGroup === 'MERCHANT') {
+    return ['MERCHANT'];
+  }
+
   if (roleGroup === 'SHIPPER') {
     return ['COURIER'];
   }
@@ -50,9 +54,13 @@ function roleOptionsByGroup(roleGroup: UserRoleGroup): string[] {
 }
 
 function pageTitleByGroup(roleGroup: UserRoleGroup): string {
+  if (roleGroup === 'MERCHANT') {
+    return 'Quan tri - Quan ly tai khoan Merchant';
+  }
+
   return roleGroup === 'SHIPPER'
     ? 'Quan tri - Quan ly tai khoan Shipper'
-    : 'Quan tri - Quan ly tai khoan Ops';
+    : 'Quản lý tài khoản Ops';
 }
 
 export function UserManagementPage({ roleGroup }: UserManagementPageProps): React.JSX.Element {
@@ -141,14 +149,14 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
       } else {
         const password = form.password.trim();
 
-        if (!password) {
-          throw new Error('Can mat khau khi tao nguoi dung.');
-        }
+        const payload = password
+          ? {
+            ...payloadBase,
+            password,
+          }
+          : payloadBase;
 
-        await createMutation.mutateAsync({
-          ...payloadBase,
-          password,
-        });
+        await createMutation.mutateAsync(payload);
 
         setActionMessage(`Da tao tai khoan ${payloadBase.username}.`);
       }
@@ -190,7 +198,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
     <div>
       <h2>{pageTitleByGroup(roleGroup)}</h2>
       <p style={styles.helperText}>
-        Tao, cap nhat, xoa tai khoan va gan hub lam viec cho tung tai khoan.
+        Tạo, cập nhật và gán HUB làm việc cho từng tài khoản.
       </p>
 
       <form style={styles.filterForm} onSubmit={(event) => event.preventDefault()}>
@@ -236,25 +244,33 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
 
       <section style={styles.editorCard}>
         <h3 style={styles.editorTitle}>
-          {editingUser ? `Sua ${editingUser.username}` : 'Tao tai khoan moi'}
+          {editingUser ? `Sua ${editingUser.username}` : 'Tạo tài khoản mới'}
         </h3>
+        {!editingUser && roleGroup !== 'MERCHANT' ? (
+          <p style={styles.helperText}>
+            Nếu để trống trường mật khẩu, hệ thống sẽ tạo mặc định là "password" cho tài khoản nhân viên.
+          </p>
+        ) : null}
         <form onSubmit={onSubmitForm} style={styles.formGrid}>
           <label style={styles.fieldLabel}>
             Ten dang nhap
             <input
               required
+              pattern="\d{8}"
+              title="Ma dang nhap gom 8 chu so."
+              disabled={Boolean(editingUser)}
               value={form.username}
               onChange={(event) =>
                 setForm((previous) => ({ ...previous, username: event.target.value }))
               }
               style={styles.input}
+              placeholder="20000001"
             />
           </label>
           <label style={styles.fieldLabel}>
             Mật khẩu {editingUser ? '(khong bat buoc)' : ''}
             <input
               type="password"
-              required={!editingUser}
               value={form.password}
               onChange={(event) =>
                 setForm((previous) => ({ ...previous, password: event.target.value }))
@@ -402,7 +418,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
 
 const styles: Record<string, React.CSSProperties> = {
   helperText: {
-    color: '#2d3f99',
+    color: 'var(--admin-primary)',
   },
   filterForm: {
     display: 'flex',
@@ -413,16 +429,16 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: 12,
   },
   input: {
-    border: '1px solid #d9def3',
+    border: '1px solid var(--admin-border)',
     borderRadius: 10,
     padding: '8px 10px',
     minWidth: 180,
   },
   editorCard: {
-    border: '1px solid #d9def3',
+    border: '1px solid var(--admin-border)',
     borderRadius: 12,
     padding: 12,
-    backgroundColor: '#f8faff',
+    backgroundColor: 'var(--admin-surface-soft)',
     marginBottom: 14,
   },
   editorTitle: {
@@ -447,11 +463,11 @@ const styles: Record<string, React.CSSProperties> = {
   headerCell: {
     textAlign: 'left',
     padding: '8px 10px',
-    borderBottom: '1px solid #d9def3',
+    borderBottom: '1px solid var(--admin-border)',
   },
   cell: {
     padding: '8px 10px',
-    borderBottom: '1px solid #e7ebf8',
+    borderBottom: '1px solid var(--admin-border)',
     verticalAlign: 'top',
   },
   actionsCell: {

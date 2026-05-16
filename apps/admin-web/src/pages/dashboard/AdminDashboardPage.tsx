@@ -1,4 +1,4 @@
-﻿import React, { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 
 import { routePaths } from '../../navigation/routes';
@@ -21,6 +21,7 @@ export function AdminDashboardPage(): React.JSX.Element {
   const quickLinks = [
     { label: 'Quan ly tai khoan Ops', to: routePaths.opsUsers },
     { label: 'Quan ly tai khoan Shipper', to: routePaths.shipperUsers },
+    { label: 'Quan ly Phân quyền mobile', to: routePaths.courierPermissions },
     { label: 'Quan ly Hub', to: routePaths.masterdataHubs },
     { label: 'Quan ly Zone', to: routePaths.masterdataZones },
     { label: 'Quan ly ly do NDR', to: routePaths.masterdataNdrReasons },
@@ -31,8 +32,8 @@ export function AdminDashboardPage(): React.JSX.Element {
     <div className="admin-dashboard">
       <section className="admin-dashboard-hero">
         <div>
-          <p className="admin-dashboard-kicker">Quan tri he thong</p>
-          <h2>Tong quan admin</h2>
+          <p className="admin-dashboard-kicker">Quản trị hệ thống</p>
+          <h2>Tổng quan admin</h2>
           <p>Dieu phoi tap trung cho danh muc dung chung va cau hinh cap he thong.</p>
         </div>
         <div className="admin-user-summary">
@@ -61,4 +62,3 @@ export function AdminDashboardPage(): React.JSX.Element {
     </div>
   );
 }
-

@@ -4,7 +4,12 @@ import { useSearchParams } from 'react-router-dom';
 
 import { useHubsQuery } from '../../features/masterdata/masterdata.api';
 import { useShipmentsQuery } from '../../features/shipments/shipments.api';
-import { tasksClient, useCourierOptionsQuery, useTasksQuery } from '../../features/tasks/tasks.api';
+import {
+  tasksClient,
+  useCourierOptionsQuery,
+  useDispatchTasksRealtime,
+  useTasksQuery,
+} from '../../features/tasks/tasks.api';
 import type { TaskListFilters, TaskListItemDto } from '../../features/tasks/tasks.types';
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
@@ -66,8 +71,10 @@ export function TaskAssignmentPage(): React.JSX.Element {
   const [bulkAssignLoading, setBulkAssignLoading] = useState(false);
   const [bulkAssignMessage, setBulkAssignMessage] = useState<string | null>(null);
   const [bulkAssignError, setBulkAssignError] = useState<string | null>(null);
+  const [courierSearchText, setCourierSearchText] = useState('');
 
   const tasksQuery = useTasksQuery(accessToken, filters);
+  const realtimeStatus = useDispatchTasksRealtime(Boolean(accessToken));
   const shipmentsQuery = useShipmentsQuery(accessToken, {});
   const hubsQuery = useHubsQuery(accessToken, {});
   const courierOptionsQuery = useCourierOptionsQuery(accessToken);
@@ -408,6 +415,12 @@ export function TaskAssignmentPage(): React.JSX.Element {
       <p style={styles.helperText}>
         Lọc theo ngày, loại tác vụ, trạng thái và khu vực giao. Chọn nhiều tác vụ để phân công cho 1 shipper.
       </p>
+      <div style={styles.realtimeRow}>
+        <span style={styles.realtimeLabel}>Realtime:</span>
+        <strong style={realtimeStatus === 'connected' ? styles.realtimeOk : styles.realtimeWarn}>
+          {realtimeStatus === 'connected' ? 'WebSocket connected' : 'Reconnecting...'}
+        </strong>
+      </div>
       {!canViewAllHubAreas ? (
         <div style={styles.scopeNotice}>
           <strong>Phạm vi hub:</strong>{' '}
@@ -478,19 +491,32 @@ export function TaskAssignmentPage(): React.JSX.Element {
         </div>
 
         <div style={styles.bulkActionsRow}>
-          <select
-            value={bulkCourierId}
-            onChange={(event) => setBulkCourierId(event.target.value)}
-            style={styles.select}
-            disabled={courierOptionsQuery.isLoading || bulkAssignLoading}
-          >
-            <option value="">Chọn shipper</option>
-            {(courierOptionsQuery.data ?? []).map((courier) => (
-              <option key={courier.courierId} value={courier.courierId}>
-                {courier.label}
-              </option>
-            ))}
-          </select>
+          <div style={styles.courierSearchWrap}>
+            <input
+              type="text"
+              placeholder="Tìm shipper theo tên, SĐT..."
+              value={courierSearchText}
+              onChange={(event) => setCourierSearchText(event.target.value)}
+              style={styles.courierSearchInput}
+            />
+            <select
+              value={bulkCourierId}
+              onChange={(event) => setBulkCourierId(event.target.value)}
+              style={styles.select}
+              disabled={courierOptionsQuery.isLoading || bulkAssignLoading}
+            >
+              <option value="">Chọn shipper</option>
+              {(courierOptionsQuery.data ?? []).filter((courier) => {
+                if (!courierSearchText.trim()) return true;
+                const search = courierSearchText.trim().toLowerCase();
+                return courier.label.toLowerCase().includes(search);
+              }).map((courier) => (
+                <option key={courier.courierId} value={courier.courierId}>
+                  {courier.label}
+                </option>
+              ))}
+            </select>
+          </div>
           <button
             type="button"
             onClick={() => void onBulkAssign()}
@@ -514,6 +540,32 @@ export function TaskAssignmentPage(): React.JSX.Element {
             {bulkAssignError}
           </div>
         ) : null}
+
+        {/* Hub destination warnings */}
+        {selectedTaskIds.length > 0 && (() => {
+          const wrongHubTasks = filteredTasks.filter((task) => {
+            if (!selectedTaskIds.includes(task.id)) return false;
+            if (task.taskType !== 'DELIVERY') return false;
+            const shipmentCode = normalizeCode(task.shipmentCode);
+            if (!shipmentCode) return false;
+            const shipment = (shipmentsQuery.data ?? []).find(
+              (s) => normalizeCode(s.shipmentCode) === shipmentCode,
+            );
+            if (!shipment) return false;
+            // Check if shipment's destination hub matches operator's hub
+            const destHub = normalizeCode(shipment.receiverHubCode ?? shipment.destinationHubCode ?? '');
+            if (!destHub) return false;
+            return !assignedHubCodes.some((h) => normalizeCode(h) === destHub);
+          });
+          if (wrongHubTasks.length === 0) return null;
+          return (
+            <div role="alert" style={{ ...styles.notice, ...styles.warningNotice }}>
+              ⚠ {wrongHubTasks.length} đơn giao CHƯA ĐẾN hub của bạn:
+              {' '}{wrongHubTasks.slice(0, 5).map((t) => t.shipmentCode).join(', ')}
+              {wrongHubTasks.length > 5 ? ` và ${wrongHubTasks.length - 5} đơn khác...` : ''}
+            </div>
+          );
+        })()}
       </section>
 
       {tasksQuery.isLoading ? <p>Đang tải tác vụ...</p> : null}
@@ -575,6 +627,24 @@ const styles: Record<string, React.CSSProperties> = {
   helperText: {
     color: '#2d3f99',
   },
+  realtimeRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  realtimeLabel: {
+    color: '#334155',
+    fontSize: 13,
+  },
+  realtimeOk: {
+    color: '#166534',
+    fontSize: 13,
+  },
+  realtimeWarn: {
+    color: '#9a3412',
+    fontSize: 13,
+  },
   scopeNotice: {
     marginTop: 10,
     marginBottom: 12,
@@ -625,5 +695,22 @@ const styles: Record<string, React.CSSProperties> = {
   errorText: {
     color: '#b91c1c',
     marginTop: 8,
+  },
+  courierSearchWrap: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 6,
+  },
+  courierSearchInput: {
+    border: '1px solid #d9def3',
+    borderRadius: 10,
+    padding: '8px 10px',
+    minWidth: 260,
+    fontSize: 13,
+  },
+  warningNotice: {
+    borderColor: '#fcd34d',
+    backgroundColor: '#fef3c7',
+    color: '#92400e',
   },
 };

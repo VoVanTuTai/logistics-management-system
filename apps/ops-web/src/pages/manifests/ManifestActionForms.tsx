@@ -143,13 +143,13 @@ export function ManifestActionForms({
         <input placeholder="Mã niêm phong" {...sealForm.register('sealCode')} />
         <textarea rows={3} placeholder="Ghi chú (không bắt buộc)" {...sealForm.register('note')} />
         <button type="submit" disabled={isSealingManifest}>
-          {isSealingManifest ? 'Đang gửi...' : 'Niêm phong bao tai'}
+          {isSealingManifest ? 'Đang gửi...' : 'Niêm phong bao tải'}
         </button>
       </form>
 
       <form onSubmit={onReceiveSubmit} style={styles.form}>
         <h3 style={styles.title}>Khung thao tác nhận bàn giao</h3>
-        <input placeholder="Ma bao tai" {...receiveForm.register('manifestCode')} />
+        <input placeholder="Mã bao tải" {...receiveForm.register('manifestCode')} />
         <input placeholder="Tên người nhận" {...receiveForm.register('receiverName')} />
         <textarea rows={3} placeholder="Ghi chú (không bắt buộc)" {...receiveForm.register('note')} />
         <button type="submit" disabled={isReceivingHandover}>

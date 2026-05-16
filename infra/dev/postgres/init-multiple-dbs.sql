@@ -8,3 +8,4 @@ CREATE DATABASE scan_db;
 CREATE DATABASE delivery_db;
 CREATE DATABASE tracking_db;
 CREATE DATABASE reporting_db;
+CREATE DATABASE payment_db;

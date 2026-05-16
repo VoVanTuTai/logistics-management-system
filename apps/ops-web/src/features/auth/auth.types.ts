@@ -52,7 +52,9 @@ export interface RefreshTokenInputDto {
 }
 
 export const loginSchema = z.object({
-  username: z.string().min(1, 'Tên đăng nhập là bắt buộc.'),
+  username: z
+    .string()
+    .regex(/^\d{8}$/, 'Tài khoản phải là mã 8 chữ số.'),
   password: z.string().min(1, 'Mật khẩu là bắt buộc.'),
 });
 

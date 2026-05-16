@@ -94,6 +94,34 @@ function Update-CourierMobileGatewayEnv([string]$mode) {
   Write-Host "[mobile-env] EXPO_PUBLIC_GATEWAY_BASE_URL=$gatewayBaseUrl"
 }
 
+function Update-GatewayBffEnv([string]$mode) {
+  $gatewayDir = Join-Path $rootDir 'services/gateway-bff'
+  if (-not (Test-Path $gatewayDir)) {
+    throw "Missing service path for gateway-bff: $gatewayDir"
+  }
+
+  $s3Endpoint = if ($mode -eq 'emulator') {
+    'http://10.0.2.2:9000'
+  } else {
+    $lanIp = Resolve-LanIp
+    "http://$lanIp`:9000"
+  }
+
+  $envPath = Join-Path $gatewayDir '.env'
+  
+  if (-not (Test-Path $envPath)) {
+    $examplePath = Join-Path $gatewayDir '.env.example'
+    if (Test-Path $examplePath) {
+      Copy-Item $examplePath $envPath
+    }
+  }
+
+  Set-EnvValue -FilePath $envPath -Key 'S3_ENDPOINT' -Value $s3Endpoint
+
+  Write-Host "[gateway-env] updated $envPath"
+  Write-Host "[gateway-env] S3_ENDPOINT=$s3Endpoint"
+}
+
 Push-Location $rootDir
 try {
   if (-not $SkipMobile) {
@@ -101,6 +129,8 @@ try {
   } else {
     Write-Host '[mobile-env] skipped by flag -SkipMobile'
   }
+
+  Update-GatewayBffEnv -mode $MobileMode
 
   $startScript = Join-Path $rootDir 'scripts/start-all-retry.ps1'
   if (-not (Test-Path $startScript)) {

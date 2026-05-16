@@ -37,16 +37,40 @@ export const courierEndpoints = {
       `${COURIER_PREFIX}/manifest/manifests/${encodeURIComponent(
         manifestId,
       )}/shipments/remove`,
+    seal: (manifestId: string) =>
+      `${COURIER_PREFIX}/manifest/manifests/${encodeURIComponent(
+        manifestId,
+      )}/seal`,
+    receive: (manifestId: string) =>
+      `${COURIER_PREFIX}/manifest/manifests/${encodeURIComponent(
+        manifestId,
+      )}/receive`,
   },
   scan: {
     pickup: `${COURIER_PREFIX}/scan/scans/pickup`,
     inbound: `${COURIER_PREFIX}/scan/scans/inbound`,
     outbound: `${COURIER_PREFIX}/scan/scans/outbound`,
+    location: (shipmentCode: string) =>
+      `${COURIER_PREFIX}/scan/locations/${encodeURIComponent(shipmentCode)}`,
   },
   delivery: {
     attempts: `${COURIER_PREFIX}/delivery/deliveries/attempts`,
     success: `${COURIER_PREFIX}/delivery/deliveries/success`,
     fail: `${COURIER_PREFIX}/delivery/deliveries/fail`,
     ndr: `${COURIER_PREFIX}/delivery/ndr`,
+    exception: `${COURIER_PREFIX}/delivery/ndr/exception`,
+  },
+  cod: {
+    collect: `${COURIER_PREFIX}/payment/cod/collect`,
+    records: (courierId: string) =>
+      `${COURIER_PREFIX}/payment/cod/courier/${encodeURIComponent(courierId)}`,
+    summary: (courierId: string) =>
+      `${COURIER_PREFIX}/payment/cod/summary/${encodeURIComponent(courierId)}`,
+    shipment: (shipmentCode: string) =>
+      `${COURIER_PREFIX}/payment/cod/shipment/${encodeURIComponent(shipmentCode)}`,
+    bankInfo: `${COURIER_PREFIX}/payment/cod/bank-info`,
+    qr: (amount: number, memo: string) =>
+      `${COURIER_PREFIX}/payment/cod/qr?amount=${amount}&memo=${encodeURIComponent(memo)}`,
+    remit: `${COURIER_PREFIX}/payment/cod/remit`,
   },
 } as const;

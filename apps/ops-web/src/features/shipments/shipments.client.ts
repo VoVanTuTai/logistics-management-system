@@ -103,6 +103,83 @@ function resolveSenderAddress(metadata: Record<string, unknown> | null): string 
   return asString(sender?.address) ?? asString(metadata.senderAddress);
 }
 
+function resolveSenderWard(metadata: Record<string, unknown> | null): string | null {
+  if (!metadata) {
+    return null;
+  }
+
+  const sender = asRecord(metadata.sender);
+  return asString(sender?.ward) ?? asString(metadata.senderWard);
+}
+
+function resolveSenderDistrict(metadata: Record<string, unknown> | null): string | null {
+  if (!metadata) {
+    return null;
+  }
+
+  const sender = asRecord(metadata.sender);
+  return asString(sender?.district) ?? asString(metadata.senderDistrict);
+}
+
+function resolveSenderProvince(metadata: Record<string, unknown> | null): string | null {
+  if (!metadata) {
+    return null;
+  }
+
+  const sender = asRecord(metadata.sender);
+  return asString(sender?.province) ?? asString(metadata.senderProvince);
+}
+
+function resolveSenderHubCode(metadata: Record<string, unknown> | null): string | null {
+  if (!metadata) {
+    return null;
+  }
+
+  const sender = asRecord(metadata.sender);
+  const routing = asRecord(metadata.routing);
+
+  return (
+    asString(sender?.hubCode) ??
+    asString(metadata.senderHubCode) ??
+    asString(routing?.originHubCode) ??
+    asString(metadata.originHubCode)
+  );
+}
+
+function resolveReceiverHubCode(metadata: Record<string, unknown> | null): string | null {
+  if (!metadata) {
+    return null;
+  }
+
+  const receiver = asRecord(metadata.receiver);
+  const routing = asRecord(metadata.routing);
+
+  return (
+    asString(receiver?.hubCode) ??
+    asString(metadata.receiverHubCode) ??
+    asString(routing?.destinationHubCode) ??
+    asString(metadata.destinationHubCode)
+  );
+}
+
+function resolveOriginHubCode(metadata: Record<string, unknown> | null): string | null {
+  if (!metadata) {
+    return null;
+  }
+
+  const routing = asRecord(metadata.routing);
+  return asString(routing?.originHubCode) ?? asString(metadata.originHubCode);
+}
+
+function resolveDestinationHubCode(metadata: Record<string, unknown> | null): string | null {
+  if (!metadata) {
+    return null;
+  }
+
+  const routing = asRecord(metadata.routing);
+  return asString(routing?.destinationHubCode) ?? asString(metadata.destinationHubCode);
+}
+
 function resolveReceiverName(metadata: Record<string, unknown> | null): string | null {
   if (!metadata) {
     return null;
@@ -254,6 +331,13 @@ function mapShipmentToListItem(payload: ShipmentApiResponse): ShipmentListItemDt
     parcelType: resolveParcelType(metadata),
     shippingFee: resolveShippingFee(metadata),
     receiverRegion: resolveReceiverRegion(metadata),
+    senderWard: resolveSenderWard(metadata),
+    senderDistrict: resolveSenderDistrict(metadata),
+    senderProvince: resolveSenderProvince(metadata),
+    senderHubCode: resolveSenderHubCode(metadata),
+    receiverHubCode: resolveReceiverHubCode(metadata),
+    originHubCode: resolveOriginHubCode(metadata),
+    destinationHubCode: resolveDestinationHubCode(metadata),
     senderName: resolveSenderName(metadata),
     senderPhone: resolveSenderPhone(metadata),
     senderAddress: resolveSenderAddress(metadata),
@@ -286,6 +370,13 @@ function mapShipmentToDetail(payload: ShipmentApiResponse): ShipmentDetailDto {
     receiverPhone: resolveReceiverPhone(metadata),
     receiverAddress: resolveReceiverAddress(metadata),
     receiverRegion: resolveReceiverRegion(metadata),
+    senderWard: resolveSenderWard(metadata),
+    senderDistrict: resolveSenderDistrict(metadata),
+    senderProvince: resolveSenderProvince(metadata),
+    senderHubCode: resolveSenderHubCode(metadata),
+    receiverHubCode: resolveReceiverHubCode(metadata),
+    originHubCode: resolveOriginHubCode(metadata),
+    destinationHubCode: resolveDestinationHubCode(metadata),
     platform: resolvePlatform(metadata),
     serviceType: resolveServiceType(metadata),
     codAmount: resolveCodAmount(metadata),

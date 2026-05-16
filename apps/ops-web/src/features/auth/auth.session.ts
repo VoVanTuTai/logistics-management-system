@@ -18,7 +18,7 @@ export async function hydrateAuthSession(): Promise<void> {
   } catch {
     localStorage.removeItem(AUTH_STORAGE_KEY);
     useAuthStore.getState().clearSession();
-    useAuthStore.getState().setAuthError('Du lieu phien dang nhap khong hop le. Vui long dang nhap lai.');
+    useAuthStore.getState().setAuthError('Dữ liệu phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.');
   } finally {
     if (!useAuthStore.getState().isAuthenticated) {
       useAuthStore.getState().setStatus('guest');

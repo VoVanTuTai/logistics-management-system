@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "JMS Auth Service",
+    "name": "NEXUS Auth Service",
     "_postman_id": "2b43dd70-cb2c-43e6-b8ec-9ff4769a0ad5",
     "description": "Auth-service smoke flow: health -> login -> introspect -> refresh -> logout",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"

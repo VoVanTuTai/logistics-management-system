@@ -22,6 +22,7 @@ export class ShipmentEventsConsumer {
     'scan.pickup_confirmed',
     'manifest.sealed',
     'manifest.received',
+    'manifest.unsealed',
     'scan.outbound',
     'scan.inbound',
     'delivery.attempted',
