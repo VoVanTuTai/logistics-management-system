@@ -27,6 +27,7 @@ graph LR
 | [Phase 1: First Mile](./01-phase1-first-mile.md) | Lấy hàng (Pickup) & Nhập kho (Inbound Scan) | ✅ Hoàn thành |
 | [Phase 2: Middle Mile](./02-phase2-middle-mile.md) | Đóng bao, Xe đi/đến, Gỡ bao (Linehaul) | ✅ Hoàn thành |
 | [Phase 3: Last Mile](./03-phase3-last-mile.md) | Giao hàng, Ký nhận, Thanh toán COD/QR | ✅ Hoàn thành |
+| [Showcase Analytics Dashboard](./04-showcase-analytics-plan.md) | Kế hoạch làm điểm nhấn báo cáo + Coming Soon Placeholder | 📝 Kế hoạch tiếp theo |
 
 ## Nguyên tắc thiết kế xuyên suốt
 
