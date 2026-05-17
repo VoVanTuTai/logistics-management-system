@@ -1,14 +1,27 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
-import './ReturnBlockRegistrationPage.css';
+import { openReturnShippingLabelPrint } from '../../../../printing/returnShippingLabelPrint';
+import './ReturnBlockManagementPage.css';
+
+type ReturnOrderStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 interface ReturnOrder {
   id: string;
   originalCode: string;
   newCode: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: ReturnOrderStatus;
   reason: string;
   createdAt: string;
+  senderName: string;
+  senderPhone: string;
+  senderAddress: string;
+  receiverName: string;
+  receiverPhone: string;
+  receiverAddress: string;
+  returnHubCode: string;
+  returnZoneCode: string;
+  itemDescription: string;
+  parcelNote: string;
 }
 
 const mockReturnOrders: ReturnOrder[] = [
@@ -19,6 +32,16 @@ const mockReturnOrders: ReturnOrder[] = [
     status: 'APPROVED',
     reason: 'Không liên lạc được với khách hàng',
     createdAt: '2023-10-15 14:30',
+    senderName: 'Nguyễn Minh Anh',
+    senderPhone: '0901 222 333',
+    senderAddress: '12 Nguyễn Trãi, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh',
+    receiverName: 'Cửa hàng NEXUS Shop',
+    receiverPhone: '028 7777 8888',
+    receiverAddress: 'Kho hoàn HCM-01, 25 Tân Thuận, Quận 7, TP. Hồ Chí Minh',
+    returnHubCode: 'HCM-01',
+    returnZoneCode: 'RET-HCM',
+    itemDescription: 'Hàng TMĐT - phụ kiện điện tử',
+    parcelNote: 'Kiện hoàn nguyên trạng, ưu tiên đối soát trong ngày.',
   },
   {
     id: 'R002',
@@ -27,112 +50,242 @@ const mockReturnOrders: ReturnOrder[] = [
     status: 'PENDING',
     reason: 'Người gửi yêu cầu chuyển hoàn',
     createdAt: '2023-10-16 09:15',
+    senderName: 'Trần Quốc Bảo',
+    senderPhone: '0918 456 789',
+    senderAddress: '88 Lê Văn Việt, TP. Thủ Đức, TP. Hồ Chí Minh',
+    receiverName: 'Kho người gửi - BAO Store',
+    receiverPhone: '0909 112 233',
+    receiverAddress: '34 Phạm Văn Đồng, TP. Thủ Đức, TP. Hồ Chí Minh',
+    returnHubCode: 'SGN-TD',
+    returnZoneCode: 'RET-TD',
+    itemDescription: 'Thời trang',
+    parcelNote: 'Chờ duyệt trước khi in tem chính thức.',
+  },
+  {
+    id: 'R003',
+    originalCode: '842502786001',
+    newCode: '842502786001-R',
+    status: 'REJECTED',
+    reason: 'Yêu cầu thiếu căn cứ xử lý',
+    createdAt: '2023-10-16 11:45',
+    senderName: 'Lê Hoàng Nam',
+    senderPhone: '0935 777 222',
+    senderAddress: '19 Cầu Giấy, Hà Nội',
+    receiverName: 'NEXUS Merchant Care',
+    receiverPhone: '024 6666 1111',
+    receiverAddress: 'Kho hoàn HN-02, Long Biên, Hà Nội',
+    returnHubCode: 'HN-02',
+    returnZoneCode: 'RET-HN',
+    itemDescription: 'Mỹ phẩm',
+    parcelNote: 'Không in tem với yêu cầu đã từ chối.',
   },
 ];
 
+const statusLabels: Record<ReturnOrderStatus, string> = {
+  PENDING: 'Chờ duyệt',
+  APPROVED: 'Đã duyệt',
+  REJECTED: 'Từ chối',
+};
+
+function normalizeSearch(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function buildReturnInstruction(order: ReturnOrder): string {
+  return [
+    'Đây là tem chuyển hoàn, không thu tiền người nhận.',
+    `Lý do hoàn: ${order.reason}`,
+    `Đối soát theo mã gốc ${order.originalCode}.`,
+  ].join('\n');
+}
+
 export function ReturnBlockManagementPage(): React.JSX.Element {
   const [searchCode, setSearchCode] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState<ReturnOrderStatus | ''>('');
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const filteredOrders = useMemo(() => {
+    const query = normalizeSearch(searchCode);
+
+    return mockReturnOrders.filter((order) => {
+      const matchesStatus = statusFilter ? order.status === statusFilter : true;
+      const matchesSearch = query
+        ? [order.originalCode, order.newCode, order.reason]
+            .some((value) => value.toLowerCase().includes(query))
+        : true;
+
+      return matchesStatus && matchesSearch;
+    });
+  }, [searchCode, statusFilter]);
 
   const handlePrintLabel = (order: ReturnOrder) => {
-    alert(`Đang in tem cho vận đơn hoàn: ${order.newCode}`);
+    const didOpen = openReturnShippingLabelPrint({
+      brandName: 'NEXUS Express',
+      serviceName: 'Chuyển hoàn',
+      shipmentCode: order.newCode,
+      originalShipmentCode: order.originalCode,
+      senderName: order.senderName,
+      senderPhone: order.senderPhone,
+      senderAddress: order.senderAddress,
+      receiverName: order.receiverName,
+      receiverPhone: order.receiverPhone,
+      receiverAddress: order.receiverAddress,
+      hubCode: order.returnHubCode,
+      zoneCode: order.returnZoneCode,
+      itemDescription: order.itemDescription,
+      parcelNote: order.parcelNote,
+      qrValue: order.newCode,
+      routeTag: 'RETURN',
+      sortCode: `${order.returnHubCode}\n${order.returnZoneCode}`,
+      codAmountText: '0 VND',
+      createdAtText: order.createdAt,
+      deliveryInstruction: buildReturnInstruction(order),
+      hotlineText: 'NEXUS Express - Tem chuyển hoàn nội bộ | Hotline: 1900 1000',
+    });
+
+    setNotice(
+      didOpen
+        ? `Đã mở cửa sổ in tem chuyển hoàn ${order.newCode}.`
+        : 'Trình duyệt đang chặn popup in. Hãy cho phép popup rồi bấm In tem lại.',
+    );
   };
 
   return (
-    <section className="ops-return-management">
+    <section className="ops-return-list">
+      <section className="ops-return-list__hero">
+        <div>
+          <small>Operations platform</small>
+          <h2>Quản lý chuyển hoàn</h2>
+          <p>Theo dõi yêu cầu hoàn, duyệt trạng thái và in tem hoàn hàng theo chuẩn vận đơn.</p>
+        </div>
+        <div className="ops-return-list__hero-stats" aria-label="Thống kê chuyển hoàn">
+          <span>
+            <strong>{mockReturnOrders.length}</strong>
+            Yêu cầu
+          </span>
+          <span>
+            <strong>{mockReturnOrders.filter((order) => order.status === 'APPROVED').length}</strong>
+            Sẵn sàng in
+          </span>
+        </div>
+      </section>
 
-      <section className="ops-return-management__panel">
-        <header className="ops-return-management__panel-header">
+      <section className="ops-return-list__panel">
+        <header className="ops-return-list__panel-header">
           <h3>Tra cứu danh sách chuyển hoàn</h3>
-          <span aria-hidden="true">⌃</span>
         </header>
-        <div className="ops-return-management__panel-body">
-          <div className="ops-return-management__proposal" style={{ gridTemplateColumns: '1fr 1fr auto' }}>
-            <label className="ops-return-management__field">
-              <span>Mã đơn gốc / Mã đơn hoàn:</span>
+        <div className="ops-return-list__panel-body">
+          <div className="ops-return-list__filters">
+            <label className="ops-return-list__field">
+              <span>Mã đơn gốc / Mã đơn hoàn</span>
               <input
                 type="text"
                 placeholder="Nhập mã đơn..."
                 value={searchCode}
-                onChange={(e) => setSearchCode(e.target.value)}
+                onChange={(event) => setSearchCode(event.target.value)}
               />
             </label>
-            <label className="ops-return-management__field">
-              <span>Trạng thái duyệt:</span>
-              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <label className="ops-return-list__field">
+              <span>Trạng thái duyệt</span>
+              <select
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value as ReturnOrderStatus | '')}
+              >
                 <option value="">Tất cả</option>
                 <option value="PENDING">Chờ duyệt</option>
                 <option value="APPROVED">Đã duyệt</option>
                 <option value="REJECTED">Từ chối</option>
               </select>
             </label>
-            <div className="ops-return-management__actions">
-              <button type="button" className="ops-return-management__search-btn">
+            <div className="ops-return-list__actions">
+              <button type="button" className="ops-return-list__search-btn">
                 Tìm kiếm
+              </button>
+              <button
+                type="button"
+                className="ops-return-list__reset-btn"
+                onClick={() => {
+                  setSearchCode('');
+                  setStatusFilter('');
+                  setNotice(null);
+                }}
+              >
+                Làm mới
               </button>
             </div>
           </div>
+          {notice ? <p className="ops-return-list__notice">{notice}</p> : null}
         </div>
       </section>
 
-      <section className="ops-return-management__panel">
-        <header className="ops-return-management__panel-header">
+      <section className="ops-return-list__panel">
+        <header className="ops-return-list__panel-header">
           <h3>Danh sách yêu cầu chuyển hoàn</h3>
+          <span>{filteredOrders.length} dòng</span>
         </header>
-        <div className="ops-return-management__panel-body" style={{ padding: 0 }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
-            <thead style={{ background: '#f1f5f9', borderBottom: '1px solid #cbd5e1' }}>
+        <div className="ops-return-list__table-wrap">
+          <table className="ops-return-list__table">
+            <thead>
               <tr>
-                <th style={{ padding: '12px 16px', fontWeight: 600 }}>Mã đơn gốc</th>
-                <th style={{ padding: '12px 16px', fontWeight: 600 }}>Mã đơn hoàn</th>
-                <th style={{ padding: '12px 16px', fontWeight: 600 }}>Lý do</th>
-                <th style={{ padding: '12px 16px', fontWeight: 600 }}>Ngày tạo</th>
-                <th style={{ padding: '12px 16px', fontWeight: 600 }}>Trạng thái</th>
-                <th style={{ padding: '12px 16px', fontWeight: 600, textAlign: 'center' }}>Thao tác</th>
+                <th>Mã đơn gốc</th>
+                <th>Mã đơn hoàn</th>
+                <th>Tuyến hoàn</th>
+                <th>Lý do</th>
+                <th>Ngày tạo</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
               </tr>
             </thead>
             <tbody>
-              {mockReturnOrders.map((order) => (
-                <tr key={order.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                  <td style={{ padding: '12px 16px' }}>{order.originalCode}</td>
-                  <td style={{ padding: '12px 16px', fontWeight: 600, color: '#1d4ed8' }}>{order.newCode}</td>
-                  <td style={{ padding: '12px 16px' }}>{order.reason}</td>
-                  <td style={{ padding: '12px 16px' }}>{order.createdAt}</td>
-                  <td style={{ padding: '12px 16px' }}>
-                    {order.status === 'APPROVED' && <span style={{ color: '#16a34a', fontWeight: 600 }}>Đã duyệt</span>}
-                    {order.status === 'PENDING' && <span style={{ color: '#f59e0b', fontWeight: 600 }}>Chờ duyệt</span>}
-                    {order.status === 'REJECTED' && <span style={{ color: '#dc2626', fontWeight: 600 }}>Từ chối</span>}
+              {filteredOrders.map((order) => (
+                <tr key={order.id}>
+                  <td>
+                    <span className="ops-return-list__mono">{order.originalCode}</span>
                   </td>
-                  <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                  <td>
+                    <strong className="ops-return-list__code">{order.newCode}</strong>
+                  </td>
+                  <td>
+                    <div className="ops-return-list__route-cell">
+                      <strong>{order.returnHubCode}</strong>
+                      <span>{order.returnZoneCode}</span>
+                    </div>
+                  </td>
+                  <td>{order.reason}</td>
+                  <td>{order.createdAt}</td>
+                  <td>
+                    <span
+                      className={`ops-return-list__status ops-return-list__status--${order.status.toLowerCase()}`}
+                    >
+                      {statusLabels[order.status]}
+                    </span>
+                  </td>
+                  <td>
                     {order.status === 'APPROVED' ? (
                       <button
                         type="button"
                         onClick={() => handlePrintLabel(order)}
-                        style={{
-                          background: '#1d4ed8',
-                          color: '#fff',
-                          border: 'none',
-                          padding: '6px 12px',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          fontWeight: 600,
-                        }}
+                        className="ops-return-list__print-btn"
                       >
                         In tem
                       </button>
                     ) : (
-                      <span style={{ color: '#94a3b8' }}>-</span>
+                      <span className="ops-return-list__disabled-text">
+                        {order.status === 'PENDING' ? 'Chờ duyệt' : 'Không in'}
+                      </span>
                     )}
                   </td>
                 </tr>
               ))}
-              {mockReturnOrders.length === 0 && (
+              {filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>
-                    Không có dữ liệu
+                  <td colSpan={7}>
+                    <div className="ops-return-list__empty">
+                      Không có yêu cầu chuyển hoàn phù hợp bộ lọc.
+                    </div>
                   </td>
                 </tr>
-              )}
+              ) : null}
             </tbody>
           </table>
         </div>
