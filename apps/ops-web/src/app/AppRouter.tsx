@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import {
   BrowserRouter,
   Navigate,
@@ -12,7 +12,6 @@ import {
 import { useLogoutMutation } from '../features/auth/auth.api';
 import { LoginPage } from '../pages/auth/LoginPage';
 import { DashboardPage } from '../pages/dashboard/DashboardPage';
-import { AnalyticsDashboardPage } from '../pages/dashboard/analytics/AnalyticsDashboardPage';
 import { ComingSoonPlaceholder } from '../pages/shared/ComingSoonPlaceholder';
 import { BasicDataGroupPage } from '../pages/function-groups/basic-data/BasicDataGroupPage';
 import { BranchLocalOrderOverviewPage } from '../pages/function-groups/branch-business/local-orders/BranchLocalOrderOverviewPage';
@@ -67,9 +66,19 @@ import { routePaths } from '../navigation/routes';
 import { useAuthStore } from '../store/authStore';
 import { formatRoleLabel } from '../utils/logisticsLabels';
 
+const AnalyticsDashboardPage = lazy(() =>
+  import('../pages/dashboard/analytics/AnalyticsDashboardPage').then((module) => ({
+    default: module.AnalyticsDashboardPage,
+  })),
+);
+
 function AuthGuard(): React.JSX.Element {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   return isAuthenticated ? <Outlet /> : <Navigate to={routePaths.login} replace />;
+}
+
+function RouteLoadingFallback(): React.JSX.Element {
+  return <div className="ops-route-loading">Đang tải...</div>;
 }
 
 type SidebarIconName =
@@ -1070,7 +1079,14 @@ export function AppRouter(): React.JSX.Element {
           <Route path={routePaths.appRoot} element={<DashboardLayout />}>
             <Route index element={<Navigate to={routePaths.dashboard} replace />} />
             <Route path={routePaths.dashboardLeaf} element={<DashboardPage />} />
-            <Route path={routePaths.analyticsDashboardLeaf} element={<AnalyticsDashboardPage />} />
+            <Route
+              path={routePaths.analyticsDashboardLeaf}
+              element={
+                <Suspense fallback={<RouteLoadingFallback />}>
+                  <AnalyticsDashboardPage />
+                </Suspense>
+              }
+            />
             <Route
               path={routePaths.comingSoonDebtReportLeaf}
               element={
