@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import {
   BrowserRouter,
   Navigate,
@@ -12,6 +12,7 @@ import {
 import { useLogoutMutation } from '../features/auth/auth.api';
 import { LoginPage } from '../pages/auth/LoginPage';
 import { DashboardPage } from '../pages/dashboard/DashboardPage';
+import { ComingSoonPlaceholder } from '../pages/shared/ComingSoonPlaceholder';
 import { BasicDataGroupPage } from '../pages/function-groups/basic-data/BasicDataGroupPage';
 import { BranchLocalOrderOverviewPage } from '../pages/function-groups/branch-business/local-orders/BranchLocalOrderOverviewPage';
 import { BranchDeliveryDispatchPage } from '../pages/function-groups/branch-business/delivery-dispatch/BranchDeliveryDispatchPage';
@@ -65,9 +66,19 @@ import { routePaths } from '../navigation/routes';
 import { useAuthStore } from '../store/authStore';
 import { formatRoleLabel } from '../utils/logisticsLabels';
 
+const AnalyticsDashboardPage = lazy(() =>
+  import('../pages/dashboard/analytics/AnalyticsDashboardPage').then((module) => ({
+    default: module.AnalyticsDashboardPage,
+  })),
+);
+
 function AuthGuard(): React.JSX.Element {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   return isAuthenticated ? <Outlet /> : <Navigate to={routePaths.login} replace />;
+}
+
+function RouteLoadingFallback(): React.JSX.Element {
+  return <div className="ops-route-loading">Đang tải...</div>;
 }
 
 type SidebarIconName =
@@ -329,7 +340,9 @@ function DashboardLayout(): React.JSX.Element {
     'Nhân viên điều hành';
   const operatorName = session?.user.username ?? 'OPS User';
   const operatorInitial = operatorName.trim().charAt(0).toUpperCase() || 'O';
-  const isDashboardRoute = pathMatches(location.pathname, routePaths.dashboard);
+  const isDashboardRoute = pathMatches(location.pathname, routePaths.dashboard)
+    || pathMatches(location.pathname, routePaths.analyticsDashboard)
+    || location.pathname.startsWith('/app/coming-soon');
 
   const isServiceQualitySection = pathMatches(location.pathname, routePaths.groupServiceQuality);
   const isOperationsMetricsSection = pathMatches(
@@ -1066,6 +1079,36 @@ export function AppRouter(): React.JSX.Element {
           <Route path={routePaths.appRoot} element={<DashboardLayout />}>
             <Route index element={<Navigate to={routePaths.dashboard} replace />} />
             <Route path={routePaths.dashboardLeaf} element={<DashboardPage />} />
+            <Route
+              path={routePaths.analyticsDashboardLeaf}
+              element={
+                <Suspense fallback={<RouteLoadingFallback />}>
+                  <AnalyticsDashboardPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path={routePaths.comingSoonDebtReportLeaf}
+              element={
+                <ComingSoonPlaceholder
+                  title="Báo cáo Công nợ"
+                  description="Module phân tích và đối soát công nợ toàn hệ thống, hỗ trợ xuất báo cáo tự động theo chu kỳ."
+                  visionText="Tích hợp AI dự đoán dòng tiền (Cash Flow Forecasting) và phân tích rủi ro nợ xấu dựa trên lịch sử thanh toán của đối tác."
+                  phaseLabel="Phase 2 — Q3 2026"
+                />
+              }
+            />
+            <Route
+              path={routePaths.comingSoonAiCashflowLeaf}
+              element={
+                <ComingSoonPlaceholder
+                  title="AI Dự đoán Dòng tiền"
+                  description="Hệ thống Machine Learning phân tích pattern thu-chi, dự báo dòng tiền 30/60/90 ngày cho từng hub."
+                  visionText="Sử dụng mô hình Time-series Forecasting (Prophet / LSTM) kết hợp dữ liệu vận hành thực tế để đưa ra dự đoán chính xác, giúp tối ưu kế hoạch tài chính."
+                  phaseLabel="Phase 3 — Q4 2026"
+                />
+              }
+            />
             <Route path={routePaths.groupBasicDataLeaf} element={<BasicDataGroupPage />} />
             <Route
               path={routePaths.groupOperationsPlatformLeaf}
