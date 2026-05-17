@@ -570,6 +570,26 @@ export function DashboardPage(): React.JSX.Element {
         <div className="ops-dashboard__hero-badge" aria-label="Hub đang theo dõi">
           <small>Hub đang theo dõi</small>
           <strong>{currentHub?.code ?? effectiveHubCode ?? 'Chưa gán'}</strong>
+          <Link
+            to={routePaths.analyticsDashboard}
+            style={{
+              marginTop: 6,
+              display: 'inline-block',
+              padding: '5px 12px',
+              borderRadius: 999,
+              background: 'rgba(255,255,255,0.18)',
+              border: '1px solid rgba(255,255,255,0.35)',
+              color: '#ffffff',
+              fontSize: 11,
+              fontWeight: 700,
+              textDecoration: 'none',
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase' as const,
+              transition: 'background 0.2s',
+            }}
+          >
+            📊 Analytics Dashboard
+          </Link>
         </div>
       </section>
 
