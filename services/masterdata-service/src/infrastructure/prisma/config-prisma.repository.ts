@@ -72,8 +72,13 @@ export class ConfigPrismaRepository extends ConfigRepository {
   }
 
   async findByKey(key: string): Promise<Config | null> {
-    const record = await this.prisma.config.findUnique({
-      where: { key },
+    const record = await this.prisma.config.findFirst({
+      where: {
+        key: {
+          equals: key,
+          mode: 'insensitive',
+        },
+      },
     });
 
     return record ? this.toEntity(record) : null;

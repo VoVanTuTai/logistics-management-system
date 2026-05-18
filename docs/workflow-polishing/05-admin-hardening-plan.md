@@ -225,6 +225,17 @@ fix(admin-web): use disable flow for users and hubs
 - UI khong con khuyen khich xoa cung user/hub.
 - Thong diep confirm dung nghiep vu logistics.
 
+**Tien do Wave 2: DONE**
+
+**Da thuc hien:**
+- `UserManagementPage.tsx`: bo nut `Xoa`, khong import/goi delete mutation; chuyen sang cap nhat `status=DISABLED` hoac `status=ACTIVE` bang update API hien co.
+- `MerchantUsersPage.tsx`: bo nut `Xoa`, khong import/goi delete mutation; chuyen sang vo hieu hoa/kich hoat lai merchant bang update API hien co, giu nguyen ho so merchant.
+- `HubManagementPage.tsx`: bo nut `Xoa`, khong import/goi delete mutation; nut hanh dong doi thanh `Vo hieu hoa` / `Kich hoat lai` va cap nhat `isActive=false/true`.
+- Confirm/action message da noi ro du lieu khong bi xoa, chi ngung su dung trong nghiep vu logistics.
+
+**Kiem chung:**
+- `cd apps/admin-web && npx tsc --noEmit`: pass.
+
 ---
 
 ## 7. Prompt Wave 3A - validation frontend danh muc
@@ -274,6 +285,17 @@ feat(admin-web): validate masterdata forms before submit
 - Nhap sai khong lam crash form.
 - Loi hien gan field/form, tieng Viet co dau.
 
+**Tien do Wave 3A: DONE**
+
+**Da thuc hien:**
+- `HubManagementPage.tsx`: them validate ma hub bat buoc, trim/uppercase, check trung trong danh sach dang tai; validate ten hub, zone, tinh/thanh, quan/huyen va phuong/xa truoc khi goi API.
+- `ZoneManagementPage.tsx`: validate code/name, trim/uppercase code, chan parent tro ve chinh no va bao loi neu parent khong co trong danh sach dang tai.
+- `ConfigManagementPage.tsx`: validate key/scope bat buoc, parse value/default value theo kieu va hien loi JSON/number/boolean than thien.
+- `NdrReasonManagementPage.tsx`: validate code/name bat buoc, trim/uppercase code va check trung code trong danh sach dang tai.
+
+**Kiem chung:**
+- `cd apps/admin-web && npx tsc --noEmit`: pass.
+
 ---
 
 ## 8. Prompt Wave 3B - validation backend danh muc
@@ -318,6 +340,18 @@ feat(masterdata-service): enforce admin masterdata validation
 **Tieu chi xong:**
 - Loi duplicate/cycle/JSON sai bi chan tu backend.
 - Khong phu thuoc vao local UI validation.
+
+**Tien do Wave 3B: DONE**
+
+**Da thuc hien:**
+- `HubsService`: tao hub yeu cau `code`, normalize uppercase/trim, validate required fields va khong cho trung code; repository tim code case-insensitive.
+- `ZonesService`: giu validation required, duplicate, parent self/cycle va parent ton tai; repository tim code case-insensitive.
+- `ConfigsService`: validate `scope` khi create/update, validate JSON value hop le, config envelope va `merchant.profile.*` bang helper nho; repository tim key case-insensitive.
+- `NdrReasonsService`: giu validate code/description/isActive va duplicate code; repository tim code case-insensitive.
+- Khong sua Prisma schema vi cac unique constraint can thiet da co tren `code`/`key`.
+
+**Kiem chung:**
+- `cd services/masterdata-service && npx tsc --noEmit`: pass.
 
 ---
 
@@ -371,6 +405,24 @@ feat(auth-service): persist courier mobile permissions
 - Co Prisma model/API/service ro rang.
 - Chua can admin UI dung API trong wave nay.
 
+**Tien do Wave 4A: DONE**
+
+**Da thuc hien:**
+- Them Prisma model `MobilePermissionProfile` va `MobilePermissionOverride` trong `services/auth-service/prisma/schema.prisma`.
+- Them domain contract `mobile-permission.entity.ts` gom actor `OPS/COURIER`, 15 permission key `scan.*`, matrix/user override/effective response types.
+- Them `MobilePermissionRepository` va Prisma repository de doc/ghi profile matrix va override theo user.
+- Them `MobilePermissionsService` de normalize payload, validate actor/permission key, resolve actor tu role user va tinh effective permission.
+- Them `MobilePermissionsController` voi API:
+  - `GET /auth/mobile-permissions/matrix`
+  - `PUT /auth/mobile-permissions/matrix`
+  - `GET /auth/mobile-permissions/users/:userId/effective`
+  - `PUT /auth/mobile-permissions/users/:userId`
+- Chua sua `admin-web`, `courier-mobile`, `gateway-bff`; localStorage chua con la backend source of truth cho contract moi.
+
+**Kiem chung:**
+- `cd services/auth-service && npx prisma generate`: pass.
+- `cd services/auth-service && npx tsc --noEmit`: pass.
+
 ---
 
 ## 10. Prompt Wave 4B - admin-web permission matrix dung backend
@@ -407,6 +459,17 @@ feat(admin-web): save courier permissions through backend
 **Tieu chi xong:**
 - Reload browser khong mat cau hinh permission.
 - UI noi ro khi save fail.
+
+**Tien do Wave 4B: DONE**
+
+**Da thuc hien:**
+- `CourierPermissionMatrixPage.tsx`: load ma tran tu backend, save ma tran bang `PUT /auth/mobile-permissions/matrix`, hien loading/saving/error state va thong bao tieng Viet.
+- Per-user view goi `GET /auth/mobile-permissions/users/:userId/effective` khi chon user va save override bang `PUT /auth/mobile-permissions/users/:userId`.
+- LocalStorage khong con la source of truth khi save; chi con fallback UI prototype neu API load fail va UI hien canh bao `Dang dung UI prototype`.
+- `services/api/types.ts`: mo rong method `PUT` de dung dung backend contract Wave 4A.
+
+**Kiem chung:**
+- `cd apps/admin-web && npx tsc --noEmit`: pass.
 
 ---
 

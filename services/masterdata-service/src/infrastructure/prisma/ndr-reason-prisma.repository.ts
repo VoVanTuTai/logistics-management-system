@@ -72,8 +72,13 @@ export class NdrReasonPrismaRepository extends NdrReasonRepository {
   }
 
   async findByCode(code: string): Promise<NdrReason | null> {
-    const record = await this.prisma.ndrReason.findUnique({
-      where: { code },
+    const record = await this.prisma.ndrReason.findFirst({
+      where: {
+        code: {
+          equals: code,
+          mode: 'insensitive',
+        },
+      },
     });
 
     return record ? this.toEntity(record) : null;

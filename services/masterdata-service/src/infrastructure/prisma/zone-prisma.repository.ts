@@ -73,8 +73,13 @@ export class ZonePrismaRepository extends ZoneRepository {
   }
 
   async findByCode(code: string): Promise<Zone | null> {
-    const record = await this.prisma.zone.findUnique({
-      where: { code },
+    const record = await this.prisma.zone.findFirst({
+      where: {
+        code: {
+          equals: code,
+          mode: 'insensitive',
+        },
+      },
     });
 
     return record ? this.toEntity(record) : null;
