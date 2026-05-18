@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
 } from '@nestjs/common';
 
 import { AuthService } from '../../application/services/auth.service';
@@ -26,6 +27,10 @@ import type {
   UserStatus,
   UserUpdateInput,
 } from '../../domain/entities/user-account.entity';
+import {
+  type AuditRequest,
+  getAdminAuditContext,
+} from './admin-audit-context';
 
 @Controller('auth')
 export class AuthController {
@@ -67,20 +72,27 @@ export class AuthController {
   }
 
   @Post('users')
-  createUser(@Body() body: UserCreateInput): Promise<UserAccountView> {
-    return this.authService.createUser(body);
+  createUser(
+    @Body() body: UserCreateInput,
+    @Req() request: AuditRequest,
+  ): Promise<UserAccountView> {
+    return this.authService.createUser(body, getAdminAuditContext(request));
   }
 
   @Patch('users/:id')
   updateUser(
     @Param('id') id: string,
     @Body() body: UserUpdateInput,
+    @Req() request: AuditRequest,
   ): Promise<UserAccountView> {
-    return this.authService.updateUser(id, body);
+    return this.authService.updateUser(id, body, getAdminAuditContext(request));
   }
 
   @Delete('users/:id')
-  deleteUser(@Param('id') id: string): Promise<{ deleted: boolean; userId: string | null }> {
-    return this.authService.deleteUser(id);
+  deleteUser(
+    @Param('id') id: string,
+    @Req() request: AuditRequest,
+  ): Promise<{ deleted: boolean; userId: string | null }> {
+    return this.authService.deleteUser(id, getAdminAuditContext(request));
   }
 }

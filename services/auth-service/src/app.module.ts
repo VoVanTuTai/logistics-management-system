@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 
+import { AdminAuditController } from './api/controllers/admin-audit.controller';
 import { AuthController } from './api/controllers/auth.controller';
 import { MobilePermissionsController } from './api/controllers/mobile-permissions.controller';
+import { AdminAuditService } from './application/services/admin-audit.service';
 import { AuthService } from './application/services/auth.service';
 import { MobilePermissionsService } from './application/services/mobile-permissions.service';
 import { AuthSessionRepository } from './domain/repositories/auth-session.repository';
@@ -21,9 +23,10 @@ import { AuthOutboxService } from './messaging/outbox/auth-outbox.service';
 
 @Module({
   imports: [HealthModule],
-  controllers: [AuthController, MobilePermissionsController],
+  controllers: [AuthController, AdminAuditController, MobilePermissionsController],
   providers: [
     PrismaService,
+    AdminAuditService,
     AuthService,
     MobilePermissionsService,
     HashService,

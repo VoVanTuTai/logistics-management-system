@@ -122,6 +122,14 @@ export class NdrReasonPrismaRepository extends NdrReasonRepository {
     return this.toEntity(record);
   }
 
+  async delete(id: string): Promise<boolean> {
+    const result = await this.prisma.ndrReason.deleteMany({
+      where: { id },
+    });
+
+    return result.count > 0;
+  }
+
   private toEntity(record: PrismaNdrReasonRecord): NdrReason {
     return {
       id: record.id,

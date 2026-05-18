@@ -10,4 +10,5 @@ export abstract class ConfigRepository {
   abstract findByKey(key: string): Promise<Config | null>;
   abstract create(input: ConfigWriteInput): Promise<Config>;
   abstract update(id: string, input: Partial<ConfigWriteInput>): Promise<Config>;
+  abstract delete(id: string): Promise<boolean>;
 }

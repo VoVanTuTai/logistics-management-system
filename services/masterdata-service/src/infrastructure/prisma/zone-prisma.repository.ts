@@ -150,6 +150,14 @@ export class ZonePrismaRepository extends ZoneRepository {
     return this.toEntity(record);
   }
 
+  async delete(id: string): Promise<boolean> {
+    const result = await this.prisma.zone.deleteMany({
+      where: { id },
+    });
+
+    return result.count > 0;
+  }
+
   private toEntity(record: PrismaZoneRecord): Zone {
     return {
       id: record.id,

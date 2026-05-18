@@ -529,7 +529,7 @@ feat(courier): enforce mobile permissions through gateway
 
 ---
 
-## 12. Prompt Wave 5A - audit log backend
+## 12. Prompt Wave 5A - audit log backend - DONE
 
 **Muc tieu:** Ghi duoc ai tao/sua/vo hieu hoa user, hub, zone, config, NDR reason.
 
@@ -571,9 +571,35 @@ feat(admin): record audit logs for admin changes
 - Create/update/disable/delete masterdata va user co ban ghi audit.
 - Co `before`/`after` de giai thich khi bao cao.
 
+### Bao cao Wave 5A - Audit log backend
+
+**Trang thai:** Hoan thanh.
+
+**Thay doi da lam:**
+- Them `AdminAuditLog` vao `services/auth-service/prisma/schema.prisma` va `services/masterdata-service/prisma/schema.prisma`.
+- Them `AdminAuditService` rieng trong tung service de ghi audit dung shape chung: actor, action, targetType, targetId, before, after, requestId, ipAddress, userAgent, createdAt.
+- Lay actor/request context tu header `x-actor-id`, `x-actor-username`, `x-request-id`, `user-agent` va IP request; neu gateway chua truyen actor thi fallback `UNKNOWN_ACTOR` va de TODO gateway.
+- Audit write duoc boc `try/catch`, loi audit duoc log nhung khong lam hong thao tac CRUD chinh.
+- `auth-service`: user create/update/disable/delete ghi audit voi `before`/`after`.
+- `masterdata-service`: hub/zone/config/NDR reason create/update/disable/delete ghi audit voi `before`/`after`.
+- Bo sung delete route/service/repository cho zone, config va NDR reason de dap ung tieu chi audit delete masterdata.
+- Bo sung audit read endpoint de admin-web doc log:
+  - `auth-service`: `GET /auth/admin-audit-logs`
+  - `masterdata-service`: `GET /admin-audit-logs`
+
+**Tac dong nghiep vu/ky thuat:**
+- Khi bi hoi "ai tao/sua/vo hieu hoa/xoa du lieu nay", backend da co bang audit trong service so huu du lieu.
+- Giu dung database-per-service: auth audit nam trong `auth-service`, masterdata audit nam trong `masterdata-service`.
+- Chua tao audit-service rieng va chua gom audit read model tap trung.
+
+**Kiem chung:**
+- `cd services/auth-service && npx tsc --noEmit`: pass.
+- `cd services/masterdata-service && npx tsc --noEmit`: pass.
+- `npx prisma generate` o ca hai service bi chan boi loi local `EACCES` khi rename `query_engine-windows.dll.node` trong `node_modules/.prisma/client`; day la loi file Windows engine dang bi lock/quyen tren workspace, khong phai loi schema/type.
+
 ---
 
-## 13. Prompt Wave 5B - audit viewer trong admin-web
+## 13. Prompt Wave 5B - audit viewer trong admin-web - DONE
 
 **Muc tieu:** Admin co man hinh xem audit log khi bi hoi "ai sua du lieu nay".
 
@@ -612,6 +638,33 @@ feat(admin-web): add admin audit log viewer
 **Tieu chi xong:**
 - Co route xem audit log.
 - Du lieu dai khong lam vo layout.
+
+### Bao cao Wave 5B - Admin audit viewer
+
+**Trang thai:** Hoan thanh.
+
+**Thay doi da lam:**
+- Tao trang `apps/admin-web/src/pages/audit/AdminAuditLogPage.tsx`.
+- Them route `/app/audit/logs` vao `apps/admin-web/src/navigation/routes.ts` va wire vao `AppRouter.tsx`.
+- Them item sidebar `Audit log` trong admin layout.
+- Them audit client/hook/type rieng trong `apps/admin-web/src/features/audit/`.
+- Them endpoint client:
+  - `opsEndpoints.auth.adminAuditLogs`
+  - `opsEndpoints.masterdata.adminAuditLogs`
+- Trang audit co filter: action, targetType, actor va ngay tao.
+- Bang hien: source, thoi gian, actor, action, targetType, targetId va tom tat before/after.
+- Vi chua co endpoint aggregate tap trung, UI query theo tung source `auth-service` va `masterdata-service`, dong thoi hien cot/source status rieng.
+- JSON dai duoc rut gon trong bang; nut `Xem` mo panel chi tiet voi `before`/`after` co scroll va wrap de khong vo layout.
+
+**Tac dong nghiep vu/ky thuat:**
+- Admin-web da co route audit viewer de phuc vu cau hoi truy vet thay doi du lieu.
+- UI san sang doc tu hai audit source rieng theo kien truc database-per-service.
+- Backend da co read endpoint rieng cho tung source; neu mot source loi, trang van hien loi theo source thay vi lam trang trang.
+
+**Kiem chung:**
+- `cd apps/admin-web && npx tsc --noEmit`: pass.
+- `cd services/auth-service && npx tsc --noEmit`: pass.
+- `cd services/masterdata-service && npx tsc --noEmit`: pass.
 
 ---
 

@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 
+import { AdminAuditController } from './api/controllers/admin-audit.controller';
 import { ConfigsController } from './api/controllers/configs.controller';
 import { HubsController } from './api/controllers/hubs.controller';
 import { NdrReasonsController } from './api/controllers/ndr-reasons.controller';
 import { ZonesController } from './api/controllers/zones.controller';
+import { AdminAuditService } from './application/services/admin-audit.service';
 import { ConfigsService } from './application/services/configs.service';
 import { HubsService } from './application/services/hubs.service';
 import { NdrReasonsService } from './application/services/ndr-reasons.service';
@@ -27,6 +29,7 @@ import { MasterdataOutboxService } from './messaging/outbox/masterdata-outbox.se
 @Module({
   imports: [HealthModule],
   controllers: [
+    AdminAuditController,
     HubsController,
     ZonesController,
     NdrReasonsController,
@@ -34,6 +37,7 @@ import { MasterdataOutboxService } from './messaging/outbox/masterdata-outbox.se
   ],
   providers: [
     PrismaService,
+    AdminAuditService,
     HubsService,
     ZonesService,
     NdrReasonsService,
