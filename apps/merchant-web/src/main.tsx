@@ -1719,6 +1719,21 @@ function MerchantApp(): React.JSX.Element {
   if (!session) {
     return (
       <div className="login-shell">
+        <div className="login-layout">
+          <section className="login-hero">
+            <div className="login-hero-top">
+              <p className="login-kicker">NEXUS Logistic</p>
+              <h1 className="brand-title">Merchant Portal</h1>
+            </div>
+            <div className="login-hero-copy">
+              <h2 className="login-hero-title">Nền tảng logistics hiện đại cho merchant.</h2>
+              <p className="login-hero-text">Theo dõi shipment, tạo yêu cầu lấy hàng và vận hành trên cùng một giao diện thống nhất.</p>
+            </div>
+            <div className="login-hero-stats">
+              <div className="login-stat"><strong>10k+</strong><span>Merchant đang hoạt động</span></div>
+              <div className="login-stat"><strong>24/7</strong><span>Hỗ trợ vận hành</span></div>
+            </div>
+          </section>
         <div className="login-card grid">
           <h1 className="brand-title">Merchant Login</h1>
           <p className="muted">Đăng nhập để vào dashboard merchant.</p>
@@ -1728,6 +1743,8 @@ function MerchantApp(): React.JSX.Element {
             <button className="btn btn-primary" type="submit" disabled={loginLoading}>{loginLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}</button>
           </form>
           {loginError ? <p className="message error">{loginError}</p> : null}
+          <div className="login-footer"><span>NEXUS Merchant Workspace</span><span>Secure access</span></div>
+        </div>
         </div>
       </div>
     );
@@ -1736,9 +1753,9 @@ function MerchantApp(): React.JSX.Element {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div><h2 className="brand-title">Merchant Hub</h2><p className="brand-subtitle">Logistics Management System</p></div>
-        <div className="session-box"><div>{session.user.username}</div><div>roles: {session.user.roles.join(', ')}</div><div>token exp: {formatDate(session.accessTokenExpiresAt)}</div></div>
-        <nav className="nav-list">{navItems.map((item) => <button key={item.id} className={`nav-btn ${activeView === item.id ? 'active' : ''}`} onClick={() => setActiveView(item.id)}>{item.label}{item.id === 'notifications' && unreadNotifications > 0 ? ` [${unreadNotifications}]` : ''}</button>)}</nav>
+        <div className="brand-lockup"><p className="login-kicker">NEXUS Logistic</p><h2 className="brand-title">Merchant Hub</h2><p className="brand-subtitle">Logistics Management System</p></div>
+        <div className="session-box"><div className="session-user">{session.user.username}</div><div>roles: {session.user.roles.join(', ')}</div><div>token exp: {formatDate(session.accessTokenExpiresAt)}</div></div>
+        <nav className="nav-list">{navItems.map((item) => <button key={item.id} className={`nav-btn ${activeView === item.id ? 'active' : ''}`} onClick={() => setActiveView(item.id)}><span>{item.label}</span>{item.id === 'notifications' && unreadNotifications > 0 ? <span className="nav-counter">{unreadNotifications}</span> : null}</button>)}</nav>
         <div className="btn-row"><button className="btn btn-secondary" onClick={() => void refreshAllData(session.accessToken, session.user)} disabled={dataLoading}>{dataLoading ? 'Đang tải lại...' : 'Tải lại'}</button><button className="btn btn-danger" onClick={() => void handleLogout()}>Logout</button></div>
       </aside>
 

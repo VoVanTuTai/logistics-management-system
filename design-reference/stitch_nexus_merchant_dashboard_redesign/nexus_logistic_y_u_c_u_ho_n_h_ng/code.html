@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+
+<html class="light" lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Yêu cầu hoàn hàng - NEXUS Logistic</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed-variant": "#004590",
+                        "primary": "#003d9b",
+                        "error": "#ba1a1a",
+                        "inverse-primary": "#b2c5ff",
+                        "background": "#faf9ff",
+                        "surface-container-highest": "#d8e2ff",
+                        "tertiary-fixed": "#afecff",
+                        "secondary-fixed": "#d7e2ff",
+                        "surface-variant": "#d8e2ff",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed-dim": "#b2c5ff",
+                        "inverse-on-surface": "#edf0ff",
+                        "on-secondary": "#ffffff",
+                        "on-background": "#051a3e",
+                        "on-tertiary-fixed-variant": "#004e5d",
+                        "on-secondary-container": "#fefcff",
+                        "secondary-fixed-dim": "#abc7ff",
+                        "on-surface-variant": "#434654",
+                        "outline": "#737685",
+                        "secondary-container": "#0071e6",
+                        "on-secondary-fixed": "#001b3f",
+                        "tertiary-container": "#006477",
+                        "surface": "#faf9ff",
+                        "on-tertiary-container": "#76e2ff",
+                        "tertiary-fixed-dim": "#48d7f9",
+                        "primary-fixed": "#dae2ff",
+                        "surface-container-low": "#f1f3ff",
+                        "surface-dim": "#ccdaff",
+                        "on-primary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "on-tertiary-fixed": "#001f27",
+                        "on-tertiary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "surface-container": "#e9edff",
+                        "on-primary-fixed": "#001848",
+                        "tertiary": "#004b59",
+                        "on-primary-container": "#c4d2ff",
+                        "primary-container": "#0052cc",
+                        "inverse-surface": "#1d3054",
+                        "surface-tint": "#0c56d0",
+                        "surface-bright": "#faf9ff",
+                        "secondary": "#0059b8",
+                        "surface-container-high": "#e1e8ff",
+                        "outline-variant": "#c3c6d6",
+                        "on-primary-fixed-variant": "#0040a2",
+                        "on-error-container": "#93000a",
+                        "on-surface": "#051a3e"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-sm": "0.5rem",
+                        "stack-lg": "2rem",
+                        "container-max-width": "1440px",
+                        "gutter": "1.5rem",
+                        "stack-md": "1rem",
+                        "margin-desktop": "2rem",
+                        "margin-mobile": "1rem"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "headline-xl": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "label-md": ["Inter"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-background text-on-surface flex min-h-screen">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-full w-[280px] bg-surface-container-low border-r border-outline-variant flex flex-col p-4 gap-2 z-50">
+<div class="mb-6 px-4">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">NEXUS Logistic</h1>
+<p class="font-label-md text-label-md text-on-surface-variant">Merchant Portal</p>
+</div>
+<button class="mb-4 flex items-center justify-center gap-2 bg-primary text-on-primary py-3 px-4 rounded-lg font-bold transition-all duration-200 active:scale-95">
+<span class="material-symbols-outlined">add_box</span>
+            Tạo đơn mới
+        </button>
+<nav class="flex-grow flex flex-col gap-1 overflow-y-auto scrollbar-hide">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Tổng quan</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="add_box">add_box</span>
+<span class="font-label-md text-label-md">Tạo đơn hàng</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-label-md text-label-md">Danh sách đơn hàng</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="local_shipping">local_shipping</span>
+<span class="font-label-md text-label-md">Yêu cầu lấy hàng</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+<span class="font-label-md text-label-md">Tra cứu vận đơn</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="edit_note">edit_note</span>
+<span class="font-label-md text-label-md">Yêu cầu đổi thông tin giao</span>
+</a>
+<!-- Active Tab -->
+<a class="flex items-center gap-3 px-4 py-3 bg-secondary-container text-on-secondary-container rounded-lg font-bold" href="#">
+<span class="material-symbols-outlined" data-icon="assignment_return">assignment_return</span>
+<span class="font-label-md text-label-md">Yêu cầu hoàn hàng</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="print">print</span>
+<span class="font-label-md text-label-md">In vận đơn</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-md text-label-md">Tài khoản</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="font-label-md text-label-md">Thông báo</span>
+</a>
+</nav>
+<div class="mt-auto pt-4 border-t border-outline-variant flex flex-col gap-1">
+<button class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg w-full text-left">
+<span class="material-symbols-outlined" data-icon="refresh">refresh</span>
+<span class="font-label-md text-label-md">Tải lại</span>
+</button>
+<button class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg w-full text-left">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="font-label-md text-label-md">Đăng xuất</span>
+</button>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-[280px] flex-grow flex flex-col min-h-screen">
+<!-- TopNavBar -->
+<header class="h-16 bg-surface border-b border-outline-variant flex justify-between items-center px-8 sticky top-0 z-40">
+<div class="flex items-center gap-4">
+<h2 class="font-headline-lg text-headline-lg font-bold text-on-surface">Yêu cầu hoàn hàng</h2>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative group">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors" data-icon="help">help</span>
+</div>
+<div class="relative group">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors" data-icon="settings">settings</span>
+</div>
+<div class="flex items-center gap-3 pl-6 border-l border-outline-variant">
+<div class="text-right">
+<p class="font-label-md text-label-md text-on-surface font-bold">Admin Store</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Merchant ID: 29048</p>
+</div>
+<img alt="Profile" class="w-10 h-10 rounded-full object-cover border-2 border-primary-container" data-alt="A professional headshot of a corporate businessman in a sharp navy suit, smiling confidently in a modern, brightly lit office environment. The background is a clean, minimalist interior with soft blue and white highlights, maintaining a corporate and high-tech aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB482C1MQCwX3fZfzzDGX24GXRPNFBT13sJeUnc1z9t0JMvDuQI-yuftS63r3Npwe78duHl6xb-H8YnVQpUPLDazLxm_4bJe0SZiL__zG8qkV78DYOC6xlV9-FClowK33oVfoOn1zNimjl9WxF29nlEGYm1sEDEaJ4GI7zU-gBm3c-DucHX5CbSmQ7rrUZV2XRgJZ5VCv4YIZRU2LfAjYbtWmQFpU8BQMinUkMZSccdqHc7A1r-TRMWF4BJ4ZeRebDZWkNIOeoNNeU"/>
+</div>
+</div>
+</header>
+<!-- Content Canvas -->
+<div class="p-8 flex flex-col gap-8 max-w-[1440px]">
+<div class="grid grid-cols-12 gap-8">
+<!-- Left Column: Search & Return Request Form -->
+<div class="col-span-8 flex flex-col gap-6">
+<!-- Step 1: Search Section -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 shadow-sm">
+<div class="flex items-center gap-2 mb-4">
+<span class="bg-primary-container text-on-primary-container w-8 h-8 rounded-full flex items-center justify-center font-bold text-label-md">1</span>
+<h3 class="font-headline-md text-headline-md">Bước 1: Tìm kiếm đơn hàng cần hoàn</h3>
+</div>
+<div class="flex gap-4">
+<div class="flex-grow relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full pl-12 pr-4 py-3 border border-outline rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all font-body-md text-body-md" placeholder="Nhập mã vận đơn (e.g., NX-889201...)" type="text"/>
+</div>
+<button class="bg-primary text-on-primary px-8 py-3 rounded-lg font-bold hover:opacity-90 transition-all active:scale-95">Tìm kiếm</button>
+</div>
+</section>
+<!-- Order Info Section (Found State) -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+<div class="bg-surface-container px-6 py-4 border-b border-outline-variant flex justify-between items-center">
+<h3 class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">Thông tin đơn hàng</h3>
+<span class="px-3 py-1 bg-tertiary-container text-on-tertiary-container rounded-full text-body-sm font-bold">Chờ giao lại</span>
+</div>
+<div class="p-6 grid grid-cols-2 gap-6">
+<div class="space-y-4">
+<div>
+<p class="text-body-sm text-on-surface-variant">Người nhận</p>
+<p class="text-body-lg font-bold text-on-surface">Nguyễn Văn A</p>
+</div>
+<div>
+<p class="text-body-sm text-on-surface-variant">Số điện thoại</p>
+<p class="text-body-lg font-bold text-on-surface">0901 234 567</p>
+</div>
+</div>
+<div class="space-y-4">
+<div>
+<p class="text-body-sm text-on-surface-variant">Địa chỉ giao hàng</p>
+<p class="text-body-lg text-on-surface">123 Đường Lê Lợi, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh</p>
+</div>
+<div>
+<p class="text-body-sm text-on-surface-variant">Lịch sử giao hàng gần nhất</p>
+<p class="text-body-sm text-error font-bold italic">Giao hàng không thành công - Khách không nghe máy (Lần 3)</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Step 2: Return Request Section -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 shadow-sm">
+<div class="flex items-center gap-2 mb-6">
+<span class="bg-primary-container text-on-primary-container w-8 h-8 rounded-full flex items-center justify-center font-bold text-label-md">2</span>
+<h3 class="font-headline-md text-headline-md">Yêu cầu hoàn</h3>
+</div>
+<div class="space-y-6">
+<div class="space-y-2">
+<label class="font-label-md text-label-md text-on-surface-variant">Lý do hoàn hàng</label>
+<select class="w-full border border-outline rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all font-body-md text-body-md bg-surface">
+<option disabled="" selected="" value="">Chọn lý do hoàn hàng...</option>
+<option value="khach-huy">Khách hàng hủy đơn</option>
+<option value="khong-lien-lac">Không liên lạc được khách hàng</option>
+<option value="sai-dia-chi">Sai địa chỉ giao hàng</option>
+<option value="hang-hong">Hàng hóa bị hư hỏng trong quá trình vận chuyển</option>
+<option value="other">Khác</option>
+</select>
+</div>
+<div class="space-y-2">
+<label class="font-label-md text-label-md text-on-surface-variant">Ghi chú chi tiết</label>
+<textarea class="w-full border border-outline rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-all font-body-md text-body-md bg-surface" placeholder="Nhập chi tiết yêu cầu hoàn hàng cho bưu tá..." rows="4"></textarea>
+</div>
+<div class="flex justify-end gap-4 pt-4">
+<button class="px-8 py-3 rounded-lg font-bold text-primary border border-primary hover:bg-surface-container transition-all">Hủy</button>
+<button class="px-8 py-3 rounded-lg font-bold bg-primary text-on-primary shadow-lg hover:opacity-90 active:scale-95 transition-all">Gửi yêu cầu hoàn hàng</button>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column: Guidelines & Metrics -->
+<div class="col-span-4 flex flex-col gap-6">
+<div class="bg-surface-container-high border border-outline-variant rounded-xl p-6">
+<div class="flex items-center gap-2 mb-4 text-primary">
+<span class="material-symbols-outlined">info</span>
+<h4 class="font-label-md text-label-md uppercase font-bold">Lưu ý quan trọng</h4>
+</div>
+<ul class="space-y-4 text-body-md text-on-surface-variant list-disc pl-4">
+<li>Yêu cầu hoàn hàng chỉ áp dụng cho các đơn hàng ở trạng thái <span class="font-bold text-on-surface">Chờ giao lại</span> hoặc <span class="font-bold text-on-surface">Không thành công</span>.</li>
+<li>Sau khi gửi yêu cầu, Nexus Logistic sẽ kiểm tra và xác nhận trong vòng 2-4 giờ làm việc.</li>
+<li>Phí hoàn hàng sẽ được tính theo quy định trong hợp đồng dịch vụ.</li>
+<li>Đối với hàng dễ vỡ, vui lòng kiểm tra kỹ hiện trạng trước khi đồng ý nhận hàng hoàn.</li>
+</ul>
+</div>
+<div class="bg-white border border-outline-variant rounded-xl p-6 shadow-sm">
+<p class="text-body-sm text-on-surface-variant mb-1">Tỷ lệ hoàn hàng tháng này</p>
+<div class="flex items-end justify-between">
+<h2 class="text-headline-xl font-headline-xl text-on-surface">4.2%</h2>
+<span class="text-error flex items-center text-body-sm font-bold bg-error-container px-2 py-0.5 rounded-full mb-2">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>
+                                +0.5%
+                            </span>
+</div>
+<div class="w-full bg-surface-container rounded-full h-2 mt-4 overflow-hidden">
+<div class="bg-error h-full rounded-full" style="width: 4.2%"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Table Section -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+<div class="px-6 py-5 border-b border-outline-variant flex justify-between items-center">
+<h3 class="font-headline-md text-headline-md">Lịch sử yêu cầu hoàn hàng</h3>
+<button class="flex items-center gap-2 text-primary font-bold hover:underline">
+<span class="material-symbols-outlined">filter_list</span>
+                        Lọc kết quả
+                    </button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container text-on-surface-variant">
+<th class="px-6 py-4 font-label-md text-label-md">Mã vận đơn</th>
+<th class="px-6 py-4 font-label-md text-label-md">Ngày gửi yêu cầu</th>
+<th class="px-6 py-4 font-label-md text-label-md">Lý do</th>
+<th class="px-6 py-4 font-label-md text-label-md">Ghi chú</th>
+<th class="px-6 py-4 font-label-md text-label-md">Trạng thái</th>
+<th class="px-6 py-4 font-label-md text-label-md text-right">Thao tác</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="px-6 py-4 font-bold text-primary">NX-99021831</td>
+<td class="px-6 py-4 text-body-md">24/10/2023 14:20</td>
+<td class="px-6 py-4 text-body-md">Khách hàng hủy đơn</td>
+<td class="px-6 py-4 text-body-md italic text-on-surface-variant">Khách báo đã mua nơi khác...</td>
+<td class="px-6 py-4">
+<span class="px-3 py-1 bg-secondary-fixed text-on-secondary-fixed rounded-full text-body-sm font-bold">Chấp nhận</span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary">visibility</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="px-6 py-4 font-bold text-primary">NX-99021552</td>
+<td class="px-6 py-4 text-body-md">24/10/2023 10:15</td>
+<td class="px-6 py-4 text-body-md">Không liên lạc được</td>
+<td class="px-6 py-4 text-body-md italic text-on-surface-variant">Lần giao thứ 3 thất bại</td>
+<td class="px-6 py-4">
+<span class="px-3 py-1 bg-surface-container-highest text-on-surface-variant rounded-full text-body-sm font-bold">Đang xử lý</span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary">visibility</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="px-6 py-4 font-bold text-primary">NX-98772101</td>
+<td class="px-6 py-4 text-body-md">23/10/2023 16:45</td>
+<td class="px-6 py-4 text-body-md">Hàng hóa hư hỏng</td>
+<td class="px-6 py-4 text-body-md italic text-on-surface-variant">Móp hộp do va đập</td>
+<td class="px-6 py-4">
+<span class="px-3 py-1 bg-primary-fixed text-on-primary-fixed rounded-full text-body-sm font-bold">Đã gửi</span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary">visibility</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="px-6 py-4 font-bold text-primary">NX-98661009</td>
+<td class="px-6 py-4 text-body-md">22/10/2023 09:30</td>
+<td class="px-6 py-4 text-body-md">Sai địa chỉ giao</td>
+<td class="px-6 py-4 text-body-md italic text-on-surface-variant">Khách đã chuyển nhà</td>
+<td class="px-6 py-4">
+<span class="px-3 py-1 bg-error-container text-on-error-container rounded-full text-body-sm font-bold">Từ chối</span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary">visibility</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="px-6 py-4 border-t border-outline-variant flex items-center justify-between bg-surface">
+<p class="text-body-sm text-on-surface-variant">Hiển thị 1-4 trên tổng số 12 yêu cầu</p>
+<div class="flex gap-2">
+<button class="p-2 rounded-lg border border-outline-variant hover:bg-surface-container disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="p-2 rounded-lg border border-outline-variant hover:bg-surface-container">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+</section>
+</div>
+</main>
+</body></html>
