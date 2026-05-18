@@ -29,6 +29,7 @@ import {
 } from '../../features/permissions/permissions.api';
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
+import { appEnv } from '../../utils/env';
 
 type ViewMode = 'global' | 'per-user';
 type CategoryFilter = CourierPermissionCategory | '';
@@ -52,6 +53,7 @@ export function CourierPermissionMatrixPage(): React.JSX.Element {
   const matrixQuery = useCourierPermissionMatrixQuery(accessToken);
   const updateMatrixMutation = useUpdateCourierPermissionMatrixMutation(accessToken);
   const updateUserOverrideMutation = useUpdateUserPermissionOverrideMutation(accessToken);
+  const allowPrototypeFallback = appEnv.allowPermissionPrototypeFallback;
 
   /* ── view mode ────────────────────────────────────────── */
   const [viewMode, setViewMode] = useState<ViewMode>('global');
@@ -113,10 +115,17 @@ export function CourierPermissionMatrixPage(): React.JSX.Element {
   useEffect(() => {
     if (!matrixQuery.isError) return;
 
+    if (allowPrototypeFallback) {
+      setErrorNotice(
+        `Local fallback UI prototype đang bật vì chưa tải được API phân quyền: ${getErrorMessage(matrixQuery.error)}`,
+      );
+      return;
+    }
+
     setErrorNotice(
-      `Đang dùng UI prototype vì chưa tải được API phân quyền: ${getErrorMessage(matrixQuery.error)}`,
+      `Không tải được phân quyền từ backend: ${getErrorMessage(matrixQuery.error)}`,
     );
-  }, [matrixQuery.error, matrixQuery.isError]);
+  }, [allowPrototypeFallback, matrixQuery.error, matrixQuery.isError]);
 
   useEffect(() => {
     const data = userEffectiveQuery.data;
@@ -146,10 +155,22 @@ export function CourierPermissionMatrixPage(): React.JSX.Element {
   useEffect(() => {
     if (!userEffectiveQuery.isError || !selectedUserId) return;
 
+    if (allowPrototypeFallback) {
+      setErrorNotice(
+        `Local fallback UI prototype đang bật vì chưa tải được phân quyền user: ${getErrorMessage(userEffectiveQuery.error)}`,
+      );
+      return;
+    }
+
     setErrorNotice(
-      `Đang dùng UI prototype vì chưa tải được phân quyền user: ${getErrorMessage(userEffectiveQuery.error)}`,
+      `Không tải được phân quyền từ backend: ${getErrorMessage(userEffectiveQuery.error)}`,
     );
-  }, [selectedUserId, userEffectiveQuery.error, userEffectiveQuery.isError]);
+  }, [
+    allowPrototypeFallback,
+    selectedUserId,
+    userEffectiveQuery.error,
+    userEffectiveQuery.isError,
+  ]);
 
   const selectedUserMap: UserPermissionMap = useMemo(() => {
     if (!selectedUserId) return createDefaultUserPermissionMap();
@@ -174,27 +195,41 @@ export function CourierPermissionMatrixPage(): React.JSX.Element {
   }, [category, query]);
 
   const totalFeatures = COURIER_PERMISSION_FEATURES.length;
+  const matrixBackendUnavailable =
+    matrixQuery.isError && !allowPrototypeFallback;
+  const selectedUserPermissionUnavailable =
+    userEffectiveQuery.isError && !allowPrototypeFallback;
+  const globalActionsDisabled =
+    matrixBackendUnavailable || updateMatrixMutation.isPending;
+  const userActionsDisabled =
+    matrixBackendUnavailable ||
+    selectedUserPermissionUnavailable ||
+    updateUserOverrideMutation.isPending;
 
   /* ── global actions ───────────────────────────────────── */
   const matrixJson = useMemo(() => JSON.stringify(matrix, null, 2), [matrix]);
   const isDirtyGlobal = matrixJson !== savedSnapshot;
 
   const toggleGlobal = (actor: CourierPermissionActor, feature: CourierPermissionFeature) => {
+    if (globalActionsDisabled) return;
     setNotice(null);
     setErrorNotice(null);
     setMatrix((c) => ({ ...c, [actor]: { ...c[actor], [feature]: !c[actor][feature] } }));
   };
   const setActorAll = (actor: CourierPermissionActor, val: boolean) => {
+    if (globalActionsDisabled) return;
     setNotice(null);
     setErrorNotice(null);
     setMatrix((c) => ({ ...c, [actor]: COURIER_PERMISSION_FEATURES.reduce((a, f) => { a[f.id] = val; return a; }, {} as Record<CourierPermissionFeature, boolean>) }));
   };
   const setFeatureAll = (feature: CourierPermissionFeature, val: boolean) => {
+    if (globalActionsDisabled) return;
     setNotice(null);
     setErrorNotice(null);
     setMatrix((c) => COURIER_PERMISSION_ACTORS.reduce((a, act) => { a[act.id] = { ...c[act.id], [feature]: val }; return a; }, {} as CourierPermissionMatrix));
   };
   const saveGlobal = async () => {
+    if (globalActionsDisabled) return;
     setNotice(null);
     setErrorNotice(null);
 
@@ -210,15 +245,20 @@ export function CourierPermissionMatrixPage(): React.JSX.Element {
     }
   };
   const resetGlobal = () => {
+    if (globalActionsDisabled) return;
     const source = matrixQuery.data
       ? normalizeCourierPermissionMatrix(matrixQuery.data)
       : loadGlobalMatrix();
     setMatrix(source);
-    setNotice(matrixQuery.data ? 'Đã hoàn tác về dữ liệu backend.' : 'Đã hoàn tác theo UI prototype.');
+    setNotice(
+      matrixQuery.data
+        ? 'Đã hoàn tác về dữ liệu backend.'
+        : 'Đã hoàn tác theo local fallback UI prototype.',
+    );
     setErrorNotice(
       matrixQuery.data
         ? null
-        : 'Đang dùng UI prototype vì API phân quyền chưa sẵn sàng.',
+        : 'Local fallback UI prototype đang bật vì API phân quyền chưa sẵn sàng.',
     );
   };
 
@@ -238,6 +278,7 @@ export function CourierPermissionMatrixPage(): React.JSX.Element {
   }, []);
 
   const toggleUserPerm = (feature: CourierPermissionFeature) => {
+    if (userActionsDisabled) return;
     if (!selectedUserId) return;
     setNotice(null);
     setErrorNotice(null);
@@ -248,6 +289,7 @@ export function CourierPermissionMatrixPage(): React.JSX.Element {
   };
 
   const setUserAll = (val: boolean) => {
+    if (userActionsDisabled) return;
     if (!selectedUserId) return;
     setNotice(null);
     setErrorNotice(null);
@@ -258,6 +300,7 @@ export function CourierPermissionMatrixPage(): React.JSX.Element {
   };
 
   const resetUserToDefault = () => {
+    if (userActionsDisabled) return;
     if (!selectedUserId) return;
     setNotice(null);
     setErrorNotice(null);
@@ -272,6 +315,7 @@ export function CourierPermissionMatrixPage(): React.JSX.Element {
   };
 
   const saveUserOverrides = async () => {
+    if (userActionsDisabled) return;
     if (!selectedUserId) return;
     setNotice(null);
     setErrorNotice(null);
@@ -298,6 +342,7 @@ export function CourierPermissionMatrixPage(): React.JSX.Element {
   };
 
   const resetUserOverrides = () => {
+    if (userActionsDisabled) return;
     if (!selectedUserId) return;
     const snapshot = overrideSnapshots[selectedUserId];
     const source = snapshot
@@ -340,6 +385,26 @@ export function CourierPermissionMatrixPage(): React.JSX.Element {
 
       {notice ? <p style={S.notice} role="status">{notice}</p> : null}
       {errorNotice ? <p style={S.errorNotice} role="alert">{errorNotice}</p> : null}
+      {allowPrototypeFallback && matrixQuery.isError ? (
+        <p style={S.localFallbackNotice}>
+          Local fallback UI prototype chỉ dùng cho dev. Demo cần permission API từ auth-service.
+        </p>
+      ) : null}
+      {matrixBackendUnavailable || selectedUserPermissionUnavailable ? (
+        <div style={S.backendErrorBar}>
+          <span>Không tải được phân quyền từ backend. Các thao tác lưu/sửa permission đã bị khóa.</span>
+          <button
+            type="button"
+            onClick={() => {
+              void matrixQuery.refetch();
+              if (selectedUserId) void userEffectiveQuery.refetch();
+            }}
+            style={S.secBtn}
+          >
+            Tải lại
+          </button>
+        </div>
+      ) : null}
       {matrixQuery.isLoading ? <p style={S.muted}>Đang tải ma trận phân quyền từ backend...</p> : null}
 
       {/* ═══════════ GLOBAL VIEW ═══════════ */}
@@ -352,7 +417,7 @@ export function CourierPermissionMatrixPage(): React.JSX.Element {
                 <article key={actor.id} style={S.card}>
                   <div><small style={S.cardLabel}>{actor.label}</small><strong style={S.cardValue}>{cnt}/{totalFeatures}</strong></div>
                   <p style={S.cardDesc}>{actor.description}</p>
-                  <div style={S.row}><button type="button" onClick={() => setActorAll(actor.id, true)} style={S.secBtn}>Bật tất cả</button><button type="button" onClick={() => setActorAll(actor.id, false)} style={S.danBtn}>Tắt tất cả</button></div>
+                  <div style={S.row}><button type="button" onClick={() => setActorAll(actor.id, true)} disabled={globalActionsDisabled} style={S.secBtn}>Bật tất cả</button><button type="button" onClick={() => setActorAll(actor.id, false)} disabled={globalActionsDisabled} style={S.danBtn}>Tắt tất cả</button></div>
                 </article>
               );
             })}
@@ -374,10 +439,10 @@ export function CourierPermissionMatrixPage(): React.JSX.Element {
                       <td><span style={riskS[f.riskLevel]}>{f.riskLevel}</span></td>
                       {COURIER_PERMISSION_ACTORS.map((a) => (
                         <td key={`${f.id}-${a.id}`} style={S.center}>
-                          <label style={S.sw}><input type="checkbox" checked={matrix[a.id][f.id]} onChange={() => toggleGlobal(a.id, f.id)} /><span>{matrix[a.id][f.id] ? 'Cho phép' : 'Chặn'}</span></label>
+                          <label style={S.sw}><input type="checkbox" checked={matrix[a.id][f.id]} disabled={globalActionsDisabled} onChange={() => toggleGlobal(a.id, f.id)} /><span>{matrix[a.id][f.id] ? 'Cho phép' : 'Chặn'}</span></label>
                         </td>
                       ))}
-                      <td style={S.center}><button type="button" onClick={() => setFeatureAll(f.id, !allOn)} style={allOn ? S.danBtn : S.secBtn}>{allOn ? 'Chặn tất cả' : 'Cho tất cả'}</button></td>
+                      <td style={S.center}><button type="button" onClick={() => setFeatureAll(f.id, !allOn)} disabled={globalActionsDisabled} style={allOn ? S.danBtn : S.secBtn}>{allOn ? 'Chặn tất cả' : 'Cho tất cả'}</button></td>
                     </tr>
                   );
                 })}
@@ -387,7 +452,7 @@ export function CourierPermissionMatrixPage(): React.JSX.Element {
           </section>
           <div style={S.saveBar}>
             <span style={isDirtyGlobal ? S.dirtyPill : S.syncPill}>{isDirtyGlobal ? '● Chưa lưu' : '✓ Đã đồng bộ'}</span>
-            <div style={S.row}><button type="button" onClick={resetGlobal} style={S.secBtn}>Hoàn tác</button><button type="button" onClick={() => void saveGlobal()} disabled={!isDirtyGlobal || updateMatrixMutation.isPending}>{updateMatrixMutation.isPending ? 'Đang lưu...' : 'Lưu thay đổi'}</button></div>
+            <div style={S.row}><button type="button" onClick={resetGlobal} disabled={globalActionsDisabled} style={S.secBtn}>Hoàn tác</button><button type="button" onClick={() => void saveGlobal()} disabled={!isDirtyGlobal || globalActionsDisabled}>{updateMatrixMutation.isPending ? 'Đang lưu...' : 'Lưu thay đổi'}</button></div>
           </div>
         </>
       ) : null}
@@ -435,9 +500,9 @@ export function CourierPermissionMatrixPage(): React.JSX.Element {
                   <div style={S.counterBox}><strong style={S.counterVal}>{userEnabledCount}/{totalFeatures}</strong><small>quyền</small></div>
                 </div>
                 <div style={S.row}>
-                  <button type="button" onClick={() => setUserAll(true)} style={S.secBtn}>Bật tất cả</button>
-                  <button type="button" onClick={() => setUserAll(false)} style={S.danBtn}>Tắt tất cả</button>
-                  <button type="button" onClick={resetUserToDefault} style={S.secBtn}>Đặt mặc định</button>
+                  <button type="button" onClick={() => setUserAll(true)} disabled={userActionsDisabled} style={S.secBtn}>Bật tất cả</button>
+                  <button type="button" onClick={() => setUserAll(false)} disabled={userActionsDisabled} style={S.danBtn}>Tắt tất cả</button>
+                  <button type="button" onClick={resetUserToDefault} disabled={userActionsDisabled} style={S.secBtn}>Đặt mặc định</button>
                 </div>
                 <div style={S.tableWrap}>
                   <table>
@@ -449,7 +514,7 @@ export function CourierPermissionMatrixPage(): React.JSX.Element {
                           <td>{COURIER_PERMISSION_CATEGORIES[f.category]}</td>
                           <td><span style={riskS[f.riskLevel]}>{f.riskLevel}</span></td>
                           <td style={S.center}>
-                            <label style={S.sw}><input type="checkbox" checked={selectedUserMap[f.id]} onChange={() => toggleUserPerm(f.id)} /><span style={selectedUserMap[f.id] ? {color:'#166534'} : {color:'#991B1B'}}>{selectedUserMap[f.id] ? 'Cho phép' : 'Chặn'}</span></label>
+                            <label style={S.sw}><input type="checkbox" checked={selectedUserMap[f.id]} disabled={userActionsDisabled} onChange={() => toggleUserPerm(f.id)} /><span style={selectedUserMap[f.id] ? {color:'#166534'} : {color:'#991B1B'}}>{selectedUserMap[f.id] ? 'Cho phép' : 'Chặn'}</span></label>
                           </td>
                         </tr>
                       ))}
@@ -459,7 +524,7 @@ export function CourierPermissionMatrixPage(): React.JSX.Element {
                 </div>
                 <div style={S.saveBar}>
                   <span style={isDirtyUser ? S.dirtyPill : S.syncPill}>{isDirtyUser ? '● Chưa lưu' : '✓ Đã đồng bộ'}</span>
-                  <div style={S.row}><button type="button" onClick={resetUserOverrides} style={S.secBtn}>Hoàn tác</button><button type="button" onClick={() => void saveUserOverrides()} disabled={!isDirtyUser || updateUserOverrideMutation.isPending}>{updateUserOverrideMutation.isPending ? 'Đang lưu...' : 'Lưu thay đổi'}</button></div>
+                  <div style={S.row}><button type="button" onClick={resetUserOverrides} disabled={userActionsDisabled} style={S.secBtn}>Hoàn tác</button><button type="button" onClick={() => void saveUserOverrides()} disabled={!isDirtyUser || userActionsDisabled}>{updateUserOverrideMutation.isPending ? 'Đang lưu...' : 'Lưu thay đổi'}</button></div>
                 </div>
               </>
             ) : (
@@ -500,6 +565,8 @@ const S: Record<string, React.CSSProperties> = {
   catSelect: { minWidth: 180 },
   notice: { margin: 0, border: '1px solid #c7d2fe', background: 'var(--admin-surface-soft)', color: 'var(--admin-primary)', borderRadius: 12, padding: '8px 10px', fontWeight: 700 },
   errorNotice: { margin: 0, border: '1px solid #fecaca', background: '#fef2f2', color: '#991b1b', borderRadius: 12, padding: '8px 10px', fontWeight: 700 },
+  localFallbackNotice: { margin: 0, border: '1px solid #fed7aa', background: '#fff7ed', color: '#9a3412', borderRadius: 12, padding: '8px 10px', fontWeight: 700 },
+  backendErrorBar: { border: '1px solid #fecaca', background: '#fff7f7', color: '#7f1d1d', borderRadius: 12, padding: '10px 12px', display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', fontWeight: 700 },
   tableWrap: { border: '1px solid var(--admin-border)', borderRadius: 14, overflow: 'auto' },
   featCol: { minWidth: 260 },
   actCol: { width: 120, textAlign: 'center' },

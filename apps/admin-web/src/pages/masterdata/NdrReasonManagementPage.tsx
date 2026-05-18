@@ -213,10 +213,10 @@ export function NdrReasonManagementPage(): React.JSX.Element {
           ndrReasonId: editingReason.id,
           payload,
         });
-        setActionMessage(`Da cap nhat ly do NDR "${payload.code}".`);
+        setActionMessage(`Đã cập nhật lý do NDR "${payload.code}".`);
       } else {
         await createMutation.mutateAsync(payload);
-        setActionMessage(`Da tao ly do NDR "${payload.code}".`);
+        setActionMessage(`Đã tạo lý do NDR "${payload.code}".`);
       }
 
       setEditorOpen(false);
@@ -238,7 +238,7 @@ export function NdrReasonManagementPage(): React.JSX.Element {
       });
 
       setActionMessage(
-        `Ly do NDR "${reason.code}" da chuyen sang ${reason.isActive ? 'INACTIVE' : 'ACTIVE'}.`,
+        `Lý do NDR "${reason.code}" đã chuyển sang ${reason.isActive ? 'INACTIVE' : 'ACTIVE'}.`,
       );
     } catch (error) {
       setActionError(getErrorMessage(error));
@@ -249,14 +249,14 @@ export function NdrReasonManagementPage(): React.JSX.Element {
 
   return (
     <div>
-      <h2>Du Lieu Danh Muc - Quan Ly Ly Do NDR</h2>
+      <h2>Dữ liệu danh mục - Quản lý lý do NDR</h2>
       <p style={styles.helperText}>
-        Quan ly bo ly do that bai chuan hoa dung cho giao hang va van hanh.
+        Quản lý bộ lý do thất bại chuẩn hóa dùng cho giao hàng và vận hành.
       </p>
 
       <form onSubmit={onApplyFilters} style={styles.filterForm}>
         <input
-          placeholder="Ma ly do"
+          placeholder="Mã lý do"
           value={draftFilters.code ?? ''}
           onChange={(event) =>
             setDraftFilters((previous) => ({
@@ -267,7 +267,7 @@ export function NdrReasonManagementPage(): React.JSX.Element {
           style={styles.input}
         />
         <input
-          placeholder="Tim theo ma/ten/mo ta"
+          placeholder="Tìm theo mã/tên/mô tả"
           value={draftFilters.q ?? ''}
           onChange={(event) =>
             setDraftFilters((previous) => ({
@@ -287,16 +287,16 @@ export function NdrReasonManagementPage(): React.JSX.Element {
           }
           style={styles.input}
         >
-          <option value="">Tất cả trang thai</option>
+          <option value="">Tất cả trạng thái</option>
           <option value="true">ACTIVE</option>
           <option value="false">INACTIVE</option>
         </select>
-        <button type="submit">Ap dung</button>
+        <button type="submit">Áp dụng</button>
         <button type="button" onClick={onResetFilters}>
           Dat lai
         </button>
         <button type="button" onClick={openCreateModal}>
-          Tao ly do
+          Tạo lý do
         </button>
       </form>
 
@@ -311,26 +311,26 @@ export function NdrReasonManagementPage(): React.JSX.Element {
         </p>
       ) : null}
 
-      {reasonsQuery.isLoading ? <p>Đang tải ly do NDR...</p> : null}
+      {reasonsQuery.isLoading ? <p>Đang tải lý do NDR...</p> : null}
       {reasonsQuery.isError ? (
         <p style={styles.errorText}>{getErrorMessage(reasonsQuery.error)}</p>
       ) : null}
       {reasonsQuery.isSuccess && (reasonsQuery.data?.length ?? 0) === 0 ? (
-        <p>Không tìm thấy ly do NDR.</p>
+        <p>Không tìm thấy lý do NDR.</p>
       ) : null}
 
       {reasonsQuery.isSuccess && (reasonsQuery.data?.length ?? 0) > 0 ? (
         <table style={styles.table}>
           <thead>
             <tr>
-              <th style={styles.headerCell}>Ma</th>
-              <th style={styles.headerCell}>Ten</th>
-              <th style={styles.headerCell}>Nhom</th>
+              <th style={styles.headerCell}>Mã</th>
+              <th style={styles.headerCell}>Tên</th>
+              <th style={styles.headerCell}>Nhóm</th>
               <th style={styles.headerCell}>Hen lai</th>
-              <th style={styles.headerCell}>Hoan</th>
-              <th style={styles.headerCell}>Trang thai</th>
-              <th style={styles.headerCell}>Cap nhat</th>
-              <th style={styles.headerCell}>Hanh dong</th>
+              <th style={styles.headerCell}>Hoàn</th>
+              <th style={styles.headerCell}>Trạng thái</th>
+              <th style={styles.headerCell}>Cập nhật</th>
+              <th style={styles.headerCell}>Hành động</th>
             </tr>
           </thead>
           <tbody>
@@ -343,9 +343,9 @@ export function NdrReasonManagementPage(): React.JSX.Element {
                   <td style={styles.cell}>{parsedReason.name}</td>
                   <td style={styles.cell}>{parsedReason.category}</td>
                   <td style={styles.cell}>
-                    {parsedReason.allowReschedule ? 'CO' : 'KHONG'}
+                    {parsedReason.allowReschedule ? 'CÓ' : 'KHÔNG'}
                   </td>
-                  <td style={styles.cell}>{parsedReason.allowReturn ? 'CO' : 'KHONG'}</td>
+                  <td style={styles.cell}>{parsedReason.allowReturn ? 'CÓ' : 'KHÔNG'}</td>
                   <td style={styles.cell}>
                     <MasterdataStatusPill isActive={reason.isActive} />
                   </td>
@@ -353,13 +353,13 @@ export function NdrReasonManagementPage(): React.JSX.Element {
                   <td style={styles.cell}>
                     <div style={styles.actionsCell}>
                       <button type="button" onClick={() => setSelectedReasonId(reason.id)}>
-                        Chi tiet
+                        Chi tiết
                       </button>
                       <button type="button" onClick={() => openEditModal(reason)}>
-                        Sua
+                        Sửa
                       </button>
                       <button type="button" onClick={() => void onToggleStatus(reason)}>
-                        {reason.isActive ? 'Tat' : 'Bat'}
+                        {reason.isActive ? 'Tắt' : 'Bật'}
                       </button>
                     </div>
                   </td>
@@ -377,32 +377,32 @@ export function NdrReasonManagementPage(): React.JSX.Element {
 
             return (
               <>
-                <h3 style={styles.detailTitle}>Chi tiet NDR: {selectedReason.code}</h3>
+                <h3 style={styles.detailTitle}>Chi tiết NDR: {selectedReason.code}</h3>
                 <p>
-                  <strong>Ten:</strong> {payload.name}
+                  <strong>Tên:</strong> {payload.name}
                 </p>
                 <p>
-                  <strong>Nhom:</strong> {payload.category}
+                  <strong>Nhóm:</strong> {payload.category}
                 </p>
                 <p>
-                  <strong>Mo ta:</strong> {payload.description}
+                  <strong>Mô tả:</strong> {payload.description}
                 </p>
                 <p>
-                  <strong>Cho phep hen lai:</strong>{' '}
-                  {payload.allowReschedule ? 'CO' : 'KHONG'}
+                  <strong>Cho phép hẹn lại:</strong>{' '}
+                  {payload.allowReschedule ? 'CÓ' : 'KHÔNG'}
                 </p>
                 <p>
-                  <strong>Cho phep hoan:</strong> {payload.allowReturn ? 'CO' : 'KHONG'}
+                  <strong>Cho phép hoàn:</strong> {payload.allowReturn ? 'CÓ' : 'KHÔNG'}
                 </p>
                 <p>
-                  <strong>Thu tu:</strong> {payload.sortOrder}
+                  <strong>Thứ tự:</strong> {payload.sortOrder}
                 </p>
                 <p>
-                  <strong>Trang thai:</strong>{' '}
+                  <strong>Trạng thái:</strong>{' '}
                   {selectedReason.isActive ? 'ACTIVE' : 'INACTIVE'}
                 </p>
                 <p>
-                  <strong>Cap nhat:</strong> {formatDateTime(selectedReason.updatedAt)}
+                  <strong>Cập nhật:</strong> {formatDateTime(selectedReason.updatedAt)}
                 </p>
               </>
             );
@@ -414,17 +414,17 @@ export function NdrReasonManagementPage(): React.JSX.Element {
         open={editorOpen}
         title={
           editingReason
-            ? `Sua ly do NDR ${editingReason.code}`
-            : 'Tao ly do NDR'
+            ? `Sửa lý do NDR ${editingReason.code}`
+            : 'Tạo lý do NDR'
         }
-        submitLabel={editingReason ? 'Luu thay doi' : 'Tao ly do'}
+        submitLabel={editingReason ? 'Lưu thay đổi' : 'Tạo lý do'}
         isSubmitting={isSaving}
         onClose={() => setEditorOpen(false)}
         onSubmit={onSubmitForm}
       >
         <div style={styles.formGrid}>
           <label style={styles.fieldLabel}>
-            Ma ly do
+            Mã lý do
             <input
               value={form.code}
               onChange={(event) =>
@@ -440,7 +440,7 @@ export function NdrReasonManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Ten ly do
+            Tên lý do
             <input
               value={form.name}
               onChange={(event) =>
@@ -454,7 +454,7 @@ export function NdrReasonManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Nhom
+            Nhóm
             <select
               value={form.category}
               onChange={(event) =>
@@ -473,7 +473,7 @@ export function NdrReasonManagementPage(): React.JSX.Element {
             </select>
           </label>
           <label style={styles.fieldLabel}>
-            Thu tu
+            Thứ tự
             <input
               type="number"
               value={form.sortOrder}
@@ -487,7 +487,7 @@ export function NdrReasonManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={{ ...styles.fieldLabel, gridColumn: '1 / -1' }}>
-            Mo ta
+            Mô tả
             <textarea
               value={form.description}
               onChange={(event) =>
@@ -511,7 +511,7 @@ export function NdrReasonManagementPage(): React.JSX.Element {
                 }))
               }
             />
-            Cho phep hen lai
+            Cho phép hẹn lại
           </label>
           <label style={styles.checkboxLabel}>
             <input
@@ -524,7 +524,7 @@ export function NdrReasonManagementPage(): React.JSX.Element {
                 }))
               }
             />
-            Cho phep hoan
+            Cho phép hoàn
           </label>
           <label style={styles.checkboxLabel}>
             <input
@@ -630,4 +630,3 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
   },
 };
-

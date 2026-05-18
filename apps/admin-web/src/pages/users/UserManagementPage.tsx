@@ -54,11 +54,11 @@ function roleOptionsByGroup(roleGroup: UserRoleGroup): string[] {
 
 function pageTitleByGroup(roleGroup: UserRoleGroup): string {
   if (roleGroup === 'MERCHANT') {
-    return 'Quan tri - Quan ly tai khoan Merchant';
+    return 'Quản trị - Quản lý tài khoản Merchant';
   }
 
   return roleGroup === 'SHIPPER'
-    ? 'Quan tri - Quan ly tai khoan Shipper'
+    ? 'Quản trị - Quản lý tài khoản Shipper'
     : 'Quản lý tài khoản Ops';
 }
 
@@ -143,7 +143,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
           payload,
         });
 
-        setActionMessage(`Da cap nhat tai khoan ${payloadBase.username}.`);
+        setActionMessage(`Đã cập nhật tài khoản ${payloadBase.username}.`);
       } else {
         const password = form.password.trim();
 
@@ -156,7 +156,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
 
         await createMutation.mutateAsync(payload);
 
-        setActionMessage(`Da tao tai khoan ${payloadBase.username}.`);
+        setActionMessage(`Đã tạo tài khoản ${payloadBase.username}.`);
       }
 
       resetForm();
@@ -214,7 +214,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
         <input
           value={q}
           onChange={(event) => setQ(event.target.value)}
-          placeholder="Tim ten dang nhap / ten / so dien thoai"
+          placeholder="Tìm tên đăng nhập / tên / số điện thoại"
           style={styles.input}
         />
         <select
@@ -222,7 +222,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
           onChange={(event) => setStatus(event.target.value as UserStatus | '')}
           style={styles.input}
         >
-          <option value="">Tất cả trang thai</option>
+          <option value="">Tất cả trạng thái</option>
           <option value="ACTIVE">ACTIVE</option>
           <option value="DISABLED">DISABLED</option>
         </select>
@@ -253,7 +253,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
 
       <section style={styles.editorCard}>
         <h3 style={styles.editorTitle}>
-          {editingUser ? `Sua ${editingUser.username}` : 'Tạo tài khoản mới'}
+          {editingUser ? `Sửa ${editingUser.username}` : 'Tạo tài khoản mới'}
         </h3>
         {!editingUser && roleGroup !== 'MERCHANT' ? (
           <p style={styles.helperText}>
@@ -262,11 +262,11 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
         ) : null}
         <form onSubmit={onSubmitForm} style={styles.formGrid}>
           <label style={styles.fieldLabel}>
-            Ten dang nhap
+            Tên đăng nhập
             <input
               required
               pattern="\d{8}"
-              title="Ma dang nhap gom 8 chu so."
+              title="Mã đăng nhập gồm 8 chữ số."
               disabled={Boolean(editingUser)}
               value={form.username}
               onChange={(event) =>
@@ -277,7 +277,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
             />
           </label>
           <label style={styles.fieldLabel}>
-            Mật khẩu {editingUser ? '(khong bat buoc)' : ''}
+            Mật khẩu {editingUser ? '(không bắt buộc)' : ''}
             <input
               type="password"
               value={form.password}
@@ -288,7 +288,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
             />
           </label>
           <label style={styles.fieldLabel}>
-            Ten hien thi
+            Tên hiển thị
             <input
               value={form.displayName}
               onChange={(event) =>
@@ -298,7 +298,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
             />
           </label>
           <label style={styles.fieldLabel}>
-            So dien thoai
+            Số điện thoại
             <input
               value={form.phone}
               onChange={(event) =>
@@ -308,7 +308,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
             />
           </label>
           <label style={styles.fieldLabel}>
-            Vai tro
+            Vai trò
             <select
               value={form.role}
               onChange={(event) =>
@@ -324,7 +324,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
             </select>
           </label>
           <label style={styles.fieldLabel}>
-            Hub duoc gan
+            Hub được gán
             <select
               value={form.hubCode}
               onChange={(event) =>
@@ -332,7 +332,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
               }
               style={styles.input}
             >
-              <option value="">Chua gan</option>
+              <option value="">Chưa gán</option>
               {(hubsQuery.data ?? []).map((hub) => (
                 <option key={hub.id} value={hub.code}>
                   {hub.code} - {hub.name}
@@ -341,7 +341,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
             </select>
           </label>
           <label style={styles.fieldLabel}>
-            Trang thai
+            Trạng thái
             <select
               value={form.status}
               onChange={(event) =>
@@ -359,23 +359,23 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
 
           <div style={styles.actionsCell}>
             <button type="submit" disabled={isSaving}>
-              {editingUser ? 'Luu tai khoan' : 'Tao tai khoan'}
+              {editingUser ? 'Lưu tài khoản' : 'Tạo tài khoản'}
             </button>
             {editingUser ? (
               <button type="button" onClick={onCancelEdit}>
-                Huy sua
+                Hủy sửa
               </button>
             ) : null}
           </div>
         </form>
       </section>
 
-      {usersQuery.isLoading ? <p>Đang tải nguoi dung...</p> : null}
+      {usersQuery.isLoading ? <p>Đang tải người dùng...</p> : null}
       {usersQuery.isError ? (
         <p style={styles.errorText}>{getErrorMessage(usersQuery.error)}</p>
       ) : null}
       {usersQuery.isSuccess && (usersQuery.data?.length ?? 0) === 0 ? (
-        <p>Không tìm thấy nguoi dung.</p>
+        <p>Không tìm thấy người dùng.</p>
       ) : null}
 
       {usersQuery.isSuccess && (usersQuery.data?.length ?? 0) > 0 ? (
@@ -385,14 +385,14 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
               <th style={styles.headerCell}>
                 {roleGroup === 'SHIPPER' ? 'ID Courier' : 'ID User'}
               </th>
-              <th style={styles.headerCell}>Ten dang nhap</th>
-              <th style={styles.headerCell}>Ten hien thi</th>
-              <th style={styles.headerCell}>So dien thoai</th>
-              <th style={styles.headerCell}>Vai tro</th>
-              <th style={styles.headerCell}>Gan hub</th>
-              <th style={styles.headerCell}>Trang thai</th>
-              <th style={styles.headerCell}>Cap nhat</th>
-              <th style={styles.headerCell}>Hanh dong</th>
+              <th style={styles.headerCell}>Tên đăng nhập</th>
+              <th style={styles.headerCell}>Tên hiển thị</th>
+              <th style={styles.headerCell}>Số điện thoại</th>
+              <th style={styles.headerCell}>Vai trò</th>
+              <th style={styles.headerCell}>Gán hub</th>
+              <th style={styles.headerCell}>Trạng thái</th>
+              <th style={styles.headerCell}>Cập nhật</th>
+              <th style={styles.headerCell}>Hành động</th>
             </tr>
           </thead>
           <tbody>
@@ -403,13 +403,13 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
                 <td style={styles.cell}>{user.displayName ?? 'Không có'}</td>
                 <td style={styles.cell}>{user.phone ?? 'Không có'}</td>
                 <td style={styles.cell}>{user.roles.join(', ')}</td>
-                <td style={styles.cell}>{user.hubCodes.join(', ') || 'Chua gan'}</td>
+                <td style={styles.cell}>{user.hubCodes.join(', ') || 'Chưa gán'}</td>
                 <td style={styles.cell}>{user.status}</td>
                 <td style={styles.cell}>{formatDateTime(user.updatedAt)}</td>
                 <td style={styles.cell}>
                   <div style={styles.actionsCell}>
                     <button type="button" onClick={() => onEditUser(user)}>
-                      Sua
+                      Sửa
                     </button>
                     <button type="button" onClick={() => void onToggleUserStatus(user)}>
                       {user.status === 'ACTIVE' ? 'Vô hiệu hóa' : 'Kích hoạt lại'}
@@ -498,4 +498,3 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
   },
 };
-

@@ -62,6 +62,23 @@ model Config {
   @@map("configs")
 }
 
+model MerchantProfile {
+  id                   String   @id @default(cuid())
+  username             String   @unique
+  citizenId            String   @unique
+  regionCode           String
+  regionLabel          String
+  defaultHubCode       String?
+  defaultHubName       String?
+  defaultSenderAddress String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([regionCode])
+  @@index([defaultHubCode])
+  @@map("merchant_profiles")
+}
+
 model AdminAuditLog {
   id            String   @id @default(cuid())
   actorId       String?
@@ -76,8 +93,12 @@ model AdminAuditLog {
   userAgent     String?
   createdAt     DateTime @default(now())
 
+  @@index([createdAt])
+  @@index([action, createdAt])
+  @@index([targetType, createdAt])
   @@index([targetType, targetId, createdAt])
   @@index([actorId, createdAt])
+  @@index([actorUsername, createdAt])
   @@map("admin_audit_logs")
 }
 
