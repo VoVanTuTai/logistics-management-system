@@ -16,9 +16,19 @@ import {
   FileText,
   MapPin,
   Trash2,
-  Truck
+  Truck,
+  PlayCircle,
+  CheckCircle2
 } from 'lucide-react';
 import './LinehaulStyles.css';
+
+/* ─── Toast ─── */
+interface LinehaulToast {
+  id: number;
+  type: 'success' | 'error' | 'info';
+  text: string;
+}
+let lhToastId = 0;
 
 interface TaskRecord {
   id: string;
@@ -119,6 +129,21 @@ export function LinehaulTripManagementPage() {
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Toast state
+  const [toasts, setToasts] = useState<LinehaulToast[]>([]);
+  const addToast = (type: LinehaulToast['type'], text: string) => {
+    lhToastId += 1;
+    const id = lhToastId;
+    setToasts(prev => [...prev, { id, type, text }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4500);
+  };
+
+  // Confirm modal for Xe đi / Xe đến
+  const [transitAction, setTransitAction] = useState<{ task: TaskRecord; action: 'depart' | 'arrive' } | null>(null);
+  const [transitSealCode, setTransitSealCode] = useState('');
+  const [transitVehiclePlate, setTransitVehiclePlate] = useState('');
+  const [isTransitSubmitting, setIsTransitSubmitting] = useState(false);
 
   const fetchManifests = async () => {
     setIsLoading(true);
@@ -268,15 +293,94 @@ export function LinehaulTripManagementPage() {
       }));
       setIsEditModalOpen(false);
       setEditingTask(null);
-      alert('Đã lưu thông tin xe và in tem thành công!');
+      addToast('success', `✓ Đã lưu thông tin xe cho ${editingTask.sealCode}.`);
     } catch (error: any) {
       console.error(error);
-      alert('Lưu thất bại: ' + (error.message || 'Lỗi hệ thống'));
+      addToast('error', `Lưu thất bại: ${error.message || 'Lỗi hệ thống'}`);
+    }
+  };
+
+  /* ─── Xe đi / Xe đến handlers ─── */
+  const openTransitConfirm = (task: TaskRecord, action: 'depart' | 'arrive') => {
+    setTransitSealCode(task.sealCode);
+    setTransitVehiclePlate(task.vehiclePlate || '');
+    setTransitAction({ task, action });
+  };
+
+  const handleTransitConfirm = async () => {
+    if (!transitAction) return;
+    const { task, action } = transitAction;
+
+    if (!transitSealCode.trim()) {
+      addToast('error', 'Vui lòng nhập mã seal xe.');
+      return;
+    }
+    if (!transitVehiclePlate.trim()) {
+      addToast('error', 'Vui lòng nhập biển số xe.');
+      return;
+    }
+
+    setIsTransitSubmitting(true);
+    try {
+      if (action === 'depart') {
+        // Seal manifest → status changes to SEALED (Đang di chuyển)
+        await opsApiClient.request(opsEndpoints.manifests.seal(task.id), {
+          method: 'POST',
+          body: {
+            sealCode: transitSealCode.trim(),
+            note: JSON.stringify({
+              vehiclePlate: transitVehiclePlate.trim(),
+              action: 'VEHICLE_DEPARTED',
+              departedAt: new Date().toISOString(),
+            }),
+          },
+        });
+        setTasks(prev => prev.map(t =>
+          t.id === task.id ? { ...t, status: 'Đang di chuyển', vehiclePlate: transitVehiclePlate.trim() } : t
+        ));
+        addToast('success', `🚛 Xe ${transitVehiclePlate.trim()} đã xuất phát. Seal: ${transitSealCode.trim()}`);
+      } else {
+        // Receive manifest → status changes to RECEIVED (Đã đến)
+        await opsApiClient.request(opsEndpoints.manifests.receive(task.id), {
+          method: 'POST',
+          body: {
+            manifestCode: task.sealCode,
+            receiverName: 'Ops User',
+            note: JSON.stringify({
+              vehiclePlate: transitVehiclePlate.trim(),
+              sealCode: transitSealCode.trim(),
+              action: 'VEHICLE_ARRIVED',
+              arrivedAt: new Date().toISOString(),
+            }),
+          },
+        });
+        setTasks(prev => prev.map(t =>
+          t.id === task.id ? { ...t, status: 'Đã đến' } : t
+        ));
+        addToast('success', `✅ Xe ${transitVehiclePlate.trim()} đã đến. Xác nhận nhận hàng thành công.`);
+      }
+      setTransitAction(null);
+      setTransitSealCode('');
+      setTransitVehiclePlate('');
+    } catch (error: any) {
+      addToast('error', `Thao tác thất bại: ${error.message || 'Lỗi hệ thống'}`);
+    } finally {
+      setIsTransitSubmitting(false);
     }
   };
 
   return (
     <div className="ops-page ops-linehaul-page">
+      {/* Toast Container */}
+      <div className="lh-toast-container" aria-live="polite">
+        {toasts.map(t => (
+          <div key={t.id} className={`lh-toast lh-toast--${t.type}`}>
+            <span>{t.type === 'success' ? '✓' : t.type === 'error' ? '✗' : 'ℹ'}</span>
+            <span className="lh-toast__text">{t.text}</span>
+          </div>
+        ))}
+      </div>
+
       {/* KHU VỰC 1: THANH CÔNG CỤ (TOOLBAR) */}
       <div className="ops-card ops-linehaul-toolbar-card">
         <div className="ops-linehaul-toolbar">
@@ -429,8 +533,12 @@ export function LinehaulTripManagementPage() {
                   </td>
                   <td>{index + 1}</td>
                   <td>
-                    <span className={`ops-badge ops-badge--${task.status === 'Đã đến' ? 'success' : task.status === 'Đang luân chuyển' ? 'info' : 'default'}`}>
-                      {task.status}
+                    <span className={`ops-badge ${
+                      task.status === 'Đã đến' || task.status === 'Đã hoàn thành' ? 'ops-badge--arrived' :
+                      task.status === 'Đang luân chuyển' || task.status === 'Đang di chuyển' ? 'ops-badge--transit' :
+                      'ops-badge--pending'
+                    }`}>
+                      {task.status === 'Đang luân chuyển' ? 'Đang di chuyển' : task.status}
                     </span>
                   </td>
                   <td>{task.type}</td>
@@ -464,6 +572,28 @@ export function LinehaulTripManagementPage() {
                           onClick={() => openEditModal(task)}
                         >
                           <Truck size={18} />
+                        </button>
+                      )}
+                      {/* Xe đi button — only for Chờ xuất phát */}
+                      {(task.status === 'Chờ xuất phát') && (
+                        <button
+                          className="ops-transit-btn ops-transit-btn--depart"
+                          title="Xác nhận xe xuất phát"
+                          onClick={() => openTransitConfirm(task, 'depart')}
+                        >
+                          <PlayCircle size={15} />
+                          <span>Xe đi</span>
+                        </button>
+                      )}
+                      {/* Xe đến button — only for Đang di chuyển */}
+                      {(task.status === 'Đang luân chuyển' || task.status === 'Đang di chuyển') && (
+                        <button
+                          className="ops-transit-btn ops-transit-btn--arrive"
+                          title="Xác nhận xe đã đến"
+                          onClick={() => openTransitConfirm(task, 'arrive')}
+                        >
+                          <CheckCircle2 size={15} />
+                          <span>Xe đến</span>
                         </button>
                       )}
                       <button 
@@ -626,6 +756,62 @@ export function LinehaulTripManagementPage() {
           </div>
         )}
       </div>
+
+      {/* ─── Transit Confirm Modal (Xe đi / Xe đến) ─── */}
+      {transitAction && (
+        <div className="lh-modal-overlay" onClick={() => setTransitAction(null)}>
+          <div className="lh-modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="lh-modal__title">
+              {transitAction.action === 'depart' ? '🚛 Xác nhận Xe đi' : '✅ Xác nhận Xe đến'}
+            </h3>
+            <div className="lh-modal__body">
+              <p><strong>Chuyến:</strong> {transitAction.task.taskName}</p>
+              <p><strong>Mã tem:</strong> {transitAction.task.sealCode}</p>
+              <p>
+                <strong>Tuyến:</strong> {transitAction.task.departure} → {transitAction.task.destinationHubCode || 'N/A'}
+              </p>
+
+              <div className="lh-modal__field">
+                <label>Biển số xe <span className="lh-required">*</span></label>
+                <input
+                  type="text"
+                  className="ops-input"
+                  placeholder="VD: 51C-123.45"
+                  value={transitVehiclePlate}
+                  onChange={(e) => setTransitVehiclePlate(e.target.value)}
+                />
+              </div>
+
+              <div className="lh-modal__field">
+                <label>Mã Seal xe <span className="lh-required">*</span></label>
+                <input
+                  type="text"
+                  className="ops-input"
+                  placeholder="Nhập mã seal niêm phong"
+                  value={transitSealCode}
+                  onChange={(e) => setTransitSealCode(e.target.value)}
+                />
+              </div>
+
+              <div className="lh-modal__warning">
+                {transitAction.action === 'depart'
+                  ? '⚠ Xác nhận rằng xe đã đóng seal và sẵn sàng xuất phát. Sau khi xác nhận, trạng thái chuyển sang "Đang di chuyển".'
+                  : '⚠ Xác nhận rằng xe đã đến hub đích và seal nguyên vẹn. Trạng thái chuyển sang "Đã đến".'}
+              </div>
+            </div>
+            <div className="lh-modal__actions">
+              <button className="ops-btn ops-btn--outline" onClick={() => setTransitAction(null)}>Hủy</button>
+              <button
+                className={`ops-btn ${transitAction.action === 'depart' ? 'ops-btn--primary' : 'ops-btn--success'}`}
+                disabled={isTransitSubmitting || !transitSealCode.trim() || !transitVehiclePlate.trim()}
+                onClick={() => void handleTransitConfirm()}
+              >
+                {isTransitSubmitting ? 'Đang xử lý...' : transitAction.action === 'depart' ? '🚛 Xác nhận Xe đi' : '✅ Xác nhận Xe đến'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

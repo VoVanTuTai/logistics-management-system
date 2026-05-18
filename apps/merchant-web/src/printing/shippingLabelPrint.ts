@@ -173,6 +173,115 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
       .cod-sign > * {
         min-width: 0;
       }
+      .sheet {
+        padding: 2.4mm;
+        grid-template-rows: 22mm 30mm 11mm 28mm 14mm 27mm minmax(0, 1fr);
+        gap: 0.8mm;
+      }
+      .block,
+      .header,
+      .two-col > *,
+      .route > *,
+      .item-qr > *,
+      .big-row > *,
+      .cod-sign > * {
+        min-height: 0;
+        overflow: hidden;
+      }
+      .block { padding: 1.1mm; }
+      .header { align-items: stretch; }
+      .brand { align-content: center; gap: 0.6mm; }
+      .brand-title { font-size: 3.8mm; line-height: 1; }
+      .service { font-size: 4.3mm; line-height: 1.05; }
+      .barcode-wrap { gap: 0.5mm; }
+      .barcode { height: 12.5mm; }
+      .ship-code { font-size: 2.9mm; line-height: 1.1; }
+      .two-col,
+      .route,
+      .item-qr,
+      .big-row,
+      .cod-sign {
+        height: 100%;
+      }
+      .label { font-size: 2.35mm; line-height: 1; margin-bottom: 0.45mm; }
+      .name { font-size: 2.75mm; line-height: 1.08; margin-bottom: 0.25mm; }
+      .text {
+        font-size: 2.25mm;
+        line-height: 1.16;
+        overflow-wrap: anywhere;
+      }
+      .two-col .block {
+        display: grid;
+        grid-template-rows: auto auto auto minmax(0, 1fr);
+      }
+      .two-col .block .text:last-child,
+      .item-qr .block .text:last-child,
+      .cod-sign .block .text:last-child {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .two-col .block .text:last-child { -webkit-line-clamp: 6; }
+      .item-qr .block .text:last-child { -webkit-line-clamp: 4; }
+      .cod-sign .block .text:last-child { -webkit-line-clamp: 5; }
+      .route-main,
+      .route-sub {
+        display: grid;
+        place-items: center;
+        padding: 0.8mm 1mm;
+      }
+      .route-main { font-size: 6mm; }
+      .route-sub { font-size: 4.2mm; }
+      .item-qr { grid-template-columns: minmax(0, 70fr) 25mm; }
+      .item-qr .block {
+        display: grid;
+        align-content: start;
+      }
+      .qr-box {
+        padding: 0.8mm;
+        align-content: center;
+        gap: 0.5mm;
+      }
+      .qr-svg,
+      .qr-fallback {
+        width: 20.5mm;
+        height: 20.5mm;
+      }
+      .route-tag {
+        display: grid;
+        place-items: center;
+        font-size: 7.4mm;
+        line-height: 1;
+        padding: 0.8mm 1mm;
+      }
+      .meta {
+        display: grid;
+        align-content: center;
+        padding: 1mm;
+      }
+      .cod-sign .block {
+        display: grid;
+        grid-template-rows: auto auto auto minmax(0, 1fr);
+        padding: 1.1mm;
+      }
+      .cod-value {
+        font-size: 5.2mm;
+        line-height: 1;
+        margin: 0.25mm 0 0.7mm;
+      }
+      .signature {
+        min-height: 0;
+        height: 100%;
+        padding: 1.1mm;
+      }
+      .sign-hint { font-size: 2mm; }
+      .footer {
+        min-height: 0;
+        overflow: hidden;
+        font-size: 2.05mm;
+        line-height: 1.15;
+        padding-top: 0.7mm;
+      }
       @media print {
         html, body { width: 100mm; height: 150mm; }
         body { margin: 0; }

@@ -71,6 +71,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
   const [bulkAssignLoading, setBulkAssignLoading] = useState(false);
   const [bulkAssignMessage, setBulkAssignMessage] = useState<string | null>(null);
   const [bulkAssignError, setBulkAssignError] = useState<string | null>(null);
+  const [courierSearchText, setCourierSearchText] = useState('');
 
   const tasksQuery = useTasksQuery(accessToken, filters);
   const realtimeStatus = useDispatchTasksRealtime(Boolean(accessToken));
@@ -490,19 +491,32 @@ export function TaskAssignmentPage(): React.JSX.Element {
         </div>
 
         <div style={styles.bulkActionsRow}>
-          <select
-            value={bulkCourierId}
-            onChange={(event) => setBulkCourierId(event.target.value)}
-            style={styles.select}
-            disabled={courierOptionsQuery.isLoading || bulkAssignLoading}
-          >
-            <option value="">Chọn shipper</option>
-            {(courierOptionsQuery.data ?? []).map((courier) => (
-              <option key={courier.courierId} value={courier.courierId}>
-                {courier.label}
-              </option>
-            ))}
-          </select>
+          <div style={styles.courierSearchWrap}>
+            <input
+              type="text"
+              placeholder="Tìm shipper theo tên, SĐT..."
+              value={courierSearchText}
+              onChange={(event) => setCourierSearchText(event.target.value)}
+              style={styles.courierSearchInput}
+            />
+            <select
+              value={bulkCourierId}
+              onChange={(event) => setBulkCourierId(event.target.value)}
+              style={styles.select}
+              disabled={courierOptionsQuery.isLoading || bulkAssignLoading}
+            >
+              <option value="">Chọn shipper</option>
+              {(courierOptionsQuery.data ?? []).filter((courier) => {
+                if (!courierSearchText.trim()) return true;
+                const search = courierSearchText.trim().toLowerCase();
+                return courier.label.toLowerCase().includes(search);
+              }).map((courier) => (
+                <option key={courier.courierId} value={courier.courierId}>
+                  {courier.label}
+                </option>
+              ))}
+            </select>
+          </div>
           <button
             type="button"
             onClick={() => void onBulkAssign()}
@@ -526,6 +540,32 @@ export function TaskAssignmentPage(): React.JSX.Element {
             {bulkAssignError}
           </div>
         ) : null}
+
+        {/* Hub destination warnings */}
+        {selectedTaskIds.length > 0 && (() => {
+          const wrongHubTasks = filteredTasks.filter((task) => {
+            if (!selectedTaskIds.includes(task.id)) return false;
+            if (task.taskType !== 'DELIVERY') return false;
+            const shipmentCode = normalizeCode(task.shipmentCode);
+            if (!shipmentCode) return false;
+            const shipment = (shipmentsQuery.data ?? []).find(
+              (s) => normalizeCode(s.shipmentCode) === shipmentCode,
+            );
+            if (!shipment) return false;
+            // Check if shipment's destination hub matches operator's hub
+            const destHub = normalizeCode(shipment.receiverHubCode ?? shipment.destinationHubCode ?? '');
+            if (!destHub) return false;
+            return !assignedHubCodes.some((h) => normalizeCode(h) === destHub);
+          });
+          if (wrongHubTasks.length === 0) return null;
+          return (
+            <div role="alert" style={{ ...styles.notice, ...styles.warningNotice }}>
+              ⚠ {wrongHubTasks.length} đơn giao CHƯA ĐẾN hub của bạn:
+              {' '}{wrongHubTasks.slice(0, 5).map((t) => t.shipmentCode).join(', ')}
+              {wrongHubTasks.length > 5 ? ` và ${wrongHubTasks.length - 5} đơn khác...` : ''}
+            </div>
+          );
+        })()}
       </section>
 
       {tasksQuery.isLoading ? <p>Đang tải tác vụ...</p> : null}
@@ -655,5 +695,22 @@ const styles: Record<string, React.CSSProperties> = {
   errorText: {
     color: '#b91c1c',
     marginTop: 8,
+  },
+  courierSearchWrap: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 6,
+  },
+  courierSearchInput: {
+    border: '1px solid #d9def3',
+    borderRadius: 10,
+    padding: '8px 10px',
+    minWidth: 260,
+    fontSize: 13,
+  },
+  warningNotice: {
+    borderColor: '#fcd34d',
+    backgroundColor: '#fef3c7',
+    color: '#92400e',
   },
 };

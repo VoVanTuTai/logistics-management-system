@@ -133,6 +133,39 @@ th {
   min-height: 0;
 }
 
+.app-crash {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.app-crash__panel {
+  width: min(560px, 100%);
+  border: 1px solid #fecdd3;
+  border-radius: 14px;
+  background: #fff1f2;
+  color: #7f1d1d;
+  padding: 18px;
+  box-shadow: var(--ops-shadow);
+}
+
+.app-crash__panel h1 {
+  margin: 0 0 8px;
+  font-size: 20px;
+}
+
+.app-crash__panel p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.ops-route-loading {
+  color: var(--ops-text-muted);
+  font-weight: var(--ops-font-weight-medium);
+  padding: 16px;
+}
+
 .global-banner {
   width: 100%;
   border: 0;
