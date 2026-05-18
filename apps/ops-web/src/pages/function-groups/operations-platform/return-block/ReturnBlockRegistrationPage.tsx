@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../../../../store/authStore';
+import { useUiStore } from '../../../../store/uiStore';
 import { useShipmentDetailQuery } from '../../../../features/shipments/shipments.hooks';
 import './ReturnBlockRegistrationPage.css';
 
@@ -126,6 +127,7 @@ function ReturnPanel({
 
 export function ReturnBlockRegistrationPage(): React.JSX.Element {
   const session = useAuthStore((state) => state.session);
+  const showToast = useUiStore((state) => state.showToast);
   const accessToken = session?.tokens.accessToken ?? null;
 
   const [inputCode, setInputCode] = useState('');
@@ -183,7 +185,7 @@ export function ReturnBlockRegistrationPage(): React.JSX.Element {
 
   const handleRegisterReturn = () => {
     if (!queryCode || !shipment) {
-      alert('Vui lòng tìm kiếm mã vận đơn trước khi đăng ký chuyển hoàn.');
+      showToast('Vui lòng tìm kiếm mã vận đơn trước khi đăng ký chuyển hoàn.', 'error');
       return;
     }
 
@@ -192,7 +194,8 @@ export function ReturnBlockRegistrationPage(): React.JSX.Element {
     const hubCode = session?.user.hubCodes?.[0] || 'N/A';
     const finalNote = `Đăng ký chuyển hoàn | Nhân viên: ${employeeName} | Mã NV: ${employeeId} | Mã hub: ${hubCode} | Ghi chú: ${returnReasonText}`;
 
-    alert(`Đã đăng ký chuyển hoàn thành công cho vận đơn ${queryCode}!\nGhi chú nội bộ: ${finalNote}`);
+    showToast(`Đã đăng ký chuyển hoàn thành công cho vận đơn ${queryCode}.`, 'success');
+    showToast(`Ghi chú nội bộ: ${finalNote}`, 'info');
     handleReset();
   };
 

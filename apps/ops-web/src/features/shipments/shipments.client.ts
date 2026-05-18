@@ -8,6 +8,7 @@ import type {
   ShipmentDetailDto,
   ShipmentListFilters,
   ShipmentListItemDto,
+  ShipmentListPageDto,
   UpdateShipmentInput,
 } from './shipments.types';
 
@@ -19,6 +20,14 @@ interface ShipmentApiResponse {
   cancellationReason: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+interface ShipmentListPageApiResponse {
+  items: ShipmentApiResponse[];
+  pageInfo?: {
+    hasNextPage?: boolean;
+    total?: number;
+  };
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -312,8 +321,32 @@ function buildShipmentListPath(filters: ShipmentListFilters): string {
     params.set('q', filters.q.trim());
   }
 
+  if (filters.shipmentCode?.trim()) {
+    params.set('shipmentCode', filters.shipmentCode.trim());
+  }
+
   if (filters.status?.trim()) {
     params.set('status', filters.status.trim());
+  }
+
+  if (filters.createdFrom?.trim()) {
+    params.set('createdFrom', filters.createdFrom.trim());
+  }
+
+  if (filters.createdTo?.trim()) {
+    params.set('createdTo', filters.createdTo.trim());
+  }
+
+  if (filters.hubCodes?.length) {
+    params.set('hubCodes', filters.hubCodes.join(','));
+  }
+
+  if (typeof filters.limit === 'number') {
+    params.set('limit', String(filters.limit));
+  }
+
+  if (typeof filters.offset === 'number') {
+    params.set('offset', String(filters.offset));
   }
 
   const queryString = params.toString();
@@ -386,16 +419,45 @@ function mapShipmentToDetail(payload: ShipmentApiResponse): ShipmentDetailDto {
   };
 }
 
+function normalizeShipmentListPage(
+  payload: ShipmentApiResponse[] | ShipmentListPageApiResponse,
+): ShipmentListPageDto {
+  if (Array.isArray(payload)) {
+    return {
+      items: payload.map(mapShipmentToListItem),
+      pageInfo: {
+        hasNextPage: false,
+        total: payload.length,
+      },
+    };
+  }
+
+  const items = Array.isArray(payload.items) ? payload.items : [];
+
+  return {
+    items: items.map(mapShipmentToListItem),
+    pageInfo: {
+      hasNextPage: Boolean(payload.pageInfo?.hasNextPage),
+      total: payload.pageInfo?.total,
+    },
+  };
+}
+
 export const shipmentsClient = {
   list: (
     accessToken: string | null,
     filters: ShipmentListFilters,
   ): Promise<ShipmentListItemDto[]> =>
+    shipmentsClient.listPage(accessToken, filters).then((page) => page.items),
+  listPage: (
+    accessToken: string | null,
+    filters: ShipmentListFilters,
+  ): Promise<ShipmentListPageDto> =>
     opsApiClient
-      .request<ShipmentApiResponse[]>(buildShipmentListPath(filters), {
+      .request<ShipmentApiResponse[] | ShipmentListPageApiResponse>(buildShipmentListPath(filters), {
         accessToken,
       })
-      .then((items) => items.map(mapShipmentToListItem)),
+      .then(normalizeShipmentListPage),
   detail: (
     accessToken: string | null,
     shipmentId: string,

@@ -177,6 +177,15 @@ vi.mock('../features/shipments/shipments.api', async (importOriginal) => {
       smokeMocks.mutationResult(smokeMocks.createShipment),
     ),
     useShipmentsQuery: vi.fn(() => smokeMocks.querySuccess(shipments)),
+    useShipmentPageQuery: vi.fn(() =>
+      smokeMocks.querySuccess({
+        items: shipments,
+        pageInfo: {
+          hasNextPage: false,
+          total: shipments.length,
+        },
+      }),
+    ),
   };
 });
 

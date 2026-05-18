@@ -21,6 +21,7 @@ import {
   urgentAlerts,
 } from './analyticsMockData';
 import type { KeyMetric, AlertSeverity } from './analyticsMockData';
+import { useUiStore } from '../../../store/uiStore';
 import './AnalyticsDashboard.css';
 
 /* ------------------------------------------------------------------ */
@@ -101,6 +102,7 @@ function renderActiveDonutShape(props: any): React.JSX.Element {
 /* ================================================================= */
 export function AnalyticsDashboardPage(): React.JSX.Element {
   const [activeDonutIndex, setActiveDonutIndex] = useState(0);
+  const showToast = useUiStore((state) => state.showToast);
 
   const hubKeys = Object.keys(hubBarColors);
 
@@ -109,7 +111,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
   };
 
   const onActionClick = (shipmentCode: string) => {
-    alert(`Mở trang xử lý cho đơn: ${shipmentCode}`);
+    showToast(`Prototype: mở trang xử lý cho đơn ${shipmentCode}.`, 'info');
   };
 
   return (

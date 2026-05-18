@@ -68,7 +68,23 @@ export interface UpdateShipmentInput {
 
 export interface ShipmentListFilters {
   q?: string;
+  shipmentCode?: string;
   status?: string;
+  hubCodes?: string[];
+  createdFrom?: string;
+  createdTo?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface ShipmentListPageInfo {
+  hasNextPage: boolean;
+  total?: number;
+}
+
+export interface ShipmentListPageDto {
+  items: ShipmentListItemDto[];
+  pageInfo: ShipmentListPageInfo;
 }
 
 export interface ReviewShipmentInput {
