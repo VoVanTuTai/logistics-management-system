@@ -10,4 +10,5 @@ export interface RequestOptions {
   body?: unknown;
   accessToken?: string | null;
   signal?: AbortSignal;
+  skipAuthRefresh?: boolean;
 }
