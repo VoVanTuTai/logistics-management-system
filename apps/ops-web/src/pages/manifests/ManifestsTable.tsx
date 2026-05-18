@@ -23,12 +23,12 @@ export function ManifestsTable({
     <table style={styles.table}>
       <thead>
         <tr>
-          <th style={styles.headerCell}>Ma bao</th>
-          <th style={styles.headerCell}>Trang thai</th>
-          <th style={styles.headerCell}>Hub di</th>
-          <th style={styles.headerCell}>Hub dich</th>
-          <th style={styles.headerCell}>Niem phong luc</th>
-          <th style={styles.headerCell}>Hanh dong</th>
+          <th style={styles.headerCell}>Mã bao</th>
+          <th style={styles.headerCell}>Trạng thái</th>
+          <th style={styles.headerCell}>Hub đi</th>
+          <th style={styles.headerCell}>Hub đích</th>
+          <th style={styles.headerCell}>Niêm phong lúc</th>
+          <th style={styles.headerCell}>Hành động</th>
         </tr>
       </thead>
       <tbody>
@@ -42,8 +42,8 @@ export function ManifestsTable({
                 <Link to={routePaths.manifestDetail(item.id)}>{item.manifestCode}</Link>
               </td>
               <td style={styles.cell}>{formatManifestStatusLabel(item.status)}</td>
-              <td style={styles.cell}>{item.originHubCode ?? 'Khong co'}</td>
-              <td style={styles.cell}>{item.destinationHubCode ?? 'Khong co'}</td>
+              <td style={styles.cell}>{item.originHubCode ?? 'Không có'}</td>
+              <td style={styles.cell}>{item.destinationHubCode ?? 'Không có'}</td>
               <td style={styles.cell}>{formatDateTime(item.sealedAt)}</td>
               <td style={styles.cell}>
                 <div style={styles.actions}>
@@ -52,7 +52,7 @@ export function ManifestsTable({
                     onClick={() => onPrintManifest(item)}
                     style={styles.printButton}
                   >
-                    In ma bao
+                    In mã bao
                   </button>
                   <button
                     type="button"
@@ -65,11 +65,11 @@ export function ManifestsTable({
                     }}
                     title={
                       canDelete
-                        ? 'Xoa ma bao'
-                        : `Chi xoa duoc bao dang o trang thai ${formatManifestStatusLabel('CREATED')}`
+                        ? 'Xóa mã bao'
+                        : `Chỉ xóa được bao đang ở trạng thái ${formatManifestStatusLabel('CREATED')}`
                     }
                   >
-                    {deleting ? 'Dang xoa...' : 'Xoa ma bao'}
+                    {deleting ? 'Đang xóa...' : 'Xóa mã bao'}
                   </button>
                 </div>
               </td>

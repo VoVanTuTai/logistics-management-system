@@ -7,10 +7,7 @@ import {
   View,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import type {
-  NativeStackNavigationProp,
-  NativeStackScreenProps,
-} from '@react-navigation/native-stack';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Card } from '../../components/ui/Card';
@@ -21,10 +18,16 @@ import type { TaskDto, TaskStatus, TaskType } from '../../features/tasks/tasks.t
 import type { AppNavigatorParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
 import { appEnv } from '../../utils/env';
-import { resolveCourierId } from '../../utils/courier';
+import { resolveCourierId, resolveCourierDisplayName } from '../../utils/courier';
 import { theme } from '../../theme';
 
-type Props = NativeStackScreenProps<AppNavigatorParamList, 'TaskList'>;
+type TaskListRouteParams = AppNavigatorParamList['TaskList'];
+
+interface Props {
+  route?: {
+    params?: TaskListRouteParams;
+  };
+}
 
 function statusVariant(status: TaskStatus):
   | 'neutral'
@@ -38,11 +41,16 @@ function statusVariant(status: TaskStatus):
   return 'info';
 }
 
-export function TaskListScreen({ route }: Props): React.JSX.Element {
+export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
   const navigation =
     useNavigation<NativeStackNavigationProp<AppNavigatorParamList>>();
   const session = useAppStore((state) => state.session);
   const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
+  const courierName = resolveCourierDisplayName({
+    displayName: session?.user.displayName,
+    username: session?.user.username,
+    courierId,
+  });
   const offlinePendingCount = useAppStore((state) => state.offlinePendingCount);
 
   const tasksQuery = useAssignedTasksQuery({
@@ -52,11 +60,11 @@ export function TaskListScreen({ route }: Props): React.JSX.Element {
   const onRefresh = () => void tasksQuery.refetch();
 
   const [taskTypeFilter, setTaskTypeFilter] = useState<TaskType | 'ALL'>(
-    route.params?.initialTaskType ?? 'ALL',
+    route?.params?.initialTaskType ?? 'ALL',
   );
   const [statusFilter, setStatusFilter] = useState<
     'ALL' | 'CREATED' | 'ASSIGNED' | 'COMPLETED' | 'CANCELLED'
-  >(route.params?.initialStatus ?? 'ALL');
+  >(route?.params?.initialStatus ?? 'ALL');
   const [typeMenuOpen, setTypeMenuOpen] = useState(false);
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
 
@@ -100,7 +108,7 @@ export function TaskListScreen({ route }: Props): React.JSX.Element {
       <View style={styles.headerBlock}>
         <View style={styles.headerTop}>
           <Text style={styles.headerSubtitle}>
-            {courierId} • {filteredTasks.length} nhiệm vụ
+            {courierName} - {courierId} • {filteredTasks.length} nhiệm vụ
           </Text>
           <Pressable
             onPress={() => navigation.navigate('TrackingLookup')}
@@ -127,7 +135,7 @@ export function TaskListScreen({ route }: Props): React.JSX.Element {
               <Ionicons
                 name={typeMenuOpen ? 'chevron-up' : 'chevron-down'}
                 size={12}
-                color="#E7F0FF"
+                color="#EFF6FF"
               />
             </Pressable>
             {typeMenuOpen ? (
@@ -163,7 +171,7 @@ export function TaskListScreen({ route }: Props): React.JSX.Element {
               <Ionicons
                 name={statusMenuOpen ? 'chevron-up' : 'chevron-down'}
                 size={12}
-                color="#E7F0FF"
+                color="#EFF6FF"
               />
             </Pressable>
             {statusMenuOpen ? (
@@ -268,7 +276,7 @@ const styles = StyleSheet.create({
   },
   headerSubtitle: {
     color: theme.colors.textPrimary,
-    fontWeight: '800',
+    fontWeight: '700',
     fontSize: 14,
   },
   trackButton: {
@@ -276,7 +284,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: theme.spacing.xs,
     borderWidth: 1,
-    borderColor: '#BFD6FF',
+    borderColor: '#BFDBFE',
     borderRadius: theme.radius.md,
     backgroundColor: '#EFF6FF',
     paddingHorizontal: theme.spacing.sm,
@@ -314,7 +322,7 @@ const styles = StyleSheet.create({
   },
   selectValue: {
     color: theme.colors.textPrimary,
-    fontWeight: '800',
+    fontWeight: '700',
     fontSize: 12,
     flex: 1,
     textAlign: 'right',
@@ -399,7 +407,7 @@ const styles = StyleSheet.create({
   taskCode: {
     color: theme.colors.textPrimary,
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '700',
     flex: 1,
   },
   taskMetaRow: {
@@ -419,3 +427,4 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 });
+

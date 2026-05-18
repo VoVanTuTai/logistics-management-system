@@ -2,7 +2,11 @@ import { useMutation } from '@tanstack/react-query';
 
 import { courierApiClient } from '../../services/api/client';
 import { courierEndpoints } from '../../services/api/endpoints';
-import type { RecordScanPayload, RecordScanResultDto } from './scan.types';
+import type {
+  CurrentLocationDto,
+  RecordScanPayload,
+  RecordScanResultDto,
+} from './scan.types';
 
 export const scanApi = {
   recordPickup: (
@@ -34,6 +38,13 @@ export const scanApi = {
       accessToken,
       body: payload,
       headers: { 'Idempotency-Key': payload.idempotencyKey },
+    }),
+  getCurrentLocation: (
+    accessToken: string,
+    shipmentCode: string,
+  ): Promise<CurrentLocationDto> =>
+    courierApiClient.request(courierEndpoints.scan.location(shipmentCode), {
+      accessToken,
     }),
 };
 

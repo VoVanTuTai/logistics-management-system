@@ -26,13 +26,13 @@ export function LoginForm({
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="auth-form">
       <label className="auth-label" htmlFor="username">
-        Ten dang nhap
+        Tên đăng nhập
       </label>
       <input
         id="username"
         {...form.register('username')}
         className="auth-input"
-        placeholder="ten.dang.nhap"
+        placeholder="20000001"
       />
       {form.formState.errors.username ? (
         <small className="auth-error">{form.formState.errors.username.message}</small>

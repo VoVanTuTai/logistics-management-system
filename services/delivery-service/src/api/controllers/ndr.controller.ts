@@ -7,6 +7,7 @@ import {
 import type {
   CreateNdrCaseInput,
   NdrCase,
+  ReportShipmentExceptionInput,
   ReturnDecisionInput,
   RescheduleNdrCaseInput,
 } from '../../domain/entities/ndr-case.entity';
@@ -31,6 +32,11 @@ export class NdrController {
   @Post()
   create(@Body() body: CreateNdrCaseInput): Promise<NdrCase> {
     return this.ndrService.create(body);
+  }
+
+  @Post('exception')
+  reportException(@Body() body: ReportShipmentExceptionInput): Promise<NdrCase> {
+    return this.ndrService.reportShipmentException(body);
   }
 
   @Post(':id/reschedule')

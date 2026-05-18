@@ -1,4 +1,4 @@
-﻿import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
 import type {
   OutboxEvent,
@@ -16,13 +16,39 @@ export class ManifestOutboxService {
     private readonly manifestEventsProducer: ManifestEventsProducer,
   ) {}
 
-  async enqueueManifestSealed(manifest: Manifest): Promise<OutboxEvent[]> {
-    const events = this.manifestEventsProducer.buildManifestSealedEvents(manifest);
+  async enqueueManifestSealed(
+    manifest: Manifest,
+    actorInput?: {
+      sealedBy?: string | null;
+      sealedByName?: string | null;
+      processingHubCode?: string | null;
+      note?: string | null;
+    },
+  ): Promise<OutboxEvent[]> {
+    const events = this.manifestEventsProducer.buildManifestSealedEvents(manifest, actorInput);
     return this.enqueueMany(events);
   }
 
   async enqueueManifestReceived(manifest: Manifest): Promise<OutboxEvent[]> {
     const events = this.manifestEventsProducer.buildManifestReceivedEvents(manifest);
+    return this.enqueueMany(events);
+  }
+
+  async enqueueManifestUnsealed(
+    manifest: Manifest,
+    shipmentCodes: string[],
+    actorInput: {
+      unsealedBy?: string | null;
+      unsealedByName?: string | null;
+      processingHubCode?: string | null;
+      note?: string | null;
+    },
+  ): Promise<OutboxEvent[]> {
+    const events = this.manifestEventsProducer.buildManifestUnsealedEvents(
+      manifest,
+      shipmentCodes,
+      actorInput,
+    );
     return this.enqueueMany(events);
   }
 

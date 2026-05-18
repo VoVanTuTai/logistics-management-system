@@ -17,7 +17,7 @@ export function LoginScreen(): React.JSX.Element {
     try {
       await login(values);
     } catch {
-      // Error state được auth store cập nhật.
+      // Error state is handled by auth store.
     }
   };
 
@@ -31,18 +31,14 @@ export function LoginScreen(): React.JSX.Element {
           <Ionicons name="cube-outline" size={26} color="#FFFFFF" />
         </View>
         <Text style={styles.heroTitle}>Courier Mobile</Text>
-        <Text style={styles.heroSubtitle}>Hệ thống vận hành giao nhận logistics</Text>
+        <Text style={styles.heroSubtitle}>He thong van hanh giao nhan logistics</Text>
       </View>
 
       <Card style={styles.formCard}>
-        <Text style={styles.formTitle}>Đăng nhập tài khoản shipper</Text>
+        <Text style={styles.formTitle}>Dang nhap tai khoan shipper</Text>
         <Text style={styles.formDescription}>
-          App chỉ gọi gateway-bff. Session/token được lưu an toàn bởi auth module.
+          App chi gọi gateway-bff. Session/token duoc luu an toan boi auth module.
         </Text>
-        <Text style={styles.seedHint}>
-          Tài khoản seed local: courier.hcm1 / courier123456
-        </Text>
-
         <LoginForm
           loading={loading}
           errorMessage={errorMessage}
@@ -79,7 +75,7 @@ const styles = StyleSheet.create({
   heroTitle: {
     color: '#FFFFFF',
     fontSize: 28,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   heroSubtitle: {
     color: '#DDE8FF',
@@ -90,17 +86,12 @@ const styles = StyleSheet.create({
   formTitle: {
     color: theme.colors.textPrimary,
     fontSize: 20,
-    fontWeight: '800',
+    fontWeight: '700',
     marginBottom: 4,
   },
   formDescription: {
     color: theme.colors.textMuted,
     marginBottom: theme.spacing.sm,
     lineHeight: 19,
-  },
-  seedHint: {
-    ...theme.typography.caption.md,
-    color: theme.colors.info,
-    marginBottom: theme.spacing.lg,
   },
 });

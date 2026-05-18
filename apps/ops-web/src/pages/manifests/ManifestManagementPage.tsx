@@ -44,16 +44,16 @@ export function ManifestManagementPage(): React.JSX.Element {
   const onGenerateBagCodes = async (payload: GenerateBagCodesInput) => {
     const createdBags = await generateBagCodesMutation.mutateAsync(payload);
     setLastGeneratedBags(createdBags);
-    setActionMessage(`Da tao ${createdBags.length} ma bao trong.`);
+    setActionMessage(`Đã tạo ${createdBags.length} mã bao trống.`);
   };
 
   const onDeleteManifest = async (item: ManifestListItemDto) => {
     if (item.status !== 'CREATED') {
-      setActionMessage(`Chi xoa duoc bao dang o trang thai ${formatManifestStatusLabel('CREATED')}.`);
+      setActionMessage(`Chỉ xóa được bao đang ở trạng thái ${formatManifestStatusLabel('CREATED')}.`);
       return;
     }
 
-    const ok = window.confirm(`Xoa ma bao ${item.manifestCode}?`);
+    const ok = window.confirm(`Xóa mã bao ${item.manifestCode}?`);
     if (!ok) {
       return;
     }
@@ -62,7 +62,7 @@ export function ManifestManagementPage(): React.JSX.Element {
     setDeletingManifestId(item.id);
     try {
       await deleteManifestMutation.mutateAsync(item.id);
-      setActionMessage(`Da xoa ma bao ${item.manifestCode}.`);
+      setActionMessage(`Đã xóa mã bao ${item.manifestCode}.`);
     } catch (error) {
       setActionMessage(getErrorMessage(error));
     } finally {
@@ -73,35 +73,35 @@ export function ManifestManagementPage(): React.JSX.Element {
   const onPrintManifest = (item: ManifestListItemDto) => {
     const opened = openBagLabelPrint({
       bagCode: item.manifestCode,
-      originHubCode: item.originHubCode ?? 'Khong co',
-      destinationHubCode: item.destinationHubCode ?? 'Khong co',
+      originHubCode: item.originHubCode ?? 'Không có',
+      destinationHubCode: item.destinationHubCode ?? 'Không có',
       status: formatManifestStatusLabel(item.status),
       createdAtText: formatDateTime(item.createdAt ?? null),
     });
 
     if (!opened) {
-      setActionMessage('Trinh duyet dang chan cua so in. Hay cho phep cua so in roi thu lai.');
+      setActionMessage('Trình duyệt đang chặn cửa sổ in. Hãy cho phép cửa sổ in rồi thử lại.');
       return;
     }
 
-    setActionMessage(`Da mo nhan in QR cho ma bao ${item.manifestCode}.`);
+    setActionMessage(`Đã mở nhãn in QR cho mã bao ${item.manifestCode}.`);
   };
 
   return (
     <div>
-      <h2>Quan ly bao tai</h2>
+      <h2>Quản lý bao tải</h2>
       <p style={{ color: '#2d3f99' }}>
-        Tao ma bao trong theo hub dich de bo phan dieu hanh dung khi dong bao trung chuyen giua
-        cac hub.
+        Tạo mã bao trống theo hub đích để bộ phận điều hành dùng khi đóng bao trung chuyển giữa
+        các hub.
       </p>
 
       {originHubCode ? (
         <p style={styles.scopeText}>
-          Hub hien tai cua ban: <strong>{originHubCode}</strong>
+          Hub hiện tại của bạn: <strong>{originHubCode}</strong>
         </p>
       ) : (
         <p style={styles.warningText}>
-          Tai khoan dieu hanh chua duoc gan hub nguon, chua the tao ma bao.
+          Tài khoản điều hành chưa được gán hub nguồn, chưa thể tạo mã bao.
         </p>
       )}
 
@@ -116,7 +116,7 @@ export function ManifestManagementPage(): React.JSX.Element {
         <p
           style={{
             ...styles.actionText,
-            ...(actionMessage.startsWith('Da')
+            ...(actionMessage.startsWith('Đã')
               ? styles.successText
               : styles.errorText),
           }}
@@ -137,7 +137,7 @@ export function ManifestManagementPage(): React.JSX.Element {
       {lastGeneratedBags.length > 0 ? (
         <div style={styles.responseBox}>
           <strong>
-            Da tao {lastGeneratedBags.length} ma bao trong luc{' '}
+            Đã tạo {lastGeneratedBags.length} mã bao trống lúc{' '}
             {formatDateTime(new Date().toISOString())}
           </strong>
           <div style={styles.tagsWrap}>
@@ -150,12 +150,12 @@ export function ManifestManagementPage(): React.JSX.Element {
         </div>
       ) : null}
 
-      {manifestsQuery.isLoading ? <p>Dang tai danh sach bao...</p> : null}
+      {manifestsQuery.isLoading ? <p>Đang tải danh sách bao...</p> : null}
       {manifestsQuery.isError ? (
         <p style={styles.errorText}>{getErrorMessage(manifestsQuery.error)}</p>
       ) : null}
       {manifestsQuery.isSuccess && (manifestsQuery.data?.length ?? 0) === 0 ? (
-        <p>Chua co bao nao.</p>
+        <p>Chưa có bao nào.</p>
       ) : null}
       {manifestsQuery.isSuccess && (manifestsQuery.data?.length ?? 0) > 0 ? (
         <ManifestsTable

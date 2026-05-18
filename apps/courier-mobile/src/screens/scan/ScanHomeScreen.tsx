@@ -9,17 +9,17 @@ import { Screen } from '../../components/ui/Screen';
 import { Card } from '../../components/ui/Card';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import type {
-  MainTabParamList,
-  RootStackParamList,
-} from '../../navigation/navigation.types';
+  AppTabsParamList,
+  AppNavigatorParamList,
+} from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
 
-type Props = BottomTabScreenProps<MainTabParamList, 'Scan'>;
+type Props = BottomTabScreenProps<AppTabsParamList, 'Scan'>;
 
 export function ScanHomeScreen(_: Props): React.JSX.Element {
   const navigation =
-    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+    useNavigation<NativeStackNavigationProp<AppNavigatorParamList>>();
   const offlinePendingCount = useAppStore((state) => state.offlinePendingCount);
 
   return (
@@ -35,9 +35,9 @@ export function ScanHomeScreen(_: Props): React.JSX.Element {
       >
         <View style={styles.rowBetween}>
           <View>
-            <Text style={styles.primaryActionTitle}>Quet Pickup</Text>
+            <Text style={styles.primaryActionTitle}>Nhận hàng</Text>
             <Text style={styles.primaryActionHint}>
-              Quet QR/barcode va gui scan pickup
+              Quét QR/barcode và gửi scan nhận hàng
             </Text>
           </View>
           <Ionicons name="scan" size={30} color="#FFFFFF" />
@@ -50,8 +50,8 @@ export function ScanHomeScreen(_: Props): React.JSX.Element {
           style={styles.gridCard}
         >
           <Ionicons name="arrow-down-circle-outline" size={24} color={theme.colors.primary} />
-          <Text style={styles.gridTitle}>Hub inbound</Text>
-          <Text style={styles.gridHint}>Nhap kho / nhan hub</Text>
+          <Text style={styles.gridTitle}>Hàng đến</Text>
+          <Text style={styles.gridHint}>Xác nhận hàng đến hub</Text>
         </Card>
 
         <Card
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: '800',
+    fontWeight: '700',
     color: theme.colors.textPrimary,
   },
   subtitle: {
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
   primaryActionTitle: {
     color: '#FFFFFF',
     fontSize: 19,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   primaryActionHint: {
     color: '#DDE8FF',
@@ -147,4 +147,3 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
 });
-

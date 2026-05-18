@@ -15,7 +15,7 @@ export function LoginForm({
   isSubmitting,
   errorMessage,
   onSubmit,
-  usernamePlaceholder = 'admin.username',
+  usernamePlaceholder = '10000001',
 }: LoginFormProps): React.JSX.Element {
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),

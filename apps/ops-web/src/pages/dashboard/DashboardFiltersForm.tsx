@@ -60,7 +60,7 @@ export function DashboardFiltersForm({
           onChange={(event) => setHubInput(event.target.value)}
           disabled={lockHubCode}
         >
-          <option value="">Ma hub</option>
+          <option value="">Mã hub</option>
           {hubOptions.map((hubCode) => (
             <option key={hubCode} value={hubCode}>
               {hubCode}
@@ -69,25 +69,25 @@ export function DashboardFiltersForm({
         </select>
       ) : (
         <input
-          placeholder="Ma hub"
+          placeholder="Mã hub"
           value={hubInput}
           onChange={(event) => setHubInput(event.target.value)}
           disabled={lockHubCode}
         />
       )}
       <input
-        placeholder="Ma zone"
+        placeholder="Mã zone"
         value={zoneInput}
         onChange={(event) => setZoneInput(event.target.value)}
       />
       <input
-        placeholder="Ma shipper"
+        placeholder="Mã shipper"
         value={courierInput}
         onChange={(event) => setCourierInput(event.target.value)}
       />
-      <button type="submit">Ap dung</button>
+      <button type="submit">Áp dụng</button>
       <button type="button" onClick={onResetClick}>
-        Dat lai
+        Đặt lại
       </button>
     </form>
   );

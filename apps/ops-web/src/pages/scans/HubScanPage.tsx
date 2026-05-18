@@ -60,19 +60,19 @@ export function HubScanPage(): React.JSX.Element {
 
   return (
     <section>
-      <h2>Van hanh quet</h2>
+      <h2>Vận hành quét</h2>
       <p style={{ color: '#2d3f99' }}>
-        Dung man hinh nay cho quet lay hang, nhap hub va xuat hub. Moi quet hop le
-        se cap nhat vi tri hien tai va dam bao idempotency theo request key.
+        Dùng màn hình này cho quét lấy hàng, nhập hub và xuất hub. Mỗi quét hợp lệ
+        sẽ cập nhật vị trí hiện tại và đảm bảo idempotency theo request key.
       </p>
       <HubScanForm isSubmitting={isSubmitting} onSubmit={onSubmit} />
 
-      {isSubmitting ? <p>Dang gui quet...</p> : null}
+      {isSubmitting ? <p>Đang gửi quét...</p> : null}
       {actionError ? <p style={styles.errorText}>{getErrorMessage(actionError)}</p> : null}
-      {!isSubmitting && !actionError && !lastScanResult ? <p>Chua co ket qua quet.</p> : null}
+      {!isSubmitting && !actionError && !lastScanResult ? <p>Chưa có kết quả quét.</p> : null}
       {lastScanResult ? (
         <div style={styles.responseBox}>
-          <strong>Phan hoi quet gan nhat ({lastScanLabel})</strong>
+          <strong>Phản hồi quét gần nhất ({lastScanLabel})</strong>
           <pre style={styles.pre}>{JSON.stringify(lastScanResult, null, 2)}</pre>
         </div>
       ) : null}

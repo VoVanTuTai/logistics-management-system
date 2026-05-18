@@ -10,15 +10,31 @@ Each event represents a business milestone in shipment lifecycle.
 5. `scan.pickup_confirmed`
 6. `manifest.sealed`
 7. `manifest.received`
-8. `scan.outbound`
-9. `scan.inbound`
-10. `task.assigned` (taskType=`DELIVERY`)
-11. `delivery.attempted`
-12. `delivery.delivered`
-13. `delivery.failed`
-14. `ndr.created`
-15. `return.started`
-16. `return.completed`
+8. `manifest.unsealed`
+9. `scan.outbound`
+10. `scan.inbound`
+11. `task.assigned` (taskType=`DELIVERY`)
+12. `delivery.attempted`
+13. `delivery.delivered`
+14. `delivery.failed`
+15. `ndr.created`
+16. `return.started`
+17. `return.completed`
+
+## Exception / Issue Variant
+
+`ndr.created` is also used when courier reports a shipment issue from the mobile app.
+
+Required payload fields for this variant:
+
+- `ndrCase.status = PENDING_RESOLUTION`
+- `ndrCase.issueType`
+- `ndrCase.issueCategory`
+- `ndrCase.reportedBy`
+- `ndrCase.reportedHubCode`
+- `ndrCase.attachments` when `issueCategory = PHYSICAL`
+
+Consumers should treat this variant as `EXCEPTION`: tracking shows the customer-facing issue timeline, reporting updates issue KPI, and shipment-service locks the shipment until the issue is resolved.
 
 ## Removed Public Bus Events
 

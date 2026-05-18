@@ -28,6 +28,9 @@ export type AppNavigatorParamList = {
     taskId?: string;
     shipmentCode?: string;
   };
+  DeliverySignScan: {
+    shipmentCode?: string;
+  } | undefined;
   HubScan: {
     mode: 'INBOUND' | 'OUTBOUND';
     taskId?: string;
@@ -35,6 +38,13 @@ export type AppNavigatorParamList = {
   };
   BagSeal: undefined;
   BagUnseal: undefined;
+  SendGoods: undefined;
+  InventoryCheck: undefined;
+  VehicleOutbound: undefined;
+  VehicleInbound: undefined;
+  ScanIssue: {
+    shipmentCode?: string;
+  } | undefined;
   DeliverySuccess: {
     taskId?: string;
     shipmentCode?: string;
@@ -54,4 +64,9 @@ export type AppNavigatorParamList = {
     shipmentCode?: string;
   };
   TrackingLookup: undefined;
+  CodStats: undefined;
+  CodCollect: {
+    shipmentCode?: string;
+    codAmount?: number;
+  };
 };

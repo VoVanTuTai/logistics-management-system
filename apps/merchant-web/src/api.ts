@@ -186,21 +186,32 @@ export function computeEstimatedFee(form: CreateShipmentForm): number {
   const length = Math.max(asNumber(form.lengthCm, 0), 0);
   const width = Math.max(asNumber(form.widthCm, 0), 0);
   const height = Math.max(asNumber(form.heightCm, 0), 0);
-  const declaredValue = Math.max(asNumber(form.declaredValue, 0), 0);
 
   const weightFee = weightKg * 4500;
   const volumetricWeight = (length * width * height) / 6000;
   const volumeFee = volumetricWeight * 3200;
-  const insuredFee = declaredValue * 0.002;
 
-  return Math.round(serviceBase + weightFee + volumeFee + insuredFee);
+  return Math.round(serviceBase + weightFee + volumeFee);
 }
 
 export function buildShipmentMetadata(
   form: CreateShipmentForm,
   estimatedFee: number,
+  createdBy?: {
+    username?: string | null;
+    userId?: string | null;
+  },
 ): Record<string, unknown> {
+  const normalizedCreatedByUsername = createdBy?.username?.trim().toUpperCase() ?? null;
+  const normalizedCreatedByUserId = createdBy?.userId?.trim().toUpperCase() ?? null;
+
   return {
+    createdBy: {
+      username: normalizedCreatedByUsername,
+      userId: normalizedCreatedByUserId,
+    },
+    createdByUsername: normalizedCreatedByUsername,
+    createdByUserId: normalizedCreatedByUserId,
     sender: {
       name: form.senderName.trim() || null,
       phone: form.senderPhone.trim() || null,
@@ -228,12 +239,12 @@ export function buildShipmentMetadata(
         width: asNumber(form.widthCm, 0),
         height: asNumber(form.heightCm, 0),
       },
-      declaredValue: asNumber(form.declaredValue, 0),
+      declaredValue: 0,
     },
     service: {
       type: form.serviceType,
     },
-    codAmount: 0,
+    codAmount: asNumber(form.codAmount, 0),
     deliveryNote: form.deliveryNote.trim() || null,
     estimatedFee,
     routing: {
@@ -250,16 +261,27 @@ export function extractShipmentRow(shipment: ShipmentResponse): ShipmentRow {
   const receiver = asRecord(metadata.receiver);
   const packageInfo = asRecord(metadata.package);
   const service = asRecord(metadata.service);
+  const routing = asRecord(metadata.routing);
   const dimensions = asRecord(packageInfo?.dimensionsCm);
 
   const senderName = asString(sender?.name) || asString(metadata.senderName) || '-';
   const senderPhone = asString(sender?.phone) || '-';
   const senderAddress = asString(sender?.address) || '-';
+  const senderProvince = asString(sender?.province) || '-';
+  const senderWard = asString(sender?.ward) || '-';
+  const senderHubCode =
+    asString(sender?.hubCode) || asString(routing?.originHubCode) || '-';
   const receiverName =
     asString(receiver?.name) || asString(metadata.receiverName) || '-';
   const receiverPhone =
     asString(receiver?.phone) || asString(metadata.receiverPhone) || '-';
   const receiverAddress = asString(receiver?.address) || '-';
+  const receiverProvince = asString(receiver?.province) || '-';
+  const receiverWard = asString(receiver?.ward) || '-';
+  const receiverHubCode =
+    asString(receiver?.hubCode) ||
+    asString(routing?.destinationHubCode) ||
+    '-';
   const receiverRegion = asString(receiver?.region) || '-';
   const serviceType = asString(service?.type) || 'STANDARD';
   const itemType = asString(packageInfo?.itemType) || '-';
@@ -278,9 +300,15 @@ export function extractShipmentRow(shipment: ShipmentResponse): ShipmentRow {
     senderName,
     senderPhone,
     senderAddress,
+    senderProvince,
+    senderWard,
+    senderHubCode,
     receiverName,
     receiverPhone,
     receiverAddress,
+    receiverProvince,
+    receiverWard,
+    receiverHubCode,
     receiverRegion,
     serviceType,
     itemType,

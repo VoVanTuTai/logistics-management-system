@@ -14,6 +14,8 @@ export type ViewId =
 export interface AuthUser {
   id: string;
   username: string;
+  displayName: string | null;
+  phone: string | null;
   roles: string[];
   hubCodes?: string[];
 }
@@ -117,9 +119,15 @@ export interface ShipmentRow {
   senderName: string;
   senderPhone: string;
   senderAddress: string;
+  senderProvince: string;
+  senderWard: string;
+  senderHubCode: string;
   receiverName: string;
   receiverPhone: string;
   receiverAddress: string;
+  receiverProvince: string;
+  receiverWard: string;
+  receiverHubCode: string;
   receiverRegion: string;
   serviceType: string;
   itemType: string;
@@ -161,7 +169,7 @@ export interface CreateShipmentForm {
   lengthCm: string;
   widthCm: string;
   heightCm: string;
-  declaredValue: string;
+  codAmount: string;
   serviceType: 'STANDARD' | 'EXPRESS' | 'SAME_DAY';
   deliveryNote: string;
 }
@@ -211,14 +219,14 @@ export const DEFAULT_CREATE_FORM: CreateShipmentForm = {
   lengthCm: '',
   widthCm: '',
   heightCm: '',
-  declaredValue: '',
+  codAmount: '',
   serviceType: 'STANDARD',
   deliveryNote: '',
 };
 
 export const DEFAULT_PROFILE: MerchantProfile = {
-  shopName: 'Merchant Demo Store',
-  contactPhone: '0900000000',
-  email: 'merchant.demo@example.com',
+  shopName: '',
+  contactPhone: '',
+  email: '',
   defaultPickupAddress: '',
 };

@@ -1,13 +1,16 @@
 import React from 'react';
 import {
   ActivityIndicator,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   CameraView,
   type BarcodeScanningResult,
@@ -18,11 +21,18 @@ import { submitPickupScanAction } from '../../features/scan/pickup.api';
 import { enqueuePickupScanOffline } from '../../features/scan/pickup.offline';
 import { parsePickupScannedCode } from '../../features/scan/pickup.scanner.adapter';
 import type { PickupScanCommand } from '../../features/scan/pickup.types';
+import { scanApi } from '../../features/scan/scan.api';
+import type { CurrentLocationDto } from '../../features/scan/scan.types';
 import { shipmentApi } from '../../features/shipment/shipment.api';
+import type { ShipmentDto, ShipmentMetadata } from '../../features/shipment/shipment.types';
+import { tasksApi } from '../../features/tasks/tasks.api';
+import type { TaskDto } from '../../features/tasks/tasks.types';
 import type { AppNavigatorParamList } from '../../navigation/types';
-import { shouldQueueOffline } from '../../services/api/client';
+import { ApiClientError, shouldQueueOffline } from '../../services/api/client';
 import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
+import { buildPickupReceiveAuditNote, resolveCourierId } from '../../utils/courier';
+import { appEnv } from '../../utils/env';
 import { createIdempotencyKey } from '../../utils/idempotency';
 
 type Props = NativeStackScreenProps<AppNavigatorParamList, 'PickupScan'>;
@@ -32,8 +42,163 @@ interface PickedShipmentItem {
   verifiedAt: string;
 }
 
+const RECEIVED_OR_LATER_STATUSES = new Set([
+  'PICKUP_COMPLETED',
+  'MANIFEST_SEALED',
+  'MANIFEST_RECEIVED',
+  'SCAN_INBOUND',
+  'SCAN_OUTBOUND',
+  'DELIVERED',
+  'DELIVERY_FAILED',
+  'NDR_CREATED',
+  'RETURN_STARTED',
+  'RETURN_COMPLETED',
+]);
+
 function normalizeCode(value: string): string {
   return value.trim().toUpperCase();
+}
+
+function normalizeOptionalCode(value: string | null | undefined): string | null {
+  const normalized = normalizeCode(value ?? '');
+  return normalized.length > 0 ? normalized : null;
+}
+
+function readMetadataPath(
+  metadata: ShipmentMetadata | null,
+  path: string,
+): unknown {
+  if (!metadata) {
+    return null;
+  }
+
+  const keys = path.split('.');
+  let current: unknown = metadata;
+
+  for (const key of keys) {
+    if (!current || typeof current !== 'object' || !(key in current)) {
+      return null;
+    }
+
+    current = (current as Record<string, unknown>)[key];
+  }
+
+  return current;
+}
+
+function readMetadataString(
+  metadata: ShipmentMetadata | null,
+  paths: string[],
+): string | null {
+  for (const path of paths) {
+    const value = readMetadataPath(metadata, path);
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value.trim();
+    }
+  }
+
+  return null;
+}
+
+function readProcessingHubCode(metadata: ShipmentMetadata | null): string | null {
+  return normalizeOptionalCode(
+    readMetadataString(metadata, [
+      'sender.hubCode',
+      'routing.originHubCode',
+      'originHubCode',
+      'senderHubCode',
+      'pickup.hubCode',
+      'pickup.originHubCode',
+      'location.hubCode',
+      'hub.code',
+    ]),
+  );
+}
+
+function isHomePickupShipment(metadata: ShipmentMetadata | null): boolean {
+  const classification = normalizeOptionalCode(
+    readMetadataString(metadata, [
+      'pickup.classification',
+      'classification',
+      'pickup.type',
+      'pickupType',
+    ]),
+  );
+  const source = normalizeOptionalCode(readMetadataString(metadata, ['source']));
+  const pickupCode = readMetadataString(metadata, ['pickup.pickupCode', 'pickupCode']);
+
+  return (
+    classification === 'HOME_PICKUP' ||
+    classification === 'PICKUP_AT_HOME' ||
+    classification === 'LAY_HANG_TAI_NHA' ||
+    source === 'MERCHANT-WEB' ||
+    Boolean(pickupCode)
+  );
+}
+
+function hasAssignedPickupTask(tasks: TaskDto[], shipmentCode: string): boolean {
+  const normalizedShipmentCode = normalizeCode(shipmentCode);
+
+  return tasks.some(
+    (task) =>
+      task.taskType === 'PICKUP' &&
+      task.status === 'ASSIGNED' &&
+      task.shipmentCode &&
+      normalizeCode(task.shipmentCode) === normalizedShipmentCode,
+  );
+}
+
+function validateShipmentForReceive(
+  shipment: ShipmentDto,
+  input: {
+    assignedHubCodes: string[];
+    assignedPickupTasks: TaskDto[];
+    currentLocation: CurrentLocationDto | null;
+  },
+): string | null {
+  const shipmentCode = normalizeCode(shipment.code);
+  const status = normalizeCode(shipment.currentStatus);
+
+  if (status === 'CANCELLED') {
+    return `Đơn ${shipmentCode} đã bị hủy trước khi nhận hàng.`;
+  }
+
+  if (input.currentLocation?.lastScanType || RECEIVED_OR_LATER_STATUSES.has(status)) {
+    return `Đơn ${shipmentCode} đã có trạng thái đã nhận hàng (${shipment.currentStatus}).`;
+  }
+
+  const processingHubCode = readProcessingHubCode(shipment.metadata);
+  if (
+    processingHubCode &&
+    input.assignedHubCodes.length > 0 &&
+    !input.assignedHubCodes.includes(processingHubCode)
+  ) {
+    return `Đơn ${shipmentCode} thuộc hub xử lý ${processingHubCode}, không thuộc hub của tài khoản này.`;
+  }
+
+  if (
+    isHomePickupShipment(shipment.metadata) &&
+    !hasAssignedPickupTask(input.assignedPickupTasks, shipmentCode)
+  ) {
+    return `Đơn ${shipmentCode} là đơn lấy hàng tại nhà. Vui lòng xử lý trong mục Đợi lấy khi đã được phân công.`;
+  }
+
+  return null;
+}
+
+async function getCurrentLocationOrNull(
+  accessToken: string,
+  shipmentCode: string,
+): Promise<CurrentLocationDto | null> {
+  try {
+    return await scanApi.getCurrentLocation(accessToken, shipmentCode);
+  } catch (error) {
+    if (error instanceof ApiClientError && error.status === 404) {
+      return null;
+    }
+
+    throw error;
+  }
 }
 
 function formatScannedAt(isoTime: string): string {
@@ -56,19 +221,35 @@ function toErrorMessage(error: unknown): string {
 export function PickupScanScreen({ route }: Props): React.JSX.Element {
   const session = useAppStore((state) => state.session);
   const setGlobalError = useAppStore((state) => state.setGlobalError);
+  const queryClient = useQueryClient();
   const [permission, requestPermission] = useCameraPermissions();
+  const proofCameraRef = React.useRef<CameraView | null>(null);
 
   const accessToken = session?.tokens.accessToken ?? null;
+  const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
+  const assignedHubCodes = React.useMemo(
+    () => (session?.user.hubCodes ?? []).map((hubCode) => normalizeCode(hubCode)),
+    [session?.user.hubCodes],
+  );
+  const receiveHubCode = assignedHubCodes[0] ?? null;
+  const routeShipmentCode = normalizeOptionalCode(route.params?.shipmentCode);
+  const isTaskReceiveMode = Boolean(route.params?.taskId && routeShipmentCode);
 
   const [pickedShipments, setPickedShipments] = React.useState<PickedShipmentItem[]>([]);
+  const [selectedCodes, setSelectedCodes] = React.useState<Set<string>>(
+    () => new Set(),
+  );
   const [isVerifyingScan, setIsVerifyingScan] = React.useState(false);
   const [isUploading, setIsUploading] = React.useState(false);
+  const [isCapturingProof, setIsCapturingProof] = React.useState(false);
+  const [proofPhotoUri, setProofPhotoUri] = React.useState<string | null>(null);
   const [scanLocked, setScanLocked] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const [infoMessage, setInfoMessage] = React.useState<string | null>(null);
 
   const scanCooldownRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialRouteCodeHandledRef = React.useRef(false);
+  const selectedCount = selectedCodes.size;
 
   React.useEffect(() => {
     return () => {
@@ -116,7 +297,23 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
       setErrorMessage(null);
 
       try {
-        await shipmentApi.getShipmentDetail(accessToken, shipmentCode);
+        const shipment = await shipmentApi.getShipmentDetail(accessToken, shipmentCode);
+        const currentLocation = await getCurrentLocationOrNull(accessToken, shipmentCode);
+        const shouldValidatePickupAssignment = isHomePickupShipment(shipment.metadata);
+        const assignedPickupTasks = shouldValidatePickupAssignment
+          ? await tasksApi.listAssignedTasks(accessToken, courierId)
+          : [];
+        const validationError = validateShipmentForReceive(shipment, {
+          assignedHubCodes,
+          assignedPickupTasks,
+          currentLocation,
+        });
+
+        if (validationError) {
+          setErrorMessage(validationError);
+          setInfoMessage(null);
+          return;
+        }
 
         setPickedShipments((currentItems) => {
           if (
@@ -136,7 +333,7 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
           ];
         });
 
-        setInfoMessage(`Da xac nhan ton tai va them ${shipmentCode} vao danh sach.`);
+        setInfoMessage(`Đã xác nhận và thêm ${shipmentCode} vào danh sách nhận hàng.`);
       } catch (error) {
         setErrorMessage(
           `Khong tim thay hoac khong xac minh duoc ma ${shipmentCode}: ${toErrorMessage(error)}`,
@@ -145,7 +342,7 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
         setIsVerifyingScan(false);
       }
     },
-    [accessToken, pickedShipments, setGlobalError],
+    [accessToken, assignedHubCodes, courierId, pickedShipments, setGlobalError],
   );
 
   React.useEffect(() => {
@@ -155,10 +352,23 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
 
     initialRouteCodeHandledRef.current = true;
 
-    if (route.params?.shipmentCode) {
-      void verifyAndAppendShipmentCode(route.params.shipmentCode);
+    if (routeShipmentCode && isTaskReceiveMode) {
+      setPickedShipments([
+        {
+          code: routeShipmentCode,
+          verifiedAt: new Date().toISOString(),
+        },
+      ]);
+      setInfoMessage(
+        `Đã lấy mã ${routeShipmentCode} từ nhiệm vụ Đợi lấy. Không cần quét lại, bấm xác nhận để nhận hàng.`,
+      );
+      return;
     }
-  }, [route.params?.shipmentCode, verifyAndAppendShipmentCode]);
+
+    if (routeShipmentCode) {
+      void verifyAndAppendShipmentCode(routeShipmentCode);
+    }
+  }, [isTaskReceiveMode, routeShipmentCode, verifyAndAppendShipmentCode]);
 
   const handleBarCodeScanned = (result: BarcodeScanningResult) => {
     if (scanLocked || isVerifyingScan || isUploading) {
@@ -180,11 +390,62 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
     void verifyAndAppendShipmentCode(parsed.value);
   };
 
-  const clearList = () => {
-    setPickedShipments([]);
-    setErrorMessage(null);
-    setInfoMessage('Da xoa danh sach ma van don da quet.');
+  const toggleSelected = (shipmentCode: string) => {
+    const normalizedCode = normalizeCode(shipmentCode);
+    setSelectedCodes((current) => {
+      const next = new Set(current);
+      if (next.has(normalizedCode)) {
+        next.delete(normalizedCode);
+      } else {
+        next.add(normalizedCode);
+      }
+      return next;
+    });
   };
+
+  const deleteSelectedShipments = () => {
+    if (selectedCodes.size === 0) {
+      return;
+    }
+
+    setPickedShipments((currentItems) =>
+      currentItems.filter((item) => !selectedCodes.has(normalizeCode(item.code))),
+    );
+    setErrorMessage(null);
+    setInfoMessage(`Đã xoá ${selectedCodes.size} mã vận đơn khỏi danh sách.`);
+    setSelectedCodes(new Set());
+  };
+
+  const capturePickupProof = React.useCallback(async () => {
+    if (!isTaskReceiveMode) {
+      return;
+    }
+
+    if (!proofCameraRef.current) {
+      setErrorMessage('Camera chưa sẵn sàng để chụp minh chứng.');
+      return;
+    }
+
+    setIsCapturingProof(true);
+    setErrorMessage(null);
+
+    try {
+      const picture = await proofCameraRef.current.takePictureAsync({
+        quality: 0.6,
+      });
+
+      if (!picture.uri) {
+        throw new Error('Không chụp được minh chứng.');
+      }
+
+      setProofPhotoUri(picture.uri);
+      setInfoMessage('Đã chụp minh chứng nhận hàng.');
+    } catch (error) {
+      setErrorMessage(toErrorMessage(error));
+    } finally {
+      setIsCapturingProof(false);
+    }
+  }, [isTaskReceiveMode]);
 
   const uploadAll = async () => {
     if (!accessToken) {
@@ -197,6 +458,11 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
       return;
     }
 
+    if (isTaskReceiveMode && !proofPhotoUri) {
+      setErrorMessage('Vui lòng chụp minh chứng trước khi xác nhận nhận hàng.');
+      return;
+    }
+
     setIsUploading(true);
     setErrorMessage(null);
     setInfoMessage(null);
@@ -204,20 +470,64 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
     const successCodes: string[] = [];
     const queuedCodes: string[] = [];
     const failedCodes: Array<{ code: string; reason: string }> = [];
+    let routeTaskCompleted = false;
+    let routeTaskCompleteFailed = false;
 
     for (const item of pickedShipments) {
+      const baseNote = buildPickupReceiveAuditNote({
+        displayName: session?.user.displayName,
+        username: session?.user.username,
+        courierId,
+        hubCode: receiveHubCode,
+      });
       const command: PickupScanCommand = {
         shipmentCode: item.code,
-        locationCode: null,
-        note: 'PICKUP_CONFIRMED_FROM_SCAN_PAGE',
-        actor: session?.user.username ?? null,
+        locationCode: receiveHubCode,
+        note:
+          isTaskReceiveMode && proofPhotoUri
+            ? `${baseNote} | Minh chứng: ${proofPhotoUri}`
+            : baseNote,
+        actor: (courierId || session?.user.username) ?? null,
         occurredAt: new Date().toISOString(),
         idempotencyKey: createIdempotencyKey('pickup-scan-batch'),
       };
 
       try {
+        const shipment = await shipmentApi.getShipmentDetail(accessToken, item.code);
+        const currentLocation = await getCurrentLocationOrNull(accessToken, item.code);
+        const shouldValidatePickupAssignment = isHomePickupShipment(shipment.metadata);
+        const assignedPickupTasks = shouldValidatePickupAssignment
+          ? await tasksApi.listAssignedTasks(accessToken, courierId)
+          : [];
+        const validationError = validateShipmentForReceive(shipment, {
+          assignedHubCodes,
+          assignedPickupTasks,
+          currentLocation,
+        });
+
+        if (validationError) {
+          failedCodes.push({
+            code: item.code,
+            reason: validationError,
+          });
+          continue;
+        }
+
         await submitPickupScanAction(accessToken, command);
         successCodes.push(item.code);
+
+        const shouldCompleteRouteTask =
+          route.params?.taskId &&
+          (!routeShipmentCode || normalizeCode(item.code) === routeShipmentCode);
+
+        if (shouldCompleteRouteTask && !routeTaskCompleted) {
+          try {
+            await tasksApi.updateTaskStatus(accessToken, route.params.taskId, 'COMPLETED');
+            routeTaskCompleted = true;
+          } catch {
+            routeTaskCompleteFailed = true;
+          }
+        }
       } catch (error) {
         if (shouldQueueOffline(error)) {
           await enqueuePickupScanOffline(command);
@@ -234,12 +544,30 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
 
     if (failedCodes.length === 0) {
       setPickedShipments([]);
+      setProofPhotoUri(null);
+      setSelectedCodes(new Set());
       setInfoMessage(
-        `Da cap nhat nhan kien ${successCodes.length} ma` +
+        `Đã cập nhật nhận hàng ${successCodes.length} mã` +
           (queuedCodes.length > 0
             ? `, ${queuedCodes.length} ma duoc queue offline.`
-            : '.'),
+            : '.') +
+          (routeTaskCompleted
+            ? ' Task Đợi lấy đã chuyển hoàn tất.'
+            : routeTaskCompleteFailed
+              ? ' Chưa cập nhật được trạng thái task, vui lòng tải lại và thử lại.'
+              : ''),
       );
+      await queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      if (route.params?.taskId) {
+        await queryClient.invalidateQueries({
+          queryKey: ['tasks', 'detail', route.params.taskId],
+        });
+      }
+      successCodes.forEach((shipmentCode) => {
+        void queryClient.invalidateQueries({
+          queryKey: ['shipment', 'detail', shipmentCode],
+        });
+      });
       setIsUploading(false);
       return;
     }
@@ -248,6 +576,15 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
     setPickedShipments((currentItems) =>
       currentItems.filter((item) => failedCodeSet.has(item.code)),
     );
+    setSelectedCodes((currentCodes) => {
+      const next = new Set<string>();
+      currentCodes.forEach((code) => {
+        if (failedCodeSet.has(code)) {
+          next.add(code);
+        }
+      });
+      return next;
+    });
 
     setErrorMessage(
       `Co ${failedCodes.length} ma tai len that bai: ${failedCodes
@@ -256,11 +593,27 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
     );
 
     setInfoMessage(
-      `Da cap nhat nhan kien ${successCodes.length} ma` +
+      `Đã cập nhật nhận hàng ${successCodes.length} mã` +
         (queuedCodes.length > 0
           ? `, ${queuedCodes.length} ma duoc queue offline.`
-          : '.'),
+          : '.') +
+        (routeTaskCompleted
+          ? ' Task Đợi lấy đã chuyển hoàn tất.'
+          : routeTaskCompleteFailed
+            ? ' Chưa cập nhật được trạng thái task, vui lòng tải lại và thử lại.'
+            : ''),
     );
+    await queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    if (route.params?.taskId) {
+      await queryClient.invalidateQueries({
+        queryKey: ['tasks', 'detail', route.params.taskId],
+      });
+    }
+    successCodes.forEach((shipmentCode) => {
+      void queryClient.invalidateQueries({
+        queryKey: ['shipment', 'detail', shipmentCode],
+      });
+    });
 
     setIsUploading(false);
   };
@@ -269,69 +622,163 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
 
   return (
     <View style={styles.container}>
-      <View style={styles.cameraSection}>
-        <Text style={styles.cameraTitle}>Quet nhan kien</Text>
-        <View style={styles.cameraFrame}>
-          {!permission ? (
-            <View style={styles.cameraPlaceholder}>
-              <ActivityIndicator size="small" color="#E2E8F0" />
-              <Text style={styles.cameraPlaceholderText}>Dang kiem tra quyen camera...</Text>
+      {isTaskReceiveMode ? (
+        <View style={styles.taskModePanel}>
+          <View style={styles.taskReceiveSection}>
+            <View style={styles.taskReceiveIcon}>
+              <Ionicons name="cube-outline" size={24} color={theme.colors.primary} />
             </View>
-          ) : null}
-
-          {permission && !cameraIsReady ? (
-            <View style={styles.cameraPlaceholder}>
-              <Text style={styles.cameraPlaceholderText}>
-                Can cap quyen camera de quet ma van don.
+            <View style={styles.taskReceiveBody}>
+              <Text style={styles.taskReceiveTitle}>Nhận hàng từ nhiệm vụ Đợi lấy</Text>
+              <Text style={styles.taskReceiveText}>
+                Mã vận đơn đã có trong nhiệm vụ nên không cần quét lại. Chụp minh chứng rồi bấm xác nhận.
               </Text>
-              {permission.canAskAgain ? (
-                <Pressable onPress={requestPermission} style={styles.permissionButton}>
-                  <Text style={styles.permissionButtonText}>Cap quyen camera</Text>
-                </Pressable>
+            </View>
+          </View>
+
+          <View style={styles.proofSection}>
+            <View style={styles.proofHeader}>
+              <View>
+                <Text style={styles.proofTitle}>Minh chứng nhận hàng</Text>
+                <Text style={styles.proofHint}>Bắt buộc chụp ảnh hàng đã lấy trước khi xác nhận.</Text>
+              </View>
+              {proofPhotoUri ? (
+                <Ionicons name="checkmark-circle" size={22} color="#0F766E" />
+              ) : (
+                <Ionicons name="camera-outline" size={22} color={theme.colors.primary} />
+              )}
+            </View>
+
+            <View style={styles.proofCameraFrame}>
+              {!permission ? (
+                <View style={styles.cameraPlaceholder}>
+                  <ActivityIndicator size="small" color="#E2E8F0" />
+                  <Text style={styles.cameraPlaceholderText}>Dang kiem tra quyen camera...</Text>
+                </View>
+              ) : null}
+
+              {permission && !cameraIsReady ? (
+                <View style={styles.cameraPlaceholder}>
+                  <Text style={styles.cameraPlaceholderText}>
+                    Cần cấp quyền camera để chụp minh chứng nhận hàng.
+                  </Text>
+                  {permission.canAskAgain ? (
+                    <Pressable onPress={requestPermission} style={styles.permissionButton}>
+                      <Text style={styles.permissionButtonText}>Cấp quyền camera</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+              ) : null}
+
+              {permission && cameraIsReady && !proofPhotoUri ? (
+                <CameraView ref={proofCameraRef} style={styles.camera} facing="back" />
+              ) : null}
+
+              {proofPhotoUri ? (
+                <Image source={{ uri: proofPhotoUri }} style={styles.proofImage} />
               ) : null}
             </View>
-          ) : null}
 
-          {permission && cameraIsReady ? (
-            <CameraView
-              style={styles.camera}
-              facing="back"
-              barcodeScannerSettings={{
-                barcodeTypes: [
-                  'qr',
-                  'ean13',
-                  'ean8',
-                  'code39',
-                  'code93',
-                  'code128',
-                  'upc_a',
-                  'upc_e',
-                ],
+            <Pressable
+              disabled={!cameraIsReady || isCapturingProof || isUploading}
+              onPress={() => {
+                void capturePickupProof();
               }}
-              onBarcodeScanned={handleBarCodeScanned}
-            />
-          ) : null}
-
-          {isVerifyingScan || isUploading ? (
-            <View style={styles.cameraOverlay}>
-              <ActivityIndicator size="small" color="#FFFFFF" />
-              <Text style={styles.cameraOverlayText}>
-                {isUploading ? 'Dang tai len...' : 'Dang xac minh ma...'}
-              </Text>
-            </View>
-          ) : null}
+              style={[
+                styles.captureProofButton,
+                (!cameraIsReady || isCapturingProof || isUploading) &&
+                  styles.captureProofButtonDisabled,
+              ]}
+            >
+              {isCapturingProof ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <Ionicons name="camera-outline" size={18} color="#FFFFFF" />
+                  <Text style={styles.captureProofButtonText}>
+                    {proofPhotoUri ? 'Chụp lại minh chứng' : 'Chụp minh chứng'}
+                  </Text>
+                </>
+              )}
+            </Pressable>
+          </View>
         </View>
-        <Text style={styles.cameraHint}>
-          Camera tu mo. Quet ma van don, he thong se kiem tra ton tai roi tu them vao danh sach.
-        </Text>
-      </View>
+      ) : (
+        <View style={styles.cameraSection}>
+          <View style={styles.cameraFrame}>
+            {!permission ? (
+              <View style={styles.cameraPlaceholder}>
+                <ActivityIndicator size="small" color="#E2E8F0" />
+                <Text style={styles.cameraPlaceholderText}>Dang kiem tra quyen camera...</Text>
+              </View>
+            ) : null}
+
+            {permission && !cameraIsReady ? (
+              <View style={styles.cameraPlaceholder}>
+                <Text style={styles.cameraPlaceholderText}>
+                  Can cap quyen camera de quet ma van don.
+                </Text>
+                {permission.canAskAgain ? (
+                  <Pressable onPress={requestPermission} style={styles.permissionButton}>
+                    <Text style={styles.permissionButtonText}>Cap quyen camera</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            ) : null}
+
+            {permission && cameraIsReady ? (
+              <CameraView
+                style={styles.camera}
+                facing="back"
+                barcodeScannerSettings={{
+                  barcodeTypes: [
+                    'qr',
+                    'ean13',
+                    'ean8',
+                    'code39',
+                    'code93',
+                    'code128',
+                    'upc_a',
+                    'upc_e',
+                  ],
+                }}
+                onBarcodeScanned={handleBarCodeScanned}
+              />
+            ) : null}
+
+            {isVerifyingScan || isUploading ? (
+              <View style={styles.cameraOverlay}>
+                <ActivityIndicator size="small" color="#FFFFFF" />
+                <Text style={styles.cameraOverlayText}>
+                  {isUploading ? 'Dang tai len...' : 'Dang xac minh ma...'}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+          <Text style={styles.cameraHint}>
+            Camera tự mở. Quét mã vận đơn, hệ thống sẽ kiểm tra điều kiện rồi tự thêm vào danh sách.
+          </Text>
+        </View>
+      )}
 
       <View style={styles.listSection}>
         <View style={styles.listHeaderRow}>
-          <Text style={styles.listTitle}>Danh sach van don ({pickedShipments.length})</Text>
-          <Pressable onPress={clearList} disabled={pickedShipments.length === 0}>
-            <Text style={styles.clearText}>Lam moi</Text>
-          </Pressable>
+          <Text style={styles.screenTitle}>Nhận hàng</Text>
+          {!isTaskReceiveMode ? (
+            <Pressable
+              disabled={selectedCount === 0}
+              onPress={deleteSelectedShipments}
+              style={[
+                styles.deleteButton,
+                selectedCount === 0 && styles.deleteButtonDisabled,
+              ]}
+            >
+              <Ionicons name="trash-outline" size={16} color="#B91C1C" />
+              <Text style={styles.deleteButtonText}>
+                Xóa{selectedCount > 0 ? ` ${selectedCount}` : ''}
+              </Text>
+            </Pressable>
+          ) : null}
         </View>
 
         {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
@@ -344,39 +791,68 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
         >
           {pickedShipments.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>Chua co ma van don nao duoc quet.</Text>
+              <Text style={styles.emptyText}>Chưa có mã vận đơn nào được quét.</Text>
             </View>
           ) : (
-            pickedShipments.map((item, index) => (
-              <View key={`${item.code}-${item.verifiedAt}`} style={styles.listItem}>
-                <View style={styles.listIndex}>
-                  <Text style={styles.listIndexText}>{index + 1}</Text>
-                </View>
-                <View style={styles.listBody}>
-                  <Text style={styles.listCode}>{item.code}</Text>
-                  <Text style={styles.listTime}>Quet luc {formatScannedAt(item.verifiedAt)}</Text>
-                </View>
-                <Text style={styles.verifiedBadge}>Da xac minh</Text>
-              </View>
-            ))
+            pickedShipments.map((item, index) => {
+              const selected = selectedCodes.has(normalizeCode(item.code));
+
+              return (
+                <Pressable
+                  key={`${item.code}-${item.verifiedAt}`}
+                  disabled={isTaskReceiveMode}
+                  onPress={() => toggleSelected(item.code)}
+                  style={[
+                    styles.listItem,
+                    selected && !isTaskReceiveMode && styles.listItemSelected,
+                  ]}
+                >
+                  {!isTaskReceiveMode ? (
+                    <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
+                      {selected ? (
+                        <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+                      ) : null}
+                    </View>
+                  ) : null}
+                  <View style={styles.listIndex}>
+                    <Text style={styles.listIndexText}>{index + 1}</Text>
+                  </View>
+                  <View style={styles.listBody}>
+                    <Text style={styles.listCode}>{item.code}</Text>
+                    <Text style={styles.listTime}>
+                      Quét lúc {formatScannedAt(item.verifiedAt)}
+                    </Text>
+                  </View>
+                  <Text style={styles.verifiedBadge}>Đã xác minh</Text>
+                </Pressable>
+              );
+            })
           )}
         </ScrollView>
 
         <Pressable
-          disabled={isUploading || isVerifyingScan || pickedShipments.length === 0}
+          disabled={
+            isUploading ||
+            isVerifyingScan ||
+            pickedShipments.length === 0 ||
+            (isTaskReceiveMode && !proofPhotoUri)
+          }
           onPress={() => {
             void uploadAll();
           }}
           style={[
             styles.uploadButton,
-            (isUploading || isVerifyingScan || pickedShipments.length === 0) &&
+            (isUploading ||
+              isVerifyingScan ||
+              pickedShipments.length === 0 ||
+              (isTaskReceiveMode && !proofPhotoUri)) &&
               styles.uploadButtonDisabled,
           ]}
         >
           {isUploading ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
-            <Text style={styles.uploadButtonText}>Tai len va cap nhat trang thai nhan kien</Text>
+            <Text style={styles.uploadButtonText}>Tải lên và cập nhật trạng thái nhận hàng</Text>
           )}
         </Pressable>
       </View>
@@ -400,14 +876,8 @@ const styles = StyleSheet.create({
     padding: 10,
     ...theme.shadow.sm,
   },
-  cameraTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
   cameraFrame: {
     flex: 1,
-    marginTop: 8,
     borderRadius: 10,
     overflow: 'hidden',
     backgroundColor: '#0F172A',
@@ -454,13 +924,101 @@ const styles = StyleSheet.create({
     color: '#475569',
     fontSize: 12,
   },
+  taskModePanel: {
+    gap: 10,
+  },
+  taskReceiveSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    borderRadius: 12,
+    padding: 14,
+    ...theme.shadow.sm,
+  },
+  taskReceiveIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EFF6FF',
+  },
+  taskReceiveBody: {
+    flex: 1,
+  },
+  taskReceiveTitle: {
+    color: '#0F172A',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  taskReceiveText: {
+    color: '#475569',
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 3,
+  },
+  proofSection: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    padding: 12,
+    gap: 10,
+    ...theme.shadow.sm,
+  },
+  proofHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  proofTitle: {
+    color: '#0F172A',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  proofHint: {
+    color: '#64748B',
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 2,
+  },
+  proofCameraFrame: {
+    height: 180,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: '#0F172A',
+  },
+  proofImage: {
+    width: '100%',
+    height: '100%',
+  },
+  captureProofButton: {
+    minHeight: 44,
+    borderRadius: 10,
+    backgroundColor: theme.colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  captureProofButtonDisabled: {
+    opacity: 0.45,
+  },
+  captureProofButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
   listSection: {
     flex: 2,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E5E7EB',
     borderRadius: 12,
-    padding: 10,
+    padding: 12,
     ...theme.shadow.sm,
   },
   listHeaderRow: {
@@ -468,6 +1026,29 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: 10,
+  },
+  screenTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  deleteButton: {
+    minHeight: 36,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    backgroundColor: '#FEF2F2',
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  deleteButtonDisabled: {
+    opacity: 0.42,
+  },
+  deleteButtonText: {
+    color: '#B91C1C',
+    fontWeight: '700',
   },
   listTitle: {
     fontSize: 18,
@@ -519,6 +1100,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
     paddingHorizontal: 10,
     paddingVertical: 10,
+  },
+  listItemSelected: {
+    borderColor: '#93C5FD',
+    backgroundColor: '#EFF6FF',
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#94A3B8',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  checkboxSelected: {
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primary,
   },
   listIndex: {
     width: 24,

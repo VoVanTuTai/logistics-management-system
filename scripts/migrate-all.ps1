@@ -1,9 +1,10 @@
-﻿$ErrorActionPreference = 'Stop'
+$ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
 $rootDir = Resolve-Path (Join-Path $PSScriptRoot '..')
 $services = @(
   'auth-service',
+  'masterdata-service',
   'shipment-service',
   'pickup-service',
   'dispatch-service',
@@ -11,7 +12,8 @@ $services = @(
   'scan-service',
   'delivery-service',
   'tracking-service',
-  'reporting-service'
+  'reporting-service',
+  'payment-service'
 )
 
 foreach ($service in $services) {

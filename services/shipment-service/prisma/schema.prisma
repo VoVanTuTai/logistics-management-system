@@ -14,11 +14,16 @@ enum ShipmentCurrentStatus {
   TASK_ASSIGNED
   MANIFEST_SEALED
   MANIFEST_RECEIVED
+  MANIFEST_UNSEALED
+  SEND_GOODS
+  IN_TRANSIT
+  INVENTORY_CHECK
   SCAN_INBOUND
   SCAN_OUTBOUND
   DELIVERED
   DELIVERY_FAILED
   NDR_CREATED
+  EXCEPTION
   RETURN_STARTED
   RETURN_COMPLETED
   CANCELLED
@@ -41,6 +46,7 @@ model Shipment {
   code               String                @unique
   /// shipment-service is the canonical owner of current_status.
   currentStatus      ShipmentCurrentStatus @default(CREATED)
+  isLocked           Boolean               @default(false)
   metadata           Json?
   cancellationReason String?
   createdAt          DateTime              @default(now())

@@ -12,6 +12,7 @@ export interface Shipment {
   id: string;
   code: string;
   currentStatus: ShipmentCurrentStatus;
+  isLocked: boolean;
   metadata: JsonValue | null;
   cancellationReason: string | null;
   createdAt: Date;
@@ -29,4 +30,9 @@ export interface UpdateShipmentInput {
 
 export interface CancelShipmentInput {
   reason?: string | null;
+}
+
+export interface ShipmentListFilters {
+  q?: string | null;
+  status?: string | null;
 }

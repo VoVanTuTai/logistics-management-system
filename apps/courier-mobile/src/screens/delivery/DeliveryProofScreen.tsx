@@ -21,6 +21,7 @@ import { Screen } from '../../components/ui/Screen';
 import { enqueueDeliverySuccessOffline } from '../../features/delivery/delivery-success.offline';
 import { useDeliverySuccessActionMutation } from '../../features/delivery/delivery-success.mutation';
 import type { DeliverySuccessPayload } from '../../features/delivery/delivery.types';
+import { useCompanyBankInfoQuery, useCollectCodMutation } from '../../features/cod/cod.queries';
 import { useShipmentDetailQuery } from '../../features/shipment/shipment.queries';
 import type { ShipmentMetadata } from '../../features/shipment/shipment.types';
 import { tasksApi } from '../../features/tasks/tasks.api';
@@ -30,6 +31,8 @@ import { shouldQueueOffline } from '../../services/api/client';
 import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
 import { createIdempotencyKey } from '../../utils/idempotency';
+import { resolveCourierId, buildDeliverySuccessAuditNote } from '../../utils/courier';
+import { appEnv } from '../../utils/env';
 
 type Props = NativeStackScreenProps<AppNavigatorParamList, 'DeliveryProof'>;
 
@@ -93,7 +96,14 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
   const [note, setNote] = React.useState('');
   const [submitMessage, setSubmitMessage] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [paymentMethod, setPaymentMethod] = React.useState<'COD' | 'BANK_TRANSFER'>('COD');
 
+  const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
+  const bankInfoQuery = useCompanyBankInfoQuery({ accessToken: session?.tokens.accessToken ?? null });
+  const bankInfo = bankInfoQuery.data;
+  const collectMutation = useCollectCodMutation(session?.tokens.accessToken ?? null);
+
+  const codAmount = shipmentQuery.data?.codAmount ?? 0;
   const shipmentMetadata = shipmentQuery.data?.metadata ?? null;
   const receiverName =
     readMetadataString(shipmentMetadata, ['receiverName', 'receiver.name']) ?? 'N/A';
@@ -162,17 +172,25 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
       return;
     }
 
+    const auditNote = buildDeliverySuccessAuditNote({
+      displayName: session?.user.displayName,
+      username: session?.user.username,
+      courierId,
+      hubCode: session?.user.hubCodes?.[0] ?? null,
+      note: note.trim().length > 0 ? note.trim() : 'Ky nhan giao hang tu courier app.',
+    });
+
     const payload: DeliverySuccessPayload = {
       shipmentCode: resolvedShipmentCode,
       taskId: route.params.taskId ?? null,
       courierId: null,
       locationCode: null,
       actor: session?.user.username ?? null,
-      note: note.trim().length > 0 ? note.trim() : 'Ky nhan giao hang tu courier app.',
+      note: auditNote,
       occurredAt: new Date().toISOString(),
       idempotencyKey: createIdempotencyKey('delivery-success'),
       podImageUrl: photoUri,
-      podNote: note.trim().length > 0 ? note.trim() : null,
+      podNote: auditNote,
       podCapturedBy: session?.user.username ?? null,
       otpCode: null,
     };
@@ -182,6 +200,24 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
 
     try {
       const result = await mutation.mutateAsync(payload);
+      
+      // Auto collect COD if applicable
+      if (codAmount > 0) {
+        try {
+          await collectMutation.mutateAsync({
+            shipmentCode: resolvedShipmentCode,
+            collectedAmount: codAmount,
+            courierId: courierId ?? '',
+            paymentMethod,
+            idempotencyKey: createIdempotencyKey('cod-collect-' + resolvedShipmentCode),
+            occurredAt: new Date().toISOString(),
+            note: 'Thu COD lúc ký nhận phát hàng',
+          });
+        } catch (codErr) {
+          Alert.alert('Cảnh báo', 'Giao hàng thành công nhưng lỗi khi ghi nhận thu COD: ' + (codErr instanceof Error ? codErr.message : 'Lỗi không xác định'));
+        }
+      }
+
       const taskId = route.params.taskId ?? null;
       const accessToken = session?.tokens.accessToken ?? null;
       let taskStatusUpdated = false;
@@ -275,7 +311,7 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
               <Text style={styles.infoValue}>{receiverPhone}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Dia chi giao</Text>
+              <Text style={styles.infoLabel}>Địa chỉ giao</Text>
               <Text style={styles.infoValue}>{deliveryAddress}</Text>
             </View>
             {shipmentQuery.isLoading ? (
@@ -285,6 +321,69 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
               </View>
             ) : null}
           </Card>
+
+          {codAmount > 0 ? (
+            <Card>
+              <Text style={styles.sectionTitle}>Thu tiền COD</Text>
+              <Text style={styles.sectionHint}>
+                Đơn hàng có thu hộ. Vui lòng chọn phương thức thanh toán.
+              </Text>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Số tiền cần thu:</Text>
+                <Text style={styles.codAmountText}>
+                  {codAmount.toLocaleString('vi-VN')}đ
+                </Text>
+              </View>
+
+              <View style={styles.toggleRow}>
+                <Pressable
+                  style={[
+                    styles.toggleButton,
+                    paymentMethod === 'COD' && styles.toggleButtonActive,
+                  ]}
+                  onPress={() => setPaymentMethod('COD')}
+                >
+                  <Text
+                    style={[
+                      styles.toggleButtonText,
+                      paymentMethod === 'COD' && styles.toggleButtonTextActive,
+                    ]}
+                  >
+                    💵 Tiền mặt
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={[
+                    styles.toggleButton,
+                    paymentMethod === 'BANK_TRANSFER' && styles.toggleButtonActive,
+                  ]}
+                  onPress={() => setPaymentMethod('BANK_TRANSFER')}
+                >
+                  <Text
+                    style={[
+                      styles.toggleButtonText,
+                      paymentMethod === 'BANK_TRANSFER' && styles.toggleButtonTextActive,
+                    ]}
+                  >
+                    🏦 Chuyển khoản QR
+                  </Text>
+                </Pressable>
+              </View>
+
+              {paymentMethod === 'BANK_TRANSFER' && bankInfo ? (
+                <View style={styles.qrContainer}>
+                  <Text style={styles.qrHint}>Cho khách hàng quét mã QR này</Text>
+                  <Image
+                    source={{
+                      uri: `https://img.vietqr.io/image/${bankInfo.bin}-${bankInfo.accountNumber}-compact2.png?amount=${codAmount}&addInfo=${encodeURIComponent(`Thanh toan don ${resolvedShipmentCode}`)}&accountName=${encodeURIComponent(bankInfo.accountName)}`,
+                    }}
+                    style={styles.qrImage}
+                    resizeMode="contain"
+                  />
+                </View>
+              ) : null}
+            </Card>
+          ) : null}
 
           <Card>
             <Text style={styles.sectionTitle}>Anh chung minh</Text>
@@ -544,6 +643,54 @@ const styles = StyleSheet.create({
     ...theme.typography.body.md,
     color: '#166534',
   },
+  toggleRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
+  },
+  toggleButton: {
+    flex: 1,
+    borderWidth: 2,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.md,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  toggleButtonActive: {
+    borderColor: theme.colors.primary,
+    backgroundColor: '#EFF6FF',
+  },
+  toggleButtonText: {
+    ...theme.typography.body.sm,
+    fontWeight: '600',
+    color: theme.colors.textSecondary,
+  },
+  toggleButtonTextActive: {
+    color: theme.colors.primary,
+  },
+  codAmountText: {
+    ...theme.typography.subtitle.md,
+    color: theme.colors.danger,
+    fontWeight: '700',
+  },
+  qrContainer: {
+    marginTop: 16,
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: theme.spacing.md,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  qrHint: {
+    ...theme.typography.caption.md,
+    color: theme.colors.textSecondary,
+    marginBottom: 8,
+  },
+  qrImage: {
+    width: 220,
+    height: 260,
+  },
   footer: {
     position: 'absolute',
     left: theme.spacing.lg,
@@ -636,3 +783,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
+

@@ -15,8 +15,13 @@ import { TaskDetailScreen } from '../screens/tasks/TaskDetailScreen';
 import { PickupScanScreen } from '../screens/scan/PickupScanScreen';
 import { HubScanScreen } from '../screens/scan/HubScanScreen';
 import { BagSealScreen } from '../screens/scan/BagSealScreen';
+import { InventoryCheckScreen } from '../screens/scan/InventoryCheckScreen';
+import { VehicleInboundScreen } from '../screens/scan/VehicleInboundScreen';
+import { VehicleOutboundScreen } from '../screens/scan/VehicleOutboundScreen';
 import { DeliverySuccessScreen } from '../screens/delivery/DeliverySuccessScreen';
 import { DeliveryFailScreen } from '../screens/delivery/DeliveryFailScreen';
+import { CodStatsScreen } from '../screens/cod/CodStatsScreen';
+import { CodCollectScreen } from '../screens/cod/CodCollectScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import { StatsScreen } from '../screens/stats/StatsScreen';
 import { ScanHomeScreen } from '../screens/scan/ScanHomeScreen';
@@ -55,7 +60,7 @@ function resolveTabIcon(
   if (routeName === 'Scan') {
     return (
       <View style={styles.scanTabIconShell}>
-        <Ionicons name="scan" size={24} color="#FFFFFF" />
+        <Ionicons name="scan" size={24} color={theme.colors.textInverse} />
       </View>
     );
   }
@@ -87,7 +92,7 @@ function MainTabs(): React.JSX.Element {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: '#8DA0B7',
+        tabBarInactiveTintColor: theme.colors.textMuted,
         tabBarLabelStyle: styles.tabLabel,
         tabBarStyle: styles.tabBar,
         tabBarItemStyle: styles.tabItem,
@@ -148,7 +153,7 @@ export function RootNavigator(): React.JSX.Element {
         headerStyle: {
           backgroundColor: theme.colors.primary,
         },
-        headerTintColor: '#FFFFFF',
+        headerTintColor: theme.colors.textInverse,
         headerTitleStyle: {
           fontWeight: '700',
         },
@@ -169,17 +174,34 @@ export function RootNavigator(): React.JSX.Element {
           <RootStack.Screen
             name="PickupScan"
             component={PickupScanScreen}
-            options={{ title: 'Quet pickup' }}
+            options={{ title: 'Nhận hàng' }}
           />
           <RootStack.Screen
             name="HubScan"
             component={HubScanScreen}
-            options={{ title: 'Quet hub' }}
+            options={({ route }) => ({
+              title: route.params.mode === 'INBOUND' ? 'Hàng đến' : 'Quet hub',
+            })}
           />
           <RootStack.Screen
             name="BagSeal"
             component={BagSealScreen}
             options={{ title: 'Dong bao tui tai che' }}
+          />
+          <RootStack.Screen
+            name="InventoryCheck"
+            component={InventoryCheckScreen}
+            options={{ title: 'Kiểm tồn kho' }}
+          />
+          <RootStack.Screen
+            name="VehicleOutbound"
+            component={VehicleOutboundScreen}
+            options={{ title: 'Xe đi' }}
+          />
+          <RootStack.Screen
+            name="VehicleInbound"
+            component={VehicleInboundScreen}
+            options={{ title: 'Xe đến' }}
           />
           <RootStack.Screen
             name="DeliverySuccess"
@@ -190,6 +212,16 @@ export function RootNavigator(): React.JSX.Element {
             name="DeliveryFail"
             component={DeliveryFailScreen}
             options={{ title: 'Giao that bai / NDR' }}
+          />
+          <RootStack.Screen
+            name="CodStats"
+            component={CodStatsScreen}
+            options={{ title: 'Tiền hàng COD' }}
+          />
+          <RootStack.Screen
+            name="CodCollect"
+            component={CodCollectScreen}
+            options={{ title: 'Thu tiền COD' }}
           />
         </>
       ) : (
@@ -209,7 +241,7 @@ const styles = StyleSheet.create({
     height: 74,
     paddingBottom: 10,
     paddingTop: 8,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface,
   },
   tabItem: {
     paddingTop: 2,
@@ -229,8 +261,7 @@ const styles = StyleSheet.create({
   },
   badge: {
     backgroundColor: theme.colors.warning,
-    color: '#FFFFFF',
+    color: theme.colors.textInverse,
     fontWeight: '700',
   },
 });
-

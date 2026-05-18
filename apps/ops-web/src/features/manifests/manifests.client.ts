@@ -38,6 +38,8 @@ function mapManifestListItem(payload: ManifestApiResponse): ManifestListItemDto 
     destinationHubCode: payload.destinationHubCode,
     createdAt: payload.createdAt ?? null,
     sealedAt: payload.sealedAt,
+    updatedAt: payload.updatedAt ?? null,
+    shipmentCount: payload.items?.length ?? 0,
   };
 }
 

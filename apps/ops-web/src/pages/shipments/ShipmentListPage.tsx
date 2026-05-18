@@ -73,6 +73,8 @@ const SHIPMENT_STATUS_OPTIONS = [
   'TASK_ASSIGNED',
   'MANIFEST_SEALED',
   'MANIFEST_RECEIVED',
+  'MANIFEST_UNSEALED',
+  'SEND_GOODS',
   'SCAN_INBOUND',
   'SCAN_OUTBOUND',
   'DELIVERED',
@@ -225,7 +227,7 @@ function printWaybill(shipment: ShipmentListItemDto): void {
     shipment.deliveryNote?.trim() || 'Gọi trước khi giao. Không cho thử hàng.';
 
   const opened = openShippingLabelPrint({
-    brandName: 'JMS LOGISTICS',
+    brandName: 'NEXUS LOGISTICS',
     serviceName: shipment.serviceType?.trim() || 'STANDARD',
     shipmentCode: shipment.shipmentCode,
     senderName,
@@ -472,7 +474,7 @@ export function ShipmentListPage(): React.JSX.Element {
           taskCode: generateDeliveryTaskCode(shipmentCode),
           taskType: 'DELIVERY',
           shipmentCode,
-          note: dispatchNote.trim() || 'quet phat tu man hinh van don ops',
+          note: dispatchNote.trim() || 'quét phát từ màn hình vận đơn OPS',
         });
       }
 
@@ -1060,4 +1062,3 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: 12,
   },
 };
-

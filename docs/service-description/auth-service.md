@@ -44,7 +44,7 @@ Service dang o muc scaffold co chuc nang core cho auth flow, nhung chua hoan thi
 
 Gateway proxy theo convention `/{group}/{service}/...`.
 
-- Client `courier-mobile` dang goi auth qua cac URL:
+- Client `courier-mobile` dang gọi auth qua cac URL:
   - `/courier/auth/auth/login`
   - `/courier/auth/auth/refresh`
   - `/courier/auth/auth/logout`
@@ -535,7 +535,7 @@ Rui ro hien tai:
 ### 11.3 Logout idempotent-like behavior
 
 - Logout voi token da vo hieu/khong ton tai -> `200 revoked=false`.
-- Dam bao client co the goi logout lap lai ma khong fail flow.
+- Dam bao client co the gọi logout lap lai ma khong fail flow.
 
 ### 11.4 Concurrency
 

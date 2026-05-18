@@ -6,6 +6,13 @@ export interface ShipmentListItemDto {
   parcelType: string | null;
   shippingFee: number | null;
   receiverRegion: string | null;
+  senderWard: string | null;
+  senderDistrict: string | null;
+  senderProvince: string | null;
+  senderHubCode: string | null;
+  receiverHubCode: string | null;
+  originHubCode: string | null;
+  destinationHubCode: string | null;
   senderName: string | null;
   senderPhone: string | null;
   senderAddress: string | null;
@@ -34,6 +41,13 @@ export interface ShipmentDetailDto {
   receiverPhone: string | null;
   receiverAddress: string | null;
   receiverRegion: string | null;
+  senderWard: string | null;
+  senderDistrict: string | null;
+  senderProvince: string | null;
+  senderHubCode: string | null;
+  receiverHubCode: string | null;
+  originHubCode: string | null;
+  destinationHubCode: string | null;
   platform: string | null;
   serviceType: string | null;
   codAmount: number | null;

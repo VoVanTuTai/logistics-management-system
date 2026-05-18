@@ -15,6 +15,7 @@ const SERVICE_URL_ENV = {
   scan: 'SCAN_SERVICE_URL',
   shipment: 'SHIPMENT_SERVICE_URL',
   tracking: 'TRACKING_SERVICE_URL',
+  payment: 'PAYMENT_SERVICE_URL',
 } as const;
 
 export type ApiGroup = 'public' | 'merchant' | 'ops' | 'courier';

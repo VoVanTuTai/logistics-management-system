@@ -1,25 +1,29 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700&display=swap');
 
 :root {
-  --bg: #edf2f8;
+  --font-family-base: 'Manrope', 'Segoe UI', sans-serif;
+  --font-weight-regular: 500;
+  --font-weight-medium: 600;
+  --font-weight-bold: 700;
+  --bg: #eef2ff;
   --surface: #ffffff;
-  --surface-soft: #f7fbff;
-  --line: #d6e3f0;
-  --text: #14243a;
-  --text-soft: #5a6f89;
+  --surface-soft: #eef2ff;
+  --line: #e2e8f0;
+  --text: #334155;
+  --text-soft: #64748b;
 
-  --brand-900: #0d2d50;
-  --brand-800: #123f6f;
-  --brand-700: #1f65a6;
-  --brand-600: #2f78ba;
+  --brand-900: #4338ca;
+  --brand-800: #4338ca;
+  --brand-700: #4f46e5;
+  --brand-600: #6366f1;
 
   --success: #137f5d;
   --warning: #9a6700;
   --danger: #b12233;
-  --muted: #5f738b;
+  --muted: #64748b;
 
-  --shadow-md: 0 10px 26px rgba(13, 45, 80, 0.1);
-  --shadow-sm: 0 6px 16px rgba(13, 45, 80, 0.08);
+  --shadow-md: 0 10px 26px rgba(15, 23, 42, 0.08);
+  --shadow-sm: 0 6px 16px rgba(15, 23, 42, 0.06);
 }
 
 * {
@@ -34,12 +38,21 @@ body,
 
 body {
   margin: 0;
-  font-family: 'Manrope', 'Segoe UI', sans-serif;
+  font-family: var(--font-family-base);
+  font-weight: var(--font-weight-regular);
   color: var(--text);
-  background:
-    radial-gradient(circle at 6% 8%, rgba(190, 220, 255, 0.66), transparent 30%),
-    radial-gradient(circle at 95% 0%, rgba(255, 227, 198, 0.78), transparent 36%),
-    var(--bg);
+  background: var(--bg);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-family-base);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.01em;
 }
 
 .login-shell {
@@ -73,31 +86,31 @@ body {
   display: grid;
   align-content: start;
   gap: 12px;
-  background:
-    linear-gradient(180deg, #0d2d50 0%, #174876 60%, #1d5c92 100%);
-  color: #eef6ff;
+  background: #ffffff;
+  color: var(--text);
+  border-right: 1px solid var(--line);
 }
 
 .brand-title {
   margin: 0;
-  font-family: 'Manrope', 'Segoe UI', sans-serif;
+  font-family: var(--font-family-base);
   font-size: 38px;
   line-height: 1.05;
 }
 
 .brand-subtitle {
   margin: 4px 0 0;
-  color: rgba(232, 244, 255, 0.76);
+  color: var(--text-soft);
   font-size: 12px;
 }
 
 .session-box {
-  border: 1px solid rgba(255, 255, 255, 0.24);
+  border: 1px solid var(--line);
   border-radius: 14px;
   padding: 10px;
   font-size: 13px;
   line-height: 1.35;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--surface-soft);
 }
 
 .nav-list {
@@ -107,19 +120,22 @@ body {
 
 .nav-btn {
   border: 0;
+  border-left: 3px solid transparent;
   border-radius: 12px;
   padding: 10px 12px;
   text-align: left;
   background: transparent;
-  color: #f2f8ff;
-  font-weight: 800;
+  color: var(--text);
+  font-weight: var(--font-weight-regular);
   cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
 .nav-btn:hover,
 .nav-btn.active {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--surface-soft);
+  border-left-color: var(--brand-700);
+  color: var(--brand-700);
 }
 
 .nav-btn:active {
@@ -142,13 +158,13 @@ body {
   justify-content: space-between;
   gap: 10px;
   border-bottom: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.9);
+  background: #ffffff;
   backdrop-filter: blur(8px);
 }
 
 .topbar h2 {
   margin: 0;
-  font-family: 'Manrope', 'Segoe UI', sans-serif;
+  font-family: var(--font-family-base);
   font-size: 34px;
   line-height: 1.05;
 }
@@ -205,7 +221,7 @@ body {
 .select,
 .textarea {
   width: 100%;
-  border: 1px solid #c6d8ec;
+  border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--surface);
   color: var(--text);
@@ -218,8 +234,8 @@ body {
 .select:focus,
 .textarea:focus {
   outline: none;
-  border-color: var(--brand-600);
-  box-shadow: 0 0 0 3px rgba(47, 120, 186, 0.14);
+  border-color: var(--brand-700);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.16);
 }
 
 .textarea {
@@ -229,7 +245,7 @@ body {
 
 .label {
   font-size: 11px;
-  font-weight: 800;
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.06em;
   color: var(--text-soft);
   text-transform: uppercase;
@@ -246,7 +262,7 @@ body {
   border-radius: 11px;
   padding: 9px 13px;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: var(--font-weight-bold);
   cursor: pointer;
   transition: transform 0.16s ease, opacity 0.16s ease, filter 0.16s ease;
 }
@@ -265,14 +281,14 @@ body {
 }
 
 .btn-primary {
-  background: linear-gradient(120deg, var(--brand-700), var(--brand-800));
+  background: var(--brand-700);
   color: #ffffff;
 }
 
 .btn-secondary {
-  background: #e9f3ff;
-  color: #194d81;
-  border-color: #cadef3;
+  background: var(--surface-soft);
+  color: var(--brand-700);
+  border-color: var(--line);
 }
 
 .btn-danger {
@@ -282,20 +298,20 @@ body {
 }
 
 .btn-ghost {
-  background: #f3f8ff;
-  color: #2e547f;
-  border-color: #d2e1f1;
+  background: #ffffff;
+  color: var(--text);
+  border-color: var(--line);
 }
 
 .message {
   margin: 0;
-  border: 1px solid #c9dcf1;
+  border: 1px solid var(--line);
   border-radius: 10px;
   padding: 8px 10px;
-  background: #f4f9ff;
+  background: var(--surface-soft);
   font-size: 13px;
-  font-weight: 700;
-  color: #245584;
+  font-weight: var(--font-weight-medium);
+  color: var(--brand-700);
 }
 
 .message.success {
@@ -324,26 +340,26 @@ body {
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 10px;
-  background: linear-gradient(180deg, #ffffff, #f9fcff);
+  background: var(--surface-soft);
 }
 
 .metric-title {
   font-size: 11px;
   color: var(--text-soft);
   text-transform: uppercase;
-  font-weight: 800;
+  font-weight: var(--font-weight-bold);
 }
 
 .metric-value {
   margin-top: 6px;
   font-size: clamp(28px, 4vw, 34px);
   line-height: 1;
-  font-family: 'Manrope', 'Segoe UI', sans-serif;
+  font-family: var(--font-family-base);
 }
 
 .table-wrap {
   overflow: auto;
-  border: 1px solid #d8e4f2;
+  border: 1px solid var(--line);
   border-radius: 14px;
 }
 
@@ -357,7 +373,7 @@ table {
 th,
 td {
   padding: 9px;
-  border-bottom: 1px solid #e3edf8;
+  border-bottom: 1px solid var(--line);
   text-align: left;
   vertical-align: top;
   font-size: 13px;
@@ -368,7 +384,7 @@ th {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text-soft);
-  background: #f6fafe;
+  background: var(--surface-soft);
 }
 
 .status {
@@ -377,14 +393,14 @@ th {
   border-radius: 999px;
   padding: 5px 10px;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: var(--font-weight-bold);
   border: 1px solid transparent;
 }
 
 .status-created {
-  color: #1f62a3;
-  background: #eaf4ff;
-  border-color: #bfd9f5;
+  color: var(--brand-700);
+  background: var(--surface-soft);
+  border-color: #c7d2fe;
 }
 
 .status-inprogress {
@@ -406,13 +422,13 @@ th {
 }
 
 .badge {
-  border: 1px solid #cadaeb;
-  background: #f3f9ff;
-  color: #2d5d8d;
+  border: 1px solid var(--line);
+  background: var(--surface-soft);
+  color: var(--brand-700);
   border-radius: 999px;
   padding: 4px 10px;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: var(--font-weight-bold);
 }
 
 .details-grid {
@@ -434,18 +450,18 @@ th {
 }
 
 .timeline-item {
-  border: 1px solid #d8e5f2;
+  border: 1px solid var(--line);
   border-radius: 12px;
   padding: 10px;
-  background: #fbfdff;
+  background: var(--surface-soft);
 }
 
 .empty {
-  border: 1px dashed #b8cce1;
+  border: 1px dashed var(--line);
   border-radius: 12px;
   padding: 12px;
   color: var(--muted);
-  background: #f8fbff;
+  background: var(--surface-soft);
 }
 
 @media (max-width: 1280px) {

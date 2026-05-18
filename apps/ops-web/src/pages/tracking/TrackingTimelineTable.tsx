@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 
 import type { TrackingTimelineEventDto } from '../../features/tracking/tracking.types';
 import { formatDateTime } from '../../utils/format';
@@ -25,8 +25,12 @@ export function TrackingTimelineTable({
         {items.map((event) => (
           <tr key={event.id}>
             <td style={styles.cell}>
-              <div>{event.eventType}</div>
-              {event.eventTypeCode ? (
+              <div style={{ fontWeight: 'bold' }}>{event.eventType}</div>
+              {event.note ? (
+                <div style={{ color: '#0369a1', fontSize: '11px', marginTop: '4px', fontStyle: 'italic' }}>
+                  {event.note}
+                </div>
+              ) : event.eventTypeCode ? (
                 <small style={styles.subtle}>{event.eventTypeCode}</small>
               ) : null}
             </td>
