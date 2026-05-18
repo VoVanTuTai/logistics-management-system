@@ -668,7 +668,7 @@ feat(admin-web): add admin audit log viewer
 
 ---
 
-## 14. Prompt Wave 6 - session refresh admin-web
+## 14. Prompt Wave 6 - session refresh admin-web - DONE
 
 **Muc tieu:** Xu ly token het han dung cach thay vi de TODO.
 
@@ -706,9 +706,36 @@ feat(admin-web): refresh admin sessions automatically
 - Het han access token khong lam app trang trang.
 - Refresh fail thi logout ro rang.
 
+### Bao cao Wave 6 - Admin session refresh
+
+**Trang thai:** Hoan thanh.
+
+**Thay doi da lam:**
+- Xac nhan backend da co `POST /auth/refresh` va `POST /auth/logout` trong `auth-service`.
+- Hoan thien `apps/admin-web/src/features/auth/auth.session.ts`:
+  - Khi hydrate session, kiem tra `refreshTokenExpiresAt`.
+  - Neu access token gan het han thi goi refresh truoc khi restore authenticated session.
+  - Luu lai session moi vao localStorage va auth store sau refresh thanh cong.
+  - Refresh fail thi xoa session, chuyen ve guest va hien loi dang nhap lai.
+  - Dung chung mot `refreshSessionPromise` de tranh nhieu request refresh cung luc.
+- Cap nhat `apps/admin-web/src/services/api/client.ts`:
+  - Truoc request co `accessToken`, tu dong lay token con hop le hoac refresh neu gan het han.
+  - Neu API tra 401, thu refresh mot lan roi retry request voi access token moi.
+  - Neu refresh fail, request fail ro rang va session bi clear.
+- Cap nhat `auth.client.ts` de bo TODO refresh contract va khong auto-refresh khi logout/refresh endpoint tu goi chinh no.
+- Bo sung `skipAuthRefresh` vao request options de tranh refresh loop.
+
+**Tac dong nghiep vu/ky thuat:**
+- Admin-web khong bi trang trang khi access token het han trong luc dang dung app.
+- Nhieu request dong thoi khi token het han chi kich hoat mot refresh call.
+- Neu refresh token het han hoac refresh fail, admin duoc logout ro rang va can dang nhap lai.
+
+**Kiem chung:**
+- `cd apps/admin-web && npx tsc --noEmit`: pass.
+
 ---
 
-## 15. Prompt Wave 7 - smoke tests admin
+## 15. Prompt Wave 7 - smoke tests admin - DONE
 
 **Muc tieu:** Co bang chung ky thuat de bao cao: cac luong admin chinh co test.
 
@@ -744,6 +771,32 @@ test(admin-web): add smoke coverage for admin workflows
 **Tieu chi xong:**
 - Co lenh test lap lai duoc.
 - Test fail that khi luong chinh bi vo.
+
+### Bao cao Wave 7 - Admin smoke tests
+
+**Trang thai:** Hoan thanh.
+
+**Thay doi da lam:**
+- Them tooling test nhe cho `apps/admin-web` bang Vitest + Testing Library + jsdom.
+- Them script `test:smoke` trong `apps/admin-web/package.json`.
+- Tao `apps/admin-web/vitest.config.ts` va `apps/admin-web/src/test/setup.ts`.
+- Tao smoke suite `apps/admin-web/src/__tests__/admin-smoke.test.tsx` voi mock API gon, khong can database that.
+- Smoke suite bao phu:
+  - Login guard: chua login bi dua ve man hinh dang nhap, khong vao dashboard.
+  - Dashboard KPI shell render voi data API mock.
+  - User admin: create validation khong submit payload rong, update user submit payload hop le.
+  - Hub masterdata: form validation va flow `Vo hieu hoa` bang update `isActive=false`, khong hard delete.
+  - Permission matrix: save thanh cong va hien loi khi backend save fail.
+
+**Tac dong nghiep vu/ky thuat:**
+- Co lenh test lap lai duoc de chung minh cac luong admin chinh khong bi vo.
+- Test mock o tang UI/API hook nen khong phu thuoc database hoac service dang chay.
+- Neu login guard, KPI shell, form validation, disable flow hoac permission save bi vo thi `test:smoke` fail that.
+
+**Kiem chung:**
+- `cd apps/admin-web && npm run test:smoke`: pass, 5 tests.
+- `cd apps/admin-web && npx tsc --noEmit`: pass.
+- Ghi chu: React Router co warning future flag v7 trong test, khong lam fail smoke suite.
 
 ---
 

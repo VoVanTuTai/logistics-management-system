@@ -1,0 +1,541 @@
+import React from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import {
+  cleanup,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
+
+import { AppRouter } from '../app/AppRouter';
+import { AdminDashboardPage } from '../pages/dashboard/AdminDashboardPage';
+import { HubManagementPage } from '../pages/masterdata/HubManagementPage';
+import { CourierPermissionMatrixPage } from '../pages/permissions/CourierPermissionMatrixPage';
+import { OpsUsersPage } from '../pages/users/OpsUsersPage';
+import { useAuthStore } from '../store/authStore';
+import type {
+  AdminUserDto,
+  AuthSessionDto,
+  UserRoleGroup,
+} from '../features/auth/auth.types';
+import type {
+  ConfigDto,
+  HubDto,
+  NdrReasonDto,
+  ZoneDto,
+} from '../features/masterdata/masterdata.types';
+import {
+  COURIER_PERMISSION_FEATURES,
+  type CourierPermissionMatrix,
+  type UserPermissionMap,
+} from '../features/permissions/courierPermissionMatrix';
+
+const mocks = vi.hoisted(() => ({
+  loginMutation: {
+    mutateAsync: vi.fn(),
+    isPending: false,
+  },
+  logoutMutation: {
+    mutateAsync: vi.fn(),
+    isPending: false,
+  },
+  createUserMutation: {
+    mutateAsync: vi.fn(),
+    isPending: false,
+  },
+  updateUserMutation: {
+    mutateAsync: vi.fn(),
+    isPending: false,
+  },
+  createHubMutation: {
+    mutateAsync: vi.fn(),
+    isPending: false,
+  },
+  updateHubMutation: {
+    mutateAsync: vi.fn(),
+    isPending: false,
+  },
+  updateMatrixMutation: {
+    mutateAsync: vi.fn(),
+    isPending: false,
+  },
+  updateUserOverrideMutation: {
+    mutateAsync: vi.fn(),
+    isPending: false,
+  },
+  usersByRole: {} as Record<string, AdminUserDto[]>,
+  hubs: [] as HubDto[],
+  zones: [] as ZoneDto[],
+  ndrReasons: [] as NdrReasonDto[],
+  configs: [] as ConfigDto[],
+  matrix: null as CourierPermissionMatrix | null,
+  effectivePermissions: null as {
+    userId: string;
+    actor: string;
+    permissions: UserPermissionMap;
+    hasOverride: boolean;
+  } | null,
+  matrixError: null as Error | null,
+  userEffectiveError: null as Error | null,
+}));
+
+vi.mock('../features/auth/auth.api', () => ({
+  useLoginMutation: () => mocks.loginMutation,
+  useLogoutMutation: () => mocks.logoutMutation,
+  useAdminUsersQuery: (
+    _accessToken: string | null,
+    filters: { roleGroup: UserRoleGroup },
+  ) => querySuccess(mocks.usersByRole[filters.roleGroup] ?? []),
+  useCreateAdminUserMutation: () => mocks.createUserMutation,
+  useUpdateAdminUserMutation: () => mocks.updateUserMutation,
+  useDeleteAdminUserMutation: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
+}));
+
+vi.mock('../features/masterdata/masterdata.api', () => ({
+  useHubsQuery: () => querySuccess(mocks.hubs),
+  useZonesQuery: () => querySuccess(mocks.zones),
+  useNdrReasonsQuery: () => querySuccess(mocks.ndrReasons),
+  useConfigsQuery: () => querySuccess(mocks.configs),
+  useCreateHubMutation: () => mocks.createHubMutation,
+  useUpdateHubMutation: () => mocks.updateHubMutation,
+  useCreateZoneMutation: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
+  useUpdateZoneMutation: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
+  useCreateNdrReasonMutation: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
+  useUpdateNdrReasonMutation: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
+  useCreateConfigMutation: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
+  useUpdateConfigMutation: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
+}));
+
+vi.mock('../features/permissions/permissions.api', () => ({
+  useCourierPermissionMatrixQuery: () =>
+    mocks.matrixError
+      ? queryError(mocks.matrixError)
+      : querySuccess(mocks.matrix),
+  useUpdateCourierPermissionMatrixMutation: () => mocks.updateMatrixMutation,
+  useUpdateUserPermissionOverrideMutation: () => mocks.updateUserOverrideMutation,
+  useUserEffectivePermissionsQuery: () =>
+    mocks.userEffectiveError
+      ? queryError(mocks.userEffectiveError)
+      : querySuccess(mocks.effectivePermissions),
+}));
+
+vi.mock('../pages/dashboard/AdminDashboardCharts', () => ({
+  AdminDashboardCharts: () => <div>Biểu đồ smoke</div>,
+}));
+
+function querySuccess<T>(data: T) {
+  return {
+    data,
+    error: null,
+    isError: false,
+    isFetching: false,
+    isLoading: false,
+    isSuccess: true,
+    refetch: vi.fn(),
+  };
+}
+
+function queryError(error: Error) {
+  return {
+    data: undefined,
+    error,
+    isError: true,
+    isFetching: false,
+    isLoading: false,
+    isSuccess: false,
+    refetch: vi.fn(),
+  };
+}
+
+function renderWithProviders(
+  ui: React.ReactElement,
+  options: { route?: string; router?: boolean } = {},
+) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
+    },
+  });
+  const content = options.router === false ? (
+    ui
+  ) : (
+    <MemoryRouter initialEntries={[options.route ?? '/']}>{ui}</MemoryRouter>
+  );
+
+  return render(
+    <QueryClientProvider client={queryClient}>{content}</QueryClientProvider>,
+  );
+}
+
+function setAdminSession() {
+  const session: AuthSessionDto = {
+    user: {
+      id: '10000001',
+      username: '10000001',
+      displayName: 'System Admin',
+      phone: null,
+      roles: ['SYSTEM_ADMIN'],
+      hubCodes: [],
+    },
+    tokens: {
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+      tokenType: 'Bearer',
+      accessTokenExpiresAt: new Date(Date.now() + 900_000).toISOString(),
+      refreshTokenExpiresAt: new Date(Date.now() + 2_592_000_000).toISOString(),
+    },
+  };
+
+  useAuthStore.getState().setSession(session);
+}
+
+function resetMocks() {
+  mocks.loginMutation.mutateAsync.mockReset();
+  mocks.logoutMutation.mutateAsync.mockReset();
+  mocks.createUserMutation.mutateAsync.mockReset();
+  mocks.updateUserMutation.mutateAsync.mockReset();
+  mocks.createHubMutation.mutateAsync.mockReset();
+  mocks.updateHubMutation.mutateAsync.mockReset();
+  mocks.updateMatrixMutation.mutateAsync.mockReset();
+  mocks.updateUserOverrideMutation.mutateAsync.mockReset();
+
+  mocks.usersByRole = {
+    OPS: [],
+    SHIPPER: [],
+    MERCHANT: [],
+  };
+  mocks.hubs = [];
+  mocks.zones = [];
+  mocks.ndrReasons = [];
+  mocks.configs = [];
+  mocks.matrix = createMatrix(false);
+  mocks.effectivePermissions = null;
+  mocks.matrixError = null;
+  mocks.userEffectiveError = null;
+
+  window.localStorage.clear();
+  useAuthStore.getState().clearSession();
+  useAuthStore.getState().clearAuthError();
+}
+
+function createUser(overrides: Partial<AdminUserDto>): AdminUserDto {
+  return {
+    id: overrides.id ?? 'user-1',
+    username: overrides.username ?? '20000001',
+    status: overrides.status ?? 'ACTIVE',
+    roles: overrides.roles ?? ['OPS_VIEWER'],
+    displayName: overrides.displayName ?? 'Ops User',
+    phone: overrides.phone ?? null,
+    hubCodes: overrides.hubCodes ?? [],
+    createdAt: overrides.createdAt ?? '2026-05-18T00:00:00.000Z',
+    updatedAt: overrides.updatedAt ?? '2026-05-18T00:00:00.000Z',
+  };
+}
+
+function createHub(overrides: Partial<HubDto>): HubDto {
+  return {
+    id: overrides.id ?? 'hub-1',
+    code: overrides.code ?? 'HCM-001',
+    name: overrides.name ?? 'Hub HCM',
+    zoneCode: overrides.zoneCode ?? 'ZONE-HCM',
+    address:
+      overrides.address ??
+      JSON.stringify({
+        addressLine: '1 Nguyen Hue',
+        ward: 'Ben Nghe',
+        district: 'Quan 1',
+        province: 'Ho Chi Minh',
+      }),
+    isActive: overrides.isActive ?? true,
+    createdAt: overrides.createdAt ?? '2026-05-18T00:00:00.000Z',
+    updatedAt: overrides.updatedAt ?? '2026-05-18T00:00:00.000Z',
+  };
+}
+
+function createZone(overrides: Partial<ZoneDto>): ZoneDto {
+  return {
+    id: overrides.id ?? 'zone-1',
+    code: overrides.code ?? 'ZONE-HCM',
+    name: overrides.name ?? 'Zone HCM',
+    parentCode: overrides.parentCode ?? null,
+    isActive: overrides.isActive ?? true,
+    createdAt: overrides.createdAt ?? '2026-05-18T00:00:00.000Z',
+    updatedAt: overrides.updatedAt ?? '2026-05-18T00:00:00.000Z',
+  };
+}
+
+function createNdrReason(overrides: Partial<NdrReasonDto>): NdrReasonDto {
+  return {
+    id: overrides.id ?? 'ndr-1',
+    code: overrides.code ?? 'NO_CONTACT',
+    description: overrides.description ?? 'Không liên hệ được',
+    isActive: overrides.isActive ?? true,
+    createdAt: overrides.createdAt ?? '2026-05-18T00:00:00.000Z',
+    updatedAt: overrides.updatedAt ?? '2026-05-18T00:00:00.000Z',
+  };
+}
+
+function createConfig(overrides: Partial<ConfigDto>): ConfigDto {
+  return {
+    id: overrides.id ?? 'config-1',
+    key: overrides.key ?? 'system.pickup_sla',
+    value: overrides.value ?? 24,
+    scope: overrides.scope ?? 'SYSTEM',
+    description: overrides.description ?? null,
+    createdAt: overrides.createdAt ?? '2026-05-18T00:00:00.000Z',
+    updatedAt: overrides.updatedAt ?? '2026-05-18T00:00:00.000Z',
+  };
+}
+
+function createMatrix(value: boolean): CourierPermissionMatrix {
+  return {
+    COURIER: createPermissionMap(value),
+    OPS: createPermissionMap(value),
+  };
+}
+
+function createPermissionMap(value: boolean): UserPermissionMap {
+  return COURIER_PERMISSION_FEATURES.reduce((permissions, feature) => {
+    permissions[feature.id] = value;
+    return permissions;
+  }, {} as UserPermissionMap);
+}
+
+beforeEach(() => {
+  resetMocks();
+  vi.spyOn(window, 'confirm').mockReturnValue(true);
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  cleanup();
+});
+
+describe('admin smoke workflows', () => {
+  it('redirects unauthenticated users away from protected admin routes', async () => {
+    window.history.pushState({}, '', '/app/dashboard');
+
+    renderWithProviders(<AppRouter />, { router: false });
+
+    expect(
+      await screen.findByRole('heading', {
+        name: /đăng nhập he thong quan tri/i,
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/tổng quan admin/i)).not.toBeInTheDocument();
+  });
+
+  it('renders the dashboard KPI shell from mocked API data', async () => {
+    setAdminSession();
+    mocks.usersByRole = {
+      OPS: [createUser({ id: 'ops-1', username: '20000001' })],
+      SHIPPER: [
+        createUser({
+          id: 'courier-1',
+          username: '30000001',
+          roles: ['COURIER'],
+        }),
+      ],
+      MERCHANT: [
+        createUser({
+          id: 'merchant-1',
+          username: '41100001',
+          roles: ['MERCHANT'],
+          status: 'DISABLED',
+        }),
+      ],
+    };
+    mocks.hubs = [createHub({})];
+    mocks.zones = [createZone({})];
+    mocks.ndrReasons = [createNdrReason({})];
+    mocks.configs = [createConfig({})];
+
+    renderWithProviders(<AdminDashboardPage />);
+
+    expect(
+      await screen.findByRole('heading', { name: /tổng quan admin/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Tổng người dùng')).toBeInTheDocument();
+    expect(screen.getByText('Tài khoản Ops')).toBeInTheDocument();
+    expect(screen.getByText('Hub')).toBeInTheDocument();
+    expect(screen.getByText(/số liệu được lấy từ api/i)).toBeInTheDocument();
+  });
+
+  it('keeps create user validation client-side and submits valid updates', async () => {
+    const user = userEvent.setup();
+    setAdminSession();
+    mocks.usersByRole = {
+      OPS: [
+        createUser({
+          id: 'ops-1',
+          username: '20000001',
+          displayName: 'Old Ops',
+        }),
+      ],
+      SHIPPER: [],
+      MERCHANT: [],
+    };
+    mocks.hubs = [createHub({ code: 'HCM-001' })];
+    mocks.updateUserMutation.mutateAsync.mockResolvedValue(
+      createUser({
+        id: 'ops-1',
+        username: '20000001',
+        displayName: 'Updated Ops',
+      }),
+    );
+
+    renderWithProviders(<OpsUsersPage />);
+
+    await user.click(screen.getByRole('button', { name: /^tao tai khoan$/i }));
+    expect(mocks.createUserMutation.mutateAsync).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: /^sua$/i }));
+    await user.clear(screen.getByLabelText(/ten hien thi/i));
+    await user.type(screen.getByLabelText(/ten hien thi/i), 'Updated Ops');
+    await user.click(screen.getByRole('button', { name: /luu tai khoan/i }));
+
+    await waitFor(() =>
+      expect(mocks.updateUserMutation.mutateAsync).toHaveBeenCalledWith({
+        userId: 'ops-1',
+        payload: expect.objectContaining({
+          displayName: 'Updated Ops',
+          roles: ['OPS_VIEWER'],
+          status: 'ACTIVE',
+        }),
+      }),
+    );
+  });
+
+  it('validates hub form and uses disable flow instead of hard delete', async () => {
+    const user = userEvent.setup();
+    setAdminSession();
+    mocks.hubs = [createHub({ id: 'hub-1', code: 'HCM-001', isActive: true })];
+    mocks.zones = [createZone({ code: 'ZONE-HCM' })];
+    mocks.usersByRole = {
+      OPS: [],
+      SHIPPER: [],
+      MERCHANT: [],
+    };
+    mocks.updateHubMutation.mutateAsync.mockResolvedValue(
+      createHub({ id: 'hub-1', code: 'HCM-001', isActive: false }),
+    );
+
+    renderWithProviders(<HubManagementPage />);
+
+    await user.click(screen.getByRole('button', { name: /tạo bưu cục/i }));
+    const createDialog = await screen.findByRole('dialog', {
+      name: /tạo hub/i,
+    });
+    await user.type(within(createDialog).getByLabelText(/mã hub/i), 'HCM-002');
+    await user.type(
+      within(createDialog).getByLabelText(/tên hub/i),
+      'Hub HCM 2',
+    );
+    await user.selectOptions(
+      within(createDialog).getByLabelText(/mã zone/i),
+      'ZONE-HCM',
+    );
+    await user.selectOptions(
+      within(createDialog).getByLabelText(/tỉnh\/thành/i),
+      'Ho Chi Minh',
+    );
+    await user.selectOptions(
+      within(createDialog).getByLabelText(/quận\/huyện/i),
+      'District 1',
+    );
+    await user.click(
+      within(createDialog).getByRole('button', { name: /^tạo hub$/i }),
+    );
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /phường\/xã là bắt buộc/i,
+    );
+    expect(mocks.createHubMutation.mutateAsync).not.toHaveBeenCalled();
+
+    await user.click(within(createDialog).getByRole('button', { name: /dong/i }));
+    await user.click(screen.getByRole('button', { name: /vô hiệu hóa/i }));
+
+    await waitFor(() =>
+      expect(mocks.updateHubMutation.mutateAsync).toHaveBeenCalledWith({
+        hubId: 'hub-1',
+        payload: {
+          isActive: false,
+        },
+      }),
+    );
+    expect(window.confirm).toHaveBeenCalledWith(
+      expect.stringContaining('Dữ liệu bưu cục'),
+    );
+  });
+
+  it('saves permission matrix successfully and reports backend failures', async () => {
+    const user = userEvent.setup();
+    setAdminSession();
+    mocks.matrix = createMatrix(false);
+    mocks.updateMatrixMutation.mutateAsync.mockResolvedValue(createMatrix(true));
+
+    renderWithProviders(<CourierPermissionMatrixPage />);
+
+    const courierCard = screen
+      .getByText(/shipper\/courier thao tác/i)
+      .closest('article') as HTMLElement;
+    await user.click(
+      within(courierCard).getByRole('button', { name: /bật tất cả/i }),
+    );
+    await user.click(screen.getByRole('button', { name: /lưu thay đổi/i }));
+
+    expect(
+      await screen.findByText(/đã lưu ma trận phân quyền chung lên backend/i),
+    ).toBeInTheDocument();
+
+    mocks.updateMatrixMutation.mutateAsync.mockRejectedValueOnce(
+      new Error('backend down'),
+    );
+
+    const opsCard = screen
+      .getByText(/nhân sự điều hành\/hub/i)
+      .closest('article') as HTMLElement;
+    await user.click(
+      within(opsCard).getByRole('button', { name: /tắt tất cả/i }),
+    );
+    await user.click(screen.getByRole('button', { name: /lưu thay đổi/i }));
+
+    expect(
+      await screen.findByRole('alert'),
+    ).toHaveTextContent(/không lưu được ma trận phân quyền: backend down/i);
+  });
+});
