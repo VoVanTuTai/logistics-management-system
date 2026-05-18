@@ -19,6 +19,10 @@ import type {
 import { ManifestRepository } from '../../domain/repositories/manifest.repository';
 import { ManifestStateMachine } from '../../domain/state-machine/manifest-state-machine';
 import { ManifestOutboxService } from '../../messaging/outbox/manifest-outbox.service';
+import {
+  OpsAuditService,
+  type OpsAuditContext,
+} from './ops-audit.service';
 
 @Injectable()
 export class ManifestsService {
@@ -27,6 +31,7 @@ export class ManifestsService {
     private readonly manifestRepository: ManifestRepository,
     private readonly manifestStateMachine: ManifestStateMachine,
     private readonly manifestOutboxService: ManifestOutboxService,
+    private readonly opsAuditService: OpsAuditService,
   ) {}
 
   list(): Promise<Manifest[]> {
@@ -182,7 +187,11 @@ export class ManifestsService {
     return this.manifestRepository.delete(id);
   }
 
-  async addShipments(id: string, input: AddShipmentsInput): Promise<Manifest> {
+  async addShipments(
+    id: string,
+    input: AddShipmentsInput,
+    auditContext?: OpsAuditContext,
+  ): Promise<Manifest> {
     const manifest = await this.getById(id);
 
     if (!this.manifestStateMachine.canEdit(manifest.status)) {
@@ -210,12 +219,22 @@ export class ManifestsService {
         ? await this.manifestRepository.update(id, { note: input.note })
         : updatedManifest;
 
+    await this.opsAuditService.record({
+      context: auditContext,
+      action: 'MANIFEST_SHIPMENTS_ADDED',
+      targetType: 'MANIFEST',
+      targetId: manifest.id,
+      before: manifest,
+      after: finalizedManifest,
+    });
+
     return finalizedManifest;
   }
 
   async removeShipments(
     id: string,
     input: RemoveShipmentsInput,
+    auditContext?: OpsAuditContext,
   ): Promise<Manifest> {
     const manifest = await this.getById(id);
 
@@ -260,10 +279,23 @@ export class ManifestsService {
       );
     }
 
+    await this.opsAuditService.record({
+      context: auditContext,
+      action: 'MANIFEST_SHIPMENTS_REMOVED',
+      targetType: 'MANIFEST',
+      targetId: manifest.id,
+      before: manifest,
+      after: finalizedManifest,
+    });
+
     return finalizedManifest;
   }
 
-  async seal(id: string, input: SealManifestInput): Promise<Manifest> {
+  async seal(
+    id: string,
+    input: SealManifestInput,
+    auditContext?: OpsAuditContext,
+  ): Promise<Manifest> {
     const manifest = await this.getById(id);
 
     if (!this.manifestStateMachine.canSeal(manifest.status)) {
@@ -299,10 +331,23 @@ export class ManifestsService {
       note: input.note,
     });
 
+    await this.opsAuditService.record({
+      context: auditContext,
+      action: 'MANIFEST_SEALED',
+      targetType: 'MANIFEST',
+      targetId: manifest.id,
+      before: manifest,
+      after: sealedManifest,
+    });
+
     return sealedManifest;
   }
 
-  async receive(id: string, input: ReceiveManifestInput): Promise<Manifest> {
+  async receive(
+    id: string,
+    input: ReceiveManifestInput,
+    auditContext?: OpsAuditContext,
+  ): Promise<Manifest> {
     const manifest = await this.getById(id);
 
     if (!this.manifestStateMachine.canReceive(manifest.status)) {
@@ -314,6 +359,15 @@ export class ManifestsService {
     const receivedManifest = await this.manifestRepository.receive(id, input);
 
     await this.manifestOutboxService.enqueueManifestReceived(receivedManifest);
+
+    await this.opsAuditService.record({
+      context: auditContext,
+      action: 'MANIFEST_RECEIVED',
+      targetType: 'MANIFEST',
+      targetId: manifest.id,
+      before: manifest,
+      after: receivedManifest,
+    });
 
     return receivedManifest;
   }

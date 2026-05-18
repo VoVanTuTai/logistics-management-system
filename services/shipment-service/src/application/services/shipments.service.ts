@@ -13,6 +13,7 @@ import type {
   CreateShipmentInput,
   Shipment,
   ShipmentListFilters,
+  ShipmentListPage,
   UpdateShipmentInput,
 } from '../../domain/entities/shipment.entity';
 import type { ShipmentConsumedEventType } from '../../domain/entities/shipment-status.entity';
@@ -32,7 +33,11 @@ export class ShipmentsService {
     private readonly shipmentOutboxService: ShipmentOutboxService,
   ) {}
 
-  list(filters: ShipmentListFilters = {}): Promise<Shipment[]> {
+  list(filters: ShipmentListFilters = {}): Promise<Shipment[] | ShipmentListPage> {
+    if (filters.limit !== undefined || filters.offset !== undefined) {
+      return this.shipmentRepository.listPage(filters);
+    }
+
     return this.shipmentRepository.list(filters);
   }
 

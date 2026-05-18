@@ -2,7 +2,7 @@ import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 
 import { ServiceRegistryClient } from './service-registry.client';
 
-type AuthenticatedUserView = {
+export type AuthenticatedUserView = {
   id: string;
   username: string;
   displayName?: string | null;
@@ -10,7 +10,7 @@ type AuthenticatedUserView = {
   hubCodes?: string[];
 };
 
-type IntrospectResponse = {
+export type IntrospectResponse = {
   active: boolean;
   sessionId: string | null;
   user: AuthenticatedUserView | null;

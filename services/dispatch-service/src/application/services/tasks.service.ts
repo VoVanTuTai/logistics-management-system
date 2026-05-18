@@ -24,6 +24,10 @@ import {
 import { TaskRepository } from '../../domain/repositories/task.repository';
 import { DispatchOutboxService } from '../../messaging/outbox/dispatch-outbox.service';
 import { TasksRealtimeGateway } from '../../realtime/tasks-realtime.gateway';
+import {
+  OpsAuditService,
+  type OpsAuditContext,
+} from './ops-audit.service';
 
 @Injectable()
 export class TasksService {
@@ -32,6 +36,7 @@ export class TasksService {
     private readonly taskRepository: TaskRepository,
     private readonly dispatchOutboxService: DispatchOutboxService,
     private readonly tasksRealtimeGateway: TasksRealtimeGateway,
+    private readonly opsAuditService: OpsAuditService,
   ) {}
 
   list(filters: {
@@ -80,7 +85,11 @@ export class TasksService {
     return task;
   }
 
-  async assign(id: string, input: AssignTaskInput): Promise<Task> {
+  async assign(
+    id: string,
+    input: AssignTaskInput,
+    auditContext?: OpsAuditContext,
+  ): Promise<Task> {
     const currentTask = await this.getById(id);
     this.ensureAssignableTask(currentTask);
     const courierId = this.requireCourierId(input.courierId);
@@ -100,11 +109,23 @@ export class TasksService {
 
     await this.dispatchOutboxService.enqueueTaskAssigned(task);
     this.tasksRealtimeGateway.publishTaskChanged('assigned', task);
+    await this.opsAuditService.record({
+      context: auditContext,
+      action: 'TASK_ASSIGNED',
+      targetType: 'TASK',
+      targetId: task.id,
+      before: currentTask,
+      after: task,
+    });
 
     return task;
   }
 
-  async reassign(id: string, input: ReassignTaskInput): Promise<Task> {
+  async reassign(
+    id: string,
+    input: ReassignTaskInput,
+    auditContext?: OpsAuditContext,
+  ): Promise<Task> {
     const currentTask = await this.getById(id);
     this.ensureAssignableTask(currentTask);
     const courierId = this.requireCourierId(input.courierId);
@@ -124,6 +145,14 @@ export class TasksService {
 
     await this.dispatchOutboxService.enqueueTaskAssigned(task);
     this.tasksRealtimeGateway.publishTaskChanged('reassigned', task);
+    await this.opsAuditService.record({
+      context: auditContext,
+      action: 'TASK_REASSIGNED',
+      targetType: 'TASK',
+      targetId: task.id,
+      before: currentTask,
+      after: task,
+    });
 
     return task;
   }

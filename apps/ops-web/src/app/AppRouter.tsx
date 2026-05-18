@@ -13,68 +13,233 @@ import { useLogoutMutation } from '../features/auth/auth.api';
 import { LoginPage } from '../pages/auth/LoginPage';
 import { DashboardPage } from '../pages/dashboard/DashboardPage';
 import { ComingSoonPlaceholder } from '../pages/shared/ComingSoonPlaceholder';
-import { BasicDataGroupPage } from '../pages/function-groups/basic-data/BasicDataGroupPage';
-import { BranchLocalOrderOverviewPage } from '../pages/function-groups/branch-business/local-orders/BranchLocalOrderOverviewPage';
-import { BranchDeliveryDispatchPage } from '../pages/function-groups/branch-business/delivery-dispatch/BranchDeliveryDispatchPage';
-import { BranchBusinessOrderCreatePage } from '../pages/function-groups/branch-business/order-create/BranchBusinessOrderCreatePage';
-import { BranchDeliveryOrderManagementPage } from '../pages/function-groups/branch-business/order-delivery/BranchDeliveryOrderManagementPage';
-import { BranchOutboundOrderManagementPage } from '../pages/function-groups/branch-business/order-outbound/BranchOutboundOrderManagementPage';
-import { BranchBusinessFeaturePlaceholderPage } from '../pages/function-groups/branch-business/shared/BranchBusinessFeaturePlaceholderPage';
-import { CapabilityPlatformGroupPage } from '../pages/function-groups/capability-platform/CapabilityPlatformGroupPage';
-import { CustomerPlatformGroupPage } from '../pages/function-groups/customer-platform/CustomerPlatformGroupPage';
-import { CustomerOrderDispatchPage } from '../pages/function-groups/customer-platform/order-dispatch/CustomerOrderDispatchPage';
-import { DatabaseGroupPage } from '../pages/function-groups/database/DatabaseGroupPage';
-import { FinanceSettlementGroupPage } from '../pages/function-groups/finance-settlement/FinanceSettlementGroupPage';
-import { IntegrationServicesGroupPage } from '../pages/function-groups/integration-services/IntegrationServicesGroupPage';
-import { OperationsMetricsGroupPage } from '../pages/function-groups/operations-metrics/OperationsMetricsGroupPage';
-import { OpsMetricsInventoryMonitorPage } from '../pages/function-groups/operations-metrics/deadline/OpsMetricsInventoryMonitorPage';
-import { OperationsMetricsFeaturePlaceholderPage } from '../pages/function-groups/operations-metrics/shared/OperationsMetricsFeaturePlaceholderPage';
-import { OperationsPlatformGroupPage } from '../pages/function-groups/operations-platform/OperationsPlatformGroupPage';
-import { MonitorData2In1Page } from '../pages/function-groups/operations-platform/data-monitoring/MonitorData2In1Page';
-import { MonitorDataDongBaoPage } from '../pages/function-groups/operations-platform/data-monitoring/MonitorDataDongBaoPage';
-import { MonitorDataHangDenPage } from '../pages/function-groups/operations-platform/data-monitoring/MonitorDataHangDenPage';
-import { MonitorDataHangGuiPage } from '../pages/function-groups/operations-platform/data-monitoring/MonitorDataHangGuiPage';
-import { MonitorDataHangNhanPage } from '../pages/function-groups/operations-platform/data-monitoring/MonitorDataHangNhanPage';
-import { MonitorDataHangPhatPage } from '../pages/function-groups/operations-platform/data-monitoring/MonitorDataHangPhatPage';
-import { MonitorDataTheoDoiTamUngPage } from '../pages/function-groups/operations-platform/data-monitoring/MonitorDataTheoDoiTamUngPage';
-import { ReturnBlockManagementPage } from '../pages/function-groups/operations-platform/return-block/ReturnBlockManagementPage';
-import { ReturnBlockRegistrationPage } from '../pages/function-groups/operations-platform/return-block/ReturnBlockRegistrationPage';
-import { ThermalLabelManagementPage } from '../pages/function-groups/operations-platform/thermal-label/ThermalLabelManagementPage';
-import { ThermalLabelPrintPage } from '../pages/function-groups/operations-platform/thermal-label/ThermalLabelPrintPage';
-import { LinehaulTripManagementPage } from '../pages/function-groups/operations-platform/linehaul/LinehaulTripManagementPage';
-import { LinehaulVehicleSealPage } from '../pages/function-groups/operations-platform/linehaul/LinehaulVehicleSealPage';
-import { PlanningPlatformGroupPage } from '../pages/function-groups/planning-platform/PlanningPlatformGroupPage';
-import { ServiceQualityGroupPage } from '../pages/function-groups/service-quality/ServiceQualityGroupPage';
-import { ServiceQualityMonitorDeliveredPage } from '../pages/function-groups/service-quality/proactive/ServiceQualityMonitorDeliveredPage';
-import { ServiceQualityMonitorReceivedPage } from '../pages/function-groups/service-quality/proactive/ServiceQualityMonitorReceivedPage';
 import { FunctionGroupLandingPage } from '../pages/function-groups/shared/FunctionGroupLandingPage';
-import { SmartDevicesGroupPage } from '../pages/function-groups/smart-devices/SmartDevicesGroupPage';
-import { ConfigManagementPage } from '../pages/masterdata/ConfigManagementPage';
-import { HubManagementPage } from '../pages/masterdata/HubManagementPage';
-import { NdrReasonManagementPage } from '../pages/masterdata/NdrReasonManagementPage';
-import { ZoneManagementPage } from '../pages/masterdata/ZoneManagementPage';
-import { ManifestDetailPage } from '../pages/manifests/ManifestDetailPage';
-import { ManifestManagementPage } from '../pages/manifests/ManifestManagementPage';
-import { NdrCaseDetailPage } from '../pages/ndr/NdrCaseDetailPage';
-import { NdrHandlingPage } from '../pages/ndr/NdrHandlingPage';
-import { PickupApprovalsPage } from '../pages/pickups/PickupApprovalsPage';
-import { PickupRequestDetailPage } from '../pages/pickups/PickupRequestDetailPage';
-import { HubScanPage } from '../pages/scans/HubScanPage';
-import { ShipmentDetailPage } from '../pages/shipments/ShipmentDetailPage';
-import { ShipmentListPage } from '../pages/shipments/ShipmentListPage';
-import { TaskAssignmentPage } from '../pages/tasks/TaskAssignmentPage';
-import { TaskDetailPage } from '../pages/tasks/TaskDetailPage';
-import { TrackingDetailPage } from '../pages/tracking/TrackingDetailPage';
-import { TrackingLookupPage } from '../pages/tracking/TrackingLookupPage';
 import { routePaths } from '../navigation/routes';
 import { useAuthStore } from '../store/authStore';
 import { appEnv } from '../utils/env';
 import { formatRoleLabel } from '../utils/logisticsLabels';
 
+function lazyRoutePage<T extends React.ComponentType<any>>(
+  loader: () => Promise<Record<string, T>>,
+  exportName: string,
+): React.LazyExoticComponent<T> {
+  return lazy(async () => ({
+    default: (await loader())[exportName],
+  }));
+}
+
 const AnalyticsDashboardPage = lazy(() =>
   import('../pages/dashboard/analytics/AnalyticsDashboardPage').then((module) => ({
     default: module.AnalyticsDashboardPage,
   })),
+);
+const BasicDataGroupPage = lazyRoutePage(
+  () => import('../pages/function-groups/basic-data/BasicDataGroupPage'),
+  'BasicDataGroupPage',
+);
+const BranchLocalOrderOverviewPage = lazyRoutePage(
+  () => import('../pages/function-groups/branch-business/local-orders/BranchLocalOrderOverviewPage'),
+  'BranchLocalOrderOverviewPage',
+);
+const BranchDeliveryDispatchPage = lazyRoutePage(
+  () => import('../pages/function-groups/branch-business/delivery-dispatch/BranchDeliveryDispatchPage'),
+  'BranchDeliveryDispatchPage',
+);
+const BranchBusinessOrderCreatePage = lazyRoutePage(
+  () => import('../pages/function-groups/branch-business/order-create/BranchBusinessOrderCreatePage'),
+  'BranchBusinessOrderCreatePage',
+);
+const BranchDeliveryOrderManagementPage = lazyRoutePage(
+  () => import('../pages/function-groups/branch-business/order-delivery/BranchDeliveryOrderManagementPage'),
+  'BranchDeliveryOrderManagementPage',
+);
+const BranchOutboundOrderManagementPage = lazyRoutePage(
+  () => import('../pages/function-groups/branch-business/order-outbound/BranchOutboundOrderManagementPage'),
+  'BranchOutboundOrderManagementPage',
+);
+const BranchBusinessFeaturePlaceholderPage = lazyRoutePage(
+  () => import('../pages/function-groups/branch-business/shared/BranchBusinessFeaturePlaceholderPage'),
+  'BranchBusinessFeaturePlaceholderPage',
+);
+const CapabilityPlatformGroupPage = lazyRoutePage(
+  () => import('../pages/function-groups/capability-platform/CapabilityPlatformGroupPage'),
+  'CapabilityPlatformGroupPage',
+);
+const CustomerPlatformGroupPage = lazyRoutePage(
+  () => import('../pages/function-groups/customer-platform/CustomerPlatformGroupPage'),
+  'CustomerPlatformGroupPage',
+);
+const CustomerOrderDispatchPage = lazyRoutePage(
+  () => import('../pages/function-groups/customer-platform/order-dispatch/CustomerOrderDispatchPage'),
+  'CustomerOrderDispatchPage',
+);
+const DatabaseGroupPage = lazyRoutePage(
+  () => import('../pages/function-groups/database/DatabaseGroupPage'),
+  'DatabaseGroupPage',
+);
+const FinanceSettlementGroupPage = lazyRoutePage(
+  () => import('../pages/function-groups/finance-settlement/FinanceSettlementGroupPage'),
+  'FinanceSettlementGroupPage',
+);
+const IntegrationServicesGroupPage = lazyRoutePage(
+  () => import('../pages/function-groups/integration-services/IntegrationServicesGroupPage'),
+  'IntegrationServicesGroupPage',
+);
+const OperationsMetricsGroupPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-metrics/OperationsMetricsGroupPage'),
+  'OperationsMetricsGroupPage',
+);
+const OpsMetricsInventoryMonitorPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-metrics/deadline/OpsMetricsInventoryMonitorPage'),
+  'OpsMetricsInventoryMonitorPage',
+);
+const OperationsMetricsFeaturePlaceholderPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-metrics/shared/OperationsMetricsFeaturePlaceholderPage'),
+  'OperationsMetricsFeaturePlaceholderPage',
+);
+const OperationsPlatformGroupPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-platform/OperationsPlatformGroupPage'),
+  'OperationsPlatformGroupPage',
+);
+const MonitorData2In1Page = lazyRoutePage(
+  () => import('../pages/function-groups/operations-platform/data-monitoring/MonitorData2In1Page'),
+  'MonitorData2In1Page',
+);
+const MonitorDataDongBaoPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-platform/data-monitoring/MonitorDataDongBaoPage'),
+  'MonitorDataDongBaoPage',
+);
+const MonitorDataHangDenPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-platform/data-monitoring/MonitorDataHangDenPage'),
+  'MonitorDataHangDenPage',
+);
+const MonitorDataHangGuiPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-platform/data-monitoring/MonitorDataHangGuiPage'),
+  'MonitorDataHangGuiPage',
+);
+const MonitorDataHangNhanPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-platform/data-monitoring/MonitorDataHangNhanPage'),
+  'MonitorDataHangNhanPage',
+);
+const MonitorDataHangPhatPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-platform/data-monitoring/MonitorDataHangPhatPage'),
+  'MonitorDataHangPhatPage',
+);
+const MonitorDataTheoDoiTamUngPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-platform/data-monitoring/MonitorDataTheoDoiTamUngPage'),
+  'MonitorDataTheoDoiTamUngPage',
+);
+const ReturnBlockManagementPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-platform/return-block/ReturnBlockManagementPage'),
+  'ReturnBlockManagementPage',
+);
+const ReturnBlockRegistrationPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-platform/return-block/ReturnBlockRegistrationPage'),
+  'ReturnBlockRegistrationPage',
+);
+const ThermalLabelManagementPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-platform/thermal-label/ThermalLabelManagementPage'),
+  'ThermalLabelManagementPage',
+);
+const ThermalLabelPrintPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-platform/thermal-label/ThermalLabelPrintPage'),
+  'ThermalLabelPrintPage',
+);
+const LinehaulTripManagementPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-platform/linehaul/LinehaulTripManagementPage'),
+  'LinehaulTripManagementPage',
+);
+const LinehaulVehicleSealPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-platform/linehaul/LinehaulVehicleSealPage'),
+  'LinehaulVehicleSealPage',
+);
+const PlanningPlatformGroupPage = lazyRoutePage(
+  () => import('../pages/function-groups/planning-platform/PlanningPlatformGroupPage'),
+  'PlanningPlatformGroupPage',
+);
+const ServiceQualityGroupPage = lazyRoutePage(
+  () => import('../pages/function-groups/service-quality/ServiceQualityGroupPage'),
+  'ServiceQualityGroupPage',
+);
+const ServiceQualityMonitorDeliveredPage = lazyRoutePage(
+  () => import('../pages/function-groups/service-quality/proactive/ServiceQualityMonitorDeliveredPage'),
+  'ServiceQualityMonitorDeliveredPage',
+);
+const ServiceQualityMonitorReceivedPage = lazyRoutePage(
+  () => import('../pages/function-groups/service-quality/proactive/ServiceQualityMonitorReceivedPage'),
+  'ServiceQualityMonitorReceivedPage',
+);
+const SmartDevicesGroupPage = lazyRoutePage(
+  () => import('../pages/function-groups/smart-devices/SmartDevicesGroupPage'),
+  'SmartDevicesGroupPage',
+);
+const ConfigManagementPage = lazyRoutePage(
+  () => import('../pages/masterdata/ConfigManagementPage'),
+  'ConfigManagementPage',
+);
+const HubManagementPage = lazyRoutePage(
+  () => import('../pages/masterdata/HubManagementPage'),
+  'HubManagementPage',
+);
+const NdrReasonManagementPage = lazyRoutePage(
+  () => import('../pages/masterdata/NdrReasonManagementPage'),
+  'NdrReasonManagementPage',
+);
+const ZoneManagementPage = lazyRoutePage(
+  () => import('../pages/masterdata/ZoneManagementPage'),
+  'ZoneManagementPage',
+);
+const ManifestDetailPage = lazyRoutePage(
+  () => import('../pages/manifests/ManifestDetailPage'),
+  'ManifestDetailPage',
+);
+const ManifestManagementPage = lazyRoutePage(
+  () => import('../pages/manifests/ManifestManagementPage'),
+  'ManifestManagementPage',
+);
+const NdrCaseDetailPage = lazyRoutePage(
+  () => import('../pages/ndr/NdrCaseDetailPage'),
+  'NdrCaseDetailPage',
+);
+const NdrHandlingPage = lazyRoutePage(
+  () => import('../pages/ndr/NdrHandlingPage'),
+  'NdrHandlingPage',
+);
+const PickupApprovalsPage = lazyRoutePage(
+  () => import('../pages/pickups/PickupApprovalsPage'),
+  'PickupApprovalsPage',
+);
+const PickupRequestDetailPage = lazyRoutePage(
+  () => import('../pages/pickups/PickupRequestDetailPage'),
+  'PickupRequestDetailPage',
+);
+const HubScanPage = lazyRoutePage(
+  () => import('../pages/scans/HubScanPage'),
+  'HubScanPage',
+);
+const ShipmentDetailPage = lazyRoutePage(
+  () => import('../pages/shipments/ShipmentDetailPage'),
+  'ShipmentDetailPage',
+);
+const ShipmentListPage = lazyRoutePage(
+  () => import('../pages/shipments/ShipmentListPage'),
+  'ShipmentListPage',
+);
+const TaskAssignmentPage = lazyRoutePage(
+  () => import('../pages/tasks/TaskAssignmentPage'),
+  'TaskAssignmentPage',
+);
+const TaskDetailPage = lazyRoutePage(
+  () => import('../pages/tasks/TaskDetailPage'),
+  'TaskDetailPage',
+);
+const TrackingDetailPage = lazyRoutePage(
+  () => import('../pages/tracking/TrackingDetailPage'),
+  'TrackingDetailPage',
+);
+const TrackingLookupPage = lazyRoutePage(
+  () => import('../pages/tracking/TrackingLookupPage'),
+  'TrackingLookupPage',
 );
 
 function AuthGuard(): React.JSX.Element {
@@ -1186,8 +1351,13 @@ function DashboardLayout(): React.JSX.Element {
 }
 
 export function AppRouter(): React.JSX.Element {
+  const lazyRoute = (element: React.ReactNode) => (
+    <Suspense fallback={<RouteLoadingFallback />}>{element}</Suspense>
+  );
   const prototypeRoute = (title: string, element: React.ReactNode) => (
-    <PrototypeRoute title={title}>{element}</PrototypeRoute>
+    <Suspense fallback={<RouteLoadingFallback />}>
+      <PrototypeRoute title={title}>{element}</PrototypeRoute>
+    </Suspense>
   );
 
   return (
@@ -1202,9 +1372,7 @@ export function AppRouter(): React.JSX.Element {
               path={routePaths.analyticsDashboardLeaf}
               element={
                 <PrototypeRoute title="Analytics Dashboard">
-                  <Suspense fallback={<RouteLoadingFallback />}>
-                    <AnalyticsDashboardPage />
-                  </Suspense>
+                  {lazyRoute(<AnalyticsDashboardPage />)}
                 </PrototypeRoute>
               }
             />
@@ -1574,26 +1742,26 @@ export function AppRouter(): React.JSX.Element {
               path={routePaths.groupPlanningPlatformLeaf}
               element={prototypeRoute('Nền tảng quy hoạch', <PlanningPlatformGroupPage />)}
             />
-            <Route path={routePaths.shipmentsLeaf} element={<ShipmentListPage />} />
-            <Route path={routePaths.shipmentDetailLeaf} element={<ShipmentDetailPage />} />
-            <Route path={routePaths.pickupsLeaf} element={<PickupApprovalsPage />} />
-            <Route path={routePaths.pickupDetailLeaf} element={<PickupRequestDetailPage />} />
-            <Route path={routePaths.tasksLeaf} element={<TaskAssignmentPage />} />
-            <Route path={routePaths.taskDetailLeaf} element={<TaskDetailPage />} />
-            <Route path={routePaths.manifestsLeaf} element={<ManifestManagementPage />} />
-            <Route path={routePaths.manifestDetailLeaf} element={<ManifestDetailPage />} />
-            <Route path={routePaths.scansLeaf} element={<HubScanPage />} />
-            <Route path={routePaths.ndrLeaf} element={<NdrHandlingPage />} />
-            <Route path={routePaths.ndrDetailLeaf} element={<NdrCaseDetailPage />} />
-            <Route path={routePaths.trackingLeaf} element={<TrackingLookupPage />} />
-            <Route path={routePaths.trackingDetailLeaf} element={<TrackingDetailPage />} />
-            <Route path={routePaths.masterdataHubsLeaf} element={<HubManagementPage />} />
-            <Route path={routePaths.masterdataZonesLeaf} element={<ZoneManagementPage />} />
+            <Route path={routePaths.shipmentsLeaf} element={lazyRoute(<ShipmentListPage />)} />
+            <Route path={routePaths.shipmentDetailLeaf} element={lazyRoute(<ShipmentDetailPage />)} />
+            <Route path={routePaths.pickupsLeaf} element={lazyRoute(<PickupApprovalsPage />)} />
+            <Route path={routePaths.pickupDetailLeaf} element={lazyRoute(<PickupRequestDetailPage />)} />
+            <Route path={routePaths.tasksLeaf} element={lazyRoute(<TaskAssignmentPage />)} />
+            <Route path={routePaths.taskDetailLeaf} element={lazyRoute(<TaskDetailPage />)} />
+            <Route path={routePaths.manifestsLeaf} element={lazyRoute(<ManifestManagementPage />)} />
+            <Route path={routePaths.manifestDetailLeaf} element={lazyRoute(<ManifestDetailPage />)} />
+            <Route path={routePaths.scansLeaf} element={lazyRoute(<HubScanPage />)} />
+            <Route path={routePaths.ndrLeaf} element={lazyRoute(<NdrHandlingPage />)} />
+            <Route path={routePaths.ndrDetailLeaf} element={lazyRoute(<NdrCaseDetailPage />)} />
+            <Route path={routePaths.trackingLeaf} element={lazyRoute(<TrackingLookupPage />)} />
+            <Route path={routePaths.trackingDetailLeaf} element={lazyRoute(<TrackingDetailPage />)} />
+            <Route path={routePaths.masterdataHubsLeaf} element={lazyRoute(<HubManagementPage />)} />
+            <Route path={routePaths.masterdataZonesLeaf} element={lazyRoute(<ZoneManagementPage />)} />
             <Route
               path={routePaths.masterdataNdrReasonsLeaf}
-              element={<NdrReasonManagementPage />}
+              element={lazyRoute(<NdrReasonManagementPage />)}
             />
-            <Route path={routePaths.masterdataConfigsLeaf} element={<ConfigManagementPage />} />
+            <Route path={routePaths.masterdataConfigsLeaf} element={lazyRoute(<ConfigManagementPage />)} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to={routePaths.login} replace />} />

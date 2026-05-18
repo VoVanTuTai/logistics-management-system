@@ -10,6 +10,7 @@ import {
   type BagTransportMethod,
 } from '../../../../printing/bagLabelPrint';
 import { useAuthStore } from '../../../../store/authStore';
+import { useUiStore } from '../../../../store/uiStore';
 import { formatDateTime } from '../../../../utils/format';
 import './ThermalLabelPrintPage.css';
 
@@ -24,6 +25,7 @@ interface BagLabelPreviewItem extends BagLabelPrintPayload {
 
 export function ThermalLabelPrintPage(): React.JSX.Element {
   const session = useAuthStore((state) => state.session);
+  const showToast = useUiStore((state) => state.showToast);
   const accessToken = session?.tokens.accessToken ?? null;
   const hubsQuery = useHubsQuery(accessToken, {});
   const generateMutation = useGenerateBagCodesMutation(accessToken);
@@ -223,7 +225,7 @@ export function ThermalLabelPrintPage(): React.JSX.Element {
   const onPrintSingle = (item: BagLabelPreviewItem) => {
     const opened = openBagLabelBatchPrint([item]);
     if (!opened) {
-      alert('Trình duyệt đang chặn cửa sổ in. Hãy cho phép popup rồi thử lại.');
+      showToast('Trình duyệt đang chặn cửa sổ in. Hãy cho phép popup rồi thử lại.', 'error');
     }
   };
 

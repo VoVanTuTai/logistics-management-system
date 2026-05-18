@@ -4,6 +4,7 @@ import qrcode from 'qrcode-generator';
 import { routePaths } from '../../../../navigation/routes';
 import { opsApiClient } from '../../../../services/api/client';
 import { opsEndpoints } from '../../../../services/api/endpoints';
+import { useUiStore } from '../../../../store/uiStore';
 import { 
   Plus, 
   Search, 
@@ -124,6 +125,7 @@ const getQrDataUrl = (data: any) => {
 
 export function LinehaulTripManagementPage() {
   const navigate = useNavigate();
+  const showToast = useUiStore((state) => state.showToast);
   const [isFilterExpanded, setIsFilterExpanded] = useState(true);
   const [tasks, setTasks] = useState<TaskRecord[]>([]);
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
@@ -407,12 +409,12 @@ export function LinehaulTripManagementPage() {
               className="ops-btn ops-btn--primary ops-btn--icon-text"
               onClick={() => {
                 if (selectedTasks.length === 0) {
-                  alert("Vui lòng chọn ít nhất 1 chuyến xe để in tem");
+                  showToast('Vui lòng chọn ít nhất 1 chuyến xe để in tem.', 'error');
                 } else if (selectedTasks.length === 1) {
                   const task = tasks.find(t => t.id === selectedTasks[0]);
                   if (task) openPrintModal(task);
                 } else {
-                  alert("Tính năng in hàng loạt đang được phát triển.");
+                  showToast('Tính năng in hàng loạt đang được phát triển.', 'info');
                 }
               }}
             >

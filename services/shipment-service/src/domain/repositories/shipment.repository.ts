@@ -2,12 +2,14 @@ import type {
   CreateShipmentInput,
   Shipment,
   ShipmentListFilters,
+  ShipmentListPage,
   UpdateShipmentInput,
 } from '../entities/shipment.entity';
 import type { ShipmentCurrentStatus } from '../entities/shipment-status.entity';
 
 export abstract class ShipmentRepository {
   abstract list(filters: ShipmentListFilters): Promise<Shipment[]>;
+  abstract listPage(filters: ShipmentListFilters): Promise<ShipmentListPage>;
   abstract findByCode(code: string): Promise<Shipment | null>;
   abstract create(input: CreateShipmentInput): Promise<Shipment>;
   abstract update(code: string, input: UpdateShipmentInput): Promise<Shipment>;
