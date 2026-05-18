@@ -1,18 +1,27 @@
 import { opsApiClient } from '../../services/api/client';
+import { ApiClientError } from '../../services/api/errors';
 import { opsEndpoints } from '../../services/api/endpoints';
+import { getValidAccessToken } from '../auth/auth.session';
+import { appEnv } from '../../utils/env';
 import type {
   AdminAuditLogDto,
   AdminAuditLogFilters,
+  AdminAuditLogPage,
   AdminAuditSource,
 } from './audit.types';
 
-type SourceKey = 'auth' | 'masterdata';
-
 function buildQueryString(filters: AdminAuditLogFilters): string {
   const params = new URLSearchParams();
+  const source = filters.source?.trim();
   const action = filters.action?.trim();
   const targetType = filters.targetType?.trim();
+  const targetId = filters.targetId?.trim();
   const actor = filters.actor?.trim();
+  const q = filters.q?.trim();
+
+  if (source) {
+    params.set('source', source);
+  }
 
   if (action) {
     params.set('action', action);
@@ -22,14 +31,30 @@ function buildQueryString(filters: AdminAuditLogFilters): string {
     params.set('targetType', targetType);
   }
 
+  if (targetId) {
+    params.set('targetId', targetId);
+  }
+
   if (actor) {
     params.set('actor', actor);
+  }
+
+  if (q) {
+    params.set('q', q);
   }
 
   if (filters.createdDate) {
     const range = toDateRange(filters.createdDate);
     params.set('createdFrom', range.createdFrom);
     params.set('createdTo', range.createdTo);
+  }
+
+  if (filters.limit) {
+    params.set('limit', filters.limit);
+  }
+
+  if (filters.offset) {
+    params.set('offset', filters.offset);
   }
 
   const queryString = params.toString();
@@ -50,23 +75,22 @@ function toDateRange(dateValue: string): {
   };
 }
 
-function getEndpoint(source: SourceKey): string {
-  return source === 'auth'
-    ? opsEndpoints.auth.adminAuditLogs
-    : opsEndpoints.masterdata.adminAuditLogs;
-}
-
-function getSourceLabel(source: SourceKey): AdminAuditSource {
-  return source === 'auth' ? 'auth-service' : 'masterdata-service';
-}
-
-function normalizeAuditResponse(
-  payload: unknown,
-  source: AdminAuditSource,
-): AdminAuditLogDto[] {
+function normalizeAuditResponse(payload: unknown): AdminAuditLogPage {
+  const record = isRecord(payload) ? payload : {};
   const rows = extractRows(payload);
+  const pageInfo = isRecord(record.pageInfo) ? record.pageInfo : {};
 
-  return rows.map((row, index) => normalizeAuditRow(row, source, index));
+  return {
+    items: rows.map((row, index) => normalizeAuditRow(row, index)),
+    pageInfo: {
+      nextCursor: getString(pageInfo.nextCursor) ?? undefined,
+      hasNextPage:
+        typeof pageInfo.hasNextPage === 'boolean'
+          ? pageInfo.hasNextPage
+          : false,
+      total: typeof pageInfo.total === 'number' ? pageInfo.total : rows.length,
+    },
+  };
 }
 
 function extractRows(payload: unknown): unknown[] {
@@ -90,11 +114,11 @@ function extractRows(payload: unknown): unknown[] {
 
 function normalizeAuditRow(
   row: unknown,
-  source: AdminAuditSource,
   index: number,
 ): AdminAuditLogDto {
   const record = isRecord(row) ? row : {};
   const createdAt = getString(record.createdAt) ?? new Date(0).toISOString();
+  const source = normalizeSource(record.source);
 
   return {
     id: getString(record.id) ?? `${source}-${index}-${createdAt}`,
@@ -113,6 +137,12 @@ function normalizeAuditRow(
   };
 }
 
+function normalizeSource(value: unknown): AdminAuditSource {
+  return value === 'auth-service' || value === 'masterdata-service'
+    ? value
+    : 'auth-service';
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -128,14 +158,38 @@ function getNullableString(value: unknown): string | null {
 export const auditClient = {
   listAuditLogs: async (
     accessToken: string | null,
-    source: SourceKey,
     filters: AdminAuditLogFilters,
-  ): Promise<AdminAuditLogDto[]> => {
+  ): Promise<AdminAuditLogPage> => {
     const payload = await opsApiClient.request<unknown>(
-      `${getEndpoint(source)}${buildQueryString(filters)}`,
+      `${opsEndpoints.admin.auditLogs}${buildQueryString(filters)}`,
       { accessToken },
     );
 
-    return normalizeAuditResponse(payload, getSourceLabel(source));
+    return normalizeAuditResponse(payload);
+  },
+
+  exportAuditLogs: async (
+    accessToken: string | null,
+    filters: AdminAuditLogFilters,
+  ): Promise<Blob> => {
+    const validAccessToken = await getValidAccessToken(accessToken);
+    const response = await fetch(
+      `${appEnv.gatewayBaseUrl}${opsEndpoints.admin.auditLogsExport}${buildQueryString(filters)}`,
+      {
+        headers: {
+          Accept: 'text/csv',
+          ...(validAccessToken ? { Authorization: `Bearer ${validAccessToken}` } : {}),
+        },
+      },
+    );
+
+    if (!response.ok) {
+      throw new ApiClientError({
+        message: `Export audit log thất bại với mã trạng thái ${response.status}.`,
+        status: response.status,
+      });
+    }
+
+    return response.blob();
   },
 };

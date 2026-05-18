@@ -21,11 +21,11 @@ export async function hydrateAuthSession(): Promise<void> {
   try {
     const session = JSON.parse(raw) as AuthSessionDto;
     if (!hasAdminRole(session)) {
-      throw new Error('Tài khoản hien tai khong co vai tro admin.');
+      throw new Error('Tài khoản hiện tại không có vai trò admin.');
     }
 
     if (isTokenExpired(session.tokens.refreshTokenExpiresAt)) {
-      throw new Error('Phien dang nhap da het han. Vui long dang nhap lai.');
+      throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
     }
 
     if (shouldRefreshAccessToken(session)) {
@@ -42,7 +42,7 @@ export async function hydrateAuthSession(): Promise<void> {
       .setAuthError(
         error instanceof Error
           ? error.message
-          : 'Du lieu phien dang nhap khong hop le. Vui long dang nhap lai.',
+          : 'Dữ liệu phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.',
       );
   } finally {
     if (!useAuthStore.getState().isAuthenticated) {
@@ -103,7 +103,7 @@ export async function refreshAuthSession(
   session: AuthSessionDto | null = getStoredAuthSession(),
 ): Promise<AuthSessionDto> {
   if (!session) {
-    throw new Error('Khong co phien dang nhap de lam moi.');
+    throw new Error('Không có phiên đăng nhập để làm mới.');
   }
 
   if (refreshSessionPromise) {
@@ -113,7 +113,7 @@ export async function refreshAuthSession(
   refreshSessionPromise = requestSessionRefresh(session)
     .then(async (refreshedSession) => {
       if (!hasAdminRole(refreshedSession)) {
-        throw new Error('Tai khoan hien tai khong co vai tro admin.');
+        throw new Error('Tài khoản hiện tại không có vai trò admin.');
       }
 
       await persistAuthSession(refreshedSession);
@@ -123,7 +123,7 @@ export async function refreshAuthSession(
       await clearAuthSession();
       useAuthStore
         .getState()
-        .setAuthError('Phien dang nhap da het han. Vui long dang nhap lai.');
+        .setAuthError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
       throw error;
     })
     .finally(() => {
@@ -196,5 +196,5 @@ function extractErrorMessage(payload: unknown, status: number): string {
     return payload.message;
   }
 
-  return `Yeu cau lam moi phien that bai voi ma trang thai ${status}.`;
+  return `Yêu cầu làm mới phiên thất bại với mã trạng thái ${status}.`;
 }

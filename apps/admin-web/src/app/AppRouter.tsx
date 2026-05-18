@@ -48,16 +48,16 @@ function AdminLayout(): React.JSX.Element {
 
   const navItems = useMemo(
     () => [
-      { label: 'Tổng quan', to: routePaths.dashboard },
-      { label: 'Tài khoản Ops', to: routePaths.opsUsers },
-      { label: 'Tài khoản Shipper', to: routePaths.shipperUsers },
-      { label: 'Tai khoan Merchant', to: routePaths.merchantUsers },
-      { label: 'Phân quyền mobile', to: routePaths.courierPermissions },
-      { label: 'Audit log', to: routePaths.auditLogs },
-      { label: 'Hub', to: routePaths.masterdataHubs },
-      { label: 'Zone', to: routePaths.masterdataZones },
-      { label: 'Ly do NDR', to: routePaths.masterdataNdrReasons },
-      { label: 'Cau hinh', to: routePaths.masterdataConfigs },
+      { label: 'Tổng quan', to: routePaths.dashboard, testId: 'nav-dashboard' },
+      { label: 'Tài khoản Ops', to: routePaths.opsUsers, testId: 'nav-users-ops' },
+      { label: 'Tài khoản Shipper', to: routePaths.shipperUsers, testId: 'nav-users-shippers' },
+      { label: 'Tài khoản Merchant', to: routePaths.merchantUsers, testId: 'nav-users-merchants' },
+      { label: 'Phân quyền mobile', to: routePaths.courierPermissions, testId: 'nav-permissions' },
+      { label: 'Audit log', to: routePaths.auditLogs, testId: 'nav-audit' },
+      { label: 'Hub', to: routePaths.masterdataHubs, testId: 'nav-hubs' },
+      { label: 'Zone', to: routePaths.masterdataZones, testId: 'nav-zones' },
+      { label: 'Lý do NDR', to: routePaths.masterdataNdrReasons, testId: 'nav-ndr-reasons' },
+      { label: 'Cấu hình', to: routePaths.masterdataConfigs, testId: 'nav-configs' },
     ],
     [],
   );
@@ -72,23 +72,24 @@ function AdminLayout(): React.JSX.Element {
       <aside className="admin-sidebar">
         <div>
           <h1>Quản trị hệ thống</h1>
-          <p>Quản trị hệ thống va du lieu danh muc</p>
+          <p>Quản trị hệ thống và dữ liệu danh mục</p>
         </div>
 
         <div className="admin-user-card">
           <strong>{session?.user.username ?? 'admin'}</strong>
           <small>vai tro: {(session?.user.roles ?? []).join(', ')}</small>
-          <button type="button" onClick={() => void onLogout()}>
+          <button type="button" data-testid="admin-logout" onClick={() => void onLogout()}>
             Đăng xuất
           </button>
         </div>
 
         <nav className="admin-nav-group">
-          <h2>Du lieu danh muc</h2>
+          <h2>Dữ liệu danh mục</h2>
           {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
+              data-testid={item.testId}
               className={({ isActive }) =>
                 isActive ? 'admin-nav-link admin-nav-link-active' : 'admin-nav-link'
               }
@@ -108,7 +109,7 @@ function AdminLayout(): React.JSX.Element {
           <span className="admin-tag">SYSTEM_ADMIN</span>
         </header>
 
-        <main className="admin-main-panel">
+        <main className="admin-main-panel" data-testid="admin-main">
           <Outlet />
         </main>
       </div>

@@ -1,4 +1,8 @@
 export const opsEndpoints = {
+  admin: {
+    auditLogs: '/ops/admin/audit-logs',
+    auditLogsExport: '/ops/admin/audit-logs/export',
+  },
   auth: {
     // Gateway route pattern is /{group}/{service}/..., auth-service routes are /auth/*
     login: '/ops/auth/auth/login',
@@ -70,6 +74,11 @@ export const opsEndpoints = {
     ndrReasonDetail: (reasonId: string) => `/ops/masterdata/ndr-reasons/${reasonId}`,
     configs: '/ops/masterdata/configs',
     configDetail: (configId: string) => `/ops/masterdata/configs/${configId}`,
+    merchantProfiles: '/ops/masterdata/merchant-profiles',
+    merchantProfileByUsername: (username: string) =>
+      `/ops/masterdata/merchant-profiles/by-username/${encodeURIComponent(username)}`,
+    merchantProfileDetail: (profileId: string) =>
+      `/ops/masterdata/merchant-profiles/${profileId}`,
     adminAuditLogs: '/ops/masterdata/admin-audit-logs',
   },
 } as const;

@@ -1,875 +1,294 @@
-# Ke hoach Admin Hardening truoc bao cao do an
-
-> **Muc tieu:** Bo sung cac diem thieu quan trong cua phan Admin de khi bao cao it bi bat loi ve nghiep vu va ky thuat: phan quyen that, audit log, dashboard co so lieu, xoa mem, validation danh muc, session refresh va test smoke.
-
-Tai lieu nay duoc thiet ke de lam tung phan rieng biet. Moi prompt ben duoi co **pham vi file rieng**, tranh viec vibe nhieu agent/nhieu lan lam de len nhau.
-
----
-
-## 1. Nguyen tac lam viec
-
-- Lam theo tung wave, moi wave nen tao mot branch/commit rieng.
-- Truoc moi wave chay `git status --short` de biet file nao dang co thay doi.
-- Khong sua cung luc `RBAC`, `audit`, `dashboard`, `soft delete` trong mot prompt.
-- Frontend-only wave khong sua backend. Backend wave khong nắn UI neu khong can.
-- Neu co xung dot voi thay doi dang co, giu thay doi hien tai va bao lai thay vi revert.
-- Sau moi wave chay toi thieu `npx tsc --noEmit` trong app/service lien quan. Chi chay `npm run build` neu node_modules/Rollup optional dependency on dinh.
+# Báo Cáo Rút Gọn: Hoàn Thiện Module Admin
 
----
-
-## 2. Thu tu uu tien
+## 1. Mục Tiêu
 
-| Uu tien | Hang muc | Ly do | Ket qua can co |
-|--------|----------|-------|----------------|
-| P0 | Backend hoa RBAC courier-mobile | Lo hong lon nhat: localStorage khong enforce server-side | Quyen luu backend, gateway/courier endpoint co check |
-| P0 | Audit log thao tac admin | Admin co quyen cao, can truy vet ai sua gi | Co bang/API audit va ghi log user/hub/zone/config/NDR |
-| P1 | Dashboard admin dung du lieu that | Trang tong quan hien con tinh | KPI lay tu API hien co |
-| P1 | Disable/soft delete | Logistics khong nen xoa cung du lieu da phat sinh | Nut xoa doi thanh vo hieu hoa/an toan |
-| P1 | Validation danh muc | Giam loi nghiep vu khi tao hub/zone/config | Validate unique, cycle, JSON schema, dia chi |
-| P2 | Session refresh | TODO con de lai trong auth.session.ts | Het han token thi refresh/logout dung cach |
-| P2 | Don file thua + text tieng Viet | Giam cau hoi "code rac" khi bao cao | Xoa file mistake, dong bo text |
-| P2 | Smoke tests admin | Chung minh luong chinh khong vo | Test login guard, CRUD/user/hub, save permission |
-
----
-
-## 3. Chia wave de khong de len nhau
-
-| Wave | Ten | Pham vi so huu file | Khong duoc sua |
-|------|-----|----------------------|----------------|
-| 0 | Cleanup an toan | `apps/admin-web/src/features/permissions/adminPermissions.ts`, `apps/admin-web/src/store/permissionStore.ts`, `apps/admin-web/src/pages/permissions/AdminAuthorizationPage.tsx`, route/import lien quan neu co | Backend, dashboard, user/hub CRUD |
-| 1 | Dashboard KPI that | `apps/admin-web/src/pages/dashboard/AdminDashboardPage.tsx`, CSS lien quan neu can, `apps/admin-web/src/features/*` chi doc/bo sung hook nho | RBAC permission page, backend schema |
-| 2 | Soft delete/disable | `UserManagementPage.tsx`, `MerchantUsersPage.tsx`, `HubManagementPage.tsx`, client API lien quan neu can | Dashboard, permission matrix |
-| 3A | Validation frontend | Cac page masterdata admin: hub/zone/config/NDR | Backend Prisma, RBAC |
-| 3B | Validation backend | `services/masterdata-service/**`, co the them DTO/helper validation | Admin UI khong lien quan |
-| 4A | RBAC backend contract | `services/auth-service/**` hoac service duoc chon lam permission source | Admin UI, courier UI |
-| 4B | RBAC admin integration | `CourierPermissionMatrixPage.tsx`, `courierPermissionMatrix.ts`, auth/admin API client | Gateway enforcement |
-| 4C | RBAC enforcement | `services/gateway-bff/**`, `apps/courier-mobile/**` permission fetch/cache | Admin dashboard |
-| 5A | Audit backend | `services/auth-service/**`, `services/masterdata-service/**` | Admin UI ngoai audit viewer |
-| 5B | Audit viewer optional | `apps/admin-web/src/pages/audit/**`, route/navigation | Service CRUD logic |
-| 6 | Session refresh | `apps/admin-web/src/features/auth/**`, `apps/admin-web/src/services/api/client.ts`, auth store | Masterdata pages |
-| 7 | Smoke tests | Test files/scripts only | Feature implementation |
-
----
-
-## 4. Prompt Wave 0 - don file thua - DONE
-
-**Muc tieu:** Xoa cac file da ghi ro "created by mistake and should be deleted" va dam bao khong con import/route treo.
-
-```text
-Ban dang lam trong repo logistics-management-system. Hay thuc hien Wave 0 Admin cleanup.
-
-Pham vi duoc sua:
-- apps/admin-web/src/features/permissions/adminPermissions.ts
-- apps/admin-web/src/store/permissionStore.ts
-- apps/admin-web/src/pages/permissions/AdminAuthorizationPage.tsx
-- Cac file route/import chi khi can go bo tham chieu den 3 file tren.
-
-Yeu cau:
-1. Tim toan bo import/reference den 3 file tren bang rg.
-2. Neu chung that su khong duoc dung, xoa file va xoa import/route treo.
-3. Khong sua CourierPermissionMatrixPage va khong sua backend.
-4. Chay:
-   cd apps/admin-web
-   npx tsc --noEmit
-5. Bao cao file da xoa/sua va neu co route nao bi anh huong.
-
-Commit goi y:
-chore(admin-web): remove unused permission prototype files
-```
-
-**Tieu chi xong:**
-- `rg "AdminAuthorizationPage|adminPermissions|permissionStore" apps/admin-web/src` khong con ket qua sai.
-- `npx tsc --noEmit` pass trong `apps/admin-web`.
-
-### Bao cao Wave 0 - Admin cleanup
-
-**Trang thai:** Hoan thanh.
-
-**Thay doi da lam:**
-- Da kiem tra reference bang `rg "AdminAuthorizationPage|adminPermissions|permissionStore" apps/admin-web/src`.
-- Khong tim thay import, route hoac usage nao den 3 file prototype.
-- Da xoa 3 file thua:
-  - `apps/admin-web/src/features/permissions/adminPermissions.ts`
-  - `apps/admin-web/src/store/permissionStore.ts`
-  - `apps/admin-web/src/pages/permissions/AdminAuthorizationPage.tsx`
-
-**Tac dong nghiep vu/ky thuat:**
-- Giam code rac trong phan admin permissions.
-- Tranh bi hoi ve cac file prototype khong dung khi review/báo cáo.
-- Khong thay doi hanh vi runtime vi cac file nay khong duoc import.
-
-**Kiem chung:**
-- `rg "AdminAuthorizationPage|adminPermissions|permissionStore" apps/admin-web/src`: khong con ket qua.
-- `cd apps/admin-web && npx tsc --noEmit`: pass.
-
----
-
-## 5. Prompt Wave 1 - dashboard admin dung du lieu that - DONE
-
-**Muc tieu:** Thay the cac so lieu tinh bang KPI lay tu API hien co: user theo role/status, hub active/inactive, zone active, NDR reason active, config count, merchant count.
-
-```text
-Hay lam Wave 1: Admin dashboard dung du lieu that.
-
-Pham vi duoc sua:
-- apps/admin-web/src/pages/dashboard/AdminDashboardPage.tsx
-- CSS/theme lien quan cua admin dashboard neu component hien tai dang dung class rieng.
-- apps/admin-web/src/features/auth/auth.api.ts hoac hook nho neu can tai su dung API user hien co.
-- apps/admin-web/src/features/masterdata/masterdata.hooks.ts chi khi can them hook dem data tu API hien co.
-
-Khong duoc sua:
-- Permission matrix / RBAC.
-- Backend schema/service.
-- UserManagementPage, HubManagementPage, ZoneManagementPage tru khi chi sua type import chung.
-
-Yeu cau:
-1. Doc cac client/hook hien co cua auth va masterdata truoc khi sua.
-2. Dashboard phai co cac KPI toi thieu:
-   - Tong user
-   - User ACTIVE / DISABLED
-   - So OPS / SHIPPER / MERCHANT
-   - Hub active / inactive
-   - Zone active
-   - NDR reason active
-   - Config count
-3. Co loading state, empty state va error state gon gang.
-4. Khong hard-code so KPI neu API da co data.
-5. UI tieng Viet co dau, khong de chu "Nguoi dung = Khong co".
-6. Chay:
-   cd apps/admin-web
-   npx tsc --noEmit
-
-Commit goi y:
-feat(admin-web): show real admin dashboard metrics
-```
-
-**Tieu chi xong:**
-- Dashboard khong con thong ke tinh gay nham lan.
-- Neu API loi, trang van hien thong bao gon, khong trang trang.
-
-### Bao cao Wave 1 - Admin dashboard metrics
-
-**Trang thai:** Hoan thanh.
-
-**Thay doi da lam:**
-- Da cap nhat `apps/admin-web/src/pages/dashboard/AdminDashboardPage.tsx` de lay so lieu tu cac query/API hien co.
-- Dashboard hien thi cac KPI that:
-  - Tong nguoi dung.
-  - User ACTIVE / DISABLED.
-  - So tai khoan Ops.
-  - So tai khoan Shipper.
-  - So tai khoan Merchant.
-  - Hub active / inactive.
-  - Zone active.
-  - NDR reason active.
-  - Config count.
-- Da bo cac chuoi thong ke tinh nhu `Nguoi dung = Khong co`.
-- Da them loading state, fetching state, empty state va error state gon gang cho dashboard.
-- Da cap nhat `apps/admin-web/src/app/theme.css` de hien thi status va mo ta KPI dep, gon, khong de chu de len nhau.
-- Da them `recharts` vao `apps/admin-web` de dashboard co bieu do truc quan.
-- Da bo sung 3 bieu do phan tich bam sat nghiep vu admin:
-  - Bieu do cot co cau tai khoan theo nhom Ops / Shipper / Merchant.
-  - Bieu do donut trang thai tai khoan ACTIVE / DISABLED.
-  - Bieu do cot stacked suc khoe masterdata theo active / inactive cho Hub, Zone, NDR va Config.
-- Da tach bieu do Recharts sang lazy chunk rieng `AdminDashboardCharts.tsx` de tranh loi thu vien chart lam trang trang toan bo admin.
-- Da them app-level error boundary cho `admin-web`, neu co runtime error se hien man hinh loi co nut tai lai thay vi trang trang.
-
-**Tac dong nghiep vu/ky thuat:**
-- Trang tong quan admin khong con la placeholder tinh.
-- Co the dung dashboard de bao cao nhanh quy mo du lieu masterdata va user hien co.
-- Khong them backend/API moi, chi tai su dung auth/masterdata API da co nen pham vi rui ro thap.
-- Neu mot API loi hoac API tra rong, dashboard van render va hien thong bao ro rang thay vi trang trang.
-- Bieu do giup giai thich nhanh co cau user, tinh trang tai khoan va muc do day du cua du lieu danh muc khi bao cao.
-- Neu bieu do loi, KPI va cac module admin van render duoc; phan chart hien fallback rieng.
-
-**Kiem chung:**
-- `cd apps/admin-web && npx tsc --noEmit`: pass.
-- `cd apps/admin-web && npm run build`: pass.
-
----
-
-## 6. Prompt Wave 2 - doi xoa cung sang disable/soft delete
-
-**Muc tieu:** User/hub khong bi xoa cung trong UI nghiep vu. Uu tien `status=DISABLED` voi user va `isActive=false` voi hub.
-
-```text
-Hay lam Wave 2: chuyen hanh vi xoa user/hub sang disable/soft delete trong admin-web.
-
-Pham vi duoc sua:
-- apps/admin-web/src/pages/users/UserManagementPage.tsx
-- apps/admin-web/src/pages/users/MerchantUsersPage.tsx
-- apps/admin-web/src/pages/masterdata/HubManagementPage.tsx
-- apps/admin-web/src/features/auth/auth.api.ts / auth.client.ts neu can dung update status hien co.
-- apps/admin-web/src/features/masterdata/masterdata.api.ts / masterdata.client.ts neu can dung update isActive hien co.
-
-Khong duoc sua:
-- Dashboard.
-- Permission matrix.
-- Backend Prisma/schema trong wave nay.
-
-Yeu cau:
-1. Tim nut "Xoa" user/hub va doi thanh "Vo hieu hoa" neu ban ghi dang active.
-2. Neu ban ghi da disabled/inactive, hien hanh dong "Kich hoat lai" neu API update ho tro.
-3. Khong goi delete API cho user/hub trong UI mac dinh.
-4. Confirm modal/text phai noi ro du lieu khong bi xoa, chi bi ngung su dung.
-5. Neu backend hien chi co delete ma khong co update status/isActive, dung API update da co neu ton tai; neu khong co, ghi ro can backend wave bo sung va khong fake thanh cong.
-6. Chay:
-   cd apps/admin-web
-   npx tsc --noEmit
-
-Commit goi y:
-fix(admin-web): use disable flow for users and hubs
-```
-
-**Tieu chi xong:**
-- UI khong con khuyen khich xoa cung user/hub.
-- Thong diep confirm dung nghiep vu logistics.
-
-**Tien do Wave 2: DONE**
-
-**Da thuc hien:**
-- `UserManagementPage.tsx`: bo nut `Xoa`, khong import/goi delete mutation; chuyen sang cap nhat `status=DISABLED` hoac `status=ACTIVE` bang update API hien co.
-- `MerchantUsersPage.tsx`: bo nut `Xoa`, khong import/goi delete mutation; chuyen sang vo hieu hoa/kich hoat lai merchant bang update API hien co, giu nguyen ho so merchant.
-- `HubManagementPage.tsx`: bo nut `Xoa`, khong import/goi delete mutation; nut hanh dong doi thanh `Vo hieu hoa` / `Kich hoat lai` va cap nhat `isActive=false/true`.
-- Confirm/action message da noi ro du lieu khong bi xoa, chi ngung su dung trong nghiep vu logistics.
-
-**Kiem chung:**
-- `cd apps/admin-web && npx tsc --noEmit`: pass.
-
----
-
-## 7. Prompt Wave 3A - validation frontend danh muc
-
-**Muc tieu:** Bat loi som tren UI truoc khi gui API.
-
-```text
-Hay lam Wave 3A: validation frontend cho danh muc admin.
-
-Pham vi duoc sua:
-- apps/admin-web/src/pages/masterdata/HubManagementPage.tsx
-- apps/admin-web/src/pages/masterdata/ZoneManagementPage.tsx
-- apps/admin-web/src/pages/masterdata/ConfigManagementPage.tsx
-- apps/admin-web/src/pages/masterdata/NdrReasonManagementPage.tsx
-- apps/admin-web/src/constants/vnLocations.ts chi doc/tao helper neu can.
-
-Khong duoc sua:
-- Backend service/Prisma.
-- Dashboard.
-- Permission matrix.
-
-Yeu cau:
-1. Hub:
-   - code bat buoc, uppercase/trim, khong trung voi danh sach dang load.
-   - ten hub bat buoc.
-   - province/district/ward phai hop le theo danh muc neu form co field nay.
-2. Zone:
-   - code/name bat buoc.
-   - chan parent tro ve chinh no tren UI.
-   - canh bao neu parent khong ton tai trong danh sach dang load.
-3. Config:
-   - key/scope bat buoc.
-   - value JSON phai parse duoc neu field dang nhap JSON.
-   - hien loi than thien, khong hien stack/JSON tho.
-4. NDR reason:
-   - code/name bat buoc, code unique trong list.
-5. Khong lam thay doi lon UI ngoai validation/error text.
-6. Chay:
-   cd apps/admin-web
-   npx tsc --noEmit
-
-Commit goi y:
-feat(admin-web): validate masterdata forms before submit
-```
-
-**Tieu chi xong:**
-- Nhap sai khong lam crash form.
-- Loi hien gan field/form, tieng Viet co dau.
-
-**Tien do Wave 3A: DONE**
-
-**Da thuc hien:**
-- `HubManagementPage.tsx`: them validate ma hub bat buoc, trim/uppercase, check trung trong danh sach dang tai; validate ten hub, zone, tinh/thanh, quan/huyen va phuong/xa truoc khi goi API.
-- `ZoneManagementPage.tsx`: validate code/name, trim/uppercase code, chan parent tro ve chinh no va bao loi neu parent khong co trong danh sach dang tai.
-- `ConfigManagementPage.tsx`: validate key/scope bat buoc, parse value/default value theo kieu va hien loi JSON/number/boolean than thien.
-- `NdrReasonManagementPage.tsx`: validate code/name bat buoc, trim/uppercase code va check trung code trong danh sach dang tai.
-
-**Kiem chung:**
-- `cd apps/admin-web && npx tsc --noEmit`: pass.
-
----
-
-## 8. Prompt Wave 3B - validation backend danh muc
-
-**Muc tieu:** Server moi la noi enforce that, UI chi la UX.
-
-```text
-Hay lam Wave 3B: validation backend cho masterdata-service.
-
-Pham vi duoc sua:
-- services/masterdata-service/src/api/controllers/*.controller.ts
-- services/masterdata-service/src/application/services/*.service.ts
-- services/masterdata-service/src/infrastructure/prisma/*.repository.ts neu can check unique/cycle.
-- services/masterdata-service/prisma/schema.prisma chi khi can them constraint/index that su.
-
-Khong duoc sua:
-- apps/admin-web.
-- auth-service/RBAC.
-
-Yeu cau:
-1. Hub:
-   - code unique case-insensitive neu kha thi; toi thieu normalize uppercase/trim truoc khi save.
-   - khong cho duplicate code.
-   - validate required fields.
-2. Zone:
-   - khong cho parentId tro ve chinh no.
-   - chan parent cycle khi update parent.
-3. Config:
-   - validate JSON/value theo key quan trong neu da co pattern.
-   - neu chua co schema map, tao helper nho de validate cac key rui ro cao, khong over-engineer.
-4. NDR reason:
-   - code unique, active flag ro rang.
-5. Loi tra ve message ro, phu hop voi API pattern hien co.
-6. Chay:
-   cd services/masterdata-service
-   npx tsc --noEmit
-
-Commit goi y:
-feat(masterdata-service): enforce admin masterdata validation
-```
-
-**Tieu chi xong:**
-- Loi duplicate/cycle/JSON sai bi chan tu backend.
-- Khong phu thuoc vao local UI validation.
-
-**Tien do Wave 3B: DONE**
-
-**Da thuc hien:**
-- `HubsService`: tao hub yeu cau `code`, normalize uppercase/trim, validate required fields va khong cho trung code; repository tim code case-insensitive.
-- `ZonesService`: giu validation required, duplicate, parent self/cycle va parent ton tai; repository tim code case-insensitive.
-- `ConfigsService`: validate `scope` khi create/update, validate JSON value hop le, config envelope va `merchant.profile.*` bang helper nho; repository tim key case-insensitive.
-- `NdrReasonsService`: giu validate code/description/isActive va duplicate code; repository tim code case-insensitive.
-- Khong sua Prisma schema vi cac unique constraint can thiet da co tren `code`/`key`.
-
-**Kiem chung:**
-- `cd services/masterdata-service && npx tsc --noEmit`: pass.
-
----
-
-## 9. Prompt Wave 4A - RBAC backend contract
-
-**Muc tieu:** Quyen courier-mobile khong con la prototype localStorage. Backend co API luu va doc permission.
-
-**De xuat thiet ke toi thieu:**
-- Dat permission source trong `auth-service` vi quyen gan voi user/role/session.
-- Them bang:
-  - `MobilePermissionProfile`: default permission theo role/nhom.
-  - `MobilePermissionOverride`: override theo userId neu can.
-- API de admin-web doc/ghi matrix va courier/gateway lay effective permission:
+Module Admin được hoàn thiện để đáp ứng các yêu cầu quản trị cốt lõi của hệ thống logistics:
+
+- Quản lý người dùng theo nhóm vai trò Admin, Ops, Shipper và Merchant.
+- Quản lý dữ liệu danh mục như hub, zone, lý do NDR, cấu hình và hồ sơ merchant.
+- Có phân quyền mobile được lưu backend và enforce ở gateway.
+- Có audit log để truy vết thao tác quản trị quan trọng.
+- Có dashboard lấy số liệu thật từ API.
+- Có cơ chế disable/soft delete thay vì xóa cứng dữ liệu nghiệp vụ.
+- Có validation ở cả frontend và backend.
+- Có session refresh và smoke test để kiểm chứng các luồng chính.
+
+Mục tiêu chính là đưa Admin từ mức prototype lên mức đủ chắc để demo, báo cáo và giải thích được về nghiệp vụ lẫn kỹ thuật.
+
+## 2. Phạm Vi Đã Triển Khai
+
+### 2.1. Dọn Code Prototype Không Dùng
+
+Đã xóa các file permission prototype cũ không còn được import hoặc sử dụng:
+
+- `adminPermissions.ts`
+- `permissionStore.ts`
+- `AdminAuthorizationPage.tsx`
+
+Việc này giúp giảm code thừa và tránh nhầm lẫn khi review source code.
+
+### 2.2. Dashboard Admin Dùng Dữ Liệu Thật
+
+Dashboard Admin không còn dùng số liệu tĩnh. Các KPI hiện được lấy từ API hiện có:
+
+- Tổng số người dùng.
+- Số user ACTIVE / DISABLED.
+- Số tài khoản Ops, Shipper, Merchant.
+- Số hub active / inactive.
+- Số zone active.
+- Số lý do NDR active.
+- Số cấu hình hệ thống.
+
+Dashboard có loading state, error state và biểu đồ trực quan. Phần biểu đồ được tách lazy chunk để nếu chart lỗi thì dashboard chính vẫn hiển thị được.
+
+### 2.3. Disable / Soft Delete
+
+Admin UI đã chuyển các thao tác xóa nhạy cảm sang vô hiệu hóa:
+
+- User: chuyển `status` giữa `ACTIVE` và `DISABLED`.
+- Hub: chuyển `isActive` giữa `true` và `false`.
+- Merchant user: vô hiệu hóa/kích hoạt lại thay vì xóa hồ sơ.
+
+Thông báo xác nhận đã được sửa rõ rằng dữ liệu không bị xóa vật lý, chỉ ngừng sử dụng trong vận hành.
+
+### 2.4. Validation Frontend Và Backend
+
+Frontend đã validate sớm các form quản trị:
+
+- Hub: bắt buộc mã/tên, chuẩn hóa mã, chống trùng, validate địa chỉ.
+- Zone: bắt buộc mã/tên, chặn parent trỏ về chính nó.
+- Config: validate key/scope và JSON/value theo kiểu dữ liệu.
+- NDR reason: bắt buộc mã/mô tả, chống trùng mã.
+
+Backend `masterdata-service` cũng enforce validation tương ứng:
+
+- Chuẩn hóa code/key trước khi lưu.
+- Chặn duplicate theo nghiệp vụ.
+- Chặn parent cycle của zone.
+- Validate config value và một số config rủi ro cao.
+
+Nhờ đó, frontend chỉ là lớp hỗ trợ UX; backend vẫn là nơi bảo vệ dữ liệu chính.
+
+### 2.5. Phân Quyền Courier Mobile Lưu Backend
+
+Phân quyền mobile không còn phụ thuộc localStorage làm source of truth.
+
+`auth-service` đã có:
+
+- `MobilePermissionProfile`: lưu ma trận quyền mặc định theo actor.
+- `MobilePermissionOverride`: lưu override theo từng user.
+- API đọc/ghi ma trận quyền:
   - `GET /auth/mobile-permissions/matrix`
   - `PUT /auth/mobile-permissions/matrix`
+- API đọc/ghi quyền effective theo user:
   - `GET /auth/mobile-permissions/users/:userId/effective`
   - `PUT /auth/mobile-permissions/users/:userId`
 
-```text
-Hay lam Wave 4A: backend hoa contract RBAC cho courier-mobile trong auth-service.
+Admin web đã tích hợp các API này để load/save phân quyền. Khi API hoạt động, dữ liệu luôn lấy từ `auth-service`.
 
-Pham vi duoc sua:
-- services/auth-service/prisma/schema.prisma
-- services/auth-service/src/api/controllers/*
-- services/auth-service/src/application/services/*
-- services/auth-service/src/infrastructure/prisma/*
-- services/auth-service/src/domain/* neu pattern hien co yeu cau.
+### 2.6. Enforce Permission Ở Gateway Và Courier App
 
-Khong duoc sua:
-- apps/admin-web.
-- apps/courier-mobile.
-- services/gateway-bff.
+Phân quyền không chỉ dùng để ẩn/hiện nút trên UI. Gateway đã enforce quyền cho các thao tác courier quan trọng:
 
-Yeu cau:
-1. Doc pattern UserAccount/AuthSession hien co truoc khi them model/service.
-2. Thiet ke permission payload tuong thich voi apps/admin-web/src/features/permissions/courierPermissionMatrix.ts va apps/courier-mobile/src/features/permissions/courier-permissions.ts.
-3. Khong luu permission trong localStorage nhu source of truth.
-4. Co API get/put matrix cho admin.
-5. Co API get effective permission theo userId cho courier/gateway.
-6. Permission key phai la enum/constant ro, tranh string lung tung nhieu noi.
-7. Chay:
-   cd services/auth-service
-   npx prisma generate
-   npx tsc --noEmit
+- Pickup scan.
+- Hub inbound/outbound scan.
+- Bag seal / bag unseal.
+- Delivery success / delivery fail.
+- COD collect.
 
-Commit goi y:
-feat(auth-service): persist courier mobile permissions
+Gateway gọi `auth-service` để lấy effective permission theo user. Nếu permission API lỗi hoặc user không có quyền, gateway mặc định chặn thao tác nhạy cảm.
+
+Courier mobile cũng fetch effective permission sau login/restore session và ẩn/disable các action không được phép.
+
+### 2.7. Bỏ Fallback UI Prototype Khỏi Demo Mode Permission
+
+Trang phân quyền courier trước đây có fallback “UI prototype” khi API lỗi. Cơ chế này đã được đổi thành opt-in bằng env:
+
+```env
+VITE_ALLOW_PERMISSION_PROTOTYPE_FALLBACK=false
 ```
 
-**Tieu chi xong:**
-- Co Prisma model/API/service ro rang.
-- Chua can admin UI dung API trong wave nay.
+Mặc định trong demo/production là `false`.
 
-**Tien do Wave 4A: DONE**
+Khi permission API lỗi và fallback không được bật:
 
-**Da thuc hien:**
-- Them Prisma model `MobilePermissionProfile` va `MobilePermissionOverride` trong `services/auth-service/prisma/schema.prisma`.
-- Them domain contract `mobile-permission.entity.ts` gom actor `OPS/COURIER`, 15 permission key `scan.*`, matrix/user override/effective response types.
-- Them `MobilePermissionRepository` va Prisma repository de doc/ghi profile matrix va override theo user.
-- Them `MobilePermissionsService` de normalize payload, validate actor/permission key, resolve actor tu role user va tinh effective permission.
-- Them `MobilePermissionsController` voi API:
-  - `GET /auth/mobile-permissions/matrix`
-  - `PUT /auth/mobile-permissions/matrix`
-  - `GET /auth/mobile-permissions/users/:userId/effective`
-  - `PUT /auth/mobile-permissions/users/:userId`
-- Chua sua `admin-web`, `courier-mobile`, `gateway-bff`; localStorage chua con la backend source of truth cho contract moi.
+- UI hiển thị lỗi rõ: “Không tải được phân quyền từ backend”.
+- Các thao tác sửa/lưu permission bị disable.
+- Có nút “Tải lại”.
 
-**Kiem chung:**
-- `cd services/auth-service && npx prisma generate`: pass.
-- `cd services/auth-service && npx tsc --noEmit`: pass.
+Khi cần dev local, có thể bật fallback bằng:
 
----
-
-## 10. Prompt Wave 4B - admin-web permission matrix dung backend
-
-**Muc tieu:** Trang phan quyen courier mobile luu vao backend, localStorage chi duoc dung lam fallback UI tam thoi neu co va phai ghi ro.
-
-```text
-Hay lam Wave 4B: tich hop CourierPermissionMatrixPage voi backend permission API.
-
-Pham vi duoc sua:
-- apps/admin-web/src/pages/permissions/CourierPermissionMatrixPage.tsx
-- apps/admin-web/src/features/permissions/courierPermissionMatrix.ts
-- apps/admin-web/src/features/auth/auth.api.ts / auth.client.ts hoac tao features/permissions/permissions.api.ts neu hop ly.
-- apps/admin-web/src/services/api/endpoints.ts neu can them endpoint.
-
-Khong duoc sua:
-- services/auth-service.
-- services/gateway-bff.
-- apps/courier-mobile.
-
-Yeu cau:
-1. Goi API backend da co tu Wave 4A de load/save matrix.
-2. Bo viec xem localStorage la source of truth.
-3. Co loading/saving/error state va toast/thong bao tieng Viet.
-4. Neu API chua san sang, khong fake thanh cong; hien canh bao "dang dung UI prototype".
-5. Chay:
-   cd apps/admin-web
-   npx tsc --noEmit
-
-Commit goi y:
-feat(admin-web): save courier permissions through backend
+```env
+VITE_ALLOW_PERMISSION_PROTOTYPE_FALLBACK=true
 ```
 
-**Tieu chi xong:**
-- Reload browser khong mat cau hinh permission.
-- UI noi ro khi save fail.
+Khi đó UI vẫn dùng prototype nhưng label ghi rõ là local fallback, không dùng cho demo.
 
-**Tien do Wave 4B: DONE**
+### 2.8. Audit Log Quản Trị
 
-**Da thuc hien:**
-- `CourierPermissionMatrixPage.tsx`: load ma tran tu backend, save ma tran bang `PUT /auth/mobile-permissions/matrix`, hien loading/saving/error state va thong bao tieng Viet.
-- Per-user view goi `GET /auth/mobile-permissions/users/:userId/effective` khi chon user va save override bang `PUT /auth/mobile-permissions/users/:userId`.
-- LocalStorage khong con la source of truth khi save; chi con fallback UI prototype neu API load fail va UI hien canh bao `Dang dung UI prototype`.
-- `services/api/types.ts`: mo rong method `PUT` de dung dung backend contract Wave 4A.
+`auth-service` và `masterdata-service` đã có bảng `AdminAuditLog` để ghi nhận thao tác quản trị.
 
-**Kiem chung:**
-- `cd apps/admin-web && npx tsc --noEmit`: pass.
+Audit log lưu các trường chính:
 
----
+- actor id / username.
+- action.
+- target type.
+- target id.
+- before / after.
+- request id.
+- IP, user agent.
+- thời điểm tạo.
 
-## 11. Prompt Wave 4C - enforce permission o gateway/courier
+Các thao tác tạo, sửa, vô hiệu hóa hoặc xóa mềm user/masterdata đều được ghi audit. Lỗi ghi audit được log lại nhưng không làm hỏng transaction chính.
 
-**Muc tieu:** Permission khong chi an/hien UI ma con chan hanh dong nhay cam tren server/gateway.
+### 2.9. Audit Server-Side Pagination, Search Và Export
 
-```text
-Hay lam Wave 4C: enforce courier-mobile permissions o gateway va cap nhat courier app.
+Audit viewer đã được nâng cấp qua gateway unified:
 
-Pham vi duoc sua:
-- services/gateway-bff/src/common/guards/*
-- services/gateway-bff/src/api/courier/**
-- services/gateway-bff/src/infrastructure/clients/*
-- apps/courier-mobile/src/features/permissions/courier-permissions.ts
-- apps/courier-mobile/src/features/auth/* neu can cache effective permissions sau login.
-- apps/courier-mobile/src/navigation/AppTabs.tsx va cac man hinh chi de an/hien action theo permission.
+- `GET /ops/admin/audit-logs`
+- `GET /ops/admin/audit-logs/export`
 
-Khong duoc sua:
-- apps/admin-web permission page.
-- services/auth-service schema.
+Gateway nhận các filter:
 
-Yeu cau:
-1. Gateway lay effective permission tu auth-service theo user dang request.
-2. Cac route/action courier quan trong phai check permission:
-   - pickup scan
-   - hub scan / bag seal / bag unseal
-   - delivery success/fail
-   - COD collect
-3. Courier app duoc an/hien nut theo permission nhung server/gateway van la enforcement that.
-4. Neu permission API loi, default deny voi action nhay cam.
-5. Chay:
-   cd services/gateway-bff && npx tsc --noEmit
-   cd ../../apps/courier-mobile && npx tsc --noEmit
+- `source`
+- `action`
+- `targetType`
+- `targetId`
+- `actor`
+- `createdFrom`
+- `createdTo`
+- `q`
+- `limit`
+- `offset`
 
-Commit goi y:
-feat(courier): enforce mobile permissions through gateway
+Response chuẩn:
+
+```json
+{
+  "items": [],
+  "pageInfo": {
+    "hasNextPage": false,
+    "total": 0
+  }
+}
 ```
 
-**Tieu chi xong:**
-- User khong co quyen khong the goi API thanh cong bang cach bypass UI.
-- Bao cao co the noi "RBAC enforced server-side".
-
-**Tien do Wave 4C: DONE**
-
-**Da thuc hien:**
-- `gateway-bff`: them `CourierPermissionGuard` va `AuthServiceClient`; cac route nhay cam goi introspect + effective permission tu `auth-service` truoc khi proxy.
-- Route enforcement: pickup scan, hub inbound/outbound scan, bag seal/unseal, delivery success/fail va COD collect. Neu permission API loi thi guard tra `Forbidden` va chan thao tac.
-- `courier-mobile`: fetch effective permission sau login/restore session, cache vao user session, bo shortcut allow-all local matrix.
-- UI courier an/disable action theo permission tren scan grid, task detail primary/issue action va nut thu COD.
-- `ScanScreen`: refresh effective permission khi focus lai man hinh de icon chuc nang bi chan bien mat theo ma tran moi.
-- Sua loi type nho o `BagSealScreen.tsx` (`shipmentCodes` chua khai bao) de typecheck app pass.
-
-**Kiem chung:**
-- `cd services/gateway-bff && npx tsc --noEmit`: pass.
-- `cd apps/courier-mobile && npx tsc --noEmit`: pass.
-
----
-
-## 12. Prompt Wave 5A - audit log backend - DONE
-
-**Muc tieu:** Ghi duoc ai tao/sua/vo hieu hoa user, hub, zone, config, NDR reason.
-
-**De xuat thiet ke toi thieu:**
-- Neu chua co audit-service rieng, dung audit table theo service:
-  - `auth-service`: audit user/admin auth actions.
-  - `masterdata-service`: audit hub/zone/config/NDR actions.
-- Shape chung:
-  - `id`, `actorId`, `actorUsername`, `action`, `targetType`, `targetId`, `before`, `after`, `requestId`, `ipAddress`, `userAgent`, `createdAt`.
-
-```text
-Hay lam Wave 5A: them audit log backend cho thao tac admin.
-
-Pham vi duoc sua:
-- services/auth-service/prisma/schema.prisma
-- services/auth-service/src/** lien quan user CRUD/admin actions
-- services/masterdata-service/prisma/schema.prisma
-- services/masterdata-service/src/** lien quan hub/zone/config/NDR CRUD
-
-Khong duoc sua:
-- apps/admin-web audit viewer.
-- Dashboard/permission UI.
-
-Yeu cau:
-1. Them AdminAuditLog model hoac ten phu hop trong tung service.
-2. Tao helper/service ghi audit de khong lap code qua nhieu.
-3. Ghi actor/action/targetType/targetId/before/after/timestamp.
-4. Lay actor tu header/context request hien co neu co; neu gateway chua truyen actor thi ghi fallback ro rang va de TODO nho.
-5. Audit failure khong duoc lam hong transaction chinh neu chi loi phu, nhung phai log duoc loi.
-6. Chay:
-   cd services/auth-service && npx prisma generate && npx tsc --noEmit
-   cd ../masterdata-service && npx prisma generate && npx tsc --noEmit
-
-Commit goi y:
-feat(admin): record audit logs for admin changes
-```
-
-**Tieu chi xong:**
-- Create/update/disable/delete masterdata va user co ban ghi audit.
-- Co `before`/`after` de giai thich khi bao cao.
-
-### Bao cao Wave 5A - Audit log backend
-
-**Trang thai:** Hoan thanh.
-
-**Thay doi da lam:**
-- Them `AdminAuditLog` vao `services/auth-service/prisma/schema.prisma` va `services/masterdata-service/prisma/schema.prisma`.
-- Them `AdminAuditService` rieng trong tung service de ghi audit dung shape chung: actor, action, targetType, targetId, before, after, requestId, ipAddress, userAgent, createdAt.
-- Lay actor/request context tu header `x-actor-id`, `x-actor-username`, `x-request-id`, `user-agent` va IP request; neu gateway chua truyen actor thi fallback `UNKNOWN_ACTOR` va de TODO gateway.
-- Audit write duoc boc `try/catch`, loi audit duoc log nhung khong lam hong thao tac CRUD chinh.
-- `auth-service`: user create/update/disable/delete ghi audit voi `before`/`after`.
-- `masterdata-service`: hub/zone/config/NDR reason create/update/disable/delete ghi audit voi `before`/`after`.
-- Bo sung delete route/service/repository cho zone, config va NDR reason de dap ung tieu chi audit delete masterdata.
-- Bo sung audit read endpoint de admin-web doc log:
-  - `auth-service`: `GET /auth/admin-audit-logs`
-  - `masterdata-service`: `GET /admin-audit-logs`
-
-**Tac dong nghiep vu/ky thuat:**
-- Khi bi hoi "ai tao/sua/vo hieu hoa/xoa du lieu nay", backend da co bang audit trong service so huu du lieu.
-- Giu dung database-per-service: auth audit nam trong `auth-service`, masterdata audit nam trong `masterdata-service`.
-- Chua tao audit-service rieng va chua gom audit read model tap trung.
-
-**Kiem chung:**
-- `cd services/auth-service && npx tsc --noEmit`: pass.
-- `cd services/masterdata-service && npx tsc --noEmit`: pass.
-- `npx prisma generate` o ca hai service bi chan boi loi local `EACCES` khi rename `query_engine-windows.dll.node` trong `node_modules/.prisma/client`; day la loi file Windows engine dang bi lock/quyen tren workspace, khong phai loi schema/type.
-
----
-
-## 13. Prompt Wave 5B - audit viewer trong admin-web - DONE
-
-**Muc tieu:** Admin co man hinh xem audit log khi bi hoi "ai sua du lieu nay".
-
-```text
-Hay lam Wave 5B: them trang xem audit log trong admin-web.
-
-Pham vi duoc sua:
-- apps/admin-web/src/pages/audit/AdminAuditLogPage.tsx (tao moi)
-- apps/admin-web/src/navigation/routes.ts
-- apps/admin-web/src/app/AppRouter.tsx
-- apps/admin-web/src/services/api/endpoints.ts va client/hook lien quan.
-- CSS/theme lien quan neu can.
-
-Khong duoc sua:
-- Backend audit writer.
-- Dashboard.
-- Permission matrix.
-
-Yeu cau:
-1. Tao trang bang audit log co filter:
-   - action
-   - targetType
-   - actor
-   - ngay tao
-2. Hien cot: thoi gian, actor, action, targetType, targetId, tom tat before/after.
-3. Neu API chua co endpoint aggregate tu ca auth/masterdata, hien tung source rieng hoac ghi ro source.
-4. Khong hien JSON qua dai; co nut xem chi tiet neu can.
-5. Chay:
-   cd apps/admin-web
-   npx tsc --noEmit
-
-Commit goi y:
-feat(admin-web): add admin audit log viewer
-```
-
-**Tieu chi xong:**
-- Co route xem audit log.
-- Du lieu dai khong lam vo layout.
-
-### Bao cao Wave 5B - Admin audit viewer
-
-**Trang thai:** Hoan thanh.
-
-**Thay doi da lam:**
-- Tao trang `apps/admin-web/src/pages/audit/AdminAuditLogPage.tsx`.
-- Them route `/app/audit/logs` vao `apps/admin-web/src/navigation/routes.ts` va wire vao `AppRouter.tsx`.
-- Them item sidebar `Audit log` trong admin layout.
-- Them audit client/hook/type rieng trong `apps/admin-web/src/features/audit/`.
-- Them endpoint client:
-  - `opsEndpoints.auth.adminAuditLogs`
-  - `opsEndpoints.masterdata.adminAuditLogs`
-- Trang audit co filter: action, targetType, actor va ngay tao.
-- Bang hien: source, thoi gian, actor, action, targetType, targetId va tom tat before/after.
-- Vi chua co endpoint aggregate tap trung, UI query theo tung source `auth-service` va `masterdata-service`, dong thoi hien cot/source status rieng.
-- JSON dai duoc rut gon trong bang; nut `Xem` mo panel chi tiet voi `before`/`after` co scroll va wrap de khong vo layout.
-
-**Tac dong nghiep vu/ky thuat:**
-- Admin-web da co route audit viewer de phuc vu cau hoi truy vet thay doi du lieu.
-- UI san sang doc tu hai audit source rieng theo kien truc database-per-service.
-- Backend da co read endpoint rieng cho tung source; neu mot source loi, trang van hien loi theo source thay vi lam trang trang.
-
-**Kiem chung:**
-- `cd apps/admin-web && npx tsc --noEmit`: pass.
-- `cd services/auth-service && npx tsc --noEmit`: pass.
-- `cd services/masterdata-service && npx tsc --noEmit`: pass.
-
----
-
-## 14. Prompt Wave 6 - session refresh admin-web - DONE
-
-**Muc tieu:** Xu ly token het han dung cach thay vi de TODO.
-
-```text
-Hay lam Wave 6: hoan thien session refresh cho admin-web.
-
-Pham vi duoc sua:
-- apps/admin-web/src/features/auth/auth.session.ts
-- apps/admin-web/src/features/auth/auth.api.ts
-- apps/admin-web/src/features/auth/auth.client.ts
-- apps/admin-web/src/store/authStore.ts
-- apps/admin-web/src/services/api/client.ts
-
-Khong duoc sua:
-- Masterdata pages.
-- Permission matrix.
-- Backend neu auth-service da co refresh endpoint.
-
-Yeu cau:
-1. Doc auth-service auth.controller de xac nhan endpoint refresh/logout hien co.
-2. Luu expiresAt/accessToken/refreshToken theo pattern hien tai.
-3. Truoc request hoac khi hydrate app, neu access token gan het han thi refresh.
-4. Neu API tra 401 va co refresh token, thu refresh mot lan roi retry request.
-5. Neu refresh fail, logout va dua ve login.
-6. Tranh race condition: nhieu request 401 cung luc chi refresh mot lan.
-7. Chay:
-   cd apps/admin-web
-   npx tsc --noEmit
-
-Commit goi y:
-feat(admin-web): refresh admin sessions automatically
-```
-
-**Tieu chi xong:**
-- Het han access token khong lam app trang trang.
-- Refresh fail thi logout ro rang.
-
-### Bao cao Wave 6 - Admin session refresh
-
-**Trang thai:** Hoan thanh.
-
-**Thay doi da lam:**
-- Xac nhan backend da co `POST /auth/refresh` va `POST /auth/logout` trong `auth-service`.
-- Hoan thien `apps/admin-web/src/features/auth/auth.session.ts`:
-  - Khi hydrate session, kiem tra `refreshTokenExpiresAt`.
-  - Neu access token gan het han thi goi refresh truoc khi restore authenticated session.
-  - Luu lai session moi vao localStorage va auth store sau refresh thanh cong.
-  - Refresh fail thi xoa session, chuyen ve guest va hien loi dang nhap lai.
-  - Dung chung mot `refreshSessionPromise` de tranh nhieu request refresh cung luc.
-- Cap nhat `apps/admin-web/src/services/api/client.ts`:
-  - Truoc request co `accessToken`, tu dong lay token con hop le hoac refresh neu gan het han.
-  - Neu API tra 401, thu refresh mot lan roi retry request voi access token moi.
-  - Neu refresh fail, request fail ro rang va session bi clear.
-- Cap nhat `auth.client.ts` de bo TODO refresh contract va khong auto-refresh khi logout/refresh endpoint tu goi chinh no.
-- Bo sung `skipAuthRefresh` vao request options de tranh refresh loop.
-
-**Tac dong nghiep vu/ky thuat:**
-- Admin-web khong bi trang trang khi access token het han trong luc dang dung app.
-- Nhieu request dong thoi khi token het han chi kich hoat mot refresh call.
-- Neu refresh token het han hoac refresh fail, admin duoc logout ro rang va can dang nhap lai.
-
-**Kiem chung:**
-- `cd apps/admin-web && npx tsc --noEmit`: pass.
-
----
-
-## 15. Prompt Wave 7 - smoke tests admin - DONE
-
-**Muc tieu:** Co bang chung ky thuat de bao cao: cac luong admin chinh co test.
-
-```text
-Hay lam Wave 7: them smoke tests cho admin.
-
-Pham vi duoc sua:
-- Test files/scripts cua apps/admin-web.
-- package.json cua apps/admin-web neu can them script test nho va phu hop voi tooling hien co.
-- Khong sua feature code tru khi test phat hien bug nho can fix trong cung pham vi.
-
-Khong duoc sua:
-- Backend schema.
-- Permission implementation.
-- Dashboard implementation.
-
-Yeu cau:
-1. Kiem tra tooling test hien co truoc. Neu da co Vitest/Playwright thi tai su dung.
-2. Test toi thieu:
-   - login guard: chua login bi redirect/khong vao app.
-   - dashboard render KPI shell.
-   - create/update user form validation.
-   - hub form validation va disable flow.
-   - permission save flow mock API thanh cong/that bai.
-3. Mock API gon, khong can database that.
-4. Them script ro rang neu chua co, vi du `test:smoke`.
-5. Chay script moi va `npx tsc --noEmit`.
-
-Commit goi y:
-test(admin-web): add smoke coverage for admin workflows
-```
-
-**Tieu chi xong:**
-- Co lenh test lap lai duoc.
-- Test fail that khi luong chinh bi vo.
-
-### Bao cao Wave 7 - Admin smoke tests
-
-**Trang thai:** Hoan thanh.
-
-**Thay doi da lam:**
-- Them tooling test nhe cho `apps/admin-web` bang Vitest + Testing Library + jsdom.
-- Them script `test:smoke` trong `apps/admin-web/package.json`.
-- Tao `apps/admin-web/vitest.config.ts` va `apps/admin-web/src/test/setup.ts`.
-- Tao smoke suite `apps/admin-web/src/__tests__/admin-smoke.test.tsx` voi mock API gon, khong can database that.
-- Smoke suite bao phu:
-  - Login guard: chua login bi dua ve man hinh dang nhap, khong vao dashboard.
-  - Dashboard KPI shell render voi data API mock.
-  - User admin: create validation khong submit payload rong, update user submit payload hop le.
-  - Hub masterdata: form validation va flow `Vo hieu hoa` bang update `isActive=false`, khong hard delete.
-  - Permission matrix: save thanh cong va hien loi khi backend save fail.
-
-**Tac dong nghiep vu/ky thuat:**
-- Co lenh test lap lai duoc de chung minh cac luong admin chinh khong bi vo.
-- Test mock o tang UI/API hook nen khong phu thuoc database hoac service dang chay.
-- Neu login guard, KPI shell, form validation, disable flow hoac permission save bi vo thi `test:smoke` fail that.
-
-**Kiem chung:**
-- `cd apps/admin-web && npm run test:smoke`: pass, 5 tests.
-- `cd apps/admin-web && npx tsc --noEmit`: pass.
-- Ghi chu: React Router co warning future flag v7 trong test, khong lam fail smoke suite.
-
----
-
-## 16. Merchant profile - cach bao cao va huong nang cap
-
-Hien merchant profile dang duoc luu trong masterdata config scope `MERCHANT_PROFILE`. Neu gan deadline, co the giu cach nay nhung phai ghi ro trong bao cao:
-
-- Day la trade-off cho do an de tai su dung config-service/masterdata hien co.
-- Khong phai thiet ke toi uu cho san pham that.
-- Huong nang cap: them bang `MerchantProfile` rieng trong `auth-service` hoac service merchant rieng, lien ket voi `UserAccount`, co audit va validation CCCD/dia chi.
-
-Prompt rieng neu con thoi gian:
-
-```text
-Hay de xuat va thuc hien nang cap merchant profile khoi MERCHANT_PROFILE config thanh model rieng.
-
-Pham vi uu tien:
-- services/auth-service/prisma/schema.prisma hoac service merchant neu repo da co.
-- apps/admin-web/src/pages/users/MerchantUsersPage.tsx.
-
-Yeu cau:
-1. Khong pha du lieu cu: neu co config MERCHANT_PROFILE cu thi co duong migrate/read fallback.
-2. MerchantProfile gom: userId, citizenId, region, defaultHubCode, businessName, address, status, createdAt, updatedAt.
-3. Co audit khi sua profile.
-4. Chay typecheck app/service lien quan.
-
-Commit goi y:
-feat(admin): store merchant profiles as first-class data
-```
-
----
-
-## 17. Goi y commit theo chuoi
+Admin web không còn tự merge audit từ hai service ở client. UI đã có search box, source filter, page size, server-side pagination và export CSV theo filter hiện tại.
+
+Schema audit đã bổ sung index theo `createdAt`, `actor`, `action`, `targetType` và `targetId` để hỗ trợ truy vấn dữ liệu lớn hơn.
+
+### 2.10. Session Refresh
+
+Admin web đã xử lý refresh session:
+
+- Khi hydrate app, nếu access token gần hết hạn thì refresh trước.
+- Khi API trả 401, client thử refresh một lần rồi retry request.
+- Nếu refresh fail, session bị clear và user quay về màn hình đăng nhập.
+- Có cơ chế tránh nhiều request cùng refresh một lúc.
+
+Điều này giúp Admin web không bị trắng màn hình khi token hết hạn trong lúc sử dụng.
+
+### 2.11. Merchant Profile Thành Dữ Liệu Riêng
+
+Merchant profile đã được tách khỏi config scope thành model riêng trong `masterdata-service`:
+
+- `MerchantProfile`
+- unique `username`
+- unique `citizenId`
+- region/default hub/default sender address
+
+Service vẫn có hướng đọc/migrate dữ liệu legacy nếu cần, giúp không mất dữ liệu demo cũ.
+
+### 2.12. Smoke Tests
+
+Admin web đã có smoke test bằng Vitest + Testing Library.
+
+Các luồng được kiểm tra:
+
+- Login guard: chưa đăng nhập không vào được app.
+- Dashboard KPI shell render với data mock.
+- User form validation và update payload.
+- Hub form validation và disable flow.
+- Permission matrix save thành công và báo lỗi khi backend save fail.
+- Permission API lỗi khi fallback không bật thì UI báo lỗi và disable thao tác.
+
+Smoke test không cần database thật, phù hợp để kiểm tra nhanh các luồng UI chính.
+
+## 3. Kiểm Chứng
+
+Các lệnh đã được chạy trong quá trình hoàn thiện:
 
 ```bash
-git add apps/admin-web
-git commit -m "chore(admin-web): remove unused permission prototype files"
-
-git add apps/admin-web
-git commit -m "feat(admin-web): show real admin dashboard metrics"
-
-git add apps/admin-web
-git commit -m "fix(admin-web): use disable flow for users and hubs"
-
-git add apps/admin-web services/masterdata-service
-git commit -m "feat(masterdata-service): enforce admin masterdata validation"
-
-git add services/auth-service
-git commit -m "feat(auth-service): persist courier mobile permissions"
-
-git add apps/admin-web
-git commit -m "feat(admin-web): save courier permissions through backend"
-
-git add services/gateway-bff apps/courier-mobile
-git commit -m "feat(courier): enforce mobile permissions through gateway"
-
-git add services/auth-service services/masterdata-service
-git commit -m "feat(admin): record audit logs for admin changes"
-
-git add apps/admin-web
-git commit -m "feat(admin-web): refresh admin sessions automatically"
-
-git add apps/admin-web
-git commit -m "test(admin-web): add smoke coverage for admin workflows"
+cd apps/admin-web
+TMPDIR=/tmp npm run test:smoke
+npm run build
 ```
 
----
+Kết quả:
 
-## 18. Noi dung nen dua vao bao cao
+- Smoke test pass.
+- Admin web build pass.
 
-- **RBAC:** Phan quyen khong chi an/hien UI, ma duoc luu backend va enforce tai gateway/API.
-- **Auditability:** Moi thay doi quan trong cua admin co actor/action/before/after/timestamp.
-- **Data integrity:** Danh muc co validation server-side, khong phu thuoc vao frontend.
-- **Operational safety:** User/hub duoc disable thay vi xoa cung.
-- **Observability:** Dashboard admin lay du lieu that tu API hien co.
-- **Known trade-off:** Merchant profile co the dang dung config scope neu chua kip tach model, va da co huong nang cap ro rang.
+Các service liên quan cũng đã được typecheck/build trong các wave triển khai:
+
+- `auth-service`
+- `masterdata-service`
+- `gateway-bff`
+- `courier-mobile`
+
+## 4. Giá Trị Đạt Được
+
+### RBAC
+
+Phân quyền courier mobile được lưu backend, đọc qua API và enforce ở gateway. Người dùng không thể bypass UI để gọi các thao tác nhạy cảm nếu không có quyền.
+
+### Auditability
+
+Các thay đổi quan trọng của admin có audit log với actor, action, before/after và timestamp. Khi cần trả lời “ai đã sửa dữ liệu này”, hệ thống có nguồn truy vết rõ ràng.
+
+### Data Integrity
+
+Danh mục có validation cả frontend lẫn backend. Các lỗi như duplicate code, JSON sai hoặc parent zone không hợp lệ được chặn trước khi ảnh hưởng dữ liệu.
+
+### Operational Safety
+
+User và hub được disable thay vì xóa cứng, phù hợp với nghiệp vụ logistics vì dữ liệu đã phát sinh cần được giữ để truy vết.
+
+### Observability
+
+Dashboard Admin lấy dữ liệu thật từ API và có biểu đồ hỗ trợ trình bày trạng thái hệ thống.
+
+### Reliability
+
+Session refresh giúp admin sử dụng hệ thống ổn định hơn. Smoke test giúp phát hiện sớm lỗi ở các luồng chính.
+
+## 5. Lưu Ý Khi Demo
+
+- Permission API của `auth-service` phải chạy ổn vì demo mode không bật fallback prototype.
+- Nếu muốn fallback khi dev local, chỉ bật `VITE_ALLOW_PERMISSION_PROTOTYPE_FALLBACK=true` trong môi trường local.
+- Cần seed sẵn dữ liệu demo: admin, ops, shipper, merchant, hub, zone, config, NDR reason và audit logs.
+- Audit export hiện dùng CSV, đủ cho báo cáo/demo. Nếu phát triển production có thể bổ sung Excel.
+- Smoke test là UI test mock API, không thay thế E2E chạy với backend thật.
+
+## 6. Hướng Nâng Cấp Sau Báo Cáo
+
+- Bổ sung Playwright E2E chạy với backend và database seed thật.
+- Chuẩn hóa toàn bộ UI text tiếng Việt nếu còn chỗ chưa đồng bộ.
+- Bổ sung role/permission chi tiết hơn cho từng nhóm Admin/Ops.
+- Bổ sung dashboard audit/security event riêng.
+- Tối ưu audit search nâng cao hơn nếu dữ liệu tăng lớn.
+- Bổ sung export Excel cho audit log và báo cáo admin.
+
+## 7. Kết Luận
+
+Module Admin đã được hoàn thiện ở mức đủ tốt để báo cáo đồ án:
+
+- Có dashboard số liệu thật.
+- Có quản lý user/masterdata an toàn.
+- Có validation frontend/backend.
+- Có RBAC backend và gateway enforcement.
+- Có audit log, server-side pagination, search và export.
+- Có session refresh.
+- Có smoke test kiểm chứng luồng chính.
+
+So với prototype ban đầu, Admin hiện đã có cơ sở kỹ thuật rõ ràng hơn, giảm rủi ro khi demo và dễ giải thích trước hội đồng về các khía cạnh bảo mật, truy vết, toàn vẹn dữ liệu và vận hành.

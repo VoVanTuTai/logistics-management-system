@@ -7,32 +7,32 @@ export interface ProvinceOption {
 export const PROVINCE_OPTIONS: ProvinceOption[] = [
   {
     code: 'HO_CHI_MINH',
-    label: 'Ho Chi Minh',
+    label: 'Hồ Chí Minh',
     districts: [
-      'District 1',
-      'District 3',
-      'District 7',
-      'Binh Thanh',
-      'Tan Binh',
-      'Thu Duc',
+      'Quận 1',
+      'Quận 3',
+      'Quận 7',
+      'Bình Thạnh',
+      'Tân Bình',
+      'Thủ Đức',
     ],
   },
   {
     code: 'DA_NANG',
-    label: 'Da Nang',
+    label: 'Đà Nẵng',
     districts: [
-      'Hai Chau',
-      'Thanh Khe',
-      'Lien Chieu',
-      'Ngu Hanh Son',
-      'Son Tra',
-      'Cam Le',
+      'Hải Châu',
+      'Thanh Khê',
+      'Liên Chiểu',
+      'Ngũ Hành Sơn',
+      'Sơn Trà',
+      'Cẩm Lệ',
     ],
   },
   {
     code: 'HA_NOI',
-    label: 'Ha Noi',
-    districts: ['Ba Dinh', 'Hoan Kiem', 'Cau Giay', 'Dong Da', 'Hai Ba Trung', 'Ha Dong'],
+    label: 'Hà Nội',
+    districts: ['Ba Đình', 'Hoàn Kiếm', 'Cầu Giấy', 'Đống Đa', 'Hai Bà Trưng', 'Hà Đông'],
   },
 ];
 
@@ -44,4 +44,3 @@ export function getDistrictOptions(provinceLabel: string): string[] {
 
   return province.districts;
 }
-

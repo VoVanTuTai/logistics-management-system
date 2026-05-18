@@ -58,7 +58,7 @@ services:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-      /usr/bin/mc config host add myminio http://minio:9000 minioadmin minioadmin123;
+      /usr/bin/mc alias set myminio http://minio:9000 minioadmin minioadmin123;
       /usr/bin/mc mb myminio/nexus-pod-images --ignore-existing;
       /usr/bin/mc anonymous set download myminio/nexus-pod-images;
       exit 0;

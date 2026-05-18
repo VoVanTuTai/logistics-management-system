@@ -23,10 +23,21 @@ export interface RecordAdminAuditInput {
 export interface ListAdminAuditLogsInput {
   action?: string;
   targetType?: string;
+  targetId?: string;
   actor?: string;
   createdFrom?: string;
   createdTo?: string;
+  q?: string;
   limit?: string;
+  offset?: string;
+}
+
+export interface AdminAuditLogPage {
+  items: Awaited<ReturnType<PrismaService['adminAuditLog']['findMany']>>;
+  pageInfo: {
+    hasNextPage: boolean;
+    total: number;
+  };
 }
 
 @Injectable()
@@ -35,59 +46,95 @@ export class AdminAuditService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async list(input: ListAdminAuditLogsInput = {}) {
-    const where: Prisma.AdminAuditLogWhereInput = {};
+  async list(input: ListAdminAuditLogsInput = {}): Promise<AdminAuditLogPage> {
+    const where = this.buildWhere(input);
+    const limit = this.normalizeLimit(input.limit);
+    const offset = this.normalizeOffset(input.offset);
+
+    const [total, items] = await this.prisma.$transaction([
+      this.prisma.adminAuditLog.count({ where }),
+      this.prisma.adminAuditLog.findMany({
+        where,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        skip: offset,
+        take: limit,
+      }),
+    ]);
+
+    return {
+      items,
+      pageInfo: {
+        hasNextPage: offset + items.length < total,
+        total,
+      },
+    };
+  }
+
+  async export(input: ListAdminAuditLogsInput = {}) {
+    const page = await this.list({
+      ...input,
+      offset: '0',
+      limit: input.limit ?? '5000',
+    });
+
+    return page.items;
+  }
+
+  private buildWhere(input: ListAdminAuditLogsInput): Prisma.AdminAuditLogWhereInput {
+    const and: Prisma.AdminAuditLogWhereInput[] = [];
     const action = input.action?.trim();
     const targetType = input.targetType?.trim();
+    const targetId = input.targetId?.trim();
     const actor = input.actor?.trim();
+    const q = input.q?.trim();
     const createdFrom = this.parseDate(input.createdFrom);
     const createdTo = this.parseDate(input.createdTo);
 
     if (action) {
-      where.action = {
-        contains: action,
-        mode: 'insensitive',
-      };
+      and.push({ action: { contains: action, mode: 'insensitive' } });
     }
 
     if (targetType) {
-      where.targetType = {
-        contains: targetType,
-        mode: 'insensitive',
-      };
+      and.push({ targetType: { contains: targetType, mode: 'insensitive' } });
+    }
+
+    if (targetId) {
+      and.push({ targetId: { contains: targetId, mode: 'insensitive' } });
     }
 
     if (actor) {
-      where.OR = [
-        {
-          actorId: {
-            contains: actor,
-            mode: 'insensitive',
-          },
-        },
-        {
-          actorUsername: {
-            contains: actor,
-            mode: 'insensitive',
-          },
-        },
-      ];
+      and.push({
+        OR: [
+          { actorId: { contains: actor, mode: 'insensitive' } },
+          { actorUsername: { contains: actor, mode: 'insensitive' } },
+        ],
+      });
+    }
+
+    if (q) {
+      and.push({
+        OR: [
+          { actorId: { contains: q, mode: 'insensitive' } },
+          { actorUsername: { contains: q, mode: 'insensitive' } },
+          { action: { contains: q, mode: 'insensitive' } },
+          { targetType: { contains: q, mode: 'insensitive' } },
+          { targetId: { contains: q, mode: 'insensitive' } },
+          { requestId: { contains: q, mode: 'insensitive' } },
+          { ipAddress: { contains: q, mode: 'insensitive' } },
+        ],
+      });
     }
 
     if (createdFrom || createdTo) {
-      where.createdAt = {
-        ...(createdFrom ? { gte: createdFrom } : {}),
-        ...(createdTo ? { lt: createdTo } : {}),
-      };
+      and.push({
+        createdAt: {
+          ...(createdFrom ? { gte: createdFrom } : {}),
+          ...(createdTo ? { lt: createdTo } : {}),
+        },
+      });
     }
 
-    return this.prisma.adminAuditLog.findMany({
-      where,
-      orderBy: {
-        createdAt: 'desc',
-      },
-      take: this.normalizeLimit(input.limit),
-    });
+    return and.length > 0 ? { AND: and } : {};
   }
 
   async record(input: RecordAdminAuditInput): Promise<void> {
@@ -150,6 +197,16 @@ export class AdminAuditService {
       return 100;
     }
 
-    return Math.min(Math.trunc(parsedLimit), 250);
+    return Math.min(Math.trunc(parsedLimit), 5000);
+  }
+
+  private normalizeOffset(value: string | undefined): number {
+    const parsedOffset = value ? Number(value) : 0;
+
+    if (!Number.isFinite(parsedOffset) || parsedOffset <= 0) {
+      return 0;
+    }
+
+    return Math.trunc(parsedOffset);
   }
 }

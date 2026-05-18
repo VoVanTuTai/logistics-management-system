@@ -4,38 +4,24 @@ import { queryKeys } from '../../utils/queryKeys';
 import { auditClient } from './audit.client';
 import type { AdminAuditLogFilters } from './audit.types';
 
-export function useAuthAuditLogsQuery(
+export function useAdminAuditLogsQuery(
   accessToken: string | null,
   filters: AdminAuditLogFilters,
 ) {
   return useQuery({
     queryKey: [
       ...queryKeys.adminAuditLogs,
-      'auth',
+      filters.source ?? '',
       filters.action ?? '',
       filters.targetType ?? '',
+      filters.targetId ?? '',
       filters.actor ?? '',
+      filters.q ?? '',
       filters.createdDate ?? '',
+      filters.limit ?? '',
+      filters.offset ?? '',
     ],
-    queryFn: () => auditClient.listAuditLogs(accessToken, 'auth', filters),
-    enabled: Boolean(accessToken),
-  });
-}
-
-export function useMasterdataAuditLogsQuery(
-  accessToken: string | null,
-  filters: AdminAuditLogFilters,
-) {
-  return useQuery({
-    queryKey: [
-      ...queryKeys.adminAuditLogs,
-      'masterdata',
-      filters.action ?? '',
-      filters.targetType ?? '',
-      filters.actor ?? '',
-      filters.createdDate ?? '',
-    ],
-    queryFn: () => auditClient.listAuditLogs(accessToken, 'masterdata', filters),
+    queryFn: () => auditClient.listAuditLogs(accessToken, filters),
     enabled: Boolean(accessToken),
   });
 }

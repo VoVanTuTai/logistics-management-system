@@ -78,15 +78,4 @@ export const authClient = {
       accessToken,
       body: payload,
     }),
-  deleteUser: (
-    accessToken: string | null,
-    userId: string,
-  ): Promise<{ deleted: boolean; userId: string | null }> =>
-    opsApiClient.request<{ deleted: boolean; userId: string | null }>(
-      opsEndpoints.auth.userDetail(userId),
-      {
-        method: 'DELETE',
-        accessToken,
-      },
-    ),
 };

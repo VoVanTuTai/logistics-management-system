@@ -32,6 +32,7 @@ import type {
 import type {
   ConfigDto,
   HubDto,
+  MerchantProfileDto,
   NdrReasonDto,
   ZoneDto,
 } from '../features/masterdata/masterdata.types';
@@ -66,6 +67,10 @@ const mocks = vi.hoisted(() => ({
     mutateAsync: vi.fn(),
     isPending: false,
   },
+  upsertMerchantProfileMutation: {
+    mutateAsync: vi.fn(),
+    isPending: false,
+  },
   updateMatrixMutation: {
     mutateAsync: vi.fn(),
     isPending: false,
@@ -79,6 +84,7 @@ const mocks = vi.hoisted(() => ({
   zones: [] as ZoneDto[],
   ndrReasons: [] as NdrReasonDto[],
   configs: [] as ConfigDto[],
+  merchantProfiles: [] as MerchantProfileDto[],
   matrix: null as CourierPermissionMatrix | null,
   effectivePermissions: null as {
     userId: string;
@@ -99,10 +105,6 @@ vi.mock('../features/auth/auth.api', () => ({
   ) => querySuccess(mocks.usersByRole[filters.roleGroup] ?? []),
   useCreateAdminUserMutation: () => mocks.createUserMutation,
   useUpdateAdminUserMutation: () => mocks.updateUserMutation,
-  useDeleteAdminUserMutation: () => ({
-    mutateAsync: vi.fn(),
-    isPending: false,
-  }),
 }));
 
 vi.mock('../features/masterdata/masterdata.api', () => ({
@@ -110,8 +112,10 @@ vi.mock('../features/masterdata/masterdata.api', () => ({
   useZonesQuery: () => querySuccess(mocks.zones),
   useNdrReasonsQuery: () => querySuccess(mocks.ndrReasons),
   useConfigsQuery: () => querySuccess(mocks.configs),
+  useMerchantProfilesQuery: () => querySuccess(mocks.merchantProfiles),
   useCreateHubMutation: () => mocks.createHubMutation,
   useUpdateHubMutation: () => mocks.updateHubMutation,
+  useUpsertMerchantProfileMutation: () => mocks.upsertMerchantProfileMutation,
   useCreateZoneMutation: () => ({
     mutateAsync: vi.fn(),
     isPending: false,
@@ -230,6 +234,7 @@ function resetMocks() {
   mocks.updateUserMutation.mutateAsync.mockReset();
   mocks.createHubMutation.mutateAsync.mockReset();
   mocks.updateHubMutation.mutateAsync.mockReset();
+  mocks.upsertMerchantProfileMutation.mutateAsync.mockReset();
   mocks.updateMatrixMutation.mutateAsync.mockReset();
   mocks.updateUserOverrideMutation.mutateAsync.mockReset();
 
@@ -242,6 +247,7 @@ function resetMocks() {
   mocks.zones = [];
   mocks.ndrReasons = [];
   mocks.configs = [];
+  mocks.merchantProfiles = [];
   mocks.matrix = createMatrix(false);
   mocks.effectivePermissions = null;
   mocks.matrixError = null;
@@ -277,8 +283,8 @@ function createHub(overrides: Partial<HubDto>): HubDto {
       JSON.stringify({
         addressLine: '1 Nguyen Hue',
         ward: 'Ben Nghe',
-        district: 'Quan 1',
-        province: 'Ho Chi Minh',
+        district: 'Quận 1',
+        province: 'Hồ Chí Minh',
       }),
     isActive: overrides.isActive ?? true,
     createdAt: overrides.createdAt ?? '2026-05-18T00:00:00.000Z',
@@ -353,7 +359,7 @@ describe('admin smoke workflows', () => {
 
     expect(
       await screen.findByRole('heading', {
-        name: /đăng nhập he thong quan tri/i,
+        name: /đăng nhập hệ thống quản trị/i,
       }),
     ).toBeInTheDocument();
     expect(screen.queryByText(/tổng quan admin/i)).not.toBeInTheDocument();
@@ -420,13 +426,13 @@ describe('admin smoke workflows', () => {
 
     renderWithProviders(<OpsUsersPage />);
 
-    await user.click(screen.getByRole('button', { name: /^tao tai khoan$/i }));
+    await user.click(screen.getByRole('button', { name: /^tạo tài khoản$/i }));
     expect(mocks.createUserMutation.mutateAsync).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole('button', { name: /^sua$/i }));
-    await user.clear(screen.getByLabelText(/ten hien thi/i));
-    await user.type(screen.getByLabelText(/ten hien thi/i), 'Updated Ops');
-    await user.click(screen.getByRole('button', { name: /luu tai khoan/i }));
+    await user.click(screen.getByRole('button', { name: /^sửa$/i }));
+    await user.clear(screen.getByLabelText(/tên hiển thị/i));
+    await user.type(screen.getByLabelText(/tên hiển thị/i), 'Updated Ops');
+    await user.click(screen.getByRole('button', { name: /lưu tài khoản/i }));
 
     await waitFor(() =>
       expect(mocks.updateUserMutation.mutateAsync).toHaveBeenCalledWith({
@@ -471,11 +477,11 @@ describe('admin smoke workflows', () => {
     );
     await user.selectOptions(
       within(createDialog).getByLabelText(/tỉnh\/thành/i),
-      'Ho Chi Minh',
+      'Hồ Chí Minh',
     );
     await user.selectOptions(
       within(createDialog).getByLabelText(/quận\/huyện/i),
-      'District 1',
+      'Quận 1',
     );
     await user.click(
       within(createDialog).getByRole('button', { name: /^tạo hub$/i }),
@@ -486,7 +492,7 @@ describe('admin smoke workflows', () => {
     );
     expect(mocks.createHubMutation.mutateAsync).not.toHaveBeenCalled();
 
-    await user.click(within(createDialog).getByRole('button', { name: /dong/i }));
+    await user.click(within(createDialog).getByRole('button', { name: /đóng/i }));
     await user.click(screen.getByRole('button', { name: /vô hiệu hóa/i }));
 
     await waitFor(() =>
@@ -537,5 +543,26 @@ describe('admin smoke workflows', () => {
     expect(
       await screen.findByRole('alert'),
     ).toHaveTextContent(/không lưu được ma trận phân quyền: backend down/i);
+  });
+
+  it('shows backend permission error without prototype fallback and disables edits', async () => {
+    const user = userEvent.setup();
+    setAdminSession();
+    mocks.matrixError = new Error('permission API down');
+
+    renderWithProviders(<CourierPermissionMatrixPage />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /không tải được phân quyền từ backend: permission api down/i,
+    );
+    expect(screen.getByRole('button', { name: /tải lại/i })).toBeInTheDocument();
+
+    for (const button of screen.getAllByRole('button', { name: /bật tất cả/i })) {
+      expect(button).toBeDisabled();
+    }
+
+    expect(screen.getByRole('button', { name: /lưu thay đổi/i })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: /lưu thay đổi/i }));
+    expect(mocks.updateMatrixMutation.mutateAsync).not.toHaveBeenCalled();
   });
 });

@@ -7,6 +7,9 @@ import type {
   HubDto,
   HubFilters,
   HubWriteInput,
+  MerchantProfileDto,
+  MerchantProfileFilters,
+  MerchantProfileWriteInput,
   NdrReasonDto,
   NdrReasonFilters,
   NdrReasonWriteInput,
@@ -63,17 +66,6 @@ export const masterdataClient = {
       accessToken,
       body: payload,
     }),
-  deleteHub: (
-    accessToken: string | null,
-    hubId: string,
-  ): Promise<{ deleted: boolean; hubId: string | null }> =>
-    opsApiClient.request<{ deleted: boolean; hubId: string | null }>(
-      opsEndpoints.masterdata.hubDetail(hubId),
-      {
-        method: 'DELETE',
-        accessToken,
-      },
-    ),
   listZones: (
     accessToken: string | null,
     filters: ZoneFilters,
@@ -173,4 +165,31 @@ export const masterdataClient = {
       accessToken,
       body: payload,
     }),
+  listMerchantProfiles: (
+    accessToken: string | null,
+    filters: MerchantProfileFilters,
+  ): Promise<MerchantProfileDto[]> =>
+    opsApiClient.request<MerchantProfileDto[]>(
+      `${opsEndpoints.masterdata.merchantProfiles}${buildQueryString({
+        username: filters.username,
+        citizenId: filters.citizenId,
+        regionCode: filters.regionCode,
+        defaultHubCode: filters.defaultHubCode,
+        q: filters.q,
+      })}`,
+      { accessToken },
+    ),
+  upsertMerchantProfileByUsername: (
+    accessToken: string | null,
+    username: string,
+    payload: MerchantProfileWriteInput,
+  ): Promise<MerchantProfileDto> =>
+    opsApiClient.request<MerchantProfileDto>(
+      opsEndpoints.masterdata.merchantProfileByUsername(username),
+      {
+        method: 'PUT',
+        accessToken,
+        body: payload,
+      },
+    ),
 };

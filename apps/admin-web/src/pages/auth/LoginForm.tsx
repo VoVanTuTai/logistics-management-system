@@ -28,10 +28,11 @@ export function LoginForm({
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="auth-form">
       <label className="auth-label" htmlFor="username">
-        Ten dang nhap
+        Tên đăng nhập
       </label>
       <input
         id="username"
+        data-testid="admin-login-username"
         {...form.register('username')}
         className="auth-input"
         placeholder={usernamePlaceholder}
@@ -45,6 +46,7 @@ export function LoginForm({
       </label>
       <input
         id="password"
+        data-testid="admin-login-password"
         type="password"
         {...form.register('password')}
         className="auth-input"
@@ -56,10 +58,14 @@ export function LoginForm({
 
       {errorMessage ? <div className="auth-error-banner">{errorMessage}</div> : null}
 
-      <button type="submit" disabled={isSubmitting} className="auth-submit">
+      <button
+        type="submit"
+        data-testid="admin-login-submit"
+        disabled={isSubmitting}
+        className="auth-submit"
+      >
         {isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
       </button>
     </form>
   );
 }
-

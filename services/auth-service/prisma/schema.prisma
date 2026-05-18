@@ -87,8 +87,12 @@ model AdminAuditLog {
   userAgent     String?
   createdAt     DateTime @default(now())
 
+  @@index([createdAt])
+  @@index([action, createdAt])
+  @@index([targetType, createdAt])
   @@index([targetType, targetId, createdAt])
   @@index([actorId, createdAt])
+  @@index([actorUsername, createdAt])
 }
 
 model OutboxEvent {
