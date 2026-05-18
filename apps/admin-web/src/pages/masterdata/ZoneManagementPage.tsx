@@ -35,6 +35,10 @@ function normalizeText(value: string): string | undefined {
   return normalizedValue.length > 0 ? normalizedValue : undefined;
 }
 
+function normalizeCode(value: string): string {
+  return value.trim().toUpperCase();
+}
+
 export function ZoneManagementPage(): React.JSX.Element {
   const accessToken = useAuthStore((state) => state.session?.tokens.accessToken ?? null);
 
@@ -99,10 +103,38 @@ export function ZoneManagementPage(): React.JSX.Element {
     setActionError(null);
     setActionMessage(null);
 
+    const code = normalizeCode(form.code);
+    const name = form.name.trim();
+    const parentCode = normalizeCode(form.parentCode);
+    const loadedZones = zonesQuery.data ?? [];
+    const parentExists = parentCode
+      ? loadedZones.some((zone) => zone.code.toUpperCase() === parentCode)
+      : true;
+
+    if (!code) {
+      setActionError('Mã zone là bắt buộc.');
+      return;
+    }
+
+    if (!name) {
+      setActionError('Tên zone là bắt buộc.');
+      return;
+    }
+
+    if (parentCode && parentCode === code) {
+      setActionError('Zone cha không được trỏ về chính zone đang sửa.');
+      return;
+    }
+
+    if (!parentExists) {
+      setActionError(`Zone cha "${parentCode}" không có trong danh sách đang tải.`);
+      return;
+    }
+
     const payload: ZoneWriteInput = {
-      code: form.code,
-      name: form.name,
-      parentCode: normalizeText(form.parentCode) ?? null,
+      code,
+      name,
+      parentCode: parentCode || null,
       isActive: form.isActive,
     };
 
@@ -318,7 +350,7 @@ export function ZoneManagementPage(): React.JSX.Element {
               onChange={(event) =>
                 setForm((previous) => ({
                   ...previous,
-                  code: event.target.value,
+                  code: normalizeCode(event.target.value),
                 }))
               }
               placeholder="ZONE_HCM"
@@ -348,7 +380,7 @@ export function ZoneManagementPage(): React.JSX.Element {
               onChange={(event) =>
                 setForm((previous) => ({
                   ...previous,
-                  parentCode: event.target.value,
+                  parentCode: normalizeCode(event.target.value),
                 }))
               }
               placeholder="ZONE_PARENT"

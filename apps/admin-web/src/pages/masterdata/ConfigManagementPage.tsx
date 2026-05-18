@@ -126,7 +126,19 @@ function parseConfigEnvelope(config: ConfigDto): ConfigEnvelope {
   };
 }
 
-function parseInputByType(valueType: ConfigValueType, input: string): ConfigValue {
+function parseJsonInput(input: string, fieldLabel: string): ConfigValue {
+  try {
+    return JSON.parse(input) as ConfigValue;
+  } catch {
+    throw new Error(`${fieldLabel} phải là JSON hợp lệ.`);
+  }
+}
+
+function parseInputByType(
+  valueType: ConfigValueType,
+  input: string,
+  fieldLabel: string,
+): ConfigValue {
   const normalizedInput = input.trim();
 
   if (valueType === 'STRING') {
@@ -137,7 +149,7 @@ function parseInputByType(valueType: ConfigValueType, input: string): ConfigValu
     const value = Number(normalizedInput);
 
     if (!Number.isFinite(value)) {
-      throw new Error('Gia tri so khong hop le.');
+      throw new Error(`${fieldLabel} phải là số hợp lệ.`);
     }
 
     return value;
@@ -154,29 +166,41 @@ function parseInputByType(valueType: ConfigValueType, input: string): ConfigValu
       return false;
     }
 
-    throw new Error('Gia tri boolean phai la true/false.');
+    throw new Error(`${fieldLabel} phải là true hoặc false.`);
   }
 
   if (!normalizedInput) {
     return null;
   }
 
-  return JSON.parse(normalizedInput) as ConfigValue;
+  return parseJsonInput(normalizedInput, fieldLabel);
 }
 
 function buildConfigPayloadFromForm(form: ConfigFormState): ConfigWriteInput {
-  const value = parseInputByType(form.valueType, form.valueInput);
+  const key = form.key.trim().toLowerCase();
+  const scope = form.group.trim();
+  const name = form.name.trim();
+
+  if (!key) {
+    throw new Error('Key config là bắt buộc.');
+  }
+
+  if (!scope) {
+    throw new Error('Scope config là bắt buộc.');
+  }
+
+  const value = parseInputByType(form.valueType, form.valueInput, 'Giá trị');
   const hasDefaultValue = form.defaultValueInput.trim().length > 0;
   const defaultValue = hasDefaultValue
-    ? parseInputByType(form.valueType, form.defaultValueInput)
+    ? parseInputByType(form.valueType, form.defaultValueInput, 'Giá trị mặc định')
     : null;
 
   return {
-    key: form.key,
-    scope: normalizeText(form.group) ?? null,
+    key,
+    scope,
     description: normalizeText(form.description) ?? null,
     value: {
-      name: form.name.trim() || form.key.trim(),
+      name: name || key,
       valueType: form.valueType,
       value,
       defaultValue,
@@ -539,7 +563,7 @@ export function ConfigManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Nhom
+            Scope
             <input
               value={form.group}
               onChange={(event) =>
@@ -549,6 +573,7 @@ export function ConfigManagementPage(): React.JSX.Element {
                 }))
               }
               placeholder="SYSTEM | PICKUP | DELIVERY"
+              required
               style={styles.input}
             />
           </label>
