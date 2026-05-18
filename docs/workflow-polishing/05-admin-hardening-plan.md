@@ -520,6 +520,7 @@ feat(courier): enforce mobile permissions through gateway
 - Route enforcement: pickup scan, hub inbound/outbound scan, bag seal/unseal, delivery success/fail va COD collect. Neu permission API loi thi guard tra `Forbidden` va chan thao tac.
 - `courier-mobile`: fetch effective permission sau login/restore session, cache vao user session, bo shortcut allow-all local matrix.
 - UI courier an/disable action theo permission tren scan grid, task detail primary/issue action va nut thu COD.
+- `ScanScreen`: refresh effective permission khi focus lai man hinh de icon chuc nang bi chan bien mat theo ma tran moi.
 - Sua loi type nho o `BagSealScreen.tsx` (`shipmentCodes` chua khai bao) de typecheck app pass.
 
 **Kiem chung:**

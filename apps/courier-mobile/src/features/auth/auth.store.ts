@@ -18,6 +18,7 @@ interface AuthStoreState {
   isLoading: boolean;
   errorMessage: string | null;
   restoreSession: () => Promise<void>;
+  refreshMobilePermissions: () => Promise<void>;
   login: (credentials: LoginFormValues) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
@@ -96,6 +97,21 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
         errorMessage: toErrorMessage(error, 'Khôi phục phiên đăng nhập thất bại.'),
       });
     }
+  },
+  refreshMobilePermissions: async () => {
+    const currentSession = get().session;
+
+    if (!currentSession) {
+      return;
+    }
+
+    const sessionWithPermissions =
+      await withEffectiveMobilePermissions(currentSession);
+    await persistAuthSession(sessionWithPermissions);
+    set({
+      status: 'authenticated',
+      session: sessionWithPermissions,
+    });
   },
   login: async (credentials) => {
     set({

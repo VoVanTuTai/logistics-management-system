@@ -2,11 +2,12 @@ import React from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { BarcodeScanningResult } from 'expo-camera';
 
 import { theme } from '../../theme';
+import { useAuthStore } from '../../features/auth/auth.store';
 import { useAppStore } from '../../store/appStore';
 import { appEnv } from '../../utils/env';
 import { resolveCourierDisplayName, resolveCourierId } from '../../utils/courier';
@@ -128,6 +129,9 @@ export function ScanScreen(): React.JSX.Element {
   const navigation =
     useNavigation<NativeStackNavigationProp<AppNavigatorParamList>>();
   const session = useAppStore((state) => state.session);
+  const refreshMobilePermissions = useAuthStore(
+    (state) => state.refreshMobilePermissions,
+  );
   const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
   const displayName = resolveCourierDisplayName({
     displayName: session?.user.displayName,
@@ -145,6 +149,12 @@ export function ScanScreen(): React.JSX.Element {
   const permittedActions = React.useMemo(
     () => filterPermittedCourierFeatures(session?.user, actions),
     [session?.user],
+  );
+
+  useFocusEffect(
+    React.useCallback(() => {
+      void refreshMobilePermissions();
+    }, [refreshMobilePermissions]),
   );
 
   const handlePressAction = (action: ScanActionItemData) => {
