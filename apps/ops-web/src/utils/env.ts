@@ -1,5 +1,7 @@
 const gatewayBaseUrl = import.meta.env.VITE_GATEWAY_BFF_URL ?? '';
 const requestTimeoutMs = Number(import.meta.env.VITE_REQUEST_TIMEOUT_MS ?? '15000');
+const showOpsPrototypeRoutes =
+  import.meta.env.VITE_SHOW_OPS_PROTOTYPE_ROUTES === 'true';
 const dispatchTasksWsUrl = resolveDispatchTasksWsUrl();
 
 function resolveDispatchTasksWsUrl(): string {
@@ -22,5 +24,6 @@ function resolveDispatchTasksWsUrl(): string {
 export const appEnv = {
   gatewayBaseUrl,
   requestTimeoutMs,
+  showOpsPrototypeRoutes,
   dispatchTasksWsUrl,
 } as const;
