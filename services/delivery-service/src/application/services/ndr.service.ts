@@ -17,6 +17,10 @@ import type { ReturnCase } from '../../domain/entities/return-case.entity';
 import { NdrCaseRepository } from '../../domain/repositories/ndr-case.repository';
 import { ReturnCaseRepository } from '../../domain/repositories/return-case.repository';
 import { DeliveryOutboxService } from '../../messaging/outbox/delivery-outbox.service';
+import {
+  OpsAuditService,
+  type OpsAuditContext,
+} from './ops-audit.service';
 
 export interface NdrReturnDecisionResult {
   action: 'RETURN_TO_SENDER' | 'KEEP_FOR_REDELIVERY';
@@ -41,6 +45,7 @@ export class NdrService {
     @Inject(ReturnCaseRepository)
     private readonly returnCaseRepository: ReturnCaseRepository,
     private readonly deliveryOutboxService: DeliveryOutboxService,
+    private readonly opsAuditService: OpsAuditService,
   ) {}
 
   async list(filter?: { shipmentCode?: string; status?: string }): Promise<NdrCase[]> {
@@ -140,6 +145,7 @@ export class NdrService {
   async reschedule(
     id: string,
     input: RescheduleNdrCaseInput,
+    auditContext?: OpsAuditContext,
   ): Promise<NdrCase> {
     const nextDeliveryAt = input.nextDeliveryAt ?? input.rescheduleAt;
     if (!nextDeliveryAt) {
@@ -154,12 +160,24 @@ export class NdrService {
       throw new NotFoundException(`NDR case "${id}" was not found.`);
     }
 
-    return this.ndrCaseRepository.reschedule(id, input);
+    const ndrCase = await this.ndrCaseRepository.reschedule(id, input);
+
+    await this.opsAuditService.record({
+      context: auditContext,
+      action: 'NDR_RESCHEDULED',
+      targetType: 'NDR_CASE',
+      targetId: ndrCase.id,
+      before: existingCase,
+      after: ndrCase,
+    });
+
+    return ndrCase;
   }
 
   async returnDecision(
     id: string,
     input: ReturnDecisionInput,
+    auditContext?: OpsAuditContext,
   ): Promise<NdrReturnDecisionResult> {
     const existingCase = await this.ndrCaseRepository.findById(id);
     if (!existingCase) {
@@ -183,18 +201,40 @@ export class NdrService {
         await this.deliveryOutboxService.enqueueReturnStarted(returnCase);
       }
 
-      return {
+      const result: NdrReturnDecisionResult = {
         action: 'RETURN_TO_SENDER',
         ndrCase,
         returnCase,
       };
+
+      await this.opsAuditService.record({
+        context: auditContext,
+        action: 'NDR_RETURN_DECISION',
+        targetType: 'NDR_CASE',
+        targetId: ndrCase.id,
+        before: existingCase,
+        after: result,
+      });
+
+      return result;
     }
 
-    return {
+    const result: NdrReturnDecisionResult = {
       action: 'KEEP_FOR_REDELIVERY',
       ndrCase: existingCase,
       returnCase: null,
     };
+
+    await this.opsAuditService.record({
+      context: auditContext,
+      action: 'NDR_RETURN_DECISION',
+      targetType: 'NDR_CASE',
+      targetId: existingCase.id,
+      before: existingCase,
+      after: result,
+    });
+
+    return result;
   }
 
   private async assertShipmentAtHub(

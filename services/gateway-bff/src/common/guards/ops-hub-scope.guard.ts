@@ -75,26 +75,42 @@ export class OpsHubScopeGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
     const rule = this.resolveRule(request);
-
-    if (!rule) {
-      return true;
-    }
-
     const accessToken = this.extractBearerToken(request);
     if (!accessToken) {
+      if (!rule) {
+        return true;
+      }
+
       throw new UnauthorizedException('Missing bearer access token.');
     }
 
-    const introspection = await this.authServiceClient.introspect(accessToken);
+    let introspection;
+    try {
+      introspection = await this.authServiceClient.introspect(accessToken);
+    } catch (error) {
+      if (!rule) {
+        return true;
+      }
+
+      throw error;
+    }
     const user = introspection.user;
 
     if (!introspection.active || !user) {
+      if (!rule) {
+        return true;
+      }
+
       throw new UnauthorizedException('Invalid or expired access token.');
     }
 
     const roles = normalizeStringList(user.roles);
     const assignedHubCodes = normalizeStringList(user.hubCodes ?? []);
     this.attachOpsContextHeaders(request, user, roles, assignedHubCodes);
+
+    if (!rule) {
+      return true;
+    }
 
     if (roles.includes('SYSTEM_ADMIN')) {
       return true;

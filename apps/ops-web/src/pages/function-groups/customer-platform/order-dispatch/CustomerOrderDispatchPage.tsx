@@ -262,8 +262,10 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
   const [isCancelling, setIsCancelling] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const tasksQuery = useTasksQuery(accessToken, { taskType: 'PICKUP' });
   const realtimeStatus = useDispatchTasksRealtime(Boolean(accessToken));
+  const tasksQuery = useTasksQuery(accessToken, { taskType: 'PICKUP' }, {
+    refetchInterval: realtimeStatus === 'connected' ? false : 10000,
+  });
   const shipmentsQuery = useShipmentsQuery(accessToken, {}, { refetchInterval: 5000 });
   const pickupsQuery = usePickupRequestsQuery(accessToken, {}, { refetchInterval: 5000 });
   const shippersQuery = useQuery({
@@ -621,7 +623,7 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
           <div className="ops-customer-dispatch__realtime">
             Realtime:
             <strong data-state={realtimeStatus === 'connected' ? 'connected' : 'disconnected'}>
-              {realtimeStatus === 'connected' ? ' WebSocket connected' : ' reconnecting...'}
+              {realtimeStatus === 'connected' ? ' đang nhận realtime' : ' đang dùng polling dự phòng'}
             </strong>
           </div>
         </div>
