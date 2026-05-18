@@ -7,6 +7,10 @@ export const courierEndpoints = {
     refresh: `${COURIER_PREFIX}/auth/auth/refresh`,
     logout: `${COURIER_PREFIX}/auth/auth/logout`,
     introspect: `${COURIER_PREFIX}/auth/auth/introspect`,
+    mobilePermissionEffective: (userId: string) =>
+      `${COURIER_PREFIX}/auth/auth/mobile-permissions/users/${encodeURIComponent(
+        userId,
+      )}/effective`,
   },
   tasks: {
     list: (courierId: string) =>

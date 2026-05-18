@@ -1,11 +1,19 @@
 import { z } from 'zod';
 
+import type {
+  CourierActor,
+  CourierPermissionFeature,
+} from '../permissions/courier-permissions';
+
 export interface AuthenticatedUserDto {
   id: string;
   username: string;
   displayName?: string | null;
   roles: string[];
   hubCodes?: string[];
+  mobilePermissionActor?: CourierActor;
+  mobilePermissions?: Partial<Record<CourierPermissionFeature, boolean>>;
+  mobilePermissionsLoadedAt?: string;
 }
 
 export interface AuthTokensDto {
@@ -36,6 +44,13 @@ export interface LoginResultDto {
   user: AuthenticatedUserDto;
   session: AuthSessionDto;
   tokens: AuthTokensDto;
+}
+
+export interface MobilePermissionEffectiveDto {
+  userId: string;
+  actor: CourierActor;
+  permissions: Record<CourierPermissionFeature, boolean>;
+  hasOverride: boolean;
 }
 
 export interface LogoutInputDto {

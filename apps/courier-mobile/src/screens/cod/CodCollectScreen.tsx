@@ -11,6 +11,7 @@ import {
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { useCollectCodMutation } from '../../features/cod/cod.queries';
+import { canAccessCourierFeature } from '../../features/permissions/courier-permissions';
 import type { AppNavigatorParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
 import { resolveCourierId } from '../../utils/courier';
@@ -24,6 +25,7 @@ export function CodCollectScreen({ route, navigation }: Props): React.JSX.Elemen
   const session = useAppStore((state) => state.session);
   const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
   const accessToken = session?.tokens.accessToken ?? null;
+  const canCollectCod = canAccessCourierFeature(session?.user, 'scan.delivery-sign');
 
   const collectMutation = useCollectCodMutation(accessToken);
 
@@ -36,6 +38,11 @@ export function CodCollectScreen({ route, navigation }: Props): React.JSX.Elemen
   const shipmentCode = route.params.shipmentCode ?? '';
 
   const handleSubmit = async () => {
+    if (!canCollectCod) {
+      Alert.alert('Không có quyền', 'Tài khoản hiện tại chưa được phân quyền thu COD.');
+      return;
+    }
+
     if (!shipmentCode) {
       Alert.alert('Lỗi', 'Thiếu mã vận đơn');
       return;
@@ -161,9 +168,9 @@ export function CodCollectScreen({ route, navigation }: Props): React.JSX.Elemen
       <Pressable
         style={[
           styles.submitButton,
-          collectMutation.isPending && styles.submitButtonDisabled,
+          (!canCollectCod || collectMutation.isPending) && styles.submitButtonDisabled,
         ]}
-        disabled={collectMutation.isPending}
+        disabled={!canCollectCod || collectMutation.isPending}
         onPress={() => {
           void handleSubmit();
         }}

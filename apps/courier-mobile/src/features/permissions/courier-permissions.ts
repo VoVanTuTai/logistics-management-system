@@ -19,48 +19,6 @@ export type CourierPermissionFeature =
   | 'scan.high-value-label'
   | 'scan.high-value-check';
 
-const ALLOW_ALL_COURIER_MOBILE_PERMISSIONS_FOR_TESTING = true;
-
-const COURIER_PERMISSION_MATRIX: Record<
-  CourierActor,
-  Record<CourierPermissionFeature, boolean>
-> = {
-  OPS: {
-    'scan.delivery-sign': true,
-    'scan.return-sign': true,
-    'scan.pickup': true,
-    'scan.bag-seal': true,
-    'scan.bag-unseal': true,
-    'scan.delivery': true,
-    'scan.issue': true,
-    'scan.outbound': true,
-    'scan.inbound': true,
-    'scan.vehicle-inbound': true,
-    'scan.vehicle-outbound': true,
-    'scan.inventory-check': true,
-    'scan.branch-pickup': true,
-    'scan.high-value-label': true,
-    'scan.high-value-check': true,
-  },
-  COURIER: {
-    'scan.delivery-sign': true,
-    'scan.return-sign': true,
-    'scan.pickup': true,
-    'scan.bag-seal': true,
-    'scan.bag-unseal': true,
-    'scan.delivery': true,
-    'scan.issue': true,
-    'scan.outbound': true,
-    'scan.inbound': true,
-    'scan.vehicle-inbound': true,
-    'scan.vehicle-outbound': true,
-    'scan.inventory-check': true,
-    'scan.branch-pickup': true,
-    'scan.high-value-label': true,
-    'scan.high-value-check': true,
-  },
-};
-
 export function resolveCourierActor(
   user: Pick<AuthenticatedUserDto, 'roles'> | null | undefined,
 ): CourierActor {
@@ -80,19 +38,20 @@ export function resolveCourierActor(
 }
 
 export function canAccessCourierFeature(
-  user: Pick<AuthenticatedUserDto, 'roles'> | null | undefined,
+  user:
+    | Pick<AuthenticatedUserDto, 'roles' | 'mobilePermissions'>
+    | null
+    | undefined,
   feature: CourierPermissionFeature,
 ): boolean {
-  if (ALLOW_ALL_COURIER_MOBILE_PERMISSIONS_FOR_TESTING) {
-    return true;
-  }
-
-  const actor = resolveCourierActor(user);
-  return COURIER_PERMISSION_MATRIX[actor][feature] === true;
+  return user?.mobilePermissions?.[feature] === true;
 }
 
 export function filterPermittedCourierFeatures<TItem extends { permission: CourierPermissionFeature }>(
-  user: Pick<AuthenticatedUserDto, 'roles'> | null | undefined,
+  user:
+    | Pick<AuthenticatedUserDto, 'roles' | 'mobilePermissions'>
+    | null
+    | undefined,
   items: TItem[],
 ): TItem[] {
   return items.filter((item) => canAccessCourierFeature(user, item.permission));

@@ -31,6 +31,37 @@ function toErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
+async function withEffectiveMobilePermissions(
+  session: LoginResultDto,
+): Promise<LoginResultDto> {
+  try {
+    const effectivePermissions = await authApi.getMobilePermissionEffective(
+      session.tokens.accessToken,
+      session.user.id,
+    );
+
+    return {
+      ...session,
+      user: {
+        ...session.user,
+        mobilePermissionActor: effectivePermissions.actor,
+        mobilePermissions: effectivePermissions.permissions,
+        mobilePermissionsLoadedAt: new Date().toISOString(),
+      },
+    };
+  } catch {
+    return {
+      ...session,
+      user: {
+        ...session.user,
+        mobilePermissionActor: undefined,
+        mobilePermissions: undefined,
+        mobilePermissionsLoadedAt: undefined,
+      },
+    };
+  }
+}
+
 export const useAuthStore = create<AuthStoreState>((set, get) => ({
   status: 'booting',
   session: null,
@@ -50,10 +81,12 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
         return;
       }
 
-      useAppStore.getState().setSession(storedSession);
+      const sessionWithPermissions =
+        await withEffectiveMobilePermissions(storedSession);
+      await persistAuthSession(sessionWithPermissions);
       set({
         status: 'authenticated',
-        session: storedSession,
+        session: sessionWithPermissions,
       });
     } catch (error) {
       useAppStore.getState().setGuest();
@@ -71,7 +104,9 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
     });
 
     try {
-      const loginResult = await authApi.login(credentials);
+      const loginResult = await withEffectiveMobilePermissions(
+        await authApi.login(credentials),
+      );
       await persistAuthSession(loginResult);
       set({
         status: 'authenticated',

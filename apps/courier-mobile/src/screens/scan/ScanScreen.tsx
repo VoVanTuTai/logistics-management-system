@@ -320,6 +320,11 @@ export function ScanScreen(): React.JSX.Element {
 
           {scannerError ? <Text style={styles.errorText}>{scannerError}</Text> : null}
           {lastScanMessage ? <Text style={styles.infoText}>{lastScanMessage}</Text> : null}
+          {permittedActions.length === 0 ? (
+            <Text style={styles.errorText}>
+              Tài khoản hiện tại chưa được phân quyền thao tác courier-mobile.
+            </Text>
+          ) : null}
 
           <ScanActionGrid actions={permittedActions} onPressAction={handlePressAction} />
         </ScrollView>

@@ -513,6 +513,19 @@ feat(courier): enforce mobile permissions through gateway
 - User khong co quyen khong the goi API thanh cong bang cach bypass UI.
 - Bao cao co the noi "RBAC enforced server-side".
 
+**Tien do Wave 4C: DONE**
+
+**Da thuc hien:**
+- `gateway-bff`: them `CourierPermissionGuard` va `AuthServiceClient`; cac route nhay cam goi introspect + effective permission tu `auth-service` truoc khi proxy.
+- Route enforcement: pickup scan, hub inbound/outbound scan, bag seal/unseal, delivery success/fail va COD collect. Neu permission API loi thi guard tra `Forbidden` va chan thao tac.
+- `courier-mobile`: fetch effective permission sau login/restore session, cache vao user session, bo shortcut allow-all local matrix.
+- UI courier an/disable action theo permission tren scan grid, task detail primary/issue action va nut thu COD.
+- Sua loi type nho o `BagSealScreen.tsx` (`shipmentCodes` chua khai bao) de typecheck app pass.
+
+**Kiem chung:**
+- `cd services/gateway-bff && npx tsc --noEmit`: pass.
+- `cd apps/courier-mobile && npx tsc --noEmit`: pass.
+
 ---
 
 ## 12. Prompt Wave 5A - audit log backend
