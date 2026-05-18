@@ -29,6 +29,7 @@ graph LR
 | [Phase 3: Last Mile](./03-phase3-last-mile.md) | Giao hàng, Ký nhận, Thanh toán COD/QR | ✅ Hoàn thành |
 | [Showcase Analytics Dashboard](./04-showcase-analytics-plan.md) | Kế hoạch làm điểm nhấn báo cáo + Coming Soon Placeholder | 📝 Kế hoạch tiếp theo |
 | [Admin Hardening trước báo cáo](./05-admin-hardening-plan.md) | Kế hoạch vá lỗ hổng admin + prompt tách wave để không đè nhau | 📝 Kế hoạch |
+| [Ops Web Production Readiness](./06-ops-web-production-readiness-plan.md) | Kế hoạch hardening ops-web gần production + prompt từng wave | 📝 Kế hoạch |
 
 ## Nguyên tắc thiết kế xuyên suốt
 

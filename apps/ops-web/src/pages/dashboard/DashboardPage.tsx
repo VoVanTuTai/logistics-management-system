@@ -14,6 +14,7 @@ import { useHubsQuery } from '../../features/masterdata/masterdata.api';
 import { routePaths } from '../../navigation/routes';
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
+import { appEnv } from '../../utils/env';
 import { formatUserStatusLabel } from '../../utils/logisticsLabels';
 import { DashboardFiltersForm } from './DashboardFiltersForm';
 import { DashboardMetricsTable } from './DashboardMetricsTable';
@@ -419,54 +420,100 @@ export function DashboardPage(): React.JSX.Element {
     to?: string;
     icon: DashboardMenuIcon;
     disabled?: boolean;
-  }> = [
-    // {
-    //   title: 'Dữ liệu cơ bản',
-    //   to: routePaths.groupBasicData,
-    //   icon: 'basic_data',
-    // },
-    {
-      title: 'Nền tảng điều hành',
-      to: routePaths.groupOperationsPlatform,
-      icon: 'operations_platform',
-    },
-    {
-      title: 'Dịch vụ tích hợp',
-      to: routePaths.groupIntegrationServices,
-      icon: 'integration_services',
-    },
-    {
-      title: 'Nền tảng khách hàng',
-      to: routePaths.groupCustomerPlatform,
-      icon: 'customer_platform',
-    },
-    {
-      title: 'Kinh doanh bưu cục',
-      to: routePaths.groupBranchBusiness,
-      icon: 'branch_business',
-    },
-    {
-      title: 'Quyết toán tài chính',
-      to: routePaths.groupFinanceSettlement,
-      icon: 'finance_settlement',
-    },
-    {
-      title: 'Quản lý vận chuyển',
-      to: routePaths.groupCapabilityPlatform,
-      icon: 'capability_platform',
-    },
-    {
-      title: 'Chỉ số vận hành',
-      to: routePaths.groupOperationsMetrics,
-      icon: 'operations_metrics',
-    },
-    {
-      title: 'Chất lượng dịch vụ',
-      to: routePaths.groupServiceQuality,
-      icon: 'service_quality',
-    },
-    // Tạm ẩn theo yêu cầu: Cơ sở dữ liệu, Thiết bị thông minh, Nền tảng quy hoạch.
-  ];
+    isPrototype?: boolean;
+  }> = appEnv.showOpsPrototypeRoutes
+    ? [
+        {
+          title: 'Nền tảng điều hành',
+          to: routePaths.groupOperationsPlatform,
+          icon: 'operations_platform',
+          isPrototype: true,
+        },
+        {
+          title: 'Dịch vụ tích hợp',
+          to: routePaths.groupIntegrationServices,
+          icon: 'integration_services',
+          isPrototype: true,
+        },
+        {
+          title: 'Nền tảng khách hàng',
+          to: routePaths.groupCustomerPlatform,
+          icon: 'customer_platform',
+          isPrototype: true,
+        },
+        {
+          title: 'Kinh doanh bưu cục',
+          to: routePaths.groupBranchBusiness,
+          icon: 'branch_business',
+          isPrototype: true,
+        },
+        {
+          title: 'Quyết toán tài chính',
+          to: routePaths.groupFinanceSettlement,
+          icon: 'finance_settlement',
+          isPrototype: true,
+        },
+        {
+          title: 'Quản lý vận chuyển',
+          to: routePaths.groupCapabilityPlatform,
+          icon: 'capability_platform',
+          isPrototype: true,
+        },
+        {
+          title: 'Chỉ số vận hành',
+          to: routePaths.groupOperationsMetrics,
+          icon: 'operations_metrics',
+          isPrototype: true,
+        },
+        {
+          title: 'Chất lượng dịch vụ',
+          to: routePaths.groupServiceQuality,
+          icon: 'service_quality',
+          isPrototype: true,
+        },
+      ]
+    : [
+        {
+          title: 'Vận đơn',
+          to: routePaths.shipments,
+          icon: 'branch_business',
+        },
+        {
+          title: 'Lấy hàng',
+          to: routePaths.pickups,
+          icon: 'customer_platform',
+        },
+        {
+          title: 'Phân công tác vụ',
+          to: routePaths.tasks,
+          icon: 'operations_platform',
+        },
+        {
+          title: 'Bao tải',
+          to: routePaths.manifests,
+          icon: 'integration_services',
+        },
+        {
+          title: 'Quét hub',
+          to: routePaths.scans,
+          icon: 'smart_devices',
+        },
+        {
+          title: 'NDR',
+          to: routePaths.ndr,
+          icon: 'service_quality',
+        },
+        {
+          title: 'Tra cứu hành trình',
+          to: routePaths.tracking,
+          icon: 'operations_metrics',
+        },
+        {
+          title: 'Masterdata',
+          to: routePaths.masterdataHubs,
+          icon: 'basic_data',
+        },
+      ];
   const notices = [
     {
       id: 'notice-1',
@@ -615,6 +662,9 @@ export function DashboardPage(): React.JSX.Element {
                   >
                     {iconNode}
                     <strong>{item.title}</strong>
+                    {item.isPrototype ? (
+                      <span className="ops-menu-tile__badge">Prototype</span>
+                    ) : null}
                   </div>
                 );
               }
@@ -623,6 +673,9 @@ export function DashboardPage(): React.JSX.Element {
                 <Link key={item.title} to={item.to} className="ops-menu-tile">
                   {iconNode}
                   <strong>{item.title}</strong>
+                  {item.isPrototype ? (
+                    <span className="ops-menu-tile__badge">Prototype</span>
+                  ) : null}
                 </Link>
               );
             })}
