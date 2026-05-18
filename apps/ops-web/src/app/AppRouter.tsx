@@ -787,10 +787,10 @@ function DashboardLayout(): React.JSX.Element {
               onClick={() => navigate(routePaths.dashboard)}
               aria-label="Go to dashboard"
             >
-              <span className="ops-topbar-logo">JMS</span>
+              <span className="ops-topbar-logo">NEXUS</span>
               <span className="ops-topbar-brand-text">
-                <strong>JMS VN</strong>
-                <span>jms logistics control tower</span>
+                <strong>NEXUS VN</strong>
+                <span>NEXUS logistics control tower</span>
               </span>
             </button>
 
@@ -855,7 +855,7 @@ function DashboardLayout(): React.JSX.Element {
             onClick={() => navigate(routePaths.dashboard)}
             aria-label="Go to dashboard"
           >
-            JMS VN
+            NEXUS VN
           </button>
 
         <nav className="ops-func-main-nav" aria-label="Main navigation">

@@ -1,6 +1,6 @@
 # courier-mobile
 
-Scaffold toi thieu cho app shipper/courier trong monorepo `jms-logistics`.
+Scaffold toi thieu cho app shipper/courier trong monorepo `NEXUS-logistics`.
 
 ## Scope
 

@@ -19,6 +19,8 @@ import type { AppNavigatorParamList } from '../../navigation/types';
 import { shouldQueueOffline } from '../../services/api/client';
 import { useAppStore } from '../../store/appStore';
 import { createIdempotencyKey } from '../../utils/idempotency';
+import { resolveCourierId, buildDeliverySuccessAuditNote } from '../../utils/courier';
+import { appEnv } from '../../utils/env';
 
 type Props = NativeStackScreenProps<AppNavigatorParamList, 'DeliverySuccess'>;
 
@@ -97,12 +99,24 @@ export function DeliverySuccessScreen({
       shouldValidate: true,
     });
 
-    const payload = mapDeliverySuccessFormToPayload(values, {
-      taskId: route.params.taskId,
-      actor: session?.user.username ?? null,
-      occurredAt: new Date().toISOString(),
-      idempotencyKey: resolvedIdempotencyKey,
+    const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
+    const auditNote = buildDeliverySuccessAuditNote({
+      displayName: session?.user.displayName,
+      username: session?.user.username,
+      courierId,
+      hubCode: session?.user.hubCodes?.[0] ?? null,
+      note: values.note,
     });
+
+    const payload = mapDeliverySuccessFormToPayload(
+      { ...values, note: auditNote, podNote: auditNote },
+      {
+        taskId: route.params.taskId,
+        actor: session?.user.username ?? null,
+        occurredAt: new Date().toISOString(),
+        idempotencyKey: resolvedIdempotencyKey,
+      },
+    );
 
     await executeSubmit(payload);
   });

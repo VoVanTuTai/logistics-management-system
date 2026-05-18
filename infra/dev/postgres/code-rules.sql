@@ -1,4 +1,4 @@
--- Code governance rules for JMS IDs.
+-- Code governance rules for NEXUS IDs.
 -- Run each section in the matching database.
 -- Existing legacy data can stay temporarily because constraints are created with NOT VALID.
 

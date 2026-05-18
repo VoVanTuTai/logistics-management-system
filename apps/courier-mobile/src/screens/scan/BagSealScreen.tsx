@@ -27,7 +27,7 @@ import type { TaskDto } from '../../features/tasks/tasks.types';
 import { ApiClientError } from '../../services/api/client';
 import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
-import { resolveCourierId } from '../../utils/courier';
+import { resolveCourierId, buildBagSealAuditNote } from '../../utils/courier';
 import { appEnv } from '../../utils/env';
 
 interface SealedShipmentItem {
@@ -450,21 +450,28 @@ export function BagSealScreen(): React.JSX.Element {
         return;
       }
 
-      const shipmentCodes = shipments.map((item) => item.code);
-      await manifestApi.addShipments(accessToken, bagManifest.id, {
-        shipmentCodes,
-        note: 'BAGGED_FROM_COURIER_APP',
-      });
-
       const hubCode = (session?.user?.hubCodes && session.user.hubCodes.length > 0) 
         ? session.user.hubCodes[0] 
         : 'SYSTEM';
+
+      const note = buildBagSealAuditNote({
+        displayName: session?.user?.displayName,
+        username: session?.user?.username,
+        courierId,
+        hubCode,
+        bagCode: bagManifest.manifestCode,
+      });
+
+      await manifestApi.addShipments(accessToken, bagManifest.id, {
+        shipmentCodes,
+        note,
+      });
       
       await manifestApi.seal(accessToken, bagManifest.id, {
         sealedBy: courierId,
         sealedByName: session?.user?.displayName || session?.user?.username,
         processingHubCode: hubCode,
-        note: 'BAGGED_FROM_COURIER_APP',
+        note,
       });
 
       setScreenMessage(
