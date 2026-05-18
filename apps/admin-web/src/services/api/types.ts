@@ -6,9 +6,8 @@ export interface ApiErrorPayload {
 }
 
 export interface RequestOptions {
-  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
   accessToken?: string | null;
   signal?: AbortSignal;
 }
-

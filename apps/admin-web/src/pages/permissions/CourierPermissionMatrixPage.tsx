@@ -14,7 +14,6 @@ import {
   loadUserPermissionOverrides,
   normalizeCourierPermissionMatrix,
   normalizeUserPermissionMap,
-  saveUserPermissionOverrides,
   type CourierPermissionActor,
   type CourierPermissionCategory,
   type CourierPermissionFeature,
@@ -22,6 +21,13 @@ import {
   type UserPermissionMap,
   type UserPermissionOverrides,
 } from '../../features/permissions/courierPermissionMatrix';
+import {
+  useCourierPermissionMatrixQuery,
+  useUpdateCourierPermissionMatrixMutation,
+  useUpdateUserPermissionOverrideMutation,
+  useUserEffectivePermissionsQuery,
+} from '../../features/permissions/permissions.api';
+import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
 
 type ViewMode = 'global' | 'per-user';
@@ -43,16 +49,20 @@ function isRelevantUser(u: AdminUserDto) { return u.roles.some((r) => RELEVANT_R
 
 export function CourierPermissionMatrixPage(): React.JSX.Element {
   const accessToken = useAuthStore((s) => s.session?.tokens.accessToken ?? null);
+  const matrixQuery = useCourierPermissionMatrixQuery(accessToken);
+  const updateMatrixMutation = useUpdateCourierPermissionMatrixMutation(accessToken);
+  const updateUserOverrideMutation = useUpdateUserPermissionOverrideMutation(accessToken);
 
   /* ── view mode ────────────────────────────────────────── */
   const [viewMode, setViewMode] = useState<ViewMode>('global');
 
   /* ── global matrix state (existing) ───────────────────── */
   const [matrix, setMatrix] = useState<CourierPermissionMatrix>(loadGlobalMatrix);
-  const [savedSnapshot, setSavedSnapshot] = useState(() => JSON.stringify(matrix));
+  const [savedSnapshot, setSavedSnapshot] = useState(() => JSON.stringify(matrix, null, 2));
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<CategoryFilter>('');
   const [notice, setNotice] = useState<string | null>(null);
+  const [errorNotice, setErrorNotice] = useState<string | null>(null);
 
   /* ── per-user state ───────────────────────────────────── */
   const opsQuery = useAdminUsersQuery(accessToken, { roleGroup: 'OPS', status: '', hubCode: '', q: '' });
@@ -64,9 +74,20 @@ export function CourierPermissionMatrixPage(): React.JSX.Element {
   }, [opsQuery.data, shipperQuery.data]);
 
   const [overrides, setOverrides] = useState<UserPermissionOverrides>(loadUserPermissionOverrides);
-  const [overridesSnapshot, setOverridesSnapshot] = useState(() => JSON.stringify(overrides));
+  const [overrideSnapshots, setOverrideSnapshots] = useState<Record<string, string>>(() =>
+    Object.fromEntries(
+      Object.entries(overrides).map(([userId, permissions]) => [
+        userId,
+        JSON.stringify(normalizeUserPermissionMap(permissions)),
+      ]),
+    ),
+  );
+  const [overrideUserIds, setOverrideUserIds] = useState<Set<string>>(
+    () => new Set(Object.keys(overrides)),
+  );
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [userSearch, setUserSearch] = useState('');
+  const userEffectiveQuery = useUserEffectivePermissionsQuery(accessToken, selectedUserId);
 
   const filteredUsers = useMemo(() => {
     const q = userSearch.trim().toLowerCase();
@@ -79,6 +100,56 @@ export function CourierPermissionMatrixPage(): React.JSX.Element {
   }, [allUsers, userSearch]);
 
   const selectedUser = useMemo(() => allUsers.find((u) => u.id === selectedUserId) ?? null, [allUsers, selectedUserId]);
+
+  useEffect(() => {
+    if (!matrixQuery.data) return;
+
+    const backendMatrix = normalizeCourierPermissionMatrix(matrixQuery.data);
+    setMatrix(backendMatrix);
+    setSavedSnapshot(JSON.stringify(backendMatrix, null, 2));
+    setErrorNotice(null);
+  }, [matrixQuery.data]);
+
+  useEffect(() => {
+    if (!matrixQuery.isError) return;
+
+    setErrorNotice(
+      `Đang dùng UI prototype vì chưa tải được API phân quyền: ${getErrorMessage(matrixQuery.error)}`,
+    );
+  }, [matrixQuery.error, matrixQuery.isError]);
+
+  useEffect(() => {
+    const data = userEffectiveQuery.data;
+    if (!data) return;
+
+    const permissions = normalizeUserPermissionMap(data.permissions);
+    setOverrides((previous) => ({
+      ...previous,
+      [data.userId]: permissions,
+    }));
+    setOverrideSnapshots((previous) => ({
+      ...previous,
+      [data.userId]: JSON.stringify(permissions),
+    }));
+    setOverrideUserIds((previous) => {
+      const next = new Set(previous);
+      if (data.hasOverride) {
+        next.add(data.userId);
+      } else {
+        next.delete(data.userId);
+      }
+      return next;
+    });
+    setErrorNotice(null);
+  }, [userEffectiveQuery.data]);
+
+  useEffect(() => {
+    if (!userEffectiveQuery.isError || !selectedUserId) return;
+
+    setErrorNotice(
+      `Đang dùng UI prototype vì chưa tải được phân quyền user: ${getErrorMessage(userEffectiveQuery.error)}`,
+    );
+  }, [selectedUserId, userEffectiveQuery.error, userEffectiveQuery.isError]);
 
   const selectedUserMap: UserPermissionMap = useMemo(() => {
     if (!selectedUserId) return createDefaultUserPermissionMap();
@@ -110,34 +181,66 @@ export function CourierPermissionMatrixPage(): React.JSX.Element {
 
   const toggleGlobal = (actor: CourierPermissionActor, feature: CourierPermissionFeature) => {
     setNotice(null);
+    setErrorNotice(null);
     setMatrix((c) => ({ ...c, [actor]: { ...c[actor], [feature]: !c[actor][feature] } }));
   };
   const setActorAll = (actor: CourierPermissionActor, val: boolean) => {
     setNotice(null);
+    setErrorNotice(null);
     setMatrix((c) => ({ ...c, [actor]: COURIER_PERMISSION_FEATURES.reduce((a, f) => { a[f.id] = val; return a; }, {} as Record<CourierPermissionFeature, boolean>) }));
   };
   const setFeatureAll = (feature: CourierPermissionFeature, val: boolean) => {
     setNotice(null);
+    setErrorNotice(null);
     setMatrix((c) => COURIER_PERMISSION_ACTORS.reduce((a, act) => { a[act.id] = { ...c[act.id], [feature]: val }; return a; }, {} as CourierPermissionMatrix));
   };
-  const saveGlobal = () => {
-    window.localStorage.setItem(COURIER_PERMISSION_STORAGE_KEY, matrixJson);
-    setSavedSnapshot(matrixJson);
-    setNotice('Đã lưu ma trận phân quyền chung.');
+  const saveGlobal = async () => {
+    setNotice(null);
+    setErrorNotice(null);
+
+    try {
+      const savedMatrix = await updateMatrixMutation.mutateAsync(matrix);
+      const normalizedMatrix = normalizeCourierPermissionMatrix(savedMatrix);
+      const savedJson = JSON.stringify(normalizedMatrix, null, 2);
+      setMatrix(normalizedMatrix);
+      setSavedSnapshot(savedJson);
+      setNotice('Đã lưu ma trận phân quyền chung lên backend.');
+    } catch (error) {
+      setErrorNotice(`Không lưu được ma trận phân quyền: ${getErrorMessage(error)}`);
+    }
   };
-  const resetGlobal = () => { setMatrix(loadGlobalMatrix()); setNotice('Đã hoàn tác.'); };
+  const resetGlobal = () => {
+    const source = matrixQuery.data
+      ? normalizeCourierPermissionMatrix(matrixQuery.data)
+      : loadGlobalMatrix();
+    setMatrix(source);
+    setNotice(matrixQuery.data ? 'Đã hoàn tác về dữ liệu backend.' : 'Đã hoàn tác theo UI prototype.');
+    setErrorNotice(
+      matrixQuery.data
+        ? null
+        : 'Đang dùng UI prototype vì API phân quyền chưa sẵn sàng.',
+    );
+  };
 
   /* ── per-user actions ─────────────────────────────────── */
-  const isDirtyUser = JSON.stringify(overrides) !== overridesSnapshot;
+  const selectedUserMapJson = JSON.stringify(selectedUserMap);
+  const selectedUserSnapshot = selectedUserId
+    ? overrideSnapshots[selectedUserId] ?? JSON.stringify(createDefaultUserPermissionMap())
+    : '';
+  const isDirtyUser = Boolean(
+    selectedUserId && selectedUserMapJson !== selectedUserSnapshot,
+  );
 
   const selectUser = useCallback((u: AdminUserDto) => {
     setSelectedUserId(u.id);
     setNotice(null);
+    setErrorNotice(null);
   }, []);
 
   const toggleUserPerm = (feature: CourierPermissionFeature) => {
     if (!selectedUserId) return;
     setNotice(null);
+    setErrorNotice(null);
     setOverrides((prev) => {
       const current = prev[selectedUserId] ? normalizeUserPermissionMap(prev[selectedUserId]) : createDefaultUserPermissionMap();
       return { ...prev, [selectedUserId]: { ...current, [feature]: !current[feature] } };
@@ -147,6 +250,7 @@ export function CourierPermissionMatrixPage(): React.JSX.Element {
   const setUserAll = (val: boolean) => {
     if (!selectedUserId) return;
     setNotice(null);
+    setErrorNotice(null);
     setOverrides((prev) => {
       const map = COURIER_PERMISSION_FEATURES.reduce((a, f) => { a[f.id] = val; return a; }, {} as UserPermissionMap);
       return { ...prev, [selectedUserId]: map };
@@ -156,25 +260,55 @@ export function CourierPermissionMatrixPage(): React.JSX.Element {
   const resetUserToDefault = () => {
     if (!selectedUserId) return;
     setNotice(null);
+    setErrorNotice(null);
+    const defaultMap =
+      userEffectiveQuery.data?.actor && matrix[userEffectiveQuery.data.actor]
+        ? normalizeUserPermissionMap(matrix[userEffectiveQuery.data.actor])
+        : createDefaultUserPermissionMap();
     setOverrides((prev) => {
-      const next = { ...prev };
-      delete next[selectedUserId];
-      return next;
+      return { ...prev, [selectedUserId]: defaultMap };
     });
-    setNotice('Đã đặt về mặc định (full quyền) cho user này.');
+    setNotice('Đã đặt về mặc định theo ma trận chung cho user này. Bấm lưu để cập nhật backend.');
   };
 
-  const saveUserOverrides = () => {
-    saveUserPermissionOverrides(overrides);
-    setOverridesSnapshot(JSON.stringify(overrides));
-    setNotice('Đã lưu phân quyền theo user.');
+  const saveUserOverrides = async () => {
+    if (!selectedUserId) return;
+    setNotice(null);
+    setErrorNotice(null);
+
+    try {
+      const savedOverride = await updateUserOverrideMutation.mutateAsync({
+        userId: selectedUserId,
+        permissions: selectedUserMap,
+      });
+      const permissions = normalizeUserPermissionMap(savedOverride.permissions);
+      setOverrides((previous) => ({
+        ...previous,
+        [savedOverride.userId]: permissions,
+      }));
+      setOverrideSnapshots((previous) => ({
+        ...previous,
+        [savedOverride.userId]: JSON.stringify(permissions),
+      }));
+      setOverrideUserIds((previous) => new Set(previous).add(savedOverride.userId));
+      setNotice('Đã lưu phân quyền user lên backend.');
+    } catch (error) {
+      setErrorNotice(`Không lưu được phân quyền user: ${getErrorMessage(error)}`);
+    }
   };
 
   const resetUserOverrides = () => {
-    const loaded = loadUserPermissionOverrides();
-    setOverrides(loaded);
-    setOverridesSnapshot(JSON.stringify(loaded));
-    setNotice('Đã hoàn tác.');
+    if (!selectedUserId) return;
+    const snapshot = overrideSnapshots[selectedUserId];
+    const source = snapshot
+      ? normalizeUserPermissionMap(JSON.parse(snapshot))
+      : createDefaultUserPermissionMap();
+    setOverrides((previous) => ({
+      ...previous,
+      [selectedUserId]: source,
+    }));
+    setNotice('Đã hoàn tác phân quyền user.');
+    setErrorNotice(null);
   };
 
   const userEnabledCount = countUserEnabledPermissions(selectedUserMap);
@@ -205,6 +339,8 @@ export function CourierPermissionMatrixPage(): React.JSX.Element {
       </section>
 
       {notice ? <p style={S.notice} role="status">{notice}</p> : null}
+      {errorNotice ? <p style={S.errorNotice} role="alert">{errorNotice}</p> : null}
+      {matrixQuery.isLoading ? <p style={S.muted}>Đang tải ma trận phân quyền từ backend...</p> : null}
 
       {/* ═══════════ GLOBAL VIEW ═══════════ */}
       {viewMode === 'global' ? (
@@ -251,7 +387,7 @@ export function CourierPermissionMatrixPage(): React.JSX.Element {
           </section>
           <div style={S.saveBar}>
             <span style={isDirtyGlobal ? S.dirtyPill : S.syncPill}>{isDirtyGlobal ? '● Chưa lưu' : '✓ Đã đồng bộ'}</span>
-            <div style={S.row}><button type="button" onClick={resetGlobal} style={S.secBtn}>Hoàn tác</button><button type="button" onClick={saveGlobal} disabled={!isDirtyGlobal}>Lưu thay đổi</button></div>
+            <div style={S.row}><button type="button" onClick={resetGlobal} style={S.secBtn}>Hoàn tác</button><button type="button" onClick={() => void saveGlobal()} disabled={!isDirtyGlobal || updateMatrixMutation.isPending}>{updateMatrixMutation.isPending ? 'Đang lưu...' : 'Lưu thay đổi'}</button></div>
           </div>
         </>
       ) : null}
@@ -269,7 +405,7 @@ export function CourierPermissionMatrixPage(): React.JSX.Element {
                 const isSel = u.id === selectedUserId;
                 const uMap = overrides[u.id] ? normalizeUserPermissionMap(overrides[u.id]) : createDefaultUserPermissionMap();
                 const cnt = countUserEnabledPermissions(uMap);
-                const hasOverride = Boolean(overrides[u.id]);
+                const hasOverride = overrideUserIds.has(u.id);
                 return (
                   <button key={u.id} type="button" onClick={() => selectUser(u)} style={{...S.userCard, ...(isSel ? S.userSel : {})}}>
                     <div style={S.userTop}>
@@ -290,6 +426,7 @@ export function CourierPermissionMatrixPage(): React.JSX.Element {
           <div style={S.rightPanel}>
             {selectedUser ? (
               <>
+                {userEffectiveQuery.isLoading ? <p style={S.muted}>Đang tải phân quyền user từ backend...</p> : null}
                 <div style={S.userInfoBar}>
                   <div>
                     <h3 style={S.panelTitle}>{selectedUser.displayName || selectedUser.username}</h3>
@@ -322,7 +459,7 @@ export function CourierPermissionMatrixPage(): React.JSX.Element {
                 </div>
                 <div style={S.saveBar}>
                   <span style={isDirtyUser ? S.dirtyPill : S.syncPill}>{isDirtyUser ? '● Chưa lưu' : '✓ Đã đồng bộ'}</span>
-                  <div style={S.row}><button type="button" onClick={resetUserOverrides} style={S.secBtn}>Hoàn tác</button><button type="button" onClick={saveUserOverrides} disabled={!isDirtyUser}>Lưu thay đổi</button></div>
+                  <div style={S.row}><button type="button" onClick={resetUserOverrides} style={S.secBtn}>Hoàn tác</button><button type="button" onClick={() => void saveUserOverrides()} disabled={!isDirtyUser || updateUserOverrideMutation.isPending}>{updateUserOverrideMutation.isPending ? 'Đang lưu...' : 'Lưu thay đổi'}</button></div>
                 </div>
               </>
             ) : (
@@ -362,6 +499,7 @@ const S: Record<string, React.CSSProperties> = {
   searchInput: { flex: 1, minWidth: 200 },
   catSelect: { minWidth: 180 },
   notice: { margin: 0, border: '1px solid #c7d2fe', background: 'var(--admin-surface-soft)', color: 'var(--admin-primary)', borderRadius: 12, padding: '8px 10px', fontWeight: 700 },
+  errorNotice: { margin: 0, border: '1px solid #fecaca', background: '#fef2f2', color: '#991b1b', borderRadius: 12, padding: '8px 10px', fontWeight: 700 },
   tableWrap: { border: '1px solid var(--admin-border)', borderRadius: 14, overflow: 'auto' },
   featCol: { minWidth: 260 },
   actCol: { width: 120, textAlign: 'center' },

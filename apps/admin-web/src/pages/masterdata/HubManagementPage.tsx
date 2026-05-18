@@ -7,7 +7,6 @@ import {
 import type { AdminUserDto } from '../../features/auth/auth.types';
 import {
   useCreateHubMutation,
-  useDeleteHubMutation,
   useHubsQuery,
   useUpdateHubMutation,
   useZonesQuery,
@@ -65,6 +64,10 @@ const EMPTY_HUB_FORM: HubFormState = {
 function normalizeText(value: string): string | undefined {
   const normalizedValue = value.trim();
   return normalizedValue.length > 0 ? normalizedValue : undefined;
+}
+
+function normalizeCode(value: string): string {
+  return value.trim().toUpperCase();
 }
 
 function parseHubAddress(address: string | null): HubAddressPayload {
@@ -222,7 +225,6 @@ export function HubManagementPage(): React.JSX.Element {
 
   const createMutation = useCreateHubMutation(accessToken);
   const updateMutation = useUpdateHubMutation(accessToken);
-  const deleteMutation = useDeleteHubMutation(accessToken);
   const updateUserMutation = useUpdateAdminUserMutation(accessToken);
 
   const selectedHub = useMemo(
@@ -365,15 +367,72 @@ export function HubManagementPage(): React.JSX.Element {
     setActionMessage(null);
     setActionError(null);
 
+    const code = normalizeCode(form.code);
+    const name = form.name.trim();
+    const zoneCode = normalizeCode(form.zoneCode);
+    const province = form.province.trim();
+    const district = form.district.trim();
+    const ward = form.ward.trim();
+    const provinceExists = PROVINCE_OPTIONS.some(
+      (provinceOption) => provinceOption.label === province,
+    );
+    const validDistricts = getDistrictOptions(province);
+    const duplicateHub = (hubsQuery.data ?? []).find(
+      (hub) => hub.code.toUpperCase() === code && hub.id !== editingHub?.id,
+    );
+
+    if (!code) {
+      setActionError('Mã hub là bắt buộc.');
+      return;
+    }
+
+    if (duplicateHub) {
+      setActionError(`Mã hub "${code}" đã tồn tại trong danh sách đang tải.`);
+      return;
+    }
+
+    if (!name) {
+      setActionError('Tên hub là bắt buộc.');
+      return;
+    }
+
+    if (!zoneCode) {
+      setActionError('Mã zone là bắt buộc.');
+      return;
+    }
+
+    if (!province || !provinceExists) {
+      setActionError('Tỉnh/Thành phải được chọn từ danh mục hợp lệ.');
+      return;
+    }
+
+    if (!district || !validDistricts.includes(district)) {
+      setActionError('Quận/Huyện phải thuộc Tỉnh/Thành đã chọn.');
+      return;
+    }
+
+    if (!ward) {
+      setActionError('Phường/Xã là bắt buộc.');
+      return;
+    }
+
     const payload: HubWriteInput = {
-      name: form.name,
-      zoneCode: normalizeText(form.zoneCode) ?? null,
-      address: serializeHubAddress(form),
+      name,
+      zoneCode,
+      address: serializeHubAddress({
+        ...form,
+        code,
+        name,
+        zoneCode,
+        province,
+        district,
+        ward,
+      }),
       isActive: form.isActive,
     };
 
-    if (editingHub && form.code.trim()) {
-      payload.code = form.code.trim();
+    if (!editingHub) {
+      payload.code = code;
     }
 
     try {
@@ -399,27 +458,13 @@ export function HubManagementPage(): React.JSX.Element {
   };
 
   const onToggleStatus = async (hub: HubDto) => {
-    setActionMessage(null);
-    setActionError(null);
+    const nextIsActive = !hub.isActive;
+    const actionLabel = nextIsActive ? 'kích hoạt lại' : 'vô hiệu hóa';
+    const confirmMessage = nextIsActive
+      ? `Kích hoạt lại bưu cục ${hub.code}? Dữ liệu cũ được giữ nguyên và bưu cục sẽ được phép sử dụng lại trong điều phối logistics.`
+      : `Vô hiệu hóa bưu cục ${hub.code}? Dữ liệu bưu cục, phân công nhân sự và lịch sử vận hành không bị xóa; bưu cục chỉ bị ngừng sử dụng cho điều phối logistics.`;
 
-    try {
-      await updateMutation.mutateAsync({
-        hubId: hub.id,
-        payload: {
-          isActive: !hub.isActive,
-        },
-      });
-
-      setActionMessage(
-        `Bưu cục "${hub.code}" đã chuyển sang ${hub.isActive ? 'INACTIVE' : 'ACTIVE'}.`,
-      );
-    } catch (error) {
-      setActionError(getErrorMessage(error));
-    }
-  };
-
-  const onDeleteHub = async (hub: HubDto) => {
-    if (!window.confirm(`Xóa bưu cục ${hub.code}?`)) {
+    if (!window.confirm(confirmMessage)) {
       return;
     }
 
@@ -427,12 +472,16 @@ export function HubManagementPage(): React.JSX.Element {
     setActionError(null);
 
     try {
-      await deleteMutation.mutateAsync(hub.id);
-      setActionMessage(`Đã xóa bưu cục "${hub.code}".`);
+      await updateMutation.mutateAsync({
+        hubId: hub.id,
+        payload: {
+          isActive: nextIsActive,
+        },
+      });
 
-      if (selectedHubId === hub.id) {
-        setSelectedHubId('');
-      }
+      setActionMessage(
+        `Đã ${actionLabel} bưu cục "${hub.code}". Dữ liệu không bị xóa.`,
+      );
     } catch (error) {
       setActionError(getErrorMessage(error));
     }
@@ -441,7 +490,6 @@ export function HubManagementPage(): React.JSX.Element {
   const isSaving =
     createMutation.isPending ||
     updateMutation.isPending ||
-    deleteMutation.isPending ||
     updateUserMutation.isPending;
   const provinceOptions = useMemo(() => {
     if (
@@ -605,10 +653,7 @@ export function HubManagementPage(): React.JSX.Element {
                         Sửa
                       </button>
                       <button type="button" onClick={() => void onToggleStatus(hub)}>
-                        {hub.isActive ? 'Tắt' : 'Bật'}
-                      </button>
-                      <button type="button" onClick={() => void onDeleteHub(hub)}>
-                        Xóa
+                        {hub.isActive ? 'Vô hiệu hóa' : 'Kích hoạt lại'}
                       </button>
                     </div>
                   </td>
@@ -671,6 +716,22 @@ export function HubManagementPage(): React.JSX.Element {
         onSubmit={onSubmitForm}
       >
         <div style={styles.formGrid}>
+          <label style={styles.fieldLabel}>
+            Mã hub
+            <input
+              value={form.code}
+              onChange={(event) =>
+                setForm((previous) => ({
+                  ...previous,
+                  code: normalizeCode(event.target.value),
+                }))
+              }
+              placeholder="HCM-001"
+              disabled={Boolean(editingHub)}
+              required
+              style={styles.input}
+            />
+          </label>
           <label style={styles.fieldLabel}>
             Tên hub
             <input
@@ -991,4 +1052,3 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
   },
 };
-

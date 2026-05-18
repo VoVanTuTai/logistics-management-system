@@ -3,7 +3,6 @@ import React, { useMemo, useState } from 'react';
 import {
   useAdminUsersQuery,
   useCreateAdminUserMutation,
-  useDeleteAdminUserMutation,
   useUpdateAdminUserMutation,
 } from '../../features/auth/auth.api';
 import type {
@@ -89,7 +88,6 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
 
   const createMutation = useCreateAdminUserMutation(accessToken);
   const updateMutation = useUpdateAdminUserMutation(accessToken);
-  const deleteMutation = useDeleteAdminUserMutation(accessToken);
 
   const roleOptions = useMemo(() => roleOptionsByGroup(roleGroup), [roleGroup]);
 
@@ -167,8 +165,15 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
     }
   };
 
-  const onDeleteUser = async (user: AdminUserDto) => {
-    if (!window.confirm(`Xoa tai khoan ${user.username}?`)) {
+  const onToggleUserStatus = async (user: AdminUserDto) => {
+    const nextStatus: UserStatus = user.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE';
+    const actionLabel = nextStatus === 'DISABLED' ? 'vô hiệu hóa' : 'kích hoạt lại';
+    const confirmMessage =
+      nextStatus === 'DISABLED'
+        ? `Vô hiệu hóa tài khoản ${user.username}? Dữ liệu tài khoản, phân quyền và lịch sử vận hành không bị xóa; tài khoản chỉ bị ngừng sử dụng trong nghiệp vụ logistics.`
+        : `Kích hoạt lại tài khoản ${user.username}? Dữ liệu cũ được giữ nguyên và tài khoản sẽ được phép sử dụng lại trong vận hành logistics.`;
+
+    if (!window.confirm(confirmMessage)) {
       return;
     }
 
@@ -176,8 +181,13 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
     setActionError(null);
 
     try {
-      await deleteMutation.mutateAsync(user.id);
-      setActionMessage(`Da xoa tai khoan ${user.username}.`);
+      await updateMutation.mutateAsync({
+        userId: user.id,
+        payload: {
+          status: nextStatus,
+        },
+      });
+      setActionMessage(`Đã ${actionLabel} tài khoản ${user.username}. Dữ liệu không bị xóa.`);
 
       if (editingUser?.id === user.id) {
         resetForm();
@@ -191,8 +201,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
     resetForm();
   };
 
-  const isSaving =
-    createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
+  const isSaving = createMutation.isPending || updateMutation.isPending;
 
   return (
     <div>
@@ -402,8 +411,8 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
                     <button type="button" onClick={() => onEditUser(user)}>
                       Sua
                     </button>
-                    <button type="button" onClick={() => void onDeleteUser(user)}>
-                      Xoa
+                    <button type="button" onClick={() => void onToggleUserStatus(user)}>
+                      {user.status === 'ACTIVE' ? 'Vô hiệu hóa' : 'Kích hoạt lại'}
                     </button>
                   </div>
                 </td>

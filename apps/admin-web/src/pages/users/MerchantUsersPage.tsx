@@ -3,7 +3,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   useAdminUsersQuery,
   useCreateAdminUserMutation,
-  useDeleteAdminUserMutation,
   useUpdateAdminUserMutation,
 } from '../../features/auth/auth.api';
 import type { AdminUserDto, UserStatus } from '../../features/auth/auth.types';
@@ -333,7 +332,6 @@ export function MerchantUsersPage(): React.JSX.Element {
 
   const createUserMutation = useCreateAdminUserMutation(accessToken);
   const updateUserMutation = useUpdateAdminUserMutation(accessToken);
-  const deleteUserMutation = useDeleteAdminUserMutation(accessToken);
   const createConfigMutation = useCreateConfigMutation(accessToken);
   const updateConfigMutation = useUpdateConfigMutation(accessToken);
 
@@ -398,7 +396,6 @@ export function MerchantUsersPage(): React.JSX.Element {
   const isSaving =
     createUserMutation.isPending ||
     updateUserMutation.isPending ||
-    deleteUserMutation.isPending ||
     createConfigMutation.isPending ||
     updateConfigMutation.isPending;
 
@@ -559,8 +556,15 @@ export function MerchantUsersPage(): React.JSX.Element {
     }
   };
 
-  const onDeleteUser = async (user: AdminUserDto) => {
-    if (!window.confirm(`Xoa tai khoan merchant ${user.username}?`)) {
+  const onToggleUserStatus = async (user: AdminUserDto) => {
+    const nextStatus: UserStatus = user.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE';
+    const actionLabel = nextStatus === 'DISABLED' ? 'vô hiệu hóa' : 'kích hoạt lại';
+    const confirmMessage =
+      nextStatus === 'DISABLED'
+        ? `Vô hiệu hóa tài khoản merchant ${user.username}? Dữ liệu merchant, hồ sơ gửi hàng và lịch sử vận hành không bị xóa; tài khoản chỉ bị ngừng sử dụng trong nghiệp vụ logistics.`
+        : `Kích hoạt lại tài khoản merchant ${user.username}? Dữ liệu cũ được giữ nguyên và merchant sẽ được phép sử dụng lại trong vận hành logistics.`;
+
+    if (!window.confirm(confirmMessage)) {
       return;
     }
 
@@ -568,8 +572,13 @@ export function MerchantUsersPage(): React.JSX.Element {
     setActionError(null);
 
     try {
-      await deleteUserMutation.mutateAsync(user.id);
-      setActionMessage(`Da xoa merchant ${user.username}.`);
+      await updateUserMutation.mutateAsync({
+        userId: user.id,
+        payload: {
+          status: nextStatus,
+        },
+      });
+      setActionMessage(`Đã ${actionLabel} merchant ${user.username}. Dữ liệu không bị xóa.`);
 
       if (editingUser?.id === user.id) {
         resetForm();
@@ -822,8 +831,8 @@ export function MerchantUsersPage(): React.JSX.Element {
                       <button type="button" onClick={() => onEditUser(user)}>
                         Sua
                       </button>
-                      <button type="button" onClick={() => void onDeleteUser(user)}>
-                        Xoa
+                      <button type="button" onClick={() => void onToggleUserStatus(user)}>
+                        {user.status === 'ACTIVE' ? 'Vô hiệu hóa' : 'Kích hoạt lại'}
                       </button>
                     </div>
                   </td>

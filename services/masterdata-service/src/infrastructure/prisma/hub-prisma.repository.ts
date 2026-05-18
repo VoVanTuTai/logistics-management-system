@@ -80,8 +80,13 @@ export class HubPrismaRepository extends HubRepository {
   }
 
   async findByCode(code: string): Promise<Hub | null> {
-    const record = await this.prisma.hub.findUnique({
-      where: { code },
+    const record = await this.prisma.hub.findFirst({
+      where: {
+        code: {
+          equals: code,
+          mode: 'insensitive',
+        },
+      },
     });
 
     return record ? this.toEntity(record) : null;

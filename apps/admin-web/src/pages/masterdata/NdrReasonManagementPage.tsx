@@ -48,6 +48,10 @@ function normalizeText(value: string): string | undefined {
   return normalizedValue.length > 0 ? normalizedValue : undefined;
 }
 
+function normalizeCode(value: string): string {
+  return value.trim().toUpperCase();
+}
+
 function parseNdrReasonPayload(rawDescription: string): NdrReasonPayload {
   try {
     const parsed = JSON.parse(rawDescription) as Record<string, unknown>;
@@ -168,10 +172,32 @@ export function NdrReasonManagementPage(): React.JSX.Element {
     setActionError(null);
     setActionMessage(null);
 
+    const code = normalizeCode(form.code);
+    const name = form.name.trim();
+    const duplicateReason = (reasonsQuery.data ?? []).find(
+      (reason) =>
+        reason.code.toUpperCase() === code && reason.id !== editingReason?.id,
+    );
+
+    if (!code) {
+      setActionError('Mã lý do NDR là bắt buộc.');
+      return;
+    }
+
+    if (duplicateReason) {
+      setActionError(`Mã lý do NDR "${code}" đã tồn tại trong danh sách đang tải.`);
+      return;
+    }
+
+    if (!name) {
+      setActionError('Tên lý do NDR là bắt buộc.');
+      return;
+    }
+
     const payload: NdrReasonWriteInput = {
-      code: form.code,
+      code,
       description: buildNdrReasonDescription({
-        name: form.name,
+        name,
         category: form.category,
         description: form.description,
         allowReschedule: form.allowReschedule,
@@ -404,7 +430,7 @@ export function NdrReasonManagementPage(): React.JSX.Element {
               onChange={(event) =>
                 setForm((previous) => ({
                   ...previous,
-                  code: event.target.value,
+                  code: normalizeCode(event.target.value),
                 }))
               }
               placeholder="CANNOT_CONTACT"

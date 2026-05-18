@@ -6,6 +6,11 @@ export const opsEndpoints = {
     logout: '/ops/auth/auth/logout',
     users: '/ops/auth/auth/users',
     userDetail: (userId: string) => `/ops/auth/auth/users/${userId}`,
+    mobilePermissionMatrix: '/ops/auth/auth/mobile-permissions/matrix',
+    mobilePermissionUserEffective: (userId: string) =>
+      `/ops/auth/auth/mobile-permissions/users/${userId}/effective`,
+    mobilePermissionUserOverride: (userId: string) =>
+      `/ops/auth/auth/mobile-permissions/users/${userId}`,
   },
   dashboard: {
     kpis: '/ops/reporting/reports/ops-dashboard',
