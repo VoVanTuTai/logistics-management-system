@@ -33,6 +33,10 @@ import { UserAccountRepository } from '../../domain/repositories/user-account.re
 import { HashService } from '../../infrastructure/security/hash.service';
 import { OpaqueTokenService } from '../../infrastructure/security/opaque-token.service';
 import { AuthOutboxService } from '../../messaging/outbox/auth-outbox.service';
+import {
+  AdminAuditService,
+  type AdminAuditContext,
+} from './admin-audit.service';
 
 const EMPLOYEE_LOGIN_CODE_PATTERN = /^\d{8}$/;
 const ADMIN_CODE_PATTERN = /^10000\d{3}$/;
@@ -56,6 +60,7 @@ export class AuthService {
     private readonly hashService: HashService,
     private readonly opaqueTokenService: OpaqueTokenService,
     private readonly authOutboxService: AuthOutboxService,
+    private readonly adminAuditService: AdminAuditService,
   ) {}
 
   async login(input: LoginInput): Promise<LoginResult> {
@@ -222,7 +227,10 @@ export class AuthService {
     return users.map((user) => this.toUserAccountView(user));
   }
 
-  async createUser(input: UserCreateInput): Promise<UserAccountView> {
+  async createUser(
+    input: UserCreateInput,
+    auditContext?: AdminAuditContext,
+  ): Promise<UserAccountView> {
     const normalizedInput = this.normalizeCreateUserInput(input);
 
     const existingUser = await this.userAccountRepository.findByUsername(
@@ -246,10 +254,23 @@ export class AuthService {
       hubCodes: normalizedInput.hubCodes,
     });
 
+    await this.adminAuditService.record({
+      context: auditContext,
+      action: 'USER_CREATED',
+      targetType: 'USER',
+      targetId: user.id,
+      before: null,
+      after: this.toUserAccountView(user),
+    });
+
     return this.toUserAccountView(user);
   }
 
-  async updateUser(id: string, input: UserUpdateInput): Promise<UserAccountView> {
+  async updateUser(
+    id: string,
+    input: UserUpdateInput,
+    auditContext?: AdminAuditContext,
+  ): Promise<UserAccountView> {
     const currentUser = await this.getUserById(id);
     const normalizedInput = this.normalizeUpdateUserInput(input);
 
@@ -281,10 +302,25 @@ export class AuthService {
 
     const user = await this.userAccountRepository.update(id, payload);
 
+    await this.adminAuditService.record({
+      context: auditContext,
+      action:
+        currentUser.status !== user.status && user.status === 'DISABLED'
+          ? 'USER_DISABLED'
+          : 'USER_UPDATED',
+      targetType: 'USER',
+      targetId: user.id,
+      before: this.toUserAccountView(currentUser),
+      after: this.toUserAccountView(user),
+    });
+
     return this.toUserAccountView(user);
   }
 
-  async deleteUser(id: string): Promise<{ deleted: boolean; userId: string | null }> {
+  async deleteUser(
+    id: string,
+    auditContext?: AdminAuditContext,
+  ): Promise<{ deleted: boolean; userId: string | null }> {
     const user = await this.userAccountRepository.findById(id);
 
     if (!user) {
@@ -295,6 +331,17 @@ export class AuthService {
     }
 
     const deleted = await this.userAccountRepository.delete(id);
+
+    if (deleted) {
+      await this.adminAuditService.record({
+        context: auditContext,
+        action: 'USER_DELETED',
+        targetType: 'USER',
+        targetId: user.id,
+        before: this.toUserAccountView(user),
+        after: null,
+      });
+    }
 
     return {
       deleted,

@@ -14,6 +14,10 @@ import {
 import { ConfigRepository } from '../../domain/repositories/config.repository';
 import { MasterdataOutboxService } from '../../messaging/outbox/masterdata-outbox.service';
 import {
+  AdminAuditService,
+  type AdminAuditContext,
+} from './admin-audit.service';
+import {
   normalizeConfigKeyQuery,
   normalizeOptionalConfigKey,
   normalizeOptionalText,
@@ -40,6 +44,7 @@ export class ConfigsService {
     @Inject(ConfigRepository)
     private readonly configRepository: ConfigRepository,
     private readonly masterdataOutboxService: MasterdataOutboxService,
+    private readonly adminAuditService: AdminAuditService,
   ) {}
 
   list(query: ListConfigsQuery = {}): Promise<Config[]> {
@@ -60,7 +65,10 @@ export class ConfigsService {
     return config;
   }
 
-  async create(input: ConfigWriteInput): Promise<Config> {
+  async create(
+    input: ConfigWriteInput,
+    auditContext?: AdminAuditContext,
+  ): Promise<Config> {
     const normalizedInput = this.normalizeCreateInput(input);
     const existingConfig = await this.configRepository.findByKey(
       normalizedInput.key,
@@ -84,10 +92,23 @@ export class ConfigsService {
       },
     );
 
+    await this.adminAuditService.record({
+      context: auditContext,
+      action: 'CONFIG_CREATED',
+      targetType: 'CONFIG',
+      targetId: config.id,
+      before: null,
+      after: config,
+    });
+
     return config;
   }
 
-  async update(id: string, input: Partial<ConfigWriteInput>): Promise<Config> {
+  async update(
+    id: string,
+    input: Partial<ConfigWriteInput>,
+    auditContext?: AdminAuditContext,
+  ): Promise<Config> {
     const currentConfig = await this.getById(id);
     const normalizedInput = this.normalizeUpdateInput(input, currentConfig.key);
 
@@ -126,7 +147,50 @@ export class ConfigsService {
       },
     );
 
+    await this.adminAuditService.record({
+      context: auditContext,
+      action: 'CONFIG_UPDATED',
+      targetType: 'CONFIG',
+      targetId: config.id,
+      before: currentConfig,
+      after: config,
+    });
+
     return config;
+  }
+
+  async remove(
+    id: string,
+    auditContext?: AdminAuditContext,
+  ): Promise<{ deleted: boolean; configId: string | null }> {
+    const config = await this.getById(id);
+    const deleted = await this.configRepository.delete(id);
+
+    if (deleted) {
+      await this.masterdataOutboxService.enqueueMasterdataUpdated(
+        'config',
+        config.id,
+        {
+          action: 'deleted',
+          entity: 'config',
+          record: config,
+        },
+      );
+
+      await this.adminAuditService.record({
+        context: auditContext,
+        action: 'CONFIG_DELETED',
+        targetType: 'CONFIG',
+        targetId: config.id,
+        before: config,
+        after: null,
+      });
+    }
+
+    return {
+      deleted,
+      configId: deleted ? config.id : null,
+    };
   }
 
   private normalizeCreateInput(input: ConfigWriteInput): ConfigWriteInput {

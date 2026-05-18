@@ -124,6 +124,14 @@ export class ConfigPrismaRepository extends ConfigRepository {
     return this.toEntity(record);
   }
 
+  async delete(id: string): Promise<boolean> {
+    const result = await this.prisma.config.deleteMany({
+      where: { id },
+    });
+
+    return result.count > 0;
+  }
+
   private toEntity(record: PrismaConfigRecord): Config {
     return {
       id: record.id,

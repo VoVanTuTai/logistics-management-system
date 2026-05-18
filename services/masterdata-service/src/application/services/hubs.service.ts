@@ -15,6 +15,10 @@ import { HubRepository } from '../../domain/repositories/hub.repository';
 import { ZoneRepository } from '../../domain/repositories/zone.repository';
 import { MasterdataOutboxService } from '../../messaging/outbox/masterdata-outbox.service';
 import {
+  AdminAuditService,
+  type AdminAuditContext,
+} from './admin-audit.service';
+import {
   normalizeCodeQuery,
   normalizeOptionalCode,
   normalizeOptionalText,
@@ -60,6 +64,7 @@ export class HubsService {
     @Inject(ZoneRepository)
     private readonly zoneRepository: ZoneRepository,
     private readonly masterdataOutboxService: MasterdataOutboxService,
+    private readonly adminAuditService: AdminAuditService,
   ) {}
 
   list(query: ListHubsQuery = {}): Promise<Hub[]> {
@@ -82,7 +87,10 @@ export class HubsService {
     return hub;
   }
 
-  async create(input: HubWriteInput): Promise<Hub> {
+  async create(
+    input: HubWriteInput,
+    auditContext?: AdminAuditContext,
+  ): Promise<Hub> {
     const normalizedInput = await this.normalizeCreateInput(input);
     const existingHub = await this.hubRepository.findByCode(normalizedInput.code);
 
@@ -108,10 +116,23 @@ export class HubsService {
       },
     );
 
+    await this.adminAuditService.record({
+      context: auditContext,
+      action: 'HUB_CREATED',
+      targetType: 'HUB',
+      targetId: hub.id,
+      before: null,
+      after: hub,
+    });
+
     return hub;
   }
 
-  async update(id: string, input: Partial<HubWriteInput>): Promise<Hub> {
+  async update(
+    id: string,
+    input: Partial<HubWriteInput>,
+    auditContext?: AdminAuditContext,
+  ): Promise<Hub> {
     const currentHub = await this.getById(id);
     const normalizedInput = this.normalizeUpdateInput(input);
 
@@ -149,10 +170,25 @@ export class HubsService {
       },
     );
 
+    await this.adminAuditService.record({
+      context: auditContext,
+      action:
+        currentHub.isActive !== hub.isActive && hub.isActive === false
+          ? 'HUB_DISABLED'
+          : 'HUB_UPDATED',
+      targetType: 'HUB',
+      targetId: hub.id,
+      before: currentHub,
+      after: hub,
+    });
+
     return hub;
   }
 
-  async remove(id: string): Promise<{ deleted: boolean; hubId: string | null }> {
+  async remove(
+    id: string,
+    auditContext?: AdminAuditContext,
+  ): Promise<{ deleted: boolean; hubId: string | null }> {
     const hub = await this.getById(id);
     const deleted = await this.hubRepository.delete(id);
 
@@ -166,6 +202,15 @@ export class HubsService {
           record: hub,
         },
       );
+
+      await this.adminAuditService.record({
+        context: auditContext,
+        action: 'HUB_DELETED',
+        targetType: 'HUB',
+        targetId: hub.id,
+        before: hub,
+        after: null,
+      });
     }
 
     return {

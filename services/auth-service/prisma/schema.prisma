@@ -73,6 +73,24 @@ model MobilePermissionOverride {
   user        UserAccount @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+model AdminAuditLog {
+  id            String   @id @default(cuid())
+  actorId       String?
+  actorUsername String?
+  action        String
+  targetType    String
+  targetId      String?
+  before        Json?
+  after         Json?
+  requestId     String?
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+
+  @@index([targetType, targetId, createdAt])
+  @@index([actorId, createdAt])
+}
+
 model OutboxEvent {
   id            String       @id @default(cuid())
   eventId       String       @unique

@@ -6,6 +6,7 @@ export const opsEndpoints = {
     logout: '/ops/auth/auth/logout',
     users: '/ops/auth/auth/users',
     userDetail: (userId: string) => `/ops/auth/auth/users/${userId}`,
+    adminAuditLogs: '/ops/auth/auth/admin-audit-logs',
     mobilePermissionMatrix: '/ops/auth/auth/mobile-permissions/matrix',
     mobilePermissionUserEffective: (userId: string) =>
       `/ops/auth/auth/mobile-permissions/users/${userId}/effective`,
@@ -69,5 +70,6 @@ export const opsEndpoints = {
     ndrReasonDetail: (reasonId: string) => `/ops/masterdata/ndr-reasons/${reasonId}`,
     configs: '/ops/masterdata/configs',
     configDetail: (configId: string) => `/ops/masterdata/configs/${configId}`,
+    adminAuditLogs: '/ops/masterdata/admin-audit-logs',
   },
 } as const;
