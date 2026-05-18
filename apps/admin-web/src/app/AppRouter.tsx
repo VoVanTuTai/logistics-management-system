@@ -13,6 +13,7 @@ import { useLogoutMutation } from '../features/auth/auth.api';
 import { hasAdminRole } from '../features/auth/auth.roles';
 import { routePaths } from '../navigation/routes';
 import { useAuthStore } from '../store/authStore';
+import { AdminAuditLogPage } from '../pages/audit/AdminAuditLogPage';
 import { LoginPage } from '../pages/auth/LoginPage';
 import { AdminDashboardPage } from '../pages/dashboard/AdminDashboardPage';
 import { ConfigManagementPage } from '../pages/masterdata/ConfigManagementPage';
@@ -52,6 +53,7 @@ function AdminLayout(): React.JSX.Element {
       { label: 'Tài khoản Shipper', to: routePaths.shipperUsers },
       { label: 'Tai khoan Merchant', to: routePaths.merchantUsers },
       { label: 'Phân quyền mobile', to: routePaths.courierPermissions },
+      { label: 'Audit log', to: routePaths.auditLogs },
       { label: 'Hub', to: routePaths.masterdataHubs },
       { label: 'Zone', to: routePaths.masterdataZones },
       { label: 'Ly do NDR', to: routePaths.masterdataNdrReasons },
@@ -127,6 +129,7 @@ export function AppRouter(): React.JSX.Element {
             <Route path={routePaths.shipperUsersLeaf} element={<ShipperUsersPage />} />
             <Route path={routePaths.merchantUsersLeaf} element={<MerchantUsersPage />} />
             <Route path={routePaths.courierPermissionsLeaf} element={<CourierPermissionMatrixPage />} />
+            <Route path={routePaths.auditLogsLeaf} element={<AdminAuditLogPage />} />
             <Route path={routePaths.masterdataHubsLeaf} element={<HubManagementPage />} />
             <Route path={routePaths.masterdataZonesLeaf} element={<ZoneManagementPage />} />
             <Route path={routePaths.masterdataNdrReasonsLeaf} element={<NdrReasonManagementPage />} />
