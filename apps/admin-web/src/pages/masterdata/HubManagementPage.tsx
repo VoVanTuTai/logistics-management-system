@@ -19,6 +19,9 @@ import type {
 import {
   PROVINCE_OPTIONS,
   getDistrictOptions,
+  isKnownProvince,
+  toProvinceApiValue,
+  toProvinceLabel,
 } from '../../constants/vnLocations';
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
@@ -307,6 +310,7 @@ export function HubManagementPage(): React.JSX.Element {
 
   const openEditModal = (hub: HubDto) => {
     const addressPayload = parseHubAddress(hub.address);
+    const normalizedProvince = toProvinceLabel(addressPayload.province);
     setEditingHub(hub);
     setForm({
       code: hub.code,
@@ -316,6 +320,7 @@ export function HubManagementPage(): React.JSX.Element {
       opsUserIds: findAssignedUserIdsByHub(opsUsers, hub.code),
       courierUserIds: findAssignedUserIdsByHub(courierUsers, hub.code),
       ...addressPayload,
+      province: normalizedProvince,
     });
     setActionError(null);
     setActionMessage(null);
@@ -371,11 +376,10 @@ export function HubManagementPage(): React.JSX.Element {
     const name = form.name.trim();
     const zoneCode = normalizeCode(form.zoneCode);
     const province = form.province.trim();
+    const provinceApiValue = toProvinceApiValue(province);
     const district = form.district.trim();
     const ward = form.ward.trim();
-    const provinceExists = PROVINCE_OPTIONS.some(
-      (provinceOption) => provinceOption.label === province,
-    );
+    const provinceExists = isKnownProvince(province);
     const validDistricts = getDistrictOptions(province);
     const duplicateHub = (hubsQuery.data ?? []).find(
       (hub) => hub.code.toUpperCase() === code && hub.id !== editingHub?.id,
@@ -424,7 +428,7 @@ export function HubManagementPage(): React.JSX.Element {
         code,
         name,
         zoneCode,
-        province,
+        province: provinceApiValue,
         district,
         ward,
       }),
@@ -494,10 +498,15 @@ export function HubManagementPage(): React.JSX.Element {
   const provinceOptions = useMemo(() => {
     if (
       form.province &&
-      !PROVINCE_OPTIONS.some((province) => province.label === form.province)
+      !isKnownProvince(form.province)
     ) {
       return [
-        { code: `LEGACY_${form.province}`, label: form.province, districts: [] },
+        {
+          code: `LEGACY_${form.province}`,
+          label: form.province,
+          apiValue: form.province,
+          districts: [],
+        },
         ...PROVINCE_OPTIONS,
       ];
     }

@@ -90,6 +90,10 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
   const updateMutation = useUpdateAdminUserMutation(accessToken);
 
   const roleOptions = useMemo(() => roleOptionsByGroup(roleGroup), [roleGroup]);
+  const activeHubs = useMemo(
+    () => (hubsQuery.data ?? []).filter((hub) => hub.isActive),
+    [hubsQuery.data],
+  );
 
   const resetForm = () => {
     setEditingUser(null);
@@ -333,7 +337,7 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
               style={styles.input}
             >
               <option value="">Chưa gán</option>
-              {(hubsQuery.data ?? []).map((hub) => (
+              {activeHubs.map((hub) => (
                 <option key={hub.id} value={hub.code}>
                   {hub.code} - {hub.name}
                 </option>

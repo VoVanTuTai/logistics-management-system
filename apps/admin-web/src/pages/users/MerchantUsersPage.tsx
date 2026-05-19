@@ -7,12 +7,15 @@ import {
 } from '../../features/auth/auth.api';
 import type { AdminUserDto, UserStatus } from '../../features/auth/auth.types';
 import {
+  useCreateConfigMutation,
   useConfigsQuery,
   useHubsQuery,
   useMerchantProfilesQuery,
+  useUpdateConfigMutation,
   useUpsertMerchantProfileMutation,
 } from '../../features/masterdata/masterdata.api';
 import type {
+  ConfigValue,
   ConfigDto,
   HubDto,
   MerchantProfileDto,
@@ -27,6 +30,10 @@ const MERCHANT_PROFILE_SCOPE = 'MERCHANT_PROFILE';
 const MERCHANT_PROFILE_KEY_PREFIX = 'merchant.profile.';
 const MERCHANT_USERNAME_PATTERN = /^411\d{5}$/;
 const CITIZEN_ID_PATTERN = /^\d{12}$/;
+
+function buildMerchantProfileKey(username: string): string {
+  return `${MERCHANT_PROFILE_KEY_PREFIX}${username.trim().toUpperCase()}`;
+}
 
 interface MerchantRegionOption {
   code: 'HA_NOI' | 'DA_NANG' | 'HO_CHI_MINH';
@@ -45,6 +52,7 @@ interface MerchantFormState {
   citizenId: string;
   regionCode: MerchantRegionOption['code'];
   defaultHubCode: string;
+  businessAddressDetail: string;
   password: string;
   confirmPassword: string;
   status: UserStatus;
@@ -54,6 +62,9 @@ interface MerchantHubOption {
   hubCode: string;
   hubName: string;
   regionCode: MerchantRegionOption['code'];
+  province: string;
+  district: string;
+  ward: string;
   fullAddress: string;
   sortLabel: string;
 }
@@ -66,6 +77,7 @@ interface MerchantProfilePayload {
   defaultHubCode: string | null;
   defaultHubName: string | null;
   defaultSenderAddress: string | null;
+  businessAddressDetail: string | null;
 }
 
 const DEFAULT_FORM: MerchantFormState = {
@@ -74,6 +86,7 @@ const DEFAULT_FORM: MerchantFormState = {
   citizenId: '',
   regionCode: MERCHANT_REGION_OPTIONS[0].code,
   defaultHubCode: '',
+  businessAddressDetail: '',
   password: '',
   confirmPassword: '',
   status: 'ACTIVE',
@@ -174,9 +187,33 @@ function toMerchantHubOption(hub: HubDto): MerchantHubOption | null {
     hubCode: hub.code,
     hubName: hub.name,
     regionCode,
+    province: addressParts.province,
+    district: addressParts.district,
+    ward: addressParts.ward,
     fullAddress,
     sortLabel: `${hub.name} (${hub.code})`,
   };
+}
+
+function composeMerchantDefaultAddress(
+  addressDetail: string,
+  hub: MerchantHubOption | null,
+): string | null {
+  const trimmedAddressDetail = addressDetail.trim();
+  const parts = [
+    trimmedAddressDetail,
+    hub?.ward ?? '',
+    hub?.district ?? '',
+    hub?.province ?? '',
+  ]
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
+
+  if (parts.length > 0) {
+    return parts.join(', ');
+  }
+
+  return hub?.fullAddress || null;
 }
 
 function toMerchantProfilePayload(
@@ -199,6 +236,7 @@ function toMerchantProfilePayload(
     defaultHubCode: profile.defaultHubCode?.trim().toUpperCase() || null,
     defaultHubName: profile.defaultHubName?.trim() || null,
     defaultSenderAddress: profile.defaultSenderAddress?.trim() || null,
+    businessAddressDetail: profile.businessAddressDetail?.trim() || null,
   };
 }
 
@@ -246,6 +284,10 @@ function parseMerchantProfilePayload(
       typeof record.defaultSenderAddress === 'string' && record.defaultSenderAddress.trim()
         ? record.defaultSenderAddress.trim()
         : null,
+    businessAddressDetail:
+      typeof record.businessAddressDetail === 'string' && record.businessAddressDetail.trim()
+        ? record.businessAddressDetail.trim()
+        : null,
   };
 }
 
@@ -289,7 +331,19 @@ function mapMerchantProfiles(
       continue;
     }
 
-    mappedProfiles.set(payload.username, payload);
+    const legacyPayload = mappedProfiles.get(payload.username);
+
+    mappedProfiles.set(payload.username, {
+      ...payload,
+      businessAddressDetail:
+        payload.businessAddressDetail ?? legacyPayload?.businessAddressDetail ?? null,
+      defaultSenderAddress:
+        payload.defaultSenderAddress ?? legacyPayload?.defaultSenderAddress ?? null,
+      defaultHubCode:
+        payload.defaultHubCode ?? legacyPayload?.defaultHubCode ?? null,
+      defaultHubName:
+        payload.defaultHubName ?? legacyPayload?.defaultHubName ?? null,
+    });
   }
 
   return mappedProfiles;
@@ -364,6 +418,8 @@ export function MerchantUsersPage(): React.JSX.Element {
 
   const createUserMutation = useCreateAdminUserMutation(accessToken);
   const updateUserMutation = useUpdateAdminUserMutation(accessToken);
+  const createConfigMutation = useCreateConfigMutation(accessToken);
+  const updateConfigMutation = useUpdateConfigMutation(accessToken);
   const upsertMerchantProfileMutation = useUpsertMerchantProfileMutation(accessToken);
 
   const merchantUsers = merchantsQuery.data ?? [];
@@ -435,6 +491,8 @@ export function MerchantUsersPage(): React.JSX.Element {
   const isSaving =
     createUserMutation.isPending ||
     updateUserMutation.isPending ||
+    createConfigMutation.isPending ||
+    updateConfigMutation.isPending ||
     upsertMerchantProfileMutation.isPending;
 
   const resetForm = () => {
@@ -465,6 +523,7 @@ export function MerchantUsersPage(): React.JSX.Element {
       citizenId: profile?.citizenId ?? '',
       regionCode,
       defaultHubCode: selectedHubCode,
+      businessAddressDetail: profile?.businessAddressDetail ?? '',
       password: '',
       confirmPassword: '',
       status: user.status,
@@ -481,6 +540,34 @@ export function MerchantUsersPage(): React.JSX.Element {
       username,
       payload: profile,
     });
+
+  const syncLegacyMerchantProfileConfig = async (
+    username: string,
+    profile: MerchantProfilePayload,
+  ): Promise<void> => {
+    const configKey = buildMerchantProfileKey(username);
+    const configValue = profile as unknown as ConfigValue;
+    const existingConfig = (profilesQuery.data ?? []).find(
+      (config) => config.key.trim() === configKey,
+    );
+
+    if (existingConfig) {
+      await updateConfigMutation.mutateAsync({
+        configId: existingConfig.id,
+        payload: {
+          value: configValue,
+        },
+      });
+      return;
+    }
+
+    await createConfigMutation.mutateAsync({
+      key: configKey,
+      scope: MERCHANT_PROFILE_SCOPE,
+      value: configValue,
+      description: `Merchant profile for ${username}`,
+    });
+  };
 
   const onSubmitForm = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -525,6 +612,7 @@ export function MerchantUsersPage(): React.JSX.Element {
 
     const username = editingUser?.username ?? nextMerchantUsername;
     const regionLabel = resolveRegionLabel(form.regionCode);
+    const businessAddressDetail = form.businessAddressDetail.trim();
 
     const profilePayload: MerchantProfilePayload = {
       username,
@@ -533,7 +621,11 @@ export function MerchantUsersPage(): React.JSX.Element {
       regionLabel,
       defaultHubCode: selectedHub.hubCode,
       defaultHubName: selectedHub.hubName,
-      defaultSenderAddress: selectedHub.fullAddress || null,
+      defaultSenderAddress: composeMerchantDefaultAddress(
+        businessAddressDetail,
+        selectedHub,
+      ),
+      businessAddressDetail: businessAddressDetail || null,
     };
 
     try {
@@ -553,6 +645,7 @@ export function MerchantUsersPage(): React.JSX.Element {
         });
 
         await upsertMerchantProfile(username, profilePayload);
+        await syncLegacyMerchantProfileConfig(username, profilePayload);
         setActionMessage(`Đã cập nhật merchant ${username}.`);
       } else {
         await createUserMutation.mutateAsync({
@@ -566,6 +659,7 @@ export function MerchantUsersPage(): React.JSX.Element {
         });
 
         await upsertMerchantProfile(username, profilePayload);
+        await syncLegacyMerchantProfileConfig(username, profilePayload);
         setActionMessage(`Đã tạo merchant ${username}.`);
       }
 
@@ -739,6 +833,21 @@ export function MerchantUsersPage(): React.JSX.Element {
             </select>
           </label>
           <label style={styles.fieldLabel}>
+            Dia chi chi tiet
+            <textarea
+              value={form.businessAddressDetail}
+              onChange={(event) =>
+                setForm((previous) => ({
+                  ...previous,
+                  businessAddressDetail: event.target.value,
+                }))
+              }
+              style={styles.textarea}
+              placeholder="So nha, ten duong, toa nha..."
+              rows={3}
+            />
+          </label>
+          <label style={styles.fieldLabel}>
             Mật khẩu {editingUser ? '(bỏ trống nếu không đổi)' : ''}
             <input
               type="password"
@@ -882,6 +991,15 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 10,
     padding: '8px 10px',
     minWidth: 180,
+  },
+  textarea: {
+    border: '1px solid var(--admin-border)',
+    borderRadius: 10,
+    padding: '8px 10px',
+    minWidth: 180,
+    minHeight: 88,
+    resize: 'vertical',
+    fontFamily: 'inherit',
   },
   editorCard: {
     border: '1px solid var(--admin-border)',

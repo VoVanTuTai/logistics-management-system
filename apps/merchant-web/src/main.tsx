@@ -85,6 +85,7 @@ interface MerchantProfileConfigPayload {
   defaultHubCode: string | null;
   defaultHubName: string | null;
   defaultSenderAddress: string | null;
+  businessAddressDetail: string | null;
 }
 
 interface PublicTrackingSnapshotResponse {
@@ -200,6 +201,10 @@ function parseMerchantProfileConfig(
     defaultSenderAddress:
       typeof payload.defaultSenderAddress === 'string' && payload.defaultSenderAddress.trim()
         ? payload.defaultSenderAddress.trim()
+        : null,
+    businessAddressDetail:
+      typeof payload.businessAddressDetail === 'string' && payload.businessAddressDetail.trim()
+        ? payload.businessAddressDetail.trim()
         : null,
   };
 }
@@ -426,6 +431,32 @@ function isShipmentOwnedByUser(
     merchantPhone.length > 0 &&
     senderPhone === merchantPhone
   );
+}
+
+function filterPickupRequestsByUser(
+  pickupRequests: PickupRequest[],
+  shipments: ShipmentResponse[],
+  user: MerchantSession['user'] | null,
+): PickupRequest[] {
+  if (!user) {
+    return [];
+  }
+
+  const ownedShipmentCodes = new Set(
+    shipments
+      .filter((shipment) => isShipmentOwnedByUser(shipment, user))
+      .map((shipment) => normalizeCode(shipment.code))
+      .filter((shipmentCode) => shipmentCode.length > 0),
+  );
+
+  return pickupRequests
+    .map((pickup) => ({
+      ...pickup,
+      items: pickup.items.filter((item) =>
+        ownedShipmentCodes.has(normalizeCode(item.shipmentCode)),
+      ),
+    }))
+    .filter((pickup) => pickup.items.length > 0);
 }
 
 function MerchantApp(): React.JSX.Element {
@@ -791,6 +822,7 @@ function MerchantApp(): React.JSX.Element {
     const normalizedSenderHubCode =
       row.senderHubCode && row.senderHubCode !== '-' ? row.senderHubCode : null;
     const metadata = asRecord(row.shipment.metadata) ?? {};
+    const senderMetadata = asRecord(metadata.sender);
     const createdBy = asRecord(metadata.createdBy);
     const createdByActor =
       typeof createdBy?.username === 'string' && createdBy.username.trim()
@@ -801,6 +833,13 @@ function MerchantApp(): React.JSX.Element {
           : row.senderName !== '-'
             ? row.senderName
             : null;
+    const senderLocationText =
+      typeof senderMetadata?.addressDetail === 'string' &&
+      senderMetadata.addressDetail.trim()
+        ? senderMetadata.addressDetail.trim()
+        : row.senderAddress && row.senderAddress !== '-'
+          ? row.senderAddress
+          : null;
 
     const timeline: TimelineEvent[] = [
       {
@@ -810,6 +849,7 @@ function MerchantApp(): React.JSX.Element {
         shipmentCode: normalizedCode,
         actor: createdByActor,
         locationCode: normalizedSenderHubCode,
+        locationText: senderLocationText,
         occurredAt: row.shipment.createdAt,
       },
     ];
@@ -829,6 +869,7 @@ function MerchantApp(): React.JSX.Element {
         shipmentCode: normalizedCode,
         actor: pickup.requesterName ?? null,
         locationCode: normalizedSenderHubCode,
+        locationText: pickup.pickupAddress?.trim() || senderLocationText,
         occurredAt:
           pickup.completedAt ?? pickup.updatedAt ?? pickup.createdAt,
       });
@@ -862,6 +903,7 @@ function MerchantApp(): React.JSX.Element {
         shipmentCode: normalizedCode,
         actor: null,
         locationCode: normalizedSenderHubCode,
+        locationText: senderLocationText,
         occurredAt: row.shipment.updatedAt,
       });
     }
@@ -878,6 +920,8 @@ function MerchantApp(): React.JSX.Element {
       currentStatus: currentStatusLabel,
       currentLocationCode:
         latest?.locationCode ?? normalizedSenderHubCode ?? null,
+      currentLocationText:
+        latest?.locationText ?? senderLocationText ?? null,
       lastEventTypeCode: latest?.eventTypeCode ?? null,
       lastEventType: latest?.eventType ?? null,
       lastEventAt: latest?.occurredAt ?? row.shipment.updatedAt,
@@ -913,6 +957,8 @@ function MerchantApp(): React.JSX.Element {
 
     const defaultSenderName = session.user.displayName?.trim() ?? '';
     const defaultSenderPhone = session.user.phone?.trim() ?? '';
+    const defaultAddressDetail =
+      merchantProfileConfig?.businessAddressDetail?.trim() ?? '';
     const defaultAddress =
       merchantProfileConfig?.defaultSenderAddress?.trim() ?? '';
 
@@ -940,8 +986,8 @@ function MerchantApp(): React.JSX.Element {
         next.senderHubCode = lockedSenderHub.hubCode;
         hasChanges = true;
       }
-      if (!next.senderAddressDetail.trim() && defaultAddress) {
-        next.senderAddressDetail = defaultAddress;
+      if (!next.senderAddressDetail.trim() && (defaultAddressDetail || defaultAddress)) {
+        next.senderAddressDetail = defaultAddressDetail || defaultAddress;
         hasChanges = true;
       }
       if (!next.senderAddress.trim()) {
@@ -1152,12 +1198,17 @@ function MerchantApp(): React.JSX.Element {
       ),
     ]);
 
+    const ownedShipments =
+      shipRes.status === 'fulfilled'
+        ? shipRes.value.filter((shipment) => isShipmentOwnedByUser(shipment, user))
+        : [];
+
     if (shipRes.status === 'fulfilled') {
-      setShipments(
-        shipRes.value.filter((shipment) => isShipmentOwnedByUser(shipment, user)),
-      );
+      setShipments(ownedShipments);
     }
-    if (pickupRes.status === 'fulfilled') setPickups(pickupRes.value);
+    if (pickupRes.status === 'fulfilled') {
+      setPickups(filterPickupRequestsByUser(pickupRes.value, ownedShipments, user));
+    }
     if (changeRes.status === 'fulfilled') setChangeRequests(changeRes.value);
     if (hubsRes.status === 'fulfilled') {
       const locations = hubsRes.value
@@ -2235,7 +2286,7 @@ function MerchantApp(): React.JSX.Element {
             </section>
           </> : null}
 
-          {activeView === 'shipment-detail' ? <section className="grid">{!selectedShipment ? <div className="card"><div className="empty">Chưa chọn shipment.</div></div> : <><div className="card"><h3>Chi tiết shipment {selectedShipment.shipment.code}</h3><div className="details-grid"><div className="detail-box"><div className="label">Người gửi</div><div>{selectedShipment.senderName}<br />{selectedShipment.senderPhone}<br />{selectedShipment.senderAddress}</div></div><div className="detail-box"><div className="label">Hub gửi</div><div>{selectedShipment.senderHubCode}<br />{selectedShipment.senderWard}, {selectedShipment.senderProvince}</div></div><div className="detail-box"><div className="label">Người nhận</div><div>{selectedShipment.receiverName}<br />{selectedShipment.receiverPhone}<br />{selectedShipment.receiverAddress}</div></div><div className="detail-box"><div className="label">Hub nhận</div><div>{selectedShipment.receiverHubCode}<br />{selectedShipment.receiverWard}, {selectedShipment.receiverProvince}</div></div><div className="detail-box"><div className="label">Hàng hóa</div><div>{selectedShipment.itemType}<br />{selectedShipment.weightKg}kg</div></div><div className="detail-box"><div className="label">COD / Phí</div><div>{formatCurrency(selectedShipment.codAmount)}<br />{formatCurrency(selectedShipment.feeEstimate)}</div></div><div className="detail-box"><div className="label">Dịch vụ</div><div>{selectedShipment.serviceType}</div></div><div className="detail-box"><div className="label">Pickup</div><div>{pickupByShipmentCode.get(normalizeCode(selectedShipment.shipment.code))?.pickupCode ?? 'Chưa tạo pickup'}</div></div></div><div className="btn-row" style={{ marginTop: 8 }}><span className={resolveShipmentStatusClass(selectedShipment.shipment)}>{resolveShipmentStatusLabel(selectedShipment.shipment)}</span><button className="btn btn-danger" onClick={() => { const reason = window.prompt('Lý do hủy đơn', '') ?? ''; void cancelShipment(selectedShipment.shipment.code, reason); }}>Hủy đơn</button><button className="btn btn-ghost" onClick={() => printShipment(selectedShipment)}>In vận đơn</button></div></div><div className="card grid"><h3>Sửa đơn nếu còn cho phép</h3><div className="grid grid-3"><input className="input" value={detailReceiverPhone} onChange={(e) => setDetailReceiverPhone(e.target.value)} placeholder="SĐT người nhận" /><input className="input" value={detailReceiverAddress} onChange={(e) => setDetailReceiverAddress(e.target.value)} placeholder="Địa chỉ người nhận" /><input className="input" value={detailDeliveryNote} onChange={(e) => setDetailDeliveryNote(e.target.value)} placeholder="Ghi chú giao hàng" /></div><div className="btn-row"><button className="btn btn-primary" disabled={detailUpdating} onClick={() => { void saveDetailUpdate(); }}>{detailUpdating ? 'Đang cập nhật...' : 'Sửa đơn'}</button><button className="btn btn-secondary" onClick={() => { setChangeCode(selectedShipment.shipment.code); setActiveView('change-requests'); }}>Yêu cầu đổi thông tin giao</button><button className="btn btn-secondary" onClick={() => { setReturnCode(selectedShipment.shipment.code); setActiveView('returns'); }}>Yêu cầu hoàn hàng</button></div>{detailError ? <p className="message error">{detailError}</p> : null}{detailSuccess ? <p className="message success">{detailSuccess}</p> : null}</div><div className="card"><h3>Timeline xử lý đơn</h3>{detailTrackError ? <p className="message error">{detailTrackError}</p> : null}<div className="timeline">{detailTrackTimeline.length === 0 ? <div className="empty">Chưa có tracking event.</div> : detailTrackTimeline.map((ev) => <div key={ev.id} className="timeline-item"><strong>{ev.eventType}</strong><div className="muted">{formatDate(ev.occurredAt)} | actor={ev.actor ?? 'system'} | loc={ev.locationCode ?? 'N/A'}</div></div>)}</div>{detailTrackCurrent ? <p className="muted">Current: {detailTrackCurrent.currentStatus ?? 'N/A'} | Last event: {detailTrackCurrent.lastEventType ?? 'N/A'}</p> : null}</div></>}</section> : null}
+          {activeView === 'shipment-detail' ? <section className="grid">{!selectedShipment ? <div className="card"><div className="empty">Chưa chọn shipment.</div></div> : <><div className="card"><h3>Chi tiết shipment {selectedShipment.shipment.code}</h3><div className="details-grid"><div className="detail-box"><div className="label">Người gửi</div><div>{selectedShipment.senderName}<br />{selectedShipment.senderPhone}<br />{selectedShipment.senderAddress}</div></div><div className="detail-box"><div className="label">Hub gửi</div><div>{selectedShipment.senderHubCode}<br />{selectedShipment.senderWard}, {selectedShipment.senderProvince}</div></div><div className="detail-box"><div className="label">Người nhận</div><div>{selectedShipment.receiverName}<br />{selectedShipment.receiverPhone}<br />{selectedShipment.receiverAddress}</div></div><div className="detail-box"><div className="label">Hub nhận</div><div>{selectedShipment.receiverHubCode}<br />{selectedShipment.receiverWard}, {selectedShipment.receiverProvince}</div></div><div className="detail-box"><div className="label">Hàng hóa</div><div>{selectedShipment.itemType}<br />{selectedShipment.weightKg}kg</div></div><div className="detail-box"><div className="label">COD / Phí</div><div>{formatCurrency(selectedShipment.codAmount)}<br />{formatCurrency(selectedShipment.feeEstimate)}</div></div><div className="detail-box"><div className="label">Dịch vụ</div><div>{selectedShipment.serviceType}</div></div><div className="detail-box"><div className="label">Pickup</div><div>{pickupByShipmentCode.get(normalizeCode(selectedShipment.shipment.code))?.pickupCode ?? 'Chưa tạo pickup'}</div></div></div><div className="btn-row" style={{ marginTop: 8 }}><span className={resolveShipmentStatusClass(selectedShipment.shipment)}>{resolveShipmentStatusLabel(selectedShipment.shipment)}</span><button className="btn btn-danger" onClick={() => { const reason = window.prompt('Lý do hủy đơn', '') ?? ''; void cancelShipment(selectedShipment.shipment.code, reason); }}>Hủy đơn</button><button className="btn btn-ghost" onClick={() => printShipment(selectedShipment)}>In vận đơn</button></div></div><div className="card grid"><h3>Sửa đơn nếu còn cho phép</h3><div className="grid grid-3"><input className="input" value={detailReceiverPhone} onChange={(e) => setDetailReceiverPhone(e.target.value)} placeholder="SĐT người nhận" /><input className="input" value={detailReceiverAddress} onChange={(e) => setDetailReceiverAddress(e.target.value)} placeholder="Địa chỉ người nhận" /><input className="input" value={detailDeliveryNote} onChange={(e) => setDetailDeliveryNote(e.target.value)} placeholder="Ghi chú giao hàng" /></div><div className="btn-row"><button className="btn btn-primary" disabled={detailUpdating} onClick={() => { void saveDetailUpdate(); }}>{detailUpdating ? 'Đang cập nhật...' : 'Sửa đơn'}</button><button className="btn btn-secondary" onClick={() => { setChangeCode(selectedShipment.shipment.code); setActiveView('change-requests'); }}>Yêu cầu đổi thông tin giao</button><button className="btn btn-secondary" onClick={() => { setReturnCode(selectedShipment.shipment.code); setActiveView('returns'); }}>Yêu cầu hoàn hàng</button></div>{detailError ? <p className="message error">{detailError}</p> : null}{detailSuccess ? <p className="message success">{detailSuccess}</p> : null}</div><div className="card"><h3>Timeline xử lý đơn</h3>{detailTrackError ? <p className="message error">{detailTrackError}</p> : null}<div className="timeline">{detailTrackTimeline.length === 0 ? <div className="empty">Chưa có tracking event.</div> : detailTrackTimeline.map((ev) => <div key={ev.id} className="timeline-item"><strong>{ev.eventType}</strong><div className="muted">{formatDate(ev.occurredAt)} | actor={ev.actor ?? 'system'} | loc={ev.locationText ?? ev.locationCode ?? 'N/A'}</div></div>)}</div>{detailTrackCurrent ? <p className="muted">Current: {detailTrackCurrent.currentStatus ?? 'N/A'} | Last event: {detailTrackCurrent.lastEventType ?? 'N/A'}</p> : null}</div></>}</section> : null}
 
           {activeView === 'pickups' ? <>
             <section className="card pickup-hero">

@@ -47,6 +47,7 @@ export interface MerchantProfileDto extends MasterdataBaseDto {
   defaultHubCode: string | null;
   defaultHubName: string | null;
   defaultSenderAddress: string | null;
+  businessAddressDetail: string | null;
 }
 
 export interface HubFilters {
@@ -122,4 +123,5 @@ export interface MerchantProfileWriteInput {
   defaultHubCode?: string | null;
   defaultHubName?: string | null;
   defaultSenderAddress?: string | null;
+  businessAddressDetail?: string | null;
 }

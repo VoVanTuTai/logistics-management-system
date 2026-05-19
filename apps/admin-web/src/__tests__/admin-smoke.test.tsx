@@ -22,6 +22,7 @@ import { AppRouter } from '../app/AppRouter';
 import { AdminDashboardPage } from '../pages/dashboard/AdminDashboardPage';
 import { HubManagementPage } from '../pages/masterdata/HubManagementPage';
 import { CourierPermissionMatrixPage } from '../pages/permissions/CourierPermissionMatrixPage';
+import { MerchantUsersPage } from '../pages/users/MerchantUsersPage';
 import { OpsUsersPage } from '../pages/users/OpsUsersPage';
 import { useAuthStore } from '../store/authStore';
 import type {
@@ -64,6 +65,14 @@ const mocks = vi.hoisted(() => ({
     isPending: false,
   },
   updateHubMutation: {
+    mutateAsync: vi.fn(),
+    isPending: false,
+  },
+  createConfigMutation: {
+    mutateAsync: vi.fn(),
+    isPending: false,
+  },
+  updateConfigMutation: {
     mutateAsync: vi.fn(),
     isPending: false,
   },
@@ -132,14 +141,8 @@ vi.mock('../features/masterdata/masterdata.api', () => ({
     mutateAsync: vi.fn(),
     isPending: false,
   }),
-  useCreateConfigMutation: () => ({
-    mutateAsync: vi.fn(),
-    isPending: false,
-  }),
-  useUpdateConfigMutation: () => ({
-    mutateAsync: vi.fn(),
-    isPending: false,
-  }),
+  useCreateConfigMutation: () => mocks.createConfigMutation,
+  useUpdateConfigMutation: () => mocks.updateConfigMutation,
 }));
 
 vi.mock('../features/permissions/permissions.api', () => ({
@@ -234,6 +237,8 @@ function resetMocks() {
   mocks.updateUserMutation.mutateAsync.mockReset();
   mocks.createHubMutation.mutateAsync.mockReset();
   mocks.updateHubMutation.mutateAsync.mockReset();
+  mocks.createConfigMutation.mutateAsync.mockReset();
+  mocks.updateConfigMutation.mutateAsync.mockReset();
   mocks.upsertMerchantProfileMutation.mutateAsync.mockReset();
   mocks.updateMatrixMutation.mutateAsync.mockReset();
   mocks.updateUserOverrideMutation.mutateAsync.mockReset();
@@ -446,6 +451,129 @@ describe('admin smoke workflows', () => {
     );
   });
 
+  it('shows only active hubs in the assigned hub select for ops accounts', async () => {
+    setAdminSession();
+    mocks.usersByRole = {
+      OPS: [createUser({ id: 'ops-1', username: '20000001' })],
+      SHIPPER: [],
+      MERCHANT: [],
+    };
+    mocks.hubs = [
+      createHub({ id: 'hub-inactive', code: 'HAN-NTL', name: 'Hub Inactive', isActive: false }),
+      createHub({ id: 'hub-active', code: 'HAN-CG', name: 'Hub Active', isActive: true }),
+    ];
+
+    renderWithProviders(<OpsUsersPage />);
+
+    const assignedHubSelect = await screen.findByLabelText(/hub/i);
+
+    expect(
+      within(assignedHubSelect).queryByRole('option', { name: /hub inactive/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(assignedHubSelect).getByRole('option', { name: /hub active/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('saves merchant address detail into the merchant profile payload', async () => {
+    const user = userEvent.setup();
+    setAdminSession();
+    mocks.usersByRole = {
+      OPS: [],
+      SHIPPER: [],
+      MERCHANT: [],
+    };
+    mocks.hubs = [
+      createHub({
+        id: 'hub-hn',
+        code: 'HAN-CG',
+        name: 'Hub Ha Noi',
+        address: JSON.stringify({
+          addressLine: 'Hub Ha Noi',
+          ward: 'Dich Vong',
+          district: 'Cau Giay',
+          province: 'Ha Noi',
+        }),
+      }),
+    ];
+    mocks.createUserMutation.mutateAsync.mockResolvedValue(
+      createUser({
+        id: 'merchant-1',
+        username: '41100001',
+        displayName: 'Merchant A',
+        phone: '0900000000',
+        roles: ['MERCHANT'],
+        hubCodes: ['HAN-CG'],
+      }),
+    );
+    mocks.createConfigMutation.mutateAsync.mockResolvedValue({
+      id: 'config-merchant-1',
+      key: 'merchant.profile.41100001',
+      value: {
+        username: '41100001',
+      },
+      scope: 'MERCHANT_PROFILE',
+      description: null,
+      createdAt: '2026-05-18T00:00:00.000Z',
+      updatedAt: '2026-05-18T00:00:00.000Z',
+    });
+    mocks.upsertMerchantProfileMutation.mutateAsync.mockResolvedValue({
+      id: 'profile-1',
+      username: '41100001',
+      citizenId: '123456789012',
+      regionCode: 'HA_NOI',
+      regionLabel: 'Ha Noi',
+      defaultHubCode: 'HAN-CG',
+      defaultHubName: 'Hub Ha Noi',
+      defaultSenderAddress: '123 Nguyen Trai, Dich Vong, Cau Giay, Ha Noi',
+      businessAddressDetail: '123 Nguyen Trai',
+      createdAt: '2026-05-18T00:00:00.000Z',
+      updatedAt: '2026-05-18T00:00:00.000Z',
+    });
+
+    renderWithProviders(<MerchantUsersPage />);
+
+    await user.type(screen.getByLabelText(/họ tên/i), 'Merchant A');
+    await user.type(screen.getByLabelText(/số điện thoại/i), '0900000000');
+    await user.type(screen.getByLabelText(/cccd/i), '123456789012');
+    await user.type(screen.getByLabelText(/dia chi chi tiet/i), '123 Nguyen Trai');
+    await user.type(screen.getByLabelText(/^mật khẩu/i), 'Secret123!');
+    await user.type(screen.getByLabelText(/xác nhận mật khẩu/i), 'Secret123!');
+    await user.click(screen.getByRole('button', { name: /merchant/i }));
+
+    await waitFor(() =>
+      expect(mocks.createUserMutation.mutateAsync).toHaveBeenCalledWith({
+        username: '41100001',
+        password: 'Secret123!',
+        roles: ['MERCHANT'],
+        status: 'ACTIVE',
+        displayName: 'Merchant A',
+        phone: '0900000000',
+        hubCodes: ['HAN-CG'],
+      }),
+    );
+    await waitFor(() =>
+      expect(mocks.upsertMerchantProfileMutation.mutateAsync).toHaveBeenCalledWith({
+        username: '41100001',
+        payload: expect.objectContaining({
+          businessAddressDetail: '123 Nguyen Trai',
+          defaultSenderAddress: '123 Nguyen Trai, Dich Vong, Cau Giay, Ha Noi',
+        }),
+      }),
+    );
+    await waitFor(() =>
+      expect(mocks.createConfigMutation.mutateAsync).toHaveBeenCalledWith({
+        key: 'merchant.profile.41100001',
+        scope: 'MERCHANT_PROFILE',
+        value: expect.objectContaining({
+          businessAddressDetail: '123 Nguyen Trai',
+          defaultSenderAddress: '123 Nguyen Trai, Dich Vong, Cau Giay, Ha Noi',
+        }),
+        description: 'Merchant profile for 41100001',
+      }),
+    );
+  });
+
   it('validates hub form and uses disable flow instead of hard delete', async () => {
     const user = userEvent.setup();
     setAdminSession();
@@ -505,6 +633,76 @@ describe('admin smoke workflows', () => {
     );
     expect(window.confirm).toHaveBeenCalledWith(
       expect.stringContaining('Dữ liệu bưu cục'),
+    );
+  });
+
+  it('normalizes Da Nang province to the API value when editing a hub', async () => {
+    const user = userEvent.setup();
+    setAdminSession();
+    mocks.hubs = [
+      createHub({
+        id: 'hub-dn',
+        code: 'DAN-001',
+        name: 'Hub DN',
+        zoneCode: 'ZONE-DN',
+        address: JSON.stringify({
+          addressLine: '1 Bach Dang',
+          ward: 'Hai Chau 1',
+          district: 'Hai Chau',
+          province: 'Da Nang',
+        }),
+      }),
+    ];
+    mocks.zones = [createZone({ code: 'ZONE-DN', name: 'Zone DN' })];
+    mocks.usersByRole = {
+      OPS: [],
+      SHIPPER: [],
+      MERCHANT: [],
+    };
+    mocks.updateHubMutation.mutateAsync.mockResolvedValue(
+      createHub({
+        id: 'hub-dn',
+        code: 'DAN-001',
+        name: 'Hub DN',
+        zoneCode: 'ZONE-DN',
+        address: JSON.stringify({
+          addressLine: '1 Bach Dang',
+          ward: 'Hai Chau 1',
+          district: 'H\u1ea3i Ch\u00e2u',
+          province: 'Da Nang',
+        }),
+      }),
+    );
+
+    renderWithProviders(<HubManagementPage />);
+
+    await user.click(screen.getByRole('button', { name: /s\u1eeda/i }));
+    const editDialog = await screen.findByRole('dialog', {
+      name: /s\u1eeda hub/i,
+    });
+
+    await user.selectOptions(
+      within(editDialog).getByLabelText(/t\u1ec9nh\/th\u00e0nh/i),
+      '\u0110\u00e0 N\u1eb5ng',
+    );
+    await user.selectOptions(
+      within(editDialog).getByLabelText(/qu\u1eadn\/huy\u1ec7n/i),
+      'H\u1ea3i Ch\u00e2u',
+    );
+    await user.click(
+      within(editDialog).getByRole('button', { name: /l\u01b0u thay \u0111\u1ed5i/i }),
+    );
+
+    await waitFor(() =>
+      expect(mocks.updateHubMutation.mutateAsync).toHaveBeenCalledWith({
+        hubId: 'hub-dn',
+        payload: expect.objectContaining({
+          name: 'Hub DN',
+          zoneCode: 'ZONE-DN',
+          isActive: true,
+          address: expect.stringContaining('"province":"Da Nang"'),
+        }),
+      }),
     );
   });
 
