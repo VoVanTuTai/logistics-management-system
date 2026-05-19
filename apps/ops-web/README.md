@@ -29,12 +29,12 @@ TMPDIR=/tmp npm run test:smoke
 ```env
 VITE_GATEWAY_BFF_URL=http://localhost:3000
 VITE_REQUEST_TIMEOUT_MS=15000
-VITE_SHOW_OPS_PROTOTYPE_ROUTES=false
+VITE_ENABLE_FULL_OPS_MODULES=true
 ```
 
 - `VITE_GATEWAY_BFF_URL`: địa chỉ gateway BFF.
 - `VITE_REQUEST_TIMEOUT_MS`: timeout mặc định cho API request.
-- `VITE_SHOW_OPS_PROTOTYPE_ROUTES`: mặc định `false` trong demo/production. Khi bật `true`, các route prototype/mock sẽ hiện lại kèm nhãn `Prototype`.
+- `VITE_ENABLE_FULL_OPS_MODULES`: mặc định hiện đầy đủ các module nghiệp vụ của Ops Web. Đặt `false` chỉ khi cần build gọn theo nhóm core.
 
 ## API Boundary
 
@@ -56,17 +56,17 @@ Các module sau được xem là phạm vi production-like cho demo đồ án:
 - Tracking: tra cứu trạng thái hiện tại và timeline vận đơn.
 - Masterdata: hub, zone, cấu hình và lý do NDR.
 
-## Module Prototype/Mock
+## Module Nghiệp Vụ Đang Hardening Production
 
-Các module sau là phần minh họa định hướng mở rộng, không trình bày như chức năng production đã hoàn tất:
+Các module sau được giữ là chức năng chính trong Ops Web để tiếp tục nâng lên production. Một số màn đã có UI/luồng nghiệp vụ nhưng còn cần backend contract, dữ liệu thật hoặc hardening trước khi xem là production-ready toàn phần:
 
-- Analytics nâng cao dùng mock data showcase.
+- Analytics nâng cao đang dùng seed data trong frontend trong lúc chờ reporting API đầy đủ.
 - Linehaul nâng cao và quản lý chuyến xe chi tiết.
 - Return block management/chuyển hoàn nâng cao.
 - Finance settlement, planning, service quality mở rộng.
 - Các function group hoặc placeholder chưa có backend contract hoàn chỉnh.
 
-Trong demo mặc định, các route này được ẩn khỏi menu chính. Nếu truy cập trực tiếp, màn hình sẽ hiển thị nhãn `Prototype` hoặc `Coming Soon` để tránh nhầm lẫn.
+Trong cấu hình mặc định, các route này hiển thị như module nghiệp vụ chính. Khi cần build gọn theo nhóm core, đặt `VITE_ENABLE_FULL_OPS_MODULES=false`.
 
 ## Demo Script Đề Xuất
 
@@ -86,10 +86,10 @@ Smoke test hiện kiểm tra các điểm gãy chính:
 - Route guard redirect về login khi chưa đăng nhập.
 - Dashboard render KPI shell.
 - Shipment form render và validate field bắt buộc.
-- Task assignment render task/courier mock và gọi assign mutation.
+- Task assignment render task/courier bằng test double và gọi assign mutation.
 - Manifest management render danh sách bao và generate bag.
 - Tracking lookup render empty/error/success state.
 
 ## Trạng Thái Báo Cáo
 
-Ops Web hiện ở mức **MVP production-like cho core operations**. Các luồng lõi đã có API boundary rõ qua gateway `/ops`, session refresh, smoke test và tách nhãn prototype. Một số hạng mục vẫn cần hardening tiếp trước production thật: server-side pagination cho list lớn, audit thao tác ops, enforce hub/role scope ở backend/gateway, chuẩn hóa toast/error và tối ưu code splitting.
+Ops Web hiện ở mức **MVP production-like cho core operations**, đồng thời giữ đầy đủ các module nghiệp vụ mở rộng trong main UI để tiếp tục hardening lên production. Các luồng lõi đã có API boundary rõ qua gateway `/ops`, session refresh và smoke test. Một số hạng mục vẫn cần hardening tiếp trước production thật: server-side pagination cho list lớn, audit thao tác ops, enforce hub/role scope ở backend/gateway, chuẩn hóa toast/error, dữ liệu thật cho module mở rộng và tối ưu code splitting.

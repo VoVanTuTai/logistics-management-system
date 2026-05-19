@@ -420,56 +420,47 @@ export function DashboardPage(): React.JSX.Element {
     to?: string;
     icon: DashboardMenuIcon;
     disabled?: boolean;
-    isPrototype?: boolean;
-  }> = appEnv.showOpsPrototypeRoutes
+  }> = appEnv.enableFullOpsModules
     ? [
         {
           title: 'Nền tảng điều hành',
           to: routePaths.groupOperationsPlatform,
           icon: 'operations_platform',
-          isPrototype: true,
         },
         {
           title: 'Dịch vụ tích hợp',
           to: routePaths.groupIntegrationServices,
           icon: 'integration_services',
-          isPrototype: true,
         },
         {
           title: 'Nền tảng khách hàng',
           to: routePaths.groupCustomerPlatform,
           icon: 'customer_platform',
-          isPrototype: true,
         },
         {
           title: 'Kinh doanh bưu cục',
           to: routePaths.groupBranchBusiness,
           icon: 'branch_business',
-          isPrototype: true,
         },
         {
           title: 'Quyết toán tài chính',
           to: routePaths.groupFinanceSettlement,
           icon: 'finance_settlement',
-          isPrototype: true,
         },
         {
           title: 'Quản lý vận chuyển',
           to: routePaths.groupCapabilityPlatform,
           icon: 'capability_platform',
-          isPrototype: true,
         },
         {
           title: 'Chỉ số vận hành',
           to: routePaths.groupOperationsMetrics,
           icon: 'operations_metrics',
-          isPrototype: true,
         },
         {
           title: 'Chất lượng dịch vụ',
           to: routePaths.groupServiceQuality,
           icon: 'service_quality',
-          isPrototype: true,
         },
       ]
     : [
@@ -662,9 +653,6 @@ export function DashboardPage(): React.JSX.Element {
                   >
                     {iconNode}
                     <strong>{item.title}</strong>
-                    {item.isPrototype ? (
-                      <span className="ops-menu-tile__badge">Prototype</span>
-                    ) : null}
                   </div>
                 );
               }
@@ -673,9 +661,6 @@ export function DashboardPage(): React.JSX.Element {
                 <Link key={item.title} to={item.to} className="ops-menu-tile">
                   {iconNode}
                   <strong>{item.title}</strong>
-                  {item.isPrototype ? (
-                    <span className="ops-menu-tile__badge">Prototype</span>
-                  ) : null}
                 </Link>
               );
             })}

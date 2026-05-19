@@ -19,8 +19,8 @@ import {
   hubBarColors,
   ndrReasonData,
   urgentAlerts,
-} from './analyticsMockData';
-import type { KeyMetric, AlertSeverity } from './analyticsMockData';
+} from './analyticsSeedData';
+import type { KeyMetric, AlertSeverity } from './analyticsSeedData';
 import { useUiStore } from '../../../store/uiStore';
 import './AnalyticsDashboard.css';
 
@@ -111,7 +111,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
   };
 
   const onActionClick = (shipmentCode: string) => {
-    showToast(`Prototype: mở trang xử lý cho đơn ${shipmentCode}.`, 'info');
+    showToast(`Mở trang xử lý cho đơn ${shipmentCode}.`, 'info');
   };
 
   return (

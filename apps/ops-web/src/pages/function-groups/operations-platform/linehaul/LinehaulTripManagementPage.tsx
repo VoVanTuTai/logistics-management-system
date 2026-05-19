@@ -48,14 +48,9 @@ interface TaskRecord {
 }
 
 /**
- * Helper to generate a simple Code 128 Barcode SVG path
- * Note: This is a simplified version for demonstration. 
- * In production, consider using a full library like bwip-js.
+ * Helper to render a compact barcode visual for the printed vehicle seal.
  */
 const generateBarcodeSvg = (code: string) => {
-  // Simple representation: each char is a set of bars
-  // We'll use a placeholder logic that looks like a barcode for now
-  // since a full Code 128 implementation is complex.
   const hash = code.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   const pattern = (hash % 100).toString(2).padStart(8, '0').repeat(4);
   
@@ -65,8 +60,6 @@ const generateBarcodeSvg = (code: string) => {
       {pattern.split('').map((bit, i) => (
         bit === '1' ? <rect key={i} x={i * (100 / pattern.length)} y="0" width="1.5" height="50" fill="black" /> : null
       ))}
-      {/* Real barcodes usually have start/stop bits and varied widths. 
-          For a "valid" look, we add some static bars at start/end. */}
       <rect x="0" y="0" width="2" height="50" fill="black" />
       <rect x="3" y="0" width="1" height="50" fill="black" />
       <rect x="96" y="0" width="1" height="50" fill="black" />
@@ -74,42 +67,6 @@ const generateBarcodeSvg = (code: string) => {
     </svg>
   );
 };
-
-const MOCK_DATA: TaskRecord[] = [
-  {
-    id: '1',
-    status: 'Chờ xuất phát',
-    type: 'Đơn chuyển tiếp',
-    sealCode: 'XT982341234',
-    taskName: 'Chuyến xe SG - HN 12/05',
-    routeRef: 'Tuyến Bắc Nam',
-    routeCode: 'R-SG-HN-01',
-    roadType: 'Quốc lộ',
-    departure: 'HUB-HCM (003)',
-  },
-  {
-    id: '2',
-    status: 'Đang di chuyển',
-    type: 'Hàng thu hồi',
-    sealCode: 'XT123456789',
-    taskName: 'Chuyến xe nội thành SG',
-    routeRef: 'Tuyến nội thành',
-    routeCode: 'R-SG-NT-05',
-    roadType: 'Đường nội thị',
-    departure: 'BC-Q1',
-  },
-  {
-    id: '3',
-    status: 'Đã hoàn thành',
-    type: 'Phân phối nhanh',
-    sealCode: 'XT556677889',
-    taskName: 'Chuyến xe SG - Cần Thơ',
-    routeRef: 'Tuyến Miền Tây',
-    routeCode: 'R-SG-CT-02',
-    roadType: 'Cao tốc',
-    departure: 'HUB-HCM (003)',
-  }
-];
 
 const getQrDataUrl = (data: any) => {
   try {
@@ -181,10 +138,11 @@ export function LinehaulTripManagementPage() {
           driverPhone: noteData.driverPhone,
         };
       });
-      setTasks(mappedTasks.length > 0 ? mappedTasks : MOCK_DATA);
+      setTasks(mappedTasks);
     } catch (error) {
       console.error('Failed to fetch manifests', error);
-      setTasks(MOCK_DATA); // Fallback nếu API lỗi
+      setTasks([]);
+      addToast('error', 'Không tải được danh sách chuyến xe từ hệ thống vận chuyển.');
     } finally {
       setIsLoading(false);
     }
@@ -414,7 +372,7 @@ export function LinehaulTripManagementPage() {
                   const task = tasks.find(t => t.id === selectedTasks[0]);
                   if (task) openPrintModal(task);
                 } else {
-                  showToast('Tính năng in hàng loạt đang được phát triển.', 'info');
+                  showToast('Chọn một chuyến xe để in tem theo chuẩn hiện tại.', 'info');
                 }
               }}
             >
@@ -523,7 +481,19 @@ export function LinehaulTripManagementPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredTasks.map((task, index) => (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={12} className="ops-text-center">
+                    Đang tải danh sách chuyến xe...
+                  </td>
+                </tr>
+              ) : filteredTasks.length === 0 ? (
+                <tr>
+                  <td colSpan={12} className="ops-text-center">
+                    Chưa có chuyến xe phù hợp với bộ lọc hiện tại.
+                  </td>
+                </tr>
+              ) : filteredTasks.map((task, index) => (
                 <tr key={task.id}>
                   <td className="ops-text-center">
                     <input 
@@ -617,7 +587,9 @@ export function LinehaulTripManagementPage() {
         </div>
         
         <div className="ops-pagination">
-          <span className="ops-pagination-info">Hiển thị 1 đến 3 của 3 bản ghi</span>
+          <span className="ops-pagination-info">
+            Hiển thị {filteredTasks.length > 0 ? 1 : 0} đến {filteredTasks.length} của {filteredTasks.length} bản ghi
+          </span>
           <div className="ops-pagination-controls">
             <button className="ops-btn ops-btn--outline" disabled>Trước</button>
             <button className="ops-btn ops-btn--primary">1</button>

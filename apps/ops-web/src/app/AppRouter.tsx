@@ -251,38 +251,26 @@ function RouteLoadingFallback(): React.JSX.Element {
   return <div className="ops-route-loading">Đang tải...</div>;
 }
 
-function PrototypeBadge(): React.JSX.Element {
-  return <span style={styles.prototypeBadge}>Prototype</span>;
-}
-
-function PrototypeRoute({
+function OpsModuleRoute({
   title,
   children,
 }: {
   title: string;
   children: React.ReactNode;
 }): React.JSX.Element {
-  if (!appEnv.showOpsPrototypeRoutes) {
+  if (!appEnv.enableFullOpsModules) {
     return (
       <ComingSoonPlaceholder
         title={title}
-        description="Màn hình này là prototype/mock và đang được ẩn trong demo production để tránh nhầm với chức năng đã nối API thật."
-        visionText="Bật VITE_SHOW_OPS_PROTOTYPE_ROUTES=true ở local/dev nếu cần xem định hướng mở rộng."
-        phaseLabel="Prototype route - hidden in demo"
-        badgeLabel="Prototype"
+        description="Module này là một phần của Ops Web production roadmap và đang tắt trong cấu hình core-only hiện tại."
+        visionText="Đặt VITE_ENABLE_FULL_OPS_MODULES=true hoặc bỏ trống biến này để hiển thị đầy đủ các luồng nghiệp vụ."
+        phaseLabel="Full module disabled"
+        badgeLabel="Disabled"
       />
     );
   }
 
-  return (
-    <>
-      <div role="status" style={styles.prototypeBanner}>
-        <strong>Prototype</strong>
-        <span>Màn hình dùng dữ liệu mô phỏng hoặc placeholder, chưa phải chức năng production.</span>
-      </div>
-      {children}
-    </>
-  );
+  return <>{children}</>;
 }
 
 type SidebarIconName =
@@ -328,7 +316,6 @@ interface TopNavItem {
   label: string;
   to: string;
   isActive: boolean;
-  isPrototype?: boolean;
 }
 
 interface SidebarItem {
@@ -336,7 +323,7 @@ interface SidebarItem {
   icon: SidebarIconName;
   to?: string;
   kind?: SidebarPanelKind;
-  isPrototype?: boolean;
+  sectionLabel?: string;
 }
 
 function pathMatches(pathname: string, basePath: string): boolean {
@@ -544,7 +531,7 @@ function DashboardLayout(): React.JSX.Element {
   const roleText =
     (session?.user.roles ?? []).map((role) => formatRoleLabel(role)).join(', ') ||
     'Nhân viên điều hành';
-  const showPrototypeRoutes = appEnv.showOpsPrototypeRoutes;
+  const enableFullOpsModules = appEnv.enableFullOpsModules;
   const operatorName = session?.user.username ?? 'OPS User';
   const operatorInitial = operatorName.trim().charAt(0).toUpperCase() || 'O';
   const isDashboardRoute = pathMatches(location.pathname, routePaths.dashboard)
@@ -569,48 +556,65 @@ function DashboardLayout(): React.JSX.Element {
     routePaths.groupCapabilityPlatform,
   );
 
-  const topNavItems: TopNavItem[] = showPrototypeRoutes
+  const topNavItems: TopNavItem[] = enableFullOpsModules
     ? [
         {
-          label: 'Nền tảng điều hành',
+          label: 'Core Ops',
+          to: routePaths.shipments,
+          isActive:
+            pathMatches(location.pathname, routePaths.shipments) ||
+            pathMatches(location.pathname, routePaths.pickups) ||
+            pathMatches(location.pathname, routePaths.tasks) ||
+            pathMatches(location.pathname, routePaths.manifests) ||
+            pathMatches(location.pathname, routePaths.scans) ||
+            pathMatches(location.pathname, routePaths.ndr) ||
+            pathMatches(location.pathname, routePaths.tracking) ||
+            pathMatches(location.pathname, routePaths.masterdataHubs) ||
+            pathMatches(location.pathname, routePaths.masterdataZones) ||
+            pathMatches(location.pathname, routePaths.masterdataNdrReasons) ||
+            pathMatches(location.pathname, routePaths.masterdataConfigs),
+        },
+        {
+          label: 'Điều hành',
           to: routePaths.groupOperationsPlatform,
           isActive:
             pathMatches(location.pathname, routePaths.groupOperationsPlatform) ||
             pathMatches(location.pathname, routePaths.thermalLabelManagement) ||
             pathMatches(location.pathname, routePaths.thermalLabelPrint) ||
             pathMatches(location.pathname, routePaths.returnBlockRoot) ||
-            pathMatches(location.pathname, routePaths.monitorDataRoot) ||
-            pathMatches(location.pathname, routePaths.tasks) ||
-            pathMatches(location.pathname, routePaths.scans) ||
-            pathMatches(location.pathname, routePaths.ndr) ||
-            pathMatches(location.pathname, routePaths.tracking),
-          isPrototype: true,
+            pathMatches(location.pathname, routePaths.monitorDataRoot),
         },
         {
-          label: 'Chỉ số vận hành',
+          label: 'Chỉ số',
           to: routePaths.groupOperationsMetrics,
           isActive: isOperationsMetricsSection,
-          isPrototype: true,
         },
         {
-          label: 'Dịch vụ tích hợp',
+          label: 'Khách hàng',
+          to: routePaths.groupCustomerPlatform,
+          isActive: pathMatches(location.pathname, routePaths.groupCustomerPlatform),
+        },
+        {
+          label: 'Bưu cục',
+          to: routePaths.groupBranchBusiness,
+          isActive: isBranchBusinessSection,
+        },
+        {
+          label: 'Vận chuyển',
+          to: routePaths.groupCapabilityPlatform,
+          isActive: isCapabilityPlatformSection,
+        },
+        {
+          label: 'Mở rộng',
           to: routePaths.groupIntegrationServices,
           isActive:
             pathMatches(location.pathname, routePaths.groupIntegrationServices) ||
-            pathMatches(location.pathname, routePaths.manifests),
-          isPrototype: true,
-        },
-        {
-          label: 'Nền tảng khách hàng',
-          to: routePaths.groupCustomerPlatform,
-          isActive: pathMatches(location.pathname, routePaths.groupCustomerPlatform),
-          isPrototype: true,
-        },
-        {
-          label: 'Kinh doanh bưu cục',
-          to: routePaths.groupBranchBusiness,
-          isActive: isBranchBusinessSection,
-          isPrototype: true,
+            pathMatches(location.pathname, routePaths.groupFinanceSettlement) ||
+            pathMatches(location.pathname, routePaths.groupServiceQuality) ||
+            pathMatches(location.pathname, routePaths.groupDatabase) ||
+            pathMatches(location.pathname, routePaths.groupSmartDevices) ||
+            pathMatches(location.pathname, routePaths.groupPlanningPlatform) ||
+            pathMatches(location.pathname, routePaths.groupBasicData),
         },
       ]
     : [
@@ -657,12 +661,21 @@ function DashboardLayout(): React.JSX.Element {
         },
       ];
 
-  const operationsSidebarItems: SidebarItem[] = showPrototypeRoutes
+  const operationsSidebarItems: SidebarItem[] = enableFullOpsModules
     ? [
+        { label: 'Luồng vận hành lõi', icon: 'tracking_lookup', sectionLabel: 'Luồng vận hành lõi' },
+        { label: 'Vận đơn', icon: 'customer_order_management', to: routePaths.shipments },
+        { label: 'Duyệt lấy hàng', icon: 'customer_order_dispatch', to: routePaths.pickups },
+        { label: 'Phân công tác vụ', icon: 'metrics_action', to: routePaths.tasks },
+        { label: 'Bao tải', icon: 'thermal_label', to: routePaths.manifests },
+        { label: 'Quét hub', icon: 'monitor_data', to: routePaths.scans },
+        { label: 'NDR', icon: 'return_block', to: routePaths.ndr },
         { label: 'Tra cứu hành trình', icon: 'tracking_lookup', to: routePaths.tracking },
-        { label: 'Tem bao in nhiệt', icon: 'thermal_label', kind: 'thermal_label', isPrototype: true },
-        { label: 'Chuyển hoàn', icon: 'return_block', kind: 'return_block', isPrototype: true },
-        { label: 'Giám sát dữ liệu', icon: 'monitor_data', kind: 'monitor_data', isPrototype: true },
+        { label: 'Masterdata', icon: 'branch_order_management', to: routePaths.masterdataHubs },
+        { label: 'Luồng nghiệp vụ mở rộng', icon: 'tracking_lookup', sectionLabel: 'Luồng nghiệp vụ mở rộng' },
+        { label: 'Tem bao in nhiệt', icon: 'thermal_label', kind: 'thermal_label' },
+        { label: 'Chuyển hoàn', icon: 'return_block', kind: 'return_block' },
+        { label: 'Giám sát dữ liệu', icon: 'monitor_data', kind: 'monitor_data' },
       ]
     : [
         { label: 'Vận đơn', icon: 'customer_order_management', to: routePaths.shipments },
@@ -965,7 +978,7 @@ function DashboardLayout(): React.JSX.Element {
     ? 'Kinh doanh bưu cục'
     : isCapabilityPlatformSection
     ? 'Quản lý vận chuyển'
-    : !showPrototypeRoutes
+    : !enableFullOpsModules
     ? 'Ops production'
     : 'Nền tảng điều hành';
 
@@ -1158,7 +1171,6 @@ function DashboardLayout(): React.JSX.Element {
                 className={item.isActive ? 'ops-func-main-link ops-func-main-link--active' : 'ops-func-main-link'}
               >
                 {item.label}
-                {item.isPrototype ? <PrototypeBadge /> : null}
               </button>
             );
           })}
@@ -1220,6 +1232,14 @@ function DashboardLayout(): React.JSX.Element {
           >
             <div className="ops-func-sidebar-primary-list">
               {sidebarItems.map((item) => {
+                if (item.sectionLabel) {
+                  return (
+                    <div key={item.sectionLabel} className="ops-func-sidebar-section">
+                      {item.sectionLabel}
+                    </div>
+                  );
+                }
+
                 const isActive =
                   item.kind === 'thermal_label'
                     ? isThermalLabelRoute
@@ -1272,7 +1292,6 @@ function DashboardLayout(): React.JSX.Element {
                         <SidebarIcon name={item.icon} />
                       </span>
                       <span className="ops-func-sidebar-label">{item.label}</span>
-                      {item.isPrototype ? <PrototypeBadge /> : null}
                       <span className="ops-func-sidebar-chevron" aria-hidden="true">
                         <svg viewBox="0 0 24 24">
                           <path d={isOpen ? 'm7 14 5-5 5 5' : 'm7 10 5 5 5-5'} />
@@ -1301,7 +1320,6 @@ function DashboardLayout(): React.JSX.Element {
                       <SidebarIcon name={item.icon} />
                     </span>
                     <span className="ops-func-sidebar-label">{item.label}</span>
-                    {item.isPrototype ? <PrototypeBadge /> : null}
                     <span className="ops-func-sidebar-chevron" aria-hidden="true">
                       <svg viewBox="0 0 24 24">
                         <path d="m7 10 5 5 5-5" />
@@ -1354,9 +1372,9 @@ export function AppRouter(): React.JSX.Element {
   const lazyRoute = (element: React.ReactNode) => (
     <Suspense fallback={<RouteLoadingFallback />}>{element}</Suspense>
   );
-  const prototypeRoute = (title: string, element: React.ReactNode) => (
+  const opsModuleRoute = (title: string, element: React.ReactNode) => (
     <Suspense fallback={<RouteLoadingFallback />}>
-      <PrototypeRoute title={title}>{element}</PrototypeRoute>
+      <OpsModuleRoute title={title}>{element}</OpsModuleRoute>
     </Suspense>
   );
 
@@ -1371,106 +1389,106 @@ export function AppRouter(): React.JSX.Element {
             <Route
               path={routePaths.analyticsDashboardLeaf}
               element={
-                <PrototypeRoute title="Analytics Dashboard">
+                <OpsModuleRoute title="Analytics Dashboard">
                   {lazyRoute(<AnalyticsDashboardPage />)}
-                </PrototypeRoute>
+                </OpsModuleRoute>
               }
             />
             <Route
               path={routePaths.comingSoonDebtReportLeaf}
               element={
-                <PrototypeRoute title="Báo cáo Công nợ">
+                <OpsModuleRoute title="Báo cáo Công nợ">
                   <ComingSoonPlaceholder
                     title="Báo cáo Công nợ"
                     description="Module phân tích và đối soát công nợ toàn hệ thống, hỗ trợ xuất báo cáo tự động theo chu kỳ."
                     visionText="Tích hợp AI dự đoán dòng tiền (Cash Flow Forecasting) và phân tích rủi ro nợ xấu dựa trên lịch sử thanh toán của đối tác."
                     phaseLabel="Phase 2 — Q3 2026"
-                    badgeLabel="Coming Soon"
+                    badgeLabel="Đang hoàn thiện"
                   />
-                </PrototypeRoute>
+                </OpsModuleRoute>
               }
             />
             <Route
               path={routePaths.comingSoonAiCashflowLeaf}
               element={
-                <PrototypeRoute title="AI Dự đoán Dòng tiền">
+                <OpsModuleRoute title="AI Dự đoán Dòng tiền">
                   <ComingSoonPlaceholder
                     title="AI Dự đoán Dòng tiền"
                     description="Hệ thống Machine Learning phân tích pattern thu-chi, dự báo dòng tiền 30/60/90 ngày cho từng hub."
                     visionText="Sử dụng mô hình Time-series Forecasting (Prophet / LSTM) kết hợp dữ liệu vận hành thực tế để đưa ra dự đoán chính xác, giúp tối ưu kế hoạch tài chính."
                     phaseLabel="Phase 3 — Q4 2026"
-                    badgeLabel="Coming Soon"
+                    badgeLabel="Đang hoàn thiện"
                   />
-                </PrototypeRoute>
+                </OpsModuleRoute>
               }
             />
             <Route
               path={routePaths.groupBasicDataLeaf}
-              element={prototypeRoute('Dữ liệu cơ bản', <BasicDataGroupPage />)}
+              element={opsModuleRoute('Dữ liệu cơ bản', <BasicDataGroupPage />)}
             />
             <Route
               path={routePaths.groupOperationsPlatformLeaf}
-              element={prototypeRoute('Nền tảng điều hành', <OperationsPlatformGroupPage />)}
+              element={opsModuleRoute('Nền tảng điều hành', <OperationsPlatformGroupPage />)}
             />
             <Route
               path={routePaths.thermalLabelManagementLeaf}
-              element={prototypeRoute('Quản lý tem bao in nhiệt', <ThermalLabelManagementPage />)}
+              element={opsModuleRoute('Quản lý tem bao in nhiệt', <ThermalLabelManagementPage />)}
             />
             <Route
               path={routePaths.thermalLabelPrintLeaf}
-              element={prototypeRoute('In tem bao', <ThermalLabelPrintPage />)}
+              element={opsModuleRoute('In tem bao', <ThermalLabelPrintPage />)}
             />
             <Route
               path={routePaths.returnBlockManagementLeaf}
-              element={prototypeRoute('Quản lý chuyển hoàn', <ReturnBlockManagementPage />)}
+              element={opsModuleRoute('Quản lý chuyển hoàn', <ReturnBlockManagementPage />)}
             />
             <Route
               path={routePaths.returnBlockRegistrationLeaf}
-              element={prototypeRoute('Đăng ký chuyển hoàn', <ReturnBlockRegistrationPage />)}
+              element={opsModuleRoute('Đăng ký chuyển hoàn', <ReturnBlockRegistrationPage />)}
             />
             <Route
               path={routePaths.monitorDataHangNhanLeaf}
-              element={prototypeRoute('Giám sát hàng nhận', <MonitorDataHangNhanPage />)}
+              element={opsModuleRoute('Giám sát hàng nhận', <MonitorDataHangNhanPage />)}
             />
             <Route
               path={routePaths.monitorDataHangDenLeaf}
-              element={prototypeRoute('Giám sát hàng đến', <MonitorDataHangDenPage />)}
+              element={opsModuleRoute('Giám sát hàng đến', <MonitorDataHangDenPage />)}
             />
             <Route
               path={routePaths.monitorDataHangGuiLeaf}
-              element={prototypeRoute('Giám sát hàng gửi', <MonitorDataHangGuiPage />)}
+              element={opsModuleRoute('Giám sát hàng gửi', <MonitorDataHangGuiPage />)}
             />
             <Route
               path={routePaths.monitorDataHangPhatLeaf}
-              element={prototypeRoute('Giám sát hàng phát', <MonitorDataHangPhatPage />)}
+              element={opsModuleRoute('Giám sát hàng phát', <MonitorDataHangPhatPage />)}
             />
             <Route
               path={routePaths.monitorData2In1Leaf}
-              element={prototypeRoute('Giám sát 2in1', <MonitorData2In1Page />)}
+              element={opsModuleRoute('Giám sát 2in1', <MonitorData2In1Page />)}
             />
             <Route
               path={routePaths.monitorDataTheoDoiTamUngLeaf}
-              element={prototypeRoute('Theo dõi tạm ứng', <MonitorDataTheoDoiTamUngPage />)}
+              element={opsModuleRoute('Theo dõi tạm ứng', <MonitorDataTheoDoiTamUngPage />)}
             />
             <Route
               path={routePaths.monitorDataDongBaoLeaf}
-              element={prototypeRoute('Giám sát đóng bao', <MonitorDataDongBaoPage />)}
+              element={opsModuleRoute('Giám sát đóng bao', <MonitorDataDongBaoPage />)}
             />
             <Route
               path={routePaths.linehaulTripManagementLeaf}
-              element={prototypeRoute('Quản lý chuyến xe', <LinehaulTripManagementPage />)}
+              element={opsModuleRoute('Quản lý chuyến xe', <LinehaulTripManagementPage />)}
             />
             <Route
               path={routePaths.linehaulVehicleSealLeaf}
-              element={prototypeRoute('Tạo tem xe', <LinehaulVehicleSealPage />)}
+              element={opsModuleRoute('Tạo tem xe', <LinehaulVehicleSealPage />)}
             />
             <Route
               path={routePaths.groupIntegrationServicesLeaf}
-              element={prototypeRoute('Dịch vụ tích hợp', <IntegrationServicesGroupPage />)}
+              element={opsModuleRoute('Dịch vụ tích hợp', <IntegrationServicesGroupPage />)}
             />
             <Route
               path={routePaths.groupCustomerPlatformLeaf}
-              element={prototypeRoute('Nền tảng khách hàng', <CustomerPlatformGroupPage />)}
+              element={opsModuleRoute('Nền tảng khách hàng', <CustomerPlatformGroupPage />)}
             />
             <Route
               path={routePaths.customerPlatformOrderManagementLeaf}
@@ -1482,11 +1500,11 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.customerPlatformOrderDispatchLeaf}
-              element={prototypeRoute('Điều phối đơn đặt', <CustomerOrderDispatchPage />)}
+              element={opsModuleRoute('Điều phối đơn đặt', <CustomerOrderDispatchPage />)}
             />
             <Route
               path={routePaths.customerPlatformOrderLookupLeaf}
-              element={prototypeRoute(
+              element={opsModuleRoute(
                 'Tra cứu đơn đặt',
                 <FunctionGroupLandingPage
                   groupCode="CUSTOMER_ORDER_LOOKUP"
@@ -1497,7 +1515,7 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.customerPlatformOrderMonitorLeaf}
-              element={prototypeRoute(
+              element={opsModuleRoute(
                 'Giám sát đơn đã tạo',
                 <FunctionGroupLandingPage
                   groupCode="CUSTOMER_ORDER_MONITOR"
@@ -1512,22 +1530,22 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.branchBusinessLocalOverviewLeaf}
-              element={prototypeRoute('Tổng quan đơn tại bưu cục', <BranchLocalOrderOverviewPage />)}
+              element={opsModuleRoute('Tổng quan đơn tại bưu cục', <BranchLocalOrderOverviewPage />)}
             />
             <Route
               path={routePaths.branchBusinessLocalOrdersLeaf}
-              element={prototypeRoute(
+              element={opsModuleRoute(
                 'Quản lý đơn tại bưu cục',
                 <BranchLocalOrderOverviewPage mode="management" />,
               )}
             />
             <Route
               path={routePaths.branchBusinessCourierHandoffLeaf}
-              element={prototypeRoute('Phát hàng tại bưu cục', <BranchDeliveryDispatchPage />)}
+              element={opsModuleRoute('Phát hàng tại bưu cục', <BranchDeliveryDispatchPage />)}
             />
             <Route
               path={routePaths.branchBusinessBranchInventoryLeaf}
-              element={prototypeRoute(
+              element={opsModuleRoute(
                 'Đơn tồn bưu cục',
                 <BranchBusinessFeaturePlaceholderPage
                   groupCode="BRANCH_ORDER_INVENTORY"
@@ -1538,7 +1556,7 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.branchBusinessShiftClosingLeaf}
-              element={prototypeRoute(
+              element={opsModuleRoute(
                 'Chốt ca',
                 <BranchBusinessFeaturePlaceholderPage
                   groupCode="BRANCH_SHIFT_CLOSING"
@@ -1549,19 +1567,19 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.branchBusinessOrderCreateLeaf}
-              element={prototypeRoute('Thêm mới vận đơn', <BranchBusinessOrderCreatePage />)}
+              element={opsModuleRoute('Thêm mới vận đơn', <BranchBusinessOrderCreatePage />)}
             />
             <Route
               path={routePaths.branchBusinessOrderOutboundLeaf}
-              element={prototypeRoute('Quản lý vận đơn gửi', <BranchOutboundOrderManagementPage />)}
+              element={opsModuleRoute('Quản lý vận đơn gửi', <BranchOutboundOrderManagementPage />)}
             />
             <Route
               path={routePaths.branchBusinessOrderDeliveryLeaf}
-              element={prototypeRoute('Quản lý vận đơn phát', <BranchDeliveryOrderManagementPage />)}
+              element={opsModuleRoute('Quản lý vận đơn phát', <BranchDeliveryOrderManagementPage />)}
             />
             <Route
               path={routePaths.branchBusinessFinanceCodLeaf}
-              element={prototypeRoute(
+              element={opsModuleRoute(
                 'Quyết toán thu hộ',
                 <BranchBusinessFeaturePlaceholderPage
                   groupCode="BRANCH_FINANCE_COD_SETTLEMENT"
@@ -1572,7 +1590,7 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.branchBusinessFinanceReconcileLeaf}
-              element={prototypeRoute(
+              element={opsModuleRoute(
                 'Đối soát công nợ',
                 <BranchBusinessFeaturePlaceholderPage
                   groupCode="BRANCH_FINANCE_RECONCILE"
@@ -1583,19 +1601,19 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.groupFinanceSettlementLeaf}
-              element={prototypeRoute('Quyết toán tài chính', <FinanceSettlementGroupPage />)}
+              element={opsModuleRoute('Quyết toán tài chính', <FinanceSettlementGroupPage />)}
             />
             <Route
               path={routePaths.groupCapabilityPlatformLeaf}
-              element={prototypeRoute('Quản lý vận chuyển', <CapabilityPlatformGroupPage />)}
+              element={opsModuleRoute('Quản lý vận chuyển', <CapabilityPlatformGroupPage />)}
             />
             <Route
               path={routePaths.groupOperationsMetricsLeaf}
-              element={prototypeRoute('Chỉ số vận hành', <OperationsMetricsGroupPage />)}
+              element={opsModuleRoute('Chỉ số vận hành', <OperationsMetricsGroupPage />)}
             />
             <Route
               path={routePaths.opsMetricsAbnormalOverviewLeaf}
-              element={prototypeRoute(
+              element={opsModuleRoute(
                 'Tổng quan kiện bất thường',
                 <OperationsMetricsFeaturePlaceholderPage
                   groupCode="OPS_METRICS_ABNORMAL_OVERVIEW"
@@ -1606,7 +1624,7 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.opsMetricsAbnormalHandlingLeaf}
-              element={prototypeRoute(
+              element={opsModuleRoute(
                 'Theo dõi xử lý kiện',
                 <OperationsMetricsFeaturePlaceholderPage
                   groupCode="OPS_METRICS_ABNORMAL_HANDLING"
@@ -1617,11 +1635,11 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.opsMetricsDeadlineInventoryLeaf}
-              element={prototypeRoute('Giám sát tồn kho', <OpsMetricsInventoryMonitorPage />)}
+              element={opsModuleRoute('Giám sát tồn kho', <OpsMetricsInventoryMonitorPage />)}
             />
             <Route
               path={routePaths.opsMetricsDeadlineOntimePickupRatioLeaf}
-              element={prototypeRoute(
+              element={opsModuleRoute(
                 'Báo biểu tỷ lệ nhận hàng kịp',
                 <OperationsMetricsFeaturePlaceholderPage
                   groupCode="OPS_METRICS_DEADLINE_PICKUP_RATIO"
@@ -1632,7 +1650,7 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.opsMetricsDeadlineDeliverySlaLeaf}
-              element={prototypeRoute(
+              element={opsModuleRoute(
                 'Giám sát thời hiệu hàng phát',
                 <OperationsMetricsFeaturePlaceholderPage
                   groupCode="OPS_METRICS_DEADLINE_DELIVERY_SLA"
@@ -1643,7 +1661,7 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.opsMetricsDeadlineActualSignT1Leaf}
-              element={prototypeRoute(
+              element={opsModuleRoute(
                 'Ký nhận thực tế T-1',
                 <OperationsMetricsFeaturePlaceholderPage
                   groupCode="OPS_METRICS_DEADLINE_SIGN_T1"
@@ -1654,7 +1672,7 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.opsMetricsDeadlineOntimeSendRatioLeaf}
-              element={prototypeRoute(
+              element={opsModuleRoute(
                 'Tỷ lệ gửi kiện đúng giờ',
                 <OperationsMetricsFeaturePlaceholderPage
                   groupCode="OPS_METRICS_DEADLINE_SEND_RATIO"
@@ -1665,7 +1683,7 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.opsMetricsDeadlineDeliveryLeadtimeLeaf}
-              element={prototypeRoute(
+              element={opsModuleRoute(
                 'Giám sát leadtime phát',
                 <OperationsMetricsFeaturePlaceholderPage
                   groupCode="OPS_METRICS_DEADLINE_DELIVERY_LEADTIME"
@@ -1676,7 +1694,7 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.opsMetricsDeadlineInboundLeadtimeLeaf}
-              element={prototypeRoute(
+              element={opsModuleRoute(
                 'Giám sát leadtime nhận',
                 <OperationsMetricsFeaturePlaceholderPage
                   groupCode="OPS_METRICS_DEADLINE_INBOUND_LEADTIME"
@@ -1687,7 +1705,7 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.opsMetricsDeadlineOverdueAlertsLeaf}
-              element={prototypeRoute(
+              element={opsModuleRoute(
                 'Hệ thống cảnh báo quá hạn',
                 <OperationsMetricsFeaturePlaceholderPage
                   groupCode="OPS_METRICS_DEADLINE_OVERDUE_ALERTS"
@@ -1698,7 +1716,7 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.opsMetricsPlanningNetworkKpiLeaf}
-              element={prototypeRoute(
+              element={opsModuleRoute(
                 'Giám sát KPI mạng lưới',
                 <OperationsMetricsFeaturePlaceholderPage
                   groupCode="OPS_METRICS_PLANNING_NETWORK_KPI"
@@ -1709,7 +1727,7 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.opsMetricsActionExecutionBoardLeaf}
-              element={prototypeRoute(
+              element={opsModuleRoute(
                 'Bàn điều phối thao tác',
                 <OperationsMetricsFeaturePlaceholderPage
                   groupCode="OPS_METRICS_ACTION_EXECUTION_BOARD"
@@ -1720,27 +1738,27 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.groupServiceQualityLeaf}
-              element={prototypeRoute('Chất lượng dịch vụ', <ServiceQualityGroupPage />)}
+              element={opsModuleRoute('Chất lượng dịch vụ', <ServiceQualityGroupPage />)}
             />
             <Route
               path={routePaths.serviceQualityProactiveInboundLeaf}
-              element={prototypeRoute('Giám sát đơn nhận', <ServiceQualityMonitorReceivedPage />)}
+              element={opsModuleRoute('Giám sát đơn nhận', <ServiceQualityMonitorReceivedPage />)}
             />
             <Route
               path={routePaths.serviceQualityProactiveDeliveredLeaf}
-              element={prototypeRoute('Giám sát đơn phát', <ServiceQualityMonitorDeliveredPage />)}
+              element={opsModuleRoute('Giám sát đơn phát', <ServiceQualityMonitorDeliveredPage />)}
             />
             <Route
               path={routePaths.groupDatabaseLeaf}
-              element={prototypeRoute('Cơ sở dữ liệu', <DatabaseGroupPage />)}
+              element={opsModuleRoute('Cơ sở dữ liệu', <DatabaseGroupPage />)}
             />
             <Route
               path={routePaths.groupSmartDevicesLeaf}
-              element={prototypeRoute('Thiết bị thông minh', <SmartDevicesGroupPage />)}
+              element={opsModuleRoute('Thiết bị thông minh', <SmartDevicesGroupPage />)}
             />
             <Route
               path={routePaths.groupPlanningPlatformLeaf}
-              element={prototypeRoute('Nền tảng quy hoạch', <PlanningPlatformGroupPage />)}
+              element={opsModuleRoute('Nền tảng quy hoạch', <PlanningPlatformGroupPage />)}
             />
             <Route path={routePaths.shipmentsLeaf} element={lazyRoute(<ShipmentListPage />)} />
             <Route path={routePaths.shipmentDetailLeaf} element={lazyRoute(<ShipmentDetailPage />)} />
@@ -1769,32 +1787,3 @@ export function AppRouter(): React.JSX.Element {
     </BrowserRouter>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  prototypeBadge: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    marginLeft: 8,
-    border: '1px solid #f59e0b',
-    borderRadius: 999,
-    padding: '2px 7px',
-    backgroundColor: '#fffbeb',
-    color: '#92400e',
-    fontSize: 11,
-    fontWeight: 800,
-    lineHeight: 1.2,
-    textTransform: 'uppercase',
-  },
-  prototypeBanner: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 12,
-    border: '1px solid #f59e0b',
-    borderRadius: 10,
-    padding: '10px 12px',
-    backgroundColor: '#fffbeb',
-    color: '#92400e',
-    fontSize: 13,
-  },
-};

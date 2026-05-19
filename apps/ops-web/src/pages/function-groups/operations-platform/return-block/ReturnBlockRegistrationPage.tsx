@@ -297,10 +297,10 @@ export function ReturnBlockRegistrationPage(): React.JSX.Element {
             }
           >
             <span>Loại chuyển hoàn :</span>
-            <div className="ops-return-management__mock-select">
+            <div className="ops-return-management__reason-select">
               <button
                 type="button"
-                className="ops-return-management__mock-select-control"
+                className="ops-return-management__reason-select-control"
                 aria-expanded={isReasonMenuOpen}
                 onClick={() => setIsReasonMenuOpen((current) => !current)}
               >
@@ -310,7 +310,7 @@ export function ReturnBlockRegistrationPage(): React.JSX.Element {
                 </svg>
               </button>
               {isReasonMenuOpen ? (
-                <div className="ops-return-management__mock-select-menu">
+                <div className="ops-return-management__reason-select-menu">
                   {returnTypeOptions.map((option) => (
                     <button
                       key={option}

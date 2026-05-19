@@ -1,8 +1,5 @@
 /**
- * Mock data for the Operations Analytics Dashboard.
- * 
- * Dữ liệu mẫu được thiết kế chuyên nghiệp nhằm demo các biểu đồ
- * Recharts (BarChart, PieChart) và bảng cảnh báo vận hành.
+ * Seed data for the Operations Analytics Dashboard while the reporting API is hardened.
  */
 
 /* ------------------------------------------------------------------ */
