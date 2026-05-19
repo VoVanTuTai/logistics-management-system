@@ -4,6 +4,7 @@ import qrcode from 'qrcode-generator';
 import { routePaths } from '../../../../navigation/routes';
 import { opsApiClient } from '../../../../services/api/client';
 import { opsEndpoints } from '../../../../services/api/endpoints';
+import { useAuthStore } from '../../../../store/authStore';
 import { useUiStore } from '../../../../store/uiStore';
 import { 
   Plus, 
@@ -82,6 +83,8 @@ const getQrDataUrl = (data: any) => {
 
 export function LinehaulTripManagementPage() {
   const navigate = useNavigate();
+  const session = useAuthStore((state) => state.session);
+  const accessToken = session?.tokens.accessToken ?? null;
   const showToast = useUiStore((state) => state.showToast);
   const [isFilterExpanded, setIsFilterExpanded] = useState(true);
   const [tasks, setTasks] = useState<TaskRecord[]>([]);
@@ -105,9 +108,17 @@ export function LinehaulTripManagementPage() {
   const [isTransitSubmitting, setIsTransitSubmitting] = useState(false);
 
   const fetchManifests = async () => {
+    if (!accessToken) {
+      setTasks([]);
+      addToast('error', 'Bạn cần đăng nhập để tải danh sách chuyến xe.');
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const manifests = await opsApiClient.request<any[]>(opsEndpoints.manifests.list);
+      const manifests = await opsApiClient.request<any[]>(opsEndpoints.manifests.list, {
+        accessToken,
+      });
       const mappedTasks: TaskRecord[] = manifests
         .filter((m: any) => m.manifestCode && m.manifestCode.startsWith('SRTR'))
         .map((m: any) => {
@@ -150,7 +161,7 @@ export function LinehaulTripManagementPage() {
 
   useEffect(() => {
     fetchManifests();
-  }, []);
+  }, [accessToken]);
 
   // Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -235,6 +246,7 @@ export function LinehaulTripManagementPage() {
 
       await opsApiClient.request(opsEndpoints.manifests.update(editingTask.id), {
         method: 'PATCH',
+        accessToken,
         body: {
           note: JSON.stringify(updatedNote),
         },
@@ -286,6 +298,7 @@ export function LinehaulTripManagementPage() {
         // Seal manifest → status changes to SEALED (Đang di chuyển)
         await opsApiClient.request(opsEndpoints.manifests.seal(task.id), {
           method: 'POST',
+          accessToken,
           body: {
             sealCode: transitSealCode.trim(),
             note: JSON.stringify({
@@ -303,6 +316,7 @@ export function LinehaulTripManagementPage() {
         // Receive manifest → status changes to RECEIVED (Đã đến)
         await opsApiClient.request(opsEndpoints.manifests.receive(task.id), {
           method: 'POST',
+          accessToken,
           body: {
             manifestCode: task.sealCode,
             receiverName: 'Ops User',

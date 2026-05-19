@@ -22,6 +22,7 @@ interface ExtraManifestData {
 export function LinehaulVehicleSealPage(): React.JSX.Element {
   const navigate = useNavigate();
   const session = useAuthStore((state) => state.session);
+  const accessToken = session?.tokens.accessToken ?? null;
   const userHubCode = session?.user.hubCodes?.[0] || 'HUB-HCM-001';
   const userName = session?.user.username || 'System User';
 
@@ -46,6 +47,11 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
+
+    if (!accessToken) {
+      setErrorMsg('Phiên đăng nhập không hợp lệ, vui lòng đăng nhập lại.');
+      return;
+    }
 
     // Rule 1: Chống lặp Hub
     if (destinationHubCode === userHubCode) {
@@ -76,6 +82,7 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
     try {
       await opsApiClient.request(opsEndpoints.manifests.create, {
         method: 'POST',
+        accessToken,
         body: {
           manifestCode: generatedManifestCode,
           originHubCode: userHubCode,

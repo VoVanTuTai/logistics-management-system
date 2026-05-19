@@ -1,0 +1,228 @@
+.ops-branch-cod {
+  display: grid;
+  gap: 14px;
+  min-width: 1120px;
+  color: #334155;
+}
+
+.ops-branch-cod__header {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 14px;
+}
+
+.ops-branch-cod__header small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.ops-branch-cod__header h2 {
+  margin: 6px 0 4px;
+  color: #1e293b;
+  font-size: 22px;
+}
+
+.ops-branch-cod__header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.ops-branch-cod__summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(118px, 1fr));
+  gap: 8px;
+}
+
+.ops-branch-cod__summary article {
+  border: 1px solid #dbe3ef;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 10px;
+  display: grid;
+  gap: 4px;
+}
+
+.ops-branch-cod__summary span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ops-branch-cod__summary strong {
+  color: #137f5d;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.ops-branch-cod__filters {
+  display: grid;
+  grid-template-columns: 180px minmax(220px, 1fr) minmax(220px, 1fr) 120px;
+  gap: 12px;
+  align-items: end;
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 12px;
+}
+
+.ops-branch-cod label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ops-branch-cod label span {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ops-branch-cod select,
+.ops-branch-cod input {
+  width: 100%;
+  height: 36px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  padding: 0 10px;
+  font-size: 13px;
+}
+
+.ops-branch-cod__filters button {
+  height: 36px;
+  border: 1px solid #137f5d;
+  border-radius: 8px;
+  background: #137f5d;
+  color: #ffffff;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ops-branch-cod__filters button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.ops-branch-cod__contract {
+  margin: 0;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #64748b;
+  padding: 12px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.ops-branch-cod__table-card {
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.ops-branch-cod__table-title {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0 12px;
+}
+
+.ops-branch-cod__table-title h3 {
+  margin: 0;
+  color: #1e293b;
+  font-size: 15px;
+}
+
+.ops-branch-cod__table-title span {
+  color: #137f5d;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ops-branch-cod__empty {
+  margin: 0;
+  padding: 12px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.ops-branch-cod__table-wrap {
+  overflow: auto;
+}
+
+.ops-branch-cod table {
+  min-width: 1080px;
+  border-collapse: collapse;
+}
+
+.ops-branch-cod th,
+.ops-branch-cod td {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 10px;
+  color: #475569;
+  font-size: 13px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.ops-branch-cod th {
+  background: #f8fafc;
+  color: #334155;
+  font-size: 12px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.ops-branch-cod__code,
+.ops-branch-cod__courier {
+  color: #1d4ed8 !important;
+  font-weight: 700;
+}
+
+.ops-branch-cod__money {
+  color: #137f5d !important;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.ops-branch-cod__status {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  border: 1px solid #fed7aa;
+  border-radius: 999px;
+  background: #fff7ed;
+  color: #c2410c;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+@media (max-width: 1180px) {
+  .ops-branch-cod {
+    min-width: 960px;
+  }
+
+  .ops-branch-cod__header {
+    display: grid;
+  }
+
+  .ops-branch-cod__summary,
+  .ops-branch-cod__filters {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+}

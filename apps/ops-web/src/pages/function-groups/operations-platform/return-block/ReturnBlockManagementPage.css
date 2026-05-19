@@ -202,6 +202,17 @@
   font-weight: 600;
 }
 
+.ops-return-list__error {
+  margin: 12px 0 0;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #b91c1c;
+  padding: 9px 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .ops-return-list__table-wrap {
   overflow: auto;
 }
@@ -237,6 +248,9 @@
 .ops-return-list__code {
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   letter-spacing: 0.01em;
+  color: #1d4ed8;
+  font-weight: 800;
+  text-decoration: none;
 }
 
 .ops-return-list__code {
