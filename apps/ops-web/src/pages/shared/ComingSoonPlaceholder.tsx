@@ -14,8 +14,8 @@ export function ComingSoonPlaceholder({
   title,
   description,
   visionText,
-  phaseLabel = 'Phase 2 — Coming Soon',
-  badgeLabel = 'Coming Soon',
+  phaseLabel = 'Production hardening roadmap',
+  badgeLabel = 'Đang hoàn thiện',
 }: ComingSoonPlaceholderProps): React.JSX.Element {
   return (
     <div className="coming-soon">

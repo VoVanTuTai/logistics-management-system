@@ -24,7 +24,7 @@ interface ReturnOrder {
   parcelNote: string;
 }
 
-const mockReturnOrders: ReturnOrder[] = [
+const returnOrderSeedData: ReturnOrder[] = [
   {
     id: 'R001',
     originalCode: '842502785302',
@@ -107,7 +107,7 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
   const filteredOrders = useMemo(() => {
     const query = normalizeSearch(searchCode);
 
-    return mockReturnOrders.filter((order) => {
+    return returnOrderSeedData.filter((order) => {
       const matchesStatus = statusFilter ? order.status === statusFilter : true;
       const matchesSearch = query
         ? [order.originalCode, order.newCode, order.reason]
@@ -160,11 +160,11 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
         </div>
         <div className="ops-return-list__hero-stats" aria-label="Thống kê chuyển hoàn">
           <span>
-            <strong>{mockReturnOrders.length}</strong>
+            <strong>{returnOrderSeedData.length}</strong>
             Yêu cầu
           </span>
           <span>
-            <strong>{mockReturnOrders.filter((order) => order.status === 'APPROVED').length}</strong>
+            <strong>{returnOrderSeedData.filter((order) => order.status === 'APPROVED').length}</strong>
             Sẵn sàng in
           </span>
         </div>

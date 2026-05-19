@@ -874,6 +874,19 @@ th {
   gap: 4px;
 }
 
+.ops-func-sidebar-section {
+  color: #475569;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  margin: 10px 6px 2px;
+  text-transform: uppercase;
+}
+
+.ops-func-sidebar-section:first-child {
+  margin-top: 0;
+}
+
 .ops-func-sidebar-group {
   display: grid;
   gap: 6px;

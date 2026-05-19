@@ -249,9 +249,9 @@ export const OPS_CORE_ROUTE_PATHS = [
   routePaths.masterdataConfigs,
 ] as const;
 
-// Prototype routes are mock, placeholder, or roadmap screens. They are hidden from
-// demo menus unless VITE_SHOW_OPS_PROTOTYPE_ROUTES=true.
-export const OPS_PROTOTYPE_ROUTE_PATHS = [
+// Full module routes are first-class ops modules kept visible for production hardening.
+// They can be hidden only for a compact core-only build.
+export const OPS_FULL_MODULE_ROUTE_PATHS = [
   routePaths.analyticsDashboard,
   routePaths.comingSoonDebtReport,
   routePaths.comingSoonAiCashflow,
