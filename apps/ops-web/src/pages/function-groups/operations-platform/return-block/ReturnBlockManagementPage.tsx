@@ -1,15 +1,28 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 
+import { ndrClient } from '../../../../features/ndr/ndr.client';
+import type { NdrCaseListItemDto } from '../../../../features/ndr/ndr.types';
+import { shipmentsClient } from '../../../../features/shipments/shipments.client';
+import type { ShipmentListItemDto } from '../../../../features/shipments/shipments.types';
+import { routePaths } from '../../../../navigation/routes';
 import { openReturnShippingLabelPrint } from '../../../../printing/returnShippingLabelPrint';
+import { useAuthStore } from '../../../../store/authStore';
+import { formatNdrStatusLabel, formatShipmentStatusLabel } from '../../../../utils/logisticsLabels';
+
 import './ReturnBlockManagementPage.css';
 
 type ReturnOrderStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 interface ReturnOrder {
   id: string;
+  sourceType: 'NDR' | 'SHIPMENT';
   originalCode: string;
+  originalShipmentId?: string;
+  ndrId?: string;
   newCode: string;
   status: ReturnOrderStatus;
+  sourceStatus: string;
   reason: string;
   createdAt: string;
   senderName: string;
@@ -24,71 +37,58 @@ interface ReturnOrder {
   parcelNote: string;
 }
 
-const returnOrderSeedData: ReturnOrder[] = [
-  {
-    id: 'R001',
-    originalCode: '842502785302',
-    newCode: '842502785302-R',
-    status: 'APPROVED',
-    reason: 'Không liên lạc được với khách hàng',
-    createdAt: '2023-10-15 14:30',
-    senderName: 'Nguyễn Minh Anh',
-    senderPhone: '0901 222 333',
-    senderAddress: '12 Nguyễn Trãi, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh',
-    receiverName: 'Cửa hàng NEXUS Shop',
-    receiverPhone: '028 7777 8888',
-    receiverAddress: 'Kho hoàn HCM-01, 25 Tân Thuận, Quận 7, TP. Hồ Chí Minh',
-    returnHubCode: 'HCM-01',
-    returnZoneCode: 'RET-HCM',
-    itemDescription: 'Hàng TMĐT - phụ kiện điện tử',
-    parcelNote: 'Kiện hoàn nguyên trạng, ưu tiên đối soát trong ngày.',
-  },
-  {
-    id: 'R002',
-    originalCode: '842502785444',
-    newCode: '842502785444-R',
-    status: 'PENDING',
-    reason: 'Người gửi yêu cầu chuyển hoàn',
-    createdAt: '2023-10-16 09:15',
-    senderName: 'Trần Quốc Bảo',
-    senderPhone: '0918 456 789',
-    senderAddress: '88 Lê Văn Việt, TP. Thủ Đức, TP. Hồ Chí Minh',
-    receiverName: 'Kho người gửi - BAO Store',
-    receiverPhone: '0909 112 233',
-    receiverAddress: '34 Phạm Văn Đồng, TP. Thủ Đức, TP. Hồ Chí Minh',
-    returnHubCode: 'SGN-TD',
-    returnZoneCode: 'RET-TD',
-    itemDescription: 'Thời trang',
-    parcelNote: 'Chờ duyệt trước khi in tem chính thức.',
-  },
-  {
-    id: 'R003',
-    originalCode: '842502786001',
-    newCode: '842502786001-R',
-    status: 'REJECTED',
-    reason: 'Yêu cầu thiếu căn cứ xử lý',
-    createdAt: '2023-10-16 11:45',
-    senderName: 'Lê Hoàng Nam',
-    senderPhone: '0935 777 222',
-    senderAddress: '19 Cầu Giấy, Hà Nội',
-    receiverName: 'NEXUS Merchant Care',
-    receiverPhone: '024 6666 1111',
-    receiverAddress: 'Kho hoàn HN-02, Long Biên, Hà Nội',
-    returnHubCode: 'HN-02',
-    returnZoneCode: 'RET-HN',
-    itemDescription: 'Mỹ phẩm',
-    parcelNote: 'Không in tem với yêu cầu đã từ chối.',
-  },
-];
-
 const statusLabels: Record<ReturnOrderStatus, string> = {
-  PENDING: 'Chờ duyệt',
-  APPROVED: 'Đã duyệt',
-  REJECTED: 'Từ chối',
+  PENDING: 'Chờ xác nhận',
+  APPROVED: 'Sẵn sàng in',
+  REJECTED: 'Đã đóng',
 };
+
+const RETURN_RELATED_STATUSES = new Set([
+  'DELIVERY_FAILED',
+  'NDR_CREATED',
+  'EXCEPTION',
+  'RETURN_STARTED',
+  'RETURN_COMPLETED',
+]);
 
 function normalizeSearch(value: string): string {
   return value.trim().toLowerCase();
+}
+
+function extractErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Không tải được dữ liệu chuyển hoàn.';
+}
+
+function formatDateTime(value: string | null | undefined): string {
+  if (!value) {
+    return '---';
+  }
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString('vi-VN');
+}
+
+function resolveReturnStatus(
+  shipment: ShipmentListItemDto | undefined,
+  ndr: NdrCaseListItemDto | undefined,
+): ReturnOrderStatus {
+  if (shipment?.currentStatus === 'RETURN_COMPLETED') {
+    return 'REJECTED';
+  }
+
+  if (shipment?.currentStatus === 'RETURN_STARTED') {
+    return 'APPROVED';
+  }
+
+  if (ndr?.status === 'RETURNING' || ndr?.status === 'RESOLVED') {
+    return 'APPROVED';
+  }
+
+  if (ndr?.status === 'CLOSED') {
+    return 'REJECTED';
+  }
+
+  return 'PENDING';
 }
 
 function buildReturnInstruction(order: ReturnOrder): string {
@@ -99,24 +99,130 @@ function buildReturnInstruction(order: ReturnOrder): string {
   ].join('\n');
 }
 
+function buildReturnOrder(
+  shipmentCode: string,
+  shipment: ShipmentListItemDto | undefined,
+  ndr: NdrCaseListItemDto | undefined,
+): ReturnOrder {
+  const originalStatusLabel = shipment
+    ? formatShipmentStatusLabel(shipment.currentStatus)
+    : ndr
+      ? formatNdrStatusLabel(ndr.status)
+      : 'Cần xử lý';
+
+  return {
+    id: ndr?.id ?? shipment?.id ?? shipmentCode,
+    sourceType: ndr ? 'NDR' : 'SHIPMENT',
+    originalCode: shipmentCode,
+    originalShipmentId: shipment?.id,
+    ndrId: ndr?.id,
+    newCode: `${shipmentCode}-R`,
+    status: resolveReturnStatus(shipment, ndr),
+    sourceStatus: originalStatusLabel,
+    reason: ndr?.reasonCode || shipment?.deliveryNote || 'Yêu cầu chuyển hoàn từ luồng giao thất bại.',
+    createdAt: formatDateTime(ndr?.updatedAt ?? shipment?.updatedAt),
+    senderName: shipment?.receiverName || 'Người nhận gốc',
+    senderPhone: shipment?.receiverPhone || '---',
+    senderAddress: shipment?.receiverAddress || 'Địa chỉ nhận gốc chưa có dữ liệu',
+    receiverName: shipment?.senderName || 'Người gửi gốc',
+    receiverPhone: shipment?.senderPhone || '---',
+    receiverAddress: shipment?.senderAddress || 'Địa chỉ gửi gốc chưa có dữ liệu',
+    returnHubCode:
+      shipment?.originHubCode ||
+      shipment?.senderHubCode ||
+      shipment?.currentLocation ||
+      shipment?.destinationHubCode ||
+      '---',
+    returnZoneCode: shipment?.senderDistrict || shipment?.senderProvince || 'RETURN',
+    itemDescription: shipment?.parcelType || shipment?.serviceType || 'Hàng chuyển hoàn',
+    parcelNote: shipment?.deliveryNote || `Nguồn chuyển hoàn: ${originalStatusLabel}`,
+  };
+}
+
+function buildReturnOrders(
+  shipments: ShipmentListItemDto[],
+  ndrCases: NdrCaseListItemDto[],
+): ReturnOrder[] {
+  const shipmentsByCode = new Map(shipments.map((shipment) => [shipment.shipmentCode, shipment]));
+  const ndrByCode = new Map(ndrCases.map((ndr) => [ndr.shipmentCode, ndr]));
+
+  const candidateCodes = new Set<string>();
+  ndrCases.forEach((ndr) => candidateCodes.add(ndr.shipmentCode));
+  shipments
+    .filter((shipment) => RETURN_RELATED_STATUSES.has(shipment.currentStatus))
+    .forEach((shipment) => candidateCodes.add(shipment.shipmentCode));
+
+  return Array.from(candidateCodes)
+    .map((shipmentCode) =>
+      buildReturnOrder(shipmentCode, shipmentsByCode.get(shipmentCode), ndrByCode.get(shipmentCode)),
+    )
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
 export function ReturnBlockManagementPage(): React.JSX.Element {
+  const session = useAuthStore((state) => state.session);
+  const accessToken = session?.tokens.accessToken ?? null;
+
   const [searchCode, setSearchCode] = useState('');
   const [statusFilter, setStatusFilter] = useState<ReturnOrderStatus | ''>('');
+  const [orders, setOrders] = useState<ReturnOrder[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const fetchReturnOrders = useCallback(async () => {
+    if (!accessToken) {
+      setOrders([]);
+      setErrorMessage('Bạn cần đăng nhập để tải danh sách chuyển hoàn.');
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMessage(null);
+
+    const [ndrResult, shipmentsResult] = await Promise.allSettled([
+      ndrClient.list(accessToken),
+      shipmentsClient.list(accessToken, {
+        limit: 200,
+        offset: 0,
+      }),
+    ]);
+
+    const ndrCases = ndrResult.status === 'fulfilled' ? ndrResult.value : [];
+    const shipments =
+      shipmentsResult.status === 'fulfilled' ? shipmentsResult.value : [];
+
+    if (ndrResult.status === 'rejected' && shipmentsResult.status === 'rejected') {
+      setOrders([]);
+      setErrorMessage(extractErrorMessage(ndrResult.reason));
+    } else {
+      setOrders(buildReturnOrders(shipments, ndrCases));
+      const failedResult = ndrResult.status === 'rejected' ? ndrResult : shipmentsResult.status === 'rejected' ? shipmentsResult : null;
+      setErrorMessage(
+        failedResult ? `Một phần dữ liệu chưa tải được: ${extractErrorMessage(failedResult.reason)}` : null,
+      );
+    }
+
+    setIsLoading(false);
+  }, [accessToken]);
+
+  useEffect(() => {
+    fetchReturnOrders();
+  }, [fetchReturnOrders]);
 
   const filteredOrders = useMemo(() => {
     const query = normalizeSearch(searchCode);
 
-    return returnOrderSeedData.filter((order) => {
+    return orders.filter((order) => {
       const matchesStatus = statusFilter ? order.status === statusFilter : true;
       const matchesSearch = query
-        ? [order.originalCode, order.newCode, order.reason]
+        ? [order.originalCode, order.newCode, order.reason, order.returnHubCode, order.sourceStatus]
             .some((value) => value.toLowerCase().includes(query))
         : true;
 
       return matchesStatus && matchesSearch;
     });
-  }, [searchCode, statusFilter]);
+  }, [orders, searchCode, statusFilter]);
 
   const handlePrintLabel = (order: ReturnOrder) => {
     const didOpen = openReturnShippingLabelPrint({
@@ -156,16 +262,23 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
         <div>
           <small>Operations platform</small>
           <h2>Quản lý chuyển hoàn</h2>
-          <p>Theo dõi yêu cầu hoàn, duyệt trạng thái và in tem hoàn hàng theo chuẩn vận đơn.</p>
+          <p>
+            Theo dõi yêu cầu hoàn phát sinh từ NDR và trạng thái vận đơn hoàn,
+            sau đó in tem hoàn hàng theo chuẩn vận đơn.
+          </p>
         </div>
         <div className="ops-return-list__hero-stats" aria-label="Thống kê chuyển hoàn">
           <span>
-            <strong>{returnOrderSeedData.length}</strong>
+            <strong>{orders.length}</strong>
             Yêu cầu
           </span>
           <span>
-            <strong>{returnOrderSeedData.filter((order) => order.status === 'APPROVED').length}</strong>
+            <strong>{orders.filter((order) => order.status === 'APPROVED').length}</strong>
             Sẵn sàng in
+          </span>
+          <span>
+            <strong>{orders.filter((order) => order.status === 'PENDING').length}</strong>
+            Chờ xác nhận
           </span>
         </div>
       </section>
@@ -173,6 +286,7 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
       <section className="ops-return-list__panel">
         <header className="ops-return-list__panel-header">
           <h3>Tra cứu danh sách chuyển hoàn</h3>
+          <span>{isLoading ? 'Đang tải' : 'Dữ liệu NDR/vận đơn'}</span>
         </header>
         <div className="ops-return-list__panel-body">
           <div className="ops-return-list__filters">
@@ -186,20 +300,20 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
               />
             </label>
             <label className="ops-return-list__field">
-              <span>Trạng thái duyệt</span>
+              <span>Trạng thái xử lý</span>
               <select
                 value={statusFilter}
                 onChange={(event) => setStatusFilter(event.target.value as ReturnOrderStatus | '')}
               >
                 <option value="">Tất cả</option>
-                <option value="PENDING">Chờ duyệt</option>
-                <option value="APPROVED">Đã duyệt</option>
-                <option value="REJECTED">Từ chối</option>
+                <option value="PENDING">Chờ xác nhận</option>
+                <option value="APPROVED">Sẵn sàng in</option>
+                <option value="REJECTED">Đã đóng</option>
               </select>
             </label>
             <div className="ops-return-list__actions">
-              <button type="button" className="ops-return-list__search-btn">
-                Tìm kiếm
+              <button type="button" className="ops-return-list__search-btn" onClick={fetchReturnOrders}>
+                {isLoading ? 'Đang tải...' : 'Làm mới'}
               </button>
               <button
                 type="button"
@@ -210,11 +324,12 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
                   setNotice(null);
                 }}
               >
-                Làm mới
+                Xóa lọc
               </button>
             </div>
           </div>
           {notice ? <p className="ops-return-list__notice">{notice}</p> : null}
+          {errorMessage ? <p className="ops-return-list__error">{errorMessage}</p> : null}
         </div>
       </section>
 
@@ -229,21 +344,37 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
               <tr>
                 <th>Mã đơn gốc</th>
                 <th>Mã đơn hoàn</th>
+                <th>Nguồn</th>
                 <th>Tuyến hoàn</th>
                 <th>Lý do</th>
-                <th>Ngày tạo</th>
+                <th>Cập nhật</th>
                 <th>Trạng thái</th>
                 <th>Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {filteredOrders.map((order) => (
-                <tr key={order.id}>
+                <tr key={`${order.sourceType}-${order.id}`}>
                   <td>
-                    <span className="ops-return-list__mono">{order.originalCode}</span>
+                    {order.originalShipmentId ? (
+                      <Link
+                        className="ops-return-list__mono"
+                        to={routePaths.shipmentDetail(order.originalShipmentId)}
+                      >
+                        {order.originalCode}
+                      </Link>
+                    ) : (
+                      <span className="ops-return-list__mono">{order.originalCode}</span>
+                    )}
                   </td>
                   <td>
                     <strong className="ops-return-list__code">{order.newCode}</strong>
+                  </td>
+                  <td>
+                    <div className="ops-return-list__route-cell">
+                      <strong>{order.sourceType}</strong>
+                      <span>{order.sourceStatus}</span>
+                    </div>
                   </td>
                   <td>
                     <div className="ops-return-list__route-cell">
@@ -271,18 +402,25 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
                       </button>
                     ) : (
                       <span className="ops-return-list__disabled-text">
-                        {order.status === 'PENDING' ? 'Chờ duyệt' : 'Không in'}
+                        {order.status === 'PENDING' ? 'Chờ return decision' : 'Đã đóng'}
                       </span>
                     )}
                   </td>
                 </tr>
               ))}
-              {filteredOrders.length === 0 ? (
+              {!isLoading && filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={7}>
+                  <td colSpan={8}>
                     <div className="ops-return-list__empty">
                       Không có yêu cầu chuyển hoàn phù hợp bộ lọc.
                     </div>
+                  </td>
+                </tr>
+              ) : null}
+              {isLoading ? (
+                <tr>
+                  <td colSpan={8}>
+                    <div className="ops-return-list__empty">Đang tải danh sách chuyển hoàn...</div>
                   </td>
                 </tr>
               ) : null}

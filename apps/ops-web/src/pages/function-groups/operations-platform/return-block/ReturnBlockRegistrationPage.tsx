@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../../../../store/authStore';
 import { useUiStore } from '../../../../store/uiStore';
+import { ndrClient } from '../../../../features/ndr/ndr.client';
 import { useShipmentDetailQuery } from '../../../../features/shipments/shipments.hooks';
 import './ReturnBlockRegistrationPage.css';
 
@@ -138,6 +139,7 @@ export function ReturnBlockRegistrationPage(): React.JSX.Element {
   const [isReasonMenuOpen, setIsReasonMenuOpen] = useState(false);
   const [selectedReturnReason, setSelectedReturnReason] = useState('');
   const [returnReasonText, setReturnReasonText] = useState('');
+  const [isSubmittingReturn, setIsSubmittingReturn] = useState(false);
 
   const [originalSender, setOriginalSender] = useState<any>({});
   const [originalReceiver, setOriginalReceiver] = useState<any>({});
@@ -183,9 +185,14 @@ export function ReturnBlockRegistrationPage(): React.JSX.Element {
     setReturnReasonText('');
   };
 
-  const handleRegisterReturn = () => {
+  const handleRegisterReturn = async () => {
     if (!queryCode || !shipment) {
       showToast('Vui lòng tìm kiếm mã vận đơn trước khi đăng ký chuyển hoàn.', 'error');
+      return;
+    }
+
+    if (!accessToken) {
+      showToast('Phiên đăng nhập không hợp lệ, vui lòng đăng nhập lại.', 'error');
       return;
     }
 
@@ -194,9 +201,34 @@ export function ReturnBlockRegistrationPage(): React.JSX.Element {
     const hubCode = session?.user.hubCodes?.[0] || 'N/A';
     const finalNote = `Đăng ký chuyển hoàn | Nhân viên: ${employeeName} | Mã NV: ${employeeId} | Mã hub: ${hubCode} | Ghi chú: ${returnReasonText}`;
 
-    showToast(`Đã đăng ký chuyển hoàn thành công cho vận đơn ${queryCode}.`, 'success');
-    showToast(`Ghi chú nội bộ: ${finalNote}`, 'info');
-    handleReset();
+    setIsSubmittingReturn(true);
+    try {
+      const ndrCases = await ndrClient.list(accessToken);
+      const matchedNdr = ndrCases.find((ndrCase) => ndrCase.shipmentCode === queryCode);
+
+      if (!matchedNdr) {
+        showToast(
+          'Chưa có NDR case cho vận đơn này. Backend hiện chưa có endpoint tạo return-block độc lập, nên chưa ghi nhận chuyển hoàn được.',
+          'error',
+        );
+        return;
+      }
+
+      await ndrClient.returnDecision(accessToken, matchedNdr.id, {
+        returnToSender: true,
+        note: finalNote,
+      });
+
+      showToast(`Đã ghi nhận quyết định chuyển hoàn cho vận đơn ${queryCode}.`, 'success');
+      handleReset();
+    } catch (error) {
+      showToast(
+        error instanceof Error ? error.message : 'Không ghi nhận được chuyển hoàn.',
+        'error',
+      );
+    } finally {
+      setIsSubmittingReturn(false);
+    }
   };
 
   const buildAddressSections = (sender: any, receiver: any): AddressSection[] => [
@@ -342,17 +374,27 @@ export function ReturnBlockRegistrationPage(): React.JSX.Element {
       </ReturnPanel>
 
       <footer className="ops-return-management__footer-actions">
-        <button type="button" className="ops-return-management__save-more-btn" onClick={handleRegisterReturn}>
+        <button
+          type="button"
+          className="ops-return-management__save-more-btn"
+          onClick={handleRegisterReturn}
+          disabled={isSubmittingReturn}
+        >
           <SearchIcon />
-          Lưu và thêm mới
+          {isSubmittingReturn ? 'Đang lưu...' : 'Lưu và thêm mới'}
         </button>
         <button type="button" className="ops-return-management__cancel-btn" onClick={handleReset}>
           <RefreshIcon />
           Hủy
         </button>
-        <button type="button" className="ops-return-management__save-btn" onClick={handleRegisterReturn}>
+        <button
+          type="button"
+          className="ops-return-management__save-btn"
+          onClick={handleRegisterReturn}
+          disabled={isSubmittingReturn}
+        >
           <SearchIcon />
-          Lưu
+          {isSubmittingReturn ? 'Đang lưu...' : 'Lưu'}
         </button>
       </footer>
     </section>

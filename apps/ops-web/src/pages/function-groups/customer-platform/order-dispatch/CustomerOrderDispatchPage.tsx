@@ -71,6 +71,8 @@ const SOURCE_LABELS: Record<string, string> = {
   RETURN_PORTAL: 'Cổng hàng trả',
 };
 
+const PAGE_SIZE_OPTIONS = [25, 50, 100] as const;
+
 function statusLabel(status: string): string {
   return STATUS_OPTIONS.find((option) => option.value === status)?.label ?? status;
 }
@@ -257,6 +259,8 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
   const [courierFilter, setCourierFilter] = useState('');
   const [selectedCourierId, setSelectedCourierId] = useState('');
   const [courierSearch, setCourierSearch] = useState('');
+  const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(25);
+  const [currentPage, setCurrentPage] = useState(1);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
@@ -407,6 +411,11 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
     toTime,
     wardFilter,
   ]);
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const pageStartIndex = (safeCurrentPage - 1) * pageSize;
+  const paginatedOrders = filteredOrders.slice(pageStartIndex, pageStartIndex + pageSize);
+  const pageEndIndex = Math.min(filteredOrders.length, pageStartIndex + paginatedOrders.length);
 
   const selectedOrders = useMemo(
     () => dispatchRows.filter((order) => selectedOrderIds.includes(order.id)),
@@ -420,15 +429,36 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
   const selectedCourier =
     courierOptions.find((courier) => courier.id === selectedCourierId) ?? null;
   const allVisibleSelected =
-    filteredOrders.length > 0 &&
-    filteredOrders.every((order) => selectedOrderIds.includes(order.id));
+    paginatedOrders.length > 0 &&
+    paginatedOrders.every((order) => selectedOrderIds.includes(order.id));
   const loadError =
     tasksQuery.error ?? shipmentsQuery.error ?? pickupsQuery.error ?? shippersQuery.error ?? null;
+  const isLoading =
+    tasksQuery.isLoading || shipmentsQuery.isLoading || pickupsQuery.isLoading;
 
   useEffect(() => {
     const existingIds = new Set(dispatchRows.map((row) => row.id));
     setSelectedOrderIds((current) => current.filter((orderId) => existingIds.has(orderId)));
   }, [dispatchRows]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    courierFilter,
+    fromTime,
+    keyword,
+    pageSize,
+    searchBy,
+    serviceFilter,
+    sourceFilter,
+    statusFilter,
+    toTime,
+    wardFilter,
+  ]);
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, totalPages));
+  }, [totalPages]);
 
   useEffect(() => {
     if (!isAssignModalOpen || selectedCourierId || searchedCouriers.length === 0) {
@@ -463,13 +493,13 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
 
   const toggleAllVisible = (checked: boolean) => {
     if (!checked) {
-      const visibleIdSet = new Set(filteredOrders.map((order) => order.id));
+      const visibleIdSet = new Set(paginatedOrders.map((order) => order.id));
       setSelectedOrderIds((current) => current.filter((orderId) => !visibleIdSet.has(orderId)));
       return;
     }
 
     setSelectedOrderIds((current) =>
-      Array.from(new Set([...current, ...filteredOrders.map((order) => order.id)])),
+      Array.from(new Set([...current, ...paginatedOrders.map((order) => order.id)])),
     );
   };
 
@@ -813,12 +843,50 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
       <section className="ops-customer-dispatch__table-panel">
         <div className="ops-customer-dispatch__table-head">
           <h3>Danh sách đơn đặt cần điều phối</h3>
-          <span>
-            {tasksQuery.isLoading || shipmentsQuery.isLoading || pickupsQuery.isLoading
-              ? 'Đang tải...'
-              : `${filteredOrders.length} dòng`}
-          </span>
+          <div className="ops-customer-dispatch__table-meta">
+            <span>
+              {isLoading
+                ? 'Đang tải...'
+                : filteredOrders.length > 0
+                ? `${pageStartIndex + 1}-${pageEndIndex} / ${filteredOrders.length} dòng`
+                : '0 dòng'}
+            </span>
+            <select
+              value={pageSize}
+              onChange={(event) =>
+                setPageSize(Number(event.target.value) as (typeof PAGE_SIZE_OPTIONS)[number])
+              }
+              aria-label="Số dòng mỗi trang"
+            >
+              {PAGE_SIZE_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}/trang
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              disabled={safeCurrentPage <= 1}
+            >
+              Trước
+            </button>
+            <strong>
+              {safeCurrentPage}/{totalPages}
+            </strong>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+              disabled={safeCurrentPage >= totalPages}
+            >
+              Sau
+            </button>
+          </div>
         </div>
+
+        {isLoading ? (
+          <div className="ops-customer-dispatch__loading">Đang tải dữ liệu điều phối...</div>
+        ) : null}
 
         <div className="ops-customer-dispatch__table-wrap">
           <table>
@@ -846,7 +914,7 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
               </tr>
             </thead>
             <tbody>
-              {filteredOrders.map((order) => (
+              {paginatedOrders.map((order) => (
                 <tr key={order.id}>
                   <td>
                     <input
@@ -911,7 +979,7 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
           </table>
         </div>
 
-        {filteredOrders.length === 0 ? (
+        {!isLoading && filteredOrders.length === 0 ? (
           <div className="ops-customer-dispatch__empty">
             {processingHubCode
               ? 'Không có đơn phù hợp bộ lọc hiện tại.'

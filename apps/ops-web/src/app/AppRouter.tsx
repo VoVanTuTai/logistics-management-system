@@ -53,13 +53,25 @@ const BranchDeliveryOrderManagementPage = lazyRoutePage(
   () => import('../pages/function-groups/branch-business/order-delivery/BranchDeliveryOrderManagementPage'),
   'BranchDeliveryOrderManagementPage',
 );
+const BranchFinanceCodSettlementPage = lazyRoutePage(
+  () => import('../pages/function-groups/branch-business/finance-cod/BranchFinanceCodSettlementPage'),
+  'BranchFinanceCodSettlementPage',
+);
+const BranchFinanceReconcilePage = lazyRoutePage(
+  () => import('../pages/function-groups/branch-business/finance-reconcile/BranchFinanceReconcilePage'),
+  'BranchFinanceReconcilePage',
+);
+const BranchInventoryPage = lazyRoutePage(
+  () => import('../pages/function-groups/branch-business/inventory/BranchInventoryPage'),
+  'BranchInventoryPage',
+);
 const BranchOutboundOrderManagementPage = lazyRoutePage(
   () => import('../pages/function-groups/branch-business/order-outbound/BranchOutboundOrderManagementPage'),
   'BranchOutboundOrderManagementPage',
 );
-const BranchBusinessFeaturePlaceholderPage = lazyRoutePage(
-  () => import('../pages/function-groups/branch-business/shared/BranchBusinessFeaturePlaceholderPage'),
-  'BranchBusinessFeaturePlaceholderPage',
+const BranchShiftClosingPage = lazyRoutePage(
+  () => import('../pages/function-groups/branch-business/shift-closing/BranchShiftClosingPage'),
+  'BranchShiftClosingPage',
 );
 const CapabilityPlatformGroupPage = lazyRoutePage(
   () => import('../pages/function-groups/capability-platform/CapabilityPlatformGroupPage'),
@@ -72,6 +84,14 @@ const CustomerPlatformGroupPage = lazyRoutePage(
 const CustomerOrderDispatchPage = lazyRoutePage(
   () => import('../pages/function-groups/customer-platform/order-dispatch/CustomerOrderDispatchPage'),
   'CustomerOrderDispatchPage',
+);
+const CustomerOrderLookupPage = lazyRoutePage(
+  () => import('../pages/function-groups/customer-platform/order-lookup/CustomerOrderLookupPage'),
+  'CustomerOrderLookupPage',
+);
+const CustomerOrderMonitorPage = lazyRoutePage(
+  () => import('../pages/function-groups/customer-platform/order-monitor/CustomerOrderMonitorPage'),
+  'CustomerOrderMonitorPage',
 );
 const DatabaseGroupPage = lazyRoutePage(
   () => import('../pages/function-groups/database/DatabaseGroupPage'),
@@ -1504,25 +1524,11 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.customerPlatformOrderLookupLeaf}
-              element={opsModuleRoute(
-                'Tra cứu đơn đặt',
-                <FunctionGroupLandingPage
-                  groupCode="CUSTOMER_ORDER_LOOKUP"
-                  title="Tra cứu đơn đặt"
-                  summary="Màn hình tra cứu đơn đặt theo mã đơn, mã vận đơn và thông tin khách hàng."
-                />,
-              )}
+              element={opsModuleRoute('Tra cứu đơn đặt', <CustomerOrderLookupPage />)}
             />
             <Route
               path={routePaths.customerPlatformOrderMonitorLeaf}
-              element={opsModuleRoute(
-                'Giám sát đơn đã tạo',
-                <FunctionGroupLandingPage
-                  groupCode="CUSTOMER_ORDER_MONITOR"
-                  title="Giám sát đơn đã tạo"
-                  summary="Màn hình giám sát các đơn đặt đã tạo và trạng thái xử lý hiện tại."
-                />,
-              )}
+              element={opsModuleRoute('Giám sát đơn đã tạo', <CustomerOrderMonitorPage />)}
             />
             <Route
               path={routePaths.groupBranchBusinessLeaf}
@@ -1545,25 +1551,11 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.branchBusinessBranchInventoryLeaf}
-              element={opsModuleRoute(
-                'Đơn tồn bưu cục',
-                <BranchBusinessFeaturePlaceholderPage
-                  groupCode="BRANCH_ORDER_INVENTORY"
-                  title="Đơn tồn bưu cục"
-                  summary="Theo dõi các đơn lưu tại bưu cục quá thời gian mục tiêu hoặc có cảnh báo bất thường."
-                />,
-              )}
+              element={opsModuleRoute('Đơn tồn bưu cục', <BranchInventoryPage />)}
             />
             <Route
               path={routePaths.branchBusinessShiftClosingLeaf}
-              element={opsModuleRoute(
-                'Chốt ca',
-                <BranchBusinessFeaturePlaceholderPage
-                  groupCode="BRANCH_SHIFT_CLOSING"
-                  title="Chốt ca"
-                  summary="Tổng hợp đơn nhận, đơn phát, đơn gửi đi và đơn tồn cuối ca của bưu cục."
-                />,
-              )}
+              element={opsModuleRoute('Chốt ca', <BranchShiftClosingPage />)}
             />
             <Route
               path={routePaths.branchBusinessOrderCreateLeaf}
@@ -1579,25 +1571,11 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.branchBusinessFinanceCodLeaf}
-              element={opsModuleRoute(
-                'Quyết toán thu hộ',
-                <BranchBusinessFeaturePlaceholderPage
-                  groupCode="BRANCH_FINANCE_COD_SETTLEMENT"
-                  title="Quyết toán thu hộ"
-                  summary="Tổng hợp đối soát thu hộ COD và phân bổ chênh lệch theo ngày."
-                />,
-              )}
+              element={opsModuleRoute('Quyết toán thu hộ', <BranchFinanceCodSettlementPage />)}
             />
             <Route
               path={routePaths.branchBusinessFinanceReconcileLeaf}
-              element={opsModuleRoute(
-                'Đối soát công nợ',
-                <BranchBusinessFeaturePlaceholderPage
-                  groupCode="BRANCH_FINANCE_RECONCILE"
-                  title="Đối soát công nợ"
-                  summary="Báo cáo đối soát công nợ bưu cục, hỗ trợ chốt số theo chu kỳ."
-                />,
-              )}
+              element={opsModuleRoute('Đối soát công nợ', <BranchFinanceReconcilePage />)}
             />
             <Route
               path={routePaths.groupFinanceSettlementLeaf}
