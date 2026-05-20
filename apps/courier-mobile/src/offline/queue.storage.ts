@@ -9,6 +9,7 @@ const SUPPORTED_ACTION_TYPES: OfflineQueueItem['actionType'][] = [
   'SCAN_OUTBOUND',
   'DELIVERY_SUCCESS',
   'DELIVERY_FAIL',
+  'COD_COLLECT',
 ];
 
 export interface OfflineQueueStorage {

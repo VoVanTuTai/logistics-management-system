@@ -29,6 +29,21 @@ export interface CreateCodRecordInput {
   courierId?: string | null;
 }
 
+export interface SyncShipmentCodRecordInput {
+  shipmentCode?: string | null;
+  code?: string | null;
+  merchantId?: string | null;
+  currency?: string | null;
+  codAmount?: number | string | null;
+  metadata?: Record<string, unknown> | null;
+}
+
+export interface SyncShipmentCodRecordResult {
+  synced: boolean;
+  reason: 'COD_RECORD_READY' | 'NO_COD' | 'MISSING_SHIPMENT_CODE';
+  record: CodRecord | null;
+}
+
 export interface CollectCodInput {
   shipmentCode: string;
   collectedAmount: number;
@@ -83,8 +98,11 @@ export interface SePaySettlementWebhookResult {
   provider: 'SEPAY';
   providerEventId: string;
   action: 'confirmed' | 'duplicate' | 'ignored';
+  referenceType: 'SETTLEMENT' | 'SHIPMENT' | null;
   settlementCode: string | null;
   settlementId: string | null;
+  shipmentCode: string | null;
+  codRecordId: string | null;
   amount: number;
   ignoredReason?: string;
 }
@@ -124,10 +142,13 @@ export interface CodDailySettlementRecord {
   shipmentCode: string;
   codAmount: number;
   collectedAmount: number | null;
+  paymentMethod: PaymentMethod;
   status: CodCollectionStatus;
   courierId: string | null;
   collectedAt: string | null;
   remittedAt: string | null;
+  companyReceivedAt: string | null;
+  companyReceivedRef: string | null;
 }
 
 export interface CodDailySettlementSummary {
@@ -137,8 +158,13 @@ export interface CodDailySettlementSummary {
   codOrders: number;
   codTotal: number;
   collectedTotal: number;
+  cashCollectedTotal: number;
+  bankTransferTotal: number;
+  companyReceivedTotal: number;
   remittedTotal: number;
   pendingRemitTotal: number;
+  pendingCashRemitTotal: number;
+  waitingBankConfirmTotal: number;
   records: CodDailySettlementRecord[];
   batches: CodSettlementBatch[];
 }
@@ -164,6 +190,7 @@ export interface CodSettlementBatch {
   createdBy: string | null;
   confirmedBy: string | null;
   confirmedAt: Date | null;
+  confirmedNote: string | null;
   createdAt: Date;
   updatedAt: Date;
   items: CodSettlementItem[];
@@ -173,8 +200,11 @@ export interface CodSettlementPaymentEvent {
   id: string;
   provider: string;
   providerEventId: string;
+  referenceType: string | null;
   settlementBatchId: string | null;
   settlementCode: string | null;
+  codRecordId: string | null;
+  shipmentCode: string | null;
   amount: number;
   accountNumber: string | null;
   transferType: string | null;
@@ -185,6 +215,32 @@ export interface CodSettlementPaymentEvent {
   rawPayload: unknown;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface CodSettlementPaymentEventQuery {
+  provider?: string | null;
+  providerEventId?: string | null;
+  referenceType?: string | null;
+  processingStatus?: string | null;
+  settlementCode?: string | null;
+  shipmentCode?: string | null;
+  codRecordId?: string | null;
+  dateFrom?: string | null;
+  dateTo?: string | null;
+  limit?: string | number | null;
+}
+
+export interface CodSettlementPaymentEventFilter {
+  provider: string | null;
+  providerEventId: string | null;
+  referenceType: string | null;
+  processingStatus: string | null;
+  settlementCode: string | null;
+  shipmentCode: string | null;
+  codRecordId: string | null;
+  dateFrom: Date | null;
+  dateTo: Date | null;
+  limit: number;
 }
 
 export interface CreateCodSettlementInput {
@@ -221,8 +277,11 @@ export interface ConfirmCodSettlementBatchRecordInput {
 export interface RecordCodSettlementPaymentEventInput {
   provider: string;
   providerEventId: string;
+  referenceType?: string | null;
   settlementBatchId: string | null;
   settlementCode: string | null;
+  codRecordId?: string | null;
+  shipmentCode?: string | null;
   amount: number;
   accountNumber: string | null;
   transferType: string | null;
@@ -240,8 +299,11 @@ export interface RecordCodSettlementPaymentEventResult {
 
 export interface UpdateCodSettlementPaymentEventInput {
   id: string;
+  referenceType?: string | null;
   settlementBatchId?: string | null;
   settlementCode?: string | null;
+  codRecordId?: string | null;
+  shipmentCode?: string | null;
   processingStatus: string;
   ignoredReason?: string | null;
 }

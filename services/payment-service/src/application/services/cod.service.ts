@@ -4,6 +4,7 @@ import {
   BadRequestException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -24,12 +25,18 @@ import type {
   RemitCodInput,
   SePaySettlementWebhookPayload,
   SePaySettlementWebhookResult,
+  CodSettlementPaymentEvent,
+  CodSettlementPaymentEventQuery,
+  SyncShipmentCodRecordInput,
+  SyncShipmentCodRecordResult,
 } from '../../domain/entities/cod-record.entity';
 import { CodRecordRepository } from '../../domain/repositories/cod-record.repository';
 import { CodOutboxService } from '../../messaging/outbox/cod-outbox.service';
 
 @Injectable()
 export class CodService {
+  private readonly logger = new Logger(CodService.name);
+
   constructor(
     @Inject(CodRecordRepository)
     private readonly codRecordRepository: CodRecordRepository,
@@ -37,15 +44,82 @@ export class CodService {
   ) {}
 
   async createCodRecord(input: CreateCodRecordInput): Promise<CodRecord> {
+    if (!input.shipmentCode?.trim()) {
+      throw new BadRequestException('shipmentCode is required.');
+    }
+
+    if (!Number.isFinite(input.codAmount) || input.codAmount <= 0) {
+      throw new BadRequestException('codAmount must be positive.');
+    }
+
     const existing = await this.codRecordRepository.findByShipmentCode(
-      input.shipmentCode,
+      input.shipmentCode.trim().toUpperCase(),
     );
 
     if (existing) {
       return existing;
     }
 
-    return this.codRecordRepository.create(input);
+    return this.codRecordRepository.create({
+      ...input,
+      shipmentCode: input.shipmentCode.trim().toUpperCase(),
+    });
+  }
+
+  async syncShipmentCodRecord(
+    input: SyncShipmentCodRecordInput,
+  ): Promise<SyncShipmentCodRecordResult> {
+    const shipmentCode = normalizeOptionalFilter(input.shipmentCode ?? input.code)?.toUpperCase();
+
+    if (!shipmentCode) {
+      return {
+        synced: false,
+        reason: 'MISSING_SHIPMENT_CODE',
+        record: null,
+      };
+    }
+
+    const metadata = input.metadata ?? null;
+    const codAmount = normalizeMoney(
+      readNumber(input.codAmount) ??
+        readNumber(metadata?.codAmount) ??
+        readNumber(readObject(metadata?.payment)?.codAmount) ??
+        readNumber(readObject(metadata?.cod)?.amount) ??
+        0,
+    );
+
+    if (codAmount <= 0) {
+      return {
+        synced: false,
+        reason: 'NO_COD',
+        record: null,
+      };
+    }
+
+    const merchantId =
+      normalizeOptionalFilter(input.merchantId) ??
+      normalizeOptionalFilter(readString(metadata?.merchantId)) ??
+      normalizeOptionalFilter(readString(metadata?.merchantCode)) ??
+      normalizeOptionalFilter(readString(metadata?.merchantUsername)) ??
+      normalizeOptionalFilter(readString(readObject(metadata?.createdBy)?.username)) ??
+      normalizeOptionalFilter(readString(metadata?.createdByUsername));
+    const currency =
+      normalizeOptionalFilter(input.currency) ??
+      normalizeOptionalFilter(readString(metadata?.currency)) ??
+      'VND';
+    const record = await this.createCodRecord({
+      shipmentCode,
+      merchantId,
+      codAmount,
+      currency,
+      paymentMethod: 'COD',
+    });
+
+    return {
+      synced: true,
+      reason: 'COD_RECORD_READY',
+      record,
+    };
   }
 
   async collectCod(input: CollectCodInput): Promise<CodRecord> {
@@ -59,6 +133,12 @@ export class CodService {
 
     if (input.collectedAmount <= 0) {
       throw new BadRequestException('collectedAmount must be positive.');
+    }
+
+    if (input.paymentMethod === 'BANK_TRANSFER') {
+      throw new BadRequestException(
+        'BANK_TRANSFER COD must be confirmed by bank webhook, not /cod/collect.',
+      );
     }
 
     const codRecord = await this.codRecordRepository.findByShipmentCode(
@@ -212,8 +292,13 @@ export class CodService {
 
     let codTotal = 0;
     let collectedTotal = 0;
+    let cashCollectedTotal = 0;
+    let bankTransferTotal = 0;
+    let companyReceivedTotal = 0;
     let remittedTotal = 0;
     let pendingRemitTotal = 0;
+    let pendingCashRemitTotal = 0;
+    let waitingBankConfirmTotal = 0;
 
     for (const record of records) {
       const codAmount = normalizeMoney(record.codAmount);
@@ -223,14 +308,28 @@ export class CodService {
 
       if (record.status === 'COLLECTED' || record.status === 'REMITTED') {
         collectedTotal += collectedAmount;
+
+        if (record.paymentMethod === 'COD') {
+          cashCollectedTotal += collectedAmount;
+        }
+
+        if (record.paymentMethod === 'BANK_TRANSFER') {
+          bankTransferTotal += collectedAmount;
+        }
       }
 
       if (record.status === 'REMITTED') {
+        companyReceivedTotal += collectedAmount;
         remittedTotal += collectedAmount;
       }
 
-      if (record.status === 'COLLECTED') {
+      if (record.status === 'COLLECTED' && record.paymentMethod === 'COD') {
+        pendingCashRemitTotal += collectedAmount;
         pendingRemitTotal += collectedAmount;
+      }
+
+      if (record.status === 'COLLECTED' && record.paymentMethod === 'BANK_TRANSFER') {
+        waitingBankConfirmTotal += collectedAmount;
       }
     }
 
@@ -241,18 +340,26 @@ export class CodService {
       codOrders: records.length,
       codTotal,
       collectedTotal,
+      cashCollectedTotal,
+      bankTransferTotal,
+      companyReceivedTotal,
       remittedTotal,
       pendingRemitTotal,
+      pendingCashRemitTotal,
+      waitingBankConfirmTotal,
       records: records.map((record) => ({
         shipmentCode: record.shipmentCode,
         codAmount: normalizeMoney(record.codAmount),
         collectedAmount: record.collectedAmount === null
           ? null
           : normalizeMoney(record.collectedAmount),
+        paymentMethod: record.paymentMethod,
         status: record.status,
         courierId: record.courierId,
         collectedAt: record.collectedAt?.toISOString() ?? null,
         remittedAt: record.remittedAt?.toISOString() ?? null,
+        companyReceivedAt: record.remittedAt?.toISOString() ?? null,
+        companyReceivedRef: record.remittedBy,
       })),
       batches,
     };
@@ -293,6 +400,20 @@ export class CodService {
 
       throw new BadRequestException(
         `Only COLLECTED COD records can be settled. Invalid records: ${details}.`,
+      );
+    }
+
+    const invalidPaymentMethodRecords = records.filter(
+      (record) => record.paymentMethod !== 'COD',
+    );
+
+    if (invalidPaymentMethodRecords.length > 0) {
+      const details = invalidPaymentMethodRecords
+        .map((record) => `${record.shipmentCode}:${record.paymentMethod}`)
+        .join(', ');
+
+      throw new BadRequestException(
+        `Only cash COD records can be settled. Invalid records: ${details}.`,
       );
     }
 
@@ -387,6 +508,20 @@ export class CodService {
       );
     }
 
+    const invalidPaymentMethodRecords = currentRecords.filter(
+      (record) => record.paymentMethod !== 'COD',
+    );
+
+    if (invalidPaymentMethodRecords.length > 0) {
+      const details = invalidPaymentMethodRecords
+        .map((record) => `${record.shipmentCode}:${record.paymentMethod}`)
+        .join(', ');
+
+      throw new BadRequestException(
+        `Cannot confirm COD settlement batch "${current.settlementCode}" with non-cash COD records: ${details}.`,
+      );
+    }
+
     const collectedShipmentCodes = new Set(
       currentRecords
         .filter((record) => record.status === 'COLLECTED')
@@ -428,6 +563,23 @@ export class CodService {
     return confirmed;
   }
 
+  async listSePayWebhookEvents(
+    query: CodSettlementPaymentEventQuery,
+  ): Promise<CodSettlementPaymentEvent[]> {
+    return this.codRecordRepository.listSettlementPaymentEvents({
+      provider: normalizeOptionalFilter(query.provider)?.toUpperCase() ?? 'SEPAY',
+      providerEventId: normalizeOptionalFilter(query.providerEventId),
+      referenceType: normalizeOptionalFilter(query.referenceType)?.toUpperCase() ?? null,
+      processingStatus: normalizeOptionalFilter(query.processingStatus)?.toUpperCase() ?? null,
+      settlementCode: normalizeOptionalFilter(query.settlementCode)?.toUpperCase() ?? null,
+      shipmentCode: normalizeOptionalFilter(query.shipmentCode)?.toUpperCase() ?? null,
+      codRecordId: normalizeOptionalFilter(query.codRecordId),
+      dateFrom: parseOptionalDateTime(query.dateFrom, 'dateFrom'),
+      dateTo: parseOptionalDateTime(query.dateTo, 'dateTo'),
+      limit: normalizeListLimit(query.limit),
+    });
+  }
+
   async handleSePaySettlementWebhook(
     input: HandleSePaySettlementWebhookInput,
   ): Promise<SePaySettlementWebhookResult> {
@@ -437,8 +589,11 @@ export class CodService {
     const eventRecord = await this.codRecordRepository.recordSettlementPaymentEvent({
       provider: 'SEPAY',
       providerEventId: transaction.providerEventId,
+      referenceType: transaction.referenceType,
       settlementBatchId: null,
-      settlementCode: null,
+      settlementCode: transaction.settlementCode,
+      shipmentCode: transaction.shipmentCode,
+      codRecordId: null,
       amount: transaction.amount,
       accountNumber: transaction.accountNumber,
       transferType: transaction.transferType,
@@ -455,8 +610,11 @@ export class CodService {
         provider: 'SEPAY',
         providerEventId: transaction.providerEventId,
         action: 'duplicate',
+        referenceType: toWebhookReferenceType(eventRecord.event.referenceType),
         settlementCode: eventRecord.event.settlementCode,
         settlementId: eventRecord.event.settlementBatchId,
+        shipmentCode: eventRecord.event.shipmentCode,
+        codRecordId: eventRecord.event.codRecordId,
         amount: eventRecord.event.amount,
         ignoredReason: eventRecord.event.ignoredReason ?? undefined,
       };
@@ -464,13 +622,37 @@ export class CodService {
 
     const ignoredResult = async (
       reason: string,
-      settlement?: CodSettlementBatch | null,
+      context?: {
+        referenceType?: 'SETTLEMENT' | 'SHIPMENT' | null;
+        settlement?: CodSettlementBatch | null;
+        settlementCode?: string | null;
+        shipmentCode?: string | null;
+        codRecordId?: string | null;
+        processingStatus?: string;
+      },
     ): Promise<SePaySettlementWebhookResult> => {
+      const referenceType = context?.referenceType ?? transaction.referenceType;
+      const settlement = context?.settlement ?? null;
+      const settlementCode =
+        context?.settlementCode ?? settlement?.settlementCode ?? transaction.settlementCode;
+      const shipmentCode = context?.shipmentCode ?? transaction.shipmentCode;
+      const codRecordId = context?.codRecordId ?? null;
+      const processingStatus = context?.processingStatus ?? 'IGNORED';
+
+      if (processingStatus === 'AMOUNT_MISMATCH' || processingStatus === 'UNKNOWN_REFERENCE') {
+        this.logger.warn(
+          `SePay COD webhook ${processingStatus}: ${reason}; event=${transaction.providerEventId}; settlement=${settlementCode ?? '-'}; shipment=${shipmentCode ?? '-'}; amount=${transaction.amount}`,
+        );
+      }
+
       await this.codRecordRepository.updateSettlementPaymentEvent({
         id: eventRecord.event.id,
+        referenceType,
         settlementBatchId: settlement?.id ?? null,
-        settlementCode: settlement?.settlementCode ?? transaction.settlementCode,
-        processingStatus: 'IGNORED',
+        settlementCode,
+        shipmentCode,
+        codRecordId,
+        processingStatus,
         ignoredReason: reason,
       });
 
@@ -479,8 +661,11 @@ export class CodService {
         provider: 'SEPAY',
         providerEventId: transaction.providerEventId,
         action: 'ignored',
-        settlementCode: settlement?.settlementCode ?? transaction.settlementCode,
+        referenceType,
+        settlementCode,
         settlementId: settlement?.id ?? null,
+        shipmentCode,
+        codRecordId,
         amount: transaction.amount,
         ignoredReason: reason,
       };
@@ -498,8 +683,135 @@ export class CodService {
       return ignoredResult('SePay transaction accountNumber does not match company bank account.');
     }
 
+    if (!transaction.referenceType) {
+      return ignoredResult('UNKNOWN_REFERENCE', {
+        referenceType: null,
+        processingStatus: 'UNKNOWN_REFERENCE',
+      });
+    }
+
+    if (transaction.referenceType === 'SHIPMENT') {
+      const shipmentCode = transaction.shipmentCode;
+
+      if (!shipmentCode) {
+        return ignoredResult('UNKNOWN_REFERENCE', {
+          referenceType: 'SHIPMENT',
+          processingStatus: 'UNKNOWN_REFERENCE',
+        });
+      }
+
+      const codRecord = await this.codRecordRepository.findByShipmentCode(shipmentCode);
+
+      if (!codRecord) {
+        return ignoredResult(`COD record "${shipmentCode}" was not found.`, {
+          referenceType: 'SHIPMENT',
+          shipmentCode,
+          processingStatus: 'UNKNOWN_REFERENCE',
+        });
+      }
+
+      const shipmentContext = {
+        referenceType: 'SHIPMENT' as const,
+        shipmentCode: codRecord.shipmentCode,
+        codRecordId: codRecord.id,
+      };
+      const amountTolerance = Number(process.env.SEPAY_AMOUNT_TOLERANCE_VND ?? '0');
+      const amountDelta = Math.abs(normalizeMoney(codRecord.codAmount) - transaction.amount);
+
+      if (amountDelta > amountTolerance) {
+        return ignoredResult(
+          `SePay transferAmount ${transaction.amount} does not match COD amount ${codRecord.codAmount}.`,
+          {
+            ...shipmentContext,
+            processingStatus: 'AMOUNT_MISMATCH',
+          },
+        );
+      }
+
+      if (codRecord.status === 'FAILED') {
+        return ignoredResult(
+          `COD record "${codRecord.shipmentCode}" is in FAILED state.`,
+          shipmentContext,
+        );
+      }
+
+      if (codRecord.status === 'REMITTED') {
+        await this.codRecordRepository.updateSettlementPaymentEvent({
+          id: eventRecord.event.id,
+          referenceType: 'SHIPMENT',
+          settlementBatchId: null,
+          settlementCode: null,
+          shipmentCode: codRecord.shipmentCode,
+          codRecordId: codRecord.id,
+          processingStatus: 'DUPLICATE',
+          ignoredReason: 'Shipment COD is already REMITTED.',
+        });
+
+        return {
+          success: true,
+          provider: 'SEPAY',
+          providerEventId: transaction.providerEventId,
+          action: 'duplicate',
+          referenceType: 'SHIPMENT',
+          settlementCode: null,
+          settlementId: null,
+          shipmentCode: codRecord.shipmentCode,
+          codRecordId: codRecord.id,
+          amount: transaction.amount,
+          ignoredReason: 'Shipment COD is already REMITTED.',
+        };
+      }
+
+      if (codRecord.status === 'COLLECTED' && codRecord.paymentMethod !== 'BANK_TRANSFER') {
+        return ignoredResult(
+          `COD record "${codRecord.shipmentCode}" was already collected as ${codRecord.paymentMethod}.`,
+          shipmentContext,
+        );
+      }
+
+      const previousStatus = codRecord.status;
+      const received = await this.codRecordRepository.markBankTransferReceived(
+        codRecord.id,
+        transaction.amount,
+        transaction.transactionDate ?? new Date(),
+        `SePay ${transaction.referenceCode ?? transaction.providerEventId}`,
+      );
+
+      if (previousStatus === 'PENDING') {
+        await this.codOutboxService.enqueueCodCollected(received);
+      }
+
+      await this.codOutboxService.enqueueCodRemitted(received);
+      await this.codRecordRepository.updateSettlementPaymentEvent({
+        id: eventRecord.event.id,
+        referenceType: 'SHIPMENT',
+        settlementBatchId: null,
+        settlementCode: null,
+        shipmentCode: received.shipmentCode,
+        codRecordId: received.id,
+        processingStatus: 'CONFIRMED',
+        ignoredReason: null,
+      });
+
+      return {
+        success: true,
+        provider: 'SEPAY',
+        providerEventId: transaction.providerEventId,
+        action: 'confirmed',
+        referenceType: 'SHIPMENT',
+        settlementCode: null,
+        settlementId: null,
+        shipmentCode: received.shipmentCode,
+        codRecordId: received.id,
+        amount: transaction.amount,
+      };
+    }
+
     if (!transaction.settlementCode) {
-      return ignoredResult('No COD settlementCode found in SePay transaction content.');
+      return ignoredResult('UNKNOWN_REFERENCE', {
+        referenceType: 'SETTLEMENT',
+        processingStatus: 'UNKNOWN_REFERENCE',
+      });
     }
 
     const settlement = await this.codRecordRepository.findSettlementBatchByCode(
@@ -509,6 +821,11 @@ export class CodService {
     if (!settlement) {
       return ignoredResult(
         `COD settlement batch "${transaction.settlementCode}" was not found.`,
+        {
+          referenceType: 'SETTLEMENT',
+          settlementCode: transaction.settlementCode,
+          processingStatus: 'UNKNOWN_REFERENCE',
+        },
       );
     }
 
@@ -518,16 +835,23 @@ export class CodService {
     if (amountDelta > amountTolerance) {
       return ignoredResult(
         `SePay transferAmount ${transaction.amount} does not match settlement totalAmount ${settlement.totalAmount}.`,
-        settlement,
+        {
+          referenceType: 'SETTLEMENT',
+          settlement,
+          processingStatus: 'AMOUNT_MISMATCH',
+        },
       );
     }
 
     if (settlement.status === 'PAID') {
       await this.codRecordRepository.updateSettlementPaymentEvent({
         id: eventRecord.event.id,
+        referenceType: 'SETTLEMENT',
         settlementBatchId: settlement.id,
         settlementCode: settlement.settlementCode,
-        processingStatus: 'DUPLICATE_PAID',
+        shipmentCode: null,
+        codRecordId: null,
+        processingStatus: 'DUPLICATE',
         ignoredReason: 'Settlement batch is already PAID.',
       });
 
@@ -536,8 +860,11 @@ export class CodService {
         provider: 'SEPAY',
         providerEventId: transaction.providerEventId,
         action: 'duplicate',
+        referenceType: 'SETTLEMENT',
         settlementCode: settlement.settlementCode,
         settlementId: settlement.id,
+        shipmentCode: null,
+        codRecordId: null,
         amount: transaction.amount,
         ignoredReason: 'Settlement batch is already PAID.',
       };
@@ -546,7 +873,10 @@ export class CodService {
     if (settlement.status !== 'WAITING_PAYMENT') {
       return ignoredResult(
         `Cannot confirm settlement batch in status "${settlement.status}".`,
-        settlement,
+        {
+          referenceType: 'SETTLEMENT',
+          settlement,
+        },
       );
     }
 
@@ -557,8 +887,11 @@ export class CodService {
 
     await this.codRecordRepository.updateSettlementPaymentEvent({
       id: eventRecord.event.id,
+      referenceType: 'SETTLEMENT',
       settlementBatchId: confirmed.id,
       settlementCode: confirmed.settlementCode,
+      shipmentCode: null,
+      codRecordId: null,
       processingStatus: 'CONFIRMED',
       ignoredReason: null,
     });
@@ -568,8 +901,11 @@ export class CodService {
       provider: 'SEPAY',
       providerEventId: transaction.providerEventId,
       action: 'confirmed',
+      referenceType: 'SETTLEMENT',
       settlementCode: confirmed.settlementCode,
       settlementId: confirmed.id,
+      shipmentCode: null,
+      codRecordId: null,
       amount: transaction.amount,
     };
   }
@@ -813,9 +1149,64 @@ function normalizeMoney(value: number): number {
   return Number.isFinite(value) ? Math.max(0, value) : 0;
 }
 
+function normalizeListLimit(value: string | number | null | undefined): number {
+  const rawValue = typeof value === 'number' ? value : Number(value ?? 50);
+  const parsed = Number.isFinite(rawValue) ? Math.trunc(rawValue) : 50;
+
+  return Math.min(200, Math.max(1, parsed));
+}
+
+function parseOptionalDateTime(
+  value: string | null | undefined,
+  fieldName: string,
+): Date | null {
+  const normalized = normalizeOptionalFilter(value);
+
+  if (!normalized) {
+    return null;
+  }
+
+  const parsed = new Date(normalized);
+
+  if (Number.isNaN(parsed.getTime())) {
+    throw new BadRequestException(`${fieldName} must be a valid ISO date/time value.`);
+  }
+
+  return parsed;
+}
+
+function readNumber(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.replace(/[^\d.-]+/g, '');
+    const parsed = Number(normalized);
+
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+}
+
+function readString(value: unknown): string | null {
+  return typeof value === 'string' && value.trim().length > 0 ? value : null;
+}
+
+function readObject(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null;
+  }
+
+  return value as Record<string, unknown>;
+}
+
 interface NormalizedSePayTransaction {
   providerEventId: string;
+  referenceType: 'SETTLEMENT' | 'SHIPMENT' | null;
   settlementCode: string | null;
+  shipmentCode: string | null;
   amount: number;
   accountNumber: string | null;
   transferType: string | null;
@@ -840,15 +1231,19 @@ function normalizeSePayPayload(
     throw new BadRequestException('SePay webhook payload requires id or referenceCode.');
   }
 
-  const amount = Number(payload.transferAmount);
+  const amount = readNumber(payload.transferAmount);
 
-  if (!Number.isFinite(amount)) {
+  if (amount === null) {
     throw new BadRequestException('SePay transferAmount must be numeric.');
   }
 
+  const reference = extractCodReference(payload);
+
   return {
     providerEventId,
-    settlementCode: extractSettlementCode(payload),
+    referenceType: reference.referenceType,
+    settlementCode: reference.referenceType === 'SETTLEMENT' ? reference.code : null,
+    shipmentCode: reference.referenceType === 'SHIPMENT' ? reference.code : null,
     amount: normalizeMoney(amount),
     accountNumber: normalizeOptionalFilter(payload.accountNumber),
     transferType: normalizeOptionalFilter(payload.transferType)?.toLowerCase() ?? null,
@@ -857,11 +1252,17 @@ function normalizeSePayPayload(
   };
 }
 
-function extractSettlementCode(payload: SePaySettlementWebhookPayload): string | null {
+function extractCodReference(payload: SePaySettlementWebhookPayload): {
+  referenceType: 'SETTLEMENT' | 'SHIPMENT' | null;
+  code: string | null;
+} {
   const directCode = normalizeOptionalFilter(payload.code)?.toUpperCase();
 
-  if (directCode?.startsWith('COD-')) {
-    return directCode;
+  if (directCode && isSettlementCode(directCode)) {
+    return {
+      referenceType: 'SETTLEMENT',
+      code: directCode,
+    };
   }
 
   const haystack = [
@@ -874,9 +1275,38 @@ function extractSettlementCode(payload: SePaySettlementWebhookPayload): string |
     .join(' ')
     .toUpperCase();
 
-  const match = /\bCOD-\d{8}-[A-Z0-9][A-Z0-9-]*-[A-Z0-9]{6}\b/.exec(haystack);
+  const settlementMatch = /\bCOD-\d{8}-[A-Z0-9][A-Z0-9-]*-[A-Z0-9]{6}\b/.exec(haystack);
 
-  return match?.[0] ?? null;
+  if (settlementMatch) {
+    return {
+      referenceType: 'SETTLEMENT',
+      code: settlementMatch[0],
+    };
+  }
+
+  const shipmentMatch = /\bCOD\s+([A-Z0-9][A-Z0-9_-]{2,64})\b/.exec(haystack);
+
+  if (shipmentMatch) {
+    return {
+      referenceType: 'SHIPMENT',
+      code: shipmentMatch[1].replace(/_+/g, '-'),
+    };
+  }
+
+  return {
+    referenceType: null,
+    code: null,
+  };
+}
+
+function isSettlementCode(value: string): boolean {
+  return /^COD-\d{8}-[A-Z0-9][A-Z0-9-]*-[A-Z0-9]{6}$/.test(value);
+}
+
+function toWebhookReferenceType(
+  value: string | null,
+): 'SETTLEMENT' | 'SHIPMENT' | null {
+  return value === 'SETTLEMENT' || value === 'SHIPMENT' ? value : null;
 }
 
 function parseSePayTransactionDate(value: string | null | undefined): Date | null {

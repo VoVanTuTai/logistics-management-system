@@ -1,5 +1,6 @@
 export type CodCollectionStatus = 'PENDING' | 'COLLECTED' | 'REMITTED' | 'FAILED';
 export type CodSettlementStatus = 'WAITING_PAYMENT' | 'PAID' | 'CANCELLED';
+export type CodPaymentMethod = 'COD' | 'BANK_TRANSFER' | 'PREPAID';
 
 export interface CodDailySettlementFilters {
   date?: string | null;
@@ -12,10 +13,13 @@ export interface CodDailySettlementRecordDto {
   shipmentCode: string;
   codAmount: number;
   collectedAmount: number | null;
+  paymentMethod: CodPaymentMethod;
   status: CodCollectionStatus;
   courierId: string | null;
   collectedAt: string | null;
   remittedAt: string | null;
+  companyReceivedAt?: string | null;
+  companyReceivedRef?: string | null;
 }
 
 export interface CodDailySettlementSummaryDto {
@@ -25,8 +29,13 @@ export interface CodDailySettlementSummaryDto {
   codOrders: number;
   codTotal: number;
   collectedTotal: number;
+  cashCollectedTotal?: number;
+  bankTransferTotal?: number;
+  companyReceivedTotal?: number;
   remittedTotal: number;
   pendingRemitTotal: number;
+  pendingCashRemitTotal?: number;
+  waitingBankConfirmTotal?: number;
   records: CodDailySettlementRecordDto[];
   batches: CodSettlementBatchDto[];
 }

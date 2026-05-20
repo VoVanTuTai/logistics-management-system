@@ -13,6 +13,7 @@ import type {
   CodRecord,
   CodSettlementBatch,
   CodSettlementPaymentEvent,
+  CodSettlementPaymentEventFilter,
   CodSettlementBatchFilter,
   ConfirmCodSettlementBatchRecordInput,
   CreateCodSettlementBatchRecordInput,
@@ -274,7 +275,8 @@ export class CodRecordPrismaRepository extends CodRecordRepository {
           status: 'PAID',
           confirmedBy: input.confirmedBy,
           confirmedAt: input.confirmedAt,
-        },
+          confirmedNote: input.note,
+        } as Prisma.CodSettlementBatchUncheckedUpdateInput,
         include: {
           items: true,
         },
@@ -292,8 +294,11 @@ export class CodRecordPrismaRepository extends CodRecordRepository {
         data: {
           provider: input.provider,
           providerEventId: input.providerEventId,
+          referenceType: input.referenceType ?? null,
           settlementBatchId: input.settlementBatchId,
           settlementCode: input.settlementCode,
+          codRecordId: input.codRecordId ?? null,
+          shipmentCode: input.shipmentCode ?? null,
           amount: input.amount,
           accountNumber: input.accountNumber,
           transferType: input.transferType,
@@ -302,7 +307,7 @@ export class CodRecordPrismaRepository extends CodRecordRepository {
           processingStatus: input.processingStatus,
           ignoredReason: input.ignoredReason,
           rawPayload: input.rawPayload as Prisma.InputJsonValue,
-        },
+        } as Prisma.CodSettlementPaymentEventUncheckedCreateInput,
       });
 
       return {
@@ -343,14 +348,68 @@ export class CodRecordPrismaRepository extends CodRecordRepository {
         id: input.id,
       },
       data: {
+        referenceType: input.referenceType,
         settlementBatchId: input.settlementBatchId,
         settlementCode: input.settlementCode,
+        codRecordId: input.codRecordId,
+        shipmentCode: input.shipmentCode,
         processingStatus: input.processingStatus,
         ignoredReason: input.ignoredReason,
-      },
+      } as Prisma.CodSettlementPaymentEventUncheckedUpdateInput,
     });
 
     return this.toSettlementPaymentEventEntity(event);
+  }
+
+  async listSettlementPaymentEvents(
+    filter: CodSettlementPaymentEventFilter,
+  ): Promise<CodSettlementPaymentEvent[]> {
+    const where: Record<string, unknown> = {};
+
+    if (filter.provider) {
+      where.provider = filter.provider;
+    }
+
+    if (filter.providerEventId) {
+      where.providerEventId = filter.providerEventId;
+    }
+
+    if (filter.referenceType) {
+      where.referenceType = filter.referenceType;
+    }
+
+    if (filter.processingStatus) {
+      where.processingStatus = filter.processingStatus;
+    }
+
+    if (filter.settlementCode) {
+      where.settlementCode = filter.settlementCode;
+    }
+
+    if (filter.shipmentCode) {
+      where.shipmentCode = filter.shipmentCode;
+    }
+
+    if (filter.codRecordId) {
+      where.codRecordId = filter.codRecordId;
+    }
+
+    if (filter.dateFrom || filter.dateTo) {
+      where.createdAt = {
+        ...(filter.dateFrom ? { gte: filter.dateFrom } : {}),
+        ...(filter.dateTo ? { lt: filter.dateTo } : {}),
+      };
+    }
+
+    const events = await this.prisma.codSettlementPaymentEvent.findMany({
+      where: where as Prisma.CodSettlementPaymentEventWhereInput,
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: filter.limit,
+    });
+
+    return events.map((event) => this.toSettlementPaymentEventEntity(event));
   }
 
   async markCollected(
@@ -371,6 +430,38 @@ export class CodRecordPrismaRepository extends CodRecordRepository {
         collectedAt,
         note,
       },
+    });
+
+    return this.toEntity(record);
+  }
+
+  async markBankTransferReceived(
+    id: string,
+    receivedAmount: number,
+    receivedAt: Date,
+    note: string | null,
+  ): Promise<CodRecord> {
+    const record = await this.prisma.$transaction(async (tx) => {
+      const current = await tx.codRecord.findUnique({
+        where: { id },
+      });
+
+      if (!current) {
+        throw new Error(`COD record "${id}" was not found.`);
+      }
+
+      return tx.codRecord.update({
+        where: { id },
+        data: {
+          status: 'REMITTED',
+          paymentMethod: 'BANK_TRANSFER',
+          collectedAmount: receivedAmount,
+          collectedAt: current.collectedAt ?? receivedAt,
+          remittedBy: 'sepay:webhook',
+          remittedAt: receivedAt,
+          note,
+        },
+      });
     });
 
     return this.toEntity(record);
@@ -492,6 +583,7 @@ export class CodRecordPrismaRepository extends CodRecordRepository {
       createdBy: record.createdBy,
       confirmedBy: record.confirmedBy,
       confirmedAt: record.confirmedAt,
+      confirmedNote: (record as { confirmedNote?: string | null }).confirmedNote ?? null,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
       items: record.items.map((item) => ({
@@ -511,8 +603,11 @@ export class CodRecordPrismaRepository extends CodRecordRepository {
       id: record.id,
       provider: record.provider,
       providerEventId: record.providerEventId,
+      referenceType: (record as { referenceType?: string | null }).referenceType ?? null,
       settlementBatchId: record.settlementBatchId,
       settlementCode: record.settlementCode,
+      codRecordId: (record as { codRecordId?: string | null }).codRecordId ?? null,
+      shipmentCode: (record as { shipmentCode?: string | null }).shipmentCode ?? null,
       amount: record.amount,
       accountNumber: record.accountNumber,
       transferType: record.transferType,
