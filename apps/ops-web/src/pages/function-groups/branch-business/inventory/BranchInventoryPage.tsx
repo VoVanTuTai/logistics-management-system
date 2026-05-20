@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { useHubsQuery } from '../../../../features/masterdata/masterdata.api';
@@ -20,6 +20,7 @@ import {
   resolveBranchAgeHours,
   resolveShipmentHub,
 } from '../shared/branchBusinessData';
+import { BranchTablePagination } from '../shared/BranchTablePagination';
 import '../shared/BranchBusinessOperations.css';
 
 interface InventoryRow {
@@ -64,6 +65,8 @@ export function BranchInventoryPage(): React.JSX.Element {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [courierFilter, setCourierFilter] = useState('ALL');
   const [keyword, setKeyword] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   const shipmentsQuery = useShipmentsQuery(accessToken, {}, { refetchInterval: 15000 });
   const tasksQuery = useTasksQuery(accessToken, { taskType: 'DELIVERY' }, { refetchInterval: 15000 });
@@ -146,6 +149,17 @@ export function BranchInventoryPage(): React.JSX.Element {
       );
     });
   }, [courierFilter, hubFilter, keyword, rows, statusFilter]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [courierFilter, hubFilter, keyword, pageSize, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const paginatedRows = useMemo(
+    () => filteredRows.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [currentPage, filteredRows, pageSize],
+  );
 
   const statusGroups = useMemo(() => countBy(rows, (row) => row.statusLabel), [rows]);
   const courierGroups = useMemo(() => countBy(rows, (row) => row.courierId), [rows]);
@@ -270,7 +284,7 @@ export function BranchInventoryPage(): React.JSX.Element {
                 </tr>
               </thead>
               <tbody>
-                {filteredRows.map((row) => (
+                {paginatedRows.map((row) => (
                   <tr key={row.shipmentCode}>
                     <td>
                       <Link
@@ -304,6 +318,13 @@ export function BranchInventoryPage(): React.JSX.Element {
               </tbody>
             </table>
           </div>
+          <BranchTablePagination
+            totalRows={filteredRows.length}
+            page={currentPage}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
           {!isLoading && filteredRows.length === 0 ? (
             <p className="ops-branch-workflow__empty">
               Không có vận đơn tồn phù hợp bộ lọc hiện tại.

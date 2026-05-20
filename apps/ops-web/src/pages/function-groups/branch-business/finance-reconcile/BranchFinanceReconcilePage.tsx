@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { useHubsQuery } from '../../../../features/masterdata/masterdata.api';
 import { useShipmentsQuery } from '../../../../features/shipments/shipments.api';
@@ -14,6 +14,7 @@ import {
   toBranchDateInputValue,
   toBranchDateKey,
 } from '../shared/branchBusinessData';
+import { BranchTablePagination } from '../shared/BranchTablePagination';
 import '../shared/BranchBusinessOperations.css';
 
 interface DebtRow {
@@ -43,6 +44,8 @@ export function BranchFinanceReconcilePage(): React.JSX.Element {
   const [dateTo, setDateTo] = useState(today);
   const [hubFilter, setHubFilter] = useState(assignedHubCodes[0] ?? 'ALL');
   const [keyword, setKeyword] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   const shipmentsQuery = useShipmentsQuery(accessToken, {}, { refetchInterval: 15000 });
   const hubsQuery = useHubsQuery(accessToken, {});
@@ -117,6 +120,16 @@ export function BranchFinanceReconcilePage(): React.JSX.Element {
         normalizeBranchText(row.hubCode).includes(normalizedKeyword),
     );
   }, [keyword, rows]);
+  useEffect(() => {
+    setPage(1);
+  }, [dateFrom, dateTo, hubFilter, keyword, pageSize]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const paginatedRows = useMemo(
+    () => filteredRows.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [currentPage, filteredRows, pageSize],
+  );
   const hubOptions = useMemo(
     () =>
       Array.from(
@@ -237,7 +250,7 @@ export function BranchFinanceReconcilePage(): React.JSX.Element {
               </tr>
             </thead>
             <tbody>
-              {filteredRows.map((row) => (
+              {paginatedRows.map((row) => (
                 <tr key={`${row.customerKey}-${row.hubCode}`}>
                   <td>{row.customerKey}</td>
                   <td>{row.hubCode}</td>
@@ -251,9 +264,16 @@ export function BranchFinanceReconcilePage(): React.JSX.Element {
                   <td>{formatBranchCurrency(row.discrepancy)}</td>
                 </tr>
               ))}
-            </tbody>
-          </table>
-        </div>
+          </tbody>
+        </table>
+      </div>
+        <BranchTablePagination
+          totalRows={filteredRows.length}
+          page={currentPage}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+        />
         {!isLoading && filteredRows.length === 0 ? (
           <p className="ops-branch-workflow__empty">
             Chưa có dữ liệu vận đơn phù hợp kỳ đối soát hoặc chưa có endpoint finance chính thức.

@@ -1,13 +1,8 @@
 import React from 'react';
+import { Navigate } from 'react-router-dom';
 
-import { FunctionGroupLandingPage } from '../shared/FunctionGroupLandingPage';
+import { routePaths } from '../../../navigation/routes';
 
 export function OperationsMetricsGroupPage(): React.JSX.Element {
-  return (
-    <FunctionGroupLandingPage
-      groupCode="OPERATIONS_METRICS"
-      title="Chỉ số vận hành"
-      summary="Cụm theo dõi KPI, báo cáo và chỉ số vận hành."
-    />
-  );
+  return <Navigate to={routePaths.opsMetricsDeadlineInventory} replace />;
 }

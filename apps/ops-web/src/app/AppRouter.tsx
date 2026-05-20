@@ -13,7 +13,6 @@ import { useLogoutMutation } from '../features/auth/auth.api';
 import { LoginPage } from '../pages/auth/LoginPage';
 import { DashboardPage } from '../pages/dashboard/DashboardPage';
 import { ComingSoonPlaceholder } from '../pages/shared/ComingSoonPlaceholder';
-import { FunctionGroupLandingPage } from '../pages/function-groups/shared/FunctionGroupLandingPage';
 import { routePaths } from '../navigation/routes';
 import { useAuthStore } from '../store/authStore';
 import { appEnv } from '../utils/env';
@@ -113,9 +112,9 @@ const OpsMetricsInventoryMonitorPage = lazyRoutePage(
   () => import('../pages/function-groups/operations-metrics/deadline/OpsMetricsInventoryMonitorPage'),
   'OpsMetricsInventoryMonitorPage',
 );
-const OperationsMetricsFeaturePlaceholderPage = lazyRoutePage(
-  () => import('../pages/function-groups/operations-metrics/shared/OperationsMetricsFeaturePlaceholderPage'),
-  'OperationsMetricsFeaturePlaceholderPage',
+const OperationsMetricsDerivedRoutePage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-metrics/shared/OperationsMetricsDerivedRoutePage'),
+  'OperationsMetricsDerivedRoutePage',
 );
 const OperationsPlatformGroupPage = lazyRoutePage(
   () => import('../pages/function-groups/operations-platform/OperationsPlatformGroupPage'),
@@ -1593,7 +1592,7 @@ export function AppRouter(): React.JSX.Element {
               path={routePaths.opsMetricsAbnormalOverviewLeaf}
               element={opsModuleRoute(
                 'Tổng quan kiện bất thường',
-                <OperationsMetricsFeaturePlaceholderPage
+                <OperationsMetricsDerivedRoutePage
                   groupCode="OPS_METRICS_ABNORMAL_OVERVIEW"
                   title="Tổng quan kiện bất thường"
                   summary="Theo dõi tổng quan kiện bất thường theo khu vực và trạng thái xử lý."
@@ -1604,7 +1603,7 @@ export function AppRouter(): React.JSX.Element {
               path={routePaths.opsMetricsAbnormalHandlingLeaf}
               element={opsModuleRoute(
                 'Theo dõi xử lý kiện',
-                <OperationsMetricsFeaturePlaceholderPage
+                <OperationsMetricsDerivedRoutePage
                   groupCode="OPS_METRICS_ABNORMAL_HANDLING"
                   title="Theo dõi xử lý kiện"
                   summary="Giám sát tiến độ xử lý kiện bất thường theo từng đơn vị vận hành."
@@ -1619,7 +1618,7 @@ export function AppRouter(): React.JSX.Element {
               path={routePaths.opsMetricsDeadlineOntimePickupRatioLeaf}
               element={opsModuleRoute(
                 'Báo biểu tỷ lệ nhận hàng kịp',
-                <OperationsMetricsFeaturePlaceholderPage
+                <OperationsMetricsDerivedRoutePage
                   groupCode="OPS_METRICS_DEADLINE_PICKUP_RATIO"
                   title="Báo biểu tỷ lệ nhận hàng kịp"
                   summary="Báo cáo tỷ lệ nhận hàng kịp theo khung giờ và TTTC."
@@ -1630,7 +1629,7 @@ export function AppRouter(): React.JSX.Element {
               path={routePaths.opsMetricsDeadlineDeliverySlaLeaf}
               element={opsModuleRoute(
                 'Giám sát thời hiệu hàng phát',
-                <OperationsMetricsFeaturePlaceholderPage
+                <OperationsMetricsDerivedRoutePage
                   groupCode="OPS_METRICS_DEADLINE_DELIVERY_SLA"
                   title="Giám sát thời hiệu hàng phát"
                   summary="Theo dõi SLA phát hàng và danh sách đơn có nguy cơ trễ hạn."
@@ -1641,7 +1640,7 @@ export function AppRouter(): React.JSX.Element {
               path={routePaths.opsMetricsDeadlineActualSignT1Leaf}
               element={opsModuleRoute(
                 'Ký nhận thực tế T-1',
-                <OperationsMetricsFeaturePlaceholderPage
+                <OperationsMetricsDerivedRoutePage
                   groupCode="OPS_METRICS_DEADLINE_SIGN_T1"
                   title="Ký nhận thực tế (T-1)"
                   summary="Tổng hợp dữ liệu ký nhận thực tế và so sánh với mục tiêu T-1."
@@ -1652,7 +1651,7 @@ export function AppRouter(): React.JSX.Element {
               path={routePaths.opsMetricsDeadlineOntimeSendRatioLeaf}
               element={opsModuleRoute(
                 'Tỷ lệ gửi kiện đúng giờ',
-                <OperationsMetricsFeaturePlaceholderPage
+                <OperationsMetricsDerivedRoutePage
                   groupCode="OPS_METRICS_DEADLINE_SEND_RATIO"
                   title="Tỷ lệ gửi kiện đúng giờ"
                   summary="Báo cáo tỷ lệ gửi kiện đúng giờ theo hub, chi nhánh và ca vận hành."
@@ -1663,7 +1662,7 @@ export function AppRouter(): React.JSX.Element {
               path={routePaths.opsMetricsDeadlineDeliveryLeadtimeLeaf}
               element={opsModuleRoute(
                 'Giám sát leadtime phát',
-                <OperationsMetricsFeaturePlaceholderPage
+                <OperationsMetricsDerivedRoutePage
                   groupCode="OPS_METRICS_DEADLINE_DELIVERY_LEADTIME"
                   title="Giám sát leadtime phát (Mới)"
                   summary="Phân tích leadtime phát theo tuyến và gom cảnh báo trễ hạn mới."
@@ -1674,7 +1673,7 @@ export function AppRouter(): React.JSX.Element {
               path={routePaths.opsMetricsDeadlineInboundLeadtimeLeaf}
               element={opsModuleRoute(
                 'Giám sát leadtime nhận',
-                <OperationsMetricsFeaturePlaceholderPage
+                <OperationsMetricsDerivedRoutePage
                   groupCode="OPS_METRICS_DEADLINE_INBOUND_LEADTIME"
                   title="Giám sát leadtime nhận"
                   summary="Giám sát leadtime nhận hàng theo điểm nhận và theo dõi điểm nghẽn."
@@ -1685,7 +1684,7 @@ export function AppRouter(): React.JSX.Element {
               path={routePaths.opsMetricsDeadlineOverdueAlertsLeaf}
               element={opsModuleRoute(
                 'Hệ thống cảnh báo quá hạn',
-                <OperationsMetricsFeaturePlaceholderPage
+                <OperationsMetricsDerivedRoutePage
                   groupCode="OPS_METRICS_DEADLINE_OVERDUE_ALERTS"
                   title="Hệ thống cảnh báo quá hạn"
                   summary="Tập trung cảnh báo quá hạn để ưu tiên xử lý theo mức độ rủi ro."
@@ -1696,7 +1695,7 @@ export function AppRouter(): React.JSX.Element {
               path={routePaths.opsMetricsPlanningNetworkKpiLeaf}
               element={opsModuleRoute(
                 'Giám sát KPI mạng lưới',
-                <OperationsMetricsFeaturePlaceholderPage
+                <OperationsMetricsDerivedRoutePage
                   groupCode="OPS_METRICS_PLANNING_NETWORK_KPI"
                   title="Giám sát KPI mạng lưới"
                   summary="Tổng hợp KPI quy hoạch mạng lưới và đánh giá mức độ đáp ứng năng lực."
@@ -1707,7 +1706,7 @@ export function AppRouter(): React.JSX.Element {
               path={routePaths.opsMetricsActionExecutionBoardLeaf}
               element={opsModuleRoute(
                 'Bàn điều phối thao tác',
-                <OperationsMetricsFeaturePlaceholderPage
+                <OperationsMetricsDerivedRoutePage
                   groupCode="OPS_METRICS_ACTION_EXECUTION_BOARD"
                   title="Bàn điều phối thao tác"
                   summary="Quản lý tác vụ thao tác và trạng thái hoàn thành theo ngày."

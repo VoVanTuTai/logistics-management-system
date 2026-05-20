@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { useHubsQuery } from '../../../../features/masterdata/masterdata.api';
@@ -14,6 +14,7 @@ import {
   deriveHubScopeTokens,
   isShipmentInScope,
 } from '../../../../utils/locationScope';
+import { BranchTablePagination } from '../shared/BranchTablePagination';
 import './BranchFinanceCodSettlementPage.css';
 
 interface CodSettlementFilters {
@@ -146,6 +147,8 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
   );
   const [draftFilters, setDraftFilters] = useState<CodSettlementFilters>(initialFilters);
   const [appliedFilters, setAppliedFilters] = useState<CodSettlementFilters>(initialFilters);
+  const [detailPage, setDetailPage] = useState(1);
+  const [detailPageSize, setDetailPageSize] = useState(25);
 
   const shipmentsQuery = useShipmentsQuery(accessToken, { status: 'DELIVERED' });
   const deliveryTasksQuery = useTasksQuery(accessToken, { taskType: 'DELIVERY' });
@@ -224,6 +227,21 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
       return sameDate && sameCourier;
     });
   }, [appliedFilters, branchRows]);
+
+  useEffect(() => {
+    setDetailPage(1);
+  }, [appliedFilters, detailPageSize]);
+
+  const detailTotalPages = Math.max(1, Math.ceil(filteredRows.length / detailPageSize));
+  const currentDetailPage = Math.min(detailPage, detailTotalPages);
+  const paginatedDetailRows = useMemo(
+    () =>
+      filteredRows.slice(
+        (currentDetailPage - 1) * detailPageSize,
+        currentDetailPage * detailPageSize,
+      ),
+    [currentDetailPage, detailPageSize, filteredRows],
+  );
 
   const courierSummaries = useMemo<CourierCodSummary[]>(() => {
     const summaryByCourier = new Map<string, CourierCodSummary>();
@@ -470,7 +488,7 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
               </tr>
             </thead>
             <tbody>
-              {filteredRows.map((row) => (
+              {paginatedDetailRows.map((row) => (
                 <tr key={row.shipment.shipmentCode}>
                   <td>
                     <Link
@@ -494,6 +512,13 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
             </tbody>
           </table>
         </div>
+        <BranchTablePagination
+          totalRows={filteredRows.length}
+          page={currentDetailPage}
+          pageSize={detailPageSize}
+          onPageChange={setDetailPage}
+          onPageSizeChange={setDetailPageSize}
+        />
       </section>
     </section>
   );

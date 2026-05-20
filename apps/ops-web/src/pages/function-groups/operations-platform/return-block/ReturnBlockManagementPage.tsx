@@ -10,6 +10,7 @@ import { openReturnShippingLabelPrint } from '../../../../printing/returnShippin
 import { useAuthStore } from '../../../../store/authStore';
 import { formatNdrStatusLabel, formatShipmentStatusLabel } from '../../../../utils/logisticsLabels';
 
+import '../data-monitoring/OperationalDataMonitorPage.css';
 import './ReturnBlockManagementPage.css';
 
 type ReturnOrderStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -50,6 +51,7 @@ const RETURN_RELATED_STATUSES = new Set([
   'RETURN_STARTED',
   'RETURN_COMPLETED',
 ]);
+const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
 
 function normalizeSearch(value: string): string {
   return value.trim().toLowerCase();
@@ -169,6 +171,8 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
   const [notice, setNotice] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   const fetchReturnOrders = useCallback(async () => {
     if (!accessToken) {
@@ -223,6 +227,14 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
       return matchesStatus && matchesSearch;
     });
   }, [orders, searchCode, statusFilter]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [pageSize, searchCode, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pagedOrders = filteredOrders.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const handlePrintLabel = (order: ReturnOrder) => {
     const didOpen = openReturnShippingLabelPrint({
@@ -353,7 +365,7 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
               </tr>
             </thead>
             <tbody>
-              {filteredOrders.map((order) => (
+              {pagedOrders.map((order) => (
                 <tr key={`${order.sourceType}-${order.id}`}>
                   <td>
                     {order.originalShipmentId ? (
@@ -427,6 +439,31 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
             </tbody>
           </table>
         </div>
+        <footer className="ops-data-monitor__pagination">
+          <span>
+            Hiển thị {filteredOrders.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}-
+            {Math.min(filteredOrders.length, currentPage * pageSize)} / {filteredOrders.length} dòng
+          </span>
+          <label>
+            <span>Số dòng</span>
+            <select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}>
+              {PAGE_SIZE_OPTIONS.map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div>
+            <button type="button" onClick={() => setPage(currentPage - 1)} disabled={currentPage <= 1}>
+              Trước
+            </button>
+            <strong>{currentPage}/{totalPages}</strong>
+            <button type="button" onClick={() => setPage(currentPage + 1)} disabled={currentPage >= totalPages}>
+              Sau
+            </button>
+          </div>
+        </footer>
       </section>
     </section>
   );
