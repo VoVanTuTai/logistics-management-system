@@ -2,10 +2,15 @@ import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 
 import { CodService } from '../../application/services/cod.service';
 import type {
+  CodDailySettlementQuery,
+  CodDailySettlementSummary,
   CodRecord,
+  CodSettlementBatch,
   CodSummary,
   CollectCodInput,
   CompanyBankInfo,
+  ConfirmCodSettlementInput,
+  CreateCodSettlementInput,
   CreateCodRecordInput,
   RemitCodInput,
 } from '../../domain/entities/cod-record.entity';
@@ -47,6 +52,28 @@ export class CodController {
   @Get('summary/:courierId')
   getSummary(@Param('courierId') courierId: string): Promise<CodSummary> {
     return this.codService.getCodSummary(courierId);
+  }
+
+  @Get('settlements/daily')
+  getDailySettlement(
+    @Query() query: CodDailySettlementQuery,
+  ): Promise<CodDailySettlementSummary> {
+    return this.codService.getDailySettlement(query);
+  }
+
+  @Post('settlements')
+  createSettlement(
+    @Body() body: CreateCodSettlementInput,
+  ): Promise<CodSettlementBatch> {
+    return this.codService.createCodSettlement(body);
+  }
+
+  @Post('settlements/:id/confirm')
+  confirmSettlement(
+    @Param('id') id: string,
+    @Body() body: ConfirmCodSettlementInput,
+  ): Promise<CodSettlementBatch> {
+    return this.codService.confirmCodSettlement(id, body);
   }
 
   @Get('bank-info')

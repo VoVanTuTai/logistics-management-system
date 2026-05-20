@@ -536,7 +536,7 @@ describe('admin smoke workflows', () => {
     await user.type(screen.getByLabelText(/họ tên/i), 'Merchant A');
     await user.type(screen.getByLabelText(/số điện thoại/i), '0900000000');
     await user.type(screen.getByLabelText(/cccd/i), '123456789012');
-    await user.type(screen.getByLabelText(/dia chi chi tiet/i), '123 Nguyen Trai');
+    await user.type(screen.getByLabelText(/Địa chỉ chi tiết/i), '123 Nguyen Trai');
     await user.type(screen.getByLabelText(/^mật khẩu/i), 'Secret123!');
     await user.type(screen.getByLabelText(/xác nhận mật khẩu/i), 'Secret123!');
     await user.click(screen.getByRole('button', { name: /merchant/i }));
