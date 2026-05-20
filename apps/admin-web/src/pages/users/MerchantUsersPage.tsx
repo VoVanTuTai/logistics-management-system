@@ -833,7 +833,7 @@ export function MerchantUsersPage(): React.JSX.Element {
             </select>
           </label>
           <label style={styles.fieldLabel}>
-            Dia chi chi tiet
+            Địa chỉ chi tiết
             <textarea
               value={form.businessAddressDetail}
               onChange={(event) =>

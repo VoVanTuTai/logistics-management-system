@@ -3,6 +3,8 @@ import type { Request, Response as ExpressResponse } from 'express';
 
 import { ApiGroup, ServiceRegistryClient } from './service-registry.client';
 
+type RequestWithRawBody = Request & { rawBody?: Buffer };
+
 const HOP_BY_HOP_HEADERS = new Set([
   'connection',
   'content-length',
@@ -132,9 +134,13 @@ export class GatewayProxyClient {
     return headers;
   }
 
-  private buildRequestBody(request: Request): BodyInit | undefined {
+  private buildRequestBody(request: RequestWithRawBody): BodyInit | undefined {
     if (request.method === 'GET' || request.method === 'HEAD') {
       return undefined;
+    }
+
+    if (Buffer.isBuffer(request.rawBody)) {
+      return new Uint8Array(request.rawBody);
     }
 
     if (request.body === undefined || request.body === null) {

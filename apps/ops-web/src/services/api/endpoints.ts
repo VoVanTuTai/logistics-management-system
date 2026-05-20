@@ -58,6 +58,12 @@ export const opsEndpoints = {
     current: (shipmentCode: string) => `/ops/tracking/tracking/${shipmentCode}/current`,
     timeline: (shipmentCode: string) => `/ops/tracking/tracking/${shipmentCode}/timeline`,
   },
+  payment: {
+    codDailySettlement: '/ops/payment/cod/settlements/daily',
+    createCodSettlement: '/ops/payment/cod/settlements',
+    confirmCodSettlement: (settlementId: string) =>
+      `/ops/payment/cod/settlements/${encodeURIComponent(settlementId)}/confirm`,
+  },
   masterdata: {
     hubs: '/ops/masterdata/hubs',
     hubDetail: (hubId: string) => `/ops/masterdata/hubs/${hubId}`,
