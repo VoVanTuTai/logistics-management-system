@@ -1,11 +1,15 @@
 import type {
   CodSettlementBatch,
+  CodSettlementPaymentEvent,
   CodDailySettlementRecordFilter,
   CodSettlementBatchFilter,
   CodRecord,
   ConfirmCodSettlementBatchRecordInput,
   CreateCodSettlementBatchRecordInput,
   CreateCodRecordInput,
+  RecordCodSettlementPaymentEventInput,
+  RecordCodSettlementPaymentEventResult,
+  UpdateCodSettlementPaymentEventInput,
 } from '../entities/cod-record.entity';
 
 export abstract class CodRecordRepository {
@@ -31,9 +35,21 @@ export abstract class CodRecordRepository {
 
   abstract findSettlementBatchById(id: string): Promise<CodSettlementBatch | null>;
 
+  abstract findSettlementBatchByCode(
+    settlementCode: string,
+  ): Promise<CodSettlementBatch | null>;
+
   abstract confirmSettlementBatch(
     input: ConfirmCodSettlementBatchRecordInput,
   ): Promise<CodSettlementBatch | null>;
+
+  abstract recordSettlementPaymentEvent(
+    input: RecordCodSettlementPaymentEventInput,
+  ): Promise<RecordCodSettlementPaymentEventResult>;
+
+  abstract updateSettlementPaymentEvent(
+    input: UpdateCodSettlementPaymentEventInput,
+  ): Promise<CodSettlementPaymentEvent>;
 
   abstract markCollected(
     id: string,

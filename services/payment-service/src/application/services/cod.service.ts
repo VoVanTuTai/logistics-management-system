@@ -1,10 +1,11 @@
-import { randomUUID } from 'crypto';
+import { createHmac, randomUUID, timingSafeEqual } from 'crypto';
 
 import {
   BadRequestException,
   Inject,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 
 import type {
@@ -19,7 +20,10 @@ import type {
   ConfirmCodSettlementInput,
   CreateCodSettlementInput,
   CreateCodRecordInput,
+  HandleSePaySettlementWebhookInput,
   RemitCodInput,
+  SePaySettlementWebhookPayload,
+  SePaySettlementWebhookResult,
 } from '../../domain/entities/cod-record.entity';
 import { CodRecordRepository } from '../../domain/repositories/cod-record.repository';
 import { CodOutboxService } from '../../messaging/outbox/cod-outbox.service';
@@ -424,6 +428,152 @@ export class CodService {
     return confirmed;
   }
 
+  async handleSePaySettlementWebhook(
+    input: HandleSePaySettlementWebhookInput,
+  ): Promise<SePaySettlementWebhookResult> {
+    this.verifySePayWebhook(input);
+
+    const transaction = normalizeSePayPayload(input.payload);
+    const eventRecord = await this.codRecordRepository.recordSettlementPaymentEvent({
+      provider: 'SEPAY',
+      providerEventId: transaction.providerEventId,
+      settlementBatchId: null,
+      settlementCode: null,
+      amount: transaction.amount,
+      accountNumber: transaction.accountNumber,
+      transferType: transaction.transferType,
+      referenceCode: transaction.referenceCode,
+      transactionDate: transaction.transactionDate,
+      processingStatus: 'RECEIVED',
+      ignoredReason: null,
+      rawPayload: input.payload,
+    });
+
+    if (!eventRecord.created) {
+      return {
+        success: true,
+        provider: 'SEPAY',
+        providerEventId: transaction.providerEventId,
+        action: 'duplicate',
+        settlementCode: eventRecord.event.settlementCode,
+        settlementId: eventRecord.event.settlementBatchId,
+        amount: eventRecord.event.amount,
+        ignoredReason: eventRecord.event.ignoredReason ?? undefined,
+      };
+    }
+
+    const ignoredResult = async (
+      reason: string,
+      settlement?: CodSettlementBatch | null,
+    ): Promise<SePaySettlementWebhookResult> => {
+      await this.codRecordRepository.updateSettlementPaymentEvent({
+        id: eventRecord.event.id,
+        settlementBatchId: settlement?.id ?? null,
+        settlementCode: settlement?.settlementCode ?? transaction.settlementCode,
+        processingStatus: 'IGNORED',
+        ignoredReason: reason,
+      });
+
+      return {
+        success: true,
+        provider: 'SEPAY',
+        providerEventId: transaction.providerEventId,
+        action: 'ignored',
+        settlementCode: settlement?.settlementCode ?? transaction.settlementCode,
+        settlementId: settlement?.id ?? null,
+        amount: transaction.amount,
+        ignoredReason: reason,
+      };
+    };
+
+    if (transaction.transferType !== 'in') {
+      return ignoredResult('SePay transaction is not an inbound transfer.');
+    }
+
+    if (transaction.amount <= 0) {
+      return ignoredResult('SePay transferAmount must be positive.');
+    }
+
+    if (!this.isCompanyBankAccount(transaction.accountNumber)) {
+      return ignoredResult('SePay transaction accountNumber does not match company bank account.');
+    }
+
+    if (!transaction.settlementCode) {
+      return ignoredResult('No COD settlementCode found in SePay transaction content.');
+    }
+
+    const settlement = await this.codRecordRepository.findSettlementBatchByCode(
+      transaction.settlementCode,
+    );
+
+    if (!settlement) {
+      return ignoredResult(
+        `COD settlement batch "${transaction.settlementCode}" was not found.`,
+      );
+    }
+
+    const amountTolerance = Number(process.env.SEPAY_AMOUNT_TOLERANCE_VND ?? '0');
+    const amountDelta = Math.abs(normalizeMoney(settlement.totalAmount) - transaction.amount);
+
+    if (amountDelta > amountTolerance) {
+      return ignoredResult(
+        `SePay transferAmount ${transaction.amount} does not match settlement totalAmount ${settlement.totalAmount}.`,
+        settlement,
+      );
+    }
+
+    if (settlement.status === 'PAID') {
+      await this.codRecordRepository.updateSettlementPaymentEvent({
+        id: eventRecord.event.id,
+        settlementBatchId: settlement.id,
+        settlementCode: settlement.settlementCode,
+        processingStatus: 'DUPLICATE_PAID',
+        ignoredReason: 'Settlement batch is already PAID.',
+      });
+
+      return {
+        success: true,
+        provider: 'SEPAY',
+        providerEventId: transaction.providerEventId,
+        action: 'duplicate',
+        settlementCode: settlement.settlementCode,
+        settlementId: settlement.id,
+        amount: transaction.amount,
+        ignoredReason: 'Settlement batch is already PAID.',
+      };
+    }
+
+    if (settlement.status !== 'WAITING_PAYMENT') {
+      return ignoredResult(
+        `Cannot confirm settlement batch in status "${settlement.status}".`,
+        settlement,
+      );
+    }
+
+    const confirmed = await this.confirmCodSettlement(settlement.id, {
+      confirmedBy: 'sepay:webhook',
+      note: `SePay ${transaction.referenceCode ?? transaction.providerEventId}`,
+    });
+
+    await this.codRecordRepository.updateSettlementPaymentEvent({
+      id: eventRecord.event.id,
+      settlementBatchId: confirmed.id,
+      settlementCode: confirmed.settlementCode,
+      processingStatus: 'CONFIRMED',
+      ignoredReason: null,
+    });
+
+    return {
+      success: true,
+      provider: 'SEPAY',
+      providerEventId: transaction.providerEventId,
+      action: 'confirmed',
+      settlementCode: confirmed.settlementCode,
+      settlementId: confirmed.id,
+      amount: transaction.amount,
+    };
+  }
+
   getCompanyBankInfo(): CompanyBankInfo {
     return {
       bankName: process.env.COMPANY_BANK_NAME ?? 'Vietcombank',
@@ -440,6 +590,75 @@ export class CodService {
     const encodedMemo = encodeURIComponent(memo);
     const encodedName = encodeURIComponent(bankInfo.accountName);
     return `https://img.vietqr.io/image/${bankInfo.bin}-${bankInfo.accountNumber}-compact2.png?amount=${amount}&addInfo=${encodedMemo}&accountName=${encodedName}`;
+  }
+
+  private verifySePayWebhook(input: HandleSePaySettlementWebhookInput): void {
+    const secret = process.env.SEPAY_WEBHOOK_SECRET?.trim();
+    const apiKey = process.env.SEPAY_WEBHOOK_API_KEY?.trim();
+
+    if (secret) {
+      const signature = input.headers.signature?.trim();
+      const timestamp = input.headers.timestamp?.trim();
+      const rawBody = rawBodyToString(input.rawBody);
+
+      if (!signature || !timestamp || !rawBody) {
+        throw new UnauthorizedException('Missing SePay HMAC signature data.');
+      }
+
+      const timestampSeconds = Number(timestamp);
+      const toleranceSeconds = Number(process.env.SEPAY_WEBHOOK_TOLERANCE_SECONDS ?? '300');
+
+      if (
+        !Number.isFinite(timestampSeconds) ||
+        Math.abs(Math.floor(Date.now() / 1000) - timestampSeconds) > toleranceSeconds
+      ) {
+        throw new UnauthorizedException('Expired SePay webhook timestamp.');
+      }
+
+      const expectedSignature = `sha256=${createHmac('sha256', secret)
+        .update(`${timestamp}.${rawBody}`)
+        .digest('hex')}`;
+
+      if (!secureEquals(expectedSignature, signature)) {
+        throw new UnauthorizedException('Invalid SePay webhook signature.');
+      }
+
+      return;
+    }
+
+    if (apiKey) {
+      const expectedAuthorization = `Apikey ${apiKey}`;
+
+      if (!secureEquals(expectedAuthorization, input.headers.authorization ?? '')) {
+        throw new UnauthorizedException('Invalid SePay webhook API key.');
+      }
+
+      return;
+    }
+
+    if (process.env.NODE_ENV === 'production') {
+      throw new UnauthorizedException(
+        'SEPAY_WEBHOOK_SECRET or SEPAY_WEBHOOK_API_KEY is required in production.',
+      );
+    }
+  }
+
+  private isCompanyBankAccount(accountNumber: string | null): boolean {
+    if (!accountNumber) {
+      return true;
+    }
+
+    const expectedAccount = normalizeBankAccount(
+      process.env.SEPAY_BANK_ACCOUNT_NUMBER ??
+        process.env.COMPANY_BANK_ACCOUNT_NUMBER ??
+        '',
+    );
+
+    if (!expectedAccount) {
+      return true;
+    }
+
+    return normalizeBankAccount(accountNumber) === expectedAccount;
   }
 }
 
@@ -592,4 +811,109 @@ function sanitizeSettlementSegment(value: string): string {
 
 function normalizeMoney(value: number): number {
   return Number.isFinite(value) ? Math.max(0, value) : 0;
+}
+
+interface NormalizedSePayTransaction {
+  providerEventId: string;
+  settlementCode: string | null;
+  amount: number;
+  accountNumber: string | null;
+  transferType: string | null;
+  referenceCode: string | null;
+  transactionDate: Date | null;
+}
+
+function normalizeSePayPayload(
+  payload: SePaySettlementWebhookPayload,
+): NormalizedSePayTransaction {
+  if (!payload || typeof payload !== 'object') {
+    throw new BadRequestException('SePay webhook payload must be an object.');
+  }
+
+  const referenceCode = normalizeOptionalFilter(payload.referenceCode);
+  const rawId = payload.id === null || payload.id === undefined
+    ? null
+    : String(payload.id).trim();
+  const providerEventId = rawId || referenceCode;
+
+  if (!providerEventId) {
+    throw new BadRequestException('SePay webhook payload requires id or referenceCode.');
+  }
+
+  const amount = Number(payload.transferAmount);
+
+  if (!Number.isFinite(amount)) {
+    throw new BadRequestException('SePay transferAmount must be numeric.');
+  }
+
+  return {
+    providerEventId,
+    settlementCode: extractSettlementCode(payload),
+    amount: normalizeMoney(amount),
+    accountNumber: normalizeOptionalFilter(payload.accountNumber),
+    transferType: normalizeOptionalFilter(payload.transferType)?.toLowerCase() ?? null,
+    referenceCode,
+    transactionDate: parseSePayTransactionDate(payload.transactionDate),
+  };
+}
+
+function extractSettlementCode(payload: SePaySettlementWebhookPayload): string | null {
+  const directCode = normalizeOptionalFilter(payload.code)?.toUpperCase();
+
+  if (directCode?.startsWith('COD-')) {
+    return directCode;
+  }
+
+  const haystack = [
+    payload.code,
+    payload.content,
+    payload.description,
+  ]
+    .map((value) => normalizeOptionalFilter(value))
+    .filter((value): value is string => Boolean(value))
+    .join(' ')
+    .toUpperCase();
+
+  const match = /\bCOD-\d{8}-[A-Z0-9][A-Z0-9-]*-[A-Z0-9]{6}\b/.exec(haystack);
+
+  return match?.[0] ?? null;
+}
+
+function parseSePayTransactionDate(value: string | null | undefined): Date | null {
+  const normalized = normalizeOptionalFilter(value);
+
+  if (!normalized) {
+    return null;
+  }
+
+  const parsed = new Date(normalized.replace(' ', 'T'));
+
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function normalizeBankAccount(value: string): string {
+  return value.replace(/\D+/g, '');
+}
+
+function rawBodyToString(rawBody: Buffer | string | null): string | null {
+  if (Buffer.isBuffer(rawBody)) {
+    return rawBody.toString('utf8');
+  }
+
+  if (typeof rawBody === 'string') {
+    return rawBody;
+  }
+
+  return null;
+}
+
+function secureEquals(expected: string, received: string): boolean {
+  const expectedBuffer = Buffer.from(expected);
+  const receivedBuffer = Buffer.from(received);
+
+  if (expectedBuffer.length !== receivedBuffer.length) {
+    return false;
+  }
+
+  return timingSafeEqual(expectedBuffer, receivedBuffer);
 }

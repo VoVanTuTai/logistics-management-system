@@ -1,10 +1,12 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Param, Post, Query, Req } from '@nestjs/common';
 
 import { CodService } from '../../application/services/cod.service';
 import type {
   CodDailySettlementQuery,
   CodDailySettlementSummary,
   CodRecord,
+  SePaySettlementWebhookPayload,
+  SePaySettlementWebhookResult,
   CodSettlementBatch,
   CodSummary,
   CollectCodInput,
@@ -14,6 +16,10 @@ import type {
   CreateCodRecordInput,
   RemitCodInput,
 } from '../../domain/entities/cod-record.entity';
+
+interface RawBodyRequest {
+  rawBody?: Buffer;
+}
 
 @Controller('cod')
 export class CodController {
@@ -74,6 +80,25 @@ export class CodController {
     @Body() body: ConfirmCodSettlementInput,
   ): Promise<CodSettlementBatch> {
     return this.codService.confirmCodSettlement(id, body);
+  }
+
+  @Post('webhooks/sepay/settlements')
+  handleSePaySettlementWebhook(
+    @Body() body: SePaySettlementWebhookPayload,
+    @Req() request: RawBodyRequest,
+    @Headers('authorization') authorization?: string,
+    @Headers('x-sepay-signature') signature?: string,
+    @Headers('x-sepay-timestamp') timestamp?: string,
+  ): Promise<SePaySettlementWebhookResult> {
+    return this.codService.handleSePaySettlementWebhook({
+      payload: body,
+      rawBody: request.rawBody ?? null,
+      headers: {
+        authorization,
+        signature,
+        timestamp,
+      },
+    });
   }
 
   @Get('bank-info')

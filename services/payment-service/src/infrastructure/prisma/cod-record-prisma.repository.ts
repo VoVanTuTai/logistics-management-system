@@ -3,6 +3,7 @@ import { Prisma as PrismaNamespace } from '@prisma/client';
 import type {
   CodRecord as PrismaCodRecord,
   CodSettlementBatch as PrismaCodSettlementBatch,
+  CodSettlementPaymentEvent as PrismaCodSettlementPaymentEvent,
   CodSettlementItem as PrismaCodSettlementItem,
   Prisma,
 } from '@prisma/client';
@@ -11,10 +12,14 @@ import type {
   CodDailySettlementRecordFilter,
   CodRecord,
   CodSettlementBatch,
+  CodSettlementPaymentEvent,
   CodSettlementBatchFilter,
   ConfirmCodSettlementBatchRecordInput,
   CreateCodSettlementBatchRecordInput,
   CreateCodRecordInput,
+  RecordCodSettlementPaymentEventInput,
+  RecordCodSettlementPaymentEventResult,
+  UpdateCodSettlementPaymentEventInput,
 } from '../../domain/entities/cod-record.entity';
 import { CodRecordRepository } from '../../domain/repositories/cod-record.repository';
 import { PrismaService } from './prisma.service';
@@ -207,6 +212,19 @@ export class CodRecordPrismaRepository extends CodRecordRepository {
     return record ? this.toSettlementBatchEntity(record) : null;
   }
 
+  async findSettlementBatchByCode(
+    settlementCode: string,
+  ): Promise<CodSettlementBatch | null> {
+    const record = await this.prisma.codSettlementBatch.findUnique({
+      where: { settlementCode },
+      include: {
+        items: true,
+      },
+    });
+
+    return record ? this.toSettlementBatchEntity(record) : null;
+  }
+
   async confirmSettlementBatch(
     input: ConfirmCodSettlementBatchRecordInput,
   ): Promise<CodSettlementBatch | null> {
@@ -264,6 +282,75 @@ export class CodRecordPrismaRepository extends CodRecordRepository {
     });
 
     return batch ? this.toSettlementBatchEntity(batch) : null;
+  }
+
+  async recordSettlementPaymentEvent(
+    input: RecordCodSettlementPaymentEventInput,
+  ): Promise<RecordCodSettlementPaymentEventResult> {
+    try {
+      const event = await this.prisma.codSettlementPaymentEvent.create({
+        data: {
+          provider: input.provider,
+          providerEventId: input.providerEventId,
+          settlementBatchId: input.settlementBatchId,
+          settlementCode: input.settlementCode,
+          amount: input.amount,
+          accountNumber: input.accountNumber,
+          transferType: input.transferType,
+          referenceCode: input.referenceCode,
+          transactionDate: input.transactionDate,
+          processingStatus: input.processingStatus,
+          ignoredReason: input.ignoredReason,
+          rawPayload: input.rawPayload as Prisma.InputJsonValue,
+        },
+      });
+
+      return {
+        event: this.toSettlementPaymentEventEntity(event),
+        created: true,
+      };
+    } catch (error) {
+      if (
+        error instanceof PrismaNamespace.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        const existing = await this.prisma.codSettlementPaymentEvent.findUnique({
+          where: {
+            provider_providerEventId: {
+              provider: input.provider,
+              providerEventId: input.providerEventId,
+            },
+          },
+        });
+
+        if (existing) {
+          return {
+            event: this.toSettlementPaymentEventEntity(existing),
+            created: false,
+          };
+        }
+      }
+
+      throw error;
+    }
+  }
+
+  async updateSettlementPaymentEvent(
+    input: UpdateCodSettlementPaymentEventInput,
+  ): Promise<CodSettlementPaymentEvent> {
+    const event = await this.prisma.codSettlementPaymentEvent.update({
+      where: {
+        id: input.id,
+      },
+      data: {
+        settlementBatchId: input.settlementBatchId,
+        settlementCode: input.settlementCode,
+        processingStatus: input.processingStatus,
+        ignoredReason: input.ignoredReason,
+      },
+    });
+
+    return this.toSettlementPaymentEventEntity(event);
   }
 
   async markCollected(
@@ -414,6 +501,28 @@ export class CodRecordPrismaRepository extends CodRecordRepository {
         shipmentCode: item.shipmentCode,
         amount: item.amount,
       })),
+    };
+  }
+
+  private toSettlementPaymentEventEntity(
+    record: PrismaCodSettlementPaymentEvent,
+  ): CodSettlementPaymentEvent {
+    return {
+      id: record.id,
+      provider: record.provider,
+      providerEventId: record.providerEventId,
+      settlementBatchId: record.settlementBatchId,
+      settlementCode: record.settlementCode,
+      amount: record.amount,
+      accountNumber: record.accountNumber,
+      transferType: record.transferType,
+      referenceCode: record.referenceCode,
+      transactionDate: record.transactionDate,
+      processingStatus: record.processingStatus,
+      ignoredReason: record.ignoredReason,
+      rawPayload: record.rawPayload,
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
     };
   }
 }

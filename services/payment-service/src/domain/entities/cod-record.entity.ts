@@ -51,6 +51,44 @@ export interface ConfirmCodSettlementInput {
   note?: string | null;
 }
 
+export interface SePayWebhookHeaders {
+  authorization?: string | null;
+  signature?: string | null;
+  timestamp?: string | null;
+}
+
+export interface SePaySettlementWebhookPayload {
+  id?: number | string | null;
+  gateway?: string | null;
+  transactionDate?: string | null;
+  accountNumber?: string | null;
+  code?: string | null;
+  content?: string | null;
+  transferType?: string | null;
+  transferAmount?: number | string | null;
+  accumulated?: number | string | null;
+  subAccount?: string | null;
+  referenceCode?: string | null;
+  description?: string | null;
+}
+
+export interface HandleSePaySettlementWebhookInput {
+  payload: SePaySettlementWebhookPayload;
+  rawBody: Buffer | string | null;
+  headers: SePayWebhookHeaders;
+}
+
+export interface SePaySettlementWebhookResult {
+  success: true;
+  provider: 'SEPAY';
+  providerEventId: string;
+  action: 'confirmed' | 'duplicate' | 'ignored';
+  settlementCode: string | null;
+  settlementId: string | null;
+  amount: number;
+  ignoredReason?: string;
+}
+
 export interface CodSummary {
   totalPending: number;
   totalCollected: number;
@@ -131,6 +169,24 @@ export interface CodSettlementBatch {
   items: CodSettlementItem[];
 }
 
+export interface CodSettlementPaymentEvent {
+  id: string;
+  provider: string;
+  providerEventId: string;
+  settlementBatchId: string | null;
+  settlementCode: string | null;
+  amount: number;
+  accountNumber: string | null;
+  transferType: string | null;
+  referenceCode: string | null;
+  transactionDate: Date | null;
+  processingStatus: string;
+  ignoredReason: string | null;
+  rawPayload: unknown;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface CreateCodSettlementInput {
   reportDate: string;
   hubCode: string;
@@ -160,6 +216,34 @@ export interface ConfirmCodSettlementBatchRecordInput {
   confirmedBy: string;
   confirmedAt: Date;
   note: string | null;
+}
+
+export interface RecordCodSettlementPaymentEventInput {
+  provider: string;
+  providerEventId: string;
+  settlementBatchId: string | null;
+  settlementCode: string | null;
+  amount: number;
+  accountNumber: string | null;
+  transferType: string | null;
+  referenceCode: string | null;
+  transactionDate: Date | null;
+  processingStatus: string;
+  ignoredReason: string | null;
+  rawPayload: unknown;
+}
+
+export interface RecordCodSettlementPaymentEventResult {
+  event: CodSettlementPaymentEvent;
+  created: boolean;
+}
+
+export interface UpdateCodSettlementPaymentEventInput {
+  id: string;
+  settlementBatchId?: string | null;
+  settlementCode?: string | null;
+  processingStatus: string;
+  ignoredReason?: string | null;
 }
 
 export interface CompanyBankInfo {
