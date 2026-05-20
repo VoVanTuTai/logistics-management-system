@@ -37,7 +37,7 @@
 
 .ops-branch-cod__summary {
   display: grid;
-  grid-template-columns: repeat(4, minmax(118px, 1fr));
+  grid-template-columns: repeat(6, minmax(118px, 1fr));
   gap: 8px;
 }
 
@@ -250,6 +250,12 @@
   font-weight: 700;
 }
 
+.ops-branch-cod__memo {
+  color: #1d4ed8 !important;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 .ops-branch-cod__status {
   display: inline-flex;
   min-height: 24px;
@@ -453,6 +459,26 @@
   color: #334155;
 }
 
+.ops-branch-cod__qr-modal-body {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  padding: 14px;
+}
+
+.ops-branch-cod__qr-modal-body img {
+  width: 160px;
+  height: 160px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.ops-branch-cod__qr-modal-body dl {
+  padding: 0;
+}
+
 .ops-branch-cod__qr-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 132px;
@@ -526,7 +552,8 @@
     grid-template-columns: repeat(2, minmax(180px, 1fr));
   }
 
-  .ops-branch-cod__qr-card {
+  .ops-branch-cod__qr-card,
+  .ops-branch-cod__qr-modal-body {
     grid-template-columns: 1fr;
   }
 }

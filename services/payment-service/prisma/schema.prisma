@@ -68,6 +68,7 @@ model CodSettlementBatch {
   createdBy      String?
   confirmedBy    String?
   confirmedAt    DateTime?
+  confirmedNote  String?
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
 
@@ -81,8 +82,11 @@ model CodSettlementPaymentEvent {
   id                  String   @id @default(cuid())
   provider            String
   providerEventId     String
+  referenceType       String?
   settlementBatchId   String?
   settlementCode      String?
+  codRecordId         String?
+  shipmentCode        String?
   amount              Float
   accountNumber       String?
   transferType        String?
@@ -95,8 +99,11 @@ model CodSettlementPaymentEvent {
   updatedAt           DateTime @updatedAt
 
   @@unique([provider, providerEventId])
+  @@index([referenceType])
   @@index([settlementBatchId])
   @@index([settlementCode])
+  @@index([codRecordId])
+  @@index([shipmentCode])
   @@map("cod_settlement_payment_events")
 }
 

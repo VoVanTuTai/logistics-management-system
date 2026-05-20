@@ -1,6 +1,7 @@
 import type {
   CodSettlementBatch,
   CodSettlementPaymentEvent,
+  CodSettlementPaymentEventFilter,
   CodDailySettlementRecordFilter,
   CodSettlementBatchFilter,
   CodRecord,
@@ -51,12 +52,23 @@ export abstract class CodRecordRepository {
     input: UpdateCodSettlementPaymentEventInput,
   ): Promise<CodSettlementPaymentEvent>;
 
+  abstract listSettlementPaymentEvents(
+    filter: CodSettlementPaymentEventFilter,
+  ): Promise<CodSettlementPaymentEvent[]>;
+
   abstract markCollected(
     id: string,
     collectedAmount: number,
     courierId: string,
     paymentMethod: string,
     collectedAt: Date,
+    note: string | null,
+  ): Promise<CodRecord>;
+
+  abstract markBankTransferReceived(
+    id: string,
+    receivedAmount: number,
+    receivedAt: Date,
     note: string | null,
   ): Promise<CodRecord>;
 

@@ -5,6 +5,8 @@ import type {
   CodDailySettlementQuery,
   CodDailySettlementSummary,
   CodRecord,
+  CodSettlementPaymentEvent,
+  CodSettlementPaymentEventQuery,
   SePaySettlementWebhookPayload,
   SePaySettlementWebhookResult,
   CodSettlementBatch,
@@ -15,6 +17,8 @@ import type {
   CreateCodSettlementInput,
   CreateCodRecordInput,
   RemitCodInput,
+  SyncShipmentCodRecordInput,
+  SyncShipmentCodRecordResult,
 } from '../../domain/entities/cod-record.entity';
 
 interface RawBodyRequest {
@@ -28,6 +32,13 @@ export class CodController {
   @Post('records')
   createRecord(@Body() body: CreateCodRecordInput): Promise<CodRecord> {
     return this.codService.createCodRecord(body);
+  }
+
+  @Post('records/sync-shipment')
+  syncShipmentRecord(
+    @Body() body: SyncShipmentCodRecordInput,
+  ): Promise<SyncShipmentCodRecordResult> {
+    return this.codService.syncShipmentCodRecord(body);
   }
 
   @Post('collect')
@@ -82,8 +93,34 @@ export class CodController {
     return this.codService.confirmCodSettlement(id, body);
   }
 
+  @Get('webhooks/sepay/events')
+  listSePayWebhookEvents(
+    @Query() query: CodSettlementPaymentEventQuery,
+  ): Promise<CodSettlementPaymentEvent[]> {
+    return this.codService.listSePayWebhookEvents(query);
+  }
+
   @Post('webhooks/sepay/settlements')
   handleSePaySettlementWebhook(
+    @Body() body: SePaySettlementWebhookPayload,
+    @Req() request: RawBodyRequest,
+    @Headers('authorization') authorization?: string,
+    @Headers('x-sepay-signature') signature?: string,
+    @Headers('x-sepay-timestamp') timestamp?: string,
+  ): Promise<SePaySettlementWebhookResult> {
+    return this.codService.handleSePaySettlementWebhook({
+      payload: body,
+      rawBody: request.rawBody ?? null,
+      headers: {
+        authorization,
+        signature,
+        timestamp,
+      },
+    });
+  }
+
+  @Post('webhooks/sepay')
+  handleSePayWebhook(
     @Body() body: SePaySettlementWebhookPayload,
     @Req() request: RawBodyRequest,
     @Headers('authorization') authorization?: string,

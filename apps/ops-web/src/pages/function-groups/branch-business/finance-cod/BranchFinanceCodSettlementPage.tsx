@@ -174,10 +174,34 @@ function getStatusLabel(status: CodCollectionStatus): string {
   }
 }
 
+function getBankTransferStatusLabel(record: CodDailySettlementRecordDto): string {
+  if (record.status === 'REMITTED') {
+    return 'Đã vào công ty';
+  }
+
+  if (record.status === 'FAILED') {
+    return 'Giao dịch lỗi';
+  }
+
+  return 'Chờ ngân hàng xác nhận';
+}
+
+function getBankTransferStatusTone(record: CodDailySettlementRecordDto): string {
+  if (record.status === 'REMITTED') {
+    return 'success';
+  }
+
+  if (record.status === 'FAILED') {
+    return 'danger';
+  }
+
+  return 'warning';
+}
+
 function getBatchStatusLabel(status: CodSettlementBatchDto['status']): string {
   switch (status) {
     case 'WAITING_PAYMENT':
-      return 'Chờ xác nhận tiền vào';
+      return 'Chờ SePay xác nhận';
     case 'PAID':
       return 'Đã nộp';
     case 'CANCELLED':
@@ -231,6 +255,7 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
   );
   const [pendingQrSummary, setPendingQrSummary] = useState<CourierCodSummary | null>(null);
   const [pendingConfirmBatch, setPendingConfirmBatch] = useState<CodSettlementBatchDto | null>(null);
+  const [viewQrBatch, setViewQrBatch] = useState<CodSettlementBatchDto | null>(null);
   const [confirmNote, setConfirmNote] = useState('');
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -349,6 +374,7 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
 
         return {
           ...record,
+          paymentMethod: record.paymentMethod ?? 'COD',
           shipment,
           courierId: record.courierId ?? task?.assignedCourierId ?? UNKNOWN_COURIER,
           hubCode: resolvedHubCode,
@@ -400,6 +426,9 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
           courierId,
           collectedAt: shipment.updatedAt,
           remittedAt: null,
+          companyReceivedAt: null,
+          companyReceivedRef: null,
+          paymentMethod: 'COD' as const,
           shipment,
           hubCode: resolveShipmentHubCode(shipment, selectedHubCodes),
           receiverName: shipment.receiverName ?? 'Người nhận',
@@ -420,6 +449,14 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
   const isUsingPreviewData =
     settlementQuery.isError || (!settlementQuery.isLoading && paymentRecords.length === 0);
   const enrichedRecords = isUsingPreviewData ? previewRecords : paymentRecords;
+  const cashRecords = useMemo(
+    () => enrichedRecords.filter((record) => record.paymentMethod === 'COD'),
+    [enrichedRecords],
+  );
+  const bankTransferRecords = useMemo(
+    () => enrichedRecords.filter((record) => record.paymentMethod === 'BANK_TRANSFER'),
+    [enrichedRecords],
+  );
 
   const courierOptions = useMemo(
     () =>
@@ -436,7 +473,7 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
   const courierSummaries = useMemo<CourierCodSummary[]>(() => {
     const summaryByCourier = new Map<string, CourierCodSummary>();
 
-    for (const record of enrichedRecords) {
+    for (const record of cashRecords) {
       const key = buildSummaryKey(record.courierId, record.hubCode);
       const latestBatch = latestBatchByKey.get(key) ?? null;
       const summary =
@@ -494,7 +531,7 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
     return Array.from(summaryByCourier.values()).sort(
       (a, b) => b.pendingRemitTotal - a.pendingRemitTotal || b.codTotal - a.codTotal,
     );
-  }, [batchedShipmentCodes, enrichedRecords, latestBatchByKey]);
+  }, [batchedShipmentCodes, cashRecords, latestBatchByKey]);
 
   useEffect(() => {
     setDetailPage(1);
@@ -511,22 +548,64 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
     [currentDetailPage, detailPageSize, enrichedRecords],
   );
 
-  const codTotal = enrichedRecords.reduce((sum, record) => sum + Math.max(0, record.codAmount), 0);
-  const collectedTotal = enrichedRecords.reduce(
-    (sum, record) =>
-      record.status === 'COLLECTED' || record.status === 'REMITTED'
-        ? sum + getCollectedAmount(record)
-        : sum,
-    0,
-  );
-  const remittedTotal = enrichedRecords.reduce(
-    (sum, record) => (record.status === 'REMITTED' ? sum + getCollectedAmount(record) : sum),
-    0,
-  );
-  const pendingRemitTotal = enrichedRecords.reduce(
-    (sum, record) => (record.status === 'COLLECTED' ? sum + getCollectedAmount(record) : sum),
-    0,
-  );
+  const derivedTotals = useMemo(() => {
+    let codTotal = 0;
+    let cashCollectedTotal = 0;
+    let bankTransferTotal = 0;
+    let companyReceivedTotal = 0;
+    let pendingCashRemitTotal = 0;
+    let waitingBankConfirmTotal = 0;
+
+    for (const record of enrichedRecords) {
+      const amount = getCollectedAmount(record);
+      codTotal += Math.max(0, record.codAmount);
+
+      if (record.paymentMethod === 'COD' && (record.status === 'COLLECTED' || record.status === 'REMITTED')) {
+        cashCollectedTotal += amount;
+      }
+
+      if (record.paymentMethod === 'BANK_TRANSFER' && (record.status === 'COLLECTED' || record.status === 'REMITTED')) {
+        bankTransferTotal += amount;
+      }
+
+      if (record.status === 'REMITTED') {
+        companyReceivedTotal += amount;
+      }
+
+      if (record.paymentMethod === 'COD' && record.status === 'COLLECTED') {
+        pendingCashRemitTotal += amount;
+      }
+
+      if (record.paymentMethod === 'BANK_TRANSFER' && record.status === 'COLLECTED') {
+        waitingBankConfirmTotal += amount;
+      }
+    }
+
+    return {
+      codTotal,
+      cashCollectedTotal,
+      bankTransferTotal,
+      companyReceivedTotal,
+      pendingCashRemitTotal,
+      waitingBankConfirmTotal,
+    };
+  }, [enrichedRecords]);
+  const codTotal = isUsingPreviewData ? derivedTotals.codTotal : settlementQuery.data?.codTotal ?? derivedTotals.codTotal;
+  const cashCollectedTotal = isUsingPreviewData
+    ? derivedTotals.cashCollectedTotal
+    : settlementQuery.data?.cashCollectedTotal ?? derivedTotals.cashCollectedTotal;
+  const bankTransferTotal = isUsingPreviewData
+    ? derivedTotals.bankTransferTotal
+    : settlementQuery.data?.bankTransferTotal ?? derivedTotals.bankTransferTotal;
+  const companyReceivedTotal = isUsingPreviewData
+    ? derivedTotals.companyReceivedTotal
+    : settlementQuery.data?.companyReceivedTotal ?? settlementQuery.data?.remittedTotal ?? derivedTotals.companyReceivedTotal;
+  const pendingCashRemitTotal = isUsingPreviewData
+    ? derivedTotals.pendingCashRemitTotal
+    : settlementQuery.data?.pendingCashRemitTotal ?? settlementQuery.data?.pendingRemitTotal ?? derivedTotals.pendingCashRemitTotal;
+  const waitingBankConfirmTotal = isUsingPreviewData
+    ? derivedTotals.waitingBankConfirmTotal
+    : settlementQuery.data?.waitingBankConfirmTotal ?? derivedTotals.waitingBankConfirmTotal;
   const isLoading =
     settlementQuery.isLoading ||
     shipmentsQuery.isLoading ||
@@ -553,6 +632,7 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
     setSuccessMessage(null);
     setPendingQrSummary(null);
     setPendingConfirmBatch(null);
+    setViewQrBatch(null);
     setAppliedFilters(draftFilters);
     void Promise.all([
       settlementQuery.refetch(),
@@ -613,7 +693,10 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
         settlementId: pendingConfirmBatch.id,
         payload: {
           confirmedBy: session?.user.username ?? 'OPS',
-          note: confirmNote.trim() || null,
+          note: [
+            'Manual fallback confirmation from ops-web: SePay webhook not received or manual reconciliation required.',
+            confirmNote.trim(),
+          ].filter(Boolean).join(' '),
         },
       });
       const key = buildSummaryKey(updatedBatch.courierId, updatedBatch.hubCode);
@@ -623,7 +706,7 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
         next.set(key, updatedBatch);
         return next;
       });
-      setSuccessMessage(`Đã xác nhận nhận tiền cho ${updatedBatch.settlementCode}.`);
+      setSuccessMessage(`Đã xác nhận thủ công khoản tiền cho ${updatedBatch.settlementCode}.`);
       setPendingConfirmBatch(null);
       setConfirmNote('');
       await settlementQuery.refetch();
@@ -642,20 +725,28 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
         </div>
         <div className="ops-branch-cod__summary" aria-label="Tổng quan thu hộ">
           <article>
-            <span>COD phát sinh</span>
+            <span>Tổng COD</span>
             <strong>{formatCurrency(codTotal)}</strong>
           </article>
           <article>
-            <span>Đã thu</span>
-            <strong>{formatCurrency(collectedTotal)}</strong>
+            <span>Tiền mặt courier thu</span>
+            <strong>{formatCurrency(cashCollectedTotal)}</strong>
           </article>
           <article>
-            <span>Đã nộp công ty</span>
-            <strong>{formatCurrency(remittedTotal)}</strong>
+            <span>Khách chuyển khoản công ty</span>
+            <strong>{formatCurrency(bankTransferTotal)}</strong>
           </article>
           <article>
-            <span>Chưa nộp</span>
-            <strong>{formatCurrency(pendingRemitTotal)}</strong>
+            <span>Đã vào công ty</span>
+            <strong>{formatCurrency(companyReceivedTotal)}</strong>
+          </article>
+          <article>
+            <span>Tiền mặt chưa nộp</span>
+            <strong>{formatCurrency(pendingCashRemitTotal)}</strong>
+          </article>
+          <article>
+            <span>Chờ ngân hàng xác nhận</span>
+            <strong>{formatCurrency(waitingBankConfirmTotal)}</strong>
           </article>
         </div>
       </header>
@@ -704,8 +795,8 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
       </form>
 
       <p className="ops-branch-cod__contract">
-        Tạo QR không làm đổi trạng thái tiền. COD chỉ chuyển sang đã nộp khi ops/kế toán xác nhận
-        batch đã vào tài khoản công ty.
+        Tạo QR settlement chỉ áp dụng cho COD tiền mặt courier đã thu. SePay webhook là nguồn xác
+        nhận chính khi tiền vào tài khoản công ty; xác nhận thủ công chỉ dùng làm fallback đối soát.
       </p>
 
       {successMessage ? <p className="ops-branch-cod__notice ops-branch-cod__notice--success">{successMessage}</p> : null}
@@ -716,18 +807,20 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
       ) : null}
       {settlementQuery.isError ? (
         <p className="ops-branch-cod__notice ops-branch-cod__notice--warning">
-          Chưa lấy được dữ liệu payment. Đang hiển thị preview từ vận đơn đã giao và task delivery.
+          Chưa lấy được dữ liệu payment. Preview từ vận đơn/task chỉ để tham khảo vận hành,
+          không phải dữ liệu quyết toán thật và không được dùng để xác nhận dòng tiền.
         </p>
       ) : null}
       {!settlementQuery.isError && isUsingPreviewData && previewRecords.length > 0 ? (
         <p className="ops-branch-cod__notice ops-branch-cod__notice--warning">
-          Payment chưa có bản ghi COD cho bộ lọc này. Đang hiển thị preview từ vận đơn đã giao.
+          Payment chưa có bản ghi COD cho bộ lọc này. Preview từ vận đơn đã giao không thay thế
+          daily settlement của payment-service.
         </p>
       ) : null}
 
       <section className="ops-branch-cod__table-card">
         <div className="ops-branch-cod__table-title">
-          <h3>Tổng hợp theo courier</h3>
+          <h3>Courier tiền mặt</h3>
           <span>{courierSummaries.length} courier</span>
         </div>
 
@@ -751,7 +844,7 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
         ) : null}
         {!isLoading && courierSummaries.length === 0 ? (
           <p className="ops-branch-cod__empty">
-            Không có bản ghi COD phù hợp bộ lọc hiện tại.
+            Không có COD tiền mặt phù hợp bộ lọc hiện tại.
           </p>
         ) : null}
 
@@ -761,8 +854,8 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
               <tr>
                 <th>Courier</th>
                 <th>Bưu cục</th>
-                <th>Đơn COD</th>
-                <th>Tổng COD</th>
+                <th>Đơn COD tiền mặt</th>
+                <th>Tổng tiền mặt</th>
                 <th>Đã nộp</th>
                 <th>Chưa nộp</th>
                 <th>Trạng thái settlement</th>
@@ -816,17 +909,87 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
                         </button>
                         <button
                           className="ops-branch-cod__secondary-button"
+                          disabled={!batch?.qrUrl}
+                          onClick={() => batch && setViewQrBatch(batch)}
+                          type="button"
+                        >
+                          Xem QR
+                        </button>
+                        <button
+                          className="ops-branch-cod__secondary-button"
                           disabled={!canConfirmBatch || confirmSettlementMutation.isPending}
                           onClick={() => batch && openConfirmModal(batch)}
                           type="button"
                         >
-                          Xác nhận đã nhận tiền
+                          Xác nhận thủ công
                         </button>
                       </div>
                     </td>
                   </tr>
                 );
               })}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="ops-branch-cod__table-card">
+        <div className="ops-branch-cod__table-title">
+          <h3>Chuyển khoản theo đơn</h3>
+          <span>{bankTransferRecords.length} vận đơn</span>
+        </div>
+
+        {isUsingPreviewData ? (
+          <p className="ops-branch-cod__empty">
+            Preview không có dữ liệu ngân hàng. Chỉ payment-service mới xác nhận được chuyển khoản theo đơn.
+          </p>
+        ) : null}
+        {!isUsingPreviewData && bankTransferRecords.length === 0 ? (
+          <p className="ops-branch-cod__empty">
+            Không có COD chuyển khoản theo đơn phù hợp bộ lọc hiện tại.
+          </p>
+        ) : null}
+
+        <div className="ops-branch-cod__table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Shipment</th>
+                <th>Courier</th>
+                <th>Số tiền</th>
+                <th>Memo</th>
+                <th>Trạng thái ngân hàng</th>
+                <th>Mã giao dịch SePay</th>
+                <th>Thời điểm nhận tiền</th>
+              </tr>
+            </thead>
+            <tbody>
+              {bankTransferRecords.map((record) => (
+                <tr key={record.shipmentCode}>
+                  <td>
+                    {record.shipment ? (
+                      <Link
+                        className="ops-branch-cod__code"
+                        to={routePaths.shipmentDetail(record.shipment.id)}
+                      >
+                        {record.shipmentCode}
+                      </Link>
+                    ) : (
+                      <span className="ops-branch-cod__code">{record.shipmentCode}</span>
+                    )}
+                  </td>
+                  <td>{record.courierId}</td>
+                  <td className="ops-branch-cod__money">{formatCurrency(getCollectedAmount(record))}</td>
+                  <td className="ops-branch-cod__memo">COD {record.shipmentCode}</td>
+                  <td>
+                    <span className={`ops-branch-cod__status ops-branch-cod__status--${getBankTransferStatusTone(record)}`}>
+                      {getBankTransferStatusLabel(record)}
+                    </span>
+                  </td>
+                  <td>{record.companyReceivedRef ?? '-'}</td>
+                  <td>{record.companyReceivedAt ? formatDateTime(record.companyReceivedAt) : '-'}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -864,7 +1027,7 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
                 <dd>{pendingQrSummary.creatableRecords.length}</dd>
               </div>
               <div>
-                <dt>Số tiền chưa nộp</dt>
+                <dt>Tiền mặt chưa nộp</dt>
                 <dd>{formatCurrency(pendingQrSummary.pendingRemitTotal)}</dd>
               </div>
               <div>
@@ -873,8 +1036,8 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
               </div>
             </dl>
             <p>
-              QR chỉ là yêu cầu chuyển khoản. Hệ thống không tự đánh dấu đã nộp
-              sau khi tạo QR.
+              QR chỉ bao gồm COD tiền mặt courier đã thu. Hệ thống không tự đánh dấu đã nộp
+              sau khi tạo QR; SePay webhook hoặc đối soát thủ công mới xác nhận tiền vào công ty.
             </p>
             <footer>
               <button
@@ -906,7 +1069,7 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
           >
             <header>
               <div>
-                <span>Xác nhận tiền vào công ty</span>
+                <span>Fallback đối soát thủ công</span>
                 <h3 id="cod-confirm-title">{pendingConfirmBatch.settlementCode}</h3>
               </div>
               <button
@@ -937,16 +1100,17 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
               </div>
             </dl>
             <label className="ops-branch-cod__modal-note">
-              <span>Ghi chú</span>
+              <span>Ghi chú đối soát</span>
               <textarea
                 onChange={(event) => setConfirmNote(event.target.value)}
-                placeholder="Nhập ghi chú xác nhận nếu cần"
+                placeholder="Ví dụ: đã đối soát sao kê, webhook SePay chưa về"
                 value={confirmNote}
               />
             </label>
             <p>
-              Chỉ xác nhận khi kế toán/ops đã thấy tiền vào tài khoản công ty.
-              Sau bước này COD trong batch sẽ chuyển sang đã nộp.
+              SePay webhook sẽ tự xác nhận batch khi giao dịch khớp. Chỉ dùng nút này khi webhook
+              chưa về hoặc kế toán đã đối soát thủ công trên sao kê; ghi chú sẽ được gửi vào audit
+              note của payment-service.
             </p>
             <footer>
               <button
@@ -961,9 +1125,62 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
                 onClick={() => void confirmSettlement()}
                 type="button"
               >
-                {confirmSettlementMutation.isPending ? 'Đang xác nhận...' : 'Xác nhận đã nhận tiền'}
+                {confirmSettlementMutation.isPending ? 'Đang xác nhận...' : 'Xác nhận thủ công'}
               </button>
             </footer>
+          </section>
+        </div>
+      ) : null}
+
+      {viewQrBatch ? (
+        <div className="ops-branch-cod__modal-backdrop" role="presentation">
+          <section
+            aria-labelledby="cod-view-qr-title"
+            aria-modal="true"
+            className="ops-branch-cod__modal"
+            role="dialog"
+          >
+            <header>
+              <div>
+                <span>QR nộp tiền mặt</span>
+                <h3 id="cod-view-qr-title">{viewQrBatch.settlementCode}</h3>
+              </div>
+              <button
+                aria-label="Đóng"
+                className="ops-branch-cod__modal-close"
+                onClick={() => setViewQrBatch(null)}
+                type="button"
+              >
+                ×
+              </button>
+            </header>
+            <div className="ops-branch-cod__qr-modal-body">
+              {viewQrBatch.qrUrl ? (
+                <img src={viewQrBatch.qrUrl} alt={`QR quyết toán ${viewQrBatch.settlementCode}`} />
+              ) : null}
+              <dl>
+                <div>
+                  <dt>Số tiền</dt>
+                  <dd>{formatCurrency(viewQrBatch.totalAmount)}</dd>
+                </div>
+                <div>
+                  <dt>Nội dung CK</dt>
+                  <dd>{viewQrBatch.transferMemo}</dd>
+                </div>
+                <div>
+                  <dt>Courier</dt>
+                  <dd>{viewQrBatch.courierId}</dd>
+                </div>
+                <div>
+                  <dt>Trạng thái</dt>
+                  <dd>{getBatchStatusLabel(viewQrBatch.status)}</dd>
+                </div>
+              </dl>
+            </div>
+            <p>
+              QR này chỉ dành cho khoản tiền mặt courier đã thu. SePay webhook sẽ tự xác nhận
+              khi giao dịch khớp settlement code và số tiền.
+            </p>
           </section>
         </div>
       ) : null}

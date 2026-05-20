@@ -441,7 +441,355 @@ TMPDIR=/tmp npm run test:smoke
 npm run build
 ```
 
-## 10. Thứ Tự Commit Đề Xuất
+## 10. Wave 7 - Chuẩn Hóa COD Record Theo Shipment
+
+### Mục tiêu
+
+Đảm bảo mọi đơn có COD đều có bản ghi trong `payment-service` trước khi courier ký nhận giao hàng.
+
+Nguyên tắc:
+
+- `codAmount > 0`: phải có `CodRecord`.
+- `codAmount <= 0` hoặc `null`: không tạo `CodRecord`, không đi vào màn quyết toán COD.
+- `payment-service` là nguồn sự thật của trạng thái COD.
+- Không phụ thuộc vào việc courier ký nhận xong rồi mới tạo COD record.
+
+### Prompt triển khai
+
+```text
+Triển khai Wave 7.
+
+Mục tiêu:
+- Chuẩn hóa việc sinh CodRecord cho shipment có codAmount > 0.
+- Đơn không COD không được xuất hiện trong luồng quyết toán COD.
+
+Yêu cầu:
+- Khi shipment được tạo hoặc được đồng bộ sang payment-service:
+  - Nếu codAmount > 0 thì tạo CodRecord với status PENDING.
+  - Nếu codAmount <= 0/null thì bỏ qua.
+- Create CodRecord phải idempotent theo shipmentCode.
+- Không đổi shipment state machine.
+- Không đổi request payload cũ nếu không cần.
+- Nếu chưa có event consumer ổn định, thêm endpoint/internal handler rõ ràng nhưng vẫn giữ payment-service là nơi lưu COD.
+
+Kiểm chứng:
+cd services/payment-service
+npx prisma db push --schema prisma/schema.prisma --skip-generate
+npx tsc -p tsconfig.json
+```
+
+## 11. Wave 8 - COD Khi Courier Ký Nhận Giao Hàng
+
+### Mục tiêu
+
+Khi courier ký nhận giao thành công, hệ thống phân nhánh đúng theo đơn không COD, COD tiền mặt và COD chuyển khoản thẳng công ty.
+
+Luồng chuẩn:
+
+```text
+Đơn không COD
+→ ký nhận thành công
+→ không gọi COD collect
+→ không hiện ở quyết toán COD
+
+Đơn COD tiền mặt
+→ courier chọn Tiền mặt
+→ payment-service mark COLLECTED, paymentMethod=COD
+→ tính vào tiền mặt chưa nộp
+
+Đơn COD chuyển khoản công ty
+→ courier chọn Chuyển khoản
+→ hiển thị QR memo COD <shipmentCode>
+→ không mark REMITTED ngay
+→ chờ SePay webhook xác nhận tiền vào công ty
+```
+
+### Prompt triển khai
+
+```text
+Triển khai Wave 8.
+
+Mục tiêu:
+- Gắn COD collect vào luồng ký nhận giao hàng theo hướng cận production.
+- Không để giao hàng thành công nhưng COD record sai trạng thái mà UI không cảnh báo.
+
+Yêu cầu:
+- Courier app chỉ gọi COD collect khi codAmount > 0.
+- Với paymentMethod=COD:
+  - gọi /payment/cod/collect
+  - status thành COLLECTED
+- Với paymentMethod=BANK_TRANSFER:
+  - tạo/hiển thị QR theo shipmentCode
+  - không đưa vào settlement tiền mặt
+  - trạng thái chờ webhook ngân hàng xác nhận
+- Nếu delivery success thành công nhưng COD update lỗi, phải có cảnh báo rõ và log/queue retry.
+- Không tự mark đã nộp công ty nếu chỉ mới hiển thị QR.
+
+Kiểm chứng:
+cd apps/courier-mobile
+npm run build
+cd services/payment-service
+npx tsc -p tsconfig.json
+```
+
+## 12. Wave 9 - SePay Cho Khách Chuyển Khoản Theo Đơn
+
+### Mục tiêu
+
+Tự động xác nhận COD khi khách nhận hàng chuyển khoản thẳng vào tài khoản công ty.
+
+Webhook SePay cần match:
+
+- `transferType = in`
+- `accountNumber` đúng tài khoản công ty
+- `transferAmount` đúng số tiền phải thu
+- `content/code/description` chứa `COD <shipmentCode>`
+- giao dịch chưa xử lý trước đó
+
+### Prompt triển khai
+
+```text
+Triển khai Wave 9 trong payment-service.
+
+Mục tiêu:
+- Thêm xử lý SePay webhook cho giao dịch khách chuyển khoản COD theo shipmentCode.
+- Không trộn luồng này với settlement batch courier nộp tiền mặt.
+
+Yêu cầu:
+- Endpoint webhook có thể dùng chung /cod/webhooks/sepay/... nhưng phải phân biệt:
+  - COD <shipmentCode>
+  - COD <settlementCode>
+- Verify webhook bằng SEPAY_WEBHOOK_SECRET hoặc SEPAY_WEBHOOK_API_KEY.
+- Idempotency theo provider + providerEventId.
+- Match amount, accountNumber, transferType.
+- Khi match shipmentCode:
+  - Nếu CodRecord chưa COLLECTED thì ghi nhận BANK_TRANSFER.
+  - Khi tiền đã vào công ty thì mark trạng thái tương ứng là REMITTED/company received.
+  - Không đưa record này vào pendingCashRemitTotal.
+- Lưu raw payload và trạng thái xử lý webhook.
+- Giao dịch không match phải lưu IGNORED/UNKNOWN_REFERENCE, không làm hỏng webhook retry.
+
+Kiểm chứng:
+cd services/payment-service
+npx prisma db push --schema prisma/schema.prisma --skip-generate
+npx tsc -p tsconfig.json
+```
+
+## 13. Wave 10 - SePay Cho Courier Nộp Tiền Mặt Theo Settlement
+
+### Mục tiêu
+
+Tự động xác nhận batch settlement khi courier nộp tiền mặt đã thu vào tài khoản công ty.
+
+Luồng:
+
+```text
+COD records paymentMethod=COD, status=COLLECTED
+→ ops tạo settlement batch WAITING_PAYMENT
+→ QR memo COD <settlementCode>
+→ courier chuyển khoản vào công ty
+→ SePay webhook match settlementCode + amount
+→ batch PAID
+→ CodRecord REMITTED
+```
+
+### Prompt triển khai
+
+```text
+Hoàn thiện Wave 10 trong payment-service và ops-web.
+
+Mục tiêu:
+- Settlement QR chỉ bao gồm COD tiền mặt courier đã thu.
+- SePay webhook là nguồn xác nhận chính cho tiền vào công ty.
+- Manual confirm trong ops chỉ là fallback có audit note.
+
+Yêu cầu:
+- create settlement chỉ nhận record:
+  - status=COLLECTED
+  - paymentMethod=COD
+- Không nhận BANK_TRANSFER vào settlement batch.
+- SePay webhook match settlementCode:
+  - amount đúng totalAmount
+  - accountNumber đúng tài khoản công ty
+  - transferType=in
+  - batch đang WAITING_PAYMENT
+- Sau confirm tự động:
+  - batch PAID
+  - COD records REMITTED
+  - emit cod.remitted
+- Manual confirm vẫn còn nhưng UI ghi rõ dùng khi webhook chưa về hoặc đối soát thủ công.
+
+Kiểm chứng:
+cd services/payment-service
+npx tsc -p tsconfig.json
+cd apps/ops-web
+TMPDIR=/tmp npm run test:smoke
+npm run build
+```
+
+## 14. Wave 11 - Daily Settlement Summary Cận Production
+
+### Mục tiêu
+
+Daily summary phải tách rõ dòng tiền COD tiền mặt, COD chuyển khoản, tiền đã vào công ty và tiền còn chờ nộp.
+
+DTO đề xuất:
+
+```ts
+{
+  codOrders: number;
+  codTotal: number;
+  cashCollectedTotal: number;
+  bankTransferTotal: number;
+  companyReceivedTotal: number;
+  remittedTotal: number;
+  pendingCashRemitTotal: number;
+  waitingBankConfirmTotal: number;
+  records: Array<{
+    shipmentCode: string;
+    codAmount: number;
+    collectedAmount: number | null;
+    paymentMethod: 'COD' | 'BANK_TRANSFER' | 'PREPAID';
+    status: 'PENDING' | 'COLLECTED' | 'REMITTED' | 'FAILED';
+    courierId: string | null;
+    collectedAt: string | null;
+    remittedAt: string | null;
+    companyReceivedAt?: string | null;
+    companyReceivedRef?: string | null;
+  }>;
+}
+```
+
+### Prompt triển khai
+
+```text
+Triển khai Wave 11.
+
+Mục tiêu:
+- Sửa daily COD settlement summary để tách tiền mặt và chuyển khoản.
+- Ops-web không tự suy luận dòng tiền nếu payment-service chưa trả rõ.
+
+Yêu cầu:
+- records trả paymentMethod.
+- Tính:
+  - cashCollectedTotal
+  - bankTransferTotal
+  - companyReceivedTotal/remittedTotal
+  - pendingCashRemitTotal
+  - waitingBankConfirmTotal
+- pendingCashRemitTotal chỉ gồm paymentMethod=COD và status=COLLECTED.
+- BANK_TRANSFER đã xác nhận ngân hàng phải tính vào companyReceived/remitted.
+- BANK_TRANSFER chưa xác nhận ngân hàng phải tính vào waitingBankConfirmTotal.
+- Giữ backward compatibility cho field cũ nếu ops-web còn dùng.
+
+Kiểm chứng:
+cd services/payment-service
+npx tsc -p tsconfig.json
+```
+
+## 15. Wave 12 - Ops UI Dòng Tiền COD Cận Production
+
+### Mục tiêu
+
+Màn `Quyết toán thu hộ` hiển thị đúng các loại dòng tiền và chỉ tạo QR nộp tiền cho phần tiền mặt.
+
+KPI:
+
+- Tổng COD
+- Tiền mặt courier thu
+- Khách chuyển khoản công ty
+- Đã vào công ty
+- Tiền mặt chưa nộp
+- Chờ ngân hàng xác nhận
+
+Bảng courier tiền mặt:
+
+- Courier
+- Bưu cục
+- Đơn COD tiền mặt
+- Tổng tiền mặt
+- Đã nộp công ty
+- Chưa nộp
+- Settlement status
+- Tạo QR / Xem QR / Xác nhận thủ công
+
+Bảng chuyển khoản theo đơn:
+
+- Shipment
+- Courier
+- Số tiền
+- Memo
+- Trạng thái ngân hàng
+- Mã giao dịch SePay
+- Thời điểm nhận tiền
+
+### Prompt triển khai
+
+```text
+Triển khai Wave 12 trong ops-web.
+
+Mục tiêu:
+- UI hiển thị đúng split COD tiền mặt và chuyển khoản.
+- Tạo QR settlement chỉ áp dụng cho tiền mặt courier đã thu.
+
+Yêu cầu:
+- Dùng fields mới từ payment daily summary.
+- Nếu payment API lỗi, fallback preview vẫn hiển thị nhưng phải cảnh báo rõ đây không phải dữ liệu quyết toán thật.
+- Button Tạo QR chỉ enable khi pendingCashRemitTotal > 0.
+- Không tạo QR settlement cho BANK_TRANSFER.
+- Hiển thị trạng thái chờ ngân hàng xác nhận cho BANK_TRANSFER chưa có webhook.
+- Manual confirm chỉ là fallback, có note.
+
+Kiểm chứng:
+cd apps/ops-web
+TMPDIR=/tmp npm run test:smoke
+npm run build
+```
+
+## 16. Wave 13 - Hardening Cận Production
+
+### Mục tiêu
+
+Tăng độ an toàn trước khi dùng luồng COD với webhook ngân hàng trong môi trường gần production.
+
+### Checklist
+
+- Verify webhook bằng secret/HMAC hoặc API key.
+- Idempotency theo `provider + providerEventId`.
+- Không xử lý giao dịch `out`.
+- Match đúng tài khoản công ty.
+- Match đúng số tiền, có `SEPAY_AMOUNT_TOLERANCE_VND` nếu cần.
+- Lưu raw payload webhook.
+- Log trạng thái xử lý: `CONFIRMED`, `IGNORED`, `DUPLICATE`, `AMOUNT_MISMATCH`, `UNKNOWN_REFERENCE`.
+- Manual confirm lưu `confirmedBy`, `confirmedAt`, `note`.
+- Có endpoint/SQL tra cứu webhook event để đối soát.
+- Có runbook xử lý giao dịch không match.
+- Không để frontend quyết định trạng thái tiền đã vào công ty.
+
+### Prompt triển khai
+
+```text
+Triển khai Wave 13.
+
+Mục tiêu:
+- Hardening webhook và đối soát COD trước production.
+
+Yêu cầu:
+- Hoàn thiện webhook event log.
+- Thêm filter/list endpoint nội bộ hoặc ops endpoint cho webhook events nếu cần.
+- Thêm cảnh báo amount mismatch/unknown reference.
+- Thêm tài liệu runbook vận hành SePay COD.
+- Không thay đổi auth/role logic nếu chưa có yêu cầu riêng.
+
+Kiểm chứng:
+cd services/payment-service
+npx tsc -p tsconfig.json
+cd apps/ops-web
+TMPDIR=/tmp npm run test:smoke
+npm run build
+```
+
+## 17. Thứ Tự Commit Đề Xuất
 
 ```bash
 git commit -m "feat(payment): add cod daily settlement summary"
@@ -450,9 +798,12 @@ git commit -m "feat(payment): confirm cod settlement remittance"
 git commit -m "feat(ops): add payment settlement api client"
 git commit -m "feat(ops): integrate cod settlement qr workflow"
 git commit -m "feat(ops): confirm cod settlement payments"
+git commit -m "feat(payment): reconcile cod payments with sepay webhooks"
+git commit -m "feat(payment): split cash and bank transfer cod totals"
+git commit -m "feat(ops): show production cod cashflow settlement"
 ```
 
-## 11. Checklist Kiểm Chứng Cuối
+## 18. Checklist Kiểm Chứng Cuối
 
 Backend:
 
