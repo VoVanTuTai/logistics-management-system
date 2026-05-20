@@ -1,5 +1,6 @@
 /**
- * Seed data for the Operations Analytics Dashboard while the reporting API is hardened.
+ * Reference-only sample data kept for isolated visual experiments.
+ * The production analytics dashboard derives figures from API queries instead of this file.
  */
 
 /* ------------------------------------------------------------------ */

@@ -25,6 +25,8 @@ export function CustomerOrderMonitorPage(): React.JSX.Element {
   const canViewAllHubAreas = session?.user.roles.includes('SYSTEM_ADMIN') ?? false;
   const [hubFilter, setHubFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   const shipmentsQuery = useShipmentsQuery(accessToken, {}, { refetchInterval: 10000 });
   const pickupsQuery = usePickupRequestsQuery(accessToken, {}, { refetchInterval: 10000 });
@@ -81,6 +83,9 @@ export function CustomerOrderMonitorPage(): React.JSX.Element {
   const isLoading =
     shipmentsQuery.isLoading || pickupsQuery.isLoading || pickupTasksQuery.isLoading;
   const loadError = shipmentsQuery.error ?? pickupsQuery.error ?? pickupTasksQuery.error ?? null;
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pageRows = filteredRows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   const scopeText = canViewAllHubAreas
     ? 'Toàn hệ thống'
     : assignedHubCodes.length > 0
@@ -186,7 +191,7 @@ export function CustomerOrderMonitorPage(): React.JSX.Element {
               </tr>
             </thead>
             <tbody>
-              {filteredRows.map((row) => (
+              {pageRows.map((row) => (
                 <tr key={row.id}>
                   <td className="ops-customer-orders__code">
                     {row.orderCode}
@@ -235,6 +240,34 @@ export function CustomerOrderMonitorPage(): React.JSX.Element {
             Không có dữ liệu đơn đã tạo trong phạm vi hub hiện tại.
           </div>
         ) : null}
+        <footer className="ops-customer-orders__pagination">
+          <span>
+            Hiển thị {filteredRows.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}-
+            {Math.min(filteredRows.length, currentPage * pageSize)} / {filteredRows.length}
+          </span>
+          <label>
+            <span>Số dòng</span>
+            <select value={pageSize} onChange={(event) => {
+              setPageSize(Number(event.target.value));
+              setPage(1);
+            }}>
+              {[10, 25, 50].map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div>
+            <button type="button" onClick={() => setPage(currentPage - 1)} disabled={currentPage <= 1}>
+              Trước
+            </button>
+            <strong>{currentPage}/{totalPages}</strong>
+            <button type="button" onClick={() => setPage(currentPage + 1)} disabled={currentPage >= totalPages}>
+              Sau
+            </button>
+          </div>
+        </footer>
       </section>
     </section>
   );

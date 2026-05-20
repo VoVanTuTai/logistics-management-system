@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { useHubsQuery } from '../../../../features/masterdata/masterdata.api';
 import {
@@ -13,6 +14,7 @@ import type { ShipmentListItemDto } from '../../../../features/shipments/shipmen
 import { useTasksQuery } from '../../../../features/tasks/tasks.api';
 import type { TaskListItemDto } from '../../../../features/tasks/tasks.types';
 import { getErrorMessage } from '../../../../services/api/errors';
+import { routePaths } from '../../../../navigation/routes';
 import { useAuthStore } from '../../../../store/authStore';
 import { formatDateTime } from '../../../../utils/format';
 import { createIdempotencyKey } from '../../../../utils/idempotency';
@@ -22,6 +24,7 @@ import {
 } from '../../../../utils/locationScope';
 import { formatShipmentStatusLabel } from '../../../../utils/logisticsLabels';
 import { queryKeys } from '../../../../utils/queryKeys';
+import { BranchTablePagination } from '../shared/BranchTablePagination';
 import './BranchLocalOrderOverviewPage.css';
 
 type BranchLocalOrderPageMode = 'overview' | 'management';
@@ -207,6 +210,8 @@ export function BranchLocalOrderOverviewPage({
   const [courierFilter, setCourierFilter] = useState('all');
   const [keyword, setKeyword] = useState('');
   const [alertFilter, setAlertFilter] = useState('all');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [scanForm, setScanForm] = useState<ScanFormState>({
     shipmentCode: '',
     locationCode: defaultLocationCode,
@@ -281,6 +286,17 @@ export function BranchLocalOrderOverviewPage({
       return stageMatched && courierMatched && alertMatched && keywordMatched;
     });
   }, [alertFilter, courierFilter, keyword, rows, stageFilter]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [alertFilter, courierFilter, keyword, pageSize, stageFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const paginatedRows = useMemo(
+    () => filteredRows.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [currentPage, filteredRows, pageSize],
+  );
 
   const kpiItems = useMemo(
     () => [
@@ -561,9 +577,16 @@ export function BranchLocalOrderOverviewPage({
                 </tr>
               </thead>
               <tbody>
-                {filteredRows.map((row) => (
+                {paginatedRows.map((row) => (
                   <tr key={row.shipment.shipmentCode}>
-                    <td className="ops-branch-local-orders__code">{row.shipment.shipmentCode}</td>
+                    <td>
+                      <Link
+                        className="ops-branch-local-orders__code"
+                        to={routePaths.shipmentDetail(row.shipment.id)}
+                      >
+                        {row.shipment.shipmentCode}
+                      </Link>
+                    </td>
                     <td>{row.currentStage}</td>
                     <td>{row.customerName}</td>
                     <td>{row.serviceType}</td>
@@ -598,6 +621,13 @@ export function BranchLocalOrderOverviewPage({
               </tbody>
             </table>
           </div>
+          <BranchTablePagination
+            totalRows={filteredRows.length}
+            page={currentPage}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
         </section>
       </section>
     </section>

@@ -42,6 +42,7 @@ export function ThermalLabelPrintPage(): React.JSX.Element {
   
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const [activeQrItem, setActiveQrItem] = useState<BagLabelPreviewItem | null>(null);
+  const [deleteCandidate, setDeleteCandidate] = useState<BagLabelPreviewItem | null>(null);
 
   const destinationHubOptions = useMemo(
     () =>
@@ -189,26 +190,42 @@ export function ThermalLabelPrintPage(): React.JSX.Element {
     }
   };
 
-  const onDeleteLabel = async (bagCode: string) => {
-    // Note: bagCode could be used directly as manifestId depending on implementation.
-    // If our API expects the internal ID, we need to have it in the previewItem.
-    // Let's assume we can fetch list of manifests and delete by manifestId, or the preview item holds manifestCode and we can pass it if the backend supports deletion by manifestCode or id.
-    // We'll delete by manifestCode via API (the hooks delete by ID but typically code works if backend handles it, but since we generate we don't know ID unless returned).
-    // Wait, generateMutation returns Manifest[], so we have the ID! We should map ID.
+  const onDeleteLabel = (bagCode: string) => {
     const item = allItems.find((i) => i.bagCode === bagCode);
-    if (!item || !item.id) {
-      setPreviewItems((prev) => prev.filter((i) => i.bagCode !== bagCode));
-      setNotice(`Đã xóa tem bao mẫu ${bagCode}.`);
+    if (!item) {
       return;
     }
-    if (window.confirm(`Bạn có chắc muốn xóa mã bao ${bagCode}?`)) {
-      try {
-        await deleteMutation.mutateAsync(item.id);
-        // No need to manually filter if using react-query as it will re-fetch
-        setNotice(`Đã xóa tem bao ${bagCode}.`);
-      } catch (err) {
-        setFormError(`Lỗi khi xóa tem bao ${bagCode}.`);
-      }
+    setDeleteCandidate(item);
+  };
+
+  const closeDeleteConfirm = () => {
+    setDeleteCandidate(null);
+  };
+
+  const confirmDeleteLabel = async () => {
+    if (!deleteCandidate) {
+      return;
+    }
+
+    if (!deleteCandidate.id) {
+      setPreviewItems((prev) => prev.filter((i) => i.bagCode !== deleteCandidate.bagCode));
+      setNotice(`Đã xóa tem bao mẫu ${deleteCandidate.bagCode}.`);
+      setDeleteCandidate(null);
+      return;
+    }
+
+    const bagCode = deleteCandidate.bagCode;
+    const manifestId = deleteCandidate.id;
+
+    try {
+      setFormError(null);
+      setNotice(`Đang xóa tem bao ${bagCode}...`);
+      setDeleteCandidate(null);
+      await deleteMutation.mutateAsync(manifestId);
+      setNotice(`Đã xóa tem bao ${bagCode}.`);
+    } catch (err) {
+      setFormError(`Lỗi khi xóa tem bao ${bagCode}.`);
+      setNotice(null);
     }
   };
 
@@ -397,6 +414,31 @@ export function ThermalLabelPrintPage(): React.JSX.Element {
           </div>
         </div>
       )}
+
+      {deleteCandidate ? (
+        <div className="ops-thermal-print__qr-modal" onClick={closeDeleteConfirm}>
+          <div className="ops-thermal-print__qr-content" onClick={(event) => event.stopPropagation()}>
+            <h4>Xác nhận xóa tem bao</h4>
+            <p>
+              Bạn đang xóa mã bao <strong>{deleteCandidate.bagCode}</strong>. Thao tác này sẽ xóa
+              tem mẫu khỏi danh sách xem trước hoặc gọi API xóa manifest nếu tem đã được tạo trên hệ thống.
+            </p>
+            <div className="ops-thermal-print__actions">
+              <button type="button" className="ops-thermal-print__secondary-btn" onClick={closeDeleteConfirm}>
+                Hủy
+              </button>
+              <button
+                type="button"
+                className="ops-thermal-print__link-btn ops-thermal-print__link-btn--danger"
+                onClick={() => void confirmDeleteLabel()}
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? 'Đang xóa...' : 'Xác nhận xóa'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

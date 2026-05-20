@@ -1,9 +1,12 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import qrcode from 'qrcode-generator';
 
 import { useManifestsQuery, useManifestDetailQuery } from '../../../../features/manifests/manifests.hooks';
 import { useAuthStore } from '../../../../store/authStore';
+import '../data-monitoring/OperationalDataMonitorPage.css';
 import './ThermalLabelManagementPage.css';
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
 
 function ManifestDetailModal({ manifestId, onClose, accessToken }: { manifestId: string; onClose: () => void; accessToken: string | null }): React.JSX.Element {
   const { data: detail, isLoading } = useManifestDetailQuery(accessToken, manifestId);
@@ -82,6 +85,8 @@ export function ThermalLabelManagementPage(): React.JSX.Element {
   const { data: manifests = [], isLoading, isError } = useManifestsQuery(accessToken);
   const [activeManifestId, setActiveManifestId] = useState<string | null>(null);
   const [activeQrBagCode, setActiveQrBagCode] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   const usedBagLabels = useMemo(() => {
     return manifests
@@ -113,6 +118,13 @@ export function ThermalLabelManagementPage(): React.JSX.Element {
     (sum, item) => sum + item.shipmentCount,
     0,
   );
+  const totalPages = Math.max(1, Math.ceil(usedBagLabels.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pagedBagLabels = usedBagLabels.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  useEffect(() => {
+    setPage(1);
+  }, [pageSize, usedBagLabels.length]);
 
   return (
     <section className="ops-thermal-management">
@@ -168,7 +180,7 @@ export function ThermalLabelManagementPage(): React.JSX.Element {
                 </td>
               </tr>
             ) : (
-              usedBagLabels.map((item) => (
+              pagedBagLabels.map((item) => (
                 <tr key={item.id} className="ops-thermal-management__tr-clickable" onClick={() => setActiveManifestId(item.id)}>
                   <td className="ops-thermal-management__bag-code">{item.bagCode}</td>
                   <td>{item.shipmentCount}</td>
@@ -194,6 +206,32 @@ export function ThermalLabelManagementPage(): React.JSX.Element {
           </tbody>
         </table>
       </section>
+
+      <footer className="ops-data-monitor__pagination">
+        <span>
+          Hiển thị {usedBagLabels.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}-
+          {Math.min(usedBagLabels.length, currentPage * pageSize)} / {usedBagLabels.length} dòng
+        </span>
+        <label>
+          <span>Số dòng</span>
+          <select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}>
+            {PAGE_SIZE_OPTIONS.map((size) => (
+              <option key={size} value={size}>
+                {size}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div>
+          <button type="button" onClick={() => setPage(currentPage - 1)} disabled={currentPage <= 1}>
+            Trước
+          </button>
+          <strong>{currentPage}/{totalPages}</strong>
+          <button type="button" onClick={() => setPage(currentPage + 1)} disabled={currentPage >= totalPages}>
+            Sau
+          </button>
+        </div>
+      </footer>
 
       {activeManifestId && (
         <ManifestDetailModal 

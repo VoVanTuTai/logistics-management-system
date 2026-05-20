@@ -1,276 +1,494 @@
-import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Server, Settings, FileText, Info, ArrowLeft, CheckCircle } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import qrcode from 'qrcode-generator';
+import { ArrowLeft, Printer, RefreshCw } from 'lucide-react';
+
+import {
+  useManifestDetailQuery,
+  useManifestsQuery,
+} from '../../../../features/manifests/manifests.api';
+import type {
+  ManifestDetailDto,
+  ManifestListItemDto,
+} from '../../../../features/manifests/manifests.types';
 import { routePaths } from '../../../../navigation/routes';
+import { getErrorMessage } from '../../../../services/api/errors';
 import { useAuthStore } from '../../../../store/authStore';
-import { opsApiClient } from '../../../../services/api/client';
-import { opsEndpoints } from '../../../../services/api/endpoints';
+import { formatDateTime } from '../../../../utils/format';
+import { formatManifestStatusLabel } from '../../../../utils/logisticsLabels';
 import './LinehaulStyles.css';
 
-interface ExtraManifestData {
-  routeCode: string;
-  routeType: string;
-  taskAttribute: string;
-  expectedDepartureTime: string;
-  expectedArrivalTime?: string;
-  taskName?: string;
-  vehiclePlate?: string;
-  driverName?: string;
-  driverPhone?: string;
+interface SealHistoryRow {
+  manifest: ManifestListItemDto;
+  action: 'SEALED' | 'RECEIVED' | 'CREATED';
+  timestamp: string | null | undefined;
+}
+
+function normalizeText(value: string | null | undefined): string {
+  return (value ?? '').trim().toLowerCase();
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function generateBarcodeSvg(code: string): string {
+  const hash = code.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const pattern = (hash % 100).toString(2).padStart(8, '0').repeat(5);
+  const bars = pattern
+    .split('')
+    .map((bit, index) =>
+      bit === '1'
+        ? `<rect x="${index * (100 / pattern.length)}" y="0" width="1.4" height="46" fill="#000" />`
+        : '',
+    )
+    .join('');
+
+  return `<svg width="100%" height="46" viewBox="0 0 100 46" preserveAspectRatio="none" aria-hidden="true"><rect width="100" height="46" fill="#fff" />${bars}<rect x="0" y="0" width="2" height="46" fill="#000" /><rect x="97" y="0" width="3" height="46" fill="#000" /></svg>`;
+}
+
+function getQrDataUrl(data: Record<string, unknown>): string {
+  try {
+    const qr = qrcode(0, 'M');
+    qr.addData(JSON.stringify(data));
+    qr.make();
+    return qr.createDataURL(5);
+  } catch {
+    return '';
+  }
+}
+
+function resolveSealDataQuality(manifest: ManifestListItemDto | null): string | null {
+  if (!manifest) {
+    return 'Chọn manifest/chuyến xe để in tem.';
+  }
+
+  if (!manifest.originHubCode || !manifest.destinationHubCode) {
+    return 'Manifest thiếu hub đi hoặc hub đến.';
+  }
+
+  if ((manifest.shipmentCount ?? 0) <= 0) {
+    return 'Manifest chưa có bao/kiện, chưa đủ dữ liệu in tem xe.';
+  }
+
+  return null;
+}
+
+function buildSealPrintHtml(
+  manifest: ManifestListItemDto,
+  detail: ManifestDetailDto | null,
+): string {
+  const shipmentCount = detail?.shipmentCodes?.length ?? manifest.shipmentCount ?? 0;
+  const qrDataUrl = getQrDataUrl({
+    manifestCode: manifest.manifestCode,
+    from: manifest.originHubCode,
+    to: manifest.destinationHubCode,
+    shipmentCount,
+    status: manifest.status,
+  });
+
+  return `
+    <section class="seal-ticket">
+      <header>
+        <div>
+          <h1>NEXUS EXPRESS</h1>
+          <p>LINEHAUL VEHICLE SEAL</p>
+        </div>
+        <strong>${escapeHtml(formatManifestStatusLabel(manifest.status))}</strong>
+      </header>
+      <div class="seal-code">
+        <span>Mã seal / manifest</span>
+        <strong>${escapeHtml(manifest.manifestCode)}</strong>
+      </div>
+      <div class="barcode">${generateBarcodeSvg(manifest.manifestCode)}</div>
+      <div class="route">
+        <article>
+          <span>Hub đi</span>
+          <strong>${escapeHtml(manifest.originHubCode ?? 'Chưa có')}</strong>
+        </article>
+        <article>
+          <span>Hub đến</span>
+          <strong>${escapeHtml(manifest.destinationHubCode ?? 'Chưa có')}</strong>
+        </article>
+      </div>
+      <div class="body">
+        <article>
+          <span>Số bao/kiện</span>
+          <strong>${shipmentCount}</strong>
+        </article>
+        <article>
+          <span>Thời gian seal</span>
+          <strong>${escapeHtml(manifest.sealedAt ? formatDateTime(manifest.sealedAt) : 'Chưa seal')}</strong>
+        </article>
+      </div>
+      <div class="qr">
+        <img src="${qrDataUrl}" alt="QR seal" />
+      </div>
+      <footer>Tem xe in từ manifest-service. Chưa có domain linehaul riêng.</footer>
+    </section>
+  `;
+}
+
+function printSealTickets(
+  manifests: ManifestListItemDto[],
+  detailByManifestId: Map<string, ManifestDetailDto | null>,
+): void {
+  const printWindow = window.open('', 'linehaul-vehicle-seal-print', 'width=980,height=760');
+  if (!printWindow) {
+    return;
+  }
+
+  const tickets = manifests
+    .map((manifest) => buildSealPrintHtml(manifest, detailByManifestId.get(manifest.id) ?? null))
+    .join('');
+
+  printWindow.document.write(`
+    <!doctype html>
+    <html>
+      <head>
+        <title>In tem xe linehaul</title>
+        <style>
+          @page { size: A5; margin: 8mm; }
+          body { margin: 0; font-family: Arial, sans-serif; color: #111827; }
+          .seal-ticket { width: 100%; min-height: 185mm; box-sizing: border-box; border: 2px solid #111827; padding: 9mm; page-break-after: always; }
+          .seal-ticket:last-child { page-break-after: auto; }
+          header { display: flex; justify-content: space-between; gap: 12px; border-bottom: 3px solid #111827; padding-bottom: 8px; }
+          h1 { margin: 0; font-size: 24px; letter-spacing: 0.04em; }
+          p { margin: 4px 0 0; font-size: 12px; font-weight: 700; }
+          header strong { align-self: start; border: 1px solid #111827; padding: 5px 8px; font-size: 12px; }
+          .seal-code { display: grid; gap: 4px; margin: 14px 0 8px; text-align: center; }
+          .seal-code span, .route span, .body span { color: #475569; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+          .seal-code strong { font-size: 30px; letter-spacing: 0.08em; }
+          .barcode { border: 1px solid #d1d5db; padding: 8px; }
+          .route, .body { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 12px; }
+          .route article, .body article { border: 2px solid #111827; padding: 10px; text-align: center; }
+          .route strong { display: block; margin-top: 6px; font-size: 24px; }
+          .body strong { display: block; margin-top: 6px; font-size: 18px; }
+          .qr { display: flex; justify-content: center; margin-top: 14px; }
+          .qr img { width: 116px; height: 116px; border: 1px solid #111827; }
+          footer { margin-top: 14px; border-top: 1px solid #d1d5db; padding-top: 8px; color: #475569; font-size: 11px; text-align: center; }
+        </style>
+      </head>
+      <body>${tickets}</body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
 }
 
 export function LinehaulVehicleSealPage(): React.JSX.Element {
-  const navigate = useNavigate();
   const session = useAuthStore((state) => state.session);
   const accessToken = session?.tokens.accessToken ?? null;
-  const userHubCode = session?.user.hubCodes?.[0] || 'HUB-HCM-001';
-  const userName = session?.user.username || 'System User';
+  const [keyword, setKeyword] = useState('');
+  const [selectedManifestId, setSelectedManifestId] = useState('');
+  const [batchSelection, setBatchSelection] = useState<string[]>([]);
+  const [printError, setPrintError] = useState<string | null>(null);
 
-  // Hệ thống tự sinh
-  const generatedManifestCode = useMemo(() => `SRTR${new Date().getTime().toString().slice(-6)}`, []);
-  
-  // Bắt buộc
-  const [destinationHubCode, setDestinationHubCode] = useState('');
-  const [routeCode, setRouteCode] = useState('');
-  const [routeType, setRouteType] = useState('');
-  const [taskAttribute, setTaskAttribute] = useState('');
-  const [expectedDepartureTime, setExpectedDepartureTime] = useState('');
+  const manifestsQuery = useManifestsQuery(accessToken);
+  const manifests = manifestsQuery.data ?? [];
+  const selectedManifest =
+    manifests.find((manifest) => manifest.id === selectedManifestId) ?? manifests[0] ?? null;
+  const selectedManifestDetailQuery = useManifestDetailQuery(
+    accessToken,
+    selectedManifest?.id ?? '',
+  );
+  const selectedManifestDetail = selectedManifestDetailQuery.data ?? null;
 
-  // Tùy chọn
-  const [expectedArrivalTime, setExpectedArrivalTime] = useState('');
-  const [taskName, setTaskName] = useState('');
+  useEffect(() => {
+    if (!selectedManifestId && manifests.length > 0) {
+      setSelectedManifestId(manifests[0].id);
+    }
+  }, [manifests, selectedManifestId]);
 
-  const [errorMsg, setErrorMsg] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
+  const filteredManifests = useMemo(() => {
+    const normalizedKeyword = normalizeText(keyword);
+    return manifests.filter(
+      (manifest) =>
+        !normalizedKeyword ||
+        normalizeText(manifest.manifestCode).includes(normalizedKeyword) ||
+        normalizeText(manifest.originHubCode).includes(normalizedKeyword) ||
+        normalizeText(manifest.destinationHubCode).includes(normalizedKeyword),
+    );
+  }, [keyword, manifests]);
 
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg('');
-    setSuccessMsg('');
+  const printableBatch = useMemo(
+    () =>
+      manifests.filter(
+        (manifest) => batchSelection.includes(manifest.id) && !resolveSealDataQuality(manifest),
+      ),
+    [batchSelection, manifests],
+  );
 
-    if (!accessToken) {
-      setErrorMsg('Phiên đăng nhập không hợp lệ, vui lòng đăng nhập lại.');
+  const sealHistoryRows = useMemo<SealHistoryRow[]>(
+    () =>
+      manifests
+        .map((manifest) => {
+          if (manifest.sealedAt) {
+            return { manifest, action: 'SEALED' as const, timestamp: manifest.sealedAt };
+          }
+          if (['RECEIVED', 'CLOSED'].includes((manifest.status ?? '').toUpperCase())) {
+            return { manifest, action: 'RECEIVED' as const, timestamp: manifest.updatedAt };
+          }
+          return { manifest, action: 'CREATED' as const, timestamp: manifest.createdAt };
+        })
+        .sort((left, right) => (right.timestamp ?? '').localeCompare(left.timestamp ?? ''))
+        .slice(0, 12),
+    [manifests],
+  );
+
+  const selectedDisableReason = resolveSealDataQuality(selectedManifest);
+  const shipmentCount =
+    selectedManifestDetail?.shipmentCodes?.length ?? selectedManifest?.shipmentCount ?? 0;
+
+  const toggleBatchSelection = (manifestId: string) => {
+    setBatchSelection((current) =>
+      current.includes(manifestId)
+        ? current.filter((id) => id !== manifestId)
+        : [...current, manifestId],
+    );
+  };
+
+  const handlePrintSelected = () => {
+    if (!selectedManifest || selectedDisableReason) {
+      setPrintError(selectedDisableReason ?? 'Chưa chọn manifest để in tem xe.');
       return;
     }
 
-    // Rule 1: Chống lặp Hub
-    if (destinationHubCode === userHubCode) {
-      setErrorMsg('Bưu cục đích không hợp lệ (Trùng với bưu cục xuất phát).');
+    setPrintError(null);
+    printSealTickets(
+      [selectedManifest],
+      new Map([[selectedManifest.id, selectedManifestDetail]]),
+    );
+  };
+
+  const handlePrintBatch = () => {
+    if (printableBatch.length === 0) {
+      setPrintError('Không có manifest đủ dữ liệu trong batch để in tem xe.');
       return;
     }
 
-    // Rule 2: Ràng buộc thời gian (ETA > Departure Time)
-    if (expectedArrivalTime) {
-      const depTime = new Date(expectedDepartureTime).getTime();
-      const arrTime = new Date(expectedArrivalTime).getTime();
-      if (arrTime <= depTime) {
-        setErrorMsg('Thời gian kết thúc hành trình phải lớn hơn Thời gian bắt đầu khởi hành.');
-        return;
-      }
-    }
-
-    // Tạo Payload API
-    const extraData: ExtraManifestData = {
-      routeCode,
-      routeType,
-      taskAttribute,
-      expectedDepartureTime: new Date(expectedDepartureTime).toISOString(),
-      expectedArrivalTime: expectedArrivalTime ? new Date(expectedArrivalTime).toISOString() : undefined,
-      taskName: taskName || undefined,
-    };
-
-    try {
-      await opsApiClient.request(opsEndpoints.manifests.create, {
-        method: 'POST',
-        accessToken,
-        body: {
-          manifestCode: generatedManifestCode,
-          originHubCode: userHubCode,
-          destinationHubCode: destinationHubCode,
-          note: JSON.stringify(extraData),
-          shipmentCodes: [], // Vật chứa rỗng
-        },
-      });
-
-      setSuccessMsg(`Tạo Tem xe ${generatedManifestCode} thành công! Hệ thống đang chờ điều phối.`);
-      setTimeout(() => {
-        navigate(routePaths.linehaulTripManagement);
-      }, 1500);
-    } catch (error: any) {
-      console.error(error);
-      setErrorMsg(error.message || 'Lỗi hệ thống khi tạo tem xe');
-    }
+    setPrintError(null);
+    printSealTickets(printableBatch, new Map());
   };
 
   return (
-    <div className="ops-page">
-      <header className="ops-page-header">
-        <div className="ops-page-header__title">
-          <button 
-            type="button" 
-            className="ops-btn ops-btn--back"
-            onClick={() => navigate(routePaths.linehaulTripManagement)}
-          >
-            <ArrowLeft size={16} /> Quay lại
-          </button>
-          <h2>Thêm mới Tem xe (Khởi tạo chuyến Linehaul)</h2>
+    <section className="ops-linehaul-seal">
+      <header className="ops-linehaul-seal__header">
+        <div>
+          <Link to={routePaths.linehaulTripManagement}>
+            <ArrowLeft size={16} />
+            Quản lý chuyến xe
+          </Link>
+          <small>LINEHAUL_VEHICLE_SEAL</small>
+          <h2>Tem xe</h2>
+          <p>
+            Chọn manifest/chuyến xe từ manifest API để preview và in tem xe. Không
+            dùng dữ liệu mẫu nếu API rỗng.
+          </p>
         </div>
+        <button type="button" onClick={() => void manifestsQuery.refetch()}>
+          <RefreshCw size={16} />
+          Làm mới
+        </button>
       </header>
 
-      <div className="ops-linehaul-layout">
-        <section className="ops-card ops-linehaul-form" style={{ maxWidth: '800px', flex: 2 }}>
-          <form onSubmit={onSubmit}>
-            
-            {/* Nhóm A: Thông tin tự sinh (Readonly) */}
-            <h3 className="ops-section-title">
-              <Server size={20} className="ops-icon-blue" />
-              A. Thông tin hệ thống
-            </h3>
-            <div className="ops-form-row">
-              <div className="ops-form-group">
-                <label>Mã Tem xe</label>
-                <input type="text" className="ops-input ops-input--readonly" value={generatedManifestCode} disabled style={{ fontWeight: 'bold', color: '#0f172a' }} />
-              </div>
-              <div className="ops-form-group">
-                <label>Bưu cục xuất phát (Source Hub)</label>
-                <input type="text" className="ops-input ops-input--readonly" value={userHubCode} disabled />
-              </div>
-              <div className="ops-form-group">
-                <label>Trạng thái</label>
-                <input type="text" className="ops-input ops-input--highlight" value="Đợi điều phối" disabled />
-              </div>
-            </div>
-            <div className="ops-form-row" style={{ marginTop: '0.5rem' }}>
-              <div className="ops-form-group">
-                <label>Người tạo</label>
-                <input type="text" className="ops-input ops-input--readonly" value={userName} disabled />
-              </div>
-            </div>
+      {manifestsQuery.error ? (
+        <p className="ops-linehaul-seal__error" role="alert">
+          {getErrorMessage(manifestsQuery.error)}
+        </p>
+      ) : null}
 
-            {/* Nhóm B: Bắt buộc */}
-            <h3 className="ops-section-title">
-              <Settings size={20} className="ops-icon-orange" />
-              B. Thông tin nghiệp vụ (* Bắt buộc)
-            </h3>
-            <div className="ops-form-row">
-              <div className="ops-form-group">
-                <label>Bưu cục xe đến (Dest Hub) *</label>
-                <select className="ops-select" required value={destinationHubCode} onChange={(e) => setDestinationHubCode(e.target.value)}>
-                  <option value="">Chọn điểm đến</option>
-                  <option value="HUB-HN-001">HUB Tổng Miền Bắc (001)</option>
-                  <option value="HUB-DN-002">HUB Tổng Miền Trung (002)</option>
-                  <option value="HUB-HCM-001">HUB Tổng Miền Nam (003) - Test Lỗi Trùng</option>
-                </select>
-              </div>
-              <div className="ops-form-group">
-                <label>Tuyến đường (Route) *</label>
-                <select className="ops-select" required value={routeCode} onChange={(e) => setRouteCode(e.target.value)}>
-                  <option value="">Chọn tuyến</option>
-                  <option value="RT-BACNAM">Tuyến Bắc - Nam</option>
-                  <option value="RT-MIENTRUNG">Tuyến HCM - Đà Nẵng</option>
-                </select>
-              </div>
-            </div>
-            
-            <div className="ops-form-row" style={{ marginTop: '1rem' }}>
-              <div className="ops-form-group">
-                <label>Loại đường *</label>
-                <select className="ops-select" required value={routeType} onChange={(e) => setRouteType(e.target.value)}>
-                  <option value="">Chọn loại</option>
-                  <option value="GOM_HANG">Gom hàng</option>
-                  <option value="TUYEN_TRUC">Tuyến trục (Linehaul)</option>
-                  <option value="LIEN_TINH">Liên tỉnh</option>
-                </select>
-              </div>
-              <div className="ops-form-group">
-                <label>Thuộc tính nghiệp vụ *</label>
-                <select className="ops-select" required value={taskAttribute} onChange={(e) => setTaskAttribute(e.target.value)}>
-                  <option value="">Chọn thuộc tính</option>
-                  <option value="CA_CHINH">Ca chính</option>
-                  <option value="CA_PHU">Ca phụ</option>
-                  <option value="TANG_CUONG">Tăng cường</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="ops-form-row" style={{ marginTop: '1rem' }}>
-              <div className="ops-form-group">
-                <label>Khởi hành dự kiến (ETD) *</label>
-                <input 
-                  type="datetime-local" 
-                  className="ops-input" 
-                  required 
-                  value={expectedDepartureTime}
-                  onChange={(e) => setExpectedDepartureTime(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Nhóm C: Tùy chọn */}
-            <h3 className="ops-section-title">
-              <FileText size={20} className="ops-icon-emerald" />
-              C. Thông tin bổ sung (Tùy chọn)
-            </h3>
-            <div className="ops-form-row">
-              <div className="ops-form-group">
-                <label>Kết thúc dự kiến (ETA)</label>
-                <input 
-                  type="datetime-local" 
-                  className="ops-input" 
-                  value={expectedArrivalTime}
-                  onChange={(e) => setExpectedArrivalTime(e.target.value)}
-                />
-              </div>
-              <div className="ops-form-group">
-                <label>Tên tác vụ / Ghi chú chuyến xe</label>
-                <input 
-                  type="text" 
-                  className="ops-input" 
-                  placeholder="VD: Chuyến tăng cường chở hàng sale 12/12"
-                  value={taskName}
-                  onChange={(e) => setTaskName(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {errorMsg && (
-              <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: '#fee2e2', color: '#b91c1c', borderRadius: '6px', borderLeft: '4px solid #ef4444', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Info size={18} />
-                <span><strong>Lỗi: </strong> {errorMsg}</span>
-              </div>
-            )}
-            
-            {successMsg && (
-              <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: '#dcfce7', color: '#15803d', borderRadius: '6px', borderLeft: '4px solid #22c55e', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <CheckCircle size={18} />
-                <span><strong>Thành công: </strong> {successMsg}</span>
-              </div>
-            )}
-
-            <div className="ops-form-actions" style={{ marginTop: '2rem', justifyContent: 'flex-start' }}>
-              <button type="submit" className="ops-btn ops-btn--primary ops-btn--large">
-                Khởi tạo Tem xe
-              </button>
-            </div>
-          </form>
+      <section className="ops-linehaul-seal__grid">
+        <section className="ops-linehaul-seal__panel">
+          <header className="ops-linehaul-seal__panel-head">
+            <h3>Chọn manifest/chuyến xe</h3>
+            <span>{manifestsQuery.isLoading ? 'Đang tải...' : `${filteredManifests.length} dòng`}</span>
+          </header>
+          <div className="ops-linehaul-seal__search">
+            <input
+              value={keyword}
+              onChange={(event) => setKeyword(event.target.value)}
+              placeholder="Tìm manifest, hub đi, hub đến"
+            />
+          </div>
+          {manifestsQuery.isLoading ? (
+            <p className="ops-linehaul-seal__empty">Đang tải manifest...</p>
+          ) : null}
+          {!manifestsQuery.isLoading && filteredManifests.length === 0 ? (
+            <p className="ops-linehaul-seal__empty">
+              Không có manifest để in tem xe. Không fallback sang seed data.
+            </p>
+          ) : null}
+          <div className="ops-linehaul-seal__list" role="listbox">
+            {filteredManifests.map((manifest) => {
+              const disableReason = resolveSealDataQuality(manifest);
+              const isSelected = selectedManifest?.id === manifest.id;
+              return (
+                <article
+                  key={manifest.id}
+                  className={`ops-linehaul-seal__manifest-option${
+                    isSelected ? ' ops-linehaul-seal__manifest-option--active' : ''
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={batchSelection.includes(manifest.id)}
+                    onChange={() => toggleBatchSelection(manifest.id)}
+                    aria-label={`Chọn batch ${manifest.manifestCode}`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setSelectedManifestId(manifest.id)}
+                    role="option"
+                    aria-selected={isSelected}
+                  >
+                    <strong>{manifest.manifestCode}</strong>
+                    <span>
+                      {manifest.originHubCode ?? 'Chưa có'} →{' '}
+                      {manifest.destinationHubCode ?? 'Chưa có'} · {manifest.shipmentCount ?? 0} bao/kiện
+                    </span>
+                    {disableReason ? <em>{disableReason}</em> : null}
+                  </button>
+                </article>
+              );
+            })}
+          </div>
         </section>
 
-        {/* Cột hướng dẫn */}
-        <aside className="ops-linehaul-preview" style={{ flex: 1 }}>
-          <div className="ops-hint-card">
-            <h4>
-              <Info size={20} className="ops-icon-blue" />
-              Hướng dẫn vận hành
-            </h4>
-            <ul className="ops-hint-list">
-              <li>Tem xe sau khi tạo sẽ mang trạng thái <strong>"Đợi điều phối"</strong>.</li>
-              <li>Lúc này tem xe là một "Vật chứa rỗng", chưa chứa đơn hàng.</li>
-              <li>Bộ phận điều phối sẽ quét mã Tem xe này để bắt đầu gán các Bao hàng/Kiện hàng lên xe.</li>
-              <li>Thông tin <strong>Biển số xe và Tài xế</strong> sẽ được bổ sung sau tại màn hình Quản lý chuyến xe.</li>
-            </ul>
-          </div>
-        </aside>
-      </div>
-    </div>
+        <section className="ops-linehaul-seal__panel">
+          <header className="ops-linehaul-seal__panel-head">
+            <h3>Preview tem xe</h3>
+            <span>{selectedManifest ? selectedManifest.manifestCode : 'Chưa chọn'}</span>
+          </header>
+          {selectedManifest ? (
+            <div className="ops-linehaul-seal__ticket">
+              <div className="ops-linehaul-seal__ticket-head">
+                <strong>NEXUS EXPRESS</strong>
+                <span>{formatManifestStatusLabel(selectedManifest.status)}</span>
+              </div>
+              <div className="ops-linehaul-seal__ticket-code">
+                <span>Mã seal / manifest</span>
+                <strong>{selectedManifest.manifestCode}</strong>
+              </div>
+              <div
+                className="ops-linehaul-seal__barcode"
+                dangerouslySetInnerHTML={{
+                  __html: generateBarcodeSvg(selectedManifest.manifestCode),
+                }}
+              />
+              <div className="ops-linehaul-seal__ticket-route">
+                <article>
+                  <span>Hub đi</span>
+                  <strong>{selectedManifest.originHubCode ?? 'Chưa có'}</strong>
+                </article>
+                <article>
+                  <span>Hub đến</span>
+                  <strong>{selectedManifest.destinationHubCode ?? 'Chưa có'}</strong>
+                </article>
+              </div>
+              <div className="ops-linehaul-seal__ticket-meta">
+                <article>
+                  <span>Số bao/kiện</span>
+                  <strong>{shipmentCount}</strong>
+                </article>
+                <article>
+                  <span>Thời gian seal</span>
+                  <strong>
+                    {selectedManifest.sealedAt
+                      ? formatDateTime(selectedManifest.sealedAt)
+                      : 'Chưa seal'}
+                  </strong>
+                </article>
+              </div>
+              {selectedDisableReason ? (
+                <p className="ops-linehaul-seal__warning">{selectedDisableReason}</p>
+              ) : null}
+            </div>
+          ) : (
+            <p className="ops-linehaul-seal__empty">Chọn một manifest để preview tem xe.</p>
+          )}
+          {selectedManifestDetailQuery.isFetching ? (
+            <p className="ops-linehaul-seal__empty">Đang tải chi tiết bao/kiện...</p>
+          ) : null}
+          {printError ? (
+            <p className="ops-linehaul-seal__error" role="alert">
+              {printError}
+            </p>
+          ) : null}
+          <footer className="ops-linehaul-seal__actions">
+            <button
+              type="button"
+              onClick={handlePrintSelected}
+              disabled={Boolean(selectedDisableReason)}
+              title={selectedDisableReason ?? 'In tem xe đang preview'}
+            >
+              <Printer size={16} />
+              In tem đang chọn
+            </button>
+            <button
+              type="button"
+              onClick={handlePrintBatch}
+              disabled={printableBatch.length === 0}
+              title={
+                printableBatch.length === 0
+                  ? 'Batch chưa có manifest đủ dữ liệu'
+                  : `In ${printableBatch.length} tem`
+              }
+            >
+              <Printer size={16} />
+              In batch ({printableBatch.length})
+            </button>
+          </footer>
+        </section>
+      </section>
+
+      <section className="ops-linehaul-seal__panel">
+        <header className="ops-linehaul-seal__panel-head">
+          <h3>Lịch sử seal / manifest</h3>
+          <span>{sealHistoryRows.length} dòng gần nhất</span>
+        </header>
+        <div className="ops-linehaul-seal__table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Manifest</th>
+                <th>Hành động</th>
+                <th>Hub đi</th>
+                <th>Hub đến</th>
+                <th>Bao/kiện</th>
+                <th>Thời gian</th>
+                <th>Chi tiết</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sealHistoryRows.map((row) => (
+                <tr key={`${row.manifest.id}-${row.action}`}>
+                  <td>{row.manifest.manifestCode}</td>
+                  <td>{row.action}</td>
+                  <td>{row.manifest.originHubCode ?? 'Chưa có'}</td>
+                  <td>{row.manifest.destinationHubCode ?? 'Chưa có'}</td>
+                  <td>{row.manifest.shipmentCount ?? 0}</td>
+                  <td>{formatDateTime(row.timestamp)}</td>
+                  <td>
+                    <Link to={routePaths.manifestDetail(row.manifest.id)}>Manifest detail</Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {!manifestsQuery.isLoading && sealHistoryRows.length === 0 ? (
+          <p className="ops-linehaul-seal__empty">
+            Chưa có lịch sử seal/manifest từ API.
+          </p>
+        ) : null}
+      </section>
+    </section>
   );
 }

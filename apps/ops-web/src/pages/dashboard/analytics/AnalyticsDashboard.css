@@ -105,6 +105,26 @@
   animation: analytics-pulse 2s ease-in-out infinite;
 }
 
+.analytics-derived-error,
+.analytics-empty-note {
+  margin: 0;
+  color: var(--ad-text-muted);
+  font-size: 13px;
+}
+
+.analytics-derived-error {
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  border-radius: 10px;
+  background: rgba(127, 29, 29, 0.35);
+  color: #fecaca;
+  padding: 10px 12px;
+  font-weight: 700;
+}
+
+.analytics-empty-note {
+  padding: 0 16px 16px;
+}
+
 @keyframes analytics-pulse {
   0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.5); }
   50%      { opacity: 0.7; box-shadow: 0 0 0 6px rgba(52, 211, 153, 0); }

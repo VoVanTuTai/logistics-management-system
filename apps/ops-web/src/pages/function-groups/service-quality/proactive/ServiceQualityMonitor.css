@@ -1,11 +1,11 @@
-.ops-metrics-inventory {
+.ops-service-quality-monitor {
   min-width: 1120px;
   display: grid;
   gap: 14px;
   color: #334155;
 }
 
-.ops-metrics-inventory__header {
+.ops-service-quality-monitor__header {
   display: flex;
   justify-content: space-between;
   gap: 16px;
@@ -15,29 +15,29 @@
   padding: 14px;
 }
 
-.ops-metrics-inventory__header small {
+.ops-service-quality-monitor__header small {
   color: #64748b;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.08em;
 }
 
-.ops-metrics-inventory__header h2 {
+.ops-service-quality-monitor__header h2 {
   margin: 6px 0 4px;
   color: #1e293b;
   font-size: 22px;
 }
 
-.ops-metrics-inventory__header p {
+.ops-service-quality-monitor__header p {
   margin: 0;
-  max-width: 760px;
+  max-width: 780px;
   color: #64748b;
   font-size: 13px;
   line-height: 1.45;
 }
 
-.ops-metrics-inventory__header button,
-.ops-metrics-inventory__pagination button {
+.ops-service-quality-monitor__header button,
+.ops-service-quality-monitor__pagination button {
   min-height: 34px;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
@@ -48,13 +48,13 @@
   font-weight: 800;
 }
 
-.ops-metrics-inventory__summary {
+.ops-service-quality-monitor__kpis {
   display: grid;
   grid-template-columns: repeat(4, minmax(150px, 1fr));
   gap: 10px;
 }
 
-.ops-metrics-inventory__summary article {
+.ops-service-quality-monitor__kpis article {
   display: grid;
   gap: 6px;
   border: 1px solid #d8e0ec;
@@ -63,29 +63,33 @@
   padding: 12px;
 }
 
-.ops-metrics-inventory__summary span {
+.ops-service-quality-monitor__kpis span {
   color: #64748b;
   font-size: 12px;
   font-weight: 800;
 }
 
-.ops-metrics-inventory__summary strong {
+.ops-service-quality-monitor__kpis strong {
   color: #1d4ed8;
   font-size: 25px;
   line-height: 1;
 }
 
-.ops-metrics-inventory__summary article[data-tone='warning'] strong {
+.ops-service-quality-monitor__kpis article[data-tone='success'] strong {
+  color: #137f5d;
+}
+
+.ops-service-quality-monitor__kpis article[data-tone='warning'] strong {
   color: #c2410c;
 }
 
-.ops-metrics-inventory__summary article[data-tone='danger'] strong {
+.ops-service-quality-monitor__kpis article[data-tone='danger'] strong {
   color: #b91c1c;
 }
 
-.ops-metrics-inventory__filters {
+.ops-service-quality-monitor__filters {
   display: grid;
-  grid-template-columns: 160px 160px 170px 190px minmax(220px, 1fr);
+  grid-template-columns: 160px 160px 170px 190px minmax(180px, 1fr);
   gap: 10px;
   border: 1px solid #dbe3ef;
   border-radius: 10px;
@@ -93,21 +97,24 @@
   padding: 12px;
 }
 
-.ops-metrics-inventory__filters label {
+.ops-service-quality-monitor__filters label {
   display: grid;
   gap: 6px;
   min-width: 0;
 }
 
-.ops-metrics-inventory__filters span {
+.ops-service-quality-monitor__filters span,
+.ops-service-quality-monitor__pagination > span,
+.ops-service-quality-monitor__pagination label span,
+.ops-service-quality-monitor__pagination strong {
   color: #475569;
   font-size: 12px;
   font-weight: 800;
 }
 
-.ops-metrics-inventory__filters input,
-.ops-metrics-inventory__filters select,
-.ops-metrics-inventory__pagination select {
+.ops-service-quality-monitor__filters input,
+.ops-service-quality-monitor__filters select,
+.ops-service-quality-monitor__pagination select {
   width: 100%;
   height: 36px;
   border: 1px solid #cbd5e1;
@@ -118,14 +125,14 @@
   font-size: 13px;
 }
 
-.ops-metrics-inventory__panel {
+.ops-service-quality-monitor__panel {
   border: 1px solid #dbe3ef;
   border-radius: 10px;
   background: #ffffff;
   overflow: hidden;
 }
 
-.ops-metrics-inventory__panel-head {
+.ops-service-quality-monitor__panel-head {
   min-height: 50px;
   display: flex;
   align-items: center;
@@ -136,30 +143,30 @@
   padding: 0 12px;
 }
 
-.ops-metrics-inventory__panel-head h3 {
+.ops-service-quality-monitor__panel-head h3 {
   margin: 0;
   color: #1e293b;
   font-size: 15px;
 }
 
-.ops-metrics-inventory__panel-head span {
+.ops-service-quality-monitor__panel-head span {
   color: #1d4ed8;
   font-size: 12px;
   font-weight: 800;
 }
 
-.ops-metrics-inventory__table-wrap {
+.ops-service-quality-monitor__table-wrap {
   overflow: auto;
 }
 
-.ops-metrics-inventory__table {
+.ops-service-quality-monitor table {
   width: 100%;
-  min-width: 1040px;
+  min-width: 1080px;
   border-collapse: collapse;
 }
 
-.ops-metrics-inventory__table th,
-.ops-metrics-inventory__table td {
+.ops-service-quality-monitor th,
+.ops-service-quality-monitor td {
   border-bottom: 1px solid #e5eaf2;
   padding: 10px 12px;
   color: #475569;
@@ -168,7 +175,7 @@
   vertical-align: top;
 }
 
-.ops-metrics-inventory__table th {
+.ops-service-quality-monitor th {
   background: #f8fafc;
   color: #334155;
   font-size: 11px;
@@ -178,45 +185,31 @@
   white-space: nowrap;
 }
 
-.ops-metrics-inventory__code {
+.ops-service-quality-monitor a,
+.ops-service-quality-monitor__code {
   color: #1d4ed8;
   font-weight: 800;
   text-decoration: none;
 }
 
-.ops-metrics-inventory__badge {
-  display: inline-flex;
-  min-height: 24px;
-  align-items: center;
-  border: 1px solid #bfdbfe;
-  border-radius: 999px;
-  background: #eff6ff;
-  color: #1d4ed8;
-  padding: 0 8px;
-  font-size: 11px;
-  font-weight: 800;
-  white-space: nowrap;
+.ops-service-quality-monitor__link-stack {
+  display: grid;
+  gap: 4px;
 }
 
-.ops-metrics-inventory__badge--danger {
-  border-color: #fecaca;
-  background: #fef2f2;
-  color: #b91c1c;
-}
-
-.ops-metrics-inventory__empty,
-.ops-metrics-inventory__error {
+.ops-service-quality-monitor__empty,
+.ops-service-quality-monitor__error {
   margin: 0;
   color: #64748b;
   font-size: 13px;
   line-height: 1.45;
 }
 
-.ops-metrics-inventory__empty {
+.ops-service-quality-monitor__empty {
   padding: 12px;
 }
 
-.ops-metrics-inventory__error {
+.ops-service-quality-monitor__error {
   border: 1px solid #fecaca;
   border-radius: 10px;
   background: #fef2f2;
@@ -225,48 +218,39 @@
   font-weight: 800;
 }
 
-.ops-metrics-inventory__pagination {
+.ops-service-quality-monitor__pagination {
   min-height: 48px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 12px;
   border-top: 1px solid #e2e8f0;
-  background: #ffffff;
   padding: 8px 12px;
 }
 
-.ops-metrics-inventory__pagination > span,
-.ops-metrics-inventory__pagination label span,
-.ops-metrics-inventory__pagination strong {
-  color: #475569;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.ops-metrics-inventory__pagination label,
-.ops-metrics-inventory__pagination div {
+.ops-service-quality-monitor__pagination label,
+.ops-service-quality-monitor__pagination div {
   display: inline-flex;
   align-items: center;
   gap: 8px;
 }
 
-.ops-metrics-inventory__pagination select,
-.ops-metrics-inventory__pagination button {
+.ops-service-quality-monitor__pagination select,
+.ops-service-quality-monitor__pagination button {
   height: 30px;
 }
 
-.ops-metrics-inventory__pagination button:disabled {
+.ops-service-quality-monitor__pagination button:disabled {
   cursor: not-allowed;
   opacity: 0.48;
 }
 
 @media (max-width: 1180px) {
-  .ops-metrics-inventory {
+  .ops-service-quality-monitor {
     min-width: 960px;
   }
 
-  .ops-metrics-inventory__filters {
+  .ops-service-quality-monitor__filters {
     grid-template-columns: repeat(2, minmax(180px, 1fr));
   }
 }

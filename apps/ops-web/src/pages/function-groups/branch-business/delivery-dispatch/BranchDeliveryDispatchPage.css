@@ -194,6 +194,17 @@
   font-weight: 700;
 }
 
+.ops-branch-delivery__print-btn {
+  height: 32px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .ops-branch-delivery__empty {
   margin: 0;
   padding: 12px;
@@ -449,6 +460,40 @@
   border-color: #fecaca;
   background: #fee2e2;
   color: #991b1b;
+}
+
+.ops-branch-delivery__audit {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 10px;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  background: #eff6ff;
+  padding: 12px;
+}
+
+.ops-branch-delivery__audit div {
+  display: grid;
+  gap: 3px;
+}
+
+.ops-branch-delivery__audit span {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.ops-branch-delivery__audit strong {
+  color: #1d4ed8;
+  font-size: 13px;
+}
+
+.ops-branch-delivery__audit p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #475569;
+  font-size: 13px;
 }
 
 .ops-branch-delivery__assign-btn {
