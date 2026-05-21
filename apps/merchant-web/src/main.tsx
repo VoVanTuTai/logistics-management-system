@@ -88,6 +88,31 @@ interface MerchantProfileConfigPayload {
   businessAddressDetail: string | null;
 }
 
+interface MerchantProfileApiRecord {
+  id: string;
+  username: string;
+  citizenId: string;
+  regionCode: MerchantRegionCode;
+  regionLabel: string;
+  defaultHubCode: string | null;
+  defaultHubName: string | null;
+  defaultSenderAddress: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface ReturnCaseApiRecord {
+  id: string;
+  shipmentCode: string;
+  ndrCaseId: string | null;
+  note: string | null;
+  status: 'STARTED' | 'COMPLETED';
+  startedAt: string;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface PublicTrackingSnapshotResponse {
   shipmentCode: string;
   current: TrackingCurrent | null;
@@ -207,6 +232,91 @@ function parseMerchantProfileConfig(
         ? payload.businessAddressDetail.trim()
         : null,
   };
+}
+
+function mapMerchantProfileRecord(
+  record: MerchantProfileApiRecord | null,
+): MerchantProfileConfigPayload | null {
+  if (!record) {
+    return null;
+  }
+
+  return {
+    username: record.username.trim().toUpperCase(),
+    citizenId: record.citizenId.trim(),
+    regionCode: record.regionCode,
+    regionLabel: record.regionLabel.trim(),
+    defaultHubCode: record.defaultHubCode?.trim().toUpperCase() || null,
+    defaultHubName: record.defaultHubName?.trim() || null,
+    defaultSenderAddress: record.defaultSenderAddress?.trim() || null,
+    businessAddressDetail: null,
+  };
+}
+
+function buildChangeRequestPayload(
+  requestType: string,
+  value: string,
+): Record<string, unknown> {
+  const normalizedValue = value.trim();
+
+  if (requestType === 'change.phone') {
+    return {
+      value: normalizedValue,
+      receiverPhone: normalizedValue,
+    };
+  }
+
+  if (requestType === 'change.address') {
+    return {
+      value: normalizedValue,
+      receiverAddress: normalizedValue,
+    };
+  }
+
+  return {
+    value: normalizedValue,
+    deliveryNote: normalizedValue,
+  };
+}
+
+function parseReturnCaseNote(note: string | null): {
+  reason: string;
+  expectedReturnAt: string;
+} {
+  const fallbackReason = 'Return requested';
+  if (!note) {
+    return {
+      reason: fallbackReason,
+      expectedReturnAt: '-',
+    };
+  }
+
+  const reasonMatch = note.match(/reason=([^|]+)/i);
+  const expectedMatch = note.match(/expected=([^|]+)/i);
+
+  return {
+    reason: reasonMatch?.[1]?.trim() || note,
+    expectedReturnAt: expectedMatch?.[1]?.trim() || '-',
+  };
+}
+
+function mapReturnCaseToRequest(returnCase: ReturnCaseApiRecord): ReturnRequest {
+  const parsedNote = parseReturnCaseNote(returnCase.note);
+
+  return {
+    id: returnCase.id,
+    shipmentCode: returnCase.shipmentCode,
+    reason: parsedNote.reason,
+    expectedReturnAt: parsedNote.expectedReturnAt,
+    status: returnCase.status === 'COMPLETED' ? 'COMPLETED' : 'IN_TRANSIT',
+    createdAt: returnCase.createdAt,
+  };
+}
+
+function isReturnRequestAllowed(shipment: ShipmentResponse): boolean {
+  return ['DELIVERY_FAILED', 'NDR_CREATED', 'RETURN_STARTED'].includes(
+    shipment.currentStatus,
+  );
 }
 
 function parseHubLocation(hub: HubApiRecord): HubLocationOption | null {
@@ -536,6 +646,8 @@ function MerchantApp(): React.JSX.Element {
   const [returnExpectedDate, setReturnExpectedDate] = useState(toInputDate(new Date()));
   const [returnStatusFilter, setReturnStatusFilter] = useState('ALL');
   const [returnRequests, setReturnRequests] = useState<ReturnRequest[]>([]);
+  const [returnLoading, setReturnLoading] = useState(false);
+  const [returnMessage, setReturnMessage] = useState<string | null>(null);
 
   const [printSingleCode, setPrintSingleCode] = useState('');
   const [printBulkCodes, setPrintBulkCodes] = useState('');
@@ -543,10 +655,12 @@ function MerchantApp(): React.JSX.Element {
 
   const [profile, setProfile] = useState<MerchantProfile>(DEFAULT_PROFILE);
   const [accountMessage, setAccountMessage] = useState<string | null>(null);
+  const [accountSaving, setAccountSaving] = useState(false);
   const [passwordOld, setPasswordOld] = useState('');
   const [passwordNew, setPasswordNew] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
+  const [passwordSaving, setPasswordSaving] = useState(false);
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
@@ -1060,7 +1174,6 @@ function MerchantApp(): React.JSX.Element {
       })),
     );
     setNotifications(parseStorage(window.localStorage.getItem(STORAGE_KEY_NOTIFICATIONS), []));
-    setReturnRequests(parseStorage(window.localStorage.getItem(STORAGE_KEY_RETURNS), []));
     // Legacy shared profile key caused data leakage between merchant accounts.
     window.localStorage.removeItem(STORAGE_KEY_PROFILE);
 
@@ -1122,33 +1235,12 @@ function MerchantApp(): React.JSX.Element {
   }, [notifications]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem(STORAGE_KEY_RETURNS, JSON.stringify(returnRequests));
-  }, [returnRequests]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
     if (!session) {
       setProfile(DEFAULT_PROFILE);
       return;
     }
-
-    const profileStorageKey = buildProfileStorageKey(session.user.username);
-    const storedProfile = parseStorage<MerchantProfile>(
-      window.localStorage.getItem(profileStorageKey),
-      DEFAULT_PROFILE,
-    );
-    setProfile({
-      ...DEFAULT_PROFILE,
-      ...storedProfile,
-    });
+    setProfile(DEFAULT_PROFILE);
   }, [session?.user.username]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !session) return;
-    const profileStorageKey = buildProfileStorageKey(session.user.username);
-    window.localStorage.setItem(profileStorageKey, JSON.stringify(profile));
-  }, [profile, session?.user.username]);
 
   useEffect(() => {
     if (!session || !selectedShipmentCode || activeView !== 'shipment-detail') return;
@@ -1185,17 +1277,17 @@ function MerchantApp(): React.JSX.Element {
   ): Promise<void> {
     setDataLoading(true);
     setDataError(null);
-    const merchantProfileKey = buildMerchantProfileKey(user.username);
-    const [shipRes, pickupRes, changeRes, hubsRes, profileRes] = await Promise.allSettled([
+    const [shipRes, pickupRes, changeRes, hubsRes, profileRes, returnRes] = await Promise.allSettled([
       request<ShipmentResponse[]>('/merchant/shipment/shipments', { method: 'GET' }, accessToken),
       request<PickupRequest[]>('/merchant/pickup/pickups', { method: 'GET' }, accessToken),
       request<ChangeRequest[]>('/merchant/shipment/change-requests', { method: 'GET' }, accessToken),
       request<HubApiRecord[]>('/merchant/masterdata/hubs?isActive=true', { method: 'GET' }, accessToken),
-      request<ConfigApiRecord[]>(
-        `/merchant/masterdata/configs?scope=${encodeURIComponent(MERCHANT_PROFILE_SCOPE)}&key=${encodeURIComponent(merchantProfileKey)}`,
+      request<MerchantProfileApiRecord>(
+        `/merchant/masterdata/merchant-profiles/by-username/${encodeURIComponent(user.username)}`,
         { method: 'GET' },
         accessToken,
       ),
+      request<ReturnCaseApiRecord[]>('/merchant/delivery/returns', { method: 'GET' }, accessToken),
     ]);
 
     const ownedShipments =
@@ -1209,7 +1301,17 @@ function MerchantApp(): React.JSX.Element {
     if (pickupRes.status === 'fulfilled') {
       setPickups(filterPickupRequestsByUser(pickupRes.value, ownedShipments, user));
     }
-    if (changeRes.status === 'fulfilled') setChangeRequests(changeRes.value);
+    const ownedShipmentCodes = new Set(
+      ownedShipments.map((shipment) => normalizeCode(shipment.code)),
+    );
+
+    if (changeRes.status === 'fulfilled') {
+      setChangeRequests(
+        changeRes.value.filter((item) =>
+          ownedShipmentCodes.has(normalizeCode(item.shipmentCode)),
+        ),
+      );
+    }
     if (hubsRes.status === 'fulfilled') {
       const locations = hubsRes.value
         .filter((hub) => hub.isActive)
@@ -1221,10 +1323,17 @@ function MerchantApp(): React.JSX.Element {
       setHubLocations([]);
     }
     if (profileRes.status === 'fulfilled') {
-      const resolvedProfile = parseMerchantProfileConfig(profileRes.value, user.username);
+      const resolvedProfile = mapMerchantProfileRecord(profileRes.value);
       setMerchantProfileConfig(resolvedProfile);
     } else {
       setMerchantProfileConfig(null);
+    }
+    if (returnRes.status === 'fulfilled') {
+      setReturnRequests(
+        returnRes.value
+          .filter((item) => ownedShipmentCodes.has(normalizeCode(item.shipmentCode)))
+          .map(mapReturnCaseToRequest),
+      );
     }
 
     if (shipRes.status === 'rejected') setDataError(extractErrorMessage(shipRes.reason));
@@ -1458,7 +1567,14 @@ function MerchantApp(): React.JSX.Element {
 
   async function cancelShipment(code: string, reason: string): Promise<void> {
     if (!session) return;
-    const cancelled = await request<ShipmentResponse>(`/merchant/shipment/shipments/${encodeURIComponent(normalizeCode(code))}/cancel`, {
+    const normalizedCode = normalizeCode(code);
+    const shipment = shipments.find((item) => normalizeCode(item.code) === normalizedCode);
+    if (!shipment || !isShipmentOwnedByUser(shipment, session.user)) {
+      pushNotification('error', 'Khong the huy don', 'Shipment khong thuoc tai khoan merchant hien tai.');
+      return;
+    }
+
+    const cancelled = await request<ShipmentResponse>(`/merchant/shipment/shipments/${encodeURIComponent(normalizedCode)}/cancel`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reason: reason.trim() || null }),
@@ -1568,25 +1684,31 @@ function MerchantApp(): React.JSX.Element {
     setDetailError(null);
     setDetailSuccess(null);
     try {
-      const metadata = asRecord(selectedShipment.shipment.metadata) ?? {};
-      const receiver = asRecord(metadata.receiver) ?? {};
-      const updated = await request<ShipmentResponse>(`/merchant/shipment/shipments/${encodeURIComponent(selectedShipment.shipment.code)}`, {
-        method: 'PATCH',
+      if (!isShipmentOwnedByUser(selectedShipment.shipment, session.user)) {
+        throw new Error('Shipment khong thuoc tai khoan merchant hien tai.');
+      }
+
+      const created = await request<ChangeRequest>('/merchant/shipment/change-requests', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          metadata: {
-            ...metadata,
-            receiver: {
-              ...receiver,
-              phone: detailReceiverPhone.trim() || null,
-              address: detailReceiverAddress.trim() || null,
-            },
+          shipmentCode: selectedShipment.shipment.code,
+          requestType: 'change.delivery_info',
+          payload: {
+            value: [
+              detailReceiverPhone.trim(),
+              detailReceiverAddress.trim(),
+              detailDeliveryNote.trim(),
+            ].filter(Boolean).join(' | '),
+            receiverPhone: detailReceiverPhone.trim() || null,
+            receiverAddress: detailReceiverAddress.trim() || null,
             deliveryNote: detailDeliveryNote.trim() || null,
           },
+          requestedBy: session.user.username,
         }),
       }, session.accessToken);
-      upsertShipment(updated);
-      setDetailSuccess(`Đã cập nhật ${updated.code}`);
+      setChangeRequests((prev) => [created, ...prev]);
+      setDetailSuccess(`Da tao yeu cau thay doi ${created.id}`);
     } catch (error) {
       setDetailError(extractErrorMessage(error));
     } finally {
@@ -1665,14 +1787,23 @@ function MerchantApp(): React.JSX.Element {
     setChangeMessage(null);
     try {
       const code = normalizeCode(changeCode);
-      if (!code || !changeValue.trim()) throw new Error('Cần mã shipment và nội dung thay đổi');
+      if (!code || !changeValue.trim()) throw new Error('Can ma shipment va noi dung thay doi');
+      const shipment = shipments.find((item) => normalizeCode(item.code) === code);
+      if (!shipment || !isShipmentOwnedByUser(shipment, session.user)) {
+        throw new Error('Shipment khong thuoc tai khoan merchant hien tai.');
+      }
       const created = await request<ChangeRequest>('/merchant/shipment/change-requests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shipmentCode: code, requestType: changeType, payload: { value: changeValue.trim() }, requestedBy: session.user.username }),
+        body: JSON.stringify({
+          shipmentCode: code,
+          requestType: changeType,
+          payload: buildChangeRequestPayload(changeType, changeValue),
+          requestedBy: session.user.username,
+        }),
       }, session.accessToken);
       setChangeRequests((prev) => [created, ...prev]);
-      setChangeMessage(`Đã tạo yêu cầu ${created.id}`);
+      setChangeMessage(`Da tao yeu cau ${created.id}`);
       setChangeValue('');
     } catch (error) {
       setChangeMessage(extractErrorMessage(error));
@@ -1681,14 +1812,136 @@ function MerchantApp(): React.JSX.Element {
     }
   }
 
-  function createReturnRequest(event?: FormEvent<HTMLFormElement>): void {
+  async function createReturnRequest(event?: FormEvent<HTMLFormElement>): Promise<void> {
     event?.preventDefault();
+    if (!session) return;
     const code = normalizeCode(returnCode);
     if (!code) return;
-    setReturnRequests((prev) => [{ id: generateLocalId('return'), shipmentCode: code, reason: returnReason.trim() || 'Khách từ chối nhận hàng', expectedReturnAt: returnExpectedDate, status: 'PENDING', createdAt: new Date().toISOString() }, ...prev]);
-    setReturnCode('');
-    setReturnReason('');
-    setReturnNotes('');
+    setReturnLoading(true);
+    setReturnMessage(null);
+    try {
+      const shipment = shipments.find((item) => normalizeCode(item.code) === code);
+      if (!shipment || !isShipmentOwnedByUser(shipment, session.user)) {
+        throw new Error('Shipment khong thuoc tai khoan merchant hien tai.');
+      }
+      if (!isReturnRequestAllowed(shipment)) {
+        throw new Error('Shipment chua o trang thai phu hop de tao return case.');
+      }
+
+      const reason = returnReason.trim() || 'Merchant requested return';
+      const returnCase = await request<ReturnCaseApiRecord>('/merchant/delivery/returns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shipmentCode: code,
+          note: `reason=${reason} | expected=${returnExpectedDate || 'N/A'} | note=${returnNotes.trim() || 'N/A'} | requestedBy=${session.user.username}`,
+        }),
+      }, session.accessToken);
+      const mappedReturn = mapReturnCaseToRequest(returnCase);
+      setReturnRequests((prev) => [
+        mappedReturn,
+        ...prev.filter((item) => item.id !== mappedReturn.id),
+      ]);
+      setReturnMessage(`Da tao return case ${returnCase.id}`);
+      setReturnCode('');
+      setReturnReason('');
+      setReturnNotes('');
+    } catch (error) {
+      setReturnMessage(extractErrorMessage(error));
+    } finally {
+      setReturnLoading(false);
+    }
+  }
+
+  async function saveAccountProfile(event?: FormEvent<HTMLFormElement>): Promise<void> {
+    event?.preventDefault();
+    if (!session) return;
+    setAccountSaving(true);
+    setAccountMessage(null);
+    try {
+      const updatedUser = await request<MerchantSession['user']>('/merchant/auth/auth/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accessToken: session.accessToken,
+          displayName: profile.shopName.trim() || null,
+          phone: profile.contactPhone.trim() || null,
+        }),
+      }, session.accessToken);
+
+      setSession((previous) =>
+        previous
+          ? {
+              ...previous,
+              user: updatedUser,
+            }
+          : previous,
+      );
+
+      let profileNote = '';
+      if (merchantProfileConfig) {
+        const savedProfile = await request<MerchantProfileApiRecord>(
+          `/merchant/masterdata/merchant-profiles/by-username/${encodeURIComponent(session.user.username)}`,
+          {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              username: session.user.username,
+              citizenId: merchantProfileConfig.citizenId,
+              regionCode: merchantProfileConfig.regionCode,
+              regionLabel: merchantProfileConfig.regionLabel,
+              defaultHubCode: merchantProfileConfig.defaultHubCode,
+              defaultHubName: merchantProfileConfig.defaultHubName,
+              defaultSenderAddress: profile.defaultPickupAddress.trim() || null,
+            }),
+          },
+          session.accessToken,
+        );
+        setMerchantProfileConfig(mapMerchantProfileRecord(savedProfile));
+      } else if (profile.defaultPickupAddress.trim()) {
+        profileNote = ' Merchant profile chua co citizenId/region nen dia chi mac dinh can ops seed truoc.';
+      }
+
+      setAccountMessage(`Da luu ho so merchant.${profileNote}`);
+    } catch (error) {
+      setAccountMessage(extractErrorMessage(error));
+    } finally {
+      setAccountSaving(false);
+    }
+  }
+
+  async function changeAccountPassword(event?: FormEvent<HTMLFormElement>): Promise<void> {
+    event?.preventDefault();
+    if (!session) return;
+    setPasswordMessage(null);
+    if (!passwordOld || !passwordNew || !passwordConfirm) {
+      setPasswordMessage('Can nhap day du thong tin');
+      return;
+    }
+    if (passwordNew !== passwordConfirm) {
+      setPasswordMessage('Mat khau xac nhan khong khop');
+      return;
+    }
+    setPasswordSaving(true);
+    try {
+      await request<{ changed: boolean; userId: string | null }>('/merchant/auth/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accessToken: session.accessToken,
+          currentPassword: passwordOld,
+          newPassword: passwordNew,
+        }),
+      }, session.accessToken);
+      setPasswordMessage('Da cap nhat mat khau.');
+      setPasswordOld('');
+      setPasswordNew('');
+      setPasswordConfirm('');
+    } catch (error) {
+      setPasswordMessage(extractErrorMessage(error));
+    } finally {
+      setPasswordSaving(false);
+    }
   }
 
   function saveDraft(): void {
@@ -2619,7 +2872,7 @@ function MerchantApp(): React.JSX.Element {
                       </div>
                       <div>
                         <p className="muted">Lịch sử giao hàng gần nhất</p>
-                        <span className="returns-order-note">Dùng dữ liệu hiện có của app để gửi yêu cầu hoàn mà không đổi business flow.</span>
+                        <span className="returns-order-note">Return request se duoc gui qua delivery-service va theo doi bang return case.</span>
                       </div>
                     </div>
                   </div>
@@ -2630,7 +2883,7 @@ function MerchantApp(): React.JSX.Element {
                     <span className="returns-step-badge">2</span>
                     <h3>Yêu cầu hoàn</h3>
                   </div>
-                  <form className="returns-form" onSubmit={createReturnRequest}>
+                  <form className="returns-form" onSubmit={(e) => { void createReturnRequest(e); }}>
                     <div className="returns-field">
                       <label className="label">Lý do hoàn hàng</label>
                       <select className="select" value={returnReason} onChange={(e) => setReturnReason(e.target.value)}>
@@ -2648,8 +2901,9 @@ function MerchantApp(): React.JSX.Element {
                     </div>
                     <div className="returns-form-actions">
                       <button className="btn btn-ghost" type="button">Hủy</button>
-                      <button className="btn btn-primary returns-submit-btn" type="submit">Gửi yêu cầu hoàn hàng</button>
+                      <button className="btn btn-primary returns-submit-btn" type="submit" disabled={returnLoading}>{returnLoading ? 'Dang gui...' : 'Gui yeu cau hoan hang'}</button>
                     </div>
+                    {returnMessage ? <p className="message">{returnMessage}</p> : null}
                   </form>
                 </section>
               </div>
@@ -2664,7 +2918,7 @@ function MerchantApp(): React.JSX.Element {
                     <li>Yêu cầu hoàn hàng áp dụng cho các đơn đang xử lý giao lại hoặc phát sinh nhu cầu hoàn từ merchant.</li>
                     <li>Sau khi gửi yêu cầu, đội vận hành sẽ kiểm tra và xác nhận theo quy trình hiện có.</li>
                     <li>Phí hoàn hàng vẫn tuân theo hợp đồng dịch vụ hiện tại của merchant.</li>
-                    <li>Không có trường API mới được thêm trong pass UI này.</li>
+                    <li>Yeu cau hoan duoc luu vao delivery-service va publish return.started theo contract hien co.</li>
                   </ul>
                 </section>
 
@@ -2686,10 +2940,8 @@ function MerchantApp(): React.JSX.Element {
                 <h3>Lịch sử yêu cầu hoàn hàng</h3>
                 <select className="select returns-history-filter" value={returnStatusFilter} onChange={(e) => setReturnStatusFilter(e.target.value)}>
                   <option value="ALL">Tất cả</option>
-                  <option value="PENDING">PENDING</option>
                   <option value="IN_TRANSIT">IN_TRANSIT</option>
                   <option value="COMPLETED">COMPLETED</option>
-                  <option value="CANCELLED">CANCELLED</option>
                 </select>
               </div>
               <div className="table-wrap returns-table-wrap">
@@ -2711,7 +2963,7 @@ function MerchantApp(): React.JSX.Element {
                       <td>{item.reason}</td>
                       <td>{item.expectedReturnAt}</td>
                       <td><span className={statusClass(item.status)}>{item.status}</span></td>
-                      <td><div className="returns-actions"><button className="btn btn-ghost" onClick={() => setReturnRequests((prev) => prev.map((r) => r.id === item.id ? { ...r, status: 'IN_TRANSIT' } : r))}>Đang hoàn</button><button className="btn btn-secondary" onClick={() => setReturnRequests((prev) => prev.map((r) => r.id === item.id ? { ...r, status: 'COMPLETED' } : r))}>Hoàn tất</button><button className="btn btn-danger" onClick={() => setReturnRequests((prev) => prev.map((r) => r.id === item.id ? { ...r, status: 'CANCELLED' } : r))}>Hủy</button></div></td>
+                      <td><div className="returns-actions"><button className="btn btn-ghost" onClick={() => { void openShipmentDetail(item.shipmentCode); }}>Xem don</button><button className="btn btn-secondary" onClick={() => { setTrackingCode(item.shipmentCode); setActiveView('tracking'); void lookupTracking(undefined, item.shipmentCode); }}>Tracking</button></div></td>
                     </tr>)}
                   </tbody>
                 </table>
@@ -2883,7 +3135,7 @@ function MerchantApp(): React.JSX.Element {
                       <div className="account-avatar">{(session.user.username ?? 'M').slice(0, 2).toUpperCase()}</div>
                       <button className="account-avatar-edit" type="button">Sửa</button>
                     </div>
-                    <form className="account-profile-form" onSubmit={(e) => { e.preventDefault(); setAccountMessage('Đã lưu hồ sơ merchant.'); }}>
+                    <form className="account-profile-form" onSubmit={(e) => { void saveAccountProfile(e); }}>
                       <div className="account-fields-grid">
                         <div className="account-field">
                           <label className="label">Tên Merchant</label>
@@ -2899,7 +3151,7 @@ function MerchantApp(): React.JSX.Element {
                         </div>
                         <div className="account-field">
                           <label className="label">Email</label>
-                          <input className="input" value={profile.email} onChange={(e) => setProfile((p) => ({ ...p, email: e.target.value }))} placeholder="Email" />
+                          <input className="input account-readonly-input" value={profile.email} placeholder="Email chua co contract backend" readOnly />
                         </div>
                         <div className="account-field account-field--span-2">
                           <label className="label">Địa chỉ kinh doanh / lấy hàng mặc định</label>
@@ -2907,11 +3159,11 @@ function MerchantApp(): React.JSX.Element {
                         </div>
                       </div>
                       <div className="account-profile-actions">
-                        <button className="btn btn-primary" type="submit">Lưu thay đổi</button>
+                        <button className="btn btn-primary" type="submit" disabled={accountSaving}>{accountSaving ? 'Dang luu...' : 'Luu thay doi'}</button>
                       </div>
                     </form>
                   </div>
-                  {accountMessage ? <p className="message success">{accountMessage}</p> : null}
+                  {accountMessage ? <p className="message">{accountMessage}</p> : null}
                 </section>
               </div>
 
@@ -2921,7 +3173,7 @@ function MerchantApp(): React.JSX.Element {
                     <span className="account-card-icon">PW</span>
                     <h3>Đổi mật khẩu</h3>
                   </div>
-                  <form className="account-password-form" onSubmit={(e) => { e.preventDefault(); if (!passwordOld || !passwordNew || !passwordConfirm) { setPasswordMessage('Cần nhập đầy đủ thông tin'); return; } if (passwordNew !== passwordConfirm) { setPasswordMessage('Mật khẩu xác nhận không khớp'); return; } setPasswordMessage('Đã tiếp nhận yêu cầu đổi mật khẩu (scaffold: chưa có API).'); setPasswordOld(''); setPasswordNew(''); setPasswordConfirm(''); }}>
+                  <form className="account-password-form" onSubmit={(e) => { void changeAccountPassword(e); }}>
                     <div className="account-field">
                       <label className="label">Mật khẩu hiện tại</label>
                       <input className="input" type="password" value={passwordOld} onChange={(e) => setPasswordOld(e.target.value)} placeholder="Mật khẩu hiện tại" />
@@ -2935,7 +3187,7 @@ function MerchantApp(): React.JSX.Element {
                       <label className="label">Xác nhận mật khẩu mới</label>
                       <input className="input" type="password" value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)} placeholder="Xác nhận mật khẩu mới" />
                     </div>
-                    <button className="btn btn-ghost account-password-btn" type="submit">Cập nhật mật khẩu</button>
+                    <button className="btn btn-ghost account-password-btn" type="submit" disabled={passwordSaving}>{passwordSaving ? 'Dang cap nhat...' : 'Cap nhat mat khau'}</button>
                   </form>
                   {passwordMessage ? <p className="message">{passwordMessage}</p> : null}
                 </section>
