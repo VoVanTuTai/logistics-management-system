@@ -11,35 +11,70 @@ $PSNativeCommandUseErrorActionPreference = $true
 $rootDir = Resolve-Path $PSScriptRoot
 
 function Resolve-LanIp() {
-  $defaultRoute = Get-NetRoute -AddressFamily IPv4 -DestinationPrefix '0.0.0.0/0' -ErrorAction SilentlyContinue |
-    Sort-Object -Property RouteMetric, InterfaceMetric |
-    Select-Object -First 1
+  $onWindows = $PSVersionTable.Platform -eq 'Win32NT' -or $PSVersionTable.OS -like '*Windows*'
+  
+  if ($onWindows) {
+    $defaultRoute = Get-NetRoute -AddressFamily IPv4 -DestinationPrefix '0.0.0.0/0' -ErrorAction SilentlyContinue |
+      Sort-Object -Property RouteMetric, InterfaceMetric |
+      Select-Object -First 1
 
-  if ($defaultRoute) {
-    $routeIp = Get-NetIPAddress -AddressFamily IPv4 -InterfaceIndex $defaultRoute.InterfaceIndex -ErrorAction SilentlyContinue |
+    if ($defaultRoute) {
+      $routeIp = Get-NetIPAddress -AddressFamily IPv4 -InterfaceIndex $defaultRoute.InterfaceIndex -ErrorAction SilentlyContinue |
+        Where-Object {
+          $_.IPAddress -notlike '127.*' -and
+          $_.IPAddress -notlike '169.254*'
+        } |
+        Select-Object -ExpandProperty IPAddress -First 1
+
+      if ($routeIp) {
+        return $routeIp
+      }
+    }
+
+    $fallbackIp = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
       Where-Object {
         $_.IPAddress -notlike '127.*' -and
-        $_.IPAddress -notlike '169.254*'
+        $_.IPAddress -notlike '169.254*' -and
+        $_.IPAddress -notlike '172.26.*' -and
+        $_.IPAddress -notlike '172.25.*' -and
+        $_.IPAddress -notlike '192.168.56.*'
       } |
       Select-Object -ExpandProperty IPAddress -First 1
 
-    if ($routeIp) {
-      return $routeIp
+    if ($fallbackIp) {
+      return $fallbackIp
     }
-  }
-
-  $fallbackIp = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
-    Where-Object {
-      $_.IPAddress -notlike '127.*' -and
-      $_.IPAddress -notlike '169.254*' -and
-      $_.IPAddress -notlike '172.26.*' -and
-      $_.IPAddress -notlike '172.25.*' -and
-      $_.IPAddress -notlike '192.168.56.*'
-    } |
-    Select-Object -ExpandProperty IPAddress -First 1
-
-  if ($fallbackIp) {
-    return $fallbackIp
+  } else {
+    # macOS / Linux fallback using ifconfig
+    try {
+      $output = ifconfig 2>/dev/null
+      if ($output) {
+        # Parse ifconfig output to find active interfaces
+        $lines = $output -split "`n"
+        for ($i = 0; $i -lt $lines.Count; $i++) {
+          $line = $lines[$i]
+          if ($line -match 'inet\s+(\d+\.\d+\.\d+\.\d+)') {
+            $ip = $matches[1]
+            if ($ip -notmatch '^127\.' -and $ip -notmatch '^169\.254' -and $ip -notmatch '^172\.(25|26)\.' -and $ip -notmatch '^192\.168\.56\.') {
+              return $ip
+            }
+          }
+        }
+      }
+    } catch {
+      Write-Host "[warn] ifconfig parsing failed: $_"
+    }
+    
+    # Fallback: try localhost.localdomain
+    $hostname = hostname
+    try {
+      $resolvedIp = (nslookup $hostname 2>/dev/null | Select-String -Pattern '\d+\.\d+\.\d+\.\d+' | Select-Object -First 1).Matches[0].Value
+      if ($resolvedIp -and $resolvedIp -notmatch '^127\.') {
+        return $resolvedIp
+      }
+    } catch {
+      Write-Host "[warn] nslookup resolution failed"
+    }
   }
 
   throw 'Cannot resolve LAN IPv4 address. Please check network and run again.'
@@ -117,9 +152,21 @@ function Update-GatewayBffEnv([string]$mode) {
   }
 
   Set-EnvValue -FilePath $envPath -Key 'S3_ENDPOINT' -Value $s3Endpoint
+  Set-EnvValue -FilePath $envPath -Key 'AUTH_SERVICE_URL' -Value 'http://localhost:3010'
+  Set-EnvValue -FilePath $envPath -Key 'DELIVERY_SERVICE_URL' -Value 'http://localhost:3007'
+  Set-EnvValue -FilePath $envPath -Key 'DISPATCH_SERVICE_URL' -Value 'http://localhost:3004'
+  Set-EnvValue -FilePath $envPath -Key 'MANIFEST_SERVICE_URL' -Value 'http://localhost:3005'
+  Set-EnvValue -FilePath $envPath -Key 'MASTERDATA_SERVICE_URL' -Value 'http://localhost:3001'
+  Set-EnvValue -FilePath $envPath -Key 'PICKUP_SERVICE_URL' -Value 'http://localhost:3003'
+  Set-EnvValue -FilePath $envPath -Key 'REPORTING_SERVICE_URL' -Value 'http://localhost:3009'
+  Set-EnvValue -FilePath $envPath -Key 'SCAN_SERVICE_URL' -Value 'http://localhost:3006'
+  Set-EnvValue -FilePath $envPath -Key 'SHIPMENT_SERVICE_URL' -Value 'http://localhost:3002'
+  Set-EnvValue -FilePath $envPath -Key 'TRACKING_SERVICE_URL' -Value 'http://localhost:3008'
+  Set-EnvValue -FilePath $envPath -Key 'PAYMENT_SERVICE_URL' -Value 'http://localhost:3011'
 
   Write-Host "[gateway-env] updated $envPath"
   Write-Host "[gateway-env] S3_ENDPOINT=$s3Endpoint"
+  Write-Host '[gateway-env] service upstreams set to localhost ports'
 }
 
 Push-Location $rootDir
