@@ -228,14 +228,39 @@ export class TasksService {
   async handleDeliveryFailed(payload: {
     shipment_code?: string | null;
     note?: string | null;
-  }): Promise<Task> {
-    // TODO: replace this placeholder with explicit return-task policy when business rules are defined.
+  }): Promise<Task | null> {
+    void payload;
+    return null;
+  }
+
+  async handleReturnStarted(payload: {
+    shipment_code?: string | null;
+    note?: string | null;
+  }): Promise<Task | null> {
+    const shipmentCode = payload.shipment_code?.trim() || null;
+
+    if (!shipmentCode) {
+      return null;
+    }
+
+    const existingReturnTasks = await this.taskRepository.list({
+      shipmentCode,
+      taskType: 'RETURN',
+    });
+    const activeReturnTask = existingReturnTasks.find(
+      (task) => task.status !== 'COMPLETED' && task.status !== 'CANCELLED',
+    );
+
+    if (activeReturnTask) {
+      return activeReturnTask;
+    }
+
     const taskType: TaskType = 'RETURN';
     const task = await this.create({
       taskCode: `task-${randomUUID()}`,
       taskType,
-      shipmentCode: payload.shipment_code ?? null,
-      note: payload.note ?? 'generated_from_delivery_failed',
+      shipmentCode,
+      note: payload.note ?? 'generated_from_return_started',
     });
 
     return task;

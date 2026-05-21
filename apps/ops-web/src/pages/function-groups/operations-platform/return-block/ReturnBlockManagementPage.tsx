@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 
 import { ndrClient } from '../../../../features/ndr/ndr.client';
 import type { NdrCaseListItemDto } from '../../../../features/ndr/ndr.types';
+import { returnClient } from '../../../../features/returns/return.client';
+import type { ReturnCaseDto } from '../../../../features/returns/return.types';
 import { shipmentsClient } from '../../../../features/shipments/shipments.client';
 import type { ShipmentListItemDto } from '../../../../features/shipments/shipments.types';
 import { routePaths } from '../../../../navigation/routes';
@@ -17,10 +19,12 @@ type ReturnOrderStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 interface ReturnOrder {
   id: string;
-  sourceType: 'NDR' | 'SHIPMENT';
+  sourceType: 'RETURN' | 'NDR' | 'SHIPMENT';
   originalCode: string;
   originalShipmentId?: string;
   ndrId?: string;
+  returnCaseId?: string;
+  returnCaseStatus?: ReturnCaseDto['status'];
   newCode: string;
   status: ReturnOrderStatus;
   sourceStatus: string;
@@ -71,9 +75,18 @@ function formatDateTime(value: string | null | undefined): string {
 }
 
 function resolveReturnStatus(
+  returnCase: ReturnCaseDto | undefined,
   shipment: ShipmentListItemDto | undefined,
   ndr: NdrCaseListItemDto | undefined,
 ): ReturnOrderStatus {
+  if (returnCase?.status === 'COMPLETED') {
+    return 'REJECTED';
+  }
+
+  if (returnCase?.status === 'STARTED') {
+    return 'APPROVED';
+  }
+
   if (shipment?.currentStatus === 'RETURN_COMPLETED') {
     return 'REJECTED';
   }
@@ -103,26 +116,33 @@ function buildReturnInstruction(order: ReturnOrder): string {
 
 function buildReturnOrder(
   shipmentCode: string,
+  returnCase: ReturnCaseDto | undefined,
   shipment: ShipmentListItemDto | undefined,
   ndr: NdrCaseListItemDto | undefined,
 ): ReturnOrder {
   const originalStatusLabel = shipment
     ? formatShipmentStatusLabel(shipment.currentStatus)
+    : returnCase
+      ? returnCase.status === 'COMPLETED'
+        ? 'Return completed'
+        : 'Return started'
     : ndr
       ? formatNdrStatusLabel(ndr.status)
       : 'Cần xử lý';
 
   return {
-    id: ndr?.id ?? shipment?.id ?? shipmentCode,
-    sourceType: ndr ? 'NDR' : 'SHIPMENT',
+    id: returnCase?.id ?? ndr?.id ?? shipment?.id ?? shipmentCode,
+    sourceType: returnCase ? 'RETURN' : ndr ? 'NDR' : 'SHIPMENT',
     originalCode: shipmentCode,
     originalShipmentId: shipment?.id,
-    ndrId: ndr?.id,
+    ndrId: returnCase?.ndrCaseId ?? ndr?.id,
+    returnCaseId: returnCase?.id,
+    returnCaseStatus: returnCase?.status,
     newCode: `${shipmentCode}-R`,
-    status: resolveReturnStatus(shipment, ndr),
+    status: resolveReturnStatus(returnCase, shipment, ndr),
     sourceStatus: originalStatusLabel,
     reason: ndr?.reasonCode || shipment?.deliveryNote || 'Yêu cầu chuyển hoàn từ luồng giao thất bại.',
-    createdAt: formatDateTime(ndr?.updatedAt ?? shipment?.updatedAt),
+    createdAt: formatDateTime(returnCase?.updatedAt ?? ndr?.updatedAt ?? shipment?.updatedAt),
     senderName: shipment?.receiverName || 'Người nhận gốc',
     senderPhone: shipment?.receiverPhone || '---',
     senderAddress: shipment?.receiverAddress || 'Địa chỉ nhận gốc chưa có dữ liệu',
@@ -144,11 +164,14 @@ function buildReturnOrder(
 function buildReturnOrders(
   shipments: ShipmentListItemDto[],
   ndrCases: NdrCaseListItemDto[],
+  returnCases: ReturnCaseDto[],
 ): ReturnOrder[] {
   const shipmentsByCode = new Map(shipments.map((shipment) => [shipment.shipmentCode, shipment]));
   const ndrByCode = new Map(ndrCases.map((ndr) => [ndr.shipmentCode, ndr]));
+  const returnByCode = new Map(returnCases.map((returnCase) => [returnCase.shipmentCode, returnCase]));
 
   const candidateCodes = new Set<string>();
+  returnCases.forEach((returnCase) => candidateCodes.add(returnCase.shipmentCode));
   ndrCases.forEach((ndr) => candidateCodes.add(ndr.shipmentCode));
   shipments
     .filter((shipment) => RETURN_RELATED_STATUSES.has(shipment.currentStatus))
@@ -156,7 +179,12 @@ function buildReturnOrders(
 
   return Array.from(candidateCodes)
     .map((shipmentCode) =>
-      buildReturnOrder(shipmentCode, shipmentsByCode.get(shipmentCode), ndrByCode.get(shipmentCode)),
+      buildReturnOrder(
+        shipmentCode,
+        returnByCode.get(shipmentCode),
+        shipmentsByCode.get(shipmentCode),
+        ndrByCode.get(shipmentCode),
+      ),
     )
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
@@ -171,6 +199,7 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
   const [notice, setNotice] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [completingReturnId, setCompletingReturnId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
@@ -184,7 +213,8 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
     setIsLoading(true);
     setErrorMessage(null);
 
-    const [ndrResult, shipmentsResult] = await Promise.allSettled([
+    const [returnsResult, ndrResult, shipmentsResult] = await Promise.allSettled([
+      returnClient.list(accessToken),
       ndrClient.list(accessToken),
       shipmentsClient.list(accessToken, {
         limit: 200,
@@ -192,16 +222,28 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
       }),
     ]);
 
+    const returnCases = returnsResult.status === 'fulfilled' ? returnsResult.value : [];
     const ndrCases = ndrResult.status === 'fulfilled' ? ndrResult.value : [];
     const shipments =
       shipmentsResult.status === 'fulfilled' ? shipmentsResult.value : [];
 
-    if (ndrResult.status === 'rejected' && shipmentsResult.status === 'rejected') {
+    if (
+      returnsResult.status === 'rejected' &&
+      ndrResult.status === 'rejected' &&
+      shipmentsResult.status === 'rejected'
+    ) {
       setOrders([]);
-      setErrorMessage(extractErrorMessage(ndrResult.reason));
+      setErrorMessage(extractErrorMessage(returnsResult.reason));
     } else {
-      setOrders(buildReturnOrders(shipments, ndrCases));
-      const failedResult = ndrResult.status === 'rejected' ? ndrResult : shipmentsResult.status === 'rejected' ? shipmentsResult : null;
+      setOrders(buildReturnOrders(shipments, ndrCases, returnCases));
+      const failedResult =
+        returnsResult.status === 'rejected'
+          ? returnsResult
+          : ndrResult.status === 'rejected'
+            ? ndrResult
+            : shipmentsResult.status === 'rejected'
+              ? shipmentsResult
+              : null;
       setErrorMessage(
         failedResult ? `Một phần dữ liệu chưa tải được: ${extractErrorMessage(failedResult.reason)}` : null,
       );
@@ -266,6 +308,27 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
         ? `Đã mở cửa sổ in tem chuyển hoàn ${order.newCode}.`
         : 'Trình duyệt đang chặn popup in. Hãy cho phép popup rồi bấm In tem lại.',
     );
+  };
+
+  const handleCompleteReturn = async (order: ReturnOrder) => {
+    if (!accessToken || !order.returnCaseId) {
+      return;
+    }
+
+    setCompletingReturnId(order.returnCaseId);
+    setErrorMessage(null);
+
+    try {
+      await returnClient.complete(accessToken, order.returnCaseId, {
+        note: `Ops completed return for ${order.originalCode}`,
+      });
+      setNotice(`Da hoan tat return case ${order.returnCaseId}.`);
+      await fetchReturnOrders();
+    } catch (error) {
+      setErrorMessage(extractErrorMessage(error));
+    } finally {
+      setCompletingReturnId(null);
+    }
   };
 
   return (
@@ -405,13 +468,25 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
                   </td>
                   <td>
                     {order.status === 'APPROVED' ? (
-                      <button
-                        type="button"
-                        onClick={() => handlePrintLabel(order)}
-                        className="ops-return-list__print-btn"
-                      >
-                        In tem
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handlePrintLabel(order)}
+                          className="ops-return-list__print-btn"
+                        >
+                          In tem
+                        </button>
+                        {order.returnCaseId && order.returnCaseStatus === 'STARTED' ? (
+                          <button
+                            type="button"
+                            onClick={() => void handleCompleteReturn(order)}
+                            className="ops-return-list__reset-btn"
+                            disabled={completingReturnId === order.returnCaseId}
+                          >
+                            {completingReturnId === order.returnCaseId ? 'Dang hoan tat' : 'Hoan tat'}
+                          </button>
+                        ) : null}
+                      </>
                     ) : (
                       <span className="ops-return-list__disabled-text">
                         {order.status === 'PENDING' ? 'Chờ return decision' : 'Đã đóng'}
