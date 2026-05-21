@@ -12,6 +12,8 @@ import {
 
 import { AuthService } from '../../application/services/auth.service';
 import type {
+  ChangePasswordInput,
+  ChangePasswordResult,
   IntrospectInput,
   IntrospectResult,
   LoginInput,
@@ -19,8 +21,10 @@ import type {
   LogoutInput,
   LogoutResult,
   RefreshSessionInput,
+  UpdateOwnProfileInput,
 } from '../../domain/entities/auth-session.entity';
 import type {
+  AuthenticatedUser,
   UserAccountView,
   UserCreateInput,
   UserRoleGroup,
@@ -54,6 +58,20 @@ export class AuthController {
   @Post('introspect')
   introspect(@Body() body: IntrospectInput): Promise<IntrospectResult> {
     return this.authService.introspect(body);
+  }
+
+  @Patch('me')
+  updateOwnProfile(
+    @Body() body: UpdateOwnProfileInput,
+  ): Promise<AuthenticatedUser> {
+    return this.authService.updateOwnProfile(body);
+  }
+
+  @Post('change-password')
+  changePassword(
+    @Body() body: ChangePasswordInput,
+  ): Promise<ChangePasswordResult> {
+    return this.authService.changePassword(body);
   }
 
   @Get('users')

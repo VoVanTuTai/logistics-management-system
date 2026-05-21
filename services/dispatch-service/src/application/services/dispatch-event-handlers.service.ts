@@ -17,6 +17,11 @@ export interface DeliveryFailedPayload {
   data?: Record<string, unknown>;
 }
 
+export interface ReturnStartedPayload {
+  shipment_code?: string | null;
+  data?: Record<string, unknown>;
+}
+
 export interface DeliveryDeliveredPayload {
   shipment_code?: string | null;
   data?: Record<string, unknown>;
@@ -64,10 +69,24 @@ export class DispatchEventHandlersService {
   async handleDeliveryFailed(payload: DeliveryFailedPayload): Promise<void> {
     await this.tasksService.handleDeliveryFailed({
       shipment_code: payload.shipment_code ?? null,
-      note:
-        typeof payload.data?.note === 'string'
-          ? payload.data.note
-          : null,
+      note: this.readString(payload.data?.note),
+    });
+  }
+
+  async handleReturnStarted(payload: ReturnStartedPayload): Promise<void> {
+    const returnCase = this.readObject(payload.data?.returnCase) ?? this.readObject(payload.data?.return_case);
+    const shipmentCode =
+      payload.shipment_code ??
+      this.readString(returnCase?.shipmentCode) ??
+      this.readString(returnCase?.shipment_code);
+    const note =
+      this.readString(returnCase?.note) ??
+      this.readString(payload.data?.note) ??
+      'generated_from_return_started';
+
+    await this.tasksService.handleReturnStarted({
+      shipment_code: shipmentCode,
+      note,
     });
   }
 

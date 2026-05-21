@@ -29,6 +29,8 @@ export class ReportingEventsConsumer {
     'ndr.created',
     'return.started',
     'return.completed',
+    'cod.collected',
+    'cod.remitted',
   ];
 
   constructor(

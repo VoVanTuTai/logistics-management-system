@@ -41,6 +41,7 @@ model CodRecord {
   currency        String              @default("VND")
   paymentMethod   PaymentMethod       @default(COD)
   status          CodCollectionStatus @default(PENDING)
+  hubCode         String?
   courierId       String?
   collectedAt     DateTime?
   collectedAmount Float?
@@ -51,6 +52,8 @@ model CodRecord {
   updatedAt       DateTime            @updatedAt
 
   @@index([status, courierId])
+  @@index([hubCode, status])
+  @@index([hubCode, courierId])
   @@index([shipmentCode])
   @@map("cod_records")
 }

@@ -15,6 +15,7 @@ export interface CodDailySettlementRecordDto {
   collectedAmount: number | null;
   paymentMethod: CodPaymentMethod;
   status: CodCollectionStatus;
+  hubCode?: string | null;
   courierId: string | null;
   collectedAt: string | null;
   remittedAt: string | null;
@@ -64,6 +65,18 @@ export interface CodSettlementBatchDto {
   createdAt: string;
   updatedAt: string;
   items: CodSettlementItemDto[];
+}
+
+export interface CodSettlementQrDto {
+  settlementId: string;
+  settlementCode: string;
+  reportDate: string;
+  hubCode: string;
+  courierId: string;
+  totalAmount: number;
+  status: CodSettlementStatus;
+  qrUrl: string;
+  transferMemo: string;
 }
 
 export interface CreateCodSettlementInput {

@@ -12,6 +12,8 @@
 - `POST /ndr`
 - `POST /ndr/:id/reschedule`
 - `POST /ndr/:id/return-decision`
+- `GET /returns`
+- `GET /returns/:id`
 - `POST /returns`
 - `POST /returns/:id/complete`
 - `GET /health`

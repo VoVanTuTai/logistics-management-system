@@ -353,24 +353,36 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
       .map((record) => {
         const shipment = shipmentByCode.get(record.shipmentCode.trim().toUpperCase()) ?? null;
         const task = taskByShipment.get(record.shipmentCode);
+        const recordHubCode = record.hubCode?.trim().toUpperCase() ?? null;
 
         if (
           shouldFilterByHub &&
+          !recordHubCode &&
           shipment &&
           !isShipmentInBranchScope(shipment, selectedHubCodes, hubScopeTokens)
         ) {
           return null;
         }
 
-        if (shouldFilterByHub && !shipment) {
+        if (
+          shouldFilterByHub &&
+          recordHubCode &&
+          !selectedHubCodes.includes(recordHubCode)
+        ) {
           return null;
         }
 
-        const resolvedHubCode = shipment
-          ? resolveShipmentHubCode(shipment, selectedHubCodes)
-          : appliedFilters.hubCode === 'all'
-            ? UNKNOWN_HUB
-            : appliedFilters.hubCode.trim().toUpperCase();
+        if (shouldFilterByHub && !recordHubCode && !shipment) {
+          return null;
+        }
+
+        const resolvedHubCode =
+          recordHubCode ??
+          (shipment
+            ? resolveShipmentHubCode(shipment, selectedHubCodes)
+            : appliedFilters.hubCode === 'all'
+              ? UNKNOWN_HUB
+              : appliedFilters.hubCode.trim().toUpperCase());
 
         return {
           ...record,

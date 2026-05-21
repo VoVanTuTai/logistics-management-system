@@ -9,6 +9,8 @@ import {
 
 import type {
   AuthSession,
+  ChangePasswordInput,
+  ChangePasswordResult,
   IntrospectInput,
   IntrospectResult,
   LoginInput,
@@ -16,6 +18,7 @@ import type {
   LogoutInput,
   LogoutResult,
   RefreshSessionInput,
+  UpdateOwnProfileInput,
 } from '../../domain/entities/auth-session.entity';
 import type {
   AuthenticatedUser,
@@ -216,6 +219,54 @@ export class AuthService {
     };
   }
 
+  async updateOwnProfile(
+    input: UpdateOwnProfileInput,
+  ): Promise<AuthenticatedUser> {
+    const session = await this.getActiveSession(input.accessToken);
+    const currentUser = await this.getActiveUser(session.userId);
+    const displayName =
+      input.displayName !== undefined
+        ? this.normalizeOptionalText(input.displayName, 120) ?? null
+        : currentUser.displayName;
+    const phone =
+      input.phone !== undefined
+        ? this.normalizeOptionalText(input.phone, 30) ?? null
+        : currentUser.phone;
+
+    const updatedUser = await this.userAccountRepository.update(currentUser.id, {
+      displayName,
+      phone,
+    });
+
+    return this.toAuthenticatedUser(updatedUser);
+  }
+
+  async changePassword(
+    input: ChangePasswordInput,
+  ): Promise<ChangePasswordResult> {
+    const session = await this.getActiveSession(input.accessToken);
+    const user = await this.getActiveUser(session.userId);
+    const currentPassword = this.normalizeRequiredText(
+      input.currentPassword,
+      'currentPassword',
+      128,
+    );
+    const newPassword = this.normalizePassword(input.newPassword);
+
+    if (!this.hashService.verify(currentPassword, user.passwordHash)) {
+      throw new UnauthorizedException('Current password is incorrect.');
+    }
+
+    await this.userAccountRepository.update(user.id, {
+      passwordHash: this.hashService.digest(newPassword),
+    });
+
+    return {
+      changed: true,
+      userId: user.id,
+    };
+  }
+
   async listUsers(filters: UserAccountListFilters = {}): Promise<UserAccountView[]> {
     const users = await this.userAccountRepository.list({
       roleGroup: this.normalizeRoleGroup(filters.roleGroup),
@@ -357,6 +408,22 @@ export class AuthService {
     }
 
     return user;
+  }
+
+  private async getActiveSession(accessToken: string): Promise<AuthSession> {
+    if (!accessToken) {
+      throw new BadRequestException('accessToken is required.');
+    }
+
+    const session = await this.authSessionRepository.findActiveByAccessTokenHash(
+      this.hashService.digest(accessToken),
+    );
+
+    if (!session || this.isExpired(session.accessTokenExpiresAt)) {
+      throw new UnauthorizedException('Access token is invalid or expired.');
+    }
+
+    return this.authSessionRepository.touch(session.id);
   }
 
   private async getUserById(userId: string): Promise<UserAccount> {
@@ -522,6 +589,18 @@ export class AuthService {
   private normalizeOptionalPassword(value: unknown): string | undefined {
     const normalizedValue = this.normalizeOptionalText(value, 128);
     return normalizedValue && normalizedValue.length > 0 ? normalizedValue : undefined;
+  }
+
+  private normalizePassword(value: unknown): string {
+    const password = this.normalizeRequiredText(value, 'newPassword', 128);
+
+    if (password.length < 8 || !/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+      throw new BadRequestException(
+        'newPassword must be at least 8 characters and include letters and numbers.',
+      );
+    }
+
+    return password;
   }
 
   private normalizeOptionalText(value: unknown, maxLength: number): string | undefined {

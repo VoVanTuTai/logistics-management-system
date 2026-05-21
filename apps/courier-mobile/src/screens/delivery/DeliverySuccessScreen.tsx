@@ -112,6 +112,7 @@ export function DeliverySuccessScreen({
       { ...values, note: auditNote, podNote: auditNote },
       {
         taskId: route.params.taskId,
+        courierId,
         actor: session?.user.username ?? null,
         occurredAt: new Date().toISOString(),
         idempotencyKey: resolvedIdempotencyKey,
@@ -142,10 +143,6 @@ export function DeliverySuccessScreen({
       <Text style={styles.helperText}>
         Chuan bi payload va hien thi response server. Không xử lý
         `pod.captured`, `otp.verified`, `delivery.delivered` o client.
-      </Text>
-      <Text style={styles.helperText}>
-        TODO: ket noi media stack de upload anh POD that, hien tai chi dung
-        `podImageUrl` placeholder.
       </Text>
 
       {submitMessage ? (

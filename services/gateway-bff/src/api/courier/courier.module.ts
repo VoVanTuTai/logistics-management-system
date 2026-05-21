@@ -1,7 +1,9 @@
 import {
   All,
   Controller,
+  Get,
   Module,
+  Query,
   Req,
   Res,
   UseGuards,
@@ -13,11 +15,26 @@ import { GatewayAuthGuard } from '../../common/guards/gateway-auth.guard';
 import { AuthServiceClient } from '../../infrastructure/clients/auth-service.client';
 import { GatewayProxyClient } from '../../infrastructure/clients/gateway-proxy.client';
 import { ServiceRegistryClient } from '../../infrastructure/clients/service-registry.client';
+import {
+  MediaUploadService,
+  type MediaUploadUrlResponse,
+} from '../media/media-upload.service';
 
 @UseGuards(GatewayAuthGuard, CourierPermissionGuard)
 @Controller('courier')
 class CourierController {
-  constructor(private readonly gatewayProxyClient: GatewayProxyClient) {}
+  constructor(
+    private readonly gatewayProxyClient: GatewayProxyClient,
+    private readonly mediaUploadService: MediaUploadService,
+  ) {}
+
+  @Get('media/upload-url')
+  getUploadUrl(
+    @Query('filename') filename: string,
+    @Query('contentType') contentType: string,
+  ): Promise<MediaUploadUrlResponse> {
+    return this.mediaUploadService.createUploadUrl(filename, contentType);
+  }
 
   @All()
   handleRoot(@Res() response: Response): void {
@@ -43,6 +60,7 @@ class CourierController {
     GatewayProxyClient,
     ServiceRegistryClient,
     GatewayAuthGuard,
+    MediaUploadService,
   ],
 })
 export class CourierModule {}

@@ -16,6 +16,7 @@ export type DeliverySuccessFormValues = z.infer<typeof deliverySuccessFormSchema
 
 export interface DeliverySuccessMapperContext {
   taskId?: string;
+  courierId?: string | null;
   actor: string | null;
   idempotencyKey: string;
   occurredAt: string;

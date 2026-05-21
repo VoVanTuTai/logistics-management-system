@@ -221,7 +221,7 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
     const payload: DeliverySuccessPayload = {
       shipmentCode: resolvedShipmentCode,
       taskId: route.params.taskId ?? null,
-      courierId: null,
+      courierId,
       locationCode: null,
       actor: session?.user.username ?? null,
       note: auditNote,
@@ -323,7 +323,7 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
     } catch (error) {
       if (shouldQueueOffline(error)) {
         await enqueueDeliverySuccessOffline(payload);
-        setSubmitMessage('Mất mạng: thao tác đã được lưu offline và sẽ tự động đồng bộ.');
+        setSubmitMessage('Mất mạng: thao tác đã được lưu offline và sẽ tự động upload POD, gửi lại với cùng idempotencyKey.');
       } else {
         const message =
           error instanceof Error ? error.message : 'Ký nhận thất bại.';

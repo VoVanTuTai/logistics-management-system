@@ -46,6 +46,18 @@ export interface IntrospectInput {
   accessToken: string;
 }
 
+export interface UpdateOwnProfileInput {
+  accessToken: string;
+  displayName?: string | null;
+  phone?: string | null;
+}
+
+export interface ChangePasswordInput {
+  accessToken: string;
+  currentPassword: string;
+  newPassword: string;
+}
+
 export interface CreateAuthSessionInput {
   userId: string;
   accessTokenHash: string;
@@ -78,4 +90,9 @@ export interface IntrospectResult {
   sessionId: string | null;
   user: AuthenticatedUser | null;
   accessTokenExpiresAt: string | null;
+}
+
+export interface ChangePasswordResult {
+  changed: boolean;
+  userId: string | null;
 }

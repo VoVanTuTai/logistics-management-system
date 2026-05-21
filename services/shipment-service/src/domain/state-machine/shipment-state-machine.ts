@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import type {
   ShipmentConsumedEventType,
@@ -24,8 +24,101 @@ const EVENT_TO_STATUS: Record<ShipmentConsumedEventType, ShipmentCurrentStatus> 
     'return.completed': 'RETURN_COMPLETED',
   };
 
+/**
+ * Valid transition whitelist.
+ *
+ * Key = current status, Value = set of statuses that are reachable from it.
+ * A status may transition to itself (idempotent replay) – this is intentional
+ * because event-driven consumers may replay the same event.
+ *
+ * Terminal statuses (DELIVERED, RETURN_COMPLETED, CANCELLED) have very
+ * limited outgoing transitions to prevent accidental rollback.
+ */
+const VALID_TRANSITIONS: Record<ShipmentCurrentStatus, ReadonlySet<ShipmentCurrentStatus>> = {
+  CREATED: new Set([
+    'CREATED', 'UPDATED', 'TASK_ASSIGNED', 'PICKUP_COMPLETED',
+    'SCAN_OUTBOUND', 'SEND_GOODS', 'MANIFEST_SEALED', 'CANCELLED',
+  ]),
+  UPDATED: new Set([
+    'UPDATED', 'TASK_ASSIGNED', 'PICKUP_COMPLETED',
+    'SCAN_OUTBOUND', 'SEND_GOODS', 'MANIFEST_SEALED', 'CANCELLED',
+  ]),
+  TASK_ASSIGNED: new Set([
+    'TASK_ASSIGNED', 'PICKUP_COMPLETED', 'SCAN_OUTBOUND', 'SEND_GOODS',
+    'MANIFEST_SEALED', 'SCAN_INBOUND', 'IN_TRANSIT',
+    'DELIVERED', 'DELIVERY_FAILED', 'CANCELLED',
+  ]),
+  PICKUP_COMPLETED: new Set([
+    'PICKUP_COMPLETED', 'TASK_ASSIGNED', 'SCAN_OUTBOUND', 'SEND_GOODS',
+    'MANIFEST_SEALED', 'SCAN_INBOUND', 'IN_TRANSIT', 'CANCELLED',
+  ]),
+  MANIFEST_SEALED: new Set([
+    'MANIFEST_SEALED', 'MANIFEST_RECEIVED', 'MANIFEST_UNSEALED',
+    'SCAN_OUTBOUND', 'SEND_GOODS', 'IN_TRANSIT', 'SCAN_INBOUND', 'CANCELLED',
+  ]),
+  MANIFEST_RECEIVED: new Set([
+    'MANIFEST_RECEIVED', 'MANIFEST_UNSEALED', 'SCAN_INBOUND',
+    'INVENTORY_CHECK', 'TASK_ASSIGNED', 'SCAN_OUTBOUND', 'SEND_GOODS',
+    'IN_TRANSIT', 'CANCELLED',
+  ]),
+  MANIFEST_UNSEALED: new Set([
+    'MANIFEST_UNSEALED', 'SCAN_INBOUND', 'INVENTORY_CHECK',
+    'TASK_ASSIGNED', 'SCAN_OUTBOUND', 'SEND_GOODS', 'IN_TRANSIT', 'CANCELLED',
+  ]),
+  SEND_GOODS: new Set([
+    'SEND_GOODS', 'IN_TRANSIT', 'SCAN_OUTBOUND', 'MANIFEST_SEALED',
+    'SCAN_INBOUND', 'CANCELLED',
+  ]),
+  IN_TRANSIT: new Set([
+    'IN_TRANSIT', 'SCAN_INBOUND', 'MANIFEST_RECEIVED', 'MANIFEST_UNSEALED',
+    'INVENTORY_CHECK', 'SCAN_OUTBOUND', 'SEND_GOODS', 'CANCELLED',
+  ]),
+  INVENTORY_CHECK: new Set([
+    'INVENTORY_CHECK', 'SCAN_INBOUND', 'TASK_ASSIGNED', 'SCAN_OUTBOUND',
+    'SEND_GOODS', 'IN_TRANSIT', 'CANCELLED',
+  ]),
+  SCAN_INBOUND: new Set([
+    'SCAN_INBOUND', 'INVENTORY_CHECK', 'TASK_ASSIGNED', 'SCAN_OUTBOUND',
+    'SEND_GOODS', 'IN_TRANSIT', 'MANIFEST_SEALED', 'CANCELLED',
+  ]),
+  SCAN_OUTBOUND: new Set([
+    'SCAN_OUTBOUND', 'SEND_GOODS', 'IN_TRANSIT', 'MANIFEST_SEALED',
+    'SCAN_INBOUND', 'TASK_ASSIGNED', 'CANCELLED',
+  ]),
+  DELIVERED: new Set([
+    'DELIVERED',
+    // After delivery, only NDR/return events can move status forward.
+  ]),
+  DELIVERY_FAILED: new Set([
+    'DELIVERY_FAILED', 'NDR_CREATED', 'EXCEPTION',
+    'TASK_ASSIGNED', 'RETURN_STARTED', 'CANCELLED',
+  ]),
+  NDR_CREATED: new Set([
+    'NDR_CREATED', 'EXCEPTION', 'TASK_ASSIGNED',
+    'RETURN_STARTED', 'CANCELLED',
+  ]),
+  EXCEPTION: new Set([
+    'EXCEPTION', 'NDR_CREATED', 'TASK_ASSIGNED',
+    'RETURN_STARTED', 'CANCELLED',
+  ]),
+  RETURN_STARTED: new Set([
+    'RETURN_STARTED', 'RETURN_COMPLETED',
+    'SCAN_INBOUND', 'SCAN_OUTBOUND', 'IN_TRANSIT',
+  ]),
+  RETURN_COMPLETED: new Set([
+    'RETURN_COMPLETED',
+    // Terminal: hàng đã hoàn, không cho chuyển tiếp.
+  ]),
+  CANCELLED: new Set([
+    'CANCELLED',
+    // Terminal: đã hủy.
+  ]),
+};
+
 @Injectable()
 export class ShipmentStateMachine {
+  private readonly logger = new Logger(ShipmentStateMachine.name);
+
   resolveNextStatus(
     currentStatus: ShipmentCurrentStatus,
     eventType: ShipmentConsumedEventType,
@@ -34,19 +127,19 @@ export class ShipmentStateMachine {
     // shipment-service is the only writer of current_status.
     // tracking-service and scan-service must not own or mutate this field.
     if (eventType === 'scan.outbound' && isSendGoodsEventData(eventData)) {
-      return 'SEND_GOODS';
+      return this.applyIfAllowed(currentStatus, 'SEND_GOODS', eventType);
     }
 
     if (eventType === 'ndr.created' && isExceptionNdrEventData(eventData)) {
-      return 'EXCEPTION';
+      return this.applyIfAllowed(currentStatus, 'EXCEPTION', eventType);
     }
 
     if (eventType === 'scan.outbound' && isVehicleOutboundEventData(eventData)) {
-      return 'IN_TRANSIT';
+      return this.applyIfAllowed(currentStatus, 'IN_TRANSIT', eventType);
     }
 
     if (eventType === 'scan.inbound' && isInventoryCheckEventData(eventData)) {
-      return 'INVENTORY_CHECK';
+      return this.applyIfAllowed(currentStatus, 'INVENTORY_CHECK', eventType);
     }
 
     const nextStatus = EVENT_TO_STATUS[eventType];
@@ -55,14 +148,34 @@ export class ShipmentStateMachine {
       return currentStatus;
     }
 
-    // TODO: enforce full transition validation matrix.
-    return nextStatus;
+    return this.applyIfAllowed(currentStatus, nextStatus, eventType);
   }
 
   canCancel(currentStatus: ShipmentCurrentStatus): boolean {
     return !['DELIVERED', 'RETURN_COMPLETED', 'CANCELLED'].includes(
       currentStatus,
     );
+  }
+
+  /**
+   * Check the transition whitelist. If the transition is not allowed,
+   * log a warning and keep the current status (safe default).
+   */
+  private applyIfAllowed(
+    currentStatus: ShipmentCurrentStatus,
+    nextStatus: ShipmentCurrentStatus,
+    eventType: ShipmentConsumedEventType,
+  ): ShipmentCurrentStatus {
+    const allowed = VALID_TRANSITIONS[currentStatus];
+
+    if (!allowed || !allowed.has(nextStatus)) {
+      this.logger.warn(
+        `Transition rejected: ${currentStatus} → ${nextStatus} (event: ${eventType}). Keeping current status.`,
+      );
+      return currentStatus;
+    }
+
+    return nextStatus;
   }
 }
 

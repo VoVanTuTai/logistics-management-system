@@ -4,6 +4,7 @@ import type {
   CodDailySettlementFilters,
   CodDailySettlementSummaryDto,
   CodSettlementBatchDto,
+  CodSettlementQrDto,
   ConfirmCodSettlementInput,
   CreateCodSettlementInput,
 } from './payment.types';
@@ -58,6 +59,15 @@ export const paymentClient = {
         accessToken,
         body: payload,
       },
+    ),
+
+  getCodSettlementQr: (
+    accessToken: string | null,
+    settlementId: string,
+  ): Promise<CodSettlementQrDto> =>
+    opsApiClient.request<CodSettlementQrDto>(
+      opsEndpoints.payment.codSettlementQr(settlementId),
+      { accessToken },
     ),
 
   confirmCodSettlement: (

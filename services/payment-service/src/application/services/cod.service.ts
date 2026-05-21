@@ -16,6 +16,7 @@ import type {
   CodRecord,
   CodSettlementBatch,
   CodSummary,
+  CodSettlementQr,
   CollectCodInput,
   CompanyBankInfo,
   ConfirmCodSettlementInput,
@@ -107,12 +108,14 @@ export class CodService {
       normalizeOptionalFilter(input.currency) ??
       normalizeOptionalFilter(readString(metadata?.currency)) ??
       'VND';
+    const hubCode = resolveShipmentHubCode(input, metadata);
     const record = await this.createCodRecord({
       shipmentCode,
       merchantId,
       codAmount,
       currency,
       paymentMethod: 'COD',
+      hubCode,
     });
 
     return {
@@ -276,10 +279,11 @@ export class CodService {
     const courierId = normalizeOptionalFilter(query.courierId);
     const status = normalizeCodStatus(query.status);
     const hubCodeFilter = normalizeOptionalFilter(query.hubCode);
-    const hubCode = hubCodeFilter ?? 'UNKNOWN';
+    const hubCode = hubCodeFilter?.toUpperCase() ?? 'ALL';
     const records = await this.codRecordRepository.listForDailySettlement({
       dateFrom: reportDate.dateFrom,
       dateTo: reportDate.dateTo,
+      hubCode: hubCodeFilter?.toUpperCase() ?? null,
       courierId,
       status,
     });
@@ -355,6 +359,7 @@ export class CodService {
           : normalizeMoney(record.collectedAmount),
         paymentMethod: record.paymentMethod,
         status: record.status,
+        hubCode: record.hubCode,
         courierId: record.courierId,
         collectedAt: record.collectedAt?.toISOString() ?? null,
         remittedAt: record.remittedAt?.toISOString() ?? null,
@@ -417,6 +422,20 @@ export class CodService {
       );
     }
 
+    const hubMismatchRecords = records.filter(
+      (record) => record.hubCode !== null && record.hubCode !== hubCode,
+    );
+
+    if (hubMismatchRecords.length > 0) {
+      const details = hubMismatchRecords
+        .map((record) => `${record.shipmentCode}:${record.hubCode ?? 'UNKNOWN'}`)
+        .join(', ');
+
+      throw new BadRequestException(
+        `All COD records must belong to hub "${hubCode}". Mismatched records: ${details}.`,
+      );
+    }
+
     const courierMismatchRecords = records.filter(
       (record) => record.courierId !== courierId,
     );
@@ -457,6 +476,33 @@ export class CodService {
       createdBy: normalizeOptionalFilter(input.createdBy),
       items,
     });
+  }
+
+  async getCodSettlementQr(id: string): Promise<CodSettlementQr> {
+    const settlementId = normalizeRequiredText(id, 'settlementId');
+    const batch = await this.codRecordRepository.findSettlementBatchById(
+      settlementId,
+    );
+
+    if (!batch) {
+      throw new NotFoundException(
+        `COD settlement batch "${settlementId}" was not found.`,
+      );
+    }
+
+    const qrUrl = batch.qrUrl ?? this.buildVietQrUrl(batch.totalAmount, batch.transferMemo);
+
+    return {
+      settlementId: batch.id,
+      settlementCode: batch.settlementCode,
+      reportDate: toDateInputValue(batch.reportDate),
+      hubCode: batch.hubCode,
+      courierId: batch.courierId,
+      totalAmount: batch.totalAmount,
+      status: batch.status,
+      qrUrl,
+      transferMemo: batch.transferMemo,
+    };
   }
 
   async confirmCodSettlement(
@@ -1200,6 +1246,60 @@ function readObject(value: unknown): Record<string, unknown> | null {
   }
 
   return value as Record<string, unknown>;
+}
+
+function resolveShipmentHubCode(
+  input: SyncShipmentCodRecordInput,
+  metadata: Record<string, unknown> | null,
+): string | null {
+  const directHubCode = normalizeOptionalFilter(input.hubCode)?.toUpperCase();
+
+  if (directHubCode) {
+    return directHubCode;
+  }
+
+  const hubCandidates = [
+    ['receiverHubCode'],
+    ['destinationHubCode'],
+    ['receiver', 'hubCode'],
+    ['routing', 'destinationHubCode'],
+    ['currentLocationCode'],
+    ['currentLocation'],
+    ['hubCode'],
+    ['senderHubCode'],
+    ['originHubCode'],
+    ['sender', 'hubCode'],
+    ['routing', 'originHubCode'],
+  ];
+
+  for (const path of hubCandidates) {
+    const hubCode = normalizeOptionalFilter(readNestedString(metadata, path))?.toUpperCase();
+
+    if (hubCode) {
+      return hubCode;
+    }
+  }
+
+  return null;
+}
+
+function readNestedString(
+  root: Record<string, unknown> | null,
+  path: string[],
+): string | null {
+  let current: unknown = root;
+
+  for (const segment of path) {
+    const currentRecord = readObject(current);
+
+    if (!currentRecord) {
+      return null;
+    }
+
+    current = currentRecord[segment];
+  }
+
+  return readString(current);
 }
 
 interface NormalizedSePayTransaction {

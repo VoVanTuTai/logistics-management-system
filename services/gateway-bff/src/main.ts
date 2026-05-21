@@ -25,7 +25,7 @@ async function bootstrap(): Promise<void> {
   app.enableCors({
     origin: corsOrigins,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Accept', 'Content-Type', 'Authorization'],
+    allowedHeaders: ['Accept', 'Content-Type', 'Authorization', 'Idempotency-Key'],
   });
 
   app.enableShutdownHooks();

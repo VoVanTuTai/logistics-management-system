@@ -54,6 +54,11 @@ export const opsEndpoints = {
     reschedule: (ndrId: string) => `/ops/delivery/ndr/${ndrId}/reschedule`,
     returnDecision: (ndrId: string) => `/ops/delivery/ndr/${ndrId}/return-decision`,
   },
+  returns: {
+    list: '/ops/delivery/returns',
+    detail: (returnId: string) => `/ops/delivery/returns/${returnId}`,
+    complete: (returnId: string) => `/ops/delivery/returns/${returnId}/complete`,
+  },
   tracking: {
     current: (shipmentCode: string) => `/ops/tracking/tracking/${shipmentCode}/current`,
     timeline: (shipmentCode: string) => `/ops/tracking/tracking/${shipmentCode}/timeline`,
@@ -61,6 +66,8 @@ export const opsEndpoints = {
   payment: {
     codDailySettlement: '/ops/payment/cod/settlements/daily',
     createCodSettlement: '/ops/payment/cod/settlements',
+    codSettlementQr: (settlementId: string) =>
+      `/ops/payment/cod/settlements/${encodeURIComponent(settlementId)}/qr`,
     confirmCodSettlement: (settlementId: string) =>
       `/ops/payment/cod/settlements/${encodeURIComponent(settlementId)}/confirm`,
   },
