@@ -1,4 +1,5 @@
 Cách chạy đúng bây giờ vẫn là dev mode:
+pwsh -ExecutionPolicy Bypass -File ./run-all.ps1 -MobileMode lan 2>&1 | tail -100
 
 powershell -ExecutionPolicy Bypass -File .\run-all.ps1 -MobileMode lan
 Hoặc nếu infra đã chạy rồi và chỉ muốn start lại service/UI:
