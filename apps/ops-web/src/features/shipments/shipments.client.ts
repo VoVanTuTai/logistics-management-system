@@ -284,6 +284,7 @@ function resolveShippingFee(metadata: Record<string, unknown> | null): number | 
     asNumber(pricing?.shippingFee) ??
     asNumber(pricing?.deliveryFee) ??
     asNumber(pricing?.estimatedFee) ??
+    asNumber(pricing?.totalFee) ??
     asNumber(pricing?.fee)
   );
 }

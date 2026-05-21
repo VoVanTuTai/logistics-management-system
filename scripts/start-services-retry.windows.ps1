@@ -19,20 +19,6 @@ $services = @(
   @{ Name = 'pricing-service'; Path = 'services/pricing-service'; Port = 3012 }
 )
 
-$dbNameMap = @{
-  'auth-service'        = 'auth_db'
-  'masterdata-service'  = 'masterdata_db'
-  'shipment-service'    = 'shipment_db'
-  'pickup-service'      = 'pickup_db'
-  'dispatch-service'    = 'dispatch_db'
-  'manifest-service'    = 'manifest_db'
-  'scan-service'        = 'scan_db'
-  'delivery-service'    = 'delivery_db'
-  'tracking-service'    = 'tracking_db'
-  'reporting-service'   = 'reporting_db'
-  'payment-service'     = 'payment_db'
-}
-
 function Test-PortListening([int]$port) {
   return $null -ne (Get-ListeningPid -port $port)
 }
@@ -50,49 +36,21 @@ function Test-HttpOk(
 }
 
 function Get-ListeningPid([int]$port) {
-  $onWindows = $PSVersionTable.Platform -eq 'Win32NT' -or $PSVersionTable.OS -like '*Windows*'
-  
-  if ($onWindows) {
-    try {
-      $listener = Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -First 1
-      if ($listener) {
-        return [int]$listener.OwningProcess
-      }
-    } catch {
-      # Fallback handled below.
+  try {
+    $listener = Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($listener) {
+      return [int]$listener.OwningProcess
     }
+  } catch {
+    # Fallback handled below.
+  }
 
-    if (Get-Command netstat -ErrorAction SilentlyContinue) {
-      $pattern = "^\s*TCP\s+\S+:$port\s+\S+\s+LISTENING\s+(\d+)\s*$"
-      foreach ($line in (netstat -ano -p tcp 2>$null)) {
-        if ($line -match $pattern) {
-          return [int]$Matches[1]
-        }
+  if (Get-Command netstat -ErrorAction SilentlyContinue) {
+    $pattern = "^\s*TCP\s+\S+:$port\s+\S+\s+LISTENING\s+(\d+)\s*$"
+    foreach ($line in (netstat -ano -p tcp 2>$null)) {
+      if ($line -match $pattern) {
+        return [int]$Matches[1]
       }
-    }
-  } else {
-    # macOS/Linux: use lsof
-    try {
-      $previousNativeErrorPreference = $PSNativeCommandUseErrorActionPreference
-      $PSNativeCommandUseErrorActionPreference = $false
-      $output = lsof -i ":$port" -sTCP:LISTEN 2>/dev/null
-      $PSNativeCommandUseErrorActionPreference = $previousNativeErrorPreference
-
-      if ($LASTEXITCODE -eq 0 -and $output) {
-        $lines = $output -split "`n"
-        # Skip header line and get PID from first data line
-        if ($lines.Count -gt 1) {
-          $fields = $lines[1] -split '\s+'
-          if ($fields.Count -gt 1) {
-            return [int]$fields[1]
-          }
-        }
-      }
-    } catch {
-      if ($null -ne $previousNativeErrorPreference) {
-        $PSNativeCommandUseErrorActionPreference = $previousNativeErrorPreference
-      }
-      Write-Host "[warn] lsof failed: $_"
     }
   }
 
@@ -147,13 +105,12 @@ function Resolve-NodeCommand() {
 }
 
 function Resolve-TsNodeCommand([string]$workingDir) {
-  $binDir = Join-Path (Join-Path $workingDir 'node_modules') '.bin'
-  $localTsNodeCmd = Join-Path $binDir 'ts-node.cmd'
+  $localTsNodeCmd = Join-Path $workingDir 'node_modules\.bin\ts-node.cmd'
   if (Test-Path $localTsNodeCmd) {
     return $localTsNodeCmd
   }
 
-  $localTsNode = Join-Path $binDir 'ts-node'
+  $localTsNode = Join-Path $workingDir 'node_modules\.bin\ts-node'
   if (Test-Path $localTsNode) {
     return $localTsNode
   }
@@ -162,7 +119,7 @@ function Resolve-TsNodeCommand([string]$workingDir) {
 }
 
 function Resolve-TsNodeEntrypoint([string]$workingDir) {
-  $localTsNodeEntrypoint = Join-Path (Join-Path (Join-Path (Join-Path $workingDir 'node_modules') 'ts-node') 'dist') 'bin.js'
+  $localTsNodeEntrypoint = Join-Path $workingDir 'node_modules\ts-node\dist\bin.js'
   if (Test-Path $localTsNodeEntrypoint) {
     return $localTsNodeEntrypoint
   }
@@ -171,13 +128,12 @@ function Resolve-TsNodeEntrypoint([string]$workingDir) {
 }
 
 function Resolve-PrismaCommand([string]$workingDir) {
-  $binDir = Join-Path (Join-Path $workingDir 'node_modules') '.bin'
-  $localPrismaCmd = Join-Path $binDir 'prisma.cmd'
+  $localPrismaCmd = Join-Path $workingDir 'node_modules\.bin\prisma.cmd'
   if (Test-Path $localPrismaCmd) {
     return $localPrismaCmd
   }
 
-  $localPrisma = Join-Path $binDir 'prisma'
+  $localPrisma = Join-Path $workingDir 'node_modules\.bin\prisma'
   if (Test-Path $localPrisma) {
     return $localPrisma
   }
@@ -186,36 +142,12 @@ function Resolve-PrismaCommand([string]$workingDir) {
 }
 
 function Resolve-PrismaEntrypoint([string]$workingDir) {
-  $localPrismaEntrypoint = Join-Path (Join-Path (Join-Path (Join-Path $workingDir 'node_modules') 'prisma') 'build') 'index.js'
+  $localPrismaEntrypoint = Join-Path $workingDir 'node_modules\prisma\build\index.js'
   if (Test-Path $localPrismaEntrypoint) {
     return $localPrismaEntrypoint
   }
 
   return $null
-}
-
-function Install-ServiceDependenciesIfNeeded([string]$workingDir, [string]$serviceName) {
-  $nodeModules = Join-Path $workingDir 'node_modules'
-  if (Test-Path $nodeModules) {
-    return
-  }
-
-  Write-Host "[install] installing dependencies for $serviceName"
-  Push-Location $workingDir
-  try {
-    if ((Test-Path 'pnpm-lock.yaml') -and (Get-Command pnpm -ErrorAction SilentlyContinue)) {
-      pnpm install --ignore-scripts
-    } else {
-      npm install --ignore-scripts
-    }
-
-    if ($LASTEXITCODE -ne 0) {
-      throw "dependency install failed for $serviceName"
-    }
-  }
-  finally {
-    Pop-Location
-  }
 }
 
 function Start-ServiceIfDown(
@@ -243,157 +175,72 @@ function Start-ServiceIfDown(
     return
   }
 
-  Install-ServiceDependenciesIfNeeded -workingDir $workingDir -serviceName $service.Name
-
   $logsDir = Join-Path $rootDir '.tmp/service-logs'
   if (-not (Test-Path $logsDir)) {
     New-Item -ItemType Directory -Path $logsDir -Force | Out-Null
   }
 
-  $onWindows = $PSVersionTable.Platform -eq 'Win32NT' -or $PSVersionTable.OS -like '*Windows*'
   $logId = Get-Date -Format 'yyyyMMdd-HHmmss-fff'
   $stdoutPath = Join-Path $logsDir "$($service.Name)-$logId.out.log"
   $stderrPath = Join-Path $logsDir "$($service.Name)-$logId.err.log"
-  $runnerPath = if ($onWindows) {
-    Join-Path $logsDir "$($service.Name)-$logId.run.cmd"
-  } else {
-    Join-Path $logsDir "$($service.Name)-$logId.run.sh"
-  }
-  $launcherPath = if ($onWindows) {
-    $runnerPath
-  } else {
-    Join-Path $logsDir "$($service.Name)-$logId.launch.sh"
-  }
-  $pidPath = Join-Path $logsDir "$($service.Name)-$logId.pid"
+  $runnerPath = Join-Path $logsDir "$($service.Name)-$logId.run.cmd"
   $npmCommand = Resolve-NpmCommand
   $npmDir = Split-Path -Parent $npmCommand
-  $pathSeparator = if ($onWindows) { ';' } else { ':' }
-  if ($npmDir -and (($env:PATH -split [regex]::Escape($pathSeparator)) -notcontains $npmDir)) {
-    $env:PATH = "$npmDir$pathSeparator$env:PATH"
-    $env:Path = "$npmDir$pathSeparator$env:Path"
+  if ($npmDir -and (($env:PATH -split ';') -notcontains $npmDir)) {
+    $env:PATH = "$npmDir;$env:PATH"
+    $env:Path = "$npmDir;$env:Path"
   }
   $nodeCommand = Resolve-NodeCommand
   $tsNodeCommand = Resolve-TsNodeCommand -workingDir $workingDir
   $tsNodeEntrypoint = Resolve-TsNodeEntrypoint -workingDir $workingDir
   $prismaCommand = Resolve-PrismaCommand -workingDir $workingDir
   $prismaEntrypoint = Resolve-PrismaEntrypoint -workingDir $workingDir
-  $databaseUrl = if ($dbNameMap.ContainsKey($service.Name)) {
-    "postgresql://postgres:postgres@localhost:15432/$($dbNameMap[$service.Name])"
-  } else {
-    $null
-  }
-  $prismaSchema = if ($onWindows) {
-    Join-Path $workingDir 'prisma\schema.prisma'
-  } else {
-    Join-Path $workingDir 'prisma/schema.prisma'
-  }
+  $prismaSchema = Join-Path $workingDir 'prisma\schema.prisma'
 
-  $runnerLines = @()
-  
-  if ($onWindows) {
-    # Windows batch script
-    $runnerLines += '@echo off'
-    if ($npmDir) {
-      $runnerLines += "set `"PATH=$npmDir;%PATH%`""
-    }
-    if ($databaseUrl) {
-      $runnerLines += "set `"DATABASE_URL=$databaseUrl`""
-    }
-    $runnerLines += "cd /d `"$workingDir`""
-    if (Test-Path $prismaSchema) {
-      if ($prismaEntrypoint) {
-        $runnerLines += "`"$nodeCommand`" `"$prismaEntrypoint`" generate --schema prisma/schema.prisma"
-      } else {
-        $runnerLines += "`"$prismaCommand`" generate --schema prisma/schema.prisma"
-      }
-      $runnerLines += 'if errorlevel 1 exit /b %errorlevel%'
-      if ($prismaEntrypoint) {
-        $runnerLines += "`"$nodeCommand`" `"$prismaEntrypoint`" db push --schema prisma/schema.prisma"
-      } else {
-        $runnerLines += "`"$prismaCommand`" db push --schema prisma/schema.prisma"
-      }
-      $runnerLines += 'if errorlevel 1 exit /b %errorlevel%'
-    }
-    if ($tsNodeEntrypoint) {
-      $runnerLines += "`"$nodeCommand`" `"$tsNodeEntrypoint`" src/main.ts"
+  $runnerLines = @(
+    '@echo off'
+  )
+  if ($npmDir) {
+    $runnerLines += "set `"PATH=$npmDir;%PATH%`""
+  }
+  $runnerLines += "cd /d `"$workingDir`""
+  if (Test-Path $prismaSchema) {
+    if ($prismaEntrypoint) {
+      $runnerLines += "`"$nodeCommand`" `"$prismaEntrypoint`" generate --schema prisma/schema.prisma"
     } else {
-      $runnerLines += "`"$tsNodeCommand`" src/main.ts"
+      $runnerLines += "`"$prismaCommand`" generate --schema prisma/schema.prisma"
     }
+    $runnerLines += 'if errorlevel 1 exit /b %errorlevel%'
+    if ($prismaEntrypoint) {
+      $runnerLines += "`"$nodeCommand`" `"$prismaEntrypoint`" db push --schema prisma/schema.prisma"
+    } else {
+      $runnerLines += "`"$prismaCommand`" db push --schema prisma/schema.prisma"
+    }
+    $runnerLines += 'if errorlevel 1 exit /b %errorlevel%'
+  }
+  if ($tsNodeEntrypoint) {
+    $runnerLines += "`"$nodeCommand`" `"$tsNodeEntrypoint`" src/main.ts"
   } else {
-    # Shell script for macOS/Linux
-    $runnerLines += '#!/bin/bash'
-    $runnerLines += 'set -e'
-    if ($npmDir) {
-      $runnerLines += "export PATH=`"$npmDir`":`$PATH"
-    }
-    if ($databaseUrl) {
-      $runnerLines += "export DATABASE_URL=`"$databaseUrl`""
-    }
-    $runnerLines += "cd `"$workingDir`""
-    if (Test-Path $prismaSchema) {
-      if ($prismaEntrypoint) {
-        $runnerLines += "`"$nodeCommand`" `"$prismaEntrypoint`" generate --schema prisma/schema.prisma"
-      } else {
-        $runnerLines += "`"$prismaCommand`" generate --schema prisma/schema.prisma"
-      }
-      if ($prismaEntrypoint) {
-        $runnerLines += "`"$nodeCommand`" `"$prismaEntrypoint`" db push --schema prisma/schema.prisma"
-      } else {
-        $runnerLines += "`"$prismaCommand`" db push --schema prisma/schema.prisma"
-      }
-    }
-    if ($tsNodeEntrypoint) {
-      $runnerLines += "`"$nodeCommand`" `"$tsNodeEntrypoint`" src/main.ts"
-    } else {
-      $runnerLines += "`"$tsNodeCommand`" src/main.ts"
-    }
+    $runnerLines += "`"$tsNodeCommand`" src/main.ts"
   }
   Set-Content -Path $runnerPath -Value $runnerLines -Encoding ASCII
 
-  # Make script executable on macOS/Linux
-  if (-not $onWindows) {
-    chmod +x $runnerPath
-    $launcherLines = @(
-      '#!/bin/zsh',
-      "nohup bash `"$runnerPath`" >> `"$stdoutPath`" 2>> `"$stderrPath`" < /dev/null &!",
-      "echo `$! > `"$pidPath`""
-    )
-    Set-Content -Path $launcherPath -Value $launcherLines -Encoding ASCII
-    chmod +x $launcherPath
-  }
-  
-  if ($onWindows) {
-    $launcher = Start-Process `
-      -FilePath $runnerPath `
-      -WorkingDirectory $workingDir `
-      -RedirectStandardOutput $stdoutPath `
-      -RedirectStandardError $stderrPath `
-      -WindowStyle Hidden `
-      -PassThru
-    $launcherPid = $launcher.Id
-  } else {
-    # macOS/Linux: invoke a tiny shell wrapper directly; it backgrounds the
-    # service with nohup and writes the real runner PID to a pidfile.
-    & $launcherPath
-    if ($LASTEXITCODE -ne 0) {
-      throw "failed to launch $($service.Name)"
-    }
-    Start-Sleep -Milliseconds 100
-    $launcherPid = if (Test-Path $pidPath) {
-      [int](Get-Content -Path $pidPath -Raw)
-    } else {
-      0
-    }
-  }
+  $launcher = Start-Process `
+    -FilePath $runnerPath `
+    -WorkingDirectory $workingDir `
+    -RedirectStandardOutput $stdoutPath `
+    -RedirectStandardError $stderrPath `
+    -WindowStyle Hidden `
+    -PassThru
 
   $started.Value += [pscustomobject]@{
     Service = $service.Name
     Port = $service.Port
-    LauncherPid = $launcherPid
+    LauncherPid = $launcher.Id
     Logs = ".tmp/service-logs/$($service.Name)-$logId.*.log"
   }
 
-  Write-Host "[start] $($service.Name) launcher pid=$launcherPid logs=.tmp/service-logs/$($service.Name)-$logId.*.log"
+  Write-Host "[start] $($service.Name) launcher pid=$($launcher.Id) logs=.tmp/service-logs/$($service.Name)-$logId.*.log"
   Start-Sleep -Milliseconds 250
 }
 

@@ -85,6 +85,7 @@ DELIVERY_SERVICE_URL=http://delivery-service:3007
 TRACKING_SERVICE_URL=http://tracking-service:3008
 REPORTING_SERVICE_URL=http://reporting-service:3009
 PAYMENT_SERVICE_URL=http://payment-service:3011
+PRICING_SERVICE_URL=http://pricing-service:3012
 S3_REGION=us-east-1
 S3_ENDPOINT=https://s3-staging.example.com
 S3_ACCESS_KEY=<secret>

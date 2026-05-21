@@ -182,6 +182,27 @@ export interface ShipmentDraft {
   form: CreateShipmentForm;
 }
 
+export interface PricingBreakdownItem {
+  code: string;
+  label: string;
+  amount: number;
+  basis: string;
+}
+
+export interface PricingQuoteResponse {
+  quoteId: string;
+  quoteVersion: string;
+  currency: string;
+  serviceType: string;
+  zone: string;
+  actualWeightKg: number;
+  volumetricWeightKg: number;
+  chargeableWeightKg: number;
+  totalFee: number;
+  validUntil: string;
+  breakdown: PricingBreakdownItem[];
+}
+
 export interface ReturnRequest {
   id: string;
   shipmentCode: string;

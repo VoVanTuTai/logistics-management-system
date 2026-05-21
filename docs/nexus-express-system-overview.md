@@ -195,6 +195,7 @@ logistics-management-system/
 | `delivery-service` | 3007 | Delivery attempt, success/fail, POD, NDR, return | `delivery_db` |
 | `tracking-service` | 3008 | Public/internal tracking read model, timeline, current view | `tracking_db` |
 | `reporting-service` | 3009 | KPI, dashboard, aggregate theo courier/hub/zone/status | `reporting_db` |
+| `pricing-service` | 3012 | Tinh gia/cuoc theo serviceType, trong luong, kich thuoc, zone, khai gia, COD | Khong so huu DB |
 
 ## 9. Domain data ownership
 
@@ -203,6 +204,7 @@ logistics-management-system/
 | User, session, token | `auth-service` | Quan ly tai khoan va phien dang nhap |
 | Hub, zone, config, NDR reason | `masterdata-service` | Du lieu danh muc dung chung |
 | Shipment va current status | `shipment-service` | Source of truth cho trang thai nghiep vu cua van don |
+| Pricing quote va rate rule | `pricing-service` | Source of truth cho cuoc phi khi tao don; shipment luu snapshot vao metadata |
 | Pickup request | `pickup-service` | Source of truth cho yeu cau lay hang |
 | Task va courier assignment | `dispatch-service` | Source of truth cho cong viec cua courier |
 | Manifest | `manifest-service` | Source of truth cho bang ke luan chuyen giua hub |
