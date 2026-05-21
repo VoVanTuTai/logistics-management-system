@@ -7,6 +7,7 @@ import type {
   CodRecord,
   CodSettlementPaymentEvent,
   CodSettlementPaymentEventQuery,
+  CodSettlementQr,
   SePaySettlementWebhookPayload,
   SePaySettlementWebhookResult,
   CodSettlementBatch,
@@ -83,6 +84,11 @@ export class CodController {
     @Body() body: CreateCodSettlementInput,
   ): Promise<CodSettlementBatch> {
     return this.codService.createCodSettlement(body);
+  }
+
+  @Get('settlements/:id/qr')
+  getSettlementQr(@Param('id') id: string): Promise<CodSettlementQr> {
+    return this.codService.getCodSettlementQr(id);
   }
 
   @Post('settlements/:id/confirm')

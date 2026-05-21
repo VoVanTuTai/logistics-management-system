@@ -38,6 +38,7 @@ export class CodRecordPrismaRepository extends CodRecordRepository {
       codAmount: input.codAmount,
       currency: input.currency ?? 'VND',
       paymentMethod: input.paymentMethod ?? 'COD',
+      hubCode: normalizeOptionalCode(input.hubCode),
       courierId: input.courierId ?? null,
     };
 
@@ -89,6 +90,10 @@ export class CodRecordPrismaRepository extends CodRecordRepository {
 
     if (filter.courierId) {
       where.courierId = filter.courierId;
+    }
+
+    if (filter.hubCode) {
+      where.hubCode = filter.hubCode;
     }
 
     if (filter.status) {
@@ -556,6 +561,7 @@ export class CodRecordPrismaRepository extends CodRecordRepository {
       currency: record.currency,
       paymentMethod: record.paymentMethod as CodRecord['paymentMethod'],
       status: record.status as CodRecord['status'],
+      hubCode: record.hubCode,
       courierId: record.courierId,
       collectedAt: record.collectedAt,
       collectedAmount: record.collectedAmount,
@@ -620,4 +626,9 @@ export class CodRecordPrismaRepository extends CodRecordRepository {
       updatedAt: record.updatedAt,
     };
   }
+}
+
+function normalizeOptionalCode(value: string | null | undefined): string | null {
+  const normalized = value?.trim().toUpperCase();
+  return normalized && normalized.length > 0 ? normalized : null;
 }

@@ -10,6 +10,7 @@ export interface CodRecord {
   currency: string;
   paymentMethod: PaymentMethod;
   status: CodCollectionStatus;
+  hubCode: string | null;
   courierId: string | null;
   collectedAt: Date | null;
   collectedAmount: number | null;
@@ -26,6 +27,7 @@ export interface CreateCodRecordInput {
   codAmount: number;
   currency?: string;
   paymentMethod?: PaymentMethod;
+  hubCode?: string | null;
   courierId?: string | null;
 }
 
@@ -35,6 +37,7 @@ export interface SyncShipmentCodRecordInput {
   merchantId?: string | null;
   currency?: string | null;
   codAmount?: number | string | null;
+  hubCode?: string | null;
   metadata?: Record<string, unknown> | null;
 }
 
@@ -127,6 +130,7 @@ export interface CodDailySettlementQuery {
 export interface CodDailySettlementRecordFilter {
   dateFrom: Date | null;
   dateTo: Date | null;
+  hubCode: string | null;
   courierId: string | null;
   status: CodCollectionStatus | null;
 }
@@ -144,6 +148,7 @@ export interface CodDailySettlementRecord {
   collectedAmount: number | null;
   paymentMethod: PaymentMethod;
   status: CodCollectionStatus;
+  hubCode: string | null;
   courierId: string | null;
   collectedAt: string | null;
   remittedAt: string | null;
@@ -194,6 +199,18 @@ export interface CodSettlementBatch {
   createdAt: Date;
   updatedAt: Date;
   items: CodSettlementItem[];
+}
+
+export interface CodSettlementQr {
+  settlementId: string;
+  settlementCode: string;
+  reportDate: string;
+  hubCode: string;
+  courierId: string;
+  totalAmount: number;
+  status: CodSettlementStatus;
+  qrUrl: string;
+  transferMemo: string;
 }
 
 export interface CodSettlementPaymentEvent {
