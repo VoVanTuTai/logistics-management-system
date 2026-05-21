@@ -163,6 +163,7 @@ function Update-GatewayBffEnv([string]$mode) {
   Set-EnvValue -FilePath $envPath -Key 'SHIPMENT_SERVICE_URL' -Value 'http://localhost:3002'
   Set-EnvValue -FilePath $envPath -Key 'TRACKING_SERVICE_URL' -Value 'http://localhost:3008'
   Set-EnvValue -FilePath $envPath -Key 'PAYMENT_SERVICE_URL' -Value 'http://localhost:3011'
+  Set-EnvValue -FilePath $envPath -Key 'PRICING_SERVICE_URL' -Value 'http://localhost:3012'
 
   Write-Host "[gateway-env] updated $envPath"
   Write-Host "[gateway-env] S3_ENDPOINT=$s3Endpoint"
