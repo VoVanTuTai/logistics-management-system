@@ -1,0 +1,16 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "Nexus Dev",
+      "Group": "Servers",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "postgres",
+      "Username": "postgres",
+      "PasswordExecCommand": "echo postgres",
+      "PasswordExecExpiration": 0,
+      "SSLMode": "prefer",
+      "Comment": "Nexus development database server"
+    }
+  }
+}
