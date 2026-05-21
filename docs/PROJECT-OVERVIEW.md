@@ -67,6 +67,7 @@ logistics-management-system/
 │   ├── tracking-service/          # Port 3008
 │   ├── reporting-service/         # Port 3009
 │   ├── payment-service/           # Port 3011
+│   ├── pricing-service/           # Port 3012
 │   └── gateway-bff/               # Port 3000 (API Gateway)
 ├── packages/                      # Shared packages
 │   ├── messaging/                 # RabbitMQ utilities
@@ -353,6 +354,27 @@ Docker container PostgreSQL chạy ở port `15432`, bên trong map `5432`.
 **COD Settlement Flow**:
 1. `shipment.created` → payment-service tạo `CodRecord` (status: PENDING)
 2. Courier giao thành công → ops gọi collect API → CodRecord = COLLECTED, publish `cod.collected`
+
+---
+
+### 13. pricing-service (Port 3012)
+**Vai tro**: Source of truth cho tinh gia/cuoc khi len don.
+
+**Endpoint chinh**:
+| Method | Path | Mo ta |
+|---|---|---|
+| `POST` | `/quotes` | Tinh cuoc va tra ve quote co version, breakdown, validUntil |
+| `GET` | `/rates` | Mo ta rule basis hien hanh |
+
+**Co so tinh gia**:
+- `serviceType`: STANDARD, EXPRESS, SAME_DAY
+- Trong luong thuc va trong luong quy doi: `lengthCm * widthCm * heightCm / 6000`
+- Trong luong tinh cuoc: `max(actualWeightKg, volumetricWeightKg)`, lam tron len nac 0.5kg
+- Zone tuyen gui/nhan: noi tinh, metro corridor, lien tinh
+- Phi khai gia tu `declaredValue`
+- Phi thu ho COD tu `codAmount`
+
+**Tich hop**: `shipment-service` goi `pricing-service` khi tao shipment va ghi ket qua vao `metadata.estimatedFee` + `metadata.pricing`. Frontend co the goi `/merchant/pricing/quotes` de hien thi phi tam tinh, nhung backend van tinh lai khi tao don.
 3. Ops tạo batch settlement → group by ngày/hub/courier → tạo `CodSettlementBatch`
 4. Generate VietQR link (napas247 format)
 5. SePay webhook confirm → match `codRecord.codAmount` với `transaction.amount` (tolerance)

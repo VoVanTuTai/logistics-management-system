@@ -17,6 +17,7 @@ import {
   normalizeCode,
   parseStorage,
   request,
+  requestPricingQuote,
   statusClass,
   toInputDate,
 } from './api';
@@ -29,6 +30,7 @@ import type {
   MerchantSession,
   NotificationItem,
   PickupRequest,
+  PricingQuoteResponse,
   ReturnRequest,
   ShipmentDraft,
   ShipmentResponse,
@@ -587,6 +589,9 @@ function MerchantApp(): React.JSX.Element {
 
   const [createForm, setCreateForm] = useState<CreateShipmentForm>(DEFAULT_CREATE_FORM);
   const [quotedFee, setQuotedFee] = useState<number | null>(null);
+  const [pricingQuote, setPricingQuote] = useState<PricingQuoteResponse | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [createSuccess, setCreateSuccess] = useState<string | null>(null);
@@ -705,7 +710,7 @@ function MerchantApp(): React.JSX.Element {
   );
   const unreadNotifications = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
   const autoEstimatedFee = useMemo(() => computeEstimatedFee(createForm), [createForm]);
-  const effectiveFee = quotedFee ?? autoEstimatedFee;
+  const effectiveFee = pricingQuote?.totalFee ?? quotedFee ?? autoEstimatedFee;
   const hubLocationMap = useMemo(
     () => new Map(hubLocations.map((location) => [location.hubCode, location])),
     [hubLocations],
@@ -1417,6 +1422,45 @@ function MerchantApp(): React.JSX.Element {
     return pickup;
   }
 
+  async function quoteCreateShipmentFee(
+    form: CreateShipmentForm = createForm,
+    options: { updateUi?: boolean } = {},
+  ): Promise<PricingQuoteResponse> {
+    if (!session) {
+      throw new Error('Session is required');
+    }
+
+    const shouldUpdateUi = options.updateUi ?? true;
+
+    if (shouldUpdateUi) {
+      setQuoteLoading(true);
+      setQuoteError(null);
+    }
+
+    try {
+      const quote = await requestPricingQuote(form, session.accessToken);
+
+      if (shouldUpdateUi) {
+        setPricingQuote(quote);
+        setQuotedFee(quote.totalFee);
+      }
+
+      return quote;
+    } catch (error) {
+      const message = extractErrorMessage(error);
+
+      if (shouldUpdateUi) {
+        setQuoteError(message);
+      }
+
+      throw error;
+    } finally {
+      if (shouldUpdateUi) {
+        setQuoteLoading(false);
+      }
+    }
+  }
+
   async function submitCreateShipment(withPickup: boolean): Promise<void> {
     if (!session) return;
     if (hubLocations.length === 0) {
@@ -1483,11 +1527,14 @@ function MerchantApp(): React.JSX.Element {
     setCreateError(null);
     setCreateSuccess(null);
     try {
+      const pricingQuoteForCreate = await quoteCreateShipmentFee(normalizedForm, {
+        updateUi: false,
+      });
       const payload: Record<string, unknown> = {
-        metadata: buildShipmentMetadata(normalizedForm, effectiveFee, {
+        metadata: buildShipmentMetadata(normalizedForm, pricingQuoteForCreate.totalFee, {
           username: session.user.username,
           userId: session.user.id,
-        }),
+        }, pricingQuoteForCreate),
       };
 
       const created = await request<ShipmentResponse>('/merchant/shipment/shipments', {
@@ -1533,6 +1580,8 @@ function MerchantApp(): React.JSX.Element {
           .join(', '),
       });
       setQuotedFee(null);
+      setPricingQuote(null);
+      setQuoteError(null);
       setActiveView('shipment-detail');
     } catch (error) {
       setCreateError(extractErrorMessage(error));
@@ -2333,8 +2382,14 @@ function MerchantApp(): React.JSX.Element {
                 />
                 <p className="muted">{'K\u00edch th\u01b0\u1edbc ki\u1ec7n h\u00e0ng: D\u00e0i (cm), R\u1ed9ng (cm), Cao (cm)'}</p>
                 <div className="btn-row">
-                  <button className="btn btn-secondary" onClick={() => setQuotedFee(autoEstimatedFee)}>
-                    {'T\u00ednh ph\u00ed t\u1ea1m t\u00ednh'}
+                  <button
+                    className="btn btn-secondary"
+                    disabled={quoteLoading}
+                    onClick={() => {
+                      void quoteCreateShipmentFee();
+                    }}
+                  >
+                    {quoteLoading ? '\u0110ang t\u00ednh...' : 'T\u00ednh ph\u00ed t\u1ea1m t\u00ednh'}
                   </button>
                   <button className="btn btn-ghost" onClick={saveDraft}>
                     {'L\u01b0u nh\u00e1p'}
@@ -2358,6 +2413,7 @@ function MerchantApp(): React.JSX.Element {
                     {'T\u1ea1o \u0111\u01a1n v\u00e0 y\u00eau c\u1ea7u pickup ngay'}
                   </button>
                 </div>
+                {quoteError ? <p className="message error">{quoteError}</p> : null}
                 {createError ? <p className="message error">{createError}</p> : null}
                 {createSuccess ? <p className="message success">{createSuccess}</p> : null}
               </div>
