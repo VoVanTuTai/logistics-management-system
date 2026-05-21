@@ -107,6 +107,7 @@ start_service() {
     printf 'export PORT=%q\n' "$port"
     echo 'export RABBITMQ_URL="${RABBITMQ_URL:-amqp://guest:guest@localhost:5672}"'
     echo 'export DOMAIN_EVENTS_EXCHANGE="${DOMAIN_EVENTS_EXCHANGE:-domain.events}"'
+    echo 'export PRICING_SERVICE_URL="${PRICING_SERVICE_URL:-http://localhost:3012}"'
     if [[ -n "$db_name" ]]; then
       printf 'export DATABASE_URL=%q\n' "postgresql://postgres:postgres@localhost:15432/$db_name"
       echo 'if [[ -f prisma/schema.prisma ]]; then'
@@ -185,6 +186,8 @@ set_env_value "$ROOT_DIR/services/gateway-bff/.env" SCAN_SERVICE_URL "http://loc
 set_env_value "$ROOT_DIR/services/gateway-bff/.env" SHIPMENT_SERVICE_URL "http://localhost:3002"
 set_env_value "$ROOT_DIR/services/gateway-bff/.env" TRACKING_SERVICE_URL "http://localhost:3008"
 set_env_value "$ROOT_DIR/services/gateway-bff/.env" PAYMENT_SERVICE_URL "http://localhost:3011"
+set_env_value "$ROOT_DIR/services/gateway-bff/.env" PRICING_SERVICE_URL "http://localhost:3012"
+set_env_value "$ROOT_DIR/services/shipment-service/.env" PRICING_SERVICE_URL "http://localhost:3012"
 
 echo "[infra] starting docker dependencies"
 docker compose -f "$ROOT_DIR/infra/dev/docker-compose.yml" up -d --remove-orphans
@@ -200,6 +203,7 @@ start_service tracking-service services/tracking-service 3008 tracking_db
 start_service reporting-service services/reporting-service 3009 reporting_db
 start_service auth-service services/auth-service 3010 auth_db
 start_service payment-service services/payment-service 3011 payment_db
+start_service pricing-service services/pricing-service 3012
 
 echo "[seed] auth demo users"
 (
@@ -220,6 +224,7 @@ wait_port tracking-service 3008
 wait_port reporting-service 3009
 wait_port auth-service 3010
 wait_port payment-service 3011
+wait_port pricing-service 3012
 
 start_service gateway-bff services/gateway-bff 3000
 wait_port gateway-bff 3000
@@ -230,8 +235,16 @@ start_web_app admin-web apps/admin-web 5175
 start_web_app public-tracking apps/public-tracking 5176
 start_mobile_app
 
+echo "[wait] UI ports"
+wait_port ops-web 5173 30
+wait_port merchant-web 5174 30
+wait_port admin-web 5175 30
+wait_port public-tracking 5176 30
+
 echo
 echo "=== OPEN URLS ==="
+echo "gateway API:      http://localhost:3000/health"
+echo "postgres UI:      http://localhost:5050  (admin@nexus.dev / admin)"
 echo "merchant-web:    http://localhost:5174"
 echo "ops-web:         http://localhost:5173"
 echo "admin-web:       http://localhost:5175"
