@@ -246,7 +246,7 @@ function Start-ServiceIfDown(
 
 Push-Location $rootDir
 try {
-  $infraPorts = @(5672, 15432)
+  $infraPorts = @(5672, 15432, 5050)
   $infraContainers = @(
     'NEXUS-dev-rabbitmq',
     'NEXUS-dev-postgres'
