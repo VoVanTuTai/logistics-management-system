@@ -17,6 +17,17 @@ export const TRACKING_BUSINESS_EVENTS = [
   'ndr.created',
   'return.started',
   'return.completed',
+  'linehaul.trip_created',
+  'linehaul.vehicle_assigned',
+  'linehaul.manifest_loaded',
+  'linehaul.vehicle_sealed',
+  'linehaul.departed',
+  'linehaul.arrived',
+  'linehaul.manifest_received',
+  'linehaul.completed',
+  'linehaul.cancelled',
+  'linehaul.incident_reported',
+  'linehaul.handover_signed',
 ] as const;
 
 export type TrackingBusinessEventType = (typeof TRACKING_BUSINESS_EVENTS)[number];
@@ -41,6 +52,17 @@ export const TRACKING_STATUS_BY_EVENT: Record<
   'ndr.created': 'DELIVERY_FAILED',
   'return.started': 'RETURNING',
   'return.completed': 'RETURNED',
+  'linehaul.trip_created': 'TRIP_PLANNED',
+  'linehaul.vehicle_assigned': 'TRIP_ASSIGNED',
+  'linehaul.manifest_loaded': 'TRIP_LOADING',
+  'linehaul.vehicle_sealed': 'TRIP_SEALED',
+  'linehaul.departed': 'TRIP_DEPARTED',
+  'linehaul.arrived': 'TRIP_ARRIVED',
+  'linehaul.manifest_received': 'TRIP_RECEIVING',
+  'linehaul.completed': 'TRIP_COMPLETED',
+  'linehaul.cancelled': 'TRIP_CANCELLED',
+  'linehaul.incident_reported': 'TRIP_INCIDENT',
+  'linehaul.handover_signed': 'TRIP_HANDOVER',
 };
 
 const STATUS_LABELS_VI: Record<string, string> = {
@@ -76,6 +98,17 @@ const STATUS_LABELS_VI: Record<string, string> = {
   RETURN_STARTED: 'Đang hoàn hàng',
   RETURN_COMPLETED: 'Đã hoàn hàng',
   CANCELLED: 'Đơn hàng đã hủy',
+  TRIP_PLANNED: 'Lập chuyến',
+  TRIP_ASSIGNED: 'Gán xe/tài xế',
+  TRIP_LOADING: 'Load bao lên xe',
+  TRIP_SEALED: 'Niêm phong xe',
+  TRIP_DEPARTED: 'Xe đi',
+  TRIP_ARRIVED: 'Xe đến',
+  TRIP_RECEIVING: 'Dỡ hàng khỏi xe',
+  TRIP_COMPLETED: 'Hoàn tất chuyến',
+  TRIP_CANCELLED: 'Hủy chuyến',
+  TRIP_INCIDENT: 'Sự cố chuyến xe',
+  TRIP_HANDOVER: 'Bàn giao chuyến',
 };
 
 const EVENT_LABELS_VI: Record<TrackingBusinessEventType, string> = {
@@ -95,6 +128,17 @@ const EVENT_LABELS_VI: Record<TrackingBusinessEventType, string> = {
   'ndr.created': 'Ghi nhận vấn đề',
   'return.started': 'Bắt đầu hoàn hàng',
   'return.completed': 'Hoàn hàng thành công',
+  'linehaul.trip_created': 'Lập chuyến xe',
+  'linehaul.vehicle_assigned': 'Gán xe/tài xế',
+  'linehaul.manifest_loaded': 'Load bao lên xe',
+  'linehaul.vehicle_sealed': 'Niêm phong xe',
+  'linehaul.departed': 'Xe đi',
+  'linehaul.arrived': 'Xe đến',
+  'linehaul.manifest_received': 'Dỡ bao khỏi xe',
+  'linehaul.completed': 'Hoàn tất chuyến xe',
+  'linehaul.cancelled': 'Hủy chuyến xe',
+  'linehaul.incident_reported': 'Ghi nhận sự cố chuyến xe',
+  'linehaul.handover_signed': 'Bàn giao chuyến xe',
 };
 
 export function isTrackingBusinessEventType(
@@ -228,6 +272,10 @@ export function toTimelineTextVi(
     return `Đơn hàng đang gặp sự cố: ${issueName}. Đang chờ xử lý`;
   }
 
+  if (event.event_type.startsWith('linehaul.')) {
+    return buildLinehaulTimelineText(event, locationCode);
+  }
+
   return EVENT_LABELS_VI[event.event_type];
 }
 
@@ -257,7 +305,69 @@ export function extractTimelineNote(event: TrackingEventEnvelope): string | null
     return readNestedString(event.data, ['scanEvent', 'note']);
   }
 
+  if (event.event_type.startsWith('linehaul.')) {
+    return buildLinehaulTimelineNote(event);
+  }
+
   return null;
+}
+
+function buildLinehaulTimelineText(
+  event: TrackingEventEnvelope,
+  locationCode: string | null,
+): string {
+  const baseText = EVENT_LABELS_VI[event.event_type as TrackingBusinessEventType];
+  const tripCode = readNestedString(event.data, ['trip', 'tripCode']);
+  const manifestCode =
+    readNestedString(event.data, ['manifest', 'manifestCode']) ??
+    readNestedString(event.data, ['tripManifest', 'manifestCode']);
+  const sealCode = readNestedString(event.data, ['seal', 'sealCode']);
+
+  if (event.event_type === 'linehaul.manifest_loaded' && manifestCode) {
+    return withLocationSuffix(`${baseText} ${manifestCode}`, locationCode);
+  }
+
+  if (event.event_type === 'linehaul.manifest_received' && manifestCode) {
+    return withLocationSuffix(`${baseText} ${manifestCode}`, locationCode);
+  }
+
+  if (event.event_type === 'linehaul.vehicle_sealed' && sealCode) {
+    return withLocationSuffix(`${baseText} ${sealCode}`, locationCode);
+  }
+
+  if (tripCode) {
+    return withLocationSuffix(`${baseText} ${tripCode}`, locationCode);
+  }
+
+  return withLocationSuffix(baseText, locationCode);
+}
+
+function buildLinehaulTimelineNote(event: TrackingEventEnvelope): string | null {
+  if (event.event_type === 'linehaul.vehicle_assigned') {
+    const vehicleCode = readNestedString(event.data, ['trip', 'vehicle', 'vehicleCode']);
+    const licensePlate = readNestedString(event.data, ['trip', 'vehicle', 'licensePlate']);
+    const driverName = readNestedString(event.data, ['trip', 'driver', 'fullName']);
+
+    return [vehicleCode, licensePlate, driverName].filter(Boolean).join(' - ') || null;
+  }
+
+  if (event.event_type === 'linehaul.incident_reported') {
+    const incidentType = readNestedString(event.data, ['incident', 'incidentType']);
+    const severity = readNestedString(event.data, ['incident', 'severity']);
+    const description = readNestedString(event.data, ['incident', 'description']);
+
+    return [incidentType, severity, description].filter(Boolean).join(' - ') || null;
+  }
+
+  if (event.event_type === 'linehaul.handover_signed') {
+    const fromUser = readNestedString(event.data, ['handover', 'fromUser']);
+    const toUser = readNestedString(event.data, ['handover', 'toUser']);
+    const hubCode = readNestedString(event.data, ['handover', 'hubCode']);
+
+    return [fromUser, toUser, hubCode].filter(Boolean).join(' - ') || null;
+  }
+
+  return readNestedString(event.data, ['trip', 'note']);
 }
 
 function withLocationSuffix(baseText: string, locationCode: string | null): string {

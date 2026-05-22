@@ -64,6 +64,15 @@ wait_port() {
   return 1
 }
 
+ensure_database() {
+  local db_name="$1"
+  if docker exec NEXUS-dev-postgres psql -U postgres -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='${db_name}'" | grep -q 1; then
+    return
+  fi
+  echo "[db] create $db_name"
+  docker exec NEXUS-dev-postgres createdb -U postgres "$db_name"
+}
+
 install_deps_if_needed() {
   local dir="$1"
   local name="$2"
@@ -179,6 +188,7 @@ set_env_value "$ROOT_DIR/services/gateway-bff/.env" AUTH_SERVICE_URL "http://loc
 set_env_value "$ROOT_DIR/services/gateway-bff/.env" DELIVERY_SERVICE_URL "http://localhost:3007"
 set_env_value "$ROOT_DIR/services/gateway-bff/.env" DISPATCH_SERVICE_URL "http://localhost:3004"
 set_env_value "$ROOT_DIR/services/gateway-bff/.env" MANIFEST_SERVICE_URL "http://localhost:3005"
+set_env_value "$ROOT_DIR/services/gateway-bff/.env" LINEHAUL_SERVICE_URL "http://localhost:3013"
 set_env_value "$ROOT_DIR/services/gateway-bff/.env" MASTERDATA_SERVICE_URL "http://localhost:3001"
 set_env_value "$ROOT_DIR/services/gateway-bff/.env" PICKUP_SERVICE_URL "http://localhost:3003"
 set_env_value "$ROOT_DIR/services/gateway-bff/.env" REPORTING_SERVICE_URL "http://localhost:3009"
@@ -191,6 +201,7 @@ set_env_value "$ROOT_DIR/services/shipment-service/.env" PRICING_SERVICE_URL "ht
 
 echo "[infra] starting docker dependencies"
 docker compose -f "$ROOT_DIR/infra/dev/docker-compose.yml" up -d --remove-orphans
+ensure_database linehaul_db
 
 start_service masterdata-service services/masterdata-service 3001 masterdata_db
 start_service shipment-service services/shipment-service 3002 shipment_db
@@ -204,6 +215,7 @@ start_service reporting-service services/reporting-service 3009 reporting_db
 start_service auth-service services/auth-service 3010 auth_db
 start_service payment-service services/payment-service 3011 payment_db
 start_service pricing-service services/pricing-service 3012
+start_service linehaul-service services/linehaul-service 3013 linehaul_db
 
 echo "[seed] auth demo users"
 (
@@ -225,6 +237,7 @@ wait_port reporting-service 3009
 wait_port auth-service 3010
 wait_port payment-service 3011
 wait_port pricing-service 3012
+wait_port linehaul-service 3013
 
 start_service gateway-bff services/gateway-bff 3000
 wait_port gateway-bff 3000

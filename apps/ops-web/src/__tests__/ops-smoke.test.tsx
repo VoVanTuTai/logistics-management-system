@@ -270,6 +270,27 @@ vi.mock('../features/tracking/tracking.api', async (importOriginal) => {
 
   return {
     ...actual,
+    useOperationTimelineQuery: vi.fn(() =>
+      smokeMocks.querySuccess([
+        {
+          id: 'operation-timeline-1',
+          eventTypeCode: 'linehaul.departed',
+          eventType: 'Xe đi LH-HCM-HN-001 HCM01',
+          eventSource: 'linehaul-service',
+          statusAfterEventCode: 'TRIP_DEPARTED',
+          statusAfterEvent: 'Xe đi',
+          locationCode: 'HCM01',
+          locationText: 'Kho HCM01',
+          occurredAt: smokeMocks.nowIso(),
+          note: 'Chuyến linehaul đã xuất bến',
+          entityType: 'TRIP',
+          entityCode: 'LH-HCM-HN-001',
+          relatedShipmentCode: null,
+          relatedManifestCode: 'BAG-HCM-HN-001',
+          relatedTripCode: 'LH-HCM-HN-001',
+        },
+      ]),
+    ),
     useTrackingDetailQuery: vi.fn((_accessToken: string | null, shipmentCode: string) => {
       if (!shipmentCode) {
         return smokeMocks.querySuccess(null);
@@ -543,5 +564,17 @@ describe('ops-web smoke coverage', () => {
     expect(await screen.findByText('SCAN_INBOUND')).toBeInTheDocument();
     expect(screen.getByText('Hub HCM 01')).toBeInTheDocument();
     expect(screen.getByText('Đã đến hub nhận')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: /Projection/i }));
+    await user.selectOptions(screen.getByLabelText(/Đối tượng/i), 'TRIP');
+    await user.type(
+      screen.getByPlaceholderText(/LH-HCM-HN-260522-01/i),
+      'LH-HCM-HN-001',
+    );
+    await user.click(screen.getByRole('button', { name: /Tìm kiếm/i }));
+
+    expect(await screen.findByText(/Timeline vận hành/i)).toBeInTheDocument();
+    expect(screen.getByText(/Xe đi LH-HCM-HN-001 HCM01/i)).toBeInTheDocument();
+    expect(screen.getByText(/Bao: BAG-HCM-HN-001/i)).toBeInTheDocument();
   });
 });

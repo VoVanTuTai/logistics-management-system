@@ -9,6 +9,7 @@ import {
 import type { Request, Response } from 'express';
 
 import { GatewayAuthGuard } from '../../common/guards/gateway-auth.guard';
+import { AuthServiceClient } from '../../infrastructure/clients/auth-service.client';
 import { GatewayProxyClient } from '../../infrastructure/clients/gateway-proxy.client';
 import { ServiceRegistryClient } from '../../infrastructure/clients/service-registry.client';
 
@@ -35,6 +36,11 @@ class MerchantController {
 
 @Module({
   controllers: [MerchantController],
-  providers: [GatewayProxyClient, ServiceRegistryClient, GatewayAuthGuard],
+  providers: [
+    AuthServiceClient,
+    GatewayProxyClient,
+    ServiceRegistryClient,
+    GatewayAuthGuard,
+  ],
 })
 export class MerchantModule {}

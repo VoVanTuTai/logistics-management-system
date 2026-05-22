@@ -161,7 +161,13 @@ export class OpsModule {}
 const AUDIT_DEFAULT_LIMIT = 20;
 const AUDIT_EXPORT_LIMIT = 5000;
 
-type AuditSource = 'auth-service' | 'masterdata-service';
+type AuditSource =
+  | 'auth-service'
+  | 'masterdata-service'
+  | 'dispatch-service'
+  | 'scan-service'
+  | 'manifest-service'
+  | 'delivery-service';
 type AuditSourceFilter = 'all' | AuditSource;
 
 interface AuditLogQuery {
@@ -203,7 +209,7 @@ interface AuditLogPage {
 
 interface AuditSourceConfig {
   source: AuditSource;
-  service: 'auth' | 'masterdata';
+  service: 'auth' | 'masterdata' | 'dispatch' | 'scan' | 'manifest' | 'delivery';
   path: string;
 }
 
@@ -218,10 +224,37 @@ const AUDIT_SOURCES: AuditSourceConfig[] = [
     service: 'masterdata',
     path: 'admin-audit-logs',
   },
+  {
+    source: 'dispatch-service',
+    service: 'dispatch',
+    path: 'ops-audit-logs',
+  },
+  {
+    source: 'scan-service',
+    service: 'scan',
+    path: 'ops-audit-logs',
+  },
+  {
+    source: 'manifest-service',
+    service: 'manifest',
+    path: 'ops-audit-logs',
+  },
+  {
+    source: 'delivery-service',
+    service: 'delivery',
+    path: 'ops-audit-logs',
+  },
 ];
 
 function normalizeSource(value: string | undefined): AuditSourceFilter {
-  if (value === 'auth-service' || value === 'masterdata-service') {
+  if (
+    value === 'auth-service' ||
+    value === 'masterdata-service' ||
+    value === 'dispatch-service' ||
+    value === 'scan-service' ||
+    value === 'manifest-service' ||
+    value === 'delivery-service'
+  ) {
     return value;
   }
 
