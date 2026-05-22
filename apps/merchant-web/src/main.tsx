@@ -1060,6 +1060,108 @@ function MerchantApp(): React.JSX.Element {
     [shipments, pickupByShipmentCode],
   );
 
+  const dashboardInsights = useMemo(() => {
+    const formatLocalDateKey = (date: Date) =>
+      `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const statusGroups = [
+      { key: 'waiting', label: 'Chờ pickup', color: '#8b5f07', count: 0 },
+      { key: 'transit', label: 'Đang giao', color: '#0059b8', count: 0 },
+      { key: 'delivered', label: 'Đã giao', color: '#127a56', count: 0 },
+      { key: 'issue', label: 'Vấn đề / hoàn', color: '#ba1a1a', count: 0 },
+      { key: 'created', label: 'Mới tạo', color: '#7c8aa2', count: 0 },
+    ];
+    const statusByKey = new Map(statusGroups.map((item) => [item.key, item]));
+
+    for (const row of shipmentRows) {
+      const status = resolveShipmentStatusCode(row.shipment);
+      if (status === 'WAITING_PICKUP') {
+        statusByKey.get('waiting')!.count += 1;
+      } else if (['PICKUP_COMPLETED', 'TASK_ASSIGNED', 'MANIFEST_SEALED', 'MANIFEST_RECEIVED', 'MANIFEST_UNSEALED', 'SEND_GOODS', 'SCAN_INBOUND', 'SCAN_OUTBOUND', 'OUT_FOR_DELIVERY'].includes(status)) {
+        statusByKey.get('transit')!.count += 1;
+      } else if (status === 'DELIVERED') {
+        statusByKey.get('delivered')!.count += 1;
+      } else if (['DELIVERY_FAILED', 'NDR_CREATED', 'RETURN_STARTED', 'RETURN_COMPLETED', 'CANCELLED'].includes(status)) {
+        statusByKey.get('issue')!.count += 1;
+      } else {
+        statusByKey.get('created')!.count += 1;
+      }
+    }
+
+    const today = new Date();
+    const dayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const dailySeries = Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(dayStart);
+      date.setDate(dayStart.getDate() - (6 - index));
+      const key = formatLocalDateKey(date);
+      return {
+        key,
+        label: date.toLocaleDateString('vi-VN', { weekday: 'short' }),
+        shortDate: date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
+        orders: 0,
+        fee: 0,
+      };
+    });
+    const dailyByKey = new Map(dailySeries.map((item) => [item.key, item]));
+
+    let totalFee = 0;
+    let totalCod = 0;
+    let deliveredCod = 0;
+
+    for (const row of shipmentRows) {
+      totalFee += row.feeEstimate;
+      totalCod += row.codAmount;
+      if (row.shipment.currentStatus === 'DELIVERED') {
+        deliveredCod += row.codAmount;
+      }
+
+      const createdAt = new Date(row.shipment.createdAt);
+      const key = Number.isNaN(createdAt.getTime()) ? '' : formatLocalDateKey(createdAt);
+      const dailyItem = dailyByKey.get(key);
+      if (dailyItem) {
+        dailyItem.orders += 1;
+        dailyItem.fee += row.feeEstimate;
+      }
+    }
+
+    const maxDailyOrders = Math.max(1, ...dailySeries.map((item) => item.orders));
+    const maxDailyFee = Math.max(1, ...dailySeries.map((item) => item.fee));
+    const totalShipments = shipmentRows.length;
+    const deliveryRate = totalShipments > 0 ? Math.round((dashboardStats.delivered / totalShipments) * 100) : 0;
+    const issueRate = totalShipments > 0 ? Math.round((dashboardStats.failedOrReturn / totalShipments) * 100) : 0;
+    const cashItems = [
+      { label: 'COD thu hộ', value: totalCod, color: '#0052cc' },
+      { label: 'COD đã giao', value: deliveredCod, color: '#127a56' },
+      { label: 'Phí vận chuyển ước tính', value: totalFee, color: '#006477' },
+    ];
+    const maxCashValue = Math.max(1, ...cashItems.map((item) => item.value));
+
+    let progress = 0;
+    const donutGradient =
+      totalShipments === 0
+        ? '#e1e8ff'
+        : `conic-gradient(${statusGroups
+            .map((item) => {
+              const start = progress;
+              progress += (item.count / totalShipments) * 100;
+              return `${item.color} ${start}% ${progress}%`;
+            })
+            .join(', ')})`;
+
+    return {
+      dailySeries,
+      maxDailyOrders,
+      maxDailyFee,
+      statusGroups,
+      totalFee,
+      totalCod,
+      deliveryRate,
+      issueRate,
+      cashItems,
+      maxCashValue,
+      donutGradient,
+    };
+  }, [shipmentRows, dashboardStats.delivered, dashboardStats.failedOrReturn, pickupByShipmentCode]);
+
   useEffect(() => setListPage(1), [listSearch, listStatus, listService, listRegion, listFromDate, listToDate]);
 
   useEffect(() => {
@@ -2139,7 +2241,110 @@ function MerchantApp(): React.JSX.Element {
         <main className={`content ${activeView === 'change-requests' ? 'content--change' : ''} ${activeView === 'print' ? 'content--print' : ''} ${activeView === 'returns' ? 'content--returns' : ''} ${activeView === 'account' ? 'content--account' : ''}`}>
           {dataError ? <p className="message error">{dataError}</p> : null}
 
-          {activeView === 'dashboard' ? <><section className="card"><h3>Tổng quan</h3><div className="metric-grid"><div className="metric"><div className="metric-title">Tổng số đơn hôm nay</div><div className="metric-value">{dashboardStats.totalToday}</div></div><div className="metric"><div className="metric-title">Đơn chờ pickup</div><div className="metric-value">{dashboardStats.waitingPickup}</div></div><div className="metric"><div className="metric-title">Đơn đang giao</div><div className="metric-value">{dashboardStats.inTransit}</div></div><div className="metric"><div className="metric-title">Đơn giao thành công</div><div className="metric-value">{dashboardStats.delivered}</div></div><div className="metric"><div className="metric-title">Thất bại / hoàn</div><div className="metric-value">{dashboardStats.failedOrReturn}</div></div></div></section><section className="card"><h3>Tìm nhanh theo mã vận đơn</h3><form className="btn-row" onSubmit={(e) => { void quickTrackFromDashboard(e); }}><input className="input" style={{ maxWidth: 320 }} value={dashboardSearchCode} onChange={(e) => setDashboardSearchCode(e.target.value)} placeholder="SHP..." /><button className="btn btn-primary" type="submit">Tra cứu vận đơn</button></form></section><section className="card"><h3>Đơn mới tạo gần đây</h3>{recentRows.length === 0 ? <div className="empty">Chưa có đơn hàng.</div> : <div className="table-wrap"><table><thead><tr><th>Mã</th><th>Người nhận</th><th>SĐT</th><th>Trạng thái</th><th>Ngày tạo</th><th>Xem</th></tr></thead><tbody>{recentRows.map((row) => <tr key={row.shipment.id}><td>{row.shipment.code}</td><td>{row.receiverName}</td><td>{row.receiverPhone}</td><td><span className={resolveShipmentStatusClass(row.shipment)}>{resolveShipmentStatusLabel(row.shipment)}</span></td><td>{formatDate(row.shipment.createdAt)}</td><td><button className="btn btn-ghost" onClick={() => { void openShipmentDetail(row.shipment.code); }}>Xem</button></td></tr>)}</tbody></table></div>}</section></> : null}
+          {activeView === 'dashboard' ? (
+            <section className="dashboard-layout">
+              <div className="card dashboard-hero">
+                <div className="dashboard-hero__copy">
+                  <p className="login-kicker">Merchant performance</p>
+                  <h3>Tổng quan vận hành</h3>
+                  <p className="muted">Theo dõi nhịp đơn, COD và phí vận chuyển ước tính từ các vận đơn hiện có.</p>
+                </div>
+                <form className="dashboard-search" onSubmit={(e) => { void quickTrackFromDashboard(e); }}>
+                  <input className="input dashboard-search__input" value={dashboardSearchCode} onChange={(e) => setDashboardSearchCode(e.target.value)} placeholder="SHP..." />
+                  <button className="btn btn-primary dashboard-search__btn" type="submit">Tra cứu</button>
+                </form>
+              </div>
+
+              <div className="metric-grid dashboard-metrics">
+                <div className="metric dashboard-metric"><div className="metric-title">Tổng số đơn hôm nay</div><div className="metric-value">{dashboardStats.totalToday}</div><div className="dashboard-metric__hint">Tạo mới trong ngày</div></div>
+                <div className="metric dashboard-metric"><div className="metric-title">Đơn chờ pickup</div><div className="metric-value">{dashboardStats.waitingPickup}</div><div className="dashboard-metric__hint">Cần bàn giao lấy hàng</div></div>
+                <div className="metric dashboard-metric"><div className="metric-title">Đơn đang giao</div><div className="metric-value">{dashboardStats.inTransit}</div><div className="dashboard-metric__hint">Đang luân chuyển</div></div>
+                <div className="metric dashboard-metric"><div className="metric-title">Đơn giao thành công</div><div className="metric-value">{dashboardStats.delivered}</div><div className="dashboard-metric__hint">{dashboardInsights.deliveryRate}% toàn bộ đơn</div></div>
+                <div className="metric dashboard-metric"><div className="metric-title">Thất bại / hoàn</div><div className="metric-value">{dashboardStats.failedOrReturn}</div><div className="dashboard-metric__hint">{dashboardInsights.issueRate}% cần theo dõi</div></div>
+              </div>
+
+              <div className="dashboard-chart-grid">
+                <section className="card dashboard-chart-card dashboard-chart-card--wide">
+                  <div className="dashboard-card-header">
+                    <div>
+                      <p className="login-kicker">7 ngày gần nhất</p>
+                      <h3>Đơn hàng & phí vận chuyển</h3>
+                    </div>
+                    <span className="badge">{formatCurrency(dashboardInsights.totalFee)} phí ước tính</span>
+                  </div>
+                  <div className="dashboard-bars" aria-label="Biểu đồ đơn hàng 7 ngày gần nhất">
+                    {dashboardInsights.dailySeries.map((item) => (
+                      <div className="dashboard-bar-item" key={item.key}>
+                        <div className="dashboard-bar-stack">
+                          <span className="dashboard-bar dashboard-bar--fee" style={{ height: `${Math.max(8, (item.fee / dashboardInsights.maxDailyFee) * 100)}%` }} title={`${formatCurrency(item.fee)} phí ước tính`} />
+                          <span className="dashboard-bar dashboard-bar--orders" style={{ height: `${Math.max(8, (item.orders / dashboardInsights.maxDailyOrders) * 100)}%` }} title={`${item.orders} đơn`} />
+                        </div>
+                        <strong>{item.orders}</strong>
+                        <span>{item.label}</span>
+                        <small>{item.shortDate}</small>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="dashboard-legend">
+                    <span><i className="dashboard-dot dashboard-dot--orders" /> Số đơn</span>
+                    <span><i className="dashboard-dot dashboard-dot--fee" /> Phí ước tính</span>
+                  </div>
+                </section>
+
+                <section className="card dashboard-chart-card">
+                  <div className="dashboard-card-header">
+                    <div>
+                      <p className="login-kicker">Tỷ trọng</p>
+                      <h3>Trạng thái đơn</h3>
+                    </div>
+                  </div>
+                  <div className="dashboard-status-chart">
+                    <div className="dashboard-donut" style={{ background: dashboardInsights.donutGradient }}>
+                      <div><strong>{shipmentRows.length}</strong><span>đơn</span></div>
+                    </div>
+                    <div className="dashboard-status-list">
+                      {dashboardInsights.statusGroups.map((item) => (
+                        <div className="dashboard-status-row" key={item.key}>
+                          <span><i style={{ background: item.color }} />{item.label}</span>
+                          <strong>{item.count}</strong>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </section>
+              </div>
+
+              <div className="dashboard-bottom-grid">
+                <section className="card dashboard-chart-card">
+                  <div className="dashboard-card-header">
+                    <div>
+                      <p className="login-kicker">Dòng tiền</p>
+                      <h3>COD & phí</h3>
+                    </div>
+                  </div>
+                  <div className="dashboard-cash-list">
+                    {dashboardInsights.cashItems.map((item) => (
+                      <div className="dashboard-cash-row" key={item.label}>
+                        <div className="dashboard-cash-row__head"><span>{item.label}</span><strong>{formatCurrency(item.value)}</strong></div>
+                        <div className="dashboard-cash-bar"><span style={{ width: `${Math.max(4, (item.value / dashboardInsights.maxCashValue) * 100)}%`, background: item.color }} /></div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="card dashboard-recent-card">
+                  <div className="dashboard-card-header">
+                    <div>
+                      <p className="login-kicker">Gần đây</p>
+                      <h3>Đơn mới tạo</h3>
+                    </div>
+                    <span className="badge">{recentRows.length} đơn</span>
+                  </div>
+                  {recentRows.length === 0 ? <div className="empty">Chưa có đơn hàng.</div> : <div className="table-wrap dashboard-table-wrap"><table><thead><tr><th>Mã</th><th>Người nhận</th><th>SĐT</th><th>Trạng thái</th><th>Ngày tạo</th><th>Xem</th></tr></thead><tbody>{recentRows.map((row) => <tr key={row.shipment.id}><td>{row.shipment.code}</td><td>{row.receiverName}</td><td>{row.receiverPhone}</td><td><span className={resolveShipmentStatusClass(row.shipment)}>{resolveShipmentStatusLabel(row.shipment)}</span></td><td>{formatDate(row.shipment.createdAt)}</td><td><button className="btn btn-ghost" onClick={() => { void openShipmentDetail(row.shipment.code); }}>Xem</button></td></tr>)}</tbody></table></div>}
+                </section>
+              </div>
+            </section>
+          ) : null}
 
           {activeView === 'create-shipment' ? (
             <section className="split-layout">
@@ -3341,8 +3546,5 @@ createRoot(rootElement).render(
     <MerchantApp />
   </React.StrictMode>,
 );
-
-
-
 
 
