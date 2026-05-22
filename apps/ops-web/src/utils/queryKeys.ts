@@ -1,8 +1,6 @@
 export const queryKeys = {
   dashboard: ['dashboard'],
-  opsAudit: ['ops-audit'],
   shipments: ['shipments'],
-  changeRequests: ['change-requests'],
   pickups: ['pickups'],
   tasks: ['tasks'],
   manifests: ['manifests'],

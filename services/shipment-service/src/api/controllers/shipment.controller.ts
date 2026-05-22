@@ -3,11 +3,8 @@ import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common
 import { ShipmentsService } from '../../application/services/shipments.service';
 import type {
   CancelShipmentInput,
-  ApproveShipmentInput,
   CreateShipmentInput,
-  ReviewShipmentInput,
   Shipment,
-  ShipmentActionResult,
   ShipmentListFilters,
   ShipmentListPage,
   UpdateShipmentInput,
@@ -46,21 +43,5 @@ export class ShipmentController {
     @Body() body: CancelShipmentInput,
   ): Promise<Shipment> {
     return this.shipmentsService.cancel(code, body);
-  }
-
-  @Post(':code/review')
-  review(
-    @Param('code') code: string,
-    @Body() body: ReviewShipmentInput,
-  ): Promise<ShipmentActionResult> {
-    return this.shipmentsService.review(code, body);
-  }
-
-  @Post(':code/approve')
-  approve(
-    @Param('code') code: string,
-    @Body() body: ApproveShipmentInput,
-  ): Promise<ShipmentActionResult> {
-    return this.shipmentsService.approve(code, body);
   }
 }

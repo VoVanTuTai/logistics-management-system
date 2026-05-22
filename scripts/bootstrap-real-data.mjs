@@ -8,7 +8,6 @@ const BASE = {
   pickup: process.env.PICKUP_SERVICE_URL ?? 'http://127.0.0.1:3003',
   dispatch: process.env.DISPATCH_SERVICE_URL ?? 'http://127.0.0.1:3004',
   manifest: process.env.MANIFEST_SERVICE_URL ?? 'http://127.0.0.1:3005',
-  linehaul: process.env.LINEHAUL_SERVICE_URL ?? 'http://127.0.0.1:3013',
   scan: process.env.SCAN_SERVICE_URL ?? 'http://127.0.0.1:3006',
   delivery: process.env.DELIVERY_SERVICE_URL ?? 'http://127.0.0.1:3007',
   tracking: process.env.TRACKING_SERVICE_URL ?? 'http://127.0.0.1:3008',
@@ -319,10 +318,6 @@ async function runFullFlowOrders() {
   });
 
   const latestManifest = await progressFullFlowManifest(manifest, shipmentCodes);
-  await ensureFullFlowLinehaulTrip({
-    manifestId: latestManifest.id,
-    manifestCode,
-  });
 
   for (const item of FULL_FLOW_SHIPMENTS) {
     await recordScan('outbound', item.code, 'HCM-001', manifestCode, '20000001', 'SEND_GOODS - gửi bao hàng lên tuyến HCM-HN', eventDate(0, 12), `full-${item.code}-send-goods`);
@@ -461,80 +456,6 @@ async function progressFullFlowManifest(manifest, shipmentCodes) {
   }
 
   return current;
-}
-
-async function ensureFullFlowLinehaulTrip(input) {
-  const tripCode = 'LH-HCM-HN-260522-01';
-  const trips = await request('GET', `${BASE.linehaul}/trips?manifestCode=${encodeURIComponent(input.manifestCode)}`);
-  const existing = trips.find((trip) => trip.tripCode === tripCode);
-  if (existing) return existing;
-
-  const vehicles = await request('GET', `${BASE.linehaul}/vehicles`);
-  const vehicle = vehicles.find((item) => item.vehicleCode === 'TRUCK-HCM-HN-01')
-    ?? await request('POST', `${BASE.linehaul}/vehicles`, {
-      vehicleCode: 'TRUCK-HCM-HN-01',
-      licensePlate: '51C-260.522',
-      vehicleType: 'Xe tải thùng kín 8 tấn',
-      capacityKg: 8000,
-      note: 'Xe tuyến cố định HCM -> HN dùng cho dữ liệu full-flow.',
-    });
-
-  const drivers = await request('GET', `${BASE.linehaul}/drivers`);
-  const driver = drivers.find((item) => item.driverCode === 'DRV-LH-001')
-    ?? await request('POST', `${BASE.linehaul}/drivers`, {
-      driverCode: 'DRV-LH-001',
-      userId: '30000001',
-      fullName: 'Nguyễn Văn Minh',
-      phone: '0903000001',
-      licenseNo: 'GPLX-HCM-260522',
-      note: 'Tài xế tuyến HCM -> HN dùng cho dữ liệu full-flow.',
-    });
-
-  const trip = await request('POST', `${BASE.linehaul}/trips`, {
-    tripCode,
-    originHubCode: 'HCM-001',
-    destinationHubCode: 'HN-001',
-    vehicleId: vehicle.id,
-    driverId: driver.id,
-    plannedDepartAt: eventDate(0, 13),
-    plannedArriveAt: eventDate(0, 15),
-    createdBy: '20000001',
-    note: 'Chuyến xe thật cho 5 đơn full-flow.',
-  });
-
-  await request('POST', `${BASE.linehaul}/trips/${encodeURIComponent(trip.id)}/manifests`, {
-    manifestId: input.manifestId,
-    manifestCode: input.manifestCode,
-    loadedBy: '20000001',
-    note: 'Load bao full-flow lên xe tuyến.',
-  });
-
-  await request('POST', `${BASE.linehaul}/trips/${encodeURIComponent(trip.id)}/seal`, {
-    sealCodes: ['SEAL-FULL-HCM-HN-01'],
-    sealedBy: '20000001',
-    note: 'Niêm phong xe trước khi xuất bến.',
-  });
-
-  await request('POST', `${BASE.linehaul}/trips/${encodeURIComponent(trip.id)}/depart`, {
-    actualDepartAt: eventDate(0, 13),
-    departedBy: '20000001',
-    note: 'Xe rời hub HCM.',
-  });
-
-  await request('POST', `${BASE.linehaul}/trips/${encodeURIComponent(trip.id)}/arrive`, {
-    actualArriveAt: eventDate(0, 15),
-    sealCodes: ['SEAL-FULL-HCM-HN-01'],
-    arrivedBy: '20000002',
-    note: 'Xe đến hub HN, seal khớp.',
-  });
-
-  await request('POST', `${BASE.linehaul}/trips/${encodeURIComponent(trip.id)}/receive-manifest`, {
-    manifestCode: input.manifestCode,
-    unloadedBy: '20000002',
-    note: 'Dỡ bao khỏi xe và bàn giao hub đích.',
-  });
-
-  return request('POST', `${BASE.linehaul}/trips/${encodeURIComponent(trip.id)}/complete`, {});
 }
 
 async function unsealFullFlowManifest(manifestId, shipmentCodes) {

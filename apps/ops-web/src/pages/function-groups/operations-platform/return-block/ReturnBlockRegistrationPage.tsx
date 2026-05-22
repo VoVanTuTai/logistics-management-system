@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../../../../store/authStore';
 import { useUiStore } from '../../../../store/uiStore';
 import { ndrClient } from '../../../../features/ndr/ndr.client';
-import { returnClient } from '../../../../features/returns/return.client';
 import { useShipmentDetailQuery } from '../../../../features/shipments/shipments.hooks';
 import './ReturnBlockRegistrationPage.css';
 
@@ -208,12 +207,10 @@ export function ReturnBlockRegistrationPage(): React.JSX.Element {
       const matchedNdr = ndrCases.find((ndrCase) => ndrCase.shipmentCode === queryCode);
 
       if (!matchedNdr) {
-        await returnClient.create(accessToken, {
-          shipmentCode: queryCode,
-          note: finalNote,
-        });
-        showToast(`Đã tạo return case độc lập cho vận đơn ${queryCode}.`, 'success');
-        handleReset();
+        showToast(
+          'Chưa có NDR case cho vận đơn này. Backend hiện chưa có endpoint tạo return-block độc lập, nên chưa ghi nhận chuyển hoàn được.',
+          'error',
+        );
         return;
       }
 

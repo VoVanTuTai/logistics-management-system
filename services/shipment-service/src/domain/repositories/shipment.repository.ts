@@ -3,7 +3,6 @@ import type {
   Shipment,
   ShipmentListFilters,
   ShipmentListPage,
-  JsonValue,
   UpdateShipmentInput,
 } from '../entities/shipment.entity';
 import type { ShipmentCurrentStatus } from '../entities/shipment-status.entity';
@@ -14,7 +13,6 @@ export abstract class ShipmentRepository {
   abstract findByCode(code: string): Promise<Shipment | null>;
   abstract create(input: CreateShipmentInput): Promise<Shipment>;
   abstract update(code: string, input: UpdateShipmentInput): Promise<Shipment>;
-  abstract updateMetadata(code: string, metadata: JsonValue | null): Promise<Shipment>;
   abstract updateCurrentStatus(
     code: string,
     currentStatus: ShipmentCurrentStatus,

@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type {
   Prisma,
-  OperationTimelineEvent as PrismaOperationTimelineEventRecord,
   TimelineEvent as PrismaTimelineEventRecord,
   TrackingCurrent as PrismaTrackingCurrentRecord,
   TrackingIndex as PrismaTrackingIndexRecord,
@@ -14,11 +13,6 @@ import {
   toTimelineTextVi,
   toTrackingStatusLabelVi,
 } from '../../application/mappers/tracking-display.mapper';
-import type {
-  OperationEntityType,
-  OperationTimelineEvent,
-  OperationTimelineFilters,
-} from '../../domain/entities/operation-timeline-event.entity';
 import type {
   TimelineEvent,
   TrackingEventEnvelope,
@@ -137,51 +131,6 @@ export class TrackingProjectionStore {
     };
   }
 
-  async projectOperation(event: TrackingEventEnvelope): Promise<boolean> {
-    if (!isTrackingBusinessEventType(event.event_type)) {
-      return false;
-    }
-
-    const shipmentCode = this.normalizeCode(this.extractShipmentCode(event));
-    const manifestCode = this.extractManifestCode(event);
-    const tripCode = this.extractTripCode(event);
-    const locationCode = this.extractLocationCode(event);
-    const actor = this.extractActor(event);
-    const occurredAt = new Date(event.occurred_at);
-    const status = this.extractOperationStatus(event);
-    const payload = event as unknown as Prisma.InputJsonValue;
-    const targets = this.buildOperationTargets({
-      shipmentCode,
-      manifestCode,
-      tripCode,
-    });
-
-    if (targets.length === 0) {
-      return false;
-    }
-
-    let createdAny = false;
-    for (const target of targets) {
-      const created = await this.createOperationTimelineIfAbsent({
-        eventId: event.event_id,
-        eventType: event.event_type,
-        entityType: target.entityType,
-        entityCode: target.entityCode,
-        relatedShipmentCode: shipmentCode,
-        relatedManifestCode: manifestCode,
-        relatedTripCode: tripCode,
-        status,
-        actor,
-        locationCode,
-        payload,
-        occurredAt,
-      });
-      createdAny ||= created;
-    }
-
-    return createdAny;
-  }
-
   async getTimeline(shipmentCode: string): Promise<TimelineEvent[]> {
     const records = await this.prisma.timelineEvent.findMany({
       where: {
@@ -215,69 +164,11 @@ export class TrackingProjectionStore {
     return record ? this.toTrackingIndexEntity(record) : null;
   }
 
-  async getOperationTimeline(
-    filters: OperationTimelineFilters,
-  ): Promise<OperationTimelineEvent[]> {
-    const where: Prisma.OperationTimelineEventWhereInput = {};
-
-    if (filters.entityType) {
-      where.entityType = filters.entityType;
-    }
-
-    if (filters.entityCode) {
-      where.entityCode = filters.entityCode;
-    }
-
-    if (filters.shipmentCode) {
-      where.relatedShipmentCode = filters.shipmentCode;
-    }
-
-    if (filters.manifestCode) {
-      where.relatedManifestCode = filters.manifestCode;
-    }
-
-    if (filters.tripCode) {
-      where.relatedTripCode = filters.tripCode;
-    }
-
-    if (filters.eventType) {
-      where.eventType = filters.eventType;
-    }
-
-    const records = await this.prisma.operationTimelineEvent.findMany({
-      where,
-      orderBy: {
-        occurredAt: 'asc',
-      },
-      take: filters.limit,
-    });
-
-    return records.map((record) => this.toOperationTimelineEntity(record));
-  }
-
   private async createTimelineIfAbsent(
     data: Prisma.TimelineEventCreateInput,
   ): Promise<boolean> {
     try {
       await this.prisma.timelineEvent.create({ data });
-      return true;
-    } catch (error) {
-      if (
-        error instanceof PrismaNamespace.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
-        return false;
-      }
-
-      throw error;
-    }
-  }
-
-  private async createOperationTimelineIfAbsent(
-    data: Prisma.OperationTimelineEventCreateInput,
-  ): Promise<boolean> {
-    try {
-      await this.prisma.operationTimelineEvent.create({ data });
       return true;
     } catch (error) {
       if (
@@ -368,61 +259,6 @@ export class TrackingProjectionStore {
     );
   }
 
-  private extractManifestCode(event: TrackingEventEnvelope): string | null {
-    return this.normalizeCode(
-      this.getNestedString(event.data, ['manifest', 'manifestCode']) ??
-        this.getNestedString(event.data, ['manifestCode']) ??
-        this.getNestedString(event.data, ['manifest', 'code']) ??
-        this.getNestedString(event.data, ['tripManifest', 'manifestCode']) ??
-        this.getNestedString(event.data, ['linehaulManifest', 'manifestCode']),
-    );
-  }
-
-  private extractTripCode(event: TrackingEventEnvelope): string | null {
-    return this.normalizeCode(
-      this.getNestedString(event.data, ['trip', 'tripCode']) ??
-        this.getNestedString(event.data, ['tripCode']) ??
-        this.getNestedString(event.data, ['linehaulTrip', 'tripCode']),
-    );
-  }
-
-  private extractOperationStatus(event: TrackingEventEnvelope): string | null {
-    const shipmentStatus = this.normalizeCode(
-      this.getNestedString(event.data, ['shipment', 'currentStatus']),
-    );
-    if (shipmentStatus) {
-      return shipmentStatus;
-    }
-
-    return (
-      resolveTrackingStatusFromEvent(event, null) ??
-      this.normalizeCode(this.getNestedString(event.data, ['trip', 'status'])) ??
-      this.normalizeCode(this.getNestedString(event.data, ['manifest', 'status']))
-    );
-  }
-
-  private buildOperationTargets(input: {
-    shipmentCode: string | null;
-    manifestCode: string | null;
-    tripCode: string | null;
-  }): Array<{ entityType: OperationEntityType; entityCode: string }> {
-    const targets: Array<{ entityType: OperationEntityType; entityCode: string }> = [];
-
-    if (input.shipmentCode) {
-      targets.push({ entityType: 'SHIPMENT', entityCode: input.shipmentCode });
-    }
-
-    if (input.manifestCode) {
-      targets.push({ entityType: 'MANIFEST', entityCode: input.manifestCode });
-    }
-
-    if (input.tripCode) {
-      targets.push({ entityType: 'TRIP', entityCode: input.tripCode });
-    }
-
-    return targets;
-  }
-
   private extractActor(event: TrackingEventEnvelope): string | null {
     if (typeof event.actor === 'string' && event.actor.trim()) {
       return event.actor;
@@ -480,12 +316,6 @@ export class TrackingProjectionStore {
     return normalized.length > 0 ? normalized : null;
   }
 
-  private normalizeCode(value: string | null | undefined): string | null {
-    const normalized = value?.trim().toUpperCase() ?? '';
-
-    return normalized.length > 0 ? normalized : null;
-  }
-
   private toTimelineEntity(record: PrismaTimelineEventRecord): TimelineEvent {
     return {
       id: record.id,
@@ -524,28 +354,6 @@ export class TrackingProjectionStore {
       shipmentCode: record.shipmentCode,
       latestEventType: record.latestEventType,
       latestEventAt: record.latestEventAt,
-      createdAt: record.createdAt,
-      updatedAt: record.updatedAt,
-    };
-  }
-
-  private toOperationTimelineEntity(
-    record: PrismaOperationTimelineEventRecord,
-  ): OperationTimelineEvent {
-    return {
-      id: record.id,
-      eventId: record.eventId,
-      eventType: record.eventType,
-      entityType: record.entityType as OperationEntityType,
-      entityCode: record.entityCode,
-      relatedShipmentCode: record.relatedShipmentCode,
-      relatedManifestCode: record.relatedManifestCode,
-      relatedTripCode: record.relatedTripCode,
-      status: record.status,
-      actor: record.actor,
-      locationCode: record.locationCode,
-      payload: record.payload as unknown as TrackingEventEnvelope,
-      occurredAt: record.occurredAt,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
     };

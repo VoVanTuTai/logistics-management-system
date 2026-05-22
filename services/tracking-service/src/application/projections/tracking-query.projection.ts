@@ -1,11 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
 import {
-  type OperationEntityType,
-  type OperationTimelineEvent,
-  type OperationTimelineFilters,
-} from '../../domain/entities/operation-timeline-event.entity';
-import {
   resolveTrackingStatusFromEvent,
   toTimelineTextVi,
   toTrackingStatusLabelVi,
@@ -53,27 +48,6 @@ export interface PublicTrackingView {
     currentStatus: string;
     currentLocation: string;
   };
-}
-
-export interface OperationTimelineEventView {
-  id: string;
-  eventId: string;
-  eventTypeCode: string;
-  eventType: string;
-  entityType: OperationEntityType;
-  entityCode: string;
-  relatedShipmentCode: string | null;
-  relatedManifestCode: string | null;
-  relatedTripCode: string | null;
-  statusAfterEventCode: string | null;
-  statusAfterEvent: string | null;
-  actor: string | null;
-  eventSource: string;
-  locationCode: string | null;
-  locationText: string | null;
-  occurredAt: Date;
-  payload: OperationTimelineEvent['payload'];
-  note: string | null;
 }
 
 @Injectable()
@@ -140,14 +114,6 @@ export class TrackingQueryProjection {
     }
 
     return current;
-  }
-
-  async getOperationTimeline(
-    filters: OperationTimelineFilters,
-  ): Promise<OperationTimelineEventView[]> {
-    const timeline = await this.trackingProjectionStore.getOperationTimeline(filters);
-
-    return timeline.map((event) => this.mapOperationTimelineEvent(event));
   }
 
   private mapTimeline(timelineRecords: TimelineEvent[]): TimelineEventView[] {
@@ -225,36 +191,6 @@ export class TrackingQueryProjection {
       lastEventAt: current.lastEventAt,
       updatedAt: current.updatedAt,
       viewPayload: current.viewPayload,
-    };
-  }
-
-  private mapOperationTimelineEvent(
-    event: OperationTimelineEvent,
-  ): OperationTimelineEventView {
-    const locationCode =
-      event.locationCode ?? this.extractLocationCode(event.payload);
-    const eventText = toTimelineTextVi(event.payload, locationCode);
-    const statusCode = event.status ?? resolveTrackingStatusFromEvent(event.payload, null);
-
-    return {
-      id: event.id,
-      eventId: event.eventId,
-      eventTypeCode: event.eventType,
-      eventType: eventText,
-      entityType: event.entityType,
-      entityCode: event.entityCode,
-      relatedShipmentCode: event.relatedShipmentCode,
-      relatedManifestCode: event.relatedManifestCode,
-      relatedTripCode: event.relatedTripCode,
-      statusAfterEventCode: statusCode,
-      statusAfterEvent: toTrackingStatusLabelVi(statusCode),
-      actor: event.actor,
-      eventSource: event.actor?.trim() || 'Hệ thống',
-      locationCode,
-      locationText: locationCode ? `Kho ${locationCode}` : null,
-      occurredAt: event.occurredAt,
-      payload: event.payload,
-      note: extractTimelineNote(event.payload),
     };
   }
 

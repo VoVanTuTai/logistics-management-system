@@ -18,12 +18,6 @@ export interface ReturnCaseFilters {
   status?: ReturnCaseStatus | 'ALL' | null;
 }
 
-export interface CreateReturnCaseInput {
-  shipmentCode: string;
-  ndrCaseId?: string | null;
-  note?: string | null;
-}
-
 export interface CompleteReturnCaseInput {
   note?: string | null;
 }

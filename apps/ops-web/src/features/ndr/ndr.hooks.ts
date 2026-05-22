@@ -4,11 +4,17 @@ import { queryKeys } from '../../utils/queryKeys';
 import { ndrClient } from './ndr.client';
 import type { RescheduleInput, ReturnDecisionInput } from './ndr.types';
 
-export function useNdrCasesQuery(accessToken: string | null) {
+export function useNdrCasesQuery(
+  accessToken: string | null,
+  options?: {
+    refetchInterval?: number | false;
+  },
+) {
   return useQuery({
     queryKey: queryKeys.ndr,
     queryFn: () => ndrClient.list(accessToken),
     enabled: Boolean(accessToken),
+    refetchInterval: options?.refetchInterval,
   });
 }
 

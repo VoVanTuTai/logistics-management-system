@@ -32,19 +32,6 @@ export interface CancelShipmentInput {
   reason?: string | null;
 }
 
-export interface ReviewShipmentInput {
-  note?: string | null;
-}
-
-export interface ApproveShipmentInput {
-  note?: string | null;
-}
-
-export interface ShipmentActionResult {
-  action: 'review' | 'approve';
-  shipment: Shipment;
-}
-
 export interface ShipmentListFilters {
   q?: string | null;
   shipmentCode?: string | null;

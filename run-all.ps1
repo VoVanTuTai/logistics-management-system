@@ -156,7 +156,6 @@ function Update-GatewayBffEnv([string]$mode) {
   Set-EnvValue -FilePath $envPath -Key 'DELIVERY_SERVICE_URL' -Value 'http://localhost:3007'
   Set-EnvValue -FilePath $envPath -Key 'DISPATCH_SERVICE_URL' -Value 'http://localhost:3004'
   Set-EnvValue -FilePath $envPath -Key 'MANIFEST_SERVICE_URL' -Value 'http://localhost:3005'
-  Set-EnvValue -FilePath $envPath -Key 'LINEHAUL_SERVICE_URL' -Value 'http://localhost:3013'
   Set-EnvValue -FilePath $envPath -Key 'MASTERDATA_SERVICE_URL' -Value 'http://localhost:3001'
   Set-EnvValue -FilePath $envPath -Key 'PICKUP_SERVICE_URL' -Value 'http://localhost:3003'
   Set-EnvValue -FilePath $envPath -Key 'REPORTING_SERVICE_URL' -Value 'http://localhost:3009'

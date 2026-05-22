@@ -3,7 +3,6 @@ export const routePaths = {
   appRoot: '/app',
   dashboard: '/app/dashboard',
   analyticsDashboard: '/app/analytics',
-  opsAudit: '/app/audit-logs',
   comingSoonDebtReport: '/app/coming-soon/bao-cao-cong-no',
   comingSoonAiCashflow: '/app/coming-soon/ai-du-doan-dong-tien',
   groupsRoot: '/app/function-groups',
@@ -52,6 +51,8 @@ export const routePaths = {
   groupCapabilityPlatform: '/app/function-groups/capability-platform',
   groupOperationsMetrics: '/app/function-groups/operations-metrics',
   groupServiceQuality: '/app/function-groups/service-quality',
+  serviceQualityProactiveActionBoard:
+    '/app/function-groups/service-quality/proactive/action-board',
   serviceQualityProactiveInbound:
     '/app/function-groups/service-quality/proactive/monitor-received',
   serviceQualityProactiveDelivered:
@@ -109,7 +110,6 @@ export const routePaths = {
   linehaulVehicleSeal: '/app/function-groups/capability-platform/van-chuyen-tuyen-nhanh/tem-xe',
   shipments: '/app/shipments',
   shipmentDetail: (shipmentId: string) => `/app/shipments/${shipmentId}`,
-  changeRequests: '/app/change-requests',
   pickups: '/app/pickups',
   pickupDetail: (pickupId: string) => `/app/pickups/${pickupId}`,
   tasks: '/app/tasks',
@@ -127,7 +127,6 @@ export const routePaths = {
   masterdataConfigs: '/app/masterdata/configs',
   dashboardLeaf: 'dashboard',
   analyticsDashboardLeaf: 'analytics',
-  opsAuditLeaf: 'audit-logs',
   comingSoonDebtReportLeaf: 'coming-soon/bao-cao-cong-no',
   comingSoonAiCashflowLeaf: 'coming-soon/ai-du-doan-dong-tien',
   groupBasicDataLeaf: 'function-groups/basic-data',
@@ -169,6 +168,8 @@ export const routePaths = {
   groupCapabilityPlatformLeaf: 'function-groups/capability-platform',
   groupOperationsMetricsLeaf: 'function-groups/operations-metrics',
   groupServiceQualityLeaf: 'function-groups/service-quality',
+  serviceQualityProactiveActionBoardLeaf:
+    'function-groups/service-quality/proactive/action-board',
   serviceQualityProactiveInboundLeaf:
     'function-groups/service-quality/proactive/monitor-received',
   serviceQualityProactiveDeliveredLeaf:
@@ -219,7 +220,6 @@ export const routePaths = {
   linehaulVehicleSealLeaf: 'function-groups/capability-platform/van-chuyen-tuyen-nhanh/tem-xe',
   shipmentsLeaf: 'shipments',
   shipmentDetailLeaf: 'shipments/:shipmentId',
-  changeRequestsLeaf: 'change-requests',
   pickupsLeaf: 'pickups',
   pickupDetailLeaf: 'pickups/:pickupId',
   tasksLeaf: 'tasks',
@@ -240,9 +240,7 @@ export const routePaths = {
 // Core routes are backed by gateway/API flows and remain visible in demo production.
 export const OPS_CORE_ROUTE_PATHS = [
   routePaths.dashboard,
-  routePaths.opsAudit,
   routePaths.shipments,
-  routePaths.changeRequests,
   routePaths.pickups,
   routePaths.tasks,
   routePaths.manifests,
@@ -292,6 +290,7 @@ export const OPS_FULL_MODULE_ROUTE_PATHS = [
   routePaths.branchBusinessOrderDelivery,
   routePaths.branchBusinessFinanceCod,
   routePaths.branchBusinessFinanceReconcile,
+  routePaths.serviceQualityProactiveActionBoard,
   routePaths.serviceQualityProactiveInbound,
   routePaths.serviceQualityProactiveDelivered,
   routePaths.opsMetricsAbnormalRoot,
