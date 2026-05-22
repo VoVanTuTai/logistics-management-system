@@ -2,6 +2,7 @@ import { opsApiClient } from '../../services/api/client';
 import { opsEndpoints } from '../../services/api/endpoints';
 import type {
   CompleteReturnCaseInput,
+  CreateReturnCaseInput,
   ReturnCaseDto,
   ReturnCaseFilters,
 } from './return.types';
@@ -46,6 +47,16 @@ export const returnClient = {
   detail: (accessToken: string | null, returnId: string): Promise<ReturnCaseDto> =>
     opsApiClient.request<ReturnCaseDto>(opsEndpoints.returns.detail(returnId), {
       accessToken,
+    }),
+
+  create: (
+    accessToken: string | null,
+    payload: CreateReturnCaseInput,
+  ): Promise<ReturnCaseDto> =>
+    opsApiClient.request<ReturnCaseDto>(opsEndpoints.returns.list, {
+      method: 'POST',
+      accessToken,
+      body: payload,
     }),
 
   complete: (

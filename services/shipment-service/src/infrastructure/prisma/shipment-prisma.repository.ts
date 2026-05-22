@@ -118,6 +118,17 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
     return this.toEntity(record);
   }
 
+  async updateMetadata(code: string, metadata: JsonValue | null): Promise<Shipment> {
+    const record = await this.prisma.shipment.update({
+      where: { code },
+      data: {
+        metadata: metadata as unknown as Prisma.InputJsonValue,
+      },
+    });
+
+    return this.toEntity(record);
+  }
+
   async updateCurrentStatus(
     code: string,
     currentStatus: ShipmentCurrentStatus,

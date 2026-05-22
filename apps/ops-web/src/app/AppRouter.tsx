@@ -32,6 +32,10 @@ const AnalyticsDashboardPage = lazy(() =>
     default: module.AnalyticsDashboardPage,
   })),
 );
+const OpsAuditLogPage = lazyRoutePage(
+  () => import('../pages/audit/OpsAuditLogPage'),
+  'OpsAuditLogPage',
+);
 const BasicDataGroupPage = lazyRoutePage(
   () => import('../pages/function-groups/basic-data/BasicDataGroupPage'),
   'BasicDataGroupPage',
@@ -71,6 +75,10 @@ const BranchOutboundOrderManagementPage = lazyRoutePage(
 const BranchShiftClosingPage = lazyRoutePage(
   () => import('../pages/function-groups/branch-business/shift-closing/BranchShiftClosingPage'),
   'BranchShiftClosingPage',
+);
+const ChangeRequestsPage = lazyRoutePage(
+  () => import('../pages/change-requests/ChangeRequestsPage'),
+  'ChangeRequestsPage',
 );
 const CapabilityPlatformGroupPage = lazyRoutePage(
   () => import('../pages/function-groups/capability-platform/CapabilityPlatformGroupPage'),
@@ -581,7 +589,9 @@ function DashboardLayout(): React.JSX.Element {
           label: 'Core Ops',
           to: routePaths.shipments,
           isActive:
+            pathMatches(location.pathname, routePaths.opsAudit) ||
             pathMatches(location.pathname, routePaths.shipments) ||
+            pathMatches(location.pathname, routePaths.changeRequests) ||
             pathMatches(location.pathname, routePaths.pickups) ||
             pathMatches(location.pathname, routePaths.tasks) ||
             pathMatches(location.pathname, routePaths.manifests) ||
@@ -640,7 +650,10 @@ function DashboardLayout(): React.JSX.Element {
         {
           label: 'Vận đơn',
           to: routePaths.shipments,
-          isActive: pathMatches(location.pathname, routePaths.shipments),
+          isActive:
+            pathMatches(location.pathname, routePaths.opsAudit) ||
+            pathMatches(location.pathname, routePaths.shipments) ||
+            pathMatches(location.pathname, routePaths.changeRequests),
         },
         {
           label: 'Lấy hàng',
@@ -683,7 +696,9 @@ function DashboardLayout(): React.JSX.Element {
   const operationsSidebarItems: SidebarItem[] = enableFullOpsModules
     ? [
         { label: 'Luồng vận hành lõi', icon: 'tracking_lookup', sectionLabel: 'Luồng vận hành lõi' },
+        { label: 'Nhật ký thao tác', icon: 'proof_management', to: routePaths.opsAudit },
         { label: 'Vận đơn', icon: 'customer_order_management', to: routePaths.shipments },
+        { label: 'Yêu cầu đổi thông tin', icon: 'proof_management', to: routePaths.changeRequests },
         { label: 'Duyệt lấy hàng', icon: 'customer_order_dispatch', to: routePaths.pickups },
         { label: 'Phân công tác vụ', icon: 'metrics_action', to: routePaths.tasks },
         { label: 'Bao tải', icon: 'thermal_label', to: routePaths.manifests },
@@ -697,7 +712,9 @@ function DashboardLayout(): React.JSX.Element {
         { label: 'Giám sát dữ liệu', icon: 'monitor_data', kind: 'monitor_data' },
       ]
     : [
+        { label: 'Nhật ký thao tác', icon: 'proof_management', to: routePaths.opsAudit },
         { label: 'Vận đơn', icon: 'customer_order_management', to: routePaths.shipments },
+        { label: 'Yêu cầu đổi thông tin', icon: 'proof_management', to: routePaths.changeRequests },
         { label: 'Duyệt lấy hàng', icon: 'customer_order_dispatch', to: routePaths.pickups },
         { label: 'Phân công tác vụ', icon: 'metrics_action', to: routePaths.tasks },
         { label: 'Bao tải', icon: 'thermal_label', to: routePaths.manifests },
@@ -1029,8 +1046,12 @@ function DashboardLayout(): React.JSX.Element {
 
   const activeTabLabel = pathMatches(location.pathname, routePaths.tracking)
     ? 'Tra cứu hành trình'
+    : pathMatches(location.pathname, routePaths.opsAudit)
+    ? 'Nhật ký thao tác'
     : pathMatches(location.pathname, routePaths.shipments)
     ? 'Vận đơn'
+    : pathMatches(location.pathname, routePaths.changeRequests)
+    ? 'Yêu cầu đổi thông tin'
     : pathMatches(location.pathname, routePaths.pickups)
     ? 'Duyệt lấy hàng'
     : pathMatches(location.pathname, routePaths.tasks)
@@ -1405,6 +1426,7 @@ export function AppRouter(): React.JSX.Element {
           <Route path={routePaths.appRoot} element={<DashboardLayout />}>
             <Route index element={<Navigate to={routePaths.dashboard} replace />} />
             <Route path={routePaths.dashboardLeaf} element={<DashboardPage />} />
+            <Route path={routePaths.opsAuditLeaf} element={lazyRoute(<OpsAuditLogPage />)} />
             <Route
               path={routePaths.analyticsDashboardLeaf}
               element={
@@ -1739,6 +1761,7 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route path={routePaths.shipmentsLeaf} element={lazyRoute(<ShipmentListPage />)} />
             <Route path={routePaths.shipmentDetailLeaf} element={lazyRoute(<ShipmentDetailPage />)} />
+            <Route path={routePaths.changeRequestsLeaf} element={lazyRoute(<ChangeRequestsPage />)} />
             <Route path={routePaths.pickupsLeaf} element={lazyRoute(<PickupApprovalsPage />)} />
             <Route path={routePaths.pickupDetailLeaf} element={lazyRoute(<PickupRequestDetailPage />)} />
             <Route path={routePaths.tasksLeaf} element={lazyRoute(<TaskAssignmentPage />)} />

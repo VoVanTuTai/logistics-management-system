@@ -47,8 +47,8 @@ Luu y:
 
 - `public` khong ap guard
 - `merchant`, `ops`, `courier` co the bat guard bang `GATEWAY_AUTH_ENABLED=true`
-- Guard hien tai chi kiem tra su ton tai cua header `Authorization`
-- TODO: thay bang verify token thuc te thong qua auth layer/service khi contract duoc chot
+- Guard yeu cau bearer token va introspect token qua `auth-service`.
+- Khi token hop le, gateway forward context header `x-auth-user-id`, `x-auth-username`, `x-auth-roles`, `x-auth-hub-codes` cho upstream service.
 
 ## Bien moi truong
 

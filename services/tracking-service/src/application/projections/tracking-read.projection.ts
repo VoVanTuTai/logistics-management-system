@@ -9,9 +9,17 @@ export class TrackingReadProjection {
     private readonly trackingProjectionStore: TrackingProjectionStore,
   ) {}
 
-  project(
+  async project(
     event: TrackingEventEnvelope,
   ): Promise<{ projected: boolean; shipmentCode: string | null }> {
-    return this.trackingProjectionStore.project(event);
+    const [trackingResult, operationProjected] = await Promise.all([
+      this.trackingProjectionStore.project(event),
+      this.trackingProjectionStore.projectOperation(event),
+    ]);
+
+    return {
+      projected: trackingResult.projected || operationProjected,
+      shipmentCode: trackingResult.shipmentCode,
+    };
   }
 }

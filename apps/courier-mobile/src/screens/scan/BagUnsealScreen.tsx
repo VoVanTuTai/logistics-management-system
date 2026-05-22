@@ -29,6 +29,7 @@ interface RemovedShipmentItem {
 }
 
 const BAG_CODE_REGEX = /^MB\d{10}$/;
+type ManifestLoadStatus = 'idle' | 'loading' | 'loaded' | 'error';
 
 function normalizeCode(value: string): string {
   return value.trim().toUpperCase();
@@ -62,10 +63,15 @@ export function BagUnsealScreen(): React.JSX.Element {
   const [selectedCodes, setSelectedCodes] = React.useState<Set<string>>(
     () => new Set(),
   );
+  const [bagManifest, setBagManifest] = React.useState<BagManifestDto | null>(null);
+  const [manifestLoadStatus, setManifestLoadStatus] =
+    React.useState<ManifestLoadStatus>('idle');
+  const [manifestLoadError, setManifestLoadError] = React.useState<string | null>(null);
   const [screenMessage, setScreenMessage] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [scanLocked, setScanLocked] = React.useState(false);
   const scanCooldownRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const manifestRequestIdRef = React.useRef(0);
 
   const accessToken = session?.tokens.accessToken ?? null;
   const employeeCode = session?.user.username ?? session?.user.id ?? null;
@@ -83,6 +89,51 @@ export function BagUnsealScreen(): React.JSX.Element {
     normalizedBagCode.length > 0 && !hasValidBagCode
       ? 'Tem bao phải đúng định dạng MB + 10 chữ số.'
       : null;
+  const expectedShipmentCodes = React.useMemo(
+    () =>
+      (bagManifest?.items ?? [])
+        .map((item) => normalizeCode(item.shipmentCode))
+        .filter(Boolean),
+    [bagManifest],
+  );
+  const expectedShipmentCodeSet = React.useMemo(
+    () => new Set(expectedShipmentCodes),
+    [expectedShipmentCodes],
+  );
+  const scannedShipmentCodes = React.useMemo(
+    () => removedShipments.map((item) => normalizeCode(item.code)),
+    [removedShipments],
+  );
+  const scannedShipmentCodeSet = React.useMemo(
+    () => new Set(scannedShipmentCodes),
+    [scannedShipmentCodes],
+  );
+  const matchedShipmentCodes = React.useMemo(
+    () => scannedShipmentCodes.filter((code) => expectedShipmentCodeSet.has(code)),
+    [expectedShipmentCodeSet, scannedShipmentCodes],
+  );
+  const unexpectedShipmentCodes = React.useMemo(
+    () =>
+      bagManifest
+        ? scannedShipmentCodes.filter((code) => !expectedShipmentCodeSet.has(code))
+        : [],
+    [bagManifest, expectedShipmentCodeSet, scannedShipmentCodes],
+  );
+  const missingShipmentCodes = React.useMemo(
+    () =>
+      bagManifest
+        ? expectedShipmentCodes.filter((code) => !scannedShipmentCodeSet.has(code))
+        : [],
+    [bagManifest, expectedShipmentCodes, scannedShipmentCodeSet],
+  );
+  const isManifestLoaded = manifestLoadStatus === 'loaded' && Boolean(bagManifest);
+  const canSubmitUnseal =
+    !isSubmitting &&
+    hasValidBagCode &&
+    isManifestLoaded &&
+    matchedShipmentCodes.length > 0 &&
+    unexpectedShipmentCodes.length === 0 &&
+    missingShipmentCodes.length === 0;
 
   React.useEffect(() => {
     return () => {
@@ -91,6 +142,111 @@ export function BagUnsealScreen(): React.JSX.Element {
       }
     };
   }, []);
+
+  const resetScannedShipments = React.useCallback(() => {
+    setRemovedShipments([]);
+    setSelectedCodes(new Set());
+    setShipmentCodeInput('');
+  }, []);
+
+  const resolveBagManifest = React.useCallback(
+    (manifests: BagManifestDto[], scannedBagCode: string): BagManifestDto | null => {
+      const normalizedCode = normalizeCode(scannedBagCode);
+
+      return (
+        manifests.find(
+          (manifest) => normalizeCode(manifest.manifestCode) === normalizedCode,
+        ) ?? null
+      );
+    },
+    [],
+  );
+
+  const loadBagManifest = React.useCallback(
+    async (scannedBagCode: string, options?: { showSuccess?: boolean }) => {
+      if (!accessToken) {
+        setGlobalError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+        return null;
+      }
+
+      const normalizedCode = normalizeCode(scannedBagCode);
+      if (!isValidBagCode(normalizedCode)) {
+        return null;
+      }
+
+      manifestRequestIdRef.current += 1;
+      const requestId = manifestRequestIdRef.current;
+      setManifestLoadStatus('loading');
+      setManifestLoadError(null);
+
+      try {
+        const manifests = await manifestApi.list(accessToken);
+        const manifest = resolveBagManifest(manifests, normalizedCode);
+
+        if (requestId !== manifestRequestIdRef.current) {
+          return null;
+        }
+
+        if (!manifest) {
+          const message = `Không tìm thấy tem bao ${normalizedCode} trên hệ thống.`;
+          setBagManifest(null);
+          setManifestLoadStatus('error');
+          setManifestLoadError(message);
+          setScreenMessage(message);
+          return null;
+        }
+
+        setBagManifest(manifest);
+        setManifestLoadStatus('loaded');
+        setManifestLoadError(null);
+
+        if (options?.showSuccess) {
+          setScreenMessage(
+            `Đã tải ${manifest.items.length} mã vận đơn dự kiến trong bao ${manifest.manifestCode}.`,
+          );
+        }
+
+        return manifest;
+      } catch (error) {
+        if (requestId !== manifestRequestIdRef.current) {
+          return null;
+        }
+
+        const message =
+          error instanceof Error ? error.message : 'Không tải được dữ liệu tem bao.';
+        setBagManifest(null);
+        setManifestLoadStatus('error');
+        setManifestLoadError(message);
+        setScreenMessage(message);
+        setGlobalError(message);
+        return null;
+      }
+    },
+    [accessToken, resolveBagManifest, setGlobalError],
+  );
+
+  React.useEffect(() => {
+    if (!hasValidBagCode) {
+      setBagManifest(null);
+      setManifestLoadStatus(normalizedBagCode ? 'error' : 'idle');
+      setManifestLoadError(null);
+      return;
+    }
+
+    let cancelled = false;
+    const timeoutId = setTimeout(() => {
+      void loadBagManifest(normalizedBagCode).then(() => {
+        if (cancelled) {
+          return;
+        }
+      });
+    }, 350);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [hasValidBagCode, loadBagManifest, normalizedBagCode]);
 
   const lockScanner = React.useCallback(() => {
     setScanLocked(true);
@@ -111,6 +267,11 @@ export function BagUnsealScreen(): React.JSX.Element {
         return;
       }
 
+      if (manifestLoadStatus === 'loading') {
+        setScreenMessage('Đang tải danh sách vận đơn trong bao. Vui lòng chờ một chút.');
+        return;
+      }
+
       const normalizedCode = normalizeCode(rawCode);
       if (!normalizedCode) {
         setScreenMessage('Mã vận đơn không hợp lệ.');
@@ -127,8 +288,15 @@ export function BagUnsealScreen(): React.JSX.Element {
           return currentItems;
         }
 
+        const expectedMatched =
+          !bagManifest || expectedShipmentCodeSet.has(normalizedCode);
+
         setShipmentCodeInput('');
-        setScreenMessage(`Đã thêm mã vận đơn ${normalizedCode} vào danh sách gỡ bao.`);
+        setScreenMessage(
+          expectedMatched
+            ? `Đã đối chiếu đúng mã ${normalizedCode} trong bao.`
+            : `Mã ${normalizedCode} không có trong danh sách dự kiến của bao.`,
+        );
 
         return [
           {
@@ -139,7 +307,7 @@ export function BagUnsealScreen(): React.JSX.Element {
         ];
       });
     },
-    [hasValidBagCode],
+    [bagManifest, expectedShipmentCodeSet, hasValidBagCode, manifestLoadStatus],
   );
 
   const handleBarCodeScanned = (result: BarcodeScanningResult) => {
@@ -161,8 +329,12 @@ export function BagUnsealScreen(): React.JSX.Element {
 
     const normalizedValue = normalizeCode(parsed.value);
     if (isValidBagCode(normalizedValue)) {
+      if (normalizedValue !== normalizedBagCode) {
+        resetScannedShipments();
+      }
       setBagCode(normalizedValue);
       setScreenMessage(`Đã nhận tem bao ${normalizedValue}.`);
+      void loadBagManifest(normalizedValue, { showSuccess: true });
       return;
     }
 
@@ -171,6 +343,17 @@ export function BagUnsealScreen(): React.JSX.Element {
 
   const addShipmentManually = () => {
     appendRemovedShipmentCode(shipmentCodeInput);
+  };
+
+  const onBagCodeChange = (value: string) => {
+    const nextCode = normalizeCode(value);
+    if (nextCode !== normalizedBagCode) {
+      setBagManifest(null);
+      setManifestLoadStatus(nextCode ? 'loading' : 'idle');
+      setManifestLoadError(null);
+      resetScannedShipments();
+    }
+    setBagCode(nextCode);
   };
 
   const toggleSelected = (shipmentCode: string) => {
@@ -198,19 +381,6 @@ export function BagUnsealScreen(): React.JSX.Element {
     setSelectedCodes(new Set());
   };
 
-  const resolveBagManifest = (
-    manifests: BagManifestDto[],
-    scannedBagCode: string,
-  ): BagManifestDto | null => {
-    const normalizedCode = normalizeCode(scannedBagCode);
-
-    return (
-      manifests.find(
-        (manifest) => normalizeCode(manifest.manifestCode) === normalizedCode,
-      ) ?? null
-    );
-  };
-
   const submitRemoveShipments = async () => {
     if (!accessToken) {
       setGlobalError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
@@ -222,8 +392,27 @@ export function BagUnsealScreen(): React.JSX.Element {
       return;
     }
 
-    if (removedShipments.length === 0) {
+    if (!isManifestLoaded || !bagManifest) {
+      setScreenMessage('Chưa tải được danh sách vận đơn trong bao. Vui lòng thử tải lại tem bao.');
+      return;
+    }
+
+    if (matchedShipmentCodes.length === 0) {
       setScreenMessage('Vui lòng quét ít nhất một mã vận đơn cần gỡ khỏi bao.');
+      return;
+    }
+
+    if (unexpectedShipmentCodes.length > 0) {
+      setScreenMessage(
+        `Có ${unexpectedShipmentCodes.length} mã không thuộc bao. Hãy xoá mã ngoài bao trước khi xác nhận.`,
+      );
+      return;
+    }
+
+    if (missingShipmentCodes.length > 0) {
+      setScreenMessage(
+        `Còn thiếu ${missingShipmentCodes.length} mã expected. Hãy quét đủ trước khi xác nhận gỡ bao.`,
+      );
       return;
     }
 
@@ -231,15 +420,7 @@ export function BagUnsealScreen(): React.JSX.Element {
     setScreenMessage(null);
 
     try {
-      const manifests = await manifestApi.list(accessToken);
-      const bagManifest = resolveBagManifest(manifests, normalizedBagCode);
-
-      if (!bagManifest) {
-        setScreenMessage(`Không tìm thấy tem bao ${normalizedBagCode} trên hệ thống.`);
-        return;
-      }
-
-      const shipmentCodes = removedShipments.map((item) => item.code);
+      const shipmentCodes = matchedShipmentCodes;
       const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
       const note = buildBagUnsealAuditNote({
         displayName: session?.user?.displayName,
@@ -263,6 +444,7 @@ export function BagUnsealScreen(): React.JSX.Element {
       setRemovedShipments([]);
       setSelectedCodes(new Set());
       setShipmentCodeInput('');
+      void loadBagManifest(normalizedBagCode);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Gỡ bao thất bại.';
       setScreenMessage(message);
@@ -350,14 +532,79 @@ export function BagUnsealScreen(): React.JSX.Element {
           <Text style={styles.fieldLabel}>Tem bao</Text>
           <TextInput
             value={normalizedBagCode}
-            onChangeText={(value) => setBagCode(normalizeCode(value))}
+            onChangeText={onBagCodeChange}
             placeholder="MB1234567890"
             placeholderTextColor="#9CA3AF"
             style={styles.fieldInput}
             autoCapitalize="characters"
           />
           {bagCodeError ? <Text style={styles.errorText}>{bagCodeError}</Text> : null}
+          {hasValidBagCode ? (
+            <View style={styles.manifestLookupRow}>
+              <View style={styles.manifestLookupInfo}>
+                <Text style={styles.manifestLookupTitle}>
+                  {manifestLoadStatus === 'loading'
+                    ? 'Đang tải danh sách expected...'
+                    : isManifestLoaded
+                      ? `Bao ${bagManifest?.manifestCode}`
+                      : 'Chưa tải được danh sách expected'}
+                </Text>
+                <Text style={styles.manifestLookupSubtext}>
+                  {isManifestLoaded
+                    ? `${bagManifest?.status ?? '-'} | ${bagManifest?.originHubCode ?? '-'} -> ${bagManifest?.destinationHubCode ?? '-'}`
+                    : manifestLoadError ?? 'Quét/nhập tem bao hợp lệ để đối chiếu vận đơn.'}
+                </Text>
+              </View>
+              <Pressable
+                disabled={manifestLoadStatus === 'loading'}
+                onPress={() => {
+                  void loadBagManifest(normalizedBagCode, { showSuccess: true });
+                }}
+                style={[
+                  styles.reloadManifestButton,
+                  manifestLoadStatus === 'loading' && styles.reloadManifestButtonDisabled,
+                ]}
+              >
+                {manifestLoadStatus === 'loading' ? (
+                  <ActivityIndicator size="small" color="#1E3A8A" />
+                ) : (
+                  <Text style={styles.reloadManifestButtonText}>Tải lại</Text>
+                )}
+              </Pressable>
+            </View>
+          ) : null}
         </View>
+
+        {isManifestLoaded ? (
+          <View style={styles.reconcileSummary}>
+            <View style={styles.reconcileMetric}>
+              <Text style={styles.reconcileMetricValue}>{expectedShipmentCodes.length}</Text>
+              <Text style={styles.reconcileMetricLabel}>Expected</Text>
+            </View>
+            <View style={styles.reconcileMetric}>
+              <Text style={styles.reconcileMetricValue}>{matchedShipmentCodes.length}</Text>
+              <Text style={styles.reconcileMetricLabel}>Scanned đúng</Text>
+            </View>
+            <View
+              style={[
+                styles.reconcileMetric,
+                missingShipmentCodes.length > 0 && styles.reconcileMetricWarning,
+              ]}
+            >
+              <Text style={styles.reconcileMetricValue}>{missingShipmentCodes.length}</Text>
+              <Text style={styles.reconcileMetricLabel}>Còn thiếu</Text>
+            </View>
+            <View
+              style={[
+                styles.reconcileMetric,
+                unexpectedShipmentCodes.length > 0 && styles.reconcileMetricDanger,
+              ]}
+            >
+              <Text style={styles.reconcileMetricValue}>{unexpectedShipmentCodes.length}</Text>
+              <Text style={styles.reconcileMetricLabel}>Ngoài bao</Text>
+            </View>
+          </View>
+        ) : null}
 
         <View style={styles.fieldRow}>
           <Text style={styles.fieldLabel}>Mã vận đơn cần gỡ</Text>
@@ -392,8 +639,14 @@ export function BagUnsealScreen(): React.JSX.Element {
 
         <View style={styles.listHeaderRow}>
           <Text style={styles.listTitle}>
-            Danh sách mã vận đơn cần gỡ ({removedShipments.length})
+            Danh sách đã quét ({removedShipments.length})
           </Text>
+          {missingShipmentCodes.length > 0 ? (
+            <Text style={styles.listHint}>
+              Còn thiếu: {missingShipmentCodes.slice(0, 4).join(', ')}
+              {missingShipmentCodes.length > 4 ? ` +${missingShipmentCodes.length - 4}` : ''}
+            </Text>
+          ) : null}
         </View>
 
         <ScrollView
@@ -408,12 +661,17 @@ export function BagUnsealScreen(): React.JSX.Element {
           ) : (
             removedShipments.map((item, index) => {
               const selected = selectedCodes.has(normalizeCode(item.code));
+              const isExpected = !isManifestLoaded || expectedShipmentCodeSet.has(normalizeCode(item.code));
 
               return (
                 <Pressable
                   key={`${item.code}-${item.scannedAt}`}
                   onPress={() => toggleSelected(item.code)}
-                  style={[styles.listItem, selected && styles.listItemSelected]}
+                  style={[
+                    styles.listItem,
+                    selected && styles.listItemSelected,
+                    !isExpected && styles.listItemUnexpected,
+                  ]}
                 >
                   <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
                     {selected ? (
@@ -429,6 +687,21 @@ export function BagUnsealScreen(): React.JSX.Element {
                       Quét lúc {formatScannedAt(item.scannedAt)}
                     </Text>
                   </View>
+                  <View
+                    style={[
+                      styles.reconcileBadge,
+                      isExpected ? styles.reconcileBadgeMatched : styles.reconcileBadgeUnexpected,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.reconcileBadgeText,
+                        !isExpected && styles.reconcileBadgeTextUnexpected,
+                      ]}
+                    >
+                      {isExpected ? 'Khớp' : 'Ngoài bao'}
+                    </Text>
+                  </View>
                 </Pressable>
               );
             })
@@ -438,14 +711,13 @@ export function BagUnsealScreen(): React.JSX.Element {
 
       <View style={styles.footer}>
         <Pressable
-          disabled={isSubmitting || !hasValidBagCode || removedShipments.length === 0}
+          disabled={!canSubmitUnseal}
           onPress={() => {
             void submitRemoveShipments();
           }}
           style={[
             styles.uploadButton,
-            (isSubmitting || !hasValidBagCode || removedShipments.length === 0) &&
-              styles.uploadButtonDisabled,
+            !canSubmitUnseal && styles.uploadButtonDisabled,
           ]}
         >
           {isSubmitting ? (
@@ -607,6 +879,84 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '700',
   },
+  manifestLookupRow: {
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    backgroundColor: '#EFF6FF',
+    borderRadius: 10,
+    padding: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  manifestLookupInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  manifestLookupTitle: {
+    color: '#1E3A8A',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  manifestLookupSubtext: {
+    color: '#475569',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  reloadManifestButton: {
+    minWidth: 66,
+    minHeight: 34,
+    borderRadius: 9,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#93C5FD',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+  },
+  reloadManifestButtonDisabled: {
+    opacity: 0.55,
+  },
+  reloadManifestButtonText: {
+    color: '#1E3A8A',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  reconcileSummary: {
+    marginTop: 10,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  reconcileMetric: {
+    flex: 1,
+    minHeight: 58,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  reconcileMetricWarning: {
+    borderColor: '#FBBF24',
+    backgroundColor: '#FFFBEB',
+  },
+  reconcileMetricDanger: {
+    borderColor: '#FCA5A5',
+    backgroundColor: '#FEF2F2',
+  },
+  reconcileMetricValue: {
+    color: '#0F172A',
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  reconcileMetricLabel: {
+    color: '#64748B',
+    fontSize: 10,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
   errorText: {
     color: '#B91C1C',
     fontSize: 13,
@@ -625,6 +975,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#0F172A',
+  },
+  listHint: {
+    color: '#B45309',
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 3,
   },
   listScroll: {
     flex: 1,
@@ -661,6 +1017,10 @@ const styles = StyleSheet.create({
   listItemSelected: {
     borderColor: '#93C5FD',
     backgroundColor: '#EFF6FF',
+  },
+  listItemUnexpected: {
+    borderColor: '#FCA5A5',
+    backgroundColor: '#FEF2F2',
   },
   checkbox: {
     width: 22,
@@ -701,6 +1061,28 @@ const styles = StyleSheet.create({
     color: '#64748B',
     fontSize: 12,
     marginTop: 2,
+  },
+  reconcileBadge: {
+    minWidth: 62,
+    minHeight: 28,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  reconcileBadgeMatched: {
+    backgroundColor: '#DCFCE7',
+  },
+  reconcileBadgeUnexpected: {
+    backgroundColor: '#FEE2E2',
+  },
+  reconcileBadgeText: {
+    color: '#166534',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  reconcileBadgeTextUnexpected: {
+    color: '#991B1B',
   },
   footer: {
     position: 'absolute',

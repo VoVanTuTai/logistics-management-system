@@ -10,8 +10,12 @@ import {
 
 import type {
   CancelShipmentInput,
+  ApproveShipmentInput,
   CreateShipmentInput,
+  JsonValue,
+  ReviewShipmentInput,
   Shipment,
+  ShipmentActionResult,
   ShipmentListFilters,
   ShipmentListPage,
   UpdateShipmentInput,
@@ -89,6 +93,30 @@ export class ShipmentsService {
     );
   }
 
+  async review(
+    code: string,
+    input: ReviewShipmentInput,
+  ): Promise<ShipmentActionResult> {
+    const shipment = await this.recordOpsAction(code, 'review', input.note);
+
+    return {
+      action: 'review',
+      shipment,
+    };
+  }
+
+  async approve(
+    code: string,
+    input: ApproveShipmentInput,
+  ): Promise<ShipmentActionResult> {
+    const shipment = await this.recordOpsAction(code, 'approve', input.note);
+
+    return {
+      action: 'approve',
+      shipment,
+    };
+  }
+
   async applyExternalEvent(
     code: string,
     eventType: ShipmentConsumedEventType,
@@ -114,6 +142,37 @@ export class ShipmentsService {
       normalizedCode,
       nextStatus,
     );
+  }
+
+  private async recordOpsAction(
+    code: string,
+    action: ShipmentActionResult['action'],
+    note: string | null | undefined,
+  ): Promise<Shipment> {
+    const normalizedCode = this.normalizeRequiredCode(code);
+    const shipment = await this.getByCode(normalizedCode);
+    const metadata = this.mergeOpsActionMetadata(shipment.metadata, action, note);
+
+    return this.shipmentRepository.updateMetadata(normalizedCode, metadata);
+  }
+
+  private mergeOpsActionMetadata(
+    value: JsonValue | null,
+    action: ShipmentActionResult['action'],
+    note: string | null | undefined,
+  ): JsonValue {
+    const metadata = isJsonRecord(value) ? { ...value } : {};
+    const opsActions = isJsonRecord(metadata.opsActions)
+      ? { ...metadata.opsActions }
+      : {};
+
+    opsActions[action] = {
+      note: normalizeOptionalText(note),
+      actedAt: new Date().toISOString(),
+    };
+    metadata.opsActions = opsActions;
+
+    return metadata;
   }
 
   private async createWithRequestedCode(
@@ -195,4 +254,13 @@ export class ShipmentsService {
 
     return `${SHIPMENT_CODE_PREFIX}${datePart}${randomPart}`;
   }
+}
+
+function normalizeOptionalText(value: string | null | undefined): string | null {
+  const normalized = value?.trim();
+  return normalized && normalized.length > 0 ? normalized : null;
+}
+
+function isJsonRecord(value: JsonValue | undefined | null): value is Record<string, JsonValue> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

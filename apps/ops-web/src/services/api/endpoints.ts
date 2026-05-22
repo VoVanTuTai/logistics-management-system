@@ -6,6 +6,10 @@ export const opsEndpoints = {
     logout: '/ops/auth/auth/logout',
     users: '/ops/auth/auth/users',
   },
+  admin: {
+    auditLogs: '/ops/admin/audit-logs',
+    auditLogsExport: '/ops/admin/audit-logs/export',
+  },
   dashboard: {
     kpis: '/ops/reporting/reports/ops-dashboard',
     dailyMetrics: '/ops/reporting/reports/daily',
@@ -14,6 +18,11 @@ export const opsEndpoints = {
   shipments: {
     list: '/ops/shipment/shipments',
     detail: (shipmentId: string) => `/ops/shipment/shipments/${shipmentId}`,
+  },
+  changeRequests: {
+    list: '/ops/shipment/change-requests',
+    detail: (requestId: string) => `/ops/shipment/change-requests/${requestId}`,
+    approve: (requestId: string) => `/ops/shipment/change-requests/${requestId}/approve`,
   },
   pickups: {
     list: '/ops/pickup/pickups',
@@ -62,6 +71,7 @@ export const opsEndpoints = {
   tracking: {
     current: (shipmentCode: string) => `/ops/tracking/tracking/${shipmentCode}/current`,
     timeline: (shipmentCode: string) => `/ops/tracking/tracking/${shipmentCode}/timeline`,
+    operationTimeline: '/ops/tracking/tracking/operation-timeline',
   },
   payment: {
     codDailySettlement: '/ops/payment/cod/settlements/daily',
