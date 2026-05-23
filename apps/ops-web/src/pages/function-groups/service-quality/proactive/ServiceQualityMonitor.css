@@ -98,7 +98,11 @@
 }
 
 .ops-service-quality-monitor__filters--action-board {
-  grid-template-columns: repeat(3, minmax(180px, 1fr));
+  grid-template-columns: repeat(4, minmax(170px, 1fr));
+}
+
+.ops-service-quality-monitor__filters--abnormal {
+  grid-template-columns: repeat(4, minmax(170px, 1fr));
 }
 
 .ops-service-quality-monitor__filters label {
@@ -245,6 +249,100 @@
   border-color: #bfdbfe;
   background: #eff6ff;
   color: #1d4ed8;
+}
+
+.ops-service-quality-monitor__state-pill {
+  display: inline-flex;
+  min-height: 22px;
+  align-items: center;
+  margin-top: 6px;
+  border: 1px solid #bbf7d0;
+  border-radius: 999px;
+  background: #f0fdf4;
+  color: #166534;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.ops-service-quality-monitor tr[data-workflow-state='acknowledged'] td {
+  background: #f8fafc;
+}
+
+.ops-service-quality-monitor__checklist {
+  display: grid;
+  gap: 3px;
+  margin: 7px 0 6px;
+  padding-left: 16px;
+}
+
+.ops-service-quality-monitor__checklist li {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.ops-service-quality-monitor__actions {
+  display: grid;
+  gap: 6px;
+  min-width: 130px;
+}
+
+.ops-service-quality-monitor__actions a,
+.ops-service-quality-monitor__actions button {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #bfdbfe;
+  border-radius: 7px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.ops-service-quality-monitor__actions button {
+  cursor: pointer;
+}
+
+.ops-service-quality-monitor__actions button:last-child {
+  border-color: #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+}
+
+.ops-service-quality-monitor__workbar {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  background: #eff6ff;
+  padding: 8px 12px;
+}
+
+.ops-service-quality-monitor__workbar span {
+  color: #1e40af;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ops-service-quality-monitor__workbar button {
+  min-height: 30px;
+  border: 1px solid #bfdbfe;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #1d4ed8;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .ops-service-quality-monitor__empty,
