@@ -759,7 +759,8 @@ function DashboardLayout(): React.JSX.Element {
     },
   ];
   const capabilityPlatformSidebarItems: SidebarItem[] = [
-    { label: 'Vận chuyển tuyến nhánh', icon: 'linehaul_transport', kind: 'linehaul_transport' },
+    { label: 'Quản lý chuyến xe', icon: 'linehaul_transport', to: routePaths.linehaulTripManagement },
+    { label: 'Tạo tem xe', icon: 'thermal_label', to: routePaths.linehaulVehicleSeal },
   ];
   const sidebarItems = isServiceQualitySection
     ? serviceQualitySidebarItems
@@ -990,7 +991,7 @@ function DashboardLayout(): React.JSX.Element {
     : isBranchBusinessSection
     ? ['branch_local_orders', 'branch_order_management', 'branch_finance_settlement']
     : isCapabilityPlatformSection
-    ? ['linehaul_transport']
+    ? []
     : ['thermal_label', 'return_block', 'monitor_data'];
 
   const activeSidebarPanelInSection =
