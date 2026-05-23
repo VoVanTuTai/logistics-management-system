@@ -215,7 +215,7 @@ function formatScannedAt(isoTime: string): string {
 }
 
 function toErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : 'Co loi xay ra.';
+  return error instanceof Error ? error.message : 'Có lỗi xảy ra.';
 }
 
 export function PickupScanScreen({ route }: Props): React.JSX.Element {
@@ -276,12 +276,12 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
       const shipmentCode = normalizeCode(rawCode);
 
       if (!shipmentCode) {
-        setErrorMessage('Ma van don khong hop le.');
+        setErrorMessage('Mã vận đơn không hợp lệ.');
         return;
       }
 
       if (!accessToken) {
-        setGlobalError('Phien dang nhap da het han. Vui long dang nhap lai.');
+        setGlobalError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
         return;
       }
 
@@ -289,7 +289,7 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
         (item) => normalizeCode(item.code) === shipmentCode,
       );
       if (hasAlreadyScanned) {
-        setInfoMessage(`Ma van don ${shipmentCode} da ton tai trong danh sach.`);
+        setInfoMessage(`Mã vận đơn ${shipmentCode} đã tồn tại trong danh sách.`);
         return;
       }
 
@@ -336,7 +336,7 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
         setInfoMessage(`Đã xác nhận và thêm ${shipmentCode} vào danh sách nhận hàng.`);
       } catch (error) {
         setErrorMessage(
-          `Khong tim thay hoac khong xac minh duoc ma ${shipmentCode}: ${toErrorMessage(error)}`,
+          `Không tìm thấy hoặc không xác minh được mã ${shipmentCode}: ${toErrorMessage(error)}`,
         );
       } finally {
         setIsVerifyingScan(false);
@@ -383,7 +383,7 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
     });
 
     if (!parsed) {
-      setErrorMessage('Khong doc duoc ma hop le. Vui long thu lai.');
+      setErrorMessage('Không đọc được mã hợp lệ. Vui lòng thử lại.');
       return;
     }
 
@@ -449,12 +449,12 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
 
   const uploadAll = async () => {
     if (!accessToken) {
-      setGlobalError('Phien dang nhap da het han. Vui long dang nhap lai.');
+      setGlobalError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
       return;
     }
 
     if (pickedShipments.length === 0) {
-      setErrorMessage('Chua co ma van don de tai len.');
+      setErrorMessage('Chưa có mã vận đơn để tải lên.');
       return;
     }
 
@@ -549,7 +549,7 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
       setInfoMessage(
         `Đã cập nhật nhận hàng ${successCodes.length} mã` +
           (queuedCodes.length > 0
-            ? `, ${queuedCodes.length} ma duoc queue offline.`
+            ? `, ${queuedCodes.length} mã được lưu offline.`
             : '.') +
           (routeTaskCompleted
             ? ' Task Đợi lấy đã chuyển hoàn tất.'
@@ -587,7 +587,7 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
     });
 
     setErrorMessage(
-      `Co ${failedCodes.length} ma tai len that bai: ${failedCodes
+      `Có ${failedCodes.length} mã tải lên thất bại: ${failedCodes
         .map((item) => `${item.code} (${item.reason})`)
         .join(', ')}`,
     );
@@ -595,7 +595,7 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
     setInfoMessage(
       `Đã cập nhật nhận hàng ${successCodes.length} mã` +
         (queuedCodes.length > 0
-          ? `, ${queuedCodes.length} ma duoc queue offline.`
+          ? `, ${queuedCodes.length} mã được lưu offline.`
           : '.') +
         (routeTaskCompleted
           ? ' Task Đợi lấy đã chuyển hoàn tất.'
@@ -653,7 +653,7 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
               {!permission ? (
                 <View style={styles.cameraPlaceholder}>
                   <ActivityIndicator size="small" color="#E2E8F0" />
-                  <Text style={styles.cameraPlaceholderText}>Dang kiem tra quyen camera...</Text>
+                  <Text style={styles.cameraPlaceholderText}>Đang kiểm tra quyền camera...</Text>
                 </View>
               ) : null}
 
@@ -709,18 +709,18 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
             {!permission ? (
               <View style={styles.cameraPlaceholder}>
                 <ActivityIndicator size="small" color="#E2E8F0" />
-                <Text style={styles.cameraPlaceholderText}>Dang kiem tra quyen camera...</Text>
+                <Text style={styles.cameraPlaceholderText}>Đang kiểm tra quyền camera...</Text>
               </View>
             ) : null}
 
             {permission && !cameraIsReady ? (
               <View style={styles.cameraPlaceholder}>
                 <Text style={styles.cameraPlaceholderText}>
-                  Can cap quyen camera de quet ma van don.
+                  Cần cấp quyền camera để quét mã vận đơn.
                 </Text>
                 {permission.canAskAgain ? (
                   <Pressable onPress={requestPermission} style={styles.permissionButton}>
-                    <Text style={styles.permissionButtonText}>Cap quyen camera</Text>
+                    <Text style={styles.permissionButtonText}>Cấp quyền camera</Text>
                   </Pressable>
                 ) : null}
               </View>
@@ -750,7 +750,7 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
               <View style={styles.cameraOverlay}>
                 <ActivityIndicator size="small" color="#FFFFFF" />
                 <Text style={styles.cameraOverlayText}>
-                  {isUploading ? 'Dang tai len...' : 'Dang xac minh ma...'}
+                  {isUploading ? 'Đang tải lên...' : 'Đang xác minh mã...'}
                 </Text>
               </View>
             ) : null}
@@ -852,7 +852,7 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
           {isUploading ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
-            <Text style={styles.uploadButtonText}>Tải lên và cập nhật trạng thái nhận hàng</Text>
+            <Text style={styles.uploadButtonText}>Xác nhận nhận hàng ({pickedShipments.length} đơn)</Text>
           )}
         </Pressable>
       </View>

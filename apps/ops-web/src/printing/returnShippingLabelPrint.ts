@@ -1,9 +1,10 @@
-﻿import qrcode from 'qrcode-generator';
+import qrcode from 'qrcode-generator';
 
-export interface ShippingLabelPrintPayload {
+export interface ReturnShippingLabelPrintPayload {
   brandName: string;
   serviceName: string;
   shipmentCode: string;
+  originalShipmentCode: string;
   senderName: string;
   senderPhone: string;
   senderAddress: string;
@@ -48,7 +49,7 @@ function buildQrSvg(value: string): string {
   }
 }
 
-function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
+function buildLabelHtml(payload: ReturnShippingLabelPrintPayload): string {
   const codeText = escapeHtml(payload.shipmentCode);
   const sender = newlineToBreaks(payload.senderAddress);
   const receiver = newlineToBreaks(payload.receiverAddress);
@@ -61,7 +62,7 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Nhãn in vận đơn ${codeText}</title>
+    <title>Return Label ${codeText}</title>
     <style>
       @page { size: 100mm 150mm; margin: 0; }
       * { box-sizing: border-box; }
@@ -85,7 +86,16 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
       .header { display: grid; grid-template-columns: minmax(0, 38fr) minmax(0, 62fr); gap: 1.2mm; }
       .brand { display: grid; gap: 0.8mm; }
       .brand-title { font-size: 4.3mm; font-weight: 800; letter-spacing: 0.2px; text-transform: uppercase; }
-      .service { font-size: 5.1mm; font-weight: 800; letter-spacing: 0.3px; }
+      .service {
+        width: max-content;
+        max-width: 100%;
+        border: 0.4mm solid #111;
+        padding: 0.8mm 1.4mm;
+        font-size: 4.6mm;
+        font-weight: 900;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+      }
       .barcode-wrap { display: grid; gap: 0.8mm; }
       .barcode {
         height: 16mm;
@@ -104,6 +114,7 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
           );
       }
       .ship-code { font-size: 3.2mm; font-weight: 700; line-height: 1.2; }
+      .original-code { font-size: 2.4mm; font-weight: 700; line-height: 1.2; color: #333; }
       .two-col { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.2mm; }
       .label { font-size: 2.6mm; font-weight: 700; text-transform: uppercase; margin-bottom: 0.6mm; }
       .name { font-size: 3mm; font-weight: 700; line-height: 1.2; margin-bottom: 0.3mm; }
@@ -119,9 +130,10 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
         overflow: hidden;
         white-space: nowrap;
         text-overflow: clip;
+        text-transform: uppercase;
       }
-      .route-main { font-size: 6.8mm; letter-spacing: 0.25px; text-transform: uppercase; }
-      .route-sub { font-size: 5mm; text-transform: uppercase; }
+      .route-main { font-size: 6.8mm; letter-spacing: 0.25px; }
+      .route-sub { font-size: 5mm; }
       .item-qr { display: grid; grid-template-columns: minmax(0, 74fr) minmax(0, 26fr); gap: 1.2mm; }
       .qr-box { border: 0.2mm solid #111; padding: 1mm; display: grid; justify-items: center; gap: 0.8mm; }
       .qr-svg {
@@ -143,7 +155,9 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
       .big-row { display: grid; grid-template-columns: minmax(0, 66fr) minmax(0, 34fr); gap: 1.2mm; }
       .route-tag {
         border: 0.2mm solid #111;
-        font-size: 9.6mm;
+        background: #111;
+        color: #fff;
+        font-size: 8.8mm;
         font-weight: 900;
         letter-spacing: 0.2px;
         text-align: center;
@@ -152,6 +166,7 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
         overflow: hidden;
         white-space: nowrap;
         text-overflow: clip;
+        text-transform: uppercase;
       }
       .meta { border: 0.2mm solid #111; padding: 1.3mm; }
       .cod-sign { display: grid; grid-template-columns: minmax(0, 70fr) minmax(0, 30fr); gap: 1.2mm; }
@@ -192,10 +207,16 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
       .header { align-items: stretch; }
       .brand { align-content: center; gap: 0.6mm; }
       .brand-title { font-size: 3.8mm; line-height: 1; }
-      .service { font-size: 4.3mm; line-height: 1.05; }
-      .barcode-wrap { gap: 0.5mm; }
-      .barcode { height: 12.5mm; }
-      .ship-code { font-size: 2.9mm; line-height: 1.1; }
+      .service {
+        align-self: start;
+        font-size: 3.9mm;
+        line-height: 1.05;
+        padding: 0.55mm 1.1mm;
+      }
+      .barcode-wrap { gap: 0.45mm; }
+      .barcode { height: 11.2mm; }
+      .ship-code { font-size: 2.75mm; line-height: 1.08; }
+      .original-code { font-size: 2.2mm; line-height: 1.08; }
       .two-col,
       .route,
       .item-qr,
@@ -297,8 +318,9 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
           <div class="service">${escapeHtml(payload.serviceName)}</div>
         </div>
         <div class="barcode-wrap">
-          <div class="barcode" role="img" aria-label="Mã vạch"></div>
-          <div class="ship-code">Mã vận đơn: ${codeText}</div>
+          <div class="barcode" role="img" aria-label="Barcode"></div>
+          <div class="ship-code">Mã đơn hoàn: ${codeText}</div>
+          <div class="original-code">Mã gốc: ${escapeHtml(payload.originalShipmentCode)}</div>
         </div>
       </section>
 
@@ -310,7 +332,7 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
           <div class="text">${sender}</div>
         </div>
         <div class="block">
-          <div class="label">Đến</div>
+          <div class="label">Hoàn về</div>
           <div class="name">${escapeHtml(payload.receiverName)}</div>
           <div class="text">${escapeHtml(payload.receiverPhone)}</div>
           <div class="text">${receiver}</div>
@@ -319,7 +341,7 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
 
       <section class="route">
         <div class="route-main">${escapeHtml(payload.hubCode || 'HUB-NA')}</div>
-        <div class="route-sub">${escapeHtml(payload.zoneCode || 'KV')}</div>
+        <div class="route-sub">${escapeHtml(payload.zoneCode || 'RETURN')}</div>
       </section>
 
       <section class="item-qr">
@@ -335,9 +357,9 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
       </section>
 
       <section class="big-row">
-        <div class="route-tag">${escapeHtml(payload.routeTag || 'TUYEN')}</div>
+        <div class="route-tag">${escapeHtml(payload.routeTag || 'RETURN')}</div>
         <div class="meta">
-          <div class="label">Ngày đặt hàng</div>
+          <div class="label">Ngày tạo hoàn</div>
           <div class="text">${escapeHtml(payload.createdAtText)}</div>
         </div>
       </section>
@@ -346,13 +368,13 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
         <div class="block">
           <div class="label">Tiền thu người nhận</div>
           <div class="cod-value">${escapeHtml(payload.codAmountText)}</div>
-          <div class="label">Chỉ dẫn giao hàng</div>
+          <div class="label">Chỉ dẫn hoàn hàng</div>
           <div class="text">${deliveryInstruction}</div>
         </div>
         <div class="signature">
-          <div class="label">Chữ ký người nhận</div>
+          <div class="label">Ký nhận hoàn</div>
           <div></div>
-          <div class="sign-hint">Vui lòng ký và ghi rõ họ tên khi nhận hàng.</div>
+          <div class="sign-hint">Hub/Người gửi ký xác nhận khi nhận hàng hoàn.</div>
         </div>
       </section>
 
@@ -364,7 +386,7 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
 </html>`;
 }
 
-export function openShippingLabelPrint(payload: ShippingLabelPrintPayload): boolean {
+export function openReturnShippingLabelPrint(payload: ReturnShippingLabelPrintPayload): boolean {
   const popup = window.open('', '_blank', 'width=440,height=900');
   if (!popup) {
     return false;

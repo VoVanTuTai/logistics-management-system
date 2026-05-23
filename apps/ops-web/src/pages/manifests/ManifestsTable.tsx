@@ -6,11 +6,23 @@ import { routePaths } from '../../navigation/routes';
 import { formatDateTime } from '../../utils/format';
 import { formatManifestStatusLabel } from '../../utils/logisticsLabels';
 
+import './ManifestsTable.css';
+
 interface ManifestsTableProps {
   items: ManifestListItemDto[];
   deletingManifestId?: string | null;
   onDeleteManifest: (item: ManifestListItemDto) => void;
   onPrintManifest: (item: ManifestListItemDto) => void;
+}
+
+function getStatusBadgeClass(status: string): string {
+  switch (status) {
+    case 'CREATED': return 'mt-badge--created';
+    case 'SEALED': return 'mt-badge--sealed';
+    case 'RECEIVED': return 'mt-badge--received';
+    case 'CLOSED': return 'mt-badge--closed';
+    default: return 'mt-badge--default';
+  }
 }
 
 export function ManifestsTable({
@@ -20,102 +32,69 @@ export function ManifestsTable({
   onPrintManifest,
 }: ManifestsTableProps): React.JSX.Element {
   return (
-    <table style={styles.table}>
-      <thead>
-        <tr>
-          <th style={styles.headerCell}>Mã bao</th>
-          <th style={styles.headerCell}>Trạng thái</th>
-          <th style={styles.headerCell}>Hub đi</th>
-          <th style={styles.headerCell}>Hub đích</th>
-          <th style={styles.headerCell}>Niêm phong lúc</th>
-          <th style={styles.headerCell}>Hành động</th>
-        </tr>
-      </thead>
-      <tbody>
-        {items.map((item) => {
-          const canDelete = item.status === 'CREATED';
-          const deleting = deletingManifestId === item.id;
+    <div className="manifests-table-wrap">
+      <table className="manifests-table">
+        <thead>
+          <tr>
+            <th>Mã bao</th>
+            <th>Trạng thái</th>
+            <th>Hub đi</th>
+            <th>Hub đích</th>
+            <th>Số kiện</th>
+            <th>Niêm phong lúc</th>
+            <th>Hành động</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item) => {
+            const canDelete = item.status === 'CREATED';
+            const deleting = deletingManifestId === item.id;
 
-          return (
-            <tr key={item.id}>
-              <td style={styles.cell}>
-                <Link to={routePaths.manifestDetail(item.id)}>{item.manifestCode}</Link>
-              </td>
-              <td style={styles.cell}>{formatManifestStatusLabel(item.status)}</td>
-              <td style={styles.cell}>{item.originHubCode ?? 'Không có'}</td>
-              <td style={styles.cell}>{item.destinationHubCode ?? 'Không có'}</td>
-              <td style={styles.cell}>{formatDateTime(item.sealedAt)}</td>
-              <td style={styles.cell}>
-                <div style={styles.actions}>
-                  <button
-                    type="button"
-                    onClick={() => onPrintManifest(item)}
-                    style={styles.printButton}
-                  >
-                    In mã bao
-                  </button>
-                  <button
-                    type="button"
-                    disabled={!canDelete || deleting}
-                    onClick={() => onDeleteManifest(item)}
-                    style={{
-                      ...styles.deleteButton,
-                      opacity: !canDelete || deleting ? 0.55 : 1,
-                      cursor: !canDelete || deleting ? 'not-allowed' : 'pointer',
-                    }}
-                    title={
-                      canDelete
-                        ? 'Xóa mã bao'
-                        : `Chỉ xóa được bao đang ở trạng thái ${formatManifestStatusLabel('CREATED')}`
-                    }
-                  >
-                    {deleting ? 'Đang xóa...' : 'Xóa mã bao'}
-                  </button>
-                </div>
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
+            return (
+              <tr key={item.id}>
+                <td>
+                  <Link to={routePaths.manifestDetail(item.id)} className="manifests-table__code-link">
+                    {item.manifestCode}
+                  </Link>
+                </td>
+                <td>
+                  <span className={`mt-badge ${getStatusBadgeClass(item.status)}`}>
+                    {formatManifestStatusLabel(item.status)}
+                  </span>
+                </td>
+                <td className="manifests-table__hub">{item.originHubCode ?? '—'}</td>
+                <td className="manifests-table__hub">{item.destinationHubCode ?? '—'}</td>
+                <td className="manifests-table__count">{item.shipmentCount ?? '—'}</td>
+                <td className="manifests-table__time">{formatDateTime(item.sealedAt)}</td>
+                <td>
+                  <div className="manifests-table__actions">
+                    <button
+                      type="button"
+                      onClick={() => onPrintManifest(item)}
+                      className="mt-action-btn mt-action-btn--print"
+                    >
+                      🖨 In mã bao
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!canDelete || deleting}
+                      onClick={() => onDeleteManifest(item)}
+                      className="mt-action-btn mt-action-btn--delete"
+                      title={
+                        canDelete
+                          ? 'Xóa mã bao'
+                          : `Chỉ xóa được bao đang ở trạng thái ${formatManifestStatusLabel('CREATED')}`
+                      }
+                    >
+                      {deleting ? '⏳ Đang xóa...' : '🗑 Xóa'}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-    marginTop: 12,
-  },
-  headerCell: {
-    textAlign: 'left',
-    padding: '8px 10px',
-    borderBottom: '1px solid #d9def3',
-  },
-  cell: {
-    padding: '8px 10px',
-    borderBottom: '1px solid #e7ebf8',
-    verticalAlign: 'top',
-  },
-  actions: {
-    display: 'flex',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  printButton: {
-    border: '1px solid #1d4ed8',
-    borderRadius: 8,
-    backgroundColor: '#1d4ed8',
-    color: '#ffffff',
-    padding: '4px 10px',
-    fontWeight: 600,
-  },
-  deleteButton: {
-    border: '1px solid #b91c1c',
-    borderRadius: 8,
-    backgroundColor: '#b91c1c',
-    color: '#ffffff',
-    padding: '4px 10px',
-    fontWeight: 600,
-  },
-};

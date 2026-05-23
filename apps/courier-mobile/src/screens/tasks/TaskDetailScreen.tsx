@@ -179,7 +179,7 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
       setCallOptionsVisible(false);
 
       if (!rawPhone) {
-        Alert.alert('Khong co so dien thoai', 'Don hang chua co thong tin so lien he.');
+        Alert.alert('Không có số điện thoại', 'Đơn hàng chưa có thông tin số liên hệ.');
         return;
       }
 
@@ -189,15 +189,15 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
       try {
         const supported = await Linking.canOpenURL(targetUrl);
         if (!supported) {
-          Alert.alert('Khong mo duoc ung dung', `Khong the xu ly: ${targetUrl}`);
+          Alert.alert('Không mở được ứng dụng', `Không thể xử lý: ${targetUrl}`);
           return;
         }
 
         await Linking.openURL(targetUrl);
       } catch (error) {
         Alert.alert(
-          'Thao tac that bai',
-          error instanceof Error ? error.message : 'Khong the mo lien ket gọi dien.',
+          'Thao tác thất bại',
+          error instanceof Error ? error.message : 'Không thể mở liên kết gọi điện.',
         );
       }
     },
@@ -209,7 +209,7 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
       <Screen scroll={false}>
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.centeredText}>Dang tai chi tiet nhiem vu...</Text>
+          <Text style={styles.centeredText}>Đang tải chi tiết nhiệm vụ...</Text>
         </View>
       </Screen>
     );
@@ -222,10 +222,10 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
           <Text style={styles.errorText}>
             {taskQuery.error instanceof Error
               ? taskQuery.error.message
-              : 'Tai chi tiet nhiem vu that bai.'}
+              : 'Tải chi tiết nhiệm vụ thất bại.'}
           </Text>
           <Pressable onPress={() => void taskQuery.refetch()} style={styles.retryButton}>
-            <Text style={styles.retryButtonText}>Thu lai</Text>
+            <Text style={styles.retryButtonText}>Thử lại</Text>
           </Pressable>
         </View>
       </Screen>
@@ -236,7 +236,7 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
     return (
       <Screen scroll={false}>
         <View style={styles.centered}>
-          <Text style={styles.errorText}>Khong tim thay nhiem vu.</Text>
+          <Text style={styles.errorText}>Không tìm thấy nhiệm vụ.</Text>
         </View>
       </Screen>
     );
@@ -278,44 +278,44 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
               <StatusBadge label={task.taskType} variant="neutral" />
             </View>
             <Text style={styles.shipmentText}>
-              Ma don: {task.shipmentCode ?? 'N/A'}
+              Mã đơn: {task.shipmentCode ?? 'N/A'}
             </Text>
           </Card>
 
           <Card>
-            <Text style={styles.sectionTitle}>Thong tin nhiem vu</Text>
+            <Text style={styles.sectionTitle}>Thông tin nhiệm vụ</Text>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Ma nhiem vu</Text>
+              <Text style={styles.infoLabel}>Mã nhiệm vụ</Text>
               <Text style={styles.infoValue}>{task.id}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Pickup request</Text>
+              <Text style={styles.infoLabel}>Yêu cầu lấy hàng</Text>
               <Text style={styles.infoValue}>{task.pickupRequestId ?? 'N/A'}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>So lan phan cong</Text>
+              <Text style={styles.infoLabel}>Số lần phân công</Text>
               <Text style={styles.infoValue}>{String(task.assignments.length)}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Tao luc</Text>
+              <Text style={styles.infoLabel}>Tạo lúc</Text>
               <Text style={styles.infoValue}>{formatDateTime(task.createdAt)}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Cap nhat luc</Text>
+              <Text style={styles.infoLabel}>Cập nhật lúc</Text>
               <Text style={styles.infoValue}>{formatDateTime(task.updatedAt)}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Ghi chu nhiem vu</Text>
+              <Text style={styles.infoLabel}>Ghi chú nhiệm vụ</Text>
               <Text style={styles.infoValue}>{task.note ?? 'N/A'}</Text>
             </View>
           </Card>
 
           <Card>
-            <Text style={styles.sectionTitle}>Thong tin don hang</Text>
+            <Text style={styles.sectionTitle}>Thông tin đơn hàng</Text>
             {shipmentQuery.isLoading ? (
               <View style={styles.loadingRow}>
                 <ActivityIndicator size="small" color={theme.colors.primary} />
-                <Text style={styles.loadingText}>Dang tai thong tin don hang...</Text>
+                <Text style={styles.loadingText}>Đang tải thông tin đơn hàng...</Text>
               </View>
             ) : null}
 
@@ -323,32 +323,32 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
               <Text style={styles.errorInlineText}>
                 {shipmentQuery.error instanceof Error
                   ? shipmentQuery.error.message
-                  : 'Khong tai duoc thong tin don hang.'}
+                  : 'Không tải được thông tin đơn hàng.'}
               </Text>
             ) : null}
 
             {!shipmentQuery.isLoading && !shipmentQuery.isError ? (
               <>
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Trang thai don</Text>
+                  <Text style={styles.infoLabel}>Trạng thái đơn</Text>
                   <Text style={styles.infoValue}>
                     {displayStatus}
                   </Text>
                 </View>
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Nguoi gui</Text>
+                  <Text style={styles.infoLabel}>Người gửi</Text>
                   <Text style={styles.infoValue}>{senderName}</Text>
                 </View>
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>So dien thoai gui</Text>
+                  <Text style={styles.infoLabel}>Số điện thoại gửi</Text>
                   <Text style={styles.infoValue}>{senderPhone ?? 'N/A'}</Text>
                 </View>
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Nguoi nhan</Text>
+                  <Text style={styles.infoLabel}>Người nhận</Text>
                   <Text style={styles.infoValue}>{receiverName}</Text>
                 </View>
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>So dien thoai nhan</Text>
+                  <Text style={styles.infoLabel}>Số điện thoại nhận</Text>
                   <Text style={styles.infoValue}>{receiverPhone ?? 'N/A'}</Text>
                 </View>
                 <View style={styles.infoRow}>
@@ -356,7 +356,7 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
                   <Text style={styles.infoValue}>{deliveryAddress}</Text>
                 </View>
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Ghi chu don</Text>
+                  <Text style={styles.infoLabel}>Ghi chú đơn</Text>
                   <Text style={styles.infoValue}>{shipmentNote}</Text>
                 </View>
               </>
@@ -402,7 +402,7 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
               color="#FFFFFF"
             />
             <Text style={styles.actionButtonText}>
-              {isPickupTask ? 'Nhận hàng' : 'Ky nhan'}
+              {isPickupTask ? 'Nhận hàng' : 'Ký nhận'}
             </Text>
           </Pressable>
 
@@ -439,7 +439,7 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
             onPress={() => setCallOptionsVisible(false)}
           />
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Thao tac lien he</Text>
+            <Text style={styles.modalTitle}>Thao tác liên hệ</Text>
             <Pressable
               onPress={() => {
                 void handleContactAction('call', receiverPhone);
@@ -447,7 +447,7 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
               style={styles.modalAction}
             >
               <Ionicons name="call-outline" size={18} color={theme.colors.primary} />
-              <Text style={styles.modalActionText}>gọi nguoi nhan</Text>
+              <Text style={styles.modalActionText}>Gọi người nhận</Text>
             </Pressable>
             <Pressable
               onPress={() => {
@@ -456,7 +456,7 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
               style={styles.modalAction}
             >
               <Ionicons name="person-outline" size={18} color={theme.colors.primary} />
-              <Text style={styles.modalActionText}>gọi nguoi gui</Text>
+              <Text style={styles.modalActionText}>Gọi người gửi</Text>
             </Pressable>
             <Pressable
               onPress={() => {
@@ -465,13 +465,13 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
               style={styles.modalAction}
             >
               <Ionicons name="chatbubble-ellipses-outline" size={18} color={theme.colors.primary} />
-              <Text style={styles.modalActionText}>Nhan tin nguoi nhan</Text>
+              <Text style={styles.modalActionText}>Nhắn tin người nhận</Text>
             </Pressable>
             <Pressable
               onPress={() => setCallOptionsVisible(false)}
               style={styles.modalCancel}
             >
-              <Text style={styles.modalCancelText}>Dong</Text>
+              <Text style={styles.modalCancelText}>Đóng</Text>
             </Pressable>
           </View>
         </View>
