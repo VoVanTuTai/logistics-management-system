@@ -2,7 +2,6 @@ import { useQuery } from '@tanstack/react-query';
 
 import { queryKeys } from '../../utils/queryKeys';
 import { trackingClient } from './tracking.client';
-import type { OperationTimelineFiltersDto } from './tracking.types';
 
 export function useTrackingSearchQuery(
   accessToken: string | null,
@@ -24,17 +23,5 @@ export function useTrackingDetailQuery(
     queryKey: [...queryKeys.tracking, 'detail', shipmentCode],
     queryFn: () => trackingClient.detail(accessToken, shipmentCode),
     enabled: Boolean(accessToken) && Boolean(shipmentCode),
-  });
-}
-
-export function useOperationTimelineQuery(
-  accessToken: string | null,
-  filters: OperationTimelineFiltersDto,
-  enabled: boolean,
-) {
-  return useQuery({
-    queryKey: [...queryKeys.tracking, 'operation-timeline', filters],
-    queryFn: () => trackingClient.operationTimeline(accessToken, filters),
-    enabled: Boolean(accessToken) && enabled,
   });
 }

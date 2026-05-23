@@ -42,29 +42,3 @@ model TrackingIndex {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
-
-model OperationTimelineEvent {
-  id                  String   @id @default(cuid())
-  eventId             String
-  eventType           String
-  entityType          String
-  entityCode          String
-  relatedShipmentCode String?
-  relatedManifestCode String?
-  relatedTripCode     String?
-  status              String?
-  actor               String?
-  locationCode        String?
-  payload             Json
-  occurredAt          DateTime
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-
-  @@unique([eventId, entityType, entityCode])
-  @@index([entityType, entityCode, occurredAt])
-  @@index([relatedShipmentCode, occurredAt])
-  @@index([relatedManifestCode, occurredAt])
-  @@index([relatedTripCode, occurredAt])
-  @@index([eventType, occurredAt])
-  @@map("operation_timeline_events")
-}

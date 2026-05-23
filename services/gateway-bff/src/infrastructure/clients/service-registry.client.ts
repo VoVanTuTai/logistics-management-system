@@ -9,7 +9,6 @@ const SERVICE_URL_ENV = {
   delivery: 'DELIVERY_SERVICE_URL',
   dispatch: 'DISPATCH_SERVICE_URL',
   manifest: 'MANIFEST_SERVICE_URL',
-  linehaul: 'LINEHAUL_SERVICE_URL',
   masterdata: 'MASTERDATA_SERVICE_URL',
   pickup: 'PICKUP_SERVICE_URL',
   reporting: 'REPORTING_SERVICE_URL',

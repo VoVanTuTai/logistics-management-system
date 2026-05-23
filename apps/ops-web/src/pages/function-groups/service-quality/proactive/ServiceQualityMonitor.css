@@ -97,6 +97,10 @@
   padding: 12px;
 }
 
+.ops-service-quality-monitor__filters--action-board {
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+}
+
 .ops-service-quality-monitor__filters label {
   display: grid;
   gap: 6px;
@@ -195,6 +199,52 @@
 .ops-service-quality-monitor__link-stack {
   display: grid;
   gap: 4px;
+}
+
+.ops-service-quality-monitor__link-stack span,
+.ops-service-quality-monitor td span,
+.ops-service-quality-monitor td time {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.ops-service-quality-monitor td strong {
+  display: block;
+  color: #334155;
+  font-size: 12px;
+}
+
+.ops-service-quality-monitor__severity {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.ops-service-quality-monitor__severity--critical {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.ops-service-quality-monitor__severity--warning {
+  border-color: #fed7aa;
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.ops-service-quality-monitor__severity--info {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
 }
 
 .ops-service-quality-monitor__empty,

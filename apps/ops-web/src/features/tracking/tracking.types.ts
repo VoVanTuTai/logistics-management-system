@@ -37,23 +37,3 @@ export interface TrackingSearchResultDto {
   lastEventType?: string | null;
   updatedAt: string | null;
 }
-
-export type OperationEntityTypeDto = 'SHIPMENT' | 'MANIFEST' | 'TRIP';
-
-export interface OperationTimelineFiltersDto {
-  entityType?: OperationEntityTypeDto;
-  entityCode?: string;
-  shipmentCode?: string;
-  manifestCode?: string;
-  tripCode?: string;
-  eventType?: string;
-  limit?: number;
-}
-
-export interface OperationTimelineEventDto extends TrackingTimelineEventDto {
-  entityType: OperationEntityTypeDto;
-  entityCode: string;
-  relatedShipmentCode: string | null;
-  relatedManifestCode: string | null;
-  relatedTripCode: string | null;
-}

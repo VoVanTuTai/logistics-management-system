@@ -16,8 +16,7 @@ $services = @(
   @{ Name = 'reporting-service'; Path = 'services/reporting-service'; Port = 3009 },
   @{ Name = 'auth-service'; Path = 'services/auth-service'; Port = 3010 },
   @{ Name = 'payment-service'; Path = 'services/payment-service'; Port = 3011 },
-  @{ Name = 'pricing-service'; Path = 'services/pricing-service'; Port = 3012 },
-  @{ Name = 'linehaul-service'; Path = 'services/linehaul-service'; Port = 3013 }
+  @{ Name = 'pricing-service'; Path = 'services/pricing-service'; Port = 3012 }
 )
 
 $dbNameMap = @{
@@ -32,7 +31,6 @@ $dbNameMap = @{
   'tracking-service'    = 'tracking_db'
   'reporting-service'   = 'reporting_db'
   'payment-service'     = 'payment_db'
-  'linehaul-service'    = 'linehaul_db'
 }
 
 function Test-PortListening([int]$port) {

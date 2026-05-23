@@ -1,13 +1,7 @@
 import { opsApiClient } from '../../services/api/client';
 import { ApiClientError } from '../../services/api/errors';
 import { opsEndpoints } from '../../services/api/endpoints';
-import type {
-  OperationTimelineEventDto,
-  OperationTimelineFiltersDto,
-  TrackingLookupResultDto,
-  TrackingSearchResultDto,
-  TrackingTimelineEventDto,
-} from './tracking.types';
+import type { TrackingLookupResultDto, TrackingSearchResultDto } from './tracking.types';
 
 interface TrackingCurrentApiResponse {
   shipmentCode: string;
@@ -33,14 +27,6 @@ interface TrackingTimelineApiResponse {
   note?: string | null;
 }
 
-interface OperationTimelineApiResponse extends TrackingTimelineApiResponse {
-  entityType: OperationTimelineEventDto['entityType'];
-  entityCode: string;
-  relatedShipmentCode: string | null;
-  relatedManifestCode: string | null;
-  relatedTripCode: string | null;
-}
-
 function mapCurrent(payload: TrackingCurrentApiResponse) {
   return {
     shipmentCode: payload.shipmentCode,
@@ -52,52 +38,6 @@ function mapCurrent(payload: TrackingCurrentApiResponse) {
     lastEventType: payload.lastEventType,
     updatedAt: payload.lastEventAt,
   };
-}
-
-function mapTimelineEvent(event: TrackingTimelineApiResponse): TrackingTimelineEventDto {
-  return {
-    id: event.id,
-    eventTypeCode: event.eventTypeCode,
-    eventType: event.eventType,
-    eventSource: event.eventSource,
-    statusAfterEventCode: event.statusAfterEventCode,
-    statusAfterEvent: event.statusAfterEvent,
-    locationCode: event.locationCode,
-    locationText: event.locationText,
-    occurredAt: event.occurredAt,
-    note: event.note,
-  };
-}
-
-function buildOperationTimelineUrl(filters: OperationTimelineFiltersDto): string {
-  const params = new URLSearchParams();
-
-  if (filters.entityType) {
-    params.set('entityType', filters.entityType);
-  }
-  if (filters.entityCode) {
-    params.set('entityCode', filters.entityCode);
-  }
-  if (filters.shipmentCode) {
-    params.set('shipmentCode', filters.shipmentCode);
-  }
-  if (filters.manifestCode) {
-    params.set('manifestCode', filters.manifestCode);
-  }
-  if (filters.tripCode) {
-    params.set('tripCode', filters.tripCode);
-  }
-  if (filters.eventType) {
-    params.set('eventType', filters.eventType);
-  }
-  if (filters.limit) {
-    params.set('limit', String(filters.limit));
-  }
-
-  const queryString = params.toString();
-  return queryString
-    ? `${opsEndpoints.tracking.operationTimeline}?${queryString}`
-    : opsEndpoints.tracking.operationTimeline;
 }
 
 export const trackingClient = {
@@ -145,24 +85,17 @@ export const trackingClient = {
       ),
     ]).then(([current, timeline]) => ({
       current,
-      timeline: timeline.map(mapTimelineEvent),
+      timeline: timeline.map((event) => ({
+        id: event.id,
+        eventTypeCode: event.eventTypeCode,
+        eventType: event.eventType,
+        eventSource: event.eventSource,
+        statusAfterEventCode: event.statusAfterEventCode,
+        statusAfterEvent: event.statusAfterEvent,
+        locationCode: event.locationCode,
+        locationText: event.locationText,
+        occurredAt: event.occurredAt,
+        note: event.note,
+      })),
     })),
-  operationTimeline: (
-    accessToken: string | null,
-    filters: OperationTimelineFiltersDto,
-  ): Promise<OperationTimelineEventDto[]> =>
-    opsApiClient
-      .request<OperationTimelineApiResponse[]>(buildOperationTimelineUrl(filters), {
-        accessToken,
-      })
-      .then((timeline) =>
-        timeline.map((event) => ({
-          ...mapTimelineEvent(event),
-          entityType: event.entityType,
-          entityCode: event.entityCode,
-          relatedShipmentCode: event.relatedShipmentCode,
-          relatedManifestCode: event.relatedManifestCode,
-          relatedTripCode: event.relatedTripCode,
-        })),
-      ),
 };
