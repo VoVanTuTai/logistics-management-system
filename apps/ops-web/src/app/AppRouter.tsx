@@ -180,6 +180,14 @@ const ServiceQualityGroupPage = lazyRoutePage(
   () => import('../pages/function-groups/service-quality/ServiceQualityGroupPage'),
   'ServiceQualityGroupPage',
 );
+const ServiceQualityIntegratedLookupPage = lazyRoutePage(
+  () => import('../pages/function-groups/service-quality/lookup/ServiceQualityIntegratedLookupPage'),
+  'ServiceQualityIntegratedLookupPage',
+);
+const ServiceQualityAbnormalManagementPage = lazyRoutePage(
+  () => import('../pages/function-groups/service-quality/abnormal/ServiceQualityAbnormalManagementPage'),
+  'ServiceQualityAbnormalManagementPage',
+);
 const ServiceQualityActionBoardPage = lazyRoutePage(
   () => import('../pages/function-groups/service-quality/proactive/ServiceQualityActionBoardPage'),
   'ServiceQualityActionBoardPage',
@@ -711,11 +719,9 @@ function DashboardLayout(): React.JSX.Element {
         { label: 'Masterdata', icon: 'branch_order_management', to: routePaths.masterdataHubs },
       ];
   const serviceQualitySidebarItems: SidebarItem[] = [
-    { label: 'Tra cứu tích', icon: 'service_lookup' },
+    { label: 'Tra cứu tích hợp', icon: 'service_lookup', to: routePaths.serviceQualityIntegratedLookup },
     { label: 'Giám sát chủ động', icon: 'service_proactive', kind: 'service_proactive' },
-    { label: 'CSKH', icon: 'service_care' },
-    { label: 'Trọng tải', icon: 'service_weight' },
-    { label: 'Quản lý hàng bất thường', icon: 'service_abnormal' },
+    { label: 'Quản lý hàng bất thường', icon: 'service_abnormal', to: routePaths.serviceQualityAbnormalManagement },
   ];
   const operationsMetricsSidebarItems: SidebarItem[] = [
     { label: 'Kiện bất thường', icon: 'metrics_abnormal', kind: 'metrics_abnormal' },
@@ -887,6 +893,14 @@ function DashboardLayout(): React.JSX.Element {
     returnBlockChildItems.some((item) => pathMatches(location.pathname, item.to));
   const isServiceQualityProactiveRoute = serviceQualityProactiveChildItems.some((item) =>
     pathMatches(location.pathname, item.to),
+  );
+  const isServiceQualityIntegratedLookupRoute = pathMatches(
+    location.pathname,
+    routePaths.serviceQualityIntegratedLookup,
+  );
+  const isServiceQualityAbnormalManagementRoute = pathMatches(
+    location.pathname,
+    routePaths.serviceQualityAbnormalManagement,
   );
   const isOpsMetricsAbnormalRoute = operationsMetricsAbnormalChildItems.some((item) =>
     pathMatches(location.pathname, item.to),
@@ -1077,6 +1091,10 @@ function DashboardLayout(): React.JSX.Element {
     ? activeCustomerPlatformItem.label
     : isCustomerPlatformSection
     ? 'Nền tảng khách hàng'
+    : isServiceQualityIntegratedLookupRoute
+    ? 'Tra cứu tích hợp'
+    : isServiceQualityAbnormalManagementRoute
+    ? 'Quản lý hàng bất thường'
     : pathMatches(location.pathname, routePaths.groupServiceQuality)
     ? 'Chất lượng dịch vụ'
     : 'Trang chủ';
@@ -1721,6 +1739,14 @@ export function AppRouter(): React.JSX.Element {
             <Route
               path={routePaths.groupServiceQualityLeaf}
               element={opsModuleRoute('Chất lượng dịch vụ', <ServiceQualityGroupPage />)}
+            />
+            <Route
+              path={routePaths.serviceQualityIntegratedLookupLeaf}
+              element={opsModuleRoute('Tra cứu tích hợp', <ServiceQualityIntegratedLookupPage />)}
+            />
+            <Route
+              path={routePaths.serviceQualityAbnormalManagementLeaf}
+              element={opsModuleRoute('Quản lý hàng bất thường', <ServiceQualityAbnormalManagementPage />)}
             />
             <Route
               path={routePaths.serviceQualityProactiveActionBoardLeaf}

@@ -124,6 +124,16 @@
   gap: 14px;
 }
 
+.ops-dashboard__content--analytics {
+  display: block;
+}
+
+.ops-dashboard__content--analytics .analytics-dash {
+  min-height: auto;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
 .ops-dashboard__main,
 .ops-dashboard__menu-side {
   display: grid;

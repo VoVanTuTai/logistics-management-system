@@ -24,7 +24,7 @@ import { useAuthStore } from '../../../store/authStore';
 import { formatShipmentStatusLabel } from '../../../utils/logisticsLabels';
 import './AnalyticsDashboard.css';
 
-const NDR_COLORS = ['#6366f1', '#f59e0b', '#ef4444', '#10b981', '#94a3b8'];
+const NDR_COLORS = ['#2563eb', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444'];
 
 function normalizeCode(value: string | null | undefined): string {
   return (value ?? '').trim().toUpperCase();
@@ -154,13 +154,13 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
                 <path d="M3 13h4v8H3zM9 9h4v12H9zM15 5h4v16h-4zM21 2l-3 3m3-3h-3m3 0v3" />
               </svg>
             </span>
-            Operations Analytics Dashboard
+            Bảng phân tích vận hành
           </h1>
           <p className="analytics-dash__subtitle">
-            Dữ liệu derive từ shipments, tasks, manifests và NDR hiện có qua Gateway BFF.
+            Dữ liệu tổng hợp từ vận đơn, tác vụ, manifest và NDR hiện có qua Gateway BFF.
           </p>
         </div>
-        <span className="analytics-dash__date-badge">API-derived · {new Date().toLocaleString('vi-VN')}</span>
+        <span className="analytics-dash__date-badge">Dữ liệu từ API · {new Date().toLocaleString('vi-VN')}</span>
       </header>
 
       {loadError ? (
@@ -169,7 +169,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
         </p>
       ) : null}
 
-      <section className="analytics-kpi-row" aria-label="Key performance indicators">
+      <section className="analytics-kpi-row" aria-label="Chỉ số vận hành chính">
         {[
           { label: 'Tổng đơn trong ngày', value: todaysShipments.length, accent: 'primary' },
           { label: 'Đang giao', value: activeDelivery.length, accent: 'info' },
@@ -182,7 +182,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
               <span className="analytics-kpi-card__value">{kpi.value}</span>
             </div>
             <span className="analytics-kpi-card__trend analytics-kpi-card__trend--neutral">
-              API source
+              Nguồn API
             </span>
           </article>
         ))}
@@ -197,8 +197,8 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={hubThroughputData} barGap={2} barCategoryGap="18%">
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="date" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} width={40} />
+              <XAxis dataKey="date" tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} width={40} />
               <Tooltip />
               {hubKeys.map((key, index) => (
                 <Bar

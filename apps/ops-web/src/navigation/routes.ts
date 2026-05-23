@@ -51,6 +51,10 @@ export const routePaths = {
   groupCapabilityPlatform: '/app/function-groups/capability-platform',
   groupOperationsMetrics: '/app/function-groups/operations-metrics',
   groupServiceQuality: '/app/function-groups/service-quality',
+  serviceQualityIntegratedLookup:
+    '/app/function-groups/service-quality/tra-cuu-tich-hop',
+  serviceQualityAbnormalManagement:
+    '/app/function-groups/service-quality/hang-bat-thuong',
   serviceQualityProactiveActionBoard:
     '/app/function-groups/service-quality/proactive/action-board',
   serviceQualityProactiveInbound:
@@ -168,6 +172,10 @@ export const routePaths = {
   groupCapabilityPlatformLeaf: 'function-groups/capability-platform',
   groupOperationsMetricsLeaf: 'function-groups/operations-metrics',
   groupServiceQualityLeaf: 'function-groups/service-quality',
+  serviceQualityIntegratedLookupLeaf:
+    'function-groups/service-quality/tra-cuu-tich-hop',
+  serviceQualityAbnormalManagementLeaf:
+    'function-groups/service-quality/hang-bat-thuong',
   serviceQualityProactiveActionBoardLeaf:
     'function-groups/service-quality/proactive/action-board',
   serviceQualityProactiveInboundLeaf:
@@ -290,6 +298,8 @@ export const OPS_FULL_MODULE_ROUTE_PATHS = [
   routePaths.branchBusinessOrderDelivery,
   routePaths.branchBusinessFinanceCod,
   routePaths.branchBusinessFinanceReconcile,
+  routePaths.serviceQualityIntegratedLookup,
+  routePaths.serviceQualityAbnormalManagement,
   routePaths.serviceQualityProactiveActionBoard,
   routePaths.serviceQualityProactiveInbound,
   routePaths.serviceQualityProactiveDelivered,

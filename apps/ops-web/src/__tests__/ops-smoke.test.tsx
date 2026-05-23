@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
@@ -427,17 +427,17 @@ describe('ops-web smoke coverage', () => {
     expect(window.location.pathname).toBe('/login');
   });
 
-  it('renders dashboard KPI shell for an authenticated ops user', async () => {
+  it('renders embedded analytics on the dashboard for an authenticated ops user', async () => {
     setAuthenticatedSession();
 
     renderWithProviders(<DashboardPage />);
 
     expect(
-      await screen.findByRole('heading', { name: /Bộ KPI/i }),
+      await screen.findByRole('heading', { name: /Bảng phân tích vận hành/i }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Đơn mới tạo/i)).toBeInTheDocument();
+    expect(screen.getByText(/Tổng đơn trong ngày/i)).toBeInTheDocument();
     expect(screen.getByText(/Menu chính/i)).toBeInTheDocument();
-    expect(screen.getByText(/Hub HCM 01/i)).toBeInTheDocument();
+    expect(within(screen.getByLabelText(/Hub đang theo dõi/i)).getByText('HCM01')).toBeInTheDocument();
   });
 
   it('renders shipment list and validates required walk-in fields', async () => {

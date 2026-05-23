@@ -39,6 +39,7 @@ interface ServiceQualityAlert {
   action: string;
   updatedAt: string | null;
   detailUrl: string;
+  lookupCode: string | null;
 }
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50];
@@ -169,6 +170,7 @@ function buildSlaAlerts(
         action: task ? 'Đẩy courier xử lý ngay' : 'Phân công task phát',
         updatedAt: shipment.updatedAt,
         detailUrl: routePaths.shipmentDetail(shipment.id),
+        lookupCode: shipment.shipmentCode,
       };
     })
     .filter((alert): alert is ServiceQualityAlert => Boolean(alert));
@@ -198,6 +200,7 @@ function buildHubDwellAlerts(shipments: ShipmentListItemDto[]): ServiceQualityAl
         action: 'Kiểm tra scan/đẩy outbound',
         updatedAt: shipment.updatedAt,
         detailUrl: routePaths.shipmentDetail(shipment.id),
+        lookupCode: shipment.shipmentCode,
       };
     })
     .filter((alert): alert is ServiceQualityAlert => Boolean(alert));
@@ -227,6 +230,7 @@ function buildNdrAlerts(ndrCases: NdrCaseListItemDto[]): ServiceQualityAlert[] {
         action: 'Chốt lịch giao lại hoặc quyết định hoàn',
         updatedAt: ndr.updatedAt,
         detailUrl: routePaths.ndrDetail(ndr.id),
+        lookupCode: ndr.shipmentCode,
       };
     })
     .filter((alert): alert is ServiceQualityAlert => Boolean(alert));
@@ -257,6 +261,7 @@ function buildManifestAlerts(manifests: ManifestListItemDto[]): ServiceQualityAl
         action: 'Kiểm tra xe/nhận manifest tại hub đích',
         updatedAt: basis,
         detailUrl: routePaths.manifestDetail(manifest.id),
+        lookupCode: null,
       };
     })
     .filter((alert): alert is ServiceQualityAlert => Boolean(alert));
@@ -286,9 +291,53 @@ function buildTaskAlerts(tasks: TaskListItemDto[]): ServiceQualityAlert[] {
         action: 'Nhắc courier hoặc reassign',
         updatedAt: task.updatedAt,
         detailUrl: routePaths.taskDetail(task.id),
+        lookupCode: task.shipmentCode,
       };
     })
     .filter((alert): alert is ServiceQualityAlert => Boolean(alert));
+}
+
+function actionChecklist(alert: ServiceQualityAlert): string[] {
+  switch (alert.type) {
+    case 'SLA_RISK':
+      return [
+        'Kiểm tra vị trí hiện tại và timeline vận đơn.',
+        alert.owner === 'Chưa phân công' ? 'Mở vận đơn/task để phân công giao.' : 'Liên hệ owner để cập nhật tiến độ xử lý.',
+        'Nếu đã trễ SLA, ưu tiên xử lý trước các cảnh báo thường.',
+      ];
+    case 'HUB_DWELL':
+      return [
+        'Đối chiếu scan inbound/outbound gần nhất.',
+        'Kiểm tra hàng còn nằm tại hub hay đã lên manifest.',
+        'Nếu thiếu scan, yêu cầu hub cập nhật thao tác ngay.',
+      ];
+    case 'NDR_OVERDUE':
+      return [
+        'Mở NDR để xác nhận lý do giao thất bại.',
+        'Chốt phương án giao lại, đổi lịch hoặc hoàn hàng.',
+        'Theo dõi đến khi NDR được đóng hoặc chuyển trạng thái.',
+      ];
+    case 'MANIFEST_PENDING':
+      return [
+        'Kiểm tra manifest đã seal và thời điểm xe xuất bến.',
+        'Liên hệ hub đích/linehaul xác nhận xe đến.',
+        'Nhận manifest hoặc ghi nhận ngoại lệ nếu xe trễ.',
+      ];
+    case 'TASK_STALE':
+      return [
+        'Mở task để kiểm tra courier đang nhận xử lý.',
+        'Nhắc courier cập nhật thao tác hoặc reassign khi cần.',
+        'Ưu tiên task đã quá hạn nhiều giờ.',
+      ];
+  }
+}
+
+function buildLookupUrl(alert: ServiceQualityAlert): string | null {
+  if (!alert.lookupCode) {
+    return null;
+  }
+
+  return `${routePaths.serviceQualityIntegratedLookup}?shipmentCode=${encodeURIComponent(alert.lookupCode)}`;
 }
 
 function formatStatus(alert: ServiceQualityAlert): string {
@@ -344,6 +393,9 @@ export function ServiceQualityActionBoardPage(): React.JSX.Element {
   const [typeFilter, setTypeFilter] = useState<AlertType | 'ALL'>('ALL');
   const [severityFilter, setSeverityFilter] = useState<AlertSeverity | 'ALL'>('ALL');
   const [hubFilter, setHubFilter] = useState('ALL');
+  const [workflowFilter, setWorkflowFilter] = useState<'ACTIVE' | 'ACKED' | 'ALL'>('ACTIVE');
+  const [acknowledgedAlertIds, setAcknowledgedAlertIds] = useState<string[]>([]);
+  const [hiddenAlertIds, setHiddenAlertIds] = useState<string[]>([]);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
@@ -384,16 +436,21 @@ export function ServiceQualityActionBoardPage(): React.JSX.Element {
     () =>
       alerts.filter(
         (alert) =>
+          !hiddenAlertIds.includes(alert.id) &&
           (typeFilter === 'ALL' || alert.type === typeFilter) &&
           (severityFilter === 'ALL' || alert.severity === severityFilter) &&
-          (hubFilter === 'ALL' || alert.hubCode === hubFilter),
+          (hubFilter === 'ALL' || alert.hubCode === hubFilter) &&
+          (workflowFilter === 'ALL' ||
+            (workflowFilter === 'ACKED'
+              ? acknowledgedAlertIds.includes(alert.id)
+              : !acknowledgedAlertIds.includes(alert.id))),
       ),
-    [alerts, hubFilter, severityFilter, typeFilter],
+    [acknowledgedAlertIds, alerts, hiddenAlertIds, hubFilter, severityFilter, typeFilter, workflowFilter],
   );
 
   useEffect(() => {
     setPage(1);
-  }, [hubFilter, pageSize, severityFilter, typeFilter]);
+  }, [hubFilter, pageSize, severityFilter, typeFilter, workflowFilter]);
 
   const hubOptions = useMemo(
     () => Array.from(new Set(alerts.map((alert) => alert.hubCode))).filter(Boolean).sort(),
@@ -401,6 +458,10 @@ export function ServiceQualityActionBoardPage(): React.JSX.Element {
   );
   const criticalCount = alerts.filter((alert) => alert.severity === 'critical').length;
   const warningCount = alerts.filter((alert) => alert.severity === 'warning').length;
+  const activeCount = alerts.filter(
+    (alert) => !acknowledgedAlertIds.includes(alert.id) && !hiddenAlertIds.includes(alert.id),
+  ).length;
+  const acknowledgedCount = alerts.filter((alert) => acknowledgedAlertIds.includes(alert.id)).length;
   const totalPages = Math.max(1, Math.ceil(filteredAlerts.length / pageSize));
   const currentPage = Math.min(page, totalPages);
   const paginatedAlerts = filteredAlerts.slice(
@@ -432,6 +493,19 @@ export function ServiceQualityActionBoardPage(): React.JSX.Element {
     void returnTasksQuery.refetch();
   };
 
+  const acknowledgeAlert = (alertId: string) => {
+    setAcknowledgedAlertIds((currentIds) =>
+      currentIds.includes(alertId) ? currentIds : [...currentIds, alertId],
+    );
+  };
+
+  const hideAlert = (alertId: string) => {
+    acknowledgeAlert(alertId);
+    setHiddenAlertIds((currentIds) =>
+      currentIds.includes(alertId) ? currentIds : [...currentIds, alertId],
+    );
+  };
+
   return (
     <section className="ops-service-quality-monitor">
       <header className="ops-service-quality-monitor__header">
@@ -458,12 +532,12 @@ export function ServiceQualityActionBoardPage(): React.JSX.Element {
           <strong>{warningCount}</strong>
         </article>
         <article>
-          <span>Tổng việc cần làm</span>
-          <strong>{alerts.length}</strong>
+          <span>Đang mở</span>
+          <strong>{activeCount}</strong>
         </article>
         <article data-tone="success">
-          <span>Đang hiển thị</span>
-          <strong>{filteredAlerts.length}</strong>
+          <span>Đã xem</span>
+          <strong>{acknowledgedCount}</strong>
         </article>
       </section>
 
@@ -499,7 +573,35 @@ export function ServiceQualityActionBoardPage(): React.JSX.Element {
             ))}
           </select>
         </label>
+        <label>
+          <span>Trạng thái xử lý</span>
+          <select
+            value={workflowFilter}
+            onChange={(event) => setWorkflowFilter(event.target.value as 'ACTIVE' | 'ACKED' | 'ALL')}
+          >
+            <option value="ACTIVE">Chưa xem</option>
+            <option value="ACKED">Đã xem</option>
+            <option value="ALL">Tất cả</option>
+          </select>
+        </label>
       </section>
+
+      {hiddenAlertIds.length > 0 || acknowledgedAlertIds.length > 0 ? (
+        <section className="ops-service-quality-monitor__workbar" aria-label="Trạng thái xử lý trong phiên">
+          <span>
+            Đã xem {acknowledgedCount} cảnh báo · Tạm ẩn {hiddenAlertIds.length} cảnh báo
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setAcknowledgedAlertIds([]);
+              setHiddenAlertIds([]);
+            }}
+          >
+            Hiện lại tất cả
+          </button>
+        </section>
+      ) : null}
 
       {loadError ? (
         <p className="ops-service-quality-monitor__error" role="alert">
@@ -529,35 +631,63 @@ export function ServiceQualityActionBoardPage(): React.JSX.Element {
                 <th>SLA</th>
                 <th>Trạng thái</th>
                 <th>Việc cần làm</th>
+                <th>Thao tác</th>
               </tr>
             </thead>
             <tbody>
-              {paginatedAlerts.map((alert) => (
-                <tr key={alert.id}>
-                  <td>
-                    <span className={`ops-service-quality-monitor__severity ops-service-quality-monitor__severity--${alert.severity}`}>
-                      {severityLabel(alert.severity)}
-                    </span>
-                  </td>
-                  <td>{alertTypeLabel(alert.type)}</td>
-                  <td>
-                    <div className="ops-service-quality-monitor__link-stack">
-                      <Link to={alert.detailUrl}>{alert.subjectCode}</Link>
-                      <span>{alert.subjectLabel}</span>
-                    </div>
-                  </td>
-                  <td>{alert.hubCode}</td>
-                  <td>{alert.owner}</td>
-                  <td>{formatAge(alert.ageHours)}</td>
-                  <td>{formatDue(alert.dueInHours)}</td>
-                  <td>{formatStatus(alert)}</td>
-                  <td>
-                    <strong>{alert.issue}</strong>
-                    <span>{alert.action}</span>
-                    <time>{formatDateTime(alert.updatedAt)}</time>
-                  </td>
-                </tr>
-              ))}
+              {paginatedAlerts.map((alert) => {
+                const lookupUrl = buildLookupUrl(alert);
+                const isAcknowledged = acknowledgedAlertIds.includes(alert.id);
+
+                return (
+                  <tr key={alert.id} data-workflow-state={isAcknowledged ? 'acknowledged' : 'active'}>
+                    <td>
+                      <span className={`ops-service-quality-monitor__severity ops-service-quality-monitor__severity--${alert.severity}`}>
+                        {severityLabel(alert.severity)}
+                      </span>
+                      {isAcknowledged ? (
+                        <span className="ops-service-quality-monitor__state-pill">Đã xem</span>
+                      ) : null}
+                    </td>
+                    <td>{alertTypeLabel(alert.type)}</td>
+                    <td>
+                      <div className="ops-service-quality-monitor__link-stack">
+                        <Link to={alert.detailUrl}>{alert.subjectCode}</Link>
+                        <span>{alert.subjectLabel}</span>
+                      </div>
+                    </td>
+                    <td>{alert.hubCode}</td>
+                    <td>{alert.owner}</td>
+                    <td>{formatAge(alert.ageHours)}</td>
+                    <td>{formatDue(alert.dueInHours)}</td>
+                    <td>{formatStatus(alert)}</td>
+                    <td>
+                      <strong>{alert.issue}</strong>
+                      <span>{alert.action}</span>
+                      <ul className="ops-service-quality-monitor__checklist">
+                        {actionChecklist(alert).map((item) => (
+                          <li key={item}>{item}</li>
+                        ))}
+                      </ul>
+                      <time>{formatDateTime(alert.updatedAt)}</time>
+                    </td>
+                    <td>
+                      <div className="ops-service-quality-monitor__actions">
+                        <Link to={alert.detailUrl}>Mở chi tiết</Link>
+                        {lookupUrl ? <Link to={lookupUrl}>Tra cứu tích hợp</Link> : null}
+                        {!isAcknowledged ? (
+                          <button type="button" onClick={() => acknowledgeAlert(alert.id)}>
+                            Đã xem
+                          </button>
+                        ) : null}
+                        <button type="button" onClick={() => hideAlert(alert.id)}>
+                          Tạm ẩn
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
