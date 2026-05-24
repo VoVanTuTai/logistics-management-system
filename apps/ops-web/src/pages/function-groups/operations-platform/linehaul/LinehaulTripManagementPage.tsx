@@ -1,197 +1,147 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Plus, RefreshCw } from 'lucide-react';
+import { Plus, Printer, RefreshCw } from 'lucide-react';
 
-import { useManifestsQuery } from '../../../../features/manifests/manifests.api';
-import type { ManifestListItemDto } from '../../../../features/manifests/manifests.types';
 import { routePaths } from '../../../../navigation/routes';
-import { getErrorMessage } from '../../../../services/api/errors';
-import { useAuthStore } from '../../../../store/authStore';
 import { formatDateTime } from '../../../../utils/format';
-import { formatManifestStatusLabel } from '../../../../utils/logisticsLabels';
+import {
+  LINEHAUL_TRIP_TYPE_LABELS,
+  getLinehaulTripStatus,
+  getLinehaulTripStatusLabel,
+  readLinehaulTrips,
+  writeLinehaulTrips,
+} from './linehaulTrips';
+import type { LinehaulTrip, LinehaulTripStatus } from './linehaulTrips';
+import { printLinehaulTripSeal } from './linehaulTripPrint';
 import './LinehaulStyles.css';
 
-interface LinehaulFilters {
-  originHubCode: string;
-  destinationHubCode: string;
+interface LinehaulTripFilters {
+  hubCode: string;
+  tripType: string;
   status: string;
-  dateFrom: string;
-  dateTo: string;
   keyword: string;
-}
-
-type LinehaulStatusTone = 'pending' | 'transit' | 'arrived' | 'default';
-
-function normalizeCode(value: string | null | undefined): string {
-  return (value ?? '').trim().toUpperCase();
 }
 
 function normalizeText(value: string | null | undefined): string {
   return (value ?? '').trim().toLowerCase();
 }
 
-function toDateInputValue(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-
-  return `${year}-${month}-${day}`;
-}
-
-function toDateKey(value: string | null | undefined): string {
-  if (!value) {
-    return '';
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return '';
-  }
-
-  return toDateInputValue(date);
-}
-
-function monthStart(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`;
-}
-
-function resolveManifestTimelineDate(manifest: ManifestListItemDto): string | null | undefined {
-  return manifest.sealedAt ?? manifest.updatedAt ?? manifest.createdAt;
-}
-
-function isOpenManifest(status: string): boolean {
-  return ['CREATED', 'OPEN', 'PENDING'].includes(normalizeCode(status));
-}
-
-function isSealedManifest(status: string): boolean {
-  return ['SEALED', 'IN_TRANSIT'].includes(normalizeCode(status));
-}
-
-function isReceivedManifest(status: string): boolean {
-  return ['RECEIVED', 'CLOSED'].includes(normalizeCode(status));
-}
-
-function isOverdueManifest(manifest: ManifestListItemDto): boolean {
-  const basis = manifest.sealedAt ?? manifest.createdAt ?? manifest.updatedAt;
-  if (!basis || isReceivedManifest(manifest.status)) {
+function isTripOverdue(trip: LinehaulTrip): boolean {
+  if (trip.printedAt) {
     return false;
   }
 
-  const timestamp = new Date(basis).getTime();
-  if (Number.isNaN(timestamp)) {
-    return false;
-  }
-
-  const thresholdHours = isSealedManifest(manifest.status) ? 48 : 24;
-  return Date.now() - timestamp > thresholdHours * 60 * 60 * 1000;
+  const endAt = new Date(trip.plannedEndAt).getTime();
+  return Number.isFinite(endAt) && Date.now() > endAt;
 }
 
-function statusTone(status: string): LinehaulStatusTone {
-  if (isReceivedManifest(status)) {
+function statusTone(status: LinehaulTripStatus, overdue: boolean): string {
+  if (overdue) {
+    return 'danger';
+  }
+  if (status === 'PRINTED') {
     return 'arrived';
   }
-  if (isSealedManifest(status)) {
-    return 'transit';
-  }
-  if (isOpenManifest(status)) {
-    return 'pending';
-  }
-  return 'default';
+  return 'pending';
 }
 
 export function LinehaulTripManagementPage(): React.JSX.Element {
-  const session = useAuthStore((state) => state.session);
-  const accessToken = session?.tokens.accessToken ?? null;
-  const today = useMemo(() => toDateInputValue(new Date()), []);
-  const [filters, setFilters] = useState<LinehaulFilters>({
-    originHubCode: 'ALL',
-    destinationHubCode: 'ALL',
+  const [trips, setTrips] = useState<LinehaulTrip[]>(readLinehaulTrips);
+  const [filters, setFilters] = useState<LinehaulTripFilters>({
+    hubCode: 'ALL',
+    tripType: 'ALL',
     status: 'ALL',
-    dateFrom: monthStart(new Date()),
-    dateTo: today,
     keyword: '',
   });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
-
-  const manifestsQuery = useManifestsQuery(accessToken);
-  const manifests = manifestsQuery.data ?? [];
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   const hubOptions = useMemo(() => {
     const hubs = new Set<string>();
-    for (const manifest of manifests) {
-      const origin = normalizeCode(manifest.originHubCode);
-      const destination = normalizeCode(manifest.destinationHubCode);
-      if (origin) {
-        hubs.add(origin);
-      }
-      if (destination) {
-        hubs.add(destination);
-      }
+    for (const trip of trips) {
+      hubs.add(trip.originHubCode);
+      hubs.add(trip.destinationHubCode);
     }
     return Array.from(hubs).sort();
-  }, [manifests]);
+  }, [trips]);
 
-  const statusOptions = useMemo(
-    () => Array.from(new Set(manifests.map((manifest) => normalizeCode(manifest.status)))).sort(),
-    [manifests],
-  );
-
-  const filteredManifests = useMemo(() => {
+  const filteredTrips = useMemo(() => {
     const keyword = normalizeText(filters.keyword);
 
-    return manifests.filter((manifest) => {
-      const originHubCode = normalizeCode(manifest.originHubCode);
-      const destinationHubCode = normalizeCode(manifest.destinationHubCode);
-      const status = normalizeCode(manifest.status);
-      const dateKey = toDateKey(resolveManifestTimelineDate(manifest));
+    return trips.filter((trip) => {
+      const status = getLinehaulTripStatus(trip);
+      const hubMatched =
+        filters.hubCode === 'ALL' ||
+        trip.originHubCode === filters.hubCode ||
+        trip.destinationHubCode === filters.hubCode;
       const keywordMatched =
         !keyword ||
-        normalizeText(manifest.manifestCode).includes(keyword) ||
-        normalizeText(originHubCode).includes(keyword) ||
-        normalizeText(destinationHubCode).includes(keyword);
+        normalizeText(trip.tripCode).includes(keyword) ||
+        normalizeText(trip.originHubCode).includes(keyword) ||
+        normalizeText(trip.destinationHubCode).includes(keyword);
 
       return (
-        keywordMatched &&
-        (filters.originHubCode === 'ALL' || originHubCode === filters.originHubCode) &&
-        (filters.destinationHubCode === 'ALL' ||
-          destinationHubCode === filters.destinationHubCode) &&
+        hubMatched &&
+        (filters.tripType === 'ALL' || trip.tripType === filters.tripType) &&
         (filters.status === 'ALL' || status === filters.status) &&
-        (!filters.dateFrom || !dateKey || dateKey >= filters.dateFrom) &&
-        (!filters.dateTo || !dateKey || dateKey <= filters.dateTo)
+        keywordMatched
       );
     });
-  }, [filters, manifests]);
+  }, [filters, trips]);
 
   useEffect(() => {
     setPage(1);
   }, [filters, pageSize]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredManifests.length / pageSize));
+  const totalPages = Math.max(1, Math.ceil(filteredTrips.length / pageSize));
   const currentPage = Math.min(page, totalPages);
-  const paginatedManifests = useMemo(
-    () => filteredManifests.slice((currentPage - 1) * pageSize, currentPage * pageSize),
-    [currentPage, filteredManifests, pageSize],
+  const paginatedTrips = useMemo(
+    () => filteredTrips.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [currentPage, filteredTrips, pageSize],
   );
 
   const kpis = useMemo(
     () => ({
-      open: manifests.filter((manifest) => isOpenManifest(manifest.status)).length,
-      sealed: manifests.filter((manifest) => isSealedManifest(manifest.status)).length,
-      received: manifests.filter((manifest) => isReceivedManifest(manifest.status)).length,
-      overdue: manifests.filter(isOverdueManifest).length,
+      total: trips.length,
+      planned: trips.filter((trip) => getLinehaulTripStatus(trip) === 'PLANNED').length,
+      printed: trips.filter((trip) => getLinehaulTripStatus(trip) === 'PRINTED').length,
+      overdue: trips.filter(isTripOverdue).length,
     }),
-    [manifests],
+    [trips],
   );
 
-  const updateFilter = <Key extends keyof LinehaulFilters>(
+  const updateFilter = <Key extends keyof LinehaulTripFilters>(
     key: Key,
-    value: LinehaulFilters[Key],
+    value: LinehaulTripFilters[Key],
   ) => {
     setFilters((current) => ({
       ...current,
       [key]: value,
     }));
+  };
+
+  const saveTrips = (nextTrips: LinehaulTrip[]) => {
+    const sortedTrips = [...nextTrips].sort((left, right) =>
+      right.createdAt.localeCompare(left.createdAt),
+    );
+    writeLinehaulTrips(sortedTrips);
+    setTrips(sortedTrips);
+  };
+
+  const printTrip = (trip: LinehaulTrip) => {
+    const opened = printLinehaulTripSeal(trip);
+    if (!opened) {
+      setActionMessage('Trình duyệt đang chặn cửa sổ in. Hãy cho phép popup rồi thử lại.');
+      return;
+    }
+
+    const printedTrip = {
+      ...trip,
+      printedAt: new Date().toISOString(),
+    };
+    saveTrips(trips.map((item) => (item.id === trip.id ? printedTrip : item)));
+    setActionMessage(`Đã in tem cho chuyến ${trip.tripCode}.`);
   };
 
   return (
@@ -201,16 +151,22 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
           <small>LINEHAUL_TRIP_MANAGEMENT</small>
           <h2>Quản lý chuyến xe</h2>
           <p>
-            Theo dõi chuyến xe/manifest, tuyến hub đi - hub đến, seal và trạng thái
-            giao nhận. Chưa có domain linehaul riêng nên manifest là nguồn dữ liệu chính.
+            Danh sách chuyến đã tạo. In tem xe trước khi xe tới; courier sẽ quét tem ở bước
+            Xe đi rồi quét đúng 2 seal để gắn seal với mã tem xe.
           </p>
         </div>
         <div className="ops-linehaul-dashboard__actions">
           <Link className="ops-linehaul-dashboard__primary-link" to={routePaths.linehaulVehicleSeal}>
             <Plus size={16} />
-            Tem xe
+            Tạo và in tem
           </Link>
-          <button type="button" onClick={() => void manifestsQuery.refetch()}>
+          <button
+            type="button"
+            onClick={() => {
+              setTrips(readLinehaulTrips());
+              setActionMessage(null);
+            }}
+          >
             <RefreshCw size={16} />
             Làm mới
           </button>
@@ -219,29 +175,42 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
 
       <section className="ops-linehaul-dashboard__kpis">
         <article>
-          <span>Manifest đang mở</span>
-          <strong>{kpis.open}</strong>
+          <span>Tổng chuyến</span>
+          <strong>{kpis.total}</strong>
         </article>
-        <article data-tone="transit">
-          <span>Đã seal / đang đi</span>
-          <strong>{kpis.sealed}</strong>
+        <article>
+          <span>Chờ in tem</span>
+          <strong>{kpis.planned}</strong>
         </article>
         <article data-tone="arrived">
-          <span>Đã receive</span>
-          <strong>{kpis.received}</strong>
+          <span>Đã in tem</span>
+          <strong>{kpis.printed}</strong>
         </article>
         <article data-tone="danger">
-          <span>Lỗi quá hạn</span>
+          <span>Quá giờ chưa in</span>
           <strong>{kpis.overdue}</strong>
         </article>
       </section>
 
+      {actionMessage ? (
+        <p
+          className={
+            actionMessage.startsWith('Đã')
+              ? 'ops-linehaul-dashboard__success'
+              : 'ops-linehaul-dashboard__error'
+          }
+          role="status"
+        >
+          {actionMessage}
+        </p>
+      ) : null}
+
       <section className="ops-linehaul-dashboard__filters">
         <label>
-          <span>Hub đi</span>
+          <span>Hub</span>
           <select
-            value={filters.originHubCode}
-            onChange={(event) => updateFilter('originHubCode', event.target.value)}
+            value={filters.hubCode}
+            onChange={(event) => updateFilter('hubCode', event.target.value)}
           >
             <option value="ALL">Tất cả</option>
             {hubOptions.map((hubCode) => (
@@ -252,34 +221,18 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
           </select>
         </label>
         <label>
-          <span>Hub đến</span>
+          <span>Loại chuyến</span>
           <select
-            value={filters.destinationHubCode}
-            onChange={(event) => updateFilter('destinationHubCode', event.target.value)}
+            value={filters.tripType}
+            onChange={(event) => updateFilter('tripType', event.target.value)}
           >
             <option value="ALL">Tất cả</option>
-            {hubOptions.map((hubCode) => (
-              <option key={hubCode} value={hubCode}>
-                {hubCode}
+            {Object.entries(LINEHAUL_TRIP_TYPE_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
               </option>
             ))}
           </select>
-        </label>
-        <label>
-          <span>Từ ngày</span>
-          <input
-            type="date"
-            value={filters.dateFrom}
-            onChange={(event) => updateFilter('dateFrom', event.target.value)}
-          />
-        </label>
-        <label>
-          <span>Đến ngày</span>
-          <input
-            type="date"
-            value={filters.dateTo}
-            onChange={(event) => updateFilter('dateTo', event.target.value)}
-          />
         </label>
         <label>
           <span>Trạng thái</span>
@@ -288,9 +241,9 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
             onChange={(event) => updateFilter('status', event.target.value)}
           >
             <option value="ALL">Tất cả</option>
-            {statusOptions.map((status) => (
+            {(['PLANNED', 'PRINTED'] as const).map((status) => (
               <option key={status} value={status}>
-                {formatManifestStatusLabel(status)}
+                {getLinehaulTripStatusLabel(status)}
               </option>
             ))}
           </select>
@@ -300,112 +253,83 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
           <input
             value={filters.keyword}
             onChange={(event) => updateFilter('keyword', event.target.value)}
-            placeholder="Manifest, hub đi, hub đến"
+            placeholder="Mã chuyến, hub"
           />
         </label>
       </section>
 
-      {manifestsQuery.error ? (
-        <p className="ops-linehaul-dashboard__error" role="alert">
-          {getErrorMessage(manifestsQuery.error)}
-        </p>
-      ) : null}
-
       <section className="ops-linehaul-dashboard__panel">
         <header className="ops-linehaul-dashboard__panel-head">
           <div>
-            <h3>Manifest / chuyến xe</h3>
-            <span>
-              {manifestsQuery.isLoading
-                ? 'Đang tải...'
-                : `${filteredManifests.length} dòng từ manifest API`}
-            </span>
+            <h3>Danh sách chuyến xe</h3>
+            <span>{filteredTrips.length} chuyến</span>
           </div>
-          <em>Link chi tiết mở manifest detail hiện có</em>
+          <em>2 seal sẽ được courier ghi khi xác nhận Xe đi</em>
         </header>
 
-        {manifestsQuery.isLoading ? (
-          <p className="ops-linehaul-dashboard__empty">Đang tải danh sách manifest...</p>
-        ) : null}
-        {!manifestsQuery.isLoading && filteredManifests.length === 0 ? (
+        {filteredTrips.length === 0 ? (
           <p className="ops-linehaul-dashboard__empty">
-            Không có manifest/chuyến xe phù hợp bộ lọc. Không sử dụng seed data thay thế.
+            Chưa có chuyến xe phù hợp. Vào Tạo và in tem để tạo tem xe mới.
           </p>
-        ) : null}
-
-        <div className="ops-linehaul-dashboard__table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Manifest / seal</th>
-                <th>Trạng thái</th>
-                <th>Hub đi</th>
-                <th>Hub đến</th>
-                <th>Bao/kiện</th>
-                <th>Đã seal</th>
-                <th>Cập nhật</th>
-                <th>SLA</th>
-                <th>Chi tiết</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedManifests.map((manifest) => {
-                const overdue = isOverdueManifest(manifest);
-                return (
-                  <tr key={manifest.id}>
-                    <td>
-                      <Link
-                        className="ops-linehaul-dashboard__code"
-                        to={routePaths.manifestDetail(manifest.id)}
-                      >
-                        {manifest.manifestCode}
-                      </Link>
-                    </td>
-                    <td>
-                      <span
-                        className={`ops-linehaul-dashboard__badge ops-linehaul-dashboard__badge--${statusTone(
-                          manifest.status,
-                        )}`}
-                      >
-                        {formatManifestStatusLabel(manifest.status)}
-                      </span>
-                    </td>
-                    <td>{manifest.originHubCode ?? 'Chưa có'}</td>
-                    <td>{manifest.destinationHubCode ?? 'Chưa có'}</td>
-                    <td>{manifest.shipmentCount ?? 0}</td>
-                    <td>{manifest.sealedAt ? formatDateTime(manifest.sealedAt) : 'Chưa seal'}</td>
-                    <td>{formatDateTime(manifest.updatedAt ?? manifest.createdAt)}</td>
-                    <td>
-                      <span
-                        className={
-                          overdue
-                            ? 'ops-linehaul-dashboard__badge ops-linehaul-dashboard__badge--danger'
-                            : 'ops-linehaul-dashboard__badge'
-                        }
-                      >
-                        {overdue ? 'Quá hạn' : 'Trong hạn'}
-                      </span>
-                    </td>
-                    <td>
-                      <Link
-                        className="ops-linehaul-dashboard__detail-link"
-                        to={routePaths.manifestDetail(manifest.id)}
-                      >
-                        <FileText size={15} />
-                        Chi tiết
-                      </Link>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        ) : (
+          <div className="ops-linehaul-dashboard__table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Mã chuyến</th>
+                  <th>Trạng thái</th>
+                  <th>Hub đi</th>
+                  <th>Hub đến</th>
+                  <th>Loại</th>
+                  <th>Bắt đầu</th>
+                  <th>Kết thúc</th>
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedTrips.map((trip) => {
+                  const status = getLinehaulTripStatus(trip);
+                  const overdue = isTripOverdue(trip);
+                  return (
+                    <tr key={trip.id}>
+                      <td>
+                        <span className="ops-linehaul-dashboard__code">{trip.tripCode}</span>
+                      </td>
+                      <td>
+                        <span
+                          className={`ops-linehaul-dashboard__badge ops-linehaul-dashboard__badge--${statusTone(
+                            status,
+                            overdue,
+                          )}`}
+                        >
+                          {overdue ? 'Quá giờ chưa in' : getLinehaulTripStatusLabel(status)}
+                        </span>
+                      </td>
+                      <td>{trip.originHubCode}</td>
+                      <td>{trip.destinationHubCode}</td>
+                      <td>{LINEHAUL_TRIP_TYPE_LABELS[trip.tripType]}</td>
+                      <td>{formatDateTime(trip.plannedStartAt)}</td>
+                      <td>{formatDateTime(trip.plannedEndAt)}</td>
+                      <td>
+                        <div className="ops-linehaul-dashboard__row-actions">
+                          <button type="button" onClick={() => printTrip(trip)}>
+                            <Printer size={15} />
+                            {trip.printedAt ? 'In lại' : 'In tem'}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         <footer className="ops-linehaul-dashboard__pagination">
           <span>
-            Hiển thị {filteredManifests.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}-
-            {Math.min(filteredManifests.length, currentPage * pageSize)} / {filteredManifests.length}
+            Hiển thị {filteredTrips.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}-
+            {Math.min(filteredTrips.length, currentPage * pageSize)} / {filteredTrips.length}
           </span>
           <label>
             <span>Số dòng</span>
