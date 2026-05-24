@@ -281,24 +281,9 @@ export function DashboardPage(): React.JSX.Element {
           icon: 'integration_services',
         },
         {
-          title: 'Quét hub',
-          to: routePaths.scans,
-          icon: 'smart_devices',
-        },
-        {
-          title: 'NDR',
-          to: routePaths.ndr,
-          icon: 'service_quality',
-        },
-        {
           title: 'Tra cứu hành trình',
           to: routePaths.tracking,
           icon: 'operations_metrics',
-        },
-        {
-          title: 'Masterdata',
-          to: routePaths.masterdataHubs,
-          icon: 'basic_data',
         },
       ];
   const notices = [
@@ -447,9 +432,6 @@ export function DashboardPage(): React.JSX.Element {
           <article className="ops-card">
             <header className="ops-card__header">
               <h3>Thông báo</h3>
-              <Link to={routePaths.ndr} className="ops-card__header-link">
-                Xem tất cả &gt;
-              </Link>
             </header>
             <ul className="ops-notification-list">
               {notices.map((item) => (

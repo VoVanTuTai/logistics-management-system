@@ -670,25 +670,9 @@ function DashboardLayout(): React.JSX.Element {
           isActive: pathMatches(location.pathname, routePaths.manifests),
         },
         {
-          label: 'Quét/NDR',
-          to: routePaths.scans,
-          isActive:
-            pathMatches(location.pathname, routePaths.scans) ||
-            pathMatches(location.pathname, routePaths.ndr),
-        },
-        {
           label: 'Tracking',
           to: routePaths.tracking,
           isActive: pathMatches(location.pathname, routePaths.tracking),
-        },
-        {
-          label: 'Masterdata',
-          to: routePaths.masterdataHubs,
-          isActive:
-            pathMatches(location.pathname, routePaths.masterdataHubs) ||
-            pathMatches(location.pathname, routePaths.masterdataZones) ||
-            pathMatches(location.pathname, routePaths.masterdataNdrReasons) ||
-            pathMatches(location.pathname, routePaths.masterdataConfigs),
         },
       ];
 
@@ -699,10 +683,7 @@ function DashboardLayout(): React.JSX.Element {
         { label: 'Duyệt lấy hàng', icon: 'customer_order_dispatch', to: routePaths.pickups },
         { label: 'Phân công tác vụ', icon: 'metrics_action', to: routePaths.tasks },
         { label: 'Bao tải', icon: 'thermal_label', to: routePaths.manifests },
-        { label: 'Quét hub', icon: 'monitor_data', to: routePaths.scans },
-        { label: 'NDR', icon: 'return_block', to: routePaths.ndr },
         { label: 'Tra cứu hành trình', icon: 'tracking_lookup', to: routePaths.tracking },
-        { label: 'Masterdata', icon: 'branch_order_management', to: routePaths.masterdataHubs },
         { label: 'Luồng nghiệp vụ mở rộng', icon: 'tracking_lookup', sectionLabel: 'Luồng nghiệp vụ mở rộng' },
         { label: 'Tem bao in nhiệt', icon: 'thermal_label', kind: 'thermal_label' },
         { label: 'Chuyển hoàn', icon: 'return_block', kind: 'return_block' },
@@ -713,10 +694,7 @@ function DashboardLayout(): React.JSX.Element {
         { label: 'Duyệt lấy hàng', icon: 'customer_order_dispatch', to: routePaths.pickups },
         { label: 'Phân công tác vụ', icon: 'metrics_action', to: routePaths.tasks },
         { label: 'Bao tải', icon: 'thermal_label', to: routePaths.manifests },
-        { label: 'Quét hub', icon: 'monitor_data', to: routePaths.scans },
-        { label: 'NDR', icon: 'return_block', to: routePaths.ndr },
         { label: 'Tra cứu hành trình', icon: 'tracking_lookup', to: routePaths.tracking },
-        { label: 'Masterdata', icon: 'branch_order_management', to: routePaths.masterdataHubs },
       ];
   const serviceQualitySidebarItems: SidebarItem[] = [
     { label: 'Tra cứu tích hợp', icon: 'service_lookup', to: routePaths.serviceQualityIntegratedLookup },
@@ -725,9 +703,7 @@ function DashboardLayout(): React.JSX.Element {
   ];
   const operationsMetricsSidebarItems: SidebarItem[] = [
     { label: 'Kiện bất thường', icon: 'metrics_abnormal', kind: 'metrics_abnormal' },
-    { label: 'Thời hiệu', icon: 'metrics_deadline', kind: 'metrics_deadline' },
-    { label: 'Quy hoạch', icon: 'metrics_planning', kind: 'metrics_planning' },
-    { label: 'Thao tác', icon: 'metrics_action', kind: 'metrics_action' },
+    { label: 'Giám sát tồn kho', icon: 'metrics_deadline', to: routePaths.opsMetricsDeadlineInventory },
   ];
   const branchBusinessSidebarItems: SidebarItem[] = [
     {
@@ -779,8 +755,6 @@ function DashboardLayout(): React.JSX.Element {
     { label: 'Giám sát hàng đến', to: routePaths.monitorDataHangDen },
     { label: 'Giám sát hàng gửi', to: routePaths.monitorDataHangGui },
     { label: 'Giám sát hàng phát', to: routePaths.monitorDataHangPhat },
-    { label: 'Giám sát 2in1', to: routePaths.monitorData2In1 },
-    { label: 'Theo dõi tạm ứng', to: routePaths.monitorDataTheoDoiTamUng },
     { label: 'Giám sát đóng bao', to: routePaths.monitorDataDongBao },
   ] as const;
   const thermalLabelChildItems = [
@@ -830,7 +804,6 @@ function DashboardLayout(): React.JSX.Element {
     { label: 'Quản lý đơn tại bưu cục', to: routePaths.branchBusinessLocalOrders },
     { label: 'Phát hàng', to: routePaths.branchBusinessCourierHandoff },
     { label: 'Đơn tồn bưu cục', to: routePaths.branchBusinessBranchInventory },
-    { label: 'Chốt ca', to: routePaths.branchBusinessShiftClosing },
   ] as const;
   const branchBusinessFinanceSettlementChildItems = [
     { label: 'Quyết toán thu hộ', to: routePaths.branchBusinessFinanceCod },
@@ -985,7 +958,7 @@ function DashboardLayout(): React.JSX.Element {
   const activePanelKinds: ReadonlyArray<SidebarPanelKind> = isServiceQualitySection
     ? ['service_proactive']
     : isOperationsMetricsSection
-    ? ['metrics_abnormal', 'metrics_deadline', 'metrics_planning', 'metrics_action']
+    ? ['metrics_abnormal']
     : isCustomerPlatformSection
     ? ['customer_order_management', 'customer_order_dispatch']
     : isBranchBusinessSection
