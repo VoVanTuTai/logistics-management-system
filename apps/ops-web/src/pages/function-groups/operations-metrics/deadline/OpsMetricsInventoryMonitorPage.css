@@ -77,7 +77,7 @@
 
 .ops-metrics-inventory__summary {
   display: grid;
-  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  grid-template-columns: repeat(6, minmax(130px, 1fr));
   gap: 10px;
 }
 
@@ -96,18 +96,24 @@
   font-weight: 800;
 }
 
+.ops-metrics-inventory__summary small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+}
+
 .ops-metrics-inventory__summary strong {
   color: #1d4ed8;
   font-size: 25px;
   line-height: 1;
 }
 
-.ops-metrics-inventory__summary article[data-tone='warning'] strong {
-  color: #c2410c;
-}
-
 .ops-metrics-inventory__summary article[data-tone='success'] strong {
   color: #15803d;
+}
+
+.ops-metrics-inventory__summary article[data-tone='warning'] strong {
+  color: #b45309;
 }
 
 .ops-metrics-inventory__summary article[data-tone='danger'] strong {
@@ -116,7 +122,7 @@
 
 .ops-metrics-inventory__filters {
   display: grid;
-  grid-template-columns: 160px 170px 190px minmax(220px, 1fr);
+  grid-template-columns: 150px 150px 170px 190px minmax(220px, 1fr);
   gap: 10px;
   border: 1px solid #dbe3ef;
   border-radius: 10px;
@@ -149,7 +155,8 @@
   font-size: 13px;
 }
 
-.ops-metrics-inventory__panel {
+.ops-metrics-inventory__panel,
+.ops-metrics-inventory__courier-panel {
   border: 1px solid #dbe3ef;
   border-radius: 10px;
   background: #ffffff;
@@ -179,13 +186,37 @@
   font-weight: 800;
 }
 
+.ops-metrics-inventory__panel-head small {
+  display: block;
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ops-metrics-inventory__ghost-button {
+  min-height: 32px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1d4ed8;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.ops-metrics-inventory__ghost-button:hover {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
 .ops-metrics-inventory__table-wrap {
   overflow: auto;
 }
 
 .ops-metrics-inventory__table {
   width: 100%;
-  min-width: 1040px;
+  min-width: 1180px;
   border-collapse: collapse;
 }
 
@@ -237,6 +268,113 @@
 
 .ops-metrics-inventory__badge--success {
   border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.ops-metrics-inventory__badge--warning {
+  border-color: #fed7aa;
+  background: #fff7ed;
+  color: #b45309;
+}
+
+.ops-metrics-inventory__courier-list {
+  max-height: 292px;
+  overflow: auto;
+}
+
+.ops-metrics-inventory__courier-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+}
+
+.ops-metrics-inventory__courier-table th,
+.ops-metrics-inventory__courier-table td {
+  border-bottom: 1px solid #e5eaf2;
+  padding: 9px 12px;
+  color: #475569;
+  font-size: 12px;
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.ops-metrics-inventory__courier-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #ffffff;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ops-metrics-inventory__courier-table tr {
+  cursor: pointer;
+}
+
+.ops-metrics-inventory__courier-table tbody tr:hover,
+.ops-metrics-inventory__courier-row--active {
+  background: #fffbeb;
+}
+
+.ops-metrics-inventory__courier-row--active td:first-child {
+  box-shadow: inset 3px 0 0 #f59e0b;
+}
+
+.ops-metrics-inventory__courier-row--clear {
+  background: #fbfefc;
+}
+
+.ops-metrics-inventory__courier-row--clear td {
+  color: #64748b;
+}
+
+.ops-metrics-inventory__courier-table td:first-child {
+  min-width: 240px;
+  white-space: normal;
+}
+
+.ops-metrics-inventory__courier-table td:first-child strong {
+  display: block;
+  color: #1e293b;
+  font-size: 13px;
+}
+
+.ops-metrics-inventory__courier-table td:first-child small {
+  display: block;
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.ops-metrics-inventory__courier-count {
+  display: inline-flex;
+  min-width: 28px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.ops-metrics-inventory__courier-count--warning {
+  background: #fff7ed;
+  color: #b45309;
+}
+
+.ops-metrics-inventory__courier-count--danger {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.ops-metrics-inventory__courier-count--clear {
   background: #f0fdf4;
   color: #15803d;
 }

@@ -4,7 +4,13 @@ dist/
 **/dist/
 *.tsbuildinfo
 
+# Local environment files
+apps/ops-web/.env
+services/gateway-bff/.env
+
 # Runtime/log artifacts
 *.log
+.tmp
+tmp/
 .tmp/service-logs/
 _local_backup/

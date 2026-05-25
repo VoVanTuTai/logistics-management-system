@@ -19,6 +19,14 @@ fi
 
 sleep 1
 
+echo "[stop] docker compose services"
+if command -v docker >/dev/null 2>&1; then
+  docker compose \
+    -f "$ROOT_DIR/infra/dev/docker-compose.yml" \
+    -f "$ROOT_DIR/infra/dev/docker-compose.services.yml" \
+    down --remove-orphans || true
+fi
+
 echo "[stop] ports"
 for port in "${PORTS[@]}"; do
   pids="$(lsof -ti ":$port" -sTCP:LISTEN 2>/dev/null || true)"
