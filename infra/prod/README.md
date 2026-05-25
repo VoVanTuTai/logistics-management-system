@@ -31,7 +31,7 @@ OPS_PUBLIC_URL=https://ops.nexus-ex.site
 MERCHANT_PUBLIC_URL=https://merchant.nexus-ex.site
 ADMIN_PUBLIC_URL=https://admin.nexus-ex.site
 PUBLIC_TRACKING_PUBLIC_URL=https://tracking.nexus-ex.site
-GATEWAY_PUBLIC_URL=https://api.nexus-ex.site
+GATEWAY_PUBLIC_URL=https://ops.nexus-ex.site
 MINIO_PUBLIC_ENDPOINT=https://minio.nexus-ex.site
 CORS_ORIGINS=https://ops.nexus-ex.site,https://merchant.nexus-ex.site,https://admin.nexus-ex.site,https://tracking.nexus-ex.site
 ```
@@ -49,7 +49,6 @@ sudo ln -sf /etc/nginx/sites-available/nexus-ex.conf /etc/nginx/sites-enabled/ne
 sudo nginx -t
 sudo systemctl reload nginx
 sudo certbot --nginx \
-  -d api.nexus-ex.site \
   -d ops.nexus-ex.site \
   -d merchant.nexus-ex.site \
   -d admin.nexus-ex.site \
@@ -67,7 +66,7 @@ MINIO_ROOT_PASSWORD=...
 ## URLs
 
 ```text
-gateway API:      https://api.nexus-ex.site/health
+gateway API:      https://ops.nexus-ex.site/health
 ops-web:          https://ops.nexus-ex.site
 merchant-web:     https://merchant.nexus-ex.site
 admin-web:        https://admin.nexus-ex.site
