@@ -82,3 +82,27 @@ docker compose --env-file infra/prod/.env -f infra/prod/docker-compose.yml logs 
 docker compose --env-file infra/prod/.env -f infra/prod/docker-compose.yml up -d --build
 docker compose --env-file infra/prod/.env -f infra/prod/docker-compose.yml down
 ```
+
+## Full public reset
+
+When the VPS has stale containers, old frontend bundles, duplicate Nginx server
+blocks, or conflicting dev containers, run the guarded reset script:
+
+```bash
+FORCE_RESET=1 ./scripts/reset-vps-public.sh
+```
+
+By default it:
+- updates `infra/prod/.env` to use `https://ops.nexus-ex.site` as the browser
+  gateway base URL;
+- disables conflicting Nginx site files for the Nexus domains and installs
+  `infra/prod/nginx-domain-proxy.conf`;
+- stops/removes the `nexus-prod` containers and `nexus/*:local` images;
+- rebuilds the stack with no Docker cache;
+- prepares and seeds the auth database when `SEED_DEMO_DATA=1`.
+
+It does not delete database volumes unless explicitly requested:
+
+```bash
+FORCE_RESET=1 RESET_VOLUMES=1 ./scripts/reset-vps-public.sh
+```

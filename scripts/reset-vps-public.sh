@@ -1,0 +1,261 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ENV_FILE="${ENV_FILE:-$ROOT_DIR/infra/prod/.env}"
+ENV_EXAMPLE="$ROOT_DIR/infra/prod/.env.example"
+COMPOSE_FILE="$ROOT_DIR/infra/prod/docker-compose.yml"
+NGINX_SOURCE="$ROOT_DIR/infra/prod/nginx-domain-proxy.conf"
+NGINX_TARGET="/etc/nginx/sites-available/nexus-public.conf"
+NGINX_LINK="/etc/nginx/sites-enabled/nexus-public.conf"
+
+OPS_DOMAIN="${OPS_DOMAIN:-ops.nexus-ex.site}"
+MERCHANT_DOMAIN="${MERCHANT_DOMAIN:-merchant.nexus-ex.site}"
+ADMIN_DOMAIN="${ADMIN_DOMAIN:-admin.nexus-ex.site}"
+TRACKING_DOMAIN="${TRACKING_DOMAIN:-tracking.nexus-ex.site}"
+MINIO_DOMAIN="${MINIO_DOMAIN:-minio.nexus-ex.site}"
+
+export DOCKER_BUILDKIT=1
+
+compose() {
+  docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"
+}
+
+sudo_cmd() {
+  if [[ "$(id -u)" -eq 0 ]]; then
+    "$@"
+  else
+    sudo "$@"
+  fi
+}
+
+require_command() {
+  local command_name="$1"
+  if ! command -v "$command_name" >/dev/null 2>&1; then
+    echo "Missing command: $command_name" >&2
+    exit 1
+  fi
+}
+
+set_env_value() {
+  local key="$1"
+  local value="$2"
+
+  if grep -q "^${key}=" "$ENV_FILE"; then
+    sed -i "s|^${key}=.*|${key}=${value}|" "$ENV_FILE"
+  else
+    printf '%s=%s\n' "$key" "$value" >>"$ENV_FILE"
+  fi
+}
+
+load_env() {
+  if [[ ! -f "$ENV_FILE" ]]; then
+    cp "$ENV_EXAMPLE" "$ENV_FILE"
+    echo "Created $ENV_FILE from example." >&2
+  fi
+
+  set_env_value OPS_PUBLIC_URL "https://${OPS_DOMAIN}"
+  set_env_value MERCHANT_PUBLIC_URL "https://${MERCHANT_DOMAIN}"
+  set_env_value ADMIN_PUBLIC_URL "https://${ADMIN_DOMAIN}"
+  set_env_value PUBLIC_TRACKING_PUBLIC_URL "https://${TRACKING_DOMAIN}"
+  set_env_value GATEWAY_PUBLIC_URL "https://${OPS_DOMAIN}"
+  set_env_value MINIO_PUBLIC_ENDPOINT "https://${MINIO_DOMAIN}"
+  set_env_value CORS_ORIGINS "https://${OPS_DOMAIN},https://${MERCHANT_DOMAIN},https://${ADMIN_DOMAIN},https://${TRACKING_DOMAIN}"
+
+  set -a
+  # shellcheck disable=SC1090
+  source "$ENV_FILE"
+  set +a
+}
+
+wait_compose_service() {
+  local service="$1"
+  local timeout="${2:-180}"
+  local elapsed=0
+  local container_id
+  local status
+
+  while [[ "$elapsed" -lt "$timeout" ]]; do
+    container_id="$(compose ps -q "$service" 2>/dev/null || true)"
+    if [[ -n "$container_id" ]]; then
+      status="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$container_id" 2>/dev/null || true)"
+      if [[ "$status" == "healthy" || "$status" == "running" ]]; then
+        echo "[ready] $service status=$status"
+        return 0
+      fi
+    fi
+
+    sleep 2
+    elapsed=$((elapsed + 2))
+  done
+
+  echo "[down] $service status=${status:-missing}" >&2
+  return 1
+}
+
+wait_http_health() {
+  local url="$1"
+  local timeout="${2:-180}"
+  local elapsed=0
+
+  while [[ "$elapsed" -lt "$timeout" ]]; do
+    if curl -fsS "$url" >/dev/null 2>&1; then
+      echo "[ready] $url"
+      return 0
+    fi
+
+    sleep 2
+    elapsed=$((elapsed + 2))
+  done
+
+  echo "[down] $url" >&2
+  return 1
+}
+
+stop_known_conflicts() {
+  if docker ps --format '{{.Names}}' | grep -qx 'NEXUS-dev-postgres'; then
+    echo "[docker] stop conflicting NEXUS-dev-postgres"
+    docker stop NEXUS-dev-postgres >/dev/null
+  fi
+}
+
+reset_compose_stack() {
+  local down_args=(down --remove-orphans)
+
+  if [[ "${RESET_VOLUMES:-0}" == "1" ]]; then
+    echo "[warn] RESET_VOLUMES=1: compose volumes will be deleted"
+    down_args+=(-v)
+  fi
+
+  echo "[compose] ${down_args[*]}"
+  compose "${down_args[@]}" || true
+
+  echo "[docker] remove nexus/*:local images"
+  docker images --format '{{.Repository}}:{{.Tag}}' \
+    | awk '/^nexus\/.*:local$/ { print }' \
+    | xargs -r docker rmi -f
+}
+
+install_nginx_config() {
+  if [[ "${CONFIGURE_NGINX:-1}" != "1" ]]; then
+    echo "[nginx] skipped"
+    return
+  fi
+
+  if [[ ! -f "$NGINX_SOURCE" ]]; then
+    echo "Missing Nginx template: $NGINX_SOURCE" >&2
+    exit 1
+  fi
+
+  echo "[nginx] install $NGINX_TARGET"
+  sudo_cmd cp "$NGINX_SOURCE" "$NGINX_TARGET"
+  sudo_cmd ln -sf "$NGINX_TARGET" "$NGINX_LINK"
+
+  if [[ "${DISABLE_CONFLICTING_NGINX:-1}" == "1" && -d /etc/nginx/sites-enabled ]]; then
+    local disabled_dir="/etc/nginx/sites-disabled/nexus-reset-$(date +%Y%m%d%H%M%S)"
+    local file
+    sudo_cmd mkdir -p "$disabled_dir"
+
+    while IFS= read -r file; do
+      if [[ "$file" == "$NGINX_LINK" ]]; then
+        continue
+      fi
+
+      echo "[nginx] disable conflicting site $file"
+      sudo_cmd mv "$file" "$disabled_dir/"
+    done < <(
+      grep -RIlE "server_name .*(${OPS_DOMAIN}|${MERCHANT_DOMAIN}|${ADMIN_DOMAIN}|${TRACKING_DOMAIN})" \
+        /etc/nginx/sites-enabled 2>/dev/null || true
+    )
+  fi
+
+  sudo_cmd nginx -t
+  sudo_cmd systemctl reload nginx
+}
+
+build_and_start_stack() {
+  echo "[docker] build no-cache"
+  compose build --no-cache
+
+  echo "[compose] start infra"
+  compose up -d postgres rabbitmq minio minio-create-bucket
+  wait_compose_service postgres 180
+  wait_compose_service rabbitmq 180
+  wait_compose_service minio 180
+
+  echo "[compose] start stack"
+  compose up -d --remove-orphans
+}
+
+prepare_auth_db() {
+  if [[ "${SEED_DEMO_DATA:-0}" != "1" ]]; then
+    echo "[seed] skipped because SEED_DEMO_DATA is not 1"
+    return
+  fi
+
+  echo "[seed] auth-service db push and demo seed"
+  docker run --rm \
+    --network nexus-prod_default \
+    -v "$ROOT_DIR/services/auth-service:/app" \
+    -w /app \
+    -e DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/auth_db" \
+    node:20-alpine \
+    sh -lc "npm install && npx prisma generate --schema prisma/schema.prisma && npx prisma db push --schema prisma/schema.prisma && npx ts-node --transpile-only prisma/seed.ts"
+}
+
+verify_public_routes() {
+  echo "[verify] public health"
+  wait_http_health "https://${OPS_DOMAIN}/health" 180
+
+  echo "[verify] auth preflight"
+  curl -fsSI -X OPTIONS "https://${OPS_DOMAIN}/ops/auth/auth/login" \
+    -H "Origin: https://${OPS_DOMAIN}" \
+    -H "Access-Control-Request-Method: POST" \
+    -H "Access-Control-Request-Headers: content-type" >/dev/null
+
+  echo "[verify] frontend bundle does not reference old IP gateway"
+  if curl -fsS "https://${OPS_DOMAIN}/login" \
+    | grep -o '/assets/[^"]*\.js' \
+    | head -n 1 \
+    | xargs -r -I '{}' curl -fsS "https://${OPS_DOMAIN}{}" \
+    | grep -q '103\.179\.172\.53:3000'; then
+    echo "Frontend bundle still references http://103.179.172.53:3000" >&2
+    exit 1
+  fi
+}
+
+print_summary() {
+  echo
+  echo "=== Public deployment ready ==="
+  echo "gateway API:      https://${OPS_DOMAIN}/health"
+  echo "ops-web:          https://${OPS_DOMAIN}"
+  echo "merchant-web:     https://${MERCHANT_DOMAIN}"
+  echo "admin-web:        https://${ADMIN_DOMAIN}"
+  echo "public-tracking:  https://${TRACKING_DOMAIN}"
+  echo
+  echo "Demo ops login: username=20000001 password=password"
+}
+
+main() {
+  if [[ "${FORCE_RESET:-0}" != "1" ]]; then
+    echo "This script stops/removes nexus-prod containers and nexus/*:local images." >&2
+    echo "Run with FORCE_RESET=1 to continue." >&2
+    echo "Set RESET_VOLUMES=1 only if you also want to delete compose volumes/database data." >&2
+    exit 1
+  fi
+
+  require_command docker
+  require_command curl
+  load_env
+  stop_known_conflicts
+  reset_compose_stack
+  install_nginx_config
+  build_and_start_stack
+  prepare_auth_db
+  compose restart auth-service gateway-bff
+  verify_public_routes
+  compose ps
+  print_summary
+}
+
+main "$@"
