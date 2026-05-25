@@ -163,10 +163,10 @@ print_urls() {
   echo
   echo "=== VPS URLS ==="
   echo "gateway API:      ${GATEWAY_PUBLIC_URL}/health"
-  echo "ops-web:          http://${PUBLIC_HOST}:${OPS_WEB_PORT}"
-  echo "merchant-web:     http://${PUBLIC_HOST}:${MERCHANT_WEB_PORT}"
-  echo "admin-web:        http://${PUBLIC_HOST}:${ADMIN_WEB_PORT}"
-  echo "public-tracking:  http://${PUBLIC_HOST}:${PUBLIC_TRACKING_PORT}"
+  echo "ops-web:          ${OPS_PUBLIC_URL:-http://${PUBLIC_HOST}:${OPS_WEB_PORT}}"
+  echo "merchant-web:     ${MERCHANT_PUBLIC_URL:-http://${PUBLIC_HOST}:${MERCHANT_WEB_PORT}}"
+  echo "admin-web:        ${ADMIN_PUBLIC_URL:-http://${PUBLIC_HOST}:${ADMIN_WEB_PORT}}"
+  echo "public-tracking:  ${PUBLIC_TRACKING_PUBLIC_URL:-http://${PUBLIC_HOST}:${PUBLIC_TRACKING_PORT}}"
   echo "minio API:        ${MINIO_PUBLIC_ENDPOINT}"
   echo
 }

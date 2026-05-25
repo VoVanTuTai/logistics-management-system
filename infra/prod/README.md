@@ -23,12 +23,37 @@ nexus/admin-web:local
 nexus/public-tracking:local
 ```
 
-Use the VPS public IP in these values:
+For HTTPS domain deployment, use HTTPS public URLs in these values:
 
 ```dotenv
 PUBLIC_HOST=103.179.172.53
-GATEWAY_PUBLIC_URL=http://103.179.172.53:3000
-MINIO_PUBLIC_ENDPOINT=http://103.179.172.53:9000
+OPS_PUBLIC_URL=https://ops.nexus-ex.site
+MERCHANT_PUBLIC_URL=https://merchant.nexus-ex.site
+ADMIN_PUBLIC_URL=https://admin.nexus-ex.site
+PUBLIC_TRACKING_PUBLIC_URL=https://tracking.nexus-ex.site
+GATEWAY_PUBLIC_URL=https://api.nexus-ex.site
+MINIO_PUBLIC_ENDPOINT=https://minio.nexus-ex.site
+CORS_ORIGINS=https://ops.nexus-ex.site,https://merchant.nexus-ex.site,https://admin.nexus-ex.site,https://tracking.nexus-ex.site
+```
+
+Do not build an HTTPS frontend with `GATEWAY_PUBLIC_URL=http://...`.
+Vite embeds this value into the generated JavaScript. A page served from
+`https://ops.nexus-ex.site` calling `http://103.179.172.53:3000` will be blocked
+by the browser as mixed content and will surface as `Failed to fetch`.
+
+The host-level Nginx template for these domains is:
+
+```bash
+sudo cp infra/prod/nginx-domain-proxy.conf /etc/nginx/sites-available/nexus-ex.conf
+sudo ln -sf /etc/nginx/sites-available/nexus-ex.conf /etc/nginx/sites-enabled/nexus-ex.conf
+sudo nginx -t
+sudo systemctl reload nginx
+sudo certbot --nginx \
+  -d api.nexus-ex.site \
+  -d ops.nexus-ex.site \
+  -d merchant.nexus-ex.site \
+  -d admin.nexus-ex.site \
+  -d tracking.nexus-ex.site
 ```
 
 Change the default passwords before running:
@@ -42,12 +67,12 @@ MINIO_ROOT_PASSWORD=...
 ## URLs
 
 ```text
-gateway API:      http://103.179.172.53:3000/health
-ops-web:          http://103.179.172.53:5173
-merchant-web:     http://103.179.172.53:5174
-admin-web:        http://103.179.172.53:5175
-public-tracking:  http://103.179.172.53:5176
-minio API:        http://103.179.172.53:9000
+gateway API:      https://api.nexus-ex.site/health
+ops-web:          https://ops.nexus-ex.site
+merchant-web:     https://merchant.nexus-ex.site
+admin-web:        https://admin.nexus-ex.site
+public-tracking:  https://tracking.nexus-ex.site
+minio API:        https://minio.nexus-ex.site
 ```
 
 ## Operations
