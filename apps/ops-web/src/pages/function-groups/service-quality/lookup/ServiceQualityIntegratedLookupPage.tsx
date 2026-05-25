@@ -122,7 +122,7 @@ export function ServiceQualityIntegratedLookupPage(): React.JSX.Element {
       <header className="ops-integrated-lookup__header">
         <div>
           <small>TRA_CUU_TICH_HOP</small>
-          <h2>Tra cứu tích hợp</h2>
+          <h2>Tra cứu sự cố / chất lượng</h2>
           <p>
             Nhập mã vận đơn để xem toàn bộ thông tin đơn hàng, hub gửi/nhận/đích,
             người gửi, người nhận, trạng thái hiện tại và lịch sử xử lý.

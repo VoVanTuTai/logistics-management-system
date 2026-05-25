@@ -357,8 +357,11 @@ start_web_app() {
 start_mobile_app() {
   local dir="$ROOT_DIR/apps/courier-mobile"
   local host_mode="lan"
+  local log_id
+  local runner
   local out_log="$LOG_DIR/courier-mobile.out.log"
   local err_log="$LOG_DIR/courier-mobile.err.log"
+  local terminal_command
 
   if [[ "$MOBILE_MODE" == "emulator" ]]; then
     host_mode="localhost"
@@ -366,13 +369,39 @@ start_mobile_app() {
 
   install_deps_if_needed "$dir" "courier-mobile"
   stop_port 8081
-  (
-    cd "$dir"
-    EXPO_PUBLIC_GATEWAY_BASE_URL="$MOBILE_GATEWAY_URL" \
-      nohup npm run start -- --host "$host_mode" --port 8081 > "$out_log" 2> "$err_log" < /dev/null &
+
+  log_id="$(date +%Y%m%d-%H%M%S)"
+  runner="$LOG_DIR/courier-mobile-$log_id.mac-run.sh"
+
+  {
+    echo '#!/usr/bin/env bash'
+    echo 'set -euo pipefail'
+    printf 'exec > >(tee -a %q) 2> >(tee -a %q >&2)\n' "$out_log" "$err_log"
+    printf 'printf "\\033]0;%s\\007"\n' "courier-mobile Expo"
+    printf 'echo $$ > %q\n' "$PID_DIR/courier-mobile.pid"
+    printf 'cd %q\n' "$dir"
+    printf 'export EXPO_PUBLIC_GATEWAY_BASE_URL=%q\n' "$MOBILE_GATEWAY_URL"
+    printf 'echo "[expo] gateway=%s"\n' "$MOBILE_GATEWAY_URL"
+    printf 'echo "[expo] host=%s port=8081"\n' "$host_mode"
+    echo 'echo "[expo] QR will appear below. Scan it with Expo Go."'
+    printf 'exec npm run start -- --host %q --port 8081\n' "$host_mode"
+  } > "$runner"
+  chmod +x "$runner"
+
+  if [[ "${EXPO_TERMINAL:-1}" == "1" ]] && command -v osascript >/dev/null 2>&1; then
+    terminal_command="$(printf '%q' "$runner")"
+    osascript \
+      -e 'tell application "Terminal"' \
+      -e 'activate' \
+      -e "do script \"$terminal_command\"" \
+      -e 'end tell' >/dev/null
+    echo "[start] courier-mobile Terminal opened port=8081 mode=$MOBILE_MODE logs=$out_log"
+  else
+    nohup "$runner" >/dev/null 2>&1 < /dev/null &
     echo "$!" > "$PID_DIR/courier-mobile.pid"
-  )
-  echo "[start] courier-mobile pid=$(cat "$PID_DIR/courier-mobile.pid") port=8081 mode=$MOBILE_MODE"
+    echo "[start] courier-mobile pid=$(cat "$PID_DIR/courier-mobile.pid") port=8081 mode=$MOBILE_MODE logs=$out_log"
+    echo "[hint] Set EXPO_TERMINAL=1 on macOS to show the Expo QR in Terminal."
+  fi
 }
 
 echo "[env] updating local Mac env"

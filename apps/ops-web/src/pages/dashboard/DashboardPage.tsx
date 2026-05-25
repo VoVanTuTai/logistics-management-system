@@ -216,20 +216,17 @@ export function DashboardPage(): React.JSX.Element {
     to?: string;
     icon: DashboardMenuIcon;
     disabled?: boolean;
+    featured?: boolean;
   }> = appEnv.enableFullOpsModules
     ? [
         {
           title: 'Nền tảng điều hành',
           to: routePaths.groupOperationsPlatform,
           icon: 'operations_platform',
+          featured: true,
         },
         {
-          title: 'Dịch vụ tích hợp',
-          to: routePaths.groupIntegrationServices,
-          icon: 'integration_services',
-        },
-        {
-          title: 'Nền tảng khách hàng',
+          title: 'Đơn khách hàng',
           to: routePaths.groupCustomerPlatform,
           icon: 'customer_platform',
         },
@@ -244,7 +241,7 @@ export function DashboardPage(): React.JSX.Element {
           icon: 'finance_settlement',
         },
         {
-          title: 'Quản lý vận chuyển',
+          title: 'Vận chuyển tuyến',
           to: routePaths.groupCapabilityPlatform,
           icon: 'capability_platform',
         },
@@ -405,11 +402,15 @@ export function DashboardPage(): React.JSX.Element {
                 </span>
               );
 
+              const tileClassName = item.featured
+                ? 'ops-menu-tile ops-menu-tile--featured'
+                : 'ops-menu-tile';
+
               if (item.disabled || !item.to) {
                 return (
                   <div
                     key={item.title}
-                    className="ops-menu-tile ops-menu-tile--disabled"
+                    className={`${tileClassName} ops-menu-tile--disabled`}
                     aria-disabled="true"
                   >
                     {iconNode}
@@ -419,7 +420,7 @@ export function DashboardPage(): React.JSX.Element {
               }
 
               return (
-                <Link key={item.title} to={item.to} className="ops-menu-tile">
+                <Link key={item.title} to={item.to} className={tileClassName}>
                   {iconNode}
                   <strong>{item.title}</strong>
                 </Link>

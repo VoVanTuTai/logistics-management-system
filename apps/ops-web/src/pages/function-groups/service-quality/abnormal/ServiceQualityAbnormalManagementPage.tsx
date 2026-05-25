@@ -622,7 +622,7 @@ export function ServiceQualityAbnormalManagementPage(): React.JSX.Element {
                     <td>
                       <div className="ops-service-quality-monitor__actions">
                         <Link to={item.detailUrl}>Mở chi tiết</Link>
-                        {lookupUrl ? <Link to={lookupUrl}>Tra cứu tích hợp</Link> : null}
+                        {lookupUrl ? <Link to={lookupUrl}>Tra cứu sự cố / chất lượng</Link> : null}
                         {workflow !== 'IN_PROGRESS' ? (
                           <button type="button" onClick={() => setWorkflow(item.id, 'IN_PROGRESS')}>
                             Nhận xử lý

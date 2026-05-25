@@ -68,6 +68,7 @@ export const routePaths = {
   opsMetricsDeadlineRoot: '/app/function-groups/operations-metrics/thoi-hieu',
   opsMetricsPlanningRoot: '/app/function-groups/operations-metrics/quy-hoach',
   opsMetricsActionRoot: '/app/function-groups/operations-metrics/thao-tac',
+  opsMetricsReport: '/app/function-groups/operations-metrics/bao-cao-van-hanh',
   opsMetricsAbnormalOverview:
     '/app/function-groups/operations-metrics/kien-bat-thuong/tong-quan',
   opsMetricsAbnormalHandling:
@@ -185,6 +186,7 @@ export const routePaths = {
   groupDatabaseLeaf: 'function-groups/database',
   groupSmartDevicesLeaf: 'function-groups/smart-devices',
   groupPlanningPlatformLeaf: 'function-groups/planning-platform',
+  opsMetricsReportLeaf: 'function-groups/operations-metrics/bao-cao-van-hanh',
   opsMetricsAbnormalOverviewLeaf:
     'function-groups/operations-metrics/kien-bat-thuong/tong-quan',
   opsMetricsAbnormalHandlingLeaf:
@@ -270,7 +272,6 @@ export const OPS_FULL_MODULE_ROUTE_PATHS = [
   routePaths.groupsRoot,
   routePaths.groupBasicData,
   routePaths.groupOperationsPlatform,
-  routePaths.groupIntegrationServices,
   routePaths.groupCustomerPlatform,
   routePaths.groupBranchBusiness,
   routePaths.groupFinanceSettlement,
@@ -307,6 +308,7 @@ export const OPS_FULL_MODULE_ROUTE_PATHS = [
   routePaths.opsMetricsDeadlineRoot,
   routePaths.opsMetricsPlanningRoot,
   routePaths.opsMetricsActionRoot,
+  routePaths.opsMetricsReport,
   routePaths.opsMetricsAbnormalOverview,
   routePaths.opsMetricsAbnormalHandling,
   routePaths.opsMetricsDeadlineInventory,

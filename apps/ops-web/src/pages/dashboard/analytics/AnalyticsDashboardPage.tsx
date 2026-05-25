@@ -26,6 +26,8 @@ import './AnalyticsDashboard.css';
 
 const NDR_COLORS = ['#2563eb', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444'];
 
+type AnalyticsAccent = 'primary' | 'info' | 'success' | 'danger' | 'warning';
+
 function normalizeCode(value: string | null | undefined): string {
   return (value ?? '').trim().toUpperCase();
 }
@@ -113,6 +115,24 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
     () => Object.keys(hubThroughputData[0] ?? {}).filter((key) => key !== 'date'),
     [hubThroughputData],
   );
+  const hubTotals = useMemo(() => {
+    return hubKeys
+      .map((hub, index) => {
+        const total = hubThroughputData.reduce((sum, row) => {
+          const value = row[hub];
+          return sum + (typeof value === 'number' ? value : 0);
+        }, 0);
+
+        return {
+          hub,
+          total,
+          color: NDR_COLORS[index % NDR_COLORS.length],
+        };
+      })
+      .sort((left, right) => right.total - left.total);
+  }, [hubKeys, hubThroughputData]);
+  const totalCreatedInWindow = hubTotals.reduce((sum, item) => sum + item.total, 0);
+  const topHub = hubTotals[0] ?? null;
   const ndrReasonData = useMemo(() => {
     const groups = new Map<string, number>();
     for (const ndr of ndrCases) {
@@ -143,6 +163,78 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
       .slice(0, 8);
   }, [shipments]);
   const loadError = shipmentsQuery.error ?? tasksQuery.error ?? manifestsQuery.error ?? ndrQuery.error ?? null;
+  const kpiCards: Array<{
+    label: string;
+    value: number;
+    accent: AnalyticsAccent;
+    description: string;
+    to: string;
+  }> = [
+    {
+      label: 'Đơn mới hôm nay',
+      value: todaysShipments.length,
+      accent: 'primary',
+      description: 'Mở danh sách vận đơn để rà soát đơn mới phát sinh.',
+      to: routePaths.shipments,
+    },
+    {
+      label: 'Đang đi giao',
+      value: activeDelivery.length,
+      accent: 'info',
+      description: 'Theo dõi các vận đơn đang ở bước phát hàng.',
+      to: routePaths.branchBusinessOrderDelivery,
+    },
+    {
+      label: 'Đã giao thành công',
+      value: delivered.length,
+      accent: 'success',
+      description: 'Xem hiệu quả phát và đối chiếu SLA giao hàng.',
+      to: routePaths.opsMetricsDeadlineDeliverySla,
+    },
+    {
+      label: 'Cần can thiệp',
+      value: abnormal.length + urgentAlerts.length,
+      accent: 'danger',
+      description: 'Đi tới nhóm xử lý bất thường và cảnh báo quá hạn.',
+      to: routePaths.serviceQualityAbnormalManagement,
+    },
+  ];
+  const supportActions: Array<{
+    title: string;
+    summary: string;
+    meta: string;
+    to: string;
+    accent: AnalyticsAccent;
+  }> = [
+    {
+      title: 'Xử lý cảnh báo quá hạn',
+      summary: 'Ưu tiên các vận đơn chưa hoàn tất sau 24h.',
+      meta: `${urgentAlerts.length} cảnh báo`,
+      to: routePaths.opsMetricsDeadlineOverdueAlerts,
+      accent: 'danger',
+    },
+    {
+      title: 'Điều phối thao tác',
+      summary: 'Gom việc cần phân công cho nhân sự vận hành.',
+      meta: `${tasks.length} task`,
+      to: routePaths.opsMetricsActionExecutionBoard,
+      accent: 'primary',
+    },
+    {
+      title: 'Kiện bất thường / NDR',
+      summary: 'Mở màn quản lý ca lỗi, giao thất bại và ngoại lệ.',
+      meta: `${abnormal.length} kiện`,
+      to: routePaths.serviceQualityAbnormalManagement,
+      accent: 'warning',
+    },
+    {
+      title: 'Quản lý chuyến / bao',
+      summary: 'Kiểm tra manifest và luồng bàn giao tuyến.',
+      meta: `${manifests.length} manifest`,
+      to: routePaths.manifests,
+      accent: 'info',
+    },
+  ];
 
   return (
     <div className="analytics-dash">
@@ -157,7 +249,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
             Bảng phân tích vận hành
           </h1>
           <p className="analytics-dash__subtitle">
-            Dữ liệu tổng hợp từ vận đơn, tác vụ, manifest và NDR hiện có qua Gateway BFF.
+            Nhìn nhanh tình trạng đơn, cảnh báo cần can thiệp và mở ngay chức năng xử lý.
           </p>
         </div>
         <span className="analytics-dash__date-badge">Dữ liệu từ API · {new Date().toLocaleString('vi-VN')}</span>
@@ -170,30 +262,59 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
       ) : null}
 
       <section className="analytics-kpi-row" aria-label="Chỉ số vận hành chính">
-        {[
-          { label: 'Tổng đơn trong ngày', value: todaysShipments.length, accent: 'primary' },
-          { label: 'Đang giao', value: activeDelivery.length, accent: 'info' },
-          { label: 'Giao thành công', value: delivered.length, accent: 'success' },
-          { label: 'Bất thường / cảnh báo', value: abnormal.length + urgentAlerts.length, accent: 'danger' },
-        ].map((kpi) => (
-          <article key={kpi.label} className={`analytics-kpi-card analytics-kpi-card--${kpi.accent}`}>
+        {kpiCards.map((kpi) => (
+          <Link key={kpi.label} to={kpi.to} className={`analytics-kpi-card analytics-kpi-card--${kpi.accent}`}>
             <span className="analytics-kpi-card__label">{kpi.label}</span>
             <div className="analytics-kpi-card__value-row">
               <span className="analytics-kpi-card__value">{kpi.value}</span>
+              <span className="analytics-kpi-card__unit">đơn</span>
             </div>
-            <span className="analytics-kpi-card__trend analytics-kpi-card__trend--neutral">
-              Nguồn API
-            </span>
-          </article>
+            <span className="analytics-kpi-card__description">{kpi.description}</span>
+            <span className="analytics-kpi-card__action">Mở chức năng</span>
+          </Link>
         ))}
+      </section>
+
+      <section className="analytics-support-grid" aria-label="Chức năng hỗ trợ vận hành">
+        <div className="analytics-support-intro">
+          <span className="analytics-support-intro__eyebrow">Cần làm tiếp</span>
+          <h2>Chọn vấn đề rồi đi thẳng tới màn xử lý</h2>
+          <p>
+            Các lối tắt này bám theo dữ liệu hiện tại để đội ops không phải đoán nên mở chức năng nào trước.
+          </p>
+        </div>
+        <div className="analytics-support-actions">
+          {supportActions.map((action) => (
+            <Link
+              key={action.title}
+              to={action.to}
+              className={`analytics-support-card analytics-support-card--${action.accent}`}
+            >
+              <span className="analytics-support-card__meta">{action.meta}</span>
+              <strong>{action.title}</strong>
+              <span>{action.summary}</span>
+            </Link>
+          ))}
+        </div>
       </section>
 
       <section className="analytics-charts-row" aria-label="Charts">
         <article className="analytics-chart-card">
-          <h3 className="analytics-chart-card__title">
-            <span className="analytics-chart-card__title-dot analytics-chart-card__title-dot--bar" />
-            Sản lượng tạo vận đơn theo hub - 7 ngày
-          </h3>
+          <header className="analytics-chart-card__header">
+            <div>
+              <h3 className="analytics-chart-card__title">
+                <span className="analytics-chart-card__title-dot analytics-chart-card__title-dot--bar" />
+                Sản lượng tạo vận đơn theo hub
+              </h3>
+              <p className="analytics-chart-card__hint">
+                7 ngày gần nhất · tổng {totalCreatedInWindow} đơn
+                {topHub ? ` · hub cao nhất ${topHub.hub}` : ''}
+              </p>
+            </div>
+            <Link className="analytics-chart-card__link" to={routePaths.opsMetricsPlanningNetworkKpi}>
+              Xem KPI mạng lưới
+            </Link>
+          </header>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={hubThroughputData} barGap={2} barCategoryGap="18%">
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -211,14 +332,32 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
               ))}
             </BarChart>
           </ResponsiveContainer>
+          {hubTotals.length > 0 ? (
+            <div className="analytics-bar-legend" aria-label="Chú giải hub">
+              {hubTotals.map((item) => (
+                <span key={item.hub} className="analytics-bar-legend__item">
+                  <span className="analytics-bar-legend__swatch" style={{ background: item.color }} />
+                  {item.hub}: {item.total}
+                </span>
+              ))}
+            </div>
+          ) : null}
           {hubKeys.length === 0 ? <p className="analytics-empty-note">Chưa có dữ liệu hub.</p> : null}
         </article>
 
         <article className="analytics-chart-card">
-          <h3 className="analytics-chart-card__title">
-            <span className="analytics-chart-card__title-dot analytics-chart-card__title-dot--donut" />
-            NDR / bất thường theo lý do
-          </h3>
+          <header className="analytics-chart-card__header">
+            <div>
+              <h3 className="analytics-chart-card__title">
+                <span className="analytics-chart-card__title-dot analytics-chart-card__title-dot--donut" />
+                Lý do bất thường / NDR
+              </h3>
+              <p className="analytics-chart-card__hint">Nhóm nguyên nhân cần ưu tiên xử lý chất lượng dịch vụ.</p>
+            </div>
+            <Link className="analytics-chart-card__link" to={routePaths.serviceQualityAbnormalManagement}>
+              Mở xử lý
+            </Link>
+          </header>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
@@ -237,6 +376,17 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
               </Pie>
             </PieChart>
           </ResponsiveContainer>
+          {ndrReasonData.length > 0 ? (
+            <div className="analytics-donut-legend" aria-label="Chú giải lý do NDR">
+              {ndrReasonData.map((entry) => (
+                <span key={entry.name} className="analytics-donut-legend__item">
+                  <span className="analytics-donut-legend__swatch" style={{ background: entry.color }} />
+                  <span>{entry.name}</span>
+                  <strong>{entry.value}</strong>
+                </span>
+              ))}
+            </div>
+          ) : null}
           {ndrReasonData.length === 0 ? <p className="analytics-empty-note">Chưa có dữ liệu NDR.</p> : null}
         </article>
       </section>
@@ -280,9 +430,14 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
                   </td>
                   <td>{shipment.receiverName ?? shipment.senderName ?? 'Không có'}</td>
                   <td>
-                    <Link className="analytics-action-btn" to={routePaths.shipmentDetail(shipment.id)}>
-                      Xử lý ngay
-                    </Link>
+                    <div className="analytics-row-actions">
+                      <Link className="analytics-action-btn" to={routePaths.shipmentDetail(shipment.id)}>
+                        Chi tiết
+                      </Link>
+                      <Link className="analytics-action-btn analytics-action-btn--secondary" to={routePaths.opsMetricsActionExecutionBoard}>
+                        Điều phối
+                      </Link>
+                    </div>
                   </td>
                 </tr>
               ))}
