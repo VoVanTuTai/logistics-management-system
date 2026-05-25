@@ -5,6 +5,41 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG_DIR="$ROOT_DIR/.tmp/service-logs"
 PID_DIR="$ROOT_DIR/.tmp/pids"
 MOBILE_MODE="${1:-lan}"
+BACKEND_MODE="${BACKEND_MODE:-container}"
+
+SERVICE_IMAGES=(
+  nexus/auth-service:local
+  nexus/masterdata-service:local
+  nexus/shipment-service:local
+  nexus/pickup-service:local
+  nexus/dispatch-service:local
+  nexus/manifest-service:local
+  nexus/scan-service:local
+  nexus/delivery-service:local
+  nexus/tracking-service:local
+  nexus/reporting-service:local
+  nexus/payment-service:local
+  nexus/pricing-service:local
+  nexus/gateway-bff:local
+)
+
+BACKEND_SERVICES=(
+  masterdata-service
+  shipment-service
+  pickup-service
+  dispatch-service
+  manifest-service
+  scan-service
+  delivery-service
+  tracking-service
+  reporting-service
+  auth-service
+  payment-service
+  pricing-service
+  gateway-bff
+)
+
+BACKEND_PORTS=(3000 3001 3002 3003 3004 3005 3006 3007 3008 3009 3010 3011 3012)
 
 mkdir -p "$LOG_DIR" "$PID_DIR"
 
@@ -64,6 +99,41 @@ wait_port() {
   return 1
 }
 
+wait_http_health() {
+  local name="$1"
+  local url="$2"
+  local timeout="${3:-120}"
+  local elapsed=0
+  while [[ "$elapsed" -lt "$timeout" ]]; do
+    if curl -fsS "$url" >/dev/null 2>&1; then
+      echo "[ready] $name health=$url"
+      return 0
+    fi
+    sleep 2
+    elapsed=$((elapsed + 2))
+  done
+  echo "[down] $name health=$url" >&2
+  return 1
+}
+
+wait_container_healthy() {
+  local container="$1"
+  local timeout="${2:-120}"
+  local elapsed=0
+  local status
+  while [[ "$elapsed" -lt "$timeout" ]]; do
+    status="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$container" 2>/dev/null || true)"
+    if [[ "$status" == "healthy" || "$status" == "running" ]]; then
+      echo "[ready] container=$container status=$status"
+      return 0
+    fi
+    sleep 2
+    elapsed=$((elapsed + 2))
+  done
+  echo "[down] container=$container status=${status:-missing}" >&2
+  return 1
+}
+
 install_deps_if_needed() {
   local dir="$1"
   local name="$2"
@@ -79,6 +149,148 @@ install_deps_if_needed() {
       npm install --ignore-scripts
     fi
   )
+}
+
+ensure_service_images() {
+  local missing=()
+  local image
+
+  if [[ "${BUILD_IMAGES:-0}" == "1" ]]; then
+    "$ROOT_DIR/scripts/build-service-images.sh"
+    return
+  fi
+
+  for image in "${SERVICE_IMAGES[@]}"; do
+    if ! docker image inspect "$image" >/dev/null 2>&1; then
+      missing+=("$image")
+    fi
+  done
+
+  if [[ "${#missing[@]}" -gt 0 ]]; then
+    echo "[docker] missing service images:"
+    printf '  %s\n' "${missing[@]}"
+    "$ROOT_DIR/scripts/build-service-images.sh"
+  else
+    echo "[docker] service images are ready"
+  fi
+}
+
+stop_known_backend_pids() {
+  local name
+  local pid_file
+  local pid
+
+  for name in "${BACKEND_SERVICES[@]}"; do
+    pid_file="$PID_DIR/$name.pid"
+    [[ -f "$pid_file" ]] || continue
+    pid="$(cat "$pid_file" 2>/dev/null || true)"
+    if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
+      echo "[stop] local $name pid=$pid"
+      kill "$pid" 2>/dev/null || true
+    fi
+    rm -f "$pid_file"
+  done
+}
+
+stop_non_docker_port() {
+  local port="$1"
+  local pids
+  local pid
+  local command_name
+
+  pids="$(lsof -ti ":$port" -sTCP:LISTEN 2>/dev/null || true)"
+  [[ -n "$pids" ]] || return 0
+
+  for pid in $pids; do
+    command_name="$(ps -p "$pid" -o comm= 2>/dev/null || true)"
+    if [[ "$command_name" == *Docker* || "$command_name" == *docker* || "$command_name" == *com.docker* ]]; then
+      echo "[keep] port $port owned by docker pid=$pid"
+      continue
+    fi
+    echo "[stop] port $port pid=$pid command=${command_name:-unknown}"
+    kill "$pid" 2>/dev/null || true
+  done
+}
+
+stop_local_backend_ports() {
+  local port
+  stop_known_backend_pids
+  sleep 1
+  for port in "${BACKEND_PORTS[@]}"; do
+    stop_non_docker_port "$port"
+  done
+}
+
+prepare_service_database() {
+  local name="$1"
+  local rel_path="$2"
+  local db_name="$3"
+  local dir="$ROOT_DIR/$rel_path"
+
+  if [[ ! -f "$dir/prisma/schema.prisma" ]]; then
+    return
+  fi
+
+  install_deps_if_needed "$dir" "$name"
+  echo "[db] prepare $name db=$db_name"
+  (
+    cd "$dir"
+    DATABASE_URL="postgresql://postgres:postgres@localhost:15432/$db_name" \
+      node node_modules/prisma/build/index.js generate --schema prisma/schema.prisma
+    DATABASE_URL="postgresql://postgres:postgres@localhost:15432/$db_name" \
+      node node_modules/prisma/build/index.js db push --schema prisma/schema.prisma
+  )
+}
+
+prepare_service_databases() {
+  prepare_service_database masterdata-service services/masterdata-service masterdata_db
+  prepare_service_database shipment-service services/shipment-service shipment_db
+  prepare_service_database pickup-service services/pickup-service pickup_db
+  prepare_service_database dispatch-service services/dispatch-service dispatch_db
+  prepare_service_database manifest-service services/manifest-service manifest_db
+  prepare_service_database scan-service services/scan-service scan_db
+  prepare_service_database delivery-service services/delivery-service delivery_db
+  prepare_service_database tracking-service services/tracking-service tracking_db
+  prepare_service_database reporting-service services/reporting-service reporting_db
+  prepare_service_database auth-service services/auth-service auth_db
+  prepare_service_database payment-service services/payment-service payment_db
+}
+
+seed_auth_demo_users() {
+  local dir="$ROOT_DIR/services/auth-service"
+
+  install_deps_if_needed "$dir" "auth-service"
+  echo "[seed] auth demo users"
+  (
+    cd "$dir"
+    DATABASE_URL="postgresql://postgres:postgres@localhost:15432/auth_db" \
+      node node_modules/ts-node/dist/bin.js --transpile-only prisma/seed.ts
+  )
+}
+
+start_container_backend() {
+  echo "[backend] mode=container"
+  ensure_service_images
+  stop_local_backend_ports
+
+  echo "[infra] starting docker dependencies"
+  docker compose -f "$ROOT_DIR/infra/dev/docker-compose.yml" up -d --remove-orphans
+  wait_container_healthy NEXUS-dev-postgres 120
+  wait_container_healthy NEXUS-dev-rabbitmq 120
+  wait_container_healthy NEXUS-dev-minio 120
+
+  prepare_service_databases
+  seed_auth_demo_users
+
+  echo "[backend] starting service containers"
+  docker compose \
+    -f "$ROOT_DIR/infra/dev/docker-compose.yml" \
+    -f "$ROOT_DIR/infra/dev/docker-compose.services.yml" \
+    up -d --remove-orphans
+
+  wait_http_health gateway-bff http://localhost:3000/health 120
+  wait_http_health masterdata-service http://localhost:3001/health 90
+  wait_http_health pricing-service http://localhost:3012/health 90
 }
 
 start_service() {
@@ -188,46 +400,50 @@ set_env_value "$ROOT_DIR/services/gateway-bff/.env" TRACKING_SERVICE_URL "http:/
 set_env_value "$ROOT_DIR/services/gateway-bff/.env" PAYMENT_SERVICE_URL "http://localhost:3011"
 set_env_value "$ROOT_DIR/services/gateway-bff/.env" PRICING_SERVICE_URL "http://localhost:3012"
 set_env_value "$ROOT_DIR/services/shipment-service/.env" PRICING_SERVICE_URL "http://localhost:3012"
+set_env_value "$ROOT_DIR/apps/ops-web/.env" VITE_GATEWAY_BFF_URL "http://localhost:3000"
 
-echo "[infra] starting docker dependencies"
-docker compose -f "$ROOT_DIR/infra/dev/docker-compose.yml" up -d --remove-orphans
+if [[ "$BACKEND_MODE" == "container" ]]; then
+  start_container_backend
+elif [[ "$BACKEND_MODE" == "local" ]]; then
+  echo "[backend] mode=local"
+  echo "[infra] starting docker dependencies"
+  docker compose -f "$ROOT_DIR/infra/dev/docker-compose.yml" up -d --remove-orphans
 
-start_service masterdata-service services/masterdata-service 3001 masterdata_db
-start_service shipment-service services/shipment-service 3002 shipment_db
-start_service pickup-service services/pickup-service 3003 pickup_db
-start_service dispatch-service services/dispatch-service 3004 dispatch_db
-start_service manifest-service services/manifest-service 3005 manifest_db
-start_service scan-service services/scan-service 3006 scan_db
-start_service delivery-service services/delivery-service 3007 delivery_db
-start_service tracking-service services/tracking-service 3008 tracking_db
-start_service reporting-service services/reporting-service 3009 reporting_db
-start_service auth-service services/auth-service 3010 auth_db
-start_service payment-service services/payment-service 3011 payment_db
-start_service pricing-service services/pricing-service 3012
+  start_service masterdata-service services/masterdata-service 3001 masterdata_db
+  start_service shipment-service services/shipment-service 3002 shipment_db
+  start_service pickup-service services/pickup-service 3003 pickup_db
+  start_service dispatch-service services/dispatch-service 3004 dispatch_db
+  start_service manifest-service services/manifest-service 3005 manifest_db
+  start_service scan-service services/scan-service 3006 scan_db
+  start_service delivery-service services/delivery-service 3007 delivery_db
+  start_service tracking-service services/tracking-service 3008 tracking_db
+  start_service reporting-service services/reporting-service 3009 reporting_db
+  start_service auth-service services/auth-service 3010 auth_db
+  start_service payment-service services/payment-service 3011 payment_db
+  start_service pricing-service services/pricing-service 3012
 
-echo "[seed] auth demo users"
-(
-  cd "$ROOT_DIR/services/auth-service"
-  DATABASE_URL="postgresql://postgres:postgres@localhost:15432/auth_db" \
-    node node_modules/ts-node/dist/bin.js --transpile-only prisma/seed.ts
-)
+  seed_auth_demo_users
 
-echo "[wait] backend ports"
-wait_port masterdata-service 3001
-wait_port shipment-service 3002
-wait_port pickup-service 3003
-wait_port dispatch-service 3004
-wait_port manifest-service 3005
-wait_port scan-service 3006
-wait_port delivery-service 3007
-wait_port tracking-service 3008
-wait_port reporting-service 3009
-wait_port auth-service 3010
-wait_port payment-service 3011
-wait_port pricing-service 3012
+  echo "[wait] backend ports"
+  wait_port masterdata-service 3001
+  wait_port shipment-service 3002
+  wait_port pickup-service 3003
+  wait_port dispatch-service 3004
+  wait_port manifest-service 3005
+  wait_port scan-service 3006
+  wait_port delivery-service 3007
+  wait_port tracking-service 3008
+  wait_port reporting-service 3009
+  wait_port auth-service 3010
+  wait_port payment-service 3011
+  wait_port pricing-service 3012
 
-start_service gateway-bff services/gateway-bff 3000
-wait_port gateway-bff 3000
+  start_service gateway-bff services/gateway-bff 3000
+  wait_port gateway-bff 3000
+else
+  echo "Unsupported BACKEND_MODE=$BACKEND_MODE. Use container or local." >&2
+  exit 1
+fi
 
 start_web_app ops-web apps/ops-web 5173
 start_web_app merchant-web apps/merchant-web 5174

@@ -28,6 +28,9 @@ const USERS = [
   { username: '30000001', roles: ['COURIER'], displayName: 'Nguyễn Văn Minh', phone: '0903000001', hubCodes: ['HCM-001'] },
   { username: '30000002', roles: ['COURIER'], displayName: 'Trần Đức Anh', phone: '0903000002', hubCodes: ['HN-001'] },
   { username: '30000003', roles: ['COURIER'], displayName: 'Lê Quốc Bảo', phone: '0903000003', hubCodes: ['DN-001'] },
+  { username: '30000004', roles: ['COURIER'], displayName: 'Phạm Minh Khang', phone: '0903000004', hubCodes: ['HCM-001'] },
+  { username: '30000005', roles: ['COURIER'], displayName: 'Võ Thanh Nam', phone: '0903000005', hubCodes: ['HCM-001'] },
+  { username: '30000006', roles: ['COURIER'], displayName: 'Đặng Quốc Huy', phone: '0903000006', hubCodes: ['HCM-001'] },
   { username: '41100001', roles: ['MERCHANT'], displayName: 'Cửa hàng An Phú', phone: '0904110001', hubCodes: ['HCM-001'] },
   { username: '41100002', roles: ['MERCHANT'], displayName: 'Nhà sách Minh Châu', phone: '0904110002', hubCodes: ['HN-001'] },
   { username: '41100003', roles: ['MERCHANT'], displayName: 'Thực phẩm sạch Sơn Trà', phone: '0904110003', hubCodes: ['DN-001'] },
@@ -121,7 +124,18 @@ const FULL_FLOW_SHIPMENTS = [
   shipment('SHPFULL260522005', 0, '41100001', 'Cửa hàng An Phú', '0904110001', 'HCM-001', 'Hồ Chí Minh', 'Phường Bến Nghé', '86 Nguyễn Huệ, Quận 1', 'Đỗ Mai Chi', '0901555005', 'HN-001', 'Hà Nội', 'Phường Dịch Vọng', '21 Hoàng Quốc Việt, Cầu Giấy', 'Loa bluetooth chống nước', 1.6, [28, 20, 16], 1150000, 58000, 'EXPRESS', 'DELIVERED'),
 ];
 
-const ALL_SHIPMENTS = [...SHIPMENTS, ...FULL_FLOW_SHIPMENTS];
+const HCM_COURIER_INVENTORY_SHIPMENTS = [
+  courierInventoryShipment('SHPHCMRET260522001', 1, '30000001', 'RETURN_RECORDED', 'Lâm Hồng Phúc', '0935001001', '18 Nguyễn Du, Quận 1', 'Máy ảnh compact', 1.3, 2250000, 'CUS_REFUSED'),
+  courierInventoryShipment('SHPHCMRET260522002', 1, '30000001', 'INVENTORY_CHECKED', 'Trương Gia Linh', '0935001002', '41 Pasteur, Quận 1', 'Bộ sạc laptop', 0.9, 780000, 'DAMAGED_PACKAGE'),
+  courierInventoryShipment('SHPHCMRET260522003', 0, '30000004', 'RETURN_RECORDED', 'Nguyễn Khánh Vy', '0935001003', '72 Lý Tự Trọng, Quận 1', 'Túi da nữ', 1.1, 1650000, 'CUS_NOT_HOME'),
+  courierInventoryShipment('SHPHCMRET260522004', 0, '30000004', 'INVENTORY_CHECKED', 'Hoàng Tuấn Kiệt', '0935001004', '19 Tôn Đức Thắng, Quận 1', 'Tai nghe gaming', 0.7, 1290000, 'ADDR_WRONG'),
+  courierInventoryShipment('SHPHCMRET260522005', 2, '30000005', 'PENDING_RETURN', 'Phan Thảo My', '0935001005', '88 Hai Bà Trưng, Quận 1', 'Bình pha cà phê', 1.8, 920000, 'CUS_NOT_HOME'),
+  courierInventoryShipment('SHPHCMRET260522006', 0, '30000005', 'RETURN_RECORDED', 'Đỗ Minh Quân', '0935001006', '102 Nam Kỳ Khởi Nghĩa, Quận 1', 'Đồng hồ treo tường', 1.4, 540000, 'CUS_REFUSED'),
+  courierInventoryShipment('SHPHCMRET260522007', 1, '30000006', 'INVENTORY_CHECKED', 'Bùi Thu Hương', '0935001007', '12 Lê Thánh Tôn, Quận 1', 'Máy xông tinh dầu', 0.8, 690000, 'DAMAGED_PACKAGE'),
+  courierInventoryShipment('SHPHCMRET260522008', 0, '30000006', 'PENDING_RETURN', 'Vũ Nhật Anh', '0935001008', '59 Nguyễn Thị Minh Khai, Quận 1', 'Giày thể thao', 1.5, 1180000, 'ADDR_WRONG'),
+];
+
+const ALL_SHIPMENTS = [...SHIPMENTS, ...FULL_FLOW_SHIPMENTS, ...HCM_COURIER_INVENTORY_SHIPMENTS];
 
 const CHANGE_REQUEST = {
   shipmentCode: 'SHPVN260522006',
@@ -157,6 +171,7 @@ async function main() {
   log('Tạo pickup, scan, manifest, delivery, COD theo luồng vận hành');
   await runOperationalFlows();
   await runFullFlowOrders();
+  await runHcmCourierInventoryFlows();
 
   log('Tạo change request merchant');
   await ensureChangeRequest(CHANGE_REQUEST);
@@ -340,6 +355,64 @@ async function runFullFlowOrders() {
   }
 }
 
+async function runHcmCourierInventoryFlows() {
+  for (const item of HCM_COURIER_INVENTORY_SHIPMENTS) {
+    const pickup = await ensurePickup(item);
+    if (pickup.status === 'REQUESTED') {
+      await request('POST', `${BASE.pickup}/pickups/${encodeURIComponent(pickup.id)}/approve`, {
+        approvedBy: '20000001',
+        note: `Duyệt lấy hàng demo kiểm tồn courier ${item.code}`,
+      });
+    }
+
+    await recordScan(
+      'pickup',
+      item.code,
+      item.senderHubCode,
+      null,
+      item.courierId,
+      `Courier ${item.courierId} nhận hàng từ merchant HCM`,
+      eventDate(item.daysAgo, 9),
+      `hcm-inventory-${item.code}-pickup`,
+    );
+
+    const refreshedPickup = await request('GET', `${BASE.pickup}/pickups/${encodeURIComponent(pickup.id)}`);
+    if (refreshedPickup.status === 'APPROVED') {
+      await request('POST', `${BASE.pickup}/pickups/${encodeURIComponent(refreshedPickup.id)}/complete`);
+    }
+
+    await ensureTaskAssigned({
+      shipmentCode: item.code,
+      taskType: 'DELIVERY',
+      courierId: item.courierId,
+      pickupRequestId: null,
+      note: `Courier ${item.courierId} phát hàng nội thành HCM ${item.code}`,
+    });
+
+    await deliverFailReturn(
+      item.code,
+      'HCM-001',
+      item.courierId,
+      eventDate(item.daysAgo, 16),
+      item.failReasonCode,
+      item.problemMode !== 'PENDING_RETURN',
+    );
+
+    if (item.problemMode === 'INVENTORY_CHECKED') {
+      await recordScan(
+        'outbound',
+        item.code,
+        'HCM-001',
+        null,
+        '20000001',
+        `INVENTORY_CHECK - kho HCM kiểm kiện vấn đề courier ${item.courierId} bàn giao`,
+        eventDate(item.daysAgo, 18),
+        `hcm-inventory-${item.code}-checked`,
+      );
+    }
+  }
+}
+
 async function ensurePickup(item) {
   const pickupCode = `PUP-${item.code}`;
   const pickups = await request('GET', `${BASE.pickup}/pickups`);
@@ -515,18 +588,27 @@ async function deliverSuccess(shipmentCode, locationCode, courierId, amount, occ
   }
 }
 
-async function deliverFailReturn(shipmentCode, locationCode, courierId, occurredAt) {
+async function deliverFailReturn(
+  shipmentCode,
+  locationCode,
+  courierId,
+  occurredAt,
+  failReasonCode = 'CUS_REFUSED',
+  startReturn = true,
+) {
   await request('POST', `${BASE.delivery}/deliveries/fail`, {
     shipmentCode,
     courierId,
     locationCode,
     actor: courierId,
-    note: 'Người nhận từ chối nhận vì đổi nhu cầu.',
+    note: startReturn
+      ? 'Courier ghi nhận kiện vấn đề và mang về kho.'
+      : 'Courier ghi nhận giao không thành công, chờ xác nhận đem kiện về kho.',
     occurredAt,
     idempotencyKey: `real-${shipmentCode}-delivery-failed`,
-    failReasonCode: 'CUS_REFUSED',
+    failReasonCode,
     createNdr: true,
-    startReturn: true,
+    startReturn,
   });
 }
 
@@ -711,6 +793,55 @@ function shipment(code, daysAgo, merchantUsername, senderName, senderPhone, send
     senderAddress,
     metadata,
     targetStatus,
+  };
+}
+
+function courierInventoryShipment(code, daysAgo, courierId, problemMode, receiverName, receiverPhone, receiverAddress, itemType, weightKg, codAmount, failReasonCode) {
+  const targetStatus =
+    problemMode === 'INVENTORY_CHECKED'
+      ? 'INVENTORY_CHECK'
+      : problemMode === 'RETURN_RECORDED'
+      ? 'RETURN_STARTED'
+      : 'DELIVERY_FAILED';
+  const item = shipment(
+    code,
+    daysAgo,
+    '41100001',
+    'Cửa hàng An Phú',
+    '0904110001',
+    'HCM-001',
+    'Hồ Chí Minh',
+    'Phường Bến Nghé',
+    '86 Nguyễn Huệ, Quận 1',
+    receiverName,
+    receiverPhone,
+    'HCM-001',
+    'Hồ Chí Minh',
+    'Phường Bến Nghé',
+    receiverAddress,
+    itemType,
+    weightKg,
+    [28, 20, 14],
+    codAmount,
+    32000,
+    'SAME_DAY',
+    targetStatus,
+  );
+
+  return {
+    ...item,
+    courierId,
+    problemMode,
+    failReasonCode,
+    metadata: {
+      ...item.metadata,
+      deliveryNote: 'Đơn demo kiểm tồn: nếu giao không thành công, courier phải đem kiện vấn đề về HCM-001.',
+      inventoryDemo: {
+        courierId,
+        problemMode,
+        expectedHubCode: 'HCM-001',
+      },
+    },
   };
 }
 
