@@ -100,10 +100,6 @@ const FinanceSettlementGroupPage = lazyRoutePage(
   () => import('../pages/function-groups/finance-settlement/FinanceSettlementGroupPage'),
   'FinanceSettlementGroupPage',
 );
-const IntegrationServicesGroupPage = lazyRoutePage(
-  () => import('../pages/function-groups/integration-services/IntegrationServicesGroupPage'),
-  'IntegrationServicesGroupPage',
-);
 const OperationsMetricsGroupPage = lazyRoutePage(
   () => import('../pages/function-groups/operations-metrics/OperationsMetricsGroupPage'),
   'OperationsMetricsGroupPage',
@@ -115,6 +111,10 @@ const OpsMetricsInventoryMonitorPage = lazyRoutePage(
 const OperationsMetricsDerivedRoutePage = lazyRoutePage(
   () => import('../pages/function-groups/operations-metrics/shared/OperationsMetricsDerivedRoutePage'),
   'OperationsMetricsDerivedRoutePage',
+);
+const OperationsReportPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-metrics/report/OperationsReportPage'),
+  'OperationsReportPage',
 );
 const OperationsPlatformGroupPage = lazyRoutePage(
   () => import('../pages/function-groups/operations-platform/OperationsPlatformGroupPage'),
@@ -569,15 +569,28 @@ function DashboardLayout(): React.JSX.Element {
     || pathMatches(location.pathname, routePaths.analyticsDashboard)
     || location.pathname.startsWith('/app/coming-soon');
 
-  const isServiceQualitySection = pathMatches(location.pathname, routePaths.groupServiceQuality);
+  const isReturnBlockSection = pathMatches(location.pathname, routePaths.returnBlockRoot);
+  const isThermalLabelSection =
+    pathMatches(location.pathname, routePaths.thermalLabelManagement) ||
+    pathMatches(location.pathname, routePaths.thermalLabelPrint);
+  const isFinanceSettlementSection =
+    pathMatches(location.pathname, routePaths.groupFinanceSettlement) ||
+    pathMatches(location.pathname, routePaths.branchBusinessFinanceSettlementRoot);
+  const isOperationsPlatformSection =
+    pathMatches(location.pathname, routePaths.groupOperationsPlatform) &&
+    !isReturnBlockSection &&
+    !isThermalLabelSection;
+  const isServiceQualitySection =
+    pathMatches(location.pathname, routePaths.groupServiceQuality) ||
+    pathMatches(location.pathname, routePaths.ndr) ||
+    isReturnBlockSection;
   const isOperationsMetricsSection = pathMatches(
     location.pathname,
     routePaths.groupOperationsMetrics,
   );
-  const isBranchBusinessSection = pathMatches(
-    location.pathname,
-    routePaths.groupBranchBusiness,
-  );
+  const isBranchBusinessSection =
+    (pathMatches(location.pathname, routePaths.groupBranchBusiness) || isThermalLabelSection) &&
+    !isFinanceSettlementSection;
   const isCustomerPlatformSection = pathMatches(
     location.pathname,
     routePaths.groupCustomerPlatform,
@@ -590,7 +603,7 @@ function DashboardLayout(): React.JSX.Element {
   const topNavItems: TopNavItem[] = enableFullOpsModules
     ? [
         {
-          label: 'Core Ops',
+          label: 'Nền tảng điều hành',
           to: routePaths.shipments,
           isActive:
             pathMatches(location.pathname, routePaths.shipments) ||
@@ -598,54 +611,43 @@ function DashboardLayout(): React.JSX.Element {
             pathMatches(location.pathname, routePaths.tasks) ||
             pathMatches(location.pathname, routePaths.manifests) ||
             pathMatches(location.pathname, routePaths.scans) ||
-            pathMatches(location.pathname, routePaths.ndr) ||
             pathMatches(location.pathname, routePaths.tracking) ||
+            isOperationsPlatformSection ||
+            pathMatches(location.pathname, routePaths.monitorDataRoot) ||
             pathMatches(location.pathname, routePaths.masterdataHubs) ||
             pathMatches(location.pathname, routePaths.masterdataZones) ||
             pathMatches(location.pathname, routePaths.masterdataNdrReasons) ||
             pathMatches(location.pathname, routePaths.masterdataConfigs),
         },
         {
-          label: 'Điều hành',
-          to: routePaths.groupOperationsPlatform,
-          isActive:
-            pathMatches(location.pathname, routePaths.groupOperationsPlatform) ||
-            pathMatches(location.pathname, routePaths.thermalLabelManagement) ||
-            pathMatches(location.pathname, routePaths.thermalLabelPrint) ||
-            pathMatches(location.pathname, routePaths.returnBlockRoot) ||
-            pathMatches(location.pathname, routePaths.monitorDataRoot),
-        },
-        {
-          label: 'Chỉ số',
-          to: routePaths.groupOperationsMetrics,
-          isActive: isOperationsMetricsSection,
-        },
-        {
-          label: 'Khách hàng',
+          label: 'Đơn khách hàng',
           to: routePaths.groupCustomerPlatform,
           isActive: pathMatches(location.pathname, routePaths.groupCustomerPlatform),
         },
         {
-          label: 'Bưu cục',
+          label: 'Kinh doanh bưu cục',
           to: routePaths.groupBranchBusiness,
           isActive: isBranchBusinessSection,
         },
         {
-          label: 'Vận chuyển',
+          label: 'Quyết toán tài chính',
+          to: routePaths.groupFinanceSettlement,
+          isActive: isFinanceSettlementSection,
+        },
+        {
+          label: 'Vận chuyển tuyến',
           to: routePaths.groupCapabilityPlatform,
           isActive: isCapabilityPlatformSection,
         },
         {
-          label: 'Mở rộng',
-          to: routePaths.groupIntegrationServices,
-          isActive:
-            pathMatches(location.pathname, routePaths.groupIntegrationServices) ||
-            pathMatches(location.pathname, routePaths.groupFinanceSettlement) ||
-            pathMatches(location.pathname, routePaths.groupServiceQuality) ||
-            pathMatches(location.pathname, routePaths.groupDatabase) ||
-            pathMatches(location.pathname, routePaths.groupSmartDevices) ||
-            pathMatches(location.pathname, routePaths.groupPlanningPlatform) ||
-            pathMatches(location.pathname, routePaths.groupBasicData),
+          label: 'Chỉ số vận hành',
+          to: routePaths.groupOperationsMetrics,
+          isActive: isOperationsMetricsSection,
+        },
+        {
+          label: 'Chất lượng dịch vụ',
+          to: routePaths.groupServiceQuality,
+          isActive: isServiceQualitySection,
         },
       ]
     : [
@@ -678,32 +680,35 @@ function DashboardLayout(): React.JSX.Element {
 
   const operationsSidebarItems: SidebarItem[] = enableFullOpsModules
     ? [
-        { label: 'Luồng vận hành lõi', icon: 'tracking_lookup', sectionLabel: 'Luồng vận hành lõi' },
         { label: 'Vận đơn', icon: 'customer_order_management', to: routePaths.shipments },
         { label: 'Duyệt lấy hàng', icon: 'customer_order_dispatch', to: routePaths.pickups },
         { label: 'Phân công tác vụ', icon: 'metrics_action', to: routePaths.tasks },
+        { label: 'Quét tại hub', icon: 'tracking_lookup', to: routePaths.scans },
         { label: 'Bao tải', icon: 'thermal_label', to: routePaths.manifests },
         { label: 'Tra cứu hành trình', icon: 'tracking_lookup', to: routePaths.tracking },
-        { label: 'Luồng nghiệp vụ mở rộng', icon: 'tracking_lookup', sectionLabel: 'Luồng nghiệp vụ mở rộng' },
-        { label: 'Tem bao in nhiệt', icon: 'thermal_label', kind: 'thermal_label' },
-        { label: 'Chuyển hoàn', icon: 'return_block', kind: 'return_block' },
         { label: 'Giám sát dữ liệu', icon: 'monitor_data', kind: 'monitor_data' },
       ]
     : [
         { label: 'Vận đơn', icon: 'customer_order_management', to: routePaths.shipments },
         { label: 'Duyệt lấy hàng', icon: 'customer_order_dispatch', to: routePaths.pickups },
         { label: 'Phân công tác vụ', icon: 'metrics_action', to: routePaths.tasks },
+        { label: 'Quét tại hub', icon: 'tracking_lookup', to: routePaths.scans },
         { label: 'Bao tải', icon: 'thermal_label', to: routePaths.manifests },
         { label: 'Tra cứu hành trình', icon: 'tracking_lookup', to: routePaths.tracking },
-      ];
+  ];
   const serviceQualitySidebarItems: SidebarItem[] = [
-    { label: 'Tra cứu tích hợp', icon: 'service_lookup', to: routePaths.serviceQualityIntegratedLookup },
+    { label: 'Tra cứu sự cố / chất lượng', icon: 'service_lookup', to: routePaths.serviceQualityIntegratedLookup },
     { label: 'Giám sát chủ động', icon: 'service_proactive', kind: 'service_proactive' },
     { label: 'Quản lý hàng bất thường', icon: 'service_abnormal', to: routePaths.serviceQualityAbnormalManagement },
+    { label: 'NDR / giao thất bại', icon: 'service_abnormal', to: routePaths.ndr },
+    { label: 'Chuyển hoàn', icon: 'return_block', kind: 'return_block' },
   ];
   const operationsMetricsSidebarItems: SidebarItem[] = [
+    { label: 'Báo cáo vận hành', icon: 'operation_report', to: routePaths.opsMetricsReport },
     { label: 'Kiện bất thường', icon: 'metrics_abnormal', kind: 'metrics_abnormal' },
-    { label: 'Giám sát tồn kho', icon: 'metrics_deadline', to: routePaths.opsMetricsDeadlineInventory },
+    { label: 'Thời hiệu / SLA', icon: 'metrics_deadline', kind: 'metrics_deadline' },
+    { label: 'Quy hoạch / KPI mạng lưới', icon: 'metrics_deadline', kind: 'metrics_planning' },
+    { label: 'Bàn điều phối thao tác', icon: 'metrics_action', kind: 'metrics_action' },
   ];
   const branchBusinessSidebarItems: SidebarItem[] = [
     {
@@ -717,22 +722,19 @@ function DashboardLayout(): React.JSX.Element {
       kind: 'branch_order_management',
     },
     {
-      label: 'Quyết toán tài chính',
-      icon: 'branch_finance_settlement',
-      kind: 'branch_finance_settlement',
+      label: 'Tem bao in nhiệt',
+      icon: 'thermal_label',
+      kind: 'thermal_label',
     },
   ];
   const customerPlatformSidebarItems: SidebarItem[] = [
-    {
-      label: 'Quản lý đơn đặt',
-      icon: 'customer_order_management',
-      kind: 'customer_order_management',
-    },
-    {
-      label: 'Điều phối đơn đặt',
-      icon: 'customer_order_dispatch',
-      kind: 'customer_order_dispatch',
-    },
+    { label: 'Điều phối đơn đặt', icon: 'customer_order_dispatch', to: routePaths.customerPlatformOrderDispatch },
+    { label: 'Tra cứu đơn đặt', icon: 'service_lookup', to: routePaths.customerPlatformOrderLookup },
+    { label: 'Giám sát đơn đã tạo', icon: 'monitor_data', to: routePaths.customerPlatformOrderMonitor },
+  ];
+  const financeSettlementSidebarItems: SidebarItem[] = [
+    { label: 'Quyết toán thu hộ', icon: 'branch_finance_settlement', to: routePaths.branchBusinessFinanceCod },
+    { label: 'Đối soát công nợ', icon: 'branch_finance_settlement', to: routePaths.branchBusinessFinanceReconcile },
   ];
   const capabilityPlatformSidebarItems: SidebarItem[] = [
     { label: 'Quản lý chuyến xe', icon: 'linehaul_transport', to: routePaths.linehaulTripManagement },
@@ -744,6 +746,8 @@ function DashboardLayout(): React.JSX.Element {
     ? operationsMetricsSidebarItems
     : isCustomerPlatformSection
     ? customerPlatformSidebarItems
+    : isFinanceSettlementSection
+    ? financeSettlementSidebarItems
     : isBranchBusinessSection
     ? branchBusinessSidebarItems
     : isCapabilityPlatformSection
@@ -804,6 +808,7 @@ function DashboardLayout(): React.JSX.Element {
     { label: 'Quản lý đơn tại bưu cục', to: routePaths.branchBusinessLocalOrders },
     { label: 'Phát hàng', to: routePaths.branchBusinessCourierHandoff },
     { label: 'Đơn tồn bưu cục', to: routePaths.branchBusinessBranchInventory },
+    { label: 'Chốt ca', to: routePaths.branchBusinessShiftClosing },
   ] as const;
   const branchBusinessFinanceSettlementChildItems = [
     { label: 'Quyết toán thu hộ', to: routePaths.branchBusinessFinanceCod },
@@ -956,16 +961,18 @@ function DashboardLayout(): React.JSX.Element {
   }, [routeDrivenPanel]);
 
   const activePanelKinds: ReadonlyArray<SidebarPanelKind> = isServiceQualitySection
-    ? ['service_proactive']
+    ? ['service_proactive', 'return_block']
     : isOperationsMetricsSection
-    ? ['metrics_abnormal']
+    ? ['metrics_abnormal', 'metrics_deadline', 'metrics_planning', 'metrics_action']
     : isCustomerPlatformSection
-    ? ['customer_order_management', 'customer_order_dispatch']
+    ? []
+    : isFinanceSettlementSection
+    ? []
     : isBranchBusinessSection
-    ? ['branch_local_orders', 'branch_order_management', 'branch_finance_settlement']
+    ? ['branch_local_orders', 'branch_order_management', 'thermal_label']
     : isCapabilityPlatformSection
     ? []
-    : ['thermal_label', 'return_block', 'monitor_data'];
+    : ['monitor_data'];
 
   const activeSidebarPanelInSection =
     activeSidebarPanel &&
@@ -985,16 +992,19 @@ function DashboardLayout(): React.JSX.Element {
     : isOperationsMetricsSection
     ? 'Chỉ số vận hành'
     : isCustomerPlatformSection
-    ? 'Nền tảng khách hàng'
+    ? 'Đơn khách hàng'
+    : isFinanceSettlementSection
+    ? 'Quyết toán tài chính'
     : isBranchBusinessSection
     ? 'Kinh doanh bưu cục'
     : isCapabilityPlatformSection
-    ? 'Quản lý vận chuyển'
+    ? 'Vận chuyển tuyến'
     : !enableFullOpsModules
     ? 'Ops production'
     : 'Nền tảng điều hành';
 
   const operationsMetricsAllChildItems = [
+    { label: 'Báo cáo vận hành', to: routePaths.opsMetricsReport },
     ...operationsMetricsAbnormalChildItems,
     ...operationsMetricsDeadlineChildItems,
     ...operationsMetricsPlanningChildItems,
@@ -1007,10 +1017,13 @@ function DashboardLayout(): React.JSX.Element {
   const branchBusinessAllChildItems = [
     ...branchBusinessLocalOrdersChildItems,
     ...branchBusinessOrderManagementChildItems,
-    ...branchBusinessFinanceSettlementChildItems,
+    ...thermalLabelChildItems,
   ];
   const activeBranchBusinessItem =
     branchBusinessAllChildItems.find((item) => pathMatches(location.pathname, item.to)) ?? null;
+  const financeSettlementAllChildItems = [...branchBusinessFinanceSettlementChildItems];
+  const activeFinanceSettlementItem =
+    financeSettlementAllChildItems.find((item) => pathMatches(location.pathname, item.to)) ?? null;
   const customerPlatformAllChildItems = [
     ...customerPlatformOrderDispatchChildItems,
     ...customerPlatformOrderManagementChildItems,
@@ -1057,6 +1070,10 @@ function DashboardLayout(): React.JSX.Element {
     ? activeOperationsMetricsItem.label
     : isOperationsMetricsSection
     ? 'Chỉ số vận hành'
+    : activeFinanceSettlementItem
+    ? activeFinanceSettlementItem.label
+    : isFinanceSettlementSection
+    ? 'Quyết toán tài chính'
     : activeBranchBusinessItem
     ? activeBranchBusinessItem.label
     : isBranchBusinessSection
@@ -1064,9 +1081,9 @@ function DashboardLayout(): React.JSX.Element {
     : activeCustomerPlatformItem
     ? activeCustomerPlatformItem.label
     : isCustomerPlatformSection
-    ? 'Nền tảng khách hàng'
+    ? 'Đơn khách hàng'
     : isServiceQualityIntegratedLookupRoute
-    ? 'Tra cứu tích hợp'
+    ? 'Tra cứu sự cố / chất lượng'
     : isServiceQualityAbnormalManagementRoute
     ? 'Quản lý hàng bất thường'
     : pathMatches(location.pathname, routePaths.groupServiceQuality)
@@ -1087,6 +1104,7 @@ function DashboardLayout(): React.JSX.Element {
       return;
     }
 
+    setQuickSearchCode('');
     navigate(routePaths.trackingDetail(normalized));
   };
 
@@ -1125,8 +1143,8 @@ function DashboardLayout(): React.JSX.Element {
                   type="text"
                   value={quickSearchCode}
                   onChange={(event) => setQuickSearchCode(event.target.value)}
-                  placeholder="Tra cứu hành trình đơn"
-                  aria-label="Tra cứu hành trình đơn"
+                  placeholder="Tra cứu mã vận đơn"
+                  aria-label="Tra cứu mã vận đơn"
                 />
                 <button type="submit" className="ops-topbar-search-submit">
                   Tìm
@@ -1202,8 +1220,8 @@ function DashboardLayout(): React.JSX.Element {
               type="text"
               value={quickSearchCode}
               onChange={(event) => setQuickSearchCode(event.target.value)}
-              placeholder="Tra cứu hành trình đơn"
-              aria-label="Tra cứu hành trình đơn"
+              placeholder="Tra cứu mã vận đơn"
+              aria-label="Tra cứu mã vận đơn"
             />
           </form>
 
@@ -1500,11 +1518,11 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.groupIntegrationServicesLeaf}
-              element={opsModuleRoute('Dịch vụ tích hợp', <IntegrationServicesGroupPage />)}
+              element={<Navigate to={routePaths.dashboard} replace />}
             />
             <Route
               path={routePaths.groupCustomerPlatformLeaf}
-              element={opsModuleRoute('Nền tảng khách hàng', <CustomerPlatformGroupPage />)}
+              element={opsModuleRoute('Đơn khách hàng', <CustomerPlatformGroupPage />)}
             />
             <Route
               path={routePaths.customerPlatformOrderManagementLeaf}
@@ -1579,11 +1597,15 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.groupCapabilityPlatformLeaf}
-              element={opsModuleRoute('Quản lý vận chuyển', <CapabilityPlatformGroupPage />)}
+              element={opsModuleRoute('Vận chuyển tuyến', <CapabilityPlatformGroupPage />)}
             />
             <Route
               path={routePaths.groupOperationsMetricsLeaf}
               element={opsModuleRoute('Chỉ số vận hành', <OperationsMetricsGroupPage />)}
+            />
+            <Route
+              path={routePaths.opsMetricsReportLeaf}
+              element={opsModuleRoute('Báo cáo vận hành', <OperationsReportPage />)}
             />
             <Route
               path={routePaths.opsMetricsAbnormalOverviewLeaf}
@@ -1716,7 +1738,7 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.serviceQualityIntegratedLookupLeaf}
-              element={opsModuleRoute('Tra cứu tích hợp', <ServiceQualityIntegratedLookupPage />)}
+              element={opsModuleRoute('Tra cứu sự cố / chất lượng', <ServiceQualityIntegratedLookupPage />)}
             />
             <Route
               path={routePaths.serviceQualityAbnormalManagementLeaf}

@@ -632,9 +632,9 @@ th {
   background: #ffffff;
   padding: 0 16px;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
   align-items: center;
-  gap: 16px;
+  column-gap: 16px;
   position: sticky;
   top: 0;
   z-index: 40;
@@ -646,6 +646,8 @@ th {
   line-height: 1;
   font-weight: 700;
   letter-spacing: 0.01em;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .ops-func-logo--button {
@@ -659,12 +661,20 @@ th {
   height: 100%;
   display: flex;
   align-items: stretch;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 4px;
   min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.ops-func-main-nav::-webkit-scrollbar {
+  display: none;
 }
 
 .ops-func-main-link {
+  flex: 0 0 auto;
   height: 100%;
   display: inline-flex;
   align-items: center;
@@ -696,6 +706,7 @@ th {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 
 .ops-func-search {
@@ -1192,26 +1203,21 @@ th {
 }
 
 @media (max-width: 1200px) {
-  .ops-func-main-nav {
-    justify-content: flex-start;
-    overflow-x: auto;
-    scrollbar-width: thin;
-  }
-
   .ops-func-search {
     width: 220px;
   }
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1360px) {
   .ops-func-header {
     height: auto;
     padding: 10px 12px;
-    grid-template-columns: 1fr;
+    grid-template-columns: max-content minmax(0, 1fr);
     gap: 10px;
   }
 
   .ops-func-main-nav {
+    grid-column: 1 / -1;
     order: 2;
     height: auto;
   }
@@ -1222,8 +1228,26 @@ th {
   }
 
   .ops-func-actions {
-    order: 3;
+    justify-content: flex-end;
     width: 100%;
+  }
+
+  .ops-func-search {
+    width: min(320px, 100%);
+  }
+}
+
+@media (max-width: 1024px) {
+  .ops-func-header {
+    grid-template-columns: 1fr;
+  }
+
+  .ops-func-main-nav {
+    grid-column: auto;
+  }
+
+  .ops-func-actions {
+    order: 3;
     justify-content: flex-start;
     flex-wrap: wrap;
   }
