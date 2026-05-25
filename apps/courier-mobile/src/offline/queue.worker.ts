@@ -1,3 +1,5 @@
+import { collectCod } from '../features/cod/cod.api';
+import type { CollectCodPayload } from '../features/cod/cod.types';
 import { submitDeliveryFailAction } from '../features/delivery/delivery-fail.api';
 import { submitDeliverySuccessAction } from '../features/delivery/delivery-success.api';
 import type { DeliveryFailPayload, DeliverySuccessPayload } from '../features/delivery/delivery.types';
@@ -38,6 +40,9 @@ export async function executeOfflineQueueItem(
         accessToken,
         item.payload as DeliveryFailPayload,
       );
+      return;
+    case 'COD_COLLECT':
+      await collectCod(item.payload as CollectCodPayload, accessToken);
       return;
     default:
       throw new Error(`Unsupported offline queue action: ${item.actionType}`);

@@ -6,6 +6,7 @@ import type {
   CreateShipmentInput,
   Shipment,
   ShipmentListFilters,
+  ShipmentListPage,
   UpdateShipmentInput,
 } from '../../domain/entities/shipment.entity';
 
@@ -14,7 +15,7 @@ export class ShipmentController {
   constructor(private readonly shipmentsService: ShipmentsService) {}
 
   @Get()
-  list(@Query() filters: ShipmentListFilters): Promise<Shipment[]> {
+  list(@Query() filters: ShipmentListFilters): Promise<Shipment[] | ShipmentListPage> {
     return this.shipmentsService.list(filters);
   }
 

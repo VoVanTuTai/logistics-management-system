@@ -1,6 +1,7 @@
 ﻿import React from 'react';
+import { Navigate } from 'react-router-dom';
 
-import { FunctionGroupLandingPage } from '../../shared/FunctionGroupLandingPage';
+import { routePaths } from '../../../../navigation/routes';
 
 interface BranchBusinessFeaturePlaceholderPageProps {
   groupCode: string;
@@ -8,10 +9,8 @@ interface BranchBusinessFeaturePlaceholderPageProps {
   summary: string;
 }
 
-export function BranchBusinessFeaturePlaceholderPage({
-  groupCode,
-  title,
-  summary,
-}: BranchBusinessFeaturePlaceholderPageProps): React.JSX.Element {
-  return <FunctionGroupLandingPage groupCode={groupCode} title={title} summary={summary} />;
+export function BranchBusinessFeaturePlaceholderPage(
+  _props: BranchBusinessFeaturePlaceholderPageProps,
+): React.JSX.Element {
+  return <Navigate to={routePaths.branchBusinessLocalOverview} replace />;
 }

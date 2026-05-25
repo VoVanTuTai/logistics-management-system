@@ -13,6 +13,10 @@ import {
 import { NdrReasonRepository } from '../../domain/repositories/ndr-reason.repository';
 import { MasterdataOutboxService } from '../../messaging/outbox/masterdata-outbox.service';
 import {
+  AdminAuditService,
+  type AdminAuditContext,
+} from './admin-audit.service';
+import {
   normalizeCodeQuery,
   normalizeRequiredCode,
   normalizeRequiredText,
@@ -33,6 +37,7 @@ export class NdrReasonsService {
     @Inject(NdrReasonRepository)
     private readonly ndrReasonRepository: NdrReasonRepository,
     private readonly masterdataOutboxService: MasterdataOutboxService,
+    private readonly adminAuditService: AdminAuditService,
   ) {}
 
   list(query: ListNdrReasonsQuery = {}): Promise<NdrReason[]> {
@@ -54,7 +59,10 @@ export class NdrReasonsService {
     return ndrReason;
   }
 
-  async create(input: NdrReasonWriteInput): Promise<NdrReason> {
+  async create(
+    input: NdrReasonWriteInput,
+    auditContext?: AdminAuditContext,
+  ): Promise<NdrReason> {
     const normalizedInput = this.normalizeCreateInput(input);
     const existingReason = await this.ndrReasonRepository.findByCode(
       normalizedInput.code,
@@ -77,12 +85,22 @@ export class NdrReasonsService {
       },
     );
 
+    await this.adminAuditService.record({
+      context: auditContext,
+      action: 'NDR_REASON_CREATED',
+      targetType: 'NDR_REASON',
+      targetId: ndrReason.id,
+      before: null,
+      after: ndrReason,
+    });
+
     return ndrReason;
   }
 
   async update(
     id: string,
     input: Partial<NdrReasonWriteInput>,
+    auditContext?: AdminAuditContext,
   ): Promise<NdrReason> {
     const currentReason = await this.getById(id);
     const normalizedInput = this.normalizeUpdateInput(input);
@@ -114,7 +132,53 @@ export class NdrReasonsService {
       },
     );
 
+    await this.adminAuditService.record({
+      context: auditContext,
+      action:
+        currentReason.isActive !== ndrReason.isActive &&
+        ndrReason.isActive === false
+          ? 'NDR_REASON_DISABLED'
+          : 'NDR_REASON_UPDATED',
+      targetType: 'NDR_REASON',
+      targetId: ndrReason.id,
+      before: currentReason,
+      after: ndrReason,
+    });
+
     return ndrReason;
+  }
+
+  async remove(
+    id: string,
+    auditContext?: AdminAuditContext,
+  ): Promise<{ deleted: boolean; ndrReasonId: string | null }> {
+    const ndrReason = await this.getById(id);
+    const deleted = await this.ndrReasonRepository.delete(id);
+
+    if (deleted) {
+      await this.masterdataOutboxService.enqueueNdrReasonUpdated(
+        ndrReason.id,
+        {
+          action: 'deleted',
+          entity: 'ndr-reason',
+          record: ndrReason,
+        },
+      );
+
+      await this.adminAuditService.record({
+        context: auditContext,
+        action: 'NDR_REASON_DELETED',
+        targetType: 'NDR_REASON',
+        targetId: ndrReason.id,
+        before: ndrReason,
+        after: null,
+      });
+    }
+
+    return {
+      deleted,
+      ndrReasonId: deleted ? ndrReason.id : null,
+    };
   }
 
   private normalizeCreateInput(input: NdrReasonWriteInput): NdrReasonWriteInput {

@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+
+<html class="light" lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NEXUS - Tạo yêu cầu lấy hàng</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-container": "#006477",
+                        "inverse-surface": "#1d3054",
+                        "error-container": "#ffdad6",
+                        "on-primary-fixed": "#001848",
+                        "surface-container-highest": "#d8e2ff",
+                        "on-surface": "#051a3e",
+                        "surface-container-lowest": "#ffffff",
+                        "on-background": "#051a3e",
+                        "inverse-primary": "#b2c5ff",
+                        "primary-fixed": "#dae2ff",
+                        "inverse-on-surface": "#edf0ff",
+                        "outline": "#737685",
+                        "surface-container-high": "#e1e8ff",
+                        "surface": "#faf9ff",
+                        "tertiary-fixed": "#afecff",
+                        "on-secondary-fixed-variant": "#004590",
+                        "on-surface-variant": "#434654",
+                        "on-primary-container": "#c4d2ff",
+                        "outline-variant": "#c3c6d6",
+                        "on-secondary-fixed": "#001b3f",
+                        "surface-tint": "#0c56d0",
+                        "on-secondary-container": "#fefcff",
+                        "on-secondary": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-container": "#76e2ff",
+                        "surface-container-low": "#f1f3ff",
+                        "on-tertiary-fixed": "#001f27",
+                        "primary-fixed-dim": "#b2c5ff",
+                        "surface-dim": "#ccdaff",
+                        "on-tertiary-fixed-variant": "#004e5d",
+                        "on-primary-fixed-variant": "#0040a2",
+                        "secondary-container": "#0071e6",
+                        "on-tertiary": "#ffffff",
+                        "surface-bright": "#faf9ff",
+                        "primary": "#003d9b",
+                        "error": "#ba1a1a",
+                        "surface-container": "#e9edff",
+                        "tertiary": "#004b59",
+                        "tertiary-fixed-dim": "#48d7f9",
+                        "surface-variant": "#d8e2ff",
+                        "secondary-fixed-dim": "#abc7ff",
+                        "background": "#faf9ff",
+                        "secondary-fixed": "#d7e2ff",
+                        "on-error": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "primary-container": "#0052cc",
+                        "secondary": "#0059b8"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.5rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-md": "1rem",
+                        "stack-lg": "2rem",
+                        "margin-mobile": "1rem",
+                        "margin-desktop": "2rem",
+                        "gutter": "1.5rem",
+                        "container-max-width": "1440px",
+                        "stack-sm": "0.5rem"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-xl": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "body-md": ["Inter"],
+                        "body-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-xl": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "body-sm": ["12px", {"lineHeight": "16px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #faf9ff;
+        }
+        .sidebar-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+        .sidebar-scroll::-webkit-scrollbar-thumb {
+            background: #c3c6d6;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex overflow-x-hidden">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 bottom-0 flex flex-col w-[280px] py-stack-md bg-surface-container-low border-r border-outline-variant z-40">
+<div class="px-6 mb-8">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">NEXUS Logistic</h1>
+<p class="text-on-surface-variant font-label-md text-label-md opacity-70">Merchant Portal</p>
+<div class="mt-6 p-4 bg-surface-container-high rounded-lg border border-outline-variant">
+<div class="flex items-center gap-3 mb-2">
+<img alt="Merchant Hub Logo" class="w-10 h-10 rounded-lg object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBI9OAuRUjhcpHeRfa_MJFLlXDC1hQ4CGcEeS8md1a4Au2yKqi5QmOdbJsn3hgU3e6b4k9Bea7J0OF_ayfTRyh2dpfF-48W1mtf4d8lKcLDXn0tdjmqloL_XfcLMTtYJk8zKhpS7Swzt9o_8BNS7Wgpeen-OoaiFTkxA4hdBYkH5OsZzDq2xWi19AxcObPnS97lZ9E4l_H-mr9ynqETt2-F6qmQJ5zImwW_mplP28L02z_Fw3ZRgIhsx-0eTsARZ2wtVJ_A3fM6W98"/>
+<div>
+<p class="font-bold text-on-surface text-sm">Merchant Hub</p>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-wider">ID: 41100006</p>
+</div>
+</div>
+<p class="text-[10px] text-on-surface-variant bg-surface-container p-1 rounded">TOKEN EXP: 18/05/2026</p>
+</div>
+</div>
+<nav class="flex-1 overflow-y-auto sidebar-scroll px-2 space-y-1">
+<a class="cursor-pointer flex items-center gap-3 p-3 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-transform duration-200 hover:translate-x-1 font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span> Tổng quan
+        </a>
+<a class="cursor-pointer flex items-center gap-3 p-3 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-transform duration-200 hover:translate-x-1 font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="add_box">add_box</span> Tạo đơn hàng
+        </a>
+<a class="cursor-pointer flex items-center gap-3 p-3 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-transform duration-200 hover:translate-x-1 font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="list_alt">list_alt</span> Danh sách đơn hàng
+        </a>
+<a class="cursor-pointer flex items-center gap-3 p-3 bg-secondary-container text-on-secondary-container font-semibold rounded-lg mx-2 transition-transform duration-200 hover:translate-x-1 font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="local_shipping">local_shipping</span> Yêu cầu lấy hàng
+        </a>
+<a class="cursor-pointer flex items-center gap-3 p-3 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-transform duration-200 hover:translate-x-1 font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="search">search</span> Tra cứu vận đơn
+        </a>
+<a class="cursor-pointer flex items-center gap-3 p-3 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-transform duration-200 hover:translate-x-1 font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="edit_note">edit_note</span> Yêu cầu đổi thông tin giao
+        </a>
+<a class="cursor-pointer flex items-center gap-3 p-3 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-transform duration-200 hover:translate-x-1 font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="assignment_return">assignment_return</span> Yêu cầu hoàn hàng
+        </a>
+<a class="cursor-pointer flex items-center gap-3 p-3 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-transform duration-200 hover:translate-x-1 font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="print">print</span> In vận đơn
+        </a>
+<a class="cursor-pointer flex items-center gap-3 p-3 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-transform duration-200 hover:translate-x-1 font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span> Tài khoản
+        </a>
+<a class="cursor-pointer flex items-center gap-3 p-3 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-transform duration-200 hover:translate-x-1 font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span> Thông báo
+        </a>
+</nav>
+<div class="mt-auto px-4 py-4 border-t border-outline-variant space-y-2">
+<button class="flex items-center gap-3 p-3 w-full text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors font-label-md text-label-md">
+<span class="material-symbols-outlined" data-icon="refresh">refresh</span> Tải lại
+        </button>
+<button class="flex items-center gap-3 p-3 w-full text-error hover:bg-error-container rounded-lg transition-colors font-label-md text-label-md">
+<span class="material-symbols-outlined" data-icon="logout">logout</span> Logout
+        </button>
+</div>
+</aside>
+<!-- Main Wrapper -->
+<div class="ml-[280px] flex-1 flex flex-col min-h-screen">
+<!-- TopNavBar -->
+<header class="sticky top-0 z-50 flex justify-between items-center px-margin-desktop w-full h-16 bg-surface-container-lowest border-b border-outline-variant shadow-sm">
+<div class="flex items-center gap-4">
+<span class="font-headline-lg text-headline-lg font-black tracking-tighter text-primary">NEXUS</span>
+<div class="h-6 w-px bg-outline-variant mx-2"></div>
+<h2 class="font-headline-md text-headline-md text-on-surface">Tạo yêu cầu lấy hàng</h2>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex gap-2 text-on-surface-variant">
+<span class="bg-primary-container/10 px-3 py-1 rounded-full text-[12px] font-semibold text-primary">Đơn chờ lấy: 15</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 rounded-full hover:bg-surface-container-low transition-colors text-on-surface-variant active:scale-95 duration-150">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 rounded-full hover:bg-surface-container-low transition-colors text-on-surface-variant active:scale-95 duration-150">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+<img alt="Merchant Profile" class="w-8 h-8 rounded-full border border-primary-container" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQ-afjArVLkLdy84_kxWpyFxyI0RhgwvVc0K0KWFUtd9wNsxXlIzgbhvCYVvAoguKwwPlLSE8vohzr_v6X9mJnItF_TF7qQsrb1rKO7Z2mQpV6beN5e3zxB6d0ICCLNX3l7POMXa4hAhkOWkkWHVhS1NLLn_LaBVUPyec39d8VRK508cU3mbV17J9sFmYAyQ5amPRamQ1n5rTp3oEgyAedSOtFzMaDmSJYS34qa6Jx-CFm1oo6V34_nrY4WlsTPzvgEP3E5oz-NVs"/>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 p-stack-lg max-w-[container-max-width] mx-auto w-full pb-32">
+<!-- Header & Filter -->
+<div class="mb-8">
+<h1 class="font-headline-xl text-headline-xl text-on-surface mb-6">Tạo yêu cầu lấy hàng</h1>
+<div class="bg-surface-container-lowest p-4 rounded-lg border border-outline-variant flex flex-wrap gap-4 items-center">
+<div class="flex-1 min-w-[300px] relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" data-icon="search">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-background border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary text-body-md" placeholder="Tìm kiếm theo mã đơn hàng..." type="text"/>
+</div>
+<div class="w-64 relative">
+<select class="w-full pl-4 pr-10 py-2 bg-background border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary appearance-none text-body-md">
+<option>Tất cả kho hàng</option>
+<option>Kho Cầu Giấy</option>
+<option>Kho Đống Đa</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant" data-icon="expand_more">expand_more</span>
+</div>
+<button class="px-6 py-2 bg-surface-container-high text-on-surface font-label-md rounded-lg hover:bg-outline-variant transition-colors">
+                    Áp dụng lọc
+                </button>
+</div>
+</div>
+<!-- Orders Table -->
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant shadow-sm overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-outline-variant">
+<th class="px-6 py-4 w-12 text-center">
+<input class="rounded border-outline-variant text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+</th>
+<th class="px-6 py-4 font-label-md text-label-md text-on-surface-variant uppercase">Mã đơn hàng</th>
+<th class="px-6 py-4 font-label-md text-label-md text-on-surface-variant uppercase">Thông tin người nhận</th>
+<th class="px-6 py-4 font-label-md text-label-md text-on-surface-variant uppercase">Dịch vụ</th>
+<th class="px-6 py-4 font-label-md text-label-md text-on-surface-variant uppercase">Khối lượng</th>
+<th class="px-6 py-4 font-label-md text-label-md text-on-surface-variant uppercase">Ngày tạo</th>
+<th class="px-6 py-4 font-label-md text-label-md text-on-surface-variant uppercase">Kho lấy</th>
+<th class="px-6 py-4 font-label-md text-label-md text-on-surface-variant uppercase text-center">Trạng thái</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/30">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-low/20 transition-colors">
+<td class="px-6 py-4 text-center">
+<input checked="" class="rounded border-outline-variant text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+</td>
+<td class="px-6 py-4 font-label-md text-primary font-bold">SHP260504F8B585</td>
+<td class="px-6 py-4 font-body-md text-on-surface">
+<div class="font-semibold">Nguyễn Văn A</div>
+<div class="text-xs text-on-surface-variant">098***888 - Hoàn Kiếm, Hà Nội</div>
+</td>
+<td class="px-6 py-4 font-body-md text-on-surface-variant">Hỏa tốc (NEXUS Express)</td>
+<td class="px-6 py-4 font-body-md text-on-surface-variant">0.5 kg</td>
+<td class="px-6 py-4 font-body-sm text-on-surface-variant">18/05/2026, 09:12</td>
+<td class="px-6 py-4 font-body-md text-on-surface-variant">Kho Cầu Giấy</td>
+<td class="px-6 py-4 text-center">
+<span class="bg-secondary-container/10 text-secondary px-3 py-1 rounded-full text-[11px] font-bold border border-secondary/20 uppercase">Chờ lấy hàng</span>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low/20 transition-colors">
+<td class="px-6 py-4 text-center">
+<input checked="" class="rounded border-outline-variant text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+</td>
+<td class="px-6 py-4 font-label-md text-primary font-bold">SHP26050472FF8F</td>
+<td class="px-6 py-4 font-body-md text-on-surface">
+<div class="font-semibold">Trần Thị B</div>
+<div class="text-xs text-on-surface-variant">097***777 - Quận 1, TP. HCM</div>
+</td>
+<td class="px-6 py-4 font-body-md text-on-surface-variant">Tiết kiệm</td>
+<td class="px-6 py-4 font-body-md text-on-surface-variant">2.1 kg</td>
+<td class="px-6 py-4 font-body-sm text-on-surface-variant">18/05/2026, 10:45</td>
+<td class="px-6 py-4 font-body-md text-on-surface-variant">Kho Cầu Giấy</td>
+<td class="px-6 py-4 text-center">
+<span class="bg-secondary-container/10 text-secondary px-3 py-1 rounded-full text-[11px] font-bold border border-secondary/20 uppercase">Chờ lấy hàng</span>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low/20 transition-colors">
+<td class="px-6 py-4 text-center">
+<input class="rounded border-outline-variant text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+</td>
+<td class="px-6 py-4 font-label-md text-primary font-bold">SHP26050310D385</td>
+<td class="px-6 py-4 font-body-md text-on-surface">
+<div class="font-semibold">Lê Văn C</div>
+<div class="text-xs text-on-surface-variant">096***666 - Hải Châu, Đà Nẵng</div>
+</td>
+<td class="px-6 py-4 font-body-md text-on-surface-variant">Nhanh</td>
+<td class="px-6 py-4 font-body-md text-on-surface-variant">1.0 kg</td>
+<td class="px-6 py-4 font-body-sm text-on-surface-variant">18/05/2026, 11:20</td>
+<td class="px-6 py-4 font-body-md text-on-surface-variant">Kho Đống Đa</td>
+<td class="px-6 py-4 text-center">
+<span class="bg-secondary-container/10 text-secondary px-3 py-1 rounded-full text-[11px] font-bold border border-secondary/20 uppercase">Chờ lấy hàng</span>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-low/20 transition-colors">
+<td class="px-6 py-4 text-center">
+<input class="rounded border-outline-variant text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+</td>
+<td class="px-6 py-4 font-label-md text-primary font-bold">SHP260503923D69</td>
+<td class="px-6 py-4 font-body-md text-on-surface">
+<div class="font-semibold">Phạm Thị D</div>
+<div class="text-xs text-on-surface-variant">091***111 - Vinh, Nghệ An</div>
+</td>
+<td class="px-6 py-4 font-body-md text-on-surface-variant">Tiết kiệm</td>
+<td class="px-6 py-4 font-body-md text-on-surface-variant">0.8 kg</td>
+<td class="px-6 py-4 font-body-sm text-on-surface-variant">18/05/2026, 14:05</td>
+<td class="px-6 py-4 font-body-md text-on-surface-variant">Kho Cầu Giấy</td>
+<td class="px-6 py-4 text-center">
+<span class="bg-secondary-container/10 text-secondary px-3 py-1 rounded-full text-[11px] font-bold border border-secondary/20 uppercase">Chờ lấy hàng</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-4 border-t border-outline-variant flex justify-between items-center bg-surface-container-low/20">
+<p class="text-body-sm text-on-surface-variant">Hiển thị <span class="font-bold">4</span> đơn hàng khả dụng</p>
+<div class="flex gap-1">
+<button class="p-2 border border-outline-variant rounded-lg hover:bg-background"><span class="material-symbols-outlined text-[18px]" data-icon="chevron_left">chevron_left</span></button>
+<button class="w-8 h-8 bg-primary text-on-primary rounded-lg font-bold text-[12px]">1</button>
+<button class="p-2 border border-outline-variant rounded-lg hover:bg-background"><span class="material-symbols-outlined text-[18px]" data-icon="chevron_right">chevron_right</span></button>
+</div>
+</div>
+</div>
+</main>
+<!-- Sticky Action Bar -->
+<div class="fixed bottom-0 right-0 left-[280px] bg-surface-container-lowest border-t border-outline-variant shadow-[0_-4px_12px_rgba(0,0,0,0.05)] p-4 px-margin-desktop z-40">
+<div class="max-w-[container-max-width] mx-auto flex items-center gap-6">
+<div class="flex-1 grid grid-cols-2 gap-4">
+<div class="relative">
+<label class="absolute -top-2 left-3 bg-surface-container-lowest px-1 text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Thời gian lấy hàng mong muốn</label>
+<div class="flex items-center gap-2 w-full p-2.5 bg-background border border-outline-variant rounded-lg">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]" data-icon="calendar_today">calendar_today</span>
+<select class="bg-transparent border-none focus:ring-0 text-body-md p-0 flex-1">
+<option>Hôm nay, Sáng (08:00 - 12:00)</option>
+<option>Hôm nay, Chiều (13:30 - 17:30)</option>
+<option>Ngày mai, Sáng (08:00 - 12:00)</option>
+</select>
+</div>
+</div>
+<div class="relative">
+<label class="absolute -top-2 left-3 bg-surface-container-lowest px-1 text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Ghi chú cho bưu tá</label>
+<input class="w-full p-2.5 bg-background border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary text-body-md" placeholder="VD: Lấy tại tầng hầm B1, gọi trước 15p..." type="text"/>
+</div>
+</div>
+<button class="px-8 py-3 bg-primary text-on-primary font-label-md font-bold rounded-lg shadow-lg shadow-primary/20 hover:bg-secondary active:scale-[0.98] transition-all flex items-center gap-2 h-[50px] whitespace-nowrap">
+<span class="material-symbols-outlined" data-icon="local_shipping">local_shipping</span>
+                Tạo yêu cầu lấy hàng cho 2 đơn đã chọn
+            </button>
+</div>
+</div>
+<!-- Floating Help -->
+<div class="fixed bottom-24 right-8 z-50">
+<button class="w-14 h-14 bg-primary text-on-primary rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[28px]" data-icon="support_agent" style="font-variation-settings: 'FILL' 1;">support_agent</span>
+</button>
+</div>
+</div>
+</body></html>

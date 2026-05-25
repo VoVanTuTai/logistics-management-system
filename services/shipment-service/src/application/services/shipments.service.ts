@@ -13,12 +13,14 @@ import type {
   CreateShipmentInput,
   Shipment,
   ShipmentListFilters,
+  ShipmentListPage,
   UpdateShipmentInput,
 } from '../../domain/entities/shipment.entity';
 import type { ShipmentConsumedEventType } from '../../domain/entities/shipment-status.entity';
 import { ShipmentRepository } from '../../domain/repositories/shipment.repository';
 import { ShipmentStateMachine } from '../../domain/state-machine/shipment-state-machine';
 import { ShipmentOutboxService } from '../../messaging/outbox/shipment-outbox.service';
+import { PricingClientService } from './pricing-client.service';
 
 const SHIPMENT_CODE_PREFIX = 'SHP';
 const MAX_CODE_RETRY = 20;
@@ -30,9 +32,14 @@ export class ShipmentsService {
     private readonly shipmentRepository: ShipmentRepository,
     private readonly shipmentStateMachine: ShipmentStateMachine,
     private readonly shipmentOutboxService: ShipmentOutboxService,
+    private readonly pricingClientService: PricingClientService,
   ) {}
 
-  list(filters: ShipmentListFilters = {}): Promise<Shipment[]> {
+  list(filters: ShipmentListFilters = {}): Promise<Shipment[] | ShipmentListPage> {
+    if (filters.limit !== undefined || filters.offset !== undefined) {
+      return this.shipmentRepository.listPage(filters);
+    }
+
     return this.shipmentRepository.list(filters);
   }
 
@@ -48,10 +55,11 @@ export class ShipmentsService {
   }
 
   async create(input: CreateShipmentInput): Promise<Shipment> {
-    const normalizedCode = this.normalizeCode(input.code ?? null);
+    const pricedInput = await this.pricingClientService.applyQuote(input);
+    const normalizedCode = this.normalizeCode(pricedInput.code ?? null);
     const shipment = normalizedCode
-      ? await this.createWithRequestedCode(input, normalizedCode)
-      : await this.createWithGeneratedCode(input);
+      ? await this.createWithRequestedCode(pricedInput, normalizedCode)
+      : await this.createWithGeneratedCode(pricedInput);
 
     await this.shipmentOutboxService.enqueueShipmentCreated(shipment);
 

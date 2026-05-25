@@ -9,6 +9,7 @@ import type {
   LoginResultDto,
   LogoutInputDto,
   LogoutResultDto,
+  MobilePermissionEffectiveDto,
   RefreshSessionInputDto,
 } from './auth.types';
 
@@ -41,6 +42,16 @@ export const authApi = {
       accessToken,
       body: payload,
     }),
+  getMobilePermissionEffective: (
+    accessToken: string | null,
+    userId: string,
+  ): Promise<MobilePermissionEffectiveDto> =>
+    courierApiClient.request(
+      courierEndpoints.auth.mobilePermissionEffective(userId),
+      {
+        accessToken,
+      },
+    ),
 };
 
 export function useLoginMutation() {

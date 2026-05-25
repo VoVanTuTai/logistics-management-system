@@ -31,3 +31,9 @@ export interface CreateReturnCaseInput {
 export interface CompleteReturnCaseInput {
   note?: string | null;
 }
+
+export interface ListReturnCasesFilter {
+  shipmentCode?: string;
+  ndrCaseId?: string;
+  status?: ReturnCase['status'];
+}

@@ -13,4 +13,5 @@ export abstract class NdrReasonRepository {
     id: string,
     input: Partial<NdrReasonWriteInput>,
   ): Promise<NdrReason>;
+  abstract delete(id: string): Promise<boolean>;
 }

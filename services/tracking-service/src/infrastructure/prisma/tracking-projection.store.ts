@@ -200,11 +200,49 @@ export class TrackingProjectionStore {
 
   private extractLocationCode(event: TrackingEventEnvelope): string | null {
     return (
-      this.getNestedString(event.location, ['location_code']) ??
-      this.getNestedString(event.location, ['locationCode']) ??
-      this.getNestedString(event.data, ['currentLocation', 'locationCode']) ??
-      this.getNestedString(event.data, ['currentLocation', 'location_code']) ??
-      this.getNestedString(event.data, ['scanEvent', 'locationCode']) ??
+      this.getFirstNormalizedString(event.location, [
+        ['location_code'],
+        ['locationCode'],
+        ['hub_code'],
+        ['hubCode'],
+        ['code'],
+      ]) ??
+      this.getFirstNormalizedString(event.data, [
+        ['currentLocation', 'locationCode'],
+        ['currentLocation', 'location_code'],
+        ['currentLocation', 'hubCode'],
+        ['currentLocation', 'code'],
+        ['trackingCurrent', 'currentLocationCode'],
+        ['trackingCurrent', 'current_location_code'],
+        ['scanEvent', 'locationCode'],
+        ['scanEvent', 'location_code'],
+        ['scanEvent', 'hubCode'],
+      ]) ??
+      this.getFirstNormalizedString(event.data, [
+        ['shipment', 'currentLocationCode'],
+        ['shipment', 'currentLocation'],
+        ['shipment', 'current_location_code'],
+        ['shipment', 'metadata', 'currentLocationCode'],
+        ['shipment', 'metadata', 'currentLocation'],
+        ['shipment', 'metadata', 'current_location_code'],
+        ['shipment', 'metadata', 'routing', 'originHubCode'],
+        ['shipment', 'metadata', 'sender', 'hubCode'],
+        ['shipment', 'metadata', 'senderHubCode'],
+        ['shipment', 'metadata', 'originHubCode'],
+        ['shipment', 'metadata', 'hubCode'],
+        ['shipment', 'metadata', 'routing', 'destinationHubCode'],
+        ['shipment', 'metadata', 'receiver', 'hubCode'],
+        ['shipment', 'metadata', 'receiverHubCode'],
+        ['shipment', 'metadata', 'destinationHubCode'],
+      ]) ??
+      this.getFirstNormalizedString(event.data, [
+        ['pickup', 'hubCode'],
+        ['pickupRequest', 'hubCode'],
+        ['pickup_request', 'hubCode'],
+        ['manifest', 'currentHubCode'],
+        ['manifest', 'originHubCode'],
+        ['manifest', 'destinationHubCode'],
+      ]) ??
       null
     );
   }
@@ -253,6 +291,29 @@ export class TrackingProjectionStore {
     }
 
     return typeof cursor === 'string' ? cursor : null;
+  }
+
+  private getFirstNormalizedString(
+    source: unknown,
+    paths: string[][],
+  ): string | null {
+    for (const path of paths) {
+      const value = this.normalizeLocationCode(
+        this.getNestedString(source, path),
+      );
+
+      if (value) {
+        return value;
+      }
+    }
+
+    return null;
+  }
+
+  private normalizeLocationCode(value: string | null): string | null {
+    const normalized = value?.trim().toUpperCase() ?? '';
+
+    return normalized.length > 0 ? normalized : null;
   }
 
   private toTimelineEntity(record: PrismaTimelineEventRecord): TimelineEvent {

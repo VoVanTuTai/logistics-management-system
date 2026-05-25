@@ -1,13 +1,8 @@
 import React from 'react';
+import { Navigate } from 'react-router-dom';
 
-import { FunctionGroupLandingPage } from '../shared/FunctionGroupLandingPage';
+import { routePaths } from '../../../navigation/routes';
 
 export function CustomerPlatformGroupPage(): React.JSX.Element {
-  return (
-    <FunctionGroupLandingPage
-      groupCode="CUSTOMER_PLATFORM"
-      title="Nền tảng khách hàng"
-      summary="Cụm chức năng liên quan đến kênh và trải nghiệm khách hàng."
-    />
-  );
+  return <Navigate to={routePaths.customerPlatformOrderDispatch} replace />;
 }

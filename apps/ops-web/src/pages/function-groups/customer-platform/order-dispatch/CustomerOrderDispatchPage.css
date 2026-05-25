@@ -211,6 +211,39 @@
   font-weight: 700;
 }
 
+.ops-customer-dispatch__table-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.ops-customer-dispatch__table-meta select {
+  width: auto;
+  min-width: 92px;
+  height: 30px;
+}
+
+.ops-customer-dispatch__table-meta button {
+  min-height: 30px;
+  padding: 0 9px;
+}
+
+.ops-customer-dispatch__table-meta strong {
+  color: #334155;
+  font-size: 12px;
+}
+
+.ops-customer-dispatch__loading {
+  border-bottom: 1px solid #d7e3f7;
+  background: #eff6ff;
+  color: #1d4ed8;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .ops-customer-dispatch__table-wrap {
   overflow: auto;
   max-height: 560px;

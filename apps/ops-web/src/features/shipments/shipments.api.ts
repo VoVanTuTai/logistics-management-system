@@ -3,6 +3,7 @@ export {
   useApproveShipmentMutation,
   useCreateShipmentMutation,
   useReviewShipmentMutation,
+  useShipmentPageQuery,
   useShipmentDetailQuery,
   useShipmentsQuery,
   useUpdateShipmentMutation,

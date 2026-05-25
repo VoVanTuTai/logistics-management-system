@@ -1,120 +1,151 @@
-import React, { useState } from 'react';
+import React, { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import {
-  BarChart,
   Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Sector,
 } from 'recharts';
 
-import {
-  keyMetrics,
-  hubThroughputData,
-  hubBarColors,
-  ndrReasonData,
-  urgentAlerts,
-} from './analyticsMockData';
-import type { KeyMetric, AlertSeverity } from './analyticsMockData';
+import { useManifestsQuery } from '../../../features/manifests/manifests.api';
+import { useNdrCasesQuery } from '../../../features/ndr/ndr.api';
+import { useShipmentsQuery } from '../../../features/shipments/shipments.api';
+import type { ShipmentListItemDto } from '../../../features/shipments/shipments.types';
+import { useTasksQuery } from '../../../features/tasks/tasks.api';
+import { routePaths } from '../../../navigation/routes';
+import { getErrorMessage } from '../../../services/api/errors';
+import { useAuthStore } from '../../../store/authStore';
+import { formatShipmentStatusLabel } from '../../../utils/logisticsLabels';
 import './AnalyticsDashboard.css';
 
-/* ------------------------------------------------------------------ */
-/*  Helpers                                                           */
-/* ------------------------------------------------------------------ */
-function trendArrow(trend: KeyMetric['trend']): string {
-  if (trend === 'up') return '▲';
-  if (trend === 'down') return '▼';
-  return '—';
+const NDR_COLORS = ['#2563eb', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444'];
+
+function normalizeCode(value: string | null | undefined): string {
+  return (value ?? '').trim().toUpperCase();
 }
 
-function severityLabel(severity: AlertSeverity): string {
-  switch (severity) {
-    case 'critical': return 'Nghiêm trọng';
-    case 'high':     return 'Cao';
-    case 'medium':   return 'Trung bình';
-    default:         return severity;
+function toDateInputValue(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function toShortDate(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
   }
+  return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
-function formatDate(): string {
-  const now = new Date();
-  const dd = String(now.getDate()).padStart(2, '0');
-  const mm = String(now.getMonth() + 1).padStart(2, '0');
-  const yyyy = now.getFullYear();
-  const hh = String(now.getHours()).padStart(2, '0');
-  const mi = String(now.getMinutes()).padStart(2, '0');
-  return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
+function ageHours(value: string | null | undefined): number | null {
+  if (!value) {
+    return null;
+  }
+  const timestamp = new Date(value).getTime();
+  return Number.isNaN(timestamp) ? null : Math.max(0, Math.floor((Date.now() - timestamp) / 3600000));
 }
 
-/* ------------------------------------------------------------------ */
-/*  Donut Active Shape (interactive hover)                            */
-/* ------------------------------------------------------------------ */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function renderActiveDonutShape(props: any): React.JSX.Element {
-  const RADIAN = Math.PI / 180;
-  const {
-    cx, cy, midAngle, innerRadius, outerRadius,
-    startAngle, endAngle, fill, payload, percent, value,
-  } = props;
-  const sin = Math.sin(-RADIAN * midAngle);
-  const cos = Math.cos(-RADIAN * midAngle);
-  const sx = cx + (outerRadius + 8) * cos;
-  const sy = cy + (outerRadius + 8) * sin;
-  const mx = cx + (outerRadius + 22) * cos;
-  const my = cy + (outerRadius + 22) * sin;
-  const ex = mx + (cos >= 0 ? 1 : -1) * 18;
-  const ey = my;
-  const textAnchor = cos >= 0 ? 'start' : 'end';
-
+function resolveShipmentHub(shipment: ShipmentListItemDto): string {
   return (
-    <g>
-      <text x={cx} y={cy - 6} dy={0} textAnchor="middle" fill="#ffffff" fontWeight={700} fontSize={14}>
-        {payload.name}
-      </text>
-      <text x={cx} y={cy + 14} textAnchor="middle" fill="#94a3b8" fontSize={12}>
-        {value} đơn
-      </text>
-      <Sector
-        cx={cx} cy={cy} innerRadius={innerRadius} outerRadius={outerRadius + 6}
-        startAngle={startAngle} endAngle={endAngle} fill={fill}
-      />
-      <Sector
-        cx={cx} cy={cy} innerRadius={outerRadius + 8} outerRadius={outerRadius + 12}
-        startAngle={startAngle} endAngle={endAngle} fill={fill}
-      />
-      <path d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} stroke={fill} fill="none" />
-      <circle cx={ex} cy={ey} r={3} fill={fill} stroke="none" />
-      <text x={ex + (cos >= 0 ? 1 : -1) * 8} y={ey} textAnchor={textAnchor} fill="#e2e8f0" fontSize={12}>
-        {`${(percent * 100).toFixed(1)}%`}
-      </text>
-    </g>
+    normalizeCode(shipment.currentLocation) ||
+    normalizeCode(shipment.receiverHubCode) ||
+    normalizeCode(shipment.destinationHubCode) ||
+    normalizeCode(shipment.originHubCode) ||
+    normalizeCode(shipment.senderHubCode) ||
+    'CHUA_XAC_DINH'
   );
 }
 
-/* ================================================================= */
-/*  Component                                                        */
-/* ================================================================= */
+function buildDateWindow(): string[] {
+  return Array.from({ length: 7 }).map((_, index) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (6 - index));
+    return toDateInputValue(date);
+  });
+}
+
 export function AnalyticsDashboardPage(): React.JSX.Element {
-  const [activeDonutIndex, setActiveDonutIndex] = useState(0);
+  const accessToken = useAuthStore((state) => state.session?.tokens.accessToken ?? null);
+  const shipmentsQuery = useShipmentsQuery(accessToken, {}, { refetchInterval: 15000 });
+  const tasksQuery = useTasksQuery(accessToken, {}, { refetchInterval: 15000 });
+  const manifestsQuery = useManifestsQuery(accessToken);
+  const ndrQuery = useNdrCasesQuery(accessToken);
 
-  const hubKeys = Object.keys(hubBarColors);
+  const shipments = shipmentsQuery.data ?? [];
+  const tasks = tasksQuery.data ?? [];
+  const manifests = manifestsQuery.data ?? [];
+  const ndrCases = ndrQuery.data ?? [];
+  const today = toDateInputValue(new Date());
+  const todaysShipments = shipments.filter((shipment) => toDateInputValue(new Date(shipment.createdAt)) === today);
+  const activeDelivery = shipments.filter((shipment) =>
+    ['TASK_ASSIGNED', 'OUT_FOR_DELIVERY', 'DELIVERY_FAILED', 'NDR_CREATED'].includes(
+      normalizeCode(shipment.currentStatus),
+    ),
+  );
+  const delivered = shipments.filter((shipment) => normalizeCode(shipment.currentStatus) === 'DELIVERED');
+  const abnormal = shipments.filter((shipment) =>
+    ['DELIVERY_FAILED', 'NDR_CREATED', 'RETURN_STARTED'].includes(normalizeCode(shipment.currentStatus)),
+  );
 
-  const onDonutEnter = (_data: unknown, index: number) => {
-    setActiveDonutIndex(index);
-  };
+  const hubThroughputData = useMemo(() => {
+    const dateWindow = buildDateWindow();
+    const hubs = Array.from(new Set(shipments.map(resolveShipmentHub))).filter(Boolean).slice(0, 5);
 
-  const onActionClick = (shipmentCode: string) => {
-    alert(`Mở trang xử lý cho đơn: ${shipmentCode}`);
-  };
+    return dateWindow.map((dateKey) => {
+      const row: Record<string, string | number> = { date: toShortDate(dateKey) };
+      for (const hub of hubs) {
+        row[hub] = shipments.filter(
+          (shipment) => toDateInputValue(new Date(shipment.createdAt)) === dateKey && resolveShipmentHub(shipment) === hub,
+        ).length;
+      }
+      return row;
+    });
+  }, [shipments]);
+  const hubKeys = useMemo(
+    () => Object.keys(hubThroughputData[0] ?? {}).filter((key) => key !== 'date'),
+    [hubThroughputData],
+  );
+  const ndrReasonData = useMemo(() => {
+    const groups = new Map<string, number>();
+    for (const ndr of ndrCases) {
+      const key = ndr.reasonCode ?? 'Chưa phân loại';
+      groups.set(key, (groups.get(key) ?? 0) + 1);
+    }
+    if (groups.size === 0) {
+      for (const shipment of abnormal) {
+        const key = formatShipmentStatusLabel(shipment.currentStatus);
+        groups.set(key, (groups.get(key) ?? 0) + 1);
+      }
+    }
+    return Array.from(groups.entries()).map(([name, value], index) => ({
+      name,
+      value,
+      color: NDR_COLORS[index % NDR_COLORS.length],
+    }));
+  }, [abnormal, ndrCases]);
+  const urgentAlerts = useMemo(() => {
+    return shipments
+      .filter((shipment) => normalizeCode(shipment.currentStatus) !== 'DELIVERED')
+      .map((shipment) => ({
+        shipment,
+        elapsedHours: ageHours(shipment.updatedAt) ?? 0,
+      }))
+      .filter((row) => row.elapsedHours >= 24)
+      .sort((left, right) => right.elapsedHours - left.elapsedHours)
+      .slice(0, 8);
+  }, [shipments]);
+  const loadError = shipmentsQuery.error ?? tasksQuery.error ?? manifestsQuery.error ?? ndrQuery.error ?? null;
 
   return (
     <div className="analytics-dash">
-      {/* ---- Header ---- */}
       <header className="analytics-dash__header">
         <div>
           <h1 className="analytics-dash__title">
@@ -123,97 +154,74 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
                 <path d="M3 13h4v8H3zM9 9h4v12H9zM15 5h4v16h-4zM21 2l-3 3m3-3h-3m3 0v3" />
               </svg>
             </span>
-            Operations Analytics Dashboard
+            Bảng phân tích vận hành
           </h1>
           <p className="analytics-dash__subtitle">
-            Hệ thống giám sát vận hành thời gian thực — NEXUS Logistics Control Tower
+            Dữ liệu tổng hợp từ vận đơn, tác vụ, manifest và NDR hiện có qua Gateway BFF.
           </p>
         </div>
-        <span className="analytics-dash__date-badge">
-          Live data · {formatDate()}
-        </span>
+        <span className="analytics-dash__date-badge">Dữ liệu từ API · {new Date().toLocaleString('vi-VN')}</span>
       </header>
 
-      {/* ---- Key Metrics Row ---- */}
-      <section className="analytics-kpi-row" aria-label="Key performance indicators">
-        {keyMetrics.map((kpi) => (
-          <article
-            key={kpi.label}
-            className={`analytics-kpi-card analytics-kpi-card--${kpi.accent}`}
-          >
+      {loadError ? (
+        <p className="analytics-derived-error" role="alert">
+          {getErrorMessage(loadError)}
+        </p>
+      ) : null}
+
+      <section className="analytics-kpi-row" aria-label="Chỉ số vận hành chính">
+        {[
+          { label: 'Tổng đơn trong ngày', value: todaysShipments.length, accent: 'primary' },
+          { label: 'Đang giao', value: activeDelivery.length, accent: 'info' },
+          { label: 'Giao thành công', value: delivered.length, accent: 'success' },
+          { label: 'Bất thường / cảnh báo', value: abnormal.length + urgentAlerts.length, accent: 'danger' },
+        ].map((kpi) => (
+          <article key={kpi.label} className={`analytics-kpi-card analytics-kpi-card--${kpi.accent}`}>
             <span className="analytics-kpi-card__label">{kpi.label}</span>
             <div className="analytics-kpi-card__value-row">
               <span className="analytics-kpi-card__value">{kpi.value}</span>
-              {kpi.unit ? (
-                <span className="analytics-kpi-card__unit">{kpi.unit}</span>
-              ) : null}
             </div>
-            <span className={`analytics-kpi-card__trend analytics-kpi-card__trend--${kpi.trend}`}>
-              {trendArrow(kpi.trend)} {kpi.trendValue}
+            <span className="analytics-kpi-card__trend analytics-kpi-card__trend--neutral">
+              Nguồn API
             </span>
           </article>
         ))}
       </section>
 
-      {/* ---- Charts Row ---- */}
       <section className="analytics-charts-row" aria-label="Charts">
-        {/* Bar Chart – Hub Throughput 7 days */}
         <article className="analytics-chart-card">
           <h3 className="analytics-chart-card__title">
             <span className="analytics-chart-card__title-dot analytics-chart-card__title-dot--bar" />
-            Sản lượng luân chuyển theo Hub — 7 ngày qua
+            Sản lượng tạo vận đơn theo hub - 7 ngày
           </h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={hubThroughputData} barGap={2} barCategoryGap="18%">
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="date" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} width={40} />
-              <Tooltip
-                contentStyle={{
-                  background: 'rgba(15, 23, 42, 0.92)',
-                  border: '1px solid rgba(255, 255, 255, 0.12)',
-                  borderRadius: 10,
-                  backdropFilter: 'blur(12px)',
-                }}
-                labelStyle={{ color: '#ffffff', fontWeight: 700 }}
-                itemStyle={{ color: '#e2e8f0', fontSize: 12 }}
-                cursor={{ fill: 'rgba(255,255,255,0.04)' }}
-              />
-              {hubKeys.map((key) => (
+              <XAxis dataKey="date" tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} width={40} />
+              <Tooltip />
+              {hubKeys.map((key, index) => (
                 <Bar
                   key={key}
                   dataKey={key}
-                  fill={hubBarColors[key]}
+                  fill={NDR_COLORS[index % NDR_COLORS.length]}
                   radius={[4, 4, 0, 0]}
                   maxBarSize={36}
                 />
               ))}
             </BarChart>
           </ResponsiveContainer>
-          <div className="analytics-bar-legend">
-            {hubKeys.map((key) => (
-              <span key={key} className="analytics-bar-legend__item">
-                <span
-                  className="analytics-bar-legend__swatch"
-                  style={{ background: hubBarColors[key] }}
-                />
-                {key}
-              </span>
-            ))}
-          </div>
+          {hubKeys.length === 0 ? <p className="analytics-empty-note">Chưa có dữ liệu hub.</p> : null}
         </article>
 
-        {/* Donut Chart – NDR Reasons */}
         <article className="analytics-chart-card">
           <h3 className="analytics-chart-card__title">
             <span className="analytics-chart-card__title-dot analytics-chart-card__title-dot--donut" />
-            Nguyên nhân giao thất bại (NDR)
+            NDR / bất thường theo lý do
           </h3>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
-                activeIndex={activeDonutIndex}
-                activeShape={renderActiveDonutShape}
                 data={ndrReasonData}
                 cx="50%"
                 cy="50%"
@@ -221,7 +229,6 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
                 outerRadius={100}
                 paddingAngle={3}
                 dataKey="value"
-                onMouseEnter={onDonutEnter}
                 stroke="none"
               >
                 {ndrReasonData.map((entry, index) => (
@@ -230,26 +237,18 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
               </Pie>
             </PieChart>
           </ResponsiveContainer>
+          {ndrReasonData.length === 0 ? <p className="analytics-empty-note">Chưa có dữ liệu NDR.</p> : null}
         </article>
       </section>
 
-      {/* ---- Urgent Alerts Table ---- */}
       <section className="analytics-alerts-section" aria-label="Urgent alerts">
         <div className="analytics-alerts-card">
           <header className="analytics-alerts-card__header">
-            <h3 className="analytics-alerts-card__title">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
-                <line x1="12" y1="9" x2="12" y2="13" />
-                <line x1="12" y1="17" x2="12.01" y2="17" />
-              </svg>
-              Cảnh báo cần xử lý gấp
-            </h3>
+            <h3 className="analytics-alerts-card__title">Cảnh báo cần xử lý gấp</h3>
             <span className="analytics-alerts-card__badge">
-              {urgentAlerts.length} cảnh báo
+              {urgentAlerts.length} cảnh báo · {tasks.length} task · {manifests.length} manifest
             </span>
           </header>
-
           <table className="analytics-alerts-table">
             <thead>
               <tr>
@@ -258,41 +257,40 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
                 <th>Hub</th>
                 <th>Mức độ</th>
                 <th>Thời gian</th>
-                <th>Shipper</th>
+                <th>Khách</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              {urgentAlerts.map((alert) => (
-                <tr key={alert.id}>
+              {urgentAlerts.map(({ shipment, elapsedHours }) => (
+                <tr key={shipment.id}>
                   <td>
-                    <span className="analytics-alert-code">{alert.shipmentCode}</span>
+                    <span className="analytics-alert-code">{shipment.shipmentCode}</span>
                   </td>
-                  <td>{alert.issue}</td>
-                  <td>{alert.hub}</td>
+                  <td>{formatShipmentStatusLabel(shipment.currentStatus)}</td>
+                  <td>{resolveShipmentHub(shipment)}</td>
                   <td>
-                    <span className={`analytics-severity analytics-severity--${alert.severity}`}>
+                    <span className={`analytics-severity analytics-severity--${elapsedHours >= 48 ? 'critical' : 'high'}`}>
                       <span className="analytics-severity__dot" />
-                      {severityLabel(alert.severity)}
+                      {elapsedHours >= 48 ? 'Nghiêm trọng' : 'Cao'}
                     </span>
                   </td>
                   <td>
-                    <span className="analytics-elapsed">{alert.elapsedHours}h trước</span>
+                    <span className="analytics-elapsed">{elapsedHours}h</span>
                   </td>
-                  <td>{alert.courier}</td>
+                  <td>{shipment.receiverName ?? shipment.senderName ?? 'Không có'}</td>
                   <td>
-                    <button
-                      type="button"
-                      className="analytics-action-btn"
-                      onClick={() => onActionClick(alert.shipmentCode)}
-                    >
+                    <Link className="analytics-action-btn" to={routePaths.shipmentDetail(shipment.id)}>
                       Xử lý ngay
-                    </button>
+                    </Link>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          {urgentAlerts.length === 0 ? (
+            <p className="analytics-empty-note">Không có cảnh báo quá hạn từ dữ liệu hiện tại.</p>
+          ) : null}
         </div>
       </section>
     </div>

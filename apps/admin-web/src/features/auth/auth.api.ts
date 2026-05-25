@@ -92,14 +92,3 @@ export function useUpdateAdminUserMutation(accessToken: string | null) {
     },
   });
 }
-
-export function useDeleteAdminUserMutation(accessToken: string | null) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (userId: string) => authClient.deleteUser(accessToken, userId),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: queryKeys.adminUsers });
-    },
-  });
-}

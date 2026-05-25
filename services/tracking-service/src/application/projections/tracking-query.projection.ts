@@ -122,7 +122,9 @@ export class TrackingQueryProjection {
     return timelineRecords.map((event) => {
       statusCursor = resolveTrackingStatusFromEvent(event.payload, statusCursor);
       const statusLabel = toTrackingStatusLabelVi(statusCursor);
-      const eventText = toTimelineTextVi(event.payload, event.locationCode);
+      const locationCode =
+        event.locationCode ?? this.extractLocationCode(event.payload);
+      const eventText = toTimelineTextVi(event.payload, locationCode);
       const source = event.actor?.trim() ? event.actor : 'Hệ thống';
 
       return {
@@ -133,8 +135,8 @@ export class TrackingQueryProjection {
         shipmentCode: event.shipmentCode,
         actor: event.actor,
         eventSource: source,
-        locationCode: event.locationCode,
-        locationText: event.locationCode ? `Kho ${event.locationCode}` : null,
+        locationCode,
+        locationText: locationCode ? `Kho ${locationCode}` : null,
         statusAfterEventCode: statusCursor,
         statusAfterEvent: statusLabel,
         occurredAt: event.occurredAt,
@@ -154,6 +156,8 @@ export class TrackingQueryProjection {
 
     const latestTimeline = timeline[timeline.length - 1] ?? null;
     const statusCode = current.currentStatus ?? latestTimeline?.statusAfterEventCode ?? null;
+    const currentLocationCode =
+      current.currentLocationCode ?? latestTimeline?.locationCode ?? null;
     const lastEventTypeCode = current.lastEventType ?? latestTimeline?.eventTypeCode ?? null;
     const lastEventTypeLabel =
       latestTimeline && latestTimeline.eventTypeCode === lastEventTypeCode
@@ -170,7 +174,7 @@ export class TrackingQueryProjection {
                 data: {},
                 idempotency_key: current.lastEventId ?? 'latest',
               },
-              current.currentLocationCode,
+              currentLocationCode,
             )
           : null;
 
@@ -178,9 +182,9 @@ export class TrackingQueryProjection {
       shipmentCode: current.shipmentCode,
       currentStatusCode: statusCode,
       currentStatus: toTrackingStatusLabelVi(statusCode),
-      currentLocationCode: current.currentLocationCode,
-      currentLocationText: current.currentLocationCode
-        ? `Kho ${current.currentLocationCode}`
+      currentLocationCode,
+      currentLocationText: currentLocationCode
+        ? `Kho ${currentLocationCode}`
         : null,
       lastEventTypeCode,
       lastEventType: lastEventTypeLabel,
@@ -188,5 +192,91 @@ export class TrackingQueryProjection {
       updatedAt: current.updatedAt,
       viewPayload: current.viewPayload,
     };
+  }
+
+  private extractLocationCode(payload: TimelineEvent['payload']): string | null {
+    return (
+      this.getFirstNormalizedString(payload.location, [
+        ['location_code'],
+        ['locationCode'],
+        ['hub_code'],
+        ['hubCode'],
+        ['code'],
+      ]) ??
+      this.getFirstNormalizedString(payload.data, [
+        ['currentLocation', 'locationCode'],
+        ['currentLocation', 'location_code'],
+        ['currentLocation', 'hubCode'],
+        ['currentLocation', 'code'],
+        ['trackingCurrent', 'currentLocationCode'],
+        ['trackingCurrent', 'current_location_code'],
+        ['scanEvent', 'locationCode'],
+        ['scanEvent', 'location_code'],
+        ['scanEvent', 'hubCode'],
+      ]) ??
+      this.getFirstNormalizedString(payload.data, [
+        ['shipment', 'currentLocationCode'],
+        ['shipment', 'currentLocation'],
+        ['shipment', 'current_location_code'],
+        ['shipment', 'metadata', 'currentLocationCode'],
+        ['shipment', 'metadata', 'currentLocation'],
+        ['shipment', 'metadata', 'current_location_code'],
+        ['shipment', 'metadata', 'routing', 'originHubCode'],
+        ['shipment', 'metadata', 'sender', 'hubCode'],
+        ['shipment', 'metadata', 'senderHubCode'],
+        ['shipment', 'metadata', 'originHubCode'],
+        ['shipment', 'metadata', 'hubCode'],
+        ['shipment', 'metadata', 'routing', 'destinationHubCode'],
+        ['shipment', 'metadata', 'receiver', 'hubCode'],
+        ['shipment', 'metadata', 'receiverHubCode'],
+        ['shipment', 'metadata', 'destinationHubCode'],
+      ]) ??
+      this.getFirstNormalizedString(payload.data, [
+        ['pickup', 'hubCode'],
+        ['pickupRequest', 'hubCode'],
+        ['pickup_request', 'hubCode'],
+        ['manifest', 'currentHubCode'],
+        ['manifest', 'originHubCode'],
+        ['manifest', 'destinationHubCode'],
+      ]) ??
+      null
+    );
+  }
+
+  private getFirstNormalizedString(
+    source: unknown,
+    paths: string[][],
+  ): string | null {
+    for (const path of paths) {
+      const value = this.normalizeLocationCode(
+        this.getNestedString(source, path),
+      );
+
+      if (value) {
+        return value;
+      }
+    }
+
+    return null;
+  }
+
+  private getNestedString(source: unknown, path: string[]): string | null {
+    let cursor: unknown = source;
+
+    for (const segment of path) {
+      if (!cursor || typeof cursor !== 'object' || !(segment in cursor)) {
+        return null;
+      }
+
+      cursor = (cursor as Record<string, unknown>)[segment];
+    }
+
+    return typeof cursor === 'string' ? cursor : null;
+  }
+
+  private normalizeLocationCode(value: string | null): string | null {
+    const normalized = value?.trim().toUpperCase() ?? '';
+
+    return normalized.length > 0 ? normalized : null;
   }
 }
