@@ -46,6 +46,8 @@ import { createIdempotencyKey } from '../../utils/idempotency';
 
 type VehicleOutboundStep = 'VEHICLE' | 'PROOF' | 'SEAL';
 
+const REQUIRED_VEHICLE_SEAL_COUNT = 2;
+
 function normalizeCode(value: string): string {
   return value.trim().toUpperCase();
 }
@@ -109,7 +111,7 @@ export function VehicleOutboundScreen(): React.JSX.Element {
     accessToken &&
       vehicleInfo &&
       proofPhotoUri &&
-      sealCodes.length > 0
+      sealCodes.length === REQUIRED_VEHICLE_SEAL_COUNT
   );
 
   React.useEffect(() => {
@@ -149,6 +151,11 @@ export function VehicleOutboundScreen(): React.JSX.Element {
     }
 
     setSealCodes((currentCodes) => {
+      if (currentCodes.length >= REQUIRED_VEHICLE_SEAL_COUNT) {
+        setScreenMessage(`Tem xe chỉ nhận đúng ${REQUIRED_VEHICLE_SEAL_COUNT} seal xe.`);
+        return currentCodes;
+      }
+
       const duplicated = currentCodes.some((item) => item.code === normalizedCode);
       if (duplicated) {
         setScreenMessage(`${normalizedCode} đã có trong danh sách seal xe.`);
@@ -281,8 +288,8 @@ export function VehicleOutboundScreen(): React.JSX.Element {
       return;
     }
 
-    if (sealCodes.length === 0) {
-      setScreenMessage('Vui lòng quét ít nhất một seal xe.');
+    if (sealCodes.length !== REQUIRED_VEHICLE_SEAL_COUNT) {
+      setScreenMessage(`Vui lòng quét đủ đúng ${REQUIRED_VEHICLE_SEAL_COUNT} seal xe.`);
       return;
     }
 
@@ -372,7 +379,7 @@ export function VehicleOutboundScreen(): React.JSX.Element {
       });
 
       setScreenMessage(
-        `Đã xác nhận xe đi ${vehicleInfo.vehicleCode}: ${successCodes.length} đơn đang luân chuyển` +
+        `Đã xác nhận xe đi ${vehicleInfo.vehicleCode} với ${sealCodes.length} seal xe: ${successCodes.length} đơn đang luân chuyển` +
           (queuedCodes.length > 0 ? `, ${queuedCodes.length} đơn lưu offline.` : '.'),
       );
       setVehicleInfo(null);
@@ -394,7 +401,7 @@ export function VehicleOutboundScreen(): React.JSX.Element {
       ? 'Quét mã tem xe để bắt đầu hành trình xe đi.'
       : currentStep === 'PROOF'
         ? 'Chụp minh chứng seal thùng xe trước khi quét mã seal.'
-        : 'Quét mã seal xe, mỗi mã hợp lệ sẽ tự động thêm vào danh sách.';
+        : `Quét đúng ${REQUIRED_VEHICLE_SEAL_COUNT} mã seal xe để gắn với tem xe vừa quét.`;
 
   return (
     <View style={styles.container}>
@@ -545,7 +552,9 @@ export function VehicleOutboundScreen(): React.JSX.Element {
         {screenMessage ? <Text style={styles.messageText}>{screenMessage}</Text> : null}
 
         <View style={styles.listHeaderRow}>
-          <Text style={styles.listTitle}>Danh sách seal xe ({sealCodes.length})</Text>
+          <Text style={styles.listTitle}>
+            Danh sách seal xe ({sealCodes.length}/{REQUIRED_VEHICLE_SEAL_COUNT})
+          </Text>
           <Pressable
             disabled={selectedCount === 0}
             onPress={deleteSelectedSeals}

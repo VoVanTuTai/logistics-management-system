@@ -126,12 +126,78 @@
   padding: 12px;
 }
 
+.ops-linehaul-dashboard__create-form {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  background: #eff6ff;
+  padding: 12px;
+}
+
+.ops-linehaul-dashboard__create-form header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ops-linehaul-dashboard__create-form h3 {
+  margin: 0 0 4px;
+  color: #1e293b;
+  font-size: 16px;
+}
+
+.ops-linehaul-dashboard__create-form header span {
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ops-linehaul-dashboard__create-form button {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #1d4ed8;
+  border-radius: 8px;
+  background: #1d4ed8;
+  color: #ffffff;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.ops-linehaul-dashboard__create-form button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.ops-linehaul-dashboard__create-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.ops-linehaul-dashboard__create-grid--wide {
+  grid-template-columns: repeat(5, minmax(150px, 1fr));
+}
+
 .ops-linehaul-dashboard__filters label {
   display: grid;
   gap: 6px;
   min-width: 0;
 }
 
+.ops-linehaul-dashboard__create-grid label,
+.ops-linehaul-dashboard__create-grid article {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ops-linehaul-dashboard__create-grid span,
 .ops-linehaul-dashboard__filters span,
 .ops-linehaul-seal__search span {
   color: #475569;
@@ -139,6 +205,8 @@
   font-weight: 800;
 }
 
+.ops-linehaul-dashboard__create-grid input,
+.ops-linehaul-dashboard__create-grid select,
 .ops-linehaul-dashboard__filters input,
 .ops-linehaul-dashboard__filters select,
 .ops-linehaul-seal__search input {
@@ -150,6 +218,24 @@
   color: #334155;
   padding: 0 10px;
   font-size: 13px;
+}
+
+.ops-linehaul-dashboard__create-grid article {
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 9px 10px;
+}
+
+.ops-linehaul-dashboard__create-grid article strong {
+  color: #1d4ed8;
+  font-size: 14px;
+}
+
+.ops-linehaul-dashboard__create-grid article small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .ops-linehaul-dashboard__panel,
@@ -317,9 +403,77 @@
   opacity: 0.52;
 }
 
+.ops-linehaul-dashboard__row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ops-linehaul-dashboard__row-actions button,
+.ops-linehaul-dashboard__arrival-form button {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1d4ed8;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ops-linehaul-dashboard__row-actions button:first-child,
+.ops-linehaul-dashboard__arrival-form button[type='submit'] {
+  border-color: #1d4ed8;
+  background: #1d4ed8;
+  color: #ffffff;
+}
+
+.ops-linehaul-dashboard__arrival-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+  gap: 10px;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  background: #eff6ff;
+  padding: 10px;
+}
+
+.ops-linehaul-dashboard__arrival-form label {
+  display: grid;
+  gap: 6px;
+}
+
+.ops-linehaul-dashboard__arrival-form label span {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ops-linehaul-dashboard__arrival-form input {
+  width: 100%;
+  height: 34px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  padding: 0 10px;
+  font-size: 13px;
+}
+
+.ops-linehaul-dashboard__arrival-form div {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+}
+
 .ops-linehaul-dashboard__empty,
 .ops-linehaul-seal__empty,
 .ops-linehaul-dashboard__error,
+.ops-linehaul-dashboard__success,
 .ops-linehaul-seal__error,
 .ops-linehaul-seal__warning {
   margin: 0;
@@ -334,6 +488,7 @@
 }
 
 .ops-linehaul-dashboard__error,
+.ops-linehaul-dashboard__success,
 .ops-linehaul-seal__error {
   border: 1px solid #fecaca;
   border-radius: 10px;
@@ -341,6 +496,12 @@
   color: #991b1b;
   padding: 10px 12px;
   font-weight: 800;
+}
+
+.ops-linehaul-dashboard__success {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
 }
 
 .ops-linehaul-seal__warning {
@@ -515,6 +676,15 @@
 
   .ops-linehaul-dashboard__filters {
     grid-template-columns: repeat(3, minmax(160px, 1fr));
+  }
+
+  .ops-linehaul-dashboard__kpis,
+  .ops-linehaul-dashboard__create-grid {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+
+  .ops-linehaul-dashboard__arrival-form {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
   }
 
   .ops-linehaul-seal__grid {

@@ -258,6 +258,9 @@ vi.mock('../features/manifests/manifests.api', async (importOriginal) => {
     useDeleteManifestMutation: vi.fn(() =>
       smokeMocks.mutationResult(smokeMocks.deleteManifest),
     ),
+    useCreateManifestMutation: vi.fn(() =>
+      smokeMocks.mutationResult(vi.fn()),
+    ),
     useGenerateBagCodesMutation: vi.fn(() =>
       smokeMocks.mutationResult(smokeMocks.generateBagCodes),
     ),
@@ -315,6 +318,7 @@ import { ManifestManagementPage } from '../pages/manifests/ManifestManagementPag
 import { ShipmentListPage } from '../pages/shipments/ShipmentListPage';
 import { TaskAssignmentPage } from '../pages/tasks/TaskAssignmentPage';
 import { TrackingLookupPage } from '../pages/tracking/TrackingLookupPage';
+import { writeLinehaulTrips } from '../pages/function-groups/operations-platform/linehaul/linehaulTrips';
 import { queryClient } from '../store/queryClient';
 import { useAuthStore } from '../store/authStore';
 
@@ -361,6 +365,7 @@ function renderWithProviders(
 describe('ops-web smoke coverage', () => {
   beforeEach(() => {
     queryClient.clear();
+    window.localStorage.clear();
     resetAuthStore();
     smokeMocks.assignTask.mockResolvedValue({
       task: {
@@ -514,6 +519,59 @@ describe('ops-web smoke coverage', () => {
     });
     expect(await screen.findAllByText(/Đã tạo 1 mã bao trống/i)).toHaveLength(2);
     expect(screen.getByText('BAG-GEN-001')).toBeInTheDocument();
+  });
+
+  it('renders linehaul trip creation and management flow', async () => {
+    setAuthenticatedSession();
+    window.history.pushState(
+      {},
+      '',
+      '/app/function-groups/capability-platform/van-chuyen-tuyen-nhanh/tem-xe',
+    );
+
+    render(
+      <AppProviders>
+        <AppRouter />
+      </AppProviders>,
+    );
+
+    expect(await screen.findByRole('heading', { name: /Tạo tem xe/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Thông tin chuyến xe/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/Hub đi/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Hub đến/i)).toBeInTheDocument();
+  });
+
+  it('renders linehaul trip list from created trips', async () => {
+    setAuthenticatedSession();
+    writeLinehaulTrips([
+      {
+        id: 'trip-1',
+        tripCode: 'TRIP-HCM01-HN01-001',
+        originHubCode: 'HCM01',
+        destinationHubCode: 'HN01',
+        tripType: 'PICKUP',
+        plannedStartAt: smokeMocks.nowIso(),
+        plannedEndAt: new Date(Date.now() + 4 * 60 * 60_000).toISOString(),
+        createdAt: smokeMocks.nowIso(),
+      },
+    ]);
+    window.history.pushState(
+      {},
+      '',
+      '/app/function-groups/capability-platform/van-chuyen-tuyen-nhanh/quan-ly-chuyen-xe',
+    );
+
+    render(
+      <AppProviders>
+        <AppRouter />
+      </AppProviders>,
+    );
+
+    expect(
+      await screen.findByRole('heading', { name: /Quản lý chuyến xe/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('TRIP-HCM01-HN01-001')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /In tem/i })).toBeInTheDocument();
   });
 
   it('renders tracking empty, error, and success states', async () => {
