@@ -13,6 +13,16 @@ nano infra/prod/.env
 ./scripts/deploy-vps.sh
 ```
 
+The deploy script builds both backend and frontend images. The web apps are
+served by Nginx runtime containers:
+
+```text
+nexus/ops-web:local
+nexus/merchant-web:local
+nexus/admin-web:local
+nexus/public-tracking:local
+```
+
 Use the VPS public IP in these values:
 
 ```dotenv
@@ -45,6 +55,6 @@ minio API:        http://103.179.172.53:9000
 ```bash
 docker compose --env-file infra/prod/.env -f infra/prod/docker-compose.yml ps
 docker compose --env-file infra/prod/.env -f infra/prod/docker-compose.yml logs -f gateway-bff
+docker compose --env-file infra/prod/.env -f infra/prod/docker-compose.yml up -d --build
 docker compose --env-file infra/prod/.env -f infra/prod/docker-compose.yml down
 ```
-
