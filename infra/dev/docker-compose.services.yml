@@ -16,6 +16,8 @@ services:
   masterdata-service:
     <<: *service-base
     image: nexus/masterdata-service:local
+    build:
+      context: ../../services/masterdata-service
     container_name: NEXUS-dev-masterdata-service
     ports:
       - "3001:3001"
@@ -27,6 +29,8 @@ services:
   shipment-service:
     <<: *service-base
     image: nexus/shipment-service:local
+    build:
+      context: ../../services/shipment-service
     container_name: NEXUS-dev-shipment-service
     ports:
       - "3002:3002"
@@ -39,6 +43,8 @@ services:
   pickup-service:
     <<: *service-base
     image: nexus/pickup-service:local
+    build:
+      context: ../../services/pickup-service
     container_name: NEXUS-dev-pickup-service
     ports:
       - "3003:3003"
@@ -50,6 +56,8 @@ services:
   dispatch-service:
     <<: *service-base
     image: nexus/dispatch-service:local
+    build:
+      context: ../../services/dispatch-service
     container_name: NEXUS-dev-dispatch-service
     ports:
       - "3004:3004"
@@ -62,6 +70,8 @@ services:
   manifest-service:
     <<: *service-base
     image: nexus/manifest-service:local
+    build:
+      context: ../../services/manifest-service
     container_name: NEXUS-dev-manifest-service
     ports:
       - "3005:3005"
@@ -74,6 +84,8 @@ services:
   scan-service:
     <<: *service-base
     image: nexus/scan-service:local
+    build:
+      context: ../../services/scan-service
     container_name: NEXUS-dev-scan-service
     ports:
       - "3006:3006"
@@ -86,6 +98,8 @@ services:
   delivery-service:
     <<: *service-base
     image: nexus/delivery-service:local
+    build:
+      context: ../../services/delivery-service
     container_name: NEXUS-dev-delivery-service
     ports:
       - "3007:3007"
@@ -99,6 +113,8 @@ services:
   tracking-service:
     <<: *service-base
     image: nexus/tracking-service:local
+    build:
+      context: ../../services/tracking-service
     container_name: NEXUS-dev-tracking-service
     ports:
       - "3008:3008"
@@ -110,6 +126,8 @@ services:
   reporting-service:
     <<: *service-base
     image: nexus/reporting-service:local
+    build:
+      context: ../../services/reporting-service
     container_name: NEXUS-dev-reporting-service
     ports:
       - "3009:3009"
@@ -123,6 +141,8 @@ services:
   auth-service:
     <<: *service-base
     image: nexus/auth-service:local
+    build:
+      context: ../../services/auth-service
     container_name: NEXUS-dev-auth-service
     ports:
       - "3010:3010"
@@ -136,6 +156,8 @@ services:
   payment-service:
     <<: *service-base
     image: nexus/payment-service:local
+    build:
+      context: ../../services/payment-service
     container_name: NEXUS-dev-payment-service
     ports:
       - "3011:3011"
@@ -153,6 +175,8 @@ services:
 
   pricing-service:
     image: nexus/pricing-service:local
+    build:
+      context: ../../services/pricing-service
     container_name: NEXUS-dev-pricing-service
     restart: unless-stopped
     ports:
@@ -163,6 +187,8 @@ services:
 
   gateway-bff:
     image: nexus/gateway-bff:local
+    build:
+      context: ../../services/gateway-bff
     container_name: NEXUS-dev-gateway-bff
     restart: unless-stopped
     depends_on:
