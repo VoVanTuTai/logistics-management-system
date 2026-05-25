@@ -21,13 +21,6 @@ PRISMA_SERVICES=(
   payment-service:payment_db
 )
 
-WEB_APPS=(
-  ops-web
-  merchant-web
-  admin-web
-  public-tracking
-)
-
 compose() {
   docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"
 }
@@ -69,20 +62,6 @@ install_deps_if_needed() {
       pnpm install --frozen-lockfile
     else
       npm ci
-    fi
-  )
-}
-
-run_package_script() {
-  local dir="$1"
-  local script="$2"
-
-  (
-    cd "$dir"
-    if [[ -f pnpm-lock.yaml ]]; then
-      pnpm run "$script"
-    else
-      npm run "$script"
     fi
   )
 }
@@ -180,44 +159,6 @@ seed_auth_demo_data() {
   )
 }
 
-write_web_env() {
-  local app="$1"
-  local dir="$ROOT_DIR/apps/$app"
-  local env_file="$dir/.env.production"
-
-  case "$app" in
-    ops-web)
-      {
-        printf 'VITE_GATEWAY_BFF_URL=%s\n' "$GATEWAY_PUBLIC_URL"
-        printf 'VITE_ENABLE_FULL_OPS_MODULES=true\n'
-      } > "$env_file"
-      ;;
-    admin-web)
-      {
-        printf 'VITE_GATEWAY_BFF_URL=%s\n' "$GATEWAY_PUBLIC_URL"
-        printf 'VITE_REQUEST_TIMEOUT_MS=15000\n'
-        printf 'VITE_ALLOW_PERMISSION_PROTOTYPE_FALLBACK=false\n'
-      } > "$env_file"
-      ;;
-    merchant-web|public-tracking)
-      printf 'VITE_GATEWAY_BFF_URL=%s\n' "$GATEWAY_PUBLIC_URL" > "$env_file"
-      ;;
-  esac
-}
-
-build_web_apps() {
-  local app
-  local dir
-
-  for app in "${WEB_APPS[@]}"; do
-    dir="$ROOT_DIR/apps/$app"
-    write_web_env "$app"
-    install_deps_if_needed "$dir" "$app"
-    echo "[build] $app"
-    run_package_script "$dir" build
-  done
-}
-
 print_urls() {
   echo
   echo "=== VPS URLS ==="
@@ -243,8 +184,8 @@ main() {
 
   load_env
 
-  echo "[docker] build backend service images"
-  "$ROOT_DIR/scripts/build-service-images.sh"
+  echo "[docker] build application images"
+  compose build
 
   echo "[infra] start postgres/rabbitmq/minio"
   compose up -d postgres rabbitmq minio minio-create-bucket
@@ -254,10 +195,9 @@ main() {
 
   prepare_databases
   seed_auth_demo_data
-  build_web_apps
 
   echo "[compose] start full stack"
-  compose up -d --remove-orphans
+  compose up -d --build --remove-orphans
   wait_http_health "${GATEWAY_PUBLIC_URL}/health" 180
 
   compose ps
