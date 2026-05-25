@@ -48,6 +48,30 @@ set_env_value() {
   fi
 }
 
+get_env_value() {
+  local key="$1"
+  local fallback="${2:-}"
+  local value
+
+  value="$(
+    awk -v key="$key" '
+      BEGIN { FS = "=" }
+      $0 !~ /^[[:space:]]*(#|$)/ && $1 == key {
+        sub(/^[^=]*=/, "")
+        print
+        exit
+      }
+    ' "$ENV_FILE"
+  )"
+  value="${value%$'\r'}"
+
+  if [[ -z "$value" ]]; then
+    value="$fallback"
+  fi
+
+  printf '%s' "$value"
+}
+
 load_env() {
   if [[ ! -f "$ENV_FILE" ]]; then
     cp "$ENV_EXAMPLE" "$ENV_FILE"
@@ -62,10 +86,16 @@ load_env() {
   set_env_value MINIO_PUBLIC_ENDPOINT "https://${MINIO_DOMAIN}"
   set_env_value CORS_ORIGINS "https://${OPS_DOMAIN},https://${MERCHANT_DOMAIN},https://${ADMIN_DOMAIN},https://${TRACKING_DOMAIN}"
 
-  set -a
-  # shellcheck disable=SC1090
-  source "$ENV_FILE"
-  set +a
+  POSTGRES_USER="$(get_env_value POSTGRES_USER postgres)"
+  POSTGRES_PASSWORD="$(get_env_value POSTGRES_PASSWORD)"
+  SEED_DEMO_DATA="$(get_env_value SEED_DEMO_DATA 0)"
+
+  export POSTGRES_USER POSTGRES_PASSWORD SEED_DEMO_DATA
+
+  if [[ -z "$POSTGRES_PASSWORD" ]]; then
+    echo "POSTGRES_PASSWORD is required in $ENV_FILE" >&2
+    exit 1
+  fi
 }
 
 wait_compose_service() {
