@@ -17,6 +17,7 @@ import {
   normalizeCode,
   parseStorage,
   request,
+  requestPricingQuote,
   statusClass,
   toInputDate,
 } from './api';
@@ -29,6 +30,7 @@ import type {
   MerchantSession,
   NotificationItem,
   PickupRequest,
+  PricingQuoteResponse,
   ReturnRequest,
   ShipmentDraft,
   ShipmentResponse,
@@ -85,6 +87,32 @@ interface MerchantProfileConfigPayload {
   defaultHubCode: string | null;
   defaultHubName: string | null;
   defaultSenderAddress: string | null;
+  businessAddressDetail: string | null;
+}
+
+interface MerchantProfileApiRecord {
+  id: string;
+  username: string;
+  citizenId: string;
+  regionCode: MerchantRegionCode;
+  regionLabel: string;
+  defaultHubCode: string | null;
+  defaultHubName: string | null;
+  defaultSenderAddress: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface ReturnCaseApiRecord {
+  id: string;
+  shipmentCode: string;
+  ndrCaseId: string | null;
+  note: string | null;
+  status: 'STARTED' | 'COMPLETED';
+  startedAt: string;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface PublicTrackingSnapshotResponse {
@@ -201,7 +229,96 @@ function parseMerchantProfileConfig(
       typeof payload.defaultSenderAddress === 'string' && payload.defaultSenderAddress.trim()
         ? payload.defaultSenderAddress.trim()
         : null,
+    businessAddressDetail:
+      typeof payload.businessAddressDetail === 'string' && payload.businessAddressDetail.trim()
+        ? payload.businessAddressDetail.trim()
+        : null,
   };
+}
+
+function mapMerchantProfileRecord(
+  record: MerchantProfileApiRecord | null,
+): MerchantProfileConfigPayload | null {
+  if (!record) {
+    return null;
+  }
+
+  return {
+    username: record.username.trim().toUpperCase(),
+    citizenId: record.citizenId.trim(),
+    regionCode: record.regionCode,
+    regionLabel: record.regionLabel.trim(),
+    defaultHubCode: record.defaultHubCode?.trim().toUpperCase() || null,
+    defaultHubName: record.defaultHubName?.trim() || null,
+    defaultSenderAddress: record.defaultSenderAddress?.trim() || null,
+    businessAddressDetail: null,
+  };
+}
+
+function buildChangeRequestPayload(
+  requestType: string,
+  value: string,
+): Record<string, unknown> {
+  const normalizedValue = value.trim();
+
+  if (requestType === 'change.phone') {
+    return {
+      value: normalizedValue,
+      receiverPhone: normalizedValue,
+    };
+  }
+
+  if (requestType === 'change.address') {
+    return {
+      value: normalizedValue,
+      receiverAddress: normalizedValue,
+    };
+  }
+
+  return {
+    value: normalizedValue,
+    deliveryNote: normalizedValue,
+  };
+}
+
+function parseReturnCaseNote(note: string | null): {
+  reason: string;
+  expectedReturnAt: string;
+} {
+  const fallbackReason = 'Return requested';
+  if (!note) {
+    return {
+      reason: fallbackReason,
+      expectedReturnAt: '-',
+    };
+  }
+
+  const reasonMatch = note.match(/reason=([^|]+)/i);
+  const expectedMatch = note.match(/expected=([^|]+)/i);
+
+  return {
+    reason: reasonMatch?.[1]?.trim() || note,
+    expectedReturnAt: expectedMatch?.[1]?.trim() || '-',
+  };
+}
+
+function mapReturnCaseToRequest(returnCase: ReturnCaseApiRecord): ReturnRequest {
+  const parsedNote = parseReturnCaseNote(returnCase.note);
+
+  return {
+    id: returnCase.id,
+    shipmentCode: returnCase.shipmentCode,
+    reason: parsedNote.reason,
+    expectedReturnAt: parsedNote.expectedReturnAt,
+    status: returnCase.status === 'COMPLETED' ? 'COMPLETED' : 'IN_TRANSIT',
+    createdAt: returnCase.createdAt,
+  };
+}
+
+function isReturnRequestAllowed(shipment: ShipmentResponse): boolean {
+  return ['DELIVERY_FAILED', 'NDR_CREATED', 'RETURN_STARTED'].includes(
+    shipment.currentStatus,
+  );
 }
 
 function parseHubLocation(hub: HubApiRecord): HubLocationOption | null {
@@ -428,6 +545,32 @@ function isShipmentOwnedByUser(
   );
 }
 
+function filterPickupRequestsByUser(
+  pickupRequests: PickupRequest[],
+  shipments: ShipmentResponse[],
+  user: MerchantSession['user'] | null,
+): PickupRequest[] {
+  if (!user) {
+    return [];
+  }
+
+  const ownedShipmentCodes = new Set(
+    shipments
+      .filter((shipment) => isShipmentOwnedByUser(shipment, user))
+      .map((shipment) => normalizeCode(shipment.code))
+      .filter((shipmentCode) => shipmentCode.length > 0),
+  );
+
+  return pickupRequests
+    .map((pickup) => ({
+      ...pickup,
+      items: pickup.items.filter((item) =>
+        ownedShipmentCodes.has(normalizeCode(item.shipmentCode)),
+      ),
+    }))
+    .filter((pickup) => pickup.items.length > 0);
+}
+
 function MerchantApp(): React.JSX.Element {
   const [booting, setBooting] = useState(true);
   const [session, setSession] = useState<MerchantSession | null>(null);
@@ -446,6 +589,9 @@ function MerchantApp(): React.JSX.Element {
 
   const [createForm, setCreateForm] = useState<CreateShipmentForm>(DEFAULT_CREATE_FORM);
   const [quotedFee, setQuotedFee] = useState<number | null>(null);
+  const [pricingQuote, setPricingQuote] = useState<PricingQuoteResponse | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [createSuccess, setCreateSuccess] = useState<string | null>(null);
@@ -501,9 +647,12 @@ function MerchantApp(): React.JSX.Element {
 
   const [returnCode, setReturnCode] = useState('');
   const [returnReason, setReturnReason] = useState('');
+  const [returnNotes, setReturnNotes] = useState('');
   const [returnExpectedDate, setReturnExpectedDate] = useState(toInputDate(new Date()));
   const [returnStatusFilter, setReturnStatusFilter] = useState('ALL');
   const [returnRequests, setReturnRequests] = useState<ReturnRequest[]>([]);
+  const [returnLoading, setReturnLoading] = useState(false);
+  const [returnMessage, setReturnMessage] = useState<string | null>(null);
 
   const [printSingleCode, setPrintSingleCode] = useState('');
   const [printBulkCodes, setPrintBulkCodes] = useState('');
@@ -511,24 +660,26 @@ function MerchantApp(): React.JSX.Element {
 
   const [profile, setProfile] = useState<MerchantProfile>(DEFAULT_PROFILE);
   const [accountMessage, setAccountMessage] = useState<string | null>(null);
+  const [accountSaving, setAccountSaving] = useState(false);
   const [passwordOld, setPasswordOld] = useState('');
   const [passwordNew, setPasswordNew] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
+  const [passwordSaving, setPasswordSaving] = useState(false);
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
-  const navItems: Array<{ id: ViewId; label: string }> = [
-    { id: 'dashboard', label: 'Tổng quan' },
-    { id: 'create-shipment', label: 'Tạo đơn hàng' },
-    { id: 'shipments', label: 'Danh sách đơn hàng' },
-    { id: 'pickups', label: 'Yêu cầu lấy hàng' },
-    { id: 'tracking', label: 'Tra cứu vận đơn' },
-    { id: 'change-requests', label: 'Yêu cầu đổi thông tin giao' },
-    { id: 'returns', label: 'Yêu cầu hoàn hàng' },
-    { id: 'print', label: 'In vận đơn' },
-    { id: 'account', label: 'Tài khoản' },
-    { id: 'notifications', label: 'Thông báo' },
+  const navItems: Array<{ id: ViewId; label: string; icon: string; subtitle: string }> = [
+    { id: 'dashboard', label: 'Tổng quan', icon: '⌂', subtitle: 'Merchant Portal > Tổng quan' },
+    { id: 'create-shipment', label: 'Tạo đơn hàng', icon: '+', subtitle: 'Đơn hàng > Tạo đơn hàng' },
+    { id: 'shipments', label: 'Danh sách đơn hàng', icon: '≣', subtitle: 'Đơn hàng > Danh sách đơn hàng' },
+    { id: 'pickups', label: 'Yêu cầu lấy hàng', icon: '↑', subtitle: 'Đơn hàng > Yêu cầu lấy hàng' },
+    { id: 'tracking', label: 'Tra cứu vận đơn', icon: '⌕', subtitle: 'Đơn hàng > Tra cứu vận đơn' },
+    { id: 'change-requests', label: 'Yêu cầu đổi thông tin giao', icon: '✎', subtitle: 'Đơn hàng > Yêu cầu đổi thông tin' },
+    { id: 'returns', label: 'Yêu cầu hoàn hàng', icon: '↩', subtitle: 'Đơn hàng > Yêu cầu hoàn hàng' },
+    { id: 'print', label: 'In vận đơn', icon: '⎙', subtitle: 'Đơn hàng > In vận đơn' },
+    { id: 'account', label: 'Tài khoản', icon: '◉', subtitle: 'Tài khoản > Hồ sơ merchant' },
+    { id: 'notifications', label: 'Thông báo', icon: '◌', subtitle: 'Hệ thống > Thông báo' },
   ];
 
   const shipmentRows = useMemo(() => shipments.map((s) => extractShipmentRow(s)), [shipments]);
@@ -536,9 +687,30 @@ function MerchantApp(): React.JSX.Element {
     () => shipmentRows.find((r) => r.shipment.code === normalizeCode(selectedShipmentCode)) ?? null,
     [shipmentRows, selectedShipmentCode],
   );
+  const changeShipmentPreview = useMemo(
+    () => shipmentRows.find((r) => r.shipment.code === normalizeCode(changeCode)) ?? null,
+    [shipmentRows, changeCode],
+  );
+  const printPreviewRow = useMemo(
+    () => shipmentRows.find((r) => r.shipment.code === normalizeCode(printSingleCode)) ?? null,
+    [shipmentRows, printSingleCode],
+  );
+  const printBulkPreviewRows = useMemo(() => {
+    const codes = printBulkCodes
+      .split(/[\s,;\n]+/)
+      .map((code) => normalizeCode(code))
+      .filter(Boolean);
+    return codes
+      .map((code) => shipmentRows.find((row) => row.shipment.code === code))
+      .filter((row): row is ShipmentRow => Boolean(row));
+  }, [shipmentRows, printBulkCodes]);
+  const returnShipmentPreview = useMemo(
+    () => shipmentRows.find((row) => row.shipment.code === normalizeCode(returnCode)) ?? null,
+    [shipmentRows, returnCode],
+  );
   const unreadNotifications = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
   const autoEstimatedFee = useMemo(() => computeEstimatedFee(createForm), [createForm]);
-  const effectiveFee = quotedFee ?? autoEstimatedFee;
+  const effectiveFee = pricingQuote?.totalFee ?? quotedFee ?? autoEstimatedFee;
   const hubLocationMap = useMemo(
     () => new Map(hubLocations.map((location) => [location.hubCode, location])),
     [hubLocations],
@@ -769,6 +941,7 @@ function MerchantApp(): React.JSX.Element {
     const normalizedSenderHubCode =
       row.senderHubCode && row.senderHubCode !== '-' ? row.senderHubCode : null;
     const metadata = asRecord(row.shipment.metadata) ?? {};
+    const senderMetadata = asRecord(metadata.sender);
     const createdBy = asRecord(metadata.createdBy);
     const createdByActor =
       typeof createdBy?.username === 'string' && createdBy.username.trim()
@@ -779,6 +952,13 @@ function MerchantApp(): React.JSX.Element {
           : row.senderName !== '-'
             ? row.senderName
             : null;
+    const senderLocationText =
+      typeof senderMetadata?.addressDetail === 'string' &&
+      senderMetadata.addressDetail.trim()
+        ? senderMetadata.addressDetail.trim()
+        : row.senderAddress && row.senderAddress !== '-'
+          ? row.senderAddress
+          : null;
 
     const timeline: TimelineEvent[] = [
       {
@@ -788,6 +968,7 @@ function MerchantApp(): React.JSX.Element {
         shipmentCode: normalizedCode,
         actor: createdByActor,
         locationCode: normalizedSenderHubCode,
+        locationText: senderLocationText,
         occurredAt: row.shipment.createdAt,
       },
     ];
@@ -807,6 +988,7 @@ function MerchantApp(): React.JSX.Element {
         shipmentCode: normalizedCode,
         actor: pickup.requesterName ?? null,
         locationCode: normalizedSenderHubCode,
+        locationText: pickup.pickupAddress?.trim() || senderLocationText,
         occurredAt:
           pickup.completedAt ?? pickup.updatedAt ?? pickup.createdAt,
       });
@@ -840,6 +1022,7 @@ function MerchantApp(): React.JSX.Element {
         shipmentCode: normalizedCode,
         actor: null,
         locationCode: normalizedSenderHubCode,
+        locationText: senderLocationText,
         occurredAt: row.shipment.updatedAt,
       });
     }
@@ -856,6 +1039,8 @@ function MerchantApp(): React.JSX.Element {
       currentStatus: currentStatusLabel,
       currentLocationCode:
         latest?.locationCode ?? normalizedSenderHubCode ?? null,
+      currentLocationText:
+        latest?.locationText ?? senderLocationText ?? null,
       lastEventTypeCode: latest?.eventTypeCode ?? null,
       lastEventType: latest?.eventType ?? null,
       lastEventAt: latest?.occurredAt ?? row.shipment.updatedAt,
@@ -875,6 +1060,108 @@ function MerchantApp(): React.JSX.Element {
     [shipments, pickupByShipmentCode],
   );
 
+  const dashboardInsights = useMemo(() => {
+    const formatLocalDateKey = (date: Date) =>
+      `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const statusGroups = [
+      { key: 'waiting', label: 'Chờ pickup', color: '#8b5f07', count: 0 },
+      { key: 'transit', label: 'Đang giao', color: '#0059b8', count: 0 },
+      { key: 'delivered', label: 'Đã giao', color: '#127a56', count: 0 },
+      { key: 'issue', label: 'Vấn đề / hoàn', color: '#ba1a1a', count: 0 },
+      { key: 'created', label: 'Mới tạo', color: '#7c8aa2', count: 0 },
+    ];
+    const statusByKey = new Map(statusGroups.map((item) => [item.key, item]));
+
+    for (const row of shipmentRows) {
+      const status = resolveShipmentStatusCode(row.shipment);
+      if (status === 'WAITING_PICKUP') {
+        statusByKey.get('waiting')!.count += 1;
+      } else if (['PICKUP_COMPLETED', 'TASK_ASSIGNED', 'MANIFEST_SEALED', 'MANIFEST_RECEIVED', 'MANIFEST_UNSEALED', 'SEND_GOODS', 'SCAN_INBOUND', 'SCAN_OUTBOUND', 'OUT_FOR_DELIVERY'].includes(status)) {
+        statusByKey.get('transit')!.count += 1;
+      } else if (status === 'DELIVERED') {
+        statusByKey.get('delivered')!.count += 1;
+      } else if (['DELIVERY_FAILED', 'NDR_CREATED', 'RETURN_STARTED', 'RETURN_COMPLETED', 'CANCELLED'].includes(status)) {
+        statusByKey.get('issue')!.count += 1;
+      } else {
+        statusByKey.get('created')!.count += 1;
+      }
+    }
+
+    const today = new Date();
+    const dayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const dailySeries = Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(dayStart);
+      date.setDate(dayStart.getDate() - (6 - index));
+      const key = formatLocalDateKey(date);
+      return {
+        key,
+        label: date.toLocaleDateString('vi-VN', { weekday: 'short' }),
+        shortDate: date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
+        orders: 0,
+        fee: 0,
+      };
+    });
+    const dailyByKey = new Map(dailySeries.map((item) => [item.key, item]));
+
+    let totalFee = 0;
+    let totalCod = 0;
+    let deliveredCod = 0;
+
+    for (const row of shipmentRows) {
+      totalFee += row.feeEstimate;
+      totalCod += row.codAmount;
+      if (row.shipment.currentStatus === 'DELIVERED') {
+        deliveredCod += row.codAmount;
+      }
+
+      const createdAt = new Date(row.shipment.createdAt);
+      const key = Number.isNaN(createdAt.getTime()) ? '' : formatLocalDateKey(createdAt);
+      const dailyItem = dailyByKey.get(key);
+      if (dailyItem) {
+        dailyItem.orders += 1;
+        dailyItem.fee += row.feeEstimate;
+      }
+    }
+
+    const maxDailyOrders = Math.max(1, ...dailySeries.map((item) => item.orders));
+    const maxDailyFee = Math.max(1, ...dailySeries.map((item) => item.fee));
+    const totalShipments = shipmentRows.length;
+    const deliveryRate = totalShipments > 0 ? Math.round((dashboardStats.delivered / totalShipments) * 100) : 0;
+    const issueRate = totalShipments > 0 ? Math.round((dashboardStats.failedOrReturn / totalShipments) * 100) : 0;
+    const cashItems = [
+      { label: 'COD thu hộ', value: totalCod, color: '#0052cc' },
+      { label: 'COD đã giao', value: deliveredCod, color: '#127a56' },
+      { label: 'Phí vận chuyển ước tính', value: totalFee, color: '#006477' },
+    ];
+    const maxCashValue = Math.max(1, ...cashItems.map((item) => item.value));
+
+    let progress = 0;
+    const donutGradient =
+      totalShipments === 0
+        ? '#e1e8ff'
+        : `conic-gradient(${statusGroups
+            .map((item) => {
+              const start = progress;
+              progress += (item.count / totalShipments) * 100;
+              return `${item.color} ${start}% ${progress}%`;
+            })
+            .join(', ')})`;
+
+    return {
+      dailySeries,
+      maxDailyOrders,
+      maxDailyFee,
+      statusGroups,
+      totalFee,
+      totalCod,
+      deliveryRate,
+      issueRate,
+      cashItems,
+      maxCashValue,
+      donutGradient,
+    };
+  }, [shipmentRows, dashboardStats.delivered, dashboardStats.failedOrReturn, pickupByShipmentCode]);
+
   useEffect(() => setListPage(1), [listSearch, listStatus, listService, listRegion, listFromDate, listToDate]);
 
   useEffect(() => {
@@ -891,6 +1178,8 @@ function MerchantApp(): React.JSX.Element {
 
     const defaultSenderName = session.user.displayName?.trim() ?? '';
     const defaultSenderPhone = session.user.phone?.trim() ?? '';
+    const defaultAddressDetail =
+      merchantProfileConfig?.businessAddressDetail?.trim() ?? '';
     const defaultAddress =
       merchantProfileConfig?.defaultSenderAddress?.trim() ?? '';
 
@@ -918,8 +1207,8 @@ function MerchantApp(): React.JSX.Element {
         next.senderHubCode = lockedSenderHub.hubCode;
         hasChanges = true;
       }
-      if (!next.senderAddressDetail.trim() && defaultAddress) {
-        next.senderAddressDetail = defaultAddress;
+      if (!next.senderAddressDetail.trim() && (defaultAddressDetail || defaultAddress)) {
+        next.senderAddressDetail = defaultAddressDetail || defaultAddress;
         hasChanges = true;
       }
       if (!next.senderAddress.trim()) {
@@ -992,7 +1281,6 @@ function MerchantApp(): React.JSX.Element {
       })),
     );
     setNotifications(parseStorage(window.localStorage.getItem(STORAGE_KEY_NOTIFICATIONS), []));
-    setReturnRequests(parseStorage(window.localStorage.getItem(STORAGE_KEY_RETURNS), []));
     // Legacy shared profile key caused data leakage between merchant accounts.
     window.localStorage.removeItem(STORAGE_KEY_PROFILE);
 
@@ -1054,33 +1342,12 @@ function MerchantApp(): React.JSX.Element {
   }, [notifications]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem(STORAGE_KEY_RETURNS, JSON.stringify(returnRequests));
-  }, [returnRequests]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
     if (!session) {
       setProfile(DEFAULT_PROFILE);
       return;
     }
-
-    const profileStorageKey = buildProfileStorageKey(session.user.username);
-    const storedProfile = parseStorage<MerchantProfile>(
-      window.localStorage.getItem(profileStorageKey),
-      DEFAULT_PROFILE,
-    );
-    setProfile({
-      ...DEFAULT_PROFILE,
-      ...storedProfile,
-    });
+    setProfile(DEFAULT_PROFILE);
   }, [session?.user.username]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !session) return;
-    const profileStorageKey = buildProfileStorageKey(session.user.username);
-    window.localStorage.setItem(profileStorageKey, JSON.stringify(profile));
-  }, [profile, session?.user.username]);
 
   useEffect(() => {
     if (!session || !selectedShipmentCode || activeView !== 'shipment-detail') return;
@@ -1117,26 +1384,41 @@ function MerchantApp(): React.JSX.Element {
   ): Promise<void> {
     setDataLoading(true);
     setDataError(null);
-    const merchantProfileKey = buildMerchantProfileKey(user.username);
-    const [shipRes, pickupRes, changeRes, hubsRes, profileRes] = await Promise.allSettled([
+    const [shipRes, pickupRes, changeRes, hubsRes, profileRes, returnRes] = await Promise.allSettled([
       request<ShipmentResponse[]>('/merchant/shipment/shipments', { method: 'GET' }, accessToken),
       request<PickupRequest[]>('/merchant/pickup/pickups', { method: 'GET' }, accessToken),
       request<ChangeRequest[]>('/merchant/shipment/change-requests', { method: 'GET' }, accessToken),
       request<HubApiRecord[]>('/merchant/masterdata/hubs?isActive=true', { method: 'GET' }, accessToken),
-      request<ConfigApiRecord[]>(
-        `/merchant/masterdata/configs?scope=${encodeURIComponent(MERCHANT_PROFILE_SCOPE)}&key=${encodeURIComponent(merchantProfileKey)}`,
+      request<MerchantProfileApiRecord>(
+        `/merchant/masterdata/merchant-profiles/by-username/${encodeURIComponent(user.username)}`,
         { method: 'GET' },
         accessToken,
       ),
+      request<ReturnCaseApiRecord[]>('/merchant/delivery/returns', { method: 'GET' }, accessToken),
     ]);
 
+    const ownedShipments =
+      shipRes.status === 'fulfilled'
+        ? shipRes.value.filter((shipment) => isShipmentOwnedByUser(shipment, user))
+        : [];
+
     if (shipRes.status === 'fulfilled') {
-      setShipments(
-        shipRes.value.filter((shipment) => isShipmentOwnedByUser(shipment, user)),
+      setShipments(ownedShipments);
+    }
+    if (pickupRes.status === 'fulfilled') {
+      setPickups(filterPickupRequestsByUser(pickupRes.value, ownedShipments, user));
+    }
+    const ownedShipmentCodes = new Set(
+      ownedShipments.map((shipment) => normalizeCode(shipment.code)),
+    );
+
+    if (changeRes.status === 'fulfilled') {
+      setChangeRequests(
+        changeRes.value.filter((item) =>
+          ownedShipmentCodes.has(normalizeCode(item.shipmentCode)),
+        ),
       );
     }
-    if (pickupRes.status === 'fulfilled') setPickups(pickupRes.value);
-    if (changeRes.status === 'fulfilled') setChangeRequests(changeRes.value);
     if (hubsRes.status === 'fulfilled') {
       const locations = hubsRes.value
         .filter((hub) => hub.isActive)
@@ -1148,10 +1430,17 @@ function MerchantApp(): React.JSX.Element {
       setHubLocations([]);
     }
     if (profileRes.status === 'fulfilled') {
-      const resolvedProfile = parseMerchantProfileConfig(profileRes.value, user.username);
+      const resolvedProfile = mapMerchantProfileRecord(profileRes.value);
       setMerchantProfileConfig(resolvedProfile);
     } else {
       setMerchantProfileConfig(null);
+    }
+    if (returnRes.status === 'fulfilled') {
+      setReturnRequests(
+        returnRes.value
+          .filter((item) => ownedShipmentCodes.has(normalizeCode(item.shipmentCode)))
+          .map(mapReturnCaseToRequest),
+      );
     }
 
     if (shipRes.status === 'rejected') setDataError(extractErrorMessage(shipRes.reason));
@@ -1235,6 +1524,45 @@ function MerchantApp(): React.JSX.Element {
     return pickup;
   }
 
+  async function quoteCreateShipmentFee(
+    form: CreateShipmentForm = createForm,
+    options: { updateUi?: boolean } = {},
+  ): Promise<PricingQuoteResponse> {
+    if (!session) {
+      throw new Error('Session is required');
+    }
+
+    const shouldUpdateUi = options.updateUi ?? true;
+
+    if (shouldUpdateUi) {
+      setQuoteLoading(true);
+      setQuoteError(null);
+    }
+
+    try {
+      const quote = await requestPricingQuote(form, session.accessToken);
+
+      if (shouldUpdateUi) {
+        setPricingQuote(quote);
+        setQuotedFee(quote.totalFee);
+      }
+
+      return quote;
+    } catch (error) {
+      const message = extractErrorMessage(error);
+
+      if (shouldUpdateUi) {
+        setQuoteError(message);
+      }
+
+      throw error;
+    } finally {
+      if (shouldUpdateUi) {
+        setQuoteLoading(false);
+      }
+    }
+  }
+
   async function submitCreateShipment(withPickup: boolean): Promise<void> {
     if (!session) return;
     if (hubLocations.length === 0) {
@@ -1301,11 +1629,14 @@ function MerchantApp(): React.JSX.Element {
     setCreateError(null);
     setCreateSuccess(null);
     try {
+      const pricingQuoteForCreate = await quoteCreateShipmentFee(normalizedForm, {
+        updateUi: false,
+      });
       const payload: Record<string, unknown> = {
-        metadata: buildShipmentMetadata(normalizedForm, effectiveFee, {
+        metadata: buildShipmentMetadata(normalizedForm, pricingQuoteForCreate.totalFee, {
           username: session.user.username,
           userId: session.user.id,
-        }),
+        }, pricingQuoteForCreate),
       };
 
       const created = await request<ShipmentResponse>('/merchant/shipment/shipments', {
@@ -1351,6 +1682,8 @@ function MerchantApp(): React.JSX.Element {
           .join(', '),
       });
       setQuotedFee(null);
+      setPricingQuote(null);
+      setQuoteError(null);
       setActiveView('shipment-detail');
     } catch (error) {
       setCreateError(extractErrorMessage(error));
@@ -1385,7 +1718,14 @@ function MerchantApp(): React.JSX.Element {
 
   async function cancelShipment(code: string, reason: string): Promise<void> {
     if (!session) return;
-    const cancelled = await request<ShipmentResponse>(`/merchant/shipment/shipments/${encodeURIComponent(normalizeCode(code))}/cancel`, {
+    const normalizedCode = normalizeCode(code);
+    const shipment = shipments.find((item) => normalizeCode(item.code) === normalizedCode);
+    if (!shipment || !isShipmentOwnedByUser(shipment, session.user)) {
+      pushNotification('error', 'Khong the huy don', 'Shipment khong thuoc tai khoan merchant hien tai.');
+      return;
+    }
+
+    const cancelled = await request<ShipmentResponse>(`/merchant/shipment/shipments/${encodeURIComponent(normalizedCode)}/cancel`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reason: reason.trim() || null }),
@@ -1495,25 +1835,31 @@ function MerchantApp(): React.JSX.Element {
     setDetailError(null);
     setDetailSuccess(null);
     try {
-      const metadata = asRecord(selectedShipment.shipment.metadata) ?? {};
-      const receiver = asRecord(metadata.receiver) ?? {};
-      const updated = await request<ShipmentResponse>(`/merchant/shipment/shipments/${encodeURIComponent(selectedShipment.shipment.code)}`, {
-        method: 'PATCH',
+      if (!isShipmentOwnedByUser(selectedShipment.shipment, session.user)) {
+        throw new Error('Shipment khong thuoc tai khoan merchant hien tai.');
+      }
+
+      const created = await request<ChangeRequest>('/merchant/shipment/change-requests', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          metadata: {
-            ...metadata,
-            receiver: {
-              ...receiver,
-              phone: detailReceiverPhone.trim() || null,
-              address: detailReceiverAddress.trim() || null,
-            },
+          shipmentCode: selectedShipment.shipment.code,
+          requestType: 'change.delivery_info',
+          payload: {
+            value: [
+              detailReceiverPhone.trim(),
+              detailReceiverAddress.trim(),
+              detailDeliveryNote.trim(),
+            ].filter(Boolean).join(' | '),
+            receiverPhone: detailReceiverPhone.trim() || null,
+            receiverAddress: detailReceiverAddress.trim() || null,
             deliveryNote: detailDeliveryNote.trim() || null,
           },
+          requestedBy: session.user.username,
         }),
       }, session.accessToken);
-      upsertShipment(updated);
-      setDetailSuccess(`Đã cập nhật ${updated.code}`);
+      setChangeRequests((prev) => [created, ...prev]);
+      setDetailSuccess(`Da tao yeu cau thay doi ${created.id}`);
     } catch (error) {
       setDetailError(extractErrorMessage(error));
     } finally {
@@ -1592,14 +1938,23 @@ function MerchantApp(): React.JSX.Element {
     setChangeMessage(null);
     try {
       const code = normalizeCode(changeCode);
-      if (!code || !changeValue.trim()) throw new Error('Cần mã shipment và nội dung thay đổi');
+      if (!code || !changeValue.trim()) throw new Error('Can ma shipment va noi dung thay doi');
+      const shipment = shipments.find((item) => normalizeCode(item.code) === code);
+      if (!shipment || !isShipmentOwnedByUser(shipment, session.user)) {
+        throw new Error('Shipment khong thuoc tai khoan merchant hien tai.');
+      }
       const created = await request<ChangeRequest>('/merchant/shipment/change-requests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shipmentCode: code, requestType: changeType, payload: { value: changeValue.trim() }, requestedBy: session.user.username }),
+        body: JSON.stringify({
+          shipmentCode: code,
+          requestType: changeType,
+          payload: buildChangeRequestPayload(changeType, changeValue),
+          requestedBy: session.user.username,
+        }),
       }, session.accessToken);
       setChangeRequests((prev) => [created, ...prev]);
-      setChangeMessage(`Đã tạo yêu cầu ${created.id}`);
+      setChangeMessage(`Da tao yeu cau ${created.id}`);
       setChangeValue('');
     } catch (error) {
       setChangeMessage(extractErrorMessage(error));
@@ -1608,13 +1963,136 @@ function MerchantApp(): React.JSX.Element {
     }
   }
 
-  function createReturnRequest(event?: FormEvent<HTMLFormElement>): void {
+  async function createReturnRequest(event?: FormEvent<HTMLFormElement>): Promise<void> {
     event?.preventDefault();
+    if (!session) return;
     const code = normalizeCode(returnCode);
     if (!code) return;
-    setReturnRequests((prev) => [{ id: generateLocalId('return'), shipmentCode: code, reason: returnReason.trim() || 'Khách từ chối nhận hàng', expectedReturnAt: returnExpectedDate, status: 'PENDING', createdAt: new Date().toISOString() }, ...prev]);
-    setReturnCode('');
-    setReturnReason('');
+    setReturnLoading(true);
+    setReturnMessage(null);
+    try {
+      const shipment = shipments.find((item) => normalizeCode(item.code) === code);
+      if (!shipment || !isShipmentOwnedByUser(shipment, session.user)) {
+        throw new Error('Shipment khong thuoc tai khoan merchant hien tai.');
+      }
+      if (!isReturnRequestAllowed(shipment)) {
+        throw new Error('Shipment chua o trang thai phu hop de tao return case.');
+      }
+
+      const reason = returnReason.trim() || 'Merchant requested return';
+      const returnCase = await request<ReturnCaseApiRecord>('/merchant/delivery/returns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shipmentCode: code,
+          note: `reason=${reason} | expected=${returnExpectedDate || 'N/A'} | note=${returnNotes.trim() || 'N/A'} | requestedBy=${session.user.username}`,
+        }),
+      }, session.accessToken);
+      const mappedReturn = mapReturnCaseToRequest(returnCase);
+      setReturnRequests((prev) => [
+        mappedReturn,
+        ...prev.filter((item) => item.id !== mappedReturn.id),
+      ]);
+      setReturnMessage(`Da tao return case ${returnCase.id}`);
+      setReturnCode('');
+      setReturnReason('');
+      setReturnNotes('');
+    } catch (error) {
+      setReturnMessage(extractErrorMessage(error));
+    } finally {
+      setReturnLoading(false);
+    }
+  }
+
+  async function saveAccountProfile(event?: FormEvent<HTMLFormElement>): Promise<void> {
+    event?.preventDefault();
+    if (!session) return;
+    setAccountSaving(true);
+    setAccountMessage(null);
+    try {
+      const updatedUser = await request<MerchantSession['user']>('/merchant/auth/auth/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accessToken: session.accessToken,
+          displayName: profile.shopName.trim() || null,
+          phone: profile.contactPhone.trim() || null,
+        }),
+      }, session.accessToken);
+
+      setSession((previous) =>
+        previous
+          ? {
+              ...previous,
+              user: updatedUser,
+            }
+          : previous,
+      );
+
+      let profileNote = '';
+      if (merchantProfileConfig) {
+        const savedProfile = await request<MerchantProfileApiRecord>(
+          `/merchant/masterdata/merchant-profiles/by-username/${encodeURIComponent(session.user.username)}`,
+          {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              username: session.user.username,
+              citizenId: merchantProfileConfig.citizenId,
+              regionCode: merchantProfileConfig.regionCode,
+              regionLabel: merchantProfileConfig.regionLabel,
+              defaultHubCode: merchantProfileConfig.defaultHubCode,
+              defaultHubName: merchantProfileConfig.defaultHubName,
+              defaultSenderAddress: profile.defaultPickupAddress.trim() || null,
+            }),
+          },
+          session.accessToken,
+        );
+        setMerchantProfileConfig(mapMerchantProfileRecord(savedProfile));
+      } else if (profile.defaultPickupAddress.trim()) {
+        profileNote = ' Merchant profile chua co citizenId/region nen dia chi mac dinh can ops seed truoc.';
+      }
+
+      setAccountMessage(`Da luu ho so merchant.${profileNote}`);
+    } catch (error) {
+      setAccountMessage(extractErrorMessage(error));
+    } finally {
+      setAccountSaving(false);
+    }
+  }
+
+  async function changeAccountPassword(event?: FormEvent<HTMLFormElement>): Promise<void> {
+    event?.preventDefault();
+    if (!session) return;
+    setPasswordMessage(null);
+    if (!passwordOld || !passwordNew || !passwordConfirm) {
+      setPasswordMessage('Can nhap day du thong tin');
+      return;
+    }
+    if (passwordNew !== passwordConfirm) {
+      setPasswordMessage('Mat khau xac nhan khong khop');
+      return;
+    }
+    setPasswordSaving(true);
+    try {
+      await request<{ changed: boolean; userId: string | null }>('/merchant/auth/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accessToken: session.accessToken,
+          currentPassword: passwordOld,
+          newPassword: passwordNew,
+        }),
+      }, session.accessToken);
+      setPasswordMessage('Da cap nhat mat khau.');
+      setPasswordOld('');
+      setPasswordNew('');
+      setPasswordConfirm('');
+    } catch (error) {
+      setPasswordMessage(extractErrorMessage(error));
+    } finally {
+      setPasswordSaving(false);
+    }
   }
 
   function saveDraft(): void {
@@ -1719,6 +2197,21 @@ function MerchantApp(): React.JSX.Element {
   if (!session) {
     return (
       <div className="login-shell">
+        <div className="login-layout">
+          <section className="login-hero">
+            <div className="login-hero-top">
+              <p className="login-kicker">NEXUS Logistic</p>
+              <h1 className="brand-title">Merchant Portal</h1>
+            </div>
+            <div className="login-hero-copy">
+              <h2 className="login-hero-title">Nền tảng logistics hiện đại cho merchant.</h2>
+              <p className="login-hero-text">Theo dõi shipment, tạo yêu cầu lấy hàng và vận hành trên cùng một giao diện thống nhất.</p>
+            </div>
+            <div className="login-hero-stats">
+              <div className="login-stat"><strong>10k+</strong><span>Merchant đang hoạt động</span></div>
+              <div className="login-stat"><strong>24/7</strong><span>Hỗ trợ vận hành</span></div>
+            </div>
+          </section>
         <div className="login-card grid">
           <h1 className="brand-title">Merchant Login</h1>
           <p className="muted">Đăng nhập để vào dashboard merchant.</p>
@@ -1728,26 +2221,130 @@ function MerchantApp(): React.JSX.Element {
             <button className="btn btn-primary" type="submit" disabled={loginLoading}>{loginLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}</button>
           </form>
           {loginError ? <p className="message error">{loginError}</p> : null}
+          <div className="login-footer"><span>NEXUS Merchant Workspace</span><span>Secure access</span></div>
+        </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <div><h2 className="brand-title">Merchant Hub</h2><p className="brand-subtitle">Logistics Management System</p></div>
-        <div className="session-box"><div>{session.user.username}</div><div>roles: {session.user.roles.join(', ')}</div><div>token exp: {formatDate(session.accessTokenExpiresAt)}</div></div>
-        <nav className="nav-list">{navItems.map((item) => <button key={item.id} className={`nav-btn ${activeView === item.id ? 'active' : ''}`} onClick={() => setActiveView(item.id)}>{item.label}{item.id === 'notifications' && unreadNotifications > 0 ? ` [${unreadNotifications}]` : ''}</button>)}</nav>
-        <div className="btn-row"><button className="btn btn-secondary" onClick={() => void refreshAllData(session.accessToken, session.user)} disabled={dataLoading}>{dataLoading ? 'Đang tải lại...' : 'Tải lại'}</button><button className="btn btn-danger" onClick={() => void handleLogout()}>Logout</button></div>
+    <div className="app-shell app-shell--stitch">
+      <aside className="sidebar sidebar--stitch">
+        <div className="brand-lockup brand-lockup--stitch"><h2 className="brand-title">NEXUS Logistic</h2><p className="brand-subtitle">Merchant Portal</p></div>
+        <nav className="nav-list nav-list--stitch">{navItems.map((item) => <button key={item.id} className={`nav-btn nav-btn--stitch ${activeView === item.id ? 'active' : ''}`} onClick={() => setActiveView(item.id)}><span className="nav-btn__main"><span className="nav-icon" aria-hidden="true">{item.icon}</span><span>{item.label}</span></span>{item.id === 'notifications' && unreadNotifications > 0 ? <span className="nav-counter">{unreadNotifications}</span> : null}</button>)}</nav>
+        <div className="sidebar-actions sidebar-actions--stitch"><button className="btn btn-secondary sidebar-action" onClick={() => void refreshAllData(session.accessToken, session.user)} disabled={dataLoading}>{dataLoading ? 'Đang tải lại...' : 'Tải lại'}</button><button className="btn btn-danger sidebar-action" onClick={() => void handleLogout()}>Đăng xuất</button></div>
       </aside>
 
       <div className="main">
-        <header className="topbar"><div><strong>{navItems.find((i) => i.id === activeView)?.label}</strong><div className="muted">{new Date().toLocaleString()}</div></div><div className="btn-row"><span className="badge">Shipments: {shipments.length}</span><span className="badge">Pickups: {pickups.length}</span><span className="badge">Changes: {changeRequests.length}</span></div></header>
-        <main className="content">
+        <header className="topbar topbar--stitch"><div className="topbar-shell-copy"><strong className="topbar-title">{navItems.find((i) => i.id === activeView)?.label}</strong><div className="topbar-breadcrumb muted">{navItems.find((i) => i.id === activeView)?.subtitle}</div></div><div className="topbar-compact-actions"><input className="input topbar-search-input" placeholder="Tìm kiếm nhanh..." /><div className="topbar-icon-group"><span className="topbar-icon">?</span><span className="topbar-icon">⚙</span><span className="topbar-avatar">{(session.user.username ?? 'M').slice(0, 1).toUpperCase()}</span></div></div></header>
+        <main className={`content ${activeView === 'change-requests' ? 'content--change' : ''} ${activeView === 'print' ? 'content--print' : ''} ${activeView === 'returns' ? 'content--returns' : ''} ${activeView === 'account' ? 'content--account' : ''}`}>
           {dataError ? <p className="message error">{dataError}</p> : null}
 
-          {activeView === 'dashboard' ? <><section className="card"><h3>Tổng quan</h3><div className="metric-grid"><div className="metric"><div className="metric-title">Tổng số đơn hôm nay</div><div className="metric-value">{dashboardStats.totalToday}</div></div><div className="metric"><div className="metric-title">Đơn chờ pickup</div><div className="metric-value">{dashboardStats.waitingPickup}</div></div><div className="metric"><div className="metric-title">Đơn đang giao</div><div className="metric-value">{dashboardStats.inTransit}</div></div><div className="metric"><div className="metric-title">Đơn giao thành công</div><div className="metric-value">{dashboardStats.delivered}</div></div><div className="metric"><div className="metric-title">Thất bại / hoàn</div><div className="metric-value">{dashboardStats.failedOrReturn}</div></div></div></section><section className="card"><h3>Tìm nhanh theo mã vận đơn</h3><form className="btn-row" onSubmit={(e) => { void quickTrackFromDashboard(e); }}><input className="input" style={{ maxWidth: 320 }} value={dashboardSearchCode} onChange={(e) => setDashboardSearchCode(e.target.value)} placeholder="SHP..." /><button className="btn btn-primary" type="submit">Tra cứu vận đơn</button></form></section><section className="card"><h3>Đơn mới tạo gần đây</h3>{recentRows.length === 0 ? <div className="empty">Chưa có đơn hàng.</div> : <div className="table-wrap"><table><thead><tr><th>Mã</th><th>Người nhận</th><th>SĐT</th><th>Trạng thái</th><th>Ngày tạo</th><th>Xem</th></tr></thead><tbody>{recentRows.map((row) => <tr key={row.shipment.id}><td>{row.shipment.code}</td><td>{row.receiverName}</td><td>{row.receiverPhone}</td><td><span className={resolveShipmentStatusClass(row.shipment)}>{resolveShipmentStatusLabel(row.shipment)}</span></td><td>{formatDate(row.shipment.createdAt)}</td><td><button className="btn btn-ghost" onClick={() => { void openShipmentDetail(row.shipment.code); }}>Xem</button></td></tr>)}</tbody></table></div>}</section></> : null}
+          {activeView === 'dashboard' ? (
+            <section className="dashboard-layout">
+              <div className="card dashboard-hero">
+                <div className="dashboard-hero__copy">
+                  <p className="login-kicker">Merchant performance</p>
+                  <h3>Tổng quan vận hành</h3>
+                  <p className="muted">Theo dõi nhịp đơn, COD và phí vận chuyển ước tính từ các vận đơn hiện có.</p>
+                </div>
+                <form className="dashboard-search" onSubmit={(e) => { void quickTrackFromDashboard(e); }}>
+                  <input className="input dashboard-search__input" value={dashboardSearchCode} onChange={(e) => setDashboardSearchCode(e.target.value)} placeholder="SHP..." />
+                  <button className="btn btn-primary dashboard-search__btn" type="submit">Tra cứu</button>
+                </form>
+              </div>
+
+              <div className="metric-grid dashboard-metrics">
+                <div className="metric dashboard-metric"><div className="metric-title">Tổng số đơn hôm nay</div><div className="metric-value">{dashboardStats.totalToday}</div><div className="dashboard-metric__hint">Tạo mới trong ngày</div></div>
+                <div className="metric dashboard-metric"><div className="metric-title">Đơn chờ pickup</div><div className="metric-value">{dashboardStats.waitingPickup}</div><div className="dashboard-metric__hint">Cần bàn giao lấy hàng</div></div>
+                <div className="metric dashboard-metric"><div className="metric-title">Đơn đang giao</div><div className="metric-value">{dashboardStats.inTransit}</div><div className="dashboard-metric__hint">Đang luân chuyển</div></div>
+                <div className="metric dashboard-metric"><div className="metric-title">Đơn giao thành công</div><div className="metric-value">{dashboardStats.delivered}</div><div className="dashboard-metric__hint">{dashboardInsights.deliveryRate}% toàn bộ đơn</div></div>
+                <div className="metric dashboard-metric"><div className="metric-title">Thất bại / hoàn</div><div className="metric-value">{dashboardStats.failedOrReturn}</div><div className="dashboard-metric__hint">{dashboardInsights.issueRate}% cần theo dõi</div></div>
+              </div>
+
+              <div className="dashboard-chart-grid">
+                <section className="card dashboard-chart-card dashboard-chart-card--wide">
+                  <div className="dashboard-card-header">
+                    <div>
+                      <p className="login-kicker">7 ngày gần nhất</p>
+                      <h3>Đơn hàng & phí vận chuyển</h3>
+                    </div>
+                    <span className="badge">{formatCurrency(dashboardInsights.totalFee)} phí ước tính</span>
+                  </div>
+                  <div className="dashboard-bars" aria-label="Biểu đồ đơn hàng 7 ngày gần nhất">
+                    {dashboardInsights.dailySeries.map((item) => (
+                      <div className="dashboard-bar-item" key={item.key}>
+                        <div className="dashboard-bar-stack">
+                          <span className="dashboard-bar dashboard-bar--fee" style={{ height: `${Math.max(8, (item.fee / dashboardInsights.maxDailyFee) * 100)}%` }} title={`${formatCurrency(item.fee)} phí ước tính`} />
+                          <span className="dashboard-bar dashboard-bar--orders" style={{ height: `${Math.max(8, (item.orders / dashboardInsights.maxDailyOrders) * 100)}%` }} title={`${item.orders} đơn`} />
+                        </div>
+                        <strong>{item.orders}</strong>
+                        <span>{item.label}</span>
+                        <small>{item.shortDate}</small>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="dashboard-legend">
+                    <span><i className="dashboard-dot dashboard-dot--orders" /> Số đơn</span>
+                    <span><i className="dashboard-dot dashboard-dot--fee" /> Phí ước tính</span>
+                  </div>
+                </section>
+
+                <section className="card dashboard-chart-card">
+                  <div className="dashboard-card-header">
+                    <div>
+                      <p className="login-kicker">Tỷ trọng</p>
+                      <h3>Trạng thái đơn</h3>
+                    </div>
+                  </div>
+                  <div className="dashboard-status-chart">
+                    <div className="dashboard-donut" style={{ background: dashboardInsights.donutGradient }}>
+                      <div><strong>{shipmentRows.length}</strong><span>đơn</span></div>
+                    </div>
+                    <div className="dashboard-status-list">
+                      {dashboardInsights.statusGroups.map((item) => (
+                        <div className="dashboard-status-row" key={item.key}>
+                          <span><i style={{ background: item.color }} />{item.label}</span>
+                          <strong>{item.count}</strong>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </section>
+              </div>
+
+              <div className="dashboard-bottom-grid">
+                <section className="card dashboard-chart-card">
+                  <div className="dashboard-card-header">
+                    <div>
+                      <p className="login-kicker">Dòng tiền</p>
+                      <h3>COD & phí</h3>
+                    </div>
+                  </div>
+                  <div className="dashboard-cash-list">
+                    {dashboardInsights.cashItems.map((item) => (
+                      <div className="dashboard-cash-row" key={item.label}>
+                        <div className="dashboard-cash-row__head"><span>{item.label}</span><strong>{formatCurrency(item.value)}</strong></div>
+                        <div className="dashboard-cash-bar"><span style={{ width: `${Math.max(4, (item.value / dashboardInsights.maxCashValue) * 100)}%`, background: item.color }} /></div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="card dashboard-recent-card">
+                  <div className="dashboard-card-header">
+                    <div>
+                      <p className="login-kicker">Gần đây</p>
+                      <h3>Đơn mới tạo</h3>
+                    </div>
+                    <span className="badge">{recentRows.length} đơn</span>
+                  </div>
+                  {recentRows.length === 0 ? <div className="empty">Chưa có đơn hàng.</div> : <div className="table-wrap dashboard-table-wrap"><table><thead><tr><th>Mã</th><th>Người nhận</th><th>SĐT</th><th>Trạng thái</th><th>Ngày tạo</th><th>Xem</th></tr></thead><tbody>{recentRows.map((row) => <tr key={row.shipment.id}><td>{row.shipment.code}</td><td>{row.receiverName}</td><td>{row.receiverPhone}</td><td><span className={resolveShipmentStatusClass(row.shipment)}>{resolveShipmentStatusLabel(row.shipment)}</span></td><td>{formatDate(row.shipment.createdAt)}</td><td><button className="btn btn-ghost" onClick={() => { void openShipmentDetail(row.shipment.code); }}>Xem</button></td></tr>)}</tbody></table></div>}
+                </section>
+              </div>
+            </section>
+          ) : null}
 
           {activeView === 'create-shipment' ? (
             <section className="split-layout">
@@ -1990,8 +2587,14 @@ function MerchantApp(): React.JSX.Element {
                 />
                 <p className="muted">{'K\u00edch th\u01b0\u1edbc ki\u1ec7n h\u00e0ng: D\u00e0i (cm), R\u1ed9ng (cm), Cao (cm)'}</p>
                 <div className="btn-row">
-                  <button className="btn btn-secondary" onClick={() => setQuotedFee(autoEstimatedFee)}>
-                    {'T\u00ednh ph\u00ed t\u1ea1m t\u00ednh'}
+                  <button
+                    className="btn btn-secondary"
+                    disabled={quoteLoading}
+                    onClick={() => {
+                      void quoteCreateShipmentFee();
+                    }}
+                  >
+                    {quoteLoading ? '\u0110ang t\u00ednh...' : 'T\u00ednh ph\u00ed t\u1ea1m t\u00ednh'}
                   </button>
                   <button className="btn btn-ghost" onClick={saveDraft}>
                     {'L\u01b0u nh\u00e1p'}
@@ -2015,6 +2618,7 @@ function MerchantApp(): React.JSX.Element {
                     {'T\u1ea1o \u0111\u01a1n v\u00e0 y\u00eau c\u1ea7u pickup ngay'}
                   </button>
                 </div>
+                {quoteError ? <p className="message error">{quoteError}</p> : null}
                 {createError ? <p className="message error">{createError}</p> : null}
                 {createSuccess ? <p className="message success">{createSuccess}</p> : null}
               </div>
@@ -2086,23 +2690,845 @@ function MerchantApp(): React.JSX.Element {
               </div>
             </section>
           ) : null}
-          {activeView === 'shipments' ? <><section className="card grid"><h3>Danh sách shipment</h3><div className="grid grid-4"><input className="input" placeholder="Tìm mã / tên / SĐT" value={listSearch} onChange={(e) => setListSearch(e.target.value)} /><select className="select" value={listStatus} onChange={(e) => setListStatus(e.target.value)}><option value="ALL">Tất cả trạng thái</option><option value="CREATED">CREATED</option><option value="UPDATED">UPDATED</option><option value="WAITING_PICKUP">CHO_LAY_HANG</option><option value="DELIVERED">DELIVERED</option><option value="DELIVERY_FAILED">DELIVERY_FAILED</option><option value="RETURN_STARTED">RETURN_STARTED</option><option value="RETURN_COMPLETED">RETURN_COMPLETED</option><option value="CANCELLED">CANCELLED</option></select><select className="select" value={listService} onChange={(e) => setListService(e.target.value)}><option value="ALL">Tất cả dịch vụ</option>{serviceOptions.map((o) => <option key={o}>{o}</option>)}</select><select className="select" value={listRegion} onChange={(e) => setListRegion(e.target.value)}><option value="ALL">Tất cả khu vực</option>{regionOptions.map((o) => <option key={o}>{o}</option>)}</select><input className="input" type="date" value={listFromDate} onChange={(e) => setListFromDate(e.target.value)} /><input className="input" type="date" value={listToDate} onChange={(e) => setListToDate(e.target.value)} /></div></section><section className="card"><div className="table-wrap"><table><thead><tr><th>Mã vận đơn</th><th>Người nhận</th><th>SĐT</th><th>Trạng thái</th><th>COD</th><th>Phí</th><th>Dịch vụ</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead><tbody>{visibleRows.map((row) => <tr key={row.shipment.id}><td>{row.shipment.code}</td><td>{row.receiverName}</td><td>{row.receiverPhone}</td><td><span className={resolveShipmentStatusClass(row.shipment)}>{resolveShipmentStatusLabel(row.shipment)}</span></td><td>{formatCurrency(row.codAmount)}</td><td>{formatCurrency(row.feeEstimate)}</td><td>{row.serviceType}</td><td>{formatDate(row.shipment.createdAt)}</td><td><div className="btn-row"><button className="btn btn-ghost" onClick={() => { void openShipmentDetail(row.shipment.code); }}>Xem</button><button className="btn btn-secondary" onClick={() => { void openShipmentDetail(row.shipment.code); }}>Cập nhật</button><button className="btn btn-danger" onClick={() => { const reason = window.prompt('Lý do hủy đơn', '') ?? ''; void cancelShipment(row.shipment.code, reason); }}>Hủy</button><button className="btn btn-secondary" disabled={pickupByShipmentCode.has(normalizeCode(row.shipment.code))} onClick={() => { const normalizedShipmentCode = normalizeCode(row.shipment.code); if (pickupByShipmentCode.has(normalizedShipmentCode)) return; void createPickupForShipment(row.shipment.code, `manual pickup ${row.shipment.code}`).then((createdPickup) => { pushNotification('success', 'Đã tạo pickup', `Pickup ${createdPickup.pickupCode} cho ${row.shipment.code}`); }).catch((error) => { pushNotification('error', 'Không tạo được pickup', extractErrorMessage(error)); }); }}>{pickupByShipmentCode.has(normalizeCode(row.shipment.code)) ? 'Đã tạo pickup' : 'Tạo pickup'}</button><button className="btn btn-ghost" onClick={() => printShipment(row)}>In</button></div></td></tr>)}</tbody></table></div>{visibleRows.length === 0 ? <div className="empty">Không có dữ liệu.</div> : null}<div className="btn-row" style={{ marginTop: 8 }}><button className="btn btn-ghost" disabled={listPage <= 1} onClick={() => setListPage((p) => Math.max(p - 1, 1))}>Trước</button><span className="badge">Trang {listPage}/{totalPages}</span><button className="btn btn-ghost" disabled={listPage >= totalPages} onClick={() => setListPage((p) => Math.min(p + 1, totalPages))}>Sau</button></div></section></> : null}
+          {activeView === 'shipments' ? <>
+            <section className="card shipment-list-hero">
+              <div className="shipment-list-hero__copy">
+                <p className="login-kicker">Shipment management</p>
+                <h3>Danh sách shipment</h3>
+                <p className="muted">Theo dõi, lọc và thao tác trên toàn bộ đơn hàng merchant trong cùng một bảng điều phối.</p>
+              </div>
+              <div className="shipment-list-hero__stats">
+                <span className="badge">Hiển thị: {visibleRows.length}</span>
+                <span className="badge">Tổng khớp: {filteredRows.length}</span>
+                <span className="badge">Trang: {listPage}/{totalPages}</span>
+              </div>
+            </section>
+            <section className="card shipment-filters">
+              <div className="shipment-filters__header">
+                <div>
+                  <p className="login-kicker">Filters</p>
+                  <h3>Bộ lọc đơn hàng</h3>
+                </div>
+                <div className="shipment-filters__summary muted">Tìm theo mã, tên người nhận, số điện thoại, trạng thái, dịch vụ, khu vực và thời gian tạo.</div>
+              </div>
+              <div className="shipment-filters__grid">
+                <div className="shipment-field shipment-field--search">
+                  <label className="label">Tìm kiếm</label>
+                  <input className="input" placeholder="Tìm mã / tên / SĐT" value={listSearch} onChange={(e) => setListSearch(e.target.value)} />
+                </div>
+                <div className="shipment-field">
+                  <label className="label">Trạng thái</label>
+                  <select className="select" value={listStatus} onChange={(e) => setListStatus(e.target.value)}><option value="ALL">Tất cả trạng thái</option><option value="CREATED">CREATED</option><option value="UPDATED">UPDATED</option><option value="WAITING_PICKUP">CHO_LAY_HANG</option><option value="DELIVERED">DELIVERED</option><option value="DELIVERY_FAILED">DELIVERY_FAILED</option><option value="RETURN_STARTED">RETURN_STARTED</option><option value="RETURN_COMPLETED">RETURN_COMPLETED</option><option value="CANCELLED">CANCELLED</option></select>
+                </div>
+                <div className="shipment-field">
+                  <label className="label">Dịch vụ</label>
+                  <select className="select" value={listService} onChange={(e) => setListService(e.target.value)}><option value="ALL">Tất cả dịch vụ</option>{serviceOptions.map((o) => <option key={o}>{o}</option>)}</select>
+                </div>
+                <div className="shipment-field">
+                  <label className="label">Khu vực</label>
+                  <select className="select" value={listRegion} onChange={(e) => setListRegion(e.target.value)}><option value="ALL">Tất cả khu vực</option>{regionOptions.map((o) => <option key={o}>{o}</option>)}</select>
+                </div>
+                <div className="shipment-field">
+                  <label className="label">Từ ngày</label>
+                  <input className="input" type="date" value={listFromDate} onChange={(e) => setListFromDate(e.target.value)} />
+                </div>
+                <div className="shipment-field">
+                  <label className="label">Đến ngày</label>
+                  <input className="input" type="date" value={listToDate} onChange={(e) => setListToDate(e.target.value)} />
+                </div>
+              </div>
+            </section>
+            <section className="card shipment-table-card">
+              <div className="shipment-table-card__header">
+                <div>
+                  <p className="login-kicker">Data table</p>
+                  <h3>Đơn hàng đang hiển thị</h3>
+                </div>
+                <div className="shipment-table-card__meta muted">Tổng số bản ghi khớp bộ lọc: {filteredRows.length}</div>
+              </div>
+              <div className="table-wrap shipment-table-wrap">
+                <table className="shipment-table">
+                  <thead>
+                    <tr>
+                      <th>Mã vận đơn</th>
+                      <th>Người nhận</th>
+                      <th>SĐT</th>
+                      <th>Trạng thái</th>
+                      <th>COD</th>
+                      <th>Phí</th>
+                      <th>Dịch vụ</th>
+                      <th>Ngày tạo</th>
+                      <th>Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visibleRows.map((row) => <tr key={row.shipment.id}>
+                      <td className="shipment-code-cell">{row.shipment.code}</td>
+                      <td>
+                        <div className="shipment-recipient">
+                          <strong>{row.receiverName}</strong>
+                        </div>
+                      </td>
+                      <td>{row.receiverPhone}</td>
+                      <td><span className={resolveShipmentStatusClass(row.shipment)}>{resolveShipmentStatusLabel(row.shipment)}</span></td>
+                      <td>{formatCurrency(row.codAmount)}</td>
+                      <td>{formatCurrency(row.feeEstimate)}</td>
+                      <td><span className="shipment-service-chip">{row.serviceType}</span></td>
+                      <td>{formatDate(row.shipment.createdAt)}</td>
+                      <td>
+                        <div className="shipment-actions">
+                          <button className="btn btn-ghost shipment-action-btn" onClick={() => { void openShipmentDetail(row.shipment.code); }}>Xem</button>
+                          <button className="btn btn-secondary shipment-action-btn" onClick={() => { void openShipmentDetail(row.shipment.code); }}>Cập nhật</button>
+                          <button className="btn btn-danger shipment-action-btn" onClick={() => { const reason = window.prompt('Lý do hủy đơn', '') ?? ''; void cancelShipment(row.shipment.code, reason); }}>Hủy</button>
+                          <button className="btn btn-secondary shipment-action-btn" disabled={pickupByShipmentCode.has(normalizeCode(row.shipment.code))} onClick={() => { const normalizedShipmentCode = normalizeCode(row.shipment.code); if (pickupByShipmentCode.has(normalizedShipmentCode)) return; void createPickupForShipment(row.shipment.code, `manual pickup ${row.shipment.code}`).then((createdPickup) => { pushNotification('success', 'Đã tạo pickup', `Pickup ${createdPickup.pickupCode} cho ${row.shipment.code}`); }).catch((error) => { pushNotification('error', 'Không tạo được pickup', extractErrorMessage(error)); }); }}>{pickupByShipmentCode.has(normalizeCode(row.shipment.code)) ? 'Đã tạo pickup' : 'Tạo pickup'}</button>
+                          <button className="btn btn-ghost shipment-action-btn" onClick={() => printShipment(row)}>In</button>
+                        </div>
+                      </td>
+                    </tr>)}
+                  </tbody>
+                </table>
+              </div>
+              {visibleRows.length === 0 ? <div className="empty shipment-empty">Không có dữ liệu.</div> : null}
+              <div className="shipment-pagination">
+                <div className="shipment-pagination__summary muted">Hiển thị {(listPage - 1) * SHIPMENT_PAGE_SIZE + (visibleRows.length > 0 ? 1 : 0)} - {(listPage - 1) * SHIPMENT_PAGE_SIZE + visibleRows.length} trong tổng số {filteredRows.length} đơn khớp bộ lọc</div>
+                <div className="shipment-pagination__controls">
+                  <button className="btn btn-ghost shipment-pagination__btn" disabled={listPage <= 1} onClick={() => setListPage((p) => Math.max(p - 1, 1))}>Trước</button>
+                  <span className="badge shipment-pagination__badge">Trang {listPage}/{totalPages}</span>
+                  <button className="btn btn-ghost shipment-pagination__btn" disabled={listPage >= totalPages} onClick={() => setListPage((p) => Math.min(p + 1, totalPages))}>Sau</button>
+                </div>
+              </div>
+            </section>
+          </> : null}
 
-          {activeView === 'shipment-detail' ? <section className="grid">{!selectedShipment ? <div className="card"><div className="empty">Chưa chọn shipment.</div></div> : <><div className="card"><h3>Chi tiết shipment {selectedShipment.shipment.code}</h3><div className="details-grid"><div className="detail-box"><div className="label">Người gửi</div><div>{selectedShipment.senderName}<br />{selectedShipment.senderPhone}<br />{selectedShipment.senderAddress}</div></div><div className="detail-box"><div className="label">Hub gửi</div><div>{selectedShipment.senderHubCode}<br />{selectedShipment.senderWard}, {selectedShipment.senderProvince}</div></div><div className="detail-box"><div className="label">Người nhận</div><div>{selectedShipment.receiverName}<br />{selectedShipment.receiverPhone}<br />{selectedShipment.receiverAddress}</div></div><div className="detail-box"><div className="label">Hub nhận</div><div>{selectedShipment.receiverHubCode}<br />{selectedShipment.receiverWard}, {selectedShipment.receiverProvince}</div></div><div className="detail-box"><div className="label">Hàng hóa</div><div>{selectedShipment.itemType}<br />{selectedShipment.weightKg}kg</div></div><div className="detail-box"><div className="label">COD / Phí</div><div>{formatCurrency(selectedShipment.codAmount)}<br />{formatCurrency(selectedShipment.feeEstimate)}</div></div><div className="detail-box"><div className="label">Dịch vụ</div><div>{selectedShipment.serviceType}</div></div><div className="detail-box"><div className="label">Pickup</div><div>{pickupByShipmentCode.get(normalizeCode(selectedShipment.shipment.code))?.pickupCode ?? 'Chưa tạo pickup'}</div></div></div><div className="btn-row" style={{ marginTop: 8 }}><span className={resolveShipmentStatusClass(selectedShipment.shipment)}>{resolveShipmentStatusLabel(selectedShipment.shipment)}</span><button className="btn btn-danger" onClick={() => { const reason = window.prompt('Lý do hủy đơn', '') ?? ''; void cancelShipment(selectedShipment.shipment.code, reason); }}>Hủy đơn</button><button className="btn btn-ghost" onClick={() => printShipment(selectedShipment)}>In vận đơn</button></div></div><div className="card grid"><h3>Sửa đơn nếu còn cho phép</h3><div className="grid grid-3"><input className="input" value={detailReceiverPhone} onChange={(e) => setDetailReceiverPhone(e.target.value)} placeholder="SĐT người nhận" /><input className="input" value={detailReceiverAddress} onChange={(e) => setDetailReceiverAddress(e.target.value)} placeholder="Địa chỉ người nhận" /><input className="input" value={detailDeliveryNote} onChange={(e) => setDetailDeliveryNote(e.target.value)} placeholder="Ghi chú giao hàng" /></div><div className="btn-row"><button className="btn btn-primary" disabled={detailUpdating} onClick={() => { void saveDetailUpdate(); }}>{detailUpdating ? 'Đang cập nhật...' : 'Sửa đơn'}</button><button className="btn btn-secondary" onClick={() => { setChangeCode(selectedShipment.shipment.code); setActiveView('change-requests'); }}>Yêu cầu đổi thông tin giao</button><button className="btn btn-secondary" onClick={() => { setReturnCode(selectedShipment.shipment.code); setActiveView('returns'); }}>Yêu cầu hoàn hàng</button></div>{detailError ? <p className="message error">{detailError}</p> : null}{detailSuccess ? <p className="message success">{detailSuccess}</p> : null}</div><div className="card"><h3>Timeline xử lý đơn</h3>{detailTrackError ? <p className="message error">{detailTrackError}</p> : null}<div className="timeline">{detailTrackTimeline.length === 0 ? <div className="empty">Chưa có tracking event.</div> : detailTrackTimeline.map((ev) => <div key={ev.id} className="timeline-item"><strong>{ev.eventType}</strong><div className="muted">{formatDate(ev.occurredAt)} | actor={ev.actor ?? 'system'} | loc={ev.locationCode ?? 'N/A'}</div></div>)}</div>{detailTrackCurrent ? <p className="muted">Current: {detailTrackCurrent.currentStatus ?? 'N/A'} | Last event: {detailTrackCurrent.lastEventType ?? 'N/A'}</p> : null}</div></>}</section> : null}
+          {activeView === 'shipment-detail' ? <section className="grid">{!selectedShipment ? <div className="card"><div className="empty">Chưa chọn shipment.</div></div> : <><div className="card"><h3>Chi tiết shipment {selectedShipment.shipment.code}</h3><div className="details-grid"><div className="detail-box"><div className="label">Người gửi</div><div>{selectedShipment.senderName}<br />{selectedShipment.senderPhone}<br />{selectedShipment.senderAddress}</div></div><div className="detail-box"><div className="label">Hub gửi</div><div>{selectedShipment.senderHubCode}<br />{selectedShipment.senderWard}, {selectedShipment.senderProvince}</div></div><div className="detail-box"><div className="label">Người nhận</div><div>{selectedShipment.receiverName}<br />{selectedShipment.receiverPhone}<br />{selectedShipment.receiverAddress}</div></div><div className="detail-box"><div className="label">Hub nhận</div><div>{selectedShipment.receiverHubCode}<br />{selectedShipment.receiverWard}, {selectedShipment.receiverProvince}</div></div><div className="detail-box"><div className="label">Hàng hóa</div><div>{selectedShipment.itemType}<br />{selectedShipment.weightKg}kg</div></div><div className="detail-box"><div className="label">COD / Phí</div><div>{formatCurrency(selectedShipment.codAmount)}<br />{formatCurrency(selectedShipment.feeEstimate)}</div></div><div className="detail-box"><div className="label">Dịch vụ</div><div>{selectedShipment.serviceType}</div></div><div className="detail-box"><div className="label">Pickup</div><div>{pickupByShipmentCode.get(normalizeCode(selectedShipment.shipment.code))?.pickupCode ?? 'Chưa tạo pickup'}</div></div></div><div className="btn-row" style={{ marginTop: 8 }}><span className={resolveShipmentStatusClass(selectedShipment.shipment)}>{resolveShipmentStatusLabel(selectedShipment.shipment)}</span><button className="btn btn-danger" onClick={() => { const reason = window.prompt('Lý do hủy đơn', '') ?? ''; void cancelShipment(selectedShipment.shipment.code, reason); }}>Hủy đơn</button><button className="btn btn-ghost" onClick={() => printShipment(selectedShipment)}>In vận đơn</button></div></div><div className="card grid"><h3>Sửa đơn nếu còn cho phép</h3><div className="grid grid-3"><input className="input" value={detailReceiverPhone} onChange={(e) => setDetailReceiverPhone(e.target.value)} placeholder="SĐT người nhận" /><input className="input" value={detailReceiverAddress} onChange={(e) => setDetailReceiverAddress(e.target.value)} placeholder="Địa chỉ người nhận" /><input className="input" value={detailDeliveryNote} onChange={(e) => setDetailDeliveryNote(e.target.value)} placeholder="Ghi chú giao hàng" /></div><div className="btn-row"><button className="btn btn-primary" disabled={detailUpdating} onClick={() => { void saveDetailUpdate(); }}>{detailUpdating ? 'Đang cập nhật...' : 'Sửa đơn'}</button><button className="btn btn-secondary" onClick={() => { setChangeCode(selectedShipment.shipment.code); setActiveView('change-requests'); }}>Yêu cầu đổi thông tin giao</button><button className="btn btn-secondary" onClick={() => { setReturnCode(selectedShipment.shipment.code); setActiveView('returns'); }}>Yêu cầu hoàn hàng</button></div>{detailError ? <p className="message error">{detailError}</p> : null}{detailSuccess ? <p className="message success">{detailSuccess}</p> : null}</div><div className="card"><h3>Timeline xử lý đơn</h3>{detailTrackError ? <p className="message error">{detailTrackError}</p> : null}<div className="timeline">{detailTrackTimeline.length === 0 ? <div className="empty">Chưa có tracking event.</div> : detailTrackTimeline.map((ev) => <div key={ev.id} className="timeline-item"><strong>{ev.eventType}</strong><div className="muted">{formatDate(ev.occurredAt)} | actor={ev.actor ?? 'system'} | loc={ev.locationText ?? ev.locationCode ?? 'N/A'}</div></div>)}</div>{detailTrackCurrent ? <p className="muted">Current: {detailTrackCurrent.currentStatus ?? 'N/A'} | Last event: {detailTrackCurrent.lastEventType ?? 'N/A'}</p> : null}</div></>}</section> : null}
 
-          {activeView === 'pickups' ? <><section className="card"><h3>Tạo và quản lý yêu cầu lấy hàng</h3><form className="grid" onSubmit={(e) => { void submitPickupRequest(e); }}><div className="grid grid-3"><textarea className="textarea" value={pickupShipmentCodes} onChange={(e) => setPickupShipmentCodes(e.target.value)} placeholder="Danh sách mã vận đơn" /><input className="input" value={pickupRequesterName} onChange={(e) => setPickupRequesterName(e.target.value)} placeholder="Người yêu cầu" /><input className="input" value={pickupContactPhone} onChange={(e) => setPickupContactPhone(e.target.value)} placeholder="SĐT liên hệ" /><input className="input" value={pickupAddress} onChange={(e) => setPickupAddress(e.target.value)} placeholder="Địa chỉ lấy hàng" /><input className="input" value={pickupDesiredTime} onChange={(e) => setPickupDesiredTime(e.target.value)} placeholder="Thời gian mong muốn" /><input className="input" value={pickupNote} onChange={(e) => setPickupNote(e.target.value)} placeholder="Ghi chú courier" /></div><button className="btn btn-primary" type="submit" disabled={pickupLoading}>{pickupLoading ? 'Đang tạo...' : 'Tạo yêu cầu lấy hàng'}</button></form>{pickupMessage ? <p className="message">{pickupMessage}</p> : null}</section><section className="card"><div className="btn-row"><select className="select" style={{ maxWidth: 220 }} value={pickupStatusFilter} onChange={(e) => setPickupStatusFilter(e.target.value)}><option value="ALL">Tất cả</option><option value="REQUESTED">chờ duyệt</option><option value="COMPLETED">đã lấy/hoàn tất</option><option value="CANCELLED">đã hủy</option></select></div><div className="table-wrap"><table><thead><tr><th>Mã lấy hàng</th><th>Vận đơn</th><th>Trạng thái</th><th>Shipper</th><th>Ngày tạo</th><th>Hành động</th></tr></thead><tbody>{pickupRows.map((item) => { const cancelBlockReason = resolvePickupCancelBlockReason(item); return <tr key={item.id}><td>{item.pickupCode}</td><td>{item.items.map((it) => it.shipmentCode).join(', ') || '-'}</td><td><span className={statusClass(item.status)}>{item.status}</span></td><td>Chưa gán</td><td>{formatDate(item.createdAt)}</td><td><button className="btn btn-danger" title={cancelBlockReason ?? undefined} disabled={Boolean(cancelBlockReason)} onClick={() => { if (!session || cancelBlockReason) return; const reason = window.prompt('Lý do hủy pickup', '') ?? ''; void request<PickupRequest>(`/merchant/pickup/pickups/${encodeURIComponent(item.id)}/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason: reason.trim() || null }) }, session.accessToken).then((cancelled) => setPickups((prev) => prev.map((pickup) => pickup.id === item.id ? cancelled : pickup))); }}>Hủy pickup</button>{cancelBlockReason ? <div className="muted" style={{ marginTop: 4 }}>{cancelBlockReason}</div> : null}</td></tr>; })}</tbody></table></div></section></> : null}
+          {activeView === 'pickups' ? <>
+            <section className="card pickup-hero">
+              <div className="pickup-hero__copy">
+                <p className="login-kicker">Pickup flow</p>
+                <h3>Tạo và quản lý yêu cầu lấy hàng</h3>
+                <p className="muted">Tập hợp vận đơn, cấu hình thông tin lấy hàng và theo dõi toàn bộ pickup request trong cùng một giao diện điều phối.</p>
+              </div>
+              <div className="pickup-hero__stats">
+                <span className="badge">Pickup hiện có: {pickupRows.length}</span>
+                <span className="badge">Tổng pickup: {pickups.length}</span>
+              </div>
+            </section>
+            <section className="card pickup-form-card">
+              <div className="pickup-form-card__header">
+                <div>
+                  <p className="login-kicker">Create request</p>
+                  <h3>Tạo yêu cầu pickup mới</h3>
+                </div>
+                <div className="pickup-form-card__note muted">Nhập danh sách mã vận đơn và thông tin liên hệ để gửi yêu cầu lấy hàng cho bưu tá.</div>
+              </div>
+              <form className="grid pickup-form" onSubmit={(e) => { void submitPickupRequest(e); }}>
+                <div className="pickup-form__grid">
+                  <div className="pickup-field pickup-field--span-2">
+                    <label className="label">Danh sách mã vận đơn</label>
+                    <textarea className="textarea pickup-textarea" value={pickupShipmentCodes} onChange={(e) => setPickupShipmentCodes(e.target.value)} placeholder="Danh sách mã vận đơn" />
+                  </div>
+                  <div className="pickup-field">
+                    <label className="label">Người yêu cầu</label>
+                    <input className="input" value={pickupRequesterName} onChange={(e) => setPickupRequesterName(e.target.value)} placeholder="Người yêu cầu" />
+                  </div>
+                  <div className="pickup-field">
+                    <label className="label">SĐT liên hệ</label>
+                    <input className="input" value={pickupContactPhone} onChange={(e) => setPickupContactPhone(e.target.value)} placeholder="SĐT liên hệ" />
+                  </div>
+                  <div className="pickup-field pickup-field--span-2">
+                    <label className="label">Địa chỉ lấy hàng</label>
+                    <input className="input" value={pickupAddress} onChange={(e) => setPickupAddress(e.target.value)} placeholder="Địa chỉ lấy hàng" />
+                  </div>
+                  <div className="pickup-field">
+                    <label className="label">Thời gian mong muốn</label>
+                    <input className="input" type="date" min={toInputDate(new Date())} value={pickupDesiredTime} onChange={(e) => setPickupDesiredTime(e.target.value)} />
+                  </div>
+                  <div className="pickup-field pickup-field--span-3">
+                    <label className="label">Ghi chú courier</label>
+                    <input className="input" value={pickupNote} onChange={(e) => setPickupNote(e.target.value)} placeholder="Ghi chú courier" />
+                  </div>
+                </div>
+                <div className="pickup-form__actions">
+                  <button className="btn btn-primary pickup-submit-btn" type="submit" disabled={pickupLoading}>{pickupLoading ? 'Đang tạo...' : 'Tạo yêu cầu lấy hàng'}</button>
+                </div>
+              </form>
+              {pickupMessage ? <p className="message">{pickupMessage}</p> : null}
+            </section>
+            <section className="card pickup-table-card">
+              <div className="pickup-table-card__header">
+                <div>
+                  <p className="login-kicker">Request list</p>
+                  <h3>Danh sách yêu cầu pickup</h3>
+                </div>
+                <div className="pickup-table-card__controls">
+                  <label className="label pickup-table-card__label">Trạng thái</label>
+                  <select className="select pickup-table-card__select" value={pickupStatusFilter} onChange={(e) => setPickupStatusFilter(e.target.value)}><option value="ALL">Tất cả</option><option value="REQUESTED">chờ duyệt</option><option value="COMPLETED">đã lấy/hoàn tất</option><option value="CANCELLED">đã hủy</option></select>
+                </div>
+              </div>
+              <div className="table-wrap pickup-table-wrap">
+                <table className="pickup-table">
+                  <thead>
+                    <tr>
+                      <th>Mã lấy hàng</th>
+                      <th>Vận đơn</th>
+                      <th>Trạng thái</th>
+                      <th>Shipper</th>
+                      <th>Ngày tạo</th>
+                      <th>Hành động</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pickupRows.map((item) => {
+                      const cancelBlockReason = resolvePickupCancelBlockReason(item);
+                      return <tr key={item.id}>
+                        <td className="pickup-code-cell">{item.pickupCode}</td>
+                        <td>{item.items.map((it) => it.shipmentCode).join(', ') || '-'}</td>
+                        <td><span className={statusClass(item.status)}>{item.status}</span></td>
+                        <td><span className="pickup-shipper-chip">Chưa gán</span></td>
+                        <td>{formatDate(item.createdAt)}</td>
+                        <td>
+                          <div className="pickup-actions">
+                            <button className="btn btn-danger pickup-action-btn" title={cancelBlockReason ?? undefined} disabled={Boolean(cancelBlockReason)} onClick={() => { if (!session || cancelBlockReason) return; const reason = window.prompt('Lý do hủy pickup', '') ?? ''; void request<PickupRequest>(`/merchant/pickup/pickups/${encodeURIComponent(item.id)}/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason: reason.trim() || null }) }, session.accessToken).then((cancelled) => setPickups((prev) => prev.map((pickup) => pickup.id === item.id ? cancelled : pickup))); }}>Hủy pickup</button>
+                            {cancelBlockReason ? <div className="muted pickup-action-note">{cancelBlockReason}</div> : null}
+                          </div>
+                        </td>
+                      </tr>;
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {pickupRows.length === 0 ? <div className="empty pickup-empty">Chưa có yêu cầu pickup phù hợp bộ lọc.</div> : null}
+            </section>
+          </> : null}
 
-          {activeView === 'tracking' ? <><section className="card"><h3>Tra cứu nội bộ</h3><form className="btn-row" onSubmit={(e) => { void lookupTracking(e); }}><input className="input" style={{ maxWidth: 320 }} value={trackingCode} onChange={(e) => setTrackingCode(e.target.value)} placeholder="Mã vận đơn" /><button className="btn btn-primary" type="submit" disabled={trackingLoading}>{trackingLoading ? 'Đang tải...' : 'Tra cứu'}</button></form>{trackingError ? <p className="message error">{trackingError}</p> : null}</section><section className="card"><div className="details-grid"><div className="detail-box"><div className="label">Trạng thái hiện tại</div><div>{trackingCurrent?.currentStatus ?? 'N/A'}</div></div><div className="detail-box"><div className="label">Vị trí hiện tại</div><div>{trackingCurrent?.currentLocationCode ?? 'N/A'}</div></div><div className="detail-box"><div className="label">Sự kiện cuối</div><div>{trackingCurrent?.lastEventType ?? 'N/A'}</div></div><div className="detail-box"><div className="label">Thời điểm sự kiện cuối</div><div>{formatDate(trackingCurrent?.lastEventAt ?? null)}</div></div></div><div className="timeline" style={{ marginTop: 8 }}>{trackingTimeline.length === 0 ? <div className="empty">Chưa có timeline event.</div> : trackingTimeline.map((ev) => <div key={ev.id} className="timeline-item"><strong>{ev.eventType}</strong><div className="muted">{formatDate(ev.occurredAt)} | actor={ev.actor ?? 'system'} | vị_trí={ev.locationCode ?? 'N/A'}</div></div>)}</div></section></> : null}
+          {activeView === 'tracking' ? <>
+            <section className="card tracking-hero">
+              <div className="tracking-hero__copy">
+                <p className="login-kicker">Tracking lookup</p>
+                <h3>Tra cứu vận đơn</h3>
+                <p className="muted">Tra cứu nhanh trạng thái, vị trí hiện tại và toàn bộ timeline xử lý của shipment ngay trong merchant workspace.</p>
+              </div>
+              <div className="tracking-hero__stats">
+                <span className="badge">Mã đang nhập: {trackingCode.trim() || 'N/A'}</span>
+                <span className="badge">Số sự kiện: {trackingTimeline.length}</span>
+              </div>
+            </section>
+            <section className="card tracking-search-card">
+              <div className="tracking-search-card__header">
+                <div>
+                  <p className="login-kicker">Search</p>
+                  <h3>Tra cứu nội bộ</h3>
+                </div>
+                <div className="tracking-search-card__hint muted">Nhập mã vận đơn để xem snapshot hiện tại và lịch sử di chuyển chi tiết.</div>
+              </div>
+              <form className="tracking-search-form" onSubmit={(e) => { void lookupTracking(e); }}>
+                <div className="tracking-search-input">
+                  <input className="input tracking-search-input__field" value={trackingCode} onChange={(e) => setTrackingCode(e.target.value)} placeholder="Mã vận đơn" />
+                </div>
+                <button className="btn btn-primary tracking-search-btn" type="submit" disabled={trackingLoading}>{trackingLoading ? 'Đang tải...' : 'Tra cứu'}</button>
+              </form>
+              {trackingError ? <p className="message error">{trackingError}</p> : null}
+            </section>
+            <section className="tracking-summary-grid">
+              <div className="card tracking-summary-card">
+                <div className="label">Trạng thái hiện tại</div>
+                <div className="tracking-summary-card__value">{trackingCurrent?.currentStatus ?? 'N/A'}</div>
+              </div>
+              <div className="card tracking-summary-card">
+                <div className="label">Vị trí hiện tại</div>
+                <div className="tracking-summary-card__value">{trackingCurrent?.currentLocationCode ?? 'N/A'}</div>
+              </div>
+              <div className="card tracking-summary-card">
+                <div className="label">Sự kiện cuối</div>
+                <div className="tracking-summary-card__value">{trackingCurrent?.lastEventType ?? 'N/A'}</div>
+              </div>
+              <div className="card tracking-summary-card">
+                <div className="label">Thời điểm sự kiện cuối</div>
+                <div className="tracking-summary-card__value">{formatDate(trackingCurrent?.lastEventAt ?? null)}</div>
+              </div>
+            </section>
+            <section className="card tracking-timeline-card">
+              <div className="tracking-timeline-card__header">
+                <div>
+                  <p className="login-kicker">Timeline</p>
+                  <h3>Hành trình vận đơn</h3>
+                </div>
+                {trackingCurrent ? <span className="badge tracking-status-badge">{trackingCurrent.currentStatus ?? 'N/A'}</span> : null}
+              </div>
+              <div className="tracking-progress">
+                {trackingTimeline.length === 0 ? <div className="empty tracking-empty">{trackingLoading ? 'Đang tải hành trình vận đơn...' : 'Chưa có timeline event.'}</div> : <div className="timeline tracking-timeline">{trackingTimeline.map((ev) => <div key={ev.id} className="timeline-item tracking-timeline-item"><strong>{ev.eventType}</strong><div className="muted">{formatDate(ev.occurredAt)}</div></div>)}</div>}
+              </div>
+            </section>
+          </> : null}
 
-          {activeView === 'change-requests' ? <><section className="card"><h3>Quản lý yêu cầu thay đổi giao hàng</h3><form className="grid" onSubmit={(e) => { void submitChangeRequest(e); }}><div className="grid grid-3"><input className="input" value={changeCode} onChange={(e) => setChangeCode(e.target.value)} placeholder="Mã vận đơn" /><select className="select" value={changeType} onChange={(e) => setChangeType(e.target.value)}><option value="change.phone">Đổi số điện thoại</option><option value="change.address">Đổi địa chỉ giao</option><option value="change.note">Đổi ghi chú giao</option></select><input className="input" value={changeValue} onChange={(e) => setChangeValue(e.target.value)} placeholder="Giá trị mới" /></div><button className="btn btn-primary" type="submit" disabled={changeLoading}>{changeLoading ? 'Đang gửi...' : 'Tạo yêu cầu thay đổi'}</button></form>{changeMessage ? <p className="message">{changeMessage}</p> : null}</section><section className="card"><div className="btn-row"><select className="select" style={{ maxWidth: 220 }} value={changeStatusFilter} onChange={(e) => setChangeStatusFilter(e.target.value)}><option value="ALL">Tất cả</option><option value="PENDING">PENDING</option><option value="APPROVED">APPROVED</option><option value="REJECTED">REJECTED</option></select></div><div className="table-wrap"><table><thead><tr><th>ID</th><th>Vận đơn</th><th>Loại</th><th>Trạng thái</th><th>Người yêu cầu</th><th>Ngày tạo</th></tr></thead><tbody>{changeRows.map((item) => <tr key={item.id}><td>{item.id}</td><td>{item.shipmentCode}</td><td>{item.requestType}</td><td><span className={statusClass(item.status)}>{item.status}</span></td><td>{item.requestedBy ?? '-'}</td><td>{formatDate(item.createdAt)}</td></tr>)}</tbody></table></div></section></> : null}
+          {activeView === 'change-requests' ? <>
+            <form className="change-reference-layout" onSubmit={(e) => { void submitChangeRequest(e); }}>
+              <section className="card change-search-card">
+                <h3>Bước 1: Tìm kiếm đơn hàng</h3>
+                <div className="change-search-row">
+                  <div className="change-search-input">
+                    <span className="change-search-input__icon">⌕</span>
+                    <input className="input change-search-input__field" value={changeCode} onChange={(e) => setChangeCode(e.target.value)} placeholder="Nhập mã vận đơn (Ví dụ: NEX-123456789)" />
+                  </div>
+                  <button className="btn btn-primary change-search-btn" type="button">Tìm kiếm</button>
+                </div>
+              </section>
 
-          {activeView === 'returns' ? <><section className="card"><h3>Quản lý yêu cầu hoàn hàng</h3><form className="grid" onSubmit={createReturnRequest}><div className="grid grid-3"><input className="input" value={returnCode} onChange={(e) => setReturnCode(e.target.value)} placeholder="Mã vận đơn" /><input className="input" value={returnReason} onChange={(e) => setReturnReason(e.target.value)} placeholder="Lý do hoàn" /><input className="input" type="date" value={returnExpectedDate} onChange={(e) => setReturnExpectedDate(e.target.value)} /></div><button className="btn btn-primary" type="submit">Tạo yêu cầu hoàn hàng</button></form></section><section className="card"><div className="btn-row"><select className="select" style={{ maxWidth: 220 }} value={returnStatusFilter} onChange={(e) => setReturnStatusFilter(e.target.value)}><option value="ALL">Tất cả</option><option value="PENDING">PENDING</option><option value="IN_TRANSIT">IN_TRANSIT</option><option value="COMPLETED">COMPLETED</option><option value="CANCELLED">CANCELLED</option></select></div><div className="table-wrap"><table><thead><tr><th>Vận đơn</th><th>Lý do</th><th>Dự kiến hoàn</th><th>Trạng thái</th><th>Ngày tạo</th><th>Hành động</th></tr></thead><tbody>{returnRows.map((item) => <tr key={item.id}><td>{item.shipmentCode}</td><td>{item.reason}</td><td>{item.expectedReturnAt}</td><td><span className={statusClass(item.status)}>{item.status}</span></td><td>{formatDate(item.createdAt)}</td><td><div className="btn-row"><button className="btn btn-ghost" onClick={() => setReturnRequests((prev) => prev.map((r) => r.id === item.id ? { ...r, status: 'IN_TRANSIT' } : r))}>Đang hoàn</button><button className="btn btn-secondary" onClick={() => setReturnRequests((prev) => prev.map((r) => r.id === item.id ? { ...r, status: 'COMPLETED' } : r))}>Hoàn tất</button><button className="btn btn-danger" onClick={() => setReturnRequests((prev) => prev.map((r) => r.id === item.id ? { ...r, status: 'CANCELLED' } : r))}>Hãy</button></div></td></tr>)}</tbody></table></div></section></> : null}
+              <section className="change-reference-grid">
+                <div className="card change-current-card">
+                  <div className="change-card-title-row">
+                    <span className="change-card-icon">i</span>
+                    <h3>Thông tin hiện tại</h3>
+                  </div>
+                  <div className="change-info-grid">
+                    <div className="change-field">
+                      <label className="label">Tên người nhận</label>
+                      <input className="input change-readonly-input" value={changeShipmentPreview?.receiverName ?? ''} placeholder="Chưa có dữ liệu đơn hàng" readOnly />
+                    </div>
+                    <div className="change-field">
+                      <label className="label">Số điện thoại</label>
+                      <input className="input change-readonly-input" value={changeShipmentPreview?.receiverPhone ?? ''} placeholder="Chưa có dữ liệu đơn hàng" readOnly />
+                    </div>
+                    <div className="change-field">
+                      <label className="label">Địa chỉ giao hàng</label>
+                      <textarea className="textarea change-readonly-input change-current-address" value={changeShipmentPreview?.receiverAddress ?? ''} placeholder="Chưa có dữ liệu đơn hàng" readOnly />
+                    </div>
+                  </div>
+                </div>
 
-          {activeView === 'print' ? <section className="card grid"><h3>In vận đơn / chứng từ</h3><div className="grid grid-2"><div className="grid"><input className="input" value={printSingleCode} onChange={(e) => setPrintSingleCode(e.target.value)} placeholder="In 1 vận đơn" /><button className="btn btn-primary" onClick={() => { const row = shipmentRows.find((r) => r.shipment.code === normalizeCode(printSingleCode)); if (!row) { setPrintMessage('Không tìm thấy shipment trong danh sách hiện tại.'); return; } printShipment(row); setPrintMessage(`Đã mở popup in cho ${row.shipment.code}`); }}>In 1 vận đơn</button></div><div className="grid"><textarea className="textarea" value={printBulkCodes} onChange={(e) => setPrintBulkCodes(e.target.value)} placeholder="In nhiều vận đơn" /><button className="btn btn-secondary" onClick={() => { const codes = printBulkCodes.split(/[\s,;\n]+/).map((c) => normalizeCode(c)).filter(Boolean); codes.forEach((c) => { const row = shipmentRows.find((r) => r.shipment.code === c); if (row) printShipment(row); }); setPrintMessage(`Đã mở popup in cho ${codes.length} code.`); }}>In nhiều vận đơn</button></div></div><div className="btn-row"><button className="btn btn-ghost" onClick={downloadCsv}>Tải danh sách đơn</button><button className="btn btn-ghost" onClick={() => window.print()}>Xuất PDF (print dialog)</button></div>{printMessage ? <p className="message">{printMessage}</p> : null}</section> : null}
+                <div className="card change-new-card">
+                  <div className="change-card-title-row">
+                    <span className="change-card-icon change-card-icon--accent">✎</span>
+                    <h3 className="change-accent-title">Thông tin mới</h3>
+                  </div>
+                  <div className="change-info-grid">
+                    <div className="change-field">
+                      <label className="label">Tên người nhận mới</label>
+                      <input className="input" value="" placeholder="Giữ theo thông tin hiện tại" readOnly />
+                    </div>
+                    <div className="change-field">
+                      <label className="label">Số điện thoại mới</label>
+                      <input className={`input ${changeType === 'change.phone' ? '' : 'change-disabled-input'}`} value={changeType === 'change.phone' ? changeValue : ''} onChange={(e) => setChangeValue(e.target.value)} placeholder="Nhập số điện thoại mới" readOnly={changeType !== 'change.phone'} />
+                    </div>
+                    <div className="change-field">
+                      <label className="label">Địa chỉ chi tiết mới</label>
+                      <textarea className={`textarea change-new-address ${changeType === 'change.address' ? '' : 'change-disabled-input'}`} value={changeType === 'change.address' ? changeValue : ''} onChange={(e) => setChangeValue(e.target.value)} placeholder="Số nhà, tên đường, phường/xã..." readOnly={changeType !== 'change.address'} />
+                    </div>
+                  </div>
+                </div>
+              </section>
 
-          {activeView === 'account' ? <><section className="card"><h3>Hồ sơ merchant</h3><form className="grid" onSubmit={(e) => { e.preventDefault(); setAccountMessage('Đã lưu hồ sơ merchant.'); }}><div className="grid grid-2"><input className="input" value={profile.shopName} onChange={(e) => setProfile((p) => ({ ...p, shopName: e.target.value }))} placeholder="Tên cửa hàng" /><input className="input" value={profile.contactPhone} onChange={(e) => setProfile((p) => ({ ...p, contactPhone: e.target.value }))} placeholder="SĐT liên hệ" /><input className="input" value={profile.email} onChange={(e) => setProfile((p) => ({ ...p, email: e.target.value }))} placeholder="Email" /><input className="input" value={profile.defaultPickupAddress} onChange={(e) => setProfile((p) => ({ ...p, defaultPickupAddress: e.target.value }))} placeholder="Địa chỉ lấy hàng mặc định" /></div><button className="btn btn-primary" type="submit">Lưu hồ sơ</button></form>{accountMessage ? <p className="message success">{accountMessage}</p> : null}</section><section className="card"><h3>Đổi mật khẩu</h3><form className="grid grid-3" onSubmit={(e) => { e.preventDefault(); if (!passwordOld || !passwordNew || !passwordConfirm) { setPasswordMessage('Cần nhập đầy đủ thông tin'); return; } if (passwordNew !== passwordConfirm) { setPasswordMessage('Mật khẩu xác nhận không khớp'); return; } setPasswordMessage('Đã tiếp nhận yêu cầu đổi mật khẩu (scaffold: chưa có API).'); setPasswordOld(''); setPasswordNew(''); setPasswordConfirm(''); }}><input className="input" type="password" value={passwordOld} onChange={(e) => setPasswordOld(e.target.value)} placeholder="Mật khẩu hiện tại" /><input className="input" type="password" value={passwordNew} onChange={(e) => setPasswordNew(e.target.value)} placeholder="Mật khẩu mới" /><input className="input" type="password" value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)} placeholder="Xác nhận mật khẩu mới" /><button className="btn btn-primary" type="submit">Đổi mật khẩu</button></form>{passwordMessage ? <p className="message">{passwordMessage}</p> : null}</section></> : null}
+              <section className="card change-reason-card">
+                <div className="change-reference-form">
+                  <div className="change-field">
+                    <label className="label">Lý do thay đổi</label>
+                    <select className="select" value={changeType} onChange={(e) => setChangeType(e.target.value)}>
+                      <option value="change.phone">Khách hàng yêu cầu đổi số điện thoại</option>
+                      <option value="change.address">Khách hàng yêu cầu đổi địa chỉ nhận hàng</option>
+                      <option value="change.note">Khác / đổi ghi chú giao hàng</option>
+                    </select>
+                  </div>
+                  <div className="change-field">
+                    <label className="label">Chi tiết lý do</label>
+                    <textarea className={`textarea ${changeType === 'change.note' ? '' : 'change-disabled-input'}`} value={changeType === 'change.note' ? changeValue : ''} onChange={(e) => setChangeValue(e.target.value)} placeholder="Chi tiết lý do (nếu có)..." readOnly={changeType !== 'change.note'} />
+                  </div>
+                </div>
+                <div className="change-reference-actions">
+                  <button className="btn btn-ghost" type="button">Hủy</button>
+                  <button className="btn btn-primary change-submit-btn" type="submit" disabled={changeLoading}>{changeLoading ? 'Đang gửi...' : 'Gửi yêu cầu thay đổi'}</button>
+                </div>
+                {changeMessage ? <p className="message">{changeMessage}</p> : null}
+              </section>
+            </form>
 
-          {activeView === 'notifications' ? <section className="card"><h3>Thông báo</h3><div className="btn-row"><button className="btn btn-ghost" onClick={() => setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))}>Đánh dấu đã đọc tất cả</button><button className="btn btn-danger" onClick={() => setNotifications([])}>Xóa toàn bộ</button></div><div className="grid" style={{ marginTop: 8 }}>{notifications.length === 0 ? <div className="empty">Chưa có thông báo.</div> : notifications.map((n) => <div className="detail-box" key={n.id}><strong>{n.title}</strong><div className="muted">{n.description}</div><div className="muted">{formatDate(n.createdAt)} | {n.read ? 'Đã đọc' : 'Chưa đọc'}</div><div className="btn-row"><button className="btn btn-ghost" onClick={() => setNotifications((prev) => prev.map((i) => i.id === n.id ? { ...i, read: true } : i))}>Đánh dấu đã đọc</button><button className="btn btn-danger" onClick={() => setNotifications((prev) => prev.filter((i) => i.id !== n.id))}>Xóa</button></div></div>)}</div></section> : null}
+            <section className="card change-history-card change-history-card--secondary">
+              <div className="change-history-card__header">
+                <div>
+                  <p className="login-kicker">History</p>
+                  <h3>Lịch sử yêu cầu đổi thông tin</h3>
+                </div>
+                <div className="change-history-card__controls">
+                  <label className="label">Trạng thái</label>
+                  <select className="select change-history-card__select" value={changeStatusFilter} onChange={(e) => setChangeStatusFilter(e.target.value)}><option value="ALL">Tất cả</option><option value="PENDING">PENDING</option><option value="APPROVED">APPROVED</option><option value="REJECTED">REJECTED</option></select>
+                </div>
+              </div>
+              <div className="table-wrap change-table-wrap">
+                <table className="change-table">
+                  <thead>
+                    <tr>
+                      <th>Vận đơn</th>
+                      <th>Thông tin cũ</th>
+                      <th>Thông tin mới</th>
+                      <th>Trạng thái</th>
+                      <th>Ngày yêu cầu</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {changeRows.map((item) => {
+                      const historyShipment = shipmentRows.find((row) => row.shipment.code === normalizeCode(item.shipmentCode));
+                      return <tr key={item.id}>
+                        <td className="change-code-cell">{item.shipmentCode}</td>
+                        <td>
+                          <div className="change-history-meta">
+                            <strong>{historyShipment?.receiverName ?? 'Thông tin hiện tại'}</strong>
+                            <span>{historyShipment?.receiverPhone ?? '-'}</span>
+                            <small>{historyShipment?.receiverAddress ?? '-'}</small>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="change-history-meta change-history-meta--new">
+                            <strong>{item.requestType}</strong>
+                            <span>{typeof item.payload?.value === 'string' ? item.payload.value : '-'}</span>
+                          </div>
+                        </td>
+                        <td><span className={statusClass(item.status)}>{item.status}</span></td>
+                        <td>{formatDate(item.createdAt)}</td>
+                      </tr>;
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {changeRows.length === 0 ? <div className="empty change-empty">Chưa có yêu cầu thay đổi phù hợp bộ lọc.</div> : null}
+            </section>
+          </> : null}
+
+          {activeView === 'returns' ? <section className="returns-layout">
+            <div className="returns-top-grid">
+              <div className="returns-main-column">
+                <section className="card returns-search-card">
+                  <div className="returns-step-header">
+                    <span className="returns-step-badge">1</span>
+                    <h3>Bước 1: Tìm kiếm đơn hàng cần hoàn</h3>
+                  </div>
+                  <div className="returns-search-row">
+                    <div className="returns-search-input">
+                      <span className="returns-search-icon">⌕</span>
+                      <input className="input returns-search-field" value={returnCode} onChange={(e) => setReturnCode(e.target.value)} placeholder="Nhập mã vận đơn (VD: NX-889201...)" />
+                    </div>
+                    <button className="btn btn-primary returns-search-btn" type="button">Tìm kiếm</button>
+                  </div>
+                </section>
+
+                <section className="card returns-order-card">
+                  <div className="returns-order-card__header">
+                    <h4>Thông tin đơn hàng</h4>
+                    <span className="returns-order-status">{returnShipmentPreview ? resolveShipmentStatusLabel(returnShipmentPreview.shipment) : 'Chờ giao lại'}</span>
+                  </div>
+                  <div className="returns-order-grid">
+                    <div className="returns-order-block">
+                      <div>
+                        <p className="muted">Người nhận</p>
+                        <strong>{returnShipmentPreview?.receiverName ?? 'Chưa có dữ liệu đơn hàng'}</strong>
+                      </div>
+                      <div>
+                        <p className="muted">Số điện thoại</p>
+                        <strong>{returnShipmentPreview?.receiverPhone ?? '-'}</strong>
+                      </div>
+                    </div>
+                    <div className="returns-order-block">
+                      <div>
+                        <p className="muted">Địa chỉ giao hàng</p>
+                        <span>{returnShipmentPreview?.receiverAddress ?? 'Nhập mã vận đơn để xem thông tin.'}</span>
+                      </div>
+                      <div>
+                        <p className="muted">Lịch sử giao hàng gần nhất</p>
+                        <span className="returns-order-note">Return request se duoc gui qua delivery-service va theo doi bang return case.</span>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="card returns-form-card">
+                  <div className="returns-step-header">
+                    <span className="returns-step-badge">2</span>
+                    <h3>Yêu cầu hoàn</h3>
+                  </div>
+                  <form className="returns-form" onSubmit={(e) => { void createReturnRequest(e); }}>
+                    <div className="returns-field">
+                      <label className="label">Lý do hoàn hàng</label>
+                      <select className="select" value={returnReason} onChange={(e) => setReturnReason(e.target.value)}>
+                        <option value="">Chọn lý do hoàn hàng...</option>
+                        <option value="Khách hàng hủy đơn">Khách hàng hủy đơn</option>
+                        <option value="Không liên lạc được khách hàng">Không liên lạc được khách hàng</option>
+                        <option value="Sai địa chỉ giao hàng">Sai địa chỉ giao hàng</option>
+                        <option value="Hàng hóa bị hư hỏng">Hàng hóa bị hư hỏng</option>
+                        <option value="Khách từ chối nhận hàng">Khách từ chối nhận hàng</option>
+                      </select>
+                    </div>
+                    <div className="returns-field">
+                      <label className="label">Ghi chú chi tiết</label>
+                      <textarea className="textarea returns-notes" value={returnNotes} onChange={(e) => setReturnNotes(e.target.value)} placeholder="Nhập chi tiết yêu cầu hoàn hàng cho bưu tá..." />
+                    </div>
+                    <div className="returns-form-actions">
+                      <button className="btn btn-ghost" type="button">Hủy</button>
+                      <button className="btn btn-primary returns-submit-btn" type="submit" disabled={returnLoading}>{returnLoading ? 'Dang gui...' : 'Gui yeu cau hoan hang'}</button>
+                    </div>
+                    {returnMessage ? <p className="message">{returnMessage}</p> : null}
+                  </form>
+                </section>
+              </div>
+
+              <div className="returns-side-column">
+                <section className="card returns-info-card">
+                  <div className="returns-info-card__header">
+                    <span className="returns-info-icon">i</span>
+                    <h4>Lưu ý quan trọng</h4>
+                  </div>
+                  <ul className="returns-info-list">
+                    <li>Yêu cầu hoàn hàng áp dụng cho các đơn đang xử lý giao lại hoặc phát sinh nhu cầu hoàn từ merchant.</li>
+                    <li>Sau khi gửi yêu cầu, đội vận hành sẽ kiểm tra và xác nhận theo quy trình hiện có.</li>
+                    <li>Phí hoàn hàng vẫn tuân theo hợp đồng dịch vụ hiện tại của merchant.</li>
+                    <li>Yeu cau hoan duoc luu vao delivery-service va publish return.started theo contract hien co.</li>
+                  </ul>
+                </section>
+
+                <section className="card returns-metric-card">
+                  <p className="muted">Tỷ lệ hoàn hàng tháng này</p>
+                  <div className="returns-metric-row">
+                    <strong>4.2%</strong>
+                    <span className="returns-metric-chip">+0.5%</span>
+                  </div>
+                  <div className="returns-metric-bar">
+                    <span className="returns-metric-bar__fill" />
+                  </div>
+                </section>
+              </div>
+            </div>
+
+            <section className="card returns-history-card">
+              <div className="returns-history-card__header">
+                <h3>Lịch sử yêu cầu hoàn hàng</h3>
+                <select className="select returns-history-filter" value={returnStatusFilter} onChange={(e) => setReturnStatusFilter(e.target.value)}>
+                  <option value="ALL">Tất cả</option>
+                  <option value="IN_TRANSIT">IN_TRANSIT</option>
+                  <option value="COMPLETED">COMPLETED</option>
+                </select>
+              </div>
+              <div className="table-wrap returns-table-wrap">
+                <table className="returns-table">
+                  <thead>
+                    <tr>
+                      <th>Mã vận đơn</th>
+                      <th>Ngày gửi yêu cầu</th>
+                      <th>Lý do</th>
+                      <th>Dự kiến hoàn</th>
+                      <th>Trạng thái</th>
+                      <th>Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {returnRows.map((item) => <tr key={item.id}>
+                      <td className="returns-code-cell">{item.shipmentCode}</td>
+                      <td>{formatDate(item.createdAt)}</td>
+                      <td>{item.reason}</td>
+                      <td>{item.expectedReturnAt}</td>
+                      <td><span className={statusClass(item.status)}>{item.status}</span></td>
+                      <td><div className="returns-actions"><button className="btn btn-ghost" onClick={() => { void openShipmentDetail(item.shipmentCode); }}>Xem don</button><button className="btn btn-secondary" onClick={() => { setTrackingCode(item.shipmentCode); setActiveView('tracking'); void lookupTracking(undefined, item.shipmentCode); }}>Tracking</button></div></td>
+                    </tr>)}
+                  </tbody>
+                </table>
+              </div>
+              {returnRows.length === 0 ? <div className="empty returns-empty">Chưa có yêu cầu hoàn hàng phù hợp bộ lọc.</div> : null}
+            </section>
+          </section> : null}
+
+          {activeView === 'print' ? <section className="print-layout">
+            <div className="print-main-column">
+              <section className="card print-filters-card">
+                <div className="print-filters-grid">
+                  <div className="print-filter-block">
+                    <label className="label">Tìm kiếm vận đơn</label>
+                    <input className="input" value={printSingleCode} onChange={(e) => setPrintSingleCode(e.target.value)} placeholder="Nhập mã vận đơn (VD: NX123...)" />
+                  </div>
+                  <div className="print-filter-block">
+                    <label className="label">Trạng thái in</label>
+                    <div className="print-toggle-row">
+                      <span className="print-toggle-chip print-toggle-chip--active">Tất cả</span>
+                      <span className="print-toggle-chip">Chờ in</span>
+                      <span className="print-toggle-chip">Đã in</span>
+                    </div>
+                  </div>
+                  <div className="print-filter-block">
+                    <label className="label">Mã vận đơn hàng loạt</label>
+                    <textarea className="textarea print-bulk-input" value={printBulkCodes} onChange={(e) => setPrintBulkCodes(e.target.value)} placeholder="Nhập nhiều mã, cách nhau bằng dấu phẩy hoặc xuống dòng" />
+                  </div>
+                </div>
+              </section>
+
+              <section className="card print-table-card">
+                <div className="print-table-card__header">
+                  <div>
+                    <p className="login-kicker">Ready to print</p>
+                    <h3>Danh sách chờ in</h3>
+                  </div>
+                  <div className="print-table-card__meta muted">Hiển thị {Math.min(shipmentRows.length, 6)} trên {shipmentRows.length} vận đơn hiện có</div>
+                </div>
+                <div className="table-wrap print-table-wrap">
+                  <table className="print-table">
+                    <thead>
+                      <tr>
+                        <th>Mã vận đơn</th>
+                        <th>Người nhận</th>
+                        <th>Dịch vụ</th>
+                        <th>Trạng thái in</th>
+                        <th>Ngày tạo</th>
+                        <th>Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {shipmentRows.slice(0, 6).map((row) => {
+                        const isSelected = normalizeCode(printSingleCode) === normalizeCode(row.shipment.code);
+                        return <tr key={row.shipment.id} className={isSelected ? 'print-row-selected' : ''}>
+                          <td className="print-code-cell">{row.shipment.code}</td>
+                          <td>
+                            <div className="print-recipient-cell">
+                              <strong>{row.receiverName}</strong>
+                              <span>{row.receiverPhone}</span>
+                            </div>
+                          </td>
+                          <td><span className="shipment-service-chip">{row.serviceType}</span></td>
+                          <td><span className={`print-status ${isSelected ? 'print-status--pending' : 'print-status--muted'}`}>{isSelected ? 'Chờ in' : 'Sẵn sàng'}</span></td>
+                          <td>{formatDate(row.shipment.createdAt)}</td>
+                          <td><button className="btn btn-ghost print-row-action" onClick={() => setPrintSingleCode(row.shipment.code)}>Xem</button></td>
+                        </tr>;
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                {shipmentRows.length === 0 ? <div className="empty print-empty">Chưa có vận đơn để in.</div> : null}
+              </section>
+            </div>
+
+            <aside className="card print-sidebar-card">
+              <div className="print-sidebar-card__header">
+                <span className="print-sidebar-icon">⌘</span>
+                <h3>Cấu hình in</h3>
+              </div>
+
+              <div className="print-config-group">
+                <label className="label">Khổ giấy</label>
+                <div className="print-option-list">
+                  <div className="print-option print-option--active">
+                    <div>
+                      <strong>A5 (Standard)</strong>
+                      <span>Phù hợp in laser văn phòng</span>
+                    </div>
+                    <span className="print-option-dot" />
+                  </div>
+                  <div className="print-option">
+                    <div>
+                      <strong>K80 (Thermal)</strong>
+                      <span>In nhiệt liên tục, tiết kiệm</span>
+                    </div>
+                  </div>
+                  <div className="print-option">
+                    <div>
+                      <strong>100x150mm</strong>
+                      <span>Chuẩn tem nhãn thương mại</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="print-config-group">
+                <label className="label">Nội dung in</label>
+                <select className="select">
+                  <option>Vận đơn đầy đủ (Full)</option>
+                  <option>Vận đơn rút gọn (Mini)</option>
+                  <option>Chỉ mã QR (QR Only)</option>
+                </select>
+              </div>
+
+              <div className="print-preview-card">
+                <div className="print-preview-sheet">
+                  <div className="print-preview-sheet__bar" />
+                  <div className="print-preview-sheet__hero">
+                    <div className="print-preview-sheet__qr">QR</div>
+                    <div className="print-preview-sheet__copy">
+                      <strong>{printPreviewRow?.shipment.code ?? 'Mã vận đơn'}</strong>
+                      <span>{printPreviewRow?.receiverName ?? 'Người nhận'}</span>
+                    </div>
+                  </div>
+                  <div className="print-preview-sheet__lines">
+                    <span />
+                    <span />
+                    <span />
+                  </div>
+                  <div className="print-preview-sheet__footer" />
+                </div>
+                <p className="muted">Bản xem trước khổ A5</p>
+              </div>
+
+              <div className="print-summary-row">
+                <span>Vận đơn đã chọn:</span>
+                <strong>{printBulkPreviewRows.length > 0 ? printBulkPreviewRows.length : printPreviewRow ? 1 : 0}</strong>
+              </div>
+
+              <div className="print-action-stack">
+                <button className="btn btn-primary print-primary-btn" onClick={() => { const row = shipmentRows.find((r) => r.shipment.code === normalizeCode(printSingleCode)); if (!row) { setPrintMessage('Không tìm thấy shipment trong danh sách hiện tại.'); return; } printShipment(row); setPrintMessage(`Đã mở popup in cho ${row.shipment.code}`); }}>In 1 vận đơn</button>
+                <button className="btn btn-secondary print-secondary-btn" onClick={() => { const codes = printBulkCodes.split(/[\s,;\n]+/).map((c) => normalizeCode(c)).filter(Boolean); codes.forEach((c) => { const row = shipmentRows.find((r) => r.shipment.code === c); if (row) printShipment(row); }); setPrintMessage(`Đã mở popup in cho ${codes.length} code.`); }}>In nhiều vận đơn</button>
+                <div className="print-utility-row">
+                  <button className="btn btn-ghost" onClick={downloadCsv}>Tải danh sách đơn</button>
+                  <button className="btn btn-ghost" onClick={() => window.print()}>Xuất PDF</button>
+                </div>
+              </div>
+
+              {printMessage ? <p className="message">{printMessage}</p> : null}
+            </aside>
+          </section> : null}
+
+          {activeView === 'account' ? <section className="account-layout">
+            <header className="account-page-header">
+              <h2>Tài khoản</h2>
+              <p className="muted">Quản lý thông tin định danh và cài đặt bảo mật của bạn.</p>
+            </header>
+
+            <div className="account-grid">
+              <div className="account-main-column">
+                <section className="card account-profile-card">
+                  <div className="account-card-header">
+                    <span className="account-card-icon">ID</span>
+                    <h3>Thông tin tài khoản</h3>
+                  </div>
+                  <div className="account-profile-content">
+                    <div className="account-avatar-block">
+                      <div className="account-avatar">{(session.user.username ?? 'M').slice(0, 2).toUpperCase()}</div>
+                      <button className="account-avatar-edit" type="button">Sửa</button>
+                    </div>
+                    <form className="account-profile-form" onSubmit={(e) => { void saveAccountProfile(e); }}>
+                      <div className="account-fields-grid">
+                        <div className="account-field">
+                          <label className="label">Tên Merchant</label>
+                          <input className="input" value={profile.shopName} onChange={(e) => setProfile((p) => ({ ...p, shopName: e.target.value }))} placeholder="Tên cửa hàng" />
+                        </div>
+                        <div className="account-field">
+                          <label className="label">Merchant ID</label>
+                          <input className="input account-readonly-input" value={session.user.id} readOnly />
+                        </div>
+                        <div className="account-field">
+                          <label className="label">Số điện thoại</label>
+                          <input className="input" value={profile.contactPhone} onChange={(e) => setProfile((p) => ({ ...p, contactPhone: e.target.value }))} placeholder="SĐT liên hệ" />
+                        </div>
+                        <div className="account-field">
+                          <label className="label">Email</label>
+                          <input className="input account-readonly-input" value={profile.email} placeholder="Email chua co contract backend" readOnly />
+                        </div>
+                        <div className="account-field account-field--span-2">
+                          <label className="label">Địa chỉ kinh doanh / lấy hàng mặc định</label>
+                          <textarea className="textarea account-address-field" value={profile.defaultPickupAddress} onChange={(e) => setProfile((p) => ({ ...p, defaultPickupAddress: e.target.value }))} placeholder="Địa chỉ lấy hàng mặc định" />
+                        </div>
+                      </div>
+                      <div className="account-profile-actions">
+                        <button className="btn btn-primary" type="submit" disabled={accountSaving}>{accountSaving ? 'Dang luu...' : 'Luu thay doi'}</button>
+                      </div>
+                    </form>
+                  </div>
+                  {accountMessage ? <p className="message">{accountMessage}</p> : null}
+                </section>
+              </div>
+
+              <div className="account-side-column">
+                <section className="card account-security-card">
+                  <div className="account-card-header">
+                    <span className="account-card-icon">PW</span>
+                    <h3>Đổi mật khẩu</h3>
+                  </div>
+                  <form className="account-password-form" onSubmit={(e) => { void changeAccountPassword(e); }}>
+                    <div className="account-field">
+                      <label className="label">Mật khẩu hiện tại</label>
+                      <input className="input" type="password" value={passwordOld} onChange={(e) => setPasswordOld(e.target.value)} placeholder="Mật khẩu hiện tại" />
+                    </div>
+                    <div className="account-field">
+                      <label className="label">Mật khẩu mới</label>
+                      <input className="input" type="password" value={passwordNew} onChange={(e) => setPasswordNew(e.target.value)} placeholder="Mật khẩu mới" />
+                      <span className="muted">Tối thiểu 8 ký tự, bao gồm chữ cái và số.</span>
+                    </div>
+                    <div className="account-field">
+                      <label className="label">Xác nhận mật khẩu mới</label>
+                      <input className="input" type="password" value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)} placeholder="Xác nhận mật khẩu mới" />
+                    </div>
+                    <button className="btn btn-ghost account-password-btn" type="submit" disabled={passwordSaving}>{passwordSaving ? 'Dang cap nhat...' : 'Cap nhat mat khau'}</button>
+                  </form>
+                  {passwordMessage ? <p className="message">{passwordMessage}</p> : null}
+                </section>
+
+                <section className="card account-session-card">
+                  <div className="account-session-copy">
+                    <h4>Trạng thái tài khoản</h4>
+                    <div className="account-session-badge">Đã xác thực</div>
+                  </div>
+                  <div className="account-session-meta">
+                    <div><span className="muted">Username</span><strong>{session.user.username}</strong></div>
+                    <div><span className="muted">Roles</span><strong>{session.user.roles.join(', ')}</strong></div>
+                    <div><span className="muted">Token hết hạn</span><strong>{formatDate(session.accessTokenExpiresAt)}</strong></div>
+                  </div>
+                </section>
+              </div>
+            </div>
+
+            <footer className="account-footer muted">Bao mat thong tin merchant la uu tien hang dau cua Nexus Logistic.</footer>
+          </section> : null}
+
+          {activeView === 'notifications' ? <section className="notifications-layout">
+            <div className="notifications-toolbar">
+              <div className="notifications-tabs">
+                <button className="notifications-tab notifications-tab--active" type="button">Tất cả</button>
+                <button className="notifications-tab" type="button">Đơn hàng</button>
+                <button className="notifications-tab" type="button">Hệ thống</button>
+                <button className="notifications-tab" type="button">Khuyến mãi</button>
+              </div>
+              <button className="notifications-mark-all" onClick={() => setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))}><span className="notifications-inline-icon">✓</span><span>Đánh dấu tất cả là đã đọc</span></button>
+            </div>
+
+            <div className="notifications-list">
+              {notifications.length === 0 ? <div className="empty notifications-empty">Chưa có thông báo.</div> : notifications.map((n) => {
+                const accentClass = !n.read ? 'notifications-card--unread' : 'notifications-card--read';
+                let levelClass = 'info';
+                let typeLabel = 'Hỗ trợ';
+                let iconLabel = '•';
+                if (n.level === 'success') {
+                  levelClass = 'success';
+                  typeLabel = 'Đơn hàng';
+                  iconLabel = '✓';
+                } else if (n.level === 'error') {
+                  levelClass = 'error';
+                  typeLabel = 'Hệ thống';
+                  iconLabel = '!';
+                } else if (n.level === 'info') {
+                  levelClass = 'info';
+                  typeLabel = 'Hỗ trợ';
+                  iconLabel = '•';
+                }
+                return <article className={`notifications-card ${accentClass}`} key={n.id}>
+                  {!n.read ? <div className="notifications-card-accent" /> : null}
+                  <div className={`notifications-card-icon notifications-card-icon--${levelClass}`}>
+                    <span>{iconLabel}</span>
+                  </div>
+                  <div className="notifications-card-body">
+                    <div className="notifications-card-head">
+                      <h3>{n.title}</h3>
+                      <span className="notifications-card-time">{formatDate(n.createdAt)}</span>
+                    </div>
+                    <p className="notifications-card-description">{n.description}</p>
+                    <div className="notifications-card-meta">
+                      <span className={`notifications-chip notifications-chip--${levelClass}`}>{typeLabel}</span>
+                      {!n.read ? <span className="notifications-unread-dot" /> : null}
+                    </div>
+                    <div className="notifications-card-actions">
+                      <button className="btn btn-ghost" onClick={() => setNotifications((prev) => prev.map((i) => i.id === n.id ? { ...i, read: true } : i))}>Đánh dấu đã đọc</button>
+                      <button className="btn btn-danger" onClick={() => setNotifications((prev) => prev.filter((i) => i.id !== n.id))}>Xóa</button>
+                    </div>
+                  </div>
+                </article>;
+              })}
+            </div>
+
+            <div className="notifications-footer-bar">
+              <span className="muted">Hiển thị {Math.min(notifications.length, 5)} trên tổng số {notifications.length} thông báo</span>
+              <button className="btn btn-danger notifications-clear-btn" onClick={() => setNotifications([])}>Xóa toàn bộ</button>
+            </div>
+          </section> : null}
         </main>
       </div>
     </div>
@@ -2120,8 +3546,5 @@ createRoot(rootElement).render(
     <MerchantApp />
   </React.StrictMode>,
 );
-
-
-
 
 

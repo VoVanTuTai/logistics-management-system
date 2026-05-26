@@ -11,7 +11,7 @@ export function mapDeliverySuccessFormToPayload(
   return {
     shipmentCode: formValues.shipmentCode,
     taskId: context.taskId ?? null,
-    courierId: null,
+    courierId: context.courierId ?? null,
     locationCode: formValues.locationCode || null,
     actor: context.actor,
     note: formValues.note || null,
@@ -23,5 +23,3 @@ export function mapDeliverySuccessFormToPayload(
     otpCode: formValues.otpCode || null,
   };
 }
-
-// TODO(delivery-success): map local media asset -> upload URL once media stack is implemented.

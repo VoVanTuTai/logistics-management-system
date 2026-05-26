@@ -1,0 +1,329 @@
+name: nexus-prod
+
+x-service-base: &service-base
+  restart: unless-stopped
+  depends_on:
+    postgres:
+      condition: service_healthy
+    rabbitmq:
+      condition: service_healthy
+  environment: &service-env
+    RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672
+    RABBITMQ_MANAGEMENT_PORT: 15672
+    DOMAIN_EVENTS_EXCHANGE: domain.events
+    OUTBOX_RELAY_INTERVAL_MS: 1000
+    OUTBOX_RELAY_BATCH_SIZE: 50
+
+x-static-web: &static-web
+  restart: unless-stopped
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../dev/postgres/init-multiple-dbs.sql:/docker-entrypoint-initdb.d/01-init-multiple-dbs.sql:ro
+    ports:
+      - "127.0.0.1:15432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "127.0.0.1:${MINIO_API_PORT}:9000"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+
+  minio-create-bucket:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set myminio http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD;
+      /usr/bin/mc mb myminio/$$MINIO_BUCKET_NAME --ignore-existing;
+      /usr/bin/mc anonymous set download myminio/$$MINIO_BUCKET_NAME;
+      exit 0;
+      "
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME}
+
+  masterdata-service:
+    <<: *service-base
+    image: nexus/masterdata-service:local
+    build:
+      context: ../../services/masterdata-service
+    environment:
+      <<: *service-env
+      PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/masterdata_db
+
+  shipment-service:
+    <<: *service-base
+    image: nexus/shipment-service:local
+    build:
+      context: ../../services/shipment-service
+    environment:
+      <<: *service-env
+      PORT: 3002
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/shipment_db
+      PRICING_SERVICE_URL: http://pricing-service:3012
+
+  pickup-service:
+    <<: *service-base
+    image: nexus/pickup-service:local
+    build:
+      context: ../../services/pickup-service
+    environment:
+      <<: *service-env
+      PORT: 3003
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/pickup_db
+
+  dispatch-service:
+    <<: *service-base
+    image: nexus/dispatch-service:local
+    build:
+      context: ../../services/dispatch-service
+    environment:
+      <<: *service-env
+      PORT: 3004
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/dispatch_db
+      DISPATCH_COURIER_OPTIONS: CR001,CR002,CR003
+
+  manifest-service:
+    <<: *service-base
+    image: nexus/manifest-service:local
+    build:
+      context: ../../services/manifest-service
+    environment:
+      <<: *service-env
+      PORT: 3005
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/manifest_db
+      SHIPMENT_SERVICE_URL: http://shipment-service:3002
+
+  scan-service:
+    <<: *service-base
+    image: nexus/scan-service:local
+    build:
+      context: ../../services/scan-service
+    environment:
+      <<: *service-env
+      PORT: 3006
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/scan_db
+      SHIPMENT_SERVICE_URL: http://shipment-service:3002
+
+  delivery-service:
+    <<: *service-base
+    image: nexus/delivery-service:local
+    build:
+      context: ../../services/delivery-service
+    environment:
+      <<: *service-env
+      PORT: 3007
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/delivery_db
+      SCAN_SERVICE_URL: http://scan-service:3006
+      SHIPMENT_SERVICE_URL: http://shipment-service:3002
+
+  tracking-service:
+    <<: *service-base
+    image: nexus/tracking-service:local
+    build:
+      context: ../../services/tracking-service
+    environment:
+      <<: *service-env
+      PORT: 3008
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/tracking_db
+
+  reporting-service:
+    <<: *service-base
+    image: nexus/reporting-service:local
+    build:
+      context: ../../services/reporting-service
+    environment:
+      <<: *service-env
+      PORT: 3009
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/reporting_db
+      REPORTING_CONSUMER_INTERVAL_MS: 1000
+      REPORTING_CONSUMER_BATCH_SIZE: 20
+
+  auth-service:
+    <<: *service-base
+    image: nexus/auth-service:local
+    build:
+      context: ../../services/auth-service
+    environment:
+      <<: *service-env
+      PORT: 3010
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/auth_db
+      ACCESS_TOKEN_TTL_SECONDS: ${ACCESS_TOKEN_TTL_SECONDS}
+      REFRESH_TOKEN_TTL_SECONDS: ${REFRESH_TOKEN_TTL_SECONDS}
+
+  payment-service:
+    <<: *service-base
+    image: nexus/payment-service:local
+    build:
+      context: ../../services/payment-service
+    environment:
+      <<: *service-env
+      PORT: 3011
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/payment_db
+      SHIPMENT_SERVICE_URL: http://shipment-service:3002
+      COMPANY_BANK_NAME: ${COMPANY_BANK_NAME}
+      COMPANY_BANK_ACCOUNT_NUMBER: ${COMPANY_BANK_ACCOUNT_NUMBER}
+      COMPANY_BANK_ACCOUNT_NAME: ${COMPANY_BANK_ACCOUNT_NAME}
+      COMPANY_BANK_BIN: ${COMPANY_BANK_BIN}
+      SEPAY_WEBHOOK_SECRET: ${SEPAY_WEBHOOK_SECRET}
+      SEPAY_WEBHOOK_API_KEY: ${SEPAY_WEBHOOK_API_KEY}
+      SEPAY_WEBHOOK_TOLERANCE_SECONDS: ${SEPAY_WEBHOOK_TOLERANCE_SECONDS}
+      SEPAY_BANK_ACCOUNT_NUMBER: ${SEPAY_BANK_ACCOUNT_NUMBER}
+      SEPAY_AMOUNT_TOLERANCE_VND: ${SEPAY_AMOUNT_TOLERANCE_VND}
+
+  pricing-service:
+    image: nexus/pricing-service:local
+    build:
+      context: ../../services/pricing-service
+    restart: unless-stopped
+    environment:
+      PORT: 3012
+      PRICING_QUOTE_TTL_MINUTES: 15
+
+  gateway-bff:
+    image: nexus/gateway-bff:local
+    build:
+      context: ../../services/gateway-bff
+    restart: unless-stopped
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      delivery-service:
+        condition: service_healthy
+      dispatch-service:
+        condition: service_healthy
+      manifest-service:
+        condition: service_healthy
+      masterdata-service:
+        condition: service_healthy
+      pickup-service:
+        condition: service_healthy
+      reporting-service:
+        condition: service_healthy
+      scan-service:
+        condition: service_healthy
+      shipment-service:
+        condition: service_healthy
+      tracking-service:
+        condition: service_healthy
+      payment-service:
+        condition: service_healthy
+      pricing-service:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${GATEWAY_PORT}:3000"
+    environment:
+      PORT: 3000
+      GATEWAY_AUTH_ENABLED: ${GATEWAY_AUTH_ENABLED}
+      AUTH_SERVICE_URL: http://auth-service:3010
+      DELIVERY_SERVICE_URL: http://delivery-service:3007
+      DISPATCH_SERVICE_URL: http://dispatch-service:3004
+      MANIFEST_SERVICE_URL: http://manifest-service:3005
+      MASTERDATA_SERVICE_URL: http://masterdata-service:3001
+      PICKUP_SERVICE_URL: http://pickup-service:3003
+      REPORTING_SERVICE_URL: http://reporting-service:3009
+      SCAN_SERVICE_URL: http://scan-service:3006
+      SHIPMENT_SERVICE_URL: http://shipment-service:3002
+      TRACKING_SERVICE_URL: http://tracking-service:3008
+      PAYMENT_SERVICE_URL: http://payment-service:3011
+      PRICING_SERVICE_URL: http://pricing-service:3012
+      S3_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT}
+      S3_REGION: us-east-1
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      S3_BUCKET_NAME: ${MINIO_BUCKET_NAME}
+      S3_FORCE_PATH_STYLE: "true"
+      CORS_ORIGINS: ${CORS_ORIGINS}
+
+  ops-web:
+    <<: *static-web
+    image: nexus/ops-web:local
+    build:
+      context: ../../apps/ops-web
+      args:
+        VITE_GATEWAY_BFF_URL: ${GATEWAY_PUBLIC_URL}
+        VITE_REQUEST_TIMEOUT_MS: 15000
+        VITE_ENABLE_FULL_OPS_MODULES: "true"
+    ports:
+      - "${OPS_WEB_PORT}:80"
+
+  merchant-web:
+    <<: *static-web
+    image: nexus/merchant-web:local
+    build:
+      context: ../../apps/merchant-web
+      args:
+        VITE_GATEWAY_BFF_URL: ${GATEWAY_PUBLIC_URL}
+        VITE_REQUEST_TIMEOUT_MS: 15000
+    ports:
+      - "${MERCHANT_WEB_PORT}:80"
+
+  admin-web:
+    <<: *static-web
+    image: nexus/admin-web:local
+    build:
+      context: ../../apps/admin-web
+      args:
+        VITE_GATEWAY_BFF_URL: ${GATEWAY_PUBLIC_URL}
+        VITE_REQUEST_TIMEOUT_MS: 15000
+        VITE_ALLOW_PERMISSION_PROTOTYPE_FALLBACK: "false"
+    ports:
+      - "${ADMIN_WEB_PORT}:80"
+
+  public-tracking:
+    <<: *static-web
+    image: nexus/public-tracking:local
+    build:
+      context: ../../apps/public-tracking
+      args:
+        VITE_GATEWAY_BFF_URL: ${GATEWAY_PUBLIC_URL}
+        VITE_REQUEST_TIMEOUT_MS: 15000
+    ports:
+      - "${PUBLIC_TRACKING_PORT}:80"
+
+volumes:
+  postgres_data:
+  minio_data:

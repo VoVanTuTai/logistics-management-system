@@ -6,6 +6,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
 } from '@nestjs/common';
 
 import { TasksService } from '../../application/services/tasks.service';
@@ -16,6 +17,10 @@ import type {
   Task,
   UpdateTaskStatusInput,
 } from '../../domain/entities/task.entity';
+import {
+  type AuditRequest,
+  getOpsAuditContext,
+} from './ops-audit-context';
 
 @Controller('tasks')
 export class TasksController {
@@ -57,16 +62,18 @@ export class TasksController {
   assign(
     @Param('id') id: string,
     @Body() body: AssignTaskInput,
+    @Req() request: AuditRequest,
   ): Promise<Task> {
-    return this.tasksService.assign(id, body);
+    return this.tasksService.assign(id, body, getOpsAuditContext(request));
   }
 
   @Post(':id/reassign')
   reassign(
     @Param('id') id: string,
     @Body() body: ReassignTaskInput,
+    @Req() request: AuditRequest,
   ): Promise<Task> {
-    return this.tasksService.reassign(id, body);
+    return this.tasksService.reassign(id, body, getOpsAuditContext(request));
   }
 
   @Patch(':id/status')

@@ -97,12 +97,12 @@ export function DeliverySuccessForm({
         name="podImageUrl"
         render={({ field }) => (
           <View style={styles.fieldBlock}>
-            <Text style={styles.label}>POD image URL</Text>
+            <Text style={styles.label}>POD image URL or local URI</Text>
             <TextInput
               value={field.value}
               onChangeText={field.onChange}
               style={styles.input}
-              placeholder="https://..."
+              placeholder="https://... hoac file://..."
             />
           </View>
         )}

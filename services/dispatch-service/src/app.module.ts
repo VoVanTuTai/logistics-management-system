@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 
+import { OpsAuditController } from './api/controllers/ops-audit.controller';
 import { TasksController } from './api/controllers/tasks.controller';
 import { DispatchEventHandlersService } from './application/services/dispatch-event-handlers.service';
+import { OpsAuditService } from './application/services/ops-audit.service';
 import { TasksService } from './application/services/tasks.service';
 import { OutboxEventRepository } from './domain/repositories/outbox-event.repository';
 import { TaskRepository } from './domain/repositories/task.repository';
@@ -18,10 +20,11 @@ import { TasksRealtimeGateway } from './realtime/tasks-realtime.gateway';
 
 @Module({
   imports: [HealthModule],
-  controllers: [TasksController],
+  controllers: [TasksController, OpsAuditController],
   providers: [
     PrismaService,
     TasksService,
+    OpsAuditService,
     DispatchEventHandlersService,
     DispatchEventsProducer,
     DispatchEventsConsumer,

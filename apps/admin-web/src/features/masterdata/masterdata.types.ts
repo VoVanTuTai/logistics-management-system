@@ -39,6 +39,17 @@ export interface ConfigDto extends MasterdataBaseDto {
   description: string | null;
 }
 
+export interface MerchantProfileDto extends MasterdataBaseDto {
+  username: string;
+  citizenId: string;
+  regionCode: string;
+  regionLabel: string;
+  defaultHubCode: string | null;
+  defaultHubName: string | null;
+  defaultSenderAddress: string | null;
+  businessAddressDetail: string | null;
+}
+
 export interface HubFilters {
   code?: string;
   name?: string;
@@ -68,6 +79,14 @@ export interface ConfigFilters {
   q?: string;
 }
 
+export interface MerchantProfileFilters {
+  username?: string;
+  citizenId?: string;
+  regionCode?: string;
+  defaultHubCode?: string;
+  q?: string;
+}
+
 export interface HubWriteInput {
   code?: string;
   name: string;
@@ -94,4 +113,15 @@ export interface ConfigWriteInput {
   value: ConfigValue;
   scope?: string | null;
   description?: string | null;
+}
+
+export interface MerchantProfileWriteInput {
+  username: string;
+  citizenId: string;
+  regionCode: string;
+  regionLabel: string;
+  defaultHubCode?: string | null;
+  defaultHubName?: string | null;
+  defaultSenderAddress?: string | null;
+  businessAddressDetail?: string | null;
 }

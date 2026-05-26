@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { ChangeRequestController } from './api/controllers/change-request.controller';
 import { ShipmentController } from './api/controllers/shipment.controller';
 import { ChangeRequestsService } from './application/services/change-requests.service';
+import { PricingClientService } from './application/services/pricing-client.service';
 import { ShipmentEventHandlersService } from './application/services/shipment-event-handlers.service';
 import { ShipmentsService } from './application/services/shipments.service';
 import { ChangeRequestRepository } from './domain/repositories/change-request.repository';
@@ -28,6 +29,7 @@ import { ShipmentOutboxService } from './messaging/outbox/shipment-outbox.servic
     PrismaService,
     ShipmentStateMachine,
     ShipmentsService,
+    PricingClientService,
     ChangeRequestsService,
     ShipmentEventHandlersService,
     MarketplaceWebhookSenderService,

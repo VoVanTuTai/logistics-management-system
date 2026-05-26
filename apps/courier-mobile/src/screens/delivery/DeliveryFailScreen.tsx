@@ -111,7 +111,7 @@ export function DeliveryFailScreen({
     const payload: DeliveryFailPayload = {
       shipmentCode: values.shipmentCode,
       taskId: route.params.taskId ?? null,
-      courierId: null,
+      courierId,
       locationCode: values.locationCode || null,
       actor: session?.user.username ?? null,
       note: auditNote,

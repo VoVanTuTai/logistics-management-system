@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Req } from '@nestjs/common';
 
 import {
   NdrService,
@@ -11,6 +11,10 @@ import type {
   ReturnDecisionInput,
   RescheduleNdrCaseInput,
 } from '../../domain/entities/ndr-case.entity';
+import {
+  type AuditRequest,
+  getOpsAuditContext,
+} from './ops-audit-context';
 
 @Controller('ndr')
 export class NdrController {
@@ -43,15 +47,17 @@ export class NdrController {
   reschedule(
     @Param('id') id: string,
     @Body() body: RescheduleNdrCaseInput,
+    @Req() request: AuditRequest,
   ): Promise<NdrCase> {
-    return this.ndrService.reschedule(id, body);
+    return this.ndrService.reschedule(id, body, getOpsAuditContext(request));
   }
 
   @Post(':id/return-decision')
   returnDecision(
     @Param('id') id: string,
     @Body() body: ReturnDecisionInput,
+    @Req() request: AuditRequest,
   ): Promise<NdrReturnDecisionResult> {
-    return this.ndrService.returnDecision(id, body);
+    return this.ndrService.returnDecision(id, body, getOpsAuditContext(request));
   }
 }

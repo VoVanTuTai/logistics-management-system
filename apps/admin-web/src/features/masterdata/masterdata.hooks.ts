@@ -7,6 +7,8 @@ import type {
   ConfigWriteInput,
   HubFilters,
   HubWriteInput,
+  MerchantProfileFilters,
+  MerchantProfileWriteInput,
   NdrReasonFilters,
   NdrReasonWriteInput,
   ZoneFilters,
@@ -46,17 +48,6 @@ export function useUpdateHubMutation(accessToken: string | null) {
   return useMutation({
     mutationFn: (params: { hubId: string; payload: Partial<HubWriteInput> }) =>
       masterdataClient.updateHub(accessToken, params.hubId, params.payload),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: queryKeys.masterdataHubs });
-    },
-  });
-}
-
-export function useDeleteHubMutation(accessToken: string | null) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (hubId: string) => masterdataClient.deleteHub(accessToken, hubId),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.masterdataHubs });
     },
@@ -193,6 +184,48 @@ export function useUpdateConfigMutation(accessToken: string | null) {
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.masterdataConfigs,
+      });
+    },
+  });
+}
+
+export function useMerchantProfilesQuery(
+  accessToken: string | null,
+  filters: MerchantProfileFilters,
+) {
+  return useQuery({
+    queryKey: [
+      ...queryKeys.merchantProfiles,
+      filters.username ?? '',
+      filters.citizenId ?? '',
+      filters.regionCode ?? '',
+      filters.defaultHubCode ?? '',
+      filters.q ?? '',
+    ],
+    queryFn: () => masterdataClient.listMerchantProfiles(accessToken, filters),
+    enabled: Boolean(accessToken),
+  });
+}
+
+export function useUpsertMerchantProfileMutation(accessToken: string | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (params: {
+      username: string;
+      payload: MerchantProfileWriteInput;
+    }) =>
+      masterdataClient.upsertMerchantProfileByUsername(
+        accessToken,
+        params.username,
+        params.payload,
+      ),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.merchantProfiles,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.adminAuditLogs,
       });
     },
   });

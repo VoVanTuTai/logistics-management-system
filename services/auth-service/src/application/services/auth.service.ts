@@ -9,6 +9,8 @@ import {
 
 import type {
   AuthSession,
+  ChangePasswordInput,
+  ChangePasswordResult,
   IntrospectInput,
   IntrospectResult,
   LoginInput,
@@ -16,6 +18,7 @@ import type {
   LogoutInput,
   LogoutResult,
   RefreshSessionInput,
+  UpdateOwnProfileInput,
 } from '../../domain/entities/auth-session.entity';
 import type {
   AuthenticatedUser,
@@ -33,6 +36,10 @@ import { UserAccountRepository } from '../../domain/repositories/user-account.re
 import { HashService } from '../../infrastructure/security/hash.service';
 import { OpaqueTokenService } from '../../infrastructure/security/opaque-token.service';
 import { AuthOutboxService } from '../../messaging/outbox/auth-outbox.service';
+import {
+  AdminAuditService,
+  type AdminAuditContext,
+} from './admin-audit.service';
 
 const EMPLOYEE_LOGIN_CODE_PATTERN = /^\d{8}$/;
 const ADMIN_CODE_PATTERN = /^10000\d{3}$/;
@@ -56,6 +63,7 @@ export class AuthService {
     private readonly hashService: HashService,
     private readonly opaqueTokenService: OpaqueTokenService,
     private readonly authOutboxService: AuthOutboxService,
+    private readonly adminAuditService: AdminAuditService,
   ) {}
 
   async login(input: LoginInput): Promise<LoginResult> {
@@ -211,6 +219,54 @@ export class AuthService {
     };
   }
 
+  async updateOwnProfile(
+    input: UpdateOwnProfileInput,
+  ): Promise<AuthenticatedUser> {
+    const session = await this.getActiveSession(input.accessToken);
+    const currentUser = await this.getActiveUser(session.userId);
+    const displayName =
+      input.displayName !== undefined
+        ? this.normalizeOptionalText(input.displayName, 120) ?? null
+        : currentUser.displayName;
+    const phone =
+      input.phone !== undefined
+        ? this.normalizeOptionalText(input.phone, 30) ?? null
+        : currentUser.phone;
+
+    const updatedUser = await this.userAccountRepository.update(currentUser.id, {
+      displayName,
+      phone,
+    });
+
+    return this.toAuthenticatedUser(updatedUser);
+  }
+
+  async changePassword(
+    input: ChangePasswordInput,
+  ): Promise<ChangePasswordResult> {
+    const session = await this.getActiveSession(input.accessToken);
+    const user = await this.getActiveUser(session.userId);
+    const currentPassword = this.normalizeRequiredText(
+      input.currentPassword,
+      'currentPassword',
+      128,
+    );
+    const newPassword = this.normalizePassword(input.newPassword);
+
+    if (!this.hashService.verify(currentPassword, user.passwordHash)) {
+      throw new UnauthorizedException('Current password is incorrect.');
+    }
+
+    await this.userAccountRepository.update(user.id, {
+      passwordHash: this.hashService.digest(newPassword),
+    });
+
+    return {
+      changed: true,
+      userId: user.id,
+    };
+  }
+
   async listUsers(filters: UserAccountListFilters = {}): Promise<UserAccountView[]> {
     const users = await this.userAccountRepository.list({
       roleGroup: this.normalizeRoleGroup(filters.roleGroup),
@@ -222,7 +278,10 @@ export class AuthService {
     return users.map((user) => this.toUserAccountView(user));
   }
 
-  async createUser(input: UserCreateInput): Promise<UserAccountView> {
+  async createUser(
+    input: UserCreateInput,
+    auditContext?: AdminAuditContext,
+  ): Promise<UserAccountView> {
     const normalizedInput = this.normalizeCreateUserInput(input);
 
     const existingUser = await this.userAccountRepository.findByUsername(
@@ -246,10 +305,23 @@ export class AuthService {
       hubCodes: normalizedInput.hubCodes,
     });
 
+    await this.adminAuditService.record({
+      context: auditContext,
+      action: 'USER_CREATED',
+      targetType: 'USER',
+      targetId: user.id,
+      before: null,
+      after: this.toUserAccountView(user),
+    });
+
     return this.toUserAccountView(user);
   }
 
-  async updateUser(id: string, input: UserUpdateInput): Promise<UserAccountView> {
+  async updateUser(
+    id: string,
+    input: UserUpdateInput,
+    auditContext?: AdminAuditContext,
+  ): Promise<UserAccountView> {
     const currentUser = await this.getUserById(id);
     const normalizedInput = this.normalizeUpdateUserInput(input);
 
@@ -281,10 +353,25 @@ export class AuthService {
 
     const user = await this.userAccountRepository.update(id, payload);
 
+    await this.adminAuditService.record({
+      context: auditContext,
+      action:
+        currentUser.status !== user.status && user.status === 'DISABLED'
+          ? 'USER_DISABLED'
+          : 'USER_UPDATED',
+      targetType: 'USER',
+      targetId: user.id,
+      before: this.toUserAccountView(currentUser),
+      after: this.toUserAccountView(user),
+    });
+
     return this.toUserAccountView(user);
   }
 
-  async deleteUser(id: string): Promise<{ deleted: boolean; userId: string | null }> {
+  async deleteUser(
+    id: string,
+    auditContext?: AdminAuditContext,
+  ): Promise<{ deleted: boolean; userId: string | null }> {
     const user = await this.userAccountRepository.findById(id);
 
     if (!user) {
@@ -295,6 +382,17 @@ export class AuthService {
     }
 
     const deleted = await this.userAccountRepository.delete(id);
+
+    if (deleted) {
+      await this.adminAuditService.record({
+        context: auditContext,
+        action: 'USER_DELETED',
+        targetType: 'USER',
+        targetId: user.id,
+        before: this.toUserAccountView(user),
+        after: null,
+      });
+    }
 
     return {
       deleted,
@@ -310,6 +408,22 @@ export class AuthService {
     }
 
     return user;
+  }
+
+  private async getActiveSession(accessToken: string): Promise<AuthSession> {
+    if (!accessToken) {
+      throw new BadRequestException('accessToken is required.');
+    }
+
+    const session = await this.authSessionRepository.findActiveByAccessTokenHash(
+      this.hashService.digest(accessToken),
+    );
+
+    if (!session || this.isExpired(session.accessTokenExpiresAt)) {
+      throw new UnauthorizedException('Access token is invalid or expired.');
+    }
+
+    return this.authSessionRepository.touch(session.id);
   }
 
   private async getUserById(userId: string): Promise<UserAccount> {
@@ -475,6 +589,18 @@ export class AuthService {
   private normalizeOptionalPassword(value: unknown): string | undefined {
     const normalizedValue = this.normalizeOptionalText(value, 128);
     return normalizedValue && normalizedValue.length > 0 ? normalizedValue : undefined;
+  }
+
+  private normalizePassword(value: unknown): string {
+    const password = this.normalizeRequiredText(value, 'newPassword', 128);
+
+    if (password.length < 8 || !/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+      throw new BadRequestException(
+        'newPassword must be at least 8 characters and include letters and numbers.',
+      );
+    }
+
+    return password;
   }
 
   private normalizeOptionalText(value: unknown, maxLength: number): string | undefined {

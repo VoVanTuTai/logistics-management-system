@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   Alert,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,7 +11,8 @@ import {
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { useCollectCodMutation } from '../../features/cod/cod.queries';
+import { useCollectCodMutation, useCompanyBankInfoQuery } from '../../features/cod/cod.queries';
+import { canAccessCourierFeature } from '../../features/permissions/courier-permissions';
 import type { AppNavigatorParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
 import { resolveCourierId } from '../../utils/courier';
@@ -24,8 +26,10 @@ export function CodCollectScreen({ route, navigation }: Props): React.JSX.Elemen
   const session = useAppStore((state) => state.session);
   const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
   const accessToken = session?.tokens.accessToken ?? null;
+  const canCollectCod = canAccessCourierFeature(session?.user, 'scan.delivery-sign');
 
   const collectMutation = useCollectCodMutation(accessToken);
+  const bankInfoQuery = useCompanyBankInfoQuery({ accessToken });
 
   const [paymentMethod, setPaymentMethod] = React.useState<'COD' | 'BANK_TRANSFER'>('COD');
   const [collectedAmount, setCollectedAmount] = React.useState(
@@ -34,8 +38,14 @@ export function CodCollectScreen({ route, navigation }: Props): React.JSX.Elemen
   const [note, setNote] = React.useState('');
 
   const shipmentCode = route.params.shipmentCode ?? '';
+  const transferMemo = shipmentCode ? `COD ${shipmentCode}` : 'COD';
 
   const handleSubmit = async () => {
+    if (!canCollectCod) {
+      Alert.alert('Không có quyền', 'Tài khoản hiện tại chưa được phân quyền thu COD.');
+      return;
+    }
+
     if (!shipmentCode) {
       Alert.alert('Lỗi', 'Thiếu mã vận đơn');
       return;
@@ -47,12 +57,20 @@ export function CodCollectScreen({ route, navigation }: Props): React.JSX.Elemen
       return;
     }
 
+    if (paymentMethod === 'BANK_TRANSFER') {
+      Alert.alert(
+        'Chờ xác nhận chuyển khoản',
+        `Cho khách chuyển đúng nội dung "${transferMemo}". Hệ thống sẽ chờ SePay/ngân hàng xác nhận tiền vào công ty, không ghi nhận thu thủ công.`,
+      );
+      return;
+    }
+
     try {
       await collectMutation.mutateAsync({
         shipmentCode,
         collectedAmount: parsedAmount,
         courierId: courierId ?? '',
-        paymentMethod,
+        paymentMethod: 'COD',
         idempotencyKey: createIdempotencyKey('cod-collect'),
         occurredAt: new Date().toISOString(),
         note: note.trim() || undefined,
@@ -152,8 +170,32 @@ export function CodCollectScreen({ route, navigation }: Props): React.JSX.Elemen
       {paymentMethod === 'BANK_TRANSFER' ? (
         <View style={styles.hintCard}>
           <Text style={styles.hintText}>
-            Khi chọn chuyển khoản, khách hàng sẽ chuyển vào tài khoản công ty.
-            Tiền sẽ được ghi nhận tự động sau khi đối soát.
+            Khi chọn chuyển khoản, khách hàng chuyển thẳng vào tài khoản công ty.
+            Tiền sẽ được ghi nhận sau khi SePay/ngân hàng xác nhận.
+          </Text>
+        </View>
+      ) : null}
+
+      {paymentMethod === 'BANK_TRANSFER' && bankInfoQuery.data ? (
+        <View style={styles.qrCard}>
+          <Text style={styles.qrTitle}>QR chuyển khoản công ty</Text>
+          <Image
+            source={{
+              uri: `https://img.vietqr.io/image/${bankInfoQuery.data.bin}-${bankInfoQuery.data.accountNumber}-compact2.png?amount=${Number(collectedAmount) || 0}&addInfo=${encodeURIComponent(transferMemo)}&accountName=${encodeURIComponent(bankInfoQuery.data.accountName)}`,
+            }}
+            style={styles.qrImage}
+            resizeMode="contain"
+          />
+          <Text style={styles.qrLine}>STK: {bankInfoQuery.data.accountNumber}</Text>
+          <Text style={styles.qrLine}>Chủ TK: {bankInfoQuery.data.accountName}</Text>
+          <Text style={styles.qrMemo}>Nội dung: {transferMemo}</Text>
+        </View>
+      ) : null}
+
+      {paymentMethod === 'BANK_TRANSFER' && bankInfoQuery.isError ? (
+        <View style={styles.hintCard}>
+          <Text style={styles.hintText}>
+            Chưa tải được tài khoản công ty. Vui lòng thử lại trước khi cho khách chuyển khoản.
           </Text>
         </View>
       ) : null}
@@ -161,15 +203,19 @@ export function CodCollectScreen({ route, navigation }: Props): React.JSX.Elemen
       <Pressable
         style={[
           styles.submitButton,
-          collectMutation.isPending && styles.submitButtonDisabled,
+          (!canCollectCod || collectMutation.isPending) && styles.submitButtonDisabled,
         ]}
-        disabled={collectMutation.isPending}
+        disabled={!canCollectCod || collectMutation.isPending}
         onPress={() => {
           void handleSubmit();
         }}
       >
         <Text style={styles.submitButtonText}>
-          {collectMutation.isPending ? 'Đang xử lý...' : 'Xác nhận thu tiền'}
+          {collectMutation.isPending
+            ? 'Đang xử lý...'
+            : paymentMethod === 'BANK_TRANSFER'
+              ? 'Chờ SePay xác nhận'
+              : 'Xác nhận thu tiền'}
         </Text>
       </Pressable>
     </ScrollView>
@@ -261,6 +307,33 @@ const styles = StyleSheet.create({
   hintText: {
     ...theme.typography.body.sm,
     color: '#92400E',
+  },
+  qrCard: {
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    padding: theme.spacing.md,
+    gap: theme.spacing.xs,
+  },
+  qrTitle: {
+    ...theme.typography.subtitle.sm,
+    color: theme.colors.textPrimary,
+    fontWeight: '700',
+  },
+  qrImage: {
+    width: 220,
+    height: 260,
+  },
+  qrLine: {
+    ...theme.typography.caption.md,
+    color: theme.colors.textSecondary,
+  },
+  qrMemo: {
+    ...theme.typography.body.sm,
+    color: theme.colors.primary,
+    fontWeight: '800',
   },
   submitButton: {
     backgroundColor: theme.colors.primary,

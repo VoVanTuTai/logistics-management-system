@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+
+<html class="light" lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NEXUS Logistic - Tài khoản</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-bright": "#faf9ff",
+                        "secondary-container": "#0071e6",
+                        "surface": "#faf9ff",
+                        "inverse-surface": "#1d3054",
+                        "background": "#faf9ff",
+                        "on-surface": "#051a3e",
+                        "on-tertiary-fixed": "#001f27",
+                        "error-container": "#ffdad6",
+                        "inverse-on-surface": "#edf0ff",
+                        "on-secondary": "#ffffff",
+                        "secondary": "#0059b8",
+                        "inverse-primary": "#b2c5ff",
+                        "surface-container": "#e9edff",
+                        "outline-variant": "#c3c6d6",
+                        "surface-container-highest": "#d8e2ff",
+                        "primary": "#003d9b",
+                        "on-secondary-container": "#fefcff",
+                        "on-primary-fixed": "#001848",
+                        "outline": "#737685",
+                        "on-error": "#ffffff",
+                        "on-tertiary-container": "#76e2ff",
+                        "on-surface-variant": "#434654",
+                        "on-primary": "#ffffff",
+                        "secondary-fixed-dim": "#abc7ff",
+                        "on-tertiary-fixed-variant": "#004e5d",
+                        "primary-fixed-dim": "#b2c5ff",
+                        "primary-container": "#0052cc",
+                        "secondary-fixed": "#d7e2ff",
+                        "tertiary-container": "#006477",
+                        "surface-container-high": "#e1e8ff",
+                        "primary-fixed": "#dae2ff",
+                        "tertiary-fixed-dim": "#48d7f9",
+                        "on-primary-container": "#c4d2ff",
+                        "tertiary": "#004b59",
+                        "on-secondary-fixed-variant": "#004590",
+                        "tertiary-fixed": "#afecff",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed": "#001b3f",
+                        "surface-variant": "#d8e2ff",
+                        "on-primary-fixed-variant": "#0040a2",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#f1f3ff",
+                        "on-background": "#051a3e",
+                        "surface-tint": "#0c56d0",
+                        "error": "#ba1a1a",
+                        "surface-dim": "#ccdaff",
+                        "on-tertiary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "1.5rem",
+                        "container-max-width": "1440px",
+                        "margin-mobile": "1rem",
+                        "margin-desktop": "2rem",
+                        "stack-sm": "0.5rem",
+                        "stack-md": "1rem",
+                        "stack-lg": "2rem"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-xl": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "label-md": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "headline-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": ["22px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-xl": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "body-sm": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                        "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .sidebar-scroll::-webkit-scrollbar { width: 4px; }
+        .sidebar-scroll::-webkit-scrollbar-thumb { background: #c3c6d6; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-background text-on-background">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-full w-[280px] bg-surface-container-low border-r border-outline-variant flex flex-col p-4 gap-2 z-50">
+<div class="mb-6 px-4">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">NEXUS Logistic</h1>
+<p class="font-label-md text-label-md text-on-surface-variant">Merchant Portal</p>
+</div>
+<button class="mb-4 flex items-center justify-center gap-2 bg-primary-container text-on-primary-container py-3 px-4 rounded-lg font-bold transition-all duration-200 active:scale-95 shadow-sm">
+<span class="material-symbols-outlined">add_box</span>
+<span class="font-label-md text-label-md">Tạo đơn mới</span>
+</button>
+<nav class="flex-1 flex flex-col gap-1 sidebar-scroll overflow-y-auto">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Tổng quan</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">add_box</span>
+<span class="font-label-md text-label-md">Tạo đơn hàng</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-label-md text-label-md">Danh sách đơn hàng</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">local_shipping</span>
+<span class="font-label-md text-label-md">Yêu cầu lấy hàng</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">search</span>
+<span class="font-label-md text-label-md">Tra cứu vận đơn</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">edit_note</span>
+<span class="font-label-md text-label-md">Yêu cầu đổi thông tin giao</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">assignment_return</span>
+<span class="font-label-md text-label-md">Yêu cầu hoàn hàng</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">print</span>
+<span class="font-label-md text-label-md">In vận đơn</span>
+</a>
+<!-- Active Tab: Tài khoản -->
+<a class="flex items-center gap-3 px-4 py-3 bg-secondary-container text-on-secondary-container rounded-lg font-bold" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="font-label-md text-label-md">Tài khoản</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">notifications</span>
+<span class="font-label-md text-label-md">Thông báo</span>
+</a>
+</nav>
+<div class="pt-4 border-t border-outline-variant flex flex-col gap-1">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">refresh</span>
+<span class="font-label-md text-label-md">Tải lại</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg text-error" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-label-md text-label-md">Đăng xuất</span>
+</a>
+</div>
+</aside>
+<!-- TopNavBar -->
+<header class="fixed top-0 right-0 left-[280px] h-16 bg-surface border-b border-outline-variant flex justify-between items-center px-8 z-40 shadow-sm">
+<div class="flex items-center gap-4">
+<span class="font-headline-lg text-headline-lg font-bold text-on-surface">NEXUS Logistic</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant">search</span>
+<input class="pl-10 pr-4 py-2 bg-surface-container-low border border-outline-variant rounded-lg focus:outline-none focus:ring-2 focus:ring-primary w-64 text-body-md" placeholder="Tìm kiếm vận đơn..." type="text"/>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">help</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">settings</button>
+<div class="h-8 w-px bg-outline-variant"></div>
+<div class="flex items-center gap-3">
+<div class="text-right">
+<p class="font-label-md text-label-md text-on-surface">Minh Tran</p>
+<p class="text-body-sm text-on-surface-variant">ID: 8829</p>
+</div>
+<img alt="Minh Tran Avatar" class="h-10 w-10 rounded-full object-cover border-2 border-primary-container" data-alt="A professional close-up headshot of a middle-aged man with a friendly smile, set against a clean, softly blurred modern office environment. The lighting is bright and natural, reflecting a high-key corporate aesthetic. He is wearing a sharp, navy blue business casual shirt that aligns with a professional logistics portal theme. The image has a crisp, high-definition quality with a shallow depth of field." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDiv30y1H5maXpn_lyAk_vNxQ0uO12Acx9Gyyx6CKUNH1op9S5Ev5F2vHLiF7iH4YVwaook-Pi-NbfZ1WRwpfTqRAsdgI7J-MYCC0ltY6370BJ77xUwG6BLhzyiZUy9ybSOhdukbLIdgj84uVxMM1F7fnP40M6dMPtBi5wW9M15iPG7DnPOwFThDtmp-UnAxMjGMGVLSarqA3jt1cZWmHLwFihBPIg51U7hlypEUd29kTBL_bAF-bYizX2-elDGHwGDUC289VcvlK0"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="ml-[280px] mt-16 p-8 bg-background min-h-screen">
+<div class="max-w-6xl mx-auto">
+<header class="mb-8">
+<h2 class="font-headline-xl text-headline-xl text-on-surface">Tài khoản</h2>
+<p class="text-body-md text-on-surface-variant">Quản lý thông tin định danh và cài đặt bảo mật của bạn.</p>
+</header>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Profile Information Column -->
+<div class="lg:col-span-2 space-y-6">
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 shadow-sm">
+<div class="flex items-center gap-4 mb-8 border-b border-surface-container-high pb-6">
+<span class="material-symbols-outlined text-primary text-3xl">badge</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">Thông tin tài khoản</h3>
+</div>
+<div class="flex flex-col md:flex-row gap-8 items-start">
+<div class="relative group">
+<img alt="Admin Store Logo" class="h-32 w-32 rounded-xl object-cover border border-outline-variant shadow-sm" data-alt="A clean, minimalist business logo displayed on a textured white card. The logo features abstract geometric shapes in shades of corporate blue and slate gray. The lighting is even and professional, suggesting a modern logistics or technology firm. The surrounding space is clean and bright, maintaining a high-end SaaS platform aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAYTOXI36e_7qPSvtw6Ax5_oZKbIy5ZrKwjFQdOekR1qnDE8zGN50aawwdeO9fbqyoZXXtWs8hXoj7np59poz6XMeBeUvcxVHapHVOo2AWN5BHfQcJvj5Kvw9Gvyavf0GJchy5kC-lmA65ADodLDK6Uu1T6vZEHbuA9A7WBK0fNrwb6-4-xWE2oDTlydRFwaTcFRYQa6ntz0zRiePMe3z5UVasT-keG-9ShHS5DgbACPj7lO3zNCYJUFFQ7ljO9foyolvrWNeTHHmE"/>
+<button class="absolute -bottom-2 -right-2 bg-primary text-white p-2 rounded-full shadow-lg hover:bg-secondary transition-colors">
+<span class="material-symbols-outlined text-sm">edit</span>
+</button>
+</div>
+<div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+<div class="space-y-1">
+<label class="font-label-md text-label-md text-on-surface-variant">Tên Merchant</label>
+<input class="w-full px-4 py-2 bg-surface border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all text-body-md" type="text" value="Minh Tran / Admin Store"/>
+</div>
+<div class="space-y-1">
+<label class="font-label-md text-label-md text-on-surface-variant">Merchant ID</label>
+<input class="w-full px-4 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md opacity-70 cursor-not-allowed" disabled="" type="text" value="29048"/>
+</div>
+<div class="space-y-1">
+<label class="font-label-md text-label-md text-on-surface-variant">Số điện thoại</label>
+<input class="w-full px-4 py-2 bg-surface border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all text-body-md" type="tel" value="0901234567"/>
+</div>
+<div class="space-y-1">
+<label class="font-label-md text-label-md text-on-surface-variant">Email</label>
+<input class="w-full px-4 py-2 bg-surface border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all text-body-md" type="email" value="contact@merchant.com"/>
+</div>
+<div class="space-y-1 md:col-span-2">
+<label class="font-label-md text-label-md text-on-surface-variant">Địa chỉ kinh doanh</label>
+<textarea class="w-full px-4 py-2 bg-surface border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all text-body-md" rows="2">123 Đường Lê Lợi, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh</textarea>
+</div>
+</div>
+</div>
+<div class="mt-8 flex justify-end">
+<button class="bg-primary hover:bg-secondary text-on-secondary px-8 py-3 rounded-lg font-label-md transition-all duration-200 active:scale-95 shadow-sm">
+                                Lưu thay đổi
+                            </button>
+</div>
+</section>
+</div>
+<!-- Security Column -->
+<div class="space-y-6">
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 shadow-sm">
+<div class="flex items-center gap-4 mb-6 border-b border-surface-container-high pb-6">
+<span class="material-symbols-outlined text-primary">lock</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">Đổi mật khẩu</h3>
+</div>
+<form class="space-y-4">
+<div class="space-y-1">
+<label class="font-label-md text-label-md text-on-surface-variant">Mật khẩu hiện tại</label>
+<div class="relative">
+<input class="w-full px-4 py-2 bg-surface border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all text-body-md" placeholder="••••••••" type="password"/>
+<button class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary" type="button">
+<span class="material-symbols-outlined text-sm">visibility</span>
+</button>
+</div>
+</div>
+<div class="space-y-1">
+<label class="font-label-md text-label-md text-on-surface-variant">Mật khẩu mới</label>
+<div class="relative">
+<input class="w-full px-4 py-2 bg-surface border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all text-body-md" placeholder="Nhập mật khẩu mới" type="password"/>
+<button class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary" type="button">
+<span class="material-symbols-outlined text-sm">visibility</span>
+</button>
+</div>
+<p class="text-[10px] text-on-surface-variant mt-1 italic">Tối thiểu 8 ký tự, bao gồm chữ cái và số.</p>
+</div>
+<div class="space-y-1">
+<label class="font-label-md text-label-md text-on-surface-variant">Xác nhận mật khẩu mới</label>
+<div class="relative">
+<input class="w-full px-4 py-2 bg-surface border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all text-body-md" placeholder="Nhập lại mật khẩu mới" type="password"/>
+<button class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary" type="button">
+<span class="material-symbols-outlined text-sm">visibility</span>
+</button>
+</div>
+</div>
+<button class="w-full mt-4 bg-transparent border border-primary text-primary hover:bg-surface-container-high px-4 py-3 rounded-lg font-label-md transition-all duration-200 active:scale-95" type="button">
+                                Cập nhật mật khẩu
+                            </button>
+</form>
+</section>
+<!-- Summary Stats Card (Added for Visual Completeness) -->
+<section class="bg-primary text-on-primary rounded-xl p-6 shadow-lg overflow-hidden relative">
+<div class="relative z-10">
+<h4 class="font-label-md text-label-md opacity-80 uppercase tracking-widest">Trạng thái tài khoản</h4>
+<div class="mt-4 flex items-end justify-between">
+<div>
+<p class="font-headline-lg text-headline-lg">Đã xác thực</p>
+<p class="text-body-sm opacity-90 mt-1">Gia nhập từ: 15/05/2023</p>
+</div>
+<span class="material-symbols-outlined text-4xl opacity-50">verified_user</span>
+</div>
+</div>
+<!-- Background decoration -->
+<div class="absolute -right-8 -bottom-8 w-32 h-32 bg-white/10 rounded-full blur-3xl"></div>
+</section>
+</div>
+</div>
+<!-- Footer Meta -->
+<footer class="mt-12 text-center text-on-surface-variant text-body-sm pb-8">
+<p>© 2024 NEXUS Logistic Platform. Bảo mật thông tin merchant là ưu tiên hàng đầu của chúng tôi.</p>
+</footer>
+</div>
+</main>
+</body></html>

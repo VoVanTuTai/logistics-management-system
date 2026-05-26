@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 
 import { useTrackingDetailQuery } from '../../features/tracking/tracking.api';
 import { routePaths } from '../../navigation/routes';
-import { getErrorMessage } from '../../services/api/errors';
+import { ApiClientError, getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
 import { formatDateTime } from '../../utils/format';
 import { TrackingTimelineTable } from './TrackingTimelineTable';
@@ -19,6 +19,18 @@ export function TrackingDetailPage(): React.JSX.Element {
   }
 
   if (detailQuery.isError) {
+    if (detailQuery.error instanceof ApiClientError && detailQuery.error.status === 404) {
+      return (
+        <section>
+          <h2>Không tìm thấy vận đơn</h2>
+          <p>Không có dữ liệu hành trình cho mã {shipmentCode}.</p>
+          <p>
+            <Link to={routePaths.tracking}>Quay lại tra cứu hành trình</Link>
+          </p>
+        </section>
+      );
+    }
+
     return <p style={styles.errorText}>{getErrorMessage(detailQuery.error)}</p>;
   }
 

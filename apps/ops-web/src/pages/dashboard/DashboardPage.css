@@ -124,6 +124,16 @@
   gap: 14px;
 }
 
+.ops-dashboard__content--analytics {
+  display: block;
+}
+
+.ops-dashboard__content--analytics .analytics-dash {
+  min-height: auto;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
 .ops-dashboard__main,
 .ops-dashboard__menu-side {
   display: grid;
@@ -185,7 +195,8 @@
 .ops-menu-grid {
   display: grid;
   gap: 10px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: minmax(220px, 1.12fr) repeat(3, minmax(0, 1fr));
+  grid-auto-rows: minmax(130px, auto);
 }
 
 .ops-menu-tile {
@@ -208,6 +219,17 @@
     background-color 0.2s ease;
 }
 
+.ops-menu-tile--featured {
+  --ops-menu-accent: #1d4ed8;
+  grid-row: span 2;
+  min-height: 270px;
+  padding: 24px 18px;
+  background:
+    linear-gradient(135deg, rgba(29, 78, 216, 0.1), rgba(14, 165, 233, 0.08)),
+    #ffffff;
+  border-color: #b8c7ee;
+}
+
 .ops-menu-tile:hover {
   text-decoration: none;
   transform: translateY(-1px);
@@ -218,6 +240,12 @@
 .ops-menu-tile strong {
   font-size: 17px;
   line-height: 1.25;
+}
+
+.ops-menu-tile--featured strong {
+  max-width: 240px;
+  font-size: 24px;
+  line-height: 1.15;
 }
 
 .ops-menu-tile__icon {
@@ -232,6 +260,16 @@
 .ops-menu-tile__icon svg {
   width: 52px;
   height: 52px;
+}
+
+.ops-menu-tile--featured .ops-menu-tile__icon {
+  width: 76px;
+  height: 76px;
+}
+
+.ops-menu-tile--featured .ops-menu-tile__icon svg {
+  width: 70px;
+  height: 70px;
 }
 
 .ops-menu-tile--disabled {
@@ -540,6 +578,13 @@
 @media (max-width: 1200px) {
   .ops-menu-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-auto-rows: auto;
+  }
+
+  .ops-menu-tile--featured {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    min-height: 180px;
   }
 
   .ops-dashboard__hero {
@@ -576,6 +621,10 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .ops-menu-tile--featured {
+    min-height: 160px;
+  }
+
   .ops-dashboard__metrics-grid {
     grid-template-columns: 1fr;
   }
@@ -588,6 +637,14 @@
 @media (max-width: 640px) {
   .ops-menu-grid {
     grid-template-columns: 1fr;
+  }
+
+  .ops-menu-tile--featured {
+    min-height: 150px;
+  }
+
+  .ops-menu-tile--featured strong {
+    font-size: 20px;
   }
 
   .ops-dashboard__hero-company {

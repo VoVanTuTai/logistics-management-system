@@ -1,0 +1,118 @@
+openapi: 3.0.3
+info:
+  title: Nexus Pricing Service API
+  version: 0.1.0
+paths:
+  /rates:
+    get:
+      summary: Describe active pricing rule basis
+      responses:
+        '200':
+          description: Active rate rule metadata
+  /quotes:
+    post:
+      summary: Calculate a shipment pricing quote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                serviceType:
+                  type: string
+                  enum: [STANDARD, EXPRESS, SAME_DAY]
+                sender:
+                  $ref: '#/components/schemas/PricingAddress'
+                receiver:
+                  $ref: '#/components/schemas/PricingAddress'
+                package:
+                  $ref: '#/components/schemas/PricingPackage'
+                codAmount:
+                  type: number
+                currency:
+                  type: string
+      responses:
+        '201':
+          description: Pricing quote
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PricingQuote'
+components:
+  schemas:
+    PricingAddress:
+      type: object
+      properties:
+        province:
+          type: string
+          nullable: true
+        hubCode:
+          type: string
+          nullable: true
+        region:
+          type: string
+          nullable: true
+    PricingPackage:
+      type: object
+      properties:
+        weightKg:
+          type: number
+        dimensionsCm:
+          type: object
+          properties:
+            length:
+              type: number
+            width:
+              type: number
+            height:
+              type: number
+        declaredValue:
+          type: number
+    PricingQuote:
+      type: object
+      required:
+        - quoteId
+        - quoteVersion
+        - currency
+        - serviceType
+        - zone
+        - chargeableWeightKg
+        - totalFee
+        - validUntil
+        - breakdown
+      properties:
+        quoteId:
+          type: string
+        quoteVersion:
+          type: string
+        currency:
+          type: string
+        serviceType:
+          type: string
+        zone:
+          type: string
+        actualWeightKg:
+          type: number
+        volumetricWeightKg:
+          type: number
+        chargeableWeightKg:
+          type: number
+        totalFee:
+          type: number
+        validUntil:
+          type: string
+          format: date-time
+        breakdown:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+              label:
+                type: string
+              amount:
+                type: number
+              basis:
+                type: string

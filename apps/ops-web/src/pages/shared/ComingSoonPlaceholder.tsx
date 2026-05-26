@@ -3,21 +3,19 @@ import React from 'react';
 import '../dashboard/analytics/AnalyticsDashboard.css';
 
 interface ComingSoonPlaceholderProps {
-  /** Tên module/tính năng (ví dụ: "Báo cáo công nợ") */
   title: string;
-  /** Mô tả ngắn về tính năng */
   description: string;
-  /** Tầm nhìn kiến trúc cho Phase tiếp theo */
   visionText?: string;
-  /** Phase mục tiêu (ví dụ: "Phase 2 — Q3 2026") */
   phaseLabel?: string;
+  badgeLabel?: string;
 }
 
 export function ComingSoonPlaceholder({
   title,
   description,
   visionText,
-  phaseLabel = 'Phase 2 — Coming Soon',
+  phaseLabel = 'Production hardening roadmap',
+  badgeLabel = 'Đang hoàn thiện',
 }: ComingSoonPlaceholderProps): React.JSX.Element {
   return (
     <div className="coming-soon">
@@ -29,8 +27,7 @@ export function ComingSoonPlaceholder({
           </svg>
         </div>
 
-        {/* Status badge */}
-        <span className="coming-soon__badge">Đang phát triển</span>
+        <span className="coming-soon__badge">{badgeLabel}</span>
 
         {/* Title */}
         <h2 className="coming-soon__title">{title}</h2>

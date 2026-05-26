@@ -1,15 +1,21 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
   Post,
   Query,
+  Req,
 } from '@nestjs/common';
 
 import { ConfigsService } from '../../application/services/configs.service';
 import type { Config, ConfigWriteInput } from '../../domain/entities/config.entity';
+import {
+  type AuditRequest,
+  getAdminAuditContext,
+} from './admin-audit-context';
 
 @Controller('configs')
 export class ConfigsController {
@@ -34,15 +40,27 @@ export class ConfigsController {
   }
 
   @Post()
-  create(@Body() body: ConfigWriteInput): Promise<Config> {
-    return this.configsService.create(body);
+  create(
+    @Body() body: ConfigWriteInput,
+    @Req() request: AuditRequest,
+  ): Promise<Config> {
+    return this.configsService.create(body, getAdminAuditContext(request));
   }
 
   @Patch(':id')
   update(
     @Param('id') id: string,
     @Body() body: Partial<ConfigWriteInput>,
+    @Req() request: AuditRequest,
   ): Promise<Config> {
-    return this.configsService.update(id, body);
+    return this.configsService.update(id, body, getAdminAuditContext(request));
+  }
+
+  @Delete(':id')
+  remove(
+    @Param('id') id: string,
+    @Req() request: AuditRequest,
+  ): Promise<{ deleted: boolean; configId: string | null }> {
+    return this.configsService.remove(id, getAdminAuditContext(request));
   }
 }

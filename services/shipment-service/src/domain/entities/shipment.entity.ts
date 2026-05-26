@@ -34,5 +34,21 @@ export interface CancelShipmentInput {
 
 export interface ShipmentListFilters {
   q?: string | null;
+  shipmentCode?: string | null;
   status?: string | null;
+  hubCodes?: string | string[] | null;
+  createdFrom?: string | null;
+  createdTo?: string | null;
+  limit?: string | number | null;
+  offset?: string | number | null;
+}
+
+export interface ShipmentListPageInfo {
+  hasNextPage: boolean;
+  total: number;
+}
+
+export interface ShipmentListPage {
+  items: Shipment[];
+  pageInfo: ShipmentListPageInfo;
 }

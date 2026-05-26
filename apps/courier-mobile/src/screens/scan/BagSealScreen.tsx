@@ -439,6 +439,10 @@ export function BagSealScreen(): React.JSX.Element {
       return;
     }
 
+    const shipmentCodes = shipments
+      .map((shipment) => normalizeCode(shipment.code))
+      .filter((shipmentCode) => shipmentCode.length > 0);
+
     setIsSubmitting(true);
     setScreenMessage(null);
 
@@ -450,8 +454,8 @@ export function BagSealScreen(): React.JSX.Element {
         return;
       }
 
-      const hubCode = (session?.user?.hubCodes && session.user.hubCodes.length > 0) 
-        ? session.user.hubCodes[0] 
+      const hubCode = (session?.user?.hubCodes && session.user.hubCodes.length > 0)
+        ? session.user.hubCodes[0]
         : 'SYSTEM';
 
       const note = buildBagSealAuditNote({
@@ -466,7 +470,7 @@ export function BagSealScreen(): React.JSX.Element {
         shipmentCodes,
         note,
       });
-      
+
       await manifestApi.seal(accessToken, bagManifest.id, {
         sealedBy: courierId,
         sealedByName: session?.user?.displayName || session?.user?.username,

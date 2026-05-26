@@ -7,6 +7,10 @@ export const courierEndpoints = {
     refresh: `${COURIER_PREFIX}/auth/auth/refresh`,
     logout: `${COURIER_PREFIX}/auth/auth/logout`,
     introspect: `${COURIER_PREFIX}/auth/auth/introspect`,
+    mobilePermissionEffective: (userId: string) =>
+      `${COURIER_PREFIX}/auth/auth/mobile-permissions/users/${encodeURIComponent(
+        userId,
+      )}/effective`,
   },
   tasks: {
     list: (courierId: string) =>
@@ -59,6 +63,12 @@ export const courierEndpoints = {
     fail: `${COURIER_PREFIX}/delivery/deliveries/fail`,
     ndr: `${COURIER_PREFIX}/delivery/ndr`,
     exception: `${COURIER_PREFIX}/delivery/ndr/exception`,
+  },
+  media: {
+    uploadUrl: (filename: string, contentType: string) =>
+      `${COURIER_PREFIX}/media/upload-url?filename=${encodeURIComponent(
+        filename,
+      )}&contentType=${encodeURIComponent(contentType)}`,
   },
   cod: {
     collect: `${COURIER_PREFIX}/payment/cod/collect`,
