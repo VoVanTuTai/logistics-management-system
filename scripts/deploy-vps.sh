@@ -91,17 +91,16 @@ run_node_service_command() {
     node:20-alpine \
     sh -lc '
       set -e
-      if [ -f pnpm-lock.yaml ]; then
+      if [ -f package-lock.json ]; then
+        npm ci
+        eval "$NPM_COMMAND"
+      elif [ -f pnpm-lock.yaml ]; then
         corepack enable >/dev/null 2>&1
         corepack prepare pnpm@9.15.9 --activate >/dev/null 2>&1
-        if [ ! -d node_modules ]; then
-          pnpm install --frozen-lockfile
-        fi
+        pnpm install --frozen-lockfile
         eval "$PNPM_COMMAND"
       else
-        if [ ! -d node_modules ]; then
-          npm ci
-        fi
+        npm install
         eval "$NPM_COMMAND"
       fi
     '
