@@ -34,6 +34,7 @@ PUBLIC_TRACKING_PUBLIC_URL=https://tracking.nexus-ex.site
 GATEWAY_PUBLIC_URL=https://ops.nexus-ex.site
 MINIO_PUBLIC_ENDPOINT=https://minio.nexus-ex.site
 CORS_ORIGINS=https://ops.nexus-ex.site,https://merchant.nexus-ex.site,https://admin.nexus-ex.site,https://tracking.nexus-ex.site
+MINIO_API_PORT=19000
 ```
 
 Do not build an HTTPS frontend with `GATEWAY_PUBLIC_URL=http://...`.
@@ -52,7 +53,8 @@ sudo certbot --nginx \
   -d ops.nexus-ex.site \
   -d merchant.nexus-ex.site \
   -d admin.nexus-ex.site \
-  -d tracking.nexus-ex.site
+  -d tracking.nexus-ex.site \
+  -d minio.nexus-ex.site
 ```
 
 Change the default passwords before running:
@@ -73,6 +75,10 @@ admin-web:        https://admin.nexus-ex.site
 public-tracking:  https://tracking.nexus-ex.site
 minio API:        https://minio.nexus-ex.site
 ```
+
+MinIO binds on `127.0.0.1:${MINIO_API_PORT}` and is exposed publicly through
+the host Nginx `minio.nexus-ex.site` server block. Keep it on a non-standard
+host port such as `19000` to avoid collisions with existing services on `9000`.
 
 ## Operations
 
