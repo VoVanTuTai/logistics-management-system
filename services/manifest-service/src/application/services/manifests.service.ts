@@ -48,6 +48,17 @@ export class ManifestsService {
     return manifest;
   }
 
+  async getByManifestCode(manifestCodeInput: string): Promise<Manifest> {
+    const manifestCode = this.normalizeManifestCode(manifestCodeInput);
+    const manifest = await this.manifestRepository.findByManifestCode(manifestCode);
+
+    if (!manifest) {
+      throw new NotFoundException(`Manifest "${manifestCode}" was not found.`);
+    }
+
+    return manifest;
+  }
+
   async create(input: CreateManifestInput): Promise<Manifest> {
     const manifestCode = this.normalizeManifestCode(input.manifestCode);
     const shipmentCodes = this.normalizeShipmentCodes(input.shipmentCodes);

@@ -25,6 +25,11 @@ export class ManifestsController {
     return this.manifestsService.list();
   }
 
+  @Get('code/:manifestCode')
+  getByManifestCode(@Param('manifestCode') manifestCode: string): Promise<Manifest> {
+    return this.manifestsService.getByManifestCode(manifestCode);
+  }
+
   @Get(':id')
   getById(@Param('id') id: string): Promise<Manifest> {
     return this.manifestsService.getById(id);
