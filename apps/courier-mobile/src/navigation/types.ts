@@ -40,6 +40,9 @@ export type AppNavigatorParamList = {
     taskId?: string;
     shipmentCode?: string;
   };
+  GoodsArrival: {
+    shipmentCode?: string;
+  } | undefined;
   BagSeal: undefined;
   BagUnseal: undefined;
   SendGoods: undefined;

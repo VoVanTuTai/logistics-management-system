@@ -201,9 +201,7 @@ export function ScanScreen(): React.JSX.Element {
     }
 
     if (action.id === 'kien-den') {
-      navigation.navigate('HubScan', {
-        mode: 'INBOUND',
-      });
+      navigation.navigate('GoodsArrival');
       return;
     }
 
@@ -265,20 +263,22 @@ export function ScanScreen(): React.JSX.Element {
       return;
     }
 
-    if (pendingAction.id === 'kien-den' || pendingAction.id === 'xe-den') {
-      navigation.navigate('HubScan', {
-        mode: 'INBOUND',
+    if (pendingAction.id === 'kien-den') {
+      navigation.navigate('GoodsArrival', {
         shipmentCode: parsed.value,
       });
       setPendingAction(null);
       return;
     }
 
+    if (pendingAction.id === 'xe-den') {
+      navigation.navigate('VehicleInbound');
+      setPendingAction(null);
+      return;
+    }
+
     if (pendingAction.id === 'xe-di') {
-      navigation.navigate('HubScan', {
-        mode: 'OUTBOUND',
-        shipmentCode: parsed.value,
-      });
+      navigation.navigate('VehicleOutbound');
       setPendingAction(null);
       return;
     }

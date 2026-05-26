@@ -107,7 +107,6 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
   const [submitMessage, setSubmitMessage] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [paymentMethod, setPaymentMethod] = React.useState<'COD' | 'BANK_TRANSFER'>('COD');
-  const [receiverNameInput, setReceiverNameInput] = React.useState('');
 
   const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
   const bankInfoQuery = useCompanyBankInfoQuery({ accessToken: session?.tokens.accessToken ?? null });
@@ -116,8 +115,6 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
 
   const codAmount = shipmentQuery.data?.codAmount ?? 0;
   const shipmentMetadata = shipmentQuery.data?.metadata ?? null;
-  const receiverName =
-    readMetadataString(shipmentMetadata, ['receiverName', 'receiver.name']) ?? 'N/A';
   const receiverPhone =
     readMetadataString(shipmentMetadata, [
       'receiverPhone',
@@ -200,11 +197,6 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
       return;
     }
 
-    if (!receiverNameInput.trim()) {
-      setSubmitMessage('Vui lòng nhập tên người nhận hàng.');
-      return;
-    }
-
     if (hasAmountToPay && !paymentMethod) {
       setSubmitMessage('Vui lòng chọn phương thức thanh toán.');
       return;
@@ -215,7 +207,7 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
       username: session?.user.username,
       courierId,
       hubCode: session?.user.hubCodes?.[0] ?? null,
-      note: note.trim().length > 0 ? note.trim() : `Ký nhận giao hàng. Người nhận: ${receiverNameInput.trim()}`,
+      note: note.trim().length > 0 ? note.trim() : 'Ký nhận giao hàng.',
     });
 
     const payload: DeliverySuccessPayload = {
@@ -292,7 +284,7 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
         result.source === 'DUPLICATE_REPLAY'
           ? 'Server đã trả lại kết quả cũ cho idempotencyKey trùng lặp.'
           : taskStatusUpdated
-            ? `✓ Ký nhận thành công! Người nhận: ${receiverNameInput.trim()}. Task đã chuyển COMPLETED.`
+            ? '✓ Ký nhận thành công. Task đã chuyển COMPLETED.'
             : '✓ Ký nhận thành công. Trạng thái đơn đã được cập nhật.';
       const paymentMessage =
         codAmount > 0 && paymentMethod === 'BANK_TRANSFER'
@@ -344,7 +336,6 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
     paymentMethod,
     photoUri,
     queryClient,
-    receiverNameInput,
     resolvedShipmentCode,
     route.params.taskId,
     session?.tokens.accessToken,
@@ -376,10 +367,6 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Shipment</Text>
               <Text style={styles.infoValue}>{resolvedShipmentCode ?? 'N/A'}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Người nhận</Text>
-              <Text style={styles.infoValue}>{receiverName}</Text>
             </View>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Số điện thoại</Text>
@@ -546,17 +533,6 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
                 </Pressable>
               ) : null}
             </View>
-          </Card>
-
-          <Card>
-            <Text style={styles.sectionTitle}>Tên người nhận hàng</Text>
-            <TextInput
-              placeholder="Nhập tên người nhận (bắt buộc)"
-              placeholderTextColor="#94A3B8"
-              style={styles.noteInput}
-              value={receiverNameInput}
-              onChangeText={setReceiverNameInput}
-            />
           </Card>
 
           <Card>
@@ -1033,4 +1009,3 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
-

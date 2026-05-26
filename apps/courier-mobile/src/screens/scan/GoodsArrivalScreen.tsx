@@ -23,6 +23,7 @@ import {
   parseVehicleLabel,
   type VehicleLabelInfo,
 } from '../../features/scan/vehicle-label';
+import { ApiClientError } from '../../services/api/client';
 import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
 import {
@@ -79,6 +80,24 @@ function resolveBagManifest(
       (manifest) => normalizeCode(manifest.manifestCode) === normalizedBagCode,
     ) ?? null
   );
+}
+
+function buildSyncedVehicleInfo(
+  scannedVehicleInfo: VehicleLabelInfo,
+  manifest: BagManifestDto,
+): VehicleLabelInfo {
+  return {
+    ...scannedVehicleInfo,
+    vehicleCode: normalizeCode(manifest.manifestCode || scannedVehicleInfo.vehicleCode),
+    originHubCode:
+      manifest.originHubCode?.trim().toUpperCase() ||
+      scannedVehicleInfo.originHubCode ||
+      'UNKNOWN',
+    destinationHubCode:
+      manifest.destinationHubCode?.trim().toUpperCase() ||
+      scannedVehicleInfo.destinationHubCode ||
+      'UNKNOWN',
+  };
 }
 
 export function GoodsArrivalScreen({
@@ -158,17 +177,38 @@ export function GoodsArrivalScreen({
     [hasVehicleInfo],
   );
 
-  const applyVehicleLabel = React.useCallback((rawValue: string) => {
-    const nextVehicleInfo = parseVehicleLabel(rawValue);
-    if (!nextVehicleInfo) {
-      setScreenMessage('Tem xe không hợp lệ. Cần QR JSON hoặc VEH|Mã tem xe|Hub đi|Hub đến|Biển số.');
+  const applyVehicleLabel = React.useCallback(async (rawValue: string) => {
+    if (!accessToken) {
+      setGlobalError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
       return;
     }
 
-    setVehicleInfo(nextVehicleInfo);
-    setManualVehicleInput('');
-    setScreenMessage(`Đã nhận tem xe ${nextVehicleInfo.vehicleCode}.`);
-  }, []);
+    const nextVehicleInfo = parseVehicleLabel(rawValue);
+    if (!nextVehicleInfo) {
+      setScreenMessage('Tem xe không hợp lệ. Vui lòng quét hoặc nhập đúng mã tem xe.');
+      return;
+    }
+
+    try {
+      const manifest = await manifestApi.detailByCode(accessToken, nextVehicleInfo.vehicleCode);
+      const syncedVehicleInfo = buildSyncedVehicleInfo(nextVehicleInfo, manifest);
+      setVehicleInfo(syncedVehicleInfo);
+      setManualVehicleInput('');
+      setScreenMessage(`Đã nhận tem xe ${syncedVehicleInfo.vehicleCode} từ hệ thống.`);
+    } catch (error) {
+      if (error instanceof ApiClientError && error.status === 404) {
+        setVehicleInfo(null);
+        setScreenMessage(
+          `Tem xe ${nextVehicleInfo.vehicleCode} chưa được tạo hoặc chưa đồng bộ trên Ops Web. Vui lòng tạo tem xe ở Ops rồi quét lại.`,
+        );
+        return;
+      }
+
+      const message = error instanceof Error ? error.message : 'Không kiểm tra được tem xe.';
+      setScreenMessage(message);
+      setGlobalError(message);
+    }
+  }, [accessToken, setGlobalError]);
 
   React.useEffect(() => {
     return () => {
@@ -216,7 +256,7 @@ export function GoodsArrivalScreen({
     const scannedValue = parsed?.value ?? result.data;
 
     if (!hasVehicleInfo) {
-      applyVehicleLabel(scannedValue);
+      void applyVehicleLabel(scannedValue);
       return;
     }
 
@@ -233,7 +273,7 @@ export function GoodsArrivalScreen({
   };
 
   const addVehicleManually = () => {
-    applyVehicleLabel(manualVehicleInput);
+    void applyVehicleLabel(manualVehicleInput);
   };
 
   const resetVehicle = () => {
@@ -487,13 +527,13 @@ export function GoodsArrivalScreen({
             <TextInput
               value={manualVehicleInput}
               onChangeText={setManualVehicleInput}
-              placeholder="VEH|Mã tem xe|Hub đi|Hub đến|Biển số"
+              placeholder="Nhập mã tem xe"
               placeholderTextColor="#9CA3AF"
               style={[styles.fieldInput, styles.codeInput]}
               autoCapitalize="characters"
             />
             <Pressable onPress={addVehicleManually} style={styles.addButton}>
-              <Text style={styles.addButtonText}>Nhận tem</Text>
+              <Text style={styles.addButtonText}>Kiểm tra</Text>
             </Pressable>
           </View>
           {vehicleInfo ? (

@@ -195,6 +195,7 @@ export function buildVehicleOutboundAuditNote(input: {
     `Mã hub: ${hubCode}`,
     `Tem xe: ${vehicleCode}`,
     `Biển số: ${licensePlate}`,
+    seals && seals.length > 0 ? `SEAL_CODES=${seals.join(',')}` : null,
     seals && seals.length > 0 ? `Seal xe: ${seals.join(',')}` : null,
   ]
     .filter(Boolean)

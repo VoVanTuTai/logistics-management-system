@@ -4,7 +4,7 @@ const os = require('os');
 const { spawn } = require('child_process');
 
 const DEFAULT_PORT = 8081;
-const DEFAULT_GATEWAY_BASE_URL = 'http://localhost:3000';
+const DEFAULT_GATEWAY_BASE_URL = 'http://103.179.172.53:13000';
 const DEFAULT_TIMEOUT_MS = '15000';
 const DEFAULT_COURIER_ID = '30000001';
 const DEFAULT_NODE_MAX_OLD_SPACE_MB = 4096;
@@ -115,10 +115,7 @@ function parseArgs(argv) {
   }
 
   if (!options.gateway) {
-    options.gateway =
-      options.mode === 'native' && options.lanIp
-        ? `http://${options.lanIp}:3000`
-        : DEFAULT_GATEWAY_BASE_URL;
+    options.gateway = DEFAULT_GATEWAY_BASE_URL;
   }
 
   options.gateway = normalizeBaseUrl(options.gateway);

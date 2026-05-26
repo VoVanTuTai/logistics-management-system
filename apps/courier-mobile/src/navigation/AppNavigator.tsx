@@ -15,6 +15,7 @@ import { PickupScanScreen } from '../screens/scan/PickupScanScreen';
 import { DeliverySignScanScreen } from '../screens/scan/DeliverySignScanScreen';
 import { ReturnRegistrationScreen } from '../screens/scan/ReturnRegistrationScreen';
 import { DeliveryDispatchScreen } from '../screens/scan/DeliveryDispatchScreen';
+import { GoodsArrivalScreen } from '../screens/scan/GoodsArrivalScreen';
 import { BagSealScreen } from '../screens/scan/BagSealScreen';
 import { BagUnsealScreen } from '../screens/scan/BagUnsealScreen';
 import { InventoryCheckScreen } from '../screens/scan/InventoryCheckScreen';
@@ -88,6 +89,14 @@ export function AppNavigator(): React.JSX.Element {
               title: route.params.mode === 'INBOUND' ? 'Hàng đến' : 'Quet hub',
             })}
           />
+          <Stack.Screen
+            name="GoodsArrival"
+            options={{ title: 'Hàng đến' }}
+          >
+            {({ route }) => (
+              <GoodsArrivalScreen initialShipmentCode={route.params?.shipmentCode} />
+            )}
+          </Stack.Screen>
           <Stack.Screen
             name="BagSeal"
             component={BagSealScreen}

@@ -47,7 +47,7 @@ import { createIdempotencyKey } from '../../utils/idempotency';
 
 type VehicleOutboundStep = 'VEHICLE' | 'PROOF' | 'SEAL';
 
-const REQUIRED_VEHICLE_SEAL_COUNT = 2;
+const MIN_VEHICLE_SEAL_COUNT = 1;
 
 function normalizeCode(value: string): string {
   return value.trim().toUpperCase();
@@ -130,7 +130,7 @@ export function VehicleOutboundScreen(): React.JSX.Element {
     accessToken &&
       vehicleInfo &&
       proofPhotoUri &&
-      sealCodes.length === REQUIRED_VEHICLE_SEAL_COUNT
+      sealCodes.length >= MIN_VEHICLE_SEAL_COUNT
   );
 
   React.useEffect(() => {
@@ -170,11 +170,6 @@ export function VehicleOutboundScreen(): React.JSX.Element {
     }
 
     setSealCodes((currentCodes) => {
-      if (currentCodes.length >= REQUIRED_VEHICLE_SEAL_COUNT) {
-        setScreenMessage(`Tem xe chỉ nhận đúng ${REQUIRED_VEHICLE_SEAL_COUNT} seal xe.`);
-        return currentCodes;
-      }
-
       const duplicated = currentCodes.some((item) => item.code === normalizedCode);
       if (duplicated) {
         setScreenMessage(`${normalizedCode} đã có trong danh sách seal xe.`);
@@ -332,8 +327,8 @@ export function VehicleOutboundScreen(): React.JSX.Element {
       return;
     }
 
-    if (sealCodes.length !== REQUIRED_VEHICLE_SEAL_COUNT) {
-      setScreenMessage(`Vui lòng quét đủ đúng ${REQUIRED_VEHICLE_SEAL_COUNT} seal xe.`);
+    if (sealCodes.length < MIN_VEHICLE_SEAL_COUNT) {
+      setScreenMessage('Vui lòng quét ít nhất một seal xe.');
       return;
     }
 
@@ -456,7 +451,7 @@ export function VehicleOutboundScreen(): React.JSX.Element {
       ? 'Quét mã tem xe để bắt đầu hành trình xe đi.'
       : currentStep === 'PROOF'
         ? 'Chụp minh chứng seal thùng xe trước khi quét mã seal.'
-        : `Quét đúng ${REQUIRED_VEHICLE_SEAL_COUNT} mã seal xe để gắn với tem xe vừa quét.`;
+        : 'Quét một hoặc nhiều mã seal xe để gắn với tem xe vừa quét.';
 
   return (
     <View style={styles.container}>
@@ -608,7 +603,7 @@ export function VehicleOutboundScreen(): React.JSX.Element {
 
         <View style={styles.listHeaderRow}>
           <Text style={styles.listTitle}>
-            Danh sách seal xe ({sealCodes.length}/{REQUIRED_VEHICLE_SEAL_COUNT})
+            Danh sách seal xe ({sealCodes.length})
           </Text>
           <Pressable
             disabled={selectedCount === 0}

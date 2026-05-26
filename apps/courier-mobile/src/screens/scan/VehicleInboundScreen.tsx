@@ -118,6 +118,22 @@ function compareSealCodes(scannedCodes: string[], expectedCodes: string[]): bool
   );
 }
 
+function parseSealCodesFromManifestNote(note: string | null | undefined): string[] {
+  if (!note) {
+    return [];
+  }
+
+  const normalizedNote = note.trim();
+  const machineMatch = normalizedNote.match(/(?:SEAL_CODES|sealCodes)=([^|]+)/);
+  const humanMatch = normalizedNote.match(/Seal xe:\s*([^|]+)/i);
+  const rawCodes = machineMatch?.[1] ?? humanMatch?.[1] ?? '';
+
+  return rawCodes
+    .split(',')
+    .map(normalizeCode)
+    .filter(Boolean);
+}
+
 function toVehicleStatusLabel(status: VehicleLoadRecord['status'] | null): string {
   if (status === 'OPEN') {
     return 'Đang mở';
@@ -145,6 +161,7 @@ export function VehicleInboundScreen(): React.JSX.Element {
     React.useState<VehicleLoadRecord | null>(null);
   const [departureRecord, setDepartureRecord] =
     React.useState<VehicleDepartureRecord | null>(null);
+  const [manifestSealCodes, setManifestSealCodes] = React.useState<string[]>([]);
   const [proofPhotoUri, setProofPhotoUri] = React.useState<string | null>(null);
   const [sealCodes, setSealCodes] = React.useState<VehicleDepartureSeal[]>([]);
   const [selectedSealCodes, setSelectedSealCodes] = React.useState<Set<string>>(
@@ -172,7 +189,7 @@ export function VehicleInboundScreen(): React.JSX.Element {
       ? 'SEAL'
       : 'PROOF';
   const expectedSealCodes =
-    departureRecord?.sealCodes.map((item) => item.code) ?? [];
+    departureRecord?.sealCodes.map((item) => item.code) ?? manifestSealCodes;
   const scannedSealCodes = sealCodes.map((item) => item.code);
   const sealMatched = compareSealCodes(scannedSealCodes, expectedSealCodes);
   const canConfirm = Boolean(accessToken && vehicleInfo && proofPhotoUri && sealCodes.length > 0);
@@ -201,6 +218,7 @@ export function VehicleInboundScreen(): React.JSX.Element {
     setVehicleInfo(null);
     setVehicleLoadRecord(null);
     setDepartureRecord(null);
+    setManifestSealCodes([]);
     setProofPhotoUri(null);
     setSealCodes([]);
     setSelectedSealCodes(new Set());
@@ -252,6 +270,7 @@ export function VehicleInboundScreen(): React.JSX.Element {
         setVehicleInfo(null);
         setVehicleLoadRecord(null);
         setDepartureRecord(null);
+        setManifestSealCodes([]);
         setScreenMessage(
           `Tem xe ${nextVehicleInfo.vehicleCode} chưa được tạo hoặc chưa đồng bộ trên Ops Web. Vui lòng tạo tem xe ở Ops rồi quét lại.`,
         );
@@ -265,6 +284,7 @@ export function VehicleInboundScreen(): React.JSX.Element {
     }
 
     const syncedVehicleInfo = buildSyncedVehicleInfo(nextVehicleInfo, manifest);
+    const nextManifestSealCodes = parseSealCodesFromManifestNote(manifest.note);
     const [nextLoadRecord, departureRecords] = await Promise.all([
       findVehicleLoadRecord(syncedVehicleInfo.vehicleCode),
       readVehicleDepartureRecords(),
@@ -277,8 +297,16 @@ export function VehicleInboundScreen(): React.JSX.Element {
     setVehicleInfo(syncedVehicleInfo);
     setVehicleLoadRecord(nextLoadRecord);
     setDepartureRecord(nextDepartureRecord);
+    setManifestSealCodes(nextManifestSealCodes);
 
     if (!nextDepartureRecord) {
+      if (nextManifestSealCodes.length > 0) {
+        setScreenMessage(
+          `Đã nhận tem xe ${syncedVehicleInfo.vehicleCode} từ hệ thống. Cần đối chứng ${nextManifestSealCodes.length} seal xe.`,
+        );
+        return;
+      }
+
       setScreenMessage(
         `Đã nhận tem xe ${syncedVehicleInfo.vehicleCode} từ hệ thống, chưa có dữ liệu xe đi để đối chứng seal trên thiết bị này.`,
       );
@@ -450,6 +478,7 @@ export function VehicleInboundScreen(): React.JSX.Element {
       setVehicleInfo(null);
       setVehicleLoadRecord(null);
       setDepartureRecord(null);
+      setManifestSealCodes([]);
       setProofPhotoUri(null);
       setSealCodes([]);
       setSelectedSealCodes(new Set());
