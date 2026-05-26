@@ -167,7 +167,7 @@ export class MarketplaceWebhookSenderService {
     return {
       eventId: randomUUID(),
       eventType,
-      occurredAt: new Date().toISOString(),
+      occurredAt: this.nowRfc3339Utc(),
       partnerCode,
       shipmentCode: shipment.code,
       status: shipment.currentStatus,
@@ -193,7 +193,9 @@ export class MarketplaceWebhookSenderService {
     webhookSecret: string,
     webhookPath: string,
   ): string {
-    const bodyHash = createHash('sha256').update(rawBody).digest('hex');
+    const bodyHash = createHash('sha256')
+      .update(Buffer.from(rawBody, 'utf8'))
+      .digest('hex');
     const signingPayload = [
       'POST',
       webhookPath,
@@ -212,6 +214,10 @@ export class MarketplaceWebhookSenderService {
       process.env.PUBLIC_TRACKING_PUBLIC_URL ?? 'https://tracking.nexus-ex.site';
 
     return `${baseUrl.replace(/\/$/, '')}/${encodeURIComponent(shipmentCode)}`;
+  }
+
+  private nowRfc3339Utc(): string {
+    return new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
   }
 
   private retryDelayMs(attempt: number): number {
