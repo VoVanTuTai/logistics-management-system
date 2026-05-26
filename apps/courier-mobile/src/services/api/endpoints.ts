@@ -39,6 +39,10 @@ export const courierEndpoints = {
   },
   manifest: {
     list: `${COURIER_PREFIX}/manifest/manifests`,
+    detailByCode: (manifestCode: string) =>
+      `${COURIER_PREFIX}/manifest/manifests/code/${encodeURIComponent(
+        manifestCode,
+      )}`,
     addShipments: (manifestId: string) =>
       `${COURIER_PREFIX}/manifest/manifests/${encodeURIComponent(
         manifestId,

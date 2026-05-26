@@ -282,19 +282,6 @@ export function BagSealScreen(): React.JSX.Element {
     }, 850);
   }, []);
 
-  const resolveBagManifest = (
-    manifests: BagManifestDto[],
-    sealedBagCode: string,
-  ): BagManifestDto | null => {
-    const normalizedCode = normalizeCode(sealedBagCode);
-
-    return (
-      manifests.find(
-        (manifest) => normalizeCode(manifest.manifestCode) === normalizedCode,
-      ) ?? null
-    );
-  };
-
   const verifyAndAppendShipmentCode = React.useCallback(
     async (rawCode: string) => {
       if (!accessToken) {
@@ -448,9 +435,19 @@ export function BagSealScreen(): React.JSX.Element {
 
     try {
       const shipmentCodes = shipments.map((shipment) => shipment.code);
-      const manifests = await manifestApi.list(accessToken);
-      const bagManifest = resolveBagManifest(manifests, normalizedBagCode);
-      if (!bagManifest) {
+      let bagManifest: BagManifestDto;
+      try {
+        bagManifest = await manifestApi.detailByCode(accessToken, normalizedBagCode);
+      } catch (error) {
+        if (error instanceof ApiClientError && error.status === 404) {
+          setScreenMessage(`Không tìm thấy tem bao ${normalizedBagCode} trên hệ thống.`);
+          return;
+        }
+
+        throw error;
+      }
+
+      if (normalizeCode(bagManifest.manifestCode) !== normalizedBagCode) {
         setScreenMessage(`Không tìm thấy tem bao ${normalizedBagCode} trên hệ thống.`);
         return;
       }
