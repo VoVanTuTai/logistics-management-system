@@ -9,6 +9,37 @@ const DEFAULT_TIMEOUT_MS = '15000';
 const DEFAULT_COURIER_ID = '30000001';
 const DEFAULT_NODE_MAX_OLD_SPACE_MB = 4096;
 
+function loadDotEnvFile() {
+  const fs = require('fs');
+  const path = require('path');
+  const envPath = path.resolve(__dirname, '..', '.env');
+
+  if (!fs.existsSync(envPath)) {
+    return;
+  }
+
+  const lines = fs.readFileSync(envPath, 'utf8').split(/\r?\n/);
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+    if (!trimmedLine || trimmedLine.startsWith('#')) {
+      continue;
+    }
+
+    const separatorIndex = trimmedLine.indexOf('=');
+    if (separatorIndex < 1) {
+      continue;
+    }
+
+    const key = trimmedLine.slice(0, separatorIndex).trim().replace(/^\uFEFF/, '');
+    const rawValue = trimmedLine.slice(separatorIndex + 1).trim();
+    const value = rawValue.replace(/^(['"])(.*)\1$/, '$2');
+
+    if (!process.env[key] || key.startsWith('EXPO_PUBLIC_')) {
+      process.env[key] = value;
+    }
+  }
+}
+
 function parseArgs(argv) {
   const lanIp = resolveLanIp();
   const options = {
@@ -225,15 +256,8 @@ function openUrl(url) {
 
 function applyEnv(options) {
   process.env.EXPO_PUBLIC_GATEWAY_BASE_URL = options.gateway;
-  process.env.EXPO_PUBLIC_GATEWAY_FALLBACK_BASE_URLS = [
-    process.env.EXPO_PUBLIC_GATEWAY_FALLBACK_BASE_URLS,
-    options.lanIp ? `http://${options.lanIp}:3000` : null,
-    'http://10.0.2.2:3000',
-    'http://10.0.3.2:3000',
-    'http://localhost:3000',
-  ]
-    .filter(Boolean)
-    .join(',');
+  process.env.EXPO_PUBLIC_GATEWAY_FALLBACK_BASE_URLS =
+    process.env.EXPO_PUBLIC_GATEWAY_FALLBACK_BASE_URLS || '';
   process.env.EXPO_PUBLIC_REQUEST_TIMEOUT_MS =
     process.env.EXPO_PUBLIC_REQUEST_TIMEOUT_MS || DEFAULT_TIMEOUT_MS;
   process.env.EXPO_PUBLIC_COURIER_ID = options.courierId;
@@ -259,6 +283,8 @@ function applyEnv(options) {
 }
 
 async function run() {
+  loadDotEnvFile();
+
   const options = parseArgs(process.argv.slice(2));
   const localUrl = buildLocalUrl(options.port);
 
@@ -331,12 +357,13 @@ async function run() {
     console.log(`[courier-test] Starting courier mobile web at ${localUrl}`);
   } else {
     console.log('[courier-test] Starting Expo native QR session');
-    console.log('[courier-test] Scan the QR with Expo Go on the same network.');
     if (options.host === 'lan') {
+      console.log('[courier-test] Scan the QR with Expo Go on the same network.');
       console.log(`[courier-test] Metro LAN host: ${options.lanIp ?? 'not found'}`);
     }
     if (options.host === 'tunnel') {
       console.log('[courier-test] Metro host: Expo tunnel');
+      console.log('[courier-test] Scan the QR with Expo Go from any network.');
     }
   }
   console.log(`[courier-test] Gateway: ${process.env.EXPO_PUBLIC_GATEWAY_BASE_URL}`);
