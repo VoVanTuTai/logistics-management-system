@@ -443,6 +443,7 @@ export function BagSealScreen(): React.JSX.Element {
     setScreenMessage(null);
 
     try {
+      const shipmentCodes = shipments.map((shipment) => shipment.code);
       const manifests = await manifestApi.list(accessToken);
       const bagManifest = resolveBagManifest(manifests, normalizedBagCode);
       if (!bagManifest) {

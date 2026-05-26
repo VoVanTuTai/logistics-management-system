@@ -24,3 +24,23 @@ export interface TaskDto {
   updatedAt: string;
   assignments: TaskAssignmentDto[];
 }
+
+export interface TaskListFilters {
+  courierId?: string;
+  taskType?: TaskType;
+  status?: TaskStatus;
+  shipmentCode?: string;
+}
+
+export interface CreateTaskInput {
+  taskCode: string;
+  taskType: TaskType;
+  shipmentCode?: string | null;
+  pickupRequestId?: string | null;
+  note?: string | null;
+}
+
+export interface AssignTaskInput {
+  taskId: string;
+  courierId: string;
+}

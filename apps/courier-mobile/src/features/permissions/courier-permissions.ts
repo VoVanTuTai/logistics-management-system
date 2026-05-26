@@ -1,4 +1,5 @@
 import type { AuthenticatedUserDto } from '../auth/auth.types';
+import { appEnv } from '../../utils/env';
 
 export type CourierActor = 'OPS' | 'COURIER';
 
@@ -19,8 +20,6 @@ export type CourierPermissionFeature =
   | 'scan.high-value-label'
   | 'scan.high-value-check';
 
-const ALLOW_ALL_COURIER_MOBILE_PERMISSIONS_FOR_TESTING = true;
-
 const COURIER_PERMISSION_MATRIX: Record<
   CourierActor,
   Record<CourierPermissionFeature, boolean>
@@ -31,7 +30,7 @@ const COURIER_PERMISSION_MATRIX: Record<
     'scan.pickup': true,
     'scan.bag-seal': true,
     'scan.bag-unseal': true,
-    'scan.delivery': true,
+    'scan.delivery': false,
     'scan.issue': true,
     'scan.outbound': true,
     'scan.inbound': true,
@@ -68,6 +67,8 @@ export function resolveCourierActor(
 
   if (
     roles.has('OPS') ||
+    roles.has('OPS_ADMIN') ||
+    roles.has('OPS_VIEWER') ||
     roles.has('OPS_STAFF') ||
     roles.has('OPS_MANAGER') ||
     roles.has('ADMIN') ||
@@ -83,7 +84,7 @@ export function canAccessCourierFeature(
   user: Pick<AuthenticatedUserDto, 'roles'> | null | undefined,
   feature: CourierPermissionFeature,
 ): boolean {
-  if (ALLOW_ALL_COURIER_MOBILE_PERMISSIONS_FOR_TESTING) {
+  if (appEnv.allowAllCourierMobilePermissionsForTesting) {
     return true;
   }
 

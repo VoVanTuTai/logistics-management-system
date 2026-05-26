@@ -8,6 +8,28 @@ export interface AuthenticatedUserDto {
   hubCodes?: string[];
 }
 
+export type UserStatus = 'ACTIVE' | 'DISABLED';
+export type UserRoleGroup = 'OPS' | 'SHIPPER' | 'MERCHANT';
+
+export interface UserAccountDto {
+  id: string;
+  username: string;
+  status: UserStatus;
+  roles: string[];
+  displayName: string | null;
+  phone: string | null;
+  hubCodes: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserListFilters {
+  roleGroup?: UserRoleGroup;
+  status?: UserStatus | '';
+  hubCode?: string;
+  q?: string;
+}
+
 export interface AuthTokensDto {
   accessToken: string;
   refreshToken: string;
