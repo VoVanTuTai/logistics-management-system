@@ -15,6 +15,7 @@ import { ChangeRequestPrismaRepository } from './infrastructure/prisma/change-re
 import { OutboxEventPrismaRepository } from './infrastructure/prisma/outbox-event-prisma.repository';
 import { PrismaService } from './infrastructure/prisma/prisma.service';
 import { ShipmentPrismaRepository } from './infrastructure/prisma/shipment-prisma.repository';
+import { MarketplaceWebhookSenderService } from './integrations/marketplace-webhook-sender.service';
 import { ShipmentEventsConsumer } from './messaging/consumers/shipment-events.consumer';
 import { ShipmentRabbitmqConsumerService } from './messaging/consumers/shipment-rabbitmq-consumer.service';
 import { ShipmentEventsProducer } from './messaging/producers/shipment-events.producer';
@@ -31,6 +32,7 @@ import { ShipmentOutboxService } from './messaging/outbox/shipment-outbox.servic
     PricingClientService,
     ChangeRequestsService,
     ShipmentEventHandlersService,
+    MarketplaceWebhookSenderService,
     ShipmentEventsProducer,
     ShipmentEventsConsumer,
     ShipmentRabbitmqConsumerService,

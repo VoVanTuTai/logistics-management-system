@@ -25,7 +25,17 @@ async function bootstrap(): Promise<void> {
   app.enableCors({
     origin: corsOrigins,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Accept', 'Content-Type', 'Authorization', 'Idempotency-Key'],
+    allowedHeaders: [
+      'Accept',
+      'Content-Type',
+      'Authorization',
+      'Idempotency-Key',
+      'X-Nexus-Partner-Code',
+      'X-Nexus-Api-Key',
+      'X-Nexus-Timestamp',
+      'X-Nexus-Nonce',
+      'X-Nexus-Signature',
+    ],
   });
 
   app.enableShutdownHooks();
