@@ -99,7 +99,24 @@ By default it:
   `infra/prod/nginx-domain-proxy.conf`;
 - stops/removes the `nexus-prod` containers and `nexus/*:local` images;
 - rebuilds the stack with no Docker cache;
-- prepares and seeds the auth database when `SEED_DEMO_DATA=1`.
+- prepares all service databases with Prisma `db push`;
+- seeds the auth database when `SEED_DEMO_DATA=1`.
+
+If the browser shows `Failed to fetch` after deploy, check these first:
+
+```bash
+docker compose --env-file infra/prod/.env -f infra/prod/docker-compose.yml ps
+docker compose --env-file infra/prod/.env -f infra/prod/docker-compose.yml logs --tail=120 gateway-bff auth-service shipment-service
+curl -i https://ops.nexus-ex.site/health
+curl -i -X OPTIONS https://ops.nexus-ex.site/ops/auth/auth/login \
+  -H 'Origin: https://ops.nexus-ex.site' \
+  -H 'Access-Control-Request-Method: POST' \
+  -H 'Access-Control-Request-Headers: content-type'
+```
+
+All app services should be `healthy`. If a service logs Prisma/table errors,
+rerun `./scripts/deploy-vps.sh` or the reset command below so every service DB
+schema is pushed before traffic is tested.
 
 It does not delete database volumes unless explicitly requested:
 
