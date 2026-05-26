@@ -3,12 +3,14 @@ import { createHash, createHmac, randomUUID } from 'crypto';
 import { Injectable, Logger } from '@nestjs/common';
 
 import type { JsonValue, Shipment } from '../domain/entities/shipment.entity';
+import type { ShipmentConsumedEventType } from '../domain/entities/shipment-status.entity';
 
 type PartnerShipmentStatus =
   | 'AWB_CREATED'
   | 'PENDING'
   | 'PICKED_UP'
   | 'IN_TRANSIT'
+  | 'OUT_FOR_DELIVERY'
   | 'DELIVERED'
   | 'CANCELLED'
   | 'FAILED'
@@ -34,6 +36,7 @@ const PARTNER_STATUS_BY_NEXUS_STATUS: Record<string, PartnerShipmentStatus> = {
   INVENTORY_CHECK: 'IN_TRANSIT',
   SCAN_INBOUND: 'IN_TRANSIT',
   SCAN_OUTBOUND: 'IN_TRANSIT',
+  OUT_FOR_DELIVERY: 'OUT_FOR_DELIVERY',
   DELIVERED: 'DELIVERED',
   DELIVERY_FAILED: 'FAILED',
   NDR_CREATED: 'FAILED',
@@ -48,6 +51,7 @@ const STATUS_DESCRIPTION_BY_PARTNER_STATUS: Record<PartnerShipmentStatus, string
   PENDING: 'Dang cho xu ly',
   PICKED_UP: 'Da lay hang thanh cong',
   IN_TRANSIT: 'Dang van chuyen',
+  OUT_FOR_DELIVERY: 'Dang giao hang',
   DELIVERED: 'Giao thanh cong',
   CANCELLED: 'Da huy',
   FAILED: 'Giao that bai',
@@ -96,7 +100,10 @@ interface MarketplaceWebhookPayload {
 export class MarketplaceWebhookSenderService {
   private readonly logger = new Logger(MarketplaceWebhookSenderService.name);
 
-  async notifyStatusChanged(shipment: Shipment): Promise<void> {
+  async notifyStatusChanged(
+    shipment: Shipment,
+    sourceEventType?: ShipmentConsumedEventType,
+  ): Promise<void> {
     if (!this.shouldSendWebhook(shipment.metadata)) {
       return;
     }
@@ -104,7 +111,7 @@ export class MarketplaceWebhookSenderService {
     const eventTypes = this.resolveEventTypes(shipment.currentStatus);
 
     for (const eventType of eventTypes) {
-      await this.send(eventType, shipment);
+      await this.send(eventType, shipment, sourceEventType);
     }
   }
 
@@ -133,6 +140,7 @@ export class MarketplaceWebhookSenderService {
   private async send(
     eventType: MarketplaceWebhookEventType,
     shipment: Shipment,
+    sourceEventType?: ShipmentConsumedEventType,
   ): Promise<void> {
     const webhookUrl = process.env.NEXUS_INTEGRATION_WEBHOOK_URL?.trim();
     const webhookSecret =
@@ -146,7 +154,7 @@ export class MarketplaceWebhookSenderService {
       return;
     }
 
-    const payload = this.buildPayload(eventType, shipment);
+    const payload = this.buildPayload(eventType, shipment, sourceEventType);
     const rawBody = JSON.stringify(payload);
     const timestamp = payload.occurredAt;
     const nonce = randomUUID();
@@ -215,6 +223,7 @@ export class MarketplaceWebhookSenderService {
   private buildPayload(
     eventType: MarketplaceWebhookEventType,
     shipment: Shipment,
+    sourceEventType?: ShipmentConsumedEventType,
   ): MarketplaceWebhookPayload {
     const metadata = this.asObject(shipment.metadata);
     const integration = this.asObject(metadata?.integration);
@@ -226,7 +235,11 @@ export class MarketplaceWebhookSenderService {
     const external = this.asObject(metadata?.external);
     const merchant = this.asObject(metadata?.merchant);
     const routing = this.asObject(metadata?.routing);
-    const partnerStatus = this.toPartnerStatus(shipment.currentStatus);
+    const webhookCurrentStatus = this.toWebhookCurrentStatus(
+      shipment.currentStatus,
+      sourceEventType,
+    );
+    const partnerStatus = this.toPartnerStatus(webhookCurrentStatus);
     const trackingUrl = this.buildTrackingUrl(shipment.code);
     const deliveredAt =
       eventType === 'shipment.delivered' ? this.nowRfc3339Utc() : undefined;
@@ -238,7 +251,7 @@ export class MarketplaceWebhookSenderService {
       partnerCode,
       shipmentCode: shipment.code,
       status: partnerStatus,
-      nexusStatus: shipment.currentStatus,
+      nexusStatus: webhookCurrentStatus,
       external,
       merchant,
       trackingUrl,
@@ -248,7 +261,7 @@ export class MarketplaceWebhookSenderService {
         externalOrderId: this.readString(external?.externalOrderId),
         externalOrderCode: this.readString(external?.externalOrderCode),
         shipmentCode: shipment.code,
-        currentStatus: shipment.currentStatus,
+        currentStatus: webhookCurrentStatus,
         partnerStatus,
         statusDescription: STATUS_DESCRIPTION_BY_PARTNER_STATUS[partnerStatus],
         location: {
@@ -260,7 +273,7 @@ export class MarketplaceWebhookSenderService {
         ...(deliveredAt ? { deliveredAt } : {}),
         shipment: {
           code: shipment.code,
-          currentStatus: shipment.currentStatus,
+          currentStatus: webhookCurrentStatus,
           partnerStatus,
           cancellationReason: shipment.cancellationReason,
           createdAt: shipment.createdAt.toISOString(),
@@ -268,6 +281,17 @@ export class MarketplaceWebhookSenderService {
         },
       },
     };
+  }
+
+  private toWebhookCurrentStatus(
+    nexusStatus: string,
+    sourceEventType?: ShipmentConsumedEventType,
+  ): string {
+    if (sourceEventType === 'delivery.attempted' && nexusStatus === 'TASK_ASSIGNED') {
+      return 'OUT_FOR_DELIVERY';
+    }
+
+    return nexusStatus;
   }
 
   private toPartnerStatus(nexusStatus: string): PartnerShipmentStatus {

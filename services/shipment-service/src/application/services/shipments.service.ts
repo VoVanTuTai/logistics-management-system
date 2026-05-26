@@ -115,7 +115,10 @@ export class ShipmentsService {
         true,
       );
 
-      await this.marketplaceWebhookSenderService.notifyStatusChanged(updatedShipment);
+      await this.marketplaceWebhookSenderService.notifyStatusChanged(
+        updatedShipment,
+        eventType,
+      );
 
       return updatedShipment;
     }
@@ -125,7 +128,10 @@ export class ShipmentsService {
       nextStatus,
     );
 
-    await this.marketplaceWebhookSenderService.notifyStatusChanged(updatedShipment);
+    await this.marketplaceWebhookSenderService.notifyStatusChanged(
+      updatedShipment,
+      eventType,
+    );
 
     return updatedShipment;
   }
