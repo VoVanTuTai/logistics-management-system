@@ -17,6 +17,20 @@ MINIO_DOMAIN="${MINIO_DOMAIN:-minio.nexus-ex.site}"
 
 export DOCKER_BUILDKIT=1
 
+PRISMA_SERVICES=(
+  masterdata-service:masterdata_db
+  shipment-service:shipment_db
+  pickup-service:pickup_db
+  dispatch-service:dispatch_db
+  manifest-service:manifest_db
+  scan-service:scan_db
+  delivery-service:delivery_db
+  tracking-service:tracking_db
+  reporting-service:reporting_db
+  auth-service:auth_db
+  payment-service:payment_db
+)
+
 compose() {
   docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"
 }
@@ -35,6 +49,39 @@ require_command() {
     echo "Missing command: $command_name" >&2
     exit 1
   fi
+}
+
+install_deps_if_needed() {
+  local dir="$1"
+  local name="$2"
+
+  if [[ -d "$dir/node_modules" ]]; then
+    return
+  fi
+
+  echo "[install] $name"
+  (
+    cd "$dir"
+    if [[ -f pnpm-lock.yaml ]]; then
+      pnpm install --frozen-lockfile
+    else
+      npm ci
+    fi
+  )
+}
+
+run_prisma() {
+  local dir="$1"
+  shift
+
+  (
+    cd "$dir"
+    if [[ -f pnpm-lock.yaml ]]; then
+      pnpm exec prisma "$@"
+    else
+      npx prisma "$@"
+    fi
+  )
 }
 
 set_env_value() {
@@ -217,20 +264,41 @@ build_and_start_stack() {
   compose up -d --remove-orphans
 }
 
-prepare_auth_db() {
+prepare_databases() {
+  local item
+  local service
+  local db_name
+  local dir
+  local database_url
+
+  for item in "${PRISMA_SERVICES[@]}"; do
+    service="${item%%:*}"
+    db_name="${item##*:}"
+    dir="$ROOT_DIR/services/$service"
+    database_url="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:15432/${db_name}"
+
+    install_deps_if_needed "$dir" "$service"
+    echo "[db] prepare $service db=$db_name"
+    DATABASE_URL="$database_url" run_prisma "$dir" generate --schema prisma/schema.prisma
+    DATABASE_URL="$database_url" run_prisma "$dir" db push --schema prisma/schema.prisma
+  done
+}
+
+seed_auth_demo_data() {
   if [[ "${SEED_DEMO_DATA:-0}" != "1" ]]; then
     echo "[seed] skipped because SEED_DEMO_DATA is not 1"
     return
   fi
 
-  echo "[seed] auth-service db push and demo seed"
-  docker run --rm \
-    --network nexus-prod_default \
-    -v "$ROOT_DIR/services/auth-service:/app" \
-    -w /app \
-    -e DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/auth_db" \
-    node:20-alpine \
-    sh -lc "npm install && npx prisma generate --schema prisma/schema.prisma && npx prisma db push --schema prisma/schema.prisma && npx ts-node --transpile-only prisma/seed.ts"
+  local dir="$ROOT_DIR/services/auth-service"
+  local database_url="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:15432/auth_db"
+
+  install_deps_if_needed "$dir" "auth-service"
+  echo "[seed] auth demo users"
+  (
+    cd "$dir"
+    DATABASE_URL="$database_url" node node_modules/ts-node/dist/bin.js --transpile-only prisma/seed.ts
+  )
 }
 
 verify_public_routes() {
@@ -242,6 +310,12 @@ verify_public_routes() {
     -H "Origin: https://${OPS_DOMAIN}" \
     -H "Access-Control-Request-Method: POST" \
     -H "Access-Control-Request-Headers: content-type" >/dev/null
+
+  echo "[verify] ops API preflight"
+  curl -fsSI -X OPTIONS "https://${OPS_DOMAIN}/ops/shipment/shipments" \
+    -H "Origin: https://${OPS_DOMAIN}" \
+    -H "Access-Control-Request-Method: GET" \
+    -H "Access-Control-Request-Headers: authorization,content-type" >/dev/null
 
   echo "[verify] frontend bundle does not reference old IP gateway"
   if curl -fsS "https://${OPS_DOMAIN}/login" \
@@ -275,14 +349,21 @@ main() {
   fi
 
   require_command docker
+  require_command node
+  require_command npm
   require_command curl
+  if ! command -v pnpm >/dev/null 2>&1; then
+    corepack enable
+    corepack prepare pnpm@9.15.9 --activate
+  fi
   load_env
   stop_known_conflicts
   reset_compose_stack
   install_nginx_config
   build_and_start_stack
-  prepare_auth_db
-  compose restart auth-service gateway-bff
+  prepare_databases
+  seed_auth_demo_data
+  compose restart auth-service masterdata-service shipment-service pickup-service dispatch-service manifest-service scan-service delivery-service tracking-service reporting-service payment-service gateway-bff
   verify_public_routes
   compose ps
   print_summary

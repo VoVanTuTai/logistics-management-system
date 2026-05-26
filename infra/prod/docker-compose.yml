@@ -228,29 +228,29 @@ services:
     restart: unless-stopped
     depends_on:
       auth-service:
-        condition: service_started
+        condition: service_healthy
       delivery-service:
-        condition: service_started
+        condition: service_healthy
       dispatch-service:
-        condition: service_started
+        condition: service_healthy
       manifest-service:
-        condition: service_started
+        condition: service_healthy
       masterdata-service:
-        condition: service_started
+        condition: service_healthy
       pickup-service:
-        condition: service_started
+        condition: service_healthy
       reporting-service:
-        condition: service_started
+        condition: service_healthy
       scan-service:
-        condition: service_started
+        condition: service_healthy
       shipment-service:
-        condition: service_started
+        condition: service_healthy
       tracking-service:
-        condition: service_started
+        condition: service_healthy
       payment-service:
-        condition: service_started
+        condition: service_healthy
       pricing-service:
-        condition: service_started
+        condition: service_healthy
       minio:
         condition: service_healthy
     ports:
