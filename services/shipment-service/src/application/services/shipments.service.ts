@@ -34,6 +34,7 @@ export class ShipmentsService {
     private readonly shipmentStateMachine: ShipmentStateMachine,
     private readonly shipmentOutboxService: ShipmentOutboxService,
     private readonly marketplaceWebhookSenderService: MarketplaceWebhookSenderService,
+    private readonly pricingClientService: PricingClientService,
   ) {}
 
   list(filters: ShipmentListFilters = {}): Promise<Shipment[] | ShipmentListPage> {
