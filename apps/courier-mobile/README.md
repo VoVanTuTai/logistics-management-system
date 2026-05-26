@@ -98,6 +98,58 @@ Dung tai khoan courier that da ton tai trong auth-service.
   - `zod`
   - `@react-native-async-storage/async-storage`
 
+## Build APK de cai tren dien thoai Android
+
+Project da co `eas.json` voi profile `preview` de xuat file `.apk`.
+
+1. Cai dependency neu may chua co:
+
+```bash
+cd apps/courier-mobile
+npm install
+```
+
+2. Tao file `.env` tu `.env.example` va doi gateway sang IP LAN/domain ma dien thoai truy cap duoc:
+
+```env
+EXPO_PUBLIC_GATEWAY_BASE_URL=http://192.168.1.10:3000
+EXPO_PUBLIC_REQUEST_TIMEOUT_MS=15000
+EXPO_PUBLIC_COURIER_ID=30000001
+```
+
+Khong dung `localhost` khi cai APK len dien thoai that, vi `localhost` luc do la chinh dien thoai.
+
+3. Dang nhap Expo va link project EAS lan dau:
+
+```bash
+npx eas-cli login
+npx eas-cli build:configure
+```
+
+Neu EAS hoi tao project moi, chon yes. Lenh nay co the them `extra.eas.projectId`
+vao `app.json`.
+
+4. Build APK:
+
+```bash
+npx eas-cli build --platform android --profile preview
+```
+
+Khi build xong, EAS se hien link download. Mo link do tren dien thoai Android,
+tai file `.apk`, cho phep cai app tu trinh duyet/file manager neu may hoi, roi cai dat.
+
+Neu muon cai qua USB:
+
+```bash
+adb install path/to/courier-mobile.apk
+```
+
+Build de day Google Play nen dung profile `production`, mac dinh xuat `.aab`:
+
+```bash
+npx eas-cli build --platform android --profile production
+```
+
 ## Next Safe Steps
 
 - Chot BFF contract rieng cho courier mobile thay vi proxy raw path

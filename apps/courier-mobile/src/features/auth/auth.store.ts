@@ -124,6 +124,7 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
         await authApi.login(credentials),
       );
       await persistAuthSession(loginResult);
+      useAppStore.getState().setSession(loginResult);
       set({
         status: 'authenticated',
         session: loginResult,
@@ -158,6 +159,7 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
     } finally {
       await clearAuthSession();
       queryClient.clear();
+      useAppStore.getState().clearSession();
       // TODO(auth): add refresh token rotation + silent refresh flow when contract is finalized.
       set({
         status: 'guest',

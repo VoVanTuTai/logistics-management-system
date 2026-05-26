@@ -7,17 +7,19 @@ export const courierEndpoints = {
     refresh: `${COURIER_PREFIX}/auth/auth/refresh`,
     logout: `${COURIER_PREFIX}/auth/auth/logout`,
     introspect: `${COURIER_PREFIX}/auth/auth/introspect`,
-    mobilePermissionEffective: (userId: string) =>
-      `${COURIER_PREFIX}/auth/auth/mobile-permissions/users/${encodeURIComponent(
-        userId,
-      )}/effective`,
+    users: `${COURIER_PREFIX}/auth/auth/users`,
   },
   tasks: {
+    base: `${COURIER_PREFIX}/dispatch/tasks`,
     list: (courierId: string) =>
       `${COURIER_PREFIX}/dispatch/tasks?courierId=${encodeURIComponent(
         courierId,
       )}`,
     detail: (taskId: string) => `${COURIER_PREFIX}/dispatch/tasks/${taskId}`,
+    assign: (taskId: string) =>
+      `${COURIER_PREFIX}/dispatch/tasks/${taskId}/assign`,
+    reassign: (taskId: string) =>
+      `${COURIER_PREFIX}/dispatch/tasks/${taskId}/reassign`,
     updateStatus: (taskId: string) =>
       `${COURIER_PREFIX}/dispatch/tasks/${taskId}/status`,
   },
@@ -62,7 +64,12 @@ export const courierEndpoints = {
     success: `${COURIER_PREFIX}/delivery/deliveries/success`,
     fail: `${COURIER_PREFIX}/delivery/deliveries/fail`,
     ndr: `${COURIER_PREFIX}/delivery/ndr`,
+    ndrByShipment: (shipmentCode: string) =>
+      `${COURIER_PREFIX}/delivery/ndr?shipmentCode=${encodeURIComponent(
+        shipmentCode,
+      )}`,
     exception: `${COURIER_PREFIX}/delivery/ndr/exception`,
+    returns: `${COURIER_PREFIX}/delivery/returns`,
   },
   media: {
     uploadUrl: (filename: string, contentType: string) =>

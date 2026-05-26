@@ -24,6 +24,11 @@ function normalizeBaseUrl(value: string): string {
   return value.trim().replace(/\/+$/, '');
 }
 
+function parseBooleanEnv(value: string | null | undefined): boolean {
+  const normalizedValue = value?.trim().toLowerCase();
+  return normalizedValue === '1' || normalizedValue === 'true' || normalizedValue === 'yes';
+}
+
 function resolveHostFromRuntimeValue(rawValue: string): string | null {
   const trimmedValue = rawValue.trim();
   if (!trimmedValue) {
@@ -222,4 +227,8 @@ export const appEnv = {
     process.env.EXPO_PUBLIC_COURIER_ID ??
     process.env.COURIER_ID ??
     '',
+  allowAllCourierMobilePermissionsForTesting: parseBooleanEnv(
+    process.env.EXPO_PUBLIC_ALLOW_ALL_COURIER_MOBILE_PERMISSIONS_FOR_TESTING ??
+      process.env.ALLOW_ALL_COURIER_MOBILE_PERMISSIONS_FOR_TESTING,
+  ),
 } as const;

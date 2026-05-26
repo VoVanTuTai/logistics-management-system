@@ -3,10 +3,13 @@ import { useMutation } from '@tanstack/react-query';
 import { courierApiClient } from '../../services/api/client';
 import { courierEndpoints } from '../../services/api/endpoints';
 import type {
+  CreateReturnCasePayload,
   DeliveryFailPayload,
   DeliveryFailResultDto,
   DeliverySuccessPayload,
   DeliverySuccessResultDto,
+  NdrCaseDto,
+  ReturnCaseDto,
 } from './delivery.types';
 
 export const deliveryApi = {
@@ -30,6 +33,26 @@ export const deliveryApi = {
       body: payload,
       headers: { 'Idempotency-Key': payload.idempotencyKey },
     }),
+  createReturnCase: (
+    accessToken: string,
+    payload: CreateReturnCasePayload,
+  ): Promise<ReturnCaseDto> =>
+    courierApiClient.request<ReturnCaseDto>(courierEndpoints.delivery.returns, {
+      method: 'POST',
+      accessToken,
+      body: payload,
+    }),
+  listNdrCases: (
+    accessToken: string,
+    shipmentCode: string,
+  ): Promise<NdrCaseDto[]> =>
+    courierApiClient.request<NdrCaseDto[]>(
+      courierEndpoints.delivery.ndrByShipment(shipmentCode),
+      {
+        method: 'GET',
+        accessToken,
+      },
+    ),
 };
 
 export function useDeliverySuccessMutation(accessToken: string | null) {

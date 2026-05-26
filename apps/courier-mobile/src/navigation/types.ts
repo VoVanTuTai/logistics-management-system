@@ -31,6 +31,10 @@ export type AppNavigatorParamList = {
   DeliverySignScan: {
     shipmentCode?: string;
   } | undefined;
+  ReturnRegistration: {
+    shipmentCode?: string;
+  } | undefined;
+  DeliveryDispatch: undefined;
   HubScan: {
     mode: 'INBOUND' | 'OUTBOUND';
     taskId?: string;

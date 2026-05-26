@@ -10,7 +10,10 @@
     "ios": {
       "supportsTablet": true
     },
-    "android": {},
+    "android": {
+      "package": "com.nexuslogistics.couriermobile",
+      "versionCode": 1
+    },
     "web": {
       "bundler": "metro"
     },

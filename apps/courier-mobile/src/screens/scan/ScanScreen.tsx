@@ -37,7 +37,7 @@ const actions: PermissionedScanAction[] = [
   },
   {
     id: 'ky-nhan-chuyen-hoan',
-    label: 'Ký nhận chuyển hoàn',
+    label: 'Đăng ký chuyển hoàn',
     permission: 'scan.return-sign',
     iconName: 'return-up-back-outline',
     iconColor: theme.colors.primary,
@@ -170,6 +170,11 @@ export function ScanScreen(): React.JSX.Element {
       return;
     }
 
+    if (action.id === 'ky-nhan-chuyen-hoan') {
+      navigation.navigate('ReturnRegistration');
+      return;
+    }
+
     if (action.id === 'dong-bao') {
       navigation.navigate('BagSeal');
       return;
@@ -187,6 +192,11 @@ export function ScanScreen(): React.JSX.Element {
 
     if (action.id === 'gui-kien') {
       navigation.navigate('SendGoods');
+      return;
+    }
+
+    if (action.id === 'phat-hang') {
+      navigation.navigate('DeliveryDispatch');
       return;
     }
 
@@ -294,7 +304,7 @@ export function ScanScreen(): React.JSX.Element {
         <CameraScannerModal
           visible={scannerVisible}
           title={pendingAction ? `Quét mã - ${pendingAction.label}` : 'Quét mã'}
-          helperText="Bấm action bất kỳ trong grid để mở camera quét QR/barcode."
+          helperText="Quét QR/barcode để chuyển mã sang chức năng đang chọn."
           onClose={handleCloseScanner}
           onScanned={handleScanned}
         />
@@ -324,7 +334,7 @@ export function ScanScreen(): React.JSX.Element {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Thao tác quét mã</Text>
             <Text style={styles.sectionSubtitle}>
-              Chọn action bất kỳ, camera sẽ mở để quét trước khi xử lý.
+              Chọn chức năng để xử lý; từng màn sẽ mở camera hoặc form phù hợp với nghiệp vụ.
             </Text>
           </View>
 
