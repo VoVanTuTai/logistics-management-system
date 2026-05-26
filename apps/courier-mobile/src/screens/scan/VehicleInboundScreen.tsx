@@ -34,6 +34,7 @@ import {
   type VehicleLoadRecord,
 } from '../../features/scan/vehicle-load.storage';
 import { parsePickupScannedCode } from '../../features/scan/pickup.scanner.adapter';
+import { ApiClientError } from '../../services/api/client';
 import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
 import {
@@ -367,8 +368,18 @@ export function VehicleInboundScreen(): React.JSX.Element {
         hubCode,
       );
 
-      const manifests = await manifestApi.list(session?.tokens.accessToken as string);
-      const manifest = manifests.find(m => m.manifestCode === vehicleInfo.vehicleCode);
+      let manifest = null;
+      try {
+        manifest = await manifestApi.detailByCode(
+          session?.tokens.accessToken as string,
+          vehicleInfo.vehicleCode,
+        );
+      } catch (error) {
+        if (!(error instanceof ApiClientError && error.status === 404)) {
+          throw error;
+        }
+      }
+
       if (manifest) {
         await manifestApi.receive(session?.tokens.accessToken as string, manifest.id, {
           receivedBy: courierId,

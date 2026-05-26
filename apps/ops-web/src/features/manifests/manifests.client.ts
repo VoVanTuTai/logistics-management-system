@@ -86,6 +86,7 @@ export const manifestsClient = {
         originHubCode: payload.originHubCode || null,
         destinationHubCode: payload.destinationHubCode || null,
         shipmentCodes: payload.shipmentCodes,
+        note: payload.note ?? null,
       },
     }),
   generateBagCodes: (

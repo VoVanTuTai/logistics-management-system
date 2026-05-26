@@ -33,7 +33,7 @@ import {
   type VehicleLoadRecord,
 } from '../../features/scan/vehicle-load.storage';
 import { parsePickupScannedCode } from '../../features/scan/pickup.scanner.adapter';
-import { shouldQueueOffline } from '../../services/api/client';
+import { ApiClientError, shouldQueueOffline } from '../../services/api/client';
 import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
 import {
@@ -312,9 +312,15 @@ export function VehicleOutboundScreen(): React.JSX.Element {
     });
 
     try {
-      const manifests = await manifestApi.list(accessToken);
-      const manifest = manifests.find(m => m.manifestCode === vehicleInfo.vehicleCode);
-      
+      let manifest = null;
+      try {
+        manifest = await manifestApi.detailByCode(accessToken, vehicleInfo.vehicleCode);
+      } catch (error) {
+        if (!(error instanceof ApiClientError && error.status === 404)) {
+          throw error;
+        }
+      }
+
       if (manifest) {
         await manifestApi.seal(accessToken, manifest.id, {
           sealedBy: courierId,

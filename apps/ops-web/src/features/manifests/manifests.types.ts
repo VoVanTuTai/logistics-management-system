@@ -27,6 +27,7 @@ export interface CreateManifestInput {
   originHubCode: string;
   destinationHubCode: string;
   shipmentCodes: string[];
+  note?: string | null;
 }
 
 export interface GenerateBagCodesInput {

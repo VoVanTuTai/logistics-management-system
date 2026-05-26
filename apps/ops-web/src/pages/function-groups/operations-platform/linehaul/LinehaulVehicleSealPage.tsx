@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Plus, RefreshCw } from 'lucide-react';
 
+import { useCreateManifestMutation } from '../../../../features/manifests/manifests.api';
 import { useHubsQuery } from '../../../../features/masterdata/masterdata.api';
 import { routePaths } from '../../../../navigation/routes';
 import { getErrorMessage } from '../../../../services/api/errors';
@@ -57,6 +58,7 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
   const [createdTripCode, setCreatedTripCode] = useState<string | null>(null);
 
   const hubsQuery = useHubsQuery(accessToken, {});
+  const createManifestMutation = useCreateManifestMutation(accessToken);
   const activeHubs = useMemo(
     () =>
       (hubsQuery.data ?? [])
@@ -83,10 +85,15 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
     }));
   };
 
-  const onCreateTrip = (event: React.FormEvent<HTMLFormElement>) => {
+  const onCreateTrip = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setActionMessage(null);
     setCreatedTripCode(null);
+
+    if (!accessToken) {
+      setActionMessage('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+      return;
+    }
 
     const originHubCode = normalizeTripCode(form.originHubCode);
     const destinationHubCode = normalizeTripCode(form.destinationHubCode);
@@ -120,6 +127,25 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
       plannedStartAt,
       plannedEndAt,
     });
+
+    try {
+      await createManifestMutation.mutateAsync({
+        manifestCode: createdTrip.tripCode,
+        originHubCode,
+        destinationHubCode,
+        shipmentCodes: [],
+        note: [
+          'LINEHAUL_TRIP',
+          `tripType=${form.tripType}`,
+          `plannedStartAt=${plannedStartAt}`,
+          `plannedEndAt=${plannedEndAt}`,
+        ].join('|'),
+      });
+    } catch (error) {
+      setActionMessage(getErrorMessage(error));
+      return;
+    }
+
     const opened = printLinehaulTripSeal(createdTrip);
     const nextTrip = opened
       ? {
@@ -179,9 +205,9 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
             <h3>Thông tin chuyến xe</h3>
             <span>Tem in trước, seal ghi khi courier quét Xe đi</span>
           </div>
-          <button type="submit">
+          <button type="submit" disabled={createManifestMutation.isPending}>
             <Plus size={16} />
-            Tạo và in tem
+            {createManifestMutation.isPending ? 'Đang tạo...' : 'Tạo và in tem'}
           </button>
         </header>
 
