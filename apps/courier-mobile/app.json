@@ -12,7 +12,8 @@
     },
     "android": {
       "package": "com.nexuslogistics.couriermobile",
-      "versionCode": 1
+      "versionCode": 1,
+      "usesCleartextTraffic": true
     },
     "web": {
       "bundler": "metro"

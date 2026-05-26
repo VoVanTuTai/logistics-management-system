@@ -72,6 +72,7 @@ MINIO_ROOT_PASSWORD=...
 
 ```text
 gateway API:      https://ops.nexus-ex.site/health
+gateway API port: http://103.179.172.53:13000/health
 ops-web:          https://ops.nexus-ex.site
 merchant-web:     https://merchant.nexus-ex.site
 admin-web:        https://admin.nexus-ex.site
@@ -83,8 +84,9 @@ minio API:        https://minio.nexus-ex.site
 MinIO binds on `127.0.0.1:${MINIO_API_PORT}` and is exposed publicly through
 the host Nginx `minio.nexus-ex.site` server block. Keep it on a non-standard
 host port such as `19000` to avoid collisions with existing services on `9000`.
-The gateway also binds only on localhost, using `GATEWAY_PORT=13000`, and host
-Nginx proxies `/health`, `/ops`, `/merchant`, and `/public` traffic to it.
+The gateway publishes `GATEWAY_PORT=13000` for Android APK testing through
+`http://103.179.172.53:13000`. Host Nginx still proxies `/health`, `/ops`,
+`/merchant`, and `/public` traffic through the HTTPS domains.
 
 ## Single Compose Run
 

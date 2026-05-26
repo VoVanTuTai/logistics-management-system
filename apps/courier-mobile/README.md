@@ -64,7 +64,7 @@ App duoc scaffold theo huong feature-first, tach ro:
 Sao chep `.env.example` thanh `.env` hoac env file phu hop voi runtime:
 
 ```env
-EXPO_PUBLIC_GATEWAY_BASE_URL=http://192.168.1.10:3000
+EXPO_PUBLIC_GATEWAY_BASE_URL=http://103.179.172.53:13000
 EXPO_PUBLIC_REQUEST_TIMEOUT_MS=15000
 EXPO_PUBLIC_COURIER_ID=30000001
 ```
@@ -76,7 +76,7 @@ Khuyen nghi van set ro `EXPO_PUBLIC_GATEWAY_BASE_URL` thanh LAN IP/server URL
 de tranh sai host tren runtime khac nhau:
 
 ```env
-EXPO_PUBLIC_GATEWAY_BASE_URL=http://192.168.1.10:3000
+EXPO_PUBLIC_GATEWAY_BASE_URL=http://103.179.172.53:13000
 ```
 
 Luu y:
@@ -109,15 +109,17 @@ cd apps/courier-mobile
 npm install
 ```
 
-2. Tao file `.env` tu `.env.example` va doi gateway sang IP LAN/domain ma dien thoai truy cap duoc:
+2. Tao file `.env` tu `.env.example` va doi gateway sang IP public/domain ma dien thoai truy cap duoc:
 
 ```env
-EXPO_PUBLIC_GATEWAY_BASE_URL=http://192.168.1.10:3000
+EXPO_PUBLIC_GATEWAY_BASE_URL=http://103.179.172.53:13000
 EXPO_PUBLIC_REQUEST_TIMEOUT_MS=15000
 EXPO_PUBLIC_COURIER_ID=30000001
 ```
 
 Khong dung `localhost` khi cai APK len dien thoai that, vi `localhost` luc do la chinh dien thoai.
+Neu dung URL `http://...` thay vi HTTPS, app Android can `usesCleartextTraffic`
+trong `app.json`.
 
 3. Dang nhap Expo va link project EAS lan dau:
 
