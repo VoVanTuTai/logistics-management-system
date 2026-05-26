@@ -81,7 +81,10 @@ export function resolveCourierActor(
 }
 
 export function canAccessCourierFeature(
-  user: Pick<AuthenticatedUserDto, 'roles'> | null | undefined,
+  user:
+    | Pick<AuthenticatedUserDto, 'roles' | 'mobilePermissions'>
+    | null
+    | undefined,
   feature: CourierPermissionFeature,
 ): boolean {
   if (appEnv.allowAllCourierMobilePermissionsForTesting) {
@@ -93,7 +96,10 @@ export function canAccessCourierFeature(
 }
 
 export function filterPermittedCourierFeatures<TItem extends { permission: CourierPermissionFeature }>(
-  user: Pick<AuthenticatedUserDto, 'roles'> | null | undefined,
+  user:
+    | Pick<AuthenticatedUserDto, 'roles' | 'mobilePermissions'>
+    | null
+    | undefined,
   items: TItem[],
 ): TItem[] {
   return items.filter((item) => canAccessCourierFeature(user, item.permission));

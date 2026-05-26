@@ -6,4 +6,5 @@ export abstract class ZoneRepository {
   abstract findByCode(code: string): Promise<Zone | null>;
   abstract create(input: ZoneWriteInput): Promise<Zone>;
   abstract update(id: string, input: Partial<ZoneWriteInput>): Promise<Zone>;
+  abstract delete(id: string): Promise<boolean>;
 }

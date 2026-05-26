@@ -13,63 +13,264 @@ import { useLogoutMutation } from '../features/auth/auth.api';
 import { LoginPage } from '../pages/auth/LoginPage';
 import { DashboardPage } from '../pages/dashboard/DashboardPage';
 import { ComingSoonPlaceholder } from '../pages/shared/ComingSoonPlaceholder';
-import { BasicDataGroupPage } from '../pages/function-groups/basic-data/BasicDataGroupPage';
-import { BranchLocalOrderOverviewPage } from '../pages/function-groups/branch-business/local-orders/BranchLocalOrderOverviewPage';
-import { BranchDeliveryDispatchPage } from '../pages/function-groups/branch-business/delivery-dispatch/BranchDeliveryDispatchPage';
-import { BranchBusinessOrderCreatePage } from '../pages/function-groups/branch-business/order-create/BranchBusinessOrderCreatePage';
-import { BranchDeliveryOrderManagementPage } from '../pages/function-groups/branch-business/order-delivery/BranchDeliveryOrderManagementPage';
-import { BranchOutboundOrderManagementPage } from '../pages/function-groups/branch-business/order-outbound/BranchOutboundOrderManagementPage';
-import { BranchBusinessFeaturePlaceholderPage } from '../pages/function-groups/branch-business/shared/BranchBusinessFeaturePlaceholderPage';
-import { CapabilityPlatformGroupPage } from '../pages/function-groups/capability-platform/CapabilityPlatformGroupPage';
-import { CustomerPlatformGroupPage } from '../pages/function-groups/customer-platform/CustomerPlatformGroupPage';
-import { CustomerOrderDispatchPage } from '../pages/function-groups/customer-platform/order-dispatch/CustomerOrderDispatchPage';
-import { DatabaseGroupPage } from '../pages/function-groups/database/DatabaseGroupPage';
-import { FinanceSettlementGroupPage } from '../pages/function-groups/finance-settlement/FinanceSettlementGroupPage';
-import { IntegrationServicesGroupPage } from '../pages/function-groups/integration-services/IntegrationServicesGroupPage';
-import { OperationsMetricsGroupPage } from '../pages/function-groups/operations-metrics/OperationsMetricsGroupPage';
-import { OpsMetricsInventoryMonitorPage } from '../pages/function-groups/operations-metrics/deadline/OpsMetricsInventoryMonitorPage';
-import { OperationsMetricsFeaturePlaceholderPage } from '../pages/function-groups/operations-metrics/shared/OperationsMetricsFeaturePlaceholderPage';
-import { OperationsPlatformGroupPage } from '../pages/function-groups/operations-platform/OperationsPlatformGroupPage';
-import { MonitorData2In1Page } from '../pages/function-groups/operations-platform/data-monitoring/MonitorData2In1Page';
-import { MonitorDataDongBaoPage } from '../pages/function-groups/operations-platform/data-monitoring/MonitorDataDongBaoPage';
-import { MonitorDataHangDenPage } from '../pages/function-groups/operations-platform/data-monitoring/MonitorDataHangDenPage';
-import { MonitorDataHangGuiPage } from '../pages/function-groups/operations-platform/data-monitoring/MonitorDataHangGuiPage';
-import { MonitorDataHangNhanPage } from '../pages/function-groups/operations-platform/data-monitoring/MonitorDataHangNhanPage';
-import { MonitorDataHangPhatPage } from '../pages/function-groups/operations-platform/data-monitoring/MonitorDataHangPhatPage';
-import { MonitorDataTheoDoiTamUngPage } from '../pages/function-groups/operations-platform/data-monitoring/MonitorDataTheoDoiTamUngPage';
-import { ReturnBlockManagementPage } from '../pages/function-groups/operations-platform/return-block/ReturnBlockManagementPage';
-import { ReturnBlockRegistrationPage } from '../pages/function-groups/operations-platform/return-block/ReturnBlockRegistrationPage';
-import { ThermalLabelManagementPage } from '../pages/function-groups/operations-platform/thermal-label/ThermalLabelManagementPage';
-import { ThermalLabelPrintPage } from '../pages/function-groups/operations-platform/thermal-label/ThermalLabelPrintPage';
-import { LinehaulTripManagementPage } from '../pages/function-groups/operations-platform/linehaul/LinehaulTripManagementPage';
-import { LinehaulVehicleSealPage } from '../pages/function-groups/operations-platform/linehaul/LinehaulVehicleSealPage';
-import { PlanningPlatformGroupPage } from '../pages/function-groups/planning-platform/PlanningPlatformGroupPage';
-import { ServiceQualityGroupPage } from '../pages/function-groups/service-quality/ServiceQualityGroupPage';
-import { ServiceQualityMonitorDeliveredPage } from '../pages/function-groups/service-quality/proactive/ServiceQualityMonitorDeliveredPage';
-import { ServiceQualityMonitorReceivedPage } from '../pages/function-groups/service-quality/proactive/ServiceQualityMonitorReceivedPage';
-import { FunctionGroupLandingPage } from '../pages/function-groups/shared/FunctionGroupLandingPage';
-import { SmartDevicesGroupPage } from '../pages/function-groups/smart-devices/SmartDevicesGroupPage';
-import { ManifestDetailPage } from '../pages/manifests/ManifestDetailPage';
-import { ManifestManagementPage } from '../pages/manifests/ManifestManagementPage';
-import { NdrCaseDetailPage } from '../pages/ndr/NdrCaseDetailPage';
-import { NdrHandlingPage } from '../pages/ndr/NdrHandlingPage';
-import { PickupApprovalsPage } from '../pages/pickups/PickupApprovalsPage';
-import { PickupRequestDetailPage } from '../pages/pickups/PickupRequestDetailPage';
-import { HubScanPage } from '../pages/scans/HubScanPage';
-import { ShipmentDetailPage } from '../pages/shipments/ShipmentDetailPage';
-import { ShipmentListPage } from '../pages/shipments/ShipmentListPage';
-import { TaskAssignmentPage } from '../pages/tasks/TaskAssignmentPage';
-import { TaskDetailPage } from '../pages/tasks/TaskDetailPage';
-import { TrackingDetailPage } from '../pages/tracking/TrackingDetailPage';
-import { TrackingLookupPage } from '../pages/tracking/TrackingLookupPage';
 import { routePaths } from '../navigation/routes';
 import { useAuthStore } from '../store/authStore';
+import { appEnv } from '../utils/env';
 import { formatRoleLabel } from '../utils/logisticsLabels';
+
+function lazyRoutePage<T extends React.ComponentType<any>>(
+  loader: () => Promise<Record<string, T>>,
+  exportName: string,
+): React.LazyExoticComponent<T> {
+  return lazy(async () => ({
+    default: (await loader())[exportName],
+  }));
+}
 
 const AnalyticsDashboardPage = lazy(() =>
   import('../pages/dashboard/analytics/AnalyticsDashboardPage').then((module) => ({
     default: module.AnalyticsDashboardPage,
   })),
+);
+const BasicDataGroupPage = lazyRoutePage(
+  () => import('../pages/function-groups/basic-data/BasicDataGroupPage'),
+  'BasicDataGroupPage',
+);
+const BranchLocalOrderOverviewPage = lazyRoutePage(
+  () => import('../pages/function-groups/branch-business/local-orders/BranchLocalOrderOverviewPage'),
+  'BranchLocalOrderOverviewPage',
+);
+const BranchDeliveryDispatchPage = lazyRoutePage(
+  () => import('../pages/function-groups/branch-business/delivery-dispatch/BranchDeliveryDispatchPage'),
+  'BranchDeliveryDispatchPage',
+);
+const BranchBusinessOrderCreatePage = lazyRoutePage(
+  () => import('../pages/function-groups/branch-business/order-create/BranchBusinessOrderCreatePage'),
+  'BranchBusinessOrderCreatePage',
+);
+const BranchDeliveryOrderManagementPage = lazyRoutePage(
+  () => import('../pages/function-groups/branch-business/order-delivery/BranchDeliveryOrderManagementPage'),
+  'BranchDeliveryOrderManagementPage',
+);
+const BranchFinanceCodSettlementPage = lazyRoutePage(
+  () => import('../pages/function-groups/branch-business/finance-cod/BranchFinanceCodSettlementPage'),
+  'BranchFinanceCodSettlementPage',
+);
+const BranchFinanceReconcilePage = lazyRoutePage(
+  () => import('../pages/function-groups/branch-business/finance-reconcile/BranchFinanceReconcilePage'),
+  'BranchFinanceReconcilePage',
+);
+const BranchInventoryPage = lazyRoutePage(
+  () => import('../pages/function-groups/branch-business/inventory/BranchInventoryPage'),
+  'BranchInventoryPage',
+);
+const BranchOutboundOrderManagementPage = lazyRoutePage(
+  () => import('../pages/function-groups/branch-business/order-outbound/BranchOutboundOrderManagementPage'),
+  'BranchOutboundOrderManagementPage',
+);
+const BranchShiftClosingPage = lazyRoutePage(
+  () => import('../pages/function-groups/branch-business/shift-closing/BranchShiftClosingPage'),
+  'BranchShiftClosingPage',
+);
+const CapabilityPlatformGroupPage = lazyRoutePage(
+  () => import('../pages/function-groups/capability-platform/CapabilityPlatformGroupPage'),
+  'CapabilityPlatformGroupPage',
+);
+const CustomerPlatformGroupPage = lazyRoutePage(
+  () => import('../pages/function-groups/customer-platform/CustomerPlatformGroupPage'),
+  'CustomerPlatformGroupPage',
+);
+const CustomerOrderDispatchPage = lazyRoutePage(
+  () => import('../pages/function-groups/customer-platform/order-dispatch/CustomerOrderDispatchPage'),
+  'CustomerOrderDispatchPage',
+);
+const CustomerOrderLookupPage = lazyRoutePage(
+  () => import('../pages/function-groups/customer-platform/order-lookup/CustomerOrderLookupPage'),
+  'CustomerOrderLookupPage',
+);
+const CustomerOrderMonitorPage = lazyRoutePage(
+  () => import('../pages/function-groups/customer-platform/order-monitor/CustomerOrderMonitorPage'),
+  'CustomerOrderMonitorPage',
+);
+const DatabaseGroupPage = lazyRoutePage(
+  () => import('../pages/function-groups/database/DatabaseGroupPage'),
+  'DatabaseGroupPage',
+);
+const FinanceSettlementGroupPage = lazyRoutePage(
+  () => import('../pages/function-groups/finance-settlement/FinanceSettlementGroupPage'),
+  'FinanceSettlementGroupPage',
+);
+const OperationsMetricsGroupPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-metrics/OperationsMetricsGroupPage'),
+  'OperationsMetricsGroupPage',
+);
+const OpsMetricsInventoryMonitorPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-metrics/deadline/OpsMetricsInventoryMonitorPage'),
+  'OpsMetricsInventoryMonitorPage',
+);
+const OperationsMetricsDerivedRoutePage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-metrics/shared/OperationsMetricsDerivedRoutePage'),
+  'OperationsMetricsDerivedRoutePage',
+);
+const OperationsReportPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-metrics/report/OperationsReportPage'),
+  'OperationsReportPage',
+);
+const OperationsPlatformGroupPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-platform/OperationsPlatformGroupPage'),
+  'OperationsPlatformGroupPage',
+);
+const MonitorData2In1Page = lazyRoutePage(
+  () => import('../pages/function-groups/operations-platform/data-monitoring/MonitorData2In1Page'),
+  'MonitorData2In1Page',
+);
+const MonitorDataDongBaoPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-platform/data-monitoring/MonitorDataDongBaoPage'),
+  'MonitorDataDongBaoPage',
+);
+const MonitorDataHangDenPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-platform/data-monitoring/MonitorDataHangDenPage'),
+  'MonitorDataHangDenPage',
+);
+const MonitorDataHangGuiPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-platform/data-monitoring/MonitorDataHangGuiPage'),
+  'MonitorDataHangGuiPage',
+);
+const MonitorDataHangNhanPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-platform/data-monitoring/MonitorDataHangNhanPage'),
+  'MonitorDataHangNhanPage',
+);
+const MonitorDataHangPhatPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-platform/data-monitoring/MonitorDataHangPhatPage'),
+  'MonitorDataHangPhatPage',
+);
+const MonitorDataTheoDoiTamUngPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-platform/data-monitoring/MonitorDataTheoDoiTamUngPage'),
+  'MonitorDataTheoDoiTamUngPage',
+);
+const ReturnBlockManagementPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-platform/return-block/ReturnBlockManagementPage'),
+  'ReturnBlockManagementPage',
+);
+const ReturnBlockRegistrationPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-platform/return-block/ReturnBlockRegistrationPage'),
+  'ReturnBlockRegistrationPage',
+);
+const ThermalLabelManagementPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-platform/thermal-label/ThermalLabelManagementPage'),
+  'ThermalLabelManagementPage',
+);
+const ThermalLabelPrintPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-platform/thermal-label/ThermalLabelPrintPage'),
+  'ThermalLabelPrintPage',
+);
+const LinehaulTripManagementPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-platform/linehaul/LinehaulTripManagementPage'),
+  'LinehaulTripManagementPage',
+);
+const LinehaulVehicleSealPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-platform/linehaul/LinehaulVehicleSealPage'),
+  'LinehaulVehicleSealPage',
+);
+const PlanningPlatformGroupPage = lazyRoutePage(
+  () => import('../pages/function-groups/planning-platform/PlanningPlatformGroupPage'),
+  'PlanningPlatformGroupPage',
+);
+const ServiceQualityGroupPage = lazyRoutePage(
+  () => import('../pages/function-groups/service-quality/ServiceQualityGroupPage'),
+  'ServiceQualityGroupPage',
+);
+const ServiceQualityIntegratedLookupPage = lazyRoutePage(
+  () => import('../pages/function-groups/service-quality/lookup/ServiceQualityIntegratedLookupPage'),
+  'ServiceQualityIntegratedLookupPage',
+);
+const ServiceQualityAbnormalManagementPage = lazyRoutePage(
+  () => import('../pages/function-groups/service-quality/abnormal/ServiceQualityAbnormalManagementPage'),
+  'ServiceQualityAbnormalManagementPage',
+);
+const ServiceQualityActionBoardPage = lazyRoutePage(
+  () => import('../pages/function-groups/service-quality/proactive/ServiceQualityActionBoardPage'),
+  'ServiceQualityActionBoardPage',
+);
+const ServiceQualityMonitorDeliveredPage = lazyRoutePage(
+  () => import('../pages/function-groups/service-quality/proactive/ServiceQualityMonitorDeliveredPage'),
+  'ServiceQualityMonitorDeliveredPage',
+);
+const ServiceQualityMonitorReceivedPage = lazyRoutePage(
+  () => import('../pages/function-groups/service-quality/proactive/ServiceQualityMonitorReceivedPage'),
+  'ServiceQualityMonitorReceivedPage',
+);
+const SmartDevicesGroupPage = lazyRoutePage(
+  () => import('../pages/function-groups/smart-devices/SmartDevicesGroupPage'),
+  'SmartDevicesGroupPage',
+);
+const ConfigManagementPage = lazyRoutePage(
+  () => import('../pages/masterdata/ConfigManagementPage'),
+  'ConfigManagementPage',
+);
+const HubManagementPage = lazyRoutePage(
+  () => import('../pages/masterdata/HubManagementPage'),
+  'HubManagementPage',
+);
+const NdrReasonManagementPage = lazyRoutePage(
+  () => import('../pages/masterdata/NdrReasonManagementPage'),
+  'NdrReasonManagementPage',
+);
+const ZoneManagementPage = lazyRoutePage(
+  () => import('../pages/masterdata/ZoneManagementPage'),
+  'ZoneManagementPage',
+);
+const ManifestDetailPage = lazyRoutePage(
+  () => import('../pages/manifests/ManifestDetailPage'),
+  'ManifestDetailPage',
+);
+const ManifestManagementPage = lazyRoutePage(
+  () => import('../pages/manifests/ManifestManagementPage'),
+  'ManifestManagementPage',
+);
+const NdrCaseDetailPage = lazyRoutePage(
+  () => import('../pages/ndr/NdrCaseDetailPage'),
+  'NdrCaseDetailPage',
+);
+const NdrHandlingPage = lazyRoutePage(
+  () => import('../pages/ndr/NdrHandlingPage'),
+  'NdrHandlingPage',
+);
+const PickupApprovalsPage = lazyRoutePage(
+  () => import('../pages/pickups/PickupApprovalsPage'),
+  'PickupApprovalsPage',
+);
+const PickupRequestDetailPage = lazyRoutePage(
+  () => import('../pages/pickups/PickupRequestDetailPage'),
+  'PickupRequestDetailPage',
+);
+const HubScanPage = lazyRoutePage(
+  () => import('../pages/scans/HubScanPage'),
+  'HubScanPage',
+);
+const ShipmentDetailPage = lazyRoutePage(
+  () => import('../pages/shipments/ShipmentDetailPage'),
+  'ShipmentDetailPage',
+);
+const ShipmentListPage = lazyRoutePage(
+  () => import('../pages/shipments/ShipmentListPage'),
+  'ShipmentListPage',
+);
+const TaskAssignmentPage = lazyRoutePage(
+  () => import('../pages/tasks/TaskAssignmentPage'),
+  'TaskAssignmentPage',
+);
+const TaskDetailPage = lazyRoutePage(
+  () => import('../pages/tasks/TaskDetailPage'),
+  'TaskDetailPage',
+);
+const TrackingDetailPage = lazyRoutePage(
+  () => import('../pages/tracking/TrackingDetailPage'),
+  'TrackingDetailPage',
+);
+const TrackingLookupPage = lazyRoutePage(
+  () => import('../pages/tracking/TrackingLookupPage'),
+  'TrackingLookupPage',
 );
 
 function AuthGuard(): React.JSX.Element {
@@ -79,6 +280,28 @@ function AuthGuard(): React.JSX.Element {
 
 function RouteLoadingFallback(): React.JSX.Element {
   return <div className="ops-route-loading">Đang tải...</div>;
+}
+
+function OpsModuleRoute({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}): React.JSX.Element {
+  if (!appEnv.enableFullOpsModules) {
+    return (
+      <ComingSoonPlaceholder
+        title={title}
+        description="Module này là một phần của Ops Web production roadmap và đang tắt trong cấu hình core-only hiện tại."
+        visionText="Đặt VITE_ENABLE_FULL_OPS_MODULES=true hoặc bỏ trống biến này để hiển thị đầy đủ các luồng nghiệp vụ."
+        phaseLabel="Full module disabled"
+        badgeLabel="Disabled"
+      />
+    );
+  }
+
+  return <>{children}</>;
 }
 
 type SidebarIconName =
@@ -131,6 +354,7 @@ interface SidebarItem {
   icon: SidebarIconName;
   to?: string;
   kind?: SidebarPanelKind;
+  sectionLabel?: string;
 }
 
 function pathMatches(pathname: string, basePath: string): boolean {
@@ -338,21 +562,35 @@ function DashboardLayout(): React.JSX.Element {
   const roleText =
     (session?.user.roles ?? []).map((role) => formatRoleLabel(role)).join(', ') ||
     'Nhân viên điều hành';
+  const enableFullOpsModules = appEnv.enableFullOpsModules;
   const operatorName = session?.user.username ?? 'OPS User';
   const operatorInitial = operatorName.trim().charAt(0).toUpperCase() || 'O';
   const isDashboardRoute = pathMatches(location.pathname, routePaths.dashboard)
     || pathMatches(location.pathname, routePaths.analyticsDashboard)
     || location.pathname.startsWith('/app/coming-soon');
 
-  const isServiceQualitySection = pathMatches(location.pathname, routePaths.groupServiceQuality);
+  const isReturnBlockSection = pathMatches(location.pathname, routePaths.returnBlockRoot);
+  const isThermalLabelSection =
+    pathMatches(location.pathname, routePaths.thermalLabelManagement) ||
+    pathMatches(location.pathname, routePaths.thermalLabelPrint);
+  const isFinanceSettlementSection =
+    pathMatches(location.pathname, routePaths.groupFinanceSettlement) ||
+    pathMatches(location.pathname, routePaths.branchBusinessFinanceSettlementRoot);
+  const isOperationsPlatformSection =
+    pathMatches(location.pathname, routePaths.groupOperationsPlatform) &&
+    !isReturnBlockSection &&
+    !isThermalLabelSection;
+  const isServiceQualitySection =
+    pathMatches(location.pathname, routePaths.groupServiceQuality) ||
+    pathMatches(location.pathname, routePaths.ndr) ||
+    isReturnBlockSection;
   const isOperationsMetricsSection = pathMatches(
     location.pathname,
     routePaths.groupOperationsMetrics,
   );
-  const isBranchBusinessSection = pathMatches(
-    location.pathname,
-    routePaths.groupBranchBusiness,
-  );
+  const isBranchBusinessSection =
+    (pathMatches(location.pathname, routePaths.groupBranchBusiness) || isThermalLabelSection) &&
+    !isFinanceSettlementSection;
   const isCustomerPlatformSection = pathMatches(
     location.pathname,
     routePaths.groupCustomerPlatform,
@@ -362,72 +600,115 @@ function DashboardLayout(): React.JSX.Element {
     routePaths.groupCapabilityPlatform,
   );
 
-  const topNavItems: TopNavItem[] = [
-    // {
-    //   label: 'Dữ liệu cơ bản',
-    //   to: routePaths.groupBasicData,
-    //   isActive:
-    //     pathMatches(location.pathname, routePaths.groupBasicData) ||
-    //     pathMatches(location.pathname, routePaths.shipments) ||
-    //     pathMatches(location.pathname, routePaths.pickups),
-    // },
-    {
-      label: 'Nền tảng điều hành',
-      to: routePaths.groupOperationsPlatform,
-      isActive:
-        pathMatches(location.pathname, routePaths.groupOperationsPlatform) ||
-        pathMatches(location.pathname, routePaths.thermalLabelManagement) ||
-        pathMatches(location.pathname, routePaths.thermalLabelPrint) ||
-        pathMatches(location.pathname, routePaths.returnBlockRoot) ||
-        pathMatches(location.pathname, routePaths.monitorDataRoot) ||
-        pathMatches(location.pathname, routePaths.tasks) ||
-        pathMatches(location.pathname, routePaths.scans) ||
-        pathMatches(location.pathname, routePaths.ndr) ||
-        pathMatches(location.pathname, routePaths.tracking),
-    },
-    {
-      label: 'Chỉ số vận hành',
-      to: routePaths.groupOperationsMetrics,
-      isActive: isOperationsMetricsSection,
-    },
-    {
-      label: 'Dịch vụ tích hợp',
-      to: routePaths.groupIntegrationServices,
-      isActive:
-        pathMatches(location.pathname, routePaths.groupIntegrationServices) ||
-        pathMatches(location.pathname, routePaths.manifests),
-    },
-    {
-      label: 'Nền tảng khách hàng',
-      to: routePaths.groupCustomerPlatform,
-      isActive: pathMatches(location.pathname, routePaths.groupCustomerPlatform),
-    },
-    {
-      label: 'Kinh doanh bưu cục',
-      to: routePaths.groupBranchBusiness,
-      isActive: isBranchBusinessSection,
-    },
-  ];
+  const topNavItems: TopNavItem[] = enableFullOpsModules
+    ? [
+        {
+          label: 'Nền tảng điều hành',
+          to: routePaths.shipments,
+          isActive:
+            pathMatches(location.pathname, routePaths.shipments) ||
+            pathMatches(location.pathname, routePaths.pickups) ||
+            pathMatches(location.pathname, routePaths.tasks) ||
+            pathMatches(location.pathname, routePaths.manifests) ||
+            pathMatches(location.pathname, routePaths.scans) ||
+            pathMatches(location.pathname, routePaths.tracking) ||
+            isOperationsPlatformSection ||
+            pathMatches(location.pathname, routePaths.monitorDataRoot) ||
+            pathMatches(location.pathname, routePaths.masterdataHubs) ||
+            pathMatches(location.pathname, routePaths.masterdataZones) ||
+            pathMatches(location.pathname, routePaths.masterdataNdrReasons) ||
+            pathMatches(location.pathname, routePaths.masterdataConfigs),
+        },
+        {
+          label: 'Đơn khách hàng',
+          to: routePaths.groupCustomerPlatform,
+          isActive: pathMatches(location.pathname, routePaths.groupCustomerPlatform),
+        },
+        {
+          label: 'Kinh doanh bưu cục',
+          to: routePaths.groupBranchBusiness,
+          isActive: isBranchBusinessSection,
+        },
+        {
+          label: 'Quyết toán tài chính',
+          to: routePaths.groupFinanceSettlement,
+          isActive: isFinanceSettlementSection,
+        },
+        {
+          label: 'Vận chuyển tuyến',
+          to: routePaths.groupCapabilityPlatform,
+          isActive: isCapabilityPlatformSection,
+        },
+        {
+          label: 'Chỉ số vận hành',
+          to: routePaths.groupOperationsMetrics,
+          isActive: isOperationsMetricsSection,
+        },
+        {
+          label: 'Chất lượng dịch vụ',
+          to: routePaths.groupServiceQuality,
+          isActive: isServiceQualitySection,
+        },
+      ]
+    : [
+        {
+          label: 'Vận đơn',
+          to: routePaths.shipments,
+          isActive: pathMatches(location.pathname, routePaths.shipments),
+        },
+        {
+          label: 'Lấy hàng',
+          to: routePaths.pickups,
+          isActive: pathMatches(location.pathname, routePaths.pickups),
+        },
+        {
+          label: 'Tác vụ',
+          to: routePaths.tasks,
+          isActive: pathMatches(location.pathname, routePaths.tasks),
+        },
+        {
+          label: 'Bao tải',
+          to: routePaths.manifests,
+          isActive: pathMatches(location.pathname, routePaths.manifests),
+        },
+        {
+          label: 'Tracking',
+          to: routePaths.tracking,
+          isActive: pathMatches(location.pathname, routePaths.tracking),
+        },
+      ];
 
-  const operationsSidebarItems: SidebarItem[] = [
-    { label: 'Tra cứu hành trình', icon: 'tracking_lookup', to: routePaths.tracking },
-    { label: 'Tem bao in nhiệt', icon: 'thermal_label', kind: 'thermal_label' },
-    { label: 'Chuyển hoàn', icon: 'return_block', kind: 'return_block' },
-    { label: 'Giám sát dữ liệu', icon: 'monitor_data', kind: 'monitor_data' },
-    // Tạm ẩn theo yêu cầu: Quản lý ký nhận, Báo biểu thao tác
+  const operationsSidebarItems: SidebarItem[] = enableFullOpsModules
+    ? [
+        { label: 'Vận đơn', icon: 'customer_order_management', to: routePaths.shipments },
+        { label: 'Duyệt lấy hàng', icon: 'customer_order_dispatch', to: routePaths.pickups },
+        { label: 'Phân công tác vụ', icon: 'metrics_action', to: routePaths.tasks },
+        { label: 'Quét tại hub', icon: 'tracking_lookup', to: routePaths.scans },
+        { label: 'Bao tải', icon: 'thermal_label', to: routePaths.manifests },
+        { label: 'Tra cứu hành trình', icon: 'tracking_lookup', to: routePaths.tracking },
+        { label: 'Giám sát dữ liệu', icon: 'monitor_data', kind: 'monitor_data' },
+      ]
+    : [
+        { label: 'Vận đơn', icon: 'customer_order_management', to: routePaths.shipments },
+        { label: 'Duyệt lấy hàng', icon: 'customer_order_dispatch', to: routePaths.pickups },
+        { label: 'Phân công tác vụ', icon: 'metrics_action', to: routePaths.tasks },
+        { label: 'Quét tại hub', icon: 'tracking_lookup', to: routePaths.scans },
+        { label: 'Bao tải', icon: 'thermal_label', to: routePaths.manifests },
+        { label: 'Tra cứu hành trình', icon: 'tracking_lookup', to: routePaths.tracking },
   ];
   const serviceQualitySidebarItems: SidebarItem[] = [
-    { label: 'Tra cứu tích', icon: 'service_lookup' },
+    { label: 'Tra cứu sự cố / chất lượng', icon: 'service_lookup', to: routePaths.serviceQualityIntegratedLookup },
     { label: 'Giám sát chủ động', icon: 'service_proactive', kind: 'service_proactive' },
-    { label: 'CSKH', icon: 'service_care' },
-    { label: 'Trọng tải', icon: 'service_weight' },
-    { label: 'Quản lý hàng bất thường', icon: 'service_abnormal' },
+    { label: 'Quản lý hàng bất thường', icon: 'service_abnormal', to: routePaths.serviceQualityAbnormalManagement },
+    { label: 'NDR / giao thất bại', icon: 'service_abnormal', to: routePaths.ndr },
+    { label: 'Chuyển hoàn', icon: 'return_block', kind: 'return_block' },
   ];
   const operationsMetricsSidebarItems: SidebarItem[] = [
+    { label: 'Báo cáo vận hành', icon: 'operation_report', to: routePaths.opsMetricsReport },
     { label: 'Kiện bất thường', icon: 'metrics_abnormal', kind: 'metrics_abnormal' },
-    { label: 'Thời hiệu', icon: 'metrics_deadline', kind: 'metrics_deadline' },
-    { label: 'Quy hoạch', icon: 'metrics_planning', kind: 'metrics_planning' },
-    { label: 'Thao tác', icon: 'metrics_action', kind: 'metrics_action' },
+    { label: 'Thời hiệu / SLA', icon: 'metrics_deadline', kind: 'metrics_deadline' },
+    { label: 'Quy hoạch / KPI mạng lưới', icon: 'metrics_deadline', kind: 'metrics_planning' },
+    { label: 'Bàn điều phối thao tác', icon: 'metrics_action', kind: 'metrics_action' },
   ];
   const branchBusinessSidebarItems: SidebarItem[] = [
     {
@@ -441,25 +722,23 @@ function DashboardLayout(): React.JSX.Element {
       kind: 'branch_order_management',
     },
     {
-      label: 'Quyết toán tài chính',
-      icon: 'branch_finance_settlement',
-      kind: 'branch_finance_settlement',
+      label: 'Tem bao in nhiệt',
+      icon: 'thermal_label',
+      kind: 'thermal_label',
     },
   ];
   const customerPlatformSidebarItems: SidebarItem[] = [
-    {
-      label: 'Quản lý đơn đặt',
-      icon: 'customer_order_management',
-      kind: 'customer_order_management',
-    },
-    {
-      label: 'Điều phối đơn đặt',
-      icon: 'customer_order_dispatch',
-      kind: 'customer_order_dispatch',
-    },
+    { label: 'Điều phối đơn đặt', icon: 'customer_order_dispatch', to: routePaths.customerPlatformOrderDispatch },
+    { label: 'Tra cứu đơn đặt', icon: 'service_lookup', to: routePaths.customerPlatformOrderLookup },
+    { label: 'Giám sát đơn đã tạo', icon: 'monitor_data', to: routePaths.customerPlatformOrderMonitor },
+  ];
+  const financeSettlementSidebarItems: SidebarItem[] = [
+    { label: 'Quyết toán thu hộ', icon: 'branch_finance_settlement', to: routePaths.branchBusinessFinanceCod },
+    { label: 'Đối soát công nợ', icon: 'branch_finance_settlement', to: routePaths.branchBusinessFinanceReconcile },
   ];
   const capabilityPlatformSidebarItems: SidebarItem[] = [
-    { label: 'Vận chuyển tuyến nhánh', icon: 'linehaul_transport', kind: 'linehaul_transport' },
+    { label: 'Quản lý chuyến xe', icon: 'linehaul_transport', to: routePaths.linehaulTripManagement },
+    { label: 'Tạo tem xe', icon: 'thermal_label', to: routePaths.linehaulVehicleSeal },
   ];
   const sidebarItems = isServiceQualitySection
     ? serviceQualitySidebarItems
@@ -467,6 +746,8 @@ function DashboardLayout(): React.JSX.Element {
     ? operationsMetricsSidebarItems
     : isCustomerPlatformSection
     ? customerPlatformSidebarItems
+    : isFinanceSettlementSection
+    ? financeSettlementSidebarItems
     : isBranchBusinessSection
     ? branchBusinessSidebarItems
     : isCapabilityPlatformSection
@@ -478,8 +759,6 @@ function DashboardLayout(): React.JSX.Element {
     { label: 'Giám sát hàng đến', to: routePaths.monitorDataHangDen },
     { label: 'Giám sát hàng gửi', to: routePaths.monitorDataHangGui },
     { label: 'Giám sát hàng phát', to: routePaths.monitorDataHangPhat },
-    { label: 'Giám sát 2in1', to: routePaths.monitorData2In1 },
-    { label: 'Theo dõi tạm ứng', to: routePaths.monitorDataTheoDoiTamUng },
     { label: 'Giám sát đóng bao', to: routePaths.monitorDataDongBao },
   ] as const;
   const thermalLabelChildItems = [
@@ -495,6 +774,7 @@ function DashboardLayout(): React.JSX.Element {
     { label: 'Quản lý chuyển hoàn', to: routePaths.returnBlockManagement },
   ] as const;
   const serviceQualityProactiveChildItems = [
+    { label: 'Bảng cảnh báo', to: routePaths.serviceQualityProactiveActionBoard },
     { label: 'Giám sát đơn nhận', to: routePaths.serviceQualityProactiveInbound },
     { label: 'Giám sát đơn phát', to: routePaths.serviceQualityProactiveDelivered },
   ] as const;
@@ -593,6 +873,14 @@ function DashboardLayout(): React.JSX.Element {
   const isServiceQualityProactiveRoute = serviceQualityProactiveChildItems.some((item) =>
     pathMatches(location.pathname, item.to),
   );
+  const isServiceQualityIntegratedLookupRoute = pathMatches(
+    location.pathname,
+    routePaths.serviceQualityIntegratedLookup,
+  );
+  const isServiceQualityAbnormalManagementRoute = pathMatches(
+    location.pathname,
+    routePaths.serviceQualityAbnormalManagement,
+  );
   const isOpsMetricsAbnormalRoute = operationsMetricsAbnormalChildItems.some((item) =>
     pathMatches(location.pathname, item.to),
   );
@@ -673,16 +961,18 @@ function DashboardLayout(): React.JSX.Element {
   }, [routeDrivenPanel]);
 
   const activePanelKinds: ReadonlyArray<SidebarPanelKind> = isServiceQualitySection
-    ? ['service_proactive']
+    ? ['service_proactive', 'return_block']
     : isOperationsMetricsSection
     ? ['metrics_abnormal', 'metrics_deadline', 'metrics_planning', 'metrics_action']
     : isCustomerPlatformSection
-    ? ['customer_order_management', 'customer_order_dispatch']
+    ? []
+    : isFinanceSettlementSection
+    ? []
     : isBranchBusinessSection
-    ? ['branch_local_orders', 'branch_order_management', 'branch_finance_settlement']
+    ? ['branch_local_orders', 'branch_order_management', 'thermal_label']
     : isCapabilityPlatformSection
-    ? ['linehaul_transport']
-    : ['thermal_label', 'return_block', 'monitor_data'];
+    ? []
+    : ['monitor_data'];
 
   const activeSidebarPanelInSection =
     activeSidebarPanel &&
@@ -702,14 +992,19 @@ function DashboardLayout(): React.JSX.Element {
     : isOperationsMetricsSection
     ? 'Chỉ số vận hành'
     : isCustomerPlatformSection
-    ? 'Nền tảng khách hàng'
+    ? 'Đơn khách hàng'
+    : isFinanceSettlementSection
+    ? 'Quyết toán tài chính'
     : isBranchBusinessSection
     ? 'Kinh doanh bưu cục'
     : isCapabilityPlatformSection
-    ? 'Quản lý vận chuyển'
+    ? 'Vận chuyển tuyến'
+    : !enableFullOpsModules
+    ? 'Ops production'
     : 'Nền tảng điều hành';
 
   const operationsMetricsAllChildItems = [
+    { label: 'Báo cáo vận hành', to: routePaths.opsMetricsReport },
     ...operationsMetricsAbnormalChildItems,
     ...operationsMetricsDeadlineChildItems,
     ...operationsMetricsPlanningChildItems,
@@ -722,10 +1017,13 @@ function DashboardLayout(): React.JSX.Element {
   const branchBusinessAllChildItems = [
     ...branchBusinessLocalOrdersChildItems,
     ...branchBusinessOrderManagementChildItems,
-    ...branchBusinessFinanceSettlementChildItems,
+    ...thermalLabelChildItems,
   ];
   const activeBranchBusinessItem =
     branchBusinessAllChildItems.find((item) => pathMatches(location.pathname, item.to)) ?? null;
+  const financeSettlementAllChildItems = [...branchBusinessFinanceSettlementChildItems];
+  const activeFinanceSettlementItem =
+    financeSettlementAllChildItems.find((item) => pathMatches(location.pathname, item.to)) ?? null;
   const customerPlatformAllChildItems = [
     ...customerPlatformOrderDispatchChildItems,
     ...customerPlatformOrderManagementChildItems,
@@ -737,6 +1035,23 @@ function DashboardLayout(): React.JSX.Element {
 
   const activeTabLabel = pathMatches(location.pathname, routePaths.tracking)
     ? 'Tra cứu hành trình'
+    : pathMatches(location.pathname, routePaths.shipments)
+    ? 'Vận đơn'
+    : pathMatches(location.pathname, routePaths.pickups)
+    ? 'Duyệt lấy hàng'
+    : pathMatches(location.pathname, routePaths.tasks)
+    ? 'Phân công tác vụ'
+    : pathMatches(location.pathname, routePaths.manifests)
+    ? 'Bao tải'
+    : pathMatches(location.pathname, routePaths.scans)
+    ? 'Quét hub'
+    : pathMatches(location.pathname, routePaths.ndr)
+    ? 'NDR'
+    : pathMatches(location.pathname, routePaths.masterdataHubs) ||
+      pathMatches(location.pathname, routePaths.masterdataZones) ||
+      pathMatches(location.pathname, routePaths.masterdataNdrReasons) ||
+      pathMatches(location.pathname, routePaths.masterdataConfigs)
+    ? 'Masterdata'
     : isMonitorDataRoute
     ? 'Giám sát dữ liệu'
     : isThermalLabelRoute
@@ -755,6 +1070,10 @@ function DashboardLayout(): React.JSX.Element {
     ? activeOperationsMetricsItem.label
     : isOperationsMetricsSection
     ? 'Chỉ số vận hành'
+    : activeFinanceSettlementItem
+    ? activeFinanceSettlementItem.label
+    : isFinanceSettlementSection
+    ? 'Quyết toán tài chính'
     : activeBranchBusinessItem
     ? activeBranchBusinessItem.label
     : isBranchBusinessSection
@@ -762,7 +1081,11 @@ function DashboardLayout(): React.JSX.Element {
     : activeCustomerPlatformItem
     ? activeCustomerPlatformItem.label
     : isCustomerPlatformSection
-    ? 'Nền tảng khách hàng'
+    ? 'Đơn khách hàng'
+    : isServiceQualityIntegratedLookupRoute
+    ? 'Tra cứu sự cố / chất lượng'
+    : isServiceQualityAbnormalManagementRoute
+    ? 'Quản lý hàng bất thường'
     : pathMatches(location.pathname, routePaths.groupServiceQuality)
     ? 'Chất lượng dịch vụ'
     : 'Trang chủ';
@@ -781,6 +1104,7 @@ function DashboardLayout(): React.JSX.Element {
       return;
     }
 
+    setQuickSearchCode('');
     navigate(routePaths.trackingDetail(normalized));
   };
 
@@ -819,8 +1143,8 @@ function DashboardLayout(): React.JSX.Element {
                   type="text"
                   value={quickSearchCode}
                   onChange={(event) => setQuickSearchCode(event.target.value)}
-                  placeholder="Tra cứu hành trình đơn"
-                  aria-label="Tra cứu hành trình đơn"
+                  placeholder="Tra cứu mã vận đơn"
+                  aria-label="Tra cứu mã vận đơn"
                 />
                 <button type="submit" className="ops-topbar-search-submit">
                   Tìm
@@ -896,8 +1220,8 @@ function DashboardLayout(): React.JSX.Element {
               type="text"
               value={quickSearchCode}
               onChange={(event) => setQuickSearchCode(event.target.value)}
-              placeholder="Tra cứu hành trình đơn"
-              aria-label="Tra cứu hành trình đơn"
+              placeholder="Tra cứu mã vận đơn"
+              aria-label="Tra cứu mã vận đơn"
             />
           </form>
 
@@ -942,6 +1266,14 @@ function DashboardLayout(): React.JSX.Element {
           >
             <div className="ops-func-sidebar-primary-list">
               {sidebarItems.map((item) => {
+                if (item.sectionLabel) {
+                  return (
+                    <div key={item.sectionLabel} className="ops-func-sidebar-section">
+                      {item.sectionLabel}
+                    </div>
+                  );
+                }
+
                 const isActive =
                   item.kind === 'thermal_label'
                     ? isThermalLabelRoute
@@ -1071,6 +1403,15 @@ function DashboardLayout(): React.JSX.Element {
 }
 
 export function AppRouter(): React.JSX.Element {
+  const lazyRoute = (element: React.ReactNode) => (
+    <Suspense fallback={<RouteLoadingFallback />}>{element}</Suspense>
+  );
+  const opsModuleRoute = (title: string, element: React.ReactNode) => (
+    <Suspense fallback={<RouteLoadingFallback />}>
+      <OpsModuleRoute title={title}>{element}</OpsModuleRoute>
+    </Suspense>
+  );
+
   return (
     <BrowserRouter>
       <Routes>
@@ -1082,94 +1423,106 @@ export function AppRouter(): React.JSX.Element {
             <Route
               path={routePaths.analyticsDashboardLeaf}
               element={
-                <Suspense fallback={<RouteLoadingFallback />}>
-                  <AnalyticsDashboardPage />
-                </Suspense>
+                <OpsModuleRoute title="Analytics Dashboard">
+                  {lazyRoute(<AnalyticsDashboardPage />)}
+                </OpsModuleRoute>
               }
             />
             <Route
               path={routePaths.comingSoonDebtReportLeaf}
               element={
-                <ComingSoonPlaceholder
-                  title="Báo cáo Công nợ"
-                  description="Module phân tích và đối soát công nợ toàn hệ thống, hỗ trợ xuất báo cáo tự động theo chu kỳ."
-                  visionText="Tích hợp AI dự đoán dòng tiền (Cash Flow Forecasting) và phân tích rủi ro nợ xấu dựa trên lịch sử thanh toán của đối tác."
-                  phaseLabel="Phase 2 — Q3 2026"
-                />
+                <OpsModuleRoute title="Báo cáo Công nợ">
+                  <ComingSoonPlaceholder
+                    title="Báo cáo Công nợ"
+                    description="Module phân tích và đối soát công nợ toàn hệ thống, hỗ trợ xuất báo cáo tự động theo chu kỳ."
+                    visionText="Tích hợp AI dự đoán dòng tiền (Cash Flow Forecasting) và phân tích rủi ro nợ xấu dựa trên lịch sử thanh toán của đối tác."
+                    phaseLabel="Phase 2 — Q3 2026"
+                    badgeLabel="Đang hoàn thiện"
+                  />
+                </OpsModuleRoute>
               }
             />
             <Route
               path={routePaths.comingSoonAiCashflowLeaf}
               element={
-                <ComingSoonPlaceholder
-                  title="AI Dự đoán Dòng tiền"
-                  description="Hệ thống Machine Learning phân tích pattern thu-chi, dự báo dòng tiền 30/60/90 ngày cho từng hub."
-                  visionText="Sử dụng mô hình Time-series Forecasting (Prophet / LSTM) kết hợp dữ liệu vận hành thực tế để đưa ra dự đoán chính xác, giúp tối ưu kế hoạch tài chính."
-                  phaseLabel="Phase 3 — Q4 2026"
-                />
+                <OpsModuleRoute title="AI Dự đoán Dòng tiền">
+                  <ComingSoonPlaceholder
+                    title="AI Dự đoán Dòng tiền"
+                    description="Hệ thống Machine Learning phân tích pattern thu-chi, dự báo dòng tiền 30/60/90 ngày cho từng hub."
+                    visionText="Sử dụng mô hình Time-series Forecasting (Prophet / LSTM) kết hợp dữ liệu vận hành thực tế để đưa ra dự đoán chính xác, giúp tối ưu kế hoạch tài chính."
+                    phaseLabel="Phase 3 — Q4 2026"
+                    badgeLabel="Đang hoàn thiện"
+                  />
+                </OpsModuleRoute>
               }
             />
-            <Route path={routePaths.groupBasicDataLeaf} element={<BasicDataGroupPage />} />
+            <Route
+              path={routePaths.groupBasicDataLeaf}
+              element={opsModuleRoute('Dữ liệu cơ bản', <BasicDataGroupPage />)}
+            />
             <Route
               path={routePaths.groupOperationsPlatformLeaf}
-              element={<OperationsPlatformGroupPage />}
+              element={opsModuleRoute('Nền tảng điều hành', <OperationsPlatformGroupPage />)}
             />
             <Route
               path={routePaths.thermalLabelManagementLeaf}
-              element={<ThermalLabelManagementPage />}
+              element={opsModuleRoute('Quản lý tem bao in nhiệt', <ThermalLabelManagementPage />)}
             />
             <Route
               path={routePaths.thermalLabelPrintLeaf}
-              element={<ThermalLabelPrintPage />}
+              element={opsModuleRoute('In tem bao', <ThermalLabelPrintPage />)}
             />
             <Route
               path={routePaths.returnBlockManagementLeaf}
-              element={<ReturnBlockManagementPage />}
+              element={opsModuleRoute('Quản lý chuyển hoàn', <ReturnBlockManagementPage />)}
             />
             <Route
               path={routePaths.returnBlockRegistrationLeaf}
-              element={<ReturnBlockRegistrationPage />}
+              element={opsModuleRoute('Đăng ký chuyển hoàn', <ReturnBlockRegistrationPage />)}
             />
             <Route
               path={routePaths.monitorDataHangNhanLeaf}
-              element={<MonitorDataHangNhanPage />}
+              element={opsModuleRoute('Giám sát hàng nhận', <MonitorDataHangNhanPage />)}
             />
             <Route
               path={routePaths.monitorDataHangDenLeaf}
-              element={<MonitorDataHangDenPage />}
+              element={opsModuleRoute('Giám sát hàng đến', <MonitorDataHangDenPage />)}
             />
             <Route
               path={routePaths.monitorDataHangGuiLeaf}
-              element={<MonitorDataHangGuiPage />}
+              element={opsModuleRoute('Giám sát hàng gửi', <MonitorDataHangGuiPage />)}
             />
             <Route
               path={routePaths.monitorDataHangPhatLeaf}
-              element={<MonitorDataHangPhatPage />}
+              element={opsModuleRoute('Giám sát hàng phát', <MonitorDataHangPhatPage />)}
             />
-            <Route path={routePaths.monitorData2In1Leaf} element={<MonitorData2In1Page />} />
+            <Route
+              path={routePaths.monitorData2In1Leaf}
+              element={opsModuleRoute('Giám sát 2in1', <MonitorData2In1Page />)}
+            />
             <Route
               path={routePaths.monitorDataTheoDoiTamUngLeaf}
-              element={<MonitorDataTheoDoiTamUngPage />}
+              element={opsModuleRoute('Theo dõi tạm ứng', <MonitorDataTheoDoiTamUngPage />)}
             />
             <Route
               path={routePaths.monitorDataDongBaoLeaf}
-              element={<MonitorDataDongBaoPage />}
+              element={opsModuleRoute('Giám sát đóng bao', <MonitorDataDongBaoPage />)}
             />
             <Route
               path={routePaths.linehaulTripManagementLeaf}
-              element={<LinehaulTripManagementPage />}
+              element={opsModuleRoute('Quản lý chuyến xe', <LinehaulTripManagementPage />)}
             />
             <Route
               path={routePaths.linehaulVehicleSealLeaf}
-              element={<LinehaulVehicleSealPage />}
+              element={opsModuleRoute('Tạo tem xe', <LinehaulVehicleSealPage />)}
             />
             <Route
               path={routePaths.groupIntegrationServicesLeaf}
-              element={<IntegrationServicesGroupPage />}
+              element={<Navigate to={routePaths.dashboard} replace />}
             />
             <Route
               path={routePaths.groupCustomerPlatformLeaf}
-              element={<CustomerPlatformGroupPage />}
+              element={opsModuleRoute('Đơn khách hàng', <CustomerPlatformGroupPage />)}
             />
             <Route
               path={routePaths.customerPlatformOrderManagementLeaf}
@@ -1181,27 +1534,15 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.customerPlatformOrderDispatchLeaf}
-              element={<CustomerOrderDispatchPage />}
+              element={opsModuleRoute('Điều phối đơn đặt', <CustomerOrderDispatchPage />)}
             />
             <Route
               path={routePaths.customerPlatformOrderLookupLeaf}
-              element={
-                <FunctionGroupLandingPage
-                  groupCode="CUSTOMER_ORDER_LOOKUP"
-                  title="Tra cứu đơn đặt"
-                  summary="Màn hình tra cứu đơn đặt theo mã đơn, mã vận đơn và thông tin khách hàng."
-                />
-              }
+              element={opsModuleRoute('Tra cứu đơn đặt', <CustomerOrderLookupPage />)}
             />
             <Route
               path={routePaths.customerPlatformOrderMonitorLeaf}
-              element={
-                <FunctionGroupLandingPage
-                  groupCode="CUSTOMER_ORDER_MONITOR"
-                  title="Giám sát đơn đã tạo"
-                  summary="Màn hình giám sát các đơn đặt đã tạo và trạng thái xử lý hiện tại."
-                />
-              }
+              element={opsModuleRoute('Giám sát đơn đã tạo', <CustomerOrderMonitorPage />)}
             />
             <Route
               path={routePaths.groupBranchBusinessLeaf}
@@ -1209,225 +1550,244 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.branchBusinessLocalOverviewLeaf}
-              element={<BranchLocalOrderOverviewPage />}
+              element={opsModuleRoute('Tổng quan đơn tại bưu cục', <BranchLocalOrderOverviewPage />)}
             />
             <Route
               path={routePaths.branchBusinessLocalOrdersLeaf}
-              element={<BranchLocalOrderOverviewPage mode="management" />}
+              element={opsModuleRoute(
+                'Quản lý đơn tại bưu cục',
+                <BranchLocalOrderOverviewPage mode="management" />,
+              )}
             />
             <Route
               path={routePaths.branchBusinessCourierHandoffLeaf}
-              element={<BranchDeliveryDispatchPage />}
+              element={opsModuleRoute('Phát hàng tại bưu cục', <BranchDeliveryDispatchPage />)}
             />
             <Route
               path={routePaths.branchBusinessBranchInventoryLeaf}
-              element={
-                <BranchBusinessFeaturePlaceholderPage
-                  groupCode="BRANCH_ORDER_INVENTORY"
-                  title="Đơn tồn bưu cục"
-                  summary="Theo dõi các đơn lưu tại bưu cục quá thời gian mục tiêu hoặc có cảnh báo bất thường."
-                />
-              }
+              element={opsModuleRoute('Đơn tồn bưu cục', <BranchInventoryPage />)}
             />
             <Route
               path={routePaths.branchBusinessShiftClosingLeaf}
-              element={
-                <BranchBusinessFeaturePlaceholderPage
-                  groupCode="BRANCH_SHIFT_CLOSING"
-                  title="Chốt ca"
-                  summary="Tổng hợp đơn nhận, đơn phát, đơn gửi đi và đơn tồn cuối ca của bưu cục."
-                />
-              }
+              element={opsModuleRoute('Chốt ca', <BranchShiftClosingPage />)}
             />
             <Route
               path={routePaths.branchBusinessOrderCreateLeaf}
-              element={<BranchBusinessOrderCreatePage />}
+              element={opsModuleRoute('Thêm mới vận đơn', <BranchBusinessOrderCreatePage />)}
             />
             <Route
               path={routePaths.branchBusinessOrderOutboundLeaf}
-              element={<BranchOutboundOrderManagementPage />}
+              element={opsModuleRoute('Quản lý vận đơn gửi', <BranchOutboundOrderManagementPage />)}
             />
             <Route
               path={routePaths.branchBusinessOrderDeliveryLeaf}
-              element={<BranchDeliveryOrderManagementPage />}
+              element={opsModuleRoute('Quản lý vận đơn phát', <BranchDeliveryOrderManagementPage />)}
             />
             <Route
               path={routePaths.branchBusinessFinanceCodLeaf}
-              element={
-                <BranchBusinessFeaturePlaceholderPage
-                  groupCode="BRANCH_FINANCE_COD_SETTLEMENT"
-                  title="Quyết toán thu hộ"
-                  summary="Tổng hợp đối soát thu hộ COD và phân bổ chênh lệch theo ngày."
-                />
-              }
+              element={opsModuleRoute('Quyết toán thu hộ', <BranchFinanceCodSettlementPage />)}
             />
             <Route
               path={routePaths.branchBusinessFinanceReconcileLeaf}
-              element={
-                <BranchBusinessFeaturePlaceholderPage
-                  groupCode="BRANCH_FINANCE_RECONCILE"
-                  title="Đối soát công nợ"
-                  summary="Báo cáo đối soát công nợ bưu cục, hỗ trợ chốt số theo chu kỳ."
-                />
-              }
+              element={opsModuleRoute('Đối soát công nợ', <BranchFinanceReconcilePage />)}
             />
             <Route
               path={routePaths.groupFinanceSettlementLeaf}
-              element={<FinanceSettlementGroupPage />}
+              element={opsModuleRoute('Quyết toán tài chính', <FinanceSettlementGroupPage />)}
             />
             <Route
               path={routePaths.groupCapabilityPlatformLeaf}
-              element={<CapabilityPlatformGroupPage />}
+              element={opsModuleRoute('Vận chuyển tuyến', <CapabilityPlatformGroupPage />)}
             />
             <Route
               path={routePaths.groupOperationsMetricsLeaf}
-              element={<OperationsMetricsGroupPage />}
+              element={opsModuleRoute('Chỉ số vận hành', <OperationsMetricsGroupPage />)}
+            />
+            <Route
+              path={routePaths.opsMetricsReportLeaf}
+              element={opsModuleRoute('Báo cáo vận hành', <OperationsReportPage />)}
             />
             <Route
               path={routePaths.opsMetricsAbnormalOverviewLeaf}
-              element={
-                <OperationsMetricsFeaturePlaceholderPage
+              element={opsModuleRoute(
+                'Tổng quan kiện bất thường',
+                <OperationsMetricsDerivedRoutePage
                   groupCode="OPS_METRICS_ABNORMAL_OVERVIEW"
                   title="Tổng quan kiện bất thường"
                   summary="Theo dõi tổng quan kiện bất thường theo khu vực và trạng thái xử lý."
-                />
-              }
+                />,
+              )}
             />
             <Route
               path={routePaths.opsMetricsAbnormalHandlingLeaf}
-              element={
-                <OperationsMetricsFeaturePlaceholderPage
+              element={opsModuleRoute(
+                'Theo dõi xử lý kiện',
+                <OperationsMetricsDerivedRoutePage
                   groupCode="OPS_METRICS_ABNORMAL_HANDLING"
                   title="Theo dõi xử lý kiện"
                   summary="Giám sát tiến độ xử lý kiện bất thường theo từng đơn vị vận hành."
-                />
-              }
+                />,
+              )}
             />
             <Route
               path={routePaths.opsMetricsDeadlineInventoryLeaf}
-              element={<OpsMetricsInventoryMonitorPage />}
+              element={opsModuleRoute('Giám sát tồn kho', <OpsMetricsInventoryMonitorPage />)}
             />
             <Route
               path={routePaths.opsMetricsDeadlineOntimePickupRatioLeaf}
-              element={
-                <OperationsMetricsFeaturePlaceholderPage
+              element={opsModuleRoute(
+                'Báo biểu tỷ lệ nhận hàng kịp',
+                <OperationsMetricsDerivedRoutePage
                   groupCode="OPS_METRICS_DEADLINE_PICKUP_RATIO"
                   title="Báo biểu tỷ lệ nhận hàng kịp"
                   summary="Báo cáo tỷ lệ nhận hàng kịp theo khung giờ và TTTC."
-                />
-              }
+                />,
+              )}
             />
             <Route
               path={routePaths.opsMetricsDeadlineDeliverySlaLeaf}
-              element={
-                <OperationsMetricsFeaturePlaceholderPage
+              element={opsModuleRoute(
+                'Giám sát thời hiệu hàng phát',
+                <OperationsMetricsDerivedRoutePage
                   groupCode="OPS_METRICS_DEADLINE_DELIVERY_SLA"
                   title="Giám sát thời hiệu hàng phát"
                   summary="Theo dõi SLA phát hàng và danh sách đơn có nguy cơ trễ hạn."
-                />
-              }
+                />,
+              )}
             />
             <Route
               path={routePaths.opsMetricsDeadlineActualSignT1Leaf}
-              element={
-                <OperationsMetricsFeaturePlaceholderPage
+              element={opsModuleRoute(
+                'Ký nhận thực tế T-1',
+                <OperationsMetricsDerivedRoutePage
                   groupCode="OPS_METRICS_DEADLINE_SIGN_T1"
                   title="Ký nhận thực tế (T-1)"
                   summary="Tổng hợp dữ liệu ký nhận thực tế và so sánh với mục tiêu T-1."
-                />
-              }
+                />,
+              )}
             />
             <Route
               path={routePaths.opsMetricsDeadlineOntimeSendRatioLeaf}
-              element={
-                <OperationsMetricsFeaturePlaceholderPage
+              element={opsModuleRoute(
+                'Tỷ lệ gửi kiện đúng giờ',
+                <OperationsMetricsDerivedRoutePage
                   groupCode="OPS_METRICS_DEADLINE_SEND_RATIO"
                   title="Tỷ lệ gửi kiện đúng giờ"
                   summary="Báo cáo tỷ lệ gửi kiện đúng giờ theo hub, chi nhánh và ca vận hành."
-                />
-              }
+                />,
+              )}
             />
             <Route
               path={routePaths.opsMetricsDeadlineDeliveryLeadtimeLeaf}
-              element={
-                <OperationsMetricsFeaturePlaceholderPage
+              element={opsModuleRoute(
+                'Giám sát leadtime phát',
+                <OperationsMetricsDerivedRoutePage
                   groupCode="OPS_METRICS_DEADLINE_DELIVERY_LEADTIME"
                   title="Giám sát leadtime phát (Mới)"
                   summary="Phân tích leadtime phát theo tuyến và gom cảnh báo trễ hạn mới."
-                />
-              }
+                />,
+              )}
             />
             <Route
               path={routePaths.opsMetricsDeadlineInboundLeadtimeLeaf}
-              element={
-                <OperationsMetricsFeaturePlaceholderPage
+              element={opsModuleRoute(
+                'Giám sát leadtime nhận',
+                <OperationsMetricsDerivedRoutePage
                   groupCode="OPS_METRICS_DEADLINE_INBOUND_LEADTIME"
                   title="Giám sát leadtime nhận"
                   summary="Giám sát leadtime nhận hàng theo điểm nhận và theo dõi điểm nghẽn."
-                />
-              }
+                />,
+              )}
             />
             <Route
               path={routePaths.opsMetricsDeadlineOverdueAlertsLeaf}
-              element={
-                <OperationsMetricsFeaturePlaceholderPage
+              element={opsModuleRoute(
+                'Hệ thống cảnh báo quá hạn',
+                <OperationsMetricsDerivedRoutePage
                   groupCode="OPS_METRICS_DEADLINE_OVERDUE_ALERTS"
                   title="Hệ thống cảnh báo quá hạn"
                   summary="Tập trung cảnh báo quá hạn để ưu tiên xử lý theo mức độ rủi ro."
-                />
-              }
+                />,
+              )}
             />
             <Route
               path={routePaths.opsMetricsPlanningNetworkKpiLeaf}
-              element={
-                <OperationsMetricsFeaturePlaceholderPage
+              element={opsModuleRoute(
+                'Giám sát KPI mạng lưới',
+                <OperationsMetricsDerivedRoutePage
                   groupCode="OPS_METRICS_PLANNING_NETWORK_KPI"
                   title="Giám sát KPI mạng lưới"
                   summary="Tổng hợp KPI quy hoạch mạng lưới và đánh giá mức độ đáp ứng năng lực."
-                />
-              }
+                />,
+              )}
             />
             <Route
               path={routePaths.opsMetricsActionExecutionBoardLeaf}
-              element={
-                <OperationsMetricsFeaturePlaceholderPage
+              element={opsModuleRoute(
+                'Bàn điều phối thao tác',
+                <OperationsMetricsDerivedRoutePage
                   groupCode="OPS_METRICS_ACTION_EXECUTION_BOARD"
                   title="Bàn điều phối thao tác"
                   summary="Quản lý tác vụ thao tác và trạng thái hoàn thành theo ngày."
-                />
-              }
+                />,
+              )}
             />
             <Route
               path={routePaths.groupServiceQualityLeaf}
-              element={<ServiceQualityGroupPage />}
+              element={opsModuleRoute('Chất lượng dịch vụ', <ServiceQualityGroupPage />)}
+            />
+            <Route
+              path={routePaths.serviceQualityIntegratedLookupLeaf}
+              element={opsModuleRoute('Tra cứu sự cố / chất lượng', <ServiceQualityIntegratedLookupPage />)}
+            />
+            <Route
+              path={routePaths.serviceQualityAbnormalManagementLeaf}
+              element={opsModuleRoute('Quản lý hàng bất thường', <ServiceQualityAbnormalManagementPage />)}
+            />
+            <Route
+              path={routePaths.serviceQualityProactiveActionBoardLeaf}
+              element={opsModuleRoute('Bảng cảnh báo', <ServiceQualityActionBoardPage />)}
             />
             <Route
               path={routePaths.serviceQualityProactiveInboundLeaf}
-              element={<ServiceQualityMonitorReceivedPage />}
+              element={opsModuleRoute('Giám sát đơn nhận', <ServiceQualityMonitorReceivedPage />)}
             />
             <Route
               path={routePaths.serviceQualityProactiveDeliveredLeaf}
-              element={<ServiceQualityMonitorDeliveredPage />}
+              element={opsModuleRoute('Giám sát đơn phát', <ServiceQualityMonitorDeliveredPage />)}
             />
-            <Route path={routePaths.groupDatabaseLeaf} element={<DatabaseGroupPage />} />
-            <Route path={routePaths.groupSmartDevicesLeaf} element={<SmartDevicesGroupPage />} />
+            <Route
+              path={routePaths.groupDatabaseLeaf}
+              element={opsModuleRoute('Cơ sở dữ liệu', <DatabaseGroupPage />)}
+            />
+            <Route
+              path={routePaths.groupSmartDevicesLeaf}
+              element={opsModuleRoute('Thiết bị thông minh', <SmartDevicesGroupPage />)}
+            />
             <Route
               path={routePaths.groupPlanningPlatformLeaf}
-              element={<PlanningPlatformGroupPage />}
+              element={opsModuleRoute('Nền tảng quy hoạch', <PlanningPlatformGroupPage />)}
             />
-            <Route path={routePaths.shipmentsLeaf} element={<ShipmentListPage />} />
-            <Route path={routePaths.shipmentDetailLeaf} element={<ShipmentDetailPage />} />
-            <Route path={routePaths.pickupsLeaf} element={<PickupApprovalsPage />} />
-            <Route path={routePaths.pickupDetailLeaf} element={<PickupRequestDetailPage />} />
-            <Route path={routePaths.tasksLeaf} element={<TaskAssignmentPage />} />
-            <Route path={routePaths.taskDetailLeaf} element={<TaskDetailPage />} />
-            <Route path={routePaths.manifestsLeaf} element={<ManifestManagementPage />} />
-            <Route path={routePaths.manifestDetailLeaf} element={<ManifestDetailPage />} />
-            <Route path={routePaths.scansLeaf} element={<HubScanPage />} />
-            <Route path={routePaths.ndrLeaf} element={<NdrHandlingPage />} />
-            <Route path={routePaths.ndrDetailLeaf} element={<NdrCaseDetailPage />} />
-            <Route path={routePaths.trackingLeaf} element={<TrackingLookupPage />} />
-            <Route path={routePaths.trackingDetailLeaf} element={<TrackingDetailPage />} />
+            <Route path={routePaths.shipmentsLeaf} element={lazyRoute(<ShipmentListPage />)} />
+            <Route path={routePaths.shipmentDetailLeaf} element={lazyRoute(<ShipmentDetailPage />)} />
+            <Route path={routePaths.pickupsLeaf} element={lazyRoute(<PickupApprovalsPage />)} />
+            <Route path={routePaths.pickupDetailLeaf} element={lazyRoute(<PickupRequestDetailPage />)} />
+            <Route path={routePaths.tasksLeaf} element={lazyRoute(<TaskAssignmentPage />)} />
+            <Route path={routePaths.taskDetailLeaf} element={lazyRoute(<TaskDetailPage />)} />
+            <Route path={routePaths.manifestsLeaf} element={lazyRoute(<ManifestManagementPage />)} />
+            <Route path={routePaths.manifestDetailLeaf} element={lazyRoute(<ManifestDetailPage />)} />
+            <Route path={routePaths.scansLeaf} element={lazyRoute(<HubScanPage />)} />
+            <Route path={routePaths.ndrLeaf} element={lazyRoute(<NdrHandlingPage />)} />
+            <Route path={routePaths.ndrDetailLeaf} element={lazyRoute(<NdrCaseDetailPage />)} />
+            <Route path={routePaths.trackingLeaf} element={lazyRoute(<TrackingLookupPage />)} />
+            <Route path={routePaths.trackingDetailLeaf} element={lazyRoute(<TrackingDetailPage />)} />
+            <Route path={routePaths.masterdataHubsLeaf} element={lazyRoute(<HubManagementPage />)} />
+            <Route path={routePaths.masterdataZonesLeaf} element={lazyRoute(<ZoneManagementPage />)} />
+            <Route
+              path={routePaths.masterdataNdrReasonsLeaf}
+              element={lazyRoute(<NdrReasonManagementPage />)}
+            />
+            <Route path={routePaths.masterdataConfigsLeaf} element={lazyRoute(<ConfigManagementPage />)} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to={routePaths.login} replace />} />

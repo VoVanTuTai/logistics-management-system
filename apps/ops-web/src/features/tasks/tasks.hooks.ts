@@ -11,6 +11,9 @@ import type {
 export function useTasksQuery(
   accessToken: string | null,
   filters: TaskListFilters,
+  options?: {
+    refetchInterval?: number | false;
+  },
 ) {
   return useQuery({
     queryKey: [
@@ -21,7 +24,7 @@ export function useTasksQuery(
     ],
     queryFn: () => tasksClient.list(accessToken, filters),
     enabled: Boolean(accessToken),
-    refetchInterval: 5000,
+    refetchInterval: options?.refetchInterval ?? 5000,
     refetchOnWindowFocus: true,
   });
 }
@@ -68,4 +71,3 @@ export function useReassignTaskMutation(accessToken: string | null) {
     },
   });
 }
-

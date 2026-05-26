@@ -44,6 +44,26 @@ function normalizeCode(value: string | null | undefined): string {
   return (value ?? '').trim().toUpperCase();
 }
 
+function formatRealtimeStatus(status: string): string {
+  if (status === 'connected') {
+    return 'Đang nhận realtime';
+  }
+
+  if (status === 'connecting') {
+    return 'Đang kết nối realtime';
+  }
+
+  if (status === 'reconnecting') {
+    return 'Đang nối lại realtime';
+  }
+
+  if (status === 'disconnected') {
+    return 'Realtime mất kết nối';
+  }
+
+  return 'Realtime chưa bật';
+}
+
 export function TaskAssignmentPage(): React.JSX.Element {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -73,8 +93,12 @@ export function TaskAssignmentPage(): React.JSX.Element {
   const [bulkAssignError, setBulkAssignError] = useState<string | null>(null);
   const [courierSearchText, setCourierSearchText] = useState('');
 
-  const tasksQuery = useTasksQuery(accessToken, filters);
   const realtimeStatus = useDispatchTasksRealtime(Boolean(accessToken));
+  const realtimeFallbackPollingEnabled =
+    Boolean(accessToken) && realtimeStatus !== 'connected';
+  const tasksQuery = useTasksQuery(accessToken, filters, {
+    refetchInterval: realtimeFallbackPollingEnabled ? 10000 : false,
+  });
   const shipmentsQuery = useShipmentsQuery(accessToken, {});
   const hubsQuery = useHubsQuery(accessToken, {});
   const courierOptionsQuery = useCourierOptionsQuery(accessToken);
@@ -409,6 +433,14 @@ export function TaskAssignmentPage(): React.JSX.Element {
     setBulkAssignLoading(false);
   };
 
+  const refreshTaskData = async () => {
+    await Promise.all([
+      queryClient.refetchQueries({ queryKey: queryKeys.tasks, type: 'active' }),
+      queryClient.refetchQueries({ queryKey: queryKeys.shipments, type: 'active' }),
+      queryClient.refetchQueries({ queryKey: queryKeys.pickups, type: 'active' }),
+    ]);
+  };
+
   return (
     <div>
       <h2>Phân công tác vụ</h2>
@@ -416,10 +448,23 @@ export function TaskAssignmentPage(): React.JSX.Element {
         Lọc theo ngày, loại tác vụ, trạng thái và khu vực giao. Chọn nhiều tác vụ để phân công cho 1 shipper.
       </p>
       <div style={styles.realtimeRow}>
-        <span style={styles.realtimeLabel}>Realtime:</span>
-        <strong style={realtimeStatus === 'connected' ? styles.realtimeOk : styles.realtimeWarn}>
-          {realtimeStatus === 'connected' ? 'WebSocket connected' : 'Reconnecting...'}
+        <span style={styles.realtimeLabel}>Realtime</span>
+        <strong
+          style={realtimeStatus === 'connected' ? styles.realtimeOk : styles.realtimeWarn}
+        >
+          {formatRealtimeStatus(realtimeStatus)}
         </strong>
+        {realtimeFallbackPollingEnabled ? (
+          <span style={styles.realtimeFallback}>Polling dự phòng 10s</span>
+        ) : null}
+        <button
+          type="button"
+          style={styles.refreshButton}
+          onClick={() => void refreshTaskData()}
+          disabled={tasksQuery.isFetching || shipmentsQuery.isFetching}
+        >
+          {tasksQuery.isFetching || shipmentsQuery.isFetching ? 'Đang tải...' : 'Tải lại'}
+        </button>
       </div>
       {!canViewAllHubAreas ? (
         <div style={styles.scopeNotice}>
@@ -631,6 +676,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 8,
+    flexWrap: 'wrap',
     marginBottom: 8,
   },
   realtimeLabel: {
@@ -644,6 +690,24 @@ const styles: Record<string, React.CSSProperties> = {
   realtimeWarn: {
     color: '#9a3412',
     fontSize: 13,
+  },
+  realtimeFallback: {
+    border: '1px solid #fcd34d',
+    borderRadius: 999,
+    padding: '3px 8px',
+    backgroundColor: '#fef3c7',
+    color: '#92400e',
+    fontSize: 12,
+    fontWeight: 700,
+  },
+  refreshButton: {
+    border: '1px solid #d9def3',
+    borderRadius: 10,
+    padding: '6px 10px',
+    backgroundColor: '#ffffff',
+    color: '#0f4c81',
+    fontSize: 13,
+    fontWeight: 700,
   },
   scopeNotice: {
     marginTop: 10,

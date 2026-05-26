@@ -14,6 +14,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Card } from '../../components/ui/Card';
+import { canAccessCourierFeature } from '../../features/permissions/courier-permissions';
 import { Screen } from '../../components/ui/Screen';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { useShipmentDetailQuery } from '../../features/shipment/shipment.queries';
@@ -245,6 +246,10 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
   const hasShipmentCode = Boolean(task.shipmentCode);
   const isPickupTask = task.taskType === 'PICKUP';
   const isReloadingStatus = taskQuery.isRefetching || shipmentQuery.isRefetching;
+  const canRunPrimaryAction = isPickupTask
+    ? canAccessCourierFeature(session?.user, 'scan.pickup')
+    : canAccessCourierFeature(session?.user, 'scan.delivery-sign');
+  const canReportIssue = canAccessCourierFeature(session?.user, 'scan.issue');
 
   return (
     <Screen scroll={false}>
@@ -374,7 +379,7 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
           </Pressable>
 
           <Pressable
-            disabled={!hasShipmentCode}
+            disabled={!hasShipmentCode || !canRunPrimaryAction}
             onPress={() => {
               if (isPickupTask) {
                 navigation.navigate('PickupScan', {
@@ -393,7 +398,7 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
             style={[
               styles.actionButton,
               styles.midActionButton,
-              !hasShipmentCode && styles.actionButtonDisabled,
+              (!hasShipmentCode || !canRunPrimaryAction) && styles.actionButtonDisabled,
             ]}
           >
             <Ionicons
@@ -407,7 +412,7 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
           </Pressable>
 
           <Pressable
-            disabled={!hasShipmentCode}
+            disabled={!hasShipmentCode || !canReportIssue}
             onPress={() =>
               navigation.navigate('TaskIssue', {
                 taskId: task.id,
@@ -418,7 +423,7 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
             style={[
               styles.actionButton,
               styles.issueActionButton,
-              !hasShipmentCode && styles.actionButtonDisabled,
+              (!hasShipmentCode || !canReportIssue) && styles.actionButtonDisabled,
             ]}
           >
             <Ionicons name="alert-circle-outline" size={18} color="#FFFFFF" />

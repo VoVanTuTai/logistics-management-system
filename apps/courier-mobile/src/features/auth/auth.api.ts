@@ -9,6 +9,7 @@ import type {
   LoginResultDto,
   LogoutInputDto,
   LogoutResultDto,
+  MobilePermissionEffectiveDto,
   RefreshSessionInputDto,
   UserAccountDto,
   UserListFilters,

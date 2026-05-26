@@ -71,6 +71,12 @@ export const courierEndpoints = {
     exception: `${COURIER_PREFIX}/delivery/ndr/exception`,
     returns: `${COURIER_PREFIX}/delivery/returns`,
   },
+  media: {
+    uploadUrl: (filename: string, contentType: string) =>
+      `${COURIER_PREFIX}/media/upload-url?filename=${encodeURIComponent(
+        filename,
+      )}&contentType=${encodeURIComponent(contentType)}`,
+  },
   cod: {
     collect: `${COURIER_PREFIX}/payment/cod/collect`,
     records: (courierId: string) =>

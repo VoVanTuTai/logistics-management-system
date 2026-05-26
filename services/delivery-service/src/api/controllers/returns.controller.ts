@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 
 import { ReturnsService } from '../../application/services/returns.service';
 import type {
@@ -10,6 +10,20 @@ import type {
 @Controller('returns')
 export class ReturnsController {
   constructor(private readonly returnsService: ReturnsService) {}
+
+  @Get()
+  list(
+    @Query('shipmentCode') shipmentCode?: string,
+    @Query('ndrCaseId') ndrCaseId?: string,
+    @Query('status') status?: string,
+  ): Promise<ReturnCase[]> {
+    return this.returnsService.list({ shipmentCode, ndrCaseId, status });
+  }
+
+  @Get(':id')
+  detail(@Param('id') id: string): Promise<ReturnCase> {
+    return this.returnsService.detail(id);
+  }
 
   @Post()
   create(@Body() body: CreateReturnCaseInput): Promise<ReturnCase> {

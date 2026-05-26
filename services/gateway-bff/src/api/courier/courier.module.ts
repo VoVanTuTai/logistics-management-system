@@ -1,21 +1,40 @@
 import {
   All,
   Controller,
+  Get,
   Module,
+  Query,
   Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
+import { CourierPermissionGuard } from '../../common/guards/courier-permission.guard';
 import { GatewayAuthGuard } from '../../common/guards/gateway-auth.guard';
+import { AuthServiceClient } from '../../infrastructure/clients/auth-service.client';
 import { GatewayProxyClient } from '../../infrastructure/clients/gateway-proxy.client';
 import { ServiceRegistryClient } from '../../infrastructure/clients/service-registry.client';
+import {
+  MediaUploadService,
+  type MediaUploadUrlResponse,
+} from '../media/media-upload.service';
 
-@UseGuards(GatewayAuthGuard)
+@UseGuards(GatewayAuthGuard, CourierPermissionGuard)
 @Controller('courier')
 class CourierController {
-  constructor(private readonly gatewayProxyClient: GatewayProxyClient) {}
+  constructor(
+    private readonly gatewayProxyClient: GatewayProxyClient,
+    private readonly mediaUploadService: MediaUploadService,
+  ) {}
+
+  @Get('media/upload-url')
+  getUploadUrl(
+    @Query('filename') filename: string,
+    @Query('contentType') contentType: string,
+  ): Promise<MediaUploadUrlResponse> {
+    return this.mediaUploadService.createUploadUrl(filename, contentType);
+  }
 
   @All()
   handleRoot(@Res() response: Response): void {
@@ -35,6 +54,13 @@ class CourierController {
 
 @Module({
   controllers: [CourierController],
-  providers: [GatewayProxyClient, ServiceRegistryClient, GatewayAuthGuard],
+  providers: [
+    AuthServiceClient,
+    CourierPermissionGuard,
+    GatewayProxyClient,
+    ServiceRegistryClient,
+    GatewayAuthGuard,
+    MediaUploadService,
+  ],
 })
 export class CourierModule {}

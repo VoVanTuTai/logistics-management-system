@@ -21,15 +21,16 @@ export const authClient = {
     opsApiClient.request<LogoutResultDto>(opsEndpoints.auth.logout, {
       method: 'POST',
       accessToken,
+      skipAuthRefresh: true,
       body: {
         accessToken,
       },
     }),
   refresh: (payload: RefreshTokenInputDto): Promise<AuthSessionDto> =>
-    // TODO(contract): confirm refresh token request/response with gateway-bff /ops.
     opsApiClient.request<AuthSessionDto>(opsEndpoints.auth.refresh, {
       method: 'POST',
       body: payload,
+      skipAuthRefresh: true,
     }),
   listUsers: (
     accessToken: string | null,
@@ -77,16 +78,4 @@ export const authClient = {
       accessToken,
       body: payload,
     }),
-  deleteUser: (
-    accessToken: string | null,
-    userId: string,
-  ): Promise<{ deleted: boolean; userId: string | null }> =>
-    opsApiClient.request<{ deleted: boolean; userId: string | null }>(
-      opsEndpoints.auth.userDetail(userId),
-      {
-        method: 'DELETE',
-        accessToken,
-      },
-    ),
 };
-

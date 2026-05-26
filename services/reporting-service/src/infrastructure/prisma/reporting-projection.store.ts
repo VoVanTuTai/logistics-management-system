@@ -20,6 +20,8 @@ type MetricField = keyof Pick<
   | 'ndrCreated'
   | 'scansInbound'
   | 'scansOutbound'
+  | 'codCollected'
+  | 'codRemitted'
 >;
 
 const METRIC_FIELDS: Record<string, MetricField> = {
@@ -30,6 +32,8 @@ const METRIC_FIELDS: Record<string, MetricField> = {
   'ndr.created': 'ndrCreated',
   'scan.inbound': 'scansInbound',
   'scan.outbound': 'scansOutbound',
+  'cod.collected': 'codCollected',
+  'cod.remitted': 'codRemitted',
 };
 
 const STATUS_BY_EVENT: Record<string, string> = {
@@ -48,6 +52,8 @@ const STATUS_BY_EVENT: Record<string, string> = {
   'ndr.created': 'DELIVERY_FAILED',
   'return.started': 'RETURNING',
   'return.completed': 'RETURNED',
+  'cod.collected': 'COD_COLLECTED',
+  'cod.remitted': 'COD_REMITTED',
 };
 
 type DimensionKey = 'courier' | 'hub' | 'zone';
@@ -542,6 +548,7 @@ export class ReportingProjectionStore {
           ['delivery_attempt', 'courierId'],
           ['pickupRequest', 'courierId'],
           ['pickup_request', 'courierId'],
+          ['codRecord', 'courierId'],
         ]) ?? ALL,
       hubCode:
         this.findString(event.data, [
@@ -556,6 +563,7 @@ export class ReportingProjectionStore {
           ['scan_event', 'locationCode'],
           ['pickupRequest', 'hubCode'],
           ['pickup_request', 'hubCode'],
+          ['codRecord', 'hubCode'],
         ]) ??
         this.findString(event.location, [['location_code'], ['locationCode']]) ??
         ALL,
@@ -691,6 +699,8 @@ export class ReportingProjectionStore {
       ndrCreated: field === 'ndrCreated' ? 1 : 0,
       scansInbound: field === 'scansInbound' ? 1 : 0,
       scansOutbound: field === 'scansOutbound' ? 1 : 0,
+      codCollected: field === 'codCollected' ? 1 : 0,
+      codRemitted: field === 'codRemitted' ? 1 : 0,
     };
   }
 
@@ -711,6 +721,8 @@ export class ReportingProjectionStore {
       ndrCreated: field === 'ndrCreated' ? 1 : 0,
       scansInbound: field === 'scansInbound' ? 1 : 0,
       scansOutbound: field === 'scansOutbound' ? 1 : 0,
+      codCollected: field === 'codCollected' ? 1 : 0,
+      codRemitted: field === 'codRemitted' ? 1 : 0,
     };
   }
 }

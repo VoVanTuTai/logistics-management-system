@@ -73,8 +73,13 @@ export class ZonePrismaRepository extends ZoneRepository {
   }
 
   async findByCode(code: string): Promise<Zone | null> {
-    const record = await this.prisma.zone.findUnique({
-      where: { code },
+    const record = await this.prisma.zone.findFirst({
+      where: {
+        code: {
+          equals: code,
+          mode: 'insensitive',
+        },
+      },
     });
 
     return record ? this.toEntity(record) : null;
@@ -143,6 +148,14 @@ export class ZonePrismaRepository extends ZoneRepository {
     });
 
     return this.toEntity(record);
+  }
+
+  async delete(id: string): Promise<boolean> {
+    const result = await this.prisma.zone.deleteMany({
+      where: { id },
+    });
+
+    return result.count > 0;
   }
 
   private toEntity(record: PrismaZoneRecord): Zone {

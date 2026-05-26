@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+
+<html class="light" lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NEXUS Logistic - Merchant Portal Login</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed-variant": "#004e5d",
+                        "on-primary-fixed": "#001848",
+                        "inverse-surface": "#1d3054",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed": "#001f27",
+                        "inverse-on-surface": "#edf0ff",
+                        "error-container": "#ffdad6",
+                        "surface-container": "#e9edff",
+                        "on-secondary-container": "#fefcff",
+                        "secondary": "#0059b8",
+                        "on-surface": "#051a3e",
+                        "surface-bright": "#faf9ff",
+                        "tertiary-container": "#006477",
+                        "tertiary": "#004b59",
+                        "primary": "#003d9b",
+                        "on-primary-fixed-variant": "#0040a2",
+                        "outline-variant": "#c3c6d6",
+                        "surface-container-low": "#f1f3ff",
+                        "on-secondary-fixed": "#001b3f",
+                        "on-secondary": "#ffffff",
+                        "primary-container": "#0052cc",
+                        "surface-variant": "#d8e2ff",
+                        "primary-fixed": "#dae2ff",
+                        "primary-fixed-dim": "#b2c5ff",
+                        "on-tertiary-container": "#76e2ff",
+                        "secondary-fixed": "#d7e2ff",
+                        "on-surface-variant": "#434654",
+                        "secondary-container": "#0071e6",
+                        "surface-container-highest": "#d8e2ff",
+                        "outline": "#737685",
+                        "surface": "#faf9ff",
+                        "surface-container-high": "#e1e8ff",
+                        "on-primary": "#ffffff",
+                        "on-secondary-fixed-variant": "#004590",
+                        "on-primary-container": "#c4d2ff",
+                        "surface-dim": "#ccdaff",
+                        "tertiary-fixed-dim": "#48d7f9",
+                        "on-error": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "background": "#faf9ff",
+                        "secondary-fixed-dim": "#abc7ff",
+                        "on-error-container": "#93000a",
+                        "inverse-primary": "#b2c5ff",
+                        "tertiary-fixed": "#afecff",
+                        "surface-tint": "#0c56d0",
+                        "on-tertiary": "#ffffff",
+                        "on-background": "#051a3e"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-sm": "0.5rem",
+                        "stack-md": "1rem",
+                        "margin-mobile": "1rem",
+                        "stack-lg": "2rem",
+                        "container-max-width": "1440px",
+                        "margin-desktop": "2rem",
+                        "gutter": "1.5rem"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Inter"],
+                        "headline-xl": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                        "headline-xl": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["22px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #faf9ff;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex items-center justify-center">
+<main class="flex w-full max-w-[1440px] min-h-screen md:min-h-[800px] md:h-[921px] md:rounded-xl overflow-hidden shadow-2xl bg-surface-container-lowest mx-auto md:m-stack-lg">
+<!-- Left Side: Visual Focus & Brand Identity -->
+<div class="hidden lg:flex lg:w-1/2 relative bg-primary-container overflow-hidden">
+<img alt="Logistics Background" class="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-60" data-alt="A cinematic, high-angle view of a modern logistics terminal at twilight, filled with organized stacks of colorful shipping containers. Professional cinematic lighting illuminates the scene with cool blues and warm amber highlights, reflecting off metallic surfaces. The atmosphere is efficient and technologically advanced, conveying a sense of global connectivity and reliable shipping operations in a clean, modern corporate style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAH9tY3PsZjp-XCnVG-y43-sPKhb-INEfJPNHYxHTVdm69WwoXvGDiw7DfuvmU5b3DHK_888jICATCwV5G1g3uvdjTPamNKyM8KJB2Ei4T4RBJ-M4US87urT0uP9tXDcCuNPz6FtF-nTa_G-XDYI2LyIsduJvHEffTuIOfqjWvAttJm8D15E5_GNR64ZxIKkl1kwxBKH-3LgX4daJfTkFTanBTrDiE0qwHwVdRRNZ_O-PizHz0CEsugBHSQU-6tzxan_Mxrdatluq8"/>
+<!-- Overlay Content -->
+<div class="relative z-10 p-margin-desktop flex flex-col justify-between h-full text-on-primary">
+<div class="flex items-center gap-stack-sm">
+<span class="material-symbols-outlined text-[40px]" data-icon="hub">hub</span>
+<h1 class="font-headline-xl text-headline-xl tracking-tight">NEXUS Logistic</h1>
+</div>
+<div class="max-w-md">
+<h2 class="font-headline-lg text-headline-lg mb-stack-sm">Nền tảng Logistics thông minh cho doanh nghiệp hiện đại</h2>
+<p class="font-body-lg text-body-lg opacity-90">Kết nối vận chuyển toàn cầu với quy trình tối ưu và dữ liệu thời gian thực.</p>
+</div>
+<div class="flex gap-stack-lg">
+<div class="flex flex-col">
+<span class="font-headline-md text-headline-md">10k+</span>
+<span class="font-label-md text-label-md opacity-80">Đối tác tin dùng</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-md text-headline-md">24/7</span>
+<span class="font-label-md text-label-md opacity-80">Hỗ trợ kỹ thuật</span>
+</div>
+</div>
+</div>
+<!-- Gradient Layer for Text Legibility -->
+<div class="absolute inset-0 bg-gradient-to-t from-primary/80 via-transparent to-primary/40 pointer-events-none"></div>
+</div>
+<!-- Right Side: Login Form -->
+<div class="w-full lg:w-1/2 flex flex-col items-center justify-center p-margin-mobile md:p-margin-desktop bg-surface-container-lowest">
+<div class="w-full max-w-[400px] flex flex-col">
+<!-- Brand Mobile Header -->
+<div class="flex flex-col items-center mb-stack-lg lg:items-start">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary text-[32px]" data-icon="hub">hub</span>
+<span class="font-headline-md text-headline-md text-primary">NEXUS Logistic</span>
+</div>
+<p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-widest">Merchant Portal</p>
+</div>
+<div class="mb-stack-lg">
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Chào mừng trở lại</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Vui lòng nhập thông tin để truy cập hệ thống quản lý</p>
+</div>
+<!-- Form Section -->
+<form class="space-y-stack-md" onsubmit="return false;">
+<!-- Username/Email Field -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface-variant" for="username">Tên đăng nhập hoặc Email</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]" data-icon="person">person</span>
+<input class="w-full pl-10 pr-4 py-3 bg-surface-bright border border-outline-variant rounded-lg font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-outline" id="username" placeholder="nexus.merchant@example.com" type="text"/>
+</div>
+</div>
+<!-- Password Field -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface-variant" for="password">Mật khẩu</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]" data-icon="lock">lock</span>
+<input class="w-full pl-10 pr-12 py-3 bg-surface-bright border border-outline-variant rounded-lg font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-outline" id="password" placeholder="••••••••" type="password"/>
+<button class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]" data-icon="visibility">visibility</span>
+</button>
+</div>
+</div>
+<!-- Utilities -->
+<div class="flex items-center justify-between">
+<label class="flex items-center gap-2 cursor-pointer group">
+<input class="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface-variant group-hover:text-on-surface">Ghi nhớ đăng nhập</span>
+</label>
+<a class="font-label-md text-label-md text-primary hover:underline transition-all" href="#">Quên mật khẩu?</a>
+</div>
+<!-- Primary Action -->
+<button class="w-full py-3.5 bg-primary text-on-primary rounded-lg font-label-md text-label-md shadow-sm hover:bg-primary-container hover:shadow-md transition-all active:scale-[0.98] mt-stack-md flex items-center justify-center gap-2" type="submit">
+<span>Đăng Nhập</span>
+<span class="material-symbols-outlined text-[18px]" data-icon="login">login</span>
+</button>
+</form>
+<!-- Footer Support -->
+<div class="mt-stack-lg pt-stack-lg border-t border-outline-variant text-center">
+<p class="font-body-md text-body-md text-on-surface-variant">
+                        Chưa có tài khoản? 
+                        <a class="text-primary font-label-md text-label-md hover:underline inline-flex items-center gap-1" href="#">
+                            Liên hệ bộ phận hỗ trợ
+                            <span class="material-symbols-outlined text-[16px]" data-icon="support_agent">support_agent</span>
+</a>
+</p>
+</div>
+<!-- App Store/Social Footer (Optional high-end UI detail) -->
+<div class="mt-auto pt-stack-lg flex flex-col items-center lg:items-start">
+<p class="font-body-sm text-body-sm text-outline mb-2">© 2024 NEXUS Logistic System. All rights reserved.</p>
+<div class="flex gap-4 opacity-50">
+<span class="material-symbols-outlined text-[18px] cursor-pointer hover:text-primary transition-colors" data-icon="language">language</span>
+<span class="material-symbols-outlined text-[18px] cursor-pointer hover:text-primary transition-colors" data-icon="security">security</span>
+<span class="material-symbols-outlined text-[18px] cursor-pointer hover:text-primary transition-colors" data-icon="policy">policy</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

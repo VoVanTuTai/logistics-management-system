@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, Req } from '@nestjs/common';
 
 import type {
   RecordInboundScanInput,
@@ -7,6 +7,10 @@ import type {
   RecordScanResult,
 } from '../../domain/entities/scan-event.entity';
 import { ScansService } from '../../application/services/scans.service';
+import {
+  type AuditRequest,
+  getOpsAuditContext,
+} from './ops-audit-context';
 
 @Controller('scans')
 export class ScanController {
@@ -15,21 +19,24 @@ export class ScanController {
   @Post('pickup')
   recordPickup(
     @Body() body: RecordPickupScanInput,
+    @Req() request: AuditRequest,
   ): Promise<RecordScanResult> {
-    return this.scansService.recordPickup(body);
+    return this.scansService.recordPickup(body, getOpsAuditContext(request));
   }
 
   @Post('inbound')
   recordInbound(
     @Body() body: RecordInboundScanInput,
+    @Req() request: AuditRequest,
   ): Promise<RecordScanResult> {
-    return this.scansService.recordInbound(body);
+    return this.scansService.recordInbound(body, getOpsAuditContext(request));
   }
 
   @Post('outbound')
   recordOutbound(
     @Body() body: RecordOutboundScanInput,
+    @Req() request: AuditRequest,
   ): Promise<RecordScanResult> {
-    return this.scansService.recordOutbound(body);
+    return this.scansService.recordOutbound(body, getOpsAuditContext(request));
   }
 }

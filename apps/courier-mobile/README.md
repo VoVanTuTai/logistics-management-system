@@ -8,7 +8,7 @@ Scaffold toi thieu cho app shipper/courier trong monorepo `NEXUS-logistics`.
 - Xem task list va task detail
 - Scan pickup
 - Scan hub inbound/outbound
-- Delivery success voi POD/OTP placeholder
+- Delivery success voi POD upload qua gateway media endpoint va OTP field
 - Delivery fail voi NDR/next action flag
 - Offline queue retry cho scan va delivery actions co `idempotencyKey`
 
@@ -43,7 +43,7 @@ App duoc scaffold theo huong feature-first, tach ro:
   - `/courier/delivery/ndr`
 - `courierId` de query task uu tien `EXPO_PUBLIC_COURIER_ID`, sau do fallback ve
   username dang nhap. Backend seed dung ma nhan vien 8 so, vi du `30000001`.
-- POD upload contract chua ro. Hien tai UI chi gui `podImageUrl` string placeholder.
+- POD upload di qua `GET /courier/media/upload-url`, sau do app PUT anh len object storage va gui public URL vao delivery success.
 - `delivery attempts` chua dua vao offline queue vi contract hien tai chua co `idempotencyKey`.
 
 ## Offline Queue

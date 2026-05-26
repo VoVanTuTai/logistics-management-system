@@ -1,5 +1,6 @@
 import type { OfflineJob } from '../../offline/queue.types';
 import { courierEndpoints } from '../../services/api/endpoints';
+import type { CollectCodPayload } from '../cod/cod.types';
 import type { DeliveryFailPayload, DeliverySuccessPayload } from '../delivery/delivery.types';
 import type { RecordScanPayload } from '../scan/scan.types';
 
@@ -69,6 +70,15 @@ export function createDeliveryFailOfflineJob(payload: DeliveryFailPayload) {
   return createOfflineJob(
     'DELIVERY_FAIL',
     courierEndpoints.delivery.fail,
+    payload,
+    payload.idempotencyKey,
+  );
+}
+
+export function createCodCollectOfflineJob(payload: CollectCodPayload) {
+  return createOfflineJob(
+    'COD_COLLECT',
+    courierEndpoints.cod.collect,
     payload,
     payload.idempotencyKey,
   );
