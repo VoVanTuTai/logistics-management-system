@@ -23,7 +23,6 @@ ufw allow 5173/tcp
 ufw allow 5174/tcp
 ufw allow 5175/tcp
 ufw allow 5176/tcp
-ufw allow 9000/tcp
 ufw --force enable
 
 echo "VPS dependencies are ready."
