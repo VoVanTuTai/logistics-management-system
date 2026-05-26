@@ -13,7 +13,6 @@ try {
   & (Join-Path $PSScriptRoot 'migrate-all.windows.ps1')
 
   Write-Host 'dev-up completed'
-  Write-Host 'Postgres UI: http://localhost:5050  (admin@nexus.dev / admin)'
   Write-Host 'Schema is ready. Start services with npm run start:dev in each service you need.'
 }
 finally {

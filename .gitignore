@@ -3,6 +3,7 @@ dist/
 **/node_modules/
 **/dist/
 *.tsbuildinfo
+.DS_Store
 
 # Local environment files
 apps/ops-web/.env

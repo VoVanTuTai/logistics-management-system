@@ -254,7 +254,7 @@ services:
       minio:
         condition: service_healthy
     ports:
-      - "${GATEWAY_PORT}:3000"
+      - "127.0.0.1:${GATEWAY_PORT}:3000"
     environment:
       PORT: 3000
       GATEWAY_AUTH_ENABLED: ${GATEWAY_AUTH_ENABLED}

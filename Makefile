@@ -1,4 +1,4 @@
-.PHONY: dev-up start-services docker-build-services docker-push-services docker-up-services docker-down-services prod-deploy
+.PHONY: dev-up start-services docker-build-services docker-push-services docker-up-services docker-down-services prod-up prod-deploy
 
 dev-up:
 	powershell -ExecutionPolicy Bypass -File scripts/dev-up.ps1
@@ -17,6 +17,9 @@ docker-up-services:
 
 docker-down-services:
 	docker compose -f infra/dev/docker-compose.yml -f infra/dev/docker-compose.services.yml down
+
+prod-up:
+	./scripts/prod-up.sh
 
 prod-deploy:
 	./scripts/deploy-vps.sh
