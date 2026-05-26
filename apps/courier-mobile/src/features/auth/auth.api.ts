@@ -72,6 +72,14 @@ export const authApi = {
       { accessToken },
     );
   },
+  getMobilePermissionEffective: (
+    accessToken: string | null,
+    userId: string,
+  ): Promise<MobilePermissionEffectiveDto> =>
+    courierApiClient.request(
+      courierEndpoints.auth.mobilePermissionEffective(userId),
+      { accessToken },
+    ),
 };
 
 export function useLoginMutation() {

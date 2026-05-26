@@ -8,6 +8,10 @@ export const courierEndpoints = {
     logout: `${COURIER_PREFIX}/auth/auth/logout`,
     introspect: `${COURIER_PREFIX}/auth/auth/introspect`,
     users: `${COURIER_PREFIX}/auth/auth/users`,
+    mobilePermissionEffective: (userId: string) =>
+      `${COURIER_PREFIX}/auth/mobile-permissions/users/${encodeURIComponent(
+        userId,
+      )}/effective`,
   },
   tasks: {
     base: `${COURIER_PREFIX}/dispatch/tasks`,

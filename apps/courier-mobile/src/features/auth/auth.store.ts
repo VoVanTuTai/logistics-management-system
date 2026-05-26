@@ -19,10 +19,15 @@ interface AuthStoreState {
   errorMessage: string | null;
   restoreSession: () => Promise<void>;
   refreshMobilePermissions: () => Promise<void>;
+  getValidAccessToken: () => Promise<string>;
   login: (credentials: LoginFormValues) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
 }
+
+const ACCESS_TOKEN_REFRESH_SKEW_MS = 60_000;
+
+let refreshSessionPromise: Promise<LoginResultDto> | null = null;
 
 function toErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.length > 0) {
@@ -30,6 +35,19 @@ function toErrorMessage(error: unknown, fallback: string): string {
   }
 
   return fallback;
+}
+
+function isExpiringAt(value: string | null | undefined, skewMs = 0): boolean {
+  if (!value) {
+    return true;
+  }
+
+  const expiresAt = new Date(value).getTime();
+  if (!Number.isFinite(expiresAt)) {
+    return true;
+  }
+
+  return expiresAt <= Date.now() + skewMs;
 }
 
 async function withEffectiveMobilePermissions(
@@ -112,6 +130,64 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
       status: 'authenticated',
       session: sessionWithPermissions,
     });
+  },
+  getValidAccessToken: async () => {
+    const currentSession = get().session;
+
+    if (!currentSession) {
+      throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+
+    if (
+      !isExpiringAt(
+        currentSession.tokens.accessTokenExpiresAt,
+        ACCESS_TOKEN_REFRESH_SKEW_MS,
+      )
+    ) {
+      return currentSession.tokens.accessToken;
+    }
+
+    if (isExpiringAt(currentSession.tokens.refreshTokenExpiresAt)) {
+      await clearAuthSession();
+      queryClient.clear();
+      useAppStore.getState().clearSession();
+      set({
+        status: 'guest',
+        session: null,
+      });
+      throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+
+    try {
+      refreshSessionPromise ??= authApi
+        .refresh({ refreshToken: currentSession.tokens.refreshToken })
+        .then(withEffectiveMobilePermissions)
+        .finally(() => {
+          refreshSessionPromise = null;
+        });
+
+      const refreshedSession = await refreshSessionPromise;
+      await persistAuthSession(refreshedSession);
+      set({
+        status: 'authenticated',
+        session: refreshedSession,
+      });
+
+      return refreshedSession.tokens.accessToken;
+    } catch (error) {
+      await clearAuthSession();
+      queryClient.clear();
+      useAppStore.getState().clearSession();
+      set({
+        status: 'guest',
+        session: null,
+        errorMessage: toErrorMessage(
+          error,
+          'Làm mới phiên đăng nhập thất bại. Vui lòng đăng nhập lại.',
+        ),
+      });
+      throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+    }
   },
   login: async (credentials) => {
     set({
