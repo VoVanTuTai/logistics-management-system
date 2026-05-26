@@ -4,6 +4,16 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import type { JsonValue, Shipment } from '../domain/entities/shipment.entity';
 
+type PartnerShipmentStatus =
+  | 'AWB_CREATED'
+  | 'PENDING'
+  | 'PICKED_UP'
+  | 'IN_TRANSIT'
+  | 'DELIVERED'
+  | 'CANCELLED'
+  | 'FAILED'
+  | 'RETURNED';
+
 type MarketplaceWebhookEventType =
   | 'shipment.status_changed'
   | 'shipment.delivered'
@@ -11,20 +21,70 @@ type MarketplaceWebhookEventType =
   | 'shipment.returned'
   | 'shipment.delivery_failed';
 
+const PARTNER_STATUS_BY_NEXUS_STATUS: Record<string, PartnerShipmentStatus> = {
+  CREATED: 'AWB_CREATED',
+  UPDATED: 'PENDING',
+  TASK_ASSIGNED: 'PENDING',
+  PICKUP_COMPLETED: 'PICKED_UP',
+  MANIFEST_SEALED: 'IN_TRANSIT',
+  MANIFEST_RECEIVED: 'IN_TRANSIT',
+  MANIFEST_UNSEALED: 'IN_TRANSIT',
+  SEND_GOODS: 'IN_TRANSIT',
+  IN_TRANSIT: 'IN_TRANSIT',
+  INVENTORY_CHECK: 'IN_TRANSIT',
+  SCAN_INBOUND: 'IN_TRANSIT',
+  SCAN_OUTBOUND: 'IN_TRANSIT',
+  DELIVERED: 'DELIVERED',
+  DELIVERY_FAILED: 'FAILED',
+  NDR_CREATED: 'FAILED',
+  EXCEPTION: 'FAILED',
+  RETURN_STARTED: 'RETURNED',
+  RETURN_COMPLETED: 'RETURNED',
+  CANCELLED: 'CANCELLED',
+};
+
+const STATUS_DESCRIPTION_BY_PARTNER_STATUS: Record<PartnerShipmentStatus, string> = {
+  AWB_CREATED: 'Da tao van don',
+  PENDING: 'Dang cho xu ly',
+  PICKED_UP: 'Da lay hang thanh cong',
+  IN_TRANSIT: 'Dang van chuyen',
+  DELIVERED: 'Giao thanh cong',
+  CANCELLED: 'Da huy',
+  FAILED: 'Giao that bai',
+  RETURNED: 'Da hoan hang',
+};
+
 interface MarketplaceWebhookPayload {
   eventId: string;
   eventType: MarketplaceWebhookEventType;
   occurredAt: string;
   partnerCode: string;
   shipmentCode: string;
-  status: string;
+  status: PartnerShipmentStatus;
+  nexusStatus: string;
   external: Record<string, unknown> | null;
   merchant: Record<string, unknown> | null;
   trackingUrl: string;
   data: {
+    platform: string | null;
+    shopId: string | null;
+    externalOrderId: string | null;
+    externalOrderCode: string | null;
+    shipmentCode: string;
+    currentStatus: string;
+    partnerStatus: PartnerShipmentStatus;
+    statusDescription: string;
+    location: {
+      hubCode: string | null;
+      hubName: string | null;
+    } | null;
+    reason: string | null;
+    trackingUrl: string;
+    deliveredAt?: string;
     shipment: {
       code: string;
       currentStatus: string;
+      partnerStatus: PartnerShipmentStatus;
       cancellationReason: string | null;
       createdAt: string;
       updatedAt: string;
@@ -163,6 +223,13 @@ export class MarketplaceWebhookSenderService {
       process.env.NEXUS_INTEGRATION_PARTNER_CODE ??
       process.env.PROD_NEXUS_PARTNER_CODE ??
       'DT_COMMERCE';
+    const external = this.asObject(metadata?.external);
+    const merchant = this.asObject(metadata?.merchant);
+    const routing = this.asObject(metadata?.routing);
+    const partnerStatus = this.toPartnerStatus(shipment.currentStatus);
+    const trackingUrl = this.buildTrackingUrl(shipment.code);
+    const deliveredAt =
+      eventType === 'shipment.delivered' ? this.nowRfc3339Utc() : undefined;
 
     return {
       eventId: randomUUID(),
@@ -170,20 +237,41 @@ export class MarketplaceWebhookSenderService {
       occurredAt: this.nowRfc3339Utc(),
       partnerCode,
       shipmentCode: shipment.code,
-      status: shipment.currentStatus,
-      external: this.asObject(metadata?.external),
-      merchant: this.asObject(metadata?.merchant),
-      trackingUrl: this.buildTrackingUrl(shipment.code),
+      status: partnerStatus,
+      nexusStatus: shipment.currentStatus,
+      external,
+      merchant,
+      trackingUrl,
       data: {
+        platform: this.readString(external?.platform),
+        shopId: this.readString(external?.shopId),
+        externalOrderId: this.readString(external?.externalOrderId),
+        externalOrderCode: this.readString(external?.externalOrderCode),
+        shipmentCode: shipment.code,
+        currentStatus: shipment.currentStatus,
+        partnerStatus,
+        statusDescription: STATUS_DESCRIPTION_BY_PARTNER_STATUS[partnerStatus],
+        location: {
+          hubCode: this.readString(routing?.originHubCode),
+          hubName: null,
+        },
+        reason: shipment.cancellationReason,
+        trackingUrl,
+        ...(deliveredAt ? { deliveredAt } : {}),
         shipment: {
           code: shipment.code,
           currentStatus: shipment.currentStatus,
+          partnerStatus,
           cancellationReason: shipment.cancellationReason,
           createdAt: shipment.createdAt.toISOString(),
           updatedAt: shipment.updatedAt.toISOString(),
         },
       },
     };
+  }
+
+  private toPartnerStatus(nexusStatus: string): PartnerShipmentStatus {
+    return PARTNER_STATUS_BY_NEXUS_STATUS[nexusStatus] ?? 'PENDING';
   }
 
   private sign(
