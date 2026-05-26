@@ -122,8 +122,15 @@ export function SendGoodsScreen(): React.JSX.Element {
     }): string => {
       const typeLabel = input.prefix === 'SEND_GOODS' ? 'Gửi kiện rời' : 'Gửi bao hàng';
       const bagInfo = input.bagCode ? ` | Bao: ${input.bagCode}` : '';
+      const originHubCode =
+        input.vehicle.originHubCode !== 'UNKNOWN'
+          ? input.vehicle.originHubCode
+          : employeeHubCode ?? 'UNKNOWN';
+      const destinationHubCode = input.vehicle.destinationHubCode || 'UNKNOWN';
+      const licensePlate =
+        input.vehicle.licensePlate !== 'UNKNOWN' ? ` (${input.vehicle.licensePlate})` : '';
       
-      return `${typeLabel}: [${input.vehicle.originHubCode}] -> [${input.vehicle.destinationHubCode}] | Nhân viên: ${employeeName} | Mã NV: ${employeeCode} | Mã hub: ${employeeHubCode} | Xe: ${input.vehicle.vehicleCode} (${input.vehicle.licensePlate})${bagInfo}`;
+      return `${typeLabel}: [${originHubCode}] -> [${destinationHubCode}] | Nhân viên: ${employeeName} | Mã NV: ${employeeCode} | Mã hub: ${employeeHubCode} | Xe: ${input.vehicle.vehicleCode}${licensePlate}${bagInfo}`;
     },
     [employeeCode, employeeHubCode, employeeName],
   );
@@ -193,7 +200,7 @@ export function SendGoodsScreen(): React.JSX.Element {
   const applyVehicleLabel = React.useCallback((rawValue: string) => {
     const nextVehicleInfo = parseVehicleLabel(rawValue);
     if (!nextVehicleInfo) {
-      setScreenMessage('Tem xe không hợp lệ. Cần QR JSON hoặc VEH|Mã tem xe|Hub đi|Hub đến|Biển số.');
+      setScreenMessage('Tem xe không hợp lệ. Vui lòng quét hoặc nhập đúng mã tem xe.');
       return;
     }
 
@@ -290,6 +297,10 @@ export function SendGoodsScreen(): React.JSX.Element {
     const failedCodes: Array<{ code: string; reason: string }> = [];
     const loadedLooseShipments: VehicleLoadedLooseShipment[] = [];
     const loadedBagByCode = new Map<string, VehicleLoadedBag>();
+    const outboundLocationCode =
+      vehicleInfo.originHubCode !== 'UNKNOWN'
+        ? vehicleInfo.originHubCode
+        : employeeHubCode ?? 'UNKNOWN';
 
     try {
       const bagItems = items.filter((item) => item.type === 'BAG');
@@ -301,7 +312,7 @@ export function SendGoodsScreen(): React.JSX.Element {
             await submitHubScanAction(accessToken, {
               mode: 'OUTBOUND',
               shipmentCode: item.code,
-              locationCode: vehicleInfo.originHubCode,
+              locationCode: outboundLocationCode,
               manifestCode: null,
               actor,
               note: buildSendGoodsNote({
@@ -347,7 +358,7 @@ export function SendGoodsScreen(): React.JSX.Element {
             await submitHubScanAction(accessToken, {
               mode: 'OUTBOUND',
               shipmentCode: manifestItem.shipmentCode,
-              locationCode: vehicleInfo.originHubCode,
+              locationCode: outboundLocationCode,
               manifestCode: manifest.manifestCode,
               actor,
               note: buildSendGoodsNote({
@@ -498,7 +509,7 @@ export function SendGoodsScreen(): React.JSX.Element {
             <TextInput
               value={manualVehicleInput}
               onChangeText={setManualVehicleInput}
-              placeholder="VEH|Mã tem xe|Hub đi|Hub đến|Biển số"
+              placeholder="Nhập hoặc quét mã tem xe"
               placeholderTextColor="#9CA3AF"
               style={[styles.fieldInput, styles.codeInput]}
               autoCapitalize="characters"
@@ -515,20 +526,30 @@ export function SendGoodsScreen(): React.JSX.Element {
               </View>
               <View style={styles.vehicleInfoCell}>
                 <Text style={styles.infoLabel}>Hub đi</Text>
-                <Text style={styles.infoValue}>{vehicleInfo.originHubCode}</Text>
+                <Text style={styles.infoValue}>
+                  {vehicleInfo.originHubCode !== 'UNKNOWN'
+                    ? vehicleInfo.originHubCode
+                    : employeeHubCode ?? 'Chưa có'}
+                </Text>
               </View>
               <View style={styles.vehicleInfoCell}>
                 <Text style={styles.infoLabel}>Hub đến</Text>
-                <Text style={styles.infoValue}>{vehicleInfo.destinationHubCode}</Text>
+                <Text style={styles.infoValue}>
+                  {vehicleInfo.destinationHubCode !== 'UNKNOWN'
+                    ? vehicleInfo.destinationHubCode
+                    : 'Chưa có'}
+                </Text>
               </View>
               <View style={styles.vehicleInfoCell}>
                 <Text style={styles.infoLabel}>Biển số</Text>
-                <Text style={styles.infoValue}>{vehicleInfo.licensePlate}</Text>
+                <Text style={styles.infoValue}>
+                  {vehicleInfo.licensePlate !== 'UNKNOWN' ? vehicleInfo.licensePlate : 'Chưa có'}
+                </Text>
               </View>
             </View>
           ) : (
             <Text style={styles.vehicleEmptyText}>
-              Chưa có tem xe. Tem xe có thể là QR JSON hoặc chuỗi VEH|Mã tem xe|Hub đi|Hub đến|Biển số.
+              Chưa có tem xe. Quét QR/in mã trên tem xe hoặc nhập trực tiếp mã tem.
             </Text>
           )}
         </View>
