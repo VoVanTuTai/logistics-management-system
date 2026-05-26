@@ -18,6 +18,7 @@ import type {
 import type { ShipmentConsumedEventType } from '../../domain/entities/shipment-status.entity';
 import { ShipmentRepository } from '../../domain/repositories/shipment.repository';
 import { ShipmentStateMachine } from '../../domain/state-machine/shipment-state-machine';
+import { MarketplaceWebhookSenderService } from '../../integrations/marketplace-webhook-sender.service';
 import { ShipmentOutboxService } from '../../messaging/outbox/shipment-outbox.service';
 
 const SHIPMENT_CODE_PREFIX = 'SHP';
@@ -30,6 +31,7 @@ export class ShipmentsService {
     private readonly shipmentRepository: ShipmentRepository,
     private readonly shipmentStateMachine: ShipmentStateMachine,
     private readonly shipmentOutboxService: ShipmentOutboxService,
+    private readonly marketplaceWebhookSenderService: MarketplaceWebhookSenderService,
   ) {}
 
   list(filters: ShipmentListFilters = {}): Promise<Shipment[]> {
@@ -75,10 +77,14 @@ export class ShipmentsService {
       );
     }
 
-    return this.shipmentRepository.cancel(
+    const cancelledShipment = await this.shipmentRepository.cancel(
       normalizedCode,
       input.reason ?? null,
     );
+
+    await this.marketplaceWebhookSenderService.notifyStatusChanged(cancelledShipment);
+
+    return cancelledShipment;
   }
 
   async applyExternalEvent(
@@ -95,17 +101,25 @@ export class ShipmentsService {
     );
 
     if (nextStatus === 'EXCEPTION') {
-      return this.shipmentRepository.updateCurrentStatusAndLock(
+      const updatedShipment = await this.shipmentRepository.updateCurrentStatusAndLock(
         normalizedCode,
         nextStatus,
         true,
       );
+
+      await this.marketplaceWebhookSenderService.notifyStatusChanged(updatedShipment);
+
+      return updatedShipment;
     }
 
-    return this.shipmentRepository.updateCurrentStatus(
+    const updatedShipment = await this.shipmentRepository.updateCurrentStatus(
       normalizedCode,
       nextStatus,
     );
+
+    await this.marketplaceWebhookSenderService.notifyStatusChanged(updatedShipment);
+
+    return updatedShipment;
   }
 
   private async createWithRequestedCode(

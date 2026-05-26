@@ -6,7 +6,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { rawBody: true });
   const port = Number(process.env.PORT ?? 3000);
   const defaultCorsOrigins = [
     'http://localhost:5173',
@@ -25,7 +25,17 @@ async function bootstrap(): Promise<void> {
   app.enableCors({
     origin: corsOrigins,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Accept', 'Content-Type', 'Authorization'],
+    allowedHeaders: [
+      'Accept',
+      'Content-Type',
+      'Authorization',
+      'Idempotency-Key',
+      'X-Nexus-Partner-Code',
+      'X-Nexus-Api-Key',
+      'X-Nexus-Timestamp',
+      'X-Nexus-Nonce',
+      'X-Nexus-Signature',
+    ],
   });
 
   app.enableShutdownHooks();
