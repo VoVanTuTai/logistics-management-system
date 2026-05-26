@@ -47,37 +47,64 @@ load_env() {
   set +a
 }
 
-install_deps_if_needed() {
-  local dir="$1"
-  local name="$2"
+compose_network() {
+  local container_id
+  local network_name
 
-  if [[ -d "$dir/node_modules" ]]; then
-    return
+  container_id="$(compose ps -q postgres 2>/dev/null || true)"
+  if [[ -z "$container_id" ]]; then
+    echo "Cannot resolve compose network because postgres is not running." >&2
+    exit 1
   fi
 
-  echo "[install] $name"
-  (
-    cd "$dir"
-    if [[ -f pnpm-lock.yaml ]]; then
-      pnpm install --frozen-lockfile
-    else
-      npm ci
-    fi
-  )
+  network_name="$(
+    docker inspect -f '{{range $name, $_ := .NetworkSettings.Networks}}{{println $name}}{{end}}' "$container_id" \
+      | head -n 1
+  )"
+
+  if [[ -z "$network_name" ]]; then
+    echo "Cannot resolve compose network for postgres container." >&2
+    exit 1
+  fi
+
+  printf '%s' "$network_name"
 }
 
-run_prisma() {
+run_node_service_command() {
   local dir="$1"
-  shift
+  local name="$2"
+  local database_url="$3"
+  local pnpm_command="$4"
+  local npm_command="$5"
+  local network_name
 
-  (
-    cd "$dir"
-    if [[ -f pnpm-lock.yaml ]]; then
-      pnpm exec prisma "$@"
-    else
-      npx prisma "$@"
-    fi
-  )
+  network_name="$(compose_network)"
+
+  echo "[node] $name"
+  docker run --rm \
+    --network "$network_name" \
+    -v "$dir:/app" \
+    -w /app \
+    -e DATABASE_URL="$database_url" \
+    -e PNPM_COMMAND="$pnpm_command" \
+    -e NPM_COMMAND="$npm_command" \
+    node:20-alpine \
+    sh -lc '
+      set -e
+      if [ -f pnpm-lock.yaml ]; then
+        corepack enable >/dev/null 2>&1
+        corepack prepare pnpm@9.15.9 --activate >/dev/null 2>&1
+        if [ ! -d node_modules ]; then
+          pnpm install --frozen-lockfile
+        fi
+        eval "$PNPM_COMMAND"
+      else
+        if [ ! -d node_modules ]; then
+          npm ci
+        fi
+        eval "$NPM_COMMAND"
+      fi
+    '
 }
 
 wait_compose_service() {
@@ -133,30 +160,34 @@ prepare_databases() {
     service="${item%%:*}"
     db_name="${item##*:}"
     dir="$ROOT_DIR/services/$service"
-    database_url="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:15432/${db_name}"
+    database_url="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${db_name}"
 
-    install_deps_if_needed "$dir" "$service"
     echo "[db] prepare $service db=$db_name"
-    DATABASE_URL="$database_url" run_prisma "$dir" generate --schema prisma/schema.prisma
-    DATABASE_URL="$database_url" run_prisma "$dir" db push --schema prisma/schema.prisma
+    run_node_service_command \
+      "$dir" \
+      "$service" \
+      "$database_url" \
+      "pnpm exec prisma generate --schema prisma/schema.prisma && pnpm exec prisma db push --schema prisma/schema.prisma" \
+      "npx prisma generate --schema prisma/schema.prisma && npx prisma db push --schema prisma/schema.prisma"
   done
 }
 
 seed_auth_demo_data() {
   local dir="$ROOT_DIR/services/auth-service"
-  local database_url="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:15432/auth_db"
+  local database_url="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/auth_db"
 
   if [[ "${SEED_DEMO_DATA:-0}" != "1" ]]; then
     echo "[seed] skipped"
     return
   fi
 
-  install_deps_if_needed "$dir" "auth-service"
   echo "[seed] auth demo users"
-  (
-    cd "$dir"
-    DATABASE_URL="$database_url" node node_modules/ts-node/dist/bin.js --transpile-only prisma/seed.ts
-  )
+  run_node_service_command \
+    "$dir" \
+    "auth-service seed" \
+    "$database_url" \
+    "pnpm exec ts-node --transpile-only prisma/seed.ts" \
+    "node node_modules/ts-node/dist/bin.js --transpile-only prisma/seed.ts"
 }
 
 print_urls() {
@@ -173,14 +204,7 @@ print_urls() {
 
 main() {
   require_command docker
-  require_command node
-  require_command npm
   require_command curl
-
-  if ! command -v pnpm >/dev/null 2>&1; then
-    corepack enable
-    corepack prepare pnpm@9.15.9 --activate
-  fi
 
   load_env
 
