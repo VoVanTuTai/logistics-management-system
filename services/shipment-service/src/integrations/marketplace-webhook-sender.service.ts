@@ -89,7 +89,11 @@ export class MarketplaceWebhookSenderService {
     const payload = this.buildPayload(eventType, shipment);
     const rawBody = JSON.stringify(payload);
     const timestamp = payload.occurredAt;
-    const signature = this.sign(rawBody, timestamp, payload.eventId, webhookSecret);
+    const nonce = randomUUID();
+    const webhookPath =
+      process.env.NEXUS_INTEGRATION_WEBHOOK_PATH?.trim() ||
+      '/api/v1/shipments/webhooks/nexus';
+    const signature = this.sign(rawBody, timestamp, nonce, webhookSecret, webhookPath);
     const maxAttempts = this.parsePositiveInt(
       process.env.NEXUS_INTEGRATION_WEBHOOK_MAX_ATTEMPTS,
       3,
@@ -104,6 +108,7 @@ export class MarketplaceWebhookSenderService {
             'Content-Type': 'application/json',
             'X-Nexus-Partner-Code': payload.partnerCode,
             'X-Nexus-Event-Id': payload.eventId,
+            'X-Nexus-Nonce': nonce,
             'X-Nexus-Timestamp': timestamp,
             'X-Nexus-Signature': signature,
           },
@@ -184,11 +189,18 @@ export class MarketplaceWebhookSenderService {
   private sign(
     rawBody: string,
     timestamp: string,
-    eventId: string,
+    nonce: string,
     webhookSecret: string,
+    webhookPath: string,
   ): string {
     const bodyHash = createHash('sha256').update(rawBody).digest('hex');
-    const signingPayload = [timestamp, eventId, bodyHash].join('\n');
+    const signingPayload = [
+      'POST',
+      webhookPath,
+      timestamp,
+      nonce,
+      bodyHash,
+    ].join('\n');
 
     return createHmac('sha256', webhookSecret)
       .update(signingPayload)

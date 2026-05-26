@@ -213,22 +213,37 @@ POST https://api.dt-commerce.site/api/v1/shipments/webhooks/nexus
 Contract webhook giữ theo thống nhất:
 
 ```text
-Signature: HMAC-SHA256 hex lowercase
 X-Nexus-Partner-Code: DT_COMMERCE
+X-Nexus-Timestamp: <RFC3339 UTC timestamp>
+X-Nexus-Nonce: <unique nonce>
 X-Nexus-Event-Id: <event id>
-Timestamp: ISO-8601
-eventId dùng chống xử lý trùng
+X-Nexus-Signature: <HMAC-SHA256 hex lowercase>
+X-Nexus-Event-Id phải bằng body.eventId
 ```
 
 Cách ký webhook:
 
 ```text
+canonical =
+  "POST\n" +
+  "/api/v1/shipments/webhooks/nexus\n" +
+  X-Nexus-Timestamp + "\n" +
+  X-Nexus-Nonce + "\n" +
+  SHA256_HEX_LOWERCASE(raw_webhook_body)
+
 signature = HMAC_SHA256(
   PROD_NEXUS_WEBHOOK_SECRET,
-  X-Nexus-Timestamp + "\n" +
-  X-Nexus-Event-Id + "\n" +
-  SHA256(raw_webhook_body)
+  canonical
 )
+```
+
+Quy tắc ký:
+
+```text
+Không dùng full URL/domain trong signing string.
+Không dùng X-Nexus-Event-Id thay nonce.
+SHA256 body tính trên raw request body bytes đúng như payload gửi qua HTTP.
+Header X-Nexus-Signature gửi lowercase hex trực tiếp.
 ```
 
 Event production cần gửi:
@@ -272,6 +287,7 @@ Cần set env cho `shipment-service` để bật webhook sender:
 NEXUS_INTEGRATION_WEBHOOK_ENABLED=true
 NEXUS_INTEGRATION_PARTNER_CODE=DT_COMMERCE
 NEXUS_INTEGRATION_WEBHOOK_URL=https://api.dt-commerce.site/api/v1/shipments/webhooks/nexus
+NEXUS_INTEGRATION_WEBHOOK_PATH=/api/v1/shipments/webhooks/nexus
 NEXUS_INTEGRATION_WEBHOOK_SECRET=<PROD_NEXUS_WEBHOOK_SECRET>
 NEXUS_INTEGRATION_WEBHOOK_MAX_ATTEMPTS=3
 NEXUS_INTEGRATION_WEBHOOK_RETRY_DELAY_MS=1000
