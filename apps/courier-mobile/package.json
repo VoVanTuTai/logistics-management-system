@@ -11,6 +11,7 @@
     "test:web:open": "node ./scripts/start-courier-test.js --open",
     "test:qr": "node ./scripts/start-courier-test.js --qr --lan",
     "test:tunnel": "node ./scripts/start-courier-test.js --tunnel",
+    "build:web": "expo export --platform web",
     "android": "node ./scripts/start-with-gateway.js --android",
     "ios": "node ./scripts/start-with-gateway.js --ios",
     "web": "node ./scripts/start-with-gateway.js --web",

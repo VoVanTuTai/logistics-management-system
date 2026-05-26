@@ -347,6 +347,18 @@ services:
     ports:
       - "${PUBLIC_TRACKING_PORT}:80"
 
+  courier-mobile:
+    <<: *static-web
+    image: nexus/courier-mobile:local
+    build:
+      context: ../../apps/courier-mobile
+      args:
+        EXPO_PUBLIC_GATEWAY_BASE_URL: ${GATEWAY_PUBLIC_URL}
+        EXPO_PUBLIC_REQUEST_TIMEOUT_MS: 15000
+        EXPO_PUBLIC_COURIER_ID: ${COURIER_MOBILE_DEFAULT_COURIER_ID}
+    ports:
+      - "${COURIER_MOBILE_PORT}:80"
+
 volumes:
   postgres_data:
   minio_data:

@@ -21,6 +21,7 @@ nexus/ops-web:local
 nexus/merchant-web:local
 nexus/admin-web:local
 nexus/public-tracking:local
+nexus/courier-mobile:local
 ```
 
 For HTTPS domain deployment, use HTTPS public URLs in these values:
@@ -31,9 +32,10 @@ OPS_PUBLIC_URL=https://ops.nexus-ex.site
 MERCHANT_PUBLIC_URL=https://merchant.nexus-ex.site
 ADMIN_PUBLIC_URL=https://admin.nexus-ex.site
 PUBLIC_TRACKING_PUBLIC_URL=https://tracking.nexus-ex.site
+COURIER_MOBILE_PUBLIC_URL=http://103.179.172.53:5177
 GATEWAY_PUBLIC_URL=https://ops.nexus-ex.site
 MINIO_PUBLIC_ENDPOINT=https://minio.nexus-ex.site
-CORS_ORIGINS=https://ops.nexus-ex.site,https://merchant.nexus-ex.site,https://admin.nexus-ex.site,https://tracking.nexus-ex.site
+CORS_ORIGINS=https://ops.nexus-ex.site,https://merchant.nexus-ex.site,https://admin.nexus-ex.site,https://tracking.nexus-ex.site,http://103.179.172.53:5177
 GATEWAY_PORT=13000
 MINIO_API_PORT=19000
 ```
@@ -74,6 +76,7 @@ ops-web:          https://ops.nexus-ex.site
 merchant-web:     https://merchant.nexus-ex.site
 admin-web:        https://admin.nexus-ex.site
 public-tracking:  https://tracking.nexus-ex.site
+courier-mobile:   http://103.179.172.53:5177
 minio API:        https://minio.nexus-ex.site
 ```
 
