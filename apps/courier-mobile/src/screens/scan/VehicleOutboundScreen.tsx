@@ -21,6 +21,7 @@ import {
 } from '../../features/scan/vehicle-departure.storage';
 import { submitHubScanAction } from '../../features/scan/hub.api';
 import { manifestApi } from '../../features/manifest/manifest.api';
+import type { BagManifestDto } from '../../features/manifest/manifest.types';
 import { enqueueHubScanOffline } from '../../features/scan/hub.offline';
 import {
   parseVehicleLabel,
@@ -67,6 +68,24 @@ function formatScannedAt(isoTime: string): string {
 
 function toErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Không lưu được xe đi.';
+}
+
+function buildSyncedVehicleInfo(
+  scannedVehicleInfo: VehicleLabelInfo,
+  manifest: BagManifestDto,
+): VehicleLabelInfo {
+  return {
+    ...scannedVehicleInfo,
+    vehicleCode: normalizeCode(manifest.manifestCode || scannedVehicleInfo.vehicleCode),
+    originHubCode:
+      manifest.originHubCode?.trim().toUpperCase() ||
+      scannedVehicleInfo.originHubCode ||
+      'UNKNOWN',
+    destinationHubCode:
+      manifest.destinationHubCode?.trim().toUpperCase() ||
+      scannedVehicleInfo.destinationHubCode ||
+      'UNKNOWN',
+  };
 }
 
 export function VehicleOutboundScreen(): React.JSX.Element {
@@ -174,28 +193,53 @@ export function VehicleOutboundScreen(): React.JSX.Element {
   }, []);
 
   const applyVehicleLabel = React.useCallback(async (rawValue: string) => {
+    if (!accessToken) {
+      setGlobalError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+      return;
+    }
+
     const nextVehicleInfo = parseVehicleLabel(rawValue);
     if (!nextVehicleInfo) {
       setScreenMessage('Tem xe không hợp lệ. Vui lòng quét đúng mã tem xe.');
       return;
     }
 
-    const nextLoadRecord = await findVehicleLoadRecord(nextVehicleInfo.vehicleCode);
-    setVehicleInfo(nextVehicleInfo);
+    let manifest: BagManifestDto;
+    try {
+      manifest = await manifestApi.detailByCode(accessToken, nextVehicleInfo.vehicleCode);
+    } catch (error) {
+      if (error instanceof ApiClientError && error.status === 404) {
+        setVehicleInfo(null);
+        setVehicleLoadRecord(null);
+        setScreenMessage(
+          `Tem xe ${nextVehicleInfo.vehicleCode} chưa được tạo hoặc chưa đồng bộ trên Ops Web. Vui lòng tạo tem xe ở Ops rồi quét lại.`,
+        );
+        return;
+      }
+
+      const message = toErrorMessage(error);
+      setScreenMessage(message);
+      setGlobalError(message);
+      return;
+    }
+
+    const syncedVehicleInfo = buildSyncedVehicleInfo(nextVehicleInfo, manifest);
+    const nextLoadRecord = await findVehicleLoadRecord(syncedVehicleInfo.vehicleCode);
+    setVehicleInfo(syncedVehicleInfo);
 
     if (!nextLoadRecord) {
       setVehicleLoadRecord(null);
       setScreenMessage(
-        `Đã nhận tem xe ${nextVehicleInfo.vehicleCode}, nhưng chưa có danh sách hàng đã lên xe trên thiết bị này.`,
+        `Đã nhận tem xe ${syncedVehicleInfo.vehicleCode} từ hệ thống, nhưng chưa có danh sách hàng đã lên xe trên thiết bị này.`,
       );
       return;
     }
 
     setVehicleLoadRecord(nextLoadRecord);
     setScreenMessage(
-      `Đã nhận tem xe ${nextVehicleInfo.vehicleCode}. Xe có ${flattenVehicleLoadShipmentCodes(nextLoadRecord).length} đơn đã lên xe.`,
+      `Đã nhận tem xe ${syncedVehicleInfo.vehicleCode}. Xe có ${flattenVehicleLoadShipmentCodes(nextLoadRecord).length} đơn đã lên xe.`,
     );
-  }, []);
+  }, [accessToken, setGlobalError]);
 
   const handleBarCodeScanned = (result: BarcodeScanningResult) => {
     if (scanLocked || isSaving || isCapturing || currentStep === 'PROOF') {
@@ -312,7 +356,7 @@ export function VehicleOutboundScreen(): React.JSX.Element {
     });
 
     try {
-      let manifest = null;
+      let manifest: BagManifestDto | null = null;
       try {
         manifest = await manifestApi.detailByCode(accessToken, vehicleInfo.vehicleCode);
       } catch (error) {
@@ -321,14 +365,19 @@ export function VehicleOutboundScreen(): React.JSX.Element {
         }
       }
 
-      if (manifest) {
-        await manifestApi.seal(accessToken, manifest.id, {
-          sealedBy: courierId,
-          sealedByName: employeeName,
-          processingHubCode: hubCode,
-          note,
-        });
+      if (!manifest) {
+        setScreenMessage(
+          `Tem xe ${vehicleInfo.vehicleCode} không còn trên hệ thống. Vui lòng tạo/đồng bộ lại tem xe trên Ops Web.`,
+        );
+        return;
       }
+
+      await manifestApi.seal(accessToken, manifest.id, {
+        sealedBy: courierId,
+        sealedByName: employeeName,
+        processingHubCode: hubCode,
+        note,
+      });
 
       for (const target of loadedShipmentTargets) {
         const command = {

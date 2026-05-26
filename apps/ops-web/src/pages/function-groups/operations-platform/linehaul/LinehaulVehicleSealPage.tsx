@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Plus, RefreshCw } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Plus, RefreshCw } from 'lucide-react';
 
 import { useCreateManifestMutation } from '../../../../features/manifests/manifests.api';
 import { useHubsQuery } from '../../../../features/masterdata/masterdata.api';
@@ -177,8 +177,8 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
           <small>LINEHAUL_TRIP_CREATE</small>
           <h2>Tạo tem xe</h2>
           <p>
-            Tạo kế hoạch chuyến xe và in tem trước khi xe tới. Khi courier quét Xe đi,
-            2 seal xe sẽ được ghi vào hệ thống và gắn với mã tem vừa in.
+            Tạo tem xe sẽ đồng bộ ngay sang manifest backend. Courier chỉ cần quét đúng
+            mã tem này ở Gửi hàng, Xe đi hoặc Xe đến để hệ thống nhận diện chuyến.
           </p>
         </div>
         <button
@@ -202,8 +202,8 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
       <form className="ops-linehaul-dashboard__create-form" onSubmit={onCreateTrip}>
         <header>
           <div>
-            <h3>Thông tin chuyến xe</h3>
-            <span>Tem in trước, seal ghi khi courier quét Xe đi</span>
+            <h3>Thông tin tem xe</h3>
+            <span>Mã in ra cũng là mã manifest để mobile đối chiếu</span>
           </div>
           <button type="submit" disabled={createManifestMutation.isPending}>
             <Plus size={16} />
@@ -267,6 +267,22 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
             />
           </label>
         </div>
+        <div className="ops-linehaul-seal__sync-strip">
+          <article>
+            <CheckCircle2 size={16} />
+            <div>
+              <strong>Đồng bộ mã tem xe</strong>
+              <span>Ops tạo xong là mobile có thể quét cùng mã vừa in.</span>
+            </div>
+          </article>
+          <article>
+            <CheckCircle2 size={16} />
+            <div>
+              <strong>Đúng nghiệp vụ vận hành</strong>
+              <span>Gửi hàng lên xe, Xe đi và Xe đến đều dùng chung một mã tem.</span>
+            </div>
+          </article>
+        </div>
       </form>
 
       {actionMessage ? (
@@ -287,12 +303,12 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
 
       <section className="ops-linehaul-seal__panel">
         <header className="ops-linehaul-seal__panel-head">
-          <h3>Chuyến vừa tạo gần đây</h3>
-          <span>{recentTrips.length} chuyến</span>
+          <h3>Tem xe đã đồng bộ gần đây</h3>
+          <span>{recentTrips.length} tem</span>
         </header>
         {recentTrips.length === 0 ? (
           <p className="ops-linehaul-seal__empty">
-            Chưa có chuyến xe nào. Sau khi tạo, chuyến sẽ nằm ở Quản lý chuyến xe.
+            Chưa có tem xe nào. Sau khi tạo, courier mobile có thể quét mã tem vừa in.
           </p>
         ) : (
           <div className="ops-linehaul-seal__table-wrap">
@@ -300,6 +316,7 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
               <thead>
                 <tr>
                   <th>Mã chuyến</th>
+                  <th>Đồng bộ mobile</th>
                   <th>Trạng thái</th>
                   <th>Hub đi</th>
                   <th>Hub đến</th>
@@ -312,6 +329,9 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
                 {recentTrips.map((trip) => (
                   <tr key={trip.id}>
                     <td>{trip.tripCode}</td>
+                    <td>
+                      <span className="ops-linehaul-seal__sync-badge">Sẵn sàng quét</span>
+                    </td>
                     <td>{getLinehaulTripStatusLabel(getLinehaulTripStatus(trip))}</td>
                     <td>{trip.originHubCode}</td>
                     <td>{trip.destinationHubCode}</td>
