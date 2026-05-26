@@ -97,6 +97,8 @@ services:
     image: nexus/shipment-service:local
     build:
       context: ../../services/shipment-service
+    env_file:
+      - .env
     environment:
       <<: *service-env
       PORT: 3002
@@ -233,6 +235,8 @@ services:
     image: nexus/gateway-bff:local
     build:
       context: ../../services/gateway-bff
+    env_file:
+      - .env
     restart: unless-stopped
     depends_on:
       auth-service:
