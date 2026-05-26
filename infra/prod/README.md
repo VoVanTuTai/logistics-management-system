@@ -34,6 +34,7 @@ PUBLIC_TRACKING_PUBLIC_URL=https://tracking.nexus-ex.site
 GATEWAY_PUBLIC_URL=https://ops.nexus-ex.site
 MINIO_PUBLIC_ENDPOINT=https://minio.nexus-ex.site
 CORS_ORIGINS=https://ops.nexus-ex.site,https://merchant.nexus-ex.site,https://admin.nexus-ex.site,https://tracking.nexus-ex.site
+GATEWAY_PORT=13000
 MINIO_API_PORT=19000
 ```
 
@@ -79,13 +80,43 @@ minio API:        https://minio.nexus-ex.site
 MinIO binds on `127.0.0.1:${MINIO_API_PORT}` and is exposed publicly through
 the host Nginx `minio.nexus-ex.site` server block. Keep it on a non-standard
 host port such as `19000` to avoid collisions with existing services on `9000`.
+The gateway also binds only on localhost, using `GATEWAY_PORT=13000`, and host
+Nginx proxies `/health`, `/ops`, `/merchant`, and `/public` traffic to it.
+
+## Single Compose Run
+
+Production uses one compose file for the full stack:
+
+```text
+infra/prod/docker-compose.yml
+```
+
+To start every backend service and every frontend app together, run:
+
+```bash
+./scripts/prod-up.sh
+```
+
+Equivalent raw compose command:
+
+```bash
+docker compose --env-file infra/prod/.env -f infra/prod/docker-compose.yml up -d --build --remove-orphans
+```
+
+Do not pass only `gateway-bff` unless you intentionally want to start only the
+API gateway and its backend dependencies. Frontend containers such as `ops-web`
+are independent services, so a targeted gateway command will not start them.
+
+For a fresh VPS or fresh database, prefer `./scripts/deploy-vps.sh` once first;
+it uses the same compose file, prepares Prisma schemas, seeds demo data when
+enabled, then starts the full stack.
 
 ## Operations
 
 ```bash
 docker compose --env-file infra/prod/.env -f infra/prod/docker-compose.yml ps
 docker compose --env-file infra/prod/.env -f infra/prod/docker-compose.yml logs -f gateway-bff
-docker compose --env-file infra/prod/.env -f infra/prod/docker-compose.yml up -d --build
+./scripts/prod-up.sh
 docker compose --env-file infra/prod/.env -f infra/prod/docker-compose.yml down
 ```
 

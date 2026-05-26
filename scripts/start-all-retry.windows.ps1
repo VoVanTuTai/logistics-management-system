@@ -227,7 +227,6 @@ try {
   Write-Host ''
   Write-Host '=== OPEN URLS ==='
   Write-Host 'gateway API:      http://localhost:3000/health'
-  Write-Host 'postgres UI:      http://localhost:5050  (admin@nexus.dev / admin)'
   Write-Host 'ops-web:         http://localhost:5173'
   Write-Host 'merchant-web:    http://localhost:5174'
   Write-Host 'admin-web:       http://localhost:5175'

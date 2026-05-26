@@ -17,7 +17,6 @@ systemctl enable --now docker
 
 ufw allow OpenSSH
 ufw allow 'Nginx Full'
-ufw allow 3000/tcp
 ufw allow 5173/tcp
 ufw allow 5174/tcp
 ufw allow 5175/tcp
