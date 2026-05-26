@@ -674,7 +674,7 @@ export function ServiceQualityActionBoardPage(): React.JSX.Element {
                     <td>
                       <div className="ops-service-quality-monitor__actions">
                         <Link to={alert.detailUrl}>Mở chi tiết</Link>
-                        {lookupUrl ? <Link to={lookupUrl}>Tra cứu tích hợp</Link> : null}
+                        {lookupUrl ? <Link to={lookupUrl}>Tra cứu sự cố / chất lượng</Link> : null}
                         {!isAcknowledged ? (
                           <button type="button" onClick={() => acknowledgeAlert(alert.id)}>
                             Đã xem
