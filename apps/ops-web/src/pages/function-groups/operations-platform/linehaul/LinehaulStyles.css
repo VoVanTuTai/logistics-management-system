@@ -452,6 +452,7 @@
 .ops-linehaul-dashboard__row-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
 }
 
@@ -476,6 +477,12 @@
   border-color: #1d4ed8;
   background: #1d4ed8;
   color: #ffffff;
+}
+
+.ops-linehaul-dashboard__action-note {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .ops-linehaul-dashboard__arrival-form {

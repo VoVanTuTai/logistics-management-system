@@ -76,7 +76,7 @@ export function getLinehaulTripStatusLabel(status: LinehaulTripStatus): string {
       return 'Đã in tem';
     case 'PLANNED':
     default:
-      return 'Chờ in tem';
+      return 'Chờ bổ sung tài xế/xe';
   }
 }
 

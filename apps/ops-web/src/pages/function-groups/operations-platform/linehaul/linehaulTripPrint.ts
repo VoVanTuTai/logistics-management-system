@@ -88,7 +88,7 @@ function buildTripSealPrintHtml(trip: LinehaulTrip): string {
       <div class="qr">
         <img src="${qrDataUrl}" alt="QR tem xe" />
       </div>
-      <footer>Courier quét tem xe ở bước Xe đi, sau đó quét đúng 2 seal xe để gắn seal với mã tem này.</footer>
+      <footer>Courier quét tem xe ở bước Xe đi, sau đó quét một hoặc nhiều seal xe để gắn seal với mã tem này.</footer>
     </section>
   `;
 }

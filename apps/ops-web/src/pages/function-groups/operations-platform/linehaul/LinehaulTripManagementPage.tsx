@@ -129,7 +129,17 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
     setTrips(sortedTrips);
   };
 
+  const canPrintTrip = (trip: LinehaulTrip): boolean =>
+    Boolean(trip.driverName?.trim() && trip.vehiclePlate?.trim());
+
   const printTrip = (trip: LinehaulTrip) => {
+    if (!canPrintTrip(trip)) {
+      setActionMessage(
+        `Chuyến ${trip.tripCode} chưa có tài xế và biển số xe nên chưa thể in tem.`,
+      );
+      return;
+    }
+
     const opened = printLinehaulTripSeal(trip);
     if (!opened) {
       setActionMessage('Trình duyệt đang chặn cửa sổ in. Hãy cho phép popup rồi thử lại.');
@@ -151,14 +161,14 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
           <small>LINEHAUL_TRIP_MANAGEMENT</small>
           <h2>Quản lý chuyến xe</h2>
           <p>
-            Danh sách chuyến đã tạo. In tem xe trước khi xe tới; courier sẽ quét tem ở bước
-            Xe đi rồi quét đúng 2 seal để gắn seal với mã tem xe.
+            Danh sách chuyến đã tạo. Chuyến mới chỉ có kế hoạch cơ bản; chỉ in tem xe sau
+            khi đã bổ sung tài xế, biển số và thông tin vận hành.
           </p>
         </div>
         <div className="ops-linehaul-dashboard__actions">
           <Link className="ops-linehaul-dashboard__primary-link" to={routePaths.linehaulVehicleSeal}>
             <Plus size={16} />
-            Tạo và in tem
+            Tạo chuyến xe
           </Link>
           <button
             type="button"
@@ -179,7 +189,7 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
           <strong>{kpis.total}</strong>
         </article>
         <article>
-          <span>Chờ in tem</span>
+          <span>Chờ bổ sung</span>
           <strong>{kpis.planned}</strong>
         </article>
         <article data-tone="arrived">
@@ -187,7 +197,7 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
           <strong>{kpis.printed}</strong>
         </article>
         <article data-tone="danger">
-          <span>Quá giờ chưa in</span>
+          <span>Quá giờ chưa hoàn tất</span>
           <strong>{kpis.overdue}</strong>
         </article>
       </section>
@@ -264,12 +274,12 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
             <h3>Danh sách chuyến xe</h3>
             <span>{filteredTrips.length} chuyến</span>
           </div>
-          <em>2 seal sẽ được courier ghi khi xác nhận Xe đi</em>
+          <em>Courier sẽ ghi một hoặc nhiều seal khi xác nhận Xe đi</em>
         </header>
 
         {filteredTrips.length === 0 ? (
           <p className="ops-linehaul-dashboard__empty">
-            Chưa có chuyến xe phù hợp. Vào Tạo và in tem để tạo tem xe mới.
+            Chưa có chuyến xe phù hợp. Vào Tạo chuyến xe để tạo kế hoạch mới.
           </p>
         ) : (
           <div className="ops-linehaul-dashboard__table-wrap">
@@ -302,7 +312,7 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
                             overdue,
                           )}`}
                         >
-                          {overdue ? 'Quá giờ chưa in' : getLinehaulTripStatusLabel(status)}
+                          {overdue ? 'Quá giờ chưa hoàn tất' : getLinehaulTripStatusLabel(status)}
                         </span>
                       </td>
                       <td>{trip.originHubCode}</td>
@@ -316,6 +326,11 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
                             <Printer size={15} />
                             {trip.printedAt ? 'In lại' : 'In tem'}
                           </button>
+                          {!canPrintTrip(trip) ? (
+                            <span className="ops-linehaul-dashboard__action-note">
+                              Chưa có tài xế/xe
+                            </span>
+                          ) : null}
                         </div>
                       </td>
                     </tr>
