@@ -930,7 +930,7 @@ export function MerchantUsersPage(): React.JSX.Element {
               <th style={styles.headerCell}>Hub mặc định</th>
               <th style={styles.headerCell}>Trạng thái</th>
               <th style={styles.headerCell}>Cập nhật</th>
-              <th style={styles.headerCell}>Hành động</th>
+              <th style={{ ...styles.headerCell, ...styles.actionsHeaderCell }}>Hành động</th>
             </tr>
           </thead>
           <tbody>
@@ -954,12 +954,24 @@ export function MerchantUsersPage(): React.JSX.Element {
                   <td style={styles.cell}>{defaultHubCode}</td>
                   <td style={styles.cell}>{user.status}</td>
                   <td style={styles.cell}>{formatDateTime(user.updatedAt)}</td>
-                  <td style={styles.cell}>
-                    <div style={styles.actionsCell}>
-                      <button type="button" onClick={() => onEditUser(user)}>
+                  <td style={{ ...styles.cell, ...styles.actionsDataCell }}>
+                    <div style={styles.tableActionsCell}>
+                      <button
+                        type="button"
+                        onClick={() => onEditUser(user)}
+                        style={styles.compactActionButton}
+                      >
                         Sửa
                       </button>
-                      <button type="button" onClick={() => void onToggleUserStatus(user)}>
+                      <button
+                        type="button"
+                        onClick={() => void onToggleUserStatus(user)}
+                        style={
+                          user.status === 'ACTIVE'
+                            ? styles.compactDangerButton
+                            : styles.compactSuccessButton
+                        }
+                      >
                         {user.status === 'ACTIVE' ? 'Vô hiệu hóa' : 'Kích hoạt lại'}
                       </button>
                     </div>
@@ -1057,6 +1069,48 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 6,
     flexWrap: 'wrap',
     alignItems: 'center',
+  },
+  tableActionsCell: {
+    display: 'flex',
+    gap: 4,
+    flexWrap: 'nowrap',
+    alignItems: 'center',
+    whiteSpace: 'nowrap',
+  },
+  actionsHeaderCell: {
+    width: 146,
+    minWidth: 146,
+  },
+  actionsDataCell: {
+    width: 146,
+    minWidth: 146,
+  },
+  compactActionButton: {
+    borderRadius: 8,
+    padding: '4px 7px',
+    fontSize: 12,
+    lineHeight: 1.2,
+    borderColor: 'var(--admin-border)',
+    backgroundColor: 'var(--admin-surface)',
+    color: 'var(--admin-text)',
+  },
+  compactDangerButton: {
+    borderRadius: 8,
+    padding: '4px 7px',
+    fontSize: 12,
+    lineHeight: 1.2,
+    borderColor: '#fecaca',
+    backgroundColor: '#fef2f2',
+    color: '#b91c1c',
+  },
+  compactSuccessButton: {
+    borderRadius: 8,
+    padding: '4px 7px',
+    fontSize: 12,
+    lineHeight: 1.2,
+    borderColor: '#bbf7d0',
+    backgroundColor: '#f0fdf4',
+    color: '#15803d',
   },
   successText: {
     color: '#166534',
