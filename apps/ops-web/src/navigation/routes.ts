@@ -51,6 +51,12 @@ export const routePaths = {
   groupCapabilityPlatform: '/app/function-groups/capability-platform',
   groupOperationsMetrics: '/app/function-groups/operations-metrics',
   groupServiceQuality: '/app/function-groups/service-quality',
+  serviceQualityIntegratedLookup:
+    '/app/function-groups/service-quality/tra-cuu-tich-hop',
+  serviceQualityAbnormalManagement:
+    '/app/function-groups/service-quality/hang-bat-thuong',
+  serviceQualityProactiveActionBoard:
+    '/app/function-groups/service-quality/proactive/action-board',
   serviceQualityProactiveInbound:
     '/app/function-groups/service-quality/proactive/monitor-received',
   serviceQualityProactiveDelivered:
@@ -62,6 +68,7 @@ export const routePaths = {
   opsMetricsDeadlineRoot: '/app/function-groups/operations-metrics/thoi-hieu',
   opsMetricsPlanningRoot: '/app/function-groups/operations-metrics/quy-hoach',
   opsMetricsActionRoot: '/app/function-groups/operations-metrics/thao-tac',
+  opsMetricsReport: '/app/function-groups/operations-metrics/bao-cao-van-hanh',
   opsMetricsAbnormalOverview:
     '/app/function-groups/operations-metrics/kien-bat-thuong/tong-quan',
   opsMetricsAbnormalHandling:
@@ -166,6 +173,12 @@ export const routePaths = {
   groupCapabilityPlatformLeaf: 'function-groups/capability-platform',
   groupOperationsMetricsLeaf: 'function-groups/operations-metrics',
   groupServiceQualityLeaf: 'function-groups/service-quality',
+  serviceQualityIntegratedLookupLeaf:
+    'function-groups/service-quality/tra-cuu-tich-hop',
+  serviceQualityAbnormalManagementLeaf:
+    'function-groups/service-quality/hang-bat-thuong',
+  serviceQualityProactiveActionBoardLeaf:
+    'function-groups/service-quality/proactive/action-board',
   serviceQualityProactiveInboundLeaf:
     'function-groups/service-quality/proactive/monitor-received',
   serviceQualityProactiveDeliveredLeaf:
@@ -173,6 +186,7 @@ export const routePaths = {
   groupDatabaseLeaf: 'function-groups/database',
   groupSmartDevicesLeaf: 'function-groups/smart-devices',
   groupPlanningPlatformLeaf: 'function-groups/planning-platform',
+  opsMetricsReportLeaf: 'function-groups/operations-metrics/bao-cao-van-hanh',
   opsMetricsAbnormalOverviewLeaf:
     'function-groups/operations-metrics/kien-bat-thuong/tong-quan',
   opsMetricsAbnormalHandlingLeaf:
@@ -232,3 +246,95 @@ export const routePaths = {
   masterdataNdrReasonsLeaf: 'masterdata/ndr-reasons',
   masterdataConfigsLeaf: 'masterdata/configs',
 } as const;
+
+// Core routes are backed by gateway/API flows and remain visible in demo production.
+export const OPS_CORE_ROUTE_PATHS = [
+  routePaths.dashboard,
+  routePaths.shipments,
+  routePaths.pickups,
+  routePaths.tasks,
+  routePaths.manifests,
+  routePaths.scans,
+  routePaths.ndr,
+  routePaths.tracking,
+  routePaths.masterdataHubs,
+  routePaths.masterdataZones,
+  routePaths.masterdataNdrReasons,
+  routePaths.masterdataConfigs,
+] as const;
+
+// Full module routes are first-class ops modules kept visible for production hardening.
+// They can be hidden only for a compact core-only build.
+export const OPS_FULL_MODULE_ROUTE_PATHS = [
+  routePaths.analyticsDashboard,
+  routePaths.comingSoonDebtReport,
+  routePaths.comingSoonAiCashflow,
+  routePaths.groupsRoot,
+  routePaths.groupBasicData,
+  routePaths.groupOperationsPlatform,
+  routePaths.groupCustomerPlatform,
+  routePaths.groupBranchBusiness,
+  routePaths.groupFinanceSettlement,
+  routePaths.groupCapabilityPlatform,
+  routePaths.groupOperationsMetrics,
+  routePaths.groupServiceQuality,
+  routePaths.groupDatabase,
+  routePaths.groupSmartDevices,
+  routePaths.groupPlanningPlatform,
+  routePaths.customerPlatformOrderManagementRoot,
+  routePaths.customerPlatformOrderDispatchRoot,
+  routePaths.customerPlatformOrderDispatch,
+  routePaths.customerPlatformOrderLookup,
+  routePaths.customerPlatformOrderMonitor,
+  routePaths.branchBusinessOrderManagementRoot,
+  routePaths.branchBusinessFinanceSettlementRoot,
+  routePaths.branchBusinessLocalOrdersRoot,
+  routePaths.branchBusinessLocalOverview,
+  routePaths.branchBusinessLocalOrders,
+  routePaths.branchBusinessCourierHandoff,
+  routePaths.branchBusinessBranchInventory,
+  routePaths.branchBusinessShiftClosing,
+  routePaths.branchBusinessOrderCreate,
+  routePaths.branchBusinessOrderOutbound,
+  routePaths.branchBusinessOrderDelivery,
+  routePaths.branchBusinessFinanceCod,
+  routePaths.branchBusinessFinanceReconcile,
+  routePaths.serviceQualityIntegratedLookup,
+  routePaths.serviceQualityAbnormalManagement,
+  routePaths.serviceQualityProactiveActionBoard,
+  routePaths.serviceQualityProactiveInbound,
+  routePaths.serviceQualityProactiveDelivered,
+  routePaths.opsMetricsAbnormalRoot,
+  routePaths.opsMetricsDeadlineRoot,
+  routePaths.opsMetricsPlanningRoot,
+  routePaths.opsMetricsActionRoot,
+  routePaths.opsMetricsReport,
+  routePaths.opsMetricsAbnormalOverview,
+  routePaths.opsMetricsAbnormalHandling,
+  routePaths.opsMetricsDeadlineInventory,
+  routePaths.opsMetricsDeadlineOntimePickupRatio,
+  routePaths.opsMetricsDeadlineDeliverySla,
+  routePaths.opsMetricsDeadlineActualSignT1,
+  routePaths.opsMetricsDeadlineOntimeSendRatio,
+  routePaths.opsMetricsDeadlineDeliveryLeadtime,
+  routePaths.opsMetricsDeadlineInboundLeadtime,
+  routePaths.opsMetricsDeadlineOverdueAlerts,
+  routePaths.opsMetricsPlanningNetworkKpi,
+  routePaths.opsMetricsActionExecutionBoard,
+  routePaths.thermalLabelManagement,
+  routePaths.thermalLabelPrint,
+  routePaths.returnBlockRoot,
+  routePaths.returnBlockRegistration,
+  routePaths.returnBlockManagement,
+  routePaths.monitorDataRoot,
+  routePaths.monitorDataHangNhan,
+  routePaths.monitorDataHangDen,
+  routePaths.monitorDataHangGui,
+  routePaths.monitorDataHangPhat,
+  routePaths.monitorData2In1,
+  routePaths.monitorDataTheoDoiTamUng,
+  routePaths.monitorDataDongBao,
+  routePaths.linehaulRoot,
+  routePaths.linehaulTripManagement,
+  routePaths.linehaulVehicleSeal,
+] as const;

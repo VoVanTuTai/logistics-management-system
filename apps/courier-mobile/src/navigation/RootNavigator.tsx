@@ -14,6 +14,7 @@ import { TaskListScreen } from '../screens/tasks/TaskListScreen';
 import { TaskDetailScreen } from '../screens/tasks/TaskDetailScreen';
 import { PickupScanScreen } from '../screens/scan/PickupScanScreen';
 import { HubScanScreen } from '../screens/scan/HubScanScreen';
+import { GoodsArrivalScreen } from '../screens/scan/GoodsArrivalScreen';
 import { BagSealScreen } from '../screens/scan/BagSealScreen';
 import { InventoryCheckScreen } from '../screens/scan/InventoryCheckScreen';
 import { VehicleInboundScreen } from '../screens/scan/VehicleInboundScreen';
@@ -183,6 +184,14 @@ export function RootNavigator(): React.JSX.Element {
               title: route.params.mode === 'INBOUND' ? 'Hàng đến' : 'Quet hub',
             })}
           />
+          <RootStack.Screen
+            name="GoodsArrival"
+            options={{ title: 'Hàng đến' }}
+          >
+            {({ route }) => (
+              <GoodsArrivalScreen initialShipmentCode={route.params?.shipmentCode} />
+            )}
+          </RootStack.Screen>
           <RootStack.Screen
             name="BagSeal"
             component={BagSealScreen}

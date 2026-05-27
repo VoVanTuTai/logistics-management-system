@@ -5,7 +5,8 @@ export interface VehicleLabelInfo {
   licensePlate: string;
 }
 
-const VEHICLE_FALLBACK_PATTERN = /^(VEH|VH|XE)[A-Z0-9-]{4,}$/;
+const VEHICLE_FALLBACK_PATTERN = /^[A-Z0-9][A-Z0-9._-]{2,}$/;
+const NON_VEHICLE_PREFIXES = ['MB', 'SHP'];
 
 function normalizeCode(value: string): string {
   return value.trim().toUpperCase();
@@ -75,9 +76,32 @@ export function parseVehicleLabel(rawValue: string): VehicleLabelInfo | null {
     };
   }
 
-  if (VEHICLE_FALLBACK_PATTERN.test(normalizeCode(trimmed))) {
+  const normalizedValue = normalizeCode(trimmed);
+  const tripParts = normalizedValue.split('-').filter(Boolean);
+  if (tripParts.length >= 5 && tripParts[0] === 'TRIP') {
     return {
-      vehicleCode: normalizeCode(trimmed),
+      vehicleCode: normalizedValue,
+      originHubCode: tripParts[1] || 'UNKNOWN',
+      destinationHubCode: tripParts[2] || 'UNKNOWN',
+      licensePlate: 'UNKNOWN',
+    };
+  }
+
+  if (tripParts.length >= 3 && tripParts[0] === 'LH') {
+    return {
+      vehicleCode: normalizedValue,
+      originHubCode: tripParts.length >= 5 ? tripParts[1] || 'UNKNOWN' : 'UNKNOWN',
+      destinationHubCode: tripParts.length >= 5 ? tripParts[2] || 'UNKNOWN' : 'UNKNOWN',
+      licensePlate: 'UNKNOWN',
+    };
+  }
+
+  if (
+    VEHICLE_FALLBACK_PATTERN.test(normalizedValue) &&
+    !NON_VEHICLE_PREFIXES.some((prefix) => normalizedValue.startsWith(prefix))
+  ) {
+    return {
+      vehicleCode: normalizedValue,
       originHubCode: 'UNKNOWN',
       destinationHubCode: 'UNKNOWN',
       licensePlate: 'UNKNOWN',

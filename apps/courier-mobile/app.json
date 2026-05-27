@@ -10,7 +10,15 @@
     "ios": {
       "supportsTablet": true
     },
-    "android": {},
+    "android": {
+      "package": "com.nexuslogistics.couriermobile",
+      "versionCode": 1,
+      "usesCleartextTraffic": true,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
     "web": {
       "bundler": "metro"
     },
@@ -22,6 +30,11 @@
           "cameraPermission": "Cho phép ứng dụng dùng camera để quét QR/barcode cho tác vụ giao nhận."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "aae5906f-3a19-4e32-b7b5-b14d551f0c8e"
+      }
+    }
   }
 }

@@ -4,14 +4,26 @@ import { useEffect, useState } from 'react';
 import { queryKeys } from '../../utils/queryKeys';
 import { appEnv } from '../../utils/env';
 
-type RealtimeConnectionStatus = 'idle' | 'connecting' | 'connected' | 'disconnected';
+export type RealtimeConnectionStatus =
+  | 'idle'
+  | 'connecting'
+  | 'connected'
+  | 'reconnecting'
+  | 'disconnected';
 
 interface TaskRealtimeEventPayload {
   type?: string;
 }
 
+interface DispatchTasksRealtimeOptions {
+  minRefetchIntervalMs?: number;
+  initialReconnectDelayMs?: number;
+  maxReconnectDelayMs?: number;
+}
+
 export function useDispatchTasksRealtime(
   enabled: boolean,
+  options: DispatchTasksRealtimeOptions = {},
 ): RealtimeConnectionStatus {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<RealtimeConnectionStatus>('idle');
@@ -29,15 +41,61 @@ export function useDispatchTasksRealtime(
 
     let isClosed = false;
     let reconnectTimeout: number | null = null;
+    let refetchTimeout: number | null = null;
     let socket: WebSocket | null = null;
     let reconnectAttempt = 0;
+    let lastRefetchAt = 0;
+    const minRefetchIntervalMs = options.minRefetchIntervalMs ?? 1500;
+    const initialReconnectDelayMs = options.initialReconnectDelayMs ?? 1000;
+    const maxReconnectDelayMs = options.maxReconnectDelayMs ?? 30000;
+
+    const refetchActiveQueries = () => {
+      if (isClosed) {
+        return;
+      }
+
+      lastRefetchAt = Date.now();
+      refetchTimeout = null;
+
+      void Promise.all([
+        queryClient.refetchQueries({
+          queryKey: queryKeys.tasks,
+          type: 'active',
+        }),
+        queryClient.refetchQueries({
+          queryKey: queryKeys.shipments,
+          type: 'active',
+        }),
+        queryClient.refetchQueries({
+          queryKey: queryKeys.pickups,
+          type: 'active',
+        }),
+      ]);
+    };
+
+    const scheduleRefetch = () => {
+      if (isClosed || refetchTimeout !== null) {
+        return;
+      }
+
+      const elapsedMs = Date.now() - lastRefetchAt;
+      if (elapsedMs >= minRefetchIntervalMs) {
+        refetchActiveQueries();
+        return;
+      }
+
+      refetchTimeout = window.setTimeout(
+        refetchActiveQueries,
+        minRefetchIntervalMs - elapsedMs,
+      );
+    };
 
     const connect = () => {
       if (isClosed) {
         return;
       }
 
-      setStatus('connecting');
+      setStatus(reconnectAttempt === 0 ? 'connecting' : 'reconnecting');
 
       socket = new WebSocket(appEnv.dispatchTasksWsUrl);
 
@@ -59,20 +117,7 @@ export function useDispatchTasksRealtime(
           return;
         }
 
-        void Promise.all([
-          queryClient.refetchQueries({
-            queryKey: queryKeys.tasks,
-            type: 'active',
-          }),
-          queryClient.refetchQueries({
-            queryKey: queryKeys.shipments,
-            type: 'active',
-          }),
-          queryClient.refetchQueries({
-            queryKey: queryKeys.pickups,
-            type: 'active',
-          }),
-        ]);
+        scheduleRefetch();
       };
 
       socket.onerror = () => {
@@ -86,9 +131,14 @@ export function useDispatchTasksRealtime(
           return;
         }
 
-        setStatus('disconnected');
         reconnectAttempt += 1;
-        const backoffMs = Math.min(10000, 1000 * 2 ** (reconnectAttempt - 1));
+        setStatus('reconnecting');
+        const jitterMs = Math.trunc(Math.random() * 250);
+        const backoffMs =
+          Math.min(
+            maxReconnectDelayMs,
+            initialReconnectDelayMs * 2 ** (reconnectAttempt - 1),
+          ) + jitterMs;
 
         reconnectTimeout = window.setTimeout(() => {
           connect();
@@ -105,11 +155,21 @@ export function useDispatchTasksRealtime(
         window.clearTimeout(reconnectTimeout);
       }
 
+      if (refetchTimeout !== null) {
+        window.clearTimeout(refetchTimeout);
+      }
+
       if (socket) {
         socket.close();
       }
     };
-  }, [enabled, queryClient]);
+  }, [
+    enabled,
+    options.initialReconnectDelayMs,
+    options.maxReconnectDelayMs,
+    options.minRefetchIntervalMs,
+    queryClient,
+  ]);
 
   return status;
 }

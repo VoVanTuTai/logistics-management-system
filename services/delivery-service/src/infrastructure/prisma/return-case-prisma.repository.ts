@@ -4,6 +4,7 @@ import type { Prisma, ReturnCase as PrismaReturnCaseRecord } from '@prisma/clien
 import type {
   CompleteReturnCaseInput,
   CreateReturnCaseInput,
+  ListReturnCasesFilter,
   ReturnCase,
 } from '../../domain/entities/return-case.entity';
 import { ReturnCaseRepository } from '../../domain/repositories/return-case.repository';
@@ -13,6 +14,21 @@ import { PrismaService } from './prisma.service';
 export class ReturnCasePrismaRepository extends ReturnCaseRepository {
   constructor(private readonly prisma: PrismaService) {
     super();
+  }
+
+  async list(filter: ListReturnCasesFilter = {}): Promise<ReturnCase[]> {
+    const records = await this.prisma.returnCase.findMany({
+      where: {
+        shipmentCode: filter.shipmentCode,
+        ndrCaseId: filter.ndrCaseId,
+        status: filter.status,
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    });
+
+    return records.map((record) => this.toEntity(record));
   }
 
   async findById(id: string): Promise<ReturnCase | null> {
@@ -26,6 +42,17 @@ export class ReturnCasePrismaRepository extends ReturnCaseRepository {
   async findByNdrCaseId(ndrCaseId: string): Promise<ReturnCase | null> {
     const record = await this.prisma.returnCase.findFirst({
       where: { ndrCaseId },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return record ? this.toEntity(record) : null;
+  }
+
+  async findByShipmentCode(shipmentCode: string): Promise<ReturnCase | null> {
+    const record = await this.prisma.returnCase.findFirst({
+      where: { shipmentCode },
       orderBy: {
         createdAt: 'desc',
       },

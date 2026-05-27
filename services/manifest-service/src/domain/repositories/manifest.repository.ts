@@ -9,6 +9,7 @@ import type {
 export abstract class ManifestRepository {
   abstract list(): Promise<Manifest[]>;
   abstract findById(id: string): Promise<Manifest | null>;
+  abstract findByManifestCode(manifestCode: string): Promise<Manifest | null>;
   abstract findByShipmentCode(shipmentCode: string): Promise<Manifest | null>;
   abstract findActiveByShipmentCode(
     shipmentCode: string,

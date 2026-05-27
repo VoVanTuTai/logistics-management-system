@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { useHubsQuery } from '../../../../features/masterdata/masterdata.api';
 import { authClient } from '../../../../features/auth/auth.client';
@@ -7,15 +8,18 @@ import { useShipmentsQuery } from '../../../../features/shipments/shipments.api'
 import type { ShipmentListItemDto } from '../../../../features/shipments/shipments.types';
 import { tasksClient, useTasksQuery } from '../../../../features/tasks/tasks.api';
 import type { TaskListItemDto } from '../../../../features/tasks/tasks.types';
+import { routePaths } from '../../../../navigation/routes';
 import { getErrorMessage } from '../../../../services/api/errors';
 import { useAuthStore } from '../../../../store/authStore';
 import { formatDateTime } from '../../../../utils/format';
 import {
   deriveHubScopeTokens,
   isShipmentInScope,
+  shipmentDestinationHubCode,
 } from '../../../../utils/locationScope';
 import { formatShipmentStatusLabel } from '../../../../utils/logisticsLabels';
 import { queryKeys } from '../../../../utils/queryKeys';
+import { BranchTablePagination } from '../shared/BranchTablePagination';
 import './BranchDeliveryDispatchPage.css';
 
 interface DeliveryOrderRow {
@@ -34,9 +38,17 @@ interface DeliveryOrderRow {
   task: TaskListItemDto | null;
 }
 
+interface HandoffAuditPreview {
+  batchCode: string;
+  courierId: string;
+  shipmentCodes: string[];
+  note: string;
+  createdAt: string;
+}
+
 const DELIVERY_STATUS_GROUPS: Record<'UNSEALED' | 'ARRIVED' | 'INVENTORY', ReadonlySet<string>> = {
   UNSEALED: new Set(['MANIFEST_UNSEALED']),
-  ARRIVED: new Set(['MANIFEST_RECEIVED', 'SCAN_INBOUND']),
+  ARRIVED: new Set(['PICKUP_COMPLETED', 'MANIFEST_RECEIVED', 'SCAN_INBOUND']),
   INVENTORY: new Set(['INVENTORY_CHECK']),
 };
 
@@ -135,16 +147,9 @@ function isShipmentAtAssignedBranch(
     return true;
   }
 
-  const relatedHubCodes = [
-    shipment.receiverHubCode,
-    shipment.destinationHubCode,
-    shipment.originHubCode,
-    shipment.senderHubCode,
-  ]
-    .map((hubCode) => (hubCode ?? '').trim().toUpperCase())
-    .filter(Boolean);
-  if (relatedHubCodes.some((hubCode) => assignedHubCodes.includes(hubCode))) {
-    return true;
+  const destinationHubCode = shipmentDestinationHubCode(shipment);
+  if (destinationHubCode) {
+    return assignedHubCodes.includes(destinationHubCode);
   }
 
   return isShipmentInScope(shipment, scopeTokens);
@@ -175,6 +180,15 @@ function generateDeliveryTaskCode(shipmentCode: string): string {
     .slice(-6);
 
   return `DLV-${normalizedShipmentCode || 'SHIP'}-${timestamp}`;
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 export function BranchDeliveryDispatchPage(): React.JSX.Element {
@@ -235,12 +249,15 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
     'all',
   );
   const [keyword, setKeyword] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [courierId, setCourierId] = useState('');
   const [courierSearch, setCourierSearch] = useState('');
   const [handoffNote, setHandoffNote] = useState('Bàn giao phát từ màn hình Phát hàng bưu cục.');
   const [isAssignPanelOpen, setIsAssignPanelOpen] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [lastHandoffAudit, setLastHandoffAudit] = useState<HandoffAuditPreview | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const hubScopeTokens = useMemo(
@@ -318,6 +335,17 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
     });
   }, [areaFilter, keyword, rows, serviceFilter, statusFilter]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [areaFilter, keyword, pageSize, serviceFilter, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const paginatedOrders = useMemo(
+    () => filteredOrders.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [currentPage, filteredOrders, pageSize],
+  );
+
   const selectedOrders = rows.filter((order) =>
     selectedShipmentCodes.includes(order.shipment.shipmentCode),
   );
@@ -358,6 +386,83 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
         ? current.filter((selectedId) => selectedId !== shipmentCode)
         : [...current, shipmentCode],
     );
+  };
+
+  const printHandoffList = (ordersToPrint: DeliveryOrderRow[], title: string) => {
+    if (ordersToPrint.length === 0) {
+      setActionError('Không có vận đơn để in danh sách bàn giao.');
+      setActionMessage(null);
+      return;
+    }
+
+    const printedAt = new Date().toLocaleString('vi-VN');
+    const rowsHtml = ordersToPrint
+      .map(
+        (order, index) => `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${escapeHtml(order.shipment.shipmentCode)}</td>
+            <td>${escapeHtml(order.receiverName)}</td>
+            <td>${escapeHtml(order.receiverPhone)}</td>
+            <td>${escapeHtml(order.address)}</td>
+            <td>${escapeHtml(order.codAmount)}</td>
+            <td>${escapeHtml(order.task?.assignedCourierId ?? (effectiveCourierId || 'Chưa bàn giao'))}</td>
+          </tr>
+        `,
+      )
+      .join('');
+    const printWindow = window.open('', 'branch-delivery-handoff-print', 'width=960,height=720');
+
+    if (!printWindow) {
+      setActionError('Trình duyệt đang chặn cửa sổ in danh sách bàn giao.');
+      setActionMessage(null);
+      return;
+    }
+
+    printWindow.document.write(`
+      <!doctype html>
+      <html>
+        <head>
+          <title>${escapeHtml(title)}</title>
+          <style>
+            body { font-family: Arial, sans-serif; color: #172033; margin: 24px; }
+            h1 { margin: 0 0 6px; font-size: 20px; }
+            p { margin: 0 0 14px; color: #475569; font-size: 12px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; vertical-align: top; }
+            th { background: #f1f5f9; color: #0f172a; }
+            .signatures { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 28px; }
+            .signatures div { min-height: 76px; border-top: 1px solid #94a3b8; padding-top: 8px; text-align: center; }
+          </style>
+        </head>
+        <body>
+          <h1>${escapeHtml(title)}</h1>
+          <p>Thời gian in: ${escapeHtml(printedAt)} | Số vận đơn: ${ordersToPrint.length}</p>
+          <table>
+            <thead>
+              <tr>
+                <th>STT</th>
+                <th>Mã vận đơn</th>
+                <th>Người nhận</th>
+                <th>SĐT</th>
+                <th>Địa chỉ</th>
+                <th>COD</th>
+                <th>Courier</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+          <section class="signatures">
+            <div>Người bàn giao</div>
+            <div>Courier nhận bàn giao</div>
+            <div>Kiểm soát bưu cục</div>
+          </section>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
   };
 
   const submitHandoff = async () => {
@@ -407,6 +512,13 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
 
       await queryClient.invalidateQueries({ queryKey: queryKeys.tasks });
       await queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
+      setLastHandoffAudit({
+        batchCode: `HANDOFF-${Date.now().toString().slice(-8)}`,
+        courierId: effectiveCourierId,
+        shipmentCodes: selectedOrders.map((order) => order.shipment.shipmentCode),
+        note: handoffNote.trim() || 'Bàn giao phát tại bưu cục',
+        createdAt: new Date().toISOString(),
+      });
       setActionMessage(`Đã bàn giao ${selectedOrders.length} vận đơn cho courier ${effectiveCourierId}.`);
       setSelectedShipmentCodes([]);
     } catch (error) {
@@ -512,6 +624,20 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
               <span>{filteredOrders.length} đơn</span>
               <button
                 type="button"
+                className="ops-branch-delivery__print-btn"
+                onClick={() =>
+                  printHandoffList(
+                    selectedOrders.length > 0 ? selectedOrders : filteredOrders,
+                    selectedOrders.length > 0
+                      ? 'Danh sách bàn giao vận đơn đã chọn'
+                      : 'Danh sách bàn giao vận đơn chờ phát',
+                  )
+                }
+              >
+                In DS
+              </button>
+              <button
+                type="button"
                 className="ops-branch-delivery__open-assign-btn"
                 onClick={openAssignPanel}
               >
@@ -550,7 +676,7 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
                 </tr>
               </thead>
               <tbody>
-                {filteredOrders.map((order) => (
+                {paginatedOrders.map((order) => (
                   <tr key={order.id}>
                     <td>
                       <input
@@ -560,7 +686,14 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
                         aria-label={`Chọn ${order.shipment.shipmentCode}`}
                       />
                     </td>
-                    <td className="ops-branch-delivery__code">{order.shipment.shipmentCode}</td>
+                    <td>
+                      <Link
+                        className="ops-branch-delivery__code"
+                        to={routePaths.shipmentDetail(order.shipment.id)}
+                      >
+                        {order.shipment.shipmentCode}
+                      </Link>
+                    </td>
                     <td>
                       <strong>{order.receiverName}</strong>
                       <small>{order.receiverPhone}</small>
@@ -590,11 +723,39 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
               </tbody>
             </table>
           </div>
+          <BranchTablePagination
+            totalRows={filteredOrders.length}
+            page={currentPage}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
         </section>
       </div>
       {actionMessage ? <p className="ops-branch-delivery__notice">{actionMessage}</p> : null}
       {actionError && !isAssignPanelOpen ? (
         <p className="ops-branch-delivery__notice ops-branch-delivery__notice--error">{actionError}</p>
+      ) : null}
+      {lastHandoffAudit ? (
+        <section className="ops-branch-delivery__audit">
+          <div>
+            <span>Audit preview</span>
+            <strong>{lastHandoffAudit.batchCode}</strong>
+          </div>
+          <div>
+            <span>Courier</span>
+            <strong>{lastHandoffAudit.courierId}</strong>
+          </div>
+          <div>
+            <span>Vận đơn</span>
+            <strong>{lastHandoffAudit.shipmentCodes.length}</strong>
+          </div>
+          <div>
+            <span>Thời gian</span>
+            <strong>{formatDateTime(lastHandoffAudit.createdAt)}</strong>
+          </div>
+          <p>{lastHandoffAudit.note}</p>
+        </section>
       ) : null}
       {isAssignPanelOpen ? (
         <div className="ops-branch-delivery__modal" role="presentation">
@@ -684,7 +845,7 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
                 disabled={isSubmitting || !effectiveCourierId}
               >
                 <SendIcon />
-                {isSubmitting ? 'Đang điều phối...' : 'Điều phối'}
+                {isSubmitting ? 'Đang chốt...' : 'Chốt bàn giao'}
               </button>
             </footer>
           </aside>

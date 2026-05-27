@@ -1,7 +1,7 @@
 const os = require('os');
 const { spawn } = require('child_process');
 
-const DEFAULT_GATEWAY_PORT = 3000;
+const DEFAULT_GATEWAY_BASE_URL = 'http://103.179.172.53:13000';
 const DEFAULT_EXPO_PORT = 8081;
 const DEFAULT_NODE_MAX_OLD_SPACE_MB = 4096;
 
@@ -89,12 +89,7 @@ function resolveGatewayBaseUrl() {
     return normalizeBaseUrl(explicitBaseUrl);
   }
 
-  const lanIp = resolveLanIp();
-  if (!lanIp) {
-    return null;
-  }
-
-  return `http://${lanIp}:${DEFAULT_GATEWAY_PORT}`;
+  return DEFAULT_GATEWAY_BASE_URL;
 }
 
 function run() {

@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Req } from '@nestjs/common';
 
 import { ManifestsService } from '../../application/services/manifests.service';
 import type {
@@ -11,6 +11,10 @@ import type {
   SealManifestInput,
   UpdateManifestInput,
 } from '../../domain/entities/manifest.entity';
+import {
+  type AuditRequest,
+  getOpsAuditContext,
+} from './ops-audit-context';
 
 @Controller('manifests')
 export class ManifestsController {
@@ -19,6 +23,11 @@ export class ManifestsController {
   @Get()
   list(): Promise<Manifest[]> {
     return this.manifestsService.list();
+  }
+
+  @Get('code/:manifestCode')
+  getByManifestCode(@Param('manifestCode') manifestCode: string): Promise<Manifest> {
+    return this.manifestsService.getByManifestCode(manifestCode);
   }
 
   @Get(':id')
@@ -53,31 +62,35 @@ export class ManifestsController {
   addShipments(
     @Param('id') id: string,
     @Body() body: AddShipmentsInput,
+    @Req() request: AuditRequest,
   ): Promise<Manifest> {
-    return this.manifestsService.addShipments(id, body);
+    return this.manifestsService.addShipments(id, body, getOpsAuditContext(request));
   }
 
   @Post(':id/shipments/remove')
   removeShipments(
     @Param('id') id: string,
     @Body() body: RemoveShipmentsInput,
+    @Req() request: AuditRequest,
   ): Promise<Manifest> {
-    return this.manifestsService.removeShipments(id, body);
+    return this.manifestsService.removeShipments(id, body, getOpsAuditContext(request));
   }
 
   @Post(':id/seal')
   seal(
     @Param('id') id: string,
     @Body() body: SealManifestInput,
+    @Req() request: AuditRequest,
   ): Promise<Manifest> {
-    return this.manifestsService.seal(id, body);
+    return this.manifestsService.seal(id, body, getOpsAuditContext(request));
   }
 
   @Post(':id/receive')
   receive(
     @Param('id') id: string,
     @Body() body: ReceiveManifestInput,
+    @Req() request: AuditRequest,
   ): Promise<Manifest> {
-    return this.manifestsService.receive(id, body);
+    return this.manifestsService.receive(id, body, getOpsAuditContext(request));
   }
 }

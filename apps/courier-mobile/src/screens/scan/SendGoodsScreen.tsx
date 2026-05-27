@@ -28,6 +28,7 @@ import {
   type VehicleLoadedBag,
   type VehicleLoadedLooseShipment,
 } from '../../features/scan/vehicle-load.storage';
+import { ApiClientError } from '../../services/api/client';
 import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
 import { resolveCourierDisplayName } from '../../utils/courier';
@@ -77,6 +78,24 @@ function resolveBagManifest(
   );
 }
 
+function buildSyncedVehicleInfo(
+  scannedVehicleInfo: VehicleLabelInfo,
+  manifest: BagManifestDto,
+): VehicleLabelInfo {
+  return {
+    ...scannedVehicleInfo,
+    vehicleCode: normalizeCode(manifest.manifestCode || scannedVehicleInfo.vehicleCode),
+    originHubCode:
+      manifest.originHubCode?.trim().toUpperCase() ||
+      scannedVehicleInfo.originHubCode ||
+      'UNKNOWN',
+    destinationHubCode:
+      manifest.destinationHubCode?.trim().toUpperCase() ||
+      scannedVehicleInfo.destinationHubCode ||
+      'UNKNOWN',
+  };
+}
+
 function appendNoteSegment(segments: string[], key: string, value: string | null | undefined) {
   const normalizedValue = value?.trim();
   if (normalizedValue) {
@@ -122,8 +141,15 @@ export function SendGoodsScreen(): React.JSX.Element {
     }): string => {
       const typeLabel = input.prefix === 'SEND_GOODS' ? 'Gửi kiện rời' : 'Gửi bao hàng';
       const bagInfo = input.bagCode ? ` | Bao: ${input.bagCode}` : '';
+      const originHubCode =
+        input.vehicle.originHubCode !== 'UNKNOWN'
+          ? input.vehicle.originHubCode
+          : employeeHubCode ?? 'UNKNOWN';
+      const destinationHubCode = input.vehicle.destinationHubCode || 'UNKNOWN';
+      const licensePlate =
+        input.vehicle.licensePlate !== 'UNKNOWN' ? ` (${input.vehicle.licensePlate})` : '';
       
-      return `${typeLabel}: [${input.vehicle.originHubCode}] -> [${input.vehicle.destinationHubCode}] | Nhân viên: ${employeeName} | Mã NV: ${employeeCode} | Mã hub: ${employeeHubCode} | Xe: ${input.vehicle.vehicleCode} (${input.vehicle.licensePlate})${bagInfo}`;
+      return `${typeLabel}: [${originHubCode}] -> [${destinationHubCode}] | Nhân viên: ${employeeName} | Mã NV: ${employeeCode} | Mã hub: ${employeeHubCode} | Xe: ${input.vehicle.vehicleCode}${licensePlate}${bagInfo}`;
     },
     [employeeCode, employeeHubCode, employeeName],
   );
@@ -190,17 +216,38 @@ export function SendGoodsScreen(): React.JSX.Element {
     [hasVehicleInfo],
   );
 
-  const applyVehicleLabel = React.useCallback((rawValue: string) => {
-    const nextVehicleInfo = parseVehicleLabel(rawValue);
-    if (!nextVehicleInfo) {
-      setScreenMessage('Tem xe không hợp lệ. Cần QR JSON hoặc VEH|Mã tem xe|Hub đi|Hub đến|Biển số.');
+  const applyVehicleLabel = React.useCallback(async (rawValue: string) => {
+    if (!accessToken) {
+      setGlobalError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
       return;
     }
 
-    setVehicleInfo(nextVehicleInfo);
-    setManualVehicleInput('');
-    setScreenMessage(`Đã nhận tem xe ${nextVehicleInfo.vehicleCode}.`);
-  }, []);
+    const nextVehicleInfo = parseVehicleLabel(rawValue);
+    if (!nextVehicleInfo) {
+      setScreenMessage('Tem xe không hợp lệ. Vui lòng quét hoặc nhập đúng mã tem xe.');
+      return;
+    }
+
+    try {
+      const manifest = await manifestApi.detailByCode(accessToken, nextVehicleInfo.vehicleCode);
+      const syncedVehicleInfo = buildSyncedVehicleInfo(nextVehicleInfo, manifest);
+      setVehicleInfo(syncedVehicleInfo);
+      setManualVehicleInput('');
+      setScreenMessage(`Đã nhận tem xe ${syncedVehicleInfo.vehicleCode} từ hệ thống.`);
+    } catch (error) {
+      if (error instanceof ApiClientError && error.status === 404) {
+        setVehicleInfo(null);
+        setScreenMessage(
+          `Tem xe ${nextVehicleInfo.vehicleCode} chưa được tạo hoặc chưa đồng bộ trên Ops Web. Vui lòng tạo tem xe ở Ops rồi quét lại.`,
+        );
+        return;
+      }
+
+      const message = error instanceof Error ? error.message : 'Không kiểm tra được tem xe.';
+      setScreenMessage(message);
+      setGlobalError(message);
+    }
+  }, [accessToken, setGlobalError]);
 
   const handleBarCodeScanned = (result: BarcodeScanningResult) => {
     if (scanLocked || isSubmitting) {
@@ -216,7 +263,7 @@ export function SendGoodsScreen(): React.JSX.Element {
     const scannedValue = parsed?.value ?? result.data;
 
     if (!hasVehicleInfo) {
-      applyVehicleLabel(scannedValue);
+      void applyVehicleLabel(scannedValue);
       return;
     }
 
@@ -233,7 +280,7 @@ export function SendGoodsScreen(): React.JSX.Element {
   };
 
   const addVehicleManually = () => {
-    applyVehicleLabel(manualVehicleInput);
+    void applyVehicleLabel(manualVehicleInput);
   };
 
   const resetVehicle = () => {
@@ -290,6 +337,10 @@ export function SendGoodsScreen(): React.JSX.Element {
     const failedCodes: Array<{ code: string; reason: string }> = [];
     const loadedLooseShipments: VehicleLoadedLooseShipment[] = [];
     const loadedBagByCode = new Map<string, VehicleLoadedBag>();
+    const outboundLocationCode =
+      vehicleInfo.originHubCode !== 'UNKNOWN'
+        ? vehicleInfo.originHubCode
+        : employeeHubCode ?? 'UNKNOWN';
 
     try {
       const bagItems = items.filter((item) => item.type === 'BAG');
@@ -301,7 +352,7 @@ export function SendGoodsScreen(): React.JSX.Element {
             await submitHubScanAction(accessToken, {
               mode: 'OUTBOUND',
               shipmentCode: item.code,
-              locationCode: vehicleInfo.originHubCode,
+              locationCode: outboundLocationCode,
               manifestCode: null,
               actor,
               note: buildSendGoodsNote({
@@ -347,7 +398,7 @@ export function SendGoodsScreen(): React.JSX.Element {
             await submitHubScanAction(accessToken, {
               mode: 'OUTBOUND',
               shipmentCode: manifestItem.shipmentCode,
-              locationCode: vehicleInfo.originHubCode,
+              locationCode: outboundLocationCode,
               manifestCode: manifest.manifestCode,
               actor,
               note: buildSendGoodsNote({
@@ -489,22 +540,16 @@ export function SendGoodsScreen(): React.JSX.Element {
 
         <View style={[styles.vehicleCard, vehicleInfo && styles.vehicleCardReady]}>
           <View style={styles.vehicleHeader}>
-            <Text style={styles.vehicleTitle}>Thông tin tem xe</Text>
+            <View style={styles.vehicleHeaderCopy}>
+              <Text style={styles.vehicleTitle}>Tem xe</Text>
+              <Text style={styles.vehicleSubtitle}>
+                {vehicleInfo
+                  ? 'Đã kiểm tra với hệ thống Ops'
+                  : 'Quét tem xe do Ops tạo trước khi thêm hàng'}
+              </Text>
+            </View>
             <Pressable onPress={resetVehicle}>
               <Text style={styles.resetText}>Làm mới</Text>
-            </Pressable>
-          </View>
-          <View style={styles.inputRow}>
-            <TextInput
-              value={manualVehicleInput}
-              onChangeText={setManualVehicleInput}
-              placeholder="VEH|Mã tem xe|Hub đi|Hub đến|Biển số"
-              placeholderTextColor="#9CA3AF"
-              style={[styles.fieldInput, styles.codeInput]}
-              autoCapitalize="characters"
-            />
-            <Pressable onPress={addVehicleManually} style={styles.addButton}>
-              <Text style={styles.addButtonText}>Nhận tem</Text>
             </Pressable>
           </View>
           {vehicleInfo ? (
@@ -515,21 +560,51 @@ export function SendGoodsScreen(): React.JSX.Element {
               </View>
               <View style={styles.vehicleInfoCell}>
                 <Text style={styles.infoLabel}>Hub đi</Text>
-                <Text style={styles.infoValue}>{vehicleInfo.originHubCode}</Text>
+                <Text style={styles.infoValue}>
+                  {vehicleInfo.originHubCode !== 'UNKNOWN'
+                    ? vehicleInfo.originHubCode
+                    : employeeHubCode ?? 'Chưa có'}
+                </Text>
               </View>
               <View style={styles.vehicleInfoCell}>
                 <Text style={styles.infoLabel}>Hub đến</Text>
-                <Text style={styles.infoValue}>{vehicleInfo.destinationHubCode}</Text>
+                <Text style={styles.infoValue}>
+                  {vehicleInfo.destinationHubCode !== 'UNKNOWN'
+                    ? vehicleInfo.destinationHubCode
+                    : 'Chưa có'}
+                </Text>
               </View>
               <View style={styles.vehicleInfoCell}>
                 <Text style={styles.infoLabel}>Biển số</Text>
-                <Text style={styles.infoValue}>{vehicleInfo.licensePlate}</Text>
+                <Text style={styles.infoValue}>
+                  {vehicleInfo.licensePlate !== 'UNKNOWN' ? vehicleInfo.licensePlate : 'Chưa có'}
+                </Text>
               </View>
             </View>
           ) : (
-            <Text style={styles.vehicleEmptyText}>
-              Chưa có tem xe. Tem xe có thể là QR JSON hoặc chuỗi VEH|Mã tem xe|Hub đi|Hub đến|Biển số.
-            </Text>
+            <>
+              <View style={styles.vehicleScanHint}>
+                <View style={styles.vehicleScanIcon}>
+                  <Ionicons name="qr-code-outline" size={22} color={theme.colors.primary} />
+                </View>
+                <Text style={styles.vehicleEmptyText}>
+                  Hướng camera vào QR tem xe. Mobile sẽ đối chiếu mã này với Ops trước khi cho gửi hàng.
+                </Text>
+              </View>
+              <View style={styles.inputRow}>
+                <TextInput
+                  value={manualVehicleInput}
+                  onChangeText={setManualVehicleInput}
+                  placeholder="Nhập mã tem xe"
+                  placeholderTextColor="#9CA3AF"
+                  style={[styles.fieldInput, styles.codeInput]}
+                  autoCapitalize="characters"
+                />
+                <Pressable onPress={addVehicleManually} style={styles.addButton}>
+                  <Text style={styles.addButtonText}>Kiểm tra</Text>
+                </Pressable>
+              </View>
+            </>
           )}
         </View>
 
@@ -756,13 +831,22 @@ const styles = StyleSheet.create({
   },
   vehicleHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: 8,
+  },
+  vehicleHeaderCopy: {
+    flex: 1,
+    gap: 2,
   },
   vehicleTitle: {
     color: '#0F172A',
     fontWeight: '800',
+  },
+  vehicleSubtitle: {
+    color: '#64748B',
+    fontSize: 12,
+    lineHeight: 16,
   },
   resetText: {
     color: '#1D4ED8',
@@ -794,9 +878,28 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   vehicleEmptyText: {
+    flex: 1,
     color: '#64748B',
     fontSize: 12,
     lineHeight: 17,
+  },
+  vehicleScanHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+    borderRadius: 10,
+    backgroundColor: '#EFF6FF',
+    padding: 10,
+  },
+  vehicleScanIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   fieldRow: {
     marginTop: 10,

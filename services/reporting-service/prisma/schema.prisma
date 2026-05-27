@@ -21,6 +21,8 @@ model KpiDaily {
   ndrCreated          Int      @default(0)
   scansInbound        Int      @default(0)
   scansOutbound       Int      @default(0)
+  codCollected        Int      @default(0)
+  codRemitted         Int      @default(0)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
@@ -40,6 +42,8 @@ model KpiMonthly {
   ndrCreated          Int      @default(0)
   scansInbound        Int      @default(0)
   scansOutbound       Int      @default(0)
+  codCollected        Int      @default(0)
+  codRemitted         Int      @default(0)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 

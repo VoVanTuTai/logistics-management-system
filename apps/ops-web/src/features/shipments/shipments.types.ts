@@ -23,6 +23,10 @@ export interface ShipmentListItemDto {
   serviceType: string | null;
   codAmount: number | null;
   deliveryNote: string | null;
+  requiresLabelReprint: boolean;
+  labelReprintReason: string | null;
+  isOperationLocked: boolean;
+  operationLockReason: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -52,6 +56,10 @@ export interface ShipmentDetailDto {
   serviceType: string | null;
   codAmount: number | null;
   note: string | null;
+  requiresLabelReprint: boolean;
+  labelReprintReason: string | null;
+  isOperationLocked: boolean;
+  operationLockReason: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -66,9 +74,29 @@ export interface UpdateShipmentInput {
   // TODO(contract): add editable fields when ops contract is finalized
 }
 
+export interface ConfirmLabelReprintInput {
+  printedBy?: string | null;
+}
+
 export interface ShipmentListFilters {
   q?: string;
+  shipmentCode?: string;
   status?: string;
+  hubCodes?: string[];
+  createdFrom?: string;
+  createdTo?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface ShipmentListPageInfo {
+  hasNextPage: boolean;
+  total?: number;
+}
+
+export interface ShipmentListPageDto {
+  items: ShipmentListItemDto[];
+  pageInfo: ShipmentListPageInfo;
 }
 
 export interface ReviewShipmentInput {

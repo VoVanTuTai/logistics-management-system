@@ -11,11 +11,17 @@ import type {
   SealManifestInput,
 } from './manifests.types';
 
-export function useManifestsQuery(accessToken: string | null) {
+export function useManifestsQuery(
+  accessToken: string | null,
+  options?: {
+    refetchInterval?: number | false;
+  },
+) {
   return useQuery({
     queryKey: queryKeys.manifests,
     queryFn: () => manifestsClient.list(accessToken),
     enabled: Boolean(accessToken),
+    refetchInterval: options?.refetchInterval,
   });
 }
 

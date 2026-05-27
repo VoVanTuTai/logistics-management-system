@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { useHubsQuery } from '../../../../features/masterdata/masterdata.api';
 import {
@@ -13,15 +14,18 @@ import type { ShipmentListItemDto } from '../../../../features/shipments/shipmen
 import { useTasksQuery } from '../../../../features/tasks/tasks.api';
 import type { TaskListItemDto } from '../../../../features/tasks/tasks.types';
 import { getErrorMessage } from '../../../../services/api/errors';
+import { routePaths } from '../../../../navigation/routes';
 import { useAuthStore } from '../../../../store/authStore';
 import { formatDateTime } from '../../../../utils/format';
 import { createIdempotencyKey } from '../../../../utils/idempotency';
 import {
   deriveHubScopeTokens,
   isShipmentInScope,
+  shipmentDestinationHubCode,
 } from '../../../../utils/locationScope';
 import { formatShipmentStatusLabel } from '../../../../utils/logisticsLabels';
 import { queryKeys } from '../../../../utils/queryKeys';
+import { BranchTablePagination } from '../shared/BranchTablePagination';
 import './BranchLocalOrderOverviewPage.css';
 
 type BranchLocalOrderPageMode = 'overview' | 'management';
@@ -163,6 +167,11 @@ function isShipmentAtAssignedBranch(
     return true;
   }
 
+  const destinationHubCode = shipmentDestinationHubCode(shipment);
+  if (destinationHubCode) {
+    return assignedHubCodes.includes(destinationHubCode);
+  }
+
   return isShipmentInScope(shipment, scopeTokens);
 }
 
@@ -207,6 +216,8 @@ export function BranchLocalOrderOverviewPage({
   const [courierFilter, setCourierFilter] = useState('all');
   const [keyword, setKeyword] = useState('');
   const [alertFilter, setAlertFilter] = useState('all');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [scanForm, setScanForm] = useState<ScanFormState>({
     shipmentCode: '',
     locationCode: defaultLocationCode,
@@ -281,6 +292,17 @@ export function BranchLocalOrderOverviewPage({
       return stageMatched && courierMatched && alertMatched && keywordMatched;
     });
   }, [alertFilter, courierFilter, keyword, rows, stageFilter]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [alertFilter, courierFilter, keyword, pageSize, stageFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const paginatedRows = useMemo(
+    () => filteredRows.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [currentPage, filteredRows, pageSize],
+  );
 
   const kpiItems = useMemo(
     () => [
@@ -500,30 +522,6 @@ export function BranchLocalOrderOverviewPage({
           </p>
         ) : null}
       </section>
-
-      <section className="ops-branch-local-orders__content">
-        <article className="ops-branch-local-orders__work-card">
-          <h3>Luồng xử lý trong bưu cục</h3>
-          <ol>
-            <li>
-              <strong>Nhận vào</strong>
-              <span>Quét PICKUP hoặc INBOUND để ghi nhận kiện nằm tại bưu cục.</span>
-            </li>
-            <li>
-              <strong>Phân loại</strong>
-              <span>Danh sách được phân nhóm theo trạng thái thật của shipment-service.</span>
-            </li>
-            <li>
-              <strong>Bàn giao</strong>
-              <span>Đơn chờ phát được đẩy sang dispatch-service để courier thấy trên app.</span>
-            </li>
-            <li>
-              <strong>Gửi đi</strong>
-              <span>Quét OUTBOUND khi kiện rời bưu cục sang hub/tuyến tiếp theo.</span>
-            </li>
-          </ol>
-        </article>
-
         <section className="ops-branch-local-orders__table-card">
           <div className="ops-branch-local-orders__table-title">
             <h3>Danh sách đơn đang ở bưu cục</h3>
@@ -561,9 +559,16 @@ export function BranchLocalOrderOverviewPage({
                 </tr>
               </thead>
               <tbody>
-                {filteredRows.map((row) => (
+                {paginatedRows.map((row) => (
                   <tr key={row.shipment.shipmentCode}>
-                    <td className="ops-branch-local-orders__code">{row.shipment.shipmentCode}</td>
+                    <td>
+                      <Link
+                        className="ops-branch-local-orders__code"
+                        to={routePaths.shipmentDetail(row.shipment.id)}
+                      >
+                        {row.shipment.shipmentCode}
+                      </Link>
+                    </td>
                     <td>{row.currentStage}</td>
                     <td>{row.customerName}</td>
                     <td>{row.serviceType}</td>
@@ -598,8 +603,14 @@ export function BranchLocalOrderOverviewPage({
               </tbody>
             </table>
           </div>
+          <BranchTablePagination
+            totalRows={filteredRows.length}
+            page={currentPage}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
         </section>
-      </section>
     </section>
   );
 }

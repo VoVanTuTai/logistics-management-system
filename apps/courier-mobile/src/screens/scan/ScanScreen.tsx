@@ -2,11 +2,12 @@ import React from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { BarcodeScanningResult } from 'expo-camera';
 
 import { theme } from '../../theme';
+import { useAuthStore } from '../../features/auth/auth.store';
 import { useAppStore } from '../../store/appStore';
 import { appEnv } from '../../utils/env';
 import { resolveCourierDisplayName, resolveCourierId } from '../../utils/courier';
@@ -36,7 +37,7 @@ const actions: PermissionedScanAction[] = [
   },
   {
     id: 'ky-nhan-chuyen-hoan',
-    label: 'Ký nhận chuyển hoàn',
+    label: 'Đăng ký chuyển hoàn',
     permission: 'scan.return-sign',
     iconName: 'return-up-back-outline',
     iconColor: theme.colors.primary,
@@ -128,6 +129,9 @@ export function ScanScreen(): React.JSX.Element {
   const navigation =
     useNavigation<NativeStackNavigationProp<AppNavigatorParamList>>();
   const session = useAppStore((state) => state.session);
+  const refreshMobilePermissions = useAuthStore(
+    (state) => state.refreshMobilePermissions,
+  );
   const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
   const displayName = resolveCourierDisplayName({
     displayName: session?.user.displayName,
@@ -147,6 +151,12 @@ export function ScanScreen(): React.JSX.Element {
     [session?.user],
   );
 
+  useFocusEffect(
+    React.useCallback(() => {
+      void refreshMobilePermissions();
+    }, [refreshMobilePermissions]),
+  );
+
   const handlePressAction = (action: ScanActionItemData) => {
     const permission = actions.find((item) => item.id === action.id)?.permission;
 
@@ -157,6 +167,11 @@ export function ScanScreen(): React.JSX.Element {
 
     if (action.id === 'ky-nhan') {
       navigation.navigate('DeliverySignScan');
+      return;
+    }
+
+    if (action.id === 'ky-nhan-chuyen-hoan') {
+      navigation.navigate('ReturnRegistration');
       return;
     }
 
@@ -180,10 +195,13 @@ export function ScanScreen(): React.JSX.Element {
       return;
     }
 
+    if (action.id === 'phat-hang') {
+      navigation.navigate('DeliveryDispatch');
+      return;
+    }
+
     if (action.id === 'kien-den') {
-      navigation.navigate('HubScan', {
-        mode: 'INBOUND',
-      });
+      navigation.navigate('GoodsArrival');
       return;
     }
 
@@ -245,20 +263,22 @@ export function ScanScreen(): React.JSX.Element {
       return;
     }
 
-    if (pendingAction.id === 'kien-den' || pendingAction.id === 'xe-den') {
-      navigation.navigate('HubScan', {
-        mode: 'INBOUND',
+    if (pendingAction.id === 'kien-den') {
+      navigation.navigate('GoodsArrival', {
         shipmentCode: parsed.value,
       });
       setPendingAction(null);
       return;
     }
 
+    if (pendingAction.id === 'xe-den') {
+      navigation.navigate('VehicleInbound');
+      setPendingAction(null);
+      return;
+    }
+
     if (pendingAction.id === 'xe-di') {
-      navigation.navigate('HubScan', {
-        mode: 'OUTBOUND',
-        shipmentCode: parsed.value,
-      });
+      navigation.navigate('VehicleOutbound');
       setPendingAction(null);
       return;
     }
@@ -284,7 +304,7 @@ export function ScanScreen(): React.JSX.Element {
         <CameraScannerModal
           visible={scannerVisible}
           title={pendingAction ? `Quét mã - ${pendingAction.label}` : 'Quét mã'}
-          helperText="Bấm action bất kỳ trong grid để mở camera quét QR/barcode."
+          helperText="Quét QR/barcode để chuyển mã sang chức năng đang chọn."
           onClose={handleCloseScanner}
           onScanned={handleScanned}
         />
@@ -314,12 +334,17 @@ export function ScanScreen(): React.JSX.Element {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Thao tác quét mã</Text>
             <Text style={styles.sectionSubtitle}>
-              Chọn action bất kỳ, camera sẽ mở để quét trước khi xử lý.
+              Chọn chức năng để xử lý; từng màn sẽ mở camera hoặc form phù hợp với nghiệp vụ.
             </Text>
           </View>
 
           {scannerError ? <Text style={styles.errorText}>{scannerError}</Text> : null}
           {lastScanMessage ? <Text style={styles.infoText}>{lastScanMessage}</Text> : null}
+          {permittedActions.length === 0 ? (
+            <Text style={styles.errorText}>
+              Tài khoản hiện tại chưa được phân quyền thao tác courier-mobile.
+            </Text>
+          ) : null}
 
           <ScanActionGrid actions={permittedActions} onPressAction={handlePressAction} />
         </ScrollView>

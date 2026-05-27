@@ -1,4 +1,5 @@
 import type { AuthenticatedUserDto } from '../auth/auth.types';
+import { appEnv } from '../../utils/env';
 
 export type CourierActor = 'OPS' | 'COURIER';
 
@@ -19,8 +20,6 @@ export type CourierPermissionFeature =
   | 'scan.high-value-label'
   | 'scan.high-value-check';
 
-const ALLOW_ALL_COURIER_MOBILE_PERMISSIONS_FOR_TESTING = true;
-
 const COURIER_PERMISSION_MATRIX: Record<
   CourierActor,
   Record<CourierPermissionFeature, boolean>
@@ -31,7 +30,7 @@ const COURIER_PERMISSION_MATRIX: Record<
     'scan.pickup': true,
     'scan.bag-seal': true,
     'scan.bag-unseal': true,
-    'scan.delivery': true,
+    'scan.delivery': false,
     'scan.issue': true,
     'scan.outbound': true,
     'scan.inbound': true,
@@ -62,12 +61,21 @@ const COURIER_PERMISSION_MATRIX: Record<
 };
 
 export function resolveCourierActor(
-  user: Pick<AuthenticatedUserDto, 'roles'> | null | undefined,
+  user:
+    | Pick<AuthenticatedUserDto, 'roles' | 'mobilePermissionActor'>
+    | null
+    | undefined,
 ): CourierActor {
+  if (user?.mobilePermissionActor === 'OPS' || user?.mobilePermissionActor === 'COURIER') {
+    return user.mobilePermissionActor;
+  }
+
   const roles = new Set((user?.roles ?? []).map((role) => role.toUpperCase()));
 
   if (
     roles.has('OPS') ||
+    roles.has('OPS_ADMIN') ||
+    roles.has('OPS_VIEWER') ||
     roles.has('OPS_STAFF') ||
     roles.has('OPS_MANAGER') ||
     roles.has('ADMIN') ||
@@ -80,11 +88,19 @@ export function resolveCourierActor(
 }
 
 export function canAccessCourierFeature(
-  user: Pick<AuthenticatedUserDto, 'roles'> | null | undefined,
+  user:
+    | Pick<AuthenticatedUserDto, 'roles' | 'mobilePermissionActor' | 'mobilePermissions'>
+    | null
+    | undefined,
   feature: CourierPermissionFeature,
 ): boolean {
-  if (ALLOW_ALL_COURIER_MOBILE_PERMISSIONS_FOR_TESTING) {
+  if (appEnv.allowAllCourierMobilePermissionsForTesting) {
     return true;
+  }
+
+  const effectivePermission = user?.mobilePermissions?.[feature];
+  if (typeof effectivePermission === 'boolean') {
+    return effectivePermission;
   }
 
   const actor = resolveCourierActor(user);
@@ -92,7 +108,10 @@ export function canAccessCourierFeature(
 }
 
 export function filterPermittedCourierFeatures<TItem extends { permission: CourierPermissionFeature }>(
-  user: Pick<AuthenticatedUserDto, 'roles'> | null | undefined,
+  user:
+    | Pick<AuthenticatedUserDto, 'roles' | 'mobilePermissionActor' | 'mobilePermissions'>
+    | null
+    | undefined,
   items: TItem[],
 ): TItem[] {
   return items.filter((item) => canAccessCourierFeature(user, item.permission));

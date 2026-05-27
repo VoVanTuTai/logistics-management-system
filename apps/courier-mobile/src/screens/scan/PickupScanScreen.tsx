@@ -21,6 +21,7 @@ import { submitPickupScanAction } from '../../features/scan/pickup.api';
 import { enqueuePickupScanOffline } from '../../features/scan/pickup.offline';
 import { parsePickupScannedCode } from '../../features/scan/pickup.scanner.adapter';
 import type { PickupScanCommand } from '../../features/scan/pickup.types';
+import { useAuthStore } from '../../features/auth/auth.store';
 import { scanApi } from '../../features/scan/scan.api';
 import type { CurrentLocationDto } from '../../features/scan/scan.types';
 import { shipmentApi } from '../../features/shipment/shipment.api';
@@ -221,6 +222,7 @@ function toErrorMessage(error: unknown): string {
 export function PickupScanScreen({ route }: Props): React.JSX.Element {
   const session = useAppStore((state) => state.session);
   const setGlobalError = useAppStore((state) => state.setGlobalError);
+  const getValidAccessToken = useAuthStore((state) => state.getValidAccessToken);
   const queryClient = useQueryClient();
   const [permission, requestPermission] = useCameraPermissions();
   const proofCameraRef = React.useRef<CameraView | null>(null);
@@ -448,7 +450,7 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
   }, [isTaskReceiveMode]);
 
   const uploadAll = async () => {
-    if (!accessToken) {
+    if (!session) {
       setGlobalError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
       return;
     }
@@ -472,6 +474,15 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
     const failedCodes: Array<{ code: string; reason: string }> = [];
     let routeTaskCompleted = false;
     let routeTaskCompleteFailed = false;
+    let currentAccessToken: string;
+
+    try {
+      currentAccessToken = await getValidAccessToken();
+    } catch (error) {
+      setErrorMessage(toErrorMessage(error));
+      setIsUploading(false);
+      return;
+    }
 
     for (const item of pickedShipments) {
       const baseNote = buildPickupReceiveAuditNote({
@@ -493,11 +504,11 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
       };
 
       try {
-        const shipment = await shipmentApi.getShipmentDetail(accessToken, item.code);
-        const currentLocation = await getCurrentLocationOrNull(accessToken, item.code);
+        const shipment = await shipmentApi.getShipmentDetail(currentAccessToken, item.code);
+        const currentLocation = await getCurrentLocationOrNull(currentAccessToken, item.code);
         const shouldValidatePickupAssignment = isHomePickupShipment(shipment.metadata);
         const assignedPickupTasks = shouldValidatePickupAssignment
-          ? await tasksApi.listAssignedTasks(accessToken, courierId)
+          ? await tasksApi.listAssignedTasks(currentAccessToken, courierId)
           : [];
         const validationError = validateShipmentForReceive(shipment, {
           assignedHubCodes,
@@ -513,7 +524,7 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
           continue;
         }
 
-        await submitPickupScanAction(accessToken, command);
+        await submitPickupScanAction(currentAccessToken, command);
         successCodes.push(item.code);
 
         const shouldCompleteRouteTask =
@@ -522,7 +533,7 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
 
         if (shouldCompleteRouteTask && !routeTaskCompleted) {
           try {
-            await tasksApi.updateTaskStatus(accessToken, route.params.taskId, 'COMPLETED');
+            await tasksApi.updateTaskStatus(currentAccessToken, route.params.taskId, 'COMPLETED');
             routeTaskCompleted = true;
           } catch {
             routeTaskCompleteFailed = true;

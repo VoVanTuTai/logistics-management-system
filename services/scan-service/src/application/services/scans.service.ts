@@ -21,6 +21,10 @@ import { CurrentLocationRepository } from '../../domain/repositories/current-loc
 import { IdempotencyRecordRepository } from '../../domain/repositories/idempotency-record.repository';
 import { ScanEventRepository } from '../../domain/repositories/scan-event.repository';
 import { ScanOutboxService } from '../../messaging/outbox/scan-outbox.service';
+import {
+  OpsAuditService,
+  type OpsAuditContext,
+} from './ops-audit.service';
 
 type ScanFlow = 'scan.pickup_confirmed' | 'scan.inbound' | 'scan.outbound';
 
@@ -34,18 +38,28 @@ export class ScansService {
     @Inject(IdempotencyRecordRepository)
     private readonly idempotencyRecordRepository: IdempotencyRecordRepository,
     private readonly scanOutboxService: ScanOutboxService,
+    private readonly opsAuditService: OpsAuditService,
   ) {}
 
-  recordPickup(input: RecordPickupScanInput): Promise<RecordScanResult> {
-    return this.recordScan('scan.pickup_confirmed', 'PICKUP', input);
+  recordPickup(
+    input: RecordPickupScanInput,
+    auditContext?: OpsAuditContext,
+  ): Promise<RecordScanResult> {
+    return this.recordScan('scan.pickup_confirmed', 'PICKUP', input, auditContext);
   }
 
-  recordInbound(input: RecordInboundScanInput): Promise<RecordScanResult> {
-    return this.recordScan('scan.inbound', 'INBOUND', input);
+  recordInbound(
+    input: RecordInboundScanInput,
+    auditContext?: OpsAuditContext,
+  ): Promise<RecordScanResult> {
+    return this.recordScan('scan.inbound', 'INBOUND', input, auditContext);
   }
 
-  recordOutbound(input: RecordOutboundScanInput): Promise<RecordScanResult> {
-    return this.recordScan('scan.outbound', 'OUTBOUND', input);
+  recordOutbound(
+    input: RecordOutboundScanInput,
+    auditContext?: OpsAuditContext,
+  ): Promise<RecordScanResult> {
+    return this.recordScan('scan.outbound', 'OUTBOUND', input, auditContext);
   }
 
   async getCurrentLocation(shipmentCode: string): Promise<CurrentLocation> {
@@ -76,6 +90,7 @@ export class ScansService {
     flow: ScanFlow,
     scanType: ScanType,
     input: RecordScanInput,
+    auditContext?: OpsAuditContext,
   ): Promise<RecordScanResult> {
     if (!input.shipmentCode) {
       throw new BadRequestException('shipmentCode is required.');
@@ -90,6 +105,9 @@ export class ScansService {
     }
 
     await this.assertShipmentNotLocked(input.shipmentCode);
+    const previousLocation = await this.currentLocationRepository.findByShipmentCode(
+      input.shipmentCode,
+    );
 
     const scopedIdempotencyKey = `${flow}:${input.idempotencyKey}`;
     const existingRecord = await this.idempotencyRecordRepository.findByKey(
@@ -145,6 +163,15 @@ export class ScansService {
       idempotencyKey: scopedIdempotencyKey,
       scope: flow,
       responsePayload: this.toSnapshot(result),
+    });
+
+    await this.opsAuditService.record({
+      context: auditContext,
+      action: `SCAN_${scanType}`,
+      targetType: 'SHIPMENT',
+      targetId: result.scanEvent.shipmentCode,
+      before: previousLocation,
+      after: result,
     });
 
     return result;

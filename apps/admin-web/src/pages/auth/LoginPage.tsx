@@ -25,7 +25,7 @@ export function LoginPage(): React.JSX.Element {
 
       if (!hasAdminRole(session)) {
         await clearAuthSession();
-        setAuthError('Tài khoản phai co vai tro SYSTEM_ADMIN.');
+        setAuthError('Tài khoản phải có vai trò SYSTEM_ADMIN.');
         return;
       }
 
@@ -38,9 +38,9 @@ export function LoginPage(): React.JSX.Element {
   return (
     <div className="auth-page auth-page-admin">
       <div className="auth-card">
-        <p className="auth-kicker">Cong Admin</p>
-        <h2 className="auth-title">Đăng nhập He Thong Quan Tri</h2>
-        <p className="auth-subtitle">Quan ly RBAC, hub, zone, ly do NDR va cau hinh dung chung.</p>
+        <p className="auth-kicker">Cổng Admin</p>
+        <h2 className="auth-title">Đăng nhập Hệ Thống Quản Trị</h2>
+        <p className="auth-subtitle">Quản lý RBAC, hub, zone, lý do NDR và cấu hình dùng chung.</p>
         <LoginForm
           isSubmitting={isSubmitting || loginMutation.isPending}
           errorMessage={authError}
@@ -51,4 +51,3 @@ export function LoginPage(): React.JSX.Element {
     </div>
   );
 }
-

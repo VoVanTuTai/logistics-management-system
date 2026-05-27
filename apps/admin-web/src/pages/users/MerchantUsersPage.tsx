@@ -3,20 +3,23 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   useAdminUsersQuery,
   useCreateAdminUserMutation,
-  useDeleteAdminUserMutation,
   useUpdateAdminUserMutation,
 } from '../../features/auth/auth.api';
 import type { AdminUserDto, UserStatus } from '../../features/auth/auth.types';
 import {
-  useConfigsQuery,
   useCreateConfigMutation,
+  useConfigsQuery,
   useHubsQuery,
+  useMerchantProfilesQuery,
   useUpdateConfigMutation,
+  useUpsertMerchantProfileMutation,
 } from '../../features/masterdata/masterdata.api';
 import type {
-  ConfigDto,
   ConfigValue,
+  ConfigDto,
   HubDto,
+  MerchantProfileDto,
+  MerchantProfileWriteInput,
 } from '../../features/masterdata/masterdata.types';
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
@@ -28,15 +31,19 @@ const MERCHANT_PROFILE_KEY_PREFIX = 'merchant.profile.';
 const MERCHANT_USERNAME_PATTERN = /^411\d{5}$/;
 const CITIZEN_ID_PATTERN = /^\d{12}$/;
 
+function buildMerchantProfileKey(username: string): string {
+  return `${MERCHANT_PROFILE_KEY_PREFIX}${username.trim().toUpperCase()}`;
+}
+
 interface MerchantRegionOption {
   code: 'HA_NOI' | 'DA_NANG' | 'HO_CHI_MINH';
   label: string;
 }
 
 const MERCHANT_REGION_OPTIONS: MerchantRegionOption[] = [
-  { code: 'HA_NOI', label: 'Ha Noi' },
-  { code: 'DA_NANG', label: 'Da Nang' },
-  { code: 'HO_CHI_MINH', label: 'Ho Chi Minh' },
+  { code: 'HA_NOI', label: 'Hà Nội' },
+  { code: 'DA_NANG', label: 'Đà Nẵng' },
+  { code: 'HO_CHI_MINH', label: 'Hồ Chí Minh' },
 ];
 
 interface MerchantFormState {
@@ -45,6 +52,7 @@ interface MerchantFormState {
   citizenId: string;
   regionCode: MerchantRegionOption['code'];
   defaultHubCode: string;
+  businessAddressDetail: string;
   password: string;
   confirmPassword: string;
   status: UserStatus;
@@ -54,6 +62,9 @@ interface MerchantHubOption {
   hubCode: string;
   hubName: string;
   regionCode: MerchantRegionOption['code'];
+  province: string;
+  district: string;
+  ward: string;
   fullAddress: string;
   sortLabel: string;
 }
@@ -66,11 +77,7 @@ interface MerchantProfilePayload {
   defaultHubCode: string | null;
   defaultHubName: string | null;
   defaultSenderAddress: string | null;
-}
-
-interface MerchantProfileRecord {
-  configId: string;
-  payload: MerchantProfilePayload;
+  businessAddressDetail: string | null;
 }
 
 const DEFAULT_FORM: MerchantFormState = {
@@ -79,6 +86,7 @@ const DEFAULT_FORM: MerchantFormState = {
   citizenId: '',
   regionCode: MERCHANT_REGION_OPTIONS[0].code,
   defaultHubCode: '',
+  businessAddressDetail: '',
   password: '',
   confirmPassword: '',
   status: 'ACTIVE',
@@ -179,13 +187,57 @@ function toMerchantHubOption(hub: HubDto): MerchantHubOption | null {
     hubCode: hub.code,
     hubName: hub.name,
     regionCode,
+    province: addressParts.province,
+    district: addressParts.district,
+    ward: addressParts.ward,
     fullAddress,
     sortLabel: `${hub.name} (${hub.code})`,
   };
 }
 
-function buildMerchantProfileKey(username: string): string {
-  return `${MERCHANT_PROFILE_KEY_PREFIX}${username}`;
+function composeMerchantDefaultAddress(
+  addressDetail: string,
+  hub: MerchantHubOption | null,
+): string | null {
+  const trimmedAddressDetail = addressDetail.trim();
+  const parts = [
+    trimmedAddressDetail,
+    hub?.ward ?? '',
+    hub?.district ?? '',
+    hub?.province ?? '',
+  ]
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
+
+  if (parts.length > 0) {
+    return parts.join(', ');
+  }
+
+  return hub?.fullAddress || null;
+}
+
+function toMerchantProfilePayload(
+  profile: MerchantProfileDto,
+): MerchantProfilePayload | null {
+  const normalizedRegionCode = profile.regionCode as MerchantRegionOption['code'];
+  const regionExists = MERCHANT_REGION_OPTIONS.some(
+    (option) => option.code === normalizedRegionCode,
+  );
+
+  if (!regionExists) {
+    return null;
+  }
+
+  return {
+    username: profile.username.trim().toUpperCase(),
+    citizenId: profile.citizenId.trim(),
+    regionCode: normalizedRegionCode,
+    regionLabel: profile.regionLabel.trim() || resolveRegionLabel(normalizedRegionCode),
+    defaultHubCode: profile.defaultHubCode?.trim().toUpperCase() || null,
+    defaultHubName: profile.defaultHubName?.trim() || null,
+    defaultSenderAddress: profile.defaultSenderAddress?.trim() || null,
+    businessAddressDetail: profile.businessAddressDetail?.trim() || null,
+  };
 }
 
 function parseMerchantProfilePayload(
@@ -232,11 +284,15 @@ function parseMerchantProfilePayload(
       typeof record.defaultSenderAddress === 'string' && record.defaultSenderAddress.trim()
         ? record.defaultSenderAddress.trim()
         : null,
+    businessAddressDetail:
+      typeof record.businessAddressDetail === 'string' && record.businessAddressDetail.trim()
+        ? record.businessAddressDetail.trim()
+        : null,
   };
 }
 
-function mapMerchantProfiles(configs: ConfigDto[]): Map<string, MerchantProfileRecord> {
-  const mappedProfiles = new Map<string, MerchantProfileRecord>();
+function mapLegacyMerchantProfiles(configs: ConfigDto[]): Map<string, MerchantProfilePayload> {
+  const mappedProfiles = new Map<string, MerchantProfilePayload>();
 
   for (const config of configs) {
     const payload = parseMerchantProfilePayload(config.value);
@@ -254,11 +310,39 @@ function mapMerchantProfiles(configs: ConfigDto[]): Map<string, MerchantProfileR
     }
 
     mappedProfiles.set(username, {
-      configId: config.id,
-      payload: {
-        ...payload,
-        username,
-      },
+      ...payload,
+      username,
+    });
+  }
+
+  return mappedProfiles;
+}
+
+function mapMerchantProfiles(
+  profiles: MerchantProfileDto[],
+  legacyProfiles: Map<string, MerchantProfilePayload>,
+): Map<string, MerchantProfilePayload> {
+  const mappedProfiles = new Map<string, MerchantProfilePayload>(legacyProfiles);
+
+  for (const profile of profiles) {
+    const payload = toMerchantProfilePayload(profile);
+
+    if (!payload) {
+      continue;
+    }
+
+    const legacyPayload = mappedProfiles.get(payload.username);
+
+    mappedProfiles.set(payload.username, {
+      ...payload,
+      businessAddressDetail:
+        payload.businessAddressDetail ?? legacyPayload?.businessAddressDetail ?? null,
+      defaultSenderAddress:
+        payload.defaultSenderAddress ?? legacyPayload?.defaultSenderAddress ?? null,
+      defaultHubCode:
+        payload.defaultHubCode ?? legacyPayload?.defaultHubCode ?? null,
+      defaultHubName:
+        payload.defaultHubName ?? legacyPayload?.defaultHubName ?? null,
     });
   }
 
@@ -297,7 +381,7 @@ function generateNextMerchantUsername(users: AdminUserDto[]): string {
     }
   }
 
-  throw new Error('Da het ma merchant 411xxxxx de tao moi.');
+  throw new Error('Đã hết mã merchant 411xxxxx để tạo mới.');
 }
 
 export function MerchantUsersPage(): React.JSX.Element {
@@ -330,12 +414,13 @@ export function MerchantUsersPage(): React.JSX.Element {
   const profilesQuery = useConfigsQuery(accessToken, {
     scope: MERCHANT_PROFILE_SCOPE,
   });
+  const merchantProfilesQuery = useMerchantProfilesQuery(accessToken, {});
 
   const createUserMutation = useCreateAdminUserMutation(accessToken);
   const updateUserMutation = useUpdateAdminUserMutation(accessToken);
-  const deleteUserMutation = useDeleteAdminUserMutation(accessToken);
   const createConfigMutation = useCreateConfigMutation(accessToken);
   const updateConfigMutation = useUpdateConfigMutation(accessToken);
+  const upsertMerchantProfileMutation = useUpsertMerchantProfileMutation(accessToken);
 
   const merchantUsers = merchantsQuery.data ?? [];
   const allMerchantUsers = allMerchantsQuery.data ?? merchantUsers;
@@ -347,9 +432,17 @@ export function MerchantUsersPage(): React.JSX.Element {
         .filter((option): option is MerchantHubOption => Boolean(option)),
     [hubsQuery.data],
   );
-  const profileByUsername = useMemo(
-    () => mapMerchantProfiles(profilesQuery.data ?? []),
+  const legacyProfileByUsername = useMemo(
+    () => mapLegacyMerchantProfiles(profilesQuery.data ?? []),
     [profilesQuery.data],
+  );
+  const profileByUsername = useMemo(
+    () =>
+      mapMerchantProfiles(
+        merchantProfilesQuery.data ?? [],
+        legacyProfileByUsername,
+      ),
+    [legacyProfileByUsername, merchantProfilesQuery.data],
   );
 
   const nextMerchantUsername = useMemo(() => {
@@ -398,9 +491,9 @@ export function MerchantUsersPage(): React.JSX.Element {
   const isSaving =
     createUserMutation.isPending ||
     updateUserMutation.isPending ||
-    deleteUserMutation.isPending ||
     createConfigMutation.isPending ||
-    updateConfigMutation.isPending;
+    updateConfigMutation.isPending ||
+    upsertMerchantProfileMutation.isPending;
 
   const resetForm = () => {
     setEditingUser(null);
@@ -408,7 +501,7 @@ export function MerchantUsersPage(): React.JSX.Element {
   };
 
   const onEditUser = (user: AdminUserDto) => {
-    const profile = profileByUsername.get(user.username)?.payload;
+    const profile = profileByUsername.get(user.username);
     const regionCode = profile?.regionCode ?? MERCHANT_REGION_OPTIONS[0].code;
     const hubsByRegion = merchantHubOptions
       .filter((option) => option.regionCode === regionCode)
@@ -430,6 +523,7 @@ export function MerchantUsersPage(): React.JSX.Element {
       citizenId: profile?.citizenId ?? '',
       regionCode,
       defaultHubCode: selectedHubCode,
+      businessAddressDetail: profile?.businessAddressDetail ?? '',
       password: '',
       confirmPassword: '',
       status: user.status,
@@ -440,28 +534,37 @@ export function MerchantUsersPage(): React.JSX.Element {
 
   const upsertMerchantProfile = async (
     username: string,
-    profile: MerchantProfilePayload,
-  ) => {
-    const profileValue = { ...profile } as ConfigValue;
-    const existingProfile = profileByUsername.get(username);
+    profile: MerchantProfileWriteInput,
+  ) =>
+    upsertMerchantProfileMutation.mutateAsync({
+      username,
+      payload: profile,
+    });
 
-    if (existingProfile) {
+  const syncLegacyMerchantProfileConfig = async (
+    username: string,
+    profile: MerchantProfilePayload,
+  ): Promise<void> => {
+    const configKey = buildMerchantProfileKey(username);
+    const configValue = profile as unknown as ConfigValue;
+    const existingConfig = (profilesQuery.data ?? []).find(
+      (config) => config.key.trim() === configKey,
+    );
+
+    if (existingConfig) {
       await updateConfigMutation.mutateAsync({
-        configId: existingProfile.configId,
+        configId: existingConfig.id,
         payload: {
-          key: buildMerchantProfileKey(username),
-          value: profileValue,
-          scope: MERCHANT_PROFILE_SCOPE,
-          description: `Merchant profile for ${username}`,
+          value: configValue,
         },
       });
       return;
     }
 
     await createConfigMutation.mutateAsync({
-      key: buildMerchantProfileKey(username),
-      value: profileValue,
+      key: configKey,
       scope: MERCHANT_PROFILE_SCOPE,
+      value: configValue,
       description: `Merchant profile for ${username}`,
     });
   };
@@ -476,39 +579,40 @@ export function MerchantUsersPage(): React.JSX.Element {
     const citizenId = form.citizenId.trim();
 
     if (!fullName) {
-      setActionError('Ho ten la bat buoc.');
+      setActionError('Họ tên là bắt buộc.');
       return;
     }
 
     if (!phone) {
-      setActionError('So dien thoai la bat buoc.');
+      setActionError('Số điện thoại là bắt buộc.');
       return;
     }
 
     if (!CITIZEN_ID_PATTERN.test(citizenId)) {
-      setActionError('CCCD phai gom dung 12 chu so.');
+      setActionError('CCCD phải gồm đúng 12 chữ số.');
       return;
     }
 
     if (!editingUser && !form.password.trim()) {
-      setActionError('Mat khau la bat buoc khi tao merchant moi.');
+      setActionError('Mật khẩu là bắt buộc khi tạo merchant mới.');
       return;
     }
 
     if (form.password.trim() !== form.confirmPassword.trim()) {
-      setActionError('Xac nhan mat khau khong khop.');
+      setActionError('Xác nhận mật khẩu không khớp.');
       return;
     }
 
     if (!selectedHub) {
       setActionError(
-        'Vui long chon hub mac dinh thuoc khu vuc da chon.',
+        'Vui lòng chọn hub mặc định thuộc khu vực đã chọn.',
       );
       return;
     }
 
     const username = editingUser?.username ?? nextMerchantUsername;
     const regionLabel = resolveRegionLabel(form.regionCode);
+    const businessAddressDetail = form.businessAddressDetail.trim();
 
     const profilePayload: MerchantProfilePayload = {
       username,
@@ -517,7 +621,11 @@ export function MerchantUsersPage(): React.JSX.Element {
       regionLabel,
       defaultHubCode: selectedHub.hubCode,
       defaultHubName: selectedHub.hubName,
-      defaultSenderAddress: selectedHub.fullAddress || null,
+      defaultSenderAddress: composeMerchantDefaultAddress(
+        businessAddressDetail,
+        selectedHub,
+      ),
+      businessAddressDetail: businessAddressDetail || null,
     };
 
     try {
@@ -537,7 +645,8 @@ export function MerchantUsersPage(): React.JSX.Element {
         });
 
         await upsertMerchantProfile(username, profilePayload);
-        setActionMessage(`Da cap nhat merchant ${username}.`);
+        await syncLegacyMerchantProfileConfig(username, profilePayload);
+        setActionMessage(`Đã cập nhật merchant ${username}.`);
       } else {
         await createUserMutation.mutateAsync({
           username,
@@ -550,7 +659,8 @@ export function MerchantUsersPage(): React.JSX.Element {
         });
 
         await upsertMerchantProfile(username, profilePayload);
-        setActionMessage(`Da tao merchant ${username}.`);
+        await syncLegacyMerchantProfileConfig(username, profilePayload);
+        setActionMessage(`Đã tạo merchant ${username}.`);
       }
 
       resetForm();
@@ -559,8 +669,15 @@ export function MerchantUsersPage(): React.JSX.Element {
     }
   };
 
-  const onDeleteUser = async (user: AdminUserDto) => {
-    if (!window.confirm(`Xoa tai khoan merchant ${user.username}?`)) {
+  const onToggleUserStatus = async (user: AdminUserDto) => {
+    const nextStatus: UserStatus = user.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE';
+    const actionLabel = nextStatus === 'DISABLED' ? 'vô hiệu hóa' : 'kích hoạt lại';
+    const confirmMessage =
+      nextStatus === 'DISABLED'
+        ? `Vô hiệu hóa tài khoản merchant ${user.username}? Dữ liệu merchant, hồ sơ gửi hàng và lịch sử vận hành không bị xóa; tài khoản chỉ bị ngừng sử dụng trong nghiệp vụ logistics.`
+        : `Kích hoạt lại tài khoản merchant ${user.username}? Dữ liệu cũ được giữ nguyên và merchant sẽ được phép sử dụng lại trong vận hành logistics.`;
+
+    if (!window.confirm(confirmMessage)) {
       return;
     }
 
@@ -568,8 +685,13 @@ export function MerchantUsersPage(): React.JSX.Element {
     setActionError(null);
 
     try {
-      await deleteUserMutation.mutateAsync(user.id);
-      setActionMessage(`Da xoa merchant ${user.username}.`);
+      await updateUserMutation.mutateAsync({
+        userId: user.id,
+        payload: {
+          status: nextStatus,
+        },
+      });
+      setActionMessage(`Đã ${actionLabel} merchant ${user.username}. Dữ liệu không bị xóa.`);
 
       if (editingUser?.id === user.id) {
         resetForm();
@@ -581,17 +703,17 @@ export function MerchantUsersPage(): React.JSX.Element {
 
   return (
     <div>
-      <h2>Quan tri - Quan ly tai khoan Merchant</h2>
+      <h2>Quản trị - Quản lý tài khoản Merchant</h2>
       <p style={styles.helperText}>
-        Tao tai khoan merchant voi Ho ten, So dien thoai, CCCD, Khu vuc.
-        Sau khi chon khu vuc, chon hub mac dinh tu danh sach hub thuoc khu vuc do.
+        Tạo tài khoản merchant với Họ tên, Số điện thoại, CCCD, Khu vực.
+        Sau khi chọn khu vực, chọn hub mặc định từ danh sách hub thuộc khu vực đó.
       </p>
 
       <form style={styles.filterForm} onSubmit={(event) => event.preventDefault()}>
         <input
           value={q}
           onChange={(event) => setQ(event.target.value)}
-          placeholder="Tim merchant theo ma / ten / so dien thoai"
+          placeholder="Tìm merchant theo mã / tên / số điện thoại"
           style={styles.input}
         />
         <select
@@ -599,7 +721,7 @@ export function MerchantUsersPage(): React.JSX.Element {
           onChange={(event) => setStatus(event.target.value as UserStatus | '')}
           style={styles.input}
         >
-          <option value="">Tat ca trang thai</option>
+          <option value="">Tất cả trạng thái</option>
           <option value="ACTIVE">ACTIVE</option>
           <option value="DISABLED">DISABLED</option>
         </select>
@@ -618,24 +740,24 @@ export function MerchantUsersPage(): React.JSX.Element {
 
       <section style={styles.editorCard}>
         <h3 style={styles.editorTitle}>
-          {editingUser ? `Sua merchant ${editingUser.username}` : 'Tao merchant moi'}
+          {editingUser ? `Sửa merchant ${editingUser.username}` : 'Tạo merchant mới'}
         </h3>
         {!editingUser ? (
           <p style={styles.helperText}>
-            Ma merchant duoc tu dong sinh theo dinh dang 411xxxxx.
+            Mã merchant được tự động sinh theo định dạng 411xxxxx.
           </p>
         ) : null}
         <div style={styles.previewRow}>
           <span style={styles.previewBadge}>
-            Ma merchant: {editingUser?.username ?? nextMerchantUsername}
+            Mã merchant: {editingUser?.username ?? nextMerchantUsername}
           </span>
           <span style={styles.previewBadge}>
-            Hub mac dinh: {selectedHub ? `${selectedHub.hubCode} - ${selectedHub.hubName}` : 'Khong co'}
+            Hub mặc định: {selectedHub ? `${selectedHub.hubCode} - ${selectedHub.hubName}` : 'Không có'}
           </span>
         </div>
         <form onSubmit={onSubmitForm} style={styles.formGrid}>
           <label style={styles.fieldLabel}>
-            Ho ten
+            Họ tên
             <input
               required
               value={form.fullName}
@@ -643,11 +765,11 @@ export function MerchantUsersPage(): React.JSX.Element {
                 setForm((previous) => ({ ...previous, fullName: event.target.value }))
               }
               style={styles.input}
-              placeholder="Nguyen Van A"
+              placeholder="Nguyễn Văn A"
             />
           </label>
           <label style={styles.fieldLabel}>
-            So dien thoai
+            Số điện thoại
             <input
               required
               value={form.phone}
@@ -659,7 +781,7 @@ export function MerchantUsersPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            So CCCD
+            Số CCCD
             <input
               required
               value={form.citizenId}
@@ -667,11 +789,11 @@ export function MerchantUsersPage(): React.JSX.Element {
                 setForm((previous) => ({ ...previous, citizenId: event.target.value }))
               }
               style={styles.input}
-              placeholder="12 chu so"
+              placeholder="12 chữ số"
             />
           </label>
           <label style={styles.fieldLabel}>
-            Khu vuc
+            Khu vực
             <select
               value={form.regionCode}
               onChange={(event) =>
@@ -690,7 +812,7 @@ export function MerchantUsersPage(): React.JSX.Element {
             </select>
           </label>
           <label style={styles.fieldLabel}>
-            Hub mac dinh
+            Hub mặc định
             <select
               value={selectedHub?.hubCode ?? ''}
               onChange={(event) =>
@@ -702,7 +824,7 @@ export function MerchantUsersPage(): React.JSX.Element {
               style={styles.input}
               disabled={regionHubOptions.length === 0}
             >
-              <option value="">Chon hub theo khu vuc</option>
+              <option value="">Chọn hub theo khu vực</option>
               {regionHubOptions.map((option) => (
                 <option key={option.hubCode} value={option.hubCode}>
                   {option.hubCode} - {option.hubName}
@@ -711,7 +833,22 @@ export function MerchantUsersPage(): React.JSX.Element {
             </select>
           </label>
           <label style={styles.fieldLabel}>
-            Mat khau {editingUser ? '(bo trong neu khong doi)' : ''}
+            Địa chỉ chi tiết
+            <textarea
+              value={form.businessAddressDetail}
+              onChange={(event) =>
+                setForm((previous) => ({
+                  ...previous,
+                  businessAddressDetail: event.target.value,
+                }))
+              }
+              style={styles.textarea}
+              placeholder="So nha, ten duong, toa nha..."
+              rows={3}
+            />
+          </label>
+          <label style={styles.fieldLabel}>
+            Mật khẩu {editingUser ? '(bỏ trống nếu không đổi)' : ''}
             <input
               type="password"
               value={form.password}
@@ -719,11 +856,11 @@ export function MerchantUsersPage(): React.JSX.Element {
                 setForm((previous) => ({ ...previous, password: event.target.value }))
               }
               style={styles.input}
-              placeholder={editingUser ? 'Khong doi mat khau' : 'Nhap mat khau'}
+              placeholder={editingUser ? 'Không đổi mật khẩu' : 'Nhập mật khẩu'}
             />
           </label>
           <label style={styles.fieldLabel}>
-            Xac nhan mat khau
+            Xác nhận mật khẩu
             <input
               type="password"
               value={form.confirmPassword}
@@ -731,11 +868,11 @@ export function MerchantUsersPage(): React.JSX.Element {
                 setForm((previous) => ({ ...previous, confirmPassword: event.target.value }))
               }
               style={styles.input}
-              placeholder="Nhap lai mat khau"
+              placeholder="Nhập lại mật khẩu"
             />
           </label>
           <label style={styles.fieldLabel}>
-            Trang thai
+            Trạng thái
             <select
               value={form.status}
               onChange={(event) =>
@@ -753,77 +890,89 @@ export function MerchantUsersPage(): React.JSX.Element {
 
           <div style={styles.actionsCell}>
             <button type="submit" disabled={isSaving || !selectedHub}>
-              {editingUser ? 'Luu merchant' : 'Tao merchant'}
+              {editingUser ? 'Lưu merchant' : 'Tạo merchant'}
             </button>
             {editingUser ? (
               <button type="button" onClick={resetForm}>
-                Huy sua
+                Hủy sửa
               </button>
             ) : null}
           </div>
         </form>
         {selectedHub ? (
           <p style={styles.helperText}>
-            Dia chi mac dinh: {selectedHub.fullAddress || `${selectedHub.hubName} (${selectedHub.hubCode})`}
+            Địa chỉ mặc định: {selectedHub.fullAddress || `${selectedHub.hubName} (${selectedHub.hubCode})`}
           </p>
         ) : (
           <p style={styles.errorText}>
-            Khu vuc nay chua co hub hop le. Vui long tao/cap nhat hub voi province dung Ha Noi, Da Nang hoac Ho Chi Minh.
+            Khu vực này chưa có hub hợp lệ. Vui lòng tạo/cập nhật hub với tỉnh/thành đúng Hà Nội, Đà Nẵng hoặc Hồ Chí Minh.
           </p>
         )}
       </section>
 
-      {merchantsQuery.isLoading ? <p>Dang tai tai khoan merchant...</p> : null}
+      {merchantsQuery.isLoading ? <p>Đang tải tài khoản merchant...</p> : null}
       {merchantsQuery.isError ? (
         <p style={styles.errorText}>{getErrorMessage(merchantsQuery.error)}</p>
       ) : null}
       {merchantsQuery.isSuccess && merchantUsers.length === 0 ? (
-        <p>Khong tim thay merchant.</p>
+        <p>Không tìm thấy merchant.</p>
       ) : null}
 
       {merchantsQuery.isSuccess && merchantUsers.length > 0 ? (
         <table style={styles.table}>
           <thead>
             <tr>
-              <th style={styles.headerCell}>Ma merchant</th>
-              <th style={styles.headerCell}>Ho ten</th>
-              <th style={styles.headerCell}>So dien thoai</th>
+              <th style={styles.headerCell}>Mã merchant</th>
+              <th style={styles.headerCell}>Họ tên</th>
+              <th style={styles.headerCell}>Số điện thoại</th>
               <th style={styles.headerCell}>CCCD</th>
-              <th style={styles.headerCell}>Khu vuc</th>
-              <th style={styles.headerCell}>Hub mac dinh</th>
-              <th style={styles.headerCell}>Trang thai</th>
-              <th style={styles.headerCell}>Cap nhat</th>
-              <th style={styles.headerCell}>Hanh dong</th>
+              <th style={styles.headerCell}>Khu vực</th>
+              <th style={styles.headerCell}>Hub mặc định</th>
+              <th style={styles.headerCell}>Trạng thái</th>
+              <th style={styles.headerCell}>Cập nhật</th>
+              <th style={{ ...styles.headerCell, ...styles.actionsHeaderCell }}>Hành động</th>
             </tr>
           </thead>
           <tbody>
             {merchantUsers.map((user) => {
-              const merchantProfile = profileByUsername.get(user.username)?.payload;
+              const merchantProfile = profileByUsername.get(user.username);
               const regionLabel =
                 merchantProfile?.regionLabel ??
                 (merchantProfile?.regionCode
                   ? resolveRegionLabel(merchantProfile.regionCode)
-                  : 'Khong co');
+                  : 'Không có');
               const defaultHubCode =
-                merchantProfile?.defaultHubCode ?? user.hubCodes[0] ?? 'Khong co';
+                merchantProfile?.defaultHubCode ?? user.hubCodes[0] ?? 'Không có';
 
               return (
                 <tr key={user.id}>
                   <td style={styles.cell}>{user.username}</td>
-                  <td style={styles.cell}>{user.displayName ?? 'Khong co'}</td>
-                  <td style={styles.cell}>{user.phone ?? 'Khong co'}</td>
-                  <td style={styles.cell}>{merchantProfile?.citizenId ?? 'Khong co'}</td>
+                  <td style={styles.cell}>{user.displayName ?? 'Không có'}</td>
+                  <td style={styles.cell}>{user.phone ?? 'Không có'}</td>
+                  <td style={styles.cell}>{merchantProfile?.citizenId ?? 'Không có'}</td>
                   <td style={styles.cell}>{regionLabel}</td>
                   <td style={styles.cell}>{defaultHubCode}</td>
                   <td style={styles.cell}>{user.status}</td>
                   <td style={styles.cell}>{formatDateTime(user.updatedAt)}</td>
-                  <td style={styles.cell}>
-                    <div style={styles.actionsCell}>
-                      <button type="button" onClick={() => onEditUser(user)}>
-                        Sua
+                  <td style={{ ...styles.cell, ...styles.actionsDataCell }}>
+                    <div style={styles.tableActionsCell}>
+                      <button
+                        type="button"
+                        onClick={() => onEditUser(user)}
+                        style={styles.compactActionButton}
+                      >
+                        Sửa
                       </button>
-                      <button type="button" onClick={() => void onDeleteUser(user)}>
-                        Xoa
+                      <button
+                        type="button"
+                        onClick={() => void onToggleUserStatus(user)}
+                        style={
+                          user.status === 'ACTIVE'
+                            ? styles.compactDangerButton
+                            : styles.compactSuccessButton
+                        }
+                      >
+                        {user.status === 'ACTIVE' ? 'Vô hiệu hóa' : 'Kích hoạt lại'}
                       </button>
                     </div>
                   </td>
@@ -854,6 +1003,15 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 10,
     padding: '8px 10px',
     minWidth: 180,
+  },
+  textarea: {
+    border: '1px solid var(--admin-border)',
+    borderRadius: 10,
+    padding: '8px 10px',
+    minWidth: 180,
+    minHeight: 88,
+    resize: 'vertical',
+    fontFamily: 'inherit',
   },
   editorCard: {
     border: '1px solid var(--admin-border)',
@@ -911,6 +1069,48 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 6,
     flexWrap: 'wrap',
     alignItems: 'center',
+  },
+  tableActionsCell: {
+    display: 'flex',
+    gap: 4,
+    flexWrap: 'nowrap',
+    alignItems: 'center',
+    whiteSpace: 'nowrap',
+  },
+  actionsHeaderCell: {
+    width: 146,
+    minWidth: 146,
+  },
+  actionsDataCell: {
+    width: 146,
+    minWidth: 146,
+  },
+  compactActionButton: {
+    borderRadius: 8,
+    padding: '4px 7px',
+    fontSize: 12,
+    lineHeight: 1.2,
+    borderColor: 'var(--admin-border)',
+    backgroundColor: 'var(--admin-surface)',
+    color: 'var(--admin-text)',
+  },
+  compactDangerButton: {
+    borderRadius: 8,
+    padding: '4px 7px',
+    fontSize: 12,
+    lineHeight: 1.2,
+    borderColor: '#fecaca',
+    backgroundColor: '#fef2f2',
+    color: '#b91c1c',
+  },
+  compactSuccessButton: {
+    borderRadius: 8,
+    padding: '4px 7px',
+    fontSize: 12,
+    lineHeight: 1.2,
+    borderColor: '#bbf7d0',
+    backgroundColor: '#f0fdf4',
+    color: '#15803d',
   },
   successText: {
     color: '#166534',

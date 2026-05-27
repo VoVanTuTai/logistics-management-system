@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../../../../store/authStore';
+import { useUiStore } from '../../../../store/uiStore';
+import { returnClient } from '../../../../features/returns/return.client';
 import { useShipmentDetailQuery } from '../../../../features/shipments/shipments.hooks';
 import './ReturnBlockRegistrationPage.css';
 
@@ -126,6 +128,7 @@ function ReturnPanel({
 
 export function ReturnBlockRegistrationPage(): React.JSX.Element {
   const session = useAuthStore((state) => state.session);
+  const showToast = useUiStore((state) => state.showToast);
   const accessToken = session?.tokens.accessToken ?? null;
 
   const [inputCode, setInputCode] = useState('');
@@ -136,6 +139,7 @@ export function ReturnBlockRegistrationPage(): React.JSX.Element {
   const [isReasonMenuOpen, setIsReasonMenuOpen] = useState(false);
   const [selectedReturnReason, setSelectedReturnReason] = useState('');
   const [returnReasonText, setReturnReasonText] = useState('');
+  const [isSubmittingReturn, setIsSubmittingReturn] = useState(false);
 
   const [originalSender, setOriginalSender] = useState<any>({});
   const [originalReceiver, setOriginalReceiver] = useState<any>({});
@@ -181,9 +185,14 @@ export function ReturnBlockRegistrationPage(): React.JSX.Element {
     setReturnReasonText('');
   };
 
-  const handleRegisterReturn = () => {
+  const handleRegisterReturn = async () => {
     if (!queryCode || !shipment) {
-      alert('Vui lòng tìm kiếm mã vận đơn trước khi đăng ký chuyển hoàn.');
+      showToast('Vui lòng tìm kiếm mã vận đơn trước khi đăng ký chuyển hoàn.', 'error');
+      return;
+    }
+
+    if (!accessToken) {
+      showToast('Phiên đăng nhập không hợp lệ, vui lòng đăng nhập lại.', 'error');
       return;
     }
 
@@ -192,8 +201,26 @@ export function ReturnBlockRegistrationPage(): React.JSX.Element {
     const hubCode = session?.user.hubCodes?.[0] || 'N/A';
     const finalNote = `Đăng ký chuyển hoàn | Nhân viên: ${employeeName} | Mã NV: ${employeeId} | Mã hub: ${hubCode} | Ghi chú: ${returnReasonText}`;
 
-    alert(`Đã đăng ký chuyển hoàn thành công cho vận đơn ${queryCode}!\nGhi chú nội bộ: ${finalNote}`);
-    handleReset();
+    setIsSubmittingReturn(true);
+    try {
+      const returnCase = await returnClient.create(accessToken, {
+        shipmentCode: queryCode,
+        note: finalNote,
+      });
+
+      showToast(
+        `Đã đăng ký và duyệt chuyển hoàn ${returnCase.id} cho vận đơn ${queryCode}.`,
+        'success',
+      );
+      handleReset();
+    } catch (error) {
+      showToast(
+        error instanceof Error ? error.message : 'Không ghi nhận được chuyển hoàn.',
+        'error',
+      );
+    } finally {
+      setIsSubmittingReturn(false);
+    }
   };
 
   const buildAddressSections = (sender: any, receiver: any): AddressSection[] => [
@@ -294,10 +321,10 @@ export function ReturnBlockRegistrationPage(): React.JSX.Element {
             }
           >
             <span>Loại chuyển hoàn :</span>
-            <div className="ops-return-management__mock-select">
+            <div className="ops-return-management__reason-select">
               <button
                 type="button"
-                className="ops-return-management__mock-select-control"
+                className="ops-return-management__reason-select-control"
                 aria-expanded={isReasonMenuOpen}
                 onClick={() => setIsReasonMenuOpen((current) => !current)}
               >
@@ -307,7 +334,7 @@ export function ReturnBlockRegistrationPage(): React.JSX.Element {
                 </svg>
               </button>
               {isReasonMenuOpen ? (
-                <div className="ops-return-management__mock-select-menu">
+                <div className="ops-return-management__reason-select-menu">
                   {returnTypeOptions.map((option) => (
                     <button
                       key={option}
@@ -339,17 +366,27 @@ export function ReturnBlockRegistrationPage(): React.JSX.Element {
       </ReturnPanel>
 
       <footer className="ops-return-management__footer-actions">
-        <button type="button" className="ops-return-management__save-more-btn" onClick={handleRegisterReturn}>
+        <button
+          type="button"
+          className="ops-return-management__save-more-btn"
+          onClick={handleRegisterReturn}
+          disabled={isSubmittingReturn}
+        >
           <SearchIcon />
-          Lưu và thêm mới
+          {isSubmittingReturn ? 'Đang lưu...' : 'Lưu và thêm mới'}
         </button>
         <button type="button" className="ops-return-management__cancel-btn" onClick={handleReset}>
           <RefreshIcon />
           Hủy
         </button>
-        <button type="button" className="ops-return-management__save-btn" onClick={handleRegisterReturn}>
+        <button
+          type="button"
+          className="ops-return-management__save-btn"
+          onClick={handleRegisterReturn}
+          disabled={isSubmittingReturn}
+        >
           <SearchIcon />
-          Lưu
+          {isSubmittingReturn ? 'Đang lưu...' : 'Lưu'}
         </button>
       </footer>
     </section>

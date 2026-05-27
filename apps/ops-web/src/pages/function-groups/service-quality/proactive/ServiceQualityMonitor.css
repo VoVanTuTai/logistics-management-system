@@ -1,0 +1,404 @@
+.ops-service-quality-monitor {
+  min-width: 1120px;
+  display: grid;
+  gap: 14px;
+  color: #334155;
+}
+
+.ops-service-quality-monitor__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 14px;
+}
+
+.ops-service-quality-monitor__header small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.ops-service-quality-monitor__header h2 {
+  margin: 6px 0 4px;
+  color: #1e293b;
+  font-size: 22px;
+}
+
+.ops-service-quality-monitor__header p {
+  margin: 0;
+  max-width: 780px;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.ops-service-quality-monitor__header button,
+.ops-service-quality-monitor__pagination button {
+  min-height: 34px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1d4ed8;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.ops-service-quality-monitor__kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.ops-service-quality-monitor__kpis article {
+  display: grid;
+  gap: 6px;
+  border: 1px solid #d8e0ec;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 12px;
+}
+
+.ops-service-quality-monitor__kpis span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ops-service-quality-monitor__kpis strong {
+  color: #1d4ed8;
+  font-size: 25px;
+  line-height: 1;
+}
+
+.ops-service-quality-monitor__kpis article[data-tone='success'] strong {
+  color: #137f5d;
+}
+
+.ops-service-quality-monitor__kpis article[data-tone='warning'] strong {
+  color: #c2410c;
+}
+
+.ops-service-quality-monitor__kpis article[data-tone='danger'] strong {
+  color: #b91c1c;
+}
+
+.ops-service-quality-monitor__filters {
+  display: grid;
+  grid-template-columns: 160px 160px 170px 190px minmax(180px, 1fr);
+  gap: 10px;
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 12px;
+}
+
+.ops-service-quality-monitor__filters--action-board {
+  grid-template-columns: repeat(4, minmax(170px, 1fr));
+}
+
+.ops-service-quality-monitor__filters--abnormal {
+  grid-template-columns: repeat(4, minmax(170px, 1fr));
+}
+
+.ops-service-quality-monitor__filters label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ops-service-quality-monitor__filters span,
+.ops-service-quality-monitor__pagination > span,
+.ops-service-quality-monitor__pagination label span,
+.ops-service-quality-monitor__pagination strong {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ops-service-quality-monitor__filters input,
+.ops-service-quality-monitor__filters select,
+.ops-service-quality-monitor__pagination select {
+  width: 100%;
+  height: 36px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  padding: 0 10px;
+  font-size: 13px;
+}
+
+.ops-service-quality-monitor__panel {
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.ops-service-quality-monitor__panel-head {
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  padding: 0 12px;
+}
+
+.ops-service-quality-monitor__panel-head h3 {
+  margin: 0;
+  color: #1e293b;
+  font-size: 15px;
+}
+
+.ops-service-quality-monitor__panel-head span {
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ops-service-quality-monitor__table-wrap {
+  overflow: auto;
+}
+
+.ops-service-quality-monitor table {
+  width: 100%;
+  min-width: 1080px;
+  border-collapse: collapse;
+}
+
+.ops-service-quality-monitor th,
+.ops-service-quality-monitor td {
+  border-bottom: 1px solid #e5eaf2;
+  padding: 10px 12px;
+  color: #475569;
+  font-size: 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.ops-service-quality-monitor th {
+  background: #f8fafc;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.ops-service-quality-monitor a,
+.ops-service-quality-monitor__code {
+  color: #1d4ed8;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.ops-service-quality-monitor__link-stack {
+  display: grid;
+  gap: 4px;
+}
+
+.ops-service-quality-monitor__link-stack span,
+.ops-service-quality-monitor td span,
+.ops-service-quality-monitor td time {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.ops-service-quality-monitor td strong {
+  display: block;
+  color: #334155;
+  font-size: 12px;
+}
+
+.ops-service-quality-monitor__severity {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.ops-service-quality-monitor__severity--critical {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.ops-service-quality-monitor__severity--warning {
+  border-color: #fed7aa;
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.ops-service-quality-monitor__severity--info {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.ops-service-quality-monitor__state-pill {
+  display: inline-flex;
+  min-height: 22px;
+  align-items: center;
+  margin-top: 6px;
+  border: 1px solid #bbf7d0;
+  border-radius: 999px;
+  background: #f0fdf4;
+  color: #166534;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.ops-service-quality-monitor tr[data-workflow-state='acknowledged'] td {
+  background: #f8fafc;
+}
+
+.ops-service-quality-monitor__checklist {
+  display: grid;
+  gap: 3px;
+  margin: 7px 0 6px;
+  padding-left: 16px;
+}
+
+.ops-service-quality-monitor__checklist li {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.ops-service-quality-monitor__actions {
+  display: grid;
+  gap: 6px;
+  min-width: 130px;
+}
+
+.ops-service-quality-monitor__actions a,
+.ops-service-quality-monitor__actions button {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #bfdbfe;
+  border-radius: 7px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.ops-service-quality-monitor__actions button {
+  cursor: pointer;
+}
+
+.ops-service-quality-monitor__actions button:last-child {
+  border-color: #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+}
+
+.ops-service-quality-monitor__workbar {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  background: #eff6ff;
+  padding: 8px 12px;
+}
+
+.ops-service-quality-monitor__workbar span {
+  color: #1e40af;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ops-service-quality-monitor__workbar button {
+  min-height: 30px;
+  border: 1px solid #bfdbfe;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #1d4ed8;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ops-service-quality-monitor__empty,
+.ops-service-quality-monitor__error {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.ops-service-quality-monitor__empty {
+  padding: 12px;
+}
+
+.ops-service-quality-monitor__error {
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #991b1b;
+  padding: 10px 12px;
+  font-weight: 800;
+}
+
+.ops-service-quality-monitor__pagination {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  border-top: 1px solid #e2e8f0;
+  padding: 8px 12px;
+}
+
+.ops-service-quality-monitor__pagination label,
+.ops-service-quality-monitor__pagination div {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ops-service-quality-monitor__pagination select,
+.ops-service-quality-monitor__pagination button {
+  height: 30px;
+}
+
+.ops-service-quality-monitor__pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+@media (max-width: 1180px) {
+  .ops-service-quality-monitor {
+    min-width: 960px;
+  }
+
+  .ops-service-quality-monitor__filters {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+}

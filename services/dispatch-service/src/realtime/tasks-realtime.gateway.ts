@@ -4,6 +4,10 @@ import { WebSocket, WebSocketServer } from 'ws';
 
 import type { Task } from '../domain/entities/task.entity';
 
+type TrackedWebSocket = WebSocket & {
+  isAlive?: boolean;
+};
+
 export type TaskRealtimeChangeKind =
   | 'created'
   | 'assigned'
@@ -32,7 +36,8 @@ interface TaskRealtimeChangedEvent {
 export class TasksRealtimeGateway implements OnModuleDestroy {
   private readonly logger = new Logger(TasksRealtimeGateway.name);
   private wsServer: WebSocketServer | null = null;
-  private readonly clients = new Set<WebSocket>();
+  private readonly clients = new Set<TrackedWebSocket>();
+  private heartbeatInterval: NodeJS.Timeout | null = null;
 
   attach(httpServer: HttpServer): void {
     if (this.wsServer) {
@@ -44,8 +49,13 @@ export class TasksRealtimeGateway implements OnModuleDestroy {
       path: '/ws/tasks',
     });
 
-    this.wsServer.on('connection', (socket: WebSocket) => {
+    this.wsServer.on('connection', (socket: TrackedWebSocket) => {
+      socket.isAlive = true;
       this.clients.add(socket);
+
+      socket.on('pong', () => {
+        socket.isAlive = true;
+      });
 
       socket.on('close', () => {
         this.clients.delete(socket);
@@ -55,6 +65,10 @@ export class TasksRealtimeGateway implements OnModuleDestroy {
         this.logger.warn(`WebSocket client error: ${this.toErrorMessage(error)}`);
       });
     });
+
+    this.heartbeatInterval = setInterval(() => {
+      this.checkClientHeartbeats();
+    }, 30000);
 
     this.logger.log('Dispatch realtime WebSocket is listening on /ws/tasks');
   }
@@ -86,6 +100,24 @@ export class TasksRealtimeGateway implements OnModuleDestroy {
     this.clients.clear();
     this.wsServer.close();
     this.wsServer = null;
+
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+  }
+
+  private checkClientHeartbeats(): void {
+    for (const socket of this.clients) {
+      if (socket.isAlive === false) {
+        this.clients.delete(socket);
+        socket.terminate();
+        continue;
+      }
+
+      socket.isAlive = false;
+      socket.ping();
+    }
   }
 
   private broadcast(payload: TaskRealtimeChangedEvent): void {

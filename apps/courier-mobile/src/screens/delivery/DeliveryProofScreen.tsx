@@ -18,6 +18,8 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { Card } from '../../components/ui/Card';
 import { Screen } from '../../components/ui/Screen';
+import { enqueueCodCollectOffline } from '../../features/cod/cod.offline';
+import type { CollectCodPayload } from '../../features/cod/cod.types';
 import { enqueueDeliverySuccessOffline } from '../../features/delivery/delivery-success.offline';
 import { useDeliverySuccessActionMutation } from '../../features/delivery/delivery-success.mutation';
 import type { DeliverySuccessPayload } from '../../features/delivery/delivery.types';
@@ -27,7 +29,7 @@ import type { ShipmentMetadata } from '../../features/shipment/shipment.types';
 import { tasksApi } from '../../features/tasks/tasks.api';
 import { useTaskDetailQuery } from '../../features/tasks/tasks.queries';
 import type { AppNavigatorParamList } from '../../navigation/types';
-import { shouldQueueOffline } from '../../services/api/client';
+import { ApiClientError, shouldQueueOffline } from '../../services/api/client';
 import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
 import { createIdempotencyKey } from '../../utils/idempotency';
@@ -35,6 +37,14 @@ import { resolveCourierId, buildDeliverySuccessAuditNote } from '../../utils/cou
 import { appEnv } from '../../utils/env';
 
 type Props = NativeStackScreenProps<AppNavigatorParamList, 'DeliveryProof'>;
+
+function shouldQueueCodCollectRetry(error: unknown): boolean {
+  if (shouldQueueOffline(error)) {
+    return true;
+  }
+
+  return error instanceof ApiClientError && error.status !== null && error.status >= 500;
+}
 
 function readMetadataPath(
   metadata: ShipmentMetadata | null,
@@ -97,7 +107,6 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
   const [submitMessage, setSubmitMessage] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [paymentMethod, setPaymentMethod] = React.useState<'COD' | 'BANK_TRANSFER'>('COD');
-  const [receiverNameInput, setReceiverNameInput] = React.useState('');
 
   const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
   const bankInfoQuery = useCompanyBankInfoQuery({ accessToken: session?.tokens.accessToken ?? null });
@@ -106,8 +115,6 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
 
   const codAmount = shipmentQuery.data?.codAmount ?? 0;
   const shipmentMetadata = shipmentQuery.data?.metadata ?? null;
-  const receiverName =
-    readMetadataString(shipmentMetadata, ['receiverName', 'receiver.name']) ?? 'N/A';
   const receiverPhone =
     readMetadataString(shipmentMetadata, [
       'receiverPhone',
@@ -140,6 +147,7 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
   })();
   const totalAmountDue = codAmount + shippingFee - prepaidAmount;
   const hasAmountToPay = totalAmountDue > 0;
+  const transferMemo = resolvedShipmentCode ? `COD ${resolvedShipmentCode}` : 'COD';
 
   const openCamera = React.useCallback(async () => {
     if (!permission?.granted) {
@@ -189,11 +197,6 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
       return;
     }
 
-    if (!receiverNameInput.trim()) {
-      setSubmitMessage('Vui lòng nhập tên người nhận hàng.');
-      return;
-    }
-
     if (hasAmountToPay && !paymentMethod) {
       setSubmitMessage('Vui lòng chọn phương thức thanh toán.');
       return;
@@ -204,13 +207,13 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
       username: session?.user.username,
       courierId,
       hubCode: session?.user.hubCodes?.[0] ?? null,
-      note: note.trim().length > 0 ? note.trim() : `Ký nhận giao hàng. Người nhận: ${receiverNameInput.trim()}`,
+      note: note.trim().length > 0 ? note.trim() : 'Ký nhận giao hàng.',
     });
 
     const payload: DeliverySuccessPayload = {
       shipmentCode: resolvedShipmentCode,
       taskId: route.params.taskId ?? null,
-      courierId: null,
+      courierId,
       locationCode: null,
       actor: session?.user.username ?? null,
       note: auditNote,
@@ -227,21 +230,40 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
 
     try {
       const result = await mutation.mutateAsync(payload);
-      
-      // Auto collect COD if applicable
-      if (codAmount > 0) {
+      let codWarningMessage: string | null = null;
+      const codCollectPayload: CollectCodPayload = {
+        shipmentCode: resolvedShipmentCode,
+        collectedAmount: codAmount,
+        courierId: courierId ?? '',
+        paymentMethod: 'COD',
+        idempotencyKey: createIdempotencyKey('cod-collect-' + resolvedShipmentCode),
+        occurredAt: new Date().toISOString(),
+        note: 'Thu COD tiền mặt lúc ký nhận phát hàng',
+      };
+
+      if (codAmount > 0 && paymentMethod === 'COD') {
         try {
-          await collectMutation.mutateAsync({
-            shipmentCode: resolvedShipmentCode,
-            collectedAmount: codAmount,
-            courierId: courierId ?? '',
-            paymentMethod,
-            idempotencyKey: createIdempotencyKey('cod-collect-' + resolvedShipmentCode),
-            occurredAt: new Date().toISOString(),
-            note: 'Thu COD lúc ký nhận phát hàng',
-          });
+          await collectMutation.mutateAsync(codCollectPayload);
         } catch (codErr) {
-          Alert.alert('Cảnh báo', 'Giao hàng thành công nhưng lỗi khi ghi nhận thu COD: ' + (codErr instanceof Error ? codErr.message : 'Lỗi không xác định'));
+          const errorMessage =
+            codErr instanceof Error ? codErr.message : 'Lỗi không xác định';
+          codWarningMessage =
+            'Giao hàng thành công nhưng chưa ghi nhận được COD tiền mặt: ' +
+            errorMessage;
+
+          console.warn('[DeliveryProof] COD collect failed after delivery success', {
+            shipmentCode: resolvedShipmentCode,
+            error: codErr,
+          });
+
+          if (shouldQueueCodCollectRetry(codErr)) {
+            await enqueueCodCollectOffline(codCollectPayload);
+            codWarningMessage += ' App đã đưa COD vào hàng đợi retry.';
+          } else {
+            codWarningMessage += ' Cần kiểm tra COD record trên payment-service.';
+          }
+
+          Alert.alert('Cảnh báo COD', codWarningMessage);
         }
       }
 
@@ -258,12 +280,19 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
         }
       }
 
-      setSubmitMessage(
+      const successMessage =
         result.source === 'DUPLICATE_REPLAY'
           ? 'Server đã trả lại kết quả cũ cho idempotencyKey trùng lặp.'
           : taskStatusUpdated
-            ? `✓ Ký nhận thành công! Người nhận: ${receiverNameInput.trim()}. Task đã chuyển COMPLETED.`
-            : '✓ Ký nhận thành công. Trạng thái đơn đã được cập nhật.',
+            ? '✓ Ký nhận thành công. Task đã chuyển COMPLETED.'
+            : '✓ Ký nhận thành công. Trạng thái đơn đã được cập nhật.';
+      const paymentMessage =
+        codAmount > 0 && paymentMethod === 'BANK_TRANSFER'
+          ? `Khách chuyển khoản theo nội dung "${transferMemo}". COD sẽ chờ SePay/ngân hàng xác nhận tiền vào công ty.`
+          : null;
+
+      setSubmitMessage(
+        [successMessage, paymentMessage, codWarningMessage].filter(Boolean).join(' '),
       );
 
       await queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -278,13 +307,15 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
         });
       }
 
-      setTimeout(() => {
-        navigation.goBack();
-      }, 600);
+      if (!codWarningMessage) {
+        setTimeout(() => {
+          navigation.goBack();
+        }, 600);
+      }
     } catch (error) {
       if (shouldQueueOffline(error)) {
         await enqueueDeliverySuccessOffline(payload);
-        setSubmitMessage('Mất mạng: thao tác đã được lưu offline và sẽ tự động đồng bộ.');
+        setSubmitMessage('Mất mạng: thao tác đã được lưu offline và sẽ tự động upload POD, gửi lại với cùng idempotencyKey.');
       } else {
         const message =
           error instanceof Error ? error.message : 'Ký nhận thất bại.';
@@ -295,16 +326,24 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
       setIsSubmitting(false);
     }
   }, [
+    codAmount,
+    collectMutation,
+    courierId,
+    hasAmountToPay,
     mutation,
     navigation,
     note,
+    paymentMethod,
     photoUri,
     queryClient,
     resolvedShipmentCode,
     route.params.taskId,
     session?.tokens.accessToken,
+    session?.user.displayName,
+    session?.user.hubCodes,
     session?.user.username,
     setGlobalError,
+    transferMemo,
   ]);
 
   return (
@@ -328,10 +367,6 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Shipment</Text>
               <Text style={styles.infoValue}>{resolvedShipmentCode ?? 'N/A'}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Người nhận</Text>
-              <Text style={styles.infoValue}>{receiverName}</Text>
             </View>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Số điện thoại</Text>
@@ -430,10 +465,10 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
               {/* QR code */}
               {paymentMethod === 'BANK_TRANSFER' && bankInfo ? (
                 <View style={styles.qrContainer}>
-                  <Text style={styles.qrHint}>Cho khách hàng quét mã QR này để thanh toán</Text>
+                  <Text style={styles.qrHint}>Cho khách hàng quét QR và chuyển đúng nội dung</Text>
                   <Image
                     source={{
-                      uri: `https://img.vietqr.io/image/${bankInfo.bin}-${bankInfo.accountNumber}-compact2.png?amount=${totalAmountDue}&addInfo=${encodeURIComponent(`Thanh toan don ${resolvedShipmentCode}`)}&accountName=${encodeURIComponent(bankInfo.accountName)}`,
+                      uri: `https://img.vietqr.io/image/${bankInfo.bin}-${bankInfo.accountNumber}-compact2.png?amount=${totalAmountDue}&addInfo=${encodeURIComponent(transferMemo)}&accountName=${encodeURIComponent(bankInfo.accountName)}`,
                     }}
                     style={styles.qrImage}
                     resizeMode="contain"
@@ -442,10 +477,31 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
                     <Text style={styles.bankDetailText}>Ngân hàng: {bankInfo.bankName ?? bankInfo.bin}</Text>
                     <Text style={styles.bankDetailText}>STK: {bankInfo.accountNumber}</Text>
                     <Text style={styles.bankDetailText}>Chủ TK: {bankInfo.accountName}</Text>
+                    <Text style={styles.bankDetailMemoText}>Nội dung: {transferMemo}</Text>
                     <Text style={[styles.bankDetailText, { fontWeight: '700', color: '#B91C1C' }]}>
                       Số tiền: {totalAmountDue.toLocaleString('vi-VN')}đ
                     </Text>
                   </View>
+                  <View style={styles.bankPendingBox}>
+                    <Ionicons name="time-outline" size={18} color="#1D4ED8" />
+                    <Text style={styles.bankPendingText}>
+                      Không ghi nhận đã nộp tại bước này. Payment-service sẽ chờ webhook SePay/ngân hàng xác nhận tiền vào công ty.
+                    </Text>
+                  </View>
+                </View>
+              ) : null}
+              {paymentMethod === 'BANK_TRANSFER' && bankInfoQuery.isLoading ? (
+                <View style={styles.inlineStateRow}>
+                  <ActivityIndicator size="small" color={theme.colors.primary} />
+                  <Text style={styles.inlineStateText}>Đang tải tài khoản công ty...</Text>
+                </View>
+              ) : null}
+              {paymentMethod === 'BANK_TRANSFER' && bankInfoQuery.isError ? (
+                <View style={styles.cashConfirmBox}>
+                  <Ionicons name="warning-outline" size={20} color="#B45309" />
+                  <Text style={styles.cashConfirmText}>
+                    Chưa tải được tài khoản công ty. Vui lòng thử lại trước khi cho khách chuyển khoản.
+                  </Text>
                 </View>
               ) : null}
             </Card>
@@ -477,17 +533,6 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
                 </Pressable>
               ) : null}
             </View>
-          </Card>
-
-          <Card>
-            <Text style={styles.sectionTitle}>Tên người nhận hàng</Text>
-            <TextInput
-              placeholder="Nhập tên người nhận (bắt buộc)"
-              placeholderTextColor="#94A3B8"
-              style={styles.noteInput}
-              value={receiverNameInput}
-              onChangeText={setReceiverNameInput}
-            />
           </Card>
 
           <Card>
@@ -525,7 +570,9 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
             ) : (
               <Text style={styles.submitButtonText}>
                 {hasAmountToPay
-                  ? `Xác nhận ký nhận — Thu ${totalAmountDue.toLocaleString('vi-VN')}đ`
+                  ? paymentMethod === 'BANK_TRANSFER'
+                    ? 'Xác nhận ký nhận - chờ SePay'
+                    : `Xác nhận ký nhận - Thu ${totalAmountDue.toLocaleString('vi-VN')}đ`
                   : 'Xác nhận ký nhận giao hàng'}
               </Text>
             )}
@@ -831,6 +878,27 @@ const styles = StyleSheet.create({
     ...theme.typography.caption.md,
     color: theme.colors.textSecondary,
   },
+  bankDetailMemoText: {
+    ...theme.typography.body.sm,
+    color: '#1D4ED8',
+    fontWeight: '800',
+  },
+  bankPendingBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginTop: 12,
+    padding: 12,
+    borderRadius: theme.radius.md,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  bankPendingText: {
+    ...theme.typography.caption.md,
+    color: '#1E3A8A',
+    flex: 1,
+  },
   qrContainer: {
     marginTop: 16,
     alignItems: 'center',
@@ -941,4 +1009,3 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
-

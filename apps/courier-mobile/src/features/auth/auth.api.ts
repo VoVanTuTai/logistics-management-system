@@ -9,7 +9,10 @@ import type {
   LoginResultDto,
   LogoutInputDto,
   LogoutResultDto,
+  MobilePermissionEffectiveDto,
   RefreshSessionInputDto,
+  UserAccountDto,
+  UserListFilters,
 } from './auth.types';
 
 export const authApi = {
@@ -41,6 +44,42 @@ export const authApi = {
       accessToken,
       body: payload,
     }),
+  listUsers: (
+    accessToken: string | null,
+    filters: UserListFilters,
+  ): Promise<UserAccountDto[]> => {
+    const params = new URLSearchParams();
+
+    if (filters.roleGroup) {
+      params.set('roleGroup', filters.roleGroup);
+    }
+
+    if (filters.status) {
+      params.set('status', filters.status);
+    }
+
+    if (filters.hubCode?.trim()) {
+      params.set('hubCode', filters.hubCode.trim().toUpperCase());
+    }
+
+    if (filters.q?.trim()) {
+      params.set('q', filters.q.trim());
+    }
+
+    const query = params.toString();
+    return courierApiClient.request<UserAccountDto[]>(
+      `${courierEndpoints.auth.users}${query ? `?${query}` : ''}`,
+      { accessToken },
+    );
+  },
+  getMobilePermissionEffective: (
+    accessToken: string | null,
+    userId: string,
+  ): Promise<MobilePermissionEffectiveDto> =>
+    courierApiClient.request(
+      courierEndpoints.auth.mobilePermissionEffective(userId),
+      { accessToken },
+    ),
 };
 
 export function useLoginMutation() {

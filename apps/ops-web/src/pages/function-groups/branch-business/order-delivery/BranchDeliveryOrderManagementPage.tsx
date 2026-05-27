@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { useHubsQuery } from '../../../../features/masterdata/masterdata.api';
 import { useShipmentsQuery } from '../../../../features/shipments/shipments.api';
@@ -6,12 +7,15 @@ import type { ShipmentListItemDto } from '../../../../features/shipments/shipmen
 import { useTasksQuery } from '../../../../features/tasks/tasks.api';
 import type { TaskListItemDto } from '../../../../features/tasks/tasks.types';
 import { getErrorMessage } from '../../../../services/api/errors';
+import { routePaths } from '../../../../navigation/routes';
 import { useAuthStore } from '../../../../store/authStore';
 import { formatDateTime } from '../../../../utils/format';
 import {
   deriveHubScopeTokens,
   isShipmentInScope,
+  shipmentDestinationHubCode,
 } from '../../../../utils/locationScope';
+import { BranchTablePagination } from '../shared/BranchTablePagination';
 import './BranchDeliveryOrderManagementPage.css';
 
 interface DeliveredOrderRow {
@@ -92,6 +96,11 @@ function isShipmentInBranchScope(
     return true;
   }
 
+  const destinationHubCode = shipmentDestinationHubCode(shipment);
+  if (destinationHubCode) {
+    return assignedHubCodes.includes(destinationHubCode);
+  }
+
   return isShipmentInScope(shipment, scopeTokens);
 }
 
@@ -116,6 +125,8 @@ export function BranchDeliveryOrderManagementPage(): React.JSX.Element {
   );
   const [draftFilters, setDraftFilters] = useState<DeliverySearchFilters>(initialFilters);
   const [appliedFilters, setAppliedFilters] = useState<DeliverySearchFilters>(initialFilters);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   const shipmentsQuery = useShipmentsQuery(accessToken, { status: 'DELIVERED' });
   const deliveryTasksQuery = useTasksQuery(accessToken, { taskType: 'DELIVERY' });
@@ -184,6 +195,17 @@ export function BranchDeliveryOrderManagementPage(): React.JSX.Element {
       return afterStart && beforeEnd && phoneMatched && courierMatched;
     });
   }, [appliedFilters, rows]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [appliedFilters, pageSize]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const paginatedRows = useMemo(
+    () => filteredRows.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [currentPage, filteredRows, pageSize],
+  );
 
   const totalCod = filteredRows.reduce((sum, row) => sum + (row.shipment.codAmount ?? 0), 0);
   const deliveredByCourier = filteredRows.filter((row) => row.courierId !== 'Không có').length;
@@ -316,9 +338,16 @@ export function BranchDeliveryOrderManagementPage(): React.JSX.Element {
               </tr>
             </thead>
             <tbody>
-              {filteredRows.map((row) => (
+              {paginatedRows.map((row) => (
                 <tr key={row.shipment.shipmentCode}>
-                  <td className="ops-branch-delivered-orders__code">{row.shipment.shipmentCode}</td>
+                  <td>
+                    <Link
+                      className="ops-branch-delivered-orders__code"
+                      to={routePaths.shipmentDetail(row.shipment.id)}
+                    >
+                      {row.shipment.shipmentCode}
+                    </Link>
+                  </td>
                   <td>{formatDateTime(row.deliveredDate)}</td>
                   <td>{row.receiverName}</td>
                   <td>{row.receiverPhone}</td>
@@ -331,6 +360,13 @@ export function BranchDeliveryOrderManagementPage(): React.JSX.Element {
             </tbody>
           </table>
         </div>
+        <BranchTablePagination
+          totalRows={filteredRows.length}
+          page={currentPage}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+        />
       </section>
     </section>
   );

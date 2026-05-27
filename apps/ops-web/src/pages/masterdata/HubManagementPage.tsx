@@ -5,6 +5,7 @@ import {
   useHubsQuery,
   useUpdateHubMutation,
 } from '../../features/masterdata/masterdata.api';
+import { useVietnamAdministrativeUnitsQuery } from '../../features/locations/vietnamAdministrativeUnits.api';
 import type {
   HubDto,
   HubFilters,
@@ -21,8 +22,10 @@ type HubType = 'BRANCH' | 'SORTING_CENTER' | 'TRANSIT_HUB' | '';
 interface HubAddressPayload {
   addressLine: string;
   ward: string;
+  wardCode: string;
   district: string;
   province: string;
+  provinceCode: string;
   phone: string;
   contactName: string;
   type: HubType;
@@ -43,8 +46,10 @@ const EMPTY_HUB_FORM: HubFormState = {
   isActive: true,
   addressLine: '',
   ward: '',
+  wardCode: '',
   district: '',
   province: '',
+  provinceCode: '',
   phone: '',
   contactName: '',
   type: '',
@@ -61,8 +66,10 @@ function parseHubAddress(address: string | null): HubAddressPayload {
     return {
       addressLine: '',
       ward: '',
+      wardCode: '',
       district: '',
       province: '',
+      provinceCode: '',
       phone: '',
       contactName: '',
       type: '',
@@ -77,8 +84,16 @@ function parseHubAddress(address: string | null): HubAddressPayload {
       addressLine:
         typeof parsed.addressLine === 'string' ? parsed.addressLine : '',
       ward: typeof parsed.ward === 'string' ? parsed.ward : '',
+      wardCode:
+        typeof parsed.wardCode === 'string' || typeof parsed.wardCode === 'number'
+          ? String(parsed.wardCode)
+          : '',
       district: typeof parsed.district === 'string' ? parsed.district : '',
       province: typeof parsed.province === 'string' ? parsed.province : '',
+      provinceCode:
+        typeof parsed.provinceCode === 'string' || typeof parsed.provinceCode === 'number'
+          ? String(parsed.provinceCode)
+          : '',
       phone: typeof parsed.phone === 'string' ? parsed.phone : '',
       contactName: typeof parsed.contactName === 'string' ? parsed.contactName : '',
       type:
@@ -93,8 +108,10 @@ function parseHubAddress(address: string | null): HubAddressPayload {
     return {
       addressLine: address,
       ward: '',
+      wardCode: '',
       district: '',
       province: '',
+      provinceCode: '',
       phone: '',
       contactName: '',
       type: '',
@@ -107,8 +124,10 @@ function serializeHubAddress(form: HubFormState): string | null {
   const payload = {
     addressLine: form.addressLine.trim(),
     ward: form.ward.trim(),
-    district: form.district.trim(),
+    wardCode: form.wardCode.trim(),
+    district: '',
     province: form.province.trim(),
+    provinceCode: form.provinceCode.trim(),
     phone: form.phone.trim(),
     contactName: form.contactName.trim(),
     type: form.type,
@@ -117,8 +136,10 @@ function serializeHubAddress(form: HubFormState): string | null {
 
   const hasExtendedFields = Boolean(
     payload.ward ||
+      payload.wardCode ||
       payload.district ||
       payload.province ||
+      payload.provinceCode ||
       payload.phone ||
       payload.contactName ||
       payload.type ||
@@ -163,6 +184,7 @@ export function HubManagementPage(): React.JSX.Element {
   const [actionError, setActionError] = useState<string | null>(null);
 
   const hubsQuery = useHubsQuery(accessToken, appliedFilters);
+  const locationsQuery = useVietnamAdministrativeUnitsQuery();
   const createMutation = useCreateHubMutation(accessToken);
   const updateMutation = useUpdateHubMutation(accessToken);
 
@@ -170,6 +192,22 @@ export function HubManagementPage(): React.JSX.Element {
     () => (hubsQuery.data ?? []).find((hub) => hub.id === selectedHubId) ?? null,
     [hubsQuery.data, selectedHubId],
   );
+  const provinceOptions = locationsQuery.data ?? [];
+  const selectedProvince = useMemo(
+    () =>
+      provinceOptions.find((province) =>
+        form.provinceCode
+          ? String(province.code) === form.provinceCode
+          : province.name === form.province,
+      ) ?? null,
+    [form.province, form.provinceCode, provinceOptions],
+  );
+  const wardOptions = selectedProvince?.wards ?? [];
+  const hasLegacyProvince =
+    form.province.length > 0 &&
+    !provinceOptions.some((province) => province.name === form.province);
+  const hasLegacyWard =
+    form.ward.length > 0 && !wardOptions.some((ward) => ward.name === form.ward);
 
   const onApplyFilters = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -447,6 +485,11 @@ export function HubManagementPage(): React.JSX.Element {
         onClose={closeModal}
         onSubmit={onSubmitForm}
       >
+        {locationsQuery.isError ? (
+          <p style={styles.errorText}>
+            Không tải được danh mục tỉnh/thành từ provinces.open-api.vn. Vui lòng thử lại.
+          </p>
+        ) : null}
         <div style={styles.formGrid}>
           <label style={styles.fieldLabel}>
             Mã hub
@@ -524,43 +567,69 @@ export function HubManagementPage(): React.JSX.Element {
             />
           </label>
           <label style={styles.fieldLabel}>
-            Phường/Xã
-            <input
-              value={form.ward}
-              onChange={(event) =>
-                setForm((previous) => ({
-                  ...previous,
-                  ward: event.target.value,
-                }))
-              }
-              style={styles.input}
-            />
-          </label>
-          <label style={styles.fieldLabel}>
-            Quận/Huyện
-            <input
-              value={form.district}
-              onChange={(event) =>
-                setForm((previous) => ({
-                  ...previous,
-                  district: event.target.value,
-                }))
-              }
-              style={styles.input}
-            />
-          </label>
-          <label style={styles.fieldLabel}>
             Tỉnh/Thành
-            <input
-              value={form.province}
-              onChange={(event) =>
+            <select
+              value={form.provinceCode || form.province}
+              onChange={(event) => {
+                const province = provinceOptions.find(
+                  (item) => String(item.code) === event.target.value,
+                );
+
                 setForm((previous) => ({
                   ...previous,
-                  province: event.target.value,
-                }))
-              }
+                  province: province?.name ?? '',
+                  provinceCode: province ? String(province.code) : '',
+                  ward: '',
+                  wardCode: '',
+                  district: '',
+                }));
+              }}
+              required
               style={styles.input}
-            />
+            >
+              <option value="">
+                {locationsQuery.isLoading ? 'Đang tải tỉnh/thành...' : 'Chọn tỉnh/thành'}
+              </option>
+              {hasLegacyProvince ? (
+                <option value={form.province}>{form.province}</option>
+              ) : null}
+              {provinceOptions.map((province) => (
+                <option key={province.code} value={province.code}>
+                  {province.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label style={styles.fieldLabel}>
+            Phường/Xã
+            <select
+              value={form.wardCode || form.ward}
+              onChange={(event) => {
+                const ward = wardOptions.find(
+                  (item) => String(item.code) === event.target.value,
+                );
+
+                setForm((previous) => ({
+                  ...previous,
+                  ward: ward?.name ?? '',
+                  wardCode: ward ? String(ward.code) : '',
+                  district: '',
+                }));
+              }}
+              disabled={!selectedProvince}
+              required
+              style={styles.input}
+            >
+              <option value="">
+                {selectedProvince ? 'Chọn phường/xã' : 'Chọn tỉnh/thành trước'}
+              </option>
+              {hasLegacyWard ? <option value={form.ward}>{form.ward}</option> : null}
+              {wardOptions.map((ward) => (
+                <option key={ward.code} value={ward.code}>
+                  {ward.name}
+                </option>
+              ))}
+            </select>
           </label>
           <label style={styles.fieldLabel}>
             Số điện thoại

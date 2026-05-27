@@ -3,20 +3,20 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { useHubsQuery } from '../../features/masterdata/masterdata.api';
+import type { HubDto } from '../../features/masterdata/masterdata.types';
+import { useVietnamAdministrativeUnitsQuery } from '../../features/locations/vietnamAdministrativeUnits.api';
 import { useInboundScanMutation, useOutboundScanMutation, usePickupScanMutation } from '../../features/scans/scans.api';
 import type { HubScanInput, HubScanType } from '../../features/scans/scans.types';
-import { useCreateShipmentMutation, useShipmentsQuery } from '../../features/shipments/shipments.api';
+import { useCreateShipmentMutation, useShipmentPageQuery } from '../../features/shipments/shipments.api';
+import { shipmentsClient } from '../../features/shipments/shipments.client';
 import type { ShipmentListFilters, ShipmentListItemDto } from '../../features/shipments/shipments.types';
 import { tasksClient, useCourierOptionsQuery } from '../../features/tasks/tasks.api';
 import { openShippingLabelPrint } from '../../printing/shippingLabelPrint';
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
+import { useUiStore } from '../../store/uiStore';
 import { createIdempotencyKey } from '../../utils/idempotency';
-import {
-  PROVINCE_CITY_OPTIONS,
-  deriveHubScopeTokens,
-  isShipmentInScope,
-} from '../../utils/locationScope';
+import { resolveBranchHubByProvince } from '../../utils/locationScope';
 import { queryKeys } from '../../utils/queryKeys';
 import { ShipmentsTable } from './ShipmentsTable';
 
@@ -85,6 +85,9 @@ const SHIPMENT_STATUS_OPTIONS = [
   'CANCELLED',
 ];
 
+const DEFAULT_PAGE_SIZE = 20;
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
+
 function toPositiveNumber(value: string): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
@@ -116,12 +119,20 @@ function estimateFee(form: WalkInShipmentFormState): number {
 function buildWalkInMetadata(
   form: WalkInShipmentFormState,
   feeEstimate: number,
+  route: {
+    senderHubCode: string | null;
+    receiverHub: HubDto;
+  },
 ): Record<string, unknown> {
+  const senderHubCode = route.senderHubCode;
+  const receiverHubCode = route.receiverHub.code.trim().toUpperCase();
+
   return {
     sender: {
       name: form.senderName.trim() || null,
       phone: form.senderPhone.trim() || null,
       address: form.senderAddress.trim() || null,
+      hubCode: senderHubCode,
     },
     receiver: {
       name: form.receiverName.trim() || null,
@@ -129,6 +140,8 @@ function buildWalkInMetadata(
       address: form.receiverAddress.trim() || null,
       region: form.receiverRegion.trim() || null,
       province: form.receiverRegion.trim() || null,
+      hubCode: receiverHubCode,
+      resolvedHubName: route.receiverHub.name,
     },
     package: {
       itemType: form.itemType.trim() || null,
@@ -148,6 +161,15 @@ function buildWalkInMetadata(
     estimatedFee: feeEstimate,
     platform: form.platform.trim() || 'OPS_WALK_IN',
     source: 'ops-web',
+    routing: {
+      originHubCode: senderHubCode,
+      destinationHubCode: receiverHubCode,
+      resolvedBy: 'address',
+    },
+    senderHubCode,
+    receiverHubCode,
+    originHubCode: senderHubCode,
+    destinationHubCode: receiverHubCode,
   };
 }
 
@@ -187,12 +209,32 @@ function toDateInputValue(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-function toDateKey(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return '';
+function toPageNumber(value: string | null, fallback: number, min: number, max: number): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return fallback;
   }
-  return toDateInputValue(date);
+
+  return Math.max(min, Math.min(max, Math.trunc(parsed)));
+}
+
+function buildCreatedAtRange(dateValue: string): { createdFrom?: string; createdTo?: string } {
+  const start = new Date(`${dateValue}T00:00:00`);
+  if (Number.isNaN(start.getTime())) {
+    return {};
+  }
+
+  const end = new Date(start);
+  end.setDate(start.getDate() + 1);
+
+  return {
+    createdFrom: start.toISOString(),
+    createdTo: end.toISOString(),
+  };
+}
+
+function formatTotal(total: number | undefined): string {
+  return typeof total === 'number' ? `Tổng ${new Intl.NumberFormat('vi-VN').format(total)} vận đơn` : 'Chưa có tổng';
 }
 
 function generateDeliveryTaskCode(shipmentCode: string): string {
@@ -204,7 +246,7 @@ function generateDeliveryTaskCode(shipmentCode: string): string {
   return `DLV-${normalizedShipmentCode || 'SHIP'}-${timestamp}`;
 }
 
-function printWaybill(shipment: ShipmentListItemDto): void {
+function printWaybill(shipment: ShipmentListItemDto): boolean {
   const senderName = shipment.senderName?.trim() || 'Người gửi';
   const senderPhone = shipment.senderPhone?.trim() || '-';
   const senderAddress = shipment.senderAddress?.trim() || '-';
@@ -212,7 +254,12 @@ function printWaybill(shipment: ShipmentListItemDto): void {
   const receiverPhone = shipment.receiverPhone?.trim() || '-';
   const receiverAddress = shipment.receiverAddress?.trim() || '-';
 
-  const hubCode = shipment.currentLocation?.trim() || shipment.receiverRegion?.trim() || 'HUB-NA';
+  const hubCode =
+    shipment.currentLocation?.trim() ||
+    shipment.receiverHubCode?.trim() ||
+    shipment.destinationHubCode?.trim() ||
+    shipment.receiverRegion?.trim() ||
+    'HUB-NA';
   const zoneCode = shipment.receiverRegion?.trim() || 'ZONE-NA';
   const routeTag = compactCode(hubCode || shipment.shipmentCode, 'ROUTE');
   const sortCode = [`Hub đích: ${hubCode || 'N/A'}`, `Khu vực: ${zoneCode || 'N/A'}`].join('\n');
@@ -250,8 +297,13 @@ function printWaybill(shipment: ShipmentListItemDto): void {
   });
 
   if (!opened) {
-    window.alert('Trình duyệt đang chặn popup in. Hãy cho phép popup rồi thử lại.');
+    useUiStore
+      .getState()
+      .showToast('Trình duyệt đang chặn cửa sổ in. Hãy cho phép popup rồi thử lại.', 'error');
+    return false;
   }
+
+  return true;
 }
 
 export function ShipmentListPage(): React.JSX.Element {
@@ -268,10 +320,13 @@ export function ShipmentListPage(): React.JSX.Element {
     q: searchParams.get('q') ?? undefined,
     status: searchParams.get('status') ?? undefined,
   };
-  const initialDate = searchParams.get('date') || today;
+  const selectedDate = searchParams.get('date') || today;
+  const pageSize = toPageNumber(searchParams.get('limit'), DEFAULT_PAGE_SIZE, 10, 100);
+  const offset = toPageNumber(searchParams.get('offset'), 0, 0, 1_000_000);
+  const pageNumber = Math.floor(offset / pageSize) + 1;
   const [qInput, setQInput] = useState(filters.q ?? '');
   const [statusInput, setStatusInput] = useState(filters.status ?? '');
-  const [dateInput, setDateInput] = useState(initialDate);
+  const [dateInput, setDateInput] = useState(selectedDate);
 
   const [counterShipmentCode, setCounterShipmentCode] = useState('');
   const [counterLocationCode, setCounterLocationCode] = useState('');
@@ -293,57 +348,53 @@ export function ShipmentListPage(): React.JSX.Element {
   const [dispatchError, setDispatchError] = useState<string | null>(null);
   const [dispatchLoading, setDispatchLoading] = useState(false);
 
-  const shipmentQuery = useShipmentsQuery(accessToken, {});
-  const hubsQuery = useHubsQuery(accessToken, {});
+  const assignedHubCodesKey = assignedHubCodes.join(',');
+  const dateRange = useMemo(() => buildCreatedAtRange(selectedDate), [selectedDate]);
+  const shipmentPageFilters = useMemo<ShipmentListFilters>(
+    () => ({
+      q: filters.q,
+      status: filters.status,
+      hubCodes: canViewAllHubAreas ? undefined : assignedHubCodes,
+      createdFrom: dateRange.createdFrom,
+      createdTo: dateRange.createdTo,
+      limit: pageSize,
+      offset,
+    }),
+    [
+      assignedHubCodes,
+      assignedHubCodesKey,
+      canViewAllHubAreas,
+      dateRange.createdFrom,
+      dateRange.createdTo,
+      filters.q,
+      filters.status,
+      offset,
+      pageSize,
+    ],
+  );
+  const lacksHubScope = Boolean(accessToken) && !canViewAllHubAreas && assignedHubCodes.length === 0;
+  const canQueryShipments = Boolean(accessToken) && !lacksHubScope;
+  const shipmentQuery = useShipmentPageQuery(accessToken, shipmentPageFilters, {
+    enabled: canQueryShipments,
+  });
   const createShipmentMutation = useCreateShipmentMutation(accessToken);
   const pickupScanMutation = usePickupScanMutation(accessToken);
   const inboundScanMutation = useInboundScanMutation(accessToken);
   const outboundScanMutation = useOutboundScanMutation(accessToken);
   const courierOptionsQuery = useCourierOptionsQuery(accessToken);
+  const locationsQuery = useVietnamAdministrativeUnitsQuery();
+  const hubsQuery = useHubsQuery(accessToken, { isActive: 'true' });
+  const provinceOptions = locationsQuery.data ?? [];
+  const activeHubs = hubsQuery.data ?? [];
 
   const estimatedFee = useMemo(() => estimateFee(walkInForm), [walkInForm]);
-  const hubScopeTokens = useMemo(
-    () => deriveHubScopeTokens(hubsQuery.data ?? [], assignedHubCodes),
-    [assignedHubCodes, hubsQuery.data],
+  const walkInReceiverHub = useMemo(
+    () => resolveBranchHubByProvince(activeHubs, walkInForm.receiverRegion),
+    [activeHubs, walkInForm.receiverRegion],
   );
-  const scopedShipments = useMemo(() => {
-    if (canViewAllHubAreas) {
-      return shipmentQuery.data ?? [];
-    }
-
-    if (assignedHubCodes.length === 0) {
-      return [];
-    }
-
-    return (shipmentQuery.data ?? []).filter((item) => isShipmentInScope(item, hubScopeTokens));
-  }, [
-    assignedHubCodes.length,
-    canViewAllHubAreas,
-    hubScopeTokens,
-    shipmentQuery.data,
-  ]);
-  const selectedDate = searchParams.get('date') || today;
-
-  const visibleShipments = useMemo(() => {
-    const keyword = (filters.q ?? '').trim().toLowerCase();
-    const status = (filters.status ?? '').trim().toLowerCase();
-
-    return scopedShipments.filter((item) => {
-      const keywordMatched =
-        keyword.length === 0 ||
-        item.shipmentCode.toLowerCase().includes(keyword) ||
-        (item.senderName ?? '').toLowerCase().includes(keyword) ||
-        (item.senderPhone ?? '').toLowerCase().includes(keyword) ||
-        (item.receiverName ?? '').toLowerCase().includes(keyword) ||
-        (item.receiverPhone ?? '').toLowerCase().includes(keyword) ||
-        (item.platform ?? '').toLowerCase().includes(keyword);
-
-      const statusMatched = status.length === 0 || item.currentStatus.toLowerCase() === status;
-      const dateMatched = toDateKey(item.createdAt) === selectedDate;
-
-      return keywordMatched && statusMatched && dateMatched;
-    });
-  }, [filters.q, filters.status, scopedShipments, selectedDate]);
+  const visibleShipments = shipmentQuery.data?.items ?? [];
+  const pageInfo = shipmentQuery.data?.pageInfo ?? { hasNextPage: false, total: undefined };
+  const hasPreviousPage = offset > 0;
 
   const isScanSubmitting =
     pickupScanMutation.isPending || inboundScanMutation.isPending || outboundScanMutation.isPending;
@@ -352,8 +403,8 @@ export function ShipmentListPage(): React.JSX.Element {
   useEffect(() => {
     setQInput(filters.q ?? '');
     setStatusInput(filters.status ?? '');
-    setDateInput(searchParams.get('date') || today);
-  }, [filters.q, filters.status, searchParams, today]);
+    setDateInput(selectedDate);
+  }, [filters.q, filters.status, selectedDate]);
 
   useEffect(() => {
     if (dispatchCourierId || !courierOptionsQuery.data?.length) {
@@ -372,6 +423,8 @@ export function ShipmentListPage(): React.JSX.Element {
     const next = new URLSearchParams();
 
     next.set('date', date);
+    next.set('limit', String(pageSize));
+    next.set('offset', '0');
     if (q) {
       next.set('q', q);
     }
@@ -385,10 +438,32 @@ export function ShipmentListPage(): React.JSX.Element {
   const onResetFilters = () => {
     const next = new URLSearchParams();
     next.set('date', today);
+    next.set('limit', String(DEFAULT_PAGE_SIZE));
+    next.set('offset', '0');
     setSearchParams(next, { replace: true });
     setQInput('');
     setStatusInput('');
     setDateInput(today);
+  };
+
+  const updatePagination = (nextLimit: number, nextOffset: number) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('date', selectedDate);
+    next.set('limit', String(nextLimit));
+    next.set('offset', String(Math.max(0, nextOffset)));
+    setSearchParams(next, { replace: true });
+  };
+
+  const onPageSizeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    updatePagination(Number(event.target.value), 0);
+  };
+
+  const goToPreviousPage = () => {
+    updatePagination(pageSize, Math.max(0, offset - pageSize));
+  };
+
+  const goToNextPage = () => {
+    updatePagination(pageSize, offset + pageSize);
   };
 
   const submitCounterScan = async () => {
@@ -507,6 +582,27 @@ export function ShipmentListPage(): React.JSX.Element {
     }
   };
 
+  const handlePrintWaybill = async (shipment: ShipmentListItemDto): Promise<void> => {
+    const opened = printWaybill(shipment);
+    if (!opened || !accessToken || !shipment.requiresLabelReprint) {
+      return;
+    }
+
+    try {
+      await shipmentsClient.confirmLabelReprint(accessToken, shipment.shipmentCode, {
+        printedBy: session?.user.username ?? 'ops-web',
+      });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
+      useUiStore
+        .getState()
+        .showToast('Đã ghi nhận in lại tem mới, vận đơn đã được mở khóa thao tác.', 'success');
+    } catch (error) {
+      useUiStore
+        .getState()
+        .showToast(`Không ghi nhận được in lại tem: ${getErrorMessage(error)}`, 'error');
+    }
+  };
+
   const submitWalkInShipment = async (createAndScanPickup: boolean) => {
     if (!accessToken) {
       return;
@@ -525,6 +621,18 @@ export function ShipmentListPage(): React.JSX.Element {
       setWalkInError('Cần địa chỉ chi tiết người nhận.');
       return;
     }
+    if (hubsQuery.isLoading) {
+      setWalkInError('Đang tải danh sách hub, vui lòng thử lại sau vài giây.');
+      return;
+    }
+    if (hubsQuery.isError) {
+      setWalkInError('Không tải được danh sách hub để chia đơn theo địa chỉ.');
+      return;
+    }
+    if (!walkInReceiverHub) {
+      setWalkInError('Không tìm thấy hub quản lý tỉnh/thành người nhận.');
+      return;
+    }
 
     setWalkInMessage(null);
     setWalkInError(null);
@@ -532,7 +640,13 @@ export function ShipmentListPage(): React.JSX.Element {
     try {
       const createdShipment = await createShipmentMutation.mutateAsync({
         code: walkInForm.manualCode.trim().toUpperCase() || null,
-        metadata: buildWalkInMetadata(walkInForm, estimatedFee),
+        metadata: buildWalkInMetadata(walkInForm, estimatedFee, {
+          senderHubCode:
+            pickupLocationCode ||
+            assignedHubCodes[0]?.trim().toUpperCase() ||
+            null,
+          receiverHub: walkInReceiverHub,
+        }),
       });
 
       let successMessage = `Đã tạo vận đơn ${createdShipment.shipmentCode}.`;
@@ -599,6 +713,16 @@ export function ShipmentListPage(): React.JSX.Element {
             onChange={(event) => setDateInput(event.target.value)}
             style={styles.dateInput}
           />
+          <label style={styles.pageSizeControl}>
+            <span>Số dòng/trang</span>
+            <select value={pageSize} onChange={onPageSizeChange} style={styles.pageSizeSelect}>
+              {PAGE_SIZE_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
           <button type="submit">Áp dụng</button>
           <button type="button" onClick={onResetFilters}>
             Đặt lại
@@ -786,10 +910,16 @@ export function ShipmentListPage(): React.JSX.Element {
                   setWalkInForm((prev) => ({ ...prev, receiverRegion: event.target.value }))
                 }
               >
-                <option value="">Tỉnh/Thành người nhận</option>
-                {PROVINCE_CITY_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
+                <option value="">
+                  {locationsQuery.isLoading ? 'Đang tải tỉnh/thành...' : 'Tỉnh/Thành người nhận'}
+                </option>
+                {walkInForm.receiverRegion &&
+                !provinceOptions.some((province) => province.name === walkInForm.receiverRegion) ? (
+                  <option value={walkInForm.receiverRegion}>{walkInForm.receiverRegion}</option>
+                ) : null}
+                {provinceOptions.map((province) => (
+                  <option key={province.code} value={province.name}>
+                    {province.name}
                   </option>
                 ))}
               </select>
@@ -894,30 +1024,54 @@ export function ShipmentListPage(): React.JSX.Element {
       ) : null}
 
       {shipmentQuery.isLoading ? <p>Đang tải vận đơn...</p> : null}
+      {shipmentQuery.isFetching && !shipmentQuery.isLoading ? <p>Đang cập nhật trang vận đơn...</p> : null}
       {shipmentQuery.isError ? (
         <p style={styles.errorText}>{getErrorMessage(shipmentQuery.error)}</p>
       ) : null}
-      {hubsQuery.isError ? (
-        <p style={styles.errorText}>{getErrorMessage(hubsQuery.error)}</p>
+      {lacksHubScope ? (
+        <p>Không hiển thị được vận đơn vì tài khoản OPS chưa được gán hub.</p>
       ) : null}
       {shipmentQuery.isSuccess && visibleShipments.length === 0 ? (
         <p>
-          {assignedHubCodes.length === 0 && !canViewAllHubAreas
-            ? 'Không hiển thị được vận đơn vì tài khoản OPS chưa được gán hub.'
-            : 'Không tìm thấy vận đơn phù hợp ngày hoặc bộ lọc hiện tại.'}
+          Không tìm thấy vận đơn phù hợp ngày hoặc bộ lọc hiện tại.
         </p>
       ) : null}
-      {shipmentQuery.isSuccess && visibleShipments.length > 0 ? (
-        <ShipmentsTable
-          items={visibleShipments}
-          onPrepareDispatch={(shipment) => {
-            setDispatchShipmentCode(shipment.shipmentCode);
-            setDispatchMessage(null);
-            setDispatchError(null);
-            setIsDispatchModalOpen(true);
-          }}
-          onPrint={printWaybill}
-        />
+      {shipmentQuery.isSuccess ? (
+        <>
+          <div style={styles.paginationBar}>
+            <span>
+              Trang {pageNumber} | {formatTotal(pageInfo.total)}
+            </span>
+            <div style={styles.paginationActions}>
+              <button
+                type="button"
+                onClick={goToPreviousPage}
+                disabled={!hasPreviousPage || shipmentQuery.isFetching}
+              >
+                Trang trước
+              </button>
+              <button
+                type="button"
+                onClick={goToNextPage}
+                disabled={!pageInfo.hasNextPage || shipmentQuery.isFetching}
+              >
+                Trang sau
+              </button>
+            </div>
+          </div>
+          {visibleShipments.length > 0 ? (
+            <ShipmentsTable
+              items={visibleShipments}
+              onPrepareDispatch={(shipment) => {
+                setDispatchShipmentCode(shipment.shipmentCode);
+                setDispatchMessage(null);
+                setDispatchError(null);
+                setIsDispatchModalOpen(true);
+              }}
+              onPrint={(shipment) => { void handlePrintWaybill(shipment); }}
+            />
+          ) : null}
+        </>
       ) : null}
     </div>
   );
@@ -968,8 +1122,41 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '8px 10px',
     minWidth: 170,
   },
+  pageSizeControl: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    color: '#2d3f99',
+    fontSize: 13,
+    fontWeight: 600,
+  },
+  pageSizeSelect: {
+    border: '1px solid #d9def3',
+    borderRadius: 10,
+    padding: '8px 10px',
+    minWidth: 88,
+  },
   filterActions: {
     marginLeft: 'auto',
+    display: 'flex',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  paginationBar: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+    flexWrap: 'wrap',
+    margin: '12px 0',
+    border: '1px solid #d9def3',
+    borderRadius: 10,
+    padding: '8px 12px',
+    backgroundColor: '#ffffff',
+    color: '#1f2b6f',
+    fontWeight: 600,
+  },
+  paginationActions: {
     display: 'flex',
     gap: 8,
     flexWrap: 'wrap',
