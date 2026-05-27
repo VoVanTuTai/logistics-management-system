@@ -203,55 +203,55 @@ export function OperationsReportPage(): React.JSX.Element {
     label: string;
     value: string;
     detail: string;
-    formula: string;
+    hint: string;
     tone: KpiTone;
     to: string;
   }> = [
     {
-      label: 'Tổng vận đơn',
+      label: 'Tổng đơn trong kỳ',
       value: String(scopedShipments.length),
       detail: `${fromDate} đến ${toDate}`,
-      formula: 'count(shipment.createdAt trong kỳ)',
+      hint: 'Tất cả vận đơn được tạo trong khoảng ngày đang xem.',
       tone: 'primary',
       to: routePaths.shipments,
     },
     {
-      label: 'Tỷ lệ giao thành công',
+      label: 'Giao xong',
       value: formatPercent(deliveredShipments.length, scopedShipments.length),
       detail: `${deliveredShipments.length}/${scopedShipments.length} đơn`,
-      formula: 'delivered / total',
+      hint: 'Tỷ lệ đơn đã giao thành công trên tổng đơn trong kỳ.',
       tone: 'success',
       to: routePaths.opsMetricsDeadlineDeliverySla,
     },
     {
-      label: 'SLA phát 48h',
+      label: 'Giao đúng 48h',
       value: formatPercent(sla48Shipments.length, deliveredShipments.length),
       detail: `${sla48Shipments.length}/${deliveredShipments.length} đơn đã giao`,
-      formula: 'delivered <= 48h / delivered',
+      hint: 'Trong nhóm đã giao, bao nhiêu đơn hoàn tất không quá 48 giờ.',
       tone: 'success',
       to: routePaths.opsMetricsDeadlineDeliveryLeadtime,
     },
     {
-      label: 'Cảnh báo quá hạn',
+      label: 'Cần xử lý ngay',
       value: String(overdueShipments.length),
-      detail: 'Đơn chưa hoàn tất quá 24h',
-      formula: 'open && age(updatedAt) >= 24h',
+      detail: 'Đơn không cập nhật quá 24h',
+      hint: 'Ưu tiên kiểm tra trước ca: đơn còn mở và đã lâu chưa đổi trạng thái.',
       tone: overdueShipments.length > 0 ? 'danger' : 'success',
       to: routePaths.opsMetricsDeadlineOverdueAlerts,
     },
     {
-      label: 'Bất thường / NDR',
+      label: 'Đơn bất thường',
       value: String(exceptionShipments.length + openNdr),
       detail: `${exceptionShipments.length} đơn, ${openNdr} NDR mở`,
-      formula: 'exception status + open NDR',
+      hint: 'Đơn giao thất bại, NDR hoặc exception đang cần theo dõi.',
       tone: exceptionShipments.length + openNdr > 0 ? 'warning' : 'success',
       to: routePaths.serviceQualityAbnormalManagement,
     },
     {
-      label: 'Việc vận hành mở',
+      label: 'Việc đang mở',
       value: String(openTasks + openManifests),
       detail: `${openTasks} task, ${openManifests} manifest`,
-      formula: 'open tasks + open manifests',
+      hint: 'Các task và bao/chuyến chưa hoàn tất trong hệ thống.',
       tone: openTasks + openManifests > 0 ? 'primary' : 'success',
       to: routePaths.opsMetricsActionExecutionBoard,
     },
@@ -277,19 +277,36 @@ export function OperationsReportPage(): React.JSX.Element {
     <section className="ops-report">
       <header className="ops-report__hero">
         <div>
-          <small>Báo cáo vận hành</small>
-          <h2>Lớp báo cáo production cho chỉ số ops</h2>
+          <small>Bảng kiểm vận hành</small>
+          <h2>Nhìn nhanh tình hình hôm nay và việc cần xử lý</h2>
           <p>
-            Dùng để chốt số liệu theo kỳ, có filter rõ, định nghĩa KPI rõ và drill-down tới màn xử lý tương ứng.
+            Màn này gom các chỉ số quan trọng thành ngôn ngữ dễ hiểu: tổng đơn,
+            giao xong, đơn quá hạn, đơn bất thường và việc còn mở. Bấm vào từng ô
+            để đi tới màn xử lý chi tiết.
           </p>
         </div>
         <div className="ops-report__hero-actions">
           <button type="button" onClick={handleExport} disabled={hubRows.length === 0}>
             Xuất CSV
           </button>
-          <Link to={routePaths.analyticsDashboard}>Mở dashboard nhanh</Link>
+          <Link to={routePaths.opsMetricsDeadlineInventory}>Xem tồn kho</Link>
         </div>
       </header>
+
+      <section className="ops-report__guide" aria-label="Cách đọc bảng kiểm">
+        <article>
+          <strong>1. Nhìn ô đỏ trước</strong>
+          <span>Có đơn quá hạn thì xử lý trước, vì đây là nhóm dễ ảnh hưởng cam kết dịch vụ.</span>
+        </article>
+        <article>
+          <strong>2. So sánh theo hub</strong>
+          <span>Hub nào nhiều đơn mở hoặc bất thường thì cần điều phối thêm người hoặc kiểm tra tồn.</span>
+        </article>
+        <article>
+          <strong>3. Chốt số cuối ca</strong>
+          <span>Dùng xuất CSV khi cần gửi báo cáo ca/ngày, không cần đọc các công thức chuyên sâu.</span>
+        </article>
+      </section>
 
       {loadError ? (
         <p className="ops-report__error" role="alert">
@@ -335,7 +352,7 @@ export function OperationsReportPage(): React.JSX.Element {
             <span>{kpi.label}</span>
             <strong>{kpi.value}</strong>
             <em>{kpi.detail}</em>
-            <small>{kpi.formula}</small>
+            <small>{kpi.hint}</small>
           </Link>
         ))}
       </section>
@@ -345,9 +362,9 @@ export function OperationsReportPage(): React.JSX.Element {
           <header className="ops-report__panel-head">
             <div>
               <h3>Tổng hợp theo hub</h3>
-              <span>{hubRows.length} hub trong bộ lọc hiện tại</span>
+              <span>Hub nào nhiều đơn mở, bất thường hoặc quá hạn thì cần kiểm tra trước</span>
             </div>
-            <Link to={routePaths.opsMetricsPlanningNetworkKpi}>KPI mạng lưới</Link>
+            <Link to={routePaths.opsMetricsDeadlineInventory}>Tồn kho & quá hạn</Link>
           </header>
           <div className="ops-report__table-wrap">
             <table>
@@ -359,7 +376,7 @@ export function OperationsReportPage(): React.JSX.Element {
                   <th>Đang mở</th>
                   <th>Bất thường</th>
                   <th>Quá hạn</th>
-                  <th>SLA 48h</th>
+                  <th>Đúng 48h</th>
                 </tr>
               </thead>
               <tbody>
@@ -385,14 +402,14 @@ export function OperationsReportPage(): React.JSX.Element {
         <article className="ops-report__panel">
           <header className="ops-report__panel-head">
             <div>
-              <h3>Drill-down cần xử lý</h3>
-              <span>{topExceptions.length} đơn ưu tiên</span>
+              <h3>Danh sách cần mở ngay</h3>
+              <span>{topExceptions.length} đơn quá hạn hoặc bất thường</span>
             </div>
             <Link to={routePaths.opsMetricsDeadlineOverdueAlerts}>Cảnh báo quá hạn</Link>
           </header>
           <div className="ops-report__issue-list">
             {topExceptions.map((shipment) => (
-              <Link key={shipment.id} to={routePaths.shipmentDetail(shipment.id)} className="ops-report__issue">
+              <Link key={shipment.id} to={routePaths.shipmentDetail(shipment.shipmentCode)} className="ops-report__issue">
                 <strong>{shipment.shipmentCode}</strong>
                 <span>{formatShipmentStatusLabel(shipment.currentStatus)}</span>
                 <small>
@@ -407,40 +424,40 @@ export function OperationsReportPage(): React.JSX.Element {
 
       <section className="ops-report__definitions">
         <article>
-          <h3>Định nghĩa KPI production</h3>
+          <h3>Chú thích ngắn</h3>
           <dl>
             <div>
-              <dt>Tổng vận đơn</dt>
-              <dd>Đếm vận đơn theo `createdAt` trong kỳ, sau khi áp dụng phạm vi hub/chi nhánh.</dd>
+              <dt>Đơn đang mở</dt>
+              <dd>Đơn chưa giao xong, chưa hủy, chưa hoàn tất chuyển hoàn.</dd>
             </div>
             <div>
-              <dt>Tỷ lệ giao thành công</dt>
-              <dd>`DELIVERED / total`, dùng để báo cáo hiệu quả phát.</dd>
+              <dt>Đơn quá hạn</dt>
+              <dd>Đơn còn mở và không có cập nhật mới trong 24 giờ.</dd>
             </div>
             <div>
-              <dt>SLA phát 48h</dt>
-              <dd>Vận đơn `DELIVERED` có thời gian từ tạo đơn tới cập nhật giao thành công không quá 48h.</dd>
+              <dt>Giao đúng 48h</dt>
+              <dd>Đơn đã giao với thời gian từ lúc tạo tới lúc giao thành công không quá 48 giờ.</dd>
             </div>
             <div>
-              <dt>Cảnh báo quá hạn</dt>
-              <dd>Vận đơn chưa hoàn tất và không cập nhật quá 24h.</dd>
+              <dt>Đơn bất thường</dt>
+              <dd>Đơn giao thất bại, có NDR, exception hoặc đang cần nhân sự kiểm tra thêm.</dd>
             </div>
           </dl>
         </article>
         <article>
-          <h3>API metrics riêng cần tách</h3>
+          <h3>Cách dùng trong ca</h3>
           <dl>
             <div>
-              <dt>Endpoint đề xuất</dt>
-              <dd>`GET /ops/reports/operations?from=&to=&hubCode=&statusGroup=`</dd>
+              <dt>Đầu ca</dt>
+              <dd>Mở nhóm cần xử lý ngay và đơn bất thường để chia việc trước.</dd>
             </div>
             <div>
-              <dt>Response đề xuất</dt>
-              <dd>`kpis`, `hubRows`, `exceptions`, `lastSyncedAt`, `scope`.</dd>
+              <dt>Trong ca</dt>
+              <dd>Theo dõi hub nào tăng đơn mở hoặc quá hạn để bổ sung người xử lý.</dd>
             </div>
             <div>
-              <dt>Lý do tách API</dt>
-              <dd>Backend chốt công thức, phân quyền dữ liệu, cache/materialized view và export chính thức.</dd>
+              <dt>Cuối ca</dt>
+              <dd>Xuất CSV và ghi chú nguyên nhân các hub còn nhiều việc mở.</dd>
             </div>
           </dl>
         </article>

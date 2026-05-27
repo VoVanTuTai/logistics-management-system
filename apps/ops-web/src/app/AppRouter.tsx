@@ -324,7 +324,6 @@ type SidebarIconName =
   | 'linehaul_transport';
 
 type SidebarPanelKind =
-  | 'thermal_label'
   | 'return_block'
   | 'monitor_data'
   | 'service_proactive'
@@ -566,9 +565,6 @@ function DashboardLayout(): React.JSX.Element {
     || location.pathname.startsWith('/app/coming-soon');
 
   const isReturnBlockSection = pathMatches(location.pathname, routePaths.returnBlockRoot);
-  const isThermalLabelSection =
-    pathMatches(location.pathname, routePaths.thermalLabelManagement) ||
-    pathMatches(location.pathname, routePaths.thermalLabelPrint);
   const isFinanceSettlementSection =
     pathMatches(location.pathname, routePaths.groupFinanceSettlement);
   const isOperationsPlatformSection =
@@ -667,7 +663,6 @@ function DashboardLayout(): React.JSX.Element {
         { label: 'Quét tại hub', icon: 'tracking_lookup', to: routePaths.scans },
         { label: 'Tra cứu hành trình', icon: 'tracking_lookup', to: routePaths.tracking },
         { label: 'Giám sát dữ liệu', icon: 'monitor_data', kind: 'monitor_data' },
-        { label: 'Tem bao in nhiệt', icon: 'thermal_label', kind: 'thermal_label' },
       ]
     : [
         { label: 'Vận đơn', icon: 'customer_order_management', to: routePaths.shipments },
@@ -684,11 +679,10 @@ function DashboardLayout(): React.JSX.Element {
     { label: 'Chuyển hoàn', icon: 'return_block', kind: 'return_block' },
   ];
   const operationsMetricsSidebarItems: SidebarItem[] = [
-    { label: 'Báo cáo vận hành', icon: 'operation_report', to: routePaths.opsMetricsReport },
-    { label: 'Chỉ số bất thường', icon: 'metrics_abnormal', kind: 'metrics_abnormal' },
-    { label: 'Thời hiệu / SLA', icon: 'metrics_deadline', kind: 'metrics_deadline' },
-    { label: 'Quy hoạch / KPI mạng lưới', icon: 'metrics_deadline', kind: 'metrics_planning' },
-    { label: 'Bàn điều phối thao tác', icon: 'metrics_action', kind: 'metrics_action' },
+    { label: 'Tổng quan dễ hiểu', icon: 'operation_report', to: routePaths.opsMetricsReport },
+    { label: 'Tồn kho & quá hạn', icon: 'metrics_deadline', to: routePaths.opsMetricsDeadlineInventory },
+    { label: 'Đơn cần chú ý', icon: 'metrics_abnormal', to: routePaths.opsMetricsAbnormalHandling },
+    { label: 'Việc cần làm', icon: 'metrics_action', to: routePaths.opsMetricsActionExecutionBoard },
   ];
   const branchBusinessSidebarItems: SidebarItem[] = [
     {
@@ -731,10 +725,6 @@ function DashboardLayout(): React.JSX.Element {
     { label: 'Giám sát hàng gửi', to: routePaths.monitorDataHangGui },
     { label: 'Giám sát hàng phát', to: routePaths.monitorDataHangPhat },
     { label: 'Giám sát đóng bao', to: routePaths.monitorDataDongBao },
-  ] as const;
-  const thermalLabelChildItems = [
-    { label: 'Quản lý tem bao', to: routePaths.thermalLabelManagement },
-    { label: 'In tem bao', to: routePaths.thermalLabelPrint },
   ] as const;
   const linehaulChildItems = [
     { label: 'Quản lý chuyến xe', to: routePaths.linehaulTripManagement },
@@ -798,7 +788,6 @@ function DashboardLayout(): React.JSX.Element {
   ] as const;
 
   const panelItemsMap: Record<SidebarPanelKind, ReadonlyArray<{ label: string; to: string }>> = {
-    thermal_label: thermalLabelChildItems,
     linehaul_transport: linehaulChildItems,
     return_block: returnBlockChildItems,
     monitor_data: monitorDataChildItems,
@@ -815,7 +804,6 @@ function DashboardLayout(): React.JSX.Element {
   };
 
   const panelTitleMap: Record<SidebarPanelKind, string> = {
-    thermal_label: 'Tem bao in nhiệt',
     linehaul_transport: 'Vận chuyển tuyến nhánh',
     return_block: 'Chuyển hoàn',
     monitor_data: 'Giám sát dữ liệu',
@@ -834,9 +822,6 @@ function DashboardLayout(): React.JSX.Element {
   const isMonitorDataRoute = monitorDataChildItems.some((item) =>
     pathMatches(location.pathname, item.to),
   );
-  const isThermalLabelRoute =
-    pathMatches(location.pathname, routePaths.thermalLabelManagement) ||
-    pathMatches(location.pathname, routePaths.thermalLabelPrint);
   const isLinehaulRoute =
     pathMatches(location.pathname, routePaths.linehaulRoot) ||
     linehaulChildItems.some((item) => pathMatches(location.pathname, item.to));
@@ -887,9 +872,7 @@ function DashboardLayout(): React.JSX.Element {
       pathMatches(location.pathname, item.to),
     );
 
-  const routeDrivenPanel: SidebarPanelKind | null = isThermalLabelRoute
-    ? 'thermal_label'
-    : isLinehaulRoute
+  const routeDrivenPanel: SidebarPanelKind | null = isLinehaulRoute
     ? 'linehaul_transport'
     : isReturnBlockRoute
     ? 'return_block'
@@ -943,7 +926,7 @@ function DashboardLayout(): React.JSX.Element {
     ? ['branch_local_orders', 'branch_finance_settlement']
     : isCapabilityPlatformSection
     ? []
-    : ['monitor_data', 'thermal_label'];
+    : ['monitor_data'];
 
   const activeSidebarPanelInSection =
     activeSidebarPanel &&
@@ -1018,8 +1001,6 @@ function DashboardLayout(): React.JSX.Element {
     ? 'Masterdata'
     : isMonitorDataRoute
     ? 'Giám sát dữ liệu'
-    : isThermalLabelRoute
-    ? 'Tem bao in nhiệt'
     : activeLinehaulItem
     ? activeLinehaulItem.label
     : isLinehaulRoute
@@ -1237,9 +1218,7 @@ function DashboardLayout(): React.JSX.Element {
                 }
 
                 const isActive =
-                  item.kind === 'thermal_label'
-                    ? isThermalLabelRoute
-                    : item.kind === 'return_block'
+                  item.kind === 'return_block'
                     ? isReturnBlockRoute
                     : item.kind === 'monitor_data'
                     ? isMonitorDataRoute
@@ -1428,11 +1407,11 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.thermalLabelManagementLeaf}
-              element={opsModuleRoute('Quản lý tem bao in nhiệt', <ThermalLabelManagementPage />)}
+              element={<Navigate to={routePaths.linehaulBagLabelManagement} replace />}
             />
             <Route
               path={routePaths.thermalLabelPrintLeaf}
-              element={opsModuleRoute('In tem bao', <ThermalLabelPrintPage />)}
+              element={<Navigate to={routePaths.linehaulBagLabelPrint} replace />}
             />
             <Route
               path={routePaths.returnBlockManagementLeaf}
@@ -1750,7 +1729,7 @@ export function AppRouter(): React.JSX.Element {
               path={routePaths.manifestsLeaf}
               element={
                 appEnv.enableFullOpsModules
-                  ? <Navigate to={routePaths.thermalLabelManagement} replace />
+                  ? <Navigate to={routePaths.linehaulBagLabelManagement} replace />
                   : lazyRoute(<ManifestManagementPage />)
               }
             />

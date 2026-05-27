@@ -24,7 +24,7 @@ import { ShipmentsTable } from './ShipmentsTable';
 
 type ServiceType = 'STANDARD' | 'EXPRESS' | 'SAME_DAY';
 type ShipmentTimeFilter = 'today' | 'last7Days' | 'last30Days' | 'custom' | 'all';
-type BranchGoodsFilter = 'all' | 'inventoryByDay' | 'problemOrders' | 'returnNeeded';
+type BranchGoodsFilter = 'readyForDelivery' | 'all' | 'inventoryByDay' | 'problemOrders' | 'returnNeeded';
 
 interface WalkInShipmentFormState {
   manualCode: string;
@@ -95,8 +95,8 @@ const SHIPMENT_STATUS_OPTIONS = [
 const DEFAULT_PAGE_SIZE = 20;
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 const EMPTY_SHIPMENTS: ShipmentListItemDto[] = [];
-const DEFAULT_TIME_FILTER: ShipmentTimeFilter = 'today';
-const DEFAULT_BRANCH_GOODS_FILTER: BranchGoodsFilter = 'all';
+const DEFAULT_TIME_FILTER: ShipmentTimeFilter = 'all';
+const DEFAULT_BRANCH_GOODS_FILTER: BranchGoodsFilter = 'readyForDelivery';
 const FINAL_BRANCH_STATUSES = new Set([
   'CANCELLED',
   'DELIVERED',
@@ -104,6 +104,12 @@ const FINAL_BRANCH_STATUSES = new Set([
   'RETURN_COMPLETED',
   'RETURNED',
   'LOST',
+]);
+const READY_FOR_DELIVERY_STATUSES = new Set([
+  'MANIFEST_RECEIVED',
+  'MANIFEST_UNSEALED',
+  'INVENTORY_CHECK',
+  'SCAN_INBOUND',
 ]);
 const PROBLEM_SHIPMENT_STATUSES = new Set(['DELIVERY_FAILED', 'NDR_CREATED', 'EXCEPTION']);
 const RETURN_NEEDED_STATUSES = new Set(['DELIVERY_FAILED', 'NDR_CREATED', 'EXCEPTION']);
@@ -249,7 +255,11 @@ function normalizeTimeFilter(value: string | null): ShipmentTimeFilter {
 }
 
 function normalizeBranchGoodsFilter(value: string | null): BranchGoodsFilter {
-  return value === 'inventoryByDay' || value === 'problemOrders' || value === 'returnNeeded'
+  return value === 'readyForDelivery' ||
+    value === 'all' ||
+    value === 'inventoryByDay' ||
+    value === 'problemOrders' ||
+    value === 'returnNeeded'
     ? value
     : DEFAULT_BRANCH_GOODS_FILTER;
 }
@@ -273,6 +283,19 @@ function toDateKey(value: string | null | undefined): string {
 
 function isBranchInventoryShipment(shipment: ShipmentListItemDto): boolean {
   return !FINAL_BRANCH_STATUSES.has(normalizeOpsCode(shipment.currentStatus));
+}
+
+function isReadyForDeliveryShipment(
+  shipment: ShipmentListItemDto,
+  deliveryCourierByShipment: Map<string, string>,
+): boolean {
+  const shipmentCode = normalizeOpsCode(shipment.shipmentCode);
+  const assignedCourier = deliveryCourierByShipment.get(shipmentCode) ?? 'Chưa bàn giao';
+
+  return (
+    READY_FOR_DELIVERY_STATUSES.has(normalizeOpsCode(shipment.currentStatus)) &&
+    assignedCourier === 'Chưa bàn giao'
+  );
 }
 
 function isProblemShipment(shipment: ShipmentListItemDto): boolean {
@@ -513,11 +536,12 @@ export function ShipmentListPage(): React.JSX.Element {
   const [dispatchLoading, setDispatchLoading] = useState(false);
 
   const assignedHubCodesKey = assignedHubCodes.join(',');
+  const hasShipmentSearch = Boolean((filters.q ?? '').trim());
   const shipmentSearchCodes = useMemo(() => extractShipmentSearchCodes(filters.q ?? ''), [filters.q]);
   const isMultiCodeSearch = shipmentSearchCodes.length > 1;
   const dateRange = useMemo(
-    () => buildCreatedAtRange(timeFilter, selectedDateFrom, selectedDateTo, today),
-    [selectedDateFrom, selectedDateTo, timeFilter, today],
+    () => (hasShipmentSearch ? {} : buildCreatedAtRange(timeFilter, selectedDateFrom, selectedDateTo, today)),
+    [hasShipmentSearch, selectedDateFrom, selectedDateTo, timeFilter, today],
   );
   const shipmentPageFilters = useMemo<ShipmentListFilters>(
     () => ({
@@ -588,13 +612,19 @@ export function ShipmentListPage(): React.JSX.Element {
   }, [courierFilter, courierOptionsQuery.data, deliveryCourierByShipment]);
   const visibleShipments = useMemo(() => {
     return pageShipments.filter((shipment) => {
+      const branchGoodsMatched =
+        hasShipmentSearch && branchGoodsFilter === DEFAULT_BRANCH_GOODS_FILTER
+          ? true
+          : branchGoodsFilter === 'all' ||
+            (branchGoodsFilter === 'readyForDelivery' &&
+              isReadyForDeliveryShipment(shipment, deliveryCourierByShipment)) ||
+            (branchGoodsFilter === 'inventoryByDay' &&
+              isBranchInventoryShipment(shipment) &&
+              (!inventoryDate || toDateKey(shipment.updatedAt) <= inventoryDate)) ||
+            (branchGoodsFilter === 'problemOrders' && isProblemShipment(shipment)) ||
+            (branchGoodsFilter === 'returnNeeded' && isReturnNeededShipment(shipment));
       const statusMatched =
-        branchGoodsFilter === 'all' ||
-        (branchGoodsFilter === 'inventoryByDay' &&
-          isBranchInventoryShipment(shipment) &&
-          (!inventoryDate || toDateKey(shipment.updatedAt) <= inventoryDate)) ||
-        (branchGoodsFilter === 'problemOrders' && isProblemShipment(shipment)) ||
-        (branchGoodsFilter === 'returnNeeded' && isReturnNeededShipment(shipment));
+        branchGoodsMatched;
       const assignedCourier =
         deliveryCourierByShipment.get(normalizeOpsCode(shipment.shipmentCode)) ?? 'Chưa bàn giao';
       const courierMatched = !courierFilter || assignedCourier === courierFilter;
@@ -605,6 +635,7 @@ export function ShipmentListPage(): React.JSX.Element {
     branchGoodsFilter,
     courierFilter,
     deliveryCourierByShipment,
+    hasShipmentSearch,
     inventoryDate,
     pageShipments,
   ]);
@@ -984,7 +1015,7 @@ export function ShipmentListPage(): React.JSX.Element {
     <div>
       <h2>Danh sách vận đơn</h2>
       <p style={styles.helperText}>
-        Danh sách vận đơn theo phạm vi hub. Chọn vận đơn cần xử lý rồi in tem từ thanh thao tác phía trên.
+        Mặc định hiển thị đơn đã về bưu cục, chưa phát sinh thao tác phát hàng. Nhập mã để tra cứu mọi vận đơn thuộc phạm vi hub.
       </p>
 
       <form onSubmit={onFilterSubmit} style={styles.filterForm}>
@@ -992,7 +1023,7 @@ export function ShipmentListPage(): React.JSX.Element {
           <textarea
             name="q"
             rows={2}
-            placeholder="Tìm mã vận đơn. Có thể dán nhiều mã, mỗi mã một dòng hoặc cách nhau bằng dấu phẩy."
+            placeholder="Tìm mã vận đơn trong toàn bộ dữ liệu thuộc hub. Có thể dán nhiều mã, mỗi mã một dòng hoặc cách nhau bằng dấu phẩy."
             value={qInput}
             onChange={(event) => setQInput(event.target.value)}
             style={styles.searchInput}
@@ -1044,6 +1075,7 @@ export function ShipmentListPage(): React.JSX.Element {
             onChange={(event) => setBranchGoodsInput(normalizeBranchGoodsFilter(event.target.value))}
             style={styles.select}
           >
+            <option value="readyForDelivery">Hàng đã đến chờ phát</option>
             <option value="all">Tất cả hàng hoá bưu cục</option>
             <option value="inventoryByDay">Hàng tồn kho theo ngày</option>
             <option value="problemOrders">Đơn vấn đề</option>
@@ -1102,7 +1134,7 @@ export function ShipmentListPage(): React.JSX.Element {
             disabled={selectedShipments.length === 0}
             onClick={() => void printSelectedLabels()}
           >
-            In tem
+            In tem đơn hàng
           </button>
         </div>
       </form>
@@ -1124,6 +1156,8 @@ export function ShipmentListPage(): React.JSX.Element {
       <div style={styles.branchFilterSummary}>
         <span>Trang hiện tại: {pageShipments.length} vận đơn</span>
         <span>Đang hiển thị: {visibleShipments.length} vận đơn</span>
+        {hasShipmentSearch ? <span>Đang tra cứu toàn bộ thời gian trong phạm vi hub</span> : null}
+        {branchGoodsFilter === 'readyForDelivery' && !hasShipmentSearch ? <span>Hàng đã đến, chưa thao tác phát</span> : null}
         {branchGoodsFilter === 'inventoryByDay' ? <span>Tồn đến ngày: {inventoryDate}</span> : null}
         {courierFilter ? <span>Courier: {courierFilter}</span> : null}
       </div>

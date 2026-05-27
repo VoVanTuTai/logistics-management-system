@@ -328,8 +328,6 @@ export const OPS_FULL_MODULE_ROUTE_PATHS = [
   routePaths.opsMetricsDeadlineOverdueAlerts,
   routePaths.opsMetricsPlanningNetworkKpi,
   routePaths.opsMetricsActionExecutionBoard,
-  routePaths.thermalLabelManagement,
-  routePaths.thermalLabelPrint,
   routePaths.returnBlockRoot,
   routePaths.returnBlockRegistration,
   routePaths.returnBlockManagement,
