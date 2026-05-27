@@ -73,10 +73,10 @@ function getQrDataUrl(data: Record<string, unknown>): string {
 function buildNexusLogoSvg(): string {
   return `
     <svg class="brand-mark" viewBox="0 0 210 210" role="img" aria-label="NEXUS">
-      <rect x="0" y="0" width="200" height="200" rx="36" fill="#ffffff" />
-      <rect x="18" y="18" width="164" height="164" rx="24" fill="#185FA5" />
-      <text x="100" y="142" text-anchor="middle" font-family="Arial, sans-serif" font-size="120" font-weight="800" fill="#ffffff">N</text>
-      <circle cx="100" cy="168" r="5" fill="#85B7EB" />
+      <rect x="4" y="4" width="202" height="202" rx="40" fill="#ffffff" stroke="#0f172a" stroke-width="8" />
+      <rect x="31" y="31" width="148" height="148" rx="28" fill="#185FA5" />
+      <path d="M61 151V59h27l35 49V59h26v92h-26L88 102v49H61Z" fill="#ffffff" />
+      <circle cx="155" cy="151" r="7" fill="#85B7EB" />
     </svg>
   `;
 }
@@ -90,6 +90,7 @@ function buildTripSealPrintHtml(trip: LinehaulTrip): string {
   const driverName = formatPrintValue(trip.driverName);
   const driverPhone = formatPrintValue(trip.driverPhone);
   const vehiclePlate = formatPrintValue(trip.vehiclePlate);
+  const printedAt = formatDateTime(new Date().toISOString());
   const qrDataUrl = getQrDataUrl({
     vehicleCode: trip.tripCode,
     tripCode: trip.tripCode,
@@ -104,6 +105,9 @@ function buildTripSealPrintHtml(trip: LinehaulTrip): string {
     plannedStartAt: trip.plannedStartAt,
     plannedEndAt: trip.plannedEndAt,
   });
+  const qrMarkup = qrDataUrl
+    ? `<img src="${qrDataUrl}" alt="QR tem xe" />`
+    : '<div class="qr-fallback">QR</div>';
 
   return `
     <section class="seal-ticket">
@@ -111,69 +115,76 @@ function buildTripSealPrintHtml(trip: LinehaulTrip): string {
         <div class="brand-lockup">
           ${buildNexusLogoSvg()}
           <div>
-            <h1>NEXUS EXPRESS</h1>
-            <p>LINEHAUL VEHICLE LABEL</p>
+            <h1>NEXUS LOGISTICS</h1>
+            <p>VEHICLE TRANSIT LABEL</p>
           </div>
         </div>
-        <div class="trip-type">${escapeHtml(LINEHAUL_TRIP_TYPE_LABELS[trip.tripType])}</div>
+        <div class="header-meta">
+          <strong>${escapeHtml(LINEHAUL_TRIP_TYPE_LABELS[trip.tripType])}</strong>
+          <span>In lúc ${escapeHtml(printedAt)}</span>
+        </div>
       </header>
 
-      <div class="trip-code-card">
-        <span>Mã chuyến / mã tem xe</span>
-        <strong>${escapeHtml(trip.tripCode)}</strong>
-      </div>
+      <section class="scan-row">
+        <div class="code-panel">
+          <div class="code-label">Mã tem xe / mã chuyến</div>
+          <strong>${escapeHtml(trip.tripCode)}</strong>
+          <div class="barcode-box">
+            ${generateBarcodeSvg(trip.tripCode)}
+          </div>
+          <span>${escapeHtml(trip.tripCode)}</span>
+        </div>
+        <aside class="qr-card">
+          ${qrMarkup}
+          <span>QR Courier Mobile</span>
+        </aside>
+      </section>
 
-      <div class="barcode-card">
-        ${generateBarcodeSvg(trip.tripCode)}
-        <span>${escapeHtml(trip.tripCode)}</span>
-      </div>
-
-      <section class="route-row">
+      <section class="route-strip" aria-label="Hub đi đến">
         <article>
           <span>Hub đi</span>
           <strong>${escapeHtml(trip.originHubCode)}</strong>
         </article>
+        <div class="route-arrow">-></div>
         <article>
           <span>Hub đến</span>
           <strong>${escapeHtml(trip.destinationHubCode)}</strong>
         </article>
       </section>
 
-      <section class="main-grid">
-        <div class="info-grid">
-          <article>
-            <span>Bắt đầu</span>
-            <strong>${escapeHtml(formatDateTime(trip.plannedStartAt))}</strong>
-          </article>
-          <article>
-            <span>Kết thúc</span>
-            <strong>${escapeHtml(formatDateTime(trip.plannedEndAt))}</strong>
-          </article>
-          <article>
-            <span>Tài xế</span>
-            <strong>${escapeHtml(driverName)}</strong>
-          </article>
-          <article>
-            <span>Số điện thoại</span>
-            <strong>${escapeHtml(driverPhone)}</strong>
-          </article>
-          <article class="vehicle-plate">
-            <span>Biển số xe</span>
-            <strong>${escapeHtml(vehiclePlate)}</strong>
-          </article>
-          <article>
-            <span>Trạng thái</span>
-            <strong>Sẵn sàng in tem</strong>
-          </article>
-        </div>
-        <aside class="qr-card">
-          <img src="${qrDataUrl}" alt="QR tem xe" />
-          <span>Quét bằng Courier Mobile</span>
-        </aside>
+      <section class="schedule-grid">
+        <article>
+          <span>Ngày giờ bắt đầu</span>
+          <strong>${escapeHtml(formatDateTime(trip.plannedStartAt))}</strong>
+        </article>
+        <article>
+          <span>Ngày giờ kết thúc</span>
+          <strong>${escapeHtml(formatDateTime(trip.plannedEndAt))}</strong>
+        </article>
+      </section>
+
+      <section class="vehicle-grid">
+        <article class="driver-card">
+          <span>Tài xế</span>
+          <strong>${escapeHtml(driverName)}</strong>
+        </article>
+        <article>
+          <span>Số điện thoại</span>
+          <strong>${escapeHtml(driverPhone)}</strong>
+        </article>
+        <article class="plate-card">
+          <span>Biển số xe</span>
+          <strong>${escapeHtml(vehiclePlate)}</strong>
+        </article>
+        <article>
+          <span>Loại chuyến</span>
+          <strong>${escapeHtml(LINEHAUL_TRIP_TYPE_LABELS[trip.tripType])}</strong>
+        </article>
       </section>
 
       <footer>
-        Courier quét tem xe ở bước Xe đi, sau đó quét một hoặc nhiều seal xe để gắn seal với mã tem này.
+        Tem dùng cho bước Xe đi / Xe đến. Courier quét QR hoặc barcode để lấy mã tem xe, hub đi,
+        hub đến và biển số; sau đó quét seal xe theo quy trình vận hành.
       </footer>
     </section>
   `;
@@ -191,165 +202,246 @@ export function printLinehaulTripSeal(trip: LinehaulTrip): boolean {
       <head>
         <title>In tem xe ${escapeHtml(trip.tripCode)}</title>
         <style>
-          @page { size: A5; margin: 8mm; }
+          @page { size: A5 portrait; margin: 8mm; }
           * { box-sizing: border-box; }
-          body { margin: 0; font-family: Arial, Helvetica, sans-serif; color: #111827; background: #ffffff; }
+          html,
+          body { margin: 0; padding: 0; background: #ffffff; }
+          body {
+            width: 132mm;
+            min-height: 194mm;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #111827;
+          }
           .seal-ticket {
-            width: 100%;
-            min-height: 185mm;
-            border: 2px solid #0f172a;
-            border-radius: 6px;
-            padding: 7mm;
+            width: 132mm;
+            min-height: 194mm;
+            border: 0.55mm solid #0f172a;
+            border-radius: 3mm;
+            padding: 5mm;
             display: grid;
             grid-template-rows: auto auto auto auto 1fr auto;
-            gap: 5mm;
+            gap: 3mm;
+            overflow: hidden;
           }
           .ticket-header {
-            display: flex;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
             align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            border-bottom: 2px solid #0f172a;
-            padding-bottom: 4mm;
+            gap: 4mm;
+            border-bottom: 0.45mm solid #0f172a;
+            padding-bottom: 3mm;
           }
-          .brand-lockup { display: flex; align-items: center; gap: 10px; min-width: 0; }
-          .brand-mark { width: 40px; height: 40px; flex: 0 0 40px; }
-          h1 { margin: 0; color: #0f172a; font-size: 21px; line-height: 1; letter-spacing: 0.03em; }
-          p { margin: 4px 0 0; color: #475569; font-size: 10px; font-weight: 800; letter-spacing: 0.12em; }
-          .trip-type {
-            flex: 0 0 auto;
-            border: 1px solid #185fa5;
+          .brand-lockup {
+            display: grid;
+            grid-template-columns: 13mm minmax(0, 1fr);
+            align-items: center;
+            gap: 3mm;
+            min-width: 0;
+          }
+          .brand-mark { width: 13mm; height: 13mm; display: block; }
+          h1 {
+            margin: 0;
+            color: #0f172a;
+            font-size: 15pt;
+            line-height: 1;
+            font-weight: 800;
+            letter-spacing: 0;
+            white-space: nowrap;
+          }
+          p {
+            margin: 1.2mm 0 0;
+            color: #475569;
+            font-size: 6.8pt;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+          }
+          .header-meta {
+            display: grid;
+            gap: 1mm;
+            justify-items: end;
+            max-width: 38mm;
+            text-align: right;
+          }
+          .header-meta strong {
+            border: 0.3mm solid #185fa5;
             border-radius: 999px;
             background: #eff6ff;
             color: #185fa5;
-            padding: 6px 10px;
-            font-size: 12px;
-            font-weight: 800;
+            padding: 1.3mm 2.2mm;
+            font-size: 8pt;
+            line-height: 1;
             white-space: nowrap;
           }
-          .trip-code-card {
-            display: grid;
-            gap: 4px;
-            border: 2px solid #0f172a;
-            border-radius: 6px;
-            padding: 4mm;
-            text-align: center;
-          }
-          .trip-code-card span,
-          .barcode-card span,
-          .route-row span,
-          .info-grid span,
+          .header-meta span,
+          .code-label,
+          .code-panel > span,
+          .route-strip span,
+          .schedule-grid span,
+          .vehicle-grid span,
           .qr-card span {
             color: #64748b;
-            font-size: 10px;
+            font-size: 6.7pt;
+            line-height: 1.15;
             font-weight: 800;
-            letter-spacing: 0.08em;
+            letter-spacing: 0.06em;
             text-transform: uppercase;
           }
-          .trip-code-card strong {
-            display: block;
-            color: #0f172a;
-            font-family: "Courier New", monospace;
-            font-size: 17px;
-            line-height: 1.2;
-            letter-spacing: 0;
-            overflow-wrap: anywhere;
-          }
-          .barcode-card {
+          .scan-row {
             display: grid;
-            gap: 2mm;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            padding: 3mm;
-            text-align: center;
-          }
-          .barcode-card svg { display: block; width: 100%; height: 52px; }
-          .barcode-card span {
-            font-family: "Courier New", monospace;
-            color: #0f172a;
-            font-size: 10px;
-            letter-spacing: 0;
-            text-transform: none;
-            overflow-wrap: anywhere;
-          }
-          .route-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4mm;
-          }
-          .route-row article {
-            min-height: 24mm;
-            display: grid;
-            align-content: center;
+            grid-template-columns: minmax(0, 1fr) 34mm;
             gap: 3mm;
-            border: 2px solid #0f172a;
-            border-radius: 6px;
-            padding: 4mm;
-            text-align: center;
-          }
-          .route-row strong {
-            color: #0f172a;
-            font-size: 27px;
-            line-height: 1;
-            overflow-wrap: anywhere;
-          }
-          .main-grid {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) 37mm;
-            gap: 4mm;
             align-items: stretch;
           }
-          .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 3mm;
+          .code-panel,
+          .qr-card,
+          .route-strip article,
+          .schedule-grid article,
+          .vehicle-grid article {
+            min-width: 0;
+            border: 0.3mm solid #cbd5e1;
+            border-radius: 2mm;
+            background: #ffffff;
           }
-          .info-grid article {
-            min-height: 20mm;
+          .code-panel {
             display: grid;
-            align-content: center;
-            gap: 2mm;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
+            grid-template-rows: auto auto 16mm auto;
+            gap: 1.6mm;
             padding: 3mm;
-            background: #f8fafc;
           }
-          .info-grid strong {
+          .code-panel strong {
+            font-family: "Courier New", monospace;
             color: #0f172a;
-            font-size: 14px;
-            line-height: 1.2;
+            font-size: 12pt;
+            line-height: 1.12;
+            font-weight: 800;
+            letter-spacing: 0;
             overflow-wrap: anywhere;
           }
-          .vehicle-plate strong {
-            font-size: 18px;
-            letter-spacing: 0.04em;
+          .barcode-box {
+            display: grid;
+            align-items: center;
+            min-height: 16mm;
+            border: 0.25mm solid #e2e8f0;
+            background: #ffffff;
+            padding: 1mm;
+          }
+          .barcode-box svg {
+            display: block;
+            width: 100%;
+            height: 13mm;
+          }
+          .code-panel > span {
+            font-family: "Courier New", monospace;
+            color: #0f172a;
+            font-size: 7pt;
+            letter-spacing: 0;
+            text-transform: none;
+            text-align: center;
+            overflow-wrap: anywhere;
           }
           .qr-card {
             display: grid;
+            grid-template-rows: 1fr auto;
             align-content: center;
             justify-items: center;
-            gap: 3mm;
-            border: 2px solid #0f172a;
-            border-radius: 6px;
-            padding: 3mm;
+            gap: 1.5mm;
+            padding: 2.2mm;
             text-align: center;
           }
-          .qr-card img {
-            width: 31mm;
-            height: 31mm;
-            border: 1px solid #cbd5e1;
+          .qr-card img,
+          .qr-fallback {
+            width: 28mm;
+            height: 28mm;
+            border: 0.25mm solid #cbd5e1;
             image-rendering: crisp-edges;
+          }
+          .qr-fallback {
+            display: grid;
+            place-items: center;
+            color: #0f172a;
+            font-size: 15pt;
+            font-weight: 800;
           }
           .qr-card span {
             color: #0f172a;
-            font-size: 9px;
-            line-height: 1.25;
+            font-size: 6.5pt;
+            letter-spacing: 0;
+            text-transform: none;
+          }
+          .route-strip {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 10mm minmax(0, 1fr);
+            gap: 2mm;
+            align-items: stretch;
+          }
+          .route-strip article {
+            min-height: 22mm;
+            display: grid;
+            align-content: center;
+            gap: 2mm;
+            border: 0.5mm solid #0f172a;
+            background: #f8fafc;
+            padding: 3mm;
+            text-align: center;
+          }
+          .route-strip strong {
+            color: #0f172a;
+            font-size: 22pt;
+            line-height: 1;
+            font-weight: 900;
+            overflow-wrap: anywhere;
+          }
+          .route-arrow {
+            display: grid;
+            place-items: center;
+            color: #0f172a;
+            font-size: 15pt;
+            font-weight: 900;
+          }
+          .schedule-grid,
+          .vehicle-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2mm;
+          }
+          .schedule-grid article,
+          .vehicle-grid article {
+            min-height: 15mm;
+            display: grid;
+            align-content: center;
+            gap: 1.4mm;
+            padding: 2.5mm;
+            background: #f8fafc;
+          }
+          .schedule-grid strong,
+          .vehicle-grid strong {
+            color: #0f172a;
+            font-size: 10pt;
+            line-height: 1.15;
+            font-weight: 800;
+            overflow-wrap: anywhere;
+          }
+          .driver-card strong {
+            font-size: 11pt;
+          }
+          .plate-card {
+            border-color: #0f172a;
+            background: #ffffff;
+          }
+          .plate-card strong {
+            font-family: "Arial Black", Arial, Helvetica, sans-serif;
+            color: #0f172a;
+            font-size: 16pt;
+            line-height: 1;
+            letter-spacing: 0;
+            text-transform: uppercase;
           }
           footer {
-            border-top: 1px solid #cbd5e1;
-            padding-top: 3mm;
+            border-top: 0.25mm solid #cbd5e1;
+            padding-top: 2.2mm;
             color: #475569;
-            font-size: 10px;
+            font-size: 7.3pt;
             line-height: 1.35;
             text-align: center;
           }
