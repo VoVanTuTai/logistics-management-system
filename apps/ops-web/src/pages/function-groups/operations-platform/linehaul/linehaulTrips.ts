@@ -139,13 +139,13 @@ export function writeLinehaulTrips(trips: LinehaulTrip[]): void {
 }
 
 export function createLinehaulTripCode(originHubCode: string, destinationHubCode: string): string {
-  const timestamp = new Date()
+  const tripDate = new Date()
     .toISOString()
     .replace(/\D/g, '')
-    .slice(2, 14);
+    .slice(2, 8);
   const suffix = Math.random().toString(36).slice(2, 6).toUpperCase();
 
-  return `TRIP-${originHubCode}-${destinationHubCode}-${timestamp}-${suffix}`;
+  return `LH-${originHubCode}-${destinationHubCode}-${tripDate}-${suffix}`;
 }
 
 export function createLinehaulTrip(input: {

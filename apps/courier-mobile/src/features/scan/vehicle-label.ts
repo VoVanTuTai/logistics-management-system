@@ -78,7 +78,7 @@ export function parseVehicleLabel(rawValue: string): VehicleLabelInfo | null {
 
   const normalizedValue = normalizeCode(trimmed);
   const tripParts = normalizedValue.split('-').filter(Boolean);
-  if (tripParts.length >= 5 && tripParts[0] === 'TRIP') {
+  if (tripParts.length >= 5 && ['TRIP', 'LH'].includes(tripParts[0])) {
     return {
       vehicleCode: normalizedValue,
       originHubCode: tripParts[1] || 'UNKNOWN',
