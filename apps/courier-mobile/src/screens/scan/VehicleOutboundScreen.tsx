@@ -19,10 +19,8 @@ import {
   saveVehicleDepartureRecord,
   type VehicleDepartureSeal,
 } from '../../features/scan/vehicle-departure.storage';
-import { submitHubScanAction } from '../../features/scan/hub.api';
 import { manifestApi } from '../../features/manifest/manifest.api';
 import type { BagManifestDto } from '../../features/manifest/manifest.types';
-import { enqueueHubScanOffline } from '../../features/scan/hub.offline';
 import {
   parseVehicleLabel,
   type VehicleLabelInfo,
@@ -34,7 +32,7 @@ import {
   type VehicleLoadRecord,
 } from '../../features/scan/vehicle-load.storage';
 import { parsePickupScannedCode } from '../../features/scan/pickup.scanner.adapter';
-import { ApiClientError, shouldQueueOffline } from '../../services/api/client';
+import { ApiClientError } from '../../services/api/client';
 import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
 import {
@@ -337,9 +335,6 @@ export function VehicleOutboundScreen(): React.JSX.Element {
     setIsSaving(true);
     setScreenMessage(null);
 
-    const successCodes: string[] = [];
-    const queuedCodes: string[] = [];
-    const failedCodes: Array<{ code: string; reason: string }> = [];
     const note = buildVehicleOutboundAuditNote({
       displayName: session?.user.displayName,
       username: session?.user.username,
@@ -374,45 +369,6 @@ export function VehicleOutboundScreen(): React.JSX.Element {
         note,
       });
 
-      for (const target of loadedShipmentTargets) {
-        const command = {
-          mode: 'OUTBOUND' as const,
-          shipmentCode: target.shipmentCode,
-          locationCode: vehicleInfo.originHubCode || hubCode || 'UNKNOWN',
-          manifestCode: target.manifestCode,
-          actor: courierId || session?.user.username || null,
-          note,
-          occurredAt: new Date().toISOString(),
-          idempotencyKey: createIdempotencyKey('vehicle-outbound-shipment'),
-        };
-
-        try {
-          await submitHubScanAction(accessToken, command);
-          successCodes.push(target.shipmentCode);
-        } catch (error) {
-          if (shouldQueueOffline(error)) {
-            await enqueueHubScanOffline(command);
-            queuedCodes.push(target.shipmentCode);
-            continue;
-          }
-
-          failedCodes.push({
-            code: target.shipmentCode,
-            reason: toErrorMessage(error),
-          });
-        }
-      }
-
-      if (failedCodes.length > 0) {
-        setScreenMessage(
-          `Đã chuyển ${successCodes.length} đơn, ${queuedCodes.length} đơn lưu offline, lỗi ${failedCodes.length}: ${failedCodes
-            .slice(0, 2)
-            .map((item) => `${item.code} (${item.reason})`)
-            .join('; ')}`,
-        );
-        return;
-      }
-
       await markVehicleLoadInTransit(vehicleInfo.vehicleCode);
       await saveVehicleDepartureRecord({
         id: createIdempotencyKey('vehicle-outbound'),
@@ -429,8 +385,7 @@ export function VehicleOutboundScreen(): React.JSX.Element {
       });
 
       setScreenMessage(
-        `Đã xác nhận xe đi ${vehicleInfo.vehicleCode} với ${sealCodes.length} seal xe: ${successCodes.length} đơn đang luân chuyển` +
-          (queuedCodes.length > 0 ? `, ${queuedCodes.length} đơn lưu offline.` : '.'),
+        `Đã xác nhận xe đi ${vehicleInfo.vehicleCode} với ${sealCodes.length} seal xe. Tem xe chuyển sang Xe đi; trạng thái đơn hàng giữ ở Gửi hàng.`,
       );
       setVehicleInfo(null);
       setVehicleLoadRecord(null);
