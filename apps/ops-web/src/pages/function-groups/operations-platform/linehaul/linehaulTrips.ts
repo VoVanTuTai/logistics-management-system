@@ -138,14 +138,14 @@ export function writeLinehaulTrips(trips: LinehaulTrip[]): void {
   window.localStorage.setItem(LINEHAUL_TRIPS_STORAGE_KEY, JSON.stringify(trips));
 }
 
-export function createLinehaulTripCode(originHubCode: string, destinationHubCode: string): string {
+export function createLinehaulTripCode(): string {
   const tripDate = new Date()
     .toISOString()
     .replace(/\D/g, '')
     .slice(2, 8);
-  const suffix = Math.random().toString(36).slice(2, 6).toUpperCase();
+  const suffix = Math.random().toString(36).slice(2, 8).toUpperCase();
 
-  return `LH-${originHubCode}-${destinationHubCode}-${tripDate}-${suffix}`;
+  return `LH-${tripDate}-${suffix}`;
 }
 
 export function createLinehaulTrip(input: {
@@ -158,7 +158,7 @@ export function createLinehaulTrip(input: {
   const originHubCode = normalizeTripCode(input.originHubCode);
   const destinationHubCode = normalizeTripCode(input.destinationHubCode);
   const now = new Date().toISOString();
-  const tripCode = createLinehaulTripCode(originHubCode, destinationHubCode);
+  const tripCode = createLinehaulTripCode();
 
   return {
     id: `trip-${now.replace(/\D/g, '')}-${Math.random().toString(36).slice(2, 8)}`,
