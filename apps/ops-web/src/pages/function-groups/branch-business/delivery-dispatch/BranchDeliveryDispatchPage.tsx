@@ -47,7 +47,7 @@ interface HandoffAuditPreview {
 
 const DELIVERY_STATUS_GROUPS: Record<'UNSEALED' | 'ARRIVED' | 'INVENTORY', ReadonlySet<string>> = {
   UNSEALED: new Set(['MANIFEST_UNSEALED']),
-  ARRIVED: new Set(['MANIFEST_RECEIVED', 'SCAN_INBOUND']),
+  ARRIVED: new Set(['PICKUP_COMPLETED', 'MANIFEST_RECEIVED', 'SCAN_INBOUND']),
   INVENTORY: new Set(['INVENTORY_CHECK']),
 };
 

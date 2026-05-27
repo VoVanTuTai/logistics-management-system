@@ -25,7 +25,11 @@ function resolveShipmentStatusLabel(item: ShipmentListItemDto): string {
 }
 
 function canDispatchShipment(item: ShipmentListItemDto): boolean {
-  return item.currentStatus === 'SCAN_INBOUND' || item.currentStatus === 'TASK_ASSIGNED';
+  return (
+    item.currentStatus === 'PICKUP_COMPLETED' ||
+    item.currentStatus === 'SCAN_INBOUND' ||
+    item.currentStatus === 'TASK_ASSIGNED'
+  );
 }
 
 export function ShipmentsTable({
@@ -81,7 +85,7 @@ export function ShipmentsTable({
                     title={
                       canDispatch
                         ? 'Quét phát và phân công courier giao hàng'
-                        : 'Chỉ quét phát khi kiện đã xuống bưu cục (SCAN_INBOUND)'
+                        : 'Chỉ quét phát khi kiện đã được nhận hoặc đã xuống bưu cục'
                     }
                   >
                     Quét phát

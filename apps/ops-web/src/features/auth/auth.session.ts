@@ -6,29 +6,38 @@ import type { AuthSessionDto } from './auth.types';
 
 const AUTH_STORAGE_KEY = 'ops-web.auth-session';
 const ACCESS_TOKEN_REFRESH_WINDOW_MS = 60_000;
+const CLIENT_SESSION_TTL_MS = 10 * 60 * 60 * 1000;
 
 let refreshSessionPromise: Promise<AuthSessionDto> | null = null;
 
+interface StoredAuthSession {
+  session: AuthSessionDto;
+  storedAt: string;
+}
+
 export async function hydrateAuthSession(): Promise<void> {
   useAuthStore.getState().setStatus('restoring');
-  const raw = localStorage.getItem(AUTH_STORAGE_KEY);
-  if (!raw) {
+  const storedSession = getStoredAuthSession();
+  if (!storedSession) {
     useAuthStore.getState().setStatus('guest');
     return;
   }
 
   try {
-    const session = JSON.parse(raw) as AuthSessionDto;
-    if (isTokenExpired(session.tokens.refreshTokenExpiresAt)) {
+    if (isClientSessionExpired()) {
+      throw new Error('Phiên đăng nhập đã quá 10 giờ. Vui lòng đăng nhập lại.');
+    }
+
+    if (isTokenExpired(storedSession.tokens.refreshTokenExpiresAt)) {
       throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
     }
 
-    if (shouldRefreshAccessToken(session)) {
-      await refreshAuthSession(session);
+    if (shouldRefreshAccessToken(storedSession)) {
+      await refreshAuthSession(storedSession);
       return;
     }
 
-    useAuthStore.getState().setSession(session);
+    await persistAuthSession(storedSession);
   } catch (error) {
     localStorage.removeItem(AUTH_STORAGE_KEY);
     useAuthStore.getState().clearSession();
@@ -47,7 +56,13 @@ export async function hydrateAuthSession(): Promise<void> {
 }
 
 export async function persistAuthSession(session: AuthSessionDto): Promise<void> {
-  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
+  localStorage.setItem(
+    AUTH_STORAGE_KEY,
+    JSON.stringify({
+      session,
+      storedAt: new Date().toISOString(),
+    } satisfies StoredAuthSession),
+  );
   useAuthStore.getState().setSession(session);
 }
 
@@ -64,9 +79,33 @@ export function getStoredAuthSession(): AuthSessionDto | null {
   }
 
   try {
-    return JSON.parse(raw) as AuthSessionDto;
+    const parsed = JSON.parse(raw) as AuthSessionDto | StoredAuthSession;
+    if ('session' in parsed && parsed.session) {
+      return parsed.session;
+    }
+
+    return parsed as AuthSessionDto;
   } catch {
     return null;
+  }
+}
+
+function isClientSessionExpired(): boolean {
+  const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+  if (!raw) {
+    return true;
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as AuthSessionDto | StoredAuthSession;
+    if (!('storedAt' in parsed)) {
+      return false;
+    }
+
+    const storedAt = new Date(parsed.storedAt).getTime();
+    return Number.isNaN(storedAt) || Date.now() - storedAt >= CLIENT_SESSION_TTL_MS;
+  } catch {
+    return true;
   }
 }
 

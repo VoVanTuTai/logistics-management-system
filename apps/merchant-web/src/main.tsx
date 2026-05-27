@@ -48,9 +48,16 @@ const STORAGE_KEY_NOTIFICATIONS = 'merchant-web.notifications.v1';
 const STORAGE_KEY_RETURNS = 'merchant-web.return-requests.v1';
 const STORAGE_KEY_PROFILE = 'merchant-web.profile.v1';
 const STORAGE_KEY_PROFILE_PREFIX = 'merchant-web.profile.v2.';
+const CLIENT_SESSION_TTL_MS = 10 * 60 * 60 * 1000;
+const ACCESS_TOKEN_REFRESH_WINDOW_MS = 60_000;
 const SHIPMENT_PAGE_SIZE = 8;
 const MERCHANT_PROFILE_SCOPE = 'MERCHANT_PROFILE';
 const MERCHANT_PROFILE_KEY_PREFIX = 'merchant.profile.';
+
+interface StoredMerchantSession {
+  session: MerchantSession;
+  storedAt: string;
+}
 
 interface HubApiRecord {
   id: string;
@@ -175,6 +182,81 @@ function buildMerchantProfileKey(username: string): string {
 
 function buildProfileStorageKey(username: string): string {
   return `${STORAGE_KEY_PROFILE_PREFIX}${username.trim().toUpperCase()}`;
+}
+
+function readStoredMerchantSession(): StoredMerchantSession | null {
+  const raw = window.localStorage.getItem(STORAGE_KEY_SESSION);
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as MerchantSession | StoredMerchantSession;
+    if ('session' in parsed && parsed.session) {
+      return parsed;
+    }
+
+    return {
+      session: parsed as MerchantSession,
+      storedAt: new Date().toISOString(),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredMerchantSession(session: MerchantSession): void {
+  window.localStorage.setItem(
+    STORAGE_KEY_SESSION,
+    JSON.stringify({
+      session,
+      storedAt: new Date().toISOString(),
+    } satisfies StoredMerchantSession),
+  );
+}
+
+function isClientSessionExpired(storedAt: string): boolean {
+  const storedAtTime = new Date(storedAt).getTime();
+  return Number.isNaN(storedAtTime) || Date.now() - storedAtTime >= CLIENT_SESSION_TTL_MS;
+}
+
+function isTokenExpired(expiresAt: string): boolean {
+  const expiryTime = new Date(expiresAt).getTime();
+  return Number.isNaN(expiryTime) || Date.now() >= expiryTime;
+}
+
+function shouldRefreshAccessToken(session: MerchantSession): boolean {
+  const expiryTime = new Date(session.accessTokenExpiresAt).getTime();
+  return (
+    Number.isNaN(expiryTime) ||
+    Date.now() + ACCESS_TOKEN_REFRESH_WINDOW_MS >= expiryTime
+  );
+}
+
+function mapLoginResponseToMerchantSession(result: LoginResponse): MerchantSession {
+  return {
+    user: result.user,
+    accessToken: result.tokens.accessToken,
+    refreshToken: result.tokens.refreshToken,
+    accessTokenExpiresAt: result.tokens.accessTokenExpiresAt,
+    refreshTokenExpiresAt: result.tokens.refreshTokenExpiresAt,
+  };
+}
+
+async function refreshMerchantSession(
+  session: MerchantSession,
+): Promise<MerchantSession> {
+  if (isTokenExpired(session.refreshTokenExpiresAt)) {
+    throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+  }
+
+  const result = await request<LoginResponse>('/merchant/auth/auth/refresh', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refreshToken: session.refreshToken }),
+  });
+
+  return mapLoginResponseToMerchantSession(result);
 }
 
 function parseMerchantProfileConfig(
@@ -1284,7 +1366,8 @@ function MerchantApp(): React.JSX.Element {
     // Legacy shared profile key caused data leakage between merchant accounts.
     window.localStorage.removeItem(STORAGE_KEY_PROFILE);
 
-    const storedSession = parseStorage<MerchantSession | null>(window.localStorage.getItem(STORAGE_KEY_SESSION), null);
+    const stored = readStoredMerchantSession();
+    const storedSession = stored?.session ?? null;
     if (!storedSession) {
       setBooting(false);
       return;
@@ -1292,24 +1375,30 @@ function MerchantApp(): React.JSX.Element {
 
     (async () => {
       try {
+        if (stored && isClientSessionExpired(stored.storedAt)) {
+          throw new Error('Phiên đăng nhập đã quá 10 giờ. Vui lòng đăng nhập lại.');
+        }
+
+        let nextSession = shouldRefreshAccessToken(storedSession)
+          ? await refreshMerchantSession(storedSession)
+          : storedSession;
+
         const introspect = await request<IntrospectResponse>('/merchant/auth/auth/introspect', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ accessToken: storedSession.accessToken }),
+          body: JSON.stringify({ accessToken: nextSession.accessToken }),
         });
 
         if (!introspect.active || !introspect.user) {
-          window.localStorage.removeItem(STORAGE_KEY_SESSION);
-          setSession(null);
-          setBooting(false);
-          return;
+          nextSession = await refreshMerchantSession(nextSession);
+        } else {
+          nextSession = {
+            ...nextSession,
+            user: introspect.user,
+            accessTokenExpiresAt:
+              introspect.accessTokenExpiresAt ?? nextSession.accessTokenExpiresAt,
+          };
         }
-
-        const nextSession: MerchantSession = {
-          ...storedSession,
-          user: introspect.user,
-          accessTokenExpiresAt: introspect.accessTokenExpiresAt ?? storedSession.accessTokenExpiresAt,
-        };
 
         setSession(nextSession);
         await refreshAllData(nextSession.accessToken, nextSession.user);
@@ -1328,7 +1417,33 @@ function MerchantApp(): React.JSX.Element {
       window.localStorage.removeItem(STORAGE_KEY_SESSION);
       return;
     }
-    window.localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(session));
+    writeStoredMerchantSession(session);
+  }, [session]);
+
+  useEffect(() => {
+    if (!session) {
+      return undefined;
+    }
+
+    const accessTokenExpiresAt = new Date(session.accessTokenExpiresAt).getTime();
+    const delayMs = Number.isNaN(accessTokenExpiresAt)
+      ? 0
+      : Math.max(accessTokenExpiresAt - Date.now() - ACCESS_TOKEN_REFRESH_WINDOW_MS, 0);
+
+    const timeoutId = window.setTimeout(() => {
+      void refreshMerchantSession(session)
+        .then((nextSession) => {
+          setSession(nextSession);
+        })
+        .catch(() => {
+          window.localStorage.removeItem(STORAGE_KEY_SESSION);
+          setSession(null);
+        });
+    }, delayMs);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
   }, [session]);
 
   useEffect(() => {
@@ -1460,13 +1575,7 @@ function MerchantApp(): React.JSX.Element {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: loginUsername.trim(), password: loginPassword }),
       });
-      const nextSession: MerchantSession = {
-        user: result.user,
-        accessToken: result.tokens.accessToken,
-        refreshToken: result.tokens.refreshToken,
-        accessTokenExpiresAt: result.tokens.accessTokenExpiresAt,
-        refreshTokenExpiresAt: result.tokens.refreshTokenExpiresAt,
-      };
+      const nextSession = mapLoginResponseToMerchantSession(result);
       setSession(nextSession);
       await refreshAllData(nextSession.accessToken, nextSession.user);
       setActiveView('dashboard');
@@ -3546,5 +3655,3 @@ createRoot(rootElement).render(
     <MerchantApp />
   </React.StrictMode>,
 );
-
-
