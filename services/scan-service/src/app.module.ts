@@ -6,6 +6,7 @@ import { ScanController } from './api/controllers/scan.controller';
 import { LocationsService } from './application/services/locations.service';
 import { OpsAuditService } from './application/services/ops-audit.service';
 import { ScanEventHandlersService } from './application/services/scan-event-handlers.service';
+import { ScanRetentionCleanupService } from './application/services/scan-retention-cleanup.service';
 import { ScansService } from './application/services/scans.service';
 import { CurrentLocationRepository } from './domain/repositories/current-location.repository';
 import { IdempotencyRecordRepository } from './domain/repositories/idempotency-record.repository';
@@ -28,6 +29,7 @@ import { ScanOutboxService } from './messaging/outbox/scan-outbox.service';
   providers: [
     PrismaService,
     ScansService,
+    ScanRetentionCleanupService,
     LocationsService,
     OpsAuditService,
     ScanEventHandlersService,

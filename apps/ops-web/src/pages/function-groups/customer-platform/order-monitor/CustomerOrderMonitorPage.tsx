@@ -222,11 +222,9 @@ export function CustomerOrderMonitorPage(): React.JSX.Element {
                       ) : (
                         <span>Không có shipment</span>
                       )}
-                      {row.pickupId ? (
-                        <Link to={routePaths.pickupDetail(row.pickupId)}>Pickup</Link>
-                      ) : (
-                        <span>Không có pickup</span>
-                      )}
+                      <Link to={routePaths.customerPlatformOrderDispatch}>
+                        Điều phối lấy hàng
+                      </Link>
                     </div>
                   </td>
                 </tr>

@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { ManifestsController } from './api/controllers/manifests.controller';
 import { OpsAuditController } from './api/controllers/ops-audit.controller';
 import { ManifestEventHandlersService } from './application/services/manifest-event-handlers.service';
+import { ManifestRetentionCleanupService } from './application/services/manifest-retention-cleanup.service';
 import { ManifestsService } from './application/services/manifests.service';
 import { OpsAuditService } from './application/services/ops-audit.service';
 import { ManifestRepository } from './domain/repositories/manifest.repository';
@@ -23,6 +24,7 @@ import { ManifestStateMachine } from './domain/state-machine/manifest-state-mach
   providers: [
     PrismaService,
     ManifestsService,
+    ManifestRetentionCleanupService,
     OpsAuditService,
     ManifestStateMachine,
     ManifestEventHandlersService,

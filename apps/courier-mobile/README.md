@@ -41,8 +41,9 @@ App duoc scaffold theo huong feature-first, tach ro:
   - `/courier/scan/scans/*`
   - `/courier/delivery/deliveries/*`
   - `/courier/delivery/ndr`
-- `courierId` de query task uu tien `EXPO_PUBLIC_COURIER_ID`, sau do fallback ve
-  username dang nhap. Backend seed dung ma nhan vien 8 so, vi du `30000001`.
+- `courierId` de query task uu tien username dang nhap. `EXPO_PUBLIC_COURIER_ID`
+  chi la fallback dev/test khi chua co session. Backend seed dung ma nhan vien
+  8 so, vi du `30000001`.
 - POD upload di qua `GET /courier/media/upload-url`, sau do app PUT anh len object storage va gui public URL vao delivery success.
 - `delivery attempts` chua dua vao offline queue vi contract hien tai chua co `idempotencyKey`.
 

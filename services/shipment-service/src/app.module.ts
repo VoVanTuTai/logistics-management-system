@@ -5,6 +5,7 @@ import { ShipmentController } from './api/controllers/shipment.controller';
 import { ChangeRequestsService } from './application/services/change-requests.service';
 import { PricingClientService } from './application/services/pricing-client.service';
 import { ShipmentEventHandlersService } from './application/services/shipment-event-handlers.service';
+import { ShipmentRetentionCleanupService } from './application/services/shipment-retention-cleanup.service';
 import { ShipmentsService } from './application/services/shipments.service';
 import { ChangeRequestRepository } from './domain/repositories/change-request.repository';
 import { OutboxEventRepository } from './domain/repositories/outbox-event.repository';
@@ -29,6 +30,7 @@ import { ShipmentOutboxService } from './messaging/outbox/shipment-outbox.servic
     PrismaService,
     ShipmentStateMachine,
     ShipmentsService,
+    ShipmentRetentionCleanupService,
     PricingClientService,
     ChangeRequestsService,
     ShipmentEventHandlersService,

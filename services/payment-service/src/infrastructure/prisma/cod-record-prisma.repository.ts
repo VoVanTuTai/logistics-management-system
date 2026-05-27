@@ -25,6 +25,8 @@ import type {
 import { CodRecordRepository } from '../../domain/repositories/cod-record.repository';
 import { PrismaService } from './prisma.service';
 
+const DEFAULT_RETENTION_DAYS = 45;
+
 @Injectable()
 export class CodRecordPrismaRepository extends CodRecordRepository {
   constructor(private readonly prisma: PrismaService) {
@@ -32,6 +34,8 @@ export class CodRecordPrismaRepository extends CodRecordRepository {
   }
 
   async create(input: CreateCodRecordInput): Promise<CodRecord> {
+    await this.deleteExpiredCodRecordForShipmentCode(input.shipmentCode);
+
     const data: Prisma.CodRecordCreateInput = {
       shipmentCode: input.shipmentCode,
       merchantId: input.merchantId ?? null,
@@ -626,6 +630,42 @@ export class CodRecordPrismaRepository extends CodRecordRepository {
       updatedAt: record.updatedAt,
     };
   }
+
+  private async deleteExpiredCodRecordForShipmentCode(
+    shipmentCode: string,
+    now = new Date(),
+  ): Promise<void> {
+    const existingRecord = await this.prisma.codRecord.findUnique({
+      where: {
+        shipmentCode,
+      },
+    });
+
+    if (!existingRecord || existingRecord.createdAt >= getRetentionCutoff(now)) {
+      return;
+    }
+
+    await this.prisma.codRecord.delete({
+      where: {
+        shipmentCode,
+      },
+    });
+  }
+}
+
+function getRetentionCutoff(now: Date): Date {
+  const retentionDays = readPositiveNumber(
+    process.env.SHIPMENT_RETENTION_DAYS ?? process.env.ORDER_RETENTION_DAYS,
+    DEFAULT_RETENTION_DAYS,
+  );
+
+  return new Date(now.getTime() - retentionDays * 24 * 60 * 60 * 1000);
+}
+
+function readPositiveNumber(value: string | undefined, fallback: number): number {
+  const parsed = Number(value);
+
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
 function normalizeOptionalCode(value: string | null | undefined): string | null {

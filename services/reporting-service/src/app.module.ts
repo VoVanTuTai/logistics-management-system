@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { ReportsController } from './api/controllers/reports.controller';
 import { ReportingProjectionService } from './application/projections/reporting-projection.service';
+import { ReportingRetentionCleanupService } from './application/services/reporting-retention-cleanup.service';
 import { ReportingQueryService } from './application/services/reporting-query.service';
 import { HealthModule } from './health/health.module';
 import { PrismaService } from './infrastructure/prisma/prisma.service';
@@ -15,6 +16,7 @@ import { ReportingRabbitmqConsumerService } from './messaging/consumers/reportin
   providers: [
     PrismaService,
     ReportingProjectionStore,
+    ReportingRetentionCleanupService,
     ReportingProjectionService,
     ReportingQueryService,
     ReportingEventsConsumer,

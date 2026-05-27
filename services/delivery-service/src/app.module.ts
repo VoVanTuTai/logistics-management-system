@@ -5,6 +5,7 @@ import { NdrController } from './api/controllers/ndr.controller';
 import { OpsAuditController } from './api/controllers/ops-audit.controller';
 import { ReturnsController } from './api/controllers/returns.controller';
 import { DeliveryEventHandlersService } from './application/services/delivery-event-handlers.service';
+import { DeliveryRetentionCleanupService } from './application/services/delivery-retention-cleanup.service';
 import { DeliveryService } from './application/services/delivery.service';
 import { NdrService } from './application/services/ndr.service';
 import { OpsAuditService } from './application/services/ops-audit.service';
@@ -37,6 +38,7 @@ import { DeliveryOutboxService } from './messaging/outbox/delivery-outbox.servic
   providers: [
     PrismaService,
     DeliveryService,
+    DeliveryRetentionCleanupService,
     NdrService,
     OpsAuditService,
     ReturnsService,

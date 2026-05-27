@@ -213,11 +213,9 @@ export function CustomerOrderLookupPage(): React.JSX.Element {
                       ) : (
                         <span>Chưa có shipment</span>
                       )}
-                      {row.pickupId ? (
-                        <Link to={routePaths.pickupDetail(row.pickupId)}>{row.pickupCode}</Link>
-                      ) : (
-                        <span>Chưa có pickup</span>
-                      )}
+                      <Link to={routePaths.customerPlatformOrderDispatch}>
+                        Điều phối lấy hàng
+                      </Link>
                     </div>
                   </td>
                 </tr>

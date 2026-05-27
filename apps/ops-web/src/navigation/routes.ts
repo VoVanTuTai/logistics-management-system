@@ -251,7 +251,6 @@ export const routePaths = {
 export const OPS_CORE_ROUTE_PATHS = [
   routePaths.dashboard,
   routePaths.shipments,
-  routePaths.pickups,
   routePaths.tasks,
   routePaths.manifests,
   routePaths.scans,

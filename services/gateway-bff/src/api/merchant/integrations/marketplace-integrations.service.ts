@@ -1,6 +1,6 @@
 import { createHash } from 'crypto';
 
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 
 import { ServiceRegistryClient } from '../../../infrastructure/clients/service-registry.client';
 import type {
@@ -136,7 +136,9 @@ export class MarketplaceIntegrationsService {
         normalized.external.externalOrderId,
       );
     const shipmentCode = this.buildShipmentCode(idempotencyKey);
-    const existingShipment = await this.findShipmentByCode(shipmentCode);
+    const existingShipment =
+      (await this.findShipmentByCode(shipmentCode)) ??
+      (await this.findShipmentByCode(this.buildLegacyShipmentCode(idempotencyKey)));
 
     if (existingShipment) {
       this.assertSameExternalOrder(existingShipment, normalized);
@@ -195,10 +197,8 @@ export class MarketplaceIntegrationsService {
     shopId: string,
     externalOrderId: string,
   ): Promise<JsonObject> {
-    const shipmentCode = this.buildShipmentCode(
-      this.buildIdempotencyKey(platform, shopId, externalOrderId),
-    );
-    const shipment = await this.getShipmentByCode(shipmentCode);
+    const idempotencyKey = this.buildIdempotencyKey(platform, shopId, externalOrderId);
+    const shipment = await this.getShipmentByCodeOrLegacy(idempotencyKey);
 
     return {
       success: true,
@@ -220,10 +220,9 @@ export class MarketplaceIntegrationsService {
     externalOrderId: string,
     input: { reason?: string | null },
   ): Promise<JsonObject> {
-    const shipmentCode = this.buildShipmentCode(
-      this.buildIdempotencyKey(platform, shopId, externalOrderId),
-    );
-    await this.getShipmentByCode(shipmentCode);
+    const idempotencyKey = this.buildIdempotencyKey(platform, shopId, externalOrderId);
+    const shipmentToCancel = await this.getShipmentByCodeOrLegacy(idempotencyKey);
+    const shipmentCode = shipmentToCancel.code;
 
     const shipment = await this.upstreamRequest<ShipmentResponse>(
       'shipment',
@@ -792,6 +791,19 @@ export class MarketplaceIntegrationsService {
     );
   }
 
+  private async getShipmentByCodeOrLegacy(idempotencyKey: string): Promise<ShipmentResponse> {
+    const shipmentCode = this.buildShipmentCode(idempotencyKey);
+    const shipment =
+      (await this.findShipmentByCode(shipmentCode)) ??
+      (await this.findShipmentByCode(this.buildLegacyShipmentCode(idempotencyKey)));
+
+    if (!shipment) {
+      throw new NotFoundException(`Shipment "${shipmentCode}" was not found.`);
+    }
+
+    return shipment;
+  }
+
   private async tryUpstreamRequest<T>(
     serviceName: string,
     path: string,
@@ -867,6 +879,10 @@ export class MarketplaceIntegrationsService {
   }
 
   private buildShipmentCode(idempotencyKey: string): string {
+    return `111${this.hashDigits(idempotencyKey, 9)}`;
+  }
+
+  private buildLegacyShipmentCode(idempotencyKey: string): string {
     return `SHP${this.hash(idempotencyKey, 18)}`;
   }
 
@@ -880,6 +896,13 @@ export class MarketplaceIntegrationsService {
       .digest('hex')
       .slice(0, size)
       .toUpperCase();
+  }
+
+  private hashDigits(value: string, size: number): string {
+    const hash = createHash('sha256').update(value).digest('hex');
+    const numericValue = BigInt(`0x${hash}`) % BigInt(10 ** size);
+
+    return numericValue.toString().padStart(size, '0');
   }
 
   private buildTrackingUrl(shipmentCode: string): string {

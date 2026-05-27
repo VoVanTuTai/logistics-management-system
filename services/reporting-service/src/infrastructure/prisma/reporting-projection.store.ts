@@ -10,6 +10,7 @@ import type {
 import { PrismaService } from './prisma.service';
 
 const ALL = 'ALL';
+const DEFAULT_RETENTION_DAYS = 45;
 
 type MetricField = keyof Pick<
   KpiDaily,
@@ -468,17 +469,28 @@ export class ReportingProjectionStore {
     const existing = await this.prisma.shipmentStatusProjection.findUnique({
       where: { shipmentCode },
     });
+    const expired = existing
+      ? existing.lastEventAt < getRetentionCutoff(occurredAt)
+      : false;
+
+    if (expired) {
+      await this.prisma.shipmentStatusProjection.delete({
+        where: {
+          shipmentCode,
+        },
+      });
+    }
 
     const courierCode = this.resolveStatusDimensionValue(
-      existing?.courierCode,
+      expired ? null : existing?.courierCode,
       dimensions.courierCode,
     );
     const hubCode = this.resolveStatusDimensionValue(
-      existing?.hubCode,
+      expired ? null : existing?.hubCode,
       dimensions.hubCode,
     );
     const zoneCode = this.resolveStatusDimensionValue(
-      existing?.zoneCode,
+      expired ? null : existing?.zoneCode,
       dimensions.zoneCode,
     );
 
@@ -725,4 +737,19 @@ export class ReportingProjectionStore {
       codRemitted: field === 'codRemitted' ? 1 : 0,
     };
   }
+}
+
+function getRetentionCutoff(now: Date): Date {
+  const retentionDays = readPositiveNumber(
+    process.env.SHIPMENT_RETENTION_DAYS ?? process.env.ORDER_RETENTION_DAYS,
+    DEFAULT_RETENTION_DAYS,
+  );
+
+  return new Date(now.getTime() - retentionDays * 24 * 60 * 60 * 1000);
+}
+
+function readPositiveNumber(value: string | undefined, fallback: number): number {
+  const parsed = Number(value);
+
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }

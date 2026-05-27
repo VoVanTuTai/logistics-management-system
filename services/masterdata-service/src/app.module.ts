@@ -5,12 +5,14 @@ import { ConfigsController } from './api/controllers/configs.controller';
 import { HubsController } from './api/controllers/hubs.controller';
 import { MerchantProfilesController } from './api/controllers/merchant-profiles.controller';
 import { NdrReasonsController } from './api/controllers/ndr-reasons.controller';
+import { VietnamAdministrativeUnitsController } from './api/controllers/vietnam-administrative-units.controller';
 import { ZonesController } from './api/controllers/zones.controller';
 import { AdminAuditService } from './application/services/admin-audit.service';
 import { ConfigsService } from './application/services/configs.service';
 import { HubsService } from './application/services/hubs.service';
 import { MerchantProfilesService } from './application/services/merchant-profiles.service';
 import { NdrReasonsService } from './application/services/ndr-reasons.service';
+import { VietnamAdministrativeUnitsService } from './application/services/vietnam-administrative-units.service';
 import { ZonesService } from './application/services/zones.service';
 import { ConfigRepository } from './domain/repositories/config.repository';
 import { HubRepository } from './domain/repositories/hub.repository';
@@ -39,6 +41,7 @@ import { MasterdataOutboxService } from './messaging/outbox/masterdata-outbox.se
     NdrReasonsController,
     ConfigsController,
     MerchantProfilesController,
+    VietnamAdministrativeUnitsController,
   ],
   providers: [
     PrismaService,
@@ -48,6 +51,7 @@ import { MasterdataOutboxService } from './messaging/outbox/masterdata-outbox.se
     NdrReasonsService,
     ConfigsService,
     MerchantProfilesService,
+    VietnamAdministrativeUnitsService,
     MasterdataEventsProducer,
     MasterdataOutboxService,
     MasterdataOutboxRelayService,

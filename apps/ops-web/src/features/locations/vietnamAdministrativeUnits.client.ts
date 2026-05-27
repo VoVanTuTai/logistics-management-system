@@ -2,15 +2,17 @@ import type {
   VietnamProvinceDto,
   VietnamWardDto,
 } from './vietnamAdministrativeUnits.types';
-
-const VIETNAM_PROVINCES_API_URL = 'https://provinces.open-api.vn/api/v2/?depth=2';
+import { opsApiClient } from '../../services/api/client';
+import { opsEndpoints } from '../../services/api/endpoints';
 
 interface VietnamProvinceApiResponse {
   code?: number;
   name?: string;
   codename?: string;
   division_type?: string;
+  divisionType?: string;
   phone_code?: number;
+  phoneCode?: number | null;
   wards?: VietnamWardApiResponse[];
 }
 
@@ -19,7 +21,9 @@ interface VietnamWardApiResponse {
   name?: string;
   codename?: string;
   division_type?: string;
+  divisionType?: string;
   province_code?: number;
+  provinceCode?: number;
 }
 
 function mapWard(payload: VietnamWardApiResponse, provinceCode: number): VietnamWardDto | null {
@@ -36,9 +40,17 @@ function mapWard(payload: VietnamWardApiResponse, provinceCode: number): Vietnam
     name: payload.name,
     codename: payload.codename,
     divisionType:
-      typeof payload.division_type === 'string' ? payload.division_type : '',
+      typeof payload.division_type === 'string'
+        ? payload.division_type
+        : typeof payload.divisionType === 'string'
+        ? payload.divisionType
+        : '',
     provinceCode:
-      typeof payload.province_code === 'number' ? payload.province_code : provinceCode,
+      typeof payload.province_code === 'number'
+        ? payload.province_code
+        : typeof payload.provinceCode === 'number'
+        ? payload.provinceCode
+        : provinceCode,
   };
 }
 
@@ -56,8 +68,17 @@ function mapProvince(payload: VietnamProvinceApiResponse): VietnamProvinceDto | 
     name: payload.name,
     codename: payload.codename,
     divisionType:
-      typeof payload.division_type === 'string' ? payload.division_type : '',
-    phoneCode: typeof payload.phone_code === 'number' ? payload.phone_code : null,
+      typeof payload.division_type === 'string'
+        ? payload.division_type
+        : typeof payload.divisionType === 'string'
+        ? payload.divisionType
+        : '',
+    phoneCode:
+      typeof payload.phone_code === 'number'
+        ? payload.phone_code
+        : typeof payload.phoneCode === 'number'
+        ? payload.phoneCode
+        : null,
     wards: Array.isArray(payload.wards)
       ? payload.wards
           .map((ward) => mapWard(ward, payload.code))
@@ -67,18 +88,12 @@ function mapProvince(payload: VietnamProvinceApiResponse): VietnamProvinceDto | 
 }
 
 export const vietnamAdministrativeUnitsClient = {
-  listProvinces: async (): Promise<VietnamProvinceDto[]> => {
-    const response = await fetch(VIETNAM_PROVINCES_API_URL, {
-      headers: {
-        Accept: 'application/json',
-      },
-    });
+  listProvinces: async (accessToken: string): Promise<VietnamProvinceDto[]> => {
+    const payload = await opsApiClient.request<unknown>(
+      opsEndpoints.masterdata.vietnamAdministrativeUnits,
+      { accessToken },
+    );
 
-    if (!response.ok) {
-      throw new Error(`Không tải được dữ liệu địa chỉ Việt Nam (${response.status}).`);
-    }
-
-    const payload = (await response.json()) as unknown;
     if (!Array.isArray(payload)) {
       throw new Error('Dữ liệu địa chỉ Việt Nam không đúng định dạng.');
     }

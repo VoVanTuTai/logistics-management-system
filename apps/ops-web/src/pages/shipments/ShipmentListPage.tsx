@@ -382,7 +382,7 @@ export function ShipmentListPage(): React.JSX.Element {
   const inboundScanMutation = useInboundScanMutation(accessToken);
   const outboundScanMutation = useOutboundScanMutation(accessToken);
   const courierOptionsQuery = useCourierOptionsQuery(accessToken);
-  const locationsQuery = useVietnamAdministrativeUnitsQuery();
+  const locationsQuery = useVietnamAdministrativeUnitsQuery(accessToken);
   const hubsQuery = useHubsQuery(accessToken, { isActive: 'true' });
   const provinceOptions = locationsQuery.data ?? [];
   const activeHubs = hubsQuery.data ?? [];
@@ -875,7 +875,7 @@ export function ShipmentListPage(): React.JSX.Element {
             </p>
             <div style={styles.formGridMulti}>
               <input
-                placeholder="Mã vận đơn tự nhập (không bắt buộc)"
+                placeholder="Mã 12 số, ví dụ 333000000001"
                 value={walkInForm.manualCode}
                 onChange={(event) => setWalkInForm((prev) => ({ ...prev, manualCode: event.target.value }))}
               />

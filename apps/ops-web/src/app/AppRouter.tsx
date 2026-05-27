@@ -236,14 +236,6 @@ const NdrHandlingPage = lazyRoutePage(
   () => import('../pages/ndr/NdrHandlingPage'),
   'NdrHandlingPage',
 );
-const PickupApprovalsPage = lazyRoutePage(
-  () => import('../pages/pickups/PickupApprovalsPage'),
-  'PickupApprovalsPage',
-);
-const PickupRequestDetailPage = lazyRoutePage(
-  () => import('../pages/pickups/PickupRequestDetailPage'),
-  'PickupRequestDetailPage',
-);
 const HubScanPage = lazyRoutePage(
   () => import('../pages/scans/HubScanPage'),
   'HubScanPage',
@@ -578,8 +570,7 @@ function DashboardLayout(): React.JSX.Element {
     pathMatches(location.pathname, routePaths.branchBusinessFinanceSettlementRoot);
   const isOperationsPlatformSection =
     pathMatches(location.pathname, routePaths.groupOperationsPlatform) &&
-    !isReturnBlockSection &&
-    !isThermalLabelSection;
+    !isReturnBlockSection;
   const isServiceQualitySection =
     pathMatches(location.pathname, routePaths.groupServiceQuality) ||
     pathMatches(location.pathname, routePaths.ndr) ||
@@ -589,7 +580,7 @@ function DashboardLayout(): React.JSX.Element {
     routePaths.groupOperationsMetrics,
   );
   const isBranchBusinessSection =
-    (pathMatches(location.pathname, routePaths.groupBranchBusiness) || isThermalLabelSection) &&
+    pathMatches(location.pathname, routePaths.groupBranchBusiness) &&
     !isFinanceSettlementSection;
   const isCustomerPlatformSection = pathMatches(
     location.pathname,
@@ -607,9 +598,7 @@ function DashboardLayout(): React.JSX.Element {
           to: routePaths.shipments,
           isActive:
             pathMatches(location.pathname, routePaths.shipments) ||
-            pathMatches(location.pathname, routePaths.pickups) ||
             pathMatches(location.pathname, routePaths.tasks) ||
-            pathMatches(location.pathname, routePaths.manifests) ||
             pathMatches(location.pathname, routePaths.scans) ||
             pathMatches(location.pathname, routePaths.tracking) ||
             isOperationsPlatformSection ||
@@ -657,12 +646,7 @@ function DashboardLayout(): React.JSX.Element {
           isActive: pathMatches(location.pathname, routePaths.shipments),
         },
         {
-          label: 'Lấy hàng',
-          to: routePaths.pickups,
-          isActive: pathMatches(location.pathname, routePaths.pickups),
-        },
-        {
-          label: 'Tác vụ',
+          label: 'Chuyển đơn',
           to: routePaths.tasks,
           isActive: pathMatches(location.pathname, routePaths.tasks),
         },
@@ -681,17 +665,15 @@ function DashboardLayout(): React.JSX.Element {
   const operationsSidebarItems: SidebarItem[] = enableFullOpsModules
     ? [
         { label: 'Vận đơn', icon: 'customer_order_management', to: routePaths.shipments },
-        { label: 'Duyệt lấy hàng', icon: 'customer_order_dispatch', to: routePaths.pickups },
-        { label: 'Phân công tác vụ', icon: 'metrics_action', to: routePaths.tasks },
+        { label: 'Chuyển đơn', icon: 'metrics_action', to: routePaths.tasks },
         { label: 'Quét tại hub', icon: 'tracking_lookup', to: routePaths.scans },
-        { label: 'Bao tải', icon: 'thermal_label', to: routePaths.manifests },
         { label: 'Tra cứu hành trình', icon: 'tracking_lookup', to: routePaths.tracking },
         { label: 'Giám sát dữ liệu', icon: 'monitor_data', kind: 'monitor_data' },
+        { label: 'Tem bao in nhiệt', icon: 'thermal_label', kind: 'thermal_label' },
       ]
     : [
         { label: 'Vận đơn', icon: 'customer_order_management', to: routePaths.shipments },
-        { label: 'Duyệt lấy hàng', icon: 'customer_order_dispatch', to: routePaths.pickups },
-        { label: 'Phân công tác vụ', icon: 'metrics_action', to: routePaths.tasks },
+        { label: 'Chuyển đơn', icon: 'metrics_action', to: routePaths.tasks },
         { label: 'Quét tại hub', icon: 'tracking_lookup', to: routePaths.scans },
         { label: 'Bao tải', icon: 'thermal_label', to: routePaths.manifests },
         { label: 'Tra cứu hành trình', icon: 'tracking_lookup', to: routePaths.tracking },
@@ -721,14 +703,9 @@ function DashboardLayout(): React.JSX.Element {
       icon: 'branch_order_management',
       kind: 'branch_order_management',
     },
-    {
-      label: 'Tem bao in nhiệt',
-      icon: 'thermal_label',
-      kind: 'thermal_label',
-    },
   ];
   const customerPlatformSidebarItems: SidebarItem[] = [
-    { label: 'Điều phối đơn đặt', icon: 'customer_order_dispatch', to: routePaths.customerPlatformOrderDispatch },
+    { label: 'Điều phối lấy hàng', icon: 'customer_order_dispatch', to: routePaths.customerPlatformOrderDispatch },
     { label: 'Tra cứu đơn đặt', icon: 'service_lookup', to: routePaths.customerPlatformOrderLookup },
     { label: 'Giám sát đơn đã tạo', icon: 'monitor_data', to: routePaths.customerPlatformOrderMonitor },
   ];
@@ -819,7 +796,7 @@ function DashboardLayout(): React.JSX.Element {
     { label: 'Giám sát đơn đã tạo', to: routePaths.customerPlatformOrderMonitor },
   ] as const;
   const customerPlatformOrderDispatchChildItems = [
-    { label: 'Điều phối', to: routePaths.customerPlatformOrderDispatch },
+    { label: 'Điều phối lấy hàng', to: routePaths.customerPlatformOrderDispatch },
     { label: 'Tra cứu đơn đặt', to: routePaths.customerPlatformOrderLookup },
     { label: 'Giám sát đơn đã tạo', to: routePaths.customerPlatformOrderMonitor },
   ] as const;
@@ -852,7 +829,7 @@ function DashboardLayout(): React.JSX.Element {
     metrics_planning: 'Quy hoạch',
     metrics_action: 'Thao tác',
     customer_order_management: 'Quản lý đơn đặt',
-    customer_order_dispatch: 'Điều phối đơn đặt',
+    customer_order_dispatch: 'Điều phối lấy hàng',
     branch_local_orders: 'Quản lý đơn tại bưu cục',
     branch_order_management: 'Quản lý vận đơn',
     branch_finance_settlement: 'Quyết toán tài chính',
@@ -969,10 +946,10 @@ function DashboardLayout(): React.JSX.Element {
     : isFinanceSettlementSection
     ? []
     : isBranchBusinessSection
-    ? ['branch_local_orders', 'branch_order_management', 'thermal_label']
+    ? ['branch_local_orders', 'branch_order_management']
     : isCapabilityPlatformSection
     ? []
-    : ['monitor_data'];
+    : ['monitor_data', 'thermal_label'];
 
   const activeSidebarPanelInSection =
     activeSidebarPanel &&
@@ -1017,7 +994,6 @@ function DashboardLayout(): React.JSX.Element {
   const branchBusinessAllChildItems = [
     ...branchBusinessLocalOrdersChildItems,
     ...branchBusinessOrderManagementChildItems,
-    ...thermalLabelChildItems,
   ];
   const activeBranchBusinessItem =
     branchBusinessAllChildItems.find((item) => pathMatches(location.pathname, item.to)) ?? null;
@@ -1037,10 +1013,8 @@ function DashboardLayout(): React.JSX.Element {
     ? 'Tra cứu hành trình'
     : pathMatches(location.pathname, routePaths.shipments)
     ? 'Vận đơn'
-    : pathMatches(location.pathname, routePaths.pickups)
-    ? 'Duyệt lấy hàng'
     : pathMatches(location.pathname, routePaths.tasks)
-    ? 'Phân công tác vụ'
+    ? 'Chuyển đơn'
     : pathMatches(location.pathname, routePaths.manifests)
     ? 'Bao tải'
     : pathMatches(location.pathname, routePaths.scans)
@@ -1534,7 +1508,7 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.customerPlatformOrderDispatchLeaf}
-              element={opsModuleRoute('Điều phối đơn đặt', <CustomerOrderDispatchPage />)}
+              element={opsModuleRoute('Điều phối lấy hàng', <CustomerOrderDispatchPage />)}
             />
             <Route
               path={routePaths.customerPlatformOrderLookupLeaf}
@@ -1770,11 +1744,24 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route path={routePaths.shipmentsLeaf} element={lazyRoute(<ShipmentListPage />)} />
             <Route path={routePaths.shipmentDetailLeaf} element={lazyRoute(<ShipmentDetailPage />)} />
-            <Route path={routePaths.pickupsLeaf} element={lazyRoute(<PickupApprovalsPage />)} />
-            <Route path={routePaths.pickupDetailLeaf} element={lazyRoute(<PickupRequestDetailPage />)} />
+            <Route
+              path={routePaths.pickupsLeaf}
+              element={<Navigate to={routePaths.customerPlatformOrderDispatch} replace />}
+            />
+            <Route
+              path={routePaths.pickupDetailLeaf}
+              element={<Navigate to={routePaths.customerPlatformOrderDispatch} replace />}
+            />
             <Route path={routePaths.tasksLeaf} element={lazyRoute(<TaskAssignmentPage />)} />
             <Route path={routePaths.taskDetailLeaf} element={lazyRoute(<TaskDetailPage />)} />
-            <Route path={routePaths.manifestsLeaf} element={lazyRoute(<ManifestManagementPage />)} />
+            <Route
+              path={routePaths.manifestsLeaf}
+              element={
+                appEnv.enableFullOpsModules
+                  ? <Navigate to={routePaths.thermalLabelManagement} replace />
+                  : lazyRoute(<ManifestManagementPage />)
+              }
+            />
             <Route path={routePaths.manifestDetailLeaf} element={lazyRoute(<ManifestDetailPage />)} />
             <Route path={routePaths.scansLeaf} element={lazyRoute(<HubScanPage />)} />
             <Route path={routePaths.ndrLeaf} element={lazyRoute(<NdrHandlingPage />)} />

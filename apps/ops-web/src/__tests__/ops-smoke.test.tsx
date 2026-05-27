@@ -213,16 +213,19 @@ vi.mock('../features/tasks/tasks.api', async (importOriginal) => {
       id: 'task-1',
       taskCode: 'TASK-001',
       taskType: 'DELIVERY',
-      status: 'CREATED',
+      status: 'ASSIGNED',
       shipmentCode: 'NXS000001',
       pickupRequestId: null,
-      assignedCourierId: null,
+      assignedCourierId: 'courier-old',
       note: null,
       createdAt: smokeMocks.nowIso(),
       updatedAt: smokeMocks.nowIso(),
     },
   ];
-  const couriers = [{ courierId: 'courier-1', label: 'Courier One' }];
+  const couriers = [
+    { courierId: 'courier-1', label: 'Courier One' },
+    { courierId: 'courier-old', label: 'Courier Old' },
+  ];
 
   return {
     ...actual,
@@ -467,14 +470,14 @@ describe('ops-web smoke coverage', () => {
     expect(smokeMocks.createShipment).not.toHaveBeenCalled();
   });
 
-  it('renders task assignment data and calls assign mutation', async () => {
+  it('renders transfer data and creates a pending transfer request', async () => {
     const user = userEvent.setup();
     setAuthenticatedSession();
 
     renderWithProviders(<TaskAssignmentPage />, '/app/tasks');
 
     expect(
-      await screen.findByRole('heading', { name: /Phân công tác vụ/i }),
+      await screen.findByRole('heading', { name: /Chuyển đơn/i }),
     ).toBeInTheDocument();
     expect(screen.getByText('NXS000001')).toBeInTheDocument();
     await waitFor(() => {
@@ -483,16 +486,14 @@ describe('ops-web smoke coverage', () => {
 
     const taskCheckbox = screen.getAllByRole('checkbox')[1];
     await user.click(taskCheckbox);
-    await user.click(screen.getByRole('button', { name: /Phân công các tác vụ đã chọn/i }));
+    await user.click(screen.getByRole('button', { name: /Gửi yêu cầu chuyển/i }));
 
     await waitFor(() => {
-      expect(smokeMocks.assignTask).toHaveBeenCalledWith('ops-access-token', {
-        courierId: 'courier-1',
-        note: 'phân công hàng loạt từ màn hình ops',
-        taskId: 'task-1',
-      });
+      expect(screen.getByRole('status')).toHaveTextContent('Đã tạo 1 yêu cầu chuyển');
     });
-    expect(await screen.findByRole('status')).toHaveTextContent('Đã phân công 1');
+    expect(screen.getByText(/courier-old sang courier-1/i)).toBeInTheDocument();
+    expect(smokeMocks.assignTask).not.toHaveBeenCalled();
+    expect(smokeMocks.reassignTask).not.toHaveBeenCalled();
   });
 
   it('renders manifest list and generates bag codes', async () => {

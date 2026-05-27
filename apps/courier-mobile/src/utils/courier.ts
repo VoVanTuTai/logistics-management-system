@@ -31,11 +31,13 @@ export function resolveCourierId(
   configuredCourierId: string | null | undefined,
   username: string | null | undefined,
 ): string {
-  const fromConfig = normalizeCourierId(configuredCourierId);
-  if (fromConfig) return fromConfig;
-
+  // The authenticated username/employee code is the real courier id.
+  // EXPO_PUBLIC_COURIER_ID is only a dev fallback and must not override login.
   const fromUsername = normalizeCourierId(username);
   if (fromUsername) return fromUsername;
+
+  const fromConfig = normalizeCourierId(configuredCourierId);
+  if (fromConfig) return fromConfig;
 
   return '';
 }

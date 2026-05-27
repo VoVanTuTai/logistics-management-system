@@ -2664,7 +2664,7 @@ function MerchantApp(): React.JSX.Element {
                   <p className="muted">Theo dõi nhịp đơn, COD và phí vận chuyển ước tính từ các vận đơn hiện có.</p>
                 </div>
                 <form className="dashboard-search" onSubmit={(e) => { void quickTrackFromDashboard(e); }}>
-                  <input className="input dashboard-search__input" value={dashboardSearchCode} onChange={(e) => setDashboardSearchCode(e.target.value)} placeholder="SHP..." />
+                  <input className="input dashboard-search__input" value={dashboardSearchCode} onChange={(e) => setDashboardSearchCode(e.target.value)} placeholder="101000000001" />
                   <button className="btn btn-primary dashboard-search__btn" type="submit">Tra cứu</button>
                 </form>
               </div>

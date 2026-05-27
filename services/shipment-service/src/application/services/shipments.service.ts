@@ -1,4 +1,4 @@
-import { randomBytes } from 'crypto';
+import { randomInt } from 'crypto';
 
 import {
   BadRequestException,
@@ -25,8 +25,9 @@ import { MarketplaceWebhookSenderService } from '../../integrations/marketplace-
 import { ShipmentOutboxService } from '../../messaging/outbox/shipment-outbox.service';
 import { PricingClientService } from './pricing-client.service';
 
-const SHIPMENT_CODE_PREFIX = 'SHP';
 const MAX_CODE_RETRY = 20;
+const SHIPMENT_CODE_RULE = /^(111|101|222|333)[0-9]{9}$/;
+const SHIPMENT_CODE_SEQUENCE_SIZE = 1_000_000_000;
 
 @Injectable()
 export class ShipmentsService {
@@ -201,6 +202,8 @@ export class ShipmentsService {
     input: CreateShipmentInput,
     requestedCode: string,
   ): Promise<Shipment> {
+    this.assertWaybillCode(requestedCode);
+
     const existedShipment = await this.shipmentRepository.findByCode(requestedCode);
 
     if (existedShipment) {
@@ -218,8 +221,10 @@ export class ShipmentsService {
   private async createWithGeneratedCode(
     input: CreateShipmentInput,
   ): Promise<Shipment> {
+    const prefix = this.resolveGeneratedCodePrefix(input.metadata);
+
     for (let attempt = 0; attempt < MAX_CODE_RETRY; attempt += 1) {
-      const generatedCode = this.generateShipmentCode();
+      const generatedCode = this.generateShipmentCode(prefix);
 
       try {
         return await this.shipmentRepository.create({
@@ -260,6 +265,14 @@ export class ShipmentsService {
     return normalizedCode;
   }
 
+  private assertWaybillCode(code: string): void {
+    if (!SHIPMENT_CODE_RULE.test(code)) {
+      throw new BadRequestException(
+        'code must be a 12-digit waybill matching /^(111|101|222|333)[0-9]{9}$/.',
+      );
+    }
+  }
+
   private normalizeRequiredCode(code: string): string {
     const normalizedCode = this.normalizeCode(code);
 
@@ -270,11 +283,43 @@ export class ShipmentsService {
     return normalizedCode;
   }
 
-  private generateShipmentCode(): string {
-    const datePart = new Date().toISOString().slice(2, 10).replace(/-/g, '');
-    const randomPart = randomBytes(3).toString('hex').toUpperCase();
+  private generateShipmentCode(prefix: '111' | '101' | '222' | '333'): string {
+    const sequence = randomInt(SHIPMENT_CODE_SEQUENCE_SIZE);
 
-    return `${SHIPMENT_CODE_PREFIX}${datePart}${randomPart}`;
+    return `${prefix}${String(sequence).padStart(9, '0')}`;
+  }
+
+  private resolveGeneratedCodePrefix(metadata: JsonValue | null | undefined): '111' | '101' | '222' | '333' {
+    const metadataRecord = asJsonRecord(metadata);
+    const platform = readString(metadataRecord.platform)?.toUpperCase() ?? '';
+    const source = readString(metadataRecord.source)?.toUpperCase() ?? '';
+    const integration = asJsonRecord(metadataRecord.integration);
+    const integrationPlatform = readString(integration.platform)?.toUpperCase() ?? '';
+    const returnWorkflow = asJsonRecord(metadataRecord.returnWorkflow);
+
+    if (
+      source.includes('RETURN') ||
+      platform.includes('RETURN') ||
+      returnWorkflow.blocksOps === true
+    ) {
+      return '222';
+    }
+
+    if (
+      source.includes('MARKETPLACE') ||
+      platform.includes('MARKETPLACE') ||
+      platform.includes('TMDT') ||
+      platform.includes('TMĐT') ||
+      integrationPlatform.length > 0
+    ) {
+      return '111';
+    }
+
+    if (source.includes('MERCHANT') || platform.includes('MERCHANT')) {
+      return '101';
+    }
+
+    return '333';
   }
 
   private buildReturnWorkflowMetadata(

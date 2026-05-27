@@ -263,11 +263,6 @@ export function DashboardPage(): React.JSX.Element {
           icon: 'branch_business',
         },
         {
-          title: 'Lấy hàng',
-          to: routePaths.pickups,
-          icon: 'customer_platform',
-        },
-        {
           title: 'Phân công tác vụ',
           to: routePaths.tasks,
           icon: 'operations_platform',

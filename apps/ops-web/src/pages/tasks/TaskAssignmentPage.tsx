@@ -5,7 +5,6 @@ import { useSearchParams } from 'react-router-dom';
 import { useHubsQuery } from '../../features/masterdata/masterdata.api';
 import { useShipmentsQuery } from '../../features/shipments/shipments.api';
 import {
-  tasksClient,
   useCourierOptionsQuery,
   useDispatchTasksRealtime,
   useTasksQuery,
@@ -17,8 +16,8 @@ import { deriveHubScopeTokens, isShipmentInScope } from '../../utils/locationSco
 import { queryKeys } from '../../utils/queryKeys';
 import { TasksTable } from './TasksTable';
 
-function canBulkAssignTask(task: TaskListItemDto): boolean {
-  return task.status === 'CREATED' || task.status === 'ASSIGNED';
+function canTransferTask(task: TaskListItemDto): boolean {
+  return task.status === 'ASSIGNED' && Boolean(task.assignedCourierId);
 }
 
 function toDateInputValue(date: Date): string {
@@ -64,6 +63,16 @@ function formatRealtimeStatus(status: string): string {
   return 'Realtime chưa bật';
 }
 
+interface PendingTransferRequest {
+  id: string;
+  taskId: string;
+  shipmentCode: string;
+  fromCourierId: string;
+  toCourierId: string;
+  reason: string;
+  requestedAt: string;
+}
+
 export function TaskAssignmentPage(): React.JSX.Element {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -79,19 +88,25 @@ export function TaskAssignmentPage(): React.JSX.Element {
     status: searchParams.get('status') ?? undefined,
   };
   const defaultDeliveryArea = searchParams.get('deliveryArea') ?? '';
+  const defaultCourierFilter = searchParams.get('courierId') ?? '';
+  const defaultShipmentCode = searchParams.get('shipmentCode') ?? '';
   const rawDateFilter = searchParams.get('date') ?? '';
   const selectedDate = isValidDateInput(rawDateFilter) ? rawDateFilter : today;
 
   const [taskTypeInput, setTaskTypeInput] = useState(filters.taskType ?? '');
   const [statusInput, setStatusInput] = useState(filters.status ?? '');
   const [deliveryAreaInput, setDeliveryAreaInput] = useState(defaultDeliveryArea);
+  const [courierFilterInput, setCourierFilterInput] = useState(defaultCourierFilter);
+  const [shipmentCodeInput, setShipmentCodeInput] = useState(defaultShipmentCode);
   const [dateInput, setDateInput] = useState(selectedDate);
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
-  const [bulkCourierId, setBulkCourierId] = useState('');
-  const [bulkAssignLoading, setBulkAssignLoading] = useState(false);
-  const [bulkAssignMessage, setBulkAssignMessage] = useState<string | null>(null);
-  const [bulkAssignError, setBulkAssignError] = useState<string | null>(null);
+  const [targetCourierId, setTargetCourierId] = useState('');
+  const [transferLoading, setTransferLoading] = useState(false);
+  const [transferMessage, setTransferMessage] = useState<string | null>(null);
+  const [transferError, setTransferError] = useState<string | null>(null);
   const [courierSearchText, setCourierSearchText] = useState('');
+  const [transferReason, setTransferReason] = useState('Điều chuyển vận hành - lý do bổ sung sau');
+  const [pendingTransfers, setPendingTransfers] = useState<PendingTransferRequest[]>([]);
 
   const realtimeStatus = useDispatchTasksRealtime(Boolean(accessToken));
   const realtimeFallbackPollingEnabled =
@@ -130,31 +145,40 @@ export function TaskAssignmentPage(): React.JSX.Element {
     setTaskTypeInput(filters.taskType ?? '');
     setStatusInput(filters.status ?? '');
     setDeliveryAreaInput(defaultDeliveryArea);
+    setCourierFilterInput(defaultCourierFilter);
+    setShipmentCodeInput(defaultShipmentCode);
     setDateInput(selectedDate);
-  }, [defaultDeliveryArea, filters.status, filters.taskType, selectedDate]);
+  }, [
+    defaultCourierFilter,
+    defaultDeliveryArea,
+    defaultShipmentCode,
+    filters.status,
+    filters.taskType,
+    selectedDate,
+  ]);
 
   useEffect(() => {
-    if (bulkCourierId || !courierOptionsQuery.data?.length) {
+    if (targetCourierId || !courierOptionsQuery.data?.length) {
       return;
     }
 
-    setBulkCourierId(courierOptionsQuery.data[0].courierId);
-  }, [bulkCourierId, courierOptionsQuery.data]);
+    setTargetCourierId(courierOptionsQuery.data[0].courierId);
+  }, [targetCourierId, courierOptionsQuery.data]);
 
   useEffect(() => {
-    if (!bulkAssignMessage && !bulkAssignError) {
+    if (!transferMessage && !transferError) {
       return;
     }
 
     const clearTimeoutId = window.setTimeout(() => {
-      setBulkAssignMessage(null);
-      setBulkAssignError(null);
+      setTransferMessage(null);
+      setTransferError(null);
     }, 5000);
 
     return () => {
       window.clearTimeout(clearTimeoutId);
     };
-  }, [bulkAssignError, bulkAssignMessage]);
+  }, [transferError, transferMessage]);
 
   const allShipmentLookupByCode = useMemo(() => {
     const map = new Map<
@@ -205,7 +229,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
         senderName: shipmentLookup?.senderName ?? null,
         receiverName: shipmentLookup?.receiverName ?? null,
         platform: shipmentLookup?.platform ?? null,
-        isSelectable: canBulkAssignTask(task),
+        isSelectable: canTransferTask(task),
       } satisfies TaskListItemDto;
     });
   }, [allShipmentLookupByCode, tasksQuery.data]);
@@ -240,7 +264,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
     }
 
     // Fallback: vẫn giữ task PICKUP mới dù shipment chưa đủ metadata khu vực,
-    // để Ops luôn nhìn thấy đơn vừa duyệt và phân công kịp thời.
+    // để Ops luôn nhìn thấy đơn vừa duyệt trong luồng chuyển đơn.
     return tasksWithArea.filter((task) => {
       if (task.shipmentCode && scopedShipmentCodeSet.has(normalizeCode(task.shipmentCode))) {
         return true;
@@ -257,21 +281,29 @@ export function TaskAssignmentPage(): React.JSX.Element {
 
   const filteredTasks = useMemo(() => {
     const normalizedDeliveryArea = deliveryAreaInput.trim().toLowerCase();
+    const normalizedCourierFilter = normalizeCode(courierFilterInput);
+    const normalizedShipmentCode = normalizeCode(shipmentCodeInput);
 
     const result = scopedTasks.filter((task) => {
       const areaMatched =
         !normalizedDeliveryArea ||
         task.deliveryArea?.toLowerCase() === normalizedDeliveryArea;
       const dateMatched = toDateKey(task.updatedAt) === selectedDate;
+      const courierMatched =
+        !normalizedCourierFilter ||
+        normalizeCode(task.assignedCourierId) === normalizedCourierFilter;
+      const shipmentMatched =
+        !normalizedShipmentCode ||
+        normalizeCode(task.shipmentCode).includes(normalizedShipmentCode);
 
-      return areaMatched && dateMatched;
+      return areaMatched && dateMatched && courierMatched && shipmentMatched;
     });
 
     return result.sort(
       (left, right) =>
         new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime(),
     );
-  }, [deliveryAreaInput, scopedTasks, selectedDate]);
+  }, [courierFilterInput, deliveryAreaInput, scopedTasks, selectedDate, shipmentCodeInput]);
 
   const selectableTaskIds = useMemo(
     () => filteredTasks.filter((task) => task.isSelectable).map((task) => task.id),
@@ -296,6 +328,8 @@ export function TaskAssignmentPage(): React.JSX.Element {
     const taskType = String(formData.get('taskType') ?? '').trim();
     const status = String(formData.get('status') ?? '').trim();
     const deliveryArea = String(formData.get('deliveryArea') ?? '').trim();
+    const courierId = String(formData.get('courierId') ?? '').trim();
+    const shipmentCode = normalizeCode(String(formData.get('shipmentCode') ?? ''));
     const date = String(formData.get('date') ?? '').trim();
     const normalizedDate = isValidDateInput(date) ? date : today;
     const next = new URLSearchParams();
@@ -314,10 +348,18 @@ export function TaskAssignmentPage(): React.JSX.Element {
       next.set('deliveryArea', deliveryArea);
     }
 
+    if (courierId) {
+      next.set('courierId', courierId);
+    }
+
+    if (shipmentCode) {
+      next.set('shipmentCode', shipmentCode);
+    }
+
     setSearchParams(next, { replace: true });
     setSelectedTaskIds([]);
-    setBulkAssignMessage(null);
-    setBulkAssignError(null);
+    setTransferMessage(null);
+    setTransferError(null);
   };
 
   const onResetFilters = () => {
@@ -327,10 +369,12 @@ export function TaskAssignmentPage(): React.JSX.Element {
     setTaskTypeInput('');
     setStatusInput('');
     setDeliveryAreaInput('');
+    setCourierFilterInput('');
+    setShipmentCodeInput('');
     setDateInput(today);
     setSelectedTaskIds([]);
-    setBulkAssignMessage(null);
-    setBulkAssignError(null);
+    setTransferMessage(null);
+    setTransferError(null);
   };
 
   const onToggleTaskSelection = (taskId: string, checked: boolean) => {
@@ -354,14 +398,14 @@ export function TaskAssignmentPage(): React.JSX.Element {
     });
   };
 
-  const onBulkAssign = async () => {
+  const onCreateTransferRequest = async () => {
     if (!accessToken) {
       return;
     }
 
-    const courierId = bulkCourierId.trim();
+    const courierId = targetCourierId.trim();
     if (!courierId) {
-      setBulkAssignError('Vui lòng chọn shipper trước khi phân công.');
+      setTransferError('Vui lòng chọn courier nhận trước khi chuyển đơn.');
       return;
     }
 
@@ -369,68 +413,50 @@ export function TaskAssignmentPage(): React.JSX.Element {
       selectedTaskIds.includes(task.id),
     );
     if (selectedTasks.length === 0) {
-      setBulkAssignError('Vui lòng chọn ít nhất 1 tác vụ.');
+      setTransferError('Vui lòng chọn ít nhất 1 đơn cần chuyển.');
       return;
     }
 
-    setBulkAssignLoading(true);
-    setBulkAssignMessage(null);
-    setBulkAssignError(null);
-
-    let assignedCount = 0;
-    let reassignedCount = 0;
-    let skippedCount = 0;
-    const failedTasks: string[] = [];
-
-    for (const task of selectedTasks) {
-      if (!task.isSelectable) {
-        skippedCount += 1;
-        continue;
-      }
-
-      try {
-        if (task.assignedCourierId) {
-          if (task.assignedCourierId === courierId) {
-            skippedCount += 1;
-            continue;
-          }
-
-          await tasksClient.reassign(accessToken, {
-            taskId: task.id,
-            courierId,
-            note: 'phân công hàng loạt từ màn hình ops',
-          });
-          reassignedCount += 1;
-          continue;
-        }
-
-        await tasksClient.assign(accessToken, {
-          taskId: task.id,
-          courierId,
-          note: 'phân công hàng loạt từ màn hình ops',
-        });
-        assignedCount += 1;
-      } catch (error) {
-        const displayCode = task.shipmentCode ?? task.id;
-        failedTasks.push(`${displayCode}: ${getErrorMessage(error)}`);
-      }
-    }
-
-    await queryClient.invalidateQueries({ queryKey: queryKeys.tasks });
-
-    if (failedTasks.length === 0) {
-      setSelectedTaskIds([]);
-    }
-
-    setBulkAssignMessage(
-      `Đã phân công ${assignedCount}, phân công lại ${reassignedCount}, bỏ qua ${skippedCount}.`,
+    const invalidTasks = selectedTasks.filter(
+      (task) => !task.isSelectable || !task.assignedCourierId,
     );
-
-    if (failedTasks.length > 0) {
-      setBulkAssignError(`Thất bại ${failedTasks.length}: ${failedTasks.slice(0, 3).join(' | ')}`);
+    if (invalidTasks.length > 0) {
+      setTransferError(
+        'Chỉ đơn đang có courier phụ trách và trạng thái ASSIGNED mới được tạo yêu cầu chuyển.',
+      );
+      return;
     }
 
-    setBulkAssignLoading(false);
+    const sameCourierTasks = selectedTasks.filter(
+      (task) => normalizeCode(task.assignedCourierId) === normalizeCode(courierId),
+    );
+    if (sameCourierTasks.length > 0) {
+      setTransferError('Courier nhận phải khác courier hiện tại của các đơn đã chọn.');
+      return;
+    }
+
+    setTransferLoading(true);
+    setTransferMessage(null);
+    setTransferError(null);
+
+    const requestedAt = new Date().toISOString();
+    const reason = transferReason.trim() || 'Điều chuyển vận hành - lý do bổ sung sau';
+    const requests = selectedTasks.map((task) => ({
+      id: `${task.id}:${courierId}:${requestedAt}`,
+      taskId: task.id,
+      shipmentCode: task.shipmentCode ?? task.taskCode,
+      fromCourierId: task.assignedCourierId as string,
+      toCourierId: courierId,
+      reason,
+      requestedAt,
+    }));
+
+    setPendingTransfers((previous) => [...requests, ...previous].slice(0, 8));
+    setSelectedTaskIds([]);
+    setTransferMessage(
+      `Đã tạo ${requests.length} yêu cầu chuyển đang chờ courier nhận xác nhận. Đơn vẫn nằm ở courier hiện tại cho đến khi có bước xác nhận trên app courier.`,
+    );
+    setTransferLoading(false);
   };
 
   const refreshTaskData = async () => {
@@ -443,9 +469,10 @@ export function TaskAssignmentPage(): React.JSX.Element {
 
   return (
     <div>
-      <h2>Phân công tác vụ</h2>
+      <h2>Chuyển đơn</h2>
       <p style={styles.helperText}>
-        Lọc theo ngày, loại tác vụ, trạng thái và khu vực giao. Chọn nhiều tác vụ để phân công cho 1 shipper.
+        Lọc đơn đang nằm trên app courier theo courier hiện tại, mã vận đơn, ngày và khu vực.
+        Tạo yêu cầu chuyển sang courier nhận; đơn chỉ hoàn tất chuyển sau khi courier nhận xác nhận.
       </p>
       <div style={styles.realtimeRow}>
         <span style={styles.realtimeLabel}>Realtime</span>
@@ -483,6 +510,31 @@ export function TaskAssignmentPage(): React.JSX.Element {
           onChange={(event) => setDateInput(event.target.value)}
           style={styles.dateInput}
         />
+
+        <input
+          type="search"
+          name="shipmentCode"
+          value={shipmentCodeInput}
+          onChange={(event) => setShipmentCodeInput(event.target.value.toUpperCase())}
+          placeholder="Tìm mã vận đơn"
+          aria-label="Tìm mã vận đơn"
+          style={styles.searchInput}
+        />
+
+        <select
+          name="courierId"
+          value={courierFilterInput}
+          onChange={(event) => setCourierFilterInput(event.target.value)}
+          style={styles.select}
+          disabled={courierOptionsQuery.isLoading}
+        >
+          <option value="">Tất cả courier hiện tại</option>
+          {(courierOptionsQuery.data ?? []).map((courier) => (
+            <option key={courier.courierId} value={courier.courierId}>
+              {courier.label}
+            </option>
+          ))}
+        </select>
 
         <select
           name="taskType"
@@ -531,7 +583,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
 
       <section style={styles.bulkPanel}>
         <div style={styles.bulkHeaderRow}>
-          <strong>Phân công hàng loạt</strong>
+          <strong>Tạo yêu cầu chuyển</strong>
           <small>Đã chọn: {selectedTaskIds.length}</small>
         </div>
 
@@ -539,18 +591,18 @@ export function TaskAssignmentPage(): React.JSX.Element {
           <div style={styles.courierSearchWrap}>
             <input
               type="text"
-              placeholder="Tìm shipper theo tên, SĐT..."
+              placeholder="Tìm courier nhận theo tên, mã..."
               value={courierSearchText}
               onChange={(event) => setCourierSearchText(event.target.value)}
               style={styles.courierSearchInput}
             />
             <select
-              value={bulkCourierId}
-              onChange={(event) => setBulkCourierId(event.target.value)}
+              value={targetCourierId}
+              onChange={(event) => setTargetCourierId(event.target.value)}
               style={styles.select}
-              disabled={courierOptionsQuery.isLoading || bulkAssignLoading}
+              disabled={courierOptionsQuery.isLoading || transferLoading}
             >
-              <option value="">Chọn shipper</option>
+              <option value="">Chọn courier nhận</option>
               {(courierOptionsQuery.data ?? []).filter((courier) => {
                 if (!courierSearchText.trim()) return true;
                 const search = courierSearchText.trim().toLowerCase();
@@ -562,27 +614,54 @@ export function TaskAssignmentPage(): React.JSX.Element {
               ))}
             </select>
           </div>
+          <input
+            type="text"
+            value={transferReason}
+            onChange={(event) => setTransferReason(event.target.value)}
+            placeholder="Lý do chuyển"
+            aria-label="Lý do chuyển"
+            style={styles.reasonInput}
+          />
           <button
             type="button"
-            onClick={() => void onBulkAssign()}
-            disabled={bulkAssignLoading || selectedTaskIds.length === 0}
+            onClick={() => void onCreateTransferRequest()}
+            disabled={transferLoading || selectedTaskIds.length === 0}
           >
-            {bulkAssignLoading ? 'Đang phân công...' : 'Phân công các tác vụ đã chọn'}
+            {transferLoading ? 'Đang tạo yêu cầu...' : 'Gửi yêu cầu chuyển'}
           </button>
         </div>
 
         <small style={styles.helperText}>
-          Chỉ các tác vụ có trạng thái CREATED hoặc ASSIGNED mới được chọn để phân công hàng loạt.
+          Chỉ đơn có trạng thái ASSIGNED và đang có courier phụ trách mới được chọn. Với contract
+          hiện tại, màn này giữ yêu cầu ở trạng thái chờ xác nhận để không chuyển tức thời khỏi
+          courier cũ.
         </small>
 
-        {bulkAssignMessage ? (
+        {transferMessage ? (
           <div role="status" style={{ ...styles.notice, ...styles.successNotice }}>
-            {bulkAssignMessage}
+            {transferMessage}
           </div>
         ) : null}
-        {bulkAssignError ? (
+        {transferError ? (
           <div role="alert" style={{ ...styles.notice, ...styles.errorNotice }}>
-            {bulkAssignError}
+            {transferError}
+          </div>
+        ) : null}
+
+        {pendingTransfers.length > 0 ? (
+          <div style={styles.pendingPanel}>
+            <strong>Yêu cầu đang chờ xác nhận</strong>
+            <div style={styles.pendingList}>
+              {pendingTransfers.map((request) => (
+                <div key={request.id} style={styles.pendingItem}>
+                  <span>{request.shipmentCode}</span>
+                  <small>
+                    {request.fromCourierId} sang {request.toCourierId}
+                  </small>
+                  <em>{request.reason}</em>
+                </div>
+              ))}
+            </div>
           </div>
         ) : null}
 
@@ -605,7 +684,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
           if (wrongHubTasks.length === 0) return null;
           return (
             <div role="alert" style={{ ...styles.notice, ...styles.warningNotice }}>
-              ⚠ {wrongHubTasks.length} đơn giao CHƯA ĐẾN hub của bạn:
+              {wrongHubTasks.length} đơn giao chưa đến hub của bạn:
               {' '}{wrongHubTasks.slice(0, 5).map((t) => t.shipmentCode).join(', ')}
               {wrongHubTasks.length > 5 ? ` và ${wrongHubTasks.length - 5} đơn khác...` : ''}
             </div>
@@ -631,7 +710,7 @@ export function TaskAssignmentPage(): React.JSX.Element {
         <p>
           {assignedHubCodes.length === 0 && !canViewAllHubAreas
             ? 'Không hiển thị được tác vụ vì tài khoản OPS chưa được gán hub.'
-            : 'Không có tác vụ phù hợp theo ngày và bộ lọc hiện tại.'}
+            : 'Không có đơn phù hợp theo ngày và bộ lọc hiện tại.'}
         </p>
       ) : null}
 
@@ -668,6 +747,13 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 10,
     padding: '8px 10px',
     minWidth: 170,
+  },
+  searchInput: {
+    border: '1px solid #d9def3',
+    borderRadius: 10,
+    padding: '8px 10px',
+    minWidth: 210,
+    textTransform: 'uppercase',
   },
   helperText: {
     color: '#2d3f99',
@@ -771,6 +857,33 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '8px 10px',
     minWidth: 260,
     fontSize: 13,
+  },
+  reasonInput: {
+    border: '1px solid #d9def3',
+    borderRadius: 10,
+    padding: '8px 10px',
+    minWidth: 300,
+    flex: '1 1 300px',
+  },
+  pendingPanel: {
+    marginTop: 12,
+    borderTop: '1px solid #d9def3',
+    paddingTop: 12,
+  },
+  pendingList: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+    gap: 8,
+    marginTop: 8,
+  },
+  pendingItem: {
+    display: 'grid',
+    gap: 4,
+    border: '1px solid #d9def3',
+    borderRadius: 10,
+    padding: '10px 12px',
+    backgroundColor: '#ffffff',
+    color: '#1f2b6f',
   },
   warningNotice: {
     borderColor: '#fcd34d',

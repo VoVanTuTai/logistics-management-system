@@ -27,19 +27,20 @@ export function TasksTable({
           <th style={styles.headerCell}>
             <input
               type="checkbox"
+              aria-label="Chọn tất cả đơn có thể chuyển"
               checked={allSelectableSelected}
               disabled={!onToggleSelectAll}
               onChange={(event) => onToggleSelectAll?.(event.currentTarget.checked)}
             />
           </th>
           <th style={styles.headerCell}>Vận đơn</th>
-          <th style={styles.headerCell}>Loại</th>
+          <th style={styles.headerCell}>Loại tác vụ</th>
           <th style={styles.headerCell}>Trạng thái</th>
           <th style={styles.headerCell}>Người gửi</th>
           <th style={styles.headerCell}>Người nhận</th>
           <th style={styles.headerCell}>Nền tảng</th>
           <th style={styles.headerCell}>Khu vực giao</th>
-          <th style={styles.headerCell}>Shipper</th>
+          <th style={styles.headerCell}>Courier hiện tại</th>
           <th style={styles.headerCell}>Cập nhật lúc</th>
         </tr>
       </thead>
@@ -49,6 +50,7 @@ export function TasksTable({
             <td style={styles.cell}>
               <input
                 type="checkbox"
+                aria-label={`Chọn đơn ${item.shipmentCode ?? item.taskCode}`}
                 checked={selectedTaskIds.includes(item.id)}
                 disabled={!item.isSelectable || !onToggleTaskSelection}
                 onChange={(event) =>
@@ -107,4 +109,3 @@ const styles: Record<string, React.CSSProperties> = {
     letterSpacing: 0.3,
   },
 };
-
