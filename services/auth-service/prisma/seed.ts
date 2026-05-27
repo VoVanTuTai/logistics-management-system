@@ -3,10 +3,10 @@ import { createHash } from 'crypto';
 import { PrismaClient } from '@prisma/client';
 
 import {
+  branchHubCodeForProvince,
   loadVietnamProvinces,
   merchantUsernameForProvinceIndex,
   REGIONAL_HUBS,
-  resolveRegionalHub,
 } from '../../../infra/dev/seed/vietnam-logistics-seed-data';
 
 const prisma = new PrismaClient();
@@ -41,15 +41,13 @@ function allPermissions(enabled: boolean): Record<string, boolean> {
 async function seedUsers() {
   const provinces = await loadVietnamProvinces();
   const merchantUsers = provinces.map((province, index) => {
-    const hub = resolveRegionalHub(province);
-
     return {
       id: merchantUsernameForProvinceIndex(index),
       username: merchantUsernameForProvinceIndex(index),
       roles: ['MERCHANT'],
       displayName: `Merchant ${province.name}`,
       phone: `0941${String(index + 1).padStart(6, '0')}`,
-      hubCodes: [hub.code],
+      hubCodes: [branchHubCodeForProvince(province)],
     };
   });
   const regionalHubUsers = [

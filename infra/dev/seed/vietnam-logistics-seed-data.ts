@@ -139,6 +139,19 @@ export function resolveRegionalHub(province: VietnamProvinceSeed): RegionalHubSe
   return REGIONAL_HUBS[resolveProvinceRegion(province.codename)];
 }
 
+export function provinceShortName(province: VietnamProvinceSeed): string {
+  return province.name.replace(/^(Tỉnh|Thành phố)\s+/u, '');
+}
+
+export function branchHubCodeForProvince(province: VietnamProvinceSeed): string {
+  const hub = resolveRegionalHub(province);
+  return `${hub.zoneCode}${String(province.code).padStart(3, '0')}B001`;
+}
+
+export function branchHubNameForProvince(province: VietnamProvinceSeed): string {
+  return `Bưu cục ${provinceShortName(province)}`;
+}
+
 export function merchantUsernameForProvinceIndex(index: number): string {
   return `411${String(index + 1).padStart(5, '0')}`;
 }

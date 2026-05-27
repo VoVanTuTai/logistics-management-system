@@ -1,11 +1,14 @@
 import { PrismaClient } from '@prisma/client';
 
 import {
+  branchHubCodeForProvince,
+  branchHubNameForProvince,
   buildAddressLine,
   getRepresentativeWard,
   loadVietnamProvinces,
   merchantCitizenId,
   merchantUsernameForProvinceIndex,
+  provinceShortName,
   REGIONAL_HUBS,
   resolveProvinceRegion,
   resolveRegionalHub,
@@ -25,6 +28,8 @@ function hubAddress(input: {
   contactName: string;
   type?: 'BRANCH' | 'SORTING_CENTER' | 'TRANSIT_HUB';
   description: string;
+  parentHubCode?: string;
+  parentHubName?: string;
   coverageProvinceCodes?: number[];
   coverageProvinceNames?: string[];
 }): string {
@@ -71,10 +76,10 @@ function merchantProfileSeed(province: VietnamProvinceSeed, index: number) {
     citizenId: merchantCitizenId(province, index),
     regionCode: hub.merchantRegionCode,
     regionLabel: hub.zoneName.replace('Zone ', ''),
-    defaultHubCode: hub.code,
-    defaultHubName: hub.name,
+    defaultHubCode: branchHubCodeForProvince(province),
+    defaultHubName: branchHubNameForProvince(province),
     defaultSenderAddress: buildAddressLine({
-      addressLine: `Kho ${province.name.replace(/^(Tỉnh|Thành phố)\s+/u, '')}`,
+      addressLine: `Kho ${provinceShortName(province)}`,
       wardName: ward?.name,
       provinceName: province.name,
     }),
@@ -126,7 +131,7 @@ async function seedHubs(provinces: VietnamProvinceSeed[]) {
       provinces.filter((province) => resolveProvinceRegion(province.codename) === region),
     ]),
   );
-  const hubs = Object.values(REGIONAL_HUBS).map((hub) => {
+  const regionalHubs = Object.values(REGIONAL_HUBS).map((hub) => {
     const province = provinces.find((item) => item.codename === hub.provinceCodename);
     if (!province) {
       throw new Error(`Cannot find hub province "${hub.provinceCodename}".`);
@@ -156,6 +161,35 @@ async function seedHubs(provinces: VietnamProvinceSeed[]) {
       isActive: true,
     };
   });
+  const branchHubs = provinces.map((province) => {
+    const regionalHub = resolveRegionalHub(province);
+    const ward = getRepresentativeWard(province);
+    const shortName = provinceShortName(province);
+
+    return {
+      code: branchHubCodeForProvince(province),
+      name: branchHubNameForProvince(province),
+      zoneCode: regionalHub.zoneCode,
+      address: hubAddress({
+        province: province.name,
+        provinceCode: String(province.code),
+        district: '',
+        ward: ward?.name ?? '',
+        wardCode: ward ? String(ward.code) : '',
+        addressLine: `Trung tâm khai thác ${shortName}`,
+        phone: `02${String(province.code).padStart(8, '0')}`,
+        contactName: `Điều phối ${shortName}`,
+        type: 'BRANCH',
+        parentHubCode: regionalHub.code,
+        parentHubName: regionalHub.name,
+        description: `${branchHubNameForProvince(province)} trực thuộc ${regionalHub.name}.`,
+        coverageProvinceCodes: [province.code],
+        coverageProvinceNames: [province.name],
+      }),
+      isActive: true,
+    };
+  });
+  const hubs = [...regionalHubs, ...branchHubs];
 
   for (const hub of hubs) {
     await prisma.hub.upsert({
