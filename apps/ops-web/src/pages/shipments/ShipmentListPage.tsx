@@ -10,17 +10,21 @@ import type { HubScanInput, HubScanType } from '../../features/scans/scans.types
 import { useCreateShipmentMutation, useShipmentPageQuery } from '../../features/shipments/shipments.api';
 import { shipmentsClient } from '../../features/shipments/shipments.client';
 import type { ShipmentListFilters, ShipmentListItemDto } from '../../features/shipments/shipments.types';
-import { tasksClient, useCourierOptionsQuery } from '../../features/tasks/tasks.api';
+import { tasksClient, useCourierOptionsQuery, useTasksQuery } from '../../features/tasks/tasks.api';
+import type { TaskListItemDto } from '../../features/tasks/tasks.types';
 import { openShippingLabelPrint } from '../../printing/shippingLabelPrint';
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
 import { useUiStore } from '../../store/uiStore';
 import { createIdempotencyKey } from '../../utils/idempotency';
 import { resolveBranchHubByProvince } from '../../utils/locationScope';
+import { formatShipmentStatusLabel } from '../../utils/logisticsLabels';
 import { queryKeys } from '../../utils/queryKeys';
 import { ShipmentsTable } from './ShipmentsTable';
 
 type ServiceType = 'STANDARD' | 'EXPRESS' | 'SAME_DAY';
+type ShipmentTimeFilter = 'today' | 'last7Days' | 'last30Days' | 'custom' | 'all';
+type BranchGoodsFilter = 'all' | 'inventoryByDay' | 'problemOrders' | 'returnNeeded';
 
 interface WalkInShipmentFormState {
   manualCode: string;
@@ -75,11 +79,14 @@ const SHIPMENT_STATUS_OPTIONS = [
   'MANIFEST_RECEIVED',
   'MANIFEST_UNSEALED',
   'SEND_GOODS',
+  'IN_TRANSIT',
+  'INVENTORY_CHECK',
   'SCAN_INBOUND',
   'SCAN_OUTBOUND',
   'DELIVERED',
   'DELIVERY_FAILED',
   'NDR_CREATED',
+  'EXCEPTION',
   'RETURN_STARTED',
   'RETURN_COMPLETED',
   'CANCELLED',
@@ -87,6 +94,19 @@ const SHIPMENT_STATUS_OPTIONS = [
 
 const DEFAULT_PAGE_SIZE = 20;
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
+const EMPTY_SHIPMENTS: ShipmentListItemDto[] = [];
+const DEFAULT_TIME_FILTER: ShipmentTimeFilter = 'today';
+const DEFAULT_BRANCH_GOODS_FILTER: BranchGoodsFilter = 'all';
+const FINAL_BRANCH_STATUSES = new Set([
+  'CANCELLED',
+  'DELIVERED',
+  'DELIVERY_COMPLETED',
+  'RETURN_COMPLETED',
+  'RETURNED',
+  'LOST',
+]);
+const PROBLEM_SHIPMENT_STATUSES = new Set(['DELIVERY_FAILED', 'NDR_CREATED', 'EXCEPTION']);
+const RETURN_NEEDED_STATUSES = new Set(['DELIVERY_FAILED', 'NDR_CREATED', 'EXCEPTION']);
 
 function toPositiveNumber(value: string): number {
   const parsed = Number(value);
@@ -218,7 +238,98 @@ function toPageNumber(value: string | null, fallback: number, min: number, max: 
   return Math.max(min, Math.min(max, Math.trunc(parsed)));
 }
 
-function buildCreatedAtRange(dateValue: string): { createdFrom?: string; createdTo?: string } {
+function normalizeTimeFilter(value: string | null): ShipmentTimeFilter {
+  return value === 'today' ||
+    value === 'last7Days' ||
+    value === 'last30Days' ||
+    value === 'custom' ||
+    value === 'all'
+    ? value
+    : DEFAULT_TIME_FILTER;
+}
+
+function normalizeBranchGoodsFilter(value: string | null): BranchGoodsFilter {
+  return value === 'inventoryByDay' || value === 'problemOrders' || value === 'returnNeeded'
+    ? value
+    : DEFAULT_BRANCH_GOODS_FILTER;
+}
+
+function normalizeOpsCode(value: string | null | undefined): string {
+  return (value ?? '').trim().toUpperCase();
+}
+
+function toDateKey(value: string | null | undefined): string {
+  if (!value) {
+    return '';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return toDateInputValue(date);
+}
+
+function isBranchInventoryShipment(shipment: ShipmentListItemDto): boolean {
+  return !FINAL_BRANCH_STATUSES.has(normalizeOpsCode(shipment.currentStatus));
+}
+
+function isProblemShipment(shipment: ShipmentListItemDto): boolean {
+  return (
+    PROBLEM_SHIPMENT_STATUSES.has(normalizeOpsCode(shipment.currentStatus)) ||
+    shipment.requiresLabelReprint ||
+    shipment.isOperationLocked
+  );
+}
+
+function isReturnNeededShipment(shipment: ShipmentListItemDto): boolean {
+  return RETURN_NEEDED_STATUSES.has(normalizeOpsCode(shipment.currentStatus));
+}
+
+function buildDeliveryCourierByShipment(tasks: TaskListItemDto[]): Map<string, string> {
+  const result = new Map<string, TaskListItemDto>();
+
+  for (const task of tasks) {
+    const shipmentCode = normalizeOpsCode(task.shipmentCode);
+    if (!shipmentCode || task.taskType !== 'DELIVERY') {
+      continue;
+    }
+
+    const previous = result.get(shipmentCode);
+    if (!previous || (task.updatedAt ?? '') > (previous.updatedAt ?? '')) {
+      result.set(shipmentCode, task);
+    }
+  }
+
+  return new Map(
+    Array.from(result.entries()).map(([shipmentCode, task]) => [
+      shipmentCode,
+      task.assignedCourierId ?? 'Chưa bàn giao',
+    ]),
+  );
+}
+
+function extractShipmentSearchCodes(value: string): string[] {
+  const tokens = value
+    .split(/[\s,;]+/)
+    .map((token) => token.trim().toUpperCase())
+    .filter((token) => token.length > 0);
+
+  return Array.from(new Set(tokens));
+}
+
+function addDays(dateValue: string, days: number): string {
+  const date = new Date(`${dateValue}T00:00:00`);
+  if (Number.isNaN(date.getTime())) {
+    return dateValue;
+  }
+
+  date.setDate(date.getDate() + days);
+  return toDateInputValue(date);
+}
+
+function buildSingleDayCreatedAtRange(dateValue: string): { createdFrom?: string; createdTo?: string } {
   const start = new Date(`${dateValue}T00:00:00`);
   if (Number.isNaN(start.getTime())) {
     return {};
@@ -231,6 +342,48 @@ function buildCreatedAtRange(dateValue: string): { createdFrom?: string; created
     createdFrom: start.toISOString(),
     createdTo: end.toISOString(),
   };
+}
+
+function buildCustomCreatedAtRange(dateFrom: string, dateTo: string): { createdFrom?: string; createdTo?: string } {
+  const start = new Date(`${dateFrom}T00:00:00`);
+  const end = new Date(`${dateTo || dateFrom}T00:00:00`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return {};
+  }
+
+  const normalizedStart = start <= end ? start : end;
+  const normalizedEnd = start <= end ? end : start;
+  normalizedEnd.setDate(normalizedEnd.getDate() + 1);
+
+  return {
+    createdFrom: normalizedStart.toISOString(),
+    createdTo: normalizedEnd.toISOString(),
+  };
+}
+
+function buildCreatedAtRange(
+  timeFilter: ShipmentTimeFilter,
+  dateFrom: string,
+  dateTo: string,
+  today: string,
+): { createdFrom?: string; createdTo?: string } {
+  if (timeFilter === 'all') {
+    return {};
+  }
+
+  if (timeFilter === 'today') {
+    return buildSingleDayCreatedAtRange(today);
+  }
+
+  if (timeFilter === 'last7Days') {
+    return buildCustomCreatedAtRange(addDays(today, -6), today);
+  }
+
+  if (timeFilter === 'last30Days') {
+    return buildCustomCreatedAtRange(addDays(today, -29), today);
+  }
+
+  return buildCustomCreatedAtRange(dateFrom, dateTo);
 }
 
 function formatTotal(total: number | undefined): string {
@@ -320,13 +473,24 @@ export function ShipmentListPage(): React.JSX.Element {
     q: searchParams.get('q') ?? undefined,
     status: searchParams.get('status') ?? undefined,
   };
-  const selectedDate = searchParams.get('date') || today;
+  const timeFilter = normalizeTimeFilter(searchParams.get('time'));
+  const selectedDateFrom = searchParams.get('dateFrom') || today;
+  const selectedDateTo = searchParams.get('dateTo') || today;
+  const branchGoodsFilter = normalizeBranchGoodsFilter(searchParams.get('branchGoods'));
+  const inventoryDate = searchParams.get('inventoryDate') || today;
+  const courierFilter = searchParams.get('courierId') ?? '';
   const pageSize = toPageNumber(searchParams.get('limit'), DEFAULT_PAGE_SIZE, 10, 100);
   const offset = toPageNumber(searchParams.get('offset'), 0, 0, 1_000_000);
   const pageNumber = Math.floor(offset / pageSize) + 1;
   const [qInput, setQInput] = useState(filters.q ?? '');
   const [statusInput, setStatusInput] = useState(filters.status ?? '');
-  const [dateInput, setDateInput] = useState(selectedDate);
+  const [timeInput, setTimeInput] = useState<ShipmentTimeFilter>(timeFilter);
+  const [dateFromInput, setDateFromInput] = useState(selectedDateFrom);
+  const [dateToInput, setDateToInput] = useState(selectedDateTo);
+  const [branchGoodsInput, setBranchGoodsInput] = useState<BranchGoodsFilter>(branchGoodsFilter);
+  const [inventoryDateInput, setInventoryDateInput] = useState(inventoryDate);
+  const [courierInput, setCourierInput] = useState(courierFilter);
+  const [selectedShipmentCodes, setSelectedShipmentCodes] = useState<string[]>([]);
 
   const [counterShipmentCode, setCounterShipmentCode] = useState('');
   const [counterLocationCode, setCounterLocationCode] = useState('');
@@ -349,10 +513,16 @@ export function ShipmentListPage(): React.JSX.Element {
   const [dispatchLoading, setDispatchLoading] = useState(false);
 
   const assignedHubCodesKey = assignedHubCodes.join(',');
-  const dateRange = useMemo(() => buildCreatedAtRange(selectedDate), [selectedDate]);
+  const shipmentSearchCodes = useMemo(() => extractShipmentSearchCodes(filters.q ?? ''), [filters.q]);
+  const isMultiCodeSearch = shipmentSearchCodes.length > 1;
+  const dateRange = useMemo(
+    () => buildCreatedAtRange(timeFilter, selectedDateFrom, selectedDateTo, today),
+    [selectedDateFrom, selectedDateTo, timeFilter, today],
+  );
   const shipmentPageFilters = useMemo<ShipmentListFilters>(
     () => ({
-      q: filters.q,
+      q: isMultiCodeSearch ? undefined : filters.q,
+      shipmentCodes: isMultiCodeSearch ? shipmentSearchCodes : undefined,
       status: filters.status,
       hubCodes: canViewAllHubAreas ? undefined : assignedHubCodes,
       createdFrom: dateRange.createdFrom,
@@ -368,8 +538,10 @@ export function ShipmentListPage(): React.JSX.Element {
       dateRange.createdTo,
       filters.q,
       filters.status,
+      isMultiCodeSearch,
       offset,
       pageSize,
+      shipmentSearchCodes,
     ],
   );
   const lacksHubScope = Boolean(accessToken) && !canViewAllHubAreas && assignedHubCodes.length === 0;
@@ -382,6 +554,7 @@ export function ShipmentListPage(): React.JSX.Element {
   const inboundScanMutation = useInboundScanMutation(accessToken);
   const outboundScanMutation = useOutboundScanMutation(accessToken);
   const courierOptionsQuery = useCourierOptionsQuery(accessToken);
+  const deliveryTasksQuery = useTasksQuery(accessToken, { taskType: 'DELIVERY' }, { refetchInterval: 15000 });
   const locationsQuery = useVietnamAdministrativeUnitsQuery(accessToken);
   const hubsQuery = useHubsQuery(accessToken, { isActive: 'true' });
   const provinceOptions = locationsQuery.data ?? [];
@@ -392,7 +565,57 @@ export function ShipmentListPage(): React.JSX.Element {
     () => resolveBranchHubByProvince(activeHubs, walkInForm.receiverRegion),
     [activeHubs, walkInForm.receiverRegion],
   );
-  const visibleShipments = shipmentQuery.data?.items ?? [];
+  const pageShipments = shipmentQuery.data?.items ?? EMPTY_SHIPMENTS;
+  const deliveryCourierByShipment = useMemo(
+    () => buildDeliveryCourierByShipment(deliveryTasksQuery.data ?? []),
+    [deliveryTasksQuery.data],
+  );
+  const courierFilterOptions = useMemo(() => {
+    const options = new Set<string>();
+    if (courierFilter) {
+      options.add(courierFilter);
+    }
+    for (const courier of courierOptionsQuery.data ?? []) {
+      options.add(courier.courierId);
+    }
+    for (const courier of deliveryCourierByShipment.values()) {
+      if (courier !== 'Chưa bàn giao') {
+        options.add(courier);
+      }
+    }
+
+    return Array.from(options).sort();
+  }, [courierFilter, courierOptionsQuery.data, deliveryCourierByShipment]);
+  const visibleShipments = useMemo(() => {
+    return pageShipments.filter((shipment) => {
+      const statusMatched =
+        branchGoodsFilter === 'all' ||
+        (branchGoodsFilter === 'inventoryByDay' &&
+          isBranchInventoryShipment(shipment) &&
+          (!inventoryDate || toDateKey(shipment.updatedAt) <= inventoryDate)) ||
+        (branchGoodsFilter === 'problemOrders' && isProblemShipment(shipment)) ||
+        (branchGoodsFilter === 'returnNeeded' && isReturnNeededShipment(shipment));
+      const assignedCourier =
+        deliveryCourierByShipment.get(normalizeOpsCode(shipment.shipmentCode)) ?? 'Chưa bàn giao';
+      const courierMatched = !courierFilter || assignedCourier === courierFilter;
+
+      return statusMatched && courierMatched;
+    });
+  }, [
+    branchGoodsFilter,
+    courierFilter,
+    deliveryCourierByShipment,
+    inventoryDate,
+    pageShipments,
+  ]);
+  const visibleShipmentCodes = useMemo(
+    () => new Set(visibleShipments.map((shipment) => shipment.shipmentCode)),
+    [visibleShipments],
+  );
+  const selectedShipments = useMemo(
+    () => visibleShipments.filter((shipment) => selectedShipmentCodes.includes(shipment.shipmentCode)),
+    [selectedShipmentCodes, visibleShipments],
+  );
   const pageInfo = shipmentQuery.data?.pageInfo ?? { hasNextPage: false, total: undefined };
   const hasPreviousPage = offset > 0;
 
@@ -403,8 +626,22 @@ export function ShipmentListPage(): React.JSX.Element {
   useEffect(() => {
     setQInput(filters.q ?? '');
     setStatusInput(filters.status ?? '');
-    setDateInput(selectedDate);
-  }, [filters.q, filters.status, selectedDate]);
+    setTimeInput(timeFilter);
+    setDateFromInput(selectedDateFrom);
+    setDateToInput(selectedDateTo);
+    setBranchGoodsInput(branchGoodsFilter);
+    setInventoryDateInput(inventoryDate);
+    setCourierInput(courierFilter);
+  }, [
+    branchGoodsFilter,
+    courierFilter,
+    filters.q,
+    filters.status,
+    inventoryDate,
+    selectedDateFrom,
+    selectedDateTo,
+    timeFilter,
+  ]);
 
   useEffect(() => {
     if (dispatchCourierId || !courierOptionsQuery.data?.length) {
@@ -414,15 +651,31 @@ export function ShipmentListPage(): React.JSX.Element {
     setDispatchCourierId(courierOptionsQuery.data[0].courierId);
   }, [courierOptionsQuery.data, dispatchCourierId]);
 
+  useEffect(() => {
+    setSelectedShipmentCodes((current) => {
+      const next = current.filter((shipmentCode) => visibleShipmentCodes.has(shipmentCode));
+      return next.length === current.length ? current : next;
+    });
+  }, [visibleShipmentCodes]);
+
   const onFilterSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const q = String(formData.get('q') ?? '').trim();
     const status = String(formData.get('status') ?? '').trim();
-    const date = String(formData.get('date') ?? '').trim() || today;
+    const time = normalizeTimeFilter(String(formData.get('time') ?? ''));
+    const dateFrom = String(formData.get('dateFrom') ?? '').trim() || today;
+    const dateTo = String(formData.get('dateTo') ?? '').trim() || dateFrom;
+    const nextBranchGoodsFilter = normalizeBranchGoodsFilter(String(formData.get('branchGoods') ?? ''));
+    const nextInventoryDate = String(formData.get('inventoryDate') ?? '').trim() || today;
+    const nextCourierId = String(formData.get('courierId') ?? '').trim();
     const next = new URLSearchParams();
 
-    next.set('date', date);
+    next.set('time', time);
+    if (time === 'custom') {
+      next.set('dateFrom', dateFrom);
+      next.set('dateTo', dateTo);
+    }
     next.set('limit', String(pageSize));
     next.set('offset', '0');
     if (q) {
@@ -431,24 +684,38 @@ export function ShipmentListPage(): React.JSX.Element {
     if (status) {
       next.set('status', status);
     }
+    if (nextBranchGoodsFilter !== DEFAULT_BRANCH_GOODS_FILTER) {
+      next.set('branchGoods', nextBranchGoodsFilter);
+    }
+    if (nextBranchGoodsFilter === 'inventoryByDay') {
+      next.set('inventoryDate', nextInventoryDate);
+    }
+    if (nextCourierId) {
+      next.set('courierId', nextCourierId);
+    }
 
     setSearchParams(next, { replace: true });
   };
 
   const onResetFilters = () => {
     const next = new URLSearchParams();
-    next.set('date', today);
+    next.set('time', DEFAULT_TIME_FILTER);
     next.set('limit', String(DEFAULT_PAGE_SIZE));
     next.set('offset', '0');
     setSearchParams(next, { replace: true });
     setQInput('');
     setStatusInput('');
-    setDateInput(today);
+    setTimeInput(DEFAULT_TIME_FILTER);
+    setDateFromInput(today);
+    setDateToInput(today);
+    setBranchGoodsInput(DEFAULT_BRANCH_GOODS_FILTER);
+    setInventoryDateInput(today);
+    setCourierInput('');
   };
 
   const updatePagination = (nextLimit: number, nextOffset: number) => {
     const next = new URLSearchParams(searchParams);
-    next.set('date', selectedDate);
+    next.set('time', timeFilter);
     next.set('limit', String(nextLimit));
     next.set('offset', String(Math.max(0, nextOffset)));
     setSearchParams(next, { replace: true });
@@ -603,6 +870,42 @@ export function ShipmentListPage(): React.JSX.Element {
     }
   };
 
+  const toggleShipmentSelection = (shipmentCode: string, checked: boolean) => {
+    setSelectedShipmentCodes((current) => {
+      if (checked) {
+        return current.includes(shipmentCode) ? current : [...current, shipmentCode];
+      }
+
+      return current.filter((code) => code !== shipmentCode);
+    });
+  };
+
+  const toggleAllVisibleShipments = (checked: boolean) => {
+    if (!checked) {
+      setSelectedShipmentCodes((current) =>
+        current.filter((shipmentCode) => !visibleShipmentCodes.has(shipmentCode)),
+      );
+      return;
+    }
+
+    setSelectedShipmentCodes((current) => {
+      const merged = new Set(current);
+      visibleShipments.forEach((shipment) => merged.add(shipment.shipmentCode));
+      return Array.from(merged);
+    });
+  };
+
+  const printSelectedLabels = async () => {
+    if (selectedShipments.length === 0) {
+      useUiStore.getState().showToast('Chọn ít nhất một vận đơn để in tem.', 'error');
+      return;
+    }
+
+    for (const shipment of selectedShipments) {
+      await handlePrintWaybill(shipment);
+    }
+  };
+
   const submitWalkInShipment = async (createAndScanPickup: boolean) => {
     if (!accessToken) {
       return;
@@ -681,17 +984,18 @@ export function ShipmentListPage(): React.JSX.Element {
     <div>
       <h2>Danh sách vận đơn</h2>
       <p style={styles.helperText}>
-        Màn hình này hỗ trợ tiếp nhận vận đơn walk-in tại quầy, thao tác quét tại chi nhánh và in phiếu vận đơn.
+        Danh sách vận đơn theo phạm vi hub. Chọn vận đơn cần xử lý rồi in tem từ thanh thao tác phía trên.
       </p>
 
       <form onSubmit={onFilterSubmit} style={styles.filterForm}>
         <div style={styles.filterControls}>
-          <input
+          <textarea
             name="q"
-            placeholder="Tìm mã vận đơn"
+            rows={2}
+            placeholder="Tìm mã vận đơn. Có thể dán nhiều mã, mỗi mã một dòng hoặc cách nhau bằng dấu phẩy."
             value={qInput}
             onChange={(event) => setQInput(event.target.value)}
-            style={styles.input}
+            style={styles.searchInput}
           />
           <select
             name="status"
@@ -702,17 +1006,71 @@ export function ShipmentListPage(): React.JSX.Element {
             <option value="">Tất cả trạng thái</option>
             {SHIPMENT_STATUS_OPTIONS.map((status) => (
               <option key={status} value={status}>
-                {status}
+                {formatShipmentStatusLabel(status)}
               </option>
             ))}
           </select>
+          <select
+            name="time"
+            value={timeInput}
+            onChange={(event) => setTimeInput(normalizeTimeFilter(event.target.value))}
+            style={styles.select}
+          >
+            <option value="today">Hôm nay</option>
+            <option value="last7Days">7 ngày gần nhất</option>
+            <option value="last30Days">30 ngày gần nhất</option>
+            <option value="custom">Tùy chọn ngày</option>
+            <option value="all">Tất cả thời gian</option>
+          </select>
           <input
             type="date"
-            name="date"
-            value={dateInput}
-            onChange={(event) => setDateInput(event.target.value)}
+            name="dateFrom"
+            value={dateFromInput}
+            onChange={(event) => setDateFromInput(event.target.value)}
             style={styles.dateInput}
+            disabled={timeInput !== 'custom'}
           />
+          <input
+            type="date"
+            name="dateTo"
+            value={dateToInput}
+            onChange={(event) => setDateToInput(event.target.value)}
+            style={styles.dateInput}
+            disabled={timeInput !== 'custom'}
+          />
+          <select
+            name="branchGoods"
+            value={branchGoodsInput}
+            onChange={(event) => setBranchGoodsInput(normalizeBranchGoodsFilter(event.target.value))}
+            style={styles.select}
+          >
+            <option value="all">Tất cả hàng hoá bưu cục</option>
+            <option value="inventoryByDay">Hàng tồn kho theo ngày</option>
+            <option value="problemOrders">Đơn vấn đề</option>
+            <option value="returnNeeded">Đơn cần chuyển hoàn</option>
+          </select>
+          <input
+            type="date"
+            name="inventoryDate"
+            value={inventoryDateInput}
+            onChange={(event) => setInventoryDateInput(event.target.value)}
+            style={styles.dateInput}
+            disabled={branchGoodsInput !== 'inventoryByDay'}
+          />
+          <select
+            name="courierId"
+            value={courierInput}
+            onChange={(event) => setCourierInput(event.target.value)}
+            style={styles.select}
+            disabled={deliveryTasksQuery.isLoading && courierFilterOptions.length === 0}
+          >
+            <option value="">Tất cả courier</option>
+            {courierFilterOptions.map((courierId) => (
+              <option key={courierId} value={courierId}>
+                {courierId}
+              </option>
+            ))}
+          </select>
           <label style={styles.pageSizeControl}>
             <span>Số dòng/trang</span>
             <select value={pageSize} onChange={onPageSizeChange} style={styles.pageSizeSelect}>
@@ -730,11 +1088,21 @@ export function ShipmentListPage(): React.JSX.Element {
         </div>
 
         <div style={styles.filterActions}>
-          <button type="button" style={styles.actionButton} onClick={() => setIsCounterModalOpen(true)}>
-            Tiếp nhận đơn hàng
-          </button>
-          <button type="button" style={styles.actionButton} onClick={() => setIsWalkInModalOpen(true)}>
-            Tạo đơn hàng
+          <span style={styles.selectionSummary}>
+            {selectedShipments.length > 0
+              ? `${selectedShipments.length} vận đơn đã chọn`
+              : 'Chưa chọn vận đơn'}
+          </span>
+          <button
+            type="button"
+            style={{
+              ...styles.actionButton,
+              ...(selectedShipments.length === 0 ? styles.actionButtonDisabled : null),
+            }}
+            disabled={selectedShipments.length === 0}
+            onClick={() => void printSelectedLabels()}
+          >
+            In tem
           </button>
         </div>
       </form>
@@ -751,6 +1119,17 @@ export function ShipmentListPage(): React.JSX.Element {
       {dispatchMessage ? (
         <div role="status" style={{ ...styles.notice, ...styles.successNotice }}>
           {dispatchMessage}
+        </div>
+      ) : null}
+      <div style={styles.branchFilterSummary}>
+        <span>Trang hiện tại: {pageShipments.length} vận đơn</span>
+        <span>Đang hiển thị: {visibleShipments.length} vận đơn</span>
+        {branchGoodsFilter === 'inventoryByDay' ? <span>Tồn đến ngày: {inventoryDate}</span> : null}
+        {courierFilter ? <span>Courier: {courierFilter}</span> : null}
+      </div>
+      {deliveryTasksQuery.isError ? (
+        <div role="alert" style={{ ...styles.notice, ...styles.errorNotice }}>
+          Không tải được dữ liệu courier giao hàng: {getErrorMessage(deliveryTasksQuery.error)}
         </div>
       ) : null}
 
@@ -1062,13 +1441,10 @@ export function ShipmentListPage(): React.JSX.Element {
           {visibleShipments.length > 0 ? (
             <ShipmentsTable
               items={visibleShipments}
-              onPrepareDispatch={(shipment) => {
-                setDispatchShipmentCode(shipment.shipmentCode);
-                setDispatchMessage(null);
-                setDispatchError(null);
-                setIsDispatchModalOpen(true);
-              }}
-              onPrint={(shipment) => { void handlePrintWaybill(shipment); }}
+              deliveryCourierByShipment={deliveryCourierByShipment}
+              selectedShipmentCodes={selectedShipmentCodes}
+              onToggleShipment={toggleShipmentSelection}
+              onToggleAllVisible={toggleAllVisibleShipments}
             />
           ) : null}
         </>
@@ -1110,6 +1486,15 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '8px 10px',
     minWidth: 320,
   },
+  searchInput: {
+    border: '1px solid #d9def3',
+    borderRadius: 10,
+    padding: '8px 10px',
+    minWidth: 360,
+    minHeight: 42,
+    resize: 'vertical',
+    fontFamily: 'inherit',
+  },
   select: {
     border: '1px solid #d9def3',
     borderRadius: 10,
@@ -1140,7 +1525,21 @@ const styles: Record<string, React.CSSProperties> = {
     marginLeft: 'auto',
     display: 'flex',
     gap: 8,
+    alignItems: 'center',
     flexWrap: 'wrap',
+    padding: '6px 8px',
+    border: '1px solid #d9def3',
+    borderRadius: 12,
+    backgroundColor: '#ffffff',
+  },
+  branchFilterSummary: {
+    display: 'flex',
+    gap: 8,
+    flexWrap: 'wrap',
+    margin: '8px 0 12px',
+    color: '#1f2b6f',
+    fontSize: 13,
+    fontWeight: 700,
   },
   paginationBar: {
     display: 'flex',
@@ -1168,6 +1567,17 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: '#0f4c81',
     color: '#ffffff',
     fontWeight: 700,
+  },
+  actionButtonDisabled: {
+    borderColor: '#aeb8df',
+    backgroundColor: '#aeb8df',
+    cursor: 'not-allowed',
+  },
+  selectionSummary: {
+    color: '#1f2b6f',
+    fontSize: 13,
+    fontWeight: 700,
+    whiteSpace: 'nowrap',
   },
   modalOverlay: {
     position: 'fixed',

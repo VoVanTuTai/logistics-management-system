@@ -1744,14 +1744,6 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route path={routePaths.shipmentsLeaf} element={lazyRoute(<ShipmentListPage />)} />
             <Route path={routePaths.shipmentDetailLeaf} element={lazyRoute(<ShipmentDetailPage />)} />
-            <Route
-              path={routePaths.pickupsLeaf}
-              element={<Navigate to={routePaths.customerPlatformOrderDispatch} replace />}
-            />
-            <Route
-              path={routePaths.pickupDetailLeaf}
-              element={<Navigate to={routePaths.customerPlatformOrderDispatch} replace />}
-            />
             <Route path={routePaths.tasksLeaf} element={lazyRoute(<TaskAssignmentPage />)} />
             <Route path={routePaths.taskDetailLeaf} element={lazyRoute(<TaskDetailPage />)} />
             <Route

@@ -39,6 +39,7 @@ export interface CancelShipmentInput {
 export interface ShipmentListFilters {
   q?: string | null;
   shipmentCode?: string | null;
+  shipmentCodes?: string | string[] | null;
   status?: string | null;
   hubCodes?: string | string[] | null;
   createdFrom?: string | null;

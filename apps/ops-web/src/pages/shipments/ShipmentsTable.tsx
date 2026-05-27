@@ -8,8 +8,10 @@ import { formatShipmentStatusLabel } from '../../utils/logisticsLabels';
 
 interface ShipmentsTableProps {
   items: ShipmentListItemDto[];
-  onPrint?: (shipment: ShipmentListItemDto) => void;
-  onPrepareDispatch?: (shipment: ShipmentListItemDto) => void;
+  deliveryCourierByShipment: Map<string, string>;
+  selectedShipmentCodes: string[];
+  onToggleShipment: (shipmentCode: string, checked: boolean) => void;
+  onToggleAllVisible: (checked: boolean) => void;
 }
 
 function resolveShipmentStatusLabel(item: ShipmentListItemDto): string {
@@ -24,119 +26,156 @@ function resolveShipmentStatusLabel(item: ShipmentListItemDto): string {
   return formatShipmentStatusLabel(item.currentStatus);
 }
 
-function canDispatchShipment(item: ShipmentListItemDto): boolean {
-  if (item.requiresLabelReprint || item.isOperationLocked) {
-    return false;
-  }
-
-  return (
-    item.currentStatus === 'PICKUP_COMPLETED' ||
-    item.currentStatus === 'SCAN_INBOUND' ||
-    item.currentStatus === 'TASK_ASSIGNED'
-  );
+function normalizeShipmentCode(value: string): string {
+  return value.trim().toUpperCase();
 }
 
 export function ShipmentsTable({
   items,
-  onPrint,
-  onPrepareDispatch,
+  deliveryCourierByShipment,
+  selectedShipmentCodes,
+  onToggleShipment,
+  onToggleAllVisible,
 }: ShipmentsTableProps): React.JSX.Element {
-  return (
-    <table style={styles.table}>
-      <thead>
-        <tr>
-          <th style={styles.headerCell}>Vận đơn</th>
-          <th style={styles.headerCell}>Trạng thái</th>
-          <th style={styles.headerCell}>Nền tảng</th>
-          <th style={styles.headerCell}>Người gửi</th>
-          <th style={styles.headerCell}>Người nhận</th>
-          <th style={styles.headerCell}>Khu vực</th>
-          <th style={styles.headerCell}>Vị trí hiện tại</th>
-          <th style={styles.headerCell}>Tạo lúc</th>
-          <th style={styles.headerCell}>Cập nhật lúc</th>
-          <th style={styles.headerCell}>Hành động</th>
-        </tr>
-      </thead>
-      <tbody>
-        {items.map((item) => {
-          const canDispatch = canDispatchShipment(item);
+  const selectedSet = new Set(selectedShipmentCodes);
+  const allVisibleSelected = items.length > 0 && items.every((item) => selectedSet.has(item.shipmentCode));
+  const someVisibleSelected = items.some((item) => selectedSet.has(item.shipmentCode));
 
-          return (
-            <tr key={item.id}>
-              <td style={styles.cell}>
-                <Link to={routePaths.shipmentDetail(item.shipmentCode)}>{item.shipmentCode}</Link>
-              </td>
-              <td style={styles.cell}>
-                <div>{resolveShipmentStatusLabel(item)}</div>
-                {item.requiresLabelReprint ? (
-                  <small style={styles.reprintWarning}>Cần in lại tem mới</small>
-                ) : null}
-                {item.isOperationLocked ? (
-                  <small style={styles.lockWarning}>Đang chặn thao tác</small>
-                ) : null}
-              </td>
-              <td style={styles.cell}>{item.platform ?? 'Không có'}</td>
-              <td style={styles.cell}>
-                <div>{item.senderName ?? 'Không có'}</div>
-                <small style={styles.subText}>{item.senderPhone ?? '-'}</small>
-              </td>
-              <td style={styles.cell}>
-                <div>{item.receiverName ?? 'Không có'}</div>
-                <small style={styles.subText}>{item.receiverPhone ?? '-'}</small>
-              </td>
-              <td style={styles.cell}>{item.receiverRegion ?? 'Không có'}</td>
-              <td style={styles.cell}>{item.currentLocation ?? 'Không có'}</td>
-              <td style={styles.cell}>{formatDateTime(item.createdAt)}</td>
-              <td style={styles.cell}>{formatDateTime(item.updatedAt)}</td>
-              <td style={styles.cell}>
-                <div style={styles.actionGroup}>
-                  <button
-                    type="button"
-                    onClick={() => onPrepareDispatch?.(item)}
-                    disabled={!canDispatch}
-                    title={
-                      item.requiresLabelReprint
-                        ? item.labelReprintReason ?? 'Vận đơn đã đổi thông tin giao hàng, OPS phải in lại tem mới trước khi thao tác.'
-                        : item.isOperationLocked
-                        ? item.operationLockReason ?? 'Vận đơn đang bị khóa thao tác.'
-                        : canDispatch
-                        ? 'Quét phát và phân công courier giao hàng'
-                        : 'Chỉ quét phát khi kiện đã được nhận hoặc đã xuống bưu cục'
-                    }
-                  >
-                    Quét phát
-                  </button>
-                  <button type="button" onClick={() => onPrint?.(item)}>
-                    In vận đơn
-                  </button>
-                </div>
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
+  return (
+    <div style={styles.tableShell}>
+      <table style={styles.table}>
+        <thead>
+          <tr>
+            <th style={{ ...styles.headerCell, ...styles.selectCell }}>
+              <input
+                type="checkbox"
+                aria-label="Chọn tất cả vận đơn trên trang"
+                checked={allVisibleSelected}
+                ref={(input) => {
+                  if (input) {
+                    input.indeterminate = someVisibleSelected && !allVisibleSelected;
+                  }
+                }}
+                onChange={(event) => onToggleAllVisible(event.target.checked)}
+              />
+            </th>
+            <th style={styles.headerCell}>Vận đơn</th>
+            <th style={styles.headerCell}>Trạng thái</th>
+            <th style={styles.headerCell}>Nền tảng</th>
+            <th style={styles.headerCell}>Người gửi</th>
+            <th style={styles.headerCell}>Người nhận</th>
+            <th style={styles.headerCell}>Luồng vận hành</th>
+            <th style={styles.headerCell}>Thời gian</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item) => {
+            const checked = selectedSet.has(item.shipmentCode);
+            const assignedCourier =
+              deliveryCourierByShipment.get(normalizeShipmentCode(item.shipmentCode)) ?? 'Chưa bàn giao';
+
+            return (
+              <tr key={item.id} style={checked ? styles.selectedRow : undefined}>
+                <td style={{ ...styles.cell, ...styles.selectCell }}>
+                  <input
+                    type="checkbox"
+                    aria-label={`Chọn vận đơn ${item.shipmentCode}`}
+                    checked={checked}
+                    onChange={(event) => onToggleShipment(item.shipmentCode, event.target.checked)}
+                  />
+                </td>
+                <td style={styles.cell}>
+                  <Link style={styles.shipmentCodeLink} to={routePaths.shipmentDetail(item.shipmentCode)}>
+                    {item.shipmentCode}
+                  </Link>
+                  <div style={styles.subText}>{item.receiverRegion ?? 'Chưa có khu vực'}</div>
+                </td>
+                <td style={styles.cell}>
+                  <div style={styles.statusText}>{resolveShipmentStatusLabel(item)}</div>
+                  {item.requiresLabelReprint ? (
+                    <small style={styles.reprintWarning}>Cần in lại tem mới</small>
+                  ) : null}
+                  {item.isOperationLocked ? (
+                    <small style={styles.lockWarning}>Đang chặn thao tác</small>
+                  ) : null}
+                </td>
+                <td style={styles.cell}>{item.platform ?? 'Không có'}</td>
+                <td style={styles.cell}>
+                  <div>{item.senderName ?? 'Không có'}</div>
+                  <small style={styles.subText}>{item.senderPhone ?? '-'}</small>
+                </td>
+                <td style={styles.cell}>
+                  <div>{item.receiverName ?? 'Không có'}</div>
+                  <small style={styles.subText}>{item.receiverPhone ?? '-'}</small>
+                </td>
+                <td style={styles.cell}>
+                  <div>{item.currentLocation ?? 'Chưa có vị trí'}</div>
+                  <small style={styles.subText}>
+                    Hub đích: {item.receiverHubCode ?? item.destinationHubCode ?? '-'}
+                  </small>
+                  <small style={styles.subText}>Courier: {assignedCourier}</small>
+                </td>
+                <td style={styles.cell}>
+                  <div>Tạo: {formatDateTime(item.createdAt)}</div>
+                  <small style={styles.subText}>Cập nhật: {formatDateTime(item.updatedAt)}</small>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
 const styles: Record<string, React.CSSProperties> = {
+  tableShell: {
+    marginTop: 12,
+    overflowX: 'auto',
+    border: '1px solid #d9def3',
+    borderRadius: 12,
+    backgroundColor: '#ffffff',
+  },
   table: {
     width: '100%',
     borderCollapse: 'collapse',
-    marginTop: 12,
+    minWidth: 1040,
   },
   headerCell: {
     textAlign: 'left',
-    padding: '8px 10px',
+    padding: '10px 12px',
     borderBottom: '1px solid #d9def3',
+    backgroundColor: '#f8faff',
+    color: '#1f2b6f',
+    fontSize: 12,
+    fontWeight: 800,
+    textTransform: 'uppercase',
     whiteSpace: 'nowrap',
   },
   cell: {
-    padding: '8px 10px',
+    padding: '10px 12px',
     borderBottom: '1px solid #e7ebf8',
     verticalAlign: 'top',
+    color: '#152052',
+    fontSize: 13,
+  },
+  selectCell: {
+    width: 44,
+    textAlign: 'center',
+  },
+  selectedRow: {
+    backgroundColor: '#f3f7ff',
+  },
+  shipmentCodeLink: {
+    color: '#0f4c81',
+    fontWeight: 800,
+    textDecoration: 'none',
+  },
+  statusText: {
+    fontWeight: 700,
   },
   subText: {
+    display: 'block',
     color: '#5262a6',
     fontSize: 12,
   },
@@ -151,10 +190,5 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: 4,
     color: '#9a3412',
     fontWeight: 700,
-  },
-  actionGroup: {
-    display: 'flex',
-    gap: 6,
-    flexWrap: 'wrap',
   },
 };

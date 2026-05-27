@@ -24,6 +24,9 @@ export function CustomerOrderLookupPage(): React.JSX.Element {
     [session?.user.hubCodes],
   );
   const canViewAllHubAreas = session?.user.roles.includes('SYSTEM_ADMIN') ?? false;
+  const [draftKeyword, setDraftKeyword] = useState('');
+  const [draftStatusFilter, setDraftStatusFilter] = useState('ALL');
+  const [draftHubFilter, setDraftHubFilter] = useState('ALL');
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [hubFilter, setHubFilter] = useState('ALL');
@@ -99,6 +102,24 @@ export function CustomerOrderLookupPage(): React.JSX.Element {
     setPage(1);
   }, [hubFilter, keyword, pageSize, statusFilter]);
 
+  const submitLookup = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setKeyword(draftKeyword.trim());
+    setStatusFilter(draftStatusFilter);
+    setHubFilter(draftHubFilter);
+    setPage(1);
+  };
+
+  const resetLookup = () => {
+    setDraftKeyword('');
+    setDraftStatusFilter('ALL');
+    setDraftHubFilter('ALL');
+    setKeyword('');
+    setStatusFilter('ALL');
+    setHubFilter('ALL');
+    setPage(1);
+  };
+
   return (
     <section className="ops-customer-orders">
       <header className="ops-customer-orders__header">
@@ -116,18 +137,25 @@ export function CustomerOrderLookupPage(): React.JSX.Element {
         </div>
       </header>
 
-      <section className="ops-customer-orders__filters" aria-label="Bộ lọc tra cứu đơn đặt">
+      <form
+        className="ops-customer-orders__filters"
+        aria-label="Bộ lọc tra cứu đơn đặt"
+        onSubmit={submitLookup}
+      >
         <label>
           <span>Từ khóa</span>
           <input
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
+            value={draftKeyword}
+            onChange={(event) => setDraftKeyword(event.target.value)}
             placeholder="Mã đơn, mã pickup, SĐT hoặc tên khách"
           />
         </label>
         <label>
           <span>Trạng thái</span>
-          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+          <select
+            value={draftStatusFilter}
+            onChange={(event) => setDraftStatusFilter(event.target.value)}
+          >
             <option value="ALL">Toàn bộ</option>
             {statusOptions.map((status) => (
               <option key={status} value={status}>
@@ -138,7 +166,7 @@ export function CustomerOrderLookupPage(): React.JSX.Element {
         </label>
         <label>
           <span>Hub</span>
-          <select value={hubFilter} onChange={(event) => setHubFilter(event.target.value)}>
+          <select value={draftHubFilter} onChange={(event) => setDraftHubFilter(event.target.value)}>
             <option value="ALL">Toàn bộ</option>
             {hubOptions.map((hubCode) => (
               <option key={hubCode} value={hubCode}>
@@ -147,11 +175,15 @@ export function CustomerOrderLookupPage(): React.JSX.Element {
             ))}
           </select>
         </label>
-        <label>
-          <span>Backend contract</span>
-          <input value="Dùng dữ liệu list hiện có, chưa có endpoint lookup riêng" readOnly disabled />
-        </label>
-      </section>
+        <div className="ops-customer-orders__filter-actions">
+          <button type="submit" className="ops-customer-orders__primary-action">
+            Tra cứu
+          </button>
+          <button type="button" onClick={resetLookup}>
+            Làm mới
+          </button>
+        </div>
+      </form>
 
       {loadError ? (
         <div className="ops-customer-orders__error" role="alert">

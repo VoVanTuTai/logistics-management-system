@@ -115,6 +115,7 @@ function buildShipmentListQueryKey(filters: ShipmentListFilters) {
     ...queryKeys.shipments,
     filters.q ?? '',
     filters.shipmentCode ?? '',
+    filters.shipmentCodes?.join(',') ?? '',
     filters.status ?? '',
     filters.createdFrom ?? '',
     filters.createdTo ?? '',
@@ -123,4 +124,3 @@ function buildShipmentListQueryKey(filters: ShipmentListFilters) {
     filters.hubCodes?.join(',') ?? '',
   ];
 }
-
