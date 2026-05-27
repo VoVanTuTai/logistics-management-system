@@ -113,6 +113,8 @@ export const routePaths = {
   linehaulRoot: '/app/function-groups/capability-platform/van-chuyen-tuyen-nhanh',
   linehaulTripManagement: '/app/function-groups/capability-platform/van-chuyen-tuyen-nhanh/quan-ly-chuyen-xe',
   linehaulVehicleSeal: '/app/function-groups/capability-platform/van-chuyen-tuyen-nhanh/tem-xe',
+  linehaulTripDataMonitor:
+    '/app/function-groups/capability-platform/van-chuyen-tuyen-nhanh/giam-sat-du-lieu-chuyen-xe',
   shipments: '/app/shipments',
   shipmentDetail: (shipmentId: string) => `/app/shipments/${shipmentId}`,
   tasks: '/app/tasks',
@@ -226,6 +228,8 @@ export const routePaths = {
     'function-groups/operations-platform/data-monitoring/giam-sat-dong-bao',
   linehaulTripManagementLeaf: 'function-groups/capability-platform/van-chuyen-tuyen-nhanh/quan-ly-chuyen-xe',
   linehaulVehicleSealLeaf: 'function-groups/capability-platform/van-chuyen-tuyen-nhanh/tem-xe',
+  linehaulTripDataMonitorLeaf:
+    'function-groups/capability-platform/van-chuyen-tuyen-nhanh/giam-sat-du-lieu-chuyen-xe',
   shipmentsLeaf: 'shipments',
   shipmentDetailLeaf: 'shipments/:shipmentId',
   tasksLeaf: 'tasks',
@@ -332,4 +336,5 @@ export const OPS_FULL_MODULE_ROUTE_PATHS = [
   routePaths.linehaulRoot,
   routePaths.linehaulTripManagement,
   routePaths.linehaulVehicleSeal,
+  routePaths.linehaulTripDataMonitor,
 ] as const;

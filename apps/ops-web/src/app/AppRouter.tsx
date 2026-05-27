@@ -172,6 +172,10 @@ const LinehaulVehicleSealPage = lazyRoutePage(
   () => import('../pages/function-groups/operations-platform/linehaul/LinehaulVehicleSealPage'),
   'LinehaulVehicleSealPage',
 );
+const LinehaulTripDataMonitorPage = lazyRoutePage(
+  () => import('../pages/function-groups/operations-platform/linehaul/LinehaulTripDataMonitorPage'),
+  'LinehaulTripDataMonitorPage',
+);
 const PlanningPlatformGroupPage = lazyRoutePage(
   () => import('../pages/function-groups/planning-platform/PlanningPlatformGroupPage'),
   'PlanningPlatformGroupPage',
@@ -706,6 +710,7 @@ function DashboardLayout(): React.JSX.Element {
   const capabilityPlatformSidebarItems: SidebarItem[] = [
     { label: 'Quản lý chuyến xe', icon: 'linehaul_transport', to: routePaths.linehaulTripManagement },
     { label: 'Tạo tem xe', icon: 'thermal_label', to: routePaths.linehaulVehicleSeal },
+    { label: 'Giám sát dữ liệu chuyến xe', icon: 'monitor_data', to: routePaths.linehaulTripDataMonitor },
   ];
   const sidebarItems = isServiceQualitySection
     ? serviceQualitySidebarItems
@@ -732,6 +737,7 @@ function DashboardLayout(): React.JSX.Element {
   const linehaulChildItems = [
     { label: 'Quản lý chuyến xe', to: routePaths.linehaulTripManagement },
     { label: 'Tạo tem xe', to: routePaths.linehaulVehicleSeal },
+    { label: 'Giám sát dữ liệu chuyến xe', to: routePaths.linehaulTripDataMonitor },
   ] as const;
   const returnBlockChildItems = [
     { label: 'Đăng ký chuyển hoàn', to: routePaths.returnBlockRegistration },
@@ -1467,6 +1473,10 @@ export function AppRouter(): React.JSX.Element {
             <Route
               path={routePaths.linehaulVehicleSealLeaf}
               element={opsModuleRoute('Tạo tem xe', <LinehaulVehicleSealPage />)}
+            />
+            <Route
+              path={routePaths.linehaulTripDataMonitorLeaf}
+              element={opsModuleRoute('Giám sát dữ liệu chuyến xe', <LinehaulTripDataMonitorPage />)}
             />
             <Route
               path={routePaths.groupIntegrationServicesLeaf}
