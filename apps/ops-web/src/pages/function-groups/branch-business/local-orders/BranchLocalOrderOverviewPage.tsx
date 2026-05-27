@@ -516,30 +516,6 @@ export function BranchLocalOrderOverviewPage({
           </p>
         ) : null}
       </section>
-
-      <section className="ops-branch-local-orders__content">
-        <article className="ops-branch-local-orders__work-card">
-          <h3>Luồng xử lý trong bưu cục</h3>
-          <ol>
-            <li>
-              <strong>Nhận vào</strong>
-              <span>Quét PICKUP hoặc INBOUND để ghi nhận kiện nằm tại bưu cục.</span>
-            </li>
-            <li>
-              <strong>Phân loại</strong>
-              <span>Danh sách được phân nhóm theo trạng thái thật của shipment-service.</span>
-            </li>
-            <li>
-              <strong>Bàn giao</strong>
-              <span>Đơn chờ phát được đẩy sang dispatch-service để courier thấy trên app.</span>
-            </li>
-            <li>
-              <strong>Gửi đi</strong>
-              <span>Quét OUTBOUND khi kiện rời bưu cục sang hub/tuyến tiếp theo.</span>
-            </li>
-          </ol>
-        </article>
-
         <section className="ops-branch-local-orders__table-card">
           <div className="ops-branch-local-orders__table-title">
             <h3>Danh sách đơn đang ở bưu cục</h3>
@@ -629,7 +605,6 @@ export function BranchLocalOrderOverviewPage({
             onPageSizeChange={setPageSize}
           />
         </section>
-      </section>
     </section>
   );
 }

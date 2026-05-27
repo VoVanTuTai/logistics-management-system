@@ -627,7 +627,7 @@ export function HubManagementPage(): React.JSX.Element {
               <th style={styles.headerCell}>Courier</th>
               <th style={styles.headerCell}>Trạng thái</th>
               <th style={styles.headerCell}>Cập nhật</th>
-              <th style={styles.headerCell}>Hành động</th>
+              <th style={{ ...styles.headerCell, ...styles.actionsHeaderCell }}>Hành động</th>
             </tr>
           </thead>
           <tbody>
@@ -653,15 +653,31 @@ export function HubManagementPage(): React.JSX.Element {
                     <MasterdataStatusPill isActive={hub.isActive} />
                   </td>
                   <td style={styles.cell}>{formatDateTime(hub.updatedAt)}</td>
-                  <td style={styles.cell}>
+                  <td style={{ ...styles.cell, ...styles.actionsDataCell }}>
                     <div style={styles.actionsCell}>
-                      <button type="button" onClick={() => setSelectedHubId(hub.id)}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedHubId(hub.id)}
+                        style={styles.compactActionButton}
+                      >
                         Chi tiết
                       </button>
-                      <button type="button" onClick={() => openEditModal(hub)}>
+                      <button
+                        type="button"
+                        onClick={() => openEditModal(hub)}
+                        style={styles.compactActionButton}
+                      >
                         Sửa
                       </button>
-                      <button type="button" onClick={() => void onToggleStatus(hub)}>
+                      <button
+                        type="button"
+                        onClick={() => void onToggleStatus(hub)}
+                        style={
+                          hub.isActive
+                            ? styles.compactDangerButton
+                            : styles.compactSuccessButton
+                        }
+                      >
                         {hub.isActive ? 'Vô hiệu hóa' : 'Kích hoạt lại'}
                       </button>
                     </div>
@@ -993,8 +1009,45 @@ const styles: Record<string, React.CSSProperties> = {
   },
   actionsCell: {
     display: 'flex',
-    gap: 6,
-    flexWrap: 'wrap',
+    gap: 4,
+    flexWrap: 'nowrap',
+    alignItems: 'center',
+    whiteSpace: 'nowrap',
+  },
+  actionsHeaderCell: {
+    width: 206,
+    minWidth: 206,
+  },
+  actionsDataCell: {
+    width: 206,
+    minWidth: 206,
+  },
+  compactActionButton: {
+    borderRadius: 8,
+    padding: '4px 7px',
+    fontSize: 12,
+    lineHeight: 1.2,
+    borderColor: 'var(--admin-border)',
+    backgroundColor: 'var(--admin-surface)',
+    color: 'var(--admin-text)',
+  },
+  compactDangerButton: {
+    borderRadius: 8,
+    padding: '4px 7px',
+    fontSize: 12,
+    lineHeight: 1.2,
+    borderColor: '#fecaca',
+    backgroundColor: '#fef2f2',
+    color: '#b91c1c',
+  },
+  compactSuccessButton: {
+    borderRadius: 8,
+    padding: '4px 7px',
+    fontSize: 12,
+    lineHeight: 1.2,
+    borderColor: '#bbf7d0',
+    backgroundColor: '#f0fdf4',
+    color: '#15803d',
   },
   detailCard: {
     marginTop: 14,

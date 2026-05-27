@@ -216,6 +216,8 @@ export interface MerchantProfile {
   shopName: string;
   contactPhone: string;
   email: string;
+  defaultPickupProvince: string;
+  defaultPickupAddressDetail: string;
   defaultPickupAddress: string;
 }
 
@@ -249,5 +251,7 @@ export const DEFAULT_PROFILE: MerchantProfile = {
   shopName: '',
   contactPhone: '',
   email: '',
+  defaultPickupProvince: '',
+  defaultPickupAddressDetail: '',
   defaultPickupAddress: '',
 };

@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
+import { useVietnamAdministrativeUnitsQuery } from '../../features/locations/vietnamAdministrativeUnits.api';
 import { useInboundScanMutation, useOutboundScanMutation, usePickupScanMutation } from '../../features/scans/scans.api';
 import type { HubScanInput, HubScanType } from '../../features/scans/scans.types';
 import { useCreateShipmentMutation, useShipmentPageQuery } from '../../features/shipments/shipments.api';
@@ -13,7 +14,6 @@ import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
 import { useUiStore } from '../../store/uiStore';
 import { createIdempotencyKey } from '../../utils/idempotency';
-import { PROVINCE_CITY_OPTIONS } from '../../utils/locationScope';
 import { queryKeys } from '../../utils/queryKeys';
 import { ShipmentsTable } from './ShipmentsTable';
 
@@ -355,6 +355,8 @@ export function ShipmentListPage(): React.JSX.Element {
   const inboundScanMutation = useInboundScanMutation(accessToken);
   const outboundScanMutation = useOutboundScanMutation(accessToken);
   const courierOptionsQuery = useCourierOptionsQuery(accessToken);
+  const locationsQuery = useVietnamAdministrativeUnitsQuery();
+  const provinceOptions = locationsQuery.data ?? [];
 
   const estimatedFee = useMemo(() => estimateFee(walkInForm), [walkInForm]);
   const visibleShipments = shipmentQuery.data?.items ?? [];
@@ -857,10 +859,16 @@ export function ShipmentListPage(): React.JSX.Element {
                   setWalkInForm((prev) => ({ ...prev, receiverRegion: event.target.value }))
                 }
               >
-                <option value="">Tỉnh/Thành người nhận</option>
-                {PROVINCE_CITY_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
+                <option value="">
+                  {locationsQuery.isLoading ? 'Đang tải tỉnh/thành...' : 'Tỉnh/Thành người nhận'}
+                </option>
+                {walkInForm.receiverRegion &&
+                !provinceOptions.some((province) => province.name === walkInForm.receiverRegion) ? (
+                  <option value={walkInForm.receiverRegion}>{walkInForm.receiverRegion}</option>
+                ) : null}
+                {provinceOptions.map((province) => (
+                  <option key={province.code} value={province.name}>
+                    {province.name}
                   </option>
                 ))}
               </select>

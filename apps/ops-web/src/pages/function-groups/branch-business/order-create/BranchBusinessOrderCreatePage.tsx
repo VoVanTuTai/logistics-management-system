@@ -2,11 +2,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import React, { useMemo, useState } from 'react';
 
 import { usePickupScanMutation } from '../../../../features/scans/scans.api';
+import { useVietnamAdministrativeUnitsQuery } from '../../../../features/locations/vietnamAdministrativeUnits.api';
 import { useCreateShipmentMutation } from '../../../../features/shipments/shipments.api';
 import { getErrorMessage } from '../../../../services/api/errors';
 import { useAuthStore } from '../../../../store/authStore';
 import { createIdempotencyKey } from '../../../../utils/idempotency';
-import { PROVINCE_CITY_OPTIONS } from '../../../../utils/locationScope';
 import { queryKeys } from '../../../../utils/queryKeys';
 import './BranchBusinessOrderCreatePage.css';
 
@@ -141,6 +141,8 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
   const accessToken = session?.tokens.accessToken ?? null;
   const operatorCode = session?.user.username ?? 'OPS';
   const defaultHubCode = session?.user.hubCodes?.[0] ?? '';
+  const locationsQuery = useVietnamAdministrativeUnitsQuery();
+  const provinceOptions = locationsQuery.data ?? [];
   const createShipmentMutation = useCreateShipmentMutation(accessToken);
   const pickupScanMutation = usePickupScanMutation(accessToken);
 
@@ -412,13 +414,22 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
               value={form.receiverRegion}
               onChange={(event) => updateForm('receiverRegion', event.target.value)}
             >
-              <option value="">Vui lòng chọn</option>
-              {PROVINCE_CITY_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
+              <option value="">
+                {locationsQuery.isLoading ? 'Đang tải tỉnh/thành...' : 'Vui lòng chọn'}
+              </option>
+              {form.receiverRegion &&
+              !provinceOptions.some((province) => province.name === form.receiverRegion) ? (
+                <option value={form.receiverRegion}>{form.receiverRegion}</option>
+              ) : null}
+              {provinceOptions.map((province) => (
+                <option key={province.code} value={province.name}>
+                  {province.name}
                 </option>
               ))}
             </select>
+            {locationsQuery.isError ? (
+              <small>Không tải được API địa chỉ, vui lòng thử lại.</small>
+            ) : null}
           </label>
           <label className="ops-branch-order-create__field ops-branch-order-create__field--wide">
             <span>

@@ -73,6 +73,7 @@ interface HubApiRecord {
   id: string;
   code: string;
   name: string;
+  zoneCode: string | null;
   address: string | null;
   isActive: boolean;
 }
@@ -83,6 +84,8 @@ interface HubLocationOption {
   province: string;
   ward: string;
   district: string;
+  type: 'BRANCH' | 'SORTING_CENTER' | 'TRANSIT_HUB' | 'UNKNOWN';
+  regionCode: MerchantRegionCode | null;
   fullAddress: string;
   label: string;
 }
@@ -184,6 +187,30 @@ function resolveRegionCode(rawProvince: string): MerchantRegionCode | null {
   }
 
   return null;
+}
+
+function resolveRegionCodeByZoneCode(zoneCode: string | null | undefined): MerchantRegionCode | null {
+  if (zoneCode === '001') {
+    return 'HA_NOI';
+  }
+  if (zoneCode === '002') {
+    return 'DA_NANG';
+  }
+  if (zoneCode === '003') {
+    return 'HO_CHI_MINH';
+  }
+
+  return null;
+}
+
+function resolveRegionLabel(regionCode: MerchantRegionCode): string {
+  if (regionCode === 'HA_NOI') {
+    return 'miền Bắc';
+  }
+  if (regionCode === 'DA_NANG') {
+    return 'miền Trung';
+  }
+  return 'miền Nam';
 }
 
 function buildMerchantProfileKey(username: string): string {
@@ -422,6 +449,7 @@ function parseHubLocation(hub: HubApiRecord): HubLocationOption | null {
   let ward = '';
   let district = '';
   let fullAddress = '';
+  let type: HubLocationOption['type'] = 'UNKNOWN';
 
   try {
     const payload = JSON.parse(hub.address) as Record<string, unknown>;
@@ -434,6 +462,13 @@ function parseHubLocation(hub: HubApiRecord): HubLocationOption | null {
     ward = typeof payload.ward === 'string' ? payload.ward.trim() : '';
     province = typeof payload.province === 'string' ? payload.province.trim() : '';
     district = typeof payload.district === 'string' ? payload.district.trim() : '';
+    if (
+      payload.type === 'BRANCH' ||
+      payload.type === 'SORTING_CENTER' ||
+      payload.type === 'TRANSIT_HUB'
+    ) {
+      type = payload.type;
+    }
     const addressParts = [addressLine, ward, district, province]
       .map((part) => part.trim())
       .filter((part) => part.length > 0);
@@ -462,6 +497,8 @@ function parseHubLocation(hub: HubApiRecord): HubLocationOption | null {
     province: normalizedProvince,
     ward: wardOrDistrict,
     district,
+    type,
+    regionCode: resolveRegionCode(normalizedProvince) ?? resolveRegionCodeByZoneCode(hub.zoneCode),
     fullAddress: normalizedFullAddress || hub.name,
     label: `${hub.name} (${wardOrDistrict}, ${normalizedProvince})`,
   };
@@ -539,7 +576,7 @@ function resolveHubByRegion(
   regionCode: MerchantRegionCode,
 ): HubLocationOption | null {
   const matchedLocations = hubLocations.filter(
-    (location) => resolveRegionCode(location.province) === regionCode,
+    (location) => location.regionCode === regionCode,
   );
 
   if (matchedLocations.length === 0) {
@@ -547,6 +584,76 @@ function resolveHubByRegion(
   }
 
   return matchedLocations.sort((left, right) => left.label.localeCompare(right.label, 'vi'))[0];
+}
+
+function composeDefaultPickupAddress(addressDetail: string, province: string): string {
+  return [addressDetail.trim(), province.trim()]
+    .filter((part) => part.length > 0)
+    .join(', ');
+}
+
+function splitDefaultPickupAddress(
+  defaultAddress: string,
+  knownProvinces: string[],
+): { addressDetail: string; province: string } {
+  const trimmedAddress = defaultAddress.trim();
+  if (!trimmedAddress) {
+    return {
+      addressDetail: '',
+      province: '',
+    };
+  }
+
+  const matchedProvince = knownProvinces
+    .slice()
+    .sort((left, right) => right.length - left.length)
+    .find(
+      (province) =>
+        normalizeLocationKey(trimmedAddress) === normalizeLocationKey(province) ||
+        normalizeLocationKey(trimmedAddress).endsWith(normalizeLocationKey(`, ${province}`)) ||
+        normalizeLocationKey(trimmedAddress).endsWith(normalizeLocationKey(province)),
+    );
+
+  if (!matchedProvince) {
+    return {
+      addressDetail: trimmedAddress,
+      province: '',
+    };
+  }
+
+  const detail = trimmedAddress
+    .replace(new RegExp(`\\s*,?\\s*${escapeRegExp(matchedProvince)}\\s*$`, 'iu'), '')
+    .trim();
+
+  return {
+    addressDetail: detail,
+    province: matchedProvince,
+  };
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function findHubByProvince(
+  hubLocations: HubLocationOption[],
+  province: string,
+): HubLocationOption | null {
+  const normalizedProvince = normalizeLocationKey(province);
+  if (!normalizedProvince) {
+    return null;
+  }
+
+  const matchedLocations = hubLocations.filter(
+    (location) => normalizeLocationKey(location.province) === normalizedProvince,
+  );
+
+  return (
+    matchedLocations.find((location) => location.type === 'BRANCH') ??
+    matchedLocations.find((location) => location.type === 'SORTING_CENTER') ??
+    matchedLocations[0] ??
+    null
+  );
 }
 
 function normalizeCreateForm(
@@ -839,6 +946,10 @@ function MerchantApp(): React.JSX.Element {
 
     return defaultHubByProfileCode ?? defaultHubByAccountCode ?? defaultHubByRegion;
   }, [session, hubLocations, merchantProfileConfig]);
+  const selectedAccountProvinceHub = useMemo(
+    () => findHubByProvince(hubLocations, profile.defaultPickupProvince),
+    [hubLocations, profile.defaultPickupProvince],
+  );
   const receiverHubOptions = useMemo(
     () =>
       hubLocations
@@ -1397,6 +1508,14 @@ function MerchantApp(): React.JSX.Element {
       merchantProfileConfig?.businessAddressDetail?.trim() ?? '';
     const defaultAddress =
       merchantProfileConfig?.defaultSenderAddress?.trim() ?? '';
+    const parsedDefaultAddress = splitDefaultPickupAddress(defaultAddress, provinceOptions);
+    const defaultProvince = parsedDefaultAddress.province || lockedSenderHub.province;
+    const defaultProfileAddressDetail =
+      defaultAddressDetail || parsedDefaultAddress.addressDetail;
+    const defaultProfileAddress =
+      composeDefaultPickupAddress(defaultProfileAddressDetail, defaultProvince) ||
+      defaultAddress ||
+      lockedSenderHub.fullAddress;
 
     setCreateForm((previous) => {
       const next = { ...previous };
@@ -1460,8 +1579,11 @@ function MerchantApp(): React.JSX.Element {
         // Keep account view aligned with admin-managed auth data.
         shopName: defaultSenderName || previous.shopName,
         contactPhone: defaultSenderPhone || previous.contactPhone,
+        defaultPickupProvince: defaultProvince || previous.defaultPickupProvince,
+        defaultPickupAddressDetail:
+          defaultProfileAddressDetail || previous.defaultPickupAddressDetail,
         defaultPickupAddress:
-          defaultAddress ||
+          defaultProfileAddress ||
           previous.defaultPickupAddress ||
           lockedSenderHub.fullAddress,
       };
@@ -1469,6 +1591,8 @@ function MerchantApp(): React.JSX.Element {
       if (
         nextProfile.shopName === previous.shopName &&
         nextProfile.contactPhone === previous.contactPhone &&
+        nextProfile.defaultPickupProvince === previous.defaultPickupProvince &&
+        nextProfile.defaultPickupAddressDetail === previous.defaultPickupAddressDetail &&
         nextProfile.defaultPickupAddress === previous.defaultPickupAddress
       ) {
         return previous;
@@ -1480,6 +1604,7 @@ function MerchantApp(): React.JSX.Element {
     session,
     lockedSenderHub,
     merchantProfileConfig,
+    provinceOptions,
   ]);
 
   useEffect(() => {
@@ -2276,6 +2401,22 @@ function MerchantApp(): React.JSX.Element {
     setAccountSaving(true);
     setAccountMessage(null);
     try {
+      const selectedProfileHub = selectedAccountProvinceHub;
+      const normalizedDefaultPickupAddress = composeDefaultPickupAddress(
+        profile.defaultPickupAddressDetail,
+        profile.defaultPickupProvince,
+      );
+      if (profile.defaultPickupAddressDetail.trim() && !profile.defaultPickupProvince.trim()) {
+        setAccountMessage('Vui lòng chọn Tỉnh/Thành tại Việt Nam cho địa chỉ lấy hàng.');
+        setAccountSaving(false);
+        return;
+      }
+      if (profile.defaultPickupProvince.trim() && !selectedProfileHub) {
+        setAccountMessage('Tỉnh/Thành đã chọn chưa có bưu cục active. Vui lòng liên hệ admin.');
+        setAccountSaving(false);
+        return;
+      }
+
       const updatedUser = await request<MerchantSession['user']>('/merchant/auth/auth/me', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -2305,17 +2446,24 @@ function MerchantApp(): React.JSX.Element {
             body: JSON.stringify({
               username: session.user.username,
               citizenId: merchantProfileConfig.citizenId,
-              regionCode: merchantProfileConfig.regionCode,
-              regionLabel: merchantProfileConfig.regionLabel,
-              defaultHubCode: merchantProfileConfig.defaultHubCode,
-              defaultHubName: merchantProfileConfig.defaultHubName,
-              defaultSenderAddress: profile.defaultPickupAddress.trim() || null,
+              regionCode: selectedProfileHub?.regionCode ?? merchantProfileConfig.regionCode,
+              regionLabel:
+                selectedProfileHub?.regionCode && selectedProfileHub.regionCode !== merchantProfileConfig.regionCode
+                  ? resolveRegionLabel(selectedProfileHub.regionCode)
+                  : merchantProfileConfig.regionLabel,
+              defaultHubCode: selectedProfileHub?.hubCode ?? merchantProfileConfig.defaultHubCode,
+              defaultHubName: selectedProfileHub?.hubName ?? merchantProfileConfig.defaultHubName,
+              defaultSenderAddress: normalizedDefaultPickupAddress || null,
             }),
           },
           session.accessToken,
         );
         setMerchantProfileConfig(mapMerchantProfileRecord(savedProfile));
-      } else if (profile.defaultPickupAddress.trim()) {
+        setProfile((previous) => ({
+          ...previous,
+          defaultPickupAddress: normalizedDefaultPickupAddress,
+        }));
+      } else if (normalizedDefaultPickupAddress) {
         profileNote = ' Merchant profile chua co citizenId/region nen dia chi mac dinh can ops seed truoc.';
       }
 
@@ -3728,8 +3876,63 @@ function MerchantApp(): React.JSX.Element {
                           <input className="input account-readonly-input" value={profile.email} placeholder="Email chua co contract backend" readOnly />
                         </div>
                         <div className="account-field account-field--span-2">
-                          <label className="label">Địa chỉ kinh doanh / lấy hàng mặc định</label>
-                          <textarea className="textarea account-address-field" value={profile.defaultPickupAddress} onChange={(e) => setProfile((p) => ({ ...p, defaultPickupAddress: e.target.value }))} placeholder="Địa chỉ lấy hàng mặc định" />
+                          <label className="label">Tỉnh/Thành lấy hàng</label>
+                          <select
+                            className="input"
+                            value={profile.defaultPickupProvince}
+                            onChange={(e) => {
+                              const province = e.target.value;
+                              setProfile((p) => ({
+                                ...p,
+                                defaultPickupProvince: province,
+                                defaultPickupAddress: composeDefaultPickupAddress(
+                                  p.defaultPickupAddressDetail,
+                                  province,
+                                ),
+                              }));
+                            }}
+                          >
+                            <option value="">Chọn tỉnh / thành tại Việt Nam</option>
+                            {provinceOptions.map((province) => (
+                              <option key={`account-province-${province}`} value={province}>
+                                {province}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="account-field account-field--span-2">
+                          <label className="label">Địa chỉ chi tiết</label>
+                          <textarea
+                            className="textarea account-address-field"
+                            value={profile.defaultPickupAddressDetail}
+                            onChange={(e) => {
+                              const addressDetail = e.target.value;
+                              setProfile((p) => ({
+                                ...p,
+                                defaultPickupAddressDetail: addressDetail,
+                                defaultPickupAddress: composeDefaultPickupAddress(
+                                  addressDetail,
+                                  p.defaultPickupProvince,
+                                ),
+                              }));
+                            }}
+                            placeholder="Số nhà, tên đường, phường/xã..."
+                          />
+                        </div>
+                        <div className="account-field account-field--span-2">
+                          <label className="label">Địa chỉ lấy hàng mặc định</label>
+                          <textarea
+                            className="textarea account-address-field account-readonly-input"
+                            value={profile.defaultPickupAddress}
+                            placeholder="Hệ thống tự ghép từ địa chỉ chi tiết và tỉnh/thành"
+                            readOnly
+                          />
+                          <span className="muted">
+                            Bưu cục mặc định:{' '}
+                            {selectedAccountProvinceHub
+                              ? `${selectedAccountProvinceHub.hubName} (${selectedAccountProvinceHub.hubCode})`
+                              : 'Chọn tỉnh/thành để hệ thống gợi ý bưu cục.'}
+                          </span>
                         </div>
                       </div>
                       <div className="account-profile-actions">
