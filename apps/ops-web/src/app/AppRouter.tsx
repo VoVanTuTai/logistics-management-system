@@ -260,6 +260,10 @@ const TaskDetailPage = lazyRoutePage(
   () => import('../pages/tasks/TaskDetailPage'),
   'TaskDetailPage',
 );
+const OpsCourierChatPage = lazyRoutePage(
+  () => import('../pages/chat/OpsCourierChatPage'),
+  'OpsCourierChatPage',
+);
 const TrackingDetailPage = lazyRoutePage(
   () => import('../pages/tracking/TrackingDetailPage'),
   'TrackingDetailPage',
@@ -302,6 +306,7 @@ function OpsModuleRoute({
 
 type SidebarIconName =
   | 'tracking_lookup'
+  | 'chat'
   | 'thermal_label'
   | 'return_block'
   | 'monitor_data'
@@ -366,6 +371,14 @@ function SidebarIcon({ name }: { name: SidebarIconName }): React.JSX.Element {
   };
 
   switch (name) {
+    case 'chat':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M5 6.5h14v9H9l-4 3v-12Z" {...common} />
+          <path d="M8.5 10h7" {...common} />
+          <path d="M8.5 13h4.5" {...common} />
+        </svg>
+      );
     case 'tracking_lookup':
       return (
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -598,6 +611,7 @@ function DashboardLayout(): React.JSX.Element {
           isActive:
             pathMatches(location.pathname, routePaths.shipments) ||
             pathMatches(location.pathname, routePaths.tasks) ||
+            pathMatches(location.pathname, routePaths.opsChat) ||
             pathMatches(location.pathname, routePaths.scans) ||
             pathMatches(location.pathname, routePaths.tracking) ||
             isOperationsPlatformSection ||
@@ -660,6 +674,7 @@ function DashboardLayout(): React.JSX.Element {
     ? [
         { label: 'Vận đơn', icon: 'customer_order_management', to: routePaths.shipments },
         { label: 'Tác vụ điều phối', icon: 'metrics_action', to: routePaths.tasks },
+        { label: 'Chat courier', icon: 'chat', to: routePaths.opsChat },
         { label: 'Quét tại hub', icon: 'tracking_lookup', to: routePaths.scans },
         { label: 'Tra cứu hành trình', icon: 'tracking_lookup', to: routePaths.tracking },
         { label: 'Giám sát dữ liệu', icon: 'monitor_data', kind: 'monitor_data' },
@@ -667,6 +682,7 @@ function DashboardLayout(): React.JSX.Element {
     : [
         { label: 'Vận đơn', icon: 'customer_order_management', to: routePaths.shipments },
         { label: 'Tác vụ điều phối', icon: 'metrics_action', to: routePaths.tasks },
+        { label: 'Chat courier', icon: 'chat', to: routePaths.opsChat },
         { label: 'Quét tại hub', icon: 'tracking_lookup', to: routePaths.scans },
         { label: 'Bao tải', icon: 'thermal_label', to: routePaths.manifests },
         { label: 'Tra cứu hành trình', icon: 'tracking_lookup', to: routePaths.tracking },
@@ -1725,6 +1741,10 @@ export function AppRouter(): React.JSX.Element {
             <Route path={routePaths.shipmentDetailLeaf} element={lazyRoute(<ShipmentDetailPage />)} />
             <Route path={routePaths.tasksLeaf} element={lazyRoute(<TaskAssignmentPage />)} />
             <Route path={routePaths.taskDetailLeaf} element={lazyRoute(<TaskDetailPage />)} />
+            <Route
+              path={routePaths.opsChatLeaf}
+              element={opsModuleRoute('Chat courier', <OpsCourierChatPage />)}
+            />
             <Route
               path={routePaths.manifestsLeaf}
               element={

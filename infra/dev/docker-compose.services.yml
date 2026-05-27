@@ -167,9 +167,12 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/payment_db
       SHIPMENT_SERVICE_URL: http://shipment-service:3002
       COMPANY_BANK_NAME: Vietcombank
+      COMPANY_BANK_CODE: Vietcombank
       COMPANY_BANK_ACCOUNT_NUMBER: 1234567890
       COMPANY_BANK_ACCOUNT_NAME: CONG TY TNHH NEXUS EXPRESS
       COMPANY_BANK_BIN: 970436
+      SEPAY_QR_BANK_CODE: Vietcombank
+      SEPAY_TRANSACTIONS_API_URL: https://userapi.sepay.vn/v2/transactions
       SEPAY_BANK_ACCOUNT_NUMBER: 1234567890
       SEPAY_AMOUNT_TOLERANCE_VND: 0
 
@@ -216,6 +219,8 @@ services:
         condition: service_started
       pricing-service:
         condition: service_started
+      redis:
+        condition: service_healthy
       minio:
         condition: service_healthy
     ports:
@@ -223,6 +228,12 @@ services:
     environment:
       PORT: 3000
       GATEWAY_AUTH_ENABLED: "false"
+      CHAT_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/chat_db
+      CHAT_REDIS_URL: redis://redis:6379
+      CHAT_REDIS_CHANNEL: gateway-bff:chat
+      CHAT_WS_TICKET_SECRET: dev-chat-ticket-secret
+      CHAT_WS_TICKET_TTL_SECONDS: 60
+      CHAT_REQUIRE_WS_TICKET: "false"
       AUTH_SERVICE_URL: http://auth-service:3010
       DELIVERY_SERVICE_URL: http://delivery-service:3007
       DISPATCH_SERVICE_URL: http://dispatch-service:3004

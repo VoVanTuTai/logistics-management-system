@@ -86,7 +86,7 @@ export function AppNavigator(): React.JSX.Element {
             name="HubScan"
             component={HubScanScreen}
             options={({ route }) => ({
-              title: route.params.mode === 'INBOUND' ? 'Hàng đến' : 'Quet hub',
+              title: route.params.mode === 'INBOUND' ? 'Hàng đến' : 'Quét hub',
             })}
           />
           <Stack.Screen
@@ -105,7 +105,7 @@ export function AppNavigator(): React.JSX.Element {
           <Stack.Screen
             name="BagUnseal"
             component={BagUnsealScreen}
-            options={{ title: 'Go bao' }}
+            options={{ title: 'Gỡ bao' }}
           />
           <Stack.Screen
             name="SendGoods"
@@ -150,12 +150,12 @@ export function AppNavigator(): React.JSX.Element {
           <Stack.Screen
             name="TaskIssue"
             component={TaskIssueScreen}
-         
+            options={{ title: 'Báo vấn đề nhiệm vụ' }}
           />
           <Stack.Screen
             name="TrackingLookup"
             component={TrackingLookupScreen}
-            options={{ title: 'Theo doi don hang' }}
+            options={{ title: 'Theo dõi đơn hàng' }}
           />
           <Stack.Screen
             name="CodStats"

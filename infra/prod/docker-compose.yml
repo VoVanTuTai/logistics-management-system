@@ -48,6 +48,18 @@ services:
       timeout: 5s
       retries: 12
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
   minio:
     image: minio/minio:latest
     restart: unless-stopped
@@ -213,12 +225,16 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/payment_db
       SHIPMENT_SERVICE_URL: http://shipment-service:3002
       COMPANY_BANK_NAME: ${COMPANY_BANK_NAME}
+      COMPANY_BANK_CODE: ${COMPANY_BANK_CODE}
       COMPANY_BANK_ACCOUNT_NUMBER: ${COMPANY_BANK_ACCOUNT_NUMBER}
       COMPANY_BANK_ACCOUNT_NAME: ${COMPANY_BANK_ACCOUNT_NAME}
       COMPANY_BANK_BIN: ${COMPANY_BANK_BIN}
+      SEPAY_QR_BANK_CODE: ${SEPAY_QR_BANK_CODE}
       SEPAY_WEBHOOK_SECRET: ${SEPAY_WEBHOOK_SECRET}
       SEPAY_WEBHOOK_API_KEY: ${SEPAY_WEBHOOK_API_KEY}
       SEPAY_WEBHOOK_TOLERANCE_SECONDS: ${SEPAY_WEBHOOK_TOLERANCE_SECONDS}
+      SEPAY_API_TOKEN: ${SEPAY_API_TOKEN}
+      SEPAY_TRANSACTIONS_API_URL: ${SEPAY_TRANSACTIONS_API_URL}
       SEPAY_BANK_ACCOUNT_NUMBER: ${SEPAY_BANK_ACCOUNT_NUMBER}
       SEPAY_AMOUNT_TOLERANCE_VND: ${SEPAY_AMOUNT_TOLERANCE_VND}
 
@@ -263,6 +279,8 @@ services:
         condition: service_healthy
       pricing-service:
         condition: service_healthy
+      redis:
+        condition: service_healthy
       minio:
         condition: service_healthy
     ports:
@@ -270,6 +288,12 @@ services:
     environment:
       PORT: 3000
       GATEWAY_AUTH_ENABLED: ${GATEWAY_AUTH_ENABLED}
+      CHAT_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/chat_db
+      CHAT_REDIS_URL: redis://redis:6379
+      CHAT_REDIS_CHANNEL: gateway-bff:chat
+      CHAT_WS_TICKET_SECRET: ${CHAT_WS_TICKET_SECRET}
+      CHAT_WS_TICKET_TTL_SECONDS: ${CHAT_WS_TICKET_TTL_SECONDS:-60}
+      CHAT_REQUIRE_WS_TICKET: "true"
       AUTH_SERVICE_URL: http://auth-service:3010
       DELIVERY_SERVICE_URL: http://delivery-service:3007
       DISPATCH_SERVICE_URL: http://dispatch-service:3004
@@ -361,4 +385,5 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
   minio_data:

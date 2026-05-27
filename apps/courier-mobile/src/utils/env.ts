@@ -216,9 +216,21 @@ function resolveGatewayBaseUrls(): string[] {
 
 const resolvedGatewayBaseUrls = resolveGatewayBaseUrls();
 
+function toChatWsUrl(baseUrl: string): string {
+  const gatewayUrl = new URL(baseUrl);
+  gatewayUrl.protocol = gatewayUrl.protocol === 'https:' ? 'wss:' : 'ws:';
+  gatewayUrl.pathname = '/ws/chat';
+  gatewayUrl.search = '';
+  gatewayUrl.hash = '';
+  return gatewayUrl.toString();
+}
+
 export const appEnv = {
   gatewayBaseUrl:
     resolvedGatewayBaseUrls[0] ?? `http://localhost:${DEFAULT_GATEWAY_PORT}`,
+  chatWsUrl: toChatWsUrl(
+    resolvedGatewayBaseUrls[0] ?? `http://localhost:${DEFAULT_GATEWAY_PORT}`,
+  ),
   gatewayFallbackBaseUrls: resolvedGatewayBaseUrls.slice(1),
   requestTimeoutMs: Number(
     process.env.EXPO_PUBLIC_REQUEST_TIMEOUT_MS ??

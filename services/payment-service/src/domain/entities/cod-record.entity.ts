@@ -110,6 +110,26 @@ export interface SePaySettlementWebhookResult {
   ignoredReason?: string;
 }
 
+export interface ReconcileSePayTransactionsInput {
+  transactionDateFrom?: string | null;
+  transactionDateTo?: string | null;
+  sinceId?: string | null;
+  perPage?: string | number | null;
+}
+
+export interface ReconcileSePayTransactionsResult {
+  success: true;
+  provider: 'SEPAY';
+  fetched: number;
+  processed: number;
+  failed: number;
+  results: SePaySettlementWebhookResult[];
+  errors: Array<{
+    providerEventId: string | null;
+    message: string;
+  }>;
+}
+
 export interface CodSummary {
   totalPending: number;
   totalCollected: number;

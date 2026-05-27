@@ -9,3 +9,4 @@ CREATE DATABASE delivery_db;
 CREATE DATABASE tracking_db;
 CREATE DATABASE reporting_db;
 CREATE DATABASE payment_db;
+CREATE DATABASE chat_db;

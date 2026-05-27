@@ -24,6 +24,8 @@ import type {
   CreateCodRecordInput,
   HandleSePaySettlementWebhookInput,
   RemitCodInput,
+  ReconcileSePayTransactionsInput,
+  ReconcileSePayTransactionsResult,
   SePaySettlementWebhookPayload,
   SePaySettlementWebhookResult,
   CodSettlementPaymentEvent,
@@ -626,12 +628,58 @@ export class CodService {
     });
   }
 
+  async reconcileSePayTransactions(
+    input: ReconcileSePayTransactionsInput,
+  ): Promise<ReconcileSePayTransactionsResult> {
+    const apiToken = process.env.SEPAY_API_TOKEN?.trim();
+
+    if (!apiToken) {
+      throw new BadRequestException('SEPAY_API_TOKEN is required to reconcile SePay transactions.');
+    }
+
+    const transactions = await this.fetchSePayTransactions(input, apiToken);
+    const results: SePaySettlementWebhookResult[] = [];
+    const errors: ReconcileSePayTransactionsResult['errors'] = [];
+
+    for (const item of transactions) {
+      const payload = mapSePayApiTransactionToWebhookPayload(item);
+      const providerEventId = payload.id === null || payload.id === undefined
+        ? payload.referenceCode ?? null
+        : String(payload.id);
+
+      try {
+        results.push(await this.processSePaySettlementWebhookPayload(payload));
+      } catch (error) {
+        errors.push({
+          providerEventId,
+          message: error instanceof Error ? error.message : 'Unable to process SePay transaction.',
+        });
+      }
+    }
+
+    return {
+      success: true,
+      provider: 'SEPAY',
+      fetched: transactions.length,
+      processed: results.length,
+      failed: errors.length,
+      results,
+      errors,
+    };
+  }
+
   async handleSePaySettlementWebhook(
     input: HandleSePaySettlementWebhookInput,
   ): Promise<SePaySettlementWebhookResult> {
     this.verifySePayWebhook(input);
 
-    const transaction = normalizeSePayPayload(input.payload);
+    return this.processSePaySettlementWebhookPayload(input.payload);
+  }
+
+  private async processSePaySettlementWebhookPayload(
+    payload: SePaySettlementWebhookPayload,
+  ): Promise<SePaySettlementWebhookResult> {
+    const transaction = normalizeSePayPayload(payload);
     const eventRecord = await this.codRecordRepository.recordSettlementPaymentEvent({
       provider: 'SEPAY',
       providerEventId: transaction.providerEventId,
@@ -647,7 +695,7 @@ export class CodService {
       transactionDate: transaction.transactionDate,
       processingStatus: 'RECEIVED',
       ignoredReason: null,
-      rawPayload: input.payload,
+      rawPayload: payload,
     });
 
     if (!eventRecord.created) {
@@ -956,6 +1004,41 @@ export class CodService {
     };
   }
 
+  private async fetchSePayTransactions(
+    input: ReconcileSePayTransactionsInput,
+    apiToken: string,
+  ): Promise<Record<string, unknown>[]> {
+    const dateRange = resolveSePayReconcileDateRange(input);
+    const baseUrl = process.env.SEPAY_TRANSACTIONS_API_URL?.trim() ||
+      'https://userapi.sepay.vn/v2/transactions';
+    const url = new URL(baseUrl);
+
+    url.searchParams.set('transaction_date_from', formatSePayDateTime(dateRange.dateFrom));
+    url.searchParams.set('transaction_date_to', formatSePayDateTime(dateRange.dateTo));
+    url.searchParams.set('per_page', String(normalizeSePayPerPage(input.perPage)));
+
+    const sinceId = normalizeOptionalFilter(input.sinceId);
+    if (sinceId) {
+      url.searchParams.set('since_id', sinceId);
+    }
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${apiToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    const payload = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      const message = readString(readObject(payload)?.message) ?? response.statusText;
+      throw new BadRequestException(`SePay transaction reconcile failed: ${message}`);
+    }
+
+    return extractSePayTransactions(payload);
+  }
+
   getCompanyBankInfo(): CompanyBankInfo {
     return {
       bankName: process.env.COMPANY_BANK_NAME ?? 'Vietcombank',
@@ -968,10 +1051,14 @@ export class CodService {
 
   buildVietQrUrl(amount: number, memo: string): string {
     const bankInfo = this.getCompanyBankInfo();
-    // VietQR format: https://img.vietqr.io/image/<BIN>-<ACCOUNT>-<TEMPLATE>.png?amount=<AMOUNT>&addInfo=<MEMO>&accountName=<NAME>
-    const encodedMemo = encodeURIComponent(memo);
-    const encodedName = encodeURIComponent(bankInfo.accountName);
-    return `https://img.vietqr.io/image/${bankInfo.bin}-${bankInfo.accountNumber}-compact2.png?amount=${amount}&addInfo=${encodedMemo}&accountName=${encodedName}`;
+    const searchParams = new URLSearchParams({
+      acc: bankInfo.accountNumber,
+      bank: resolveSePayQrBankCode(bankInfo),
+      amount: String(Math.round(amount)),
+      des: memo,
+    });
+
+    return `https://qr.sepay.vn/img?${searchParams.toString()}`;
   }
 
   private verifySePayWebhook(input: HandleSePaySettlementWebhookInput): void {
@@ -1221,6 +1308,66 @@ function parseOptionalDateTime(
   return parsed;
 }
 
+function resolveSePayReconcileDateRange(input: ReconcileSePayTransactionsInput): {
+  dateFrom: Date;
+  dateTo: Date;
+} {
+  const dateTo = parseOptionalDateTime(input.transactionDateTo, 'transactionDateTo') ?? new Date();
+  const dateFrom = parseOptionalDateTime(input.transactionDateFrom, 'transactionDateFrom') ??
+    new Date(dateTo.getTime() - 24 * 60 * 60 * 1000);
+
+  if (dateFrom >= dateTo) {
+    throw new BadRequestException('transactionDateFrom must be before transactionDateTo.');
+  }
+
+  return {
+    dateFrom,
+    dateTo,
+  };
+}
+
+function normalizeSePayPerPage(value: string | number | null | undefined): number {
+  const rawValue = typeof value === 'number' ? value : Number(value ?? 100);
+  const parsed = Number.isFinite(rawValue) ? Math.trunc(rawValue) : 100;
+
+  return Math.min(100, Math.max(1, parsed));
+}
+
+function formatSePayDateTime(value: Date): string {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const day = String(value.getDate()).padStart(2, '0');
+  const hours = String(value.getHours()).padStart(2, '0');
+  const minutes = String(value.getMinutes()).padStart(2, '0');
+  const seconds = String(value.getSeconds()).padStart(2, '0');
+
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
+function extractSePayTransactions(payload: unknown): Record<string, unknown>[] {
+  const root = readObject(payload);
+  const data = root?.data;
+
+  if (Array.isArray(data)) {
+    return data.filter(isRecord);
+  }
+
+  const nestedData = readObject(data)?.data;
+  if (Array.isArray(nestedData)) {
+    return nestedData.filter(isRecord);
+  }
+
+  if (Array.isArray(payload)) {
+    return payload.filter(isRecord);
+  }
+
+  return [];
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
 function readNumber(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return value;
@@ -1300,6 +1447,45 @@ function readNestedString(
   }
 
   return readString(current);
+}
+
+function mapSePayApiTransactionToWebhookPayload(
+  transaction: Record<string, unknown>,
+): SePaySettlementWebhookPayload {
+  const amountIn = readNumber(transaction.amount_in) ?? 0;
+  const amountOut = readNumber(transaction.amount_out) ?? 0;
+  const transferAmount = amountIn > 0 ? amountIn : amountOut;
+  const transferType = amountIn > 0
+    ? 'in'
+    : amountOut > 0
+      ? 'out'
+      : readString(transaction.transferType) ?? readString(transaction.transfer_type);
+
+  return {
+    id: readString(transaction.id) ??
+      readString(transaction.uuid) ??
+      readString(transaction.reference_number) ??
+      readString(transaction.referenceCode),
+    gateway: readString(transaction.bank_brand_name) ??
+      readString(transaction.gateway) ??
+      readString(transaction.bank),
+    transactionDate: readString(transaction.transaction_date) ??
+      readString(transaction.transactionDate),
+    accountNumber: readString(transaction.account_number) ??
+      readString(transaction.accountNumber),
+    code: readString(transaction.code),
+    content: readString(transaction.transaction_content) ??
+      readString(transaction.content) ??
+      readString(transaction.description),
+    transferType,
+    transferAmount,
+    accumulated: readNumber(transaction.accumulated),
+    subAccount: readString(transaction.va) ?? readString(transaction.subAccount),
+    referenceCode: readString(transaction.reference_number) ??
+      readString(transaction.referenceCode),
+    description: readString(transaction.description) ??
+      readString(transaction.transaction_content),
+  };
 }
 
 interface NormalizedSePayTransaction {
@@ -1423,6 +1609,15 @@ function parseSePayTransactionDate(value: string | null | undefined): Date | nul
 
 function normalizeBankAccount(value: string): string {
   return value.replace(/\D+/g, '');
+}
+
+function resolveSePayQrBankCode(bankInfo: CompanyBankInfo): string {
+  return (
+    process.env.SEPAY_QR_BANK_CODE?.trim() ||
+    process.env.COMPANY_BANK_CODE?.trim() ||
+    bankInfo.bankName.trim() ||
+    bankInfo.bin.trim()
+  );
 }
 
 function rawBodyToString(rawBody: Buffer | string | null): string | null {
