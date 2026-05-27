@@ -667,10 +667,9 @@ export function OpsMetricsInventoryMonitorPage(): React.JSX.Element {
       <header className="ops-metrics-inventory__header">
         <div>
           <small>OPS_METRICS_DEADLINE_INVENTORY</small>
-          <h2>Giám sát tồn kho</h2>
+          <h2>Tồn kho & SLA lưu kho</h2>
           <p>
-            Theo dõi lượt phát trong ngày theo courier, gồm phát thành công, phát bất thành
-            và số kiện đã hoàn tất kiểm kho tại hub.
+            Theo dõi tuổi tồn, lượt phát trong ngày theo courier và số kiện đã hoàn tất kiểm kho tại hub.
           </p>
         </div>
         <div className="ops-metrics-inventory__header-actions">

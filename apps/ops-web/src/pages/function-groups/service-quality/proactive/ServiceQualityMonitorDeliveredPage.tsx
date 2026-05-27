@@ -228,9 +228,9 @@ export function ServiceQualityMonitorDeliveredPage(): React.JSX.Element {
       <header className="ops-service-quality-monitor__header">
         <div>
           <small>SERVICE_QUALITY_MONITOR_DELIVERED</small>
-          <h2>Giám sát hàng phát</h2>
+          <h2>Theo dõi giao thất bại / NDR</h2>
           <p>
-            Theo dõi SLA phát, giao thất bại và NDR từ shipments, delivery tasks
+            Tập trung vào các đơn giao thất bại, NDR và nguy cơ trễ SLA từ shipments, delivery tasks
             và NDR cases hiện có.
           </p>
         </div>
@@ -317,12 +317,12 @@ export function ServiceQualityMonitorDeliveredPage(): React.JSX.Element {
 
       <section className="ops-service-quality-monitor__panel">
         <header className="ops-service-quality-monitor__panel-head">
-          <h3>Vận đơn gây chỉ số phát hàng</h3>
+          <h3>Vận đơn cần theo dõi chất lượng phát</h3>
           <span>{isLoading ? 'Đang tải...' : `${rows.length} dòng`}</span>
         </header>
-        {isLoading ? <p className="ops-service-quality-monitor__empty">Đang tải dữ liệu hàng phát...</p> : null}
+        {isLoading ? <p className="ops-service-quality-monitor__empty">Đang tải dữ liệu giao thất bại/NDR...</p> : null}
         {!isLoading && rows.length === 0 ? (
-          <p className="ops-service-quality-monitor__empty">Không có dữ liệu hàng phát phù hợp bộ lọc.</p>
+          <p className="ops-service-quality-monitor__empty">Không có dữ liệu giao thất bại/NDR phù hợp bộ lọc.</p>
         ) : null}
         <div className="ops-service-quality-monitor__table-wrap">
           <table>

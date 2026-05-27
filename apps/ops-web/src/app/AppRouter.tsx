@@ -566,8 +566,7 @@ function DashboardLayout(): React.JSX.Element {
     pathMatches(location.pathname, routePaths.thermalLabelManagement) ||
     pathMatches(location.pathname, routePaths.thermalLabelPrint);
   const isFinanceSettlementSection =
-    pathMatches(location.pathname, routePaths.groupFinanceSettlement) ||
-    pathMatches(location.pathname, routePaths.branchBusinessFinanceSettlementRoot);
+    pathMatches(location.pathname, routePaths.groupFinanceSettlement);
   const isOperationsPlatformSection =
     pathMatches(location.pathname, routePaths.groupOperationsPlatform) &&
     !isReturnBlockSection;
@@ -580,8 +579,8 @@ function DashboardLayout(): React.JSX.Element {
     routePaths.groupOperationsMetrics,
   );
   const isBranchBusinessSection =
-    pathMatches(location.pathname, routePaths.groupBranchBusiness) &&
-    !isFinanceSettlementSection;
+    pathMatches(location.pathname, routePaths.groupBranchBusiness) ||
+    isFinanceSettlementSection;
   const isCustomerPlatformSection = pathMatches(
     location.pathname,
     routePaths.groupCustomerPlatform,
@@ -617,11 +616,6 @@ function DashboardLayout(): React.JSX.Element {
           label: 'Kinh doanh bưu cục',
           to: routePaths.groupBranchBusiness,
           isActive: isBranchBusinessSection,
-        },
-        {
-          label: 'Quyết toán tài chính',
-          to: routePaths.groupFinanceSettlement,
-          isActive: isFinanceSettlementSection,
         },
         {
           label: 'Vận chuyển tuyến',
@@ -687,7 +681,7 @@ function DashboardLayout(): React.JSX.Element {
   ];
   const operationsMetricsSidebarItems: SidebarItem[] = [
     { label: 'Báo cáo vận hành', icon: 'operation_report', to: routePaths.opsMetricsReport },
-    { label: 'Kiện bất thường', icon: 'metrics_abnormal', kind: 'metrics_abnormal' },
+    { label: 'Chỉ số bất thường', icon: 'metrics_abnormal', kind: 'metrics_abnormal' },
     { label: 'Thời hiệu / SLA', icon: 'metrics_deadline', kind: 'metrics_deadline' },
     { label: 'Quy hoạch / KPI mạng lưới', icon: 'metrics_deadline', kind: 'metrics_planning' },
     { label: 'Bàn điều phối thao tác', icon: 'metrics_action', kind: 'metrics_action' },
@@ -698,15 +692,16 @@ function DashboardLayout(): React.JSX.Element {
       icon: 'branch_local_orders',
       kind: 'branch_local_orders',
     },
+    {
+      label: 'Quyết toán tài chính',
+      icon: 'branch_finance_settlement',
+      kind: 'branch_finance_settlement',
+    },
   ];
   const customerPlatformSidebarItems: SidebarItem[] = [
     { label: 'Điều phối lấy hàng', icon: 'customer_order_dispatch', to: routePaths.customerPlatformOrderDispatch },
     { label: 'Tra cứu đơn đặt', icon: 'service_lookup', to: routePaths.customerPlatformOrderLookup },
     { label: 'Giám sát đơn đã tạo', icon: 'monitor_data', to: routePaths.customerPlatformOrderMonitor },
-  ];
-  const financeSettlementSidebarItems: SidebarItem[] = [
-    { label: 'Quyết toán thu hộ', icon: 'branch_finance_settlement', to: routePaths.branchBusinessFinanceCod },
-    { label: 'Đối soát công nợ', icon: 'branch_finance_settlement', to: routePaths.branchBusinessFinanceReconcile },
   ];
   const capabilityPlatformSidebarItems: SidebarItem[] = [
     { label: 'Quản lý chuyến xe', icon: 'linehaul_transport', to: routePaths.linehaulTripManagement },
@@ -718,8 +713,6 @@ function DashboardLayout(): React.JSX.Element {
     ? operationsMetricsSidebarItems
     : isCustomerPlatformSection
     ? customerPlatformSidebarItems
-    : isFinanceSettlementSection
-    ? financeSettlementSidebarItems
     : isBranchBusinessSection
     ? branchBusinessSidebarItems
     : isCapabilityPlatformSection
@@ -747,14 +740,14 @@ function DashboardLayout(): React.JSX.Element {
   const serviceQualityProactiveChildItems = [
     { label: 'Bảng cảnh báo', to: routePaths.serviceQualityProactiveActionBoard },
     { label: 'Giám sát đơn nhận', to: routePaths.serviceQualityProactiveInbound },
-    { label: 'Giám sát đơn phát', to: routePaths.serviceQualityProactiveDelivered },
+    { label: 'Theo dõi giao thất bại / NDR', to: routePaths.serviceQualityProactiveDelivered },
   ] as const;
   const operationsMetricsAbnormalChildItems = [
-    { label: 'Tổng quan kiện bất thường', to: routePaths.opsMetricsAbnormalOverview },
+    { label: 'Tổng quan chỉ số bất thường', to: routePaths.opsMetricsAbnormalOverview },
     { label: 'Theo dõi xử lý kiện', to: routePaths.opsMetricsAbnormalHandling },
   ] as const;
   const operationsMetricsDeadlineChildItems = [
-    { label: 'Giám sát tồn kho', to: routePaths.opsMetricsDeadlineInventory },
+    { label: 'Tồn kho & SLA lưu kho', to: routePaths.opsMetricsDeadlineInventory },
     { label: 'Báo biểu tỷ lệ nhận hàng kịp', to: routePaths.opsMetricsDeadlineOntimePickupRatio },
     { label: 'Giám sát thời hiệu hàng phát', to: routePaths.opsMetricsDeadlineDeliverySla },
     { label: 'Ký nhận thực tế (T-1)', to: routePaths.opsMetricsDeadlineActualSignT1 },
@@ -817,7 +810,7 @@ function DashboardLayout(): React.JSX.Element {
     return_block: 'Chuyển hoàn',
     monitor_data: 'Giám sát dữ liệu',
     service_proactive: 'Giám sát chủ động',
-    metrics_abnormal: 'Kiện bất thường',
+    metrics_abnormal: 'Chỉ số bất thường',
     metrics_deadline: 'Thời hiệu',
     metrics_planning: 'Quy hoạch',
     metrics_action: 'Thao tác',
@@ -904,7 +897,7 @@ function DashboardLayout(): React.JSX.Element {
     ? 'metrics_action'
     : isBranchOrderManagementRoute
     ? 'branch_order_management'
-    : isBranchFinanceSettlementRoute
+    : isBranchFinanceSettlementRoute || isFinanceSettlementSection
     ? 'branch_finance_settlement'
     : isBranchLocalOrdersRoute
     ? 'branch_local_orders'
@@ -936,10 +929,8 @@ function DashboardLayout(): React.JSX.Element {
     ? ['metrics_abnormal', 'metrics_deadline', 'metrics_planning', 'metrics_action']
     : isCustomerPlatformSection
     ? []
-    : isFinanceSettlementSection
-    ? []
     : isBranchBusinessSection
-    ? ['branch_local_orders']
+    ? ['branch_local_orders', 'branch_finance_settlement']
     : isCapabilityPlatformSection
     ? []
     : ['monitor_data', 'thermal_label'];
@@ -963,8 +954,6 @@ function DashboardLayout(): React.JSX.Element {
     ? 'Chỉ số vận hành'
     : isCustomerPlatformSection
     ? 'Đơn khách hàng'
-    : isFinanceSettlementSection
-    ? 'Quyết toán tài chính'
     : isBranchBusinessSection
     ? 'Kinh doanh bưu cục'
     : isCapabilityPlatformSection
@@ -987,12 +976,10 @@ function DashboardLayout(): React.JSX.Element {
   const branchBusinessAllChildItems = [
     ...branchBusinessLocalOrdersChildItems,
     ...branchBusinessOrderManagementChildItems,
+    ...branchBusinessFinanceSettlementChildItems,
   ];
   const activeBranchBusinessItem =
     branchBusinessAllChildItems.find((item) => pathMatches(location.pathname, item.to)) ?? null;
-  const financeSettlementAllChildItems = [...branchBusinessFinanceSettlementChildItems];
-  const activeFinanceSettlementItem =
-    financeSettlementAllChildItems.find((item) => pathMatches(location.pathname, item.to)) ?? null;
   const customerPlatformAllChildItems = [
     ...customerPlatformOrderDispatchChildItems,
     ...customerPlatformOrderManagementChildItems,
@@ -1037,12 +1024,10 @@ function DashboardLayout(): React.JSX.Element {
     ? activeOperationsMetricsItem.label
     : isOperationsMetricsSection
     ? 'Chỉ số vận hành'
-    : activeFinanceSettlementItem
-    ? activeFinanceSettlementItem.label
-    : isFinanceSettlementSection
-    ? 'Quyết toán tài chính'
     : activeBranchBusinessItem
     ? activeBranchBusinessItem.label
+    : isFinanceSettlementSection
+    ? 'Quyết toán tài chính'
     : isBranchBusinessSection
     ? 'Kinh doanh bưu cục'
     : activeCustomerPlatformItem
@@ -1577,11 +1562,11 @@ export function AppRouter(): React.JSX.Element {
             <Route
               path={routePaths.opsMetricsAbnormalOverviewLeaf}
               element={opsModuleRoute(
-                'Tổng quan kiện bất thường',
+                'Tổng quan chỉ số bất thường',
                 <OperationsMetricsDerivedRoutePage
                   groupCode="OPS_METRICS_ABNORMAL_OVERVIEW"
-                  title="Tổng quan kiện bất thường"
-                  summary="Theo dõi tổng quan kiện bất thường theo khu vực và trạng thái xử lý."
+                  title="Tổng quan chỉ số bất thường"
+                  summary="Theo dõi KPI bất thường theo khu vực và trạng thái xử lý."
                 />,
               )}
             />
@@ -1598,7 +1583,7 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.opsMetricsDeadlineInventoryLeaf}
-              element={opsModuleRoute('Giám sát tồn kho', <OpsMetricsInventoryMonitorPage />)}
+              element={opsModuleRoute('Tồn kho & SLA lưu kho', <OpsMetricsInventoryMonitorPage />)}
             />
             <Route
               path={routePaths.opsMetricsDeadlineOntimePickupRatioLeaf}
@@ -1721,7 +1706,7 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.serviceQualityProactiveDeliveredLeaf}
-              element={opsModuleRoute('Giám sát đơn phát', <ServiceQualityMonitorDeliveredPage />)}
+              element={opsModuleRoute('Theo dõi giao thất bại / NDR', <ServiceQualityMonitorDeliveredPage />)}
             />
             <Route
               path={routePaths.groupDatabaseLeaf}
