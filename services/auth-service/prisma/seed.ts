@@ -4,6 +4,7 @@ import { PrismaClient } from '@prisma/client';
 
 import {
   branchHubCodeForProvince,
+  branchHubNameForProvince,
   loadVietnamProvinces,
   merchantUsernameForProvinceIndex,
   REGIONAL_HUBS,
@@ -40,6 +41,19 @@ function allPermissions(enabled: boolean): Record<string, boolean> {
 
 async function seedUsers() {
   const provinces = await loadVietnamProvinces();
+  const branchOpsUsers = provinces.map((province, index) => {
+    const sequence = index + 7;
+    const username = `20000${String(sequence).padStart(3, '0')}`;
+
+    return {
+      id: username,
+      username,
+      roles: ['OPS_VIEWER'],
+      displayName: `Ops ${branchHubNameForProvince(province)}`,
+      phone: `0902${String(sequence).padStart(6, '0')}`,
+      hubCodes: [branchHubCodeForProvince(province)],
+    };
+  });
   const merchantUsers = provinces.map((province, index) => {
     return {
       id: merchantUsernameForProvinceIndex(index),
@@ -132,7 +146,7 @@ async function seedUsers() {
       hubCodes: [REGIONAL_HUBS.SOUTH.code],
     },
   ];
-  const users = [...regionalHubUsers, ...merchantUsers];
+  const users = [...regionalHubUsers, ...branchOpsUsers, ...merchantUsers];
 
   for (const user of users) {
     await prisma.userAccount.upsert({
