@@ -95,7 +95,7 @@ export function ThermalLabelPrintPage(): React.JSX.Element {
 
   const onCreateLabelsSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    void createLabels({ printAfterCreate: false });
+    void createLabels({ printAfterCreate: true });
   };
 
   const onPrintLastCreated = () => {
@@ -238,33 +238,23 @@ export function ThermalLabelPrintPage(): React.JSX.Element {
         <small>THERMAL_LABEL_PRINT</small>
         <h2>In tem bao</h2>
         <p>
-          Chọn số lượng n tem, hub đến và phương thức vận chuyển để tạo một lô tem duy nhất
-          trên hệ thống. Tem đã có thao tác hàng đến không xuất hiện trong danh sách sử dụng lại.
+          Tạo nhanh lô tem bao theo hub đến, phương thức vận chuyển và số lượng. Hub đi
+          được lấy tự động theo phạm vi bưu cục của tài khoản.
         </p>
       </header>
 
       <div className="ops-thermal-print__layout">
         <article className="ops-thermal-print__form-card">
-          <h3>Thông tin in</h3>
+          <div className="ops-thermal-print__form-head">
+            <div>
+              <h3>In nhanh</h3>
+              <span>Hub đi: {originHubCode || 'CHƯA_GÁN_HUB'}</span>
+            </div>
+            <strong>{transportMethod}</strong>
+          </div>
           <form onSubmit={onCreateLabelsSubmit} className="ops-thermal-print__form">
             <label className="ops-thermal-print__field">
-              <span>Hub đi</span>
-              <input type="text" value={originHubCode || 'CHƯA_GÁN_HUB'} disabled />
-            </label>
-
-            <label className="ops-thermal-print__field">
-              <span>Số lượng tem bao</span>
-              <input
-                type="number"
-                min={1}
-                max={MAX_PREVIEW_LABELS}
-                value={quantityInput}
-                onChange={(event) => setQuantityInput(event.target.value)}
-              />
-            </label>
-
-            <label className="ops-thermal-print__field">
-              <span>Mã hub đến</span>
+              <span>Hub đến</span>
               <select
                 value={destinationHubCode}
                 onChange={(event) => setDestinationHubCode(normalizeHubCode(event.target.value))}
@@ -284,7 +274,7 @@ export function ThermalLabelPrintPage(): React.JSX.Element {
             </label>
 
             <fieldset className="ops-thermal-print__field ops-thermal-print__field--method">
-              <legend>Phương thức</legend>
+              <legend>Phương thức vận chuyển</legend>
               <label className="ops-thermal-print__radio">
                 <input
                   type="radio"
@@ -293,7 +283,10 @@ export function ThermalLabelPrintPage(): React.JSX.Element {
                   checked={transportMethod === 'T'}
                   onChange={() => setTransportMethod('T')}
                 />
-                T (Trucking)
+                <span>
+                  <strong>Đường bộ</strong>
+                  <small>T - Trucking</small>
+                </span>
               </label>
               <label className="ops-thermal-print__radio">
                 <input
@@ -303,21 +296,27 @@ export function ThermalLabelPrintPage(): React.JSX.Element {
                   checked={transportMethod === 'A'}
                   onChange={() => setTransportMethod('A')}
                 />
-                A (Air)
+                <span>
+                  <strong>Đường bay</strong>
+                  <small>A - Air</small>
+                </span>
               </label>
             </fieldset>
 
+            <label className="ops-thermal-print__field">
+              <span>Số lượng</span>
+              <input
+                type="number"
+                min={1}
+                max={MAX_PREVIEW_LABELS}
+                value={quantityInput}
+                onChange={(event) => setQuantityInput(event.target.value)}
+              />
+            </label>
+
             <div className="ops-thermal-print__actions">
               <button type="submit" disabled={generateMutation.isPending}>
-                {generateMutation.isPending ? 'Đang tạo...' : 'Tạo tem bao'}
-              </button>
-              <button
-                type="button"
-                className="ops-thermal-print__secondary-btn"
-                onClick={() => void createLabels({ printAfterCreate: true })}
-                disabled={generateMutation.isPending}
-              >
-                Tạo và in
+                {generateMutation.isPending ? 'Đang tạo tem...' : 'Tạo và in tem'}
               </button>
               <button
                 type="button"
@@ -334,7 +333,8 @@ export function ThermalLabelPrintPage(): React.JSX.Element {
             <p className="ops-thermal-print__hint">Không tải được danh sách hub đến. Vui lòng thử lại sau.</p>
           ) : (
             <p className="ops-thermal-print__hint">
-              Mỗi lần tạo sẽ gọi hệ thống cấp mã thật, không in tem mẫu cục bộ. Có {arrivedLabelsAtOrigin} tem đã hàng đến đang bị khóa khỏi danh sách dùng lại.
+              Mỗi lần in sẽ xin mã bao thật từ hệ thống. Có {arrivedLabelsAtOrigin} tem đã hàng đến
+              đang bị khóa khỏi danh sách dùng lại.
             </p>
           )}
           {formError ? <p className="ops-thermal-print__error">{formError}</p> : null}
