@@ -13,6 +13,7 @@ import { formatDateTime } from '../../../../utils/format';
 import {
   deriveHubScopeTokens,
   isShipmentInScope,
+  shipmentDestinationHubCode,
 } from '../../../../utils/locationScope';
 import { BranchTablePagination } from '../shared/BranchTablePagination';
 import './BranchDeliveryOrderManagementPage.css';
@@ -93,6 +94,11 @@ function isShipmentInBranchScope(
   const currentLocation = (shipment.currentLocation ?? '').trim().toUpperCase();
   if (currentLocation && assignedHubCodes.includes(currentLocation)) {
     return true;
+  }
+
+  const destinationHubCode = shipmentDestinationHubCode(shipment);
+  if (destinationHubCode) {
+    return assignedHubCodes.includes(destinationHubCode);
   }
 
   return isShipmentInScope(shipment, scopeTokens);

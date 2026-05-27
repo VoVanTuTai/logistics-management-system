@@ -5,6 +5,8 @@ interface HubAddressPayload {
   province: string;
   district: string;
   serviceAreas: string[];
+  type: string;
+  coverageProvinceNames: string[];
 }
 
 export const PROVINCE_CITY_OPTIONS = [
@@ -53,19 +55,23 @@ function parseHubAddress(address: string | null): HubAddressPayload {
       province: '',
       district: '',
       serviceAreas: [],
+      type: '',
+      coverageProvinceNames: [],
     };
   }
 
   try {
     const parsed = asRecord(JSON.parse(address));
     if (!parsed) {
-      return { province: '', district: '', serviceAreas: [] };
+      return { province: '', district: '', serviceAreas: [], type: '', coverageProvinceNames: [] };
     }
 
     return {
       province: toStringValue(parsed.province),
       district: toStringValue(parsed.district),
       serviceAreas: toStringArray(parsed.serviceAreas),
+      type: toStringValue(parsed.type).toUpperCase(),
+      coverageProvinceNames: toStringArray(parsed.coverageProvinceNames),
     };
   } catch {
     const parts = address
@@ -77,6 +83,8 @@ function parseHubAddress(address: string | null): HubAddressPayload {
       province: parts[parts.length - 1] ?? '',
       district: parts.length > 1 ? parts[parts.length - 2] : '',
       serviceAreas: [],
+      type: '',
+      coverageProvinceNames: [],
     };
   }
 }
@@ -146,6 +154,47 @@ export function deriveHubScopeTokens(
   }
 
   return tokens;
+}
+
+export function resolveBranchHubByProvince(
+  hubs: HubDto[],
+  province: string | null | undefined,
+): HubDto | null {
+  const provinceToken = normalizeLocationToken(province ?? '');
+
+  if (!provinceToken) {
+    return null;
+  }
+
+  return (
+    hubs.find((hub) => {
+      if (!hub.isActive) {
+        return false;
+      }
+
+      const parsed = parseHubAddress(hub.address);
+      if (parsed.type !== 'BRANCH') {
+        return false;
+      }
+
+      const hubProvinceToken = normalizeLocationToken(parsed.province);
+      if (hubProvinceToken === provinceToken) {
+        return true;
+      }
+
+      return parsed.coverageProvinceNames.some(
+        (coverageProvince) => normalizeLocationToken(coverageProvince) === provinceToken,
+      );
+    }) ?? null
+  );
+}
+
+export function shipmentDestinationHubCode(shipment: ShipmentListItemDto): string {
+  return (
+    shipment.receiverHubCode?.trim().toUpperCase() ||
+    shipment.destinationHubCode?.trim().toUpperCase() ||
+    ''
+  );
 }
 
 export function deriveShipmentAreaTokens(shipment: ShipmentListItemDto): string[] {

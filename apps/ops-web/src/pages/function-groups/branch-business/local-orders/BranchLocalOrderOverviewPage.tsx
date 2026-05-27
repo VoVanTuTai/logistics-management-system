@@ -21,6 +21,7 @@ import { createIdempotencyKey } from '../../../../utils/idempotency';
 import {
   deriveHubScopeTokens,
   isShipmentInScope,
+  shipmentDestinationHubCode,
 } from '../../../../utils/locationScope';
 import { formatShipmentStatusLabel } from '../../../../utils/logisticsLabels';
 import { queryKeys } from '../../../../utils/queryKeys';
@@ -164,6 +165,11 @@ function isShipmentAtAssignedBranch(
   const currentLocation = (shipment.currentLocation ?? '').trim().toUpperCase();
   if (currentLocation && assignedHubCodes.includes(currentLocation)) {
     return true;
+  }
+
+  const destinationHubCode = shipmentDestinationHubCode(shipment);
+  if (destinationHubCode) {
+    return assignedHubCodes.includes(destinationHubCode);
   }
 
   return isShipmentInScope(shipment, scopeTokens);

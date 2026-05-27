@@ -1,12 +1,15 @@
 import { useQueryClient } from '@tanstack/react-query';
 import React, { useMemo, useState } from 'react';
 
+import { useHubsQuery } from '../../../../features/masterdata/masterdata.api';
+import type { HubDto } from '../../../../features/masterdata/masterdata.types';
 import { usePickupScanMutation } from '../../../../features/scans/scans.api';
 import { useVietnamAdministrativeUnitsQuery } from '../../../../features/locations/vietnamAdministrativeUnits.api';
 import { useCreateShipmentMutation } from '../../../../features/shipments/shipments.api';
 import { getErrorMessage } from '../../../../services/api/errors';
 import { useAuthStore } from '../../../../store/authStore';
 import { createIdempotencyKey } from '../../../../utils/idempotency';
+import { resolveBranchHubByProvince } from '../../../../utils/locationScope';
 import { queryKeys } from '../../../../utils/queryKeys';
 import './BranchBusinessOrderCreatePage.css';
 
@@ -99,12 +102,20 @@ function buildMetadata(
   form: BranchOrderFormState,
   feeEstimate: number,
   operatorCode: string,
+  route: {
+    senderHubCode: string | null;
+    receiverHub: HubDto;
+  },
 ): Record<string, unknown> {
+  const senderHubCode = route.senderHubCode;
+  const receiverHubCode = route.receiverHub.code.trim().toUpperCase();
+
   return {
     sender: {
       name: form.senderName.trim() || null,
       phone: form.senderPhone.trim() || null,
       address: form.senderAddress.trim() || null,
+      hubCode: senderHubCode,
     },
     receiver: {
       name: form.receiverName.trim() || null,
@@ -112,6 +123,8 @@ function buildMetadata(
       address: form.receiverAddress.trim() || null,
       region: form.receiverRegion.trim() || null,
       province: form.receiverRegion.trim() || null,
+      hubCode: receiverHubCode,
+      resolvedHubName: route.receiverHub.name,
     },
     package: {
       itemType: form.itemType.trim() || null,
@@ -132,6 +145,15 @@ function buildMetadata(
     platform: form.platform.trim() || 'OPS_BRANCH',
     source: 'ops-web-branch-order-create',
     operatorCode,
+    routing: {
+      originHubCode: senderHubCode,
+      destinationHubCode: receiverHubCode,
+      resolvedBy: 'address',
+    },
+    senderHubCode,
+    receiverHubCode,
+    originHubCode: senderHubCode,
+    destinationHubCode: receiverHubCode,
   };
 }
 
@@ -143,6 +165,7 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
   const defaultHubCode = session?.user.hubCodes?.[0] ?? '';
   const locationsQuery = useVietnamAdministrativeUnitsQuery();
   const provinceOptions = locationsQuery.data ?? [];
+  const hubsQuery = useHubsQuery(accessToken, { isActive: 'true' });
   const createShipmentMutation = useCreateShipmentMutation(accessToken);
   const pickupScanMutation = usePickupScanMutation(accessToken);
 
@@ -155,6 +178,11 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
 
   const estimatedFee = useMemo(() => estimateFee(form), [form]);
   const isSubmitting = createShipmentMutation.isPending || pickupScanMutation.isPending;
+  const activeHubs = hubsQuery.data ?? [];
+  const receiverHub = useMemo(
+    () => resolveBranchHubByProvince(activeHubs, form.receiverRegion),
+    [activeHubs, form.receiverRegion],
+  );
 
   const updateForm = (key: keyof BranchOrderFormState, value: string) => {
     setForm((current) => ({ ...current, [key]: value }));
@@ -185,6 +213,18 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
       return 'Cần nhập mã bưu cục để tạo + quét pickup.';
     }
 
+    if (hubsQuery.isError) {
+      return 'Không tải được danh sách hub để chia đơn theo địa chỉ.';
+    }
+
+    if (hubsQuery.isLoading) {
+      return 'Đang tải danh sách hub, vui lòng thử lại sau vài giây.';
+    }
+
+    if (!receiverHub) {
+      return 'Không tìm thấy hub quản lý tỉnh/thành người nhận.';
+    }
+
     return null;
   };
 
@@ -200,13 +240,24 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
       return;
     }
 
+    if (!receiverHub) {
+      setActionError('Không tìm thấy hub quản lý tỉnh/thành người nhận.');
+      return;
+    }
+
     setActionMessage(null);
     setActionError(null);
 
     try {
       const createdShipment = await createShipmentMutation.mutateAsync({
         code: form.manualCode.trim().toUpperCase() || null,
-        metadata: buildMetadata(form, estimatedFee, operatorCode),
+        metadata: buildMetadata(form, estimatedFee, operatorCode, {
+          senderHubCode:
+            form.pickupLocationCode.trim().toUpperCase() ||
+            defaultHubCode.trim().toUpperCase() ||
+            null,
+          receiverHub,
+        }),
       });
 
       if (createAndScanPickup) {

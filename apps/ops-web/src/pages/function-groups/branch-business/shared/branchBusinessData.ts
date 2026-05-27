@@ -163,13 +163,19 @@ export function isShipmentInBranchScope(
     return false;
   }
 
-  const hubCandidates = [
-    shipment.currentLocation,
-    shipment.receiverHubCode,
-    shipment.destinationHubCode,
-    shipment.originHubCode,
-    shipment.senderHubCode,
-  ]
+  const currentLocation = normalizeBranchCode(shipment.currentLocation);
+  if (currentLocation) {
+    return assignedHubCodes.includes(currentLocation);
+  }
+
+  const destinationHubCode =
+    normalizeBranchCode(shipment.receiverHubCode) ||
+    normalizeBranchCode(shipment.destinationHubCode);
+  if (destinationHubCode) {
+    return assignedHubCodes.includes(destinationHubCode);
+  }
+
+  const hubCandidates = [shipment.originHubCode, shipment.senderHubCode]
     .map(normalizeBranchCode)
     .filter(Boolean);
 

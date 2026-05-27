@@ -2,6 +2,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
+import { useHubsQuery } from '../../features/masterdata/masterdata.api';
+import type { HubDto } from '../../features/masterdata/masterdata.types';
 import { useVietnamAdministrativeUnitsQuery } from '../../features/locations/vietnamAdministrativeUnits.api';
 import { useInboundScanMutation, useOutboundScanMutation, usePickupScanMutation } from '../../features/scans/scans.api';
 import type { HubScanInput, HubScanType } from '../../features/scans/scans.types';
@@ -14,6 +16,7 @@ import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
 import { useUiStore } from '../../store/uiStore';
 import { createIdempotencyKey } from '../../utils/idempotency';
+import { resolveBranchHubByProvince } from '../../utils/locationScope';
 import { queryKeys } from '../../utils/queryKeys';
 import { ShipmentsTable } from './ShipmentsTable';
 
@@ -116,12 +119,20 @@ function estimateFee(form: WalkInShipmentFormState): number {
 function buildWalkInMetadata(
   form: WalkInShipmentFormState,
   feeEstimate: number,
+  route: {
+    senderHubCode: string | null;
+    receiverHub: HubDto;
+  },
 ): Record<string, unknown> {
+  const senderHubCode = route.senderHubCode;
+  const receiverHubCode = route.receiverHub.code.trim().toUpperCase();
+
   return {
     sender: {
       name: form.senderName.trim() || null,
       phone: form.senderPhone.trim() || null,
       address: form.senderAddress.trim() || null,
+      hubCode: senderHubCode,
     },
     receiver: {
       name: form.receiverName.trim() || null,
@@ -129,6 +140,8 @@ function buildWalkInMetadata(
       address: form.receiverAddress.trim() || null,
       region: form.receiverRegion.trim() || null,
       province: form.receiverRegion.trim() || null,
+      hubCode: receiverHubCode,
+      resolvedHubName: route.receiverHub.name,
     },
     package: {
       itemType: form.itemType.trim() || null,
@@ -148,6 +161,15 @@ function buildWalkInMetadata(
     estimatedFee: feeEstimate,
     platform: form.platform.trim() || 'OPS_WALK_IN',
     source: 'ops-web',
+    routing: {
+      originHubCode: senderHubCode,
+      destinationHubCode: receiverHubCode,
+      resolvedBy: 'address',
+    },
+    senderHubCode,
+    receiverHubCode,
+    originHubCode: senderHubCode,
+    destinationHubCode: receiverHubCode,
   };
 }
 
@@ -232,7 +254,12 @@ function printWaybill(shipment: ShipmentListItemDto): boolean {
   const receiverPhone = shipment.receiverPhone?.trim() || '-';
   const receiverAddress = shipment.receiverAddress?.trim() || '-';
 
-  const hubCode = shipment.currentLocation?.trim() || shipment.receiverRegion?.trim() || 'HUB-NA';
+  const hubCode =
+    shipment.currentLocation?.trim() ||
+    shipment.receiverHubCode?.trim() ||
+    shipment.destinationHubCode?.trim() ||
+    shipment.receiverRegion?.trim() ||
+    'HUB-NA';
   const zoneCode = shipment.receiverRegion?.trim() || 'ZONE-NA';
   const routeTag = compactCode(hubCode || shipment.shipmentCode, 'ROUTE');
   const sortCode = [`Hub đích: ${hubCode || 'N/A'}`, `Khu vực: ${zoneCode || 'N/A'}`].join('\n');
@@ -356,9 +383,15 @@ export function ShipmentListPage(): React.JSX.Element {
   const outboundScanMutation = useOutboundScanMutation(accessToken);
   const courierOptionsQuery = useCourierOptionsQuery(accessToken);
   const locationsQuery = useVietnamAdministrativeUnitsQuery();
+  const hubsQuery = useHubsQuery(accessToken, { isActive: 'true' });
   const provinceOptions = locationsQuery.data ?? [];
+  const activeHubs = hubsQuery.data ?? [];
 
   const estimatedFee = useMemo(() => estimateFee(walkInForm), [walkInForm]);
+  const walkInReceiverHub = useMemo(
+    () => resolveBranchHubByProvince(activeHubs, walkInForm.receiverRegion),
+    [activeHubs, walkInForm.receiverRegion],
+  );
   const visibleShipments = shipmentQuery.data?.items ?? [];
   const pageInfo = shipmentQuery.data?.pageInfo ?? { hasNextPage: false, total: undefined };
   const hasPreviousPage = offset > 0;
@@ -588,6 +621,18 @@ export function ShipmentListPage(): React.JSX.Element {
       setWalkInError('Cần địa chỉ chi tiết người nhận.');
       return;
     }
+    if (hubsQuery.isLoading) {
+      setWalkInError('Đang tải danh sách hub, vui lòng thử lại sau vài giây.');
+      return;
+    }
+    if (hubsQuery.isError) {
+      setWalkInError('Không tải được danh sách hub để chia đơn theo địa chỉ.');
+      return;
+    }
+    if (!walkInReceiverHub) {
+      setWalkInError('Không tìm thấy hub quản lý tỉnh/thành người nhận.');
+      return;
+    }
 
     setWalkInMessage(null);
     setWalkInError(null);
@@ -595,7 +640,13 @@ export function ShipmentListPage(): React.JSX.Element {
     try {
       const createdShipment = await createShipmentMutation.mutateAsync({
         code: walkInForm.manualCode.trim().toUpperCase() || null,
-        metadata: buildWalkInMetadata(walkInForm, estimatedFee),
+        metadata: buildWalkInMetadata(walkInForm, estimatedFee, {
+          senderHubCode:
+            pickupLocationCode ||
+            assignedHubCodes[0]?.trim().toUpperCase() ||
+            null,
+          receiverHub: walkInReceiverHub,
+        }),
       });
 
       let successMessage = `Đã tạo vận đơn ${createdShipment.shipmentCode}.`;

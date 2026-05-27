@@ -55,11 +55,11 @@ export function normalizeCustomerOrderText(value: string | null | undefined): st
 
 export function resolveCustomerOrderHub(shipment: ShipmentListItemDto | null): string {
   return normalizeCustomerOrderCode(
-    shipment?.senderHubCode ??
-      shipment?.originHubCode ??
-      shipment?.currentLocation ??
-      shipment?.receiverHubCode ??
+    shipment?.receiverHubCode ??
       shipment?.destinationHubCode ??
+      shipment?.currentLocation ??
+      shipment?.senderHubCode ??
+      shipment?.originHubCode ??
       null,
   );
 }

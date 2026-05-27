@@ -15,6 +15,7 @@ import { formatDateTime } from '../../../../utils/format';
 import {
   deriveHubScopeTokens,
   isShipmentInScope,
+  shipmentDestinationHubCode,
 } from '../../../../utils/locationScope';
 import { formatShipmentStatusLabel } from '../../../../utils/logisticsLabels';
 import { queryKeys } from '../../../../utils/queryKeys';
@@ -146,16 +147,9 @@ function isShipmentAtAssignedBranch(
     return true;
   }
 
-  const relatedHubCodes = [
-    shipment.receiverHubCode,
-    shipment.destinationHubCode,
-    shipment.originHubCode,
-    shipment.senderHubCode,
-  ]
-    .map((hubCode) => (hubCode ?? '').trim().toUpperCase())
-    .filter(Boolean);
-  if (relatedHubCodes.some((hubCode) => assignedHubCodes.includes(hubCode))) {
-    return true;
+  const destinationHubCode = shipmentDestinationHubCode(shipment);
+  if (destinationHubCode) {
+    return assignedHubCodes.includes(destinationHubCode);
   }
 
   return isShipmentInScope(shipment, scopeTokens);
