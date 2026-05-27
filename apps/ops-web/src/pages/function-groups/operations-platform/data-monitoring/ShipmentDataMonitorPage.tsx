@@ -26,6 +26,8 @@ interface ShipmentMonitorConfig {
   hubLabel: string;
   oppositeHubLabel: string;
   ownerLabel: string;
+  senderFilterLabel?: string;
+  receiverFilterLabel?: string;
   emptyText: string;
   summaryLabels: {
     total: string;
@@ -42,17 +44,17 @@ const configs: Record<ShipmentMonitorMode, ShipmentMonitorConfig> = {
   arrival: {
     groupCode: 'MONITOR_DATA_HANG_DEN',
     title: 'Giám sát hàng đến',
-    description: 'Theo dõi những đơn đã có thao tác quét hàng đến tại bưu cục.',
+    description: 'Theo dõi các đơn từ hub khác đã được quét hàng đến tại bưu cục.',
     statusQuery: 'SCAN_INBOUND',
-    defaultStatuses: ['SCAN_INBOUND', 'MANIFEST_RECEIVED', 'INVENTORY_CHECK'],
+    defaultStatuses: ['SCAN_INBOUND'],
     keywordLabel: 'Mã vận đơn / người gửi / người nhận',
     hubLabel: 'BC đến',
-    oppositeHubLabel: 'BC gửi',
+    oppositeHubLabel: 'Hub gửi',
     ownerLabel: 'Người quét/xử lý',
-    emptyText: 'Chưa có dữ liệu hàng đến phù hợp bộ lọc.',
+    emptyText: 'Chưa có đơn quét hàng đến từ hub khác phù hợp bộ lọc.',
     summaryLabels: {
-      total: 'Đã quét đến',
-      secondary: 'Bưu cục đến',
+      total: 'Hàng đến',
+      secondary: 'Hub gửi khác',
       warning: 'Quá 6 giờ',
     },
   },
@@ -60,34 +62,37 @@ const configs: Record<ShipmentMonitorMode, ShipmentMonitorConfig> = {
     groupCode: 'MONITOR_DATA_HANG_GUI',
     title: 'Giám sát hàng gửi',
     description:
-      'Theo dõi những đơn đã quét gửi ra khỏi bưu cục nhưng bưu cục đích chưa quét hàng nhận.',
-    statusQuery: 'SCAN_OUTBOUND',
-    defaultStatuses: ['SCAN_OUTBOUND', 'SEND_GOODS', 'IN_TRANSIT'],
-    keywordLabel: 'Mã vận đơn / hub gửi / hub đích',
+      'Theo dõi hàng nhân viên Ops hoặc courier đã nhận để chuẩn bị gửi đi cho khách hàng.',
+    statusQuery: 'PICKUP_COMPLETED',
+    defaultStatuses: ['PICKUP_COMPLETED'],
+    keywordLabel: 'Mã vận đơn / người gửi / người nhận / hub đích',
     hubLabel: 'BC gửi',
     oppositeHubLabel: 'BC đích',
-    ownerLabel: 'Người xử lý',
+    ownerLabel: 'Người gửi',
     emptyText: 'Chưa có dữ liệu hàng gửi phù hợp bộ lọc.',
     summaryLabels: {
-      total: 'Đã quét gửi',
-      secondary: 'Đích chưa nhận',
-      warning: 'Chờ quá 6 giờ',
+      total: 'Đã nhận gửi',
+      secondary: 'Hub đích',
+      warning: 'Chờ gửi quá 6 giờ',
     },
   },
   delivery: {
     groupCode: 'MONITOR_DATA_HANG_PHAT',
     title: 'Giám sát hàng phát',
-    description: 'Theo dõi tiến độ giao hàng, các đơn đã bàn giao courier và kết quả đi phát.',
-    defaultStatuses: ['TASK_ASSIGNED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'DELIVERY_FAILED', 'NDR_CREATED'],
-    keywordLabel: 'Mã vận đơn / người nhận / courier',
+    description: 'Theo dõi các đơn đã giao và hỗ trợ rà soát lại theo bên gửi, bên nhận.',
+    statusQuery: 'DELIVERED',
+    defaultStatuses: ['DELIVERED'],
+    keywordLabel: 'Mã vận đơn / bên gửi / bên nhận / số điện thoại',
     hubLabel: 'BC phát',
     oppositeHubLabel: 'BC gửi',
-    ownerLabel: 'Courier/người nhận',
+    ownerLabel: 'Bên nhận',
+    senderFilterLabel: 'Bên gửi',
+    receiverFilterLabel: 'Bên nhận',
     emptyText: 'Không tìm thấy dữ liệu hàng phát phù hợp bộ lọc.',
     summaryLabels: {
-      total: 'Đơn hàng phát',
-      secondary: 'Đã giao',
-      warning: 'Thất bại/NDR',
+      total: 'Đã giao',
+      secondary: 'Bên gửi',
+      warning: 'Bên nhận',
     },
   },
 };
@@ -153,7 +158,7 @@ function formatAge(minutes: number | null): string {
 
 function resolvePrimaryHub(shipment: ShipmentListItemDto, mode: ShipmentMonitorMode): string {
   if (mode === 'outbound') {
-    return normalizeCode(shipment.originHubCode) || normalizeCode(shipment.senderHubCode) || normalizeCode(shipment.currentLocation) || '---';
+    return normalizeCode(shipment.currentLocation) || normalizeCode(shipment.originHubCode) || normalizeCode(shipment.senderHubCode) || '---';
   }
 
   if (mode === 'delivery') {
@@ -183,6 +188,51 @@ function resolveOwner(shipment: ShipmentListItemDto, mode: ShipmentMonitorMode):
   return shipment.senderName || shipment.senderPhone || shipment.receiverName || 'Hệ thống';
 }
 
+function hasKnownDifferentHub(left: string, right: string): boolean {
+  return left !== '---' && right !== '---' && left !== right;
+}
+
+function isArrivalFromAnotherHub(shipment: ShipmentListItemDto): boolean {
+  const arrivalHub = resolvePrimaryHub(shipment, 'arrival');
+  const senderHub = resolveOppositeHub(shipment, 'arrival');
+
+  return hasKnownDifferentHub(arrivalHub, senderHub);
+}
+
+function matchesPartyFilter(shipment: ShipmentListItemDto, senderFilter: string, receiverFilter: string): boolean {
+  const normalizedSender = normalize(senderFilter);
+  const normalizedReceiver = normalize(receiverFilter);
+  const senderValues = [
+    shipment.senderName,
+    shipment.senderPhone,
+    shipment.senderAddress,
+    shipment.senderWard,
+    shipment.senderDistrict,
+    shipment.senderProvince,
+    shipment.senderHubCode,
+    shipment.originHubCode,
+  ];
+  const receiverValues = [
+    shipment.receiverName,
+    shipment.receiverPhone,
+    shipment.receiverAddress,
+    shipment.receiverRegion,
+    shipment.receiverHubCode,
+    shipment.destinationHubCode,
+  ];
+
+  const senderMatched =
+    !normalizedSender || senderValues.some((value) => normalize(value).includes(normalizedSender));
+  const receiverMatched =
+    !normalizedReceiver || receiverValues.some((value) => normalize(value).includes(normalizedReceiver));
+
+  return senderMatched && receiverMatched;
+}
+
+function countUnique(values: string[]): number {
+  return new Set(values.map(normalize).filter(Boolean)).size;
+}
+
 function statusClass(status: string): string {
   return status.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 }
@@ -198,6 +248,8 @@ export function ShipmentDataMonitorPage({
   const [shipments, setShipments] = useState<ShipmentListItemDto[]>([]);
   const [keyword, setKeyword] = useState('');
   const [hubFilter, setHubFilter] = useState('');
+  const [senderFilter, setSenderFilter] = useState('');
+  const [receiverFilter, setReceiverFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -237,12 +289,13 @@ export function ShipmentDataMonitorPage({
 
   useEffect(() => {
     setPage(1);
-  }, [dateFrom, dateTo, hubFilter, keyword, mode, pageSize, statusFilter]);
+  }, [dateFrom, dateTo, hubFilter, keyword, mode, pageSize, receiverFilter, senderFilter, statusFilter]);
 
-  const sourceRows = useMemo(
-    () => shipments.filter((shipment) => config.defaultStatuses.includes(shipment.currentStatus)),
-    [config.defaultStatuses, shipments],
-  );
+  const sourceRows = useMemo(() => {
+    return shipments
+      .filter((shipment) => config.defaultStatuses.includes(shipment.currentStatus))
+      .filter((shipment) => (mode === 'arrival' ? isArrivalFromAnotherHub(shipment) : true));
+  }, [config.defaultStatuses, mode, shipments]);
 
   const statusOptions = useMemo(
     () => Array.from(new Set(sourceRows.map((shipment) => shipment.currentStatus))).sort(),
@@ -274,12 +327,13 @@ export function ShipmentDataMonitorPage({
       return (
         keywordMatched &&
         (!normalizedHub || primaryHub.includes(normalizedHub) || oppositeHub.includes(normalizedHub)) &&
+        matchesPartyFilter(shipment, mode === 'delivery' ? senderFilter : '', mode === 'delivery' ? receiverFilter : '') &&
         (!statusFilter || shipment.currentStatus === statusFilter) &&
         (!dateFrom || !updatedDate || updatedDate >= dateFrom) &&
         (!dateTo || !updatedDate || updatedDate <= dateTo)
       );
     });
-  }, [dateFrom, dateTo, hubFilter, keyword, mode, sourceRows, statusFilter]);
+  }, [dateFrom, dateTo, hubFilter, keyword, mode, receiverFilter, senderFilter, sourceRows, statusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -287,11 +341,11 @@ export function ShipmentDataMonitorPage({
   const warningRows = filteredRows.filter((shipment) => (minutesSince(shipment.updatedAt) ?? 0) >= 360);
   const secondaryCount =
     mode === 'delivery'
-      ? filteredRows.filter((shipment) => shipment.currentStatus === 'DELIVERED').length
+      ? countUnique(filteredRows.map((shipment) => shipment.senderPhone || shipment.senderName || ''))
       : new Set(filteredRows.map((shipment) => resolvePrimaryHub(shipment, mode)).filter((hub) => hub !== '---')).size;
   const warningCount =
     mode === 'delivery'
-      ? filteredRows.filter((shipment) => ['DELIVERY_FAILED', 'NDR_CREATED'].includes(shipment.currentStatus)).length
+      ? countUnique(filteredRows.map((shipment) => shipment.receiverPhone || shipment.receiverName || ''))
       : warningRows.length;
 
   return (
@@ -311,7 +365,7 @@ export function ShipmentDataMonitorPage({
             <span>{config.summaryLabels.secondary}</span>
             <strong>{secondaryCount}</strong>
           </article>
-          <article className={warningCount > 0 ? 'ops-data-monitor__summary-card ops-data-monitor__summary-card--warning' : 'ops-data-monitor__summary-card'}>
+          <article className={warningCount > 0 && mode !== 'delivery' ? 'ops-data-monitor__summary-card ops-data-monitor__summary-card--warning' : 'ops-data-monitor__summary-card'}>
             <span>{config.summaryLabels.warning}</span>
             <strong>{warningCount}</strong>
           </article>
@@ -353,6 +407,28 @@ export function ShipmentDataMonitorPage({
             ))}
           </select>
         </label>
+        {mode === 'delivery' ? (
+          <>
+            <label>
+              <span>{config.senderFilterLabel}</span>
+              <input
+                type="search"
+                value={senderFilter}
+                onChange={(event) => setSenderFilter(event.target.value)}
+                placeholder="Tên, SĐT hoặc hub gửi..."
+              />
+            </label>
+            <label>
+              <span>{config.receiverFilterLabel}</span>
+              <input
+                type="search"
+                value={receiverFilter}
+                onChange={(event) => setReceiverFilter(event.target.value)}
+                placeholder="Tên, SĐT hoặc khu vực nhận..."
+              />
+            </label>
+          </>
+        ) : null}
         <label>
           <span>{config.keywordLabel}</span>
           <input
@@ -372,6 +448,8 @@ export function ShipmentDataMonitorPage({
               setDateFrom('');
               setDateTo('');
               setHubFilter('');
+              setSenderFilter('');
+              setReceiverFilter('');
               setStatusFilter('');
               setKeyword('');
             }}

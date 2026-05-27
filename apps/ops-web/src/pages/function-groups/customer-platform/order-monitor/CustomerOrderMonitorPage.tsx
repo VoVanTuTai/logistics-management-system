@@ -10,6 +10,7 @@ import { useAuthStore } from '../../../../store/authStore';
 import {
   buildCustomerOrderOpsRows,
   formatCustomerOrderDateTime,
+  isBranchCreatedCustomerOrder,
   isCustomerOrderInHubScope,
   normalizeCustomerOrderCode,
 } from '../customerOrderRows';
@@ -40,9 +41,11 @@ export function CustomerOrderMonitorPage(): React.JSX.Element {
         shipments: shipmentsQuery.data ?? [],
         pickups: pickupsQuery.data ?? [],
         tasks: pickupTasksQuery.data ?? [],
-      }).filter((row) =>
-        isCustomerOrderInHubScope(row, assignedHubCodes, canViewAllHubAreas),
-      ),
+      })
+        .filter(isBranchCreatedCustomerOrder)
+        .filter((row) =>
+          isCustomerOrderInHubScope(row, assignedHubCodes, canViewAllHubAreas),
+        ),
     [
       assignedHubCodes,
       canViewAllHubAreas,
@@ -99,8 +102,8 @@ export function CustomerOrderMonitorPage(): React.JSX.Element {
           <small>CUSTOMER_ORDER_MONITOR</small>
           <h2>Giám sát đơn đã tạo</h2>
           <p>
-            Theo dõi luồng đơn khách hàng từ shipment mới tạo, pickup request đến
-            task lấy hàng và điều phối courier theo phạm vi hub.
+            Theo dõi các vận đơn được tạo tại bưu cục qua chức năng Thêm mới vận đơn,
+            gồm nguồn walk-in/ops và nhóm mã vận đơn khách lẻ.
           </p>
         </div>
         <div className="ops-customer-orders__scope">
@@ -111,15 +114,15 @@ export function CustomerOrderMonitorPage(): React.JSX.Element {
 
       <section className="ops-customer-orders__kpis" aria-label="KPI đơn đặt">
         <article>
-          <span>Đơn mới</span>
+          <span>Mới tạo tại bưu cục</span>
           <strong>{kpis.newOrders}</strong>
         </article>
         <article>
-          <span>Chờ duyệt</span>
+          <span>Chờ lấy/tiếp nhận</span>
           <strong>{kpis.waitingApproval}</strong>
         </article>
         <article>
-          <span>Đã điều phối</span>
+          <span>Đã điều phối lấy</span>
           <strong>{kpis.dispatched}</strong>
         </article>
         <article data-tone="danger">
@@ -156,8 +159,8 @@ export function CustomerOrderMonitorPage(): React.JSX.Element {
           <input value=">= 4 giờ từ thời điểm tạo/pickup request" readOnly disabled />
         </label>
         <label>
-          <span>Nguồn dữ liệu</span>
-          <input value="shipment + pickup + pickup task" readOnly disabled />
+          <span>Nguồn đơn</span>
+          <input value="Tạo tại bưu cục / OPS walk-in / mã 333" readOnly disabled />
         </label>
       </section>
 
@@ -169,7 +172,7 @@ export function CustomerOrderMonitorPage(): React.JSX.Element {
 
       <section className="ops-customer-orders__panel">
         <header className="ops-customer-orders__panel-head">
-          <h3>Bảng đơn theo hub/courier/trạng thái</h3>
+          <h3>Bảng đơn tạo tại bưu cục</h3>
           <span>{isLoading ? 'Đang tải...' : `${filteredRows.length} dòng`}</span>
         </header>
 
@@ -235,7 +238,7 @@ export function CustomerOrderMonitorPage(): React.JSX.Element {
 
         {!isLoading && filteredRows.length === 0 ? (
           <div className="ops-customer-orders__empty">
-            Không có dữ liệu đơn đã tạo trong phạm vi hub hiện tại.
+            Không có đơn tạo tại bưu cục trong phạm vi hub hiện tại.
           </div>
         ) : null}
         <footer className="ops-customer-orders__pagination">

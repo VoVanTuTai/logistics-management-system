@@ -732,7 +732,6 @@ function DashboardLayout(): React.JSX.Element {
     : operationsSidebarItems;
 
   const monitorDataChildItems = [
-    { label: 'Giám sát hàng nhận', to: routePaths.monitorDataHangNhan },
     { label: 'Giám sát hàng đến', to: routePaths.monitorDataHangDen },
     { label: 'Giám sát hàng gửi', to: routePaths.monitorDataHangGui },
     { label: 'Giám sát hàng phát', to: routePaths.monitorDataHangPhat },

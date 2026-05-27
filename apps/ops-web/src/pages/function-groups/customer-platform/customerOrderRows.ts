@@ -76,6 +76,20 @@ export function isCustomerOrderInHubScope(
   return assignedHubCodes.length > 0 && assignedHubCodes.includes(row.hubCode);
 }
 
+export function isBranchCreatedCustomerOrder(row: CustomerOrderOpsRow): boolean {
+  const source = normalizeCustomerOrderCode(row.source);
+  const shipmentCode = normalizeCustomerOrderCode(row.shipmentCode);
+  const orderCode = normalizeCustomerOrderCode(row.orderCode);
+
+  return (
+    source.includes('OPS_WALK_IN') ||
+    source.includes('WALK_IN') ||
+    source.includes('BRANCH') ||
+    shipmentCode.startsWith('333') ||
+    orderCode.startsWith('333')
+  );
+}
+
 export function formatCustomerOrderDateTime(value: string | null | undefined): string {
   if (!value) {
     return 'Không có';
