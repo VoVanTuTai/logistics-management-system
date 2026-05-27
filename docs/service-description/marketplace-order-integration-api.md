@@ -2,7 +2,7 @@
 
 Tai lieu nay mo ta hop dong API de san thuong mai dien tu gui don hang sang Nexus Express tao van don va, neu can, tao yeu cau lay hang.
 
-Trang thai: Adapter `/merchant/integrations/*` da duoc implement trong `gateway-bff`; can deploy gateway va cau hinh credential/mapping production truoc khi mo outbound cho doi tac.
+Trang thai: Adapter `/merchant/integrations/*` da duoc implement trong `gateway-bff`; can deploy gateway va cau hinh credential/marketplace merchant production truoc khi mo outbound cho doi tac.
 
 ## 1. Base URL
 
@@ -84,23 +84,23 @@ POST /merchant/integrations/orders
 ```json
 {
   "external": {
-    "platform": "SHOPEE",
-    "shopId": "SHOP123",
-    "externalOrderId": "240526ABC",
-    "externalOrderCode": "SPXVN240526ABC",
+    "platform": "DT_COMMERCE",
+    "shopId": "9f8a2776-a0d3-4013-ac02-6784166eadd6",
+    "externalOrderId": "order-id",
+    "externalOrderCode": "EMX9000004",
     "orderCreatedAt": "2026-05-26T10:20:00+07:00",
     "orderStatus": "READY_TO_SHIP"
   },
   "merchant": {
-    "merchantId": "41100001",
-    "shopName": "Cua hang An Phu"
+    "merchantId": "41100000",
+    "shopName": "DT Commerce Marketplace"
   },
   "sender": {
-    "name": "Cua hang An Phu",
-    "phone": "0904110001",
-    "address": "86 Nguyen Hue, Quan 1",
-    "ward": "Phuong Ben Nghe",
-    "district": "Quan 1",
+    "name": "Seller contact name",
+    "phone": "seller pickup phone",
+    "address": "seller pickup address",
+    "ward": "seller pickup ward",
+    "district": "seller pickup district",
     "province": "Ho Chi Minh",
     "hubCode": "HCM-001"
   },
@@ -150,11 +150,11 @@ POST /merchant/integrations/orders
 | Field | Required | Note |
 | --- | --- | --- |
 | `external.platform` | Yes | Ma san, vi du `SHOPEE`, `TIKTOK`, `LAZADA`. |
-| `external.shopId` | Yes | Ma shop/merchant ben san. |
+| `external.shopId` | Yes | Ma seller/shop ben san, dung de doi soat va idempotency; voi DT_COMMERCE khong dung de map sang merchant Nexus rieng. |
 | `external.externalOrderId` | Yes | Ma don duy nhat ben san. |
-| `merchant.merchantId` | Yes | Ma merchant trong Nexus. |
-| `sender.phone` | Yes | So dien thoai shop/nguoi gui. |
-| `sender.address` | Yes | Dia chi lay hang. |
+| `merchant.merchantId` | Yes | Ma merchant trong Nexus. Voi DT_COMMERCE la merchant marketplace co dinh `41100000`. |
+| `sender.phone` | Yes | So dien thoai lay hang dong theo ho so seller/don hang. |
+| `sender.address` | Yes | Dia chi lay hang dong theo ho so seller/don hang. |
 | `receiver.name` | Yes | Ten nguoi nhan. |
 | `receiver.phone` | Yes | So dien thoai nguoi nhan. |
 | `receiver.address` | Yes | Dia chi giao hang. |
@@ -291,7 +291,7 @@ Tat ca loi tra ve cung format:
 | 400 | `VALIDATION_ERROR` | Payload thieu/sai dinh dang. |
 | 401 | `UNAUTHORIZED` | API key khong hop le hoac thieu auth header. |
 | 403 | `SIGNATURE_INVALID` | HMAC signature sai. |
-| 404 | `MERCHANT_NOT_FOUND` | Merchant/shop chua duoc mapping trong Nexus. |
+| 404 | `MERCHANT_NOT_FOUND` | Merchant marketplace chua duoc cau hinh hoac merchantId khong dung. |
 | 409 | `DUPLICATE_ORDER` | Don da ton tai nhung khac payload/idempotency. |
 | 409 | `CANNOT_CANCEL` | Trang thai hien tai khong cho phep huy. |
 | 422 | `UNSUPPORTED_SERVICE_TYPE` | Loai dich vu khong duoc ho tro. |
@@ -334,10 +334,11 @@ curl -X POST "https://ops.nexus-ex.site/merchant/integrations/orders" \
 Khi nhan don tu san, Nexus can map sang service noi bo:
 
 1. Tao shipment qua `shipment-service`.
-2. Luu thong tin don san trong `metadata.external`.
-3. Luu sender/receiver/parcel/payment/service trong `metadata`.
-4. Neu `options.autoCreatePickup=true`, tao pickup request qua `pickup-service`.
-5. Tra ve `shipmentCode` va `trackingUrl` cho san.
+2. Luu thong tin don san trong `metadata.external`, trong do `external.shopId` giu nguyen sellerId/shopId de doi soat.
+3. Luu `merchant` la marketplace merchant co dinh neu partner la DT_COMMERCE.
+4. Luu sender/receiver/parcel/payment/service trong `metadata`; `sender` co the thay doi theo tung don.
+5. Neu `options.autoCreatePickup=true`, tao pickup request qua `pickup-service`.
+6. Tra ve `shipmentCode` va `trackingUrl` cho san.
 
 Endpoint noi bo hien co:
 
@@ -351,7 +352,8 @@ Endpoint `/merchant/integrations/orders` la lop adapter de doi tac khong phai bi
 ## 12. Go-Live Checklist
 
 - Cap API key/secret cho doi tac.
-- Mapping `shopId` cua san voi `merchantId` trong Nexus.
+- Cau hinh merchant marketplace co dinh cho DT_COMMERCE; khong map `external.shopId` thanh merchant rieng.
+- Xac nhan hub routing theo `sender.province`/`sender.ward`, hoac thong nhat bang mapping provinceCode -> hubCode neu bat buoc gui `sender.hubCode`.
 - Thong nhat service type va bang gia.
 - Test tao don thuong, don COD, don huy, don lap idempotency.
 - Test rate limit va retry.

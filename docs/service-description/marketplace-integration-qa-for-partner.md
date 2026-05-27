@@ -124,19 +124,25 @@ Khong nen dung ten shop hien thi lam `shopId` vi co the trung hoac thay doi.
 
 ### 2. merchant.merchantId lay tu dau?
 
-`merchant.merchantId` do Nexus cap/mapping cho tung shop da onboard.
-
-Mac dinh moi seller/shop ben doi tac se duoc map voi mot merchant trong Nexus:
+Voi doi tac theo mo hinh per-seller merchant, `merchant.merchantId` do Nexus cap/mapping cho tung shop da onboard:
 
 ```text
 external.shopId -> merchant.merchantId
 ```
 
-Neu doi tac muon gom nhieu seller vao mot merchant chung, can thong nhat truoc theo nghiep vu doi soat va COD.
+Voi DT_COMMERCE, mo hinh production la marketplace merchant co dinh:
+
+```text
+merchant.merchantId = 41100000
+merchant.shopName = DT Commerce Marketplace
+external.shopId = sellerId/shopId cua dt-commerce, chi dung de doi soat/idempotency
+```
+
+`sender.*` duoc gui dong theo dia chi lay hang cua seller trong tung don.
 
 ### 3. Co API tra cuu/mapping shopId -> merchantId khong?
 
-Phien ban dau: Nexus khuyen nghi mapping offline truoc khi go-live.
+Phien ban dau: Nexus khuyen nghi mapping offline truoc khi go-live neu doi tac dung mo hinh per-seller merchant.
 
 File mapping mau:
 
@@ -175,7 +181,9 @@ Quy trinh de xuat:
 3. Nexus tra lai `merchantId`, `senderHubCode`, cau hinh dich vu, cau hinh COD.
 4. Doi tac bat dau tao don cho shop do.
 
-Neu tao don cho shop chua mapping, Nexus tra loi:
+Voi DT_COMMERCE, seller moi khong can Nexus merchant rieng neu van dung `merchantId=41100000`; dt-commerce chi can gui `external.shopId` dung sellerId va `sender.*` dung ho so pickup seller.
+
+Neu doi tac theo mo hinh per-seller merchant tao don cho shop chua mapping, Nexus tra loi:
 
 ```http
 404 MERCHANT_NOT_FOUND
@@ -230,15 +238,15 @@ Nexus se mapping sang zone/hub noi bo.
 
 ### 4. hubCode co bat buoc khong?
 
-Khong bat buoc neu Nexus da co mapping shop -> hub.
+Khong bat buoc neu Nexus route duoc theo dia chi sender hoac da co mapping shop -> hub.
 
 Thu tu uu tien:
 
 1. `sender.hubCode` trong request.
-2. Mapping `external.shopId -> senderHubCode`.
-3. Auto route theo dia chi sender.
+2. Auto route theo `sender.province` / `sender.ward`.
+3. Mapping `external.shopId -> senderHubCode` neu doi tac dung mo hinh mapping shop.
 
-Production khuyen nghi Nexus cap `senderHubCode` theo shop/kho de giam sai route.
+Production DT_COMMERCE: neu Nexus bat buoc `hubCode`, hai ben can chot mapping provinceCode -> hubCode; neu khong, dt-commerce co the bo qua `sender.hubCode`.
 
 ## 4. Thong Tin Kien Hang
 

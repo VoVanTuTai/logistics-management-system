@@ -7,7 +7,7 @@
 
 Chào team dt-commerce,
 
-Nexus đã bổ sung adapter `/merchant/integrations/*` theo contract đã thống nhất. Sau khi deploy bản gateway mới lên production và cấu hình credential/mapping, dt-commerce có thể bật outbound giao hàng production với `autoCreatePickup=true`.
+Nexus đã bổ sung adapter `/merchant/integrations/*` theo contract đã thống nhất. Sau khi deploy bản gateway mới lên production và cấu hình credential/marketplace merchant, dt-commerce có thể bật outbound giao hàng production với `autoCreatePickup=true`.
 
 ## 1. Endpoint Adapter
 
@@ -82,73 +82,30 @@ PROD_NEXUS_WEBHOOK_SECRET=<gui_qua_kenh_bao_mat>
 
 Không gửi `PROD_NEXUS_API_SECRET` và `PROD_NEXUS_WEBHOOK_SECRET` qua email/ticket/chat công khai.
 
-## 4. Mapping Shop Production
+## 4. Marketplace Merchant Production
 
-Adapter hỗ trợ validate mapping bằng biến môi trường:
-
-```text
-NEXUS_INTEGRATION_REQUIRE_SHOP_MAPPING=true
-NEXUS_INTEGRATION_SHOP_MAPPINGS_JSON=<json_array_mapping>
-```
-
-Danh sách mapping active cần cấu hình trên production:
-
-```json
-[
-  {
-    "shopId": "550e8400-e29b-41d4-a716-446655440000",
-    "shopName": "Cua hang An Phu",
-    "merchantId": "41100001",
-    "sender": {
-      "name": "Cua hang An Phu",
-      "phone": "0904110001",
-      "address": "86 Nguyen Hue",
-      "ward": "Phuong Ben Nghe",
-      "district": "Quan 1",
-      "province": "Ho Chi Minh",
-      "hubCode": "HCM-001"
-    },
-    "active": true
-  },
-  {
-    "shopId": "7b9d4f1a-3b62-4d91-ae55-7c5d7a120001",
-    "shopName": "Cua hang Minh Chau",
-    "merchantId": "41100002",
-    "sender": {
-      "name": "Cua hang Minh Chau",
-      "phone": "0904110002",
-      "address": "44 Ho Tung Mau",
-      "ward": "Phuong Dich Vong",
-      "district": "Cau Giay",
-      "province": "Ha Noi",
-      "hubCode": "HN-001"
-    },
-    "active": true
-  },
-  {
-    "shopId": "2a251a42-8fd7-4d7a-8fd8-5b0322d30001",
-    "shopName": "Cua hang Da Nang",
-    "merchantId": "41100003",
-    "sender": {
-      "name": "Cua hang Da Nang",
-      "phone": "0904110003",
-      "address": "19 Ong Ich Khiem",
-      "ward": "Phuong Hai Chau 1",
-      "district": "Hai Chau",
-      "province": "Da Nang",
-      "hubCode": "DN-001"
-    },
-    "active": true
-  }
-]
-```
-
-Chốt mapping:
+Mô hình production mới của dt-commerce:
 
 ```text
-Số shop được mapping để go-live: 3
-Chỉ shop active trong danh sách trên được tạo vận đơn Nexus.
-Seller chưa có mapping active sẽ bị từ chối với MERCHANT_NOT_FOUND.
+merchant.merchantId: 41100000
+merchant.shopName: DT Commerce Marketplace
+external.shopId: sellerId/shopId của dt-commerce, chỉ dùng để đối soát và idempotency
+sender.*: địa chỉ lấy hàng động theo hồ sơ seller/don hang
+```
+
+Gateway production có thể cấu hình tường minh:
+
+```text
+NEXUS_INTEGRATION_MARKETPLACE_MERCHANT_ID=41100000
+```
+
+Chốt mô hình:
+
+```text
+Một merchantId cố định được phép tạo vận đơn với nhiều sender pickup address khác nhau theo từng đơn.
+external.shopId không cần mapping thành Nexus merchant riêng.
+Nếu routing tự suy theo sender.province/sender.ward thì sender.hubCode không bắt buộc.
+Nếu production bắt buộc sender.hubCode, hai bên cần chốt provinceCode -> hubCode mapping.
 ```
 
 ## 5. Tạo Giao Hàng Thật
@@ -273,8 +230,7 @@ NEXUS_INTEGRATION_PARTNER_CODE=DT_COMMERCE
 NEXUS_INTEGRATION_API_KEY=<PROD_NEXUS_API_KEY>
 NEXUS_INTEGRATION_API_SECRET=<PROD_NEXUS_API_SECRET>
 NEXUS_INTEGRATION_WEBHOOK_SECRET=<PROD_NEXUS_WEBHOOK_SECRET>
-NEXUS_INTEGRATION_REQUIRE_SHOP_MAPPING=true
-NEXUS_INTEGRATION_SHOP_MAPPINGS_JSON=<json_array_mapping>
+NEXUS_INTEGRATION_MARKETPLACE_MERCHANT_ID=41100000
 NEXUS_INTEGRATION_TIMESTAMP_SKEW_MS=300000
 NEXUS_INTEGRATION_NONCE_TTL_MS=86400000
 OPS_PUBLIC_URL=https://ops.nexus-ex.site
@@ -306,8 +262,9 @@ Endpoint health: đã implement, chờ deploy production
 Endpoint create order: đã implement, chờ deploy production
 Endpoint query/cancel/tracking/label: đã implement, chờ deploy production
 
-Số shop được mapping để go-live: 3
-File/danh sách mapping đính kèm: có
+Marketplace merchantId production: 41100000
+external.shopId dùng cho đối soát seller: xác nhận
+sender pickup address động theo đơn: xác nhận
 
 autoCreatePickup cho giao hàng thật: true
 dt-commerce có cần gọi thêm API pickup không: không

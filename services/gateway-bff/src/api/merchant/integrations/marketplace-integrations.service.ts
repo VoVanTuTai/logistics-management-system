@@ -113,7 +113,7 @@ export class MarketplaceIntegrationsService {
     idempotencyKeyHeader?: string,
   ): Promise<CreateOrderResult> {
     const normalized = this.normalizeCreateOrderInput(input);
-    this.assertShopMapping(normalized);
+    this.assertMerchantMapping(normalized);
 
     const idempotencyKey =
       idempotencyKeyHeader?.trim() ||
@@ -380,9 +380,21 @@ export class MarketplaceIntegrationsService {
     };
   }
 
-  private assertShopMapping(
-    input: NormalizedCreateOrderInput,
-  ): void {
+  private assertMerchantMapping(input: NormalizedCreateOrderInput): void {
+    const fixedMarketplaceMerchantId = this.resolveFixedMarketplaceMerchantId(input);
+
+    if (fixedMarketplaceMerchantId) {
+      if (input.merchant.merchantId !== fixedMarketplaceMerchantId) {
+        this.fail(
+          HttpStatus.NOT_FOUND,
+          'MERCHANT_NOT_FOUND',
+          'merchant.merchantId does not match fixed marketplace merchant.',
+        );
+      }
+
+      return;
+    }
+
     const mappings = this.loadShopMappings();
 
     if (mappings.length === 0) {
@@ -412,6 +424,25 @@ export class MarketplaceIntegrationsService {
         'merchant.merchantId does not match active Nexus shop mapping.',
       );
     }
+  }
+
+  private resolveFixedMarketplaceMerchantId(input: NormalizedCreateOrderInput): string | null {
+    const configuredMerchantId = [
+      process.env.NEXUS_INTEGRATION_MARKETPLACE_MERCHANT_ID,
+      process.env.NEXUS_DT_COMMERCE_MERCHANT_ID,
+    ]
+      .map((value) => value?.trim())
+      .find((value): value is string => Boolean(value));
+
+    if (configuredMerchantId) {
+      return configuredMerchantId;
+    }
+
+    return this.isDtCommercePlatform(input.external.platform) ? '41100000' : null;
+  }
+
+  private isDtCommercePlatform(platform: string): boolean {
+    return platform.trim().toUpperCase() === 'DT_COMMERCE';
   }
 
   private loadShopMappings(): ShopMapping[] {

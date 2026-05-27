@@ -36,31 +36,25 @@ Trạng thái:
 
 ---
 
-## 2. Mapping Shop Production Dùng Để Test
+## 2. Marketplace Merchant Production Dùng Để Test
 
-Nexus sẽ cấp 1 shop production dùng riêng cho kiểm thử có kiểm soát.
+Nexus sẽ dùng một merchant marketplace production cố định cho DT_COMMERCE. Seller/shop cụ thể vẫn nằm trong `external.shopId` để đối soát, còn địa chỉ lấy hàng lấy động từ hồ sơ seller trong dt-commerce.
 
 ```text
-sellerId/shopId: CHO_CAP
-shopName: CHO_CAP
-merchantId: CHO_CAP
-sender.name: CHO_CAP
-sender.phone: CHO_CAP
-sender.address: CHO_CAP
-sender.ward: CHO_CAP
-sender.district: CHO_CAP
-sender.province: CHO_CAP
-sender.hubCode: CHO_CAP
+merchantId: 41100000
+shopName: DT Commerce Marketplace
+external.shopId: sellerId/shopId của dt-commerce
+sender.*: địa chỉ lấy hàng động theo từng seller/don hang
+sender.hubCode: không bắt buộc nếu Nexus route theo sender.province/sender.ward
 ```
 
 Trạng thái:
 
 ```text
-sellerId/shopId: CHO_CAP
-shopName: CHO_CAP
-merchantId: CHO_CAP
-senderHubCode: CHO_CAP
-Đã có đầy đủ địa chỉ sender: chưa
+Marketplace merchantId: 41100000
+external.shopId dùng cho đối soát seller: xác nhận
+sender pickup address động theo đơn: xác nhận
+senderHubCode: chờ chốt nếu production bắt buộc hubCode
 ```
 
 ---
@@ -146,11 +140,10 @@ Endpoint production: chưa bật
 No-pickup: đã xác nhận theo nghiệp vụ, chờ xác nhận lại sau khi endpoint production bật
 Webhook: chưa đăng ký
 
-sellerId/shopId: CHO_CAP
-shopName: CHO_CAP
-merchantId: CHO_CAP
-senderHubCode: CHO_CAP
-Đã có đầy đủ địa chỉ sender: chưa
+Marketplace merchantId: 41100000
+external.shopId dùng cho đối soát seller: xác nhận
+sender pickup address động theo đơn: xác nhận
+senderHubCode: chờ chốt nếu production bắt buộc hubCode
 ```
 
 ---
@@ -158,7 +151,8 @@ senderHubCode: CHO_CAP
 ## Việc Nexus Cần Hoàn Tất Trước Khi dt-commerce Gửi Đơn Test
 
 - Cấp credential production qua kênh bảo mật riêng.
-- Tạo/mapping 1 shop production dùng cho kiểm thử.
+- Cấu hình merchant marketplace production cố định `41100000`.
+- Xác nhận routing theo `sender.province`/`sender.ward`, hoặc cấp mapping provinceCode -> hubCode nếu bắt buộc `sender.hubCode`.
 - Whitelist IP `103.179.172.220` hoặc xác nhận production không yêu cầu whitelist.
 - Enable endpoint `GET /merchant/integrations/health`.
 - Enable endpoint `POST /merchant/integrations/orders`.
