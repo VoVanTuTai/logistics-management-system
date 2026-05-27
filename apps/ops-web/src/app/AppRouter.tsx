@@ -694,14 +694,9 @@ function DashboardLayout(): React.JSX.Element {
   ];
   const branchBusinessSidebarItems: SidebarItem[] = [
     {
-      label: 'Quản lý đơn tại bưu cục',
+      label: 'Thao tác bưu cục',
       icon: 'branch_local_orders',
       kind: 'branch_local_orders',
-    },
-    {
-      label: 'Quản lý vận đơn',
-      icon: 'branch_order_management',
-      kind: 'branch_order_management',
     },
   ];
   const customerPlatformSidebarItems: SidebarItem[] = [
@@ -775,15 +770,14 @@ function DashboardLayout(): React.JSX.Element {
     { label: 'Bàn điều phối thao tác', to: routePaths.opsMetricsActionExecutionBoard },
   ] as const;
   const branchBusinessOrderManagementChildItems = [
-    { label: 'Thêm mới vận đơn', to: routePaths.branchBusinessOrderCreate },
     { label: 'Quản lý vận đơn gửi', to: routePaths.branchBusinessOrderOutbound },
     { label: 'Quản lý vận đơn phát', to: routePaths.branchBusinessOrderDelivery },
   ] as const;
   const branchBusinessLocalOrdersChildItems = [
     { label: 'Tổng quan đơn tại bưu cục', to: routePaths.branchBusinessLocalOverview },
-    { label: 'Quản lý đơn tại bưu cục', to: routePaths.branchBusinessLocalOrders },
-    { label: 'Phát hàng', to: routePaths.branchBusinessCourierHandoff },
-    { label: 'Đơn tồn bưu cục', to: routePaths.branchBusinessBranchInventory },
+    { label: 'Tạo vận đơn tại quầy', to: routePaths.branchBusinessOrderCreate },
+    { label: 'Xử lý đơn tại bưu cục', to: routePaths.branchBusinessLocalOrders },
+    { label: 'Bàn giao phát', to: routePaths.branchBusinessCourierHandoff },
     { label: 'Chốt ca', to: routePaths.branchBusinessShiftClosing },
   ] as const;
   const branchBusinessFinanceSettlementChildItems = [
@@ -829,7 +823,7 @@ function DashboardLayout(): React.JSX.Element {
     metrics_action: 'Thao tác',
     customer_order_management: 'Quản lý đơn đặt',
     customer_order_dispatch: 'Điều phối lấy hàng',
-    branch_local_orders: 'Quản lý đơn tại bưu cục',
+    branch_local_orders: 'Thao tác bưu cục',
     branch_order_management: 'Quản lý vận đơn',
     branch_finance_settlement: 'Quyết toán tài chính',
   };
@@ -945,7 +939,7 @@ function DashboardLayout(): React.JSX.Element {
     : isFinanceSettlementSection
     ? []
     : isBranchBusinessSection
-    ? ['branch_local_orders', 'branch_order_management']
+    ? ['branch_local_orders']
     : isCapabilityPlatformSection
     ? []
     : ['monitor_data', 'thermal_label'];
@@ -1528,13 +1522,13 @@ export function AppRouter(): React.JSX.Element {
             <Route
               path={routePaths.branchBusinessLocalOrdersLeaf}
               element={opsModuleRoute(
-                'Quản lý đơn tại bưu cục',
+                'Xử lý đơn tại bưu cục',
                 <BranchLocalOrderOverviewPage mode="management" />,
               )}
             />
             <Route
               path={routePaths.branchBusinessCourierHandoffLeaf}
-              element={opsModuleRoute('Phát hàng tại bưu cục', <BranchDeliveryDispatchPage />)}
+              element={opsModuleRoute('Bàn giao phát', <BranchDeliveryDispatchPage />)}
             />
             <Route
               path={routePaths.branchBusinessBranchInventoryLeaf}
@@ -1546,7 +1540,7 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.branchBusinessOrderCreateLeaf}
-              element={opsModuleRoute('Thêm mới vận đơn', <BranchBusinessOrderCreatePage />)}
+              element={opsModuleRoute('Tạo vận đơn tại quầy', <BranchBusinessOrderCreatePage />)}
             />
             <Route
               path={routePaths.branchBusinessOrderOutboundLeaf}

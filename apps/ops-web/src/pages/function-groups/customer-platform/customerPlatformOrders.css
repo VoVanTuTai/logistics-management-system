@@ -102,6 +102,10 @@
   gap: 6px;
 }
 
+.ops-customer-orders__filter-search {
+  grid-column: span 2;
+}
+
 .ops-customer-orders__filters span {
   color: #475569;
   font-size: 12px;

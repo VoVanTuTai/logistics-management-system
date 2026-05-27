@@ -253,7 +253,7 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
   const [pageSize, setPageSize] = useState(25);
   const [courierId, setCourierId] = useState('');
   const [courierSearch, setCourierSearch] = useState('');
-  const [handoffNote, setHandoffNote] = useState('Bàn giao phát từ màn hình Phát hàng bưu cục.');
+  const [handoffNote, setHandoffNote] = useState('Bàn giao phát từ màn hình bưu cục.');
   const [isAssignPanelOpen, setIsAssignPanelOpen] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -548,7 +548,7 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
       <header className="ops-branch-delivery__header">
         <div>
           <small>BRANCH_DELIVERY_DISPATCH</small>
-          <h2>Phát hàng</h2>
+          <h2>Bàn giao phát</h2>
           <p>Dữ liệu lấy từ shipment-service và dispatch-service, dùng để bàn giao đơn thật sang app courier.</p>
         </div>
         <div className="ops-branch-delivery__summary">

@@ -13,6 +13,7 @@ import {
   isBranchCreatedCustomerOrder,
   isCustomerOrderInHubScope,
   normalizeCustomerOrderCode,
+  normalizeCustomerOrderText,
 } from '../customerOrderRows';
 import '../customerPlatformOrders.css';
 
@@ -24,6 +25,7 @@ export function CustomerOrderMonitorPage(): React.JSX.Element {
     [session?.user.hubCodes],
   );
   const canViewAllHubAreas = session?.user.roles.includes('SYSTEM_ADMIN') ?? false;
+  const [keyword, setKeyword] = useState('');
   const [hubFilter, setHubFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [page, setPage] = useState(1);
@@ -55,15 +57,25 @@ export function CustomerOrderMonitorPage(): React.JSX.Element {
     ],
   );
 
-  const filteredRows = useMemo(
-    () =>
-      rows.filter(
-        (row) =>
-          (hubFilter === 'ALL' || row.hubCode === hubFilter) &&
-          (statusFilter === 'ALL' || row.status === statusFilter),
-      ),
-    [hubFilter, rows, statusFilter],
-  );
+  const filteredRows = useMemo(() => {
+    const normalizedKeyword = normalizeCustomerOrderText(keyword);
+
+    return rows.filter((row) => {
+      const keywordMatched =
+        !normalizedKeyword ||
+        normalizeCustomerOrderText(row.shipmentCode).includes(normalizedKeyword) ||
+        normalizeCustomerOrderText(row.orderCode).includes(normalizedKeyword) ||
+        normalizeCustomerOrderText(row.pickupCode).includes(normalizedKeyword) ||
+        normalizeCustomerOrderText(row.customerName).includes(normalizedKeyword) ||
+        normalizeCustomerOrderText(row.customerPhone).includes(normalizedKeyword);
+
+      return (
+        keywordMatched &&
+        (hubFilter === 'ALL' || row.hubCode === hubFilter) &&
+        (statusFilter === 'ALL' || row.status === statusFilter)
+      );
+    });
+  }, [hubFilter, keyword, rows, statusFilter]);
 
   const hubOptions = useMemo(
     () => Array.from(new Set(rows.map((row) => row.hubCode))).sort(),
@@ -132,9 +144,27 @@ export function CustomerOrderMonitorPage(): React.JSX.Element {
       </section>
 
       <section className="ops-customer-orders__filters" aria-label="Bộ lọc giám sát đơn đặt">
+        <label className="ops-customer-orders__filter-search">
+          <span>Tìm mã vận đơn</span>
+          <input
+            type="search"
+            value={keyword}
+            onChange={(event) => {
+              setKeyword(event.target.value);
+              setPage(1);
+            }}
+            placeholder="Nhập mã vận đơn, mã đơn hoặc SĐT"
+          />
+        </label>
         <label>
           <span>Hub</span>
-          <select value={hubFilter} onChange={(event) => setHubFilter(event.target.value)}>
+          <select
+            value={hubFilter}
+            onChange={(event) => {
+              setHubFilter(event.target.value);
+              setPage(1);
+            }}
+          >
             <option value="ALL">Toàn bộ</option>
             {hubOptions.map((hubCode) => (
               <option key={hubCode} value={hubCode}>
@@ -145,7 +175,13 @@ export function CustomerOrderMonitorPage(): React.JSX.Element {
         </label>
         <label>
           <span>Trạng thái</span>
-          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+          <select
+            value={statusFilter}
+            onChange={(event) => {
+              setStatusFilter(event.target.value);
+              setPage(1);
+            }}
+          >
             <option value="ALL">Toàn bộ</option>
             {statusOptions.map((status) => (
               <option key={status} value={status}>

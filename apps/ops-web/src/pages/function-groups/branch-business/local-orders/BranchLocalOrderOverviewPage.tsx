@@ -383,15 +383,15 @@ export function BranchLocalOrderOverviewPage({
       scanType,
       note:
         scanType === 'OUTBOUND'
-          ? 'Quét gửi đi từ màn hình quản lý đơn tại bưu cục'
-          : 'Quét nhận tại màn hình quản lý đơn tại bưu cục',
+          ? 'Quét gửi đi từ màn hình xử lý đơn tại bưu cục'
+          : 'Quét nhận tại màn hình xử lý đơn tại bưu cục',
     });
     setActionError(null);
     setActionMessage(null);
   };
 
   const pageTitle =
-    mode === 'management' ? 'Quản lý đơn tại bưu cục' : 'Tổng quan đơn tại bưu cục';
+    mode === 'management' ? 'Xử lý đơn tại bưu cục' : 'Tổng quan đơn tại bưu cục';
   const pageCode =
     mode === 'management' ? 'BRANCH_LOCAL_ORDER_MANAGEMENT' : 'BRANCH_LOCAL_ORDER_OVERVIEW';
 
