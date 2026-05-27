@@ -54,6 +54,19 @@ async function seedUsers() {
       hubCodes: [branchHubCodeForProvince(province)],
     };
   });
+  const branchCourierUsers = provinces.map((province, index) => {
+    const sequence = index + 4;
+    const username = `30000${String(sequence).padStart(3, '0')}`;
+
+    return {
+      id: username,
+      username,
+      roles: ['COURIER'],
+      displayName: `Courier ${branchHubNameForProvince(province)}`,
+      phone: `0903${String(sequence).padStart(6, '0')}`,
+      hubCodes: [branchHubCodeForProvince(province)],
+    };
+  });
   const merchantUsers = provinces.map((province, index) => {
     return {
       id: merchantUsernameForProvinceIndex(index),
@@ -146,7 +159,12 @@ async function seedUsers() {
       hubCodes: [REGIONAL_HUBS.SOUTH.code],
     },
   ];
-  const users = [...regionalHubUsers, ...branchOpsUsers, ...merchantUsers];
+  const users = [
+    ...regionalHubUsers,
+    ...branchOpsUsers,
+    ...branchCourierUsers,
+    ...merchantUsers,
+  ];
 
   for (const user of users) {
     await prisma.userAccount.upsert({
