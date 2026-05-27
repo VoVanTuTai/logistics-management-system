@@ -710,6 +710,8 @@ function DashboardLayout(): React.JSX.Element {
   const capabilityPlatformSidebarItems: SidebarItem[] = [
     { label: 'Quản lý chuyến xe', icon: 'linehaul_transport', to: routePaths.linehaulTripManagement },
     { label: 'Tạo tem xe', icon: 'thermal_label', to: routePaths.linehaulVehicleSeal },
+    { label: 'Quản lý tem bao', icon: 'thermal_label', to: routePaths.linehaulBagLabelManagement },
+    { label: 'In tem bao', icon: 'thermal_label', to: routePaths.linehaulBagLabelPrint },
     { label: 'Giám sát dữ liệu chuyến xe', icon: 'monitor_data', to: routePaths.linehaulTripDataMonitor },
   ];
   const sidebarItems = isServiceQualitySection
@@ -737,6 +739,8 @@ function DashboardLayout(): React.JSX.Element {
   const linehaulChildItems = [
     { label: 'Quản lý chuyến xe', to: routePaths.linehaulTripManagement },
     { label: 'Tạo tem xe', to: routePaths.linehaulVehicleSeal },
+    { label: 'Quản lý tem bao', to: routePaths.linehaulBagLabelManagement },
+    { label: 'In tem bao', to: routePaths.linehaulBagLabelPrint },
     { label: 'Giám sát dữ liệu chuyến xe', to: routePaths.linehaulTripDataMonitor },
   ] as const;
   const returnBlockChildItems = [
@@ -1473,6 +1477,14 @@ export function AppRouter(): React.JSX.Element {
             <Route
               path={routePaths.linehaulVehicleSealLeaf}
               element={opsModuleRoute('Tạo tem xe', <LinehaulVehicleSealPage />)}
+            />
+            <Route
+              path={routePaths.linehaulBagLabelManagementLeaf}
+              element={opsModuleRoute('Quản lý tem bao tuyến', <ThermalLabelManagementPage />)}
+            />
+            <Route
+              path={routePaths.linehaulBagLabelPrintLeaf}
+              element={opsModuleRoute('In tem bao tuyến', <ThermalLabelPrintPage />)}
             />
             <Route
               path={routePaths.linehaulTripDataMonitorLeaf}

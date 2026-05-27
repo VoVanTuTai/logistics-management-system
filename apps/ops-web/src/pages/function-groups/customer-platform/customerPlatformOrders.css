@@ -266,11 +266,33 @@
 }
 
 .ops-customer-orders__links a,
-.ops-customer-orders__links span {
+.ops-customer-orders__links span,
+.ops-customer-orders__links button {
   color: #1d4ed8;
   font-size: 12px;
   font-weight: 700;
   text-decoration: none;
+}
+
+.ops-customer-orders__links button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.ops-customer-orders__links button:hover {
+  color: #1e40af;
+}
+
+.ops-customer-orders__links button:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.18);
+  outline-offset: 3px;
+  border-radius: 6px;
 }
 
 .ops-customer-orders__links span {

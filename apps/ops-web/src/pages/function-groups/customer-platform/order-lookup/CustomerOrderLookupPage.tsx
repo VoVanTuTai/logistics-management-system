@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Check, Copy } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { usePickupRequestsQuery } from '../../../../features/pickups/pickups.api';
@@ -32,6 +33,7 @@ export function CustomerOrderLookupPage(): React.JSX.Element {
   const [hubFilter, setHubFilter] = useState('ALL');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const [copiedShipmentCode, setCopiedShipmentCode] = useState<string | null>(null);
 
   const shipmentsQuery = useShipmentsQuery(accessToken, {}, { refetchInterval: 10000 });
   const pickupsQuery = usePickupRequestsQuery(accessToken, {}, { refetchInterval: 10000 });
@@ -102,6 +104,15 @@ export function CustomerOrderLookupPage(): React.JSX.Element {
     setPage(1);
   }, [hubFilter, keyword, pageSize, statusFilter]);
 
+  useEffect(() => {
+    if (!copiedShipmentCode) {
+      return undefined;
+    }
+
+    const timer = window.setTimeout(() => setCopiedShipmentCode(null), 1600);
+    return () => window.clearTimeout(timer);
+  }, [copiedShipmentCode]);
+
   const submitLookup = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setKeyword(draftKeyword.trim());
@@ -118,6 +129,11 @@ export function CustomerOrderLookupPage(): React.JSX.Element {
     setStatusFilter('ALL');
     setHubFilter('ALL');
     setPage(1);
+  };
+
+  const copyShipmentCode = async (shipmentCode: string) => {
+    await navigator.clipboard.writeText(shipmentCode);
+    setCopiedShipmentCode(shipmentCode);
   };
 
   return (
@@ -239,9 +255,20 @@ export function CustomerOrderLookupPage(): React.JSX.Element {
                   <td>
                     <div className="ops-customer-orders__links">
                       {row.shipmentId ? (
-                        <Link to={routePaths.shipmentDetail(row.shipmentId)}>
+                        <button
+                          type="button"
+                          className="ops-customer-orders__copy-code"
+                          onClick={() => void copyShipmentCode(row.shipmentCode)}
+                          aria-label={`Sao chép mã vận đơn ${row.shipmentCode}`}
+                          title="Sao chép mã vận đơn"
+                        >
+                          {copiedShipmentCode === row.shipmentCode ? (
+                            <Check size={14} aria-hidden="true" />
+                          ) : (
+                            <Copy size={14} aria-hidden="true" />
+                          )}
                           {row.shipmentCode}
-                        </Link>
+                        </button>
                       ) : (
                         <span>Chưa có shipment</span>
                       )}

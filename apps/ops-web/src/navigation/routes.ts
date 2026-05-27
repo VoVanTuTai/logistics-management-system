@@ -113,6 +113,10 @@ export const routePaths = {
   linehaulRoot: '/app/function-groups/capability-platform/van-chuyen-tuyen-nhanh',
   linehaulTripManagement: '/app/function-groups/capability-platform/van-chuyen-tuyen-nhanh/quan-ly-chuyen-xe',
   linehaulVehicleSeal: '/app/function-groups/capability-platform/van-chuyen-tuyen-nhanh/tem-xe',
+  linehaulBagLabelManagement:
+    '/app/function-groups/capability-platform/van-chuyen-tuyen-nhanh/tem-bao/quan-ly',
+  linehaulBagLabelPrint:
+    '/app/function-groups/capability-platform/van-chuyen-tuyen-nhanh/tem-bao/in',
   linehaulTripDataMonitor:
     '/app/function-groups/capability-platform/van-chuyen-tuyen-nhanh/giam-sat-du-lieu-chuyen-xe',
   shipments: '/app/shipments',
@@ -228,6 +232,10 @@ export const routePaths = {
     'function-groups/operations-platform/data-monitoring/giam-sat-dong-bao',
   linehaulTripManagementLeaf: 'function-groups/capability-platform/van-chuyen-tuyen-nhanh/quan-ly-chuyen-xe',
   linehaulVehicleSealLeaf: 'function-groups/capability-platform/van-chuyen-tuyen-nhanh/tem-xe',
+  linehaulBagLabelManagementLeaf:
+    'function-groups/capability-platform/van-chuyen-tuyen-nhanh/tem-bao/quan-ly',
+  linehaulBagLabelPrintLeaf:
+    'function-groups/capability-platform/van-chuyen-tuyen-nhanh/tem-bao/in',
   linehaulTripDataMonitorLeaf:
     'function-groups/capability-platform/van-chuyen-tuyen-nhanh/giam-sat-du-lieu-chuyen-xe',
   shipmentsLeaf: 'shipments',
@@ -336,5 +344,7 @@ export const OPS_FULL_MODULE_ROUTE_PATHS = [
   routePaths.linehaulRoot,
   routePaths.linehaulTripManagement,
   routePaths.linehaulVehicleSeal,
+  routePaths.linehaulBagLabelManagement,
+  routePaths.linehaulBagLabelPrint,
   routePaths.linehaulTripDataMonitor,
 ] as const;
