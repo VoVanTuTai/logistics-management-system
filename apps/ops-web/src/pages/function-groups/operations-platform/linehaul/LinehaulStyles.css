@@ -126,6 +126,85 @@
   padding: 12px;
 }
 
+.ops-linehaul-dashboard__operation-form {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 12px;
+}
+
+.ops-linehaul-dashboard__operation-form header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ops-linehaul-dashboard__operation-form h3 {
+  margin: 0 0 4px;
+  color: #1e293b;
+  font-size: 16px;
+}
+
+.ops-linehaul-dashboard__operation-form header span,
+.ops-linehaul-dashboard__operation-hint {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ops-linehaul-dashboard__operation-form button {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #1d4ed8;
+  border-radius: 8px;
+  background: #1d4ed8;
+  color: #ffffff;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.ops-linehaul-dashboard__operation-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.4fr) repeat(3, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.ops-linehaul-dashboard__operation-grid label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ops-linehaul-dashboard__operation-grid label span {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ops-linehaul-dashboard__operation-grid input,
+.ops-linehaul-dashboard__operation-grid select {
+  width: 100%;
+  height: 36px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  padding: 0 10px;
+  font-size: 13px;
+}
+
+.ops-linehaul-dashboard__operation-hint {
+  margin: 0;
+  line-height: 1.45;
+}
+
 .ops-linehaul-dashboard__create-form {
   display: grid;
   gap: 12px;
@@ -483,6 +562,21 @@
   color: #64748b;
   font-size: 11px;
   font-weight: 800;
+}
+
+.ops-linehaul-dashboard__driver-cell {
+  display: grid;
+  gap: 3px;
+}
+
+.ops-linehaul-dashboard__driver-cell strong {
+  color: #1e293b;
+  font-size: 12px;
+}
+
+.ops-linehaul-dashboard__driver-cell span {
+  color: #64748b;
+  font-size: 12px;
 }
 
 .ops-linehaul-dashboard__arrival-form {

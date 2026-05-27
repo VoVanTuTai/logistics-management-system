@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Printer, RefreshCw } from 'lucide-react';
+import { Pencil, Plus, Printer, RefreshCw, Save } from 'lucide-react';
 
 import { routePaths } from '../../../../navigation/routes';
 import { formatDateTime } from '../../../../utils/format';
@@ -20,6 +20,13 @@ interface LinehaulTripFilters {
   tripType: string;
   status: string;
   keyword: string;
+}
+
+interface LinehaulTripOperationForm {
+  tripId: string;
+  driverName: string;
+  driverPhone: string;
+  vehiclePlate: string;
 }
 
 function normalizeText(value: string | null | undefined): string {
@@ -47,6 +54,12 @@ function statusTone(status: LinehaulTripStatus, overdue: boolean): string {
 
 export function LinehaulTripManagementPage(): React.JSX.Element {
   const [trips, setTrips] = useState<LinehaulTrip[]>(readLinehaulTrips);
+  const [operationForm, setOperationForm] = useState<LinehaulTripOperationForm>({
+    tripId: '',
+    driverName: '',
+    driverPhone: '',
+    vehiclePlate: '',
+  });
   const [filters, setFilters] = useState<LinehaulTripFilters>({
     hubCode: 'ALL',
     tripType: 'ALL',
@@ -110,6 +123,10 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
     }),
     [trips],
   );
+  const selectedTrip = useMemo(
+    () => trips.find((trip) => trip.id === operationForm.tripId) ?? null,
+    [operationForm.tripId, trips],
+  );
 
   const updateFilter = <Key extends keyof LinehaulTripFilters>(
     key: Key,
@@ -131,6 +148,68 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
 
   const canPrintTrip = (trip: LinehaulTrip): boolean =>
     Boolean(trip.driverName?.trim() && trip.vehiclePlate?.trim());
+
+  const selectTripForOperation = (trip: LinehaulTrip) => {
+    setOperationForm({
+      tripId: trip.id,
+      driverName: trip.driverName ?? '',
+      driverPhone: trip.driverPhone ?? '',
+      vehiclePlate: trip.vehiclePlate ?? '',
+    });
+    setActionMessage(null);
+  };
+
+  const updateOperationForm = <Key extends keyof LinehaulTripOperationForm>(
+    key: Key,
+    value: LinehaulTripOperationForm[Key],
+  ) => {
+    if (key === 'tripId') {
+      const trip = trips.find((item) => item.id === value);
+      if (trip) {
+        selectTripForOperation(trip);
+        return;
+      }
+    }
+
+    setOperationForm((current) => ({
+      ...current,
+      [key]: value,
+    }));
+  };
+
+  const saveTripOperationInfo = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const driverName = operationForm.driverName.trim();
+    const driverPhone = operationForm.driverPhone.trim();
+    const vehiclePlate = operationForm.vehiclePlate.trim().toUpperCase();
+
+    if (!selectedTrip) {
+      setActionMessage('Vui lòng chọn chuyến xe cần bổ sung thông tin.');
+      return;
+    }
+
+    if (!driverName || !driverPhone || !vehiclePlate) {
+      setActionMessage('Vui lòng nhập đủ tên tài xế, số điện thoại và biển số xe.');
+      return;
+    }
+
+    const updatedTrip: LinehaulTrip = {
+      ...selectedTrip,
+      driverName,
+      driverPhone,
+      vehiclePlate,
+    };
+
+    saveTrips(trips.map((trip) => (trip.id === selectedTrip.id ? updatedTrip : trip)));
+    setOperationForm({
+      tripId: updatedTrip.id,
+      driverName: updatedTrip.driverName ?? '',
+      driverPhone: updatedTrip.driverPhone ?? '',
+      vehiclePlate: updatedTrip.vehiclePlate ?? '',
+    });
+    setActionMessage(`Đã cập nhật tài xế/xe cho chuyến ${updatedTrip.tripCode}. Có thể in tem.`);
+  };
 
   const printTrip = (trip: LinehaulTrip) => {
     if (!canPrintTrip(trip)) {
@@ -268,6 +347,65 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
         </label>
       </section>
 
+      <form className="ops-linehaul-dashboard__operation-form" onSubmit={saveTripOperationInfo}>
+        <header>
+          <div>
+            <h3>Bổ sung tài xế và xe</h3>
+            <span>Chọn chuyến đã tạo, nhập thông tin vận hành rồi mới in tem xe.</span>
+          </div>
+          <button type="submit">
+            <Save size={16} />
+            Lưu thông tin
+          </button>
+        </header>
+        <div className="ops-linehaul-dashboard__operation-grid">
+          <label>
+            <span>Chuyến xe</span>
+            <select
+              value={operationForm.tripId}
+              onChange={(event) => updateOperationForm('tripId', event.target.value)}
+            >
+              <option value="">Chọn chuyến cần bổ sung</option>
+              {trips.map((trip) => (
+                <option key={trip.id} value={trip.id}>
+                  {trip.tripCode} | {trip.originHubCode} - {trip.destinationHubCode}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>Tài xế</span>
+            <input
+              value={operationForm.driverName}
+              onChange={(event) => updateOperationForm('driverName', event.target.value)}
+              placeholder="Ví dụ: Nguyễn Văn A"
+            />
+          </label>
+          <label>
+            <span>Số điện thoại</span>
+            <input
+              value={operationForm.driverPhone}
+              onChange={(event) => updateOperationForm('driverPhone', event.target.value)}
+              placeholder="Ví dụ: 0901234567"
+            />
+          </label>
+          <label>
+            <span>Biển số xe</span>
+            <input
+              value={operationForm.vehiclePlate}
+              onChange={(event) => updateOperationForm('vehiclePlate', event.target.value)}
+              placeholder="Ví dụ: 51C-12345"
+            />
+          </label>
+        </div>
+        {selectedTrip ? (
+          <p className="ops-linehaul-dashboard__operation-hint">
+            Đang chọn {selectedTrip.tripCode}. Sau khi lưu đủ tài xế, số điện thoại và biển số,
+            nút In tem sẽ dùng các thông tin này trên tem xe.
+          </p>
+        ) : null}
+      </form>
+
       <section className="ops-linehaul-dashboard__panel">
         <header className="ops-linehaul-dashboard__panel-head">
           <div>
@@ -291,6 +429,7 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
                   <th>Hub đi</th>
                   <th>Hub đến</th>
                   <th>Loại</th>
+                  <th>Tài xế / xe</th>
                   <th>Bắt đầu</th>
                   <th>Kết thúc</th>
                   <th>Thao tác</th>
@@ -318,10 +457,23 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
                       <td>{trip.originHubCode}</td>
                       <td>{trip.destinationHubCode}</td>
                       <td>{LINEHAUL_TRIP_TYPE_LABELS[trip.tripType]}</td>
+                      <td>
+                        <div className="ops-linehaul-dashboard__driver-cell">
+                          <strong>{trip.driverName?.trim() || 'Chưa có tài xế'}</strong>
+                          <span>
+                            {trip.vehiclePlate?.trim() || 'Chưa có biển số'}
+                            {trip.driverPhone?.trim() ? ` | ${trip.driverPhone}` : ''}
+                          </span>
+                        </div>
+                      </td>
                       <td>{formatDateTime(trip.plannedStartAt)}</td>
                       <td>{formatDateTime(trip.plannedEndAt)}</td>
                       <td>
                         <div className="ops-linehaul-dashboard__row-actions">
+                          <button type="button" onClick={() => selectTripForOperation(trip)}>
+                            <Pencil size={15} />
+                            Bổ sung
+                          </button>
                           <button type="button" onClick={() => printTrip(trip)}>
                             <Printer size={15} />
                             {trip.printedAt ? 'In lại' : 'In tem'}
