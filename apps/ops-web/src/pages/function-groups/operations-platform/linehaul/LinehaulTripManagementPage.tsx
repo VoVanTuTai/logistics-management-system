@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Pencil, Plus, Printer, RefreshCw, Save } from 'lucide-react';
+import { Pencil, Plus, Printer, RefreshCw, Save, X } from 'lucide-react';
 
 import { routePaths } from '../../../../navigation/routes';
 import { formatDateTime } from '../../../../utils/format';
@@ -69,6 +69,7 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [operationModalOpen, setOperationModalOpen] = useState(false);
 
   const hubOptions = useMemo(() => {
     const hubs = new Set<string>();
@@ -157,6 +158,7 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
       vehiclePlate: trip.vehiclePlate ?? '',
     });
     setActionMessage(null);
+    setOperationModalOpen(true);
   };
 
   const updateOperationForm = <Key extends keyof LinehaulTripOperationForm>(
@@ -208,11 +210,13 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
       driverPhone: updatedTrip.driverPhone ?? '',
       vehiclePlate: updatedTrip.vehiclePlate ?? '',
     });
+    setOperationModalOpen(false);
     setActionMessage(`Đã cập nhật tài xế/xe cho chuyến ${updatedTrip.tripCode}. Có thể in tem.`);
   };
 
   const printTrip = (trip: LinehaulTrip) => {
     if (!canPrintTrip(trip)) {
+      selectTripForOperation(trip);
       setActionMessage(
         `Chuyến ${trip.tripCode} chưa có tài xế và biển số xe nên chưa thể in tem.`,
       );
@@ -347,65 +351,6 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
         </label>
       </section>
 
-      <form className="ops-linehaul-dashboard__operation-form" onSubmit={saveTripOperationInfo}>
-        <header>
-          <div>
-            <h3>Bổ sung tài xế và xe</h3>
-            <span>Chọn chuyến đã tạo, nhập thông tin vận hành rồi mới in tem xe.</span>
-          </div>
-          <button type="submit">
-            <Save size={16} />
-            Lưu thông tin
-          </button>
-        </header>
-        <div className="ops-linehaul-dashboard__operation-grid">
-          <label>
-            <span>Chuyến xe</span>
-            <select
-              value={operationForm.tripId}
-              onChange={(event) => updateOperationForm('tripId', event.target.value)}
-            >
-              <option value="">Chọn chuyến cần bổ sung</option>
-              {trips.map((trip) => (
-                <option key={trip.id} value={trip.id}>
-                  {trip.tripCode} | {trip.originHubCode} - {trip.destinationHubCode}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span>Tài xế</span>
-            <input
-              value={operationForm.driverName}
-              onChange={(event) => updateOperationForm('driverName', event.target.value)}
-              placeholder="Ví dụ: Nguyễn Văn A"
-            />
-          </label>
-          <label>
-            <span>Số điện thoại</span>
-            <input
-              value={operationForm.driverPhone}
-              onChange={(event) => updateOperationForm('driverPhone', event.target.value)}
-              placeholder="Ví dụ: 0901234567"
-            />
-          </label>
-          <label>
-            <span>Biển số xe</span>
-            <input
-              value={operationForm.vehiclePlate}
-              onChange={(event) => updateOperationForm('vehiclePlate', event.target.value)}
-              placeholder="Ví dụ: 51C-12345"
-            />
-          </label>
-        </div>
-        {selectedTrip ? (
-          <p className="ops-linehaul-dashboard__operation-hint">
-            Đang chọn {selectedTrip.tripCode}. Sau khi lưu đủ tài xế, số điện thoại và biển số,
-            nút In tem sẽ dùng các thông tin này trên tem xe.
-          </p>
-        ) : null}
-      </form>
-
       <section className="ops-linehaul-dashboard__panel">
         <header className="ops-linehaul-dashboard__panel-head">
           <div>
@@ -525,6 +470,94 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
           </div>
         </footer>
       </section>
+
+      {operationModalOpen ? (
+        <div className="lh-modal-overlay" role="presentation">
+          <form
+            className="lh-modal ops-linehaul-dashboard__operation-modal"
+            onSubmit={saveTripOperationInfo}
+          >
+            <div className="lh-modal__title ops-linehaul-dashboard__operation-modal-title">
+              <span>Bổ sung tài xế và xe</span>
+              <button
+                type="button"
+                aria-label="Đóng"
+                onClick={() => setOperationModalOpen(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="lh-modal__body">
+              <p>Chọn chuyến đã tạo, nhập thông tin vận hành rồi mới in tem xe.</p>
+              <div className="lh-modal__field">
+                <label htmlFor="linehaul-operation-trip">Chuyến xe</label>
+                <select
+                  id="linehaul-operation-trip"
+                  className="ops-linehaul-dashboard__operation-input"
+                  value={operationForm.tripId}
+                  onChange={(event) => updateOperationForm('tripId', event.target.value)}
+                >
+                  <option value="">Chọn chuyến cần bổ sung</option>
+                  {trips.map((trip) => (
+                    <option key={trip.id} value={trip.id}>
+                      {trip.tripCode} | {trip.originHubCode} - {trip.destinationHubCode}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="lh-modal__field">
+                <label htmlFor="linehaul-operation-driver">Tài xế</label>
+                <input
+                  id="linehaul-operation-driver"
+                  className="ops-linehaul-dashboard__operation-input"
+                  value={operationForm.driverName}
+                  onChange={(event) => updateOperationForm('driverName', event.target.value)}
+                  placeholder="Ví dụ: Nguyễn Văn A"
+                />
+              </div>
+              <div className="lh-modal__field">
+                <label htmlFor="linehaul-operation-phone">Số điện thoại</label>
+                <input
+                  id="linehaul-operation-phone"
+                  className="ops-linehaul-dashboard__operation-input"
+                  value={operationForm.driverPhone}
+                  onChange={(event) => updateOperationForm('driverPhone', event.target.value)}
+                  placeholder="Ví dụ: 0901234567"
+                />
+              </div>
+              <div className="lh-modal__field">
+                <label htmlFor="linehaul-operation-plate">Biển số xe</label>
+                <input
+                  id="linehaul-operation-plate"
+                  className="ops-linehaul-dashboard__operation-input"
+                  value={operationForm.vehiclePlate}
+                  onChange={(event) => updateOperationForm('vehiclePlate', event.target.value)}
+                  placeholder="Ví dụ: 51C-12345"
+                />
+              </div>
+              {selectedTrip ? (
+                <p className="ops-linehaul-dashboard__operation-hint">
+                  Đang chọn {selectedTrip.tripCode}. Sau khi lưu đủ thông tin,
+                  nút In tem sẽ dùng các thông tin này trên tem xe.
+                </p>
+              ) : null}
+            </div>
+            <div className="lh-modal__actions">
+              <button
+                type="button"
+                className="ops-linehaul-dashboard__modal-secondary"
+                onClick={() => setOperationModalOpen(false)}
+              >
+                Đóng
+              </button>
+              <button type="submit" className="ops-linehaul-dashboard__modal-primary">
+                <Save size={16} />
+                Lưu thông tin
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
     </section>
   );
 }
