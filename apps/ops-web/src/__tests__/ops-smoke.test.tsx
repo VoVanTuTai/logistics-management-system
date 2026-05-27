@@ -477,7 +477,7 @@ describe('ops-web smoke coverage', () => {
     renderWithProviders(<TaskAssignmentPage />, '/app/tasks');
 
     expect(
-      await screen.findByRole('heading', { name: /Chuyển đơn/i }),
+      await screen.findByRole('heading', { name: /Tác vụ điều phối/i }),
     ).toBeInTheDocument();
     expect(screen.getByText('NXS000001')).toBeInTheDocument();
     await waitFor(() => {
@@ -536,7 +536,7 @@ describe('ops-web smoke coverage', () => {
       </AppProviders>,
     );
 
-    expect(await screen.findByRole('heading', { name: /Tạo tem xe/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /Tem xe \/ chuyến/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Thông tin chuyến xe/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/Hub đi/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Hub đến/i)).toBeInTheDocument();

@@ -10,6 +10,7 @@ import { getErrorMessage } from '../../../services/api/errors';
 import { useAuthStore } from '../../../store/authStore';
 import { formatDateTime } from '../../../utils/format';
 import { formatShipmentStatusLabel } from '../../../utils/logisticsLabels';
+import { CopyableShipmentCode } from '../../shared/CopyableShipmentCode';
 import '../operations-platform/data-monitoring/OperationalDataMonitorPage.css';
 import './FinanceSettlementGroupPage.css';
 
@@ -554,12 +555,10 @@ export function FinanceSettlementGroupPage(): React.JSX.Element {
               {pagedExceptionRows.map((row) => (
                 <tr key={row.shipment.shipmentCode}>
                   <td>
-                    <Link
+                    <CopyableShipmentCode
+                      code={row.shipment.shipmentCode}
                       className="ops-finance-settlement__code"
-                      to={routePaths.shipmentDetail(row.shipment.id)}
-                    >
-                      {row.shipment.shipmentCode}
-                    </Link>
+                    />
                   </td>
                   <td>{row.customerKey}</td>
                   <td>{row.hubCode}</td>

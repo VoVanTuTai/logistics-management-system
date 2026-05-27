@@ -188,7 +188,7 @@ export function LinehaulTripDataMonitorPage(): React.JSX.Element {
         </div>
         <div className="ops-linehaul-dashboard__actions">
           <Link className="ops-linehaul-dashboard__primary-link" to={routePaths.linehaulVehicleSeal}>
-            Tạo tem xe
+            Tem xe / chuyến
           </Link>
           <button type="button" onClick={refreshData}>
             <RefreshCw size={16} />
@@ -284,7 +284,7 @@ export function LinehaulTripDataMonitorPage(): React.JSX.Element {
         ) : null}
         {!manifestsQuery.isLoading && filteredRows.length === 0 ? (
           <p className="ops-linehaul-dashboard__empty">
-            Chưa có chuyến xe phù hợp bộ lọc. Vào Tạo tem xe để tạo chuyến test mới.
+            Chưa có chuyến xe phù hợp bộ lọc. Vào Tem xe / chuyến để tạo chuyến test mới.
           </p>
         ) : null}
 

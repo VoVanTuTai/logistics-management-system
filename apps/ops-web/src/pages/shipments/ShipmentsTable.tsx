@@ -1,10 +1,8 @@
 ﻿import React from 'react';
-import { Link } from 'react-router-dom';
-
 import type { ShipmentListItemDto } from '../../features/shipments/shipments.types';
-import { routePaths } from '../../navigation/routes';
 import { formatDateTime } from '../../utils/format';
 import { formatShipmentStatusLabel } from '../../utils/logisticsLabels';
+import { CopyableShipmentCode } from '../shared/CopyableShipmentCode';
 
 interface ShipmentsTableProps {
   items: ShipmentListItemDto[];
@@ -85,9 +83,7 @@ export function ShipmentsTable({
                   />
                 </td>
                 <td style={styles.cell}>
-                  <Link style={styles.shipmentCodeLink} to={routePaths.shipmentDetail(item.shipmentCode)}>
-                    {item.shipmentCode}
-                  </Link>
+                  <CopyableShipmentCode code={item.shipmentCode} />
                   <div style={styles.subText}>{item.receiverRegion ?? 'Chưa có khu vực'}</div>
                 </td>
                 <td style={styles.cell}>

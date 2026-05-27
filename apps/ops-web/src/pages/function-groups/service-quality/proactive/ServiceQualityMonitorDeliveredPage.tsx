@@ -12,6 +12,7 @@ import { getErrorMessage } from '../../../../services/api/errors';
 import { useAuthStore } from '../../../../store/authStore';
 import { formatDateTime } from '../../../../utils/format';
 import { formatNdrStatusLabel, formatShipmentStatusLabel } from '../../../../utils/logisticsLabels';
+import { CopyableShipmentCode } from '../../../shared/CopyableShipmentCode';
 import './ServiceQualityMonitor.css';
 
 interface DeliveryQualityRow {
@@ -342,12 +343,10 @@ export function ServiceQualityMonitorDeliveredPage(): React.JSX.Element {
               {paginatedRows.map((row) => (
                 <tr key={row.shipment.id}>
                   <td>
-                    <Link
+                    <CopyableShipmentCode
+                      code={row.shipment.shipmentCode}
                       className="ops-service-quality-monitor__code"
-                      to={routePaths.shipmentDetail(row.shipment.id)}
-                    >
-                      {row.shipment.shipmentCode}
-                    </Link>
+                    />
                   </td>
                   <td>
                     <div className="ops-service-quality-monitor__link-stack">

@@ -1,0 +1,35 @@
+.ops-copy-shipment-code {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  color: #1d4ed8;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  line-height: 1.25;
+  padding: 0;
+  text-align: left;
+}
+
+.ops-copy-shipment-code:hover,
+.ops-copy-shipment-code:focus-visible {
+  color: #1e40af;
+  text-decoration: underline;
+}
+
+.ops-copy-shipment-code:focus-visible {
+  border-radius: 4px;
+  outline: 2px solid #93c5fd;
+  outline-offset: 2px;
+}
+
+.ops-copy-shipment-code svg {
+  flex: 0 0 auto;
+  opacity: 0.72;
+}
+
+.ops-copy-shipment-code[data-copied='true'] {
+  color: #047857;
+}

@@ -19,6 +19,7 @@ import {
   formatShipmentStatusLabel,
   formatTaskStatusLabel,
 } from '../../../../utils/logisticsLabels';
+import { CopyableShipmentCode } from '../../../shared/CopyableShipmentCode';
 import './ServiceQualityMonitor.css';
 
 type AlertType = 'SLA_RISK' | 'HUB_DWELL' | 'NDR_OVERDUE' | 'MANIFEST_PENDING' | 'TASK_STALE';
@@ -169,7 +170,7 @@ function buildSlaAlerts(
         issue: remaining <= 0 ? 'Đơn đã trễ SLA phát' : 'Đơn sắp trễ SLA phát',
         action: task ? 'Đẩy courier xử lý ngay' : 'Phân công task phát',
         updatedAt: shipment.updatedAt,
-        detailUrl: routePaths.shipmentDetail(shipment.id),
+        detailUrl: buildShipmentLookupUrl(shipment.shipmentCode),
         lookupCode: shipment.shipmentCode,
       };
     })
@@ -199,7 +200,7 @@ function buildHubDwellAlerts(shipments: ShipmentListItemDto[]): ServiceQualityAl
         issue: 'Hàng tồn hub quá lâu',
         action: 'Kiểm tra scan/đẩy outbound',
         updatedAt: shipment.updatedAt,
-        detailUrl: routePaths.shipmentDetail(shipment.id),
+        detailUrl: buildShipmentLookupUrl(shipment.shipmentCode),
         lookupCode: shipment.shipmentCode,
       };
     })
@@ -338,6 +339,10 @@ function buildLookupUrl(alert: ServiceQualityAlert): string | null {
   }
 
   return `${routePaths.serviceQualityIntegratedLookup}?shipmentCode=${encodeURIComponent(alert.lookupCode)}`;
+}
+
+function buildShipmentLookupUrl(shipmentCode: string): string {
+  return `${routePaths.serviceQualityIntegratedLookup}?shipmentCode=${encodeURIComponent(shipmentCode)}`;
 }
 
 function formatStatus(alert: ServiceQualityAlert): string {
@@ -652,7 +657,11 @@ export function ServiceQualityActionBoardPage(): React.JSX.Element {
                     <td>{alertTypeLabel(alert.type)}</td>
                     <td>
                       <div className="ops-service-quality-monitor__link-stack">
-                        <Link to={alert.detailUrl}>{alert.subjectCode}</Link>
+                        {alert.lookupCode ? (
+                          <CopyableShipmentCode code={alert.lookupCode} />
+                        ) : (
+                          <Link to={alert.detailUrl}>{alert.subjectCode}</Link>
+                        )}
                         <span>{alert.subjectLabel}</span>
                       </div>
                     </td>
@@ -673,7 +682,7 @@ export function ServiceQualityActionBoardPage(): React.JSX.Element {
                     </td>
                     <td>
                       <div className="ops-service-quality-monitor__actions">
-                        <Link to={alert.detailUrl}>Mở chi tiết</Link>
+                        {!alert.lookupCode ? <Link to={alert.detailUrl}>Mở chi tiết</Link> : null}
                         {lookupUrl ? <Link to={lookupUrl}>Tra cứu sự cố / chất lượng</Link> : null}
                         {!isAcknowledged ? (
                           <button type="button" onClick={() => acknowledgeAlert(alert.id)}>

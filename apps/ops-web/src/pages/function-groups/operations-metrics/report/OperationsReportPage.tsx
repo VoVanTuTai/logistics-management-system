@@ -10,6 +10,7 @@ import { routePaths } from '../../../../navigation/routes';
 import { getErrorMessage } from '../../../../services/api/errors';
 import { useAuthStore } from '../../../../store/authStore';
 import { formatShipmentStatusLabel } from '../../../../utils/logisticsLabels';
+import { CopyableShipmentCode } from '../../../shared/CopyableShipmentCode';
 import './OperationsReportPage.css';
 
 type ReportStatusFilter = 'all' | 'open' | 'delivered' | 'exception' | 'overdue';
@@ -409,13 +410,13 @@ export function OperationsReportPage(): React.JSX.Element {
           </header>
           <div className="ops-report__issue-list">
             {topExceptions.map((shipment) => (
-              <Link key={shipment.id} to={routePaths.shipmentDetail(shipment.shipmentCode)} className="ops-report__issue">
-                <strong>{shipment.shipmentCode}</strong>
+              <article key={shipment.id} className="ops-report__issue">
+                <CopyableShipmentCode code={shipment.shipmentCode} />
                 <span>{formatShipmentStatusLabel(shipment.currentStatus)}</span>
                 <small>
                   {resolveShipmentHub(shipment)} · {ageHours(shipment.updatedAt) ?? 0}h
                 </small>
-              </Link>
+              </article>
             ))}
             {topExceptions.length === 0 ? <p className="ops-report__empty">Không có đơn cần ưu tiên trong kỳ này.</p> : null}
           </div>

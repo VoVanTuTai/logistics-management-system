@@ -1,12 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 
 import { shipmentsClient } from '../../../../features/shipments/shipments.client';
 import type { ShipmentListItemDto } from '../../../../features/shipments/shipments.types';
-import { routePaths } from '../../../../navigation/routes';
 import { getErrorMessage } from '../../../../services/api/errors';
 import { useAuthStore } from '../../../../store/authStore';
 import { formatShipmentStatusLabel } from '../../../../utils/logisticsLabels';
+import { CopyableShipmentCode } from '../../../shared/CopyableShipmentCode';
 
 import './OperationalDataMonitorPage.css';
 
@@ -484,9 +483,7 @@ export function ShipmentDataMonitorPage({
                 <tr key={shipment.id}>
                   <td>{(currentPage - 1) * pageSize + index + 1}</td>
                   <td>
-                    <Link className="ops-data-monitor__code" to={routePaths.shipmentDetail(shipment.id)}>
-                      {shipment.shipmentCode}
-                    </Link>
+                    <CopyableShipmentCode code={shipment.shipmentCode} className="ops-data-monitor__code" />
                   </td>
                   <td>{formatDateTime(shipment.updatedAt)}</td>
                   <td>{resolvePrimaryHub(shipment, mode)}</td>

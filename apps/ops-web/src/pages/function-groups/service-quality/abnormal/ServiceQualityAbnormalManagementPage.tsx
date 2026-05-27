@@ -19,6 +19,7 @@ import {
   formatShipmentStatusLabel,
   formatTaskStatusLabel,
 } from '../../../../utils/logisticsLabels';
+import { CopyableShipmentCode } from '../../../shared/CopyableShipmentCode';
 import '../proactive/ServiceQualityMonitor.css';
 
 type AbnormalType =
@@ -165,7 +166,7 @@ function buildShipmentAbnormalCases(
         issue: isReturn ? 'Đơn đang trong luồng hoàn/bất thường' : 'Đơn phát sinh giao thất bại hoặc NDR',
         nextAction: ndr ? 'Mở NDR để chốt giao lại/hoàn hàng' : 'Kiểm tra timeline và xác định phương án xử lý',
         updatedAt: shipment.updatedAt,
-        detailUrl: ndr ? routePaths.ndrDetail(ndr.id) : routePaths.shipmentDetail(shipment.id),
+        detailUrl: ndr ? routePaths.ndrDetail(ndr.id) : buildShipmentLookupUrl(shipment.shipmentCode),
       });
     }
 
@@ -185,7 +186,7 @@ function buildShipmentAbnormalCases(
         issue: 'Hàng tồn hub lâu, chưa có luồng xử lý tiếp theo',
         nextAction: 'Đối chiếu scan/manifest và yêu cầu hub cập nhật thao tác',
         updatedAt: shipment.updatedAt,
-        detailUrl: routePaths.shipmentDetail(shipment.id),
+        detailUrl: buildShipmentLookupUrl(shipment.shipmentCode),
       });
     }
 
@@ -345,6 +346,10 @@ function buildLookupUrl(item: AbnormalCase): string | null {
   }
 
   return `${routePaths.serviceQualityIntegratedLookup}?shipmentCode=${encodeURIComponent(item.shipmentCode)}`;
+}
+
+function buildShipmentLookupUrl(shipmentCode: string): string {
+  return `${routePaths.serviceQualityIntegratedLookup}?shipmentCode=${encodeURIComponent(shipmentCode)}`;
 }
 
 export function ServiceQualityAbnormalManagementPage(): React.JSX.Element {
@@ -603,7 +608,11 @@ export function ServiceQualityAbnormalManagementPage(): React.JSX.Element {
                     <td>{typeLabel(item.type)}</td>
                     <td>
                       <div className="ops-service-quality-monitor__link-stack">
-                        <Link to={item.detailUrl}>{item.subjectCode}</Link>
+                        {item.shipmentCode ? (
+                          <CopyableShipmentCode code={item.shipmentCode} />
+                        ) : (
+                          <Link to={item.detailUrl}>{item.subjectCode}</Link>
+                        )}
                         <span>{item.subjectLabel}</span>
                       </div>
                     </td>
@@ -621,7 +630,7 @@ export function ServiceQualityAbnormalManagementPage(): React.JSX.Element {
                     </td>
                     <td>
                       <div className="ops-service-quality-monitor__actions">
-                        <Link to={item.detailUrl}>Mở chi tiết</Link>
+                        {!item.shipmentCode ? <Link to={item.detailUrl}>Mở chi tiết</Link> : null}
                         {lookupUrl ? <Link to={lookupUrl}>Tra cứu sự cố / chất lượng</Link> : null}
                         {workflow !== 'IN_PROGRESS' ? (
                           <button type="button" onClick={() => setWorkflow(item.id, 'IN_PROGRESS')}>

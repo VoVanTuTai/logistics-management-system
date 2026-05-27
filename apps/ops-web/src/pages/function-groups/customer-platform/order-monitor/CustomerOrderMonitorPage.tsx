@@ -7,6 +7,7 @@ import { useTasksQuery } from '../../../../features/tasks/tasks.api';
 import { routePaths } from '../../../../navigation/routes';
 import { getErrorMessage } from '../../../../services/api/errors';
 import { useAuthStore } from '../../../../store/authStore';
+import { CopyableShipmentCode } from '../../../shared/CopyableShipmentCode';
 import {
   buildCustomerOrderOpsRows,
   formatCustomerOrderDateTime,
@@ -112,7 +113,7 @@ export function CustomerOrderMonitorPage(): React.JSX.Element {
       <header className="ops-customer-orders__header">
         <div>
           <small>CUSTOMER_ORDER_MONITOR</small>
-          <h2>Giám sát đơn đã tạo</h2>
+          <h2>Giám sát luồng đơn đặt</h2>
           <p>
             Theo dõi các vận đơn được tạo tại bưu cục qua chức năng Thêm mới vận đơn,
             gồm nguồn walk-in/ops và nhóm mã vận đơn khách lẻ.
@@ -256,8 +257,8 @@ export function CustomerOrderMonitorPage(): React.JSX.Element {
                   </td>
                   <td>
                     <div className="ops-customer-orders__links">
-                      {row.shipmentId ? (
-                        <Link to={routePaths.shipmentDetail(row.shipmentId)}>Shipment</Link>
+                      {row.shipmentCode ? (
+                        <CopyableShipmentCode code={row.shipmentCode} />
                       ) : (
                         <span>Không có shipment</span>
                       )}

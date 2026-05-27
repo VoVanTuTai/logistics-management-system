@@ -1,6 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 
 import { useHubsQuery } from '../../../../features/masterdata/masterdata.api';
 import { authClient } from '../../../../features/auth/auth.client';
@@ -8,7 +7,6 @@ import { useShipmentsQuery } from '../../../../features/shipments/shipments.api'
 import type { ShipmentListItemDto } from '../../../../features/shipments/shipments.types';
 import { tasksClient, useTasksQuery } from '../../../../features/tasks/tasks.api';
 import type { TaskListItemDto } from '../../../../features/tasks/tasks.types';
-import { routePaths } from '../../../../navigation/routes';
 import { getErrorMessage } from '../../../../services/api/errors';
 import { useAuthStore } from '../../../../store/authStore';
 import { formatDateTime } from '../../../../utils/format';
@@ -19,6 +17,7 @@ import {
 } from '../../../../utils/locationScope';
 import { formatShipmentStatusLabel } from '../../../../utils/logisticsLabels';
 import { queryKeys } from '../../../../utils/queryKeys';
+import { CopyableShipmentCode } from '../../../shared/CopyableShipmentCode';
 import { BranchTablePagination } from '../shared/BranchTablePagination';
 import './BranchDeliveryDispatchPage.css';
 
@@ -687,12 +686,10 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
                       />
                     </td>
                     <td>
-                      <Link
+                      <CopyableShipmentCode
+                        code={order.shipment.shipmentCode}
                         className="ops-branch-delivery__code"
-                        to={routePaths.shipmentDetail(order.shipment.id)}
-                      >
-                        {order.shipment.shipmentCode}
-                      </Link>
+                      />
                     </td>
                     <td>
                       <strong>{order.receiverName}</strong>

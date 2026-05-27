@@ -640,7 +640,7 @@ function DashboardLayout(): React.JSX.Element {
           isActive: pathMatches(location.pathname, routePaths.shipments),
         },
         {
-          label: 'Chuyển đơn',
+          label: 'Tác vụ điều phối',
           to: routePaths.tasks,
           isActive: pathMatches(location.pathname, routePaths.tasks),
         },
@@ -659,14 +659,14 @@ function DashboardLayout(): React.JSX.Element {
   const operationsSidebarItems: SidebarItem[] = enableFullOpsModules
     ? [
         { label: 'Vận đơn', icon: 'customer_order_management', to: routePaths.shipments },
-        { label: 'Chuyển đơn', icon: 'metrics_action', to: routePaths.tasks },
+        { label: 'Tác vụ điều phối', icon: 'metrics_action', to: routePaths.tasks },
         { label: 'Quét tại hub', icon: 'tracking_lookup', to: routePaths.scans },
         { label: 'Tra cứu hành trình', icon: 'tracking_lookup', to: routePaths.tracking },
         { label: 'Giám sát dữ liệu', icon: 'monitor_data', kind: 'monitor_data' },
       ]
     : [
         { label: 'Vận đơn', icon: 'customer_order_management', to: routePaths.shipments },
-        { label: 'Chuyển đơn', icon: 'metrics_action', to: routePaths.tasks },
+        { label: 'Tác vụ điều phối', icon: 'metrics_action', to: routePaths.tasks },
         { label: 'Quét tại hub', icon: 'tracking_lookup', to: routePaths.scans },
         { label: 'Bao tải', icon: 'thermal_label', to: routePaths.manifests },
         { label: 'Tra cứu hành trình', icon: 'tracking_lookup', to: routePaths.tracking },
@@ -699,11 +699,11 @@ function DashboardLayout(): React.JSX.Element {
   const customerPlatformSidebarItems: SidebarItem[] = [
     { label: 'Điều phối lấy hàng', icon: 'customer_order_dispatch', to: routePaths.customerPlatformOrderDispatch },
     { label: 'Tra cứu đơn đặt', icon: 'service_lookup', to: routePaths.customerPlatformOrderLookup },
-    { label: 'Giám sát đơn đã tạo', icon: 'monitor_data', to: routePaths.customerPlatformOrderMonitor },
+    { label: 'Giám sát luồng đơn đặt', icon: 'monitor_data', to: routePaths.customerPlatformOrderMonitor },
   ];
   const capabilityPlatformSidebarItems: SidebarItem[] = [
     { label: 'Quản lý chuyến xe', icon: 'linehaul_transport', to: routePaths.linehaulTripManagement },
-    { label: 'Tạo tem xe', icon: 'thermal_label', to: routePaths.linehaulVehicleSeal },
+    { label: 'Tem xe / chuyến', icon: 'thermal_label', to: routePaths.linehaulVehicleSeal },
     { label: 'Quản lý tem bao', icon: 'thermal_label', to: routePaths.linehaulBagLabelManagement },
     { label: 'In tem bao', icon: 'thermal_label', to: routePaths.linehaulBagLabelPrint },
     { label: 'Giám sát dữ liệu chuyến xe', icon: 'monitor_data', to: routePaths.linehaulTripDataMonitor },
@@ -728,7 +728,7 @@ function DashboardLayout(): React.JSX.Element {
   ] as const;
   const linehaulChildItems = [
     { label: 'Quản lý chuyến xe', to: routePaths.linehaulTripManagement },
-    { label: 'Tạo tem xe', to: routePaths.linehaulVehicleSeal },
+    { label: 'Tem xe / chuyến', to: routePaths.linehaulVehicleSeal },
     { label: 'Quản lý tem bao', to: routePaths.linehaulBagLabelManagement },
     { label: 'In tem bao', to: routePaths.linehaulBagLabelPrint },
     { label: 'Giám sát dữ liệu chuyến xe', to: routePaths.linehaulTripDataMonitor },
@@ -779,12 +779,12 @@ function DashboardLayout(): React.JSX.Element {
   ] as const;
   const customerPlatformOrderManagementChildItems = [
     { label: 'Tra cứu đơn đặt', to: routePaths.customerPlatformOrderLookup },
-    { label: 'Giám sát đơn đã tạo', to: routePaths.customerPlatformOrderMonitor },
+    { label: 'Giám sát luồng đơn đặt', to: routePaths.customerPlatformOrderMonitor },
   ] as const;
   const customerPlatformOrderDispatchChildItems = [
     { label: 'Điều phối lấy hàng', to: routePaths.customerPlatformOrderDispatch },
     { label: 'Tra cứu đơn đặt', to: routePaths.customerPlatformOrderLookup },
-    { label: 'Giám sát đơn đã tạo', to: routePaths.customerPlatformOrderMonitor },
+    { label: 'Giám sát luồng đơn đặt', to: routePaths.customerPlatformOrderMonitor },
   ] as const;
 
   const panelItemsMap: Record<SidebarPanelKind, ReadonlyArray<{ label: string; to: string }>> = {
@@ -987,7 +987,7 @@ function DashboardLayout(): React.JSX.Element {
     : pathMatches(location.pathname, routePaths.shipments)
     ? 'Vận đơn'
     : pathMatches(location.pathname, routePaths.tasks)
-    ? 'Chuyển đơn'
+    ? 'Tác vụ điều phối'
     : pathMatches(location.pathname, routePaths.manifests)
     ? 'Bao tải'
     : pathMatches(location.pathname, routePaths.scans)
@@ -1455,7 +1455,7 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.linehaulVehicleSealLeaf}
-              element={opsModuleRoute('Tạo tem xe', <LinehaulVehicleSealPage />)}
+              element={opsModuleRoute('Tem xe / chuyến', <LinehaulVehicleSealPage />)}
             />
             <Route
               path={routePaths.linehaulBagLabelManagementLeaf}
@@ -1495,7 +1495,7 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.customerPlatformOrderMonitorLeaf}
-              element={opsModuleRoute('Giám sát đơn đã tạo', <CustomerOrderMonitorPage />)}
+              element={opsModuleRoute('Giám sát luồng đơn đặt', <CustomerOrderMonitorPage />)}
             />
             <Route
               path={routePaths.groupBranchBusinessLeaf}

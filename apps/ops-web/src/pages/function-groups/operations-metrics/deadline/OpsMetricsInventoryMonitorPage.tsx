@@ -22,6 +22,7 @@ import {
   isShipmentInBranchScope,
   normalizeBranchCode,
 } from '../../branch-business/shared/branchBusinessData';
+import { CopyableShipmentCode } from '../../../shared/CopyableShipmentCode';
 import './OpsMetricsInventoryMonitorPage.css';
 
 const FINAL_STATUSES = new Set([
@@ -925,9 +926,10 @@ export function OpsMetricsInventoryMonitorPage(): React.JSX.Element {
                 return (
                   <tr key={row.shipment.id}>
                     <td>
-                      <Link className="ops-metrics-inventory__code" to={routePaths.shipmentDetail(row.shipment.id)}>
-                        {row.shipment.shipmentCode}
-                      </Link>
+                      <CopyableShipmentCode
+                        code={row.shipment.shipmentCode}
+                        className="ops-metrics-inventory__code"
+                      />
                     </td>
                     <td>{row.hubCode}</td>
                     <td>

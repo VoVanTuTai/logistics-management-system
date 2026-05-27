@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 
 import { useShipmentDetailQuery, useShipmentsQuery } from '../../../../features/shipments/shipments.api';
 import type {
@@ -9,7 +9,6 @@ import type {
 } from '../../../../features/shipments/shipments.types';
 import { useTrackingDetailQuery } from '../../../../features/tracking/tracking.api';
 import type { TrackingTimelineEventDto } from '../../../../features/tracking/tracking.types';
-import { routePaths } from '../../../../navigation/routes';
 import { getErrorMessage } from '../../../../services/api/errors';
 import { useAuthStore } from '../../../../store/authStore';
 import { formatDateTime } from '../../../../utils/format';
@@ -19,6 +18,7 @@ import {
   formatTrackingEventSourceLabel,
   formatTrackingEventTypeLabel,
 } from '../../../../utils/logisticsLabels';
+import { CopyableShipmentCode } from '../../../shared/CopyableShipmentCode';
 import './ServiceQualityIntegratedLookupPage.css';
 
 interface DetailField {
@@ -211,7 +211,7 @@ export function ServiceQualityIntegratedLookupPage(): React.JSX.Element {
           <section className="ops-integrated-lookup__summary">
             <article>
               <span>Mã vận đơn</span>
-              <strong>{shipment.shipmentCode}</strong>
+              <CopyableShipmentCode code={shipment.shipmentCode} />
             </article>
             <article>
               <span>Trạng thái hiện tại</span>
@@ -231,7 +231,7 @@ export function ServiceQualityIntegratedLookupPage(): React.JSX.Element {
             <article className="ops-integrated-lookup__panel">
               <header>
                 <h3>Thông tin hub và tuyến</h3>
-                <Link to={routePaths.shipmentDetail(shipment.shipmentCode)}>Mở chi tiết vận đơn</Link>
+                <CopyableShipmentCode code={shipment.shipmentCode} />
               </header>
               <FieldGrid
                 fields={[

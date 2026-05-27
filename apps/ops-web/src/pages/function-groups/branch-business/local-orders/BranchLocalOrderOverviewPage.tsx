@@ -1,6 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 
 import { useHubsQuery } from '../../../../features/masterdata/masterdata.api';
 import {
@@ -14,7 +13,6 @@ import type { ShipmentListItemDto } from '../../../../features/shipments/shipmen
 import { useTasksQuery } from '../../../../features/tasks/tasks.api';
 import type { TaskListItemDto } from '../../../../features/tasks/tasks.types';
 import { getErrorMessage } from '../../../../services/api/errors';
-import { routePaths } from '../../../../navigation/routes';
 import { useAuthStore } from '../../../../store/authStore';
 import { formatDateTime } from '../../../../utils/format';
 import { createIdempotencyKey } from '../../../../utils/idempotency';
@@ -25,6 +23,7 @@ import {
 } from '../../../../utils/locationScope';
 import { formatShipmentStatusLabel } from '../../../../utils/logisticsLabels';
 import { queryKeys } from '../../../../utils/queryKeys';
+import { CopyableShipmentCode } from '../../../shared/CopyableShipmentCode';
 import { BranchTablePagination } from '../shared/BranchTablePagination';
 import './BranchLocalOrderOverviewPage.css';
 
@@ -562,12 +561,10 @@ export function BranchLocalOrderOverviewPage({
                 {paginatedRows.map((row) => (
                   <tr key={row.shipment.shipmentCode}>
                     <td>
-                      <Link
+                      <CopyableShipmentCode
+                        code={row.shipment.shipmentCode}
                         className="ops-branch-local-orders__code"
-                        to={routePaths.shipmentDetail(row.shipment.id)}
-                      >
-                        {row.shipment.shipmentCode}
-                      </Link>
+                      />
                     </td>
                     <td>{row.currentStage}</td>
                     <td>{row.customerName}</td>

@@ -19,6 +19,7 @@ import {
   formatShipmentStatusLabel,
   formatTaskStatusLabel,
 } from '../../../../utils/logisticsLabels';
+import { CopyableShipmentCode } from '../../../shared/CopyableShipmentCode';
 import './OpsMetricsDerivedDashboardPage.css';
 
 export type OpsMetricsDashboardKind =
@@ -127,6 +128,10 @@ function formatHours(value: number | null): string {
   return days > 0 ? `${days} ngày ${value % 24} giờ` : `${value} giờ`;
 }
 
+function shipmentLookupPath(shipmentCode: string): string {
+  return `${routePaths.serviceQualityIntegratedLookup}?shipmentCode=${encodeURIComponent(shipmentCode)}`;
+}
+
 function resolveShipmentHub(shipment: ShipmentListItemDto): string {
   return (
     normalizeCode(shipment.currentLocation) ||
@@ -187,7 +192,7 @@ function buildDeliveryRows(shipments: ShipmentListItemDto[], mode: 'sla' | 'lead
         basisAt: status === 'DELIVERED' ? shipment.updatedAt : shipment.createdAt,
         ageHours: leadHours,
         issue,
-        detailTo: routePaths.shipmentDetail(shipment.id),
+        detailTo: shipmentLookupPath(shipment.shipmentCode),
       };
     })
     .sort((left, right) => (right.ageHours ?? 0) - (left.ageHours ?? 0));
@@ -214,7 +219,7 @@ function buildAbnormalRows(
         mode === 'handling'
           ? 'Vận đơn bất thường cần theo dõi thao tác xử lý'
           : 'Vận đơn có trạng thái thất bại/NDR/chuyển hoàn',
-      detailTo: routePaths.shipmentDetail(shipment.id),
+      detailTo: shipmentLookupPath(shipment.shipmentCode),
     }));
 
   const ndrRows = ndrCases.map<MetricRow>((ndr) => ({
@@ -284,7 +289,7 @@ function buildSignT1Rows(shipments: ShipmentListItemDto[]): MetricRow[] {
         basisAt: shipment.updatedAt,
         ageHours: hours,
         issue: (hours ?? 0) <= 24 ? 'Ký nhận trong T-1' : 'Ký nhận vượt mục tiêu T-1',
-        detailTo: routePaths.shipmentDetail(shipment.id),
+        detailTo: shipmentLookupPath(shipment.shipmentCode),
       };
     })
     .sort((left, right) => (right.ageHours ?? 0) - (left.ageHours ?? 0));
@@ -304,7 +309,7 @@ function buildSendRows(shipments: ShipmentListItemDto[], manifests: ManifestList
       basisAt: shipment.updatedAt,
       ageHours: ageHours(shipment.updatedAt),
       issue: 'Vận đơn đã có tín hiệu gửi/ra khỏi hub',
-      detailTo: routePaths.shipmentDetail(shipment.id),
+      detailTo: shipmentLookupPath(shipment.shipmentCode),
     }));
 
   const manifestRows = manifests.map<MetricRow>((manifest) => {
@@ -355,7 +360,7 @@ function buildInboundRows(shipments: ShipmentListItemDto[], tasks: TaskListItemD
         basisAt: shipment.updatedAt,
         ageHours: hours,
         issue: (hours ?? 0) <= 8 ? 'Leadtime nhận trong ngưỡng 8h' : 'Leadtime nhận vượt ngưỡng 8h',
-        detailTo: routePaths.shipmentDetail(shipment.id),
+        detailTo: shipmentLookupPath(shipment.shipmentCode),
       };
     })
     .sort((left, right) => (right.ageHours ?? 0) - (left.ageHours ?? 0));
@@ -389,7 +394,7 @@ function buildNetworkRows(shipments: ShipmentListItemDto[], manifests: ManifestL
       basisAt: shipment.updatedAt,
       ageHours: ageHours(shipment.updatedAt),
       issue: 'Vận đơn mở tạo tải vận hành tại hub/tuyến',
-      detailTo: routePaths.shipmentDetail(shipment.id),
+      detailTo: shipmentLookupPath(shipment.shipmentCode),
     }));
 
   return [...manifestRows, ...shipmentRows].sort((left, right) => (right.ageHours ?? 0) - (left.ageHours ?? 0));
@@ -441,7 +446,7 @@ function buildOverdueRows(
       basisAt: shipment.updatedAt,
       ageHours: ageHours(shipment.updatedAt),
       issue: 'Vận đơn chưa đóng quá 24h từ lần cập nhật cuối',
-      detailTo: routePaths.shipmentDetail(shipment.id),
+      detailTo: shipmentLookupPath(shipment.shipmentCode),
     }));
   const taskRows = tasks
     .filter((task) => !['COMPLETED', 'CANCELLED'].includes(normalizeCode(task.status)))
@@ -771,9 +776,13 @@ export function OpsMetricsDerivedDashboardPage({
               {paginatedRows.map((row) => (
                 <tr key={`${row.type}-${row.id}`}>
                   <td>
-                    <Link className="ops-metrics-derived__code" to={row.detailTo}>
-                      {row.code}
-                    </Link>
+                    {row.type === 'shipment' ? (
+                      <CopyableShipmentCode code={row.code} className="ops-metrics-derived__code" />
+                    ) : (
+                      <Link className="ops-metrics-derived__code" to={row.detailTo}>
+                        {row.code}
+                      </Link>
+                    )}
                   </td>
                   <td>{row.type}</td>
                   <td>{row.statusLabel}</td>
