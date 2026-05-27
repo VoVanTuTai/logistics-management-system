@@ -56,6 +56,7 @@ export const opsEndpoints = {
   },
   returns: {
     list: '/ops/delivery/returns',
+    create: '/ops/delivery/returns',
     detail: (returnId: string) => `/ops/delivery/returns/${returnId}`,
     complete: (returnId: string) => `/ops/delivery/returns/${returnId}/complete`,
   },

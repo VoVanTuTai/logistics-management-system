@@ -112,6 +112,10 @@ export class OpsHubScopeGuard implements CanActivate {
       return true;
     }
 
+    if (rule.action === 'task-assignment') {
+      await this.ensureTaskAssignmentAllowed(request);
+    }
+
     if (roles.includes('SYSTEM_ADMIN')) {
       return true;
     }
@@ -212,16 +216,24 @@ export class OpsHubScopeGuard implements CanActivate {
     }
 
     const task = await this.fetchServiceJson('dispatch', `tasks/${taskId}`, request);
+    const taskRecord = asRecord(task);
+    const shipmentCode = normalizeString(taskRecord?.shipmentCode);
+    const relatedShipment = shipmentCode
+      ? await this.fetchServiceJson(
+          'shipment',
+          `shipments/${encodeURIComponent(shipmentCode)}`,
+          request,
+        )
+      : null;
+
     const taskScope = collectHubCodes(task);
     if (taskScope.length > 0) {
       return { hubCodes: taskScope };
     }
 
-    const taskRecord = asRecord(task);
-    const shipmentCode = normalizeString(taskRecord?.shipmentCode);
-    if (shipmentCode) {
+    if (relatedShipment) {
       return {
-        hubCodes: await this.resolveShipmentHubCodes(shipmentCode, request),
+        hubCodes: collectHubCodes(relatedShipment),
       };
     }
 
@@ -230,6 +242,37 @@ export class OpsHubScopeGuard implements CanActivate {
       missingContextMessage:
         'Task không có shipmentCode hoặc hub context nên không thể phân quyền phân công.',
     };
+  }
+
+  private async ensureTaskAssignmentAllowed(request: Request): Promise<void> {
+    const taskId = extractPathParam(
+      normalizeWildcardPath(request.params['0']),
+      /^dispatch\/tasks\/([^/]+)\/(?:assign|reassign)$/,
+    );
+    if (!taskId) {
+      return;
+    }
+
+    const task = await this.fetchServiceJson('dispatch', `tasks/${taskId}`, request);
+    const taskRecord = asRecord(task);
+    if (normalizeString(taskRecord?.taskType) !== 'DELIVERY') {
+      return;
+    }
+
+    const shipmentCode = normalizeString(taskRecord?.shipmentCode);
+    if (!shipmentCode) {
+      return;
+    }
+
+    const shipment = await this.fetchServiceJson(
+      'shipment',
+      `shipments/${encodeURIComponent(shipmentCode)}`,
+      request,
+    );
+    const blockReason = getShipmentOperationBlockReason(shipment, shipmentCode);
+    if (blockReason) {
+      throw new ForbiddenException(blockReason);
+    }
   }
 
   private async resolveManifestScope(
@@ -485,6 +528,38 @@ function collectMetadataHubCodes(metadata: Record<string, unknown> | null): unkn
     hub?.code,
     hub?.currentCode,
   ];
+}
+
+function getShipmentOperationBlockReason(
+  value: unknown,
+  shipmentCode: string,
+): string | null {
+  const shipment = asRecord(value);
+  if (!shipment) {
+    return null;
+  }
+
+  const metadata = asRecord(shipment.metadata);
+  const deliveryInfoChange = asRecord(metadata?.deliveryInfoChange);
+  const returnWorkflow = asRecord(metadata?.returnWorkflow);
+
+  const requiresLabelReprint =
+    deliveryInfoChange?.requiresLabelReprint === true ||
+    deliveryInfoChange?.blocksOpsUntilLabelReprint === true;
+
+  if (requiresLabelReprint) {
+    return `Vận đơn ${shipmentCode} đã đổi thông tin giao hàng và cần OPS in lại tem mới trước khi phân công phát.`;
+  }
+
+  if (returnWorkflow?.blocksOps === true || shipment.currentStatus === 'RETURN_STARTED') {
+    return `Vận đơn ${shipmentCode} đang chuyển hoàn. Chỉ được xử lý theo luồng đăng ký/in tem chuyển hoàn.`;
+  }
+
+  if (shipment.isLocked === true) {
+    return `Vận đơn ${shipmentCode} đang bị khóa bởi luồng xử lý ngoại lệ.`;
+  }
+
+  return null;
 }
 
 function isSameHubOrScopedLocation(targetCode: string, assignedHubCode: string): boolean {

@@ -53,6 +53,16 @@ const ACCESS_TOKEN_REFRESH_WINDOW_MS = 60_000;
 const SHIPMENT_PAGE_SIZE = 8;
 const MERCHANT_PROFILE_SCOPE = 'MERCHANT_PROFILE';
 const MERCHANT_PROFILE_KEY_PREFIX = 'merchant.profile.';
+const DELIVERY_INFO_CHANGE_BLOCKED_STATUSES = new Set([
+  'TASK_ASSIGNED',
+  'DELIVERED',
+  'DELIVERY_FAILED',
+  'NDR_CREATED',
+  'EXCEPTION',
+  'RETURN_STARTED',
+  'RETURN_COMPLETED',
+  'CANCELLED',
+]);
 
 interface StoredMerchantSession {
   session: MerchantSession;
@@ -398,7 +408,7 @@ function mapReturnCaseToRequest(returnCase: ReturnCaseApiRecord): ReturnRequest 
 }
 
 function isReturnRequestAllowed(shipment: ShipmentResponse): boolean {
-  return ['DELIVERY_FAILED', 'NDR_CREATED', 'RETURN_STARTED'].includes(
+  return !['DELIVERED', 'RETURN_COMPLETED', 'CANCELLED'].includes(
     shipment.currentStatus,
   );
 }
@@ -708,7 +718,6 @@ function MerchantApp(): React.JSX.Element {
   const [pickupRequesterName, setPickupRequesterName] = useState('');
   const [pickupContactPhone, setPickupContactPhone] = useState('');
   const [pickupAddress, setPickupAddress] = useState('');
-  const [pickupDesiredTime, setPickupDesiredTime] = useState('');
   const [pickupNote, setPickupNote] = useState('');
   const [pickupStatusFilter, setPickupStatusFilter] = useState('ALL');
   const [pickupLoading, setPickupLoading] = useState(false);
@@ -777,6 +786,14 @@ function MerchantApp(): React.JSX.Element {
     () => shipmentRows.find((r) => r.shipment.code === normalizeCode(printSingleCode)) ?? null,
     [shipmentRows, printSingleCode],
   );
+  const trackingShipmentRow = useMemo(() => {
+    const code = normalizeCode(trackingCurrent?.shipmentCode ?? trackingCode);
+    if (!code) {
+      return null;
+    }
+
+    return shipmentRows.find((row) => normalizeCode(row.shipment.code) === code) ?? null;
+  }, [shipmentRows, trackingCode, trackingCurrent]);
   const printBulkPreviewRows = useMemo(() => {
     const codes = printBulkCodes
       .split(/[\s,;\n]+/)
@@ -881,6 +898,10 @@ function MerchantApp(): React.JSX.Element {
 
     return map;
   }, [pickups]);
+  const trackingPickupRequest = useMemo(() => {
+    const code = normalizeCode(trackingShipmentRow?.shipment.code ?? trackingCurrent?.shipmentCode ?? trackingCode);
+    return code ? pickupByShipmentCode.get(code) ?? null : null;
+  }, [pickupByShipmentCode, trackingCode, trackingCurrent, trackingShipmentRow]);
   const selectedPickupUpdatedAt = useMemo(
     () =>
       pickupByShipmentCode.get(normalizeCode(selectedShipmentCode))?.updatedAt ??
@@ -908,8 +929,108 @@ function MerchantApp(): React.JSX.Element {
   const visibleRows = useMemo(() => filteredRows.slice((listPage - 1) * SHIPMENT_PAGE_SIZE, listPage * SHIPMENT_PAGE_SIZE), [filteredRows, listPage]);
   const recentRows = useMemo(() => shipmentRows.slice(0, 8), [shipmentRows]);
   const pickupRows = useMemo(() => pickups.filter((p) => (pickupStatusFilter === 'ALL' ? true : p.status === pickupStatusFilter)), [pickups, pickupStatusFilter]);
+  const pickupSelectableRows = useMemo(
+    () =>
+      shipmentRows.filter(
+        (row) => !pickupByShipmentCode.has(normalizeCode(row.shipment.code)),
+      ),
+    [shipmentRows, pickupByShipmentCode],
+  );
+  const selectedPickupCodeSet = useMemo(() => {
+    const codes = pickupShipmentCodes
+      .split(/[\s,;\n]+/)
+      .map((code) => normalizeCode(code))
+      .filter(Boolean);
+
+    return new Set(codes);
+  }, [pickupShipmentCodes]);
+  const selectedPickupRows = useMemo(
+    () =>
+      pickupSelectableRows.filter((row) =>
+        selectedPickupCodeSet.has(normalizeCode(row.shipment.code)),
+      ),
+    [pickupSelectableRows, selectedPickupCodeSet],
+  );
+  const allPickupRowsSelected =
+    pickupSelectableRows.length > 0 &&
+    pickupSelectableRows.every((row) =>
+      selectedPickupCodeSet.has(normalizeCode(row.shipment.code)),
+    );
   const changeRows = useMemo(() => changeRequests.filter((c) => (changeStatusFilter === 'ALL' ? true : c.status === changeStatusFilter)), [changeRequests, changeStatusFilter]);
   const returnRows = useMemo(() => returnRequests.filter((r) => (returnStatusFilter === 'ALL' ? true : r.status === returnStatusFilter)), [returnRequests, returnStatusFilter]);
+
+  function formatPickupWindowDate(date: Date): string {
+    return date.toLocaleDateString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  }
+
+  function resolvePickupWindowForShipment(row: ShipmentRow): string {
+    const createdAt = new Date(row.shipment.createdAt);
+    if (Number.isNaN(createdAt.getTime())) {
+      return 'Tự động theo giờ tạo đơn';
+    }
+
+    if (createdAt.getHours() < 12) {
+      return `Lấy trong ngày ${formatPickupWindowDate(createdAt)}`;
+    }
+
+    const tomorrowNoon = new Date(createdAt);
+    tomorrowNoon.setDate(tomorrowNoon.getDate() + 1);
+    return `Lấy trước 12:00 trưa ${formatPickupWindowDate(tomorrowNoon)}`;
+  }
+
+  function resolvePickupWindowSummary(rows: ShipmentRow[]): string {
+    if (rows.length === 0) {
+      return 'Chọn đơn để hệ thống tự tính thời gian lấy hàng';
+    }
+
+    const uniqueWindows = Array.from(new Set(rows.map(resolvePickupWindowForShipment)));
+    if (uniqueWindows.length === 1) {
+      return uniqueWindows[0] ?? 'Tự động theo giờ tạo đơn';
+    }
+
+    return uniqueWindows.map((window) => {
+      const count = rows.filter((row) => resolvePickupWindowForShipment(row) === window).length;
+      return `${count} đơn: ${window}`;
+    }).join(' · ');
+  }
+
+  const selectedPickupWindowSummary = resolvePickupWindowSummary(selectedPickupRows);
+
+  function togglePickupShipmentSelection(code: string, checked: boolean): void {
+    const normalizedCode = normalizeCode(code);
+    if (!normalizedCode) {
+      return;
+    }
+
+    setPickupShipmentCodes((previous) => {
+      const nextCodes = new Set(
+        previous
+          .split(/[\s,;\n]+/)
+          .map((item) => normalizeCode(item))
+          .filter(Boolean),
+      );
+
+      if (checked) {
+        nextCodes.add(normalizedCode);
+      } else {
+        nextCodes.delete(normalizedCode);
+      }
+
+      return Array.from(nextCodes).join('\n');
+    });
+  }
+
+  function toggleAllPickupShipments(checked: boolean): void {
+    setPickupShipmentCodes(
+      checked
+        ? pickupSelectableRows.map((row) => normalizeCode(row.shipment.code)).join('\n')
+        : '',
+    );
+  }
 
   function resolveShipmentStatusCode(shipment: ShipmentResponse): string {
     const normalizedCode = normalizeCode(shipment.code);
@@ -975,6 +1096,18 @@ function MerchantApp(): React.JSX.Element {
     return resolveShipmentStatusCode(shipment) === 'WAITING_PICKUP'
       ? statusClass('UPDATED')
       : statusClass(shipment.currentStatus);
+  }
+
+  function resolveDeliveryInfoChangeBlockReason(row: ShipmentRow | null): string | null {
+    if (!row) {
+      return null;
+    }
+
+    if (DELIVERY_INFO_CHANGE_BLOCKED_STATUSES.has(row.shipment.currentStatus)) {
+      return 'Chỉ được đổi thông tin giao trước khi đơn hàng được phân công đi phát.';
+    }
+
+    return null;
   }
 
   function resolvePickupCancelBlockReason(pickup: PickupRequest): string | null {
@@ -1617,6 +1750,13 @@ function MerchantApp(): React.JSX.Element {
       );
     }
 
+    const pickupRow = shipmentRows.find(
+      (row) => normalizeCode(row.shipment.code) === normalizedShipmentCode,
+    );
+    const desiredWindow = pickupRow
+      ? resolvePickupWindowForShipment(pickupRow)
+      : 'Tự động theo giờ tạo đơn';
+
     const pickup = await request<PickupRequest>('/merchant/pickup/pickups', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1625,7 +1765,7 @@ function MerchantApp(): React.JSX.Element {
         requesterName: pickupRequesterName.trim() || createForm.senderName.trim() || session.user.username,
         contactPhone: pickupContactPhone.trim() || createForm.senderPhone.trim() || profile.contactPhone || null,
         pickupAddress: pickupAddress.trim() || senderComposedAddress || profile.defaultPickupAddress || null,
-        note: `${note} | desired=${pickupDesiredTime || 'N/A'}`,
+        note: `${note} | desired=${desiredWindow}`,
         items: [{ shipmentCode: normalizedShipmentCode, quantity: 1 }],
       }),
     }, session.accessToken);
@@ -1947,6 +2087,10 @@ function MerchantApp(): React.JSX.Element {
       if (!isShipmentOwnedByUser(selectedShipment.shipment, session.user)) {
         throw new Error('Shipment khong thuoc tai khoan merchant hien tai.');
       }
+      const changeBlockReason = resolveDeliveryInfoChangeBlockReason(selectedShipment);
+      if (changeBlockReason) {
+        throw new Error(changeBlockReason);
+      }
 
       const created = await request<ChangeRequest>('/merchant/shipment/change-requests', {
         method: 'POST',
@@ -1982,8 +2126,15 @@ function MerchantApp(): React.JSX.Element {
     setPickupLoading(true);
     setPickupMessage(null);
     try {
-      const codes = Array.from(new Set(pickupShipmentCodes.split(/[\s,;\n]+/).map((item) => normalizeCode(item)).filter(Boolean)));
-      if (codes.length === 0) throw new Error('Cần ít nhất 1 shipment code');
+      const selectableCodes = new Set(
+        pickupSelectableRows.map((row) => normalizeCode(row.shipment.code)),
+      );
+      const codes = Array.from(new Set(pickupShipmentCodes.split(/[\s,;\n]+/).map((item) => normalizeCode(item)).filter(Boolean)))
+        .filter((code) => selectableCodes.has(code));
+      if (codes.length === 0) throw new Error('Vui lòng chọn ít nhất 1 đơn hàng để yêu cầu lấy hàng');
+      const requestedRows = pickupSelectableRows.filter((row) =>
+        codes.includes(normalizeCode(row.shipment.code)),
+      );
       const pickup = await request<PickupRequest>('/merchant/pickup/pickups', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1992,7 +2143,7 @@ function MerchantApp(): React.JSX.Element {
           requesterName: pickupRequesterName.trim() || session.user.username,
           contactPhone: pickupContactPhone.trim() || null,
           pickupAddress: pickupAddress.trim() || profile.defaultPickupAddress || null,
-          note: `${pickupNote.trim()} | desired=${pickupDesiredTime || 'N/A'}`,
+          note: `${pickupNote.trim()} | desired=${resolvePickupWindowSummary(requestedRows)}`,
           items: codes.map((shipmentCode) => ({ shipmentCode, quantity: 1 })),
         }),
       }, session.accessToken);
@@ -2052,6 +2203,12 @@ function MerchantApp(): React.JSX.Element {
       if (!shipment || !isShipmentOwnedByUser(shipment, session.user)) {
         throw new Error('Shipment khong thuoc tai khoan merchant hien tai.');
       }
+      const changeBlockReason = resolveDeliveryInfoChangeBlockReason(
+        shipmentRows.find((row) => normalizeCode(row.shipment.code) === code) ?? null,
+      );
+      if (changeBlockReason) {
+        throw new Error(changeBlockReason);
+      }
       const created = await request<ChangeRequest>('/merchant/shipment/change-requests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2085,7 +2242,7 @@ function MerchantApp(): React.JSX.Element {
         throw new Error('Shipment khong thuoc tai khoan merchant hien tai.');
       }
       if (!isReturnRequestAllowed(shipment)) {
-        throw new Error('Shipment chua o trang thai phu hop de tao return case.');
+        throw new Error('Đơn đã giao thành công, đã hoàn tất hoàn hoặc đã hủy nên không thể yêu cầu hoàn hàng.');
       }
 
       const reason = returnReason.trim() || 'Merchant requested return';
@@ -2102,7 +2259,7 @@ function MerchantApp(): React.JSX.Element {
         mappedReturn,
         ...prev.filter((item) => item.id !== mappedReturn.id),
       ]);
-      setReturnMessage(`Da tao return case ${returnCase.id}`);
+      setReturnMessage(`Đã tạo và duyệt yêu cầu hoàn ${returnCase.id}. Vận đơn sẽ bị chặn thao tác thường để OPS in tem chuyển hoàn.`);
       setReturnCode('');
       setReturnReason('');
       setReturnNotes('');
@@ -2909,7 +3066,7 @@ function MerchantApp(): React.JSX.Element {
             </section>
           </> : null}
 
-          {activeView === 'shipment-detail' ? <section className="grid">{!selectedShipment ? <div className="card"><div className="empty">Chưa chọn shipment.</div></div> : <><div className="card"><h3>Chi tiết shipment {selectedShipment.shipment.code}</h3><div className="details-grid"><div className="detail-box"><div className="label">Người gửi</div><div>{selectedShipment.senderName}<br />{selectedShipment.senderPhone}<br />{selectedShipment.senderAddress}</div></div><div className="detail-box"><div className="label">Hub gửi</div><div>{selectedShipment.senderHubCode}<br />{selectedShipment.senderWard}, {selectedShipment.senderProvince}</div></div><div className="detail-box"><div className="label">Người nhận</div><div>{selectedShipment.receiverName}<br />{selectedShipment.receiverPhone}<br />{selectedShipment.receiverAddress}</div></div><div className="detail-box"><div className="label">Hub nhận</div><div>{selectedShipment.receiverHubCode}<br />{selectedShipment.receiverWard}, {selectedShipment.receiverProvince}</div></div><div className="detail-box"><div className="label">Hàng hóa</div><div>{selectedShipment.itemType}<br />{selectedShipment.weightKg}kg</div></div><div className="detail-box"><div className="label">COD / Phí</div><div>{formatCurrency(selectedShipment.codAmount)}<br />{formatCurrency(selectedShipment.feeEstimate)}</div></div><div className="detail-box"><div className="label">Dịch vụ</div><div>{selectedShipment.serviceType}</div></div><div className="detail-box"><div className="label">Pickup</div><div>{pickupByShipmentCode.get(normalizeCode(selectedShipment.shipment.code))?.pickupCode ?? 'Chưa tạo pickup'}</div></div></div><div className="btn-row" style={{ marginTop: 8 }}><span className={resolveShipmentStatusClass(selectedShipment.shipment)}>{resolveShipmentStatusLabel(selectedShipment.shipment)}</span><button className="btn btn-danger" onClick={() => { const reason = window.prompt('Lý do hủy đơn', '') ?? ''; void cancelShipment(selectedShipment.shipment.code, reason); }}>Hủy đơn</button><button className="btn btn-ghost" onClick={() => printShipment(selectedShipment)}>In vận đơn</button></div></div><div className="card grid"><h3>Sửa đơn nếu còn cho phép</h3><div className="grid grid-3"><input className="input" value={detailReceiverPhone} onChange={(e) => setDetailReceiverPhone(e.target.value)} placeholder="SĐT người nhận" /><input className="input" value={detailReceiverAddress} onChange={(e) => setDetailReceiverAddress(e.target.value)} placeholder="Địa chỉ người nhận" /><input className="input" value={detailDeliveryNote} onChange={(e) => setDetailDeliveryNote(e.target.value)} placeholder="Ghi chú giao hàng" /></div><div className="btn-row"><button className="btn btn-primary" disabled={detailUpdating} onClick={() => { void saveDetailUpdate(); }}>{detailUpdating ? 'Đang cập nhật...' : 'Sửa đơn'}</button><button className="btn btn-secondary" onClick={() => { setChangeCode(selectedShipment.shipment.code); setActiveView('change-requests'); }}>Yêu cầu đổi thông tin giao</button><button className="btn btn-secondary" onClick={() => { setReturnCode(selectedShipment.shipment.code); setActiveView('returns'); }}>Yêu cầu hoàn hàng</button></div>{detailError ? <p className="message error">{detailError}</p> : null}{detailSuccess ? <p className="message success">{detailSuccess}</p> : null}</div><div className="card"><h3>Timeline xử lý đơn</h3>{detailTrackError ? <p className="message error">{detailTrackError}</p> : null}<div className="timeline">{detailTrackTimeline.length === 0 ? <div className="empty">Chưa có tracking event.</div> : detailTrackTimeline.map((ev) => <div key={ev.id} className="timeline-item"><strong>{ev.eventType}</strong><div className="muted">{formatDate(ev.occurredAt)} | actor={ev.actor ?? 'system'} | loc={ev.locationText ?? ev.locationCode ?? 'N/A'}</div></div>)}</div>{detailTrackCurrent ? <p className="muted">Current: {detailTrackCurrent.currentStatus ?? 'N/A'} | Last event: {detailTrackCurrent.lastEventType ?? 'N/A'}</p> : null}</div></>}</section> : null}
+          {activeView === 'shipment-detail' ? <section className="grid">{!selectedShipment ? <div className="card"><div className="empty">Chưa chọn shipment.</div></div> : <><div className="card"><h3>Chi tiết shipment {selectedShipment.shipment.code}</h3><div className="details-grid"><div className="detail-box"><div className="label">Người gửi</div><div>{selectedShipment.senderName}<br />{selectedShipment.senderPhone}<br />{selectedShipment.senderAddress}</div></div><div className="detail-box"><div className="label">Hub gửi</div><div>{selectedShipment.senderHubCode}<br />{selectedShipment.senderWard}, {selectedShipment.senderProvince}</div></div><div className="detail-box"><div className="label">Người nhận</div><div>{selectedShipment.receiverName}<br />{selectedShipment.receiverPhone}<br />{selectedShipment.receiverAddress}</div></div><div className="detail-box"><div className="label">Hub nhận</div><div>{selectedShipment.receiverHubCode}<br />{selectedShipment.receiverWard}, {selectedShipment.receiverProvince}</div></div><div className="detail-box"><div className="label">Hàng hóa</div><div>{selectedShipment.itemType}<br />{selectedShipment.weightKg}kg</div></div><div className="detail-box"><div className="label">COD / Phí</div><div>{formatCurrency(selectedShipment.codAmount)}<br />{formatCurrency(selectedShipment.feeEstimate)}</div></div><div className="detail-box"><div className="label">Dịch vụ</div><div>{selectedShipment.serviceType}</div></div><div className="detail-box"><div className="label">Pickup</div><div>{pickupByShipmentCode.get(normalizeCode(selectedShipment.shipment.code))?.pickupCode ?? 'Chưa tạo pickup'}</div></div></div><div className="btn-row" style={{ marginTop: 8 }}><span className={resolveShipmentStatusClass(selectedShipment.shipment)}>{resolveShipmentStatusLabel(selectedShipment.shipment)}</span><button className="btn btn-danger" onClick={() => { const reason = window.prompt('Lý do hủy đơn', '') ?? ''; void cancelShipment(selectedShipment.shipment.code, reason); }}>Hủy đơn</button><button className="btn btn-ghost" onClick={() => printShipment(selectedShipment)}>In vận đơn</button></div></div><div className="card grid"><h3>Sửa đơn nếu còn cho phép</h3><div className="grid grid-3"><input className="input" value={detailReceiverPhone} onChange={(e) => setDetailReceiverPhone(e.target.value)} placeholder="SĐT người nhận" /><input className="input" value={detailReceiverAddress} onChange={(e) => setDetailReceiverAddress(e.target.value)} placeholder="Địa chỉ người nhận" /><input className="input" value={detailDeliveryNote} onChange={(e) => setDetailDeliveryNote(e.target.value)} placeholder="Ghi chú giao hàng" /></div><div className="btn-row"><button className="btn btn-primary" title={resolveDeliveryInfoChangeBlockReason(selectedShipment) ?? undefined} disabled={detailUpdating || Boolean(resolveDeliveryInfoChangeBlockReason(selectedShipment))} onClick={() => { void saveDetailUpdate(); }}>{detailUpdating ? 'Đang cập nhật...' : 'Sửa đơn'}</button><button className="btn btn-secondary" onClick={() => { setChangeCode(selectedShipment.shipment.code); setActiveView('change-requests'); }}>Yêu cầu đổi thông tin giao</button><button className="btn btn-secondary" onClick={() => { setReturnCode(selectedShipment.shipment.code); setActiveView('returns'); }}>Yêu cầu hoàn hàng</button></div>{detailError ? <p className="message error">{detailError}</p> : null}{detailSuccess ? <p className="message success">{detailSuccess}</p> : null}</div><div className="card"><h3>Timeline xử lý đơn</h3>{detailTrackError ? <p className="message error">{detailTrackError}</p> : null}<div className="timeline">{detailTrackTimeline.length === 0 ? <div className="empty">Chưa có tracking event.</div> : detailTrackTimeline.map((ev) => <div key={ev.id} className="timeline-item"><strong>{ev.eventType}</strong><div className="muted">{formatDate(ev.occurredAt)} | actor={ev.actor ?? 'system'} | loc={ev.locationText ?? ev.locationCode ?? 'N/A'}</div></div>)}</div>{detailTrackCurrent ? <p className="muted">Current: {detailTrackCurrent.currentStatus ?? 'N/A'} | Last event: {detailTrackCurrent.lastEventType ?? 'N/A'}</p> : null}</div></>}</section> : null}
 
           {activeView === 'pickups' ? <>
             <section className="card pickup-hero">
@@ -2923,45 +3080,77 @@ function MerchantApp(): React.JSX.Element {
                 <span className="badge">Tổng pickup: {pickups.length}</span>
               </div>
             </section>
-            <section className="card pickup-form-card">
+            <section className="card pickup-selection-card">
               <div className="pickup-form-card__header">
                 <div>
-                  <p className="login-kicker">Create request</p>
-                  <h3>Tạo yêu cầu pickup mới</h3>
+                  <p className="login-kicker">Available orders</p>
+                  <h3>Chọn đơn hàng cần lấy</h3>
                 </div>
-                <div className="pickup-form-card__note muted">Nhập danh sách mã vận đơn và thông tin liên hệ để gửi yêu cầu lấy hàng cho bưu tá.</div>
+                <div className="pickup-form-card__note muted">Đơn tạo buổi sáng sẽ lấy trong ngày. Đơn tạo buổi chiều sẽ được lấy trước 12:00 trưa ngày mai.</div>
               </div>
-              <form className="grid pickup-form" onSubmit={(e) => { void submitPickupRequest(e); }}>
-                <div className="pickup-form__grid">
-                  <div className="pickup-field pickup-field--span-2">
-                    <label className="label">Danh sách mã vận đơn</label>
-                    <textarea className="textarea pickup-textarea" value={pickupShipmentCodes} onChange={(e) => setPickupShipmentCodes(e.target.value)} placeholder="Danh sách mã vận đơn" />
-                  </div>
-                  <div className="pickup-field">
-                    <label className="label">Người yêu cầu</label>
-                    <input className="input" value={pickupRequesterName} onChange={(e) => setPickupRequesterName(e.target.value)} placeholder="Người yêu cầu" />
-                  </div>
-                  <div className="pickup-field">
-                    <label className="label">SĐT liên hệ</label>
-                    <input className="input" value={pickupContactPhone} onChange={(e) => setPickupContactPhone(e.target.value)} placeholder="SĐT liên hệ" />
-                  </div>
-                  <div className="pickup-field pickup-field--span-2">
-                    <label className="label">Địa chỉ lấy hàng</label>
-                    <input className="input" value={pickupAddress} onChange={(e) => setPickupAddress(e.target.value)} placeholder="Địa chỉ lấy hàng" />
-                  </div>
-                  <div className="pickup-field">
-                    <label className="label">Thời gian mong muốn</label>
-                    <input className="input" type="date" min={toInputDate(new Date())} value={pickupDesiredTime} onChange={(e) => setPickupDesiredTime(e.target.value)} />
-                  </div>
-                  <div className="pickup-field pickup-field--span-3">
-                    <label className="label">Ghi chú courier</label>
-                    <input className="input" value={pickupNote} onChange={(e) => setPickupNote(e.target.value)} placeholder="Ghi chú courier" />
-                  </div>
+              <div className="table-wrap pickup-table-wrap">
+                <table className="pickup-table pickup-order-table">
+                  <thead>
+                    <tr>
+                      <th className="pickup-select-cell">
+                        <input
+                          aria-label="Chọn tất cả đơn hàng"
+                          checked={allPickupRowsSelected}
+                          className="pickup-checkbox"
+                          disabled={pickupSelectableRows.length === 0}
+                          type="checkbox"
+                          onChange={(event) => toggleAllPickupShipments(event.target.checked)}
+                        />
+                      </th>
+                      <th>Mã vận đơn</th>
+                      <th>Người nhận</th>
+                      <th>Dịch vụ</th>
+                      <th>Khối lượng</th>
+                      <th>Ngày tạo</th>
+                      <th>Kho lấy</th>
+                      <th>Thời gian lấy hàng</th>
+                      <th>Trạng thái</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pickupSelectableRows.map((row) => {
+                      const normalizedCode = normalizeCode(row.shipment.code);
+                      return <tr key={row.shipment.id} className={selectedPickupCodeSet.has(normalizedCode) ? 'pickup-order-row is-selected' : 'pickup-order-row'}>
+                        <td className="pickup-select-cell">
+                          <input
+                            aria-label={`Chọn đơn ${row.shipment.code}`}
+                            checked={selectedPickupCodeSet.has(normalizedCode)}
+                            className="pickup-checkbox"
+                            type="checkbox"
+                            onChange={(event) => togglePickupShipmentSelection(row.shipment.code, event.target.checked)}
+                          />
+                        </td>
+                        <td className="pickup-code-cell">{row.shipment.code}</td>
+                        <td>
+                          <div className="pickup-recipient">
+                            <strong>{row.receiverName}</strong>
+                            <small>{row.receiverPhone} · {row.receiverAddress}</small>
+                          </div>
+                        </td>
+                        <td><span className="shipment-service-chip">{row.serviceType}</span></td>
+                        <td>{row.weightKg} kg</td>
+                        <td>{formatDate(row.shipment.createdAt)}</td>
+                        <td>{row.senderHubCode || '-'}</td>
+                        <td className="pickup-window-cell">{resolvePickupWindowForShipment(row)}</td>
+                        <td><span className={resolveShipmentStatusClass(row.shipment)}>{resolveShipmentStatusLabel(row.shipment)}</span></td>
+                      </tr>;
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {pickupSelectableRows.length === 0 ? <div className="empty pickup-empty">Không có đơn hàng khả dụng để tạo yêu cầu lấy hàng.</div> : null}
+              <div className="pickup-request-bar">
+                <div>
+                  <strong>{selectedPickupRows.length} đơn đã chọn</strong>
+                  <p className="muted">{selectedPickupWindowSummary}</p>
                 </div>
-                <div className="pickup-form__actions">
-                  <button className="btn btn-primary pickup-submit-btn" type="submit" disabled={pickupLoading}>{pickupLoading ? 'Đang tạo...' : 'Tạo yêu cầu lấy hàng'}</button>
-                </div>
-              </form>
+                <button className="btn btn-primary pickup-submit-btn" type="button" disabled={pickupLoading || selectedPickupRows.length === 0} onClick={() => { void submitPickupRequest(); }}>{pickupLoading ? 'Đang tạo...' : 'Yêu cầu lấy hàng'}</button>
+              </div>
               {pickupMessage ? <p className="message">{pickupMessage}</p> : null}
             </section>
             <section className="card pickup-table-card">
@@ -3012,24 +3201,13 @@ function MerchantApp(): React.JSX.Element {
           </> : null}
 
           {activeView === 'tracking' ? <>
-            <section className="card tracking-hero">
-              <div className="tracking-hero__copy">
-                <p className="login-kicker">Tracking lookup</p>
-                <h3>Tra cứu vận đơn</h3>
-                <p className="muted">Tra cứu nhanh trạng thái, vị trí hiện tại và toàn bộ timeline xử lý của shipment ngay trong merchant workspace.</p>
-              </div>
-              <div className="tracking-hero__stats">
-                <span className="badge">Mã đang nhập: {trackingCode.trim() || 'N/A'}</span>
-                <span className="badge">Số sự kiện: {trackingTimeline.length}</span>
-              </div>
-            </section>
             <section className="card tracking-search-card">
               <div className="tracking-search-card__header">
                 <div>
-                  <p className="login-kicker">Search</p>
-                  <h3>Tra cứu nội bộ</h3>
+                  <p className="login-kicker">Tracking lookup</p>
+                  <h3>Tra cứu vận đơn</h3>
                 </div>
-                <div className="tracking-search-card__hint muted">Nhập mã vận đơn để xem snapshot hiện tại và lịch sử di chuyển chi tiết.</div>
+                <div className="tracking-search-card__hint muted">Xem trạng thái, hành trình và toàn bộ thông tin đơn hàng trong một màn hình.</div>
               </div>
               <form className="tracking-search-form" onSubmit={(e) => { void lookupTracking(e); }}>
                 <div className="tracking-search-input">
@@ -3042,11 +3220,11 @@ function MerchantApp(): React.JSX.Element {
             <section className="tracking-summary-grid">
               <div className="card tracking-summary-card">
                 <div className="label">Trạng thái hiện tại</div>
-                <div className="tracking-summary-card__value">{trackingCurrent?.currentStatus ?? 'N/A'}</div>
+                <div className="tracking-summary-card__value">{trackingCurrent?.currentStatus ?? (trackingShipmentRow ? resolveShipmentStatusLabel(trackingShipmentRow.shipment) : 'N/A')}</div>
               </div>
               <div className="card tracking-summary-card">
                 <div className="label">Vị trí hiện tại</div>
-                <div className="tracking-summary-card__value">{trackingCurrent?.currentLocationCode ?? 'N/A'}</div>
+                <div className="tracking-summary-card__value">{trackingCurrent?.currentLocationText ?? trackingCurrent?.currentLocationCode ?? trackingShipmentRow?.senderHubCode ?? 'N/A'}</div>
               </div>
               <div className="card tracking-summary-card">
                 <div className="label">Sự kiện cuối</div>
@@ -3057,16 +3235,41 @@ function MerchantApp(): React.JSX.Element {
                 <div className="tracking-summary-card__value">{formatDate(trackingCurrent?.lastEventAt ?? null)}</div>
               </div>
             </section>
-            <section className="card tracking-timeline-card">
-              <div className="tracking-timeline-card__header">
-                <div>
-                  <p className="login-kicker">Timeline</p>
-                  <h3>Hành trình vận đơn</h3>
+            <section className="tracking-detail-layout">
+              <div className="card tracking-order-card">
+                <div className="tracking-timeline-card__header">
+                  <div>
+                    <p className="login-kicker">Shipment info</p>
+                    <h3>Thông tin đơn hàng</h3>
+                  </div>
+                  {trackingShipmentRow ? <span className={resolveShipmentStatusClass(trackingShipmentRow.shipment)}>{resolveShipmentStatusLabel(trackingShipmentRow.shipment)}</span> : null}
                 </div>
-                {trackingCurrent ? <span className="badge tracking-status-badge">{trackingCurrent.currentStatus ?? 'N/A'}</span> : null}
+                {!trackingShipmentRow ? <div className="empty tracking-empty tracking-empty--compact">{trackingLoading ? 'Đang tải thông tin đơn hàng...' : 'Nhập mã vận đơn để xem thông tin đơn hàng.'}</div> : <div className="tracking-info-grid">
+                  <div className="tracking-info-item tracking-info-item--wide"><span>Mã vận đơn</span><strong>{trackingShipmentRow.shipment.code}</strong></div>
+                  <div className="tracking-info-item"><span>Dịch vụ</span><strong>{trackingShipmentRow.serviceType}</strong></div>
+                  <div className="tracking-info-item"><span>Khối lượng</span><strong>{trackingShipmentRow.weightKg} kg</strong></div>
+                  <div className="tracking-info-item"><span>COD</span><strong>{formatCurrency(trackingShipmentRow.codAmount)}</strong></div>
+                  <div className="tracking-info-item"><span>Phí</span><strong>{formatCurrency(trackingShipmentRow.feeEstimate)}</strong></div>
+                  <div className="tracking-info-item tracking-info-item--wide"><span>Người gửi</span><strong>{trackingShipmentRow.senderName}</strong><small>{trackingShipmentRow.senderPhone} · {trackingShipmentRow.senderAddress}</small></div>
+                  <div className="tracking-info-item tracking-info-item--wide"><span>Người nhận</span><strong>{trackingShipmentRow.receiverName}</strong><small>{trackingShipmentRow.receiverPhone} · {trackingShipmentRow.receiverAddress}</small></div>
+                  <div className="tracking-info-item"><span>Hub gửi</span><strong>{trackingShipmentRow.senderHubCode || '-'}</strong><small>{trackingShipmentRow.senderWard}, {trackingShipmentRow.senderProvince}</small></div>
+                  <div className="tracking-info-item"><span>Hub nhận</span><strong>{trackingShipmentRow.receiverHubCode || '-'}</strong><small>{trackingShipmentRow.receiverWard}, {trackingShipmentRow.receiverProvince}</small></div>
+                  <div className="tracking-info-item"><span>Pickup</span><strong>{trackingPickupRequest?.pickupCode ?? 'Chưa tạo pickup'}</strong></div>
+                  <div className="tracking-info-item"><span>Ngày tạo</span><strong>{formatDate(trackingShipmentRow.shipment.createdAt)}</strong></div>
+                  <div className="tracking-info-item tracking-info-item--wide"><span>Ghi chú giao hàng</span><strong>{trackingShipmentRow.deliveryNote || '-'}</strong></div>
+                </div>}
               </div>
-              <div className="tracking-progress">
-                {trackingTimeline.length === 0 ? <div className="empty tracking-empty">{trackingLoading ? 'Đang tải hành trình vận đơn...' : 'Chưa có timeline event.'}</div> : <div className="timeline tracking-timeline">{trackingTimeline.map((ev) => <div key={ev.id} className="timeline-item tracking-timeline-item"><strong>{ev.eventType}</strong><div className="muted">{formatDate(ev.occurredAt)}</div></div>)}</div>}
+              <div className="card tracking-timeline-card">
+                <div className="tracking-timeline-card__header">
+                  <div>
+                    <p className="login-kicker">Journey</p>
+                    <h3>Hành trình vận đơn</h3>
+                  </div>
+                  <span className="badge tracking-status-badge">{trackingTimeline.length} sự kiện</span>
+                </div>
+                <div className="tracking-progress">
+                  {trackingTimeline.length === 0 ? <div className="empty tracking-empty">{trackingLoading ? 'Đang tải hành trình vận đơn...' : 'Chưa có timeline event.'}</div> : <div className="timeline tracking-timeline">{trackingTimeline.map((ev) => <div key={ev.id} className="timeline-item tracking-timeline-item"><strong>{ev.eventType}</strong><div className="tracking-event-meta"><span>{formatDate(ev.occurredAt)}</span><span>{ev.locationText ?? ev.locationCode ?? 'Không có vị trí'}</span><span>{ev.actor ?? 'system'}</span></div>{ev.statusAfterEvent ? <div className="muted">Sau sự kiện: {ev.statusAfterEvent}</div> : null}</div>)}</div>}
+                </div>
               </div>
             </section>
           </> : null}
@@ -3145,8 +3348,9 @@ function MerchantApp(): React.JSX.Element {
                 </div>
                 <div className="change-reference-actions">
                   <button className="btn btn-ghost" type="button">Hủy</button>
-                  <button className="btn btn-primary change-submit-btn" type="submit" disabled={changeLoading}>{changeLoading ? 'Đang gửi...' : 'Gửi yêu cầu thay đổi'}</button>
+                  <button className="btn btn-primary change-submit-btn" type="submit" title={resolveDeliveryInfoChangeBlockReason(changeShipmentPreview) ?? undefined} disabled={changeLoading || Boolean(resolveDeliveryInfoChangeBlockReason(changeShipmentPreview))}>{changeLoading ? 'Đang gửi...' : 'Gửi yêu cầu thay đổi'}</button>
                 </div>
+                {resolveDeliveryInfoChangeBlockReason(changeShipmentPreview) ? <p className="message error">{resolveDeliveryInfoChangeBlockReason(changeShipmentPreview)}</p> : null}
                 {changeMessage ? <p className="message">{changeMessage}</p> : null}
               </section>
             </form>
@@ -3242,7 +3446,7 @@ function MerchantApp(): React.JSX.Element {
                       </div>
                       <div>
                         <p className="muted">Lịch sử giao hàng gần nhất</p>
-                        <span className="returns-order-note">Return request se duoc gui qua delivery-service va theo doi bang return case.</span>
+                        <span className="returns-order-note">Yêu cầu hoàn sẽ được duyệt ngay và chặn thao tác thường trên vận đơn.</span>
                       </div>
                     </div>
                   </div>
@@ -3271,7 +3475,7 @@ function MerchantApp(): React.JSX.Element {
                     </div>
                     <div className="returns-form-actions">
                       <button className="btn btn-ghost" type="button">Hủy</button>
-                      <button className="btn btn-primary returns-submit-btn" type="submit" disabled={returnLoading}>{returnLoading ? 'Dang gui...' : 'Gui yeu cau hoan hang'}</button>
+                      <button className="btn btn-primary returns-submit-btn" type="submit" disabled={returnLoading}>{returnLoading ? 'Đang gửi...' : 'Gửi yêu cầu hoàn hàng'}</button>
                     </div>
                     {returnMessage ? <p className="message">{returnMessage}</p> : null}
                   </form>
@@ -3286,9 +3490,9 @@ function MerchantApp(): React.JSX.Element {
                   </div>
                   <ul className="returns-info-list">
                     <li>Yêu cầu hoàn hàng áp dụng cho các đơn đang xử lý giao lại hoặc phát sinh nhu cầu hoàn từ merchant.</li>
-                    <li>Sau khi gửi yêu cầu, đội vận hành sẽ kiểm tra và xác nhận theo quy trình hiện có.</li>
+                    <li>Sau khi gửi yêu cầu, hệ thống sẽ duyệt chuyển hoàn ngay và OPS có thể in tem chuyển hoàn.</li>
                     <li>Phí hoàn hàng vẫn tuân theo hợp đồng dịch vụ hiện tại của merchant.</li>
-                    <li>Yeu cau hoan duoc luu vao delivery-service va publish return.started theo contract hien co.</li>
+                    <li>Yêu cầu hoàn được lưu vào delivery-service và publish return.started theo contract hiện có.</li>
                   </ul>
                 </section>
 
@@ -3333,7 +3537,7 @@ function MerchantApp(): React.JSX.Element {
                       <td>{item.reason}</td>
                       <td>{item.expectedReturnAt}</td>
                       <td><span className={statusClass(item.status)}>{item.status}</span></td>
-                      <td><div className="returns-actions"><button className="btn btn-ghost" onClick={() => { void openShipmentDetail(item.shipmentCode); }}>Xem don</button><button className="btn btn-secondary" onClick={() => { setTrackingCode(item.shipmentCode); setActiveView('tracking'); void lookupTracking(undefined, item.shipmentCode); }}>Tracking</button></div></td>
+                      <td><div className="returns-actions"><button className="btn btn-ghost" onClick={() => { void openShipmentDetail(item.shipmentCode); }}>Xem đơn</button><button className="btn btn-secondary" onClick={() => { setTrackingCode(item.shipmentCode); setActiveView('tracking'); void lookupTracking(undefined, item.shipmentCode); }}>Tracking</button></div></td>
                     </tr>)}
                   </tbody>
                 </table>

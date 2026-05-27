@@ -118,6 +118,22 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
     return this.toEntity(record);
   }
 
+  async updateMetadataAndLock(
+    code: string,
+    metadata: JsonValue | null | undefined,
+    isLocked: boolean,
+  ): Promise<Shipment> {
+    const record = await this.prisma.shipment.update({
+      where: { code },
+      data: {
+        metadata: (metadata ?? null) as unknown as Prisma.InputJsonValue,
+        isLocked,
+      },
+    });
+
+    return this.toEntity(record);
+  }
+
   async updateCurrentStatus(
     code: string,
     currentStatus: ShipmentCurrentStatus,
@@ -141,6 +157,24 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
       where: { code },
       data: {
         currentStatus: currentStatus as PrismaShipmentCurrentStatus,
+        isLocked,
+      },
+    });
+
+    return this.toEntity(record);
+  }
+
+  async updateCurrentStatusMetadataAndLock(
+    code: string,
+    currentStatus: ShipmentCurrentStatus,
+    metadata: JsonValue | null | undefined,
+    isLocked: boolean,
+  ): Promise<Shipment> {
+    const record = await this.prisma.shipment.update({
+      where: { code },
+      data: {
+        currentStatus: currentStatus as PrismaShipmentCurrentStatus,
+        metadata: (metadata ?? null) as unknown as Prisma.InputJsonValue,
         isLocked,
       },
     });

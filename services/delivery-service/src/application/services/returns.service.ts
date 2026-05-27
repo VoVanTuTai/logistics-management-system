@@ -83,6 +83,8 @@ export class ReturnsService {
       return existingByShipment;
     }
 
+    await this.assertShipmentCanStartReturn(shipmentCode);
+
     const returnCase = await this.returnCaseRepository.create({
       ...input,
       shipmentCode,
@@ -117,7 +119,38 @@ export class ReturnsService {
 
     return returnCase;
   }
+
+  private async assertShipmentCanStartReturn(shipmentCode: string): Promise<void> {
+    const shipmentServiceUrl =
+      process.env.SHIPMENT_SERVICE_URL ?? 'http://localhost:3002';
+    const response = await fetch(
+      `${shipmentServiceUrl}/shipments/${encodeURIComponent(shipmentCode)}`,
+    );
+
+    if (response.status === 404) {
+      throw new NotFoundException(`Shipment "${shipmentCode}" was not found.`);
+    }
+
+    if (!response.ok) {
+      return;
+    }
+
+    const shipment = (await response.json()) as { currentStatus?: string };
+    const currentStatus = normalizeOptionalText(shipment.currentStatus)?.toUpperCase();
+
+    if (currentStatus && RETURN_BLOCKED_STATUSES.has(currentStatus)) {
+      throw new BadRequestException(
+        `Shipment "${shipmentCode}" cannot start return from status "${currentStatus}".`,
+      );
+    }
+  }
 }
+
+const RETURN_BLOCKED_STATUSES = new Set([
+  'DELIVERED',
+  'RETURN_COMPLETED',
+  'CANCELLED',
+]);
 
 function normalizeShipmentCode(value: string | null | undefined): string | null {
   const normalized = value?.trim().toUpperCase();

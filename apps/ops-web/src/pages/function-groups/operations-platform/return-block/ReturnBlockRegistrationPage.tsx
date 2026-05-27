@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../../../../store/authStore';
 import { useUiStore } from '../../../../store/uiStore';
-import { ndrClient } from '../../../../features/ndr/ndr.client';
+import { returnClient } from '../../../../features/returns/return.client';
 import { useShipmentDetailQuery } from '../../../../features/shipments/shipments.hooks';
 import './ReturnBlockRegistrationPage.css';
 
@@ -203,23 +203,15 @@ export function ReturnBlockRegistrationPage(): React.JSX.Element {
 
     setIsSubmittingReturn(true);
     try {
-      const ndrCases = await ndrClient.list(accessToken);
-      const matchedNdr = ndrCases.find((ndrCase) => ndrCase.shipmentCode === queryCode);
-
-      if (!matchedNdr) {
-        showToast(
-          'Chưa có NDR case cho vận đơn này. Backend hiện chưa có endpoint tạo return-block độc lập, nên chưa ghi nhận chuyển hoàn được.',
-          'error',
-        );
-        return;
-      }
-
-      await ndrClient.returnDecision(accessToken, matchedNdr.id, {
-        returnToSender: true,
+      const returnCase = await returnClient.create(accessToken, {
+        shipmentCode: queryCode,
         note: finalNote,
       });
 
-      showToast(`Đã ghi nhận quyết định chuyển hoàn cho vận đơn ${queryCode}.`, 'success');
+      showToast(
+        `Đã đăng ký và duyệt chuyển hoàn ${returnCase.id} cho vận đơn ${queryCode}.`,
+        'success',
+      );
       handleReset();
     } catch (error) {
       showToast(

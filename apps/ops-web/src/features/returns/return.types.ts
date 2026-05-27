@@ -21,3 +21,9 @@ export interface ReturnCaseFilters {
 export interface CompleteReturnCaseInput {
   note?: string | null;
 }
+
+export interface CreateReturnCaseInput {
+  shipmentCode: string;
+  ndrCaseId?: string | null;
+  note?: string | null;
+}

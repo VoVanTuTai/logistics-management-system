@@ -25,6 +25,10 @@ function resolveShipmentStatusLabel(item: ShipmentListItemDto): string {
 }
 
 function canDispatchShipment(item: ShipmentListItemDto): boolean {
+  if (item.requiresLabelReprint || item.isOperationLocked) {
+    return false;
+  }
+
   return (
     item.currentStatus === 'PICKUP_COMPLETED' ||
     item.currentStatus === 'SCAN_INBOUND' ||
@@ -62,7 +66,15 @@ export function ShipmentsTable({
               <td style={styles.cell}>
                 <Link to={routePaths.shipmentDetail(item.shipmentCode)}>{item.shipmentCode}</Link>
               </td>
-              <td style={styles.cell}>{resolveShipmentStatusLabel(item)}</td>
+              <td style={styles.cell}>
+                <div>{resolveShipmentStatusLabel(item)}</div>
+                {item.requiresLabelReprint ? (
+                  <small style={styles.reprintWarning}>Cần in lại tem mới</small>
+                ) : null}
+                {item.isOperationLocked ? (
+                  <small style={styles.lockWarning}>Đang chặn thao tác</small>
+                ) : null}
+              </td>
               <td style={styles.cell}>{item.platform ?? 'Không có'}</td>
               <td style={styles.cell}>
                 <div>{item.senderName ?? 'Không có'}</div>
@@ -83,7 +95,11 @@ export function ShipmentsTable({
                     onClick={() => onPrepareDispatch?.(item)}
                     disabled={!canDispatch}
                     title={
-                      canDispatch
+                      item.requiresLabelReprint
+                        ? item.labelReprintReason ?? 'Vận đơn đã đổi thông tin giao hàng, OPS phải in lại tem mới trước khi thao tác.'
+                        : item.isOperationLocked
+                        ? item.operationLockReason ?? 'Vận đơn đang bị khóa thao tác.'
+                        : canDispatch
                         ? 'Quét phát và phân công courier giao hàng'
                         : 'Chỉ quét phát khi kiện đã được nhận hoặc đã xuống bưu cục'
                     }
@@ -123,6 +139,18 @@ const styles: Record<string, React.CSSProperties> = {
   subText: {
     color: '#5262a6',
     fontSize: 12,
+  },
+  reprintWarning: {
+    display: 'inline-block',
+    marginTop: 4,
+    color: '#b42318',
+    fontWeight: 700,
+  },
+  lockWarning: {
+    display: 'inline-block',
+    marginTop: 4,
+    color: '#9a3412',
+    fontWeight: 700,
   },
   actionGroup: {
     display: 'flex',

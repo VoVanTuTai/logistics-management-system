@@ -5,6 +5,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useInboundScanMutation, useOutboundScanMutation, usePickupScanMutation } from '../../features/scans/scans.api';
 import type { HubScanInput, HubScanType } from '../../features/scans/scans.types';
 import { useCreateShipmentMutation, useShipmentPageQuery } from '../../features/shipments/shipments.api';
+import { shipmentsClient } from '../../features/shipments/shipments.client';
 import type { ShipmentListFilters, ShipmentListItemDto } from '../../features/shipments/shipments.types';
 import { tasksClient, useCourierOptionsQuery } from '../../features/tasks/tasks.api';
 import { openShippingLabelPrint } from '../../printing/shippingLabelPrint';
@@ -223,7 +224,7 @@ function generateDeliveryTaskCode(shipmentCode: string): string {
   return `DLV-${normalizedShipmentCode || 'SHIP'}-${timestamp}`;
 }
 
-function printWaybill(shipment: ShipmentListItemDto): void {
+function printWaybill(shipment: ShipmentListItemDto): boolean {
   const senderName = shipment.senderName?.trim() || 'Người gửi';
   const senderPhone = shipment.senderPhone?.trim() || '-';
   const senderAddress = shipment.senderAddress?.trim() || '-';
@@ -272,7 +273,10 @@ function printWaybill(shipment: ShipmentListItemDto): void {
     useUiStore
       .getState()
       .showToast('Trình duyệt đang chặn cửa sổ in. Hãy cho phép popup rồi thử lại.', 'error');
+    return false;
   }
+
+  return true;
 }
 
 export function ShipmentListPage(): React.JSX.Element {
@@ -540,6 +544,27 @@ export function ShipmentListPage(): React.JSX.Element {
       setDispatchError(getErrorMessage(error));
     } finally {
       setDispatchLoading(false);
+    }
+  };
+
+  const handlePrintWaybill = async (shipment: ShipmentListItemDto): Promise<void> => {
+    const opened = printWaybill(shipment);
+    if (!opened || !accessToken || !shipment.requiresLabelReprint) {
+      return;
+    }
+
+    try {
+      await shipmentsClient.confirmLabelReprint(accessToken, shipment.shipmentCode, {
+        printedBy: session?.user.username ?? 'ops-web',
+      });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
+      useUiStore
+        .getState()
+        .showToast('Đã ghi nhận in lại tem mới, vận đơn đã được mở khóa thao tác.', 'success');
+    } catch (error) {
+      useUiStore
+        .getState()
+        .showToast(`Không ghi nhận được in lại tem: ${getErrorMessage(error)}`, 'error');
     }
   };
 
@@ -984,7 +1009,7 @@ export function ShipmentListPage(): React.JSX.Element {
                 setDispatchError(null);
                 setIsDispatchModalOpen(true);
               }}
-              onPrint={printWaybill}
+              onPrint={(shipment) => { void handlePrintWaybill(shipment); }}
             />
           ) : null}
         </>

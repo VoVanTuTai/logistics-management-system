@@ -28,6 +28,10 @@ export interface UpdateShipmentInput {
   metadata?: JsonValue | null;
 }
 
+export interface ConfirmLabelReprintInput {
+  printedBy?: string | null;
+}
+
 export interface CancelShipmentInput {
   reason?: string | null;
 }

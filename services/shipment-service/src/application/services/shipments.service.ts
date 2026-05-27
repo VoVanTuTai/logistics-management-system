@@ -10,7 +10,9 @@ import {
 
 import type {
   CancelShipmentInput,
+  ConfirmLabelReprintInput,
   CreateShipmentInput,
+  JsonValue,
   Shipment,
   ShipmentListFilters,
   ShipmentListPage,
@@ -75,6 +77,33 @@ export class ShipmentsService {
     return this.shipmentRepository.update(normalizedCode, input);
   }
 
+  async confirmLabelReprint(
+    code: string,
+    input: ConfirmLabelReprintInput = {},
+  ): Promise<Shipment> {
+    const normalizedCode = this.normalizeRequiredCode(code);
+    const shipment = await this.getByCode(normalizedCode);
+    const metadata = asJsonRecord(shipment.metadata);
+    const deliveryInfoChange = asJsonRecord(metadata.deliveryInfoChange);
+    const returnWorkflow = asJsonRecord(metadata.returnWorkflow);
+    const printedAt = new Date().toISOString();
+    const shouldStayLocked = returnWorkflow.blocksOps === true;
+
+    return this.shipmentRepository.updateMetadataAndLock(
+      normalizedCode,
+      {
+        ...metadata,
+        deliveryInfoChange: {
+          ...deliveryInfoChange,
+          requiresLabelReprint: false,
+          labelReprintedAt: printedAt,
+          labelReprintedBy: input.printedBy?.trim() || null,
+        },
+      },
+      shouldStayLocked,
+    );
+  }
+
   async cancel(code: string, input: CancelShipmentInput): Promise<Shipment> {
     const normalizedCode = this.normalizeRequiredCode(code);
     const shipment = await this.getByCode(normalizedCode);
@@ -113,6 +142,38 @@ export class ShipmentsService {
         normalizedCode,
         nextStatus,
         true,
+      );
+
+      await this.marketplaceWebhookSenderService.notifyStatusChanged(
+        updatedShipment,
+        eventType,
+      );
+
+      return updatedShipment;
+    }
+
+    if (eventType === 'return.started') {
+      const updatedShipment = await this.shipmentRepository.updateCurrentStatusMetadataAndLock(
+        normalizedCode,
+        nextStatus,
+        this.buildReturnWorkflowMetadata(shipment.metadata, data, true),
+        true,
+      );
+
+      await this.marketplaceWebhookSenderService.notifyStatusChanged(
+        updatedShipment,
+        eventType,
+      );
+
+      return updatedShipment;
+    }
+
+    if (eventType === 'return.completed') {
+      const updatedShipment = await this.shipmentRepository.updateCurrentStatusMetadataAndLock(
+        normalizedCode,
+        nextStatus,
+        this.buildReturnWorkflowMetadata(shipment.metadata, data, false),
+        false,
       );
 
       await this.marketplaceWebhookSenderService.notifyStatusChanged(
@@ -215,4 +276,39 @@ export class ShipmentsService {
 
     return `${SHIPMENT_CODE_PREFIX}${datePart}${randomPart}`;
   }
+
+  private buildReturnWorkflowMetadata(
+    currentMetadata: JsonValue | null,
+    eventData: Record<string, unknown>,
+    blocksOps: boolean,
+  ): JsonValue {
+    const metadata = asJsonRecord(currentMetadata);
+    const returnCase = asJsonRecord(eventData.returnCase);
+    const now = new Date().toISOString();
+
+    return {
+      ...metadata,
+      returnWorkflow: {
+        ...asJsonRecord(metadata.returnWorkflow),
+        returnCaseId: readString(returnCase.id) ?? null,
+        reason: readString(returnCase.note) ?? null,
+        status: blocksOps ? 'STARTED' : 'COMPLETED',
+        blocksOps,
+        approvedAt: readString(returnCase.startedAt) ?? now,
+        completedAt: blocksOps ? null : readString(returnCase.completedAt) ?? now,
+      },
+    };
+  }
+}
+
+function asJsonRecord(value: unknown): Record<string, JsonValue> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+
+  return value as Record<string, JsonValue>;
+}
+
+function readString(value: unknown): string | null {
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
 }

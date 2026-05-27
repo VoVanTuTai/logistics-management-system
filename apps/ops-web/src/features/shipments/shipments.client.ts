@@ -2,6 +2,7 @@ import { opsApiClient } from '../../services/api/client';
 import { opsEndpoints } from '../../services/api/endpoints';
 import type {
   ApproveShipmentInput,
+  ConfirmLabelReprintInput,
   CreateShipmentInput,
   ReviewShipmentInput,
   ShipmentActionResultDto,
@@ -17,6 +18,7 @@ interface ShipmentApiResponse {
   code: string;
   currentStatus: string;
   metadata: Record<string, unknown> | null;
+  isLocked?: boolean;
   cancellationReason: string | null;
   createdAt: string;
   updatedAt: string;
@@ -55,6 +57,37 @@ function asNumber(value: unknown): number | null {
   }
 
   return null;
+}
+
+function resolveRequiresLabelReprint(metadata: Record<string, unknown> | null): boolean {
+  const deliveryInfoChange = asRecord(metadata?.deliveryInfoChange);
+
+  return (
+    deliveryInfoChange?.requiresLabelReprint === true ||
+    deliveryInfoChange?.blocksOpsUntilLabelReprint === true
+  );
+}
+
+function resolveLabelReprintReason(metadata: Record<string, unknown> | null): string | null {
+  const deliveryInfoChange = asRecord(metadata?.deliveryInfoChange);
+  const changeRequestId = asString(deliveryInfoChange?.changeRequestId);
+
+  return changeRequestId
+    ? `Đã duyệt đổi thông tin giao hàng từ yêu cầu ${changeRequestId}.`
+    : asString(deliveryInfoChange?.reason);
+}
+
+function resolveOperationLockReason(
+  metadata: Record<string, unknown> | null,
+  isLocked?: boolean,
+): string | null {
+  const returnWorkflow = asRecord(metadata?.returnWorkflow);
+
+  if (returnWorkflow?.blocksOps === true) {
+    return 'Đang chuyển hoàn, chỉ xử lý theo luồng đăng ký/in tem chuyển hoàn.';
+  }
+
+  return isLocked === true ? 'Vận đơn đang bị khóa bởi luồng xử lý ngoại lệ.' : null;
 }
 
 function resolveReceiverRegion(metadata: Record<string, unknown> | null): string | null {
@@ -382,6 +415,10 @@ function mapShipmentToListItem(payload: ShipmentApiResponse): ShipmentListItemDt
     serviceType: resolveServiceType(metadata),
     codAmount: resolveCodAmount(metadata),
     deliveryNote: resolveDeliveryNote(metadata),
+    requiresLabelReprint: resolveRequiresLabelReprint(metadata),
+    labelReprintReason: resolveLabelReprintReason(metadata),
+    isOperationLocked: Boolean(resolveOperationLockReason(metadata, payload.isLocked)),
+    operationLockReason: resolveOperationLockReason(metadata, payload.isLocked),
     createdAt: payload.createdAt,
     updatedAt: payload.updatedAt,
   };
@@ -415,6 +452,10 @@ function mapShipmentToDetail(payload: ShipmentApiResponse): ShipmentDetailDto {
     serviceType: resolveServiceType(metadata),
     codAmount: resolveCodAmount(metadata),
     note: resolveDeliveryNote(metadata),
+    requiresLabelReprint: resolveRequiresLabelReprint(metadata),
+    labelReprintReason: resolveLabelReprintReason(metadata),
+    isOperationLocked: Boolean(resolveOperationLockReason(metadata, payload.isLocked)),
+    operationLockReason: resolveOperationLockReason(metadata, payload.isLocked),
     createdAt: payload.createdAt,
     updatedAt: payload.updatedAt,
   };
@@ -490,6 +531,21 @@ export const shipmentsClient = {
         accessToken,
         body: payload,
       })
+      .then(mapShipmentToDetail),
+  confirmLabelReprint: (
+    accessToken: string | null,
+    shipmentCode: string,
+    payload: ConfirmLabelReprintInput,
+  ): Promise<ShipmentDetailDto> =>
+    opsApiClient
+      .request<ShipmentApiResponse>(
+        `${opsEndpoints.shipments.detail(shipmentCode)}/label-reprint/confirm`,
+        {
+          method: 'POST',
+          accessToken,
+          body: payload,
+        },
+      )
       .then(mapShipmentToDetail),
   review: (
     accessToken: string | null,

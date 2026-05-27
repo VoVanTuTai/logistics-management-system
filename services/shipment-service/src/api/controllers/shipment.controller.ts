@@ -3,6 +3,7 @@ import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common
 import { ShipmentsService } from '../../application/services/shipments.service';
 import type {
   CancelShipmentInput,
+  ConfirmLabelReprintInput,
   CreateShipmentInput,
   Shipment,
   ShipmentListFilters,
@@ -35,6 +36,14 @@ export class ShipmentController {
     @Body() body: UpdateShipmentInput,
   ): Promise<Shipment> {
     return this.shipmentsService.update(code, body);
+  }
+
+  @Post(':code/label-reprint/confirm')
+  confirmLabelReprint(
+    @Param('code') code: string,
+    @Body() body: ConfirmLabelReprintInput,
+  ): Promise<Shipment> {
+    return this.shipmentsService.confirmLabelReprint(code, body);
   }
 
   @Post(':code/cancel')
