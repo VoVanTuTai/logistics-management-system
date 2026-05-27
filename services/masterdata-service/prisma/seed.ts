@@ -1,15 +1,32 @@
 import { PrismaClient } from '@prisma/client';
 
+import {
+  buildAddressLine,
+  getRepresentativeWard,
+  loadVietnamProvinces,
+  merchantCitizenId,
+  merchantUsernameForProvinceIndex,
+  REGIONAL_HUBS,
+  resolveProvinceRegion,
+  resolveRegionalHub,
+  type VietnamProvinceSeed,
+} from '../../../infra/dev/seed/vietnam-logistics-seed-data';
+
 const prisma = new PrismaClient();
 
 function hubAddress(input: {
   province: string;
+  provinceCode?: string;
   district: string;
   ward: string;
+  wardCode?: string;
   addressLine: string;
   phone: string;
   contactName: string;
+  type?: 'BRANCH' | 'SORTING_CENTER' | 'TRANSIT_HUB';
   description: string;
+  coverageProvinceCodes?: number[];
+  coverageProvinceNames?: string[];
 }): string {
   return JSON.stringify(input);
 }
@@ -43,33 +60,51 @@ function configEnvelope(input: {
   };
 }
 
+function merchantProfileSeed(province: VietnamProvinceSeed, index: number) {
+  const hub = resolveRegionalHub(province);
+  const ward = getRepresentativeWard(province);
+  const username = merchantUsernameForProvinceIndex(index);
+
+  return {
+    id: `merchant-profile-${username}`,
+    username,
+    citizenId: merchantCitizenId(province, index),
+    regionCode: hub.merchantRegionCode,
+    regionLabel: hub.zoneName.replace('Zone ', ''),
+    defaultHubCode: hub.code,
+    defaultHubName: hub.name,
+    defaultSenderAddress: buildAddressLine({
+      addressLine: `Kho ${province.name.replace(/^(Tỉnh|Thành phố)\s+/u, '')}`,
+      wardName: ward?.name,
+      provinceName: province.name,
+    }),
+  };
+}
+
+async function cleanupLegacyRegionalSeed() {
+  await prisma.hub.deleteMany({
+    where: {
+      code: {
+        in: ['HCM-001', 'HN-001', 'DN-001'],
+      },
+    },
+  });
+  await prisma.zone.deleteMany({
+    where: {
+      code: {
+        in: ['VN', 'HCM', 'HN', 'DN'],
+      },
+    },
+  });
+}
+
 async function seedZones() {
-  const zones = [
-    {
-      code: 'VN',
-      name: 'Toàn quốc',
-      parentCode: null,
-      isActive: true,
-    },
-    {
-      code: 'HCM',
-      name: 'Khu vực Hồ Chí Minh',
-      parentCode: 'VN',
-      isActive: true,
-    },
-    {
-      code: 'HN',
-      name: 'Khu vực Hà Nội',
-      parentCode: 'VN',
-      isActive: true,
-    },
-    {
-      code: 'DN',
-      name: 'Khu vực Đà Nẵng',
-      parentCode: 'VN',
-      isActive: true,
-    },
-  ];
+  const zones = Object.values(REGIONAL_HUBS).map((hub) => ({
+    code: hub.zoneCode,
+    name: hub.zoneName,
+    parentCode: null,
+    isActive: true,
+  }));
 
   for (const zone of zones) {
     await prisma.zone.upsert({
@@ -84,54 +119,43 @@ async function seedZones() {
   }
 }
 
-async function seedHubs() {
-  const hubs = [
-    {
-      code: 'HCM-001',
-      name: 'Hub Quận 1',
-      zoneCode: 'HCM',
+async function seedHubs(provinces: VietnamProvinceSeed[]) {
+  const coverageByRegion = new Map(
+    Object.keys(REGIONAL_HUBS).map((region) => [
+      region,
+      provinces.filter((province) => resolveProvinceRegion(province.codename) === region),
+    ]),
+  );
+  const hubs = Object.values(REGIONAL_HUBS).map((hub) => {
+    const province = provinces.find((item) => item.codename === hub.provinceCodename);
+    if (!province) {
+      throw new Error(`Cannot find hub province "${hub.provinceCodename}".`);
+    }
+
+    const ward = getRepresentativeWard(province, hub.preferredWardNames);
+    const coverage = coverageByRegion.get(hub.region) ?? [];
+
+    return {
+      code: hub.code,
+      name: hub.name,
+      zoneCode: hub.zoneCode,
       address: hubAddress({
-        province: 'Hồ Chí Minh',
-        district: 'Quận 1',
-        ward: 'Phường Bến Nghé',
-        addressLine: '12 Lê Lợi',
-        phone: '0281000001',
-        contactName: 'Điều phối HCM',
-        description: 'Hub demo trung tâm Hồ Chí Minh',
+        province: province.name,
+        provinceCode: String(province.code),
+        district: '',
+        ward: ward?.name ?? '',
+        wardCode: ward ? String(ward.code) : '',
+        addressLine: hub.addressLine,
+        phone: hub.phone,
+        contactName: hub.contactName,
+        type: 'SORTING_CENTER',
+        description: `${hub.name} phụ trách ${coverage.length} tỉnh/thành.`,
+        coverageProvinceCodes: coverage.map((item) => item.code),
+        coverageProvinceNames: coverage.map((item) => item.name),
       }),
       isActive: true,
-    },
-    {
-      code: 'HN-001',
-      name: 'Hub Cầu Giấy',
-      zoneCode: 'HN',
-      address: hubAddress({
-        province: 'Hà Nội',
-        district: 'Cầu Giấy',
-        ward: 'Phường Dịch Vọng',
-        addressLine: '24 Xuân Thủy',
-        phone: '0241000001',
-        contactName: 'Điều phối Hà Nội',
-        description: 'Hub demo khu vực Hà Nội',
-      }),
-      isActive: true,
-    },
-    {
-      code: 'DN-001',
-      name: 'Hub Hải Châu',
-      zoneCode: 'DN',
-      address: hubAddress({
-        province: 'Đà Nẵng',
-        district: 'Hải Châu',
-        ward: 'Phường Hải Châu 1',
-        addressLine: '08 Bạch Đằng',
-        phone: '0236100001',
-        contactName: 'Điều phối Đà Nẵng',
-        description: 'Hub demo khu vực Đà Nẵng',
-      }),
-      isActive: true,
-    },
-  ];
+    };
+  });
 
   for (const hub of hubs) {
     await prisma.hub.upsert({
@@ -199,7 +223,25 @@ async function seedNdrReasons() {
   }
 }
 
-async function seedConfigs() {
+async function seedConfigs(provinces: VietnamProvinceSeed[]) {
+  const merchantProfileConfigs = provinces.map((province, index) => {
+    const profile = merchantProfileSeed(province, index);
+
+    return {
+      key: `merchant.profile.${profile.username}`,
+      scope: 'MERCHANT_PROFILE',
+      description: `Hồ sơ merchant demo ${province.name}.`,
+      value: {
+        username: profile.username,
+        citizenId: profile.citizenId,
+        regionCode: profile.regionCode,
+        regionLabel: profile.regionLabel,
+        defaultHubCode: profile.defaultHubCode,
+        defaultHubName: profile.defaultHubName,
+        defaultSenderAddress: profile.defaultSenderAddress,
+      },
+    };
+  });
   const configs = [
     {
       key: 'delivery.retry.max_attempts',
@@ -223,20 +265,7 @@ async function seedConfigs() {
         defaultValue: 60,
       }),
     },
-    {
-      key: 'merchant.profile.41100001',
-      scope: 'MERCHANT_PROFILE',
-      description: 'Hồ sơ merchant demo.',
-      value: {
-        username: '41100001',
-        citizenId: '079200000001',
-        regionCode: 'HO_CHI_MINH',
-        regionLabel: 'Hồ Chí Minh',
-        defaultHubCode: 'HCM-001',
-        defaultHubName: 'Hub Quận 1',
-        defaultSenderAddress: '12 Lê Lợi, Phường Bến Nghé, Quận 1, Hồ Chí Minh',
-      },
-    },
+    ...merchantProfileConfigs,
   ];
 
   for (const config of configs) {
@@ -252,19 +281,10 @@ async function seedConfigs() {
   }
 }
 
-async function seedMerchantProfiles() {
-  const profiles = [
-    {
-      id: 'merchant-profile-41100001',
-      username: '41100001',
-      citizenId: '079200000001',
-      regionCode: 'HO_CHI_MINH',
-      regionLabel: 'Hồ Chí Minh',
-      defaultHubCode: 'HCM-001',
-      defaultHubName: 'Hub Quận 1',
-      defaultSenderAddress: '12 Lê Lợi, Phường Bến Nghé, Quận 1, Hồ Chí Minh',
-    },
-  ];
+async function seedMerchantProfiles(provinces: VietnamProvinceSeed[]) {
+  const profiles = provinces.map((province, index) =>
+    merchantProfileSeed(province, index),
+  );
 
   for (const profile of profiles) {
     await prisma.merchantProfile.upsert({
@@ -282,7 +302,13 @@ async function seedMerchantProfiles() {
   }
 }
 
-async function seedAuditLogs() {
+async function seedAuditLogs(provinces: VietnamProvinceSeed[]) {
+  const firstProvince = provinces[0];
+  if (!firstProvince) {
+    throw new Error('Cannot seed audit logs without province data.');
+  }
+
+  const firstMerchant = merchantProfileSeed(firstProvince, 0);
   const logs = [
     {
       id: 'seed-masterdata-audit-001',
@@ -290,11 +316,11 @@ async function seedAuditLogs() {
       actorUsername: '10000001',
       action: 'HUB_CREATED',
       targetType: 'HUB',
-      targetId: 'HCM-001',
+      targetId: REGIONAL_HUBS.NORTH.code,
       before: null,
       after: {
-        code: 'HCM-001',
-        zoneCode: 'HCM',
+        code: REGIONAL_HUBS.NORTH.code,
+        zoneCode: REGIONAL_HUBS.NORTH.zoneCode,
         isActive: true,
       },
       requestId: 'seed-demo-masterdata-001',
@@ -329,10 +355,10 @@ async function seedAuditLogs() {
       targetId: 'merchant-profile-41100001',
       before: null,
       after: {
-        username: '41100001',
-        citizenId: '079200000001',
-        regionCode: 'HO_CHI_MINH',
-        defaultHubCode: 'HCM-001',
+        username: firstMerchant.username,
+        citizenId: firstMerchant.citizenId,
+        regionCode: firstMerchant.regionCode,
+        defaultHubCode: firstMerchant.defaultHubCode,
       },
       requestId: 'seed-demo-masterdata-003',
       ipAddress: '127.0.0.1',
@@ -363,12 +389,15 @@ async function seedAuditLogs() {
 }
 
 async function main() {
+  const provinces = await loadVietnamProvinces();
+
+  await cleanupLegacyRegionalSeed();
   await seedZones();
-  await seedHubs();
+  await seedHubs(provinces);
   await seedNdrReasons();
-  await seedConfigs();
-  await seedMerchantProfiles();
-  await seedAuditLogs();
+  await seedConfigs(provinces);
+  await seedMerchantProfiles(provinces);
+  await seedAuditLogs(provinces);
   console.log('masterdata-service demo seed completed.');
 }
 

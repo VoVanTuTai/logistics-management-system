@@ -2,6 +2,13 @@ import { createHash } from 'crypto';
 
 import { PrismaClient } from '@prisma/client';
 
+import {
+  loadVietnamProvinces,
+  merchantUsernameForProvinceIndex,
+  REGIONAL_HUBS,
+  resolveRegionalHub,
+} from '../../../infra/dev/seed/vietnam-logistics-seed-data';
+
 const prisma = new PrismaClient();
 
 const demoPassword = process.env.DEMO_PASSWORD ?? 'password';
@@ -32,56 +39,102 @@ function allPermissions(enabled: boolean): Record<string, boolean> {
 }
 
 async function seedUsers() {
-  const users = [
+  const provinces = await loadVietnamProvinces();
+  const merchantUsers = provinces.map((province, index) => {
+    const hub = resolveRegionalHub(province);
+
+    return {
+      id: merchantUsernameForProvinceIndex(index),
+      username: merchantUsernameForProvinceIndex(index),
+      roles: ['MERCHANT'],
+      displayName: `Merchant ${province.name}`,
+      phone: `0941${String(index + 1).padStart(6, '0')}`,
+      hubCodes: [hub.code],
+    };
+  });
+  const regionalHubUsers = [
     {
       id: '10000001',
       username: '10000001',
       roles: ['SYSTEM_ADMIN'],
-      displayName: 'Admin Demo',
+      displayName: 'Admin Tổng NEXUS',
       phone: '0901000001',
-      hubCodes: ['HCM-001'],
+      hubCodes: Object.values(REGIONAL_HUBS).map((hub) => hub.code),
     },
     {
       id: '20000001',
       username: '20000001',
       roles: ['OPS_ADMIN'],
-      displayName: 'Ops Admin Demo',
+      displayName: 'Ops Admin miền Bắc',
       phone: '0902000001',
-      hubCodes: ['HCM-001'],
+      hubCodes: [REGIONAL_HUBS.NORTH.code],
     },
     {
       id: '20000002',
       username: '20000002',
-      roles: ['OPS_VIEWER'],
-      displayName: 'Ops Viewer Demo',
+      roles: ['OPS_ADMIN'],
+      displayName: 'Ops Admin miền Trung',
       phone: '0902000002',
-      hubCodes: ['HN-001'],
+      hubCodes: [REGIONAL_HUBS.CENTRAL.code],
+    },
+    {
+      id: '20000003',
+      username: '20000003',
+      roles: ['OPS_ADMIN'],
+      displayName: 'Ops Admin miền Nam',
+      phone: '0902000003',
+      hubCodes: [REGIONAL_HUBS.SOUTH.code],
+    },
+    {
+      id: '20000004',
+      username: '20000004',
+      roles: ['OPS_VIEWER'],
+      displayName: 'Ops Hub miền Bắc',
+      phone: '0902000004',
+      hubCodes: [REGIONAL_HUBS.NORTH.code],
+    },
+    {
+      id: '20000005',
+      username: '20000005',
+      roles: ['OPS_VIEWER'],
+      displayName: 'Ops Hub miền Trung',
+      phone: '0902000005',
+      hubCodes: [REGIONAL_HUBS.CENTRAL.code],
+    },
+    {
+      id: '20000006',
+      username: '20000006',
+      roles: ['OPS_VIEWER'],
+      displayName: 'Ops Hub miền Nam',
+      phone: '0902000006',
+      hubCodes: [REGIONAL_HUBS.SOUTH.code],
     },
     {
       id: '30000001',
       username: '30000001',
       roles: ['COURIER'],
-      displayName: 'Shipper Demo HCM',
+      displayName: 'Courier miền Bắc',
       phone: '0903000001',
-      hubCodes: ['HCM-001'],
+      hubCodes: [REGIONAL_HUBS.NORTH.code],
     },
     {
       id: '30000002',
       username: '30000002',
       roles: ['COURIER'],
-      displayName: 'Shipper Demo HN',
+      displayName: 'Courier miền Trung',
       phone: '0903000002',
-      hubCodes: ['HN-001'],
+      hubCodes: [REGIONAL_HUBS.CENTRAL.code],
     },
     {
-      id: '41100001',
-      username: '41100001',
-      roles: ['MERCHANT'],
-      displayName: 'Merchant Demo',
-      phone: '0904110001',
-      hubCodes: ['HCM-001'],
+      id: '30000003',
+      username: '30000003',
+      roles: ['COURIER'],
+      displayName: 'Courier miền Nam',
+      phone: '0903000003',
+      hubCodes: [REGIONAL_HUBS.SOUTH.code],
     },
   ];
+  const users = [...regionalHubUsers, ...merchantUsers];
 
   for (const user of users) {
     await prisma.userAccount.upsert({
@@ -148,7 +201,7 @@ async function seedAuditLogs() {
       after: {
         username: '20000001',
         roles: ['OPS_ADMIN'],
-        hubCodes: ['HCM-001'],
+        hubCodes: [REGIONAL_HUBS.NORTH.code],
       },
       requestId: 'seed-demo-auth-001',
       ipAddress: '127.0.0.1',
@@ -166,6 +219,7 @@ async function seedAuditLogs() {
       after: {
         actor: 'COURIER',
         disabled: ['scan.vehicle-inbound', 'scan.vehicle-outbound', 'scan.inventory-check'],
+        hubCodes: Object.values(REGIONAL_HUBS).map((hub) => hub.code),
       },
       requestId: 'seed-demo-auth-002',
       ipAddress: '127.0.0.1',
