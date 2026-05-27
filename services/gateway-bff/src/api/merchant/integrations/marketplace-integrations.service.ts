@@ -82,6 +82,19 @@ interface NormalizedCreateOrderInput {
   };
 }
 
+interface HubRecord {
+  code: string;
+  name: string;
+  zoneCode?: string | null;
+  address?: string | null;
+  isActive?: boolean;
+}
+
+interface ResolvedHubRoute {
+  senderHub: HubRecord;
+  receiverHub: HubRecord;
+}
+
 const SERVICE_TYPES = new Set(['STANDARD', 'EXPRESS', 'SAME_DAY']);
 const PICKUP_TYPES = new Set(['PICKUP', 'DROP_OFF']);
 const DEFAULT_PARCEL = {
@@ -146,10 +159,12 @@ export class MarketplaceIntegrationsService {
       };
     }
 
+    const resolvedRoute = await this.resolveHubRoute(normalized);
     const metadata = this.buildShipmentMetadata(
       normalized,
       partnerCode,
       idempotencyKey,
+      resolvedRoute,
     );
     const shipment = await this.upstreamRequest<ShipmentResponse>(
       'shipment',
@@ -471,10 +486,142 @@ export class MarketplaceIntegrationsService {
     }
   }
 
+  private async resolveHubRoute(
+    input: NormalizedCreateOrderInput,
+  ): Promise<ResolvedHubRoute> {
+    const hubs = await this.loadActiveHubs();
+    const senderHub = this.resolveHubForAddress(hubs, input.sender, 'sender');
+    const receiverHub = this.resolveHubForAddress(hubs, input.receiver, 'receiver');
+
+    return {
+      senderHub,
+      receiverHub,
+    };
+  }
+
+  private async loadActiveHubs(): Promise<HubRecord[]> {
+    const hubs = await this.upstreamRequest<HubRecord[]>(
+      'masterdata',
+      '/hubs?isActive=true',
+      { method: 'GET' },
+    );
+
+    return hubs.filter((hub) => hub.isActive !== false);
+  }
+
+  private resolveHubForAddress(
+    hubs: HubRecord[],
+    addressInput: {
+      address: string;
+      ward?: string;
+      district?: string;
+      province?: string;
+      hubCode?: string;
+    },
+    side: 'sender' | 'receiver',
+  ): HubRecord {
+    const addressText = [
+      addressInput.address,
+      addressInput.ward,
+      addressInput.district,
+      addressInput.province,
+    ]
+      .filter((value): value is string => Boolean(value?.trim()))
+      .join(', ');
+    const matchedHubs = hubs
+      .map((hub) => ({
+        hub,
+        address: this.parseHubAddress(hub.address),
+      }))
+      .filter((item) => item.address.type === 'BRANCH');
+    const explicitProvinceKey = this.normalizeProvinceKey(addressInput.province);
+    const addressKey = this.normalizeProvinceKey(addressText);
+    const matchingProvinceHub = matchedHubs.find(({ address }) => {
+      const hubProvinceKey = this.normalizeProvinceKey(address.province);
+      return (
+        Boolean(hubProvinceKey) &&
+        (hubProvinceKey === explicitProvinceKey ||
+          (Boolean(addressKey) && addressKey.includes(hubProvinceKey)))
+      );
+    });
+
+    if (matchingProvinceHub) {
+      return matchingProvinceHub.hub;
+    }
+
+    const explicitHubCode = addressInput.hubCode?.trim().toUpperCase();
+    const explicitHub = explicitHubCode
+      ? matchedHubs.find((item) => item.hub.code.toUpperCase() === explicitHubCode)?.hub
+      : null;
+
+    if (explicitHub) {
+      return explicitHub;
+    }
+
+    this.fail(
+      HttpStatus.BAD_REQUEST,
+      'ADDRESS_HUB_NOT_RESOLVED',
+      `${side}.address/province không khớp bưu cục tỉnh active nào trong hệ thống.`,
+      [
+        {
+          field: `${side}.province`,
+          reason: 'must match a supported Vietnam province with an active branch hub',
+        },
+      ],
+    );
+  }
+
+  private parseHubAddress(address: string | null | undefined): {
+    province: string;
+    type: string;
+  } {
+    if (!address?.trim()) {
+      return {
+        province: '',
+        type: '',
+      };
+    }
+
+    try {
+      const payload = JSON.parse(address) as unknown;
+      const objectPayload = this.asObject(payload);
+
+      return {
+        province: typeof objectPayload?.province === 'string' ? objectPayload.province : '',
+        type: typeof objectPayload?.type === 'string' ? objectPayload.type : '',
+      };
+    } catch {
+      const parts = address.split(',').map((part) => part.trim()).filter(Boolean);
+
+      return {
+        province: parts[parts.length - 1] ?? '',
+        type: '',
+      };
+    }
+  }
+
+  private normalizeProvinceKey(value: string | undefined): string {
+    if (!value?.trim()) {
+      return '';
+    }
+
+    const normalized = value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase()
+      .replace(/\b(TINH|THANH\s*PHO|TP)\b/g, ' ')
+      .replace(/DAK\s*LAK/g, 'DAKLAK')
+      .replace(/HO\s*CHI\s*MINH|HCM|SAI\s*GON/g, 'HOCHIMINH')
+      .replace(/[^A-Z0-9]+/gi, '');
+
+    return normalized;
+  }
+
   private buildShipmentMetadata(
     input: NormalizedCreateOrderInput,
     partnerCode: string,
     idempotencyKey: string,
+    route: ResolvedHubRoute,
   ): JsonObject {
     return {
       source: 'marketplace-integration',
@@ -485,15 +632,29 @@ export class MarketplaceIntegrationsService {
       },
       external: input.external,
       merchant: input.merchant,
-      sender: input.sender,
-      receiver: input.receiver,
+      sender: {
+        ...input.sender,
+        hubCode: route.senderHub.code,
+        resolvedHubName: route.senderHub.name,
+      },
+      receiver: {
+        ...input.receiver,
+        hubCode: route.receiverHub.code,
+        resolvedHubName: route.receiverHub.name,
+      },
       parcel: input.parcel,
       service: input.service,
       payment: input.payment,
       options: input.options,
       routing: {
-        originHubCode: input.sender.hubCode ?? null,
+        originHubCode: route.senderHub.code,
+        destinationHubCode: route.receiverHub.code,
+        resolvedBy: 'address',
       },
+      senderHubCode: route.senderHub.code,
+      receiverHubCode: route.receiverHub.code,
+      originHubCode: route.senderHub.code,
+      destinationHubCode: route.receiverHub.code,
       codAmount: input.payment.codAmount,
       estimatedFee: input.payment.shippingFee,
     };
