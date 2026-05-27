@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 
 import { authClient } from '../../../../features/auth/auth.client';
 import type { OpsUserDto } from '../../../../features/auth/auth.types';
+import { useHubsQuery } from '../../../../features/masterdata/masterdata.api';
 import { usePickupRequestsQuery } from '../../../../features/pickups/pickups.api';
 import type { PickupRequestListItemDto } from '../../../../features/pickups/pickups.types';
 import { useShipmentsQuery } from '../../../../features/shipments/shipments.api';
@@ -15,6 +16,7 @@ import {
 import type { TaskListItemDto } from '../../../../features/tasks/tasks.types';
 import { getErrorMessage } from '../../../../services/api/errors';
 import { useAuthStore } from '../../../../store/authStore';
+import { deriveHubScopeTokens, normalizeLocationToken } from '../../../../utils/locationScope';
 import { queryKeys } from '../../../../utils/queryKeys';
 import './CustomerOrderDispatchPage.css';
 
@@ -68,6 +70,8 @@ const SOURCE_LABELS: Record<string, string> = {
   'merchant-web': 'Merchant web',
   MERCHANT_WEB: 'Merchant web',
   MARKETPLACE: 'Sàn TMĐT',
+  DT_COMMERCE: 'Sàn DT',
+  'marketplace-integration': 'Sàn TMĐT',
   RETURN_PORTAL: 'Cổng hàng trả',
 };
 
@@ -185,13 +189,77 @@ function buildPickupLookup(pickups: PickupRequestListItemDto[]): Map<string, Pic
   return lookup;
 }
 
-function resolvePickupHub(shipment: ShipmentListItemDto | null): string {
-  return normalizeCode(
-    shipment?.senderHubCode ??
-      shipment?.originHubCode ??
-      shipment?.currentLocation ??
-      null,
-  );
+function splitAddressTokens(address: string | null): string[] {
+  if (!address) {
+    return [];
+  }
+
+  return address
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+function hasScopeTokenMatch(tokens: Iterable<string>, scopeTokens: Set<string>): boolean {
+  for (const token of tokens) {
+    if (!token) {
+      continue;
+    }
+
+    for (const scopeToken of scopeTokens) {
+      if (
+        token === scopeToken ||
+        token.includes(scopeToken) ||
+        scopeToken.includes(token)
+      ) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function isShipmentSenderInHubScope(
+  shipment: ShipmentListItemDto | null,
+  scopeTokens: Set<string>,
+): boolean {
+  if (!shipment || scopeTokens.size === 0) {
+    return false;
+  }
+
+  const senderTokens = new Set<string>();
+  if (shipment.senderWard) {
+    senderTokens.add(normalizeLocationToken(shipment.senderWard));
+  }
+  if (shipment.senderDistrict) {
+    senderTokens.add(normalizeLocationToken(shipment.senderDistrict));
+  }
+  if (shipment.senderProvince) {
+    senderTokens.add(normalizeLocationToken(shipment.senderProvince));
+  }
+  for (const part of splitAddressTokens(shipment.senderAddress)) {
+    senderTokens.add(normalizeLocationToken(part));
+  }
+
+  return hasScopeTokenMatch(senderTokens, scopeTokens);
+}
+
+function resolvePickupHub(
+  shipment: ShipmentListItemDto | null,
+  processingHubCode: string,
+  processingScopeTokens: Set<string>,
+): string {
+  const explicitPickupHub = normalizeCode(shipment?.senderHubCode ?? shipment?.originHubCode ?? null);
+  if (explicitPickupHub) {
+    return explicitPickupHub;
+  }
+
+  if (processingHubCode && isShipmentSenderInHubScope(shipment, processingScopeTokens)) {
+    return processingHubCode;
+  }
+
+  return normalizeCode(shipment?.currentLocation ?? null);
 }
 
 function mapTaskToDispatchRow(
@@ -199,12 +267,14 @@ function mapTaskToDispatchRow(
   shipment: ShipmentListItemDto | null,
   pickup: PickupRequestListItemDto | null,
   courierLookup: Map<string, OpsUserDto>,
+  processingHubCode: string,
+  processingScopeTokens: Set<string>,
 ): DispatchOrderRow | null {
   if (!isDispatchStatus(task.status)) {
     return null;
   }
 
-  const pickupHub = resolvePickupHub(shipment);
+  const pickupHub = resolvePickupHub(shipment, processingHubCode, processingScopeTokens);
   if (!pickupHub) {
     return null;
   }
@@ -270,6 +340,7 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
   const tasksQuery = useTasksQuery(accessToken, { taskType: 'PICKUP' }, {
     refetchInterval: realtimeStatus === 'connected' ? false : 10000,
   });
+  const hubsQuery = useHubsQuery(accessToken, {});
   const shipmentsQuery = useShipmentsQuery(accessToken, {}, { refetchInterval: 5000 });
   const pickupsQuery = usePickupRequestsQuery(accessToken, {}, { refetchInterval: 5000 });
   const shippersQuery = useQuery({
@@ -297,6 +368,14 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
     return lookup;
   }, [shippersQuery.data]);
 
+  const processingScopeTokens = useMemo(
+    () =>
+      processingHubCode
+        ? deriveHubScopeTokens(hubsQuery.data ?? [], [processingHubCode])
+        : new Set<string>(),
+    [hubsQuery.data, processingHubCode],
+  );
+
   const dispatchRows = useMemo(() => {
     const shipmentLookup = buildShipmentLookup(shipmentsQuery.data ?? []);
     const pickupLookup = buildPickupLookup(pickupsQuery.data ?? []);
@@ -306,7 +385,14 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
         const shipmentCode = normalizeCode(task.shipmentCode);
         const shipment = shipmentCode ? shipmentLookup.get(shipmentCode) ?? null : null;
         const pickup = shipmentCode ? pickupLookup.get(shipmentCode) ?? null : null;
-        return mapTaskToDispatchRow(task, shipment, pickup, courierLookup);
+        return mapTaskToDispatchRow(
+          task,
+          shipment,
+          pickup,
+          courierLookup,
+          processingHubCode,
+          processingScopeTokens,
+        );
       })
       .filter((row): row is DispatchOrderRow => Boolean(row))
       .filter((row) => row.pickupHub === processingHubCode)
@@ -318,6 +404,7 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
     courierLookup,
     pickupsQuery.data,
     processingHubCode,
+    processingScopeTokens,
     shipmentsQuery.data,
     tasksQuery.data,
   ]);
@@ -432,9 +519,14 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
     paginatedOrders.length > 0 &&
     paginatedOrders.every((order) => selectedOrderIds.includes(order.id));
   const loadError =
-    tasksQuery.error ?? shipmentsQuery.error ?? pickupsQuery.error ?? shippersQuery.error ?? null;
+    tasksQuery.error ??
+    hubsQuery.error ??
+    shipmentsQuery.error ??
+    pickupsQuery.error ??
+    shippersQuery.error ??
+    null;
   const isLoading =
-    tasksQuery.isLoading || shipmentsQuery.isLoading || pickupsQuery.isLoading;
+    tasksQuery.isLoading || hubsQuery.isLoading || shipmentsQuery.isLoading || pickupsQuery.isLoading;
 
   useEffect(() => {
     const existingIds = new Set(dispatchRows.map((row) => row.id));

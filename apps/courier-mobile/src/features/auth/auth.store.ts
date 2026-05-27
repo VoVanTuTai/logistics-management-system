@@ -69,15 +69,7 @@ async function withEffectiveMobilePermissions(
       },
     };
   } catch {
-    return {
-      ...session,
-      user: {
-        ...session.user,
-        mobilePermissionActor: undefined,
-        mobilePermissions: undefined,
-        mobilePermissionsLoadedAt: undefined,
-      },
-    };
+    return session;
   }
 }
 
@@ -103,6 +95,7 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
       const sessionWithPermissions =
         await withEffectiveMobilePermissions(storedSession);
       await persistAuthSession(sessionWithPermissions);
+      useAppStore.getState().setSession(sessionWithPermissions);
       set({
         status: 'authenticated',
         session: sessionWithPermissions,
@@ -126,6 +119,7 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
     const sessionWithPermissions =
       await withEffectiveMobilePermissions(currentSession);
     await persistAuthSession(sessionWithPermissions);
+    useAppStore.getState().setSession(sessionWithPermissions);
     set({
       status: 'authenticated',
       session: sessionWithPermissions,
@@ -168,6 +162,7 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
 
       const refreshedSession = await refreshSessionPromise;
       await persistAuthSession(refreshedSession);
+      useAppStore.getState().setSession(refreshedSession);
       set({
         status: 'authenticated',
         session: refreshedSession,

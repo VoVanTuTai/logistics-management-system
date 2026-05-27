@@ -61,8 +61,15 @@ const COURIER_PERMISSION_MATRIX: Record<
 };
 
 export function resolveCourierActor(
-  user: Pick<AuthenticatedUserDto, 'roles'> | null | undefined,
+  user:
+    | Pick<AuthenticatedUserDto, 'roles' | 'mobilePermissionActor'>
+    | null
+    | undefined,
 ): CourierActor {
+  if (user?.mobilePermissionActor === 'OPS' || user?.mobilePermissionActor === 'COURIER') {
+    return user.mobilePermissionActor;
+  }
+
   const roles = new Set((user?.roles ?? []).map((role) => role.toUpperCase()));
 
   if (
@@ -82,7 +89,7 @@ export function resolveCourierActor(
 
 export function canAccessCourierFeature(
   user:
-    | Pick<AuthenticatedUserDto, 'roles' | 'mobilePermissions'>
+    | Pick<AuthenticatedUserDto, 'roles' | 'mobilePermissionActor' | 'mobilePermissions'>
     | null
     | undefined,
   feature: CourierPermissionFeature,
@@ -91,13 +98,18 @@ export function canAccessCourierFeature(
     return true;
   }
 
+  const effectivePermission = user?.mobilePermissions?.[feature];
+  if (typeof effectivePermission === 'boolean') {
+    return effectivePermission;
+  }
+
   const actor = resolveCourierActor(user);
   return COURIER_PERMISSION_MATRIX[actor][feature] === true;
 }
 
 export function filterPermittedCourierFeatures<TItem extends { permission: CourierPermissionFeature }>(
   user:
-    | Pick<AuthenticatedUserDto, 'roles' | 'mobilePermissions'>
+    | Pick<AuthenticatedUserDto, 'roles' | 'mobilePermissionActor' | 'mobilePermissions'>
     | null
     | undefined,
   items: TItem[],
