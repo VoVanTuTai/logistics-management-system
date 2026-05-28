@@ -77,15 +77,16 @@ run_node_service_command() {
   local pnpm_command="$4"
   local npm_command="$5"
   local network_name
+  local service_path
 
   network_name="$(compose_network)"
+  service_path="${dir#$ROOT_DIR/}"
 
   echo "[node] $name"
   docker run --rm \
     --network "$network_name" \
-    -v "$dir:/app" \
-    -v "$ROOT_DIR/infra:/infra:ro" \
-    -w /app \
+    -v "$ROOT_DIR:/workspace" \
+    -w "/workspace/$service_path" \
     -e DATABASE_URL="$database_url" \
     -e PNPM_COMMAND="$pnpm_command" \
     -e NPM_COMMAND="$npm_command" \
