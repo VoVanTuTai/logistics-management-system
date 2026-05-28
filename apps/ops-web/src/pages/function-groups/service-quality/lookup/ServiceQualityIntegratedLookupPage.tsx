@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 
 import { useShipmentDetailQuery, useShipmentsQuery } from '../../../../features/shipments/shipments.api';
 import type {
@@ -8,7 +9,6 @@ import type {
 } from '../../../../features/shipments/shipments.types';
 import { useTrackingDetailQuery } from '../../../../features/tracking/tracking.api';
 import type { TrackingTimelineEventDto } from '../../../../features/tracking/tracking.types';
-import { routePaths } from '../../../../navigation/routes';
 import { getErrorMessage } from '../../../../services/api/errors';
 import { useAuthStore } from '../../../../store/authStore';
 import { formatDateTime } from '../../../../utils/format';
@@ -18,6 +18,7 @@ import {
   formatTrackingEventSourceLabel,
   formatTrackingEventTypeLabel,
 } from '../../../../utils/logisticsLabels';
+import { CopyableShipmentCode } from '../../../shared/CopyableShipmentCode';
 import './ServiceQualityIntegratedLookupPage.css';
 
 interface DetailField {
@@ -45,6 +46,19 @@ function formatMoney(value: number | null | undefined): string {
   return `${new Intl.NumberFormat('vi-VN').format(value)} đ`;
 }
 
+function maskPhone(value: string | null | undefined): string {
+  const phone = value?.trim();
+
+  if (!phone) {
+    return 'Không có';
+  }
+
+  const visibleSuffixLength = Math.min(3, phone.length);
+  const maskedLength = Math.max(phone.length - visibleSuffixLength, 0);
+
+  return `${'*'.repeat(maskedLength)}${phone.slice(-visibleSuffixLength)}`;
+}
+
 function FieldGrid({ fields }: { fields: DetailField[] }): React.JSX.Element {
   return (
     <dl className="ops-integrated-lookup__fields">
@@ -55,6 +69,36 @@ function FieldGrid({ fields }: { fields: DetailField[] }): React.JSX.Element {
         </div>
       ))}
     </dl>
+  );
+}
+
+function SensitivePhoneValue({ value, label }: { value: string | null | undefined; label: string }): React.JSX.Element {
+  const phone = value?.trim() ?? '';
+  const [isRevealed, setIsRevealed] = useState(false);
+
+  useEffect(() => {
+    setIsRevealed(false);
+  }, [phone]);
+
+  if (!phone) {
+    return <>{formatText(value)}</>;
+  }
+
+  const buttonLabel = isRevealed ? `Ẩn ${label}` : `Hiện ${label}`;
+
+  return (
+    <span className="ops-integrated-lookup__sensitive-value">
+      <span>{isRevealed ? phone : maskPhone(phone)}</span>
+      <button
+        type="button"
+        className="ops-integrated-lookup__sensitive-toggle"
+        onClick={() => setIsRevealed((current) => !current)}
+        aria-label={buttonLabel}
+        title={buttonLabel}
+      >
+        {isRevealed ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
+      </button>
+    </span>
   );
 }
 
@@ -167,7 +211,7 @@ export function ServiceQualityIntegratedLookupPage(): React.JSX.Element {
           <section className="ops-integrated-lookup__summary">
             <article>
               <span>Mã vận đơn</span>
-              <strong>{shipment.shipmentCode}</strong>
+              <CopyableShipmentCode code={shipment.shipmentCode} />
             </article>
             <article>
               <span>Trạng thái hiện tại</span>
@@ -187,7 +231,7 @@ export function ServiceQualityIntegratedLookupPage(): React.JSX.Element {
             <article className="ops-integrated-lookup__panel">
               <header>
                 <h3>Thông tin hub và tuyến</h3>
-                <Link to={routePaths.shipmentDetail(shipment.id)}>Mở chi tiết vận đơn</Link>
+                <CopyableShipmentCode code={shipment.shipmentCode} />
               </header>
               <FieldGrid
                 fields={[
@@ -208,7 +252,7 @@ export function ServiceQualityIntegratedLookupPage(): React.JSX.Element {
               <FieldGrid
                 fields={[
                   { label: 'Tên', value: formatText(shipment.senderName) },
-                  { label: 'Số điện thoại', value: formatText(shipment.senderPhone) },
+                  { label: 'Số điện thoại', value: <SensitivePhoneValue value={shipment.senderPhone} label="số điện thoại người gửi" /> },
                   { label: 'Địa chỉ', value: formatText(shipment.senderAddress) },
                   { label: 'Phường/xã', value: formatText(shipment.senderWard) },
                   { label: 'Quận/huyện', value: formatText(shipment.senderDistrict) },
@@ -224,7 +268,7 @@ export function ServiceQualityIntegratedLookupPage(): React.JSX.Element {
               <FieldGrid
                 fields={[
                   { label: 'Tên', value: formatText(shipment.receiverName) },
-                  { label: 'Số điện thoại', value: formatText(shipment.receiverPhone) },
+                  { label: 'Số điện thoại', value: <SensitivePhoneValue value={shipment.receiverPhone} label="số điện thoại người nhận" /> },
                   { label: 'Địa chỉ', value: formatText(shipment.receiverAddress) },
                   { label: 'Khu vực', value: formatText(shipment.receiverRegion) },
                 ]}

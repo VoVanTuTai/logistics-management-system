@@ -359,6 +359,10 @@ function buildShipmentListPath(filters: ShipmentListFilters): string {
     params.set('shipmentCode', filters.shipmentCode.trim());
   }
 
+  if (filters.shipmentCodes?.length) {
+    params.set('shipmentCodes', filters.shipmentCodes.join(','));
+  }
+
   if (filters.status?.trim()) {
     params.set('status', filters.status.trim());
   }

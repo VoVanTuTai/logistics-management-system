@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 
 import { ndrClient } from '../../../../features/ndr/ndr.client';
 import type { NdrCaseListItemDto } from '../../../../features/ndr/ndr.types';
@@ -7,10 +6,10 @@ import { returnClient } from '../../../../features/returns/return.client';
 import type { ReturnCaseDto } from '../../../../features/returns/return.types';
 import { shipmentsClient } from '../../../../features/shipments/shipments.client';
 import type { ShipmentListItemDto } from '../../../../features/shipments/shipments.types';
-import { routePaths } from '../../../../navigation/routes';
 import { openReturnShippingLabelPrint } from '../../../../printing/returnShippingLabelPrint';
 import { useAuthStore } from '../../../../store/authStore';
 import { formatNdrStatusLabel, formatShipmentStatusLabel } from '../../../../utils/logisticsLabels';
+import { CopyableShipmentCode } from '../../../shared/CopyableShipmentCode';
 
 import '../data-monitoring/OperationalDataMonitorPage.css';
 import './ReturnBlockManagementPage.css';
@@ -432,12 +431,10 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
                 <tr key={`${order.sourceType}-${order.id}`}>
                   <td>
                     {order.originalShipmentId ? (
-                      <Link
+                      <CopyableShipmentCode
+                        code={order.originalCode}
                         className="ops-return-list__mono"
-                        to={routePaths.shipmentDetail(order.originalShipmentId)}
-                      >
-                        {order.originalCode}
-                      </Link>
+                      />
                     ) : (
                       <span className="ops-return-list__mono">{order.originalCode}</span>
                     )}

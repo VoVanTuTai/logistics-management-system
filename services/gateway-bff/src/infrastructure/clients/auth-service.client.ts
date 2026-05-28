@@ -10,6 +10,13 @@ export type AuthenticatedUserView = {
   hubCodes?: string[];
 };
 
+export type UserAccountView = AuthenticatedUserView & {
+  status: 'ACTIVE' | 'DISABLED';
+  phone?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 export type IntrospectResponse = {
   active: boolean;
   sessionId: string | null;
@@ -51,6 +58,32 @@ export class AuthServiceClient {
     return this.request<IntrospectResponse>('/auth/introspect', {
       method: 'POST',
       body: { accessToken },
+    });
+  }
+
+  async listUsers(filters: {
+    roleGroup?: 'OPS' | 'SHIPPER' | 'MERCHANT';
+    status?: 'ACTIVE' | 'DISABLED';
+    hubCode?: string;
+    q?: string;
+  } = {}): Promise<UserAccountView[]> {
+    const params = new URLSearchParams();
+    if (filters.roleGroup) {
+      params.set('roleGroup', filters.roleGroup);
+    }
+    if (filters.status) {
+      params.set('status', filters.status);
+    }
+    if (filters.hubCode) {
+      params.set('hubCode', filters.hubCode);
+    }
+    if (filters.q) {
+      params.set('q', filters.q);
+    }
+
+    const suffix = params.size > 0 ? `?${params.toString()}` : '';
+    return this.request<UserAccountView[]>(`/auth/users${suffix}`, {
+      method: 'GET',
     });
   }
 

@@ -212,6 +212,7 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
     const andFilters: Prisma.ShipmentWhereInput[] = [];
     const status = normalizeString(filters.status);
     const keyword = normalizeString(filters.shipmentCode) ?? normalizeString(filters.q);
+    const shipmentCodes = normalizeStringList(filters.shipmentCodes);
     const hubCodes = normalizeStringList(filters.hubCodes);
     const createdFrom = normalizeDate(filters.createdFrom);
     const createdTo = normalizeDate(filters.createdTo);
@@ -220,7 +221,13 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
       where.currentStatus = status as PrismaShipmentCurrentStatus;
     }
 
-    if (keyword) {
+    if (shipmentCodes.length > 0) {
+      andFilters.push({
+        code: {
+          in: shipmentCodes,
+        },
+      });
+    } else if (keyword) {
       andFilters.push({
         code: {
           contains: keyword,

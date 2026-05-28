@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 
 import { useHubsQuery } from '../../../../features/masterdata/masterdata.api';
 import {
@@ -16,7 +15,6 @@ import { useShipmentsQuery } from '../../../../features/shipments/shipments.api'
 import type { ShipmentListItemDto } from '../../../../features/shipments/shipments.types';
 import { useTasksQuery } from '../../../../features/tasks/tasks.api';
 import type { TaskListItemDto } from '../../../../features/tasks/tasks.types';
-import { routePaths } from '../../../../navigation/routes';
 import { getErrorMessage } from '../../../../services/api/errors';
 import { useAuthStore } from '../../../../store/authStore';
 import { formatDateTime } from '../../../../utils/format';
@@ -24,6 +22,7 @@ import {
   deriveHubScopeTokens,
   isShipmentInScope,
 } from '../../../../utils/locationScope';
+import { CopyableShipmentCode } from '../../../shared/CopyableShipmentCode';
 import { BranchTablePagination } from '../shared/BranchTablePagination';
 import './BranchFinanceCodSettlementPage.css';
 
@@ -980,12 +979,10 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
                 <tr key={record.shipmentCode}>
                   <td>
                     {record.shipment ? (
-                      <Link
+                      <CopyableShipmentCode
+                        code={record.shipmentCode}
                         className="ops-branch-cod__code"
-                        to={routePaths.shipmentDetail(record.shipment.id)}
-                      >
-                        {record.shipmentCode}
-                      </Link>
+                      />
                     ) : (
                       <span className="ops-branch-cod__code">{record.shipmentCode}</span>
                     )}
@@ -1258,12 +1255,10 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
                 <tr key={row.shipmentCode}>
                   <td>
                     {row.shipment ? (
-                      <Link
+                      <CopyableShipmentCode
+                        code={row.shipmentCode}
                         className="ops-branch-cod__code"
-                        to={routePaths.shipmentDetail(row.shipment.id)}
-                      >
-                        {row.shipmentCode}
-                      </Link>
+                      />
                     ) : (
                       <span className="ops-branch-cod__code">{row.shipmentCode}</span>
                     )}

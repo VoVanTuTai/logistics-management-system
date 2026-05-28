@@ -75,6 +75,7 @@ export const opsEndpoints = {
   masterdata: {
     hubs: '/ops/masterdata/hubs',
     hubDetail: (hubId: string) => `/ops/masterdata/hubs/${hubId}`,
+    vietnamAdministrativeUnits: '/ops/masterdata/locations/vietnam-administrative-units',
     zones: '/ops/masterdata/zones',
     zoneDetail: (zoneId: string) => `/ops/masterdata/zones/${zoneId}`,
     ndrReasons: '/ops/masterdata/ndr-reasons',

@@ -1,59 +1,68 @@
-﻿.ops-branch-order-create {
+.ops-branch-order-create {
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .ops-branch-order-create__panel {
+  overflow: hidden;
   border: 1px solid #dbe3ef;
+  border-radius: 8px;
   background: #ffffff;
 }
 
 .ops-branch-order-create__panel-header {
-  height: 54px;
+  min-height: 44px;
   border-bottom: 1px solid #dbe3ef;
-  background: #f3f4f6;
+  background: #f8fafc;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
+  padding: 0 14px;
 }
 
 .ops-branch-order-create__panel-header h2 {
   margin: 0;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  color: #374151;
-  font-size: 30px;
-  font-weight: 600;
+  gap: 7px;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
 }
 
 .ops-branch-order-create__panel-header h2::before {
   content: '';
   width: 3px;
-  height: 20px;
-  border-radius: 999px;
-  background: #111827;
+  height: 16px;
+  border-radius: 6px;
+  background: #2563eb;
   display: inline-block;
 }
 
 .ops-branch-order-create__panel-header h2 span {
-  font-size: 16px;
-  color: #6b7280;
+  font-size: 12px;
+  color: #64748b;
 }
 
 .ops-branch-order-create__collapse-btn {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border: 0;
+  border-radius: 6px;
   background: transparent;
-  color: #9ca3af;
+  color: #64748b;
   padding: 0;
 }
 
+.ops-branch-order-create__collapse-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
 .ops-branch-order-create__collapse-btn svg {
-  width: 18px;
-  height: 18px;
+  width: 17px;
+  height: 17px;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.8;
@@ -64,8 +73,8 @@
 .ops-branch-order-create__form {
   display: grid;
   grid-template-columns: repeat(4, minmax(220px, 1fr));
-  gap: 24px;
-  padding: 22px 16px 16px;
+  gap: 14px 16px;
+  padding: 16px;
 }
 
 .ops-branch-order-create__form--sender {
@@ -74,7 +83,8 @@
 
 .ops-branch-order-create__field {
   display: grid;
-  gap: 8px;
+  align-content: start;
+  gap: 6px;
 }
 
 .ops-branch-order-create__field--wide {
@@ -82,10 +92,10 @@
 }
 
 .ops-branch-order-create__field span {
-  font-size: 26px;
-  font-weight: 600;
-  color: #3f3f46;
-  line-height: 1.2;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
 }
 
 .ops-branch-order-create__field span i {
@@ -98,7 +108,7 @@
   width: 16px;
   height: 16px;
   border-radius: 999px;
-  background: #4b5563;
+  background: #475569;
   color: #ffffff;
   font-size: 11px;
   font-style: normal;
@@ -106,33 +116,55 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-left: 7px;
+  margin-left: 6px;
 }
 
 .ops-branch-order-create__field input,
 .ops-branch-order-create__field select,
 .ops-branch-order-create__field textarea {
-  height: 40px;
-  border: 1px solid #d1d5db;
-  border-radius: 11px;
-  padding: 9px 12px;
-  color: #4b5563;
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 8px 11px;
   background: #ffffff;
+  color: #0f172a;
+  font-size: 13px;
+  line-height: 1.4;
+  outline: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
 }
 
 .ops-branch-order-create__field textarea {
-  min-height: 80px;
+  min-height: 76px;
   resize: vertical;
+}
+
+.ops-branch-order-create__field input:focus,
+.ops-branch-order-create__field select:focus,
+.ops-branch-order-create__field textarea:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
 .ops-branch-order-create__field input:disabled,
 .ops-branch-order-create__field select:disabled {
-  background: #f3f4f6;
-  color: #6b7280;
+  background: #f1f5f9;
+  color: #64748b;
 }
 
 .ops-branch-order-create__field input::placeholder {
-  color: #9ca3af;
+  color: #94a3b8;
+}
+
+.ops-branch-order-create__field small {
+  color: #b45309;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .ops-branch-order-create__field--error input {
@@ -143,11 +175,11 @@
   grid-column: 1;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  color: #9ca3af;
-  font-size: 26px;
+  gap: 8px;
+  color: #475569;
+  font-size: 13px;
   font-weight: 600;
-  margin-top: -10px;
+  margin-top: -4px;
 }
 
 .ops-branch-order-create__checkbox input {
@@ -157,28 +189,31 @@
 
 .ops-branch-order-create__summary {
   border: 1px solid #bfdbfe;
-  border-radius: 11px;
+  border-radius: 8px;
   background: #eff6ff;
-  padding: 9px 12px;
+  padding: 8px 11px;
   display: grid;
-  gap: 4px;
+  align-content: center;
+  gap: 2px;
 }
 
 .ops-branch-order-create__summary span {
   color: #1d4ed8;
-  font-size: 18px;
+  font-size: 12px;
   font-weight: 700;
 }
 
 .ops-branch-order-create__summary strong {
   color: #1e3a8a;
-  font-size: 24px;
+  font-size: 18px;
+  line-height: 1.25;
 }
 
 .ops-branch-order-create__actions {
   border: 1px solid #dbe3ef;
+  border-radius: 8px;
   background: #ffffff;
-  padding: 14px 16px;
+  padding: 12px 16px;
   display: flex;
   gap: 10px;
   align-items: center;
@@ -189,17 +224,23 @@
 .ops-branch-order-create__actions > div {
   margin-right: auto;
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .ops-branch-order-create__actions button {
-  min-height: 40px;
+  min-height: 38px;
   border: 1px solid #1d4ed8;
-  border-radius: 10px;
+  border-radius: 8px;
   background: #1d4ed8;
   color: #ffffff;
   padding: 0 14px;
+  font-size: 13px;
   font-weight: 700;
+}
+
+.ops-branch-order-create__actions button + button {
+  border-color: #0f172a;
+  background: #0f172a;
 }
 
 .ops-branch-order-create__actions button:disabled {
@@ -213,8 +254,8 @@
   border-radius: 8px;
   background: #dcfce7;
   color: #166534;
-  padding: 8px 10px;
-  font-size: 13px;
+  padding: 7px 10px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -241,10 +282,19 @@
 @media (max-width: 760px) {
   .ops-branch-order-create__form {
     grid-template-columns: 1fr;
-    gap: 14px;
+    gap: 12px;
+    padding: 14px;
   }
 
   .ops-branch-order-create__checkbox {
     margin-top: 0;
+  }
+
+  .ops-branch-order-create__actions {
+    align-items: stretch;
+  }
+
+  .ops-branch-order-create__actions button {
+    width: 100%;
   }
 }

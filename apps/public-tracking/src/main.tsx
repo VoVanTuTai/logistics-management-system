@@ -200,7 +200,7 @@ function PublicTrackingApp(): React.JSX.Element {
                 type="text"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
-                placeholder="Ví dụ: SHP260317A1B2C3"
+                placeholder="Ví dụ: 101000000001"
               />
               <button type="submit" disabled={loading}>TRA CỨU</button>
             </form>

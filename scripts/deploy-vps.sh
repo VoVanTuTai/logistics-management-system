@@ -21,6 +21,21 @@ PRISMA_SERVICES=(
   payment-service:payment_db
 )
 
+APP_DATABASES=(
+  auth_db
+  masterdata_db
+  shipment_db
+  pickup_db
+  dispatch_db
+  manifest_db
+  scan_db
+  delivery_db
+  tracking_db
+  reporting_db
+  payment_db
+  chat_db
+)
+
 compose() {
   docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"
 }
@@ -33,6 +48,28 @@ require_command() {
   fi
 }
 
+append_missing_env_example_values() {
+  local line
+  local key
+
+  if [[ ! -f "$ENV_EXAMPLE" ]]; then
+    return
+  fi
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line%$'\r'}"
+
+    if [[ "$line" =~ ^[[:space:]]*$ || "$line" =~ ^[[:space:]]*# ]]; then
+      continue
+    fi
+
+    key="${line%%=*}"
+    if [[ -n "$key" && "$line" == *=* ]] && ! grep -q "^${key}=" "$ENV_FILE"; then
+      printf '%s\n' "$line" >>"$ENV_FILE"
+    fi
+  done <"$ENV_EXAMPLE"
+}
+
 load_env() {
   if [[ ! -f "$ENV_FILE" ]]; then
     cp "$ENV_EXAMPLE" "$ENV_FILE"
@@ -40,6 +77,8 @@ load_env() {
     echo "Edit secrets in $ENV_FILE, then run this script again." >&2
     exit 1
   fi
+
+  append_missing_env_example_values
 
   set -a
   # shellcheck disable=SC1090
@@ -77,14 +116,16 @@ run_node_service_command() {
   local pnpm_command="$4"
   local npm_command="$5"
   local network_name
+  local service_path
 
   network_name="$(compose_network)"
+  service_path="${dir#$ROOT_DIR/}"
 
   echo "[node] $name"
   docker run --rm \
     --network "$network_name" \
-    -v "$dir:/app" \
-    -w /app \
+    -v "$ROOT_DIR:/workspace" \
+    -w "/workspace/$service_path" \
     -e DATABASE_URL="$database_url" \
     -e PNPM_COMMAND="$pnpm_command" \
     -e NPM_COMMAND="$npm_command" \
@@ -146,6 +187,26 @@ wait_http_health() {
 
   echo "[down] $url" >&2
   return 1
+}
+
+ensure_databases() {
+  local db_name
+  local exists
+
+  for db_name in "${APP_DATABASES[@]}"; do
+    exists="$(
+      compose exec -T postgres psql -U "$POSTGRES_USER" -d postgres -tAc \
+        "SELECT 1 FROM pg_database WHERE datname = '${db_name}'" \
+        2>/dev/null || true
+    )"
+
+    if [[ "$exists" == "1" ]]; then
+      echo "[db] exists $db_name"
+    else
+      echo "[db] create $db_name"
+      compose exec -T postgres createdb -U "$POSTGRES_USER" "$db_name"
+    fi
+  done
 }
 
 prepare_databases() {
@@ -216,6 +277,7 @@ main() {
   wait_compose_service rabbitmq 180
   wait_compose_service minio 180
 
+  ensure_databases
   prepare_databases
   seed_auth_demo_data
 

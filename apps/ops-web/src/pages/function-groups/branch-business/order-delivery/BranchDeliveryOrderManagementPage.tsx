@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 
 import { useHubsQuery } from '../../../../features/masterdata/masterdata.api';
 import { useShipmentsQuery } from '../../../../features/shipments/shipments.api';
@@ -7,7 +6,6 @@ import type { ShipmentListItemDto } from '../../../../features/shipments/shipmen
 import { useTasksQuery } from '../../../../features/tasks/tasks.api';
 import type { TaskListItemDto } from '../../../../features/tasks/tasks.types';
 import { getErrorMessage } from '../../../../services/api/errors';
-import { routePaths } from '../../../../navigation/routes';
 import { useAuthStore } from '../../../../store/authStore';
 import { formatDateTime } from '../../../../utils/format';
 import {
@@ -15,6 +13,7 @@ import {
   isShipmentInScope,
   shipmentDestinationHubCode,
 } from '../../../../utils/locationScope';
+import { CopyableShipmentCode } from '../../../shared/CopyableShipmentCode';
 import { BranchTablePagination } from '../shared/BranchTablePagination';
 import './BranchDeliveryOrderManagementPage.css';
 
@@ -341,12 +340,10 @@ export function BranchDeliveryOrderManagementPage(): React.JSX.Element {
               {paginatedRows.map((row) => (
                 <tr key={row.shipment.shipmentCode}>
                   <td>
-                    <Link
+                    <CopyableShipmentCode
+                      code={row.shipment.shipmentCode}
                       className="ops-branch-delivered-orders__code"
-                      to={routePaths.shipmentDetail(row.shipment.id)}
-                    >
-                      {row.shipment.shipmentCode}
-                    </Link>
+                    />
                   </td>
                   <td>{formatDateTime(row.deliveredDate)}</td>
                   <td>{row.receiverName}</td>

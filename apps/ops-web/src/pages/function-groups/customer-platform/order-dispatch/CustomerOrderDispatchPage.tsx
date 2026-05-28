@@ -4,6 +4,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { authClient } from '../../../../features/auth/auth.client';
 import type { OpsUserDto } from '../../../../features/auth/auth.types';
 import { useHubsQuery } from '../../../../features/masterdata/masterdata.api';
+import type { HubDto } from '../../../../features/masterdata/masterdata.types';
+import { useVietnamAdministrativeUnitsQuery } from '../../../../features/locations/vietnamAdministrativeUnits.api';
 import { usePickupRequestsQuery } from '../../../../features/pickups/pickups.api';
 import type { PickupRequestListItemDto } from '../../../../features/pickups/pickups.types';
 import { useShipmentsQuery } from '../../../../features/shipments/shipments.api';
@@ -200,6 +202,48 @@ function splitAddressTokens(address: string | null): string[] {
     .filter(Boolean);
 }
 
+function readHubAddressProvince(address: string | null): string {
+  if (!address) {
+    return '';
+  }
+
+  try {
+    const parsed = JSON.parse(address) as Record<string, unknown>;
+    return typeof parsed.province === 'string' ? parsed.province.trim() : '';
+  } catch {
+    const parts = splitAddressTokens(address);
+    return parts[parts.length - 1] ?? '';
+  }
+}
+
+function provinceMatchKey(value: string): string {
+  const normalized = normalizeLocationToken(value)
+    .replace(/\bTHANH PHO\b/g, ' ')
+    .replace(/\bTINH\b/g, ' ')
+    .replace(/\bTP\b/g, ' ')
+    .replace(/\bCITY\b/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (normalized === 'HCM' || normalized.includes('HO CHI MINH')) {
+    return 'HO CHI MINH';
+  }
+
+  return normalized;
+}
+
+function findProcessingHubProvince(hubs: HubDto[], processingHubCode: string): string {
+  const hub = hubs.find((item) => normalizeCode(item.code) === processingHubCode);
+  return readHubAddressProvince(hub?.address ?? null);
+}
+
+function isSameProvince(left: string, right: string): boolean {
+  const leftKey = provinceMatchKey(left);
+  const rightKey = provinceMatchKey(right);
+
+  return Boolean(leftKey && rightKey && leftKey === rightKey);
+}
+
 function hasScopeTokenMatch(tokens: Iterable<string>, scopeTokens: Set<string>): boolean {
   for (const token of tokens) {
     if (!token) {
@@ -341,6 +385,7 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
     refetchInterval: realtimeStatus === 'connected' ? false : 10000,
   });
   const hubsQuery = useHubsQuery(accessToken, {});
+  const locationsQuery = useVietnamAdministrativeUnitsQuery(accessToken);
   const shipmentsQuery = useShipmentsQuery(accessToken, {}, { refetchInterval: 5000 });
   const pickupsQuery = usePickupRequestsQuery(accessToken, {}, { refetchInterval: 5000 });
   const shippersQuery = useQuery({
@@ -373,6 +418,10 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
       processingHubCode
         ? deriveHubScopeTokens(hubsQuery.data ?? [], [processingHubCode])
         : new Set<string>(),
+    [hubsQuery.data, processingHubCode],
+  );
+  const processingHubProvince = useMemo(
+    () => findProcessingHubProvince(hubsQuery.data ?? [], processingHubCode),
     [hubsQuery.data, processingHubCode],
   );
 
@@ -443,13 +492,17 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
     );
   }, [courierOptions, courierSearch]);
 
-  const wardOptions = useMemo(
-    () =>
-      Array.from(
-        new Set(dispatchRows.map((order) => order.ward).filter((ward) => ward !== '-')),
-      ).sort(),
-    [dispatchRows],
-  );
+  const wardOptions = useMemo(() => {
+    const dataWards = dispatchRows.map((order) => order.ward).filter((ward) => ward !== '-');
+    const province = (locationsQuery.data ?? []).find((item) =>
+      isSameProvince(item.name, processingHubProvince),
+    );
+    const apiWards = province?.wards.map((ward) => ward.name) ?? [];
+
+    return Array.from(new Set([...apiWards, ...dataWards])).sort((left, right) =>
+      left.localeCompare(right, 'vi'),
+    );
+  }, [dispatchRows, locationsQuery.data, processingHubProvince]);
   const sourceOptions = useMemo(
     () => Array.from(new Set(dispatchRows.map((order) => order.source))).sort(),
     [dispatchRows],
@@ -508,6 +561,10 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
     () => dispatchRows.filter((order) => selectedOrderIds.includes(order.id)),
     [dispatchRows, selectedOrderIds],
   );
+  const selectedAssignableOrders = useMemo(
+    () => selectedOrders.filter(canAssign),
+    [selectedOrders],
+  );
   const selectedParcelCount = selectedOrders.reduce((sum, order) => sum + order.parcelCount, 0);
   const selectedHubCodes = useMemo(
     () => Array.from(new Set(selectedOrders.map((order) => order.pickupHub))).sort(),
@@ -521,12 +578,18 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
   const loadError =
     tasksQuery.error ??
     hubsQuery.error ??
+    locationsQuery.error ??
     shipmentsQuery.error ??
     pickupsQuery.error ??
     shippersQuery.error ??
     null;
   const isLoading =
     tasksQuery.isLoading || hubsQuery.isLoading || shipmentsQuery.isLoading || pickupsQuery.isLoading;
+  const waitingOrderCount = dispatchRows.filter((order) => order.status === 'CREATED').length;
+  const assignedOrderCount = dispatchRows.filter((order) => order.status === 'ASSIGNED').length;
+  const marketplaceOrderCount = dispatchRows.filter((order) =>
+    ['MARKETPLACE', 'DT_COMMERCE', 'marketplace-integration'].includes(order.source),
+  ).length;
 
   useEffect(() => {
     const existingIds = new Set(dispatchRows.map((row) => row.id));
@@ -595,6 +658,16 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
     );
   };
 
+  const selectAllFiltered = () => {
+    setSelectedOrderIds((current) =>
+      Array.from(new Set([...current, ...filteredOrders.map((order) => order.id)])),
+    );
+  };
+
+  const clearSelectedOrders = () => {
+    setSelectedOrderIds([]);
+  };
+
   const resetFilters = () => {
     setStatusFilter('CREATED');
     setSearchBy('order');
@@ -615,12 +688,11 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
     }
 
     if (selectedOrderIds.length === 0) {
-      setNotice('Vui lòng chọn ít nhất một đơn để điều phối shipper.');
+      setNotice('Vui lòng chọn ít nhất một đơn để điều phối nhân viên giao nhận.');
       return;
     }
 
-    const assignableSelectedOrders = selectedOrders.filter(canAssign);
-    if (assignableSelectedOrders.length === 0) {
+    if (selectedAssignableOrders.length === 0) {
       setNotice('Chỉ các đơn chưa điều phối hoặc đã điều phối mới có thể gán nhân viên.');
       return;
     }
@@ -640,8 +712,7 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
       return;
     }
 
-    const assignableSelectedOrders = selectedOrders.filter(canAssign);
-    if (assignableSelectedOrders.length === 0) {
+    if (selectedAssignableOrders.length === 0) {
       setNotice('Không có đơn phù hợp để điều phối.');
       return;
     }
@@ -652,7 +723,7 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
     let skippedCount = 0;
     const failedRows: string[] = [];
 
-    for (const order of assignableSelectedOrders) {
+    for (const order of selectedAssignableOrders) {
       try {
         if (order.assignedCourierId) {
           if (order.assignedCourierId === selectedCourier.id) {
@@ -701,8 +772,7 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
       return;
     }
 
-    const cancellableOrders = selectedOrders.filter(canAssign);
-    if (cancellableOrders.length === 0) {
+    if (selectedAssignableOrders.length === 0) {
       setNotice('Vui lòng chọn đơn lấy hàng đang mở để ghi nhận thất bại.');
       return;
     }
@@ -710,7 +780,7 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
     setIsCancelling(true);
     const failedRows: string[] = [];
 
-    for (const order of cancellableOrders) {
+    for (const order of selectedAssignableOrders) {
       try {
         await tasksClient.updateStatus(accessToken, {
           taskId: order.id,
@@ -731,7 +801,7 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
     setNotice(
       failedRows.length > 0
         ? `Không thể cập nhật ${failedRows.length} đơn: ${failedRows.slice(0, 2).join(' | ')}`
-        : `Đã ghi nhận lấy hàng thất bại cho ${cancellableOrders.length} đơn.`,
+        : `Đã ghi nhận lấy hàng thất bại cho ${selectedAssignableOrders.length} đơn.`,
     );
   };
 
@@ -739,39 +809,37 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
   return (
     <section className="ops-customer-dispatch">
       <header className="ops-customer-dispatch__top">
-        <div>
-          <h2>Điều phối đơn đặt</h2>
-          <p>Quản lý task lấy hàng thật theo bưu cục Ops được gán và phân công nhân viên giao nhận.</p>
-          <div className="ops-customer-dispatch__realtime">
-            Realtime:
-            <strong data-state={realtimeStatus === 'connected' ? 'connected' : 'disconnected'}>
-              {realtimeStatus === 'connected' ? ' đang nhận realtime' : ' đang dùng polling dự phòng'}
-            </strong>
+        <div className="ops-customer-dispatch__title">
+          <span>Đơn khách hàng</span>
+          <h2>Điều phối lấy hàng</h2>
+          <p>Đơn từ Sàn DT/Merchant có địa chỉ lấy thuộc bưu cục Ops được gán.</p>
+        </div>
+        <div className="ops-customer-dispatch__summary" aria-label="Tổng quan điều phối">
+          <div>
+            <strong>{processingHubCode || '-'}</strong>
+            <span>Bưu cục</span>
+          </div>
+          <div>
+            <strong>{waitingOrderCount}</strong>
+            <span>Chờ điều phối</span>
+          </div>
+          <div>
+            <strong>{assignedOrderCount}</strong>
+            <span>Đang lấy</span>
+          </div>
+          <div>
+            <strong>{marketplaceOrderCount}</strong>
+            <span>Từ sàn</span>
           </div>
         </div>
-        <button type="button" className="ops-customer-dispatch__collapse-btn">
-          Thu gọn
-        </button>
       </header>
 
       <section className="ops-customer-dispatch__toolbar" aria-label="Thao tác điều phối">
-        <button type="button" className="ops-customer-dispatch__primary-action">
-          Tìm kiếm
-        </button>
-        <button type="button" disabled>
-          Xuất dữ liệu
-        </button>
         <button type="button" onClick={resetFilters}>
           Làm mới
         </button>
-        <button type="button" disabled>
-          Rút đơn đặt
-        </button>
-        <button type="button" onClick={openAssignModal}>
-          Điều phối shipper
-        </button>
-        <button type="button" disabled>
-          Trung tâm tải xuống
+        <button type="button" className="ops-customer-dispatch__primary-action" onClick={openAssignModal}>
+          Điều phối NVGN
         </button>
         <button
           type="button"
@@ -783,6 +851,15 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
       </section>
 
       <section className="ops-customer-dispatch__filters" aria-label="Bộ lọc điều phối">
+        <label className="ops-customer-dispatch__filter-wide">
+          <span>Từ khóa</span>
+          <input
+            value={keyword}
+            onChange={(event) => setKeyword(event.target.value)}
+            placeholder="Mã đơn, mã vận đơn, tên shop"
+          />
+        </label>
+
         <fieldset className="ops-customer-dispatch__radio-field">
           <legend>Tìm theo</legend>
           <label>
@@ -806,7 +883,7 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
         </fieldset>
 
         <label>
-          <span>Từ giờ bắt đầu nhập đơn đặt</span>
+          <span>Từ giờ tạo</span>
           <input
             type="datetime-local"
             value={fromTime}
@@ -815,7 +892,7 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
         </label>
 
         <label>
-          <span>Đến giờ kết thúc nhập đơn đặt</span>
+          <span>Đến giờ tạo</span>
           <input
             type="datetime-local"
             value={toTime}
@@ -824,19 +901,7 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
         </label>
 
         <label>
-          <span>Phường xã lấy</span>
-          <select value={wardFilter} onChange={(event) => setWardFilter(event.target.value)}>
-            <option value="ALL">Vui lòng chọn phường xã</option>
-            {wardOptions.map((ward) => (
-              <option key={ward} value={ward}>
-                {ward}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label>
-          <span>Mã bưu cục xử lý</span>
+          <span>Bưu cục xử lý</span>
           <input
             type="text"
             value={processingHubCode || 'Chưa được gán bưu cục'}
@@ -846,9 +911,9 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
         </label>
 
         <label>
-          <span>Nguồn đơn đặt</span>
+          <span>Nguồn đơn</span>
           <select value={sourceFilter} onChange={(event) => setSourceFilter(event.target.value)}>
-            <option value="ALL">Vui lòng chọn nguồn đơn</option>
+            <option value="ALL">Tất cả nguồn</option>
             {sourceOptions.map((source) => (
               <option key={source} value={source}>
                 {sourceLabel(source)}
@@ -858,7 +923,7 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
         </label>
 
         <label>
-          <span>Trạng thái đơn đặt</span>
+          <span>Tiến độ</span>
           <select
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value as 'ALL' | DispatchStatus)}
@@ -872,16 +937,7 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
         </label>
 
         <label>
-          <span>Từ khóa</span>
-          <input
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-            placeholder="Nhập mã hoặc tên shop"
-          />
-        </label>
-
-        <label>
-          <span>Nhân viên giao nhận</span>
+          <span>NVGN</span>
           <input
             value={courierFilter}
             onChange={(event) => setCourierFilter(event.target.value)}
@@ -890,7 +946,7 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
         </label>
 
         <label>
-          <span>Loại dịch vụ</span>
+          <span>Dịch vụ</span>
           <select value={serviceFilter} onChange={(event) => setServiceFilter(event.target.value)}>
             <option value="ALL">Toàn bộ</option>
             {serviceOptions.map((serviceType) => (
@@ -902,27 +958,51 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
         </label>
 
         <label>
-          <span>Mã khách hàng</span>
-          <input placeholder="Vui lòng nhập tên hoặc mã KH" disabled />
+          <span>Phường xã lấy</span>
+          <select value={wardFilter} onChange={(event) => setWardFilter(event.target.value)}>
+            <option value="ALL">Tất cả phường xã</option>
+            {wardOptions.map((ward) => (
+              <option key={ward} value={ward}>
+                {ward}
+              </option>
+            ))}
+          </select>
         </label>
       </section>
 
       <section className="ops-customer-dispatch__assign-strip">
-        <div>
+        <div className="ops-customer-dispatch__bulk-metric">
           <strong>{selectedOrderIds.length}</strong>
           <span>đơn đã chọn</span>
         </div>
-        <div>
+        <div className="ops-customer-dispatch__bulk-metric">
           <strong>{selectedParcelCount}</strong>
           <span>kiện cần lấy</span>
         </div>
-        <div>
+        <div className="ops-customer-dispatch__bulk-metric">
           <strong>{selectedHubCodes.length ? selectedHubCodes.join(', ') : '-'}</strong>
           <span>bưu cục xử lý</span>
         </div>
-        <button type="button" onClick={openAssignModal}>
-          Điều phối đã chọn
-        </button>
+        <div className="ops-customer-dispatch__bulk-metric">
+          <strong>{selectedAssignableOrders.length}</strong>
+          <span>đủ điều phối</span>
+        </div>
+        <div className="ops-customer-dispatch__bulk-actions">
+          <button type="button" onClick={selectAllFiltered} disabled={filteredOrders.length === 0}>
+            Chọn tất cả kết quả lọc
+          </button>
+          <button type="button" onClick={clearSelectedOrders} disabled={selectedOrderIds.length === 0}>
+            Bỏ chọn
+          </button>
+          <button
+            type="button"
+            className="ops-customer-dispatch__primary-action"
+            onClick={openAssignModal}
+            disabled={selectedAssignableOrders.length === 0}
+          >
+            Điều phối {selectedAssignableOrders.length} đơn
+          </button>
+        </div>
         {notice ? <p role="status">{notice}</p> : null}
       </section>
 
@@ -934,7 +1014,7 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
 
       <section className="ops-customer-dispatch__table-panel">
         <div className="ops-customer-dispatch__table-head">
-          <h3>Danh sách đơn đặt cần điều phối</h3>
+          <h3>Đơn cần lấy</h3>
           <div className="ops-customer-dispatch__table-meta">
             <span>
               {isLoading
@@ -992,16 +1072,13 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
                     aria-label="Chọn tất cả đơn đang hiển thị"
                   />
                 </th>
-                <th>Mã đơn đặt</th>
-                <th>Mã vận đơn</th>
-                <th>Người gửi</th>
+                <th>Đơn / vận đơn</th>
+                <th>Shop gửi</th>
                 <th>Địa chỉ lấy</th>
-                <th>Phường xã</th>
-                <th>Trạng thái đơn đặt</th>
-                <th>Thông tin</th>
-                <th>Bưu cục lấy</th>
-                <th>Thời gian điều phối shipper</th>
-                <th>Nhân viên</th>
+                <th>Nguồn / dịch vụ</th>
+                <th>Tiến độ</th>
+                <th>NVGN</th>
+                <th>Thời gian</th>
                 <th>Thao tác</th>
               </tr>
             </thead>
@@ -1018,18 +1095,25 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
                   </td>
                   <td className="ops-customer-dispatch__code">
                     {order.orderCode}
-                    <small>{order.taskCode}</small>
+                    <small>{order.shipmentCode}</small>
                   </td>
-                  <td>{order.shipmentCode}</td>
                   <td>
                     <strong>{order.senderName}</strong>
                     <small>{order.senderPhone}</small>
                   </td>
                   <td>
                     {order.pickupAddress}
-                    <small>{order.district}</small>
+                    <small>
+                      {order.ward} · {order.district} · Hub {order.pickupHub}
+                    </small>
                   </td>
-                  <td>{order.ward}</td>
+                  <td>
+                    <strong>{sourceLabel(order.source)}</strong>
+                    <small>
+                      {serviceLabel(order.serviceType)} · {order.parcelCount} kiện
+                    </small>
+                    <small>Pickup: {order.pickupStatus ?? '-'}</small>
+                  </td>
                   <td>
                     <span
                       className={`ops-customer-dispatch__status ops-customer-dispatch__status--${order.status.toLowerCase()}`}
@@ -1037,15 +1121,6 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
                       {statusLabel(order.status)}
                     </span>
                   </td>
-                  <td>
-                    <strong>{serviceLabel(order.serviceType)}</strong>
-                    <small>
-                      {sourceLabel(order.source)} · {order.parcelCount} kiện
-                    </small>
-                    <small>Pickup: {order.pickupStatus ?? '-'}</small>
-                  </td>
-                  <td>{order.pickupHub}</td>
-                  <td>{order.scheduledAt ? formatDateTime(order.scheduledAt) : 'Chưa điều phối'}</td>
                   <td>
                     {order.assignedCourierId ? (
                       <>
@@ -1055,6 +1130,10 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
                     ) : (
                       'Chưa gán'
                     )}
+                  </td>
+                  <td>
+                    <strong>Yêu cầu: {formatDateTime(order.requestedAt)}</strong>
+                    <small>ĐP: {order.scheduledAt ? formatDateTime(order.scheduledAt) : 'Chưa'}</small>
                   </td>
                   <td>
                     <button
@@ -1092,7 +1171,7 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
               <div>
                 <h3 id="dispatch-assign-title">Điều phối nhân viên giao nhận</h3>
                 <span>
-                  {selectedOrderIds.length} đơn / {selectedParcelCount} kiện
+                  {selectedAssignableOrders.length} đơn đủ điều phối / {selectedParcelCount} kiện đã chọn
                 </span>
               </div>
               <button
@@ -1142,7 +1221,7 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
                       <strong>{courier.name}</strong>
                       <small>{courier.id}</small>
                     </span>
-                    <em>{courier.activeTasks} task</em>
+                    <em>{courier.activeTasks} đơn</em>
                   </button>
                 );
               })}
@@ -1163,7 +1242,7 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
                 onClick={() => void assignSelectedOrders()}
                 disabled={!selectedCourier || isAssigning}
               >
-                {isAssigning ? 'Đang điều phối...' : 'Điều phối'}
+                {isAssigning ? 'Đang điều phối...' : `Điều phối ${selectedAssignableOrders.length} đơn`}
               </button>
             </footer>
           </aside>

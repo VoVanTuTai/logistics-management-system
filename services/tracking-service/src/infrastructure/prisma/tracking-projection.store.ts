@@ -21,6 +21,8 @@ import type { TrackingCurrent } from '../../domain/entities/tracking-current.ent
 import type { TrackingIndex } from '../../domain/entities/tracking-index.entity';
 import { PrismaService } from './prisma.service';
 
+const DEFAULT_RETENTION_DAYS = 45;
+
 @Injectable()
 export class TrackingProjectionStore {
   constructor(private readonly prisma: PrismaService) {}
@@ -44,6 +46,7 @@ export class TrackingProjectionStore {
     }
 
     const occurredAt = new Date(event.occurred_at);
+    await this.deleteExpiredProjectionForShipmentCode(shipmentCode, occurredAt);
     const actor = this.extractActor(event);
     const locationCode = this.extractLocationCode(event);
     const existingCurrent = await this.prisma.trackingCurrent.findUnique({
@@ -162,6 +165,53 @@ export class TrackingProjectionStore {
     });
 
     return record ? this.toTrackingIndexEntity(record) : null;
+  }
+
+  private async deleteExpiredProjectionForShipmentCode(
+    shipmentCode: string,
+    now: Date,
+  ): Promise<void> {
+    const cutoff = getRetentionCutoff(now);
+    const [existingCurrent, existingIndex] = await Promise.all([
+      this.prisma.trackingCurrent.findUnique({
+        where: {
+          shipmentCode,
+        },
+      }),
+      this.prisma.trackingIndex.findUnique({
+        where: {
+          shipmentCode,
+        },
+      }),
+    ]);
+    const currentExpired = existingCurrent
+      ? (existingCurrent.lastEventAt ?? existingCurrent.createdAt) < cutoff
+      : false;
+    const indexExpired = existingIndex
+      ? (existingIndex.latestEventAt ?? existingIndex.createdAt) < cutoff
+      : false;
+
+    if (!currentExpired && !indexExpired) {
+      return;
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.timelineEvent.deleteMany({
+        where: {
+          shipmentCode,
+        },
+      }),
+      this.prisma.trackingCurrent.deleteMany({
+        where: {
+          shipmentCode,
+        },
+      }),
+      this.prisma.trackingIndex.deleteMany({
+        where: {
+          shipmentCode,
+        },
+      }),
+    ]);
   }
 
   private async createTimelineIfAbsent(
@@ -358,4 +408,19 @@ export class TrackingProjectionStore {
       updatedAt: record.updatedAt,
     };
   }
+}
+
+function getRetentionCutoff(now: Date): Date {
+  const retentionDays = readPositiveNumber(
+    process.env.SHIPMENT_RETENTION_DAYS ?? process.env.ORDER_RETENTION_DAYS,
+    DEFAULT_RETENTION_DAYS,
+  );
+
+  return new Date(now.getTime() - retentionDays * 24 * 60 * 60 * 1000);
+}
+
+function readPositiveNumber(value: string | undefined, fallback: number): number {
+  const parsed = Number(value);
+
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }

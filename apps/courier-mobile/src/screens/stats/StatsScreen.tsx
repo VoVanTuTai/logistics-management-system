@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   ActivityIndicator,
-  Alert,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -68,7 +67,11 @@ export function StatsScreen(): React.JSX.Element {
       iconName: 'trending-up-outline' as const,
       iconColor: '#1D4ED8',
       iconBgColor: '#EFF6FF',
-      onPress: () => Alert.alert('Hiệu suất', 'Đang mở shortcut'),
+      onPress: () =>
+        navigation.navigate('TaskList', {
+          initialTaskType: 'ALL',
+          initialStatus: 'COMPLETED',
+        }),
     },
   ];
 
@@ -108,7 +111,7 @@ export function StatsScreen(): React.JSX.Element {
                   iconName={item.iconName}
                   iconColor={item.iconColor}
                   iconBgColor={item.iconBgColor}
-                  onPress={(item as { onPress?: () => void }).onPress ?? (() => Alert.alert(item.title, 'Đang mở shortcut'))}
+                  onPress={item.onPress}
                 />
               ))}
             </View>
@@ -274,4 +277,3 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
   },
 });
-

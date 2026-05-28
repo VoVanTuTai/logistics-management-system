@@ -4,6 +4,7 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from './app.module';
+import { ChatRealtimeGateway } from './api/chat/chat-realtime.gateway';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, { rawBody: true });
@@ -41,6 +42,7 @@ async function bootstrap(): Promise<void> {
   app.enableShutdownHooks();
 
   await app.listen(port);
+  app.get(ChatRealtimeGateway).registerHttpServer(app.getHttpServer());
 }
 
 void bootstrap();

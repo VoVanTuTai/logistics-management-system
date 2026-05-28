@@ -8,8 +8,8 @@ import { useShipmentsQuery } from '../../../../features/shipments/shipments.api'
 import type { ShipmentListItemDto } from '../../../../features/shipments/shipments.types';
 import { tasksClient, useTasksQuery } from '../../../../features/tasks/tasks.api';
 import type { TaskListItemDto } from '../../../../features/tasks/tasks.types';
-import { routePaths } from '../../../../navigation/routes';
 import { getErrorMessage } from '../../../../services/api/errors';
+import { routePaths } from '../../../../navigation/routes';
 import { useAuthStore } from '../../../../store/authStore';
 import { formatDateTime } from '../../../../utils/format';
 import {
@@ -19,6 +19,7 @@ import {
 } from '../../../../utils/locationScope';
 import { formatShipmentStatusLabel } from '../../../../utils/logisticsLabels';
 import { queryKeys } from '../../../../utils/queryKeys';
+import { CopyableShipmentCode } from '../../../shared/CopyableShipmentCode';
 import { BranchTablePagination } from '../shared/BranchTablePagination';
 import './BranchDeliveryDispatchPage.css';
 
@@ -253,7 +254,7 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
   const [pageSize, setPageSize] = useState(25);
   const [courierId, setCourierId] = useState('');
   const [courierSearch, setCourierSearch] = useState('');
-  const [handoffNote, setHandoffNote] = useState('Bàn giao phát từ màn hình Phát hàng bưu cục.');
+  const [handoffNote, setHandoffNote] = useState('Bàn giao phát từ màn hình bưu cục.');
   const [isAssignPanelOpen, setIsAssignPanelOpen] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -548,7 +549,7 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
       <header className="ops-branch-delivery__header">
         <div>
           <small>BRANCH_DELIVERY_DISPATCH</small>
-          <h2>Phát hàng</h2>
+          <h2>Bàn giao phát</h2>
           <p>Dữ liệu lấy từ shipment-service và dispatch-service, dùng để bàn giao đơn thật sang app courier.</p>
         </div>
         <div className="ops-branch-delivery__summary">
@@ -672,6 +673,7 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
                   <th>Thao tác cuối</th>
                   <th>Trạng thái phát hàng</th>
                   <th>Courier</th>
+                  <th>Liên lạc</th>
                   <th>SLA</th>
                 </tr>
               </thead>
@@ -687,12 +689,10 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
                       />
                     </td>
                     <td>
-                      <Link
+                      <CopyableShipmentCode
+                        code={order.shipment.shipmentCode}
                         className="ops-branch-delivery__code"
-                        to={routePaths.shipmentDetail(order.shipment.id)}
-                      >
-                        {order.shipment.shipmentCode}
-                      </Link>
+                      />
                     </td>
                     <td>
                       <strong>{order.receiverName}</strong>
@@ -707,6 +707,18 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
                     <td>{order.lastScan}</td>
                     <td>{order.shipmentStatusLabel}</td>
                     <td>{order.task?.assignedCourierId ?? 'Chưa bàn giao'}</td>
+                    <td>
+                      {order.task?.assignedCourierId ? (
+                        <Link
+                          className="ops-branch-delivery__chat-link"
+                          to={routePaths.opsChatWithCourier(order.task.assignedCourierId)}
+                        >
+                          Chat
+                        </Link>
+                      ) : (
+                        <span className="ops-branch-delivery__muted">Chưa có</span>
+                      )}
+                    </td>
                     <td>
                       <span
                         className={
@@ -838,6 +850,14 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
               <button type="button" onClick={() => setIsAssignPanelOpen(false)}>
                 Hủy
               </button>
+              {effectiveCourierId ? (
+                <Link
+                  className="ops-branch-delivery__drawer-chat"
+                  to={routePaths.opsChatWithCourier(effectiveCourierId)}
+                >
+                  Chat courier
+                </Link>
+              ) : null}
               <button
                 type="button"
                 className="ops-branch-delivery__assign-btn"

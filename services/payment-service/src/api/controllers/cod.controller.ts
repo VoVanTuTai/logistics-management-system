@@ -17,6 +17,8 @@ import type {
   ConfirmCodSettlementInput,
   CreateCodSettlementInput,
   CreateCodRecordInput,
+  ReconcileSePayTransactionsInput,
+  ReconcileSePayTransactionsResult,
   RemitCodInput,
   SyncShipmentCodRecordInput,
   SyncShipmentCodRecordResult,
@@ -104,6 +106,13 @@ export class CodController {
     @Query() query: CodSettlementPaymentEventQuery,
   ): Promise<CodSettlementPaymentEvent[]> {
     return this.codService.listSePayWebhookEvents(query);
+  }
+
+  @Post('webhooks/sepay/reconcile')
+  reconcileSePayTransactions(
+    @Body() body: ReconcileSePayTransactionsInput,
+  ): Promise<ReconcileSePayTransactionsResult> {
+    return this.codService.reconcileSePayTransactions(body);
   }
 
   @Post('webhooks/sepay/settlements')

@@ -184,7 +184,7 @@ export function HubManagementPage(): React.JSX.Element {
   const [actionError, setActionError] = useState<string | null>(null);
 
   const hubsQuery = useHubsQuery(accessToken, appliedFilters);
-  const locationsQuery = useVietnamAdministrativeUnitsQuery();
+  const locationsQuery = useVietnamAdministrativeUnitsQuery(accessToken);
   const createMutation = useCreateHubMutation(accessToken);
   const updateMutation = useUpdateHubMutation(accessToken);
 
@@ -487,7 +487,7 @@ export function HubManagementPage(): React.JSX.Element {
       >
         {locationsQuery.isError ? (
           <p style={styles.errorText}>
-            Không tải được danh mục tỉnh/thành từ provinces.open-api.vn. Vui lòng thử lại.
+            Không tải được danh mục địa chỉ từ hệ thống. Vui lòng thử lại.
           </p>
         ) : null}
         <div style={styles.formGrid}>

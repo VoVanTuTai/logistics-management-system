@@ -1,11 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 
 import { useHubsQuery } from '../../../../features/masterdata/masterdata.api';
 import { usePickupRequestsQuery } from '../../../../features/pickups/pickups.api';
 import { useShipmentsQuery } from '../../../../features/shipments/shipments.api';
 import { useTasksQuery } from '../../../../features/tasks/tasks.api';
-import { routePaths } from '../../../../navigation/routes';
 import { getErrorMessage } from '../../../../services/api/errors';
 import { useAuthStore } from '../../../../store/authStore';
 import { formatShipmentStatusLabel } from '../../../../utils/logisticsLabels';
@@ -24,6 +22,7 @@ import {
   toBranchDateInputValue,
   toBranchDateKey,
 } from '../shared/branchBusinessData';
+import { CopyableShipmentCode } from '../../../shared/CopyableShipmentCode';
 import '../shared/BranchBusinessOperations.css';
 
 type ShiftCode = 'MORNING' | 'AFTERNOON' | 'FULL_DAY';
@@ -260,12 +259,10 @@ export function BranchShiftClosingPage(): React.JSX.Element {
                   return (
                     <tr key={shipment.shipmentCode}>
                       <td>
-                        <Link
+                        <CopyableShipmentCode
+                          code={shipment.shipmentCode}
                           className="ops-branch-workflow__code"
-                          to={routePaths.shipmentDetail(shipment.id)}
-                        >
-                          {shipment.shipmentCode}
-                        </Link>
+                        />
                       </td>
                       <td>{formatShipmentStatusLabel(shipment.currentStatus)}</td>
                       <td>{resolveShipmentHub(shipment)}</td>

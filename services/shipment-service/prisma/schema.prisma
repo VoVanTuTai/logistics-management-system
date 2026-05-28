@@ -67,7 +67,7 @@ model ChangeRequest {
   approvedAt   DateTime?
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
-  shipment     Shipment            @relation(fields: [shipmentCode], references: [code])
+  shipment     Shipment            @relation(fields: [shipmentCode], references: [code], onDelete: Cascade)
 
   @@index([shipmentCode, status])
   @@map("change_requests")

@@ -83,6 +83,10 @@
   gap: 10px;
 }
 
+.ops-linehaul-dashboard__kpis--six {
+  grid-template-columns: repeat(6, minmax(130px, 1fr));
+}
+
 .ops-linehaul-dashboard__kpis article {
   display: grid;
   gap: 6px;
@@ -124,6 +128,10 @@
   border-radius: 10px;
   background: #ffffff;
   padding: 12px;
+}
+
+.ops-linehaul-dashboard__filters--monitor {
+  grid-template-columns: minmax(160px, 0.8fr) minmax(160px, 0.8fr) minmax(260px, 2fr);
 }
 
 .ops-linehaul-dashboard__operation-hint {

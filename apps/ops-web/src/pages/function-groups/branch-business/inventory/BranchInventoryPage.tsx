@@ -1,10 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 
 import { useHubsQuery } from '../../../../features/masterdata/masterdata.api';
 import { useShipmentsQuery } from '../../../../features/shipments/shipments.api';
 import { useTasksQuery } from '../../../../features/tasks/tasks.api';
-import { routePaths } from '../../../../navigation/routes';
 import { getErrorMessage } from '../../../../services/api/errors';
 import { useAuthStore } from '../../../../store/authStore';
 import { formatShipmentStatusLabel } from '../../../../utils/logisticsLabels';
@@ -20,6 +18,7 @@ import {
   resolveBranchAgeHours,
   resolveShipmentHub,
 } from '../shared/branchBusinessData';
+import { CopyableShipmentCode } from '../../../shared/CopyableShipmentCode';
 import { BranchTablePagination } from '../shared/BranchTablePagination';
 import '../shared/BranchBusinessOperations.css';
 
@@ -285,15 +284,13 @@ export function BranchInventoryPage(): React.JSX.Element {
               </thead>
               <tbody>
                 {paginatedRows.map((row) => (
-                  <tr key={row.shipmentCode}>
-                    <td>
-                      <Link
+                <tr key={row.shipmentCode}>
+                  <td>
+                      <CopyableShipmentCode
+                        code={row.shipmentCode}
                         className="ops-branch-workflow__code"
-                        to={routePaths.shipmentDetail(row.shipmentId)}
-                      >
-                        {row.shipmentCode}
-                      </Link>
-                    </td>
+                      />
+                  </td>
                     <td>{row.statusLabel}</td>
                     <td>{row.hubCode}</td>
                     <td>{row.courierId}</td>

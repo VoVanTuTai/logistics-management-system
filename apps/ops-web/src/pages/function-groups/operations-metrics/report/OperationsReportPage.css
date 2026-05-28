@@ -8,6 +8,7 @@
 .ops-report__hero,
 .ops-report__filters,
 .ops-report__panel,
+.ops-report__guide article,
 .ops-report__definitions article {
   border: 1px solid #dbe3ef;
   border-radius: 10px;
@@ -90,6 +91,29 @@
   font-weight: 800;
 }
 
+.ops-report__guide {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ops-report__guide article {
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+}
+
+.ops-report__guide strong {
+  color: #1e293b;
+  font-size: 13px;
+}
+
+.ops-report__guide span {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .ops-report__filters {
   display: grid;
   grid-template-columns: 160px 160px minmax(180px, 1fr) minmax(180px, 1fr);
@@ -128,7 +152,7 @@
 }
 
 .ops-report__kpi {
-  min-height: 136px;
+  min-height: 146px;
   border: 1px solid #d8e0ec;
   border-left: 3px solid #1d4ed8;
   border-radius: 10px;
@@ -165,6 +189,10 @@
   font-size: 12px;
   font-style: normal;
   line-height: 1.35;
+}
+
+.ops-report__kpi small {
+  display: block;
 }
 
 .ops-report__kpi[data-tone='success'] {
@@ -327,7 +355,8 @@
 }
 
 @media (max-width: 1280px) {
-  .ops-report__kpis {
+  .ops-report__kpis,
+  .ops-report__guide {
     grid-template-columns: repeat(3, minmax(180px, 1fr));
   }
 

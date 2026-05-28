@@ -27,19 +27,21 @@ export function TasksTable({
           <th style={styles.headerCell}>
             <input
               type="checkbox"
+              aria-label="Chọn tất cả đơn có thể chuyển"
               checked={allSelectableSelected}
               disabled={!onToggleSelectAll}
               onChange={(event) => onToggleSelectAll?.(event.currentTarget.checked)}
             />
           </th>
           <th style={styles.headerCell}>Vận đơn</th>
-          <th style={styles.headerCell}>Loại</th>
+          <th style={styles.headerCell}>Loại tác vụ</th>
           <th style={styles.headerCell}>Trạng thái</th>
           <th style={styles.headerCell}>Người gửi</th>
           <th style={styles.headerCell}>Người nhận</th>
           <th style={styles.headerCell}>Nền tảng</th>
           <th style={styles.headerCell}>Khu vực giao</th>
-          <th style={styles.headerCell}>Shipper</th>
+          <th style={styles.headerCell}>Courier hiện tại</th>
+          <th style={styles.headerCell}>Liên lạc</th>
           <th style={styles.headerCell}>Cập nhật lúc</th>
         </tr>
       </thead>
@@ -49,6 +51,7 @@ export function TasksTable({
             <td style={styles.cell}>
               <input
                 type="checkbox"
+                aria-label={`Chọn đơn ${item.shipmentCode ?? item.taskCode}`}
                 checked={selectedTaskIds.includes(item.id)}
                 disabled={!item.isSelectable || !onToggleTaskSelection}
                 onChange={(event) =>
@@ -70,6 +73,15 @@ export function TasksTable({
             </td>
             <td style={styles.cell}>{item.deliveryArea ?? 'Không xác định'}</td>
             <td style={styles.cell}>{item.assignedCourierId ?? 'Không có'}</td>
+            <td style={styles.cell}>
+              {item.assignedCourierId ? (
+                <Link style={styles.chatLink} to={routePaths.opsChatWithCourier(item.assignedCourierId)}>
+                  Chat
+                </Link>
+              ) : (
+                'Chưa có'
+              )}
+            </td>
             <td style={styles.cell}>{formatDateTime(item.updatedAt)}</td>
           </tr>
         ))}
@@ -106,5 +118,18 @@ const styles: Record<string, React.CSSProperties> = {
     textTransform: 'uppercase',
     letterSpacing: 0.3,
   },
+  chatLink: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 28,
+    border: '1px solid #bfdbfe',
+    borderRadius: 8,
+    backgroundColor: '#eff6ff',
+    color: '#1d4ed8',
+    padding: '0 10px',
+    fontSize: 12,
+    fontWeight: 700,
+    textDecoration: 'none',
+  },
 };
-

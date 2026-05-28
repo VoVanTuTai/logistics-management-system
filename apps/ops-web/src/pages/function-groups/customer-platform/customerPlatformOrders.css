@@ -102,6 +102,10 @@
   gap: 6px;
 }
 
+.ops-customer-orders__filter-search {
+  grid-column: span 2;
+}
+
 .ops-customer-orders__filters span {
   color: #475569;
   font-size: 12px;
@@ -117,6 +121,32 @@
   color: #334155;
   padding: 0 10px;
   font-size: 13px;
+}
+
+.ops-customer-orders__filter-actions {
+  display: flex;
+  align-items: end;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.ops-customer-orders__filter-actions button {
+  min-width: 88px;
+  height: 36px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.ops-customer-orders__filter-actions .ops-customer-orders__primary-action {
+  border-color: #1d4ed8;
+  background: #1d4ed8;
+  color: #ffffff;
 }
 
 .ops-customer-orders__panel {
@@ -236,11 +266,33 @@
 }
 
 .ops-customer-orders__links a,
-.ops-customer-orders__links span {
+.ops-customer-orders__links span,
+.ops-customer-orders__links button {
   color: #1d4ed8;
   font-size: 12px;
   font-weight: 700;
   text-decoration: none;
+}
+
+.ops-customer-orders__links button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.ops-customer-orders__links button:hover {
+  color: #1e40af;
+}
+
+.ops-customer-orders__links button:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.18);
+  outline-offset: 3px;
+  border-radius: 6px;
 }
 
 .ops-customer-orders__links span {

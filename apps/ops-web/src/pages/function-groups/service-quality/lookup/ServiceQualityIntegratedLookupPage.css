@@ -173,6 +173,37 @@
   overflow-wrap: anywhere;
 }
 
+.ops-integrated-lookup__sensitive-value {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 8px;
+}
+
+.ops-integrated-lookup__sensitive-toggle {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #475569;
+  cursor: pointer;
+}
+
+.ops-integrated-lookup__sensitive-toggle:hover {
+  border-color: #1d4ed8;
+  color: #1d4ed8;
+}
+
+.ops-integrated-lookup__sensitive-toggle:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.18);
+  outline-offset: 2px;
+}
+
 .ops-integrated-lookup__table-wrap {
   overflow: auto;
 }

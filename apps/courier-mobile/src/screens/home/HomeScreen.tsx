@@ -12,7 +12,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Ionicons } from '@expo/vector-icons';
 
 import { theme } from '../../theme';
 import { HomeHeader } from '../../components/home/HomeHeader';
@@ -20,7 +19,6 @@ import { NotificationBanner } from '../../components/home/NotificationBanner';
 import { QuickStatsRow } from '../../components/home/QuickStatsRow';
 import { OverdueCard } from '../../components/home/OverdueCard';
 import { AppGrid, type HomeAppGridItem } from '../../components/home/AppGrid';
-import { StatusBadge } from '../../components/ui/StatusBadge';
 import type { TaskDto, TaskStatus } from '../../features/tasks/tasks.types';
 import { useAssignedTasksQuery } from '../../features/tasks/tasks.queries';
 import type { AppNavigatorParamList } from '../../navigation/types';
@@ -30,30 +28,44 @@ import { resolveCourierDisplayName, resolveCourierId } from '../../utils/courier
 
 const appItems: HomeAppGridItem[] = [
   {
-    id: 'create-order',
-    label: 'Lên đơn',
-    iconName: 'add-circle-outline',
+    id: 'pickup',
+    label: 'Nhận hàng',
+    iconName: 'cube-outline',
+    iconColor: '#1A6B4A',
+    iconBgColor: '#E6FAF1',
+  },
+  {
+    id: 'delivery',
+    label: 'Phát hàng',
+    iconName: 'paper-plane-outline',
     iconColor: theme.colors.primary,
     iconBgColor: theme.colors.infoSurface,
   },
   {
-    id: 'scan-history',
-    label: 'Lịch sử quét',
-    iconName: 'scan-outline',
+    id: 'goods-arrival',
+    label: 'Hàng đến',
+    iconName: 'download-outline',
     iconColor: theme.colors.primary,
     iconBgColor: theme.colors.infoSurface,
   },
   {
-    id: 'cash-stats',
-    label: 'Thống kê tiền hàng',
+    id: 'bag-seal',
+    label: 'Đóng bao',
+    iconName: 'archive-outline',
+    iconColor: '#8A5A0A',
+    iconBgColor: '#FFF4DD',
+  },
+  {
+    id: 'vehicle-out',
+    label: 'Xe đi',
+    iconName: 'car-sport-outline',
+    iconColor: theme.colors.primary,
+    iconBgColor: theme.colors.infoSurface,
+  },
+  {
+    id: 'cod',
+    label: 'Tiền hàng COD',
     iconName: 'wallet-outline',
-    iconColor: theme.colors.primary,
-    iconBgColor: theme.colors.infoSurface,
-  },
-  {
-    id: 'shipping-fee',
-    label: 'Tính vận phí',
-    iconName: 'calculator-outline',
     iconColor: theme.colors.primary,
     iconBgColor: theme.colors.infoSurface,
   },
@@ -65,25 +77,11 @@ const appItems: HomeAppGridItem[] = [
     iconBgColor: theme.colors.infoSurface,
   },
   {
-    id: 'uniform-check',
-    label: 'Kiểm tra đồng phục',
-    iconName: 'shirt-outline',
-    iconColor: theme.colors.primary,
-    iconBgColor: theme.colors.infoSurface,
-  },
-  {
-    id: 'referral',
-    label: 'Giới thiệu khách hàng',
-    iconName: 'people-outline',
-    iconColor: theme.colors.primary,
-    iconBgColor: theme.colors.infoSurface,
-  },
-  {
-    id: 'weight-change',
-    label: 'Đăng ký đổi trọng lượng',
-    iconName: 'barbell-outline',
-    iconColor: theme.colors.primary,
-    iconBgColor: theme.colors.infoSurface,
+    id: 'scan-issue',
+    label: 'Báo vấn đề',
+    iconName: 'alert-circle-outline',
+    iconColor: '#C25B12',
+    iconBgColor: '#FFEDD5',
   },
 ];
 
@@ -136,7 +134,6 @@ export function HomeScreen(): React.JSX.Element {
   const pickupCount = waitingPickupTasks.length;
   const deliveryCount = waitingDeliveryTasks.length;
   const processingCount = tasks.filter((task) => task.status === 'ASSIGNED').length;
-  const recentTasks = tasks.slice(0, 3);
 
   const displayName = resolveCourierDisplayName({
     displayName: session?.user.displayName,
@@ -152,7 +149,7 @@ export function HomeScreen(): React.JSX.Element {
           greeting="Xin chào"
           userName={displayName}
           hubName={hubLabel}
-          onPressQr={() => Alert.alert('QR', 'Mở shortcut QR')}
+          onPressQr={() => navigation.navigate('MainTabs', { screen: 'Scan' })}
           onPressNotification={() => Alert.alert('Thông báo', 'Mở danh sách thông báo')}
         />
 
@@ -192,7 +189,12 @@ export function HomeScreen(): React.JSX.Element {
             title="Đơn đang xử lý"
             overdueCount={processingCount}
             subtitle="Hiển thị số task có trạng thái ASSIGNED theo payload server."
-            onPress={() => Alert.alert('Trạng thái', 'Mở danh sách đơn đang xử lý')}
+            onPress={() =>
+              navigation.navigate('TaskList', {
+                initialTaskType: 'ALL',
+                initialStatus: 'ASSIGNED',
+              })
+            }
           />
 
           {tasksQuery.isLoading ? (
@@ -220,12 +222,44 @@ export function HomeScreen(): React.JSX.Element {
           <AppGrid
             items={appItems}
             onPressItem={(item) => {
+              if (item.id === 'pickup') {
+                navigation.navigate('PickupScan', {});
+                return;
+              }
+
+              if (item.id === 'delivery') {
+                navigation.navigate('DeliveryDispatch');
+                return;
+              }
+
+              if (item.id === 'goods-arrival') {
+                navigation.navigate('GoodsArrival');
+                return;
+              }
+
+              if (item.id === 'bag-seal') {
+                navigation.navigate('BagSeal');
+                return;
+              }
+
+              if (item.id === 'vehicle-out') {
+                navigation.navigate('VehicleOutbound');
+                return;
+              }
+
+              if (item.id === 'cod') {
+                navigation.navigate('CodStats');
+                return;
+              }
+
               if (item.id === 'tracking') {
                 navigation.navigate('TrackingLookup');
                 return;
               }
 
-              Alert.alert('Ứng dụng', item.label);
+              if (item.id === 'scan-issue') {
+                navigation.navigate('ScanIssue');
+              }
             }}
           />
         </ScrollView>
@@ -363,5 +397,3 @@ const styles = StyleSheet.create({
     borderTopColor: theme.colors.border,
   },
 });
-
-

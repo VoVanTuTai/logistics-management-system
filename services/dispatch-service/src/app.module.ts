@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { OpsAuditController } from './api/controllers/ops-audit.controller';
 import { TasksController } from './api/controllers/tasks.controller';
 import { DispatchEventHandlersService } from './application/services/dispatch-event-handlers.service';
+import { DispatchRetentionCleanupService } from './application/services/dispatch-retention-cleanup.service';
 import { OpsAuditService } from './application/services/ops-audit.service';
 import { TasksService } from './application/services/tasks.service';
 import { OutboxEventRepository } from './domain/repositories/outbox-event.repository';
@@ -24,6 +25,7 @@ import { TasksRealtimeGateway } from './realtime/tasks-realtime.gateway';
   providers: [
     PrismaService,
     TasksService,
+    DispatchRetentionCleanupService,
     OpsAuditService,
     DispatchEventHandlersService,
     DispatchEventsProducer,

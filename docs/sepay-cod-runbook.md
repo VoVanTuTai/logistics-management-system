@@ -16,6 +16,7 @@ Nguon su that:
 
 - Khach chuyen khoan COD theo don: `COD <shipmentCode>`.
 - Courier nop tien mat theo settlement: `COD <settlementCode>`.
+- QR settlement duoc sinh tu SePay QR endpoint `https://qr.sepay.vn/img` voi `acc`, `bank`, `amount`, `des`.
 
 Webhook hop le phai khop:
 
@@ -28,11 +29,14 @@ Webhook hop le phai khop:
 ## Bien moi truong can kiem tra
 
 - `COMPANY_BANK_ACCOUNT_NUMBER`
+- `COMPANY_BANK_CODE` hoac `SEPAY_QR_BANK_CODE` de sinh QR SePay dung ma ngan hang.
 - `COMPANY_BANK_BIN`
 - `COMPANY_BANK_ACCOUNT_NAME`
 - `SEPAY_BANK_ACCOUNT_NUMBER` neu muon override account matching.
 - `SEPAY_WEBHOOK_SECRET` cho HMAC, uu tien dung production.
 - `SEPAY_WEBHOOK_API_KEY` neu chua dung HMAC.
+- `SEPAY_API_TOKEN` de chay doi soat chu dong qua SePay API.
+- `SEPAY_TRANSACTIONS_API_URL`, mac dinh `https://userapi.sepay.vn/v2/transactions`.
 - `SEPAY_AMOUNT_TOLERANCE_VND`, mac dinh `0`.
 
 Production phai co `SEPAY_WEBHOOK_SECRET` hoac `SEPAY_WEBHOOK_API_KEY`.
@@ -42,6 +46,8 @@ Production phai co `SEPAY_WEBHOOK_SECRET` hoac `SEPAY_WEBHOOK_API_KEY`.
 Payment-service:
 
 ```text
+POST /cod/webhooks/sepay
+POST /cod/webhooks/sepay/reconcile
 GET /cod/webhooks/sepay/events
 ```
 
@@ -50,6 +56,32 @@ Qua gateway ops:
 ```text
 GET /ops/payment/cod/webhooks/sepay/events
 ```
+
+Public webhook URL de cau hinh tren SePay khi chi expose gateway:
+
+```text
+POST /public/payment/cod/webhooks/sepay
+```
+
+Endpoint public nay van phai bat HMAC/API key trong `payment-service`; khong dua webhook qua route `/ops` vi route do can token dang nhap noi bo.
+
+Endpoint doi soat chu dong co the goi qua gateway ops:
+
+```text
+POST /ops/payment/cod/webhooks/sepay/reconcile
+```
+
+Body mac dinh lay 24h gan nhat neu khong truyen thoi gian:
+
+```json
+{
+  "transactionDateFrom": "2026-05-27T00:00:00+07:00",
+  "transactionDateTo": "2026-05-27T23:59:59+07:00",
+  "perPage": 100
+}
+```
+
+Cron goi endpoint nay moi 15 phut se bo sung giao dich webhook bi miss va dua qua cung logic auto-confirm.
 
 Filter ho tro:
 

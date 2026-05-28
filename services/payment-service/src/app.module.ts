@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { CodController } from './api/controllers/cod.controller';
 import { CodService } from './application/services/cod.service';
+import { PaymentRetentionCleanupService } from './application/services/payment-retention-cleanup.service';
 import { CodRecordRepository } from './domain/repositories/cod-record.repository';
 import { OutboxEventRepository } from './domain/repositories/outbox-event.repository';
 import { HealthModule } from './health/health.module';
@@ -20,6 +21,7 @@ import { CodOutboxService } from './messaging/outbox/cod-outbox.service';
   providers: [
     PrismaService,
     CodService,
+    PaymentRetentionCleanupService,
     CodEventsProducer,
     CodOutboxService,
     CodOutboxRelayService,

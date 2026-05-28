@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { PickupsController } from './api/controllers/pickups.controller';
 import { PickupEventHandlersService } from './application/services/pickup-event-handlers.service';
+import { PickupRetentionCleanupService } from './application/services/pickup-retention-cleanup.service';
 import { PickupsService } from './application/services/pickups.service';
 import { OutboxEventRepository } from './domain/repositories/outbox-event.repository';
 import { PickupRequestRepository } from './domain/repositories/pickup-request.repository';
@@ -20,6 +21,7 @@ import { PickupOutboxService } from './messaging/outbox/pickup-outbox.service';
   providers: [
     PrismaService,
     PickupsService,
+    PickupRetentionCleanupService,
     PickupEventHandlersService,
     PickupEventsProducer,
     PickupEventsConsumer,

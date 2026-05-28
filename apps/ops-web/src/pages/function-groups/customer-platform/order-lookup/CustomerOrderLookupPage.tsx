@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Check, Copy } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { usePickupRequestsQuery } from '../../../../features/pickups/pickups.api';
@@ -24,11 +25,15 @@ export function CustomerOrderLookupPage(): React.JSX.Element {
     [session?.user.hubCodes],
   );
   const canViewAllHubAreas = session?.user.roles.includes('SYSTEM_ADMIN') ?? false;
+  const [draftKeyword, setDraftKeyword] = useState('');
+  const [draftStatusFilter, setDraftStatusFilter] = useState('ALL');
+  const [draftHubFilter, setDraftHubFilter] = useState('ALL');
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [hubFilter, setHubFilter] = useState('ALL');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const [copiedShipmentCode, setCopiedShipmentCode] = useState<string | null>(null);
 
   const shipmentsQuery = useShipmentsQuery(accessToken, {}, { refetchInterval: 10000 });
   const pickupsQuery = usePickupRequestsQuery(accessToken, {}, { refetchInterval: 10000 });
@@ -99,6 +104,38 @@ export function CustomerOrderLookupPage(): React.JSX.Element {
     setPage(1);
   }, [hubFilter, keyword, pageSize, statusFilter]);
 
+  useEffect(() => {
+    if (!copiedShipmentCode) {
+      return undefined;
+    }
+
+    const timer = window.setTimeout(() => setCopiedShipmentCode(null), 1600);
+    return () => window.clearTimeout(timer);
+  }, [copiedShipmentCode]);
+
+  const submitLookup = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setKeyword(draftKeyword.trim());
+    setStatusFilter(draftStatusFilter);
+    setHubFilter(draftHubFilter);
+    setPage(1);
+  };
+
+  const resetLookup = () => {
+    setDraftKeyword('');
+    setDraftStatusFilter('ALL');
+    setDraftHubFilter('ALL');
+    setKeyword('');
+    setStatusFilter('ALL');
+    setHubFilter('ALL');
+    setPage(1);
+  };
+
+  const copyShipmentCode = async (shipmentCode: string) => {
+    await navigator.clipboard.writeText(shipmentCode);
+    setCopiedShipmentCode(shipmentCode);
+  };
+
   return (
     <section className="ops-customer-orders">
       <header className="ops-customer-orders__header">
@@ -116,18 +153,25 @@ export function CustomerOrderLookupPage(): React.JSX.Element {
         </div>
       </header>
 
-      <section className="ops-customer-orders__filters" aria-label="Bộ lọc tra cứu đơn đặt">
+      <form
+        className="ops-customer-orders__filters"
+        aria-label="Bộ lọc tra cứu đơn đặt"
+        onSubmit={submitLookup}
+      >
         <label>
           <span>Từ khóa</span>
           <input
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
+            value={draftKeyword}
+            onChange={(event) => setDraftKeyword(event.target.value)}
             placeholder="Mã đơn, mã pickup, SĐT hoặc tên khách"
           />
         </label>
         <label>
           <span>Trạng thái</span>
-          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+          <select
+            value={draftStatusFilter}
+            onChange={(event) => setDraftStatusFilter(event.target.value)}
+          >
             <option value="ALL">Toàn bộ</option>
             {statusOptions.map((status) => (
               <option key={status} value={status}>
@@ -138,7 +182,7 @@ export function CustomerOrderLookupPage(): React.JSX.Element {
         </label>
         <label>
           <span>Hub</span>
-          <select value={hubFilter} onChange={(event) => setHubFilter(event.target.value)}>
+          <select value={draftHubFilter} onChange={(event) => setDraftHubFilter(event.target.value)}>
             <option value="ALL">Toàn bộ</option>
             {hubOptions.map((hubCode) => (
               <option key={hubCode} value={hubCode}>
@@ -147,11 +191,15 @@ export function CustomerOrderLookupPage(): React.JSX.Element {
             ))}
           </select>
         </label>
-        <label>
-          <span>Backend contract</span>
-          <input value="Dùng dữ liệu list hiện có, chưa có endpoint lookup riêng" readOnly disabled />
-        </label>
-      </section>
+        <div className="ops-customer-orders__filter-actions">
+          <button type="submit" className="ops-customer-orders__primary-action">
+            Tra cứu
+          </button>
+          <button type="button" onClick={resetLookup}>
+            Làm mới
+          </button>
+        </div>
+      </form>
 
       {loadError ? (
         <div className="ops-customer-orders__error" role="alert">
@@ -207,17 +255,26 @@ export function CustomerOrderLookupPage(): React.JSX.Element {
                   <td>
                     <div className="ops-customer-orders__links">
                       {row.shipmentId ? (
-                        <Link to={routePaths.shipmentDetail(row.shipmentId)}>
+                        <button
+                          type="button"
+                          className="ops-customer-orders__copy-code"
+                          onClick={() => void copyShipmentCode(row.shipmentCode)}
+                          aria-label={`Sao chép mã vận đơn ${row.shipmentCode}`}
+                          title="Sao chép mã vận đơn"
+                        >
+                          {copiedShipmentCode === row.shipmentCode ? (
+                            <Check size={14} aria-hidden="true" />
+                          ) : (
+                            <Copy size={14} aria-hidden="true" />
+                          )}
                           {row.shipmentCode}
-                        </Link>
+                        </button>
                       ) : (
                         <span>Chưa có shipment</span>
                       )}
-                      {row.pickupId ? (
-                        <Link to={routePaths.pickupDetail(row.pickupId)}>{row.pickupCode}</Link>
-                      ) : (
-                        <span>Chưa có pickup</span>
-                      )}
+                      <Link to={routePaths.customerPlatformOrderDispatch}>
+                        Điều phối lấy hàng
+                      </Link>
                     </div>
                   </td>
                 </tr>

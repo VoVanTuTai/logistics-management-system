@@ -22,6 +22,7 @@ import { routePaths } from '../../../navigation/routes';
 import { getErrorMessage } from '../../../services/api/errors';
 import { useAuthStore } from '../../../store/authStore';
 import { formatShipmentStatusLabel } from '../../../utils/logisticsLabels';
+import { CopyableShipmentCode } from '../../shared/CopyableShipmentCode';
 import './AnalyticsDashboard.css';
 
 const NDR_COLORS = ['#2563eb', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444'];
@@ -415,7 +416,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
               {urgentAlerts.map(({ shipment, elapsedHours }) => (
                 <tr key={shipment.id}>
                   <td>
-                    <span className="analytics-alert-code">{shipment.shipmentCode}</span>
+                    <CopyableShipmentCode code={shipment.shipmentCode} className="analytics-alert-code" />
                   </td>
                   <td>{formatShipmentStatusLabel(shipment.currentStatus)}</td>
                   <td>{resolveShipmentHub(shipment)}</td>
@@ -431,9 +432,6 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
                   <td>{shipment.receiverName ?? shipment.senderName ?? 'Không có'}</td>
                   <td>
                     <div className="analytics-row-actions">
-                      <Link className="analytics-action-btn" to={routePaths.shipmentDetail(shipment.id)}>
-                        Chi tiết
-                      </Link>
                       <Link className="analytics-action-btn analytics-action-btn--secondary" to={routePaths.opsMetricsActionExecutionBoard}>
                         Điều phối
                       </Link>

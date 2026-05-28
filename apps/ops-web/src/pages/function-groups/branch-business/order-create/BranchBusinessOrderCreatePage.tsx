@@ -163,7 +163,7 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
   const accessToken = session?.tokens.accessToken ?? null;
   const operatorCode = session?.user.username ?? 'OPS';
   const defaultHubCode = session?.user.hubCodes?.[0] ?? '';
-  const locationsQuery = useVietnamAdministrativeUnitsQuery();
+  const locationsQuery = useVietnamAdministrativeUnitsQuery(accessToken);
   const provinceOptions = locationsQuery.data ?? [];
   const hubsQuery = useHubsQuery(accessToken, { isActive: 'true' });
   const createShipmentMutation = useCreateShipmentMutation(accessToken);
@@ -319,7 +319,7 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
             <span>Mã vận đơn</span>
             <input
               type="text"
-              placeholder="Tự sinh nếu bỏ trống"
+              placeholder="Tự sinh nếu bỏ trống, ví dụ 333000000001"
               value={form.manualCode}
               onChange={(event) => updateForm('manualCode', event.target.value)}
             />

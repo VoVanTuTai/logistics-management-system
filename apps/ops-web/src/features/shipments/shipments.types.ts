@@ -81,6 +81,7 @@ export interface ConfirmLabelReprintInput {
 export interface ShipmentListFilters {
   q?: string;
   shipmentCode?: string;
+  shipmentCodes?: string[];
   status?: string;
   hubCodes?: string[];
   createdFrom?: string;

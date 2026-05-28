@@ -15,6 +15,7 @@ import {
   formatTaskStatusLabel,
   formatTaskTypeLabel,
 } from '../../../../utils/logisticsLabels';
+import { CopyableShipmentCode } from '../../../shared/CopyableShipmentCode';
 
 import './OperationalDataMonitorPage.css';
 
@@ -29,6 +30,7 @@ interface MonitorRow {
   code: string;
   codeTo?: string;
   codePath?: string;
+  isShipmentCode?: boolean;
   hubCode: string;
   oppositeHubCode: string;
   customer: string;
@@ -256,7 +258,7 @@ function buildReceivedRows(shipments: ShipmentListItemDto[]): MonitorRow[] {
       return {
         id: shipment.id,
         code: shipment.shipmentCode,
-        codePath: routePaths.shipmentDetail(shipment.id),
+        isShipmentCode: true,
         hubCode: shipmentHub(shipment),
         oppositeHubCode: shipment.originHubCode || shipment.senderHubCode || shipment.destinationHubCode || '---',
         customer: shipment.senderName || shipment.receiverName || '---',
@@ -312,7 +314,7 @@ function buildTwoInOneRows(
       return {
         id: shipment.id,
         code: shipment.shipmentCode,
-        codePath: routePaths.shipmentDetail(shipment.id),
+        isShipmentCode: true,
         hubCode: shipmentHub(shipment),
         oppositeHubCode: shipment.destinationHubCode || shipment.receiverHubCode || '---',
         customer: shipment.receiverName || shipment.senderName || '---',
@@ -339,7 +341,7 @@ function buildAdvanceRows(shipments: ShipmentListItemDto[]): MonitorRow[] {
       return {
         id: shipment.id,
         code: shipment.shipmentCode,
-        codePath: routePaths.shipmentDetail(shipment.id),
+        isShipmentCode: true,
         hubCode: shipment.destinationHubCode || shipment.receiverHubCode || shipmentHub(shipment),
         oppositeHubCode: shipment.originHubCode || shipment.senderHubCode || '---',
         customer: shipment.receiverName || shipment.receiverPhone || '---',
@@ -624,7 +626,9 @@ export function OperationalDataMonitorPage({
               <tr key={`${row.id}-${row.code}`}>
                 <td>{(page - 1) * PAGE_SIZE + index + 1}</td>
                 <td>
-                  {row.codePath ? (
+                  {row.isShipmentCode ? (
+                    <CopyableShipmentCode code={row.code} className="ops-data-monitor__code" />
+                  ) : row.codePath ? (
                     <Link className="ops-data-monitor__code" to={row.codePath}>
                       {row.code}
                     </Link>

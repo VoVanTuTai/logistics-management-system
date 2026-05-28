@@ -95,6 +95,9 @@ export const routePaths = {
     '/app/function-groups/operations-metrics/thao-tac/ban-dieu-phoi-thao-tac',
   thermalLabelManagement: '/app/function-groups/operations-platform/thermal-label/management',
   thermalLabelPrint: '/app/function-groups/operations-platform/thermal-label/print',
+  operationsPlatformChat: '/app/function-groups/operations-platform/chat-courier',
+  operationsPlatformChatWithCourier: (courierId: string) =>
+    `/app/function-groups/operations-platform/chat-courier?courierId=${encodeURIComponent(courierId)}`,
   returnBlockRoot: '/app/function-groups/operations-platform/chuyen-hoan',
   returnBlockRegistration:
     '/app/function-groups/operations-platform/chuyen-hoan/dang-ky-chuyen-hoan',
@@ -113,12 +116,19 @@ export const routePaths = {
   linehaulRoot: '/app/function-groups/capability-platform/van-chuyen-tuyen-nhanh',
   linehaulTripManagement: '/app/function-groups/capability-platform/van-chuyen-tuyen-nhanh/quan-ly-chuyen-xe',
   linehaulVehicleSeal: '/app/function-groups/capability-platform/van-chuyen-tuyen-nhanh/tem-xe',
+  linehaulBagLabelManagement:
+    '/app/function-groups/capability-platform/van-chuyen-tuyen-nhanh/tem-bao/quan-ly',
+  linehaulBagLabelPrint:
+    '/app/function-groups/capability-platform/van-chuyen-tuyen-nhanh/tem-bao/in',
+  linehaulTripDataMonitor:
+    '/app/function-groups/capability-platform/van-chuyen-tuyen-nhanh/giam-sat-du-lieu-chuyen-xe',
   shipments: '/app/shipments',
   shipmentDetail: (shipmentId: string) => `/app/shipments/${shipmentId}`,
-  pickups: '/app/pickups',
-  pickupDetail: (pickupId: string) => `/app/pickups/${pickupId}`,
   tasks: '/app/tasks',
   taskDetail: (taskId: string) => `/app/tasks/${taskId}`,
+  opsChat: '/app/chat',
+  opsChatWithCourier: (courierId: string) =>
+    `/app/function-groups/operations-platform/chat-courier?courierId=${encodeURIComponent(courierId)}`,
   manifests: '/app/manifests',
   manifestDetail: (manifestId: string) => `/app/manifests/${manifestId}`,
   scans: '/app/scans',
@@ -213,6 +223,7 @@ export const routePaths = {
     'function-groups/operations-metrics/thao-tac/ban-dieu-phoi-thao-tac',
   thermalLabelManagementLeaf: 'function-groups/operations-platform/thermal-label/management',
   thermalLabelPrintLeaf: 'function-groups/operations-platform/thermal-label/print',
+  operationsPlatformChatLeaf: 'function-groups/operations-platform/chat-courier',
   returnBlockRegistrationLeaf:
     'function-groups/operations-platform/chuyen-hoan/dang-ky-chuyen-hoan',
   returnBlockManagementLeaf:
@@ -228,12 +239,17 @@ export const routePaths = {
     'function-groups/operations-platform/data-monitoring/giam-sat-dong-bao',
   linehaulTripManagementLeaf: 'function-groups/capability-platform/van-chuyen-tuyen-nhanh/quan-ly-chuyen-xe',
   linehaulVehicleSealLeaf: 'function-groups/capability-platform/van-chuyen-tuyen-nhanh/tem-xe',
+  linehaulBagLabelManagementLeaf:
+    'function-groups/capability-platform/van-chuyen-tuyen-nhanh/tem-bao/quan-ly',
+  linehaulBagLabelPrintLeaf:
+    'function-groups/capability-platform/van-chuyen-tuyen-nhanh/tem-bao/in',
+  linehaulTripDataMonitorLeaf:
+    'function-groups/capability-platform/van-chuyen-tuyen-nhanh/giam-sat-du-lieu-chuyen-xe',
   shipmentsLeaf: 'shipments',
   shipmentDetailLeaf: 'shipments/:shipmentId',
-  pickupsLeaf: 'pickups',
-  pickupDetailLeaf: 'pickups/:pickupId',
   tasksLeaf: 'tasks',
   taskDetailLeaf: 'tasks/:taskId',
+  opsChatLeaf: 'chat',
   manifestsLeaf: 'manifests',
   manifestDetailLeaf: 'manifests/:manifestId',
   scansLeaf: 'scans',
@@ -251,8 +267,8 @@ export const routePaths = {
 export const OPS_CORE_ROUTE_PATHS = [
   routePaths.dashboard,
   routePaths.shipments,
-  routePaths.pickups,
   routePaths.tasks,
+  routePaths.opsChat,
   routePaths.manifests,
   routePaths.scans,
   routePaths.ndr,
@@ -321,8 +337,6 @@ export const OPS_FULL_MODULE_ROUTE_PATHS = [
   routePaths.opsMetricsDeadlineOverdueAlerts,
   routePaths.opsMetricsPlanningNetworkKpi,
   routePaths.opsMetricsActionExecutionBoard,
-  routePaths.thermalLabelManagement,
-  routePaths.thermalLabelPrint,
   routePaths.returnBlockRoot,
   routePaths.returnBlockRegistration,
   routePaths.returnBlockManagement,
@@ -337,4 +351,7 @@ export const OPS_FULL_MODULE_ROUTE_PATHS = [
   routePaths.linehaulRoot,
   routePaths.linehaulTripManagement,
   routePaths.linehaulVehicleSeal,
+  routePaths.linehaulBagLabelManagement,
+  routePaths.linehaulBagLabelPrint,
+  routePaths.linehaulTripDataMonitor,
 ] as const;

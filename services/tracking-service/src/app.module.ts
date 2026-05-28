@@ -4,6 +4,7 @@ import { InternalTrackingController } from './api/controllers/internal-tracking.
 import { PublicTrackingController } from './api/controllers/public-tracking.controller';
 import { TrackingQueryProjection } from './application/projections/tracking-query.projection';
 import { TrackingReadProjection } from './application/projections/tracking-read.projection';
+import { TrackingRetentionCleanupService } from './application/services/tracking-retention-cleanup.service';
 import { HealthModule } from './health/health.module';
 import { PrismaService } from './infrastructure/prisma/prisma.service';
 import { TrackingProjectionStore } from './infrastructure/prisma/tracking-projection.store';
@@ -16,6 +17,7 @@ import { TrackingRabbitmqConsumerService } from './messaging/consumers/tracking-
   providers: [
     PrismaService,
     TrackingProjectionStore,
+    TrackingRetentionCleanupService,
     TrackingReadProjection,
     TrackingQueryProjection,
     TrackingEventsConsumer,

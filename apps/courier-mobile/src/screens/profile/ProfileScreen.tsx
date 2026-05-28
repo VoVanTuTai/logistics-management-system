@@ -1,6 +1,8 @@
 import React from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { theme } from '../../theme';
 import {
@@ -13,17 +15,11 @@ import { SettingsSection } from '../../components/profile/SettingsSection';
 import type { SettingsItemData } from '../../components/profile/SettingsItem';
 import { useAppStore } from '../../store/appStore';
 import { useAuthStore } from '../../features/auth/auth.store';
+import type { AppNavigatorParamList } from '../../navigation/types';
 import { appEnv } from '../../utils/env';
 import { resolveCourierId, resolveCourierDisplayName } from '../../utils/courier';
 
 const shortcutItems: ProfileShortcutItemData[] = [
-  {
-    id: 'shopping',
-    label: 'Mua sắm',
-    iconName: 'bag-handle-outline',
-    iconColor: '#1D4ED8',
-    iconBgColor: '#EFF6FF',
-  },
   {
     id: 'stats',
     label: 'Thống kê',
@@ -32,39 +28,46 @@ const shortcutItems: ProfileShortcutItemData[] = [
     iconBgColor: '#EFF6FF',
   },
   {
-    id: 'qr-order',
-    label: 'QR lên đơn',
+    id: 'scan',
+    label: 'Quét mã',
     iconName: 'qr-code-outline',
     iconColor: '#1A6B4A',
     iconBgColor: '#E6FAF1',
   },
   {
-    id: 'extra-feature',
-    label: 'Chức năng bổ sung',
-    iconName: 'grid-outline',
+    id: 'cod',
+    label: 'Tiền hàng COD',
+    iconName: 'wallet-outline',
+    iconColor: '#1D4ED8',
+    iconBgColor: '#EFF6FF',
+  },
+  {
+    id: 'pickup',
+    label: 'Nhận hàng',
+    iconName: 'cube-outline',
+    iconColor: '#1A6B4A',
+    iconBgColor: '#E6FAF1',
+  },
+  {
+    id: 'delivery',
+    label: 'Phát hàng',
+    iconName: 'paper-plane-outline',
     iconColor: '#8A5A0A',
     iconBgColor: '#FFF4DD',
   },
   {
-    id: 'weight-change',
-    label: 'Đăng ký đổi trọng lượng',
-    iconName: 'barbell-outline',
+    id: 'tracking',
+    label: 'Theo dõi đơn',
+    iconName: 'locate-outline',
     iconColor: '#1D4ED8',
     iconBgColor: '#EFF6FF',
   },
   {
-    id: 'learning-center',
-    label: 'Trung tâm học tập',
-    iconName: 'school-outline',
-    iconColor: '#1D4ED8',
-    iconBgColor: '#EFF6FF',
-  },
-  {
-    id: 'uniform-check',
-    label: 'Kiểm tra đồng phục',
-    iconName: 'shirt-outline',
-    iconColor: '#1A6B4A',
-    iconBgColor: '#E6FAF1',
+    id: 'issue',
+    label: 'Báo vấn đề',
+    iconName: 'alert-circle-outline',
+    iconColor: '#C25B12',
+    iconBgColor: '#FFEDD5',
   },
 ];
 
@@ -97,6 +100,7 @@ const settingsItems: SettingsItemData[] = [
 ];
 
 export function ProfileScreen(): React.JSX.Element {
+  const navigation = useNavigation<NativeStackNavigationProp<AppNavigatorParamList>>();
   const session = useAppStore((state) => state.session);
   const logout = useAuthStore((state) => state.logout);
   const authLoading = useAuthStore((state) => state.isLoading);
@@ -139,7 +143,39 @@ export function ProfileScreen(): React.JSX.Element {
           <ProfileShortcutGrid
             items={shortcutItems}
             onPressItem={(item) => {
-              Alert.alert('Tiện ích', item.label);
+              if (item.id === 'stats') {
+                navigation.navigate('MainTabs', { screen: 'Stats' });
+                return;
+              }
+
+              if (item.id === 'scan') {
+                navigation.navigate('MainTabs', { screen: 'Scan' });
+                return;
+              }
+
+              if (item.id === 'cod') {
+                navigation.navigate('CodStats');
+                return;
+              }
+
+              if (item.id === 'pickup') {
+                navigation.navigate('PickupScan', {});
+                return;
+              }
+
+              if (item.id === 'delivery') {
+                navigation.navigate('DeliveryDispatch');
+                return;
+              }
+
+              if (item.id === 'tracking') {
+                navigation.navigate('TrackingLookup');
+                return;
+              }
+
+              if (item.id === 'issue') {
+                navigation.navigate('ScanIssue');
+              }
             }}
           />
 
@@ -147,6 +183,11 @@ export function ProfileScreen(): React.JSX.Element {
             title="Cài đặt và tiện ích"
             items={settingsItems}
             onPressItem={(item) => {
+              if (item.id === 'help-center') {
+                navigation.navigate('MainTabs', { screen: 'Chat' });
+                return;
+              }
+
               Alert.alert('Cài đặt', item.label);
             }}
           />
@@ -209,4 +250,3 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 });
-

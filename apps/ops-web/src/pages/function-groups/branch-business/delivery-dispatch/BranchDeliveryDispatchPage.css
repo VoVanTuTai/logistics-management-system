@@ -205,6 +205,27 @@
   font-weight: 700;
 }
 
+.ops-branch-delivery__chat-link,
+.ops-branch-delivery__drawer-chat {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.ops-branch-delivery__muted {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
 .ops-branch-delivery__empty {
   margin: 0;
   padding: 12px;
