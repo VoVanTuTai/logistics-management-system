@@ -268,7 +268,7 @@ install_nginx_config() {
       echo "[nginx] disable conflicting site $file"
       sudo_cmd mv "$file" "$disabled_dir/"
     done < <(
-      grep -RIlE "server_name .*(${OPS_DOMAIN}|${MERCHANT_DOMAIN}|${ADMIN_DOMAIN}|${TRACKING_DOMAIN})" \
+      grep -RIlE "server_name .*(${OPS_DOMAIN}|${MERCHANT_DOMAIN}|${ADMIN_DOMAIN}|${TRACKING_DOMAIN}|${MINIO_DOMAIN})" \
         /etc/nginx/sites-enabled 2>/dev/null || true
     )
   fi
