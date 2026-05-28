@@ -21,6 +21,21 @@ PRISMA_SERVICES=(
   payment-service:payment_db
 )
 
+APP_DATABASES=(
+  auth_db
+  masterdata_db
+  shipment_db
+  pickup_db
+  dispatch_db
+  manifest_db
+  scan_db
+  delivery_db
+  tracking_db
+  reporting_db
+  payment_db
+  chat_db
+)
+
 compose() {
   docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"
 }
@@ -174,6 +189,26 @@ wait_http_health() {
   return 1
 }
 
+ensure_databases() {
+  local db_name
+  local exists
+
+  for db_name in "${APP_DATABASES[@]}"; do
+    exists="$(
+      compose exec -T postgres psql -U "$POSTGRES_USER" -d postgres -tAc \
+        "SELECT 1 FROM pg_database WHERE datname = '${db_name}'" \
+        2>/dev/null || true
+    )"
+
+    if [[ "$exists" == "1" ]]; then
+      echo "[db] exists $db_name"
+    else
+      echo "[db] create $db_name"
+      compose exec -T postgres createdb -U "$POSTGRES_USER" "$db_name"
+    fi
+  done
+}
+
 prepare_databases() {
   local item
   local service
@@ -242,6 +277,7 @@ main() {
   wait_compose_service rabbitmq 180
   wait_compose_service minio 180
 
+  ensure_databases
   prepare_databases
   seed_auth_demo_data
 
