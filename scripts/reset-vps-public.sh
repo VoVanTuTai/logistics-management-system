@@ -123,6 +123,28 @@ set_env_value() {
   fi
 }
 
+append_missing_env_example_values() {
+  local line
+  local key
+
+  if [[ ! -f "$ENV_EXAMPLE" ]]; then
+    return
+  fi
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line%$'\r'}"
+
+    if [[ "$line" =~ ^[[:space:]]*$ || "$line" =~ ^[[:space:]]*# ]]; then
+      continue
+    fi
+
+    key="${line%%=*}"
+    if [[ -n "$key" && "$line" == *=* ]] && ! grep -q "^${key}=" "$ENV_FILE"; then
+      printf '%s\n' "$line" >>"$ENV_FILE"
+    fi
+  done <"$ENV_EXAMPLE"
+}
+
 get_env_value() {
   local key="$1"
   local fallback="${2:-}"
@@ -152,6 +174,8 @@ load_env() {
     cp "$ENV_EXAMPLE" "$ENV_FILE"
     echo "Created $ENV_FILE from example." >&2
   fi
+
+  append_missing_env_example_values
 
   set_env_value OPS_PUBLIC_URL "https://${OPS_DOMAIN}"
   set_env_value MERCHANT_PUBLIC_URL "https://${MERCHANT_DOMAIN}"
@@ -247,6 +271,176 @@ reset_compose_stack() {
     | xargs -r docker rmi -f
 }
 
+cert_domain_for() {
+  local domain="$1"
+  local fallback_domain="${SSL_CERT_DOMAIN:-$OPS_DOMAIN}"
+
+  if sudo_cmd test -f "/etc/letsencrypt/live/${domain}/fullchain.pem" \
+    && sudo_cmd test -f "/etc/letsencrypt/live/${domain}/privkey.pem"; then
+    printf '%s' "$domain"
+    return 0
+  fi
+
+  if sudo_cmd test -f "/etc/letsencrypt/live/${fallback_domain}/fullchain.pem" \
+    && sudo_cmd test -f "/etc/letsencrypt/live/${fallback_domain}/privkey.pem"; then
+    printf '%s' "$fallback_domain"
+    return 0
+  fi
+
+  return 1
+}
+
+has_https_cert() {
+  cert_domain_for "$OPS_DOMAIN" >/dev/null
+}
+
+render_https_nginx_config() {
+  local ops_cert
+  local merchant_cert
+  local admin_cert
+  local tracking_cert
+  local minio_cert
+
+  ops_cert="$(cert_domain_for "$OPS_DOMAIN")"
+  merchant_cert="$(cert_domain_for "$MERCHANT_DOMAIN")"
+  admin_cert="$(cert_domain_for "$ADMIN_DOMAIN")"
+  tracking_cert="$(cert_domain_for "$TRACKING_DOMAIN")"
+  minio_cert="$(cert_domain_for "$MINIO_DOMAIN")"
+
+  cat <<EOF
+server {
+  listen 80;
+  server_name ${OPS_DOMAIN} ${MERCHANT_DOMAIN} ${ADMIN_DOMAIN} ${TRACKING_DOMAIN} ${MINIO_DOMAIN};
+
+  location ^~ /.well-known/acme-challenge/ {
+    root /var/www/html;
+  }
+
+  location / {
+    return 301 https://\$host\$request_uri;
+  }
+}
+
+server {
+  listen 443 ssl;
+  server_name ${OPS_DOMAIN};
+
+  ssl_certificate /etc/letsencrypt/live/${ops_cert}/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/${ops_cert}/privkey.pem;
+  ssl_protocols TLSv1.2 TLSv1.3;
+
+  location = /health {
+    proxy_pass http://127.0.0.1:13000;
+    proxy_http_version 1.1;
+    proxy_set_header Host \$host;
+    proxy_set_header X-Forwarded-Proto \$scheme;
+    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+  }
+
+  location ^~ /ops/ {
+    proxy_pass http://127.0.0.1:13000;
+    proxy_http_version 1.1;
+    proxy_set_header Host \$host;
+    proxy_set_header X-Forwarded-Proto \$scheme;
+    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+  }
+
+  location ^~ /merchant/ {
+    proxy_pass http://127.0.0.1:13000;
+    proxy_http_version 1.1;
+    proxy_set_header Host \$host;
+    proxy_set_header X-Forwarded-Proto \$scheme;
+    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+  }
+
+  location ^~ /public/ {
+    proxy_pass http://127.0.0.1:13000;
+    proxy_http_version 1.1;
+    proxy_set_header Host \$host;
+    proxy_set_header X-Forwarded-Proto \$scheme;
+    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+  }
+
+  location / {
+    proxy_pass http://127.0.0.1:5173;
+    proxy_http_version 1.1;
+    proxy_set_header Host \$host;
+    proxy_set_header X-Forwarded-Proto \$scheme;
+    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+  }
+}
+
+server {
+  listen 443 ssl;
+  server_name ${MERCHANT_DOMAIN};
+
+  ssl_certificate /etc/letsencrypt/live/${merchant_cert}/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/${merchant_cert}/privkey.pem;
+  ssl_protocols TLSv1.2 TLSv1.3;
+
+  location / {
+    proxy_pass http://127.0.0.1:5174;
+    proxy_http_version 1.1;
+    proxy_set_header Host \$host;
+    proxy_set_header X-Forwarded-Proto \$scheme;
+    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+  }
+}
+
+server {
+  listen 443 ssl;
+  server_name ${ADMIN_DOMAIN};
+
+  ssl_certificate /etc/letsencrypt/live/${admin_cert}/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/${admin_cert}/privkey.pem;
+  ssl_protocols TLSv1.2 TLSv1.3;
+
+  location / {
+    proxy_pass http://127.0.0.1:5175;
+    proxy_http_version 1.1;
+    proxy_set_header Host \$host;
+    proxy_set_header X-Forwarded-Proto \$scheme;
+    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+  }
+}
+
+server {
+  listen 443 ssl;
+  server_name ${TRACKING_DOMAIN};
+
+  ssl_certificate /etc/letsencrypt/live/${tracking_cert}/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/${tracking_cert}/privkey.pem;
+  ssl_protocols TLSv1.2 TLSv1.3;
+
+  location / {
+    proxy_pass http://127.0.0.1:5176;
+    proxy_http_version 1.1;
+    proxy_set_header Host \$host;
+    proxy_set_header X-Forwarded-Proto \$scheme;
+    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+  }
+}
+
+server {
+  listen 443 ssl;
+  server_name ${MINIO_DOMAIN};
+
+  ssl_certificate /etc/letsencrypt/live/${minio_cert}/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/${minio_cert}/privkey.pem;
+  ssl_protocols TLSv1.2 TLSv1.3;
+  client_max_body_size 100m;
+
+  location / {
+    proxy_pass http://127.0.0.1:19000;
+    proxy_http_version 1.1;
+    proxy_set_header Host \$host;
+    proxy_set_header X-Forwarded-Proto \$scheme;
+    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+  }
+}
+EOF
+}
+
 install_nginx_config() {
   if [[ "${CONFIGURE_NGINX:-1}" != "1" ]]; then
     echo "[nginx] skipped"
@@ -259,7 +453,13 @@ install_nginx_config() {
   fi
 
   echo "[nginx] install $NGINX_TARGET"
-  sudo_cmd cp "$NGINX_SOURCE" "$NGINX_TARGET"
+  if [[ "${USE_HTTPS_NGINX_IF_CERT_EXISTS:-1}" == "1" ]] && has_https_cert; then
+    echo "[nginx] render HTTPS config from existing Let's Encrypt certificate"
+    render_https_nginx_config | sudo_cmd tee "$NGINX_TARGET" >/dev/null
+  else
+    echo "[nginx] install HTTP config; run certbot after this if HTTPS certificates are not installed"
+    sudo_cmd cp "$NGINX_SOURCE" "$NGINX_TARGET"
+  fi
   sudo_cmd ln -sf "$NGINX_TARGET" "$NGINX_LINK"
 
   if [[ "${DISABLE_CONFLICTING_NGINX:-1}" == "1" && -d /etc/nginx/sites-enabled ]]; then
@@ -396,6 +596,7 @@ main() {
   prepare_databases
   seed_auth_demo_data
   compose restart auth-service masterdata-service shipment-service pickup-service dispatch-service manifest-service scan-service delivery-service tracking-service reporting-service payment-service gateway-bff
+  wait_compose_service gateway-bff 180
   verify_public_routes
   compose ps
   print_summary

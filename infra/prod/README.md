@@ -137,12 +137,26 @@ FORCE_RESET=1 ./scripts/reset-vps-public.sh
 By default it:
 - updates `infra/prod/.env` to use `https://ops.nexus-ex.site` as the browser
   gateway base URL;
-- disables conflicting Nginx site files for the Nexus domains and installs
-  `infra/prod/nginx-domain-proxy.conf`;
+- disables conflicting Nginx site files for the Nexus domains;
+- installs HTTP Nginx config when certificates are not present, or renders an
+  HTTPS Nginx config from existing Let's Encrypt certificates when they are
+  present;
 - stops/removes the `nexus-prod` containers and `nexus/*:local` images;
 - rebuilds the stack with no Docker cache;
 - prepares all service databases with Prisma `db push`;
 - seeds the auth database when `SEED_DEMO_DATA=1`.
+
+If a reset was run before certificates existed, issue or restore certificates
+after the reset:
+
+```bash
+sudo certbot --nginx \
+  -d ops.nexus-ex.site \
+  -d merchant.nexus-ex.site \
+  -d admin.nexus-ex.site \
+  -d tracking.nexus-ex.site \
+  -d minio.nexus-ex.site
+```
 
 If the browser shows `Failed to fetch` after deploy, check these first:
 

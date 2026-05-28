@@ -33,6 +33,28 @@ require_command() {
   fi
 }
 
+append_missing_env_example_values() {
+  local line
+  local key
+
+  if [[ ! -f "$ENV_EXAMPLE" ]]; then
+    return
+  fi
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line%$'\r'}"
+
+    if [[ "$line" =~ ^[[:space:]]*$ || "$line" =~ ^[[:space:]]*# ]]; then
+      continue
+    fi
+
+    key="${line%%=*}"
+    if [[ -n "$key" && "$line" == *=* ]] && ! grep -q "^${key}=" "$ENV_FILE"; then
+      printf '%s\n' "$line" >>"$ENV_FILE"
+    fi
+  done <"$ENV_EXAMPLE"
+}
+
 load_env() {
   if [[ ! -f "$ENV_FILE" ]]; then
     cp "$ENV_EXAMPLE" "$ENV_FILE"
@@ -40,6 +62,8 @@ load_env() {
     echo "Edit secrets in $ENV_FILE, then run this script again." >&2
     exit 1
   fi
+
+  append_missing_env_example_values
 
   set -a
   # shellcheck disable=SC1090
