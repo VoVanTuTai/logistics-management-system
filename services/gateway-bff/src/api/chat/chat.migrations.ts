@@ -42,6 +42,16 @@ const CHAT_MIGRATIONS: ChatMigration[] = [
       );
     `,
   },
+  {
+    id: '002_chat_conversation_hub_scope',
+    up: `
+      ALTER TABLE chat_conversations
+        ADD COLUMN IF NOT EXISTS hub_code TEXT;
+
+      CREATE INDEX IF NOT EXISTS idx_chat_conversations_hub_updated
+        ON chat_conversations(hub_code, updated_at DESC);
+    `,
+  },
 ];
 
 export async function runChatMigrations(

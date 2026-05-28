@@ -12,6 +12,7 @@ import { Pool } from 'pg';
 import {
   AuthServiceClient,
   type AuthenticatedUserView,
+  type UserAccountView,
 } from '../../infrastructure/clients/auth-service.client';
 import { runChatMigrations } from './chat.migrations';
 import { ChatMetricsService } from './chat.metrics';
@@ -27,7 +28,17 @@ import type {
 const MAX_MESSAGE_HISTORY = 500;
 const DEFAULT_MESSAGES_LIMIT = 50;
 const MAX_MESSAGES_LIMIT = 100;
-const OPS_ROLE_HINTS = new Set(['OPS', 'ADMIN', 'HUB', 'DISPATCHER', 'SUPERVISOR']);
+const OPS_ROLE_HINTS = new Set([
+  'OPS',
+  'OPS_ADMIN',
+  'OPS_VIEWER',
+  'OPS_MANAGER',
+  'ADMIN',
+  'SYSTEM_ADMIN',
+  'HUB',
+  'DISPATCHER',
+  'SUPERVISOR',
+]);
 
 interface ChatMessagePageOptions {
   before?: string | null;
@@ -46,6 +57,7 @@ interface ChatStore {
   createMessage(input: {
     actor: ChatActor;
     courierId: string;
+    hubCode: string | null;
     text: string;
   }): Promise<{ message: ChatMessageDto; conversation: ChatConversationDto }>;
   markRead(input: {
@@ -102,6 +114,8 @@ export class ChatService implements OnModuleInit, OnModuleDestroy {
       }
 
       const role = hintedRole ?? inferredRole;
+      const hubCodes = normalizeHubCodes(introspection.user.hubCodes);
+      const canAccessAllHubs = canUserAccessAllHubs(introspection.user);
       return {
         role,
         id: introspection.user.id,
@@ -113,6 +127,8 @@ export class ChatService implements OnModuleInit, OnModuleDestroy {
           role === 'COURIER'
             ? introspection.user.username
             : courierIdHint,
+        hubCodes,
+        canAccessAllHubs,
       };
     }
 
@@ -128,6 +144,8 @@ export class ChatService implements OnModuleInit, OnModuleDestroy {
       id: role === 'COURIER' ? devCourierId : 'ops-dev',
       displayName: role === 'COURIER' ? `Courier ${devCourierId}` : 'Ops Dev',
       courierId: role === 'COURIER' ? devCourierId : courierIdHint,
+      hubCodes: [],
+      canAccessAllHubs: true,
     };
   }
 
@@ -135,7 +153,7 @@ export class ChatService implements OnModuleInit, OnModuleDestroy {
     return this.store.listConversations(actor);
   }
 
-  listMessages(
+  async listMessages(
     actor: ChatActor,
     input: {
       conversationId?: string | null;
@@ -145,6 +163,10 @@ export class ChatService implements OnModuleInit, OnModuleDestroy {
     },
   ): Promise<ChatMessagePageDto> {
     const conversationId = this.resolveConversationId(actor, input);
+    await this.assertActorCanAccessCourier(
+      actor,
+      parseCourierIdFromConversationId(conversationId) ?? '',
+    );
     return this.store.listMessages(
       actor,
       conversationId,
@@ -157,6 +179,7 @@ export class ChatService implements OnModuleInit, OnModuleDestroy {
     text?: string | null;
   }): Promise<{ message: ChatMessageDto; conversation: ChatConversationDto }> {
     const courierId = this.resolveCourierId(actor, input.courierId);
+    const hubCode = await this.resolveConversationHubCode(actor, courierId);
     const text = normalizeOptionalText(input.text);
 
     if (!text) {
@@ -171,6 +194,7 @@ export class ChatService implements OnModuleInit, OnModuleDestroy {
       const result = await this.store.createMessage({
         actor,
         courierId,
+        hubCode,
         text,
       });
       this.metrics.increment('chat_messages_created_total');
@@ -192,6 +216,10 @@ export class ChatService implements OnModuleInit, OnModuleDestroy {
     },
   ): Promise<ChatConversationDto> {
     const conversationId = this.resolveConversationId(actor, input);
+    await this.assertActorCanAccessCourier(
+      actor,
+      parseCourierIdFromConversationId(conversationId) ?? '',
+    );
     try {
       const conversation = await this.store.markRead({ actor, conversationId });
       this.metrics.increment('chat_read_marks_total');
@@ -214,6 +242,8 @@ export class ChatService implements OnModuleInit, OnModuleDestroy {
       role: actor.role,
       displayName: actor.displayName,
       courierId: actor.courierId,
+      hubCodes: actor.hubCodes,
+      canAccessAllHubs: actor.canAccessAllHubs,
       exp: Math.floor(expiresAtMs / 1000),
       jti: randomUUID(),
     };
@@ -232,15 +262,23 @@ export class ChatService implements OnModuleInit, OnModuleDestroy {
       id: payload.sub,
       displayName: payload.displayName,
       courierId: payload.courierId,
+      hubCodes: payload.hubCodes,
+      canAccessAllHubs: payload.canAccessAllHubs,
     };
   }
 
   canReceive(actor: ChatActor, message: ChatMessageDto): boolean {
-    return actor.role === 'OPS' || actor.courierId === message.courierId;
+    return (
+      actor.courierId === message.courierId ||
+      (actor.role === 'OPS' && canAccessHub(actor, null))
+    );
   }
 
   canReceiveConversation(actor: ChatActor, conversation: ChatConversationDto): boolean {
-    return actor.role === 'OPS' || actor.courierId === conversation.courierId;
+    return (
+      actor.courierId === conversation.courierId ||
+      (actor.role === 'OPS' && canAccessHub(actor, conversation.hubCode))
+    );
   }
 
   private resolveConversationId(
@@ -278,10 +316,57 @@ export class ChatService implements OnModuleInit, OnModuleDestroy {
 
     return courierId;
   }
+
+  private async assertActorCanAccessCourier(
+    actor: ChatActor,
+    courierId: string,
+  ): Promise<void> {
+    if (actor.role === 'COURIER') {
+      if (actor.courierId !== courierId) {
+        throw new UnauthorizedException('Courier cannot access another conversation.');
+      }
+      return;
+    }
+
+    await this.resolveConversationHubCode(actor, courierId);
+  }
+
+  private async resolveConversationHubCode(
+    actor: ChatActor,
+    courierId: string,
+  ): Promise<string | null> {
+    if (actor.role === 'COURIER') {
+      return actor.hubCodes[0] ?? null;
+    }
+
+    const courier = await this.findCourierByUsername(courierId);
+    const courierHubCode = normalizeHubCodes(courier?.hubCodes)[0] ?? null;
+
+    if (courierHubCode && !canAccessHub(actor, courierHubCode)) {
+      throw new UnauthorizedException('OPS cannot access courier outside assigned hub.');
+    }
+
+    return courierHubCode ?? actor.hubCodes[0] ?? null;
+  }
+
+  private async findCourierByUsername(courierId: string): Promise<UserAccountView | null> {
+    if (process.env.GATEWAY_AUTH_ENABLED !== 'true') {
+      return null;
+    }
+
+    const users = await this.authServiceClient.listUsers({
+      roleGroup: 'SHIPPER',
+      status: 'ACTIVE',
+      q: courierId,
+    });
+
+    return users.find((user) => user.username === courierId) ?? null;
+  }
 }
 
 class MemoryChatStore implements ChatStore {
   private readonly messagesByConversation = new Map<string, ChatMessageDto[]>();
+  private readonly hubCodesByConversation = new Map<string, string | null>();
   private readonly readsByConversation = new Map<string, Map<string, string>>();
 
   async init(): Promise<void> {}
@@ -298,7 +383,10 @@ class MemoryChatStore implements ChatStore {
           return false;
         }
 
-        return actor.role === 'OPS' || conversation.courierId === actor.courierId;
+        return (
+          conversation.courierId === actor.courierId ||
+          (actor.role === 'OPS' && canAccessHub(actor, conversation.hubCode))
+        );
       })
       .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
 
@@ -307,7 +395,11 @@ class MemoryChatStore implements ChatStore {
       actor.courierId &&
       !conversations.some((item) => item.courierId === actor.courierId)
     ) {
-      return [createEmptyConversation(actor.courierId, this.getLastReadAt(buildConversationId(actor.courierId), actor))];
+      return [createEmptyConversation(
+        actor.courierId,
+        actor.hubCodes[0] ?? null,
+        this.getLastReadAt(buildConversationId(actor.courierId), actor),
+      )];
     }
 
     return conversations;
@@ -334,10 +426,14 @@ class MemoryChatStore implements ChatStore {
   async createMessage(input: {
     actor: ChatActor;
     courierId: string;
+    hubCode: string | null;
     text: string;
   }): Promise<{ message: ChatMessageDto; conversation: ChatConversationDto }> {
     const conversationId = buildConversationId(input.courierId);
     const messages = this.messagesByConversation.get(conversationId) ?? [];
+    if (!this.hubCodesByConversation.has(conversationId) || input.hubCode) {
+      this.hubCodesByConversation.set(conversationId, input.hubCode);
+    }
     const message: ChatMessageDto = {
       id: randomUUID(),
       conversationId,
@@ -363,7 +459,11 @@ class MemoryChatStore implements ChatStore {
       message: this.withReadReceipt(message),
       conversation:
         this.toConversation(conversationId, messages, input.actor) ??
-        createEmptyConversation(input.courierId, this.getLastReadAt(conversationId, input.actor)),
+        createEmptyConversation(
+          input.courierId,
+          input.hubCode,
+          this.getLastReadAt(conversationId, input.actor),
+        ),
     };
   }
 
@@ -378,7 +478,11 @@ class MemoryChatStore implements ChatStore {
 
     return (
       this.toConversation(input.conversationId, messages, input.actor) ??
-      createEmptyConversation(courierId ?? '', now)
+      createEmptyConversation(
+        courierId ?? '',
+        this.hubCodesByConversation.get(input.conversationId) ?? null,
+        now,
+      )
     );
   }
 
@@ -397,10 +501,12 @@ class MemoryChatStore implements ChatStore {
 
     const lastReadAt = this.getLastReadAt(conversationId, actor);
     const unreadCount = countUnread(messages, actor, lastReadAt);
+    const hubCode = this.hubCodesByConversation.get(conversationId) ?? null;
 
     return {
       id: conversationId,
       courierId,
+      hubCode,
       title: `Courier ${courierId}`,
       lastMessage: lastMessage ? this.withReadReceipt(lastMessage) : null,
       updatedAt: lastMessage?.createdAt ?? new Date(0).toISOString(),
@@ -470,12 +576,14 @@ class PostgresChatStore implements ChatStore {
       receiptActorId(actor),
       actor.role,
       actor.role === 'OPS' ? null : actor.courierId,
+      actor.role === 'OPS' && !actor.canAccessAllHubs ? actor.hubCodes : null,
     ];
     const result = await this.pool.query<ConversationRow>(
       `
       SELECT
         c.id,
         c.courier_id,
+        c.hub_code,
         c.title,
         c.updated_at,
         COUNT(m.id)::int AS message_count,
@@ -515,8 +623,14 @@ class PostgresChatStore implements ChatStore {
         AND unread.sender_role <> $3
         AND (rr.last_read_at IS NULL OR unread.created_at > rr.last_read_at)
       WHERE ($4::text IS NULL OR c.courier_id = $4)
+        AND (
+          $5::text[] IS NULL
+          OR c.hub_code IS NULL
+          OR c.hub_code = ANY($5::text[])
+        )
       GROUP BY c.id, rr.last_read_at, lm.id, lm.sender_role, lm.sender_id,
-        lm.sender_name, lm.text, lm.created_at, ops_rr.last_read_at, courier_rr.last_read_at
+        c.hub_code, lm.sender_name, lm.text, lm.created_at,
+        ops_rr.last_read_at, courier_rr.last_read_at
       ORDER BY c.updated_at DESC
       `,
       params,
@@ -528,7 +642,7 @@ class PostgresChatStore implements ChatStore {
       actor.courierId &&
       conversations.length === 0
     ) {
-      return [createEmptyConversation(actor.courierId, null)];
+      return [createEmptyConversation(actor.courierId, actor.hubCodes[0] ?? null, null)];
     }
 
     return conversations;
@@ -588,6 +702,7 @@ class PostgresChatStore implements ChatStore {
   async createMessage(input: {
     actor: ChatActor;
     courierId: string;
+    hubCode: string | null;
     text: string;
   }): Promise<{ message: ChatMessageDto; conversation: ChatConversationDto }> {
     const conversationId = buildConversationId(input.courierId);
@@ -598,12 +713,15 @@ class PostgresChatStore implements ChatStore {
       await client.query('BEGIN');
       await client.query(
         `
-        INSERT INTO chat_conversations (id, courier_id, title, created_at, updated_at)
-        VALUES ($1, $2, $3, now(), now())
+        INSERT INTO chat_conversations (id, courier_id, hub_code, title, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, now(), now())
         ON CONFLICT (id)
-        DO UPDATE SET updated_at = now(), title = EXCLUDED.title
+        DO UPDATE SET
+          updated_at = now(),
+          title = EXCLUDED.title,
+          hub_code = COALESCE(chat_conversations.hub_code, EXCLUDED.hub_code)
         `,
-        [conversationId, input.courierId, `Courier ${input.courierId}`],
+        [conversationId, input.courierId, input.hubCode, `Courier ${input.courierId}`],
       );
       const messageResult = await client.query<MessageRow>(
         `
@@ -652,8 +770,8 @@ class PostgresChatStore implements ChatStore {
   }): Promise<ChatConversationDto> {
     await this.pool.query(
       `
-      INSERT INTO chat_conversations (id, courier_id, title, created_at, updated_at)
-      VALUES ($1, $2, $3, now(), now())
+      INSERT INTO chat_conversations (id, courier_id, hub_code, title, created_at, updated_at)
+      VALUES ($1, $2, NULL, $3, now(), now())
       ON CONFLICT (id) DO NOTHING
       `,
       [
@@ -682,7 +800,7 @@ class PostgresChatStore implements ChatStore {
     }
 
     const courierId = parseCourierIdFromConversationId(conversationId) ?? '';
-    return createEmptyConversation(courierId, null);
+    return createEmptyConversation(courierId, null, null);
   }
 }
 
@@ -702,6 +820,7 @@ interface MessageRow {
 interface ConversationRow {
   id: string;
   courier_id: string;
+  hub_code: string | null;
   title: string;
   updated_at: Date | string;
   message_count: number;
@@ -728,6 +847,8 @@ interface ChatTicketPayload {
   role: ChatActorRole;
   displayName: string;
   courierId: string | null;
+  hubCodes: string[];
+  canAccessAllHubs: boolean;
   exp: number;
   jti: string;
 }
@@ -738,11 +859,13 @@ export function buildConversationId(courierId: string): string {
 
 function createEmptyConversation(
   courierId: string,
+  hubCode: string | null,
   lastReadAt: string | null,
 ): ChatConversationDto {
   return {
     id: buildConversationId(courierId),
     courierId,
+    hubCode,
     title: `Courier ${courierId}`,
     lastMessage: null,
     updatedAt: new Date(0).toISOString(),
@@ -781,6 +904,7 @@ function rowToConversation(row: ConversationRow): ChatConversationDto {
   return {
     id: row.id,
     courierId: row.courier_id,
+    hubCode: row.hub_code,
     title: row.title,
     lastMessage,
     updatedAt: toIso(row.updated_at),
@@ -976,6 +1100,9 @@ function isValidTicketPayload(payload: Partial<ChatTicketPayload>): payload is C
     (payload.role === 'OPS' || payload.role === 'COURIER') &&
     typeof payload.displayName === 'string' &&
     (typeof payload.courierId === 'string' || payload.courierId === null) &&
+    Array.isArray(payload.hubCodes) &&
+    payload.hubCodes.every((hubCode) => typeof hubCode === 'string') &&
+    typeof payload.canAccessAllHubs === 'boolean' &&
     typeof payload.exp === 'number' &&
     Number.isFinite(payload.exp) &&
     typeof payload.jti === 'string' &&
@@ -1036,9 +1163,56 @@ function normalizeRole(value?: string | null): ChatActorRole | null {
 }
 
 function inferRoleFromUser(user: AuthenticatedUserView): ChatActorRole {
-  return user.roles.some((role) => OPS_ROLE_HINTS.has(role.trim().toUpperCase()))
+  return user.roles.some((role) => isOpsRole(role))
     ? 'OPS'
     : 'COURIER';
+}
+
+function isOpsRole(role: string): boolean {
+  const normalizedRole = role.trim().toUpperCase();
+  return OPS_ROLE_HINTS.has(normalizedRole) || normalizedRole.startsWith('OPS_');
+}
+
+function canUserAccessAllHubs(user: AuthenticatedUserView): boolean {
+  return user.roles.some((role) => role.trim().toUpperCase() === 'SYSTEM_ADMIN');
+}
+
+function canAccessHub(actor: ChatActor, hubCode: string | null): boolean {
+  if (actor.canAccessAllHubs || !hubCode) {
+    return true;
+  }
+
+  const normalizedHubCode = normalizeHubCode(hubCode);
+  return actor.hubCodes.some((assignedHubCode) =>
+    isSameHubOrScopedLocation(normalizedHubCode, assignedHubCode),
+  );
+}
+
+function normalizeHubCodes(value?: string[] | null): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return Array.from(
+    new Set(
+      value
+        .map((item) => normalizeHubCode(item))
+        .filter((item) => item.length > 0),
+    ),
+  );
+}
+
+function normalizeHubCode(value?: string | null): string {
+  return value?.trim().toUpperCase() ?? '';
+}
+
+function isSameHubOrScopedLocation(targetCode: string, assignedHubCode: string): boolean {
+  return (
+    targetCode === assignedHubCode ||
+    targetCode.startsWith(`${assignedHubCode}-`) ||
+    targetCode.startsWith(`${assignedHubCode}_`) ||
+    targetCode.startsWith(`${assignedHubCode}.`)
+  );
 }
 
 function normalizeOptionalText(value?: string | null): string | null {

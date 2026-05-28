@@ -124,6 +124,8 @@ export const routePaths = {
   tasks: '/app/tasks',
   taskDetail: (taskId: string) => `/app/tasks/${taskId}`,
   opsChat: '/app/chat',
+  opsChatWithCourier: (courierId: string) =>
+    `/app/chat?courierId=${encodeURIComponent(courierId)}`,
   manifests: '/app/manifests',
   manifestDetail: (manifestId: string) => `/app/manifests/${manifestId}`,
   scans: '/app/scans',

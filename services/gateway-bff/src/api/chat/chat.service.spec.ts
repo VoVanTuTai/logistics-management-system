@@ -35,6 +35,8 @@ test('issues and verifies a short-lived WebSocket ticket', async () => {
     id: 'courier-user-1',
     displayName: 'Courier 30000001',
     courierId: '30000001',
+    hubCodes: ['HCM01'],
+    canAccessAllHubs: false,
   };
   const ticket = service.issueWebSocketTicket(actor);
   const resolvedActor = service.resolveActorFromWebSocketTicket(ticket.ticket);
@@ -55,6 +57,8 @@ test('paginates chat messages with a stable before cursor', async () => {
     id: 'ops-user-1',
     displayName: 'Ops User',
     courierId: null,
+    hubCodes: ['HCM01'],
+    canAccessAllHubs: false,
   };
 
   await service.createMessage(actor, { courierId: '30000001', text: 'one' });
@@ -79,7 +83,63 @@ test('paginates chat messages with a stable before cursor', async () => {
   assert.equal(olderPage.nextCursor, null);
 });
 
-function createService(): ChatService {
+test('resolves current OPS roles for chat access', async () => {
+  const service = createService({
+    introspect: async () => ({
+      active: true,
+      sessionId: 'session-1',
+      user: {
+        id: 'ops-user-1',
+        username: '88000001',
+        displayName: 'Ops HCM',
+        roles: ['OPS_ADMIN'],
+        hubCodes: ['HCM01'],
+      },
+      accessTokenExpiresAt: new Date(Date.now() + 60000).toISOString(),
+    }),
+  });
+
+  const actor = await service.resolveActor({
+    authorizationHeader: 'Bearer token',
+    roleHint: 'OPS',
+  });
+
+  assert.equal(actor.role, 'OPS');
+  assert.deepEqual(actor.hubCodes, ['HCM01']);
+});
+
+test('blocks OPS chat to courier outside assigned hub', async () => {
+  process.env.GATEWAY_AUTH_ENABLED = 'true';
+  const service = createService({
+    listUsers: async () => [
+      {
+        id: '30000001',
+        username: '30000001',
+        displayName: 'Courier Ha Noi',
+        roles: ['COURIER'],
+        hubCodes: ['HAN01'],
+        status: 'ACTIVE',
+      },
+    ],
+  });
+  await service.onModuleInit();
+
+  const actor: ChatActor = {
+    role: 'OPS',
+    id: 'ops-user-1',
+    displayName: 'Ops HCM',
+    courierId: null,
+    hubCodes: ['HCM01'],
+    canAccessAllHubs: false,
+  };
+
+  await assert.rejects(
+    () => service.createMessage(actor, { courierId: '30000001', text: 'hello' }),
+    /outside assigned hub/,
+  );
+});
+
+function createService(authClientOverrides: Record<string, unknown> = {}): ChatService {
   return new ChatService(
     {
       introspect: async () => ({
@@ -88,6 +148,8 @@ function createService(): ChatService {
         user: null,
         accessTokenExpiresAt: null,
       }),
+      listUsers: async () => [],
+      ...authClientOverrides,
     } as never,
     new ChatMetricsService(),
   );

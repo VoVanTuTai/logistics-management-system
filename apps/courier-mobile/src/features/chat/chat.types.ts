@@ -21,6 +21,7 @@ export interface ChatMessagePageDto {
 export interface ChatConversationDto {
   id: string;
   courierId: string;
+  hubCode: string | null;
   title: string;
   lastMessage: ChatMessageDto | null;
   updatedAt: string;

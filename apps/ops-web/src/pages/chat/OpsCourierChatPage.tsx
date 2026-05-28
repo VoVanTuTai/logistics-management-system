@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 import {
   buildOpsChatWsUrl,
@@ -19,10 +20,12 @@ import './OpsCourierChatPage.css';
 type RealtimeStatus = 'connecting' | 'connected' | 'reconnecting' | 'offline';
 
 export function OpsCourierChatPage(): React.JSX.Element {
+  const [searchParams] = useSearchParams();
   const accessToken = useAuthStore((state) => state.session?.tokens.accessToken ?? null);
   const [conversations, setConversations] = useState<ChatConversationDto[]>([]);
-  const [selectedCourierId, setSelectedCourierId] = useState('');
-  const [manualCourierId, setManualCourierId] = useState('30000001');
+  const initialCourierId = searchParams.get('courierId')?.trim() ?? '';
+  const [selectedCourierId, setSelectedCourierId] = useState(initialCourierId);
+  const [manualCourierId, setManualCourierId] = useState(initialCourierId || '30000001');
   const [messages, setMessages] = useState<ChatMessageDto[]>([]);
   const [messagesNextCursor, setMessagesNextCursor] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
@@ -36,6 +39,16 @@ export function OpsCourierChatPage(): React.JSX.Element {
     () => conversations.find((item) => item.courierId === selectedCourierId) ?? null,
     [conversations, selectedCourierId],
   );
+
+  useEffect(() => {
+    const courierId = searchParams.get('courierId')?.trim();
+    if (!courierId) {
+      return;
+    }
+
+    setSelectedCourierId(courierId);
+    setManualCourierId(courierId);
+  }, [searchParams]);
 
   useEffect(() => {
     let isMounted = true;
@@ -197,15 +210,16 @@ export function OpsCourierChatPage(): React.JSX.Element {
     setSelectedCourierId(courierId);
     setConversations((current) =>
       upsertConversation(current, {
-          id: `courier:${courierId}`,
-          courierId,
-          title: `Courier ${courierId}`,
-          lastMessage: null,
-          updatedAt: new Date(0).toISOString(),
-          messageCount: 0,
-          unreadCount: 0,
-          lastReadAt: null,
-        }),
+        id: `courier:${courierId}`,
+        courierId,
+        hubCode: null,
+        title: `Courier ${courierId}`,
+        lastMessage: null,
+        updatedAt: new Date(0).toISOString(),
+        messageCount: 0,
+        unreadCount: 0,
+        lastReadAt: null,
+      }),
     );
   };
 
@@ -226,6 +240,8 @@ export function OpsCourierChatPage(): React.JSX.Element {
         upsertConversation(current, {
           id: message.conversationId,
           courierId: message.courierId,
+          hubCode:
+            current.find((item) => item.courierId === message.courierId)?.hubCode ?? null,
           title: `Courier ${message.courierId}`,
           lastMessage: message,
           updatedAt: message.createdAt,

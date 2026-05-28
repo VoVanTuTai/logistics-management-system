@@ -5,6 +5,8 @@ export interface ChatActor {
   id: string;
   displayName: string;
   courierId: string | null;
+  hubCodes: string[];
+  canAccessAllHubs: boolean;
 }
 
 export interface ChatMessageDto {
@@ -28,6 +30,7 @@ export interface ChatMessagePageDto {
 export interface ChatConversationDto {
   id: string;
   courierId: string;
+  hubCode: string | null;
   title: string;
   lastMessage: ChatMessageDto | null;
   updatedAt: string;

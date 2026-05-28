@@ -51,9 +51,10 @@ export class ChatRealtimeGateway {
     const payload = JSON.stringify(event);
 
     for (const client of this.clients) {
-      const canReceive = event.message
-        ? this.chatService.canReceive(client.actor, event.message)
-        : this.chatService.canReceiveConversation(client.actor, event.conversation);
+      const canReceive = this.chatService.canReceiveConversation(
+        client.actor,
+        event.conversation,
+      );
       if (!canReceive) {
         continue;
       }
