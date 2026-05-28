@@ -88,6 +88,7 @@ run_node_service_command() {
   docker run --rm \
     --network "$network_name" \
     -v "$dir:/app" \
+    -v "$ROOT_DIR/infra:/infra:ro" \
     -w /app \
     -e DATABASE_URL="$database_url" \
     -e PNPM_COMMAND="$pnpm_command" \
