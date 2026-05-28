@@ -674,7 +674,7 @@ function DashboardLayout(): React.JSX.Element {
     ? [
         { label: 'Vận đơn', icon: 'customer_order_management', to: routePaths.shipments },
         { label: 'Tác vụ điều phối', icon: 'metrics_action', to: routePaths.tasks },
-        { label: 'Chat courier', icon: 'chat', to: routePaths.opsChat },
+        { label: 'Chat courier', icon: 'chat', to: routePaths.operationsPlatformChat },
         { label: 'Quét tại hub', icon: 'tracking_lookup', to: routePaths.scans },
         { label: 'Tra cứu hành trình', icon: 'tracking_lookup', to: routePaths.tracking },
         { label: 'Giám sát dữ liệu', icon: 'monitor_data', kind: 'monitor_data' },
@@ -682,7 +682,7 @@ function DashboardLayout(): React.JSX.Element {
     : [
         { label: 'Vận đơn', icon: 'customer_order_management', to: routePaths.shipments },
         { label: 'Tác vụ điều phối', icon: 'metrics_action', to: routePaths.tasks },
-        { label: 'Chat courier', icon: 'chat', to: routePaths.opsChat },
+        { label: 'Chat courier', icon: 'chat', to: routePaths.operationsPlatformChat },
         { label: 'Quét tại hub', icon: 'tracking_lookup', to: routePaths.scans },
         { label: 'Bao tải', icon: 'thermal_label', to: routePaths.manifests },
         { label: 'Tra cứu hành trình', icon: 'tracking_lookup', to: routePaths.tracking },
@@ -1420,6 +1420,10 @@ export function AppRouter(): React.JSX.Element {
             <Route
               path={routePaths.groupOperationsPlatformLeaf}
               element={opsModuleRoute('Nền tảng điều hành', <OperationsPlatformGroupPage />)}
+            />
+            <Route
+              path={routePaths.operationsPlatformChatLeaf}
+              element={opsModuleRoute('Chat courier', <OpsCourierChatPage />)}
             />
             <Route
               path={routePaths.thermalLabelManagementLeaf}

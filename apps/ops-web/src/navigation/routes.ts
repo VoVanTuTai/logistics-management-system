@@ -95,6 +95,9 @@ export const routePaths = {
     '/app/function-groups/operations-metrics/thao-tac/ban-dieu-phoi-thao-tac',
   thermalLabelManagement: '/app/function-groups/operations-platform/thermal-label/management',
   thermalLabelPrint: '/app/function-groups/operations-platform/thermal-label/print',
+  operationsPlatformChat: '/app/function-groups/operations-platform/chat-courier',
+  operationsPlatformChatWithCourier: (courierId: string) =>
+    `/app/function-groups/operations-platform/chat-courier?courierId=${encodeURIComponent(courierId)}`,
   returnBlockRoot: '/app/function-groups/operations-platform/chuyen-hoan',
   returnBlockRegistration:
     '/app/function-groups/operations-platform/chuyen-hoan/dang-ky-chuyen-hoan',
@@ -125,7 +128,7 @@ export const routePaths = {
   taskDetail: (taskId: string) => `/app/tasks/${taskId}`,
   opsChat: '/app/chat',
   opsChatWithCourier: (courierId: string) =>
-    `/app/chat?courierId=${encodeURIComponent(courierId)}`,
+    `/app/function-groups/operations-platform/chat-courier?courierId=${encodeURIComponent(courierId)}`,
   manifests: '/app/manifests',
   manifestDetail: (manifestId: string) => `/app/manifests/${manifestId}`,
   scans: '/app/scans',
@@ -220,6 +223,7 @@ export const routePaths = {
     'function-groups/operations-metrics/thao-tac/ban-dieu-phoi-thao-tac',
   thermalLabelManagementLeaf: 'function-groups/operations-platform/thermal-label/management',
   thermalLabelPrintLeaf: 'function-groups/operations-platform/thermal-label/print',
+  operationsPlatformChatLeaf: 'function-groups/operations-platform/chat-courier',
   returnBlockRegistrationLeaf:
     'function-groups/operations-platform/chuyen-hoan/dang-ky-chuyen-hoan',
   returnBlockManagementLeaf:
