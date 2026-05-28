@@ -159,6 +159,12 @@ load_env() {
   set_env_value GATEWAY_PUBLIC_URL "https://${OPS_DOMAIN}"
   set_env_value MINIO_PUBLIC_ENDPOINT "https://${MINIO_DOMAIN}"
   set_env_value CORS_ORIGINS "https://${OPS_DOMAIN},https://${MERCHANT_DOMAIN},https://${ADMIN_DOMAIN},https://${TRACKING_DOMAIN}"
+  set_env_value OPS_WEB_PORT "5173"
+  set_env_value MERCHANT_WEB_PORT "5174"
+  set_env_value ADMIN_WEB_PORT "5175"
+  set_env_value PUBLIC_TRACKING_PORT "5176"
+  set_env_value GATEWAY_PORT "13000"
+  set_env_value MINIO_API_PORT "19000"
 
   POSTGRES_USER="$(get_env_value POSTGRES_USER postgres)"
   POSTGRES_PASSWORD="$(get_env_value POSTGRES_PASSWORD)"
