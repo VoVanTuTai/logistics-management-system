@@ -10,12 +10,18 @@ import type {
 export async function listChatConversations(
   accessToken: string | null,
 ): Promise<ChatConversationDto[]> {
-  return opsApiClient.request<ChatConversationDto[]>(
+  const payload = await opsApiClient.request<unknown>(
     '/chat/conversations?clientRole=OPS',
     {
       accessToken,
     },
   );
+
+  if (!Array.isArray(payload)) {
+    throw new Error('Phản hồi danh sách hội thoại không hợp lệ.');
+  }
+
+  return payload as ChatConversationDto[];
 }
 
 export async function listChatMessages(input: {
