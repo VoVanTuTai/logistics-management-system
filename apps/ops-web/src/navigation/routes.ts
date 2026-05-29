@@ -98,10 +98,15 @@ export const routePaths = {
   operationsPlatformChat: '/app/function-groups/operations-platform/chat-courier',
   operationsPlatformChatWithCourier: (courierId: string) =>
     `/app/function-groups/operations-platform/chat-courier?courierId=${encodeURIComponent(courierId)}`,
-  returnBlockRoot: '/app/function-groups/operations-platform/chuyen-hoan',
+  returnBlockRoot: '/app/function-groups/service-quality/chuyen-hoan',
   returnBlockRegistration:
-    '/app/function-groups/operations-platform/chuyen-hoan/dang-ky-chuyen-hoan',
+    '/app/function-groups/service-quality/chuyen-hoan/dang-ky-chuyen-hoan',
   returnBlockManagement:
+    '/app/function-groups/service-quality/chuyen-hoan/quan-ly-chuyen-hoan',
+  legacyReturnBlockRoot: '/app/function-groups/operations-platform/chuyen-hoan',
+  legacyReturnBlockRegistration:
+    '/app/function-groups/operations-platform/chuyen-hoan/dang-ky-chuyen-hoan',
+  legacyReturnBlockManagement:
     '/app/function-groups/operations-platform/chuyen-hoan/quan-ly-chuyen-hoan',
   monitorDataRoot: '/app/function-groups/operations-platform/data-monitoring',
   monitorDataHangNhan: '/app/function-groups/operations-platform/data-monitoring/hang-nhan',
@@ -224,9 +229,15 @@ export const routePaths = {
   thermalLabelManagementLeaf: 'function-groups/operations-platform/thermal-label/management',
   thermalLabelPrintLeaf: 'function-groups/operations-platform/thermal-label/print',
   operationsPlatformChatLeaf: 'function-groups/operations-platform/chat-courier',
+  returnBlockRootLeaf: 'function-groups/service-quality/chuyen-hoan',
   returnBlockRegistrationLeaf:
-    'function-groups/operations-platform/chuyen-hoan/dang-ky-chuyen-hoan',
+    'function-groups/service-quality/chuyen-hoan/dang-ky-chuyen-hoan',
   returnBlockManagementLeaf:
+    'function-groups/service-quality/chuyen-hoan/quan-ly-chuyen-hoan',
+  legacyReturnBlockRootLeaf: 'function-groups/operations-platform/chuyen-hoan',
+  legacyReturnBlockRegistrationLeaf:
+    'function-groups/operations-platform/chuyen-hoan/dang-ky-chuyen-hoan',
+  legacyReturnBlockManagementLeaf:
     'function-groups/operations-platform/chuyen-hoan/quan-ly-chuyen-hoan',
   monitorDataHangNhanLeaf: 'function-groups/operations-platform/data-monitoring/hang-nhan',
   monitorDataHangDenLeaf: 'function-groups/operations-platform/data-monitoring/hang-den',
@@ -290,7 +301,6 @@ export const OPS_FULL_MODULE_ROUTE_PATHS = [
   routePaths.groupOperationsPlatform,
   routePaths.groupCustomerPlatform,
   routePaths.groupBranchBusiness,
-  routePaths.groupFinanceSettlement,
   routePaths.groupCapabilityPlatform,
   routePaths.groupOperationsMetrics,
   routePaths.groupServiceQuality,
@@ -341,12 +351,9 @@ export const OPS_FULL_MODULE_ROUTE_PATHS = [
   routePaths.returnBlockRegistration,
   routePaths.returnBlockManagement,
   routePaths.monitorDataRoot,
-  routePaths.monitorDataHangNhan,
   routePaths.monitorDataHangDen,
   routePaths.monitorDataHangGui,
   routePaths.monitorDataHangPhat,
-  routePaths.monitorData2In1,
-  routePaths.monitorDataTheoDoiTamUng,
   routePaths.monitorDataDongBao,
   routePaths.linehaulRoot,
   routePaths.linehaulTripManagement,

@@ -34,10 +34,6 @@ const AnalyticsDashboardPage = lazy(() =>
     default: module.AnalyticsDashboardPage,
   })),
 );
-const BasicDataGroupPage = lazyRoutePage(
-  () => import('../pages/function-groups/basic-data/BasicDataGroupPage'),
-  'BasicDataGroupPage',
-);
 const BranchLocalOrderOverviewPage = lazyRoutePage(
   () => import('../pages/function-groups/branch-business/local-orders/BranchLocalOrderOverviewPage'),
   'BranchLocalOrderOverviewPage',
@@ -98,10 +94,6 @@ const DatabaseGroupPage = lazyRoutePage(
   () => import('../pages/function-groups/database/DatabaseGroupPage'),
   'DatabaseGroupPage',
 );
-const FinanceSettlementGroupPage = lazyRoutePage(
-  () => import('../pages/function-groups/finance-settlement/FinanceSettlementGroupPage'),
-  'FinanceSettlementGroupPage',
-);
 const OperationsMetricsGroupPage = lazyRoutePage(
   () => import('../pages/function-groups/operations-metrics/OperationsMetricsGroupPage'),
   'OperationsMetricsGroupPage',
@@ -122,10 +114,6 @@ const OperationsPlatformGroupPage = lazyRoutePage(
   () => import('../pages/function-groups/operations-platform/OperationsPlatformGroupPage'),
   'OperationsPlatformGroupPage',
 );
-const MonitorData2In1Page = lazyRoutePage(
-  () => import('../pages/function-groups/operations-platform/data-monitoring/MonitorData2In1Page'),
-  'MonitorData2In1Page',
-);
 const MonitorDataDongBaoPage = lazyRoutePage(
   () => import('../pages/function-groups/operations-platform/data-monitoring/MonitorDataDongBaoPage'),
   'MonitorDataDongBaoPage',
@@ -138,17 +126,9 @@ const MonitorDataHangGuiPage = lazyRoutePage(
   () => import('../pages/function-groups/operations-platform/data-monitoring/MonitorDataHangGuiPage'),
   'MonitorDataHangGuiPage',
 );
-const MonitorDataHangNhanPage = lazyRoutePage(
-  () => import('../pages/function-groups/operations-platform/data-monitoring/MonitorDataHangNhanPage'),
-  'MonitorDataHangNhanPage',
-);
 const MonitorDataHangPhatPage = lazyRoutePage(
   () => import('../pages/function-groups/operations-platform/data-monitoring/MonitorDataHangPhatPage'),
   'MonitorDataHangPhatPage',
-);
-const MonitorDataTheoDoiTamUngPage = lazyRoutePage(
-  () => import('../pages/function-groups/operations-platform/data-monitoring/MonitorDataTheoDoiTamUngPage'),
-  'MonitorDataTheoDoiTamUngPage',
 );
 const ReturnBlockManagementPage = lazyRoutePage(
   () => import('../pages/function-groups/operations-platform/return-block/ReturnBlockManagementPage'),
@@ -589,6 +569,12 @@ function DashboardLayout(): React.JSX.Element {
     || location.pathname.startsWith('/app/coming-soon');
 
   const isReturnBlockSection = pathMatches(location.pathname, routePaths.returnBlockRoot);
+  const isBasicDataSection =
+    pathMatches(location.pathname, routePaths.groupBasicData) ||
+    pathMatches(location.pathname, routePaths.masterdataHubs) ||
+    pathMatches(location.pathname, routePaths.masterdataZones) ||
+    pathMatches(location.pathname, routePaths.masterdataNdrReasons) ||
+    pathMatches(location.pathname, routePaths.masterdataConfigs);
   const isFinanceSettlementSection =
     pathMatches(location.pathname, routePaths.groupFinanceSettlement);
   const isOperationsPlatformSection =
@@ -623,14 +609,16 @@ function DashboardLayout(): React.JSX.Element {
             pathMatches(location.pathname, routePaths.shipments) ||
             pathMatches(location.pathname, routePaths.tasks) ||
             pathMatches(location.pathname, routePaths.opsChat) ||
+            pathMatches(location.pathname, routePaths.manifests) ||
             pathMatches(location.pathname, routePaths.scans) ||
             pathMatches(location.pathname, routePaths.tracking) ||
             isOperationsPlatformSection ||
-            pathMatches(location.pathname, routePaths.monitorDataRoot) ||
-            pathMatches(location.pathname, routePaths.masterdataHubs) ||
-            pathMatches(location.pathname, routePaths.masterdataZones) ||
-            pathMatches(location.pathname, routePaths.masterdataNdrReasons) ||
-            pathMatches(location.pathname, routePaths.masterdataConfigs),
+            pathMatches(location.pathname, routePaths.monitorDataRoot),
+        },
+        {
+          label: 'Dữ liệu cơ bản',
+          to: routePaths.groupBasicData,
+          isActive: isBasicDataSection,
         },
         {
           label: 'Đơn khách hàng',
@@ -687,6 +675,7 @@ function DashboardLayout(): React.JSX.Element {
         { label: 'Tác vụ điều phối', icon: 'metrics_action', to: routePaths.tasks },
         { label: 'Chat courier', icon: 'chat', to: routePaths.operationsPlatformChat },
         { label: 'Quét tại hub', icon: 'tracking_lookup', to: routePaths.scans },
+        { label: 'Bao tải', icon: 'thermal_label', to: routePaths.manifests },
         { label: 'Tra cứu hành trình', icon: 'tracking_lookup', to: routePaths.tracking },
         { label: 'Giám sát dữ liệu', icon: 'monitor_data', kind: 'monitor_data' },
       ]
@@ -697,6 +686,12 @@ function DashboardLayout(): React.JSX.Element {
         { label: 'Quét tại hub', icon: 'tracking_lookup', to: routePaths.scans },
         { label: 'Bao tải', icon: 'thermal_label', to: routePaths.manifests },
         { label: 'Tra cứu hành trình', icon: 'tracking_lookup', to: routePaths.tracking },
+  ];
+  const basicDataSidebarItems: SidebarItem[] = [
+    { label: 'Hub / bưu cục', icon: 'branch_local_orders', to: routePaths.masterdataHubs },
+    { label: 'Zone / vùng tuyến', icon: 'linehaul_transport', to: routePaths.masterdataZones },
+    { label: 'Lý do NDR', icon: 'service_abnormal', to: routePaths.masterdataNdrReasons },
+    { label: 'Cấu hình hệ thống', icon: 'metrics_action', to: routePaths.masterdataConfigs },
   ];
   const serviceQualitySidebarItems: SidebarItem[] = [
     { label: 'Tra cứu sự cố / chất lượng', icon: 'service_lookup', to: routePaths.serviceQualityIntegratedLookup },
@@ -716,6 +711,11 @@ function DashboardLayout(): React.JSX.Element {
       label: 'Thao tác bưu cục',
       icon: 'branch_local_orders',
       kind: 'branch_local_orders',
+    },
+    {
+      label: 'Quản lý vận đơn',
+      icon: 'branch_order_management',
+      kind: 'branch_order_management',
     },
     {
       label: 'Quyết toán tài chính',
@@ -739,6 +739,8 @@ function DashboardLayout(): React.JSX.Element {
     ? serviceQualitySidebarItems
     : isOperationsMetricsSection
     ? operationsMetricsSidebarItems
+    : isBasicDataSection
+    ? basicDataSidebarItems
     : isCustomerPlatformSection
     ? customerPlatformSidebarItems
     : isBranchBusinessSection
@@ -950,7 +952,7 @@ function DashboardLayout(): React.JSX.Element {
     : isCustomerPlatformSection
     ? []
     : isBranchBusinessSection
-    ? ['branch_local_orders', 'branch_finance_settlement']
+    ? ['branch_local_orders', 'branch_order_management', 'branch_finance_settlement']
     : isCapabilityPlatformSection
     ? []
     : ['monitor_data'];
@@ -972,6 +974,8 @@ function DashboardLayout(): React.JSX.Element {
     ? 'Chất lượng dịch vụ'
     : isOperationsMetricsSection
     ? 'Chỉ số vận hành'
+    : isBasicDataSection
+    ? 'Dữ liệu cơ bản'
     : isCustomerPlatformSection
     ? 'Đơn khách hàng'
     : isBranchBusinessSection
@@ -1021,11 +1025,14 @@ function DashboardLayout(): React.JSX.Element {
     ? 'Quét hub'
     : pathMatches(location.pathname, routePaths.ndr)
     ? 'NDR'
-    : pathMatches(location.pathname, routePaths.masterdataHubs) ||
-      pathMatches(location.pathname, routePaths.masterdataZones) ||
-      pathMatches(location.pathname, routePaths.masterdataNdrReasons) ||
-      pathMatches(location.pathname, routePaths.masterdataConfigs)
-    ? 'Masterdata'
+    : pathMatches(location.pathname, routePaths.masterdataHubs)
+    ? 'Hub / bưu cục'
+    : pathMatches(location.pathname, routePaths.masterdataZones)
+    ? 'Zone / vùng tuyến'
+    : pathMatches(location.pathname, routePaths.masterdataNdrReasons)
+    ? 'Lý do NDR'
+    : pathMatches(location.pathname, routePaths.masterdataConfigs)
+    ? 'Cấu hình hệ thống'
     : isMonitorDataRoute
     ? 'Giám sát dữ liệu'
     : activeLinehaulItem
@@ -1432,7 +1439,7 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.groupBasicDataLeaf}
-              element={opsModuleRoute('Dữ liệu cơ bản', <BasicDataGroupPage />)}
+              element={<Navigate to={routePaths.masterdataHubs} replace />}
             />
             <Route
               path={routePaths.groupOperationsPlatformLeaf}
@@ -1451,6 +1458,22 @@ export function AppRouter(): React.JSX.Element {
               element={<Navigate to={routePaths.linehaulBagLabelPrint} replace />}
             />
             <Route
+              path={routePaths.legacyReturnBlockRootLeaf}
+              element={<Navigate to={routePaths.returnBlockRegistration} replace />}
+            />
+            <Route
+              path={routePaths.legacyReturnBlockManagementLeaf}
+              element={<Navigate to={routePaths.returnBlockManagement} replace />}
+            />
+            <Route
+              path={routePaths.legacyReturnBlockRegistrationLeaf}
+              element={<Navigate to={routePaths.returnBlockRegistration} replace />}
+            />
+            <Route
+              path={routePaths.returnBlockRootLeaf}
+              element={<Navigate to={routePaths.returnBlockRegistration} replace />}
+            />
+            <Route
               path={routePaths.returnBlockManagementLeaf}
               element={opsModuleRoute('Quản lý chuyển hoàn', <ReturnBlockManagementPage />)}
             />
@@ -1460,7 +1483,7 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.monitorDataHangNhanLeaf}
-              element={opsModuleRoute('Giám sát hàng nhận', <MonitorDataHangNhanPage />)}
+              element={<Navigate to={routePaths.monitorDataHangDen} replace />}
             />
             <Route
               path={routePaths.monitorDataHangDenLeaf}
@@ -1476,11 +1499,11 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.monitorData2In1Leaf}
-              element={opsModuleRoute('Giám sát 2in1', <MonitorData2In1Page />)}
+              element={<Navigate to={routePaths.monitorDataHangDen} replace />}
             />
             <Route
               path={routePaths.monitorDataTheoDoiTamUngLeaf}
-              element={opsModuleRoute('Theo dõi tạm ứng', <MonitorDataTheoDoiTamUngPage />)}
+              element={<Navigate to={routePaths.monitorDataHangDen} replace />}
             />
             <Route
               path={routePaths.monitorDataDongBaoLeaf}
@@ -1583,7 +1606,7 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.groupFinanceSettlementLeaf}
-              element={opsModuleRoute('Quyết toán tài chính', <FinanceSettlementGroupPage />)}
+              element={<Navigate to={routePaths.branchBusinessFinanceCod} replace />}
             />
             <Route
               path={routePaths.groupCapabilityPlatformLeaf}
@@ -1768,11 +1791,7 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.manifestsLeaf}
-              element={
-                appEnv.enableFullOpsModules
-                  ? <Navigate to={routePaths.linehaulBagLabelManagement} replace />
-                  : lazyRoute(<ManifestManagementPage />)
-              }
+              element={lazyRoute(<ManifestManagementPage />)}
             />
             <Route path={routePaths.manifestDetailLeaf} element={lazyRoute(<ManifestDetailPage />)} />
             <Route path={routePaths.scansLeaf} element={lazyRoute(<HubScanPage />)} />

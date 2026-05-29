@@ -236,11 +236,6 @@ export function DashboardPage(): React.JSX.Element {
           icon: 'branch_business',
         },
         {
-          title: 'Quyết toán tài chính',
-          to: routePaths.groupFinanceSettlement,
-          icon: 'finance_settlement',
-        },
-        {
           title: 'Vận chuyển tuyến',
           to: routePaths.groupCapabilityPlatform,
           icon: 'capability_platform',
