@@ -10,6 +10,7 @@ import type { Request, Response } from 'express';
 
 import { GatewayAuthGuard } from '../../common/guards/gateway-auth.guard';
 import { GatewayRoleGuard } from '../../common/guards/gateway-role.guard';
+import { AuthServiceClient } from '../../infrastructure/clients/auth-service.client';
 import { GatewayProxyClient } from '../../infrastructure/clients/gateway-proxy.client';
 import { ServiceRegistryClient } from '../../infrastructure/clients/service-registry.client';
 import { MarketplaceAuthService } from './integrations/marketplace-auth.service';
@@ -40,6 +41,7 @@ class MerchantController {
 @Module({
   controllers: [MerchantIntegrationsController, MerchantController],
   providers: [
+    AuthServiceClient,
     GatewayProxyClient,
     ServiceRegistryClient,
     GatewayAuthGuard,
