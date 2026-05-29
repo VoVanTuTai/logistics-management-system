@@ -150,6 +150,10 @@
   align-items: start;
 }
 
+.ops-branch-workflow__grid--balanced {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .ops-branch-workflow__panel {
   border: 1px solid #dbe3ef;
   border-radius: 10px;

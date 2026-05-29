@@ -34,10 +34,6 @@ const AnalyticsDashboardPage = lazy(() =>
     default: module.AnalyticsDashboardPage,
   })),
 );
-const BranchLocalOrderOverviewPage = lazyRoutePage(
-  () => import('../pages/function-groups/branch-business/local-orders/BranchLocalOrderOverviewPage'),
-  'BranchLocalOrderOverviewPage',
-);
 const BranchDeliveryDispatchPage = lazyRoutePage(
   () => import('../pages/function-groups/branch-business/delivery-dispatch/BranchDeliveryDispatchPage'),
   'BranchDeliveryDispatchPage',
@@ -53,10 +49,6 @@ const BranchFinanceCodSettlementPage = lazyRoutePage(
 const BranchFinanceReconcilePage = lazyRoutePage(
   () => import('../pages/function-groups/branch-business/finance-reconcile/BranchFinanceReconcilePage'),
   'BranchFinanceReconcilePage',
-);
-const BranchInventoryPage = lazyRoutePage(
-  () => import('../pages/function-groups/branch-business/inventory/BranchInventoryPage'),
-  'BranchInventoryPage',
 );
 const BranchShiftClosingPage = lazyRoutePage(
   () => import('../pages/function-groups/branch-business/shift-closing/BranchShiftClosingPage'),
@@ -158,14 +150,6 @@ const ServiceQualityActionBoardPage = lazyRoutePage(
   () => import('../pages/function-groups/service-quality/proactive/ServiceQualityActionBoardPage'),
   'ServiceQualityActionBoardPage',
 );
-const ServiceQualityMonitorDeliveredPage = lazyRoutePage(
-  () => import('../pages/function-groups/service-quality/proactive/ServiceQualityMonitorDeliveredPage'),
-  'ServiceQualityMonitorDeliveredPage',
-);
-const ServiceQualityMonitorReceivedPage = lazyRoutePage(
-  () => import('../pages/function-groups/service-quality/proactive/ServiceQualityMonitorReceivedPage'),
-  'ServiceQualityMonitorReceivedPage',
-);
 const SmartDevicesGroupPage = lazyRoutePage(
   () => import('../pages/function-groups/smart-devices/SmartDevicesGroupPage'),
   'SmartDevicesGroupPage',
@@ -266,7 +250,6 @@ type SidebarIconName =
   | 'metrics_planning'
   | 'metrics_action'
   | 'shipment_dispatch'
-  | 'branch_local_orders'
   | 'branch_order_management'
   | 'branch_finance_settlement'
   | 'linehaul_transport';
@@ -274,13 +257,7 @@ type SidebarIconName =
 type SidebarPanelKind =
   | 'return_block'
   | 'monitor_data'
-  | 'service_proactive'
-  | 'metrics_abnormal'
-  | 'metrics_deadline'
-  | 'metrics_planning'
-  | 'metrics_action'
   | 'shipment_dispatch'
-  | 'branch_local_orders'
   | 'branch_finance_settlement'
   | 'linehaul_transport';
 
@@ -441,16 +418,6 @@ function SidebarIcon({ name }: { name: SidebarIconName }): React.JSX.Element {
           <path d="M9 15.4h4.2" {...common} />
         </svg>
       );
-    case 'branch_local_orders':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M5.5 6.5h13v11h-13z" {...common} />
-          <path d="M8.2 10h7.6" {...common} />
-          <path d="M8.2 13h4.4" {...common} />
-          <circle cx="16" cy="15.2" r="2.3" {...common} />
-          <path d="m14.8 15.2.8.8 1.5-1.7" {...common} />
-        </svg>
-      );
     case 'branch_finance_settlement':
       return (
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -593,23 +560,26 @@ function DashboardLayout(): React.JSX.Element {
   ];
 
   const serviceQualitySidebarItems: SidebarItem[] = [
+    { label: 'Bảng cảnh báo chất lượng', icon: 'service_proactive', to: routePaths.serviceQualityProactiveActionBoard },
     { label: 'Tra cứu sự cố / chất lượng', icon: 'service_lookup', to: routePaths.serviceQualityIntegratedLookup },
-    { label: 'Giám sát chủ động', icon: 'service_proactive', kind: 'service_proactive' },
     { label: 'Quản lý hàng bất thường', icon: 'service_abnormal', to: routePaths.serviceQualityAbnormalManagement },
-    { label: 'NDR / giao thất bại', icon: 'service_abnormal', to: routePaths.ndr },
     { label: 'Chuyển hoàn', icon: 'return_block', kind: 'return_block' },
   ];
   const operationsMetricsSidebarItems: SidebarItem[] = [
-    { label: 'Tổng quan dễ hiểu', icon: 'operation_report', to: routePaths.opsMetricsReport },
+    { label: 'Báo cáo vận hành', icon: 'operation_report', to: routePaths.opsMetricsReport },
     { label: 'Tồn kho & quá hạn', icon: 'metrics_deadline', to: routePaths.opsMetricsDeadlineInventory },
     { label: 'Đơn cần chú ý', icon: 'metrics_abnormal', to: routePaths.opsMetricsAbnormalHandling },
-    { label: 'Việc cần làm', icon: 'metrics_action', to: routePaths.opsMetricsActionExecutionBoard },
   ];
   const branchBusinessSidebarItems: SidebarItem[] = [
     {
-      label: 'Thao tác bưu cục',
-      icon: 'branch_local_orders',
-      kind: 'branch_local_orders',
+      label: 'Tạo vận đơn tại quầy',
+      icon: 'branch_order_management',
+      to: routePaths.branchBusinessOrderCreate,
+    },
+    {
+      label: 'Báo cáo cuối ngày',
+      icon: 'metrics_action',
+      to: routePaths.branchBusinessShiftClosing,
     },
     {
       label: 'Quyết toán tài chính',
@@ -657,36 +627,9 @@ function DashboardLayout(): React.JSX.Element {
     { label: 'Điều phối lấy hàng', to: routePaths.operationsPlatformPickupDispatch },
     { label: 'Điều phối phát hàng', to: routePaths.operationsPlatformDeliveryDispatch },
   ] as const;
-  const serviceQualityProactiveChildItems = [
-    { label: 'Bảng cảnh báo', to: routePaths.serviceQualityProactiveActionBoard },
-    { label: 'Giám sát đơn nhận', to: routePaths.serviceQualityProactiveInbound },
-    { label: 'Theo dõi giao thất bại / NDR', to: routePaths.serviceQualityProactiveDelivered },
-  ] as const;
-  const operationsMetricsAbnormalChildItems = [
-    { label: 'Tổng quan chỉ số bất thường', to: routePaths.opsMetricsAbnormalOverview },
-    { label: 'Theo dõi xử lý kiện', to: routePaths.opsMetricsAbnormalHandling },
-  ] as const;
-  const operationsMetricsDeadlineChildItems = [
-    { label: 'Tồn kho & SLA lưu kho', to: routePaths.opsMetricsDeadlineInventory },
-    { label: 'Báo biểu tỷ lệ nhận hàng kịp', to: routePaths.opsMetricsDeadlineOntimePickupRatio },
-    { label: 'Giám sát thời hiệu hàng phát', to: routePaths.opsMetricsDeadlineDeliverySla },
-    { label: 'Ký nhận thực tế (T-1)', to: routePaths.opsMetricsDeadlineActualSignT1 },
-    { label: 'Tỷ lệ gửi kiện đúng giờ', to: routePaths.opsMetricsDeadlineOntimeSendRatio },
-    { label: 'Giám sát leadtime phát (Mới)', to: routePaths.opsMetricsDeadlineDeliveryLeadtime },
-    { label: 'Giám sát leadtime nhận', to: routePaths.opsMetricsDeadlineInboundLeadtime },
-    { label: 'Hệ thống cảnh báo quá hạn', to: routePaths.opsMetricsDeadlineOverdueAlerts },
-  ] as const;
-  const operationsMetricsPlanningChildItems = [
-    { label: 'Giám sát KPI mạng lưới', to: routePaths.opsMetricsPlanningNetworkKpi },
-  ] as const;
-  const operationsMetricsActionChildItems = [
-    { label: 'Bàn điều phối thao tác', to: routePaths.opsMetricsActionExecutionBoard },
-  ] as const;
-  const branchBusinessLocalOrdersChildItems = [
-    { label: 'Tổng quan đơn tại bưu cục', to: routePaths.branchBusinessLocalOverview },
+  const branchBusinessDirectItems = [
     { label: 'Tạo vận đơn tại quầy', to: routePaths.branchBusinessOrderCreate },
-    { label: 'Xử lý đơn tại bưu cục', to: routePaths.branchBusinessLocalOrders },
-    { label: 'Chốt ca', to: routePaths.branchBusinessShiftClosing },
+    { label: 'Báo cáo cuối ngày', to: routePaths.branchBusinessShiftClosing },
   ] as const;
   const branchBusinessFinanceSettlementChildItems = [
     { label: 'Quyết toán thu hộ', to: routePaths.branchBusinessFinanceCod },
@@ -699,13 +642,7 @@ function DashboardLayout(): React.JSX.Element {
     shipment_dispatch: shipmentDispatchChildItems,
     return_block: returnBlockChildItems,
     monitor_data: monitorDataChildItems,
-    service_proactive: serviceQualityProactiveChildItems,
-    metrics_abnormal: operationsMetricsAbnormalChildItems,
-    metrics_deadline: operationsMetricsDeadlineChildItems,
-    metrics_planning: operationsMetricsPlanningChildItems,
-    metrics_action: operationsMetricsActionChildItems,
 
-    branch_local_orders: branchBusinessLocalOrdersChildItems,
     branch_finance_settlement: branchBusinessFinanceSettlementChildItems,
   };
 
@@ -714,13 +651,7 @@ function DashboardLayout(): React.JSX.Element {
     shipment_dispatch: 'Điều phối vận đơn',
     return_block: 'Chuyển hoàn',
     monitor_data: 'Giám sát dữ liệu',
-    service_proactive: 'Giám sát chủ động',
-    metrics_abnormal: 'Chỉ số bất thường',
-    metrics_deadline: 'Thời hiệu',
-    metrics_planning: 'Quy hoạch',
-    metrics_action: 'Thao tác',
 
-    branch_local_orders: 'Thao tác bưu cục',
     branch_finance_settlement: 'Quyết toán tài chính',
   };
 
@@ -736,8 +667,9 @@ function DashboardLayout(): React.JSX.Element {
   const isShipmentDispatchRoute = shipmentDispatchChildItems.some((item) =>
     pathMatches(location.pathname, item.to),
   );
-  const isServiceQualityProactiveRoute = serviceQualityProactiveChildItems.some((item) =>
-    pathMatches(location.pathname, item.to),
+  const isServiceQualityActionBoardRoute = pathMatches(
+    location.pathname,
+    routePaths.serviceQualityProactiveActionBoard,
   );
   const isServiceQualityIntegratedLookupRoute = pathMatches(
     location.pathname,
@@ -747,24 +679,9 @@ function DashboardLayout(): React.JSX.Element {
     location.pathname,
     routePaths.serviceQualityAbnormalManagement,
   );
-  const isOpsMetricsAbnormalRoute = operationsMetricsAbnormalChildItems.some((item) =>
-    pathMatches(location.pathname, item.to),
-  );
-  const isOpsMetricsDeadlineRoute = operationsMetricsDeadlineChildItems.some((item) =>
-    pathMatches(location.pathname, item.to),
-  );
-  const isOpsMetricsPlanningRoute = operationsMetricsPlanningChildItems.some((item) =>
-    pathMatches(location.pathname, item.to),
-  );
-  const isOpsMetricsActionRoute = operationsMetricsActionChildItems.some((item) =>
-    pathMatches(location.pathname, item.to),
-  );
   const isBranchFinanceSettlementRoute = branchBusinessFinanceSettlementChildItems.some((item) =>
     pathMatches(location.pathname, item.to),
   );
-  const isBranchLocalOrdersRoute =
-    pathMatches(location.pathname, routePaths.branchBusinessLocalOrdersRoot) ||
-    branchBusinessLocalOrdersChildItems.some((item) => pathMatches(location.pathname, item.to));
 
 
   const routeDrivenPanel: SidebarPanelKind | null = isLinehaulRoute
@@ -775,24 +692,8 @@ function DashboardLayout(): React.JSX.Element {
     ? 'shipment_dispatch'
     : isMonitorDataRoute
     ? 'monitor_data'
-    : isServiceQualityProactiveRoute
-    ? 'service_proactive'
-    : isOpsMetricsAbnormalRoute
-    ? 'metrics_abnormal'
-    : isOpsMetricsDeadlineRoute
-    ? 'metrics_deadline'
-    : isOpsMetricsPlanningRoute
-    ? 'metrics_planning'
-    : isOpsMetricsActionRoute
-    ? 'metrics_action'
     : isBranchFinanceSettlementRoute || isFinanceSettlementSection
     ? 'branch_finance_settlement'
-    : isBranchLocalOrdersRoute
-    ? 'branch_local_orders'
-    : pathMatches(location.pathname, routePaths.groupOperationsMetrics)
-    ? 'metrics_deadline'
-    : pathMatches(location.pathname, routePaths.groupBranchBusiness)
-    ? 'branch_local_orders'
     : null;
 
   const [activeSidebarPanel, setActiveSidebarPanel] = useState<SidebarPanelKind | null>(
@@ -806,11 +707,11 @@ function DashboardLayout(): React.JSX.Element {
   }, [routeDrivenPanel]);
 
   const activePanelKinds: ReadonlyArray<SidebarPanelKind> = isServiceQualitySection
-    ? ['service_proactive', 'return_block']
+    ? ['return_block']
     : isOperationsMetricsSection
-    ? ['metrics_abnormal', 'metrics_deadline', 'metrics_planning', 'metrics_action']
+    ? []
     : isBranchBusinessSection
-    ? ['branch_local_orders', 'branch_finance_settlement']
+    ? ['branch_finance_settlement']
     : isCapabilityPlatformSection
     ? []
     : ['shipment_dispatch', 'monitor_data'];
@@ -843,17 +744,15 @@ function DashboardLayout(): React.JSX.Element {
 
   const operationsMetricsAllChildItems = [
     { label: 'Báo cáo vận hành', to: routePaths.opsMetricsReport },
-    ...operationsMetricsAbnormalChildItems,
-    ...operationsMetricsDeadlineChildItems,
-    ...operationsMetricsPlanningChildItems,
-    ...operationsMetricsActionChildItems,
+    { label: 'Tồn kho & quá hạn', to: routePaths.opsMetricsDeadlineInventory },
+    { label: 'Đơn cần chú ý', to: routePaths.opsMetricsAbnormalHandling },
   ];
   const activeOperationsMetricsItem =
     operationsMetricsAllChildItems.find((item) => pathMatches(location.pathname, item.to)) ?? null;
   const activeReturnBlockItem =
     returnBlockChildItems.find((item) => pathMatches(location.pathname, item.to)) ?? null;
   const branchBusinessAllChildItems = [
-    ...branchBusinessLocalOrdersChildItems,
+    ...branchBusinessDirectItems,
     ...branchBusinessFinanceSettlementChildItems,
   ];
   const activeBranchBusinessItem =
@@ -883,8 +782,8 @@ function DashboardLayout(): React.JSX.Element {
     ? activeReturnBlockItem.label
     : isReturnBlockRoute
     ? 'Chuyển hoàn'
-    : isServiceQualityProactiveRoute
-    ? 'Giám sát chủ động'
+    : isServiceQualityActionBoardRoute
+    ? 'Bảng cảnh báo chất lượng'
     : activeOperationsMetricsItem
     ? activeOperationsMetricsItem.label
     : isOperationsMetricsSection
@@ -1098,20 +997,8 @@ function DashboardLayout(): React.JSX.Element {
                     ? isShipmentDispatchRoute
                     : item.kind === 'monitor_data'
                     ? isMonitorDataRoute
-                    : item.kind === 'service_proactive'
-                    ? isServiceQualityProactiveRoute
-                    : item.kind === 'metrics_abnormal'
-                    ? isOpsMetricsAbnormalRoute
-                    : item.kind === 'metrics_deadline'
-                    ? isOpsMetricsDeadlineRoute
-                    : item.kind === 'metrics_planning'
-                    ? isOpsMetricsPlanningRoute
-                    : item.kind === 'metrics_action'
-                    ? isOpsMetricsActionRoute
                     : item.kind === 'branch_finance_settlement'
                     ? isBranchFinanceSettlementRoute
-                    : item.kind === 'branch_local_orders'
-                    ? isBranchLocalOrdersRoute
                     : item.to
                     ? pathMatches(location.pathname, item.to)
                     : false;
@@ -1372,18 +1259,15 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.groupBranchBusinessLeaf}
-              element={<Navigate to={routePaths.branchBusinessLocalOverview} replace />}
+              element={<Navigate to={routePaths.branchBusinessOrderCreate} replace />}
             />
             <Route
               path={routePaths.branchBusinessLocalOverviewLeaf}
-              element={opsModuleRoute('Tổng quan đơn tại bưu cục', <BranchLocalOrderOverviewPage />)}
+              element={<Navigate to={routePaths.branchBusinessOrderCreate} replace />}
             />
             <Route
               path={routePaths.branchBusinessLocalOrdersLeaf}
-              element={opsModuleRoute(
-                'Xử lý đơn tại bưu cục',
-                <BranchLocalOrderOverviewPage mode="management" />,
-              )}
+              element={<Navigate to={routePaths.branchBusinessOrderCreate} replace />}
             />
             <Route
               path={routePaths.branchBusinessCourierHandoffLeaf}
@@ -1391,11 +1275,11 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.branchBusinessBranchInventoryLeaf}
-              element={opsModuleRoute('Đơn tồn bưu cục', <BranchInventoryPage />)}
+              element={<Navigate to={routePaths.branchBusinessShiftClosing} replace />}
             />
             <Route
               path={routePaths.branchBusinessShiftClosingLeaf}
-              element={opsModuleRoute('Chốt ca', <BranchShiftClosingPage />)}
+              element={opsModuleRoute('Báo cáo cuối ngày', <BranchShiftClosingPage />)}
             />
             <Route
               path={routePaths.branchBusinessOrderCreateLeaf}
@@ -1403,11 +1287,11 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.branchBusinessOrderOutboundLeaf}
-              element={<Navigate to={routePaths.branchBusinessLocalOverview} replace />}
+              element={<Navigate to={routePaths.branchBusinessOrderCreate} replace />}
             />
             <Route
               path={routePaths.branchBusinessOrderDeliveryLeaf}
-              element={<Navigate to={routePaths.branchBusinessLocalOverview} replace />}
+              element={<Navigate to={routePaths.branchBusinessOrderCreate} replace />}
             />
             <Route
               path={routePaths.branchBusinessFinanceCodLeaf}
@@ -1435,14 +1319,7 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.opsMetricsAbnormalOverviewLeaf}
-              element={opsModuleRoute(
-                'Tổng quan chỉ số bất thường',
-                <OperationsMetricsDerivedRoutePage
-                  groupCode="OPS_METRICS_ABNORMAL_OVERVIEW"
-                  title="Tổng quan chỉ số bất thường"
-                  summary="Theo dõi KPI bất thường theo khu vực và trạng thái xử lý."
-                />,
-              )}
+              element={<Navigate to={routePaths.opsMetricsAbnormalHandling} replace />}
             />
             <Route
               path={routePaths.opsMetricsAbnormalHandlingLeaf}
@@ -1461,102 +1338,39 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.opsMetricsDeadlineOntimePickupRatioLeaf}
-              element={opsModuleRoute(
-                'Báo biểu tỷ lệ nhận hàng kịp',
-                <OperationsMetricsDerivedRoutePage
-                  groupCode="OPS_METRICS_DEADLINE_PICKUP_RATIO"
-                  title="Báo biểu tỷ lệ nhận hàng kịp"
-                  summary="Báo cáo tỷ lệ nhận hàng kịp theo khung giờ và TTTC."
-                />,
-              )}
+              element={<Navigate to={routePaths.opsMetricsReport} replace />}
             />
             <Route
               path={routePaths.opsMetricsDeadlineDeliverySlaLeaf}
-              element={opsModuleRoute(
-                'Giám sát thời hiệu hàng phát',
-                <OperationsMetricsDerivedRoutePage
-                  groupCode="OPS_METRICS_DEADLINE_DELIVERY_SLA"
-                  title="Giám sát thời hiệu hàng phát"
-                  summary="Theo dõi SLA phát hàng và danh sách đơn có nguy cơ trễ hạn."
-                />,
-              )}
+              element={<Navigate to={routePaths.opsMetricsReport} replace />}
             />
             <Route
               path={routePaths.opsMetricsDeadlineActualSignT1Leaf}
-              element={opsModuleRoute(
-                'Ký nhận thực tế T-1',
-                <OperationsMetricsDerivedRoutePage
-                  groupCode="OPS_METRICS_DEADLINE_SIGN_T1"
-                  title="Ký nhận thực tế (T-1)"
-                  summary="Tổng hợp dữ liệu ký nhận thực tế và so sánh với mục tiêu T-1."
-                />,
-              )}
+              element={<Navigate to={routePaths.opsMetricsReport} replace />}
             />
             <Route
               path={routePaths.opsMetricsDeadlineOntimeSendRatioLeaf}
-              element={opsModuleRoute(
-                'Tỷ lệ gửi kiện đúng giờ',
-                <OperationsMetricsDerivedRoutePage
-                  groupCode="OPS_METRICS_DEADLINE_SEND_RATIO"
-                  title="Tỷ lệ gửi kiện đúng giờ"
-                  summary="Báo cáo tỷ lệ gửi kiện đúng giờ theo hub, chi nhánh và ca vận hành."
-                />,
-              )}
+              element={<Navigate to={routePaths.opsMetricsReport} replace />}
             />
             <Route
               path={routePaths.opsMetricsDeadlineDeliveryLeadtimeLeaf}
-              element={opsModuleRoute(
-                'Giám sát leadtime phát',
-                <OperationsMetricsDerivedRoutePage
-                  groupCode="OPS_METRICS_DEADLINE_DELIVERY_LEADTIME"
-                  title="Giám sát leadtime phát (Mới)"
-                  summary="Phân tích leadtime phát theo tuyến và gom cảnh báo trễ hạn mới."
-                />,
-              )}
+              element={<Navigate to={routePaths.opsMetricsReport} replace />}
             />
             <Route
               path={routePaths.opsMetricsDeadlineInboundLeadtimeLeaf}
-              element={opsModuleRoute(
-                'Giám sát leadtime nhận',
-                <OperationsMetricsDerivedRoutePage
-                  groupCode="OPS_METRICS_DEADLINE_INBOUND_LEADTIME"
-                  title="Giám sát leadtime nhận"
-                  summary="Giám sát leadtime nhận hàng theo điểm nhận và theo dõi điểm nghẽn."
-                />,
-              )}
+              element={<Navigate to={routePaths.opsMetricsReport} replace />}
             />
             <Route
               path={routePaths.opsMetricsDeadlineOverdueAlertsLeaf}
-              element={opsModuleRoute(
-                'Hệ thống cảnh báo quá hạn',
-                <OperationsMetricsDerivedRoutePage
-                  groupCode="OPS_METRICS_DEADLINE_OVERDUE_ALERTS"
-                  title="Hệ thống cảnh báo quá hạn"
-                  summary="Tập trung cảnh báo quá hạn để ưu tiên xử lý theo mức độ rủi ro."
-                />,
-              )}
+              element={<Navigate to={routePaths.opsMetricsDeadlineInventory} replace />}
             />
             <Route
               path={routePaths.opsMetricsPlanningNetworkKpiLeaf}
-              element={opsModuleRoute(
-                'Giám sát KPI mạng lưới',
-                <OperationsMetricsDerivedRoutePage
-                  groupCode="OPS_METRICS_PLANNING_NETWORK_KPI"
-                  title="Giám sát KPI mạng lưới"
-                  summary="Tổng hợp KPI quy hoạch mạng lưới và đánh giá mức độ đáp ứng năng lực."
-                />,
-              )}
+              element={<Navigate to={routePaths.opsMetricsReport} replace />}
             />
             <Route
               path={routePaths.opsMetricsActionExecutionBoardLeaf}
-              element={opsModuleRoute(
-                'Bàn điều phối thao tác',
-                <OperationsMetricsDerivedRoutePage
-                  groupCode="OPS_METRICS_ACTION_EXECUTION_BOARD"
-                  title="Bàn điều phối thao tác"
-                  summary="Quản lý tác vụ thao tác và trạng thái hoàn thành theo ngày."
-                />,
-              )}
+              element={<Navigate to={routePaths.opsMetricsAbnormalHandling} replace />}
             />
             <Route
               path={routePaths.groupServiceQualityLeaf}
@@ -1572,15 +1386,15 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.serviceQualityProactiveActionBoardLeaf}
-              element={opsModuleRoute('Bảng cảnh báo', <ServiceQualityActionBoardPage />)}
+              element={opsModuleRoute('Bảng cảnh báo chất lượng', <ServiceQualityActionBoardPage />)}
             />
             <Route
               path={routePaths.serviceQualityProactiveInboundLeaf}
-              element={opsModuleRoute('Giám sát đơn nhận', <ServiceQualityMonitorReceivedPage />)}
+              element={<Navigate to={routePaths.serviceQualityProactiveActionBoard} replace />}
             />
             <Route
               path={routePaths.serviceQualityProactiveDeliveredLeaf}
-              element={opsModuleRoute('Theo dõi giao thất bại / NDR', <ServiceQualityMonitorDeliveredPage />)}
+              element={<Navigate to={routePaths.serviceQualityAbnormalManagement} replace />}
             />
             <Route
               path={routePaths.groupDatabaseLeaf}

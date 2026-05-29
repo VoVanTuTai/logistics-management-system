@@ -12,5 +12,5 @@ interface BranchBusinessFeaturePlaceholderPageProps {
 export function BranchBusinessFeaturePlaceholderPage(
   _props: BranchBusinessFeaturePlaceholderPageProps,
 ): React.JSX.Element {
-  return <Navigate to={routePaths.branchBusinessLocalOverview} replace />;
+  return <Navigate to={routePaths.branchBusinessOrderCreate} replace />;
 }

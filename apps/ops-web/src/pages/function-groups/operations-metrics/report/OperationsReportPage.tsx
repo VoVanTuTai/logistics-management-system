@@ -222,7 +222,7 @@ export function OperationsReportPage(): React.JSX.Element {
       detail: `${deliveredShipments.length}/${scopedShipments.length} đơn`,
       hint: 'Tỷ lệ đơn đã giao thành công trên tổng đơn trong kỳ.',
       tone: 'success',
-      to: routePaths.opsMetricsDeadlineDeliverySla,
+      to: routePaths.shipments,
     },
     {
       label: 'Giao đúng 48h',
@@ -230,7 +230,7 @@ export function OperationsReportPage(): React.JSX.Element {
       detail: `${sla48Shipments.length}/${deliveredShipments.length} đơn đã giao`,
       hint: 'Trong nhóm đã giao, bao nhiêu đơn hoàn tất không quá 48 giờ.',
       tone: 'success',
-      to: routePaths.opsMetricsDeadlineDeliveryLeadtime,
+      to: routePaths.shipments,
     },
     {
       label: 'Cần xử lý ngay',
@@ -238,7 +238,7 @@ export function OperationsReportPage(): React.JSX.Element {
       detail: 'Đơn không cập nhật quá 24h',
       hint: 'Ưu tiên kiểm tra trước ca: đơn còn mở và đã lâu chưa đổi trạng thái.',
       tone: overdueShipments.length > 0 ? 'danger' : 'success',
-      to: routePaths.opsMetricsDeadlineOverdueAlerts,
+      to: routePaths.opsMetricsDeadlineInventory,
     },
     {
       label: 'Đơn bất thường',
@@ -254,7 +254,7 @@ export function OperationsReportPage(): React.JSX.Element {
       detail: `${openTasks} task, ${openManifests} manifest`,
       hint: 'Các task và bao/chuyến chưa hoàn tất trong hệ thống.',
       tone: openTasks + openManifests > 0 ? 'primary' : 'success',
-      to: routePaths.opsMetricsActionExecutionBoard,
+      to: routePaths.operationsPlatformPickupDispatch,
     },
   ];
 
@@ -406,7 +406,7 @@ export function OperationsReportPage(): React.JSX.Element {
               <h3>Danh sách cần mở ngay</h3>
               <span>{topExceptions.length} đơn quá hạn hoặc bất thường</span>
             </div>
-            <Link to={routePaths.opsMetricsDeadlineOverdueAlerts}>Cảnh báo quá hạn</Link>
+            <Link to={routePaths.opsMetricsDeadlineInventory}>Tồn kho & quá hạn</Link>
           </header>
           <div className="ops-report__issue-list">
             {topExceptions.map((shipment) => (
