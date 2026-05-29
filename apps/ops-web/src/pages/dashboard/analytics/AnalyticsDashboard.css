@@ -12,8 +12,8 @@
   --ad-glass-border: #dbeafe;
   --ad-text: #1e293b;
   --ad-text-muted: #64748b;
-  --ad-primary: #2563eb;
-  --ad-primary-dark: #1d4ed8;
+  --ad-primary: var(--ops-primary);
+  --ad-primary-dark: var(--ops-primary);
   --ad-primary-glow: rgba(37, 99, 235, 0.16);
   --ad-success: #137f5d;
   --ad-warning: #b7791f;
@@ -799,7 +799,7 @@
   width: 72px;
   height: 72px;
   border-radius: 20px;
-  background: linear-gradient(135deg, var(--ad-primary, #2563eb), var(--ad-primary-dark, #1d4ed8));
+  background: linear-gradient(135deg, var(--ad-primary, var(--ops-primary)), var(--ad-primary-dark, var(--ops-primary)));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -866,14 +866,14 @@
   border-radius: 12px;
   background: #eff6ff;
   padding: 14px 18px;
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-size: 13px;
   line-height: 1.55;
   text-align: left;
 }
 
 .coming-soon__vision strong {
-  color: var(--ad-primary, #2563eb);
+  color: var(--ad-primary, var(--ops-primary));
 }
 
 .coming-soon__phase {
@@ -884,7 +884,7 @@
   border-radius: 999px;
   background: #eff6ff;
   border: 1px solid #bfdbfe;
-  color: var(--ad-primary, #2563eb);
+  color: var(--ad-primary, var(--ops-primary));
   font-size: 12px;
   font-weight: 600;
 }

@@ -67,7 +67,7 @@
 .ops-thermal-print__form-head span {
   display: block;
   margin-top: 4px;
-  color: #1e40af;
+  color: var(--ops-primary-dark);
   font-size: 12px;
   font-weight: 700;
 }
@@ -78,7 +78,7 @@
   border-radius: 10px;
   display: grid;
   place-items: center;
-  background: #1d4ed8;
+  background: var(--ops-primary);
   color: #ffffff;
   font-size: 22px;
   line-height: 1;
@@ -145,7 +145,7 @@
 }
 
 .ops-thermal-print__radio:has(input:checked) {
-  border-color: #2563eb;
+  border-color: var(--ops-primary);
   background: #eff6ff;
 }
 
@@ -185,13 +185,13 @@
 
 .ops-thermal-print__actions button[type="submit"] {
   flex: 1 1 180px;
-  background: #2563eb;
+  background: var(--ops-primary);
   color: #ffffff;
   border: none;
 }
 
 .ops-thermal-print__actions button[type="submit"]:hover {
-  background: #1d4ed8;
+  background: var(--ops-primary);
 }
 
 .ops-thermal-print__secondary-btn {
@@ -234,7 +234,7 @@
   border: 1px solid #bfdbfe;
   border-radius: 999px;
   background: #eff6ff;
-  color: #1d4ed8;
+  color: var(--ops-primary);
   padding: 2px 8px;
   font-size: 12px;
   font-weight: 700;
@@ -277,7 +277,7 @@
 .ops-thermal-print__link-btn {
   background: none;
   border: none;
-  color: #2563eb;
+  color: var(--ops-primary);
   font-weight: 600;
   cursor: pointer;
   padding: 0 6px;

@@ -14,7 +14,7 @@ export function DashboardPieChart({
 }: DashboardPieChartProps): React.JSX.Element {
   const total = points.reduce((sum, p) => sum + p.value, 0);
   
-  const colors = ['#2563eb', '#16a34a', '#dc2626', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'];
+  const colors = ['var(--ops-primary)', '#16a34a', '#dc2626', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'];
   const gradientParts: string[] = [];
   let accum = 0;
   

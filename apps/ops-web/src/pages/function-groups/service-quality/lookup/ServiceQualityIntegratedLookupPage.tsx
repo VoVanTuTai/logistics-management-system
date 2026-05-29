@@ -19,6 +19,7 @@ import {
   formatTrackingEventTypeLabel,
 } from '../../../../utils/logisticsLabels';
 import { CopyableShipmentCode } from '../../../shared/CopyableShipmentCode';
+import { LinkifiedText } from '../../../shared/LinkifiedText';
 import './ServiceQualityIntegratedLookupPage.css';
 
 interface DetailField {
@@ -328,7 +329,9 @@ export function ServiceQualityIntegratedLookupPage(): React.JSX.Element {
                         <td>{formatTrackingEventTypeLabel(event.eventTypeCode ?? event.eventType)}</td>
                         <td>{formatText(event.locationText ?? event.locationCode)}</td>
                         <td>{formatTrackingEventSourceLabel(event.eventSource)}</td>
-                        <td>{formatText(event.note)}</td>
+                        <td>
+                          <LinkifiedText text={event.note} />
+                        </td>
                       </tr>
                     ))}
                   </tbody>

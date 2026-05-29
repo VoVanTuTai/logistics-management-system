@@ -12,7 +12,7 @@ export function DashboardProgressChart({
   title, 
   value, 
   total, 
-  color = '#2563eb',
+  color = 'var(--ops-primary)',
   suffix = ''
 }: DashboardProgressChartProps): React.JSX.Element {
   const percent = total > 0 ? Math.min(100, Math.round((value / total) * 100)) : 0;

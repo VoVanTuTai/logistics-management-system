@@ -83,7 +83,7 @@
 
 .ops-monitor-hang-phat__btn {
   padding: 8px 20px;
-  background: #2563eb;
+  background: var(--ops-primary);
   color: white;
   border: none;
   border-radius: 6px;
@@ -93,7 +93,7 @@
 }
 
 .ops-monitor-hang-phat__btn:hover {
-  background: #1d4ed8;
+  background: var(--ops-primary);
 }
 
 .ops-monitor-hang-phat__table-wrap {
@@ -129,7 +129,7 @@
 .ops-monitor-hang-phat__code {
   font-family: monospace;
   font-weight: 600;
-  color: #2563eb;
+  color: var(--ops-primary);
 }
 
 .ops-monitor-hang-phat__status {
@@ -141,7 +141,7 @@
 }
 
 .ops-monitor-hang-phat__status--delivered { background: #dcfce7; color: #166534; }
-.ops-monitor-hang-phat__status--task_assigned { background: #dbeafe; color: #1e40af; }
+.ops-monitor-hang-phat__status--task_assigned { background: #dbeafe; color: var(--ops-primary-dark); }
 .ops-monitor-hang-phat__status--delivery_failed { background: #fee2e2; color: #991b1b; }
 .ops-monitor-hang-phat__status--ndr_created { background: #fef3c7; color: #92400e; }
 
@@ -154,6 +154,6 @@
   align-items: center;
   z-index: 10;
   font-weight: 500;
-  color: #2563eb;
+  color: var(--ops-primary);
   backdrop-filter: blur(2px);
 }

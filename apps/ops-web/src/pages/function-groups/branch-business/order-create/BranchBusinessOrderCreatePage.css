@@ -36,7 +36,7 @@
   width: 3px;
   height: 16px;
   border-radius: 6px;
-  background: #2563eb;
+  background: var(--ops-primary);
   display: inline-block;
 }
 
@@ -147,7 +147,7 @@
 .ops-branch-order-create__field input:focus,
 .ops-branch-order-create__field select:focus,
 .ops-branch-order-create__field textarea:focus {
-  border-color: #2563eb;
+  border-color: var(--ops-primary);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
@@ -198,7 +198,7 @@
 }
 
 .ops-branch-order-create__summary span {
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-size: 12px;
   font-weight: 700;
 }
@@ -229,9 +229,9 @@
 
 .ops-branch-order-create__actions button {
   min-height: 38px;
-  border: 1px solid #1d4ed8;
+  border: 1px solid var(--ops-primary);
   border-radius: 8px;
-  background: #1d4ed8;
+  background: var(--ops-primary);
   color: #ffffff;
   padding: 0 14px;
   font-size: 13px;

@@ -63,7 +63,7 @@
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   background: #ffffff;
-  color: #1d4ed8;
+  color: var(--ops-primary);
   padding: 0 12px;
   font-size: 13px;
   font-weight: 800;
@@ -72,8 +72,8 @@
 
 .ops-linehaul-dashboard__primary-link,
 .ops-linehaul-seal__actions button:first-child {
-  border-color: #1d4ed8;
-  background: #1d4ed8;
+  border-color: var(--ops-primary);
+  background: var(--ops-primary);
   color: #ffffff;
 }
 
@@ -103,7 +103,7 @@
 }
 
 .ops-linehaul-dashboard__kpis strong {
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-size: 25px;
   line-height: 1;
 }
@@ -190,8 +190,8 @@
 }
 
 .ops-linehaul-dashboard__modal-primary {
-  border: 1px solid #1d4ed8;
-  background: #1d4ed8;
+  border: 1px solid var(--ops-primary);
+  background: var(--ops-primary);
   color: #ffffff;
 }
 
@@ -224,7 +224,7 @@
 }
 
 .ops-linehaul-dashboard__create-form header span {
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-size: 12px;
   font-weight: 800;
 }
@@ -235,9 +235,9 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border: 1px solid #1d4ed8;
+  border: 1px solid var(--ops-primary);
   border-radius: 8px;
-  background: #1d4ed8;
+  background: var(--ops-primary);
   color: #ffffff;
   padding: 0 12px;
   font-size: 13px;
@@ -263,7 +263,7 @@
   border-radius: 8px;
   background: #ffffff;
   padding: 10px;
-  color: #1d4ed8;
+  color: var(--ops-primary);
 }
 
 .ops-linehaul-seal__sync-strip div {
@@ -336,7 +336,7 @@
 }
 
 .ops-linehaul-dashboard__create-grid article strong {
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-size: 14px;
 }
 
@@ -376,7 +376,7 @@
 .ops-linehaul-dashboard__panel-head span,
 .ops-linehaul-dashboard__panel-head em,
 .ops-linehaul-seal__panel-head span {
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-size: 12px;
   font-style: normal;
   font-weight: 800;
@@ -437,7 +437,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-weight: 800;
   text-decoration: none;
 }
@@ -449,7 +449,7 @@
   border: 1px solid #bfdbfe;
   border-radius: 999px;
   background: #eff6ff;
-  color: #1d4ed8;
+  color: var(--ops-primary);
   padding: 0 8px;
   font-size: 11px;
   font-weight: 800;
@@ -465,7 +465,7 @@
 .ops-linehaul-dashboard__badge--transit {
   border-color: #bfdbfe;
   background: #eff6ff;
-  color: #1d4ed8;
+  color: var(--ops-primary);
 }
 
 .ops-linehaul-dashboard__badge--arrived {
@@ -512,7 +512,7 @@
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   background: #ffffff;
-  color: #1d4ed8;
+  color: var(--ops-primary);
   padding: 0 10px;
   font-size: 12px;
   font-weight: 800;
@@ -541,7 +541,7 @@
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   background: #ffffff;
-  color: #1d4ed8;
+  color: var(--ops-primary);
   padding: 0 10px;
   font-size: 12px;
   font-weight: 800;
@@ -549,8 +549,8 @@
 
 .ops-linehaul-dashboard__row-actions button:first-child,
 .ops-linehaul-dashboard__arrival-form button[type='submit'] {
-  border-color: #1d4ed8;
-  background: #1d4ed8;
+  border-color: var(--ops-primary);
+  background: var(--ops-primary);
   color: #ffffff;
 }
 
@@ -688,7 +688,7 @@
 }
 
 .ops-linehaul-seal__manifest-option--active {
-  border-color: #1d4ed8;
+  border-color: var(--ops-primary);
   background: #eff6ff;
 }
 
@@ -703,7 +703,7 @@
 }
 
 .ops-linehaul-seal__manifest-option strong {
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-size: 13px;
 }
 
@@ -970,7 +970,7 @@
 }
 
 .ops-link {
-  color: #2563eb;
+  color: var(--ops-primary);
   font-weight: 600;
   text-decoration: none;
 }
@@ -991,7 +991,7 @@
 }
 
 /* UTILS: ICONS & BADGES */
-.ops-icon-blue { color: #2563eb; }
+.ops-icon-blue { color: var(--ops-primary); }
 .ops-icon-orange { color: #f97316; }
 .ops-icon-emerald { color: #059669; }
 .ops-icon-red { color: #ef4444; }
@@ -1004,7 +1004,7 @@
 
 .ops-badge--info {
   background-color: #dbeafe;
-  color: #1e40af;
+  color: var(--ops-primary-dark);
 }
 
 .ops-badge--default {
@@ -1209,7 +1209,7 @@
 
 .ops-badge--transit {
   background-color: #dbeafe;
-  color: #1e40af;
+  color: var(--ops-primary-dark);
   border: 1px solid #93c5fd;
 }
 
@@ -1238,7 +1238,7 @@
 
 .ops-transit-btn--depart {
   background: #eff6ff;
-  color: #1d4ed8;
+  color: var(--ops-primary);
   border: 1px solid #bfdbfe;
 }
 .ops-transit-btn--depart:hover {
@@ -1310,7 +1310,7 @@
 .lh-toast--info {
   background: linear-gradient(135deg, #eff6ff, #dbeafe);
   border: 1px solid #93c5fd;
-  color: #1e40af;
+  color: var(--ops-primary-dark);
 }
 
 .lh-toast__text { flex: 1; }

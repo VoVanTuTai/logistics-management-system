@@ -118,7 +118,7 @@
 }
 
 .ops-tracking-lookup__code-btn--active {
-  border-color: #4f46e5;
+  border-color: var(--ops-primary);
   background: #eef2ff;
   color: #312e81;
 }
@@ -145,7 +145,7 @@
 }
 
 .ops-tracking-lookup__log-header strong {
-  color: #4f46e5;
+  color: var(--ops-primary);
 }
 
 .ops-tracking-lookup__history-table-wrap {
@@ -199,6 +199,17 @@
 .ops-tracking-lookup__history-description-cell {
   color: #334155;
   white-space: normal;
+}
+
+.ops-linkified-text__link {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin: 0 4px;
+  color: var(--ops-primary);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .ops-tracking-lookup__error {

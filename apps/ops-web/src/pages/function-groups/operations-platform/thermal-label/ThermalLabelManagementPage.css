@@ -88,7 +88,7 @@
 }
 
 .ops-thermal-management__bag-code {
-  color: #1d4ed8 !important;
+  color: var(--ops-primary) !important;
   font-weight: 700;
 }
 
@@ -107,7 +107,7 @@
 
 .ops-thermal-management__status--created {
   background: #eff6ff;
-  color: #1d4ed8;
+  color: var(--ops-primary);
 }
 
 .ops-thermal-management__status--sealed {

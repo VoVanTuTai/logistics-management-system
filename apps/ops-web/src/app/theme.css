@@ -11,8 +11,10 @@
   --ops-text: #334155;
   --ops-text-muted: #64748b;
   --ops-border: #e2e8f0;
-  --ops-primary: #4f46e5;
-  --ops-primary-dark: #4f46e5;
+  --ops-primary: #185fa5;
+  --ops-primary-dark: #0f4c81;
+  --ops-primary-light: #85b7eb;
+  --ops-primary-soft: #eaf4ff;
   --ops-success: #137f5d;
   --ops-warning: #9f6a00;
   --ops-danger: #b12233;
@@ -80,7 +82,7 @@ select:focus,
 textarea:focus {
   outline: none;
   border-color: var(--ops-primary);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.16);
+  box-shadow: 0 0 0 3px rgba(24, 95, 165, 0.16);
 }
 
 button {
@@ -90,6 +92,17 @@ button {
   color: #ffffff;
   font-weight: 600;
   cursor: pointer;
+  transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--ops-primary-dark);
+  background: var(--ops-primary-dark);
+}
+
+button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(133, 183, 235, 0.45);
 }
 
 button:disabled {
@@ -253,12 +266,12 @@ th {
 .global-toast-info {
   border-color: #bfdbfe;
   background: #eff6ff;
-  color: #1e40af;
+  color: var(--ops-primary-dark);
 }
 
 .global-toast-info .global-toast-icon {
   background: #dbeafe;
-  color: #1e40af;
+  color: var(--ops-primary-dark);
 }
 
 .ops-layout {
@@ -641,7 +654,7 @@ th {
 }
 
 .ops-func-logo {
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-size: 24px;
   line-height: 1;
   font-weight: 700;
@@ -693,13 +706,13 @@ th {
 }
 
 .ops-func-main-link:hover {
-  color: #1d4ed8;
+  color: var(--ops-primary);
   text-decoration: none;
 }
 
 .ops-func-main-link--active {
-  color: #1d4ed8;
-  border-bottom-color: #1d4ed8;
+  color: var(--ops-primary);
+  border-bottom-color: var(--ops-primary);
 }
 
 .ops-func-actions {
@@ -766,7 +779,7 @@ th {
 }
 
 .ops-func-bell:hover {
-  color: #1d4ed8;
+  color: var(--ops-primary);
   border-color: #bfdbfe;
   background: #eff6ff;
 }
@@ -786,7 +799,7 @@ th {
   height: 26px;
   border-radius: 999px;
   background: #eff6ff;
-  color: #1d4ed8;
+  color: var(--ops-primary);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -866,7 +879,7 @@ th {
   width: 3px;
   height: 16px;
   border-radius: 999px;
-  background: #1d4ed8;
+  background: var(--ops-primary);
 }
 
 .ops-func-sidebar-nav {
@@ -925,7 +938,7 @@ th {
 
 .ops-func-sidebar-item--active {
   background: #eff6ff;
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-weight: 600;
 }
 
@@ -1024,7 +1037,7 @@ th {
 .ops-func-sidebar-secondary-item--active {
   border-color: #93c5fd;
   background: #eff6ff;
-  color: #1d4ed8;
+  color: var(--ops-primary);
 }
 
 /* Đã xóa override màu đỏ cho ops-metrics secondary */
@@ -1058,8 +1071,8 @@ th {
 }
 
 .ops-func-tab--active {
-  border-top: 2px solid #1d4ed8;
-  color: #1d4ed8;
+  border-top: 2px solid var(--ops-primary);
+  color: var(--ops-primary);
   font-weight: 600;
 }
 
@@ -1075,7 +1088,7 @@ th {
 }
 
 .ops-func-welcome {
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-size: 28px;
   font-weight: 700;
   text-align: center;

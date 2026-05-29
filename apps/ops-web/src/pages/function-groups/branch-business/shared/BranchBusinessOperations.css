@@ -56,7 +56,7 @@
 
 .ops-branch-workflow__scope strong,
 .ops-branch-workflow__kpis strong {
-  color: #1d4ed8;
+  color: var(--ops-primary);
 }
 
 .ops-branch-workflow__scope strong {
@@ -128,9 +128,9 @@
 .ops-branch-workflow__filters button,
 .ops-branch-workflow__actions button {
   height: 36px;
-  border: 1px solid #1d4ed8;
+  border: 1px solid var(--ops-primary);
   border-radius: 8px;
-  background: #1d4ed8;
+  background: var(--ops-primary);
   color: #ffffff;
   padding: 0 14px;
   font-size: 13px;
@@ -179,7 +179,7 @@
 }
 
 .ops-branch-workflow__panel-head span {
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-size: 12px;
   font-weight: 700;
 }
@@ -226,7 +226,7 @@
 }
 
 .ops-branch-workflow__code {
-  color: #1d4ed8 !important;
+  color: var(--ops-primary) !important;
   font-weight: 800;
   text-decoration: none;
 }
@@ -244,7 +244,7 @@
   border: 1px solid #bfdbfe;
   border-radius: 999px;
   background: #eff6ff;
-  color: #1d4ed8;
+  color: var(--ops-primary);
   padding: 0 8px;
   font-size: 11px;
   font-weight: 800;
@@ -310,7 +310,7 @@
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   background: #f8fafc;
-  color: #1d4ed8;
+  color: var(--ops-primary);
   padding: 0 10px;
   font-size: 12px;
   font-weight: 800;
@@ -366,7 +366,7 @@
 }
 
 .ops-branch-workflow__loading {
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-weight: 700;
 }
 

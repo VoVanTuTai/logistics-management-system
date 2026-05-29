@@ -79,7 +79,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid #bfdbfe',
     borderRadius: 8,
     backgroundColor: '#eff6ff',
-    color: '#1d4ed8',
+    color: 'var(--ops-primary)',
     padding: '0 10px',
     fontSize: 12,
     fontWeight: 700,

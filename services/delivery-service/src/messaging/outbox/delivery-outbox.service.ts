@@ -2,6 +2,7 @@
 
 import type { DeliveryAttempt } from '../../domain/entities/delivery-attempt.entity';
 import type { NdrCase } from '../../domain/entities/ndr-case.entity';
+import type { Pod } from '../../domain/entities/pod.entity';
 import { OutboxEventRepository } from '../../domain/repositories/outbox-event.repository';
 import type { ReturnCase } from '../../domain/entities/return-case.entity';
 import { DeliveryEventsProducer } from '../producers/delivery-events.producer';
@@ -20,9 +21,12 @@ export class DeliveryOutboxService {
     );
   }
 
-  async enqueueDeliveryDelivered(deliveryAttempt: DeliveryAttempt): Promise<void> {
+  async enqueueDeliveryDelivered(
+    deliveryAttempt: DeliveryAttempt,
+    pod?: Pod | null,
+  ): Promise<void> {
     await this.outboxEventRepository.create(
-      this.deliveryEventsProducer.buildDeliveryDeliveredEvent(deliveryAttempt),
+      this.deliveryEventsProducer.buildDeliveryDeliveredEvent(deliveryAttempt, pod),
     );
   }
 

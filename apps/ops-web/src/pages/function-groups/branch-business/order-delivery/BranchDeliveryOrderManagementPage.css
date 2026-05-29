@@ -57,7 +57,7 @@
 }
 
 .ops-branch-delivered-orders__summary strong {
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-size: 24px;
   line-height: 1;
 }
@@ -99,9 +99,9 @@
 
 .ops-branch-delivered-orders__filters button {
   height: 36px;
-  border: 1px solid #1d4ed8;
+  border: 1px solid var(--ops-primary);
   border-radius: 8px;
-  background: #1d4ed8;
+  background: var(--ops-primary);
   color: #ffffff;
   padding: 0 14px;
   font-size: 13px;
@@ -136,7 +136,7 @@
 }
 
 .ops-branch-delivered-orders__table-title span {
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-size: 12px;
   font-weight: 700;
 }
@@ -176,7 +176,7 @@
 }
 
 .ops-branch-delivered-orders__code {
-  color: #1d4ed8 !important;
+  color: var(--ops-primary) !important;
   font-weight: 700;
 }
 

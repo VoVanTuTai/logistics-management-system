@@ -369,7 +369,12 @@ export class ManifestsService {
 
     const receivedManifest = await this.manifestRepository.receive(id, input);
 
-    await this.manifestOutboxService.enqueueManifestReceived(receivedManifest);
+    await this.manifestOutboxService.enqueueManifestReceived(receivedManifest, {
+      receivedBy: input.receivedBy,
+      receivedByName: input.receivedByName,
+      processingHubCode: input.processingHubCode,
+      note: input.note,
+    });
 
     await this.opsAuditService.record({
       context: auditContext,

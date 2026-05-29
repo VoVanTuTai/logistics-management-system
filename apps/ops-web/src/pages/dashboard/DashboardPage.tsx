@@ -50,9 +50,9 @@ function DashboardMenuOutlineIcon({
   };
   const accentStrokeProps = {
     ...outlineProps,
-    stroke: 'var(--ops-menu-accent, #2563eb)',
+    stroke: 'var(--ops-menu-accent, var(--ops-primary))',
   };
-  const accentFill = 'var(--ops-menu-accent, #2563eb)';
+  const accentFill = 'var(--ops-menu-accent, var(--ops-primary))';
 
   switch (icon) {
     case 'basic_data':

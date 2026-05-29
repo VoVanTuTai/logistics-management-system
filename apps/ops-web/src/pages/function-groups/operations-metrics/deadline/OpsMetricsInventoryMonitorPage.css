@@ -42,7 +42,7 @@
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   background: #ffffff;
-  color: #1d4ed8;
+  color: var(--ops-primary);
   padding: 0 12px;
   font-size: 13px;
   font-weight: 800;
@@ -71,7 +71,7 @@
 }
 
 .ops-metrics-inventory__scope strong {
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-size: 13px;
 }
 
@@ -103,7 +103,7 @@
 }
 
 .ops-metrics-inventory__summary strong {
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-size: 25px;
   line-height: 1;
 }
@@ -181,7 +181,7 @@
 }
 
 .ops-metrics-inventory__panel-head span {
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-size: 12px;
   font-weight: 800;
 }
@@ -199,7 +199,7 @@
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   background: #ffffff;
-  color: #1d4ed8;
+  color: var(--ops-primary);
   padding: 0 10px;
   font-size: 12px;
   font-weight: 900;
@@ -241,7 +241,7 @@
 }
 
 .ops-metrics-inventory__code {
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-weight: 800;
   text-decoration: none;
 }
@@ -253,7 +253,7 @@
   border: 1px solid #bfdbfe;
   border-radius: 999px;
   background: #eff6ff;
-  color: #1d4ed8;
+  color: var(--ops-primary);
   padding: 0 8px;
   font-size: 11px;
   font-weight: 800;

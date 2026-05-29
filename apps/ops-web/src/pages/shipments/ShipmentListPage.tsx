@@ -96,7 +96,7 @@ const DEFAULT_PAGE_SIZE = 20;
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 const EMPTY_SHIPMENTS: ShipmentListItemDto[] = [];
 const DEFAULT_TIME_FILTER: ShipmentTimeFilter = 'all';
-const DEFAULT_BRANCH_GOODS_FILTER: BranchGoodsFilter = 'readyForDelivery';
+const DEFAULT_BRANCH_GOODS_FILTER: BranchGoodsFilter = 'all';
 const FINAL_BRANCH_STATUSES = new Set([
   'CANCELLED',
   'DELIVERED',
@@ -311,6 +311,17 @@ function isReturnNeededShipment(shipment: ShipmentListItemDto): boolean {
 }
 
 function buildDeliveryCourierByShipment(tasks: TaskListItemDto[]): Map<string, string> {
+  const result = buildLatestDeliveryTaskByShipment(tasks);
+
+  return new Map(
+    Array.from(result.entries()).map(([shipmentCode, task]) => [
+      shipmentCode,
+      task.assignedCourierId ?? 'Chưa bàn giao',
+    ]),
+  );
+}
+
+function buildLatestDeliveryTaskByShipment(tasks: TaskListItemDto[]): Map<string, TaskListItemDto> {
   const result = new Map<string, TaskListItemDto>();
 
   for (const task of tasks) {
@@ -325,12 +336,7 @@ function buildDeliveryCourierByShipment(tasks: TaskListItemDto[]): Map<string, s
     }
   }
 
-  return new Map(
-    Array.from(result.entries()).map(([shipmentCode, task]) => [
-      shipmentCode,
-      task.assignedCourierId ?? 'Chưa bàn giao',
-    ]),
-  );
+  return result;
 }
 
 function extractShipmentSearchCodes(value: string): string[] {
@@ -592,6 +598,10 @@ export function ShipmentListPage(): React.JSX.Element {
   const pageShipments = shipmentQuery.data?.items ?? EMPTY_SHIPMENTS;
   const deliveryCourierByShipment = useMemo(
     () => buildDeliveryCourierByShipment(deliveryTasksQuery.data ?? []),
+    [deliveryTasksQuery.data],
+  );
+  const deliveryTaskByShipment = useMemo(
+    () => buildLatestDeliveryTaskByShipment(deliveryTasksQuery.data ?? []),
     [deliveryTasksQuery.data],
   );
   const courierFilterOptions = useMemo(() => {
@@ -1015,7 +1025,7 @@ export function ShipmentListPage(): React.JSX.Element {
     <div>
       <h2>Danh sách vận đơn</h2>
       <p style={styles.helperText}>
-        Mặc định hiển thị đơn đã về bưu cục, chưa phát sinh thao tác phát hàng. Nhập mã để tra cứu mọi vận đơn thuộc phạm vi hub.
+        Mặc định hiển thị toàn bộ đơn hàng đã thao tác tại bưu cục trong phạm vi hub. Nhập mã để tra cứu nhanh một hoặc nhiều vận đơn.
       </p>
 
       <form onSubmit={onFilterSubmit} style={styles.filterForm}>
@@ -1075,8 +1085,8 @@ export function ShipmentListPage(): React.JSX.Element {
             onChange={(event) => setBranchGoodsInput(normalizeBranchGoodsFilter(event.target.value))}
             style={styles.select}
           >
+            <option value="all">Tất cả đơn đã thao tác tại bưu cục</option>
             <option value="readyForDelivery">Hàng đã đến chờ phát</option>
-            <option value="all">Tất cả hàng hoá bưu cục</option>
             <option value="inventoryByDay">Hàng tồn kho theo ngày</option>
             <option value="problemOrders">Đơn vấn đề</option>
             <option value="returnNeeded">Đơn cần chuyển hoàn</option>
@@ -1163,6 +1173,7 @@ export function ShipmentListPage(): React.JSX.Element {
         <span>Trang hiện tại: {pageShipments.length} vận đơn</span>
         <span>Đang hiển thị: {visibleShipments.length} vận đơn</span>
         {hasShipmentSearch ? <span>Đang tra cứu toàn bộ thời gian trong phạm vi hub</span> : null}
+        {branchGoodsFilter === 'all' && !hasShipmentSearch ? <span>Tất cả đơn đã thao tác tại bưu cục</span> : null}
         {branchGoodsFilter === 'readyForDelivery' && !hasShipmentSearch ? <span>Hàng đã đến, chưa thao tác phát</span> : null}
         {branchGoodsFilter === 'inventoryByDay' ? <span>Tồn đến ngày: {inventoryDate}</span> : null}
         {courierFilter ? <span>Courier: {courierFilter}</span> : null}
@@ -1482,6 +1493,7 @@ export function ShipmentListPage(): React.JSX.Element {
             <ShipmentsTable
               items={visibleShipments}
               deliveryCourierByShipment={deliveryCourierByShipment}
+              deliveryTaskByShipment={deliveryTaskByShipment}
               selectedShipmentCodes={selectedShipmentCodes}
               onToggleShipment={toggleShipmentSelection}
               onToggleAllVisible={toggleAllVisibleShipments}
@@ -1601,10 +1613,10 @@ const styles: Record<string, React.CSSProperties> = {
     flexWrap: 'wrap',
   },
   actionButton: {
-    border: '1px solid #0f4c81',
+    border: '1px solid var(--ops-primary-dark)',
     borderRadius: 10,
     padding: '8px 12px',
-    backgroundColor: '#0f4c81',
+    backgroundColor: 'var(--ops-primary-dark)',
     color: '#ffffff',
     fontWeight: 700,
   },
@@ -1652,7 +1664,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 10,
     padding: '8px 12px',
     backgroundColor: '#ffffff',
-    color: '#0f4c81',
+    color: 'var(--ops-primary-dark)',
     fontWeight: 700,
   },
   cardTitle: {

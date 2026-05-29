@@ -89,5 +89,7 @@ export interface SealManifestInput {
 
 export interface ReceiveManifestInput {
   receivedBy?: string | null;
+  receivedByName?: string | null;
+  processingHubCode?: string | null;
   note?: string | null;
 }

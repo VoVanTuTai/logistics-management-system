@@ -82,13 +82,25 @@ services:
     depends_on:
       minio:
         condition: service_healthy
-    entrypoint: >
-      /bin/sh -c "
-      /usr/bin/mc alias set myminio http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD;
-      /usr/bin/mc mb myminio/$$MINIO_BUCKET_NAME --ignore-existing;
-      /usr/bin/mc anonymous set download myminio/$$MINIO_BUCKET_NAME;
+    entrypoint: |
+      /bin/sh -c '
+      /usr/bin/mc alias set myminio http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD";
+      /usr/bin/mc mb "myminio/$$MINIO_BUCKET_NAME" --ignore-existing;
+      /usr/bin/mc anonymous set download "myminio/$$MINIO_BUCKET_NAME";
+      cat >/tmp/minio-cors.json <<EOF
+      [
+        {
+          "AllowedOrigins": ["*"],
+          "AllowedMethods": ["GET", "PUT", "HEAD"],
+          "AllowedHeaders": ["*"],
+          "ExposeHeaders": ["ETag"],
+          "MaxAgeSeconds": 3000
+        }
+      ]
+      EOF
+      /usr/bin/mc cors set "myminio/$$MINIO_BUCKET_NAME" /tmp/minio-cors.json;
       exit 0;
-      "
+      '
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}

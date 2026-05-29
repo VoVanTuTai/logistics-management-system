@@ -50,7 +50,7 @@
 .hub-scan-toast--info {
   background: linear-gradient(135deg, #eff6ff, #dbeafe);
   border: 1px solid #93c5fd;
-  color: #1e40af;
+  color: var(--ops-primary-dark);
 }
 
 .hub-scan-toast__icon {
@@ -259,9 +259,9 @@
 }
 
 .hub-scan-type-btn--active {
-  border-color: #2563eb;
+  border-color: var(--ops-primary);
   background: linear-gradient(135deg, #eff6ff, #dbeafe);
-  color: #1d4ed8;
+  color: var(--ops-primary);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
@@ -303,7 +303,7 @@
 }
 
 .hub-scan-input:focus {
-  border-color: #2563eb;
+  border-color: var(--ops-primary);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
@@ -325,7 +325,7 @@
   width: 18px;
   height: 18px;
   border: 2px solid #e2e8f0;
-  border-top-color: #2563eb;
+  border-top-color: var(--ops-primary);
   border-radius: 50%;
   animation: hubScanSpin 0.6s linear infinite;
 }
@@ -339,7 +339,7 @@
   padding: 10px 24px;
   border: none;
   border-radius: 8px;
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  background: linear-gradient(135deg, var(--ops-primary), var(--ops-primary));
   color: #fff;
   font-size: 0.925rem;
   font-weight: 700;
@@ -350,7 +350,7 @@
 }
 
 .hub-scan-submit-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #1d4ed8, #1e40af);
+  background: linear-gradient(135deg, var(--ops-primary), var(--ops-primary-dark));
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
   transform: translateY(-1px);
 }
@@ -408,7 +408,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #2563eb;
+  background: var(--ops-primary);
   color: #fff;
   font-size: 0.75rem;
   font-weight: 700;
@@ -520,7 +520,7 @@
 
 .hub-scan-badge--inbound {
   background: #dbeafe;
-  color: #1e40af;
+  color: var(--ops-primary-dark);
 }
 
 .hub-scan-badge--outbound {

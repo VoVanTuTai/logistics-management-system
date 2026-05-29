@@ -4,6 +4,7 @@ import { Injectable } from '@nestjs/common';
 
 import type { DeliveryAttempt } from '../../domain/entities/delivery-attempt.entity';
 import type { NdrCase } from '../../domain/entities/ndr-case.entity';
+import type { Pod } from '../../domain/entities/pod.entity';
 import type {
   DeliveryPublishedEventType,
   QueueOutboxEventInput,
@@ -31,6 +32,7 @@ export class DeliveryEventsProducer {
 
   buildDeliveryDeliveredEvent(
     deliveryAttempt: DeliveryAttempt,
+    pod?: Pod | null,
   ): QueueOutboxEventInput {
     return this.buildEvent(
       'delivery.delivered',
@@ -39,7 +41,7 @@ export class DeliveryEventsProducer {
       deliveryAttempt.shipmentCode,
       deliveryAttempt.actor,
       deliveryAttempt.locationCode,
-      { deliveryAttempt },
+      { deliveryAttempt, pod: pod ?? null },
       `delivery.delivered:${deliveryAttempt.id}`,
     );
   }

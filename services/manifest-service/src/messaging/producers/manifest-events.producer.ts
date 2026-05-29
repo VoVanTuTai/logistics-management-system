@@ -16,6 +16,13 @@ interface ManifestUnsealedActorInput {
   note?: string | null;
 }
 
+interface ManifestReceivedActorInput {
+  receivedBy?: string | null;
+  receivedByName?: string | null;
+  processingHubCode?: string | null;
+  note?: string | null;
+}
+
 export interface ManifestSealedActorInput {
   sealedBy?: string | null;
   sealedByName?: string | null;
@@ -27,7 +34,10 @@ export interface ManifestSealedActorInput {
 export class ManifestEventsProducer {
   readonly exchangeName = process.env.DOMAIN_EVENTS_EXCHANGE ?? 'domain.events';
 
-  buildManifestSealedEvents(manifest: Manifest, actorInput?: ManifestSealedActorInput): QueueOutboxEventInput[] {
+  buildManifestSealedEvents(
+    manifest: Manifest,
+    actorInput?: ManifestSealedActorInput,
+  ): QueueOutboxEventInput[] {
     const targets = this.resolveTargetShipmentCodes(manifest);
 
     return targets.map((shipmentCode) =>
@@ -35,8 +45,11 @@ export class ManifestEventsProducer {
     );
   }
 
-  buildManifestReceivedEvents(manifest: Manifest): QueueOutboxEventInput[] {
-    return this.buildEvents('manifest.received', manifest);
+  buildManifestReceivedEvents(
+    manifest: Manifest,
+    actorInput?: ManifestReceivedActorInput,
+  ): QueueOutboxEventInput[] {
+    return this.buildEvents('manifest.received', manifest, actorInput);
   }
 
   buildManifestUnsealedEvents(
@@ -55,11 +68,19 @@ export class ManifestEventsProducer {
   private buildEvents(
     eventType: ManifestPublishedEventType,
     manifest: Manifest,
+    actorInput?: ManifestReceivedActorInput,
   ): QueueOutboxEventInput[] {
     const targets = this.resolveTargetShipmentCodes(manifest);
 
     return targets.map((shipmentCode) =>
-      this.buildEvent(eventType, manifest, shipmentCode),
+      this.buildEvent(
+        eventType,
+        manifest,
+        shipmentCode,
+        undefined,
+        undefined,
+        actorInput,
+      ),
     );
   }
 
@@ -69,12 +90,19 @@ export class ManifestEventsProducer {
     shipmentCode: string | null,
     actorInput?: ManifestUnsealedActorInput,
     sealedActorInput?: ManifestSealedActorInput,
+    receivedActorInput?: ManifestReceivedActorInput,
   ): QueueOutboxEventInput {
     const eventId = randomUUID();
     const occurredAt = new Date();
     const idempotencyShipmentCode = shipmentCode ?? 'none';
-    const actor = this.buildActor(actorInput) || this.buildSealedActor(sealedActorInput);
-    const location = this.buildLocation(actorInput) || this.buildSealedLocation(sealedActorInput);
+    const actor =
+      this.buildActor(actorInput) ||
+      this.buildSealedActor(sealedActorInput) ||
+      this.buildReceivedActor(receivedActorInput);
+    const location =
+      this.buildLocation(actorInput) ||
+      this.buildSealedLocation(sealedActorInput) ||
+      this.buildReceivedLocation(receivedActorInput);
     const payload: ManifestEventEnvelope = {
       event_id: eventId,
       event_type: eventType,
@@ -102,6 +130,16 @@ export class ManifestEventsProducer {
                 employeeCode: sealedActorInput?.sealedBy ?? null,
                 employeeName: sealedActorInput?.sealedByName ?? null,
                 processingHubCode: sealedActorInput?.processingHubCode ?? null,
+              },
+            }
+          : eventType === 'manifest.received'
+          ? {
+              receive: {
+                shipmentCode,
+                note: receivedActorInput?.note ?? null,
+                receivedBy: receivedActorInput?.receivedBy ?? null,
+                receivedByName: receivedActorInput?.receivedByName ?? null,
+                processingHubCode: receivedActorInput?.processingHubCode ?? null,
               },
             }
           : {}),
@@ -194,6 +232,38 @@ export class ManifestEventsProducer {
 
   private buildSealedLocation(
     input: ManifestSealedActorInput | undefined,
+  ): Record<string, unknown> | null {
+    const hubCode = input?.processingHubCode?.trim() ?? '';
+
+    if (!hubCode) {
+      return null;
+    }
+
+    return {
+      location_code: hubCode,
+    };
+  }
+
+  private buildReceivedActor(
+    input: ManifestReceivedActorInput | undefined,
+  ): Record<string, unknown> | null {
+    const employeeCode = input?.receivedBy?.trim() ?? '';
+    const employeeName = input?.receivedByName?.trim() ?? '';
+    const hubCode = input?.processingHubCode?.trim() ?? '';
+
+    if (!employeeCode && !employeeName && !hubCode) {
+      return null;
+    }
+
+    return {
+      id: employeeCode || null,
+      name: employeeName || null,
+      hub_code: hubCode || null,
+    };
+  }
+
+  private buildReceivedLocation(
+    input: ManifestReceivedActorInput | undefined,
   ): Record<string, unknown> | null {
     const hubCode = input?.processingHubCode?.trim() ?? '';
 
