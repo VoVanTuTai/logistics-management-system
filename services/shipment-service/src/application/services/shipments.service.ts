@@ -29,6 +29,16 @@ import { PricingClientService } from './pricing-client.service';
 const MAX_CODE_RETRY = 20;
 const SHIPMENT_CODE_RULE = /^(111|101|222|333)[0-9]{9}$/;
 const SHIPMENT_CODE_SEQUENCE_SIZE = 1_000_000_000;
+const DESTINATION_VISIBLE_STATUSES = new Set<string>([
+  'MANIFEST_RECEIVED',
+  'MANIFEST_UNSEALED',
+  'SCAN_INBOUND',
+  'INVENTORY_CHECK',
+  'DELIVERED',
+  'DELIVERY_FAILED',
+  'NDR_CREATED',
+  'EXCEPTION',
+]);
 
 export interface OpsShipmentScopeContext {
   hubCodes: string[];
@@ -231,7 +241,29 @@ export class ShipmentsService {
       data,
     );
 
+    const movementMetadata = this.buildMovementMetadata(
+      shipment.metadata,
+      eventType,
+      data,
+    );
+
     if (nextStatus === 'EXCEPTION') {
+      if (movementMetadata) {
+        const updatedShipment = await this.shipmentRepository.updateCurrentStatusMetadataAndLock(
+          normalizedCode,
+          nextStatus,
+          movementMetadata,
+          true,
+        );
+
+        await this.marketplaceWebhookSenderService.notifyStatusChanged(
+          updatedShipment,
+          eventType,
+        );
+
+        return updatedShipment;
+      }
+
       const updatedShipment = await this.shipmentRepository.updateCurrentStatusAndLock(
         normalizedCode,
         nextStatus,
@@ -278,10 +310,17 @@ export class ShipmentsService {
       return updatedShipment;
     }
 
-    const updatedShipment = await this.shipmentRepository.updateCurrentStatus(
-      normalizedCode,
-      nextStatus,
-    );
+    const updatedShipment = movementMetadata
+      ? await this.shipmentRepository.updateCurrentStatusMetadataAndLock(
+          normalizedCode,
+          nextStatus,
+          movementMetadata,
+          shipment.isLocked,
+        )
+      : await this.shipmentRepository.updateCurrentStatus(
+          normalizedCode,
+          nextStatus,
+        );
 
     await this.marketplaceWebhookSenderService.notifyStatusChanged(
       updatedShipment,
@@ -437,6 +476,72 @@ export class ShipmentsService {
       },
     };
   }
+
+  private buildMovementMetadata(
+    currentMetadata: JsonValue | null,
+    eventType: ShipmentConsumedEventType,
+    eventData: Record<string, unknown>,
+  ): JsonValue | null {
+    const currentHubCode = this.resolveMovementHubCode(eventType, eventData);
+    if (!currentHubCode) {
+      return null;
+    }
+
+    const metadata = asJsonRecord(currentMetadata);
+    const location = asJsonRecord(metadata.location);
+    const hub = asJsonRecord(metadata.hub);
+
+    return {
+      ...metadata,
+      currentHubCode,
+      currentLocation: currentHubCode,
+      location: {
+        ...location,
+        hubCode: currentHubCode,
+        current: currentHubCode,
+      },
+      hub: {
+        ...hub,
+        code: currentHubCode,
+        currentCode: currentHubCode,
+      },
+      movement: {
+        ...asJsonRecord(metadata.movement),
+        lastEventType: eventType,
+        lastUpdatedAt: new Date().toISOString(),
+      },
+    };
+  }
+
+  private resolveMovementHubCode(
+    eventType: ShipmentConsumedEventType,
+    eventData: Record<string, unknown>,
+  ): string | null {
+    if (
+      eventType === 'scan.pickup_confirmed' ||
+      eventType === 'scan.inbound' ||
+      eventType === 'scan.outbound'
+    ) {
+      const scanEvent = asJsonRecord(eventData.scanEvent);
+      return normalizeString(scanEvent.locationCode);
+    }
+
+    if (eventType === 'manifest.received') {
+      const manifest = asJsonRecord(eventData.manifest);
+      return normalizeString(manifest.destinationHubCode);
+    }
+
+    if (eventType === 'manifest.unsealed') {
+      const unseal = asJsonRecord(eventData.unseal);
+      const manifest = asJsonRecord(eventData.manifest);
+      return (
+        normalizeString(unseal.processingHubCode) ??
+        normalizeString(manifest.destinationHubCode)
+      );
+    }
+
+    return null;
+  }
 }
 
 function asJsonRecord(value: unknown): Record<string, JsonValue> {
@@ -478,22 +583,27 @@ function collectHubCodes(shipment: Shipment): string[] {
   const routing = asJsonRecord(metadata.routing);
   const location = asJsonRecord(metadata.location);
   const hub = asJsonRecord(metadata.hub);
+  const destinationCodes = DESTINATION_VISIBLE_STATUSES.has(shipment.currentStatus)
+    ? [
+        metadata.receiverHubCode,
+        metadata.destinationHubCode,
+        receiver.hubCode,
+        routing.destinationHubCode,
+      ]
+    : [];
 
   return normalizeStringList([
     metadata.senderHubCode,
-    metadata.receiverHubCode,
     metadata.originHubCode,
-    metadata.destinationHubCode,
     metadata.currentHubCode,
     metadata.currentLocation,
     sender.hubCode,
-    receiver.hubCode,
     routing.originHubCode,
-    routing.destinationHubCode,
     location.hubCode,
     location.current,
     hub.code,
     hub.currentCode,
+    ...destinationCodes,
   ]);
 }
 

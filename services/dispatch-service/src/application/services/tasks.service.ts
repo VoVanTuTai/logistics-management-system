@@ -30,6 +30,17 @@ import {
   type OpsAuditContext,
 } from './ops-audit.service';
 
+const DESTINATION_VISIBLE_STATUSES = new Set<string>([
+  'MANIFEST_RECEIVED',
+  'MANIFEST_UNSEALED',
+  'SCAN_INBOUND',
+  'INVENTORY_CHECK',
+  'DELIVERED',
+  'DELIVERY_FAILED',
+  'NDR_CREATED',
+  'EXCEPTION',
+]);
+
 export interface OpsTaskScopeContext {
   hubCodes: string[];
   canAccessAllHubs: boolean;
@@ -514,14 +525,17 @@ function collectHubCodes(value: unknown): string[] {
     record.currentLocation,
     record.locationCode,
     record.originHubCode,
-    record.destinationHubCode,
     record.senderHubCode,
-    record.receiverHubCode,
     record.reportedHubCode,
   ];
   const metadataCodes = collectMetadataHubCodes(asRecord(record.metadata));
+  const destinationCodes = DESTINATION_VISIBLE_STATUSES.has(
+    normalizeString(record.currentStatus) ?? '',
+  )
+    ? collectDestinationHubCodes(asRecord(record.metadata))
+    : [];
 
-  return normalizeStringList([...directCodes, ...metadataCodes]);
+  return normalizeStringList([...directCodes, ...metadataCodes, ...destinationCodes]);
 }
 
 function collectMetadataHubCodes(metadata: Record<string, unknown> | null): unknown[] {
@@ -530,26 +544,39 @@ function collectMetadataHubCodes(metadata: Record<string, unknown> | null): unkn
   }
 
   const sender = asRecord(metadata.sender);
-  const receiver = asRecord(metadata.receiver);
   const routing = asRecord(metadata.routing);
   const location = asRecord(metadata.location);
   const hub = asRecord(metadata.hub);
 
   return [
     metadata.senderHubCode,
-    metadata.receiverHubCode,
     metadata.originHubCode,
-    metadata.destinationHubCode,
     metadata.currentHubCode,
     metadata.currentLocation,
     sender?.hubCode,
-    receiver?.hubCode,
     routing?.originHubCode,
-    routing?.destinationHubCode,
     location?.hubCode,
     location?.current,
     hub?.code,
     hub?.currentCode,
+  ];
+}
+
+function collectDestinationHubCodes(
+  metadata: Record<string, unknown> | null,
+): unknown[] {
+  if (!metadata) {
+    return [];
+  }
+
+  const receiver = asRecord(metadata.receiver);
+  const routing = asRecord(metadata.routing);
+
+  return [
+    metadata.receiverHubCode,
+    metadata.destinationHubCode,
+    receiver?.hubCode,
+    routing?.destinationHubCode,
   ];
 }
 
