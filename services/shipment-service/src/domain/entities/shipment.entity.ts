@@ -42,6 +42,7 @@ export interface ShipmentListFilters {
   shipmentCodes?: string | string[] | null;
   status?: string | null;
   hubCodes?: string | string[] | null;
+  opsArrivedUnsigned?: string | boolean | null;
   createdFrom?: string | null;
   createdTo?: string | null;
   limit?: string | number | null;

@@ -117,6 +117,7 @@ function buildShipmentListQueryKey(filters: ShipmentListFilters) {
     filters.shipmentCode ?? '',
     filters.shipmentCodes?.join(',') ?? '',
     filters.status ?? '',
+    filters.opsArrivedUnsigned === true ? 'ops-arrived-unsigned' : '',
     filters.createdFrom ?? '',
     filters.createdTo ?? '',
     filters.limit ?? '',

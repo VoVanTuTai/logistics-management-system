@@ -96,7 +96,7 @@ const DEFAULT_PAGE_SIZE = 20;
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 const EMPTY_SHIPMENTS: ShipmentListItemDto[] = [];
 const DEFAULT_TIME_FILTER: ShipmentTimeFilter = 'all';
-const DEFAULT_BRANCH_GOODS_FILTER: BranchGoodsFilter = 'all';
+const DEFAULT_BRANCH_GOODS_FILTER: BranchGoodsFilter = 'readyForDelivery';
 const FINAL_BRANCH_STATUSES = new Set([
   'CANCELLED',
   'DELIVERED',
@@ -110,6 +110,12 @@ const READY_FOR_DELIVERY_STATUSES = new Set([
   'MANIFEST_UNSEALED',
   'INVENTORY_CHECK',
   'SCAN_INBOUND',
+  'TASK_ASSIGNED',
+  'SCAN_OUTBOUND',
+  'DELIVERY_FAILED',
+  'NDR_CREATED',
+  'EXCEPTION',
+  'RETURN_STARTED',
 ]);
 const PROBLEM_SHIPMENT_STATUSES = new Set(['DELIVERY_FAILED', 'NDR_CREATED', 'EXCEPTION']);
 const RETURN_NEEDED_STATUSES = new Set(['DELIVERY_FAILED', 'NDR_CREATED', 'EXCEPTION']);
@@ -287,15 +293,8 @@ function isBranchInventoryShipment(shipment: ShipmentListItemDto): boolean {
 
 function isReadyForDeliveryShipment(
   shipment: ShipmentListItemDto,
-  deliveryCourierByShipment: Map<string, string>,
 ): boolean {
-  const shipmentCode = normalizeOpsCode(shipment.shipmentCode);
-  const assignedCourier = deliveryCourierByShipment.get(shipmentCode) ?? 'Chưa bàn giao';
-
-  return (
-    READY_FOR_DELIVERY_STATUSES.has(normalizeOpsCode(shipment.currentStatus)) &&
-    assignedCourier === 'Chưa bàn giao'
-  );
+  return READY_FOR_DELIVERY_STATUSES.has(normalizeOpsCode(shipment.currentStatus));
 }
 
 function isProblemShipment(shipment: ShipmentListItemDto): boolean {
@@ -555,6 +554,8 @@ export function ShipmentListPage(): React.JSX.Element {
       shipmentCodes: isMultiCodeSearch ? shipmentSearchCodes : undefined,
       status: filters.status,
       hubCodes: canViewAllHubAreas ? undefined : assignedHubCodes,
+      opsArrivedUnsigned:
+        !hasShipmentSearch && branchGoodsFilter === 'readyForDelivery' ? true : undefined,
       createdFrom: dateRange.createdFrom,
       createdTo: dateRange.createdTo,
       limit: pageSize,
@@ -568,6 +569,8 @@ export function ShipmentListPage(): React.JSX.Element {
       dateRange.createdTo,
       filters.q,
       filters.status,
+      branchGoodsFilter,
+      hasShipmentSearch,
       isMultiCodeSearch,
       offset,
       pageSize,
@@ -627,7 +630,7 @@ export function ShipmentListPage(): React.JSX.Element {
           ? true
           : branchGoodsFilter === 'all' ||
             (branchGoodsFilter === 'readyForDelivery' &&
-              isReadyForDeliveryShipment(shipment, deliveryCourierByShipment)) ||
+              isReadyForDeliveryShipment(shipment)) ||
             (branchGoodsFilter === 'inventoryByDay' &&
               isBranchInventoryShipment(shipment) &&
               (!inventoryDate || toDateKey(shipment.updatedAt) <= inventoryDate)) ||
@@ -1025,7 +1028,7 @@ export function ShipmentListPage(): React.JSX.Element {
     <div>
       <h2>Danh sách vận đơn</h2>
       <p style={styles.helperText}>
-        Mặc định hiển thị toàn bộ đơn hàng đã thao tác tại bưu cục trong phạm vi hub. Nhập mã để tra cứu nhanh một hoặc nhiều vận đơn.
+        Mặc định hiển thị toàn bộ đơn đã có thao tác hàng đến hub và chưa được ký nhận trong phạm vi vận hành. Nhập mã để tra cứu nhanh một hoặc nhiều vận đơn.
       </p>
 
       <form onSubmit={onFilterSubmit} style={styles.filterForm}>
@@ -1085,8 +1088,8 @@ export function ShipmentListPage(): React.JSX.Element {
             onChange={(event) => setBranchGoodsInput(normalizeBranchGoodsFilter(event.target.value))}
             style={styles.select}
           >
+            <option value="readyForDelivery">Hàng đã đến hub, chưa ký nhận</option>
             <option value="all">Tất cả đơn đã thao tác tại bưu cục</option>
-            <option value="readyForDelivery">Hàng đã đến chờ phát</option>
             <option value="inventoryByDay">Hàng tồn kho theo ngày</option>
             <option value="problemOrders">Đơn vấn đề</option>
             <option value="returnNeeded">Đơn cần chuyển hoàn</option>
@@ -1174,7 +1177,7 @@ export function ShipmentListPage(): React.JSX.Element {
         <span>Đang hiển thị: {visibleShipments.length} vận đơn</span>
         {hasShipmentSearch ? <span>Đang tra cứu toàn bộ thời gian trong phạm vi hub</span> : null}
         {branchGoodsFilter === 'all' && !hasShipmentSearch ? <span>Tất cả đơn đã thao tác tại bưu cục</span> : null}
-        {branchGoodsFilter === 'readyForDelivery' && !hasShipmentSearch ? <span>Hàng đã đến, chưa thao tác phát</span> : null}
+        {branchGoodsFilter === 'readyForDelivery' && !hasShipmentSearch ? <span>Hàng đã đến hub, chưa ký nhận</span> : null}
         {branchGoodsFilter === 'inventoryByDay' ? <span>Tồn đến ngày: {inventoryDate}</span> : null}
         {courierFilter ? <span>Courier: {courierFilter}</span> : null}
       </div>
