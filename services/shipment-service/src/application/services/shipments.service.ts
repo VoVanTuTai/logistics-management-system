@@ -527,8 +527,12 @@ export class ShipmentsService {
     }
 
     if (eventType === 'manifest.received') {
+      const receive = asJsonRecord(eventData.receive);
       const manifest = asJsonRecord(eventData.manifest);
-      return normalizeString(manifest.destinationHubCode);
+      return (
+        normalizeString(receive.processingHubCode) ??
+        normalizeString(manifest.destinationHubCode)
+      );
     }
 
     if (eventType === 'manifest.unsealed') {

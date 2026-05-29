@@ -31,6 +31,17 @@ const ARRIVED_UNSIGNED_STATUSES: PrismaShipmentCurrentStatus[] = [
   'RETURN_STARTED',
 ];
 
+const DESTINATION_ARRIVED_UNSIGNED_STATUSES: PrismaShipmentCurrentStatus[] = [
+  'MANIFEST_RECEIVED',
+  'MANIFEST_UNSEALED',
+  'SCAN_INBOUND',
+  'INVENTORY_CHECK',
+  'DELIVERY_FAILED',
+  'NDR_CREATED',
+  'EXCEPTION',
+  'RETURN_STARTED',
+];
+
 const CURRENT_HUB_JSON_PATHS = [
   ['currentHubCode'],
   ['currentLocation'],
@@ -38,6 +49,13 @@ const CURRENT_HUB_JSON_PATHS = [
   ['location', 'current'],
   ['hub', 'code'],
   ['hub', 'currentCode'],
+];
+
+const DESTINATION_HUB_JSON_PATHS = [
+  ['receiver', 'hubCode'],
+  ['routing', 'destinationHubCode'],
+  ['receiverHubCode'],
+  ['destinationHubCode'],
 ];
 
 @Injectable()
@@ -282,12 +300,6 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
         ['originHubCode'],
         ...CURRENT_HUB_JSON_PATHS,
       ];
-      const destinationHubJsonPaths = [
-        ['receiver', 'hubCode'],
-        ['routing', 'destinationHubCode'],
-        ['receiverHubCode'],
-        ['destinationHubCode'],
-      ];
       const destinationVisibleStatuses: PrismaShipmentCurrentStatus[] = [
         'MANIFEST_RECEIVED',
         'MANIFEST_UNSEALED',
@@ -315,7 +327,7 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
               },
               {
                 OR: hubCodes.flatMap((hubCode) =>
-                  destinationHubJsonPaths.flatMap((path) =>
+                  DESTINATION_HUB_JSON_PATHS.flatMap((path) =>
                     buildHubJsonPathScopeFilters(path, hubCode),
                   ),
                 ),
@@ -351,11 +363,29 @@ function buildArrivedUnsignedWhere(
     AND: [
       statusFilter,
       {
-        OR: scopedHubCodes.flatMap((hubCode) =>
-          CURRENT_HUB_JSON_PATHS.flatMap((path) =>
-            buildHubJsonPathScopeFilters(path, hubCode),
+        OR: [
+          ...scopedHubCodes.flatMap((hubCode) =>
+            CURRENT_HUB_JSON_PATHS.flatMap((path) =>
+              buildHubJsonPathScopeFilters(path, hubCode),
+            ),
           ),
-        ),
+          {
+            AND: [
+              {
+                currentStatus: {
+                  in: DESTINATION_ARRIVED_UNSIGNED_STATUSES,
+                },
+              },
+              {
+                OR: scopedHubCodes.flatMap((hubCode) =>
+                  DESTINATION_HUB_JSON_PATHS.flatMap((path) =>
+                    buildHubJsonPathScopeFilters(path, hubCode),
+                  ),
+                ),
+              },
+            ],
+          },
+        ],
       },
     ],
   };
