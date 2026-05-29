@@ -9,6 +9,7 @@ import {
 
 import type {
   AuthSession,
+  AuthPortalRoleGroup,
   ChangePasswordInput,
   ChangePasswordResult,
   IntrospectInput,
@@ -83,7 +84,7 @@ export class AuthService {
 
     this.assertUserMatchesLoginRoleGroup(
       user,
-      this.normalizeRoleGroup(input.roleGroup),
+      this.normalizeLoginRoleGroup(input.roleGroup),
     );
 
     const issuedAt = new Date();
@@ -123,7 +124,7 @@ export class AuthService {
     const user = await this.getActiveUser(currentSession.userId);
     this.assertUserMatchesLoginRoleGroup(
       user,
-      this.normalizeRoleGroup(input.roleGroup),
+      this.normalizeLoginRoleGroup(input.roleGroup),
     );
     const issuedAt = new Date();
     const tokens = this.opaqueTokenService.issueTokens(issuedAt);
@@ -695,7 +696,7 @@ export class AuthService {
 
   private assertUserMatchesLoginRoleGroup(
     user: UserAccount,
-    roleGroup: UserRoleGroup | undefined,
+    roleGroup: AuthPortalRoleGroup | undefined,
   ): void {
     if (!roleGroup) {
       return;
@@ -710,7 +711,16 @@ export class AuthService {
     );
   }
 
-  private userHasRoleGroup(roles: string[], roleGroup: UserRoleGroup): boolean {
+  private userHasRoleGroup(roles: string[], roleGroup: AuthPortalRoleGroup): boolean {
+    if (roleGroup === 'COURIER_APP') {
+      return roles.some(
+        (role) =>
+          ADMIN_ROLE_SET.has(role) ||
+          OPS_ROLE_SET.has(role) ||
+          COURIER_ROLE_SET.has(role),
+      );
+    }
+
     if (roleGroup === 'OPS') {
       return roles.some(
         (role) => ADMIN_ROLE_SET.has(role) || OPS_ROLE_SET.has(role),
@@ -724,7 +734,11 @@ export class AuthService {
     return roles.some((role) => MERCHANT_ROLE_SET.has(role));
   }
 
-  private roleGroupLabel(roleGroup: UserRoleGroup): string {
+  private roleGroupLabel(roleGroup: AuthPortalRoleGroup): string {
+    if (roleGroup === 'COURIER_APP') {
+      return 'COURIER hoặc OPS';
+    }
+
     if (roleGroup === 'OPS') {
       return 'OPS';
     }
@@ -828,5 +842,24 @@ export class AuthService {
     }
 
     throw new BadRequestException('roleGroup must be OPS, SHIPPER, or MERCHANT.');
+  }
+
+  private normalizeLoginRoleGroup(value: unknown): AuthPortalRoleGroup | undefined {
+    if (value === undefined || value === null || value === '') {
+      return undefined;
+    }
+
+    if (
+      value === 'OPS' ||
+      value === 'SHIPPER' ||
+      value === 'MERCHANT' ||
+      value === 'COURIER_APP'
+    ) {
+      return value;
+    }
+
+    throw new BadRequestException(
+      'roleGroup must be OPS, SHIPPER, MERCHANT, or COURIER_APP.',
+    );
   }
 }

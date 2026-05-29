@@ -21,7 +21,7 @@ export const authApi = {
       method: 'POST',
       body: {
         ...payload,
-        roleGroup: 'SHIPPER',
+        roleGroup: 'COURIER_APP',
       },
     }),
   refresh: (payload: RefreshSessionInputDto): Promise<LoginResultDto> =>
@@ -29,7 +29,7 @@ export const authApi = {
       method: 'POST',
       body: {
         ...payload,
-        roleGroup: 'SHIPPER',
+        roleGroup: 'COURIER_APP',
       },
     }),
   logout: (

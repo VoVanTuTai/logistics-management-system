@@ -4,7 +4,7 @@ import type { Request, Response as ExpressResponse } from 'express';
 import { ApiGroup, ServiceRegistryClient } from './service-registry.client';
 
 type RequestWithRawBody = Request & { rawBody?: Buffer };
-type AuthRoleGroup = 'OPS' | 'SHIPPER' | 'MERCHANT';
+type AuthRoleGroup = 'OPS' | 'SHIPPER' | 'MERCHANT' | 'COURIER_APP';
 
 const HOP_BY_HOP_HEADERS = new Set([
   'connection',
@@ -209,7 +209,7 @@ function resolveAuthRoleGroup(group: ApiGroup): AuthRoleGroup | null {
   }
 
   if (group === 'courier') {
-    return 'SHIPPER';
+    return 'COURIER_APP';
   }
 
   if (group === 'merchant') {

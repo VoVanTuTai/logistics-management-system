@@ -12,7 +12,12 @@ import { AuthServiceClient } from '../../infrastructure/clients/auth-service.cli
 type GatewayRoleGroup = 'OPS' | 'COURIER' | 'MERCHANT';
 
 const OPS_ALLOWED_ROLES = new Set(['SYSTEM_ADMIN', 'OPS_ADMIN', 'OPS_VIEWER']);
-const COURIER_ALLOWED_ROLES = new Set(['COURIER']);
+const COURIER_ALLOWED_ROLES = new Set([
+  'SYSTEM_ADMIN',
+  'OPS_ADMIN',
+  'OPS_VIEWER',
+  'COURIER',
+]);
 const MERCHANT_ALLOWED_ROLES = new Set(['MERCHANT']);
 
 @Injectable()
