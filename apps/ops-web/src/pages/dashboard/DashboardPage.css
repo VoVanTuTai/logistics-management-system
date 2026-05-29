@@ -201,7 +201,7 @@
 
 .ops-menu-grid--featured-layout {
   grid-template-columns: minmax(260px, 1.2fr) repeat(2, minmax(160px, 1fr));
-  grid-template-rows: repeat(2, minmax(150px, 1fr));
+  grid-template-rows: repeat(2, minmax(170px, 1fr));
   align-items: stretch;
 }
 
@@ -218,7 +218,7 @@
   align-content: center;
   text-align: center;
   gap: 10px;
-  min-height: 150px;
+  min-height: 170px;
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease,
@@ -232,7 +232,7 @@
   background: var(--ops-primary-soft);
   border-color: #c7d7ff;
   padding: 22px 16px;
-  min-height: 308px;
+  min-height: 348px;
 }
 
 .ops-menu-tile:hover {
@@ -585,7 +585,7 @@
 @media (max-width: 1200px) {
   .ops-menu-grid--featured-layout {
     grid-template-columns: minmax(220px, 1fr) minmax(180px, 1fr);
-    grid-template-rows: repeat(4, minmax(116px, auto));
+    grid-template-rows: repeat(4, minmax(132px, auto));
   }
 
   .ops-menu-grid--featured-layout .ops-menu-tile--featured {
@@ -630,7 +630,7 @@
   .ops-menu-grid--featured-layout .ops-menu-tile--featured {
     grid-column: 1 / -1;
     grid-row: auto;
-    min-height: 180px;
+    min-height: 210px;
   }
 
   .ops-menu-tile--featured .ops-menu-tile__icon {
