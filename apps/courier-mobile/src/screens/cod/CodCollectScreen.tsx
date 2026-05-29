@@ -15,7 +15,7 @@ import { useCollectCodMutation, useCompanyBankInfoQuery } from '../../features/c
 import { canAccessCourierFeature } from '../../features/permissions/courier-permissions';
 import type { AppNavigatorParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
-import { resolveCourierId } from '../../utils/courier';
+import { buildCodCollectAuditNote, resolveCourierId } from '../../utils/courier';
 import { appEnv } from '../../utils/env';
 import { createIdempotencyKey } from '../../utils/idempotency';
 import { theme } from '../../theme';
@@ -73,7 +73,16 @@ export function CodCollectScreen({ route, navigation }: Props): React.JSX.Elemen
         paymentMethod: 'COD',
         idempotencyKey: createIdempotencyKey('cod-collect'),
         occurredAt: new Date().toISOString(),
-        note: note.trim() || undefined,
+        note: buildCodCollectAuditNote({
+          displayName: session?.user.displayName,
+          username: session?.user.username,
+          courierId,
+          hubCode: session?.user.hubCodes?.[0] ?? null,
+          shipmentCode,
+          collectedAmount: parsedAmount,
+          paymentMethod: 'COD',
+          note,
+        }),
       });
 
       Alert.alert(

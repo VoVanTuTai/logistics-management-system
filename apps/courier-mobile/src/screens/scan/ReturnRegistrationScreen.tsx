@@ -220,7 +220,7 @@ export function ReturnRegistrationScreen({ route }: Props): React.JSX.Element {
     username: session?.user.username,
     courierId,
   });
-  const employeeId = session?.user.username ?? courierId ?? 'N/A';
+  const employeeId = courierId || session?.user.username || 'N/A';
   const hubCode = session?.user.hubCodes?.[0]?.trim().toUpperCase() ?? '';
   const selectedReason =
     RETURN_REASON_OPTIONS.find((reason) => reason.id === selectedReasonId) ??

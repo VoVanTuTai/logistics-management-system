@@ -52,6 +52,34 @@ const CHAT_MIGRATIONS: ChatMigration[] = [
         ON chat_conversations(hub_code, updated_at DESC);
     `,
   },
+  {
+    id: '003_chat_assignment_and_audit',
+    up: `
+      ALTER TABLE chat_conversations
+        ADD COLUMN IF NOT EXISTS assigned_ops_id TEXT,
+        ADD COLUMN IF NOT EXISTS assigned_ops_name TEXT,
+        ADD COLUMN IF NOT EXISTS assigned_ops_at TIMESTAMPTZ;
+
+      CREATE TABLE IF NOT EXISTS chat_audit_logs (
+        id TEXT PRIMARY KEY,
+        event_type TEXT NOT NULL,
+        conversation_id TEXT NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,
+        courier_id TEXT NOT NULL,
+        actor_role TEXT NOT NULL CHECK (actor_role IN ('OPS', 'COURIER')),
+        actor_id TEXT NOT NULL,
+        actor_name TEXT NOT NULL,
+        message_id TEXT REFERENCES chat_messages(id) ON DELETE SET NULL,
+        details JSONB NOT NULL DEFAULT '{}'::jsonb,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_chat_audit_logs_conversation_created
+        ON chat_audit_logs(conversation_id, created_at DESC);
+
+      CREATE INDEX IF NOT EXISTS idx_chat_audit_logs_actor_created
+        ON chat_audit_logs(actor_role, actor_id, created_at DESC);
+    `,
+  },
 ];
 
 export async function runChatMigrations(

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { theme } from '../../theme';
@@ -14,6 +14,8 @@ export interface ProfileHeaderData {
 
 interface ProfileHeaderProps {
   user: ProfileHeaderData;
+  avatarUri?: string | null;
+  onPressAvatar?: () => void;
   onPressStarDetail?: () => void;
 }
 
@@ -36,14 +38,26 @@ function getInitials(fullName: string): string {
 
 export function ProfileHeader({
   user,
+  avatarUri,
+  onPressAvatar,
   onPressStarDetail,
 }: ProfileHeaderProps): React.JSX.Element {
   return (
     <View style={styles.card}>
       <View style={styles.topRow}>
-        <View style={styles.avatarWrap}>
-          <Text style={styles.avatarText}>{getInitials(user.fullName)}</Text>
-        </View>
+        <Pressable
+          onPress={onPressAvatar}
+          style={({ pressed }) => [styles.avatarWrap, pressed && styles.pressed]}
+        >
+          {avatarUri ? (
+            <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
+          ) : (
+            <Text style={styles.avatarText}>{getInitials(user.fullName)}</Text>
+          )}
+          <View style={styles.avatarEditBadge}>
+            <Ionicons name="camera-outline" size={13} color="#FFFFFF" />
+          </View>
+        </Pressable>
 
         <View style={styles.userInfoWrap}>
           <Text style={styles.fullName}>{user.fullName}</Text>
@@ -100,6 +114,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFF6FF',
     borderWidth: 1,
     borderColor: '#BFDBFE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  avatarEditBadge: {
+    position: 'absolute',
+    right: 4,
+    bottom: 4,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: theme.colors.primary,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -170,4 +203,3 @@ const styles = StyleSheet.create({
     marginLeft: 'auto',
   },
 });
-

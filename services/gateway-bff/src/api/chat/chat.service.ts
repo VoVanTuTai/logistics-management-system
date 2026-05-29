@@ -64,6 +64,12 @@ interface ChatStore {
     actor: ChatActor;
     conversationId: string;
   }): Promise<ChatConversationDto>;
+  claimConversation(input: {
+    actor: ChatActor;
+    conversationId: string;
+    courierId: string;
+    hubCode: string | null;
+  }): Promise<ChatConversationDto>;
 }
 
 @Injectable()
@@ -233,6 +239,39 @@ export class ChatService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  async claimConversation(
+    actor: ChatActor,
+    input: {
+      conversationId?: string | null;
+      courierId?: string | null;
+    },
+  ): Promise<ChatConversationDto> {
+    if (actor.role !== 'OPS') {
+      throw new UnauthorizedException('Only OPS can claim a chat conversation.');
+    }
+
+    const conversationId = this.resolveConversationId(actor, input);
+    const courierId = parseCourierIdFromConversationId(conversationId) ?? '';
+    const hubCode = await this.resolveConversationHubCode(actor, courierId);
+
+    try {
+      const conversation = await this.store.claimConversation({
+        actor,
+        conversationId,
+        courierId,
+        hubCode,
+      });
+      this.metrics.increment('chat_claims_total');
+      this.logger.log(
+        `Chat conversation claimed conversationId=${conversationId} actorId=${actor.id}`,
+      );
+      return conversation;
+    } catch (error) {
+      this.metrics.increment('chat_store_errors_total');
+      throw error;
+    }
+  }
+
   issueWebSocketTicket(actor: ChatActor): ChatWebSocketTicketDto {
     const ttlSeconds = normalizeTicketTtlSeconds(process.env.CHAT_WS_TICKET_TTL_SECONDS);
     const expiresAtMs = Date.now() + ttlSeconds * 1000;
@@ -368,6 +407,20 @@ class MemoryChatStore implements ChatStore {
   private readonly messagesByConversation = new Map<string, ChatMessageDto[]>();
   private readonly hubCodesByConversation = new Map<string, string | null>();
   private readonly readsByConversation = new Map<string, Map<string, string>>();
+  private readonly assignedOpsByConversation = new Map<
+    string,
+    { id: string; name: string; assignedAt: string }
+  >();
+  private readonly auditLogs: Array<{
+    eventType: string;
+    conversationId: string;
+    courierId: string;
+    actorRole: ChatActorRole;
+    actorId: string;
+    actorName: string;
+    messageId: string | null;
+    createdAt: string;
+  }> = [];
 
   async init(): Promise<void> {}
 
@@ -434,6 +487,13 @@ class MemoryChatStore implements ChatStore {
     if (!this.hubCodesByConversation.has(conversationId) || input.hubCode) {
       this.hubCodesByConversation.set(conversationId, input.hubCode);
     }
+    if (input.actor.role === 'OPS') {
+      this.assignedOpsByConversation.set(conversationId, {
+        id: input.actor.id,
+        name: input.actor.displayName,
+        assignedAt: new Date().toISOString(),
+      });
+    }
     const message: ChatMessageDto = {
       id: randomUUID(),
       conversationId,
@@ -454,6 +514,14 @@ class MemoryChatStore implements ChatStore {
 
     this.messagesByConversation.set(conversationId, messages);
     this.setLastReadAt(conversationId, input.actor, message.createdAt);
+    this.appendAuditLog({
+      eventType: 'MESSAGE_CREATED',
+      conversationId,
+      courierId: input.courierId,
+      actor: input.actor,
+      messageId: message.id,
+      createdAt: message.createdAt,
+    });
 
     return {
       message: this.withReadReceipt(message),
@@ -486,6 +554,35 @@ class MemoryChatStore implements ChatStore {
     );
   }
 
+  async claimConversation(input: {
+    actor: ChatActor;
+    conversationId: string;
+    courierId: string;
+    hubCode: string | null;
+  }): Promise<ChatConversationDto> {
+    const assignedAt = new Date().toISOString();
+    this.hubCodesByConversation.set(input.conversationId, input.hubCode);
+    this.assignedOpsByConversation.set(input.conversationId, {
+      id: input.actor.id,
+      name: input.actor.displayName,
+      assignedAt,
+    });
+    this.appendAuditLog({
+      eventType: 'CONVERSATION_CLAIMED',
+      conversationId: input.conversationId,
+      courierId: input.courierId,
+      actor: input.actor,
+      messageId: null,
+      createdAt: assignedAt,
+    });
+
+    const messages = this.messagesByConversation.get(input.conversationId) ?? [];
+    return (
+      this.toConversation(input.conversationId, messages, input.actor) ??
+      createEmptyConversation(input.courierId, input.hubCode, null)
+    );
+  }
+
   private toConversation(
     conversationId: string,
     messages: ChatMessageDto[],
@@ -502,12 +599,16 @@ class MemoryChatStore implements ChatStore {
     const lastReadAt = this.getLastReadAt(conversationId, actor);
     const unreadCount = countUnread(messages, actor, lastReadAt);
     const hubCode = this.hubCodesByConversation.get(conversationId) ?? null;
+    const assignedOps = this.assignedOpsByConversation.get(conversationId) ?? null;
 
     return {
       id: conversationId,
       courierId,
       hubCode,
       title: `Courier ${courierId}`,
+      assignedOpsId: assignedOps?.id ?? null,
+      assignedOpsName: assignedOps?.name ?? null,
+      assignedOpsAt: assignedOps?.assignedAt ?? null,
       lastMessage: lastMessage ? this.withReadReceipt(lastMessage) : null,
       updatedAt: lastMessage?.createdAt ?? new Date(0).toISOString(),
       messageCount: messages.length,
@@ -517,9 +618,7 @@ class MemoryChatStore implements ChatStore {
   }
 
   private withReadReceipt(message: ChatMessageDto): ChatMessageDto {
-    const opsReadAt = this.readsByConversation
-      .get(message.conversationId)
-      ?.get(readKey('OPS', 'ops'));
+    const opsReadAt = this.getAnyOpsReadAt(message.conversationId);
     const courierReadAt = this.readsByConversation
       .get(message.conversationId)
       ?.get(readKey('COURIER', message.courierId));
@@ -549,6 +648,42 @@ class MemoryChatStore implements ChatStore {
     const reads = this.readsByConversation.get(conversationId) ?? new Map<string, string>();
     reads.set(readKeyForActor(actor), readAt);
     this.readsByConversation.set(conversationId, reads);
+  }
+
+  private getAnyOpsReadAt(conversationId: string): string | null {
+    const reads = this.readsByConversation.get(conversationId);
+    if (!reads) {
+      return null;
+    }
+
+    let latestReadAt: string | null = null;
+    for (const [key, readAt] of reads.entries()) {
+      if (key.startsWith('OPS:') && (!latestReadAt || readAt > latestReadAt)) {
+        latestReadAt = readAt;
+      }
+    }
+
+    return latestReadAt;
+  }
+
+  private appendAuditLog(input: {
+    eventType: string;
+    conversationId: string;
+    courierId: string;
+    actor: ChatActor;
+    messageId: string | null;
+    createdAt: string;
+  }): void {
+    this.auditLogs.push({
+      eventType: input.eventType,
+      conversationId: input.conversationId,
+      courierId: input.courierId,
+      actorRole: input.actor.role,
+      actorId: input.actor.id,
+      actorName: input.actor.displayName,
+      messageId: input.messageId,
+      createdAt: input.createdAt,
+    });
   }
 }
 
@@ -585,6 +720,9 @@ class PostgresChatStore implements ChatStore {
         c.courier_id,
         c.hub_code,
         c.title,
+        c.assigned_ops_id,
+        c.assigned_ops_name,
+        c.assigned_ops_at,
         c.updated_at,
         COUNT(m.id)::int AS message_count,
         rr.last_read_at,
@@ -610,10 +748,12 @@ class PostgresChatStore implements ChatStore {
         ON rr.conversation_id = c.id
         AND rr.actor_role = $1
         AND rr.actor_id = $2
-      LEFT JOIN chat_read_receipts ops_rr
-        ON ops_rr.conversation_id = c.id
-        AND ops_rr.actor_role = 'OPS'
-        AND ops_rr.actor_id = 'ops'
+      LEFT JOIN LATERAL (
+        SELECT MAX(last_read_at) AS last_read_at
+        FROM chat_read_receipts
+        WHERE conversation_id = c.id
+          AND actor_role = 'OPS'
+      ) ops_rr ON true
       LEFT JOIN chat_read_receipts courier_rr
         ON courier_rr.conversation_id = c.id
         AND courier_rr.actor_role = 'COURIER'
@@ -629,7 +769,8 @@ class PostgresChatStore implements ChatStore {
           OR c.hub_code = ANY($5::text[])
         )
       GROUP BY c.id, rr.last_read_at, lm.id, lm.sender_role, lm.sender_id,
-        c.hub_code, lm.sender_name, lm.text, lm.created_at,
+        c.hub_code, c.assigned_ops_id, c.assigned_ops_name, c.assigned_ops_at,
+        lm.sender_name, lm.text, lm.created_at,
         ops_rr.last_read_at, courier_rr.last_read_at
       ORDER BY c.updated_at DESC
       `,
@@ -663,10 +804,12 @@ class PostgresChatStore implements ChatStore {
           ops_rr.last_read_at AS ops_read_at,
           courier_rr.last_read_at AS courier_read_at
         FROM chat_messages m
-        LEFT JOIN chat_read_receipts ops_rr
-          ON ops_rr.conversation_id = m.conversation_id
-          AND ops_rr.actor_role = 'OPS'
-          AND ops_rr.actor_id = 'ops'
+        LEFT JOIN LATERAL (
+          SELECT MAX(last_read_at) AS last_read_at
+          FROM chat_read_receipts
+          WHERE conversation_id = m.conversation_id
+            AND actor_role = 'OPS'
+        ) ops_rr ON true
         LEFT JOIN chat_read_receipts courier_rr
           ON courier_rr.conversation_id = m.conversation_id
           AND courier_rr.actor_role = 'COURIER'
@@ -708,20 +851,38 @@ class PostgresChatStore implements ChatStore {
     const conversationId = buildConversationId(input.courierId);
     const id = randomUUID();
     const client = await this.pool.connect();
+    const assignedOpsId = input.actor.role === 'OPS' ? input.actor.id : null;
+    const assignedOpsName = input.actor.role === 'OPS' ? input.actor.displayName : null;
 
     try {
       await client.query('BEGIN');
       await client.query(
         `
-        INSERT INTO chat_conversations (id, courier_id, hub_code, title, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, now(), now())
+        INSERT INTO chat_conversations (
+          id, courier_id, hub_code, title, created_at, updated_at,
+          assigned_ops_id, assigned_ops_name, assigned_ops_at
+        )
+        VALUES ($1, $2, $3, $4, now(), now(), $5, $6, CASE WHEN $5::text IS NULL THEN NULL ELSE now() END)
         ON CONFLICT (id)
         DO UPDATE SET
           updated_at = now(),
           title = EXCLUDED.title,
-          hub_code = COALESCE(chat_conversations.hub_code, EXCLUDED.hub_code)
+          hub_code = COALESCE(chat_conversations.hub_code, EXCLUDED.hub_code),
+          assigned_ops_id = COALESCE(EXCLUDED.assigned_ops_id, chat_conversations.assigned_ops_id),
+          assigned_ops_name = COALESCE(EXCLUDED.assigned_ops_name, chat_conversations.assigned_ops_name),
+          assigned_ops_at = CASE
+            WHEN EXCLUDED.assigned_ops_id IS NULL THEN chat_conversations.assigned_ops_at
+            ELSE now()
+          END
         `,
-        [conversationId, input.courierId, input.hubCode, `Courier ${input.courierId}`],
+        [
+          conversationId,
+          input.courierId,
+          input.hubCode,
+          `Courier ${input.courierId}`,
+          assignedOpsId,
+          assignedOpsName,
+        ],
       );
       const messageResult = await client.query<MessageRow>(
         `
@@ -748,6 +909,13 @@ class PostgresChatStore implements ChatStore {
         actor: input.actor,
         conversationId,
         readAtSql: 'now()',
+      });
+      await insertChatAuditLog(client, {
+        eventType: 'MESSAGE_CREATED',
+        conversationId,
+        courierId: input.courierId,
+        actor: input.actor,
+        messageId: id,
       });
       await client.query('COMMIT');
 
@@ -789,6 +957,57 @@ class PostgresChatStore implements ChatStore {
     return this.getConversationForActor(input.actor, input.conversationId);
   }
 
+  async claimConversation(input: {
+    actor: ChatActor;
+    conversationId: string;
+    courierId: string;
+    hubCode: string | null;
+  }): Promise<ChatConversationDto> {
+    const client = await this.pool.connect();
+
+    try {
+      await client.query('BEGIN');
+      await client.query(
+        `
+        INSERT INTO chat_conversations (
+          id, courier_id, hub_code, title, created_at, updated_at,
+          assigned_ops_id, assigned_ops_name, assigned_ops_at
+        )
+        VALUES ($1, $2, $3, $4, now(), now(), $5, $6, now())
+        ON CONFLICT (id)
+        DO UPDATE SET
+          hub_code = COALESCE(chat_conversations.hub_code, EXCLUDED.hub_code),
+          assigned_ops_id = EXCLUDED.assigned_ops_id,
+          assigned_ops_name = EXCLUDED.assigned_ops_name,
+          assigned_ops_at = now()
+        `,
+        [
+          input.conversationId,
+          input.courierId,
+          input.hubCode,
+          `Courier ${input.courierId}`,
+          input.actor.id,
+          input.actor.displayName,
+        ],
+      );
+      await insertChatAuditLog(client, {
+        eventType: 'CONVERSATION_CLAIMED',
+        conversationId: input.conversationId,
+        courierId: input.courierId,
+        actor: input.actor,
+        messageId: null,
+      });
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+
+    return this.getConversationForActor(input.actor, input.conversationId);
+  }
+
   private async getConversationForActor(
     actor: ChatActor,
     conversationId: string,
@@ -822,6 +1041,9 @@ interface ConversationRow {
   courier_id: string;
   hub_code: string | null;
   title: string;
+  assigned_ops_id: string | null;
+  assigned_ops_name: string | null;
+  assigned_ops_at: Date | string | null;
   updated_at: Date | string;
   message_count: number;
   unread_count: number;
@@ -867,6 +1089,9 @@ function createEmptyConversation(
     courierId,
     hubCode,
     title: `Courier ${courierId}`,
+    assignedOpsId: null,
+    assignedOpsName: null,
+    assignedOpsAt: null,
     lastMessage: null,
     updatedAt: new Date(0).toISOString(),
     messageCount: 0,
@@ -906,6 +1131,9 @@ function rowToConversation(row: ConversationRow): ChatConversationDto {
     courierId: row.courier_id,
     hubCode: row.hub_code,
     title: row.title,
+    assignedOpsId: row.assigned_ops_id,
+    assignedOpsName: row.assigned_ops_name,
+    assignedOpsAt: row.assigned_ops_at ? toIso(row.assigned_ops_at) : null,
     lastMessage,
     updatedAt: toIso(row.updated_at),
     messageCount: Number(row.message_count),
@@ -959,6 +1187,37 @@ async function upsertReadReceipt(
       updated_at = now()
     `,
     [input.conversationId, input.actor.role, receiptActorId(input.actor)],
+  );
+}
+
+async function insertChatAuditLog(
+  queryable: Pick<Pool, 'query'>,
+  input: {
+    eventType: string;
+    conversationId: string;
+    courierId: string;
+    actor: ChatActor;
+    messageId: string | null;
+  },
+): Promise<void> {
+  await queryable.query(
+    `
+    INSERT INTO chat_audit_logs (
+      id, event_type, conversation_id, courier_id, actor_role,
+      actor_id, actor_name, message_id, details, created_at
+    )
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, '{}'::jsonb, now())
+    `,
+    [
+      randomUUID(),
+      input.eventType,
+      input.conversationId,
+      input.courierId,
+      input.actor.role,
+      input.actor.id,
+      input.actor.displayName,
+      input.messageId,
+    ],
   );
 }
 
@@ -1043,7 +1302,7 @@ function readKey(role: ChatActorRole, actorId: string): string {
 }
 
 function receiptActorId(actor: ChatActor): string {
-  return actor.role === 'OPS' ? 'ops' : actor.courierId ?? actor.id;
+  return actor.role === 'OPS' ? actor.id : actor.courierId ?? actor.id;
 }
 
 function signTicket(payload: ChatTicketPayload): string {

@@ -32,6 +32,9 @@ export interface ChatConversationDto {
   courierId: string;
   hubCode: string | null;
   title: string;
+  assignedOpsId: string | null;
+  assignedOpsName: string | null;
+  assignedOpsAt: string | null;
   lastMessage: ChatMessageDto | null;
   updatedAt: string;
   messageCount: number;
@@ -40,7 +43,7 @@ export interface ChatConversationDto {
 }
 
 export interface ChatRealtimeEvent {
-  type: 'chat.message' | 'chat.read';
+  type: 'chat.message' | 'chat.read' | 'chat.claim';
   message?: ChatMessageDto;
   conversation: ChatConversationDto;
 }

@@ -68,13 +68,16 @@ export function BagUnsealScreen(): React.JSX.Element {
   const scanCooldownRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const accessToken = session?.tokens.accessToken ?? null;
-  const employeeCode = session?.user.username ?? session?.user.id ?? null;
+  const employeeCode =
+    resolveCourierId(appEnv.courierId, session?.user.username) ||
+    session?.user.id ||
+    null;
   const employeeName = resolveCourierDisplayName({
     displayName: session?.user.displayName,
     username: session?.user.username,
-    courierId: session?.user.id,
+    courierId: employeeCode,
   });
-  const processingHubCode = session?.user.hubCodes?.[0] ?? null;
+  const processingHubCode = session?.user.hubCodes?.[0]?.trim().toUpperCase() ?? null;
   const normalizedBagCode = normalizeCode(bagCode);
   const hasValidBagCode = isValidBagCode(normalizedBagCode);
   const cameraIsReady = permission?.granted === true;

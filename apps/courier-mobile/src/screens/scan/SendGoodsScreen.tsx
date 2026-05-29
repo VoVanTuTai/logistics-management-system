@@ -31,7 +31,8 @@ import {
 import { ApiClientError } from '../../services/api/client';
 import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
-import { resolveCourierDisplayName } from '../../utils/courier';
+import { resolveCourierDisplayName, resolveCourierId } from '../../utils/courier';
+import { appEnv } from '../../utils/env';
 import { createIdempotencyKey } from '../../utils/idempotency';
 
 type SendItemType = 'BAG' | 'SHIPMENT';
@@ -121,13 +122,19 @@ export function SendGoodsScreen(): React.JSX.Element {
   const scanCooldownRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const accessToken = session?.tokens.accessToken ?? null;
-  const employeeCode = session?.user.username ?? session?.user.id ?? null;
+  const employeeCode =
+    resolveCourierId(appEnv.courierId, session?.user.username) ||
+    session?.user.id ||
+    null;
   const employeeName = resolveCourierDisplayName({
     displayName: session?.user.displayName,
     username: session?.user.username,
-    courierId: session?.user.id,
+    courierId: employeeCode,
   });
-  const employeeHubCode = session?.user.hubCodes?.[0] ?? vehicleInfo?.originHubCode ?? null;
+  const employeeHubCode =
+    session?.user.hubCodes?.[0]?.trim().toUpperCase() ??
+    vehicleInfo?.originHubCode?.trim().toUpperCase() ??
+    null;
   const actor = employeeCode;
   const cameraIsReady = permission?.granted === true;
   const hasVehicleInfo = Boolean(vehicleInfo);
@@ -149,7 +156,7 @@ export function SendGoodsScreen(): React.JSX.Element {
       const licensePlate =
         input.vehicle.licensePlate !== 'UNKNOWN' ? ` (${input.vehicle.licensePlate})` : '';
       
-      return `${typeLabel}: [${originHubCode}] -> [${destinationHubCode}] | Nhân viên: ${employeeName} | Mã NV: ${employeeCode} | Mã hub: ${employeeHubCode} | Xe: ${input.vehicle.vehicleCode}${licensePlate}${bagInfo}`;
+      return `${typeLabel}: [${originHubCode}] -> [${destinationHubCode}] | Nhân viên: ${employeeName} | Mã NV: ${employeeCode ?? 'N/A'} | Mã hub: ${employeeHubCode ?? 'N/A'} | Xe: ${input.vehicle.vehicleCode}${licensePlate}${bagInfo}`;
     },
     [employeeCode, employeeHubCode, employeeName],
   );

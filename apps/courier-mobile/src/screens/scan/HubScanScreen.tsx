@@ -26,6 +26,8 @@ import { parseHubScannedCode } from '../../features/scan/hub.scanner.adapter';
 import { useAppStore } from '../../store/appStore';
 import type { AppNavigatorParamList } from '../../navigation/types';
 import { shouldQueueOffline } from '../../services/api/client';
+import { buildHubScanAuditNote, resolveCourierId } from '../../utils/courier';
+import { appEnv } from '../../utils/env';
 import { createIdempotencyKey } from '../../utils/idempotency';
 import { CameraScannerModal } from '../../components/scan/CameraScannerModal';
 import { GoodsArrivalScreen } from './GoodsArrivalScreen';
@@ -49,6 +51,7 @@ function LegacyHubScanForm({ route }: Pick<Props, 'route'>): React.JSX.Element {
   const session = useAppStore((state) => state.session);
   const setGlobalError = useAppStore((state) => state.setGlobalError);
   const mutation = useHubScanMutation(session?.tokens.accessToken ?? null);
+  const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
   const [selectedMode, setSelectedMode] = React.useState<HubScanMode>(
     route.params.mode,
   );
@@ -118,7 +121,17 @@ function LegacyHubScanForm({ route }: Pick<Props, 'route'>): React.JSX.Element {
       shipmentCode: values.shipmentCode,
       locationCode: values.locationCode,
       manifestCode: values.manifestCode || null,
-      note: values.note || null,
+      note: buildHubScanAuditNote({
+        displayName: session?.user.displayName,
+        username: session?.user.username,
+        courierId,
+        hubCode: session?.user.hubCodes?.[0] ?? null,
+        mode: selectedMode,
+        shipmentCode: values.shipmentCode,
+        locationCode: values.locationCode,
+        manifestCode: values.manifestCode,
+        note: values.note,
+      }),
       actor: session?.user.username ?? null,
       occurredAt: new Date().toISOString(),
       idempotencyKey: resolvedIdempotencyKey,

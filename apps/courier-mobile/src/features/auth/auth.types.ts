@@ -9,6 +9,7 @@ export interface AuthenticatedUserDto {
   id: string;
   username: string;
   displayName?: string | null;
+  phone?: string | null;
   roles: string[];
   hubCodes?: string[];
   mobilePermissionActor?: CourierActor;

@@ -18,72 +18,14 @@ import { HomeHeader } from '../../components/home/HomeHeader';
 import { NotificationBanner } from '../../components/home/NotificationBanner';
 import { QuickStatsRow } from '../../components/home/QuickStatsRow';
 import { OverdueCard } from '../../components/home/OverdueCard';
-import { AppGrid, type HomeAppGridItem } from '../../components/home/AppGrid';
+import { AppGrid } from '../../components/home/AppGrid';
 import type { TaskDto, TaskStatus } from '../../features/tasks/tasks.types';
 import { useAssignedTasksQuery } from '../../features/tasks/tasks.queries';
 import type { AppNavigatorParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
 import { appEnv } from '../../utils/env';
 import { resolveCourierDisplayName, resolveCourierId } from '../../utils/courier';
-
-const appItems: HomeAppGridItem[] = [
-  {
-    id: 'pickup',
-    label: 'Nhận hàng',
-    iconName: 'cube-outline',
-    iconColor: '#1A6B4A',
-    iconBgColor: '#E6FAF1',
-  },
-  {
-    id: 'delivery',
-    label: 'Phát hàng',
-    iconName: 'paper-plane-outline',
-    iconColor: theme.colors.primary,
-    iconBgColor: theme.colors.infoSurface,
-  },
-  {
-    id: 'goods-arrival',
-    label: 'Hàng đến',
-    iconName: 'download-outline',
-    iconColor: theme.colors.primary,
-    iconBgColor: theme.colors.infoSurface,
-  },
-  {
-    id: 'bag-seal',
-    label: 'Đóng bao',
-    iconName: 'archive-outline',
-    iconColor: '#8A5A0A',
-    iconBgColor: '#FFF4DD',
-  },
-  {
-    id: 'vehicle-out',
-    label: 'Xe đi',
-    iconName: 'car-sport-outline',
-    iconColor: theme.colors.primary,
-    iconBgColor: theme.colors.infoSurface,
-  },
-  {
-    id: 'cod',
-    label: 'Tiền hàng COD',
-    iconName: 'wallet-outline',
-    iconColor: theme.colors.primary,
-    iconBgColor: theme.colors.infoSurface,
-  },
-  {
-    id: 'tracking',
-    label: 'Theo dõi đơn',
-    iconName: 'locate-outline',
-    iconColor: theme.colors.primary,
-    iconBgColor: theme.colors.infoSurface,
-  },
-  {
-    id: 'scan-issue',
-    label: 'Báo vấn đề',
-    iconName: 'alert-circle-outline',
-    iconColor: '#C25B12',
-    iconBgColor: '#FFEDD5',
-  },
-];
+import { getQuickAppItems, navigateToQuickApp } from '../../features/quick-apps/quickApps';
 
 const WAITING_TASK_STATUSES: ReadonlySet<TaskStatus> = new Set(['CREATED', 'ASSIGNED']);
 
@@ -113,6 +55,7 @@ export function HomeScreen(): React.JSX.Element {
   const navigation =
     useNavigation<NativeStackNavigationProp<AppNavigatorParamList>>();
   const session = useAppStore((state) => state.session);
+  const quickAppIds = useAppStore((state) => state.quickAppIds);
   const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
   const tasksQuery = useAssignedTasksQuery({
     accessToken: session?.tokens.accessToken ?? null,
@@ -134,6 +77,7 @@ export function HomeScreen(): React.JSX.Element {
   const pickupCount = waitingPickupTasks.length;
   const deliveryCount = waitingDeliveryTasks.length;
   const processingCount = tasks.filter((task) => task.status === 'ASSIGNED').length;
+  const quickAppItems = useMemo(() => getQuickAppItems(quickAppIds), [quickAppIds]);
 
   const displayName = resolveCourierDisplayName({
     displayName: session?.user.displayName,
@@ -220,46 +164,10 @@ export function HomeScreen(): React.JSX.Element {
           {/* Ẩn block "nhiệm vụ gần đây" theo yêu cầu */}
 
           <AppGrid
-            items={appItems}
+            title="Ứng dụng tùy chỉnh"
+            items={quickAppItems}
             onPressItem={(item) => {
-              if (item.id === 'pickup') {
-                navigation.navigate('PickupScan', {});
-                return;
-              }
-
-              if (item.id === 'delivery') {
-                navigation.navigate('DeliveryDispatch');
-                return;
-              }
-
-              if (item.id === 'goods-arrival') {
-                navigation.navigate('GoodsArrival');
-                return;
-              }
-
-              if (item.id === 'bag-seal') {
-                navigation.navigate('BagSeal');
-                return;
-              }
-
-              if (item.id === 'vehicle-out') {
-                navigation.navigate('VehicleOutbound');
-                return;
-              }
-
-              if (item.id === 'cod') {
-                navigation.navigate('CodStats');
-                return;
-              }
-
-              if (item.id === 'tracking') {
-                navigation.navigate('TrackingLookup');
-                return;
-              }
-
-              if (item.id === 'scan-issue') {
-                navigation.navigate('ScanIssue');
-              }
+              navigateToQuickApp(item.id, navigation);
             }}
           />
         </ScrollView>

@@ -20,10 +20,20 @@ export default function App(): React.JSX.Element {
   const globalLoadingMessage = useAppStore((state) => state.globalLoadingMessage);
   const globalErrorMessage = useAppStore((state) => state.globalErrorMessage);
   const clearGlobalError = useAppStore((state) => state.clearGlobalError);
+  const hydrateQuickApps = useAppStore((state) => state.hydrateQuickApps);
+  const hydrateCourierProfile = useAppStore((state) => state.hydrateCourierProfile);
 
   useEffect(() => {
     void restoreSession();
   }, [restoreSession]);
+
+  useEffect(() => {
+    void hydrateQuickApps();
+  }, [hydrateQuickApps]);
+
+  useEffect(() => {
+    void hydrateCourierProfile();
+  }, [hydrateCourierProfile]);
 
   return (
     <AppProviders>
