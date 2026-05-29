@@ -271,6 +271,8 @@ function shouldRefreshAccessToken(session: MerchantSession): boolean {
 }
 
 function mapLoginResponseToMerchantSession(result: LoginResponse): MerchantSession {
+  assertMerchantUser(result.user);
+
   return {
     user: result.user,
     accessToken: result.tokens.accessToken,
@@ -278,6 +280,16 @@ function mapLoginResponseToMerchantSession(result: LoginResponse): MerchantSessi
     accessTokenExpiresAt: result.tokens.accessTokenExpiresAt,
     refreshTokenExpiresAt: result.tokens.refreshTokenExpiresAt,
   };
+}
+
+function assertMerchantUser(user: LoginResponse['user']): void {
+  const isMerchant = user.roles.some((role) => role.trim().toUpperCase() === 'MERCHANT');
+
+  if (!isMerchant) {
+    throw new Error(
+      'Tài khoản không thuộc nhóm quyền MERCHANT. Vui lòng đăng nhập đúng cổng hệ thống.',
+    );
+  }
 }
 
 async function refreshMerchantSession(
@@ -290,7 +302,10 @@ async function refreshMerchantSession(
   const result = await request<LoginResponse>('/merchant/auth/auth/refresh', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refreshToken: session.refreshToken }),
+    body: JSON.stringify({
+      refreshToken: session.refreshToken,
+      roleGroup: 'MERCHANT',
+    }),
   });
 
   return mapLoginResponseToMerchantSession(result);
@@ -1651,6 +1666,7 @@ function MerchantApp(): React.JSX.Element {
           if (!introspect.active || !introspect.user) {
             nextSession = await refreshMerchantSession(nextSession);
           } else {
+            assertMerchantUser(introspect.user);
             nextSession = {
               ...nextSession,
               user: introspect.user,
@@ -1841,7 +1857,11 @@ function MerchantApp(): React.JSX.Element {
       const result = await request<LoginResponse>('/merchant/auth/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: loginUsername.trim(), password: loginPassword }),
+        body: JSON.stringify({
+          username: loginUsername.trim(),
+          password: loginPassword,
+          roleGroup: 'MERCHANT',
+        }),
       });
       const nextSession = mapLoginResponseToMerchantSession(result);
       setSession(nextSession);

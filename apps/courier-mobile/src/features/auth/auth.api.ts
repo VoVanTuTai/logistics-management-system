@@ -19,12 +19,18 @@ export const authApi = {
   login: (payload: LoginFormValues): Promise<LoginResultDto> =>
     courierApiClient.request(courierEndpoints.auth.login, {
       method: 'POST',
-      body: payload,
+      body: {
+        ...payload,
+        roleGroup: 'SHIPPER',
+      },
     }),
   refresh: (payload: RefreshSessionInputDto): Promise<LoginResultDto> =>
     courierApiClient.request(courierEndpoints.auth.refresh, {
       method: 'POST',
-      body: payload,
+      body: {
+        ...payload,
+        roleGroup: 'SHIPPER',
+      },
     }),
   logout: (
     accessToken: string | null,

@@ -1,4 +1,5 @@
 import type { AuthenticatedUser } from './user-account.entity';
+import type { UserRoleGroup } from './user-account.entity';
 
 export type SessionStatus = 'ACTIVE' | 'REVOKED';
 
@@ -31,10 +32,12 @@ export interface AuthTokens {
 export interface LoginInput {
   username: string;
   password: string;
+  roleGroup?: UserRoleGroup;
 }
 
 export interface RefreshSessionInput {
   refreshToken: string;
+  roleGroup?: UserRoleGroup;
 }
 
 export interface LogoutInput {

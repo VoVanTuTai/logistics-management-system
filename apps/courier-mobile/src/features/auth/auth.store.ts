@@ -26,6 +26,7 @@ interface AuthStoreState {
 }
 
 const ACCESS_TOKEN_REFRESH_SKEW_MS = 60_000;
+const COURIER_ALLOWED_ROLES = new Set(['COURIER']);
 
 let refreshSessionPromise: Promise<LoginResultDto> | null = null;
 
@@ -73,6 +74,18 @@ async function withEffectiveMobilePermissions(
   }
 }
 
+function assertCourierSession(session: LoginResultDto): void {
+  const isCourier = session.user.roles.some((role) =>
+    COURIER_ALLOWED_ROLES.has(role.trim().toUpperCase()),
+  );
+
+  if (!isCourier) {
+    throw new Error(
+      'Tai khoan khong thuoc nhom quyen COURIER. Vui long dang nhap dung ung dung.',
+    );
+  }
+}
+
 export const useAuthStore = create<AuthStoreState>((set, get) => ({
   status: 'booting',
   session: null,
@@ -92,6 +105,7 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
         return;
       }
 
+      assertCourierSession(storedSession);
       const sessionWithPermissions =
         await withEffectiveMobilePermissions(storedSession);
       await persistAuthSession(sessionWithPermissions);
@@ -155,6 +169,10 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
     try {
       refreshSessionPromise ??= authApi
         .refresh({ refreshToken: currentSession.tokens.refreshToken })
+        .then((refreshedSession) => {
+          assertCourierSession(refreshedSession);
+          return refreshedSession;
+        })
         .then(withEffectiveMobilePermissions)
         .finally(() => {
           refreshSessionPromise = null;
@@ -194,6 +212,7 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
       const loginResult = await withEffectiveMobilePermissions(
         await authApi.login(credentials),
       );
+      assertCourierSession(loginResult);
       await persistAuthSession(loginResult);
       useAppStore.getState().setSession(loginResult);
       set({
