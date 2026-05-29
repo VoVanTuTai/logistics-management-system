@@ -62,8 +62,13 @@ const configs: Record<ShipmentMonitorMode, ShipmentMonitorConfig> = {
     title: 'Giám sát hàng gửi',
     description:
       'Theo dõi hàng nhân viên Ops hoặc courier đã nhận để chuẩn bị gửi đi cho khách hàng.',
-    statusQuery: 'PICKUP_COMPLETED',
-    defaultStatuses: ['PICKUP_COMPLETED'],
+    defaultStatuses: [
+      'PICKUP_COMPLETED',
+      'MANIFEST_RECEIVED',
+      'MANIFEST_UNSEALED',
+      'SCAN_INBOUND',
+      'INVENTORY_CHECK',
+    ],
     keywordLabel: 'Mã vận đơn / người gửi / người nhận / hub đích',
     hubLabel: 'BC gửi',
     oppositeHubLabel: 'BC đích',
