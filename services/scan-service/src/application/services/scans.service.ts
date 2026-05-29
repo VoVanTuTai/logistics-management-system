@@ -104,7 +104,7 @@ export class ScansService {
       throw new BadRequestException('occurredAt must be a valid ISO date.');
     }
 
-    await this.assertShipmentNotLocked(input.shipmentCode);
+    await this.assertShipmentNotLocked(input.shipmentCode, scanType, input.note);
     const previousLocation = await this.currentLocationRepository.findByShipmentCode(
       input.shipmentCode,
     );
@@ -221,7 +221,11 @@ export class ScansService {
     }
   }
 
-  private async assertShipmentNotLocked(shipmentCode: string): Promise<void> {
+  private async assertShipmentNotLocked(
+    shipmentCode: string,
+    scanType: ScanType,
+    note?: string | null,
+  ): Promise<void> {
     const shipmentServiceUrl =
       process.env.SHIPMENT_SERVICE_URL ?? 'http://localhost:3002';
     const response = await fetch(
@@ -237,7 +241,7 @@ export class ScansService {
       currentStatus?: string;
     };
 
-    if (shipment.isLocked) {
+    if (shipment.isLocked && !isInventoryCheckScan(scanType, note)) {
       throw new BadRequestException(
         `Block: Shipment "${shipmentCode}" is locked by issue workflow (${shipment.currentStatus ?? 'UNKNOWN'}).`,
       );
@@ -305,4 +309,19 @@ export class ScansService {
       },
     };
   }
+}
+
+function isInventoryCheckScan(
+  scanType: ScanType,
+  note?: string | null,
+): boolean {
+  if (scanType !== 'INBOUND' || typeof note !== 'string') {
+    return false;
+  }
+
+  const trimmedNote = note.trim();
+  return (
+    trimmedNote.startsWith('INVENTORY_CHECK') ||
+    trimmedNote.startsWith('Kiểm tồn kho')
+  );
 }

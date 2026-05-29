@@ -310,6 +310,28 @@ export class ShipmentsService {
       return updatedShipment;
     }
 
+    if (nextStatus === 'INVENTORY_CHECK') {
+      const updatedShipment = movementMetadata
+        ? await this.shipmentRepository.updateCurrentStatusMetadataAndLock(
+            normalizedCode,
+            nextStatus,
+            movementMetadata,
+            false,
+          )
+        : await this.shipmentRepository.updateCurrentStatusAndLock(
+            normalizedCode,
+            nextStatus,
+            false,
+          );
+
+      await this.marketplaceWebhookSenderService.notifyStatusChanged(
+        updatedShipment,
+        eventType,
+      );
+
+      return updatedShipment;
+    }
+
     const updatedShipment = movementMetadata
       ? await this.shipmentRepository.updateCurrentStatusMetadataAndLock(
           normalizedCode,
