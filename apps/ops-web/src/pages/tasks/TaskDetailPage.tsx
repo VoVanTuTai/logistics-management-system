@@ -33,7 +33,7 @@ export function TaskDetailPage(): React.JSX.Element {
     <section>
       <h2>Chi tiết đơn chuyển</h2>
       <p>
-        <Link to={routePaths.tasks}>Quay lại màn chuyển đơn</Link>
+        <Link to={routePaths.operationsPlatformPickupDispatch}>Quay lại điều phối vận đơn</Link>
       </p>
 
       <p>Mã tác vụ: {detailQuery.data.taskCode}</p>

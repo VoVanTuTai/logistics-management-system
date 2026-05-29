@@ -11,6 +11,8 @@ export const routePaths = {
   groupIntegrationServices: '/app/function-groups/integration-services',
   operationsPlatformPickupDispatch:
     '/app/function-groups/operations-platform/dieu-phoi-lay-hang',
+  operationsPlatformDeliveryDispatch:
+    '/app/function-groups/operations-platform/dieu-phoi-phat-hang',
   groupBranchBusiness: '/app/function-groups/branch-business',
   branchBusinessOrderManagementRoot:
     '/app/function-groups/branch-business/quan-ly-van-don',
@@ -91,6 +93,8 @@ export const routePaths = {
     `/app/function-groups/operations-platform/chat-courier?courierId=${encodeURIComponent(courierId)}`,
   operationsPlatformPickupDispatchLeaf:
     'function-groups/operations-platform/dieu-phoi-lay-hang',
+  operationsPlatformDeliveryDispatchLeaf:
+    'function-groups/operations-platform/dieu-phoi-phat-hang',
   returnBlockRoot: '/app/function-groups/service-quality/chuyen-hoan',
   returnBlockRegistration:
     '/app/function-groups/service-quality/chuyen-hoan/dang-ky-chuyen-hoan',
@@ -251,7 +255,6 @@ export const routePaths = {
 export const OPS_CORE_ROUTE_PATHS = [
   routePaths.dashboard,
   routePaths.shipments,
-  routePaths.tasks,
   routePaths.opsChat,
 
   routePaths.scans,
@@ -276,17 +279,14 @@ export const OPS_FULL_MODULE_ROUTE_PATHS = [
   routePaths.groupSmartDevices,
   routePaths.groupPlanningPlatform,
   routePaths.operationsPlatformPickupDispatch,
-  routePaths.branchBusinessOrderManagementRoot,
+  routePaths.operationsPlatformDeliveryDispatch,
   routePaths.branchBusinessFinanceSettlementRoot,
   routePaths.branchBusinessLocalOrdersRoot,
   routePaths.branchBusinessLocalOverview,
   routePaths.branchBusinessLocalOrders,
-  routePaths.branchBusinessCourierHandoff,
   routePaths.branchBusinessBranchInventory,
   routePaths.branchBusinessShiftClosing,
   routePaths.branchBusinessOrderCreate,
-  routePaths.branchBusinessOrderOutbound,
-  routePaths.branchBusinessOrderDelivery,
   routePaths.branchBusinessFinanceCod,
   routePaths.branchBusinessFinanceReconcile,
   routePaths.serviceQualityIntegratedLookup,

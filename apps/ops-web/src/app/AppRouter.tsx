@@ -46,10 +46,6 @@ const BranchBusinessOrderCreatePage = lazyRoutePage(
   () => import('../pages/function-groups/branch-business/order-create/BranchBusinessOrderCreatePage'),
   'BranchBusinessOrderCreatePage',
 );
-const BranchDeliveryOrderManagementPage = lazyRoutePage(
-  () => import('../pages/function-groups/branch-business/order-delivery/BranchDeliveryOrderManagementPage'),
-  'BranchDeliveryOrderManagementPage',
-);
 const BranchFinanceCodSettlementPage = lazyRoutePage(
   () => import('../pages/function-groups/branch-business/finance-cod/BranchFinanceCodSettlementPage'),
   'BranchFinanceCodSettlementPage',
@@ -61,10 +57,6 @@ const BranchFinanceReconcilePage = lazyRoutePage(
 const BranchInventoryPage = lazyRoutePage(
   () => import('../pages/function-groups/branch-business/inventory/BranchInventoryPage'),
   'BranchInventoryPage',
-);
-const BranchOutboundOrderManagementPage = lazyRoutePage(
-  () => import('../pages/function-groups/branch-business/order-outbound/BranchOutboundOrderManagementPage'),
-  'BranchOutboundOrderManagementPage',
 );
 const BranchShiftClosingPage = lazyRoutePage(
   () => import('../pages/function-groups/branch-business/shift-closing/BranchShiftClosingPage'),
@@ -199,10 +191,6 @@ const ShipmentListPage = lazyRoutePage(
   () => import('../pages/shipments/ShipmentListPage'),
   'ShipmentListPage',
 );
-const TaskAssignmentPage = lazyRoutePage(
-  () => import('../pages/tasks/TaskAssignmentPage'),
-  'TaskAssignmentPage',
-);
 const TaskDetailPage = lazyRoutePage(
   () => import('../pages/tasks/TaskDetailPage'),
   'TaskDetailPage',
@@ -277,6 +265,7 @@ type SidebarIconName =
   | 'metrics_deadline'
   | 'metrics_planning'
   | 'metrics_action'
+  | 'shipment_dispatch'
   | 'branch_local_orders'
   | 'branch_order_management'
   | 'branch_finance_settlement'
@@ -290,8 +279,8 @@ type SidebarPanelKind =
   | 'metrics_deadline'
   | 'metrics_planning'
   | 'metrics_action'
+  | 'shipment_dispatch'
   | 'branch_local_orders'
-  | 'branch_order_management'
   | 'branch_finance_settlement'
   | 'linehaul_transport';
 
@@ -541,14 +530,14 @@ function DashboardLayout(): React.JSX.Element {
         {
           label: 'Nền tảng điều hành',
           to: routePaths.shipments,
-          isActive:
-            pathMatches(location.pathname, routePaths.shipments) ||
-            pathMatches(location.pathname, routePaths.tasks) ||
+            isActive:
+              pathMatches(location.pathname, routePaths.shipments) ||
             pathMatches(location.pathname, routePaths.opsChat) ||
             pathMatches(location.pathname, routePaths.scans) ||
             pathMatches(location.pathname, routePaths.tracking) ||
             isOperationsPlatformSection ||
             pathMatches(location.pathname, routePaths.operationsPlatformPickupDispatch) ||
+            pathMatches(location.pathname, routePaths.operationsPlatformDeliveryDispatch) ||
             pathMatches(location.pathname, routePaths.monitorDataRoot),
         },
 
@@ -580,12 +569,6 @@ function DashboardLayout(): React.JSX.Element {
           isActive: pathMatches(location.pathname, routePaths.shipments),
         },
         {
-          label: 'Tác vụ điều phối',
-          to: routePaths.tasks,
-          isActive: pathMatches(location.pathname, routePaths.tasks),
-        },
-
-        {
           label: 'Tracking',
           to: routePaths.tracking,
           isActive: pathMatches(location.pathname, routePaths.tracking),
@@ -595,18 +578,16 @@ function DashboardLayout(): React.JSX.Element {
   const operationsSidebarItems: SidebarItem[] = enableFullOpsModules
     ? [
         { label: 'Vận đơn', icon: 'branch_order_management', to: routePaths.shipments },
-        { label: 'Tác vụ điều phối', icon: 'metrics_action', to: routePaths.tasks },
         { label: 'Chat courier', icon: 'chat', to: routePaths.operationsPlatformChat },
-        { label: 'Điều phối lấy hàng', icon: 'metrics_action', to: routePaths.operationsPlatformPickupDispatch },
+        { label: 'Điều phối vận đơn', icon: 'shipment_dispatch', kind: 'shipment_dispatch' },
         { label: 'Quét tại hub', icon: 'tracking_lookup', to: routePaths.scans },
         { label: 'Tra cứu hành trình', icon: 'tracking_lookup', to: routePaths.tracking },
         { label: 'Giám sát dữ liệu', icon: 'monitor_data', kind: 'monitor_data' },
       ]
     : [
         { label: 'Vận đơn', icon: 'branch_order_management', to: routePaths.shipments },
-        { label: 'Tác vụ điều phối', icon: 'metrics_action', to: routePaths.tasks },
         { label: 'Chat courier', icon: 'chat', to: routePaths.operationsPlatformChat },
-        { label: 'Điều phối lấy hàng', icon: 'metrics_action', to: routePaths.operationsPlatformPickupDispatch },
+        { label: 'Điều phối vận đơn', icon: 'shipment_dispatch', kind: 'shipment_dispatch' },
         { label: 'Quét tại hub', icon: 'tracking_lookup', to: routePaths.scans },
         { label: 'Tra cứu hành trình', icon: 'tracking_lookup', to: routePaths.tracking },
   ];
@@ -629,11 +610,6 @@ function DashboardLayout(): React.JSX.Element {
       label: 'Thao tác bưu cục',
       icon: 'branch_local_orders',
       kind: 'branch_local_orders',
-    },
-    {
-      label: 'Quản lý vận đơn',
-      icon: 'branch_order_management',
-      kind: 'branch_order_management',
     },
     {
       label: 'Quyết toán tài chính',
@@ -677,6 +653,10 @@ function DashboardLayout(): React.JSX.Element {
     { label: 'Đăng ký chuyển hoàn', to: routePaths.returnBlockRegistration },
     { label: 'Quản lý chuyển hoàn', to: routePaths.returnBlockManagement },
   ] as const;
+  const shipmentDispatchChildItems = [
+    { label: 'Điều phối lấy hàng', to: routePaths.operationsPlatformPickupDispatch },
+    { label: 'Điều phối phát hàng', to: routePaths.operationsPlatformDeliveryDispatch },
+  ] as const;
   const serviceQualityProactiveChildItems = [
     { label: 'Bảng cảnh báo', to: routePaths.serviceQualityProactiveActionBoard },
     { label: 'Giám sát đơn nhận', to: routePaths.serviceQualityProactiveInbound },
@@ -702,15 +682,10 @@ function DashboardLayout(): React.JSX.Element {
   const operationsMetricsActionChildItems = [
     { label: 'Bàn điều phối thao tác', to: routePaths.opsMetricsActionExecutionBoard },
   ] as const;
-  const branchBusinessOrderManagementChildItems = [
-    { label: 'Quản lý vận đơn gửi', to: routePaths.branchBusinessOrderOutbound },
-    { label: 'Quản lý vận đơn phát', to: routePaths.branchBusinessOrderDelivery },
-  ] as const;
   const branchBusinessLocalOrdersChildItems = [
     { label: 'Tổng quan đơn tại bưu cục', to: routePaths.branchBusinessLocalOverview },
     { label: 'Tạo vận đơn tại quầy', to: routePaths.branchBusinessOrderCreate },
     { label: 'Xử lý đơn tại bưu cục', to: routePaths.branchBusinessLocalOrders },
-    { label: 'Bàn giao phát', to: routePaths.branchBusinessCourierHandoff },
     { label: 'Chốt ca', to: routePaths.branchBusinessShiftClosing },
   ] as const;
   const branchBusinessFinanceSettlementChildItems = [
@@ -721,6 +696,7 @@ function DashboardLayout(): React.JSX.Element {
 
   const panelItemsMap: Record<SidebarPanelKind, ReadonlyArray<{ label: string; to: string }>> = {
     linehaul_transport: linehaulChildItems,
+    shipment_dispatch: shipmentDispatchChildItems,
     return_block: returnBlockChildItems,
     monitor_data: monitorDataChildItems,
     service_proactive: serviceQualityProactiveChildItems,
@@ -730,12 +706,12 @@ function DashboardLayout(): React.JSX.Element {
     metrics_action: operationsMetricsActionChildItems,
 
     branch_local_orders: branchBusinessLocalOrdersChildItems,
-    branch_order_management: branchBusinessOrderManagementChildItems,
     branch_finance_settlement: branchBusinessFinanceSettlementChildItems,
   };
 
   const panelTitleMap: Record<SidebarPanelKind, string> = {
     linehaul_transport: 'Vận chuyển tuyến nhánh',
+    shipment_dispatch: 'Điều phối vận đơn',
     return_block: 'Chuyển hoàn',
     monitor_data: 'Giám sát dữ liệu',
     service_proactive: 'Giám sát chủ động',
@@ -745,7 +721,6 @@ function DashboardLayout(): React.JSX.Element {
     metrics_action: 'Thao tác',
 
     branch_local_orders: 'Thao tác bưu cục',
-    branch_order_management: 'Quản lý vận đơn',
     branch_finance_settlement: 'Quyết toán tài chính',
   };
 
@@ -758,6 +733,9 @@ function DashboardLayout(): React.JSX.Element {
   const isReturnBlockRoute =
     pathMatches(location.pathname, routePaths.returnBlockRoot) ||
     returnBlockChildItems.some((item) => pathMatches(location.pathname, item.to));
+  const isShipmentDispatchRoute = shipmentDispatchChildItems.some((item) =>
+    pathMatches(location.pathname, item.to),
+  );
   const isServiceQualityProactiveRoute = serviceQualityProactiveChildItems.some((item) =>
     pathMatches(location.pathname, item.to),
   );
@@ -781,9 +759,6 @@ function DashboardLayout(): React.JSX.Element {
   const isOpsMetricsActionRoute = operationsMetricsActionChildItems.some((item) =>
     pathMatches(location.pathname, item.to),
   );
-  const isBranchOrderManagementRoute = branchBusinessOrderManagementChildItems.some((item) =>
-    pathMatches(location.pathname, item.to),
-  );
   const isBranchFinanceSettlementRoute = branchBusinessFinanceSettlementChildItems.some((item) =>
     pathMatches(location.pathname, item.to),
   );
@@ -796,6 +771,8 @@ function DashboardLayout(): React.JSX.Element {
     ? 'linehaul_transport'
     : isReturnBlockRoute
     ? 'return_block'
+    : isShipmentDispatchRoute
+    ? 'shipment_dispatch'
     : isMonitorDataRoute
     ? 'monitor_data'
     : isServiceQualityProactiveRoute
@@ -808,8 +785,6 @@ function DashboardLayout(): React.JSX.Element {
     ? 'metrics_planning'
     : isOpsMetricsActionRoute
     ? 'metrics_action'
-    : isBranchOrderManagementRoute
-    ? 'branch_order_management'
     : isBranchFinanceSettlementRoute || isFinanceSettlementSection
     ? 'branch_finance_settlement'
     : isBranchLocalOrdersRoute
@@ -835,10 +810,10 @@ function DashboardLayout(): React.JSX.Element {
     : isOperationsMetricsSection
     ? ['metrics_abnormal', 'metrics_deadline', 'metrics_planning', 'metrics_action']
     : isBranchBusinessSection
-    ? ['branch_local_orders', 'branch_order_management', 'branch_finance_settlement']
+    ? ['branch_local_orders', 'branch_finance_settlement']
     : isCapabilityPlatformSection
     ? []
-    : ['monitor_data'];
+    : ['shipment_dispatch', 'monitor_data'];
 
   const activeSidebarPanelInSection =
     activeSidebarPanel &&
@@ -879,7 +854,6 @@ function DashboardLayout(): React.JSX.Element {
     returnBlockChildItems.find((item) => pathMatches(location.pathname, item.to)) ?? null;
   const branchBusinessAllChildItems = [
     ...branchBusinessLocalOrdersChildItems,
-    ...branchBusinessOrderManagementChildItems,
     ...branchBusinessFinanceSettlementChildItems,
   ];
   const activeBranchBusinessItem =
@@ -891,12 +865,14 @@ function DashboardLayout(): React.JSX.Element {
     ? 'Tra cứu hành trình'
     : pathMatches(location.pathname, routePaths.shipments)
     ? 'Vận đơn'
-    : pathMatches(location.pathname, routePaths.tasks)
-    ? 'Tác vụ điều phối'
     : pathMatches(location.pathname, routePaths.scans)
     ? 'Quét hub'
     : pathMatches(location.pathname, routePaths.ndr)
     ? 'NDR'
+    : pathMatches(location.pathname, routePaths.operationsPlatformPickupDispatch)
+    ? 'Điều phối lấy hàng'
+    : pathMatches(location.pathname, routePaths.operationsPlatformDeliveryDispatch)
+    ? 'Điều phối phát hàng'
     : isMonitorDataRoute
     ? 'Giám sát dữ liệu'
     : activeLinehaulItem
@@ -1118,6 +1094,8 @@ function DashboardLayout(): React.JSX.Element {
                 const isActive =
                   item.kind === 'return_block'
                     ? isReturnBlockRoute
+                    : item.kind === 'shipment_dispatch'
+                    ? isShipmentDispatchRoute
                     : item.kind === 'monitor_data'
                     ? isMonitorDataRoute
                     : item.kind === 'service_proactive'
@@ -1130,8 +1108,6 @@ function DashboardLayout(): React.JSX.Element {
                     ? isOpsMetricsPlanningRoute
                     : item.kind === 'metrics_action'
                     ? isOpsMetricsActionRoute
-                    : item.kind === 'branch_order_management'
-                    ? isBranchOrderManagementRoute
                     : item.kind === 'branch_finance_settlement'
                     ? isBranchFinanceSettlementRoute
                     : item.kind === 'branch_local_orders'
@@ -1391,6 +1367,10 @@ export function AppRouter(): React.JSX.Element {
               element={opsModuleRoute('Điều phối lấy hàng', <CustomerOrderDispatchPage />)}
             />
             <Route
+              path={routePaths.operationsPlatformDeliveryDispatchLeaf}
+              element={opsModuleRoute('Điều phối phát hàng', <BranchDeliveryDispatchPage />)}
+            />
+            <Route
               path={routePaths.groupBranchBusinessLeaf}
               element={<Navigate to={routePaths.branchBusinessLocalOverview} replace />}
             />
@@ -1407,7 +1387,7 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.branchBusinessCourierHandoffLeaf}
-              element={opsModuleRoute('Bàn giao phát', <BranchDeliveryDispatchPage />)}
+              element={<Navigate to={routePaths.operationsPlatformDeliveryDispatch} replace />}
             />
             <Route
               path={routePaths.branchBusinessBranchInventoryLeaf}
@@ -1423,11 +1403,11 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.branchBusinessOrderOutboundLeaf}
-              element={opsModuleRoute('Quản lý vận đơn gửi', <BranchOutboundOrderManagementPage />)}
+              element={<Navigate to={routePaths.branchBusinessLocalOverview} replace />}
             />
             <Route
               path={routePaths.branchBusinessOrderDeliveryLeaf}
-              element={opsModuleRoute('Quản lý vận đơn phát', <BranchDeliveryOrderManagementPage />)}
+              element={<Navigate to={routePaths.branchBusinessLocalOverview} replace />}
             />
             <Route
               path={routePaths.branchBusinessFinanceCodLeaf}
@@ -1616,7 +1596,10 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route path={routePaths.shipmentsLeaf} element={lazyRoute(<ShipmentListPage />)} />
             <Route path={routePaths.shipmentDetailLeaf} element={lazyRoute(<ShipmentDetailPage />)} />
-            <Route path={routePaths.tasksLeaf} element={lazyRoute(<TaskAssignmentPage />)} />
+            <Route
+              path={routePaths.tasksLeaf}
+              element={<Navigate to={routePaths.operationsPlatformPickupDispatch} replace />}
+            />
             <Route path={routePaths.taskDetailLeaf} element={lazyRoute(<TaskDetailPage />)} />
             <Route
               path={routePaths.opsChatLeaf}

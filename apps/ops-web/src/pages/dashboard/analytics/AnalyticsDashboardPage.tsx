@@ -183,7 +183,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
       value: activeDelivery.length,
       accent: 'info',
       description: 'Theo dõi các vận đơn đang ở bước phát hàng.',
-      to: routePaths.branchBusinessOrderDelivery,
+      to: routePaths.shipments,
     },
     {
       label: 'Đã giao thành công',

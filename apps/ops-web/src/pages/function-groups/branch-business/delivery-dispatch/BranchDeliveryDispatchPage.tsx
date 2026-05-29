@@ -548,9 +548,9 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
     <section className="ops-branch-delivery">
       <header className="ops-branch-delivery__header">
         <div>
-          <small>BRANCH_DELIVERY_DISPATCH</small>
-          <h2>Bàn giao phát</h2>
-          <p>Dữ liệu lấy từ shipment-service và dispatch-service, dùng để bàn giao đơn thật sang app courier.</p>
+          <small>OPERATIONS_DELIVERY_DISPATCH</small>
+          <h2>Điều phối phát hàng</h2>
+          <p>Dữ liệu lấy từ shipment-service và dispatch-service, dùng để điều phối đơn thật sang app courier.</p>
         </div>
         <div className="ops-branch-delivery__summary">
           <article>
