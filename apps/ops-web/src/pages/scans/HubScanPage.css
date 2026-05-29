@@ -36,19 +36,19 @@
 }
 
 .hub-scan-toast--success {
-  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+  background: #ecfdf5;
   border: 1px solid #6ee7b7;
   color: #065f46;
 }
 
 .hub-scan-toast--error {
-  background: linear-gradient(135deg, #fef2f2, #fee2e2);
+  background: #fef2f2;
   border: 1px solid #fca5a5;
   color: #991b1b;
 }
 
 .hub-scan-toast--info {
-  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  background: #eff6ff;
   border: 1px solid #93c5fd;
   color: var(--ops-primary-dark);
 }
@@ -113,7 +113,7 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 2rem;
-  background: linear-gradient(135deg, #1e293b, #0f172a);
+  background: #102548;
   border-radius: 14px;
   padding: 1.5rem 2rem;
   color: #fff;
@@ -260,7 +260,7 @@
 
 .hub-scan-type-btn--active {
   border-color: var(--ops-primary);
-  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  background: var(--ops-primary-soft);
   color: var(--ops-primary);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
@@ -339,7 +339,7 @@
   padding: 10px 24px;
   border: none;
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--ops-primary), var(--ops-primary));
+  background: var(--ops-primary);
   color: #fff;
   font-size: 0.925rem;
   font-weight: 700;
@@ -350,7 +350,7 @@
 }
 
 .hub-scan-submit-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, var(--ops-primary), var(--ops-primary-dark));
+  background: var(--ops-primary-dark);
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
   transform: translateY(-1px);
 }

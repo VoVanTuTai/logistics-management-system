@@ -1158,7 +1158,7 @@
 }
 
 .ops-hint-card {
-  background: linear-gradient(145deg, #f8fafc, #f1f5f9);
+  background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 1.5rem;
@@ -1296,19 +1296,19 @@
 }
 
 .lh-toast--success {
-  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+  background: #ecfdf5;
   border: 1px solid #6ee7b7;
   color: #065f46;
 }
 
 .lh-toast--error {
-  background: linear-gradient(135deg, #fef2f2, #fee2e2);
+  background: #fef2f2;
   border: 1px solid #fca5a5;
   color: #991b1b;
 }
 
 .lh-toast--info {
-  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  background: #eff6ff;
   border: 1px solid #93c5fd;
   color: var(--ops-primary-dark);
 }

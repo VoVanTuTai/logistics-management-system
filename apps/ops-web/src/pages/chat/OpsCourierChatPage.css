@@ -164,7 +164,7 @@
   flex-direction: column;
   gap: 10px;
   padding: 20px;
-  background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+  background: #f7fbff;
 }
 
 .ops-chat__empty {

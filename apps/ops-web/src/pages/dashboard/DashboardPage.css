@@ -178,12 +178,12 @@
   border: 1px solid #d7e3f7;
   border-radius: 16px;
   background: #f4f8fd;
-  padding: 12px;
+  padding: 10px;
   min-height: 100%;
 }
 
 .ops-dashboard__section-header {
-  margin: 0 2px 12px;
+  margin: 0 2px 8px;
 }
 
 .ops-dashboard__section-header h3 {
@@ -196,12 +196,12 @@
 .ops-menu-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
 .ops-menu-grid--featured-layout {
-  grid-template-columns: minmax(240px, 1.18fr) repeat(2, minmax(150px, 1fr));
-  grid-template-rows: repeat(2, minmax(132px, 1fr));
+  grid-template-columns: minmax(260px, 1.2fr) repeat(2, minmax(160px, 1fr));
+  grid-template-rows: repeat(2, minmax(150px, 1fr));
   align-items: stretch;
 }
 
@@ -217,8 +217,8 @@
   justify-items: center;
   align-content: center;
   text-align: center;
-  gap: 8px;
-  min-height: 132px;
+  gap: 10px;
+  min-height: 150px;
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease,
@@ -229,12 +229,10 @@
 .ops-menu-tile--featured {
   --ops-menu-accent: var(--ops-primary);
   grid-row: span 2;
-  background:
-    linear-gradient(135deg, rgba(0, 82, 204, 0.1), rgba(43, 111, 227, 0.14)),
-    #ffffff;
+  background: var(--ops-primary-soft);
   border-color: #c7d7ff;
   padding: 22px 16px;
-  min-height: 274px;
+  min-height: 308px;
 }
 
 .ops-menu-tile:hover {
@@ -247,7 +245,7 @@
 
 .ops-menu-tile strong {
   max-width: 100%;
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.25;
   overflow-wrap: anywhere;
 }
@@ -258,8 +256,8 @@
 }
 
 .ops-menu-tile__icon {
-  width: 46px;
-  height: 46px;
+  width: 52px;
+  height: 52px;
   color: var(--ops-menu-accent);
   display: inline-flex;
   align-items: center;
@@ -267,8 +265,8 @@
 }
 
 .ops-menu-tile__icon svg {
-  width: 42px;
-  height: 42px;
+  width: 48px;
+  height: 48px;
 }
 
 .ops-menu-tile--featured .ops-menu-tile__icon {

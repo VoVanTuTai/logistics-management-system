@@ -91,7 +91,7 @@ textarea:focus {
 button {
   border: 1px solid var(--ops-primary);
   padding: 8px 12px;
-  background: linear-gradient(135deg, var(--ops-primary), var(--ops-primary-light));
+  background: var(--ops-primary);
   color: #ffffff;
   font-weight: 600;
   cursor: pointer;
