@@ -611,10 +611,23 @@ function isSameHubOrScopedLocation(
   targetCode: string,
   assignedHubCode: string,
 ): boolean {
+  const targetProvinceScope = getBranchHubProvinceScopePrefix(targetCode);
+  const assignedProvinceScope = getBranchHubProvinceScopePrefix(assignedHubCode);
+
   return (
     targetCode === assignedHubCode ||
     targetCode.startsWith(`${assignedHubCode}-`) ||
     targetCode.startsWith(`${assignedHubCode}_`) ||
-    targetCode.startsWith(`${assignedHubCode}.`)
+    targetCode.startsWith(`${assignedHubCode}.`) ||
+    (Boolean(targetProvinceScope) &&
+      targetProvinceScope === assignedProvinceScope)
   );
+}
+
+function getBranchHubProvinceScopePrefix(hubCode: string): string | null {
+  const normalizedHubCode = hubCode.trim().toUpperCase();
+
+  return /^\d{6}[A-Z][A-Z0-9]*$/.test(normalizedHubCode)
+    ? normalizedHubCode.slice(0, 6)
+    : null;
 }

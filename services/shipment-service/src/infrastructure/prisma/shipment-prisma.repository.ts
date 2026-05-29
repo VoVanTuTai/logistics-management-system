@@ -278,12 +278,9 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
       andFilters.push({
         OR: [
           ...hubCodes.flatMap((hubCode) =>
-            originOrCurrentHubJsonPaths.map((path) => ({
-              metadata: {
-                path,
-                equals: hubCode,
-              },
-            })),
+            originOrCurrentHubJsonPaths.flatMap((path) =>
+              buildHubJsonPathScopeFilters(path, hubCode),
+            ),
           ),
           {
             AND: [
@@ -294,12 +291,9 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
               },
               {
                 OR: hubCodes.flatMap((hubCode) =>
-                  destinationHubJsonPaths.map((path) => ({
-                    metadata: {
-                      path,
-                      equals: hubCode,
-                    },
-                  })),
+                  destinationHubJsonPaths.flatMap((path) =>
+                    buildHubJsonPathScopeFilters(path, hubCode),
+                  ),
                 ),
               },
             ],
@@ -314,6 +308,40 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
 
     return where;
   }
+}
+
+function buildHubJsonPathScopeFilters(
+  path: string[],
+  hubCode: string,
+): Prisma.ShipmentWhereInput[] {
+  const filters: Prisma.ShipmentWhereInput[] = [
+    {
+      metadata: {
+        path,
+        equals: hubCode,
+      },
+    },
+  ];
+  const provinceScopePrefix = getBranchHubProvinceScopePrefix(hubCode);
+
+  if (provinceScopePrefix) {
+    filters.push({
+      metadata: {
+        path,
+        string_starts_with: provinceScopePrefix,
+      },
+    });
+  }
+
+  return filters;
+}
+
+function getBranchHubProvinceScopePrefix(hubCode: string): string | null {
+  const normalizedHubCode = hubCode.trim().toUpperCase();
+
+  return /^\d{6}[A-Z][A-Z0-9]*$/.test(normalizedHubCode)
+    ? normalizedHubCode.slice(0, 6)
+    : null;
 }
 
 function normalizeString(value: unknown): string | null {
