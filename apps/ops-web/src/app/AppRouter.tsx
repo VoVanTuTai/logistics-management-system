@@ -74,21 +74,9 @@ const CapabilityPlatformGroupPage = lazyRoutePage(
   () => import('../pages/function-groups/capability-platform/CapabilityPlatformGroupPage'),
   'CapabilityPlatformGroupPage',
 );
-const CustomerPlatformGroupPage = lazyRoutePage(
-  () => import('../pages/function-groups/customer-platform/CustomerPlatformGroupPage'),
-  'CustomerPlatformGroupPage',
-);
 const CustomerOrderDispatchPage = lazyRoutePage(
-  () => import('../pages/function-groups/customer-platform/order-dispatch/CustomerOrderDispatchPage'),
+  () => import('../pages/function-groups/operations-platform/pickup-dispatch/CustomerOrderDispatchPage'),
   'CustomerOrderDispatchPage',
-);
-const CustomerOrderLookupPage = lazyRoutePage(
-  () => import('../pages/function-groups/customer-platform/order-lookup/CustomerOrderLookupPage'),
-  'CustomerOrderLookupPage',
-);
-const CustomerOrderMonitorPage = lazyRoutePage(
-  () => import('../pages/function-groups/customer-platform/order-monitor/CustomerOrderMonitorPage'),
-  'CustomerOrderMonitorPage',
 );
 const DatabaseGroupPage = lazyRoutePage(
   () => import('../pages/function-groups/database/DatabaseGroupPage'),
@@ -190,30 +178,7 @@ const SmartDevicesGroupPage = lazyRoutePage(
   () => import('../pages/function-groups/smart-devices/SmartDevicesGroupPage'),
   'SmartDevicesGroupPage',
 );
-const ConfigManagementPage = lazyRoutePage(
-  () => import('../pages/masterdata/ConfigManagementPage'),
-  'ConfigManagementPage',
-);
-const HubManagementPage = lazyRoutePage(
-  () => import('../pages/masterdata/HubManagementPage'),
-  'HubManagementPage',
-);
-const NdrReasonManagementPage = lazyRoutePage(
-  () => import('../pages/masterdata/NdrReasonManagementPage'),
-  'NdrReasonManagementPage',
-);
-const ZoneManagementPage = lazyRoutePage(
-  () => import('../pages/masterdata/ZoneManagementPage'),
-  'ZoneManagementPage',
-);
-const ManifestDetailPage = lazyRoutePage(
-  () => import('../pages/manifests/ManifestDetailPage'),
-  'ManifestDetailPage',
-);
-const ManifestManagementPage = lazyRoutePage(
-  () => import('../pages/manifests/ManifestManagementPage'),
-  'ManifestManagementPage',
-);
+
 const NdrCaseDetailPage = lazyRoutePage(
   () => import('../pages/ndr/NdrCaseDetailPage'),
   'NdrCaseDetailPage',
@@ -312,8 +277,6 @@ type SidebarIconName =
   | 'metrics_deadline'
   | 'metrics_planning'
   | 'metrics_action'
-  | 'customer_order_management'
-  | 'customer_order_dispatch'
   | 'branch_local_orders'
   | 'branch_order_management'
   | 'branch_finance_settlement'
@@ -327,8 +290,6 @@ type SidebarPanelKind =
   | 'metrics_deadline'
   | 'metrics_planning'
   | 'metrics_action'
-  | 'customer_order_management'
-  | 'customer_order_dispatch'
   | 'branch_local_orders'
   | 'branch_order_management'
   | 'branch_finance_settlement'
@@ -481,24 +442,7 @@ function SidebarIcon({ name }: { name: SidebarIconName }): React.JSX.Element {
           <path d="m8.3 12 2.1 2.2 5.3-5.4" {...common} />
         </svg>
       );
-    case 'customer_order_management':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M7 7.2h10l1.2 12.1H5.8z" {...common} />
-          <path d="M9.2 7.2a2.8 2.8 0 0 1 5.6 0" {...common} />
-          <path d="M9 12h6" {...common} />
-          <path d="M9 15.2h4.5" {...common} />
-        </svg>
-      );
-    case 'customer_order_dispatch':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4.8 7.2h9.4v8.9H4.8z" {...common} />
-          <path d="M14.2 10.1h3.2l2 2.5v3.5h-5.2z" {...common} />
-          <circle cx="8.1" cy="18" r="1.4" {...common} />
-          <circle cx="17.2" cy="18" r="1.4" {...common} />
-        </svg>
-      );
+
     case 'branch_order_management':
       return (
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -569,12 +513,7 @@ function DashboardLayout(): React.JSX.Element {
     || location.pathname.startsWith('/app/coming-soon');
 
   const isReturnBlockSection = pathMatches(location.pathname, routePaths.returnBlockRoot);
-  const isBasicDataSection =
-    pathMatches(location.pathname, routePaths.groupBasicData) ||
-    pathMatches(location.pathname, routePaths.masterdataHubs) ||
-    pathMatches(location.pathname, routePaths.masterdataZones) ||
-    pathMatches(location.pathname, routePaths.masterdataNdrReasons) ||
-    pathMatches(location.pathname, routePaths.masterdataConfigs);
+
   const isFinanceSettlementSection =
     pathMatches(location.pathname, routePaths.groupFinanceSettlement);
   const isOperationsPlatformSection =
@@ -591,10 +530,7 @@ function DashboardLayout(): React.JSX.Element {
   const isBranchBusinessSection =
     pathMatches(location.pathname, routePaths.groupBranchBusiness) ||
     isFinanceSettlementSection;
-  const isCustomerPlatformSection = pathMatches(
-    location.pathname,
-    routePaths.groupCustomerPlatform,
-  );
+
   const isCapabilityPlatformSection = pathMatches(
     location.pathname,
     routePaths.groupCapabilityPlatform,
@@ -609,22 +545,13 @@ function DashboardLayout(): React.JSX.Element {
             pathMatches(location.pathname, routePaths.shipments) ||
             pathMatches(location.pathname, routePaths.tasks) ||
             pathMatches(location.pathname, routePaths.opsChat) ||
-            pathMatches(location.pathname, routePaths.manifests) ||
             pathMatches(location.pathname, routePaths.scans) ||
             pathMatches(location.pathname, routePaths.tracking) ||
             isOperationsPlatformSection ||
+            pathMatches(location.pathname, routePaths.operationsPlatformPickupDispatch) ||
             pathMatches(location.pathname, routePaths.monitorDataRoot),
         },
-        {
-          label: 'Dữ liệu cơ bản',
-          to: routePaths.groupBasicData,
-          isActive: isBasicDataSection,
-        },
-        {
-          label: 'Đơn khách hàng',
-          to: routePaths.groupCustomerPlatform,
-          isActive: pathMatches(location.pathname, routePaths.groupCustomerPlatform),
-        },
+
         {
           label: 'Kinh doanh bưu cục',
           to: routePaths.groupBranchBusiness,
@@ -657,11 +584,7 @@ function DashboardLayout(): React.JSX.Element {
           to: routePaths.tasks,
           isActive: pathMatches(location.pathname, routePaths.tasks),
         },
-        {
-          label: 'Bao tải',
-          to: routePaths.manifests,
-          isActive: pathMatches(location.pathname, routePaths.manifests),
-        },
+
         {
           label: 'Tracking',
           to: routePaths.tracking,
@@ -671,28 +594,23 @@ function DashboardLayout(): React.JSX.Element {
 
   const operationsSidebarItems: SidebarItem[] = enableFullOpsModules
     ? [
-        { label: 'Vận đơn', icon: 'customer_order_management', to: routePaths.shipments },
+        { label: 'Vận đơn', icon: 'branch_order_management', to: routePaths.shipments },
         { label: 'Tác vụ điều phối', icon: 'metrics_action', to: routePaths.tasks },
         { label: 'Chat courier', icon: 'chat', to: routePaths.operationsPlatformChat },
+        { label: 'Điều phối lấy hàng', icon: 'metrics_action', to: routePaths.operationsPlatformPickupDispatch },
         { label: 'Quét tại hub', icon: 'tracking_lookup', to: routePaths.scans },
-        { label: 'Bao tải', icon: 'thermal_label', to: routePaths.manifests },
         { label: 'Tra cứu hành trình', icon: 'tracking_lookup', to: routePaths.tracking },
         { label: 'Giám sát dữ liệu', icon: 'monitor_data', kind: 'monitor_data' },
       ]
     : [
-        { label: 'Vận đơn', icon: 'customer_order_management', to: routePaths.shipments },
+        { label: 'Vận đơn', icon: 'branch_order_management', to: routePaths.shipments },
         { label: 'Tác vụ điều phối', icon: 'metrics_action', to: routePaths.tasks },
         { label: 'Chat courier', icon: 'chat', to: routePaths.operationsPlatformChat },
+        { label: 'Điều phối lấy hàng', icon: 'metrics_action', to: routePaths.operationsPlatformPickupDispatch },
         { label: 'Quét tại hub', icon: 'tracking_lookup', to: routePaths.scans },
-        { label: 'Bao tải', icon: 'thermal_label', to: routePaths.manifests },
         { label: 'Tra cứu hành trình', icon: 'tracking_lookup', to: routePaths.tracking },
   ];
-  const basicDataSidebarItems: SidebarItem[] = [
-    { label: 'Hub / bưu cục', icon: 'branch_local_orders', to: routePaths.masterdataHubs },
-    { label: 'Zone / vùng tuyến', icon: 'linehaul_transport', to: routePaths.masterdataZones },
-    { label: 'Lý do NDR', icon: 'service_abnormal', to: routePaths.masterdataNdrReasons },
-    { label: 'Cấu hình hệ thống', icon: 'metrics_action', to: routePaths.masterdataConfigs },
-  ];
+
   const serviceQualitySidebarItems: SidebarItem[] = [
     { label: 'Tra cứu sự cố / chất lượng', icon: 'service_lookup', to: routePaths.serviceQualityIntegratedLookup },
     { label: 'Giám sát chủ động', icon: 'service_proactive', kind: 'service_proactive' },
@@ -723,11 +641,7 @@ function DashboardLayout(): React.JSX.Element {
       kind: 'branch_finance_settlement',
     },
   ];
-  const customerPlatformSidebarItems: SidebarItem[] = [
-    { label: 'Điều phối lấy hàng', icon: 'customer_order_dispatch', to: routePaths.customerPlatformOrderDispatch },
-    { label: 'Tra cứu đơn đặt', icon: 'service_lookup', to: routePaths.customerPlatformOrderLookup },
-    { label: 'Giám sát luồng đơn đặt', icon: 'monitor_data', to: routePaths.customerPlatformOrderMonitor },
-  ];
+
   const capabilityPlatformSidebarItems: SidebarItem[] = [
     { label: 'Quản lý chuyến xe', icon: 'linehaul_transport', to: routePaths.linehaulTripManagement },
     { label: 'Tem xe / chuyến', icon: 'thermal_label', to: routePaths.linehaulVehicleSeal },
@@ -739,10 +653,7 @@ function DashboardLayout(): React.JSX.Element {
     ? serviceQualitySidebarItems
     : isOperationsMetricsSection
     ? operationsMetricsSidebarItems
-    : isBasicDataSection
-    ? basicDataSidebarItems
-    : isCustomerPlatformSection
-    ? customerPlatformSidebarItems
+
     : isBranchBusinessSection
     ? branchBusinessSidebarItems
     : isCapabilityPlatformSection
@@ -806,15 +717,7 @@ function DashboardLayout(): React.JSX.Element {
     { label: 'Quyết toán thu hộ', to: routePaths.branchBusinessFinanceCod },
     { label: 'Đối soát công nợ', to: routePaths.branchBusinessFinanceReconcile },
   ] as const;
-  const customerPlatformOrderManagementChildItems = [
-    { label: 'Tra cứu đơn đặt', to: routePaths.customerPlatformOrderLookup },
-    { label: 'Giám sát luồng đơn đặt', to: routePaths.customerPlatformOrderMonitor },
-  ] as const;
-  const customerPlatformOrderDispatchChildItems = [
-    { label: 'Điều phối lấy hàng', to: routePaths.customerPlatformOrderDispatch },
-    { label: 'Tra cứu đơn đặt', to: routePaths.customerPlatformOrderLookup },
-    { label: 'Giám sát luồng đơn đặt', to: routePaths.customerPlatformOrderMonitor },
-  ] as const;
+
 
   const panelItemsMap: Record<SidebarPanelKind, ReadonlyArray<{ label: string; to: string }>> = {
     linehaul_transport: linehaulChildItems,
@@ -825,8 +728,7 @@ function DashboardLayout(): React.JSX.Element {
     metrics_deadline: operationsMetricsDeadlineChildItems,
     metrics_planning: operationsMetricsPlanningChildItems,
     metrics_action: operationsMetricsActionChildItems,
-    customer_order_management: customerPlatformOrderManagementChildItems,
-    customer_order_dispatch: customerPlatformOrderDispatchChildItems,
+
     branch_local_orders: branchBusinessLocalOrdersChildItems,
     branch_order_management: branchBusinessOrderManagementChildItems,
     branch_finance_settlement: branchBusinessFinanceSettlementChildItems,
@@ -841,8 +743,7 @@ function DashboardLayout(): React.JSX.Element {
     metrics_deadline: 'Thời hiệu',
     metrics_planning: 'Quy hoạch',
     metrics_action: 'Thao tác',
-    customer_order_management: 'Quản lý đơn đặt',
-    customer_order_dispatch: 'Điều phối lấy hàng',
+
     branch_local_orders: 'Thao tác bưu cục',
     branch_order_management: 'Quản lý vận đơn',
     branch_finance_settlement: 'Quyết toán tài chính',
@@ -889,17 +790,7 @@ function DashboardLayout(): React.JSX.Element {
   const isBranchLocalOrdersRoute =
     pathMatches(location.pathname, routePaths.branchBusinessLocalOrdersRoot) ||
     branchBusinessLocalOrdersChildItems.some((item) => pathMatches(location.pathname, item.to));
-  const isCustomerOrderManagementRoute =
-    pathMatches(location.pathname, routePaths.customerPlatformOrderManagementRoot) ||
-    customerPlatformOrderManagementChildItems.some((item) =>
-      pathMatches(location.pathname, item.to),
-    );
-  const isCustomerOrderDispatchRoute =
-    pathMatches(location.pathname, routePaths.customerPlatformOrderDispatchRoot) ||
-    pathMatches(location.pathname, routePaths.customerPlatformOrderDispatch) ||
-    customerPlatformOrderDispatchChildItems.some((item) =>
-      pathMatches(location.pathname, item.to),
-    );
+
 
   const routeDrivenPanel: SidebarPanelKind | null = isLinehaulRoute
     ? 'linehaul_transport'
@@ -923,14 +814,8 @@ function DashboardLayout(): React.JSX.Element {
     ? 'branch_finance_settlement'
     : isBranchLocalOrdersRoute
     ? 'branch_local_orders'
-    : isCustomerOrderDispatchRoute
-    ? 'customer_order_dispatch'
-    : isCustomerOrderManagementRoute
-    ? 'customer_order_management'
     : pathMatches(location.pathname, routePaths.groupOperationsMetrics)
     ? 'metrics_deadline'
-    : pathMatches(location.pathname, routePaths.groupCustomerPlatform)
-    ? 'customer_order_dispatch'
     : pathMatches(location.pathname, routePaths.groupBranchBusiness)
     ? 'branch_local_orders'
     : null;
@@ -949,8 +834,6 @@ function DashboardLayout(): React.JSX.Element {
     ? ['service_proactive', 'return_block']
     : isOperationsMetricsSection
     ? ['metrics_abnormal', 'metrics_deadline', 'metrics_planning', 'metrics_action']
-    : isCustomerPlatformSection
-    ? []
     : isBranchBusinessSection
     ? ['branch_local_orders', 'branch_order_management', 'branch_finance_settlement']
     : isCapabilityPlatformSection
@@ -974,10 +857,7 @@ function DashboardLayout(): React.JSX.Element {
     ? 'Chất lượng dịch vụ'
     : isOperationsMetricsSection
     ? 'Chỉ số vận hành'
-    : isBasicDataSection
-    ? 'Dữ liệu cơ bản'
-    : isCustomerPlatformSection
-    ? 'Đơn khách hàng'
+
     : isBranchBusinessSection
     ? 'Kinh doanh bưu cục'
     : isCapabilityPlatformSection
@@ -1004,12 +884,6 @@ function DashboardLayout(): React.JSX.Element {
   ];
   const activeBranchBusinessItem =
     branchBusinessAllChildItems.find((item) => pathMatches(location.pathname, item.to)) ?? null;
-  const customerPlatformAllChildItems = [
-    ...customerPlatformOrderDispatchChildItems,
-    ...customerPlatformOrderManagementChildItems,
-  ];
-  const activeCustomerPlatformItem =
-    customerPlatformAllChildItems.find((item) => pathMatches(location.pathname, item.to)) ?? null;
   const activeLinehaulItem =
     linehaulChildItems.find((item) => pathMatches(location.pathname, item.to)) ?? null;
 
@@ -1019,20 +893,10 @@ function DashboardLayout(): React.JSX.Element {
     ? 'Vận đơn'
     : pathMatches(location.pathname, routePaths.tasks)
     ? 'Tác vụ điều phối'
-    : pathMatches(location.pathname, routePaths.manifests)
-    ? 'Bao tải'
     : pathMatches(location.pathname, routePaths.scans)
     ? 'Quét hub'
     : pathMatches(location.pathname, routePaths.ndr)
     ? 'NDR'
-    : pathMatches(location.pathname, routePaths.masterdataHubs)
-    ? 'Hub / bưu cục'
-    : pathMatches(location.pathname, routePaths.masterdataZones)
-    ? 'Zone / vùng tuyến'
-    : pathMatches(location.pathname, routePaths.masterdataNdrReasons)
-    ? 'Lý do NDR'
-    : pathMatches(location.pathname, routePaths.masterdataConfigs)
-    ? 'Cấu hình hệ thống'
     : isMonitorDataRoute
     ? 'Giám sát dữ liệu'
     : activeLinehaulItem
@@ -1055,10 +919,6 @@ function DashboardLayout(): React.JSX.Element {
     ? 'Quyết toán tài chính'
     : isBranchBusinessSection
     ? 'Kinh doanh bưu cục'
-    : activeCustomerPlatformItem
-    ? activeCustomerPlatformItem.label
-    : isCustomerPlatformSection
-    ? 'Đơn khách hàng'
     : isServiceQualityIntegratedLookupRoute
     ? 'Tra cứu sự cố / chất lượng'
     : isServiceQualityAbnormalManagementRoute
@@ -1276,10 +1136,6 @@ function DashboardLayout(): React.JSX.Element {
                     ? isBranchFinanceSettlementRoute
                     : item.kind === 'branch_local_orders'
                     ? isBranchLocalOrdersRoute
-                    : item.kind === 'customer_order_management'
-                    ? isCustomerOrderManagementRoute && !isCustomerOrderDispatchRoute
-                    : item.kind === 'customer_order_dispatch'
-                    ? isCustomerOrderDispatchRoute
                     : item.to
                     ? pathMatches(location.pathname, item.to)
                     : false;
@@ -1437,10 +1293,7 @@ export function AppRouter(): React.JSX.Element {
                 </OpsModuleRoute>
               }
             />
-            <Route
-              path={routePaths.groupBasicDataLeaf}
-              element={<Navigate to={routePaths.masterdataHubs} replace />}
-            />
+
             <Route
               path={routePaths.groupOperationsPlatformLeaf}
               element={opsModuleRoute('Nền tảng điều hành', <OperationsPlatformGroupPage />)}
@@ -1534,28 +1387,8 @@ export function AppRouter(): React.JSX.Element {
               element={<Navigate to={routePaths.dashboard} replace />}
             />
             <Route
-              path={routePaths.groupCustomerPlatformLeaf}
-              element={opsModuleRoute('Đơn khách hàng', <CustomerPlatformGroupPage />)}
-            />
-            <Route
-              path={routePaths.customerPlatformOrderManagementLeaf}
-              element={<Navigate to={routePaths.customerPlatformOrderLookup} replace />}
-            />
-            <Route
-              path={routePaths.customerPlatformOrderDispatchRootLeaf}
-              element={<Navigate to={routePaths.customerPlatformOrderDispatch} replace />}
-            />
-            <Route
-              path={routePaths.customerPlatformOrderDispatchLeaf}
+              path={routePaths.operationsPlatformPickupDispatchLeaf}
               element={opsModuleRoute('Điều phối lấy hàng', <CustomerOrderDispatchPage />)}
-            />
-            <Route
-              path={routePaths.customerPlatformOrderLookupLeaf}
-              element={opsModuleRoute('Tra cứu đơn đặt', <CustomerOrderLookupPage />)}
-            />
-            <Route
-              path={routePaths.customerPlatformOrderMonitorLeaf}
-              element={opsModuleRoute('Giám sát luồng đơn đặt', <CustomerOrderMonitorPage />)}
             />
             <Route
               path={routePaths.groupBranchBusinessLeaf}
@@ -1789,23 +1622,13 @@ export function AppRouter(): React.JSX.Element {
               path={routePaths.opsChatLeaf}
               element={opsModuleRoute('Chat courier', <OpsCourierChatPage />)}
             />
-            <Route
-              path={routePaths.manifestsLeaf}
-              element={lazyRoute(<ManifestManagementPage />)}
-            />
-            <Route path={routePaths.manifestDetailLeaf} element={lazyRoute(<ManifestDetailPage />)} />
+
             <Route path={routePaths.scansLeaf} element={lazyRoute(<HubScanPage />)} />
             <Route path={routePaths.ndrLeaf} element={lazyRoute(<NdrHandlingPage />)} />
             <Route path={routePaths.ndrDetailLeaf} element={lazyRoute(<NdrCaseDetailPage />)} />
             <Route path={routePaths.trackingLeaf} element={lazyRoute(<TrackingLookupPage />)} />
             <Route path={routePaths.trackingDetailLeaf} element={lazyRoute(<TrackingDetailPage />)} />
-            <Route path={routePaths.masterdataHubsLeaf} element={lazyRoute(<HubManagementPage />)} />
-            <Route path={routePaths.masterdataZonesLeaf} element={lazyRoute(<ZoneManagementPage />)} />
-            <Route
-              path={routePaths.masterdataNdrReasonsLeaf}
-              element={lazyRoute(<NdrReasonManagementPage />)}
-            />
-            <Route path={routePaths.masterdataConfigsLeaf} element={lazyRoute(<ConfigManagementPage />)} />
+
           </Route>
         </Route>
         <Route path="*" element={<Navigate to={routePaths.login} replace />} />

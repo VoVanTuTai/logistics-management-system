@@ -271,7 +271,7 @@ function buildManifestAbnormalCases(manifests: ManifestListItemDto[]): AbnormalC
         issue: 'Manifest đã seal/in transit lâu nhưng chưa receive',
         nextAction: 'Kiểm tra xe, hub đích và nhận manifest nếu đã đến',
         updatedAt: basis,
-        detailUrl: routePaths.manifestDetail(manifest.id),
+        detailUrl: routePaths.linehaulTripDataMonitor,
       };
     })
     .filter((item): item is AbnormalCase => Boolean(item));

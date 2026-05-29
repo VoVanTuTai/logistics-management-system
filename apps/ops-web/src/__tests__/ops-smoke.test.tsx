@@ -144,7 +144,7 @@ vi.mock('../features/shipments/shipments.api', async (importOriginal) => {
     {
       id: 'shipment-1',
       shipmentCode: 'NXS000001',
-      currentStatus: 'CREATED',
+      currentStatus: 'SCAN_INBOUND',
       currentLocation: 'HCM01',
       parcelType: 'Parcel',
       shippingFee: 22000,
@@ -317,7 +317,7 @@ vi.mock('../features/tracking/tracking.api', async (importOriginal) => {
 import { AppProviders } from '../app/AppProviders';
 import { AppRouter } from '../app/AppRouter';
 import { DashboardPage } from '../pages/dashboard/DashboardPage';
-import { ManifestManagementPage } from '../pages/manifests/ManifestManagementPage';
+
 import { ShipmentListPage } from '../pages/shipments/ShipmentListPage';
 import { TaskAssignmentPage } from '../pages/tasks/TaskAssignmentPage';
 import { TrackingLookupPage } from '../pages/tracking/TrackingLookupPage';
@@ -443,7 +443,7 @@ describe('ops-web smoke coverage', () => {
     expect(
       await screen.findByRole('heading', { name: /Bảng phân tích vận hành/i }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Tổng đơn trong ngày/i)).toBeInTheDocument();
+    expect(screen.getByText(/Đơn mới hôm nay/i)).toBeInTheDocument();
     expect(screen.getByText(/Menu chính/i)).toBeInTheDocument();
     expect(within(screen.getByLabelText(/Hub đang theo dõi/i)).getByText('HCM01')).toBeInTheDocument();
   });
@@ -452,7 +452,7 @@ describe('ops-web smoke coverage', () => {
     const user = userEvent.setup();
     setAuthenticatedSession();
 
-    renderWithProviders(<ShipmentListPage />, '/app/shipments');
+    renderWithProviders(<ShipmentListPage />, '/app/shipments?branchGoods=all');
 
     expect(
       await screen.findByRole('heading', { name: /Danh sách vận đơn/i }),
@@ -496,31 +496,7 @@ describe('ops-web smoke coverage', () => {
     expect(smokeMocks.reassignTask).not.toHaveBeenCalled();
   });
 
-  it('renders manifest list and generates bag codes', async () => {
-    const user = userEvent.setup();
-    setAuthenticatedSession();
 
-    renderWithProviders(<ManifestManagementPage />, '/app/manifests');
-
-    expect(
-      await screen.findByRole('heading', { name: /Quản lý bao tải/i }),
-    ).toBeInTheDocument();
-    expect(screen.getByText('BAG-HCM-HN-001')).toBeInTheDocument();
-
-    await user.selectOptions(screen.getByLabelText(/Hub đích/i), 'HN01');
-    await user.click(screen.getByRole('button', { name: /^Tạo mã bao$/i }));
-
-    await waitFor(() => {
-      expect(smokeMocks.generateBagCodes).toHaveBeenCalledWith({
-        destinationHubCode: 'HN01',
-        note: 'EMPTY_BAG',
-        originHubCode: 'HCM01',
-        quantity: 1,
-      });
-    });
-    expect(await screen.findAllByText(/Đã tạo 1 mã bao trống/i)).toHaveLength(2);
-    expect(screen.getByText('BAG-GEN-001')).toBeInTheDocument();
-  });
 
   it('renders linehaul trip creation and management flow', async () => {
     setAuthenticatedSession();
@@ -536,7 +512,7 @@ describe('ops-web smoke coverage', () => {
       </AppProviders>,
     );
 
-    expect(await screen.findByRole('heading', { name: /Tem xe \/ chuyến/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /Tạo chuyến xe/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Thông tin chuyến xe/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/Hub đi/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Hub đến/i)).toBeInTheDocument();
@@ -572,7 +548,7 @@ describe('ops-web smoke coverage', () => {
       await screen.findByRole('heading', { name: /Quản lý chuyến xe/i }),
     ).toBeInTheDocument();
     expect(screen.getByText('TRIP-HCM01-HN01-001')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /In tem/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^In tem$/ })).toBeInTheDocument();
   });
 
   it('renders tracking empty, error, and success states', async () => {

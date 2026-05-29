@@ -226,11 +226,6 @@ export function DashboardPage(): React.JSX.Element {
           featured: true,
         },
         {
-          title: 'Đơn khách hàng',
-          to: routePaths.groupCustomerPlatform,
-          icon: 'customer_platform',
-        },
-        {
           title: 'Kinh doanh bưu cục',
           to: routePaths.groupBranchBusiness,
           icon: 'branch_business',
@@ -263,8 +258,8 @@ export function DashboardPage(): React.JSX.Element {
           icon: 'operations_platform',
         },
         {
-          title: 'Bao tải',
-          to: routePaths.manifests,
+          title: 'Quản lý tem bao',
+          to: routePaths.linehaulBagLabelManagement,
           icon: 'integration_services',
         },
         {

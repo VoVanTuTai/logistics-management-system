@@ -79,9 +79,9 @@ export function ShipmentDetailPage(): React.JSX.Element {
             Phân công/phân công lại tác vụ
           </Link>
           <Link
-            to={`${routePaths.manifests}?shipmentCode=${encodeURIComponent(detailQuery.data.shipmentCode)}`}
+            to={`${routePaths.linehaulBagLabelManagement}?shipmentCode=${encodeURIComponent(detailQuery.data.shipmentCode)}`}
           >
-            Thêm vào bao tải
+            Đóng bao tải (Linehaul)
           </Link>
           <Link to={`${routePaths.scans}?shipmentCode=${encodeURIComponent(detailQuery.data.shipmentCode)}`}>
             Quét hub

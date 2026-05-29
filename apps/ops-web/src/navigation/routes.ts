@@ -6,20 +6,11 @@ export const routePaths = {
   comingSoonDebtReport: '/app/coming-soon/bao-cao-cong-no',
   comingSoonAiCashflow: '/app/coming-soon/ai-du-doan-dong-tien',
   groupsRoot: '/app/function-groups',
-  groupBasicData: '/app/function-groups/basic-data',
+
   groupOperationsPlatform: '/app/function-groups/operations-platform',
   groupIntegrationServices: '/app/function-groups/integration-services',
-  groupCustomerPlatform: '/app/function-groups/customer-platform',
-  customerPlatformOrderManagementRoot:
-    '/app/function-groups/customer-platform/quan-ly-don-dat',
-  customerPlatformOrderDispatchRoot:
-    '/app/function-groups/customer-platform/dieu-phoi-don-dat',
-  customerPlatformOrderDispatch:
-    '/app/function-groups/customer-platform/dieu-phoi-don-dat/dieu-phoi',
-  customerPlatformOrderLookup:
-    '/app/function-groups/customer-platform/dieu-phoi-don-dat/tra-cuu-don-dat',
-  customerPlatformOrderMonitor:
-    '/app/function-groups/customer-platform/dieu-phoi-don-dat/giam-sat-don-da-tao',
+  operationsPlatformPickupDispatch:
+    '/app/function-groups/operations-platform/dieu-phoi-lay-hang',
   groupBranchBusiness: '/app/function-groups/branch-business',
   branchBusinessOrderManagementRoot:
     '/app/function-groups/branch-business/quan-ly-van-don',
@@ -98,6 +89,8 @@ export const routePaths = {
   operationsPlatformChat: '/app/function-groups/operations-platform/chat-courier',
   operationsPlatformChatWithCourier: (courierId: string) =>
     `/app/function-groups/operations-platform/chat-courier?courierId=${encodeURIComponent(courierId)}`,
+  operationsPlatformPickupDispatchLeaf:
+    'function-groups/operations-platform/dieu-phoi-lay-hang',
   returnBlockRoot: '/app/function-groups/service-quality/chuyen-hoan',
   returnBlockRegistration:
     '/app/function-groups/service-quality/chuyen-hoan/dang-ky-chuyen-hoan',
@@ -134,35 +127,20 @@ export const routePaths = {
   opsChat: '/app/chat',
   opsChatWithCourier: (courierId: string) =>
     `/app/function-groups/operations-platform/chat-courier?courierId=${encodeURIComponent(courierId)}`,
-  manifests: '/app/manifests',
-  manifestDetail: (manifestId: string) => `/app/manifests/${manifestId}`,
   scans: '/app/scans',
   ndr: '/app/ndr',
   ndrDetail: (ndrId: string) => `/app/ndr/${ndrId}`,
   tracking: '/app/tracking',
   trackingDetail: (shipmentCode: string) => `/app/tracking/${encodeURIComponent(shipmentCode)}`,
-  masterdataHubs: '/app/masterdata/hubs',
-  masterdataZones: '/app/masterdata/zones',
-  masterdataNdrReasons: '/app/masterdata/ndr-reasons',
-  masterdataConfigs: '/app/masterdata/configs',
+
   dashboardLeaf: 'dashboard',
   analyticsDashboardLeaf: 'analytics',
   comingSoonDebtReportLeaf: 'coming-soon/bao-cao-cong-no',
   comingSoonAiCashflowLeaf: 'coming-soon/ai-du-doan-dong-tien',
-  groupBasicDataLeaf: 'function-groups/basic-data',
+
   groupOperationsPlatformLeaf: 'function-groups/operations-platform',
   groupIntegrationServicesLeaf: 'function-groups/integration-services',
-  groupCustomerPlatformLeaf: 'function-groups/customer-platform',
-  customerPlatformOrderManagementLeaf:
-    'function-groups/customer-platform/quan-ly-don-dat',
-  customerPlatformOrderDispatchRootLeaf:
-    'function-groups/customer-platform/dieu-phoi-don-dat',
-  customerPlatformOrderDispatchLeaf:
-    'function-groups/customer-platform/dieu-phoi-don-dat/dieu-phoi',
-  customerPlatformOrderLookupLeaf:
-    'function-groups/customer-platform/dieu-phoi-don-dat/tra-cuu-don-dat',
-  customerPlatformOrderMonitorLeaf:
-    'function-groups/customer-platform/dieu-phoi-don-dat/giam-sat-don-da-tao',
+
   groupBranchBusinessLeaf: 'function-groups/branch-business',
   branchBusinessLocalOverviewLeaf:
     'function-groups/branch-business/don-tai-buu-cuc/tong-quan',
@@ -261,17 +239,12 @@ export const routePaths = {
   tasksLeaf: 'tasks',
   taskDetailLeaf: 'tasks/:taskId',
   opsChatLeaf: 'chat',
-  manifestsLeaf: 'manifests',
-  manifestDetailLeaf: 'manifests/:manifestId',
   scansLeaf: 'scans',
   ndrLeaf: 'ndr',
   ndrDetailLeaf: 'ndr/:ndrId',
   trackingLeaf: 'tracking',
   trackingDetailLeaf: 'tracking/:shipmentCode',
-  masterdataHubsLeaf: 'masterdata/hubs',
-  masterdataZonesLeaf: 'masterdata/zones',
-  masterdataNdrReasonsLeaf: 'masterdata/ndr-reasons',
-  masterdataConfigsLeaf: 'masterdata/configs',
+
 } as const;
 
 // Core routes are backed by gateway/API flows and remain visible in demo production.
@@ -280,14 +253,11 @@ export const OPS_CORE_ROUTE_PATHS = [
   routePaths.shipments,
   routePaths.tasks,
   routePaths.opsChat,
-  routePaths.manifests,
+
   routePaths.scans,
   routePaths.ndr,
   routePaths.tracking,
-  routePaths.masterdataHubs,
-  routePaths.masterdataZones,
-  routePaths.masterdataNdrReasons,
-  routePaths.masterdataConfigs,
+
 ] as const;
 
 // Full module routes are first-class ops modules kept visible for production hardening.
@@ -297,9 +267,7 @@ export const OPS_FULL_MODULE_ROUTE_PATHS = [
   routePaths.comingSoonDebtReport,
   routePaths.comingSoonAiCashflow,
   routePaths.groupsRoot,
-  routePaths.groupBasicData,
   routePaths.groupOperationsPlatform,
-  routePaths.groupCustomerPlatform,
   routePaths.groupBranchBusiness,
   routePaths.groupCapabilityPlatform,
   routePaths.groupOperationsMetrics,
@@ -307,11 +275,7 @@ export const OPS_FULL_MODULE_ROUTE_PATHS = [
   routePaths.groupDatabase,
   routePaths.groupSmartDevices,
   routePaths.groupPlanningPlatform,
-  routePaths.customerPlatformOrderManagementRoot,
-  routePaths.customerPlatformOrderDispatchRoot,
-  routePaths.customerPlatformOrderDispatch,
-  routePaths.customerPlatformOrderLookup,
-  routePaths.customerPlatformOrderMonitor,
+  routePaths.operationsPlatformPickupDispatch,
   routePaths.branchBusinessOrderManagementRoot,
   routePaths.branchBusinessFinanceSettlementRoot,
   routePaths.branchBusinessLocalOrdersRoot,

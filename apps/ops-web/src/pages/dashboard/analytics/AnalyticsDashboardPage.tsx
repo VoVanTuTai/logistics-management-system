@@ -232,7 +232,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
       title: 'Quản lý chuyến / bao',
       summary: 'Kiểm tra manifest và luồng bàn giao tuyến.',
       meta: `${manifests.length} manifest`,
-      to: routePaths.manifests,
+      to: routePaths.linehaulTripDataMonitor,
       accent: 'info',
     },
   ];
