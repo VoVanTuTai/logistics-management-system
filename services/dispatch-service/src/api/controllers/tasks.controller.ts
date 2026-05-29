@@ -9,7 +9,10 @@ import {
   Req,
 } from '@nestjs/common';
 
-import { TasksService } from '../../application/services/tasks.service';
+import {
+  type OpsTaskScopeContext,
+  TasksService,
+} from '../../application/services/tasks.service';
 import type {
   AssignTaskInput,
   CreateTaskInput,
@@ -33,14 +36,18 @@ export class TasksController {
     @Query('status') status?: string,
     @Query('shipmentCode') shipmentCode?: string,
     @Query('pickupRequestId') pickupRequestId?: string,
+    @Req() request?: AuditRequest,
   ): Promise<Task[]> {
-    return this.tasksService.list({
-      courierId,
-      taskType,
-      status,
-      shipmentCode,
-      pickupRequestId,
-    });
+    return this.tasksService.list(
+      {
+        courierId,
+        taskType,
+        status,
+        shipmentCode,
+        pickupRequestId,
+      },
+      getOpsTaskScopeContext(request),
+    );
   }
 
   @Get('couriers')
@@ -49,8 +56,8 @@ export class TasksController {
   }
 
   @Get(':id')
-  getById(@Param('id') id: string): Promise<Task> {
-    return this.tasksService.getById(id);
+  getById(@Param('id') id: string, @Req() request: AuditRequest): Promise<Task> {
+    return this.tasksService.getById(id, getOpsTaskScopeContext(request));
   }
 
   @Post()
@@ -80,7 +87,47 @@ export class TasksController {
   updateStatus(
     @Param('id') id: string,
     @Body() body: UpdateTaskStatusInput,
+    @Req() request: AuditRequest,
   ): Promise<Task> {
-    return this.tasksService.updateStatus(id, body);
+    return this.tasksService.updateStatus(
+      id,
+      body,
+      getOpsTaskScopeContext(request),
+    );
   }
+}
+
+function getOpsTaskScopeContext(
+  request: AuditRequest | undefined,
+): OpsTaskScopeContext | undefined {
+  if (!request) {
+    return undefined;
+  }
+
+  const roles = getHeaderList(request, 'x-ops-roles');
+  const hubCodes = getHeaderList(request, 'x-ops-hub-codes');
+
+  if (roles.length === 0 && hubCodes.length === 0) {
+    return undefined;
+  }
+
+  return {
+    hubCodes,
+    canAccessAllHubs: roles.includes('SYSTEM_ADMIN'),
+  };
+}
+
+function getHeaderList(request: AuditRequest, name: string): string[] {
+  const value = request.headers[name];
+  const rawValues = Array.isArray(value) ? value : [value];
+
+  return Array.from(
+    new Set(
+      rawValues
+        .filter((item): item is string => typeof item === 'string')
+        .flatMap((item) => item.split(','))
+        .map((item) => item.trim().toUpperCase())
+        .filter((item) => item.length > 0),
+    ),
+  );
 }

@@ -6,11 +6,13 @@ import {
   Outlet,
   Route,
   Routes,
+  useLocation,
   useNavigate,
 } from 'react-router-dom';
 
 import { useLogoutMutation } from '../features/auth/auth.api';
 import { hasAdminRole } from '../features/auth/auth.roles';
+import { getStoredAuthSession } from '../features/auth/auth.session';
 import { routePaths } from '../navigation/routes';
 import { useAuthStore } from '../store/authStore';
 import { AdminAuditLogPage } from '../pages/audit/AdminAuditLogPage';
@@ -28,9 +30,15 @@ import { ShipperUsersPage } from '../pages/users/ShipperUsersPage';
 function AdminGuard(): React.JSX.Element {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const session = useAuthStore((state) => state.session);
+  const status = useAuthStore((state) => state.status);
+  const location = useLocation();
+
+  if (status === 'restoring' || (!isAuthenticated && getStoredAuthSession())) {
+    return <div className="admin-route-loading">Đang khôi phục phiên đăng nhập...</div>;
+  }
 
   if (!isAuthenticated) {
-    return <Navigate to={routePaths.login} replace />;
+    return <Navigate to={routePaths.login} replace state={{ from: location }} />;
   }
 
   if (!hasAdminRole(session)) {

@@ -3,6 +3,7 @@ import { randomInt } from 'crypto';
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Inject,
   Injectable,
   NotFoundException,
@@ -29,6 +30,11 @@ const MAX_CODE_RETRY = 20;
 const SHIPMENT_CODE_RULE = /^(111|101|222|333)[0-9]{9}$/;
 const SHIPMENT_CODE_SEQUENCE_SIZE = 1_000_000_000;
 
+export interface OpsShipmentScopeContext {
+  hubCodes: string[];
+  canAccessAllHubs: boolean;
+}
+
 @Injectable()
 export class ShipmentsService {
   constructor(
@@ -40,15 +46,39 @@ export class ShipmentsService {
     private readonly pricingClientService: PricingClientService,
   ) {}
 
-  list(filters: ShipmentListFilters = {}): Promise<Shipment[] | ShipmentListPage> {
-    if (filters.limit !== undefined || filters.offset !== undefined) {
-      return this.shipmentRepository.listPage(filters);
+  list(
+    filters: ShipmentListFilters = {},
+    opsScope?: OpsShipmentScopeContext,
+  ): Promise<Shipment[] | ShipmentListPage> {
+    const scopedFilters = this.applyOpsScopeToFilters(filters, opsScope);
+    const shouldReturnPage =
+      filters.limit !== undefined || filters.offset !== undefined;
+
+    if (!scopedFilters) {
+      return Promise.resolve(
+        shouldReturnPage
+          ? {
+              items: [],
+              pageInfo: {
+                hasNextPage: false,
+                total: 0,
+              },
+            }
+          : [],
+      );
     }
 
-    return this.shipmentRepository.list(filters);
+    if (shouldReturnPage) {
+      return this.shipmentRepository.listPage(scopedFilters);
+    }
+
+    return this.shipmentRepository.list(scopedFilters);
   }
 
-  async getByCode(code: string): Promise<Shipment> {
+  async getByCode(
+    code: string,
+    opsScope?: OpsShipmentScopeContext,
+  ): Promise<Shipment> {
     const normalizedCode = this.normalizeRequiredCode(code);
     const shipment = await this.shipmentRepository.findByCode(normalizedCode);
 
@@ -56,6 +86,7 @@ export class ShipmentsService {
       throw new NotFoundException(`Shipment "${normalizedCode}" was not found.`);
     }
 
+    this.ensureShipmentVisibleToOps(shipment, opsScope);
     return shipment;
   }
 
@@ -71,9 +102,13 @@ export class ShipmentsService {
     return shipment;
   }
 
-  async update(code: string, input: UpdateShipmentInput): Promise<Shipment> {
+  async update(
+    code: string,
+    input: UpdateShipmentInput,
+    opsScope?: OpsShipmentScopeContext,
+  ): Promise<Shipment> {
     const normalizedCode = this.normalizeRequiredCode(code);
-    await this.getByCode(normalizedCode);
+    await this.getByCode(normalizedCode, opsScope);
 
     return this.shipmentRepository.update(normalizedCode, input);
   }
@@ -81,9 +116,10 @@ export class ShipmentsService {
   async confirmLabelReprint(
     code: string,
     input: ConfirmLabelReprintInput = {},
+    opsScope?: OpsShipmentScopeContext,
   ): Promise<Shipment> {
     const normalizedCode = this.normalizeRequiredCode(code);
-    const shipment = await this.getByCode(normalizedCode);
+    const shipment = await this.getByCode(normalizedCode, opsScope);
     const metadata = asJsonRecord(shipment.metadata);
     const deliveryInfoChange = asJsonRecord(metadata.deliveryInfoChange);
     const returnWorkflow = asJsonRecord(metadata.returnWorkflow);
@@ -105,9 +141,13 @@ export class ShipmentsService {
     );
   }
 
-  async cancel(code: string, input: CancelShipmentInput): Promise<Shipment> {
+  async cancel(
+    code: string,
+    input: CancelShipmentInput,
+    opsScope?: OpsShipmentScopeContext,
+  ): Promise<Shipment> {
     const normalizedCode = this.normalizeRequiredCode(code);
-    const shipment = await this.getByCode(normalizedCode);
+    const shipment = await this.getByCode(normalizedCode, opsScope);
 
     if (!this.shipmentStateMachine.canCancel(shipment.currentStatus)) {
       throw new ConflictException(
@@ -123,6 +163,59 @@ export class ShipmentsService {
     await this.marketplaceWebhookSenderService.notifyStatusChanged(cancelledShipment);
 
     return cancelledShipment;
+  }
+
+  private applyOpsScopeToFilters(
+    filters: ShipmentListFilters,
+    opsScope?: OpsShipmentScopeContext,
+  ): ShipmentListFilters | null {
+    if (!opsScope || opsScope.canAccessAllHubs) {
+      return filters;
+    }
+
+    if (opsScope.hubCodes.length === 0) {
+      return null;
+    }
+
+    const requestedHubCodes = normalizeStringList(filters.hubCodes);
+    const hubCodes = requestedHubCodes.length > 0
+      ? requestedHubCodes.filter((requestedHubCode) =>
+          opsScope.hubCodes.some((assignedHubCode) =>
+            isSameHubOrScopedLocation(requestedHubCode, assignedHubCode),
+          ),
+        )
+      : opsScope.hubCodes;
+
+    if (hubCodes.length === 0) {
+      return null;
+    }
+
+    return {
+      ...filters,
+      hubCodes,
+    };
+  }
+
+  private ensureShipmentVisibleToOps(
+    shipment: Shipment,
+    opsScope?: OpsShipmentScopeContext,
+  ): void {
+    if (!opsScope || opsScope.canAccessAllHubs) {
+      return;
+    }
+
+    const shipmentHubCodes = collectHubCodes(shipment);
+    const isVisible = shipmentHubCodes.some((hubCode) =>
+      opsScope.hubCodes.some((assignedHubCode) =>
+        isSameHubOrScopedLocation(hubCode, assignedHubCode),
+      ),
+    );
+
+    if (opsScope.hubCodes.length === 0 || !isVisible) {
+      throw new ForbiddenException(
+        'Tài khoản OPS không có quyền xem vận đơn ngoài phạm vi hub được gán.',
+      );
+    }
   }
 
   async applyExternalEvent(
@@ -356,4 +449,62 @@ function asJsonRecord(value: unknown): Record<string, JsonValue> {
 
 function readString(value: unknown): string | null {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
+}
+
+function normalizeString(value: unknown): string | null {
+  return typeof value === 'string' && value.trim().length > 0
+    ? value.trim().toUpperCase()
+    : null;
+}
+
+function normalizeStringList(value: unknown): string[] {
+  const values = Array.isArray(value) ? value : [value];
+
+  return Array.from(
+    new Set(
+      values
+        .filter((item): item is string => typeof item === 'string')
+        .flatMap((item) => item.split(','))
+        .map((item) => normalizeString(item))
+        .filter((item): item is string => item !== null),
+    ),
+  );
+}
+
+function collectHubCodes(shipment: Shipment): string[] {
+  const metadata = asJsonRecord(shipment.metadata);
+  const sender = asJsonRecord(metadata.sender);
+  const receiver = asJsonRecord(metadata.receiver);
+  const routing = asJsonRecord(metadata.routing);
+  const location = asJsonRecord(metadata.location);
+  const hub = asJsonRecord(metadata.hub);
+
+  return normalizeStringList([
+    metadata.senderHubCode,
+    metadata.receiverHubCode,
+    metadata.originHubCode,
+    metadata.destinationHubCode,
+    metadata.currentHubCode,
+    metadata.currentLocation,
+    sender.hubCode,
+    receiver.hubCode,
+    routing.originHubCode,
+    routing.destinationHubCode,
+    location.hubCode,
+    location.current,
+    hub.code,
+    hub.currentCode,
+  ]);
+}
+
+function isSameHubOrScopedLocation(
+  targetCode: string,
+  assignedHubCode: string,
+): boolean {
+  return (
+    targetCode === assignedHubCode ||
+    targetCode.startsWith(`${assignedHubCode}-`) ||
+    targetCode.startsWith(`${assignedHubCode}_`) ||
+    targetCode.startsWith(`${assignedHubCode}.`)
+  );
 }

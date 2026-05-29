@@ -52,6 +52,7 @@ services:
       <<: *service-env
       PORT: 3003
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/pickup_db
+      SHIPMENT_SERVICE_URL: http://shipment-service:3002
 
   dispatch-service:
     <<: *service-base
@@ -66,6 +67,8 @@ services:
       PORT: 3004
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/dispatch_db
       DISPATCH_COURIER_OPTIONS: CR001,CR002,CR003
+      PICKUP_SERVICE_URL: http://pickup-service:3003
+      SHIPMENT_SERVICE_URL: http://shipment-service:3002
 
   manifest-service:
     <<: *service-base

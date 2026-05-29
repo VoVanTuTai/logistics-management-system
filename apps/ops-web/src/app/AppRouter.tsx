@@ -10,6 +10,8 @@ import {
 } from 'react-router-dom';
 
 import { useLogoutMutation } from '../features/auth/auth.api';
+import { getStoredAuthSession } from '../features/auth/auth.session';
+import { GlobalChatBubble } from '../features/chat/GlobalChatBubble';
 import { LoginPage } from '../pages/auth/LoginPage';
 import { DashboardPage } from '../pages/dashboard/DashboardPage';
 import { ComingSoonPlaceholder } from '../pages/shared/ComingSoonPlaceholder';
@@ -275,7 +277,16 @@ const TrackingLookupPage = lazyRoutePage(
 
 function AuthGuard(): React.JSX.Element {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  return isAuthenticated ? <Outlet /> : <Navigate to={routePaths.login} replace />;
+  const status = useAuthStore((state) => state.status);
+  const location = useLocation();
+
+  if (status === 'restoring' || (!isAuthenticated && getStoredAuthSession())) {
+    return <RouteLoadingFallback />;
+  }
+
+  return isAuthenticated
+    ? <Outlet />
+    : <Navigate to={routePaths.login} replace state={{ from: location }} />;
 }
 
 function RouteLoadingFallback(): React.JSX.Element {
@@ -1074,75 +1085,79 @@ function DashboardLayout(): React.JSX.Element {
 
   if (isDashboardRoute) {
     return (
-      <div className="ops-layout ops-layout--no-sidebar">
-        <div className="ops-workspace ops-workspace--full">
-          <header className="ops-topbar ops-topbar--full">
-            <button
-              type="button"
-              className="ops-topbar-brand ops-topbar-brand--button"
-              onClick={() => navigate(routePaths.dashboard)}
-              aria-label="Go to dashboard"
-            >
-              <span className="ops-topbar-logo">NEXUS</span>
-              <span className="ops-topbar-brand-text">
-                <strong>NEXUS VN</strong>
-                <span>NEXUS logistics control tower</span>
-              </span>
-            </button>
-
-            <div className="ops-topbar-actions">
-              <form onSubmit={onQuickSearch} className="ops-topbar-search" role="search">
-                <span className="ops-topbar-search-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <circle cx="11" cy="11" r="6.5" />
-                    <path d="m16 16 4 4" />
-                  </svg>
-                </span>
-                <input
-                  type="text"
-                  value={quickSearchCode}
-                  onChange={(event) => setQuickSearchCode(event.target.value)}
-                  placeholder="Tra cứu mã vận đơn"
-                  aria-label="Tra cứu mã vận đơn"
-                />
-                <button type="submit" className="ops-topbar-search-submit">
-                  Tìm
-                </button>
-              </form>
-
-              <button type="button" className="ops-topbar-icon-btn" aria-label="Thông báo">
-                <svg viewBox="0 0 24 24">
-                  <path d="M12 4.5a4.5 4.5 0 0 0-4.5 4.5v2.5c0 .9-.36 1.77-1 2.4l-1.2 1.2h13.4l-1.2-1.2a3.4 3.4 0 0 1-1-2.4V9A4.5 4.5 0 0 0 12 4.5Z" />
-                  <path d="M10 17.5a2 2 0 0 0 4 0" />
-                </svg>
-              </button>
-
-              <div className="ops-topbar-profile" aria-label="Tài khoản">
-                <span className="ops-topbar-avatar">{operatorInitial}</span>
-                <span className="ops-topbar-user">{operatorName}</span>
-                <span className="ops-topbar-role">{roleText}</span>
-              </div>
-
+      <>
+        <div className="ops-layout ops-layout--no-sidebar">
+          <div className="ops-workspace ops-workspace--full">
+            <header className="ops-topbar ops-topbar--full">
               <button
                 type="button"
-                className="ops-logout-inline"
-                disabled={logoutMutation.isPending}
-                onClick={() => void onLogout()}
+                className="ops-topbar-brand ops-topbar-brand--button"
+                onClick={() => navigate(routePaths.dashboard)}
+                aria-label="Go to dashboard"
               >
-                {logoutMutation.isPending ? 'Đang đăng xuất...' : 'Đăng xuất'}
+                <span className="ops-topbar-logo">NEXUS</span>
+                <span className="ops-topbar-brand-text">
+                  <strong>NEXUS VN</strong>
+                  <span>NEXUS logistics control tower</span>
+                </span>
               </button>
-            </div>
-          </header>
 
-          <main className="ops-main-panel ops-main-panel--flat">
-            <Outlet />
-          </main>
+              <div className="ops-topbar-actions">
+                <form onSubmit={onQuickSearch} className="ops-topbar-search" role="search">
+                  <span className="ops-topbar-search-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                      <circle cx="11" cy="11" r="6.5" />
+                      <path d="m16 16 4 4" />
+                    </svg>
+                  </span>
+                  <input
+                    type="text"
+                    value={quickSearchCode}
+                    onChange={(event) => setQuickSearchCode(event.target.value)}
+                    placeholder="Tra cứu mã vận đơn"
+                    aria-label="Tra cứu mã vận đơn"
+                  />
+                  <button type="submit" className="ops-topbar-search-submit">
+                    Tìm
+                  </button>
+                </form>
+
+                <button type="button" className="ops-topbar-icon-btn" aria-label="Thông báo">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M12 4.5a4.5 4.5 0 0 0-4.5 4.5v2.5c0 .9-.36 1.77-1 2.4l-1.2 1.2h13.4l-1.2-1.2a3.4 3.4 0 0 1-1-2.4V9A4.5 4.5 0 0 0 12 4.5Z" />
+                    <path d="M10 17.5a2 2 0 0 0 4 0" />
+                  </svg>
+                </button>
+
+                <div className="ops-topbar-profile" aria-label="Tài khoản">
+                  <span className="ops-topbar-avatar">{operatorInitial}</span>
+                  <span className="ops-topbar-user">{operatorName}</span>
+                  <span className="ops-topbar-role">{roleText}</span>
+                </div>
+
+                <button
+                  type="button"
+                  className="ops-logout-inline"
+                  disabled={logoutMutation.isPending}
+                  onClick={() => void onLogout()}
+                >
+                  {logoutMutation.isPending ? 'Đang đăng xuất...' : 'Đăng xuất'}
+                </button>
+              </div>
+            </header>
+
+            <main className="ops-main-panel ops-main-panel--flat">
+              <Outlet />
+            </main>
+          </div>
         </div>
-      </div>
+        <GlobalChatBubble />
+      </>
     );
   }
 
   return (
+    <>
       <div className="ops-func-shell">
         <header className="ops-func-header">
           <button
@@ -1355,7 +1370,9 @@ function DashboardLayout(): React.JSX.Element {
           </section>
         </main>
       </div>
-    </div>
+      </div>
+      <GlobalChatBubble />
+    </>
   );
 }
 
