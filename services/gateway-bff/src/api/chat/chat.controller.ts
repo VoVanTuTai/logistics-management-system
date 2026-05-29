@@ -29,6 +29,11 @@ interface MarkChatReadBody {
   courierId?: string;
 }
 
+interface ClaimChatBody {
+  conversationId?: string;
+  courierId?: string;
+}
+
 @Controller('chat')
 export class ChatController {
   constructor(
@@ -112,6 +117,27 @@ export class ChatController {
 
     await this.chatRealtimeGateway.publish({
       type: 'chat.read',
+      conversation,
+    });
+
+    return conversation;
+  }
+
+  @Post('claim')
+  async claimConversation(
+    @Req() request: Request,
+    @Body() body: ClaimChatBody,
+    @Query('clientRole') clientRole?: string,
+  ): Promise<ChatConversationDto> {
+    const actor = await this.chatService.resolveActor({
+      authorizationHeader: request.headers.authorization,
+      roleHint: clientRole,
+      courierIdHint: body.courierId,
+    });
+    const conversation = await this.chatService.claimConversation(actor, body);
+
+    await this.chatRealtimeGateway.publish({
+      type: 'chat.claim',
       conversation,
     });
 

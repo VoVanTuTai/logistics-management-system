@@ -363,7 +363,6 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
 
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<'ALL' | DispatchStatus>('CREATED');
-  const [searchBy, setSearchBy] = useState<'order' | 'shipment'>('order');
   const [keyword, setKeyword] = useState('');
   const [fromTime, setFromTime] = useState(startOfTodayInputValue);
   const [toTime, setToTime] = useState(endOfTodayInputValue);
@@ -517,7 +516,7 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
     const normalizedCourier = normalizeText(courierFilter);
 
     return dispatchRows.filter((order) => {
-      const keywordSource = searchBy === 'order' ? order.orderCode : order.shipmentCode;
+      const keywordSource = order.shipmentCode;
       const keywordMatched =
         !normalizedKeyword ||
         normalizeText(keywordSource).includes(normalizedKeyword) ||
@@ -544,7 +543,6 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
     dispatchRows,
     fromTime,
     keyword,
-    searchBy,
     serviceFilter,
     sourceFilter,
     statusFilter,
@@ -603,7 +601,6 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
     fromTime,
     keyword,
     pageSize,
-    searchBy,
     serviceFilter,
     sourceFilter,
     statusFilter,
@@ -670,7 +667,6 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
 
   const resetFilters = () => {
     setStatusFilter('CREATED');
-    setSearchBy('order');
     setKeyword('');
     setFromTime(startOfTodayInputValue());
     setToTime(endOfTodayInputValue());
@@ -808,31 +804,6 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
 
   return (
     <section className="ops-customer-dispatch">
-      <header className="ops-customer-dispatch__top">
-        <div className="ops-customer-dispatch__title">
-          <span>Đơn khách hàng</span>
-          <h2>Điều phối lấy hàng</h2>
-          <p>Đơn từ Sàn DT/Merchant có địa chỉ lấy thuộc bưu cục Ops được gán.</p>
-        </div>
-        <div className="ops-customer-dispatch__summary" aria-label="Tổng quan điều phối">
-          <div>
-            <strong>{processingHubCode || '-'}</strong>
-            <span>Bưu cục</span>
-          </div>
-          <div>
-            <strong>{waitingOrderCount}</strong>
-            <span>Chờ điều phối</span>
-          </div>
-          <div>
-            <strong>{assignedOrderCount}</strong>
-            <span>Đang lấy</span>
-          </div>
-          <div>
-            <strong>{marketplaceOrderCount}</strong>
-            <span>Từ sàn</span>
-          </div>
-        </div>
-      </header>
 
       <section className="ops-customer-dispatch__toolbar" aria-label="Thao tác điều phối">
         <button type="button" onClick={resetFilters}>
@@ -856,31 +827,9 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
           <input
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
-            placeholder="Mã đơn, mã vận đơn, tên shop"
+            placeholder="Mã vận đơn, tên shop"
           />
         </label>
-
-        <fieldset className="ops-customer-dispatch__radio-field">
-          <legend>Tìm theo</legend>
-          <label>
-            <input
-              type="radio"
-              name="dispatch-search-by"
-              checked={searchBy === 'order'}
-              onChange={() => setSearchBy('order')}
-            />
-            <span>Mã đơn đặt</span>
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="dispatch-search-by"
-              checked={searchBy === 'shipment'}
-              onChange={() => setSearchBy('shipment')}
-            />
-            <span>Mã vận đơn</span>
-          </label>
-        </fieldset>
 
         <label>
           <span>Từ giờ tạo</span>

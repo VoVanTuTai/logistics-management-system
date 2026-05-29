@@ -367,7 +367,7 @@ function buildBaggingRows(manifests: ManifestListItemDto[]): MonitorRow[] {
     return {
       id: manifest.id,
       code: manifest.manifestCode,
-      codePath: routePaths.manifestDetail(manifest.id),
+      codePath: routePaths.linehaulTripDataMonitor,
       hubCode: manifest.originHubCode || '---',
       oppositeHubCode: manifest.destinationHubCode || '---',
       customer: manifest.manifestCode,

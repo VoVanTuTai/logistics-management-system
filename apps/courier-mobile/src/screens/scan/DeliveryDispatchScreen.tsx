@@ -28,7 +28,8 @@ import type { TaskAssignmentDto, TaskDto } from '../../features/tasks/tasks.type
 import { ApiClientError } from '../../services/api/client';
 import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
-import { resolveCourierDisplayName } from '../../utils/courier';
+import { resolveCourierDisplayName, resolveCourierId } from '../../utils/courier';
+import { appEnv } from '../../utils/env';
 
 interface CourierOption {
   courierId: string;
@@ -321,11 +322,11 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
         .filter(Boolean),
     [user?.hubCodes],
   );
-  const actorCode = user?.username ?? user?.id ?? 'N/A';
+  const actorCode = resolveCourierId(appEnv.courierId, user?.username) || user?.id || 'N/A';
   const actorName = resolveCourierDisplayName({
     displayName: user?.displayName,
     username: user?.username,
-    courierId: user?.id,
+    courierId: actorCode,
   });
   const actorHubCode = assignedHubCodes[0] ?? null;
 
@@ -574,7 +575,7 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
       `Vận đơn: ${shipmentCode}`,
       `Nhân viên: ${actorName}`,
       `Mã NV: ${actorCode}`,
-      `Hub: ${actorHubCode ?? 'N/A'}`,
+      `Mã hub: ${actorHubCode ?? 'N/A'}`,
       selectedCourier ? `Courier: ${selectedCourier.courierId}` : null,
     ]
       .filter(Boolean)

@@ -99,7 +99,11 @@ export class ChatPubSubService implements OnModuleInit, OnModuleDestroy {
 function parseEnvelope(rawMessage: string): ChatPubSubEnvelope | null {
   try {
     const parsed = JSON.parse(rawMessage) as Partial<ChatPubSubEnvelope>;
-    if (parsed.event?.type === 'chat.message' || parsed.event?.type === 'chat.read') {
+    if (
+      parsed.event?.type === 'chat.message' ||
+      parsed.event?.type === 'chat.read' ||
+      parsed.event?.type === 'chat.claim'
+    ) {
       return parsed as ChatPubSubEnvelope;
     }
   } catch {

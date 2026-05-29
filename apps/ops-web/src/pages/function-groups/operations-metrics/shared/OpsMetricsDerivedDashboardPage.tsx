@@ -328,7 +328,7 @@ function buildSendRows(shipments: ShipmentListItemDto[], manifests: ManifestList
         normalizeCode(manifest.status) === 'SEALED'
           ? 'Manifest đã seal, sẵn sàng tính gửi đúng giờ'
           : 'Manifest dùng làm nguồn kiểm soát gửi kiện',
-      detailTo: routePaths.manifestDetail(manifest.id),
+      detailTo: routePaths.linehaulTripDataMonitor,
     };
   });
 
@@ -378,7 +378,7 @@ function buildNetworkRows(shipments: ShipmentListItemDto[], manifests: ManifestL
     basisAt: manifest.updatedAt ?? manifest.createdAt ?? manifest.sealedAt,
     ageHours: ageHours(manifest.updatedAt ?? manifest.createdAt ?? manifest.sealedAt),
     issue: `Manifest tuyến ${manifest.shipmentCount ?? 0} kiện, dùng tính tải mạng lưới`,
-    detailTo: routePaths.manifestDetail(manifest.id),
+    detailTo: routePaths.linehaulTripDataMonitor,
   }));
 
   const shipmentRows = shipments
@@ -475,7 +475,7 @@ function buildOverdueRows(
     basisAt: manifest.sealedAt ?? manifest.createdAt ?? manifest.updatedAt,
     ageHours: ageHours(manifest.sealedAt ?? manifest.createdAt ?? manifest.updatedAt),
     issue: 'Manifest/linehaul quá hạn chưa receive',
-    detailTo: routePaths.manifestDetail(manifest.id),
+    detailTo: routePaths.linehaulTripDataMonitor,
   }));
   const ndrRows = ndrCases
     .filter((ndr) => normalizeCode(ndr.status) !== 'CLOSED')

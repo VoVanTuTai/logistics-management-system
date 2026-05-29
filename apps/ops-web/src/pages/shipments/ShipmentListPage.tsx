@@ -1120,6 +1120,12 @@ export function ShipmentListPage(): React.JSX.Element {
         </div>
 
         <div style={styles.filterActions}>
+          <button type="button" style={styles.actionButton} onClick={() => setIsCounterModalOpen(true)}>
+            Tiếp nhận đơn hàng
+          </button>
+          <button type="button" style={styles.actionButton} onClick={() => setIsWalkInModalOpen(true)}>
+            Tạo đơn hàng
+          </button>
           <span style={styles.selectionSummary}>
             {selectedShipments.length > 0
               ? `${selectedShipments.length} vận đơn đã chọn`

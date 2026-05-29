@@ -37,6 +37,18 @@
   line-height: 1.45;
 }
 
+.ops-chat__assignment {
+  display: inline-flex;
+  margin: 8px 0 0;
+  border: 1px solid #b7d6f5;
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: #eef6ff;
+  color: #17456f;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .ops-chat__status {
   border-radius: 999px;
   padding: 5px 10px;

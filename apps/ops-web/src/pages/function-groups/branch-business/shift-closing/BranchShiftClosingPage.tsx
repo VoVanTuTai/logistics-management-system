@@ -1,16 +1,17 @@
 import React, { useMemo, useState } from 'react';
 
 import { useHubsQuery } from '../../../../features/masterdata/masterdata.api';
-import { usePickupRequestsQuery } from '../../../../features/pickups/pickups.api';
+import { useCodDailySettlementQuery } from '../../../../features/payments/payment.api';
+import type { CodDailySettlementRecordDto } from '../../../../features/payments/payment.types';
 import { useShipmentsQuery } from '../../../../features/shipments/shipments.api';
+import type { ShipmentListItemDto } from '../../../../features/shipments/shipments.types';
 import { useTasksQuery } from '../../../../features/tasks/tasks.api';
+import type { TaskListItemDto } from '../../../../features/tasks/tasks.types';
 import { getErrorMessage } from '../../../../services/api/errors';
 import { useAuthStore } from '../../../../store/authStore';
 import { formatShipmentStatusLabel } from '../../../../utils/logisticsLabels';
 import {
   EXCEPTION_BRANCH_STATUSES,
-  RECEIVED_BRANCH_STATUSES,
-  SENT_BRANCH_STATUSES,
   buildBranchScopeTokens,
   buildTaskByShipment,
   formatBranchCurrency,
@@ -32,6 +33,34 @@ const SHIFT_LABELS: Record<ShiftCode, string> = {
   AFTERNOON: 'Ca chiều',
   FULL_DAY: 'Cả ngày',
 };
+
+const INVENTORY_CHECK_STATUSES = new Set(['INVENTORY_CHECK']);
+
+interface CourierCodReportRow {
+  courierId: string;
+  deliveredOrders: number;
+  failedOrders: number;
+  codTotal: number;
+  remittedTotal: number;
+  pendingTotal: number;
+  source: 'payment' | 'preview';
+}
+
+function normalizeTaskStatus(task: TaskListItemDto | null | undefined): string {
+  return normalizeBranchCode(task?.status);
+}
+
+function isDeliveryCompleted(shipment: ShipmentListItemDto, task: TaskListItemDto | null): boolean {
+  return normalizeBranchCode(shipment.currentStatus) === 'DELIVERED' || normalizeTaskStatus(task) === 'COMPLETED';
+}
+
+function isDeliveryIssue(shipment: ShipmentListItemDto, task: TaskListItemDto | null): boolean {
+  return EXCEPTION_BRANCH_STATUSES.has(normalizeBranchCode(shipment.currentStatus)) || normalizeTaskStatus(task) === 'CANCELLED';
+}
+
+function readCollectedAmount(record: CodDailySettlementRecordDto): number {
+  return Math.max(0, record.collectedAmount ?? record.codAmount);
+}
 
 function isShipmentInSelectedShift(updatedAt: string, selectedDate: string, shift: ShiftCode): boolean {
   if (toBranchDateKey(updatedAt) !== selectedDate) {
@@ -63,7 +92,6 @@ export function BranchShiftClosingPage(): React.JSX.Element {
   const deliveryTasksQuery = useTasksQuery(accessToken, { taskType: 'DELIVERY' }, {
     refetchInterval: 15000,
   });
-  const pickupsQuery = usePickupRequestsQuery(accessToken, {}, { refetchInterval: 15000 });
   const hubsQuery = useHubsQuery(accessToken, {});
 
   const selectedHubCodes = useMemo(
@@ -73,6 +101,16 @@ export function BranchShiftClosingPage(): React.JSX.Element {
   const scopeTokens = useMemo(
     () => buildBranchScopeTokens(hubsQuery.data ?? [], selectedHubCodes),
     [hubsQuery.data, selectedHubCodes],
+  );
+  const settlementQuery = useCodDailySettlementQuery(
+    accessToken,
+    {
+      date: selectedDate,
+      hubCode: hubFilter === 'ALL' ? null : hubFilter,
+      courierId: null,
+      status: 'ALL',
+    },
+    { refetchInterval: 15000 },
   );
   const taskByShipment = useMemo(
     () => buildTaskByShipment(deliveryTasksQuery.data ?? [], 'DELIVERY'),
@@ -93,16 +131,48 @@ export function BranchShiftClosingPage(): React.JSX.Element {
       ),
     [scopedShipments, selectedDate, selectedShift],
   );
+  const shiftDeliveryTasks = useMemo(
+    () =>
+      (deliveryTasksQuery.data ?? []).filter((task) =>
+        isShipmentInSelectedShift(task.updatedAt, selectedDate, selectedShift),
+      ),
+    [deliveryTasksQuery.data, selectedDate, selectedShift],
+  );
+  const assignedTaskRows = useMemo(
+    () => shiftDeliveryTasks.filter((task) => Boolean(task.assignedCourierId)),
+    [shiftDeliveryTasks],
+  );
+  const completedRows = useMemo(
+    () =>
+      shiftShipments.filter((shipment) =>
+        isDeliveryCompleted(shipment, taskByShipment.get(normalizeBranchCode(shipment.shipmentCode)) ?? null),
+      ),
+    [shiftShipments, taskByShipment],
+  );
+  const issueRows = useMemo(
+    () =>
+      shiftShipments.filter((shipment) =>
+        isDeliveryIssue(shipment, taskByShipment.get(normalizeBranchCode(shipment.shipmentCode)) ?? null),
+      ),
+    [shiftShipments, taskByShipment],
+  );
   const inventoryShipments = useMemo(
     () => scopedShipments.filter(isBranchInventoryShipment),
     [scopedShipments],
   );
-  const exceptionRows = useMemo(
+  const inventoryCheckedRows = useMemo(
     () =>
-      scopedShipments
-        .filter((shipment) => EXCEPTION_BRANCH_STATUSES.has(normalizeBranchCode(shipment.currentStatus)))
-        .slice(0, 20),
-    [scopedShipments],
+      shiftShipments.filter((shipment) =>
+        INVENTORY_CHECK_STATUSES.has(normalizeBranchCode(shipment.currentStatus)),
+      ),
+    [shiftShipments],
+  );
+  const missingRows = useMemo(
+    () =>
+      issueRows.filter(
+        (shipment) => !INVENTORY_CHECK_STATUSES.has(normalizeBranchCode(shipment.currentStatus)),
+      ),
+    [issueRows],
   );
   const hubOptions = useMemo(
     () =>
@@ -110,42 +180,102 @@ export function BranchShiftClosingPage(): React.JSX.Element {
     [assignedHubCodes, scopedShipments],
   );
 
-  const receivedCount = shiftShipments.filter((shipment) =>
-    RECEIVED_BRANCH_STATUSES.has(normalizeBranchCode(shipment.currentStatus)),
-  ).length;
-  const sentCount = shiftShipments.filter((shipment) =>
-    SENT_BRANCH_STATUSES.has(normalizeBranchCode(shipment.currentStatus)),
-  ).length;
-  const deliveredRows = shiftShipments.filter(
-    (shipment) => normalizeBranchCode(shipment.currentStatus) === 'DELIVERED',
-  );
-  const codReceivable = deliveredRows.reduce((sum, shipment) => sum + (shipment.codAmount ?? 0), 0);
-  const codHandedOver = 0;
-  const pickupCreatedCount = (pickupsQuery.data ?? []).filter(
-    (pickup) => toBranchDateKey(pickup.requestedAt) === selectedDate,
-  ).length;
+  const deliveredRows = completedRows;
+  const paymentRecords = settlementQuery.data?.records ?? [];
+  const usePaymentCodData = !settlementQuery.isError && paymentRecords.length > 0;
+  const courierCodRows = useMemo<CourierCodReportRow[]>(() => {
+    const rowsByCourier = new Map<string, CourierCodReportRow>();
+
+    const ensureRow = (courierId: string, source: CourierCodReportRow['source']) => {
+      const key = courierId || 'Chưa xác định';
+      const row =
+        rowsByCourier.get(key) ??
+        {
+          courierId: key,
+          deliveredOrders: 0,
+          failedOrders: 0,
+          codTotal: 0,
+          remittedTotal: 0,
+          pendingTotal: 0,
+          source,
+        };
+
+      rowsByCourier.set(key, row);
+      return row;
+    };
+
+    for (const shipment of shiftShipments) {
+      const task = taskByShipment.get(normalizeBranchCode(shipment.shipmentCode)) ?? null;
+      const row = ensureRow(task?.assignedCourierId ?? 'Chưa xác định', usePaymentCodData ? 'payment' : 'preview');
+
+      if (isDeliveryCompleted(shipment, task)) {
+        row.deliveredOrders += 1;
+      }
+
+      if (isDeliveryIssue(shipment, task)) {
+        row.failedOrders += 1;
+      }
+    }
+
+    if (usePaymentCodData) {
+      for (const record of paymentRecords) {
+        const row = ensureRow(record.courierId ?? 'Chưa xác định', 'payment');
+        const amount = readCollectedAmount(record);
+
+        row.codTotal += Math.max(0, record.codAmount);
+        if (record.status === 'REMITTED') {
+          row.remittedTotal += amount;
+        }
+        if (record.status === 'COLLECTED') {
+          row.pendingTotal += amount;
+        }
+      }
+    } else {
+      for (const shipment of deliveredRows) {
+        const codAmount = Math.max(0, shipment.codAmount ?? 0);
+        if (codAmount <= 0) {
+          continue;
+        }
+
+        const task = taskByShipment.get(normalizeBranchCode(shipment.shipmentCode)) ?? null;
+        const row = ensureRow(task?.assignedCourierId ?? 'Chưa xác định', 'preview');
+        row.codTotal += codAmount;
+        row.pendingTotal += codAmount;
+      }
+    }
+
+    return Array.from(rowsByCourier.values()).sort(
+      (left, right) =>
+        right.pendingTotal - left.pendingTotal ||
+        right.codTotal - left.codTotal ||
+        left.courierId.localeCompare(right.courierId),
+    );
+  }, [deliveredRows, paymentRecords, shiftShipments, taskByShipment, usePaymentCodData]);
+  const codReceivable = courierCodRows.reduce((sum, row) => sum + row.codTotal, 0);
+  const codHandedOver = courierCodRows.reduce((sum, row) => sum + row.remittedTotal, 0);
+  const codPending = courierCodRows.reduce((sum, row) => sum + row.pendingTotal, 0);
   const isLoading =
     shipmentsQuery.isLoading ||
     deliveryTasksQuery.isLoading ||
-    pickupsQuery.isLoading ||
+    settlementQuery.isLoading ||
     hubsQuery.isLoading;
   const loadError =
-    shipmentsQuery.error ?? deliveryTasksQuery.error ?? pickupsQuery.error ?? hubsQuery.error ?? null;
+    shipmentsQuery.error ?? deliveryTasksQuery.error ?? hubsQuery.error ?? null;
 
   return (
     <section className="ops-branch-workflow">
       <header className="ops-branch-workflow__header">
         <div>
-          <small>BRANCH_SHIFT_CLOSING</small>
-          <h2>Chốt ca</h2>
+          <small>BRANCH_END_OF_DAY_REPORT</small>
+          <h2>Báo cáo cuối ngày</h2>
           <p>
-            Preview số liệu cuối ca từ shipment, pickup và task. Chưa có API ghi
-            nhận chốt ca nên màn này chưa tạo bản ghi đóng ca chính thức.
+            Tổng hợp dữ liệu cốt lõi khi vận hành giao hàng: đơn đã đẩy sang app courier,
+            kết quả phát, tồn kho, thiếu hàng và COD theo từng courier.
           </p>
         </div>
         <div className="ops-branch-workflow__scope">
-          <span>Trạng thái contract</span>
-          <strong>Chưa có API ghi nhận chốt ca</strong>
+          <span>Nguồn COD</span>
+          <strong>{usePaymentCodData ? 'Payment-service' : 'Preview từ shipment/task'}</strong>
         </div>
       </header>
 
@@ -188,40 +318,40 @@ export function BranchShiftClosingPage(): React.JSX.Element {
 
       <section className="ops-branch-workflow__kpis">
         <article>
-          <span>Đơn nhận</span>
-          <strong>{receivedCount + pickupCreatedCount}</strong>
+          <span>Đã phát sang app courier</span>
+          <strong>{assignedTaskRows.length}</strong>
         </article>
         <article>
-          <span>Đơn gửi</span>
-          <strong>{sentCount}</strong>
+          <span>Hoàn thành</span>
+          <strong>{completedRows.length}</strong>
+        </article>
+        <article data-tone="danger">
+          <span>Không hoàn thành / có vấn đề</span>
+          <strong>{issueRows.length}</strong>
         </article>
         <article>
-          <span>Đơn phát</span>
-          <strong>{deliveredRows.length}</strong>
+          <span>Đã kiểm tồn kho</span>
+          <strong>{inventoryCheckedRows.length}</strong>
+        </article>
+        <article data-tone="danger">
+          <span>Đơn thiếu chưa về kho</span>
+          <strong>{missingRows.length}</strong>
         </article>
         <article>
-          <span>Đơn tồn cuối ca</span>
+          <span>Tồn kho hiện tại</span>
           <strong>{inventoryShipments.length}</strong>
         </article>
         <article data-tone="money">
-          <span>COD phải thu</span>
+          <span>Tổng COD cần kiểm soát</span>
           <strong>{formatBranchCurrency(codReceivable)}</strong>
         </article>
         <article data-tone="money">
-          <span>COD đã giao</span>
+          <span>COD đã nộp</span>
           <strong>{formatBranchCurrency(codHandedOver)}</strong>
         </article>
-        <article data-tone="danger">
-          <span>Ngoại lệ</span>
-          <strong>{exceptionRows.length}</strong>
-        </article>
-        <article>
-          <span>Task giao trong ca</span>
-          <strong>
-            {(deliveryTasksQuery.data ?? []).filter((task) =>
-              isShipmentInSelectedShift(task.updatedAt, selectedDate, selectedShift),
-            ).length}
-          </strong>
+        <article data-tone="money">
+          <span>COD chưa nộp</span>
+          <strong>{formatBranchCurrency(codPending)}</strong>
         </article>
       </section>
 
@@ -234,8 +364,8 @@ export function BranchShiftClosingPage(): React.JSX.Element {
       <section className="ops-branch-workflow__grid">
         <section className="ops-branch-workflow__panel">
           <header className="ops-branch-workflow__panel-head">
-            <h3>Ngoại lệ cần xử lý trước khi chốt</h3>
-            <span>{isLoading ? 'Đang tải...' : `${exceptionRows.length} dòng`}</span>
+            <h3>Đơn giao không hoàn thành / có ghi nhận vấn đề</h3>
+            <span>{isLoading ? 'Đang tải...' : `${issueRows.length} dòng`}</span>
           </header>
           {isLoading ? (
             <p className="ops-branch-workflow__loading">Đang tổng hợp số liệu ca...</p>
@@ -253,7 +383,7 @@ export function BranchShiftClosingPage(): React.JSX.Element {
                 </tr>
               </thead>
               <tbody>
-                {exceptionRows.map((shipment) => {
+                {issueRows.map((shipment) => {
                   const task = taskByShipment.get(normalizeBranchCode(shipment.shipmentCode));
 
                   return (
@@ -277,43 +407,134 @@ export function BranchShiftClosingPage(): React.JSX.Element {
               </tbody>
             </table>
           </div>
-          {!isLoading && exceptionRows.length === 0 ? (
+          {!isLoading && issueRows.length === 0 ? (
             <p className="ops-branch-workflow__empty">
-              Không có ngoại lệ trong phạm vi ca hiện tại.
+              Không có đơn giao lỗi hoặc vấn đề phát sinh trong phạm vi báo cáo.
             </p>
           ) : null}
         </section>
 
         <aside className="ops-branch-workflow__panel">
           <header className="ops-branch-workflow__panel-head">
-            <h3>Điều kiện chốt ca</h3>
+            <h3>Diễn giải vận hành</h3>
           </header>
           <div className="ops-branch-workflow__stack">
             <p className="ops-branch-workflow__contract">
-              Chưa có API ghi nhận chốt ca. Cần bổ sung endpoint tạo phiên chốt,
-              lưu người chốt, hub, ca, tổng COD, danh sách ngoại lệ và audit log.
+              Báo cáo này là màn tổng hợp vận hành từ dữ liệu hiện có. COD ưu tiên lấy
+              từ payment-service; nếu chưa có bản ghi COD thì hiển thị preview theo đơn
+              đã giao và courier được gán.
             </p>
             <ul className="ops-branch-workflow__mini-list">
               <li>
-                <span>COD đã giao</span>
-                <strong>Chưa có contract nộp tiền</strong>
+                <span>Đã phát sang app</span>
+                <strong>{assignedTaskRows.length} task DELIVERY có courier</strong>
               </li>
               <li>
-                <span>Scan trong ca</span>
-                <strong>Chưa có endpoint list scan</strong>
+                <span>Tỷ lệ hoàn thành</span>
+                <strong>
+                  {assignedTaskRows.length > 0
+                    ? `${Math.round((completedRows.length / assignedTaskRows.length) * 100)}%`
+                    : '0%'}
+                </strong>
               </li>
               <li>
-                <span>Trạng thái</span>
-                <strong>Preview only</strong>
+                <span>COD chưa nộp</span>
+                <strong>{formatBranchCurrency(codPending)}</strong>
               </li>
             </ul>
           </div>
-          <div className="ops-branch-workflow__actions">
-            <button type="button" disabled title="Chưa có API ghi nhận chốt ca">
-              Chốt ca
-            </button>
-          </div>
         </aside>
+      </section>
+
+      <section className="ops-branch-workflow__grid ops-branch-workflow__grid--balanced">
+        <section className="ops-branch-workflow__panel">
+          <header className="ops-branch-workflow__panel-head">
+            <h3>COD theo courier</h3>
+            <span>
+              {settlementQuery.isError
+                ? 'Fallback preview'
+                : usePaymentCodData
+                  ? `${courierCodRows.length} courier`
+                  : 'Preview chưa có settlement'}
+            </span>
+          </header>
+          <div className="ops-branch-workflow__table-wrap">
+            <table className="ops-branch-workflow__table">
+              <thead>
+                <tr>
+                  <th>Courier</th>
+                  <th>Đơn hoàn thành</th>
+                  <th>Đơn lỗi</th>
+                  <th>Tổng COD</th>
+                  <th>Đã nộp</th>
+                  <th>Chưa nộp</th>
+                  <th>Nguồn</th>
+                </tr>
+              </thead>
+              <tbody>
+                {courierCodRows.map((row) => (
+                  <tr key={row.courierId}>
+                    <td><strong>{row.courierId}</strong></td>
+                    <td>{row.deliveredOrders}</td>
+                    <td>{row.failedOrders}</td>
+                    <td className="ops-branch-workflow__money">{formatBranchCurrency(row.codTotal)}</td>
+                    <td className="ops-branch-workflow__money">{formatBranchCurrency(row.remittedTotal)}</td>
+                    <td className="ops-branch-workflow__money">{formatBranchCurrency(row.pendingTotal)}</td>
+                    <td>
+                      <span className="ops-branch-workflow__badge">
+                        {row.source === 'payment' ? 'Payment' : 'Preview'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {!isLoading && courierCodRows.length === 0 ? (
+            <p className="ops-branch-workflow__empty">Chưa có dữ liệu COD/courier trong phạm vi báo cáo.</p>
+          ) : null}
+        </section>
+
+        <section className="ops-branch-workflow__panel">
+          <header className="ops-branch-workflow__panel-head">
+            <h3>Đơn thiếu chưa về kiểm kho</h3>
+            <span>{missingRows.length} dòng</span>
+          </header>
+          <div className="ops-branch-workflow__table-wrap">
+            <table className="ops-branch-workflow__table">
+              <thead>
+                <tr>
+                  <th>Mã vận đơn</th>
+                  <th>Trạng thái</th>
+                  <th>Courier</th>
+                  <th>Cập nhật cuối</th>
+                </tr>
+              </thead>
+              <tbody>
+                {missingRows.map((shipment) => {
+                  const task = taskByShipment.get(normalizeBranchCode(shipment.shipmentCode));
+
+                  return (
+                    <tr key={shipment.shipmentCode}>
+                      <td>
+                        <CopyableShipmentCode
+                          code={shipment.shipmentCode}
+                          className="ops-branch-workflow__code"
+                        />
+                      </td>
+                      <td>{formatShipmentStatusLabel(shipment.currentStatus)}</td>
+                      <td>{task?.assignedCourierId ?? 'Chưa xác định'}</td>
+                      <td>{formatBranchDateTime(shipment.updatedAt)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {!isLoading && missingRows.length === 0 ? (
+            <p className="ops-branch-workflow__empty">Không có đơn thiếu cần đối soát kho.</p>
+          ) : null}
+        </section>
       </section>
     </section>
   );

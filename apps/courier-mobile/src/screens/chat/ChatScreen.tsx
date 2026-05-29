@@ -21,6 +21,7 @@ import {
   sendCourierChatMessage,
 } from '../../features/chat/chat.api';
 import type {
+  ChatConversationDto,
   ChatMessageDto,
   ChatRealtimeEvent,
 } from '../../features/chat/chat.types';
@@ -42,6 +43,7 @@ export function ChatScreen(): React.JSX.Element {
     courierId,
   });
   const scrollRef = React.useRef<ScrollView | null>(null);
+  const [conversation, setConversation] = React.useState<ChatConversationDto | null>(null);
   const [messages, setMessages] = React.useState<ChatMessageDto[]>([]);
   const [messagesNextCursor, setMessagesNextCursor] = React.useState<string | null>(null);
   const [draft, setDraft] = React.useState('');
@@ -63,10 +65,11 @@ export function ChatScreen(): React.JSX.Element {
       });
       setMessages(items.items);
       setMessagesNextCursor(items.nextCursor);
-      await markCourierChatRead({
+      const readConversation = await markCourierChatRead({
         accessToken: token,
         courierId,
       });
+      setConversation(readConversation);
     } catch (error) {
       setErrorMessage(toErrorMessage(error, 'Không tải được hội thoại.'));
     } finally {
@@ -128,9 +131,10 @@ export function ChatScreen(): React.JSX.Element {
         const payload = safeParseRealtimeEvent(String(event.data));
         if (payload?.type !== 'chat.message') {
           if (
-            payload?.type === 'chat.read' &&
+            (payload?.type === 'chat.read' || payload?.type === 'chat.claim') &&
             payload.conversation.courierId === courierId
           ) {
+            setConversation(payload.conversation);
             void getValidAccessToken()
               .then((token) => listCourierChatMessages({ accessToken: token, courierId }))
               .then((page) => {
@@ -143,6 +147,7 @@ export function ChatScreen(): React.JSX.Element {
         }
 
         if (payload.message.courierId === courierId) {
+          setConversation(payload.conversation);
           setMessages((current) => appendMessageIfMissing(current, payload.message));
           void getValidAccessToken()
             .then((token) => markCourierChatRead({ accessToken: token, courierId }))
@@ -242,6 +247,11 @@ export function ChatScreen(): React.JSX.Element {
             <Text style={styles.title}>Chat vận hành</Text>
             <Text style={styles.subtitle}>
               {displayName} · {courierId}
+            </Text>
+            <Text style={styles.assignmentText}>
+              {conversation?.assignedOpsName
+                ? `Đang xử lý bởi ${conversation.assignedOpsName}`
+                : 'Ops cùng hub sẽ tiếp nhận'}
             </Text>
           </View>
           <View
@@ -451,6 +461,12 @@ const styles = StyleSheet.create({
     ...theme.typography.caption.md,
     color: theme.colors.textMuted,
     marginTop: 2,
+  },
+  assignmentText: {
+    ...theme.typography.caption.sm,
+    color: theme.colors.primary,
+    fontWeight: '800',
+    marginTop: 4,
   },
   statusPill: {
     borderRadius: theme.radius.pill,

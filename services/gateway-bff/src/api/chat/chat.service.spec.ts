@@ -139,6 +139,73 @@ test('blocks OPS chat to courier outside assigned hub', async () => {
   );
 });
 
+test('tracks unread state separately for OPS users while sharing the courier thread', async () => {
+  const service = createService();
+  await service.onModuleInit();
+
+  const courier: ChatActor = {
+    role: 'COURIER',
+    id: 'courier-user-1',
+    displayName: 'Courier 30000001',
+    courierId: '30000001',
+    hubCodes: ['HCM01'],
+    canAccessAllHubs: false,
+  };
+  const opsOne: ChatActor = {
+    role: 'OPS',
+    id: 'ops-user-1',
+    displayName: 'Ops One',
+    courierId: null,
+    hubCodes: ['HCM01'],
+    canAccessAllHubs: false,
+  };
+  const opsTwo: ChatActor = {
+    role: 'OPS',
+    id: 'ops-user-2',
+    displayName: 'Ops Two',
+    courierId: null,
+    hubCodes: ['HCM01'],
+    canAccessAllHubs: false,
+  };
+
+  await service.createMessage(courier, { courierId: '30000001', text: 'need help' });
+
+  assert.equal((await service.listConversations(opsOne))[0]?.unreadCount, 1);
+  assert.equal((await service.listConversations(opsTwo))[0]?.unreadCount, 1);
+
+  await service.markRead(opsOne, { courierId: '30000001' });
+
+  assert.equal((await service.listConversations(opsOne))[0]?.unreadCount, 0);
+  assert.equal((await service.listConversations(opsTwo))[0]?.unreadCount, 1);
+
+  const courierMessages = await service.listMessages(courier, {
+    courierId: '30000001',
+  });
+  assert.ok(courierMessages.items[0]?.readByOpsAt);
+});
+
+test('allows OPS to claim a shared courier conversation', async () => {
+  const service = createService();
+  await service.onModuleInit();
+
+  const actor: ChatActor = {
+    role: 'OPS',
+    id: 'ops-user-1',
+    displayName: 'Ops HCM',
+    courierId: null,
+    hubCodes: ['HCM01'],
+    canAccessAllHubs: false,
+  };
+
+  const conversation = await service.claimConversation(actor, {
+    courierId: '30000001',
+  });
+
+  assert.equal(conversation.assignedOpsId, actor.id);
+  assert.equal(conversation.assignedOpsName, actor.displayName);
+  assert.ok(conversation.assignedOpsAt);
+});
+
 function createService(authClientOverrides: Record<string, unknown> = {}): ChatService {
   return new ChatService(
     {

@@ -5,6 +5,7 @@ import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from './app.module';
 import { ChatRealtimeGateway } from './api/chat/chat-realtime.gateway';
+import { TasksRealtimeProxyGateway } from './api/tasks-realtime/tasks-realtime-proxy.gateway';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, { rawBody: true });
@@ -43,6 +44,7 @@ async function bootstrap(): Promise<void> {
 
   await app.listen(port);
   app.get(ChatRealtimeGateway).registerHttpServer(app.getHttpServer());
+  app.get(TasksRealtimeProxyGateway).registerHttpServer(app.getHttpServer());
 }
 
 void bootstrap();

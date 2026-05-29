@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 
 import {
   BadRequestException,
+  ForbiddenException,
   Inject,
   Injectable,
   NotFoundException,
@@ -29,6 +30,22 @@ import {
   type OpsAuditContext,
 } from './ops-audit.service';
 
+const DESTINATION_VISIBLE_STATUSES = new Set<string>([
+  'MANIFEST_RECEIVED',
+  'MANIFEST_UNSEALED',
+  'SCAN_INBOUND',
+  'INVENTORY_CHECK',
+  'DELIVERED',
+  'DELIVERY_FAILED',
+  'NDR_CREATED',
+  'EXCEPTION',
+]);
+
+export interface OpsTaskScopeContext {
+  hubCodes: string[];
+  canAccessAllHubs: boolean;
+}
+
 @Injectable()
 export class TasksService {
   constructor(
@@ -39,13 +56,16 @@ export class TasksService {
     private readonly opsAuditService: OpsAuditService,
   ) {}
 
-  list(filters: {
-    courierId?: string;
-    taskType?: string;
-    status?: string;
-    shipmentCode?: string;
-    pickupRequestId?: string;
-  }): Promise<Task[]> {
+  async list(
+    filters: {
+      courierId?: string;
+      taskType?: string;
+      status?: string;
+      shipmentCode?: string;
+      pickupRequestId?: string;
+    },
+    opsScope?: OpsTaskScopeContext,
+  ): Promise<Task[]> {
     const normalizedFilters: ListTasksFilters = {
       courierId: filters.courierId?.trim() || undefined,
       shipmentCode: filters.shipmentCode?.trim() || undefined,
@@ -54,7 +74,10 @@ export class TasksService {
       status: this.normalizeTaskStatus(filters.status),
     };
 
-    return this.taskRepository.list(normalizedFilters);
+    return this.filterTasksByOpsScope(
+      await this.taskRepository.list(normalizedFilters),
+      opsScope,
+    );
   }
 
   async listCouriers(): Promise<string[]> {
@@ -69,13 +92,14 @@ export class TasksService {
     );
   }
 
-  async getById(id: string): Promise<Task> {
+  async getById(id: string, opsScope?: OpsTaskScopeContext): Promise<Task> {
     const task = await this.taskRepository.findById(id);
 
     if (!task) {
       throw new NotFoundException(`Task "${id}" was not found.`);
     }
 
+    await this.ensureTaskVisibleToOps(task, opsScope);
     return task;
   }
 
@@ -157,8 +181,12 @@ export class TasksService {
     return task;
   }
 
-  async updateStatus(id: string, input: UpdateTaskStatusInput): Promise<Task> {
-    const currentTask = await this.getById(id);
+  async updateStatus(
+    id: string,
+    input: UpdateTaskStatusInput,
+    opsScope?: OpsTaskScopeContext,
+  ): Promise<Task> {
+    const currentTask = await this.getById(id, opsScope);
 
     if (currentTask.status === input.status) {
       return currentTask;
@@ -274,6 +302,128 @@ export class TasksService {
     }
   }
 
+  private async filterTasksByOpsScope(
+    tasks: Task[],
+    opsScope?: OpsTaskScopeContext,
+  ): Promise<Task[]> {
+    if (!opsScope || opsScope.canAccessAllHubs) {
+      return tasks;
+    }
+
+    if (opsScope.hubCodes.length === 0) {
+      return [];
+    }
+
+    const visibleTasks: Task[] = [];
+    for (const task of tasks) {
+      if (await this.isTaskVisibleToOps(task, opsScope)) {
+        visibleTasks.push(task);
+      }
+    }
+
+    return visibleTasks;
+  }
+
+  private async ensureTaskVisibleToOps(
+    task: Task,
+    opsScope?: OpsTaskScopeContext,
+  ): Promise<void> {
+    if (!opsScope || opsScope.canAccessAllHubs) {
+      return;
+    }
+
+    if (
+      opsScope.hubCodes.length === 0 ||
+      !(await this.isTaskVisibleToOps(task, opsScope))
+    ) {
+      throw new ForbiddenException(
+        'Tài khoản OPS không có quyền xem tác vụ ngoài phạm vi hub được gán.',
+      );
+    }
+  }
+
+  private async isTaskVisibleToOps(
+    task: Task,
+    opsScope: OpsTaskScopeContext,
+  ): Promise<boolean> {
+    const taskHubCodes = await this.resolveTaskHubCodes(task);
+    return taskHubCodes.some((hubCode) =>
+      opsScope.hubCodes.some((assignedHubCode) =>
+        isSameHubOrScopedLocation(hubCode, assignedHubCode),
+      ),
+    );
+  }
+
+  private async resolveTaskHubCodes(task: Task): Promise<string[]> {
+    const hubCodes = new Set<string>(collectHubCodes(task));
+
+    if (task.shipmentCode) {
+      const shipmentHubCodes = await this.resolveShipmentHubCodes(
+        task.shipmentCode,
+      );
+      shipmentHubCodes.forEach((hubCode) => hubCodes.add(hubCode));
+    }
+
+    if (task.pickupRequestId) {
+      const pickup = await this.fetchServiceJson(
+        'PICKUP_SERVICE_URL',
+        `pickups/${encodeURIComponent(task.pickupRequestId)}`,
+      );
+      const pickupRecord = asRecord(pickup);
+      const pickupItems = Array.isArray(pickupRecord?.items)
+        ? pickupRecord.items
+        : [];
+
+      for (const item of pickupItems) {
+        const shipmentCode = normalizeNonEmptyString(asRecord(item)?.shipmentCode);
+        if (!shipmentCode) {
+          continue;
+      }
+
+        const shipmentHubCodes = await this.resolveShipmentHubCodes(
+          shipmentCode,
+        );
+        shipmentHubCodes.forEach((hubCode) => hubCodes.add(hubCode));
+      }
+    }
+
+    return [...hubCodes];
+  }
+
+  private async resolveShipmentHubCodes(shipmentCode: string): Promise<string[]> {
+    const shipment = await this.fetchServiceJson(
+      'SHIPMENT_SERVICE_URL',
+      `shipments/${encodeURIComponent(shipmentCode)}`,
+    );
+
+    return collectHubCodes(shipment);
+  }
+
+  private async fetchServiceJson(
+    serviceUrlEnv: 'SHIPMENT_SERVICE_URL' | 'PICKUP_SERVICE_URL',
+    path: string,
+  ): Promise<unknown> {
+    const baseUrl = process.env[serviceUrlEnv]?.trim();
+    if (!baseUrl) {
+      return null;
+    }
+
+    const url = new URL(path, baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`);
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        accept: 'application/json',
+      },
+      redirect: 'manual',
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    return response.json().catch(() => null);
+  }
+
   private getActiveAssignment(task: Task): TaskAssignment | null {
     return (
       task.assignments.find((assignment) => assignment.unassignedAt === null) ??
@@ -329,4 +479,115 @@ export class TasksService {
 
     return normalizedStatus as (typeof TASK_STATUSES)[number];
   }
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
+
+function normalizeString(value: unknown): string | null {
+  return typeof value === 'string' && value.trim().length > 0
+    ? value.trim().toUpperCase()
+    : null;
+}
+
+function normalizeNonEmptyString(value: unknown): string | null {
+  return typeof value === 'string' && value.trim().length > 0
+    ? value.trim()
+    : null;
+}
+
+function normalizeStringList(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return Array.from(
+    new Set(
+      value
+        .map((item) => normalizeString(item))
+        .filter((item): item is string => item !== null),
+    ),
+  );
+}
+
+function collectHubCodes(value: unknown): string[] {
+  const record = asRecord(value);
+  if (!record) {
+    return [];
+  }
+
+  const directCodes = [
+    record.hubCode,
+    record.currentHubCode,
+    record.currentLocation,
+    record.locationCode,
+    record.originHubCode,
+    record.senderHubCode,
+    record.reportedHubCode,
+  ];
+  const metadataCodes = collectMetadataHubCodes(asRecord(record.metadata));
+  const destinationCodes = DESTINATION_VISIBLE_STATUSES.has(
+    normalizeString(record.currentStatus) ?? '',
+  )
+    ? collectDestinationHubCodes(asRecord(record.metadata))
+    : [];
+
+  return normalizeStringList([...directCodes, ...metadataCodes, ...destinationCodes]);
+}
+
+function collectMetadataHubCodes(metadata: Record<string, unknown> | null): unknown[] {
+  if (!metadata) {
+    return [];
+  }
+
+  const sender = asRecord(metadata.sender);
+  const routing = asRecord(metadata.routing);
+  const location = asRecord(metadata.location);
+  const hub = asRecord(metadata.hub);
+
+  return [
+    metadata.senderHubCode,
+    metadata.originHubCode,
+    metadata.currentHubCode,
+    metadata.currentLocation,
+    sender?.hubCode,
+    routing?.originHubCode,
+    location?.hubCode,
+    location?.current,
+    hub?.code,
+    hub?.currentCode,
+  ];
+}
+
+function collectDestinationHubCodes(
+  metadata: Record<string, unknown> | null,
+): unknown[] {
+  if (!metadata) {
+    return [];
+  }
+
+  const receiver = asRecord(metadata.receiver);
+  const routing = asRecord(metadata.routing);
+
+  return [
+    metadata.receiverHubCode,
+    metadata.destinationHubCode,
+    receiver?.hubCode,
+    routing?.destinationHubCode,
+  ];
+}
+
+function isSameHubOrScopedLocation(
+  targetCode: string,
+  assignedHubCode: string,
+): boolean {
+  return (
+    targetCode === assignedHubCode ||
+    targetCode.startsWith(`${assignedHubCode}-`) ||
+    targetCode.startsWith(`${assignedHubCode}_`) ||
+    targetCode.startsWith(`${assignedHubCode}.`)
+  );
 }

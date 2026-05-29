@@ -14,22 +14,10 @@ export type TaskRealtimeChangeKind =
   | 'reassigned'
   | 'status_updated';
 
-interface TaskRealtimeSnapshot {
-  id: string;
-  taskCode: string;
-  taskType: string;
-  status: string;
-  shipmentCode: string | null;
-  pickupRequestId: string | null;
-  assignedCourierId: string | null;
-  updatedAt: string;
-}
-
 interface TaskRealtimeChangedEvent {
   type: 'task.changed';
   kind: TaskRealtimeChangeKind;
   at: string;
-  task: TaskRealtimeSnapshot;
 }
 
 @Injectable()
@@ -74,11 +62,11 @@ export class TasksRealtimeGateway implements OnModuleDestroy {
   }
 
   publishTaskChanged(kind: TaskRealtimeChangeKind, task: Task): void {
+    void task;
     const payload: TaskRealtimeChangedEvent = {
       type: 'task.changed',
       kind,
       at: new Date().toISOString(),
-      task: this.toTaskSnapshot(task),
     };
 
     this.broadcast(payload);
@@ -136,23 +124,6 @@ export class TasksRealtimeGateway implements OnModuleDestroy {
         );
       }
     }
-  }
-
-  private toTaskSnapshot(task: Task): TaskRealtimeSnapshot {
-    const activeAssignment =
-      task.assignments.find((assignment) => assignment.unassignedAt === null) ??
-      null;
-
-    return {
-      id: task.id,
-      taskCode: task.taskCode,
-      taskType: task.taskType,
-      status: task.status,
-      shipmentCode: task.shipmentCode,
-      pickupRequestId: task.pickupRequestId,
-      assignedCourierId: activeAssignment?.courierId ?? null,
-      updatedAt: task.updatedAt.toISOString(),
-    };
   }
 
   private toErrorMessage(error: unknown): string {

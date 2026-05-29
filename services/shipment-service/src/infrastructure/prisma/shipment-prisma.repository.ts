@@ -246,26 +246,65 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
     }
 
     if (hubCodes.length > 0) {
-      const hubJsonPaths = [
+      const originOrCurrentHubJsonPaths = [
         ['sender', 'hubCode'],
-        ['receiver', 'hubCode'],
         ['routing', 'originHubCode'],
-        ['routing', 'destinationHubCode'],
         ['senderHubCode'],
-        ['receiverHubCode'],
         ['originHubCode'],
+        ['currentHubCode'],
+        ['currentLocation'],
+        ['location', 'hubCode'],
+        ['location', 'current'],
+        ['hub', 'code'],
+        ['hub', 'currentCode'],
+      ];
+      const destinationHubJsonPaths = [
+        ['receiver', 'hubCode'],
+        ['routing', 'destinationHubCode'],
+        ['receiverHubCode'],
         ['destinationHubCode'],
+      ];
+      const destinationVisibleStatuses: PrismaShipmentCurrentStatus[] = [
+        'MANIFEST_RECEIVED',
+        'MANIFEST_UNSEALED',
+        'SCAN_INBOUND',
+        'INVENTORY_CHECK',
+        'DELIVERED',
+        'DELIVERY_FAILED',
+        'NDR_CREATED',
+        'EXCEPTION',
       ];
 
       andFilters.push({
-        OR: hubCodes.flatMap((hubCode) =>
-          hubJsonPaths.map((path) => ({
-            metadata: {
-              path,
-              equals: hubCode,
-            },
-          })),
-        ),
+        OR: [
+          ...hubCodes.flatMap((hubCode) =>
+            originOrCurrentHubJsonPaths.map((path) => ({
+              metadata: {
+                path,
+                equals: hubCode,
+              },
+            })),
+          ),
+          {
+            AND: [
+              {
+                currentStatus: {
+                  in: destinationVisibleStatuses,
+                },
+              },
+              {
+                OR: hubCodes.flatMap((hubCode) =>
+                  destinationHubJsonPaths.map((path) => ({
+                    metadata: {
+                      path,
+                      equals: hubCode,
+                    },
+                  })),
+                ),
+              },
+            ],
+          },
+        ],
       });
     }
 

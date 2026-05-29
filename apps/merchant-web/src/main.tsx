@@ -1641,25 +1641,31 @@ function MerchantApp(): React.JSX.Element {
           ? await refreshMerchantSession(storedSession)
           : storedSession;
 
-        const introspect = await request<IntrospectResponse>('/merchant/auth/auth/introspect', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ accessToken: nextSession.accessToken }),
-        });
+        try {
+          const introspect = await request<IntrospectResponse>('/merchant/auth/auth/introspect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ accessToken: nextSession.accessToken }),
+          });
 
-        if (!introspect.active || !introspect.user) {
+          if (!introspect.active || !introspect.user) {
+            nextSession = await refreshMerchantSession(nextSession);
+          } else {
+            nextSession = {
+              ...nextSession,
+              user: introspect.user,
+              accessTokenExpiresAt:
+                introspect.accessTokenExpiresAt ?? nextSession.accessTokenExpiresAt,
+            };
+          }
+        } catch {
           nextSession = await refreshMerchantSession(nextSession);
-        } else {
-          nextSession = {
-            ...nextSession,
-            user: introspect.user,
-            accessTokenExpiresAt:
-              introspect.accessTokenExpiresAt ?? nextSession.accessTokenExpiresAt,
-          };
         }
 
         setSession(nextSession);
-        await refreshAllData(nextSession.accessToken, nextSession.user);
+        await refreshAllData(nextSession.accessToken, nextSession.user).catch((error) => {
+          setDataError(extractErrorMessage(error));
+        });
       } catch {
         window.localStorage.removeItem(STORAGE_KEY_SESSION);
         setSession(null);
@@ -1671,12 +1677,16 @@ function MerchantApp(): React.JSX.Element {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    if (booting) {
+      return;
+    }
+
     if (!session) {
       window.localStorage.removeItem(STORAGE_KEY_SESSION);
       return;
     }
     writeStoredMerchantSession(session);
-  }, [session]);
+  }, [booting, session]);
 
   useEffect(() => {
     if (!session) {

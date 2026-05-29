@@ -33,7 +33,11 @@ import { ApiClientError, shouldQueueOffline } from '../../services/api/client';
 import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
 import { createIdempotencyKey } from '../../utils/idempotency';
-import { resolveCourierId, buildDeliverySuccessAuditNote } from '../../utils/courier';
+import {
+  buildCodCollectAuditNote,
+  buildDeliverySuccessAuditNote,
+  resolveCourierId,
+} from '../../utils/courier';
 import { appEnv } from '../../utils/env';
 
 type Props = NativeStackScreenProps<AppNavigatorParamList, 'DeliveryProof'>;
@@ -238,7 +242,16 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
         paymentMethod: 'COD',
         idempotencyKey: createIdempotencyKey('cod-collect-' + resolvedShipmentCode),
         occurredAt: new Date().toISOString(),
-        note: 'Thu COD tiền mặt lúc ký nhận phát hàng',
+        note: buildCodCollectAuditNote({
+          displayName: session?.user.displayName,
+          username: session?.user.username,
+          courierId,
+          hubCode: session?.user.hubCodes?.[0] ?? null,
+          shipmentCode: resolvedShipmentCode,
+          collectedAmount: codAmount,
+          paymentMethod: 'COD',
+          note: 'Thu COD tiền mặt lúc ký nhận phát hàng',
+        }),
       };
 
       if (codAmount > 0 && paymentMethod === 'COD') {

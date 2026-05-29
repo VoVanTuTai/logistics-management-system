@@ -261,7 +261,7 @@ function buildManifestAlerts(manifests: ManifestListItemDto[]): ServiceQualityAl
         issue: 'Manifest đã seal nhưng chưa receive',
         action: 'Kiểm tra xe/nhận manifest tại hub đích',
         updatedAt: basis,
-        detailUrl: routePaths.manifestDetail(manifest.id),
+        detailUrl: routePaths.linehaulTripDataMonitor,
         lookupCode: null,
       };
     })

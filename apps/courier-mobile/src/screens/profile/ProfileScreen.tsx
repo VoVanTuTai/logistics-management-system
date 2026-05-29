@@ -1,109 +1,43 @@
 import React from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
 
 import { theme } from '../../theme';
 import {
   ProfileHeader,
   type ProfileHeaderData,
 } from '../../components/profile/ProfileHeader';
-import { ProfileShortcutGrid } from '../../components/profile/ProfileShortcutGrid';
-import type { ProfileShortcutItemData } from '../../components/profile/ProfileShortcutItem';
-import { SettingsSection } from '../../components/profile/SettingsSection';
-import type { SettingsItemData } from '../../components/profile/SettingsItem';
 import { useAppStore } from '../../store/appStore';
 import { useAuthStore } from '../../features/auth/auth.store';
-import type { AppNavigatorParamList } from '../../navigation/types';
 import { appEnv } from '../../utils/env';
 import { resolveCourierId, resolveCourierDisplayName } from '../../utils/courier';
-
-const shortcutItems: ProfileShortcutItemData[] = [
-  {
-    id: 'stats',
-    label: 'Thống kê',
-    iconName: 'stats-chart-outline',
-    iconColor: '#1D4ED8',
-    iconBgColor: '#EFF6FF',
-  },
-  {
-    id: 'scan',
-    label: 'Quét mã',
-    iconName: 'qr-code-outline',
-    iconColor: '#1A6B4A',
-    iconBgColor: '#E6FAF1',
-  },
-  {
-    id: 'cod',
-    label: 'Tiền hàng COD',
-    iconName: 'wallet-outline',
-    iconColor: '#1D4ED8',
-    iconBgColor: '#EFF6FF',
-  },
-  {
-    id: 'pickup',
-    label: 'Nhận hàng',
-    iconName: 'cube-outline',
-    iconColor: '#1A6B4A',
-    iconBgColor: '#E6FAF1',
-  },
-  {
-    id: 'delivery',
-    label: 'Phát hàng',
-    iconName: 'paper-plane-outline',
-    iconColor: '#8A5A0A',
-    iconBgColor: '#FFF4DD',
-  },
-  {
-    id: 'tracking',
-    label: 'Theo dõi đơn',
-    iconName: 'locate-outline',
-    iconColor: '#1D4ED8',
-    iconBgColor: '#EFF6FF',
-  },
-  {
-    id: 'issue',
-    label: 'Báo vấn đề',
-    iconName: 'alert-circle-outline',
-    iconColor: '#C25B12',
-    iconBgColor: '#FFEDD5',
-  },
-];
-
-const settingsItems: SettingsItemData[] = [
-  {
-    id: 'print-setup',
-    label: 'Thiết lập in',
-    iconName: 'print-outline',
-  },
-  {
-    id: 'base-data',
-    label: 'Dữ liệu cơ bản',
-    iconName: 'file-tray-full-outline',
-  },
-  {
-    id: 'help-center',
-    label: 'Trung tâm trợ giúp',
-    iconName: 'help-circle-outline',
-  },
-  {
-    id: 'call-log-setup',
-    label: 'Thiết lập call log',
-    iconName: 'call-outline',
-  },
-  {
-    id: 'about-jnt',
-    label: 'Về J&T',
-    iconName: 'information-circle-outline',
-  },
-];
+import {
+  QUICK_APP_CATALOG,
+  type QuickAppItem,
+} from '../../features/quick-apps/quickApps';
 
 export function ProfileScreen(): React.JSX.Element {
-  const navigation = useNavigation<NativeStackNavigationProp<AppNavigatorParamList>>();
   const session = useAppStore((state) => state.session);
+  const quickAppIds = useAppStore((state) => state.quickAppIds);
+  const toggleQuickApp = useAppStore((state) => state.toggleQuickApp);
+  const resetQuickApps = useAppStore((state) => state.resetQuickApps);
+  const courierAvatarUri = useAppStore((state) => state.courierAvatarUri);
+  const setCourierAvatarUri = useAppStore((state) => state.setCourierAvatarUri);
   const logout = useAuthStore((state) => state.logout);
   const authLoading = useAuthStore((state) => state.isLoading);
+  const [avatarModalVisible, setAvatarModalVisible] = React.useState(false);
+  const [avatarInputValue, setAvatarInputValue] = React.useState(courierAvatarUri ?? '');
 
   const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
   const courierName = resolveCourierDisplayName({
@@ -117,12 +51,33 @@ export function ProfileScreen(): React.JSX.Element {
     fullName: courierName,
     branchName: roles.length > 0 ? `Vai trò: ${roles.join(', ')}` : 'Vai trò: courier',
     employeeCode: courierId,
-    phoneNumber: '---',
+    phoneNumber: session?.user.phone?.trim() || 'Chưa cập nhật',
     starTierLabel: 'Đang cập nhật',
   };
 
   const handleLogout = () => {
     void logout();
+  };
+
+  const openAvatarModal = () => {
+    setAvatarInputValue(courierAvatarUri ?? '');
+    setAvatarModalVisible(true);
+  };
+
+  const saveAvatarUri = () => {
+    const normalizedValue = avatarInputValue.trim();
+
+    if (
+      normalizedValue.length > 0 &&
+      !normalizedValue.startsWith('http://') &&
+      !normalizedValue.startsWith('https://')
+    ) {
+      Alert.alert('URL ảnh chưa hợp lệ', 'Vui lòng nhập URL bắt đầu bằng http:// hoặc https://.');
+      return;
+    }
+
+    setCourierAvatarUri(normalizedValue || null);
+    setAvatarModalVisible(false);
   };
 
   return (
@@ -135,61 +90,18 @@ export function ProfileScreen(): React.JSX.Element {
         >
           <ProfileHeader
             user={userData}
+            avatarUri={courierAvatarUri}
+            onPressAvatar={openAvatarModal}
             onPressStarDetail={() => {
               Alert.alert('Hạng sao', 'Chi tiết hạng sao sẽ cập nhật theo API.');
             }}
           />
 
-          <ProfileShortcutGrid
-            items={shortcutItems}
-            onPressItem={(item) => {
-              if (item.id === 'stats') {
-                navigation.navigate('MainTabs', { screen: 'Stats' });
-                return;
-              }
-
-              if (item.id === 'scan') {
-                navigation.navigate('MainTabs', { screen: 'Scan' });
-                return;
-              }
-
-              if (item.id === 'cod') {
-                navigation.navigate('CodStats');
-                return;
-              }
-
-              if (item.id === 'pickup') {
-                navigation.navigate('PickupScan', {});
-                return;
-              }
-
-              if (item.id === 'delivery') {
-                navigation.navigate('DeliveryDispatch');
-                return;
-              }
-
-              if (item.id === 'tracking') {
-                navigation.navigate('TrackingLookup');
-                return;
-              }
-
-              if (item.id === 'issue') {
-                navigation.navigate('ScanIssue');
-              }
-            }}
-          />
-
-          <SettingsSection
-            title="Cài đặt và tiện ích"
-            items={settingsItems}
-            onPressItem={(item) => {
-              if (item.id === 'help-center') {
-                navigation.navigate('MainTabs', { screen: 'Chat' });
-                return;
-              }
-
-              Alert.alert('Cài đặt', item.label);
-            }}
+          <QuickAppCustomizeCard
+            appItems={QUICK_APP_CATALOG}
+            selectedAppIds={quickAppIds}
+            onToggleApp={toggleQuickApp}
+            onReset={resetQuickApps}
           />
 
           <Pressable
@@ -208,8 +120,140 @@ export function ProfileScreen(): React.JSX.Element {
             )}
           </Pressable>
         </ScrollView>
+
+        <Modal
+          transparent
+          visible={avatarModalVisible}
+          animationType="fade"
+          onRequestClose={() => setAvatarModalVisible(false)}
+        >
+          <View style={styles.modalBackdrop}>
+            <View style={styles.avatarModalCard}>
+              <Text style={styles.avatarModalTitle}>Đổi ảnh đại diện</Text>
+              <Text style={styles.avatarModalText}>
+                Nhập URL ảnh đại diện để lưu trên thiết bị này.
+              </Text>
+
+              <TextInput
+                value={avatarInputValue}
+                onChangeText={setAvatarInputValue}
+                placeholder="https://..."
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={styles.avatarInput}
+              />
+
+              <View style={styles.avatarModalActions}>
+                <Pressable
+                  onPress={() => setAvatarModalVisible(false)}
+                  style={({ pressed }) => [
+                    styles.avatarSecondaryButton,
+                    pressed && styles.modalButtonPressed,
+                  ]}
+                >
+                  <Text style={styles.avatarSecondaryButtonText}>Hủy</Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={() => {
+                    setAvatarInputValue('');
+                    setCourierAvatarUri(null);
+                    setAvatarModalVisible(false);
+                  }}
+                  style={({ pressed }) => [
+                    styles.avatarSecondaryButton,
+                    pressed && styles.modalButtonPressed,
+                  ]}
+                >
+                  <Text style={styles.avatarSecondaryButtonText}>Xóa</Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={saveAvatarUri}
+                  style={({ pressed }) => [
+                    styles.avatarPrimaryButton,
+                    pressed && styles.modalButtonPressed,
+                  ]}
+                >
+                  <Text style={styles.avatarPrimaryButtonText}>Lưu</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </View>
     </SafeAreaView>
+  );
+}
+
+interface QuickAppCustomizeCardProps {
+  appItems: QuickAppItem[];
+  selectedAppIds: string[];
+  onToggleApp: (appId: string) => void;
+  onReset: () => void;
+}
+
+function QuickAppCustomizeCard({
+  appItems,
+  selectedAppIds,
+  onToggleApp,
+  onReset,
+}: QuickAppCustomizeCardProps): React.JSX.Element {
+  return (
+    <View style={styles.quickAppCard}>
+      <View style={styles.quickAppHeader}>
+        <View>
+          <Text style={styles.quickAppTitle}>Ứng dụng nhanh</Text>
+          <Text style={styles.quickAppCount}>{selectedAppIds.length} mục đang hiển thị</Text>
+        </View>
+
+        <Pressable onPress={onReset} style={styles.quickAppResetButton}>
+          <Text style={styles.quickAppResetText}>Mặc định</Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.quickAppGrid}>
+        {appItems.map((item) => {
+          const isSelected = selectedAppIds.includes(item.id);
+          const isOnlySelected = isSelected && selectedAppIds.length <= 1;
+
+          return (
+            <Pressable
+              key={item.id}
+              disabled={isOnlySelected}
+              onPress={() => onToggleApp(item.id)}
+              style={({ pressed }) => [
+                styles.quickAppTile,
+                isSelected && styles.quickAppTileSelected,
+                pressed && styles.quickAppTilePressed,
+                isOnlySelected && styles.quickAppTileDisabled,
+              ]}
+            >
+              <View
+                style={[
+                  styles.quickAppTileMark,
+                  isSelected && styles.quickAppTileMarkSelected,
+                ]}
+              >
+                <Ionicons
+                  name={isSelected ? 'checkmark' : 'add'}
+                  size={12}
+                  color={isSelected ? '#FFFFFF' : theme.colors.textMuted}
+                />
+              </View>
+
+              <View style={[styles.quickAppIconWrap, { backgroundColor: item.iconBgColor }]}>
+                <Ionicons name={item.iconName} size={18} color={item.iconColor} />
+              </View>
+
+              <Text numberOfLines={2} style={styles.quickAppLabel}>
+                {item.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
   );
 }
 
@@ -248,5 +292,176 @@ const styles = StyleSheet.create({
   logoutButtonText: {
     ...theme.typography.subtitle.md,
     color: '#FFFFFF',
+  },
+  quickAppCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    padding: theme.spacing.md,
+    ...theme.shadow.card,
+  },
+  quickAppHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: theme.spacing.sm,
+    marginBottom: theme.spacing.sm,
+  },
+  quickAppTitle: {
+    ...theme.typography.subtitle.lg,
+    color: theme.colors.textPrimary,
+  },
+  quickAppCount: {
+    ...theme.typography.caption.md,
+    color: theme.colors.textMuted,
+    marginTop: 2,
+  },
+  quickAppResetButton: {
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+    backgroundColor: theme.colors.background,
+  },
+  quickAppResetText: {
+    ...theme.typography.caption.md,
+    color: theme.colors.textSecondary,
+    fontWeight: '700',
+  },
+  quickAppGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: theme.spacing.sm,
+  },
+  quickAppTile: {
+    width: '31.5%',
+    minHeight: 94,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.xs,
+    paddingVertical: theme.spacing.sm,
+    position: 'relative',
+  },
+  quickAppTileSelected: {
+    borderColor: theme.colors.primaryMuted,
+    backgroundColor: '#F7FBFF',
+  },
+  quickAppTilePressed: {
+    opacity: 0.88,
+  },
+  quickAppTileDisabled: {
+    opacity: 0.72,
+  },
+  quickAppTileMark: {
+    position: 'absolute',
+    top: 7,
+    right: 7,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickAppTileMarkSelected: {
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primary,
+  },
+  quickAppIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#DFE8F5',
+  },
+  quickAppLabel: {
+    ...theme.typography.caption.md,
+    color: theme.colors.textSecondary,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: theme.spacing.lg,
+  },
+  avatarModalCard: {
+    width: '100%',
+    borderRadius: theme.radius.lg,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    padding: theme.spacing.lg,
+    ...theme.shadow.card,
+  },
+  avatarModalTitle: {
+    ...theme.typography.subtitle.lg,
+    color: theme.colors.textPrimary,
+  },
+  avatarModalText: {
+    ...theme.typography.body.md,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.xs,
+  },
+  avatarInput: {
+    minHeight: 46,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
+    paddingHorizontal: theme.spacing.md,
+    marginTop: theme.spacing.md,
+    color: theme.colors.textPrimary,
+  },
+  avatarModalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: theme.spacing.sm,
+    marginTop: theme.spacing.md,
+  },
+  avatarSecondaryButton: {
+    minHeight: 40,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    paddingHorizontal: theme.spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  avatarSecondaryButtonText: {
+    ...theme.typography.caption.md,
+    color: theme.colors.textSecondary,
+    fontWeight: '700',
+  },
+  avatarPrimaryButton: {
+    minHeight: 40,
+    borderRadius: theme.radius.md,
+    paddingHorizontal: theme.spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.primary,
+  },
+  avatarPrimaryButtonText: {
+    ...theme.typography.caption.md,
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  modalButtonPressed: {
+    opacity: 0.86,
   },
 });

@@ -77,6 +77,19 @@ export async function markOpsChatRead(input: {
   });
 }
 
+export async function claimOpsChatConversation(input: {
+  accessToken: string | null;
+  courierId: string;
+}): Promise<ChatConversationDto> {
+  return opsApiClient.request<ChatConversationDto>('/chat/claim?clientRole=OPS', {
+    method: 'POST',
+    accessToken: input.accessToken,
+    body: {
+      courierId: input.courierId,
+    },
+  });
+}
+
 export async function createOpsChatWebSocketTicket(
   accessToken: string | null,
 ): Promise<ChatWebSocketTicketDto> {

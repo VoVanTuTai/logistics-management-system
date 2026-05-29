@@ -351,9 +351,7 @@ export function LinehaulTripDataMonitorPage(): React.JSX.Element {
                   <td>{row.shipmentCount}</td>
                   <td>
                     {row.manifest ? (
-                      <Link to={routePaths.manifestDetail(row.manifest.id)}>
-                        {row.manifest.manifestCode}
-                      </Link>
+                      <span>{row.manifest.manifestCode}</span>
                     ) : (
                       'Chưa có manifest'
                     )}

@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 
 import {
   buildOpsChatWsUrl,
+  claimOpsChatConversation,
   createOpsChatWebSocketTicket,
   listChatConversations,
   listChatMessages,
@@ -21,7 +22,9 @@ type RealtimeStatus = 'connecting' | 'connected' | 'reconnecting' | 'offline';
 
 export function OpsCourierChatPage(): React.JSX.Element {
   const [searchParams] = useSearchParams();
-  const accessToken = useAuthStore((state) => state.session?.tokens.accessToken ?? null);
+  const session = useAuthStore((state) => state.session);
+  const accessToken = session?.tokens.accessToken ?? null;
+  const currentOpsId = session?.user.id ?? null;
   const [conversations, setConversations] = useState<ChatConversationDto[]>([]);
   const initialCourierId = searchParams.get('courierId')?.trim() ?? '';
   const [selectedCourierId, setSelectedCourierId] = useState(initialCourierId);
@@ -31,6 +34,7 @@ export function OpsCourierChatPage(): React.JSX.Element {
   const [draft, setDraft] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
+  const [isClaiming, setIsClaiming] = useState(false);
   const [isLoadingOlder, setIsLoadingOlder] = useState(false);
   const [realtimeStatus, setRealtimeStatus] = useState<RealtimeStatus>('connecting');
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -146,7 +150,7 @@ export function OpsCourierChatPage(): React.JSX.Element {
       socket.onmessage = (event) => {
         const payload = safeParseRealtimeEvent(event.data);
         if (payload?.type !== 'chat.message') {
-          if (payload?.type === 'chat.read') {
+          if (payload?.type === 'chat.read' || payload?.type === 'chat.claim') {
             setConversations((current) => upsertConversation(current, payload.conversation));
             if (payload.conversation.courierId === selectedCourierId) {
               void listChatMessages({ accessToken, courierId: selectedCourierId })
@@ -214,6 +218,9 @@ export function OpsCourierChatPage(): React.JSX.Element {
         courierId,
         hubCode: null,
         title: `Courier ${courierId}`,
+        assignedOpsId: null,
+        assignedOpsName: null,
+        assignedOpsAt: null,
         lastMessage: null,
         updatedAt: new Date(0).toISOString(),
         messageCount: 0,
@@ -221,6 +228,24 @@ export function OpsCourierChatPage(): React.JSX.Element {
         lastReadAt: null,
       }),
     );
+  };
+
+  const claimConversation = async () => {
+    const courierId = selectedCourierId.trim();
+    if (!courierId || isClaiming) {
+      return;
+    }
+
+    setIsClaiming(true);
+    setErrorMessage(null);
+    try {
+      const conversation = await claimOpsChatConversation({ accessToken, courierId });
+      setConversations((current) => upsertConversation(current, conversation));
+    } catch (error) {
+      setErrorMessage(toErrorMessage(error, 'Không nhận xử lý được hội thoại.'));
+    } finally {
+      setIsClaiming(false);
+    }
   };
 
   const sendMessage = async () => {
@@ -243,6 +268,9 @@ export function OpsCourierChatPage(): React.JSX.Element {
           hubCode:
             current.find((item) => item.courierId === message.courierId)?.hubCode ?? null,
           title: `Courier ${message.courierId}`,
+          assignedOpsId: currentOpsId,
+          assignedOpsName: session?.user.displayName ?? session?.user.username ?? null,
+          assignedOpsAt: message.createdAt,
           lastMessage: message,
           updatedAt: message.createdAt,
           messageCount:
@@ -353,7 +381,30 @@ export function OpsCourierChatPage(): React.JSX.Element {
                 ? `Conversation courier:${selectedCourierId}`
                 : 'Nhập mã courier để bắt đầu hội thoại.'}
             </p>
+            {selectedCourierId ? (
+              <p className="ops-chat__assignment">
+                {selectedConversation?.assignedOpsName
+                  ? `Đang xử lý bởi ${selectedConversation.assignedOpsName}`
+                  : 'Chưa có ops nhận xử lý'}
+              </p>
+            ) : null}
           </div>
+          <button
+            className="ops-chat__button"
+            type="button"
+            disabled={
+              !selectedCourierId ||
+              isClaiming ||
+              Boolean(currentOpsId && selectedConversation?.assignedOpsId === currentOpsId)
+            }
+            onClick={() => void claimConversation()}
+          >
+            {isClaiming
+              ? 'Đang nhận'
+              : currentOpsId && selectedConversation?.assignedOpsId === currentOpsId
+                ? 'Bạn đang xử lý'
+                : 'Nhận xử lý'}
+          </button>
         </header>
 
         <div className="ops-chat__messages">

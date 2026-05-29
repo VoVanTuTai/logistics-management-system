@@ -183,14 +183,14 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
       value: activeDelivery.length,
       accent: 'info',
       description: 'Theo dõi các vận đơn đang ở bước phát hàng.',
-      to: routePaths.branchBusinessOrderDelivery,
+      to: routePaths.shipments,
     },
     {
       label: 'Đã giao thành công',
       value: delivered.length,
       accent: 'success',
       description: 'Xem hiệu quả phát và đối chiếu SLA giao hàng.',
-      to: routePaths.opsMetricsDeadlineDeliverySla,
+      to: routePaths.opsMetricsReport,
     },
     {
       label: 'Cần can thiệp',
@@ -211,14 +211,14 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
       title: 'Xử lý cảnh báo quá hạn',
       summary: 'Ưu tiên các vận đơn chưa hoàn tất sau 24h.',
       meta: `${urgentAlerts.length} cảnh báo`,
-      to: routePaths.opsMetricsDeadlineOverdueAlerts,
+      to: routePaths.opsMetricsDeadlineInventory,
       accent: 'danger',
     },
     {
-      title: 'Điều phối thao tác',
-      summary: 'Gom việc cần phân công cho nhân sự vận hành.',
+      title: 'Điều phối vận đơn',
+      summary: 'Mở màn điều phối lấy hàng/phát hàng cho đội vận hành.',
       meta: `${tasks.length} task`,
-      to: routePaths.opsMetricsActionExecutionBoard,
+      to: routePaths.operationsPlatformPickupDispatch,
       accent: 'primary',
     },
     {
@@ -232,7 +232,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
       title: 'Quản lý chuyến / bao',
       summary: 'Kiểm tra manifest và luồng bàn giao tuyến.',
       meta: `${manifests.length} manifest`,
-      to: routePaths.manifests,
+      to: routePaths.linehaulTripDataMonitor,
       accent: 'info',
     },
   ];
@@ -312,8 +312,8 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
                 {topHub ? ` · hub cao nhất ${topHub.hub}` : ''}
               </p>
             </div>
-            <Link className="analytics-chart-card__link" to={routePaths.opsMetricsPlanningNetworkKpi}>
-              Xem KPI mạng lưới
+            <Link className="analytics-chart-card__link" to={routePaths.opsMetricsReport}>
+              Xem báo cáo vận hành
             </Link>
           </header>
           <ResponsiveContainer width="100%" height={300}>
@@ -432,7 +432,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
                   <td>{shipment.receiverName ?? shipment.senderName ?? 'Không có'}</td>
                   <td>
                     <div className="analytics-row-actions">
-                      <Link className="analytics-action-btn analytics-action-btn--secondary" to={routePaths.opsMetricsActionExecutionBoard}>
+                      <Link className="analytics-action-btn analytics-action-btn--secondary" to={routePaths.operationsPlatformDeliveryDispatch}>
                         Điều phối
                       </Link>
                     </div>

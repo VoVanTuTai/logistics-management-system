@@ -226,19 +226,9 @@ export function DashboardPage(): React.JSX.Element {
           featured: true,
         },
         {
-          title: 'Đơn khách hàng',
-          to: routePaths.groupCustomerPlatform,
-          icon: 'customer_platform',
-        },
-        {
           title: 'Kinh doanh bưu cục',
           to: routePaths.groupBranchBusiness,
           icon: 'branch_business',
-        },
-        {
-          title: 'Quyết toán tài chính',
-          to: routePaths.groupFinanceSettlement,
-          icon: 'finance_settlement',
         },
         {
           title: 'Vận chuyển tuyến',
@@ -263,13 +253,13 @@ export function DashboardPage(): React.JSX.Element {
           icon: 'branch_business',
         },
         {
-          title: 'Phân công tác vụ',
-          to: routePaths.tasks,
+          title: 'Điều phối vận đơn',
+          to: routePaths.operationsPlatformPickupDispatch,
           icon: 'operations_platform',
         },
         {
-          title: 'Bao tải',
-          to: routePaths.manifests,
+          title: 'Quản lý tem bao',
+          to: routePaths.linehaulBagLabelManagement,
           icon: 'integration_services',
         },
         {
