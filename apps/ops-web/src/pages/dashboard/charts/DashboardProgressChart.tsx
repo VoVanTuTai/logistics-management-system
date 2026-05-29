@@ -33,8 +33,7 @@ export function DashboardProgressChart({
           background, 
           display: 'flex', 
           alignItems: 'center', 
-          justifyContent: 'center',
-          boxShadow: 'inset 0 0 10px rgba(0,0,0,0.02)'
+          justifyContent: 'center'
         }}>
           <div style={{ 
             width: '100px', 
@@ -43,8 +42,7 @@ export function DashboardProgressChart({
             borderRadius: '50%', 
             display: 'flex', 
             alignItems: 'center', 
-            justifyContent: 'center',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+            justifyContent: 'center'
           }}>
             <span style={{ fontSize: '1.75rem', fontWeight: 'bold', color }}>{percent}%</span>
           </div>

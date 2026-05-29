@@ -35,7 +35,7 @@ export function DashboardPieChart({
         <h3>{title}</h3>
       </header>
       <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', padding: '1.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-        <div style={{ width: '160px', height: '160px', borderRadius: '50%', background, flexShrink: 0, boxShadow: 'inset 0 0 20px rgba(0,0,0,0.05)' }} />
+        <div style={{ width: '160px', height: '160px', borderRadius: '50%', background, flexShrink: 0 }} />
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', minWidth: '150px' }}>
           {points.map((point, index) => {
