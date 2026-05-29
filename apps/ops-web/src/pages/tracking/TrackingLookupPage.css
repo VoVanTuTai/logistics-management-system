@@ -82,9 +82,9 @@
 }
 
 .ops-tracking-lookup__list-header span {
-  border: 1px solid #c7d2fe;
-  background: #eef2ff;
-  color: #4338ca;
+  border: 1px solid #c7d7ff;
+  background: var(--ops-primary-soft);
+  color: var(--ops-primary);
   border-radius: 999px;
   padding: 2px 8px;
   font-size: 12px;
@@ -113,14 +113,15 @@
 }
 
 .ops-tracking-lookup__code-btn:hover {
-  border-color: #a5b4fc;
-  background: #f8faff;
+  border-color: var(--ops-border-strong);
+  background: var(--ops-hover-bg);
+  color: var(--ops-text);
 }
 
 .ops-tracking-lookup__code-btn--active {
   border-color: var(--ops-primary);
-  background: #eef2ff;
-  color: #312e81;
+  background: var(--ops-primary-soft);
+  color: var(--ops-primary);
 }
 
 .ops-tracking-lookup__right-column {

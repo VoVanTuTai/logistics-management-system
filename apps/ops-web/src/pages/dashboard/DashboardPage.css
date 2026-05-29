@@ -1,12 +1,12 @@
 .ops-dashboard {
   --dash-surface: #ffffff;
-  --dash-surface-muted: #eef2ff;
-  --dash-border: #e2e8f0;
-  --dash-text: #334155;
-  --dash-muted: #64748b;
+  --dash-surface-muted: var(--ops-surface-soft);
+  --dash-border: var(--ops-border);
+  --dash-text: var(--ops-text);
+  --dash-muted: var(--ops-text-muted);
   --dash-primary: var(--ops-primary);
-  --dash-primary-soft: #eef2ff;
-  --dash-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+  --dash-primary-soft: var(--ops-primary-soft);
+  --dash-shadow: var(--ops-shadow);
   display: grid;
   gap: 14px;
 }
@@ -223,16 +223,17 @@
 .ops-menu-tile--featured {
   --ops-menu-accent: var(--ops-primary);
   background:
-    linear-gradient(135deg, rgba(24, 95, 165, 0.1), rgba(133, 183, 235, 0.14)),
+    linear-gradient(135deg, rgba(0, 82, 204, 0.1), rgba(43, 111, 227, 0.14)),
     #ffffff;
-  border-color: #b7d5f4;
+  border-color: #c7d7ff;
 }
 
 .ops-menu-tile:hover {
   text-decoration: none;
   transform: translateY(-1px);
-  border-color: #bbc3d1;
-  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+  border-color: var(--ops-border-strong);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 8px 18px rgba(14, 35, 74, 0.08);
 }
 
 .ops-menu-tile strong {
@@ -312,8 +313,8 @@
 }
 
 .ops-notification-tag {
-  border: 1px solid #c7d2fe;
-  background: #eef2ff;
+  border: 1px solid #c7d7ff;
+  background: var(--ops-primary-soft);
   border-radius: 999px;
   color: var(--dash-primary);
   font-size: 11px;
