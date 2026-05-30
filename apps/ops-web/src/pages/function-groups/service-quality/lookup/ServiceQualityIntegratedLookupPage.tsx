@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 
+import { useNdrCasesQuery } from '../../../../features/ndr/ndr.api';
+import type { NdrCaseListItemDto } from '../../../../features/ndr/ndr.types';
 import { useShipmentDetailQuery, useShipmentsQuery } from '../../../../features/shipments/shipments.api';
 import type {
   ShipmentDetailDto,
@@ -116,6 +118,30 @@ function listItemToDetail(item: ShipmentListItemDto): ShipmentDetailDto {
   };
 }
 
+function formatIssueText(item: NdrCaseListItemDto): string {
+  return item.issueType ?? item.reasonCode ?? 'Không có';
+}
+
+function formatIssueCategory(value: string | null | undefined): string {
+  if (!value) {
+    return 'Không có';
+  }
+
+  if (value === 'PHYSICAL') {
+    return 'Hàng hóa / vật lý';
+  }
+
+  if (value === 'INFORMATION') {
+    return 'Thông tin / vận hành';
+  }
+
+  return value;
+}
+
+function countAttachments(value: unknown): number {
+  return Array.isArray(value) ? value.length : 0;
+}
+
 export function ServiceQualityIntegratedLookupPage(): React.JSX.Element {
   const accessToken = useAuthStore((state) => state.session?.tokens.accessToken ?? null);
   const [searchParams] = useSearchParams();
@@ -132,8 +158,13 @@ export function ServiceQualityIntegratedLookupPage(): React.JSX.Element {
   const shipmentListItem = shipmentsQuery.data?.find(
     (shipment) => normalizeShipmentCode(shipment.shipmentCode) === lookupCode,
   ) ?? shipmentsQuery.data?.[0] ?? null;
-  const shipmentDetailQuery = useShipmentDetailQuery(accessToken, shipmentListItem?.id ?? '');
+  const shipmentDetailQuery = useShipmentDetailQuery(accessToken, shipmentListItem?.shipmentCode ?? '');
   const trackingQuery = useTrackingDetailQuery(accessToken, lookupCode);
+  const ndrQuery = useNdrCasesQuery(
+    accessToken,
+    { shipmentCode: lookupCode },
+    { enabled: Boolean(lookupCode) },
+  );
 
   const shipment: ShipmentDetailDto | null =
     shipmentDetailQuery.data ?? (shipmentListItem ? listItemToDetail(shipmentListItem) : null);
@@ -141,9 +172,14 @@ export function ServiceQualityIntegratedLookupPage(): React.JSX.Element {
     () => buildTimelineRows(trackingQuery.data?.timeline ?? []),
     [trackingQuery.data?.timeline],
   );
-  const isLoading = Boolean(lookupCode) && (shipmentsQuery.isLoading || shipmentDetailQuery.isLoading || trackingQuery.isLoading);
+  const isLoading = Boolean(lookupCode) && (
+    shipmentsQuery.isLoading ||
+    shipmentDetailQuery.isLoading ||
+    trackingQuery.isLoading ||
+    ndrQuery.isLoading
+  );
   const notFound = Boolean(lookupCode) && !isLoading && shipmentsQuery.isSuccess && !shipmentListItem;
-  const error = shipmentsQuery.error ?? shipmentDetailQuery.error ?? trackingQuery.error ?? null;
+  const error = shipmentsQuery.error ?? shipmentDetailQuery.error ?? trackingQuery.error ?? ndrQuery.error ?? null;
 
   const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -189,7 +225,7 @@ export function ServiceQualityIntegratedLookupPage(): React.JSX.Element {
       </form>
 
       {inputError ? <p className="ops-integrated-lookup__error">{inputError}</p> : null}
-      {error && !trackingQuery.isError ? (
+      {error && !trackingQuery.isError && !ndrQuery.isError ? (
         <p className="ops-integrated-lookup__error">{getErrorMessage(error)}</p>
       ) : null}
 
@@ -293,6 +329,53 @@ export function ServiceQualityIntegratedLookupPage(): React.JSX.Element {
                 ]}
               />
             </article>
+          </section>
+
+          <section className="ops-integrated-lookup__panel ops-integrated-lookup__panel--wide">
+            <header>
+              <h3>Sự cố / chất lượng</h3>
+              <span>{ndrQuery.data?.length ?? 0} hồ sơ</span>
+            </header>
+            {ndrQuery.isError ? (
+              <p className="ops-integrated-lookup__empty">
+                Chưa lấy được dữ liệu sự cố / chất lượng từ NDR API.
+              </p>
+            ) : null}
+            {!ndrQuery.isError && (ndrQuery.data?.length ?? 0) === 0 ? (
+              <p className="ops-integrated-lookup__empty">Chưa có hồ sơ sự cố / chất lượng cho vận đơn này.</p>
+            ) : null}
+            {!ndrQuery.isError && (ndrQuery.data?.length ?? 0) > 0 ? (
+              <div className="ops-integrated-lookup__table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Cập nhật</th>
+                      <th>Trạng thái</th>
+                      <th>Loại sự cố</th>
+                      <th>Nhóm</th>
+                      <th>Hub ghi nhận</th>
+                      <th>Ảnh</th>
+                      <th>Ghi chú</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ndrQuery.data?.map((item) => (
+                      <tr key={item.id}>
+                        <td>{formatDateTime(item.updatedAt)}</td>
+                        <td>{formatText(item.status)}</td>
+                        <td>{formatIssueText(item)}</td>
+                        <td>{formatIssueCategory(item.issueCategory)}</td>
+                        <td>{formatText(item.reportedHubCode)}</td>
+                        <td>{countAttachments(item.attachments)}</td>
+                        <td>
+                          <LinkifiedText text={item.note ?? null} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
           </section>
 
           <section className="ops-integrated-lookup__panel ops-integrated-lookup__panel--wide">
