@@ -310,6 +310,28 @@ export class ShipmentsService {
       return updatedShipment;
     }
 
+    if (nextStatus === 'INVENTORY_CHECK') {
+      const updatedShipment = movementMetadata
+        ? await this.shipmentRepository.updateCurrentStatusMetadataAndLock(
+            normalizedCode,
+            nextStatus,
+            movementMetadata,
+            false,
+          )
+        : await this.shipmentRepository.updateCurrentStatusAndLock(
+            normalizedCode,
+            nextStatus,
+            false,
+          );
+
+      await this.marketplaceWebhookSenderService.notifyStatusChanged(
+        updatedShipment,
+        eventType,
+      );
+
+      return updatedShipment;
+    }
+
     const updatedShipment = movementMetadata
       ? await this.shipmentRepository.updateCurrentStatusMetadataAndLock(
           normalizedCode,
@@ -527,8 +549,12 @@ export class ShipmentsService {
     }
 
     if (eventType === 'manifest.received') {
+      const receive = asJsonRecord(eventData.receive);
       const manifest = asJsonRecord(eventData.manifest);
-      return normalizeString(manifest.destinationHubCode);
+      return (
+        normalizeString(receive.processingHubCode) ??
+        normalizeString(manifest.destinationHubCode)
+      );
     }
 
     if (eventType === 'manifest.unsealed') {
@@ -611,10 +637,23 @@ function isSameHubOrScopedLocation(
   targetCode: string,
   assignedHubCode: string,
 ): boolean {
+  const targetProvinceScope = getBranchHubProvinceScopePrefix(targetCode);
+  const assignedProvinceScope = getBranchHubProvinceScopePrefix(assignedHubCode);
+
   return (
     targetCode === assignedHubCode ||
     targetCode.startsWith(`${assignedHubCode}-`) ||
     targetCode.startsWith(`${assignedHubCode}_`) ||
-    targetCode.startsWith(`${assignedHubCode}.`)
+    targetCode.startsWith(`${assignedHubCode}.`) ||
+    (Boolean(targetProvinceScope) &&
+      targetProvinceScope === assignedProvinceScope)
   );
+}
+
+function getBranchHubProvinceScopePrefix(hubCode: string): string | null {
+  const normalizedHubCode = hubCode.trim().toUpperCase();
+
+  return /^\d{6}[A-Z][A-Z0-9]*$/.test(normalizedHubCode)
+    ? normalizedHubCode.slice(0, 6)
+    : null;
 }

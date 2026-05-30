@@ -791,7 +791,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 10,
     padding: '6px 10px',
     backgroundColor: '#ffffff',
-    color: '#0f4c81',
+    color: 'var(--ops-primary-dark)',
     fontSize: 13,
     fontWeight: 700,
   },

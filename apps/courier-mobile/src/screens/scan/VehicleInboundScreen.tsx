@@ -26,6 +26,10 @@ import {
 import { manifestApi } from '../../features/manifest/manifest.api';
 import type { BagManifestDto } from '../../features/manifest/manifest.types';
 import {
+  isLocalMediaUri,
+  uploadCourierImage,
+} from '../../features/media/courier-media-upload.api';
+import {
   parseVehicleLabel,
   type VehicleLabelInfo,
 } from '../../features/scan/vehicle-label';
@@ -445,14 +449,23 @@ export function VehicleInboundScreen(): React.JSX.Element {
         return;
       }
 
+      const proofImageUrl = isLocalMediaUri(proofPhotoUri)
+        ? await uploadCourierImage({
+            accessToken,
+            uri: proofPhotoUri,
+            filename: `${vehicleInfo.vehicleCode}-vehicle-inbound-proof.jpg`,
+          })
+        : proofPhotoUri;
+      const noteWithProof = `${note} | Minh chứng: ${proofImageUrl}`;
+
       await saveVehicleArrivalRecord({
         id: createIdempotencyKey('vehicle-inbound'),
         vehicle: vehicleInfo,
-        proofPhotoUri,
+        proofPhotoUri: proofImageUrl,
         scannedSealCodes: sealCodes,
         expectedSealCodes,
         sealMatched,
-        note,
+        note: noteWithProof,
         employeeCode: courierId || session?.user.username || null,
         employeeName,
         hubCode,
@@ -467,7 +480,7 @@ export function VehicleInboundScreen(): React.JSX.Element {
         receivedBy: courierId,
         receivedByName: employeeName,
         processingHubCode: hubCode,
-        note,
+        note: noteWithProof,
       });
 
       setVehicleLoadRecord(nextLoadRecord ?? vehicleLoadRecord);

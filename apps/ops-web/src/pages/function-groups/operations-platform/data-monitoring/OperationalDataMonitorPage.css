@@ -57,7 +57,7 @@
 }
 
 .ops-data-monitor__summary-card strong {
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-size: 22px;
   line-height: 1.05;
 }
@@ -82,7 +82,7 @@
 .ops-data-monitor__scope {
   border: 1px solid #bfdbfe;
   background: #eff6ff;
-  color: #1d4ed8;
+  color: var(--ops-primary);
 }
 
 .ops-data-monitor__warning {
@@ -147,8 +147,8 @@
 }
 
 .ops-data-monitor__actions button:first-child {
-  border-color: #1d4ed8;
-  background: #1d4ed8;
+  border-color: var(--ops-primary);
+  background: var(--ops-primary);
   color: #ffffff;
 }
 
@@ -173,7 +173,7 @@
   display: grid;
   place-items: center;
   background: rgba(248, 250, 252, 0.78);
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-weight: 700;
 }
 
@@ -209,7 +209,7 @@
 .ops-data-monitor__code {
   display: grid;
   gap: 2px;
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-weight: 800;
   text-decoration: none;
 }
@@ -243,7 +243,7 @@
 .ops-data-monitor__status--pickup-completed,
 .ops-data-monitor__status--created {
   background: #dbeafe;
-  color: #1d4ed8;
+  color: var(--ops-primary);
 }
 
 .ops-data-monitor__status--delivery-failed,

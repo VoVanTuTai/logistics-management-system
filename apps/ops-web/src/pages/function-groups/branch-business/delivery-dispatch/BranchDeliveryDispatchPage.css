@@ -52,7 +52,7 @@
   border: 1px solid #c7d8f2;
   border-radius: 8px;
   background: #ffffff;
-  color: #174a9c;
+  color: var(--ops-primary-dark);
   padding: 0 12px;
   font-size: 12px;
   font-weight: 700;
@@ -78,8 +78,8 @@
 .ops-branch-delivery__primary-action,
 .ops-branch-delivery__assign-strip button.ops-branch-delivery__primary-action,
 .ops-branch-delivery__assign-btn {
-  border-color: #1d4ed8 !important;
-  background: #1d4ed8 !important;
+  border-color: var(--ops-primary) !important;
+  background: var(--ops-primary) !important;
   color: #ffffff !important;
 }
 
@@ -139,7 +139,7 @@
 .ops-branch-delivery input:focus,
 .ops-branch-delivery select:focus,
 .ops-branch-delivery textarea:focus {
-  border-color: #1d4ed8;
+  border-color: var(--ops-primary);
   box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.1);
 }
 
@@ -181,7 +181,7 @@
 }
 
 .ops-branch-delivery__assign-strip strong {
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-size: 20px;
   line-height: 1;
   word-break: break-word;
@@ -230,7 +230,7 @@
 }
 
 .ops-branch-delivery__table-title span {
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-size: 12px;
   font-weight: 700;
 }
@@ -244,7 +244,7 @@
 .ops-branch-delivery__loading {
   border-bottom: 1px solid #d7e3f7;
   background: #eff6ff;
-  color: #1d4ed8;
+  color: var(--ops-primary);
   padding: 10px 12px;
   font-size: 13px;
   font-weight: 700;
@@ -302,7 +302,7 @@
   width: 15px;
   height: 15px;
   padding: 0;
-  accent-color: #1d4ed8;
+  accent-color: var(--ops-primary);
 }
 
 .ops-branch-delivery td:nth-child(4) {
@@ -323,7 +323,7 @@
 }
 
 .ops-branch-delivery__code {
-  color: #1d4ed8 !important;
+  color: var(--ops-primary) !important;
   font-weight: 800;
 }
 
@@ -336,7 +336,7 @@
   min-height: 24px;
   border: 1px solid #c7d8f2;
   background: #eff6ff;
-  color: #1d4ed8;
+  color: var(--ops-primary);
   padding: 0 8px;
   font-size: 11px;
   font-weight: 800;
@@ -401,7 +401,7 @@
 }
 
 .ops-branch-delivery__audit strong {
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-size: 13px;
 }
 
@@ -480,7 +480,7 @@
 }
 
 .ops-branch-delivery__drawer-summary strong {
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-size: 14px;
 }
 
@@ -525,7 +525,7 @@
 }
 
 .ops-branch-delivery__courier-option--active {
-  border-color: #1d4ed8 !important;
+  border-color: var(--ops-primary) !important;
   background: #eff6ff !important;
 }
 
@@ -549,7 +549,7 @@
 .ops-branch-delivery__courier-option em {
   border: 1px solid #bfdbfe;
   background: #eff6ff;
-  color: #1d4ed8;
+  color: var(--ops-primary);
   padding: 3px 7px;
   font-size: 11px;
   font-style: normal;

@@ -18,6 +18,46 @@ import type { ShipmentCurrentStatus } from '../../domain/entities/shipment-statu
 import { ShipmentRepository } from '../../domain/repositories/shipment.repository';
 import { PrismaService } from './prisma.service';
 
+const ARRIVED_UNSIGNED_STATUSES: PrismaShipmentCurrentStatus[] = [
+  'MANIFEST_RECEIVED',
+  'MANIFEST_UNSEALED',
+  'SCAN_INBOUND',
+  'INVENTORY_CHECK',
+  'TASK_ASSIGNED',
+  'SCAN_OUTBOUND',
+  'DELIVERY_FAILED',
+  'NDR_CREATED',
+  'EXCEPTION',
+  'RETURN_STARTED',
+];
+
+const DESTINATION_ARRIVED_UNSIGNED_STATUSES: PrismaShipmentCurrentStatus[] = [
+  'MANIFEST_RECEIVED',
+  'MANIFEST_UNSEALED',
+  'SCAN_INBOUND',
+  'INVENTORY_CHECK',
+  'DELIVERY_FAILED',
+  'NDR_CREATED',
+  'EXCEPTION',
+  'RETURN_STARTED',
+];
+
+const CURRENT_HUB_JSON_PATHS = [
+  ['currentHubCode'],
+  ['currentLocation'],
+  ['location', 'hubCode'],
+  ['location', 'current'],
+  ['hub', 'code'],
+  ['hub', 'currentCode'],
+];
+
+const DESTINATION_HUB_JSON_PATHS = [
+  ['receiver', 'hubCode'],
+  ['routing', 'destinationHubCode'],
+  ['receiverHubCode'],
+  ['destinationHubCode'],
+];
+
 @Injectable()
 export class ShipmentPrismaRepository extends ShipmentRepository {
   constructor(private readonly prisma: PrismaService) {
@@ -216,6 +256,7 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
     const hubCodes = normalizeStringList(filters.hubCodes);
     const createdFrom = normalizeDate(filters.createdFrom);
     const createdTo = normalizeDate(filters.createdTo);
+    const opsArrivedUnsigned = normalizeBoolean(filters.opsArrivedUnsigned);
 
     if (status) {
       where.currentStatus = status as PrismaShipmentCurrentStatus;
@@ -245,24 +286,19 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
       });
     }
 
+    if (opsArrivedUnsigned) {
+      andFilters.push(
+        buildArrivedUnsignedWhere(hubCodes.length > 0 ? hubCodes : undefined),
+      );
+    }
+
     if (hubCodes.length > 0) {
       const originOrCurrentHubJsonPaths = [
         ['sender', 'hubCode'],
         ['routing', 'originHubCode'],
         ['senderHubCode'],
         ['originHubCode'],
-        ['currentHubCode'],
-        ['currentLocation'],
-        ['location', 'hubCode'],
-        ['location', 'current'],
-        ['hub', 'code'],
-        ['hub', 'currentCode'],
-      ];
-      const destinationHubJsonPaths = [
-        ['receiver', 'hubCode'],
-        ['routing', 'destinationHubCode'],
-        ['receiverHubCode'],
-        ['destinationHubCode'],
+        ...CURRENT_HUB_JSON_PATHS,
       ];
       const destinationVisibleStatuses: PrismaShipmentCurrentStatus[] = [
         'MANIFEST_RECEIVED',
@@ -278,12 +314,9 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
       andFilters.push({
         OR: [
           ...hubCodes.flatMap((hubCode) =>
-            originOrCurrentHubJsonPaths.map((path) => ({
-              metadata: {
-                path,
-                equals: hubCode,
-              },
-            })),
+            originOrCurrentHubJsonPaths.flatMap((path) =>
+              buildHubJsonPathScopeFilters(path, hubCode),
+            ),
           ),
           {
             AND: [
@@ -294,12 +327,9 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
               },
               {
                 OR: hubCodes.flatMap((hubCode) =>
-                  destinationHubJsonPaths.map((path) => ({
-                    metadata: {
-                      path,
-                      equals: hubCode,
-                    },
-                  })),
+                  DESTINATION_HUB_JSON_PATHS.flatMap((path) =>
+                    buildHubJsonPathScopeFilters(path, hubCode),
+                  ),
                 ),
               },
             ],
@@ -314,6 +344,85 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
 
     return where;
   }
+}
+
+function buildArrivedUnsignedWhere(
+  scopedHubCodes: string[] | undefined,
+): Prisma.ShipmentWhereInput {
+  const statusFilter: Prisma.ShipmentWhereInput = {
+    currentStatus: {
+      in: ARRIVED_UNSIGNED_STATUSES,
+    },
+  };
+
+  if (!scopedHubCodes?.length) {
+    return statusFilter;
+  }
+
+  return {
+    AND: [
+      statusFilter,
+      {
+        OR: [
+          ...scopedHubCodes.flatMap((hubCode) =>
+            CURRENT_HUB_JSON_PATHS.flatMap((path) =>
+              buildHubJsonPathScopeFilters(path, hubCode),
+            ),
+          ),
+          {
+            AND: [
+              {
+                currentStatus: {
+                  in: DESTINATION_ARRIVED_UNSIGNED_STATUSES,
+                },
+              },
+              {
+                OR: scopedHubCodes.flatMap((hubCode) =>
+                  DESTINATION_HUB_JSON_PATHS.flatMap((path) =>
+                    buildHubJsonPathScopeFilters(path, hubCode),
+                  ),
+                ),
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+}
+
+function buildHubJsonPathScopeFilters(
+  path: string[],
+  hubCode: string,
+): Prisma.ShipmentWhereInput[] {
+  const filters: Prisma.ShipmentWhereInput[] = [
+    {
+      metadata: {
+        path,
+        equals: hubCode,
+      },
+    },
+  ];
+  const provinceScopePrefix = getBranchHubProvinceScopePrefix(hubCode);
+
+  if (provinceScopePrefix) {
+    filters.push({
+      metadata: {
+        path,
+        string_starts_with: provinceScopePrefix,
+      },
+    });
+  }
+
+  return filters;
+}
+
+function getBranchHubProvinceScopePrefix(hubCode: string): string | null {
+  const normalizedHubCode = hubCode.trim().toUpperCase();
+
+  return /^\d{6}[A-Z][A-Z0-9]*$/.test(normalizedHubCode)
+    ? normalizedHubCode.slice(0, 6)
+    : null;
 }
 
 function normalizeString(value: unknown): string | null {
@@ -344,6 +453,19 @@ function normalizeDate(value: unknown): Date | null {
 
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function normalizeBoolean(value: unknown): boolean {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value !== 'string') {
+    return false;
+  }
+
+  const normalizedValue = value.trim().toLowerCase();
+  return normalizedValue === 'true' || normalizedValue === '1' || normalizedValue === 'yes';
 }
 
 function normalizePaginationNumber(

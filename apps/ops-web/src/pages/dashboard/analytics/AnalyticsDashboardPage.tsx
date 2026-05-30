@@ -25,7 +25,7 @@ import { formatShipmentStatusLabel } from '../../../utils/logisticsLabels';
 import { CopyableShipmentCode } from '../../shared/CopyableShipmentCode';
 import './AnalyticsDashboard.css';
 
-const NDR_COLORS = ['#2563eb', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444'];
+const NDR_COLORS = ['var(--ops-primary)', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444'];
 
 type AnalyticsAccent = 'primary' | 'info' | 'success' | 'danger' | 'warning';
 

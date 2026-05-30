@@ -14,7 +14,7 @@ export function DashboardPieChart({
 }: DashboardPieChartProps): React.JSX.Element {
   const total = points.reduce((sum, p) => sum + p.value, 0);
   
-  const colors = ['#2563eb', '#16a34a', '#dc2626', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'];
+  const colors = ['var(--ops-primary)', '#16a34a', '#dc2626', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'];
   const gradientParts: string[] = [];
   let accum = 0;
   
@@ -35,7 +35,7 @@ export function DashboardPieChart({
         <h3>{title}</h3>
       </header>
       <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', padding: '1.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-        <div style={{ width: '160px', height: '160px', borderRadius: '50%', background, flexShrink: 0, boxShadow: 'inset 0 0 20px rgba(0,0,0,0.05)' }} />
+        <div style={{ width: '160px', height: '160px', borderRadius: '50%', background, flexShrink: 0 }} />
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', minWidth: '150px' }}>
           {points.map((point, index) => {

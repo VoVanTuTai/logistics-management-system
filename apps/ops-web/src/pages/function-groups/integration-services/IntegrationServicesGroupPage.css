@@ -57,7 +57,7 @@
 }
 
 .ops-integration-services__summary strong {
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-size: 22px;
   line-height: 1.05;
 }
@@ -71,7 +71,7 @@
   border: 1px solid #bfdbfe;
   border-radius: 8px;
   background: #eff6ff;
-  color: #1d4ed8;
+  color: var(--ops-primary);
   padding: 10px 12px;
   font-size: 13px;
 }

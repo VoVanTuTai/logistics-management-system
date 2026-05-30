@@ -9,6 +9,7 @@ import {
 
 import type {
   AuthSession,
+  AuthPortalRoleGroup,
   ChangePasswordInput,
   ChangePasswordResult,
   IntrospectInput,
@@ -81,6 +82,11 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials.');
     }
 
+    this.assertUserMatchesLoginRoleGroup(
+      user,
+      this.normalizeLoginRoleGroup(input.roleGroup),
+    );
+
     const issuedAt = new Date();
     const tokens = this.opaqueTokenService.issueTokens(issuedAt);
     const session = await this.authSessionRepository.create({
@@ -116,6 +122,10 @@ export class AuthService {
     }
 
     const user = await this.getActiveUser(currentSession.userId);
+    this.assertUserMatchesLoginRoleGroup(
+      user,
+      this.normalizeLoginRoleGroup(input.roleGroup),
+    );
     const issuedAt = new Date();
     const tokens = this.opaqueTokenService.issueTokens(issuedAt);
     const session = await this.authSessionRepository.rotateTokens(currentSession.id, {
@@ -684,6 +694,62 @@ export class AuthService {
     }
   }
 
+  private assertUserMatchesLoginRoleGroup(
+    user: UserAccount,
+    roleGroup: AuthPortalRoleGroup | undefined,
+  ): void {
+    if (!roleGroup) {
+      return;
+    }
+
+    if (this.userHasRoleGroup(user.roles, roleGroup)) {
+      return;
+    }
+
+    throw new UnauthorizedException(
+      `Tài khoản không thuộc nhóm quyền ${this.roleGroupLabel(roleGroup)}. Vui lòng đăng nhập đúng cổng hệ thống.`,
+    );
+  }
+
+  private userHasRoleGroup(roles: string[], roleGroup: AuthPortalRoleGroup): boolean {
+    if (roleGroup === 'COURIER_APP') {
+      return roles.some(
+        (role) =>
+          ADMIN_ROLE_SET.has(role) ||
+          OPS_ROLE_SET.has(role) ||
+          COURIER_ROLE_SET.has(role),
+      );
+    }
+
+    if (roleGroup === 'OPS') {
+      return roles.some(
+        (role) => ADMIN_ROLE_SET.has(role) || OPS_ROLE_SET.has(role),
+      );
+    }
+
+    if (roleGroup === 'SHIPPER') {
+      return roles.some((role) => COURIER_ROLE_SET.has(role));
+    }
+
+    return roles.some((role) => MERCHANT_ROLE_SET.has(role));
+  }
+
+  private roleGroupLabel(roleGroup: AuthPortalRoleGroup): string {
+    if (roleGroup === 'COURIER_APP') {
+      return 'COURIER hoặc OPS';
+    }
+
+    if (roleGroup === 'OPS') {
+      return 'OPS';
+    }
+
+    if (roleGroup === 'SHIPPER') {
+      return 'COURIER';
+    }
+
+    return 'MERCHANT';
+  }
+
   private isEmployeeRoleSet(roles: string[]): boolean {
     return roles.some(
       (role) =>
@@ -776,5 +842,24 @@ export class AuthService {
     }
 
     throw new BadRequestException('roleGroup must be OPS, SHIPPER, or MERCHANT.');
+  }
+
+  private normalizeLoginRoleGroup(value: unknown): AuthPortalRoleGroup | undefined {
+    if (value === undefined || value === null || value === '') {
+      return undefined;
+    }
+
+    if (
+      value === 'OPS' ||
+      value === 'SHIPPER' ||
+      value === 'MERCHANT' ||
+      value === 'COURIER_APP'
+    ) {
+      return value;
+    }
+
+    throw new BadRequestException(
+      'roleGroup must be OPS, SHIPPER, MERCHANT, or COURIER_APP.',
+    );
   }
 }

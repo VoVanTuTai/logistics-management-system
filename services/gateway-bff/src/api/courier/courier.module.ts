@@ -12,6 +12,7 @@ import type { Request, Response } from 'express';
 
 import { CourierPermissionGuard } from '../../common/guards/courier-permission.guard';
 import { GatewayAuthGuard } from '../../common/guards/gateway-auth.guard';
+import { GatewayRoleGuard } from '../../common/guards/gateway-role.guard';
 import { AuthServiceClient } from '../../infrastructure/clients/auth-service.client';
 import { GatewayProxyClient } from '../../infrastructure/clients/gateway-proxy.client';
 import { ServiceRegistryClient } from '../../infrastructure/clients/service-registry.client';
@@ -20,7 +21,7 @@ import {
   type MediaUploadUrlResponse,
 } from '../media/media-upload.service';
 
-@UseGuards(GatewayAuthGuard, CourierPermissionGuard)
+@UseGuards(GatewayAuthGuard, GatewayRoleGuard, CourierPermissionGuard)
 @Controller('courier')
 class CourierController {
   constructor(
@@ -60,6 +61,7 @@ class CourierController {
     GatewayProxyClient,
     ServiceRegistryClient,
     GatewayAuthGuard,
+    GatewayRoleGuard,
     MediaUploadService,
   ],
 })

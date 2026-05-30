@@ -390,6 +390,8 @@ export function ReturnRegistrationScreen({ route }: Props): React.JSX.Element {
           <Text style={styles.sectionTitle}>Thông tin đề xuất</Text>
           <View style={styles.inputRow}>
             <TextInput
+              testID="return-registration-shipment-code-input"
+              accessibilityLabel="Mã vận đơn đăng ký chuyển hoàn"
               value={inputCode}
               onChangeText={setInputCode}
               placeholder="Nhập mã vận đơn"
@@ -403,6 +405,8 @@ export function ReturnRegistrationScreen({ route }: Props): React.JSX.Element {
           </View>
           <View style={styles.actionRow}>
             <Pressable
+              testID="return-registration-search-button"
+              accessibilityLabel="Tìm kiếm vận đơn chuyển hoàn"
               disabled={shipmentQuery.isFetching}
               onPress={handleSearch}
               style={[styles.secondaryButton, shipmentQuery.isFetching && styles.buttonDisabled]}
@@ -499,6 +503,8 @@ export function ReturnRegistrationScreen({ route }: Props): React.JSX.Element {
 
               <Text style={styles.fieldLabel}>Ghi chú nguyên nhân</Text>
               <TextInput
+                testID="return-registration-reason-note-input"
+                accessibilityLabel="Ghi chú nguyên nhân chuyển hoàn"
                 value={reasonText}
                 onChangeText={setReasonText}
                 multiline
@@ -520,6 +526,8 @@ export function ReturnRegistrationScreen({ route }: Props): React.JSX.Element {
 
       <View style={styles.footer}>
         <Pressable
+          testID="return-registration-submit-button"
+          accessibilityLabel="Lưu đăng ký chuyển hoàn"
           disabled={!canSubmitReturnRegistration}
           onPress={submitReturnRegistration}
           style={[

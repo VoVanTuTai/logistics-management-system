@@ -68,13 +68,25 @@ services:
     depends_on:
       minio:
         condition: service_healthy
-    entrypoint: >
-      /bin/sh -c "
+    entrypoint: |
+      /bin/sh -c '
       /usr/bin/mc alias set myminio http://minio:9000 minioadmin minioadmin123;
       /usr/bin/mc mb myminio/nexus-pod-images --ignore-existing;
       /usr/bin/mc anonymous set download myminio/nexus-pod-images;
+      cat >/tmp/minio-cors.json <<EOF
+      [
+        {
+          "AllowedOrigins": ["*"],
+          "AllowedMethods": ["GET", "PUT", "HEAD"],
+          "AllowedHeaders": ["*"],
+          "ExposeHeaders": ["ETag"],
+          "MaxAgeSeconds": 3000
+        }
+      ]
+      EOF
+      /usr/bin/mc cors set myminio/nexus-pod-images /tmp/minio-cors.json;
       exit 0;
-      "
+      '
 
 volumes:
   postgres_data:

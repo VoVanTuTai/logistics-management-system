@@ -1,12 +1,14 @@
 ﻿import React from 'react';
 import type { ShipmentListItemDto } from '../../features/shipments/shipments.types';
+import type { TaskListItemDto } from '../../features/tasks/tasks.types';
 import { formatDateTime } from '../../utils/format';
-import { formatShipmentStatusLabel } from '../../utils/logisticsLabels';
+import { formatShipmentStatusLabel, formatTaskStatusLabel } from '../../utils/logisticsLabels';
 import { CopyableShipmentCode } from '../shared/CopyableShipmentCode';
 
 interface ShipmentsTableProps {
   items: ShipmentListItemDto[];
   deliveryCourierByShipment: Map<string, string>;
+  deliveryTaskByShipment: Map<string, TaskListItemDto>;
   selectedShipmentCodes: string[];
   onToggleShipment: (shipmentCode: string, checked: boolean) => void;
   onToggleAllVisible: (checked: boolean) => void;
@@ -31,6 +33,7 @@ function normalizeShipmentCode(value: string): string {
 export function ShipmentsTable({
   items,
   deliveryCourierByShipment,
+  deliveryTaskByShipment,
   selectedShipmentCodes,
   onToggleShipment,
   onToggleAllVisible,
@@ -63,14 +66,16 @@ export function ShipmentsTable({
             <th style={styles.headerCell}>Người gửi</th>
             <th style={styles.headerCell}>Người nhận</th>
             <th style={styles.headerCell}>Luồng vận hành</th>
-            <th style={styles.headerCell}>Thời gian</th>
+            <th style={styles.headerCell}>Mốc trạng thái</th>
           </tr>
         </thead>
         <tbody>
           {items.map((item) => {
             const checked = selectedSet.has(item.shipmentCode);
+            const normalizedShipmentCode = normalizeShipmentCode(item.shipmentCode);
             const assignedCourier =
-              deliveryCourierByShipment.get(normalizeShipmentCode(item.shipmentCode)) ?? 'Chưa bàn giao';
+              deliveryCourierByShipment.get(normalizedShipmentCode) ?? 'Chưa bàn giao';
+            const deliveryTask = deliveryTaskByShipment.get(normalizedShipmentCode) ?? null;
 
             return (
               <tr key={item.id} style={checked ? styles.selectedRow : undefined}>
@@ -88,6 +93,7 @@ export function ShipmentsTable({
                 </td>
                 <td style={styles.cell}>
                   <div style={styles.statusText}>{resolveShipmentStatusLabel(item)}</div>
+                  <small style={styles.statusCode}>{item.currentStatus}</small>
                   {item.requiresLabelReprint ? (
                     <small style={styles.reprintWarning}>Cần in lại tem mới</small>
                   ) : null}
@@ -110,10 +116,16 @@ export function ShipmentsTable({
                     Hub đích: {item.receiverHubCode ?? item.destinationHubCode ?? '-'}
                   </small>
                   <small style={styles.subText}>Courier: {assignedCourier}</small>
+                  <small style={styles.subText}>
+                    Task giao: {deliveryTask ? formatTaskStatusLabel(deliveryTask.status) : 'Chưa tạo'}
+                  </small>
                 </td>
                 <td style={styles.cell}>
-                  <div>Tạo: {formatDateTime(item.createdAt)}</div>
-                  <small style={styles.subText}>Cập nhật: {formatDateTime(item.updatedAt)}</small>
+                  <div>Trạng thái: {formatDateTime(item.updatedAt)}</div>
+                  <small style={styles.subText}>Tạo vận đơn: {formatDateTime(item.createdAt)}</small>
+                  <small style={styles.subText}>
+                    Task giao: {deliveryTask ? formatDateTime(deliveryTask.updatedAt) : 'Chưa có'}
+                  </small>
                 </td>
               </tr>
             );
@@ -135,7 +147,7 @@ const styles: Record<string, React.CSSProperties> = {
   table: {
     width: '100%',
     borderCollapse: 'collapse',
-    minWidth: 1040,
+    minWidth: 1160,
   },
   headerCell: {
     textAlign: 'left',
@@ -163,11 +175,18 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: '#f3f7ff',
   },
   shipmentCodeLink: {
-    color: '#0f4c81',
+    color: 'var(--ops-primary-dark)',
     fontWeight: 800,
     textDecoration: 'none',
   },
   statusText: {
+    fontWeight: 700,
+  },
+  statusCode: {
+    display: 'block',
+    marginTop: 3,
+    color: '#64748b',
+    fontSize: 11,
     fontWeight: 700,
   },
   subText: {

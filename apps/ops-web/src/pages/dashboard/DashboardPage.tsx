@@ -50,9 +50,9 @@ function DashboardMenuOutlineIcon({
   };
   const accentStrokeProps = {
     ...outlineProps,
-    stroke: 'var(--ops-menu-accent, #2563eb)',
+    stroke: 'var(--ops-menu-accent, var(--ops-primary))',
   };
-  const accentFill = 'var(--ops-menu-accent, #2563eb)';
+  const accentFill = 'var(--ops-menu-accent, var(--ops-primary))';
 
   switch (icon) {
     case 'basic_data':
@@ -379,7 +379,13 @@ export function DashboardPage(): React.JSX.Element {
           <header className="ops-dashboard__section-header">
             <h3>Menu chính</h3>
           </header>
-          <div className="ops-menu-grid">
+          <div
+            className={
+              quickMenu.some((item) => item.featured)
+                ? 'ops-menu-grid ops-menu-grid--featured-layout'
+                : 'ops-menu-grid'
+            }
+          >
             {quickMenu.map((item) => {
               const iconNode = (
                 <span className="ops-menu-tile__icon">

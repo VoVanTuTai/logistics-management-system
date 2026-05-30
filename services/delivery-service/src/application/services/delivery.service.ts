@@ -140,7 +140,7 @@ export class DeliveryService {
       otpRecord,
     };
 
-    await this.deliveryOutboxService.enqueueDeliveryDelivered(deliveryAttempt);
+    await this.deliveryOutboxService.enqueueDeliveryDelivered(deliveryAttempt, pod);
 
     await this.idempotencyRecordRepository.createIfAbsent({
       idempotencyKey: scopedIdempotencyKey,

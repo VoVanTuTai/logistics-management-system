@@ -41,6 +41,8 @@ export function LoginForm({
           <View style={styles.fieldBlock}>
             <Text style={styles.label}>Tài khoản</Text>
             <TextInput
+              testID="login-username-input"
+              accessibilityLabel="Tài khoản courier"
               autoCapitalize="none"
               autoCorrect={false}
               editable={!loading}
@@ -64,6 +66,8 @@ export function LoginForm({
           <View style={styles.fieldBlock}>
             <Text style={styles.label}>Mật khẩu</Text>
             <TextInput
+              testID="login-password-input"
+              accessibilityLabel="Mật khẩu courier"
               secureTextEntry
               autoCapitalize="none"
               autoCorrect={false}
@@ -88,6 +92,8 @@ export function LoginForm({
       ) : null}
 
       <Pressable
+        testID="login-submit-button"
+        accessibilityLabel="Đăng nhập"
         disabled={loading}
         onPress={handleSubmit(onSubmit)}
         style={styles.primaryButton}

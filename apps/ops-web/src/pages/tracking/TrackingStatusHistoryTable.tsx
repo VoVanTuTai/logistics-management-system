@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { LinkifiedText } from '../shared/LinkifiedText';
+
 interface TrackingStatusHistoryRow {
   id: string;
   stt: number;
@@ -48,7 +50,9 @@ export function TrackingStatusHistoryTable({
               <td>{row.status}</td>
               <td>{row.location}</td>
               <td>{row.source}</td>
-              <td className="ops-tracking-lookup__history-description-cell">{row.description}</td>
+              <td className="ops-tracking-lookup__history-description-cell">
+                <LinkifiedText text={row.description} fallback="--" />
+              </td>
               <td>{row.actualWeight}</td>
               <td>{row.chargedWeight}</td>
             </tr>

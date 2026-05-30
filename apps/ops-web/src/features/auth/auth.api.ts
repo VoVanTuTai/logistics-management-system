@@ -6,6 +6,8 @@ import { authClient } from './auth.client';
 import { clearAuthSession, persistAuthSession } from './auth.session';
 import type { LoginFormValues } from './auth.types';
 
+const OPS_ALLOWED_ROLES = new Set(['SYSTEM_ADMIN', 'OPS_ADMIN', 'OPS_VIEWER']);
+
 export const authApi = {
   login: authClient.login,
   logout: authClient.logout,
@@ -20,6 +22,11 @@ export function useLoginMutation() {
 
       try {
         const session = await authApi.login(payload);
+        if (!isOpsSession(session)) {
+          throw new Error(
+            'Tài khoản không thuộc nhóm quyền OPS. Vui lòng đăng nhập đúng cổng hệ thống.',
+          );
+        }
         await persistAuthSession(session);
         return session;
       } catch (error) {
@@ -30,6 +37,12 @@ export function useLoginMutation() {
       }
     },
   });
+}
+
+function isOpsSession(session: { user: { roles: string[] } }): boolean {
+  return session.user.roles.some((role) =>
+    OPS_ALLOWED_ROLES.has(role.trim().toUpperCase()),
+  );
 }
 
 export function useLogoutMutation(accessToken: string | null) {

@@ -1,5 +1,9 @@
 import { ApiClientError, courierApiClient } from '../../services/api/client';
 import { courierEndpoints } from '../../services/api/endpoints';
+import {
+  isLocalMediaUri,
+  uploadCourierImage,
+} from '../media/courier-media-upload.api';
 import type { RecordScanResultDto } from './scan.types';
 import type { PickupScanCommand, PickupScanMutationResult } from './pickup.types';
 
@@ -7,14 +11,16 @@ export async function submitPickupScanAction(
   accessToken: string,
   payload: PickupScanCommand,
 ): Promise<PickupScanMutationResult> {
+  const uploadResolvedPayload = await resolvePickupProofPayload(accessToken, payload);
+
   try {
     const result = await courierApiClient.request<RecordScanResultDto>(
       courierEndpoints.scan.pickup,
       {
         method: 'POST',
         accessToken,
-        body: payload,
-        headers: { 'Idempotency-Key': payload.idempotencyKey },
+        body: uploadResolvedPayload,
+        headers: { 'Idempotency-Key': uploadResolvedPayload.idempotencyKey },
       },
     );
 
@@ -35,6 +41,52 @@ export async function submitPickupScanAction(
 
     throw error;
   }
+}
+
+async function resolvePickupProofPayload(
+  accessToken: string,
+  payload: PickupScanCommand,
+): Promise<PickupScanCommand> {
+  const note = payload.note ?? '';
+  const proofUri = extractProofUri(note);
+
+  if (!isLocalMediaUri(proofUri)) {
+    return payload;
+  }
+
+  const publicUrl = await uploadCourierImage({
+    accessToken,
+    uri: proofUri,
+    filename: `${payload.shipmentCode.replace(/[^a-zA-Z0-9_-]/g, '') || 'shipment'}-pickup-proof.jpg`,
+  });
+
+  return {
+    ...payload,
+    note: replaceProofUri(note, publicUrl),
+  };
+}
+
+function extractProofUri(note: string): string | null {
+  const marker = 'Minh chứng:';
+  const markerIndex = note.lastIndexOf(marker);
+
+  if (markerIndex < 0) {
+    return null;
+  }
+
+  const proofValue = note.slice(markerIndex + marker.length).trim();
+  return proofValue || null;
+}
+
+function replaceProofUri(note: string, publicUrl: string): string {
+  const marker = 'Minh chứng:';
+  const markerIndex = note.lastIndexOf(marker);
+
+  if (markerIndex < 0) {
+    return note;
+  }
+
+  return `${note.slice(0, markerIndex + marker.length)} ${publicUrl}`;
 }
 
 function isDuplicateStatus(status: number | null): boolean {

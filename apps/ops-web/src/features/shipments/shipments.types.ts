@@ -84,6 +84,7 @@ export interface ShipmentListFilters {
   shipmentCodes?: string[];
   status?: string;
   hubCodes?: string[];
+  opsArrivedUnsigned?: boolean;
   createdFrom?: string;
   createdTo?: string;
   limit?: number;

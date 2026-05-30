@@ -7,6 +7,7 @@ import type { AuthSessionDto } from './auth.types';
 const AUTH_STORAGE_KEY = 'ops-web.auth-session';
 const ACCESS_TOKEN_REFRESH_WINDOW_MS = 60_000;
 const CLIENT_SESSION_TTL_MS = 10 * 60 * 60 * 1000;
+const OPS_ALLOWED_ROLES = new Set(['SYSTEM_ADMIN', 'OPS_ADMIN', 'OPS_VIEWER']);
 
 let refreshSessionPromise: Promise<AuthSessionDto> | null = null;
 
@@ -30,6 +31,12 @@ export async function hydrateAuthSession(): Promise<void> {
 
     if (isTokenExpired(storedSession.tokens.refreshTokenExpiresAt)) {
       throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+
+    if (!isOpsSession(storedSession)) {
+      throw new Error(
+        'Tài khoản không thuộc nhóm quyền OPS. Vui lòng đăng nhập đúng cổng hệ thống.',
+      );
     }
 
     if (shouldRefreshAccessToken(storedSession)) {
@@ -56,6 +63,7 @@ export async function hydrateAuthSession(): Promise<void> {
 }
 
 export async function persistAuthSession(session: AuthSessionDto): Promise<void> {
+  assertOpsSession(session);
   localStorage.setItem(
     AUTH_STORAGE_KEY,
     JSON.stringify({
@@ -120,6 +128,8 @@ export async function getValidAccessToken(
   if (!session) {
     return currentAccessToken;
   }
+
+  assertOpsSession(session);
 
   if (session.tokens.accessToken !== currentAccessToken) {
     return session.tokens.accessToken;
@@ -190,6 +200,7 @@ async function requestSessionRefresh(
       },
       body: JSON.stringify({
         refreshToken: session.tokens.refreshToken,
+        roleGroup: 'OPS',
       }),
     },
   );
@@ -206,6 +217,20 @@ async function requestSessionRefresh(
   }
 
   return payload as AuthSessionDto;
+}
+
+function isOpsSession(session: AuthSessionDto): boolean {
+  return session.user.roles.some((role) =>
+    OPS_ALLOWED_ROLES.has(role.trim().toUpperCase()),
+  );
+}
+
+function assertOpsSession(session: AuthSessionDto): void {
+  if (!isOpsSession(session)) {
+    throw new Error(
+      'Tài khoản không thuộc nhóm quyền OPS. Vui lòng đăng nhập đúng cổng hệ thống.',
+    );
+  }
 }
 
 function safeParseJson(input: string): unknown {

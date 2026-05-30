@@ -4,6 +4,7 @@ import type { Request, Response as ExpressResponse } from 'express';
 import { ApiGroup, ServiceRegistryClient } from './service-registry.client';
 
 type RequestWithRawBody = Request & { rawBody?: Buffer };
+type AuthRoleGroup = 'OPS' | 'SHIPPER' | 'MERCHANT' | 'COURIER_APP';
 
 const HOP_BY_HOP_HEADERS = new Set([
   'connection',
@@ -53,7 +54,7 @@ export class GatewayProxyClient {
       const upstreamResponse = await fetch(targetUrl, {
         method: request.method,
         headers: this.buildHeaders(request),
-        body: this.buildRequestBody(request),
+        body: this.buildRequestBody(request, group, serviceName, targetPathSegments),
         redirect: 'manual',
       });
 
@@ -134,9 +135,25 @@ export class GatewayProxyClient {
     return headers;
   }
 
-  private buildRequestBody(request: RequestWithRawBody): BodyInit | undefined {
+  private buildRequestBody(
+    request: RequestWithRawBody,
+    group: ApiGroup,
+    serviceName: string,
+    targetPathSegments: string[],
+  ): BodyInit | undefined {
     if (request.method === 'GET' || request.method === 'HEAD') {
       return undefined;
+    }
+
+    const roleScopedAuthBody = this.buildRoleScopedAuthBody(
+      request,
+      group,
+      serviceName,
+      targetPathSegments,
+    );
+
+    if (roleScopedAuthBody) {
+      return roleScopedAuthBody;
     }
 
     if (Buffer.isBuffer(request.rawBody)) {
@@ -156,5 +173,86 @@ export class GatewayProxyClient {
     }
 
     return JSON.stringify(request.body);
+  }
+
+  private buildRoleScopedAuthBody(
+    request: RequestWithRawBody,
+    group: ApiGroup,
+    serviceName: string,
+    targetPathSegments: string[],
+  ): string | null {
+    const roleGroup = resolveAuthRoleGroup(group);
+    if (!roleGroup || serviceName !== 'auth') {
+      return null;
+    }
+
+    const targetPath = targetPathSegments.join('/');
+    if (targetPath !== 'auth/login' && targetPath !== 'auth/refresh') {
+      return null;
+    }
+
+    const parsedBody = parseRequestJsonBody(request);
+    if (!parsedBody) {
+      return null;
+    }
+
+    return JSON.stringify({
+      ...parsedBody,
+      roleGroup,
+    });
+  }
+}
+
+function resolveAuthRoleGroup(group: ApiGroup): AuthRoleGroup | null {
+  if (group === 'ops') {
+    return 'OPS';
+  }
+
+  if (group === 'courier') {
+    return 'COURIER_APP';
+  }
+
+  if (group === 'merchant') {
+    return 'MERCHANT';
+  }
+
+  return null;
+}
+
+function parseRequestJsonBody(
+  request: RequestWithRawBody,
+): Record<string, unknown> | null {
+  if (
+    request.body &&
+    typeof request.body === 'object' &&
+    !Array.isArray(request.body) &&
+    !Buffer.isBuffer(request.body)
+  ) {
+    return request.body as Record<string, unknown>;
+  }
+
+  if (typeof request.body === 'string') {
+    return parseJsonObject(request.body);
+  }
+
+  if (Buffer.isBuffer(request.rawBody)) {
+    return parseJsonObject(request.rawBody.toString('utf8'));
+  }
+
+  if (Buffer.isBuffer(request.body)) {
+    return parseJsonObject(request.body.toString('utf8'));
+  }
+
+  return null;
+}
+
+function parseJsonObject(rawValue: string): Record<string, unknown> | null {
+  try {
+    const parsed = JSON.parse(rawValue) as unknown;
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? parsed as Record<string, unknown>
+      : null;
+  } catch {
+    return null;
   }
 }

@@ -61,7 +61,7 @@
 }
 
 .ops-return-list__hero-stats strong {
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-size: 22px;
   line-height: 1;
 }
@@ -101,7 +101,7 @@
   margin-right: 8px;
   vertical-align: -2px;
   border-radius: 999px;
-  background: #1d4ed8;
+  background: var(--ops-primary);
 }
 
 .ops-return-list__panel-header span {
@@ -169,15 +169,15 @@
 
 .ops-return-list__search-btn,
 .ops-return-list__print-btn {
-  border-color: #1d4ed8;
-  background: #1d4ed8;
+  border-color: var(--ops-primary);
+  background: var(--ops-primary);
   color: #ffffff;
 }
 
 .ops-return-list__search-btn:hover,
 .ops-return-list__print-btn:hover {
-  background: #1e40af;
-  border-color: #1e40af;
+  background: var(--ops-primary-dark);
+  border-color: var(--ops-primary-dark);
 }
 
 .ops-return-list__reset-btn {
@@ -248,13 +248,13 @@
 .ops-return-list__code {
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   letter-spacing: 0.01em;
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-weight: 800;
   text-decoration: none;
 }
 
 .ops-return-list__code {
-  color: #1d4ed8;
+  color: var(--ops-primary);
 }
 
 .ops-return-list__route-cell {

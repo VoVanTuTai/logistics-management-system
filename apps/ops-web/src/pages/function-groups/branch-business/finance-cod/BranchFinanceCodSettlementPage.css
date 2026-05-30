@@ -234,7 +234,7 @@
 
 .ops-branch-cod__code,
 .ops-branch-cod__courier {
-  color: #1d4ed8 !important;
+  color: var(--ops-primary) !important;
   font-weight: 700;
 }
 
@@ -251,7 +251,7 @@
 }
 
 .ops-branch-cod__memo {
-  color: #1d4ed8 !important;
+  color: var(--ops-primary) !important;
   font-weight: 800;
   white-space: nowrap;
 }

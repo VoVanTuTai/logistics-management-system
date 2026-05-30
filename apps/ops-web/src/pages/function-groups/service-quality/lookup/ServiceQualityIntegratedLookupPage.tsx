@@ -2,14 +2,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 
-import { useShipmentDetailQuery, useShipmentsQuery } from '../../../../features/shipments/shipments.api';
-import type {
-  ShipmentDetailDto,
-  ShipmentListItemDto,
-} from '../../../../features/shipments/shipments.types';
+import { useNdrCasesQuery } from '../../../../features/ndr/ndr.api';
+import type { NdrCaseListItemDto } from '../../../../features/ndr/ndr.types';
+import { useShipmentDetailQuery } from '../../../../features/shipments/shipments.api';
+import type { ShipmentDetailDto } from '../../../../features/shipments/shipments.types';
 import { useTrackingDetailQuery } from '../../../../features/tracking/tracking.api';
 import type { TrackingTimelineEventDto } from '../../../../features/tracking/tracking.types';
-import { getErrorMessage } from '../../../../services/api/errors';
+import { ApiClientError, getErrorMessage } from '../../../../services/api/errors';
 import { useAuthStore } from '../../../../store/authStore';
 import { formatDateTime } from '../../../../utils/format';
 import {
@@ -19,6 +18,7 @@ import {
   formatTrackingEventTypeLabel,
 } from '../../../../utils/logisticsLabels';
 import { CopyableShipmentCode } from '../../../shared/CopyableShipmentCode';
+import { LinkifiedText } from '../../../shared/LinkifiedText';
 import './ServiceQualityIntegratedLookupPage.css';
 
 interface DetailField {
@@ -108,11 +108,32 @@ function buildTimelineRows(events: TrackingTimelineEventDto[]) {
   );
 }
 
-function listItemToDetail(item: ShipmentListItemDto): ShipmentDetailDto {
-  return {
-    ...item,
-    note: item.deliveryNote,
-  };
+function formatIssueText(item: NdrCaseListItemDto): string {
+  return item.issueType ?? item.reasonCode ?? 'Không có';
+}
+
+function formatIssueCategory(value: string | null | undefined): string {
+  if (!value) {
+    return 'Không có';
+  }
+
+  if (value === 'PHYSICAL') {
+    return 'Hàng hóa / vật lý';
+  }
+
+  if (value === 'INFORMATION') {
+    return 'Thông tin / vận hành';
+  }
+
+  return value;
+}
+
+function countAttachments(value: unknown): number {
+  return Array.isArray(value) ? value.length : 0;
+}
+
+function isNotFoundError(error: unknown): boolean {
+  return error instanceof ApiClientError && error.status === 404;
 }
 
 export function ServiceQualityIntegratedLookupPage(): React.JSX.Element {
@@ -123,26 +144,26 @@ export function ServiceQualityIntegratedLookupPage(): React.JSX.Element {
   const [lookupCode, setLookupCode] = useState(initialShipmentCode);
   const [inputError, setInputError] = useState<string | null>(null);
 
-  const shipmentsQuery = useShipmentsQuery(
-    accessToken,
-    { shipmentCode: lookupCode, limit: 1 },
-    { enabled: Boolean(lookupCode) },
-  );
-  const shipmentListItem = shipmentsQuery.data?.find(
-    (shipment) => normalizeShipmentCode(shipment.shipmentCode) === lookupCode,
-  ) ?? shipmentsQuery.data?.[0] ?? null;
-  const shipmentDetailQuery = useShipmentDetailQuery(accessToken, shipmentListItem?.id ?? '');
+  const shipmentDetailQuery = useShipmentDetailQuery(accessToken, lookupCode);
   const trackingQuery = useTrackingDetailQuery(accessToken, lookupCode);
+  const ndrQuery = useNdrCasesQuery(
+    accessToken,
+    { shipmentCode: lookupCode },
+    { enabled: Boolean(accessToken) && Boolean(lookupCode) },
+  );
 
-  const shipment: ShipmentDetailDto | null =
-    shipmentDetailQuery.data ?? (shipmentListItem ? listItemToDetail(shipmentListItem) : null);
+  const shipment: ShipmentDetailDto | null = shipmentDetailQuery.data ?? null;
   const timelineRows = useMemo(
     () => buildTimelineRows(trackingQuery.data?.timeline ?? []),
     [trackingQuery.data?.timeline],
   );
-  const isLoading = Boolean(lookupCode) && (shipmentsQuery.isLoading || shipmentDetailQuery.isLoading || trackingQuery.isLoading);
-  const notFound = Boolean(lookupCode) && !isLoading && shipmentsQuery.isSuccess && !shipmentListItem;
-  const error = shipmentsQuery.error ?? shipmentDetailQuery.error ?? trackingQuery.error ?? null;
+  const isLoading = Boolean(lookupCode) && (
+    shipmentDetailQuery.isLoading ||
+    trackingQuery.isLoading ||
+    ndrQuery.isLoading
+  );
+  const notFound = Boolean(lookupCode) && !isLoading && isNotFoundError(shipmentDetailQuery.error);
+  const error = shipmentDetailQuery.error && !notFound ? shipmentDetailQuery.error : null;
 
   const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -188,7 +209,7 @@ export function ServiceQualityIntegratedLookupPage(): React.JSX.Element {
       </form>
 
       {inputError ? <p className="ops-integrated-lookup__error">{inputError}</p> : null}
-      {error && !trackingQuery.isError ? (
+      {error ? (
         <p className="ops-integrated-lookup__error">{getErrorMessage(error)}</p>
       ) : null}
 
@@ -296,6 +317,53 @@ export function ServiceQualityIntegratedLookupPage(): React.JSX.Element {
 
           <section className="ops-integrated-lookup__panel ops-integrated-lookup__panel--wide">
             <header>
+              <h3>Sự cố / chất lượng</h3>
+              <span>{ndrQuery.data?.length ?? 0} hồ sơ</span>
+            </header>
+            {ndrQuery.isError ? (
+              <p className="ops-integrated-lookup__empty">
+                Chưa lấy được dữ liệu sự cố / chất lượng từ NDR API.
+              </p>
+            ) : null}
+            {!ndrQuery.isError && (ndrQuery.data?.length ?? 0) === 0 ? (
+              <p className="ops-integrated-lookup__empty">Chưa có hồ sơ sự cố / chất lượng cho vận đơn này.</p>
+            ) : null}
+            {!ndrQuery.isError && (ndrQuery.data?.length ?? 0) > 0 ? (
+              <div className="ops-integrated-lookup__table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Cập nhật</th>
+                      <th>Trạng thái</th>
+                      <th>Loại sự cố</th>
+                      <th>Nhóm</th>
+                      <th>Hub ghi nhận</th>
+                      <th>Ảnh</th>
+                      <th>Ghi chú</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ndrQuery.data?.map((item) => (
+                      <tr key={item.id}>
+                        <td>{formatDateTime(item.updatedAt)}</td>
+                        <td>{formatText(item.status)}</td>
+                        <td>{formatIssueText(item)}</td>
+                        <td>{formatIssueCategory(item.issueCategory)}</td>
+                        <td>{formatText(item.reportedHubCode)}</td>
+                        <td>{countAttachments(item.attachments)}</td>
+                        <td>
+                          <LinkifiedText text={item.note ?? null} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
+          </section>
+
+          <section className="ops-integrated-lookup__panel ops-integrated-lookup__panel--wide">
+            <header>
               <h3>Lịch sử trạng thái</h3>
               <span>{timelineRows.length} sự kiện</span>
             </header>
@@ -328,7 +396,9 @@ export function ServiceQualityIntegratedLookupPage(): React.JSX.Element {
                         <td>{formatTrackingEventTypeLabel(event.eventTypeCode ?? event.eventType)}</td>
                         <td>{formatText(event.locationText ?? event.locationCode)}</td>
                         <td>{formatTrackingEventSourceLabel(event.eventSource)}</td>
-                        <td>{formatText(event.note)}</td>
+                        <td>
+                          <LinkifiedText text={event.note} />
+                        </td>
                       </tr>
                     ))}
                   </tbody>

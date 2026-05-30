@@ -9,6 +9,7 @@
     "start:raw": "expo start",
     "test:web": "node ./scripts/start-courier-test.js",
     "test:web:open": "node ./scripts/start-courier-test.js --open",
+    "test:maestro": "maestro test maestro/courier-mobile-smoke.yaml",
     "test:qr": "node ./scripts/start-courier-test.js --qr --lan",
     "test:tunnel": "node ./scripts/start-courier-test.js --tunnel",
     "build:web": "expo export --platform web",

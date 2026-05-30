@@ -12,12 +12,13 @@ import {
 import type { Request, Response } from 'express';
 
 import { GatewayAuthGuard } from '../../common/guards/gateway-auth.guard';
+import { GatewayRoleGuard } from '../../common/guards/gateway-role.guard';
 import { OpsHubScopeGuard } from '../../common/guards/ops-hub-scope.guard';
 import { AuthServiceClient } from '../../infrastructure/clients/auth-service.client';
 import { GatewayProxyClient } from '../../infrastructure/clients/gateway-proxy.client';
 import { ServiceRegistryClient } from '../../infrastructure/clients/service-registry.client';
 
-@UseGuards(GatewayAuthGuard, OpsHubScopeGuard)
+@UseGuards(GatewayAuthGuard, GatewayRoleGuard, OpsHubScopeGuard)
 @Controller('ops')
 class OpsController {
   constructor(
@@ -153,6 +154,7 @@ class OpsController {
     GatewayProxyClient,
     ServiceRegistryClient,
     GatewayAuthGuard,
+    GatewayRoleGuard,
     OpsHubScopeGuard,
   ],
 })

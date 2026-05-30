@@ -23,7 +23,7 @@
 }
 
 .ops-report__hero small {
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -57,7 +57,7 @@
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   background: #ffffff;
-  color: #1d4ed8;
+  color: var(--ops-primary);
   padding: 8px 12px;
   font-size: 13px;
   font-weight: 800;
@@ -154,7 +154,7 @@
 .ops-report__kpi {
   min-height: 146px;
   border: 1px solid #d8e0ec;
-  border-left: 3px solid #1d4ed8;
+  border-left: 3px solid var(--ops-primary);
   border-radius: 10px;
   background: #ffffff;
   color: #334155;
@@ -178,7 +178,7 @@
 }
 
 .ops-report__kpi strong {
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-size: 25px;
   line-height: 1;
 }
@@ -277,7 +277,7 @@
 }
 
 .ops-report td strong {
-  color: #1d4ed8;
+  color: var(--ops-primary);
 }
 
 .ops-report__issue-list {
@@ -300,7 +300,7 @@
 }
 
 .ops-report__issue strong {
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-size: 13px;
 }
 

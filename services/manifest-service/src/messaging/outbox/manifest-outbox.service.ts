@@ -29,8 +29,19 @@ export class ManifestOutboxService {
     return this.enqueueMany(events);
   }
 
-  async enqueueManifestReceived(manifest: Manifest): Promise<OutboxEvent[]> {
-    const events = this.manifestEventsProducer.buildManifestReceivedEvents(manifest);
+  async enqueueManifestReceived(
+    manifest: Manifest,
+    actorInput?: {
+      receivedBy?: string | null;
+      receivedByName?: string | null;
+      processingHubCode?: string | null;
+      note?: string | null;
+    },
+  ): Promise<OutboxEvent[]> {
+    const events = this.manifestEventsProducer.buildManifestReceivedEvents(
+      manifest,
+      actorInput,
+    );
     return this.enqueueMany(events);
   }
 

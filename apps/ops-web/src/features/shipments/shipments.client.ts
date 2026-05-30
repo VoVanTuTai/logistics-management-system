@@ -379,6 +379,10 @@ function buildShipmentListPath(filters: ShipmentListFilters): string {
     params.set('hubCodes', filters.hubCodes.join(','));
   }
 
+  if (filters.opsArrivedUnsigned === true) {
+    params.set('opsArrivedUnsigned', 'true');
+  }
+
   if (typeof filters.limit === 'number') {
     params.set('limit', String(filters.limit));
   }

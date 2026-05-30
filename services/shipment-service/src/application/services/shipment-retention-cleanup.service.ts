@@ -9,6 +9,7 @@ import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 
 const DEFAULT_RETENTION_DAYS = 45;
 const DEFAULT_CLEANUP_INTERVAL_MS = 24 * 60 * 60 * 1000;
+const RETAINED_TERMINAL_STATUSES = ['DELIVERED', 'RETURN_COMPLETED', 'CANCELLED'] as const;
 
 @Injectable()
 export class ShipmentRetentionCleanupService implements OnModuleInit, OnModuleDestroy {
@@ -51,7 +52,10 @@ export class ShipmentRetentionCleanupService implements OnModuleInit, OnModuleDe
         this.prisma.changeRequest.deleteMany({
           where: {
             shipment: {
-              createdAt: {
+              currentStatus: {
+                in: [...RETAINED_TERMINAL_STATUSES],
+              },
+              updatedAt: {
                 lt: cutoff,
               },
             },
@@ -59,7 +63,10 @@ export class ShipmentRetentionCleanupService implements OnModuleInit, OnModuleDe
         }),
         this.prisma.shipment.deleteMany({
           where: {
-            createdAt: {
+            currentStatus: {
+              in: [...RETAINED_TERMINAL_STATUSES],
+            },
+            updatedAt: {
               lt: cutoff,
             },
           },
