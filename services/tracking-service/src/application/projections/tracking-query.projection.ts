@@ -119,6 +119,33 @@ export class TrackingQueryProjection {
   private mapTimeline(timelineRecords: TimelineEvent[]): TimelineEventView[] {
     let statusCursor: string | null = null;
 
+    let senderAddress: string | null = null;
+    let receiverAddress: string | null = null;
+
+    for (const record of timelineRecords) {
+      const payload = record.payload as any;
+      const shipment = payload?.data?.shipment;
+      if (shipment) {
+        const metadata = shipment.metadata || {};
+        const sender = metadata.sender || {};
+        const receiver = metadata.receiver || {};
+        
+        const sa = sender.address || metadata.senderAddress || shipment.senderAddress;
+        if (sa && typeof sa === 'string') {
+          senderAddress = sa;
+        }
+        
+        const ra = receiver.address || metadata.receiverAddress || shipment.receiverAddress;
+        if (ra && typeof ra === 'string') {
+          receiverAddress = ra;
+        }
+        
+        if (senderAddress && receiverAddress) {
+          break;
+        }
+      }
+    }
+
     return timelineRecords.map((event) => {
       statusCursor = resolveTrackingStatusFromEvent(event.payload, statusCursor);
       const statusLabel = toTrackingStatusLabelVi(statusCursor);
@@ -126,6 +153,26 @@ export class TrackingQueryProjection {
         event.locationCode ?? this.extractLocationCode(event.payload);
       const eventText = toTimelineTextVi(event.payload, locationCode);
       const source = event.actor?.trim() ? event.actor : 'Hệ thống';
+
+      let locationText = locationCode ? `Kho ${locationCode}` : null;
+      if (
+        statusCursor === 'PICKUP_REQUESTED' ||
+        statusCursor === 'PICKUP_ASSIGNED' ||
+        statusCursor === 'UPDATED' ||
+        statusCursor === 'TASK_ASSIGNED'
+      ) {
+        if (senderAddress) {
+          locationText = senderAddress;
+        }
+      } else if (
+        statusCursor === 'DELIVERING' ||
+        statusCursor === 'OUT_FOR_DELIVERY' ||
+        statusCursor === 'DELIVERED'
+      ) {
+        if (receiverAddress) {
+          locationText = receiverAddress;
+        }
+      }
 
       return {
         id: event.id,
@@ -136,7 +183,7 @@ export class TrackingQueryProjection {
         actor: event.actor,
         eventSource: source,
         locationCode,
-        locationText: locationCode ? `Kho ${locationCode}` : null,
+        locationText,
         statusAfterEventCode: statusCursor,
         statusAfterEvent: statusLabel,
         occurredAt: event.occurredAt,
@@ -178,14 +225,16 @@ export class TrackingQueryProjection {
             )
           : null;
 
+    const currentLocationText =
+      latestTimeline?.locationText ??
+      (currentLocationCode ? `Kho ${currentLocationCode}` : null);
+
     return {
       shipmentCode: current.shipmentCode,
       currentStatusCode: statusCode,
       currentStatus: toTrackingStatusLabelVi(statusCode),
       currentLocationCode,
-      currentLocationText: currentLocationCode
-        ? `Kho ${currentLocationCode}`
-        : null,
+      currentLocationText,
       lastEventTypeCode,
       lastEventType: lastEventTypeLabel,
       lastEventAt: current.lastEventAt,

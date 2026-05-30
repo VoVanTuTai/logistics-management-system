@@ -106,6 +106,7 @@ export function VehicleOutboundScreen(): React.JSX.Element {
   );
   const [screenMessage, setScreenMessage] = React.useState<string | null>(null);
   const [scanLocked, setScanLocked] = React.useState(false);
+  const [isCameraCollapsed, setIsCameraCollapsed] = React.useState(false);
   const [isCapturing, setIsCapturing] = React.useState(false);
   const [isSaving, setIsSaving] = React.useState(false);
   const scanCooldownRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -161,6 +162,7 @@ export function VehicleOutboundScreen(): React.JSX.Element {
     setProofPhotoUri(null);
     setSealCodes([]);
     setSelectedSealCodes(new Set());
+    setIsCameraCollapsed(false);
     setScreenMessage('Đã làm mới luồng xe đi.');
   };
 
@@ -405,6 +407,7 @@ export function VehicleOutboundScreen(): React.JSX.Element {
       setProofPhotoUri(null);
       setSealCodes([]);
       setSelectedSealCodes(new Set());
+      setIsCameraCollapsed(false);
     } catch (error) {
       const message = toErrorMessage(error);
       setScreenMessage(message);
@@ -423,210 +426,233 @@ export function VehicleOutboundScreen(): React.JSX.Element {
 
   return (
     <View style={styles.container}>
-      <View style={styles.cameraSection}>
-        <View style={styles.cameraFrame}>
-          {!permission ? (
-            <View style={styles.cameraPlaceholder}>
-              <ActivityIndicator size="small" color="#E2E8F0" />
-              <Text style={styles.cameraPlaceholderText}>Đang kiểm tra quyền camera...</Text>
-            </View>
-          ) : null}
+      <ScrollView
+        style={styles.mainScroll}
+        contentContainerStyle={styles.mainScrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {isCameraCollapsed ? (
+          <Pressable
+            onPress={() => setIsCameraCollapsed(false)}
+            style={styles.collapsedCameraBar}
+          >
+            <Ionicons name="camera-outline" size={20} color="#1D4ED8" />
+            <Text style={styles.collapsedCameraBarText}>Bật camera để quét/chụp</Text>
+            <Ionicons name="chevron-down" size={16} color="#64748B" style={styles.expandIcon} />
+          </Pressable>
+        ) : (
+          <View style={styles.cameraSection}>
+            <View style={styles.cameraFrame}>
+              {permission && cameraIsReady ? (
+                <Pressable
+                  onPress={() => setIsCameraCollapsed(true)}
+                  style={styles.collapseCameraButton}
+                >
+                  <Ionicons name="eye-off-outline" size={14} color="#FFFFFF" />
+                  <Text style={styles.collapseButtonText}>Ẩn cam</Text>
+                </Pressable>
+              ) : null}
 
-          {permission && !cameraIsReady ? (
-            <View style={styles.cameraPlaceholder}>
-              <Text style={styles.cameraPlaceholderText}>
-                Cần cấp quyền camera để quét tem xe, chụp minh chứng và quét seal xe.
-              </Text>
-              {permission.canAskAgain ? (
-                <Pressable onPress={requestPermission} style={styles.permissionButton}>
-                  <Text style={styles.permissionButtonText}>Cấp quyền camera</Text>
+              {!permission ? (
+                <View style={styles.cameraPlaceholder}>
+                  <ActivityIndicator size="small" color="#E2E8F0" />
+                  <Text style={styles.cameraPlaceholderText}>Đang kiểm tra quyền camera...</Text>
+                </View>
+              ) : null}
+
+              {permission && !cameraIsReady ? (
+                <View style={styles.cameraPlaceholder}>
+                  <Text style={styles.cameraPlaceholderText}>
+                    Cần cấp quyền camera để quét tem xe, chụp minh chứng và quét seal xe.
+                  </Text>
+                  {permission.canAskAgain ? (
+                    <Pressable onPress={requestPermission} style={styles.permissionButton}>
+                      <Text style={styles.permissionButtonText}>Cấp quyền camera</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+              ) : null}
+
+              {permission && cameraIsReady ? (
+                <CameraView
+                  ref={cameraRef}
+                  style={styles.camera}
+                  facing="back"
+                  barcodeScannerSettings={{
+                    barcodeTypes: [
+                      'qr',
+                      'ean13',
+                      'ean8',
+                      'code39',
+                      'code93',
+                      'code128',
+                      'upc_a',
+                      'upc_e',
+                    ],
+                  }}
+                  onBarcodeScanned={
+                    currentStep === 'PROOF' ? undefined : handleBarCodeScanned
+                  }
+                />
+              ) : null}
+
+              {proofPhotoUri && currentStep === 'SEAL' ? (
+                <Image source={{ uri: proofPhotoUri }} style={styles.proofThumb} />
+              ) : null}
+
+              {currentStep === 'PROOF' && cameraIsReady ? (
+                <View style={styles.captureBar}>
+                  <Pressable
+                    disabled={isCapturing}
+                    onPress={() => {
+                      void captureProof();
+                    }}
+                    style={[styles.captureButton, isCapturing && styles.buttonDisabled]}
+                  >
+                    {isCapturing ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <>
+                        <Ionicons name="camera-outline" size={18} color="#FFFFFF" />
+                        <Text style={styles.captureButtonText}>Chụp minh chứng</Text>
+                      </>
+                    )}
+                  </Pressable>
+                </View>
+              ) : null}
+
+              {isSaving ? (
+                <View style={styles.cameraOverlay}>
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <Text style={styles.cameraOverlayText}>Đang xác nhận xe đi...</Text>
+                </View>
+              ) : null}
+            </View>
+            <Text style={styles.cameraHint}>{cameraHint}</Text>
+          </View>
+        )}
+
+        <View style={styles.workSection}>
+          <View style={styles.headerRow}>
+            <Text style={styles.screenTitle}>Xe đi</Text>
+            <Pressable onPress={resetVehicleOutbound}>
+              <Text style={styles.resetText}>Làm mới</Text>
+            </Pressable>
+          </View>
+
+          <View style={[styles.vehicleCard, vehicleInfo && styles.vehicleCardReady]}>
+            <Text style={styles.vehicleTitle}>Tem xe</Text>
+            {vehicleInfo ? (
+              <>
+                <View style={styles.vehicleGrid}>
+                  <View style={styles.vehicleInfoCell}>
+                    <Text style={styles.infoLabel}>Mã tem xe</Text>
+                    <Text style={styles.infoValue}>{vehicleInfo.vehicleCode}</Text>
+                  </View>
+                  <View style={styles.vehicleInfoCell}>
+                    <Text style={styles.infoLabel}>Hub đi</Text>
+                    <Text style={styles.infoValue}>{vehicleInfo.originHubCode}</Text>
+                  </View>
+                  <View style={styles.vehicleInfoCell}>
+                    <Text style={styles.infoLabel}>Hub đến</Text>
+                    <Text style={styles.infoValue}>{vehicleInfo.destinationHubCode}</Text>
+                  </View>
+                  <View style={styles.vehicleInfoCell}>
+                    <Text style={styles.infoLabel}>Biển số</Text>
+                    <Text style={styles.infoValue}>{vehicleInfo.licensePlate}</Text>
+                  </View>
+                </View>
+                <Text style={styles.loadSummaryText}>
+                  Trạng thái tem xe:{' '}
+                  {vehicleLoadRecord?.status === 'IN_TRANSIT'
+                    ? 'Đang luân chuyển'
+                    : 'Đang mở'}
+                  {' | '}
+                  Bao: {vehicleLoadRecord?.bagItems.length ?? 0}
+                  {' | '}
+                  Kiện rời: {vehicleLoadRecord?.looseShipments.length ?? 0}
+                  {' | '}
+                  Đơn hàng: {loadedShipmentTargets.length}
+                </Text>
+              </>
+            ) : (
+              <Text style={styles.emptyGuide}>Chưa có tem xe. Hãy quét mã tem xe bằng camera.</Text>
+            )}
+          </View>
+
+          <View style={[styles.proofCard, proofPhotoUri && styles.proofCardReady]}>
+            <View style={styles.proofHeader}>
+              <Text style={styles.vehicleTitle}>Minh chứng</Text>
+              {proofPhotoUri ? (
+                <Pressable onPress={() => setProofPhotoUri(null)}>
+                  <Text style={styles.resetText}>Chụp lại</Text>
                 </Pressable>
               ) : null}
             </View>
-          ) : null}
-
-          {permission && cameraIsReady ? (
-            <CameraView
-              ref={cameraRef}
-              style={styles.camera}
-              facing="back"
-              barcodeScannerSettings={{
-                barcodeTypes: [
-                  'qr',
-                  'ean13',
-                  'ean8',
-                  'code39',
-                  'code93',
-                  'code128',
-                  'upc_a',
-                  'upc_e',
-                ],
-              }}
-              onBarcodeScanned={
-                currentStep === 'PROOF' ? undefined : handleBarCodeScanned
-              }
-            />
-          ) : null}
-
-          {proofPhotoUri && currentStep === 'SEAL' ? (
-            <Image source={{ uri: proofPhotoUri }} style={styles.proofThumb} />
-          ) : null}
-
-          {currentStep === 'PROOF' && cameraIsReady ? (
-            <View style={styles.captureBar}>
-              <Pressable
-                disabled={isCapturing}
-                onPress={() => {
-                  void captureProof();
-                }}
-                style={[styles.captureButton, isCapturing && styles.buttonDisabled]}
-              >
-                {isCapturing ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <>
-                    <Ionicons name="camera-outline" size={18} color="#FFFFFF" />
-                    <Text style={styles.captureButtonText}>Chụp minh chứng</Text>
-                  </>
-                )}
-              </Pressable>
-            </View>
-          ) : null}
-
-          {isSaving ? (
-            <View style={styles.cameraOverlay}>
-              <ActivityIndicator size="small" color="#FFFFFF" />
-              <Text style={styles.cameraOverlayText}>Đang xác nhận xe đi...</Text>
-            </View>
-          ) : null}
-        </View>
-        <Text style={styles.cameraHint}>{cameraHint}</Text>
-      </View>
-
-      <View style={styles.workSection}>
-        <View style={styles.headerRow}>
-          <Text style={styles.screenTitle}>Xe đi</Text>
-          <Pressable onPress={resetVehicleOutbound}>
-            <Text style={styles.resetText}>Làm mới</Text>
-          </Pressable>
-        </View>
-
-        <View style={[styles.vehicleCard, vehicleInfo && styles.vehicleCardReady]}>
-          <Text style={styles.vehicleTitle}>Tem xe</Text>
-          {vehicleInfo ? (
-            <>
-              <View style={styles.vehicleGrid}>
-                <View style={styles.vehicleInfoCell}>
-                  <Text style={styles.infoLabel}>Mã tem xe</Text>
-                  <Text style={styles.infoValue}>{vehicleInfo.vehicleCode}</Text>
-                </View>
-                <View style={styles.vehicleInfoCell}>
-                  <Text style={styles.infoLabel}>Hub đi</Text>
-                  <Text style={styles.infoValue}>{vehicleInfo.originHubCode}</Text>
-                </View>
-                <View style={styles.vehicleInfoCell}>
-                  <Text style={styles.infoLabel}>Hub đến</Text>
-                  <Text style={styles.infoValue}>{vehicleInfo.destinationHubCode}</Text>
-                </View>
-                <View style={styles.vehicleInfoCell}>
-                  <Text style={styles.infoLabel}>Biển số</Text>
-                  <Text style={styles.infoValue}>{vehicleInfo.licensePlate}</Text>
-                </View>
-              </View>
-              <Text style={styles.loadSummaryText}>
-                Trạng thái tem xe:{' '}
-                {vehicleLoadRecord?.status === 'IN_TRANSIT'
-                  ? 'Đang luân chuyển'
-                  : 'Đang mở'}
-                {' | '}
-                Bao: {vehicleLoadRecord?.bagItems.length ?? 0}
-                {' | '}
-                Kiện rời: {vehicleLoadRecord?.looseShipments.length ?? 0}
-                {' | '}
-                Đơn hàng: {loadedShipmentTargets.length}
-              </Text>
-            </>
-          ) : (
-            <Text style={styles.emptyGuide}>Chưa có tem xe. Hãy quét mã tem xe bằng camera.</Text>
-          )}
-        </View>
-
-        <View style={[styles.proofCard, proofPhotoUri && styles.proofCardReady]}>
-          <View style={styles.proofHeader}>
-            <Text style={styles.vehicleTitle}>Minh chứng</Text>
             {proofPhotoUri ? (
-              <Pressable onPress={() => setProofPhotoUri(null)}>
-                <Text style={styles.resetText}>Chụp lại</Text>
-              </Pressable>
-            ) : null}
+              <Text style={styles.proofReadyText}>Đã chụp minh chứng seal thùng xe.</Text>
+            ) : (
+              <Text style={styles.emptyGuide}>Sau khi quét tem xe, bấm chụp minh chứng trên khung camera.</Text>
+            )}
           </View>
-          {proofPhotoUri ? (
-            <Text style={styles.proofReadyText}>Đã chụp minh chứng seal thùng xe.</Text>
-          ) : (
-            <Text style={styles.emptyGuide}>Sau khi quét tem xe, bấm chụp minh chứng trên khung camera.</Text>
-          )}
-        </View>
 
-        {screenMessage ? <Text style={styles.messageText}>{screenMessage}</Text> : null}
+          {screenMessage ? <Text style={styles.messageText}>{screenMessage}</Text> : null}
 
-        <View style={styles.listHeaderRow}>
-          <Text style={styles.listTitle}>
-            Danh sách seal xe ({sealCodes.length})
-          </Text>
-          <Pressable
-            disabled={selectedCount === 0}
-            onPress={deleteSelectedSeals}
-            style={[
-              styles.deleteButton,
-              selectedCount === 0 && styles.deleteButtonDisabled,
-            ]}
-          >
-            <Ionicons name="trash-outline" size={16} color="#B91C1C" />
-            <Text style={styles.deleteButtonText}>
-              Xóa{selectedCount > 0 ? ` ${selectedCount}` : ''}
+          <View style={styles.listHeaderRow}>
+            <Text style={styles.listTitle}>
+              Danh sách seal xe ({sealCodes.length})
             </Text>
-          </Pressable>
+            <Pressable
+              disabled={selectedCount === 0}
+              onPress={deleteSelectedSeals}
+              style={[
+                styles.deleteButton,
+                selectedCount === 0 && styles.deleteButtonDisabled,
+              ]}
+            >
+              <Ionicons name="trash-outline" size={16} color="#B91C1C" />
+              <Text style={styles.deleteButtonText}>
+                Xóa{selectedCount > 0 ? ` ${selectedCount}` : ''}
+              </Text>
+            </Pressable>
+          </View>
+
+          <View style={styles.listContainer}>
+            {sealCodes.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyText}>Chưa có mã seal xe nào.</Text>
+              </View>
+            ) : (
+              sealCodes.map((item, index) => {
+                const selected = selectedSealCodes.has(item.code);
+
+                return (
+                  <Pressable
+                    key={`${item.code}-${item.scannedAt}`}
+                    onPress={() => toggleSelectedSeal(item.code)}
+                    style={[styles.listItem, selected && styles.listItemSelected]}
+                  >
+                    <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
+                      {selected ? (
+                        <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+                      ) : null}
+                    </View>
+                    <View style={styles.listIndex}>
+                      <Text style={styles.listIndexText}>{index + 1}</Text>
+                    </View>
+                    <View style={styles.listBody}>
+                      <Text style={styles.itemCodeText}>{item.code}</Text>
+                      <Text style={styles.itemTimeText}>
+                        Quét lúc {formatScannedAt(item.scannedAt)}
+                      </Text>
+                    </View>
+                  </Pressable>
+                );
+              })
+            )}
+          </View>
         </View>
-
-        <ScrollView
-          style={styles.listScroll}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {sealCodes.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>Chưa có mã seal xe nào.</Text>
-            </View>
-          ) : (
-            sealCodes.map((item, index) => {
-              const selected = selectedSealCodes.has(item.code);
-
-              return (
-                <Pressable
-                  key={`${item.code}-${item.scannedAt}`}
-                  onPress={() => toggleSelectedSeal(item.code)}
-                  style={[styles.listItem, selected && styles.listItemSelected]}
-                >
-                  <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
-                    {selected ? (
-                      <Ionicons name="checkmark" size={14} color="#FFFFFF" />
-                    ) : null}
-                  </View>
-                  <View style={styles.listIndex}>
-                    <Text style={styles.listIndexText}>{index + 1}</Text>
-                  </View>
-                  <View style={styles.listBody}>
-                    <Text style={styles.itemCodeText}>{item.code}</Text>
-                    <Text style={styles.itemTimeText}>
-                      Quét lúc {formatScannedAt(item.scannedAt)}
-                    </Text>
-                  </View>
-                </Pressable>
-              );
-            })
-          )}
-        </ScrollView>
-      </View>
+      </ScrollView>
 
       <View style={styles.footer}>
         <Pressable
@@ -658,7 +684,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   cameraSection: {
-    flex: 1,
+    height: 240,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E5E7EB',
@@ -746,13 +772,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   workSection: {
-    flex: 2,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E5E7EB',
     borderRadius: 12,
     padding: 12,
-    paddingBottom: 78,
+    paddingBottom: 16,
     ...theme.shadow.sm,
   },
   headerRow: {
@@ -883,13 +908,16 @@ const styles = StyleSheet.create({
     color: '#B91C1C',
     fontWeight: '700',
   },
-  listScroll: {
+  mainScroll: {
     flex: 1,
-    marginTop: 8,
   },
-  listContent: {
+  mainScrollContent: {
+    gap: 10,
+    paddingBottom: 90,
+  },
+  listContainer: {
+    marginTop: 8,
     gap: 8,
-    paddingBottom: 10,
   },
   emptyState: {
     borderWidth: 1,
@@ -988,5 +1016,44 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '800',
     fontSize: 15,
+  },
+  collapsedCameraBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 8,
+    ...theme.shadow.sm,
+  },
+  collapsedCameraBarText: {
+    color: '#1D4ED8',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  expandIcon: {
+    marginLeft: 'auto',
+  },
+  collapseCameraButton: {
+    position: 'absolute',
+    left: 10,
+    top: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.75)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 6,
+    zIndex: 10,
+  },
+  collapseButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 12,
   },
 });

@@ -37,10 +37,14 @@ export interface CreateTaskInput {
 
 export interface AssignTaskInput {
   courierId: string;
+  hubCode?: string | null;
+  note?: string | null;
 }
 
 export interface ReassignTaskInput {
   courierId: string;
+  hubCode?: string | null;
+  note?: string | null;
 }
 
 export interface UpdateTaskStatusInput {

@@ -107,7 +107,7 @@ export function HomeScreen(): React.JSX.Element {
         >
           <NotificationBanner
             title="Thông báo vận hành"
-            message={`Đã đồng bộ ${tasks.length} nhiệm vụ từ gateway-bff.`}
+            message={`Đã nhận ${tasks.length} nhiệm vụ.`}
             onPress={() => Alert.alert('Thông báo', 'Chi tiết thông báo vận hành')}
           />
 

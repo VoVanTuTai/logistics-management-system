@@ -129,9 +129,13 @@ export class TasksService {
       );
     }
 
-    const task = await this.taskRepository.assign(id, { courierId });
+    const task = await this.taskRepository.assign(id, input);
 
-    await this.dispatchOutboxService.enqueueTaskAssigned(task);
+    await this.dispatchOutboxService.enqueueTaskAssigned(task, {
+      actorId: auditContext?.actorId,
+      actorUsername: auditContext?.actorUsername,
+      hubCode: input.hubCode,
+    });
     this.tasksRealtimeGateway.publishTaskChanged('assigned', task);
     await this.opsAuditService.record({
       context: auditContext,
@@ -165,9 +169,13 @@ export class TasksService {
       return currentTask;
     }
 
-    const task = await this.taskRepository.reassign(id, { courierId });
+    const task = await this.taskRepository.reassign(id, input);
 
-    await this.dispatchOutboxService.enqueueTaskAssigned(task);
+    await this.dispatchOutboxService.enqueueTaskAssigned(task, {
+      actorId: auditContext?.actorId,
+      actorUsername: auditContext?.actorUsername,
+      hubCode: input.hubCode,
+    });
     this.tasksRealtimeGateway.publishTaskChanged('reassigned', task);
     await this.opsAuditService.record({
       context: auditContext,

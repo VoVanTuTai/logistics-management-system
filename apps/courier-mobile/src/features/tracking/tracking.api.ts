@@ -28,6 +28,7 @@ interface TrackingTimelineApiResponse {
   locationCode: string | null;
   locationText: string | null;
   occurredAt: string;
+  note?: string | null;
 }
 
 function mapCurrent(payload: TrackingCurrentApiResponse): TrackingCurrentDto {
@@ -57,6 +58,7 @@ function mapTimelineEvent(
     locationCode: payload.locationCode,
     locationText: payload.locationText,
     occurredAt: payload.occurredAt,
+    note: payload.note,
   };
 }
 

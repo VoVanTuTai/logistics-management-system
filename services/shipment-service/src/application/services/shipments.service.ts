@@ -566,6 +566,11 @@ export class ShipmentsService {
       );
     }
 
+    if (eventType === 'task.assigned') {
+      const location = asJsonRecord(eventData.location);
+      return normalizeString(location.locationCode);
+    }
+
     return null;
   }
 }

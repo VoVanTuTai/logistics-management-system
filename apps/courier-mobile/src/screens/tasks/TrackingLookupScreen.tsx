@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Keyboard,
+  Linking,
   Pressable,
   StyleSheet,
   Text,
@@ -38,6 +39,42 @@ function resolveTimelineLocation(event: TrackingTimelineEventDto): string {
 
 function normalizeShipmentCode(value: string): string {
   return value.trim().toUpperCase();
+}
+
+const URL_PATTERN = /(https?:\/\/[^\s,|]+)/gi;
+
+function renderEventNote(note: string | null | undefined): React.JSX.Element | null {
+  const normalized = note?.trim();
+  if (!normalized) {
+    return null;
+  }
+
+  const parts = normalized.split(URL_PATTERN);
+  const urls = normalized.match(URL_PATTERN);
+
+  return (
+    <View style={styles.noteContainer}>
+      <Text style={styles.noteText}>
+        {parts.map((part, index) => {
+          if (!part) return null;
+          if (/^https?:\/\//i.test(part)) {
+            return null;
+          }
+          return <Text key={index}>{part}</Text>;
+        })}
+      </Text>
+      {urls && urls.map((url, index) => (
+        <Pressable
+          key={index}
+          style={styles.imageButton}
+          onPress={() => Linking.openURL(url).catch(err => console.error(err))}
+        >
+          <Ionicons name="image-outline" size={16} color={theme.colors.primary} />
+          <Text style={styles.imageButtonText}>Xem ảnh</Text>
+        </Pressable>
+      ))}
+    </View>
+  );
 }
 
 export function TrackingLookupScreen(): React.JSX.Element {
@@ -205,6 +242,7 @@ export function TrackingLookupScreen(): React.JSX.Element {
 
                 <Text style={styles.timelineMeta}>Vi tri: {resolveTimelineLocation(event)}</Text>
                 <Text style={styles.timelineMeta}>Nguon su kien: {event.eventSource}</Text>
+                {renderEventNote(event.note)}
               </Card>
             ))
           )}
@@ -326,6 +364,33 @@ const styles = StyleSheet.create({
   timelineMeta: {
     ...theme.typography.caption.md,
     color: theme.colors.textSecondary,
+  },
+  noteContainer: {
+    marginTop: theme.spacing.xs,
+    paddingTop: theme.spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+    gap: theme.spacing.xs,
+  },
+  noteText: {
+    ...theme.typography.caption.md,
+    color: theme.colors.textSecondary,
+  },
+  imageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: theme.spacing.xs,
+    paddingVertical: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.sm,
+    backgroundColor: '#F1F5F9',
+    borderRadius: theme.radius.sm,
+    marginTop: 2,
+  },
+  imageButtonText: {
+    ...theme.typography.caption.md,
+    color: theme.colors.primary,
+    fontWeight: '700',
   },
   infoCard: {
     backgroundColor: '#F8FAFC',

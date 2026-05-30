@@ -117,6 +117,7 @@ export function GoodsArrivalScreen({
   const [screenMessage, setScreenMessage] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [scanLocked, setScanLocked] = React.useState(false);
+  const [isCameraCollapsed, setIsCameraCollapsed] = React.useState(false);
   const scanCooldownRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialCodeHandledRef = React.useRef(false);
 
@@ -282,6 +283,7 @@ export function GoodsArrivalScreen({
     setSelectedCodes(new Set());
     setManualVehicleInput('');
     setManualCodeInput('');
+    setIsCameraCollapsed(false);
     setScreenMessage('Đã làm mới tem xe và danh sách hàng đến.');
   };
 
@@ -433,6 +435,7 @@ export function GoodsArrivalScreen({
       setItems([]);
       setSelectedCodes(new Set());
       setManualCodeInput('');
+      setIsCameraCollapsed(false);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Xác nhận hàng đến thất bại.';
       setScreenMessage(message);
@@ -444,205 +447,228 @@ export function GoodsArrivalScreen({
 
   return (
     <View style={styles.container}>
-      <View style={styles.cameraSection}>
-        <View style={styles.cameraFrame}>
-          {!permission ? (
-            <View style={styles.cameraPlaceholder}>
-              <ActivityIndicator size="small" color="#E2E8F0" />
-              <Text style={styles.cameraPlaceholderText}>Đang kiểm tra quyền camera...</Text>
-            </View>
-          ) : null}
-
-          {permission && !cameraIsReady ? (
-            <View style={styles.cameraPlaceholder}>
-              <Text style={styles.cameraPlaceholderText}>
-                Cần cấp quyền camera để quét tem xe, bao hàng và mã kiện.
-              </Text>
-              {permission.canAskAgain ? (
-                <Pressable onPress={requestPermission} style={styles.permissionButton}>
-                  <Text style={styles.permissionButtonText}>Cấp quyền camera</Text>
+      <ScrollView
+        style={styles.mainScroll}
+        contentContainerStyle={styles.mainScrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {isCameraCollapsed ? (
+          <Pressable
+            onPress={() => setIsCameraCollapsed(false)}
+            style={styles.collapsedCameraBar}
+          >
+            <Ionicons name="camera-outline" size={20} color="#1D4ED8" />
+            <Text style={styles.collapsedCameraBarText}>Bật camera để quét/chụp</Text>
+            <Ionicons name="chevron-down" size={16} color="#64748B" style={styles.expandIcon} />
+          </Pressable>
+        ) : (
+          <View style={styles.cameraSection}>
+            <View style={styles.cameraFrame}>
+              {permission && cameraIsReady ? (
+                <Pressable
+                  onPress={() => setIsCameraCollapsed(true)}
+                  style={styles.collapseCameraButton}
+                >
+                  <Ionicons name="eye-off-outline" size={14} color="#FFFFFF" />
+                  <Text style={styles.collapseButtonText}>Ẩn cam</Text>
                 </Pressable>
               ) : null}
+
+              {!permission ? (
+                <View style={styles.cameraPlaceholder}>
+                  <ActivityIndicator size="small" color="#E2E8F0" />
+                  <Text style={styles.cameraPlaceholderText}>Đang kiểm tra quyền camera...</Text>
+                </View>
+              ) : null}
+
+              {permission && !cameraIsReady ? (
+                <View style={styles.cameraPlaceholder}>
+                  <Text style={styles.cameraPlaceholderText}>
+                    Cần cấp quyền camera để quét tem xe, bao hàng và mã kiện.
+                  </Text>
+                  {permission.canAskAgain ? (
+                    <Pressable onPress={requestPermission} style={styles.permissionButton}>
+                      <Text style={styles.permissionButtonText}>Cấp quyền camera</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+              ) : null}
+
+              {permission && cameraIsReady ? (
+                <CameraView
+                  style={styles.camera}
+                  facing="back"
+                  barcodeScannerSettings={{
+                    barcodeTypes: [
+                      'qr',
+                      'ean13',
+                      'ean8',
+                      'code39',
+                      'code93',
+                      'code128',
+                      'upc_a',
+                      'upc_e',
+                    ],
+                  }}
+                  onBarcodeScanned={handleBarCodeScanned}
+                />
+              ) : null}
+
+              {isSubmitting ? (
+                <View style={styles.cameraOverlay}>
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <Text style={styles.cameraOverlayText}>Đang xác nhận hàng đến...</Text>
+                </View>
+              ) : null}
             </View>
-          ) : null}
-
-          {permission && cameraIsReady ? (
-            <CameraView
-              style={styles.camera}
-              facing="back"
-              barcodeScannerSettings={{
-                barcodeTypes: [
-                  'qr',
-                  'ean13',
-                  'ean8',
-                  'code39',
-                  'code93',
-                  'code128',
-                  'upc_a',
-                  'upc_e',
-                ],
-              }}
-              onBarcodeScanned={handleBarCodeScanned}
-            />
-          ) : null}
-
-          {isSubmitting ? (
-            <View style={styles.cameraOverlay}>
-              <ActivityIndicator size="small" color="#FFFFFF" />
-              <Text style={styles.cameraOverlayText}>Đang xác nhận hàng đến...</Text>
-            </View>
-          ) : null}
-        </View>
-        <Text style={styles.cameraHint}>
-          Quét tem xe trước để bắt hành trình, sau đó quét bao hàng hoặc kiện rời.
-        </Text>
-      </View>
-
-      <View style={styles.workSection}>
-        <View style={styles.headerRow}>
-          <Text style={styles.screenTitle}>Hàng đến</Text>
-          <Pressable
-            disabled={selectedCount === 0}
-            onPress={deleteSelectedItems}
-            style={[
-              styles.deleteButton,
-              selectedCount === 0 && styles.deleteButtonDisabled,
-            ]}
-          >
-            <Ionicons name="trash-outline" size={16} color="#B91C1C" />
-            <Text style={styles.deleteButtonText}>
-              Xóa{selectedCount > 0 ? ` ${selectedCount}` : ''}
+            <Text style={styles.cameraHint}>
+              Quét tem xe trước để bắt hành trình, sau đó quét bao hàng hoặc kiện rời.
             </Text>
-          </Pressable>
-        </View>
-
-        <View style={[styles.vehicleCard, vehicleInfo && styles.vehicleCardReady]}>
-          <View style={styles.vehicleHeader}>
-            <Text style={styles.vehicleTitle}>Thông tin tem xe</Text>
-            <Pressable onPress={resetVehicle}>
-              <Text style={styles.resetText}>Làm mới</Text>
-            </Pressable>
           </View>
-          <View style={styles.inputRow}>
-            <TextInput
-              value={manualVehicleInput}
-              onChangeText={setManualVehicleInput}
-              placeholder="Nhập mã tem xe"
-              placeholderTextColor="#9CA3AF"
-              style={[styles.fieldInput, styles.codeInput]}
-              autoCapitalize="characters"
-            />
-            <Pressable onPress={addVehicleManually} style={styles.addButton}>
-              <Text style={styles.addButtonText}>Kiểm tra</Text>
-            </Pressable>
-          </View>
-          {vehicleInfo ? (
-            <View style={styles.vehicleGrid}>
-              <View style={styles.vehicleInfoCell}>
-                <Text style={styles.infoLabel}>Mã tem xe</Text>
-                <Text style={styles.infoValue}>{vehicleInfo.vehicleCode}</Text>
-              </View>
-              <View style={styles.vehicleInfoCell}>
-                <Text style={styles.infoLabel}>Hub đi</Text>
-                <Text style={styles.infoValue}>{vehicleInfo.originHubCode}</Text>
-              </View>
-              <View style={styles.vehicleInfoCell}>
-                <Text style={styles.infoLabel}>Hub đến</Text>
-                <Text style={styles.infoValue}>{vehicleInfo.destinationHubCode}</Text>
-              </View>
-              <View style={styles.vehicleInfoCell}>
-                <Text style={styles.infoLabel}>Biển số</Text>
-                <Text style={styles.infoValue}>{vehicleInfo.licensePlate}</Text>
-              </View>
-            </View>
-          ) : (
-            <Text style={styles.vehicleEmptyText}>
-              Chưa có tem xe. Nhập hoặc quét tem xe trước khi nhận bao và hàng.
-            </Text>
-          )}
-        </View>
+        )}
 
-        <View style={styles.fieldRow}>
-          <Text style={styles.fieldLabel}>Bao hàng hoặc mã kiện rời</Text>
-          <View style={styles.inputRow}>
-            <TextInput
-              value={manualCodeInput}
-              onChangeText={setManualCodeInput}
-              placeholder="MB1234567890 hoặc SHP..."
-              placeholderTextColor="#9CA3AF"
-              style={[
-                styles.fieldInput,
-                styles.codeInput,
-                !hasVehicleInfo && styles.fieldInputDisabled,
-              ]}
-              autoCapitalize="characters"
-              editable={hasVehicleInfo}
-            />
+        <View style={styles.workSection}>
+          <View style={styles.headerRow}>
+            <Text style={styles.screenTitle}>Hàng đến</Text>
             <Pressable
-              disabled={!hasVehicleInfo}
-              onPress={addItemManually}
-              style={[styles.addButton, !hasVehicleInfo && styles.addButtonDisabled]}
+              disabled={selectedCount === 0}
+              onPress={deleteSelectedItems}
+              style={[
+                styles.deleteButton,
+                selectedCount === 0 && styles.deleteButtonDisabled,
+              ]}
             >
-              <Text style={styles.addButtonText}>Thêm</Text>
+              <Ionicons name="trash-outline" size={16} color="#B91C1C" />
+              <Text style={styles.deleteButtonText}>
+                Xóa{selectedCount > 0 ? ` ${selectedCount}` : ''}
+              </Text>
             </Pressable>
           </View>
-        </View>
 
-        {screenMessage ? <Text style={styles.messageText}>{screenMessage}</Text> : null}
-
-        <View style={styles.listHeaderRow}>
-          <Text style={styles.listTitle}>Danh sách hàng đến ({items.length})</Text>
-        </View>
-
-        <ScrollView
-          style={styles.listScroll}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {items.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>Chưa có bao hàng hoặc kiện rời nào.</Text>
+          <View style={[styles.vehicleCard, vehicleInfo && styles.vehicleCardReady]}>
+            <View style={styles.vehicleHeader}>
+              <Text style={styles.vehicleTitle}>Thông tin tem xe</Text>
+              <Pressable onPress={resetVehicle}>
+                <Text style={styles.resetText}>Làm mới</Text>
+              </Pressable>
             </View>
-          ) : (
-            items.map((item, index) => {
-              const selected = selectedCodes.has(item.code);
+            <View style={styles.inputRow}>
+              <TextInput
+                value={manualVehicleInput}
+                onChangeText={setManualVehicleInput}
+                placeholder="Nhập mã tem xe"
+                placeholderTextColor="#9CA3AF"
+                style={[styles.fieldInput, styles.codeInput]}
+                autoCapitalize="characters"
+              />
+              <Pressable onPress={addVehicleManually} style={styles.addButton}>
+                <Text style={styles.addButtonText}>Kiểm tra</Text>
+              </Pressable>
+            </View>
+            {vehicleInfo ? (
+              <View style={styles.vehicleGrid}>
+                <View style={styles.vehicleInfoCell}>
+                  <Text style={styles.infoLabel}>Mã tem xe</Text>
+                  <Text style={styles.infoValue}>{vehicleInfo.vehicleCode}</Text>
+                </View>
+                <View style={styles.vehicleInfoCell}>
+                  <Text style={styles.infoLabel}>Hub đi</Text>
+                  <Text style={styles.infoValue}>{vehicleInfo.originHubCode}</Text>
+                </View>
+                <View style={styles.vehicleInfoCell}>
+                  <Text style={styles.infoLabel}>Hub đến</Text>
+                  <Text style={styles.infoValue}>{vehicleInfo.destinationHubCode}</Text>
+                </View>
+                <View style={styles.vehicleInfoCell}>
+                  <Text style={styles.infoLabel}>Biển số</Text>
+                  <Text style={styles.infoValue}>{vehicleInfo.licensePlate}</Text>
+                </View>
+              </View>
+            ) : (
+              <Text style={styles.vehicleEmptyText}>
+                Chưa có tem xe. Nhập hoặc quét tem xe trước khi nhận bao và hàng.
+              </Text>
+            )}
+          </View>
 
-              return (
-                <Pressable
-                  key={`${item.code}-${item.scannedAt}`}
-                  onPress={() => toggleSelected(item.code)}
-                  style={[styles.listItem, selected && styles.listItemSelected]}
-                >
-                  <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
-                    {selected ? (
-                      <Ionicons name="checkmark" size={14} color="#FFFFFF" />
-                    ) : null}
-                  </View>
-                  <View style={styles.listIndex}>
-                    <Text style={styles.listIndexText}>{index + 1}</Text>
-                  </View>
-                  <View style={styles.listBody}>
-                    <View style={styles.itemTitleRow}>
-                      <Text style={styles.itemCodeText}>{item.code}</Text>
-                      <Text
-                        style={[
-                          styles.itemTypeBadge,
-                          item.type === 'BAG' ? styles.bagBadge : styles.shipmentBadge,
-                        ]}
-                      >
-                        {item.type === 'BAG' ? 'Bao' : 'Kiện rời'}
+          <View style={styles.fieldRow}>
+            <Text style={styles.fieldLabel}>Bao hàng hoặc mã kiện rời</Text>
+            <View style={styles.inputRow}>
+              <TextInput
+                value={manualCodeInput}
+                onChangeText={setManualCodeInput}
+                placeholder="MB1234567890 hoặc SHP..."
+                placeholderTextColor="#9CA3AF"
+                style={[
+                  styles.fieldInput,
+                  styles.codeInput,
+                  !hasVehicleInfo && styles.fieldInputDisabled,
+                ]}
+                autoCapitalize="characters"
+                editable={hasVehicleInfo}
+              />
+              <Pressable
+                disabled={!hasVehicleInfo}
+                onPress={addItemManually}
+                style={[styles.addButton, !hasVehicleInfo && styles.addButtonDisabled]}
+              >
+                <Text style={styles.addButtonText}>Thêm</Text>
+              </Pressable>
+            </View>
+          </View>
+
+          {screenMessage ? <Text style={styles.messageText}>{screenMessage}</Text> : null}
+
+          <View style={styles.listHeaderRow}>
+            <Text style={styles.listTitle}>Danh sách hàng đến ({items.length})</Text>
+          </View>
+
+          <View style={styles.listContainer}>
+            {items.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyText}>Chưa có bao hàng hoặc kiện rời nào.</Text>
+              </View>
+            ) : (
+              items.map((item, index) => {
+                const selected = selectedCodes.has(item.code);
+
+                return (
+                  <Pressable
+                    key={`${item.code}-${item.scannedAt}`}
+                    onPress={() => toggleSelected(item.code)}
+                    style={[styles.listItem, selected && styles.listItemSelected]}
+                  >
+                    <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
+                      {selected ? (
+                        <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+                      ) : null}
+                    </View>
+                    <View style={styles.listIndex}>
+                      <Text style={styles.listIndexText}>{index + 1}</Text>
+                    </View>
+                    <View style={styles.listBody}>
+                      <View style={styles.itemTitleRow}>
+                        <Text style={styles.itemCodeText}>{item.code}</Text>
+                        <Text
+                          style={[
+                            styles.itemTypeBadge,
+                            item.type === 'BAG' ? styles.bagBadge : styles.shipmentBadge,
+                          ]}
+                        >
+                          {item.type === 'BAG' ? 'Bao' : 'Kiện rời'}
+                        </Text>
+                      </View>
+                      <Text style={styles.itemTimeText}>
+                        Quét lúc {formatScannedAt(item.scannedAt)}
                       </Text>
                     </View>
-                    <Text style={styles.itemTimeText}>
-                      Quét lúc {formatScannedAt(item.scannedAt)}
-                    </Text>
-                  </View>
-                </Pressable>
-              );
-            })
-          )}
-        </ScrollView>
-      </View>
+                  </Pressable>
+                );
+              })
+            )}
+          </View>
+        </View>
+      </ScrollView>
 
       <View style={styles.footer}>
         <Pressable
@@ -675,7 +701,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   cameraSection: {
-    flex: 1,
+    height: 240,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E5E7EB',
@@ -732,13 +758,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   workSection: {
-    flex: 2,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E5E7EB',
     borderRadius: 12,
     padding: 12,
-    paddingBottom: 78,
+    paddingBottom: 16,
     ...theme.shadow.sm,
   },
   headerRow: {
@@ -886,13 +911,55 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#0F172A',
   },
-  listScroll: {
+  mainScroll: {
     flex: 1,
-    marginTop: 8,
   },
-  listContent: {
+  mainScrollContent: {
+    gap: 10,
+    paddingBottom: 90,
+  },
+  listContainer: {
+    marginTop: 8,
     gap: 8,
-    paddingBottom: 10,
+  },
+  collapsedCameraBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 8,
+    ...theme.shadow.sm,
+  },
+  collapsedCameraBarText: {
+    color: '#1D4ED8',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  expandIcon: {
+    marginLeft: 'auto',
+  },
+  collapseCameraButton: {
+    position: 'absolute',
+    left: 10,
+    top: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.75)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 6,
+    zIndex: 10,
+  },
+  collapseButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 12,
   },
   emptyState: {
     borderWidth: 1,

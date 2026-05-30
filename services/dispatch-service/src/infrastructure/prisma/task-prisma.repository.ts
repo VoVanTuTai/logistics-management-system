@@ -153,6 +153,7 @@ export class TaskPrismaRepository extends TaskRepository {
       where: { id },
       data: {
         status: 'ASSIGNED',
+        note: input.note !== undefined ? (input.note ?? null) : undefined,
         assignments: {
           create: {
             courierId: input.courierId,
@@ -186,6 +187,7 @@ export class TaskPrismaRepository extends TaskRepository {
       where: { id },
       data: {
         status: 'ASSIGNED',
+        note: input.note !== undefined ? (input.note ?? null) : undefined,
         assignments: {
           create: {
             courierId: input.courierId,
