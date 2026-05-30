@@ -42,10 +42,19 @@ function note(step, detail) {
   return `E2E_FULL_FLOW|run=${RUN_ID}|step=${step}|${detail}`;
 }
 
-function addReport(step, noteText, evidence) {
+function addReport(step, noteText, evidence, options = {}) {
+  const observedNote = evidence === undefined ? false : containsText(evidence, noteText);
+  if (options.requireRecordedNote && !observedNote) {
+    throw new Error(
+      `Ghi chú chưa được ghi nhận thực tế ở bước "${step}". Expected note: ${noteText}. Evidence: ${JSON.stringify(evidence)}`,
+    );
+  }
+  const noteRecorded = observedNote ? true : options.requireRecordedNote ? false : null;
+
   report.push({
     step,
     note: noteText,
+    noteRecorded,
     evidence,
     recordedAt: new Date().toISOString(),
   });
@@ -59,11 +68,19 @@ async function request(pathname, options = {}) {
     ...(options.headers || {}),
   };
 
-  const response = await fetch(endpoint(pathname), {
-    method: options.method || 'GET',
-    headers,
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
-  });
+  let response;
+  try {
+    response = await fetch(endpoint(pathname), {
+      method: options.method || 'GET',
+      headers,
+      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    });
+  } catch (error) {
+    throw new Error(
+      `${options.method || 'GET'} ${pathname} không kết nối được gateway ${endpoint('')}. ` +
+        `Hãy chạy stack backend trước rồi chạy lại script. Lỗi gốc: ${error.message}`,
+    );
+  }
   const text = await response.text();
   const data = parseJson(text);
 
@@ -74,6 +91,26 @@ async function request(pathname, options = {}) {
   }
 
   return { status: response.status, data, text };
+}
+
+function containsText(value, expectedText) {
+  if (typeof expectedText !== 'string' || expectedText.length === 0) {
+    return false;
+  }
+
+  if (typeof value === 'string') {
+    return value.includes(expectedText);
+  }
+
+  if (Array.isArray(value)) {
+    return value.some((item) => containsText(item, expectedText));
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.values(value).some((item) => containsText(item, expectedText));
+  }
+
+  return false;
 }
 
 function parseJson(text) {
@@ -101,6 +138,14 @@ async function login(prefix, username, roleGroup) {
     token,
     user: data.user,
   };
+}
+
+async function assertGatewayReady() {
+  const { data } = await request('/health', { allowError: true });
+  assert(
+    data?.status === 'ok',
+    `Gateway chưa sẵn sàng tại ${endpoint('/health')}. Response: ${JSON.stringify(data)}`,
+  );
 }
 
 function firstHub(session, fallback) {
@@ -187,7 +232,7 @@ async function createShipment(token, code, originHubCode, destinationHubCode, co
     shipmentCode: data.code,
     status: data.currentStatus,
     metadataNote: data.metadata?.e2eCreateNote,
-  });
+  }, { requireRecordedNote: true });
   return data;
 }
 
@@ -268,7 +313,7 @@ async function createAndAssignPickup(tokens, shipmentCodes, originHubCode) {
     pickupId: pickup.id,
     savedNote: pickup.note,
     items: pickup.items?.map((item) => item.shipmentCode),
-  });
+  }, { requireRecordedNote: true });
 
   const approveNote = note(
     'pickup-approve',
@@ -286,7 +331,7 @@ async function createAndAssignPickup(tokens, shipmentCodes, originHubCode) {
     pickupCode: approvedPickup.pickupCode,
     status: approvedPickup.status,
     savedNote: approvedPickup.note,
-  });
+  }, { requireRecordedNote: true });
 
   const tasks = await ensurePickupTasks(tokens.admin, tokens.opsOrigin, pickup.id, shipmentCodes);
   for (const task of tasks) {
@@ -341,7 +386,7 @@ async function ensurePickupTasks(adminToken, opsToken, pickupRequestId, shipment
         taskCode: task.taskCode,
         shipmentCode: task.shipmentCode,
         savedNote: task.note,
-      });
+      }, { requireRecordedNote: true });
       tasks.push(task);
     }
 
@@ -390,7 +435,7 @@ async function pickupScan(tokens, shipmentCodes, originHubCode, pickup) {
       shipmentCode: data.scanEvent.shipmentCode,
       savedNote: data.scanEvent.note,
       locationCode: data.currentLocation.locationCode,
-    });
+    }, { requireRecordedNote: true });
     await waitForStatus(tokens.admin, shipmentCode, ['PICKUP_COMPLETED'], 'sau khi courier lấy hàng');
   }
 
@@ -438,7 +483,7 @@ async function moveLeg(params) {
     manifestId: bag.id,
     savedNote: bag.note,
     shipments: bag.items?.map((item) => item.shipmentCode),
-  });
+  }, { requireRecordedNote: true });
 
   const sealNote = note(
     `bag-seal-${legIndex}`,
@@ -458,7 +503,7 @@ async function moveLeg(params) {
     manifestCode: sealedBag.manifestCode,
     status: sealedBag.status,
     savedSealNote: sealedBag.sealRecord?.note,
-  });
+  }, { requireRecordedNote: true });
   await waitForAllStatuses(tokens.admin, shipmentCodes, ['MANIFEST_SEALED'], 'sau khi đóng bao');
 
   const tripCode = `TRIP-${RUN_ID}-${legIndex}`;
@@ -482,7 +527,7 @@ async function moveLeg(params) {
     tripCode: trip.manifestCode,
     manifestId: trip.id,
     savedNote: trip.note,
-  });
+  }, { requireRecordedNote: true });
 
   for (const shipmentCode of shipmentCodes) {
     const sendGoodsNote = note(
@@ -505,7 +550,7 @@ async function moveLeg(params) {
       shipmentCode: data.scanEvent.shipmentCode,
       savedNote: data.scanEvent.note,
       manifestCode: data.scanEvent.manifestCode,
-    });
+    }, { requireRecordedNote: true });
   }
   await waitForAllStatuses(tokens.admin, shipmentCodes, ['SEND_GOODS'], 'sau khi quét gửi hàng');
 
@@ -531,7 +576,7 @@ async function moveLeg(params) {
       shipmentCode: data.scanEvent.shipmentCode,
       savedNote: data.scanEvent.note,
       locationCode: data.currentLocation.locationCode,
-    });
+    }, { requireRecordedNote: true });
   }
   await waitForAllStatuses(tokens.admin, shipmentCodes, ['IN_TRANSIT'], 'sau khi xe rời hub');
 
@@ -554,7 +599,7 @@ async function moveLeg(params) {
     manifestCode: receivedBag.manifestCode,
     status: receivedBag.status,
     savedReceiveNote: receivedBag.receiveRecord?.note,
-  });
+  }, { requireRecordedNote: true });
 
   for (const shipmentCode of shipmentCodes) {
     const inboundNote = note(
@@ -577,7 +622,7 @@ async function moveLeg(params) {
       shipmentCode: data.scanEvent.shipmentCode,
       savedNote: data.scanEvent.note,
       locationCode: data.currentLocation.locationCode,
-    });
+    }, { requireRecordedNote: true });
   }
   await waitForAllStatuses(tokens.admin, shipmentCodes, ['SCAN_INBOUND'], 'sau khi hàng đến hub');
 
@@ -603,7 +648,7 @@ async function createAndAssignDelivery(tokens, shipmentCode, destHubCode) {
     taskCode: task.taskCode,
     shipmentCode: task.shipmentCode,
     savedNote: task.note,
-  });
+  }, { requireRecordedNote: true });
 
   const assignNote = note(
     'delivery-task-assign',
@@ -651,7 +696,7 @@ async function deliverSuccess(tokens, shipmentCode, task, destHubCode) {
     savedNote: data.deliveryAttempt.note,
     podImageUrl: data.pod?.imageUrl,
     podNote: data.pod?.note,
-  });
+  }, { requireRecordedNote: true });
   await waitForStatus(tokens.admin, shipmentCode, ['DELIVERED'], 'sau khi ký nhận giao thành công');
 }
 
@@ -687,7 +732,7 @@ async function reportIssueAndInventory(tokens, shipmentCode, task, destHubCode) 
     savedNote: ndrCase.note,
     attachments: ndrCase.attachments,
     taskId: task.id,
-  });
+  }, { requireRecordedNote: true });
   await waitForStatus(tokens.admin, shipmentCode, ['EXCEPTION'], 'sau khi ghi nhận vấn đề');
 
   const inventoryNote = note(
@@ -709,7 +754,7 @@ async function reportIssueAndInventory(tokens, shipmentCode, task, destHubCode) 
     shipmentCode: data.scanEvent.shipmentCode,
     savedNote: data.scanEvent.note,
     locationCode: data.currentLocation.locationCode,
-  });
+  }, { requireRecordedNote: true });
   const shipment = await waitForStatus(
     tokens.admin,
     shipmentCode,
@@ -819,16 +864,39 @@ function printReport(payload, outputPath) {
   console.log(`Gateway: ${payload.gatewayUrl}`);
   console.log(`Shipments: ${payload.shipments.join(', ')}`);
   console.log(`Hubs: origin=${payload.hubs.origin}, sort=${payload.hubs.sort}, destination=${payload.hubs.destination}`);
+  console.log(
+    `Note checks: verified=${payload.noteChecks.verified}, notPersisted=${payload.noteChecks.notPersisted}, notApplicable=${payload.noteChecks.notApplicable}`,
+  );
   console.log(`Report file: ${outputPath}`);
   for (const [index, item] of report.entries()) {
     console.log(`\n[${String(index + 1).padStart(2, '0')}] ${item.step}`);
     console.log(`note: ${item.note}`);
+    console.log(`noteRecorded: ${item.noteRecorded}`);
     console.log(`evidence: ${JSON.stringify(item.evidence)}`);
   }
   console.log('\nPASS: Luồng E2E hoàn tất bằng API thật và đã ghi nhận ghi chú/ảnh trong dữ liệu trả về.');
 }
 
+function summarizeNoteChecks() {
+  return report.reduce(
+    (summary, item) => {
+      if (item.noteRecorded === true) {
+        summary.verified += 1;
+      } else if (item.noteRecorded === null) {
+        summary.notApplicable += 1;
+      } else {
+        summary.notPersisted += 1;
+      }
+      return summary;
+    },
+    { verified: 0, notPersisted: 0, notApplicable: 0 },
+  );
+}
+
 async function main() {
+  log('Kiểm tra gateway trước khi chạy luồng E2E.');
+  await assertGatewayReady();
+
   log('Đăng nhập các vai trò merchant/ops/courier.');
   const sessions = {
     admin: await login('/ops', accounts.admin, 'OPS'),
@@ -936,6 +1004,7 @@ async function main() {
     hubs,
     shipments: shipmentCodes,
     proofs,
+    noteChecks: summarizeNoteChecks(),
     report,
   };
   const outputPath = writeReportFile(payload);
