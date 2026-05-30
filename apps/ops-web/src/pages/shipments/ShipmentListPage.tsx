@@ -1026,11 +1026,6 @@ export function ShipmentListPage(): React.JSX.Element {
 
   return (
     <div>
-      <h2>Danh sách vận đơn</h2>
-      <p style={styles.helperText}>
-        Mặc định hiển thị toàn bộ đơn đã có thao tác hàng đến hub và chưa được ký nhận trong phạm vi vận hành. Nhập mã để tra cứu nhanh một hoặc nhiều vận đơn.
-      </p>
-
       <form onSubmit={onFilterSubmit} style={styles.filterForm}>
         <div style={styles.filterControls}>
           <textarea
