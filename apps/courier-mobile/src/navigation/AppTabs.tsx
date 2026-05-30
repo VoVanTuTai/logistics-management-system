@@ -93,7 +93,11 @@ export function AppTabs(): React.JSX.Element {
       <Tab.Screen
         name="Scan"
         component={ScanScreen}
-        options={{ tabBarLabel: 'Quét mã' }}
+        options={{
+          tabBarLabel: 'Quét mã',
+          tabBarAccessibilityLabel: 'Tab Quét mã',
+          tabBarButtonTestID: 'tab-scan',
+        }}
       />
       <Tab.Screen
         name="Chat"

@@ -4,14 +4,11 @@ import { useSearchParams } from 'react-router-dom';
 
 import { useNdrCasesQuery } from '../../../../features/ndr/ndr.api';
 import type { NdrCaseListItemDto } from '../../../../features/ndr/ndr.types';
-import { useShipmentDetailQuery, useShipmentsQuery } from '../../../../features/shipments/shipments.api';
-import type {
-  ShipmentDetailDto,
-  ShipmentListItemDto,
-} from '../../../../features/shipments/shipments.types';
+import { useShipmentDetailQuery } from '../../../../features/shipments/shipments.api';
+import type { ShipmentDetailDto } from '../../../../features/shipments/shipments.types';
 import { useTrackingDetailQuery } from '../../../../features/tracking/tracking.api';
 import type { TrackingTimelineEventDto } from '../../../../features/tracking/tracking.types';
-import { getErrorMessage } from '../../../../services/api/errors';
+import { ApiClientError, getErrorMessage } from '../../../../services/api/errors';
 import { useAuthStore } from '../../../../store/authStore';
 import { formatDateTime } from '../../../../utils/format';
 import {
@@ -111,13 +108,6 @@ function buildTimelineRows(events: TrackingTimelineEventDto[]) {
   );
 }
 
-function listItemToDetail(item: ShipmentListItemDto): ShipmentDetailDto {
-  return {
-    ...item,
-    note: item.deliveryNote,
-  };
-}
-
 function formatIssueText(item: NdrCaseListItemDto): string {
   return item.issueType ?? item.reasonCode ?? 'Không có';
 }
@@ -142,6 +132,10 @@ function countAttachments(value: unknown): number {
   return Array.isArray(value) ? value.length : 0;
 }
 
+function isNotFoundError(error: unknown): boolean {
+  return error instanceof ApiClientError && error.status === 404;
+}
+
 export function ServiceQualityIntegratedLookupPage(): React.JSX.Element {
   const accessToken = useAuthStore((state) => state.session?.tokens.accessToken ?? null);
   const [searchParams] = useSearchParams();
@@ -150,36 +144,26 @@ export function ServiceQualityIntegratedLookupPage(): React.JSX.Element {
   const [lookupCode, setLookupCode] = useState(initialShipmentCode);
   const [inputError, setInputError] = useState<string | null>(null);
 
-  const shipmentsQuery = useShipmentsQuery(
-    accessToken,
-    { shipmentCode: lookupCode, limit: 1 },
-    { enabled: Boolean(lookupCode) },
-  );
-  const shipmentListItem = shipmentsQuery.data?.find(
-    (shipment) => normalizeShipmentCode(shipment.shipmentCode) === lookupCode,
-  ) ?? shipmentsQuery.data?.[0] ?? null;
-  const shipmentDetailQuery = useShipmentDetailQuery(accessToken, shipmentListItem?.shipmentCode ?? '');
+  const shipmentDetailQuery = useShipmentDetailQuery(accessToken, lookupCode);
   const trackingQuery = useTrackingDetailQuery(accessToken, lookupCode);
   const ndrQuery = useNdrCasesQuery(
     accessToken,
     { shipmentCode: lookupCode },
-    { enabled: Boolean(lookupCode) },
+    { enabled: Boolean(accessToken) && Boolean(lookupCode) },
   );
 
-  const shipment: ShipmentDetailDto | null =
-    shipmentDetailQuery.data ?? (shipmentListItem ? listItemToDetail(shipmentListItem) : null);
+  const shipment: ShipmentDetailDto | null = shipmentDetailQuery.data ?? null;
   const timelineRows = useMemo(
     () => buildTimelineRows(trackingQuery.data?.timeline ?? []),
     [trackingQuery.data?.timeline],
   );
   const isLoading = Boolean(lookupCode) && (
-    shipmentsQuery.isLoading ||
     shipmentDetailQuery.isLoading ||
     trackingQuery.isLoading ||
     ndrQuery.isLoading
   );
-  const notFound = Boolean(lookupCode) && !isLoading && shipmentsQuery.isSuccess && !shipmentListItem;
-  const error = shipmentsQuery.error ?? shipmentDetailQuery.error ?? trackingQuery.error ?? ndrQuery.error ?? null;
+  const notFound = Boolean(lookupCode) && !isLoading && isNotFoundError(shipmentDetailQuery.error);
+  const error = shipmentDetailQuery.error && !notFound ? shipmentDetailQuery.error : null;
 
   const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -225,7 +209,7 @@ export function ServiceQualityIntegratedLookupPage(): React.JSX.Element {
       </form>
 
       {inputError ? <p className="ops-integrated-lookup__error">{inputError}</p> : null}
-      {error && !trackingQuery.isError && !ndrQuery.isError ? (
+      {error ? (
         <p className="ops-integrated-lookup__error">{getErrorMessage(error)}</p>
       ) : null}
 

@@ -12,6 +12,8 @@ const COURIER_A = '30009991';
 const COURIER_B = '30009992';
 const COURIER_OLD = '30009990';
 const DEFAULT_PASSWORD = 'password';
+const args = new Set(process.argv.slice(2));
+const seedOnly = args.has('--seed-only');
 
 const shipmentCodes = {
   dispatchOne: 'E2E-DLV-001',
@@ -49,6 +51,7 @@ async function request(path, options = {}) {
     method: options.method ?? 'GET',
     headers: {
       'content-type': 'application/json',
+      ...(options.token ? { authorization: `Bearer ${options.token}` } : {}),
       ...(options.headers ?? {}),
     },
     body: options.body === undefined ? undefined : JSON.stringify(options.body),
@@ -61,6 +64,25 @@ async function request(path, options = {}) {
   }
 
   return { status: response.status, data };
+}
+
+async function login(username, roleGroup = 'COURIER_APP') {
+  const { data } = await request('/courier/auth/auth/login', {
+    method: 'POST',
+    body: {
+      username,
+      password: DEFAULT_PASSWORD,
+      roleGroup,
+    },
+  });
+
+  const token = data?.tokens?.accessToken;
+  assert(token, `Không lấy được accessToken cho tài khoản ${username}.`);
+
+  return {
+    token,
+    user: data.user,
+  };
 }
 
 function psql(database, sql) {
@@ -268,8 +290,9 @@ async function seedData() {
   });
 }
 
-async function getShipment(code) {
+async function getShipment(code, token) {
   const response = await request(`/courier/shipment/shipments/${encodeURIComponent(code)}`, {
+    token,
     allowError: true,
   });
   if (response.status === 404) {
@@ -279,8 +302,9 @@ async function getShipment(code) {
   return response.data;
 }
 
-async function getLocation(code) {
+async function getLocation(code, token) {
   const response = await request(`/courier/scan/locations/${encodeURIComponent(code)}`, {
+    token,
     allowError: true,
   });
   if (response.status === 404) {
@@ -290,9 +314,10 @@ async function getLocation(code) {
   return response.data;
 }
 
-async function listDeliveryTasks(code) {
+async function listDeliveryTasks(code, token) {
   const response = await request(
     `/courier/dispatch/tasks?taskType=DELIVERY&shipmentCode=${encodeURIComponent(code)}`,
+    { token },
   );
   return response.data;
 }
@@ -343,15 +368,15 @@ function validateDispatchInput({ shipment, location, assignedHubCodes, hasOpenDe
   return null;
 }
 
-async function dispatchShipments(codes, courierId) {
+async function dispatchShipments(codes, courierId, token) {
   const successes = [];
   const failures = [];
 
   for (const code of codes) {
     const [shipment, location, tasks] = await Promise.all([
-      getShipment(code),
-      getLocation(code),
-      listDeliveryTasks(code),
+      getShipment(code, token),
+      getLocation(code, token),
+      listDeliveryTasks(code, token),
     ]);
     const openTask = tasks
       .filter((task) => task.status !== 'COMPLETED' && task.status !== 'CANCELLED')
@@ -372,6 +397,7 @@ async function dispatchShipments(codes, courierId) {
     if (!task) {
       const created = await request('/courier/dispatch/tasks', {
         method: 'POST',
+        token,
         body: {
           taskCode: `E2E-DLV-${code}-${RUN_ID}`,
           taskType: 'DELIVERY',
@@ -388,6 +414,7 @@ async function dispatchShipments(codes, courierId) {
     if (!activeAssignment) {
       await request(`/courier/dispatch/tasks/${encodeURIComponent(task.id)}/assign`, {
         method: 'POST',
+        token,
         body: {
           courierId,
         },
@@ -395,6 +422,7 @@ async function dispatchShipments(codes, courierId) {
     } else if (activeAssignment.courierId !== courierId) {
       await request(`/courier/dispatch/tasks/${encodeURIComponent(task.id)}/reassign`, {
         method: 'POST',
+        token,
         body: {
           courierId,
         },
@@ -407,8 +435,8 @@ async function dispatchShipments(codes, courierId) {
   return { successes, failures };
 }
 
-async function assertAssignedCourier(code, courierId) {
-  const tasks = await listDeliveryTasks(code);
+async function assertAssignedCourier(code, courierId, token) {
+  const tasks = await listDeliveryTasks(code, token);
   const activeTask = tasks.find((task) =>
     task.assignments.some(
       (assignment) => assignment.courierId === courierId && assignment.unassignedAt === null,
@@ -418,10 +446,11 @@ async function assertAssignedCourier(code, courierId) {
   return activeTask;
 }
 
-async function testDispatchHappyPath() {
+async function testDispatchHappyPath(token) {
   log('Test: ops chọn courier rồi scan nhiều vận đơn phát hàng...');
   const couriers = await request(
     `/courier/auth/auth/users?roleGroup=SHIPPER&status=ACTIVE&hubCode=${encodeURIComponent(HUB_CODE)}`,
+    { token },
   );
   assert(
     couriers.data.some((user) => user.username === COURIER_A),
@@ -431,18 +460,19 @@ async function testDispatchHappyPath() {
   const result = await dispatchShipments(
     [shipmentCodes.dispatchOne, shipmentCodes.dispatchTwo],
     COURIER_A,
+    token,
   );
   assert(result.failures.length === 0, `Happy path có lỗi: ${JSON.stringify(result.failures)}`);
   assert(result.successes.length === 2, 'Happy path không bàn giao đủ 2 vận đơn.');
-  await assertAssignedCourier(shipmentCodes.dispatchOne, COURIER_A);
-  await assertAssignedCourier(shipmentCodes.dispatchTwo, COURIER_A);
+  await assertAssignedCourier(shipmentCodes.dispatchOne, COURIER_A, token);
+  await assertAssignedCourier(shipmentCodes.dispatchTwo, COURIER_A, token);
 }
 
-async function testReassignExistingTask() {
+async function testReassignExistingTask(token) {
   log('Test: vận đơn đã có delivery task thì reassign...');
-  const result = await dispatchShipments([shipmentCodes.reassign], COURIER_B);
+  const result = await dispatchShipments([shipmentCodes.reassign], COURIER_B, token);
   assert(result.failures.length === 0, `Reassign có lỗi: ${JSON.stringify(result.failures)}`);
-  const task = await assertAssignedCourier(shipmentCodes.reassign, COURIER_B);
+  const task = await assertAssignedCourier(shipmentCodes.reassign, COURIER_B, token);
   assert(
     task.assignments.some(
       (assignment) => assignment.courierId === COURIER_OLD && assignment.unassignedAt !== null,
@@ -451,11 +481,12 @@ async function testReassignExistingTask() {
   );
 }
 
-async function testWrongHubAndMissingShipment() {
+async function testWrongHubAndMissingShipment(token) {
   log('Test: vận đơn sai hub hoặc không tồn tại thì báo lỗi...');
   const result = await dispatchShipments(
     [shipmentCodes.wrongHub, 'E2E-NOT-FOUND'],
     COURIER_A,
+    token,
   );
   assert(result.successes.length === 0, 'Sai hub/nonexistent không được phép success.');
   assert(
@@ -468,13 +499,15 @@ async function testWrongHubAndMissingShipment() {
   );
 }
 
-async function listNdrCases(code) {
-  const response = await request(`/courier/delivery/ndr?shipmentCode=${encodeURIComponent(code)}`);
+async function listNdrCases(code, token) {
+  const response = await request(`/courier/delivery/ndr?shipmentCode=${encodeURIComponent(code)}`, {
+    token,
+  });
   return response.data;
 }
 
-async function createReturnCaseFromLatestNdr(code, expectedReasonCode) {
-  const ndrCases = await listNdrCases(code);
+async function createReturnCaseFromLatestNdr(code, expectedReasonCode, token) {
+  const ndrCases = await listNdrCases(code, token);
   const latest = [...ndrCases].sort((left, right) =>
     right.createdAt.localeCompare(left.createdAt),
   )[0];
@@ -486,6 +519,7 @@ async function createReturnCaseFromLatestNdr(code, expectedReasonCode) {
 
   const returnCase = await request('/courier/delivery/returns', {
     method: 'POST',
+    token,
     body: {
       shipmentCode: code,
       ndrCaseId: latest.id,
@@ -498,10 +532,11 @@ async function createReturnCaseFromLatestNdr(code, expectedReasonCode) {
   return returnCase.data;
 }
 
-async function testIssueThenReturnRegistration() {
+async function testIssueThenReturnRegistration(token) {
   log('Test: courier tạo Vấn đề, sau đó Đăng ký chuyển hoàn tự lấy đúng lý do...');
   await request('/courier/delivery/ndr/exception', {
     method: 'POST',
+    token,
     body: {
       shipmentCode: shipmentCodes.issueReturn,
       currentHubCode: HUB_CODE,
@@ -513,13 +548,14 @@ async function testIssueThenReturnRegistration() {
     },
   });
 
-  await createReturnCaseFromLatestNdr(shipmentCodes.issueReturn, 'WRONG_PHONE');
+  await createReturnCaseFromLatestNdr(shipmentCodes.issueReturn, 'WRONG_PHONE', token);
 }
 
-async function testDeliveryFailThenReturnRegistration() {
+async function testDeliveryFailThenReturnRegistration(token) {
   log('Test: courier Giao thất bại, sau đó đăng ký chuyển hoàn lấy đúng reason...');
   await request('/courier/delivery/deliveries/fail', {
     method: 'POST',
+    token,
     headers: {
       'idempotency-key': `e2e-${RUN_ID}-delivery-fail`,
     },
@@ -538,18 +574,25 @@ async function testDeliveryFailThenReturnRegistration() {
     },
   });
 
-  await createReturnCaseFromLatestNdr(shipmentCodes.failReturn, 'CANNOT_CONTACT');
+  await createReturnCaseFromLatestNdr(shipmentCodes.failReturn, 'CANNOT_CONTACT', token);
 }
 
 async function main() {
   log(`Gateway: ${endpoint('')}`);
   await request('/health');
   await seedData();
-  await testDispatchHappyPath();
-  await testReassignExistingTask();
-  await testWrongHubAndMissingShipment();
-  await testIssueThenReturnRegistration();
-  await testDeliveryFailThenReturnRegistration();
+  if (seedOnly) {
+    log('PASS: seed-only completed. Run Maestro/mobile UI flow to execute app gestures.');
+    return;
+  }
+
+  const courierSession = await login(COURIER_A);
+  log(`Logged in courier ${courierSession.user?.username ?? COURIER_A}; workflow calls will send bearer token.`);
+  await testDispatchHappyPath(courierSession.token);
+  await testReassignExistingTask(courierSession.token);
+  await testWrongHubAndMissingShipment(courierSession.token);
+  await testIssueThenReturnRegistration(courierSession.token);
+  await testDeliveryFailThenReturnRegistration(courierSession.token);
   log('PASS: courier mobile docker-compose E2E completed.');
 }
 

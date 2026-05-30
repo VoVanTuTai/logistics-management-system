@@ -1,0 +1,76 @@
+appId: com.nexuslogistics.couriermobile
+name: Courier mobile smoke flow
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    id: login-username-input
+- inputText: ${COURIER_E2E_USERNAME}
+- tapOn:
+    id: login-password-input
+- inputText: ${COURIER_E2E_PASSWORD}
+- tapOn:
+    id: login-submit-button
+- waitForAnimationToEnd
+
+- tapOn:
+    id: tab-scan
+
+- tapOn:
+    id: scan-action-phat-hang
+- tapOn:
+    id: delivery-dispatch-courier-search-input
+- inputText: ${COURIER_E2E_USERNAME}
+- tapOn:
+    id: delivery-dispatch-courier-option-${COURIER_E2E_USERNAME}
+- tapOn:
+    id: delivery-dispatch-shipment-code-input
+- inputText: E2E-DLV-001
+- tapOn:
+    id: delivery-dispatch-add-shipment-button
+- tapOn:
+    id: delivery-dispatch-submit-button
+- waitForAnimationToEnd
+- back
+
+- tapOn:
+    id: scan-action-van-de
+- tapOn:
+    id: scan-issue-shipment-code-input
+- inputText: E2E-RTN-ISSUE
+- scrollUntilVisible:
+    element:
+      id: scan-issue-reason-option-issue-wrong-phone
+    direction: DOWN
+- tapOn:
+    id: scan-issue-reason-option-issue-wrong-phone
+- scrollUntilVisible:
+    element:
+      id: scan-issue-note-input
+    direction: DOWN
+- tapOn:
+    id: scan-issue-note-input
+- inputText: E2E vấn đề sai số điện thoại từ Maestro
+- scrollUntilVisible:
+    element:
+      id: scan-issue-submit-button
+    direction: DOWN
+- tapOn:
+    id: scan-issue-submit-button
+- waitForAnimationToEnd
+- back
+
+- tapOn:
+    id: scan-action-ky-nhan-chuyen-hoan
+- tapOn:
+    id: return-registration-shipment-code-input
+- inputText: E2E-RTN-ISSUE
+- tapOn:
+    id: return-registration-search-button
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      id: return-registration-submit-button
+    direction: DOWN
+- tapOn:
+    id: return-registration-submit-button

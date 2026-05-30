@@ -25,6 +25,8 @@ export function ScanActionItem({
 }: ScanActionItemProps): React.JSX.Element {
   return (
     <Pressable
+      testID={`scan-action-${action.id}`}
+      accessibilityLabel={action.label}
       onPress={() => {
         if (onPress) {
           onPress(action);

@@ -122,6 +122,27 @@ Khong dung `localhost` khi cai APK len dien thoai that, vi `localhost` luc do la
 Neu dung URL `http://...` thay vi HTTPS, app Android can `usesCleartextTraffic`
 trong `app.json`.
 
+## Smoke test tren may that voi Maestro
+
+Flow UI ngan nam tai `maestro/courier-mobile-smoke.yaml`.
+
+Seed data truoc khi chay UI flow:
+
+```bash
+node scripts/courier-mobile-e2e.js --seed-only
+```
+
+Sau khi cai APK preview len may/emulator:
+
+```bash
+COURIER_E2E_USERNAME=30009991 \
+COURIER_E2E_PASSWORD=password \
+maestro test apps/courier-mobile/maestro/courier-mobile-smoke.yaml
+```
+
+Voi may that, `EXPO_PUBLIC_GATEWAY_BASE_URL` phai la LAN IP/public URL ma may
+co the truy cap; khong dung `localhost`.
+
 3. Dang nhap Expo va link project EAS lan dau:
 
 ```bash

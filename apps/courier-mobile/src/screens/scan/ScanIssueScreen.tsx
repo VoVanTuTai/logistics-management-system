@@ -268,6 +268,8 @@ export function ScanIssueScreen({ navigation, route }: Props): React.JSX.Element
             </Text>
             <View style={styles.inputRow}>
               <TextInput
+                testID="scan-issue-shipment-code-input"
+                accessibilityLabel="Mã vận đơn ghi nhận vấn đề"
                 value={shipmentCode}
                 onChangeText={setShipmentCode}
                 placeholder="Mã vận đơn"
@@ -299,6 +301,8 @@ export function ScanIssueScreen({ navigation, route }: Props): React.JSX.Element
                 const selected = option.id === selectedIssueId;
                 return (
                   <Pressable
+                    testID={`scan-issue-reason-option-${option.id}`}
+                    accessibilityLabel={`Chọn vấn đề ${option.title}`}
                     key={option.id}
                     onPress={() => setSelectedIssueId(option.id)}
                     style={[styles.optionItem, selected && styles.optionItemSelected]}
@@ -328,6 +332,8 @@ export function ScanIssueScreen({ navigation, route }: Props): React.JSX.Element
               Vấn đề ngoại quan bắt buộc có minh chứng. Vấn đề thông tin/hệ thống bắt buộc có ghi chú.
             </Text>
             <TextInput
+              testID="scan-issue-note-input"
+              accessibilityLabel="Ghi chú vấn đề"
               placeholder="Nhập ghi chú nếu cần"
               placeholderTextColor="#94A3B8"
               style={styles.noteInput}
@@ -378,6 +384,8 @@ export function ScanIssueScreen({ navigation, route }: Props): React.JSX.Element
 
         <View style={styles.footer}>
           <Pressable
+            testID="scan-issue-submit-button"
+            accessibilityLabel="Xác nhận vấn đề"
             onPress={() => {
               void handleSubmit();
             }}

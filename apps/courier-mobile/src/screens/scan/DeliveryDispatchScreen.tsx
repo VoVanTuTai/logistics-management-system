@@ -788,6 +788,8 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
           <View style={styles.searchBox}>
             <Ionicons name="search-outline" size={18} color={theme.colors.textMuted} />
             <TextInput
+              testID="delivery-dispatch-courier-search-input"
+              accessibilityLabel="Tìm courier nhận phát"
               value={courierSearch}
               onChangeText={(value) => {
                 setCourierSearch(value);
@@ -816,6 +818,8 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
                 const selected = selectedCourier?.courierId === courier.courierId;
                 return (
                   <Pressable
+                    testID={`delivery-dispatch-courier-option-${courier.courierId}`}
+                    accessibilityLabel={`Chọn courier ${courier.label}`}
                     key={courier.courierId}
                     onPress={() => chooseCourier(courier)}
                     style={[
@@ -852,6 +856,8 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
           <Text style={styles.fieldLabel}>Mã vận đơn</Text>
           <View style={styles.inputRow}>
             <TextInput
+              testID="delivery-dispatch-shipment-code-input"
+              accessibilityLabel="Mã vận đơn phát hàng"
               value={manualShipmentCode}
               onChangeText={setManualShipmentCode}
               placeholder="Nhập hoặc quét mã vận đơn"
@@ -861,6 +867,8 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
               editable={Boolean(selectedCourier)}
             />
             <Pressable
+              testID="delivery-dispatch-add-shipment-button"
+              accessibilityLabel="Thêm mã vận đơn phát hàng"
               disabled={!selectedCourier}
               onPress={addManualShipmentCode}
               style={[styles.addButton, !selectedCourier && styles.addButtonDisabled]}
@@ -927,6 +935,8 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
 
       <View style={styles.footer}>
         <Pressable
+          testID="delivery-dispatch-submit-button"
+          accessibilityLabel="Bàn giao đơn phát hàng"
           disabled={isSubmitting || !selectedCourier || items.length === 0}
           onPress={submitDispatch}
           style={[
