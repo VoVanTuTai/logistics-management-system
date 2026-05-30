@@ -8,6 +8,7 @@ export interface TrackingTimelineEventDto {
   locationCode: string | null;
   locationText: string | null;
   occurredAt: string;
+  note?: string | null;
 }
 
 export interface TrackingCurrentDto {

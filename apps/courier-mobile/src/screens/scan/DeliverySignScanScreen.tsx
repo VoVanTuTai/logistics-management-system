@@ -6,6 +6,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
   CameraView,
@@ -30,7 +31,7 @@ function normalizeCode(value: string): string {
 }
 
 function toErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : 'Co loi xay ra.';
+  return error instanceof Error ? error.message : 'Có lỗi xảy ra.';
 }
 
 function findDeliveryTaskByShipment(
@@ -64,6 +65,7 @@ export function DeliverySignScanScreen({
 
   const [isVerifyingScan, setIsVerifyingScan] = React.useState(false);
   const [scanLocked, setScanLocked] = React.useState(false);
+  const [isCameraCollapsed, setIsCameraCollapsed] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const [infoMessage, setInfoMessage] = React.useState<string | null>(null);
   const scanCooldownRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -94,18 +96,18 @@ export function DeliverySignScanScreen({
       const shipmentCode = normalizeCode(rawCode);
 
       if (!shipmentCode) {
-        setErrorMessage('Ma van don khong hop le.');
+        setErrorMessage('Mã vận đơn không hợp lệ.');
         return;
       }
 
       if (!accessToken) {
-        setGlobalError('Phien dang nhap da het han. Vui long dang nhap lai.');
+        setGlobalError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
         return;
       }
 
       setIsVerifyingScan(true);
       setErrorMessage(null);
-      setInfoMessage(`Dang xac minh ${shipmentCode}...`);
+      setInfoMessage(`Đang xác minh ${shipmentCode}...`);
 
       try {
         await shipmentApi.getShipmentDetail(accessToken, shipmentCode);
@@ -125,7 +127,7 @@ export function DeliverySignScanScreen({
         });
       } catch (error) {
         setErrorMessage(
-          `Khong tim thay hoac khong xac minh duoc ma ${shipmentCode}: ${toErrorMessage(error)}`,
+          `Không tìm thấy hoặc không xác minh được mã ${shipmentCode}: ${toErrorMessage(error)}`,
         );
         setInfoMessage(null);
       } finally {
@@ -160,7 +162,7 @@ export function DeliverySignScanScreen({
     });
 
     if (!parsed) {
-      setErrorMessage('Khong doc duoc ma hop le. Vui long thu lai.');
+      setErrorMessage('Không đọc được mã hợp lệ. Vui lòng thử lại.');
       return;
     }
 
@@ -171,75 +173,96 @@ export function DeliverySignScanScreen({
 
   return (
     <View style={styles.container}>
-      <View style={styles.cameraSection}>
-        <Text style={styles.cameraTitle}>Quet ky nhan</Text>
-        <View style={styles.cameraFrame}>
-          {!permission ? (
-            <View style={styles.cameraPlaceholder}>
-              <ActivityIndicator size="small" color="#E2E8F0" />
-              <Text style={styles.cameraPlaceholderText}>Dang kiem tra quyen camera...</Text>
-            </View>
-          ) : null}
+      {isCameraCollapsed ? (
+        <Pressable
+          onPress={() => setIsCameraCollapsed(false)}
+          style={styles.collapsedCameraBar}
+        >
+          <Ionicons name="camera-outline" size={20} color="#1D4ED8" />
+          <Text style={styles.collapsedCameraBarText}>Bật camera để quét ký nhận</Text>
+          <Ionicons name="chevron-down" size={16} color="#64748B" style={styles.expandIcon} />
+        </Pressable>
+      ) : (
+        <View style={styles.cameraSection}>
+          <Text style={styles.cameraTitle}>Quét ký nhận</Text>
+          <View style={styles.cameraFrame}>
+            {permission && cameraIsReady ? (
+              <Pressable
+                onPress={() => setIsCameraCollapsed(true)}
+                style={styles.collapseCameraButton}
+              >
+                <Ionicons name="eye-off-outline" size={14} color="#FFFFFF" />
+                <Text style={styles.collapseButtonText}>Ẩn cam</Text>
+              </Pressable>
+            ) : null}
 
-          {permission && !cameraIsReady ? (
-            <View style={styles.cameraPlaceholder}>
-              <Text style={styles.cameraPlaceholderText}>
-                Can cap quyen camera de quet ma van don.
-              </Text>
-              {permission.canAskAgain ? (
-                <Pressable onPress={requestPermission} style={styles.permissionButton}>
-                  <Text style={styles.permissionButtonText}>Cap quyen camera</Text>
-                </Pressable>
-              ) : null}
-            </View>
-          ) : null}
+            {!permission ? (
+              <View style={styles.cameraPlaceholder}>
+                <ActivityIndicator size="small" color="#E2E8F0" />
+                <Text style={styles.cameraPlaceholderText}>Đang kiểm tra quyền camera...</Text>
+              </View>
+            ) : null}
 
-          {permission && cameraIsReady ? (
-            <CameraView
-              style={styles.camera}
-              facing="back"
-              barcodeScannerSettings={{
-                barcodeTypes: [
-                  'qr',
-                  'ean13',
-                  'ean8',
-                  'code39',
-                  'code93',
-                  'code128',
-                  'upc_a',
-                  'upc_e',
-                ],
-              }}
-              onBarcodeScanned={handleBarCodeScanned}
-            />
-          ) : null}
+            {permission && !cameraIsReady ? (
+              <View style={styles.cameraPlaceholder}>
+                <Text style={styles.cameraPlaceholderText}>
+                  Cần cấp quyền camera để quét mã vận đơn.
+                </Text>
+                {permission.canAskAgain ? (
+                  <Pressable onPress={requestPermission} style={styles.permissionButton}>
+                    <Text style={styles.permissionButtonText}>Cấp quyền camera</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            ) : null}
 
-          {isVerifyingScan ? (
-            <View style={styles.cameraOverlay}>
-              <ActivityIndicator size="small" color="#FFFFFF" />
-              <Text style={styles.cameraOverlayText}>Dang xac minh ma...</Text>
-            </View>
-          ) : null}
+            {permission && cameraIsReady ? (
+              <CameraView
+                style={styles.camera}
+                facing="back"
+                barcodeScannerSettings={{
+                  barcodeTypes: [
+                    'qr',
+                    'ean13',
+                    'ean8',
+                    'code39',
+                    'code93',
+                    'code128',
+                    'upc_a',
+                    'upc_e',
+                  ],
+                }}
+                onBarcodeScanned={handleBarCodeScanned}
+              />
+            ) : null}
+
+            {isVerifyingScan ? (
+              <View style={styles.cameraOverlay}>
+                <ActivityIndicator size="small" color="#FFFFFF" />
+                <Text style={styles.cameraOverlayText}>Đang xác minh mã...</Text>
+              </View>
+            ) : null}
+          </View>
+          <Text style={styles.cameraHint}>
+            Camera tự mở. Quét mã vận đơn, hệ thống sẽ mở thông tin đơn hàng để chụp minh chứng ký nhận.
+          </Text>
         </View>
-        <Text style={styles.cameraHint}>
-          Camera tu mo. Quet ma van don, he thong se mo thong tin don hang de chup minh chung ky nhan.
-        </Text>
-      </View>
+      )}
 
       <View style={styles.infoSection}>
-        <Text style={styles.infoTitle}>Don hang cho ky nhan</Text>
+        <Text style={styles.infoTitle}>Đơn hàng chờ ký nhận</Text>
         <Text style={styles.infoHint}>
-          Sau khi quet thanh cong, man hinh thong tin don hang se hien thi nguoi nhan,
-          so dien thoai, dia chi va khu vuc chup anh minh chung.
+          Sau khi quét thành công, màn hình thông tin đơn hàng sẽ hiển thị người nhận,
+          số điện thoại, địa chỉ và khu vực chụp ảnh minh chứng.
         </Text>
 
         {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
         {infoMessage ? <Text style={styles.infoText}>{infoMessage}</Text> : null}
 
         <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>Chua co ma van don</Text>
+          <Text style={styles.emptyTitle}>Chưa có mã vận đơn</Text>
           <Text style={styles.emptyText}>
-            Dua barcode/QR vao khung camera de bat dau ky nhan.
+            Đưa barcode/QR vào khung camera để bắt đầu ký nhận.
           </Text>
         </View>
       </View>
@@ -366,5 +389,44 @@ const styles = StyleSheet.create({
     color: '#64748B',
     marginTop: 4,
     textAlign: 'center',
+  },
+  collapsedCameraBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 8,
+    ...theme.shadow.sm,
+  },
+  collapsedCameraBarText: {
+    color: '#1D4ED8',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  expandIcon: {
+    marginLeft: 'auto',
+  },
+  collapseCameraButton: {
+    position: 'absolute',
+    left: 10,
+    top: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.75)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 6,
+    zIndex: 10,
+  },
+  collapseButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 12,
   },
 });

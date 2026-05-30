@@ -518,11 +518,15 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
           await tasksClient.reassign(accessToken, {
             taskId: task.id,
             courierId: effectiveCourierId,
+            hubCode: assignedHubCodes[0] ?? null,
+            note: handoffNote.trim() || 'Bàn giao phát tại bưu cục',
           });
         } else if (!task.assignedCourierId) {
           await tasksClient.assign(accessToken, {
             taskId: task.id,
             courierId: effectiveCourierId,
+            hubCode: assignedHubCodes[0] ?? null,
+            note: handoffNote.trim() || 'Bàn giao phát tại bưu cục',
           });
         }
       }

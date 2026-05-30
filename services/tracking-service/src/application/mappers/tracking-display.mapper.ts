@@ -273,7 +273,17 @@ export function extractTimelineNote(event: TrackingEventEnvelope): string | null
   }
 
   if (event.event_type === 'delivery.attempted' || event.event_type === 'delivery.failed') {
-    return readNestedString(event.data, ['deliveryAttempt', 'note']);
+    const deliveryNote = readNestedString(event.data, ['deliveryAttempt', 'note']);
+    if (event.event_type === 'delivery.attempted') {
+      const courierId = readNestedString(event.data, ['deliveryAttempt', 'courierId']);
+      const hubCode = readNestedString(event.data, ['deliveryAttempt', 'locationCode']);
+      let infoParts: string[] = [];
+      if (courierId) infoParts.push(`Courier: ${courierId}`);
+      if (hubCode) infoParts.push(`Hub: ${hubCode}`);
+      const infoText = infoParts.join(' - ');
+      return joinTimelineNoteParts([infoText || null, deliveryNote]);
+    }
+    return deliveryNote;
   }
 
   if (event.event_type === 'ndr.created') {
@@ -286,6 +296,32 @@ export function extractTimelineNote(event: TrackingEventEnvelope): string | null
       note,
       attachmentUrls.length > 0 ? `Minh chứng vấn đề: ${attachmentUrls.join(', ')}` : null,
     ]);
+  }
+
+  if (event.event_type === 'task.assigned') {
+    const taskType = readTaskType(event.data);
+    const taskNote = readNestedString(event.data, ['task', 'note']);
+    if (taskType === 'DELIVERY') {
+      const assignments = readNestedValue(event.data, ['task', 'assignments']);
+      let courierId: string | null = null;
+      if (Array.isArray(assignments) && assignments.length > 0) {
+        const activeAssignment = assignments.find((a: any) => !a.unassignedAt) || assignments[assignments.length - 1];
+        if (activeAssignment && typeof activeAssignment === 'object') {
+          courierId = (activeAssignment as any).courierId || null;
+        }
+      }
+      const hubCode = readNestedString(event.data, ['location', 'locationCode'])
+        ?? readNestedString(event.data, ['location', 'hubCode'])
+        ?? readNestedString(event.data, ['task', 'hubCode'])
+        ?? readNestedString(event.data, ['task', 'hub_code'])
+        ?? null;
+      let infoParts: string[] = [];
+      if (courierId) infoParts.push(`Courier: ${courierId}`);
+      if (hubCode) infoParts.push(`Hub: ${hubCode}`);
+      const infoText = infoParts.join(' - ');
+      return joinTimelineNoteParts([infoText || null, taskNote]);
+    }
+    return taskNote;
   }
 
   return null;

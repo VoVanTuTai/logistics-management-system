@@ -1,4 +1,4 @@
-﻿import { randomUUID } from 'crypto';
+import { randomUUID } from 'crypto';
 
 import { Injectable } from '@nestjs/common';
 
@@ -13,13 +13,17 @@ import type { Task } from '../../domain/entities/task.entity';
 export class DispatchEventsProducer {
   readonly exchangeName = process.env.DOMAIN_EVENTS_EXCHANGE ?? 'domain.events';
 
-  buildTaskAssignedEvent(task: Task): QueueOutboxEventInput {
-    return this.buildEvent('task.assigned', task);
+  buildTaskAssignedEvent(
+    task: Task,
+    context?: { actorId?: string | null; actorUsername?: string | null; hubCode?: string | null },
+  ): QueueOutboxEventInput {
+    return this.buildEvent('task.assigned', task, context);
   }
 
   private buildEvent(
     eventType: DispatchPublishedEventType,
     task: Task,
+    context?: { actorId?: string | null; actorUsername?: string | null; hubCode?: string | null },
   ): QueueOutboxEventInput {
     const eventId = randomUUID();
     const occurredAt = new Date();
@@ -28,10 +32,30 @@ export class DispatchEventsProducer {
       event_type: eventType,
       occurred_at: occurredAt.toISOString(),
       shipment_code: task.shipmentCode,
-      actor: null,
-      location: null,
+      actor: context?.actorUsername
+        ? {
+            id: context.actorId ?? 'UNKNOWN',
+            name: context.actorUsername,
+          }
+        : null,
+      location: context?.hubCode
+        ? {
+            locationCode: context.hubCode,
+          }
+        : null,
       data: {
         task,
+        actor: context?.actorUsername
+          ? {
+              id: context.actorId ?? 'UNKNOWN',
+              name: context.actorUsername,
+            }
+          : null,
+        location: context?.hubCode
+          ? {
+              locationCode: context.hubCode,
+            }
+          : null,
       },
       idempotency_key: `${eventType}:task:${task.id}:${occurredAt.toISOString()}`,
     };

@@ -46,6 +46,7 @@ export interface CreateTaskInput {
 export interface AssignTaskInput {
   taskId: string;
   courierId: string;
+  hubCode?: string | null;
   note?: string | null;
 }
 

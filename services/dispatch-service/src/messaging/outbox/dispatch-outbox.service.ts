@@ -1,4 +1,4 @@
-﻿import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
 import type { OutboxEvent } from '../../domain/entities/outbox-event.entity';
 import type { Task } from '../../domain/entities/task.entity';
@@ -13,9 +13,12 @@ export class DispatchOutboxService {
     private readonly dispatchEventsProducer: DispatchEventsProducer,
   ) {}
 
-  enqueueTaskAssigned(task: Task): Promise<OutboxEvent> {
+  enqueueTaskAssigned(
+    task: Task,
+    context?: { actorId?: string | null; actorUsername?: string | null; hubCode?: string | null },
+  ): Promise<OutboxEvent> {
     return this.outboxEventRepository.create(
-      this.dispatchEventsProducer.buildTaskAssignedEvent(task),
+      this.dispatchEventsProducer.buildTaskAssignedEvent(task, context),
     );
   }
 }

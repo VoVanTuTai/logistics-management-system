@@ -794,6 +794,7 @@ function MerchantApp(): React.JSX.Element {
   const [loginPassword, setLoginPassword] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const [shipments, setShipments] = useState<ShipmentResponse[]>([]);
   const [pickups, setPickups] = useState<PickupRequest[]>([]);
@@ -883,16 +884,16 @@ function MerchantApp(): React.JSX.Element {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
   const navItems: Array<{ id: ViewId; label: string; icon: string; subtitle: string }> = [
-    { id: 'dashboard', label: 'Tổng quan', icon: '⌂', subtitle: 'Merchant Portal > Tổng quan' },
-    { id: 'create-shipment', label: 'Tạo đơn hàng', icon: '+', subtitle: 'Đơn hàng > Tạo đơn hàng' },
-    { id: 'shipments', label: 'Danh sách đơn hàng', icon: '≣', subtitle: 'Đơn hàng > Danh sách đơn hàng' },
-    { id: 'pickups', label: 'Yêu cầu lấy hàng', icon: '↑', subtitle: 'Đơn hàng > Yêu cầu lấy hàng' },
-    { id: 'tracking', label: 'Tra cứu vận đơn', icon: '⌕', subtitle: 'Đơn hàng > Tra cứu vận đơn' },
-    { id: 'change-requests', label: 'Yêu cầu đổi thông tin giao', icon: '✎', subtitle: 'Đơn hàng > Yêu cầu đổi thông tin' },
-    { id: 'returns', label: 'Yêu cầu hoàn hàng', icon: '↩', subtitle: 'Đơn hàng > Yêu cầu hoàn hàng' },
-    { id: 'print', label: 'In vận đơn', icon: '⎙', subtitle: 'Đơn hàng > In vận đơn' },
-    { id: 'account', label: 'Tài khoản', icon: '◉', subtitle: 'Tài khoản > Hồ sơ merchant' },
-    { id: 'notifications', label: 'Thông báo', icon: '◌', subtitle: 'Hệ thống > Thông báo' },
+    { id: 'dashboard', label: 'Tổng quan', icon: 'dashboard', subtitle: 'Merchant Portal > Tổng quan' },
+    { id: 'create-shipment', label: 'Tạo đơn hàng', icon: 'add_box', subtitle: 'Đơn hàng > Tạo đơn hàng' },
+    { id: 'shipments', label: 'Danh sách đơn hàng', icon: 'inventory_2', subtitle: 'Đơn hàng > Danh sách đơn hàng' },
+    { id: 'pickups', label: 'Yêu cầu lấy hàng', icon: 'local_shipping', subtitle: 'Đơn hàng > Yêu cầu lấy hàng' },
+    { id: 'tracking', label: 'Tra cứu vận đơn', icon: 'search', subtitle: 'Đơn hàng > Tra cứu vận đơn' },
+    { id: 'change-requests', label: 'Yêu cầu đổi thông tin giao', icon: 'edit_note', subtitle: 'Đơn hàng > Yêu cầu đổi thông tin' },
+    { id: 'returns', label: 'Yêu cầu hoàn hàng', icon: 'assignment_return', subtitle: 'Đơn hàng > Yêu cầu hoàn hàng' },
+    { id: 'print', label: 'In vận đơn', icon: 'print', subtitle: 'Đơn hàng > In vận đơn' },
+    { id: 'account', label: 'Tài khoản', icon: 'person', subtitle: 'Tài khoản > Hồ sơ merchant' },
+    { id: 'notifications', label: 'Thông báo', icon: 'notifications', subtitle: 'Hệ thống > Thông báo' },
   ];
 
   const shipmentRows = useMemo(() => shipments.map((s) => extractShipmentRow(s)), [shipments]);
@@ -2642,31 +2643,124 @@ function MerchantApp(): React.JSX.Element {
     return (
       <div className="login-shell">
         <div className="login-layout">
+          {/* Left Side: Visual Focus & Brand Identity */}
           <section className="login-hero">
-            <div className="login-hero-top">
-              <p className="login-kicker">NEXUS Logistic</p>
-              <h1 className="brand-title">Merchant Portal</h1>
-            </div>
-            <div className="login-hero-copy">
-              <h2 className="login-hero-title">Nền tảng logistics hiện đại cho merchant.</h2>
-              <p className="login-hero-text">Theo dõi shipment, tạo yêu cầu lấy hàng và vận hành trên cùng một giao diện thống nhất.</p>
-            </div>
-            <div className="login-hero-stats">
-              <div className="login-stat"><strong>10k+</strong><span>Merchant đang hoạt động</span></div>
-              <div className="login-stat"><strong>24/7</strong><span>Hỗ trợ vận hành</span></div>
+            <img className="login-hero-img" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAH9tY3PsZjp-XCnVG-y43-sPKhb-INEfJPNHYxHTVdm69WwoXvGDiw7DfuvmU5b3DHK_888jICATCwV5G1g3uvdjTPamNKyM8KJB2Ei4T4RBJ-M4US87urT0uP9tXDcCuNPz6FtF-nTa_G-XDYI2LyIsduJvHEffTuIOfqjWvAttJm8D15E5_GNR64ZxIKkl1kwxBKH-3LgX4daJfTkFTanBTrDiE0qwHwVdRRNZ_O-PizHz0CEsugBHSQU-6tzxan_Mxrdatluq8" alt="Logistics Background" />
+            <div className="login-hero-overlay" />
+            <div className="login-hero-content">
+              <div className="login-hero-top">
+                <span className="material-symbols-outlined brand-icon">hub</span>
+                <h1 className="brand-title">NEXUS Logistic</h1>
+              </div>
+              <div className="login-hero-copy">
+                <h2 className="login-hero-title">Nền tảng Logistics thông minh cho doanh nghiệp hiện đại</h2>
+                <p className="login-hero-text">Kết nối vận chuyển toàn cầu với quy trình tối ưu và dữ liệu thời gian thực.</p>
+              </div>
+              <div className="login-hero-stats">
+                <div className="login-stat">
+                  <strong>10k+</strong>
+                  <span>Đối tác tin dùng</span>
+                </div>
+                <div className="login-stat">
+                  <strong>24/7</strong>
+                  <span>Hỗ trợ kỹ thuật</span>
+                </div>
+              </div>
             </div>
           </section>
-        <div className="login-card grid">
-          <h1 className="brand-title">Merchant Login</h1>
-          <p className="muted">Đăng nhập để vào dashboard merchant.</p>
-          <form className="grid" onSubmit={handleLogin}>
-            <input className="input" value={loginUsername} onChange={(e) => setLoginUsername(e.target.value)} placeholder="Tài khoản" />
-            <input className="input" type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} placeholder="Mật khẩu" />
-            <button className="btn btn-primary" type="submit" disabled={loginLoading}>{loginLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}</button>
-          </form>
-          {loginError ? <p className="message error">{loginError}</p> : null}
-          <div className="login-footer"><span>NEXUS Merchant Workspace</span><span>Secure access</span></div>
-        </div>
+
+          {/* Right Side: Login Form */}
+          <div className="login-card">
+            <div className="login-card-inner">
+              <div className="login-brand-header">
+                <div className="login-brand-logo">
+                  <span className="material-symbols-outlined brand-icon">hub</span>
+                  <span className="brand-title">NEXUS Logistic</span>
+                </div>
+                <p className="login-kicker-label">Merchant Portal</p>
+              </div>
+              
+              <div className="login-header-group">
+                <h2 className="login-title-new">Chào mừng trở lại</h2>
+                <p className="login-subtitle-new">Vui lòng nhập thông tin để truy cập hệ thống quản lý</p>
+              </div>
+
+              <form className="login-form-new" onSubmit={handleLogin}>
+                <div className="login-field-group">
+                  <label className="login-field-label" htmlFor="username">Tên đăng nhập hoặc Email</label>
+                  <div className="login-input-wrapper">
+                    <span className="material-symbols-outlined login-input-icon">person</span>
+                    <input 
+                      className="login-input" 
+                      id="username" 
+                      value={loginUsername} 
+                      onChange={(e) => setLoginUsername(e.target.value)} 
+                      placeholder="nexus.merchant@example.com" 
+                      type="text" 
+                    />
+                  </div>
+                </div>
+
+                <div className="login-field-group">
+                  <label className="login-field-label" htmlFor="password">Mật khẩu</label>
+                  <div className="login-input-wrapper">
+                    <span className="material-symbols-outlined login-input-icon">lock</span>
+                    <input 
+                      className="login-input login-input-password" 
+                      id="password" 
+                      value={loginPassword} 
+                      onChange={(e) => setLoginPassword(e.target.value)} 
+                      placeholder="••••••••" 
+                      type={showPassword ? "text" : "password"} 
+                    />
+                    <button 
+                      className="login-input-toggle-btn" 
+                      type="button" 
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      <span className="material-symbols-outlined">
+                        {showPassword ? "visibility_off" : "visibility"}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="login-utilities">
+                  <label className="login-remember-label">
+                    <input className="login-remember-checkbox" type="checkbox" />
+                    <span className="login-remember-text">Ghi nhớ đăng nhập</span>
+                  </label>
+                  <a className="login-forgot-link" href="#" onClick={(e) => e.preventDefault()}>Quên mật khẩu?</a>
+                </div>
+
+                <button className="login-submit-btn" type="submit" disabled={loginLoading}>
+                  <span>{loginLoading ? 'Đang Đăng Nhập...' : 'Đăng Nhập'}</span>
+                  <span className="material-symbols-outlined">login</span>
+                </button>
+              </form>
+
+              {loginError ? <p className="message error" style={{ marginTop: 12 }}>{loginError}</p> : null}
+
+              <div className="login-footer-support">
+                <p className="login-footer-support-text">
+                  Chưa có tài khoản?
+                  <a className="login-footer-support-link" href="#" onClick={(e) => e.preventDefault()}>
+                    Liên hệ bộ phận hỗ trợ
+                    <span className="material-symbols-outlined">support_agent</span>
+                  </a>
+                </p>
+              </div>
+
+              <div className="login-copyright-section">
+                <p className="login-copyright-text">© 2026 NEXUS Logistic System. All rights reserved.</p>
+                <div className="login-copyright-icons">
+                  <span className="material-symbols-outlined">language</span>
+                  <span className="material-symbols-outlined">security</span>
+                  <span className="material-symbols-outlined">policy</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -2676,12 +2770,34 @@ function MerchantApp(): React.JSX.Element {
     <div className="app-shell app-shell--stitch">
       <aside className="sidebar sidebar--stitch">
         <div className="brand-lockup brand-lockup--stitch"><h2 className="brand-title">NEXUS Logistic</h2><p className="brand-subtitle">Merchant Portal</p></div>
-        <nav className="nav-list nav-list--stitch">{navItems.map((item) => <button key={item.id} className={`nav-btn nav-btn--stitch ${activeView === item.id ? 'active' : ''}`} onClick={() => setActiveView(item.id)}><span className="nav-btn__main"><span className="nav-icon" aria-hidden="true">{item.icon}</span><span>{item.label}</span></span>{item.id === 'notifications' && unreadNotifications > 0 ? <span className="nav-counter">{unreadNotifications}</span> : null}</button>)}</nav>
-        <div className="sidebar-actions sidebar-actions--stitch"><button className="btn btn-secondary sidebar-action" onClick={() => void refreshAllData(session.accessToken, session.user)} disabled={dataLoading}>{dataLoading ? 'Đang tải lại...' : 'Tải lại'}</button><button className="btn btn-danger sidebar-action" onClick={() => void handleLogout()}>Đăng xuất</button></div>
+        <nav className="nav-list nav-list--stitch">{navItems.map((item) => <button key={item.id} className={`nav-btn nav-btn--stitch ${activeView === item.id ? 'active' : ''}`} onClick={() => setActiveView(item.id)}><span className="nav-btn__main"><span className="material-symbols-outlined nav-icon" aria-hidden="true">{item.icon}</span><span>{item.label}</span></span>{item.id === 'notifications' && unreadNotifications > 0 ? <span className="nav-counter">{unreadNotifications}</span> : null}</button>)}</nav>
+        <div className="sidebar-actions sidebar-actions--stitch">
+          <button className="btn btn-secondary sidebar-action" onClick={() => void refreshAllData(session.accessToken, session.user)} disabled={dataLoading}>
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>refresh</span>
+            <span>{dataLoading ? 'Đang tải...' : 'Tải lại'}</span>
+          </button>
+          <button className="btn btn-danger sidebar-action" onClick={() => void handleLogout()}>
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>logout</span>
+            <span>Đăng xuất</span>
+          </button>
+        </div>
       </aside>
 
       <div className="main">
-        <header className="topbar topbar--stitch"><div className="topbar-shell-copy"><strong className="topbar-title">{navItems.find((i) => i.id === activeView)?.label}</strong><div className="topbar-breadcrumb muted">{navItems.find((i) => i.id === activeView)?.subtitle}</div></div><div className="topbar-compact-actions"><input className="input topbar-search-input" placeholder="Tìm kiếm nhanh..." /><div className="topbar-icon-group"><span className="topbar-icon">?</span><span className="topbar-icon">⚙</span><span className="topbar-avatar">{(session.user.username ?? 'M').slice(0, 1).toUpperCase()}</span></div></div></header>
+        <header className="topbar topbar--stitch">
+          <div className="topbar-shell-copy">
+            <strong className="topbar-title">{navItems.find((i) => i.id === activeView)?.label}</strong>
+            <div className="topbar-breadcrumb muted">{navItems.find((i) => i.id === activeView)?.subtitle}</div>
+          </div>
+          <div className="topbar-compact-actions">
+            <input className="input topbar-search-input" placeholder="Tìm kiếm nhanh..." />
+            <div className="topbar-icon-group">
+              <span className="material-symbols-outlined topbar-icon">help</span>
+              <span className="material-symbols-outlined topbar-icon">settings</span>
+              <span className="topbar-avatar">{(session.user.username ?? 'M').slice(0, 1).toUpperCase()}</span>
+            </div>
+          </div>
+        </header>
         <main className={`content ${activeView === 'change-requests' ? 'content--change' : ''} ${activeView === 'print' ? 'content--print' : ''} ${activeView === 'returns' ? 'content--returns' : ''} ${activeView === 'account' ? 'content--account' : ''}`}>
           {dataError ? <p className="message error">{dataError}</p> : null}
 
