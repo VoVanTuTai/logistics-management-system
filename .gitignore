@@ -6,9 +6,9 @@ dist/
 .DS_Store
 
 # Local environment files
-apps/ops-web/.env
-services/gateway-bff/.env
-infra/prod/.env
+.env
+.env.*
+!.env.example
 
 # Runtime/log artifacts
 *.log
