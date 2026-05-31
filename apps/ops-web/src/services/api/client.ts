@@ -18,14 +18,14 @@ export class OpsApiClient {
 
       if (
         parsedResponse.response.status === 401 &&
-        options.accessToken &&
-        !options.skipAuthRefresh
+        preparedOptions.accessToken &&
+        !preparedOptions.skipAuthRefresh
       ) {
         const refreshedSession = await refreshAuthSession();
         const retryResponse = await this.fetch(
           path,
           {
-            ...options,
+            ...preparedOptions,
             accessToken: refreshedSession.tokens.accessToken,
           },
           controller,

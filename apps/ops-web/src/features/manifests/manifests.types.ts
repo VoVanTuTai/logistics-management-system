@@ -30,6 +30,14 @@ export interface CreateManifestInput {
   note?: string | null;
 }
 
+export interface UpdateManifestInput {
+  originHubCode?: string | null;
+  destinationHubCode?: string | null;
+  note?: string | null;
+  addShipmentCodes?: string[];
+  removeShipmentCodes?: string[];
+}
+
 export interface GenerateBagCodesInput {
   originHubCode?: string | null;
   destinationHubCode: string;

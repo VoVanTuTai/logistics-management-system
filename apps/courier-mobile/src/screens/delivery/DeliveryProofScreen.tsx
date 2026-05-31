@@ -23,7 +23,11 @@ import type { CollectCodPayload } from '../../features/cod/cod.types';
 import { enqueueDeliverySuccessOffline } from '../../features/delivery/delivery-success.offline';
 import { useDeliverySuccessActionMutation } from '../../features/delivery/delivery-success.mutation';
 import type { DeliverySuccessPayload } from '../../features/delivery/delivery.types';
-import { useCompanyBankInfoQuery, useCollectCodMutation } from '../../features/cod/cod.queries';
+import {
+  useCompanyBankInfoQuery,
+  useCollectCodMutation,
+  useCodRecordByShipmentQuery,
+} from '../../features/cod/cod.queries';
 import { useShipmentDetailQuery } from '../../features/shipment/shipment.queries';
 import type { ShipmentMetadata } from '../../features/shipment/shipment.types';
 import { tasksApi } from '../../features/tasks/tasks.api';
@@ -112,13 +116,21 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [paymentMethod, setPaymentMethod] = React.useState<'COD' | 'BANK_TRANSFER'>('COD');
 
+  const codAmount = shipmentQuery.data?.codAmount ?? 0;
+  const shipmentMetadata = shipmentQuery.data?.metadata ?? null;
+
   const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
   const bankInfoQuery = useCompanyBankInfoQuery({ accessToken: session?.tokens.accessToken ?? null });
   const bankInfo = bankInfoQuery.data;
   const collectMutation = useCollectCodMutation(session?.tokens.accessToken ?? null);
 
-  const codAmount = shipmentQuery.data?.codAmount ?? 0;
-  const shipmentMetadata = shipmentQuery.data?.metadata ?? null;
+  const isPollingPayment = paymentMethod === 'BANK_TRANSFER' && !!photoUri && codAmount > 0 && !isSubmitting;
+  const codRecordQuery = useCodRecordByShipmentQuery({
+    shipmentCode: resolvedShipmentCode,
+    accessToken: session?.tokens.accessToken ?? null,
+    refetchInterval: isPollingPayment ? 2000 : false,
+  });
+  const codRecord = codRecordQuery.data;
   const receiverPhone =
     readMetadataString(shipmentMetadata, [
       'receiverPhone',
@@ -359,6 +371,22 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
     transferMemo,
   ]);
 
+  React.useEffect(() => {
+    if (
+      paymentMethod === 'BANK_TRANSFER' &&
+      photoUri &&
+      codRecord &&
+      (codRecord.status === 'COLLECTED' || codRecord.status === 'REMITTED') &&
+      !isSubmitting
+    ) {
+      Alert.alert(
+        'Thanh toán thành công',
+        'Hệ thống đã nhận được tiền chuyển khoản từ khách hàng qua SePay. Đang tự động hoàn tất ký nhận giao hàng...',
+      );
+      void handleSubmit();
+    }
+  }, [codRecord, paymentMethod, photoUri, isSubmitting, handleSubmit]);
+
   return (
     <Screen scroll={false}>
       <View style={styles.layout}>
@@ -400,123 +428,134 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
           {codAmount > 0 ? (
             <Card style={styles.financialCard}>
               <Text style={styles.sectionTitle}>💰 Tổng tiền phải thu</Text>
-              <Text style={styles.sectionHint}>
-                Đơn hàng có thu hộ. Vui lòng thu đủ tiền trước khi ký nhận.
-              </Text>
-
-              {/* Financial breakdown */}
-              <View style={styles.financialBreakdown}>
-                <View style={styles.finRow}>
-                  <Text style={styles.finLabel}>Tiền thu hộ (COD)</Text>
-                  <Text style={styles.finValue}>{codAmount.toLocaleString('vi-VN')}đ</Text>
+              {!photoUri ? (
+                <View style={styles.photoRequiredNotice}>
+                  <Ionicons name="camera-outline" size={24} color="#B45309" />
+                  <Text style={styles.photoRequiredText}>
+                    Vui lòng chụp ảnh minh chứng giao hàng bên dưới để mở phương thức thanh toán và tạo mã QR.
+                  </Text>
                 </View>
-                {shippingFee > 0 ? (
-                  <View style={styles.finRow}>
-                    <Text style={styles.finLabel}>Phí vận chuyển</Text>
-                    <Text style={styles.finValue}>{shippingFee.toLocaleString('vi-VN')}đ</Text>
+              ) : (
+                <>
+                  <Text style={styles.sectionHint}>
+                    Đơn hàng có thu hộ. Vui lòng thu đủ tiền trước khi ký nhận.
+                  </Text>
+
+                  {/* Financial breakdown */}
+                  <View style={styles.financialBreakdown}>
+                    <View style={styles.finRow}>
+                      <Text style={styles.finLabel}>Tiền thu hộ (COD)</Text>
+                      <Text style={styles.finValue}>{codAmount.toLocaleString('vi-VN')}đ</Text>
+                    </View>
+                    {shippingFee > 0 ? (
+                      <View style={styles.finRow}>
+                        <Text style={styles.finLabel}>Phí vận chuyển</Text>
+                        <Text style={styles.finValue}>{shippingFee.toLocaleString('vi-VN')}đ</Text>
+                      </View>
+                    ) : null}
+                    {prepaidAmount > 0 ? (
+                      <View style={styles.finRow}>
+                        <Text style={styles.finLabel}>Đã trả trước</Text>
+                        <Text style={[styles.finValue, { color: '#059669' }]}>-{prepaidAmount.toLocaleString('vi-VN')}đ</Text>
+                      </View>
+                    ) : null}
+                    <View style={styles.finTotalRow}>
+                      <Text style={styles.finTotalLabel}>TỔNG PHẢI THU</Text>
+                      <Text style={styles.finTotalValue}>{totalAmountDue.toLocaleString('vi-VN')}đ</Text>
+                    </View>
                   </View>
-                ) : null}
-                {prepaidAmount > 0 ? (
-                  <View style={styles.finRow}>
-                    <Text style={styles.finLabel}>Đã trả trước</Text>
-                    <Text style={[styles.finValue, { color: '#059669' }]}>-{prepaidAmount.toLocaleString('vi-VN')}đ</Text>
+
+                  {/* Payment method toggle */}
+                  <Text style={[styles.sectionHint, { marginTop: 12, marginBottom: 4 }]}>Phương thức thanh toán:</Text>
+                  <View style={styles.toggleRow}>
+                    <Pressable
+                      style={[
+                        styles.toggleButton,
+                        paymentMethod === 'COD' && styles.toggleButtonActive,
+                      ]}
+                      onPress={() => setPaymentMethod('COD')}
+                    >
+                      <Text
+                        style={[
+                          styles.toggleButtonText,
+                          paymentMethod === 'COD' && styles.toggleButtonTextActive,
+                        ]}
+                      >
+                        💵 Tiền mặt
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      style={[
+                        styles.toggleButton,
+                        paymentMethod === 'BANK_TRANSFER' && styles.toggleButtonActive,
+                      ]}
+                      onPress={() => setPaymentMethod('BANK_TRANSFER')}
+                    >
+                      <Text
+                        style={[
+                          styles.toggleButtonText,
+                          paymentMethod === 'BANK_TRANSFER' && styles.toggleButtonTextActive,
+                        ]}
+                      >
+                        🏦 Chuyển khoản QR
+                      </Text>
+                    </Pressable>
                   </View>
-                ) : null}
-                <View style={styles.finTotalRow}>
-                  <Text style={styles.finTotalLabel}>TỔNG PHẢI THU</Text>
-                  <Text style={styles.finTotalValue}>{totalAmountDue.toLocaleString('vi-VN')}đ</Text>
-                </View>
-              </View>
 
-              {/* Payment method toggle */}
-              <Text style={[styles.sectionHint, { marginTop: 12, marginBottom: 4 }]}>Phương thức thanh toán:</Text>
-              <View style={styles.toggleRow}>
-                <Pressable
-                  style={[
-                    styles.toggleButton,
-                    paymentMethod === 'COD' && styles.toggleButtonActive,
-                  ]}
-                  onPress={() => setPaymentMethod('COD')}
-                >
-                  <Text
-                    style={[
-                      styles.toggleButtonText,
-                      paymentMethod === 'COD' && styles.toggleButtonTextActive,
-                    ]}
-                  >
-                    💵 Tiền mặt
-                  </Text>
-                </Pressable>
-                <Pressable
-                  style={[
-                    styles.toggleButton,
-                    paymentMethod === 'BANK_TRANSFER' && styles.toggleButtonActive,
-                  ]}
-                  onPress={() => setPaymentMethod('BANK_TRANSFER')}
-                >
-                  <Text
-                    style={[
-                      styles.toggleButtonText,
-                      paymentMethod === 'BANK_TRANSFER' && styles.toggleButtonTextActive,
-                    ]}
-                  >
-                    🏦 Chuyển khoản QR
-                  </Text>
-                </Pressable>
-              </View>
+                  {/* Cash confirmation */}
+                  {paymentMethod === 'COD' ? (
+                    <View style={styles.cashConfirmBox}>
+                      <Ionicons name="cash-outline" size={20} color="#059669" />
+                      <Text style={styles.cashConfirmText}>
+                        Xác nhận đã thu đủ {totalAmountDue.toLocaleString('vi-VN')}đ tiền mặt từ người nhận.
+                      </Text>
+                    </View>
+                  ) : null}
 
-              {/* Cash confirmation */}
-              {paymentMethod === 'COD' ? (
-                <View style={styles.cashConfirmBox}>
-                  <Ionicons name="cash-outline" size={20} color="#059669" />
-                  <Text style={styles.cashConfirmText}>
-                    Xác nhận đã thu đủ {totalAmountDue.toLocaleString('vi-VN')}đ tiền mặt từ người nhận.
-                  </Text>
-                </View>
-              ) : null}
-
-              {/* QR code */}
-              {paymentMethod === 'BANK_TRANSFER' && bankInfo ? (
-                <View style={styles.qrContainer}>
-                  <Text style={styles.qrHint}>Cho khách hàng quét QR và chuyển đúng nội dung</Text>
-                  <Image
-                    source={{
-                      uri: `https://img.vietqr.io/image/${bankInfo.bin}-${bankInfo.accountNumber}-compact2.png?amount=${totalAmountDue}&addInfo=${encodeURIComponent(transferMemo)}&accountName=${encodeURIComponent(bankInfo.accountName)}`,
-                    }}
-                    style={styles.qrImage}
-                    resizeMode="contain"
+                  {/* QR code */}
+                  {paymentMethod === 'BANK_TRANSFER' && bankInfo ? (
+                    <View style={styles.qrContainer}>
+                      <Text style={styles.qrHint}>Cho khách hàng quét QR và chuyển đúng nội dung</Text>
+                      <Image
+                        source={{
+                          uri: `https://img.vietqr.io/image/${bankInfo.bin}-${bankInfo.accountNumber}-compact2.png?amount=${totalAmountDue}&addInfo=${encodeURIComponent(transferMemo)}&accountName=${encodeURIComponent(bankInfo.accountName)}`,
+                        }}
+                        style={styles.qrImage}
+                        resizeMode="contain"
                   />
-                  <View style={styles.bankDetailBox}>
-                    <Text style={styles.bankDetailText}>Ngân hàng: {bankInfo.bankName ?? bankInfo.bin}</Text>
-                    <Text style={styles.bankDetailText}>STK: {bankInfo.accountNumber}</Text>
-                    <Text style={styles.bankDetailText}>Chủ TK: {bankInfo.accountName}</Text>
-                    <Text style={styles.bankDetailMemoText}>Nội dung: {transferMemo}</Text>
-                    <Text style={[styles.bankDetailText, { fontWeight: '700', color: '#B91C1C' }]}>
-                      Số tiền: {totalAmountDue.toLocaleString('vi-VN')}đ
-                    </Text>
-                  </View>
-                  <View style={styles.bankPendingBox}>
-                    <Ionicons name="time-outline" size={18} color="#1D4ED8" />
-                    <Text style={styles.bankPendingText}>
-                      Không ghi nhận đã nộp tại bước này. Payment-service sẽ chờ webhook SePay/ngân hàng xác nhận tiền vào công ty.
-                    </Text>
-                  </View>
-                </View>
-              ) : null}
-              {paymentMethod === 'BANK_TRANSFER' && bankInfoQuery.isLoading ? (
-                <View style={styles.inlineStateRow}>
-                  <ActivityIndicator size="small" color={theme.colors.primary} />
-                  <Text style={styles.inlineStateText}>Đang tải tài khoản công ty...</Text>
-                </View>
-              ) : null}
-              {paymentMethod === 'BANK_TRANSFER' && bankInfoQuery.isError ? (
-                <View style={styles.cashConfirmBox}>
-                  <Ionicons name="warning-outline" size={20} color="#B45309" />
-                  <Text style={styles.cashConfirmText}>
-                    Chưa tải được tài khoản công ty. Vui lòng thử lại trước khi cho khách chuyển khoản.
-                  </Text>
-                </View>
-              ) : null}
+                      <View style={styles.bankDetailBox}>
+                        <Text style={styles.bankDetailText}>Ngân hàng: {bankInfo.bankName ?? bankInfo.bin}</Text>
+                        <Text style={styles.bankDetailText}>STK: {bankInfo.accountNumber}</Text>
+                        <Text style={styles.bankDetailText}>Chủ TK: {bankInfo.accountName}</Text>
+                        <Text style={styles.bankDetailMemoText}>Nội dung: {transferMemo}</Text>
+                        <Text style={[styles.bankDetailText, { fontWeight: '700', color: '#B91C1C' }]}>
+                          Số tiền: {totalAmountDue.toLocaleString('vi-VN')}đ
+                        </Text>
+                      </View>
+                      <View style={styles.bankPendingBox}>
+                        <ActivityIndicator size="small" color="#1D4ED8" style={{ marginRight: 4 }} />
+                        <Text style={styles.bankPendingText}>
+                          Tự động kiểm tra trạng thái chuyển khoản... Hệ thống sẽ tự động hoàn tất ký nhận ngay khi nhận được tiền qua SePay.
+                        </Text>
+                      </View>
+                    </View>
+                  ) : null}
+                  {paymentMethod === 'BANK_TRANSFER' && bankInfoQuery.isLoading ? (
+                    <View style={styles.inlineStateRow}>
+                      <ActivityIndicator size="small" color={theme.colors.primary} />
+                      <Text style={styles.inlineStateText}>Đang tải tài khoản công ty...</Text>
+                    </View>
+                  ) : null}
+                  {paymentMethod === 'BANK_TRANSFER' && bankInfoQuery.isError ? (
+                    <View style={styles.cashConfirmBox}>
+                      <Ionicons name="warning-outline" size={20} color="#B45309" />
+                      <Text style={styles.cashConfirmText}>
+                        Chưa tải được tài khoản công ty. Vui lòng thử lại trước khi cho khách chuyển khoản.
+                      </Text>
+                    </View>
+                  ) : null}
+                </>
+              )}
             </Card>
           ) : null}
 
@@ -573,23 +612,30 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
         </ScrollView>
 
         <View style={styles.footer}>
-          <Pressable
-            onPress={() => void handleSubmit()}
-            disabled={isSubmitting}
-            style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <Text style={styles.submitButtonText}>
-                {hasAmountToPay
-                  ? paymentMethod === 'BANK_TRANSFER'
-                    ? 'Xác nhận ký nhận - chờ SePay'
-                    : `Xác nhận ký nhận - Thu ${totalAmountDue.toLocaleString('vi-VN')}đ`
-                  : 'Xác nhận ký nhận giao hàng'}
+          {hasAmountToPay && paymentMethod === 'BANK_TRANSFER' ? (
+            <View style={[styles.submitButton, styles.submitButtonDisabled, { backgroundColor: '#F3F4F6', borderColor: '#E5E7EB', borderWidth: 1, flexDirection: 'row', gap: 8 }]}>
+              <ActivityIndicator size="small" color="#4B5563" />
+              <Text style={[styles.submitButtonText, { color: '#4B5563' }]}>
+                Đang chờ chuyển khoản QR...
               </Text>
-            )}
-          </Pressable>
+            </View>
+          ) : (
+            <Pressable
+              onPress={() => void handleSubmit()}
+              disabled={isSubmitting}
+              style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.submitButtonText}>
+                  {hasAmountToPay
+                    ? `Xác nhận ký nhận - Thu ${totalAmountDue.toLocaleString('vi-VN')}đ`
+                    : 'Xác nhận ký nhận giao hàng'}
+                </Text>
+              )}
+            </Pressable>
+          )}
         </View>
       </View>
 
@@ -813,6 +859,23 @@ const styles = StyleSheet.create({
     ...theme.typography.subtitle.md,
     color: theme.colors.danger,
     fontWeight: '700',
+  },
+  photoRequiredNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+    padding: 12,
+    borderRadius: theme.radius.md,
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+  },
+  photoRequiredText: {
+    ...theme.typography.body.sm,
+    color: '#B45309',
+    fontWeight: '600',
+    flex: 1,
   },
   financialCard: {
     borderWidth: 1.5,

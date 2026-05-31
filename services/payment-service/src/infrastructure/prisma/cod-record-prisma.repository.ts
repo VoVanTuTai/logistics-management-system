@@ -556,6 +556,15 @@ export class CodRecordPrismaRepository extends CodRecordRepository {
     };
   }
 
+  async updateCourier(id: string, courierId: string): Promise<CodRecord> {
+    const record = await this.prisma.codRecord.update({
+      where: { id },
+      data: { courierId },
+    });
+
+    return this.toEntity(record);
+  }
+
   private toEntity(record: PrismaCodRecord): CodRecord {
     return {
       id: record.id,

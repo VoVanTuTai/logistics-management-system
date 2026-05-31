@@ -2,12 +2,16 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Pencil, Plus, Printer, RefreshCw, Save, X } from 'lucide-react';
 
+import { manifestsClient } from '../../../../features/manifests/manifests.api';
 import { routePaths } from '../../../../navigation/routes';
+import { getErrorMessage } from '../../../../services/api/errors';
+import { useAuthStore } from '../../../../store/authStore';
 import { formatDateTime } from '../../../../utils/format';
 import {
   LINEHAUL_TRIP_TYPE_LABELS,
   getLinehaulTripStatus,
   getLinehaulTripStatusLabel,
+  normalizeTripCode,
   readLinehaulTrips,
   writeLinehaulTrips,
 } from './linehaulTrips';
@@ -52,7 +56,31 @@ function statusTone(status: LinehaulTripStatus, overdue: boolean): string {
   return 'pending';
 }
 
+function buildLinehaulTripNote(trip: LinehaulTrip): string {
+  return [
+    'LINEHAUL_TRIP',
+    `tripType=${trip.tripType}`,
+    `originHubCode=${trip.originHubCode}`,
+    `destinationHubCode=${trip.destinationHubCode}`,
+    `plannedStartAt=${trip.plannedStartAt}`,
+    `plannedEndAt=${trip.plannedEndAt}`,
+    trip.driverName?.trim() ? `driverName=${trip.driverName.trim()}` : null,
+    trip.driverPhone?.trim() ? `driverPhone=${trip.driverPhone.trim()}` : null,
+    trip.vehiclePlate?.trim() ? `vehiclePlate=${trip.vehiclePlate.trim().toUpperCase()}` : null,
+    trip.vehiclePlate?.trim() ? `licensePlate=${trip.vehiclePlate.trim().toUpperCase()}` : null,
+  ]
+    .filter((segment): segment is string => Boolean(segment))
+    .join('|');
+}
+
 export function LinehaulTripManagementPage(): React.JSX.Element {
+  const session = useAuthStore((state) => state.session);
+  const accessToken = session?.tokens.accessToken ?? null;
+  const assignedHubCodes = useMemo(
+    () => (session?.user.hubCodes ?? []).map(normalizeTripCode).filter(Boolean),
+    [session?.user.hubCodes],
+  );
+  const canViewAllHubAreas = session?.user.roles.includes('SYSTEM_ADMIN') ?? false;
   const [trips, setTrips] = useState<LinehaulTrip[]>(readLinehaulTrips);
   const [operationForm, setOperationForm] = useState<LinehaulTripOperationForm>({
     tripId: '',
@@ -71,19 +99,33 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [operationModalOpen, setOperationModalOpen] = useState(false);
 
+  const scopedTrips = useMemo(() => {
+    if (canViewAllHubAreas) {
+      return trips;
+    }
+
+    if (assignedHubCodes.length === 0) {
+      return [];
+    }
+
+    return trips.filter((trip) =>
+      assignedHubCodes.includes(normalizeTripCode(trip.originHubCode)),
+    );
+  }, [assignedHubCodes, canViewAllHubAreas, trips]);
+
   const hubOptions = useMemo(() => {
     const hubs = new Set<string>();
-    for (const trip of trips) {
+    for (const trip of scopedTrips) {
       hubs.add(trip.originHubCode);
       hubs.add(trip.destinationHubCode);
     }
     return Array.from(hubs).sort();
-  }, [trips]);
+  }, [scopedTrips]);
 
   const filteredTrips = useMemo(() => {
     const keyword = normalizeText(filters.keyword);
 
-    return trips.filter((trip) => {
+    return scopedTrips.filter((trip) => {
       const status = getLinehaulTripStatus(trip);
       const hubMatched =
         filters.hubCode === 'ALL' ||
@@ -102,7 +144,7 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
         keywordMatched
       );
     });
-  }, [filters, trips]);
+  }, [filters, scopedTrips]);
 
   useEffect(() => {
     setPage(1);
@@ -117,16 +159,16 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
 
   const kpis = useMemo(
     () => ({
-      total: trips.length,
-      planned: trips.filter((trip) => getLinehaulTripStatus(trip) === 'PLANNED').length,
-      printed: trips.filter((trip) => getLinehaulTripStatus(trip) === 'PRINTED').length,
-      overdue: trips.filter(isTripOverdue).length,
+      total: scopedTrips.length,
+      planned: scopedTrips.filter((trip) => getLinehaulTripStatus(trip) === 'PLANNED').length,
+      printed: scopedTrips.filter((trip) => getLinehaulTripStatus(trip) === 'PRINTED').length,
+      overdue: scopedTrips.filter(isTripOverdue).length,
     }),
-    [trips],
+    [scopedTrips],
   );
   const selectedTrip = useMemo(
-    () => trips.find((trip) => trip.id === operationForm.tripId) ?? null,
-    [operationForm.tripId, trips],
+    () => scopedTrips.find((trip) => trip.id === operationForm.tripId) ?? null,
+    [operationForm.tripId, scopedTrips],
   );
 
   const updateFilter = <Key extends keyof LinehaulTripFilters>(
@@ -166,7 +208,7 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
     value: LinehaulTripOperationForm[Key],
   ) => {
     if (key === 'tripId') {
-      const trip = trips.find((item) => item.id === value);
+      const trip = scopedTrips.find((item) => item.id === value);
       if (trip) {
         selectTripForOperation(trip);
         return;
@@ -179,7 +221,7 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
     }));
   };
 
-  const saveTripOperationInfo = (event: React.FormEvent<HTMLFormElement>) => {
+  const saveTripOperationInfo = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const driverName = operationForm.driverName.trim();
@@ -203,7 +245,8 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
       vehiclePlate,
     };
 
-    saveTrips(trips.map((trip) => (trip.id === selectedTrip.id ? updatedTrip : trip)));
+    const nextTrips = trips.map((trip) => (trip.id === selectedTrip.id ? updatedTrip : trip));
+    saveTrips(nextTrips);
     setOperationForm({
       tripId: updatedTrip.id,
       driverName: updatedTrip.driverName ?? '',
@@ -211,7 +254,34 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
       vehiclePlate: updatedTrip.vehiclePlate ?? '',
     });
     setOperationModalOpen(false);
-    setActionMessage(`Đã cập nhật tài xế/xe cho chuyến ${updatedTrip.tripCode}. Có thể in tem.`);
+
+    if (!accessToken) {
+      setActionMessage(
+        `Đã cập nhật tài xế/xe cho chuyến ${updatedTrip.tripCode} trên trình duyệt. Phiên đăng nhập đã hết hạn nên chưa đồng bộ Ops.`,
+      );
+      return;
+    }
+
+    try {
+      const manifests = await manifestsClient.list(accessToken);
+      const manifest = manifests.find(
+        (item) => normalizeTripCode(item.manifestCode) === normalizeTripCode(updatedTrip.tripCode),
+      );
+
+      if (manifest) {
+        await manifestsClient.update(accessToken, manifest.id, {
+          originHubCode: updatedTrip.originHubCode,
+          destinationHubCode: updatedTrip.destinationHubCode,
+          note: buildLinehaulTripNote(updatedTrip),
+        });
+      }
+
+      setActionMessage(`Đã cập nhật tài xế/xe cho chuyến ${updatedTrip.tripCode}. Có thể in tem.`);
+    } catch (error) {
+      setActionMessage(
+        `Đã lưu tài xế/xe trên trình duyệt nhưng chưa đồng bộ biển số lên Ops: ${getErrorMessage(error)}`,
+      );
+    }
   };
 
   const printTrip = (trip: LinehaulTrip) => {
@@ -498,7 +568,7 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
                   onChange={(event) => updateOperationForm('tripId', event.target.value)}
                 >
                   <option value="">Chọn chuyến cần bổ sung</option>
-                  {trips.map((trip) => (
+                  {scopedTrips.map((trip) => (
                     <option key={trip.id} value={trip.id}>
                       {trip.tripCode} | {trip.originHubCode} - {trip.destinationHubCode}
                     </option>

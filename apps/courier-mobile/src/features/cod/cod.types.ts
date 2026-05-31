@@ -49,3 +49,51 @@ export interface RemitCodPayload {
   idempotencyKey: string;
   note?: string;
 }
+
+export interface CodSettlementBatchDto {
+  id: string;
+  settlementCode: string;
+  reportDate: string;
+  hubCode: string;
+  courierId: string;
+  totalAmount: number;
+  status: 'WAITING_PAYMENT' | 'PAID' | 'CANCELLED';
+  qrUrl: string | null;
+  transferMemo: string;
+  createdBy: string | null;
+  confirmedBy: string | null;
+  confirmedAt: string | null;
+  confirmedNote: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CodDailySettlementSummaryDto {
+  reportDate: string;
+  hubCode: string;
+  courierId: string;
+  codOrders: number;
+  codTotal: number;
+  collectedTotal: number;
+  cashCollectedTotal: number;
+  bankTransferTotal: number;
+  companyReceivedTotal: number;
+  remittedTotal: number;
+  pendingRemitTotal: number;
+  pendingCashRemitTotal: number;
+  waitingBankConfirmTotal: number;
+  records: Array<{
+    shipmentCode: string;
+    codAmount: number;
+    collectedAmount: number | null;
+    paymentMethod: string;
+    status: string;
+    hubCode: string | null;
+    courierId: string | null;
+    collectedAt: string | null;
+    remittedAt: string | null;
+    companyReceivedAt: string | null;
+    companyReceivedRef: string | null;
+  }>;
+  batches: CodSettlementBatchDto[];
+}

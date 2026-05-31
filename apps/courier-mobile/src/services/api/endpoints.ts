@@ -97,5 +97,10 @@ export const courierEndpoints = {
     qr: (amount: number, memo: string) =>
       `${COURIER_PREFIX}/payment/cod/qr?amount=${amount}&memo=${encodeURIComponent(memo)}`,
     remit: `${COURIER_PREFIX}/payment/cod/remit`,
+    dailySettlement: (courierId: string, date: string) =>
+      `${COURIER_PREFIX}/payment/cod/settlements/daily?courierId=${encodeURIComponent(
+        courierId,
+      )}&date=${encodeURIComponent(date)}`,
+    createSettlement: `${COURIER_PREFIX}/payment/cod/settlements`,
   },
 } as const;

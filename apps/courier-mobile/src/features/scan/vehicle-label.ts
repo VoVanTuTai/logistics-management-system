@@ -48,7 +48,9 @@ export function parseVehicleLabel(rawValue: string): VehicleLabelInfo | null {
       ]);
       const licensePlate = readString(record, [
         'licensePlate',
+        'vehiclePlate',
         'license_plate',
+        'vehicle_plate',
         'plateNumber',
         'plate',
       ]);

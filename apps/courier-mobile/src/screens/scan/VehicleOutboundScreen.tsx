@@ -76,18 +76,63 @@ function buildSyncedVehicleInfo(
   scannedVehicleInfo: VehicleLabelInfo,
   manifest: BagManifestDto,
 ): VehicleLabelInfo {
+  const noteVehicleInfo = parseLinehaulVehicleNote(manifest.note);
+  const scannedLicensePlate =
+    scannedVehicleInfo.licensePlate !== 'UNKNOWN'
+      ? scannedVehicleInfo.licensePlate
+      : '';
+
   return {
     ...scannedVehicleInfo,
     vehicleCode: normalizeCode(manifest.manifestCode || scannedVehicleInfo.vehicleCode),
     originHubCode:
       manifest.originHubCode?.trim().toUpperCase() ||
+      noteVehicleInfo.originHubCode ||
       scannedVehicleInfo.originHubCode ||
       'UNKNOWN',
     destinationHubCode:
       manifest.destinationHubCode?.trim().toUpperCase() ||
+      noteVehicleInfo.destinationHubCode ||
       scannedVehicleInfo.destinationHubCode ||
       'UNKNOWN',
+    licensePlate:
+      scannedLicensePlate ||
+      noteVehicleInfo.licensePlate ||
+      'UNKNOWN',
   };
+}
+
+function parseLinehaulVehicleNote(note: string | null | undefined): Partial<VehicleLabelInfo> {
+  const segments = note?.split('|') ?? [];
+  const fields = new Map<string, string>();
+
+  for (const segment of segments) {
+    const separatorIndex = segment.indexOf('=');
+    if (separatorIndex <= 0) {
+      continue;
+    }
+
+    const key = segment.slice(0, separatorIndex).trim();
+    const value = segment.slice(separatorIndex + 1).trim();
+    if (key && value) {
+      fields.set(key, value);
+    }
+  }
+
+  return {
+    originHubCode: normalizeOptionalCode(fields.get('originHubCode')),
+    destinationHubCode: normalizeOptionalCode(fields.get('destinationHubCode')),
+    licensePlate:
+      normalizeOptionalCode(fields.get('licensePlate')) ||
+      normalizeOptionalCode(fields.get('vehiclePlate')),
+  };
+}
+
+function normalizeOptionalCode(value: string | null | undefined): string | undefined {
+  const normalizedValue = value?.trim().toUpperCase();
+  return normalizedValue && normalizedValue !== 'N/A' && normalizedValue !== 'UNKNOWN'
+    ? normalizedValue
+    : undefined;
 }
 
 export function VehicleOutboundScreen(): React.JSX.Element {

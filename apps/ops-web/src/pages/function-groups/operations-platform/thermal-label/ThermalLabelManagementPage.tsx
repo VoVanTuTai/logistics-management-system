@@ -9,7 +9,13 @@ import './ThermalLabelManagementPage.css';
 const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
 
 export function ThermalLabelManagementPage(): React.JSX.Element {
-  const accessToken = useAuthStore((s) => s.session?.tokens.accessToken ?? null);
+  const session = useAuthStore((s) => s.session);
+  const accessToken = session?.tokens.accessToken ?? null;
+  const assignedHubCodes = useMemo(
+    () => (session?.user.hubCodes ?? []).map(normalizeHubCode).filter(Boolean),
+    [session?.user.hubCodes],
+  );
+  const canViewAllHubAreas = session?.user.roles.includes('SYSTEM_ADMIN') ?? false;
   const { data: manifests = [], isLoading, isError } = useManifestsQuery(accessToken);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
@@ -40,15 +46,29 @@ export function ThermalLabelManagementPage(): React.JSX.Element {
       });
   }, [manifests]);
 
-  const totalShipments = bagLabels.reduce((sum, item) => sum + item.shipmentCount, 0);
-  const arrivedLabels = bagLabels.filter((item) => item.status === 'RECEIVED').length;
-  const totalPages = Math.max(1, Math.ceil(bagLabels.length / pageSize));
+  const scopedBagLabels = useMemo(() => {
+    if (canViewAllHubAreas) {
+      return bagLabels;
+    }
+
+    if (assignedHubCodes.length === 0) {
+      return [];
+    }
+
+    return bagLabels.filter((item) =>
+      assignedHubCodes.includes(normalizeHubCode(item.originHubCode)),
+    );
+  }, [assignedHubCodes, bagLabels, canViewAllHubAreas]);
+
+  const totalShipments = scopedBagLabels.reduce((sum, item) => sum + item.shipmentCount, 0);
+  const arrivedLabels = scopedBagLabels.filter((item) => item.status === 'RECEIVED').length;
+  const totalPages = Math.max(1, Math.ceil(scopedBagLabels.length / pageSize));
   const currentPage = Math.min(page, totalPages);
-  const pagedBagLabels = bagLabels.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const pagedBagLabels = scopedBagLabels.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   useEffect(() => {
     setPage(1);
-  }, [pageSize, bagLabels.length]);
+  }, [pageSize, scopedBagLabels.length]);
 
   return (
     <section className="ops-thermal-management">
@@ -64,7 +84,7 @@ export function ThermalLabelManagementPage(): React.JSX.Element {
       <section className="ops-thermal-management__summary">
         <article className="ops-thermal-management__summary-card">
           <span>Tổng tem bao</span>
-          <strong>{bagLabels.length}</strong>
+          <strong>{scopedBagLabels.length}</strong>
         </article>
         <article className="ops-thermal-management__summary-card">
           <span>Tổng số đơn trong các bao</span>
@@ -102,10 +122,12 @@ export function ThermalLabelManagementPage(): React.JSX.Element {
                   Đã xảy ra lỗi khi tải dữ liệu tem bao.
                 </td>
               </tr>
-            ) : bagLabels.length === 0 ? (
+            ) : scopedBagLabels.length === 0 ? (
               <tr>
                 <td colSpan={7} style={{ textAlign: 'center', padding: '1rem' }}>
-                  Chưa có dữ liệu tem bao từ server.
+                  {canViewAllHubAreas
+                    ? 'Chưa có dữ liệu tem bao từ server.'
+                    : 'Chưa có tem bao thuộc hub được gán.'}
                 </td>
               </tr>
             ) : (
@@ -133,8 +155,8 @@ export function ThermalLabelManagementPage(): React.JSX.Element {
 
       <footer className="ops-data-monitor__pagination">
         <span>
-          Hiển thị {bagLabels.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}-
-          {Math.min(bagLabels.length, currentPage * pageSize)} / {bagLabels.length} dòng
+          Hiển thị {scopedBagLabels.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}-
+          {Math.min(scopedBagLabels.length, currentPage * pageSize)} / {scopedBagLabels.length} dòng
         </span>
         <label>
           <span>Số dòng</span>
@@ -158,6 +180,10 @@ export function ThermalLabelManagementPage(): React.JSX.Element {
       </footer>
     </section>
   );
+}
+
+function normalizeHubCode(value: string | null | undefined): string {
+  return (value ?? '').trim().toUpperCase();
 }
 
 function getDateSortValue(value: string | null | undefined): number {
