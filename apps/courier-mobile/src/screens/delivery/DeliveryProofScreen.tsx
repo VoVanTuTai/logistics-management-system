@@ -532,26 +532,45 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
                           Số tiền: {totalAmountDue.toLocaleString('vi-VN')}đ
                         </Text>
                       </View>
-                      <View style={styles.bankPendingBox}>
-                        <ActivityIndicator size="small" color="#1D4ED8" style={{ marginRight: 4 }} />
-                        <View style={{ flex: 1, gap: 2 }}>
-                          <Text style={styles.bankPendingText}>
-                            Tự động kiểm tra trạng thái chuyển khoản... Hệ thống sẽ tự động hoàn tất ký nhận ngay khi nhận được tiền qua SePay.
-                          </Text>
+                      <View style={[
+                        styles.bankPendingBox,
+                        codRecordQuery.isError ? styles.bankPendingBoxError :
+                        codRecord?.status === 'COLLECTED' || codRecord?.status === 'REMITTED' ? styles.bankPendingBoxSuccess :
+                        styles.bankPendingBoxPending
+                      ]}>
+                        <View style={styles.statusHeaderRow}>
                           {codRecordQuery.isError ? (
-                            <Text style={[styles.bankPendingText, { color: '#B91C1C', fontWeight: '700' }]}>
-                              Lỗi kết nối: {codRecordQuery.error instanceof Error ? codRecordQuery.error.message : 'Lỗi không xác định'}
-                            </Text>
-                          ) : null}
-                          {codRecord ? (
-                            <Text style={[styles.bankPendingText, { color: '#1E3A8A', fontWeight: '700', marginTop: 4 }]}>
-                              [Debug] Trạng thái đơn: {codRecord.status} — Hình thức: {codRecord.paymentMethod}
-                            </Text>
+                            <Ionicons name="alert-circle" size={18} color="#B91C1C" />
+                          ) : codRecord?.status === 'COLLECTED' || codRecord?.status === 'REMITTED' ? (
+                            <Ionicons name="checkmark-circle" size={18} color="#059669" />
                           ) : (
-                            <Text style={[styles.bankPendingText, { color: '#1E3A8A', fontWeight: '700', marginTop: 4 }]}>
-                              [Debug] Đang kết nối lấy trạng thái COD...
-                            </Text>
+                            <ActivityIndicator size="small" color="#4F46E5" />
                           )}
+                          <Text style={[
+                            styles.statusTitle,
+                            codRecordQuery.isError ? { color: '#B91C1C' } :
+                            codRecord?.status === 'COLLECTED' || codRecord?.status === 'REMITTED' ? { color: '#059669' } :
+                            { color: '#4F46E5' }
+                          ]}>
+                            {codRecordQuery.isError ? 'Lỗi kết nối kiểm tra' :
+                             codRecord?.status === 'COLLECTED' || codRecord?.status === 'REMITTED' ? 'Thanh toán thành công' :
+                             'Đang chờ chuyển tiền qua QR'}
+                          </Text>
+                        </View>
+                        
+                        <Text style={styles.statusDescription}>
+                          {codRecordQuery.isError ? 'Không thể kết nối đến máy chủ thanh toán. Hệ thống sẽ tiếp tục thử lại tự động.' :
+                           codRecord?.status === 'COLLECTED' || codRecord?.status === 'REMITTED' ? 'Hệ thống đã xác nhận giao dịch thành công từ SePay. Đang tự động hoàn tất...' :
+                           'Khách hàng quét mã QR ở trên và chuyển khoản. Giao dịch sẽ tự động xác nhận sau khi nhận được tiền.'}
+                        </Text>
+
+                        {/* Subtle debug log in small font */}
+                        <View style={styles.debugLogWrapper}>
+                          <Text style={styles.debugLogText}>
+                            {codRecordQuery.isError ? `Chi tiết: ${codRecordQuery.error instanceof Error ? codRecordQuery.error.message : 'Lỗi không xác định'}` :
+                             codRecord ? `Mã COD: ${codRecord.shipmentCode} · Trạng thái: ${codRecord.status}` :
+                             'Đang lấy thông tin COD đơn hàng...'}
+                          </Text>
                         </View>
                       </View>
                     </View>
@@ -976,15 +995,50 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   bankPendingBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
     marginTop: 12,
     padding: 12,
     borderRadius: theme.radius.md,
-    backgroundColor: '#EFF6FF',
+  },
+  bankPendingBoxPending: {
+    backgroundColor: '#EEF2FF',
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: '#C7D2FE',
+  },
+  bankPendingBoxSuccess: {
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  bankPendingBoxError: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+  },
+  statusHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  statusTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  statusDescription: {
+    fontSize: 12,
+    color: '#4B5563',
+    lineHeight: 18,
+  },
+  debugLogWrapper: {
+    marginTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    paddingTop: 6,
+    opacity: 0.75,
+  },
+  debugLogText: {
+    fontSize: 10,
+    color: '#94A3B8',
   },
   bankPendingText: {
     ...theme.typography.caption.md,
