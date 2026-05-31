@@ -35,57 +35,6 @@ type Props = NativeStackScreenProps<AppNavigatorParamList, 'CodStats'>;
 function formatVnd(amount: number): string {
   return amount.toLocaleString('vi-VN') + 'đ';
 }
-
-function statusLabel(status: string): string {
-  switch (status) {
-    case 'PENDING':
-      return 'Chờ thu';
-    case 'COLLECTED':
-      return 'Đã thu';
-    case 'REMITTED':
-      return 'Đã nộp';
-    case 'FAILED':
-      return 'Thất bại';
-    default:
-      return status;
-  }
-}
-
-function statusColor(status: string): { bg: string; text: string } {
-  switch (status) {
-    case 'PENDING':
-      return { bg: '#FEF3C7', text: '#92400E' };
-    case 'COLLECTED':
-      return { bg: '#D1FAE5', text: '#065F46' };
-    case 'REMITTED':
-      return { bg: '#DBEAFE', text: '#1E40AF' };
-    case 'FAILED':
-      return { bg: '#FEE2E2', text: '#991B1B' };
-    default:
-      return { bg: '#F1F5F9', text: '#334155' };
-  }
-}
-
-function paymentMethodBadge(method: string): {
-  label: string;
-  bg: string;
-  text: string;
-  icon: React.ComponentProps<typeof Ionicons>['name'];
-} {
-  switch (method) {
-    case 'COD':
-      return { label: 'Tiền mặt', bg: '#FEF3C7', text: '#92400E', icon: 'cash-outline' };
-    case 'BANK_TRANSFER':
-      return { label: 'Chuyển khoản', bg: '#DBEAFE', text: '#1E40AF', icon: 'card-outline' };
-    case 'PREPAID':
-      return { label: 'Trả trước', bg: '#E0E7FF', text: '#3730A3', icon: 'checkmark-done-outline' };
-    default:
-      return { label: method, bg: '#F1F5F9', text: '#334155', icon: 'help-outline' };
-  }
-}
-
-/* ── Reusable mini-card for breakdown rows ───────────── */
-
 function BreakdownRow({
   label,
   value,
@@ -100,50 +49,6 @@ function BreakdownRow({
       <View style={[s.breakdownDot, { backgroundColor: color }]} />
       <Text style={s.breakdownLabel}>{label}</Text>
       <Text style={[s.breakdownValue, { color }]}>{value}</Text>
-    </View>
-  );
-}
-
-/* ── Record card ─────────────────────────────────────── */
-
-function RecordCard({ record }: { record: CodRecordDto }): React.JSX.Element {
-  const sc = statusColor(record.status);
-  const pm = paymentMethodBadge(record.paymentMethod);
-
-  return (
-    <View style={s.recordCard}>
-      <View style={s.recordHeader}>
-        <Text style={s.recordShipmentCode}>{record.shipmentCode}</Text>
-        <View style={[s.badge, { backgroundColor: sc.bg }]}>
-          <Text style={[s.badgeText, { color: sc.text }]}>
-            {statusLabel(record.status)}
-          </Text>
-        </View>
-      </View>
-
-      <View style={s.recordBody}>
-        <View style={s.recordRow}>
-          <Text style={s.recordLabel}>Tiền COD</Text>
-          <Text style={s.recordAmount}>{formatVnd(record.codAmount)}</Text>
-        </View>
-
-        {record.collectedAmount != null ? (
-          <View style={s.recordRow}>
-            <Text style={s.recordLabel}>Thực thu</Text>
-            <Text style={[s.recordAmount, { color: '#059669' }]}>
-              {formatVnd(record.collectedAmount)}
-            </Text>
-          </View>
-        ) : null}
-
-        <View style={s.recordRow}>
-          <Text style={s.recordLabel}>Hình thức</Text>
-          <View style={[s.pmBadge, { backgroundColor: pm.bg }]}>
-            <Ionicons name={pm.icon} size={12} color={pm.text} />
-            <Text style={[s.pmBadgeText, { color: pm.text }]}>{pm.label}</Text>
-          </View>
-        </View>
-      </View>
     </View>
   );
 }
@@ -433,19 +338,7 @@ export function CodStatsScreen({ navigation }: Props): React.JSX.Element {
               </View>
             ) : null}
 
-            {/* Cash record list */}
-            {cashRecords.length > 0 ? (
-              <View style={s.recordList}>
-                {cashRecords.map((record) => (
-                  <RecordCard key={record.id} record={record} />
-                ))}
-              </View>
-            ) : (
-              <View style={s.emptyBlock}>
-                <Ionicons name="cash-outline" size={32} color={theme.colors.textMuted} />
-                <Text style={s.emptyText}>Chưa có đơn tiền mặt</Text>
-              </View>
-            )}
+
           </View>
         ) : null}
 
@@ -497,19 +390,7 @@ export function CodStatsScreen({ navigation }: Props): React.JSX.Element {
               </View>
             ) : null}
 
-            {/* Bank transfer record list */}
-            {bankRecords.length > 0 ? (
-              <View style={s.recordList}>
-                {bankRecords.map((record) => (
-                  <RecordCard key={record.id} record={record} />
-                ))}
-              </View>
-            ) : (
-              <View style={s.emptyBlock}>
-                <Ionicons name="card-outline" size={32} color={theme.colors.textMuted} />
-                <Text style={s.emptyText}>Chưa có đơn chuyển khoản</Text>
-              </View>
-            )}
+
           </View>
         ) : null}
       </ScrollView>
