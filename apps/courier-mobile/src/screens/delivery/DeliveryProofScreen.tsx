@@ -534,9 +534,25 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
                       </View>
                       <View style={styles.bankPendingBox}>
                         <ActivityIndicator size="small" color="#1D4ED8" style={{ marginRight: 4 }} />
-                        <Text style={styles.bankPendingText}>
-                          Tự động kiểm tra trạng thái chuyển khoản... Hệ thống sẽ tự động hoàn tất ký nhận ngay khi nhận được tiền qua SePay.
-                        </Text>
+                        <View style={{ flex: 1, gap: 2 }}>
+                          <Text style={styles.bankPendingText}>
+                            Tự động kiểm tra trạng thái chuyển khoản... Hệ thống sẽ tự động hoàn tất ký nhận ngay khi nhận được tiền qua SePay.
+                          </Text>
+                          {codRecordQuery.isError ? (
+                            <Text style={[styles.bankPendingText, { color: '#B91C1C', fontWeight: '700' }]}>
+                              Lỗi kết nối: {codRecordQuery.error instanceof Error ? codRecordQuery.error.message : 'Lỗi không xác định'}
+                            </Text>
+                          ) : null}
+                          {codRecord ? (
+                            <Text style={[styles.bankPendingText, { color: '#1E3A8A', fontWeight: '700', marginTop: 4 }]}>
+                              [Debug] Trạng thái đơn: {codRecord.status} — Hình thức: {codRecord.paymentMethod}
+                            </Text>
+                          ) : (
+                            <Text style={[styles.bankPendingText, { color: '#1E3A8A', fontWeight: '700', marginTop: 4 }]}>
+                              [Debug] Đang kết nối lấy trạng thái COD...
+                            </Text>
+                          )}
+                        </View>
                       </View>
                     </View>
                   ) : null}
