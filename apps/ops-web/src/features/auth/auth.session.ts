@@ -7,6 +7,7 @@ import type { AuthSessionDto } from './auth.types';
 const AUTH_STORAGE_KEY = 'ops-web.auth-session';
 const ACCESS_TOKEN_REFRESH_WINDOW_MS = 60_000;
 const CLIENT_SESSION_TTL_MS = 10 * 60 * 60 * 1000;
+const REFRESH_FAILURE_RECOVERY_DELAY_MS = 300;
 const OPS_ALLOWED_ROLES = new Set(['SYSTEM_ADMIN', 'OPS_ADMIN', 'OPS_VIEWER']);
 
 let refreshSessionPromise: Promise<AuthSessionDto> | null = null;
@@ -78,6 +79,45 @@ export async function clearAuthSession(): Promise<void> {
   localStorage.removeItem(AUTH_STORAGE_KEY);
   refreshSessionPromise = null;
   useAuthStore.getState().clearSession();
+}
+
+export function subscribeToAuthSessionStorage(): () => void {
+  if (typeof window === 'undefined') {
+    return () => undefined;
+  }
+
+  const handleStorage = (event: StorageEvent) => {
+    if (
+      event.key !== AUTH_STORAGE_KEY ||
+      (event.storageArea && event.storageArea !== localStorage)
+    ) {
+      return;
+    }
+
+    const session = getStoredAuthSession();
+    if (!session) {
+      useAuthStore.getState().clearSession();
+      return;
+    }
+
+    if (
+      !isOpsSession(session) ||
+      isClientSessionExpired() ||
+      isTokenExpired(session.tokens.refreshTokenExpiresAt)
+    ) {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+      useAuthStore.getState().clearSession();
+      return;
+    }
+
+    useAuthStore.getState().setSession(session);
+  };
+
+  window.addEventListener('storage', handleStorage);
+
+  return () => {
+    window.removeEventListener('storage', handleStorage);
+  };
 }
 
 export function getStoredAuthSession(): AuthSessionDto | null {
@@ -160,6 +200,12 @@ export async function refreshAuthSession(
       return refreshedSession;
     })
     .catch(async (error) => {
+      const recoveredSession = await getRefreshFailureRecoverySession(session);
+      if (recoveredSession) {
+        useAuthStore.getState().setSession(recoveredSession);
+        return recoveredSession;
+      }
+
       await clearAuthSession();
       useAuthStore
         .getState()
@@ -171,6 +217,50 @@ export async function refreshAuthSession(
     });
 
   return refreshSessionPromise;
+}
+
+async function getRefreshFailureRecoverySession(
+  attemptedSession: AuthSessionDto,
+): Promise<AuthSessionDto | null> {
+  const immediateSession = getRecoverableStoredSession(attemptedSession);
+  if (immediateSession) {
+    return immediateSession;
+  }
+
+  await delay(REFRESH_FAILURE_RECOVERY_DELAY_MS);
+  return getRecoverableStoredSession(attemptedSession);
+}
+
+function getRecoverableStoredSession(
+  attemptedSession: AuthSessionDto,
+): AuthSessionDto | null {
+  const latestSession = getStoredAuthSession();
+  if (!latestSession) {
+    return null;
+  }
+
+  const hasRotatedTokens =
+    latestSession.tokens.refreshToken !== attemptedSession.tokens.refreshToken ||
+    latestSession.tokens.accessToken !== attemptedSession.tokens.accessToken;
+  if (!hasRotatedTokens) {
+    return null;
+  }
+
+  if (!isOpsSession(latestSession)) {
+    return null;
+  }
+
+  if (isTokenExpired(latestSession.tokens.refreshTokenExpiresAt)) {
+    return null;
+  }
+
+  return latestSession;
+}
+
+function delay(durationMs: number): Promise<void> {
+  return new Promise((resolve) => {
+    globalThis.setTimeout(resolve, durationMs);
+  });
 }
 
 function shouldRefreshAccessToken(session: AuthSessionDto): boolean {

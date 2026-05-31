@@ -3,7 +3,10 @@ import React, { Component, useEffect } from 'react';
 import { AppProviders } from './AppProviders';
 import { AppShell } from './AppShell';
 import { AppRouter } from './AppRouter';
-import { hydrateAuthSession } from '../features/auth/auth.session';
+import {
+  hydrateAuthSession,
+  subscribeToAuthSessionStorage,
+} from '../features/auth/auth.session';
 import { useUiStore } from '../store/uiStore';
 
 interface AppErrorBoundaryState {
@@ -53,6 +56,8 @@ export function App(): React.JSX.Element {
         error instanceof Error ? error.message : 'Không thể khôi phục phiên đăng nhập.',
       );
     });
+
+    return subscribeToAuthSessionStorage();
   }, [setGlobalError]);
 
   return (
