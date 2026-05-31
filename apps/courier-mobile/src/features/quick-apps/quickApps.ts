@@ -4,9 +4,11 @@ import { theme } from '../../theme';
 import type { HomeAppGridItem } from '../../components/home/AppGrid';
 import type { AppNavigatorParamList } from '../../navigation/types';
 import { DEFAULT_QUICK_APP_IDS } from './quickAppDefaults';
+import type { CourierPermissionFeature } from '../permissions/courier-permissions';
 
 export interface QuickAppItem extends HomeAppGridItem {
   description: string;
+  permission?: CourierPermissionFeature;
 }
 
 export const QUICK_APP_CATALOG: QuickAppItem[] = [
@@ -25,6 +27,7 @@ export const QUICK_APP_CATALOG: QuickAppItem[] = [
     iconName: 'cube-outline',
     iconColor: '#1A6B4A',
     iconBgColor: '#E6FAF1',
+    permission: 'scan.pickup',
   },
   {
     id: 'delivery',
@@ -33,6 +36,7 @@ export const QUICK_APP_CATALOG: QuickAppItem[] = [
     iconName: 'paper-plane-outline',
     iconColor: theme.colors.primary,
     iconBgColor: theme.colors.infoSurface,
+    permission: 'scan.delivery',
   },
   {
     id: 'goods-arrival',
@@ -41,6 +45,7 @@ export const QUICK_APP_CATALOG: QuickAppItem[] = [
     iconName: 'download-outline',
     iconColor: theme.colors.primary,
     iconBgColor: theme.colors.infoSurface,
+    permission: 'scan.inbound',
   },
   {
     id: 'bag-seal',
@@ -49,6 +54,7 @@ export const QUICK_APP_CATALOG: QuickAppItem[] = [
     iconName: 'archive-outline',
     iconColor: '#8A5A0A',
     iconBgColor: '#FFF4DD',
+    permission: 'scan.bag-seal',
   },
   {
     id: 'bag-unseal',
@@ -57,6 +63,7 @@ export const QUICK_APP_CATALOG: QuickAppItem[] = [
     iconName: 'file-tray-outline',
     iconColor: '#7C3AED',
     iconBgColor: '#F3E8FF',
+    permission: 'scan.bag-unseal',
   },
   {
     id: 'vehicle-out',
@@ -65,6 +72,7 @@ export const QUICK_APP_CATALOG: QuickAppItem[] = [
     iconName: 'car-sport-outline',
     iconColor: theme.colors.primary,
     iconBgColor: theme.colors.infoSurface,
+    permission: 'scan.vehicle-outbound',
   },
   {
     id: 'vehicle-in',
@@ -73,6 +81,7 @@ export const QUICK_APP_CATALOG: QuickAppItem[] = [
     iconName: 'bus-outline',
     iconColor: '#1A6B4A',
     iconBgColor: '#E6FAF1',
+    permission: 'scan.vehicle-inbound',
   },
   {
     id: 'inventory-check',
@@ -81,6 +90,7 @@ export const QUICK_APP_CATALOG: QuickAppItem[] = [
     iconName: 'clipboard-outline',
     iconColor: '#8A5A0A',
     iconBgColor: '#FFF4DD',
+    permission: 'scan.inventory-check',
   },
   {
     id: 'cod',
@@ -105,6 +115,7 @@ export const QUICK_APP_CATALOG: QuickAppItem[] = [
     iconName: 'alert-circle-outline',
     iconColor: '#C25B12',
     iconBgColor: '#FFEDD5',
+    permission: 'scan.issue',
   },
   {
     id: 'stats',
@@ -129,6 +140,15 @@ export const QUICK_APP_CATALOG: QuickAppItem[] = [
     iconName: 'chatbubble-ellipses-outline',
     iconColor: '#1D4ED8',
     iconBgColor: '#EFF6FF',
+  },
+  {
+    id: 'send-goods',
+    label: 'Gửi hàng',
+    description: 'Quét và gửi hàng đi',
+    iconName: 'send-outline',
+    iconColor: '#1A6B4A',
+    iconBgColor: '#E6FAF1',
+    permission: 'scan.outbound',
   },
 ];
 
@@ -227,5 +247,10 @@ export function navigateToQuickApp(
 
   if (appId === 'chat') {
     navigation.navigate('MainTabs', { screen: 'Chat' });
+    return;
+  }
+
+  if (appId === 'send-goods') {
+    navigation.navigate('SendGoods');
   }
 }

@@ -15,10 +15,7 @@ export type CourierPermissionFeature =
   | 'scan.inbound'
   | 'scan.vehicle-inbound'
   | 'scan.vehicle-outbound'
-  | 'scan.inventory-check'
-  | 'scan.branch-pickup'
-  | 'scan.high-value-label'
-  | 'scan.high-value-check';
+  | 'scan.inventory-check';
 
 const COURIER_PERMISSION_MATRIX: Record<
   CourierActor,
@@ -37,9 +34,6 @@ const COURIER_PERMISSION_MATRIX: Record<
     'scan.vehicle-inbound': true,
     'scan.vehicle-outbound': true,
     'scan.inventory-check': true,
-    'scan.branch-pickup': true,
-    'scan.high-value-label': true,
-    'scan.high-value-check': true,
   },
   COURIER: {
     'scan.delivery-sign': true,
@@ -54,9 +48,6 @@ const COURIER_PERMISSION_MATRIX: Record<
     'scan.vehicle-inbound': true,
     'scan.vehicle-outbound': true,
     'scan.inventory-check': true,
-    'scan.branch-pickup': true,
-    'scan.high-value-label': true,
-    'scan.high-value-check': true,
   },
 };
 

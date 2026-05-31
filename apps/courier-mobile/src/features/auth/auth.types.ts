@@ -109,3 +109,14 @@ export const loginSchema = z.object({
 });
 
 export type LoginFormValues = z.infer<typeof loginSchema>;
+
+export interface ChangePasswordInputDto {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface ChangePasswordResultDto {
+  changed: boolean;
+  userId: string | null;
+}
+
