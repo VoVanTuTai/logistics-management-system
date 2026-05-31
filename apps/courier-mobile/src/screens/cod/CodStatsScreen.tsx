@@ -159,7 +159,17 @@ export function CodStatsScreen({ navigation }: Props): React.JSX.Element {
   const summaryQuery = useCodSummaryQuery({ courierId, accessToken });
   const recordsQuery = useCodRecordsQuery({ courierId, accessToken });
   const bankInfoQuery = useCompanyBankInfoQuery({ accessToken });
-  const dailySettlementQuery = useDailySettlementQuery({ courierId, date: todayStr, accessToken });
+
+  // Auto-polling state when active settlement batch is waiting for payment
+  const [shouldPoll, setShouldPoll] = React.useState(false);
+  const lastActiveBatchId = React.useRef<string | null>(null);
+
+  const dailySettlementQuery = useDailySettlementQuery({
+    courierId,
+    date: todayStr,
+    accessToken,
+    refetchInterval: shouldPoll ? 2000 : false,
+  });
   const createSettlementMutation = useCreateSettlementMutation(accessToken);
 
   const onRefresh = () => {
@@ -176,6 +186,27 @@ export function CodStatsScreen({ navigation }: Props): React.JSX.Element {
   const records = recordsQuery.data ?? [];
   const bankInfo = bankInfoQuery.data;
   const dailySettlement = dailySettlementQuery.data;
+
+  // Monitor settlement status changes
+  React.useEffect(() => {
+    const activeBatch = dailySettlement?.batches?.find((b) => b.status === 'WAITING_PAYMENT');
+
+    if (activeBatch) {
+      lastActiveBatchId.current = activeBatch.id;
+      setShouldPoll(true);
+    } else {
+      if (lastActiveBatchId.current) {
+        Alert.alert(
+          'Quyết toán thành công',
+          'Hệ thống đã nhận được tiền mặt nộp quyết toán của bạn qua chuyển khoản SePay.',
+        );
+        void summaryQuery.refetch();
+        void recordsQuery.refetch();
+        lastActiveBatchId.current = null;
+      }
+      setShouldPoll(false);
+    }
+  }, [dailySettlement, summaryQuery, recordsQuery]);
 
   /* ── Compute per-method breakdown from records ─────── */
 
@@ -347,6 +378,10 @@ export function CodStatsScreen({ navigation }: Props): React.JSX.Element {
                       style={s.qrImage}
                       resizeMode="contain"
                     />
+                    <View style={s.pollingStatusBlock}>
+                      <ActivityIndicator size="small" color={theme.colors.primary} />
+                      <Text style={s.pollingStatusText}>Đang chờ xác nhận giao dịch SePay...</Text>
+                    </View>
                     {bankInfo ? (
                       <View style={s.bankInfoBlock}>
                         <Text style={s.bankInfoText}>
@@ -689,6 +724,22 @@ const s = StyleSheet.create({
   qrImage: {
     width: 220,
     height: 260,
+  },
+  pollingStatusBlock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 8,
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  pollingStatusText: {
+    ...theme.typography.caption.md,
+    color: theme.colors.primary,
+    fontWeight: '600',
   },
   bankInfoBlock: {
     marginTop: theme.spacing.sm,

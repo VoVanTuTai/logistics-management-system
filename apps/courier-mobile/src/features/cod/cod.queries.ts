@@ -72,6 +72,7 @@ export function useDailySettlementQuery(params: {
   courierId: string | null;
   date: string | null;
   accessToken: string | null;
+  refetchInterval?: number | false;
 }) {
   return useQuery({
     queryKey: ['cod', 'settlements', 'daily', params.courierId, params.date],
@@ -82,6 +83,7 @@ export function useDailySettlementQuery(params: {
         params.accessToken,
       ),
     enabled: !!params.courierId && !!params.date,
+    refetchInterval: params.refetchInterval,
   });
 }
 
