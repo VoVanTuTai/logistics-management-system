@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   collectCod,
   createSettlement,
+  fetchCodRecordByShipmentCode,
   fetchCodRecords,
   fetchCodSummary,
   fetchCompanyBankInfo,
@@ -100,3 +101,18 @@ export function useCreateSettlementMutation(accessToken: string | null) {
     },
   });
 }
+
+export function useCodRecordByShipmentQuery(params: {
+  shipmentCode: string | null;
+  accessToken: string | null;
+  refetchInterval?: number | false;
+}) {
+  return useQuery({
+    queryKey: ['cod', 'shipment', params.shipmentCode],
+    queryFn: () =>
+      fetchCodRecordByShipmentCode(params.shipmentCode!, params.accessToken),
+    enabled: !!params.shipmentCode,
+    refetchInterval: params.refetchInterval,
+  });
+}
+

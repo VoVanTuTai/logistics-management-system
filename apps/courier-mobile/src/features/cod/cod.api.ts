@@ -126,3 +126,17 @@ export async function createSettlement(
     },
   );
 }
+
+export async function fetchCodRecordByShipmentCode(
+  shipmentCode: string,
+  accessToken: string | null,
+): Promise<CodRecordDto | null> {
+  return courierApiClient.request<CodRecordDto | null>(
+    courierEndpoints.cod.shipment(shipmentCode),
+    {
+      method: 'GET',
+      accessToken,
+    },
+  );
+}
+
