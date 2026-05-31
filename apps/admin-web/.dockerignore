@@ -1,0 +1,11 @@
+node_modules
+dist
+.env
+.env.*
+!.env.example
+npm-debug.log*
+pnpm-workspace.yaml
+coverage
+playwright-report
+test-results
+.DS_Store

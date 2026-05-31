@@ -31,11 +31,13 @@ export function resolveCourierId(
   configuredCourierId: string | null | undefined,
   username: string | null | undefined,
 ): string {
-  const fromConfig = normalizeCourierId(configuredCourierId);
-  if (fromConfig) return fromConfig;
-
+  // The authenticated username/employee code is the real courier id.
+  // EXPO_PUBLIC_COURIER_ID is only a dev fallback and must not override login.
   const fromUsername = normalizeCourierId(username);
   if (fromUsername) return fromUsername;
+
+  const fromConfig = normalizeCourierId(configuredCourierId);
+  if (fromConfig) return fromConfig;
 
   return '';
 }
@@ -195,6 +197,7 @@ export function buildVehicleOutboundAuditNote(input: {
     `Mã hub: ${hubCode}`,
     `Tem xe: ${vehicleCode}`,
     `Biển số: ${licensePlate}`,
+    seals && seals.length > 0 ? `SEAL_CODES=${seals.join(',')}` : null,
     seals && seals.length > 0 ? `Seal xe: ${seals.join(',')}` : null,
   ]
     .filter(Boolean)
@@ -303,6 +306,90 @@ export function buildDeliverySuccessAuditNote(input: {
 
   return [
     'Giao hàng thành công',
+    `Nhân viên: ${employeeName}`,
+    `Mã NV: ${employeeId}`,
+    `Mã hub: ${hubCode}`,
+    note ? `Ghi chú: ${note}` : null,
+  ]
+    .filter(Boolean)
+    .join(' | ');
+}
+
+export function buildCodCollectAuditNote(input: {
+  displayName?: string | null;
+  username?: string | null;
+  courierId?: string | null;
+  hubCode?: string | null;
+  shipmentCode?: string | null;
+  collectedAmount?: number | null;
+  paymentMethod?: string | null;
+  note?: string | null;
+}): string {
+  const employeeId =
+    resolveCourierId(input.courierId, input.username) ||
+    input.username?.trim() ||
+    'N/A';
+  const employeeName = resolveCourierDisplayName({
+    displayName: input.displayName,
+    username: input.username,
+    courierId: employeeId,
+  });
+  const hubCode = input.hubCode?.trim().toUpperCase() || 'N/A';
+  const shipmentCode = input.shipmentCode?.trim().toUpperCase();
+  const paymentMethod = input.paymentMethod?.trim().toUpperCase() || 'COD';
+  const note = input.note?.trim();
+  const amount =
+    typeof input.collectedAmount === 'number' && Number.isFinite(input.collectedAmount)
+      ? input.collectedAmount.toLocaleString('vi-VN')
+      : null;
+
+  return [
+    'Thu COD',
+    shipmentCode ? `Vận đơn: ${shipmentCode}` : null,
+    amount ? `Số tiền: ${amount}đ` : null,
+    `Hình thức: ${paymentMethod}`,
+    `Nhân viên: ${employeeName}`,
+    `Mã NV: ${employeeId}`,
+    `Mã hub: ${hubCode}`,
+    note ? `Ghi chú: ${note}` : null,
+  ]
+    .filter(Boolean)
+    .join(' | ');
+}
+
+export function buildHubScanAuditNote(input: {
+  displayName?: string | null;
+  username?: string | null;
+  courierId?: string | null;
+  hubCode?: string | null;
+  mode?: string | null;
+  shipmentCode?: string | null;
+  locationCode?: string | null;
+  manifestCode?: string | null;
+  note?: string | null;
+}): string {
+  const employeeId =
+    resolveCourierId(input.courierId, input.username) ||
+    input.username?.trim() ||
+    'N/A';
+  const employeeName = resolveCourierDisplayName({
+    displayName: input.displayName,
+    username: input.username,
+    courierId: employeeId,
+  });
+  const hubCode = input.hubCode?.trim().toUpperCase() || 'N/A';
+  const mode = input.mode?.trim().toUpperCase() || 'N/A';
+  const shipmentCode = input.shipmentCode?.trim().toUpperCase();
+  const locationCode = input.locationCode?.trim().toUpperCase();
+  const manifestCode = input.manifestCode?.trim().toUpperCase();
+  const note = input.note?.trim();
+
+  return [
+    'Quét hub',
+    `Thao tác: ${mode}`,
+    shipmentCode ? `Vận đơn: ${shipmentCode}` : null,
+    manifestCode ? `Manifest: ${manifestCode}` : null,
+    locationCode ? `Vị trí: ${locationCode}` : null,
     `Nhân viên: ${employeeName}`,
     `Mã NV: ${employeeId}`,
     `Mã hub: ${hubCode}`,

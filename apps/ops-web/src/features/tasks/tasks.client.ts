@@ -124,6 +124,8 @@ export const tasksClient = {
         accessToken,
         body: {
           courierId: payload.courierId,
+          hubCode: payload.hubCode,
+          note: payload.note,
         },
       })
       .then(mapTaskActionResult),
@@ -137,6 +139,8 @@ export const tasksClient = {
         accessToken,
         body: {
           courierId: payload.courierId,
+          hubCode: payload.hubCode,
+          note: payload.note,
         },
       })
       .then(mapTaskActionResult),

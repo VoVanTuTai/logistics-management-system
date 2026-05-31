@@ -1,0 +1,524 @@
+
+ RUN  v1.6.1 /Users/Tai.IS/my-project/logistics-management-system/apps/ops-web
+
+ ❯ src/__tests__/ops-smoke.test.tsx  (7 tests | 2 failed) 330ms
+   ❯ src/__tests__/ops-smoke.test.tsx > ops-web smoke coverage > renders embedded analytics on the dashboard for an authenticated ops user
+     → Unable to find an element with the text: /Tổng đơn trong ngày/i. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"ops-dashboard"[39m
+    [36m>[39m
+      [36m<section[39m
+        [33maria-label[39m=[32m"Hero carousel"[39m
+        [33mclass[39m=[32m"ops-dashboard__hero"[39m
+      [36m>[39m
+        [36m<button[39m
+          [33maria-label[39m=[32m"Trang trước"[39m
+          [33mclass[39m=[32m"ops-dashboard__hero-nav"[39m
+          [33mtype[39m=[32m"button"[39m
+        [36m>[39m
+          [36m<span[39m
+            [33maria-hidden[39m=[32m"true"[39m
+          [36m>[39m
+            [0m‹[0m
+          [36m</span>[39m
+        [36m</button>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"ops-dashboard__hero-content"[39m
+        [36m>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"ops-dashboard__hero-company"[39m
+          [36m>[39m
+            [0mNEXUS EXPRESS SYSTEM[0m
+          [36m</p>[39m
+          [36m<h2[39m
+            [33mclass[39m=[32m"ops-dashboard__hero-title"[39m
+          [36m>[39m
+            [0mDIGITIZATION • AUTOMATION • INTELLIGENCE[0m
+          [36m</h2>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"ops-dashboard__hero-subtitle"[39m
+          [36m>[39m
+            [0mVận hành tập trung, theo dõi trạng thái theo thời gian thực và kết nối đa kênh.[0m
+          [36m</p>[39m
+          [36m<div[39m
+            [33maria-hidden[39m=[32m"true"[39m
+            [33mclass[39m=[32m"ops-dashboard__hero-dots"[39m
+          [36m>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"ops-dashboard__hero-dot ops-dashboard__hero-dot--active"[39m
+            [36m/>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"ops-dashboard__hero-dot"[39m
+            [36m/>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"ops-dashboard__hero-dot"[39m
+            [36m/>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<button[39m
+          [33maria-label[39m=[32m"Trang sau"[39m
+          [33mclass[39m=[32m"ops-dashboard__hero-nav"[39m
+          [33mtype[39m=[32m"button"[39m
+        [36m>[39m
+          [36m<span[39m
+            [33maria-hidden[39m=[32m"true"[39m
+          [36m>[39m
+            [0m›[0m
+          [36m</span>[39m
+        [36m</button>[39m
+        [36m<div[39m
+          [33maria-label[39m=[32m"Hub đang theo dõi"[39m
+          [33mclass[39m=[32m"ops-dashboard__hero-badge"[39m
+        [36m>[39m
+          [36m<small>[39m
+            [0mHub đang theo dõi[0m
+          [36m</small>[39m
+          [36m<strong>[39m
+            [0mHCM01[0m
+          [36m</strong>[39m
+        [36m</div>[39m
+      [36m</section>[39m
+      [36m<section[39m
+        [33mclass[39m=[32m"ops-dashboard__menu-layout"[39m
+      [36m>[39m
+        [36m<section[39m
+          [33maria-label[39m=[32m"Nhóm chức năng"[39m
+          [33mclass[39m=[32m"ops-dashboard__function-groups"[39m
+        [36m>[39m
+          [36m<header[39m
+            [33mclass[39m=[32m"ops-dashboard__section-header"[39m
+          [36m>[39m
+            [36m<h3>[39m
+              [0mMenu chính[0m
+            [36m</h3>[39m
+          [36m</header>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"ops-menu-grid"[39m
+          [36m>[39m
+            [36m<a[39m
+              [33mclass[39m=[32m"ops-menu-tile ops-menu-tile--featured"[39m
+              [33mhref[39m=[32m"/app/function-groups/operations-platform"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"ops-menu-tile__icon"[39m
+              [36m>[39m
+                [36m<svg[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mviewBox[39m=[32m"0 0 24 24"[39m
+                [36m>[39m
+                  [36m<rect[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mheight[39m=[32m"10"[39m
+                    [33mrx[39m=[32m"1.5"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mstroke-linecap[39m=[32m"round"[39m
+                    [33mstroke-linejoin[39m=[32m"round"[39m
+                    [33mstroke-width[39m=[32m"1.85"[39m
+                    [33mwidth[39m=[32m"15"[39m
+                    [33mx[39m=[32m"4.5"[39m
+                    [33my[39m=[32m"5"[39m
+                  [36m/>[39m
+                  [36m<path[39m
+                    [33md[39m=[32m"M8.5 18.5h7"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mstroke-linecap[39m=[32m"round"[39m
+                    [33mstroke-linejoin[39m=[32m"round"[39m
+                    [33mstroke-width[39m=[32m"1.85"[39m
+                  [36m/>[39m
+                  [36m<path[39m
+                    [33md[39m=[32m"M10 8.5 14.4 10.2 10 12.4z"[39m
+                    [33mfill[39m=[32m"var(--ops-menu-accent, #2563eb)"[39m
+                  [36m/>[39m
+                [36m</svg>[39m
+              [36m</span>[39m
+              [36m<strong>[39m
+                [0mNền tảng điều hành[0m
+              [36m</strong>[39m
+            [36m</a>[39m
+            [36m<a[39m
+              [33mclass[39m=[32m"ops-menu-tile"[39m
+              [33mhref[39m=[32m"/app/function-groups/branch-business"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"ops-menu-tile__icon"[39m
+              [36m>[39m
+                [36m<svg[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mviewBox[39m=[32m"0 0 24 24"[39m
+                [36m>[39m
+                  [36m<path[39m
+                    [33md[39m=[32m"M12 20c3.8-3.5 5.8-6 5.8-8.8A5.8 5.8 0 0 0 12 5.4a5.8 5.8 0 0 0-5.8 5.8c0 2.8 2 5.3 5.8 8.8Z"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mstroke-linecap[39m=[32m"round"[39m
+                    [33mstroke-linejoin[39m=[32m"round"[39m
+                    [33mstroke-width[39m=[32m"1.85"[39m
+                  [36m/>[39m
+                  [36m<circle[39m
+                    [33mcx[39m=[32m"12"[39m
+                    [33mcy[39m=[32m"11.1"[39m
+                    [33mfill[39m=[32m"var(--ops-menu-accent, #2563eb)"[39m
+                    [33mr[39m=[32m"1.9"[39m
+                  [36m/>[39m
+                [36m</svg>[39m
+              [36m</span>[39m
+              [36m<strong>[39m
+                [0mKinh doanh bưu cục[0m
+              [36m</strong>[39m
+            [36m</a>[39m
+            [36m<a[39m
+              [33mclass[39m=[32m"ops-menu-tile"[39m
+              [33mhref[39m=[32m"/app/function-groups/capability-platform"[39m
+            [36m>[...
+   ❯ src/__tests__/ops-smoke.test.tsx > ops-web smoke coverage > renders shipment list and validates required walk-in fields
+     → Unable to find an element with the text: NXS000001. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div>[39m
+      [36m<h2>[39m
+        [0mDanh sách vận đơn[0m
+      [36m</h2>[39m
+      [36m<p[39m
+        [33mstyle[39m=[32m"color: rgb(45, 63, 153);"[39m
+      [36m>[39m
+        [0mMặc định hiển thị đơn đã về bưu cục, chưa phát sinh thao tác phát hàng. Nhập mã để tra cứu mọi vận đơn thuộc phạm vi hub.[0m
+      [36m</p>[39m
+      [36m<form[39m
+        [33mstyle[39m=[32m"display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 12px; margin-bottom: 8px;"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mstyle[39m=[32m"display: flex; gap: 8px; align-items: center; flex-wrap: wrap;"[39m
+        [36m>[39m
+          [36m<textarea[39m
+            [33mname[39m=[32m"q"[39m
+            [33mplaceholder[39m=[32m"Tìm mã vận đơn trong toàn bộ dữ liệu thuộc hub. Có thể dán nhiều mã, mỗi mã một dòng hoặc cách nhau bằng dấu phẩy."[39m
+            [33mrows[39m=[32m"2"[39m
+            [33mstyle[39m=[32m"border: 1px solid rgb(217, 222, 243); border-radius: 10px; padding: 8px 10px; min-width: 360px; min-height: 42px; resize: vertical; font-family: inherit;"[39m
+          [36m/>[39m
+          [36m<select[39m
+            [33mname[39m=[32m"status"[39m
+            [33mstyle[39m=[32m"border: 1px solid rgb(217, 222, 243); border-radius: 10px; padding: 8px 10px; min-width: 220px;"[39m
+          [36m>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m""[39m
+            [36m>[39m
+              [0mTất cả trạng thái[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"CREATED"[39m
+            [36m>[39m
+              [0mMới tạo[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"UPDATED"[39m
+            [36m>[39m
+              [0mĐã cập nhật[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"PICKUP_COMPLETED"[39m
+            [36m>[39m
+              [0mĐã nhận hàng[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"TASK_ASSIGNED"[39m
+            [36m>[39m
+              [0mĐã phân công giao[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"MANIFEST_SEALED"[39m
+            [36m>[39m
+              [0mĐang luân chuyển[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"MANIFEST_RECEIVED"[39m
+            [36m>[39m
+              [0mXe đến[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"MANIFEST_UNSEALED"[39m
+            [36m>[39m
+              [0mGỡ bao[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"SEND_GOODS"[39m
+            [36m>[39m
+              [0mĐã gửi hàng[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"IN_TRANSIT"[39m
+            [36m>[39m
+              [0mĐang luân chuyển[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"INVENTORY_CHECK"[39m
+            [36m>[39m
+              [0mKhông xác định[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"SCAN_INBOUND"[39m
+            [36m>[39m
+              [0mHàng đến[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"SCAN_OUTBOUND"[39m
+            [36m>[39m
+              [0mGửi hàng[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"DELIVERED"[39m
+            [36m>[39m
+              [0mKý nhận[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"DELIVERY_FAILED"[39m
+            [36m>[39m
+              [0mGhi nhận vấn đề[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"NDR_CREATED"[39m
+            [36m>[39m
+              [0mCần xử lý giao thất bại[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"EXCEPTION"[39m
+            [36m>[39m
+              [0mKhông xác định[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"RETURN_STARTED"[39m
+            [36m>[39m
+              [0mBắt đầu hoàn hàng[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"RETURN_COMPLETED"[39m
+            [36m>[39m
+              [0mHoàn hàng thành công[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"CANCELLED"[39m
+            [36m>[39m
+              [0mĐã hủy[0m
+            [36m</option>[39m
+          [36m</select>[39m
+          [36m<select[39m
+            [33mname[39m=[32m"time"[39m
+            [33mstyle[39m=[32m"border: 1px solid rgb(217, 222, 243); border-radius: 10px; padding: 8px 10px; min-width: 220px;"[39m
+          [36m>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"today"[39m
+            [36m>[39m
+              [0mHôm nay[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"last7Days"[39m
+            [36m>[39m
+              [0m7 ngày gần nhất[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"last30Days"[39m
+            [36m>[39m
+              [0m30 ngày gần nhất[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"custom"[39m
+            [36m>[39m
+              [0mTùy chọn ngày[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"all"[39m
+            [36m>[39m
+              [0mTất cả thời gian[0m
+            [36m</option>[39m
+          [36m</select>[39m
+          [36m<input[39m
+            [33mdisabled[39m=[32m""[39m
+            [33mname[39m=[32m"dateFrom"[39m
+            [33mstyle[39m=[32m"border: 1px solid rgb(217, 222, 243); border-radius: 10px; padding: 8px 10px; min-width: 170px;"[39m
+            [33mtype[39m=[32m"date"[39m
+            [33mvalue[39m=[32m"2026-05-29"[39m
+          [36m/>[39m
+          [36m<input[39m
+            [33mdisabled[39m=[32m""[39m
+            [33mname[39m=[32m"dateTo"[39m
+            [33mstyle[39m=[32m"border: 1px solid rgb(217, 222, 243); border-radius: 10px; padding: 8px 10px; min-width: 170px;"[39m
+            [33mtype[39m=[32m"date"[39m
+            [33mvalue[39m=[32m"2026-05-29"[39m
+          [36m/>[39m
+          [36m<select[39m
+            [33mname[39m=[32m"branchGoods"[39m
+            [33mstyle[39m=[32m"border: 1px solid rgb(217, 222, 243); border-radius: 10px; padding: 8px 10px; min-width: 220px;"[39m
+          [36m>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"readyForDelivery"[39m
+            [36m>[39m
+              [0mHàng đã đến chờ phát[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"all"[39m
+            [36m>[39m
+              [0mTất cả hàng hoá bưu cục[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"inventoryByDay"[39m
+            [36m>[39m
+              [0mHàng tồn kho theo ngày[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"problemOrders"[39m
+            [36m>[39m
+              [0mĐơn vấn đề[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"returnNeeded"[39m
+            [36m>[39m
+              [0mĐơn cần chuyển hoàn[0m
+            [36m</option>[39m
+          [36m</select>[39m
+          [36m<input[39m
+            [33mdisabled[39m=[32m""[39m
+            [33mname[39m=[32m"inventoryDate"[39m
+            [33mstyle[39m=[32m"border: 1px solid rgb(217, 222, 243); border-radius: 10px; padding: 8px 10px; min-width: 170px;"[39m
+            [33mtype[39m=[32m"date"[39m
+            [33mvalue[39m=[32m"2026-05-29"[39m
+          [36m/>[39m
+          [36m<select[39m
+            [33mname[39m=[32m"courierId"[39m
+            [33mstyle[39m=[32m"border: 1px solid rgb(217, 222, 243); border-radius: 10px; padding: 8px 10px; min-width: 220px;"[39m
+          [36m>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m""[39m
+            [36m>[39m
+              [0mTất cả courier[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"courier-1"[39m
+            [36m>[39m
+              [0mcourier-1[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"courier-old"[39m
+            [36m>[39m
+              [0mcourier-old[0m
+            [36m</option>[39m
+          [36m</select>[39m
+          [36m<label[39m
+            [33mstyle[39m=[32m"display: flex; align-items: center; gap: 8px; color: rgb(45, 63, 153); font-size: 13px; font-weight: 600;"[39m
+          [36m>[39m
+            [36m<span>[39m
+              [0mSố dòng/trang[0m
+            [36m</span>[39m
+            [36m<select[39m
+              [33mstyle[39m=[32m"border: 1px solid rgb(217, 222, 243); border-radius: 10px; padding: 8px 10px; min-width: 88px;"[39m
+            [36m>[39m
+              [36m<option[39m
+                [33mvalue[39m=[32m"10"[39m
+              [36m>[39m
+                [0m10[0m
+              [36m</option>[39m
+              [36m<option[39m
+                [33mvalue[39m=[32m"20"[39m
+              [36m>[39m
+                [0m20[0m
+              [36m</option>[39m
+              [36m<option[39m
+                [33mvalue[39m=[32m"50"[39m
+              [36m>[39m
+                [0m50[0m
+              [36m</option>[39m
+              [36m<option[39m
+                [33mvalue[39m=[32m"100"[39m
+              [36m>[39m
+                [0m100[0m
+              [36m</option>[39m
+            [36m</select>[39m
+          [36m</label>[39m
+          [36m<button[39m
+            [33mtype[39m=[32m"submit"[39m
+          [36m>[39m
+            [0mÁp dụng[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mĐặt lại[0m
+          [36m</button>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mstyle[39m=[32m"margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 6px 8px; border: 1px solid rgb(217, 222, 243); border-radius: 12px; background-color: rgb(255, 255, 255);"[39m
+        [36m>[39m
+          [36m<span[39m
+            [33mstyle[39m=[32m"color: rgb(31, 43, 111); font-size: 13px; font-weight: 700; white-space: nowrap;"[39m
+          [36m>[39m
+            [0mChưa chọn vận đơn[0m
+          [36m</span>[39m
+          [36m<button[39m
+            [33mdisabled[39m=[32m""[39m
+            [33mstyle[39m=[32m"border: 1px solid rgb(15, 76, 129); border-radius: 10px; padding: 8px 12px; background-color: rgb(174, 184, 223); color: rgb(255, 255, 255); font-weight: 700; border-color: rgb(174, 184, 223); cursor: not-allowed;"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mIn tem đơn hàng[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</form>[39m
+      [36m<div[39m
+        [33mstyle[39m=[32m"display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0px 12px; color: rgb(31, 43, 111); font-size: 13px; font-weight: 700;"[39m
+      [36m>[39m
+        [36m<span>[39m
+          [0mTrang hiện tại: [0m
+          [0m1[0m
+          [0m vận đơn[0m
+        [36m</span>[39m
+        [36m<span>[39m
+          [0mĐang hiển thị: [0m
+          [0m0[0m
+          [0m vận đơn[0m
+        [36m</span>[39m
+        [36m<span>[39m
+          [0mHàng đã đến, chưa thao tác phát[0m
+        [36m</span>[39m
+      [36m</div>[39m
+      [36m<p>[39m
+        [0mKhông tìm thấy vận đơn phù hợp ngày hoặc bộ lọc hiện tại.[0m
+      [36m</p>[39m
+      [36m<div[39m
+        [33mstyle[39m=[32m"display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin: 12px 0px; border: 1px solid rgb(217, 222, 243); border-radius: 10px; padding: 8px 12px; background-color: rgb(255, 255, 255); color: rgb(31, 43, 111); font-weight: 600;"[39m
+      [36m>[39m
+        [36m<span>[39m
+          [0mTrang [0m
+          [0m1[0m
+          [0m | [0m
+          [0mTổng 1 vận đơn[0m
+        [36m</span>[39m
+        [36m<div[39m
+          [33mstyle[39m=[32m"display: flex; gap: 8px; flex-wrap: wrap;"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33mdisabled[39m=[32m""[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mTrang trước[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mdisabled[39m=[32m""[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mTrang sau[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 5 passed (7)
+   Start at  16:55:48
+   Duration  958ms (transform 193ms, setup 53ms, collect 345ms, tests 330ms, environment 127ms, prepare 25ms)
+

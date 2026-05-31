@@ -95,6 +95,24 @@ export interface DeliveryFailResultDto {
   returnCase: unknown | null;
 }
 
+export interface CreateReturnCasePayload {
+  shipmentCode: string;
+  ndrCaseId?: string | null;
+  note?: string | null;
+}
+
+export interface ReturnCaseDto {
+  id: string;
+  shipmentCode: string;
+  ndrCaseId: string | null;
+  note: string | null;
+  status: 'STARTED' | 'COMPLETED';
+  startedAt: string | null;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const deliverySuccessSchema = z.object({
   shipmentCode: z.string().min(1, 'Shipment code is required.'),
   locationCode: z.string().optional().default(''),

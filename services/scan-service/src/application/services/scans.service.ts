@@ -21,6 +21,10 @@ import { CurrentLocationRepository } from '../../domain/repositories/current-loc
 import { IdempotencyRecordRepository } from '../../domain/repositories/idempotency-record.repository';
 import { ScanEventRepository } from '../../domain/repositories/scan-event.repository';
 import { ScanOutboxService } from '../../messaging/outbox/scan-outbox.service';
+import {
+  OpsAuditService,
+  type OpsAuditContext,
+} from './ops-audit.service';
 
 type ScanFlow = 'scan.pickup_confirmed' | 'scan.inbound' | 'scan.outbound';
 
@@ -34,18 +38,28 @@ export class ScansService {
     @Inject(IdempotencyRecordRepository)
     private readonly idempotencyRecordRepository: IdempotencyRecordRepository,
     private readonly scanOutboxService: ScanOutboxService,
+    private readonly opsAuditService: OpsAuditService,
   ) {}
 
-  recordPickup(input: RecordPickupScanInput): Promise<RecordScanResult> {
-    return this.recordScan('scan.pickup_confirmed', 'PICKUP', input);
+  recordPickup(
+    input: RecordPickupScanInput,
+    auditContext?: OpsAuditContext,
+  ): Promise<RecordScanResult> {
+    return this.recordScan('scan.pickup_confirmed', 'PICKUP', input, auditContext);
   }
 
-  recordInbound(input: RecordInboundScanInput): Promise<RecordScanResult> {
-    return this.recordScan('scan.inbound', 'INBOUND', input);
+  recordInbound(
+    input: RecordInboundScanInput,
+    auditContext?: OpsAuditContext,
+  ): Promise<RecordScanResult> {
+    return this.recordScan('scan.inbound', 'INBOUND', input, auditContext);
   }
 
-  recordOutbound(input: RecordOutboundScanInput): Promise<RecordScanResult> {
-    return this.recordScan('scan.outbound', 'OUTBOUND', input);
+  recordOutbound(
+    input: RecordOutboundScanInput,
+    auditContext?: OpsAuditContext,
+  ): Promise<RecordScanResult> {
+    return this.recordScan('scan.outbound', 'OUTBOUND', input, auditContext);
   }
 
   async getCurrentLocation(shipmentCode: string): Promise<CurrentLocation> {
@@ -76,6 +90,7 @@ export class ScansService {
     flow: ScanFlow,
     scanType: ScanType,
     input: RecordScanInput,
+    auditContext?: OpsAuditContext,
   ): Promise<RecordScanResult> {
     if (!input.shipmentCode) {
       throw new BadRequestException('shipmentCode is required.');
@@ -89,7 +104,10 @@ export class ScansService {
       throw new BadRequestException('occurredAt must be a valid ISO date.');
     }
 
-    await this.assertShipmentNotLocked(input.shipmentCode);
+    await this.assertShipmentNotLocked(input.shipmentCode, scanType, input.note);
+    const previousLocation = await this.currentLocationRepository.findByShipmentCode(
+      input.shipmentCode,
+    );
 
     const scopedIdempotencyKey = `${flow}:${input.idempotencyKey}`;
     const existingRecord = await this.idempotencyRecordRepository.findByKey(
@@ -147,6 +165,15 @@ export class ScansService {
       responsePayload: this.toSnapshot(result),
     });
 
+    await this.opsAuditService.record({
+      context: auditContext,
+      action: `SCAN_${scanType}`,
+      targetType: 'SHIPMENT',
+      targetId: result.scanEvent.shipmentCode,
+      before: previousLocation,
+      after: result,
+    });
+
     return result;
   }
 
@@ -194,7 +221,11 @@ export class ScansService {
     }
   }
 
-  private async assertShipmentNotLocked(shipmentCode: string): Promise<void> {
+  private async assertShipmentNotLocked(
+    shipmentCode: string,
+    scanType: ScanType,
+    note?: string | null,
+  ): Promise<void> {
     const shipmentServiceUrl =
       process.env.SHIPMENT_SERVICE_URL ?? 'http://localhost:3002';
     const response = await fetch(
@@ -210,7 +241,7 @@ export class ScansService {
       currentStatus?: string;
     };
 
-    if (shipment.isLocked) {
+    if (shipment.isLocked && !isInventoryCheckScan(scanType, note)) {
       throw new BadRequestException(
         `Block: Shipment "${shipmentCode}" is locked by issue workflow (${shipment.currentStatus ?? 'UNKNOWN'}).`,
       );
@@ -278,4 +309,19 @@ export class ScansService {
       },
     };
   }
+}
+
+function isInventoryCheckScan(
+  scanType: ScanType,
+  note?: string | null,
+): boolean {
+  if (scanType !== 'INBOUND' || typeof note !== 'string') {
+    return false;
+  }
+
+  const trimmedNote = note.trim();
+  return (
+    trimmedNote.startsWith('INVENTORY_CHECK') ||
+    trimmedNote.startsWith('Kiểm tồn kho')
+  );
 }

@@ -10,6 +10,10 @@ import { Zone, ZoneWriteInput } from '../../domain/entities/zone.entity';
 import { ZoneRepository } from '../../domain/repositories/zone.repository';
 import { MasterdataOutboxService } from '../../messaging/outbox/masterdata-outbox.service';
 import {
+  AdminAuditService,
+  type AdminAuditContext,
+} from './admin-audit.service';
+import {
   normalizeCodeQuery,
   normalizeOptionalCode,
   normalizeRequiredCode,
@@ -32,6 +36,7 @@ export class ZonesService {
     @Inject(ZoneRepository)
     private readonly zoneRepository: ZoneRepository,
     private readonly masterdataOutboxService: MasterdataOutboxService,
+    private readonly adminAuditService: AdminAuditService,
   ) {}
 
   list(query: ListZonesQuery = {}): Promise<Zone[]> {
@@ -54,7 +59,10 @@ export class ZonesService {
     return zone;
   }
 
-  async create(input: ZoneWriteInput): Promise<Zone> {
+  async create(
+    input: ZoneWriteInput,
+    auditContext?: AdminAuditContext,
+  ): Promise<Zone> {
     const normalizedInput = this.normalizeCreateInput(input);
     const existingZone = await this.zoneRepository.findByCode(normalizedInput.code);
 
@@ -81,10 +89,23 @@ export class ZonesService {
       },
     );
 
+    await this.adminAuditService.record({
+      context: auditContext,
+      action: 'ZONE_CREATED',
+      targetType: 'ZONE',
+      targetId: zone.id,
+      before: null,
+      after: zone,
+    });
+
     return zone;
   }
 
-  async update(id: string, input: Partial<ZoneWriteInput>): Promise<Zone> {
+  async update(
+    id: string,
+    input: Partial<ZoneWriteInput>,
+    auditContext?: AdminAuditContext,
+  ): Promise<Zone> {
     const currentZone = await this.getById(id);
     const normalizedInput = this.normalizeUpdateInput(input);
 
@@ -121,7 +142,53 @@ export class ZonesService {
       },
     );
 
+    await this.adminAuditService.record({
+      context: auditContext,
+      action:
+        currentZone.isActive !== zone.isActive && zone.isActive === false
+          ? 'ZONE_DISABLED'
+          : 'ZONE_UPDATED',
+      targetType: 'ZONE',
+      targetId: zone.id,
+      before: currentZone,
+      after: zone,
+    });
+
     return zone;
+  }
+
+  async remove(
+    id: string,
+    auditContext?: AdminAuditContext,
+  ): Promise<{ deleted: boolean; zoneId: string | null }> {
+    const zone = await this.getById(id);
+    const deleted = await this.zoneRepository.delete(id);
+
+    if (deleted) {
+      await this.masterdataOutboxService.enqueueMasterdataUpdated(
+        'zone',
+        zone.id,
+        {
+          action: 'deleted',
+          entity: 'zone',
+          record: zone,
+        },
+      );
+
+      await this.adminAuditService.record({
+        context: auditContext,
+        action: 'ZONE_DELETED',
+        targetType: 'ZONE',
+        targetId: zone.id,
+        before: zone,
+        after: null,
+      });
+    }
+
+    return {
+      deleted,
+      zoneId: deleted ? zone.id : null,
+    };
   }
 
   private normalizeCreateInput(input: ZoneWriteInput): ZoneWriteInput {

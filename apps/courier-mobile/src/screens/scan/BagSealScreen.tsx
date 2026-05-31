@@ -45,6 +45,8 @@ const BAG_BLOCKED_STATUSES = new Set([
   'NDR_CREATED',
   'RETURN_STARTED',
   'RETURN_COMPLETED',
+  'OUT_FOR_DELIVERY',
+  'DELIVERING',
 ]);
 
 function normalizeCode(value: string): string {
@@ -178,6 +180,7 @@ function validateShipmentForBagSeal(
     assignedHubCodes: string[];
     assignedPickupTasks: TaskDto[];
     currentLocation: CurrentLocationDto | null;
+    shipmentTasks?: TaskDto[];
   },
 ): string | null {
   const shipmentCode = normalizeCode(shipment.code);
@@ -188,7 +191,23 @@ function validateShipmentForBagSeal(
   }
 
   if (BAG_BLOCKED_STATUSES.has(status)) {
+    if (status === 'DELIVERED') {
+      return `Đơn ${shipmentCode} đã ký nhận, không thể đóng bao.`;
+    }
+    if (status === 'OUT_FOR_DELIVERY' || status === 'DELIVERING') {
+      return `Đơn ${shipmentCode} đang phát hàng, không thể đóng bao.`;
+    }
     return `Đơn ${shipmentCode} đã qua trạng thái đóng bao/xử lý sau đó (${shipment.currentStatus}).`;
+  }
+
+  const hasActiveDeliveryTask = input.shipmentTasks?.some(
+    (task) =>
+      task.taskType === 'DELIVERY' &&
+      (task.status === 'CREATED' || task.status === 'ASSIGNED'),
+  );
+
+  if (hasActiveDeliveryTask) {
+    return `Đơn ${shipmentCode} đang phát hàng, không thể đóng bao.`;
   }
 
   const isAtHub =
@@ -203,9 +222,10 @@ function validateShipmentForBagSeal(
 
   if (
     input.currentLocation?.lastScanType &&
-    input.currentLocation.lastScanType !== 'PICKUP'
+    input.currentLocation.lastScanType !== 'PICKUP' &&
+    input.currentLocation.lastScanType !== 'INBOUND'
   ) {
-    return `Đơn ${shipmentCode} không còn ở trạng thái nhận hàng tại bưu cục.`;
+    return `Đơn ${shipmentCode} không còn ở trạng thái nhận hàng/hàng đến tại bưu cục.`;
   }
 
   const currentHubCode = normalizeOptionalCode(input.currentLocation?.locationCode);
@@ -282,19 +302,6 @@ export function BagSealScreen(): React.JSX.Element {
     }, 850);
   }, []);
 
-  const resolveBagManifest = (
-    manifests: BagManifestDto[],
-    sealedBagCode: string,
-  ): BagManifestDto | null => {
-    const normalizedCode = normalizeCode(sealedBagCode);
-
-    return (
-      manifests.find(
-        (manifest) => normalizeCode(manifest.manifestCode) === normalizedCode,
-      ) ?? null
-    );
-  };
-
   const verifyAndAppendShipmentCode = React.useCallback(
     async (rawCode: string) => {
       if (!accessToken) {
@@ -322,8 +329,11 @@ export function BagSealScreen(): React.JSX.Element {
       setScreenMessage(`Đang kiểm tra ${normalizedCode}...`);
 
       try {
-        const shipment = await shipmentApi.getShipmentDetail(accessToken, normalizedCode);
-        const currentLocation = await getCurrentLocationOrNull(accessToken, normalizedCode);
+        const [shipment, currentLocation, shipmentTasks] = await Promise.all([
+          shipmentApi.getShipmentDetail(accessToken, normalizedCode),
+          getCurrentLocationOrNull(accessToken, normalizedCode),
+          tasksApi.listTasks(accessToken, { shipmentCode: normalizedCode }),
+        ]);
         const assignedPickupTasks = isHomePickupShipment(shipment.metadata)
           ? await tasksApi.listAssignedTasks(accessToken, courierId)
           : [];
@@ -331,6 +341,7 @@ export function BagSealScreen(): React.JSX.Element {
           assignedHubCodes,
           assignedPickupTasks,
           currentLocation,
+          shipmentTasks,
         });
 
         if (validationError) {
@@ -439,19 +450,34 @@ export function BagSealScreen(): React.JSX.Element {
       return;
     }
 
+    const shipmentCodes = shipments
+      .map((shipment) => normalizeCode(shipment.code))
+      .filter((shipmentCode) => shipmentCode.length > 0);
+
     setIsSubmitting(true);
     setScreenMessage(null);
 
     try {
-      const manifests = await manifestApi.list(accessToken);
-      const bagManifest = resolveBagManifest(manifests, normalizedBagCode);
-      if (!bagManifest) {
+      const shipmentCodes = shipments.map((shipment) => shipment.code);
+      let bagManifest: BagManifestDto;
+      try {
+        bagManifest = await manifestApi.detailByCode(accessToken, normalizedBagCode);
+      } catch (error) {
+        if (error instanceof ApiClientError && error.status === 404) {
+          setScreenMessage(`Không tìm thấy tem bao ${normalizedBagCode} trên hệ thống.`);
+          return;
+        }
+
+        throw error;
+      }
+
+      if (normalizeCode(bagManifest.manifestCode) !== normalizedBagCode) {
         setScreenMessage(`Không tìm thấy tem bao ${normalizedBagCode} trên hệ thống.`);
         return;
       }
 
-      const hubCode = (session?.user?.hubCodes && session.user.hubCodes.length > 0) 
-        ? session.user.hubCodes[0] 
+      const hubCode = (session?.user?.hubCodes && session.user.hubCodes.length > 0)
+        ? session.user.hubCodes[0]
         : 'SYSTEM';
 
       const note = buildBagSealAuditNote({
@@ -466,7 +492,7 @@ export function BagSealScreen(): React.JSX.Element {
         shipmentCodes,
         note,
       });
-      
+
       await manifestApi.seal(accessToken, bagManifest.id, {
         sealedBy: courierId,
         sealedByName: session?.user?.displayName || session?.user?.username,

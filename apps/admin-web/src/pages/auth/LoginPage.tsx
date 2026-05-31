@@ -1,5 +1,5 @@
-﻿import React from 'react';
-import { useNavigate } from 'react-router-dom';
+﻿import React, { useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { useLoginMutation } from '../../features/auth/auth.api';
 import { hasAdminRole } from '../../features/auth/auth.roles';
@@ -11,11 +11,22 @@ import { LoginForm } from './LoginForm';
 
 export function LoginPage(): React.JSX.Element {
   const navigate = useNavigate();
+  const location = useLocation();
   const loginMutation = useLoginMutation();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const session = useAuthStore((state) => state.session);
+  const status = useAuthStore((state) => state.status);
   const isSubmitting = useAuthStore((state) => state.isSubmitting);
   const authError = useAuthStore((state) => state.authError);
   const clearAuthError = useAuthStore((state) => state.clearAuthError);
   const setAuthError = useAuthStore((state) => state.setAuthError);
+  const redirectTo = getRedirectPath(location.state);
+
+  useEffect(() => {
+    if (isAuthenticated && hasAdminRole(session)) {
+      navigate(redirectTo, { replace: true });
+    }
+  }, [isAuthenticated, navigate, redirectTo, session]);
 
   const onSubmit = async (values: LoginFormValues) => {
     clearAuthError();
@@ -25,22 +36,26 @@ export function LoginPage(): React.JSX.Element {
 
       if (!hasAdminRole(session)) {
         await clearAuthSession();
-        setAuthError('Tài khoản phai co vai tro SYSTEM_ADMIN.');
+        setAuthError('Tài khoản phải có vai trò SYSTEM_ADMIN.');
         return;
       }
 
-      navigate(routePaths.masterdataHubs, { replace: true });
+      navigate(redirectTo, { replace: true });
     } catch {
       // Error message is mapped into auth store by useLoginMutation.
     }
   };
 
+  if (status === 'restoring') {
+    return <div className="admin-route-loading">Đang khôi phục phiên đăng nhập...</div>;
+  }
+
   return (
     <div className="auth-page auth-page-admin">
       <div className="auth-card">
-        <p className="auth-kicker">Cong Admin</p>
-        <h2 className="auth-title">Đăng nhập He Thong Quan Tri</h2>
-        <p className="auth-subtitle">Quan ly RBAC, hub, zone, ly do NDR va cau hinh dung chung.</p>
+        <p className="auth-kicker">Cổng Admin</p>
+        <h2 className="auth-title">Đăng nhập Hệ Thống Quản Trị</h2>
+        <p className="auth-subtitle">Quản lý RBAC, hub, zone, lý do NDR và cấu hình dùng chung.</p>
         <LoginForm
           isSubmitting={isSubmitting || loginMutation.isPending}
           errorMessage={authError}
@@ -52,3 +67,23 @@ export function LoginPage(): React.JSX.Element {
   );
 }
 
+function getRedirectPath(state: unknown): string {
+  if (
+    state !== null &&
+    typeof state === 'object' &&
+    'from' in state &&
+    state.from !== null &&
+    typeof state.from === 'object' &&
+    'pathname' in state.from &&
+    typeof state.from.pathname === 'string' &&
+    state.from.pathname.startsWith('/app')
+  ) {
+    const search =
+      'search' in state.from && typeof state.from.search === 'string'
+        ? state.from.search
+        : '';
+    return `${state.from.pathname}${search}`;
+  }
+
+  return routePaths.masterdataHubs;
+}

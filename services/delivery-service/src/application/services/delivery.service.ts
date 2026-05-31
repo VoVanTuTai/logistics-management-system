@@ -140,7 +140,7 @@ export class DeliveryService {
       otpRecord,
     };
 
-    await this.deliveryOutboxService.enqueueDeliveryDelivered(deliveryAttempt);
+    await this.deliveryOutboxService.enqueueDeliveryDelivered(deliveryAttempt, pod);
 
     await this.idempotencyRecordRepository.createIfAbsent({
       idempotencyKey: scopedIdempotencyKey,
@@ -174,6 +174,7 @@ export class DeliveryService {
 
     let ndrCase: NdrCase | null = null;
     let returnCase: ReturnCase | null = null;
+    let returnCaseWasCreated = false;
 
     if (input.createNdr !== false) {
       ndrCase = await this.ndrCaseRepository.create({
@@ -185,11 +186,18 @@ export class DeliveryService {
     }
 
     if (input.startReturn) {
-      returnCase = await this.returnCaseRepository.create({
-        shipmentCode: input.shipmentCode,
-        ndrCaseId: ndrCase?.id ?? null,
-        note: input.note ?? null,
-      });
+      const existingReturnCase = ndrCase
+        ? await this.returnCaseRepository.findByNdrCaseId(ndrCase.id)
+        : await this.returnCaseRepository.findByShipmentCode(input.shipmentCode);
+
+      returnCase =
+        existingReturnCase ??
+        (await this.returnCaseRepository.create({
+          shipmentCode: input.shipmentCode,
+          ndrCaseId: ndrCase?.id ?? null,
+          note: input.note ?? null,
+        }));
+      returnCaseWasCreated = !existingReturnCase;
     }
 
     const result: DeliveryFailResult = {
@@ -205,7 +213,7 @@ export class DeliveryService {
       await this.deliveryOutboxService.enqueueNdrCreated(ndrCase);
     }
 
-    if (returnCase) {
+    if (returnCase && returnCaseWasCreated) {
       await this.deliveryOutboxService.enqueueReturnStarted(returnCase);
     }
 

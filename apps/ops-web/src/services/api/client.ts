@@ -1,5 +1,9 @@
 import type { RequestOptions } from './types';
 import { ApiClientError } from './errors';
+import {
+  getValidAccessToken,
+  refreshAuthSession,
+} from '../../features/auth/auth.session';
 import { appEnv } from '../../utils/env';
 
 export class OpsApiClient {
@@ -8,31 +12,30 @@ export class OpsApiClient {
     const timeoutId = setTimeout(() => controller.abort(), appEnv.requestTimeoutMs);
 
     try {
-      const response = await fetch(`${appEnv.gatewayBaseUrl}${path}`, {
-        method: options.method ?? 'GET',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-          ...(options.accessToken
-            ? { Authorization: `Bearer ${options.accessToken}` }
-            : {}),
-        },
-        body: options.body === undefined ? undefined : JSON.stringify(options.body),
-        signal: options.signal ?? controller.signal,
-      });
+      const preparedOptions = await this.prepareAuthOptions(options);
+      const response = await this.fetch(path, preparedOptions, controller);
+      const parsedResponse = await this.parseResponse(response);
 
-      const text = await response.text();
-      const payload = text.length > 0 ? safeParseJson(text) : null;
+      if (
+        parsedResponse.response.status === 401 &&
+        preparedOptions.accessToken &&
+        !preparedOptions.skipAuthRefresh
+      ) {
+        const refreshedSession = await refreshAuthSession();
+        const retryResponse = await this.fetch(
+          path,
+          {
+            ...preparedOptions,
+            accessToken: refreshedSession.tokens.accessToken,
+          },
+          controller,
+        );
+        const parsedRetryResponse = await this.parseResponse(retryResponse);
 
-      if (!response.ok) {
-        throw new ApiClientError({
-          message: extractErrorMessage(payload, response.status),
-          status: response.status,
-          payload: payload as Record<string, unknown> | null,
-        });
+        return this.resolveParsedResponse<T>(parsedRetryResponse);
       }
 
-      return payload as T;
+      return this.resolveParsedResponse<T>(parsedResponse);
     } catch (error) {
       if (error instanceof ApiClientError) {
         throw error;
@@ -45,6 +48,70 @@ export class OpsApiClient {
     } finally {
       clearTimeout(timeoutId);
     }
+  }
+
+  private async prepareAuthOptions(
+    options: RequestOptions,
+  ): Promise<RequestOptions> {
+    if (!options.accessToken || options.skipAuthRefresh) {
+      return options;
+    }
+
+    const accessToken = await getValidAccessToken(options.accessToken);
+    return {
+      ...options,
+      accessToken,
+    };
+  }
+
+  private async fetch(
+    path: string,
+    options: RequestOptions,
+    controller: AbortController,
+  ): Promise<Response> {
+    return fetch(`${appEnv.gatewayBaseUrl}${path}`, {
+      method: options.method ?? 'GET',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        ...(options.accessToken
+          ? { Authorization: `Bearer ${options.accessToken}` }
+          : {}),
+      },
+      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      signal: options.signal ?? controller.signal,
+    });
+  }
+
+  private async parseResponse(response: Response): Promise<{
+    response: Response;
+    payload: unknown;
+  }> {
+    const text = await response.text();
+    const payload = text.length > 0 ? safeParseJson(text) : null;
+
+    return {
+      response,
+      payload,
+    };
+  }
+
+  private resolveParsedResponse<T>(parsedResponse: {
+    response: Response;
+    payload: unknown;
+  }): T {
+    if (!parsedResponse.response.ok) {
+      throw new ApiClientError({
+        message: extractErrorMessage(
+          parsedResponse.payload,
+          parsedResponse.response.status,
+        ),
+        status: parsedResponse.response.status,
+        payload: parsedResponse.payload as Record<string, unknown> | null,
+      });
+    }
+
+    return parsedResponse.payload as T;
   }
 }
 

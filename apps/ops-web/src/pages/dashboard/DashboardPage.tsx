@@ -1,77 +1,12 @@
-import { useQuery } from '@tanstack/react-query';
 import React, { useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
-import {
-  useDashboardDailyMetricsQuery,
-  useDashboardKpisQuery,
-  useDashboardMonthlyMetricsQuery,
-} from '../../features/dashboard/dashboard.api';
-import type { DashboardFilters } from '../../features/dashboard/dashboard.types';
-import { authClient } from '../../features/auth/auth.client';
-import type { OpsUserDto } from '../../features/auth/auth.types';
 import { useHubsQuery } from '../../features/masterdata/masterdata.api';
 import { routePaths } from '../../navigation/routes';
-import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
-import { formatUserStatusLabel } from '../../utils/logisticsLabels';
-import { DashboardFiltersForm } from './DashboardFiltersForm';
-import { DashboardMetricsTable } from './DashboardMetricsTable';
-import { KpiCards } from './KpiCards';
-import { DashboardBarChart } from './charts/DashboardBarChart';
-import { DashboardTrendChart } from './charts/DashboardTrendChart';
-import { DashboardPieChart } from './charts/DashboardPieChart';
-import { DashboardProgressChart } from './charts/DashboardProgressChart';
+import { appEnv } from '../../utils/env';
+import { AnalyticsDashboardPage } from './analytics/AnalyticsDashboardPage';
 import './DashboardPage.css';
-
-interface HubAddressPayload {
-  addressLine: string;
-  district: string;
-  province: string;
-  workingRadiusKm: string;
-  serviceAreas: string[];
-}
-
-function parseHubAddress(address: string | null): HubAddressPayload {
-  if (!address) {
-    return {
-      addressLine: '',
-      district: '',
-      province: '',
-      workingRadiusKm: '',
-      serviceAreas: [],
-    };
-  }
-
-  try {
-    const parsed = JSON.parse(address) as Record<string, unknown>;
-    return {
-      addressLine: typeof parsed.addressLine === 'string' ? parsed.addressLine : '',
-      district: typeof parsed.district === 'string' ? parsed.district : '',
-      province: typeof parsed.province === 'string' ? parsed.province : '',
-      workingRadiusKm:
-        typeof parsed.workingRadiusKm === 'string' ? parsed.workingRadiusKm : '',
-      serviceAreas: Array.isArray(parsed.serviceAreas)
-        ? parsed.serviceAreas
-            .filter((item): item is string => typeof item === 'string')
-            .map((item) => item.trim())
-            .filter((item) => item.length > 0)
-        : [],
-    };
-  } catch {
-    const segments = address
-      .split(',')
-      .map((item) => item.trim())
-      .filter((item) => item.length > 0);
-    return {
-      addressLine: segments.slice(0, -2).join(', '),
-      district: segments.length >= 2 ? segments[segments.length - 2] : '',
-      province: segments.length >= 1 ? segments[segments.length - 1] : '',
-      workingRadiusKm: '',
-      serviceAreas: [],
-    };
-  }
-}
 
 function normalizeCode(value: string): string {
   return value.trim().toUpperCase();
@@ -115,9 +50,9 @@ function DashboardMenuOutlineIcon({
   };
   const accentStrokeProps = {
     ...outlineProps,
-    stroke: 'var(--ops-menu-accent, #2563eb)',
+    stroke: 'var(--ops-menu-accent, var(--ops-primary))',
   };
-  const accentFill = 'var(--ops-menu-accent, #2563eb)';
+  const accentFill = 'var(--ops-menu-accent, var(--ops-primary))';
 
   switch (icon) {
     case 'basic_data':
@@ -238,78 +173,17 @@ function DashboardMenuOutlineIcon({
 }
 
 export function DashboardPage(): React.JSX.Element {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [shipperSearch, setShipperSearch] = useState('');
   const session = useAuthStore((state) => state.session);
   const accessToken = session?.tokens.accessToken ?? null;
   const currentRoles = session?.user.roles ?? [];
   const assignedHubCodes = dedupeCodes(session?.user.hubCodes ?? []);
   const canViewAllHubData = currentRoles.includes('SYSTEM_ADMIN');
-  const rawFilters: DashboardFilters = {
-    date: searchParams.get('date') ?? undefined,
-    hubCode: searchParams.get('hubCode') ?? undefined,
-    zoneCode: searchParams.get('zoneCode') ?? undefined,
-    courierId: searchParams.get('courierId') ?? undefined,
-  };
 
   const effectiveHubCode = useMemo(() => {
-    const requestedHubCode = rawFilters.hubCode
-      ? normalizeCode(rawFilters.hubCode)
-      : '';
-
-    if (canViewAllHubData) {
-      return requestedHubCode || undefined;
-    }
-
-    if (assignedHubCodes.length === 0) {
-      return undefined;
-    }
-
-    if (!requestedHubCode || !assignedHubCodes.includes(requestedHubCode)) {
-      return assignedHubCodes[0];
-    }
-
-    return requestedHubCode;
-  }, [assignedHubCodes, canViewAllHubData, rawFilters.hubCode]);
-
-  const effectiveFilters: DashboardFilters = useMemo(
-    () => ({
-      date: rawFilters.date,
-      hubCode: effectiveHubCode,
-      zoneCode: rawFilters.zoneCode,
-      courierId: rawFilters.courierId,
-    }),
-    [effectiveHubCode, rawFilters.courierId, rawFilters.date, rawFilters.zoneCode],
-  );
+    return assignedHubCodes[0] ?? undefined;
+  }, [assignedHubCodes]);
 
   const hubsQuery = useHubsQuery(accessToken, {});
-  const kpiQuery = useDashboardKpisQuery(accessToken, effectiveFilters);
-  const dailyMetricsQuery = useDashboardDailyMetricsQuery(accessToken, effectiveFilters);
-  const monthlyMetricsQuery = useDashboardMonthlyMetricsQuery(accessToken, effectiveFilters);
-  const shipperQuery = useQuery({
-    queryKey: [
-      'dashboard',
-      'shippers',
-      effectiveHubCode ?? '',
-      shipperSearch.trim().toLowerCase(),
-    ],
-    queryFn: () =>
-      authClient.listUsers(accessToken, {
-        roleGroup: 'SHIPPER',
-        hubCode: effectiveHubCode,
-        q: shipperSearch.trim() || undefined,
-      }),
-    enabled: Boolean(accessToken && effectiveHubCode),
-  });
-
-  const hubOptions = useMemo(() => {
-    if (!canViewAllHubData) {
-      return assignedHubCodes;
-    }
-
-    const fromMasterData = (hubsQuery.data ?? []).map((hub) => normalizeCode(hub.code));
-    return dedupeCodes(fromMasterData);
-  }, [assignedHubCodes, canViewAllHubData, hubsQuery.data]);
 
   const scopedHubs = useMemo(() => {
     if (canViewAllHubData) {
@@ -337,136 +211,63 @@ export function DashboardPage(): React.JSX.Element {
     );
   }, [effectiveHubCode, scopedHubs]);
 
-  const currentHubAddress = parseHubAddress(currentHub?.address ?? null);
-  const currentHubAddressText = [
-    currentHubAddress.addressLine,
-    currentHubAddress.district,
-    currentHubAddress.province,
-  ]
-    .map((item) => item.trim())
-    .filter((item) => item.length > 0)
-    .join(', ');
-  const currentHubScopeText = [
-    currentHubAddress.workingRadiusKm
-      ? `Bán kính ${currentHubAddress.workingRadiusKm.trim()} km`
-      : '',
-    currentHubAddress.serviceAreas.join(', '),
-  ]
-    .map((item) => item.trim())
-    .filter((item) => item.length > 0)
-    .join(' | ');
-
-  const onApplyFilters = (nextFilters: DashboardFilters) => {
-    const next = new URLSearchParams();
-    const normalizedHubCode = nextFilters.hubCode
-      ? normalizeCode(nextFilters.hubCode)
-      : '';
-    const resolvedHubCode = canViewAllHubData
-      ? normalizedHubCode
-      : assignedHubCodes.includes(normalizedHubCode)
-      ? normalizedHubCode
-      : assignedHubCodes[0] ?? '';
-
-    if (nextFilters.date) {
-      next.set('date', nextFilters.date);
-    }
-
-    if (resolvedHubCode) {
-      next.set('hubCode', resolvedHubCode);
-    }
-
-    if (nextFilters.zoneCode) {
-      next.set('zoneCode', nextFilters.zoneCode);
-    }
-
-    if (nextFilters.courierId) {
-      next.set('courierId', nextFilters.courierId);
-    }
-
-    setSearchParams(next, { replace: true });
-  };
-
-  const onResetFilters = () => {
-    const next = new URLSearchParams();
-    if (!canViewAllHubData && assignedHubCodes.length > 0) {
-      next.set('hubCode', assignedHubCodes[0]);
-    }
-    setSearchParams(next, { replace: true });
-  };
-
-  const kpiData = kpiQuery.data ?? null;
-  const kpiEntries = kpiData ? Object.entries(kpiData) : [];
-  const dailyData = dailyMetricsQuery.data ?? [];
-  const monthlyData = monthlyMetricsQuery.data ?? [];
-  const shippers = shipperQuery.data ?? [];
-
-  // Sử dụng dữ liệu thật từ Database (kpiData), mặc định 0
-  const deliveryStatusPoints = [
-    { label: 'deliveriesDelivered', value: Number(kpiData?.deliveriesDelivered) || 0 },
-    { label: 'deliveriesFailed', value: Number(kpiData?.deliveriesFailed) || 0 },
-    { label: 'ndrCreated', value: Number(kpiData?.ndrCreated) || 0 },
-  ].filter((p) => p.value > 0);
-
-  const hubFlowPoints = [
-    { label: 'scansInbound', value: Number(kpiData?.scansInbound) || 0 },
-    { label: 'scansOutbound', value: Number(kpiData?.scansOutbound) || 0 },
-  ];
-
-  const totalAttempts = Number(kpiData?.deliveryAttempts) || 0;
-  const totalDelivered = Number(kpiData?.deliveriesDelivered) || 0;
   const quickMenu: ReadonlyArray<{
     title: string;
     to?: string;
     icon: DashboardMenuIcon;
     disabled?: boolean;
-  }> = [
-    // {
-    //   title: 'Dữ liệu cơ bản',
-    //   to: routePaths.groupBasicData,
-    //   icon: 'basic_data',
-    // },
-    {
-      title: 'Nền tảng điều hành',
-      to: routePaths.groupOperationsPlatform,
-      icon: 'operations_platform',
-    },
-    {
-      title: 'Dịch vụ tích hợp',
-      to: routePaths.groupIntegrationServices,
-      icon: 'integration_services',
-    },
-    {
-      title: 'Nền tảng khách hàng',
-      to: routePaths.groupCustomerPlatform,
-      icon: 'customer_platform',
-    },
-    {
-      title: 'Kinh doanh bưu cục',
-      to: routePaths.groupBranchBusiness,
-      icon: 'branch_business',
-    },
-    {
-      title: 'Quyết toán tài chính',
-      to: routePaths.groupFinanceSettlement,
-      icon: 'finance_settlement',
-    },
-    {
-      title: 'Quản lý vận chuyển',
-      to: routePaths.groupCapabilityPlatform,
-      icon: 'capability_platform',
-    },
-    {
-      title: 'Chỉ số vận hành',
-      to: routePaths.groupOperationsMetrics,
-      icon: 'operations_metrics',
-    },
-    {
-      title: 'Chất lượng dịch vụ',
-      to: routePaths.groupServiceQuality,
-      icon: 'service_quality',
-    },
-    // Tạm ẩn theo yêu cầu: Cơ sở dữ liệu, Thiết bị thông minh, Nền tảng quy hoạch.
-  ];
+    featured?: boolean;
+  }> = appEnv.enableFullOpsModules
+    ? [
+        {
+          title: 'Nền tảng điều hành',
+          to: routePaths.groupOperationsPlatform,
+          icon: 'operations_platform',
+          featured: true,
+        },
+        {
+          title: 'Kinh doanh bưu cục',
+          to: routePaths.groupBranchBusiness,
+          icon: 'branch_business',
+        },
+        {
+          title: 'Vận chuyển tuyến',
+          to: routePaths.groupCapabilityPlatform,
+          icon: 'capability_platform',
+        },
+        {
+          title: 'Chỉ số vận hành',
+          to: routePaths.groupOperationsMetrics,
+          icon: 'operations_metrics',
+        },
+        {
+          title: 'Chất lượng dịch vụ',
+          to: routePaths.groupServiceQuality,
+          icon: 'service_quality',
+        },
+      ]
+    : [
+        {
+          title: 'Vận đơn',
+          to: routePaths.shipments,
+          icon: 'branch_business',
+        },
+        {
+          title: 'Điều phối vận đơn',
+          to: routePaths.operationsPlatformPickupDispatch,
+          icon: 'operations_platform',
+        },
+        {
+          title: 'Quản lý tem bao',
+          to: routePaths.linehaulBagLabelManagement,
+          icon: 'integration_services',
+        },
+        {
+          title: 'Tra cứu hành trình',
+          to: routePaths.tracking,
+          icon: 'operations_metrics',
+        },
+      ];
   const notices = [
     {
       id: 'notice-1',
@@ -578,7 +379,13 @@ export function DashboardPage(): React.JSX.Element {
           <header className="ops-dashboard__section-header">
             <h3>Menu chính</h3>
           </header>
-          <div className="ops-menu-grid">
+          <div
+            className={
+              quickMenu.some((item) => item.featured)
+                ? 'ops-menu-grid ops-menu-grid--featured-layout'
+                : 'ops-menu-grid'
+            }
+          >
             {quickMenu.map((item) => {
               const iconNode = (
                 <span className="ops-menu-tile__icon">
@@ -586,11 +393,15 @@ export function DashboardPage(): React.JSX.Element {
                 </span>
               );
 
+              const tileClassName = item.featured
+                ? 'ops-menu-tile ops-menu-tile--featured'
+                : 'ops-menu-tile';
+
               if (item.disabled || !item.to) {
                 return (
                   <div
                     key={item.title}
-                    className="ops-menu-tile ops-menu-tile--disabled"
+                    className={`${tileClassName} ops-menu-tile--disabled`}
                     aria-disabled="true"
                   >
                     {iconNode}
@@ -600,7 +411,7 @@ export function DashboardPage(): React.JSX.Element {
               }
 
               return (
-                <Link key={item.title} to={item.to} className="ops-menu-tile">
+                <Link key={item.title} to={item.to} className={tileClassName}>
                   {iconNode}
                   <strong>{item.title}</strong>
                 </Link>
@@ -613,9 +424,6 @@ export function DashboardPage(): React.JSX.Element {
           <article className="ops-card">
             <header className="ops-card__header">
               <h3>Thông báo</h3>
-              <Link to={routePaths.ndr} className="ops-card__header-link">
-                Xem tất cả &gt;
-              </Link>
             </header>
             <ul className="ops-notification-list">
               {notices.map((item) => (
@@ -635,199 +443,8 @@ export function DashboardPage(): React.JSX.Element {
         </aside>
       </section>
 
-      <section className="ops-dashboard__content">
-        <div className="ops-dashboard__main">
-          <article className="ops-card">
-            <header className="ops-card__header">
-              <h3>Bộ lọc báo cáo</h3>
-            </header>
-            <p className="ops-dashboard__subtitle">
-              Dữ liệu báo cáo luôn được giới hạn theo hub của tài khoản điều hành.
-            </p>
-            <DashboardFiltersForm
-              filters={effectiveFilters}
-              onApply={onApplyFilters}
-              onReset={onResetFilters}
-              hubOptions={hubOptions}
-              lockHubCode={!canViewAllHubData && assignedHubCodes.length <= 1}
-            />
-          </article>
-
-          <article className="ops-card">
-            <header className="ops-card__header">
-              <h3>Hub đang quản lý</h3>
-            </header>
-            {hubsQuery.isLoading ? <p className="ops-state">Đang tải thông tin hub...</p> : null}
-            {hubsQuery.isError ? (
-              <p className="ops-state ops-state--error">{getErrorMessage(hubsQuery.error)}</p>
-            ) : null}
-            {hubsQuery.isSuccess && !currentHub ? (
-              <p className="ops-state">
-                Tài khoản chưa được gán hub. Vui lòng gán hub trong trang quản trị.
-              </p>
-            ) : null}
-            {currentHub ? (
-              <div className="ops-hub-card">
-                <div>
-                  <small>Mã hub</small>
-                  <strong>{currentHub.code}</strong>
-                </div>
-                <div>
-                  <small>Tên hub</small>
-                  <strong>{currentHub.name}</strong>
-                </div>
-                <div>
-                  <small>Khu vực</small>
-                  <strong>{currentHub.zoneCode ?? 'Không có'}</strong>
-                </div>
-                <div>
-                  <small>Địa chỉ</small>
-                  <strong>{currentHubAddressText || 'Không có'}</strong>
-                </div>
-                <div>
-                  <small>Phạm vi phục vụ</small>
-                  <strong>{currentHubScopeText || 'Không có'}</strong>
-                </div>
-              </div>
-            ) : null}
-          </article>
-
-          <article className="ops-card">
-            <header className="ops-card__header">
-              <h3>Danh sách nhân viên giao theo hub</h3>
-            </header>
-            <div className="ops-shipper-tools">
-              <input
-                placeholder="Tìm tên đăng nhập / tên hiển thị / số điện thoại"
-                value={shipperSearch}
-                onChange={(event) => setShipperSearch(event.target.value)}
-              />
-            </div>
-            {!effectiveHubCode ? (
-              <p className="ops-state">Tài khoản chưa được gán hub, nên chưa thể tải danh sách nhân viên giao.
-              </p>
-            ) : null}
-            {shipperQuery.isLoading ? <p className="ops-state">Đang tải danh sách nhân viên giao...</p> : null}
-            {shipperQuery.isError ? (
-              <p className="ops-state ops-state--error">{getErrorMessage(shipperQuery.error)}</p>
-            ) : null}
-            {shipperQuery.isSuccess && shippers.length === 0 ? (
-              <p className="ops-state">Không có nhân viên giao nào thuộc hub hiện tại.</p>
-            ) : null}
-            {shippers.length > 0 ? (
-              <table className="ops-shipper-table">
-                <thead>
-                  <tr>
-                    <th>Tên đăng nhập</th>
-                    <th>Tên hiển thị</th>
-                    <th>Số điện thoại</th>
-                    <th>Trạng thái</th>
-                    <th>Danh sách hub</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {shippers.map((shipper: OpsUserDto) => (
-                    <tr key={shipper.id}>
-                      <td>{shipper.username}</td>
-                      <td>{shipper.displayName ?? '-'}</td>
-                      <td>{shipper.phone ?? '-'}</td>
-                      <td>{formatUserStatusLabel(shipper.status)}</td>
-                      <td>{shipper.hubCodes.join(', ') || '-'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : null}
-          </article>
-
-          <article className="ops-card">
-            <header className="ops-card__header">
-              <h3>Bộ KPI</h3>
-            </header>
-            {kpiQuery.isLoading ? <p className="ops-state">Đang tải KPI...</p> : null}
-            {kpiQuery.isError ? (
-              <p className="ops-state ops-state--error">{getErrorMessage(kpiQuery.error)}</p>
-            ) : null}
-            {kpiQuery.isSuccess && kpiEntries.length === 0 ? (
-              <p className="ops-state">Không có dữ liệu KPI.</p>
-            ) : null}
-            {kpiEntries.length > 0 ? <KpiCards kpis={kpiData ?? {}} /> : null}
-          </article>
-
-          <section className="ops-dashboard__metric-block">
-            <header className="ops-card__header">
-              <h3>Chỉ số theo ngày</h3>
-            </header>
-            {dailyMetricsQuery.isLoading ? (
-              <p className="ops-state">Đang tải chỉ số ngày...</p>
-            ) : null}
-            {dailyMetricsQuery.isError ? (
-              <p className="ops-state ops-state--error">
-                {getErrorMessage(dailyMetricsQuery.error)}
-              </p>
-            ) : null}
-            {dailyMetricsQuery.isSuccess && dailyData.length === 0 ? (
-              <p className="ops-state">Không có chỉ số ngày.</p>
-            ) : null}
-            {dailyData.length > 0 ? (
-              <div className="ops-dashboard__metrics-grid">
-                <DashboardBarChart title="Biểu đồ chỉ số ngày" points={dailyData} />
-                <DashboardMetricsTable title="Bảng chỉ số ngày" rows={dailyData} />
-              </div>
-            ) : null}
-          </section>
-
-          <section className="ops-dashboard__metric-block">
-            <header className="ops-card__header">
-              <h3>Chỉ số theo tháng</h3>
-            </header>
-            {monthlyMetricsQuery.isLoading ? (
-              <p className="ops-state">Đang tải chỉ số tháng...</p>
-            ) : null}
-            {monthlyMetricsQuery.isError ? (
-              <p className="ops-state ops-state--error">
-                {getErrorMessage(monthlyMetricsQuery.error)}
-              </p>
-            ) : null}
-            {monthlyMetricsQuery.isSuccess && monthlyData.length === 0 ? (
-              <p className="ops-state">Không có chỉ số theo tháng.</p>
-            ) : null}
-            {monthlyData.length > 0 ? (
-              <div className="ops-dashboard__metrics-grid">
-                <DashboardTrendChart title="Biểu đồ chỉ số tháng" points={monthlyData} />
-                <DashboardMetricsTable title="Bảng chỉ số tháng" rows={monthlyData} />
-              </div>
-            ) : null}
-          </section>
-
-          <section className="ops-dashboard__metric-block">
-            <header className="ops-card__header">
-              <h3>Giám sát Hiệu suất Giao hàng & Lưu lượng (Real-time)</h3>
-            </header>
-            <div className="ops-dashboard__metrics-grid">
-              <DashboardProgressChart 
-                title="Tỷ lệ Giao thành công / Lượt giao" 
-                value={totalDelivered} 
-                total={totalAttempts} 
-                color="#10b981"
-                suffix="lượt"
-              />
-              <DashboardBarChart 
-                title="Cân bằng Lưu lượng Kho (Inbound vs Outbound)" 
-                points={hubFlowPoints} 
-              />
-            </div>
-            
-            {deliveryStatusPoints.length > 0 ? (
-              <div className="ops-dashboard__metrics-grid" style={{ marginTop: '1.5rem' }}>
-                <DashboardPieChart 
-                  title="Phân bổ Kết quả Giao hàng (Outcomes)" 
-                  points={deliveryStatusPoints} 
-                />
-              </div>
-            ) : null}
-          </section>
-        </div>
+      <section className="ops-dashboard__content ops-dashboard__content--analytics">
+        <AnalyticsDashboardPage />
       </section>
     </div>
   );

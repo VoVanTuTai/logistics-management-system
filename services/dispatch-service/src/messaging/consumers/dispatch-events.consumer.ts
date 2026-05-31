@@ -6,6 +6,7 @@ import {
   DeliveryFailedPayload,
   DispatchEventHandlersService,
   PickupApprovedPayload,
+  ReturnStartedPayload,
 } from '../../application/services/dispatch-event-handlers.service';
 
 export interface DispatchConsumerEnvelope {
@@ -14,7 +15,8 @@ export interface DispatchConsumerEnvelope {
     | 'pickup.requested'
     | 'pickup.approved'
     | 'delivery.delivered'
-    | 'delivery.failed';
+    | 'delivery.failed'
+    | 'return.started';
   shipment_code?: string | null;
   data?: Record<string, unknown>;
 }
@@ -28,6 +30,7 @@ export class DispatchEventsConsumer {
     'pickup.approved',
     'delivery.delivered',
     'delivery.failed',
+    'return.started',
   ];
   readonly retryQueues = ['dispatch-service.retry.10s', 'dispatch-service.retry.1m'];
   readonly deadLetterQueue = 'dispatch-service.dlq';
@@ -61,6 +64,13 @@ export class DispatchEventsConsumer {
     if (payload.event_type === 'delivery.failed') {
       await this.dispatchEventHandlersService.handleDeliveryFailed(
         payload as DeliveryFailedPayload,
+      );
+      return;
+    }
+
+    if (payload.event_type === 'return.started') {
+      await this.dispatchEventHandlersService.handleReturnStarted(
+        payload as ReturnStartedPayload,
       );
       return;
     }

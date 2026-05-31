@@ -12,80 +12,20 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Ionicons } from '@expo/vector-icons';
 
 import { theme } from '../../theme';
 import { HomeHeader } from '../../components/home/HomeHeader';
 import { NotificationBanner } from '../../components/home/NotificationBanner';
 import { QuickStatsRow } from '../../components/home/QuickStatsRow';
 import { OverdueCard } from '../../components/home/OverdueCard';
-import { AppGrid, type HomeAppGridItem } from '../../components/home/AppGrid';
-import { StatusBadge } from '../../components/ui/StatusBadge';
+import { AppGrid } from '../../components/home/AppGrid';
 import type { TaskDto, TaskStatus } from '../../features/tasks/tasks.types';
 import { useAssignedTasksQuery } from '../../features/tasks/tasks.queries';
 import type { AppNavigatorParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
 import { appEnv } from '../../utils/env';
 import { resolveCourierDisplayName, resolveCourierId } from '../../utils/courier';
-
-const appItems: HomeAppGridItem[] = [
-  {
-    id: 'create-order',
-    label: 'Lên đơn',
-    iconName: 'add-circle-outline',
-    iconColor: theme.colors.primary,
-    iconBgColor: theme.colors.infoSurface,
-  },
-  {
-    id: 'scan-history',
-    label: 'Lịch sử quét',
-    iconName: 'scan-outline',
-    iconColor: theme.colors.primary,
-    iconBgColor: theme.colors.infoSurface,
-  },
-  {
-    id: 'cash-stats',
-    label: 'Thống kê tiền hàng',
-    iconName: 'wallet-outline',
-    iconColor: theme.colors.primary,
-    iconBgColor: theme.colors.infoSurface,
-  },
-  {
-    id: 'shipping-fee',
-    label: 'Tính vận phí',
-    iconName: 'calculator-outline',
-    iconColor: theme.colors.primary,
-    iconBgColor: theme.colors.infoSurface,
-  },
-  {
-    id: 'tracking',
-    label: 'Theo dõi đơn',
-    iconName: 'locate-outline',
-    iconColor: theme.colors.primary,
-    iconBgColor: theme.colors.infoSurface,
-  },
-  {
-    id: 'uniform-check',
-    label: 'Kiểm tra đồng phục',
-    iconName: 'shirt-outline',
-    iconColor: theme.colors.primary,
-    iconBgColor: theme.colors.infoSurface,
-  },
-  {
-    id: 'referral',
-    label: 'Giới thiệu khách hàng',
-    iconName: 'people-outline',
-    iconColor: theme.colors.primary,
-    iconBgColor: theme.colors.infoSurface,
-  },
-  {
-    id: 'weight-change',
-    label: 'Đăng ký đổi trọng lượng',
-    iconName: 'barbell-outline',
-    iconColor: theme.colors.primary,
-    iconBgColor: theme.colors.infoSurface,
-  },
-];
+import { getQuickAppItems, navigateToQuickApp } from '../../features/quick-apps/quickApps';
 
 const WAITING_TASK_STATUSES: ReadonlySet<TaskStatus> = new Set(['CREATED', 'ASSIGNED']);
 
@@ -115,6 +55,7 @@ export function HomeScreen(): React.JSX.Element {
   const navigation =
     useNavigation<NativeStackNavigationProp<AppNavigatorParamList>>();
   const session = useAppStore((state) => state.session);
+  const quickAppIds = useAppStore((state) => state.quickAppIds);
   const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
   const tasksQuery = useAssignedTasksQuery({
     accessToken: session?.tokens.accessToken ?? null,
@@ -136,7 +77,7 @@ export function HomeScreen(): React.JSX.Element {
   const pickupCount = waitingPickupTasks.length;
   const deliveryCount = waitingDeliveryTasks.length;
   const processingCount = tasks.filter((task) => task.status === 'ASSIGNED').length;
-  const recentTasks = tasks.slice(0, 3);
+  const quickAppItems = useMemo(() => getQuickAppItems(quickAppIds), [quickAppIds]);
 
   const displayName = resolveCourierDisplayName({
     displayName: session?.user.displayName,
@@ -152,7 +93,7 @@ export function HomeScreen(): React.JSX.Element {
           greeting="Xin chào"
           userName={displayName}
           hubName={hubLabel}
-          onPressQr={() => Alert.alert('QR', 'Mở shortcut QR')}
+          onPressQr={() => navigation.navigate('MainTabs', { screen: 'Scan' })}
           onPressNotification={() => Alert.alert('Thông báo', 'Mở danh sách thông báo')}
         />
 
@@ -166,7 +107,7 @@ export function HomeScreen(): React.JSX.Element {
         >
           <NotificationBanner
             title="Thông báo vận hành"
-            message={`Đã đồng bộ ${tasks.length} nhiệm vụ từ gateway-bff.`}
+            message={`Đã nhận ${tasks.length} nhiệm vụ.`}
             onPress={() => Alert.alert('Thông báo', 'Chi tiết thông báo vận hành')}
           />
 
@@ -192,7 +133,12 @@ export function HomeScreen(): React.JSX.Element {
             title="Đơn đang xử lý"
             overdueCount={processingCount}
             subtitle="Hiển thị số task có trạng thái ASSIGNED theo payload server."
-            onPress={() => Alert.alert('Trạng thái', 'Mở danh sách đơn đang xử lý')}
+            onPress={() =>
+              navigation.navigate('TaskList', {
+                initialTaskType: 'ALL',
+                initialStatus: 'ASSIGNED',
+              })
+            }
           />
 
           {tasksQuery.isLoading ? (
@@ -218,14 +164,10 @@ export function HomeScreen(): React.JSX.Element {
           {/* Ẩn block "nhiệm vụ gần đây" theo yêu cầu */}
 
           <AppGrid
-            items={appItems}
+            title="Ứng dụng tùy chỉnh"
+            items={quickAppItems}
             onPressItem={(item) => {
-              if (item.id === 'tracking') {
-                navigation.navigate('TrackingLookup');
-                return;
-              }
-
-              Alert.alert('Ứng dụng', item.label);
+              navigateToQuickApp(item.id, navigation);
             }}
           />
         </ScrollView>
@@ -363,5 +305,3 @@ const styles = StyleSheet.create({
     borderTopColor: theme.colors.border,
   },
 });
-
-

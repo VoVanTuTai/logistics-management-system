@@ -236,25 +236,92 @@ export function extractTimelineNote(event: TrackingEventEnvelope): string | null
     const employeeName = readNestedString(event.data, ['seal', 'employeeName']) ?? 'N/A';
     const employeeCode = readNestedString(event.data, ['seal', 'employeeCode']) ?? 'N/A';
     const hubCode = readNestedString(event.data, ['seal', 'processingHubCode']) ?? 'N/A';
-    return `${employeeName} - ${employeeCode} - ${hubCode}`;
+    const note = readNestedString(event.data, ['seal', 'note']);
+    return joinTimelineNoteParts([`${employeeName} - ${employeeCode} - ${hubCode}`, note]);
   }
   
   if (event.event_type === 'manifest.received') {
     const employeeName = readNestedString(event.data, ['receive', 'receivedByName']) ?? 'N/A';
     const employeeCode = readNestedString(event.data, ['receive', 'receivedBy']) ?? 'N/A';
     const hubCode = readNestedString(event.data, ['receive', 'processingHubCode']) ?? 'N/A';
-    return `${employeeName} - ${employeeCode} - ${hubCode}`;
+    const note = readNestedString(event.data, ['receive', 'note']);
+    return joinTimelineNoteParts([`${employeeName} - ${employeeCode} - ${hubCode}`, note]);
   }
 
   if (event.event_type === 'manifest.unsealed') {
     const employeeName = readNestedString(event.data, ['unseal', 'unsealedByName']) ?? readNestedString(event.data, ['unseal', 'employeeName']) ?? 'N/A';
     const employeeCode = readNestedString(event.data, ['unseal', 'unsealedBy']) ?? readNestedString(event.data, ['unseal', 'employeeCode']) ?? 'N/A';
     const hubCode = readNestedString(event.data, ['unseal', 'processingHubCode']) ?? 'N/A';
-    return `${employeeName} - ${employeeCode} - ${hubCode}`;
+    const note = readNestedString(event.data, ['unseal', 'note']);
+    return joinTimelineNoteParts([`${employeeName} - ${employeeCode} - ${hubCode}`, note]);
   }
 
   if (event.event_type === 'scan.outbound' || event.event_type === 'scan.inbound' || event.event_type === 'scan.pickup_confirmed') {
     return readNestedString(event.data, ['scanEvent', 'note']);
+  }
+
+  if (event.event_type === 'delivery.delivered') {
+    const deliveryNote = readNestedString(event.data, ['deliveryAttempt', 'note']);
+    const podNote = readNestedString(event.data, ['pod', 'note']);
+    const podImageUrl = readNestedString(event.data, ['pod', 'imageUrl']);
+
+    return joinTimelineNoteParts([
+      deliveryNote,
+      podNote,
+      podImageUrl ? `Minh chứng giao hàng: ${podImageUrl}` : null,
+    ]);
+  }
+
+  if (event.event_type === 'delivery.attempted' || event.event_type === 'delivery.failed') {
+    const deliveryNote = readNestedString(event.data, ['deliveryAttempt', 'note']);
+    if (event.event_type === 'delivery.attempted') {
+      const courierId = readNestedString(event.data, ['deliveryAttempt', 'courierId']);
+      const hubCode = readNestedString(event.data, ['deliveryAttempt', 'locationCode']);
+      let infoParts: string[] = [];
+      if (courierId) infoParts.push(`Courier: ${courierId}`);
+      if (hubCode) infoParts.push(`Hub: ${hubCode}`);
+      const infoText = infoParts.join(' - ');
+      return joinTimelineNoteParts([infoText || null, deliveryNote]);
+    }
+    return deliveryNote;
+  }
+
+  if (event.event_type === 'ndr.created') {
+    const note = readNestedString(event.data, ['ndrCase', 'note']);
+    const attachmentUrls = extractAttachmentUrls(
+      readNestedValue(event.data, ['ndrCase', 'attachments']),
+    );
+
+    return joinTimelineNoteParts([
+      note,
+      attachmentUrls.length > 0 ? `Minh chứng vấn đề: ${attachmentUrls.join(', ')}` : null,
+    ]);
+  }
+
+  if (event.event_type === 'task.assigned') {
+    const taskType = readTaskType(event.data);
+    const taskNote = readNestedString(event.data, ['task', 'note']);
+    if (taskType === 'DELIVERY') {
+      const assignments = readNestedValue(event.data, ['task', 'assignments']);
+      let courierId: string | null = null;
+      if (Array.isArray(assignments) && assignments.length > 0) {
+        const activeAssignment = assignments.find((a: any) => !a.unassignedAt) || assignments[assignments.length - 1];
+        if (activeAssignment && typeof activeAssignment === 'object') {
+          courierId = (activeAssignment as any).courierId || null;
+        }
+      }
+      const hubCode = readNestedString(event.data, ['location', 'locationCode'])
+        ?? readNestedString(event.data, ['location', 'hubCode'])
+        ?? readNestedString(event.data, ['task', 'hubCode'])
+        ?? readNestedString(event.data, ['task', 'hub_code'])
+        ?? null;
+      let infoParts: string[] = [];
+      if (courierId) infoParts.push(`Courier: ${courierId}`);
+      if (hubCode) infoParts.push(`Hub: ${hubCode}`);
+      const infoText = infoParts.join(' - ');
+      return joinTimelineNoteParts([infoText || null, taskNote]);
+    }
+    return taskNote;
   }
 
   return null;
@@ -313,6 +380,12 @@ function isInventoryCheckEvent(event: TrackingEventEnvelope): boolean {
 }
 
 function readNestedString(source: unknown, path: string[]): string | null {
+  const cursor = readNestedValue(source, path);
+
+  return normalizeValue(cursor);
+}
+
+function readNestedValue(source: unknown, path: string[]): unknown {
   let cursor: unknown = source;
 
   for (const segment of path) {
@@ -323,7 +396,42 @@ function readNestedString(source: unknown, path: string[]): string | null {
     cursor = (cursor as Record<string, unknown>)[segment];
   }
 
-  return normalizeValue(cursor);
+  return cursor;
+}
+
+function joinTimelineNoteParts(parts: Array<string | null>): string | null {
+  const uniqueParts = Array.from(
+    new Set(parts.map((part) => normalizeValue(part)).filter(Boolean)),
+  );
+
+  return uniqueParts.length > 0 ? uniqueParts.join(' | ') : null;
+}
+
+function extractAttachmentUrls(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => {
+      if (!item || typeof item !== 'object') {
+        return null;
+      }
+
+      const record = item as Record<string, unknown>;
+      return normalizeUrl(record.url) ?? normalizeUrl(record.uri);
+    })
+    .filter((url): url is string => Boolean(url));
+}
+
+function normalizeUrl(value: unknown): string | null {
+  const normalized = normalizeValue(value);
+
+  if (!normalized || !/^https?:\/\//i.test(normalized)) {
+    return null;
+  }
+
+  return normalized;
 }
 
 function normalizeValue(value: unknown): string | null {

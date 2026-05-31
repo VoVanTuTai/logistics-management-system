@@ -11,6 +11,16 @@ export const manifestApi = {
     courierApiClient.request<BagManifestDto[]>(courierEndpoints.manifest.list, {
       accessToken,
     }),
+  detailByCode: (
+    accessToken: string,
+    manifestCode: string,
+  ): Promise<BagManifestDto> =>
+    courierApiClient.request<BagManifestDto>(
+      courierEndpoints.manifest.detailByCode(manifestCode),
+      {
+        accessToken,
+      },
+    ),
   addShipments: (
     accessToken: string,
     manifestId: string,

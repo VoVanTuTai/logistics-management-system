@@ -2,12 +2,14 @@ import { opsApiClient } from '../../services/api/client';
 import { opsEndpoints } from '../../services/api/endpoints';
 import type {
   ApproveShipmentInput,
+  ConfirmLabelReprintInput,
   CreateShipmentInput,
   ReviewShipmentInput,
   ShipmentActionResultDto,
   ShipmentDetailDto,
   ShipmentListFilters,
   ShipmentListItemDto,
+  ShipmentListPageDto,
   UpdateShipmentInput,
 } from './shipments.types';
 
@@ -16,9 +18,18 @@ interface ShipmentApiResponse {
   code: string;
   currentStatus: string;
   metadata: Record<string, unknown> | null;
+  isLocked?: boolean;
   cancellationReason: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+interface ShipmentListPageApiResponse {
+  items: ShipmentApiResponse[];
+  pageInfo?: {
+    hasNextPage?: boolean;
+    total?: number;
+  };
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -46,6 +57,37 @@ function asNumber(value: unknown): number | null {
   }
 
   return null;
+}
+
+function resolveRequiresLabelReprint(metadata: Record<string, unknown> | null): boolean {
+  const deliveryInfoChange = asRecord(metadata?.deliveryInfoChange);
+
+  return (
+    deliveryInfoChange?.requiresLabelReprint === true ||
+    deliveryInfoChange?.blocksOpsUntilLabelReprint === true
+  );
+}
+
+function resolveLabelReprintReason(metadata: Record<string, unknown> | null): string | null {
+  const deliveryInfoChange = asRecord(metadata?.deliveryInfoChange);
+  const changeRequestId = asString(deliveryInfoChange?.changeRequestId);
+
+  return changeRequestId
+    ? `Đã duyệt đổi thông tin giao hàng từ yêu cầu ${changeRequestId}.`
+    : asString(deliveryInfoChange?.reason);
+}
+
+function resolveOperationLockReason(
+  metadata: Record<string, unknown> | null,
+  isLocked?: boolean,
+): string | null {
+  const returnWorkflow = asRecord(metadata?.returnWorkflow);
+
+  if (returnWorkflow?.blocksOps === true) {
+    return 'Đang chuyển hoàn, chỉ xử lý theo luồng đăng ký/in tem chuyển hoàn.';
+  }
+
+  return isLocked === true ? 'Vận đơn đang bị khóa bởi luồng xử lý ngoại lệ.' : null;
 }
 
 function resolveReceiverRegion(metadata: Record<string, unknown> | null): string | null {
@@ -275,6 +317,7 @@ function resolveShippingFee(metadata: Record<string, unknown> | null): number | 
     asNumber(pricing?.shippingFee) ??
     asNumber(pricing?.deliveryFee) ??
     asNumber(pricing?.estimatedFee) ??
+    asNumber(pricing?.totalFee) ??
     asNumber(pricing?.fee)
   );
 }
@@ -312,8 +355,40 @@ function buildShipmentListPath(filters: ShipmentListFilters): string {
     params.set('q', filters.q.trim());
   }
 
+  if (filters.shipmentCode?.trim()) {
+    params.set('shipmentCode', filters.shipmentCode.trim());
+  }
+
+  if (filters.shipmentCodes?.length) {
+    params.set('shipmentCodes', filters.shipmentCodes.join(','));
+  }
+
   if (filters.status?.trim()) {
     params.set('status', filters.status.trim());
+  }
+
+  if (filters.createdFrom?.trim()) {
+    params.set('createdFrom', filters.createdFrom.trim());
+  }
+
+  if (filters.createdTo?.trim()) {
+    params.set('createdTo', filters.createdTo.trim());
+  }
+
+  if (filters.hubCodes?.length) {
+    params.set('hubCodes', filters.hubCodes.join(','));
+  }
+
+  if (filters.opsArrivedUnsigned === true) {
+    params.set('opsArrivedUnsigned', 'true');
+  }
+
+  if (typeof filters.limit === 'number') {
+    params.set('limit', String(filters.limit));
+  }
+
+  if (typeof filters.offset === 'number') {
+    params.set('offset', String(filters.offset));
   }
 
   const queryString = params.toString();
@@ -348,6 +423,10 @@ function mapShipmentToListItem(payload: ShipmentApiResponse): ShipmentListItemDt
     serviceType: resolveServiceType(metadata),
     codAmount: resolveCodAmount(metadata),
     deliveryNote: resolveDeliveryNote(metadata),
+    requiresLabelReprint: resolveRequiresLabelReprint(metadata),
+    labelReprintReason: resolveLabelReprintReason(metadata),
+    isOperationLocked: Boolean(resolveOperationLockReason(metadata, payload.isLocked)),
+    operationLockReason: resolveOperationLockReason(metadata, payload.isLocked),
     createdAt: payload.createdAt,
     updatedAt: payload.updatedAt,
   };
@@ -381,8 +460,36 @@ function mapShipmentToDetail(payload: ShipmentApiResponse): ShipmentDetailDto {
     serviceType: resolveServiceType(metadata),
     codAmount: resolveCodAmount(metadata),
     note: resolveDeliveryNote(metadata),
+    requiresLabelReprint: resolveRequiresLabelReprint(metadata),
+    labelReprintReason: resolveLabelReprintReason(metadata),
+    isOperationLocked: Boolean(resolveOperationLockReason(metadata, payload.isLocked)),
+    operationLockReason: resolveOperationLockReason(metadata, payload.isLocked),
     createdAt: payload.createdAt,
     updatedAt: payload.updatedAt,
+  };
+}
+
+function normalizeShipmentListPage(
+  payload: ShipmentApiResponse[] | ShipmentListPageApiResponse,
+): ShipmentListPageDto {
+  if (Array.isArray(payload)) {
+    return {
+      items: payload.map(mapShipmentToListItem),
+      pageInfo: {
+        hasNextPage: false,
+        total: payload.length,
+      },
+    };
+  }
+
+  const items = Array.isArray(payload.items) ? payload.items : [];
+
+  return {
+    items: items.map(mapShipmentToListItem),
+    pageInfo: {
+      hasNextPage: Boolean(payload.pageInfo?.hasNextPage),
+      total: payload.pageInfo?.total,
+    },
   };
 }
 
@@ -391,11 +498,16 @@ export const shipmentsClient = {
     accessToken: string | null,
     filters: ShipmentListFilters,
   ): Promise<ShipmentListItemDto[]> =>
+    shipmentsClient.listPage(accessToken, filters).then((page) => page.items),
+  listPage: (
+    accessToken: string | null,
+    filters: ShipmentListFilters,
+  ): Promise<ShipmentListPageDto> =>
     opsApiClient
-      .request<ShipmentApiResponse[]>(buildShipmentListPath(filters), {
+      .request<ShipmentApiResponse[] | ShipmentListPageApiResponse>(buildShipmentListPath(filters), {
         accessToken,
       })
-      .then((items) => items.map(mapShipmentToListItem)),
+      .then(normalizeShipmentListPage),
   detail: (
     accessToken: string | null,
     shipmentId: string,
@@ -427,6 +539,21 @@ export const shipmentsClient = {
         accessToken,
         body: payload,
       })
+      .then(mapShipmentToDetail),
+  confirmLabelReprint: (
+    accessToken: string | null,
+    shipmentCode: string,
+    payload: ConfirmLabelReprintInput,
+  ): Promise<ShipmentDetailDto> =>
+    opsApiClient
+      .request<ShipmentApiResponse>(
+        `${opsEndpoints.shipments.detail(shipmentCode)}/label-reprint/confirm`,
+        {
+          method: 'POST',
+          accessToken,
+          body: payload,
+        },
+      )
       .then(mapShipmentToDetail),
   review: (
     accessToken: string | null,

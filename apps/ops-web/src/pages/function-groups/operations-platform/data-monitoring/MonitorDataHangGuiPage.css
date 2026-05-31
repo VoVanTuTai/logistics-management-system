@@ -54,7 +54,7 @@
 }
 
 .ops-monitor-hang-gui__summary strong {
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-size: 24px;
   line-height: 1;
 }
@@ -159,7 +159,7 @@
   justify-content: center;
   z-index: 10;
   font-weight: 700;
-  color: #1d4ed8;
+  color: var(--ops-primary);
   backdrop-filter: blur(2px);
 }
 
@@ -171,7 +171,7 @@
 
 .ops-monitor-hang-gui__code,
 .ops-monitor-hang-gui__wait {
-  color: #1d4ed8 !important;
+  color: var(--ops-primary) !important;
   font-weight: 700;
 }
 

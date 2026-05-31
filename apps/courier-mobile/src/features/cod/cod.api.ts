@@ -1,7 +1,9 @@
 import { courierApiClient } from '../../services/api/client';
 import { courierEndpoints } from '../../services/api/endpoints';
 import type {
+  CodDailySettlementSummaryDto,
   CodRecordDto,
+  CodSettlementBatchDto,
   CodSummaryDto,
   CollectCodPayload,
   CompanyBankInfoDto,
@@ -90,3 +92,51 @@ export async function fetchCodQrUrl(
     },
   );
 }
+
+export async function fetchDailySettlement(
+  courierId: string,
+  date: string,
+  accessToken: string | null,
+): Promise<CodDailySettlementSummaryDto> {
+  return courierApiClient.request<CodDailySettlementSummaryDto>(
+    courierEndpoints.cod.dailySettlement(courierId, date),
+    {
+      method: 'GET',
+      accessToken,
+    },
+  );
+}
+
+export async function createSettlement(
+  payload: {
+    reportDate: string;
+    hubCode: string;
+    courierId: string;
+    shipmentCodes: string[];
+    createdBy: string;
+  },
+  accessToken: string | null,
+): Promise<CodSettlementBatchDto> {
+  return courierApiClient.request<CodSettlementBatchDto>(
+    courierEndpoints.cod.createSettlement,
+    {
+      method: 'POST',
+      accessToken,
+      body: payload,
+    },
+  );
+}
+
+export async function fetchCodRecordByShipmentCode(
+  shipmentCode: string,
+  accessToken: string | null,
+): Promise<CodRecordDto | null> {
+  return courierApiClient.request<CodRecordDto | null>(
+    courierEndpoints.cod.shipment(shipmentCode),
+    {
+      method: 'GET',
+      accessToken,
+    },
+  );
+}
+

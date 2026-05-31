@@ -1,13 +1,8 @@
 import React from 'react';
+import { Navigate } from 'react-router-dom';
 
-import { FunctionGroupLandingPage } from '../shared/FunctionGroupLandingPage';
+import { routePaths } from '../../../navigation/routes';
 
 export function OperationsPlatformGroupPage(): React.JSX.Element {
-  return (
-    <FunctionGroupLandingPage
-      groupCode="OPERATIONS_PLATFORM"
-      title="Nền tảng điều hành"
-      summary="Cụm nghiệp vụ điều hành và các chức năng vận hành nội bộ."
-    />
-  );
+  return <Navigate to={routePaths.shipments} replace />;
 }

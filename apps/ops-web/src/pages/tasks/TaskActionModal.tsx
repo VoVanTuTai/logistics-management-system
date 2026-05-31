@@ -57,7 +57,7 @@ export function TaskActionModal({
     return null;
   }
 
-  const actionTitle = mode === 'assign' ? 'Phân công tác vụ' : 'Phân công lại tác vụ';
+  const actionTitle = mode === 'assign' ? 'Chọn courier nhận' : 'Chuyển sang courier khác';
 
   const handleSubmit = form.handleSubmit(async (values) => {
     await onSubmit({
@@ -74,10 +74,10 @@ export function TaskActionModal({
       <div style={styles.modal}>
         <h3 style={styles.title}>{actionTitle}</h3>
         <form onSubmit={handleSubmit} style={styles.form}>
-          <label htmlFor={`${mode}-courier`}>Nhân viên giao</label>
+          <label htmlFor={`${mode}-courier`}>Courier nhận</label>
 
           {courierOptionsLoading ? (
-            <p style={styles.helperText}>Đang tải danh sách nhân viên giao...</p>
+            <p style={styles.helperText}>Đang tải danh sách courier...</p>
           ) : courierOptions.length > 0 ? (
             <select
               id={`${mode}-courier`}
@@ -93,11 +93,11 @@ export function TaskActionModal({
             <>
               <input
                 id={`${mode}-courier`}
-                placeholder="Nhập mã nhân viên giao"
+                placeholder="Nhập mã courier"
                 {...form.register('courierId', { required: true })}
               />
               <small style={styles.helperText}>
-                Chưa có danh sách nhân viên giao. Vui lòng nhập mã thủ công.
+                Chưa có danh sách courier. Vui lòng nhập mã thủ công.
               </small>
             </>
           )}

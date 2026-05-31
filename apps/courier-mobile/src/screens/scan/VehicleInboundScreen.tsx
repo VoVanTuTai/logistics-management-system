@@ -24,6 +24,11 @@ import {
   saveVehicleArrivalRecord,
 } from '../../features/scan/vehicle-arrival.storage';
 import { manifestApi } from '../../features/manifest/manifest.api';
+import type { BagManifestDto } from '../../features/manifest/manifest.types';
+import {
+  isLocalMediaUri,
+  uploadCourierImage,
+} from '../../features/media/courier-media-upload.api';
 import {
   parseVehicleLabel,
   type VehicleLabelInfo,
@@ -34,6 +39,7 @@ import {
   type VehicleLoadRecord,
 } from '../../features/scan/vehicle-load.storage';
 import { parsePickupScannedCode } from '../../features/scan/pickup.scanner.adapter';
+import { ApiClientError } from '../../services/api/client';
 import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
 import {
@@ -67,6 +73,24 @@ function toErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Không lưu được xe đến.';
 }
 
+function buildSyncedVehicleInfo(
+  scannedVehicleInfo: VehicleLabelInfo,
+  manifest: BagManifestDto,
+): VehicleLabelInfo {
+  return {
+    ...scannedVehicleInfo,
+    vehicleCode: normalizeCode(manifest.manifestCode || scannedVehicleInfo.vehicleCode),
+    originHubCode:
+      manifest.originHubCode?.trim().toUpperCase() ||
+      scannedVehicleInfo.originHubCode ||
+      'UNKNOWN',
+    destinationHubCode:
+      manifest.destinationHubCode?.trim().toUpperCase() ||
+      scannedVehicleInfo.destinationHubCode ||
+      'UNKNOWN',
+  };
+}
+
 function findLatestDeparture(
   records: VehicleDepartureRecord[],
   vehicleCode: string,
@@ -98,6 +122,22 @@ function compareSealCodes(scannedCodes: string[], expectedCodes: string[]): bool
   );
 }
 
+function parseSealCodesFromManifestNote(note: string | null | undefined): string[] {
+  if (!note) {
+    return [];
+  }
+
+  const normalizedNote = note.trim();
+  const machineMatch = normalizedNote.match(/(?:SEAL_CODES|sealCodes)=([^|]+)/);
+  const humanMatch = normalizedNote.match(/Seal xe:\s*([^|]+)/i);
+  const rawCodes = machineMatch?.[1] ?? humanMatch?.[1] ?? '';
+
+  return rawCodes
+    .split(',')
+    .map(normalizeCode)
+    .filter(Boolean);
+}
+
 function toVehicleStatusLabel(status: VehicleLoadRecord['status'] | null): string {
   if (status === 'OPEN') {
     return 'Đang mở';
@@ -125,6 +165,7 @@ export function VehicleInboundScreen(): React.JSX.Element {
     React.useState<VehicleLoadRecord | null>(null);
   const [departureRecord, setDepartureRecord] =
     React.useState<VehicleDepartureRecord | null>(null);
+  const [manifestSealCodes, setManifestSealCodes] = React.useState<string[]>([]);
   const [proofPhotoUri, setProofPhotoUri] = React.useState<string | null>(null);
   const [sealCodes, setSealCodes] = React.useState<VehicleDepartureSeal[]>([]);
   const [selectedSealCodes, setSelectedSealCodes] = React.useState<Set<string>>(
@@ -132,11 +173,13 @@ export function VehicleInboundScreen(): React.JSX.Element {
   );
   const [screenMessage, setScreenMessage] = React.useState<string | null>(null);
   const [scanLocked, setScanLocked] = React.useState(false);
+  const [isCameraCollapsed, setIsCameraCollapsed] = React.useState(false);
   const [isCapturing, setIsCapturing] = React.useState(false);
   const [isSaving, setIsSaving] = React.useState(false);
   const scanCooldownRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
+  const accessToken = session?.tokens.accessToken ?? null;
   const employeeName = resolveCourierDisplayName({
     displayName: session?.user.displayName,
     username: session?.user.username,
@@ -151,10 +194,10 @@ export function VehicleInboundScreen(): React.JSX.Element {
       ? 'SEAL'
       : 'PROOF';
   const expectedSealCodes =
-    departureRecord?.sealCodes.map((item) => item.code) ?? [];
+    departureRecord?.sealCodes.map((item) => item.code) ?? manifestSealCodes;
   const scannedSealCodes = sealCodes.map((item) => item.code);
   const sealMatched = compareSealCodes(scannedSealCodes, expectedSealCodes);
-  const canConfirm = Boolean(vehicleInfo && proofPhotoUri && sealCodes.length > 0);
+  const canConfirm = Boolean(accessToken && vehicleInfo && proofPhotoUri && sealCodes.length > 0);
 
   React.useEffect(() => {
     return () => {
@@ -180,9 +223,11 @@ export function VehicleInboundScreen(): React.JSX.Element {
     setVehicleInfo(null);
     setVehicleLoadRecord(null);
     setDepartureRecord(null);
+    setManifestSealCodes([]);
     setProofPhotoUri(null);
     setSealCodes([]);
     setSelectedSealCodes(new Set());
+    setIsCameraCollapsed(false);
     setScreenMessage('Đã làm mới luồng xe đến.');
   };
 
@@ -212,36 +257,72 @@ export function VehicleInboundScreen(): React.JSX.Element {
   }, []);
 
   const applyVehicleLabel = React.useCallback(async (rawValue: string) => {
+    if (!accessToken) {
+      setGlobalError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+      return;
+    }
+
     const nextVehicleInfo = parseVehicleLabel(rawValue);
     if (!nextVehicleInfo) {
       setScreenMessage('Tem xe không hợp lệ. Vui lòng quét đúng mã tem xe.');
       return;
     }
 
+    let manifest: BagManifestDto;
+    try {
+      manifest = await manifestApi.detailByCode(accessToken, nextVehicleInfo.vehicleCode);
+    } catch (error) {
+      if (error instanceof ApiClientError && error.status === 404) {
+        setVehicleInfo(null);
+        setVehicleLoadRecord(null);
+        setDepartureRecord(null);
+        setManifestSealCodes([]);
+        setScreenMessage(
+          `Tem xe ${nextVehicleInfo.vehicleCode} chưa được tạo hoặc chưa đồng bộ trên Ops Web. Vui lòng tạo tem xe ở Ops rồi quét lại.`,
+        );
+        return;
+      }
+
+      const message = toErrorMessage(error);
+      setScreenMessage(message);
+      setGlobalError(message);
+      return;
+    }
+
+    const syncedVehicleInfo = buildSyncedVehicleInfo(nextVehicleInfo, manifest);
+    const nextManifestSealCodes = parseSealCodesFromManifestNote(manifest.note);
     const [nextLoadRecord, departureRecords] = await Promise.all([
-      findVehicleLoadRecord(nextVehicleInfo.vehicleCode),
+      findVehicleLoadRecord(syncedVehicleInfo.vehicleCode),
       readVehicleDepartureRecords(),
     ]);
     const nextDepartureRecord = findLatestDeparture(
       departureRecords,
-      nextVehicleInfo.vehicleCode,
+      syncedVehicleInfo.vehicleCode,
     );
 
-    setVehicleInfo(nextVehicleInfo);
+    setVehicleInfo(syncedVehicleInfo);
     setVehicleLoadRecord(nextLoadRecord);
     setDepartureRecord(nextDepartureRecord);
+    setManifestSealCodes(nextManifestSealCodes);
 
     if (!nextDepartureRecord) {
+      if (nextManifestSealCodes.length > 0) {
+        setScreenMessage(
+          `Đã nhận tem xe ${syncedVehicleInfo.vehicleCode} từ hệ thống. Cần đối chứng ${nextManifestSealCodes.length} seal xe.`,
+        );
+        return;
+      }
+
       setScreenMessage(
-        `Đã nhận tem xe ${nextVehicleInfo.vehicleCode}, chưa có dữ liệu xe đi để đối chứng seal trên thiết bị này.`,
+        `Đã nhận tem xe ${syncedVehicleInfo.vehicleCode} từ hệ thống, chưa có dữ liệu xe đi để đối chứng seal trên thiết bị này.`,
       );
       return;
     }
 
     setScreenMessage(
-      `Đã nhận tem xe ${nextVehicleInfo.vehicleCode}. Cần đối chứng ${nextDepartureRecord.sealCodes.length} seal xe.`,
+      `Đã nhận tem xe ${syncedVehicleInfo.vehicleCode}. Cần đối chứng ${nextDepartureRecord.sealCodes.length} seal xe.`,
     );
-  }, []);
+  }, [accessToken, setGlobalError]);
 
   const handleBarCodeScanned = (result: BarcodeScanningResult) => {
     if (scanLocked || isSaving || isCapturing || currentStep === 'PROOF') {
@@ -319,6 +400,11 @@ export function VehicleInboundScreen(): React.JSX.Element {
   };
 
   const confirmVehicleInbound = async () => {
+    if (!accessToken) {
+      setGlobalError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+      return;
+    }
+
     if (!vehicleInfo) {
       setScreenMessage('Vui lòng quét tem xe trước khi xác nhận xe đến.');
       return;
@@ -349,14 +435,39 @@ export function VehicleInboundScreen(): React.JSX.Element {
         sealMatched,
       });
 
+      let manifest: BagManifestDto | null = null;
+      try {
+        manifest = await manifestApi.detailByCode(accessToken, vehicleInfo.vehicleCode);
+      } catch (error) {
+        if (!(error instanceof ApiClientError && error.status === 404)) {
+          throw error;
+        }
+      }
+
+      if (!manifest) {
+        setScreenMessage(
+          `Tem xe ${vehicleInfo.vehicleCode} không còn trên hệ thống. Vui lòng tạo/đồng bộ lại tem xe trên Ops Web.`,
+        );
+        return;
+      }
+
+      const proofImageUrl = isLocalMediaUri(proofPhotoUri)
+        ? await uploadCourierImage({
+            accessToken,
+            uri: proofPhotoUri,
+            filename: `${vehicleInfo.vehicleCode}-vehicle-inbound-proof.jpg`,
+          })
+        : proofPhotoUri;
+      const noteWithProof = `${note} | Minh chứng: ${proofImageUrl}`;
+
       await saveVehicleArrivalRecord({
         id: createIdempotencyKey('vehicle-inbound'),
         vehicle: vehicleInfo,
-        proofPhotoUri,
+        proofPhotoUri: proofImageUrl,
         scannedSealCodes: sealCodes,
         expectedSealCodes,
         sealMatched,
-        note,
+        note: noteWithProof,
         employeeCode: courierId || session?.user.username || null,
         employeeName,
         hubCode,
@@ -367,16 +478,12 @@ export function VehicleInboundScreen(): React.JSX.Element {
         hubCode,
       );
 
-      const manifests = await manifestApi.list(session?.tokens.accessToken as string);
-      const manifest = manifests.find(m => m.manifestCode === vehicleInfo.vehicleCode);
-      if (manifest) {
-        await manifestApi.receive(session?.tokens.accessToken as string, manifest.id, {
-          receivedBy: courierId,
-          receivedByName: employeeName,
-          processingHubCode: hubCode,
-          note,
-        });
-      }
+      await manifestApi.receive(accessToken, manifest.id, {
+        receivedBy: courierId,
+        receivedByName: employeeName,
+        processingHubCode: hubCode,
+        note: noteWithProof,
+      });
 
       setVehicleLoadRecord(nextLoadRecord ?? vehicleLoadRecord);
       setScreenMessage(
@@ -386,9 +493,11 @@ export function VehicleInboundScreen(): React.JSX.Element {
       setVehicleInfo(null);
       setVehicleLoadRecord(null);
       setDepartureRecord(null);
+      setManifestSealCodes([]);
       setProofPhotoUri(null);
       setSealCodes([]);
       setSelectedSealCodes(new Set());
+      setIsCameraCollapsed(false);
     } catch (error) {
       const message = toErrorMessage(error);
       setScreenMessage(message);
@@ -407,226 +516,249 @@ export function VehicleInboundScreen(): React.JSX.Element {
 
   return (
     <View style={styles.container}>
-      <View style={styles.cameraSection}>
-        <View style={styles.cameraFrame}>
-          {!permission ? (
-            <View style={styles.cameraPlaceholder}>
-              <ActivityIndicator size="small" color="#E2E8F0" />
-              <Text style={styles.cameraPlaceholderText}>Đang kiểm tra quyền camera...</Text>
-            </View>
-          ) : null}
+      <ScrollView
+        style={styles.mainScroll}
+        contentContainerStyle={styles.mainScrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {isCameraCollapsed ? (
+          <Pressable
+            onPress={() => setIsCameraCollapsed(false)}
+            style={styles.collapsedCameraBar}
+          >
+            <Ionicons name="camera-outline" size={20} color="#1D4ED8" />
+            <Text style={styles.collapsedCameraBarText}>Bật camera để quét/chụp</Text>
+            <Ionicons name="chevron-down" size={16} color="#64748B" style={styles.expandIcon} />
+          </Pressable>
+        ) : (
+          <View style={styles.cameraSection}>
+            <View style={styles.cameraFrame}>
+              {permission && cameraIsReady ? (
+                <Pressable
+                  onPress={() => setIsCameraCollapsed(true)}
+                  style={styles.collapseCameraButton}
+                >
+                  <Ionicons name="eye-off-outline" size={14} color="#FFFFFF" />
+                  <Text style={styles.collapseButtonText}>Ẩn cam</Text>
+                </Pressable>
+              ) : null}
 
-          {permission && !cameraIsReady ? (
-            <View style={styles.cameraPlaceholder}>
-              <Text style={styles.cameraPlaceholderText}>
-                Cần cấp quyền camera để quét tem xe, chụp minh chứng và quét seal xe.
-              </Text>
-              {permission.canAskAgain ? (
-                <Pressable onPress={requestPermission} style={styles.permissionButton}>
-                  <Text style={styles.permissionButtonText}>Cấp quyền camera</Text>
+              {!permission ? (
+                <View style={styles.cameraPlaceholder}>
+                  <ActivityIndicator size="small" color="#E2E8F0" />
+                  <Text style={styles.cameraPlaceholderText}>Đang kiểm tra quyền camera...</Text>
+                </View>
+              ) : null}
+
+              {permission && !cameraIsReady ? (
+                <View style={styles.cameraPlaceholder}>
+                  <Text style={styles.cameraPlaceholderText}>
+                    Cần cấp quyền camera để quét tem xe, chụp minh chứng và quét seal xe.
+                  </Text>
+                  {permission.canAskAgain ? (
+                    <Pressable onPress={requestPermission} style={styles.permissionButton}>
+                      <Text style={styles.permissionButtonText}>Cấp quyền camera</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+              ) : null}
+
+              {permission && cameraIsReady ? (
+                <CameraView
+                  ref={cameraRef}
+                  style={styles.camera}
+                  facing="back"
+                  barcodeScannerSettings={{
+                    barcodeTypes: [
+                      'qr',
+                      'ean13',
+                      'ean8',
+                      'code39',
+                      'code93',
+                      'code128',
+                      'upc_a',
+                      'upc_e',
+                    ],
+                  }}
+                  onBarcodeScanned={
+                    currentStep === 'PROOF' ? undefined : handleBarCodeScanned
+                  }
+                />
+              ) : null}
+
+              {proofPhotoUri && currentStep === 'SEAL' ? (
+                <Image source={{ uri: proofPhotoUri }} style={styles.proofThumb} />
+              ) : null}
+
+              {currentStep === 'PROOF' && cameraIsReady ? (
+                <View style={styles.captureBar}>
+                  <Pressable
+                    disabled={isCapturing}
+                    onPress={() => {
+                      void captureProof();
+                    }}
+                    style={[styles.captureButton, isCapturing && styles.buttonDisabled]}
+                  >
+                    {isCapturing ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <>
+                        <Ionicons name="camera-outline" size={18} color="#FFFFFF" />
+                        <Text style={styles.captureButtonText}>Chụp minh chứng</Text>
+                      </>
+                    )}
+                  </Pressable>
+                </View>
+              ) : null}
+
+              {isSaving ? (
+                <View style={styles.cameraOverlay}>
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <Text style={styles.cameraOverlayText}>Đang xác nhận xe đến...</Text>
+                </View>
+              ) : null}
+            </View>
+            <Text style={styles.cameraHint}>{cameraHint}</Text>
+          </View>
+        )}
+
+        <View style={styles.workSection}>
+          <View style={styles.headerRow}>
+            <Text style={styles.screenTitle}>Xe đến</Text>
+            <Pressable onPress={resetVehicleInbound}>
+              <Text style={styles.resetText}>Làm mới</Text>
+            </Pressable>
+          </View>
+
+          <View style={[styles.vehicleCard, vehicleInfo && styles.vehicleCardReady]}>
+            <Text style={styles.vehicleTitle}>Tem xe</Text>
+            {vehicleInfo ? (
+              <>
+                <View style={styles.vehicleGrid}>
+                  <View style={styles.vehicleInfoCell}>
+                    <Text style={styles.infoLabel}>Mã tem xe</Text>
+                    <Text style={styles.infoValue}>{vehicleInfo.vehicleCode}</Text>
+                  </View>
+                  <View style={styles.vehicleInfoCell}>
+                    <Text style={styles.infoLabel}>Hub đi</Text>
+                    <Text style={styles.infoValue}>{vehicleInfo.originHubCode}</Text>
+                  </View>
+                  <View style={styles.vehicleInfoCell}>
+                    <Text style={styles.infoLabel}>Hub đến</Text>
+                    <Text style={styles.infoValue}>{vehicleInfo.destinationHubCode}</Text>
+                  </View>
+                  <View style={styles.vehicleInfoCell}>
+                    <Text style={styles.infoLabel}>Biển số</Text>
+                    <Text style={styles.infoValue}>{vehicleInfo.licensePlate}</Text>
+                  </View>
+                </View>
+                <Text style={styles.loadSummaryText}>
+                  Trạng thái tem xe: {toVehicleStatusLabel(vehicleLoadRecord?.status ?? null)}
+                  {' | '}
+                  Hub thao tác: {hubCode ?? 'N/A'}
+                  {' | '}
+                  Seal dự kiến: {expectedSealCodes.length}
+                </Text>
+              </>
+            ) : (
+              <Text style={styles.emptyGuide}>Chưa có tem xe. Hãy quét mã tem xe bằng camera.</Text>
+            )}
+          </View>
+
+          <View style={[styles.proofCard, proofPhotoUri && styles.proofCardReady]}>
+            <View style={styles.proofHeader}>
+              <Text style={styles.vehicleTitle}>Minh chứng</Text>
+              {proofPhotoUri ? (
+                <Pressable onPress={() => setProofPhotoUri(null)}>
+                  <Text style={styles.resetText}>Chụp lại</Text>
                 </Pressable>
               ) : null}
             </View>
-          ) : null}
-
-          {permission && cameraIsReady ? (
-            <CameraView
-              ref={cameraRef}
-              style={styles.camera}
-              facing="back"
-              barcodeScannerSettings={{
-                barcodeTypes: [
-                  'qr',
-                  'ean13',
-                  'ean8',
-                  'code39',
-                  'code93',
-                  'code128',
-                  'upc_a',
-                  'upc_e',
-                ],
-              }}
-              onBarcodeScanned={
-                currentStep === 'PROOF' ? undefined : handleBarCodeScanned
-              }
-            />
-          ) : null}
-
-          {proofPhotoUri && currentStep === 'SEAL' ? (
-            <Image source={{ uri: proofPhotoUri }} style={styles.proofThumb} />
-          ) : null}
-
-          {currentStep === 'PROOF' && cameraIsReady ? (
-            <View style={styles.captureBar}>
-              <Pressable
-                disabled={isCapturing}
-                onPress={() => {
-                  void captureProof();
-                }}
-                style={[styles.captureButton, isCapturing && styles.buttonDisabled]}
-              >
-                {isCapturing ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <>
-                    <Ionicons name="camera-outline" size={18} color="#FFFFFF" />
-                    <Text style={styles.captureButtonText}>Chụp minh chứng</Text>
-                  </>
-                )}
-              </Pressable>
-            </View>
-          ) : null}
-
-          {isSaving ? (
-            <View style={styles.cameraOverlay}>
-              <ActivityIndicator size="small" color="#FFFFFF" />
-              <Text style={styles.cameraOverlayText}>Đang xác nhận xe đến...</Text>
-            </View>
-          ) : null}
-        </View>
-        <Text style={styles.cameraHint}>{cameraHint}</Text>
-      </View>
-
-      <View style={styles.workSection}>
-        <View style={styles.headerRow}>
-          <Text style={styles.screenTitle}>Xe đến</Text>
-          <Pressable onPress={resetVehicleInbound}>
-            <Text style={styles.resetText}>Làm mới</Text>
-          </Pressable>
-        </View>
-
-        <View style={[styles.vehicleCard, vehicleInfo && styles.vehicleCardReady]}>
-          <Text style={styles.vehicleTitle}>Tem xe</Text>
-          {vehicleInfo ? (
-            <>
-              <View style={styles.vehicleGrid}>
-                <View style={styles.vehicleInfoCell}>
-                  <Text style={styles.infoLabel}>Mã tem xe</Text>
-                  <Text style={styles.infoValue}>{vehicleInfo.vehicleCode}</Text>
-                </View>
-                <View style={styles.vehicleInfoCell}>
-                  <Text style={styles.infoLabel}>Hub đi</Text>
-                  <Text style={styles.infoValue}>{vehicleInfo.originHubCode}</Text>
-                </View>
-                <View style={styles.vehicleInfoCell}>
-                  <Text style={styles.infoLabel}>Hub đến</Text>
-                  <Text style={styles.infoValue}>{vehicleInfo.destinationHubCode}</Text>
-                </View>
-                <View style={styles.vehicleInfoCell}>
-                  <Text style={styles.infoLabel}>Biển số</Text>
-                  <Text style={styles.infoValue}>{vehicleInfo.licensePlate}</Text>
-                </View>
-              </View>
-              <Text style={styles.loadSummaryText}>
-                Trạng thái tem xe: {toVehicleStatusLabel(vehicleLoadRecord?.status ?? null)}
-                {' | '}
-                Hub thao tác: {hubCode ?? 'N/A'}
-                {' | '}
-                Seal dự kiến: {expectedSealCodes.length}
-              </Text>
-            </>
-          ) : (
-            <Text style={styles.emptyGuide}>Chưa có tem xe. Hãy quét mã tem xe bằng camera.</Text>
-          )}
-        </View>
-
-        <View style={[styles.proofCard, proofPhotoUri && styles.proofCardReady]}>
-          <View style={styles.proofHeader}>
-            <Text style={styles.vehicleTitle}>Minh chứng</Text>
             {proofPhotoUri ? (
-              <Pressable onPress={() => setProofPhotoUri(null)}>
-                <Text style={styles.resetText}>Chụp lại</Text>
-              </Pressable>
-            ) : null}
+              <Text style={styles.proofReadyText}>Đã chụp minh chứng seal xe còn nguyên.</Text>
+            ) : (
+              <Text style={styles.emptyGuide}>Sau khi quét tem xe, bấm chụp minh chứng trên khung camera.</Text>
+            )}
           </View>
-          {proofPhotoUri ? (
-            <Text style={styles.proofReadyText}>Đã chụp minh chứng seal xe còn nguyên.</Text>
-          ) : (
-            <Text style={styles.emptyGuide}>Sau khi quét tem xe, bấm chụp minh chứng trên khung camera.</Text>
-          )}
-        </View>
 
-        {screenMessage ? <Text style={styles.messageText}>{screenMessage}</Text> : null}
+          {screenMessage ? <Text style={styles.messageText}>{screenMessage}</Text> : null}
 
-        <View style={styles.sealCompareRow}>
-          <Text style={[styles.sealCompareText, sealMatched && styles.sealCompareMatched]}>
-            {expectedSealCodes.length === 0
-              ? 'Chưa có dữ liệu seal xuất bến để đối chứng.'
-              : sealMatched
-                ? 'Seal khớp với lúc xe đi.'
-                : 'Seal chưa khớp hoặc còn thiếu.'}
-          </Text>
-        </View>
-
-        <View style={styles.listHeaderRow}>
-          <Text style={styles.listTitle}>Danh sách seal xe ({sealCodes.length})</Text>
-          <Pressable
-            disabled={selectedCount === 0}
-            onPress={deleteSelectedSeals}
-            style={[
-              styles.deleteButton,
-              selectedCount === 0 && styles.deleteButtonDisabled,
-            ]}
-          >
-            <Ionicons name="trash-outline" size={16} color="#B91C1C" />
-            <Text style={styles.deleteButtonText}>
-              Xóa{selectedCount > 0 ? ` ${selectedCount}` : ''}
+          <View style={styles.sealCompareRow}>
+            <Text style={[styles.sealCompareText, sealMatched && styles.sealCompareMatched]}>
+              {expectedSealCodes.length === 0
+                ? 'Chưa có dữ liệu seal xuất bến để đối chứng.'
+                : sealMatched
+                  ? 'Seal khớp với lúc xe đi.'
+                  : 'Seal chưa khớp hoặc còn thiếu.'}
             </Text>
-          </Pressable>
-        </View>
+          </View>
 
-        <ScrollView
-          style={styles.listScroll}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {sealCodes.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>Chưa có mã seal xe nào.</Text>
-            </View>
-          ) : (
-            sealCodes.map((item, index) => {
-              const selected = selectedSealCodes.has(item.code);
-              const expected = expectedSealCodes
-                .map(normalizeCode)
-                .includes(normalizeCode(item.code));
+          <View style={styles.listHeaderRow}>
+            <Text style={styles.listTitle}>Danh sách seal xe ({sealCodes.length})</Text>
+            <Pressable
+              disabled={selectedCount === 0}
+              onPress={deleteSelectedSeals}
+              style={[
+                styles.deleteButton,
+                selectedCount === 0 && styles.deleteButtonDisabled,
+              ]}
+            >
+              <Ionicons name="trash-outline" size={16} color="#B91C1C" />
+              <Text style={styles.deleteButtonText}>
+                Xóa{selectedCount > 0 ? ` ${selectedCount}` : ''}
+              </Text>
+            </Pressable>
+          </View>
 
-              return (
-                <Pressable
-                  key={`${item.code}-${item.scannedAt}`}
-                  onPress={() => toggleSelectedSeal(item.code)}
-                  style={[styles.listItem, selected && styles.listItemSelected]}
-                >
-                  <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
-                    {selected ? (
-                      <Ionicons name="checkmark" size={14} color="#FFFFFF" />
-                    ) : null}
-                  </View>
-                  <View style={styles.listIndex}>
-                    <Text style={styles.listIndexText}>{index + 1}</Text>
-                  </View>
-                  <View style={styles.listBody}>
-                    <View style={styles.itemTitleRow}>
-                      <Text style={styles.itemCodeText}>{item.code}</Text>
-                      <Text
-                        style={[
-                          styles.itemTypeBadge,
-                          expected ? styles.expectedBadge : styles.warningBadge,
-                        ]}
-                      >
-                        {expected ? 'Khớp' : 'Cần kiểm tra'}
+          <View style={styles.listContainer}>
+            {sealCodes.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyText}>Chưa có mã seal xe nào.</Text>
+              </View>
+            ) : (
+              sealCodes.map((item, index) => {
+                const selected = selectedSealCodes.has(item.code);
+                const expected = expectedSealCodes
+                  .map(normalizeCode)
+                  .includes(normalizeCode(item.code));
+
+                return (
+                  <Pressable
+                    key={`${item.code}-${item.scannedAt}`}
+                    onPress={() => toggleSelectedSeal(item.code)}
+                    style={[styles.listItem, selected && styles.listItemSelected]}
+                  >
+                    <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
+                      {selected ? (
+                        <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+                      ) : null}
+                    </View>
+                    <View style={styles.listIndex}>
+                      <Text style={styles.listIndexText}>{index + 1}</Text>
+                    </View>
+                    <View style={styles.listBody}>
+                      <View style={styles.itemTitleRow}>
+                        <Text style={styles.itemCodeText}>{item.code}</Text>
+                        <Text
+                          style={[
+                            styles.itemTypeBadge,
+                            expected ? styles.expectedBadge : styles.warningBadge,
+                          ]}
+                        >
+                          {expected ? 'Khớp' : 'Cần kiểm tra'}
+                        </Text>
+                      </View>
+                      <Text style={styles.itemTimeText}>
+                        Quét lúc {formatScannedAt(item.scannedAt)}
                       </Text>
                     </View>
-                    <Text style={styles.itemTimeText}>
-                      Quét lúc {formatScannedAt(item.scannedAt)}
-                    </Text>
-                  </View>
-                </Pressable>
-              );
-            })
-          )}
-        </ScrollView>
-      </View>
+                  </Pressable>
+                );
+              })
+            )}
+          </View>
+        </View>
+      </ScrollView>
 
       <View style={styles.footer}>
         <Pressable
@@ -658,7 +790,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   cameraSection: {
-    flex: 1,
+    height: 240,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E5E7EB',
@@ -746,13 +878,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   workSection: {
-    flex: 2,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E5E7EB',
     borderRadius: 12,
     padding: 12,
-    paddingBottom: 78,
+    paddingBottom: 16,
     ...theme.shadow.sm,
   },
   headerRow: {
@@ -894,13 +1025,16 @@ const styles = StyleSheet.create({
     color: '#B91C1C',
     fontWeight: '700',
   },
-  listScroll: {
+  mainScroll: {
     flex: 1,
-    marginTop: 8,
   },
-  listContent: {
+  mainScrollContent: {
+    gap: 10,
+    paddingBottom: 90,
+  },
+  listContainer: {
+    marginTop: 8,
     gap: 8,
-    paddingBottom: 10,
   },
   emptyState: {
     borderWidth: 1,
@@ -1020,5 +1154,44 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '800',
     fontSize: 15,
+  },
+  collapsedCameraBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 8,
+    ...theme.shadow.sm,
+  },
+  collapsedCameraBarText: {
+    color: '#1D4ED8',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  expandIcon: {
+    marginLeft: 'auto',
+  },
+  collapseCameraButton: {
+    position: 'absolute',
+    left: 10,
+    top: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.75)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 6,
+    zIndex: 10,
+  },
+  collapseButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 12,
   },
 });

@@ -6,9 +6,10 @@ export const queryKeys = {
   manifests: ['manifests'],
   ndr: ['ndr'],
   tracking: ['tracking'],
+  payments: ['payments'],
   masterdataHubs: ['masterdata', 'hubs'],
   masterdataZones: ['masterdata', 'zones'],
   masterdataNdrReasons: ['masterdata', 'ndr-reasons'],
   masterdataConfigs: ['masterdata', 'configs'],
+  vietnamAdministrativeUnits: ['locations', 'vietnam-administrative-units'],
 } as const;
-

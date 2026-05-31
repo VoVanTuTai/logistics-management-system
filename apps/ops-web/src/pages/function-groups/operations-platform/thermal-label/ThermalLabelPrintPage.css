@@ -32,7 +32,7 @@
 
 .ops-thermal-print__layout {
   display: grid;
-  grid-template-columns: 320px minmax(0, 1fr);
+  grid-template-columns: minmax(320px, 380px) minmax(0, 1fr);
   gap: 14px;
   align-items: start;
 }
@@ -53,6 +53,37 @@
   font-size: 18px;
 }
 
+.ops-thermal-print__form-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #dbeafe;
+  border-radius: 10px;
+  background: #eff6ff;
+  padding: 10px 12px;
+}
+
+.ops-thermal-print__form-head span {
+  display: block;
+  margin-top: 4px;
+  color: var(--ops-primary-dark);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ops-thermal-print__form-head strong {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--ops-primary);
+  color: #ffffff;
+  font-size: 22px;
+  line-height: 1;
+}
+
 .ops-thermal-print__form {
   display: grid;
   gap: 10px;
@@ -64,7 +95,7 @@
   gap: 5px;
 }
 
-.ops-thermal-print__field span,
+.ops-thermal-print__field > span,
 .ops-thermal-print__field legend {
   color: #475569;
   font-size: 12px;
@@ -88,19 +119,54 @@
 }
 
 .ops-thermal-print__field--method {
-  border: 1px solid #dbe3ef;
-  border-radius: 10px;
-  padding: 8px 10px;
+  border: 0;
+  padding: 0;
   display: grid;
   gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ops-thermal-print__field--method legend {
+  grid-column: 1 / -1;
 }
 
 .ops-thermal-print__radio {
-  display: flex;
+  min-height: 74px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 10px;
   color: #334155;
   font-weight: 600;
+}
+
+.ops-thermal-print__radio:has(input:checked) {
+  border-color: var(--ops-primary);
+  background: #eff6ff;
+}
+
+.ops-thermal-print__radio input {
+  width: 16px;
+  height: 16px;
+}
+
+.ops-thermal-print__radio span {
+  display: grid;
+  gap: 2px;
+}
+
+.ops-thermal-print__radio strong {
+  color: #1e293b;
+  font-size: 13px;
+}
+
+.ops-thermal-print__radio small {
+  color: #64748b;
+  font-size: 12px;
 }
 
 .ops-thermal-print__actions {
@@ -118,13 +184,14 @@
 }
 
 .ops-thermal-print__actions button[type="submit"] {
-  background: #2563eb;
+  flex: 1 1 180px;
+  background: var(--ops-primary);
   color: #ffffff;
   border: none;
 }
 
 .ops-thermal-print__actions button[type="submit"]:hover {
-  background: #1d4ed8;
+  background: var(--ops-primary);
 }
 
 .ops-thermal-print__secondary-btn {
@@ -167,7 +234,7 @@
   border: 1px solid #bfdbfe;
   border-radius: 999px;
   background: #eff6ff;
-  color: #1d4ed8;
+  color: var(--ops-primary);
   padding: 2px 8px;
   font-size: 12px;
   font-weight: 700;
@@ -210,7 +277,7 @@
 .ops-thermal-print__link-btn {
   background: none;
   border: none;
-  color: #2563eb;
+  color: var(--ops-primary);
   font-weight: 600;
   cursor: pointer;
   padding: 0 6px;
@@ -285,4 +352,16 @@
 .ops-thermal-print__status-tag--preview {
   background: #f1f5f9;
   color: #475569;
+}
+
+@media (max-width: 900px) {
+  .ops-thermal-print__layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .ops-thermal-print__field--method {
+    grid-template-columns: 1fr;
+  }
 }

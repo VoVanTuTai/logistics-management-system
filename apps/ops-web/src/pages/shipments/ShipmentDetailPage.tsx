@@ -75,13 +75,15 @@ export function ShipmentDetailPage(): React.JSX.Element {
       <div style={styles.entryPointGroup}>
         <strong>Điểm vào nghiệp vụ liên quan</strong>
         <div style={styles.entryLinks}>
-          <Link to={`${routePaths.tasks}?shipmentCode=${encodeURIComponent(detailQuery.data.shipmentCode)}`}>
-            Phân công/phân công lại tác vụ
+          <Link
+            to={`${routePaths.operationsPlatformPickupDispatch}?shipmentCode=${encodeURIComponent(detailQuery.data.shipmentCode)}`}
+          >
+            Mở điều phối vận đơn
           </Link>
           <Link
-            to={`${routePaths.manifests}?shipmentCode=${encodeURIComponent(detailQuery.data.shipmentCode)}`}
+            to={`${routePaths.linehaulBagLabelManagement}?shipmentCode=${encodeURIComponent(detailQuery.data.shipmentCode)}`}
           >
-            Thêm vào bao tải
+            Đóng bao tải (Linehaul)
           </Link>
           <Link to={`${routePaths.scans}?shipmentCode=${encodeURIComponent(detailQuery.data.shipmentCode)}`}>
             Quét hub

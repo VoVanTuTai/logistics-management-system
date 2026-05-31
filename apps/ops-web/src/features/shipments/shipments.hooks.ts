@@ -14,13 +14,30 @@ export function useShipmentsQuery(
   accessToken: string | null,
   filters: ShipmentListFilters,
   options?: {
+    enabled?: boolean;
     refetchInterval?: number | false;
   },
 ) {
   return useQuery({
-    queryKey: [...queryKeys.shipments, filters.q ?? '', filters.status ?? ''],
+    queryKey: buildShipmentListQueryKey(filters),
     queryFn: () => shipmentsClient.list(accessToken, filters),
-    enabled: Boolean(accessToken),
+    enabled: options?.enabled ?? Boolean(accessToken),
+    refetchInterval: options?.refetchInterval,
+  });
+}
+
+export function useShipmentPageQuery(
+  accessToken: string | null,
+  filters: ShipmentListFilters,
+  options?: {
+    enabled?: boolean;
+    refetchInterval?: number | false;
+  },
+) {
+  return useQuery({
+    queryKey: [...buildShipmentListQueryKey(filters), 'page'],
+    queryFn: () => shipmentsClient.listPage(accessToken, filters),
+    enabled: options?.enabled ?? Boolean(accessToken),
     refetchInterval: options?.refetchInterval,
   });
 }
@@ -93,3 +110,18 @@ export function useApproveShipmentMutation(
   });
 }
 
+function buildShipmentListQueryKey(filters: ShipmentListFilters) {
+  return [
+    ...queryKeys.shipments,
+    filters.q ?? '',
+    filters.shipmentCode ?? '',
+    filters.shipmentCodes?.join(',') ?? '',
+    filters.status ?? '',
+    filters.opsArrivedUnsigned === true ? 'ops-arrived-unsigned' : '',
+    filters.createdFrom ?? '',
+    filters.createdTo ?? '',
+    filters.limit ?? '',
+    filters.offset ?? '',
+    filters.hubCodes?.join(',') ?? '',
+  ];
+}

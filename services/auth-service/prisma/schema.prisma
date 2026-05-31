@@ -36,6 +36,7 @@ model UserAccount {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   sessions     AuthSession[]
+  mobilePermissionOverride MobilePermissionOverride?
 }
 
 model AuthSession {
@@ -53,6 +54,45 @@ model AuthSession {
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
   user                  UserAccount   @relation(fields: [userId], references: [id])
+}
+
+model MobilePermissionProfile {
+  id          String   @id @default(cuid())
+  actor       String   @unique
+  permissions Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model MobilePermissionOverride {
+  id          String      @id @default(cuid())
+  userId      String      @unique
+  permissions Json
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  user        UserAccount @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AdminAuditLog {
+  id            String   @id @default(cuid())
+  actorId       String?
+  actorUsername String?
+  action        String
+  targetType    String
+  targetId      String?
+  before        Json?
+  after         Json?
+  requestId     String?
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([action, createdAt])
+  @@index([targetType, createdAt])
+  @@index([targetType, targetId, createdAt])
+  @@index([actorId, createdAt])
+  @@index([actorUsername, createdAt])
 }
 
 model OutboxEvent {

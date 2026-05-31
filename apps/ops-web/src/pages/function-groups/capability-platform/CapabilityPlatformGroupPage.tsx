@@ -1,13 +1,8 @@
 import React from 'react';
+import { Navigate } from 'react-router-dom';
 
-import { FunctionGroupLandingPage } from '../shared/FunctionGroupLandingPage';
+import { routePaths } from '../../../navigation/routes';
 
 export function CapabilityPlatformGroupPage(): React.JSX.Element {
-  return (
-    <FunctionGroupLandingPage
-      groupCode="CAPABILITY_PLATFORM"
-      title="Quản lý vận chuyển"
-      summary="Cụm quản lý năng lực vận hành, tài nguyên và khả năng đáp ứng."
-    />
-  );
+  return <Navigate to={routePaths.linehaulTripManagement} replace />;
 }

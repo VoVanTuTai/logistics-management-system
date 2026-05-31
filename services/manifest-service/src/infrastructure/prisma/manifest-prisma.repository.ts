@@ -60,6 +60,19 @@ export class ManifestPrismaRepository extends ManifestRepository {
     return record ? this.toEntity(record) : null;
   }
 
+  async findByManifestCode(manifestCode: string): Promise<Manifest | null> {
+    const record = await this.prisma.manifest.findUnique({
+      where: { manifestCode },
+      include: {
+        items: true,
+        sealRecord: true,
+        receiveRecord: true,
+      },
+    });
+
+    return record ? this.toEntity(record) : null;
+  }
+
   async findByShipmentCode(shipmentCode: string): Promise<Manifest | null> {
     const record = await this.prisma.manifest.findFirst({
       where: {

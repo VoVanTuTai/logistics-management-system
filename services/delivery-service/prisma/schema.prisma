@@ -107,6 +107,10 @@ model ReturnCase {
   completedAt  DateTime?
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
+
+  @@unique([ndrCaseId])
+  @@index([shipmentCode])
+  @@index([status])
 }
 
 model IdempotencyRecord {
@@ -132,4 +136,25 @@ model OutboxEvent {
   publishedAt   DateTime?
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
+}
+
+model OpsAuditLog {
+  id            String   @id @default(cuid())
+  actorId       String?
+  actorUsername String?
+  action        String
+  targetType    String
+  targetId      String?
+  before        Json?
+  after         Json?
+  requestId     String?
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([actorId])
+  @@index([action])
+  @@index([targetType, targetId])
+  @@map("ops_audit_logs")
 }

@@ -13,6 +13,9 @@ import { TaskIssueScreen } from '../screens/delivery/TaskIssueScreen';
 import { HubScanScreen } from '../screens/scan/HubScanScreen';
 import { PickupScanScreen } from '../screens/scan/PickupScanScreen';
 import { DeliverySignScanScreen } from '../screens/scan/DeliverySignScanScreen';
+import { ReturnRegistrationScreen } from '../screens/scan/ReturnRegistrationScreen';
+import { DeliveryDispatchScreen } from '../screens/scan/DeliveryDispatchScreen';
+import { GoodsArrivalScreen } from '../screens/scan/GoodsArrivalScreen';
 import { BagSealScreen } from '../screens/scan/BagSealScreen';
 import { BagUnsealScreen } from '../screens/scan/BagUnsealScreen';
 import { InventoryCheckScreen } from '../screens/scan/InventoryCheckScreen';
@@ -70,12 +73,30 @@ export function AppNavigator(): React.JSX.Element {
             options={{ title: 'Quét ký nhận' }}
           />
           <Stack.Screen
+            name="ReturnRegistration"
+            component={ReturnRegistrationScreen}
+            options={{ title: 'Đăng ký chuyển hoàn' }}
+          />
+          <Stack.Screen
+            name="DeliveryDispatch"
+            component={DeliveryDispatchScreen}
+            options={{ title: 'Phát hàng' }}
+          />
+          <Stack.Screen
             name="HubScan"
             component={HubScanScreen}
             options={({ route }) => ({
-              title: route.params.mode === 'INBOUND' ? 'Hàng đến' : 'Quet hub',
+              title: route.params.mode === 'INBOUND' ? 'Hàng đến' : 'Quét hub',
             })}
           />
+          <Stack.Screen
+            name="GoodsArrival"
+            options={{ title: 'Hàng đến' }}
+          >
+            {({ route }) => (
+              <GoodsArrivalScreen initialShipmentCode={route.params?.shipmentCode} />
+            )}
+          </Stack.Screen>
           <Stack.Screen
             name="BagSeal"
             component={BagSealScreen}
@@ -84,7 +105,7 @@ export function AppNavigator(): React.JSX.Element {
           <Stack.Screen
             name="BagUnseal"
             component={BagUnsealScreen}
-            options={{ title: 'Go bao' }}
+            options={{ title: 'Gỡ bao' }}
           />
           <Stack.Screen
             name="SendGoods"
@@ -129,12 +150,12 @@ export function AppNavigator(): React.JSX.Element {
           <Stack.Screen
             name="TaskIssue"
             component={TaskIssueScreen}
-         
+            options={{ title: 'Báo vấn đề nhiệm vụ' }}
           />
           <Stack.Screen
             name="TrackingLookup"
             component={TrackingLookupScreen}
-            options={{ title: 'Theo doi don hang' }}
+            options={{ title: 'Theo dõi đơn hàng' }}
           />
           <Stack.Screen
             name="CodStats"

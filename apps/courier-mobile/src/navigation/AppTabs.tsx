@@ -7,7 +7,7 @@ import type { AppTabsParamList } from './types';
 import { HomeScreen } from '../screens/home/HomeScreen';
 import { StatsScreen } from '../screens/stats/StatsScreen';
 import { ScanScreen } from '../screens/scan/ScanScreen';
-import { ChatPlaceholderScreen } from '../screens/chat/ChatPlaceholderScreen';
+import { ChatScreen } from '../screens/chat/ChatScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import { theme } from '../theme';
 
@@ -93,11 +93,15 @@ export function AppTabs(): React.JSX.Element {
       <Tab.Screen
         name="Scan"
         component={ScanScreen}
-        options={{ tabBarLabel: 'Quét mã' }}
+        options={{
+          tabBarLabel: 'Quét mã',
+          tabBarAccessibilityLabel: 'Tab Quét mã',
+          tabBarButtonTestID: 'tab-scan',
+        }}
       />
       <Tab.Screen
         name="Chat"
-        component={ChatPlaceholderScreen}
+        component={ChatScreen}
         options={{ tabBarLabel: 'Chat' }}
       />
       <Tab.Screen

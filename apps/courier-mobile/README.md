@@ -8,7 +8,7 @@ Scaffold toi thieu cho app shipper/courier trong monorepo `NEXUS-logistics`.
 - Xem task list va task detail
 - Scan pickup
 - Scan hub inbound/outbound
-- Delivery success voi POD/OTP placeholder
+- Delivery success voi POD upload qua gateway media endpoint va OTP field
 - Delivery fail voi NDR/next action flag
 - Offline queue retry cho scan va delivery actions co `idempotencyKey`
 
@@ -41,9 +41,10 @@ App duoc scaffold theo huong feature-first, tach ro:
   - `/courier/scan/scans/*`
   - `/courier/delivery/deliveries/*`
   - `/courier/delivery/ndr`
-- `courierId` de query task uu tien `EXPO_PUBLIC_COURIER_ID`, sau do fallback ve
-  username dang nhap. Backend seed dung ma nhan vien 8 so, vi du `30000001`.
-- POD upload contract chua ro. Hien tai UI chi gui `podImageUrl` string placeholder.
+- `courierId` de query task uu tien username dang nhap. `EXPO_PUBLIC_COURIER_ID`
+  chi la fallback dev/test khi chua co session. Backend seed dung ma nhan vien
+  8 so, vi du `30000001`.
+- POD upload di qua `GET /courier/media/upload-url`, sau do app PUT anh len object storage va gui public URL vao delivery success.
 - `delivery attempts` chua dua vao offline queue vi contract hien tai chua co `idempotencyKey`.
 
 ## Offline Queue
@@ -64,7 +65,7 @@ App duoc scaffold theo huong feature-first, tach ro:
 Sao chep `.env.example` thanh `.env` hoac env file phu hop voi runtime:
 
 ```env
-EXPO_PUBLIC_GATEWAY_BASE_URL=http://192.168.1.10:3000
+EXPO_PUBLIC_GATEWAY_BASE_URL=http://103.179.172.53:13000
 EXPO_PUBLIC_REQUEST_TIMEOUT_MS=15000
 EXPO_PUBLIC_COURIER_ID=30000001
 ```
@@ -76,7 +77,7 @@ Khuyen nghi van set ro `EXPO_PUBLIC_GATEWAY_BASE_URL` thanh LAN IP/server URL
 de tranh sai host tren runtime khac nhau:
 
 ```env
-EXPO_PUBLIC_GATEWAY_BASE_URL=http://192.168.1.10:3000
+EXPO_PUBLIC_GATEWAY_BASE_URL=http://103.179.172.53:13000
 ```
 
 Luu y:
@@ -97,6 +98,81 @@ Dung tai khoan courier that da ton tai trong auth-service.
   - `react-hook-form`
   - `zod`
   - `@react-native-async-storage/async-storage`
+
+## Build APK de cai tren dien thoai Android
+
+Project da co `eas.json` voi profile `preview` de xuat file `.apk`.
+
+1. Cai dependency neu may chua co:
+
+```bash
+cd apps/courier-mobile
+npm install
+```
+
+2. Tao file `.env` tu `.env.example` va doi gateway sang IP public/domain ma dien thoai truy cap duoc:
+
+```env
+EXPO_PUBLIC_GATEWAY_BASE_URL=http://103.179.172.53:13000
+EXPO_PUBLIC_REQUEST_TIMEOUT_MS=15000
+EXPO_PUBLIC_COURIER_ID=30000001
+```
+
+Khong dung `localhost` khi cai APK len dien thoai that, vi `localhost` luc do la chinh dien thoai.
+Neu dung URL `http://...` thay vi HTTPS, app Android can `usesCleartextTraffic`
+trong `app.json`.
+
+## Smoke test tren may that voi Maestro
+
+Flow UI ngan nam tai `maestro/courier-mobile-smoke.yaml`.
+
+Seed data truoc khi chay UI flow:
+
+```bash
+node scripts/courier-mobile-e2e.js --seed-only
+```
+
+Sau khi cai APK preview len may/emulator:
+
+```bash
+COURIER_E2E_USERNAME=30009991 \
+COURIER_E2E_PASSWORD=password \
+maestro test apps/courier-mobile/maestro/courier-mobile-smoke.yaml
+```
+
+Voi may that, `EXPO_PUBLIC_GATEWAY_BASE_URL` phai la LAN IP/public URL ma may
+co the truy cap; khong dung `localhost`.
+
+3. Dang nhap Expo va link project EAS lan dau:
+
+```bash
+npx eas-cli login
+npx eas-cli build:configure
+```
+
+Neu EAS hoi tao project moi, chon yes. Lenh nay co the them `extra.eas.projectId`
+vao `app.json`.
+
+4. Build APK:
+
+```bash
+npx eas-cli build --platform android --profile preview
+```
+
+Khi build xong, EAS se hien link download. Mo link do tren dien thoai Android,
+tai file `.apk`, cho phep cai app tu trinh duyet/file manager neu may hoi, roi cai dat.
+
+Neu muon cai qua USB:
+
+```bash
+adb install path/to/courier-mobile.apk
+```
+
+Build de day Google Play nen dung profile `production`, mac dinh xuat `.aab`:
+
+```bash
+npx eas-cli build --platform android --profile production
+```
 
 ## Next Safe Steps
 

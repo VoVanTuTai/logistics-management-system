@@ -28,11 +28,11 @@
 
 .ops-return-management__tab:hover {
   background: #f8fafc;
-  color: #1d4ed8;
+  color: var(--ops-primary);
 }
 
 .ops-return-management__tab--active {
-  color: #1d4ed8;
+  color: var(--ops-primary);
   font-weight: 700;
   background: #eff6ff;
 }
@@ -49,7 +49,7 @@
   justify-content: space-between;
   gap: 12px;
   border-bottom: 1px solid #e2e8f0;
-  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  background: #f8fafc;
   padding: 0 14px;
 }
 
@@ -142,7 +142,7 @@
   appearance: auto;
 }
 
-.ops-return-management__field--invalid .ops-return-management__mock-select-control {
+.ops-return-management__field--invalid .ops-return-management__reason-select-control {
   border-color: #ef4444;
 }
 
@@ -174,8 +174,8 @@
 }
 
 .ops-return-management__search-btn {
-  border-color: #1d4ed8;
-  background: #1d4ed8;
+  border-color: var(--ops-primary);
+  background: var(--ops-primary);
   color: #ffffff;
 }
 
@@ -263,11 +263,11 @@
   min-height: 170px;
 }
 
-.ops-return-management__mock-select {
+.ops-return-management__reason-select {
   position: relative;
 }
 
-.ops-return-management__mock-select-control {
+.ops-return-management__reason-select-control {
   width: 100%;
   height: 36px;
   border: 1px solid #cbd5e1;
@@ -283,7 +283,7 @@
   font-weight: 600;
 }
 
-.ops-return-management__mock-select-control svg {
+.ops-return-management__reason-select-control svg {
   width: 15px;
   height: 15px;
   fill: none;
@@ -293,7 +293,7 @@
   stroke-linejoin: round;
 }
 
-.ops-return-management__mock-select-menu {
+.ops-return-management__reason-select-menu {
   position: absolute;
   left: 0;
   top: 42px;
@@ -308,7 +308,7 @@
   padding: 6px 0;
 }
 
-.ops-return-management__mock-select-menu button {
+.ops-return-management__reason-select-menu button {
   width: 100%;
   min-height: 36px;
   border: 0;
@@ -321,7 +321,7 @@
   font-weight: 600;
 }
 
-.ops-return-management__mock-select-menu button:hover {
+.ops-return-management__reason-select-menu button:hover {
   background: #f8fafc;
   color: #334155;
 }
@@ -360,8 +360,8 @@
 
 .ops-return-management__save-more-btn,
 .ops-return-management__save-btn {
-  border-color: #1d4ed8;
-  background: #1d4ed8;
+  border-color: var(--ops-primary);
+  background: var(--ops-primary);
   color: #ffffff;
 }
 

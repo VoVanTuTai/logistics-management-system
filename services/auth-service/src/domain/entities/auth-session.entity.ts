@@ -1,5 +1,7 @@
 import type { AuthenticatedUser } from './user-account.entity';
+import type { UserRoleGroup } from './user-account.entity';
 
+export type AuthPortalRoleGroup = UserRoleGroup | 'COURIER_APP';
 export type SessionStatus = 'ACTIVE' | 'REVOKED';
 
 export interface AuthSession {
@@ -31,10 +33,12 @@ export interface AuthTokens {
 export interface LoginInput {
   username: string;
   password: string;
+  roleGroup?: AuthPortalRoleGroup;
 }
 
 export interface RefreshSessionInput {
   refreshToken: string;
+  roleGroup?: AuthPortalRoleGroup;
 }
 
 export interface LogoutInput {
@@ -44,6 +48,18 @@ export interface LogoutInput {
 
 export interface IntrospectInput {
   accessToken: string;
+}
+
+export interface UpdateOwnProfileInput {
+  accessToken: string;
+  displayName?: string | null;
+  phone?: string | null;
+}
+
+export interface ChangePasswordInput {
+  accessToken: string;
+  currentPassword: string;
+  newPassword: string;
 }
 
 export interface CreateAuthSessionInput {
@@ -78,4 +94,9 @@ export interface IntrospectResult {
   sessionId: string | null;
   user: AuthenticatedUser | null;
   accessTokenExpiresAt: string | null;
+}
+
+export interface ChangePasswordResult {
+  changed: boolean;
+  userId: string | null;
 }

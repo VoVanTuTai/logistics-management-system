@@ -24,6 +24,11 @@ function normalizeBaseUrl(value: string): string {
   return value.trim().replace(/\/+$/, '');
 }
 
+function parseBooleanEnv(value: string | null | undefined): boolean {
+  const normalizedValue = value?.trim().toLowerCase();
+  return normalizedValue === '1' || normalizedValue === 'true' || normalizedValue === 'yes';
+}
+
 function resolveHostFromRuntimeValue(rawValue: string): string | null {
   const trimmedValue = rawValue.trim();
   if (!trimmedValue) {
@@ -174,6 +179,8 @@ function resolveGatewayBaseUrls(): string[] {
 
   if (configuredBaseUrl && configuredBaseUrl.trim().length > 0) {
     appendUnique(gatewayBaseUrls, normalizeBaseUrl(configuredBaseUrl));
+    appendConfiguredFallbackBaseUrls(gatewayBaseUrls);
+    return gatewayBaseUrls;
   }
 
   const runtimeHosts = collectRuntimeHosts();
@@ -209,9 +216,21 @@ function resolveGatewayBaseUrls(): string[] {
 
 const resolvedGatewayBaseUrls = resolveGatewayBaseUrls();
 
+function toChatWsUrl(baseUrl: string): string {
+  const gatewayUrl = new URL(baseUrl);
+  gatewayUrl.protocol = gatewayUrl.protocol === 'https:' ? 'wss:' : 'ws:';
+  gatewayUrl.pathname = '/ws/chat';
+  gatewayUrl.search = '';
+  gatewayUrl.hash = '';
+  return gatewayUrl.toString();
+}
+
 export const appEnv = {
   gatewayBaseUrl:
     resolvedGatewayBaseUrls[0] ?? `http://localhost:${DEFAULT_GATEWAY_PORT}`,
+  chatWsUrl: toChatWsUrl(
+    resolvedGatewayBaseUrls[0] ?? `http://localhost:${DEFAULT_GATEWAY_PORT}`,
+  ),
   gatewayFallbackBaseUrls: resolvedGatewayBaseUrls.slice(1),
   requestTimeoutMs: Number(
     process.env.EXPO_PUBLIC_REQUEST_TIMEOUT_MS ??
@@ -222,4 +241,8 @@ export const appEnv = {
     process.env.EXPO_PUBLIC_COURIER_ID ??
     process.env.COURIER_ID ??
     '',
+  allowAllCourierMobilePermissionsForTesting: parseBooleanEnv(
+    process.env.EXPO_PUBLIC_ALLOW_ALL_COURIER_MOBILE_PERMISSIONS_FOR_TESTING ??
+      process.env.ALLOW_ALL_COURIER_MOBILE_PERMISSIONS_FOR_TESTING,
+  ),
 } as const;

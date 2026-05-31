@@ -1,9 +1,31 @@
-import { Injectable } from '@nestjs/common';
-import type { CodRecord as PrismaCodRecord, Prisma } from '@prisma/client';
+import { ConflictException, Injectable } from '@nestjs/common';
+import { Prisma as PrismaNamespace } from '@prisma/client';
+import type {
+  CodRecord as PrismaCodRecord,
+  CodSettlementBatch as PrismaCodSettlementBatch,
+  CodSettlementPaymentEvent as PrismaCodSettlementPaymentEvent,
+  CodSettlementItem as PrismaCodSettlementItem,
+  Prisma,
+} from '@prisma/client';
 
-import type { CodRecord, CreateCodRecordInput } from '../../domain/entities/cod-record.entity';
+import type {
+  CodDailySettlementRecordFilter,
+  CodRecord,
+  CodSettlementBatch,
+  CodSettlementPaymentEvent,
+  CodSettlementPaymentEventFilter,
+  CodSettlementBatchFilter,
+  ConfirmCodSettlementBatchRecordInput,
+  CreateCodSettlementBatchRecordInput,
+  CreateCodRecordInput,
+  RecordCodSettlementPaymentEventInput,
+  RecordCodSettlementPaymentEventResult,
+  UpdateCodSettlementPaymentEventInput,
+} from '../../domain/entities/cod-record.entity';
 import { CodRecordRepository } from '../../domain/repositories/cod-record.repository';
 import { PrismaService } from './prisma.service';
+
+const DEFAULT_RETENTION_DAYS = 45;
 
 @Injectable()
 export class CodRecordPrismaRepository extends CodRecordRepository {
@@ -12,12 +34,15 @@ export class CodRecordPrismaRepository extends CodRecordRepository {
   }
 
   async create(input: CreateCodRecordInput): Promise<CodRecord> {
+    await this.deleteExpiredCodRecordForShipmentCode(input.shipmentCode);
+
     const data: Prisma.CodRecordCreateInput = {
       shipmentCode: input.shipmentCode,
       merchantId: input.merchantId ?? null,
       codAmount: input.codAmount,
       currency: input.currency ?? 'VND',
       paymentMethod: input.paymentMethod ?? 'COD',
+      hubCode: normalizeOptionalCode(input.hubCode),
       courierId: input.courierId ?? null,
     };
 
@@ -33,6 +58,21 @@ export class CodRecordPrismaRepository extends CodRecordRepository {
     return record ? this.toEntity(record) : null;
   }
 
+  async listByShipmentCodes(shipmentCodes: string[]): Promise<CodRecord[]> {
+    const records = await this.prisma.codRecord.findMany({
+      where: {
+        shipmentCode: {
+          in: shipmentCodes,
+        },
+      },
+      orderBy: {
+        shipmentCode: 'asc',
+      },
+    });
+
+    return records.map((record) => this.toEntity(record));
+  }
+
   async listByCourierId(courierId: string, status?: string): Promise<CodRecord[]> {
     const where: Prisma.CodRecordWhereInput = { courierId };
     if (status) {
@@ -45,6 +85,340 @@ export class CodRecordPrismaRepository extends CodRecordRepository {
     });
 
     return records.map((r) => this.toEntity(r));
+  }
+
+  async listForDailySettlement(
+    filter: CodDailySettlementRecordFilter,
+  ): Promise<CodRecord[]> {
+    const where: Prisma.CodRecordWhereInput = {};
+
+    if (filter.courierId) {
+      where.courierId = filter.courierId;
+    }
+
+    if (filter.hubCode) {
+      where.hubCode = filter.hubCode;
+    }
+
+    if (filter.status) {
+      where.status = filter.status;
+    }
+
+    if (filter.dateFrom && filter.dateTo) {
+      where.OR = [
+        {
+          collectedAt: {
+            gte: filter.dateFrom,
+            lt: filter.dateTo,
+          },
+        },
+        {
+          collectedAt: null,
+          updatedAt: {
+            gte: filter.dateFrom,
+            lt: filter.dateTo,
+          },
+        },
+      ];
+    }
+
+    const records = await this.prisma.codRecord.findMany({
+      where,
+      orderBy: [
+        { collectedAt: 'desc' },
+        { updatedAt: 'desc' },
+        { createdAt: 'desc' },
+      ],
+    });
+
+    return records.map((record) => this.toEntity(record));
+  }
+
+  async listSettlementBatches(
+    filter: CodSettlementBatchFilter,
+  ): Promise<CodSettlementBatch[]> {
+    const where: Prisma.CodSettlementBatchWhereInput = {};
+
+    if (filter.hubCode) {
+      where.hubCode = filter.hubCode;
+    }
+
+    if (filter.courierId) {
+      where.courierId = filter.courierId;
+    }
+
+    if (filter.dateFrom && filter.dateTo) {
+      where.reportDate = {
+        gte: filter.dateFrom,
+        lt: filter.dateTo,
+      };
+    }
+
+    const records = await this.prisma.codSettlementBatch.findMany({
+      where,
+      include: {
+        items: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return records.map((record) => this.toSettlementBatchEntity(record));
+  }
+
+  async createSettlementBatch(
+    input: CreateCodSettlementBatchRecordInput,
+  ): Promise<CodSettlementBatch> {
+    try {
+      const batch = await this.prisma.$transaction(async (tx) => {
+        return tx.codSettlementBatch.create({
+          data: {
+            settlementCode: input.settlementCode,
+            reportDate: input.reportDate,
+            hubCode: input.hubCode,
+            courierId: input.courierId,
+            totalAmount: input.totalAmount,
+            qrUrl: input.qrUrl,
+            transferMemo: input.transferMemo,
+            createdBy: input.createdBy,
+            items: {
+              create: input.items.map((item) => ({
+                codRecordId: item.codRecordId,
+                shipmentCode: item.shipmentCode,
+                amount: item.amount,
+              })),
+            },
+          },
+          include: {
+            items: true,
+          },
+        });
+      });
+
+      return this.toSettlementBatchEntity(batch);
+    } catch (error) {
+      if (
+        error instanceof PrismaNamespace.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'One or more COD records already belong to a settlement batch.',
+        );
+      }
+
+      throw error;
+    }
+  }
+
+  async findSettlementBatchById(id: string): Promise<CodSettlementBatch | null> {
+    const record = await this.prisma.codSettlementBatch.findUnique({
+      where: { id },
+      include: {
+        items: true,
+      },
+    });
+
+    return record ? this.toSettlementBatchEntity(record) : null;
+  }
+
+  async findSettlementBatchByCode(
+    settlementCode: string,
+  ): Promise<CodSettlementBatch | null> {
+    const record = await this.prisma.codSettlementBatch.findUnique({
+      where: { settlementCode },
+      include: {
+        items: true,
+      },
+    });
+
+    return record ? this.toSettlementBatchEntity(record) : null;
+  }
+
+  async confirmSettlementBatch(
+    input: ConfirmCodSettlementBatchRecordInput,
+  ): Promise<CodSettlementBatch | null> {
+    const batch = await this.prisma.$transaction(async (tx) => {
+      const current = await tx.codSettlementBatch.findUnique({
+        where: {
+          id: input.id,
+        },
+        include: {
+          items: true,
+        },
+      });
+
+      if (!current) {
+        return null;
+      }
+
+      if (current.status === 'PAID') {
+        return current;
+      }
+
+      if (current.status !== 'WAITING_PAYMENT') {
+        return current;
+      }
+
+      const codRecordIds = current.items.map((item) => item.codRecordId);
+
+      await tx.codRecord.updateMany({
+        where: {
+          id: {
+            in: codRecordIds,
+          },
+        },
+        data: {
+          status: 'REMITTED',
+          remittedBy: input.confirmedBy,
+          remittedAt: input.confirmedAt,
+          note: input.note ?? undefined,
+        },
+      });
+
+      return tx.codSettlementBatch.update({
+        where: {
+          id: input.id,
+        },
+        data: {
+          status: 'PAID',
+          confirmedBy: input.confirmedBy,
+          confirmedAt: input.confirmedAt,
+          confirmedNote: input.note,
+        } as Prisma.CodSettlementBatchUncheckedUpdateInput,
+        include: {
+          items: true,
+        },
+      });
+    });
+
+    return batch ? this.toSettlementBatchEntity(batch) : null;
+  }
+
+  async recordSettlementPaymentEvent(
+    input: RecordCodSettlementPaymentEventInput,
+  ): Promise<RecordCodSettlementPaymentEventResult> {
+    try {
+      const event = await this.prisma.codSettlementPaymentEvent.create({
+        data: {
+          provider: input.provider,
+          providerEventId: input.providerEventId,
+          referenceType: input.referenceType ?? null,
+          settlementBatchId: input.settlementBatchId,
+          settlementCode: input.settlementCode,
+          codRecordId: input.codRecordId ?? null,
+          shipmentCode: input.shipmentCode ?? null,
+          amount: input.amount,
+          accountNumber: input.accountNumber,
+          transferType: input.transferType,
+          referenceCode: input.referenceCode,
+          transactionDate: input.transactionDate,
+          processingStatus: input.processingStatus,
+          ignoredReason: input.ignoredReason,
+          rawPayload: input.rawPayload as Prisma.InputJsonValue,
+        } as Prisma.CodSettlementPaymentEventUncheckedCreateInput,
+      });
+
+      return {
+        event: this.toSettlementPaymentEventEntity(event),
+        created: true,
+      };
+    } catch (error) {
+      if (
+        error instanceof PrismaNamespace.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        const existing = await this.prisma.codSettlementPaymentEvent.findUnique({
+          where: {
+            provider_providerEventId: {
+              provider: input.provider,
+              providerEventId: input.providerEventId,
+            },
+          },
+        });
+
+        if (existing) {
+          return {
+            event: this.toSettlementPaymentEventEntity(existing),
+            created: false,
+          };
+        }
+      }
+
+      throw error;
+    }
+  }
+
+  async updateSettlementPaymentEvent(
+    input: UpdateCodSettlementPaymentEventInput,
+  ): Promise<CodSettlementPaymentEvent> {
+    const event = await this.prisma.codSettlementPaymentEvent.update({
+      where: {
+        id: input.id,
+      },
+      data: {
+        referenceType: input.referenceType,
+        settlementBatchId: input.settlementBatchId,
+        settlementCode: input.settlementCode,
+        codRecordId: input.codRecordId,
+        shipmentCode: input.shipmentCode,
+        processingStatus: input.processingStatus,
+        ignoredReason: input.ignoredReason,
+      } as Prisma.CodSettlementPaymentEventUncheckedUpdateInput,
+    });
+
+    return this.toSettlementPaymentEventEntity(event);
+  }
+
+  async listSettlementPaymentEvents(
+    filter: CodSettlementPaymentEventFilter,
+  ): Promise<CodSettlementPaymentEvent[]> {
+    const where: Record<string, unknown> = {};
+
+    if (filter.provider) {
+      where.provider = filter.provider;
+    }
+
+    if (filter.providerEventId) {
+      where.providerEventId = filter.providerEventId;
+    }
+
+    if (filter.referenceType) {
+      where.referenceType = filter.referenceType;
+    }
+
+    if (filter.processingStatus) {
+      where.processingStatus = filter.processingStatus;
+    }
+
+    if (filter.settlementCode) {
+      where.settlementCode = filter.settlementCode;
+    }
+
+    if (filter.shipmentCode) {
+      where.shipmentCode = filter.shipmentCode;
+    }
+
+    if (filter.codRecordId) {
+      where.codRecordId = filter.codRecordId;
+    }
+
+    if (filter.dateFrom || filter.dateTo) {
+      where.createdAt = {
+        ...(filter.dateFrom ? { gte: filter.dateFrom } : {}),
+        ...(filter.dateTo ? { lt: filter.dateTo } : {}),
+      };
+    }
+
+    const events = await this.prisma.codSettlementPaymentEvent.findMany({
+      where: where as Prisma.CodSettlementPaymentEventWhereInput,
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: filter.limit,
+    });
+
+    return events.map((event) => this.toSettlementPaymentEventEntity(event));
   }
 
   async markCollected(
@@ -65,6 +439,38 @@ export class CodRecordPrismaRepository extends CodRecordRepository {
         collectedAt,
         note,
       },
+    });
+
+    return this.toEntity(record);
+  }
+
+  async markBankTransferReceived(
+    id: string,
+    receivedAmount: number,
+    receivedAt: Date,
+    note: string | null,
+  ): Promise<CodRecord> {
+    const record = await this.prisma.$transaction(async (tx) => {
+      const current = await tx.codRecord.findUnique({
+        where: { id },
+      });
+
+      if (!current) {
+        throw new Error(`COD record "${id}" was not found.`);
+      }
+
+      return tx.codRecord.update({
+        where: { id },
+        data: {
+          status: 'REMITTED',
+          paymentMethod: 'BANK_TRANSFER',
+          collectedAmount: receivedAmount,
+          collectedAt: current.collectedAt ?? receivedAt,
+          remittedBy: 'sepay:webhook',
+          remittedAt: receivedAt,
+          note,
+        },
+      });
     });
 
     return this.toEntity(record);
@@ -150,6 +556,15 @@ export class CodRecordPrismaRepository extends CodRecordRepository {
     };
   }
 
+  async updateCourier(id: string, courierId: string): Promise<CodRecord> {
+    const record = await this.prisma.codRecord.update({
+      where: { id },
+      data: { courierId },
+    });
+
+    return this.toEntity(record);
+  }
+
   private toEntity(record: PrismaCodRecord): CodRecord {
     return {
       id: record.id,
@@ -159,6 +574,7 @@ export class CodRecordPrismaRepository extends CodRecordRepository {
       currency: record.currency,
       paymentMethod: record.paymentMethod as CodRecord['paymentMethod'],
       status: record.status as CodRecord['status'],
+      hubCode: record.hubCode,
       courierId: record.courierId,
       collectedAt: record.collectedAt,
       collectedAmount: record.collectedAmount,
@@ -169,4 +585,99 @@ export class CodRecordPrismaRepository extends CodRecordRepository {
       updatedAt: record.updatedAt,
     };
   }
+
+  private toSettlementBatchEntity(
+    record: PrismaCodSettlementBatch & { items: PrismaCodSettlementItem[] },
+  ): CodSettlementBatch {
+    return {
+      id: record.id,
+      settlementCode: record.settlementCode,
+      reportDate: record.reportDate,
+      hubCode: record.hubCode,
+      courierId: record.courierId,
+      totalAmount: record.totalAmount,
+      status: record.status as CodSettlementBatch['status'],
+      qrUrl: record.qrUrl,
+      transferMemo: record.transferMemo,
+      createdBy: record.createdBy,
+      confirmedBy: record.confirmedBy,
+      confirmedAt: record.confirmedAt,
+      confirmedNote: (record as { confirmedNote?: string | null }).confirmedNote ?? null,
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
+      items: record.items.map((item) => ({
+        id: item.id,
+        batchId: item.batchId,
+        codRecordId: item.codRecordId,
+        shipmentCode: item.shipmentCode,
+        amount: item.amount,
+      })),
+    };
+  }
+
+  private toSettlementPaymentEventEntity(
+    record: PrismaCodSettlementPaymentEvent,
+  ): CodSettlementPaymentEvent {
+    return {
+      id: record.id,
+      provider: record.provider,
+      providerEventId: record.providerEventId,
+      referenceType: (record as { referenceType?: string | null }).referenceType ?? null,
+      settlementBatchId: record.settlementBatchId,
+      settlementCode: record.settlementCode,
+      codRecordId: (record as { codRecordId?: string | null }).codRecordId ?? null,
+      shipmentCode: (record as { shipmentCode?: string | null }).shipmentCode ?? null,
+      amount: record.amount,
+      accountNumber: record.accountNumber,
+      transferType: record.transferType,
+      referenceCode: record.referenceCode,
+      transactionDate: record.transactionDate,
+      processingStatus: record.processingStatus,
+      ignoredReason: record.ignoredReason,
+      rawPayload: record.rawPayload,
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
+    };
+  }
+
+  private async deleteExpiredCodRecordForShipmentCode(
+    shipmentCode: string,
+    now = new Date(),
+  ): Promise<void> {
+    const existingRecord = await this.prisma.codRecord.findUnique({
+      where: {
+        shipmentCode,
+      },
+    });
+
+    if (!existingRecord || existingRecord.createdAt >= getRetentionCutoff(now)) {
+      return;
+    }
+
+    await this.prisma.codRecord.delete({
+      where: {
+        shipmentCode,
+      },
+    });
+  }
+}
+
+function getRetentionCutoff(now: Date): Date {
+  const retentionDays = readPositiveNumber(
+    process.env.SHIPMENT_RETENTION_DAYS ?? process.env.ORDER_RETENTION_DAYS,
+    DEFAULT_RETENTION_DAYS,
+  );
+
+  return new Date(now.getTime() - retentionDays * 24 * 60 * 60 * 1000);
+}
+
+function readPositiveNumber(value: string | undefined, fallback: number): number {
+  const parsed = Number(value);
+
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function normalizeOptionalCode(value: string | null | undefined): string | null {
+  const normalized = value?.trim().toUpperCase();
+  return normalized && normalized.length > 0 ? normalized : null;
 }

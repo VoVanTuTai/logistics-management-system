@@ -10,6 +10,7 @@ import type {
 import { PrismaService } from './prisma.service';
 
 const ALL = 'ALL';
+const DEFAULT_RETENTION_DAYS = 45;
 
 type MetricField = keyof Pick<
   KpiDaily,
@@ -20,6 +21,8 @@ type MetricField = keyof Pick<
   | 'ndrCreated'
   | 'scansInbound'
   | 'scansOutbound'
+  | 'codCollected'
+  | 'codRemitted'
 >;
 
 const METRIC_FIELDS: Record<string, MetricField> = {
@@ -30,6 +33,8 @@ const METRIC_FIELDS: Record<string, MetricField> = {
   'ndr.created': 'ndrCreated',
   'scan.inbound': 'scansInbound',
   'scan.outbound': 'scansOutbound',
+  'cod.collected': 'codCollected',
+  'cod.remitted': 'codRemitted',
 };
 
 const STATUS_BY_EVENT: Record<string, string> = {
@@ -48,6 +53,8 @@ const STATUS_BY_EVENT: Record<string, string> = {
   'ndr.created': 'DELIVERY_FAILED',
   'return.started': 'RETURNING',
   'return.completed': 'RETURNED',
+  'cod.collected': 'COD_COLLECTED',
+  'cod.remitted': 'COD_REMITTED',
 };
 
 type DimensionKey = 'courier' | 'hub' | 'zone';
@@ -462,17 +469,28 @@ export class ReportingProjectionStore {
     const existing = await this.prisma.shipmentStatusProjection.findUnique({
       where: { shipmentCode },
     });
+    const expired = existing
+      ? existing.lastEventAt < getRetentionCutoff(occurredAt)
+      : false;
+
+    if (expired) {
+      await this.prisma.shipmentStatusProjection.delete({
+        where: {
+          shipmentCode,
+        },
+      });
+    }
 
     const courierCode = this.resolveStatusDimensionValue(
-      existing?.courierCode,
+      expired ? null : existing?.courierCode,
       dimensions.courierCode,
     );
     const hubCode = this.resolveStatusDimensionValue(
-      existing?.hubCode,
+      expired ? null : existing?.hubCode,
       dimensions.hubCode,
     );
     const zoneCode = this.resolveStatusDimensionValue(
-      existing?.zoneCode,
+      expired ? null : existing?.zoneCode,
       dimensions.zoneCode,
     );
 
@@ -542,6 +560,7 @@ export class ReportingProjectionStore {
           ['delivery_attempt', 'courierId'],
           ['pickupRequest', 'courierId'],
           ['pickup_request', 'courierId'],
+          ['codRecord', 'courierId'],
         ]) ?? ALL,
       hubCode:
         this.findString(event.data, [
@@ -556,6 +575,7 @@ export class ReportingProjectionStore {
           ['scan_event', 'locationCode'],
           ['pickupRequest', 'hubCode'],
           ['pickup_request', 'hubCode'],
+          ['codRecord', 'hubCode'],
         ]) ??
         this.findString(event.location, [['location_code'], ['locationCode']]) ??
         ALL,
@@ -691,6 +711,8 @@ export class ReportingProjectionStore {
       ndrCreated: field === 'ndrCreated' ? 1 : 0,
       scansInbound: field === 'scansInbound' ? 1 : 0,
       scansOutbound: field === 'scansOutbound' ? 1 : 0,
+      codCollected: field === 'codCollected' ? 1 : 0,
+      codRemitted: field === 'codRemitted' ? 1 : 0,
     };
   }
 
@@ -711,6 +733,23 @@ export class ReportingProjectionStore {
       ndrCreated: field === 'ndrCreated' ? 1 : 0,
       scansInbound: field === 'scansInbound' ? 1 : 0,
       scansOutbound: field === 'scansOutbound' ? 1 : 0,
+      codCollected: field === 'codCollected' ? 1 : 0,
+      codRemitted: field === 'codRemitted' ? 1 : 0,
     };
   }
+}
+
+function getRetentionCutoff(now: Date): Date {
+  const retentionDays = readPositiveNumber(
+    process.env.SHIPMENT_RETENTION_DAYS ?? process.env.ORDER_RETENTION_DAYS,
+    DEFAULT_RETENTION_DAYS,
+  );
+
+  return new Date(now.getTime() - retentionDays * 24 * 60 * 60 * 1000);
+}
+
+function readPositiveNumber(value: string | undefined, fallback: number): number {
+  const parsed = Number(value);
+
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }

@@ -1,0 +1,258 @@
+x-service-base: &service-base
+  restart: unless-stopped
+  depends_on:
+    postgres:
+      condition: service_healthy
+    rabbitmq:
+      condition: service_healthy
+  environment: &service-env
+    RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    RABBITMQ_MANAGEMENT_PORT: 15672
+    DOMAIN_EVENTS_EXCHANGE: domain.events
+    OUTBOX_RELAY_INTERVAL_MS: 1000
+    OUTBOX_RELAY_BATCH_SIZE: 50
+
+services:
+  masterdata-service:
+    <<: *service-base
+    image: nexus/masterdata-service:local
+    build:
+      context: ../../services/masterdata-service
+    container_name: NEXUS-dev-masterdata-service
+    ports:
+      - "3001:3001"
+    environment:
+      <<: *service-env
+      PORT: 3001
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/masterdata_db
+
+  shipment-service:
+    <<: *service-base
+    image: nexus/shipment-service:local
+    build:
+      context: ../../services/shipment-service
+    container_name: NEXUS-dev-shipment-service
+    ports:
+      - "3002:3002"
+    environment:
+      <<: *service-env
+      PORT: 3002
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/shipment_db
+      PRICING_SERVICE_URL: http://pricing-service:3012
+
+  pickup-service:
+    <<: *service-base
+    image: nexus/pickup-service:local
+    build:
+      context: ../../services/pickup-service
+    container_name: NEXUS-dev-pickup-service
+    ports:
+      - "3003:3003"
+    environment:
+      <<: *service-env
+      PORT: 3003
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/pickup_db
+      SHIPMENT_SERVICE_URL: http://shipment-service:3002
+
+  dispatch-service:
+    <<: *service-base
+    image: nexus/dispatch-service:local
+    build:
+      context: ../../services/dispatch-service
+    container_name: NEXUS-dev-dispatch-service
+    ports:
+      - "3004:3004"
+    environment:
+      <<: *service-env
+      PORT: 3004
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/dispatch_db
+      DISPATCH_COURIER_OPTIONS: CR001,CR002,CR003
+      PICKUP_SERVICE_URL: http://pickup-service:3003
+      SHIPMENT_SERVICE_URL: http://shipment-service:3002
+
+  manifest-service:
+    <<: *service-base
+    image: nexus/manifest-service:local
+    build:
+      context: ../../services/manifest-service
+    container_name: NEXUS-dev-manifest-service
+    ports:
+      - "3005:3005"
+    environment:
+      <<: *service-env
+      PORT: 3005
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/manifest_db
+      SHIPMENT_SERVICE_URL: http://shipment-service:3002
+
+  scan-service:
+    <<: *service-base
+    image: nexus/scan-service:local
+    build:
+      context: ../../services/scan-service
+    container_name: NEXUS-dev-scan-service
+    ports:
+      - "3006:3006"
+    environment:
+      <<: *service-env
+      PORT: 3006
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/scan_db
+      SHIPMENT_SERVICE_URL: http://shipment-service:3002
+
+  delivery-service:
+    <<: *service-base
+    image: nexus/delivery-service:local
+    build:
+      context: ../../services/delivery-service
+    container_name: NEXUS-dev-delivery-service
+    ports:
+      - "3007:3007"
+    environment:
+      <<: *service-env
+      PORT: 3007
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/delivery_db
+      SCAN_SERVICE_URL: http://scan-service:3006
+      SHIPMENT_SERVICE_URL: http://shipment-service:3002
+
+  tracking-service:
+    <<: *service-base
+    image: nexus/tracking-service:local
+    build:
+      context: ../../services/tracking-service
+    container_name: NEXUS-dev-tracking-service
+    ports:
+      - "3008:3008"
+    environment:
+      <<: *service-env
+      PORT: 3008
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/tracking_db
+
+  reporting-service:
+    <<: *service-base
+    image: nexus/reporting-service:local
+    build:
+      context: ../../services/reporting-service
+    container_name: NEXUS-dev-reporting-service
+    ports:
+      - "3009:3009"
+    environment:
+      <<: *service-env
+      PORT: 3009
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/reporting_db
+      REPORTING_CONSUMER_INTERVAL_MS: 1000
+      REPORTING_CONSUMER_BATCH_SIZE: 20
+
+  auth-service:
+    <<: *service-base
+    image: nexus/auth-service:local
+    build:
+      context: ../../services/auth-service
+    container_name: NEXUS-dev-auth-service
+    ports:
+      - "3010:3010"
+    environment:
+      <<: *service-env
+      PORT: 3010
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/auth_db
+      ACCESS_TOKEN_TTL_SECONDS: 900
+      REFRESH_TOKEN_TTL_SECONDS: 2592000
+
+  payment-service:
+    <<: *service-base
+    image: nexus/payment-service:local
+    build:
+      context: ../../services/payment-service
+    container_name: NEXUS-dev-payment-service
+    ports:
+      - "3011:3011"
+    environment:
+      <<: *service-env
+      PORT: 3011
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/payment_db
+      SHIPMENT_SERVICE_URL: http://shipment-service:3002
+      COMPANY_BANK_NAME: Vietcombank
+      COMPANY_BANK_CODE: Vietcombank
+      COMPANY_BANK_ACCOUNT_NUMBER: 1234567890
+      COMPANY_BANK_ACCOUNT_NAME: CONG TY TNHH NEXUS EXPRESS
+      COMPANY_BANK_BIN: 970436
+      SEPAY_QR_BANK_CODE: Vietcombank
+      SEPAY_TRANSACTIONS_API_URL: https://userapi.sepay.vn/v2/transactions
+      SEPAY_BANK_ACCOUNT_NUMBER: 1234567890
+      SEPAY_AMOUNT_TOLERANCE_VND: 0
+
+  pricing-service:
+    image: nexus/pricing-service:local
+    build:
+      context: ../../services/pricing-service
+    container_name: NEXUS-dev-pricing-service
+    restart: unless-stopped
+    ports:
+      - "3012:3012"
+    environment:
+      PORT: 3012
+      PRICING_QUOTE_TTL_MINUTES: 15
+
+  gateway-bff:
+    image: nexus/gateway-bff:local
+    build:
+      context: ../../services/gateway-bff
+    container_name: NEXUS-dev-gateway-bff
+    restart: unless-stopped
+    depends_on:
+      auth-service:
+        condition: service_started
+      delivery-service:
+        condition: service_started
+      dispatch-service:
+        condition: service_started
+      manifest-service:
+        condition: service_started
+      masterdata-service:
+        condition: service_started
+      pickup-service:
+        condition: service_started
+      reporting-service:
+        condition: service_started
+      scan-service:
+        condition: service_started
+      shipment-service:
+        condition: service_started
+      tracking-service:
+        condition: service_started
+      payment-service:
+        condition: service_started
+      pricing-service:
+        condition: service_started
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      GATEWAY_AUTH_ENABLED: "false"
+      CHAT_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/chat_db
+      CHAT_REDIS_URL: redis://redis:6379
+      CHAT_REDIS_CHANNEL: gateway-bff:chat
+      CHAT_WS_TICKET_SECRET: dev-chat-ticket-secret
+      CHAT_WS_TICKET_TTL_SECONDS: 60
+      CHAT_REQUIRE_WS_TICKET: "false"
+      AUTH_SERVICE_URL: http://auth-service:3010
+      DELIVERY_SERVICE_URL: http://delivery-service:3007
+      DISPATCH_SERVICE_URL: http://dispatch-service:3004
+      MANIFEST_SERVICE_URL: http://manifest-service:3005
+      MASTERDATA_SERVICE_URL: http://masterdata-service:3001
+      PICKUP_SERVICE_URL: http://pickup-service:3003
+      REPORTING_SERVICE_URL: http://reporting-service:3009
+      SCAN_SERVICE_URL: http://scan-service:3006
+      SHIPMENT_SERVICE_URL: http://shipment-service:3002
+      TRACKING_SERVICE_URL: http://tracking-service:3008
+      PAYMENT_SERVICE_URL: http://payment-service:3011
+      PRICING_SERVICE_URL: http://pricing-service:3012
+      S3_ENDPOINT: http://minio:9000
+      S3_REGION: us-east-1
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin123
+      S3_BUCKET_NAME: nexus-pod-images
+      S3_FORCE_PATH_STYLE: "true"
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,http://localhost:5175,http://127.0.0.1:5175,http://localhost:5176,http://127.0.0.1:5176}

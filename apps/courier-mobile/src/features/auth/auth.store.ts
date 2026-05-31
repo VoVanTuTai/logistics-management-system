@@ -18,10 +18,22 @@ interface AuthStoreState {
   isLoading: boolean;
   errorMessage: string | null;
   restoreSession: () => Promise<void>;
+  refreshMobilePermissions: () => Promise<void>;
+  getValidAccessToken: () => Promise<string>;
   login: (credentials: LoginFormValues) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
 }
+
+const ACCESS_TOKEN_REFRESH_SKEW_MS = 60_000;
+const COURIER_APP_ALLOWED_ROLES = new Set([
+  'SYSTEM_ADMIN',
+  'OPS_ADMIN',
+  'OPS_VIEWER',
+  'COURIER',
+]);
+
+let refreshSessionPromise: Promise<LoginResultDto> | null = null;
 
 function toErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.length > 0) {
@@ -29,6 +41,54 @@ function toErrorMessage(error: unknown, fallback: string): string {
   }
 
   return fallback;
+}
+
+function isExpiringAt(value: string | null | undefined, skewMs = 0): boolean {
+  if (!value) {
+    return true;
+  }
+
+  const expiresAt = new Date(value).getTime();
+  if (!Number.isFinite(expiresAt)) {
+    return true;
+  }
+
+  return expiresAt <= Date.now() + skewMs;
+}
+
+async function withEffectiveMobilePermissions(
+  session: LoginResultDto,
+): Promise<LoginResultDto> {
+  try {
+    const effectivePermissions = await authApi.getMobilePermissionEffective(
+      session.tokens.accessToken,
+      session.user.id,
+    );
+
+    return {
+      ...session,
+      user: {
+        ...session.user,
+        mobilePermissionActor: effectivePermissions.actor,
+        mobilePermissions: effectivePermissions.permissions,
+        mobilePermissionsLoadedAt: new Date().toISOString(),
+      },
+    };
+  } catch {
+    return session;
+  }
+}
+
+function assertCourierSession(session: LoginResultDto): void {
+  const canUseCourierApp = session.user.roles.some((role) =>
+    COURIER_APP_ALLOWED_ROLES.has(role.trim().toUpperCase()),
+  );
+
+  if (!canUseCourierApp) {
+    throw new Error(
+      'Tai khoan khong thuoc nhom quyen COURIER hoac OPS. Vui long dang nhap dung ung dung.',
+    );
+  }
 }
 
 export const useAuthStore = create<AuthStoreState>((set, get) => ({
@@ -50,10 +110,14 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
         return;
       }
 
-      useAppStore.getState().setSession(storedSession);
+      assertCourierSession(storedSession);
+      const sessionWithPermissions =
+        await withEffectiveMobilePermissions(storedSession);
+      await persistAuthSession(sessionWithPermissions);
+      useAppStore.getState().setSession(sessionWithPermissions);
       set({
         status: 'authenticated',
-        session: storedSession,
+        session: sessionWithPermissions,
       });
     } catch (error) {
       useAppStore.getState().setGuest();
@@ -64,6 +128,85 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
       });
     }
   },
+  refreshMobilePermissions: async () => {
+    const currentSession = get().session;
+
+    if (!currentSession) {
+      return;
+    }
+
+    const sessionWithPermissions =
+      await withEffectiveMobilePermissions(currentSession);
+    await persistAuthSession(sessionWithPermissions);
+    useAppStore.getState().setSession(sessionWithPermissions);
+    set({
+      status: 'authenticated',
+      session: sessionWithPermissions,
+    });
+  },
+  getValidAccessToken: async () => {
+    const currentSession = get().session;
+
+    if (!currentSession) {
+      throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+
+    if (
+      !isExpiringAt(
+        currentSession.tokens.accessTokenExpiresAt,
+        ACCESS_TOKEN_REFRESH_SKEW_MS,
+      )
+    ) {
+      return currentSession.tokens.accessToken;
+    }
+
+    if (isExpiringAt(currentSession.tokens.refreshTokenExpiresAt)) {
+      await clearAuthSession();
+      queryClient.clear();
+      useAppStore.getState().clearSession();
+      set({
+        status: 'guest',
+        session: null,
+      });
+      throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+
+    try {
+      refreshSessionPromise ??= authApi
+        .refresh({ refreshToken: currentSession.tokens.refreshToken })
+        .then((refreshedSession) => {
+          assertCourierSession(refreshedSession);
+          return refreshedSession;
+        })
+        .then(withEffectiveMobilePermissions)
+        .finally(() => {
+          refreshSessionPromise = null;
+        });
+
+      const refreshedSession = await refreshSessionPromise;
+      await persistAuthSession(refreshedSession);
+      useAppStore.getState().setSession(refreshedSession);
+      set({
+        status: 'authenticated',
+        session: refreshedSession,
+      });
+
+      return refreshedSession.tokens.accessToken;
+    } catch (error) {
+      await clearAuthSession();
+      queryClient.clear();
+      useAppStore.getState().clearSession();
+      set({
+        status: 'guest',
+        session: null,
+        errorMessage: toErrorMessage(
+          error,
+          'Làm mới phiên đăng nhập thất bại. Vui lòng đăng nhập lại.',
+        ),
+      });
+      throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+  },
   login: async (credentials) => {
     set({
       isLoading: true,
@@ -71,8 +214,12 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
     });
 
     try {
-      const loginResult = await authApi.login(credentials);
+      const loginResult = await withEffectiveMobilePermissions(
+        await authApi.login(credentials),
+      );
+      assertCourierSession(loginResult);
       await persistAuthSession(loginResult);
+      useAppStore.getState().setSession(loginResult);
       set({
         status: 'authenticated',
         session: loginResult,
@@ -107,6 +254,7 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
     } finally {
       await clearAuthSession();
       queryClient.clear();
+      useAppStore.getState().clearSession();
       // TODO(auth): add refresh token rotation + silent refresh flow when contract is finalized.
       set({
         status: 'guest',

@@ -50,11 +50,6 @@ export function TrackingLookupPage(): React.JSX.Element {
 
   return (
     <section className="ops-tracking-lookup">
-      <header className="ops-tracking-lookup__heading">
-        <h2>Tra hành trình</h2>
-        <p>Nhập nhiều mã vận đơn (mỗi dòng một mã) để tra cứu nhiều đơn cùng lúc.</p>
-      </header>
-
       <div className="ops-tracking-lookup__grid">
         <article className="ops-tracking-lookup__left-column">
           <section className="ops-tracking-lookup__panel">

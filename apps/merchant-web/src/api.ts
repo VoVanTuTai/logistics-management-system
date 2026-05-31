@@ -1,4 +1,9 @@
-import type { CreateShipmentForm, ShipmentResponse, ShipmentRow } from './types';
+import type {
+  CreateShipmentForm,
+  PricingQuoteResponse,
+  ShipmentResponse,
+  ShipmentRow,
+} from './types';
 
 export const gatewayBaseUrl = import.meta.env.VITE_GATEWAY_BFF_URL ?? '';
 
@@ -201,11 +206,12 @@ export function buildShipmentMetadata(
     username?: string | null;
     userId?: string | null;
   },
+  pricingQuote?: PricingQuoteResponse | null,
 ): Record<string, unknown> {
   const normalizedCreatedByUsername = createdBy?.username?.trim().toUpperCase() ?? null;
   const normalizedCreatedByUserId = createdBy?.userId?.trim().toUpperCase() ?? null;
 
-  return {
+  const metadata: Record<string, unknown> = {
     createdBy: {
       username: normalizedCreatedByUsername,
       userId: normalizedCreatedByUserId,
@@ -253,6 +259,63 @@ export function buildShipmentMetadata(
     },
     source: 'merchant-web',
   };
+
+  if (pricingQuote) {
+    metadata.currency = pricingQuote.currency;
+    metadata.pricing = {
+      quoteId: pricingQuote.quoteId,
+      quoteVersion: pricingQuote.quoteVersion,
+      currency: pricingQuote.currency,
+      totalFee: pricingQuote.totalFee,
+      validUntil: pricingQuote.validUntil,
+      serviceType: pricingQuote.serviceType,
+      zone: pricingQuote.zone,
+      actualWeightKg: pricingQuote.actualWeightKg,
+      volumetricWeightKg: pricingQuote.volumetricWeightKg,
+      chargeableWeightKg: pricingQuote.chargeableWeightKg,
+      breakdown: pricingQuote.breakdown,
+      source: 'pricing-service',
+    };
+  }
+
+  return metadata;
+}
+
+export async function requestPricingQuote(
+  form: CreateShipmentForm,
+  accessToken: string,
+): Promise<PricingQuoteResponse> {
+  return request<PricingQuoteResponse>(
+    '/merchant/pricing/quotes',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        serviceType: form.serviceType,
+        sender: {
+          province: form.senderProvince.trim() || null,
+          hubCode: form.senderHubCode.trim() || null,
+        },
+        receiver: {
+          province: form.receiverProvince.trim() || null,
+          region: form.receiverRegion.trim() || null,
+          hubCode: form.receiverHubCode.trim() || null,
+        },
+        package: {
+          weightKg: asNumber(form.weightKg, 0),
+          dimensionsCm: {
+            length: asNumber(form.lengthCm, 0),
+            width: asNumber(form.widthCm, 0),
+            height: asNumber(form.heightCm, 0),
+          },
+          declaredValue: 0,
+        },
+        codAmount: asNumber(form.codAmount, 0),
+        currency: 'VND',
+      }),
+    },
+    accessToken,
+  );
 }
 
 export function extractShipmentRow(shipment: ShipmentResponse): ShipmentRow {

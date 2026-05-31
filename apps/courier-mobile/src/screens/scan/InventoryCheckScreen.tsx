@@ -27,10 +27,12 @@ import {
 } from '../../utils/courier';
 import { appEnv } from '../../utils/env';
 import { createIdempotencyKey } from '../../utils/idempotency';
+import { uploadCourierImage } from '../../features/media/courier-media-upload.api';
 
 interface InventoryItem {
   code: string;
   scannedAt: string;
+  photoUri?: string | null;
 }
 
 function normalizeCode(value: string): string {
@@ -58,6 +60,7 @@ export function InventoryCheckScreen(): React.JSX.Element {
   const session = useAppStore((state) => state.session);
   const setGlobalError = useAppStore((state) => state.setGlobalError);
   const [permission, requestPermission] = useCameraPermissions();
+  const cameraRef = React.useRef<any>(null);
 
   const [manualCodeInput, setManualCodeInput] = React.useState('');
   const [items, setItems] = React.useState<InventoryItem[]>([]);
@@ -97,7 +100,7 @@ export function InventoryCheckScreen(): React.JSX.Element {
     }, 850);
   }, []);
 
-  const appendInventoryItem = React.useCallback((rawCode: string) => {
+  const appendInventoryItem = React.useCallback((rawCode: string, photoUri?: string | null) => {
     const normalizedCode = normalizeCode(rawCode);
     if (!normalizedCode) {
       setScreenMessage('Mã vận đơn không hợp lệ.');
@@ -118,13 +121,14 @@ export function InventoryCheckScreen(): React.JSX.Element {
         {
           code: normalizedCode,
           scannedAt: new Date().toISOString(),
+          photoUri: photoUri || null,
         },
         ...currentItems,
       ];
     });
   }, []);
 
-  const handleBarCodeScanned = (result: BarcodeScanningResult) => {
+  const handleBarCodeScanned = async (result: BarcodeScanningResult) => {
     if (scanLocked || isSubmitting) {
       return;
     }
@@ -141,7 +145,32 @@ export function InventoryCheckScreen(): React.JSX.Element {
       return;
     }
 
-    appendInventoryItem(parsed.value);
+    const normalizedCode = normalizeCode(parsed.value);
+
+    let duplicated = false;
+    setItems((currentItems) => {
+      duplicated = currentItems.some((item) => item.code === normalizedCode);
+      return currentItems;
+    });
+
+    if (duplicated) {
+      setScreenMessage(`${normalizedCode} đã có trong danh sách kiểm tồn.`);
+      return;
+    }
+
+    let photoUri: string | null = null;
+    if (cameraRef.current) {
+      try {
+        const picture = await cameraRef.current.takePictureAsync({
+          quality: 0.6,
+        });
+        photoUri = picture.uri || null;
+      } catch (err) {
+        console.error('Failed to capture auto proof photo for inventory check:', err);
+      }
+    }
+
+    appendInventoryItem(parsed.value, photoUri);
   };
 
   const addItemManually = () => {
@@ -194,18 +223,34 @@ export function InventoryCheckScreen(): React.JSX.Element {
     const failedCodes: Array<{ code: string; reason: string }> = [];
 
     for (const item of items) {
+      let finalNote = buildInventoryCheckAuditNote({
+        displayName: session?.user.displayName,
+        username: session?.user.username,
+        courierId,
+        hubCode,
+      });
+
+      if (item.photoUri) {
+        try {
+          const publicUrl = await uploadCourierImage({
+            accessToken,
+            uri: item.photoUri,
+            filename: `inventory-check-${item.code}.jpg`,
+          });
+          finalNote = `${finalNote} | Minh chứng: ${publicUrl}`;
+        } catch (uploadError) {
+          console.error('Failed to upload proof photo for inventory check:', uploadError);
+          finalNote = `${finalNote} | Minh chứng: ${item.photoUri}`;
+        }
+      }
+
       const command = {
         mode: 'INBOUND' as const,
         shipmentCode: item.code,
         locationCode: hubCode,
         manifestCode: null,
         actor,
-        note: buildInventoryCheckAuditNote({
-          displayName: session?.user.displayName,
-          username: session?.user.username,
-          courierId,
-          hubCode,
-        }),
+        note: finalNote,
         occurredAt: new Date().toISOString(),
         idempotencyKey: createIdempotencyKey('inventory-check'),
       };
@@ -288,6 +333,7 @@ export function InventoryCheckScreen(): React.JSX.Element {
 
           {permission && cameraIsReady ? (
             <CameraView
+              ref={cameraRef}
               style={styles.camera}
               facing="back"
               barcodeScannerSettings={{

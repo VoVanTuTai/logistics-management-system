@@ -5,19 +5,25 @@ import type {
   DeliverySuccessResultDto,
 } from './delivery.types';
 import type { DeliverySuccessMutationResult } from './delivery-success.types';
+import { isLocalPodImageUri, uploadPodImage } from './pod-upload.api';
 
 export async function submitDeliverySuccessAction(
   accessToken: string,
   payload: DeliverySuccessPayload,
 ): Promise<DeliverySuccessMutationResult> {
+  const uploadResolvedPayload = await resolvePodImagePayload(
+    accessToken,
+    payload,
+  );
+
   try {
     const result = await courierApiClient.request<DeliverySuccessResultDto>(
       courierEndpoints.delivery.success,
       {
         method: 'POST',
         accessToken,
-        body: payload,
-        headers: { 'Idempotency-Key': payload.idempotencyKey },
+        body: uploadResolvedPayload,
+        headers: { 'Idempotency-Key': uploadResolvedPayload.idempotencyKey },
       },
     );
 
@@ -38,6 +44,28 @@ export async function submitDeliverySuccessAction(
 
     throw error;
   }
+}
+
+async function resolvePodImagePayload(
+  accessToken: string,
+  payload: DeliverySuccessPayload,
+): Promise<DeliverySuccessPayload> {
+  const localPodImageUri = payload.podImageUrl;
+
+  if (!isLocalPodImageUri(localPodImageUri)) {
+    return payload;
+  }
+
+  const publicPodImageUrl = await uploadPodImage({
+    accessToken,
+    uri: localPodImageUri,
+    shipmentCode: payload.shipmentCode,
+  });
+
+  return {
+    ...payload,
+    podImageUrl: publicPodImageUrl,
+  };
 }
 
 function isDuplicateStatus(status: number | null): boolean {

@@ -2,13 +2,38 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { queryKeys } from '../../utils/queryKeys';
 import { ndrClient } from './ndr.client';
-import type { RescheduleInput, ReturnDecisionInput } from './ndr.types';
+import type { NdrCaseListFilters, RescheduleInput, ReturnDecisionInput } from './ndr.types';
 
-export function useNdrCasesQuery(accessToken: string | null) {
+interface NdrQueryOptions {
+  enabled?: boolean;
+  refetchInterval?: number | false;
+}
+
+export function useNdrCasesQuery(
+  accessToken: string | null,
+  filtersOrOptions:
+    | NdrCaseListFilters
+    | NdrQueryOptions = {},
+  options?: NdrQueryOptions,
+) {
+  const isOptionsOnly =
+    'refetchInterval' in filtersOrOptions || 'enabled' in filtersOrOptions;
+  const filters: NdrCaseListFilters = isOptionsOnly
+    ? {}
+    : filtersOrOptions as NdrCaseListFilters;
+  const queryOptions: NdrQueryOptions | undefined = isOptionsOnly
+    ? filtersOrOptions as NdrQueryOptions
+    : options;
+
   return useQuery({
-    queryKey: queryKeys.ndr,
-    queryFn: () => ndrClient.list(accessToken),
-    enabled: Boolean(accessToken),
+    queryKey: [
+      ...queryKeys.ndr,
+      filters.shipmentCode ?? '',
+      filters.status ?? '',
+    ],
+    queryFn: () => ndrClient.list(accessToken, filters),
+    enabled: queryOptions?.enabled ?? Boolean(accessToken),
+    refetchInterval: queryOptions?.refetchInterval,
   });
 }
 

@@ -4,6 +4,7 @@ import type { Control } from 'react-hook-form';
 import { Controller } from 'react-hook-form';
 
 import type { DeliveryFailFormValues, DeliveryFailNextAction } from './delivery-fail.types';
+import { DELIVERY_FAIL_RETURN_REASONS } from './return-reasons';
 
 const NEXT_ACTION_OPTIONS: Array<{ label: string; value: DeliveryFailNextAction }> = [
   { label: 'None', value: 'NONE' },
@@ -71,12 +72,42 @@ export function DeliveryFailForm({
         render={({ field, fieldState }) => (
           <View style={styles.fieldBlock}>
             <Text style={styles.label}>Reason code</Text>
+            <View style={styles.reasonGrid}>
+              {DELIVERY_FAIL_RETURN_REASONS.map((reason) => {
+                const active = field.value === reason.code;
+
+                return (
+                  <Pressable
+                    key={reason.id}
+                    onPress={() => field.onChange(reason.code)}
+                    style={[styles.reasonButton, active && styles.reasonButtonActive]}
+                  >
+                    <Text
+                      style={[
+                        styles.reasonButtonText,
+                        active && styles.reasonButtonTextActive,
+                      ]}
+                    >
+                      {reason.label}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.reasonButtonCode,
+                        active && styles.reasonButtonTextActive,
+                      ]}
+                    >
+                      {reason.code}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
             <TextInput
               autoCapitalize="characters"
               value={field.value}
               onChangeText={field.onChange}
               style={styles.input}
-              placeholder="CUSTOMER_UNREACHABLE"
+              placeholder="CANNOT_CONTACT"
             />
             {fieldState.error ? (
               <Text style={styles.errorText}>{fieldState.error.message}</Text>
@@ -176,6 +207,35 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     paddingHorizontal: 12,
     paddingVertical: 10,
+  },
+  reasonGrid: {
+    marginBottom: 8,
+  },
+  reasonButton: {
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 10,
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 8,
+  },
+  reasonButtonActive: {
+    borderColor: '#0f172a',
+    backgroundColor: '#0f172a',
+  },
+  reasonButtonText: {
+    color: '#0f172a',
+    fontWeight: '700',
+  },
+  reasonButtonCode: {
+    marginTop: 2,
+    color: '#64748b',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  reasonButtonTextActive: {
+    color: '#ffffff',
   },
   multilineInput: {
     minHeight: 100,

@@ -1,4 +1,5 @@
 import type { DeliveryFailPayload, DeliverySuccessPayload } from '../delivery/delivery.types';
+import type { CollectCodPayload } from '../cod/cod.types';
 import type { RecordScanPayload } from '../scan/scan.types';
 
 export type QueueableActionType =
@@ -6,7 +7,8 @@ export type QueueableActionType =
   | 'SCAN_INBOUND'
   | 'SCAN_OUTBOUND'
   | 'DELIVERY_SUCCESS'
-  | 'DELIVERY_FAIL';
+  | 'DELIVERY_FAIL'
+  | 'COD_COLLECT';
 
 export interface QueueableActionPayloadMap {
   SCAN_PICKUP: RecordScanPayload;
@@ -14,4 +16,5 @@ export interface QueueableActionPayloadMap {
   SCAN_OUTBOUND: RecordScanPayload;
   DELIVERY_SUCCESS: DeliverySuccessPayload;
   DELIVERY_FAIL: DeliveryFailPayload;
+  COD_COLLECT: CollectCodPayload;
 }

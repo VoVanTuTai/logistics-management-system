@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+
+<html class="light" lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NEXUS Logistic - Tra cứu vận đơn</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed-dim": "#48d7f9",
+                        "on-tertiary-fixed-variant": "#004e5d",
+                        "surface-variant": "#d8e2ff",
+                        "on-surface": "#051a3e",
+                        "on-secondary-fixed": "#001b3f",
+                        "secondary-fixed-dim": "#abc7ff",
+                        "on-primary-fixed": "#001848",
+                        "on-secondary-fixed-variant": "#004590",
+                        "on-secondary-container": "#fefcff",
+                        "surface-tint": "#0c56d0",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-primary": "#b2c5ff",
+                        "error-container": "#ffdad6",
+                        "surface": "#faf9ff",
+                        "primary-fixed-dim": "#b2c5ff",
+                        "surface-container-highest": "#d8e2ff",
+                        "primary": "#003d9b",
+                        "error": "#ba1a1a",
+                        "secondary-fixed": "#d7e2ff",
+                        "outline": "#737685",
+                        "inverse-on-surface": "#edf0ff",
+                        "primary-container": "#0052cc",
+                        "secondary-container": "#0071e6",
+                        "on-error-container": "#93000a",
+                        "on-error": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "background": "#faf9ff",
+                        "tertiary": "#004b59",
+                        "on-primary-fixed-variant": "#0040a2",
+                        "tertiary-fixed": "#afecff",
+                        "surface-bright": "#faf9ff",
+                        "on-background": "#051a3e",
+                        "tertiary-container": "#006477",
+                        "surface-container": "#e9edff",
+                        "secondary": "#0059b8",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-high": "#e1e8ff",
+                        "primary-fixed": "#dae2ff",
+                        "inverse-surface": "#1d3054",
+                        "surface-dim": "#ccdaff",
+                        "on-primary-container": "#c4d2ff",
+                        "on-surface-variant": "#434654",
+                        "on-tertiary-container": "#76e2ff",
+                        "surface-container-low": "#f1f3ff",
+                        "outline-variant": "#c3c6d6",
+                        "on-tertiary-fixed": "#001f27"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "1.5rem",
+                        "margin-desktop": "2rem",
+                        "stack-md": "1rem",
+                        "margin-mobile": "1rem",
+                        "container-max-width": "1440px",
+                        "stack-sm": "0.5rem",
+                        "stack-lg": "2rem"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-xl": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["22px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "body-sm": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                        "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-xl": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #faf9ff; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .sidebar-scroll::-webkit-scrollbar { width: 4px; }
+        .sidebar-scroll::-webkit-scrollbar-thumb { background: #c3c6d6; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-background text-on-surface">
+<!-- Sidebar Navigation Shell -->
+<aside class="fixed left-0 top-0 h-full w-[280px] bg-surface-container-low dark:bg-surface-dim border-r border-outline-variant flex flex-col p-4 gap-2 z-50">
+<div class="mb-6 px-4">
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim">NEXUS Logistic</h1>
+<p class="font-label-md text-label-md text-on-surface-variant">Merchant Portal</p>
+</div>
+<button class="mb-4 flex items-center justify-center gap-2 bg-primary text-on-primary py-3 px-4 rounded-lg font-bold transition-all duration-200 ease-in-out active:scale-95 shadow-md">
+<span class="material-symbols-outlined">add_box</span>
+            Tạo đơn mới
+        </button>
+<nav class="flex-1 overflow-y-auto sidebar-scroll flex flex-col gap-1 pr-1">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">dashboard</span>
+<span class="font-label-md text-label-md">Tổng quan</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">add_box</span>
+<span class="font-label-md text-label-md">Tạo đơn hàng</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">inventory_2</span>
+<span class="font-label-md text-label-md">Danh sách đơn hàng</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">local_shipping</span>
+<span class="font-label-md text-label-md">Yêu cầu lấy hàng</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 bg-secondary-container text-on-secondary-container rounded-lg font-bold" href="#">
+<span class="material-symbols-outlined">search</span>
+<span class="font-label-md text-label-md">Tra cứu vận đơn</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">edit_note</span>
+<span class="font-label-md text-label-md">Yêu cầu đổi thông tin giao</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">assignment_return</span>
+<span class="font-label-md text-label-md">Yêu cầu hoàn hàng</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">print</span>
+<span class="font-label-md text-label-md">In vận đơn</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">person</span>
+<span class="font-label-md text-label-md">Tài khoản</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">notifications</span>
+<span class="font-label-md text-label-md">Thông báo</span>
+</a>
+</nav>
+<div class="mt-auto border-t border-outline-variant pt-4 flex flex-col gap-1">
+<button class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg w-full">
+<span class="material-symbols-outlined">refresh</span>
+<span class="font-label-md text-label-md">Tải lại</span>
+</button>
+<button class="flex items-center gap-3 px-4 py-3 text-error hover:bg-error-container/10 transition-colors rounded-lg w-full">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-label-md text-label-md">Đăng xuất</span>
+</button>
+</div>
+</aside>
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 right-0 left-[280px] h-16 bg-surface dark:bg-surface-dim border-b border-outline-variant flex justify-between items-center px-8 z-40">
+<div class="flex items-center gap-4">
+<h2 class="font-headline-lg text-headline-lg font-bold text-on-surface dark:text-on-surface-variant">Tra cứu vận đơn</h2>
+<span class="text-on-surface-variant font-body-md text-body-md">18/05/2026, 18:47:42</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex gap-2">
+<span class="bg-secondary-container/10 text-secondary px-3 py-1 rounded-full text-[12px] font-bold">Shipments: 15</span>
+<span class="bg-primary-container/10 text-primary px-3 py-1 rounded-full text-[12px] font-bold">Pickups: 26</span>
+<span class="bg-tertiary-container/10 text-tertiary px-3 py-1 rounded-full text-[12px] font-bold">Changes: 1</span>
+</div>
+<div class="flex gap-4 items-center">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors">help</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors">settings</span>
+<div class="w-8 h-8 rounded-full bg-outline-variant flex items-center justify-center overflow-hidden">
+<img alt="Merchant Profile Avatar" class="w-full h-full object-cover" data-alt="A professional headshot of a middle-aged merchant with a friendly expression, set against a neutral, high-key office background. The lighting is soft and corporate, reflecting a modern light-mode UI aesthetic. The composition is a clean circular avatar framed within a minimalist logistics dashboard interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDiT7dtJ4dZlMDvmOv6WvpOgQPpI0Am4huRGw-nfrbyZ77c6kQXJQ3NPSh6lhladNb9D0ak9BL3z1H_77JTr7S3vGmPHLT8JJR-_JWMS35-YtuFGOmsXJXhXB0ePO7_XY3TB8hobMkmSx_waD-Ta6srlfkacnfWoIMoDNhK4MuYa-pmWPyMLZhwSy3SK0LLMaInDP26vhLthCX7QE-740nOVq8S1S50e_PW6GJFcFzj5u7Ncq2F-MyE71xJSUPZu0woVvleJRwau74"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="ml-[280px] pt-24 pb-8 px-8 min-h-screen">
+<div class="max-w-container-max-width mx-auto">
+<!-- Search Section -->
+<section class="bg-surface-container-lowest p-8 rounded-xl border border-outline-variant shadow-sm mb-8">
+<h3 class="font-headline-lg text-headline-lg font-bold mb-6 text-on-surface">Tra cứu nội bộ</h3>
+<div class="flex gap-4">
+<div class="relative flex-1">
+<span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline">search</span>
+<input class="w-full pl-12 pr-4 py-3 bg-surface border border-outline rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none font-body-md text-body-md" placeholder="Mã vận đơn" type="text"/>
+</div>
+<button class="bg-primary-container text-on-primary py-3 px-8 rounded-lg font-bold hover:opacity-90 transition-all duration-150 active:scale-95 shadow-md">
+                        Tra cứu
+                    </button>
+</div>
+</section>
+<!-- Status Summary Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+<!-- Status Card 1 -->
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-shadow group">
+<p class="font-label-md text-label-md text-outline uppercase tracking-wider mb-2">Trạng thái hiện tại</p>
+<div class="flex items-center justify-between">
+<h4 class="font-headline-md text-headline-md text-on-surface-variant italic">N/A</h4>
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors">sync_alt</span>
+</div>
+</div>
+<!-- Status Card 2 -->
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-shadow group">
+<p class="font-label-md text-label-md text-outline uppercase tracking-wider mb-2">Vị trí hiện tại</p>
+<div class="flex items-center justify-between">
+<h4 class="font-headline-md text-headline-md text-on-surface-variant italic">N/A</h4>
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors">location_on</span>
+</div>
+</div>
+<!-- Status Card 3 -->
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-shadow group">
+<p class="font-label-md text-label-md text-outline uppercase tracking-wider mb-2">Sự kiện cuối</p>
+<div class="flex items-center justify-between">
+<h4 class="font-headline-md text-headline-md text-on-surface-variant italic">N/A</h4>
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors">event_note</span>
+</div>
+</div>
+<!-- Status Card 4 -->
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-shadow group">
+<p class="font-label-md text-label-md text-outline uppercase tracking-wider mb-2">Thời điểm sự kiện cuối</p>
+<div class="flex items-center justify-between">
+<h4 class="font-headline-md text-headline-md text-on-surface-variant italic">-</h4>
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors">schedule</span>
+</div>
+</div>
+</div>
+<!-- Timeline/Empty State Area -->
+<section class="bg-surface-container-low/50 rounded-xl border border-outline-variant border-dashed p-16 flex flex-col items-center justify-center text-center">
+<div class="w-20 h-20 bg-surface-container-high rounded-full flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-[48px] text-outline">history</span>
+</div>
+<h5 class="font-headline-md text-headline-md text-on-surface-variant mb-2">Chưa có timeline event.</h5>
+<p class="font-body-md text-body-md text-outline max-w-md">Nhập mã vận đơn và nhấn 'Tra cứu' để xem lịch sử hành trình chi tiết của đơn hàng này.</p>
+<!-- Decorative Graphic -->
+<div class="mt-12 w-full max-w-2xl relative h-48 rounded-2xl overflow-hidden shadow-sm border border-outline-variant/30">
+<img alt="Logistics background" class="w-full h-full object-cover opacity-60" data-alt="A high-angle, wide-angle cinematic shot of a vast, modern logistics warehouse at sunset. Warm golden light spills through high windows, illuminating rows of organized shipping crates and automated machinery. The aesthetic is professional and corporate, with a clean color palette of deep blues and crisp whites, echoing a technologically advanced supply chain environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDNC6uIL7KHoh7W2_Pkpfr2OAR0nRihRxGZAL4zC5URhuoEz5Y6hi0nWoU1x7gNRGfdYrzVXRtzlhIPVTy-E8e-kOs_k_Ssvx_6OmD7N18opsNqGXRyNVjfHQPUShZG7zdauOX72ES5tAsiJTCmjYCEx0Oe7ZOAJdlWtYtqURR5s9tj9jTGI2XR4BYnGxntjxUrv7e506rSC37lQC5zPngQoU3Jyk_5Yh8ZU9xgF5W-58oLgW8PXR2VAwWadMSBVDZAj5eEkP_UdUw"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-low to-transparent"></div>
+</div>
+</section>
+</div>
+</main>
+<!-- FAB (Suppressed as per rules for detailed search/settings pages) -->
+</body></html>

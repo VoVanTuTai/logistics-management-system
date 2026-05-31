@@ -4,35 +4,28 @@ import { WebSocket, WebSocketServer } from 'ws';
 
 import type { Task } from '../domain/entities/task.entity';
 
+type TrackedWebSocket = WebSocket & {
+  isAlive?: boolean;
+};
+
 export type TaskRealtimeChangeKind =
   | 'created'
   | 'assigned'
   | 'reassigned'
   | 'status_updated';
 
-interface TaskRealtimeSnapshot {
-  id: string;
-  taskCode: string;
-  taskType: string;
-  status: string;
-  shipmentCode: string | null;
-  pickupRequestId: string | null;
-  assignedCourierId: string | null;
-  updatedAt: string;
-}
-
 interface TaskRealtimeChangedEvent {
   type: 'task.changed';
   kind: TaskRealtimeChangeKind;
   at: string;
-  task: TaskRealtimeSnapshot;
 }
 
 @Injectable()
 export class TasksRealtimeGateway implements OnModuleDestroy {
   private readonly logger = new Logger(TasksRealtimeGateway.name);
   private wsServer: WebSocketServer | null = null;
-  private readonly clients = new Set<WebSocket>();
+  private readonly clients = new Set<TrackedWebSocket>();
+  private heartbeatInterval: NodeJS.Timeout | null = null;
 
   attach(httpServer: HttpServer): void {
     if (this.wsServer) {
@@ -44,8 +37,13 @@ export class TasksRealtimeGateway implements OnModuleDestroy {
       path: '/ws/tasks',
     });
 
-    this.wsServer.on('connection', (socket: WebSocket) => {
+    this.wsServer.on('connection', (socket: TrackedWebSocket) => {
+      socket.isAlive = true;
       this.clients.add(socket);
+
+      socket.on('pong', () => {
+        socket.isAlive = true;
+      });
 
       socket.on('close', () => {
         this.clients.delete(socket);
@@ -56,15 +54,19 @@ export class TasksRealtimeGateway implements OnModuleDestroy {
       });
     });
 
+    this.heartbeatInterval = setInterval(() => {
+      this.checkClientHeartbeats();
+    }, 30000);
+
     this.logger.log('Dispatch realtime WebSocket is listening on /ws/tasks');
   }
 
   publishTaskChanged(kind: TaskRealtimeChangeKind, task: Task): void {
+    void task;
     const payload: TaskRealtimeChangedEvent = {
       type: 'task.changed',
       kind,
       at: new Date().toISOString(),
-      task: this.toTaskSnapshot(task),
     };
 
     this.broadcast(payload);
@@ -86,6 +88,24 @@ export class TasksRealtimeGateway implements OnModuleDestroy {
     this.clients.clear();
     this.wsServer.close();
     this.wsServer = null;
+
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+  }
+
+  private checkClientHeartbeats(): void {
+    for (const socket of this.clients) {
+      if (socket.isAlive === false) {
+        this.clients.delete(socket);
+        socket.terminate();
+        continue;
+      }
+
+      socket.isAlive = false;
+      socket.ping();
+    }
   }
 
   private broadcast(payload: TaskRealtimeChangedEvent): void {
@@ -104,23 +124,6 @@ export class TasksRealtimeGateway implements OnModuleDestroy {
         );
       }
     }
-  }
-
-  private toTaskSnapshot(task: Task): TaskRealtimeSnapshot {
-    const activeAssignment =
-      task.assignments.find((assignment) => assignment.unassignedAt === null) ??
-      null;
-
-    return {
-      id: task.id,
-      taskCode: task.taskCode,
-      taskType: task.taskType,
-      status: task.status,
-      shipmentCode: task.shipmentCode,
-      pickupRequestId: task.pickupRequestId,
-      assignedCourierId: activeAssignment?.courierId ?? null,
-      updatedAt: task.updatedAt.toISOString(),
-    };
   }
 
   private toErrorMessage(error: unknown): string {

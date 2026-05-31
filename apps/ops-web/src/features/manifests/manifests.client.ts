@@ -10,6 +10,7 @@ import type {
   ReceiveHandoverInput,
   RemoveShipmentInput,
   SealManifestInput,
+  UpdateManifestInput,
 } from './manifests.types';
 
 interface ManifestItemApiResponse {
@@ -86,8 +87,27 @@ export const manifestsClient = {
         originHubCode: payload.originHubCode || null,
         destinationHubCode: payload.destinationHubCode || null,
         shipmentCodes: payload.shipmentCodes,
+        note: payload.note ?? null,
       },
     }),
+  update: (
+    accessToken: string | null,
+    manifestId: string,
+    payload: UpdateManifestInput,
+  ): Promise<ManifestDetailDto> =>
+    opsApiClient
+      .request<ManifestApiResponse>(opsEndpoints.manifests.update(manifestId), {
+        method: 'PATCH',
+        accessToken,
+        body: {
+          originHubCode: payload.originHubCode ?? undefined,
+          destinationHubCode: payload.destinationHubCode ?? undefined,
+          note: payload.note ?? undefined,
+          addShipmentCodes: payload.addShipmentCodes,
+          removeShipmentCodes: payload.removeShipmentCodes,
+        },
+      })
+      .then(mapManifestDetail),
   generateBagCodes: (
     accessToken: string | null,
     payload: GenerateBagCodesInput,

@@ -32,7 +32,7 @@
 
 .ops-thermal-management__summary {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -66,7 +66,7 @@
 
 .ops-thermal-management__table {
   width: 100%;
-  min-width: 920px;
+  min-width: 960px;
   border-collapse: collapse;
   background: #ffffff;
 }
@@ -88,153 +88,41 @@
 }
 
 .ops-thermal-management__bag-code {
-  color: #1d4ed8 !important;
+  color: var(--ops-primary) !important;
   font-weight: 700;
 }
 
-.ops-thermal-management__qr-btn {
-  border: 1px solid #93c5fd;
-  border-radius: 6px;
-  background: #eff6ff;
-  color: #1d4ed8;
-  padding: 4px 10px;
+.ops-thermal-management__status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 86px;
+  border-radius: 999px;
+  padding: 4px 9px;
+  background: #f1f5f9;
+  color: #475569;
   font-size: 12px;
   font-weight: 700;
-  cursor: pointer;
 }
 
-.ops-thermal-management__qr-btn:hover {
-  background: #dbeafe;
+.ops-thermal-management__status--created {
+  background: #eff6ff;
+  color: var(--ops-primary);
+}
+
+.ops-thermal-management__status--sealed {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.ops-thermal-management__status--received,
+.ops-thermal-management__status--closed {
+  background: #dcfce7;
+  color: #166534;
 }
 
 @media (max-width: 860px) {
   .ops-thermal-management__summary {
     grid-template-columns: 1fr;
   }
-}
-
-.ops-thermal-management__tr-clickable {
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-
-.ops-thermal-management__tr-clickable:hover {
-  background-color: #f1f5f9;
-}
-
-.ops-thermal-management__modal {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  background: rgba(15, 23, 42, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-}
-
-.ops-thermal-management__modal-content {
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-  width: 100%;
-  max-width: 500px;
-  max-height: 80vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.ops-thermal-management__qr-modal-content {
-  max-width: 360px;
-}
-
-.ops-thermal-management__modal-header {
-  padding: 16px 20px;
-  border-bottom: 1px solid #e2e8f0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.ops-thermal-management__modal-header h3 {
-  margin: 0;
-  font-size: 18px;
-  color: #334155;
-}
-
-.ops-thermal-management__modal-header button {
-  background: none;
-  border: none;
-  font-size: 24px;
-  color: #64748b;
-  cursor: pointer;
-  line-height: 1;
-}
-
-.ops-thermal-management__modal-header button:hover {
-  color: #0f172a;
-}
-
-.ops-thermal-management__modal-body {
-  padding: 20px;
-  overflow-y: auto;
-}
-
-.ops-thermal-management__qr-modal-body {
-  display: grid;
-  justify-items: center;
-  gap: 12px;
-}
-
-.ops-thermal-management__qr-image {
-  width: 220px;
-  height: 220px;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  background: #ffffff;
-  padding: 8px;
-}
-
-.ops-thermal-management__modal-info {
-  display: grid;
-  gap: 8px;
-  background: #f8fafc;
-  padding: 12px;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  border: 1px solid #e2e8f0;
-  color: #334155;
-  font-size: 14px;
-}
-
-.ops-thermal-management__modal-list h4 {
-  margin: 0 0 10px;
-  font-size: 15px;
-  color: #1e293b;
-}
-
-.ops-thermal-management__empty-text {
-  color: #64748b;
-  font-style: italic;
-  font-size: 14px;
-  margin: 0;
-}
-
-.ops-thermal-management__shipment-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  gap: 6px;
-}
-
-.ops-thermal-management__shipment-list li {
-  padding: 8px 12px;
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  color: #0f172a;
-  font-family: monospace;
-  font-size: 14px;
 }

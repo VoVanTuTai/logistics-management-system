@@ -1,0 +1,575 @@
+/* ═══════════════════════════════════════════════════════
+   HubScanPage.css — Professional Hub Scan Operations UI
+   ═══════════════════════════════════════════════════════ */
+
+/* ─── Page Layout ─── */
+.hub-scan-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  position: relative;
+}
+
+/* ─── Toast Notifications ─── */
+.hub-scan-toast-container {
+  position: fixed;
+  top: 70px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 440px;
+}
+
+.hub-scan-toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  animation: toastSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  font-size: 0.9rem;
+  font-weight: 500;
+  backdrop-filter: blur(8px);
+}
+
+.hub-scan-toast--success {
+  background: #ecfdf5;
+  border: 1px solid #6ee7b7;
+  color: #065f46;
+}
+
+.hub-scan-toast--error {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  color: #991b1b;
+}
+
+.hub-scan-toast--info {
+  background: #eff6ff;
+  border: 1px solid #93c5fd;
+  color: var(--ops-primary-dark);
+}
+
+.hub-scan-toast__icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hub-scan-toast--success .hub-scan-toast__icon {
+  background-color: #10b981;
+  color: #fff;
+  font-size: 0.8rem;
+}
+
+.hub-scan-toast--error .hub-scan-toast__icon {
+  background-color: #ef4444;
+  color: #fff;
+  font-size: 0.8rem;
+}
+
+.hub-scan-toast__text {
+  flex: 1;
+  line-height: 1.35;
+}
+
+.hub-scan-toast__close {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.5;
+  padding: 0 4px;
+  transition: opacity 0.2s;
+}
+
+.hub-scan-toast__close:hover {
+  opacity: 1;
+}
+
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ─── Header ─── */
+.hub-scan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 2rem;
+  background: #102548;
+  border-radius: 14px;
+  padding: 1.5rem 2rem;
+  color: #fff;
+}
+
+.hub-scan-header__title {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hub-scan-header__icon {
+  width: 28px;
+  height: 28px;
+  color: #60a5fa;
+}
+
+.hub-scan-header__desc {
+  margin: 6px 0 0;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.hub-scan-header__stats {
+  display: flex;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.hub-scan-stat {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px 18px;
+  text-align: center;
+  min-width: 100px;
+}
+
+.hub-scan-stat__value {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #60a5fa;
+}
+
+.hub-scan-stat--mode .hub-scan-stat__value {
+  font-size: 1rem;
+  color: #a78bfa;
+}
+
+.hub-scan-stat__label {
+  display: block;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+/* ─── Scan Form ─── */
+.hub-scan-form {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.hub-scan-form__row {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.hub-scan-form__row--top {
+  margin-bottom: 1.25rem;
+}
+
+.hub-scan-form__group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hub-scan-form__group--type {
+  flex: 1;
+}
+
+.hub-scan-form__group--code {
+  flex: 2.5;
+}
+
+.hub-scan-form__group--location {
+  flex: 1.2;
+}
+
+.hub-scan-form__group--note {
+  flex: 1.5;
+}
+
+.hub-scan-form__group--submit {
+  flex-shrink: 0;
+}
+
+.hub-scan-form__label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.hub-scan-form__required {
+  color: #ef4444;
+}
+
+/* ─── Scan Type Selector ─── */
+.hub-scan-type-selector {
+  display: flex;
+  gap: 8px;
+}
+
+.hub-scan-type-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.hub-scan-type-btn:hover {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.hub-scan-type-btn--active {
+  border-color: var(--ops-primary);
+  background: var(--ops-primary-soft);
+  color: var(--ops-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.hub-scan-type-btn__icon {
+  font-size: 1.1rem;
+}
+
+/* ─── Inputs ─── */
+.hub-scan-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.hub-scan-input-wrap__icon {
+  position: absolute;
+  left: 12px;
+  width: 20px;
+  height: 20px;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.hub-scan-input-wrap--primary .hub-scan-input {
+  padding-left: 40px;
+  padding-right: 36px;
+}
+
+.hub-scan-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.925rem;
+  color: #0f172a;
+  background: #fff;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.hub-scan-input:focus {
+  border-color: var(--ops-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.hub-scan-input--lg {
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.hub-scan-input:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.hub-scan-input-wrap__spinner {
+  position: absolute;
+  right: 12px;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #e2e8f0;
+  border-top-color: var(--ops-primary);
+  border-radius: 50%;
+  animation: hubScanSpin 0.6s linear infinite;
+}
+
+/* ─── Submit Button ─── */
+.hub-scan-submit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
+  background: var(--ops-primary);
+  color: #fff;
+  font-size: 0.925rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  min-height: 44px;
+}
+
+.hub-scan-submit-btn:hover:not(:disabled) {
+  background: var(--ops-primary-dark);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+  transform: translateY(-1px);
+}
+
+.hub-scan-submit-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.hub-scan-submit-btn__spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: hubScanSpin 0.6s linear infinite;
+}
+
+@keyframes hubScanSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ─── Scan History ─── */
+.hub-scan-history {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.hub-scan-history__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.hub-scan-history__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hub-scan-history__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ops-primary);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  min-width: 22px;
+  height: 22px;
+  border-radius: 11px;
+  padding: 0 6px;
+}
+
+.hub-scan-history__clear {
+  background: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 4px 12px;
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.hub-scan-history__clear:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: #fef2f2;
+}
+
+/* ─── Empty State ─── */
+.hub-scan-history__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  color: #94a3b8;
+  text-align: center;
+  gap: 12px;
+}
+
+.hub-scan-history__empty-icon {
+  width: 48px;
+  height: 48px;
+  opacity: 0.35;
+}
+
+.hub-scan-history__empty p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* ─── History List ─── */
+.hub-scan-history__list {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.hub-scan-history__item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background-color 0.3s ease;
+}
+
+.hub-scan-history__item:last-child {
+  border-bottom: none;
+}
+
+.hub-scan-history__item:hover {
+  background: #f8fafc;
+}
+
+/* ─── New Item Highlight Animation ─── */
+.hub-scan-history__item--new {
+  animation: scanHighlight 2.2s ease-out;
+}
+
+@keyframes scanHighlight {
+  0% {
+    background-color: #bbf7d0;
+  }
+  30% {
+    background-color: #dcfce7;
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.hub-scan-history__item-badge {
+  flex-shrink: 0;
+}
+
+.hub-scan-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.hub-scan-badge--pickup {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.hub-scan-badge--inbound {
+  background: #dbeafe;
+  color: var(--ops-primary-dark);
+}
+
+.hub-scan-badge--outbound {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+.hub-scan-history__item-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hub-scan-history__item-code {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+  font-family: 'Roboto Mono', monospace;
+  letter-spacing: 0.04em;
+}
+
+.hub-scan-history__item-meta {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.hub-scan-history__item-status {
+  flex-shrink: 0;
+}
+
+.hub-scan-history__item-ok {
+  color: #059669;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 900px) {
+  .hub-scan-header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .hub-scan-form__row--main {
+    flex-wrap: wrap;
+  }
+
+  .hub-scan-form__group--code {
+    flex-basis: 100%;
+  }
+}

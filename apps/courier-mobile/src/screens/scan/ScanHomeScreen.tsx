@@ -1,13 +1,15 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Screen } from '../../components/ui/Screen';
 import { Card } from '../../components/ui/Card';
 import { StatusBadge } from '../../components/ui/StatusBadge';
+import { useAuthStore } from '../../features/auth/auth.store';
+import { canAccessCourierFeature } from '../../features/permissions/courier-permissions';
 import type {
   AppTabsParamList,
   AppNavigatorParamList,
@@ -20,7 +22,21 @@ type Props = BottomTabScreenProps<AppTabsParamList, 'Scan'>;
 export function ScanHomeScreen(_: Props): React.JSX.Element {
   const navigation =
     useNavigation<NativeStackNavigationProp<AppNavigatorParamList>>();
+  const session = useAppStore((state) => state.session);
   const offlinePendingCount = useAppStore((state) => state.offlinePendingCount);
+  const refreshMobilePermissions = useAuthStore(
+    (state) => state.refreshMobilePermissions,
+  );
+  const canScanPickup = canAccessCourierFeature(session?.user, 'scan.pickup');
+  const canScanInbound = canAccessCourierFeature(session?.user, 'scan.inbound');
+  const canScanOutbound = canAccessCourierFeature(session?.user, 'scan.outbound');
+  const hasScanAction = canScanPickup || canScanInbound || canScanOutbound;
+
+  useFocusEffect(
+    React.useCallback(() => {
+      void refreshMobilePermissions();
+    }, [refreshMobilePermissions]),
+  );
 
   return (
     <Screen contentContainerStyle={styles.content}>
@@ -29,40 +45,57 @@ export function ScanHomeScreen(_: Props): React.JSX.Element {
         <Text style={styles.subtitle}>Uu tien thao tac nhanh, mot tay, de retry.</Text>
       </View>
 
-      <Card
-        onPress={() => navigation.navigate('PickupScan', {})}
-        style={styles.primaryActionCard}
-      >
-        <View style={styles.rowBetween}>
-          <View>
-            <Text style={styles.primaryActionTitle}>Nhận hàng</Text>
-            <Text style={styles.primaryActionHint}>
-              Quét QR/barcode và gửi scan nhận hàng
-            </Text>
+      {canScanPickup ? (
+        <Card
+          onPress={() => navigation.navigate('PickupScan', {})}
+          style={styles.primaryActionCard}
+        >
+          <View style={styles.rowBetween}>
+            <View>
+              <Text style={styles.primaryActionTitle}>Nhận hàng</Text>
+              <Text style={styles.primaryActionHint}>
+                Quét QR/barcode và gửi scan nhận hàng
+              </Text>
+            </View>
+            <Ionicons name="scan" size={30} color="#FFFFFF" />
           </View>
-          <Ionicons name="scan" size={30} color="#FFFFFF" />
+        </Card>
+      ) : null}
+
+      {canScanInbound || canScanOutbound ? (
+        <View style={styles.grid}>
+          {canScanInbound ? (
+            <Card
+              onPress={() => navigation.navigate('HubScan', { mode: 'INBOUND' })}
+              style={styles.gridCard}
+            >
+              <Ionicons name="arrow-down-circle-outline" size={24} color={theme.colors.primary} />
+              <Text style={styles.gridTitle}>Hàng đến</Text>
+              <Text style={styles.gridHint}>Xác nhận hàng đến hub</Text>
+            </Card>
+          ) : null}
+
+          {canScanOutbound ? (
+            <Card
+              onPress={() => navigation.navigate('HubScan', { mode: 'OUTBOUND' })}
+              style={styles.gridCard}
+            >
+              <Ionicons name="arrow-up-circle-outline" size={24} color={theme.colors.primary} />
+              <Text style={styles.gridTitle}>Hub outbound</Text>
+              <Text style={styles.gridHint}>Xuat kho / roi hub</Text>
+            </Card>
+          ) : null}
         </View>
-      </Card>
+      ) : null}
 
-      <View style={styles.grid}>
-        <Card
-          onPress={() => navigation.navigate('HubScan', { mode: 'INBOUND' })}
-          style={styles.gridCard}
-        >
-          <Ionicons name="arrow-down-circle-outline" size={24} color={theme.colors.primary} />
-          <Text style={styles.gridTitle}>Hàng đến</Text>
-          <Text style={styles.gridHint}>Xác nhận hàng đến hub</Text>
+      {!hasScanAction ? (
+        <Card style={styles.statusCard}>
+          <Text style={styles.statusTitle}>Chưa có quyền quét mã</Text>
+          <Text style={styles.statusHint}>
+            Tài khoản hiện tại chưa được phân quyền thao tác courier-mobile.
+          </Text>
         </Card>
-
-        <Card
-          onPress={() => navigation.navigate('HubScan', { mode: 'OUTBOUND' })}
-          style={styles.gridCard}
-        >
-          <Ionicons name="arrow-up-circle-outline" size={24} color={theme.colors.primary} />
-          <Text style={styles.gridTitle}>Hub outbound</Text>
-          <Text style={styles.gridHint}>Xuat kho / roi hub</Text>
-        </Card>
-      </View>
+      ) : null}
 
       <Card style={styles.statusCard}>
         <View style={styles.rowBetween}>

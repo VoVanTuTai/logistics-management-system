@@ -21,6 +21,12 @@ enum CodCollectionStatus {
   FAILED
 }
 
+enum CodSettlementStatus {
+  WAITING_PAYMENT
+  PAID
+  CANCELLED
+}
+
 enum OutboxStatus {
   PENDING
   PUBLISHED
@@ -35,6 +41,7 @@ model CodRecord {
   currency        String              @default("VND")
   paymentMethod   PaymentMethod       @default(COD)
   status          CodCollectionStatus @default(PENDING)
+  hubCode         String?
   courierId       String?
   collectedAt     DateTime?
   collectedAmount Float?
@@ -45,8 +52,75 @@ model CodRecord {
   updatedAt       DateTime            @updatedAt
 
   @@index([status, courierId])
+  @@index([hubCode, status])
+  @@index([hubCode, courierId])
   @@index([shipmentCode])
   @@map("cod_records")
+}
+
+model CodSettlementBatch {
+  id             String              @id @default(cuid())
+  settlementCode String              @unique
+  reportDate     DateTime
+  hubCode        String
+  courierId      String
+  totalAmount    Float
+  status         CodSettlementStatus @default(WAITING_PAYMENT)
+  qrUrl          String?
+  transferMemo   String
+  createdBy      String?
+  confirmedBy    String?
+  confirmedAt    DateTime?
+  confirmedNote  String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  items          CodSettlementItem[]
+
+  @@index([reportDate, hubCode, courierId])
+  @@map("cod_settlement_batches")
+}
+
+model CodSettlementPaymentEvent {
+  id                  String   @id @default(cuid())
+  provider            String
+  providerEventId     String
+  referenceType       String?
+  settlementBatchId   String?
+  settlementCode      String?
+  codRecordId         String?
+  shipmentCode        String?
+  amount              Float
+  accountNumber       String?
+  transferType        String?
+  referenceCode       String?
+  transactionDate     DateTime?
+  processingStatus    String
+  ignoredReason       String?
+  rawPayload          Json
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([provider, providerEventId])
+  @@index([referenceType])
+  @@index([settlementBatchId])
+  @@index([settlementCode])
+  @@index([codRecordId])
+  @@index([shipmentCode])
+  @@map("cod_settlement_payment_events")
+}
+
+model CodSettlementItem {
+  id           String @id @default(cuid())
+  batchId      String
+  codRecordId  String
+  shipmentCode String
+  amount       Float
+
+  batch        CodSettlementBatch @relation(fields: [batchId], references: [id])
+
+  @@unique([codRecordId])
+  @@map("cod_settlement_items")
 }
 
 model IdempotencyRecord {

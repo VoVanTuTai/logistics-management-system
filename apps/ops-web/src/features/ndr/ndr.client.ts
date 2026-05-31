@@ -3,14 +3,33 @@ import { opsEndpoints } from '../../services/api/endpoints';
 import type {
   NdrActionResultDto,
   NdrCaseDetailDto,
+  NdrCaseListFilters,
   NdrCaseListItemDto,
   RescheduleInput,
   ReturnDecisionInput,
 } from './ndr.types';
 
+function buildNdrListPath(filters?: NdrCaseListFilters): string {
+  const params = new URLSearchParams();
+
+  if (filters?.shipmentCode?.trim()) {
+    params.set('shipmentCode', filters.shipmentCode.trim());
+  }
+
+  if (filters?.status?.trim()) {
+    params.set('status', filters.status.trim());
+  }
+
+  const queryString = params.toString();
+  return queryString ? `${opsEndpoints.ndr.list}?${queryString}` : opsEndpoints.ndr.list;
+}
+
 export const ndrClient = {
-  list: (accessToken: string | null): Promise<NdrCaseListItemDto[]> =>
-    opsApiClient.request<NdrCaseListItemDto[]>(opsEndpoints.ndr.list, {
+  list: (
+    accessToken: string | null,
+    filters?: NdrCaseListFilters,
+  ): Promise<NdrCaseListItemDto[]> =>
+    opsApiClient.request<NdrCaseListItemDto[]>(buildNdrListPath(filters), {
       accessToken,
     }),
   detail: (accessToken: string | null, ndrId: string): Promise<NdrCaseDetailDto> =>

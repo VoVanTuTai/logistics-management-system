@@ -1,136 +1,462 @@
 .ops-metrics-inventory {
+  min-width: 1120px;
   display: grid;
-  gap: 12px;
+  gap: 14px;
+  color: #334155;
 }
 
-.ops-metrics-inventory__tabs {
+.ops-metrics-inventory__header {
   display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  border-bottom: 1px solid #dbe3ef;
-}
-
-.ops-metrics-inventory__tab {
-  border: 0;
-  border-bottom: 2px solid transparent;
-  border-radius: 0;
-  background: transparent;
-  color: #64748b;
-  font-weight: 600;
-  padding: 8px 4px;
-}
-
-.ops-metrics-inventory__tab--active {
-  color: #1d4ed8;
-  border-bottom-color: #2563eb;
-}
-
-.ops-metrics-inventory__toolbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.ops-metrics-inventory__search-btn,
-.ops-metrics-inventory__export-btn {
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid #dbe3ef;
   border-radius: 10px;
-  font-size: 14px;
-  line-height: 1;
-  padding: 8px 12px;
-  display: inline-flex;
+  background: #ffffff;
+  padding: 14px;
+}
+
+.ops-metrics-inventory__header small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.ops-metrics-inventory__header h2 {
+  margin: 6px 0 4px;
+  color: #1e293b;
+  font-size: 22px;
+}
+
+.ops-metrics-inventory__header p {
+  margin: 0;
+  max-width: 760px;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.ops-metrics-inventory__header button,
+.ops-metrics-inventory__pagination button {
+  min-height: 34px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--ops-primary);
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.ops-metrics-inventory__header-actions {
+  display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
-.ops-metrics-inventory__search-btn {
-  border: 1px solid #2563eb;
-  background: #ffffff;
-  color: #1e40af;
+.ops-metrics-inventory__scope {
+  min-width: 180px;
+  display: grid;
+  gap: 4px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eff6ff;
+  padding: 8px 10px;
 }
 
-.ops-metrics-inventory__search-btn span {
-  width: 14px;
-  height: 14px;
-  display: inline-flex;
+.ops-metrics-inventory__scope span {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
 }
 
-.ops-metrics-inventory__search-btn svg {
-  width: 14px;
-  height: 14px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.ops-metrics-inventory__scope strong {
+  color: var(--ops-primary);
+  font-size: 13px;
 }
 
-.ops-metrics-inventory__export-btn {
+.ops-metrics-inventory__summary {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.ops-metrics-inventory__summary article {
+  display: grid;
+  gap: 6px;
   border: 1px solid #d8e0ec;
+  border-radius: 10px;
   background: #ffffff;
-  color: #475569;
+  padding: 12px;
+}
+
+.ops-metrics-inventory__summary span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ops-metrics-inventory__summary small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.ops-metrics-inventory__summary strong {
+  color: var(--ops-primary);
+  font-size: 25px;
+  line-height: 1;
+}
+
+.ops-metrics-inventory__summary article[data-tone='success'] strong {
+  color: #15803d;
+}
+
+.ops-metrics-inventory__summary article[data-tone='warning'] strong {
+  color: #b45309;
+}
+
+.ops-metrics-inventory__summary article[data-tone='danger'] strong {
+  color: #b91c1c;
 }
 
 .ops-metrics-inventory__filters {
   display: grid;
-  grid-template-columns: minmax(220px, 320px);
-  gap: 8px;
-}
-
-.ops-metrics-inventory__filter-field {
-  display: grid;
-  gap: 5px;
-}
-
-.ops-metrics-inventory__filter-field span {
-  color: #334155;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.ops-metrics-inventory__filter-field select {
-  border: 1px solid #d0d9e6;
+  grid-template-columns: 150px 150px 170px 190px minmax(220px, 1fr);
+  gap: 10px;
+  border: 1px solid #dbe3ef;
   border-radius: 10px;
   background: #ffffff;
+  padding: 12px;
+}
+
+.ops-metrics-inventory__filters label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ops-metrics-inventory__filters span {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ops-metrics-inventory__filters input,
+.ops-metrics-inventory__filters select,
+.ops-metrics-inventory__pagination select {
+  width: 100%;
+  height: 36px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
   color: #334155;
-  height: 38px;
-  padding: 8px 10px;
+  padding: 0 10px;
+  font-size: 13px;
+}
+
+.ops-metrics-inventory__panel,
+.ops-metrics-inventory__courier-panel {
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.ops-metrics-inventory__panel-head {
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  padding: 0 12px;
+}
+
+.ops-metrics-inventory__panel-head h3 {
+  margin: 0;
+  color: #1e293b;
+  font-size: 15px;
+}
+
+.ops-metrics-inventory__panel-head span {
+  color: var(--ops-primary);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ops-metrics-inventory__panel-head small {
+  display: block;
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ops-metrics-inventory__ghost-button {
+  min-height: 32px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--ops-primary);
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.ops-metrics-inventory__ghost-button:hover {
+  border-color: #93c5fd;
+  background: #eff6ff;
 }
 
 .ops-metrics-inventory__table-wrap {
-  border: 1px solid #d8e0ec;
-  border-radius: 10px;
   overflow: auto;
 }
 
 .ops-metrics-inventory__table {
   width: 100%;
+  min-width: 1180px;
   border-collapse: collapse;
-  min-width: 700px;
 }
 
 .ops-metrics-inventory__table th,
 .ops-metrics-inventory__table td {
-  border: 1px solid #e2e8f0;
-  padding: 10px;
-  text-align: center;
-  white-space: nowrap;
+  border-bottom: 1px solid #e5eaf2;
+  padding: 10px 12px;
   color: #475569;
+  font-size: 12px;
+  text-align: left;
+  vertical-align: top;
 }
 
 .ops-metrics-inventory__table th {
   background: #f8fafc;
   color: #334155;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.ops-metrics-inventory__code {
+  color: var(--ops-primary);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.ops-metrics-inventory__badge {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: var(--ops-primary);
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.ops-metrics-inventory__badge--danger {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.ops-metrics-inventory__badge--success {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.ops-metrics-inventory__badge--warning {
+  border-color: #fed7aa;
+  background: #fff7ed;
+  color: #b45309;
+}
+
+.ops-metrics-inventory__courier-list {
+  max-height: 292px;
+  overflow: auto;
+}
+
+.ops-metrics-inventory__courier-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+}
+
+.ops-metrics-inventory__courier-table th,
+.ops-metrics-inventory__courier-table td {
+  border-bottom: 1px solid #e5eaf2;
+  padding: 9px 12px;
+  color: #475569;
+  font-size: 12px;
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.ops-metrics-inventory__courier-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #ffffff;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ops-metrics-inventory__courier-table tr {
+  cursor: pointer;
+}
+
+.ops-metrics-inventory__courier-table tbody tr:hover,
+.ops-metrics-inventory__courier-row--active {
+  background: #fffbeb;
+}
+
+.ops-metrics-inventory__courier-row--active td:first-child {
+  box-shadow: inset 3px 0 0 #f59e0b;
+}
+
+.ops-metrics-inventory__courier-row--clear {
+  background: #fbfefc;
+}
+
+.ops-metrics-inventory__courier-row--clear td {
+  color: #64748b;
+}
+
+.ops-metrics-inventory__courier-table td:first-child {
+  min-width: 240px;
+  white-space: normal;
+}
+
+.ops-metrics-inventory__courier-table td:first-child strong {
+  display: block;
+  color: #1e293b;
+  font-size: 13px;
+}
+
+.ops-metrics-inventory__courier-table td:first-child small {
+  display: block;
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.ops-metrics-inventory__courier-count {
+  display: inline-flex;
+  min-width: 28px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.ops-metrics-inventory__courier-count--warning {
+  background: #fff7ed;
+  color: #b45309;
+}
+
+.ops-metrics-inventory__courier-count--danger {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.ops-metrics-inventory__courier-count--clear {
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.ops-metrics-inventory__table small {
+  color: #64748b;
+  font-size: 11px;
   font-weight: 700;
 }
 
-.ops-metrics-inventory__danger-cell {
-  color: #1e40af !important;
-  font-weight: 700;
+.ops-metrics-inventory__empty,
+.ops-metrics-inventory__error {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.45;
 }
 
-@media (max-width: 640px) {
+.ops-metrics-inventory__empty {
+  padding: 12px;
+}
+
+.ops-metrics-inventory__error {
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #991b1b;
+  padding: 10px 12px;
+  font-weight: 800;
+}
+
+.ops-metrics-inventory__pagination {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  border-top: 1px solid #e2e8f0;
+  background: #ffffff;
+  padding: 8px 12px;
+}
+
+.ops-metrics-inventory__pagination > span,
+.ops-metrics-inventory__pagination label span,
+.ops-metrics-inventory__pagination strong {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ops-metrics-inventory__pagination label,
+.ops-metrics-inventory__pagination div {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ops-metrics-inventory__pagination select,
+.ops-metrics-inventory__pagination button {
+  height: 30px;
+}
+
+.ops-metrics-inventory__pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+@media (max-width: 1180px) {
+  .ops-metrics-inventory {
+    min-width: 960px;
+  }
+
   .ops-metrics-inventory__filters {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+
+  .ops-metrics-inventory__header {
+    align-items: flex-start;
+  }
+
+  .ops-metrics-inventory__header-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

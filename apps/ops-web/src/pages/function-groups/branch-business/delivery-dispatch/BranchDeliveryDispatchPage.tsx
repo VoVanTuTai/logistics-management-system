@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { useHubsQuery } from '../../../../features/masterdata/masterdata.api';
 import { authClient } from '../../../../features/auth/auth.client';
@@ -8,14 +9,18 @@ import type { ShipmentListItemDto } from '../../../../features/shipments/shipmen
 import { tasksClient, useTasksQuery } from '../../../../features/tasks/tasks.api';
 import type { TaskListItemDto } from '../../../../features/tasks/tasks.types';
 import { getErrorMessage } from '../../../../services/api/errors';
+import { routePaths } from '../../../../navigation/routes';
 import { useAuthStore } from '../../../../store/authStore';
 import { formatDateTime } from '../../../../utils/format';
 import {
   deriveHubScopeTokens,
   isShipmentInScope,
+  shipmentDestinationHubCode,
 } from '../../../../utils/locationScope';
 import { formatShipmentStatusLabel } from '../../../../utils/logisticsLabels';
 import { queryKeys } from '../../../../utils/queryKeys';
+import { CopyableShipmentCode } from '../../../shared/CopyableShipmentCode';
+import { BranchTablePagination } from '../shared/BranchTablePagination';
 import './BranchDeliveryDispatchPage.css';
 
 interface DeliveryOrderRow {
@@ -34,9 +39,17 @@ interface DeliveryOrderRow {
   task: TaskListItemDto | null;
 }
 
+interface HandoffAuditPreview {
+  batchCode: string;
+  courierId: string;
+  shipmentCodes: string[];
+  note: string;
+  createdAt: string;
+}
+
 const DELIVERY_STATUS_GROUPS: Record<'UNSEALED' | 'ARRIVED' | 'INVENTORY', ReadonlySet<string>> = {
   UNSEALED: new Set(['MANIFEST_UNSEALED']),
-  ARRIVED: new Set(['MANIFEST_RECEIVED', 'SCAN_INBOUND']),
+  ARRIVED: new Set(['PICKUP_COMPLETED', 'MANIFEST_RECEIVED', 'SCAN_INBOUND']),
   INVENTORY: new Set(['INVENTORY_CHECK']),
 };
 
@@ -74,15 +87,6 @@ function SendIcon(): React.JSX.Element {
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="m4 12 15-7-4 15-3-6z" />
       <path d="m12 14 7-9" />
-    </svg>
-  );
-}
-
-function SearchIcon(): React.JSX.Element {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="11" cy="11" r="6.5" />
-      <path d="m16 16 4 4" />
     </svg>
   );
 }
@@ -135,16 +139,9 @@ function isShipmentAtAssignedBranch(
     return true;
   }
 
-  const relatedHubCodes = [
-    shipment.receiverHubCode,
-    shipment.destinationHubCode,
-    shipment.originHubCode,
-    shipment.senderHubCode,
-  ]
-    .map((hubCode) => (hubCode ?? '').trim().toUpperCase())
-    .filter(Boolean);
-  if (relatedHubCodes.some((hubCode) => assignedHubCodes.includes(hubCode))) {
-    return true;
+  const destinationHubCode = shipmentDestinationHubCode(shipment);
+  if (destinationHubCode) {
+    return assignedHubCodes.includes(destinationHubCode);
   }
 
   return isShipmentInScope(shipment, scopeTokens);
@@ -175,6 +172,15 @@ function generateDeliveryTaskCode(shipmentCode: string): string {
     .slice(-6);
 
   return `DLV-${normalizedShipmentCode || 'SHIP'}-${timestamp}`;
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 export function BranchDeliveryDispatchPage(): React.JSX.Element {
@@ -235,12 +241,15 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
     'all',
   );
   const [keyword, setKeyword] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [courierId, setCourierId] = useState('');
   const [courierSearch, setCourierSearch] = useState('');
-  const [handoffNote, setHandoffNote] = useState('Bàn giao phát từ màn hình Phát hàng bưu cục.');
+  const [handoffNote, setHandoffNote] = useState('Bàn giao phát từ màn hình bưu cục.');
   const [isAssignPanelOpen, setIsAssignPanelOpen] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [lastHandoffAudit, setLastHandoffAudit] = useState<HandoffAuditPreview | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const hubScopeTokens = useMemo(
@@ -318,9 +327,26 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
     });
   }, [areaFilter, keyword, rows, serviceFilter, statusFilter]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [areaFilter, keyword, pageSize, serviceFilter, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const paginatedOrders = useMemo(
+    () => filteredOrders.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [currentPage, filteredOrders, pageSize],
+  );
+
   const selectedOrders = rows.filter((order) =>
     selectedShipmentCodes.includes(order.shipment.shipmentCode),
   );
+  const selectedReadyOrders = selectedOrders.filter((order) => order.shipmentStatusGroup !== null);
+  const selectedHubLabels = Array.from(new Set(selectedOrders.map((order) => order.area))).filter(
+    Boolean,
+  );
+  const isLoading =
+    shipmentsQuery.isLoading || deliveryTasksQuery.isLoading || hubsQuery.isLoading;
 
   const courierOptions = courierOptionsQuery.data ?? [];
   const effectiveCourierId = courierId || courierOptions[0]?.courierId || '';
@@ -359,6 +385,102 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
         : [...current, shipmentCode],
     );
   };
+  const selectAllFiltered = () => {
+    setSelectedShipmentCodes(filteredOrders.map((order) => order.shipment.shipmentCode));
+    setActionError(null);
+  };
+  const clearSelectedOrders = () => {
+    setSelectedShipmentCodes([]);
+    setActionError(null);
+  };
+  const resetFilters = () => {
+    setAreaFilter('all');
+    setServiceFilter('all');
+    setStatusFilter('all');
+    setKeyword('');
+    setPage(1);
+    void shipmentsQuery.refetch();
+    void deliveryTasksQuery.refetch();
+    void hubsQuery.refetch();
+    void courierOptionsQuery.refetch();
+  };
+
+  const printHandoffList = (ordersToPrint: DeliveryOrderRow[], title: string) => {
+    if (ordersToPrint.length === 0) {
+      setActionError('Không có vận đơn để in danh sách bàn giao.');
+      setActionMessage(null);
+      return;
+    }
+
+    const printedAt = new Date().toLocaleString('vi-VN');
+    const rowsHtml = ordersToPrint
+      .map(
+        (order, index) => `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${escapeHtml(order.shipment.shipmentCode)}</td>
+            <td>${escapeHtml(order.receiverName)}</td>
+            <td>${escapeHtml(order.receiverPhone)}</td>
+            <td>${escapeHtml(order.address)}</td>
+            <td>${escapeHtml(order.codAmount)}</td>
+            <td>${escapeHtml(order.task?.assignedCourierId ?? (effectiveCourierId || 'Chưa bàn giao'))}</td>
+          </tr>
+        `,
+      )
+      .join('');
+    const printWindow = window.open('', 'branch-delivery-handoff-print', 'width=960,height=720');
+
+    if (!printWindow) {
+      setActionError('Trình duyệt đang chặn cửa sổ in danh sách bàn giao.');
+      setActionMessage(null);
+      return;
+    }
+
+    printWindow.document.write(`
+      <!doctype html>
+      <html>
+        <head>
+          <title>${escapeHtml(title)}</title>
+          <style>
+            body { font-family: Arial, sans-serif; color: #172033; margin: 24px; }
+            h1 { margin: 0 0 6px; font-size: 20px; }
+            p { margin: 0 0 14px; color: #475569; font-size: 12px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; vertical-align: top; }
+            th { background: #f1f5f9; color: #0f172a; }
+            .signatures { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 28px; }
+            .signatures div { min-height: 76px; border-top: 1px solid #94a3b8; padding-top: 8px; text-align: center; }
+          </style>
+        </head>
+        <body>
+          <h1>${escapeHtml(title)}</h1>
+          <p>Thời gian in: ${escapeHtml(printedAt)} | Số vận đơn: ${ordersToPrint.length}</p>
+          <table>
+            <thead>
+              <tr>
+                <th>STT</th>
+                <th>Mã vận đơn</th>
+                <th>Người nhận</th>
+                <th>SĐT</th>
+                <th>Địa chỉ</th>
+                <th>COD</th>
+                <th>Courier</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+          <section class="signatures">
+            <div>Người bàn giao</div>
+            <div>Courier nhận bàn giao</div>
+            <div>Kiểm soát bưu cục</div>
+          </section>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
 
   const submitHandoff = async () => {
     if (!accessToken || isSubmitting) {
@@ -396,17 +518,28 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
           await tasksClient.reassign(accessToken, {
             taskId: task.id,
             courierId: effectiveCourierId,
+            hubCode: assignedHubCodes[0] ?? null,
+            note: handoffNote.trim() || 'Bàn giao phát tại bưu cục',
           });
         } else if (!task.assignedCourierId) {
           await tasksClient.assign(accessToken, {
             taskId: task.id,
             courierId: effectiveCourierId,
+            hubCode: assignedHubCodes[0] ?? null,
+            note: handoffNote.trim() || 'Bàn giao phát tại bưu cục',
           });
         }
       }
 
       await queryClient.invalidateQueries({ queryKey: queryKeys.tasks });
       await queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
+      setLastHandoffAudit({
+        batchCode: `HANDOFF-${Date.now().toString().slice(-8)}`,
+        courierId: effectiveCourierId,
+        shipmentCodes: selectedOrders.map((order) => order.shipment.shipmentCode),
+        note: handoffNote.trim() || 'Bàn giao phát tại bưu cục',
+        createdAt: new Date().toISOString(),
+      });
       setActionMessage(`Đã bàn giao ${selectedOrders.length} vận đơn cho courier ${effectiveCourierId}.`);
       setSelectedShipmentCodes([]);
     } catch (error) {
@@ -433,29 +566,61 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
 
   return (
     <section className="ops-branch-delivery">
-      <header className="ops-branch-delivery__header">
-        <div>
-          <small>BRANCH_DELIVERY_DISPATCH</small>
-          <h2>Phát hàng</h2>
-          <p>Dữ liệu lấy từ shipment-service và dispatch-service, dùng để bàn giao đơn thật sang app courier.</p>
-        </div>
+      <header className="ops-branch-delivery__top">
         <div className="ops-branch-delivery__summary">
-          <article>
+          <div>
             <span>Gỡ bao</span>
             <strong>{rows.filter((row) => row.shipmentStatusGroup === 'UNSEALED').length}</strong>
-          </article>
-          <article>
+          </div>
+          <div>
             <span>Hàng đến</span>
             <strong>{rows.filter((row) => row.shipmentStatusGroup === 'ARRIVED').length}</strong>
-          </article>
-          <article>
+          </div>
+          <div>
             <span>Tồn kho</span>
             <strong>{rows.filter((row) => row.shipmentStatusGroup === 'INVENTORY').length}</strong>
-          </article>
+          </div>
         </div>
       </header>
 
+      <section className="ops-branch-delivery__toolbar" aria-label="Thao tác điều phối phát hàng">
+        <button type="button" onClick={resetFilters}>
+          Làm mới
+        </button>
+        <button
+          type="button"
+          className="ops-branch-delivery__primary-action"
+          onClick={openAssignPanel}
+          disabled={selectedOrders.length === 0}
+        >
+          Điều phối NVGN
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            printHandoffList(
+              selectedOrders.length > 0 ? selectedOrders : filteredOrders,
+              selectedOrders.length > 0
+                ? 'Danh sách bàn giao vận đơn đã chọn'
+                : 'Danh sách bàn giao vận đơn chờ phát',
+            )
+          }
+          disabled={filteredOrders.length === 0}
+        >
+          In danh sách
+        </button>
+      </section>
+
       <section className="ops-branch-delivery__filters">
+        <label className="ops-branch-delivery__filter-wide">
+          <span>Từ khóa</span>
+          <input
+            type="text"
+            placeholder="Mã vận đơn, người nhận, số điện thoại"
+            value={keyword}
+            onChange={(event) => setKeyword(event.target.value)}
+          />
+        </label>
         <label>
           <span>Tuyến / khu vực</span>
           <select value={areaFilter} onChange={(event) => setAreaFilter(event.target.value)}>
@@ -490,18 +655,51 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
             <option value="all">Tất cả</option>
           </select>
         </label>
-        <label className="ops-branch-delivery__search">
-          <span>Tìm kiếm</span>
-          <div>
-            <SearchIcon />
-            <input
-              type="text"
-              placeholder="Mã vận đơn, người nhận, số điện thoại"
-              value={keyword}
-              onChange={(event) => setKeyword(event.target.value)}
-            />
-          </div>
+        <label>
+          <span>Bưu cục xử lý</span>
+          <input
+            type="text"
+            value={assignedHubCodes.length ? assignedHubCodes.join(', ') : 'Chưa được gán bưu cục'}
+            disabled
+            readOnly
+          />
         </label>
+      </section>
+
+      <section className="ops-branch-delivery__assign-strip">
+        <div className="ops-branch-delivery__bulk-metric">
+          <strong>{selectedShipmentCodes.length}</strong>
+          <span>vận đơn đã chọn</span>
+        </div>
+        <div className="ops-branch-delivery__bulk-metric">
+          <strong>{selectedReadyOrders.length}</strong>
+          <span>đủ điều phối</span>
+        </div>
+        <div className="ops-branch-delivery__bulk-metric">
+          <strong>{selectedHubLabels.length ? selectedHubLabels.join(', ') : '-'}</strong>
+          <span>tuyến / khu vực</span>
+        </div>
+        <div className="ops-branch-delivery__bulk-metric">
+          <strong>{effectiveCourierId || '-'}</strong>
+          <span>courier đang chọn</span>
+        </div>
+        <div className="ops-branch-delivery__bulk-actions">
+          <button type="button" onClick={selectAllFiltered} disabled={filteredOrders.length === 0}>
+            Chọn tất cả kết quả lọc
+          </button>
+          <button type="button" onClick={clearSelectedOrders} disabled={selectedShipmentCodes.length === 0}>
+            Bỏ chọn
+          </button>
+          <button
+            type="button"
+            className="ops-branch-delivery__primary-action"
+            onClick={openAssignPanel}
+            disabled={selectedOrders.length === 0}
+          >
+            Điều phối {selectedOrders.length} vận đơn
+          </button>
+        </div>
+        {actionMessage ? <p role="status">{actionMessage}</p> : null}
       </section>
 
       <div className="ops-branch-delivery__content">
@@ -510,17 +708,10 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
             <h3>Danh sách đơn chờ phát</h3>
             <div className="ops-branch-delivery__table-actions">
               <span>{filteredOrders.length} đơn</span>
-              <button
-                type="button"
-                className="ops-branch-delivery__open-assign-btn"
-                onClick={openAssignPanel}
-              >
-                Phân công ({selectedShipmentCodes.length})
-              </button>
             </div>
           </div>
-          {shipmentsQuery.isLoading || deliveryTasksQuery.isLoading || hubsQuery.isLoading ? (
-            <p className="ops-branch-delivery__empty">Đang tải dữ liệu thật từ hệ thống...</p>
+          {isLoading ? (
+            <div className="ops-branch-delivery__loading">Đang tải dữ liệu điều phối...</div>
           ) : null}
           {shipmentsQuery.isError ? (
             <p className="ops-branch-delivery__empty">{getErrorMessage(shipmentsQuery.error)}</p>
@@ -546,11 +737,12 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
                   <th>Thao tác cuối</th>
                   <th>Trạng thái phát hàng</th>
                   <th>Courier</th>
+                  <th>Liên lạc</th>
                   <th>SLA</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredOrders.map((order) => (
+                {paginatedOrders.map((order) => (
                   <tr key={order.id}>
                     <td>
                       <input
@@ -560,7 +752,12 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
                         aria-label={`Chọn ${order.shipment.shipmentCode}`}
                       />
                     </td>
-                    <td className="ops-branch-delivery__code">{order.shipment.shipmentCode}</td>
+                    <td>
+                      <CopyableShipmentCode
+                        code={order.shipment.shipmentCode}
+                        className="ops-branch-delivery__code"
+                      />
+                    </td>
                     <td>
                       <strong>{order.receiverName}</strong>
                       <small>{order.receiverPhone}</small>
@@ -574,6 +771,18 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
                     <td>{order.lastScan}</td>
                     <td>{order.shipmentStatusLabel}</td>
                     <td>{order.task?.assignedCourierId ?? 'Chưa bàn giao'}</td>
+                    <td>
+                      {order.task?.assignedCourierId ? (
+                        <Link
+                          className="ops-branch-delivery__chat-link"
+                          to={routePaths.opsChatWithCourier(order.task.assignedCourierId)}
+                        >
+                          Chat
+                        </Link>
+                      ) : (
+                        <span className="ops-branch-delivery__muted">Chưa có</span>
+                      )}
+                    </td>
                     <td>
                       <span
                         className={
@@ -590,11 +799,38 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
               </tbody>
             </table>
           </div>
+          <BranchTablePagination
+            totalRows={filteredOrders.length}
+            page={currentPage}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
         </section>
       </div>
-      {actionMessage ? <p className="ops-branch-delivery__notice">{actionMessage}</p> : null}
       {actionError && !isAssignPanelOpen ? (
         <p className="ops-branch-delivery__notice ops-branch-delivery__notice--error">{actionError}</p>
+      ) : null}
+      {lastHandoffAudit ? (
+        <section className="ops-branch-delivery__audit">
+          <div>
+            <span>Audit preview</span>
+            <strong>{lastHandoffAudit.batchCode}</strong>
+          </div>
+          <div>
+            <span>Courier</span>
+            <strong>{lastHandoffAudit.courierId}</strong>
+          </div>
+          <div>
+            <span>Vận đơn</span>
+            <strong>{lastHandoffAudit.shipmentCodes.length}</strong>
+          </div>
+          <div>
+            <span>Thời gian</span>
+            <strong>{formatDateTime(lastHandoffAudit.createdAt)}</strong>
+          </div>
+          <p>{lastHandoffAudit.note}</p>
+        </section>
       ) : null}
       {isAssignPanelOpen ? (
         <div className="ops-branch-delivery__modal" role="presentation">
@@ -677,6 +913,14 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
               <button type="button" onClick={() => setIsAssignPanelOpen(false)}>
                 Hủy
               </button>
+              {effectiveCourierId ? (
+                <Link
+                  className="ops-branch-delivery__drawer-chat"
+                  to={routePaths.opsChatWithCourier(effectiveCourierId)}
+                >
+                  Chat courier
+                </Link>
+              ) : null}
               <button
                 type="button"
                 className="ops-branch-delivery__assign-btn"
@@ -684,7 +928,7 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
                 disabled={isSubmitting || !effectiveCourierId}
               >
                 <SendIcon />
-                {isSubmitting ? 'Đang điều phối...' : 'Điều phối'}
+                {isSubmitting ? 'Đang chốt...' : 'Chốt bàn giao'}
               </button>
             </footer>
           </aside>

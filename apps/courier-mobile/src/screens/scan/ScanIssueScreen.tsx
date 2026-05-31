@@ -25,6 +25,7 @@ import { Card } from '../../components/ui/Card';
 import { Screen } from '../../components/ui/Screen';
 import { reportShipmentException } from '../../features/delivery/shipment-exception.api';
 import type { IssueAttachmentPayload } from '../../features/delivery/delivery.types';
+import { SCAN_ISSUE_RETURN_REASONS } from '../../features/delivery/return-reasons';
 import { parsePickupScannedCode } from '../../features/scan/pickup.scanner.adapter';
 import type { AppNavigatorParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
@@ -46,43 +47,13 @@ interface IssueOption {
   issueCategory: 'PHYSICAL' | 'INFORMATION' | 'SYSTEM';
 }
 
-const ISSUE_OPTIONS: IssueOption[] = [
-  {
-    id: 'physical-damage',
-    title: 'Hư hỏng ngoại quan',
-    description: 'Bưu kiện móp, vỡ hoặc có dấu hiệu hư hỏng vật lý.',
-    issueType: 'PHYSICAL_DAMAGE',
-    issueCategory: 'PHYSICAL',
-  },
-  {
-    id: 'torn',
-    title: 'Rách bao bì',
-    description: 'Bao bì bị rách, bung mép hoặc mất nguyên vẹn.',
-    issueType: 'TORN',
-    issueCategory: 'PHYSICAL',
-  },
-  {
-    id: 'wet',
-    title: 'Ướt hàng',
-    description: 'Bưu kiện bị ướt hoặc có dấu hiệu thấm nước.',
-    issueType: 'WET',
-    issueCategory: 'PHYSICAL',
-  },
-  {
-    id: 'wrong-phone',
-    title: 'Sai số điện thoại',
-    description: 'Thông tin số điện thoại không đúng hoặc không liên hệ được.',
-    issueType: 'WRONG_PHONE',
-    issueCategory: 'INFORMATION',
-  },
-  {
-    id: 'wrong-hub-route',
-    title: 'Sai tuyến hub',
-    description: 'Bưu kiện đang ở sai hub hoặc sai tuyến trung chuyển.',
-    issueType: 'WRONG_HUB_ROUTE',
-    issueCategory: 'SYSTEM',
-  },
-];
+const ISSUE_OPTIONS: IssueOption[] = SCAN_ISSUE_RETURN_REASONS.map((reason) => ({
+  id: reason.id,
+  title: reason.label,
+  description: reason.description,
+  issueType: reason.code,
+  issueCategory: reason.issueCategory ?? 'INFORMATION',
+}));
 
 interface LocalAttachment {
   uri: string;
@@ -297,6 +268,8 @@ export function ScanIssueScreen({ navigation, route }: Props): React.JSX.Element
             </Text>
             <View style={styles.inputRow}>
               <TextInput
+                testID="scan-issue-shipment-code-input"
+                accessibilityLabel="Mã vận đơn ghi nhận vấn đề"
                 value={shipmentCode}
                 onChangeText={setShipmentCode}
                 placeholder="Mã vận đơn"
@@ -328,6 +301,8 @@ export function ScanIssueScreen({ navigation, route }: Props): React.JSX.Element
                 const selected = option.id === selectedIssueId;
                 return (
                   <Pressable
+                    testID={`scan-issue-reason-option-${option.id}`}
+                    accessibilityLabel={`Chọn vấn đề ${option.title}`}
                     key={option.id}
                     onPress={() => setSelectedIssueId(option.id)}
                     style={[styles.optionItem, selected && styles.optionItemSelected]}
@@ -357,6 +332,8 @@ export function ScanIssueScreen({ navigation, route }: Props): React.JSX.Element
               Vấn đề ngoại quan bắt buộc có minh chứng. Vấn đề thông tin/hệ thống bắt buộc có ghi chú.
             </Text>
             <TextInput
+              testID="scan-issue-note-input"
+              accessibilityLabel="Ghi chú vấn đề"
               placeholder="Nhập ghi chú nếu cần"
               placeholderTextColor="#94A3B8"
               style={styles.noteInput}
@@ -407,6 +384,8 @@ export function ScanIssueScreen({ navigation, route }: Props): React.JSX.Element
 
         <View style={styles.footer}>
           <Pressable
+            testID="scan-issue-submit-button"
+            accessibilityLabel="Xác nhận vấn đề"
             onPress={() => {
               void handleSubmit();
             }}
