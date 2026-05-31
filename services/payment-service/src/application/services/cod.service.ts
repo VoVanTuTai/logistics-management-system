@@ -184,6 +184,15 @@ export class CodService {
     return updated;
   }
 
+  async assignCourier(shipmentCode: string, courierId: string): Promise<CodRecord | null> {
+    const codRecord = await this.codRecordRepository.findByShipmentCode(shipmentCode);
+    if (!codRecord) {
+      this.logger.warn(`COD record not found for shipment "${shipmentCode}" to assign courier "${courierId}".`);
+      return null;
+    }
+    return this.codRecordRepository.updateCourier(codRecord.id, courierId);
+  }
+
   async remitCod(input: RemitCodInput): Promise<CodRecord> {
     if (!input.shipmentCode) {
       throw new BadRequestException('shipmentCode is required.');

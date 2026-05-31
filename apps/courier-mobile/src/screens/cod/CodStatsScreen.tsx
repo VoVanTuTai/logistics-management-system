@@ -1,7 +1,9 @@
 import React from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Image,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -16,6 +18,8 @@ import {
   useCodSummaryQuery,
   useCodRecordsQuery,
   useCompanyBankInfoQuery,
+  useDailySettlementQuery,
+  useCreateSettlementMutation,
 } from '../../features/cod/cod.queries';
 import type { CodRecordDto } from '../../features/cod/cod.types';
 import type { AppNavigatorParamList } from '../../navigation/types';
@@ -151,19 +155,27 @@ export function CodStatsScreen({ navigation }: Props): React.JSX.Element {
   const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
   const accessToken = session?.tokens.accessToken ?? null;
 
+  const todayStr = new Date().toISOString().slice(0, 10);
   const summaryQuery = useCodSummaryQuery({ courierId, accessToken });
   const recordsQuery = useCodRecordsQuery({ courierId, accessToken });
   const bankInfoQuery = useCompanyBankInfoQuery({ accessToken });
+  const dailySettlementQuery = useDailySettlementQuery({ courierId, date: todayStr, accessToken });
+  const createSettlementMutation = useCreateSettlementMutation(accessToken);
 
   const onRefresh = () => {
     void summaryQuery.refetch();
     void recordsQuery.refetch();
+    void dailySettlementQuery.refetch();
   };
-  const refreshing = summaryQuery.isRefetching || recordsQuery.isRefetching;
+  const refreshing =
+    summaryQuery.isRefetching ||
+    recordsQuery.isRefetching ||
+    dailySettlementQuery.isRefetching;
 
   const summary = summaryQuery.data;
   const records = recordsQuery.data ?? [];
   const bankInfo = bankInfoQuery.data;
+  const dailySettlement = dailySettlementQuery.data;
 
   /* ── Compute per-method breakdown from records ─────── */
 
@@ -192,15 +204,38 @@ export function CodStatsScreen({ navigation }: Props): React.JSX.Element {
     + (summary?.collectedAmount ?? 0)
     + (summary?.remittedAmount ?? 0);
 
+  const activeBatch = dailySettlement?.batches?.find((b) => b.status === 'WAITING_PAYMENT');
+
   // Cash that courier still holds and needs to remit
   const cashNeedRemit = cashCollected;
 
   // VietQR for remitting cash
-  const qrMemo = `NOP COD ${courierId ?? 'SHIPPER'} ${new Date().toISOString().slice(0, 10)}`;
-  const qrUrl =
-    bankInfo && cashNeedRemit > 0
-      ? `https://img.vietqr.io/image/${bankInfo.bin}-${bankInfo.accountNumber}-compact2.png?amount=${cashNeedRemit}&addInfo=${encodeURIComponent(qrMemo)}&accountName=${encodeURIComponent(bankInfo.accountName)}`
-      : null;
+  const qrMemo = activeBatch ? activeBatch.transferMemo : '';
+  const qrUrl = activeBatch ? activeBatch.qrUrl : null;
+
+  const handleCreateSettlement = async () => {
+    const collectedCashRecords = cashRecords.filter((r) => r.status === 'COLLECTED');
+    const shipmentCodes = collectedCashRecords.map((r) => r.shipmentCode);
+
+    if (shipmentCodes.length === 0) {
+      Alert.alert('Thông báo', 'Không có đơn tiền mặt nào cần nộp.');
+      return;
+    }
+
+    try {
+      await createSettlementMutation.mutateAsync({
+        reportDate: todayStr,
+        hubCode: session?.user.hubCodes?.[0] ?? 'UNKNOWN',
+        courierId: courierId ?? 'UNKNOWN',
+        shipmentCodes,
+        createdBy: session?.user.username ?? 'UNKNOWN',
+      });
+      Alert.alert('Thành công', 'Đã tạo yêu cầu quyết toán. Vui lòng quét mã QR chuyển khoản nộp tiền.');
+      void dailySettlementQuery.refetch();
+    } catch (err) {
+      Alert.alert('Lỗi', err instanceof Error ? err.message : 'Không thể tạo yêu cầu nộp tiền.');
+    }
+  };
 
   const isLoading = summaryQuery.isLoading || recordsQuery.isLoading;
 
@@ -291,15 +326,15 @@ export function CodStatsScreen({ navigation }: Props): React.JSX.Element {
               />
             </View>
 
-            {/* Cash remit QR banner — only when courier holds cash */}
-            {cashNeedRemit > 0 ? (
+            {/* Cash remit QR banner — only when courier holds cash or has an active batch */}
+            {activeBatch ? (
               <View style={s.remitBanner}>
                 <View style={s.remitBannerHeader}>
                   <Ionicons name="alert-circle-outline" size={20} color="#FFF" />
-                  <Text style={s.remitBannerTitle}>Cần nộp tiền mặt</Text>
+                  <Text style={s.remitBannerTitle}>Cần nộp tiền mặt (Có mã QR)</Text>
                 </View>
                 <Text style={s.remitBannerAmount}>
-                  {formatVnd(cashNeedRemit)}
+                  {formatVnd(activeBatch.totalAmount)}
                 </Text>
                 <Text style={s.remitBannerHint}>
                   Quét mã QR bên dưới để chuyển khoản nộp tiền về công ty
@@ -325,6 +360,36 @@ export function CodStatsScreen({ navigation }: Props): React.JSX.Element {
                     ) : null}
                   </View>
                 ) : null}
+              </View>
+            ) : cashNeedRemit > 0 ? (
+              <View style={s.remitBanner}>
+                <View style={s.remitBannerHeader}>
+                  <Ionicons name="alert-circle-outline" size={20} color="#FFF" />
+                  <Text style={s.remitBannerTitle}>Cần nộp tiền mặt</Text>
+                </View>
+                <Text style={s.remitBannerAmount}>
+                  {formatVnd(cashNeedRemit)}
+                </Text>
+                <Text style={s.remitBannerHint}>
+                  Nhấn nút bên dưới để tạo mã quyết toán và QR chuyển tiền về công ty.
+                </Text>
+                <Pressable
+                  onPress={() => {
+                    void handleCreateSettlement();
+                  }}
+                  disabled={createSettlementMutation.isPending}
+                  style={({ pressed }) => [
+                    s.remitButton,
+                    pressed && s.remitButtonPressed,
+                    createSettlementMutation.isPending && s.remitButtonDisabled,
+                  ]}
+                >
+                  {createSettlementMutation.isPending ? (
+                    <ActivityIndicator size="small" color="#DC2626" />
+                  ) : (
+                    <Text style={s.remitButtonText}>Tạo QR nộp tiền mặt</Text>
+                  )}
+                </Pressable>
               </View>
             ) : cashRecords.length > 0 ? (
               <View style={s.allDoneBanner}>
@@ -593,6 +658,26 @@ const s = StyleSheet.create({
   remitBannerHint: {
     ...theme.typography.body.sm,
     color: 'rgba(255,255,255,0.8)',
+  },
+  remitButton: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: theme.radius.md,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: theme.spacing.sm,
+    ...theme.shadow.sm,
+  },
+  remitButtonPressed: {
+    opacity: 0.85,
+  },
+  remitButtonDisabled: {
+    opacity: 0.6,
+  },
+  remitButtonText: {
+    ...theme.typography.body.md,
+    color: '#DC2626',
+    fontWeight: '700',
   },
   qrContainer: {
     marginTop: theme.spacing.sm,

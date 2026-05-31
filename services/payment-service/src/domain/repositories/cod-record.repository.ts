@@ -90,4 +90,6 @@ export abstract class CodRecordRepository {
     collectedAmount: number;
     remittedAmount: number;
   }>;
+
+  abstract updateCourier(id: string, courierId: string): Promise<CodRecord>;
 }

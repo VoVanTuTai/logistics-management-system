@@ -2,9 +2,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import {
   collectCod,
+  createSettlement,
   fetchCodRecords,
   fetchCodSummary,
   fetchCompanyBankInfo,
+  fetchDailySettlement,
   remitCod,
 } from './cod.api';
 import type { CollectCodPayload, RemitCodPayload } from './cod.types';
@@ -59,6 +61,40 @@ export function useRemitCodMutation(accessToken: string | null) {
 
   return useMutation({
     mutationFn: (payload: RemitCodPayload) => remitCod(payload, accessToken),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['cod'] });
+    },
+  });
+}
+
+export function useDailySettlementQuery(params: {
+  courierId: string | null;
+  date: string | null;
+  accessToken: string | null;
+}) {
+  return useQuery({
+    queryKey: ['cod', 'settlements', 'daily', params.courierId, params.date],
+    queryFn: () =>
+      fetchDailySettlement(
+        params.courierId!,
+        params.date!,
+        params.accessToken,
+      ),
+    enabled: !!params.courierId && !!params.date,
+  });
+}
+
+export function useCreateSettlementMutation(accessToken: string | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: {
+      reportDate: string;
+      hubCode: string;
+      courierId: string;
+      shipmentCodes: string[];
+      createdBy: string;
+    }) => createSettlement(payload, accessToken),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['cod'] });
     },
