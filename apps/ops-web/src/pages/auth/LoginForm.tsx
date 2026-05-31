@@ -15,6 +15,7 @@ export function LoginForm({
   errorMessage,
   onSubmit,
 }: LoginFormProps): React.JSX.Element {
+  const [showPassword, setShowPassword] = React.useState(false);
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -24,38 +25,66 @@ export function LoginForm({
   });
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="auth-form">
-      <label className="auth-label" htmlFor="username">
-        Tên đăng nhập
-      </label>
-      <input
-        id="username"
-        {...form.register('username')}
-        className="auth-input"
-        placeholder="20000001"
-      />
-      {form.formState.errors.username ? (
-        <small className="auth-error">{form.formState.errors.username.message}</small>
-      ) : null}
+    <form onSubmit={form.handleSubmit(onSubmit)} className="login-form-new">
+      <div className="login-field-group">
+        <label className="login-field-label" htmlFor="username">
+          Tên đăng nhập
+        </label>
+        <div className="login-input-wrapper">
+          <span className="material-symbols-outlined login-input-icon">person</span>
+          <input
+            id="username"
+            {...form.register('username')}
+            className="login-input"
+            placeholder="20000001"
+          />
+        </div>
+        {form.formState.errors.username ? (
+          <small className="auth-error">{form.formState.errors.username.message}</small>
+        ) : null}
+      </div>
 
-      <label className="auth-label" htmlFor="password">
-        Mật khẩu
-      </label>
-      <input
-        id="password"
-        type="password"
-        {...form.register('password')}
-        className="auth-input"
-        placeholder="********"
-      />
-      {form.formState.errors.password ? (
-        <small className="auth-error">{form.formState.errors.password.message}</small>
-      ) : null}
+      <div className="login-field-group">
+        <label className="login-field-label" htmlFor="password">
+          Mật khẩu
+        </label>
+        <div className="login-input-wrapper">
+          <span className="material-symbols-outlined login-input-icon">lock</span>
+          <input
+            id="password"
+            type={showPassword ? 'text' : 'password'}
+            {...form.register('password')}
+            className="login-input login-input-password"
+            placeholder="••••••••"
+          />
+          <button
+            className="login-input-toggle-btn"
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+          >
+            <span className="material-symbols-outlined">
+              {showPassword ? 'visibility_off' : 'visibility'}
+            </span>
+          </button>
+        </div>
+        {form.formState.errors.password ? (
+          <small className="auth-error">{form.formState.errors.password.message}</small>
+        ) : null}
+      </div>
 
       {errorMessage ? <div className="auth-error-banner">{errorMessage}</div> : null}
 
-      <button type="submit" disabled={isSubmitting} className="auth-submit">
-        {isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
+      <div className="login-utilities">
+        <label className="login-remember-label">
+          <input className="login-remember-checkbox" type="checkbox" />
+          <span className="login-remember-text">Ghi nhớ đăng nhập</span>
+        </label>
+        <a className="login-forgot-link" href="#" onClick={(e) => e.preventDefault()}>Quên mật khẩu?</a>
+      </div>
+
+      <button type="submit" disabled={isSubmitting} className="login-submit-btn">
+        <span>{isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập'}</span>
+        <span className="material-symbols-outlined">login</span>
       </button>
     </form>
   );
