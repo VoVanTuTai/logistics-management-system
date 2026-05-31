@@ -136,6 +136,8 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
         note: [
           'LINEHAUL_TRIP',
           `tripType=${form.tripType}`,
+          `originHubCode=${originHubCode}`,
+          `destinationHubCode=${destinationHubCode}`,
           `plannedStartAt=${plannedStartAt}`,
           `plannedEndAt=${plannedEndAt}`,
         ].join('|'),
