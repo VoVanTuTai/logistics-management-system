@@ -30,6 +30,7 @@ import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
 import { resolveCourierDisplayName, resolveCourierId } from '../../utils/courier';
 import { appEnv } from '../../utils/env';
+import { playScanSuccessSound, playScanWarningSound } from '../../utils/scanSoundFeedback';
 
 interface CourierOption {
   courierId: string;
@@ -479,12 +480,14 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
   const appendShipmentCode = React.useCallback(
     (rawValue: string) => {
       if (!selectedCourier) {
+        playScanWarningSound();
         setErrorMessage('Vui lòng chọn courier trước khi quét vận đơn.');
         return;
       }
 
       const shipmentCode = normalizeCode(rawValue);
       if (!shipmentCode) {
+        playScanWarningSound();
         setErrorMessage('Mã vận đơn không hợp lệ.');
         return;
       }
@@ -494,12 +497,14 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
           (item) => item.shipmentCode === shipmentCode,
         );
         if (duplicated) {
+          playScanWarningSound();
           setMessage(`${shipmentCode} đã có trong danh sách phát hàng.`);
           setErrorMessage(null);
           return currentItems;
         }
 
         setManualShipmentCode('');
+        playScanSuccessSound();
         setMessage(`Đã thêm vận đơn ${shipmentCode}.`);
         setErrorMessage(null);
         setFailurePreview((current) =>
@@ -531,6 +536,7 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
     });
 
     if (!parsed) {
+      playScanWarningSound();
       setErrorMessage('Không đọc được mã vận đơn. Vui lòng thử lại.');
       return;
     }

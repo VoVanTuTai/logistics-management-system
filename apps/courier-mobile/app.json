@@ -2,7 +2,8 @@
   "expo": {
     "name": "courier-mobile",
     "slug": "courier-mobile",
-    "version": "1.0.0",
+    "version": "1.0.3",
+    "icon": "./assets/icon.png",
     "orientation": "portrait",
     "assetBundlePatterns": [
       "**/*"
@@ -12,11 +13,13 @@
     },
     "android": {
       "package": "com.nexuslogistics.couriermobile",
-      "versionCode": 1,
-      "usesCleartextTraffic": true,
+      "versionCode": 4,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#185FA5"
+      },
       "permissions": [
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.CAMERA"
       ]
     },
     "web": {
@@ -29,7 +32,18 @@
         {
           "cameraPermission": "Cho phép ứng dụng dùng camera để quét QR/barcode cho tác vụ giao nhận."
         }
-      ]
+      ],
+      "expo-font",
+      "expo-asset",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ],
+      "expo-audio"
     ],
     "extra": {
       "eas": {

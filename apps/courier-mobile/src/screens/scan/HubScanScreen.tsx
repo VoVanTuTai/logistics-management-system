@@ -29,6 +29,7 @@ import { shouldQueueOffline } from '../../services/api/client';
 import { buildHubScanAuditNote, resolveCourierId } from '../../utils/courier';
 import { appEnv } from '../../utils/env';
 import { createIdempotencyKey } from '../../utils/idempotency';
+import { playScanSuccessSound, playScanWarningSound } from '../../utils/scanSoundFeedback';
 import { CameraScannerModal } from '../../components/scan/CameraScannerModal';
 import { GoodsArrivalScreen } from './GoodsArrivalScreen';
 
@@ -171,10 +172,12 @@ function LegacyHubScanForm({ route }: Pick<Props, 'route'>): React.JSX.Element {
     });
 
     if (!parsed) {
+      playScanWarningSound();
       setScannerError('Không đọc được mã hợp lệ. Vui lòng thử lại.');
       return;
     }
 
+    playScanSuccessSound();
     setValue('shipmentCode', parsed.value, {
       shouldDirty: true,
       shouldValidate: true,

@@ -4,6 +4,7 @@ import {
   Alert,
   Linking,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -239,8 +240,6 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
     'ALL' | 'CREATED' | 'ASSIGNED' | 'COMPLETED' | 'CANCELLED'
   >(route?.params?.initialStatus ?? 'ALL');
   const [viewMode, setViewMode] = useState<TaskViewMode>('ORDER');
-  const [typeMenuOpen, setTypeMenuOpen] = useState(false);
-  const [statusMenuOpen, setStatusMenuOpen] = useState(false);
 
   const tasks = tasksQuery.data ?? [];
 
@@ -364,77 +363,79 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
           </Pressable>
         </View>
 
-        <View style={styles.selectRow}>
-          <View style={styles.selectColumn}>
-            <Pressable
-              style={styles.selectButton}
-              onPress={() => {
-                setTypeMenuOpen((prev) => !prev);
-                setStatusMenuOpen(false);
-              }}
+        <View style={styles.filterPanel}>
+          <View style={styles.filterGroup}>
+            <View style={styles.filterLabelRow}>
+              <Ionicons name="cube-outline" size={14} color={theme.colors.textSecondary} />
+              <Text style={styles.filterLabel}>Loại</Text>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filterChipRow}
             >
-              <Text style={styles.selectLabel}>Loại</Text>
-              <Text style={styles.selectValue}>
-                {typeOptions.find((o) => o.value === taskTypeFilter)?.label ?? 'Tất cả'}
-              </Text>
-              <Ionicons
-                name={typeMenuOpen ? 'chevron-up' : 'chevron-down'}
-                size={12}
-                color="#EFF6FF"
-              />
-            </Pressable>
-            {typeMenuOpen ? (
-              <View style={styles.dropdown}>
-                {typeOptions.map((option) => (
+              {typeOptions.map((option) => {
+                const active = option.value === taskTypeFilter;
+
+                return (
                   <Pressable
                     key={option.value}
-                    style={styles.dropdownItem}
-                    onPress={() => {
-                      setTaskTypeFilter(option.value);
-                      setTypeMenuOpen(false);
-                    }}
+                    onPress={() => setTaskTypeFilter(option.value)}
+                    style={({ pressed }) => [
+                      styles.filterChip,
+                      active && styles.filterChipActive,
+                      pressed && styles.filterChipPressed,
+                    ]}
                   >
-                    <Text style={styles.dropdownText}>{option.label}</Text>
+                    <Text
+                      style={[
+                        styles.filterChipText,
+                        active && styles.filterChipTextActive,
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
                   </Pressable>
-                ))}
-              </View>
-            ) : null}
+                );
+              })}
+            </ScrollView>
           </View>
 
-          <View style={styles.selectColumn}>
-            <Pressable
-              style={styles.selectButton}
-              onPress={() => {
-                setStatusMenuOpen((prev) => !prev);
-                setTypeMenuOpen(false);
-              }}
+          <View style={styles.filterGroup}>
+            <View style={styles.filterLabelRow}>
+              <Ionicons name="radio-button-on-outline" size={14} color={theme.colors.textSecondary} />
+              <Text style={styles.filterLabel}>Trạng Thái</Text>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filterChipRow}
             >
-              <Text style={styles.selectLabel}>Trạng thái</Text>
-              <Text style={styles.selectValue}>
-                {statusOptions.find((o) => o.value === statusFilter)?.label ?? 'Tất cả'}
-              </Text>
-              <Ionicons
-                name={statusMenuOpen ? 'chevron-up' : 'chevron-down'}
-                size={12}
-                color="#EFF6FF"
-              />
-            </Pressable>
-            {statusMenuOpen ? (
-              <View style={styles.dropdown}>
-                {statusOptions.map((option) => (
+              {statusOptions.map((option) => {
+                const active = option.value === statusFilter;
+
+                return (
                   <Pressable
                     key={option.value}
-                    style={styles.dropdownItem}
-                    onPress={() => {
-                      setStatusFilter(option.value);
-                      setStatusMenuOpen(false);
-                    }}
+                    onPress={() => setStatusFilter(option.value)}
+                    style={({ pressed }) => [
+                      styles.filterChip,
+                      active && styles.filterChipActive,
+                      pressed && styles.filterChipPressed,
+                    ]}
                   >
-                    <Text style={styles.dropdownText}>{option.label}</Text>
+                    <Text
+                      style={[
+                        styles.filterChipText,
+                        active && styles.filterChipTextActive,
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
                   </Pressable>
-                ))}
-              </View>
-            ) : null}
+                );
+              })}
+            </ScrollView>
           </View>
         </View>
 
@@ -622,8 +623,9 @@ const styles = StyleSheet.create({
   headerBlock: {
     backgroundColor: '#FFFFFF',
     paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.xxs,
-    gap: theme.spacing.xs,
+    paddingTop: 6,
+    paddingBottom: 8,
+    gap: 7,
     borderBottomLeftRadius: theme.radius.md,
     borderBottomRightRadius: theme.radius.md,
     ...theme.shadow.sm,
@@ -643,33 +645,29 @@ const styles = StyleSheet.create({
   trackButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.xs,
+    gap: 4,
     borderWidth: 1,
     borderColor: '#BFDBFE',
-    borderRadius: theme.radius.md,
+    borderRadius: theme.radius.pill,
     backgroundColor: '#EFF6FF',
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
   trackButtonText: {
     color: theme.colors.primary,
     fontWeight: '700',
     fontSize: 12,
   },
-  selectRow: {
-    flexDirection: 'row',
-    gap: theme.spacing.sm,
-  },
   viewModeRow: {
     flexDirection: 'row',
     gap: theme.spacing.xs,
     backgroundColor: '#EEF4FB',
     borderRadius: theme.radius.md,
-    padding: 3,
+    padding: 2,
   },
   viewModeButton: {
     flex: 1,
-    minHeight: 34,
+    minHeight: 30,
     borderRadius: theme.radius.sm,
     flexDirection: 'row',
     alignItems: 'center',
@@ -691,48 +689,55 @@ const styles = StyleSheet.create({
   viewModeTextActive: {
     color: '#FFFFFF',
   },
-  selectColumn: {
-    flex: 1,
+  filterPanel: {
+    gap: 5,
   },
-  selectButton: {
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    paddingHorizontal: 1,
-    paddingVertical: 1,
+  filterGroup: {
+    minHeight: 32,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 8,
+  },
+  filterLabelRow: {
+    width: 46,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  filterLabel: {
+    color: theme.colors.textSecondary,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  filterChipRow: {
     gap: theme.spacing.xs,
+    paddingRight: theme.spacing.md,
   },
-  selectLabel: {
-    color: theme.colors.textPrimary,
-    fontSize: 12,
-    fontWeight: '700',
-    marginRight: 0,
+  filterChip: {
+    minHeight: 30,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    borderColor: '#D8E3F3',
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  selectValue: {
-    color: theme.colors.textPrimary,
-    fontWeight: '700',
-    fontSize: 12,
-    flex: 1,
-    textAlign: 'right',
-    marginRight: theme.spacing.xs,
+  filterChipActive: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+    ...theme.shadow.sm,
   },
-  dropdown: {
-    marginTop: 4,
-    borderRadius: theme.radius.md,
-    backgroundColor: '#FFFFFF',
-    ...theme.shadow.card,
+  filterChipPressed: {
+    opacity: 0.86,
   },
-  dropdownItem: {
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: 10,
+  filterChipText: {
+    color: theme.colors.textSecondary,
+    fontSize: 11,
+    fontWeight: '800',
   },
-  dropdownText: {
-    color: theme.colors.textPrimary,
-    fontWeight: '700',
+  filterChipTextActive: {
+    color: '#FFFFFF',
   },
   offlineBanner: {
     marginHorizontal: theme.spacing.lg,

@@ -46,6 +46,7 @@ import {
 } from '../../utils/courier';
 import { appEnv } from '../../utils/env';
 import { createIdempotencyKey } from '../../utils/idempotency';
+import { playScanSuccessSound, playScanWarningSound } from '../../utils/scanSoundFeedback';
 
 type VehicleOutboundStep = 'VEHICLE' | 'PROOF' | 'SEAL';
 
@@ -214,6 +215,7 @@ export function VehicleOutboundScreen(): React.JSX.Element {
   const appendSealCode = React.useCallback((rawCode: string) => {
     const normalizedCode = normalizeCode(rawCode);
     if (!normalizedCode) {
+      playScanWarningSound();
       setScreenMessage('Mã seal xe không hợp lệ.');
       return;
     }
@@ -221,10 +223,12 @@ export function VehicleOutboundScreen(): React.JSX.Element {
     setSealCodes((currentCodes) => {
       const duplicated = currentCodes.some((item) => item.code === normalizedCode);
       if (duplicated) {
+        playScanWarningSound();
         setScreenMessage(`${normalizedCode} đã có trong danh sách seal xe.`);
         return currentCodes;
       }
 
+      playScanSuccessSound();
       setScreenMessage(`Đã thêm seal xe ${normalizedCode}.`);
       return [
         {
@@ -244,6 +248,7 @@ export function VehicleOutboundScreen(): React.JSX.Element {
 
     const nextVehicleInfo = parseVehicleLabel(rawValue);
     if (!nextVehicleInfo) {
+      playScanWarningSound();
       setScreenMessage('Tem xe không hợp lệ. Vui lòng quét đúng mã tem xe.');
       return;
     }
@@ -255,6 +260,7 @@ export function VehicleOutboundScreen(): React.JSX.Element {
       if (error instanceof ApiClientError && error.status === 404) {
         setVehicleInfo(null);
         setVehicleLoadRecord(null);
+        playScanWarningSound();
         setScreenMessage(
           `Tem xe ${nextVehicleInfo.vehicleCode} chưa được tạo hoặc chưa đồng bộ trên Ops Web. Vui lòng tạo tem xe ở Ops rồi quét lại.`,
         );
@@ -262,6 +268,7 @@ export function VehicleOutboundScreen(): React.JSX.Element {
       }
 
       const message = toErrorMessage(error);
+      playScanWarningSound();
       setScreenMessage(message);
       setGlobalError(message);
       return;
@@ -270,6 +277,7 @@ export function VehicleOutboundScreen(): React.JSX.Element {
     const syncedVehicleInfo = buildSyncedVehicleInfo(nextVehicleInfo, manifest);
     const nextLoadRecord = await findVehicleLoadRecord(syncedVehicleInfo.vehicleCode);
     setVehicleInfo(syncedVehicleInfo);
+    playScanSuccessSound();
 
     if (!nextLoadRecord) {
       setVehicleLoadRecord(null);

@@ -34,6 +34,7 @@ import { theme } from '../../theme';
 import { resolveCourierDisplayName, resolveCourierId } from '../../utils/courier';
 import { appEnv } from '../../utils/env';
 import { createIdempotencyKey } from '../../utils/idempotency';
+import { playScanSuccessSound, playScanWarningSound } from '../../utils/scanSoundFeedback';
 
 type SendItemType = 'BAG' | 'SHIPMENT';
 
@@ -229,12 +230,14 @@ export function SendGoodsScreen(): React.JSX.Element {
   const appendSendItem = React.useCallback(
     (rawCode: string) => {
       if (!hasVehicleInfo) {
+        playScanWarningSound();
         setScreenMessage('Vui lòng quét tem xe trước khi quét tem bao hoặc mã kiện.');
         return;
       }
 
       const normalizedCode = normalizeCode(rawCode);
       if (!normalizedCode) {
+        playScanWarningSound();
         setScreenMessage('Mã không hợp lệ.');
         return;
       }
@@ -244,11 +247,13 @@ export function SendGoodsScreen(): React.JSX.Element {
       setItems((currentItems) => {
         const duplicated = currentItems.some((item) => item.code === normalizedCode);
         if (duplicated) {
+          playScanWarningSound();
           setScreenMessage(`${normalizedCode} đã có trong danh sách gửi hàng.`);
           return currentItems;
         }
 
         setManualCodeInput('');
+        playScanSuccessSound();
         setScreenMessage(
           itemType === 'BAG'
             ? `Đã thêm tem bao ${normalizedCode}.`
@@ -276,6 +281,7 @@ export function SendGoodsScreen(): React.JSX.Element {
 
     const nextVehicleInfo = parseVehicleLabel(rawValue);
     if (!nextVehicleInfo) {
+      playScanWarningSound();
       setScreenMessage('Tem xe không hợp lệ. Vui lòng quét hoặc nhập đúng mã tem xe.');
       return;
     }
@@ -285,10 +291,12 @@ export function SendGoodsScreen(): React.JSX.Element {
       const syncedVehicleInfo = buildSyncedVehicleInfo(nextVehicleInfo, manifest);
       setVehicleInfo(syncedVehicleInfo);
       setManualVehicleInput('');
+      playScanSuccessSound();
       setScreenMessage(`Đã nhận tem xe ${syncedVehicleInfo.vehicleCode} từ hệ thống.`);
     } catch (error) {
       if (error instanceof ApiClientError && error.status === 404) {
         setVehicleInfo(null);
+        playScanWarningSound();
         setScreenMessage(
           `Tem xe ${nextVehicleInfo.vehicleCode} chưa được tạo hoặc chưa đồng bộ trên Ops Web. Vui lòng tạo tem xe ở Ops rồi quét lại.`,
         );
@@ -296,6 +304,7 @@ export function SendGoodsScreen(): React.JSX.Element {
       }
 
       const message = error instanceof Error ? error.message : 'Không kiểm tra được tem xe.';
+      playScanWarningSound();
       setScreenMessage(message);
       setGlobalError(message);
     }
@@ -320,6 +329,7 @@ export function SendGoodsScreen(): React.JSX.Element {
     }
 
     if (!parsed) {
+      playScanWarningSound();
       setScreenMessage('Không đọc được mã tem bao/kiện hợp lệ. Vui lòng thử lại.');
       return;
     }

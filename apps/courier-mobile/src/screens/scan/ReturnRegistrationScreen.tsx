@@ -29,6 +29,7 @@ import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
 import { resolveCourierDisplayName, resolveCourierId } from '../../utils/courier';
 import { appEnv } from '../../utils/env';
+import { playScanSuccessSound, playScanWarningSound } from '../../utils/scanSoundFeedback';
 
 type Props = NativeStackScreenProps<AppNavigatorParamList, 'ReturnRegistration'>;
 
@@ -270,10 +271,12 @@ export function ReturnRegistrationScreen({ route }: Props): React.JSX.Element {
     });
 
     if (!parsed) {
+      playScanWarningSound();
       setScannerError('Không đọc được mã hợp lệ. Vui lòng thử lại.');
       return;
     }
 
+    playScanSuccessSound();
     const normalizedCode = normalizeCode(parsed.value);
     setInputCode(normalizedCode);
     setQueryCode(normalizedCode);

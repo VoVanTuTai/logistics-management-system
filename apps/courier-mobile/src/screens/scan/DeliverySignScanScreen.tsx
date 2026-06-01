@@ -23,6 +23,7 @@ import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
 import { resolveCourierId } from '../../utils/courier';
 import { appEnv } from '../../utils/env';
+import { playScanSuccessSound, playScanWarningSound } from '../../utils/scanSoundFeedback';
 
 type Props = NativeStackScreenProps<AppNavigatorParamList, 'DeliverySignScan'>;
 
@@ -96,6 +97,7 @@ export function DeliverySignScanScreen({
       const shipmentCode = normalizeCode(rawCode);
 
       if (!shipmentCode) {
+        playScanWarningSound();
         setErrorMessage('Mã vận đơn không hợp lệ.');
         return;
       }
@@ -120,12 +122,14 @@ export function DeliverySignScanScreen({
           deliveryTask = null;
         }
 
+        playScanSuccessSound();
         navigation.replace('DeliveryProof', {
           taskId: deliveryTask?.id,
           taskCode: deliveryTask?.taskCode,
           shipmentCode,
         });
       } catch (error) {
+        playScanWarningSound();
         setErrorMessage(
           `Không tìm thấy hoặc không xác minh được mã ${shipmentCode}: ${toErrorMessage(error)}`,
         );
@@ -162,6 +166,7 @@ export function DeliverySignScanScreen({
     });
 
     if (!parsed) {
+      playScanWarningSound();
       setErrorMessage('Không đọc được mã hợp lệ. Vui lòng thử lại.');
       return;
     }
