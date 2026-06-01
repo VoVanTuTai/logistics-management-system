@@ -18,7 +18,7 @@
 
 ## APIs
 
-- `GET /public/track/:shipmentCode`
+- `GET /public/track/:shipmentCode?receiverPhone=:receiverPhone`
 - `GET /tracking/:shipmentCode/timeline`
 - `GET /tracking/:shipmentCode/current`
 - `GET /health`
