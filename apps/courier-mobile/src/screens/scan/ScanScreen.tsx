@@ -1,5 +1,12 @@
 import React from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Alert,
+  ImageBackground,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -11,11 +18,13 @@ import { useAuthStore } from '../../features/auth/auth.store';
 import { useAppStore } from '../../store/appStore';
 import { appEnv } from '../../utils/env';
 import { resolveCourierDisplayName, resolveCourierId } from '../../utils/courier';
+import { ADMIN_LOGIN_HERO_IMAGE_URI } from '../../utils/branding';
 import { ScanActionGrid } from '../../components/scan/ScanActionGrid';
 import type { ScanActionItemData } from '../../components/scan/ScanActionItem';
 import { CameraScannerModal } from '../../components/scan/CameraScannerModal';
 import type { AppNavigatorParamList } from '../../navigation/types';
 import { parsePickupScannedCode } from '../../features/scan/pickup.scanner.adapter';
+import { playScanSuccessSound, playScanWarningSound } from '../../utils/scanSoundFeedback';
 import {
   canAccessCourierFeature,
   filterPermittedCourierFeatures,
@@ -246,10 +255,12 @@ export function ScanScreen(): React.JSX.Element {
     });
 
     if (!parsed) {
+      playScanWarningSound();
       setScannerError('Không đọc được mã hợp lệ. Vui lòng thử lại.');
       return;
     }
 
+    playScanSuccessSound();
     setScannerVisible(false);
     setLastScanMessage(
       `${pendingAction.label}: ${parsed.format} - ${parsed.value}`,
@@ -310,20 +321,28 @@ export function ScanScreen(): React.JSX.Element {
         />
 
         <View style={styles.headerWrap}>
-          <View style={styles.headerContent}>
-            <View style={styles.headerTopRow}>
-              <View style={styles.userBlock}>
-                <Text style={styles.greeting}>Xin chào</Text>
-                <Text style={styles.userName}>{displayName}</Text>
-                <Text style={styles.hubName}>{hubName}</Text>
-              </View>
+          <ImageBackground
+            source={{ uri: ADMIN_LOGIN_HERO_IMAGE_URI }}
+            resizeMode="cover"
+            style={styles.headerBackgroundImage}
+            imageStyle={styles.headerBackgroundImageInner}
+          >
+            <View style={styles.headerOverlay} />
+            <View style={styles.headerContent}>
+              <View style={styles.headerTopRow}>
+                <View style={styles.userBlock}>
+                  <Text style={styles.greeting}>Xin chào</Text>
+                  <Text style={styles.userName}>{displayName}</Text>
+                  <Text style={styles.hubName}>{hubName}</Text>
+                </View>
 
-              <View style={styles.scanBadge}>
-                <Ionicons name="scan" size={20} color="#DBEAFE" />
-                <Text style={styles.scanBadgeText}>Scan Ops</Text>
+                <View style={styles.scanBadge}>
+                  <Ionicons name="scan" size={20} color="#DBEAFE" />
+                  <Text style={styles.scanBadgeText}>Scan Ops</Text>
+                </View>
               </View>
             </View>
-          </View>
+          </ImageBackground>
         </View>
 
         <ScrollView
@@ -369,6 +388,16 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primary,
     overflow: 'hidden',
     ...theme.shadow.md,
+  },
+  headerBackgroundImage: {
+    minHeight: 152,
+  },
+  headerBackgroundImageInner: {
+    opacity: 0.72,
+  },
+  headerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(18, 38, 86, 0.74)',
   },
   headerContent: {
     minHeight: 152,

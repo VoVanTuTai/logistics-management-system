@@ -35,6 +35,7 @@ import { theme } from '../../theme';
 import { buildPickupReceiveAuditNote, resolveCourierId } from '../../utils/courier';
 import { appEnv } from '../../utils/env';
 import { createIdempotencyKey } from '../../utils/idempotency';
+import { playScanSuccessSound, playScanWarningSound } from '../../utils/scanSoundFeedback';
 
 type Props = NativeStackScreenProps<AppNavigatorParamList, 'PickupScan'>;
 
@@ -278,6 +279,7 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
       const shipmentCode = normalizeCode(rawCode);
 
       if (!shipmentCode) {
+        playScanWarningSound();
         setErrorMessage('Mã vận đơn không hợp lệ.');
         return;
       }
@@ -291,6 +293,7 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
         (item) => normalizeCode(item.code) === shipmentCode,
       );
       if (hasAlreadyScanned) {
+        playScanWarningSound();
         setInfoMessage(`Mã vận đơn ${shipmentCode} đã tồn tại trong danh sách.`);
         return;
       }
@@ -312,6 +315,7 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
         });
 
         if (validationError) {
+          playScanWarningSound();
           setErrorMessage(validationError);
           setInfoMessage(null);
           return;
@@ -335,8 +339,10 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
           ];
         });
 
+        playScanSuccessSound();
         setInfoMessage(`Đã xác nhận và thêm ${shipmentCode} vào danh sách nhận hàng.`);
       } catch (error) {
+        playScanWarningSound();
         setErrorMessage(
           `Không tìm thấy hoặc không xác minh được mã ${shipmentCode}: ${toErrorMessage(error)}`,
         );
@@ -385,6 +391,7 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
     });
 
     if (!parsed) {
+      playScanWarningSound();
       setErrorMessage('Không đọc được mã hợp lệ. Vui lòng thử lại.');
       return;
     }

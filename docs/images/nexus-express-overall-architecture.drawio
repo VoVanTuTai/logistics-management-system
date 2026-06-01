@@ -1,0 +1,119 @@
+<mxfile host="app.diagrams.net" agent="Codex">
+  <diagram id="nexus-express-overall-architecture-compact" name="A4 Portrait">
+    <mxGraphModel dx="1753" dy="1205" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=24;fontStyle=1;fontColor=#171717;" value="SƠ ĐỒ KIẾN TRÚC TỔNG THỂ&lt;br&gt;&lt;font style=&quot;font-size: 15px; font-weight: 400;&quot;&gt;Nexus Express System&lt;/font&gt;" vertex="1">
+          <mxGeometry height="62" width="680" x="73" y="28" as="geometry" />
+        </mxCell>
+        <mxCell id="clientsBand" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#BCBCBC;strokeWidth=2;arcSize=8;fontSize=15;fontStyle=1;fontColor=#3B3B3B;verticalAlign=top;spacingTop=10;" value="Lớp ứng dụng người dùng" vertex="1">
+          <mxGeometry height="142" width="737" x="45" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="admin" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8E8E8;strokeColor=#606060;strokeWidth=1.5;arcSize=10;fontSize=12;fontStyle=1;fontColor=#3B3B3B;spacing=6;" value="Admin Web&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;Quản trị hệ thống&lt;/font&gt;" vertex="1">
+          <mxGeometry height="56" width="128" x="75" y="158" as="geometry" />
+        </mxCell>
+        <mxCell id="ops" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EEEEEE;strokeColor=#656565;strokeWidth=1.5;arcSize=10;fontSize=12;fontStyle=1;fontColor=#454545;spacing=6;" value="Ops Web&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;Vận hành kho/hub&lt;/font&gt;" vertex="1">
+          <mxGeometry height="56" width="128" x="215" y="158" as="geometry" />
+        </mxCell>
+        <mxCell id="merchant" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0F0F0;strokeColor=#6F6F6F;strokeWidth=1.5;arcSize=10;fontSize=12;fontStyle=1;fontColor=#484848;spacing=6;" value="Merchant Web&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;Tạo đơn, pickup&lt;/font&gt;" vertex="1">
+          <mxGeometry height="56" width="128" x="355" y="158" as="geometry" />
+        </mxCell>
+        <mxCell id="courier" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F1F1F1;strokeColor=#878787;strokeWidth=1.5;arcSize=10;fontSize=12;fontStyle=1;fontColor=#535353;spacing=6;" value="Courier Mobile&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;Task, scan, POD&lt;/font&gt;" vertex="1">
+          <mxGeometry height="56" width="128" x="495" y="158" as="geometry" />
+        </mxCell>
+        <mxCell id="public" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EEEEEE;strokeColor=#656565;strokeWidth=1.5;arcSize=10;fontSize=12;fontStyle=1;fontColor=#474747;spacing=6;" value="Public Tracking&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;Tra cứu vận đơn&lt;/font&gt;" vertex="1">
+          <mxGeometry height="56" width="118" x="635" y="158" as="geometry" />
+        </mxCell>
+        <mxCell id="gateway" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#000000;strokeColor=#9C9C9C;strokeWidth=2.5;arcSize=8;fontSize=18;fontStyle=1;fontColor=#FFFFFF;spacing=10;" value="Gateway BFF&lt;br&gt;&lt;font style=&quot;font-size: 11px; font-weight: 400;&quot;&gt;Điểm vào duy nhất cho web/mobile, proxy route /admin /ops /merchant /courier /public /media&lt;/font&gt;" vertex="1">
+          <mxGeometry height="82" width="537" x="145" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="syncLabel" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#BCBCBC;strokeWidth=1;fontSize=11;fontColor=#4F4F4F;spacing=4;" value="HTTP / REST" vertex="1">
+          <mxGeometry height="24" width="98" x="365" y="264" as="geometry" />
+        </mxCell>
+        <mxCell id="servicesBand" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAFAFA;strokeColor=#D3D3D3;strokeWidth=2;arcSize=8;fontSize=15;fontStyle=1;fontColor=#3F3F3F;verticalAlign=top;spacingTop=10;" value="Lớp microservices nghiệp vụ" vertex="1">
+          <mxGeometry height="328" width="737" x="45" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="coreServices" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EEEEEE;strokeColor=#656565;strokeWidth=2;arcSize=8;fontSize=14;fontStyle=1;fontColor=#454545;align=left;spacing=12;" value="Nhóm lõi hệ thống&lt;br&gt;&lt;font style=&quot;font-size: 11px; font-weight: 400;&quot;&gt;auth-service: user/session/token&lt;br&gt;masterdata-service: hub, zone, config&lt;br&gt;pricing-service: quote/rate, không có DB riêng&lt;/font&gt;" vertex="1">
+          <mxGeometry height="108" width="214" x="72" y="485" as="geometry" />
+        </mxCell>
+        <mxCell id="shipmentServices" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0F0F0;strokeColor=#6F6F6F;strokeWidth=2.5;arcSize=8;fontSize=14;fontStyle=1;fontColor=#484848;align=left;spacing=12;" value="Shipment domain&lt;br&gt;&lt;font style=&quot;font-size: 11px; font-weight: 400;&quot;&gt;shipment-service&lt;br&gt;Sở hữu vòng đời vận đơn và currentStatus&lt;br&gt;Lưu snapshot pricing khi tạo đơn&lt;/font&gt;" vertex="1">
+          <mxGeometry height="108" width="214" x="307" y="485" as="geometry" />
+        </mxCell>
+        <mxCell id="opsServices" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7F7F7;strokeColor=#666666;strokeWidth=2;arcSize=8;fontSize=14;fontStyle=1;fontColor=#525252;align=left;spacing=12;" value="Nhóm vận hành &amp;amp; linehaul&lt;br&gt;&lt;font style=&quot;font-size: 10px; font-weight: 400;&quot;&gt;pickup-service: yêu cầu lấy hàng&lt;br&gt;dispatch-service: task/courier&lt;br&gt;manifest-service: bao/manifest&lt;br&gt;linehaul-service: chuyến xe hub-to-hub&lt;/font&gt;" vertex="1">
+          <mxGeometry height="108" width="214" x="542" y="485" as="geometry" />
+        </mxCell>
+        <mxCell id="fulfillmentServices" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9F9F9;strokeColor=#6A6A6A;strokeWidth=2.5;arcSize=8;fontSize=14;fontStyle=1;fontColor=#464646;align=left;spacing=12;" value="Scan &amp;amp; Delivery&lt;br&gt;&lt;font style=&quot;font-size: 11px; font-weight: 400;&quot;&gt;scan-service: scan event, current location&lt;br&gt;delivery-service: POD, OTP, NDR, return&lt;/font&gt;" vertex="1">
+          <mxGeometry height="92" width="214" x="72" y="622" as="geometry" />
+        </mxCell>
+        <mxCell id="paymentServices" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F1F1F1;strokeColor=#878787;strokeWidth=2.5;arcSize=8;fontSize=14;fontStyle=1;fontColor=#535353;align=left;spacing=12;" value="COD &amp;amp; Payment&lt;br&gt;&lt;font style=&quot;font-size: 11px; font-weight: 400;&quot;&gt;payment-service&lt;br&gt;COD record, settlement batch, webhook, remittance&lt;/font&gt;" vertex="1">
+          <mxGeometry height="92" width="214" x="307" y="622" as="geometry" />
+        </mxCell>
+        <mxCell id="readModels" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EEEEEE;strokeColor=#656565;strokeWidth=2.5;arcSize=8;fontSize=14;fontStyle=1;fontColor=#474747;align=left;spacing=12;" value="Read model / Projection&lt;br&gt;&lt;font style=&quot;font-size: 11px; font-weight: 400;&quot;&gt;tracking-service: timeline/current tracking&lt;br&gt;reporting-service: KPI, status projection&lt;/font&gt;" vertex="1">
+          <mxGeometry height="92" width="214" x="542" y="622" as="geometry" />
+        </mxCell>
+        <mxCell id="eventBus" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0F0F0;strokeColor=#7B7B7B;strokeWidth=2.5;arcSize=8;fontSize=16;fontStyle=1;fontColor=#4F4F4F;spacing=8;" value="RabbitMQ - domain.events&lt;br&gt;&lt;font style=&quot;font-size: 11px; font-weight: 400;&quot;&gt;Đồng bộ bất đồng bộ: shipment.*, scan.*, delivery.*, cod.*, linehaul.*&lt;/font&gt;" vertex="1">
+          <mxGeometry height="68" width="537" x="145" y="795" as="geometry" />
+        </mxCell>
+        <mxCell id="dataBand" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F4F4F4;strokeColor=#A1A1A1;strokeWidth=2;arcSize=8;fontSize=15;fontStyle=1;fontColor=#3F3F3F;verticalAlign=top;spacingTop=10;" value="Lớp dữ liệu và hạ tầng" vertex="1">
+          <mxGeometry height="182" width="737" x="45" y="905" as="geometry" />
+        </mxCell>
+        <mxCell id="postgres" parent="1" style="shape=cylinder3d;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#E8E8E8;strokeColor=#606060;strokeWidth=2;fontSize=13;fontStyle=1;fontColor=#3B3B3B;spacing=8;" value="PostgreSQL&lt;br&gt;&lt;font style=&quot;font-size: 11px; font-weight: 400;&quot;&gt;Database-per-service&lt;br&gt;Mỗi service sở hữu DB/schema riêng&lt;/font&gt;" vertex="1">
+          <mxGeometry height="86" width="210" x="75" y="963" as="geometry" />
+        </mxCell>
+        <mxCell id="minio" parent="1" style="shape=cylinder3d;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#F0F0F0;strokeColor=#6F6F6F;strokeWidth=2;fontSize=13;fontStyle=1;fontColor=#484848;spacing=8;" value="MinIO / S3&lt;br&gt;&lt;font style=&quot;font-size: 11px; font-weight: 400;&quot;&gt;Lưu ảnh POD và media upload&lt;/font&gt;" vertex="1">
+          <mxGeometry height="86" width="210" x="308" y="963" as="geometry" />
+        </mxCell>
+        <mxCell id="redisDocker" parent="1" style="shape=cylinder3d;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#EAEAEA;strokeColor=#5C5C5C;strokeWidth=2;fontSize=13;fontStyle=1;fontColor=#414141;spacing=8;" value="Redis + Docker Compose&lt;br&gt;&lt;font style=&quot;font-size: 11px; font-weight: 400;&quot;&gt;Chat/realtime cache và local infrastructure&lt;/font&gt;" vertex="1">
+          <mxGeometry height="86" width="210" x="541" y="963" as="geometry" />
+        </mxCell>
+        <mxCell id="note" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D3D3D3;strokeWidth=1.5;arcSize=8;fontSize=11;fontColor=#3F3F3F;align=center;spacing=6;" value="Ghi chú: shipment-service sở hữu trạng thái vận đơn; linehaul-service sở hữu chuyến xe hub-to-hub; tracking/reporting là read model." vertex="1">
+          <mxGeometry height="36" width="677" x="75" y="1108" as="geometry" />
+        </mxCell>
+        <mxCell id="edgeClientsGateway" edge="1" parent="1" source="clientsBand" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#606060;strokeWidth=2.5;endArrow=block;endFill=1;" target="gateway" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edgeGatewayServices" edge="1" parent="1" source="gateway" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#606060;strokeWidth=2.5;endArrow=block;endFill=1;fontSize=11;fontColor=#4F4F4F;" target="servicesBand" value="HTTP nội bộ">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edgeServicesEvent" edge="1" parent="1" source="servicesBand" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#7B7B7B;strokeWidth=2.5;dashed=1;dashPattern=8 4;endArrow=block;endFill=1;fontSize=11;fontColor=#4F4F4F;" target="eventBus" value="publish / consume events">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edgeEventServices" edge="1" parent="1" source="eventBus" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#7B7B7B;strokeWidth=2.5;dashed=1;dashPattern=8 4;endArrow=block;endFill=1;" target="servicesBand" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="706" y="829" />
+              <mxPoint x="706" y="744" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edgeServicesDb" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6F6F6F;strokeWidth=2.5;endArrow=block;endFill=1;fontSize=11;fontColor=#484848;" value="own database">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="130" y="880" />
+            </Array>
+            <mxPoint x="130" y="758" as="sourcePoint" />
+            <mxPoint x="130" y="963" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edgeGatewayMinio" edge="1" parent="1" source="gateway" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6F6F6F;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;fontColor=#484848;" target="minio" value="/media">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="20" y="341" />
+              <mxPoint x="20" y="1070" />
+              <mxPoint x="413" y="1070" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edgeGatewayRedis" edge="1" parent="1" source="gateway" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#5C5C5C;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;fontColor=#414141;" target="redisDocker" value="chat/realtime">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="800" y="341" />
+              <mxPoint x="800" y="1006" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -29,6 +29,7 @@ import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
 import { resolveCourierId, buildBagSealAuditNote } from '../../utils/courier';
 import { appEnv } from '../../utils/env';
+import { playScanSuccessSound, playScanWarningSound } from '../../utils/scanSoundFeedback';
 
 interface SealedShipmentItem {
   code: string;
@@ -310,17 +311,20 @@ export function BagSealScreen(): React.JSX.Element {
       }
 
       if (!hasValidBagCode) {
+        playScanWarningSound();
         setScreenMessage('Vui lòng quét hoặc nhập tem bao hợp lệ trước khi quét mã vận đơn.');
         return;
       }
 
       const normalizedCode = normalizeCode(rawCode);
       if (!normalizedCode) {
+        playScanWarningSound();
         setScreenMessage('Mã vận đơn không hợp lệ.');
         return;
       }
 
       if (shipments.some((item) => normalizeCode(item.code) === normalizedCode)) {
+        playScanWarningSound();
         setScreenMessage(`Mã vận đơn ${normalizedCode} đã có trong danh sách.`);
         return;
       }
@@ -345,6 +349,7 @@ export function BagSealScreen(): React.JSX.Element {
         });
 
         if (validationError) {
+          playScanWarningSound();
           setScreenMessage(validationError);
           return;
         }
@@ -357,8 +362,10 @@ export function BagSealScreen(): React.JSX.Element {
           ...currentItems,
         ]);
         setShipmentCodeInput('');
+        playScanSuccessSound();
         setScreenMessage(`Đã thêm mã vận đơn ${normalizedCode} vào danh sách đóng bao.`);
       } catch (error) {
+        playScanWarningSound();
         setScreenMessage(
           error instanceof Error
             ? error.message
@@ -391,6 +398,7 @@ export function BagSealScreen(): React.JSX.Element {
     });
 
     if (!parsed) {
+      playScanWarningSound();
       setScreenMessage('Không đọc được mã hợp lệ. Vui lòng thử lại.');
       return;
     }
@@ -398,6 +406,7 @@ export function BagSealScreen(): React.JSX.Element {
     const normalizedValue = normalizeCode(parsed.value);
     if (isValidBagCode(normalizedValue)) {
       setBagCode(normalizedValue);
+      playScanSuccessSound();
       setScreenMessage(`Đã nhận tem bao ${normalizedValue}.`);
       return;
     }

@@ -28,6 +28,7 @@ import {
 import { appEnv } from '../../utils/env';
 import { createIdempotencyKey } from '../../utils/idempotency';
 import { uploadCourierImage } from '../../features/media/courier-media-upload.api';
+import { playScanSuccessSound, playScanWarningSound } from '../../utils/scanSoundFeedback';
 
 interface InventoryItem {
   code: string;
@@ -103,6 +104,7 @@ export function InventoryCheckScreen(): React.JSX.Element {
   const appendInventoryItem = React.useCallback((rawCode: string, photoUri?: string | null) => {
     const normalizedCode = normalizeCode(rawCode);
     if (!normalizedCode) {
+      playScanWarningSound();
       setScreenMessage('Mã vận đơn không hợp lệ.');
       return;
     }
@@ -110,11 +112,13 @@ export function InventoryCheckScreen(): React.JSX.Element {
     setItems((currentItems) => {
       const duplicated = currentItems.some((item) => item.code === normalizedCode);
       if (duplicated) {
+        playScanWarningSound();
         setScreenMessage(`${normalizedCode} đã có trong danh sách kiểm tồn.`);
         return currentItems;
       }
 
       setManualCodeInput('');
+      playScanSuccessSound();
       setScreenMessage(`Đã thêm ${normalizedCode} vào danh sách kiểm tồn.`);
 
       return [
@@ -141,6 +145,7 @@ export function InventoryCheckScreen(): React.JSX.Element {
     });
 
     if (!parsed) {
+      playScanWarningSound();
       setScreenMessage('Không đọc được mã vận đơn hợp lệ. Vui lòng thử lại.');
       return;
     }
@@ -154,6 +159,7 @@ export function InventoryCheckScreen(): React.JSX.Element {
     });
 
     if (duplicated) {
+      playScanWarningSound();
       setScreenMessage(`${normalizedCode} đã có trong danh sách kiểm tồn.`);
       return;
     }

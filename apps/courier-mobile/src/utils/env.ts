@@ -1,6 +1,7 @@
 import { NativeModules, Platform } from 'react-native';
 
 const DEFAULT_GATEWAY_PORT = 3000;
+const DEFAULT_PUBLIC_GATEWAY_BASE_URL = 'http://103.179.172.53:13000';
 const DEFAULT_TIMEOUT_MS = 15000;
 const DEFAULT_COURIER_ID = '';
 const LOCALHOST_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '0.0.0.0']);
@@ -201,6 +202,8 @@ function resolveGatewayBaseUrls(): string[] {
 
   appendConfiguredFallbackBaseUrls(gatewayBaseUrls);
 
+  appendUnique(gatewayBaseUrls, DEFAULT_PUBLIC_GATEWAY_BASE_URL);
+
   if (Platform.OS === 'android') {
     appendUnique(gatewayBaseUrls, `http://10.0.2.2:${DEFAULT_GATEWAY_PORT}`);
     appendUnique(gatewayBaseUrls, `http://10.0.3.2:${DEFAULT_GATEWAY_PORT}`);
@@ -227,9 +230,9 @@ function toChatWsUrl(baseUrl: string): string {
 
 export const appEnv = {
   gatewayBaseUrl:
-    resolvedGatewayBaseUrls[0] ?? `http://localhost:${DEFAULT_GATEWAY_PORT}`,
+    resolvedGatewayBaseUrls[0] ?? DEFAULT_PUBLIC_GATEWAY_BASE_URL,
   chatWsUrl: toChatWsUrl(
-    resolvedGatewayBaseUrls[0] ?? `http://localhost:${DEFAULT_GATEWAY_PORT}`,
+    resolvedGatewayBaseUrls[0] ?? DEFAULT_PUBLIC_GATEWAY_BASE_URL,
   ),
   gatewayFallbackBaseUrls: resolvedGatewayBaseUrls.slice(1),
   requestTimeoutMs: Number(

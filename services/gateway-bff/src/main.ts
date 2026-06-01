@@ -2,13 +2,22 @@ import 'dotenv/config';
 import 'reflect-metadata';
 
 import { NestFactory } from '@nestjs/core';
+import * as express from 'express';
+import type { Request, Response } from 'express';
 
 import { AppModule } from './app.module';
 import { ChatRealtimeGateway } from './api/chat/chat-realtime.gateway';
 import { TasksRealtimeProxyGateway } from './api/tasks-realtime/tasks-realtime-proxy.gateway';
+import {
+  captureRawBody,
+  createPayloadErrorHandler,
+  createRateLimitMiddleware,
+  gatewayBodyLimit,
+  GatewayHttpMetrics,
+} from './common/http/gateway-http-controls';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule, { rawBody: true });
+  const app = await NestFactory.create(AppModule, { bodyParser: false });
   const port = Number(process.env.PORT ?? 3000);
   const defaultCorsOrigins = [
     'http://localhost:5173',
@@ -38,6 +47,20 @@ async function bootstrap(): Promise<void> {
       'X-Nexus-Nonce',
       'X-Nexus-Signature',
     ],
+  });
+
+  const metrics = new GatewayHttpMetrics();
+  const bodyLimit = gatewayBodyLimit();
+  const expressApp = app.getHttpAdapter().getInstance();
+
+  app.use(metrics.middleware());
+  app.use(createRateLimitMiddleware(metrics));
+  app.use(express.json({ limit: bodyLimit, verify: captureRawBody }));
+  app.use(express.urlencoded({ extended: true, limit: bodyLimit, verify: captureRawBody }));
+  app.use(createPayloadErrorHandler());
+
+  expressApp.get('/metrics', (_request: Request, response: Response) => {
+    response.type('text/plain; version=0.0.4').send(metrics.renderPrometheus());
   });
 
   app.enableShutdownHooks();

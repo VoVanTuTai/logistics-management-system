@@ -36,6 +36,7 @@ import {
   resolveCourierDisplayName,
   resolveCourierId,
 } from '../../utils/courier';
+import { playScanSuccessSound, playScanWarningSound } from '../../utils/scanSoundFeedback';
 
 type Props = NativeStackScreenProps<AppNavigatorParamList, 'ScanIssue'>;
 
@@ -97,10 +98,12 @@ export function ScanIssueScreen({ navigation, route }: Props): React.JSX.Element
     });
 
     if (!parsed) {
+      playScanWarningSound();
       setScannerError('Không đọc được mã hợp lệ. Vui lòng thử lại.');
       return;
     }
 
+    playScanSuccessSound();
     setShipmentCode(parsed.value);
     setScannerError(null);
     setScannerVisible(false);

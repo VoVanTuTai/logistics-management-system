@@ -22,6 +22,7 @@ import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
 import { resolveCourierDisplayName, resolveCourierId, buildBagUnsealAuditNote } from '../../utils/courier';
 import { appEnv } from '../../utils/env';
+import { playScanSuccessSound, playScanWarningSound } from '../../utils/scanSoundFeedback';
 
 interface RemovedShipmentItem {
   code: string;
@@ -110,12 +111,14 @@ export function BagUnsealScreen(): React.JSX.Element {
   const appendRemovedShipmentCode = React.useCallback(
     (rawCode: string) => {
       if (!hasValidBagCode) {
+        playScanWarningSound();
         setScreenMessage('Vui lòng quét hoặc nhập tem bao hợp lệ trước khi quét mã vận đơn.');
         return;
       }
 
       const normalizedCode = normalizeCode(rawCode);
       if (!normalizedCode) {
+        playScanWarningSound();
         setScreenMessage('Mã vận đơn không hợp lệ.');
         return;
       }
@@ -126,11 +129,13 @@ export function BagUnsealScreen(): React.JSX.Element {
         );
 
         if (duplicated) {
+          playScanWarningSound();
           setScreenMessage(`Mã vận đơn ${normalizedCode} đã có trong danh sách gỡ bao.`);
           return currentItems;
         }
 
         setShipmentCodeInput('');
+        playScanSuccessSound();
         setScreenMessage(`Đã thêm mã vận đơn ${normalizedCode} vào danh sách gỡ bao.`);
 
         return [
@@ -158,6 +163,7 @@ export function BagUnsealScreen(): React.JSX.Element {
     });
 
     if (!parsed) {
+      playScanWarningSound();
       setScreenMessage('Không đọc được mã hợp lệ. Vui lòng thử lại.');
       return;
     }
@@ -165,6 +171,7 @@ export function BagUnsealScreen(): React.JSX.Element {
     const normalizedValue = normalizeCode(parsed.value);
     if (isValidBagCode(normalizedValue)) {
       setBagCode(normalizedValue);
+      playScanSuccessSound();
       setScreenMessage(`Đã nhận tem bao ${normalizedValue}.`);
       return;
     }
