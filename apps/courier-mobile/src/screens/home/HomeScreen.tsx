@@ -26,6 +26,7 @@ import { useAppStore } from '../../store/appStore';
 import { appEnv } from '../../utils/env';
 import { resolveCourierDisplayName, resolveCourierId } from '../../utils/courier';
 import { getQuickAppItems, navigateToQuickApp } from '../../features/quick-apps/quickApps';
+import { canAccessCourierFeature } from '../../features/permissions/courier-permissions';
 
 const WAITING_TASK_STATUSES: ReadonlySet<TaskStatus> = new Set(['CREATED', 'ASSIGNED']);
 
@@ -77,7 +78,29 @@ export function HomeScreen(): React.JSX.Element {
   const pickupCount = waitingPickupTasks.length;
   const deliveryCount = waitingDeliveryTasks.length;
   const processingCount = tasks.filter((task) => task.status === 'ASSIGNED').length;
-  const quickAppItems = useMemo(() => getQuickAppItems(quickAppIds), [quickAppIds]);
+  const quickAppItems = useMemo(() => {
+    const items = getQuickAppItems(quickAppIds);
+    return items.filter(
+      (item) => !item.permission || canAccessCourierFeature(session?.user, item.permission),
+    );
+  }, [quickAppIds, session?.user]);
+
+  const todayTasksCount = useMemo(() => {
+    const todayStr = new Date().toDateString();
+    return tasks.filter((task) => {
+      if (task.createdAt && new Date(task.createdAt).toDateString() === todayStr) {
+        return true;
+      }
+      const activeAssignment = task.assignments?.find((a) => !a.unassignedAt);
+      if (
+        activeAssignment?.assignedAt &&
+        new Date(activeAssignment.assignedAt).toDateString() === todayStr
+      ) {
+        return true;
+      }
+      return false;
+    }).length;
+  }, [tasks]);
 
   const displayName = resolveCourierDisplayName({
     displayName: session?.user.displayName,
@@ -107,7 +130,7 @@ export function HomeScreen(): React.JSX.Element {
         >
           <NotificationBanner
             title="Thông báo vận hành"
-            message={`Đã nhận ${tasks.length} nhiệm vụ.`}
+            message={`Đã nhận ${todayTasksCount} nhiệm vụ trong ngày.`}
             onPress={() => Alert.alert('Thông báo', 'Chi tiết thông báo vận hành')}
           />
 
