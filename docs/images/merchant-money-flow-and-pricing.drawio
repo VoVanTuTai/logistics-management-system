@@ -1,0 +1,100 @@
+<mxfile host="app.diagrams.net" agent="Codex">
+  <diagram id="merchant-money-flow-and-pricing-summary" name="Money Flow Summary">
+    <mxGraphModel dx="332" dy="229" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=25;fontStyle=1;fontColor=#111827;" value="LUỒNG TIỀN VÀ CÔNG THỨC TÍNH TIỀN ĐƠN HÀNG&lt;br&gt;&lt;font style=&quot;font-size: 15px; font-weight: 400;&quot;&gt;Nexus Express - Merchant / Sàn / Công ty&lt;/font&gt;" vertex="1">
+          <mxGeometry height="70" width="1060" x="170" y="24" as="geometry" />
+        </mxCell>
+        <mxCell id="source" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111827;strokeColor=#111827;strokeWidth=2;arcSize=8;fontSize=18;fontStyle=1;fontColor=#FFFFFF;" value="NGUỒN ĐƠN" vertex="1">
+          <mxGeometry height="54" width="220" x="80" y="168" as="geometry" />
+        </mxCell>
+        <mxCell id="internal" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EAF4FF;strokeColor=#2563EB;strokeWidth=2;arcSize=8;fontSize=15;fontStyle=1;fontColor=#1E3A8A;spacing=8;" value="Merchant nội bộ&lt;br&gt;&lt;font style=&quot;font-size: 12px; font-weight: 400;&quot;&gt;Nexus tự tính phí vận chuyển&lt;/font&gt;" vertex="1">
+          <mxGeometry height="80" width="220" x="80" y="269" as="geometry" />
+        </mxCell>
+        <mxCell id="marketplace" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7E6;strokeColor=#D97706;strokeWidth=2;arcSize=8;fontSize=15;fontStyle=1;fontColor=#7C2D12;spacing=8;" value="Đơn từ sàn&lt;br&gt;&lt;font style=&quot;font-size: 12px; font-weight: 400;&quot;&gt;Sàn gửi số tiền phải thu&lt;/font&gt;" vertex="1">
+          <mxGeometry height="80" width="220" x="80" y="403" as="geometry" />
+        </mxCell>
+        <mxCell id="cod_amount" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDF2F8;strokeColor=#DB2777;strokeWidth=2;arcSize=8;fontSize=17;fontStyle=1;fontColor=#831843;spacing=12;" value="SỐ TIỀN CẦN THU TỪ NGƯỜI NHẬN&lt;br&gt;&lt;font style=&quot;font-size: 13px; font-weight: 400;&quot;&gt;&lt;b&gt;codAmount&lt;/b&gt; = tiền thực tế courier/Nexus phải thu&lt;/font&gt;" vertex="1">
+          <mxGeometry height="120" width="330" x="420" y="255" as="geometry" />
+        </mxCell>
+        <mxCell id="collection" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111827;strokeColor=#111827;strokeWidth=2;arcSize=8;fontSize=18;fontStyle=1;fontColor=#FFFFFF;" value="THU TIỀN" vertex="1">
+          <mxGeometry height="54" width="260" x="965" y="156" as="geometry" />
+        </mxCell>
+        <mxCell id="cash" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF1F2;strokeColor=#E11D48;strokeWidth=2;arcSize=8;fontSize=15;fontStyle=1;fontColor=#881337;spacing=8;" value="Tiền mặt&lt;br&gt;&lt;font style=&quot;font-size: 12px; font-weight: 400;&quot;&gt;Người nhận → Courier&lt;br&gt;Courier nộp settlement về công ty&lt;/font&gt;" vertex="1">
+          <mxGeometry height="100" width="190" x="965" y="222" as="geometry" />
+        </mxCell>
+        <mxCell id="bank" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#059669;strokeWidth=2;arcSize=8;fontSize=15;fontStyle=1;fontColor=#064E3B;spacing=8;" value="Chuyển khoản&lt;br&gt;&lt;font style=&quot;font-size: 12px; font-weight: 400;&quot;&gt;Người nhận → Tài khoản công ty&lt;br&gt;Memo: COD &amp;lt;shipmentCode&amp;gt;&lt;/font&gt;" vertex="1">
+          <mxGeometry height="100" width="220" x="672" y="432" as="geometry" />
+        </mxCell>
+        <mxCell id="company_received" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDFA;strokeColor=#0D9488;strokeWidth=2;arcSize=8;fontSize=17;fontStyle=1;fontColor=#134E4A;spacing=12;" value="CÔNG TY ĐÃ NHẬN TIỀN&lt;br&gt;&lt;font style=&quot;font-size: 13px; font-weight: 400;&quot;&gt;SePay/webhook hoặc kế toán xác nhận&lt;br&gt;&lt;b&gt;companyReceivedCOD&lt;/b&gt; = tổng COD đã vào công ty&lt;/font&gt;" vertex="1">
+          <mxGeometry height="120" width="330" x="965" y="425" as="geometry" />
+        </mxCell>
+        <mxCell id="pricing_formula" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#64748B;strokeWidth=2;arcSize=8;fontSize=16;fontStyle=1;fontColor=#1F2937;align=left;spacing=14;" value="CÔNG THỨC PHÍ NỘI BỘ NEXUS&lt;br&gt;&lt;font style=&quot;font-size: 12px; font-weight: 400;&quot;&gt;Áp dụng cho đơn merchant nội bộ, hoặc khi cần tính phí theo bảng giá Nexus&lt;br&gt;&lt;br&gt;chargeableWeight = max(cân thực, L × W × H / 6000)&lt;br&gt;shippingFee = baseFee + weightFee + zoneFee + insuranceFee + codHandlingFee&lt;br&gt;insuranceFee = declaredValue × 0.2%&lt;br&gt;codHandlingFee = clamp(codAmount × 0.5%, 5.000, 35.000)&lt;br&gt;&lt;b&gt;totalFee = làm tròn 100 VND&lt;/b&gt;&lt;/font&gt;" vertex="1">
+          <mxGeometry height="210" width="560" x="77" y="526" as="geometry" />
+        </mxCell>
+        <mxCell id="marketplace_formula" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFBEB;strokeColor=#B45309;strokeWidth=2;arcSize=8;fontSize=16;fontStyle=1;fontColor=#78350F;align=left;spacing=14;" value="CÔNG THỨC ĐỐI SOÁT VỚI MERCHANT / SÀN&lt;br&gt;&lt;font style=&quot;font-size: 12px; font-weight: 400;&quot;&gt;Với đơn sàn: không tự tính lại số tiền thu, nhận số từ sàn&lt;br&gt;&lt;br&gt;codAmount = số tiền sàn yêu cầu thu từ người nhận&lt;br&gt;companyFee = phí vận chuyển / phí COD / phụ phí theo hợp đồng&lt;br&gt;&lt;b&gt;merchantPayable = companyReceivedCOD - companyFee - refund - adjustment&lt;/b&gt;&lt;br&gt;&lt;br&gt;Nếu merchant/sàn trả phí ship riêng: companyFee ghi công nợ/invoice, không trừ vào COD.&lt;/font&gt;" vertex="1">
+          <mxGeometry height="210" width="560" x="735" y="620" as="geometry" />
+        </mxCell>
+        <mxCell id="payout" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F2FE;strokeColor=#0284C7;strokeWidth=2;arcSize=8;fontSize=17;fontStyle=1;fontColor=#0C4A6E;spacing=12;" value="TRẢ TIỀN MERCHANT&lt;br&gt;&lt;font style=&quot;font-size: 13px; font-weight: 400;&quot;&gt;Theo kỳ đối soát: ngày / tuần / tháng&lt;br&gt;Chỉ trả phần đã vào công ty và đã đối soát&lt;/font&gt;" vertex="1">
+          <mxGeometry height="80" width="360" x="77" y="784" as="geometry" />
+        </mxCell>
+        <mxCell id="note" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.5;arcSize=8;fontSize=13;fontColor=#334155;align=center;spacing=10;" value="Thông điệp chính: Đơn nội bộ dùng công thức Nexus để tính phí. Đơn từ sàn thu đúng codAmount sàn gửi. Công ty nhận tiền COD rồi đối soát phí và trả phần còn lại cho merchant." vertex="1">
+          <mxGeometry height="46" width="900" x="250" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="internal" style="endArrow=block;html=1;rounded=0;strokeWidth=2.5;strokeColor=#2563EB;" target="cod_amount">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="marketplace" style="endArrow=block;html=1;rounded=0;strokeWidth=2.5;strokeColor=#D97706;" target="cod_amount">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="588" y="443" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=2.5;strokeColor=#DB2777;fontSize=12;fontColor=#831843;" target="cash" value="thu đúng codAmount">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="754" y="272" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e4" edge="1" parent="1" source="cod_amount" style="endArrow=block;html=1;rounded=0;strokeWidth=2.5;strokeColor=#059669;fontSize=12;fontColor=#064E3B;" value="hoặc">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="815" y="315" />
+            </Array>
+            <mxPoint x="816" y="429" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="1" source="cash" style="endArrow=block;html=1;rounded=0;strokeWidth=2.5;strokeColor=#E11D48;exitX=0.832;exitY=0.987;exitDx=0;exitDy=0;exitPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1123" y="427" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e6" edge="1" parent="1" source="bank" style="endArrow=block;html=1;rounded=0;strokeWidth=2.5;strokeColor=#059669;" target="company_received">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" edge="1" parent="1" source="company_received" style="endArrow=block;html=1;rounded=0;strokeWidth=2.5;strokeColor=#0D9488;fontSize=12;fontColor=#134E4A;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" value="companyReceivedCOD">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1131" y="617" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e8" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=2.5;strokeColor=#64748B;fontSize=12;fontColor=#334155;entryX=-0.002;entryY=0.122;entryDx=0;entryDy=0;entryPerimeter=0;" target="marketplace_formula" value="totalFee / companyFee">
+          <mxGeometry relative="1" x="0.0371" y="-13" as="geometry">
+            <mxPoint x="-1" as="offset" />
+            <mxPoint x="636" y="645" as="sourcePoint" />
+            <mxPoint x="734" y="649" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e9" edge="1" parent="1" style="endArrow=block;html=1;rounded=0;strokeWidth=2.5;strokeColor=#0284C7;fontSize=12;fontColor=#0C4A6E;" target="payout" value="merchantPayable">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="675" y="817" />
+            </Array>
+            <mxPoint x="733" y="817" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
