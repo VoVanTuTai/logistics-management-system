@@ -24,6 +24,7 @@ import type { PickupScanCommand } from '../../features/scan/pickup.types';
 import { useAuthStore } from '../../features/auth/auth.store';
 import { scanApi } from '../../features/scan/scan.api';
 import type { CurrentLocationDto } from '../../features/scan/scan.types';
+import { resolveShipmentScanCode } from '../../features/scan/shipment-code';
 import { shipmentApi } from '../../features/shipment/shipment.api';
 import type { ShipmentDto, ShipmentMetadata } from '../../features/shipment/shipment.types';
 import { tasksApi } from '../../features/tasks/tasks.api';
@@ -235,7 +236,9 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
     [session?.user.hubCodes],
   );
   const receiveHubCode = assignedHubCodes[0] ?? null;
-  const routeShipmentCode = normalizeOptionalCode(route.params?.shipmentCode);
+  const routeShipmentCode =
+    resolveShipmentScanCode(route.params?.shipmentCode)?.shipmentCode ??
+    normalizeOptionalCode(route.params?.shipmentCode);
   const isTaskReceiveMode = Boolean(route.params?.taskId && routeShipmentCode);
 
   const [pickedShipments, setPickedShipments] = React.useState<PickedShipmentItem[]>([]);
@@ -276,7 +279,8 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
 
   const verifyAndAppendShipmentCode = React.useCallback(
     async (rawCode: string) => {
-      const shipmentCode = normalizeCode(rawCode);
+      const scanCode = resolveShipmentScanCode(rawCode);
+      const shipmentCode = scanCode?.shipmentCode ?? '';
 
       if (!shipmentCode) {
         playScanWarningSound();

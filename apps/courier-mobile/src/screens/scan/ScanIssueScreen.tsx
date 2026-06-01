@@ -27,6 +27,7 @@ import { reportShipmentException } from '../../features/delivery/shipment-except
 import type { IssueAttachmentPayload } from '../../features/delivery/delivery.types';
 import { SCAN_ISSUE_RETURN_REASONS } from '../../features/delivery/return-reasons';
 import { parsePickupScannedCode } from '../../features/scan/pickup.scanner.adapter';
+import { resolveShipmentScanCode } from '../../features/scan/shipment-code';
 import type { AppNavigatorParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
@@ -68,7 +69,11 @@ export function ScanIssueScreen({ navigation, route }: Props): React.JSX.Element
   const queryClient = useQueryClient();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = React.useRef<CameraView | null>(null);
-  const [shipmentCode, setShipmentCode] = React.useState(route.params?.shipmentCode ?? '');
+  const [shipmentCode, setShipmentCode] = React.useState(
+    resolveShipmentScanCode(route.params?.shipmentCode)?.shipmentCode ??
+      route.params?.shipmentCode ??
+      '',
+  );
   const [selectedIssueId, setSelectedIssueId] = React.useState(ISSUE_OPTIONS[0].id);
   const [note, setNote] = React.useState('');
   const [attachments, setAttachments] = React.useState<LocalAttachment[]>([]);
@@ -103,11 +108,18 @@ export function ScanIssueScreen({ navigation, route }: Props): React.JSX.Element
       return;
     }
 
+    const scanCode = resolveShipmentScanCode(parsed.value);
+    const resolvedShipmentCode = scanCode?.shipmentCode ?? parsed.value.trim().toUpperCase();
+
     playScanSuccessSound();
-    setShipmentCode(parsed.value);
+    setShipmentCode(resolvedShipmentCode);
     setScannerError(null);
     setScannerVisible(false);
-    setMessage(`Đã quét mã vận đơn ${parsed.value}.`);
+    setMessage(
+      scanCode?.isReturnLabel
+        ? `Đã quét tem hoàn ${scanCode.scannedCode}, đối soát mã gốc ${resolvedShipmentCode}.`
+        : `Đã quét mã vận đơn ${resolvedShipmentCode}.`,
+    );
   }, []);
 
   const openCamera = React.useCallback(async () => {
@@ -159,7 +171,9 @@ export function ScanIssueScreen({ navigation, route }: Props): React.JSX.Element
   };
 
   const handleSubmit = React.useCallback(async () => {
-    const normalizedShipmentCode = shipmentCode.trim().toUpperCase();
+    const normalizedShipmentCode =
+      resolveShipmentScanCode(shipmentCode)?.shipmentCode ??
+      shipmentCode.trim().toUpperCase();
     const rawNote = note.trim();
 
     if (!normalizedShipmentCode) {

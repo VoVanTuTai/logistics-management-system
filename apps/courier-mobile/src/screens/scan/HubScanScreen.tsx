@@ -23,6 +23,7 @@ import {
 import { useHubScanMutation } from '../../features/scan/hub.mutation';
 import { enqueueHubScanOffline } from '../../features/scan/hub.offline';
 import { parseHubScannedCode } from '../../features/scan/hub.scanner.adapter';
+import { resolveShipmentScanCode } from '../../features/scan/shipment-code';
 import { useAppStore } from '../../store/appStore';
 import type { AppNavigatorParamList } from '../../navigation/types';
 import { shouldQueueOffline } from '../../services/api/client';
@@ -70,7 +71,10 @@ function LegacyHubScanForm({ route }: Pick<Props, 'route'>): React.JSX.Element {
     resolver: zodResolver(hubScanFormSchema),
     defaultValues: {
       mode: route.params.mode,
-      shipmentCode: route.params.shipmentCode ?? '',
+      shipmentCode:
+        resolveShipmentScanCode(route.params.shipmentCode)?.shipmentCode ??
+        route.params.shipmentCode ??
+        '',
       locationCode: '',
       manifestCode: '',
       note: '',
@@ -117,9 +121,12 @@ function LegacyHubScanForm({ route }: Pick<Props, 'route'>): React.JSX.Element {
       shouldValidate: true,
     });
 
+    const shipmentScanCode = resolveShipmentScanCode(values.shipmentCode);
+    const shipmentCode = shipmentScanCode?.shipmentCode ?? values.shipmentCode;
+
     const command: HubScanCommand = {
       mode: selectedMode,
-      shipmentCode: values.shipmentCode,
+      shipmentCode,
       locationCode: values.locationCode,
       manifestCode: values.manifestCode || null,
       note: buildHubScanAuditNote({
@@ -128,7 +135,7 @@ function LegacyHubScanForm({ route }: Pick<Props, 'route'>): React.JSX.Element {
         courierId,
         hubCode: session?.user.hubCodes?.[0] ?? null,
         mode: selectedMode,
-        shipmentCode: values.shipmentCode,
+        shipmentCode,
         locationCode: values.locationCode,
         manifestCode: values.manifestCode,
         note: values.note,
@@ -177,12 +184,19 @@ function LegacyHubScanForm({ route }: Pick<Props, 'route'>): React.JSX.Element {
       return;
     }
 
+    const shipmentScanCode = resolveShipmentScanCode(parsed.value);
+    const shipmentCode = shipmentScanCode?.shipmentCode ?? parsed.value;
+
     playScanSuccessSound();
-    setValue('shipmentCode', parsed.value, {
+    setValue('shipmentCode', shipmentCode, {
       shouldDirty: true,
       shouldValidate: true,
     });
-    setLocalInfoMessage(`Đã nhận mã ${parsed.format}: ${parsed.value}`);
+    setLocalInfoMessage(
+      shipmentScanCode?.isReturnLabel
+        ? `Đã nhận tem hoàn ${shipmentScanCode.scannedCode}, đối soát mã gốc ${shipmentCode}.`
+        : `Đã nhận mã ${parsed.format}: ${shipmentCode}`,
+    );
     setScannerVisible(false);
   };
 
