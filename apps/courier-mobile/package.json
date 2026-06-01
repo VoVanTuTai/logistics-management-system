@@ -1,6 +1,6 @@
 {
   "name": "courier-mobile",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Scaffold toi thieu cho app shipper/courier trong monorepo `NEXUS-logistics`.",
   "main": "index.js",
   "scripts": {
