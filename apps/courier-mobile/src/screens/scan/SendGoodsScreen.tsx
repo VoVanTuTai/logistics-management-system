@@ -19,6 +19,7 @@ import { manifestApi } from '../../features/manifest/manifest.api';
 import type { BagManifestDto } from '../../features/manifest/manifest.types';
 import { submitHubScanAction } from '../../features/scan/hub.api';
 import { parsePickupScannedCode } from '../../features/scan/pickup.scanner.adapter';
+import { resolveShipmentScanCode } from '../../features/scan/shipment-code';
 import {
   parseVehicleLabel,
   type VehicleLabelInfo,
@@ -41,6 +42,8 @@ type SendItemType = 'BAG' | 'SHIPMENT';
 interface SendGoodsItem {
   type: SendItemType;
   code: string;
+  scannedCode: string;
+  isReturnLabel: boolean;
   scannedAt: string;
 }
 
@@ -242,32 +245,41 @@ export function SendGoodsScreen(): React.JSX.Element {
         return;
       }
 
-      const itemType: SendItemType = isBagCode(normalizedCode) ? 'BAG' : 'SHIPMENT';
+      const isBag = isBagCode(normalizedCode);
+      const shipmentScanCode = isBag ? null : resolveShipmentScanCode(rawCode);
+      if (!isBag && !shipmentScanCode) {
+        playScanWarningSound();
+        setScreenMessage('Mã kiện không hợp lệ.');
+        return;
+      }
+
+      const nextItem: SendGoodsItem = {
+        type: isBag ? 'BAG' : 'SHIPMENT',
+        code: isBag ? normalizedCode : shipmentScanCode?.shipmentCode ?? normalizedCode,
+        scannedCode: isBag ? normalizedCode : shipmentScanCode?.scannedCode ?? normalizedCode,
+        isReturnLabel: shipmentScanCode?.isReturnLabel ?? false,
+        scannedAt: new Date().toISOString(),
+      };
 
       setItems((currentItems) => {
-        const duplicated = currentItems.some((item) => item.code === normalizedCode);
+        const duplicated = currentItems.some((item) => item.code === nextItem.code);
         if (duplicated) {
           playScanWarningSound();
-          setScreenMessage(`${normalizedCode} đã có trong danh sách gửi hàng.`);
+          setScreenMessage(`${nextItem.code} đã có trong danh sách gửi hàng.`);
           return currentItems;
         }
 
         setManualCodeInput('');
         playScanSuccessSound();
         setScreenMessage(
-          itemType === 'BAG'
-            ? `Đã thêm tem bao ${normalizedCode}.`
-            : `Đã thêm kiện rời ${normalizedCode}.`,
+          nextItem.type === 'BAG'
+            ? `Đã thêm tem bao ${nextItem.code}.`
+            : nextItem.isReturnLabel
+              ? `Đã thêm tem hoàn ${nextItem.scannedCode} (đối soát mã gốc ${nextItem.code}).`
+              : `Đã thêm kiện rời ${nextItem.code}.`,
         );
 
-        return [
-          {
-            type: itemType,
-            code: normalizedCode,
-            scannedAt: new Date().toISOString(),
-          },
-          ...currentItems,
-        ];
+        return [nextItem, ...currentItems];
       });
     },
     [hasVehicleInfo],
@@ -676,7 +688,7 @@ export function SendGoodsScreen(): React.JSX.Element {
             <TextInput
               value={manualCodeInput}
               onChangeText={setManualCodeInput}
-              placeholder="MB1234567890 hoặc SHP..."
+              placeholder="MB1234567890, mã kiện hoặc tem hoàn -R"
               placeholderTextColor="#9CA3AF"
               style={[
                 styles.fieldInput,
@@ -744,6 +756,11 @@ export function SendGoodsScreen(): React.JSX.Element {
                     <Text style={styles.itemTimeText}>
                       Quét lúc {formatScannedAt(item.scannedAt)}
                     </Text>
+                    {item.isReturnLabel ? (
+                      <Text style={styles.returnLabelText}>
+                        Tem hoàn: {item.scannedCode}
+                      </Text>
+                    ) : null}
                   </View>
                 </Pressable>
               );
@@ -1097,6 +1114,12 @@ const styles = StyleSheet.create({
     color: '#111827',
     fontSize: 14,
     fontWeight: '700',
+  },
+  returnLabelText: {
+    color: '#0F766E',
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 2,
   },
   itemTypeBadge: {
     borderRadius: 999,

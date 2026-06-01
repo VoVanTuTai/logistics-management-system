@@ -15,6 +15,7 @@ import {
 } from 'expo-camera';
 
 import { parsePickupScannedCode } from '../../features/scan/pickup.scanner.adapter';
+import { resolveShipmentScanCode } from '../../features/scan/shipment-code';
 import { shipmentApi } from '../../features/shipment/shipment.api';
 import { tasksApi } from '../../features/tasks/tasks.api';
 import type { TaskDto } from '../../features/tasks/tasks.types';
@@ -94,7 +95,8 @@ export function DeliverySignScanScreen({
 
   const openDeliveryProof = React.useCallback(
     async (rawCode: string) => {
-      const shipmentCode = normalizeCode(rawCode);
+      const scanCode = resolveShipmentScanCode(rawCode);
+      const shipmentCode = scanCode?.shipmentCode ?? '';
 
       if (!shipmentCode) {
         playScanWarningSound();

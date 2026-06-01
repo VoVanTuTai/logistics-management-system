@@ -241,7 +241,11 @@ export class ScansService {
       currentStatus?: string;
     };
 
-    if (shipment.isLocked && !isInventoryCheckScan(scanType, note)) {
+    if (
+      shipment.isLocked &&
+      !isReturnMovementScan(shipment.currentStatus, scanType) &&
+      !isInventoryCheckScan(scanType, note)
+    ) {
       throw new BadRequestException(
         `Block: Shipment "${shipmentCode}" is locked by issue workflow (${shipment.currentStatus ?? 'UNKNOWN'}).`,
       );
@@ -323,5 +327,15 @@ function isInventoryCheckScan(
   return (
     trimmedNote.startsWith('INVENTORY_CHECK') ||
     trimmedNote.startsWith('Kiểm tồn kho')
+  );
+}
+
+function isReturnMovementScan(
+  currentStatus: string | undefined,
+  scanType: ScanType,
+): boolean {
+  return (
+    currentStatus === 'RETURN_STARTED' &&
+    (scanType === 'INBOUND' || scanType === 'OUTBOUND')
   );
 }

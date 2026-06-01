@@ -512,6 +512,11 @@ export class ShipmentsService {
     const metadata = asJsonRecord(currentMetadata);
     const location = asJsonRecord(metadata.location);
     const hub = asJsonRecord(metadata.hub);
+    const movement = asJsonRecord(metadata.movement);
+    const touchedHubCodes = normalizeStringList([
+      ...asUnknownArray(movement.hubCodes),
+      currentHubCode,
+    ]);
 
     return {
       ...metadata,
@@ -528,7 +533,9 @@ export class ShipmentsService {
         currentCode: currentHubCode,
       },
       movement: {
-        ...asJsonRecord(metadata.movement),
+        ...movement,
+        hubCodes: touchedHubCodes,
+        hubCodesText: `|${touchedHubCodes.join('|')}|`,
         lastEventType: eventType,
         lastUpdatedAt: new Date().toISOString(),
       },
@@ -614,6 +621,7 @@ function collectHubCodes(shipment: Shipment): string[] {
   const routing = asJsonRecord(metadata.routing);
   const location = asJsonRecord(metadata.location);
   const hub = asJsonRecord(metadata.hub);
+  const movement = asJsonRecord(metadata.movement);
   const destinationCodes = DESTINATION_VISIBLE_STATUSES.has(shipment.currentStatus)
     ? [
         metadata.receiverHubCode,
@@ -634,8 +642,13 @@ function collectHubCodes(shipment: Shipment): string[] {
     location.current,
     hub.code,
     hub.currentCode,
+    ...asUnknownArray(movement.hubCodes),
     ...destinationCodes,
   ]);
+}
+
+function asUnknownArray(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [value];
 }
 
 function isSameHubOrScopedLocation(

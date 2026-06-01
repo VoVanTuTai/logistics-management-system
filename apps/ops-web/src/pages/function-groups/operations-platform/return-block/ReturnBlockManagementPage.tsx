@@ -113,6 +113,27 @@ function buildReturnInstruction(order: ReturnOrder): string {
   ].join('\n');
 }
 
+function buildCompleteReturnNote(
+  order: ReturnOrder,
+  session: ReturnType<typeof useAuthStore.getState>['session'],
+): string {
+  const employeeName = session?.user.displayName || session?.user.username || 'N/A';
+  const employeeId = session?.user.username || 'N/A';
+  const hubCode = session?.user.hubCodes?.[0] || order.returnHubCode || 'N/A';
+
+  return [
+    'Thao tác: Xác nhận hoàn tất chuyển hoàn',
+    `Mã vận đơn gốc: ${order.originalCode}`,
+    `Mã đơn hoàn: ${order.newCode}`,
+    `Return case: ${order.returnCaseId ?? 'N/A'}`,
+    `Người xác nhận: ${employeeName}`,
+    `Mã nhân viên: ${employeeId}`,
+    `Hub thao tác: ${hubCode}`,
+    `Thời gian xác nhận: ${new Date().toLocaleString('vi-VN')}`,
+    `Ghi chú đăng ký: ${order.reason}`,
+  ].join('\n');
+}
+
 function buildReturnOrder(
   shipmentCode: string,
   returnCase: ReturnCaseDto | undefined,
@@ -140,7 +161,12 @@ function buildReturnOrder(
     newCode: `${shipmentCode}-R`,
     status: resolveReturnStatus(returnCase, shipment, ndr),
     sourceStatus: originalStatusLabel,
-    reason: ndr?.reasonCode || shipment?.deliveryNote || 'Yêu cầu chuyển hoàn từ luồng giao thất bại.',
+    reason:
+      returnCase?.note ||
+      ndr?.note ||
+      ndr?.reasonCode ||
+      shipment?.deliveryNote ||
+      'Yêu cầu chuyển hoàn từ luồng giao thất bại.',
     createdAt: formatDateTime(returnCase?.updatedAt ?? ndr?.updatedAt ?? shipment?.updatedAt),
     senderName: shipment?.receiverName || 'Người nhận gốc',
     senderPhone: shipment?.receiverPhone || '---',
@@ -319,9 +345,9 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
 
     try {
       await returnClient.complete(accessToken, order.returnCaseId, {
-        note: `Ops completed return for ${order.originalCode}`,
+        note: buildCompleteReturnNote(order, session),
       });
-      setNotice(`Da hoan tat return case ${order.returnCaseId}.`);
+      setNotice(`Đã hoàn tất return case ${order.returnCaseId}.`);
       await fetchReturnOrders();
     } catch (error) {
       setErrorMessage(extractErrorMessage(error));
@@ -480,7 +506,7 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
                             className="ops-return-list__reset-btn"
                             disabled={completingReturnId === order.returnCaseId}
                           >
-                            {completingReturnId === order.returnCaseId ? 'Dang hoan tat' : 'Hoan tat'}
+                            {completingReturnId === order.returnCaseId ? 'Đang hoàn tất' : 'Hoàn tất'}
                           </button>
                         ) : null}
                       </>

@@ -96,7 +96,7 @@ const DEFAULT_PAGE_SIZE = 20;
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 const EMPTY_SHIPMENTS: ShipmentListItemDto[] = [];
 const DEFAULT_TIME_FILTER: ShipmentTimeFilter = 'all';
-const DEFAULT_BRANCH_GOODS_FILTER: BranchGoodsFilter = 'readyForDelivery';
+const DEFAULT_BRANCH_GOODS_FILTER: BranchGoodsFilter = 'all';
 const FINAL_BRANCH_STATUSES = new Set([
   'CANCELLED',
   'DELIVERED',
@@ -1031,7 +1031,7 @@ export function ShipmentListPage(): React.JSX.Element {
           <textarea
             name="q"
             rows={2}
-            placeholder="Tìm mã vận đơn trong toàn bộ dữ liệu thuộc hub. Có thể dán nhiều mã, mỗi mã một dòng hoặc cách nhau bằng dấu phẩy."
+            placeholder="Tìm mã vận đơn trong toàn bộ dữ liệu hub đã thao tác. Có thể dán nhiều mã, mỗi mã một dòng hoặc cách nhau bằng dấu phẩy."
             value={qInput}
             onChange={(event) => setQInput(event.target.value)}
             style={styles.searchInput}
@@ -1083,8 +1083,8 @@ export function ShipmentListPage(): React.JSX.Element {
             onChange={(event) => setBranchGoodsInput(normalizeBranchGoodsFilter(event.target.value))}
             style={styles.select}
           >
-            <option value="readyForDelivery">Hàng đã đến hub, chưa ký nhận</option>
             <option value="all">Tất cả đơn đã thao tác tại bưu cục</option>
+            <option value="readyForDelivery">Hàng đã đến hub, chưa ký nhận</option>
             <option value="inventoryByDay">Hàng tồn kho theo ngày</option>
             <option value="problemOrders">Đơn vấn đề</option>
             <option value="returnNeeded">Đơn cần chuyển hoàn</option>

@@ -19,6 +19,7 @@ import {
 
 import { authApi } from '../../features/auth/auth.api';
 import { parsePickupScannedCode } from '../../features/scan/pickup.scanner.adapter';
+import { resolveShipmentScanCode } from '../../features/scan/shipment-code';
 import { scanApi } from '../../features/scan/scan.api';
 import type { CurrentLocationDto } from '../../features/scan/scan.types';
 import { shipmentApi } from '../../features/shipment/shipment.api';
@@ -485,7 +486,8 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
         return;
       }
 
-      const shipmentCode = normalizeCode(rawValue);
+      const scanCode = resolveShipmentScanCode(rawValue);
+      const shipmentCode = scanCode?.shipmentCode ?? '';
       if (!shipmentCode) {
         playScanWarningSound();
         setErrorMessage('Mã vận đơn không hợp lệ.');

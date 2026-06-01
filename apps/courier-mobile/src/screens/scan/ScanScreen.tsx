@@ -24,6 +24,7 @@ import type { ScanActionItemData } from '../../components/scan/ScanActionItem';
 import { CameraScannerModal } from '../../components/scan/CameraScannerModal';
 import type { AppNavigatorParamList } from '../../navigation/types';
 import { parsePickupScannedCode } from '../../features/scan/pickup.scanner.adapter';
+import { resolveShipmentScanCode } from '../../features/scan/shipment-code';
 import { playScanSuccessSound, playScanWarningSound } from '../../utils/scanSoundFeedback';
 import {
   canAccessCourierFeature,
@@ -261,14 +262,18 @@ export function ScanScreen(): React.JSX.Element {
     }
 
     playScanSuccessSound();
+    const shipmentScanCode = resolveShipmentScanCode(parsed.value);
+    const shipmentCode = shipmentScanCode?.shipmentCode ?? parsed.value;
     setScannerVisible(false);
     setLastScanMessage(
-      `${pendingAction.label}: ${parsed.format} - ${parsed.value}`,
+      shipmentScanCode?.isReturnLabel
+        ? `${pendingAction.label}: tem hoàn ${shipmentScanCode.scannedCode} -> ${shipmentCode}`
+        : `${pendingAction.label}: ${parsed.format} - ${shipmentCode}`,
     );
 
     if (pendingAction.id === 'nhan-kien') {
       navigation.navigate('PickupScan', {
-        shipmentCode: parsed.value,
+        shipmentCode,
       });
       setPendingAction(null);
       return;
@@ -276,7 +281,7 @@ export function ScanScreen(): React.JSX.Element {
 
     if (pendingAction.id === 'kien-den') {
       navigation.navigate('GoodsArrival', {
-        shipmentCode: parsed.value,
+        shipmentCode,
       });
       setPendingAction(null);
       return;
@@ -296,7 +301,7 @@ export function ScanScreen(): React.JSX.Element {
 
     if (pendingAction.id === 'van-de') {
       navigation.navigate('ScanIssue', {
-        shipmentCode: parsed.value,
+        shipmentCode,
       });
       setPendingAction(null);
       return;
@@ -304,7 +309,7 @@ export function ScanScreen(): React.JSX.Element {
 
     Alert.alert(
       pendingAction.label,
-      `Đã quét ${parsed.format}: ${parsed.value}\nTODO: nối API action này khi contract sẵn sàng.`,
+      `Đã quét ${parsed.format}: ${shipmentCode}\nTODO: nối API action này khi contract sẵn sàng.`,
     );
     setPendingAction(null);
   };
