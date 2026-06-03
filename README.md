@@ -1,499 +1,427 @@
-﻿# Nexus Express System
+# Nexus Express System
 
-> A production-oriented logistics platform built with microservices to manage the full shipment lifecycle across pickup, hub operations, delivery, tracking, and operational reporting.
+A logistics management platform for shipment creation, pickup, hub operations, courier delivery, public tracking, COD settlement, and operational reporting.
 
-![Architecture](https://img.shields.io/badge/architecture-microservices-blue)
-![Backend](https://img.shields.io/badge/backend-NestJS%20%2B%20TypeScript-red)
-![Messaging](https://img.shields.io/badge/messaging-RabbitMQ-orange)
-![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
-![ORM](https://img.shields.io/badge/orm-Prisma-2D3748)
+The project is a TypeScript monorepo built around microservices, a Gateway/BFF entry point, PostgreSQL database-per-service ownership, RabbitMQ domain events, and separate web/mobile clients for each user group.
 
----
+## What This System Does
 
-## Overview
-
-**Logistics Management System** is a microservices-based platform designed for modern warehouse and delivery operations.  
-It manages a shipment from the moment it is created, through pickup and hub scanning, to successful delivery or failure handling, while also supporting public tracking and operations KPI reporting.
-
-The platform is built around **clear service ownership**, **event-driven communication**, and **read models optimized for speed**, making it suitable for systems that need both operational flexibility and scalable architecture.
-
----
-
-## Why This Project Stands Out
-
-### 1. Clear domain ownership
-Each service owns its own schema and business boundary.  
-This keeps the architecture modular, avoids cross-service database coupling, and makes the platform easier to evolve.
-
-### 2. Gateway-first client access
-All clients go through `gateway-bff` instead of calling internal services directly.  
-This creates a clean entry point for authentication, routing, permission checks, and request orchestration.
-
-### 3. Event-driven by design
-The platform uses RabbitMQ and domain events to connect business workflows across services.  
-Core actions such as shipment creation, pickup completion, hub scan updates, manifest handover, and delivery results are propagated asynchronously.
-
-### 4. Reliable asynchronous processing
-Write-side services use the **Outbox pattern**, which improves reliability by ensuring business data and outgoing events are committed safely.
-
-### 5. Strong separation of status and location ownership
-This is one of the most important design decisions in the system:
-
-- `shipment-service` is the **canonical owner of current shipment status**
-- `scan-service` is the **source of truth for scan events and current location**
-
-This avoids ambiguity when multiple operational events affect the same shipment.
-
-### 6. Fast read models for user-facing queries
-Two dedicated read-model services are used for high-performance queries:
-
-- `tracking-service` for shipment timeline, current status, and current location
-- `reporting-service` for KPI aggregation and operational dashboards
-
----
-
-## System Scope
-
-The platform supports key logistics workflows across:
-
-- Shipment creation
-- Pickup request management
-- Courier task assignment
-- Pickup confirmation scan
-- Manifest creation, seal, and receive
-- Hub inbound and outbound scanning
-- Successful delivery with POD or OTP
-- Failed delivery with NDR, reschedule, or return
-- Public tracking
-- Operations reporting
-
----
-
-## Architecture at a Glance
-
-```mermaid
-flowchart TD
-    A[ops-web]
-    B[merchant-web]
-    C[public-tracking]
-    D[courier-mobile]
-    E[admin-web]
-
-    A --> G[gateway-bff]
-    B --> G
-    C --> G
-    D --> G
-    E --> G
-
-    G --> AU[auth-service]
-    G --> MD[masterdata-service]
-    G --> SH[shipment-service]
-    G --> PI[pickup-service]
-    G --> DI[dispatch-service]
-    G --> MA[manifest-service]
-    G --> SC[scan-service]
-    G --> DE[delivery-service]
-    G --> TR[tracking-service]
-    G --> RE[reporting-service]
-
-    SH --> MQ[(RabbitMQ: domain.events)]
-    PI --> MQ
-    DI --> MQ
-    MA --> MQ
-    SC --> MQ
-    DE --> MQ
-    MD --> MQ
-    AU --> MQ
-
-    MQ --> SH
-    MQ --> TR
-    MQ --> RE
-    MQ --> PI
-    MQ --> DI
-    MQ --> MA
-    MQ --> SC
-    MQ --> DE
-```
-
----
-
-## Core Design Principles
-
-### Database-per-service by schema
-All services use PostgreSQL, but each service owns its own schema.  
-No service should query another service's schema directly.
-
-### Event-driven integration
-Services communicate through RabbitMQ using domain events, reducing tight coupling and improving scalability.
-
-### Outbox pattern
-Write-side services persist business data and event records in the same transaction, then publish through an outbox worker.
-
-### Idempotency for critical operational actions
-Repeated actions such as scans and delivery confirmation must include `idempotencyKey` to prevent duplicate processing.
-
-### Role-based access control
-The platform is designed for multiple actors with distinct responsibilities and permissions.
-
-### Audit and timeline readiness
-The system is naturally traceable because important business transitions are represented as events and projections.
-
----
-
-## Core Services
-
-| Service | Role |
-|---|---|
-| `gateway-bff` | Unified entry point for all web and mobile clients |
-| `auth-service` | Authentication, JWT, refresh tokens, and RBAC |
-| `masterdata-service` | Hubs, warehouses, zones, NDR reasons, and system configuration |
-| `shipment-service` | Shipment lifecycle management and canonical current status |
-| `pickup-service` | Pickup request lifecycle |
-| `dispatch-service` | Task creation, assignment, and reassignment for pickup, delivery, and return |
-| `manifest-service` | Shipment handover and manifest operations |
-| `scan-service` | Pickup, inbound, and outbound scan events with location ownership |
-| `delivery-service` | POD, OTP, delivery outcome, NDR, reschedule, and return |
-| `tracking-service` | Read model for public and internal tracking queries |
-| `reporting-service` | Read model for KPI and operational reporting |
-
----
-
-## Client Applications
-
-| Client | Primary Users | Purpose |
-|---|---|---|
-| `ops-web` | Operations staff | Shipment review, task assignment, manifest processing, hub operations, dashboards |
-| `merchant-web` | Merchants | Shipment creation, pickup request, tracking, update requests |
-| `public-tracking` | Guests, receivers, merchants | Public shipment lookup |
-| `courier-mobile` | Couriers | Task handling, scan operations, delivery confirmation, failure reporting |
-| `admin-web` | Admins | User management, roles, system configuration, master data |
-
----
-
-## Critical Ownership Rules
-
-### Canonical shipment status
-`shipment-service` is the only service responsible for deciding the current shipment status.
-
-Examples:
-- `CREATED`
-- `PICKUP_ASSIGNED`
-- `PICKED_UP`
-- `INBOUND_AT_HUB`
-- `OUTBOUND_FROM_HUB`
-- `DELIVERED`
-- `DELIVERY_FAILED`
-- `RETURNING`
-
-### Source of truth for current location
-`scan-service` owns:
-- pickup scan
-- inbound scan
-- outbound scan
-- current location
-
-This keeps physical movement tracking separate from business-state decisions.
-
----
-
-## Main Business Flow
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant Gateway as gateway-bff
-    participant Shipment as shipment-service
-    participant Pickup as pickup-service
-    participant Dispatch as dispatch-service
-    participant Manifest as manifest-service
-    participant Scan as scan-service
-    participant Delivery as delivery-service
-    participant MQ as RabbitMQ
-    participant Tracking as tracking-service
-    participant Reporting as reporting-service
-
-    Client->>Gateway: Create shipment
-    Gateway->>Shipment: Create shipment
-    Shipment-->>MQ: shipment.created
-    MQ-->>Tracking: Update timeline/current view
-    MQ-->>Reporting: Update shipment KPI
-
-    Client->>Gateway: Create pickup request
-    Gateway->>Pickup: Create pickup request
-    Pickup-->>MQ: pickup.requested
-
-    Gateway->>Dispatch: Assign pickup task
-    Dispatch-->>MQ: task.assigned
-    MQ-->>Shipment: Update current_status
-
-    Gateway->>Scan: Pickup scan
-    Scan-->>MQ: scan.pickup_confirmed
-    Pickup-->>MQ: pickup.completed
-    MQ-->>Shipment: Mark picked up
-    MQ-->>Tracking: Update timeline/location
-
-    Gateway->>Manifest: Create, seal, receive manifest
-    Manifest-->>MQ: manifest.sealed / manifest.received
-
-    Gateway->>Scan: Inbound / outbound scan
-    Scan-->>MQ: scan.inbound / scan.outbound
-    MQ-->>Shipment: Update current_status
-    MQ-->>Tracking: Update current_location
-
-    Gateway->>Delivery: Success or failure result
-    Delivery-->>MQ: delivery.delivered / delivery.failed
-    MQ-->>Shipment: Finalize shipment status
-    MQ-->>Tracking: Update timeline
-    MQ-->>Reporting: Update KPI
-```
-
----
-
-## Example Shipment Lifecycle
-
-```mermaid
-stateDiagram-v2
-    [*] --> CREATED
-    CREATED --> PICKUP_REQUESTED
-    PICKUP_REQUESTED --> PICKUP_ASSIGNED
-    PICKUP_ASSIGNED --> PICKED_UP
-    PICKED_UP --> IN_TRANSIT_MANIFESTED
-    IN_TRANSIT_MANIFESTED --> INBOUND_AT_HUB
-    INBOUND_AT_HUB --> OUTBOUND_FROM_HUB
-    OUTBOUND_FROM_HUB --> DELIVERED
-    OUTBOUND_FROM_HUB --> DELIVERY_FAILED
-    DELIVERY_FAILED --> RETURNING
-    DELIVERED --> [*]
-    RETURNING --> [*]
-```
-
----
-
-## Event-Driven Messaging
-
-### Exchange
-- `domain.events` (topic exchange)
-
-### Typical routing keys
-- `shipment.created`
-- `shipment.updated`
-- `pickup.requested`
-- `pickup.completed`
-- `task.assigned`
-- `manifest.sealed`
-- `manifest.received`
-- `scan.inbound`
-- `scan.outbound`
-- `delivery.delivered`
-- `delivery.failed`
-- `ndr.created`
-- `return.started`
-
-### Queue naming convention
-- `<service>.q`
-- `<service>.dlq`
-- `<service>.retry.10s`
-- `<service>.retry.1m`
-
-Examples:
-- `tracking.q`
-- `tracking.dlq`
-- `tracking.retry.10s`
-- `tracking.retry.1m`
-
----
-
-## Event Envelope
-
-```json
-{
-  "event_id": "uuid",
-  "event_type": "shipment.created",
-  "occurred_at": "2026-04-21T10:00:00Z",
-  "shipment_code": "SHP000001",
-  "actor": {
-    "user_id": "u_123",
-    "role": "merchant"
-  },
-  "location": {
-    "hub_id": "HCM01",
-    "zone_id": "SOUTH"
-  },
-  "data": {},
-  "idempotency_key": "uuid-or-hash"
-}
-```
-
----
-
-## Read Models
-
-### `tracking-service`
-Purpose:
-- fast shipment lookup
-- public tracking
-- current status view
-- current location view
-- timeline projection
-
-### `reporting-service`
-Purpose:
-- daily KPI
-- monthly KPI
-- delivery success rate
-- pickup success rate
-- NDR rate
-- operational dashboards by hub, zone, and courier
-
----
-
-## Monorepo Structure
+Nexus Express System models the core flow of a last-mile and hub-and-spoke delivery company:
 
 ```text
-NEXUS-logistics/
-|- apps/
-|  |- backend/
-|  |  |- gateway-bff/
-|  |  |- auth-service/
-|  |  |- masterdata-service/
-|  |  |- shipment-service/
-|  |  |- pickup-service/
-|  |  |- dispatch-service/
-|  |  |- manifest-service/
-|  |  |- scan-service/
-|  |  |- delivery-service/
-|  |  |- tracking-service/
-|  |  `- reporting-service/
-|  `- frontend/
-|     |- ops-web/
-|     |- merchant-web/
-|     |- public-tracking/
-|     |- admin-web/
-|     `- courier-mobile/
-|- libs/
-|  |- shared/
-|  |- messaging/
-|  `- testing/
-|- contracts/
-|  |- openapi/
-|  `- events/
-|- infra/
-|  |- dev/
-|  `- k8s/
-|- scripts/
-`- docs/
+Merchant creates shipment
+-> pickup request and courier assignment
+-> pickup scan
+-> manifest / hub transfer
+-> inbound and outbound scans
+-> delivery success, delivery failure, NDR, or return
+-> COD settlement
+-> tracking and reporting projections
 ```
 
-### Key folders
+Primary users:
 
-| Folder | Purpose |
-|---|---|
-| `apps/backend` | Deployable backend services and gateway |
-| `apps/frontend` | Web and mobile clients |
-| `libs/shared` | Shared config, logger, auth utils, error helpers |
-| `libs/messaging` | RabbitMQ wrapper, outbox helpers, serializers |
-| `libs/testing` | Test utilities, fixtures, factories |
-| `contracts/openapi` | Sync API contracts |
-| `contracts/events` | Event contracts and payload examples |
-| `infra/dev` | Local development infrastructure |
-| `infra/k8s` | Deployment scaffolding |
-| `docs/architecture` | Architecture, ownership, events, and status model |
+| User group | Client | Main work |
+| --- | --- | --- |
+| Admin | `apps/admin-web` | Users, roles, hubs, zones, configs, NDR reasons, merchant profiles |
+| Ops staff | `apps/ops-web` | Shipments, pickups, tasks, manifests, scans, NDR, return, COD, reporting |
+| Merchant | `apps/merchant-web` | Create shipments, manage orders, request pickup, print labels, track shipments |
+| Courier | `apps/courier-mobile` | Assigned tasks, pickup/hub scans, POD/OTP, delivery failure, offline retry |
+| Guest / receiver | `apps/public-tracking` | Public shipment lookup |
 
----
+## Architecture
 
-## Tech Stack
+Clients call `gateway-bff`; they do not call internal domain services directly.
 
-### Backend
-- Node.js
-- NestJS
-- TypeScript
-- Prisma
+```text
+Client apps
+  admin-web / ops-web / merchant-web / courier-mobile / public-tracking
+        |
+        v
+gateway-bff
+        |
+        +-- synchronous HTTP --> domain services
+        |
+        v
+RabbitMQ topic exchange: domain.events
+        |
+        +-- tracking-service projects timeline/current tracking
+        +-- reporting-service projects KPI/read models
+        +-- domain services consume selected business milestones
+```
 
-### Infrastructure
-- PostgreSQL
-- RabbitMQ
-- Redis (optional)
-- MinIO (optional)
+Important ownership rules:
 
-### Frontend
-- React + Vite
-- React Native for courier operations
+- `shipment-service` is the canonical owner of shipment business status.
+- `scan-service` is the source of truth for scan events and current physical location.
+- `tracking-service` and `reporting-service` are read models; they do not decide write-side business state.
+- `payment-service` is the source of truth for COD records, settlement batches, payment webhook events, and remittance.
+- `pricing-service` calculates quotes/rates and currently has no database.
+- Services must not read or write another service's database directly. Use internal HTTP or domain events.
 
-### Monorepo Tooling
-- pnpm workspaces
-- Turborepo
+## Repository Layout
 
----
+```text
+apps/
+  admin-web/          React/Vite admin portal
+  ops-web/            React/Vite operations portal
+  merchant-web/       React/Vite merchant portal
+  courier-mobile/     Expo/React Native courier app
+  public-tracking/    React/Vite public tracking page
 
-## Non-Functional Focus
+services/
+  gateway-bff/        API gateway, media upload, marketplace adapter, chat/realtime
+  auth-service/       Opaque-token sessions, refresh/logout/introspect, user accounts
+  masterdata-service/ Hubs, zones, configs, NDR reasons, merchant profiles
+  shipment-service/   Shipment write model and current status state machine
+  pickup-service/     Pickup request lifecycle
+  dispatch-service/   Task creation, assignment, reassignment, completion
+  manifest-service/   Manifest/bag, seal, receive, unseal
+  scan-service/       Pickup/inbound/outbound scan events and current location
+  delivery-service/   Delivery attempts, POD, OTP, NDR, return
+  tracking-service/   Tracking timeline/current read model
+  reporting-service/  KPI and shipment-status read model
+  payment-service/    COD record, settlement batch, SePay/VietQR remittance
+  pricing-service/    Rule-based shipping quote calculation
 
-### Security
-- JWT-based authentication
-- RBAC
-- service boundary isolation through Gateway BFF
+packages/
+  messaging/          Shared RabbitMQ/envelope/outbox helpers
+  shared/             Shared types/constants
+  testing/            Test helpers
+  ui/                 Shared UI components
 
-### Reliability
-- Outbox pattern
-- retry queues
-- dead-letter queues
-- idempotency for repeated requests
+contracts/
+  events/             Domain event names and example payloads
+  openapi/            Service OpenAPI contracts
 
-### Performance
-- dedicated tracking read model
-- dedicated reporting read model
-- asynchronous event processing
+infra/
+  dev/                Local PostgreSQL, RabbitMQ, Redis, MinIO
+  prod/               Single-VPS Docker Compose deployment
 
-### Observability
-- structured logs
-- metrics-ready service boundaries
-- audit-friendly event timeline
+docs/
+  PROJECT-OVERVIEW.md Main source of truth for the system overview
+  runbook/            Deploy, account, code-rule, and trial runbooks
+  service-description/ Partner integration and service notes
+  Documents/          Prompt packs, test reports, workbook notes
+```
 
----
+There is no root `package.json`. Run install/build/test commands inside the specific app or service directory.
 
-## Why This Architecture Matters
+## Services And Ports
 
-This project is more than a basic shipment CRUD application.
+| Service | Port | Database | Responsibility |
+| --- | ---: | --- | --- |
+| `gateway-bff` | 3000 | `chat_db` for chat only | Client entry point, proxy, media upload, marketplace integration |
+| `masterdata-service` | 3001 | `masterdata_db` | Hubs, zones, configs, NDR reasons, merchant profiles |
+| `shipment-service` | 3002 | `shipment_db` | Shipment lifecycle and canonical current status |
+| `pickup-service` | 3003 | `pickup_db` | Pickup requests |
+| `dispatch-service` | 3004 | `dispatch_db` | Courier tasks and assignments |
+| `manifest-service` | 3005 | `manifest_db` | Manifests, bags, seal/receive/unseal |
+| `scan-service` | 3006 | `scan_db` | Scan events and current location |
+| `delivery-service` | 3007 | `delivery_db` | Delivery attempts, POD, OTP, NDR, returns |
+| `tracking-service` | 3008 | `tracking_db` | Timeline/current tracking read model |
+| `reporting-service` | 3009 | `reporting_db` | KPI and dashboard read model |
+| `auth-service` | 3010 | `auth_db` | User accounts, sessions, opaque tokens |
+| `payment-service` | 3011 | `payment_db` | COD settlement, QR, webhook reconciliation |
+| `pricing-service` | 3012 | none | Shipping quote/rate calculation |
 
-It is designed as a **real logistics platform** with:
-- multiple actors
-- operational workflows
-- event-driven communication
-- separation between write-side and read-side models
-- explicit ownership of status and location
-- room to scale services independently
+Local frontend ports:
 
-That makes it a strong foundation for:
-- academic system design projects
-- portfolio presentation
-- internal logistics prototypes
-- production-oriented architecture evolution
+| App | URL |
+| --- | --- |
+| `ops-web` | `http://127.0.0.1:5173` |
+| `merchant-web` | `http://127.0.0.1:5174` |
+| `admin-web` | `http://127.0.0.1:5175` |
+| `public-tracking` | `http://127.0.0.1:5176` |
+| `courier-mobile` | Expo dev server / configured mobile runtime |
 
----
+## Local Development
 
-## Future Expansion
+### Prerequisites
 
-Potential extensions include:
-- notification service
-- billing or COD settlement
-- SLA monitoring
-- observability stack
-- fraud and risk checks
-- independent scaling for tracking/reporting consumers
-- separate deployment pipelines per service
+- Node.js 20+
+- npm and/or pnpm
+- Docker Desktop or Docker Engine with Compose
+- Expo tooling if working on `apps/courier-mobile`
+- PostgreSQL client tools are useful but not required
 
----
+Because each module owns its own lockfile and scripts, use the package manager already used in that module. Most modules can be run with npm; some scripts and older docs also show pnpm.
 
-## Summary
+### 1. Start local infrastructure
 
-**Logistics Management System** is a microservices-based, event-driven platform for warehouse and delivery operations.
+```bash
+cd infra/dev
+docker compose up -d
+```
 
-Its strongest architectural advantages are:
+This starts:
 
-- clear service ownership
-- reliable async workflows with outbox
-- strict separation between shipment status and physical location
-- optimized read models for tracking and reporting
-- support for real operational logistics flows
+| Component | Local port |
+| --- | ---: |
+| PostgreSQL | `15432` |
+| RabbitMQ | `5672` |
+| RabbitMQ management UI | `15672` |
+| Redis | `6379` |
+| MinIO API | `9000` |
+| MinIO console | `9001` |
 
-If extended further, this architecture can evolve from a strong project foundation into a scalable logistics platform ready for real-world workflows.
+The PostgreSQL init script creates the service databases such as `auth_db`, `shipment_db`, `tracking_db`, `payment_db`, and `chat_db`.
 
+### 2. Configure environment files
+
+Copy the relevant `.env.example` files before running a module:
+
+```bash
+cp services/gateway-bff/.env.example services/gateway-bff/.env
+cp apps/ops-web/.env.example apps/ops-web/.env
+cp apps/merchant-web/.env.example apps/merchant-web/.env
+cp apps/admin-web/.env.example apps/admin-web/.env
+cp apps/public-tracking/.env.example apps/public-tracking/.env
+```
+
+For local host-based service runs, set gateway upstream URLs to `http://localhost:<port>`. The helper scripts do this for you; if you start services manually, check `services/gateway-bff/.env`.
+
+### 3. Prepare service databases
+
+Run inside each Prisma-backed service:
+
+```bash
+npm install
+npm run db:prepare
+```
+
+Services with `db:prepare`:
+
+```text
+auth-service
+masterdata-service
+shipment-service
+pickup-service
+dispatch-service
+manifest-service
+scan-service
+delivery-service
+tracking-service
+reporting-service
+payment-service
+```
+
+Seed commands currently exist for:
+
+```bash
+cd services/auth-service && npm run db:seed
+cd services/masterdata-service && npm run db:seed
+```
+
+The runbooks note that default seed data may be disabled depending on the current branch. Use real/imported local accounts when seed data is not available.
+
+### 4. Start the stack
+
+On macOS/Linux:
+
+```bash
+./run-all-mac.sh
+```
+
+On Windows PowerShell:
+
+```powershell
+.\run-all.ps1
+```
+
+The helper scripts update local gateway/mobile env values, start infrastructure if needed, and start the backend/apps through the project scripts.
+
+Manual service example:
+
+```bash
+cd services/gateway-bff
+npm install
+npm run start:dev
+```
+
+Manual frontend example:
+
+```bash
+cd apps/ops-web
+npm install
+npm run dev
+```
+
+## Build And Test
+
+Run commands from the module directory.
+
+| Module | Useful commands |
+| --- | --- |
+| Backend services | `npm run build` |
+| Services with Prisma | `npm run db:prepare`, then `npm run build` |
+| `gateway-bff` | `npm run build`, `npm run test:chat` |
+| `ops-web` | `npm run build`, `npm run test:smoke` |
+| `admin-web` | `npm run build`, `npm run test:smoke`, `npm run test:e2e` |
+| `merchant-web` | `npm run build` |
+| `public-tracking` | `npm run build` |
+| `courier-mobile` | `npm run typecheck`, `npm run build:web`, `npm run test:maestro` |
+
+Baseline check from the planning docs:
+
+```bash
+cd services/gateway-bff && npm run build
+cd ../../apps/merchant-web && npm run build
+cd ../ops-web && npm run build
+cd ../admin-web && npm run build
+cd ../public-tracking && npm run build
+cd ../courier-mobile && npm run typecheck
+```
+
+For a broader backend typecheck, run `npx tsc -p tsconfig.json --noEmit` inside each backend service.
+
+## Domain Events
+
+Events are published to RabbitMQ exchange `domain.events`. The slim milestone set is documented in `contracts/events/event-types.md`.
+
+Representative events:
+
+```text
+shipment.created
+pickup.requested
+pickup.approved
+task.assigned
+scan.pickup_confirmed
+manifest.sealed
+manifest.received
+manifest.unsealed
+scan.outbound
+scan.inbound
+delivery.attempted
+delivery.delivered
+delivery.failed
+ndr.created
+return.started
+return.completed
+cod.collected
+cod.collection_failed
+cod.remitted
+```
+
+Many write-side services persist business data and an `OutboxEvent` in the same transaction, then publish through an outbox relay. Scan, delivery, payment, and reporting flows use idempotency or projection ledgers to avoid duplicate processing during retries.
+
+## API Gateway Conventions
+
+Gateway routes use this broad pattern:
+
+```text
+/{group}/{service}/...
+```
+
+Examples:
+
+```text
+GET  /public/tracking/shipments/:shipmentCode
+GET  /merchant/shipment/shipments
+POST /ops/scan/scans/inbound
+POST /courier/delivery/deliveries/success
+```
+
+Auth notes:
+
+- `/public/*` is public.
+- `/merchant/*`, `/ops/*`, and `/courier/*` can be protected with `GATEWAY_AUTH_ENABLED=true`.
+- The current gateway guard can be configured as a perimeter authorization-header check; detailed session/token ownership belongs to `auth-service`.
+
+## COD And Payment Notes
+
+COD settlement is intentionally handled by `payment-service`, not by frontend inference.
+
+Key rules from the COD docs:
+
+- Creating a QR is a payment request, not proof of remittance.
+- A settlement is marked paid only after SePay webhook confirmation or an audited manual confirmation.
+- Webhook processing must match account number, transfer type, amount/tolerance, memo reference, and provider event id.
+- Memo conventions are `COD <shipmentCode>` for shipment-level transfer and `COD <settlementCode>` for courier cash settlement batches.
+
+See `docs/payment-cod-settlement-implementation-plan.md` and `docs/sepay-cod-runbook.md`.
+
+## Frontend Development Rules
+
+These rules are repeated across the frontend prompt packs and redesign docs:
+
+- Frontends call `gateway-bff` only.
+- Do not move backend business decisions into React or React Native.
+- Do not infer shipment status or current location on the client.
+- Preserve loading, empty, error, and success states.
+- For merchant UI redesign work, the current handoff allows edits only in `apps/merchant-web/src/main.tsx` and `apps/merchant-web/src/styles.css` unless the scope is explicitly expanded.
+- The merchant redesign reference lives in `design-reference/stitch_nexus_merchant_dashboard_redesign`.
+
+## Production / Trial Deployment
+
+The production-ish deployment is a single-VPS Docker Compose setup under `infra/prod`.
+
+First run outline:
+
+```bash
+cd /opt/logistics-management-system
+cp infra/prod/.env.example infra/prod/.env
+nano infra/prod/.env
+./scripts/deploy-vps.sh
+```
+
+Operational commands:
+
+```bash
+./scripts/prod-up.sh
+docker compose --env-file infra/prod/.env -f infra/prod/docker-compose.yml ps
+docker compose --env-file infra/prod/.env -f infra/prod/docker-compose.yml logs -f gateway-bff
+docker compose --env-file infra/prod/.env -f infra/prod/docker-compose.yml down
+```
+
+Production deployment rules in `docs/runbook/github-deploy-rules.md` require PR-based merges to `main`, passing CI checks, reviewed migrations with rollback plans, GitHub environment secrets, production review gates, and post-deploy health/log checks.
+
+## Documentation Map
+
+Start here:
+
+| File | Purpose |
+| --- | --- |
+| `docs/PROJECT-OVERVIEW.md` | Canonical overview of scope, architecture, services, ports, events, data ownership, local dev |
+| `docs/AI-REPORT-HANDOFF.md` | Source-of-truth reminders for writing reports without misrepresenting service ownership |
+| `docs/order-lifecycle-report.md` | Shipment lifecycle across pickup, hub transfer, delivery, NDR, and return |
+| `contracts/events/event-types.md` | Current public domain event milestone set |
+| `contracts/openapi/` | Service API contracts |
+| `docs/runbook/test-accounts.md` | Local account and username-code rules |
+| `docs/runbook/id-code-rules.md` | Hub, shipment, bag, vehicle, employee, merchant code conventions |
+| `docs/runbook/trial-deploy.md` | Staging/trial deployment checklist |
+| `infra/prod/README.md` | Single-VPS deployment guide |
+| `docs/service-description/marketplace-order-integration-api.md` | Marketplace adapter API contract |
+| `docs/service-description/auth-service.md` | Detailed auth-service behavior and limitations |
+| `docs/sepay-cod-runbook.md` | SePay COD reconciliation operations |
+| `design-reference/codex-handoff.md` | Merchant UI redesign handoff and constraints |
+
+Some files under `docs/architecture/` and `docs/runbook/` are currently placeholders. Prefer `docs/PROJECT-OVERVIEW.md`, service READMEs, contracts, and source code when those placeholders are empty.
+
+## Current Limitations To Know
+
+- This is production-oriented, but not fully production-hardened.
+- Auth password hashing is documented as a scaffold-level SHA-256 implementation and should be upgraded before real production use.
+- Gateway auth can be a perimeter header check depending on configuration; full token/session validation should be handled through `auth-service`.
+- Local and production setups use one PostgreSQL container with multiple service databases; the architectural rule remains database-per-service.
+- Some expanded ops modules, advanced analytics, linehaul hardening, observability, load tests, and zero-trust controls are still in progress.
+- Several docs are Vietnamese project/reporting docs; when documentation conflicts, prefer `docs/PROJECT-OVERVIEW.md`, contracts, current service READMEs, and source code.
+
+## Safe Change Checklist
+
+Before changing business behavior:
+
+1. Identify the owning service.
+2. Check whether the change affects API contracts or event contracts.
+3. Preserve gateway-first client access.
+4. Do not read/write another service's database.
+5. Add idempotency for retry-prone scan, delivery, and payment actions.
+6. Update tracking/reporting projections if the change must be visible in read models.
+7. Run the smallest relevant build/test commands for the touched modules.
+
+For UI-only work:
+
+1. Keep API calls, payloads, response mapping, routes, auth, permissions, validation, and status logic unchanged.
+2. Change JSX/layout/styles/presentational components only.
+3. Preserve loading, empty, error, and success states.
+4. Build the touched app before handing off.
