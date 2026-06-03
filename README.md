@@ -19,6 +19,22 @@ Merchant creates shipment
 -> tracking and reporting projections
 ```
 
+```mermaid
+flowchart LR
+    merchant["Merchant creates shipment"] --> pickup["Pickup request"]
+    pickup --> task["Courier task assignment"]
+    task --> pickupScan["Pickup scan"]
+    pickupScan --> hub["Hub manifest and transfer"]
+    hub --> scan["Inbound / outbound scans"]
+    scan --> delivery{"Delivery outcome"}
+    delivery --> delivered["Delivered"]
+    delivery --> failed["Failed delivery / NDR"]
+    failed --> returned["Return flow"]
+    delivered --> cod["COD settlement"]
+    returned --> tracking["Tracking and reporting"]
+    cod --> tracking
+```
+
 Primary users:
 
 | User group | Client | Main work |
@@ -33,21 +49,90 @@ Primary users:
 
 Clients call `gateway-bff`; they do not call internal domain services directly.
 
-```text
-Client apps
-  admin-web / ops-web / merchant-web / courier-mobile / public-tracking
-        |
-        v
-gateway-bff
-        |
-        +-- synchronous HTTP --> domain services
-        |
-        v
-RabbitMQ topic exchange: domain.events
-        |
-        +-- tracking-service projects timeline/current tracking
-        +-- reporting-service projects KPI/read models
-        +-- domain services consume selected business milestones
+```mermaid
+flowchart TB
+    subgraph clients["Client applications"]
+        admin["admin-web"]
+        ops["ops-web"]
+        merchantWeb["merchant-web"]
+        courier["courier-mobile"]
+        publicTracking["public-tracking"]
+    end
+
+    gateway["gateway-bff<br/>single client entry point"]
+
+    subgraph services["Domain services"]
+        auth["auth-service"]
+        masterdata["masterdata-service"]
+        pricing["pricing-service"]
+        shipment["shipment-service"]
+        pickup["pickup-service"]
+        dispatch["dispatch-service"]
+        manifest["manifest-service"]
+        scan["scan-service"]
+        delivery["delivery-service"]
+        payment["payment-service"]
+    end
+
+    subgraph readmodels["Read models"]
+        tracking["tracking-service"]
+        reporting["reporting-service"]
+    end
+
+    subgraph infra["Stateful infrastructure"]
+        postgres[("PostgreSQL<br/>database per service")]
+        rabbit[("RabbitMQ<br/>domain.events")]
+        redis[("Redis")]
+        minio[("MinIO / S3")]
+    end
+
+    admin --> gateway
+    ops --> gateway
+    merchantWeb --> gateway
+    courier --> gateway
+    publicTracking --> gateway
+
+    gateway --> auth
+    gateway --> masterdata
+    gateway --> pricing
+    gateway --> shipment
+    gateway --> pickup
+    gateway --> dispatch
+    gateway --> manifest
+    gateway --> scan
+    gateway --> delivery
+    gateway --> payment
+    gateway --> tracking
+    gateway --> reporting
+
+    auth --> postgres
+    masterdata --> postgres
+    shipment --> postgres
+    pickup --> postgres
+    dispatch --> postgres
+    manifest --> postgres
+    scan --> postgres
+    delivery --> postgres
+    payment --> postgres
+    tracking --> postgres
+    reporting --> postgres
+    gateway --> redis
+    gateway --> minio
+
+    shipment --> rabbit
+    pickup --> rabbit
+    dispatch --> rabbit
+    manifest --> rabbit
+    scan --> rabbit
+    delivery --> rabbit
+    payment --> rabbit
+
+    rabbit --> shipment
+    rabbit --> tracking
+    rabbit --> reporting
+    rabbit --> dispatch
+    rabbit --> manifest
+    rabbit --> delivery
 ```
 
 Important ownership rules:
@@ -58,6 +143,30 @@ Important ownership rules:
 - `payment-service` is the source of truth for COD records, settlement batches, payment webhook events, and remittance.
 - `pricing-service` calculates quotes/rates and currently has no database.
 - Services must not read or write another service's database directly. Use internal HTTP or domain events.
+
+```mermaid
+flowchart LR
+    subgraph write["Write-side ownership"]
+        shipmentStatus["shipment-service<br/>shipment status"]
+        scanLocation["scan-service<br/>scan events and location"]
+        paymentCod["payment-service<br/>COD settlement"]
+        deliveryAttempt["delivery-service<br/>POD, OTP, NDR, return"]
+    end
+
+    events[("RabbitMQ<br/>domain.events")]
+
+    subgraph projection["Projection services"]
+        trackingProjection["tracking-service<br/>timeline and current tracking"]
+        reportingProjection["reporting-service<br/>KPI and status aggregates"]
+    end
+
+    shipmentStatus --> events
+    scanLocation --> events
+    paymentCod --> events
+    deliveryAttempt --> events
+    events --> trackingProjection
+    events --> reportingProjection
+```
 
 ## Repository Layout
 
