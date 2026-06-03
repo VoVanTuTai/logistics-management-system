@@ -333,13 +333,16 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
       return;
     }
 
-    const canOpen = await Linking.canOpenURL(`tel:${normalizedPhone}`);
-    if (canOpen) {
+    try {
       await Linking.openURL(`tel:${normalizedPhone}`);
-      return;
+    } catch (error) {
+      Alert.alert(
+        'Không thể gọi',
+        error instanceof Error
+          ? error.message
+          : `Không thể mở ứng dụng gọi điện cho số ${normalizedPhone}.`,
+      );
     }
-
-    Alert.alert('Không thể gọi', normalizedPhone);
   };
 
   return (
