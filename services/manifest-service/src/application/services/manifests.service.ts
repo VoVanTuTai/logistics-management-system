@@ -530,7 +530,7 @@ export class ManifestsService {
       currentStatus?: string;
     };
 
-    if (shipment.isLocked) {
+    if (shipment.isLocked && shipment.currentStatus !== 'RETURN_STARTED') {
       throw new BadRequestException(
         `Block: Shipment "${shipmentCode}" is locked by issue workflow (${shipment.currentStatus ?? 'UNKNOWN'}).`,
       );

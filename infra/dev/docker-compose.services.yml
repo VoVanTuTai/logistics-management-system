@@ -231,6 +231,11 @@ services:
     environment:
       PORT: 3000
       GATEWAY_AUTH_ENABLED: "false"
+      GATEWAY_BODY_LIMIT: 1mb
+      GATEWAY_RATE_LIMIT_ENABLED: "true"
+      GATEWAY_RATE_LIMIT_WINDOW_MS: 60000
+      GATEWAY_RATE_LIMIT_MAX: 120
+      GATEWAY_RATE_LIMIT_SKIP_PATHS: /health,/metrics
       CHAT_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/chat_db
       CHAT_REDIS_URL: redis://redis:6379
       CHAT_REDIS_CHANNEL: gateway-bff:chat

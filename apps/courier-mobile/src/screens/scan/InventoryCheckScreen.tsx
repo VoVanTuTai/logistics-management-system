@@ -18,6 +18,7 @@ import {
 import { submitHubScanAction } from '../../features/scan/hub.api';
 import { enqueueHubScanOffline } from '../../features/scan/hub.offline';
 import { parsePickupScannedCode } from '../../features/scan/pickup.scanner.adapter';
+import { resolveShipmentScanCode } from '../../features/scan/shipment-code';
 import { shouldQueueOffline } from '../../services/api/client';
 import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
@@ -28,9 +29,12 @@ import {
 import { appEnv } from '../../utils/env';
 import { createIdempotencyKey } from '../../utils/idempotency';
 import { uploadCourierImage } from '../../features/media/courier-media-upload.api';
+import { playScanSuccessSound, playScanWarningSound } from '../../utils/scanSoundFeedback';
 
 interface InventoryItem {
   code: string;
+  scannedCode: string;
+  isReturnLabel: boolean;
   scannedAt: string;
   photoUri?: string | null;
 }
@@ -101,25 +105,35 @@ export function InventoryCheckScreen(): React.JSX.Element {
   }, []);
 
   const appendInventoryItem = React.useCallback((rawCode: string, photoUri?: string | null) => {
-    const normalizedCode = normalizeCode(rawCode);
-    if (!normalizedCode) {
+    const scanCode = resolveShipmentScanCode(rawCode);
+    if (!scanCode) {
+      playScanWarningSound();
       setScreenMessage('Mã vận đơn không hợp lệ.');
       return;
     }
+    const normalizedCode = scanCode.shipmentCode;
 
     setItems((currentItems) => {
       const duplicated = currentItems.some((item) => item.code === normalizedCode);
       if (duplicated) {
+        playScanWarningSound();
         setScreenMessage(`${normalizedCode} đã có trong danh sách kiểm tồn.`);
         return currentItems;
       }
 
       setManualCodeInput('');
-      setScreenMessage(`Đã thêm ${normalizedCode} vào danh sách kiểm tồn.`);
+      playScanSuccessSound();
+      setScreenMessage(
+        scanCode.isReturnLabel
+          ? `Đã thêm tem hoàn ${scanCode.scannedCode} (đối soát mã gốc ${normalizedCode}) vào danh sách kiểm tồn.`
+          : `Đã thêm ${normalizedCode} vào danh sách kiểm tồn.`,
+      );
 
       return [
         {
           code: normalizedCode,
+          scannedCode: scanCode.scannedCode,
+          isReturnLabel: scanCode.isReturnLabel,
           scannedAt: new Date().toISOString(),
           photoUri: photoUri || null,
         },
@@ -141,11 +155,13 @@ export function InventoryCheckScreen(): React.JSX.Element {
     });
 
     if (!parsed) {
+      playScanWarningSound();
       setScreenMessage('Không đọc được mã vận đơn hợp lệ. Vui lòng thử lại.');
       return;
     }
 
-    const normalizedCode = normalizeCode(parsed.value);
+    const scanCode = resolveShipmentScanCode(parsed.value);
+    const normalizedCode = scanCode?.shipmentCode ?? '';
 
     let duplicated = false;
     setItems((currentItems) => {
@@ -154,6 +170,7 @@ export function InventoryCheckScreen(): React.JSX.Element {
     });
 
     if (duplicated) {
+      playScanWarningSound();
       setScreenMessage(`${normalizedCode} đã có trong danh sách kiểm tồn.`);
       return;
     }
@@ -388,7 +405,7 @@ export function InventoryCheckScreen(): React.JSX.Element {
             <TextInput
               value={manualCodeInput}
               onChangeText={setManualCodeInput}
-              placeholder="SHP..."
+              placeholder="Mã vận đơn hoặc tem hoàn -R"
               placeholderTextColor="#9CA3AF"
               style={[styles.fieldInput, styles.codeInput]}
               autoCapitalize="characters"
@@ -434,6 +451,11 @@ export function InventoryCheckScreen(): React.JSX.Element {
                   </View>
                   <View style={styles.listBody}>
                     <Text style={styles.itemCodeText}>{item.code}</Text>
+                    {item.isReturnLabel ? (
+                      <Text style={styles.returnLabelText}>
+                        Tem hoàn: {item.scannedCode}
+                      </Text>
+                    ) : null}
                     <Text style={styles.itemTimeText}>
                       Quét lúc {formatScannedAt(item.scannedAt)}
                     </Text>
@@ -692,6 +714,12 @@ const styles = StyleSheet.create({
     color: '#111827',
     fontSize: 14,
     fontWeight: '700',
+  },
+  returnLabelText: {
+    color: '#0F766E',
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 2,
   },
   itemTimeText: {
     marginTop: 4,

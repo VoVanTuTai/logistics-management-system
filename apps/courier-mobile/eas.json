@@ -1,12 +1,39 @@
 {
+  "cli": {
+    "appVersionSource": "local"
+  },
   "build": {
     "preview": {
       "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_GATEWAY_BASE_URL": "http://103.179.172.53:13000",
+        "EXPO_PUBLIC_REQUEST_TIMEOUT_MS": "15000",
+        "EXPO_PUBLIC_COURIER_ID": "30000001",
+        "EXPO_PUBLIC_ALLOW_ALL_COURIER_MOBILE_PERMISSIONS_FOR_TESTING": "false"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production-apk": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_GATEWAY_BASE_URL": "http://103.179.172.53:13000",
+        "EXPO_PUBLIC_REQUEST_TIMEOUT_MS": "15000",
+        "EXPO_PUBLIC_COURIER_ID": "30000001",
+        "EXPO_PUBLIC_ALLOW_ALL_COURIER_MOBILE_PERMISSIONS_FOR_TESTING": "false"
+      },
       "android": {
         "buildType": "apk"
       }
     },
     "production": {
+      "env": {
+        "EXPO_PUBLIC_GATEWAY_BASE_URL": "http://103.179.172.53:13000",
+        "EXPO_PUBLIC_REQUEST_TIMEOUT_MS": "15000",
+        "EXPO_PUBLIC_COURIER_ID": "30000001",
+        "EXPO_PUBLIC_ALLOW_ALL_COURIER_MOBILE_PERMISSIONS_FOR_TESTING": "false"
+      },
       "android": {
         "buildType": "app-bundle"
       }

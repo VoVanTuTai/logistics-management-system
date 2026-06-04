@@ -1,0 +1,142 @@
+<mxfile host="app.diagrams.net" agent="Codex">
+  <diagram id="nexus-express-database-per-service" name="Database Per Service">
+    <mxGraphModel dx="1134" dy="780" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=22;fontStyle=1;fontColor=#171717;" value="NGUYÊN TẮC TỔ CHỨC DỮ LIỆU&lt;br&gt;&lt;font style=&quot;font-size: 15px; font-weight: 400;&quot;&gt;Database per Service - Nexus Express System&lt;/font&gt;" vertex="1">
+          <mxGeometry height="62" width="717" x="55" y="26" as="geometry" />
+        </mxCell>
+        <mxCell id="principle" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;strokeWidth=2;arcSize=8;fontSize=15;fontStyle=1;fontColor=#333333;spacing=10;" value="Nguyên tắc chính&lt;br&gt;&lt;font style=&quot;font-size: 11px; font-weight: 400;&quot;&gt;Mỗi service sở hữu dữ liệu của miền nghiệp vụ riêng. Service khác không truy cập trực tiếp database của service đó.&lt;/font&gt;" vertex="1">
+          <mxGeometry height="62" width="667" x="80" y="112" as="geometry" />
+        </mxCell>
+        <mxCell id="serviceLayer" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAFAFA;strokeColor=#777777;strokeWidth=2;arcSize=8;fontSize=15;fontStyle=1;fontColor=#333333;verticalAlign=top;spacingTop=10;" value="Lớp domain service" vertex="1">
+          <mxGeometry height="725" width="355" x="45" y="215" as="geometry" />
+        </mxCell>
+        <mxCell id="dbLayer" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAFAFA;strokeColor=#777777;strokeWidth=2;arcSize=8;fontSize=15;fontStyle=1;fontColor=#333333;verticalAlign=top;spacingTop=10;" value="Lớp database riêng theo service" vertex="1">
+          <mxGeometry height="725" width="355" x="427" y="215" as="geometry" />
+        </mxCell>
+        <mxCell id="authService" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFEFEF;strokeColor=#555555;strokeWidth=1.8;arcSize=8;fontSize=12;fontStyle=1;fontColor=#333333;" value="auth-service" vertex="1">
+          <mxGeometry height="34" width="140" x="75" y="266" as="geometry" />
+        </mxCell>
+        <mxCell id="authDb" parent="1" style="shape=cylinder3d;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=13;fillColor=#F2F2F2;strokeColor=#555555;strokeWidth=1.8;fontSize=12;fontStyle=1;fontColor=#333333;spacing=5;" value="auth_db&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;User, session, token&lt;/font&gt;" vertex="1">
+          <mxGeometry height="48" width="150" x="548" y="259" as="geometry" />
+        </mxCell>
+        <mxCell id="masterdataService" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFEFEF;strokeColor=#555555;strokeWidth=1.8;arcSize=8;fontSize=12;fontStyle=1;fontColor=#333333;" value="masterdata-service" vertex="1">
+          <mxGeometry height="34" width="140" x="75" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="masterdataDb" parent="1" style="shape=cylinder3d;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=13;fillColor=#F2F2F2;strokeColor=#555555;strokeWidth=1.8;fontSize=12;fontStyle=1;fontColor=#333333;spacing=5;" value="masterdata_db&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;Hub, zone, config&lt;/font&gt;" vertex="1">
+          <mxGeometry height="48" width="150" x="548" y="323" as="geometry" />
+        </mxCell>
+        <mxCell id="shipmentService" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8E8E8;strokeColor=#222222;strokeWidth=1.8;arcSize=8;fontSize=12;fontStyle=1;fontColor=#222222;" value="shipment-service" vertex="1">
+          <mxGeometry height="34" width="140" x="75" y="385" as="geometry" />
+        </mxCell>
+        <mxCell id="shipmentDb" parent="1" style="shape=cylinder3d;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=13;fillColor=#EDEDED;strokeColor=#222222;strokeWidth=1.8;fontSize=12;fontStyle=1;fontColor=#222222;spacing=5;" value="shipment_db&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;Shipment, status&lt;/font&gt;" vertex="1">
+          <mxGeometry height="48" width="150" x="548" y="378" as="geometry" />
+        </mxCell>
+        <mxCell id="pickupService" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFEFEF;strokeColor=#555555;strokeWidth=1.8;arcSize=8;fontSize=12;fontStyle=1;fontColor=#333333;" value="pickup-service" vertex="1">
+          <mxGeometry height="34" width="140" x="75" y="440" as="geometry" />
+        </mxCell>
+        <mxCell id="pickupDb" parent="1" style="shape=cylinder3d;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=13;fillColor=#F2F2F2;strokeColor=#555555;strokeWidth=1.8;fontSize=12;fontStyle=1;fontColor=#333333;spacing=5;" value="pickup_db&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;Pickup request/item&lt;/font&gt;" vertex="1">
+          <mxGeometry height="48" width="150" x="548" y="433" as="geometry" />
+        </mxCell>
+        <mxCell id="dispatchService" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFEFEF;strokeColor=#555555;strokeWidth=1.8;arcSize=8;fontSize=12;fontStyle=1;fontColor=#333333;" value="dispatch-service" vertex="1">
+          <mxGeometry height="34" width="140" x="75" y="495" as="geometry" />
+        </mxCell>
+        <mxCell id="dispatchDb" parent="1" style="shape=cylinder3d;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=13;fillColor=#F2F2F2;strokeColor=#555555;strokeWidth=1.8;fontSize=12;fontStyle=1;fontColor=#333333;spacing=5;" value="dispatch_db&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;Task, assignment&lt;/font&gt;" vertex="1">
+          <mxGeometry height="48" width="150" x="548" y="488" as="geometry" />
+        </mxCell>
+        <mxCell id="manifestService" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFEFEF;strokeColor=#555555;strokeWidth=1.8;arcSize=8;fontSize=12;fontStyle=1;fontColor=#333333;" value="manifest-service" vertex="1">
+          <mxGeometry height="34" width="140" x="75" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="manifestDb" parent="1" style="shape=cylinder3d;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=13;fillColor=#F2F2F2;strokeColor=#555555;strokeWidth=1.8;fontSize=12;fontStyle=1;fontColor=#333333;spacing=5;" value="manifest_db&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;Manifest, bag, seal&lt;/font&gt;" vertex="1">
+          <mxGeometry height="48" width="150" x="548" y="543" as="geometry" />
+        </mxCell>
+        <mxCell id="scanService" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8E8E8;strokeColor=#222222;strokeWidth=1.8;arcSize=8;fontSize=12;fontStyle=1;fontColor=#222222;" value="scan-service" vertex="1">
+          <mxGeometry height="34" width="140" x="75" y="605" as="geometry" />
+        </mxCell>
+        <mxCell id="scanDb" parent="1" style="shape=cylinder3d;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=13;fillColor=#EDEDED;strokeColor=#222222;strokeWidth=1.8;fontSize=12;fontStyle=1;fontColor=#222222;spacing=5;" value="scan_db&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;Scan, location&lt;/font&gt;" vertex="1">
+          <mxGeometry height="48" width="150" x="548" y="598" as="geometry" />
+        </mxCell>
+        <mxCell id="deliveryService" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFEFEF;strokeColor=#555555;strokeWidth=1.8;arcSize=8;fontSize=12;fontStyle=1;fontColor=#333333;" value="delivery-service" vertex="1">
+          <mxGeometry height="34" width="140" x="75" y="660" as="geometry" />
+        </mxCell>
+        <mxCell id="deliveryDb" parent="1" style="shape=cylinder3d;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=13;fillColor=#F2F2F2;strokeColor=#555555;strokeWidth=1.8;fontSize=12;fontStyle=1;fontColor=#333333;spacing=5;" value="delivery_db&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;POD, NDR, return&lt;/font&gt;" vertex="1">
+          <mxGeometry height="48" width="150" x="548" y="653" as="geometry" />
+        </mxCell>
+        <mxCell id="paymentService" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8E8E8;strokeColor=#222222;strokeWidth=1.8;arcSize=8;fontSize=12;fontStyle=1;fontColor=#222222;" value="payment-service" vertex="1">
+          <mxGeometry height="34" width="140" x="75" y="715" as="geometry" />
+        </mxCell>
+        <mxCell id="paymentDb" parent="1" style="shape=cylinder3d;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=13;fillColor=#EDEDED;strokeColor=#222222;strokeWidth=1.8;fontSize=12;fontStyle=1;fontColor=#222222;spacing=5;" value="payment_db&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;COD settlement&lt;/font&gt;" vertex="1">
+          <mxGeometry height="48" width="150" x="548" y="708" as="geometry" />
+        </mxCell>
+        <mxCell id="trackingService" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFEFEF;strokeColor=#555555;strokeWidth=1.8;arcSize=8;fontSize=12;fontStyle=1;fontColor=#333333;" value="tracking-service" vertex="1">
+          <mxGeometry height="34" width="140" x="75" y="770" as="geometry" />
+        </mxCell>
+        <mxCell id="trackingDb" parent="1" style="shape=cylinder3d;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=13;fillColor=#F2F2F2;strokeColor=#555555;strokeWidth=1.8;fontSize=12;fontStyle=1;fontColor=#333333;spacing=5;" value="tracking_db&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;Timeline read model&lt;/font&gt;" vertex="1">
+          <mxGeometry height="48" width="150" x="548" y="763" as="geometry" />
+        </mxCell>
+        <mxCell id="reportingService" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFEFEF;strokeColor=#555555;strokeWidth=1.8;arcSize=8;fontSize=12;fontStyle=1;fontColor=#333333;" value="reporting-service" vertex="1">
+          <mxGeometry height="34" width="140" x="75" y="825" as="geometry" />
+        </mxCell>
+        <mxCell id="reportingDb" parent="1" style="shape=cylinder3d;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=13;fillColor=#F2F2F2;strokeColor=#555555;strokeWidth=1.8;fontSize=12;fontStyle=1;fontColor=#333333;spacing=5;" value="reporting_db&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;KPI, projection&lt;/font&gt;" vertex="1">
+          <mxGeometry height="48" width="150" x="548" y="818" as="geometry" />
+        </mxCell>
+        <mxCell id="gatewayBox" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFEFEF;strokeColor=#555555;strokeWidth=1.8;arcSize=8;fontSize=12;fontStyle=1;fontColor=#333333;" value="gateway-bff&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;Chat module&lt;/font&gt;" vertex="1">
+          <mxGeometry height="46" width="130" x="238" y="878" as="geometry" />
+        </mxCell>
+        <mxCell id="chatDb" parent="1" style="shape=cylinder3d;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=13;fillColor=#F2F2F2;strokeColor=#555555;strokeWidth=1.8;fontSize=12;fontStyle=1;fontColor=#333333;spacing=5;" value="chat_db&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;Conversation/message&lt;/font&gt;" vertex="1">
+          <mxGeometry height="48" width="120" x="548" y="878" as="geometry" />
+        </mxCell>
+        <mxCell id="pricingNoDb" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#777777;strokeWidth=1.6;dashed=1;arcSize=8;fontSize=12;fontStyle=1;fontColor=#333333;spacing=6;" value="pricing-service&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;Không có DB riêng&lt;/font&gt;" vertex="1">
+          <mxGeometry height="46" width="130" x="75" y="878" as="geometry" />
+        </mxCell>
+        <mxCell id="postgresNote" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAAAAA;strokeWidth=1.5;arcSize=8;fontSize=12;fontStyle=1;fontColor=#333333;align=center;spacing=7;" value="Cùng một PostgreSQL instance có thể chứa nhiều database riêng&lt;br&gt;&lt;font style=&quot;font-size: 10px; font-weight: 400;&quot;&gt;Trong triển khai local/prod hiện tại, các database được khởi tạo riêng theo service nhưng chạy chung trên PostgreSQL container.&lt;/font&gt;" vertex="1">
+          <mxGeometry height="48" width="667" x="80" y="970" as="geometry" />
+        </mxCell>
+        <mxCell id="ruleBox" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;strokeWidth=2;arcSize=8;fontSize=13;fontStyle=1;fontColor=#333333;align=center;spacing=8;" value="Quy tắc trao đổi dữ liệu&lt;br&gt;&lt;font style=&quot;font-size: 10px; font-weight: 400;&quot;&gt;Không join trực tiếp cross-database. Service cần dữ liệu của service khác phải đi qua API nội bộ hoặc domain event. Tracking/reporting là read model được dựng từ event.&lt;/font&gt;" vertex="1">
+          <mxGeometry height="58" width="667" x="80" y="1040" as="geometry" />
+        </mxCell>
+        <mxCell id="linehaulNote" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#BBBBBB;strokeWidth=1.4;dashed=1;arcSize=8;fontSize=10;fontColor=#444444;align=center;spacing=6;" value="Ghi chú: module linehaul hiện chưa có database riêng trong compose chính; nghiệp vụ chuyến xe đang phối hợp qua manifest/scan." vertex="1">
+          <mxGeometry height="28" width="617" x="105" y="1110" as="geometry" />
+        </mxCell>
+        <mxCell id="edgeAuth" edge="1" parent="1" source="authService" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#555555;strokeWidth=1.8;endArrow=block;endFill=1;fontSize=10;fontColor=#333333;" target="authDb" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edgeMasterdata" edge="1" parent="1" source="masterdataService" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#555555;strokeWidth=1.8;endArrow=block;endFill=1;fontSize=10;fontColor=#333333;" target="masterdataDb" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edgeShipment" edge="1" parent="1" source="shipmentService" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#222222;strokeWidth=1.8;endArrow=block;endFill=1;fontSize=10;fontColor=#222222;" target="shipmentDb" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edgePickup" edge="1" parent="1" source="pickupService" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#555555;strokeWidth=1.8;endArrow=block;endFill=1;fontSize=10;fontColor=#333333;" target="pickupDb" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edgeDispatch" edge="1" parent="1" source="dispatchService" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#555555;strokeWidth=1.8;endArrow=block;endFill=1;fontSize=10;fontColor=#333333;" target="dispatchDb" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edgeManifest" edge="1" parent="1" source="manifestService" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#555555;strokeWidth=1.8;endArrow=block;endFill=1;fontSize=10;fontColor=#333333;" target="manifestDb" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edgeScan" edge="1" parent="1" source="scanService" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#222222;strokeWidth=1.8;endArrow=block;endFill=1;fontSize=10;fontColor=#222222;" target="scanDb" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edgeDelivery" edge="1" parent="1" source="deliveryService" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#555555;strokeWidth=1.8;endArrow=block;endFill=1;fontSize=10;fontColor=#333333;" target="deliveryDb" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edgePayment" edge="1" parent="1" source="paymentService" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#222222;strokeWidth=1.8;endArrow=block;endFill=1;fontSize=10;fontColor=#222222;" target="paymentDb" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edgeTracking" edge="1" parent="1" source="trackingService" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#555555;strokeWidth=1.8;dashed=1;endArrow=block;endFill=1;fontSize=10;fontColor=#333333;" target="trackingDb" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edgeReporting" edge="1" parent="1" source="reportingService" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#555555;strokeWidth=1.8;dashed=1;endArrow=block;endFill=1;fontSize=10;fontColor=#333333;" target="reportingDb" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edgeChat" edge="1" parent="1" source="gatewayBox" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#555555;strokeWidth=1.8;endArrow=block;endFill=1;fontSize=10;fontColor=#333333;" target="chatDb" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -18,13 +18,17 @@ import {
 import { manifestApi } from '../../features/manifest/manifest.api';
 import type { BagManifestDto } from '../../features/manifest/manifest.types';
 import { parsePickupScannedCode } from '../../features/scan/pickup.scanner.adapter';
+import { resolveShipmentScanCode } from '../../features/scan/shipment-code';
 import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
 import { resolveCourierDisplayName, resolveCourierId, buildBagUnsealAuditNote } from '../../utils/courier';
 import { appEnv } from '../../utils/env';
+import { playScanSuccessSound, playScanWarningSound } from '../../utils/scanSoundFeedback';
 
 interface RemovedShipmentItem {
   code: string;
+  scannedCode: string;
+  isReturnLabel: boolean;
   scannedAt: string;
 }
 
@@ -110,15 +114,18 @@ export function BagUnsealScreen(): React.JSX.Element {
   const appendRemovedShipmentCode = React.useCallback(
     (rawCode: string) => {
       if (!hasValidBagCode) {
+        playScanWarningSound();
         setScreenMessage('Vui lòng quét hoặc nhập tem bao hợp lệ trước khi quét mã vận đơn.');
         return;
       }
 
-      const normalizedCode = normalizeCode(rawCode);
-      if (!normalizedCode) {
+      const scanCode = resolveShipmentScanCode(rawCode);
+      if (!scanCode) {
+        playScanWarningSound();
         setScreenMessage('Mã vận đơn không hợp lệ.');
         return;
       }
+      const normalizedCode = scanCode.shipmentCode;
 
       setRemovedShipments((currentItems) => {
         const duplicated = currentItems.some(
@@ -126,16 +133,24 @@ export function BagUnsealScreen(): React.JSX.Element {
         );
 
         if (duplicated) {
+          playScanWarningSound();
           setScreenMessage(`Mã vận đơn ${normalizedCode} đã có trong danh sách gỡ bao.`);
           return currentItems;
         }
 
         setShipmentCodeInput('');
-        setScreenMessage(`Đã thêm mã vận đơn ${normalizedCode} vào danh sách gỡ bao.`);
+        playScanSuccessSound();
+        setScreenMessage(
+          scanCode.isReturnLabel
+            ? `Đã thêm tem hoàn ${scanCode.scannedCode} (đối soát mã gốc ${normalizedCode}) vào danh sách gỡ bao.`
+            : `Đã thêm mã vận đơn ${normalizedCode} vào danh sách gỡ bao.`,
+        );
 
         return [
           {
             code: normalizedCode,
+            scannedCode: scanCode.scannedCode,
+            isReturnLabel: scanCode.isReturnLabel,
             scannedAt: new Date().toISOString(),
           },
           ...currentItems,
@@ -158,6 +173,7 @@ export function BagUnsealScreen(): React.JSX.Element {
     });
 
     if (!parsed) {
+      playScanWarningSound();
       setScreenMessage('Không đọc được mã hợp lệ. Vui lòng thử lại.');
       return;
     }
@@ -165,11 +181,12 @@ export function BagUnsealScreen(): React.JSX.Element {
     const normalizedValue = normalizeCode(parsed.value);
     if (isValidBagCode(normalizedValue)) {
       setBagCode(normalizedValue);
+      playScanSuccessSound();
       setScreenMessage(`Đã nhận tem bao ${normalizedValue}.`);
       return;
     }
 
-    appendRemovedShipmentCode(normalizedValue);
+    appendRemovedShipmentCode(parsed.value);
   };
 
   const addShipmentManually = () => {
@@ -368,7 +385,7 @@ export function BagUnsealScreen(): React.JSX.Element {
             <TextInput
               value={shipmentCodeInput}
               onChangeText={setShipmentCodeInput}
-              placeholder="Nhập hoặc quét mã vận đơn"
+              placeholder="Nhập/quét mã vận đơn hoặc tem hoàn -R"
               placeholderTextColor="#9CA3AF"
               style={[
                 styles.fieldInput,
@@ -428,6 +445,11 @@ export function BagUnsealScreen(): React.JSX.Element {
                   </View>
                   <View style={styles.listBody}>
                     <Text style={styles.shipmentCodeText}>{item.code}</Text>
+                    {item.isReturnLabel ? (
+                      <Text style={styles.returnLabelText}>
+                        Tem hoàn: {item.scannedCode}
+                      </Text>
+                    ) : null}
                     <Text style={styles.shipmentTimeText}>
                       Quét lúc {formatScannedAt(item.scannedAt)}
                     </Text>
@@ -703,6 +725,12 @@ const styles = StyleSheet.create({
   shipmentTimeText: {
     color: '#64748B',
     fontSize: 12,
+    marginTop: 2,
+  },
+  returnLabelText: {
+    color: '#0F766E',
+    fontSize: 12,
+    fontWeight: '700',
     marginTop: 2,
   },
   footer: {

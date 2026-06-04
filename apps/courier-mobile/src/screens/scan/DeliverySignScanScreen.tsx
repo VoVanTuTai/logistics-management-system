@@ -15,6 +15,7 @@ import {
 } from 'expo-camera';
 
 import { parsePickupScannedCode } from '../../features/scan/pickup.scanner.adapter';
+import { resolveShipmentScanCode } from '../../features/scan/shipment-code';
 import { shipmentApi } from '../../features/shipment/shipment.api';
 import { tasksApi } from '../../features/tasks/tasks.api';
 import type { TaskDto } from '../../features/tasks/tasks.types';
@@ -23,6 +24,7 @@ import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
 import { resolveCourierId } from '../../utils/courier';
 import { appEnv } from '../../utils/env';
+import { playScanSuccessSound, playScanWarningSound } from '../../utils/scanSoundFeedback';
 
 type Props = NativeStackScreenProps<AppNavigatorParamList, 'DeliverySignScan'>;
 
@@ -93,9 +95,11 @@ export function DeliverySignScanScreen({
 
   const openDeliveryProof = React.useCallback(
     async (rawCode: string) => {
-      const shipmentCode = normalizeCode(rawCode);
+      const scanCode = resolveShipmentScanCode(rawCode);
+      const shipmentCode = scanCode?.shipmentCode ?? '';
 
       if (!shipmentCode) {
+        playScanWarningSound();
         setErrorMessage('Mã vận đơn không hợp lệ.');
         return;
       }
@@ -120,12 +124,14 @@ export function DeliverySignScanScreen({
           deliveryTask = null;
         }
 
+        playScanSuccessSound();
         navigation.replace('DeliveryProof', {
           taskId: deliveryTask?.id,
           taskCode: deliveryTask?.taskCode,
           shipmentCode,
         });
       } catch (error) {
+        playScanWarningSound();
         setErrorMessage(
           `Không tìm thấy hoặc không xác minh được mã ${shipmentCode}: ${toErrorMessage(error)}`,
         );
@@ -162,6 +168,7 @@ export function DeliverySignScanScreen({
     });
 
     if (!parsed) {
+      playScanWarningSound();
       setErrorMessage('Không đọc được mã hợp lệ. Vui lòng thử lại.');
       return;
     }

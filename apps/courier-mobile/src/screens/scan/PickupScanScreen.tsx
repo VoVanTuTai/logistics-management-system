@@ -24,6 +24,7 @@ import type { PickupScanCommand } from '../../features/scan/pickup.types';
 import { useAuthStore } from '../../features/auth/auth.store';
 import { scanApi } from '../../features/scan/scan.api';
 import type { CurrentLocationDto } from '../../features/scan/scan.types';
+import { resolveShipmentScanCode } from '../../features/scan/shipment-code';
 import { shipmentApi } from '../../features/shipment/shipment.api';
 import type { ShipmentDto, ShipmentMetadata } from '../../features/shipment/shipment.types';
 import { tasksApi } from '../../features/tasks/tasks.api';
@@ -35,6 +36,7 @@ import { theme } from '../../theme';
 import { buildPickupReceiveAuditNote, resolveCourierId } from '../../utils/courier';
 import { appEnv } from '../../utils/env';
 import { createIdempotencyKey } from '../../utils/idempotency';
+import { playScanSuccessSound, playScanWarningSound } from '../../utils/scanSoundFeedback';
 
 type Props = NativeStackScreenProps<AppNavigatorParamList, 'PickupScan'>;
 
@@ -234,7 +236,9 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
     [session?.user.hubCodes],
   );
   const receiveHubCode = assignedHubCodes[0] ?? null;
-  const routeShipmentCode = normalizeOptionalCode(route.params?.shipmentCode);
+  const routeShipmentCode =
+    resolveShipmentScanCode(route.params?.shipmentCode)?.shipmentCode ??
+    normalizeOptionalCode(route.params?.shipmentCode);
   const isTaskReceiveMode = Boolean(route.params?.taskId && routeShipmentCode);
 
   const [pickedShipments, setPickedShipments] = React.useState<PickedShipmentItem[]>([]);
@@ -275,9 +279,11 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
 
   const verifyAndAppendShipmentCode = React.useCallback(
     async (rawCode: string) => {
-      const shipmentCode = normalizeCode(rawCode);
+      const scanCode = resolveShipmentScanCode(rawCode);
+      const shipmentCode = scanCode?.shipmentCode ?? '';
 
       if (!shipmentCode) {
+        playScanWarningSound();
         setErrorMessage('Mã vận đơn không hợp lệ.');
         return;
       }
@@ -291,6 +297,7 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
         (item) => normalizeCode(item.code) === shipmentCode,
       );
       if (hasAlreadyScanned) {
+        playScanWarningSound();
         setInfoMessage(`Mã vận đơn ${shipmentCode} đã tồn tại trong danh sách.`);
         return;
       }
@@ -312,6 +319,7 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
         });
 
         if (validationError) {
+          playScanWarningSound();
           setErrorMessage(validationError);
           setInfoMessage(null);
           return;
@@ -335,8 +343,10 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
           ];
         });
 
+        playScanSuccessSound();
         setInfoMessage(`Đã xác nhận và thêm ${shipmentCode} vào danh sách nhận hàng.`);
       } catch (error) {
+        playScanWarningSound();
         setErrorMessage(
           `Không tìm thấy hoặc không xác minh được mã ${shipmentCode}: ${toErrorMessage(error)}`,
         );
@@ -385,6 +395,7 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
     });
 
     if (!parsed) {
+      playScanWarningSound();
       setErrorMessage('Không đọc được mã hợp lệ. Vui lòng thử lại.');
       return;
     }

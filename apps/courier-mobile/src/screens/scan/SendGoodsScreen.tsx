@@ -19,6 +19,7 @@ import { manifestApi } from '../../features/manifest/manifest.api';
 import type { BagManifestDto } from '../../features/manifest/manifest.types';
 import { submitHubScanAction } from '../../features/scan/hub.api';
 import { parsePickupScannedCode } from '../../features/scan/pickup.scanner.adapter';
+import { resolveShipmentScanCode } from '../../features/scan/shipment-code';
 import {
   parseVehicleLabel,
   type VehicleLabelInfo,
@@ -34,12 +35,15 @@ import { theme } from '../../theme';
 import { resolveCourierDisplayName, resolveCourierId } from '../../utils/courier';
 import { appEnv } from '../../utils/env';
 import { createIdempotencyKey } from '../../utils/idempotency';
+import { playScanSuccessSound, playScanWarningSound } from '../../utils/scanSoundFeedback';
 
 type SendItemType = 'BAG' | 'SHIPMENT';
 
 interface SendGoodsItem {
   type: SendItemType;
   code: string;
+  scannedCode: string;
+  isReturnLabel: boolean;
   scannedAt: string;
 }
 
@@ -229,40 +233,53 @@ export function SendGoodsScreen(): React.JSX.Element {
   const appendSendItem = React.useCallback(
     (rawCode: string) => {
       if (!hasVehicleInfo) {
+        playScanWarningSound();
         setScreenMessage('Vui lòng quét tem xe trước khi quét tem bao hoặc mã kiện.');
         return;
       }
 
       const normalizedCode = normalizeCode(rawCode);
       if (!normalizedCode) {
+        playScanWarningSound();
         setScreenMessage('Mã không hợp lệ.');
         return;
       }
 
-      const itemType: SendItemType = isBagCode(normalizedCode) ? 'BAG' : 'SHIPMENT';
+      const isBag = isBagCode(normalizedCode);
+      const shipmentScanCode = isBag ? null : resolveShipmentScanCode(rawCode);
+      if (!isBag && !shipmentScanCode) {
+        playScanWarningSound();
+        setScreenMessage('Mã kiện không hợp lệ.');
+        return;
+      }
+
+      const nextItem: SendGoodsItem = {
+        type: isBag ? 'BAG' : 'SHIPMENT',
+        code: isBag ? normalizedCode : shipmentScanCode?.shipmentCode ?? normalizedCode,
+        scannedCode: isBag ? normalizedCode : shipmentScanCode?.scannedCode ?? normalizedCode,
+        isReturnLabel: shipmentScanCode?.isReturnLabel ?? false,
+        scannedAt: new Date().toISOString(),
+      };
 
       setItems((currentItems) => {
-        const duplicated = currentItems.some((item) => item.code === normalizedCode);
+        const duplicated = currentItems.some((item) => item.code === nextItem.code);
         if (duplicated) {
-          setScreenMessage(`${normalizedCode} đã có trong danh sách gửi hàng.`);
+          playScanWarningSound();
+          setScreenMessage(`${nextItem.code} đã có trong danh sách gửi hàng.`);
           return currentItems;
         }
 
         setManualCodeInput('');
+        playScanSuccessSound();
         setScreenMessage(
-          itemType === 'BAG'
-            ? `Đã thêm tem bao ${normalizedCode}.`
-            : `Đã thêm kiện rời ${normalizedCode}.`,
+          nextItem.type === 'BAG'
+            ? `Đã thêm tem bao ${nextItem.code}.`
+            : nextItem.isReturnLabel
+              ? `Đã thêm tem hoàn ${nextItem.scannedCode} (đối soát mã gốc ${nextItem.code}).`
+              : `Đã thêm kiện rời ${nextItem.code}.`,
         );
 
-        return [
-          {
-            type: itemType,
-            code: normalizedCode,
-            scannedAt: new Date().toISOString(),
-          },
-          ...currentItems,
-        ];
+        return [nextItem, ...currentItems];
       });
     },
     [hasVehicleInfo],
@@ -276,6 +293,7 @@ export function SendGoodsScreen(): React.JSX.Element {
 
     const nextVehicleInfo = parseVehicleLabel(rawValue);
     if (!nextVehicleInfo) {
+      playScanWarningSound();
       setScreenMessage('Tem xe không hợp lệ. Vui lòng quét hoặc nhập đúng mã tem xe.');
       return;
     }
@@ -285,10 +303,12 @@ export function SendGoodsScreen(): React.JSX.Element {
       const syncedVehicleInfo = buildSyncedVehicleInfo(nextVehicleInfo, manifest);
       setVehicleInfo(syncedVehicleInfo);
       setManualVehicleInput('');
+      playScanSuccessSound();
       setScreenMessage(`Đã nhận tem xe ${syncedVehicleInfo.vehicleCode} từ hệ thống.`);
     } catch (error) {
       if (error instanceof ApiClientError && error.status === 404) {
         setVehicleInfo(null);
+        playScanWarningSound();
         setScreenMessage(
           `Tem xe ${nextVehicleInfo.vehicleCode} chưa được tạo hoặc chưa đồng bộ trên Ops Web. Vui lòng tạo tem xe ở Ops rồi quét lại.`,
         );
@@ -296,6 +316,7 @@ export function SendGoodsScreen(): React.JSX.Element {
       }
 
       const message = error instanceof Error ? error.message : 'Không kiểm tra được tem xe.';
+      playScanWarningSound();
       setScreenMessage(message);
       setGlobalError(message);
     }
@@ -320,6 +341,7 @@ export function SendGoodsScreen(): React.JSX.Element {
     }
 
     if (!parsed) {
+      playScanWarningSound();
       setScreenMessage('Không đọc được mã tem bao/kiện hợp lệ. Vui lòng thử lại.');
       return;
     }
@@ -666,7 +688,7 @@ export function SendGoodsScreen(): React.JSX.Element {
             <TextInput
               value={manualCodeInput}
               onChangeText={setManualCodeInput}
-              placeholder="MB1234567890 hoặc SHP..."
+              placeholder="MB1234567890, mã kiện hoặc tem hoàn -R"
               placeholderTextColor="#9CA3AF"
               style={[
                 styles.fieldInput,
@@ -734,6 +756,11 @@ export function SendGoodsScreen(): React.JSX.Element {
                     <Text style={styles.itemTimeText}>
                       Quét lúc {formatScannedAt(item.scannedAt)}
                     </Text>
+                    {item.isReturnLabel ? (
+                      <Text style={styles.returnLabelText}>
+                        Tem hoàn: {item.scannedCode}
+                      </Text>
+                    ) : null}
                   </View>
                 </Pressable>
               );
@@ -1087,6 +1114,12 @@ const styles = StyleSheet.create({
     color: '#111827',
     fontSize: 14,
     fontWeight: '700',
+  },
+  returnLabelText: {
+    color: '#0F766E',
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 2,
   },
   itemTypeBadge: {
     borderRadius: 999,

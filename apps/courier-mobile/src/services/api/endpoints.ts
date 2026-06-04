@@ -9,7 +9,7 @@ export const courierEndpoints = {
     introspect: `${COURIER_PREFIX}/auth/auth/introspect`,
     users: `${COURIER_PREFIX}/auth/auth/users`,
     mobilePermissionEffective: (userId: string) =>
-      `${COURIER_PREFIX}/auth/mobile-permissions/users/${encodeURIComponent(
+      `${COURIER_PREFIX}/auth/auth/mobile-permissions/users/${encodeURIComponent(
         userId,
       )}/effective`,
   },

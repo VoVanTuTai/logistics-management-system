@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 
 import {
   type PublicTrackingView,
@@ -14,7 +14,17 @@ export class PublicTrackingController {
   @Get(':shipmentCode')
   getByShipmentCode(
     @Param('shipmentCode') shipmentCode: string,
+    @Query() query: PublicTrackingLookupQuery,
   ): Promise<PublicTrackingView> {
-    return this.trackingQueryProjection.getPublicTracking(shipmentCode);
+    return this.trackingQueryProjection.getPublicTracking(
+      shipmentCode,
+      query.receiverPhone ?? query.phone ?? query.recipientPhone,
+    );
   }
+}
+
+interface PublicTrackingLookupQuery {
+  receiverPhone?: string;
+  phone?: string;
+  recipientPhone?: string;
 }
