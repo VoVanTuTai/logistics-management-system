@@ -3,8 +3,6 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
-RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
-
 ARG EXPO_PUBLIC_GATEWAY_BASE_URL
 ARG EXPO_PUBLIC_REQUEST_TIMEOUT_MS=15000
 ARG EXPO_PUBLIC_COURIER_ID=
@@ -15,11 +13,11 @@ ENV EXPO_NO_DEPENDENCY_VALIDATION=1
 ENV EXPO_NO_DOCTOR=1
 ENV EXPO_NO_METRO_WORKSPACE_ROOT=1
 
-COPY package.json pnpm-lock.yaml ./
-RUN --mount=type=cache,id=pnpm-courier-mobile,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile
+COPY package.json package-lock.json ./
+RUN --mount=type=cache,id=npm-courier-mobile,target=/root/.npm npm ci
 
 COPY . .
-RUN pnpm build:web
+RUN npm run build:web
 
 FROM nginx:1.27-alpine AS runtime
 

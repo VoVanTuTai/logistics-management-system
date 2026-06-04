@@ -49,6 +49,7 @@ import {
 } from '../../utils/courier';
 import { appEnv } from '../../utils/env';
 import { createIdempotencyKey } from '../../utils/idempotency';
+import { playScanSuccessSound, playScanWarningSound } from '../../utils/scanSoundFeedback';
 
 type VehicleInboundStep = 'VEHICLE' | 'PROOF' | 'SEAL';
 
@@ -234,6 +235,7 @@ export function VehicleInboundScreen(): React.JSX.Element {
   const appendSealCode = React.useCallback((rawCode: string) => {
     const normalizedCode = normalizeCode(rawCode);
     if (!normalizedCode) {
+      playScanWarningSound();
       setScreenMessage('Mã seal xe không hợp lệ.');
       return;
     }
@@ -241,10 +243,12 @@ export function VehicleInboundScreen(): React.JSX.Element {
     setSealCodes((currentCodes) => {
       const duplicated = currentCodes.some((item) => item.code === normalizedCode);
       if (duplicated) {
+        playScanWarningSound();
         setScreenMessage(`${normalizedCode} đã có trong danh sách seal xe.`);
         return currentCodes;
       }
 
+      playScanSuccessSound();
       setScreenMessage(`Đã thêm seal xe ${normalizedCode}.`);
       return [
         {
@@ -264,6 +268,7 @@ export function VehicleInboundScreen(): React.JSX.Element {
 
     const nextVehicleInfo = parseVehicleLabel(rawValue);
     if (!nextVehicleInfo) {
+      playScanWarningSound();
       setScreenMessage('Tem xe không hợp lệ. Vui lòng quét đúng mã tem xe.');
       return;
     }
@@ -277,6 +282,7 @@ export function VehicleInboundScreen(): React.JSX.Element {
         setVehicleLoadRecord(null);
         setDepartureRecord(null);
         setManifestSealCodes([]);
+        playScanWarningSound();
         setScreenMessage(
           `Tem xe ${nextVehicleInfo.vehicleCode} chưa được tạo hoặc chưa đồng bộ trên Ops Web. Vui lòng tạo tem xe ở Ops rồi quét lại.`,
         );
@@ -284,6 +290,7 @@ export function VehicleInboundScreen(): React.JSX.Element {
       }
 
       const message = toErrorMessage(error);
+      playScanWarningSound();
       setScreenMessage(message);
       setGlobalError(message);
       return;
@@ -304,6 +311,7 @@ export function VehicleInboundScreen(): React.JSX.Element {
     setVehicleLoadRecord(nextLoadRecord);
     setDepartureRecord(nextDepartureRecord);
     setManifestSealCodes(nextManifestSealCodes);
+    playScanSuccessSound();
 
     if (!nextDepartureRecord) {
       if (nextManifestSealCodes.length > 0) {

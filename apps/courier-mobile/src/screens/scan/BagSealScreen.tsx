@@ -20,6 +20,7 @@ import type { BagManifestDto } from '../../features/manifest/manifest.types';
 import { parsePickupScannedCode } from '../../features/scan/pickup.scanner.adapter';
 import { scanApi } from '../../features/scan/scan.api';
 import type { CurrentLocationDto } from '../../features/scan/scan.types';
+import { resolveShipmentScanCode } from '../../features/scan/shipment-code';
 import { shipmentApi } from '../../features/shipment/shipment.api';
 import type { ShipmentDto, ShipmentMetadata } from '../../features/shipment/shipment.types';
 import { tasksApi } from '../../features/tasks/tasks.api';
@@ -29,9 +30,12 @@ import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
 import { resolveCourierId, buildBagSealAuditNote } from '../../utils/courier';
 import { appEnv } from '../../utils/env';
+import { playScanSuccessSound, playScanWarningSound } from '../../utils/scanSoundFeedback';
 
 interface SealedShipmentItem {
   code: string;
+  scannedCode: string;
+  isReturnLabel: boolean;
   scannedAt: string;
 }
 
@@ -43,7 +47,6 @@ const BAG_BLOCKED_STATUSES = new Set([
   'DELIVERED',
   'DELIVERY_FAILED',
   'NDR_CREATED',
-  'RETURN_STARTED',
   'RETURN_COMPLETED',
   'OUT_FOR_DELIVERY',
   'DELIVERING',
@@ -180,17 +183,24 @@ function validateShipmentForBagSeal(
     assignedHubCodes: string[];
     assignedPickupTasks: TaskDto[];
     currentLocation: CurrentLocationDto | null;
+    isReturnLabel?: boolean;
     shipmentTasks?: TaskDto[];
   },
 ): string | null {
   const shipmentCode = normalizeCode(shipment.code);
   const status = normalizeCode(shipment.currentStatus);
+  const isReturnBagFlow =
+    input.isReturnLabel === true &&
+    (status === 'RETURN_STARTED' ||
+      status === 'DELIVERY_FAILED' ||
+      status === 'NDR_CREATED' ||
+      status === 'EXCEPTION');
 
   if (status === 'CANCELLED') {
     return `Đơn ${shipmentCode} đã bị hủy, không thể đóng bao.`;
   }
 
-  if (BAG_BLOCKED_STATUSES.has(status)) {
+  if (BAG_BLOCKED_STATUSES.has(status) && !isReturnBagFlow) {
     if (status === 'DELIVERED') {
       return `Đơn ${shipmentCode} đã ký nhận, không thể đóng bao.`;
     }
@@ -200,13 +210,17 @@ function validateShipmentForBagSeal(
     return `Đơn ${shipmentCode} đã qua trạng thái đóng bao/xử lý sau đó (${shipment.currentStatus}).`;
   }
 
+  if (status === 'RETURN_STARTED' && !input.isReturnLabel) {
+    return `Đơn ${shipmentCode} đang trong luồng chuyển hoàn. Vui lòng quét tem hoàn ${shipmentCode}-R để đóng bao.`;
+  }
+
   const hasActiveDeliveryTask = input.shipmentTasks?.some(
     (task) =>
       task.taskType === 'DELIVERY' &&
       (task.status === 'CREATED' || task.status === 'ASSIGNED'),
   );
 
-  if (hasActiveDeliveryTask) {
+  if (hasActiveDeliveryTask && !isReturnBagFlow) {
     return `Đơn ${shipmentCode} đang phát hàng, không thể đóng bao.`;
   }
 
@@ -214,6 +228,7 @@ function validateShipmentForBagSeal(
     status === 'PICKUP_COMPLETED' ||
     status === 'SCAN_INBOUND' ||
     status === 'INVENTORY_CHECK' ||
+    isReturnBagFlow ||
     Boolean(input.currentLocation?.lastScanType);
 
   if (!isAtHub) {
@@ -221,6 +236,7 @@ function validateShipmentForBagSeal(
   }
 
   if (
+    !isReturnBagFlow &&
     input.currentLocation?.lastScanType &&
     input.currentLocation.lastScanType !== 'PICKUP' &&
     input.currentLocation.lastScanType !== 'INBOUND'
@@ -310,17 +326,21 @@ export function BagSealScreen(): React.JSX.Element {
       }
 
       if (!hasValidBagCode) {
+        playScanWarningSound();
         setScreenMessage('Vui lòng quét hoặc nhập tem bao hợp lệ trước khi quét mã vận đơn.');
         return;
       }
 
-      const normalizedCode = normalizeCode(rawCode);
-      if (!normalizedCode) {
+      const scanCode = resolveShipmentScanCode(rawCode);
+      if (!scanCode) {
+        playScanWarningSound();
         setScreenMessage('Mã vận đơn không hợp lệ.');
         return;
       }
+      const normalizedCode = scanCode.shipmentCode;
 
       if (shipments.some((item) => normalizeCode(item.code) === normalizedCode)) {
+        playScanWarningSound();
         setScreenMessage(`Mã vận đơn ${normalizedCode} đã có trong danh sách.`);
         return;
       }
@@ -341,10 +361,12 @@ export function BagSealScreen(): React.JSX.Element {
           assignedHubCodes,
           assignedPickupTasks,
           currentLocation,
+          isReturnLabel: scanCode.isReturnLabel,
           shipmentTasks,
         });
 
         if (validationError) {
+          playScanWarningSound();
           setScreenMessage(validationError);
           return;
         }
@@ -352,13 +374,21 @@ export function BagSealScreen(): React.JSX.Element {
         setShipments((currentItems) => [
           {
             code: normalizedCode,
+            scannedCode: scanCode.scannedCode,
+            isReturnLabel: scanCode.isReturnLabel,
             scannedAt: new Date().toISOString(),
           },
           ...currentItems,
         ]);
         setShipmentCodeInput('');
-        setScreenMessage(`Đã thêm mã vận đơn ${normalizedCode} vào danh sách đóng bao.`);
+        playScanSuccessSound();
+        setScreenMessage(
+          scanCode.isReturnLabel
+            ? `Đã thêm tem hoàn ${scanCode.scannedCode} (đối soát mã gốc ${normalizedCode}) vào danh sách đóng bao.`
+            : `Đã thêm mã vận đơn ${normalizedCode} vào danh sách đóng bao.`,
+        );
       } catch (error) {
+        playScanWarningSound();
         setScreenMessage(
           error instanceof Error
             ? error.message
@@ -391,6 +421,7 @@ export function BagSealScreen(): React.JSX.Element {
     });
 
     if (!parsed) {
+      playScanWarningSound();
       setScreenMessage('Không đọc được mã hợp lệ. Vui lòng thử lại.');
       return;
     }
@@ -398,6 +429,7 @@ export function BagSealScreen(): React.JSX.Element {
     const normalizedValue = normalizeCode(parsed.value);
     if (isValidBagCode(normalizedValue)) {
       setBagCode(normalizedValue);
+      playScanSuccessSound();
       setScreenMessage(`Đã nhận tem bao ${normalizedValue}.`);
       return;
     }
@@ -610,7 +642,7 @@ export function BagSealScreen(): React.JSX.Element {
             <TextInput
               value={shipmentCodeInput}
               onChangeText={setShipmentCodeInput}
-              placeholder="Nhập hoặc quét mã vận đơn"
+              placeholder="Nhập/quét mã vận đơn hoặc tem hoàn -R"
               placeholderTextColor="#9CA3AF"
               style={[
                 styles.fieldInput,
@@ -668,6 +700,11 @@ export function BagSealScreen(): React.JSX.Element {
                   </View>
                   <View style={styles.listBody}>
                     <Text style={styles.shipmentCodeText}>{item.code}</Text>
+                    {item.isReturnLabel ? (
+                      <Text style={styles.returnLabelText}>
+                        Tem hoàn: {item.scannedCode}
+                      </Text>
+                    ) : null}
                     <Text style={styles.shipmentTimeText}>
                       Quét lúc {formatScannedAt(item.scannedAt)}
                     </Text>
@@ -943,6 +980,12 @@ const styles = StyleSheet.create({
   shipmentTimeText: {
     color: '#64748B',
     fontSize: 12,
+    marginTop: 2,
+  },
+  returnLabelText: {
+    color: '#0F766E',
+    fontSize: 12,
+    fontWeight: '700',
     marginTop: 2,
   },
   footer: {

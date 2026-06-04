@@ -137,6 +137,7 @@ export function ReturnBlockRegistrationPage(): React.JSX.Element {
   const { data: shipment, isFetching } = useShipmentDetailQuery(accessToken, queryCode);
 
   const [isReasonMenuOpen, setIsReasonMenuOpen] = useState(false);
+  const [returnOrderType, setReturnOrderType] = useState('Chuyển hoàn');
   const [selectedReturnReason, setSelectedReturnReason] = useState('');
   const [returnReasonText, setReturnReasonText] = useState('');
   const [isSubmittingReturn, setIsSubmittingReturn] = useState(false);
@@ -181,8 +182,31 @@ export function ReturnBlockRegistrationPage(): React.JSX.Element {
     setQueryCode('');
     setOriginalSender({});
     setOriginalReceiver({});
+    setReturnOrderType('Chuyển hoàn');
     setSelectedReturnReason('');
     setReturnReasonText('');
+  };
+
+  const buildReturnConfirmationNote = (): string => {
+    const employeeName = session?.user.displayName || session?.user.username || 'N/A';
+    const employeeId = session?.user.username || 'N/A';
+    const hubCode = session?.user.hubCodes?.[0] || 'N/A';
+    const confirmedAt = new Date().toLocaleString('vi-VN');
+
+    return [
+      'Thao tác: Đăng ký chuyển hoàn',
+      `Mã vận đơn gốc: ${queryCode || inputCode.trim().toUpperCase() || 'N/A'}`,
+      `Loại đơn: ${returnOrderType}`,
+      `Loại chuyển hoàn: ${selectedReturnReason || 'Chưa chọn'}`,
+      `Nguyên nhân yêu cầu: ${returnReasonText.trim() || 'Chưa có ghi chú'}`,
+      `Người xác nhận: ${employeeName}`,
+      `Mã nhân viên: ${employeeId}`,
+      `Hub thao tác: ${hubCode}`,
+      `Thời gian xác nhận: ${confirmedAt}`,
+      `Người gửi gốc: ${formatPartyNote(originalSender)}`,
+      `Người nhận gốc: ${formatPartyNote(originalReceiver)}`,
+      `Tuyến hoàn mới: ${formatPartyNote(originalReceiver)} -> ${formatPartyNote(originalSender)}`,
+    ].join('\n');
   };
 
   const handleRegisterReturn = async () => {
@@ -196,10 +220,12 @@ export function ReturnBlockRegistrationPage(): React.JSX.Element {
       return;
     }
 
-    const employeeName = session?.user.displayName || session?.user.username || 'N/A';
-    const employeeId = session?.user.username || 'N/A';
-    const hubCode = session?.user.hubCodes?.[0] || 'N/A';
-    const finalNote = `Đăng ký chuyển hoàn | Nhân viên: ${employeeName} | Mã NV: ${employeeId} | Mã hub: ${hubCode} | Ghi chú: ${returnReasonText}`;
+    if (!selectedReturnReason.trim() || !returnReasonText.trim()) {
+      showToast('Vui lòng chọn loại chuyển hoàn và nhập nguyên nhân yêu cầu.', 'error');
+      return;
+    }
+
+    const finalNote = buildReturnConfirmationNote();
 
     setIsSubmittingReturn(true);
     try {
@@ -272,9 +298,13 @@ export function ReturnBlockRegistrationPage(): React.JSX.Element {
           </label>
           <label className="ops-return-management__field ops-return-management__field--required">
             <span>Loại đơn :</span>
-            <select defaultValue="return" aria-label="Loại đơn">
-              <option value="return">Chuyển hoàn</option>
-              <option value="partial-return">Chuyển hoàn 1 phần</option>
+            <select
+              value={returnOrderType}
+              onChange={(event) => setReturnOrderType(event.target.value)}
+              aria-label="Loại đơn"
+            >
+              <option value="Chuyển hoàn">Chuyển hoàn</option>
+              <option value="Chuyển hoàn 1 phần">Chuyển hoàn 1 phần</option>
             </select>
           </label>
           <div className="ops-return-management__actions">
@@ -362,6 +392,15 @@ export function ReturnBlockRegistrationPage(): React.JSX.Element {
               onChange={(event) => setReturnReasonText(event.target.value)}
             />
           </label>
+
+          <label className="ops-return-management__field ops-return-management__reason">
+            <span>Ghi chú xác nhận thao tác :</span>
+            <textarea
+              aria-label="Ghi chú xác nhận thao tác"
+              value={buildReturnConfirmationNote()}
+              readOnly
+            />
+          </label>
         </div>
       </ReturnPanel>
 
@@ -391,4 +430,17 @@ export function ReturnBlockRegistrationPage(): React.JSX.Element {
       </footer>
     </section>
   );
+}
+
+function formatPartyNote(party: any): string {
+  return [
+    party?.name || 'N/A',
+    party?.phone || 'N/A',
+    party?.address || 'N/A',
+    party?.ward,
+    party?.district,
+    party?.province,
+  ]
+    .filter(Boolean)
+    .join(' - ');
 }

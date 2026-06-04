@@ -65,6 +65,17 @@ async function withEffectiveMobilePermissions(
       session.user.id,
     );
 
+    console.warn(
+      '[permissions] Loaded effective permissions for user',
+      session.user.id,
+      'actor=',
+      effectivePermissions.actor,
+      'hasOverride=',
+      effectivePermissions.hasOverride,
+      'permissions=',
+      JSON.stringify(effectivePermissions.permissions),
+    );
+
     return {
       ...session,
       user: {
@@ -74,7 +85,13 @@ async function withEffectiveMobilePermissions(
         mobilePermissionsLoadedAt: new Date().toISOString(),
       },
     };
-  } catch {
+  } catch (error) {
+    console.warn(
+      '[permissions] FAILED to load effective permissions for user',
+      session.user.id,
+      'error=',
+      error instanceof Error ? error.message : String(error),
+    );
     return session;
   }
 }

@@ -1,8 +1,9 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { theme } from '../../theme';
+import { ADMIN_LOGIN_HERO_IMAGE_URI } from '../../utils/branding';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -41,34 +42,42 @@ export function HomeHeader({
 }: HomeHeaderProps): React.JSX.Element {
   return (
     <View style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.topRow}>
-          <View style={styles.welcomeBlock}>
-            <Text style={styles.greeting}>{greeting}</Text>
-            <Text numberOfLines={1} style={styles.userName}>
-              {userName}
-            </Text>
-            <Text numberOfLines={1} style={styles.hubName}>
-              {hubName}
-            </Text>
+      <ImageBackground
+        source={{ uri: ADMIN_LOGIN_HERO_IMAGE_URI }}
+        resizeMode="cover"
+        style={styles.backgroundImage}
+        imageStyle={styles.backgroundImageInner}
+      >
+        <View style={styles.imageOverlay} />
+        <View style={styles.content}>
+          <View style={styles.topRow}>
+            <View style={styles.welcomeBlock}>
+              <Text style={styles.greeting}>{greeting}</Text>
+              <Text numberOfLines={1} style={styles.userName}>
+                {userName}
+              </Text>
+              <Text numberOfLines={1} style={styles.hubName}>
+                {hubName}
+              </Text>
+            </View>
+
+            <View style={styles.actionsRow}>
+              <HeaderIconButton icon="qr-code-outline" onPress={onPressQr} />
+              <HeaderIconButton
+                icon="notifications-outline"
+                onPress={onPressNotification}
+              />
+            </View>
           </View>
 
-          <View style={styles.actionsRow}>
-            <HeaderIconButton icon="qr-code-outline" onPress={onPressQr} />
-            <HeaderIconButton
-              icon="notifications-outline"
-              onPress={onPressNotification}
-            />
+          <View style={styles.metaRow}>
+            <View style={styles.statusPill}>
+              <Ionicons name="navigate-outline" size={14} color="#B3D7FF" />
+              <Text style={styles.statusText}>Sẵn sàng giao nhận</Text>
+            </View>
           </View>
         </View>
-
-        <View style={styles.metaRow}>
-          <View style={styles.statusPill}>
-            <Ionicons name="navigate-outline" size={14} color="#B3D7FF" />
-            <Text style={styles.statusText}>Sẵn sàng giao nhận</Text>
-          </View>
-        </View>
-      </View>
+      </ImageBackground>
     </View>
   );
 }
@@ -81,6 +90,16 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     minHeight: 180,
     ...theme.shadow.md,
+  },
+  backgroundImage: {
+    minHeight: 180,
+  },
+  backgroundImageInner: {
+    opacity: 0.72,
+  },
+  imageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(18, 38, 86, 0.74)',
   },
   content: {
     paddingHorizontal: theme.spacing.lg,
@@ -150,4 +169,3 @@ const styles = StyleSheet.create({
     color: '#DBEAFE',
   },
 });
-

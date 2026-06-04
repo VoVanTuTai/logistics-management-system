@@ -279,15 +279,14 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
       }
 
       const phone = normalizePhone(rawPhone);
+      if (!phone) {
+        Alert.alert('Không có số điện thoại', 'Số liên hệ của đơn hàng không hợp lệ.');
+        return;
+      }
+
       const targetUrl = kind === 'sms' ? `sms:${phone}` : `tel:${phone}`;
 
       try {
-        const supported = await Linking.canOpenURL(targetUrl);
-        if (!supported) {
-          Alert.alert('Không mở được ứng dụng', `Không thể xử lý: ${targetUrl}`);
-          return;
-        }
-
         await Linking.openURL(targetUrl);
       } catch (error) {
         Alert.alert(

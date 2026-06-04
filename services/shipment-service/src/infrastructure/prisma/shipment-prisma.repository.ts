@@ -318,6 +318,9 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
               buildHubJsonPathScopeFilters(path, hubCode),
             ),
           ),
+          ...hubCodes.flatMap((hubCode) =>
+            buildHubMovementHistoryScopeFilters(hubCode),
+          ),
           {
             AND: [
               {
@@ -389,6 +392,31 @@ function buildArrivedUnsignedWhere(
       },
     ],
   };
+}
+
+function buildHubMovementHistoryScopeFilters(
+  hubCode: string,
+): Prisma.ShipmentWhereInput[] {
+  const filters: Prisma.ShipmentWhereInput[] = [
+    {
+      metadata: {
+        path: ['movement', 'hubCodesText'],
+        string_contains: `|${hubCode}|`,
+      },
+    },
+  ];
+  const provinceScopePrefix = getBranchHubProvinceScopePrefix(hubCode);
+
+  if (provinceScopePrefix) {
+    filters.push({
+      metadata: {
+        path: ['movement', 'hubCodesText'],
+        string_contains: `|${provinceScopePrefix}`,
+      },
+    });
+  }
+
+  return filters;
 }
 
 function buildHubJsonPathScopeFilters(

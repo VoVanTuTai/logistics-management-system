@@ -22,6 +22,7 @@ import {
   RETURN_REASON_OPTIONS,
 } from '../../features/delivery/return-reasons';
 import { parsePickupScannedCode } from '../../features/scan/pickup.scanner.adapter';
+import { resolveShipmentScanCode } from '../../features/scan/shipment-code';
 import { useShipmentDetailQuery } from '../../features/shipment/shipment.queries';
 import type { ShipmentDto, ShipmentMetadata } from '../../features/shipment/shipment.types';
 import type { AppNavigatorParamList } from '../../navigation/types';
@@ -29,6 +30,7 @@ import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
 import { resolveCourierDisplayName, resolveCourierId } from '../../utils/courier';
 import { appEnv } from '../../utils/env';
+import { playScanSuccessSound, playScanWarningSound } from '../../utils/scanSoundFeedback';
 
 type Props = NativeStackScreenProps<AppNavigatorParamList, 'ReturnRegistration'>;
 
@@ -187,7 +189,9 @@ export function ReturnRegistrationScreen({ route }: Props): React.JSX.Element {
   const session = useAppStore((state) => state.session);
   const setGlobalError = useAppStore((state) => state.setGlobalError);
   const accessToken = session?.tokens.accessToken ?? null;
-  const initialShipmentCode = normalizeCode(route.params?.shipmentCode);
+  const initialShipmentCode =
+    resolveShipmentScanCode(route.params?.shipmentCode)?.shipmentCode ??
+    normalizeCode(route.params?.shipmentCode);
   const [inputCode, setInputCode] = React.useState(initialShipmentCode);
   const [queryCode, setQueryCode] = React.useState(initialShipmentCode);
   const [selectedReasonId, setSelectedReasonId] = React.useState<string>(
@@ -250,7 +254,8 @@ export function ReturnRegistrationScreen({ route }: Props): React.JSX.Element {
   }, [ndrCasesQuery.data, shipmentQuery.data]);
 
   const handleSearch = () => {
-    const normalizedCode = normalizeCode(inputCode);
+    const normalizedCode =
+      resolveShipmentScanCode(inputCode)?.shipmentCode ?? normalizeCode(inputCode);
     if (!normalizedCode) {
       setMessage('Vui lòng nhập mã vận đơn.');
       return;
@@ -270,18 +275,25 @@ export function ReturnRegistrationScreen({ route }: Props): React.JSX.Element {
     });
 
     if (!parsed) {
+      playScanWarningSound();
       setScannerError('Không đọc được mã hợp lệ. Vui lòng thử lại.');
       return;
     }
 
-    const normalizedCode = normalizeCode(parsed.value);
+    const scanCode = resolveShipmentScanCode(parsed.value);
+    const normalizedCode = scanCode?.shipmentCode ?? normalizeCode(parsed.value);
+    playScanSuccessSound();
     setInputCode(normalizedCode);
     setQueryCode(normalizedCode);
     setLinkedNdrCaseId(null);
     setHasWorkflowReason(false);
     setScannerError(null);
     setScannerVisible(false);
-    setMessage(`Đã quét vận đơn ${normalizedCode}.`);
+    setMessage(
+      scanCode?.isReturnLabel
+        ? `Đã quét tem hoàn ${scanCode.scannedCode}, đối soát mã gốc ${normalizedCode}.`
+        : `Đã quét vận đơn ${normalizedCode}.`,
+    );
   };
 
   const resetForm = () => {
@@ -296,7 +308,9 @@ export function ReturnRegistrationScreen({ route }: Props): React.JSX.Element {
   };
 
   const submitReturnRegistration = async () => {
-    const normalizedCode = normalizeCode(queryCode || inputCode);
+    const normalizedCode =
+      resolveShipmentScanCode(queryCode || inputCode)?.shipmentCode ??
+      normalizeCode(queryCode || inputCode);
     const finalReason = reasonText.trim() || selectedReason.label;
 
     if (!accessToken) {
