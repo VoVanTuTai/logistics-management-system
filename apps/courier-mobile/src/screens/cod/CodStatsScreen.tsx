@@ -35,57 +35,6 @@ type Props = NativeStackScreenProps<AppNavigatorParamList, 'CodStats'>;
 function formatVnd(amount: number): string {
   return amount.toLocaleString('vi-VN') + 'đ';
 }
-
-function statusLabel(status: string): string {
-  switch (status) {
-    case 'PENDING':
-      return 'Chờ thu';
-    case 'COLLECTED':
-      return 'Đã thu';
-    case 'REMITTED':
-      return 'Đã nộp';
-    case 'FAILED':
-      return 'Thất bại';
-    default:
-      return status;
-  }
-}
-
-function statusColor(status: string): { bg: string; text: string } {
-  switch (status) {
-    case 'PENDING':
-      return { bg: '#FEF3C7', text: '#92400E' };
-    case 'COLLECTED':
-      return { bg: '#D1FAE5', text: '#065F46' };
-    case 'REMITTED':
-      return { bg: '#DBEAFE', text: '#1E40AF' };
-    case 'FAILED':
-      return { bg: '#FEE2E2', text: '#991B1B' };
-    default:
-      return { bg: '#F1F5F9', text: '#334155' };
-  }
-}
-
-function paymentMethodBadge(method: string): {
-  label: string;
-  bg: string;
-  text: string;
-  icon: React.ComponentProps<typeof Ionicons>['name'];
-} {
-  switch (method) {
-    case 'COD':
-      return { label: 'Tiền mặt', bg: '#FEF3C7', text: '#92400E', icon: 'cash-outline' };
-    case 'BANK_TRANSFER':
-      return { label: 'Chuyển khoản', bg: '#DBEAFE', text: '#1E40AF', icon: 'card-outline' };
-    case 'PREPAID':
-      return { label: 'Trả trước', bg: '#E0E7FF', text: '#3730A3', icon: 'checkmark-done-outline' };
-    default:
-      return { label: method, bg: '#F1F5F9', text: '#334155', icon: 'help-outline' };
-  }
-}
-
-/* ── Reusable mini-card for breakdown rows ───────────── */
-
 function BreakdownRow({
   label,
   value,
@@ -104,50 +53,6 @@ function BreakdownRow({
   );
 }
 
-/* ── Record card ─────────────────────────────────────── */
-
-function RecordCard({ record }: { record: CodRecordDto }): React.JSX.Element {
-  const sc = statusColor(record.status);
-  const pm = paymentMethodBadge(record.paymentMethod);
-
-  return (
-    <View style={s.recordCard}>
-      <View style={s.recordHeader}>
-        <Text style={s.recordShipmentCode}>{record.shipmentCode}</Text>
-        <View style={[s.badge, { backgroundColor: sc.bg }]}>
-          <Text style={[s.badgeText, { color: sc.text }]}>
-            {statusLabel(record.status)}
-          </Text>
-        </View>
-      </View>
-
-      <View style={s.recordBody}>
-        <View style={s.recordRow}>
-          <Text style={s.recordLabel}>Tiền COD</Text>
-          <Text style={s.recordAmount}>{formatVnd(record.codAmount)}</Text>
-        </View>
-
-        {record.collectedAmount != null ? (
-          <View style={s.recordRow}>
-            <Text style={s.recordLabel}>Thực thu</Text>
-            <Text style={[s.recordAmount, { color: '#059669' }]}>
-              {formatVnd(record.collectedAmount)}
-            </Text>
-          </View>
-        ) : null}
-
-        <View style={s.recordRow}>
-          <Text style={s.recordLabel}>Hình thức</Text>
-          <View style={[s.pmBadge, { backgroundColor: pm.bg }]}>
-            <Ionicons name={pm.icon} size={12} color={pm.text} />
-            <Text style={[s.pmBadgeText, { color: pm.text }]}>{pm.label}</Text>
-          </View>
-        </View>
-      </View>
-    </View>
-  );
-}
-
 /* ── Main screen ─────────────────────────────────────── */
 
 export function CodStatsScreen({ navigation }: Props): React.JSX.Element {
@@ -159,7 +64,17 @@ export function CodStatsScreen({ navigation }: Props): React.JSX.Element {
   const summaryQuery = useCodSummaryQuery({ courierId, accessToken });
   const recordsQuery = useCodRecordsQuery({ courierId, accessToken });
   const bankInfoQuery = useCompanyBankInfoQuery({ accessToken });
-  const dailySettlementQuery = useDailySettlementQuery({ courierId, date: todayStr, accessToken });
+
+  // Auto-polling state when active settlement batch is waiting for payment
+  const [shouldPoll, setShouldPoll] = React.useState(false);
+  const lastActiveBatchId = React.useRef<string | null>(null);
+
+  const dailySettlementQuery = useDailySettlementQuery({
+    courierId,
+    date: todayStr,
+    accessToken,
+    refetchInterval: shouldPoll ? 2000 : false,
+  });
   const createSettlementMutation = useCreateSettlementMutation(accessToken);
 
   const onRefresh = () => {
@@ -176,6 +91,27 @@ export function CodStatsScreen({ navigation }: Props): React.JSX.Element {
   const records = recordsQuery.data ?? [];
   const bankInfo = bankInfoQuery.data;
   const dailySettlement = dailySettlementQuery.data;
+
+  // Monitor settlement status changes
+  React.useEffect(() => {
+    const activeBatch = dailySettlement?.batches?.find((b) => b.status === 'WAITING_PAYMENT');
+
+    if (activeBatch) {
+      lastActiveBatchId.current = activeBatch.id;
+      setShouldPoll(true);
+    } else {
+      if (lastActiveBatchId.current) {
+        Alert.alert(
+          'Quyết toán thành công',
+          'Hệ thống đã nhận được tiền mặt nộp quyết toán của bạn qua chuyển khoản SePay.',
+        );
+        void summaryQuery.refetch();
+        void recordsQuery.refetch();
+        lastActiveBatchId.current = null;
+      }
+      setShouldPoll(false);
+    }
+  }, [dailySettlement, summaryQuery, recordsQuery]);
 
   /* ── Compute per-method breakdown from records ─────── */
 
@@ -347,6 +283,10 @@ export function CodStatsScreen({ navigation }: Props): React.JSX.Element {
                       style={s.qrImage}
                       resizeMode="contain"
                     />
+                    <View style={s.pollingStatusBlock}>
+                      <ActivityIndicator size="small" color={theme.colors.primary} />
+                      <Text style={s.pollingStatusText}>Đang chờ xác nhận giao dịch SePay...</Text>
+                    </View>
                     {bankInfo ? (
                       <View style={s.bankInfoBlock}>
                         <Text style={s.bankInfoText}>
@@ -398,19 +338,7 @@ export function CodStatsScreen({ navigation }: Props): React.JSX.Element {
               </View>
             ) : null}
 
-            {/* Cash record list */}
-            {cashRecords.length > 0 ? (
-              <View style={s.recordList}>
-                {cashRecords.map((record) => (
-                  <RecordCard key={record.id} record={record} />
-                ))}
-              </View>
-            ) : (
-              <View style={s.emptyBlock}>
-                <Ionicons name="cash-outline" size={32} color={theme.colors.textMuted} />
-                <Text style={s.emptyText}>Chưa có đơn tiền mặt</Text>
-              </View>
-            )}
+
           </View>
         ) : null}
 
@@ -462,19 +390,7 @@ export function CodStatsScreen({ navigation }: Props): React.JSX.Element {
               </View>
             ) : null}
 
-            {/* Bank transfer record list */}
-            {bankRecords.length > 0 ? (
-              <View style={s.recordList}>
-                {bankRecords.map((record) => (
-                  <RecordCard key={record.id} record={record} />
-                ))}
-              </View>
-            ) : (
-              <View style={s.emptyBlock}>
-                <Ionicons name="card-outline" size={32} color={theme.colors.textMuted} />
-                <Text style={s.emptyText}>Chưa có đơn chuyển khoản</Text>
-              </View>
-            )}
+
           </View>
         ) : null}
       </ScrollView>
@@ -689,6 +605,22 @@ const s = StyleSheet.create({
   qrImage: {
     width: 220,
     height: 260,
+  },
+  pollingStatusBlock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 8,
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  pollingStatusText: {
+    ...theme.typography.caption.md,
+    color: theme.colors.primary,
+    fontWeight: '600',
   },
   bankInfoBlock: {
     marginTop: theme.spacing.sm,

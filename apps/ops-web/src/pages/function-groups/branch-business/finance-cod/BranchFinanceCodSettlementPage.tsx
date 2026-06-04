@@ -22,8 +22,6 @@ import {
   deriveHubScopeTokens,
   isShipmentInScope,
 } from '../../../../utils/locationScope';
-import { CopyableShipmentCode } from '../../../shared/CopyableShipmentCode';
-import { BranchTablePagination } from '../shared/BranchTablePagination';
 import './BranchFinanceCodSettlementPage.css';
 
 interface CodSettlementFilters {
@@ -247,8 +245,6 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
   );
   const [draftFilters, setDraftFilters] = useState<CodSettlementFilters>(initialFilters);
   const [appliedFilters, setAppliedFilters] = useState<CodSettlementFilters>(initialFilters);
-  const [detailPage, setDetailPage] = useState(1);
-  const [detailPageSize, setDetailPageSize] = useState(25);
   const [localBatchesByKey, setLocalBatchesByKey] = useState<Map<string, CodSettlementBatchDto>>(
     () => new Map(),
   );
@@ -544,20 +540,7 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
     );
   }, [batchedShipmentCodes, cashRecords, latestBatchByKey]);
 
-  useEffect(() => {
-    setDetailPage(1);
-  }, [appliedFilters, detailPageSize]);
 
-  const detailTotalPages = Math.max(1, Math.ceil(enrichedRecords.length / detailPageSize));
-  const currentDetailPage = Math.min(detailPage, detailTotalPages);
-  const paginatedDetailRows = useMemo(
-    () =>
-      enrichedRecords.slice(
-        (currentDetailPage - 1) * detailPageSize,
-        currentDetailPage * detailPageSize,
-      ),
-    [currentDetailPage, detailPageSize, enrichedRecords],
-  );
 
   const derivedTotals = useMemo(() => {
     let codTotal = 0;
@@ -736,28 +719,16 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
         </div>
         <div className="ops-branch-cod__summary" aria-label="Tổng quan thu hộ">
           <article>
-            <span>Tổng COD</span>
+            <span>Tổng tiền COD</span>
             <strong>{formatCurrency(codTotal)}</strong>
           </article>
           <article>
-            <span>Tiền mặt courier thu</span>
-            <strong>{formatCurrency(cashCollectedTotal)}</strong>
+            <span>Đã nộp công ty</span>
+            <strong style={{ color: '#2563EB' }}>{formatCurrency(companyReceivedTotal)}</strong>
           </article>
           <article>
-            <span>Khách chuyển khoản công ty</span>
-            <strong>{formatCurrency(bankTransferTotal)}</strong>
-          </article>
-          <article>
-            <span>Đã vào công ty</span>
-            <strong>{formatCurrency(companyReceivedTotal)}</strong>
-          </article>
-          <article>
-            <span>Tiền mặt chưa nộp</span>
-            <strong>{formatCurrency(pendingCashRemitTotal)}</strong>
-          </article>
-          <article>
-            <span>Chờ ngân hàng xác nhận</span>
-            <strong>{formatCurrency(waitingBankConfirmTotal)}</strong>
+            <span>Chưa nộp công ty</span>
+            <strong style={{ color: '#D97706' }}>{formatCurrency(pendingCashRemitTotal + waitingBankConfirmTotal)}</strong>
           </article>
         </div>
       </header>
@@ -866,20 +837,22 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
                 <th>Courier</th>
                 <th>Bưu cục</th>
                 <th>Đơn COD tiền mặt</th>
-                <th>Tổng tiền mặt</th>
-                <th>Đã nộp</th>
-                <th>Chưa nộp</th>
+                <th>Tổng COD giao</th>
+                <th>Tổng đã thu</th>
+                <th>Đã nộp công ty</th>
+                <th>Cần nộp (Chờ xác nhận)</th>
                 <th>Trạng thái settlement</th>
                 <th>Action</th>
               </tr>
             </thead>
             <tbody>
               {courierSummaries.map((summary) => {
+                const hasWaitingBatch = Boolean(summary.waitingBatch);
                 const batch = summary.waitingBatch ?? summary.latestBatch;
                 const canCreateQr =
                   summary.pendingRemitTotal > 0 &&
                   summary.creatableRecords.length > 0 &&
-                  !summary.waitingBatch &&
+                  !hasWaitingBatch &&
                   !isUsingPreviewData &&
                   summary.courierId !== UNKNOWN_COURIER &&
                   summary.hubCode !== UNKNOWN_HUB;
@@ -891,8 +864,9 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
                     <td>{summary.hubCode}</td>
                     <td>{summary.codOrders}</td>
                     <td className="ops-branch-cod__money">{formatCurrency(summary.codTotal)}</td>
-                    <td className="ops-branch-cod__money">{formatCurrency(summary.remittedTotal)}</td>
-                    <td className="ops-branch-cod__money">{formatCurrency(summary.pendingRemitTotal)}</td>
+                    <td className="ops-branch-cod__money" style={{ color: '#059669', fontWeight: 'bold' }}>{formatCurrency(summary.collectedTotal)}</td>
+                    <td className="ops-branch-cod__money" style={{ color: '#2563EB' }}>{formatCurrency(summary.remittedTotal)}</td>
+                    <td className="ops-branch-cod__money" style={{ color: '#D97706', fontWeight: 'bold' }}>{formatCurrency(summary.pendingRemitTotal)}</td>
                     <td>
                       {batch ? (
                         <div className="ops-branch-cod__batch-cell">
@@ -911,21 +885,23 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
                     </td>
                     <td>
                       <div className="ops-branch-cod__actions">
-                        <button
-                          type="button"
-                          onClick={() => setPendingQrSummary(summary)}
-                          disabled={!canCreateQr || createSettlementMutation.isPending}
-                        >
-                          Tạo QR
-                        </button>
-                        <button
-                          className="ops-branch-cod__secondary-button"
-                          disabled={!batch?.qrUrl}
-                          onClick={() => batch && setViewQrBatch(batch)}
-                          type="button"
-                        >
-                          Xem QR
-                        </button>
+                        {hasWaitingBatch ? (
+                          <button
+                            type="button"
+                            onClick={() => summary.waitingBatch && setViewQrBatch(summary.waitingBatch)}
+                            style={{ backgroundColor: '#10B981', borderColor: '#10B981', color: '#FFFFFF' }}
+                          >
+                            Thanh toán QR
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setPendingQrSummary(summary)}
+                            disabled={!canCreateQr || createSettlementMutation.isPending}
+                          >
+                            Tạo QR
+                          </button>
+                        )}
                         <button
                           className="ops-branch-cod__secondary-button"
                           disabled={!canConfirmBatch || confirmSettlementMutation.isPending}
@@ -944,65 +920,7 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
         </div>
       </section>
 
-      <section className="ops-branch-cod__table-card">
-        <div className="ops-branch-cod__table-title">
-          <h3>Chuyển khoản theo đơn</h3>
-          <span>{bankTransferRecords.length} vận đơn</span>
-        </div>
 
-        {isUsingPreviewData ? (
-          <p className="ops-branch-cod__empty">
-            Preview không có dữ liệu ngân hàng. Chỉ payment-service mới xác nhận được chuyển khoản theo đơn.
-          </p>
-        ) : null}
-        {!isUsingPreviewData && bankTransferRecords.length === 0 ? (
-          <p className="ops-branch-cod__empty">
-            Không có COD chuyển khoản theo đơn phù hợp bộ lọc hiện tại.
-          </p>
-        ) : null}
-
-        <div className="ops-branch-cod__table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Shipment</th>
-                <th>Courier</th>
-                <th>Số tiền</th>
-                <th>Memo</th>
-                <th>Trạng thái ngân hàng</th>
-                <th>Mã giao dịch SePay</th>
-                <th>Thời điểm nhận tiền</th>
-              </tr>
-            </thead>
-            <tbody>
-              {bankTransferRecords.map((record) => (
-                <tr key={record.shipmentCode}>
-                  <td>
-                    {record.shipment ? (
-                      <CopyableShipmentCode
-                        code={record.shipmentCode}
-                        className="ops-branch-cod__code"
-                      />
-                    ) : (
-                      <span className="ops-branch-cod__code">{record.shipmentCode}</span>
-                    )}
-                  </td>
-                  <td>{record.courierId}</td>
-                  <td className="ops-branch-cod__money">{formatCurrency(getCollectedAmount(record))}</td>
-                  <td className="ops-branch-cod__memo">COD {record.shipmentCode}</td>
-                  <td>
-                    <span className={`ops-branch-cod__status ops-branch-cod__status--${getBankTransferStatusTone(record)}`}>
-                      {getBankTransferStatusLabel(record)}
-                    </span>
-                  </td>
-                  <td>{record.companyReceivedRef ?? '-'}</td>
-                  <td>{record.companyReceivedAt ? formatDateTime(record.companyReceivedAt) : '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
 
       {pendingQrSummary ? (
         <div className="ops-branch-cod__modal-backdrop" role="presentation">
@@ -1195,8 +1113,8 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
       ) : null}
 
       {courierSummaries
-        .map((summary) => summary.waitingBatch ?? summary.latestBatch)
-        .filter((batch): batch is CodSettlementBatchDto => Boolean(batch))
+        .map((summary) => summary.waitingBatch)
+        .filter((batch): batch is CodSettlementBatchDto => Boolean(batch && batch.status === 'WAITING_PAYMENT'))
         .map((batch) => (
           <section className="ops-branch-cod__qr-card" key={batch.id}>
             <div>
@@ -1230,64 +1148,7 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
           </section>
         ))}
 
-      <section className="ops-branch-cod__table-card">
-        <div className="ops-branch-cod__table-title">
-          <h3>Chi tiết COD trong ngày</h3>
-          <span>{enrichedRecords.length} vận đơn</span>
-        </div>
-        <div className="ops-branch-cod__table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Mã vận đơn</th>
-                <th>Thời gian thu</th>
-                <th>Courier</th>
-                <th>Người nhận</th>
-                <th>SĐT</th>
-                <th>Bưu cục</th>
-                <th>COD</th>
-                <th>Đã thu</th>
-                <th>Trạng thái tiền</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedDetailRows.map((row) => (
-                <tr key={row.shipmentCode}>
-                  <td>
-                    {row.shipment ? (
-                      <CopyableShipmentCode
-                        code={row.shipmentCode}
-                        className="ops-branch-cod__code"
-                      />
-                    ) : (
-                      <span className="ops-branch-cod__code">{row.shipmentCode}</span>
-                    )}
-                  </td>
-                  <td>{row.collectedAt ? formatDateTime(row.collectedAt) : '-'}</td>
-                  <td>{row.courierId}</td>
-                  <td>{row.receiverName}</td>
-                  <td>{row.receiverPhone}</td>
-                  <td>{row.hubCode}</td>
-                  <td className="ops-branch-cod__money">{formatCurrency(row.codAmount)}</td>
-                  <td className="ops-branch-cod__money">{formatCurrency(getCollectedAmount(row))}</td>
-                  <td>
-                    <span className={`ops-branch-cod__status ops-branch-cod__status--${getStatusTone(row.status)}`}>
-                      {row.source === 'preview' ? 'Preview từ vận đơn' : getStatusLabel(row.status)}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <BranchTablePagination
-          totalRows={enrichedRecords.length}
-          page={currentDetailPage}
-          pageSize={detailPageSize}
-          onPageChange={setDetailPage}
-          onPageSizeChange={setDetailPageSize}
-        />
-      </section>
+
     </section>
   );
 }

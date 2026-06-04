@@ -37,8 +37,8 @@
 
 .ops-branch-cod__summary {
   display: grid;
-  grid-template-columns: repeat(6, minmax(118px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(3, minmax(160px, 1fr));
+  gap: 12px;
 }
 
 .ops-branch-cod__summary article {

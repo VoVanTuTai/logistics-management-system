@@ -20,6 +20,8 @@ import {
 } from '../../components/profile/ProfileHeader';
 import { useAppStore } from '../../store/appStore';
 import { useAuthStore } from '../../features/auth/auth.store';
+import { useChangePasswordMutation } from '../../features/auth/auth.api';
+import { canAccessCourierFeature } from '../../features/permissions/courier-permissions';
 import { appEnv } from '../../utils/env';
 import { resolveCourierId, resolveCourierDisplayName } from '../../utils/courier';
 import {
@@ -38,6 +40,62 @@ export function ProfileScreen(): React.JSX.Element {
   const authLoading = useAuthStore((state) => state.isLoading);
   const [avatarModalVisible, setAvatarModalVisible] = React.useState(false);
   const [avatarInputValue, setAvatarInputValue] = React.useState(courierAvatarUri ?? '');
+  const [passwordModalVisible, setPasswordModalVisible] = React.useState(false);
+  const [currentPassword, setCurrentPassword] = React.useState('');
+  const [newPassword, setNewPassword] = React.useState('');
+  const [confirmPassword, setConfirmPassword] = React.useState('');
+  const [passwordLoading, setPasswordLoading] = React.useState(false);
+
+  const changePasswordMutation = useChangePasswordMutation(
+    session?.tokens.accessToken ?? null,
+  );
+
+  const handleClosePasswordModal = () => {
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setPasswordModalVisible(false);
+  };
+
+  const handleSavePassword = async () => {
+    const curPass = currentPassword.trim();
+    const newPass = newPassword.trim();
+    const confPass = confirmPassword.trim();
+
+    if (!curPass || !newPass || !confPass) {
+      Alert.alert('Thiếu thông tin', 'Vui lòng nhập đầy đủ tất cả các trường.');
+      return;
+    }
+
+    if (newPass !== confPass) {
+      Alert.alert('Mật khẩu không khớp', 'Mật khẩu mới và mật khẩu xác nhận không trùng khớp.');
+      return;
+    }
+
+    if (newPass.length < 8 || !/[A-Za-z]/.test(newPass) || !/\d/.test(newPass)) {
+      Alert.alert(
+        'Mật khẩu chưa hợp lệ',
+        'Mật khẩu mới phải dài ít nhất 8 ký tự và bao gồm cả chữ cái và chữ số.',
+      );
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      await changePasswordMutation.mutateAsync({
+        currentPassword: curPass,
+        newPassword: newPass,
+      });
+      Alert.alert('Thành công', 'Mật khẩu đã được thay đổi thành công.');
+      handleClosePasswordModal();
+    } catch (error) {
+      const msg =
+        error instanceof Error ? error.message : 'Đã có lỗi xảy ra khi đổi mật khẩu.';
+      Alert.alert('Lỗi đổi mật khẩu', msg);
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
 
   const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
   const courierName = resolveCourierDisplayName({
@@ -45,6 +103,12 @@ export function ProfileScreen(): React.JSX.Element {
     username: session?.user.username,
     courierId,
   });
+
+  const permittedCatalog = React.useMemo(() => {
+    return QUICK_APP_CATALOG.filter(
+      (item) => !item.permission || canAccessCourierFeature(session?.user, item.permission),
+    );
+  }, [session?.user]);
 
   const roles = session?.user.roles ?? [];
   const userData: ProfileHeaderData = {
@@ -98,11 +162,21 @@ export function ProfileScreen(): React.JSX.Element {
           />
 
           <QuickAppCustomizeCard
-            appItems={QUICK_APP_CATALOG}
+            appItems={permittedCatalog}
             selectedAppIds={quickAppIds}
             onToggleApp={toggleQuickApp}
             onReset={resetQuickApps}
           />
+
+          <Pressable
+            onPress={() => setPasswordModalVisible(true)}
+            style={({ pressed }) => [
+              styles.changePasswordButton,
+              pressed && styles.changePasswordButtonPressed,
+            ]}
+          >
+            <Text style={styles.changePasswordButtonText}>Đổi mật khẩu</Text>
+          </Pressable>
 
           <Pressable
             onPress={handleLogout}
@@ -181,6 +255,92 @@ export function ProfileScreen(): React.JSX.Element {
             </View>
           </View>
         </Modal>
+
+        <Modal
+          transparent
+          visible={passwordModalVisible}
+          animationType="fade"
+          onRequestClose={() => {
+            if (!passwordLoading) {
+              handleClosePasswordModal();
+            }
+          }}
+        >
+          <View style={styles.modalBackdrop}>
+            <View style={styles.passwordModalCard}>
+              <Text style={styles.passwordModalTitle}>Đổi mật khẩu</Text>
+              <Text style={styles.passwordModalText}>
+                Mật khẩu phải dài ít nhất 8 ký tự, bao gồm cả chữ cái và chữ số.
+              </Text>
+
+              <Text style={styles.inputLabel}>Mật khẩu hiện tại</Text>
+              <TextInput
+                value={currentPassword}
+                onChangeText={setCurrentPassword}
+                placeholder="Nhập mật khẩu hiện tại"
+                secureTextEntry
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={styles.passwordInput}
+                editable={!passwordLoading}
+              />
+
+              <Text style={styles.inputLabel}>Mật khẩu mới</Text>
+              <TextInput
+                value={newPassword}
+                onChangeText={setNewPassword}
+                placeholder="Nhập mật khẩu mới"
+                secureTextEntry
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={styles.passwordInput}
+                editable={!passwordLoading}
+              />
+
+              <Text style={styles.inputLabel}>Xác nhận mật khẩu mới</Text>
+              <TextInput
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                placeholder="Xác nhận mật khẩu mới"
+                secureTextEntry
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={styles.passwordInput}
+                editable={!passwordLoading}
+              />
+
+              <View style={styles.avatarModalActions}>
+                <Pressable
+                  onPress={handleClosePasswordModal}
+                  disabled={passwordLoading}
+                  style={({ pressed }) => [
+                    styles.avatarSecondaryButton,
+                    pressed && styles.modalButtonPressed,
+                    passwordLoading && styles.disabledButton,
+                  ]}
+                >
+                  <Text style={styles.avatarSecondaryButtonText}>Hủy</Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={handleSavePassword}
+                  disabled={passwordLoading}
+                  style={({ pressed }) => [
+                    styles.avatarPrimaryButton,
+                    pressed && styles.modalButtonPressed,
+                    passwordLoading && styles.disabledButton,
+                  ]}
+                >
+                  {passwordLoading ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.avatarPrimaryButtonText}>Cập nhật</Text>
+                  )}
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </View>
     </SafeAreaView>
   );
@@ -199,60 +359,80 @@ function QuickAppCustomizeCard({
   onToggleApp,
   onReset,
 }: QuickAppCustomizeCardProps): React.JSX.Element {
+  const [isExpanded, setIsExpanded] = React.useState(false);
+
   return (
     <View style={styles.quickAppCard}>
-      <View style={styles.quickAppHeader}>
-        <View>
+      <View style={[styles.quickAppHeader, !isExpanded && { marginBottom: 0 }]}>
+        <View style={{ flex: 1 }}>
           <Text style={styles.quickAppTitle}>Ứng dụng nhanh</Text>
           <Text style={styles.quickAppCount}>{selectedAppIds.length} mục đang hiển thị</Text>
         </View>
 
-        <Pressable onPress={onReset} style={styles.quickAppResetButton}>
-          <Text style={styles.quickAppResetText}>Mặc định</Text>
-        </Pressable>
+        <View style={styles.quickAppHeaderActions}>
+          <Pressable onPress={onReset} style={styles.quickAppResetButton}>
+            <Text style={styles.quickAppResetText}>Mặc định</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => setIsExpanded(!isExpanded)}
+            style={styles.quickAppToggleButton}
+          >
+            <Text style={styles.quickAppToggleText}>
+              {isExpanded ? 'Thu gọn' : 'Tùy chỉnh'}
+            </Text>
+            <Ionicons
+              name={isExpanded ? 'chevron-up' : 'chevron-down'}
+              size={14}
+              color={theme.colors.textSecondary}
+            />
+          </Pressable>
+        </View>
       </View>
 
-      <View style={styles.quickAppGrid}>
-        {appItems.map((item) => {
-          const isSelected = selectedAppIds.includes(item.id);
-          const isOnlySelected = isSelected && selectedAppIds.length <= 1;
+      {isExpanded ? (
+        <View style={styles.quickAppGrid}>
+          {appItems.map((item) => {
+            const isSelected = selectedAppIds.includes(item.id);
+            const isOnlySelected = isSelected && selectedAppIds.length <= 1;
 
-          return (
-            <Pressable
-              key={item.id}
-              disabled={isOnlySelected}
-              onPress={() => onToggleApp(item.id)}
-              style={({ pressed }) => [
-                styles.quickAppTile,
-                isSelected && styles.quickAppTileSelected,
-                pressed && styles.quickAppTilePressed,
-                isOnlySelected && styles.quickAppTileDisabled,
-              ]}
-            >
-              <View
-                style={[
-                  styles.quickAppTileMark,
-                  isSelected && styles.quickAppTileMarkSelected,
+            return (
+              <Pressable
+                key={item.id}
+                disabled={isOnlySelected}
+                onPress={() => onToggleApp(item.id)}
+                style={({ pressed }) => [
+                  styles.quickAppTile,
+                  isSelected && styles.quickAppTileSelected,
+                  pressed && styles.quickAppTilePressed,
+                  isOnlySelected && styles.quickAppTileDisabled,
                 ]}
               >
-                <Ionicons
-                  name={isSelected ? 'checkmark' : 'add'}
-                  size={12}
-                  color={isSelected ? '#FFFFFF' : theme.colors.textMuted}
-                />
-              </View>
+                <View
+                  style={[
+                    styles.quickAppTileMark,
+                    isSelected && styles.quickAppTileMarkSelected,
+                  ]}
+                >
+                  <Ionicons
+                    name={isSelected ? 'checkmark' : 'add'}
+                    size={12}
+                    color={isSelected ? '#FFFFFF' : theme.colors.textMuted}
+                  />
+                </View>
 
-              <View style={[styles.quickAppIconWrap, { backgroundColor: item.iconBgColor }]}>
-                <Ionicons name={item.iconName} size={18} color={item.iconColor} />
-              </View>
+                <View style={[styles.quickAppIconWrap, { backgroundColor: item.iconBgColor }]}>
+                  <Ionicons name={item.iconName} size={18} color={item.iconColor} />
+                </View>
 
-              <Text numberOfLines={2} style={styles.quickAppLabel}>
-                {item.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+                <Text numberOfLines={2} style={styles.quickAppLabel}>
+                  {item.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -463,5 +643,81 @@ const styles = StyleSheet.create({
   },
   modalButtonPressed: {
     opacity: 0.86,
+  },
+  changePasswordButton: {
+    borderRadius: theme.radius.lg,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 50,
+    ...theme.shadow.card,
+  },
+  changePasswordButtonPressed: {
+    backgroundColor: '#F1F5F9',
+  },
+  changePasswordButtonText: {
+    ...theme.typography.subtitle.md,
+    color: theme.colors.textPrimary,
+    fontWeight: '600',
+  },
+  passwordModalCard: {
+    width: '100%',
+    borderRadius: theme.radius.lg,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    padding: theme.spacing.lg,
+    ...theme.shadow.card,
+    gap: theme.spacing.sm,
+  },
+  passwordModalTitle: {
+    ...theme.typography.subtitle.lg,
+    color: theme.colors.textPrimary,
+  },
+  passwordModalText: {
+    ...theme.typography.body.md,
+    color: theme.colors.textMuted,
+    marginBottom: theme.spacing.xs,
+  },
+  inputLabel: {
+    ...theme.typography.body.md,
+    color: theme.colors.textSecondary,
+    fontWeight: '600',
+    marginTop: theme.spacing.xs,
+  },
+  passwordInput: {
+    minHeight: 46,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
+    paddingHorizontal: theme.spacing.md,
+    color: theme.colors.textPrimary,
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  quickAppHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+  },
+  quickAppToggleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+    backgroundColor: theme.colors.background,
+  },
+  quickAppToggleText: {
+    ...theme.typography.caption.md,
+    color: theme.colors.textSecondary,
+    fontWeight: '700',
   },
 });

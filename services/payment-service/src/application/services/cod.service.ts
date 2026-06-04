@@ -803,14 +803,30 @@ export class CodService {
         });
       }
 
-      const codRecord = await this.codRecordRepository.findByShipmentCode(shipmentCode);
+      let targetShipmentCode = shipmentCode;
+      const digitMatch = /^(\d{12})\b/.exec(shipmentCode);
+      if (digitMatch) {
+        targetShipmentCode = digitMatch[1];
+      } else {
+        const spMatch = /^(SP\d{8,12})\b/i.exec(shipmentCode);
+        if (spMatch) {
+          targetShipmentCode = spMatch[1].toUpperCase();
+        } else {
+          targetShipmentCode = shipmentCode.replace(/-(CHUYEN|CHUYENKHOAN|CK|TIEN|KHOAN|T|K|ND|KH)$/i, '');
+        }
+      }
+
+      const codRecord = await this.codRecordRepository.findByShipmentCode(targetShipmentCode);
 
       if (!codRecord) {
-        return ignoredResult(`COD record "${shipmentCode}" was not found.`, {
-          referenceType: 'SHIPMENT',
-          shipmentCode,
-          processingStatus: 'UNKNOWN_REFERENCE',
-        });
+        return ignoredResult(
+          `COD record "${shipmentCode}" (resolved: "${targetShipmentCode}") was not found.`,
+          {
+            referenceType: 'SHIPMENT',
+            shipmentCode,
+            processingStatus: 'UNKNOWN_REFERENCE',
+          },
+        );
       }
 
       const shipmentContext = {

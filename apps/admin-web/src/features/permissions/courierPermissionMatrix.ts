@@ -12,10 +12,7 @@ export type CourierPermissionFeature =
   | 'scan.inbound'
   | 'scan.vehicle-inbound'
   | 'scan.vehicle-outbound'
-  | 'scan.inventory-check'
-  | 'scan.branch-pickup'
-  | 'scan.high-value-label'
-  | 'scan.high-value-check';
+  | 'scan.inventory-check';
 
 export type CourierPermissionCategory =
   | 'handover'
@@ -155,27 +152,6 @@ export const COURIER_PERMISSION_FEATURES: CourierPermissionFeatureDefinition[] =
     category: 'control',
     description: 'Kiểm kê nhanh trạng thái tồn tại bưu cục/hub.',
     riskLevel: 'Trung bình',
-  },
-  {
-    id: 'scan.branch-pickup',
-    label: 'Nhận hàng CB',
-    category: 'handover',
-    description: 'Nhận hàng tại chi nhánh/counter branch.',
-    riskLevel: 'Trung bình',
-  },
-  {
-    id: 'scan.high-value-label',
-    label: 'Tem hàng giá trị cao',
-    category: 'control',
-    description: 'Tạo hoặc gắn nhãn kiểm soát hàng giá trị cao.',
-    riskLevel: 'Cao',
-  },
-  {
-    id: 'scan.high-value-check',
-    label: 'Kiểm tra tem giá trị cao',
-    category: 'control',
-    description: 'Đối soát tem hàng giá trị cao trước/sau vận hành.',
-    riskLevel: 'Cao',
   },
 ];
 

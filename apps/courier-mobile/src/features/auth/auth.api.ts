@@ -13,6 +13,8 @@ import type {
   RefreshSessionInputDto,
   UserAccountDto,
   UserListFilters,
+  ChangePasswordInputDto,
+  ChangePasswordResultDto,
 } from './auth.types';
 
 export const authApi = {
@@ -86,6 +88,15 @@ export const authApi = {
       courierEndpoints.auth.mobilePermissionEffective(userId),
       { accessToken },
     ),
+  changePassword: (
+    accessToken: string | null,
+    payload: ChangePasswordInputDto,
+  ): Promise<ChangePasswordResultDto> =>
+    courierApiClient.request('/courier/auth/auth/change-password', {
+      method: 'POST',
+      accessToken,
+      body: payload,
+    }),
 };
 
 export function useLoginMutation() {
@@ -98,5 +109,12 @@ export function useLogoutMutation() {
   return useMutation({
     mutationFn: (payload: LogoutInputDto) =>
       authApi.logout(payload.accessToken ?? null, payload),
+  });
+}
+
+export function useChangePasswordMutation(accessToken: string | null) {
+  return useMutation({
+    mutationFn: (payload: ChangePasswordInputDto) =>
+      authApi.changePassword(accessToken, payload),
   });
 }

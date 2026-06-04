@@ -845,6 +845,8 @@ function MerchantApp(): React.JSX.Element {
   const [pickupStatusFilter, setPickupStatusFilter] = useState('ALL');
   const [pickupLoading, setPickupLoading] = useState(false);
   const [pickupMessage, setPickupMessage] = useState<string | null>(null);
+  const [dispatchTasks, setDispatchTasks] = useState<any[]>([]);
+  const [shippers, setShippers] = useState<any[]>([]);
 
   const [trackingCode, setTrackingCode] = useState('');
   const [trackingCurrent, setTrackingCurrent] = useState<TrackingCurrent | null>(null);
@@ -1126,6 +1128,35 @@ function MerchantApp(): React.JSX.Element {
   }
 
   const selectedPickupWindowSummary = resolvePickupWindowSummary(selectedPickupRows);
+
+  function resolveShipperForPickup(pickup: PickupRequest): string {
+    const task = dispatchTasks.find(
+      (t) =>
+        t.pickupRequestId === pickup.id ||
+        (t.shipmentCode && pickup.items?.some((pi) => normalizeCode(pi.shipmentCode) === normalizeCode(t.shipmentCode)))
+    );
+    if (!task) {
+      return 'Chưa gán';
+    }
+
+    const activeAssignment = task.assignments?.find(
+      (a: any) => !a.unassignedAt
+    );
+    if (!activeAssignment) {
+      return 'Chưa gán';
+    }
+
+    const courierId = activeAssignment.courierId;
+    const shipper = shippers.find(
+      (s) => normalizeCode(s.username) === normalizeCode(courierId)
+    );
+
+    if (shipper && shipper.displayName) {
+      return `${courierId} - ${shipper.displayName}`;
+    }
+
+    return courierId;
+  }
 
   function togglePickupShipmentSelection(code: string, checked: boolean): void {
     const normalizedCode = normalizeCode(code);
@@ -1784,7 +1815,7 @@ function MerchantApp(): React.JSX.Element {
   ): Promise<void> {
     setDataLoading(true);
     setDataError(null);
-    const [shipRes, pickupRes, changeRes, hubsRes, profileRes, returnRes] = await Promise.allSettled([
+    const [shipRes, pickupRes, changeRes, hubsRes, profileRes, returnRes, tasksRes, shippersRes] = await Promise.allSettled([
       request<ShipmentResponse[]>('/merchant/shipment/shipments', { method: 'GET' }, accessToken),
       request<PickupRequest[]>('/merchant/pickup/pickups', { method: 'GET' }, accessToken),
       request<ChangeRequest[]>('/merchant/shipment/change-requests', { method: 'GET' }, accessToken),
@@ -1795,6 +1826,8 @@ function MerchantApp(): React.JSX.Element {
         accessToken,
       ),
       request<ReturnCaseApiRecord[]>('/merchant/delivery/returns', { method: 'GET' }, accessToken),
+      request<any[]>('/merchant/dispatch/tasks?taskType=PICKUP', { method: 'GET' }, accessToken),
+      request<any[]>('/merchant/auth/auth/users?roleGroup=SHIPPER', { method: 'GET' }, accessToken),
     ]);
 
     const ownedShipments =
@@ -1841,6 +1874,17 @@ function MerchantApp(): React.JSX.Element {
           .filter((item) => ownedShipmentCodes.has(normalizeCode(item.shipmentCode)))
           .map(mapReturnCaseToRequest),
       );
+    }
+
+    if (tasksRes.status === 'fulfilled') {
+      setDispatchTasks(tasksRes.value);
+    } else {
+      setDispatchTasks([]);
+    }
+    if (shippersRes.status === 'fulfilled') {
+      setShippers(shippersRes.value);
+    } else {
+      setShippers([]);
     }
 
     if (shipRes.status === 'rejected') setDataError(extractErrorMessage(shipRes.reason));
@@ -3477,7 +3521,15 @@ function MerchantApp(): React.JSX.Element {
                         <td className="pickup-code-cell">{item.pickupCode}</td>
                         <td>{item.items.map((it) => it.shipmentCode).join(', ') || '-'}</td>
                         <td><span className={statusClass(item.status)}>{item.status}</span></td>
-                        <td><span className="pickup-shipper-chip">Chưa gán</span></td>
+                        <td>
+                          {(() => {
+                            const shipperInfo = resolveShipperForPickup(item);
+                            if (shipperInfo === 'Chưa gán') {
+                              return <span className="pickup-shipper-chip">Chưa gán</span>;
+                            }
+                            return <span className="pickup-shipper-chip" style={{ borderColor: 'var(--stitch-primary)', color: 'var(--stitch-primary)', background: 'rgba(0, 89, 184, 0.08)' }}>{shipperInfo}</span>;
+                          })()}
+                        </td>
                         <td>{formatDate(item.createdAt)}</td>
                         <td>
                           <div className="pickup-actions">
