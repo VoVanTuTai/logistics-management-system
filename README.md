@@ -1,10 +1,34 @@
+<div align="center">
+
 # Nexus Express System
 
-A logistics management platform for shipment creation, pickup, hub operations, courier delivery, public tracking, COD settlement, and operational reporting.
+**A microservices-based logistics operations platform for shipment, pickup, hub, courier, tracking, COD, and reporting workflows.**
 
-The project is a TypeScript monorepo built around microservices, a Gateway/BFF entry point, PostgreSQL database-per-service ownership, RabbitMQ domain events, and separate web/mobile clients for each user group.
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![NestJS](https://img.shields.io/badge/NestJS-Services-E0234E?logo=nestjs&logoColor=white)](https://nestjs.com/)
+[![React](https://img.shields.io/badge/React-Vite-61DAFB?logo=react&logoColor=111111)](https://react.dev/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Service_DBs-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![RabbitMQ](https://img.shields.io/badge/RabbitMQ-Domain_Events-FF6600?logo=rabbitmq&logoColor=white)](https://www.rabbitmq.com/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/compose/)
+[![Redis](https://img.shields.io/badge/Redis-Cache-DC382D?logo=redis&logoColor=white)](https://redis.io/)
+[![MinIO](https://img.shields.io/badge/MinIO-Object_Storage-C72E49?logo=minio&logoColor=white)](https://min.io/)
 
-## What This System Does
+</div>
+
+## Overview
+
+Nexus Express System is a TypeScript monorepo that models a last-mile and hub-and-spoke logistics company. It combines separate web/mobile clients, a Gateway/BFF entry point, domain-oriented backend services, PostgreSQL database-per-service ownership, RabbitMQ domain events, and local Docker infrastructure.
+
+The system demonstrates:
+
+- Multi-role logistics applications for admin, operations staff, merchants, couriers, and public tracking users.
+- Shipment, pickup, dispatch, manifest, scan, delivery, return, COD, tracking, and reporting domains.
+- Gateway-first client access with service-owned data and RabbitMQ-based event propagation.
+- Contract and documentation support through service READMEs, OpenAPI files, event payloads, runbooks, and deployment notes.
+
+> **Project status:** this repository is suitable for local development, architecture demonstrations, project reports, workflow testing, and production-like trial deployment. The production Compose setup is single-host and still requires the hardening notes documented in the runbooks before real production use.
+
+## Core Logistics Workflow
 
 Nexus Express System models the core flow of a last-mile and hub-and-spoke delivery company:
 
@@ -35,17 +59,27 @@ flowchart LR
     cod --> tracking
 ```
 
-Primary users:
+## Client Applications
 
-| User group | Client | Main work |
+| Application | User group | Main work |
 | --- | --- | --- |
-| Admin | `apps/admin-web` | Users, roles, hubs, zones, configs, NDR reasons, merchant profiles |
-| Ops staff | `apps/ops-web` | Shipments, pickups, tasks, manifests, scans, NDR, return, COD, reporting |
-| Merchant | `apps/merchant-web` | Create shipments, manage orders, request pickup, print labels, track shipments |
-| Courier | `apps/courier-mobile` | Assigned tasks, pickup/hub scans, POD/OTP, delivery failure, offline retry |
-| Guest / receiver | `apps/public-tracking` | Public shipment lookup |
+| `apps/admin-web` | Admin | Users, roles, hubs, zones, configs, NDR reasons, merchant profiles |
+| `apps/ops-web` | Ops staff | Shipments, pickups, tasks, manifests, scans, NDR, return, COD, reporting |
+| `apps/merchant-web` | Merchant | Create shipments, manage orders, request pickup, print labels, track shipments |
+| `apps/courier-mobile` | Courier | Assigned tasks, pickup/hub scans, POD/OTP, delivery failure, offline retry |
+| `apps/public-tracking` | Guest / receiver | Public shipment lookup |
 
 ## Architecture
+
+### Architectural Principles
+
+| Principle | Implementation |
+| --- | --- |
+| Single client entry point | Web/mobile clients call `gateway-bff`; internal services are not called directly by clients. |
+| Domain ownership | Each service owns its business rules and service database. Cross-service access goes through HTTP APIs or domain events. |
+| Event-driven projections | Write-side services publish RabbitMQ domain events; tracking and reporting consume events as read models. |
+| Operational workflow fidelity | Pickup, dispatch, manifest, scan, delivery, NDR, return, COD, and reporting flows mirror real logistics operations. |
+| Deployment-minded structure | Local and trial deployments use Docker Compose, environment templates, runbooks, and service-level build commands. |
 
 Clients call `gateway-bff`; they do not call internal domain services directly.
 
@@ -216,7 +250,9 @@ docs/
 
 There is no root `package.json`. Run install/build/test commands inside the specific app or service directory.
 
-## Services And Ports
+## Backend Services
+
+The local backend stack is organized around domain services. Each service owns its main database and exposes its API through `gateway-bff` or internal service communication.
 
 | Service | Port | Database | Responsibility |
 | --- | ---: | --- | --- |
@@ -234,7 +270,16 @@ There is no root `package.json`. Run install/build/test commands inside the spec
 | `payment-service` | 3011 | `payment_db` | COD settlement, QR, webhook reconciliation |
 | `pricing-service` | 3012 | none | Shipping quote/rate calculation |
 
-Local frontend ports:
+### Data Ownership
+
+| Store | Owning domains | Primary use |
+| --- | --- | --- |
+| PostgreSQL | Auth, master data, shipment, pickup, dispatch, manifest, scan, delivery, tracking, reporting, payment | Service-owned transactional data and local projections |
+| RabbitMQ | Shipment, pickup, dispatch, manifest, scan, delivery, payment | Domain events for tracking, reporting, dispatch, manifest, and delivery workflows |
+| Redis | Gateway and runtime modules | Caching, temporary runtime state, and gateway support |
+| MinIO | Gateway/media workflows | Object storage for upload-style assets and proof-of-delivery media |
+
+### Local Frontend Ports
 
 | App | URL |
 | --- | --- |
