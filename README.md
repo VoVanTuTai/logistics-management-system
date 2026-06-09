@@ -1,8 +1,8 @@
 # Nexus Express System
 
-A logistics management platform for shipment creation, pickup, hub operations, courier delivery, public tracking, COD settlement, and operational reporting.
+A student logistics management practice project for shipment creation, pickup, hub operations, courier delivery, public tracking, COD settlement, and operational reporting.
 
-The project is a TypeScript monorepo built around microservices, a Gateway/BFF entry point, PostgreSQL database-per-service ownership, RabbitMQ domain events, and separate web/mobile clients for each user group.
+The project is a TypeScript monorepo used to practice service-boundary design, a Gateway/BFF entry point, PostgreSQL ownership ideas, RabbitMQ event exposure, and separate client apps for different user groups.
 
 ## What This System Does
 
