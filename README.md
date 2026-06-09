@@ -2,7 +2,7 @@
 
 # Nexus Express System
 
-**A microservices-based logistics operations platform for shipment, pickup, hub, courier, tracking, COD, and reporting workflows.**
+**A logistics architecture practice project for learning shipment, pickup, hub, courier, tracking, COD, and reporting workflows.**
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![NestJS](https://img.shields.io/badge/NestJS-Services-E0234E?logo=nestjs&logoColor=white)](https://nestjs.com/)
@@ -17,16 +17,16 @@
 
 ## Overview
 
-Nexus Express System is a TypeScript monorepo that models a last-mile and hub-and-spoke logistics company. It combines separate web/mobile clients, a Gateway/BFF entry point, domain-oriented backend services, PostgreSQL database-per-service ownership, RabbitMQ domain events, and local Docker infrastructure.
+Nexus Express System is a TypeScript monorepo used to model a last-mile and hub-and-spoke logistics company. It explores separate web/mobile clients, a Gateway/BFF entry point, domain-oriented backend services, PostgreSQL ownership ideas, RabbitMQ domain events, and local Docker infrastructure.
 
-The system demonstrates:
+The project is used to practice:
 
 - Multi-role logistics applications for admin, operations staff, merchants, couriers, and public tracking users.
 - Shipment, pickup, dispatch, manifest, scan, delivery, return, COD, tracking, and reporting domains.
 - Gateway-first client access with service-owned data and RabbitMQ-based event propagation.
 - Contract and documentation support through service READMEs, OpenAPI files, event payloads, runbooks, and deployment notes.
 
-> **Project status:** this repository is suitable for local development, architecture demonstrations, project reports, workflow testing, and production-like trial deployment. The production Compose setup is single-host and still requires the hardening notes documented in the runbooks before real production use.
+> **Project status:** this repository is suitable for local development, architecture learning, project reports, demos, and workflow testing. The Compose setup is for development/demo use and is not production-ready without additional hardening.
 
 ## Core Logistics Workflow
 
@@ -554,7 +554,7 @@ Some files under `docs/architecture/` and `docs/runbook/` are currently placehol
 
 ## Current Limitations To Know
 
-- This is production-oriented, but not fully production-hardened.
+- This is a learning/demo-oriented project and is not production-ready.
 - Auth password hashing is documented as a scaffold-level SHA-256 implementation and should be upgraded before real production use.
 - Gateway auth can be a perimeter header check depending on configuration; full token/session validation should be handled through `auth-service`.
 - Local and production setups use one PostgreSQL container with multiple service databases; the architectural rule remains database-per-service.
