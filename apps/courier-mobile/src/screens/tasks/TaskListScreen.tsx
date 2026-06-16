@@ -25,6 +25,11 @@ import type { AppNavigatorParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
 import { appEnv } from '../../utils/env';
 import { resolveCourierId, resolveCourierDisplayName } from '../../utils/courier';
+import {
+  openGoogleMapsDirections,
+  resolveShipmentNavigationDestination,
+  type NavigationDestination,
+} from '../../utils/directions';
 import { theme } from '../../theme';
 
 type TaskListRouteParams = AppNavigatorParamList['TaskList'];
@@ -37,6 +42,7 @@ interface TaskDisplayItem {
   receiverName: string;
   receiverPhone: string | null;
   deliveryAddress: string | null;
+  navigationDestination: NavigationDestination | null;
   customerKey: string;
 }
 
@@ -45,6 +51,7 @@ interface CustomerTaskGroup {
   receiverName: string;
   receiverPhone: string | null;
   deliveryAddress: string | null;
+  navigationDestination: NavigationDestination | null;
   tasks: TaskDisplayItem[];
 }
 
@@ -163,6 +170,10 @@ function buildTaskDisplayItem(
       'recipient.address',
       'address',
     ]) ?? null;
+  const navigationDestination = resolveShipmentNavigationDestination({
+    taskType: task.taskType,
+    metadata,
+  });
 
   return {
     task,
@@ -170,6 +181,7 @@ function buildTaskDisplayItem(
     receiverName,
     receiverPhone,
     deliveryAddress,
+    navigationDestination,
     customerKey: buildCustomerKey({
       taskId: task.id,
       receiverName,
@@ -185,6 +197,10 @@ function groupTasksByCustomer(items: TaskDisplayItem[]): CustomerTaskGroup[] {
   for (const item of items) {
     const existingGroup = groups.get(item.customerKey);
     if (existingGroup) {
+      if (!existingGroup.navigationDestination && item.navigationDestination) {
+        existingGroup.navigationDestination = item.navigationDestination;
+      }
+
       existingGroup.tasks.push(item);
       continue;
     }
@@ -194,6 +210,7 @@ function groupTasksByCustomer(items: TaskDisplayItem[]): CustomerTaskGroup[] {
       receiverName: item.receiverName,
       receiverPhone: item.receiverPhone,
       deliveryAddress: item.deliveryAddress,
+      navigationDestination: item.navigationDestination,
       tasks: [item],
     });
   }
@@ -343,6 +360,12 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
           : `Không thể mở ứng dụng gọi điện cho số ${normalizedPhone}.`,
       );
     }
+  };
+
+  const handleOpenDirections = async (
+    destination: NavigationDestination | null,
+  ) => {
+    await openGoogleMapsDirections(destination);
   };
 
   return (
@@ -550,6 +573,22 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
                 </Text>
               </View>
               <Text style={styles.taskNote}>{item.task.note ?? 'Không có ghi chú.'}</Text>
+              <View style={styles.taskActionRow}>
+                <Pressable
+                  onPress={(event) => {
+                    event.stopPropagation();
+                    void handleOpenDirections(item.navigationDestination);
+                  }}
+                  style={({ pressed }) => [
+                    styles.directionsButton,
+                    !item.navigationDestination && styles.directionsButtonDisabled,
+                    pressed && styles.directionsButtonPressed,
+                  ]}
+                >
+                  <Ionicons name="navigate-outline" size={14} color="#FFFFFF" />
+                  <Text style={styles.directionsButtonText}>Chỉ đường</Text>
+                </Pressable>
+              </View>
             </Card>
           ))
         : null}
@@ -581,6 +620,17 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
                 >
                   <Ionicons name="call-outline" size={14} color="#FFFFFF" />
                   <Text style={styles.callButtonText}>Gọi khách</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => void handleOpenDirections(group.navigationDestination)}
+                  style={({ pressed }) => [
+                    styles.directionsButton,
+                    !group.navigationDestination && styles.directionsButtonDisabled,
+                    pressed && styles.directionsButtonPressed,
+                  ]}
+                >
+                  <Ionicons name="navigate-outline" size={14} color="#FFFFFF" />
+                  <Text style={styles.directionsButtonText}>Chỉ đường</Text>
                 </Pressable>
                 <View style={styles.signModeBadge}>
                   <Ionicons name="create-outline" size={13} color={theme.colors.textSecondary} />
@@ -841,6 +891,11 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
     fontSize: 12,
   },
+  taskActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
   customerCard: {
     marginHorizontal: theme.spacing.lg,
     gap: theme.spacing.sm,
@@ -887,6 +942,27 @@ const styles = StyleSheet.create({
     opacity: 0.88,
   },
   callButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  directionsButton: {
+    minHeight: 34,
+    borderRadius: theme.radius.md,
+    backgroundColor: '#2563EB',
+    paddingHorizontal: theme.spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.xs,
+  },
+  directionsButtonDisabled: {
+    opacity: 0.55,
+  },
+  directionsButtonPressed: {
+    opacity: 0.88,
+  },
+  directionsButtonText: {
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '800',
