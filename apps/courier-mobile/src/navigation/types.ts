@@ -3,6 +3,7 @@ export type AppTabsParamList = {
     initialTaskType?: 'PICKUP' | 'DELIVERY' | 'RETURN' | 'ALL';
     initialStatus?: 'ALL' | 'CREATED' | 'ASSIGNED' | 'COMPLETED' | 'CANCELLED';
   } | undefined;
+  Map: undefined;
   Stats: undefined;
   Scan: undefined;
   Chat: undefined;
