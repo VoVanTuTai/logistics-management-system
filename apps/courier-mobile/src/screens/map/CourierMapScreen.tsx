@@ -53,10 +53,27 @@ interface MapPoint {
   destination: NavigationDestination | null;
   coordinate: GeoCoordinate | null;
   plot: PlotPosition;
+  codAmount: number | null;
+  operationAreaKey: string | null;
+  groupingBlockedReason: string | null;
+}
+
+type ClusterRadiusMeters = 500 | 1000 | 2000;
+
+interface SmartCluster {
+  id: string;
+  points: MapPoint[];
+  center: GeoCoordinate;
+  radiusMeters: ClusterRadiusMeters;
+  maxDistanceMeters: number;
+  codTotal: number;
+  codCount: number;
+  areaLabel: string;
 }
 
 const MARKER_SIZE = 42;
 const MAP_PADDING_PERCENT = 9;
+const CLUSTER_RADII: ClusterRadiusMeters[] = [500, 1000, 2000];
 const FALLBACK_ROUTE: PlotPosition[] = [
   { x: 16, y: 66 },
   { x: 31, y: 34 },
@@ -100,6 +117,119 @@ function readMetadataString(
   }
 
   return null;
+}
+
+function readMetadataNumber(
+  metadata: ShipmentMetadata | null,
+  paths: string[],
+): number | null {
+  for (const path of paths) {
+    const value = readMetadataPath(metadata, path);
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+
+    if (typeof value === 'string') {
+      const parsed = Number(value.trim());
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+  }
+
+  return null;
+}
+
+function normalizeAreaKey(value: string | null): string | null {
+  return value ? value.trim().toUpperCase() : null;
+}
+
+function resolveCodAmount(shipment: ShipmentDto | null): number | null {
+  return shipment?.codAmount ?? readMetadataNumber(shipment?.metadata ?? null, [
+    'codAmount',
+    'payment.codAmount',
+    'payment.cod',
+    'cod.amount',
+  ]);
+}
+
+function resolveOperationAreaKey(
+  taskType: TaskType,
+  metadata: ShipmentMetadata | null,
+): string | null {
+  const sharedPaths = [
+    'hubCode',
+    'processingHubCode',
+    'assignedHubCode',
+    'currentHubCode',
+    'routeAreaCode',
+    'areaCode',
+    'zoneCode',
+    'districtCode',
+  ];
+
+  if (taskType === 'PICKUP') {
+    return normalizeAreaKey(readMetadataString(metadata, [
+      'pickupHubCode',
+      'pickup.hubCode',
+      'pickup.location.hubCode',
+      'originHubCode',
+      'origin.hubCode',
+      'pickupAreaCode',
+      'pickup.areaCode',
+      'sender.areaCode',
+      'sender.districtCode',
+      ...sharedPaths,
+    ]));
+  }
+
+  if (taskType === 'RETURN') {
+    return normalizeAreaKey(readMetadataString(metadata, [
+      'returnHubCode',
+      'return.hubCode',
+      'return.location.hubCode',
+      'returnAreaCode',
+      'return.areaCode',
+      'sender.areaCode',
+      'sender.districtCode',
+      ...sharedPaths,
+    ]));
+  }
+
+  return normalizeAreaKey(readMetadataString(metadata, [
+    'deliveryHubCode',
+    'delivery.hubCode',
+    'delivery.location.hubCode',
+    'destinationHubCode',
+    'destination.hubCode',
+    'deliveryAreaCode',
+    'delivery.areaCode',
+    'receiver.areaCode',
+    'receiver.districtCode',
+    'recipient.areaCode',
+    'recipient.districtCode',
+    ...sharedPaths,
+  ]));
+}
+
+function formatDistance(meters: number): string {
+  if (meters >= 1000) {
+    return `${(meters / 1000).toFixed(meters >= 10_000 ? 0 : 1)}km`;
+  }
+
+  return `${Math.round(meters)}m`;
+}
+
+function formatMoney(value: number | null): string {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    return '0đ';
+  }
+
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    maximumFractionDigits: 0,
+  }).format(value);
 }
 
 function toTaskTypeLabel(taskType: TaskType): string {
@@ -252,11 +382,64 @@ function projectCoordinate(
   };
 }
 
+function distanceMeters(first: GeoCoordinate, second: GeoCoordinate): number {
+  const toRadians = (value: number) => (value * Math.PI) / 180;
+  const earthRadiusMeters = 6_371_000;
+  const deltaLat = toRadians(second.latitude - first.latitude);
+  const deltaLng = toRadians(second.longitude - first.longitude);
+  const firstLat = toRadians(first.latitude);
+  const secondLat = toRadians(second.latitude);
+  const a =
+    Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+    Math.cos(firstLat) *
+      Math.cos(secondLat) *
+      Math.sin(deltaLng / 2) *
+      Math.sin(deltaLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return earthRadiusMeters * c;
+}
+
+function buildPickupCompletionByShipment(tasks: TaskDto[]): Map<string, boolean> {
+  const pickupCompletion = new Map<string, boolean>();
+
+  tasks.forEach((task) => {
+    if (task.taskType !== 'PICKUP' || !task.shipmentCode) {
+      return;
+    }
+
+    const shipmentCode = task.shipmentCode.trim().toUpperCase();
+    const existing = pickupCompletion.get(shipmentCode);
+    pickupCompletion.set(shipmentCode, Boolean(existing) || task.status === 'COMPLETED');
+  });
+
+  return pickupCompletion;
+}
+
+function resolveGroupingBlockedReason(
+  task: TaskDto,
+  pickupCompletionByShipment: Map<string, boolean>,
+): string | null {
+  if (task.status === 'COMPLETED' || task.status === 'CANCELLED') {
+    return 'Nhiệm vụ đã kết thúc';
+  }
+
+  if (task.taskType === 'DELIVERY' && task.shipmentCode) {
+    const shipmentCode = task.shipmentCode.trim().toUpperCase();
+    if (pickupCompletionByShipment.has(shipmentCode) && !pickupCompletionByShipment.get(shipmentCode)) {
+      return 'Cần pickup trước delivery';
+    }
+  }
+
+  return null;
+}
+
 function buildMapPoint(input: {
   task: TaskDto;
   shipment: ShipmentDto | null;
   index: number;
   bounds: NonNullable<ReturnType<typeof buildCoordinateBounds>> | null;
+  pickupCompletionByShipment: Map<string, boolean>;
 }): MapPoint {
   const metadata = input.shipment?.metadata ?? null;
   const destination = resolveShipmentNavigationDestination({
@@ -283,7 +466,101 @@ function buildMapPoint(input: {
     plot: coordinate && input.bounds
       ? projectCoordinate(coordinate, input.bounds)
       : getFallbackPlot(input.index),
+    codAmount: resolveCodAmount(input.shipment),
+    operationAreaKey: resolveOperationAreaKey(input.task.taskType, metadata),
+    groupingBlockedReason: resolveGroupingBlockedReason(
+      input.task,
+      input.pickupCompletionByShipment,
+    ),
   };
+}
+
+function canGroupTogether(first: MapPoint, second: MapPoint): boolean {
+  if (first.operationAreaKey && second.operationAreaKey) {
+    return first.operationAreaKey === second.operationAreaKey;
+  }
+
+  return true;
+}
+
+function averageCoordinate(points: MapPoint[]): GeoCoordinate {
+  const total = points.reduce(
+    (sum, point) => ({
+      latitude: sum.latitude + (point.coordinate?.latitude ?? 0),
+      longitude: sum.longitude + (point.coordinate?.longitude ?? 0),
+    }),
+    { latitude: 0, longitude: 0 },
+  );
+
+  return {
+    latitude: total.latitude / points.length,
+    longitude: total.longitude / points.length,
+  };
+}
+
+function buildSmartClusters(
+  mapPoints: MapPoint[],
+  radiusMeters: ClusterRadiusMeters,
+): SmartCluster[] {
+  const candidates = mapPoints.filter(
+    (point) => point.coordinate && !point.groupingBlockedReason,
+  );
+  const usedPointIds = new Set<string>();
+  const clusters: SmartCluster[] = [];
+
+  candidates.forEach((seed) => {
+    if (!seed.coordinate || usedPointIds.has(seed.id)) {
+      return;
+    }
+
+    const seedCoordinate = seed.coordinate;
+    const points = candidates.filter((candidate) => {
+      if (!candidate.coordinate || usedPointIds.has(candidate.id)) {
+        return false;
+      }
+
+      return (
+        canGroupTogether(seed, candidate) &&
+        distanceMeters(seedCoordinate, candidate.coordinate) <= radiusMeters
+      );
+    });
+
+    if (points.length < 2) {
+      return;
+    }
+
+    const center = averageCoordinate(points);
+    const maxDistanceMeters = points.reduce((maxDistance, point) => {
+      if (!point.coordinate) {
+        return maxDistance;
+      }
+
+      return Math.max(maxDistance, distanceMeters(center, point.coordinate));
+    }, 0);
+    const codTotal = points.reduce((total, point) => total + (point.codAmount ?? 0), 0);
+    const codCount = points.filter((point) => (point.codAmount ?? 0) > 0).length;
+    const areaKey = points.find((point) => point.operationAreaKey)?.operationAreaKey;
+
+    points.forEach((point) => usedPointIds.add(point.id));
+    clusters.push({
+      id: `${radiusMeters}:${points.map((point) => point.id).join('|')}`,
+      points,
+      center,
+      radiusMeters,
+      maxDistanceMeters,
+      codTotal,
+      codCount,
+      areaLabel: areaKey ? `Khu vực ${areaKey}` : 'Cùng khu vực gần nhau',
+    });
+  });
+
+  return clusters.sort((first, second) => {
+    if (second.points.length !== first.points.length) {
+      return second.points.length - first.points.length;
+    }
+
+    return first.maxDistanceMeters - second.maxDistanceMeters;
+  });
 }
 
 export function CourierMapScreen(): React.JSX.Element {
@@ -301,6 +578,8 @@ export function CourierMapScreen(): React.JSX.Element {
     courierId,
   });
   const [selectedPointId, setSelectedPointId] = useState<string | null>(null);
+  const [selectedClusterId, setSelectedClusterId] = useState<string | null>(null);
+  const [clusterRadius, setClusterRadius] = useState<ClusterRadiusMeters>(1000);
   const [currentLocation, setCurrentLocation] = useState<GeoCoordinate | null>(null);
   const [locationState, setLocationState] = useState<LocationState>('idle');
 
@@ -368,6 +647,10 @@ export function CourierMapScreen(): React.JSX.Element {
 
     return buildCoordinateBounds(coordinates);
   }, [currentLocation, shipmentByCode, tasks]);
+  const pickupCompletionByShipment = useMemo(
+    () => buildPickupCompletionByShipment(tasks),
+    [tasks],
+  );
   const mapPoints = useMemo(
     () =>
       tasks.map((task, index) =>
@@ -378,9 +661,20 @@ export function CourierMapScreen(): React.JSX.Element {
             : null,
           index,
           bounds: coordinateBounds,
+          pickupCompletionByShipment,
         }),
       ),
-    [coordinateBounds, shipmentByCode, tasks],
+    [coordinateBounds, pickupCompletionByShipment, shipmentByCode, tasks],
+  );
+  const smartClusters = useMemo(
+    () => buildSmartClusters(mapPoints, clusterRadius),
+    [clusterRadius, mapPoints],
+  );
+  const selectedCluster =
+    smartClusters.find((cluster) => cluster.id === selectedClusterId) ?? null;
+  const selectedClusterPointIds = useMemo(
+    () => new Set(selectedCluster?.points.map((point) => point.id) ?? []),
+    [selectedCluster],
   );
   const selectedPoint =
     mapPoints.find((point) => point.id === selectedPointId) ?? mapPoints[0] ?? null;
@@ -428,6 +722,12 @@ export function CourierMapScreen(): React.JSX.Element {
     }
   }, [mapPoints, selectedPointId]);
 
+  useEffect(() => {
+    if (selectedClusterId && !smartClusters.some((cluster) => cluster.id === selectedClusterId)) {
+      setSelectedClusterId(null);
+    }
+  }, [selectedClusterId, smartClusters]);
+
   const handleRefresh = () => {
     void refreshCurrentLocation();
     void tasksQuery.refetch();
@@ -435,6 +735,11 @@ export function CourierMapScreen(): React.JSX.Element {
 
   const handleOpenDirections = async (destination: NavigationDestination | null) => {
     await openGoogleMapsDirections(destination);
+  };
+
+  const handleSelectCluster = (cluster: SmartCluster) => {
+    setSelectedClusterId(cluster.id);
+    setSelectedPointId(cluster.points[0]?.id ?? null);
   };
 
   return (
@@ -553,13 +858,20 @@ export function CourierMapScreen(): React.JSX.Element {
 
             {mapPoints.map((point, index) => {
               const selected = selectedPoint?.id === point.id;
+              const clustered = selectedClusterPointIds.has(point.id);
 
               return (
                 <Pressable
                   key={point.id}
-                  onPress={() => setSelectedPointId(point.id)}
+                  onPress={() => {
+                    setSelectedPointId(point.id);
+                    if (!clustered) {
+                      setSelectedClusterId(null);
+                    }
+                  }}
                   style={({ pressed }) => [
                     styles.marker,
+                    clustered && styles.markerClustered,
                     selected && styles.markerSelected,
                     pressed && styles.markerPressed,
                     {
@@ -582,6 +894,173 @@ export function CourierMapScreen(): React.JSX.Element {
             })}
           </View>
         </Card>
+
+        {!tasksQuery.isLoading && !tasksQuery.isError ? (
+          <Card style={styles.clusterCard}>
+            <View style={styles.clusterHeaderRow}>
+              <View style={styles.clusterTitleBlock}>
+                <Text style={styles.clusterEyebrow}>Gợi ý thông minh</Text>
+                <Text style={styles.clusterTitle}>Gom đơn gần nhau</Text>
+              </View>
+              <StatusBadge
+                label={`${smartClusters.length} nhóm`}
+                variant={smartClusters.length > 0 ? 'info' : 'neutral'}
+              />
+            </View>
+
+            <View style={styles.radiusControl}>
+              {CLUSTER_RADII.map((radius) => {
+                const active = clusterRadius === radius;
+
+                return (
+                  <Pressable
+                    key={radius}
+                    onPress={() => setClusterRadius(radius)}
+                    style={({ pressed }) => [
+                      styles.radiusButton,
+                      active && styles.radiusButtonActive,
+                      pressed && styles.actionPressed,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.radiusButtonText,
+                        active && styles.radiusButtonTextActive,
+                      ]}
+                    >
+                      {formatDistance(radius)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {smartClusters.length === 0 ? (
+              <View style={styles.clusterEmptyState}>
+                <Ionicons name="git-merge-outline" size={22} color={theme.colors.textMuted} />
+                <Text style={styles.clusterEmptyTitle}>Chưa có cụm phù hợp</Text>
+                <Text style={styles.clusterEmptyText}>
+                  Cần ít nhất 2 đơn có tọa độ, đúng thứ tự pickup/delivery và cùng khu vực khi có dữ liệu hub.
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.clusterList}>
+                {smartClusters.map((cluster) => {
+                  const active = selectedCluster?.id === cluster.id;
+                  const firstPoint = cluster.points[0] ?? null;
+
+                  return (
+                    <Pressable
+                      key={cluster.id}
+                      onPress={() => handleSelectCluster(cluster)}
+                      style={({ pressed }) => [
+                        styles.clusterItem,
+                        active && styles.clusterItemActive,
+                        pressed && styles.pointRowPressed,
+                      ]}
+                    >
+                      <View style={styles.clusterItemTop}>
+                        <View style={styles.clusterCountBadge}>
+                          <Text style={styles.clusterCountText}>{cluster.points.length}</Text>
+                        </View>
+                        <View style={styles.clusterItemTextBlock}>
+                          <Text style={styles.clusterItemTitle}>
+                            {cluster.points.length} đơn gần khu vực này
+                          </Text>
+                          <Text style={styles.clusterItemSubtitle}>
+                            Gần đây có thêm {Math.max(cluster.points.length - 1, 1)} đơn, xử lý cùng lượt trong {formatDistance(cluster.radiusMeters)}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.clusterMetaRow}>
+                        <View style={styles.clusterMetaPill}>
+                          <Ionicons name="map-outline" size={13} color={theme.colors.textSecondary} />
+                          <Text style={styles.clusterMetaText}>
+                            {cluster.areaLabel} - xa nhất {formatDistance(cluster.maxDistanceMeters)}
+                          </Text>
+                        </View>
+                        <View style={styles.clusterMetaPill}>
+                          <Ionicons name="cash-outline" size={13} color={theme.colors.textSecondary} />
+                          <Text style={styles.clusterMetaText}>
+                            COD {formatMoney(cluster.codTotal)} ({cluster.codCount} đơn)
+                          </Text>
+                        </View>
+                      </View>
+
+                      {active ? (
+                        <View style={styles.clusterDetailList}>
+                          {cluster.points.map((point) => (
+                            <Pressable
+                              key={point.id}
+                              onPress={() => setSelectedPointId(point.id)}
+                              style={({ pressed }) => [
+                                styles.clusterPointRow,
+                                selectedPoint?.id === point.id && styles.clusterPointRowActive,
+                                pressed && styles.pointRowPressed,
+                              ]}
+                            >
+                              <View
+                                style={[
+                                  styles.clusterPointDot,
+                                  { backgroundColor: typeColor(point.task.taskType) },
+                                ]}
+                              />
+                              <View style={styles.clusterPointTextBlock}>
+                                <Text numberOfLines={1} style={styles.clusterPointTitle}>
+                                  {point.task.shipmentCode ?? point.task.taskCode}
+                                </Text>
+                                <Text numberOfLines={1} style={styles.clusterPointSubtitle}>
+                                  {toTaskTypeLabel(point.task.taskType)} - {formatMoney(point.codAmount)}
+                                </Text>
+                              </View>
+                              <Ionicons
+                                name="chevron-forward"
+                                size={16}
+                                color={theme.colors.textMuted}
+                              />
+                            </Pressable>
+                          ))}
+                          {firstPoint ? (
+                            <View style={styles.actionRow}>
+                              <Pressable
+                                onPress={() =>
+                                  navigation.navigate('TaskDetail', { taskId: firstPoint.task.id })
+                                }
+                                style={({ pressed }) => [
+                                  styles.secondaryAction,
+                                  pressed && styles.actionPressed,
+                                ]}
+                              >
+                                <Ionicons
+                                  name="document-text-outline"
+                                  size={15}
+                                  color={theme.colors.primary}
+                                />
+                                <Text style={styles.secondaryActionText}>Xem điểm đầu</Text>
+                              </Pressable>
+                              <Pressable
+                                onPress={() => void handleOpenDirections(firstPoint.destination)}
+                                style={({ pressed }) => [
+                                  styles.primaryAction,
+                                  !firstPoint.destination && styles.actionDisabled,
+                                  pressed && styles.actionPressed,
+                                ]}
+                              >
+                                <Ionicons name="navigate-outline" size={15} color="#FFFFFF" />
+                                <Text style={styles.primaryActionText}>Đi điểm đầu</Text>
+                              </Pressable>
+                            </View>
+                          ) : null}
+                        </View>
+                      ) : null}
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
+          </Card>
+        ) : null}
 
         {tasksQuery.isLoading ? (
           <View style={styles.centeredState}>
@@ -633,6 +1112,12 @@ export function CourierMapScreen(): React.JSX.Element {
               <Ionicons name="call-outline" size={14} color={theme.colors.textMuted} />
               <Text style={styles.detailMetaText}>
                 {selectedPoint.contact ?? 'Chưa có số liên hệ'}
+              </Text>
+            </View>
+            <View style={styles.detailMetaRow}>
+              <Ionicons name="cash-outline" size={14} color={theme.colors.textMuted} />
+              <Text style={styles.detailMetaText}>
+                COD {formatMoney(selectedPoint.codAmount)}
               </Text>
             </View>
             <View style={styles.actionRow}>
@@ -690,7 +1175,7 @@ export function CourierMapScreen(): React.JSX.Element {
                   {point.task.shipmentCode ?? point.task.taskCode}
                 </Text>
                 <Text numberOfLines={1} style={styles.pointSubtitle}>
-                  {toTaskTypeLabel(point.task.taskType)} - {point.subtitle}
+                  {toTaskTypeLabel(point.task.taskType)} - COD {formatMoney(point.codAmount)}
                 </Text>
               </View>
               <StatusBadge
@@ -916,6 +1401,10 @@ const styles = StyleSheet.create({
     marginTop: -((MARKER_SIZE + 8) / 2),
     borderWidth: 5,
   },
+  markerClustered: {
+    borderColor: '#14B8A6',
+    backgroundColor: '#CCFBF1',
+  },
   markerPressed: {
     opacity: 0.84,
   },
@@ -930,6 +1419,184 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '900',
+  },
+  clusterCard: {
+    gap: theme.spacing.md,
+  },
+  clusterHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: theme.spacing.sm,
+  },
+  clusterTitleBlock: {
+    flex: 1,
+    minWidth: 0,
+  },
+  clusterEyebrow: {
+    color: '#0F766E',
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  clusterTitle: {
+    color: theme.colors.textPrimary,
+    fontSize: 17,
+    fontWeight: '900',
+    marginTop: 2,
+  },
+  radiusControl: {
+    minHeight: 42,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: '#F8FAFC',
+    padding: 4,
+    flexDirection: 'row',
+    gap: 4,
+  },
+  radiusButton: {
+    flex: 1,
+    minHeight: 32,
+    borderRadius: theme.radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radiusButtonActive: {
+    backgroundColor: '#0F766E',
+    ...theme.shadow.sm,
+  },
+  radiusButtonText: {
+    color: theme.colors.textMuted,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  radiusButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  clusterEmptyState: {
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: '#F8FAFC',
+    padding: theme.spacing.md,
+    alignItems: 'center',
+  },
+  clusterEmptyTitle: {
+    color: theme.colors.textPrimary,
+    fontSize: 14,
+    fontWeight: '900',
+    marginTop: theme.spacing.xs,
+  },
+  clusterEmptyText: {
+    color: theme.colors.textMuted,
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  clusterList: {
+    gap: theme.spacing.sm,
+  },
+  clusterItem: {
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: '#CCFBF1',
+    backgroundColor: '#F0FDFA',
+    padding: theme.spacing.md,
+    gap: theme.spacing.sm,
+  },
+  clusterItemActive: {
+    borderColor: '#0F766E',
+    backgroundColor: '#ECFDF5',
+  },
+  clusterItemTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  clusterCountBadge: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#0F766E',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clusterCountText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  clusterItemTextBlock: {
+    flex: 1,
+    minWidth: 0,
+  },
+  clusterItemTitle: {
+    color: theme.colors.textPrimary,
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  clusterItemSubtitle: {
+    color: theme.colors.textSecondary,
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 2,
+  },
+  clusterMetaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: theme.spacing.xs,
+  },
+  clusterMetaPill: {
+    minHeight: 28,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: theme.spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  clusterMetaText: {
+    color: theme.colors.textSecondary,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  clusterDetailList: {
+    gap: theme.spacing.xs,
+  },
+  clusterPointRow: {
+    minHeight: 48,
+    borderRadius: theme.radius.sm,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  clusterPointRowActive: {
+    backgroundColor: '#DBEAFE',
+  },
+  clusterPointDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  clusterPointTextBlock: {
+    flex: 1,
+    minWidth: 0,
+  },
+  clusterPointTitle: {
+    color: theme.colors.textPrimary,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  clusterPointSubtitle: {
+    color: theme.colors.textMuted,
+    fontSize: 11,
+    marginTop: 2,
   },
   centeredState: {
     paddingVertical: theme.spacing.xl,
