@@ -56,6 +56,7 @@ interface MapPoint {
   codAmount: number | null;
   operationAreaKey: string | null;
   groupingBlockedReason: string | null;
+  deadlineAt: Date | null;
 }
 
 type ClusterRadiusMeters = 500 | 1000 | 2000;
@@ -69,6 +70,19 @@ interface SmartCluster {
   codTotal: number;
   codCount: number;
   areaLabel: string;
+}
+
+interface RouteStep {
+  point: MapPoint;
+  distanceFromPreviousMeters: number | null;
+  clusterSize: number;
+  priorityLabel: string;
+}
+
+interface SuggestedRoute {
+  steps: RouteStep[];
+  totalDistanceMeters: number;
+  startsFromCurrentLocation: boolean;
 }
 
 const MARKER_SIZE = 42;
@@ -153,6 +167,57 @@ function resolveCodAmount(shipment: ShipmentDto | null): number | null {
   ]);
 }
 
+function resolveDeadlineAt(
+  taskType: TaskType,
+  metadata: ShipmentMetadata | null,
+): Date | null {
+  const sharedPaths = [
+    'deadline',
+    'deadlineAt',
+    'dueAt',
+    'slaDeadline',
+    'expectedAt',
+    'promisedAt',
+  ];
+  const taskPaths =
+    taskType === 'PICKUP'
+      ? [
+          'pickupDeadline',
+          'pickup.deadline',
+          'pickup.deadlineAt',
+          'pickup.dueAt',
+          'pickup.expectedAt',
+          'pickup.promisedAt',
+        ]
+      : taskType === 'RETURN'
+        ? [
+            'returnDeadline',
+            'return.deadline',
+            'return.deadlineAt',
+            'return.dueAt',
+            'return.expectedAt',
+            'return.promisedAt',
+          ]
+        : [
+            'deliveryDeadline',
+            'delivery.deadline',
+            'delivery.deadlineAt',
+            'delivery.dueAt',
+            'delivery.expectedAt',
+            'delivery.promisedAt',
+            'promisedDeliveryAt',
+          ];
+  const value = readMetadataString(metadata, [...taskPaths, ...sharedPaths]);
+
+  if (!value) {
+    return null;
+  }
+
+  const parsed = new Date(value);
+
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
 function resolveOperationAreaKey(
   taskType: TaskType,
   metadata: ShipmentMetadata | null,
@@ -230,6 +295,30 @@ function formatMoney(value: number | null): string {
     currency: 'VND',
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+function formatDeadline(value: Date | null): string {
+  if (!value) {
+    return 'Không deadline';
+  }
+
+  return value.toLocaleString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function formatRouteSummary(steps: RouteStep[]): string {
+  if (steps.length === 0) {
+    return 'Chưa có tuyến';
+  }
+
+  return steps
+    .slice(0, 5)
+    .map((step, index) => `Điểm ${index + 1}`)
+    .join(' → ');
 }
 
 function toTaskTypeLabel(taskType: TaskType): string {
@@ -472,6 +561,7 @@ function buildMapPoint(input: {
       input.task,
       input.pickupCompletionByShipment,
     ),
+    deadlineAt: resolveDeadlineAt(input.task.taskType, metadata),
   };
 }
 
@@ -563,6 +653,256 @@ function buildSmartClusters(
   });
 }
 
+function buildClusterSizeByPointId(clusters: SmartCluster[]): Map<string, number> {
+  const clusterSizeByPointId = new Map<string, number>();
+
+  clusters.forEach((cluster) => {
+    cluster.points.forEach((point) => {
+      clusterSizeByPointId.set(
+        point.id,
+        Math.max(clusterSizeByPointId.get(point.id) ?? 0, cluster.points.length),
+      );
+    });
+  });
+
+  return clusterSizeByPointId;
+}
+
+function hasPendingPickupBeforeDelivery(
+  candidate: MapPoint,
+  unvisited: MapPoint[],
+): boolean {
+  if (candidate.task.taskType !== 'DELIVERY' || !candidate.task.shipmentCode) {
+    return false;
+  }
+
+  const shipmentCode = candidate.task.shipmentCode.trim().toUpperCase();
+
+  return unvisited.some(
+    (point) =>
+      point.id !== candidate.id &&
+      point.task.taskType === 'PICKUP' &&
+      point.task.shipmentCode?.trim().toUpperCase() === shipmentCode,
+  );
+}
+
+function deadlinePriorityPenalty(point: MapPoint, now: number): number {
+  if (!point.deadlineAt) {
+    return 0;
+  }
+
+  const hoursUntilDeadline = (point.deadlineAt.getTime() - now) / 3_600_000;
+
+  if (hoursUntilDeadline <= 0) {
+    return -2000;
+  }
+
+  if (hoursUntilDeadline <= 2) {
+    return -1300;
+  }
+
+  if (hoursUntilDeadline <= 6) {
+    return -700;
+  }
+
+  if (hoursUntilDeadline <= 24) {
+    return -250;
+  }
+
+  return 0;
+}
+
+function routePriorityLabel(point: MapPoint, clusterSize: number, now: number): string {
+  const labels: string[] = [];
+
+  if (point.deadlineAt) {
+    const overdue = point.deadlineAt.getTime() < now;
+    labels.push(overdue ? 'Quá hạn' : `Deadline ${formatDeadline(point.deadlineAt)}`);
+  }
+
+  if (clusterSize > 1) {
+    labels.push(`${clusterSize} đơn cùng cụm`);
+  }
+
+  if (point.operationAreaKey) {
+    labels.push(`Khu ${point.operationAreaKey}`);
+  }
+
+  return labels.length > 0 ? labels.join(' - ') : 'Gần nhất tiếp theo';
+}
+
+function buildSuggestedRoute(input: {
+  mapPoints: MapPoint[];
+  currentLocation: GeoCoordinate | null;
+  smartClusters: SmartCluster[];
+  manualOrderIds: string[];
+}): SuggestedRoute {
+  const clusterSizeByPointId = buildClusterSizeByPointId(input.smartClusters);
+  const pointById = new Map(input.mapPoints.map((point) => [point.id, point]));
+  const routeCandidates = input.mapPoints.filter(
+    (point) => isRouteEligiblePoint(point),
+  );
+  const manualSteps = input.manualOrderIds
+    .map((pointId) => pointById.get(pointId) ?? null)
+    .filter((point): point is MapPoint =>
+      Boolean(point && isRouteEligiblePoint(point)),
+    );
+  const orderedPoints =
+    manualSteps.length === routeCandidates.length
+      ? manualSteps
+      : buildAutomaticRouteOrder({
+          candidates: routeCandidates,
+          currentLocation: input.currentLocation,
+          clusterSizeByPointId,
+        });
+
+  return buildRouteFromOrderedPoints({
+    orderedPoints,
+    currentLocation: input.currentLocation,
+    clusterSizeByPointId,
+  });
+}
+
+function isRouteEligiblePoint(point: MapPoint): boolean {
+  return Boolean(
+    point.coordinate &&
+      point.task.status !== 'COMPLETED' &&
+      point.task.status !== 'CANCELLED',
+  );
+}
+
+function buildAutomaticRouteOrder(input: {
+  candidates: MapPoint[];
+  currentLocation: GeoCoordinate | null;
+  clusterSizeByPointId: Map<string, number>;
+}): MapPoint[] {
+  const unvisited = [...input.candidates];
+  const ordered: MapPoint[] = [];
+  let cursor = input.currentLocation;
+  const now = Date.now();
+
+  while (unvisited.length > 0) {
+    const eligible = unvisited.filter(
+      (candidate) => !hasPendingPickupBeforeDelivery(candidate, unvisited),
+    );
+    const pool = eligible.length > 0 ? eligible : unvisited;
+    const next = pool.reduce<MapPoint | null>((best, candidate) => {
+      if (!candidate.coordinate) {
+        return best;
+      }
+
+      if (!best?.coordinate) {
+        return candidate;
+      }
+
+      const candidateDistance = cursor
+        ? distanceMeters(cursor, candidate.coordinate)
+        : 0;
+      const bestDistance = cursor ? distanceMeters(cursor, best.coordinate) : 0;
+      const candidateClusterSize = input.clusterSizeByPointId.get(candidate.id) ?? 1;
+      const bestClusterSize = input.clusterSizeByPointId.get(best.id) ?? 1;
+      const candidateScore =
+        candidateDistance -
+        Math.max(candidateClusterSize - 1, 0) * 450 +
+        deadlinePriorityPenalty(candidate, now);
+      const bestScore =
+        bestDistance -
+        Math.max(bestClusterSize - 1, 0) * 450 +
+        deadlinePriorityPenalty(best, now);
+
+      return candidateScore < bestScore ? candidate : best;
+    }, null);
+
+    if (!next) {
+      break;
+    }
+
+    ordered.push(next);
+    cursor = next.coordinate ?? cursor;
+    unvisited.splice(unvisited.findIndex((point) => point.id === next.id), 1);
+  }
+
+  return ordered;
+}
+
+function buildRouteFromOrderedPoints(input: {
+  orderedPoints: MapPoint[];
+  currentLocation: GeoCoordinate | null;
+  clusterSizeByPointId: Map<string, number>;
+}): SuggestedRoute {
+  let cursor = input.currentLocation;
+  let totalDistanceMeters = 0;
+  const now = Date.now();
+  const steps = input.orderedPoints.map((point) => {
+    const distanceFromPreviousMeters =
+      cursor && point.coordinate ? distanceMeters(cursor, point.coordinate) : null;
+
+    if (typeof distanceFromPreviousMeters === 'number') {
+      totalDistanceMeters += distanceFromPreviousMeters;
+    }
+
+    cursor = point.coordinate ?? cursor;
+
+    return {
+      point,
+      distanceFromPreviousMeters,
+      clusterSize: input.clusterSizeByPointId.get(point.id) ?? 1,
+      priorityLabel: routePriorityLabel(
+        point,
+        input.clusterSizeByPointId.get(point.id) ?? 1,
+        now,
+      ),
+    };
+  });
+
+  return {
+    steps,
+    totalDistanceMeters,
+    startsFromCurrentLocation: Boolean(input.currentLocation),
+  };
+}
+
+function canMoveRouteStep(
+  orderedPoints: MapPoint[],
+  fromIndex: number,
+  toIndex: number,
+): boolean {
+  if (toIndex < 0 || toIndex >= orderedPoints.length) {
+    return false;
+  }
+
+  const nextOrder = [...orderedPoints];
+  const [movedPoint] = nextOrder.splice(fromIndex, 1);
+
+  if (!movedPoint) {
+    return false;
+  }
+
+  nextOrder.splice(toIndex, 0, movedPoint);
+
+  return isPickupBeforeDeliveryOrder(nextOrder);
+}
+
+function isPickupBeforeDeliveryOrder(orderedPoints: MapPoint[]): boolean {
+  const pickupIndexByShipment = new Map<string, number>();
+
+  orderedPoints.forEach((point, index) => {
+    if (point.task.taskType === 'PICKUP' && point.task.shipmentCode) {
+      pickupIndexByShipment.set(point.task.shipmentCode.trim().toUpperCase(), index);
+    }
+  });
+
+  return orderedPoints.every((point, index) => {
+    if (point.task.taskType !== 'DELIVERY' || !point.task.shipmentCode) {
+      return true;
+    }
+
+    const pickupIndex = pickupIndexByShipment.get(point.task.shipmentCode.trim().toUpperCase());
+
+    return pickupIndex === undefined || pickupIndex < index;
+  });
+}
+
 export function CourierMapScreen(): React.JSX.Element {
   const navigation =
     useNavigation<NativeStackNavigationProp<AppNavigatorParamList>>();
@@ -580,6 +920,7 @@ export function CourierMapScreen(): React.JSX.Element {
   const [selectedPointId, setSelectedPointId] = useState<string | null>(null);
   const [selectedClusterId, setSelectedClusterId] = useState<string | null>(null);
   const [clusterRadius, setClusterRadius] = useState<ClusterRadiusMeters>(1000);
+  const [manualRouteOrderIds, setManualRouteOrderIds] = useState<string[]>([]);
   const [currentLocation, setCurrentLocation] = useState<GeoCoordinate | null>(null);
   const [locationState, setLocationState] = useState<LocationState>('idle');
 
@@ -676,6 +1017,20 @@ export function CourierMapScreen(): React.JSX.Element {
     () => new Set(selectedCluster?.points.map((point) => point.id) ?? []),
     [selectedCluster],
   );
+  const suggestedRoute = useMemo(
+    () =>
+      buildSuggestedRoute({
+        mapPoints,
+        currentLocation,
+        smartClusters,
+        manualOrderIds: manualRouteOrderIds,
+      }),
+    [currentLocation, manualRouteOrderIds, mapPoints, smartClusters],
+  );
+  const routePointIds = useMemo(
+    () => new Set(suggestedRoute.steps.map((step) => step.point.id)),
+    [suggestedRoute.steps],
+  );
   const selectedPoint =
     mapPoints.find((point) => point.id === selectedPointId) ?? mapPoints[0] ?? null;
   const currentLocationPlot =
@@ -728,6 +1083,32 @@ export function CourierMapScreen(): React.JSX.Element {
     }
   }, [selectedClusterId, smartClusters]);
 
+  useEffect(() => {
+    const automaticOrderIds = buildSuggestedRoute({
+      mapPoints,
+      currentLocation,
+      smartClusters,
+      manualOrderIds: [],
+    }).steps.map((step) => step.point.id);
+
+    setManualRouteOrderIds((currentOrderIds) => {
+      const currentSet = new Set(currentOrderIds);
+      const automaticSet = new Set(automaticOrderIds);
+      const hasSameRouteIds =
+        currentOrderIds.length === automaticOrderIds.length &&
+        automaticOrderIds.every((pointId) => currentSet.has(pointId));
+
+      if (hasSameRouteIds) {
+        return currentOrderIds;
+      }
+
+      return [
+        ...currentOrderIds.filter((pointId) => automaticSet.has(pointId)),
+        ...automaticOrderIds.filter((pointId) => !currentSet.has(pointId)),
+      ];
+    });
+  }, [currentLocation, mapPoints, smartClusters]);
+
   const handleRefresh = () => {
     void refreshCurrentLocation();
     void tasksQuery.refetch();
@@ -740,6 +1121,29 @@ export function CourierMapScreen(): React.JSX.Element {
   const handleSelectCluster = (cluster: SmartCluster) => {
     setSelectedClusterId(cluster.id);
     setSelectedPointId(cluster.points[0]?.id ?? null);
+  };
+
+  const handleMoveRouteStep = (fromIndex: number, direction: -1 | 1) => {
+    const orderedPoints = suggestedRoute.steps.map((step) => step.point);
+    const toIndex = fromIndex + direction;
+
+    if (!canMoveRouteStep(orderedPoints, fromIndex, toIndex)) {
+      return;
+    }
+
+    const nextOrder = orderedPoints.map((point) => point.id);
+    const [movedPointId] = nextOrder.splice(fromIndex, 1);
+
+    if (!movedPointId) {
+      return;
+    }
+
+    nextOrder.splice(toIndex, 0, movedPointId);
+    setManualRouteOrderIds(nextOrder);
+  };
+
+  const handleResetRouteOrder = () => {
+    setManualRouteOrderIds([]);
   };
 
   return (
@@ -859,6 +1263,7 @@ export function CourierMapScreen(): React.JSX.Element {
             {mapPoints.map((point, index) => {
               const selected = selectedPoint?.id === point.id;
               const clustered = selectedClusterPointIds.has(point.id);
+              const routed = routePointIds.has(point.id);
 
               return (
                 <Pressable
@@ -871,6 +1276,7 @@ export function CourierMapScreen(): React.JSX.Element {
                   }}
                   style={({ pressed }) => [
                     styles.marker,
+                    routed && styles.markerRouted,
                     clustered && styles.markerClustered,
                     selected && styles.markerSelected,
                     pressed && styles.markerPressed,
@@ -1058,6 +1464,135 @@ export function CourierMapScreen(): React.JSX.Element {
                   );
                 })}
               </View>
+            )}
+          </Card>
+        ) : null}
+
+        {!tasksQuery.isLoading && !tasksQuery.isError ? (
+          <Card style={styles.routeCard}>
+            <View style={styles.routeHeaderRow}>
+              <View style={styles.routeTitleBlock}>
+                <Text style={styles.routeEyebrow}>Tối ưu tuyến đường</Text>
+                <Text style={styles.routeTitle}>Tuyến đề xuất</Text>
+              </View>
+              <Pressable
+                onPress={handleResetRouteOrder}
+                style={({ pressed }) => [
+                  styles.routeResetButton,
+                  pressed && styles.actionPressed,
+                ]}
+              >
+                <Ionicons name="refresh-outline" size={14} color={theme.colors.primary} />
+                <Text style={styles.routeResetText}>Tự động</Text>
+              </Pressable>
+            </View>
+
+            {suggestedRoute.steps.length === 0 ? (
+              <View style={styles.routeEmptyState}>
+                <Ionicons name="trail-sign-outline" size={22} color={theme.colors.textMuted} />
+                <Text style={styles.routeEmptyTitle}>Chưa đủ dữ liệu tuyến</Text>
+                <Text style={styles.routeEmptyText}>
+                  Cần điểm có tọa độ và nhiệm vụ đang xử lý để đề xuất thứ tự đi.
+                </Text>
+              </View>
+            ) : (
+              <>
+                <View style={styles.routeSummaryBox}>
+                  <Text style={styles.routeSummaryText}>
+                    {formatRouteSummary(suggestedRoute.steps)}
+                  </Text>
+                  <View style={styles.routeMetricRow}>
+                    <View style={styles.routeMetricPill}>
+                      <Ionicons name="navigate-outline" size={13} color={theme.colors.textSecondary} />
+                      <Text style={styles.routeMetricText}>
+                        {formatDistance(suggestedRoute.totalDistanceMeters)}
+                      </Text>
+                    </View>
+                    <View style={styles.routeMetricPill}>
+                      <Ionicons name="locate-outline" size={13} color={theme.colors.textSecondary} />
+                      <Text style={styles.routeMetricText}>
+                        {suggestedRoute.startsFromCurrentLocation ? 'Từ vị trí hiện tại' : 'Từ điểm đầu'}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                <View style={styles.routeStepList}>
+                  {suggestedRoute.steps.map((step, index) => {
+                    const canMoveUp = canMoveRouteStep(
+                      suggestedRoute.steps.map((routeStep) => routeStep.point),
+                      index,
+                      index - 1,
+                    );
+                    const canMoveDown = canMoveRouteStep(
+                      suggestedRoute.steps.map((routeStep) => routeStep.point),
+                      index,
+                      index + 1,
+                    );
+
+                    return (
+                      <Pressable
+                        key={step.point.id}
+                        onPress={() => setSelectedPointId(step.point.id)}
+                        style={({ pressed }) => [
+                          styles.routeStepRow,
+                          selectedPoint?.id === step.point.id && styles.routeStepRowActive,
+                          pressed && styles.pointRowPressed,
+                        ]}
+                      >
+                        <View style={styles.routeStepNumber}>
+                          <Text style={styles.routeStepNumberText}>{index + 1}</Text>
+                        </View>
+                        <View style={styles.routeStepTextBlock}>
+                          <Text numberOfLines={1} style={styles.routeStepTitle}>
+                            {step.point.task.shipmentCode ?? step.point.task.taskCode}
+                          </Text>
+                          <Text numberOfLines={1} style={styles.routeStepSubtitle}>
+                            {toTaskTypeLabel(step.point.task.taskType)} - {step.priorityLabel}
+                          </Text>
+                          <Text numberOfLines={1} style={styles.routeStepMeta}>
+                            {step.distanceFromPreviousMeters === null
+                              ? 'Điểm bắt đầu'
+                              : `Cách điểm trước ${formatDistance(step.distanceFromPreviousMeters)}`} - COD {formatMoney(step.point.codAmount)}
+                          </Text>
+                        </View>
+                        <View style={styles.routeStepActions}>
+                          <Pressable
+                            disabled={!canMoveUp}
+                            onPress={() => handleMoveRouteStep(index, -1)}
+                            style={({ pressed }) => [
+                              styles.routeStepActionButton,
+                              !canMoveUp && styles.routeStepActionButtonDisabled,
+                              pressed && styles.actionPressed,
+                            ]}
+                          >
+                            <Ionicons
+                              name="chevron-up"
+                              size={16}
+                              color={canMoveUp ? theme.colors.primary : theme.colors.textMuted}
+                            />
+                          </Pressable>
+                          <Pressable
+                            disabled={!canMoveDown}
+                            onPress={() => handleMoveRouteStep(index, 1)}
+                            style={({ pressed }) => [
+                              styles.routeStepActionButton,
+                              !canMoveDown && styles.routeStepActionButtonDisabled,
+                              pressed && styles.actionPressed,
+                            ]}
+                          >
+                            <Ionicons
+                              name="chevron-down"
+                              size={16}
+                              color={canMoveDown ? theme.colors.primary : theme.colors.textMuted}
+                            />
+                          </Pressable>
+                        </View>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </>
             )}
           </Card>
         ) : null}
@@ -1405,6 +1940,10 @@ const styles = StyleSheet.create({
     borderColor: '#14B8A6',
     backgroundColor: '#CCFBF1',
   },
+  markerRouted: {
+    borderColor: '#2563EB',
+    backgroundColor: '#DBEAFE',
+  },
   markerPressed: {
     opacity: 0.84,
   },
@@ -1597,6 +2136,170 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
     fontSize: 11,
     marginTop: 2,
+  },
+  routeCard: {
+    gap: theme.spacing.md,
+  },
+  routeHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: theme.spacing.sm,
+  },
+  routeTitleBlock: {
+    flex: 1,
+    minWidth: 0,
+  },
+  routeEyebrow: {
+    color: theme.colors.primary,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  routeTitle: {
+    color: theme.colors.textPrimary,
+    fontSize: 17,
+    fontWeight: '900',
+    marginTop: 2,
+  },
+  routeResetButton: {
+    minHeight: 34,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: theme.spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  routeResetText: {
+    color: theme.colors.primary,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  routeEmptyState: {
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: '#F8FAFC',
+    padding: theme.spacing.md,
+    alignItems: 'center',
+  },
+  routeEmptyTitle: {
+    color: theme.colors.textPrimary,
+    fontSize: 14,
+    fontWeight: '900',
+    marginTop: theme.spacing.xs,
+  },
+  routeEmptyText: {
+    color: theme.colors.textMuted,
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  routeSummaryBox: {
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    backgroundColor: '#EFF6FF',
+    padding: theme.spacing.md,
+    gap: theme.spacing.sm,
+  },
+  routeSummaryText: {
+    color: theme.colors.textPrimary,
+    fontSize: 15,
+    fontWeight: '900',
+    lineHeight: 21,
+  },
+  routeMetricRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: theme.spacing.xs,
+  },
+  routeMetricPill: {
+    minHeight: 28,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: theme.spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  routeMetricText: {
+    color: theme.colors.textSecondary,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  routeStepList: {
+    gap: theme.spacing.sm,
+  },
+  routeStepRow: {
+    minHeight: 78,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    ...theme.shadow.sm,
+  },
+  routeStepRowActive: {
+    borderColor: '#93C5FD',
+    backgroundColor: '#EFF6FF',
+  },
+  routeStepNumber: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: theme.colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  routeStepNumberText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  routeStepTextBlock: {
+    flex: 1,
+    minWidth: 0,
+  },
+  routeStepTitle: {
+    color: theme.colors.textPrimary,
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  routeStepSubtitle: {
+    color: theme.colors.textSecondary,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  routeStepMeta: {
+    color: theme.colors.textMuted,
+    fontSize: 11,
+    marginTop: 3,
+  },
+  routeStepActions: {
+    gap: 5,
+  },
+  routeStepActionButton: {
+    width: 32,
+    height: 30,
+    borderRadius: theme.radius.sm,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  routeStepActionButtonDisabled: {
+    opacity: 0.4,
   },
   centeredState: {
     paddingVertical: theme.spacing.xl,
