@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -27,16 +27,12 @@ import { resolveCourierDisplayName, resolveCourierId } from '../../utils/courier
 import {
   openGoogleMapsDirections,
   resolveShipmentNavigationDestination,
+  type GeoCoordinate,
   type NavigationDestination,
 } from '../../utils/directions';
 import { appEnv } from '../../utils/env';
 
 type LocationState = 'idle' | 'loading' | 'ready' | 'unavailable' | 'error';
-
-interface GeoCoordinate {
-  latitude: number;
-  longitude: number;
-}
 
 interface PlotPosition {
   x: number;
@@ -88,6 +84,8 @@ interface SuggestedRoute {
 const MARKER_SIZE = 42;
 const MAP_PADDING_PERCENT = 9;
 const CLUSTER_RADII: ClusterRadiusMeters[] = [500, 1000, 2000];
+const LOCATION_POLLING_INTERVAL_MS = 15_000;
+const LOCATION_DISTANCE_INTERVAL_METERS = 25;
 const FALLBACK_ROUTE: PlotPosition[] = [
   { x: 16, y: 66 },
   { x: 31, y: 34 },
@@ -307,6 +305,18 @@ function formatDeadline(value: Date | null): string {
     month: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
+  });
+}
+
+function formatLocationUpdatedAt(value: Date | null): string {
+  if (!value) {
+    return 'Chưa có GPS';
+  }
+
+  return value.toLocaleTimeString('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
   });
 }
 
@@ -923,6 +933,8 @@ export function CourierMapScreen(): React.JSX.Element {
   const [manualRouteOrderIds, setManualRouteOrderIds] = useState<string[]>([]);
   const [currentLocation, setCurrentLocation] = useState<GeoCoordinate | null>(null);
   const [locationState, setLocationState] = useState<LocationState>('idle');
+  const [lastLocationUpdatedAt, setLastLocationUpdatedAt] = useState<Date | null>(null);
+  const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
 
   const tasks = tasksQuery.data ?? [];
   const shipmentCodes = useMemo(
@@ -1042,6 +1054,15 @@ export function CourierMapScreen(): React.JSX.Element {
   const completedCount = mapPoints.filter((point) => point.task.status === 'COMPLETED').length;
   const processingCount = mapPoints.filter((point) => point.task.status === 'ASSIGNED').length;
 
+  const applyCurrentLocation = useCallback((position: Location.LocationObject) => {
+    setCurrentLocation({
+      latitude: Number(position.coords.latitude.toFixed(6)),
+      longitude: Number(position.coords.longitude.toFixed(6)),
+    });
+    setLastLocationUpdatedAt(new Date(position.timestamp));
+    setLocationState('ready');
+  }, []);
+
   const refreshCurrentLocation = useCallback(async () => {
     setLocationState('loading');
 
@@ -1057,19 +1078,49 @@ export function CourierMapScreen(): React.JSX.Element {
         accuracy: Location.Accuracy.Balanced,
       });
 
-      setCurrentLocation({
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-      });
-      setLocationState('ready');
+      applyCurrentLocation(position);
     } catch {
       setLocationState('error');
     }
-  }, []);
+  }, [applyCurrentLocation]);
+
+  const startLocationPolling = useCallback(async () => {
+    setLocationState((state) => (state === 'ready' ? state : 'loading'));
+
+    try {
+      const permission = await Location.requestForegroundPermissionsAsync();
+
+      if (permission.status !== Location.PermissionStatus.GRANTED) {
+        setLocationState('unavailable');
+        return;
+      }
+
+      const position = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      applyCurrentLocation(position);
+      locationSubscriptionRef.current?.remove();
+      locationSubscriptionRef.current = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.Balanced,
+          timeInterval: LOCATION_POLLING_INTERVAL_MS,
+          distanceInterval: LOCATION_DISTANCE_INTERVAL_METERS,
+        },
+        applyCurrentLocation,
+      );
+    } catch {
+      setLocationState('error');
+    }
+  }, [applyCurrentLocation]);
 
   useEffect(() => {
-    void refreshCurrentLocation();
-  }, [refreshCurrentLocation]);
+    void startLocationPolling();
+
+    return () => {
+      locationSubscriptionRef.current?.remove();
+      locationSubscriptionRef.current = null;
+    };
+  }, [startLocationPolling]);
 
   useEffect(() => {
     if (!selectedPointId && mapPoints.length > 0) {
@@ -1196,11 +1247,13 @@ export function CourierMapScreen(): React.JSX.Element {
             <View>
               <Text style={styles.mapTitle}>Tuyến hôm nay</Text>
               <Text style={styles.mapSubtitle}>
-                {isShipmentLoading ? 'Đang nạp địa chỉ đơn...' : 'Pickup, delivery và trạng thái'}
+                {isShipmentLoading
+                  ? 'Đang nạp địa chỉ đơn...'
+                  : `Pickup, delivery và GPS ${formatLocationUpdatedAt(lastLocationUpdatedAt)}`}
               </Text>
             </View>
             <StatusBadge
-              label={locationState === 'ready' ? 'GPS ready' : 'GPS pending'}
+              label={locationState === 'ready' ? 'GPS live' : 'GPS pending'}
               variant={locationState === 'ready' ? 'success' : 'neutral'}
             />
           </View>

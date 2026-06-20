@@ -3,6 +3,11 @@ import { Alert, Linking } from 'react-native';
 import type { ShipmentMetadata } from '../features/shipment/shipment.types';
 import type { TaskType } from '../features/tasks/tasks.types';
 
+export interface GeoCoordinate {
+  latitude: number;
+  longitude: number;
+}
+
 export interface NavigationDestination {
   address: string | null;
   latitude: number | null;
@@ -66,6 +71,75 @@ function readMetadataNumber(
   return null;
 }
 
+function readCoordinateValue(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Number(value.trim());
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function normalizeCoordinate(input: {
+  latitude: unknown;
+  longitude: unknown;
+}): GeoCoordinate | null {
+  const latitude = readCoordinateValue(input.latitude);
+  const longitude = readCoordinateValue(input.longitude);
+
+  if (
+    latitude === null ||
+    longitude === null ||
+    latitude < -90 ||
+    latitude > 90 ||
+    longitude < -180 ||
+    longitude > 180
+  ) {
+    return null;
+  }
+
+  return {
+    latitude: Number(latitude.toFixed(6)),
+    longitude: Number(longitude.toFixed(6)),
+  };
+}
+
+function readMetadataCoordinateObject(
+  metadata: ShipmentMetadata | null,
+  paths: string[],
+): GeoCoordinate | null {
+  for (const path of paths) {
+    const value = readMetadataPath(metadata, path);
+
+    if (typeof value === 'string') {
+      const [latitude, longitude] = value.split(',').map((part) => part.trim());
+      const coordinate = normalizeCoordinate({ latitude, longitude });
+      if (coordinate) {
+        return coordinate;
+      }
+    }
+
+    if (value && typeof value === 'object') {
+      const record = value as Record<string, unknown>;
+      const coordinate = normalizeCoordinate({
+        latitude: record.latitude ?? record.lat,
+        longitude: record.longitude ?? record.lng ?? record.lon,
+      });
+      if (coordinate) {
+        return coordinate;
+      }
+    }
+  }
+
+  return null;
+}
+
 function resolveAddressPaths(taskType: TaskType): string[] {
   if (taskType === 'PICKUP') {
     return [
@@ -100,6 +174,63 @@ function resolveAddressPaths(taskType: TaskType): string[] {
     'receiver.address',
     'recipient.address',
     'address',
+  ];
+}
+
+function resolveCoordinateObjectPaths(taskType: TaskType): string[] {
+  if (taskType === 'PICKUP') {
+    return [
+      'pickupCoordinate',
+      'pickupCoordinates',
+      'pickup.coordinate',
+      'pickup.coordinates',
+      'pickup.location',
+      'pickup.location.coordinate',
+      'pickup.location.coordinates',
+      'sender.location',
+      'sender.coordinate',
+      'sender.coordinates',
+      'origin.location',
+      'origin.coordinate',
+      'origin.coordinates',
+    ];
+  }
+
+  if (taskType === 'RETURN') {
+    return [
+      'returnCoordinate',
+      'returnCoordinates',
+      'return.coordinate',
+      'return.coordinates',
+      'return.location',
+      'return.location.coordinate',
+      'return.location.coordinates',
+      'sender.location',
+      'sender.coordinate',
+      'sender.coordinates',
+      'pickup.location',
+      'pickup.coordinate',
+      'pickup.coordinates',
+    ];
+  }
+
+  return [
+    'deliveryCoordinate',
+    'deliveryCoordinates',
+    'delivery.coordinate',
+    'delivery.coordinates',
+    'delivery.location',
+    'delivery.location.coordinate',
+    'delivery.location.coordinates',
+    'receiver.location',
+    'receiver.coordinate',
+    'receiver.coordinates',
+    'recipient.location',
+    'recipient.coordinate',
+    'recipient.coordinates',
+    'coordinate',
+    'coordinates',
+    'location',
   ];
 }
 
@@ -233,17 +364,29 @@ export function resolveShipmentNavigationDestination(input: {
     input.metadata,
     resolveAddressPaths(input.taskType),
   );
-  const latitude = readMetadataNumber(
+  const objectCoordinate = readMetadataCoordinateObject(
     input.metadata,
-    resolveLatitudePaths(input.taskType),
+    resolveCoordinateObjectPaths(input.taskType),
   );
-  const longitude = readMetadataNumber(
-    input.metadata,
-    resolveLongitudePaths(input.taskType),
-  );
+  const coordinate =
+    objectCoordinate ??
+    normalizeCoordinate({
+      latitude: readMetadataNumber(
+        input.metadata,
+        resolveLatitudePaths(input.taskType),
+      ),
+      longitude: readMetadataNumber(
+        input.metadata,
+        resolveLongitudePaths(input.taskType),
+      ),
+    });
 
-  if (latitude !== null && longitude !== null) {
-    return { address, latitude, longitude };
+  if (coordinate) {
+    return {
+      address,
+      latitude: coordinate.latitude,
+      longitude: coordinate.longitude,
+    };
   }
 
   if (address) {
