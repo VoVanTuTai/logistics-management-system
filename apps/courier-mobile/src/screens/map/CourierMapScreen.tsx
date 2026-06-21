@@ -320,6 +320,14 @@ function formatLocationUpdatedAt(value: Date | null): string {
   });
 }
 
+function formatTodayLabel(): string {
+  return new Intl.DateTimeFormat('vi-VN', {
+    weekday: 'long',
+    day: '2-digit',
+    month: '2-digit',
+  }).format(new Date());
+}
+
 function formatRouteSummary(steps: RouteStep[]): string {
   if (steps.length === 0) {
     return 'Chưa có tuyến';
@@ -1053,6 +1061,13 @@ export function CourierMapScreen(): React.JSX.Element {
   const isRefreshing = tasksQuery.isRefetching || shipmentQueries.some((query) => query.isFetching);
   const completedCount = mapPoints.filter((point) => point.task.status === 'COMPLETED').length;
   const processingCount = mapPoints.filter((point) => point.task.status === 'ASSIGNED').length;
+  const pendingCount = mapPoints.filter((point) => point.task.status === 'CREATED').length;
+  const routeEligibleCount = mapPoints.filter(isRouteEligiblePoint).length;
+  const clusteredPointCount = new Set(
+    smartClusters.flatMap((cluster) => cluster.points.map((point) => point.id)),
+  ).size;
+  const codTotal = mapPoints.reduce((total, point) => total + (point.codAmount ?? 0), 0);
+  const todayLabel = formatTodayLabel();
 
   const applyCurrentLocation = useCallback((position: Location.LocationObject) => {
     setCurrentLocation({
@@ -1209,7 +1224,8 @@ export function CourierMapScreen(): React.JSX.Element {
         <View style={styles.header}>
           <View style={styles.headerTitleBlock}>
             <Text style={styles.eyebrow}>{courierName} - {courierId}</Text>
-            <Text style={styles.title}>Bản đồ giao hàng</Text>
+            <Text style={styles.title}>MVP tuyến giao hôm nay</Text>
+            <Text style={styles.headerSubtitle}>{todayLabel}</Text>
           </View>
           <Pressable
             onPress={refreshCurrentLocation}
@@ -1227,18 +1243,63 @@ export function CourierMapScreen(): React.JSX.Element {
           </Pressable>
         </View>
 
+        <Card style={styles.demoCard}>
+          <View style={styles.demoCardHeader}>
+            <View style={styles.demoIconShell}>
+              <Ionicons name="sparkles-outline" size={18} color="#FFFFFF" />
+            </View>
+            <View style={styles.demoTitleBlock}>
+              <Text style={styles.demoEyebrow}>Demo đồ án logistics</Text>
+              <Text style={styles.demoTitle}>4 điểm ăn tiền trên một màn hình</Text>
+            </View>
+          </View>
+          <View style={styles.demoFeatureGrid}>
+            <View style={styles.demoFeaturePill}>
+              <Ionicons name="list-outline" size={14} color={theme.colors.primary} />
+              <Text style={styles.demoFeatureText}>Đơn hôm nay</Text>
+            </View>
+            <View style={styles.demoFeaturePill}>
+              <Ionicons name="map-outline" size={14} color={theme.colors.primary} />
+              <Text style={styles.demoFeatureText}>Bản đồ điểm</Text>
+            </View>
+            <View style={styles.demoFeaturePill}>
+              <Ionicons name="navigate-outline" size={14} color={theme.colors.primary} />
+              <Text style={styles.demoFeatureText}>Chỉ đường từng đơn</Text>
+            </View>
+            <View style={styles.demoFeaturePill}>
+              <Ionicons name="git-merge-outline" size={14} color={theme.colors.primary} />
+              <Text style={styles.demoFeatureText}>Gom cụm + tuyến</Text>
+            </View>
+          </View>
+        </Card>
+
         <View style={styles.summaryRow}>
           <View style={styles.summaryItem}>
             <Text style={styles.summaryValue}>{mapPoints.length}</Text>
-            <Text style={styles.summaryLabel}>điểm</Text>
+            <Text style={styles.summaryLabel}>đơn hôm nay</Text>
           </View>
           <View style={styles.summaryItem}>
             <Text style={styles.summaryValue}>{processingCount}</Text>
             <Text style={styles.summaryLabel}>đang xử lý</Text>
           </View>
           <View style={styles.summaryItem}>
-            <Text style={styles.summaryValue}>{completedCount}</Text>
-            <Text style={styles.summaryLabel}>hoàn thành</Text>
+            <Text style={styles.summaryValue}>{routeEligibleCount}</Text>
+            <Text style={styles.summaryLabel}>có tuyến</Text>
+          </View>
+        </View>
+
+        <View style={styles.summaryRow}>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryValue}>{smartClusters.length}</Text>
+            <Text style={styles.summaryLabel}>nhóm gần</Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryValue}>{clusteredPointCount}</Text>
+            <Text style={styles.summaryLabel}>đơn gom cụm</Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryValue}>{formatMoney(codTotal)}</Text>
+            <Text style={styles.summaryLabel}>COD dự kiến</Text>
           </View>
         </View>
 
@@ -1249,7 +1310,7 @@ export function CourierMapScreen(): React.JSX.Element {
               <Text style={styles.mapSubtitle}>
                 {isShipmentLoading
                   ? 'Đang nạp địa chỉ đơn...'
-                  : `Pickup, delivery và GPS ${formatLocationUpdatedAt(lastLocationUpdatedAt)}`}
+                  : `${mapPoints.length} điểm, ${pendingCount} chờ nhận, ${completedCount} hoàn thành - GPS ${formatLocationUpdatedAt(lastLocationUpdatedAt)}`}
               </Text>
             </View>
             <StatusBadge
@@ -1278,6 +1339,9 @@ export function CourierMapScreen(): React.JSX.Element {
           </View>
 
           <View style={styles.mapSurface}>
+            <View style={styles.mapDistrictA} />
+            <View style={styles.mapDistrictB} />
+            <View style={styles.mapDistrictC} />
             <View style={[styles.gridLineVertical, { left: '25%' }]} />
             <View style={[styles.gridLineVertical, { left: '50%' }]} />
             <View style={[styles.gridLineVertical, { left: '75%' }]} />
@@ -1424,10 +1488,10 @@ export function CourierMapScreen(): React.JSX.Element {
                         </View>
                         <View style={styles.clusterItemTextBlock}>
                           <Text style={styles.clusterItemTitle}>
-                            {cluster.points.length} đơn gần khu vực này
+                            Nhóm {cluster.points.length} đơn gần nhau
                           </Text>
                           <Text style={styles.clusterItemSubtitle}>
-                            Gần đây có thêm {Math.max(cluster.points.length - 1, 1)} đơn, xử lý cùng lượt trong {formatDistance(cluster.radiusMeters)}
+                            Đề xuất xử lý cùng lượt trong bán kính {formatDistance(cluster.radiusMeters)}
                           </Text>
                         </View>
                       </View>
@@ -1736,43 +1800,77 @@ export function CourierMapScreen(): React.JSX.Element {
           </Card>
         ) : null}
 
-        <View style={styles.pointList}>
-          {mapPoints.map((point, index) => (
-            <Pressable
-              key={point.id}
-              onPress={() => setSelectedPointId(point.id)}
-              style={({ pressed }) => [
-                styles.pointRow,
-                selectedPoint?.id === point.id && styles.pointRowActive,
-                pressed && styles.pointRowPressed,
-              ]}
-            >
-              <View
-                style={[
-                  styles.pointNumber,
-                  {
-                    backgroundColor: typeColor(point.task.taskType),
-                    borderColor: statusColor(point.task.status),
-                  },
-                ]}
-              >
-                <Text style={styles.pointNumberText}>{index + 1}</Text>
-              </View>
-              <View style={styles.pointTextBlock}>
-                <Text numberOfLines={1} style={styles.pointTitle}>
-                  {point.task.shipmentCode ?? point.task.taskCode}
-                </Text>
-                <Text numberOfLines={1} style={styles.pointSubtitle}>
-                  {toTaskTypeLabel(point.task.taskType)} - COD {formatMoney(point.codAmount)}
+        {!tasksQuery.isLoading && !tasksQuery.isError && mapPoints.length > 0 ? (
+          <Card style={styles.todayListCard}>
+            <View style={styles.todayListHeader}>
+              <View>
+                <Text style={styles.todayListEyebrow}>Danh sách đơn hôm nay</Text>
+                <Text style={styles.todayListTitle}>
+                  {mapPoints.length} điểm cần lấy/giao
                 </Text>
               </View>
               <StatusBadge
-                label={toTaskStatusLabel(point.task.status)}
-                variant={statusVariant(point.task.status)}
+                label={`${routeEligibleCount} có chỉ đường`}
+                variant={routeEligibleCount > 0 ? 'info' : 'neutral'}
               />
-            </Pressable>
-          ))}
-        </View>
+            </View>
+
+            <View style={styles.pointList}>
+              {mapPoints.map((point, index) => (
+                <Pressable
+                  key={point.id}
+                  onPress={() => setSelectedPointId(point.id)}
+                  style={({ pressed }) => [
+                    styles.pointRow,
+                    selectedPoint?.id === point.id && styles.pointRowActive,
+                    pressed && styles.pointRowPressed,
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.pointNumber,
+                      {
+                        backgroundColor: typeColor(point.task.taskType),
+                        borderColor: statusColor(point.task.status),
+                      },
+                    ]}
+                  >
+                    <Text style={styles.pointNumberText}>{index + 1}</Text>
+                  </View>
+                  <View style={styles.pointTextBlock}>
+                    <Text numberOfLines={1} style={styles.pointTitle}>
+                      {point.task.shipmentCode ?? point.task.taskCode}
+                    </Text>
+                    <Text numberOfLines={1} style={styles.pointSubtitle}>
+                      {toTaskTypeLabel(point.task.taskType)} - COD {formatMoney(point.codAmount)}
+                    </Text>
+                    <Text numberOfLines={1} style={styles.pointAddress}>
+                      {point.subtitle}
+                    </Text>
+                  </View>
+                  <View style={styles.pointRightBlock}>
+                    <StatusBadge
+                      label={toTaskStatusLabel(point.task.status)}
+                      variant={statusVariant(point.task.status)}
+                    />
+                    <Pressable
+                      disabled={!point.destination}
+                      onPress={() => void handleOpenDirections(point.destination)}
+                      style={({ pressed }) => [
+                        styles.pointDirectionButton,
+                        !point.destination && styles.actionDisabled,
+                        pressed && styles.actionPressed,
+                      ]}
+                    >
+                      <Ionicons name="navigate-outline" size={14} color="#FFFFFF" />
+                      <Text style={styles.pointDirectionText}>Đi</Text>
+                    </Pressable>
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+          </Card>
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -1810,6 +1908,13 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     marginTop: 3,
   },
+  headerSubtitle: {
+    color: theme.colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 4,
+    textTransform: 'capitalize',
+  },
   locationButton: {
     minHeight: 38,
     borderRadius: theme.radius.pill,
@@ -1828,6 +1933,59 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
     fontSize: 12,
     fontWeight: '800',
+  },
+  demoCard: {
+    padding: theme.spacing.md,
+    gap: theme.spacing.md,
+    backgroundColor: '#0F172A',
+    borderColor: '#1E293B',
+  },
+  demoCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  demoIconShell: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#2563EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  demoTitleBlock: {
+    flex: 1,
+    minWidth: 0,
+  },
+  demoEyebrow: {
+    color: '#BFDBFE',
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  demoTitle: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '900',
+    marginTop: 2,
+  },
+  demoFeatureGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: theme.spacing.xs,
+  },
+  demoFeaturePill: {
+    minHeight: 34,
+    borderRadius: theme.radius.pill,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: theme.spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  demoFeatureText: {
+    color: theme.colors.textPrimary,
+    fontSize: 11,
+    fontWeight: '900',
   },
   summaryRow: {
     flexDirection: 'row',
@@ -1917,6 +2075,35 @@ const styles = StyleSheet.create({
     backgroundColor: '#EAF3FF',
     overflow: 'hidden',
     position: 'relative',
+  },
+  mapDistrictA: {
+    position: 'absolute',
+    left: '-5%',
+    top: '9%',
+    width: '54%',
+    height: '45%',
+    borderRadius: 999,
+    backgroundColor: 'rgba(59, 130, 246, 0.12)',
+    transform: [{ rotate: '-18deg' }],
+  },
+  mapDistrictB: {
+    position: 'absolute',
+    right: '-9%',
+    top: '18%',
+    width: '58%',
+    height: '48%',
+    borderRadius: 999,
+    backgroundColor: 'rgba(20, 184, 166, 0.12)',
+    transform: [{ rotate: '21deg' }],
+  },
+  mapDistrictC: {
+    position: 'absolute',
+    left: '12%',
+    bottom: '-10%',
+    width: '72%',
+    height: '42%',
+    borderRadius: 999,
+    backgroundColor: 'rgba(249, 115, 22, 0.1)',
   },
   gridLineVertical: {
     position: 'absolute',
@@ -2478,6 +2665,26 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '900',
   },
+  todayListCard: {
+    gap: theme.spacing.md,
+  },
+  todayListHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: theme.spacing.sm,
+  },
+  todayListEyebrow: {
+    color: theme.colors.primary,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  todayListTitle: {
+    color: theme.colors.textPrimary,
+    fontSize: 17,
+    fontWeight: '900',
+    marginTop: 2,
+  },
   pointList: {
     gap: theme.spacing.sm,
   },
@@ -2527,5 +2734,28 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
     fontSize: 12,
     marginTop: 2,
+  },
+  pointAddress: {
+    color: theme.colors.textSecondary,
+    fontSize: 11,
+    marginTop: 3,
+  },
+  pointRightBlock: {
+    alignItems: 'flex-end',
+    gap: theme.spacing.xs,
+  },
+  pointDirectionButton: {
+    minHeight: 30,
+    borderRadius: theme.radius.pill,
+    backgroundColor: '#2563EB',
+    paddingHorizontal: theme.spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  pointDirectionText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '900',
   },
 });
