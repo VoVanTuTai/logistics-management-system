@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Linking,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -31,6 +33,12 @@ import {
   type NavigationDestination,
 } from '../../utils/directions';
 import { appEnv } from '../../utils/env';
+import {
+  MapView as NativeMapView,
+  Marker as NativeMarker,
+  Polyline as NativePolyline,
+  PROVIDER_GOOGLE,
+} from './nativeMaps';
 
 type LocationState = 'idle' | 'loading' | 'ready' | 'unavailable' | 'error';
 
@@ -81,11 +89,22 @@ interface SuggestedRoute {
   startsFromCurrentLocation: boolean;
 }
 
+interface MapRegion extends GeoCoordinate {
+  latitudeDelta: number;
+  longitudeDelta: number;
+}
+
 const MARKER_SIZE = 42;
 const MAP_PADDING_PERCENT = 9;
 const CLUSTER_RADII: ClusterRadiusMeters[] = [500, 1000, 2000];
 const LOCATION_POLLING_INTERVAL_MS = 15_000;
 const LOCATION_DISTANCE_INTERVAL_METERS = 25;
+const DEFAULT_MAP_REGION: MapRegion = {
+  latitude: 10.7769,
+  longitude: 106.7009,
+  latitudeDelta: 0.08,
+  longitudeDelta: 0.08,
+};
 const FALLBACK_ROUTE: PlotPosition[] = [
   { x: 16, y: 66 },
   { x: 31, y: 34 },
@@ -473,6 +492,27 @@ function buildCoordinateBounds(
       maxLng: coordinates[0].longitude,
     },
   );
+}
+
+function buildMapRegion(coordinates: GeoCoordinate[]): MapRegion {
+  if (coordinates.length === 0) {
+    return DEFAULT_MAP_REGION;
+  }
+
+  const bounds = buildCoordinateBounds(coordinates);
+  if (!bounds) {
+    return DEFAULT_MAP_REGION;
+  }
+
+  const latitudeDelta = Math.max((bounds.maxLat - bounds.minLat) * 1.65, 0.01);
+  const longitudeDelta = Math.max((bounds.maxLng - bounds.minLng) * 1.65, 0.01);
+
+  return {
+    latitude: (bounds.minLat + bounds.maxLat) / 2,
+    longitude: (bounds.minLng + bounds.maxLng) / 2,
+    latitudeDelta,
+    longitudeDelta,
+  };
 }
 
 function projectCoordinate(
@@ -1051,8 +1091,38 @@ export function CourierMapScreen(): React.JSX.Element {
     () => new Set(suggestedRoute.steps.map((step) => step.point.id)),
     [suggestedRoute.steps],
   );
+  const routePointNumberById = useMemo(
+    () =>
+      new Map(
+        suggestedRoute.steps.map((step, index) => [step.point.id, index + 1]),
+      ),
+    [suggestedRoute.steps],
+  );
+  const routeMapPoints = useMemo(
+    () =>
+      suggestedRoute.steps
+        .map((step) => step.point)
+        .filter((point) => point.coordinate),
+    [suggestedRoute.steps],
+  );
+  const routeCoordinates = useMemo(
+    () =>
+      suggestedRoute.steps
+        .map((step) => step.point.coordinate)
+        .filter((coordinate): coordinate is GeoCoordinate => Boolean(coordinate)),
+    [suggestedRoute.steps],
+  );
+  const nativeMapRegion = useMemo(
+    () =>
+      buildMapRegion([
+        ...(currentLocation ? [currentLocation] : []),
+        ...routeCoordinates,
+      ]),
+    [currentLocation, routeCoordinates],
+  );
   const selectedPoint =
     mapPoints.find((point) => point.id === selectedPointId) ?? mapPoints[0] ?? null;
+  const nextRoutePoint = suggestedRoute.steps[0]?.point ?? null;
   const currentLocationPlot =
     currentLocation && coordinateBounds
       ? projectCoordinate(currentLocation, coordinateBounds)
@@ -1063,11 +1133,30 @@ export function CourierMapScreen(): React.JSX.Element {
   const processingCount = mapPoints.filter((point) => point.task.status === 'ASSIGNED').length;
   const pendingCount = mapPoints.filter((point) => point.task.status === 'CREATED').length;
   const routeEligibleCount = mapPoints.filter(isRouteEligiblePoint).length;
+  const missingRouteCoordinateCount =
+    suggestedRoute.steps.length - routeCoordinates.length;
   const clusteredPointCount = new Set(
     smartClusters.flatMap((cluster) => cluster.points.map((point) => point.id)),
   ).size;
   const codTotal = mapPoints.reduce((total, point) => total + (point.codAmount ?? 0), 0);
   const todayLabel = formatTodayLabel();
+  const canUseNativeMap =
+    Platform.OS !== 'web' &&
+    Boolean(NativeMapView && NativeMarker && NativePolyline);
+  const locationNotice =
+    locationState === 'unavailable'
+      ? 'Chưa cấp quyền vị trí. Courier vẫn xem được tuyến nhưng chưa thấy vị trí hiện tại.'
+      : locationState === 'error'
+        ? 'Không lấy được GPS. Bấm Vị trí để thử lại.'
+        : null;
+  const routeNotice =
+    suggestedRoute.steps.length === 0
+      ? 'Chưa có điểm đủ điều kiện để vẽ tuyến.'
+      : routeCoordinates.length < 2
+        ? 'Cần ít nhất 2 điểm có tọa độ để vẽ polyline tuyến.'
+        : missingRouteCoordinateCount > 0
+          ? `${missingRouteCoordinateCount} điểm thiếu tọa độ nên chỉ hiển thị trong danh sách.`
+          : null;
 
   const applyCurrentLocation = useCallback((position: Location.LocationObject) => {
     setCurrentLocation({
@@ -1182,6 +1271,15 @@ export function CourierMapScreen(): React.JSX.Element {
 
   const handleOpenDirections = async (destination: NavigationDestination | null) => {
     await openGoogleMapsDirections(destination);
+  };
+
+  const handleCallContact = async (phone: string | null) => {
+    const normalizedPhone = phone?.replace(/[^\d+]/g, '') ?? '';
+    if (!normalizedPhone) {
+      return;
+    }
+
+    await Linking.openURL(`tel:${normalizedPhone}`);
   };
 
   const handleSelectCluster = (cluster: SmartCluster) => {
@@ -1338,83 +1436,275 @@ export function CourierMapScreen(): React.JSX.Element {
             </View>
           </View>
 
+          {locationNotice ? (
+            <View style={styles.mapNotice}>
+              <Ionicons name="warning-outline" size={15} color="#B45309" />
+              <Text style={styles.mapNoticeText}>{locationNotice}</Text>
+              <Pressable onPress={refreshCurrentLocation} style={styles.mapNoticeAction}>
+                <Text style={styles.mapNoticeActionText}>Thử lại</Text>
+              </Pressable>
+            </View>
+          ) : null}
+
+          {routeNotice ? (
+            <View style={styles.mapNotice}>
+              <Ionicons name="information-circle-outline" size={15} color={theme.colors.primary} />
+              <Text style={styles.mapNoticeText}>{routeNotice}</Text>
+            </View>
+          ) : null}
+
           <View style={styles.mapSurface}>
-            <View style={styles.mapDistrictA} />
-            <View style={styles.mapDistrictB} />
-            <View style={styles.mapDistrictC} />
-            <View style={[styles.gridLineVertical, { left: '25%' }]} />
-            <View style={[styles.gridLineVertical, { left: '50%' }]} />
-            <View style={[styles.gridLineVertical, { left: '75%' }]} />
-            <View style={[styles.gridLineHorizontal, { top: '33%' }]} />
-            <View style={[styles.gridLineHorizontal, { top: '66%' }]} />
-            <View style={styles.routeRibbon} />
-
-            {currentLocation ? (
-              <View
-                style={[
-                  styles.currentLocationMarker,
-                  {
-                    left: `${currentLocationPlot.x}%`,
-                    top: `${currentLocationPlot.y}%`,
-                  },
-                ]}
+            {canUseNativeMap ? (
+              <NativeMapView
+                style={styles.nativeMap}
+                provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+                region={nativeMapRegion}
+                showsUserLocation={locationState === 'ready'}
+                showsMyLocationButton
+                loadingEnabled
+                toolbarEnabled={false}
               >
-                <View style={styles.currentLocationPulse} />
-                <Ionicons name="navigate" size={15} color="#FFFFFF" />
-              </View>
+                {routeCoordinates.length > 1 ? (
+                  <NativePolyline
+                    coordinates={routeCoordinates}
+                    strokeColor={theme.colors.primary}
+                    strokeWidth={5}
+                    lineCap="round"
+                    lineJoin="round"
+                  />
+                ) : null}
+
+                {currentLocation ? (
+                  <NativeMarker coordinate={currentLocation} title="Vị trí courier">
+                    <View style={styles.nativeCurrentMarker}>
+                      <Ionicons name="navigate" size={15} color="#FFFFFF" />
+                    </View>
+                  </NativeMarker>
+                ) : null}
+
+                {routeMapPoints.map((point) => {
+                  if (!point.coordinate) {
+                    return null;
+                  }
+
+                  const selected = selectedPoint?.id === point.id;
+                  const sequenceNumber = routePointNumberById.get(point.id);
+
+                  return (
+                    <NativeMarker
+                      key={point.id}
+                      coordinate={point.coordinate}
+                      title={point.task.shipmentCode ?? point.task.taskCode}
+                      description={point.subtitle}
+                      onPress={() => {
+                        setSelectedPointId(point.id);
+                        if (!selectedClusterPointIds.has(point.id)) {
+                          setSelectedClusterId(null);
+                        }
+                      }}
+                    >
+                      <View
+                        style={[
+                          styles.nativeTaskMarker,
+                          selected && styles.nativeTaskMarkerSelected,
+                          { borderColor: statusColor(point.task.status) },
+                        ]}
+                      >
+                        <View
+                          style={[
+                            styles.nativeTaskMarkerInner,
+                            { backgroundColor: typeColor(point.task.taskType) },
+                          ]}
+                        >
+                          <Text style={styles.nativeTaskMarkerText}>
+                            {sequenceNumber ?? ''}
+                          </Text>
+                        </View>
+                      </View>
+                    </NativeMarker>
+                  );
+                })}
+              </NativeMapView>
             ) : (
-              <View
-                style={[
-                  styles.currentLocationMarker,
-                  styles.currentLocationMarkerMuted,
-                  {
-                    left: `${currentLocationPlot.x}%`,
-                    top: `${currentLocationPlot.y}%`,
-                  },
-                ]}
-              >
-                <Ionicons name="locate-outline" size={15} color="#FFFFFF" />
-              </View>
-            )}
+              <>
+                <View style={styles.mapDistrictA} />
+                <View style={styles.mapDistrictB} />
+                <View style={styles.mapDistrictC} />
+                <View style={[styles.gridLineVertical, { left: '25%' }]} />
+                <View style={[styles.gridLineVertical, { left: '50%' }]} />
+                <View style={[styles.gridLineVertical, { left: '75%' }]} />
+                <View style={[styles.gridLineHorizontal, { top: '33%' }]} />
+                <View style={[styles.gridLineHorizontal, { top: '66%' }]} />
+                <View style={styles.routeRibbon} />
 
-            {mapPoints.map((point, index) => {
-              const selected = selectedPoint?.id === point.id;
-              const clustered = selectedClusterPointIds.has(point.id);
-              const routed = routePointIds.has(point.id);
-
-              return (
-                <Pressable
-                  key={point.id}
-                  onPress={() => {
-                    setSelectedPointId(point.id);
-                    if (!clustered) {
-                      setSelectedClusterId(null);
-                    }
-                  }}
-                  style={({ pressed }) => [
-                    styles.marker,
-                    routed && styles.markerRouted,
-                    clustered && styles.markerClustered,
-                    selected && styles.markerSelected,
-                    pressed && styles.markerPressed,
-                    {
-                      left: `${point.plot.x}%`,
-                      top: `${point.plot.y}%`,
-                      borderColor: statusColor(point.task.status),
-                    },
-                  ]}
-                >
+                {currentLocation ? (
                   <View
                     style={[
-                      styles.markerInner,
-                      { backgroundColor: typeColor(point.task.taskType) },
+                      styles.currentLocationMarker,
+                      {
+                        left: `${currentLocationPlot.x}%`,
+                        top: `${currentLocationPlot.y}%`,
+                      },
                     ]}
                   >
-                    <Text style={styles.markerIndex}>{index + 1}</Text>
+                    <View style={styles.currentLocationPulse} />
+                    <Ionicons name="navigate" size={15} color="#FFFFFF" />
                   </View>
-                </Pressable>
-              );
-            })}
+                ) : (
+                  <View
+                    style={[
+                      styles.currentLocationMarker,
+                      styles.currentLocationMarkerMuted,
+                      {
+                        left: `${currentLocationPlot.x}%`,
+                        top: `${currentLocationPlot.y}%`,
+                      },
+                    ]}
+                  >
+                    <Ionicons name="locate-outline" size={15} color="#FFFFFF" />
+                  </View>
+                )}
+
+                {routeMapPoints.map((point) => {
+                  const selected = selectedPoint?.id === point.id;
+                  const clustered = selectedClusterPointIds.has(point.id);
+                  const routed = routePointIds.has(point.id);
+                  const sequenceNumber = routePointNumberById.get(point.id);
+
+                  return (
+                    <Pressable
+                      key={point.id}
+                      onPress={() => {
+                        setSelectedPointId(point.id);
+                        if (!clustered) {
+                          setSelectedClusterId(null);
+                        }
+                      }}
+                      style={({ pressed }) => [
+                        styles.marker,
+                        routed && styles.markerRouted,
+                        clustered && styles.markerClustered,
+                        selected && styles.markerSelected,
+                        pressed && styles.markerPressed,
+                        {
+                          left: `${point.plot.x}%`,
+                          top: `${point.plot.y}%`,
+                          borderColor: statusColor(point.task.status),
+                        },
+                      ]}
+                    >
+                      <View
+                        style={[
+                          styles.markerInner,
+                          { backgroundColor: typeColor(point.task.taskType) },
+                        ]}
+                      >
+                        <Text style={styles.markerIndex}>{sequenceNumber ?? ''}</Text>
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </>
+            )}
+
+            <View style={styles.mapStatusChipRow} pointerEvents="none">
+              <View style={styles.mapStatusChip}>
+                <Ionicons
+                  name={locationState === 'ready' ? 'locate' : 'locate-outline'}
+                  size={13}
+                  color={locationState === 'ready' ? '#16A34A' : '#64748B'}
+                />
+                <Text style={styles.mapStatusChipText}>
+                  {locationState === 'ready' ? 'GPS sẵn sàng' : 'Chưa có GPS'}
+                </Text>
+              </View>
+              <View style={styles.mapStatusChip}>
+                <Ionicons name="git-branch-outline" size={13} color={theme.colors.primary} />
+                <Text style={styles.mapStatusChipText}>Polyline dự phòng</Text>
+              </View>
+            </View>
+
+            {nextRoutePoint ? (
+              <View style={styles.nextStopSheet}>
+                <View style={styles.nextStopHeader}>
+                  <View style={styles.nextStopTextBlock}>
+                    <Text style={styles.nextStopEyebrow}>Điểm tiếp theo</Text>
+                    <Text numberOfLines={1} style={styles.nextStopTitle}>
+                      {nextRoutePoint.title}
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.nextStopNumber,
+                      { backgroundColor: typeColor(nextRoutePoint.task.taskType) },
+                    ]}
+                  >
+                    <Text style={styles.nextStopNumberText}>
+                      {routePointNumberById.get(nextRoutePoint.id) ?? 1}
+                    </Text>
+                  </View>
+                </View>
+                <Text numberOfLines={2} style={styles.nextStopAddress}>
+                  {nextRoutePoint.subtitle}
+                </Text>
+                <View style={styles.nextStopBadgeRow}>
+                  <StatusBadge
+                    label={toTaskTypeLabel(nextRoutePoint.task.taskType)}
+                    variant="info"
+                  />
+                  <StatusBadge
+                    label={toTaskStatusLabel(nextRoutePoint.task.status)}
+                    variant={statusVariant(nextRoutePoint.task.status)}
+                  />
+                </View>
+                <View style={styles.nextStopActionRow}>
+                  <Pressable
+                    disabled={!nextRoutePoint.contact}
+                    onPress={() => void handleCallContact(nextRoutePoint.contact)}
+                    style={({ pressed }) => [
+                      styles.nextStopSecondaryAction,
+                      !nextRoutePoint.contact && styles.actionDisabled,
+                      pressed && styles.actionPressed,
+                    ]}
+                  >
+                    <Ionicons name="call-outline" size={15} color={theme.colors.primary} />
+                    <Text style={styles.nextStopSecondaryText}>Gọi</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() =>
+                      navigation.navigate('TaskDetail', { taskId: nextRoutePoint.task.id })
+                    }
+                    style={({ pressed }) => [
+                      styles.nextStopSecondaryAction,
+                      pressed && styles.actionPressed,
+                    ]}
+                  >
+                    <Ionicons name="document-text-outline" size={15} color={theme.colors.primary} />
+                    <Text style={styles.nextStopSecondaryText}>Chi tiết</Text>
+                  </Pressable>
+                  <Pressable
+                    disabled={!nextRoutePoint.destination}
+                    onPress={() => void handleOpenDirections(nextRoutePoint.destination)}
+                    style={({ pressed }) => [
+                      styles.nextStopPrimaryAction,
+                      !nextRoutePoint.destination && styles.actionDisabled,
+                      pressed && styles.actionPressed,
+                    ]}
+                  >
+                    <Ionicons name="navigate-outline" size={15} color="#FFFFFF" />
+                    <Text style={styles.nextStopPrimaryText}>Bắt đầu</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.mapEmptyOverlay}>
+                <Ionicons name="map-outline" size={24} color={theme.colors.textMuted} />
+                <Text style={styles.mapEmptyTitle}>Chưa có tuyến để vẽ</Text>
+                <Text style={styles.mapEmptyText}>
+                  Các đơn thiếu tọa độ vẫn nằm trong danh sách bên dưới.
+                </Text>
+              </View>
+            )}
           </View>
         </Card>
 
@@ -2034,6 +2324,39 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 2,
   },
+  mapNotice: {
+    minHeight: 38,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    backgroundColor: '#FFFBEB',
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+  },
+  mapNoticeText: {
+    flex: 1,
+    minWidth: 0,
+    color: theme.colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 17,
+  },
+  mapNoticeAction: {
+    minHeight: 28,
+    borderRadius: theme.radius.pill,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: theme.spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mapNoticeActionText: {
+    color: '#B45309',
+    fontSize: 11,
+    fontWeight: '900',
+  },
   legendGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -2075,6 +2398,197 @@ const styles = StyleSheet.create({
     backgroundColor: '#EAF3FF',
     overflow: 'hidden',
     position: 'relative',
+  },
+  nativeMap: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  nativeCurrentMarker: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#111827',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    ...theme.shadow.md,
+  },
+  nativeTaskMarker: {
+    width: MARKER_SIZE,
+    height: MARKER_SIZE,
+    borderRadius: MARKER_SIZE / 2,
+    borderWidth: 4,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...theme.shadow.md,
+  },
+  nativeTaskMarkerSelected: {
+    width: MARKER_SIZE + 8,
+    height: MARKER_SIZE + 8,
+    borderRadius: (MARKER_SIZE + 8) / 2,
+    borderWidth: 5,
+  },
+  nativeTaskMarkerInner: {
+    width: 27,
+    height: 27,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nativeTaskMarkerText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  mapStatusChipRow: {
+    position: 'absolute',
+    left: theme.spacing.sm,
+    right: theme.spacing.sm,
+    top: theme.spacing.sm,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: theme.spacing.xs,
+    zIndex: 20,
+  },
+  mapStatusChip: {
+    minHeight: 30,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: 'rgba(255, 255, 255, 0.94)',
+    paddingHorizontal: theme.spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  mapStatusChipText: {
+    color: theme.colors.textSecondary,
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  nextStopSheet: {
+    position: 'absolute',
+    left: theme.spacing.sm,
+    right: theme.spacing.sm,
+    bottom: theme.spacing.sm,
+    borderRadius: theme.radius.lg,
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+    backgroundColor: 'rgba(255, 255, 255, 0.97)',
+    padding: theme.spacing.md,
+    gap: theme.spacing.xs,
+    zIndex: 25,
+    ...theme.shadow.md,
+  },
+  nextStopHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  nextStopTextBlock: {
+    flex: 1,
+    minWidth: 0,
+  },
+  nextStopEyebrow: {
+    color: theme.colors.primary,
+    fontSize: 11,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+  },
+  nextStopTitle: {
+    color: theme.colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '900',
+    marginTop: 2,
+  },
+  nextStopNumber: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nextStopNumberText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  nextStopAddress: {
+    color: theme.colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 17,
+  },
+  nextStopBadgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: theme.spacing.xs,
+  },
+  nextStopActionRow: {
+    flexDirection: 'row',
+    gap: theme.spacing.xs,
+    marginTop: 2,
+  },
+  nextStopSecondaryAction: {
+    minHeight: 42,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: theme.spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+  },
+  nextStopSecondaryText: {
+    color: theme.colors.primary,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  nextStopPrimaryAction: {
+    flex: 1,
+    minHeight: 42,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: theme.spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  nextStopPrimaryText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  mapEmptyOverlay: {
+    position: 'absolute',
+    left: theme.spacing.md,
+    right: theme.spacing.md,
+    top: '34%',
+    borderRadius: theme.radius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: 'rgba(255, 255, 255, 0.94)',
+    padding: theme.spacing.md,
+    alignItems: 'center',
+    zIndex: 25,
+    ...theme.shadow.sm,
+  },
+  mapEmptyTitle: {
+    color: theme.colors.textPrimary,
+    fontSize: 14,
+    fontWeight: '900',
+    marginTop: theme.spacing.xs,
+  },
+  mapEmptyText: {
+    color: theme.colors.textMuted,
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 17,
+    marginTop: 3,
   },
   mapDistrictA: {
     position: 'absolute',
