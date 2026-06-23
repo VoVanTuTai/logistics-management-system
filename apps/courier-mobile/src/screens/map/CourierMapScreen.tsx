@@ -86,6 +86,7 @@ interface RouteStep {
 interface SuggestedRoute {
   steps: RouteStep[];
   totalDistanceMeters: number;
+  estimatedDurationMinutes: number | null;
   startsFromCurrentLocation: boolean;
 }
 
@@ -99,6 +100,8 @@ const MAP_PADDING_PERCENT = 9;
 const CLUSTER_RADII: ClusterRadiusMeters[] = [500, 1000, 2000];
 const LOCATION_POLLING_INTERVAL_MS = 15_000;
 const LOCATION_DISTANCE_INTERVAL_METERS = 25;
+const ESTIMATED_ROUTE_SPEED_KPH = 22;
+const ESTIMATED_STOP_MINUTES = 4;
 const DEFAULT_MAP_REGION: MapRegion = {
   latitude: 10.7769,
   longitude: 106.7009,
@@ -300,6 +303,23 @@ function formatDistance(meters: number): string {
   }
 
   return `${Math.round(meters)}m`;
+}
+
+function formatDuration(minutes: number | null): string {
+  if (minutes === null || !Number.isFinite(minutes) || minutes <= 0) {
+    return 'ETA chưa rõ';
+  }
+
+  if (minutes < 60) {
+    return `ETA ~${Math.round(minutes)} phút`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = Math.round(minutes % 60);
+
+  return remainingMinutes > 0
+    ? `ETA ~${hours}h${remainingMinutes}p`
+    : `ETA ~${hours}h`;
 }
 
 function formatMoney(value: number | null): string {
@@ -789,6 +809,16 @@ function routePriorityLabel(point: MapPoint, clusterSize: number, now: number): 
   return labels.length > 0 ? labels.join(' - ') : 'Gần nhất tiếp theo';
 }
 
+function formatRouteStepMeta(step: RouteStep): string {
+  const distanceLabel = !step.point.coordinate
+    ? 'Thiếu tọa độ - không vẽ marker'
+    : step.distanceFromPreviousMeters === null
+      ? 'Điểm bắt đầu'
+      : `Cách điểm trước ${formatDistance(step.distanceFromPreviousMeters)}`;
+
+  return `${distanceLabel} - COD ${formatMoney(step.point.codAmount)}`;
+}
+
 function buildSuggestedRoute(input: {
   mapPoints: MapPoint[];
   currentLocation: GeoCoordinate | null;
@@ -823,8 +853,7 @@ function buildSuggestedRoute(input: {
 
 function isRouteEligiblePoint(point: MapPoint): boolean {
   return Boolean(
-    point.coordinate &&
-      point.task.status !== 'COMPLETED' &&
+    point.task.status !== 'COMPLETED' &&
       point.task.status !== 'CANCELLED',
   );
 }
@@ -844,32 +873,36 @@ function buildAutomaticRouteOrder(input: {
       (candidate) => !hasPendingPickupBeforeDelivery(candidate, unvisited),
     );
     const pool = eligible.length > 0 ? eligible : unvisited;
-    const next = pool.reduce<MapPoint | null>((best, candidate) => {
-      if (!candidate.coordinate) {
-        return best;
-      }
+    const drawablePool = pool.filter((candidate) => candidate.coordinate);
+    const next =
+      drawablePool.length > 0
+        ? drawablePool.reduce<MapPoint | null>((best, candidate) => {
+            if (!candidate.coordinate) {
+              return best;
+            }
 
-      if (!best?.coordinate) {
-        return candidate;
-      }
+            if (!best?.coordinate) {
+              return candidate;
+            }
 
-      const candidateDistance = cursor
-        ? distanceMeters(cursor, candidate.coordinate)
-        : 0;
-      const bestDistance = cursor ? distanceMeters(cursor, best.coordinate) : 0;
-      const candidateClusterSize = input.clusterSizeByPointId.get(candidate.id) ?? 1;
-      const bestClusterSize = input.clusterSizeByPointId.get(best.id) ?? 1;
-      const candidateScore =
-        candidateDistance -
-        Math.max(candidateClusterSize - 1, 0) * 450 +
-        deadlinePriorityPenalty(candidate, now);
-      const bestScore =
-        bestDistance -
-        Math.max(bestClusterSize - 1, 0) * 450 +
-        deadlinePriorityPenalty(best, now);
+            const candidateDistance = cursor
+              ? distanceMeters(cursor, candidate.coordinate)
+              : 0;
+            const bestDistance = cursor ? distanceMeters(cursor, best.coordinate) : 0;
+            const candidateClusterSize = input.clusterSizeByPointId.get(candidate.id) ?? 1;
+            const bestClusterSize = input.clusterSizeByPointId.get(best.id) ?? 1;
+            const candidateScore =
+              candidateDistance -
+              Math.max(candidateClusterSize - 1, 0) * 450 +
+              deadlinePriorityPenalty(candidate, now);
+            const bestScore =
+              bestDistance -
+              Math.max(bestClusterSize - 1, 0) * 450 +
+              deadlinePriorityPenalty(best, now);
 
-      return candidateScore < bestScore ? candidate : best;
-    }, null);
+            return candidateScore < bestScore ? candidate : best;
+          }, null)
+        : pool[0] ?? null;
 
     if (!next) {
       break;
@@ -890,6 +923,7 @@ function buildRouteFromOrderedPoints(input: {
 }): SuggestedRoute {
   let cursor = input.currentLocation;
   let totalDistanceMeters = 0;
+  let drawableStepCount = 0;
   const now = Date.now();
   const steps = input.orderedPoints.map((point) => {
     const distanceFromPreviousMeters =
@@ -899,7 +933,10 @@ function buildRouteFromOrderedPoints(input: {
       totalDistanceMeters += distanceFromPreviousMeters;
     }
 
-    cursor = point.coordinate ?? cursor;
+    if (point.coordinate) {
+      drawableStepCount += 1;
+      cursor = point.coordinate;
+    }
 
     return {
       point,
@@ -916,6 +953,13 @@ function buildRouteFromOrderedPoints(input: {
   return {
     steps,
     totalDistanceMeters,
+    estimatedDurationMinutes:
+      totalDistanceMeters > 0
+        ? Math.ceil(
+            (totalDistanceMeters / 1000 / ESTIMATED_ROUTE_SPEED_KPH) * 60 +
+              drawableStepCount * ESTIMATED_STOP_MINUTES,
+          )
+        : null,
     startsFromCurrentLocation: Boolean(input.currentLocation),
   };
 }
@@ -1112,13 +1156,16 @@ export function CourierMapScreen(): React.JSX.Element {
         .filter((coordinate): coordinate is GeoCoordinate => Boolean(coordinate)),
     [suggestedRoute.steps],
   );
-  const nativeMapRegion = useMemo(
-    () =>
-      buildMapRegion([
-        ...(currentLocation ? [currentLocation] : []),
-        ...routeCoordinates,
-      ]),
+  const polylineCoordinates = useMemo(
+    () => [
+      ...(currentLocation ? [currentLocation] : []),
+      ...routeCoordinates,
+    ],
     [currentLocation, routeCoordinates],
+  );
+  const nativeMapRegion = useMemo(
+    () => buildMapRegion(polylineCoordinates),
+    [polylineCoordinates],
   );
   const selectedPoint =
     mapPoints.find((point) => point.id === selectedPointId) ?? mapPoints[0] ?? null;
@@ -1151,9 +1198,11 @@ export function CourierMapScreen(): React.JSX.Element {
         : null;
   const routeNotice =
     suggestedRoute.steps.length === 0
-      ? 'Chưa có điểm đủ điều kiện để vẽ tuyến.'
-      : routeCoordinates.length < 2
-        ? 'Cần ít nhất 2 điểm có tọa độ để vẽ polyline tuyến.'
+      ? 'Chưa có nhiệm vụ active để đề xuất tuyến.'
+      : routeCoordinates.length === 0
+        ? 'Tuyến hiện chỉ có điểm thiếu tọa độ nên chưa vẽ marker/polyline.'
+        : polylineCoordinates.length < 2
+          ? 'Cần vị trí courier hoặc thêm một điểm có tọa độ để vẽ polyline.'
         : missingRouteCoordinateCount > 0
           ? `${missingRouteCoordinateCount} điểm thiếu tọa độ nên chỉ hiển thị trong danh sách.`
           : null;
@@ -1464,9 +1513,9 @@ export function CourierMapScreen(): React.JSX.Element {
                 loadingEnabled
                 toolbarEnabled={false}
               >
-                {routeCoordinates.length > 1 ? (
+                {polylineCoordinates.length > 1 ? (
                   <NativePolyline
-                    coordinates={routeCoordinates}
+                    coordinates={polylineCoordinates}
                     strokeColor={theme.colors.primary}
                     strokeWidth={5}
                     lineCap="round"
@@ -1620,7 +1669,9 @@ export function CourierMapScreen(): React.JSX.Element {
               </View>
               <View style={styles.mapStatusChip}>
                 <Ionicons name="git-branch-outline" size={13} color={theme.colors.primary} />
-                <Text style={styles.mapStatusChipText}>Polyline dự phòng</Text>
+                <Text style={styles.mapStatusChipText}>
+                  {canUseNativeMap ? 'MapView + polyline' : 'Polyline dự phòng'}
+                </Text>
               </View>
             </View>
 
@@ -1899,7 +1950,7 @@ export function CourierMapScreen(): React.JSX.Element {
                 <Ionicons name="trail-sign-outline" size={22} color={theme.colors.textMuted} />
                 <Text style={styles.routeEmptyTitle}>Chưa đủ dữ liệu tuyến</Text>
                 <Text style={styles.routeEmptyText}>
-                  Cần điểm có tọa độ và nhiệm vụ đang xử lý để đề xuất thứ tự đi.
+                  Cần nhiệm vụ active để đề xuất thứ tự đi; điểm thiếu tọa độ vẫn sẽ hiện ở đây.
                 </Text>
               </View>
             ) : (
@@ -1913,6 +1964,12 @@ export function CourierMapScreen(): React.JSX.Element {
                       <Ionicons name="navigate-outline" size={13} color={theme.colors.textSecondary} />
                       <Text style={styles.routeMetricText}>
                         {formatDistance(suggestedRoute.totalDistanceMeters)}
+                      </Text>
+                    </View>
+                    <View style={styles.routeMetricPill}>
+                      <Ionicons name="time-outline" size={13} color={theme.colors.textSecondary} />
+                      <Text style={styles.routeMetricText}>
+                        {formatDuration(suggestedRoute.estimatedDurationMinutes)}
                       </Text>
                     </View>
                     <View style={styles.routeMetricPill}>
@@ -1947,7 +2004,12 @@ export function CourierMapScreen(): React.JSX.Element {
                           pressed && styles.pointRowPressed,
                         ]}
                       >
-                        <View style={styles.routeStepNumber}>
+                        <View
+                          style={[
+                            styles.routeStepNumber,
+                            !step.point.coordinate && styles.routeStepNumberMuted,
+                          ]}
+                        >
                           <Text style={styles.routeStepNumberText}>{index + 1}</Text>
                         </View>
                         <View style={styles.routeStepTextBlock}>
@@ -1955,12 +2017,12 @@ export function CourierMapScreen(): React.JSX.Element {
                             {step.point.task.shipmentCode ?? step.point.task.taskCode}
                           </Text>
                           <Text numberOfLines={1} style={styles.routeStepSubtitle}>
-                            {toTaskTypeLabel(step.point.task.taskType)} - {step.priorityLabel}
+                            {toTaskTypeLabel(step.point.task.taskType)} - {step.point.coordinate
+                              ? step.priorityLabel
+                              : 'Chưa có tọa độ'}
                           </Text>
                           <Text numberOfLines={1} style={styles.routeStepMeta}>
-                            {step.distanceFromPreviousMeters === null
-                              ? 'Điểm bắt đầu'
-                              : `Cách điểm trước ${formatDistance(step.distanceFromPreviousMeters)}`} - COD {formatMoney(step.point.codAmount)}
+                            {formatRouteStepMeta(step)}
                           </Text>
                         </View>
                         <View style={styles.routeStepActions}>
@@ -3014,6 +3076,9 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  routeStepNumberMuted: {
+    backgroundColor: theme.colors.textMuted,
   },
   routeStepNumberText: {
     color: '#FFFFFF',
