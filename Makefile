@@ -1,10 +1,13 @@
-.PHONY: dev-up start-services docker-build-services docker-push-services docker-up-services docker-down-services prod-up prod-deploy
+.PHONY: dev-up start-services phase1-flow docker-build-services docker-push-services docker-up-services docker-down-services prod-up prod-deploy
 
 dev-up:
 	powershell -ExecutionPolicy Bypass -File scripts/dev-up.ps1
 
 start-services:
 	powershell -ExecutionPolicy Bypass -File scripts/start-services-retry.ps1
+
+phase1-flow:
+	node scripts/phase1-logistics-flow-e2e.js
 
 docker-build-services:
 	./scripts/build-service-images.sh
