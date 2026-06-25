@@ -22,6 +22,7 @@ import { ScanEventsConsumer } from './messaging/consumers/scan-events.consumer';
 import { ScanEventsProducer } from './messaging/producers/scan-events.producer';
 import { ScanOutboxRelayService } from './messaging/outbox/scan-outbox-relay.service';
 import { ScanOutboxService } from './messaging/outbox/scan-outbox.service';
+import { LocationsRealtimeGateway } from './realtime/locations-realtime.gateway';
 
 @Module({
   imports: [HealthModule],
@@ -37,6 +38,7 @@ import { ScanOutboxService } from './messaging/outbox/scan-outbox.service';
     ScanEventsConsumer,
     ScanOutboxService,
     ScanOutboxRelayService,
+    LocationsRealtimeGateway,
     {
       provide: ScanEventRepository,
       useClass: ScanEventPrismaRepository,
