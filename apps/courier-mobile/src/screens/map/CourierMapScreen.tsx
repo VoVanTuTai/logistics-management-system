@@ -790,6 +790,16 @@ function deadlinePriorityPenalty(point: MapPoint, now: number): number {
   return 0;
 }
 
+function pickupDeliveryPenalty(point: MapPoint): number {
+  if (point.task.taskType === 'PICKUP') {
+    return -200;
+  }
+  if (point.task.taskType === 'DELIVERY') {
+    return 200;
+  }
+  return 0;
+}
+
 function routePriorityLabel(point: MapPoint, clusterSize: number, now: number): string {
   const labels: string[] = [];
 
@@ -894,11 +904,13 @@ function buildAutomaticRouteOrder(input: {
             const candidateScore =
               candidateDistance -
               Math.max(candidateClusterSize - 1, 0) * 450 +
-              deadlinePriorityPenalty(candidate, now);
+              deadlinePriorityPenalty(candidate, now) +
+              pickupDeliveryPenalty(candidate);
             const bestScore =
               bestDistance -
               Math.max(bestClusterSize - 1, 0) * 450 +
-              deadlinePriorityPenalty(best, now);
+              deadlinePriorityPenalty(best, now) +
+              pickupDeliveryPenalty(best);
 
             return candidateScore < bestScore ? candidate : best;
           }, null)
