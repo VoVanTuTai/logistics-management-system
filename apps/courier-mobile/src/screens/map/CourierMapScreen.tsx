@@ -1143,6 +1143,23 @@ export function CourierMapScreen(): React.JSX.Element {
       }),
     [currentLocation, manualRouteOrderIds, mapPoints, smartClusters],
   );
+  const defaultRoute = useMemo(
+    () => {
+      const candidates = mapPoints.filter(isRouteEligiblePoint);
+      const clusterSizeByPointId = buildClusterSizeByPointId(smartClusters);
+      return buildRouteFromOrderedPoints({
+        orderedPoints: candidates,
+        currentLocation,
+        clusterSizeByPointId,
+      });
+    },
+    [mapPoints, currentLocation, smartClusters]
+  );
+  const savedDistanceMeters = Math.max(0, defaultRoute.totalDistanceMeters - suggestedRoute.totalDistanceMeters);
+  const savedMinutes = Math.max(0, (defaultRoute.estimatedDurationMinutes ?? 0) - (suggestedRoute.estimatedDurationMinutes ?? 0));
+  const improvementRatio = defaultRoute.totalDistanceMeters > 0 
+    ? (savedDistanceMeters / defaultRoute.totalDistanceMeters) * 100 
+    : 0;
   const routePointIds = useMemo(
     () => new Set(suggestedRoute.steps.map((step) => step.point.id)),
     [suggestedRoute.steps],
@@ -1990,6 +2007,31 @@ export function CourierMapScreen(): React.JSX.Element {
                         {suggestedRoute.startsFromCurrentLocation ? 'Từ vị trí hiện tại' : 'Từ điểm đầu'}
                       </Text>
                     </View>
+                  </View>
+                </View>
+
+                <View style={styles.evaluationBox}>
+                  <View style={styles.evaluationHeader}>
+                    <Ionicons name="analytics-outline" size={16} color={theme.colors.primary} />
+                    <Text style={styles.evaluationTitle}>Đánh giá hiệu quả (Giai đoạn 4)</Text>
+                  </View>
+                  <View style={styles.evaluationRow}>
+                    <Text style={styles.evaluationLabel}>Tuyến mặc định:</Text>
+                    <Text style={styles.evaluationValue}>
+                      {formatDistance(defaultRoute.totalDistanceMeters)}, {formatDuration(defaultRoute.estimatedDurationMinutes)}
+                    </Text>
+                  </View>
+                  <View style={styles.evaluationRow}>
+                    <Text style={styles.evaluationLabel}>Tuyến đề xuất:</Text>
+                    <Text style={styles.evaluationValue}>
+                      {formatDistance(suggestedRoute.totalDistanceMeters)}, {formatDuration(suggestedRoute.estimatedDurationMinutes)}
+                    </Text>
+                  </View>
+                  <View style={styles.evaluationRow}>
+                    <Text style={styles.evaluationLabel}>Tiết kiệm:</Text>
+                    <Text style={styles.evaluationHighlight}>
+                      {formatDistance(savedDistanceMeters)}, ~{savedMinutes} phút (Cải thiện {improvementRatio.toFixed(1)}%)
+                    </Text>
                   </View>
                 </View>
 
