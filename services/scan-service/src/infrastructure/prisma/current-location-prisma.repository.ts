@@ -1,8 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import type { CurrentLocation as PrismaCurrentLocationRecord } from '@prisma/client';
+import type {
+  CourierCurrentLocation as PrismaCourierCurrentLocationRecord,
+  CurrentLocation as PrismaCurrentLocationRecord,
+} from '@prisma/client';
 
 import type {
+  CourierCurrentLocation,
   CurrentLocation,
+  UpsertCourierLocationInput,
   UpsertCurrentLocationInput,
 } from '../../domain/entities/current-location.entity';
 import { CurrentLocationRepository } from '../../domain/repositories/current-location.repository';
@@ -24,6 +29,27 @@ export class CurrentLocationPrismaRepository extends CurrentLocationRepository {
     });
 
     return record ? this.toEntity(record) : null;
+  }
+
+  async findCourierByCourierId(
+    courierId: string,
+  ): Promise<CourierCurrentLocation | null> {
+    const record = await this.prisma.courierCurrentLocation.findUnique({
+      where: { courierId },
+    });
+
+    return record ? this.toCourierEntity(record) : null;
+  }
+
+  async findLatestCourierByShipmentCode(
+    shipmentCode: string,
+  ): Promise<CourierCurrentLocation | null> {
+    const record = await this.prisma.courierCurrentLocation.findFirst({
+      where: { shipmentCode },
+      orderBy: { capturedAt: 'desc' },
+    });
+
+    return record ? this.toCourierEntity(record) : null;
   }
 
   async upsert(input: UpsertCurrentLocationInput): Promise<CurrentLocation> {
@@ -54,6 +80,90 @@ export class CurrentLocationPrismaRepository extends CurrentLocationRepository {
     return this.toEntity(record);
   }
 
+  async upsertCourierLocation(
+    input: UpsertCourierLocationInput,
+  ): Promise<CourierCurrentLocation> {
+    const normalizedShipmentCode = normalizeNullableCode(input.shipmentCode);
+    const normalizedTaskId = normalizeNullableText(input.taskId);
+
+    const courierRecord = await this.prisma.courierCurrentLocation.upsert({
+      where: { courierId: input.courierId },
+      update: {
+        taskId: normalizedTaskId,
+        shipmentCode: normalizedShipmentCode,
+        latitude: input.latitude,
+        longitude: input.longitude,
+        accuracy: input.accuracy ?? null,
+        capturedAt: input.capturedAt,
+        source: input.source,
+      },
+      create: {
+        courierId: input.courierId,
+        taskId: normalizedTaskId,
+        shipmentCode: normalizedShipmentCode,
+        latitude: input.latitude,
+        longitude: input.longitude,
+        accuracy: input.accuracy ?? null,
+        capturedAt: input.capturedAt,
+        source: input.source,
+      },
+    });
+
+    if (normalizedShipmentCode) {
+      await this.upsertShipmentPosition({
+        shipmentCode: normalizedShipmentCode,
+        courierId: input.courierId,
+        taskId: normalizedTaskId,
+        latitude: input.latitude,
+        longitude: input.longitude,
+        accuracy: input.accuracy ?? null,
+        capturedAt: input.capturedAt,
+        source: input.source,
+      });
+    }
+
+    return this.toCourierEntity(courierRecord);
+  }
+
+  private async upsertShipmentPosition(input: {
+    shipmentCode: string;
+    courierId: string;
+    taskId: string | null;
+    latitude: number;
+    longitude: number;
+    accuracy: number | null;
+    capturedAt: Date;
+    source: UpsertCourierLocationInput['source'];
+  }): Promise<void> {
+    await this.prisma.currentLocation.upsert({
+      where: { shipmentCode: input.shipmentCode },
+      update: {
+        courierId: input.courierId,
+        taskId: input.taskId,
+        latitude: input.latitude,
+        longitude: input.longitude,
+        accuracy: input.accuracy,
+        capturedAt: input.capturedAt,
+        source: input.source,
+      },
+      create: {
+        shipmentCode: input.shipmentCode,
+        locationCode: null,
+        lastScanType: null,
+        lastScanEventId: null,
+        lastScannedAt: null,
+        manifestCode: null,
+        courierId: input.courierId,
+        taskId: input.taskId,
+        latitude: input.latitude,
+        longitude: input.longitude,
+        accuracy: input.accuracy,
+        capturedAt: input.capturedAt,
+        source: input.source,
+      },
+    });
+  }
+
   private toEntity(record: PrismaCurrentLocationRecord): CurrentLocation {
     return {
       id: record.id,
@@ -63,6 +173,31 @@ export class CurrentLocationPrismaRepository extends CurrentLocationRepository {
       lastScanEventId: record.lastScanEventId,
       lastScannedAt: record.lastScannedAt,
       manifestCode: record.manifestCode,
+      courierId: record.courierId,
+      taskId: record.taskId,
+      latitude: record.latitude,
+      longitude: record.longitude,
+      accuracy: record.accuracy,
+      capturedAt: record.capturedAt,
+      source: record.source,
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
+    };
+  }
+
+  private toCourierEntity(
+    record: PrismaCourierCurrentLocationRecord,
+  ): CourierCurrentLocation {
+    return {
+      id: record.id,
+      courierId: record.courierId,
+      taskId: record.taskId,
+      shipmentCode: record.shipmentCode,
+      latitude: record.latitude,
+      longitude: record.longitude,
+      accuracy: record.accuracy,
+      capturedAt: record.capturedAt,
+      source: record.source,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
     };
@@ -117,4 +252,16 @@ function readPositiveNumber(value: string | undefined, fallback: number): number
   const parsed = Number(value);
 
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function normalizeNullableCode(value: string | null | undefined): string | null {
+  const normalized = value?.trim().toUpperCase() ?? '';
+
+  return normalized.length > 0 ? normalized : null;
+}
+
+function normalizeNullableText(value: string | null | undefined): string | null {
+  const normalized = value?.trim() ?? '';
+
+  return normalized.length > 0 ? normalized : null;
 }

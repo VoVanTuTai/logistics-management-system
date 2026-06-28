@@ -23,6 +23,10 @@ import { useTaskDetailQuery } from '../../features/tasks/tasks.queries';
 import type { AppNavigatorParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
+import {
+  openGoogleMapsDirections,
+  resolveShipmentNavigationDestination,
+} from '../../utils/directions';
 
 type Props = NativeStackScreenProps<AppNavigatorParamList, 'TaskDetail'>;
 
@@ -180,6 +184,16 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
       'sender.phone',
       'shipperPhone',
     ]) ?? null;
+  const pickupAddress =
+    readMetadataString(shipmentMetadata, [
+      'pickupAddress',
+      'pickup.address',
+      'pickup.location.address',
+      'senderAddress',
+      'sender.address',
+      'merchant.address',
+      'origin.address',
+    ]) ?? 'N/A';
   const receiverName =
     readMetadataString(shipmentMetadata, ['receiverName', 'receiver.name']) ?? 'N/A';
   const receiverPhone =
@@ -247,6 +261,19 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
   const issueEmployeeCode = readMetadataString(shipmentMetadata, ['issueEmployeeCode', 'exceptionEmployeeCode', 'ndrCase.reportedById', 'reportedById']);
   const issueHubCode = readMetadataString(shipmentMetadata, ['issueHubCode', 'exceptionHubCode', 'ndrCase.reportedHubCode', 'reportedHubCode']);
   const issueNoteFull = readMetadataString(shipmentMetadata, ['issueNote', 'exceptionNote', 'ndrCase.note', 'note']);
+  const navigationDestination = React.useMemo(
+    () =>
+      task
+        ? resolveShipmentNavigationDestination({
+            taskType: task.taskType,
+            metadata: shipmentMetadata,
+          })
+        : null,
+    [shipmentMetadata, task],
+  );
+  const handleOpenDirections = React.useCallback(async () => {
+    await openGoogleMapsDirections(navigationDestination);
+  }, [navigationDestination]);
 
   let displayStatus = toShipmentStatusLabelVi(shipmentQuery.data?.currentStatus);
   if (shipmentQuery.data?.currentStatus === 'EXCEPTION') {
@@ -338,6 +365,14 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
 
   const hasShipmentCode = Boolean(task.shipmentCode);
   const isPickupTask = task.taskType === 'PICKUP';
+  const addressLabel =
+    task.taskType === 'PICKUP'
+      ? 'Địa chỉ lấy'
+      : task.taskType === 'RETURN'
+        ? 'Địa chỉ hoàn'
+        : 'Địa chỉ giao';
+  const taskAddress =
+    navigationDestination?.address ?? (isPickupTask ? pickupAddress : deliveryAddress);
   const isReloadingStatus = taskQuery.isRefetching || shipmentQuery.isRefetching;
   const canRunPrimaryAction = isPickupTask
     ? canAccessCourierFeature(session?.user, 'scan.pickup')
@@ -449,9 +484,22 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
                   <Text style={styles.infoValue}>{receiverPhone ?? 'N/A'}</Text>
                 </View>
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Địa chỉ giao</Text>
-                  <Text style={styles.infoValue}>{deliveryAddress}</Text>
+                  <Text style={styles.infoLabel}>{addressLabel}</Text>
+                  <Text style={styles.infoValue}>{taskAddress}</Text>
                 </View>
+                <Pressable
+                  onPress={() => {
+                    void handleOpenDirections();
+                  }}
+                  style={({ pressed }) => [
+                    styles.directionsButton,
+                    !navigationDestination && styles.directionsButtonDisabled,
+                    pressed && styles.directionsButtonPressed,
+                  ]}
+                >
+                  <Ionicons name="navigate-outline" size={16} color="#FFFFFF" />
+                  <Text style={styles.directionsButtonText}>Chỉ đường</Text>
+                </Pressable>
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>Ghi chú</Text>
                   <Text style={styles.infoValue}>{shipmentNote}</Text>
@@ -679,6 +727,28 @@ const styles = StyleSheet.create({
     flex: 2,
     fontWeight: '800',
     textAlign: 'right',
+  },
+  directionsButton: {
+    minHeight: 42,
+    borderRadius: theme.radius.md,
+    backgroundColor: '#2563EB',
+    marginBottom: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.xs,
+  },
+  directionsButtonDisabled: {
+    opacity: 0.55,
+  },
+  directionsButtonPressed: {
+    opacity: 0.88,
+  },
+  directionsButtonText: {
+    ...theme.typography.caption.md,
+    color: '#FFFFFF',
+    fontWeight: '800',
   },
   loadingRow: {
     flexDirection: 'row',

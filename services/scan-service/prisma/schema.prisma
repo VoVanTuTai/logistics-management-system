@@ -20,6 +20,12 @@ enum OutboxStatus {
   FAILED
 }
 
+enum LocationSource {
+  GPS
+  MANUAL
+  SCAN
+}
+
 model ScanEvent {
   id             String   @id @default(cuid())
   shipmentCode   String
@@ -51,8 +57,33 @@ model CurrentLocation {
   lastScanEventId String?
   lastScannedAt  DateTime?
   manifestCode   String?
+  courierId      String?
+  taskId         String?
+  latitude       Float?
+  longitude      Float?
+  accuracy       Float?
+  capturedAt     DateTime?
+  source         LocationSource @default(SCAN)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+}
+
+model CourierCurrentLocation {
+  id           String         @id @default(cuid())
+  courierId    String         @unique
+  taskId       String?
+  shipmentCode String?
+  latitude     Float
+  longitude    Float
+  accuracy     Float?
+  capturedAt   DateTime
+  source       LocationSource @default(GPS)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([taskId])
+  @@index([shipmentCode])
+  @@index([capturedAt])
 }
 
 model OutboxEvent {

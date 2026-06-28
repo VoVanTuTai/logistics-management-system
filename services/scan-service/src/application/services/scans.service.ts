@@ -199,6 +199,13 @@ export class ScansService {
       lastScanEventId: scanEvent.id,
       lastScannedAt: scanEvent.occurredAt,
       manifestCode: scanEvent.manifestCode,
+      courierId: null,
+      taskId: null,
+      latitude: null,
+      longitude: null,
+      accuracy: null,
+      capturedAt: null,
+      source: 'SCAN',
       createdAt: scanEvent.createdAt,
       updatedAt: scanEvent.updatedAt,
     };
@@ -277,6 +284,15 @@ export class ScansService {
           ? new Date(record.responsePayload.currentLocation.lastScannedAt)
           : null,
         manifestCode: record.responsePayload.currentLocation.manifestCode,
+        courierId: record.responsePayload.currentLocation.courierId ?? null,
+        taskId: record.responsePayload.currentLocation.taskId ?? null,
+        latitude: record.responsePayload.currentLocation.latitude ?? null,
+        longitude: record.responsePayload.currentLocation.longitude ?? null,
+        accuracy: record.responsePayload.currentLocation.accuracy ?? null,
+        capturedAt: record.responsePayload.currentLocation.capturedAt
+          ? new Date(record.responsePayload.currentLocation.capturedAt)
+          : null,
+        source: record.responsePayload.currentLocation.source ?? 'SCAN',
         createdAt: new Date(record.responsePayload.currentLocation.createdAt),
         updatedAt: new Date(record.responsePayload.currentLocation.updatedAt),
       },
@@ -308,6 +324,15 @@ export class ScansService {
           ? result.currentLocation.lastScannedAt.toISOString()
           : null,
         manifestCode: result.currentLocation.manifestCode,
+        courierId: result.currentLocation.courierId,
+        taskId: result.currentLocation.taskId,
+        latitude: result.currentLocation.latitude,
+        longitude: result.currentLocation.longitude,
+        accuracy: result.currentLocation.accuracy,
+        capturedAt: result.currentLocation.capturedAt
+          ? result.currentLocation.capturedAt.toISOString()
+          : null,
+        source: result.currentLocation.source,
         createdAt: result.currentLocation.createdAt.toISOString(),
         updatedAt: result.currentLocation.updatedAt.toISOString(),
       },
