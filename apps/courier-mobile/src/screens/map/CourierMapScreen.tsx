@@ -567,6 +567,43 @@ function distanceMeters(first: GeoCoordinate, second: GeoCoordinate): number {
   return earthRadiusMeters * c;
 }
 
+function calculateRouteDistance(route: MapPoint[], currentLocation: GeoCoordinate | null): number {
+  let totalDistance = 0;
+  let cursor = currentLocation;
+  for (const point of route) {
+    if (point.coordinate) {
+      if (cursor) {
+        totalDistance += distanceMeters(cursor, point.coordinate);
+      }
+      cursor = point.coordinate;
+    }
+  }
+  return totalDistance;
+}
+
+function isValidRouteOrder(route: MapPoint[]): boolean {
+  const pickupPositions = new Map<string, number>();
+  for (let i = 0; i < route.length; i++) {
+    const point = route[i];
+    if (point.task.taskType === 'PICKUP' && point.task.shipmentCode) {
+      pickupPositions.set(point.task.shipmentCode.trim().toUpperCase(), i);
+    }
+  }
+
+  for (let i = 0; i < route.length; i++) {
+    const point = route[i];
+    if (point.task.taskType === 'DELIVERY' && point.task.shipmentCode) {
+      const code = point.task.shipmentCode.trim().toUpperCase();
+      const pickupIdx = pickupPositions.get(code);
+      if (pickupIdx !== undefined && pickupIdx > i) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+
 function buildPickupCompletionByShipment(tasks: TaskDto[]): Map<string, boolean> {
   const pickupCompletion = new Map<string, boolean>();
 
@@ -925,8 +962,50 @@ function buildAutomaticRouteOrder(input: {
     unvisited.splice(unvisited.findIndex((point) => point.id === next.id), 1);
   }
 
-  return ordered;
+  return optimizeRoute2Opt(ordered, input.currentLocation);
 }
+
+function optimizeRoute2Opt(
+  initialRoute: MapPoint[],
+  currentLocation: GeoCoordinate | null,
+): MapPoint[] {
+  if (initialRoute.length <= 3) {
+    return initialRoute;
+  }
+
+  let bestRoute = [...initialRoute];
+  let bestDistance = calculateRouteDistance(bestRoute, currentLocation);
+  let improved = true;
+  let iterations = 0;
+  const maxIterations = 200;
+
+  while (improved && iterations < maxIterations) {
+    improved = false;
+    iterations++;
+
+    for (let i = 0; i < bestRoute.length - 1; i++) {
+      for (let j = i + 1; j < bestRoute.length; j++) {
+        const newRoute = bestRoute.slice(0, i)
+          .concat(bestRoute.slice(i, j + 1).reverse())
+          .concat(bestRoute.slice(j + 1));
+
+        if (!isValidRouteOrder(newRoute)) {
+          continue;
+        }
+
+        const newDistance = calculateRouteDistance(newRoute, currentLocation);
+        if (newDistance < bestDistance - 1) {
+          bestRoute = newRoute;
+          bestDistance = newDistance;
+          improved = true;
+        }
+      }
+    }
+  }
+
+  return bestRoute;
+}
+
 
 function buildRouteFromOrderedPoints(input: {
   orderedPoints: MapPoint[];
@@ -3391,4 +3470,44 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '900',
   },
+  evaluationBox: {
+    padding: theme.spacing.md,
+    borderRadius: theme.radius.md,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: theme.spacing.xs,
+  },
+  evaluationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    marginBottom: theme.spacing.xs,
+  },
+  evaluationTitle: {
+    color: theme.colors.textPrimary,
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  evaluationRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  evaluationLabel: {
+    color: theme.colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  evaluationValue: {
+    color: theme.colors.textPrimary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  evaluationHighlight: {
+    color: theme.colors.primary,
+    fontSize: 12,
+    fontWeight: '900',
+  },
 });
+
