@@ -33,6 +33,7 @@ import {
   type NavigationDestination,
 } from '../../utils/directions';
 import { appEnv } from '../../utils/env';
+import { reportLocationToServer } from '../../services/location-reporter.service';
 import {
   MapView as NativeMapView,
   Marker as NativeMarker,
@@ -1322,7 +1323,18 @@ export function CourierMapScreen(): React.JSX.Element {
     });
     setLastLocationUpdatedAt(new Date(position.timestamp));
     setLocationState('ready');
-  }, []);
+
+    // Fire-and-forget: report GPS position to backend for real-time tracking.
+    reportLocationToServer({
+      accessToken: session?.tokens.accessToken ?? null,
+      courierId,
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude,
+      accuracy: position.coords.accuracy,
+      capturedAt: new Date(position.timestamp).toISOString(),
+      source: 'GPS',
+    });
+  }, [session?.tokens.accessToken, courierId]);
 
   const refreshCurrentLocation = useCallback(async () => {
     setLocationState('loading');
