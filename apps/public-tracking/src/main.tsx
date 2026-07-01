@@ -1,4 +1,4 @@
-import React, { FormEvent, useMemo, useState } from 'react';
+import React, { FormEvent, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import './styles.css';
@@ -7,6 +7,7 @@ const SearchIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" heig
 const PackageIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m7.5 4.27 9 5.15" /><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" /><path d="m3.3 7 8.7 5 8.7-5" /><path d="M12 22V12" /></svg>;
 const TruckIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" /><path d="M15 18H9" /><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" /><circle cx="17" cy="18" r="2" /><circle cx="7" cy="18" r="2" /></svg>;
 const MapPinIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="3" /></svg>;
+const LocateIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12h3" /><path d="M19 12h3" /><path d="M12 2v3" /><path d="M12 19v3" /><circle cx="12" cy="12" r="7" /><circle cx="12" cy="12" r="3" /></svg>;
 const CheckCircleIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><path d="m9 11 3 3L22 4" /></svg>;
 const NetworkIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 13c0-4.4-3.6-8-8-8s-8 3.6-8 8" /><path d="M21 13h-4" /><path d="M7 13H3" /><path d="M12 5V1" /><path d="m18 19 3 3" /><path d="m6 19-3 3" /><circle cx="12" cy="13" r="3" /><circle cx="12" cy="19" r="2" /></svg>;
 const ShieldIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.68-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1Z" /><path d="m9 12 2 2 4-4" /></svg>;
@@ -86,6 +87,22 @@ interface TrackingResponse {
 
 interface ApiErrorPayload {
   message?: string | string[];
+}
+
+interface GpsPositionApiResponse {
+  latitude: number;
+  longitude: number;
+  accuracy: number | null;
+  capturedAt: string | null;
+  source: string | null;
+}
+
+interface GpsPositionView {
+  latitude: number;
+  longitude: number;
+  accuracy: number | null;
+  capturedAt: string | null;
+  source: string;
 }
 
 interface TimelineItem {
@@ -211,6 +228,7 @@ function PublicTrackingApp(): React.JSX.Element {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [tracking, setTracking] = useState<TrackingResponse | null>(null);
+  const [gpsPosition, setGpsPosition] = useState<GpsPositionView | null>(null);
 
   async function onSubmit(event?: FormEvent<HTMLFormElement>): Promise<void> {
     if (event) event.preventDefault();
@@ -233,11 +251,37 @@ function PublicTrackingApp(): React.JSX.Element {
         },
       );
       setTracking(detail);
+      // Fire-and-forget: fetch latest GPS position (optional, never blocks UI).
+      void fetchGpsPosition(trackingCode);
     } catch (requestError) {
       setTracking(null);
+      setGpsPosition(null);
       setError(getErrorMessage(requestError));
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function fetchGpsPosition(shipmentCode: string): Promise<void> {
+    try {
+      const position = await request<GpsPositionApiResponse>(
+        `/public/scan/locations/${encodeURIComponent(shipmentCode)}/latest-position`,
+        { method: 'GET', headers: { Accept: 'application/json' } },
+      );
+      if (position && typeof position.latitude === 'number' && typeof position.longitude === 'number') {
+        setGpsPosition({
+          latitude: position.latitude,
+          longitude: position.longitude,
+          accuracy: typeof position.accuracy === 'number' ? position.accuracy : null,
+          capturedAt: position.capturedAt ?? null,
+          source: position.source ?? 'GPS',
+        });
+      } else {
+        setGpsPosition(null);
+      }
+    } catch {
+      // GPS position is optional — silently ignore errors.
+      setGpsPosition(null);
     }
   }
 
@@ -337,6 +381,28 @@ function PublicTrackingApp(): React.JSX.Element {
                 <InfoItem label="Dịch vụ" value={order?.serviceType} />
               </div>
             </section>
+
+            {gpsPosition ? (
+              <section className="panel gps-position-card">
+                <PanelHeader title="Vị trí GPS gần nhất" icon={<LocateIcon />} />
+                <div className="gps-position-content">
+                  <div className="gps-position-indicator">
+                    <span className="gps-pulse" />
+                    <span className="gps-label">LIVE</span>
+                  </div>
+                  <div className="gps-position-details">
+                    <InfoList
+                      items={[
+                        ['Tọa độ', `${gpsPosition.latitude.toFixed(6)}, ${gpsPosition.longitude.toFixed(6)}`],
+                        ['Độ chính xác', gpsPosition.accuracy !== null ? `±${gpsPosition.accuracy}m` : 'Không rõ'],
+                        ['Cập nhật lúc', gpsPosition.capturedAt ? formatDate(gpsPosition.capturedAt) : 'Không rõ'],
+                        ['Nguồn', gpsPosition.source],
+                      ]}
+                    />
+                  </div>
+                </div>
+              </section>
+            ) : null}
 
             <section className="details-grid">
               <article className="panel">
