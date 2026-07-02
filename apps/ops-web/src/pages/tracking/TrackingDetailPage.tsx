@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import { useTrackingDetailQuery } from '../../features/tracking/tracking.api';
@@ -6,6 +6,7 @@ import { routePaths } from '../../navigation/routes';
 import { ApiClientError, getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
 import { formatDateTime } from '../../utils/format';
+import { CourierLocationCard } from './CourierLocationCard';
 import { TrackingTimelineTable } from './TrackingTimelineTable';
 
 export function TrackingDetailPage(): React.JSX.Element {
@@ -58,6 +59,8 @@ export function TrackingDetailPage(): React.JSX.Element {
         <p>Sự kiện cuối: {detailQuery.data.current?.lastEventType ?? 'Không có'}</p>
         <p>Cập nhật lúc: {formatDateTime(detailQuery.data.current?.updatedAt)}</p>
       </article>
+
+      <CourierLocationCard shipmentCode={shipmentCode} />
 
       <h3 style={styles.timelineHeading}>Dòng thời gian</h3>
       {detailQuery.data.timeline.length === 0 ? <p>Không có sự kiện timeline.</p> : null}

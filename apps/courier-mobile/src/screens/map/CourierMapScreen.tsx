@@ -33,6 +33,7 @@ import {
   type NavigationDestination,
 } from '../../utils/directions';
 import { appEnv } from '../../utils/env';
+import { reportLocationToServer } from '../../services/location-reporter.service';
 import {
   MapView as NativeMapView,
   Marker as NativeMarker,
@@ -567,6 +568,43 @@ function distanceMeters(first: GeoCoordinate, second: GeoCoordinate): number {
   return earthRadiusMeters * c;
 }
 
+function calculateRouteDistance(route: MapPoint[], currentLocation: GeoCoordinate | null): number {
+  let totalDistance = 0;
+  let cursor = currentLocation;
+  for (const point of route) {
+    if (point.coordinate) {
+      if (cursor) {
+        totalDistance += distanceMeters(cursor, point.coordinate);
+      }
+      cursor = point.coordinate;
+    }
+  }
+  return totalDistance;
+}
+
+function isValidRouteOrder(route: MapPoint[]): boolean {
+  const pickupPositions = new Map<string, number>();
+  for (let i = 0; i < route.length; i++) {
+    const point = route[i];
+    if (point.task.taskType === 'PICKUP' && point.task.shipmentCode) {
+      pickupPositions.set(point.task.shipmentCode.trim().toUpperCase(), i);
+    }
+  }
+
+  for (let i = 0; i < route.length; i++) {
+    const point = route[i];
+    if (point.task.taskType === 'DELIVERY' && point.task.shipmentCode) {
+      const code = point.task.shipmentCode.trim().toUpperCase();
+      const pickupIdx = pickupPositions.get(code);
+      if (pickupIdx !== undefined && pickupIdx > i) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+
 function buildPickupCompletionByShipment(tasks: TaskDto[]): Map<string, boolean> {
   const pickupCompletion = new Map<string, boolean>();
 
@@ -925,8 +963,50 @@ function buildAutomaticRouteOrder(input: {
     unvisited.splice(unvisited.findIndex((point) => point.id === next.id), 1);
   }
 
-  return ordered;
+  return optimizeRoute2Opt(ordered, input.currentLocation);
 }
+
+function optimizeRoute2Opt(
+  initialRoute: MapPoint[],
+  currentLocation: GeoCoordinate | null,
+): MapPoint[] {
+  if (initialRoute.length <= 3) {
+    return initialRoute;
+  }
+
+  let bestRoute = [...initialRoute];
+  let bestDistance = calculateRouteDistance(bestRoute, currentLocation);
+  let improved = true;
+  let iterations = 0;
+  const maxIterations = 200;
+
+  while (improved && iterations < maxIterations) {
+    improved = false;
+    iterations++;
+
+    for (let i = 0; i < bestRoute.length - 1; i++) {
+      for (let j = i + 1; j < bestRoute.length; j++) {
+        const newRoute = bestRoute.slice(0, i)
+          .concat(bestRoute.slice(i, j + 1).reverse())
+          .concat(bestRoute.slice(j + 1));
+
+        if (!isValidRouteOrder(newRoute)) {
+          continue;
+        }
+
+        const newDistance = calculateRouteDistance(newRoute, currentLocation);
+        if (newDistance < bestDistance - 1) {
+          bestRoute = newRoute;
+          bestDistance = newDistance;
+          improved = true;
+        }
+      }
+    }
+  }
+
+  return bestRoute;
+}
+
 
 function buildRouteFromOrderedPoints(input: {
   orderedPoints: MapPoint[];
@@ -1243,7 +1323,18 @@ export function CourierMapScreen(): React.JSX.Element {
     });
     setLastLocationUpdatedAt(new Date(position.timestamp));
     setLocationState('ready');
-  }, []);
+
+    // Fire-and-forget: report GPS position to backend for real-time tracking.
+    reportLocationToServer({
+      accessToken: session?.tokens.accessToken ?? null,
+      courierId,
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude,
+      accuracy: position.coords.accuracy,
+      capturedAt: new Date(position.timestamp).toISOString(),
+      source: 'GPS',
+    });
+  }, [session?.tokens.accessToken, courierId]);
 
   const refreshCurrentLocation = useCallback(async () => {
     setLocationState('loading');
@@ -2013,25 +2104,86 @@ export function CourierMapScreen(): React.JSX.Element {
                 <View style={styles.evaluationBox}>
                   <View style={styles.evaluationHeader}>
                     <Ionicons name="analytics-outline" size={16} color={theme.colors.primary} />
-                    <Text style={styles.evaluationTitle}>Đánh giá hiệu quả (Giai đoạn 4)</Text>
+                    <Text style={styles.evaluationTitle}>Đánh giá hiệu quả tối ưu hóa</Text>
                   </View>
-                  <View style={styles.evaluationRow}>
-                    <Text style={styles.evaluationLabel}>Tuyến mặc định:</Text>
-                    <Text style={styles.evaluationValue}>
-                      {formatDistance(defaultRoute.totalDistanceMeters)}, {formatDuration(defaultRoute.estimatedDurationMinutes)}
+
+                  {/* Comparison table header */}
+                  <View style={styles.evalCompareHeader}>
+                    <View style={styles.evalCompareHeaderCell} />
+                    <Text style={styles.evalCompareHeaderLabel}>Quãng đường</Text>
+                    <Text style={styles.evalCompareHeaderLabel}>ETA</Text>
+                  </View>
+
+                  {/* Default route row */}
+                  <View style={styles.evalCompareRow}>
+                    <View style={styles.evalCompareIconCell}>
+                      <View style={[styles.evalDot, { backgroundColor: '#94A3B8' }]} />
+                      <Text style={styles.evalCompareRowLabel}>Mặc định</Text>
+                    </View>
+                    <Text style={styles.evalCompareRowValue}>
+                      {formatDistance(defaultRoute.totalDistanceMeters)}
+                    </Text>
+                    <Text style={styles.evalCompareRowValue}>
+                      {formatDuration(defaultRoute.estimatedDurationMinutes)}
                     </Text>
                   </View>
-                  <View style={styles.evaluationRow}>
-                    <Text style={styles.evaluationLabel}>Tuyến đề xuất:</Text>
-                    <Text style={styles.evaluationValue}>
-                      {formatDistance(suggestedRoute.totalDistanceMeters)}, {formatDuration(suggestedRoute.estimatedDurationMinutes)}
+
+                  {/* Distance comparison bar (default) */}
+                  <View style={styles.evalBarTrack}>
+                    <View style={[styles.evalBarFill, styles.evalBarDefault, { width: '100%' }]} />
+                  </View>
+
+                  {/* Optimized route row */}
+                  <View style={[styles.evalCompareRow, { marginTop: theme.spacing.sm }]}>
+                    <View style={styles.evalCompareIconCell}>
+                      <View style={[styles.evalDot, { backgroundColor: theme.colors.success }]} />
+                      <Text style={[styles.evalCompareRowLabel, { color: theme.colors.success }]}>Tối ưu</Text>
+                    </View>
+                    <Text style={[styles.evalCompareRowValue, { color: theme.colors.success, fontWeight: '900' }]}>
+                      {formatDistance(suggestedRoute.totalDistanceMeters)}
+                    </Text>
+                    <Text style={[styles.evalCompareRowValue, { color: theme.colors.success, fontWeight: '900' }]}>
+                      {formatDuration(suggestedRoute.estimatedDurationMinutes)}
                     </Text>
                   </View>
-                  <View style={styles.evaluationRow}>
-                    <Text style={styles.evaluationLabel}>Tiết kiệm:</Text>
-                    <Text style={styles.evaluationHighlight}>
-                      {formatDistance(savedDistanceMeters)}, ~{savedMinutes} phút (Cải thiện {improvementRatio.toFixed(1)}%)
-                    </Text>
+
+                  {/* Distance comparison bar (optimized) */}
+                  <View style={styles.evalBarTrack}>
+                    <View
+                      style={[
+                        styles.evalBarFill,
+                        styles.evalBarOptimized,
+                        {
+                          width: defaultRoute.totalDistanceMeters > 0
+                            ? `${Math.max(5, (suggestedRoute.totalDistanceMeters / defaultRoute.totalDistanceMeters) * 100)}%`
+                            : '100%',
+                        },
+                      ]}
+                    />
+                  </View>
+
+                  {/* Savings summary */}
+                  <View style={styles.evalSavingsBox}>
+                    <View style={styles.evalSavingsRow}>
+                      <Ionicons name="trending-down-outline" size={16} color={theme.colors.success} />
+                      <Text style={styles.evalSavingsTitle}>Tiết kiệm</Text>
+                    </View>
+                    <View style={styles.evalSavingsMetrics}>
+                      <View style={styles.evalSavingsMetric}>
+                        <Text style={styles.evalSavingsNumber}>{formatDistance(savedDistanceMeters)}</Text>
+                        <Text style={styles.evalSavingsUnit}>quãng đường</Text>
+                      </View>
+                      <View style={styles.evalSavingsDivider} />
+                      <View style={styles.evalSavingsMetric}>
+                        <Text style={styles.evalSavingsNumber}>~{savedMinutes} phút</Text>
+                        <Text style={styles.evalSavingsUnit}>thời gian</Text>
+                      </View>
+                      <View style={styles.evalSavingsDivider} />
+                      <View style={styles.evalSavingsMetric}>
+                        <Text style={styles.evalSavingsPercent}>{improvementRatio.toFixed(1)}%</Text>
+                        <Text style={styles.evalSavingsUnit}>cải thiện</Text>
+                      </View>
+                    </View>
                   </View>
                 </View>
 
@@ -3391,4 +3543,139 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '900',
   },
+  evaluationBox: {
+    padding: theme.spacing.md,
+    borderRadius: theme.radius.md,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: theme.spacing.xxs,
+  },
+  evaluationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    marginBottom: theme.spacing.sm,
+  },
+  evaluationTitle: {
+    color: theme.colors.textPrimary,
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  evalCompareHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingBottom: theme.spacing.xxs,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    marginBottom: theme.spacing.xs,
+  },
+  evalCompareHeaderCell: {
+    flex: 1.2,
+  },
+  evalCompareHeaderLabel: {
+    flex: 1,
+    fontSize: 10,
+    fontWeight: '800',
+    color: theme.colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    textAlign: 'right',
+  },
+  evalCompareRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  evalCompareIconCell: {
+    flex: 1.2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  evalDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  evalCompareRowLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: theme.colors.textSecondary,
+  },
+  evalCompareRowValue: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+    textAlign: 'right',
+  },
+  evalBarTrack: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#E2E8F0',
+    marginTop: 3,
+    marginBottom: 2,
+    overflow: 'hidden',
+  },
+  evalBarFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  evalBarDefault: {
+    backgroundColor: '#94A3B8',
+    opacity: 0.5,
+  },
+  evalBarOptimized: {
+    backgroundColor: theme.colors.success,
+  },
+  evalSavingsBox: {
+    marginTop: theme.spacing.sm,
+    padding: theme.spacing.sm,
+    borderRadius: theme.radius.sm,
+    backgroundColor: theme.colors.successSoft,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+  },
+  evalSavingsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: theme.spacing.xs,
+  },
+  evalSavingsTitle: {
+    fontSize: 12,
+    fontWeight: '900',
+    color: theme.colors.success,
+  },
+  evalSavingsMetrics: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+  },
+  evalSavingsMetric: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  evalSavingsNumber: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: theme.colors.success,
+  },
+  evalSavingsPercent: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: theme.colors.primary,
+  },
+  evalSavingsUnit: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: theme.colors.textMuted,
+    marginTop: 2,
+  },
+  evalSavingsDivider: {
+    width: 1,
+    height: 28,
+    backgroundColor: '#BBF7D0',
+  },
 });
+
