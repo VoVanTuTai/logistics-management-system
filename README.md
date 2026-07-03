@@ -1,8 +1,8 @@
 # Nexus Express System
 
-A logistics management platform for shipment creation, pickup, hub operations, courier delivery, public tracking, COD settlement, and operational reporting.
+A student logistics management practice project for shipment creation, pickup, hub operations, courier delivery, public tracking, COD settlement, and operational reporting.
 
-The project is a TypeScript monorepo built around microservices, a Gateway/BFF entry point, PostgreSQL database-per-service ownership, RabbitMQ domain events, and separate web/mobile clients for each user group.
+The project is a TypeScript monorepo used to practice service-boundary design, a Gateway/BFF entry point, PostgreSQL ownership ideas, RabbitMQ event exposure, and separate client apps for different user groups.
 
 ## What This System Does
 
@@ -355,6 +355,33 @@ cd apps/ops-web
 npm install
 npm run dev
 ```
+
+### 5. Run the Phase 1 logistics flow
+
+After the backend stack is running, use the phase-1 runner to verify the
+core demo flow:
+
+```bash
+node scripts/phase1-logistics-flow-e2e.js
+# or
+make phase1-flow
+```
+
+The runner exercises real Gateway APIs for:
+
+```text
+Merchant creates shipment
+-> Ops approves pickup and assigns pickup task
+-> Courier sees assigned pickup task and scans pickup
+-> Ops creates/assigns delivery task
+-> Courier sees assigned delivery task and marks delivery success
+-> Shipment reaches DELIVERED
+-> Public tracking returns the shipment journey by receiver phone
+```
+
+It writes a JSON evidence report to `tmp/phase1-logistics-flow-e2e-*.json`.
+Use `PHASE1_GATEWAY_URL`, `PHASE1_ORIGIN_HUB`, `PHASE1_DEST_HUB`, and the
+`E2E_*_USER` variables to point it at a different environment or account set.
 
 ## Build And Test
 
