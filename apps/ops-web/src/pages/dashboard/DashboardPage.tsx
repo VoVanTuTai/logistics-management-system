@@ -245,6 +245,11 @@ export function DashboardPage(): React.JSX.Element {
           to: routePaths.groupServiceQuality,
           icon: 'service_quality',
         },
+        {
+          title: 'Nền tảng quy hoạch',
+          to: routePaths.groupPlanningPlatform,
+          icon: 'planning_platform',
+        },
       ]
     : [
         {
