@@ -6,6 +6,7 @@ import { MerchantModule } from './api/merchant/merchant.module';
 import { OpsModule } from './api/ops/ops.module';
 import { PublicModule } from './api/public/public.module';
 import { TasksRealtimeModule } from './api/tasks-realtime/tasks-realtime.module';
+import { LocationsRealtimeModule } from './api/locations-realtime/locations-realtime.module';
 import { MediaModule } from './api/media/media.module';
 import { HealthModule } from './health/health.module';
 
@@ -15,6 +16,7 @@ import { HealthModule } from './health/health.module';
     PublicModule,
     ChatModule,
     TasksRealtimeModule,
+    LocationsRealtimeModule,
     MerchantModule,
     OpsModule,
     CourierModule,
@@ -22,3 +24,4 @@ import { HealthModule } from './health/health.module';
   ],
 })
 export class AppModule {}
+

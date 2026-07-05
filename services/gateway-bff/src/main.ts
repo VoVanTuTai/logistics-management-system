@@ -8,6 +8,7 @@ import type { Request, Response } from 'express';
 import { AppModule } from './app.module';
 import { ChatRealtimeGateway } from './api/chat/chat-realtime.gateway';
 import { TasksRealtimeProxyGateway } from './api/tasks-realtime/tasks-realtime-proxy.gateway';
+import { LocationsRealtimeProxyGateway } from './api/locations-realtime/locations-realtime-proxy.gateway';
 import {
   captureRawBody,
   createPayloadErrorHandler,
@@ -68,6 +69,8 @@ async function bootstrap(): Promise<void> {
   await app.listen(port);
   app.get(ChatRealtimeGateway).registerHttpServer(app.getHttpServer());
   app.get(TasksRealtimeProxyGateway).registerHttpServer(app.getHttpServer());
+  app.get(LocationsRealtimeProxyGateway).registerHttpServer(app.getHttpServer());
 }
 
 void bootstrap();
+
