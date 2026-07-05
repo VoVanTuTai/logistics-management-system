@@ -1,5 +1,6 @@
 import type {
   CourierCurrentLocation,
+  CourierLocationHistory,
   CurrentLocation,
   UpsertCourierLocationInput,
   UpsertCurrentLocationInput,
@@ -25,4 +26,22 @@ export abstract class CurrentLocationRepository {
   abstract upsertCourierLocation(
     input: UpsertCourierLocationInput,
   ): Promise<CourierCurrentLocation>;
+
+  abstract createLocationHistory(
+    input: UpsertCourierLocationInput,
+  ): Promise<CourierLocationHistory>;
+
+  abstract getCourierHistory(
+    courierId: string,
+    limit: number,
+  ): Promise<CourierLocationHistory[]>;
+
+  abstract getShipmentHistory(
+    shipmentCode: string,
+  ): Promise<CourierLocationHistory[]>;
+
+  abstract pruneLocationHistory(
+    cutoff: Date,
+  ): Promise<number>;
 }
+

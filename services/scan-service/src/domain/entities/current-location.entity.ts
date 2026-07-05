@@ -85,3 +85,30 @@ export interface UpsertCourierLocationInput {
   capturedAt: Date;
   source: LocationSource;
 }
+
+export interface CourierLocationHistory {
+  id: string;
+  courierId: string;
+  taskId: string | null;
+  shipmentCode: string | null;
+  latitude: number;
+  longitude: number;
+  accuracy: number | null;
+  capturedAt: Date;
+  source: LocationSource;
+  createdAt: Date;
+}
+
+export interface CourierLocationHistorySnapshot {
+  id: string;
+  courierId: string;
+  taskId: string | null;
+  shipmentCode: string | null;
+  latitude: number;
+  longitude: number;
+  accuracy: number | null;
+  capturedAt: string;
+  source: LocationSource;
+  createdAt: string;
+}
+
