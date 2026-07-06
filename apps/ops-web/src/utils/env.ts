@@ -49,10 +49,39 @@ function resolveChatWsUrl(): string {
   return `${protocol}://${window.location.host}/ws/chat`;
 }
 
+function resolveLocationsWsUrl(): string {
+  const configuredUrl = import.meta.env.VITE_LOCATIONS_WS_URL ?? '';
+  if (configuredUrl.trim()) {
+    return configuredUrl.trim();
+  }
+
+  if (gatewayBaseUrl.trim()) {
+    try {
+      const gatewayUrl = new URL(gatewayBaseUrl);
+      gatewayUrl.protocol = gatewayUrl.protocol === 'https:' ? 'wss:' : 'ws:';
+      gatewayUrl.pathname = '/ws/locations';
+      gatewayUrl.search = '';
+      gatewayUrl.hash = '';
+      return gatewayUrl.toString();
+    } catch {
+      // Fall through to same-origin websocket for relative gateway configs.
+    }
+  }
+
+  if (typeof window === 'undefined') {
+    return 'ws://127.0.0.1:5173/ws/locations';
+  }
+
+  const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+  return `${protocol}://${window.location.host}/ws/locations`;
+}
+
 export const appEnv = {
   gatewayBaseUrl,
   requestTimeoutMs,
   enableFullOpsModules,
   dispatchTasksWsUrl,
   chatWsUrl,
+  locationsWsUrl: resolveLocationsWsUrl(),
 } as const;
+
