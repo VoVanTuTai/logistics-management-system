@@ -561,3 +561,98 @@ For UI-only work:
 2. Change JSX/layout/styles/presentational components only.
 3. Preserve loading, empty, error, and success states.
 4. Build the touched app before handing off.
+
+Đề xuất Tích hợp Trí tuệ Nhân tạo (AI) vào Hệ thống Nexus Express System
+Tài liệu này trình bày chi tiết hai giải pháp tích hợp Trí tuệ Nhân tạo (AI) vào kiến trúc Microservices của Nexus Express System nhằm tối ưu hóa chi phí vận hành và nâng cao độ tin cậy của hệ thống. Nội dung được trình bày theo văn phong báo cáo khoa học/luận văn tốt nghiệp ngành Công nghệ thông tin.
+
+GIẢI PHÁP 1: AI VISION TỰ ĐỘNG KIỂM DUYỆT CHẤT LƯỢNG ẢNH MINH CHỨNG GIAO NHẬN (PROOF OF DELIVERY - POD)
+1. Đặt vấn đề và Mục tiêu giải quyết
+Trong quy trình hoàn tất đơn hàng chuyển phát (Last-mile Delivery), việc Courier xác nhận trạng thái "Giao thành công" (DELIVERED) bắt buộc phải đính kèm ảnh chụp gói hàng thực tế cùng bối cảnh giao nhận làm minh chứng (Proof of Delivery - POD). Tuy nhiên, trên thực tế vận hành phát sinh hai vấn đề nghiêm trọng:
+
+Gian lận từ Courier (Giao lụi): Để kịp chỉ tiêu năng suất ngày, Courier tự ý cập nhật trạng thái giao thành công nhưng tải lên ảnh chụp không hợp lệ (ảnh tối đen, ảnh bàn chân, ảnh mặt đường, ảnh phong cảnh không liên quan).
+Mất mát và tranh chấp tài chính: Khi khách hàng khiếu nại không nhận được hàng, bộ phận đối soát (Ops) phải kiểm tra thủ công hàng ngàn ảnh POD mỗi ngày, gây tốn thời gian và làm chậm trễ quy trình bồi hoàn COD cho Merchant.
+Mục tiêu: Tích hợp bộ lọc AI Vision tại API Gateway để tự động phát hiện và ngăn chặn ảnh POD không hợp lệ ngay tại thời điểm Courier tải ảnh lên, không cho phép cập nhật trạng thái đơn hàng khi chưa có POD chuẩn.
+
+2. Kiến trúc và Quy trình xử lý dữ liệu
+Giải pháp được thiết kế hoạt động dưới dạng một Middleware kiểm duyệt ảnh trung gian tại gateway-bff, hoạt động trước khi dữ liệu được chuyển tiếp tới delivery-service.
+
+delivery-service
+MinIO / S3 Storage
+AI Vision Engine
+gateway-bff (API Gateway)
+delivery-service
+MinIO / S3 Storage
+AI Vision Engine
+gateway-bff (API Gateway)
+Kiểm tra: Phân loại cảnh quan,
+Phát hiện Gói hàng (Object Detection)
+alt
+[Ảnh không hợp lệ (Không có gói hàng / Ảnh tối đen / Spam)]
+[Ảnh hợp lệ]
+Courier App
+POST /courier/delivery/success (Payload + Image File)
+1
+Gửi ảnh kiểm duyệt chất lượng
+2
+Trả về trạng thái "Invalid POD" (Kèm lý do)
+3
+HTTP 400 Bad Request: "Ảnh chụp minh chứng không hợp lệ"
+4
+Trả về trạng thái "Valid POD"
+5
+Lưu trữ ảnh gốc và nhận URL
+6
+Forward request kèm podImageUrl & trạng thái DELIVERED
+7
+Xác nhận cập nhật thành công
+8
+HTTP 200 OK
+9
+Courier App
+3. Phương pháp công nghệ và Mô hình áp dụng
+Hệ thống sử dụng mô hình học sâu kết hợp giữa Phân loại hình ảnh (Image Classification) và Phát hiện vật thể (Object Detection):
+
+Mô hình phân loại (VGG16 / MobileNetV2): Được huấn luyện hoặc sử dụng dịch vụ đám mây (Gemini Flash Vision/AWS Rekognition) để phân loại ảnh đầu vào thành các nhóm: Ảnh hợp lệ (Delivery Scene), Ảnh lỗi/Tối đen (Low Quality/Blank), Ảnh spam không liên quan (Irrelevant).
+Mô hình phát hiện vật thể (YOLOv8): Xác định sự xuất hiện của các đối tượng trọng yếu trong ảnh: Package (gói hàng), Label (nhãn vận đơn), Customer Signature (chữ ký trên biên lai).
+Quy tắc logic kiểm duyệt: Ảnh được coi là hợp lệ khi và chỉ khi: $$\text{Score}{\text{Confidence}} \ge 0.85 \quad \text{và} \quad \text{Class}{\text{Scene}} = \text{"Delivery Scene"} \quad \text{và} \quad \text{Objects} \cap {\text{"Package"}, \text{"Handover"}} \neq \emptyset$$
+4. Hiệu quả vận hành và Chỉ số đánh giá (KPIs)
+Ngăn chặn gian lận giao nhận: Giảm thiểu 95% các trường hợp cập nhật khống trạng thái giao hàng từ phía Courier.
+Giảm tải đối soát thủ công: Tự động loại bỏ các ảnh lỗi giúp bộ phận CSKH giảm 80% thời gian tra cứu và xử lý khiếu nại mất mát hàng hóa.
+Độ chính xác mô hình: Đạt độ chính xác kiểm duyệt tối thiểu 92% (F1-score $\ge 0.90$) trên tập dữ liệu thử nghiệm thực tế.
+GIẢI PHÁP 2: AI CHUẨN HÓA ĐỊA CHỈ TỰ NHIÊN VÀ TỰ ĐỘNG ĐỊNH TUYẾN HUB/ZONE (SMART ROUTING & ADDRESS PARSER)
+1. Đặt vấn đề và Mục tiêu giải quyết
+Địa chỉ giao hàng do Merchant hoặc người mua nhập vào hệ thống e-commerce thường ở dạng ngôn ngữ tự nhiên không cấu trúc, sai chính tả, thiếu cấp hành chính hoặc viết tắt (Ví dụ: "12/3 hẻm me, sau chợ Bà Chiểu, P.1, B.Thạnh").
+
+Hậu quả định tuyến sai: Địa chỉ không chuẩn hóa khiến hệ thống không thể tự động khớp đơn hàng vào đúng Hub quản lý miền địa lý và Zone (tuyến giao của Courier). Hàng hóa bị phân loại sai hub gốc, phải vận chuyển đi-về giữa các kho tổng gây chậm trễ SLA và phát sinh chi phí nhiên liệu lớn.
+Tác vụ thủ công nặng nề: Bộ phận Ops phải đọc thủ công các địa chỉ lỗi để phân loại lại Hub, tạo ra điểm nghẽn cổ chai (bottleneck) tại các Hub phân loại trung tâm.
+Mục tiêu: Áp dụng công nghệ Xử lý ngôn ngữ tự nhiên (NLP) để phân tách địa chỉ thô thành các cấp hành chính chuẩn hóa và tự động định tuyến Hub/Zone đích với độ chính xác tuyệt đối.
+
+2. Kiến trúc và Quy trình xử lý dữ liệu
+Dịch vụ AI Address Parser được thiết kế như một module bổ trợ bên trong shipment-service hoặc gọi qua gateway-bff trong luồng tạo đơn hàng.
+
+JSON cấu trúc chuẩn
+Thành công
+Thất bại/Không rõ
+Merchant tạo đơn hàng
+Địa chỉ thô: '12/3 hẻm me, sau chợ Bà Chiểu, Bình Thạnh'
+AI Address Parser
+Trích xuất JSON cấu trúc chuẩn
+Gắn cờ chờ Ops duyệt thủ công
+Khớp với Master Data Hub/Zone
+Định vị GPS tọa độ địa chỉ
+Cập nhật Shipment với HubCode & ZoneCode thích hợp
+Đơn hàng tự động chuyển sang Hub gốc khớp tuyến
+Street: 12/3 hẻm Cây Me
+Ward: Phường 1
+District: Quận Bình Thạnh
+City: TP. Hồ Chí Minh
+3. Phương pháp công nghệ và Mô hình áp dụng
+Giải pháp kết hợp giữa Nhận diện thực thể có tên (Named Entity Recognition - NER) và Tìm kiếm mờ (Fuzzy Matching) đối chiếu cơ sở dữ liệu quốc gia:
+
+Mô hình ngôn ngữ lớn (Gemini / PhoBERT Fine-tuned): Nhận diện thực thể có tên chuyên biệt cho địa chỉ Việt Nam. Mô hình phân tách chuỗi văn bản thô thành các trường thông tin cụ thể: Street_Number, Street_Name, Ward, District, Province.
+Cơ chế đối chiếu Master Data (Fuzzy String Matching): Sử dụng thuật toán so khớp chuỗi Levenshtein Distance để đối chiếu địa chỉ trích xuất được với danh mục Hành chính quốc gia trong masterdata_db nhằm tự động sửa lỗi chính tả (ví dụ: "B.Thạnh" $\rightarrow$ "Bình Thạnh").
+Định vị tọa độ (Geocoding Engine): Gọi API bản đồ để chuyển đổi địa chỉ chuẩn hóa thành tọa độ GPS (Latitude, Longitude), dùng thuật toán Point-in-Polygon (PIP) xác định tọa độ đó nằm trong ranh giới địa lý (Polygon) của Hub và Zone nào.
+4. Hiệu quả vận hành và Chỉ số đánh giá (KPIs)
+Tỷ lệ tự động hóa: Đạt tỷ lệ tự động định tuyến chuẩn xác 97.5% đối với đơn hàng nội tỉnh và liên tỉnh, giảm tỷ lệ hàng bị gửi sai Hub xuống dưới 0.5%.
+Tối ưu tốc độ xử lý kho: Thời gian phân luồng tuyến đơn hàng giảm từ 15 phút/đơn (nếu xử lý thủ công) xuống còn dưới 2 giây/đơn.
+Tiết kiệm chi phí vận hành: Tiết kiệm trung bình 12% chi phí chặng trung chuyển và giao chặng cuối nhờ tối ưu hóa cung đường đi ngay từ khâu tạo đơn.
