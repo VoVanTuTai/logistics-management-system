@@ -1,17 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import type {
   CourierCurrentLocation as PrismaCourierCurrentLocationRecord,
+  CourierLocationHistory as PrismaCourierLocationHistoryRecord,
   CurrentLocation as PrismaCurrentLocationRecord,
 } from '@prisma/client';
 
 import type {
   CourierCurrentLocation,
+  CourierLocationHistory,
   CurrentLocation,
   UpsertCourierLocationInput,
   UpsertCurrentLocationInput,
 } from '../../domain/entities/current-location.entity';
 import { CurrentLocationRepository } from '../../domain/repositories/current-location.repository';
 import { PrismaService } from './prisma.service';
+
 
 const DEFAULT_RETENTION_DAYS = 45;
 
@@ -237,6 +240,87 @@ export class CurrentLocationPrismaRepository extends CurrentLocationRepository {
       }),
     ]);
   }
+
+  async createLocationHistory(
+    input: UpsertCourierLocationInput,
+  ): Promise<CourierLocationHistory> {
+    const record = await this.prisma.courierLocationHistory.create({
+      data: {
+        courierId: input.courierId,
+        taskId: normalizeNullableText(input.taskId),
+        shipmentCode: normalizeNullableCode(input.shipmentCode),
+        latitude: input.latitude,
+        longitude: input.longitude,
+        accuracy: input.accuracy ?? null,
+        capturedAt: input.capturedAt,
+        source: input.source,
+      },
+    });
+
+    return this.toHistoryEntity(record);
+  }
+
+  async getCourierHistory(
+    courierId: string,
+    limit: number,
+  ): Promise<CourierLocationHistory[]> {
+    const records = await this.prisma.courierLocationHistory.findMany({
+      where: {
+        courierId,
+      },
+      orderBy: {
+        capturedAt: 'desc',
+      },
+      take: limit,
+    });
+
+    return records.map((record) => this.toHistoryEntity(record));
+  }
+
+  async getShipmentHistory(
+    shipmentCode: string,
+  ): Promise<CourierLocationHistory[]> {
+    const records = await this.prisma.courierLocationHistory.findMany({
+      where: {
+        shipmentCode,
+      },
+      orderBy: {
+        capturedAt: 'desc',
+      },
+    });
+
+    return records.map((record) => this.toHistoryEntity(record));
+  }
+
+  async pruneLocationHistory(cutoff: Date): Promise<number> {
+    const result = await this.prisma.courierLocationHistory.deleteMany({
+      where: {
+        capturedAt: {
+          lt: cutoff,
+        },
+      },
+    });
+
+    return result.count;
+  }
+
+  private toHistoryEntity(
+    record: PrismaCourierLocationHistoryRecord,
+  ): CourierLocationHistory {
+    return {
+      id: record.id,
+      courierId: record.courierId,
+      taskId: record.taskId,
+      shipmentCode: record.shipmentCode,
+      latitude: record.latitude,
+      longitude: record.longitude,
+      accuracy: record.accuracy,
+      capturedAt: record.capturedAt,
+      source: record.source,
+      createdAt: record.createdAt,
+    };
+  }
+
 }
 
 function getRetentionCutoff(now: Date): Date {

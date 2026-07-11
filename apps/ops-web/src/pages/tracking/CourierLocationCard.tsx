@@ -4,6 +4,8 @@ import { opsApiClient } from '../../services/api/client';
 import { opsEndpoints } from '../../services/api/endpoints';
 import { useAuthStore } from '../../store/authStore';
 import { formatDateTime } from '../../utils/format';
+import { appEnv } from '../../utils/env';
+import { CourierLocationMap, type LocationHistorySample } from './CourierLocationMap';
 
 const AUTO_REFRESH_INTERVAL_MS = 30_000;
 
@@ -27,6 +29,7 @@ export function CourierLocationCard({
     (state) => state.session?.tokens.accessToken ?? null,
   );
   const [position, setPosition] = useState<CourierGpsPosition | null>(null);
+  const [history, setHistory] = useState<LocationHistorySample[]>([]);
   const [loadState, setLoadState] = useState<LoadState>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -70,11 +73,32 @@ export function CourierLocationCard({
     }
   }, [accessToken, shipmentCode]);
 
+  const fetchHistory = useCallback(async () => {
+    if (!accessToken || !shipmentCode) {
+      return;
+    }
+
+    try {
+      const result = await opsApiClient.request<LocationHistorySample[]>(
+        opsEndpoints.scans.history(shipmentCode),
+        { accessToken },
+      );
+
+      if (Array.isArray(result)) {
+        setHistory(result);
+      }
+    } catch (error) {
+      console.warn('Failed to fetch location history:', error);
+    }
+  }, [accessToken, shipmentCode]);
+
   useEffect(() => {
     void fetchPosition();
+    void fetchHistory();
 
     intervalRef.current = setInterval(() => {
       void fetchPosition();
+      void fetchHistory();
     }, AUTO_REFRESH_INTERVAL_MS);
 
     return () => {
@@ -83,7 +107,88 @@ export function CourierLocationCard({
         intervalRef.current = null;
       }
     };
-  }, [fetchPosition]);
+  }, [fetchPosition, fetchHistory]);
+
+  // WebSocket subscription for realtime updates
+  useEffect(() => {
+    if (!accessToken || !shipmentCode) {
+      return;
+    }
+
+    let ws: WebSocket | null = null;
+    let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    const connectWs = () => {
+      try {
+        const wsUrl = new URL(appEnv.locationsWsUrl);
+        wsUrl.searchParams.set('token', accessToken);
+
+        ws = new WebSocket(wsUrl.toString());
+
+        ws.onmessage = (event) => {
+          try {
+            const payload = JSON.parse(event.data);
+            if (payload.type === 'location.updated') {
+              if (
+                payload.shipmentCode === shipmentCode ||
+                (position && payload.courierId === position.courierId)
+              ) {
+                const newPos: CourierGpsPosition = {
+                  latitude: payload.latitude,
+                  longitude: payload.longitude,
+                  accuracy: payload.accuracy,
+                  capturedAt: payload.capturedAt,
+                  source: payload.source,
+                  courierId: payload.courierId,
+                };
+                setPosition(newPos);
+                setLoadState('ready');
+                setErrorMessage(null);
+
+                setHistory((prev) => {
+                  if (prev.some((h) => h.capturedAt === payload.capturedAt)) {
+                    return prev;
+                  }
+                  return [
+                    ...prev,
+                    {
+                      latitude: payload.latitude,
+                      longitude: payload.longitude,
+                      capturedAt: payload.capturedAt,
+                    },
+                  ];
+                });
+              }
+            }
+          } catch (err) {
+            console.error('Error parsing WS message:', err);
+          }
+        };
+
+        ws.onclose = () => {
+          reconnectTimeout = setTimeout(connectWs, 5000);
+        };
+
+        ws.onerror = () => {
+          ws?.close();
+        };
+      } catch (err) {
+        console.warn('Failed to connect to WS:', err);
+      }
+    };
+
+    connectWs();
+
+    return () => {
+      if (ws) {
+        ws.onclose = null;
+        ws.close();
+      }
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
+    };
+  }, [accessToken, shipmentCode, position]);
 
   if (loadState === 'idle' || loadState === 'loading') {
     return (
@@ -108,7 +213,7 @@ export function CourierLocationCard({
       <article style={styles.card}>
         <h3 style={styles.heading}>📍 Vị trí GPS gần nhất</h3>
         <p style={styles.errorText}>{errorMessage}</p>
-        <button type="button" style={styles.retryButton} onClick={() => void fetchPosition()}>
+        <button type="button" style={styles.retryButton} onClick={() => { void fetchPosition(); void fetchHistory(); }}>
           Thử lại
         </button>
       </article>
@@ -156,7 +261,15 @@ export function CourierLocationCard({
           </div>
         ) : null}
       </div>
-      <p style={styles.autoRefreshNote}>Tự cập nhật mỗi 30 giây</p>
+
+      <CourierLocationMap
+        latitude={position.latitude}
+        longitude={position.longitude}
+        courierId={position.courierId}
+        history={history}
+      />
+
+      <p style={styles.autoRefreshNote}>Tự cập nhật realtime và định kỳ mỗi 30 giây</p>
     </article>
   );
 }

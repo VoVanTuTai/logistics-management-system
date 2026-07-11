@@ -80,6 +80,41 @@ const CHAT_MIGRATIONS: ChatMigration[] = [
         ON chat_audit_logs(actor_role, actor_id, created_at DESC);
     `,
   },
+  {
+    id: '004_chat_multi_user_and_channels',
+    up: `
+      ALTER TABLE chat_conversations
+        ADD COLUMN IF NOT EXISTS type TEXT NOT NULL DEFAULT 'DIRECT' CHECK (type IN ('DIRECT', 'GROUP', 'SHIPMENT')),
+        ADD COLUMN IF NOT EXISTS shipment_code TEXT;
+
+      CREATE INDEX IF NOT EXISTS idx_chat_conversations_shipment
+        ON chat_conversations(shipment_code) WHERE shipment_code IS NOT NULL;
+
+      CREATE TABLE IF NOT EXISTS chat_conversation_participants (
+        conversation_id TEXT NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,
+        actor_id TEXT NOT NULL,
+        actor_role TEXT NOT NULL CHECK (actor_role IN ('OPS', 'COURIER')),
+        joined_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        last_read_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        PRIMARY KEY (conversation_id, actor_id)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_chat_conversation_participants_actor
+        ON chat_conversation_participants(actor_role, actor_id);
+
+      INSERT INTO chat_conversation_participants (conversation_id, actor_id, actor_role, joined_at, last_read_at)
+      SELECT c.id, c.courier_id, 'COURIER', c.created_at, COALESCE(r.last_read_at, c.created_at)
+      FROM chat_conversations c
+      LEFT JOIN chat_read_receipts r ON r.conversation_id = c.id AND r.actor_role = 'COURIER'
+      ON CONFLICT DO NOTHING;
+
+      ALTER TABLE chat_messages
+        ALTER COLUMN courier_id DROP NOT NULL;
+
+      ALTER TABLE chat_audit_logs
+        ALTER COLUMN courier_id DROP NOT NULL;
+    `,
+  },
 ];
 
 export async function runChatMigrations(

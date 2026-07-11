@@ -48,6 +48,7 @@ export const opsEndpoints = {
     outbound: '/ops/scan/scans/outbound',
     location: (shipmentCode: string) => `/ops/scan/locations/${encodeURIComponent(shipmentCode)}`,
     latestPosition: (shipmentCode: string) => `/ops/scan/locations/${encodeURIComponent(shipmentCode)}/latest-position`,
+    history: (shipmentCode: string) => `/ops/scan/locations/${encodeURIComponent(shipmentCode)}/history`,
   },
   ndr: {
     list: '/ops/delivery/ndr',

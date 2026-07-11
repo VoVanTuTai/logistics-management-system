@@ -491,6 +491,10 @@ function DashboardLayout(): React.JSX.Element {
     location.pathname,
     routePaths.groupCapabilityPlatform,
   );
+  const isPlanningPlatformSection = pathMatches(
+    location.pathname,
+    routePaths.groupPlanningPlatform,
+  );
 
   const topNavItems: TopNavItem[] = enableFullOpsModules
     ? [
@@ -527,6 +531,11 @@ function DashboardLayout(): React.JSX.Element {
           label: 'Chất lượng dịch vụ',
           to: routePaths.groupServiceQuality,
           isActive: isServiceQualitySection,
+        },
+        {
+          label: 'Quy hoạch & Dự báo',
+          to: routePaths.groupPlanningPlatform,
+          isActive: isPlanningPlatformSection,
         },
       ]
     : [
@@ -595,6 +604,9 @@ function DashboardLayout(): React.JSX.Element {
     { label: 'In tem bao', icon: 'thermal_label', to: routePaths.linehaulBagLabelPrint },
     { label: 'Giám sát dữ liệu chuyến xe', icon: 'monitor_data', to: routePaths.linehaulTripDataMonitor },
   ];
+  const planningPlatformSidebarItems: SidebarItem[] = [
+    { label: 'Dự báo tải vận hành', icon: 'metrics_planning', to: routePaths.groupPlanningPlatform },
+  ];
   const sidebarItems = isServiceQualitySection
     ? serviceQualitySidebarItems
     : isOperationsMetricsSection
@@ -604,6 +616,8 @@ function DashboardLayout(): React.JSX.Element {
     ? branchBusinessSidebarItems
     : isCapabilityPlatformSection
     ? capabilityPlatformSidebarItems
+    : isPlanningPlatformSection
+    ? planningPlatformSidebarItems
     : operationsSidebarItems;
 
   const monitorDataChildItems = [
@@ -738,6 +752,8 @@ function DashboardLayout(): React.JSX.Element {
     ? 'Kinh doanh bưu cục'
     : isCapabilityPlatformSection
     ? 'Vận chuyển tuyến'
+    : isPlanningPlatformSection
+    ? 'Nền tảng quy hoạch'
     : !enableFullOpsModules
     ? 'Ops production'
     : 'Nền tảng điều hành';
@@ -800,6 +816,8 @@ function DashboardLayout(): React.JSX.Element {
     ? 'Quản lý hàng bất thường'
     : pathMatches(location.pathname, routePaths.groupServiceQuality)
     ? 'Chất lượng dịch vụ'
+    : isPlanningPlatformSection
+    ? 'Dự báo tải vận hành'
     : 'Trang chủ';
   const sidebarClassName = [
     'ops-func-sidebar',

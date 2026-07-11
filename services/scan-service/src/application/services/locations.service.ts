@@ -7,6 +7,7 @@ import {
 
 import type {
   CourierCurrentLocation,
+  CourierLocationHistory,
   CurrentLocation,
   LocationSource,
   UpsertCourierLocationInput,
@@ -14,6 +15,7 @@ import type {
 import { CurrentLocationRepository } from '../../domain/repositories/current-location.repository';
 import { LocationsRealtimeGateway } from '../../realtime/locations-realtime.gateway';
 import { ScansService } from './scans.service';
+
 
 @Injectable()
 export class LocationsService {
@@ -71,13 +73,41 @@ export class LocationsService {
   async recordCourierLocation(
     input: RecordCourierLocationRequest,
   ): Promise<CourierCurrentLocation> {
-    const currentLocation = await this.currentLocationRepository.upsertCourierLocation(
-      this.normalizeCourierLocationInput(input),
-    );
+    const normalizedInput = this.normalizeCourierLocationInput(input);
+    const [currentLocation] = await Promise.all([
+      this.currentLocationRepository.upsertCourierLocation(normalizedInput),
+      this.currentLocationRepository.createLocationHistory(normalizedInput),
+    ]);
+
+    this.pruneOldHistoryAsync(normalizedInput.capturedAt);
 
     this.locationsRealtimeGateway.publishLocationUpdated(currentLocation);
 
     return currentLocation;
+  }
+
+  async getCourierHistory(
+    courierId: string,
+    limitInput?: number | string | null,
+  ): Promise<CourierLocationHistory[]> {
+    const normalizedCourierId = normalizeRequiredText(courierId, 'courierId');
+    const limit = limitInput && !Number.isNaN(Number(limitInput)) ? Math.max(1, Number(limitInput)) : 100;
+    return this.currentLocationRepository.getCourierHistory(normalizedCourierId, limit);
+  }
+
+  async getShipmentHistory(
+    shipmentCode: string,
+  ): Promise<CourierLocationHistory[]> {
+    const normalizedShipmentCode = normalizeRequiredText(shipmentCode, 'shipmentCode').toUpperCase();
+    return this.currentLocationRepository.getShipmentHistory(normalizedShipmentCode);
+  }
+
+  private pruneOldHistoryAsync(now: Date): void {
+    const retentionDays = 7;
+    const cutoff = new Date(now.getTime() - retentionDays * 24 * 60 * 60 * 1000);
+    this.currentLocationRepository.pruneLocationHistory(cutoff).catch(() => {
+      // Ignore errors in background pruning task.
+    });
   }
 
   private normalizeCourierLocationInput(

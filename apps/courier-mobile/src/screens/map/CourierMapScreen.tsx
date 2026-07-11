@@ -1491,7 +1491,7 @@ export function CourierMapScreen(): React.JSX.Element {
         <View style={styles.header}>
           <View style={styles.headerTitleBlock}>
             <Text style={styles.eyebrow}>{courierName} - {courierId}</Text>
-            <Text style={styles.title}>MVP tuyến giao hôm nay</Text>
+            <Text style={styles.title}>Tuyến giao hôm nay</Text>
             <Text style={styles.headerSubtitle}>{todayLabel}</Text>
           </View>
           <Pressable
@@ -1502,40 +1502,62 @@ export function CourierMapScreen(): React.JSX.Element {
             ]}
           >
             {locationState === 'loading' ? (
-              <ActivityIndicator size="small" color={theme.colors.primary} />
+              <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Ionicons name="locate-outline" size={16} color={theme.colors.primary} />
+              <Ionicons name="locate" size={15} color="#FFFFFF" />
             )}
-            <Text style={styles.locationButtonText}>Vị trí</Text>
+            <Text style={styles.locationButtonText}>GPS Live</Text>
           </Pressable>
         </View>
 
-        <Card style={styles.demoCard}>
-          <View style={styles.demoCardHeader}>
-            <View style={styles.demoIconShell}>
-              <Ionicons name="sparkles-outline" size={18} color="#FFFFFF" />
+        <Card style={styles.overviewCard}>
+          <View style={styles.overviewHeader}>
+            <View style={styles.overviewHeaderLeft}>
+              <Text style={styles.overviewEyebrow}>TỔNG QUAN HÀNH TRÌNH</Text>
+              <Text style={styles.overviewTitle}>Hoàn thành đơn trong ngày</Text>
             </View>
-            <View style={styles.demoTitleBlock}>
-              <Text style={styles.demoEyebrow}>Demo đồ án logistics</Text>
-              <Text style={styles.demoTitle}>4 điểm ăn tiền trên một màn hình</Text>
+            <View style={styles.overviewProgressBadge}>
+              <Text style={styles.overviewProgressText}>
+                {mapPoints.length > 0
+                  ? `${Math.round((completedCount / mapPoints.length) * 100)}%`
+                  : '0%'}
+              </Text>
             </View>
           </View>
-          <View style={styles.demoFeatureGrid}>
-            <View style={styles.demoFeaturePill}>
-              <Ionicons name="list-outline" size={14} color={theme.colors.primary} />
-              <Text style={styles.demoFeatureText}>Đơn hôm nay</Text>
+
+          <View style={styles.progressBarBg}>
+            <View
+              style={[
+                styles.progressBarFill,
+                {
+                  width: mapPoints.length > 0
+                    ? `${(completedCount / mapPoints.length) * 100}%`
+                    : '0%',
+                },
+              ]}
+            />
+          </View>
+
+          <View style={styles.overviewStatsRow}>
+            <View style={styles.overviewStatItem}>
+              <Text style={styles.overviewStatLabel}>Hoàn thành</Text>
+              <Text style={styles.overviewStatValue}>
+                {completedCount}/{mapPoints.length}
+              </Text>
             </View>
-            <View style={styles.demoFeaturePill}>
-              <Ionicons name="map-outline" size={14} color={theme.colors.primary} />
-              <Text style={styles.demoFeatureText}>Bản đồ điểm</Text>
+            <View style={styles.overviewStatDivider} />
+            <View style={styles.overviewStatItem}>
+              <Text style={styles.overviewStatLabel}>Dự kiến COD</Text>
+              <Text style={[styles.overviewStatValue, { color: theme.colors.success }]}>
+                {formatMoney(codTotal)}
+              </Text>
             </View>
-            <View style={styles.demoFeaturePill}>
-              <Ionicons name="navigate-outline" size={14} color={theme.colors.primary} />
-              <Text style={styles.demoFeatureText}>Chỉ đường từng đơn</Text>
-            </View>
-            <View style={styles.demoFeaturePill}>
-              <Ionicons name="git-merge-outline" size={14} color={theme.colors.primary} />
-              <Text style={styles.demoFeatureText}>Gom cụm + tuyến</Text>
+            <View style={styles.overviewStatDivider} />
+            <View style={styles.overviewStatItem}>
+              <Text style={styles.overviewStatLabel}>Gom cụm</Text>
+              <Text style={styles.overviewStatValue}>
+                {smartClusters.length} cụm
+              </Text>
             </View>
           </View>
         </Card>
@@ -2492,58 +2514,85 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
   },
-  demoCard: {
-    padding: theme.spacing.md,
-    gap: theme.spacing.md,
-    backgroundColor: '#0F172A',
-    borderColor: '#1E293B',
+  overviewCard: {
+    padding: theme.spacing.lg,
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.xl,
+    borderWidth: 1,
+    ...theme.shadow.md,
   },
-  demoCardHeader: {
+  overviewHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.sm,
+    justifyContent: 'space-between',
+    marginBottom: theme.spacing.md,
   },
-  demoIconShell: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#2563EB',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  demoTitleBlock: {
+  overviewHeaderLeft: {
     flex: 1,
     minWidth: 0,
   },
-  demoEyebrow: {
-    color: '#BFDBFE',
-    fontSize: 12,
-    fontWeight: '900',
+  overviewEyebrow: {
+    color: theme.colors.primary,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.8,
   },
-  demoTitle: {
-    color: '#FFFFFF',
-    fontSize: 17,
+  overviewTitle: {
+    color: theme.colors.textPrimary,
+    fontSize: 16,
     fontWeight: '900',
     marginTop: 2,
   },
-  demoFeatureGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: theme.spacing.xs,
-  },
-  demoFeaturePill: {
-    minHeight: 34,
-    borderRadius: theme.radius.pill,
-    backgroundColor: '#FFFFFF',
+  overviewProgressBadge: {
     paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 4,
+    borderRadius: theme.radius.pill,
+    backgroundColor: theme.colors.successSoft,
+  },
+  overviewProgressText: {
+    color: theme.colors.success,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  progressBarBg: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: theme.colors.border,
+    overflow: 'hidden',
+    marginBottom: theme.spacing.lg,
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 3,
+    backgroundColor: theme.colors.success,
+  },
+  overviewStatsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    justifyContent: 'space-around',
+    paddingTop: theme.spacing.xs,
   },
-  demoFeatureText: {
+  overviewStatItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  overviewStatLabel: {
+    color: theme.colors.textMuted,
+    fontSize: 10,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  overviewStatValue: {
     color: theme.colors.textPrimary,
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: '900',
+    marginTop: 4,
+  },
+  overviewStatDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: theme.colors.border,
   },
   summaryRow: {
     flexDirection: 'row',
@@ -2551,29 +2600,36 @@ const styles = StyleSheet.create({
   },
   summaryItem: {
     flex: 1,
-    minHeight: 70,
-    borderRadius: theme.radius.md,
+    minHeight: 64,
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     ...theme.shadow.sm,
   },
   summaryValue: {
     color: theme.colors.primary,
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '900',
   },
   summaryLabel: {
     color: theme.colors.textMuted,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
     marginTop: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
   mapCard: {
     gap: theme.spacing.md,
     padding: theme.spacing.md,
+    borderRadius: theme.radius.xl,
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
+    borderWidth: 1,
+    ...theme.shadow.md,
   },
   mapHeaderRow: {
     flexDirection: 'row',
@@ -2583,7 +2639,7 @@ const styles = StyleSheet.create({
   },
   mapTitle: {
     color: theme.colors.textPrimary,
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '900',
   },
   mapSubtitle: {
@@ -2594,10 +2650,10 @@ const styles = StyleSheet.create({
   },
   mapNotice: {
     minHeight: 38,
-    borderRadius: theme.radius.md,
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
-    borderColor: '#FDE68A',
-    backgroundColor: '#FFFBEB',
+    borderColor: theme.colors.warningSoft,
+    backgroundColor: 'rgba(254, 243, 199, 0.4)',
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: theme.spacing.xs,
     flexDirection: 'row',
@@ -2609,31 +2665,34 @@ const styles = StyleSheet.create({
     minWidth: 0,
     color: theme.colors.textSecondary,
     fontSize: 12,
-    fontWeight: '700',
-    lineHeight: 17,
+    fontWeight: '600',
+    lineHeight: 16,
   },
   mapNoticeAction: {
-    minHeight: 28,
+    minHeight: 26,
     borderRadius: theme.radius.pill,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface,
     paddingHorizontal: theme.spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.warning,
   },
   mapNoticeActionText: {
-    color: '#B45309',
+    color: theme.colors.warning,
     fontSize: 11,
-    fontWeight: '900',
+    fontWeight: '800',
   },
   legendGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: theme.spacing.xs,
+    paddingVertical: 2,
   },
   legendItem: {
-    minHeight: 28,
+    minHeight: 26,
     borderRadius: theme.radius.pill,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: theme.colors.background,
     borderWidth: 1,
     borderColor: theme.colors.border,
     paddingHorizontal: theme.spacing.sm,
@@ -2642,39 +2701,40 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  legendRing: {
     width: 10,
     height: 10,
     borderRadius: 5,
-  },
-  legendRing: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    borderWidth: 3,
-    backgroundColor: '#FFFFFF',
+    borderWidth: 2.5,
+    backgroundColor: theme.colors.surface,
   },
   legendText: {
     color: theme.colors.textSecondary,
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   mapSurface: {
-    height: 360,
-    borderRadius: theme.radius.lg,
+    height: 320,
+    borderRadius: theme.radius.xl,
     borderWidth: 1,
-    borderColor: '#C7D2FE',
-    backgroundColor: '#EAF3FF',
+    borderColor: theme.colors.border,
+    backgroundColor: '#EEF4FC',
     overflow: 'hidden',
     position: 'relative',
+    ...theme.shadow.sm,
   },
   nativeMap: {
     ...StyleSheet.absoluteFillObject,
   },
   nativeCurrentMarker: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#111827',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#1E293B',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
@@ -2711,43 +2771,43 @@ const styles = StyleSheet.create({
   },
   mapStatusChipRow: {
     position: 'absolute',
-    left: theme.spacing.sm,
-    right: theme.spacing.sm,
-    top: theme.spacing.sm,
+    left: theme.spacing.xs,
+    right: theme.spacing.xs,
+    top: theme.spacing.xs,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: theme.spacing.xs,
+    gap: theme.spacing.xxs,
     zIndex: 20,
   },
   mapStatusChip: {
-    minHeight: 30,
+    minHeight: 26,
     borderRadius: theme.radius.pill,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: 'rgba(255, 255, 255, 0.94)',
+    borderColor: theme.colors.border,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     paddingHorizontal: theme.spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
   },
   mapStatusChipText: {
     color: theme.colors.textSecondary,
-    fontSize: 11,
-    fontWeight: '900',
+    fontSize: 10,
+    fontWeight: '800',
   },
   nextStopSheet: {
     position: 'absolute',
-    left: theme.spacing.sm,
-    right: theme.spacing.sm,
-    bottom: theme.spacing.sm,
-    borderRadius: theme.radius.lg,
+    left: theme.spacing.xs,
+    right: theme.spacing.xs,
+    bottom: theme.spacing.xs,
+    borderRadius: theme.radius.xl,
     borderWidth: 1,
-    borderColor: '#DBEAFE',
-    backgroundColor: 'rgba(255, 255, 255, 0.97)',
+    borderColor: theme.colors.border,
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
     padding: theme.spacing.md,
-    gap: theme.spacing.xs,
+    gap: theme.spacing.sm,
     zIndex: 25,
-    ...theme.shadow.md,
+    ...theme.shadow.lg,
   },
   nextStopHeader: {
     flexDirection: 'row',
@@ -2760,33 +2820,34 @@ const styles = StyleSheet.create({
   },
   nextStopEyebrow: {
     color: theme.colors.primary,
-    fontSize: 11,
-    fontWeight: '900',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   nextStopTitle: {
     color: theme.colors.textPrimary,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '900',
-    marginTop: 2,
+    marginTop: 1,
   },
   nextStopNumber: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   nextStopNumberText: {
     color: '#FFFFFF',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '900',
   },
   nextStopAddress: {
     color: theme.colors.textSecondary,
     fontSize: 12,
-    fontWeight: '700',
-    lineHeight: 17,
+    fontWeight: '500',
+    lineHeight: 16,
   },
   nextStopBadgeRow: {
     flexDirection: 'row',
@@ -2795,32 +2856,32 @@ const styles = StyleSheet.create({
   },
   nextStopActionRow: {
     flexDirection: 'row',
-    gap: theme.spacing.xs,
+    gap: theme.spacing.sm,
     marginTop: 2,
   },
   nextStopSecondaryAction: {
-    minHeight: 42,
-    borderRadius: theme.radius.md,
+    minHeight: 38,
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: theme.spacing.sm,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
+    paddingHorizontal: theme.spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 5,
+    gap: 4,
   },
   nextStopSecondaryText: {
-    color: theme.colors.primary,
+    color: theme.colors.textSecondary,
     fontSize: 12,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   nextStopPrimaryAction: {
     flex: 1,
-    minHeight: 42,
-    borderRadius: theme.radius.md,
+    minHeight: 38,
+    borderRadius: theme.radius.lg,
     backgroundColor: theme.colors.primary,
-    paddingHorizontal: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -2835,15 +2896,15 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: theme.spacing.md,
     right: theme.spacing.md,
-    top: '34%',
+    top: '32%',
     borderRadius: theme.radius.lg,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    backgroundColor: 'rgba(255, 255, 255, 0.94)',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     padding: theme.spacing.md,
     alignItems: 'center',
     zIndex: 25,
-    ...theme.shadow.sm,
+    ...theme.shadow.md,
   },
   mapEmptyTitle: {
     color: theme.colors.textPrimary,
@@ -2855,71 +2916,71 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
     fontSize: 12,
     textAlign: 'center',
-    lineHeight: 17,
-    marginTop: 3,
+    lineHeight: 16,
+    marginTop: 4,
   },
   mapDistrictA: {
     position: 'absolute',
-    left: '-5%',
-    top: '9%',
-    width: '54%',
-    height: '45%',
-    borderRadius: 999,
-    backgroundColor: 'rgba(59, 130, 246, 0.12)',
-    transform: [{ rotate: '-18deg' }],
+    left: '-10%',
+    top: '5%',
+    width: '60%',
+    height: '50%',
+    borderRadius: theme.radius.xl,
+    backgroundColor: 'rgba(59, 130, 246, 0.08)',
+    transform: [{ rotate: '-12deg' }],
   },
   mapDistrictB: {
     position: 'absolute',
-    right: '-9%',
-    top: '18%',
-    width: '58%',
-    height: '48%',
-    borderRadius: 999,
-    backgroundColor: 'rgba(20, 184, 166, 0.12)',
-    transform: [{ rotate: '21deg' }],
+    right: '-10%',
+    top: '20%',
+    width: '60%',
+    height: '50%',
+    borderRadius: theme.radius.xl,
+    backgroundColor: 'rgba(20, 184, 166, 0.08)',
+    transform: [{ rotate: '18deg' }],
   },
   mapDistrictC: {
     position: 'absolute',
-    left: '12%',
+    left: '10%',
     bottom: '-10%',
-    width: '72%',
-    height: '42%',
-    borderRadius: 999,
-    backgroundColor: 'rgba(249, 115, 22, 0.1)',
+    width: '80%',
+    height: '45%',
+    borderRadius: theme.radius.xl,
+    backgroundColor: 'rgba(249, 115, 22, 0.06)',
   },
   gridLineVertical: {
     position: 'absolute',
     top: 0,
     bottom: 0,
     width: 1,
-    backgroundColor: 'rgba(37, 99, 235, 0.12)',
+    backgroundColor: 'rgba(37, 99, 235, 0.08)',
   },
   gridLineHorizontal: {
     position: 'absolute',
     left: 0,
     right: 0,
     height: 1,
-    backgroundColor: 'rgba(37, 99, 235, 0.12)',
+    backgroundColor: 'rgba(37, 99, 235, 0.08)',
   },
   routeRibbon: {
     position: 'absolute',
-    left: '12%',
+    left: '10%',
     right: '10%',
-    top: '48%',
-    height: 44,
-    borderRadius: 999,
-    borderWidth: 2,
-    borderColor: 'rgba(37, 99, 235, 0.2)',
-    transform: [{ rotate: '-11deg' }],
+    top: '50%',
+    height: 38,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1.5,
+    borderColor: 'rgba(37, 99, 235, 0.15)',
+    transform: [{ rotate: '-8deg' }],
   },
   currentLocationMarker: {
     position: 'absolute',
-    width: 34,
-    height: 34,
-    marginLeft: -17,
-    marginTop: -17,
-    borderRadius: 17,
-    backgroundColor: '#111827',
+    width: 32,
+    height: 32,
+    marginLeft: -16,
+    marginTop: -16,
+    borderRadius: 16,
+    backgroundColor: '#1E293B',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
@@ -2928,14 +2989,14 @@ const styles = StyleSheet.create({
     ...theme.shadow.md,
   },
   currentLocationMarkerMuted: {
-    backgroundColor: '#64748B',
+    backgroundColor: theme.colors.textMuted,
   },
   currentLocationPulse: {
     position: 'absolute',
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(17, 24, 39, 0.14)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(30, 41, 59, 0.12)',
   },
   marker: {
     position: 'absolute',
@@ -2944,34 +3005,35 @@ const styles = StyleSheet.create({
     marginLeft: -(MARKER_SIZE / 2),
     marginTop: -(MARKER_SIZE / 2),
     borderRadius: MARKER_SIZE / 2,
-    borderWidth: 4,
-    backgroundColor: '#FFFFFF',
+    borderWidth: 3,
+    backgroundColor: theme.colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
     ...theme.shadow.md,
   },
   markerSelected: {
-    width: MARKER_SIZE + 8,
-    height: MARKER_SIZE + 8,
-    marginLeft: -((MARKER_SIZE + 8) / 2),
-    marginTop: -((MARKER_SIZE + 8) / 2),
-    borderWidth: 5,
+    width: MARKER_SIZE + 6,
+    height: MARKER_SIZE + 6,
+    marginLeft: -((MARKER_SIZE + 6) / 2),
+    marginTop: -((MARKER_SIZE + 6) / 2),
+    borderWidth: 4,
+    zIndex: 15,
   },
   markerClustered: {
-    borderColor: '#14B8A6',
+    borderColor: '#0D9488',
     backgroundColor: '#CCFBF1',
   },
   markerRouted: {
-    borderColor: '#2563EB',
-    backgroundColor: '#DBEAFE',
+    borderColor: theme.colors.primary,
+    backgroundColor: '#EFF6FF',
   },
   markerPressed: {
-    opacity: 0.84,
+    opacity: 0.85,
   },
   markerInner: {
-    width: 27,
-    height: 27,
+    width: 28,
+    height: 28,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
@@ -2983,6 +3045,11 @@ const styles = StyleSheet.create({
   },
   clusterCard: {
     gap: theme.spacing.md,
+    borderRadius: theme.radius.xl,
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
+    borderWidth: 1,
+    ...theme.shadow.md,
   },
   clusterHeaderRow: {
     flexDirection: 'row',
@@ -2996,29 +3063,31 @@ const styles = StyleSheet.create({
   },
   clusterEyebrow: {
     color: '#0F766E',
-    fontSize: 12,
-    fontWeight: '900',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   clusterTitle: {
     color: theme.colors.textPrimary,
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '900',
     marginTop: 2,
   },
   radiusControl: {
-    minHeight: 42,
-    borderRadius: theme.radius.md,
+    minHeight: 38,
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    backgroundColor: '#F8FAFC',
-    padding: 4,
+    backgroundColor: theme.colors.background,
+    padding: 3,
     flexDirection: 'row',
     gap: 4,
   },
   radiusButton: {
     flex: 1,
-    minHeight: 32,
-    borderRadius: theme.radius.sm,
+    minHeight: 30,
+    borderRadius: theme.radius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -3029,17 +3098,17 @@ const styles = StyleSheet.create({
   radiusButtonText: {
     color: theme.colors.textMuted,
     fontSize: 12,
-    fontWeight: '900',
+    fontWeight: '800',
   },
   radiusButtonTextActive: {
     color: '#FFFFFF',
   },
   clusterEmptyState: {
-    borderRadius: theme.radius.md,
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    backgroundColor: '#F8FAFC',
-    padding: theme.spacing.md,
+    backgroundColor: theme.colors.background,
+    padding: theme.spacing.lg,
     alignItems: 'center',
   },
   clusterEmptyTitle: {
@@ -3051,7 +3120,7 @@ const styles = StyleSheet.create({
   clusterEmptyText: {
     color: theme.colors.textMuted,
     fontSize: 12,
-    lineHeight: 18,
+    lineHeight: 17,
     textAlign: 'center',
     marginTop: 4,
   },
@@ -3059,12 +3128,13 @@ const styles = StyleSheet.create({
     gap: theme.spacing.sm,
   },
   clusterItem: {
-    borderRadius: theme.radius.md,
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
     borderColor: '#CCFBF1',
     backgroundColor: '#F0FDFA',
     padding: theme.spacing.md,
     gap: theme.spacing.sm,
+    ...theme.shadow.sm,
   },
   clusterItemActive: {
     borderColor: '#0F766E',
@@ -3076,16 +3146,16 @@ const styles = StyleSheet.create({
     gap: theme.spacing.sm,
   },
   clusterCountBadge: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#0F766E',
     alignItems: 'center',
     justifyContent: 'center',
   },
   clusterCountText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '900',
   },
   clusterItemTextBlock: {
@@ -3094,14 +3164,14 @@ const styles = StyleSheet.create({
   },
   clusterItemTitle: {
     color: theme.colors.textPrimary,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '900',
   },
   clusterItemSubtitle: {
     color: theme.colors.textSecondary,
     fontSize: 12,
-    lineHeight: 18,
-    marginTop: 2,
+    lineHeight: 16,
+    marginTop: 1,
   },
   clusterMetaRow: {
     flexDirection: 'row',
@@ -3109,11 +3179,11 @@ const styles = StyleSheet.create({
     gap: theme.spacing.xs,
   },
   clusterMetaPill: {
-    minHeight: 28,
+    minHeight: 26,
     borderRadius: theme.radius.pill,
     borderWidth: 1,
     borderColor: '#A7F3D0',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface,
     paddingHorizontal: theme.spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
@@ -3122,28 +3192,35 @@ const styles = StyleSheet.create({
   clusterMetaText: {
     color: theme.colors.textSecondary,
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   clusterDetailList: {
     gap: theme.spacing.xs,
+    marginTop: theme.spacing.xs,
+    paddingTop: theme.spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: '#CCFBF1',
   },
   clusterPointRow: {
-    minHeight: 48,
-    borderRadius: theme.radius.sm,
-    backgroundColor: '#FFFFFF',
+    minHeight: 46,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.surface,
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: theme.spacing.xs,
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   clusterPointRowActive: {
-    backgroundColor: '#DBEAFE',
+    backgroundColor: '#EFF6FF',
+    borderColor: '#BFDBFE',
   },
   clusterPointDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   clusterPointTextBlock: {
     flex: 1,
@@ -3152,15 +3229,20 @@ const styles = StyleSheet.create({
   clusterPointTitle: {
     color: theme.colors.textPrimary,
     fontSize: 13,
-    fontWeight: '900',
+    fontWeight: '800',
   },
   clusterPointSubtitle: {
     color: theme.colors.textMuted,
     fontSize: 11,
-    marginTop: 2,
+    marginTop: 1,
   },
   routeCard: {
     gap: theme.spacing.md,
+    borderRadius: theme.radius.xl,
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
+    borderWidth: 1,
+    ...theme.shadow.md,
   },
   routeHeaderRow: {
     flexDirection: 'row',
@@ -3174,37 +3256,39 @@ const styles = StyleSheet.create({
   },
   routeEyebrow: {
     color: theme.colors.primary,
-    fontSize: 12,
-    fontWeight: '900',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   routeTitle: {
     color: theme.colors.textPrimary,
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '900',
     marginTop: 2,
   },
   routeResetButton: {
-    minHeight: 34,
+    minHeight: 30,
     borderRadius: theme.radius.pill,
     borderWidth: 1,
     borderColor: '#BFDBFE',
     backgroundColor: '#EFF6FF',
-    paddingHorizontal: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
   },
   routeResetText: {
     color: theme.colors.primary,
     fontSize: 12,
-    fontWeight: '900',
+    fontWeight: '800',
   },
   routeEmptyState: {
-    borderRadius: theme.radius.md,
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    backgroundColor: '#F8FAFC',
-    padding: theme.spacing.md,
+    backgroundColor: theme.colors.background,
+    padding: theme.spacing.lg,
     alignItems: 'center',
   },
   routeEmptyTitle: {
@@ -3216,23 +3300,23 @@ const styles = StyleSheet.create({
   routeEmptyText: {
     color: theme.colors.textMuted,
     fontSize: 12,
-    lineHeight: 18,
+    lineHeight: 17,
     textAlign: 'center',
     marginTop: 4,
   },
   routeSummaryBox: {
-    borderRadius: theme.radius.md,
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: '#DBEAFE',
     backgroundColor: '#EFF6FF',
     padding: theme.spacing.md,
     gap: theme.spacing.sm,
   },
   routeSummaryText: {
     color: theme.colors.textPrimary,
-    fontSize: 15,
-    fontWeight: '900',
-    lineHeight: 21,
+    fontSize: 14,
+    fontWeight: '800',
+    lineHeight: 19,
   },
   routeMetricRow: {
     flexDirection: 'row',
@@ -3240,30 +3324,31 @@ const styles = StyleSheet.create({
     gap: theme.spacing.xs,
   },
   routeMetricPill: {
-    minHeight: 28,
+    minHeight: 26,
     borderRadius: theme.radius.pill,
     borderWidth: 1,
     borderColor: '#BFDBFE',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface,
     paddingHorizontal: theme.spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
   },
   routeMetricText: {
     color: theme.colors.textSecondary,
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   routeStepList: {
     gap: theme.spacing.sm,
+    marginTop: theme.spacing.xs,
   },
   routeStepRow: {
-    minHeight: 78,
-    borderRadius: theme.radius.md,
+    minHeight: 72,
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
     flexDirection: 'row',
@@ -3297,34 +3382,34 @@ const styles = StyleSheet.create({
   },
   routeStepTitle: {
     color: theme.colors.textPrimary,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '900',
   },
   routeStepSubtitle: {
     color: theme.colors.textSecondary,
     fontSize: 12,
-    marginTop: 2,
+    marginTop: 1,
   },
   routeStepMeta: {
     color: theme.colors.textMuted,
     fontSize: 11,
-    marginTop: 3,
+    marginTop: 2,
   },
   routeStepActions: {
-    gap: 5,
+    gap: 4,
   },
   routeStepActionButton: {
-    width: 32,
-    height: 30,
+    width: 30,
+    height: 28,
     borderRadius: theme.radius.sm,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
-    backgroundColor: '#EFF6FF',
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
     alignItems: 'center',
     justifyContent: 'center',
   },
   routeStepActionButtonDisabled: {
-    opacity: 0.4,
+    opacity: 0.35,
   },
   centeredState: {
     paddingVertical: theme.spacing.xl,
@@ -3336,11 +3421,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   errorCard: {
-    borderColor: '#FECACA',
-    backgroundColor: '#FEF2F2',
+    borderColor: theme.colors.dangerSoft,
+    backgroundColor: 'rgba(254, 226, 226, 0.4)',
+    borderWidth: 1,
+    padding: theme.spacing.md,
+    borderRadius: theme.radius.lg,
   },
   errorText: {
     color: theme.colors.danger,
+    fontWeight: '600',
   },
   retryButton: {
     alignSelf: 'flex-start',
@@ -3357,15 +3446,24 @@ const styles = StyleSheet.create({
   emptyCard: {
     alignItems: 'center',
     paddingVertical: theme.spacing.xl,
+    borderRadius: theme.radius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
   emptyTitle: {
     color: theme.colors.textPrimary,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
     marginTop: theme.spacing.sm,
   },
   detailCard: {
     gap: theme.spacing.sm,
+    borderRadius: theme.radius.xl,
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
+    borderWidth: 1,
+    ...theme.shadow.lg,
   },
   detailTopRow: {
     flexDirection: 'row',
@@ -3379,24 +3477,25 @@ const styles = StyleSheet.create({
   },
   detailEyebrow: {
     color: theme.colors.textMuted,
-    fontSize: 12,
-    fontWeight: '800',
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
   },
   detailTitle: {
     color: theme.colors.primary,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '900',
-    marginTop: 2,
+    marginTop: 1,
   },
   detailName: {
     color: theme.colors.textPrimary,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800',
   },
   detailAddress: {
     color: theme.colors.textSecondary,
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 12,
+    lineHeight: 17,
   },
   detailMetaRow: {
     flexDirection: 'row',
@@ -3404,41 +3503,43 @@ const styles = StyleSheet.create({
     gap: theme.spacing.xs,
   },
   detailMetaText: {
-    color: theme.colors.textMuted,
+    color: theme.colors.textSecondary,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   actionRow: {
     flexDirection: 'row',
     gap: theme.spacing.sm,
+    marginTop: theme.spacing.xs,
   },
   primaryAction: {
     flex: 1,
-    minHeight: 42,
-    borderRadius: theme.radius.md,
-    backgroundColor: '#2563EB',
+    minHeight: 40,
+    borderRadius: theme.radius.lg,
+    backgroundColor: theme.colors.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: theme.spacing.xs,
+    ...theme.shadow.sm,
   },
   secondaryAction: {
     flex: 1,
-    minHeight: 42,
-    borderRadius: theme.radius.md,
+    minHeight: 40,
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
-    backgroundColor: '#EFF6FF',
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: theme.spacing.xs,
   },
   actionPressed: {
-    opacity: 0.86,
+    opacity: 0.82,
   },
   actionDisabled: {
-    opacity: 0.55,
+    opacity: 0.5,
   },
   primaryActionText: {
     color: '#FFFFFF',
@@ -3452,6 +3553,11 @@ const styles = StyleSheet.create({
   },
   todayListCard: {
     gap: theme.spacing.md,
+    borderRadius: theme.radius.xl,
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
+    borderWidth: 1,
+    ...theme.shadow.md,
   },
   todayListHeader: {
     flexDirection: 'row',
@@ -3461,12 +3567,14 @@ const styles = StyleSheet.create({
   },
   todayListEyebrow: {
     color: theme.colors.primary,
-    fontSize: 12,
-    fontWeight: '900',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   todayListTitle: {
     color: theme.colors.textPrimary,
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '900',
     marginTop: 2,
   },
@@ -3475,10 +3583,10 @@ const styles = StyleSheet.create({
   },
   pointRow: {
     minHeight: 64,
-    borderRadius: theme.radius.md,
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
     flexDirection: 'row',
@@ -3487,17 +3595,17 @@ const styles = StyleSheet.create({
     ...theme.shadow.sm,
   },
   pointRowActive: {
-    borderColor: '#93C5FD',
+    borderColor: theme.colors.primary,
     backgroundColor: '#EFF6FF',
   },
   pointRowPressed: {
-    opacity: 0.88,
+    opacity: 0.85,
   },
   pointNumber: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    borderWidth: 3,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -3512,27 +3620,27 @@ const styles = StyleSheet.create({
   },
   pointTitle: {
     color: theme.colors.textPrimary,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '900',
   },
   pointSubtitle: {
     color: theme.colors.textMuted,
     fontSize: 12,
-    marginTop: 2,
+    marginTop: 1,
   },
   pointAddress: {
     color: theme.colors.textSecondary,
     fontSize: 11,
-    marginTop: 3,
+    marginTop: 2,
   },
   pointRightBlock: {
     alignItems: 'flex-end',
     gap: theme.spacing.xs,
   },
   pointDirectionButton: {
-    minHeight: 30,
+    minHeight: 28,
     borderRadius: theme.radius.pill,
-    backgroundColor: '#2563EB',
+    backgroundColor: theme.colors.primary,
     paddingHorizontal: theme.spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
@@ -3545,10 +3653,10 @@ const styles = StyleSheet.create({
   },
   evaluationBox: {
     padding: theme.spacing.md,
-    borderRadius: theme.radius.md,
-    backgroundColor: '#F8FAFC',
+    borderRadius: theme.radius.lg,
+    backgroundColor: theme.colors.background,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: theme.colors.border,
     gap: theme.spacing.xxs,
   },
   evaluationHeader: {
@@ -3559,15 +3667,15 @@ const styles = StyleSheet.create({
   },
   evaluationTitle: {
     color: theme.colors.textPrimary,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '900',
   },
   evalCompareHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingBottom: theme.spacing.xxs,
+    paddingBottom: 4,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: theme.colors.border,
     marginBottom: theme.spacing.xs,
   },
   evalCompareHeaderCell: {
@@ -3575,7 +3683,7 @@ const styles = StyleSheet.create({
   },
   evalCompareHeaderLabel: {
     flex: 1,
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '800',
     color: theme.colors.textMuted,
     textTransform: 'uppercase',
@@ -3593,33 +3701,33 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   evalDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   evalCompareRowLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
     color: theme.colors.textSecondary,
   },
   evalCompareRowValue: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: theme.colors.textPrimary,
     textAlign: 'right',
   },
   evalBarTrack: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#E2E8F0',
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: theme.colors.border,
     marginTop: 3,
     marginBottom: 2,
     overflow: 'hidden',
   },
   evalBarFill: {
     height: '100%',
-    borderRadius: 3,
+    borderRadius: 2.5,
   },
   evalBarDefault: {
     backgroundColor: '#94A3B8',
@@ -3631,7 +3739,7 @@ const styles = StyleSheet.create({
   evalSavingsBox: {
     marginTop: theme.spacing.sm,
     padding: theme.spacing.sm,
-    borderRadius: theme.radius.sm,
+    borderRadius: theme.radius.md,
     backgroundColor: theme.colors.successSoft,
     borderWidth: 1,
     borderColor: '#BBF7D0',
@@ -3657,12 +3765,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   evalSavingsNumber: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '900',
     color: theme.colors.success,
   },
   evalSavingsPercent: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '900',
     color: theme.colors.primary,
   },
