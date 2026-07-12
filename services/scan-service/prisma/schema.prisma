@@ -86,6 +86,25 @@ model CourierCurrentLocation {
   @@index([capturedAt])
 }
 
+model CourierLocationHistory {
+  id           String         @id @default(cuid())
+  courierId    String
+  taskId       String?
+  shipmentCode String?
+  latitude     Float
+  longitude    Float
+  accuracy     Float?
+  capturedAt   DateTime
+  source       LocationSource @default(GPS)
+  createdAt    DateTime       @default(now())
+
+  @@index([courierId])
+  @@index([taskId])
+  @@index([shipmentCode])
+  @@index([capturedAt])
+}
+
+
 model OutboxEvent {
   id            String       @id @default(cuid())
   eventId       String       @unique

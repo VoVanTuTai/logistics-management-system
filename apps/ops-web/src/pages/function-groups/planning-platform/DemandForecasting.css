@@ -1,0 +1,435 @@
+/* Demand Forecasting Premium Styles */
+
+.ops-forecast-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 8px 16px 24px 16px;
+  color: #1e293b;
+  font-family: inherit;
+}
+
+.ops-forecast-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 16px;
+}
+
+.ops-forecast-header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.ops-forecast-header p {
+  color: #64748b;
+  margin: 4px 0 0 0;
+  font-size: 0.875rem;
+}
+
+/* Tabs */
+.ops-forecast-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 2px solid #f1f5f9;
+  padding-bottom: 2px;
+}
+
+.ops-forecast-tab-btn {
+  background: none;
+  border: none;
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+  margin-bottom: -2px;
+}
+
+.ops-forecast-tab-btn:hover {
+  color: #0f172a;
+}
+
+.ops-forecast-tab-btn.active {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+}
+
+/* Grids and Cards */
+.ops-forecast-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.ops-forecast-card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.02);
+  border: 1px solid #e2e8f0;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ops-forecast-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.ops-forecast-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: transparent;
+}
+
+.ops-forecast-card.primary::before {
+  background: #3b82f6;
+}
+
+.ops-forecast-card.success::before {
+  background: #10b981;
+}
+
+.ops-forecast-card.warning::before {
+  background: #f59e0b;
+}
+
+.ops-forecast-card.danger::before {
+  background: #ef4444;
+}
+
+.ops-forecast-card-label {
+  font-size: 0.775rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.ops-forecast-card-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.1;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.ops-forecast-card-unit {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.ops-forecast-card-desc {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Warnings and Alerts */
+.ops-forecast-alerts-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ops-forecast-alert-banner {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 12px;
+  align-items: flex-start;
+  transition: all 0.2s ease;
+}
+
+.ops-forecast-alert-banner.warning {
+  background: #fffbeb;
+  border: 1px solid #fef3c7;
+  color: #92400e;
+}
+
+.ops-forecast-alert-banner.danger {
+  background: #fef2f2;
+  border: 1px solid #fee2e2;
+  color: #991b1b;
+}
+
+.ops-forecast-alert-banner svg {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+}
+
+.ops-forecast-alert-content {
+  flex: 1;
+}
+
+.ops-forecast-alert-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+
+.ops-forecast-alert-desc {
+  font-size: 0.85rem;
+  opacity: 0.9;
+  line-height: 1.4;
+}
+
+/* Main layouts */
+.ops-forecast-main-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 1024px) {
+  .ops-forecast-main-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ops-forecast-chart-card {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  padding: 20px;
+}
+
+.ops-forecast-chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.ops-forecast-chart-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.ops-forecast-chart-legend {
+  display: flex;
+  gap: 12px;
+}
+
+.ops-forecast-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #475569;
+}
+
+.ops-forecast-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.ops-forecast-detail-side {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Hubs Load Table */
+.ops-forecast-table-card {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  padding: 20px;
+}
+
+.ops-forecast-table-card h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 16px 0;
+}
+
+.ops-forecast-hub-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.ops-forecast-hub-table th,
+.ops-forecast-hub-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.ops-forecast-hub-table th {
+  font-weight: 600;
+  color: #64748b;
+  background: #f8fafc;
+}
+
+.ops-forecast-hub-table tr:hover td {
+  background: #f8fafc;
+}
+
+.ops-forecast-hub-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.ops-forecast-hub-badge.normal {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.ops-forecast-hub-badge.warning {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.ops-forecast-hub-badge.danger {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.ops-forecast-progress-bar {
+  background: #e2e8f0;
+  border-radius: 10px;
+  height: 8px;
+  width: 80px;
+  overflow: hidden;
+}
+
+.ops-forecast-progress-fill {
+  height: 100%;
+  border-radius: 10px;
+}
+
+/* Simulation Adjustments */
+.ops-simulation-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .ops-simulation-section {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ops-simulation-card {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  padding: 20px;
+}
+
+.ops-simulation-card h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 16px 0;
+}
+
+.ops-simulation-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ops-simulation-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ops-simulation-field-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.825rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.ops-simulation-field-value {
+  color: #2563eb;
+  font-family: monospace;
+  font-weight: 700;
+}
+
+.ops-simulation-slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: #e2e8f0;
+  outline: none;
+}
+
+.ops-simulation-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #2563eb;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.ops-simulation-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.ops-model-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.ops-model-stat-box {
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+}
+
+.ops-model-stat-title {
+  font-size: 0.725rem;
+  text-transform: uppercase;
+  color: #64748b;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.ops-model-stat-value {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+}
