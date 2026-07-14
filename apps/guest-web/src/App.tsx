@@ -113,26 +113,119 @@ function CreateOrderPage() {
   }
 
   return (
-    <div className="space-y-6 mt-4">
+    <div className="space-y-6 mt-4 pb-8">
       <h1 className="text-2xl font-bold tracking-tight">Tạo đơn hàng mới</h1>
-      <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
-        <p className="text-green-600 font-medium">Đang tạo đơn cho SĐT: {phone}</p>
-        {/* Form placeholder */}
-        <div className="space-y-4">
-          <div>
-            <label className="text-sm font-medium text-gray-700">Địa chỉ người nhận</label>
-            <input type="text" className="w-full px-4 py-3 mt-1 border rounded-xl" placeholder="Nhập địa chỉ..." />
+      
+      <div className="space-y-6">
+        {/* Thông tin người gửi */}
+        <section className="bg-white p-5 rounded-2xl shadow-sm border space-y-4">
+          <h2 className="text-lg font-bold flex items-center gap-2 border-b pb-3">
+            <User className="w-5 h-5 text-primary" /> Thông tin lấy hàng
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Tên người gửi</label>
+              <input type="text" className="w-full px-4 py-2 mt-1 border rounded-xl bg-gray-50" defaultValue="Khách hàng" />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">SĐT người gửi</label>
+              <input type="tel" className="w-full px-4 py-2 mt-1 border rounded-xl bg-gray-50 font-medium" value={phone} disabled />
+            </div>
+            <div className="md:col-span-2">
+              <label className="text-sm font-medium text-gray-700">Địa chỉ lấy hàng</label>
+              <input type="text" className="w-full px-4 py-2 mt-1 border rounded-xl" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành..." />
+            </div>
           </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">SĐT người nhận</label>
-            <input type="tel" className="w-full px-4 py-3 mt-1 border rounded-xl" placeholder="Nhập SĐT..." />
+        </section>
+
+        {/* Thông tin người nhận */}
+        <section className="bg-white p-5 rounded-2xl shadow-sm border space-y-4">
+          <h2 className="text-lg font-bold flex items-center gap-2 border-b pb-3">
+            <User className="w-5 h-5 text-orange-500" /> Thông tin giao hàng
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Tên người nhận <span className="text-red-500">*</span></label>
+              <input type="text" className="w-full px-4 py-2 mt-1 border rounded-xl" placeholder="Nhập tên..." />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">SĐT người nhận <span className="text-red-500">*</span></label>
+              <input type="tel" className="w-full px-4 py-2 mt-1 border rounded-xl" placeholder="Nhập SĐT..." />
+            </div>
+            <div className="md:col-span-2">
+              <label className="text-sm font-medium text-gray-700">Địa chỉ giao hàng <span className="text-red-500">*</span></label>
+              <input type="text" className="w-full px-4 py-2 mt-1 border rounded-xl" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành..." />
+            </div>
           </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">Tiền thu hộ (COD)</label>
-            <input type="number" className="w-full px-4 py-3 mt-1 border rounded-xl" placeholder="0 VNĐ" />
+        </section>
+
+        {/* Thông tin hàng hóa */}
+        <section className="bg-white p-5 rounded-2xl shadow-sm border space-y-4">
+          <h2 className="text-lg font-bold flex items-center gap-2 border-b pb-3">
+            <Package className="w-5 h-5 text-blue-500" /> Chi tiết hàng hóa
+          </h2>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2 md:col-span-1">
+              <label className="text-sm font-medium text-gray-700">Tên/Loại hàng</label>
+              <input type="text" className="w-full px-4 py-2 mt-1 border rounded-xl" placeholder="Quần áo, tài liệu..." />
+            </div>
+            <div className="col-span-2 md:col-span-1">
+              <label className="text-sm font-medium text-gray-700">Khối lượng (kg)</label>
+              <input type="number" step="0.1" className="w-full px-4 py-2 mt-1 border rounded-xl" placeholder="0.5" />
+            </div>
+            <div className="col-span-2 grid grid-cols-3 gap-2">
+              <div>
+                <label className="text-xs font-medium text-gray-500">Dài (cm)</label>
+                <input type="number" className="w-full px-3 py-2 mt-1 border rounded-xl" placeholder="0" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-500">Rộng (cm)</label>
+                <input type="number" className="w-full px-3 py-2 mt-1 border rounded-xl" placeholder="0" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-500">Cao (cm)</label>
+                <input type="number" className="w-full px-3 py-2 mt-1 border rounded-xl" placeholder="0" />
+              </div>
+            </div>
           </div>
-          <button className="w-full bg-primary text-white py-3 rounded-xl font-medium mt-4">
-            Xác nhận tạo đơn
+        </section>
+
+        {/* Dịch vụ & Thanh toán */}
+        <section className="bg-white p-5 rounded-2xl shadow-sm border space-y-4">
+          <h2 className="text-lg font-bold flex items-center gap-2 border-b pb-3">
+            <Clock className="w-5 h-5 text-purple-500" /> Dịch vụ & Ghi chú
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Gói dịch vụ</label>
+              <select className="w-full px-4 py-2 mt-1 border rounded-xl bg-white">
+                <option value="STANDARD">Giao chuẩn (Standard)</option>
+                <option value="EXPRESS">Giao nhanh (Express)</option>
+                <option value="SAME_DAY">Giao hỏa tốc (Same Day)</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">Tiền thu hộ (COD)</label>
+              <div className="relative">
+                <input type="number" className="w-full pl-4 pr-12 py-2 mt-1 border rounded-xl" placeholder="0" />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 mt-0.5 text-gray-500 font-medium">VNĐ</span>
+              </div>
+            </div>
+            <div className="md:col-span-2">
+              <label className="text-sm font-medium text-gray-700">Ghi chú giao hàng</label>
+              <textarea className="w-full px-4 py-2 mt-1 border rounded-xl resize-none" rows={2} placeholder="Cho khách xem hàng, gọi trước khi giao..." />
+            </div>
+          </div>
+        </section>
+
+        {/* Hành động */}
+        <div className="bg-white p-5 rounded-2xl shadow-sm border flex flex-col sm:flex-row justify-between items-center gap-4 sticky bottom-20 md:bottom-4 z-10">
+          <div className="text-center sm:text-left w-full sm:w-auto">
+            <p className="text-sm text-gray-500">Cước phí dự kiến</p>
+            <p className="text-xl font-bold text-primary">0 VNĐ</p>
+          </div>
+          <button className="w-full sm:w-auto bg-primary text-white px-8 py-3 rounded-xl font-bold shadow-md hover:bg-primary/90 transition-colors">
+            TẠO ĐƠN HÀNG
           </button>
         </div>
       </div>
