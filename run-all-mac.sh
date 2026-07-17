@@ -430,6 +430,7 @@ set_env_value "$ROOT_DIR/services/gateway-bff/.env" PAYMENT_SERVICE_URL "http://
 set_env_value "$ROOT_DIR/services/gateway-bff/.env" PRICING_SERVICE_URL "http://localhost:3012"
 set_env_value "$ROOT_DIR/services/shipment-service/.env" PRICING_SERVICE_URL "http://localhost:3012"
 set_env_value "$ROOT_DIR/apps/ops-web/.env" VITE_GATEWAY_BFF_URL "http://localhost:3000"
+set_env_value "$ROOT_DIR/apps/guest-web/.env" VITE_GATEWAY_BFF_URL "http://localhost:3000"
 
 if [[ "$BACKEND_MODE" == "container" ]]; then
   start_container_backend
@@ -478,6 +479,7 @@ start_web_app ops-web apps/ops-web 5173
 start_web_app merchant-web apps/merchant-web 5174
 start_web_app admin-web apps/admin-web 5175
 start_web_app public-tracking apps/public-tracking 5176
+start_web_app guest-web apps/guest-web 5177
 start_mobile_app
 
 echo "[wait] UI ports"
@@ -485,6 +487,7 @@ wait_port ops-web 5173 30
 wait_port merchant-web 5174 30
 wait_port admin-web 5175 30
 wait_port public-tracking 5176 30
+wait_port guest-web 5177 30
 
 echo
 echo "=== OPEN URLS ==="
@@ -494,6 +497,7 @@ echo "merchant-web:    http://localhost:5174"
 echo "ops-web:         http://localhost:5173"
 echo "admin-web:       http://localhost:5175"
 echo "public-tracking: http://localhost:5176"
+echo "guest-web:       http://localhost:5177"
 echo "courier-mobile:  http://localhost:8081"
 echo
 echo "Demo login: merchant 41100001 / password"
