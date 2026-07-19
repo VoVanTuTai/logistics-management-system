@@ -302,6 +302,154 @@ export class TasksService {
     return task;
   }
 
+  async autoAssignDeliveryTask(
+    shipmentCode: string,
+    locationCode: string,
+  ): Promise<Task | null> {
+    const shipment = await this.fetchServiceJson(
+      'SHIPMENT_SERVICE_URL',
+      `shipments/${encodeURIComponent(shipmentCode)}`,
+    );
+
+    if (!shipment) {
+      return null;
+    }
+
+    const shipmentRecord = asRecord(shipment);
+    const metadata = asRecord(shipmentRecord?.metadata);
+    const receiver = asRecord(metadata?.receiver);
+
+    const routing = asRecord(metadata?.routing);
+    const destinationHubCode = normalizeNonEmptyString(
+      routing?.destinationHubCode ?? receiver?.hubCode ?? metadata?.receiverHubCode,
+    );
+
+    if (!destinationHubCode) {
+      return null;
+    }
+
+    if (locationCode.toUpperCase() !== destinationHubCode.toUpperCase()) {
+      return null;
+    }
+
+    const province = normalizeNonEmptyString(receiver?.province);
+    const district = normalizeNonEmptyString(receiver?.district);
+    const ward = normalizeNonEmptyString(receiver?.ward);
+
+    if (!province || !district || !ward) {
+      return this.getOrCreateUnassignedDeliveryTask(
+        shipmentCode,
+        'Thiếu thông tin địa chỉ để tự động gán',
+      );
+    }
+
+    const masterdataUrl = process.env.MASTERDATA_SERVICE_URL?.trim();
+    if (!masterdataUrl) {
+      return this.getOrCreateUnassignedDeliveryTask(
+        shipmentCode,
+        'Không tìm thấy cấu hình MASTERDATA_SERVICE_URL',
+      );
+    }
+
+    const query = new URLSearchParams({
+      hubCode: destinationHubCode,
+      province,
+      district,
+      ward,
+      isActive: 'true',
+    });
+
+    const url = new URL(
+      `courier-area-assignments?${query.toString()}`,
+      masterdataUrl.endsWith('/') ? masterdataUrl : `${masterdataUrl}/`,
+    );
+
+    let assignments: any = null;
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          accept: 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        assignments = await response.json().catch(() => null);
+      }
+    } catch (error) {
+      // Ignore network error and default to unassigned
+    }
+
+    const assignmentList = Array.isArray(assignments) ? assignments : [];
+    const firstAssignment = assignmentList[0];
+
+    if (!firstAssignment || !firstAssignment.courierId) {
+      return this.getOrCreateUnassignedDeliveryTask(
+        shipmentCode,
+        'Không tìm thấy shipper phụ trách khu vực này',
+      );
+    }
+
+    const courierId = firstAssignment.courierId;
+
+    const existingTasks = await this.taskRepository.list({
+      shipmentCode,
+      taskType: 'DELIVERY',
+    });
+    const activeTask = existingTasks.find(
+      (task) => task.status !== 'COMPLETED' && task.status !== 'CANCELLED',
+    );
+
+    if (activeTask) {
+      if (activeTask.status === 'CREATED') {
+        return this.assign(activeTask.id, {
+          courierId,
+          hubCode: destinationHubCode,
+          note: `Tự động gán cho shipper ${courierId} phụ trách tuyến ${ward}`,
+        });
+      }
+
+      return activeTask;
+    }
+
+    const task = await this.create({
+      taskCode: `DLV-AUTO-${randomUUID()}`,
+      taskType: 'DELIVERY',
+      shipmentCode,
+      note: `Tự động gán cho shipper ${courierId} phụ trách tuyến ${ward}`,
+    });
+
+    return this.assign(task.id, {
+      courierId,
+      hubCode: destinationHubCode,
+      note: 'Hệ thống tự động phân công theo tuyến',
+    });
+  }
+
+  private async getOrCreateUnassignedDeliveryTask(
+    shipmentCode: string,
+    reason: string,
+  ): Promise<Task> {
+    const existingTasks = await this.taskRepository.list({
+      shipmentCode,
+      taskType: 'DELIVERY',
+    });
+    const activeTask = existingTasks.find(
+      (task) => task.status !== 'COMPLETED' && task.status !== 'CANCELLED',
+    );
+
+    if (activeTask) {
+      return activeTask;
+    }
+
+    return this.create({
+      taskCode: `DLV-AUTO-${randomUUID()}`,
+      taskType: 'DELIVERY',
+      shipmentCode,
+      note: `Chờ gán thủ công: ${reason}`,
+    });
+  }
+
   private ensureAssignableTask(task: Task): void {
     if (task.status === 'COMPLETED' || task.status === 'CANCELLED') {
       throw new BadRequestException(
