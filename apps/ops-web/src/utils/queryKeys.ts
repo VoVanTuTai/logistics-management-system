@@ -12,4 +12,5 @@ export const queryKeys = {
   masterdataNdrReasons: ['masterdata', 'ndr-reasons'],
   masterdataConfigs: ['masterdata', 'configs'],
   vietnamAdministrativeUnits: ['locations', 'vietnam-administrative-units'],
+  courierAreaAssignments: ['masterdata', 'courier-area-assignments'],
 } as const;
