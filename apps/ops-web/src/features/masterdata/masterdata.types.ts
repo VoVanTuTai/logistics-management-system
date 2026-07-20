@@ -95,3 +95,50 @@ export interface ConfigWriteInput {
   scope?: string | null;
   description?: string | null;
 }
+
+export interface CourierAreaAssignmentDto {
+  id: string;
+  courierId: string;
+  hubCode: string;
+  province: string;
+  district: string;
+  ward: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CourierAreaAssignmentFilters {
+  courierId?: string;
+  hubCode?: string;
+  province?: string;
+  district?: string;
+  ward?: string;
+  isActive?: string;
+}
+
+export interface CourierAreaAssignmentWriteInput {
+  courierId: string;
+  hubCode: string;
+  province: string;
+  district: string;
+  ward: string;
+  isActive?: boolean;
+}
+
+export interface VietnamWardDto {
+  code: number;
+  name: string;
+  codename: string;
+  divisionType: string;
+  provinceCode: number;
+}
+
+export interface VietnamProvinceDto {
+  code: number;
+  name: string;
+  codename: string;
+  divisionType: string;
+  phoneCode: number | null;
+  wards: VietnamWardDto[];
+}

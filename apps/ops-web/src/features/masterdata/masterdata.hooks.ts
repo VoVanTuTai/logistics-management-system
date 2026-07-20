@@ -11,6 +11,8 @@ import type {
   NdrReasonWriteInput,
   ZoneFilters,
   ZoneWriteInput,
+  CourierAreaAssignmentFilters,
+  CourierAreaAssignmentWriteInput,
 } from './masterdata.types';
 
 export function useHubsQuery(accessToken: string | null, filters: HubFilters) {
@@ -184,5 +186,82 @@ export function useUpdateConfigMutation(accessToken: string | null) {
         queryKey: queryKeys.masterdataConfigs,
       });
     },
+  });
+}
+
+export function useCourierAreaAssignmentsQuery(
+  accessToken: string | null,
+  filters: CourierAreaAssignmentFilters,
+) {
+  return useQuery({
+    queryKey: [
+      ...queryKeys.courierAreaAssignments,
+      filters.courierId ?? '',
+      filters.hubCode ?? '',
+      filters.province ?? '',
+      filters.district ?? '',
+      filters.ward ?? '',
+      filters.isActive ?? '',
+    ],
+    queryFn: () => masterdataClient.listCourierAreaAssignments(accessToken, filters),
+    enabled: Boolean(accessToken),
+  });
+}
+
+export function useCreateCourierAreaAssignmentMutation(accessToken: string | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: CourierAreaAssignmentWriteInput) =>
+      masterdataClient.createCourierAreaAssignment(accessToken, payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.courierAreaAssignments,
+      });
+    },
+  });
+}
+
+export function useUpdateCourierAreaAssignmentMutation(accessToken: string | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (params: {
+      id: string;
+      payload: Partial<CourierAreaAssignmentWriteInput>;
+    }) =>
+      masterdataClient.updateCourierAreaAssignment(
+        accessToken,
+        params.id,
+        params.payload,
+      ),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.courierAreaAssignments,
+      });
+    },
+  });
+}
+
+export function useDeleteCourierAreaAssignmentMutation(accessToken: string | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) =>
+      masterdataClient.deleteCourierAreaAssignment(accessToken, id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.courierAreaAssignments,
+      });
+    },
+  });
+}
+
+export function useVietnamAdministrativeUnitsQuery(accessToken: string | null) {
+  return useQuery({
+    queryKey: queryKeys.vietnamAdministrativeUnits,
+    queryFn: () => masterdataClient.listVietnamAdministrativeUnits(accessToken),
+    enabled: Boolean(accessToken),
+    staleTime: 24 * 60 * 60 * 1000, // 24 hours caching since administrative units change very rarely
   });
 }
