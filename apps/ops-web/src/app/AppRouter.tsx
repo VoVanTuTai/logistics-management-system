@@ -179,6 +179,10 @@ const TaskDetailPage = lazyRoutePage(
   () => import('../pages/tasks/TaskDetailPage'),
   'TaskDetailPage',
 );
+const CourierAreaAssignmentPage = lazyRoutePage(
+  () => import('../pages/tasks/CourierAreaAssignmentPage'),
+  'CourierAreaAssignmentPage',
+);
 const OpsCourierChatPage = lazyRoutePage(
   () => import('../pages/chat/OpsCourierChatPage'),
   'OpsCourierChatPage',
@@ -640,6 +644,7 @@ function DashboardLayout(): React.JSX.Element {
   const shipmentDispatchChildItems = [
     { label: 'Điều phối lấy hàng', to: routePaths.operationsPlatformPickupDispatch },
     { label: 'Điều phối phát hàng', to: routePaths.operationsPlatformDeliveryDispatch },
+    { label: 'Phân vùng Shipper', to: routePaths.courierAreaAssignment },
   ] as const;
   const branchBusinessDirectItems = [
     { label: 'Tạo vận đơn tại quầy', to: routePaths.branchBusinessOrderCreate },
@@ -1433,6 +1438,10 @@ export function AppRouter(): React.JSX.Element {
               element={<Navigate to={routePaths.operationsPlatformPickupDispatch} replace />}
             />
             <Route path={routePaths.taskDetailLeaf} element={lazyRoute(<TaskDetailPage />)} />
+            <Route
+              path={routePaths.courierAreaAssignmentLeaf}
+              element={opsModuleRoute('Phân vùng Shipper', <CourierAreaAssignmentPage />)}
+            />
             <Route
               path={routePaths.opsChatLeaf}
               element={opsModuleRoute('Chat courier', <OpsCourierChatPage />)}

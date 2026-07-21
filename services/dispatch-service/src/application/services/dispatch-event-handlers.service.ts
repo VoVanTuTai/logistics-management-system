@@ -119,6 +119,20 @@ export class DispatchEventHandlersService {
     });
   }
 
+  async handleScanInbound(payload: {
+    shipment_code?: string | null;
+    location?: { location_code?: string | null } | null;
+  }): Promise<void> {
+    const shipmentCode = payload.shipment_code?.trim() || null;
+    const locationCode = payload.location?.location_code?.trim() || null;
+
+    if (!shipmentCode || !locationCode) {
+      return;
+    }
+
+    await this.tasksService.autoAssignDeliveryTask(shipmentCode, locationCode);
+  }
+
   private readDeliveryTaskId(data: Record<string, unknown> | undefined): string | null {
     const deliveryAttempt = this.readDeliveryAttempt(data);
     if (!deliveryAttempt) {
