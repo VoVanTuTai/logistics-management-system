@@ -16,7 +16,8 @@ export interface DispatchConsumerEnvelope {
     | 'pickup.approved'
     | 'delivery.delivered'
     | 'delivery.failed'
-    | 'return.started';
+    | 'return.started'
+    | 'scan.inbound';
   shipment_code?: string | null;
   data?: Record<string, unknown>;
 }
@@ -31,6 +32,7 @@ export class DispatchEventsConsumer {
     'delivery.delivered',
     'delivery.failed',
     'return.started',
+    'scan.inbound',
   ];
   readonly retryQueues = ['dispatch-service.retry.10s', 'dispatch-service.retry.1m'];
   readonly deadLetterQueue = 'dispatch-service.dlq';
@@ -78,6 +80,13 @@ export class DispatchEventsConsumer {
     if (payload.event_type === 'delivery.delivered') {
       await this.dispatchEventHandlersService.handleDeliveryDelivered(
         payload as DeliveryDeliveredPayload,
+      );
+      return;
+    }
+
+    if (payload.event_type === 'scan.inbound') {
+      await this.dispatchEventHandlersService.handleScanInbound(
+        payload as any,
       );
     }
   }

@@ -128,6 +128,7 @@ export const routePaths = {
   shipmentDetail: (shipmentId: string) => `/app/shipments/${shipmentId}`,
   tasks: '/app/tasks',
   taskDetail: (taskId: string) => `/app/tasks/${taskId}`,
+  courierAreaAssignment: '/app/tasks/courier-area-assignments',
   opsChat: '/app/chat',
   opsChatWithCourier: (courierId: string) =>
     `/app/function-groups/operations-platform/chat-courier?courierId=${encodeURIComponent(courierId)}`,
@@ -242,6 +243,7 @@ export const routePaths = {
   shipmentDetailLeaf: 'shipments/:shipmentId',
   tasksLeaf: 'tasks',
   taskDetailLeaf: 'tasks/:taskId',
+  courierAreaAssignmentLeaf: 'tasks/courier-area-assignments',
   opsChatLeaf: 'chat',
   scansLeaf: 'scans',
   ndrLeaf: 'ndr',
