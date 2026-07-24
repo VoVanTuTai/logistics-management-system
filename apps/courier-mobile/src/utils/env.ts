@@ -1,7 +1,7 @@
 import { NativeModules, Platform } from 'react-native';
 
 const DEFAULT_GATEWAY_PORT = 3000;
-const DEFAULT_PUBLIC_GATEWAY_BASE_URL = 'http://103.179.172.53:13000';
+const DEFAULT_PUBLIC_GATEWAY_BASE_URL = 'http://222.255.181.210:13000';
 const DEFAULT_TIMEOUT_MS = 15000;
 const DEFAULT_COURIER_ID = '';
 const LOCALHOST_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '0.0.0.0']);
@@ -237,8 +237,8 @@ export const appEnv = {
   gatewayFallbackBaseUrls: resolvedGatewayBaseUrls.slice(1),
   requestTimeoutMs: Number(
     process.env.EXPO_PUBLIC_REQUEST_TIMEOUT_MS ??
-      process.env.REQUEST_TIMEOUT_MS ??
-      DEFAULT_TIMEOUT_MS,
+    process.env.REQUEST_TIMEOUT_MS ??
+    DEFAULT_TIMEOUT_MS,
   ),
   courierId:
     process.env.EXPO_PUBLIC_COURIER_ID ??
@@ -246,6 +246,6 @@ export const appEnv = {
     '',
   allowAllCourierMobilePermissionsForTesting: parseBooleanEnv(
     process.env.EXPO_PUBLIC_ALLOW_ALL_COURIER_MOBILE_PERMISSIONS_FOR_TESTING ??
-      process.env.ALLOW_ALL_COURIER_MOBILE_PERMISSIONS_FOR_TESTING,
+    process.env.ALLOW_ALL_COURIER_MOBILE_PERMISSIONS_FOR_TESTING,
   ),
 } as const;
