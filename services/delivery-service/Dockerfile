@@ -6,7 +6,7 @@ WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 
 COPY package.json pnpm-lock.yaml ./
-RUN --mount=type=cache,id=pnpm-delivery-service,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm-delivery-service,target=/root/.local/share/pnpm/store pnpm install --no-frozen-lockfile
 
 COPY tsconfig.json ./
 COPY prisma ./prisma

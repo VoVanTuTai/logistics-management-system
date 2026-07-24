@@ -19,7 +19,7 @@ import {
 } from './admin-audit.service';
 import {
   normalizeRequiredText,
-  normalizeOptionalText,
+  normalizeTextQuery,
   parseBooleanQuery,
 } from './masterdata-normalizers';
 
@@ -43,11 +43,11 @@ export class CourierAreaAssignmentsService {
 
   list(query: ListCourierAreaAssignmentsQuery = {}): Promise<CourierAreaAssignment[]> {
     return this.courierAreaAssignmentRepository.list({
-      courierId: normalizeOptionalText(query.courierId, 'courierId', 80),
-      hubCode: normalizeOptionalText(query.hubCode, 'hubCode', 80),
-      province: normalizeOptionalText(query.province, 'province', 120),
-      district: normalizeOptionalText(query.district, 'district', 120),
-      ward: normalizeOptionalText(query.ward, 'ward', 120),
+      courierId: normalizeTextQuery(query.courierId, 'courierId', 80),
+      hubCode: normalizeTextQuery(query.hubCode, 'hubCode', 80),
+      province: normalizeTextQuery(query.province, 'province', 120),
+      district: normalizeTextQuery(query.district, 'district', 120),
+      ward: normalizeTextQuery(query.ward, 'ward', 120),
       isActive: parseBooleanQuery(query.isActive, 'isActive'),
     });
   }
