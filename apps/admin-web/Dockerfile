@@ -13,7 +13,7 @@ ENV VITE_REQUEST_TIMEOUT_MS=$VITE_REQUEST_TIMEOUT_MS
 ENV VITE_ALLOW_PERMISSION_PROTOTYPE_FALLBACK=$VITE_ALLOW_PERMISSION_PROTOTYPE_FALLBACK
 
 COPY package.json pnpm-lock.yaml ./
-RUN --mount=type=cache,id=pnpm-admin-web,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm-admin-web,target=/root/.local/share/pnpm/store pnpm install --no-frozen-lockfile
 
 COPY . .
 RUN pnpm build
