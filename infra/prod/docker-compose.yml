@@ -403,6 +403,17 @@ services:
     ports:
       - "${COURIER_MOBILE_PORT}:80"
 
+  guest-web:
+    <<: *static-web
+    image: nexus/guest-web:local
+    build:
+      context: ../../apps/guest-web
+      args:
+        VITE_GATEWAY_BFF_URL: ${GATEWAY_PUBLIC_URL}
+        VITE_REQUEST_TIMEOUT_MS: 15000
+    ports:
+      - "${GUEST_WEB_PORT:-5178}:80"
+
 volumes:
   postgres_data:
   redis_data:
