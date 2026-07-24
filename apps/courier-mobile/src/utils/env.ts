@@ -1,7 +1,7 @@
 import { NativeModules, Platform } from 'react-native';
 
 const DEFAULT_GATEWAY_PORT = 3000;
-const DEFAULT_PUBLIC_GATEWAY_BASE_URL = 'http://103.179.172.53:13000';
+const DEFAULT_PUBLIC_GATEWAY_BASE_URL = 'https://ops.nexus-ex.site';
 const DEFAULT_TIMEOUT_MS = 15000;
 const DEFAULT_COURIER_ID = '';
 const LOCALHOST_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '0.0.0.0']);
