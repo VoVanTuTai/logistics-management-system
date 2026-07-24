@@ -299,6 +299,50 @@ async function seedConfigs(provinces: VietnamProvinceSeed[]) {
         defaultValue: 60,
       }),
     },
+    {
+      key: 'system.maps.provider',
+      scope: 'SYSTEM',
+      description: 'Nhà cung cấp bản đồ số cho hệ thống.',
+      value: configEnvelope({
+        name: 'Map Provider',
+        valueType: 'STRING',
+        value: 'GOOGLE_MAPS',
+        defaultValue: 'GOOGLE_MAPS',
+      }),
+    },
+    {
+      key: 'system.maps.google_api_key',
+      scope: 'SYSTEM',
+      description: 'Google Maps API Key.',
+      value: configEnvelope({
+        name: 'Google Maps API Key',
+        valueType: 'STRING',
+        value: 'AIzaSyDemoKeyForVietnamLogisticsSystem123',
+        defaultValue: '',
+      }),
+    },
+    {
+      key: 'system.maps.google_api_version',
+      scope: 'SYSTEM',
+      description: 'Phiên bản API Google Maps (New APIs).',
+      value: configEnvelope({
+        name: 'Google Maps API Version',
+        valueType: 'STRING',
+        value: 'v1',
+        defaultValue: 'v1',
+      }),
+    },
+    {
+      key: 'system.maps.cache_ttl_days',
+      scope: 'SYSTEM',
+      description: 'Thời gian lưu cache kết quả định vị và khoảng cách (ngày).',
+      value: configEnvelope({
+        name: 'Maps Cache TTL Days',
+        valueType: 'NUMBER',
+        value: 30,
+        defaultValue: 30,
+      }),
+    },
     ...merchantProfileConfigs,
   ];
 

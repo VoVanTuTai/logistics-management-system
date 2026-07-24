@@ -5,6 +5,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import type { AppTabsParamList } from './types';
 import { HomeScreen } from '../screens/home/HomeScreen';
+import { CourierMapScreen } from '../screens/map/CourierMapScreen';
 import { StatsScreen } from '../screens/stats/StatsScreen';
 import { ScanScreen } from '../screens/scan/ScanScreen';
 import { ChatScreen } from '../screens/chat/ChatScreen';
@@ -33,6 +34,16 @@ function renderTabIcon(
     return (
       <Ionicons
         name={focused ? 'stats-chart' : 'stats-chart-outline'}
+        size={size}
+        color={color}
+      />
+    );
+  }
+
+  if (routeName === 'Map') {
+    return (
+      <Ionicons
+        name={focused ? 'map' : 'map-outline'}
         size={size}
         color={color}
       />
@@ -84,6 +95,11 @@ export function AppTabs(): React.JSX.Element {
         name="Tasks"
         component={HomeScreen}
         options={{ tabBarLabel: 'Nhiệm vụ' }}
+      />
+      <Tab.Screen
+        name="Map"
+        component={CourierMapScreen}
+        options={{ tabBarLabel: 'Bản đồ' }}
       />
       <Tab.Screen
         name="Stats"

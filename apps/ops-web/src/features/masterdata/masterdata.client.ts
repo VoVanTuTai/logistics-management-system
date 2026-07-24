@@ -13,6 +13,10 @@ import type {
   ZoneDto,
   ZoneFilters,
   ZoneWriteInput,
+  CourierAreaAssignmentDto,
+  CourierAreaAssignmentFilters,
+  CourierAreaAssignmentWriteInput,
+  VietnamProvinceDto,
 } from './masterdata.types';
 
 function buildQueryString(filters: Record<string, string | undefined>): string {
@@ -162,4 +166,62 @@ export const masterdataClient = {
       accessToken,
       body: payload,
     }),
+  listCourierAreaAssignments: (
+    accessToken: string | null,
+    filters: CourierAreaAssignmentFilters,
+  ): Promise<CourierAreaAssignmentDto[]> =>
+    opsApiClient.request<CourierAreaAssignmentDto[]>(
+      `${opsEndpoints.masterdata.courierAreaAssignments}${buildQueryString({
+        courierId: filters.courierId,
+        hubCode: filters.hubCode,
+        province: filters.province,
+        district: filters.district,
+        ward: filters.ward,
+        isActive: filters.isActive,
+      })}`,
+      { accessToken },
+    ),
+  createCourierAreaAssignment: (
+    accessToken: string | null,
+    payload: CourierAreaAssignmentWriteInput,
+  ): Promise<CourierAreaAssignmentDto> =>
+    opsApiClient.request<CourierAreaAssignmentDto>(
+      opsEndpoints.masterdata.courierAreaAssignments,
+      {
+        method: 'POST',
+        accessToken,
+        body: payload,
+      },
+    ),
+  updateCourierAreaAssignment: (
+    accessToken: string | null,
+    id: string,
+    payload: Partial<CourierAreaAssignmentWriteInput>,
+  ): Promise<CourierAreaAssignmentDto> =>
+    opsApiClient.request<CourierAreaAssignmentDto>(
+      opsEndpoints.masterdata.courierAreaAssignmentDetail(id),
+      {
+        method: 'PATCH',
+        accessToken,
+        body: payload,
+      },
+    ),
+  deleteCourierAreaAssignment: (
+    accessToken: string | null,
+    id: string,
+  ): Promise<{ success: boolean }> =>
+    opsApiClient.request<{ success: boolean }>(
+      opsEndpoints.masterdata.courierAreaAssignmentDetail(id),
+      {
+        method: 'DELETE',
+        accessToken,
+      },
+    ),
+  listVietnamAdministrativeUnits: (
+    accessToken: string | null,
+  ): Promise<VietnamProvinceDto[]> =>
+    opsApiClient.request<VietnamProvinceDto[]>(
+      opsEndpoints.masterdata.vietnamAdministrativeUnits,
+      { accessToken },
+    ),
 };

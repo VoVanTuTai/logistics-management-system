@@ -47,6 +47,8 @@ export const opsEndpoints = {
     inbound: '/ops/scan/scans/inbound',
     outbound: '/ops/scan/scans/outbound',
     location: (shipmentCode: string) => `/ops/scan/locations/${encodeURIComponent(shipmentCode)}`,
+    latestPosition: (shipmentCode: string) => `/ops/scan/locations/${encodeURIComponent(shipmentCode)}/latest-position`,
+    history: (shipmentCode: string) => `/ops/scan/locations/${encodeURIComponent(shipmentCode)}/history`,
   },
   ndr: {
     list: '/ops/delivery/ndr',
@@ -82,5 +84,7 @@ export const opsEndpoints = {
     ndrReasonDetail: (reasonId: string) => `/ops/masterdata/ndr-reasons/${reasonId}`,
     configs: '/ops/masterdata/configs',
     configDetail: (configId: string) => `/ops/masterdata/configs/${configId}`,
+    courierAreaAssignments: '/ops/masterdata/courier-area-assignments',
+    courierAreaAssignmentDetail: (id: string) => `/ops/masterdata/courier-area-assignments/${id}`,
   },
 } as const;

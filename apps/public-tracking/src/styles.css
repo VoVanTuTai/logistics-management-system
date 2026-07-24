@@ -584,3 +584,56 @@ input {
     flex-direction: column;
   }
 }
+
+/* GPS position card */
+.gps-position-card {
+  border-left: 3px solid var(--success);
+}
+
+.gps-position-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.gps-position-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding-top: 4px;
+  min-width: 48px;
+}
+
+.gps-pulse {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 0 0 rgba(4, 120, 87, 0.5);
+  animation: gps-pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes gps-pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(4, 120, 87, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(4, 120, 87, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(4, 120, 87, 0);
+  }
+}
+
+.gps-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--success);
+}
+
+.gps-position-details {
+  flex: 1;
+}

@@ -25,6 +25,11 @@ import type { AppNavigatorParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
 import { appEnv } from '../../utils/env';
 import { resolveCourierId, resolveCourierDisplayName } from '../../utils/courier';
+import {
+  openGoogleMapsDirections,
+  resolveShipmentNavigationDestination,
+  type NavigationDestination,
+} from '../../utils/directions';
 import { theme } from '../../theme';
 
 type TaskListRouteParams = AppNavigatorParamList['TaskList'];
@@ -37,6 +42,7 @@ interface TaskDisplayItem {
   receiverName: string;
   receiverPhone: string | null;
   deliveryAddress: string | null;
+  navigationDestination: NavigationDestination | null;
   customerKey: string;
 }
 
@@ -45,6 +51,7 @@ interface CustomerTaskGroup {
   receiverName: string;
   receiverPhone: string | null;
   deliveryAddress: string | null;
+  navigationDestination: NavigationDestination | null;
   tasks: TaskDisplayItem[];
 }
 
@@ -163,6 +170,10 @@ function buildTaskDisplayItem(
       'recipient.address',
       'address',
     ]) ?? null;
+  const navigationDestination = resolveShipmentNavigationDestination({
+    taskType: task.taskType,
+    metadata,
+  });
 
   return {
     task,
@@ -170,6 +181,7 @@ function buildTaskDisplayItem(
     receiverName,
     receiverPhone,
     deliveryAddress,
+    navigationDestination,
     customerKey: buildCustomerKey({
       taskId: task.id,
       receiverName,
@@ -185,6 +197,10 @@ function groupTasksByCustomer(items: TaskDisplayItem[]): CustomerTaskGroup[] {
   for (const item of items) {
     const existingGroup = groups.get(item.customerKey);
     if (existingGroup) {
+      if (!existingGroup.navigationDestination && item.navigationDestination) {
+        existingGroup.navigationDestination = item.navigationDestination;
+      }
+
       existingGroup.tasks.push(item);
       continue;
     }
@@ -194,6 +210,7 @@ function groupTasksByCustomer(items: TaskDisplayItem[]): CustomerTaskGroup[] {
       receiverName: item.receiverName,
       receiverPhone: item.receiverPhone,
       deliveryAddress: item.deliveryAddress,
+      navigationDestination: item.navigationDestination,
       tasks: [item],
     });
   }
@@ -345,6 +362,12 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
     }
   };
 
+  const handleOpenDirections = async (
+    destination: NavigationDestination | null,
+  ) => {
+    await openGoogleMapsDirections(destination);
+  };
+
   return (
     <Screen
       style={{ backgroundColor: theme.colors.background }}
@@ -354,28 +377,31 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
     >
       <View style={styles.headerBlock}>
         <View style={styles.headerTop}>
-          <Text style={styles.headerSubtitle}>
-            {courierName} - {courierId} • {visibleCountText}
-          </Text>
+          <View style={styles.headerTitleBlock}>
+            <Text style={styles.headerEyebrow}>{courierName} - {courierId}</Text>
+            <Text style={styles.headerTitle}>Nhiệm vụ hàng ngày</Text>
+            <Text style={styles.headerSubtitle}>{visibleCountText}</Text>
+          </View>
           <Pressable
             onPress={() => navigation.navigate('TrackingLookup')}
-            style={({ pressed }) => [styles.trackButton, pressed && { opacity: 0.85 }]}
+            style={({ pressed }) => [styles.trackButton, pressed && styles.trackButtonPressed]}
           >
-            <Ionicons name="locate-outline" size={14} color={theme.colors.primary} />
-            <Text style={styles.trackButtonText}>Theo doi don</Text>
+            <Ionicons name="search" size={13} color={theme.colors.primary} />
+            <Text style={styles.trackButtonText}>Tra cứu</Text>
           </Pressable>
         </View>
 
         <View style={styles.filterPanel}>
-          <View style={styles.filterGroup}>
-            <View style={styles.filterLabelRow}>
-              <Ionicons name="cube-outline" size={14} color={theme.colors.textSecondary} />
-              <Text style={styles.filterLabel}>Loại</Text>
+          <View style={styles.filterSection}>
+            <View style={styles.filterHeader}>
+              <Ionicons name="cube-outline" size={13} color={theme.colors.textSecondary} />
+              <Text style={styles.filterLabel}>Nhiệm vụ</Text>
             </View>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.filterChipRow}
+              style={styles.filterScrollView}
             >
               {typeOptions.map((option) => {
                 const active = option.value === taskTypeFilter;
@@ -404,15 +430,16 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
             </ScrollView>
           </View>
 
-          <View style={styles.filterGroup}>
-            <View style={styles.filterLabelRow}>
-              <Ionicons name="radio-button-on-outline" size={14} color={theme.colors.textSecondary} />
-              <Text style={styles.filterLabel}>Trạng Thái</Text>
+          <View style={styles.filterSection}>
+            <View style={styles.filterHeader}>
+              <Ionicons name="radio-button-on-outline" size={13} color={theme.colors.textSecondary} />
+              <Text style={styles.filterLabel}>Trạng thái</Text>
             </View>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.filterChipRow}
+              style={styles.filterScrollView}
             >
               {statusOptions.map((option) => {
                 const active = option.value === statusFilter;
@@ -453,8 +480,8 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
           >
             <Ionicons
               name="receipt-outline"
-              size={14}
-              color={viewMode === 'ORDER' ? '#FFFFFF' : theme.colors.textSecondary}
+              size={13}
+              color={viewMode === 'ORDER' ? theme.colors.primary : theme.colors.textSecondary}
             />
             <Text
               style={[
@@ -476,8 +503,8 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
           >
             <Ionicons
               name="person-outline"
-              size={14}
-              color={viewMode === 'CUSTOMER' ? '#FFFFFF' : theme.colors.textSecondary}
+              size={13}
+              color={viewMode === 'CUSTOMER' ? theme.colors.primary : theme.colors.textSecondary}
             />
             <Text
               style={[
@@ -550,6 +577,22 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
                 </Text>
               </View>
               <Text style={styles.taskNote}>{item.task.note ?? 'Không có ghi chú.'}</Text>
+              <View style={styles.taskActionRow}>
+                <Pressable
+                  onPress={(event) => {
+                    event.stopPropagation();
+                    void handleOpenDirections(item.navigationDestination);
+                  }}
+                  style={({ pressed }) => [
+                    styles.directionsButton,
+                    !item.navigationDestination && styles.directionsButtonDisabled,
+                    pressed && styles.directionsButtonPressed,
+                  ]}
+                >
+                  <Ionicons name="navigate-outline" size={14} color="#FFFFFF" />
+                  <Text style={styles.directionsButtonText}>Chỉ đường</Text>
+                </Pressable>
+              </View>
             </Card>
           ))
         : null}
@@ -581,6 +624,17 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
                 >
                   <Ionicons name="call-outline" size={14} color="#FFFFFF" />
                   <Text style={styles.callButtonText}>Gọi khách</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => void handleOpenDirections(group.navigationDestination)}
+                  style={({ pressed }) => [
+                    styles.directionsButton,
+                    !group.navigationDestination && styles.directionsButtonDisabled,
+                    pressed && styles.directionsButtonPressed,
+                  ]}
+                >
+                  <Ionicons name="navigate-outline" size={14} color="#FFFFFF" />
+                  <Text style={styles.directionsButtonText}>Chỉ đường</Text>
                 </Pressable>
                 <View style={styles.signModeBadge}>
                   <Ionicons name="create-outline" size={13} color={theme.colors.textSecondary} />
@@ -621,68 +675,96 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
 const styles = StyleSheet.create({
   content: {
     paddingBottom: theme.spacing.xl,
-    gap: theme.spacing.sm,
+    gap: theme.spacing.md,
   },
   headerBlock: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface,
     paddingHorizontal: theme.spacing.md,
-    paddingTop: 6,
-    paddingBottom: 8,
-    gap: 7,
-    borderBottomLeftRadius: theme.radius.md,
-    borderBottomRightRadius: theme.radius.md,
+    paddingTop: theme.spacing.md,
+    paddingBottom: theme.spacing.md,
+    gap: theme.spacing.md,
+    borderBottomLeftRadius: theme.radius.xl,
+    borderBottomRightRadius: theme.radius.xl,
     ...theme.shadow.sm,
-    marginTop: 0
-    
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderTopWidth: 0,
+    marginTop: 0,
   },
   headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: theme.spacing.sm,
+  },
+  headerTitleBlock: {
+    flex: 1,
+    minWidth: 0,
+  },
+  headerEyebrow: {
+    color: theme.colors.textMuted,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  headerTitle: {
+    color: theme.colors.textPrimary,
+    fontSize: 20,
+    fontWeight: '900',
+    marginTop: 2,
+    letterSpacing: -0.5,
   },
   headerSubtitle: {
-    color: theme.colors.textPrimary,
-    fontWeight: '700',
-    fontSize: 14,
+    color: theme.colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 2,
   },
   trackButton: {
+    minHeight: 32,
+    borderRadius: theme.radius.pill,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    paddingHorizontal: theme.spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    borderRadius: theme.radius.pill,
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+  },
+  trackButtonPressed: {
+    opacity: 0.82,
   },
   trackButtonText: {
     color: theme.colors.primary,
-    fontWeight: '700',
-    fontSize: 12,
+    fontWeight: '800',
+    fontSize: 11,
   },
   viewModeRow: {
     flexDirection: 'row',
-    gap: theme.spacing.xs,
-    backgroundColor: '#EEF4FB',
-    borderRadius: theme.radius.md,
-    padding: 2,
+    gap: 4,
+    backgroundColor: '#F1F5F9',
+    borderRadius: theme.radius.lg,
+    padding: 3,
+    marginTop: 2,
   },
   viewModeButton: {
     flex: 1,
-    minHeight: 30,
-    borderRadius: theme.radius.sm,
+    minHeight: 34,
+    borderRadius: theme.radius.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 5,
+    gap: 6,
   },
   viewModeButtonActive: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#FFFFFF',
     ...theme.shadow.sm,
+    borderWidth: 0.5,
+    borderColor: 'rgba(0,0,0,0.05)',
   },
   viewModeButtonPressed: {
-    opacity: 0.88,
+    opacity: 0.85,
   },
   viewModeText: {
     color: theme.colors.textSecondary,
@@ -690,71 +772,82 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   viewModeTextActive: {
-    color: '#FFFFFF',
+    color: theme.colors.primary,
+    fontWeight: '800',
   },
   filterPanel: {
-    gap: 5,
+    gap: theme.spacing.sm,
   },
-  filterGroup: {
-    minHeight: 32,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  filterSection: {
+    gap: 6,
   },
-  filterLabelRow: {
-    width: 46,
+  filterHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    paddingLeft: 2,
   },
   filterLabel: {
-    color: theme.colors.textSecondary,
+    color: theme.colors.textMuted,
     fontSize: 11,
     fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  filterScrollView: {
+    marginHorizontal: -theme.spacing.md,
+    paddingHorizontal: theme.spacing.md,
   },
   filterChipRow: {
     gap: theme.spacing.xs,
-    paddingRight: theme.spacing.md,
+    paddingRight: theme.spacing.xl,
+    paddingVertical: 2,
   },
   filterChip: {
-    minHeight: 30,
+    minHeight: 28,
     borderRadius: theme.radius.pill,
     borderWidth: 1,
-    borderColor: '#D8E3F3',
-    backgroundColor: '#F8FAFC',
-    paddingHorizontal: 11,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+    paddingHorizontal: theme.spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
   filterChipActive: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: 'rgba(37, 99, 235, 0.08)',
     borderColor: theme.colors.primary,
-    ...theme.shadow.sm,
   },
   filterChipPressed: {
-    opacity: 0.86,
+    opacity: 0.82,
   },
   filterChipText: {
     color: theme.colors.textSecondary,
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   filterChipTextActive: {
-    color: '#FFFFFF',
+    color: theme.colors.primary,
+    fontWeight: '800',
   },
   offlineBanner: {
-    marginHorizontal: theme.spacing.lg,
+    marginHorizontal: theme.spacing.md,
     backgroundColor: '#FFF7ED',
     borderColor: '#FED7AA',
+    borderRadius: theme.radius.lg,
+    borderWidth: 1,
+    padding: theme.spacing.md,
+    ...theme.shadow.sm,
   },
   offlineBannerTitle: {
     color: '#9A3412',
-    fontWeight: '700',
+    fontWeight: '800',
+    fontSize: 13,
     marginBottom: 4,
   },
   offlineBannerText: {
     color: '#7C2D12',
-    lineHeight: 19,
+    fontSize: 12,
+    lineHeight: 17,
   },
   centeredState: {
     paddingVertical: theme.spacing.xl,
@@ -765,12 +858,16 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
   },
   errorCard: {
-    borderColor: '#FECACA',
-    backgroundColor: '#FEF2F2',
-    marginHorizontal: theme.spacing.lg,
+    borderColor: theme.colors.dangerSoft,
+    backgroundColor: 'rgba(254, 226, 226, 0.4)',
+    borderWidth: 1,
+    marginHorizontal: theme.spacing.md,
+    padding: theme.spacing.md,
+    borderRadius: theme.radius.lg,
   },
   errorText: {
     color: theme.colors.danger,
+    fontWeight: '600',
   },
   retryButton: {
     alignSelf: 'flex-start',
@@ -782,12 +879,16 @@ const styles = StyleSheet.create({
   },
   retryText: {
     color: '#FFFFFF',
-    fontWeight: '700',
+    fontWeight: '800',
   },
   emptyCard: {
     alignItems: 'center',
     paddingVertical: theme.spacing.xl,
-    marginHorizontal: theme.spacing.lg,
+    marginHorizontal: theme.spacing.md,
+    borderRadius: theme.radius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
   emptyTitle: {
     color: theme.colors.textPrimary,
@@ -795,8 +896,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   taskCard: {
-    marginHorizontal: theme.spacing.lg,
-    gap: theme.spacing.xs,
+    marginHorizontal: theme.spacing.md,
+    gap: theme.spacing.sm,
+    borderRadius: theme.radius.xl,
+    ...theme.shadow.md,
   },
   taskTopRow: {
     flexDirection: 'row',
@@ -841,9 +944,16 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
     fontSize: 12,
   },
-  customerCard: {
-    marginHorizontal: theme.spacing.lg,
+  taskActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: theme.spacing.sm,
+  },
+  customerCard: {
+    marginHorizontal: theme.spacing.md,
+    gap: theme.spacing.sm,
+    borderRadius: theme.radius.xl,
+    ...theme.shadow.md,
   },
   customerTopRow: {
     flexDirection: 'row',
@@ -872,7 +982,7 @@ const styles = StyleSheet.create({
   },
   callButton: {
     minHeight: 34,
-    borderRadius: theme.radius.md,
+    borderRadius: theme.radius.lg,
     backgroundColor: theme.colors.primary,
     paddingHorizontal: theme.spacing.md,
     flexDirection: 'row',
@@ -891,12 +1001,33 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
   },
+  directionsButton: {
+    minHeight: 34,
+    borderRadius: theme.radius.lg,
+    backgroundColor: '#2563EB',
+    paddingHorizontal: theme.spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.xs,
+  },
+  directionsButtonDisabled: {
+    opacity: 0.55,
+  },
+  directionsButtonPressed: {
+    opacity: 0.88,
+  },
+  directionsButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
+  },
   signModeBadge: {
     minHeight: 34,
-    borderRadius: theme.radius.md,
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: theme.colors.background,
     paddingHorizontal: theme.spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
@@ -912,10 +1043,10 @@ const styles = StyleSheet.create({
   },
   groupShipmentRow: {
     minHeight: 52,
-    borderRadius: theme.radius.md,
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background,
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: theme.spacing.xs,
     flexDirection: 'row',
