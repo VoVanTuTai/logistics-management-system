@@ -153,7 +153,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
       // Reset form
       setFormWardName('');
     } catch (err) {
-      setErrorMsg(getErrorMessage(err, 'Lỗi khi tạo cấu hình phân vùng shipper.'));
+      setErrorMsg(err instanceof Error ? err.message : 'Lỗi khi tạo cấu hình phân vùng shipper.');
     } finally {
       setSubmitting(false);
     }
@@ -171,7 +171,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
       });
       setSuccessMsg('Đã cập nhật trạng thái hoạt động tuyến thành công!');
     } catch (err) {
-      setErrorMsg(getErrorMessage(err, 'Lỗi khi cập nhật trạng thái hoạt động.'));
+      setErrorMsg(err instanceof Error ? err.message : 'Lỗi khi cập nhật trạng thái hoạt động.');
     }
   };
 
@@ -184,7 +184,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
       await deleteMutation.mutateAsync(id);
       setSuccessMsg('Đã xóa cấu hình phân vùng tuyến thành công.');
     } catch (err) {
-      setErrorMsg(getErrorMessage(err, 'Lỗi khi xóa phân vùng tuyến.'));
+      setErrorMsg(err instanceof Error ? err.message : 'Lỗi khi xóa phân vùng tuyến.');
     }
   };
 
@@ -261,7 +261,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
                   <option value="">-- Tất cả Shipper --</option>
                   {couriersQuery.data?.map(c => (
                     <option key={c.courierId} value={c.courierId}>
-                      {c.courierId} - {c.fullName}
+                      {c.label}
                     </option>
                   ))}
                 </select>
@@ -339,7 +339,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
                             <div style={styles.courierCell}>
                               <User size={14} style={{ color: '#64748b' }} />
                               <strong>{assignment.courierId}</strong>
-                              {courier && <span style={styles.courierName}>({courier.fullName})</span>}
+                              {courier && <span style={styles.courierName}>({courier.label})</span>}
                             </div>
                           </td>
                           <td>
@@ -423,7 +423,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
                   <option value="" disabled>-- Chọn Shipper --</option>
                   {couriersQuery.data?.map(c => (
                     <option key={c.courierId} value={c.courierId}>
-                      {c.courierId} - {c.fullName}
+                      {c.label}
                     </option>
                   ))}
                 </select>
