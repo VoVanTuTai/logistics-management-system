@@ -205,6 +205,12 @@ export async function loadVietnamProvinces(): Promise<VietnamProvinceSeed[]> {
     const provinces = payload
       .map(mapProvince)
       .filter((province): province is VietnamProvinceSeed => Boolean(province))
+      .filter(
+        (province) =>
+          NORTH_PROVINCES.has(province.codename) ||
+          CENTRAL_PROVINCES.has(province.codename) ||
+          SOUTH_PROVINCES.has(province.codename),
+      )
       .sort((left, right) => left.code - right.code);
 
     assertProvinceCoverage(provinces);
