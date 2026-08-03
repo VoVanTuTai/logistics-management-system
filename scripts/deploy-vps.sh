@@ -250,6 +250,23 @@ seed_auth_demo_data() {
     "node node_modules/ts-node/dist/bin.js --transpile-only prisma/seed.ts"
 }
 
+seed_masterdata_demo_data() {
+  local dir="$ROOT_DIR/services/masterdata-service"
+  local database_url="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/masterdata_db"
+
+  if [[ "${SEED_DEMO_DATA:-0}" != "1" ]]; then
+    return
+  fi
+
+  echo "[seed] masterdata hubs & profiles"
+  run_node_service_command \
+    "$dir" \
+    "masterdata-service seed" \
+    "$database_url" \
+    "pnpm exec ts-node --transpile-only prisma/seed.ts" \
+    "node node_modules/ts-node/dist/bin.js --transpile-only prisma/seed.ts"
+}
+
 print_urls() {
   echo
   echo "=== VPS URLS ==="
@@ -258,6 +275,7 @@ print_urls() {
   echo "merchant-web:     ${MERCHANT_PUBLIC_URL:-http://${PUBLIC_HOST}:${MERCHANT_WEB_PORT}}"
   echo "admin-web:        ${ADMIN_PUBLIC_URL:-http://${PUBLIC_HOST}:${ADMIN_WEB_PORT}}"
   echo "public-tracking:  ${PUBLIC_TRACKING_PUBLIC_URL:-http://${PUBLIC_HOST}:${PUBLIC_TRACKING_PORT}}"
+  echo "guest-web:        ${GUEST_PUBLIC_URL:-http://${PUBLIC_HOST}:${GUEST_WEB_PORT:-5178}}"
   echo "minio API:        ${MINIO_PUBLIC_ENDPOINT}"
   echo
 }
@@ -280,6 +298,7 @@ main() {
   ensure_databases
   prepare_databases
   seed_auth_demo_data
+  seed_masterdata_demo_data
 
   echo "[compose] start full stack"
   compose up -d --build --remove-orphans

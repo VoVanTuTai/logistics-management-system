@@ -602,6 +602,23 @@ seed_auth_demo_data() {
     "node node_modules/ts-node/dist/bin.js --transpile-only prisma/seed.ts"
 }
 
+seed_masterdata_demo_data() {
+  if [[ "${SEED_DEMO_DATA:-0}" != "1" ]]; then
+    return
+  fi
+
+  local dir="$ROOT_DIR/services/masterdata-service"
+  local database_url="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/masterdata_db"
+
+  echo "[seed] masterdata hubs & profiles"
+  run_node_service_command \
+    "$dir" \
+    "masterdata-service seed" \
+    "$database_url" \
+    "pnpm exec ts-node --transpile-only prisma/seed.ts" \
+    "node node_modules/ts-node/dist/bin.js --transpile-only prisma/seed.ts"
+}
+
 verify_public_routes() {
   echo "[verify] public health"
   wait_http_health "https://${OPS_DOMAIN}/health" 180
@@ -659,6 +676,7 @@ main() {
   ensure_databases
   prepare_databases
   seed_auth_demo_data
+  seed_masterdata_demo_data
   compose restart auth-service masterdata-service shipment-service pickup-service dispatch-service manifest-service scan-service delivery-service tracking-service reporting-service payment-service gateway-bff
   wait_compose_service gateway-bff 180
   verify_public_routes
