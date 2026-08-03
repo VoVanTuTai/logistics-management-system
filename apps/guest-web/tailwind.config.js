@@ -7,8 +7,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["Outfit", "sans-serif"],
-        serif: ["Cormorant Garamond", "serif"],
+        sans: ["Manrope", "Segoe UI", "Helvetica Neue", "Arial", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",

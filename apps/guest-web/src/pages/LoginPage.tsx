@@ -26,48 +26,48 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-[70vh] items-center justify-center px-4">
-      <div className="w-full max-w-md luxury-glass p-8 md:p-10 rounded-2.5xl border border-[#E2EAF4] luxury-shadow space-y-7 text-center">
-        <div className="space-y-4">
-          <div className="w-16 h-16 bg-[#0C3E8A]/10 text-[#0C3E8A] rounded-2xl flex items-center justify-center mx-auto">
-            <Shield className="w-7 h-7" strokeWidth={1.5} />
+    <div className="flex min-h-[75vh] items-center justify-center px-4">
+      <div className="w-full max-w-md bg-white p-8 md:p-10 rounded-2xl border border-slate-200 shadow-lg space-y-6 text-center">
+        <div className="space-y-3">
+          <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mx-auto border border-blue-100">
+            <Shield className="w-7 h-7" strokeWidth={1.75} />
           </div>
-          <h1 className="text-2.5xl font-light font-serif-luxury text-[#0F172A]">Xác thực tài khoản</h1>
-          <p className="text-[#5A6E85] text-sm font-light leading-relaxed max-w-xs mx-auto">
+          <h1 className="text-2xl font-bold text-slate-900">Xác thực tài khoản khách hàng</h1>
+          <p className="text-slate-500 text-xs leading-relaxed max-w-xs mx-auto">
             {step === 'phone' 
-              ? 'Nhập số điện thoại di động của quý khách để nhận mã truy cập OTP.' 
-              : `Nhập mã OTP gồm 6 chữ số vừa được gửi đến thiết bị số di động ${phone}.`}
+              ? 'Nhập số điện thoại di động để nhận mã xác thực OTP tạo đơn và truy xuất vận đơn.' 
+              : `Nhập mã xác thực OTP 6 chữ số đã được gửi đến số điện thoại ${phone}.`}
           </p>
         </div>
 
         {step === 'phone' ? (
-          <form onSubmit={handleRequestOtp} className="space-y-5">
-            <div className="space-y-2 text-left">
-              <label htmlFor="login-phone" className="block text-xs font-semibold uppercase tracking-[0.1em] text-[#5A6E85]">
-                Số điện thoại
+          <form onSubmit={handleRequestOtp} className="space-y-4">
+            <div className="space-y-1.5 text-left">
+              <label htmlFor="login-phone" className="block text-xs font-semibold uppercase tracking-wider text-slate-600">
+                Số điện thoại di động
               </label>
               <input 
                 id="login-phone"
                 type="tel" 
                 value={phone}
                 onChange={e => setPhone(e.target.value)}
-                placeholder="Nhập số điện thoại..." 
-                className="w-full rounded-xl border border-[#E2EAF4] bg-white px-5 py-4 text-center text-lg font-medium tracking-widest text-[#0F172A] outline-none transition duration-300 placeholder:normal-case placeholder:font-light placeholder:tracking-normal focus:border-[#0C3E8A] focus:ring-1 focus:ring-[#0C3E8A]/20"
+                placeholder="0912 345 678" 
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-center text-lg font-semibold tracking-widest text-slate-900 outline-none transition duration-200 focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10"
                 autoFocus
               />
             </div>
             <button 
               type="submit" 
               disabled={phone.length < 10}
-              className="w-full bg-gradient-to-r from-[#0C3E8A] to-[#0052CC] text-white py-4 rounded-xl font-bold uppercase tracking-wider hover:brightness-110 shadow-lg shadow-[#0C3E8A]/15 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center gap-2"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider shadow-md disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
             >
-              Tiếp tục <ArrowRight className="w-4.5 h-4.5" strokeWidth={2} />
+              Nhận mã OTP <ArrowRight className="w-4 h-4" strokeWidth={2} />
             </button>
           </form>
         ) : (
-          <form onSubmit={handleVerifyOtp} className="space-y-5">
-            <div className="space-y-2 text-left">
-              <label htmlFor="login-otp" className="block text-xs font-semibold uppercase tracking-[0.1em] text-[#5A6E85]">
+          <form onSubmit={handleVerifyOtp} className="space-y-4">
+            <div className="space-y-1.5 text-left">
+              <label htmlFor="login-otp" className="block text-xs font-semibold uppercase tracking-wider text-slate-600">
                 Mã xác thực OTP
               </label>
               <input 
@@ -76,23 +76,23 @@ export default function LoginPage() {
                 value={otp}
                 onChange={e => setOtp(e.target.value.slice(0, 6))}
                 placeholder="000000" 
-                className="w-full rounded-xl border border-[#E2EAF4] bg-white px-5 py-4 text-center text-2xl font-semibold tracking-[0.5em] text-[#0F172A] outline-none transition duration-300 placeholder:normal-case placeholder:font-light placeholder:tracking-normal focus:border-[#0C3E8A] focus:ring-1 focus:ring-[#0C3E8A]/20"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-center text-2xl font-bold tracking-[0.4em] text-slate-900 outline-none transition duration-200 focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10"
                 autoFocus
               />
             </div>
             <button 
               type="submit" 
               disabled={otp.length !== 6}
-              className="w-full bg-gradient-to-r from-[#0C3E8A] to-[#0052CC] text-white py-4 rounded-xl font-bold uppercase tracking-wider hover:brightness-110 shadow-lg shadow-[#0C3E8A]/15 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center gap-2"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider shadow-md disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
             >
-              Xác nhận mã OTP <CheckCircle2 className="w-4.5 h-4.5" strokeWidth={2} />
+              Xác nhận & Đăng nhập <CheckCircle2 className="w-4 h-4" strokeWidth={2} />
             </button>
             <button 
               type="button" 
               onClick={() => setStep('phone')}
-              className="w-full text-[#5A6E85] hover:text-[#0C3E8A] text-xs font-medium py-1 transition-colors duration-200"
+              className="w-full text-slate-500 hover:text-blue-600 text-xs font-medium py-1 transition-colors duration-200"
             >
-              Thay đổi số điện thoại liên kết
+              Đổi số điện thoại nhận mã
             </button>
           </form>
         )}
