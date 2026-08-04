@@ -50,7 +50,7 @@ interface DailyRecord {
   hubCOrders: number;
 }
 
-// Generate base historical data for 30 days based on real database records
+// Generate historical daily records strictly from real database shipments
 function generateRealHistoricalData(
   realShipments: any[],
   realTasks: any[],
@@ -60,9 +60,6 @@ function generateRealHistoricalData(
 ): DailyRecord[] {
   const data: DailyRecord[] = [];
   const daysOfWeek = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
-  const dayMultipliers: Record<number, number> = {
-    0: 0.7, 1: 1.1, 2: 1.2, 3: 1.25, 4: 1.15, 5: 1.05, 6: 0.8,
-  };
 
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - 30);
@@ -77,10 +74,6 @@ function generateRealHistoricalData(
     realShipmentsByDateMap.set(dateKey, list);
   }
 
-  const realTotalShipmentsCount = realShipments.length;
-  const baseVolume = Math.max(150, Math.round(realTotalShipmentsCount > 0 ? (realTotalShipmentsCount / 5) + 200 : 1200));
-  const growthSlope = 4;
-
   for (let i = 0; i < 30; i++) {
     const currentDate = new Date(startDate);
     currentDate.setDate(startDate.getDate() + i);
@@ -89,9 +82,8 @@ function generateRealHistoricalData(
     const dayOfWeekName = daysOfWeek[dayOfWeekIndex];
 
     const dayShipments = realShipmentsByDateMap.get(dateKey) ?? [];
-    const hasRealDataForDay = dayShipments.length > 0;
 
-    let totalOrders = 0;
+    let totalOrders = dayShipments.length;
     let pickupOrders = 0;
     let deliveryOrders = 0;
     let returnOrders = 0;
@@ -101,53 +93,32 @@ function generateRealHistoricalData(
     let hubBOrders = 0;
     let hubCOrders = 0;
 
-    if (hasRealDataForDay) {
-      totalOrders = dayShipments.length;
-      for (const s of dayShipments) {
-        const st = (s.currentStatus ?? '').toUpperCase();
-        if (st.includes('PICKUP') || st.includes('CREATED') || st.includes('INBOUND')) {
-          pickupOrders++;
-        } else if (st.includes('DELIVER') || st.includes('OUT_FOR')) {
-          deliveryOrders++;
-        } else if (st.includes('RETURN')) {
-          returnOrders++;
-        }
-
-        if (st.includes('FAILED') || st.includes('NDR') || st.includes('DELAY')) {
-          slaDelayed++;
-        }
-
-        const hub = (s.currentLocation || s.receiverHubCode || s.originHubCode || s.destinationHubCode || '').toUpperCase();
-        if (hub.startsWith('001') || hub.includes('HN') || hub.includes('BAC')) {
-          hubAOrders++;
-        } else if (hub.startsWith('003') || hub.includes('HCM') || hub.includes('NAM')) {
-          hubBOrders++;
-        } else {
-          hubCOrders++;
-        }
+    for (const s of dayShipments) {
+      const st = (s.currentStatus ?? '').toUpperCase();
+      if (st.includes('PICKUP') || st.includes('CREATED') || st.includes('INBOUND')) {
+        pickupOrders++;
+      } else if (st.includes('DELIVER') || st.includes('OUT_FOR')) {
+        deliveryOrders++;
+      } else if (st.includes('RETURN')) {
+        returnOrders++;
       }
-      merchantVolume = Math.round(totalOrders * 0.42);
-    } else {
-      const trendVol = baseVolume + growthSlope * i;
-      const weeklyFactor = 1 + (dayMultipliers[dayOfWeekIndex] - 1) * weeklyPatternStrength;
-      const noise = Math.sin(i * 1.5) * 30 + Math.cos(i * 0.8) * 20;
 
-      totalOrders = Math.max(100, Math.round((trendVol * weeklyFactor + noise)));
-      const pickupRatio = 0.35 + Math.sin(i) * 0.03;
-      const deliveryRatio = 0.55 + Math.cos(i) * 0.03;
+      if (st.includes('FAILED') || st.includes('NDR') || st.includes('DELAY')) {
+        slaDelayed++;
+      }
 
-      pickupOrders = Math.round(totalOrders * pickupRatio);
-      deliveryOrders = Math.round(totalOrders * deliveryRatio);
-      returnOrders = totalOrders - pickupOrders - deliveryOrders;
-      slaDelayed = Math.max(0, Math.round(totalOrders * (0.04 + Math.sin(i * 2.2) * 0.02)));
-      merchantVolume = Math.round(totalOrders * 0.42);
-
-      hubAOrders = Math.round(totalOrders * (0.45 + Math.sin(i * 0.9) * 0.02));
-      hubBOrders = Math.round(totalOrders * (0.35 + Math.cos(i * 1.1) * 0.02));
-      hubCOrders = totalOrders - hubAOrders - hubBOrders;
+      const hub = (s.currentLocation || s.receiverHubCode || s.originHubCode || s.destinationHubCode || '').toUpperCase();
+      if (hub.startsWith('001') || hub.includes('HN') || hub.includes('BAC')) {
+        hubAOrders++;
+      } else if (hub.startsWith('003') || hub.includes('HCM') || hub.includes('NAM')) {
+        hubBOrders++;
+      } else {
+        hubCOrders++;
+      }
     }
+    merchantVolume = Math.round(totalOrders * 0.42);
 
-    // Apply active what-if simulation sliders to real baseline
+    // Apply active multiplier controls to real database records
     totalOrders = Math.round(totalOrders * volumeMultiplier);
     pickupOrders = Math.round(pickupOrders * volumeMultiplier);
     deliveryOrders = Math.round(deliveryOrders * volumeMultiplier);
