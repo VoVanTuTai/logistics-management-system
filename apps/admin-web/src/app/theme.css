@@ -6,17 +6,17 @@
   --admin-font-weight-regular: 500;
   --admin-font-weight-medium: 600;
   --admin-font-weight-bold: 700;
-  --admin-bg: #eef2ff;
+  --admin-bg: #f4f5f7;
   --admin-surface: #ffffff;
-  --admin-surface-soft: #eef2ff;
-  --admin-text: #334155;
-  --admin-muted: #64748b;
-  --admin-border: #e2e8f0;
-  --admin-primary: #4f46e5;
-  --admin-primary-dark: #4338ca;
+  --admin-surface-soft: #deebff;
+  --admin-text: #172b4d;
+  --admin-muted: #5e6c84;
+  --admin-border: #dfe1e6;
+  --admin-primary: #0052cc;
+  --admin-primary-dark: #0747a6;
   --admin-success: #137f5d;
-  --admin-danger: #b12233;
-  --admin-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+  --admin-danger: #de350b;
+  --admin-shadow: 0 8px 20px rgba(9, 30, 66, 0.08);
 
   /* Stitch Design Tokens mapped to Admin variables */
   --stitch-surface: #faf9ff;
@@ -251,14 +251,14 @@ th {
 }
 
 .admin-brand-logo {
-  background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+  background: linear-gradient(135deg, #0052cc 0%, #0747a6 100%);
   color: #ffffff;
   font-weight: 800;
   font-size: 14px;
   letter-spacing: 0.06em;
   padding: 8px 10px;
   border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+  box-shadow: 0 4px 10px rgba(0, 82, 204, 0.3);
 }
 
 .admin-sidebar h1 {
@@ -276,10 +276,10 @@ th {
 }
 
 .admin-user-card {
-  border: 1px solid #e0e7ff;
+  border: 1px solid #b3d4ff;
   border-radius: 14px;
   padding: 10px 12px;
-  background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+  background: linear-gradient(135deg, #f4f5f7 0%, #deebff 100%);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -289,7 +289,7 @@ th {
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  background: #4f46e5;
+  background: #0052cc;
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -381,18 +381,18 @@ th {
 }
 
 .admin-nav-link:hover .nav-icon {
-  color: #4f46e5;
+  color: #0052cc;
 }
 
 .admin-nav-link-active {
-  background: #eef2ff !important;
-  color: #4f46e5 !important;
+  background: #deebff !important;
+  color: #0052cc !important;
   font-weight: 700;
-  box-shadow: inset 3px 0 0 #4f46e5;
+  box-shadow: inset 3px 0 0 #0052cc;
 }
 
 .admin-nav-link-active .nav-icon {
-  color: #4f46e5 !important;
+  color: #0052cc !important;
 }
 
 .admin-workspace {
@@ -404,10 +404,10 @@ th {
 }
 
 .admin-topbar {
-  border: 1px solid #e2e8f0;
+  border: 1px solid #dfe1e6;
   border-radius: 16px;
-  background: linear-gradient(135deg, #ffffff 0%, #faf5ff 100%);
-  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.05);
+  background: linear-gradient(135deg, #ffffff 0%, #ebf3ff 100%);
+  box-shadow: 0 4px 16px -2px rgba(9, 30, 66, 0.06);
   padding: 14px 18px;
   display: flex;
   align-items: center;
@@ -437,13 +437,13 @@ th {
 }
 
 .admin-tag {
-  border: 1px solid #c7d2fe;
+  border: 1px solid #b3d4ff;
   border-radius: 999px;
   padding: 6px 12px;
   font-size: 11px;
   font-weight: 800;
-  color: #3730a3;
-  background: #eef2ff;
+  color: #0747a6;
+  background: #deebff;
 }
 
 .admin-main-panel {
