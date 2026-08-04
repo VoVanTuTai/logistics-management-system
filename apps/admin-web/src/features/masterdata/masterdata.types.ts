@@ -125,3 +125,16 @@ export interface MerchantProfileWriteInput {
   defaultSenderAddress?: string | null;
   businessAddressDetail?: string | null;
 }
+
+export interface RegionalHierarchyItemDto {
+  regionKey: 'NORTH' | 'CENTRAL' | 'SOUTH';
+  regionName: string;
+  zoneCode: string;
+  regionalHub: HubDto | null;
+  provincesCount: number;
+  provinces: string[];
+  branchHubsCount: number;
+  branchHubs: HubDto[];
+  totalHubsCount: number;
+}
+
