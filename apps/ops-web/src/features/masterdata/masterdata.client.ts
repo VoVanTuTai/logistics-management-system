@@ -48,6 +48,11 @@ export const masterdataClient = {
       })}`,
       { accessToken },
     ),
+  getRegionalHierarchy: (accessToken: string | null) =>
+    opsApiClient.request<import('./masterdata.types').RegionalHierarchyItemDto[]>(
+      `${opsEndpoints.masterdata.hubs}/regional-hierarchy`,
+      { accessToken },
+    ),
   createHub: (
     accessToken: string | null,
     payload: HubWriteInput,

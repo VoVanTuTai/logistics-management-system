@@ -38,6 +38,11 @@ export class HubsController {
     });
   }
 
+  @Get('regional-hierarchy')
+  getRegionalHierarchy() {
+    return this.hubsService.getRegionalHierarchy();
+  }
+
   @Get(':id')
   getById(@Param('id') id: string): Promise<Hub> {
     return this.hubsService.getById(id);

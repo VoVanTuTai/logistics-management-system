@@ -77,6 +77,65 @@ export class HubsService {
     });
   }
 
+  async getRegionalHierarchy() {
+    const allHubs = await this.hubRepository.list({});
+    const regionalMeta = [
+      {
+        regionKey: 'NORTH',
+        regionName: 'Miền Bắc',
+        zoneCode: '001',
+        regionalHubCode: '001N001',
+        provinces: [
+          'Thành phố Hà Nội', 'Thành phố Hải Phòng', 'Tỉnh Quảng Ninh', 'Tỉnh Bắc Ninh',
+          'Tỉnh Hưng Yên', 'Tỉnh Thái Nguyên', 'Tỉnh Lạng Sơn', 'Tỉnh Cao Bằng',
+          'Tỉnh Tuyên Quang', 'Tỉnh Điện Biên', 'Tỉnh Lai Châu', 'Tỉnh Sơn La',
+          'Tỉnh Lào Cai', 'Tỉnh Phú Thọ', 'Tỉnh Ninh Bình',
+        ],
+      },
+      {
+        regionKey: 'CENTRAL',
+        regionName: 'Miền Trung & Tây Nguyên',
+        zoneCode: '002',
+        regionalHubCode: '002C001',
+        provinces: [
+          'Tỉnh Thanh Hóa', 'Tỉnh Nghệ An', 'Tỉnh Hà Tĩnh', 'Tỉnh Quảng Trị',
+          'Thành phố Đà Nẵng', 'Tỉnh Thừa Thiên Huế', 'Tỉnh Quảng Ngãi', 'Tỉnh Gia Lai',
+          'Tỉnh Khánh Hòa', 'Tỉnh Đắk Lắk', 'Tỉnh Lâm Đồng',
+        ],
+      },
+      {
+        regionKey: 'SOUTH',
+        regionName: 'Miền Nam & ĐBSCL',
+        zoneCode: '003',
+        regionalHubCode: '003S001',
+        provinces: [
+          'Thành phố Hồ Chí Minh', 'Tỉnh Đồng Nai', 'Tỉnh Tây Ninh', 'Tỉnh Đồng Tháp',
+          'Tỉnh Vĩnh Long', 'Tỉnh An Giang', 'Thành phố Cần Thơ', 'Tỉnh Cà Mau',
+        ],
+      },
+    ];
+
+    return regionalMeta.map((region) => {
+      const regionHubs = allHubs.filter(
+        (h) => h.zoneCode === region.zoneCode || h.code.startsWith(region.zoneCode),
+      );
+      const mainHub = regionHubs.find((h) => h.code === region.regionalHubCode) ?? null;
+      const branchHubs = regionHubs.filter((h) => h.code !== region.regionalHubCode);
+
+      return {
+        regionKey: region.regionKey,
+        regionName: region.regionName,
+        zoneCode: region.zoneCode,
+        regionalHub: mainHub,
+        provincesCount: region.provinces.length,
+        provinces: region.provinces,
+        branchHubsCount: branchHubs.length,
+        branchHubs,
+        totalHubsCount: regionHubs.length,
+      };
+    });
+  }
+
   async getById(id: string): Promise<Hub> {
     const hub = await this.hubRepository.findById(id);
 

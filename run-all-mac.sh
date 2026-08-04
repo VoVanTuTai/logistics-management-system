@@ -434,6 +434,7 @@ set_env_value "$ROOT_DIR/apps/guest-web/.env" VITE_GATEWAY_BFF_URL "http://local
 
 if [[ "$BACKEND_MODE" == "container" ]]; then
   start_container_backend
+  node "$ROOT_DIR/scripts/seed-master-logistics-flow.js"
 elif [[ "$BACKEND_MODE" == "local" ]]; then
   echo "[backend] mode=local"
   echo "[infra] starting docker dependencies"
@@ -453,6 +454,7 @@ elif [[ "$BACKEND_MODE" == "local" ]]; then
   start_service pricing-service services/pricing-service 3012
 
   seed_auth_demo_users
+  node "$ROOT_DIR/scripts/seed-master-logistics-flow.js"
 
   echo "[wait] backend ports"
   wait_port masterdata-service 3001
