@@ -283,19 +283,19 @@ async function runSeed() {
 
   console.log(`📦 Inserting ${demoShipments.length} Master Operational Demo Shipments...`);
 
-function toShipmentEnumStatus(status) {
-  switch (status) {
-    case 'CREATED': return 'CREATED';
-    case 'INBOUND_HUB': return 'SCAN_INBOUND';
-    case 'SCAN_INBOUND': return 'SCAN_INBOUND';
-    case 'IN_TRANSIT': return 'IN_TRANSIT';
-    case 'OUT_FOR_DELIVERY': return 'TASK_ASSIGNED';
-    case 'DELIVERY_FAILED': return 'DELIVERY_FAILED';
-    case 'NDR_CREATED': return 'NDR_CREATED';
-    case 'DELIVERED': return 'DELIVERED';
-    default: return 'CREATED';
+  function toShipmentEnumStatus(status) {
+    switch (status) {
+      case 'CREATED': return 'CREATED';
+      case 'INBOUND_HUB': return 'SCAN_INBOUND';
+      case 'SCAN_INBOUND': return 'SCAN_INBOUND';
+      case 'IN_TRANSIT': return 'IN_TRANSIT';
+      case 'OUT_FOR_DELIVERY': return 'TASK_ASSIGNED';
+      case 'DELIVERY_FAILED': return 'DELIVERY_FAILED';
+      case 'NDR_CREATED': return 'NDR_CREATED';
+      case 'DELIVERED': return 'DELIVERED';
+      default: return 'CREATED';
+    }
   }
-}
 
   for (const item of demoShipments) {
     const baseDate = new Date();
