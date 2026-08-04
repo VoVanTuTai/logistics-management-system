@@ -723,6 +723,7 @@ export function HubManagementPage(): React.JSX.Element {
             <tr>
               <th style={styles.headerCell}>Mã hub</th>
               <th style={styles.headerCell}>Tên hub</th>
+              <th style={styles.headerCell}>Phân cấp Hub</th>
               <th style={styles.headerCell}>Mã zone</th>
               <th style={styles.headerCell}>Địa chỉ</th>
               <th style={styles.headerCell}>Liên hệ</th>
@@ -738,11 +739,23 @@ export function HubManagementPage(): React.JSX.Element {
               const addressPayload = parseHubAddress(hub.address);
               const assignedOps = opsByHub.get(hub.code) ?? [];
               const assignedCouriers = couriersByHub.get(hub.code) ?? [];
+              const isRegionalHub = hub.code === '001N001' || hub.code === '002C001' || hub.code === '003S001';
 
               return (
                 <tr key={hub.id}>
                   <td style={styles.cell}>{hub.code}</td>
                   <td style={styles.cell}>{hub.name}</td>
+                  <td style={styles.cell}>
+                    {isRegionalHub ? (
+                      <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '4px', backgroundColor: '#f3e8ff', color: '#6b21a8' }}>
+                        ★ HUB TỔNG MIỀN
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 8px', borderRadius: '4px', backgroundColor: '#e0f2fe', color: '#0369a1' }}>
+                        BƯU CỤC TỈNH
+                      </span>
+                    )}
+                  </td>
                   <td style={styles.cell}>{hub.zoneCode ?? 'Không có'}</td>
                   <td style={styles.cell}>{formatAddressSummary(addressPayload)}</td>
                   <td style={styles.cell}>{formatContactSummary(addressPayload)}</td>
