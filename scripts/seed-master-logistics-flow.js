@@ -391,7 +391,7 @@ function toShipmentEnumStatus(status) {
             shipmentCode: item.code,
             actor: evt.actor,
             locationCode: evt.location,
-            payload: { description: evt.desc, status: evt.type },
+            payload: { description: evt.desc, status: evt.type, data: { shipment: metadata } },
             occurredAt: evt.time,
             createdAt: evt.time,
             updatedAt: evt.time,
@@ -405,6 +405,12 @@ function toShipmentEnumStatus(status) {
 
     // Insert TrackingCurrent snapshot in tracking_db
     const lastEvt = events[events.length - 1];
+    const fullViewPayload = {
+      ...metadata,
+      event_data: { shipment: metadata },
+      timeline: events,
+    };
+
     await trackingDb.trackingCurrent.upsert({
       where: { shipmentCode: item.code },
       create: {
@@ -415,7 +421,7 @@ function toShipmentEnumStatus(status) {
         lastEventId: `evt_${item.code}_${lastEvt.type}`,
         lastEventType: lastEvt.type,
         lastEventAt: lastEvt.time,
-        viewPayload: { ...metadata, timeline: events },
+        viewPayload: fullViewPayload,
         createdAt: lastEvt.time,
         updatedAt: lastEvt.time,
       },
@@ -423,7 +429,7 @@ function toShipmentEnumStatus(status) {
         currentStatus: item.currentStatus,
         currentLocationCode: item.currentLocation,
         lastEventAt: lastEvt.time,
-        viewPayload: { ...metadata, timeline: events },
+        viewPayload: fullViewPayload,
         updatedAt: lastEvt.time,
       },
     });

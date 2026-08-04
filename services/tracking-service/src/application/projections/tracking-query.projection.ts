@@ -322,6 +322,11 @@ export class TrackingQueryProjection {
       return fromCurrent;
     }
 
+    const viewPayloadRecord = this.asRecord(current?.viewPayload);
+    if (viewPayloadRecord) {
+      return viewPayloadRecord;
+    }
+
     for (const record of [...timelineRecords].reverse()) {
       const shipment = this.getNestedRecord(record.payload, ['data', 'shipment']);
       if (shipment) {
