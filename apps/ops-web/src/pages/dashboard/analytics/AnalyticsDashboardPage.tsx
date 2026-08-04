@@ -13,6 +13,7 @@ import {
   YAxis,
 } from 'recharts';
 
+import { useRegionalHierarchyQuery } from '../../../features/masterdata/masterdata.api';
 import { useManifestsQuery } from '../../../features/manifests/manifests.api';
 import { useNdrCasesQuery } from '../../../features/ndr/ndr.api';
 import { useShipmentsQuery } from '../../../features/shipments/shipments.api';
@@ -77,15 +78,51 @@ function buildDateWindow(): string[] {
 
 export function AnalyticsDashboardPage(): React.JSX.Element {
   const accessToken = useAuthStore((state) => state.session?.tokens.accessToken ?? null);
+  const [selectedScope, setSelectedScope] = React.useState<'ALL' | 'NORTH' | 'CENTRAL' | 'SOUTH'>('ALL');
+
   const shipmentsQuery = useShipmentsQuery(accessToken, {}, { refetchInterval: 15000 });
   const tasksQuery = useTasksQuery(accessToken, {}, { refetchInterval: 15000 });
   const manifestsQuery = useManifestsQuery(accessToken);
   const ndrQuery = useNdrCasesQuery(accessToken);
+  const regionalHierarchyQuery = useRegionalHierarchyQuery(accessToken);
 
-  const shipments = shipmentsQuery.data ?? [];
-  const tasks = tasksQuery.data ?? [];
+  const rawShipments = shipmentsQuery.data ?? [];
+  const rawTasks = tasksQuery.data ?? [];
   const manifests = manifestsQuery.data ?? [];
   const ndrCases = ndrQuery.data ?? [];
+  const regionalHierarchy = regionalHierarchyQuery.data ?? [];
+
+  // Regional 3-Miền Breakdown Calculations
+  const regionalBreakdown = useMemo(() => {
+    const north = rawShipments.filter((s) => resolveShipmentHub(s).startsWith('001') || resolveShipmentHub(s).includes('HN'));
+    const central = rawShipments.filter((s) => resolveShipmentHub(s).startsWith('002'));
+    const south = rawShipments.filter((s) => resolveShipmentHub(s).startsWith('003') || resolveShipmentHub(s).includes('HCM'));
+    const other = rawShipments.length - north.length - central.length - south.length;
+
+    const northInfo = regionalHierarchy.find((r) => r.regionKey === 'NORTH');
+    const centralInfo = regionalHierarchy.find((r) => r.regionKey === 'CENTRAL');
+    const southInfo = regionalHierarchy.find((r) => r.regionKey === 'SOUTH');
+
+    return {
+      north: { count: north.length, info: northInfo },
+      central: { count: central.length, info: centralInfo },
+      south: { count: south.length, info: southInfo },
+      total: rawShipments.length,
+    };
+  }, [rawShipments, regionalHierarchy]);
+
+  // Filter shipments by selected scope
+  const shipments = useMemo(() => {
+    if (selectedScope === 'ALL') return rawShipments;
+    const prefix = selectedScope === 'NORTH' ? '001' : selectedScope === 'CENTRAL' ? '002' : '003';
+    return rawShipments.filter((s) => {
+      const hub = resolveShipmentHub(s);
+      return hub.startsWith(prefix) || (selectedScope === 'NORTH' && hub.includes('HN')) || (selectedScope === 'SOUTH' && hub.includes('HCM'));
+    });
+  }, [rawShipments, selectedScope]);
+
+  const tasks = rawTasks;
+
   const today = toDateInputValue(new Date());
   const todaysShipments = shipments.filter((shipment) => toDateInputValue(new Date(shipment.createdAt)) === today);
   const activeDelivery = shipments.filter((shipment) =>
@@ -97,6 +134,15 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
   const abnormal = shipments.filter((shipment) =>
     ['DELIVERY_FAILED', 'NDR_CREATED', 'RETURN_STARTED'].includes(normalizeCode(shipment.currentStatus)),
   );
+
+  // Total COD Financial Calculation
+  const codFinancials = useMemo(() => {
+    const totalCod = shipments.reduce((sum, s) => sum + (s.codAmount ?? 0), 0);
+    const deliveredCod = delivered.reduce((sum, s) => sum + (s.codAmount ?? 0), 0);
+    const pendingCod = totalCod - deliveredCod;
+
+    return { totalCod, deliveredCod, pendingCod };
+  }, [shipments, delivered]);
 
   const hubThroughputData = useMemo(() => {
     const dateWindow = buildDateWindow();
@@ -247,14 +293,132 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
                 <path d="M3 13h4v8H3zM9 9h4v12H9zM15 5h4v16h-4zM21 2l-3 3m3-3h-3m3 0v3" />
               </svg>
             </span>
-            Bảng phân tích vận hành
+            Trung Tâm Chỉ Huy Vận Hành Mạng Lưới Toàn Quốc
           </h1>
           <p className="analytics-dash__subtitle">
-            Nhìn nhanh tình trạng đơn, cảnh báo cần can thiệp và mở ngay chức năng xử lý.
+            Giám sát real-time luồng đơn hàng, chuyển xe trung chuyển Linehaul 3 miền và đối soát COD toàn bộ bưu cục.
           </p>
         </div>
         <span className="analytics-dash__date-badge">Dữ liệu từ API · {new Date().toLocaleString('vi-VN')}</span>
       </header>
+
+      {/* Scope Switcher Toolbar */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', padding: '12px 16px', backgroundColor: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', flexWrap: 'wrap', alignItems: 'center' }}>
+        <span style={{ fontSize: '13px', fontWeight: 700, color: '#334155', marginRight: '8px' }}>🌐 Phạm Vi Vận Hành:</span>
+        <button
+          type="button"
+          onClick={() => setSelectedScope('ALL')}
+          style={{
+            padding: '6px 14px',
+            fontSize: '13px',
+            fontWeight: 600,
+            borderRadius: '6px',
+            border: selectedScope === 'ALL' ? '2px solid #2563eb' : '1px solid #cbd5e1',
+            backgroundColor: selectedScope === 'ALL' ? '#eff6ff' : '#ffffff',
+            color: selectedScope === 'ALL' ? '#1d4ed8' : '#475569',
+            cursor: 'pointer',
+          }}
+        >
+          🌐 TOÀN QUỐC ({regionalBreakdown.total} đơn)
+        </button>
+        <button
+          type="button"
+          onClick={() => setSelectedScope('NORTH')}
+          style={{
+            padding: '6px 14px',
+            fontSize: '13px',
+            fontWeight: 600,
+            borderRadius: '6px',
+            border: selectedScope === 'NORTH' ? '2px solid #0284c7' : '1px solid #cbd5e1',
+            backgroundColor: selectedScope === 'NORTH' ? '#e0f2fe' : '#ffffff',
+            color: selectedScope === 'NORTH' ? '#0369a1' : '#475569',
+            cursor: 'pointer',
+          }}
+        >
+          🏢 HUB MIỀN BẮC (001N001 · {regionalBreakdown.north.count} đơn)
+        </button>
+        <button
+          type="button"
+          onClick={() => setSelectedScope('CENTRAL')}
+          style={{
+            padding: '6px 14px',
+            fontSize: '13px',
+            fontWeight: 600,
+            borderRadius: '6px',
+            border: selectedScope === 'CENTRAL' ? '2px solid #d97706' : '1px solid #cbd5e1',
+            backgroundColor: selectedScope === 'CENTRAL' ? '#fef3c7' : '#ffffff',
+            color: selectedScope === 'CENTRAL' ? '#b45309' : '#475569',
+            cursor: 'pointer',
+          }}
+        >
+          🏢 HUB MIỀN TRUNG (002C001 · {regionalBreakdown.central.count} đơn)
+        </button>
+        <button
+          type="button"
+          onClick={() => setSelectedScope('SOUTH')}
+          style={{
+            padding: '6px 14px',
+            fontSize: '13px',
+            fontWeight: 600,
+            borderRadius: '6px',
+            border: selectedScope === 'SOUTH' ? '2px solid #16a34a' : '1px solid #cbd5e1',
+            backgroundColor: selectedScope === 'SOUTH' ? '#dcfce7' : '#ffffff',
+            color: selectedScope === 'SOUTH' ? '#15803d' : '#475569',
+            cursor: 'pointer',
+          }}
+        >
+          🏢 HUB MIỀN NAM (003S001 · {regionalBreakdown.south.count} đơn)
+        </button>
+      </div>
+
+      {/* 3 Regional Hub Cards Summary */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+        <div style={{ padding: '14px', borderRadius: '10px', border: '1px solid #bae6fd', backgroundColor: '#f0f9ff' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: '#0369a1' }}>Hub Miền Bắc (Zone 001)</div>
+          <div style={{ fontSize: '18px', fontWeight: 700, color: '#0c4a6e', margin: '4px 0' }}>Hub Hà Nội (001N001)</div>
+          <div style={{ fontSize: '13px', color: '#0369a1' }}>
+            Phủ sóng: <strong>15 Tỉnh</strong> · Bưu cục: <strong>{regionalBreakdown.north.info?.branchHubsCount ?? 15} bưu cục</strong>
+          </div>
+          <div style={{ fontSize: '13px', color: '#0369a1', marginTop: '4px' }}>
+            Đơn hàng hiện tại: <strong>{regionalBreakdown.north.count} đơn</strong> ({regionalBreakdown.total > 0 ? Math.round((regionalBreakdown.north.count / regionalBreakdown.total) * 100) : 0}%)
+          </div>
+        </div>
+
+        <div style={{ padding: '14px', borderRadius: '10px', border: '1px solid #fde68a', backgroundColor: '#fffbeb' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: '#b45309' }}>Hub Miền Trung (Zone 002)</div>
+          <div style={{ fontSize: '18px', fontWeight: 700, color: '#78350f', margin: '4px 0' }}>Hub Đà Nẵng (002C001)</div>
+          <div style={{ fontSize: '13px', color: '#b45309' }}>
+            Phủ sóng: <strong>11 Tỉnh</strong> · Bưu cục: <strong>{regionalBreakdown.central.info?.branchHubsCount ?? 11} bưu cục</strong>
+          </div>
+          <div style={{ fontSize: '13px', color: '#b45309', marginTop: '4px' }}>
+            Đơn hàng hiện tại: <strong>{regionalBreakdown.central.count} đơn</strong> ({regionalBreakdown.total > 0 ? Math.round((regionalBreakdown.central.count / regionalBreakdown.total) * 100) : 0}%)
+          </div>
+        </div>
+
+        <div style={{ padding: '14px', borderRadius: '10px', border: '1px solid #bbf7d0', backgroundColor: '#f0fdf4' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: '#15803d' }}>Hub Miền Nam (Zone 003)</div>
+          <div style={{ fontSize: '18px', fontWeight: 700, color: '#14532d', margin: '4px 0' }}>Hub TP.HCM (003S001)</div>
+          <div style={{ fontSize: '13px', color: '#15803d' }}>
+            Phủ sóng: <strong>8 Tỉnh</strong> · Bưu cục: <strong>{regionalBreakdown.south.info?.branchHubsCount ?? 8} bưu cục</strong>
+          </div>
+          <div style={{ fontSize: '13px', color: '#15803d', marginTop: '4px' }}>
+            Đơn hàng hiện tại: <strong>{regionalBreakdown.south.count} đơn</strong> ({regionalBreakdown.total > 0 ? Math.round((regionalBreakdown.south.count / regionalBreakdown.total) * 100) : 0}%)
+          </div>
+        </div>
+
+        <div style={{ padding: '14px', borderRadius: '10px', border: '1px solid #e2e8f0', backgroundColor: '#ffffff' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: '#64748b' }}>Thu Hộ COD Phân Vùng</div>
+          <div style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a', margin: '4px 0' }}>
+            {codFinancials.totalCod.toLocaleString('vi-VN')} đ
+          </div>
+          <div style={{ fontSize: '12px', color: '#16a34a' }}>
+            Đã thu: <strong>{codFinancials.deliveredCod.toLocaleString('vi-VN')} đ</strong>
+          </div>
+          <div style={{ fontSize: '12px', color: '#dc2626', marginTop: '2px' }}>
+            Chờ nộp/đang phát: <strong>{codFinancials.pendingCod.toLocaleString('vi-VN')} đ</strong>
+          </div>
+        </div>
+      </div>
 
       {loadError ? (
         <p className="analytics-derived-error" role="alert">
