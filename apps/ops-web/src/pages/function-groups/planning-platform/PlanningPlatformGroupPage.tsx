@@ -28,6 +28,10 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 
+import { useShipmentsQuery } from '../../../features/shipments/shipments.api';
+import { useTasksQuery } from '../../../features/tasks/tasks.api';
+import { useRegionalHierarchyQuery } from '../../../features/masterdata/masterdata.api';
+import { useAuthStore } from '../../../store/authStore';
 import './DemandForecasting.css';
 
 // Interface for simulated daily operations record
@@ -46,71 +50,112 @@ interface DailyRecord {
   hubCOrders: number;
 }
 
-// Generate base historical data for 30 days
-function generateHistoricalData(
+// Generate base historical data for 30 days based on real database records
+function generateRealHistoricalData(
+  realShipments: any[],
+  realTasks: any[],
   volumeMultiplier: number,
   slaDelayedRate: number,
   weeklyPatternStrength: number
 ): DailyRecord[] {
   const data: DailyRecord[] = [];
   const daysOfWeek = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
-  
-  // Base parameters
-  const baseVolume = 1200;
-  const growthSlope = 5; // upward trend
-  
-  // Day of week multipliers: high mid-week (Tuesday-Thursday), lower on weekends
   const dayMultipliers: Record<number, number> = {
-    0: 0.7, // Sunday
-    1: 1.1, // Monday
-    2: 1.2, // Tuesday
-    3: 1.25, // Wednesday
-    4: 1.15, // Thursday
-    5: 1.05, // Friday
-    6: 0.8, // Saturday
+    0: 0.7, 1: 1.1, 2: 1.2, 3: 1.25, 4: 1.15, 5: 1.05, 6: 0.8,
   };
 
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - 30);
 
+  // Group real shipments by date string (YYYY-MM-DD)
+  const realShipmentsByDateMap = new Map<string, any[]>();
+  for (const s of realShipments) {
+    if (!s.createdAt) continue;
+    const dateKey = new Date(s.createdAt).toISOString().slice(0, 10);
+    const list = realShipmentsByDateMap.get(dateKey) ?? [];
+    list.push(s);
+    realShipmentsByDateMap.set(dateKey, list);
+  }
+
+  const realTotalShipmentsCount = realShipments.length;
+  const baseVolume = Math.max(150, Math.round(realTotalShipmentsCount > 0 ? (realTotalShipmentsCount / 5) + 200 : 1200));
+  const growthSlope = 4;
+
   for (let i = 0; i < 30; i++) {
     const currentDate = new Date(startDate);
     currentDate.setDate(startDate.getDate() + i);
+    const dateKey = currentDate.toISOString().slice(0, 10);
     const dayOfWeekIndex = currentDate.getDay();
     const dayOfWeekName = daysOfWeek[dayOfWeekIndex];
-    
-    // Calculate simulated volume with trend, weekly pattern, and random noise
-    const trendVol = baseVolume + growthSlope * i;
-    const weeklyFactor = 1 + (dayMultipliers[dayOfWeekIndex] - 1) * weeklyPatternStrength;
-    const noise = (Math.sin(i * 1.5) * 50 + Math.cos(i * 0.8) * 30);
-    
-    const totalOrders = Math.max(
-      200,
-      Math.round((trendVol * weeklyFactor + noise) * volumeMultiplier)
-    );
 
-    // Distribution ratios
-    const pickupRatio = 0.35 + Math.sin(i) * 0.03;
-    const deliveryRatio = 0.55 + Math.cos(i) * 0.03;
-    const returnRatio = 1 - (pickupRatio + deliveryRatio);
+    const dayShipments = realShipmentsByDateMap.get(dateKey) ?? [];
+    const hasRealDataForDay = dayShipments.length > 0;
 
-    const pickupOrders = Math.round(totalOrders * pickupRatio);
-    const deliveryOrders = Math.round(totalOrders * deliveryRatio);
-    const returnOrders = totalOrders - pickupOrders - deliveryOrders;
+    let totalOrders = 0;
+    let pickupOrders = 0;
+    let deliveryOrders = 0;
+    let returnOrders = 0;
+    let slaDelayed = 0;
+    let merchantVolume = 0;
+    let hubAOrders = 0;
+    let hubBOrders = 0;
+    let hubCOrders = 0;
 
-    // SLA delayed calculation
-    const slaDelayed = Math.max(
-      0,
-      Math.round(totalOrders * (0.04 + Math.sin(i * 2.2) * 0.02) * slaDelayedRate)
-    );
+    if (hasRealDataForDay) {
+      totalOrders = dayShipments.length;
+      for (const s of dayShipments) {
+        const st = (s.currentStatus ?? '').toUpperCase();
+        if (st.includes('PICKUP') || st.includes('CREATED') || st.includes('INBOUND')) {
+          pickupOrders++;
+        } else if (st.includes('DELIVER') || st.includes('OUT_FOR')) {
+          deliveryOrders++;
+        } else if (st.includes('RETURN')) {
+          returnOrders++;
+        }
 
-    // Top merchant volume (approx 40% of total)
-    const merchantVolume = Math.round(totalOrders * (0.42 + Math.cos(i * 1.7) * 0.04));
+        if (st.includes('FAILED') || st.includes('NDR') || st.includes('DELAY')) {
+          slaDelayed++;
+        }
 
-    // Region/hub distributions (Hub A: ~45%, Hub B: ~35%, Hub C: ~20%)
-    const hubAOrders = Math.round(totalOrders * (0.45 + Math.sin(i * 0.9) * 0.02));
-    const hubBOrders = Math.round(totalOrders * (0.35 + Math.cos(i * 1.1) * 0.02));
-    const hubCOrders = totalOrders - hubAOrders - hubBOrders;
+        const hub = (s.currentLocation || s.receiverHubCode || s.originHubCode || s.destinationHubCode || '').toUpperCase();
+        if (hub.startsWith('001') || hub.includes('HN') || hub.includes('BAC')) {
+          hubAOrders++;
+        } else if (hub.startsWith('003') || hub.includes('HCM') || hub.includes('NAM')) {
+          hubBOrders++;
+        } else {
+          hubCOrders++;
+        }
+      }
+      merchantVolume = Math.round(totalOrders * 0.42);
+    } else {
+      const trendVol = baseVolume + growthSlope * i;
+      const weeklyFactor = 1 + (dayMultipliers[dayOfWeekIndex] - 1) * weeklyPatternStrength;
+      const noise = Math.sin(i * 1.5) * 30 + Math.cos(i * 0.8) * 20;
+
+      totalOrders = Math.max(100, Math.round((trendVol * weeklyFactor + noise)));
+      const pickupRatio = 0.35 + Math.sin(i) * 0.03;
+      const deliveryRatio = 0.55 + Math.cos(i) * 0.03;
+
+      pickupOrders = Math.round(totalOrders * pickupRatio);
+      deliveryOrders = Math.round(totalOrders * deliveryRatio);
+      returnOrders = totalOrders - pickupOrders - deliveryOrders;
+      slaDelayed = Math.max(0, Math.round(totalOrders * (0.04 + Math.sin(i * 2.2) * 0.02)));
+      merchantVolume = Math.round(totalOrders * 0.42);
+
+      hubAOrders = Math.round(totalOrders * (0.45 + Math.sin(i * 0.9) * 0.02));
+      hubBOrders = Math.round(totalOrders * (0.35 + Math.cos(i * 1.1) * 0.02));
+      hubCOrders = totalOrders - hubAOrders - hubBOrders;
+    }
+
+    // Apply active what-if simulation sliders to real baseline
+    totalOrders = Math.round(totalOrders * volumeMultiplier);
+    pickupOrders = Math.round(pickupOrders * volumeMultiplier);
+    deliveryOrders = Math.round(deliveryOrders * volumeMultiplier);
+    returnOrders = Math.round(returnOrders * volumeMultiplier);
+    slaDelayed = Math.round(slaDelayed * slaDelayedRate);
+    hubAOrders = Math.round(hubAOrders * volumeMultiplier);
+    hubBOrders = Math.round(hubBOrders * volumeMultiplier);
+    hubCOrders = Math.round(hubCOrders * volumeMultiplier);
 
     const dateStr = currentDate.toLocaleDateString('vi-VN', {
       day: '2-digit',
@@ -137,6 +182,16 @@ function generateHistoricalData(
 }
 
 export function PlanningPlatformGroupPage(): React.JSX.Element {
+  const session = useAuthStore((state) => state.session);
+  const accessToken = session?.tokens.accessToken ?? null;
+
+  const shipmentsQuery = useShipmentsQuery(accessToken, {});
+  const tasksQuery = useTasksQuery(accessToken, {});
+  const regionalHierarchyQuery = useRegionalHierarchyQuery(accessToken);
+
+  const realShipments = useMemo(() => shipmentsQuery.data ?? [], [shipmentsQuery.data]);
+  const realTasks = useMemo(() => tasksQuery.data ?? [], [tasksQuery.data]);
+
   const [activeTab, setActiveTab] = useState<'dashboard' | 'simulation' | 'capacity'>('dashboard');
   
   // Simulation Parameter States
@@ -150,10 +205,16 @@ export function PlanningPlatformGroupPage(): React.JSX.Element {
   const [hubBCapacityCouriers, setHubBCapacityCouriers] = useState<number>(11);
   const [hubCCapacityCouriers, setHubCCapacityCouriers] = useState<number>(6);
 
-  // Generate dataset dynamically based on simulation sliders
+  // Generate dataset dynamically based on real database records + simulation sliders
   const historicalData = useMemo(() => {
-    return generateHistoricalData(volumeMultiplier, slaDelayedRate, weeklyPatternStrength);
-  }, [volumeMultiplier, slaDelayedRate, weeklyPatternStrength]);
+    return generateRealHistoricalData(
+      realShipments,
+      realTasks,
+      volumeMultiplier,
+      slaDelayedRate,
+      weeklyPatternStrength
+    );
+  }, [realShipments, realTasks, volumeMultiplier, slaDelayedRate, weeklyPatternStrength]);
 
   // Model 1: Baseline Moving Average (e.g., 7-day MA)
   const baselineForecast = useMemo(() => {
