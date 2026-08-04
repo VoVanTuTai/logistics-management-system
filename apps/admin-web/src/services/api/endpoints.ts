@@ -21,6 +21,8 @@ export const opsEndpoints = {
     kpis: '/ops/reporting/reports/ops-dashboard',
     dailyMetrics: '/ops/reporting/reports/daily',
     monthlyMetrics: '/ops/reporting/reports/monthly',
+    networkOverview: '/ops/reporting/reports/network-overview',
+    regionalSummary: '/ops/reporting/reports/regional-summary',
   },
   shipments: {
     list: '/ops/shipment/shipments',
