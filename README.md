@@ -1,10 +1,12 @@
+<div align="center">
+
 # Nexus Express System
 
 A student logistics management practice project for shipment creation, pickup, hub operations, courier delivery, public tracking, COD settlement, and operational reporting.
 
 The project is a TypeScript monorepo used to practice service-boundary design, a Gateway/BFF entry point, PostgreSQL ownership ideas, RabbitMQ event exposure, and separate client apps for different user groups.
 
-## What This System Does
+## Core Logistics Workflow
 
 Nexus Express System models the core flow of a last-mile and hub-and-spoke delivery company:
 
@@ -35,17 +37,27 @@ flowchart LR
     cod --> tracking
 ```
 
-Primary users:
+## Client Applications
 
-| User group | Client | Main work |
+| Application | User group | Main work |
 | --- | --- | --- |
-| Admin | `apps/admin-web` | Users, roles, hubs, zones, configs, NDR reasons, merchant profiles |
-| Ops staff | `apps/ops-web` | Shipments, pickups, tasks, manifests, scans, NDR, return, COD, reporting |
-| Merchant | `apps/merchant-web` | Create shipments, manage orders, request pickup, print labels, track shipments |
-| Courier | `apps/courier-mobile` | Assigned tasks, pickup/hub scans, POD/OTP, delivery failure, offline retry |
-| Guest / receiver | `apps/public-tracking` | Public shipment lookup |
+| `apps/admin-web` | Admin | Users, roles, hubs, zones, configs, NDR reasons, merchant profiles |
+| `apps/ops-web` | Ops staff | Shipments, pickups, tasks, manifests, scans, NDR, return, COD, reporting |
+| `apps/merchant-web` | Merchant | Create shipments, manage orders, request pickup, print labels, track shipments |
+| `apps/courier-mobile` | Courier | Assigned tasks, pickup/hub scans, POD/OTP, delivery failure, offline retry |
+| `apps/public-tracking` | Guest / receiver | Public shipment lookup |
 
 ## Architecture
+
+### Architectural Principles
+
+| Principle | Implementation |
+| --- | --- |
+| Single client entry point | Web/mobile clients call `gateway-bff`; internal services are not called directly by clients. |
+| Domain ownership | Each service owns its business rules and service database. Cross-service access goes through HTTP APIs or domain events. |
+| Event-driven projections | Write-side services publish RabbitMQ domain events; tracking and reporting consume events as read models. |
+| Operational workflow fidelity | Pickup, dispatch, manifest, scan, delivery, NDR, return, COD, and reporting flows mirror real logistics operations. |
+| Deployment-minded structure | Local and trial deployments use Docker Compose, environment templates, runbooks, and service-level build commands. |
 
 Clients call `gateway-bff`; they do not call internal domain services directly.
 
@@ -216,7 +228,9 @@ docs/
 
 There is no root `package.json`. Run install/build/test commands inside the specific app or service directory.
 
-## Services And Ports
+## Backend Services
+
+The local backend stack is organized around domain services. Each service owns its main database and exposes its API through `gateway-bff` or internal service communication.
 
 | Service | Port | Database | Responsibility |
 | --- | ---: | --- | --- |
@@ -234,7 +248,16 @@ There is no root `package.json`. Run install/build/test commands inside the spec
 | `payment-service` | 3011 | `payment_db` | COD settlement, QR, webhook reconciliation |
 | `pricing-service` | 3012 | none | Shipping quote/rate calculation |
 
-Local frontend ports:
+### Data Ownership
+
+| Store | Owning domains | Primary use |
+| --- | --- | --- |
+| PostgreSQL | Auth, master data, shipment, pickup, dispatch, manifest, scan, delivery, tracking, reporting, payment | Service-owned transactional data and local projections |
+| RabbitMQ | Shipment, pickup, dispatch, manifest, scan, delivery, payment | Domain events for tracking, reporting, dispatch, manifest, and delivery workflows |
+| Redis | Gateway and runtime modules | Caching, temporary runtime state, and gateway support |
+| MinIO | Gateway/media workflows | Object storage for upload-style assets and proof-of-delivery media |
+
+### Local Frontend Ports
 
 | App | URL |
 | --- | --- |
@@ -536,7 +559,7 @@ Some files under `docs/architecture/` and `docs/runbook/` are currently placehol
 
 ## Current Limitations To Know
 
-- This is production-oriented, but not fully production-hardened.
+- This is a learning/demo-oriented project and is not production-ready.
 - Auth password hashing is documented as a scaffold-level SHA-256 implementation and should be upgraded before real production use.
 - Gateway auth can be a perimeter header check depending on configuration; full token/session validation should be handled through `auth-service`.
 - Local and production setups use one PostgreSQL container with multiple service databases; the architectural rule remains database-per-service.

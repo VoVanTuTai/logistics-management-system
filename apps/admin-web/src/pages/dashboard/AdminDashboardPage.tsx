@@ -13,6 +13,7 @@ import {
 import { routePaths } from '../../navigation/routes';
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
+import { BusinessOperationsSection } from './components/BusinessOperationsSection';
 
 interface DashboardStat {
   label: string;
@@ -402,6 +403,11 @@ export function AdminDashboardPage(): React.JSX.Element {
           </Link>
         ))}
       </section>
+
+      <BusinessOperationsSection
+        hubs={hubsQuery.data ?? []}
+        ndrReasons={ndrReasonsQuery.data ?? []}
+      />
     </div>
   );
 }
