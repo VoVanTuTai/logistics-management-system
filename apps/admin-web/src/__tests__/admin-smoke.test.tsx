@@ -162,6 +162,21 @@ vi.mock('../pages/dashboard/AdminDashboardCharts', () => ({
   AdminDashboardCharts: () => <div>Biểu đồ smoke</div>,
 }));
 
+vi.mock('../features/reporting/reporting.api', () => ({
+  useOpsDashboardQuery: () =>
+    querySuccess({
+      metricDate: '2026-08-09',
+      totals: { shipmentsCreated: 100, deliveriesDelivered: 85, successRate: 85.0 },
+      shipmentStatusSummary: [{ status: 'DELIVERED', count: 85 }],
+      courierAggregates: [],
+      hubAggregates: [],
+      zoneAggregates: [],
+      sourceType: 'read_model',
+    }),
+  useAdminShipmentsQuery: () => querySuccess([]),
+  useAdminNdrCasesQuery: () => querySuccess([]),
+}));
+
 function querySuccess<T>(data: T) {
   return {
     data,
@@ -364,7 +379,7 @@ describe('admin smoke workflows', () => {
 
     expect(
       await screen.findByRole('heading', {
-        name: /đăng nhập hệ thống quản trị/i,
+        name: /đăng nhập quản trị/i,
       }),
     ).toBeInTheDocument();
     expect(screen.queryByText(/tổng quan admin/i)).not.toBeInTheDocument();
@@ -404,6 +419,17 @@ describe('admin smoke workflows', () => {
     expect(screen.getByText('Tài khoản Ops')).toBeInTheDocument();
     expect(screen.getByText('Hub')).toBeInTheDocument();
     expect(screen.getByText(/số liệu được lấy từ api/i)).toBeInTheDocument();
+
+    // Verify Business & Operational Overview section
+    expect(
+      screen.getByRole('heading', { name: /TỔNG QUAN KINH DOANH & VẬN HÀNH/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Tổng đơn hàng')).toBeInTheDocument();
+    expect(screen.getByText('Đã giao thành công')).toBeInTheDocument();
+    expect(screen.getAllByText('Tỷ lệ giao thành công').length).toBeGreaterThan(0);
+    expect(screen.getByText('Doanh thu vận chuyển')).toBeInTheDocument();
+    expect(screen.getByText('Tổng COD')).toBeInTheDocument();
+    expect(screen.getByText('Giao thất bại / NDR')).toBeInTheDocument();
   });
 
   it('keeps create user validation client-side and submits valid updates', async () => {
