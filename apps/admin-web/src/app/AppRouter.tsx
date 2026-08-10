@@ -54,18 +54,24 @@ function AdminLayout(): React.JSX.Element {
   const accessToken = session?.tokens.accessToken ?? null;
   const logoutMutation = useLogoutMutation(accessToken);
 
-  const navItems = useMemo(
+  const accountNavItems = useMemo(
     () => [
-      { label: 'Tổng quan', to: routePaths.dashboard, testId: 'nav-dashboard' },
-      { label: 'Tài khoản Ops', to: routePaths.opsUsers, testId: 'nav-users-ops' },
-      { label: 'Tài khoản Shipper', to: routePaths.shipperUsers, testId: 'nav-users-shippers' },
-      { label: 'Tài khoản Merchant', to: routePaths.merchantUsers, testId: 'nav-users-merchants' },
-      { label: 'Phân quyền mobile', to: routePaths.courierPermissions, testId: 'nav-permissions' },
-      { label: 'Audit log', to: routePaths.auditLogs, testId: 'nav-audit' },
-      { label: 'Hub', to: routePaths.masterdataHubs, testId: 'nav-hubs' },
-      { label: 'Zone', to: routePaths.masterdataZones, testId: 'nav-zones' },
-      { label: 'Lý do NDR', to: routePaths.masterdataNdrReasons, testId: 'nav-ndr-reasons' },
-      { label: 'Cấu hình', to: routePaths.masterdataConfigs, testId: 'nav-configs' },
+      { label: 'Tài khoản Ops', to: routePaths.opsUsers, testId: 'nav-users-ops', icon: 'badge' },
+      { label: 'Tài khoản Shipper', to: routePaths.shipperUsers, testId: 'nav-users-shippers', icon: 'two_wheeler' },
+      { label: 'Tài khoản Merchant', to: routePaths.merchantUsers, testId: 'nav-users-merchants', icon: 'storefront' },
+      { label: 'Phân quyền Mobile', to: routePaths.courierPermissions, testId: 'nav-permissions', icon: 'admin_panel_settings' },
+      { label: 'Nhật ký Audit Log', to: routePaths.auditLogs, testId: 'nav-audit', icon: 'receipt_long' },
+    ],
+    [],
+  );
+
+  const masterdataNavItems = useMemo(
+    () => [
+      { label: 'Tổng quan hệ thống', to: routePaths.dashboard, testId: 'nav-dashboard', icon: 'dashboard' },
+      { label: 'Quản lý Hub & 3 Miền', to: routePaths.masterdataHubs, testId: 'nav-hubs', icon: 'hub' },
+      { label: 'Quản lý Zone Vùng', to: routePaths.masterdataZones, testId: 'nav-zones', icon: 'map' },
+      { label: 'Lý do lỗi NDR', to: routePaths.masterdataNdrReasons, testId: 'nav-ndr-reasons', icon: 'report_problem' },
+      { label: 'Cấu hình tham số', to: routePaths.masterdataConfigs, testId: 'nav-configs', icon: 'tune' },
     ],
     [],
   );
@@ -78,22 +84,30 @@ function AdminLayout(): React.JSX.Element {
   return (
     <div className="admin-layout">
       <aside className="admin-sidebar">
-        <div>
-          <h1>Quản trị hệ thống</h1>
-          <p>Quản trị hệ thống và dữ liệu danh mục</p>
+        <div className="admin-brand-header">
+          <div className="admin-brand-logo">NEXUS</div>
+          <div>
+            <h1>Admin Portal</h1>
+            <p>Quản trị hệ thống & Dữ liệu danh mục</p>
+          </div>
         </div>
 
         <div className="admin-user-card">
-          <strong>{session?.user.username ?? 'admin'}</strong>
-          <small>vai tro: {(session?.user.roles ?? []).join(', ')}</small>
-          <button type="button" data-testid="admin-logout" onClick={() => void onLogout()}>
+          <div className="admin-user-avatar">
+            {(session?.user.username ?? 'A')[0].toUpperCase()}
+          </div>
+          <div className="admin-user-info">
+            <strong>{session?.user.username ?? 'admin'}</strong>
+            <small>{(session?.user.roles ?? ['SYSTEM_ADMIN']).join(', ')}</small>
+          </div>
+          <button type="button" data-testid="admin-logout" className="admin-logout-btn" onClick={() => void onLogout()}>
             Đăng xuất
           </button>
         </div>
 
         <nav className="admin-nav-group">
-          <h2>Dữ liệu danh mục</h2>
-          {navItems.map((item) => (
+          <h2>Tổng quan & Danh mục Vận hành</h2>
+          {masterdataNavItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -102,7 +116,25 @@ function AdminLayout(): React.JSX.Element {
                 isActive ? 'admin-nav-link admin-nav-link-active' : 'admin-nav-link'
               }
             >
-              {item.label}
+              <span className="material-symbols-outlined nav-icon">{item.icon}</span>
+              <span>{item.label}</span>
+            </NavLink>
+          ))}
+        </nav>
+
+        <nav className="admin-nav-group" style={{ marginTop: 12 }}>
+          <h2>Quản trị Dân cư & Phân quyền</h2>
+          {accountNavItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              data-testid={item.testId}
+              className={({ isActive }) =>
+                isActive ? 'admin-nav-link admin-nav-link-active' : 'admin-nav-link'
+              }
+            >
+              <span className="material-symbols-outlined nav-icon">{item.icon}</span>
+              <span>{item.label}</span>
             </NavLink>
           ))}
         </nav>
@@ -111,10 +143,12 @@ function AdminLayout(): React.JSX.Element {
       <div className="admin-workspace">
         <header className="admin-topbar">
           <div>
-            <h2>Bảng điều hành NEXUS Admin</h2>
-            <p>Khu vực đặc quyền để quản lý danh mục dùng chung và cấu hình hệ thống.</p>
+            <h2>Trung Tâm Điều Hành Quản Trị Hệ Thống NEXUS</h2>
+            <p>Khu vực quản lý danh mục toàn quốc, tài khoản người dùng và cấu hình dịch vụ dùng chung.</p>
           </div>
-          <span className="admin-tag">SYSTEM_ADMIN</span>
+          <div className="admin-topbar-badges">
+            <span className="admin-tag">⚡ SYSTEM_ADMIN</span>
+          </div>
         </header>
 
         <main className="admin-main-panel" data-testid="admin-main">

@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
 import {
   useCreateZoneMutation,
@@ -246,7 +246,7 @@ export function ZoneManagementPage(): React.JSX.Element {
         />
         <button type="submit">Áp dụng</button>
         <button type="button" onClick={onResetFilters}>
-          Dat lai
+          Đặt lại
         </button>
         <button type="button" onClick={openCreateModal}>
           Tạo zone
