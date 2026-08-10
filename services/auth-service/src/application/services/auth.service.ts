@@ -587,13 +587,7 @@ export class AuthService {
   }
 
   private normalizeLoginCode(value: unknown, field: string): string {
-    const normalizedValue = this.normalizeRequiredText(value, field, 8);
-
-    if (!EMPLOYEE_LOGIN_CODE_PATTERN.test(normalizedValue)) {
-      throw new BadRequestException(`${field} must be exactly 8 digits.`);
-    }
-
-    return normalizedValue;
+    return this.normalizeRequiredText(value, field, 64);
   }
 
   private normalizeOptionalPassword(value: unknown): string | undefined {
@@ -681,16 +675,7 @@ export class AuthService {
     }
 
     if (roles.some((role) => MERCHANT_ROLE_SET.has(role))) {
-      if (!MERCHANT_CODE_PATTERN.test(username)) {
-        throw new BadRequestException(
-          'Merchant account code must match 411xxxxx.',
-        );
-      }
       return;
-    }
-
-    if (!EMPLOYEE_LOGIN_CODE_PATTERN.test(username)) {
-      throw new BadRequestException('username must be exactly 8 digits.');
     }
   }
 

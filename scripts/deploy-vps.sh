@@ -275,6 +275,7 @@ print_urls() {
   echo "merchant-web:     ${MERCHANT_PUBLIC_URL:-http://${PUBLIC_HOST}:${MERCHANT_WEB_PORT}}"
   echo "admin-web:        ${ADMIN_PUBLIC_URL:-http://${PUBLIC_HOST}:${ADMIN_WEB_PORT}}"
   echo "public-tracking:  ${PUBLIC_TRACKING_PUBLIC_URL:-http://${PUBLIC_HOST}:${PUBLIC_TRACKING_PORT}}"
+  echo "guest-web:        ${GUEST_PUBLIC_URL:-http://${PUBLIC_HOST}:${GUEST_WEB_PORT:-5178}}"
   echo "minio API:        ${MINIO_PUBLIC_ENDPOINT}"
   echo
 }

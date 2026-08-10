@@ -1,4 +1,4 @@
-x-service-base: &service-base
+cx-service-base: &service-base
   restart: unless-stopped
   depends_on:
     postgres:
