@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -9,6 +9,7 @@ import { shipmentApi } from '../../services/api/shipment.api';
 import { authStore } from '../../store/authStore';
 import { colors, shadows, spacing } from '../../theme';
 import type { OrderModel, ShipmentStatus } from '../../types';
+import { copyToClipboard } from '../../utils/clipboard';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateOrderSuccess'>;
 
@@ -31,6 +32,16 @@ export function CreateOrderSuccessScreen({ route, navigation }: Props): React.JS
       const receiver = meta.receiver || {};
       const pkg = meta.package || {};
 
+      const senderAddressComposed =
+        sender.address ||
+        [sender.addressDetail, sender.ward, sender.province].filter(Boolean).join(', ') ||
+        'Chưa có địa chỉ';
+
+      const receiverAddressComposed =
+        receiver.address ||
+        [receiver.addressDetail, receiver.ward, receiver.province].filter(Boolean).join(', ') ||
+        'Chưa có địa chỉ';
+
       const orderModel: OrderModel = {
         id: shipment.id,
         code: shipment.code,
@@ -39,18 +50,26 @@ export function CreateOrderSuccessScreen({ route, navigation }: Props): React.JS
         sender: {
           name: sender.name || 'Người gửi',
           phone: sender.phone || '',
-          addressDetail: sender.addressDetail || sender.province || '',
+          addressDetail: senderAddressComposed,
+          composedAddress: senderAddressComposed,
+          ward: sender.ward,
+          district: sender.district,
+          province: sender.province,
         },
         receiver: {
           name: receiver.name || 'Người nhận',
           phone: receiver.phone || '',
-          addressDetail: receiver.addressDetail || receiver.province || '',
+          addressDetail: receiverAddressComposed,
+          composedAddress: receiverAddressComposed,
+          ward: receiver.ward,
+          district: receiver.district,
+          province: receiver.province,
         },
-        itemName: pkg.itemName || 'Hàng hóa bưu gửi',
+        itemName: pkg.itemName || pkg.itemType || 'Hàng hóa bưu gửi',
         weightKg: Number(pkg.weightKg) || 0.5,
         declaredValueVnd: Number(pkg.declaredValue) || 0,
         codAmountVnd: Number(meta.codAmount || pkg.codAmount) || 0,
-        shippingFeeVnd: Number(meta.shippingFee || meta.service?.fee) || 22000,
+        shippingFeeVnd: Number(meta.estimatedFee || meta.shippingFee || meta.pricing?.totalFee) || 22000,
         status: (shipment.currentStatus as ShipmentStatus) || 'CREATED',
         createdAt: shipment.createdAt,
         updatedAt: shipment.updatedAt,
@@ -79,10 +98,18 @@ export function CreateOrderSuccessScreen({ route, navigation }: Props): React.JS
         <Text style={styles.title}>Tạo đơn hàng thành công!</Text>
         <Text style={styles.subtitle}>Đơn hàng của quý khách đã được ghi nhận vào hệ thống NEXUS Express.</Text>
 
-        <View style={styles.codeBox}>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          style={styles.codeBox}
+          onPress={() => copyToClipboard(orderCode, 'mã vận đơn')}
+        >
           <Text style={styles.codeLabel}>Mã vận đơn:</Text>
-          <Text style={styles.codeVal}>{orderCode}</Text>
-        </View>
+          <View style={styles.codeValRow}>
+            <Text style={styles.codeVal}>{orderCode}</Text>
+            <Ionicons name="copy-outline" size={20} color={colors.primary} />
+          </View>
+          <Text style={styles.copyHint}>Bấm vào đây để sao chép mã đơn</Text>
+        </TouchableOpacity>
 
         <View style={styles.btnStack}>
           <PrimaryButton
@@ -153,11 +180,22 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: 2,
   },
+  codeValRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   codeVal: {
     fontSize: 22,
     fontWeight: '800',
     color: colors.primary,
     letterSpacing: 1,
+  },
+  copyHint: {
+    fontSize: 11,
+    color: colors.primary,
+    marginTop: 4,
+    fontWeight: '600',
   },
   btnStack: {
     width: '100%',

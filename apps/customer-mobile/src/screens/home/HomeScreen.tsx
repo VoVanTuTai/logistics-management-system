@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -79,39 +80,41 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
 
   const [recentOrders, setRecentOrders] = useState<OrderModel[]>([]);
   const [loadingOrders, setLoadingOrders] = useState<boolean>(false);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+
+  const fetchRecentShipments = async (showLoading = true) => {
+    const token = authStore.getAccessToken();
+    if (!token) return;
+
+    if (showLoading) setLoadingOrders(true);
+    try {
+      const response = await shipmentApi.getShipments(token, { limit: 5 });
+      const rawItems: ShipmentResponse[] = Array.isArray(response)
+        ? response
+        : response.items || [];
+
+      setRecentOrders(rawItems.map(mapShipmentToOrderModel));
+    } catch {
+      setRecentOrders([]);
+    } finally {
+      setLoadingOrders(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    let isMounted = true;
-    const fetchRecentShipments = async () => {
-      const token = authStore.getAccessToken();
-      if (!token) return;
+    fetchRecentShipments(true);
+    const interval = setInterval(() => {
+      fetchRecentShipments(false);
+    }, 15000);
 
-      setLoadingOrders(true);
-      try {
-        const response = await shipmentApi.getShipments(token, { limit: 3 });
-        const rawItems: ShipmentResponse[] = Array.isArray(response)
-          ? response
-          : response.items || [];
-
-        if (isMounted) {
-          setRecentOrders(rawItems.map(mapShipmentToOrderModel));
-        }
-      } catch {
-        if (isMounted) {
-          setRecentOrders([]);
-        }
-      } finally {
-        if (isMounted) {
-          setLoadingOrders(false);
-        }
-      }
-    };
-
-    fetchRecentShipments();
-    return () => {
-      isMounted = false;
-    };
+    return () => clearInterval(interval);
   }, [session]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchRecentShipments(false);
+  };
 
   const handleOrderClick = (order: OrderModel) => {
     navigation.navigate('OrderDetail', { order });
@@ -119,7 +122,13 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
 
   return (
     <View style={styles.flex}>
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
+        }
+      >
         {/* 1. TOP HEADER CARD */}
         <View style={styles.headerBanner}>
           <View style={styles.headerTopRow}>

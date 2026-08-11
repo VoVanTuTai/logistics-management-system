@@ -29,18 +29,22 @@ export interface SenderInfo {
   name: string;
   phone: string;
   addressDetail: string;
+  composedAddress?: string;
   ward?: string;
   district?: string;
   province?: string;
+  hubCode?: string;
 }
 
 export interface ReceiverInfo {
   name: string;
   phone: string;
   addressDetail: string;
+  composedAddress?: string;
   ward?: string;
   district?: string;
   province?: string;
+  hubCode?: string;
 }
 
 export interface TrackingEvent {

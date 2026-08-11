@@ -56,6 +56,16 @@ function mapShipmentToOrderModel(s: ShipmentResponse): OrderModel {
   const receiver = meta.receiver || {};
   const pkg = meta.package || {};
 
+  const senderAddressComposed =
+    sender.address ||
+    [sender.addressDetail, sender.ward, sender.province].filter(Boolean).join(', ') ||
+    'Chưa có địa chỉ';
+
+  const receiverAddressComposed =
+    receiver.address ||
+    [receiver.addressDetail, receiver.ward, receiver.province].filter(Boolean).join(', ') ||
+    'Chưa có địa chỉ';
+
   return {
     id: s.id,
     code: s.code,
@@ -64,18 +74,28 @@ function mapShipmentToOrderModel(s: ShipmentResponse): OrderModel {
     sender: {
       name: sender.name || 'Người gửi',
       phone: sender.phone || '',
-      addressDetail: sender.addressDetail || sender.province || '',
+      addressDetail: senderAddressComposed,
+      composedAddress: senderAddressComposed,
+      ward: sender.ward,
+      district: sender.district,
+      province: sender.province,
+      hubCode: sender.hubCode,
     },
     receiver: {
       name: receiver.name || 'Người nhận',
       phone: receiver.phone || '',
-      addressDetail: receiver.addressDetail || receiver.province || '',
+      addressDetail: receiverAddressComposed,
+      composedAddress: receiverAddressComposed,
+      ward: receiver.ward,
+      district: receiver.district,
+      province: receiver.province,
+      hubCode: receiver.hubCode,
     },
-    itemName: pkg.itemName || 'Hàng hóa bưu gửi',
+    itemName: pkg.itemName || pkg.itemType || 'Hàng hóa bưu gửi',
     weightKg: Number(pkg.weightKg) || 0.5,
     declaredValueVnd: Number(pkg.declaredValue) || 0,
     codAmountVnd: Number(meta.codAmount || pkg.codAmount) || 0,
-    shippingFeeVnd: Number(meta.shippingFee || meta.service?.fee) || 22000,
+    shippingFeeVnd: Number(meta.estimatedFee || meta.shippingFee || meta.pricing?.totalFee) || 22000,
     status: (s.currentStatus as ShipmentStatus) || 'CREATED',
     createdAt: s.createdAt,
     updatedAt: s.updatedAt,
@@ -98,11 +118,11 @@ export function OrdersScreen({ route, navigation }: Props): React.JSX.Element {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchLiveShipments = async () => {
+  const fetchLiveShipments = async (showLoading = true) => {
     const accessToken = authStore.getAccessToken();
     if (!accessToken) return;
 
-    setLoading(true);
+    if (showLoading) setLoading(true);
     try {
       const response = await shipmentApi.getShipments(accessToken, {
         status: statusFilter !== 'ALL' ? statusFilter : undefined,
@@ -123,12 +143,17 @@ export function OrdersScreen({ route, navigation }: Props): React.JSX.Element {
   };
 
   useEffect(() => {
-    fetchLiveShipments();
+    fetchLiveShipments(true);
+    const interval = setInterval(() => {
+      fetchLiveShipments(false);
+    }, 10000);
+
+    return () => clearInterval(interval);
   }, [statusFilter, timeFilter]);
 
   const handleRefresh = () => {
     setRefreshing(true);
-    fetchLiveShipments();
+    fetchLiveShipments(false);
   };
 
   const filteredOrders = useMemo(() => {
@@ -149,103 +174,80 @@ export function OrdersScreen({ route, navigation }: Props): React.JSX.Element {
     return found ? found.label : 'Trạng thái';
   };
 
-  const handleOrderPress = (order: OrderModel) => {
-    navigation.navigate('OrderDetail', { order });
-  };
-
   return (
-    <View style={styles.flex}>
-      {/* 1. HEADER CATEGORY TABS (Đơn gửi / Đơn nhận) */}
-      <View style={styles.headerArea}>
-        <Text style={styles.headerTitle}>Quản lý đơn hàng</Text>
-        <View style={styles.topTabsRow}>
-          <TouchableOpacity
-            activeOpacity={0.8}
-            style={[styles.topTabBtn, category === 'SENT' && styles.topTabActive]}
-            onPress={() => setCategory('SENT')}
-          >
-            <Text style={[styles.topTabText, category === 'SENT' && styles.topTabActiveText]}>
-              Đơn gửi
-            </Text>
-          </TouchableOpacity>
+    <View style={styles.container}>
+      {/* HEADER TABS */}
+      <View style={styles.topTabs}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          style={[styles.topTabBtn, category === 'SENT' && styles.topTabBtnActive]}
+          onPress={() => setCategory('SENT')}
+        >
+          <Text style={[styles.topTabText, category === 'SENT' && styles.topTabTextActive]}>
+            Đơn gửi ({liveOrders.length})
+          </Text>
+        </TouchableOpacity>
 
-          <TouchableOpacity
-            activeOpacity={0.8}
-            style={[styles.topTabBtn, category === 'RECEIVED' && styles.topTabActive]}
-            onPress={() => setCategory('RECEIVED')}
-          >
-            <Text style={[styles.topTabText, category === 'RECEIVED' && styles.topTabActiveText]}>
-              Đơn nhận
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          style={[styles.topTabBtn, category === 'RECEIVED' && styles.topTabBtnActive]}
+          onPress={() => setCategory('RECEIVED')}
+        >
+          <Text style={[styles.topTabText, category === 'RECEIVED' && styles.topTabTextActive]}>
+            Đơn nhận (0)
+          </Text>
+        </TouchableOpacity>
       </View>
 
-      {/* 2. SUB TABS (Đơn thường, Đơn TMĐT, Đơn nhanh) */}
-      <View style={styles.subTabsContainer}>
-        {(['REGULAR', 'ECOMMERCE', 'EXPRESS'] as OrderType[]).map((t) => {
-          const isSelected = subTab === t;
-          const label = t === 'REGULAR' ? 'Đơn thường' : t === 'ECOMMERCE' ? 'Đơn TMĐT' : 'Đơn giao nhanh';
-          return (
-            <TouchableOpacity
-              key={t}
-              activeOpacity={0.7}
-              style={[styles.subTabBtn, isSelected && styles.subTabActive]}
-              onPress={() => setSubTab(t)}
-            >
-              <Text style={[styles.subTabText, isSelected && styles.subTabActiveText]}>
-                {label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      {/* 3. FILTER BAR CHIPS */}
+      {/* FILTER BAR */}
       <View style={styles.filterBar}>
         <TouchableOpacity
           activeOpacity={0.7}
-          style={styles.chipBtn}
+          style={styles.filterChip}
           onPress={() => setShowTimeSheet(true)}
         >
-          <Ionicons name="calendar-outline" size={15} color={colors.textPrimary} />
-          <Text style={styles.chipText}>{getTimeLabel()}</Text>
-          <Ionicons name="chevron-down" size={14} color={colors.textMuted} />
+          <Ionicons name="calendar-outline" size={14} color={colors.textSecondary} />
+          <Text style={styles.filterChipText}>{getTimeLabel()}</Text>
+          <Ionicons name="chevron-down" size={14} color={colors.textSecondary} />
         </TouchableOpacity>
 
         <TouchableOpacity
           activeOpacity={0.7}
-          style={styles.chipBtn}
+          style={styles.filterChip}
           onPress={() => setShowStatusSheet(true)}
         >
-          <Ionicons name="filter-outline" size={15} color={colors.textPrimary} />
-          <Text style={styles.chipText} numberOfLines={1}>{getStatusLabel()}</Text>
-          <Ionicons name="chevron-down" size={14} color={colors.textMuted} />
+          <Ionicons name="funnel-outline" size={14} color={colors.textSecondary} />
+          <Text style={styles.filterChipText}>{getStatusLabel()}</Text>
+          <Ionicons name="chevron-down" size={14} color={colors.textSecondary} />
         </TouchableOpacity>
       </View>
 
-      {/* 4. ORDERS LIST OR EMPTY STATE */}
+      {/* ORDERS LIST */}
       {loading && !refreshing ? (
-        <View style={styles.loadingContainer}>
+        <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Đang tải danh sách vận đơn...</Text>
+          <Text style={styles.loadingText}>Đang tải danh sách đơn hàng...</Text>
         </View>
       ) : (
         <FlatList
           data={filteredOrders}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContainer}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[colors.primary]} />
-          }
           renderItem={({ item }) => (
-            <OrderCard order={item} onPressDetail={handleOrderPress} />
+            <OrderCard
+              order={item}
+              onPressDetail={(ord) => navigation.navigate('OrderDetail', { order: ord })}
+            />
           )}
+          contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
           ListEmptyComponent={
             <EmptyState
-              title={category === 'SENT' ? 'Quý khách chưa có đơn hàng gửi.' : 'Quý khách chưa có đơn hàng nhận.'}
-              subtitle="Vui lòng tạo thêm đơn để quản lý!"
-              buttonTitle="Tạo đơn hàng"
+              iconName="cube-outline"
+              title="Không có đơn hàng nào"
+              subtitle="Chưa có đơn hàng nào phù hợp với bộ lọc hiện tại."
+              buttonTitle="Tạo đơn ngay"
               onButtonPress={() => navigation.navigate('CreateOrder')}
             />
           }
@@ -255,19 +257,19 @@ export function OrdersScreen({ route, navigation }: Props): React.JSX.Element {
       {/* FILTER BOTTOM SHEETS */}
       <FilterBottomSheet
         visible={showTimeSheet}
-        title="Bộ lọc thời gian"
+        title="Lọc theo thời gian"
         options={TIME_FILTER_OPTIONS}
         selectedValue={timeFilter}
-        onSelect={(val) => setTimeFilter(val)}
+        onSelect={setTimeFilter}
         onClose={() => setShowTimeSheet(false)}
       />
 
       <FilterBottomSheet
         visible={showStatusSheet}
-        title="Bộ lọc trạng thái"
+        title="Lọc theo trạng thái đơn"
         options={STATUS_FILTER_OPTIONS}
         selectedValue={statusFilter}
-        onSelect={(val) => setStatusFilter(val)}
+        onSelect={setStatusFilter}
         onClose={() => setShowStatusSheet(false)}
       />
     </View>
@@ -275,111 +277,70 @@ export function OrdersScreen({ route, navigation }: Props): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  flex: {
+  container: {
     flex: 1,
     backgroundColor: colors.background,
   },
-  headerArea: {
+  topTabs: {
+    flexDirection: 'row',
     backgroundColor: colors.surface,
-    paddingTop: spacing.xl + 10,
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.sm,
+    paddingTop: spacing.xs,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderSubtle,
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    marginBottom: spacing.md,
-  },
-  topTabsRow: {
-    flexDirection: 'row',
-    backgroundColor: colors.background,
-    borderRadius: 12,
-    padding: 3,
-  },
   topTabBtn: {
     flex: 1,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
     alignItems: 'center',
-    borderRadius: 10,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
   },
-  topTabActive: {
-    backgroundColor: colors.primary,
+  topTabBtnActive: {
+    borderBottomColor: colors.primary,
   },
   topTabText: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.textSecondary,
+    color: colors.textMuted,
   },
-  topTabActiveText: {
-    color: colors.surface,
-    fontWeight: '700',
-  },
-  subTabsContainer: {
-    flexDirection: 'row',
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderSubtle,
-    gap: 8,
-  },
-  subTabBtn: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: colors.background,
-  },
-  subTabActive: {
-    backgroundColor: colors.primaryLight,
-  },
-  subTabText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  subTabActiveText: {
+  topTabTextActive: {
     color: colors.primary,
     fontWeight: '700',
   },
   filterBar: {
     flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
-    gap: 10,
+    gap: spacing.sm,
   },
-  chipBtn: {
+  filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: 20,
     paddingHorizontal: spacing.md,
     paddingVertical: 6,
-    gap: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: 4,
   },
-  chipText: {
+  filterChipText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: colors.textPrimary,
+    color: colors.textSecondary,
+    fontWeight: '500',
   },
-  listContainer: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxl,
+  listContent: {
+    padding: spacing.lg,
   },
-  loadingContainer: {
+  centerContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: spacing.xxl,
   },
   loadingText: {
-    fontSize: 13,
-    color: colors.textMuted,
     marginTop: spacing.md,
+    fontSize: 14,
+    color: colors.textMuted,
   },
 });

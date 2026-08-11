@@ -259,12 +259,17 @@ export function CreateOrderScreen({ navigation }: Props): React.JSX.Element {
   return (
     <KeyboardAvoidingView
       style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 20}
     >
       <AppHeader title="Tạo đơn hàng mới" onBackPress={handlePrevStep} />
       <StepIndicator currentStep={step} />
 
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         {/* STEP 1: ĐỊA CHỈ GỬI & NHẬN (Lấy từ Database Masterdata) */}
         {step === 1 ? (
           <View style={styles.stepBlock}>
@@ -581,7 +586,7 @@ const styles = StyleSheet.create({
   },
   container: {
     padding: spacing.lg,
-    paddingBottom: spacing.xxl,
+    paddingBottom: 220,
   },
   stepBlock: {
     gap: spacing.lg,

@@ -8,3 +8,5 @@ Nếu chỉ start backend services:
 
 powershell -ExecutionPolicy Bypass -File .\scripts\start-services-retry.windows.ps1
 Còn run-all.ps1 bạn có thể giữ cho bản macOS/generic.
+
+powershell -ExecutionPolicy Bypass -File .\run-all.ps1

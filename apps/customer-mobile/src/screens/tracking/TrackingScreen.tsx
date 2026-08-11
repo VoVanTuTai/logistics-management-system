@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatusBadge } from '../../components/StatusBadge';
 import { TrackingTimeline } from '../../components/TrackingTimeline';
 import type { MainTabParamList, RootStackParamList } from '../../navigation/types';
-import { trackingApi, type PublicTrackingResponse } from '../../services/api/tracking.api';
+import { trackingApi, type UnifiedTrackingResponse } from '../../services/api/tracking.api';
 import { colors, shadows, spacing } from '../../theme';
 import type { OrderModel, ShipmentStatus, TrackingEvent } from '../../types';
 
@@ -25,42 +25,41 @@ type Props = CompositeScreenProps<
   NativeStackScreenProps<RootStackParamList>
 >;
 
-function mapTrackingToOrderModel(res: PublicTrackingResponse): OrderModel {
+function mapTrackingToOrderModel(res: UnifiedTrackingResponse): OrderModel {
   const currentStatus = (res.current?.currentStatusCode as ShipmentStatus) || 'CREATED';
 
-  const mappedTimeline: TrackingEvent[] = res.timeline.map((ev, index) => ({
+  const mappedTimeline: TrackingEvent[] = (res.timeline || []).map((ev, index) => ({
     id: ev.id || `ev-${index}`,
     title: ev.statusAfterEvent || ev.eventType || 'Cập nhật trạng thái',
     timestamp: new Date(ev.occurredAt).toLocaleString('vi-VN'),
-    location: ev.locationText || ev.locationCode || undefined,
+    location: [ev.locationText || ev.locationCode, ev.note].filter(Boolean).join(' • ') || undefined,
     completed: true,
-    isCurrent: index === res.timeline.length - 1,
+    isCurrent: index === (res.timeline || []).length - 1,
   }));
 
-  const orderData = res.order;
   return {
     id: res.shipmentCode,
     code: res.shipmentCode,
     category: 'SENT',
     orderType: 'REGULAR',
     sender: {
-      name: orderData?.sender?.name || 'Người gửi',
-      phone: orderData?.sender?.phone || '',
-      addressDetail: orderData?.sender?.addressDetail || '',
+      name: 'Người gửi',
+      phone: '',
+      addressDetail: res.current?.currentLocationText || '',
     },
     receiver: {
-      name: orderData?.receiver?.name || 'Người nhận',
-      phone: orderData?.receiver?.phone || '',
-      addressDetail: orderData?.receiver?.addressDetail || '',
+      name: 'Người nhận',
+      phone: '',
+      addressDetail: '',
     },
-    itemName: orderData?.package?.itemType || 'Hàng hóa bưu gửi',
-    weightKg: Number(orderData?.package?.weightKg) || 0.5,
-    declaredValueVnd: Number(orderData?.package?.declaredValue) || 0,
-    codAmountVnd: Number(orderData?.codAmount) || 0,
-    shippingFeeVnd: Number(orderData?.shippingFee) || 22000,
+    itemName: 'Hàng hóa bưu gửi',
+    weightKg: 0.5,
+    declaredValueVnd: 0,
+    codAmountVnd: 0,
+    shippingFeeVnd: 22000,
     status: currentStatus,
-    createdAt: orderData?.createdAt || new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    createdAt: res.current?.lastEventAt || new Date().toISOString(),
+    updatedAt: res.current?.updatedAt || new Date().toISOString(),
     timeline: mappedTimeline.length > 0 ? mappedTimeline : [
       {
         id: 't-1',
