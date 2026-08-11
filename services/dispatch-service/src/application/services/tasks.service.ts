@@ -908,10 +908,23 @@ function isSameHubOrScopedLocation(
   targetCode: string,
   assignedHubCode: string,
 ): boolean {
-  return (
+  if (
     targetCode === assignedHubCode ||
     targetCode.startsWith(`${assignedHubCode}-`) ||
     targetCode.startsWith(`${assignedHubCode}_`) ||
     targetCode.startsWith(`${assignedHubCode}.`)
-  );
+  ) {
+    return true;
+  }
+
+  // Regional hub matching (e.g. 003S001 regional hub matches 003079B001 branch hub)
+  if (assignedHubCode.length >= 3 && targetCode.length >= 3) {
+    const assignedRegion = assignedHubCode.substring(0, 3);
+    const targetRegion = targetCode.substring(0, 3);
+    if (assignedRegion === targetRegion) {
+      return true;
+    }
+  }
+
+  return false;
 }
