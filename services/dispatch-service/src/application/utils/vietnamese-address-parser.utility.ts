@@ -183,10 +183,10 @@ export function parseVietnameseAddress(
   metadataFallback?: AddressMetadataFallback | null,
 ): ParsedVietnameseAddress {
   const rawAddress = addressInput?.trim() || null;
-  let parsedProvince: string | null = metadataFallback?.province?.trim() || null;
-  let parsedDistrict: string | null = metadataFallback?.district?.trim() || null;
-  let parsedWard: string | null = metadataFallback?.ward?.trim() || null;
-  let parsedDetail: string | null = metadataFallback?.addressDetail?.trim() || null;
+  let parsedProvince: string | null = null;
+  let parsedDistrict: string | null = null;
+  let parsedWard: string | null = null;
+  let parsedDetail: string | null = null;
 
   if (rawAddress) {
     const parts = rawAddress
@@ -194,27 +194,49 @@ export function parseVietnameseAddress(
       .map((part) => part.trim())
       .filter((part) => part.length > 0);
 
+    for (const part of parts) {
+      if (!parsedWard && /^(Phường|P\.|Xã|X\.|Thị trấn|TT\.)\s+/i.test(part)) {
+        parsedWard = formatWardName(part);
+      } else if (!parsedDistrict && /^(Quận|Q\.|Huyện|H\.|Thị xã|TX\.)\s+/i.test(part)) {
+        parsedDistrict = formatDistrictName(part);
+      } else if (!parsedProvince && (/^(TP\.|Tỉnh)\s+/i.test(part) || PROVINCE_ALIASES[normalizeLocationToken(part)])) {
+        parsedProvince = formatProvinceName(part);
+      }
+    }
+
     if (parts.length >= 3) {
-      // Standard Vietnamese format: [Detail], [Ward], [District], [Province]
       const provincePart = parts[parts.length - 1];
-      const districtPart = parts[parts.length - 2];
-      const wardPart = parts[parts.length - 3];
-      const detailParts = parts.slice(0, parts.length - 3);
+      const secondLastPart = parts[parts.length - 2];
+      const thirdLastPart = parts[parts.length - 3];
 
       if (!parsedProvince && provincePart) {
         parsedProvince = formatProvinceName(provincePart);
       }
-      if (!parsedDistrict && districtPart) {
-        parsedDistrict = formatDistrictName(districtPart);
-      }
-      if (!parsedWard && wardPart) {
-        parsedWard = formatWardName(wardPart);
-      }
-      if (!parsedDetail && detailParts.length > 0) {
-        parsedDetail = detailParts.join(', ');
+
+      const isSecondLastPartWard =
+        /^(Phường|P\.|Xã|X\.|Thị trấn|TT\.)\s+/i.test(secondLastPart);
+
+      if (isSecondLastPartWard && parts.length === 3) {
+        if (!parsedWard) {
+          parsedWard = formatWardName(secondLastPart);
+        }
+        const detailParts = parts.slice(0, parts.length - 2);
+        if (!parsedDetail && detailParts.length > 0) {
+          parsedDetail = detailParts.join(', ');
+        }
+      } else {
+        if (!parsedDistrict && secondLastPart) {
+          parsedDistrict = formatDistrictName(secondLastPart);
+        }
+        if (!parsedWard && thirdLastPart) {
+          parsedWard = formatWardName(thirdLastPart);
+        }
+        const detailParts = parts.slice(0, parts.length - 3);
+        if (!parsedDetail && detailParts.length > 0) {
+          parsedDetail = detailParts.join(', ');
+        }
       }
     } else if (parts.length === 2) {
-      // Format: [Detail/Ward], [District/Province]
       const districtOrProvincePart = parts[1];
       const detailOrWardPart = parts[0];
 
@@ -225,10 +247,8 @@ export function parseVietnameseAddress(
         parsedDetail = detailOrWardPart;
       }
     } else if (parts.length === 1) {
-      // Attempt regex extraction from single un-comma-separated string
       const fullText = parts[0];
 
-      // Extract Province
       if (!parsedProvince) {
         for (const [aliasKey, canonicalProvince] of Object.entries(PROVINCE_ALIASES)) {
           const regex = new RegExp(`\\b${aliasKey.replace(/\./g, '\\.')}\\b`, 'i');
@@ -239,7 +259,6 @@ export function parseVietnameseAddress(
         }
       }
 
-      // Extract Ward
       if (!parsedWard) {
         const wardMatch = fullText.match(/(?:Phường|P\.|Xã|X\.|Thị trấn|Tt\.)\s*(\d+|[A-ZÀ-Ỹà-ỹ]+(?:\s+[A-ZÀ-Ỹà-ỹ]+)*)/i);
         if (wardMatch) {
@@ -247,7 +266,6 @@ export function parseVietnameseAddress(
         }
       }
 
-      // Extract District
       if (!parsedDistrict) {
         const districtMatch = fullText.match(/(?:Quận|Q\.|Huyện|H\.|Thị xã|Tx\.)\s*(\d+|[A-ZÀ-Ỹà-ỹ]+(?:\s+[A-ZÀ-Ỹà-ỹ]+)*)/i);
         if (districtMatch) {
@@ -259,6 +277,19 @@ export function parseVietnameseAddress(
         parsedDetail = fullText;
       }
     }
+  }
+
+  if (!parsedProvince && metadataFallback?.province) {
+    parsedProvince = formatProvinceName(metadataFallback.province);
+  }
+  if (!parsedDistrict && metadataFallback?.district) {
+    parsedDistrict = formatDistrictName(metadataFallback.district);
+  }
+  if (!parsedWard && metadataFallback?.ward) {
+    parsedWard = formatWardName(metadataFallback.ward);
+  }
+  if (!parsedDetail && metadataFallback?.addressDetail) {
+    parsedDetail = metadataFallback.addressDetail.trim();
   }
 
   // Ensure formatting consistency

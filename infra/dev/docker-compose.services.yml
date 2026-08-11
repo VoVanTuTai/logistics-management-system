@@ -1,4 +1,4 @@
-cx-service-base: &service-base
+x-service-base: &service-base
   restart: unless-stopped
   depends_on:
     postgres:
@@ -69,6 +69,8 @@ services:
       DISPATCH_COURIER_OPTIONS: CR001,CR002,CR003
       PICKUP_SERVICE_URL: http://pickup-service:3003
       SHIPMENT_SERVICE_URL: http://shipment-service:3002
+      MASTERDATA_SERVICE_URL: http://masterdata-service:3001
+
 
   manifest-service:
     <<: *service-base

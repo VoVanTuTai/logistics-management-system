@@ -227,13 +227,19 @@ export class TasksService {
     return task;
   }
 
+  private readonly pickupTaskCreationPromises = new Map<string, Promise<Task>>();
+
   async createTaskFromPickupApproved(payload: {
     pickup_request_id?: string | null;
     shipment_code?: string | null;
     note?: string | null;
   }): Promise<Task> {
     const pickupRequestId = payload.pickup_request_id?.trim() ?? null;
-    const shipmentCode = payload.shipment_code?.trim() ?? null;
+    const shipmentCode = payload.shipment_code?.trim()?.toUpperCase() ?? null;
+
+    if (shipmentCode && this.pickupTaskCreationPromises.has(shipmentCode)) {
+      await this.pickupTaskCreationPromises.get(shipmentCode)?.catch(() => undefined);
+    }
 
     if (pickupRequestId) {
       const existingTask = await this.taskRepository.findByPickupRequestId(
@@ -245,28 +251,53 @@ export class TasksService {
     }
 
     if (shipmentCode) {
-      const existingPickupTask = await this.taskRepository.list({
+      const existingPickupTasks = await this.taskRepository.list({
         shipmentCode,
         taskType: 'PICKUP',
       });
-      if (existingPickupTask.length > 0) {
-        return existingPickupTask[0];
+      const activeTask = existingPickupTasks.find(
+        (t) => t.status !== 'CANCELLED',
+      );
+      if (activeTask) {
+        if (pickupRequestId && !activeTask.pickupRequestId) {
+          return this.taskRepository.updatePickupRequestId(
+            activeTask.id,
+            pickupRequestId,
+          );
+        }
+        return activeTask;
       }
     }
 
-    const task = await this.create({
-      taskCode: `task-${randomUUID()}`,
-      taskType: 'PICKUP',
-      pickupRequestId,
-      shipmentCode,
-      note: payload.note ?? null,
-    });
+    const executeCreate = async (): Promise<Task> => {
+      const task = await this.create({
+        taskCode: `task-${randomUUID()}`,
+        taskType: 'PICKUP',
+        pickupRequestId,
+        shipmentCode,
+        note: payload.note ?? null,
+      });
 
+      if (shipmentCode) {
+        void this.autoAssignPickupTask(task.id, shipmentCode);
+      }
+
+      return task;
+    };
+
+    const creationPromise = executeCreate();
     if (shipmentCode) {
-      void this.autoAssignPickupTask(task.id, shipmentCode);
+      this.pickupTaskCreationPromises.set(shipmentCode, creationPromise);
     }
 
-    return task;
+    try {
+      const createdTask = await creationPromise;
+      return createdTask;
+    } finally {
+      if (shipmentCode) {
+        this.pickupTaskCreationPromises.delete(shipmentCode);
+      }
+    }
   }
 
   async handleDeliveryFailed(payload: {
@@ -515,7 +546,7 @@ export class TasksService {
     const district = parsedAddress.district;
     const ward = parsedAddress.ward;
 
-    if (!province || !district || !ward) {
+    if (!province || !ward) {
       return null;
     }
 
@@ -524,13 +555,17 @@ export class TasksService {
       return null;
     }
 
-    const query = new URLSearchParams({
+    const queryParams: Record<string, string> = {
       hubCode: originHubCode,
       province,
-      district,
       ward,
       isActive: 'true',
-    });
+    };
+    if (district) {
+      queryParams.district = district;
+    }
+
+    const query = new URLSearchParams(queryParams);
 
     const url = new URL(
       `courier-area-assignments?${query.toString()}`,

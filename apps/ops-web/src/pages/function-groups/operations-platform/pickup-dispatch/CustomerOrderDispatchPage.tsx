@@ -428,7 +428,7 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
     const shipmentLookup = buildShipmentLookup(shipmentsQuery.data ?? []);
     const pickupLookup = buildPickupLookup(pickupsQuery.data ?? []);
 
-    return (tasksQuery.data ?? [])
+    const mappedRows = (tasksQuery.data ?? [])
       .map((task) => {
         const shipmentCode = normalizeCode(task.shipmentCode);
         const shipment = shipmentCode ? shipmentLookup.get(shipmentCode) ?? null : null;
@@ -443,11 +443,28 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
         );
       })
       .filter((row): row is DispatchOrderRow => Boolean(row))
-      .filter((row) => row.pickupHub === processingHubCode)
-      .sort(
-        (left, right) =>
-          new Date(right.requestedAt ?? '').getTime() - new Date(left.requestedAt ?? '').getTime(),
-      );
+      .filter((row) => row.pickupHub === processingHubCode);
+
+    const deduplicatedMap = new Map<string, DispatchOrderRow>();
+    for (const row of mappedRows) {
+      const code = normalizeCode(row.shipmentCode);
+      if (!code || code === '-') {
+        deduplicatedMap.set(row.id, row);
+        continue;
+      }
+
+      const existing = deduplicatedMap.get(code);
+      if (!existing) {
+        deduplicatedMap.set(code, row);
+      } else if (existing.status === 'CREATED' && row.status !== 'CREATED') {
+        deduplicatedMap.set(code, row);
+      }
+    }
+
+    return Array.from(deduplicatedMap.values()).sort(
+      (left, right) =>
+        new Date(right.requestedAt ?? '').getTime() - new Date(left.requestedAt ?? '').getTime(),
+    );
   }, [
     courierLookup,
     pickupsQuery.data,
