@@ -30,6 +30,14 @@ export function useHubsQuery(accessToken: string | null, filters: HubFilters) {
   });
 }
 
+export function useRegionalHierarchyQuery(accessToken: string | null) {
+  return useQuery({
+    queryKey: [...queryKeys.masterdataHubs, 'regional-hierarchy'],
+    queryFn: () => masterdataClient.getRegionalHierarchy(accessToken),
+    enabled: Boolean(accessToken),
+  });
+}
+
 export function useCreateHubMutation(accessToken: string | null) {
   const queryClient = useQueryClient();
 

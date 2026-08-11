@@ -190,4 +190,80 @@ export class ReportingQueryService {
       zoneCode: query.zoneCode,
     });
   }
+
+  async getNetworkOverview(query: DailyReportQuery = {}) {
+    const metricDate = this.reportingProjectionStore.resolveDate(query.date);
+    const globalTotals = await this.reportingProjectionStore.getDailyGlobal(metricDate);
+    const zoneAggregates = await this.reportingProjectionStore.getDailyByDimension(
+      metricDate,
+      'zone',
+      {},
+    );
+
+    return {
+      metricDate: metricDate.toISOString().slice(0, 10),
+      regionalHubsCount: 3,
+      totalProvincesCovered: 34,
+      totals: {
+        shipmentsCreated: globalTotals?.shipmentsCreated ?? 0,
+        pickupsCompleted: globalTotals?.pickupsCompleted ?? 0,
+        deliveriesDelivered: globalTotals?.deliveriesDelivered ?? 0,
+        deliveriesFailed: globalTotals?.deliveriesFailed ?? 0,
+        ndrCreated: globalTotals?.ndrCreated ?? 0,
+        scansInbound: globalTotals?.scansInbound ?? 0,
+        scansOutbound: globalTotals?.scansOutbound ?? 0,
+      },
+      zoneAggregates,
+    };
+  }
+
+  async getRegionalSummary(query: DailyReportQuery = {}) {
+    const metricDate = this.reportingProjectionStore.resolveDate(query.date);
+    const zoneAggregates = await this.reportingProjectionStore.getDailyByDimension(
+      metricDate,
+      'zone',
+      {},
+    );
+
+    const regionalNames: Record<string, string> = {
+      '001': 'Miền Bắc',
+      '002': 'Miền Trung & Tây Nguyên',
+      '003': 'Miền Nam & ĐBSCL',
+    };
+
+    const regionalProvincesCount: Record<string, number> = {
+      '001': 15,
+      '002': 11,
+      '003': 8,
+    };
+
+    const regionalHubCodes: Record<string, string> = {
+      '001': '001N001',
+      '002': '002C001',
+      '003': '003S001',
+    };
+
+    return ['001', '002', '003'].map((zoneCode) => {
+      const aggregate = zoneAggregates.find((z) => z.zoneCode === zoneCode);
+      const delivered = aggregate?.deliveriesDelivered ?? 0;
+      const failed = aggregate?.deliveriesFailed ?? 0;
+      const attempts = delivered + failed;
+      const successRate =
+        attempts > 0 ? Number(((delivered / attempts) * 100).toFixed(2)) : 0;
+
+      return {
+        zoneCode,
+        regionalHubCode: regionalHubCodes[zoneCode],
+        regionName: regionalNames[zoneCode],
+        provincesCount: regionalProvincesCount[zoneCode],
+        shipmentsCreated: aggregate?.shipmentsCreated ?? 0,
+        pickupsCompleted: aggregate?.pickupsCompleted ?? 0,
+        deliveriesDelivered: delivered,
+        deliveriesFailed: failed,
+        scansInbound: aggregate?.scansInbound ?? 0,
+        scansOutbound: aggregate?.scansOutbound ?? 0,
+        successRate,
+      };
+    });
+  }
 }

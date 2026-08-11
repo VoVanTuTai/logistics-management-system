@@ -7,6 +7,7 @@ import {
   useConfigsQuery,
   useHubsQuery,
   useNdrReasonsQuery,
+  useRegionalHierarchyQuery,
   useZonesQuery,
 } from '../../features/masterdata/masterdata.api';
 import { routePaths } from '../../navigation/routes';
@@ -96,6 +97,7 @@ export function AdminDashboardPage(): React.JSX.Element {
   const zonesQuery = useZonesQuery(accessToken, {});
   const ndrReasonsQuery = useNdrReasonsQuery(accessToken, {});
   const configsQuery = useConfigsQuery(accessToken, {});
+  const regionalHierarchyQuery = useRegionalHierarchyQuery(accessToken);
 
   const queryStates = [
     opsUsersQuery,
@@ -105,6 +107,7 @@ export function AdminDashboardPage(): React.JSX.Element {
     zonesQuery,
     ndrReasonsQuery,
     configsQuery,
+    regionalHierarchyQuery,
   ];
 
   const isLoading = queryStates.some((query) => query.isLoading);
@@ -316,6 +319,60 @@ export function AdminDashboardPage(): React.JSX.Element {
             <span>{isLoading ? 'Đang tải dữ liệu' : item.description}</span>
           </article>
         ))}
+      </section>
+
+      {/* Báo cáo Mạng lưới Hub 3 Miền Toàn quốc */}
+      <section style={{ backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '20px', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div>
+            <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a', margin: '0 0 4px 0' }}>
+              Báo Cáo Mạng Lưới Hub 3 Miền & Phụ Trách Phủ Sóng Toàn Quốc
+            </h3>
+            <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
+              Hệ thống Thống kê Phân cấp 3 Tầng: Hub Tổng Khu Vực (Miền Bắc, Trung, Nam) ➔ Bưu cục Cấp Tỉnh ➔ 63 Tỉnh/Thành
+            </p>
+          </div>
+          <Link
+            to={routePaths.masterdataHubs}
+            style={{ fontSize: '13px', fontWeight: 600, color: '#2563eb', textDecoration: 'none', backgroundColor: '#eff6ff', padding: '6px 12px', borderRadius: '6px', border: '1px solid #bfdbfe' }}
+          >
+            Quản lý Bưu cục ➔
+          </Link>
+        </div>
+
+        {regionalHierarchyQuery.isLoading ? <p>Đang tải báo cáo tổng quan 3 miền...</p> : null}
+        {regionalHierarchyQuery.isSuccess && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+            {(regionalHierarchyQuery.data ?? []).map((region) => (
+              <div
+                key={region.regionKey}
+                style={{
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  padding: '16px',
+                  backgroundColor: '#f8fafc',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 700, padding: '2px 8px', borderRadius: '4px', backgroundColor: '#dbeafe', color: '#1e40af' }}>
+                    Zone {region.zoneCode}
+                  </span>
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: '#16a34a' }}>● Hoạt động</span>
+                </div>
+                <h4 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a', margin: '0 0 4px 0' }}>
+                  {region.regionName}
+                </h4>
+                <div style={{ fontSize: '13px', color: '#475569', marginBottom: '12px' }}>
+                  Hub Tổng: <strong>{region.regionalHub?.name ?? 'Hub Khu vực'}</strong> ({region.regionalHub?.code ?? 'N/A'})
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', paddingTop: '10px', borderTop: '1px solid #e2e8f0' }}>
+                  <span>Phủ sóng: <strong>{region.provincesCount} Tỉnh/Thành</strong></span>
+                  <span>Bưu cục Tỉnh: <strong>{region.branchHubsCount} Hub</strong></span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <DashboardChartsErrorBoundary>

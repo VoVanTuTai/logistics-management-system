@@ -507,6 +507,8 @@ export function ShipmentListPage(): React.JSX.Element {
   const branchGoodsFilter = normalizeBranchGoodsFilter(searchParams.get('branchGoods'));
   const inventoryDate = searchParams.get('inventoryDate') || today;
   const courierFilter = searchParams.get('courierId') ?? '';
+  const senderPhoneFilter = searchParams.get('senderPhone') ?? '';
+  const receiverPhoneFilter = searchParams.get('receiverPhone') ?? '';
   const pageSize = toPageNumber(searchParams.get('limit'), DEFAULT_PAGE_SIZE, 10, 100);
   const offset = toPageNumber(searchParams.get('offset'), 0, 0, 1_000_000);
   const pageNumber = Math.floor(offset / pageSize) + 1;
@@ -518,6 +520,8 @@ export function ShipmentListPage(): React.JSX.Element {
   const [branchGoodsInput, setBranchGoodsInput] = useState<BranchGoodsFilter>(branchGoodsFilter);
   const [inventoryDateInput, setInventoryDateInput] = useState(inventoryDate);
   const [courierInput, setCourierInput] = useState(courierFilter);
+  const [senderPhoneInput, setSenderPhoneInput] = useState(senderPhoneFilter);
+  const [receiverPhoneInput, setReceiverPhoneInput] = useState(receiverPhoneFilter);
   const [selectedShipmentCodes, setSelectedShipmentCodes] = useState<string[]>([]);
 
   const [counterShipmentCode, setCounterShipmentCode] = useState('');
@@ -641,8 +645,12 @@ export function ShipmentListPage(): React.JSX.Element {
       const assignedCourier =
         deliveryCourierByShipment.get(normalizeOpsCode(shipment.shipmentCode)) ?? 'Chưa bàn giao';
       const courierMatched = !courierFilter || assignedCourier === courierFilter;
+      const senderPhoneMatched =
+        !senderPhoneFilter || (shipment.senderPhone ?? '').includes(senderPhoneFilter.trim());
+      const receiverPhoneMatched =
+        !receiverPhoneFilter || (shipment.receiverPhone ?? '').includes(receiverPhoneFilter.trim());
 
-      return statusMatched && courierMatched;
+      return statusMatched && courierMatched && senderPhoneMatched && receiverPhoneMatched;
     });
   }, [
     branchGoodsFilter,
@@ -651,6 +659,8 @@ export function ShipmentListPage(): React.JSX.Element {
     hasShipmentSearch,
     inventoryDate,
     pageShipments,
+    senderPhoneFilter,
+    receiverPhoneFilter,
   ]);
   const visibleShipmentCodes = useMemo(
     () => new Set(visibleShipments.map((shipment) => shipment.shipmentCode)),
@@ -676,14 +686,18 @@ export function ShipmentListPage(): React.JSX.Element {
     setBranchGoodsInput(branchGoodsFilter);
     setInventoryDateInput(inventoryDate);
     setCourierInput(courierFilter);
+    setSenderPhoneInput(senderPhoneFilter);
+    setReceiverPhoneInput(receiverPhoneFilter);
   }, [
     branchGoodsFilter,
     courierFilter,
     filters.q,
     filters.status,
     inventoryDate,
+    receiverPhoneFilter,
     selectedDateFrom,
     selectedDateTo,
+    senderPhoneFilter,
     timeFilter,
   ]);
 
@@ -713,6 +727,8 @@ export function ShipmentListPage(): React.JSX.Element {
     const nextBranchGoodsFilter = normalizeBranchGoodsFilter(String(formData.get('branchGoods') ?? ''));
     const nextInventoryDate = String(formData.get('inventoryDate') ?? '').trim() || today;
     const nextCourierId = String(formData.get('courierId') ?? '').trim();
+    const nextSenderPhone = String(formData.get('senderPhone') ?? '').trim();
+    const nextReceiverPhone = String(formData.get('receiverPhone') ?? '').trim();
     const next = new URLSearchParams();
 
     next.set('time', time);
@@ -737,6 +753,12 @@ export function ShipmentListPage(): React.JSX.Element {
     if (nextCourierId) {
       next.set('courierId', nextCourierId);
     }
+    if (nextSenderPhone) {
+      next.set('senderPhone', nextSenderPhone);
+    }
+    if (nextReceiverPhone) {
+      next.set('receiverPhone', nextReceiverPhone);
+    }
 
     setSearchParams(next, { replace: true });
   };
@@ -755,6 +777,8 @@ export function ShipmentListPage(): React.JSX.Element {
     setBranchGoodsInput(DEFAULT_BRANCH_GOODS_FILTER);
     setInventoryDateInput(today);
     setCourierInput('');
+    setSenderPhoneInput('');
+    setReceiverPhoneInput('');
   };
 
   const updatePagination = (nextLimit: number, nextOffset: number) => {
@@ -1064,18 +1088,40 @@ export function ShipmentListPage(): React.JSX.Element {
           <input
             type="date"
             name="dateFrom"
+            title="Từ ngày"
             value={dateFromInput}
-            onChange={(event) => setDateFromInput(event.target.value)}
+            onChange={(event) => {
+              setDateFromInput(event.target.value);
+              if (timeInput !== 'custom') setTimeInput('custom');
+            }}
             style={styles.dateInput}
-            disabled={timeInput !== 'custom'}
           />
           <input
             type="date"
             name="dateTo"
+            title="Đến ngày"
             value={dateToInput}
-            onChange={(event) => setDateToInput(event.target.value)}
+            onChange={(event) => {
+              setDateToInput(event.target.value);
+              if (timeInput !== 'custom') setTimeInput('custom');
+            }}
             style={styles.dateInput}
-            disabled={timeInput !== 'custom'}
+          />
+          <input
+            type="text"
+            name="senderPhone"
+            placeholder="SĐT người gửi..."
+            value={senderPhoneInput}
+            onChange={(event) => setSenderPhoneInput(event.target.value)}
+            style={styles.phoneInput}
+          />
+          <input
+            type="text"
+            name="receiverPhone"
+            placeholder="SĐT người nhận..."
+            value={receiverPhoneInput}
+            onChange={(event) => setReceiverPhoneInput(event.target.value)}
+            style={styles.phoneInput}
           />
           <select
             name="branchGoods"
@@ -1555,7 +1601,13 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid #d9def3',
     borderRadius: 10,
     padding: '8px 10px',
-    minWidth: 170,
+    minWidth: 160,
+  },
+  phoneInput: {
+    border: '1px solid #d9def3',
+    borderRadius: 10,
+    padding: '8px 10px',
+    minWidth: 160,
   },
   pageSizeControl: {
     display: 'flex',

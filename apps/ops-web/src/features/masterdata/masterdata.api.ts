@@ -7,6 +7,7 @@ export {
   useCreateZoneMutation,
   useHubsQuery,
   useNdrReasonsQuery,
+  useRegionalHierarchyQuery,
   useUpdateConfigMutation,
   useUpdateHubMutation,
   useUpdateNdrReasonMutation,
