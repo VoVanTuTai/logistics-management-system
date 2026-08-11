@@ -224,6 +224,24 @@ export class TaskPrismaRepository extends TaskRepository {
     return this.toEntity(record);
   }
 
+  async updatePickupRequestId(id: string, pickupRequestId: string): Promise<Task> {
+    const record = await this.prisma.task.update({
+      where: { id },
+      data: {
+        pickupRequestId,
+      },
+      include: {
+        assignments: {
+          orderBy: {
+            assignedAt: 'desc',
+          },
+        },
+      },
+    });
+
+    return this.toEntity(record);
+  }
+
   private toEntity(record: TaskRecordWithAssignments): Task {
     return {
       id: record.id,

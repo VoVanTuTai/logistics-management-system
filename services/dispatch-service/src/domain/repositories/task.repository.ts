@@ -16,4 +16,5 @@ export abstract class TaskRepository {
   abstract assign(id: string, input: AssignTaskInput): Promise<Task>;
   abstract reassign(id: string, input: ReassignTaskInput): Promise<Task>;
   abstract updateStatus(id: string, input: UpdateTaskStatusInput): Promise<Task>;
+  abstract updatePickupRequestId(id: string, pickupRequestId: string): Promise<Task>;
 }
