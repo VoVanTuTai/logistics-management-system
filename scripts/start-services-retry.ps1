@@ -50,7 +50,7 @@ function Test-HttpOk(
 }
 
 function Get-ListeningPid([int]$port) {
-  $onWindows = $PSVersionTable.Platform -eq 'Win32NT' -or $PSVersionTable.OS -like '*Windows*'
+  $onWindows = [System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT -or $env:OS -like '*Windows*' -or $PSVersionTable.PSEdition -eq 'Desktop'
   
   if ($onWindows) {
     try {

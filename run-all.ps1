@@ -11,7 +11,7 @@ $PSNativeCommandUseErrorActionPreference = $true
 $rootDir = Resolve-Path $PSScriptRoot
 
 function Resolve-LanIp() {
-  $onWindows = $PSVersionTable.Platform -eq 'Win32NT' -or $PSVersionTable.OS -like '*Windows*'
+  $onWindows = [System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT -or $env:OS -like '*Windows*' -or $PSVersionTable.PSEdition -eq 'Desktop'
   
   if ($onWindows) {
     $defaultRoute = Get-NetRoute -AddressFamily IPv4 -DestinationPrefix '0.0.0.0/0' -ErrorAction SilentlyContinue |
@@ -77,7 +77,7 @@ function Resolve-LanIp() {
     }
   }
 
-  throw 'Cannot resolve LAN IPv4 address. Please check network and run again.'
+  return 'localhost'
 }
 
 function Set-EnvValue(
@@ -170,10 +170,31 @@ function Update-GatewayBffEnv([string]$mode) {
   Write-Host '[gateway-env] service upstreams set to localhost ports'
 }
 
+function Update-CustomerMobileGatewayEnv([string]$mode) {
+  $mobileDir = Join-Path $rootDir 'apps/customer-mobile'
+  if (-not (Test-Path $mobileDir)) {
+    return
+  }
+
+  $gatewayBaseUrl = if ($mode -eq 'emulator') {
+    'http://10.0.2.2:3000'
+  } else {
+    $lanIp = Resolve-LanIp
+    "http://$lanIp`:3000"
+  }
+
+  $envPath = Join-Path $mobileDir '.env'
+  Set-EnvValue -FilePath $envPath -Key 'EXPO_PUBLIC_GATEWAY_BASE_URL' -Value $gatewayBaseUrl
+
+  Write-Host "[customer-mobile-env] updated $envPath"
+  Write-Host "[customer-mobile-env] EXPO_PUBLIC_GATEWAY_BASE_URL=$gatewayBaseUrl"
+}
+
 Push-Location $rootDir
 try {
   if (-not $SkipMobile) {
     Update-CourierMobileGatewayEnv -mode $MobileMode
+    Update-CustomerMobileGatewayEnv -mode $MobileMode
   } else {
     Write-Host '[mobile-env] skipped by flag -SkipMobile'
   }

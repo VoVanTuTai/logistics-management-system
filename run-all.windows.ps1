@@ -122,10 +122,31 @@ function Update-GatewayBffEnv([string]$mode) {
   Write-Host "[gateway-env] S3_ENDPOINT=$s3Endpoint"
 }
 
+function Update-CustomerMobileGatewayEnv([string]$mode) {
+  $mobileDir = Join-Path $rootDir 'apps/customer-mobile'
+  if (-not (Test-Path $mobileDir)) {
+    return
+  }
+
+  $gatewayBaseUrl = if ($mode -eq 'emulator') {
+    'http://10.0.2.2:3000'
+  } else {
+    $lanIp = Resolve-LanIp
+    "http://$lanIp`:3000"
+  }
+
+  $envPath = Join-Path $mobileDir '.env'
+  Set-EnvValue -FilePath $envPath -Key 'EXPO_PUBLIC_GATEWAY_BASE_URL' -Value $gatewayBaseUrl
+
+  Write-Host "[customer-mobile-env] updated $envPath"
+  Write-Host "[customer-mobile-env] EXPO_PUBLIC_GATEWAY_BASE_URL=$gatewayBaseUrl"
+}
+
 Push-Location $rootDir
 try {
   if (-not $SkipMobile) {
     Update-CourierMobileGatewayEnv -mode $MobileMode
+    Update-CustomerMobileGatewayEnv -mode $MobileMode
   } else {
     Write-Host '[mobile-env] skipped by flag -SkipMobile'
   }
