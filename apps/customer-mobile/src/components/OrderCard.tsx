@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { colors, shadows, spacing } from '../theme';
 import type { OrderModel } from '../types';
+import { copyToClipboard } from '../utils/clipboard';
 import { StatusBadge } from './StatusBadge';
 
 interface OrderCardProps {
@@ -16,33 +17,67 @@ function formatVnd(val: number): string {
 }
 
 export function OrderCard({ order, onPressDetail }: OrderCardProps): React.JSX.Element {
+  const senderAddressText =
+    order.sender.composedAddress || order.sender.addressDetail || 'Chưa có địa chỉ gửi';
+  const receiverAddressText =
+    order.receiver.composedAddress || order.receiver.addressDetail || 'Chưa có địa chỉ nhận';
+
   return (
     <View style={styles.card}>
+      {/* CARD HEADER WITH COPY CODE BUTTON */}
       <View style={styles.cardHeader}>
         <View style={styles.codeWrapper}>
-          <Ionicons name="cube-outline" size={18} color={colors.primary} />
+          <Ionicons name="cube" size={18} color={colors.primary} />
           <Text style={styles.codeText}>{order.code}</Text>
+
+          {/* COPY ORDER CODE BUTTON */}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            style={styles.copyBtn}
+            onPress={() => copyToClipboard(order.code, 'mã vận đơn')}
+          >
+            <Ionicons name="copy-outline" size={16} color={colors.primary} />
+          </TouchableOpacity>
         </View>
+
         <StatusBadge status={order.status} />
       </View>
 
       <View style={styles.divider} />
 
+      {/* CARD BODY WITH FULL SENDER & RECEIVER ADDRESSES */}
       <View style={styles.cardBody}>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Người nhận:</Text>
-          <Text style={styles.infoValue} numberOfLines={1}>
-            {order.receiver.name}
+        {/* SENDER BLOCK */}
+        <View style={styles.locationBlock}>
+          <View style={styles.locationHeaderRow}>
+            <View style={[styles.dotCircle, { backgroundColor: colors.info }]} />
+            <Text style={styles.locationRoleLabel}>GỬI TỪ:</Text>
+            <Text style={styles.personNameText} numberOfLines={1}>
+              {order.sender.name} ({order.sender.phone || 'SĐT N/A'})
+            </Text>
+          </View>
+          <Text style={styles.fullAddressText} numberOfLines={2}>
+            {senderAddressText}
           </Text>
         </View>
 
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Địa chỉ:</Text>
-          <Text style={styles.infoValue} numberOfLines={1}>
-            {order.receiver.addressDetail}
+        <View style={styles.routeLineDot} />
+
+        {/* RECEIVER BLOCK */}
+        <View style={styles.locationBlock}>
+          <View style={styles.locationHeaderRow}>
+            <View style={[styles.dotCircle, { backgroundColor: colors.primary }]} />
+            <Text style={styles.locationRoleLabel}>GIAO ĐẾN:</Text>
+            <Text style={styles.personNameText} numberOfLines={1}>
+              {order.receiver.name} ({order.receiver.phone || 'SĐT N/A'})
+            </Text>
+          </View>
+          <Text style={styles.fullAddressText} numberOfLines={2}>
+            {receiverAddressText}
           </Text>
         </View>
 
+        {/* FEES GRID */}
         <View style={styles.amountGrid}>
           <View style={styles.amountItem}>
             <Text style={styles.amountLabel}>Phí vận chuyển</Text>
@@ -56,6 +91,7 @@ export function OrderCard({ order, onPressDetail }: OrderCardProps): React.JSX.E
         </View>
       </View>
 
+      {/* CARD FOOTER */}
       <View style={styles.cardFooter}>
         <Text style={styles.dateText}>
           {new Date(order.createdAt).toLocaleDateString('vi-VN')}
@@ -77,7 +113,7 @@ export function OrderCard({ order, onPressDetail }: OrderCardProps): React.JSX.E
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 14,
+    borderRadius: 16,
     padding: spacing.md,
     marginBottom: spacing.md,
     borderWidth: 1,
@@ -95,9 +131,16 @@ const styles = StyleSheet.create({
   },
   codeText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.textPrimary,
     marginLeft: 6,
+  },
+  copyBtn: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginLeft: 4,
+    backgroundColor: colors.primaryLight,
+    borderRadius: 6,
   },
   divider: {
     height: 1,
@@ -105,22 +148,45 @@ const styles = StyleSheet.create({
     marginVertical: spacing.sm,
   },
   cardBody: {
-    gap: 6,
+    gap: spacing.xs,
   },
-  infoRow: {
+  locationBlock: {
+    marginVertical: 2,
+  },
+  locationHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 2,
   },
-  infoLabel: {
-    fontSize: 13,
+  dotCircle: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    marginRight: 6,
+  },
+  locationRoleLabel: {
+    fontSize: 11,
+    fontWeight: '800',
     color: colors.textMuted,
-    width: 85,
+    marginRight: 4,
   },
-  infoValue: {
-    flex: 1,
+  personNameText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.textPrimary,
+    flex: 1,
+  },
+  fullAddressText: {
+    fontSize: 12.5,
+    color: colors.textSecondary,
+    marginLeft: 13,
+    lineHeight: 18,
+  },
+  routeLineDot: {
+    width: 1,
+    height: 6,
+    backgroundColor: colors.border,
+    marginLeft: 3,
   },
   amountGrid: {
     flexDirection: 'row',

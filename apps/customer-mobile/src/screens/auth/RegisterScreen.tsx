@@ -94,11 +94,16 @@ export function RegisterScreen({ navigation }: Props): React.JSX.Element {
   return (
     <KeyboardAvoidingView
       style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 20}
     >
       <AppHeader title="Đăng ký tài khoản" onBackPress={() => navigation.goBack()} />
 
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Tạo tài khoản mới</Text>
           <Text style={styles.cardSub}>Trở thành thành viên NEXUS Express ngay hôm nay</Text>

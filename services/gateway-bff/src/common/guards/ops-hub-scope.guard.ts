@@ -444,6 +444,19 @@ function buildForwardHeaders(request: Request): Headers {
     headers.set('x-request-id', String(request.headers['x-request-id']));
   }
 
+  if (request.headers['x-ops-user-id']) {
+    headers.set('x-ops-user-id', String(request.headers['x-ops-user-id']));
+  }
+  if (request.headers['x-ops-username']) {
+    headers.set('x-ops-username', String(request.headers['x-ops-username']));
+  }
+  if (request.headers['x-ops-roles']) {
+    headers.set('x-ops-roles', String(request.headers['x-ops-roles']));
+  }
+  if (request.headers['x-ops-hub-codes']) {
+    headers.set('x-ops-hub-codes', String(request.headers['x-ops-hub-codes']));
+  }
+
   headers.set('accept', 'application/json');
   headers.set('x-forwarded-for', request.ip ?? '');
   headers.set('x-forwarded-host', request.hostname ?? '');

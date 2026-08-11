@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -182,7 +184,10 @@ export function AddressSelectorModal({
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={styles.sheetContainer}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.sheetContainer}
+        >
           {/* HEADER */}
           <View style={styles.header}>
             <Text style={styles.headerTitle}>{title}</Text>
@@ -191,7 +196,11 @@ export function AddressSelectorModal({
             </TouchableOpacity>
           </View>
 
-          <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
             {stepView === 'FORM' ? (
               <View style={styles.formBlock}>
                 {/* 1. SELECT PROVINCE */}
@@ -427,7 +436,7 @@ export function AddressSelectorModal({
               </View>
             ) : null}
           </ScrollView>
-        </View>
+        </KeyboardAvoidingView>
       </View>
     </Modal>
   );
@@ -444,7 +453,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: '85%',
-    paddingBottom: spacing.xxl,
   },
   header: {
     flexDirection: 'row',
@@ -464,6 +472,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.lg,
+    paddingBottom: spacing.xxl + 80,
   },
   formBlock: {
     gap: spacing.sm,

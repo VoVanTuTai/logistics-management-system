@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,7 +16,8 @@ import { TrackingTimeline } from '../../components/TrackingTimeline';
 import type { RootStackParamList } from '../../navigation/types';
 import { trackingApi } from '../../services/api/tracking.api';
 import { colors, shadows, spacing } from '../../theme';
-import type { TrackingEvent } from '../../types';
+import type { ShipmentStatus, TrackingEvent } from '../../types';
+import { copyToClipboard } from '../../utils/clipboard';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'OrderDetail'>;
 
@@ -25,34 +27,52 @@ function formatVnd(val: number): string {
 
 export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Element {
   const { order } = route.params;
+  const [liveStatus, setLiveStatus] = useState<ShipmentStatus | string>(order.status);
   const [liveTimeline, setLiveTimeline] = useState<TrackingEvent[]>(order.timeline || []);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const senderAddressText =
+    order.sender.composedAddress || order.sender.addressDetail || 'Chưa có địa chỉ gửi';
+  const receiverAddressText =
+    order.receiver.composedAddress || order.receiver.addressDetail || 'Chưa có địa chỉ nhận';
+
+  const fetchLiveTracking = async () => {
+    try {
+      const res = await trackingApi.getTracking(order.code);
+      if (res.current?.currentStatusCode) {
+        setLiveStatus(res.current.currentStatusCode);
+      }
+      if (res.timeline && res.timeline.length > 0) {
+        const mapped: TrackingEvent[] = res.timeline.map((ev, index) => ({
+          id: ev.id || `ev-${index}`,
+          title: ev.statusAfterEvent || ev.eventType || 'Cập nhật hành trình',
+          timestamp: new Date(ev.occurredAt).toLocaleString('vi-VN'),
+          location: [ev.locationText || ev.locationCode, ev.note].filter(Boolean).join(' • ') || undefined,
+          completed: true,
+          isCurrent: index === res.timeline.length - 1,
+        }));
+        setLiveTimeline(mapped);
+      }
+    } catch {
+      // Keep existing timeline & status
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    let isMounted = true;
-    const fetchLiveTracking = async () => {
-      try {
-        const res = await trackingApi.getTracking(order.code);
-        if (isMounted && res.timeline && res.timeline.length > 0) {
-          const mapped: TrackingEvent[] = res.timeline.map((ev, index) => ({
-            id: ev.id || `ev-${index}`,
-            title: ev.statusAfterEvent || ev.eventType || 'Cập nhật trạng thái',
-            timestamp: new Date(ev.occurredAt).toLocaleString('vi-VN'),
-            location: ev.locationText || ev.locationCode || undefined,
-            completed: true,
-            isCurrent: index === res.timeline.length - 1,
-          }));
-          setLiveTimeline(mapped);
-        }
-      } catch {
-        // Keep initial timeline
-      }
-    };
-
     fetchLiveTracking();
-    return () => {
-      isMounted = false;
-    };
+    const interval = setInterval(() => {
+      fetchLiveTracking();
+    }, 8000);
+
+    return () => clearInterval(interval);
   }, [order.code]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchLiveTracking();
+  };
 
   return (
     <View style={styles.flex}>
@@ -60,25 +80,42 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
         title="Chi tiết đơn hàng"
         onBackPress={() => navigation.goBack()}
         rightAction={
-          <TouchableOpacity style={styles.shareBtn}>
-            <Ionicons name="share-social-outline" size={20} color={colors.textPrimary} />
+          <TouchableOpacity style={styles.shareBtn} onPress={() => copyToClipboard(order.code, 'mã đơn')}>
+            <Ionicons name="copy-outline" size={20} color={colors.primary} />
           </TouchableOpacity>
         }
       />
 
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
+        }
+      >
         {/* 1. CODE & STATUS HERO */}
         <View style={styles.heroCard}>
-          <View style={styles.heroHeader}>
-            <View style={styles.heroCodeRow}>
-              <Ionicons name="barcode-outline" size={24} color={colors.primary} />
-              <Text style={styles.heroCode}>{order.code}</Text>
-            </View>
-            <StatusBadge status={order.status} />
+          <View style={styles.heroCodeRow}>
+            <Ionicons name="barcode-outline" size={24} color={colors.primary} />
+            <Text style={styles.heroCode}>{order.code}</Text>
+
+            {/* COPY BUTTON */}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={styles.copyChipBtn}
+              onPress={() => copyToClipboard(order.code, 'mã vận đơn')}
+            >
+              <Ionicons name="copy-outline" size={15} color={colors.primary} />
+              <Text style={styles.copyChipText}>Sao chép</Text>
+            </TouchableOpacity>
           </View>
-          <Text style={styles.heroDate}>
-            Ngày tạo: {new Date(order.createdAt).toLocaleString('vi-VN')}
-          </Text>
+
+          <View style={styles.heroMetaRow}>
+            <StatusBadge status={liveStatus} />
+            <Text style={styles.heroDate}>
+              Ngày tạo: {new Date(order.createdAt).toLocaleString('vi-VN')}
+            </Text>
+          </View>
         </View>
 
         {/* 2. TIMELINE JOURNEY */}
@@ -105,7 +142,7 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
             </View>
             <Text style={styles.addrName}>{order.sender.name}</Text>
             <Text style={styles.addrPhone}>{order.sender.phone}</Text>
-            <Text style={styles.addrDetail}>{order.sender.addressDetail}</Text>
+            <Text style={styles.addrDetail}>{senderAddressText}</Text>
           </View>
 
           <View style={styles.divider} />
@@ -118,7 +155,7 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
             </View>
             <Text style={styles.addrName}>{order.receiver.name}</Text>
             <Text style={styles.addrPhone}>{order.receiver.phone}</Text>
-            <Text style={styles.addrDetail}>{order.receiver.addressDetail}</Text>
+            <Text style={styles.addrDetail}>{receiverAddressText}</Text>
           </View>
         </View>
 
@@ -180,25 +217,43 @@ const styles = StyleSheet.create({
     borderColor: colors.borderSubtle,
     ...shadows.sm,
   },
-  heroHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
   heroCodeRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: spacing.sm,
   },
   heroCode: {
     fontSize: 18,
     fontWeight: '800',
     color: colors.textPrimary,
-    marginLeft: 8,
+  },
+  copyChipBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
+  },
+  copyChipText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  heroMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
   },
   heroDate: {
     fontSize: 12,
     color: colors.textMuted,
-    marginTop: spacing.xs,
   },
   card: {
     backgroundColor: colors.surface,
@@ -252,6 +307,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textMuted,
     marginTop: 2,
+    lineHeight: 19,
   },
   divider: {
     height: 1,
