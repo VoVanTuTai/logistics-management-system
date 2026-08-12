@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import type { CompositeScreenProps } from '@react-navigation/native';
+import { useFocusEffect, type CompositeScreenProps } from '@react-navigation/native';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -124,10 +124,16 @@ export function OrdersScreen({ route, navigation }: Props): React.JSX.Element {
 
     if (showLoading) setLoading(true);
     try {
-      const response = await shipmentApi.getShipments(accessToken, {
-        status: statusFilter !== 'ALL' ? statusFilter : undefined,
-        limit: 50,
-      });
+      const response =
+        category === 'RECEIVED'
+          ? await shipmentApi.getReceivedShipments(accessToken, {
+              status: statusFilter !== 'ALL' ? statusFilter : undefined,
+              limit: 50,
+            })
+          : await shipmentApi.getShipments(accessToken, {
+              status: statusFilter !== 'ALL' ? statusFilter : undefined,
+              limit: 50,
+            });
 
       const rawItems: ShipmentResponse[] = Array.isArray(response)
         ? response
@@ -149,7 +155,13 @@ export function OrdersScreen({ route, navigation }: Props): React.JSX.Element {
     }, 10000);
 
     return () => clearInterval(interval);
-  }, [statusFilter, timeFilter]);
+  }, [statusFilter, timeFilter, category]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchLiveShipments(false);
+    }, [statusFilter, timeFilter, category])
+  );
 
   const handleRefresh = () => {
     setRefreshing(true);

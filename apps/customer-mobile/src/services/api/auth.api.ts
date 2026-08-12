@@ -47,20 +47,19 @@ export const authApi = {
       body: {
         username: payload.username,
         password: payload.password,
-        roleGroup: 'MERCHANT',
+        roleGroup: payload.roleGroup || 'CUSTOMER_APP',
       },
     });
   },
 
   register: async (payload: RegisterPayload): Promise<UserProfileResponse> => {
-    return customerApiClient.request<UserProfileResponse>('/public/auth/auth/users', {
+    return customerApiClient.request<UserProfileResponse>('/public/auth/auth/register-customer', {
       method: 'POST',
       body: {
         username: payload.username,
         password: payload.password,
         displayName: payload.displayName || payload.username,
         phone: payload.phone || payload.username,
-        roles: ['MERCHANT'],
       },
     });
   },

@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import type { CompositeScreenProps } from '@react-navigation/native';
+import { useFocusEffect, type CompositeScreenProps } from '@react-navigation/native';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -47,6 +47,16 @@ function mapShipmentToOrderModel(s: ShipmentResponse): OrderModel {
   const receiver = meta.receiver || {};
   const pkg = meta.package || {};
 
+  const senderAddressComposed =
+    sender.address ||
+    [sender.addressDetail, sender.ward, sender.province].filter(Boolean).join(', ') ||
+    'Chưa có địa chỉ';
+
+  const receiverAddressComposed =
+    receiver.address ||
+    [receiver.addressDetail, receiver.ward, receiver.province].filter(Boolean).join(', ') ||
+    'Chưa có địa chỉ';
+
   return {
     id: s.id,
     code: s.code,
@@ -55,18 +65,28 @@ function mapShipmentToOrderModel(s: ShipmentResponse): OrderModel {
     sender: {
       name: sender.name || 'Người gửi',
       phone: sender.phone || '',
-      addressDetail: sender.addressDetail || sender.province || '',
+      addressDetail: senderAddressComposed,
+      composedAddress: senderAddressComposed,
+      ward: sender.ward,
+      district: sender.district,
+      province: sender.province,
+      hubCode: sender.hubCode,
     },
     receiver: {
       name: receiver.name || 'Người nhận',
       phone: receiver.phone || '',
-      addressDetail: receiver.addressDetail || receiver.province || '',
+      addressDetail: receiverAddressComposed,
+      composedAddress: receiverAddressComposed,
+      ward: receiver.ward,
+      district: receiver.district,
+      province: receiver.province,
+      hubCode: receiver.hubCode,
     },
-    itemName: pkg.itemName || 'Hàng hóa bưu gửi',
+    itemName: pkg.itemName || pkg.itemType || 'Hàng hóa bưu gửi',
     weightKg: Number(pkg.weightKg) || 0.5,
     declaredValueVnd: Number(pkg.declaredValue) || 0,
     codAmountVnd: Number(meta.codAmount || pkg.codAmount) || 0,
-    shippingFeeVnd: Number(meta.shippingFee || meta.service?.fee) || 22000,
+    shippingFeeVnd: Number(meta.estimatedFee || meta.shippingFee || meta.service?.fee || meta.pricing?.totalFee) || 22000,
     status: (s.currentStatus as ShipmentStatus) || 'CREATED',
     createdAt: s.createdAt,
     updatedAt: s.updatedAt,
@@ -110,6 +130,12 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
 
     return () => clearInterval(interval);
   }, [session]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchRecentShipments(false);
+    }, [session])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);

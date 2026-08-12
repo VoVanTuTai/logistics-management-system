@@ -16,7 +16,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatusBadge } from '../../components/StatusBadge';
 import { TrackingTimeline } from '../../components/TrackingTimeline';
 import type { MainTabParamList, RootStackParamList } from '../../navigation/types';
+import { shipmentApi, type ShipmentResponse } from '../../services/api/shipment.api';
 import { trackingApi, type UnifiedTrackingResponse } from '../../services/api/tracking.api';
+import { authStore } from '../../store/authStore';
 import { colors, shadows, spacing } from '../../theme';
 import type { OrderModel, ShipmentStatus, TrackingEvent } from '../../types';
 
@@ -25,8 +27,34 @@ type Props = CompositeScreenProps<
   NativeStackScreenProps<RootStackParamList>
 >;
 
-function mapTrackingToOrderModel(res: UnifiedTrackingResponse): OrderModel {
-  const currentStatus = (res.current?.currentStatusCode as ShipmentStatus) || 'CREATED';
+function formatVnd(val: number): string {
+  return new Intl.NumberFormat('vi-VN').format(val) + 'đ';
+}
+
+function mapTrackingToOrderModel(
+  res: UnifiedTrackingResponse,
+  shipment?: ShipmentResponse | null,
+): OrderModel {
+  const currentStatus =
+    (res.current?.currentStatusCode as ShipmentStatus) ||
+    (shipment?.currentStatus as ShipmentStatus) ||
+    'CREATED';
+
+  const meta = (shipment?.metadata as Record<string, any>) || {};
+  const sender = meta.sender || {};
+  const receiver = meta.receiver || {};
+  const pkg = meta.package || {};
+
+  const senderAddressComposed =
+    sender.address ||
+    [sender.addressDetail, sender.ward, sender.province].filter(Boolean).join(', ') ||
+    res.current?.currentLocationText ||
+    '';
+
+  const receiverAddressComposed =
+    receiver.address ||
+    [receiver.addressDetail, receiver.ward, receiver.province].filter(Boolean).join(', ') ||
+    '';
 
   const mappedTimeline: TrackingEvent[] = (res.timeline || []).map((ev, index) => ({
     id: ev.id || `ev-${index}`,
@@ -38,33 +66,43 @@ function mapTrackingToOrderModel(res: UnifiedTrackingResponse): OrderModel {
   }));
 
   return {
-    id: res.shipmentCode,
+    id: shipment?.id || res.shipmentCode,
     code: res.shipmentCode,
     category: 'SENT',
     orderType: 'REGULAR',
     sender: {
-      name: 'Người gửi',
-      phone: '',
-      addressDetail: res.current?.currentLocationText || '',
+      name: sender.name || 'Người gửi',
+      phone: sender.phone || '',
+      addressDetail: senderAddressComposed,
+      composedAddress: senderAddressComposed,
+      ward: sender.ward,
+      district: sender.district,
+      province: sender.province,
+      hubCode: sender.hubCode,
     },
     receiver: {
-      name: 'Người nhận',
-      phone: '',
-      addressDetail: '',
+      name: receiver.name || 'Người nhận',
+      phone: receiver.phone || '',
+      addressDetail: receiverAddressComposed,
+      composedAddress: receiverAddressComposed,
+      ward: receiver.ward,
+      district: receiver.district,
+      province: receiver.province,
+      hubCode: receiver.hubCode,
     },
-    itemName: 'Hàng hóa bưu gửi',
-    weightKg: 0.5,
-    declaredValueVnd: 0,
-    codAmountVnd: 0,
-    shippingFeeVnd: 22000,
+    itemName: pkg.itemName || pkg.itemType || 'Hàng hóa bưu gửi',
+    weightKg: Number(pkg.weightKg) || 0.5,
+    declaredValueVnd: Number(pkg.declaredValue) || 0,
+    codAmountVnd: Number(meta.codAmount || pkg.codAmount) || 0,
+    shippingFeeVnd: Number(meta.estimatedFee || meta.shippingFee || meta.service?.fee || meta.pricing?.totalFee) || 22000,
     status: currentStatus,
-    createdAt: res.current?.lastEventAt || new Date().toISOString(),
-    updatedAt: res.current?.updatedAt || new Date().toISOString(),
+    createdAt: shipment?.createdAt || res.current?.lastEventAt || new Date().toISOString(),
+    updatedAt: shipment?.updatedAt || res.current?.updatedAt || new Date().toISOString(),
     timeline: mappedTimeline.length > 0 ? mappedTimeline : [
       {
         id: 't-1',
         title: 'Đã khởi tạo đơn trên hệ thống',
-        timestamp: new Date().toLocaleTimeString('vi-VN'),
+        timestamp: new Date(shipment?.createdAt || Date.now()).toLocaleString('vi-VN'),
         completed: true,
         isCurrent: true,
       },
@@ -73,7 +111,7 @@ function mapTrackingToOrderModel(res: UnifiedTrackingResponse): OrderModel {
 }
 
 export function TrackingScreen({ route, navigation }: Props): React.JSX.Element {
-  const [searchQuery, setSearchQuery] = useState(route.params?.initialCode ?? 'NXS123456789');
+  const [searchQuery, setSearchQuery] = useState(route.params?.initialCode ?? '');
   const [foundOrder, setFoundOrder] = useState<OrderModel | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -85,8 +123,23 @@ export function TrackingScreen({ route, navigation }: Props): React.JSX.Element 
     setLoading(true);
     setHasSearched(true);
     try {
-      const res = await trackingApi.getTracking(q);
-      setFoundOrder(mapTrackingToOrderModel(res));
+      const accessToken = authStore.getAccessToken();
+      const [shipmentResult, trackingResult] = await Promise.allSettled([
+        accessToken ? shipmentApi.getShipmentByCode(accessToken, q) : Promise.resolve(null),
+        trackingApi.getTracking(q),
+      ]);
+
+      const shipment = shipmentResult.status === 'fulfilled' ? shipmentResult.value : null;
+      const trackingRes =
+        trackingResult.status === 'fulfilled'
+          ? trackingResult.value
+          : { shipmentCode: q, current: null, timeline: [] };
+
+      if (!shipment && (!trackingRes.timeline || trackingRes.timeline.length === 0) && !trackingRes.current) {
+        setFoundOrder(null);
+      } else {
+        setFoundOrder(mapTrackingToOrderModel(trackingRes, shipment));
+      }
     } catch {
       setFoundOrder(null);
     } finally {
@@ -96,6 +149,7 @@ export function TrackingScreen({ route, navigation }: Props): React.JSX.Element 
 
   useEffect(() => {
     if (route.params?.initialCode) {
+      setSearchQuery(route.params.initialCode);
       handleSearch();
     }
   }, [route.params?.initialCode]);
@@ -112,7 +166,7 @@ export function TrackingScreen({ route, navigation }: Props): React.JSX.Element 
           <Ionicons name="search" size={20} color={colors.primary} style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Nhập mã vận đơn (Ví dụ: NXS123456789)"
+            placeholder="Nhập mã vận đơn..."
             placeholderTextColor={colors.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -152,17 +206,52 @@ export function TrackingScreen({ route, navigation }: Props): React.JSX.Element 
             {/* SENDER / RECEIVER SUMMARY */}
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Thông tin bưu gửi</Text>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Người gửi:</Text>
-                <Text style={styles.infoVal}>{foundOrder.sender.name}</Text>
+              
+              <View style={styles.infoBlock}>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Người gửi:</Text>
+                  <Text style={styles.infoVal}>{foundOrder.sender.name} {foundOrder.sender.phone ? `(${foundOrder.sender.phone})` : ''}</Text>
+                </View>
+                {foundOrder.sender.composedAddress || foundOrder.sender.addressDetail ? (
+                  <View style={styles.infoRowAddress}>
+                    <Text style={styles.infoLabel}>Địa chỉ gửi:</Text>
+                    <Text style={styles.infoValAddress}>{foundOrder.sender.composedAddress || foundOrder.sender.addressDetail}</Text>
+                  </View>
+                ) : null}
               </View>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Người nhận:</Text>
-                <Text style={styles.infoVal}>{foundOrder.receiver.name}</Text>
+
+              <View style={styles.divider} />
+
+              <View style={styles.infoBlock}>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Người nhận:</Text>
+                  <Text style={styles.infoVal}>{foundOrder.receiver.name} {foundOrder.receiver.phone ? `(${foundOrder.receiver.phone})` : ''}</Text>
+                </View>
+                {foundOrder.receiver.composedAddress || foundOrder.receiver.addressDetail ? (
+                  <View style={styles.infoRowAddress}>
+                    <Text style={styles.infoLabel}>Địa chỉ nhận:</Text>
+                    <Text style={styles.infoValAddress}>{foundOrder.receiver.composedAddress || foundOrder.receiver.addressDetail}</Text>
+                  </View>
+                ) : null}
               </View>
+
+              <View style={styles.divider} />
+
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Tên hàng hóa:</Text>
                 <Text style={styles.infoVal}>{foundOrder.itemName}</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Khối lượng:</Text>
+                <Text style={styles.infoVal}>{foundOrder.weightKg} kg</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Cước vận chuyển:</Text>
+                <Text style={styles.infoVal}>{formatVnd(foundOrder.shippingFeeVnd)}</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Tiền thu hộ (COD):</Text>
+                <Text style={[styles.infoVal, { color: colors.primary }]}>{formatVnd(foundOrder.codAmountVnd)}</Text>
               </View>
             </View>
           </View>
@@ -285,11 +374,17 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     marginBottom: spacing.xs,
   },
+  infoBlock: {
+    gap: 4,
+  },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 2,
+  },
+  infoRowAddress: {
+    marginTop: 2,
   },
   infoLabel: {
     fontSize: 13,
@@ -299,6 +394,17 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: colors.textPrimary,
+  },
+  infoValAddress: {
+    fontSize: 13,
+    color: colors.textPrimary,
+    marginTop: 2,
+    lineHeight: 18,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.borderSubtle,
+    marginVertical: 4,
   },
   loadingContainer: {
     alignItems: 'center',
