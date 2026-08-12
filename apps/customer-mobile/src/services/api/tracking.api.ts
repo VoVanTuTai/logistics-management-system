@@ -36,7 +36,7 @@ export const trackingApi = {
   getTimeline: async (shipmentCode: string): Promise<TimelineEventResponse[]> => {
     const token = authStore.getAccessToken();
     const endpoint = token
-      ? `/merchant/tracking/tracking/${encodeURIComponent(shipmentCode)}/timeline`
+      ? `/customer/tracking/tracking/${encodeURIComponent(shipmentCode)}/timeline`
       : `/public/tracking/public/track/${encodeURIComponent(shipmentCode)}`;
 
     try {
@@ -59,7 +59,7 @@ export const trackingApi = {
 
     try {
       return await customerApiClient.request<TrackingCurrentResponse>(
-        `/merchant/tracking/tracking/${encodeURIComponent(shipmentCode)}/current`,
+        `/customer/tracking/tracking/${encodeURIComponent(shipmentCode)}/current`,
         { method: 'GET' },
       );
     } catch {

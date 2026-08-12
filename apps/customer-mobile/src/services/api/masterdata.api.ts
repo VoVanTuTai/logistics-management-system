@@ -70,7 +70,7 @@ export function parseHubRecord(raw: any): HubRecord {
 
 export const masterdataApi = {
   getHubs: async (accessToken?: string): Promise<HubRecord[]> => {
-    const rawList = await customerApiClient.request<any[]>('/merchant/masterdata/hubs?isActive=true', {
+    const rawList = await customerApiClient.request<any[]>('/customer/masterdata/hubs?isActive=true', {
       method: 'GET',
       accessToken,
     });
@@ -81,7 +81,7 @@ export const masterdataApi = {
   getAdministrativeUnits: async (accessToken?: string): Promise<VietnamProvince[]> => {
     try {
       return await customerApiClient.request<VietnamProvince[]>(
-        '/merchant/masterdata/locations/vietnam-administrative-units',
+        '/customer/masterdata/locations/vietnam-administrative-units',
         { method: 'GET', accessToken },
       );
     } catch {
