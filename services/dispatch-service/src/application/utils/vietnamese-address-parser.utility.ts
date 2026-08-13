@@ -216,7 +216,7 @@ export function parseVietnameseAddress(
       const isSecondLastPartWard =
         /^(Phường|P\.|Xã|X\.|Thị trấn|TT\.)\s+/i.test(secondLastPart);
 
-      if (isSecondLastPartWard && parts.length === 3) {
+      if (isSecondLastPartWard) {
         if (!parsedWard) {
           parsedWard = formatWardName(secondLastPart);
         }
@@ -237,14 +237,19 @@ export function parseVietnameseAddress(
         }
       }
     } else if (parts.length === 2) {
-      const districtOrProvincePart = parts[1];
-      const detailOrWardPart = parts[0];
+      const secondPart = parts[1];
+      const firstPart = parts[0];
 
       if (!parsedProvince) {
-        parsedProvince = formatProvinceName(districtOrProvincePart);
+        parsedProvince = formatProvinceName(secondPart);
       }
-      if (!parsedDetail) {
-        parsedDetail = detailOrWardPart;
+
+      if (/^(Phường|P\.|Xã|X\.|Thị trấn|TT\.)\s+/i.test(firstPart)) {
+        if (!parsedWard) {
+          parsedWard = formatWardName(firstPart);
+        }
+      } else if (!parsedDetail) {
+        parsedDetail = firstPart;
       }
     } else if (parts.length === 1) {
       const fullText = parts[0];
