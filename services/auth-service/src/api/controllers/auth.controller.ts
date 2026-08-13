@@ -25,6 +25,7 @@ import type {
 } from '../../domain/entities/auth-session.entity';
 import type {
   AuthenticatedUser,
+  RegisterCustomerInput,
   UserAccountView,
   UserCreateInput,
   UserRoleGroup,
@@ -95,6 +96,14 @@ export class AuthController {
     @Req() request: AuditRequest,
   ): Promise<UserAccountView> {
     return this.authService.createUser(body, getAdminAuditContext(request));
+  }
+
+  @Post('register-customer')
+  registerCustomer(
+    @Body() body: RegisterCustomerInput,
+    @Req() request: AuditRequest,
+  ): Promise<UserAccountView> {
+    return this.authService.registerCustomer(body, getAdminAuditContext(request));
   }
 
   @Patch('users/:id')

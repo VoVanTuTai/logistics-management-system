@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -14,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { AddressSelectorModal, type StructuredAddress } from '../../components/AddressSelectorModal';
 import { AppHeader } from '../../components/AppHeader';
+import { AppModal, type ModalVariant } from '../../components/common/AppModal';
 import { InputField } from '../../components/InputField';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { StepIndicator } from '../../components/StepIndicator';
@@ -134,28 +134,56 @@ export function CreateOrderScreen({ navigation }: Props): React.JSX.Element {
     receiverAddress?.hubCode,
   ]);
 
+  const [modalConfig, setModalConfig] = useState<{
+    visible: boolean;
+    variant: ModalVariant;
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+  }>({
+    visible: false,
+    variant: 'warning',
+    title: '',
+    message: '',
+  });
+
+  const showModal = (
+    title: string,
+    message: string,
+    variant: ModalVariant = 'warning',
+    onConfirm?: () => void,
+  ) => {
+    setModalConfig({
+      visible: true,
+      variant,
+      title,
+      message,
+      onConfirm,
+    });
+  };
+
   const handleNextStep = async () => {
     if (step === 1) {
       if (!senderName.trim() || !senderPhone.trim()) {
-        Alert.alert('Thiếu thông tin', 'Vui lòng nhập tên và số điện thoại người gửi.');
+        showModal('Thiếu thông tin', 'Vui lòng nhập tên và số điện thoại người gửi.');
         return;
       }
       if (!senderAddress) {
-        Alert.alert('Thiếu thông tin', 'Vui lòng chọn địa chỉ người gửi.');
+        showModal('Thiếu thông tin', 'Vui lòng chọn địa chỉ người gửi.');
         return;
       }
       if (!receiverName.trim() || !receiverPhone.trim()) {
-        Alert.alert('Thiếu thông tin', 'Vui lòng nhập tên và số điện thoại người nhận.');
+        showModal('Thiếu thông tin', 'Vui lòng nhập tên và số điện thoại người nhận.');
         return;
       }
       if (!receiverAddress) {
-        Alert.alert('Thiếu thông tin', 'Vui lòng chọn địa chỉ người nhận.');
+        showModal('Thiếu thông tin', 'Vui lòng chọn địa chỉ người nhận.');
         return;
       }
       setStep(2);
     } else if (step === 2) {
       if (!itemName.trim() || !weightKg.trim()) {
-        Alert.alert('Thiếu thông tin', 'Vui lòng nhập tên hàng hóa và khối lượng.');
+        showModal('Thiếu thông tin', 'Vui lòng nhập tên hàng hóa và khối lượng.');
         return;
       }
       setStep(3);
@@ -163,13 +191,12 @@ export function CreateOrderScreen({ navigation }: Props): React.JSX.Element {
       // Step 3 -> Create Shipment on Live Backend using SAME Merchant API & DTO
       const token = authStore.getAccessToken() || session?.accessToken;
       if (!token) {
-        Alert.alert('Phiên làm việc', 'Vui lòng đăng nhập lại để tiếp tục tạo đơn.');
-        navigation.replace('Login');
+        showModal('Phiên làm việc', 'Vui lòng đăng nhập lại để tiếp tục tạo đơn.', 'warning', () => navigation.replace('Login'));
         return;
       }
 
       if (!senderAddress || !receiverAddress) {
-        Alert.alert('Lỗi địa chỉ', 'Vui lòng chọn đầy đủ địa chỉ gửi và địa chỉ nhận.');
+        showModal('Lỗi địa chỉ', 'Vui lòng chọn đầy đủ địa chỉ gửi và địa chỉ nhận.');
         return;
       }
 
@@ -241,7 +268,7 @@ export function CreateOrderScreen({ navigation }: Props): React.JSX.Element {
         navigation.replace('CreateOrderSuccess', { orderCode: createdShipment.code });
       } catch (error) {
         const msg = error instanceof ApiClientError ? error.message : 'Tạo vận đơn thất bại.';
-        Alert.alert('Lỗi tạo đơn', msg);
+        showModal('Lỗi tạo đơn', msg, 'error');
       } finally {
         setSubmitting(false);
       }
@@ -574,6 +601,19 @@ export function CreateOrderScreen({ navigation }: Props): React.JSX.Element {
         accessToken={session?.accessToken}
         onConfirm={(addr) => setReceiverAddress(addr)}
         onClose={() => setShowReceiverAddressModal(false)}
+      />
+
+      <AppModal
+        visible={modalConfig.visible}
+        variant={modalConfig.variant}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        onConfirm={() => {
+          setModalConfig((prev) => ({ ...prev, visible: false }));
+          if (modalConfig.onConfirm) {
+            modalConfig.onConfirm();
+          }
+        }}
       />
     </KeyboardAvoidingView>
   );

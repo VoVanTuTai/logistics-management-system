@@ -19,7 +19,7 @@ const SERVICE_URL_ENV = {
   pricing: 'PRICING_SERVICE_URL',
 } as const;
 
-export type ApiGroup = 'public' | 'merchant' | 'ops' | 'courier';
+export type ApiGroup = 'public' | 'merchant' | 'ops' | 'courier' | 'customer';
 type ServiceName = keyof typeof SERVICE_URL_ENV;
 
 @Injectable()

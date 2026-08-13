@@ -76,7 +76,7 @@ function Wait-PortListening(
 }
 
 function Resolve-LanIp() {
-  $onWindows = $PSVersionTable.Platform -eq 'Win32NT' -or $PSVersionTable.OS -like '*Windows*'
+  $onWindows = [System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT -or $env:OS -like '*Windows*' -or $PSVersionTable.PSEdition -eq 'Desktop' -or $PSVersionTable.Platform -eq 'Win32NT'
 
   if ($onWindows) {
     $defaultRoute = Get-NetRoute -AddressFamily IPv4 -DestinationPrefix '0.0.0.0/0' -ErrorAction SilentlyContinue |
@@ -170,7 +170,7 @@ function Start-WebUiProcess(
 
   Install-AppDependenciesIfNeeded -workingDir $workingDir -name $name
 
-  $onWindows = $PSVersionTable.Platform -eq 'Win32NT' -or $PSVersionTable.OS -like '*Windows*'
+  $onWindows = [System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT -or $env:OS -like '*Windows*' -or $PSVersionTable.PSEdition -eq 'Desktop' -or $PSVersionTable.Platform -eq 'Win32NT'
   if ($onWindows) {
     $launcher = Start-Process `
       -FilePath 'cmd.exe' `
@@ -200,7 +200,7 @@ function Start-CourierMobileProcess([string]$mode) {
     return
   }
 
-  $onWindows = $PSVersionTable.Platform -eq 'Win32NT' -or $PSVersionTable.OS -like '*Windows*'
+  $onWindows = [System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT -or $env:OS -like '*Windows*' -or $PSVersionTable.PSEdition -eq 'Desktop' -or $PSVersionTable.Platform -eq 'Win32NT'
   $expoBin = if ($onWindows) {
     Join-Path (Join-Path (Join-Path $workingDir 'node_modules') '.bin') 'expo.cmd'
   } else {

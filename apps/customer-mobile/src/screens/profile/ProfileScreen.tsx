@@ -1,6 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
-  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,6 +11,7 @@ import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
+import { AppModal } from '../../components/common/AppModal';
 import type { MainTabParamList, RootStackParamList } from '../../navigation/types';
 import { authStore, useAuthSession } from '../../store/authStore';
 import { colors, shadows, spacing } from '../../theme';
@@ -33,19 +33,16 @@ const PROFILE_MENUS = [
 export function ProfileScreen({ navigation }: Props): React.JSX.Element {
   const session = useAuthSession();
   const user = session?.user;
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const handleLogout = () => {
-    Alert.alert('Đăng xuất', 'Bạn có chắc chắn muốn đăng xuất tài khoản?', [
-      { text: 'Hủy', style: 'cancel' },
-      {
-        text: 'Đăng xuất',
-        style: 'destructive',
-        onPress: () => {
-          authStore.logout();
-          navigation.replace('Login');
-        },
-      },
-    ]);
+    setShowLogoutModal(true);
+  };
+
+  const confirmLogout = () => {
+    setShowLogoutModal(false);
+    authStore.logout();
+    navigation.replace('Login');
   };
 
   return (
@@ -64,7 +61,7 @@ export function ProfileScreen({ navigation }: Props): React.JSX.Element {
           <View style={styles.userInfoCol}>
             <Text style={styles.userName}>{user?.displayName || user?.username || 'Khách hàng'}</Text>
             <Text style={styles.userPhone}>{user?.phone || user?.username || 'Chưa cập nhật SĐT'}</Text>
-            <Text style={styles.userEmail}>Vai trò: {user?.roles?.join(', ') || 'MERCHANT'}</Text>
+            <Text style={styles.userEmail}>Vai trò: {user?.roles?.join(', ') || 'CUSTOMER'}</Text>
           </View>
         </View>
 
@@ -107,6 +104,18 @@ export function ProfileScreen({ navigation }: Props): React.JSX.Element {
           <Text style={styles.logoutBtnText}>Đăng xuất tài khoản</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {/* LOGOUT CONFIRM MODAL */}
+      <AppModal
+        visible={showLogoutModal}
+        variant="confirm"
+        title="Đăng xuất tài khoản"
+        message="Bạn có chắc chắn muốn đăng xuất khỏi ứng dụng Nexus Express?"
+        confirmText="Đăng xuất"
+        cancelText="Hủy"
+        onConfirm={confirmLogout}
+        onCancel={() => setShowLogoutModal(false)}
+      />
     </View>
   );
 }

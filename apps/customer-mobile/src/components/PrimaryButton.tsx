@@ -15,6 +15,7 @@ interface PrimaryButtonProps {
   variant?: 'primary' | 'secondary' | 'outline' | 'danger';
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
+  loadingTitle?: string;
   disabled?: boolean;
   style?: ViewStyle;
   icon?: React.ReactNode;
@@ -26,6 +27,7 @@ export function PrimaryButton({
   variant = 'primary',
   size = 'md',
   loading = false,
+  loadingTitle,
   disabled = false,
   style,
   icon,
@@ -68,7 +70,20 @@ export function PrimaryButton({
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={getTextColor()} size="small" />
+        <>
+          <ActivityIndicator color={getTextColor()} size="small" style={{ marginRight: spacing.sm }} />
+          <Text
+            style={[
+              styles.text,
+              {
+                color: getTextColor(),
+                fontSize: size === 'sm' ? 13 : 15,
+              },
+            ]}
+          >
+            {loadingTitle || title}
+          </Text>
+        </>
       ) : (
         <>
           {icon}

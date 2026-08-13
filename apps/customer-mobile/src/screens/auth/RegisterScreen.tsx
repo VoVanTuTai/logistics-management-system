@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -12,6 +11,7 @@ import {
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { AppHeader } from '../../components/AppHeader';
+import { AppErrorModal } from '../../components/common/AppErrorModal';
 import { InputField } from '../../components/InputField';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import type { RootStackParamList } from '../../navigation/types';
@@ -22,6 +22,12 @@ import { colors, spacing } from '../../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Register'>;
 
+interface ErrorModalState {
+  visible: boolean;
+  title: string;
+  message: string;
+}
+
 export function RegisterScreen({ navigation }: Props): React.JSX.Element {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
@@ -29,22 +35,45 @@ export function RegisterScreen({ navigation }: Props): React.JSX.Element {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errorModal, setErrorModal] = useState<ErrorModalState>({
+    visible: false,
+    title: '',
+    message: '',
+  });
 
   const handleRegister = async () => {
+    if (loading) return;
+
     if (!fullName.trim()) {
-      Alert.alert('Lỗi', 'Vui lòng nhập họ và tên.');
+      setErrorModal({
+        visible: true,
+        title: 'Thiếu thông tin',
+        message: 'Vui lòng nhập họ và tên.',
+      });
       return;
     }
     if (!phone.trim()) {
-      Alert.alert('Lỗi', 'Vui lòng nhập số điện thoại.');
+      setErrorModal({
+        visible: true,
+        title: 'Thiếu thông tin',
+        message: 'Vui lòng nhập số điện thoại.',
+      });
       return;
     }
     if (!password.trim()) {
-      Alert.alert('Lỗi', 'Vui lòng nhập mật khẩu.');
+      setErrorModal({
+        visible: true,
+        title: 'Thiếu thông tin',
+        message: 'Vui lòng nhập mật khẩu.',
+      });
       return;
     }
     if (password !== confirmPassword) {
-      Alert.alert('Lỗi', 'Mật khẩu xác nhận không trùng khớp.');
+      setErrorModal({
+        visible: true,
+        title: 'Mật khẩu không khớp',
+        message: 'Mật khẩu xác nhận không trùng khớp. Vui lòng kiểm tra lại.',
+      });
       return;
     }
 
@@ -76,16 +105,20 @@ export function RegisterScreen({ navigation }: Props): React.JSX.Element {
           username: loginRes.user.username,
           displayName: loginRes.user.displayName || fullName.trim(),
           phone: loginRes.user.phone || phone.trim(),
-          roles: loginRes.user.roles || ['MERCHANT'],
+          roles: loginRes.user.roles || ['CUSTOMER'],
         },
       });
 
-      Alert.alert('Thành công', 'Tạo tài khoản thành công!', [
-        { text: 'Bắt đầu', onPress: () => navigation.replace('MainTabs', { screen: 'HomeTab' }) },
-      ]);
+      navigation.replace('MainTabs', { screen: 'HomeTab' });
     } catch (error) {
-      const msg = error instanceof ApiClientError ? error.message : 'Đăng ký tài khoản thất bại.';
-      Alert.alert('Lỗi đăng ký', msg);
+      const msg = error instanceof ApiClientError && error.isNetworkError
+        ? 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng và thử lại.'
+        : 'Đăng ký tài khoản thất bại. Số điện thoại có thể đã được sử dụng.';
+      setErrorModal({
+        visible: true,
+        title: 'Lỗi đăng ký',
+        message: msg,
+      });
     } finally {
       setLoading(false);
     }
@@ -158,6 +191,7 @@ export function RegisterScreen({ navigation }: Props): React.JSX.Element {
 
           <PrimaryButton
             title="Đăng ký tài khoản"
+            loadingTitle="Đang đăng ký..."
             onPress={handleRegister}
             loading={loading}
             size="lg"
@@ -172,6 +206,13 @@ export function RegisterScreen({ navigation }: Props): React.JSX.Element {
           </View>
         </View>
       </ScrollView>
+
+      <AppErrorModal
+        visible={errorModal.visible}
+        title={errorModal.title}
+        message={errorModal.message}
+        onClose={() => setErrorModal((prev) => ({ ...prev, visible: false }))}
+      />
     </KeyboardAvoidingView>
   );
 }
