@@ -47,12 +47,17 @@ model Shipment {
   /// shipment-service is the canonical owner of current_status.
   currentStatus      ShipmentCurrentStatus @default(CREATED)
   isLocked           Boolean               @default(false)
+  createdByUserId    String?
+  createdByType      String?
+  receiverPhone      String?
   metadata           Json?
   cancellationReason String?
   createdAt          DateTime              @default(now())
   updatedAt          DateTime              @updatedAt
   changeRequests     ChangeRequest[]
 
+  @@index([createdByUserId])
+  @@index([receiverPhone])
   @@map("shipments")
 }
 

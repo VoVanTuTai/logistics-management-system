@@ -51,15 +51,10 @@ export class CustomerApiClient {
         return await this.requestWithCandidateBaseUrl<T>(candidateBaseUrl, path, options);
       } catch (error) {
         if (error instanceof ApiClientError && !error.isNetworkError) {
-          lastHttpError = error;
-          continue;
+          throw error;
         }
         lastNetworkError = error;
       }
-    }
-
-    if (lastHttpError) {
-      throw lastHttpError;
     }
 
     const fallbackMessage =

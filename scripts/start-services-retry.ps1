@@ -250,7 +250,7 @@ function Start-ServiceIfDown(
     New-Item -ItemType Directory -Path $logsDir -Force | Out-Null
   }
 
-  $onWindows = $PSVersionTable.Platform -eq 'Win32NT' -or $PSVersionTable.OS -like '*Windows*'
+  $onWindows = [System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT -or $env:OS -like '*Windows*' -or $PSVersionTable.PSEdition -eq 'Desktop' -or $PSVersionTable.Platform -eq 'Win32NT'
   $logId = Get-Date -Format 'yyyyMMdd-HHmmss-fff'
   $stdoutPath = Join-Path $logsDir "$($service.Name)-$logId.out.log"
   $stderrPath = Join-Path $logsDir "$($service.Name)-$logId.err.log"
@@ -300,20 +300,6 @@ function Start-ServiceIfDown(
       $runnerLines += "set `"DATABASE_URL=$databaseUrl`""
     }
     $runnerLines += "cd /d `"$workingDir`""
-    if (Test-Path $prismaSchema) {
-      if ($prismaEntrypoint) {
-        $runnerLines += "`"$nodeCommand`" `"$prismaEntrypoint`" generate --schema prisma/schema.prisma"
-      } else {
-        $runnerLines += "`"$prismaCommand`" generate --schema prisma/schema.prisma"
-      }
-      $runnerLines += 'if errorlevel 1 exit /b %errorlevel%'
-      if ($prismaEntrypoint) {
-        $runnerLines += "`"$nodeCommand`" `"$prismaEntrypoint`" db push --schema prisma/schema.prisma"
-      } else {
-        $runnerLines += "`"$prismaCommand`" db push --schema prisma/schema.prisma"
-      }
-      $runnerLines += 'if errorlevel 1 exit /b %errorlevel%'
-    }
     if ($tsNodeEntrypoint) {
       $runnerLines += "`"$nodeCommand`" `"$tsNodeEntrypoint`" src/main.ts"
     } else {
@@ -330,18 +316,6 @@ function Start-ServiceIfDown(
       $runnerLines += "export DATABASE_URL=`"$databaseUrl`""
     }
     $runnerLines += "cd `"$workingDir`""
-    if (Test-Path $prismaSchema) {
-      if ($prismaEntrypoint) {
-        $runnerLines += "`"$nodeCommand`" `"$prismaEntrypoint`" generate --schema prisma/schema.prisma"
-      } else {
-        $runnerLines += "`"$prismaCommand`" generate --schema prisma/schema.prisma"
-      }
-      if ($prismaEntrypoint) {
-        $runnerLines += "`"$nodeCommand`" `"$prismaEntrypoint`" db push --schema prisma/schema.prisma"
-      } else {
-        $runnerLines += "`"$prismaCommand`" db push --schema prisma/schema.prisma"
-      }
-    }
     if ($tsNodeEntrypoint) {
       $runnerLines += "`"$nodeCommand`" `"$tsNodeEntrypoint`" src/main.ts"
     } else {

@@ -1,7 +1,7 @@
 import type { AuthenticatedUser } from './user-account.entity';
 import type { UserRoleGroup } from './user-account.entity';
 
-export type AuthPortalRoleGroup = UserRoleGroup | 'COURIER_APP';
+export type AuthPortalRoleGroup = UserRoleGroup | 'COURIER_APP' | 'CUSTOMER_APP';
 export type SessionStatus = 'ACTIVE' | 'REVOKED';
 
 export interface AuthSession {

@@ -1,5 +1,5 @@
 export type UserStatus = 'ACTIVE' | 'DISABLED';
-export type UserRoleGroup = 'OPS' | 'SHIPPER' | 'MERCHANT';
+export type UserRoleGroup = 'OPS' | 'SHIPPER' | 'MERCHANT' | 'CUSTOMER';
 
 export interface UserAccount {
   id: string;
@@ -81,4 +81,12 @@ export interface UserUpdateInput {
   displayName?: string | null;
   phone?: string | null;
   hubCodes?: string[];
+}
+
+export interface RegisterCustomerInput {
+  username: string;
+  password?: string;
+  displayName?: string | null;
+  phone?: string | null;
+  email?: string | null;
 }

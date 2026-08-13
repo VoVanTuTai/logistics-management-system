@@ -204,20 +204,6 @@ function Start-ServiceIfDown(
     $runnerLines += "set `"PATH=$npmDir;%PATH%`""
   }
   $runnerLines += "cd /d `"$workingDir`""
-  if (Test-Path $prismaSchema) {
-    if ($prismaEntrypoint) {
-      $runnerLines += "`"$nodeCommand`" `"$prismaEntrypoint`" generate --schema prisma/schema.prisma"
-    } else {
-      $runnerLines += "`"$prismaCommand`" generate --schema prisma/schema.prisma"
-    }
-    $runnerLines += 'if errorlevel 1 exit /b %errorlevel%'
-    if ($prismaEntrypoint) {
-      $runnerLines += "`"$nodeCommand`" `"$prismaEntrypoint`" db push --schema prisma/schema.prisma"
-    } else {
-      $runnerLines += "`"$prismaCommand`" db push --schema prisma/schema.prisma"
-    }
-    $runnerLines += 'if errorlevel 1 exit /b %errorlevel%'
-  }
   if ($tsNodeEntrypoint) {
     $runnerLines += "`"$nodeCommand`" `"$tsNodeEntrypoint`" src/main.ts"
   } else {

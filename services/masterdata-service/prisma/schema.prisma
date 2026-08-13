@@ -79,6 +79,20 @@ model MerchantProfile {
   @@map("merchant_profiles")
 }
 
+model CustomerProfile {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  fullName       String
+  phone          String?  @unique
+  email          String?
+  defaultAddress String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([phone])
+  @@map("customer_profiles")
+}
+
 model AdminAuditLog {
   id            String   @id @default(cuid())
   actorId       String?

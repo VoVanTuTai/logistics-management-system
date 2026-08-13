@@ -119,6 +119,9 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
 
     const data: Prisma.ShipmentCreateInput = {
       code: input.code,
+      createdByUserId: input.createdByUserId ?? null,
+      createdByType: input.createdByType ?? null,
+      receiverPhone: input.receiverPhone ?? null,
       metadata: (input.metadata ?? null) as unknown as Prisma.InputJsonValue,
       currentStatus: 'CREATED',
     };
@@ -240,6 +243,9 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
       code: record.code,
       currentStatus: record.currentStatus as ShipmentCurrentStatus,
       isLocked: record.isLocked,
+      createdByUserId: record.createdByUserId,
+      createdByType: record.createdByType,
+      receiverPhone: record.receiverPhone,
       metadata: record.metadata as JsonValue | null,
       cancellationReason: record.cancellationReason,
       createdAt: record.createdAt,
@@ -257,9 +263,19 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
     const createdFrom = normalizeDate(filters.createdFrom);
     const createdTo = normalizeDate(filters.createdTo);
     const opsArrivedUnsigned = normalizeBoolean(filters.opsArrivedUnsigned);
+    const createdByUserId = normalizeString(filters.createdByUserId);
+    const receiverPhone = normalizeString(filters.receiverPhone);
 
     if (status) {
       where.currentStatus = status as PrismaShipmentCurrentStatus;
+    }
+
+    if (createdByUserId) {
+      where.createdByUserId = createdByUserId;
+    }
+
+    if (receiverPhone) {
+      where.receiverPhone = receiverPhone;
     }
 
     if (shipmentCodes.length > 0) {
@@ -405,13 +421,13 @@ function buildHubMovementHistoryScopeFilters(
       },
     },
   ];
-  const provinceScopePrefix = getBranchHubProvinceScopePrefix(hubCode);
+  const prefixes = getBranchHubProvinceScopePrefixes(hubCode);
 
-  if (provinceScopePrefix) {
+  for (const prefix of prefixes) {
     filters.push({
       metadata: {
         path: ['movement', 'hubCodesText'],
-        string_contains: `|${provinceScopePrefix}`,
+        string_contains: `|${prefix}`,
       },
     });
   }
@@ -431,13 +447,13 @@ function buildHubJsonPathScopeFilters(
       },
     },
   ];
-  const provinceScopePrefix = getBranchHubProvinceScopePrefix(hubCode);
+  const prefixes = getBranchHubProvinceScopePrefixes(hubCode);
 
-  if (provinceScopePrefix) {
+  for (const prefix of prefixes) {
     filters.push({
       metadata: {
         path,
-        string_starts_with: provinceScopePrefix,
+        string_starts_with: prefix,
       },
     });
   }
@@ -445,12 +461,20 @@ function buildHubJsonPathScopeFilters(
   return filters;
 }
 
-function getBranchHubProvinceScopePrefix(hubCode: string): string | null {
+function getBranchHubProvinceScopePrefixes(hubCode: string): string[] {
   const normalizedHubCode = hubCode.trim().toUpperCase();
 
-  return /^\d{6}[A-Z][A-Z0-9]*$/.test(normalizedHubCode)
-    ? normalizedHubCode.slice(0, 6)
-    : null;
+  // Regional Hubs (e.g. 001N001, 002C001, 003S001) -> Match 3-digit region prefix (001, 002, 003)
+  if (/^\d{3}[A-Z]\d{3}$/.test(normalizedHubCode)) {
+    return [normalizedHubCode.slice(0, 3)];
+  }
+
+  // Branch Hubs (e.g. 003079B001) -> Match 6-digit province prefix (003079)
+  if (/^\d{6}[A-Z][A-Z0-9]*$/.test(normalizedHubCode)) {
+    return [normalizedHubCode.slice(0, 6)];
+  }
+
+  return [];
 }
 
 function normalizeString(value: unknown): string | null {

@@ -28,9 +28,9 @@ export class GatewayAuthGuard implements CanActivate {
 }
 
 function isAuthPassthroughRoute(request: Request): boolean {
-  const path = request.path ?? request.originalUrl.split('?')[0] ?? '';
+  const path = request.originalUrl ? request.originalUrl.split('?')[0] : (request.path ?? '');
 
-  return /^\/(?:ops|merchant|courier)\/auth\/auth\/(?:login|refresh|logout|introspect)$/.test(
+  return /^\/(?:ops|merchant|courier|customer)\/auth\/auth\/(?:login|refresh|logout|introspect|register-customer)$/.test(
     path,
   );
 }

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -12,6 +11,7 @@ import {
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
+import { AppErrorModal } from '../../components/common/AppErrorModal';
 import { InputField } from '../../components/InputField';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import type { RootStackParamList } from '../../navigation/types';
@@ -22,19 +22,77 @@ import { colors, spacing } from '../../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
+interface ErrorModalState {
+  visible: boolean;
+  title: string;
+  message: string;
+}
+
+function getErrorContent(error: unknown): { title: string; message: string } {
+  if (error instanceof ApiClientError) {
+    if (error.isNetworkError) {
+      const lowerMsg = (error.message || '').toLowerCase();
+      if (lowerMsg.includes('aborted') || lowerMsg.includes('timeout')) {
+        return {
+          title: 'Kết nối quá lâu',
+          message: 'Máy chủ phản hồi quá lâu. Vui lòng thử lại.',
+        };
+      }
+      return {
+        title: 'Không thể kết nối',
+        message: 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại.',
+      };
+    }
+
+    if (error.status === 401) {
+      return {
+        title: 'Đăng nhập thất bại',
+        message: 'Số điện thoại hoặc mật khẩu không đúng. Vui lòng kiểm tra và thử lại.',
+      };
+    }
+
+    if (error.status === 500) {
+      return {
+        title: 'Có lỗi xảy ra',
+        message: 'Hệ thống đang gặp sự cố. Vui lòng thử lại sau.',
+      };
+    }
+  }
+
+  return {
+    title: 'Đăng nhập thất bại',
+    message: 'Số điện thoại hoặc mật khẩu không đúng. Vui lòng kiểm tra và thử lại.',
+  };
+}
+
 export function LoginScreen({ navigation }: Props): React.JSX.Element {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorModal, setErrorModal] = useState<ErrorModalState>({
+    visible: false,
+    title: '',
+    message: '',
+  });
 
   const handleLogin = async () => {
+    if (loading) return;
+
     if (!phone.trim()) {
-      Alert.alert('Lỗi', 'Vui lòng nhập số điện thoại hoặc tên đăng nhập.');
+      setErrorModal({
+        visible: true,
+        title: 'Thiếu thông tin',
+        message: 'Vui lòng nhập số điện thoại hoặc tên đăng nhập.',
+      });
       return;
     }
     if (!password.trim()) {
-      Alert.alert('Lỗi', 'Vui lòng nhập mật khẩu.');
+      setErrorModal({
+        visible: true,
+        title: 'Thiếu thông tin',
+        message: 'Vui lòng nhập mật khẩu.',
+      });
       return;
     }
 
@@ -57,14 +115,18 @@ export function LoginScreen({ navigation }: Props): React.JSX.Element {
           username: result.user.username,
           displayName: result.user.displayName || result.user.username,
           phone: result.user.phone || result.user.username,
-          roles: result.user.roles || ['MERCHANT'],
+          roles: result.user.roles || ['CUSTOMER'],
         },
       });
 
       navigation.replace('MainTabs', { screen: 'HomeTab' });
     } catch (error) {
-      const msg = error instanceof ApiClientError ? error.message : 'Tài khoản hoặc mật khẩu không chính xác.';
-      Alert.alert('Đăng nhập thất bại', msg);
+      const errContent = getErrorContent(error);
+      setErrorModal({
+        visible: true,
+        title: errContent.title,
+        message: errContent.message,
+      });
     } finally {
       setLoading(false);
     }
@@ -121,6 +183,7 @@ export function LoginScreen({ navigation }: Props): React.JSX.Element {
 
           <PrimaryButton
             title="Đăng nhập"
+            loadingTitle="Đang đăng nhập..."
             onPress={handleLogin}
             loading={loading}
             size="lg"
@@ -135,6 +198,13 @@ export function LoginScreen({ navigation }: Props): React.JSX.Element {
           </View>
         </View>
       </ScrollView>
+
+      <AppErrorModal
+        visible={errorModal.visible}
+        title={errorModal.title}
+        message={errorModal.message}
+        onClose={() => setErrorModal((prev) => ({ ...prev, visible: false }))}
+      />
     </KeyboardAvoidingView>
   );
 }
