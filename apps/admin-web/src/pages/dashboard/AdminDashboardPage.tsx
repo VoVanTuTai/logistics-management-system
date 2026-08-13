@@ -19,6 +19,9 @@ interface DashboardStat {
   label: string;
   value: string;
   description: string;
+  icon: string;
+  badge: string;
+  color: string;
 }
 
 export interface RoleMixChartPoint {
@@ -144,42 +147,66 @@ export function AdminDashboardPage(): React.JSX.Element {
       {
         label: 'Tổng người dùng',
         value: formatCount(allUsers.length),
-        description: `${formatCount(activeUsers)} ACTIVE / ${formatCount(disabledUsers)} DISABLED`,
+        description: `${formatCount(activeUsers)} Hoạt động / ${formatCount(disabledUsers)} Vô hiệu`,
+        icon: 'group',
+        badge: 'Hệ thống RBAC',
+        color: '#4f46e5',
       },
       {
         label: 'Tài khoản Ops',
         value: formatCount(opsUsers.length),
         description: 'Nhóm vận hành nội bộ',
+        icon: 'admin_panel_settings',
+        badge: 'Vận hành',
+        color: '#0284c7',
       },
       {
         label: 'Tài khoản Shipper',
         value: formatCount(shipperUsers.length),
-        description: 'Nhân sự giao nhận/courier',
+        description: 'Nhân sự giao nhận / Courier',
+        icon: 'local_shipping',
+        badge: 'Giao nhận',
+        color: '#059669',
       },
       {
         label: 'Tài khoản Merchant',
         value: formatCount(merchantUsers.length),
-        description: 'Khách hàng gửi đơn',
+        description: 'Khách hàng / Đối tác gửi đơn',
+        icon: 'storefront',
+        badge: 'Khách hàng',
+        color: '#d97706',
       },
       {
         label: 'Hub',
         value: formatCount(hubs.length),
-        description: `${formatCount(activeHubs)} active / ${formatCount(inactiveHubs)} inactive`,
+        description: `${formatCount(activeHubs)} Hoạt động / ${formatCount(inactiveHubs)} Tắt`,
+        icon: 'hub',
+        badge: 'Bưu cục',
+        color: '#7c3aed',
       },
       {
-        label: 'Zone active',
+        label: 'Zone Hoạt động',
         value: formatCount(activeZones),
-        description: `${formatCount(zones.length)} zone trong hệ thống`,
+        description: `${formatCount(zones.length)} Zone phân vùng toàn quốc`,
+        icon: 'map',
+        badge: 'Khu vực',
+        color: '#0d9488',
       },
       {
-        label: 'Lý do NDR active',
+        label: 'Lý do NDR Active',
         value: formatCount(activeNdrReasons),
-        description: `${formatCount(ndrReasons.length)} lý do đã cấu hình`,
+        description: `${formatCount(ndrReasons.length)} lý do không giao được`,
+        icon: 'report_problem',
+        badge: 'Sự cố đơn',
+        color: '#ea580c',
       },
       {
-        label: 'Cấu hình',
+        label: 'Cấu hình Masterdata',
         value: formatCount(configs.length),
-        description: 'Bản ghi cấu hình masterdata',
+        description: 'Tham số hệ thống dùng chung',
+        icon: 'settings_suggest',
+        badge: 'Cấu hình',
+        color: '#475569',
       },
     ];
   }, [
@@ -284,13 +311,14 @@ export function AdminDashboardPage(): React.JSX.Element {
   })();
 
   const quickLinks = [
-    { label: 'Quản lý tài khoản Ops', to: routePaths.opsUsers },
-    { label: 'Quản lý tài khoản Shipper', to: routePaths.shipperUsers },
-    { label: 'Quản lý phân quyền mobile', to: routePaths.courierPermissions },
-    { label: 'Quản lý Hub', to: routePaths.masterdataHubs },
-    { label: 'Quản lý Zone', to: routePaths.masterdataZones },
-    { label: 'Quản lý lý do NDR', to: routePaths.masterdataNdrReasons },
-    { label: 'Quản lý cấu hình', to: routePaths.masterdataConfigs },
+    { label: 'Quản lý tài khoản Ops', subtitle: 'Phân quyền & tài khoản vận hành nội bộ', icon: 'manage_accounts', to: routePaths.opsUsers },
+    { label: 'Quản lý tài khoản Shipper', subtitle: 'Tài khoản ứng dụng courier giao hàng', icon: 'badge', to: routePaths.shipperUsers },
+    { label: 'Quản lý tài khoản Merchant', subtitle: 'Cấu hình tài khoản & hồ sơ khách hàng gửi đơn', icon: 'storefront', to: routePaths.merchantUsers },
+    { label: 'Quản lý phân quyền mobile', subtitle: 'Phân quyền tính năng ứng dụng mobile', icon: 'phonelink_lock', to: routePaths.courierPermissions },
+    { label: 'Quản lý Hub', subtitle: 'Mạng lưới bưu cục tổng và cấp tỉnh', icon: 'hub', to: routePaths.masterdataHubs },
+    { label: 'Quản lý Zone', subtitle: 'Phân vùng và phân tầng khu vực', icon: 'map', to: routePaths.masterdataZones },
+    { label: 'Quản lý lý do NDR', subtitle: 'Cấu hình mã lý do không giao được đơn', icon: 'report_problem', to: routePaths.masterdataNdrReasons },
+    { label: 'Quản lý cấu hình', subtitle: 'Cấu hình biểu phí và hệ thống masterdata', icon: 'tune', to: routePaths.masterdataConfigs },
   ];
 
   return (
@@ -313,10 +341,22 @@ export function AdminDashboardPage(): React.JSX.Element {
 
       <section className="admin-stats-grid">
         {stats.map((item) => (
-          <article key={item.label} className="admin-stat-card">
-            <small>{item.label}</small>
-            <strong>{isLoading ? '...' : item.value}</strong>
-            <span>{isLoading ? 'Đang tải dữ liệu' : item.description}</span>
+          <article key={item.label} className="admin-stat-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderLeft: `4px solid ${item.color}` }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <small style={{ fontWeight: 600, color: '#64748b', fontSize: '13px' }}>{item.label}</small>
+              <span className="material-symbols-outlined" style={{ color: item.color, fontSize: '22px' }}>
+                {item.icon}
+              </span>
+            </div>
+            <strong style={{ fontSize: '24px', fontWeight: 700, color: '#0f172a', margin: '4px 0' }}>
+              {isLoading ? '...' : item.value}
+            </strong>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', paddingTop: '6px', borderTop: '1px solid #f1f5f9' }}>
+              <span style={{ fontSize: '12px', color: '#64748b' }}>{isLoading ? 'Đang tải dữ liệu' : item.description}</span>
+              <span style={{ fontSize: '10px', fontWeight: 600, padding: '2px 6px', borderRadius: '4px', backgroundColor: `${item.color}15`, color: item.color }}>
+                {item.badge}
+              </span>
+            </div>
           </article>
         ))}
       </section>
@@ -395,11 +435,19 @@ export function AdminDashboardPage(): React.JSX.Element {
         </Suspense>
       </DashboardChartsErrorBoundary>
 
-      <section className="admin-link-grid">
+      <section className="admin-link-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', margin: '20px 0' }}>
         {quickLinks.map((item) => (
-          <Link key={item.label} to={item.to} className="admin-link-tile">
-            <strong>{item.label}</strong>
-            <span>Mở module</span>
+          <Link key={item.label} to={item.to} className="admin-link-tile" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '12px', padding: '14px', borderRadius: '10px', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', transition: 'all 0.15s ease' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '24px', color: '#4f46e5', padding: '8px', backgroundColor: '#eef2ff', borderRadius: '8px' }}>
+              {item.icon}
+            </span>
+            <div style={{ flex: 1 }}>
+              <strong style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#0f172a' }}>{item.label}</strong>
+              <span style={{ fontSize: '12px', color: '#64748b' }}>{item.subtitle}</span>
+            </div>
+            <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#94a3b8' }}>
+              arrow_forward_ios
+            </span>
           </Link>
         ))}
       </section>
