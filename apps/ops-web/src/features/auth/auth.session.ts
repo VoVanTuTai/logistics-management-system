@@ -8,7 +8,7 @@ const AUTH_STORAGE_KEY = 'ops-web.auth-session';
 const ACCESS_TOKEN_REFRESH_WINDOW_MS = 60_000;
 const CLIENT_SESSION_TTL_MS = 10 * 60 * 60 * 1000;
 const REFRESH_FAILURE_RECOVERY_DELAY_MS = 300;
-const OPS_ALLOWED_ROLES = new Set(['SYSTEM_ADMIN', 'OPS_ADMIN', 'OPS_VIEWER']);
+const OPS_ALLOWED_ROLES = new Set(['SYSTEM_ADMIN', 'OPS_ADMIN', 'OPS_VIEWER', 'OPS_MANAGER']);
 
 let refreshSessionPromise: Promise<AuthSessionDto> | null = null;
 

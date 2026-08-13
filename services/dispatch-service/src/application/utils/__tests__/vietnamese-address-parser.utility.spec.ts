@@ -54,6 +54,12 @@ export function runAddressParserTests(): void {
   assert.strictEqual(fallbackResult.province, 'Hà Nội');
   assert.strictEqual(fallbackResult.district, 'Quận Đống Đa');
   assert.strictEqual(fallbackResult.ward, 'Phường Láng Hạ');
+
+  // Test 2-tier Vietnam administrative structure (Tỉnh/Thành -> Phường/Xã)
+  const twoTierResult = parseVietnameseAddress('123 Nguyễn Thị Minh Khai, Phường Cửa Nam, Hà Nội');
+  assert.strictEqual(twoTierResult.province, 'Hà Nội');
+  assert.strictEqual(twoTierResult.ward, 'Phường Cửa Nam');
+  assert.strictEqual(twoTierResult.detail, '123 Nguyễn Thị Minh Khai');
 }
 
 runAddressParserTests();

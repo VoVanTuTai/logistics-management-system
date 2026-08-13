@@ -121,6 +121,7 @@ vi.mock('../features/masterdata/masterdata.api', () => ({
   useZonesQuery: () => querySuccess(mocks.zones),
   useNdrReasonsQuery: () => querySuccess(mocks.ndrReasons),
   useConfigsQuery: () => querySuccess(mocks.configs),
+  useRegionalHierarchyQuery: () => querySuccess([]),
   useMerchantProfilesQuery: () => querySuccess(mocks.merchantProfiles),
   useCreateHubMutation: () => mocks.createHubMutation,
   useUpdateHubMutation: () => mocks.updateHubMutation,
@@ -273,7 +274,7 @@ function resetMocks() {
   mocks.matrixError = null;
   mocks.userEffectiveError = null;
 
-  window.localStorage.clear();
+  window.localStorage?.clear?.();
   useAuthStore.getState().clearSession();
   useAuthStore.getState().clearAuthError();
 }

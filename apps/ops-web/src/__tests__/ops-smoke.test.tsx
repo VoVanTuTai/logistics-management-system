@@ -318,6 +318,7 @@ import { AppProviders } from '../app/AppProviders';
 import { AppRouter } from '../app/AppRouter';
 import { DashboardPage } from '../pages/dashboard/DashboardPage';
 
+import { MasterOpsCommandCenterPage } from '../pages/dashboard/MasterOpsCommandCenterPage';
 import { ShipmentListPage } from '../pages/shipments/ShipmentListPage';
 import { TaskAssignmentPage } from '../pages/tasks/TaskAssignmentPage';
 import { TrackingLookupPage } from '../pages/tracking/TrackingLookupPage';
@@ -578,5 +579,16 @@ describe('ops-web smoke coverage', () => {
     expect(await screen.findByText('SCAN_INBOUND')).toBeInTheDocument();
     expect(screen.getByText('Hub HCM 01')).toBeInTheDocument();
     expect(screen.getByText('Đã đến hub nhận')).toBeInTheDocument();
+  });
+
+  it('renders Master Ops Command Center page with scope switcher options', async () => {
+    setAuthenticatedSession();
+    renderWithProviders(<MasterOpsCommandCenterPage />);
+
+    expect(
+      await screen.findByText(/TRUNG TÂM ĐIỀU HÀNH & GIÁM SÁT VẬN HÀNH TOÀN HỆ THỐNG/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Sản Lượng Toàn Quốc/i)).toBeInTheDocument();
+    expect(screen.getByText(/Toàn Quốc \(HQ Ops\)/i)).toBeInTheDocument();
   });
 });

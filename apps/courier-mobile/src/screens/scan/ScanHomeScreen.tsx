@@ -97,6 +97,28 @@ export function ScanHomeScreen(_: Props): React.JSX.Element {
         </Card>
       ) : null}
 
+      <Card style={{ backgroundColor: '#eff6ff', borderColor: '#bfdbfe' }}>
+        <View style={styles.rowBetween}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: '#1e40af', fontSize: 16, fontWeight: '700' }}>
+              📬 Yêu cầu nhận chuyển đơn mới
+            </Text>
+            <Text style={{ color: '#1d4ed8', fontSize: 13, marginTop: 4 }}>
+              Courier 30000001 (Nguyễn Văn Minh) chuyển giao 1 đơn hàng (NXS000001) cho bạn.
+            </Text>
+          </View>
+          <StatusBadge label="Chờ xác nhận" variant="warning" />
+        </View>
+        <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+          <View style={{ flex: 1, backgroundColor: '#166534', paddingVertical: 10, borderRadius: 8, alignItems: 'center' }}>
+            <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 13 }}>✅ Chấp nhận</Text>
+          </View>
+          <View style={{ flex: 1, backgroundColor: '#991b1b', paddingVertical: 10, borderRadius: 8, alignItems: 'center' }}>
+            <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 13 }}>❌ Từ chối</Text>
+          </View>
+        </View>
+      </Card>
+
       <Card style={styles.statusCard}>
         <View style={styles.rowBetween}>
           <Text style={styles.statusTitle}>Offline queue</Text>

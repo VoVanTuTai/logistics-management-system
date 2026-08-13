@@ -50,7 +50,7 @@ const COURIER_CODE_PATTERN = /^3000\d{4}$/;
 const MERCHANT_CODE_PATTERN = /^411\d{5}$/;
 const DEFAULT_EMPLOYEE_PASSWORD = 'password';
 
-const OPS_ROLE_SET = new Set(['OPS_ADMIN', 'OPS_VIEWER']);
+const OPS_ROLE_SET = new Set(['OPS_ADMIN', 'OPS_VIEWER', 'OPS_MANAGER']);
 const ADMIN_ROLE_SET = new Set(['SYSTEM_ADMIN']);
 const COURIER_ROLE_SET = new Set(['COURIER']);
 const MERCHANT_ROLE_SET = new Set(['MERCHANT']);

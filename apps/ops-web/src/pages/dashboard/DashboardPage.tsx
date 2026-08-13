@@ -263,6 +263,11 @@ export function DashboardPage(): React.JSX.Element {
           icon: 'operations_platform',
         },
         {
+          title: 'Chuyển đơn bàn giao',
+          to: routePaths.courierTaskTransfer,
+          icon: 'operations_platform',
+        },
+        {
           title: 'Quản lý tem bao',
           to: routePaths.linehaulBagLabelManagement,
           icon: 'integration_services',

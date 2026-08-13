@@ -29,6 +29,24 @@ function lazyRoutePage<T extends React.ComponentType<any>>(
   }));
 }
 
+import { SCOPE_OPTIONS, resolveAllowedScopes, useOpsScopeStore } from '../store/opsScopeStore';
+import { canAccessOpsFeature, resolveOpsActor } from '../features/permissions/opsPermissions';
+
+const MasterOpsCommandCenterPage = lazy(() =>
+  import('../pages/dashboard/MasterOpsCommandCenterPage').then((module) => ({
+    default: module.MasterOpsCommandCenterPage,
+  })),
+);
+const DownloadCenterPage = lazy(() =>
+  import('../pages/download/DownloadCenterPage').then((module) => ({
+    default: module.DownloadCenterPage,
+  })),
+);
+const CourierTaskTransferPage = lazy(() =>
+  import('../pages/function-groups/operations-platform/transfer/CourierTaskTransferPage').then((module) => ({
+    default: module.CourierTaskTransferPage,
+  })),
+);
 const AnalyticsDashboardPage = lazy(() =>
   import('../pages/dashboard/analytics/AnalyticsDashboardPage').then((module) => ({
     default: module.AnalyticsDashboardPage,
@@ -500,8 +518,21 @@ function DashboardLayout(): React.JSX.Element {
     routePaths.groupPlanningPlatform,
   );
 
+  const canViewHq = canAccessOpsFeature(session?.user, 'nav.hq-command-center');
+  const canViewBranch = canAccessOpsFeature(session?.user, 'nav.branch-business');
+  const canViewFleet = canAccessOpsFeature(session?.user, 'nav.linehaul-fleet-control');
+
   const topNavItems: TopNavItem[] = enableFullOpsModules
     ? [
+        ...(canViewHq
+          ? [
+              {
+                label: '🌐 HQ Master Ops',
+                to: routePaths.masterOpsCommandCenter,
+                isActive: pathMatches(location.pathname, routePaths.masterOpsCommandCenter),
+              },
+            ]
+          : []),
         {
           label: 'Nền tảng điều hành',
           to: routePaths.shipments,
@@ -513,19 +544,27 @@ function DashboardLayout(): React.JSX.Element {
             isOperationsPlatformSection ||
             pathMatches(location.pathname, routePaths.operationsPlatformPickupDispatch) ||
             pathMatches(location.pathname, routePaths.operationsPlatformDeliveryDispatch) ||
+            pathMatches(location.pathname, routePaths.courierTaskTransfer) ||
             pathMatches(location.pathname, routePaths.monitorDataRoot),
         },
-
-        {
-          label: 'Kinh doanh bưu cục',
-          to: routePaths.groupBranchBusiness,
-          isActive: isBranchBusinessSection,
-        },
-        {
-          label: 'Vận chuyển tuyến',
-          to: routePaths.groupCapabilityPlatform,
-          isActive: isCapabilityPlatformSection,
-        },
+        ...(canViewBranch
+          ? [
+              {
+                label: 'Kinh doanh bưu cục',
+                to: routePaths.groupBranchBusiness,
+                isActive: isBranchBusinessSection,
+              },
+            ]
+          : []),
+        ...(canViewFleet
+          ? [
+              {
+                label: 'Vận chuyển tuyến',
+                to: routePaths.groupCapabilityPlatform,
+                isActive: isCapabilityPlatformSection,
+              },
+            ]
+          : []),
         {
           label: 'Chỉ số vận hành',
           to: routePaths.groupOperationsMetrics,
@@ -540,6 +579,11 @@ function DashboardLayout(): React.JSX.Element {
           label: 'Quy hoạch & Dự báo',
           to: routePaths.groupPlanningPlatform,
           isActive: isPlanningPlatformSection,
+        },
+        {
+          label: '📥 Trung tâm Tải về',
+          to: routePaths.downloadCenter,
+          isActive: pathMatches(location.pathname, routePaths.downloadCenter),
         },
       ]
     : [
@@ -644,6 +688,7 @@ function DashboardLayout(): React.JSX.Element {
   const shipmentDispatchChildItems = [
     { label: 'Điều phối lấy hàng', to: routePaths.operationsPlatformPickupDispatch },
     { label: 'Điều phối phát hàng', to: routePaths.operationsPlatformDeliveryDispatch },
+    { label: 'Chuyển đơn', to: routePaths.courierTaskTransfer },
     { label: 'Phân vùng Shipper', to: routePaths.courierAreaAssignment },
   ] as const;
   const branchBusinessDirectItems = [
@@ -1135,14 +1180,44 @@ export function AppRouter(): React.JSX.Element {
     </Suspense>
   );
 
+function AppIndexRedirect(): React.JSX.Element {
+  const session = useAuthStore((state) => state.session);
+  const isHq = resolveOpsActor(session?.user.username, session?.user.roles) === 'HQ_OPS';
+  return <Navigate to={isHq ? routePaths.masterOpsCommandCenter : routePaths.dashboard} replace />;
+}
+
   return (
     <BrowserRouter>
       <Routes>
         <Route path={routePaths.login} element={<LoginPage />} />
         <Route element={<AuthGuard />}>
           <Route path={routePaths.appRoot} element={<DashboardLayout />}>
-            <Route index element={<Navigate to={routePaths.dashboard} replace />} />
+            <Route index element={<AppIndexRedirect />} />
             <Route path={routePaths.dashboardLeaf} element={<DashboardPage />} />
+            <Route
+              path={routePaths.masterOpsCommandCenterLeaf}
+              element={
+                <OpsModuleRoute title="HQ Master Ops Command Center">
+                  {lazyRoute(<MasterOpsCommandCenterPage />)}
+                </OpsModuleRoute>
+              }
+            />
+            <Route
+              path={routePaths.downloadCenterLeaf}
+              element={
+                <OpsModuleRoute title="Trung tâm Tải về">
+                  {lazyRoute(<DownloadCenterPage />)}
+                </OpsModuleRoute>
+              }
+            />
+            <Route
+              path={routePaths.courierTaskTransferLeaf}
+              element={
+                <OpsModuleRoute title="Quản lý Chuyển đơn Bàn giao">
+                  {lazyRoute(<CourierTaskTransferPage />)}
+                </OpsModuleRoute>
+              }
+            />
             <Route
               path={routePaths.analyticsDashboardLeaf}
               element={
