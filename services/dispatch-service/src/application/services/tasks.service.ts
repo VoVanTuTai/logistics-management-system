@@ -318,6 +318,19 @@ export class TasksService {
       return null;
     }
 
+    // Cancel active delivery / redelivery tasks so courier app clears the task
+    const activeDeliveryTasks = await this.taskRepository.list({
+      shipmentCode,
+      taskType: 'DELIVERY',
+    });
+    for (const deliveryTask of activeDeliveryTasks) {
+      if (deliveryTask.status !== 'COMPLETED' && deliveryTask.status !== 'CANCELLED') {
+        await this.taskRepository.updateStatus(deliveryTask.id, {
+          status: 'CANCELLED',
+        });
+      }
+    }
+
     const existingReturnTasks = await this.taskRepository.list({
       shipmentCode,
       taskType: 'RETURN',

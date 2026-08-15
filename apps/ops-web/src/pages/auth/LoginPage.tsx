@@ -79,7 +79,7 @@ export function LoginPage(): React.JSX.Element {
             </div>
             
             <div className="login-header-group">
-              <h2 className="login-title-new">Đăng nhập tài khoản</h2>
+              <h2 className="login-title-new">Đăng nhập NEXUS Ops</h2>
               <p className="login-subtitle-new">Nhập thông tin nhân viên điều hành để truy cập hệ thống</p>
             </div>
 
