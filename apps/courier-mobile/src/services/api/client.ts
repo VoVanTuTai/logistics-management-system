@@ -60,10 +60,7 @@ export class CourierApiClient {
         );
       } catch (error) {
         if (error instanceof ApiClientError && !error.isNetworkError) {
-          // Candidate may point to a reachable but wrong host.
-          // Continue trying other candidates before failing.
-          lastHttpError = error;
-          continue;
+          throw error;
         }
 
         lastNetworkError = error;

@@ -40,6 +40,16 @@ export interface UserProfileResponse {
   status?: string;
 }
 
+export interface ChangePasswordPayload {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface ChangePasswordResponse {
+  changed: boolean;
+  userId: string;
+}
+
 export const authApi = {
   login: async (payload: LoginPayload): Promise<LoginResponse> => {
     return customerApiClient.request<LoginResponse>('/public/auth/auth/login', {
@@ -68,6 +78,21 @@ export const authApi = {
     return customerApiClient.request<UserProfileResponse>('/public/auth/auth/me', {
       method: 'GET',
       accessToken,
+    });
+  },
+
+  changePassword: async (
+    accessToken: string,
+    payload: ChangePasswordPayload,
+  ): Promise<ChangePasswordResponse> => {
+    return customerApiClient.request<ChangePasswordResponse>('/public/auth/auth/change-password', {
+      method: 'POST',
+      accessToken,
+      body: {
+        accessToken,
+        currentPassword: payload.currentPassword,
+        newPassword: payload.newPassword,
+      },
     });
   },
 };

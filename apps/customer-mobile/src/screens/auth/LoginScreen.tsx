@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -21,6 +22,8 @@ import { authStore } from '../../store/authStore';
 import { colors, spacing } from '../../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
+
+const REMEMBER_ME_STORAGE_KEY = 'NEXUS_REMEMBER_ME_CREDS_V1';
 
 interface ErrorModalState {
   visible: boolean;
@@ -68,6 +71,7 @@ function getErrorContent(error: unknown): { title: string; message: string } {
 export function LoginScreen({ navigation }: Props): React.JSX.Element {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorModal, setErrorModal] = useState<ErrorModalState>({
@@ -75,6 +79,30 @@ export function LoginScreen({ navigation }: Props): React.JSX.Element {
     title: '',
     message: '',
   });
+
+  // Load saved "Ghi nhớ đăng nhập" credentials on screen mount
+  useEffect(() => {
+    let isMounted = true;
+    const loadSavedCredentials = async () => {
+      try {
+        const raw = await AsyncStorage.getItem(REMEMBER_ME_STORAGE_KEY);
+        if (raw && isMounted) {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.rememberMe) {
+            setPhone(parsed.username || '');
+            setPassword(parsed.password || '');
+            setRememberMe(true);
+          }
+        }
+      } catch {
+        // Ignore storage read error
+      }
+    };
+    loadSavedCredentials();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleLogin = async () => {
     if (loading) return;
@@ -106,6 +134,20 @@ export function LoginScreen({ navigation }: Props): React.JSX.Element {
       const token = result.tokens?.accessToken || result.accessToken;
       if (!token) {
         throw new Error('Không nhận được token xác thực từ máy chủ.');
+      }
+
+      // Handle Remember Me persistence
+      if (rememberMe) {
+        await AsyncStorage.setItem(
+          REMEMBER_ME_STORAGE_KEY,
+          JSON.stringify({
+            username: phone.trim(),
+            password: password.trim(),
+            rememberMe: true,
+          }),
+        ).catch(() => {});
+      } else {
+        await AsyncStorage.removeItem(REMEMBER_ME_STORAGE_KEY).catch(() => {});
       }
 
       authStore.setSession({
@@ -177,9 +219,25 @@ export function LoginScreen({ navigation }: Props): React.JSX.Element {
             required
           />
 
-          <TouchableOpacity style={styles.forgotPassBtn}>
-            <Text style={styles.forgotPassText}>Quên mật khẩu?</Text>
-          </TouchableOpacity>
+          {/* OPTIONS ROW: REMEMBER ME CHECKBOX + FORGOT PASSWORD */}
+          <View style={styles.optionsRow}>
+            <TouchableOpacity
+              style={styles.rememberRow}
+              activeOpacity={0.8}
+              onPress={() => setRememberMe(!rememberMe)}
+            >
+              <Ionicons
+                name={rememberMe ? 'checkbox' : 'square-outline'}
+                size={20}
+                color={rememberMe ? colors.primary : colors.textMuted}
+              />
+              <Text style={styles.rememberText}>Ghi nhớ đăng nhập</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.forgotPassBtn}>
+              <Text style={styles.forgotPassText}>Quên mật khẩu?</Text>
+            </TouchableOpacity>
+          </View>
 
           <PrimaryButton
             title="Đăng nhập"
@@ -261,10 +319,23 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: spacing.lg,
   },
-  forgotPassBtn: {
-    alignSelf: 'flex-end',
-    marginBottom: spacing.lg,
+  optionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginVertical: spacing.md,
   },
+  rememberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  rememberText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  forgotPassBtn: {},
   forgotPassText: {
     fontSize: 13,
     color: colors.primary,

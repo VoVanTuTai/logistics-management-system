@@ -180,8 +180,6 @@ function resolveGatewayBaseUrls(): string[] {
 
   if (configuredBaseUrl && configuredBaseUrl.trim().length > 0) {
     appendUnique(gatewayBaseUrls, normalizeBaseUrl(configuredBaseUrl));
-    appendConfiguredFallbackBaseUrls(gatewayBaseUrls);
-    return gatewayBaseUrls;
   }
 
   const runtimeHosts = collectRuntimeHosts();
