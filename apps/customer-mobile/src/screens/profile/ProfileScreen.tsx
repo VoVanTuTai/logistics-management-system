@@ -53,8 +53,12 @@ export function ProfileScreen({ navigation }: Props): React.JSX.Element {
       </View>
 
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        {/* USER CARD */}
-        <View style={styles.userCard}>
+        {/* USER CARD (CLICKABLE) */}
+        <TouchableOpacity
+          activeOpacity={0.8}
+          style={styles.userCard}
+          onPress={() => navigation.navigate('AccountDetail')}
+        >
           <View style={styles.avatarCircle}>
             <Ionicons name="person" size={32} color={colors.primary} />
           </View>
@@ -63,7 +67,8 @@ export function ProfileScreen({ navigation }: Props): React.JSX.Element {
             <Text style={styles.userPhone}>{user?.phone || user?.username || 'Chưa cập nhật SĐT'}</Text>
             <Text style={styles.userEmail}>Vai trò: {user?.roles?.join(', ') || 'CUSTOMER'}</Text>
           </View>
-        </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+        </TouchableOpacity>
 
         {/* POINTS & VOUCHERS BANNER */}
         <View style={styles.statBanner}>
@@ -86,7 +91,8 @@ export function ProfileScreen({ navigation }: Props): React.JSX.Element {
               activeOpacity={0.7}
               style={styles.menuRow}
               onPress={() => {
-                if (menu.id === 'orders') navigation.navigate('OrdersTab');
+                if (menu.id === 'account') navigation.navigate('AccountDetail');
+                else if (menu.id === 'orders') navigation.navigate('OrdersTab');
               }}
             >
               <View style={styles.menuIconBox}>

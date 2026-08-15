@@ -12,9 +12,19 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   MainTabs: NavigatorScreenParams<MainTabParamList>;
-  CreateOrder: undefined;
+  CreateOrder: {
+    prefilledSenderAddress?: any;
+    prefilledReceiverAddress?: any;
+    prefilledWeightKg?: string;
+    prefilledLengthCm?: string;
+    prefilledWidthCm?: string;
+    prefilledHeightCm?: string;
+    prefilledHasCod?: boolean;
+    prefilledCodAmount?: string;
+  } | undefined;
   CreateOrderSuccess: { orderCode: string };
   OrderDetail: { order: OrderModel };
   PriceCalculator: undefined;
   AddressManagement: undefined;
+  AccountDetail: undefined;
 };

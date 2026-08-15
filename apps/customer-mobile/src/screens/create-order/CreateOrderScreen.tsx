@@ -31,7 +31,7 @@ function formatVnd(val: number): string {
   return new Intl.NumberFormat('vi-VN').format(val) + 'đ';
 }
 
-export function CreateOrderScreen({ navigation }: Props): React.JSX.Element {
+export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Element {
   const session = useAuthSession();
   const user = session?.user;
 
@@ -76,6 +76,21 @@ export function CreateOrderScreen({ navigation }: Props): React.JSX.Element {
       if (!senderPhone) setSenderPhone(user.phone || user.username || '');
     }
   }, [user]);
+
+  // Sync prefilled params from PriceCalculatorScreen
+  useEffect(() => {
+    const params = route.params;
+    if (params) {
+      if (params.prefilledSenderAddress) setSenderAddress(params.prefilledSenderAddress);
+      if (params.prefilledReceiverAddress) setReceiverAddress(params.prefilledReceiverAddress);
+      if (params.prefilledWeightKg) setWeightKg(params.prefilledWeightKg);
+      if (params.prefilledLengthCm) setLengthCm(params.prefilledLengthCm);
+      if (params.prefilledWidthCm) setWidthCm(params.prefilledWidthCm);
+      if (params.prefilledHeightCm) setHeightCm(params.prefilledHeightCm);
+      if (params.prefilledHasCod !== undefined) setHasCod(params.prefilledHasCod);
+      if (params.prefilledCodAmount) setCodAmount(params.prefilledCodAmount);
+    }
+  }, [route.params]);
 
   // Calculate pricing quote dynamically from live backend pricing-service
   useEffect(() => {

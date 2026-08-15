@@ -89,8 +89,14 @@ export class UserAccountPrismaRepository extends UserAccountRepository {
   }
 
   async findByUsername(username: string): Promise<UserAccount | null> {
-    const record = await this.prisma.userAccount.findUnique({
-      where: { username },
+    const trimmedUsername = username.trim();
+    const record = await this.prisma.userAccount.findFirst({
+      where: {
+        OR: [
+          { username: trimmedUsername },
+          { phone: trimmedUsername },
+        ],
+      },
     });
 
     return record ? this.toEntity(record) : null;

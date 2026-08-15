@@ -72,8 +72,7 @@ export class CourierApiClient {
         return result;
       } catch (error) {
         if (error instanceof ApiClientError && !error.isNetworkError) {
-          lastHttpError = error;
-          continue;
+          throw error;
         }
 
         lastNetworkError = error;
