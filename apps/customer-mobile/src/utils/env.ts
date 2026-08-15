@@ -2,7 +2,7 @@ import { NativeModules, Platform } from 'react-native';
 import Constants from 'expo-constants';
 
 const DEFAULT_GATEWAY_PORT = 3000;
-const DEFAULT_PUBLIC_GATEWAY_BASE_URL = 'http://222.255.181.210:13000';
+const DEFAULT_PUBLIC_GATEWAY_BASE_URL = 'http://localhost:3000';
 const DEFAULT_TIMEOUT_MS = 15000;
 const LOCALHOST_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '0.0.0.0']);
 const HOST_HINT_KEYS = new Set([

@@ -1632,6 +1632,9 @@ export function ShipmentListPage(): React.JSX.Element {
       ) : null}
       {shipmentQuery.isSuccess ? (
         <>
+          <h2 style={{ fontSize: '18px', fontWeight: 700, margin: '14px 0 8px 0', color: '#0f172a' }}>
+            Danh sách vận đơn
+          </h2>
           <div style={styles.paginationBar}>
             <span>
               Trang {pageNumber} | {formatTotal(pageInfo.total)}

@@ -255,6 +255,7 @@ function OpsModuleRoute({
 }
 
 type SidebarIconName =
+  | 'hq_command'
   | 'tracking_lookup'
   | 'chat'
   | 'thermal_label'
@@ -311,6 +312,16 @@ function SidebarIcon({ name }: { name: SidebarIconName }): React.JSX.Element {
   };
 
   switch (name) {
+    case 'hq_command':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" {...common} />
+          <path d="M3.6 9h16.8" {...common} />
+          <path d="M3.6 15h16.8" {...common} />
+          <path d="M12 3a14 14 0 0 0 0 18" {...common} />
+          <path d="M12 3a14 14 0 0 1 0 18" {...common} />
+        </svg>
+      );
     case 'chat':
       return (
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -517,6 +528,10 @@ function DashboardLayout(): React.JSX.Element {
     location.pathname,
     routePaths.groupPlanningPlatform,
   );
+  const isHqSection =
+    pathMatches(location.pathname, routePaths.masterOpsCommandCenter) ||
+    pathMatches(location.pathname, routePaths.groupHqOperations) ||
+    location.pathname.startsWith('/app/hq-');
 
   const canViewHq = canAccessOpsFeature(session?.user, 'nav.hq-command-center');
   const canViewBranch = canAccessOpsFeature(session?.user, 'nav.branch-business');
@@ -527,9 +542,9 @@ function DashboardLayout(): React.JSX.Element {
         ...(canViewHq
           ? [
               {
-                label: '🌐 HQ Master Ops',
+                label: '🌐 Điều hành HQ',
                 to: routePaths.masterOpsCommandCenter,
-                isActive: pathMatches(location.pathname, routePaths.masterOpsCommandCenter),
+                isActive: isHqSection,
               },
             ]
           : []),
@@ -599,6 +614,44 @@ function DashboardLayout(): React.JSX.Element {
         },
       ];
 
+  const hqSidebarItems: SidebarItem[] = [
+    {
+      label: 'Trung tâm chỉ huy toàn quốc',
+      icon: 'hq_command',
+      to: routePaths.masterOpsCommandCenter,
+    },
+    {
+      label: 'Xe tuyến trục Bắc - Trung - Nam',
+      icon: 'linehaul_transport',
+      to: routePaths.linehaulTripManagement,
+    },
+    {
+      label: 'Duyệt chuyển hoàn mùa Sale',
+      icon: 'return_block',
+      to: routePaths.returnBlockManagement,
+    },
+    {
+      label: 'Radar cảnh báo & SLA',
+      icon: 'service_proactive',
+      to: routePaths.serviceQualityProactiveActionBoard,
+    },
+    {
+      label: 'Báo cáo chỉ số vĩ mô',
+      icon: 'operation_report',
+      to: routePaths.opsMetricsReport,
+    },
+    {
+      label: 'Quy hoạch & Dự báo tải',
+      icon: 'metrics_planning',
+      to: routePaths.groupPlanningPlatform,
+    },
+    {
+      label: 'Trung tâm tải báo cáo HQ',
+      icon: 'operation_report',
+      to: routePaths.downloadCenter,
+    },
+  ];
+
   const operationsSidebarItems: SidebarItem[] = enableFullOpsModules
     ? [
         { label: 'Vận đơn', icon: 'branch_order_management', to: routePaths.shipments },
@@ -655,11 +708,12 @@ function DashboardLayout(): React.JSX.Element {
   const planningPlatformSidebarItems: SidebarItem[] = [
     { label: 'Dự báo tải vận hành', icon: 'metrics_planning', to: routePaths.groupPlanningPlatform },
   ];
-  const sidebarItems = isServiceQualitySection
+  const sidebarItems = isHqSection
+    ? hqSidebarItems
+    : isServiceQualitySection
     ? serviceQualitySidebarItems
     : isOperationsMetricsSection
     ? operationsMetricsSidebarItems
-
     : isBranchBusinessSection
     ? branchBusinessSidebarItems
     : isCapabilityPlatformSection
@@ -1198,6 +1252,14 @@ function AppIndexRedirect(): React.JSX.Element {
               path={routePaths.masterOpsCommandCenterLeaf}
               element={
                 <OpsModuleRoute title="HQ Master Ops Command Center">
+                  {lazyRoute(<MasterOpsCommandCenterPage />)}
+                </OpsModuleRoute>
+              }
+            />
+            <Route
+              path={routePaths.groupHqOperationsLeaf}
+              element={
+                <OpsModuleRoute title="Nhóm Chức Năng Điều Hành HQ">
                   {lazyRoute(<MasterOpsCommandCenterPage />)}
                 </OpsModuleRoute>
               }

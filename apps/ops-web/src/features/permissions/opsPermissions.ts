@@ -8,7 +8,8 @@ export type OpsFeatureKey =
   | 'nav.operations-platform'     // Operations Platform Section
   | 'nav.branch-business'         // Local Counter Order & Branch Business
   | 'nav.barcode-scan-hub'        // Local Hub Barcode Scanner Operations
-  | 'nav.local-counter-create';   // Local Counter Order Creation Form
+  | 'nav.local-counter-create'    // Local Counter Order Creation Form
+  | 'action.fast-track-return';   // Fast-track Instant Return Approval during Sale
 
 const OPS_PERMISSION_MATRIX: Record<OpsActor, Record<OpsFeatureKey, boolean>> = {
   HQ_OPS: {
@@ -20,6 +21,7 @@ const OPS_PERMISSION_MATRIX: Record<OpsActor, Record<OpsFeatureKey, boolean>> = 
     'nav.branch-business': false,
     'nav.barcode-scan-hub': false,
     'nav.local-counter-create': false,
+    'action.fast-track-return': true,
   },
   REGIONAL_OPS: {
     'nav.hq-command-center': false,
@@ -30,6 +32,7 @@ const OPS_PERMISSION_MATRIX: Record<OpsActor, Record<OpsFeatureKey, boolean>> = 
     'nav.branch-business': true,
     'nav.barcode-scan-hub': true,
     'nav.local-counter-create': true,
+    'action.fast-track-return': true,
   },
   HUB_OPS: {
     'nav.hq-command-center': false,
@@ -40,6 +43,7 @@ const OPS_PERMISSION_MATRIX: Record<OpsActor, Record<OpsFeatureKey, boolean>> = 
     'nav.branch-business': true,
     'nav.barcode-scan-hub': true,
     'nav.local-counter-create': true,
+    'action.fast-track-return': false,
   },
 };
 

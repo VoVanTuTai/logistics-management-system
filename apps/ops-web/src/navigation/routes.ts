@@ -8,7 +8,7 @@ export const routePaths = {
   comingSoonDebtReport: '/app/coming-soon/bao-cao-cong-no',
   comingSoonAiCashflow: '/app/coming-soon/ai-du-doan-dong-tien',
   groupsRoot: '/app/function-groups',
-
+  groupHqOperations: '/app/function-groups/hq-operations',
   groupOperationsPlatform: '/app/function-groups/operations-platform',
   groupIntegrationServices: '/app/function-groups/integration-services',
   operationsPlatformPickupDispatch:
@@ -151,6 +151,7 @@ export const routePaths = {
   comingSoonDebtReportLeaf: 'coming-soon/bao-cao-cong-no',
   comingSoonAiCashflowLeaf: 'coming-soon/ai-du-doan-dong-tien',
 
+  groupHqOperationsLeaf: 'function-groups/hq-operations',
   groupOperationsPlatformLeaf: 'function-groups/operations-platform',
   groupIntegrationServicesLeaf: 'function-groups/integration-services',
 

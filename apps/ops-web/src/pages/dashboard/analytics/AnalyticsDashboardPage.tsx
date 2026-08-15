@@ -287,13 +287,13 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
     <div className="analytics-dash">
       <header className="analytics-dash__header">
         <div>
-          <h1 className="analytics-dash__title">
+            <h1 className="analytics-dash__title">
             <span className="analytics-dash__title-icon">
               <svg viewBox="0 0 24 24">
                 <path d="M3 13h4v8H3zM9 9h4v12H9zM15 5h4v16h-4zM21 2l-3 3m3-3h-3m3 0v3" />
               </svg>
             </span>
-            Trung Tâm Chỉ Huy Vận Hành Mạng Lưới Toàn Quốc
+            Bảng phân tích vận hành toàn hệ thống
           </h1>
           <p className="analytics-dash__subtitle">
             Giám sát real-time luồng đơn hàng, chuyển xe trung chuyển Linehaul 3 miền và đối soát COD toàn bộ bưu cục.
