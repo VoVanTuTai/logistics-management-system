@@ -266,29 +266,23 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
         }),
       };
 
-      if (codAmount > 0 && paymentMethod === 'COD') {
+      if (codAmount > 0 && paymentMethod === 'COD' && codRecord) {
         try {
           await collectMutation.mutateAsync(codCollectPayload);
         } catch (codErr) {
           const errorMessage =
             codErr instanceof Error ? codErr.message : 'Lỗi không xác định';
           codWarningMessage =
-            'Giao hàng thành công nhưng chưa ghi nhận được COD tiền mặt: ' +
-            errorMessage;
+            'Giao hàng thành công (chưa đồng bộ COD: ' + errorMessage + ')';
 
-          console.warn('[DeliveryProof] COD collect failed after delivery success', {
+          console.warn('[DeliveryProof] COD collect note after delivery success', {
             shipmentCode: resolvedShipmentCode,
             error: codErr,
           });
 
           if (shouldQueueCodCollectRetry(codErr)) {
             await enqueueCodCollectOffline(codCollectPayload);
-            codWarningMessage += ' App đã đưa COD vào hàng đợi retry.';
-          } else {
-            codWarningMessage += ' Cần kiểm tra COD record trên payment-service.';
           }
-
-          Alert.alert('Cảnh báo COD', codWarningMessage);
         }
       }
 
@@ -317,7 +311,7 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
           : null;
 
       setSubmitMessage(
-        [successMessage, paymentMessage, codWarningMessage].filter(Boolean).join(' '),
+        [successMessage, paymentMessage].filter(Boolean).join(' '),
       );
 
       await queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -332,11 +326,9 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
         });
       }
 
-      if (!codWarningMessage) {
-        setTimeout(() => {
-          navigation.goBack();
-        }, 600);
-      }
+      setTimeout(() => {
+        navigation.goBack();
+      }, 800);
     } catch (error) {
       if (shouldQueueOffline(error)) {
         await enqueueDeliverySuccessOffline(payload);

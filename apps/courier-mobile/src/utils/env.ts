@@ -1,7 +1,7 @@
 import { NativeModules, Platform } from 'react-native';
 
 const DEFAULT_GATEWAY_PORT = 3000;
-const DEFAULT_PUBLIC_GATEWAY_BASE_URL = 'http://222.255.181.210:13000';
+const DEFAULT_PUBLIC_GATEWAY_BASE_URL = 'http://localhost:3000';
 const DEFAULT_TIMEOUT_MS = 15000;
 const DEFAULT_COURIER_ID = '';
 const LOCALHOST_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '0.0.0.0']);
@@ -72,10 +72,7 @@ function scanHostHintsFromUnknown(
     appendHostHint(target, value);
 
     const trimmedValue = value.trim();
-    if (
-      trimmedValue.startsWith('{') &&
-      trimmedValue.endsWith('}')
-    ) {
+    if (trimmedValue.startsWith('{') && trimmedValue.endsWith('}')) {
       try {
         const parsedJson = JSON.parse(trimmedValue) as unknown;
         scanHostHintsFromUnknown(parsedJson, target, visited, depth + 1);
@@ -143,7 +140,6 @@ function appendGatewayCandidatesFromHost(target: string[], host: string): void {
   }
 
   if (Platform.OS === 'android') {
-    // Emulator aliases for host machine + local loopback options.
     appendUnique(target, `http://10.0.2.2:${DEFAULT_GATEWAY_PORT}`);
     appendUnique(target, `http://10.0.3.2:${DEFAULT_GATEWAY_PORT}`);
     appendUnique(target, `http://127.0.0.1:${DEFAULT_GATEWAY_PORT}`);
@@ -180,6 +176,7 @@ function resolveGatewayBaseUrls(): string[] {
 
   if (configuredBaseUrl && configuredBaseUrl.trim().length > 0) {
     appendUnique(gatewayBaseUrls, normalizeBaseUrl(configuredBaseUrl));
+    appendConfiguredFallbackBaseUrls(gatewayBaseUrls);
   }
 
   const runtimeHosts = collectRuntimeHosts();
@@ -218,12 +215,16 @@ function resolveGatewayBaseUrls(): string[] {
 const resolvedGatewayBaseUrls = resolveGatewayBaseUrls();
 
 function toChatWsUrl(baseUrl: string): string {
-  const gatewayUrl = new URL(baseUrl);
-  gatewayUrl.protocol = gatewayUrl.protocol === 'https:' ? 'wss:' : 'ws:';
-  gatewayUrl.pathname = '/ws/chat';
-  gatewayUrl.search = '';
-  gatewayUrl.hash = '';
-  return gatewayUrl.toString();
+  try {
+    const gatewayUrl = new URL(baseUrl);
+    gatewayUrl.protocol = gatewayUrl.protocol === 'https:' ? 'wss:' : 'ws:';
+    gatewayUrl.pathname = '/ws/chat';
+    gatewayUrl.search = '';
+    gatewayUrl.hash = '';
+    return gatewayUrl.toString();
+  } catch {
+    return 'ws://localhost:3000/ws/chat';
+  }
 }
 
 export const appEnv = {
@@ -235,8 +236,8 @@ export const appEnv = {
   gatewayFallbackBaseUrls: resolvedGatewayBaseUrls.slice(1),
   requestTimeoutMs: Number(
     process.env.EXPO_PUBLIC_REQUEST_TIMEOUT_MS ??
-    process.env.REQUEST_TIMEOUT_MS ??
-    DEFAULT_TIMEOUT_MS,
+      process.env.REQUEST_TIMEOUT_MS ??
+      DEFAULT_TIMEOUT_MS,
   ),
   courierId:
     process.env.EXPO_PUBLIC_COURIER_ID ??
@@ -244,6 +245,6 @@ export const appEnv = {
     '',
   allowAllCourierMobilePermissionsForTesting: parseBooleanEnv(
     process.env.EXPO_PUBLIC_ALLOW_ALL_COURIER_MOBILE_PERMISSIONS_FOR_TESTING ??
-    process.env.ALLOW_ALL_COURIER_MOBILE_PERMISSIONS_FOR_TESTING,
+      process.env.ALLOW_ALL_COURIER_MOBILE_PERMISSIONS_FOR_TESTING,
   ),
 } as const;

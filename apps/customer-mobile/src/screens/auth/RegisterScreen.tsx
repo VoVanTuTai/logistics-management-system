@@ -111,9 +111,18 @@ export function RegisterScreen({ navigation }: Props): React.JSX.Element {
 
       navigation.replace('MainTabs', { screen: 'HomeTab' });
     } catch (error) {
-      const msg = error instanceof ApiClientError && error.isNetworkError
-        ? 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng và thử lại.'
-        : 'Đăng ký tài khoản thất bại. Số điện thoại có thể đã được sử dụng.';
+      let msg = 'Đăng ký tài khoản thất bại.';
+      if (error instanceof ApiClientError) {
+        if (error.isNetworkError) {
+          msg = 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng và thử lại.';
+        } else if (error.message) {
+          msg = error.message.includes('already exists')
+            ? `Số điện thoại / Tên đăng nhập "${phone.trim()}" đã được sử dụng. Vui lòng đăng nhập hoặc dùng số khác.`
+            : error.message;
+        }
+      } else if (error instanceof Error && error.message) {
+        msg = error.message;
+      }
       setErrorModal({
         visible: true,
         title: 'Lỗi đăng ký',
