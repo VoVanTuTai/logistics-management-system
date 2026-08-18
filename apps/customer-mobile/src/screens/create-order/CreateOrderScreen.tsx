@@ -12,6 +12,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
 import { AddressSelectorModal, type StructuredAddress } from '../../components/AddressSelectorModal';
+import { SavedAddressPickerModal } from '../../components/SavedAddressPickerModal';
 import { AppHeader } from '../../components/AppHeader';
 import { AppModal, type ModalVariant } from '../../components/common/AppModal';
 import { InputField } from '../../components/InputField';
@@ -23,6 +24,7 @@ import { ApiClientError } from '../../services/api/client';
 import { pricingApi, type PricingQuoteResponse } from '../../services/api/pricing.api';
 import { shipmentApi } from '../../services/api/shipment.api';
 import { authStore, useAuthSession } from '../../store/authStore';
+import { savedAddressStore } from '../../store/savedAddressStore';
 import { colors, shadows, spacing } from '../../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateOrder'>;
@@ -43,11 +45,37 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
   // Address Modals state
   const [showSenderAddressModal, setShowSenderAddressModal] = useState(false);
   const [showReceiverAddressModal, setShowReceiverAddressModal] = useState(false);
+  const [showSavedAddressPickerModal, setShowSavedAddressPickerModal] = useState(false);
 
   // Sender details
+  const [senderAddressMode, setSenderAddressMode] = useState<'SAVED' | 'MANUAL'>('SAVED');
   const [senderName, setSenderName] = useState(user?.displayName || user?.username || '');
   const [senderPhone, setSenderPhone] = useState(user?.phone || user?.username || '');
   const [senderAddress, setSenderAddress] = useState<StructuredAddress | null>(null);
+
+  const handleSelectSenderMode = async (mode: 'SAVED' | 'MANUAL') => {
+    setSenderAddressMode(mode);
+    if (mode === 'SAVED') {
+      const def = await savedAddressStore.getDefaultAddress();
+      if (def) {
+        setSenderName(def.name);
+        setSenderPhone(def.phone);
+        setSenderAddress({
+          province: def.province || '',
+          district: def.district || '',
+          ward: def.ward || '',
+          addressDetail: def.addressDetail || '',
+          composedAddress: def.composedAddress || '',
+          hubCode: def.hubCode || '',
+          hubName: def.hubName || '',
+        });
+      }
+    } else {
+      setSenderName(user?.displayName || user?.username || '');
+      setSenderPhone(user?.phone || user?.username || '');
+      setSenderAddress(null);
+    }
+  };
 
   // Receiver details
   const [receiverName, setReceiverName] = useState('');
@@ -76,6 +104,29 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
       if (!senderPhone) setSenderPhone(user.phone || user.username || '');
     }
   }, [user]);
+
+  // Auto-prefill default sender address from savedAddressStore if no route params override
+  useEffect(() => {
+    let isMounted = true;
+    savedAddressStore.getDefaultAddress().then((def) => {
+      if (def && isMounted && !route.params?.prefilledSenderAddress) {
+        setSenderName(def.name);
+        setSenderPhone(def.phone);
+        setSenderAddress({
+          province: def.province || '',
+          district: def.district || '',
+          ward: def.ward || '',
+          addressDetail: def.addressDetail || '',
+          composedAddress: def.composedAddress || '',
+          hubCode: def.hubCode || '',
+          hubName: def.hubName || '',
+        });
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Sync prefilled params from PriceCalculatorScreen
   useEffect(() => {
@@ -322,38 +373,123 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
                 <Text style={styles.cardTitle}>Thông tin người gửi</Text>
               </View>
 
-              <InputField
-                label="Họ và tên người gửi"
-                placeholder="Nhập tên người gửi"
-                value={senderName}
-                onChangeText={setSenderName}
-                required
-              />
-              <InputField
-                label="Số điện thoại người gửi"
-                placeholder="09xxxxxxxx"
-                keyboardType="phone-pad"
-                value={senderPhone}
-                onChangeText={setSenderPhone}
-                required
-              />
+              {/* MODE SELECTOR: SAVED ADDRESS vs MANUAL ENTRY */}
+              <View style={styles.senderModeGroup}>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  style={[styles.senderModePill, senderAddressMode === 'SAVED' && styles.senderModePillActive]}
+                  onPress={() => handleSelectSenderMode('SAVED')}
+                >
+                  <Ionicons
+                    name={senderAddressMode === 'SAVED' ? 'radio-button-on' : 'radio-button-off'}
+                    size={17}
+                    color={senderAddressMode === 'SAVED' ? colors.primary : colors.textMuted}
+                  />
+                  <Text style={[styles.senderModeText, senderAddressMode === 'SAVED' && styles.senderModeTextActive]}>
+                    Địa chỉ của tôi (Mặc định)
+                  </Text>
+                </TouchableOpacity>
 
-              <Text style={styles.fieldLabel}>Địa chỉ người gửi (Chọn từ Database) *</Text>
-              <TouchableOpacity
-                activeOpacity={0.8}
-                style={[styles.addressBoxSelect, !senderAddress && styles.addressBoxUnselected]}
-                onPress={() => setShowSenderAddressModal(true)}
-              >
-                {senderAddress ? (
-                  <View style={styles.addressBoxTextCol}>
-                    <Text style={styles.addressComposedText}>{senderAddress.composedAddress}</Text>
-                    <Text style={styles.addressHubText}>📍 Bưu cục gửi: {senderAddress.hubName} [{senderAddress.hubCode}]</Text>
-                  </View>
-                ) : (
-                  <Text style={styles.addressPlaceholderText}>+ Bấm để chọn Tỉnh / Thành / Bưu cục gửi</Text>
-                )}
-                <Ionicons name="chevron-forward" size={20} color={colors.primary} />
-              </TouchableOpacity>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  style={[styles.senderModePill, senderAddressMode === 'MANUAL' && styles.senderModePillActive]}
+                  onPress={() => handleSelectSenderMode('MANUAL')}
+                >
+                  <Ionicons
+                    name={senderAddressMode === 'MANUAL' ? 'radio-button-on' : 'radio-button-off'}
+                    size={17}
+                    color={senderAddressMode === 'MANUAL' ? colors.primary : colors.textMuted}
+                  />
+                  <Text style={[styles.senderModeText, senderAddressMode === 'MANUAL' && styles.senderModeTextActive]}>
+                    Tự nhập địa chỉ mới
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* SAVED ADDRESS MODE */}
+              {senderAddressMode === 'SAVED' ? (
+                <View style={styles.modeSection}>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    style={styles.pickSavedBtn}
+                    onPress={() => setShowSavedAddressPickerModal(true)}
+                  >
+                    <Ionicons name="book-outline" size={16} color={colors.primary} />
+                    <Text style={styles.pickSavedBtnText}>Đổi từ danh sách Địa chỉ của tôi</Text>
+                    <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+                  </TouchableOpacity>
+
+                  {/* PRE-FILLED SENDER FORM */}
+                  <InputField
+                    label="Họ và tên người gửi"
+                    placeholder="Nhập tên người gửi"
+                    value={senderName}
+                    onChangeText={setSenderName}
+                    required
+                  />
+                  <InputField
+                    label="Số điện thoại người gửi"
+                    placeholder="09xxxxxxxx"
+                    keyboardType="phone-pad"
+                    value={senderPhone}
+                    onChangeText={setSenderPhone}
+                    required
+                  />
+
+                  <Text style={styles.fieldLabel}>Địa chỉ người gửi (Đã chọn từ Địa chỉ của tôi) *</Text>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    style={[styles.addressBoxSelect, !senderAddress && styles.addressBoxUnselected]}
+                    onPress={() => setShowSavedAddressPickerModal(true)}
+                  >
+                    {senderAddress ? (
+                      <View style={styles.addressBoxTextCol}>
+                        <Text style={styles.addressComposedText}>{senderAddress.composedAddress}</Text>
+                        <Text style={styles.addressHubText}>📍 Bưu cục gửi: {senderAddress.hubName} [{senderAddress.hubCode}]</Text>
+                      </View>
+                    ) : (
+                      <Text style={styles.addressPlaceholderText}>+ Bấm để chọn từ danh sách Địa chỉ của tôi</Text>
+                    )}
+                    <Ionicons name="chevron-forward" size={20} color={colors.primary} />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                /* MANUAL ENTRY MODE */
+                <View style={styles.modeSection}>
+                  <InputField
+                    label="Họ và tên người gửi"
+                    placeholder="Nhập tên người gửi mới"
+                    value={senderName}
+                    onChangeText={setSenderName}
+                    required
+                  />
+                  <InputField
+                    label="Số điện thoại người gửi"
+                    placeholder="09xxxxxxxx"
+                    keyboardType="phone-pad"
+                    value={senderPhone}
+                    onChangeText={setSenderPhone}
+                    required
+                  />
+
+                  <Text style={styles.fieldLabel}>Địa chỉ người gửi mới (Chọn từ Database) *</Text>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    style={[styles.addressBoxSelect, !senderAddress && styles.addressBoxUnselected]}
+                    onPress={() => setShowSenderAddressModal(true)}
+                  >
+                    {senderAddress ? (
+                      <View style={styles.addressBoxTextCol}>
+                        <Text style={styles.addressComposedText}>{senderAddress.composedAddress}</Text>
+                        <Text style={styles.addressHubText}>📍 Bưu cục gửi: {senderAddress.hubName} [{senderAddress.hubCode}]</Text>
+                      </View>
+                    ) : (
+                      <Text style={styles.addressPlaceholderText}>+ Bấm để chọn Tỉnh / Thành / Bưu cục gửi mới</Text>
+                    )}
+                    <Ionicons name="chevron-forward" size={20} color={colors.primary} />
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
 
             {/* RECEIVER CARD */}
@@ -618,6 +754,26 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
         onClose={() => setShowReceiverAddressModal(false)}
       />
 
+      {/* SAVED ADDRESS PICKER MODAL */}
+      <SavedAddressPickerModal
+        visible={showSavedAddressPickerModal}
+        onClose={() => setShowSavedAddressPickerModal(false)}
+        onSelectAddress={(picked) => {
+          setSenderName(picked.name);
+          setSenderPhone(picked.phone);
+          setSenderAddress({
+            province: picked.province || '',
+            district: picked.district || '',
+            ward: picked.ward || '',
+            addressDetail: picked.addressDetail || '',
+            composedAddress: picked.composedAddress || '',
+            hubCode: picked.hubCode || '',
+            hubName: picked.hubName || '',
+          });
+        }}
+        onManageAddresses={() => navigation.navigate('AddressManagement')}
+      />
+
       <AppModal
         visible={modalConfig.visible}
         variant={modalConfig.variant}
@@ -872,5 +1028,56 @@ const styles = StyleSheet.create({
   },
   nextStepBtnCol: {
     flex: 1,
+  },
+  senderModeGroup: {
+    flexDirection: 'column',
+    gap: 8,
+    marginBottom: spacing.md,
+  },
+  senderModePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: colors.borderSubtle,
+    borderRadius: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+    gap: 8,
+  },
+  senderModePillActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryLight,
+  },
+  senderModeText: {
+    fontSize: 13.5,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  senderModeTextActive: {
+    color: colors.primary,
+    fontWeight: '800',
+  },
+  modeSection: {
+    gap: spacing.xs,
+  },
+  pickSavedBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+    marginBottom: spacing.xs,
+  },
+  pickSavedBtnText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.primary,
+    marginLeft: 6,
   },
 });

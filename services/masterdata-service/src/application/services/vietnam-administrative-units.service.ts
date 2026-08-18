@@ -5,7 +5,7 @@ import type {
   VietnamWard,
 } from '../../domain/entities/vietnam-administrative-unit.entity';
 
-const VIETNAM_PROVINCES_API_URL = 'https://provinces.open-api.vn/api/v2/?depth=2';
+const VIETNAM_PROVINCES_API_URL = 'https://provinces.open-api.vn/api/v2/?depth=3';
 
 @Injectable()
 export class VietnamAdministrativeUnitsService {
@@ -72,6 +72,22 @@ function mapProvince(value: unknown): VietnamProvince | null {
 
   const provinceCode = record.code;
 
+  let wardList: VietnamWard[] = [];
+  if (Array.isArray(record.wards)) {
+    wardList = record.wards
+      .map((ward) => mapWard(ward, provinceCode))
+      .filter((ward): ward is VietnamWard => Boolean(ward));
+  } else if (Array.isArray(record.districts)) {
+    wardList = (record.districts as unknown[]).flatMap((district) => {
+      if (!district || typeof district !== 'object') return [];
+      const dRecord = district as Record<string, unknown>;
+      if (!Array.isArray(dRecord.wards)) return [];
+      return dRecord.wards
+        .map((ward) => mapWard(ward, provinceCode))
+        .filter((ward): ward is VietnamWard => Boolean(ward));
+    });
+  }
+
   return {
     code: provinceCode,
     name: record.name,
@@ -79,11 +95,7 @@ function mapProvince(value: unknown): VietnamProvince | null {
     divisionType:
       typeof record.division_type === 'string' ? record.division_type : '',
     phoneCode: typeof record.phone_code === 'number' ? record.phone_code : null,
-    wards: Array.isArray(record.wards)
-      ? record.wards
-          .map((ward) => mapWard(ward, provinceCode))
-          .filter((ward): ward is VietnamWard => Boolean(ward))
-      : [],
+    wards: wardList,
   };
 }
 

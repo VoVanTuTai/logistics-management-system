@@ -62,6 +62,8 @@ export interface ShipmentFilters {
   createdTo?: string;
   limit?: number;
   offset?: number;
+  userId?: string | null;
+  phone?: string | null;
 }
 
 export const shipmentApi = {
@@ -87,6 +89,7 @@ export const shipmentApi = {
     if (filters.createdTo) params.append('createdTo', filters.createdTo);
     if (filters.limit) params.append('limit', String(filters.limit));
     if (filters.offset) params.append('offset', String(filters.offset));
+    if (filters.userId) params.append('userId', filters.userId);
 
     const queryString = params.toString();
     const url = `/customer/shipment/shipments/sent${queryString ? `?${queryString}` : ''}`;
@@ -108,6 +111,7 @@ export const shipmentApi = {
     if (filters.createdTo) params.append('createdTo', filters.createdTo);
     if (filters.limit) params.append('limit', String(filters.limit));
     if (filters.offset) params.append('offset', String(filters.offset));
+    if (filters.phone) params.append('phone', filters.phone);
 
     const queryString = params.toString();
     const url = `/customer/shipment/shipments/received${queryString ? `?${queryString}` : ''}`;

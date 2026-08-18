@@ -220,24 +220,27 @@ export class TrackingQueryProjection {
       const eventText = toTimelineTextVi(event.payload, locationCode);
       const source = event.actor?.trim() ? event.actor : 'Hệ thống';
 
-      let locationText = locationCode ? `Kho ${locationCode}` : null;
+      let locationText =
+        event.locationText ||
+        (locationCode ? `Kho ${locationCode}` : null);
+
       if (
-        statusCursor === 'PICKUP_REQUESTED' ||
-        statusCursor === 'PICKUP_ASSIGNED' ||
-        statusCursor === 'UPDATED' ||
-        statusCursor === 'TASK_ASSIGNED'
+        (statusCursor === 'PICKUP_REQUESTED' ||
+          statusCursor === 'PICKUP_ASSIGNED' ||
+          statusCursor === 'UPDATED' ||
+          statusCursor === 'TASK_ASSIGNED') &&
+        !locationText &&
+        senderAddress
       ) {
-        if (senderAddress) {
-          locationText = senderAddress;
-        }
+        locationText = senderAddress;
       } else if (
-        statusCursor === 'DELIVERING' ||
-        statusCursor === 'OUT_FOR_DELIVERY' ||
-        statusCursor === 'DELIVERED'
+        (statusCursor === 'DELIVERING' ||
+          statusCursor === 'OUT_FOR_DELIVERY' ||
+          statusCursor === 'DELIVERED') &&
+        !locationText &&
+        receiverAddress
       ) {
-        if (receiverAddress) {
-          locationText = receiverAddress;
-        }
+        locationText = receiverAddress;
       }
 
       return {

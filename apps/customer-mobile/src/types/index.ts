@@ -47,11 +47,26 @@ export interface ReceiverInfo {
   hubCode?: string;
 }
 
+/**
+ * 100% Real Tracking Timeline Event matching Ops Staff Web & Tracking API fields
+ */
 export interface TrackingEvent {
   id: string;
-  title: string;
-  timestamp: string;
-  location?: string;
+  stt?: number;              // STT (1, 2, 3...)
+  action?: string;           // Thao tác (ev.eventType || 'Cập nhật hành trình')
+  title?: string;            // Alias for action (backward compatibility)
+  statusText?: string;       // Trạng thái (ev.statusAfterEvent || '')
+  scannedAt?: string;        // Thời gian quét (ev.occurredAt)
+  timestamp?: string;        // Alias for scannedAt (backward compatibility)
+  timeLabel?: string;        // Giờ quét gọn (HH:mm:ss)
+  dateLabel?: string;        // Ngày quét (DD/MM/YYYY)
+  locationText?: string;     // Vị trí (ev.locationText / ev.locationCode)
+  location?: string;         // Alias for locationText (backward compatibility)
+  actorText?: string;        // Người thực hiện / Nhân viên (ev.actor)
+  noteText?: string;         // Ghi chú chi tiết (ev.note)
+  proofImageUrl?: string;    // Minh chứng ảnh thật từ API
+  boldPrefix?: string;       // Câu thông báo in đậm (e.g., "Đơn hàng đang chờ nhân viên giao nhận lấy tại ")
+  addressSuffix?: string;    // Phần địa chỉ đính kèm (e.g., "123 test, Phường Nùng Trí Cao...")
   completed: boolean;
   isCurrent?: boolean;
 }

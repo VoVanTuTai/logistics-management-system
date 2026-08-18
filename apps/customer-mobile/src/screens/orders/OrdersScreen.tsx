@@ -120,20 +120,16 @@ export function OrdersScreen({ route, navigation }: Props): React.JSX.Element {
 
   const fetchLiveShipments = async (showLoading = true) => {
     const accessToken = authStore.getAccessToken();
+    const user = authStore.getUser();
     if (!accessToken) return;
 
     if (showLoading) setLoading(true);
     try {
+      // Don't send strict status query param to backend so status alias variants (SCAN_INBOUND, ARRIVED_HUB, etc.) are fetched
       const response =
         category === 'RECEIVED'
-          ? await shipmentApi.getReceivedShipments(accessToken, {
-              status: statusFilter !== 'ALL' ? statusFilter : undefined,
-              limit: 50,
-            })
-          : await shipmentApi.getShipments(accessToken, {
-              status: statusFilter !== 'ALL' ? statusFilter : undefined,
-              limit: 50,
-            });
+          ? await shipmentApi.getReceivedShipments(accessToken, { limit: 50, phone: user?.phone })
+          : await shipmentApi.getShipments(accessToken, { limit: 50, userId: user?.id });
 
       const rawItems: ShipmentResponse[] = Array.isArray(response)
         ? response
@@ -171,7 +167,18 @@ export function OrdersScreen({ route, navigation }: Props): React.JSX.Element {
   const filteredOrders = useMemo(() => {
     return liveOrders.filter((ord) => {
       if (category === 'SENT' && ord.category !== 'SENT') return false;
-      if (statusFilter !== 'ALL' && ord.status !== statusFilter) return false;
+      if (statusFilter !== 'ALL') {
+        const s = (ord.status || '').toUpperCase();
+        if (statusFilter === 'ARRIVED_HUB') {
+          if (s !== 'ARRIVED_HUB' && s !== 'SCAN_INBOUND' && s !== 'HUB_ARRIVED' && s !== 'MANIFEST_RECEIVED') return false;
+        } else if (statusFilter === 'IN_TRANSIT') {
+          if (s !== 'IN_TRANSIT' && s !== 'OUTBOUND' && s !== 'MANIFEST_DISPATCHED') return false;
+        } else if (statusFilter === 'PICKUP_COMPLETED') {
+          if (s !== 'PICKUP_COMPLETED' && s !== 'PICKED_UP' && s !== 'SCAN_PICKUP') return false;
+        } else if (s !== statusFilter) {
+          return false;
+        }
+      }
       return true;
     });
   }, [liveOrders, category, statusFilter]);

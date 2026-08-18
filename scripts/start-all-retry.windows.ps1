@@ -1,4 +1,4 @@
-﻿param(
+param(
   [ValidateSet('lan', 'emulator')]
   [string]$MobileMode = 'lan',
   [switch]$SkipInfra,
@@ -156,6 +156,53 @@ function Start-CourierMobileProcess([string]$mode) {
   Write-Host "        EXPO_PUBLIC_GATEWAY_BASE_URL=$gatewayBaseUrl"
 }
 
+function Start-CustomerMobileProcess([string]$mode) {
+  $workingDir = Join-Path $rootDir 'apps/customer-mobile'
+  if (-not (Test-Path $workingDir)) {
+    Write-Host '[skip] customer-mobile directory not found'
+    return
+  }
+
+  if (Test-PortListening 8082) {
+    Write-Host '[skip] customer-mobile already listening on port 8082'
+    return
+  }
+
+  $expoBin = Join-Path $workingDir 'node_modules\.bin\expo.cmd'
+  if (-not (Test-Path $expoBin)) {
+    Write-Host '[mobile] expo not found in customer-mobile/node_modules, running npm install...' -ForegroundColor Yellow
+    Push-Location $workingDir
+    try {
+      & cmd.exe /c 'npm install'
+      if ($LASTEXITCODE -ne 0) {
+        throw 'npm install failed for customer-mobile'
+      }
+    } finally {
+      Pop-Location
+    }
+  }
+
+  $gatewayBaseUrl = if ($mode -eq 'emulator') {
+    'http://10.0.2.2:3000'
+  } else {
+    $lanIp = Resolve-LanIp
+    "http://$lanIp`:3000"
+  }
+
+  $expoHost = if ($mode -eq 'emulator') { 'localhost' } else { 'lan' }
+
+  $command = "set EXPO_PUBLIC_GATEWAY_BASE_URL=$gatewayBaseUrl && npm run start -- --host $expoHost --port 8082"
+
+  $launcher = Start-Process `
+    -FilePath 'cmd.exe' `
+    -ArgumentList '/k', $command `
+    -WorkingDirectory $workingDir `
+    -PassThru
+
+  Write-Host "[start] customer-mobile pid=$($launcher.Id) port=8082 mode=$mode"
+  Write-Host "        EXPO_PUBLIC_GATEWAY_BASE_URL=$gatewayBaseUrl"
+}
+
 Push-Location $rootDir
 try {
   if (-not $SkipInfra) {
@@ -189,15 +236,23 @@ try {
   Start-WebUiProcess -name 'public-tracking' -relativePath 'apps/public-tracking' -port 5176
 
   if (-not $SkipMobile) {
-    Write-Host '[ui] starting courier-mobile'
+    Write-Host '[ui] starting courier-mobile & customer-mobile'
     Start-CourierMobileProcess -mode $MobileMode
+    Start-CustomerMobileProcess -mode $MobileMode
+
     Write-Host '[ui] waiting for courier-mobile Metro (port 8081)...'
-    $mobileReady = Wait-PortListening -port 8081 -timeoutSeconds 90 -sleepSeconds 2
-    if (-not $mobileReady) {
+    $courierReady = Wait-PortListening -port 8081 -timeoutSeconds 90 -sleepSeconds 2
+    if (-not $courierReady) {
       Write-Host '[ui] courier-mobile is not listening yet (Metro may still be starting).' -ForegroundColor Yellow
     }
+
+    Write-Host '[ui] waiting for customer-mobile Metro (port 8082)...'
+    $customerReady = Wait-PortListening -port 8082 -timeoutSeconds 90 -sleepSeconds 2
+    if (-not $customerReady) {
+      Write-Host '[ui] customer-mobile is not listening yet (Metro may still be starting).' -ForegroundColor Yellow
+    }
   } else {
-    Write-Host '[ui] skipped courier-mobile by flag'
+    Write-Host '[ui] skipped mobile apps by flag'
   }
 
   Start-Sleep -Seconds 3
@@ -209,7 +264,8 @@ try {
     @{ Name = 'merchant-web'; Port = 5174 },
     @{ Name = 'admin-web'; Port = 5175 },
     @{ Name = 'public-tracking'; Port = 5176 },
-    @{ Name = 'courier-mobile'; Port = 8081 }
+    @{ Name = 'courier-mobile'; Port = 8081 },
+    @{ Name = 'customer-mobile'; Port = 8082 }
   )
 
   $uiRows = foreach ($uiPort in $uiPorts) {
@@ -232,6 +288,7 @@ try {
   Write-Host 'admin-web:       http://localhost:5175'
   Write-Host 'public-tracking: http://localhost:5176'
   Write-Host 'courier-mobile:  http://localhost:8081'
+  Write-Host 'customer-mobile: http://localhost:8082'
 
   Write-Host ''
   Write-Host '=== DATA MODE ==='

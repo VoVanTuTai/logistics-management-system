@@ -18,6 +18,7 @@ import { trackingApi } from '../../services/api/tracking.api';
 import { colors, shadows, spacing } from '../../theme';
 import type { ShipmentStatus, TrackingEvent } from '../../types';
 import { copyToClipboard } from '../../utils/clipboard';
+import { mapTimelineEventsForCustomer } from '../../utils/customerTrackingMapper';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'OrderDetail'>;
 
@@ -43,14 +44,11 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
         setLiveStatus(res.current.currentStatusCode);
       }
       if (res.timeline && res.timeline.length > 0) {
-        const mapped: TrackingEvent[] = res.timeline.map((ev, index) => ({
-          id: ev.id || `ev-${index}`,
-          title: ev.statusAfterEvent || ev.eventType || 'Cập nhật hành trình',
-          timestamp: new Date(ev.occurredAt).toLocaleString('vi-VN'),
-          location: [ev.locationText || ev.locationCode, ev.note].filter(Boolean).join(' • ') || undefined,
-          completed: true,
-          isCurrent: index === res.timeline.length - 1,
-        }));
+        const mapped = mapTimelineEventsForCustomer(
+          res.timeline,
+          senderAddressText,
+          receiverAddressText,
+        );
         setLiveTimeline(mapped);
       }
     } catch {
