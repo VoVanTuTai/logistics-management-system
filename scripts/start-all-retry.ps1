@@ -15,44 +15,19 @@ function Test-PortListening([int]$port) {
 }
 
 function Get-ListeningPid([int]$port) {
-  $onWindows = [System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT -or $env:OS -like '*Windows*' -or $PSVersionTable.PSEdition -eq 'Desktop'
-
-  if ($onWindows) {
-    try {
-      $listener = Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -First 1
-      if ($listener) {
-        return [int]$listener.OwningProcess
-      }
-    } catch {
-      # Fallback handled below.
+  try {
+    $listener = Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($listener) {
+      return [int]$listener.OwningProcess
     }
+  } catch {
+    # Fallback handled below.
+  }
 
-    $pattern = "^\s*TCP\s+\S+:$port\s+\S+\s+LISTENING\s+(\d+)\s*$"
-    foreach ($line in (netstat -ano -p tcp 2>$null)) {
-      if ($line -match $pattern) {
-        return [int]$Matches[1]
-      }
-    }
-  } else {
-    try {
-      $previousNativeErrorPreference = $PSNativeCommandUseErrorActionPreference
-      $PSNativeCommandUseErrorActionPreference = $false
-      $output = lsof -i ":$port" -sTCP:LISTEN 2>/dev/null
-      $PSNativeCommandUseErrorActionPreference = $previousNativeErrorPreference
-
-      if ($LASTEXITCODE -eq 0 -and $output) {
-        $lines = $output -split "`n"
-        if ($lines.Count -gt 1) {
-          $fields = $lines[1] -split '\s+'
-          if ($fields.Count -gt 1) {
-            return [int]$fields[1]
-          }
-        }
-      }
-    } catch {
-      if ($null -ne $previousNativeErrorPreference) {
-        $PSNativeCommandUseErrorActionPreference = $previousNativeErrorPreference
-      }
+  $pattern = "^\s*TCP\s+\S+:$port\s+\S+\s+LISTENING\s+(\d+)\s*$"
+  foreach ($line in (netstat -ano -p tcp 2>$null)) {
+    if ($line -match $pattern) {
+      return [int]$Matches[1]
     }
   }
 
@@ -76,81 +51,59 @@ function Wait-PortListening(
 }
 
 function Resolve-LanIp() {
-  $onWindows = [System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT -or $env:OS -like '*Windows*' -or $PSVersionTable.PSEdition -eq 'Desktop' -or $PSVersionTable.Platform -eq 'Win32NT'
+  $defaultRoute = Get-NetRoute -AddressFamily IPv4 -DestinationPrefix '0.0.0.0/0' -ErrorAction SilentlyContinue |
+    Sort-Object -Property RouteMetric, InterfaceMetric |
+    Select-Object -First 1
 
-  if ($onWindows) {
-    $defaultRoute = Get-NetRoute -AddressFamily IPv4 -DestinationPrefix '0.0.0.0/0' -ErrorAction SilentlyContinue |
-      Sort-Object -Property RouteMetric, InterfaceMetric |
-      Select-Object -First 1
-
-    if ($defaultRoute) {
-      $routeIp = Get-NetIPAddress -AddressFamily IPv4 -InterfaceIndex $defaultRoute.InterfaceIndex -ErrorAction SilentlyContinue |
-        Where-Object {
-          $_.IPAddress -notlike '127.*' -and
-          $_.IPAddress -notlike '169.254*'
-        } |
-        Select-Object -ExpandProperty IPAddress -First 1
-
-      if ($routeIp) {
-        return $routeIp
-      }
-    }
-
-    $fallbackIp = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
+  if ($defaultRoute) {
+    $routeIp = Get-NetIPAddress -AddressFamily IPv4 -InterfaceIndex $defaultRoute.InterfaceIndex -ErrorAction SilentlyContinue |
       Where-Object {
         $_.IPAddress -notlike '127.*' -and
-        $_.IPAddress -notlike '169.254*' -and
-        $_.IPAddress -notlike '172.26.*' -and
-        $_.IPAddress -notlike '172.25.*' -and
-        $_.IPAddress -notlike '192.168.56.*'
+        $_.IPAddress -notlike '169.254*'
       } |
       Select-Object -ExpandProperty IPAddress -First 1
 
-    if ($fallbackIp) {
-      return $fallbackIp
+    if ($routeIp) {
+      return $routeIp
     }
-  } else {
-    $output = ifconfig 2>/dev/null
-    if ($output) {
-      foreach ($line in ($output -split "`n")) {
-        if ($line -match 'inet\s+(\d+\.\d+\.\d+\.\d+)') {
-          $ip = $matches[1]
-          if ($ip -notmatch '^127\.' -and $ip -notmatch '^169\.254' -and $ip -notmatch '^172\.(25|26)\.' -and $ip -notmatch '^192\.168\.56\.') {
-            return $ip
-          }
-        }
-      }
-    }
+  }
+
+  $fallbackIp = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
+    Where-Object {
+      $_.IPAddress -notlike '127.*' -and
+      $_.IPAddress -notlike '169.254*' -and
+      $_.IPAddress -notlike '172.26.*' -and
+      $_.IPAddress -notlike '172.25.*' -and
+      $_.IPAddress -notlike '192.168.56.*'
+    } |
+    Select-Object -ExpandProperty IPAddress -First 1
+
+  if ($fallbackIp) {
+    return $fallbackIp
   }
 
   throw 'Cannot resolve LAN IPv4 address. Please check network and run again.'
 }
 
-function Install-AppDependencies([string]$workingDir, [string]$name) {
-  Write-Host "[install] installing dependencies for $name"
+function Install-AppDependencies(
+  [string]$workingDir,
+  [string]$name
+) {
+  Write-Host "[mobile] running npm install for $name..." -ForegroundColor Yellow
   Push-Location $workingDir
   try {
-    if ((Test-Path 'pnpm-lock.yaml') -and (Get-Command pnpm -ErrorAction SilentlyContinue)) {
-      pnpm install --ignore-scripts
+    $onWindows = [System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT -or $env:OS -like '*Windows*' -or $PSVersionTable.PSEdition -eq 'Desktop' -or $PSVersionTable.Platform -eq 'Win32NT'
+    if ($onWindows) {
+      & cmd.exe /c 'npm install'
     } else {
-      npm install --ignore-scripts
+      & npm install
     }
-
     if ($LASTEXITCODE -ne 0) {
-      throw "dependency install failed for $name"
+      throw "npm install failed for $name"
     }
-  }
-  finally {
+  } finally {
     Pop-Location
   }
-}
-
-function Install-AppDependenciesIfNeeded([string]$workingDir, [string]$name) {
-  if (Test-Path (Join-Path $workingDir 'node_modules')) {
-    return
-  }
-
-  Install-AppDependencies -workingDir $workingDir -name $name
 }
 
 function Start-WebUiProcess(
@@ -168,9 +121,8 @@ function Start-WebUiProcess(
     throw "Missing app path for ${name}: $workingDir"
   }
 
-  Install-AppDependenciesIfNeeded -workingDir $workingDir -name $name
-
   $onWindows = [System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT -or $env:OS -like '*Windows*' -or $PSVersionTable.PSEdition -eq 'Desktop' -or $PSVersionTable.Platform -eq 'Win32NT'
+
   if ($onWindows) {
     $launcher = Start-Process `
       -FilePath 'cmd.exe' `
@@ -240,6 +192,58 @@ function Start-CourierMobileProcess([string]$mode) {
   Write-Host "        EXPO_PUBLIC_GATEWAY_BASE_URL=$gatewayBaseUrl"
 }
 
+function Start-CustomerMobileProcess([string]$mode) {
+  $workingDir = Join-Path $rootDir 'apps/customer-mobile'
+  if (-not (Test-Path $workingDir)) {
+    Write-Host '[skip] customer-mobile directory not found'
+    return
+  }
+
+  if (Test-PortListening 8082) {
+    Write-Host '[skip] customer-mobile already listening on port 8082'
+    return
+  }
+
+  $onWindows = [System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT -or $env:OS -like '*Windows*' -or $PSVersionTable.PSEdition -eq 'Desktop' -or $PSVersionTable.Platform -eq 'Win32NT'
+  $expoBin = if ($onWindows) {
+    Join-Path (Join-Path (Join-Path $workingDir 'node_modules') '.bin') 'expo.cmd'
+  } else {
+    Join-Path (Join-Path (Join-Path $workingDir 'node_modules') '.bin') 'expo'
+  }
+  if (-not (Test-Path $expoBin)) {
+    Write-Host '[mobile] expo not found in customer-mobile/node_modules, installing dependencies...' -ForegroundColor Yellow
+    Install-AppDependencies -workingDir $workingDir -name 'customer-mobile'
+  }
+
+  $gatewayBaseUrl = if ($mode -eq 'emulator') {
+    'http://10.0.2.2:3000'
+  } else {
+    $lanIp = Resolve-LanIp
+    "http://$lanIp`:3000"
+  }
+
+  $expoHost = if ($mode -eq 'emulator') { 'localhost' } else { 'lan' }
+
+  if ($onWindows) {
+    $command = "set EXPO_PUBLIC_GATEWAY_BASE_URL=$gatewayBaseUrl && npm run start -- --host $expoHost --port 8082"
+    $launcher = Start-Process `
+      -FilePath 'cmd.exe' `
+      -ArgumentList '/k', $command `
+      -WorkingDirectory $workingDir `
+      -PassThru
+  } else {
+    $env:EXPO_PUBLIC_GATEWAY_BASE_URL = $gatewayBaseUrl
+    $launcher = Start-Process `
+      -FilePath 'npm' `
+      -ArgumentList 'run', 'start', '--', '--host', $expoHost, '--port', '8082' `
+      -WorkingDirectory $workingDir `
+      -PassThru
+  }
+
+  Write-Host "[start] customer-mobile pid=$($launcher.Id) port=8082 mode=$mode"
+  Write-Host "        EXPO_PUBLIC_GATEWAY_BASE_URL=$gatewayBaseUrl"
+}
+
 Push-Location $rootDir
 try {
   if (-not $SkipInfra) {
@@ -273,15 +277,23 @@ try {
   Start-WebUiProcess -name 'public-tracking' -relativePath 'apps/public-tracking' -port 5176
 
   if (-not $SkipMobile) {
-    Write-Host '[ui] starting courier-mobile'
+    Write-Host '[ui] starting courier-mobile & customer-mobile'
     Start-CourierMobileProcess -mode $MobileMode
+    Start-CustomerMobileProcess -mode $MobileMode
+
     Write-Host '[ui] waiting for courier-mobile Metro (port 8081)...'
-    $mobileReady = Wait-PortListening -port 8081 -timeoutSeconds 90 -sleepSeconds 2
-    if (-not $mobileReady) {
+    $courierReady = Wait-PortListening -port 8081 -timeoutSeconds 90 -sleepSeconds 2
+    if (-not $courierReady) {
       Write-Host '[ui] courier-mobile is not listening yet (Metro may still be starting).' -ForegroundColor Yellow
     }
+
+    Write-Host '[ui] waiting for customer-mobile Metro (port 8082)...'
+    $customerReady = Wait-PortListening -port 8082 -timeoutSeconds 90 -sleepSeconds 2
+    if (-not $customerReady) {
+      Write-Host '[ui] customer-mobile is not listening yet (Metro may still be starting).' -ForegroundColor Yellow
+    }
   } else {
-    Write-Host '[ui] skipped courier-mobile by flag'
+    Write-Host '[ui] skipped mobile apps by flag'
   }
 
   Start-Sleep -Seconds 3
@@ -293,7 +305,8 @@ try {
     @{ Name = 'merchant-web'; Port = 5174 },
     @{ Name = 'admin-web'; Port = 5175 },
     @{ Name = 'public-tracking'; Port = 5176 },
-    @{ Name = 'courier-mobile'; Port = 8081 }
+    @{ Name = 'courier-mobile'; Port = 8081 },
+    @{ Name = 'customer-mobile'; Port = 8082 }
   )
 
   $uiRows = foreach ($uiPort in $uiPorts) {
@@ -316,6 +329,7 @@ try {
   Write-Host 'admin-web:       http://localhost:5175'
   Write-Host 'public-tracking: http://localhost:5176'
   Write-Host 'courier-mobile:  http://localhost:8081'
+  Write-Host 'customer-mobile: http://localhost:8082'
 
   Write-Host ''
   Write-Host '=== DATA MODE ==='

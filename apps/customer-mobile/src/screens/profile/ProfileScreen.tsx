@@ -92,6 +92,7 @@ export function ProfileScreen({ navigation }: Props): React.JSX.Element {
               style={styles.menuRow}
               onPress={() => {
                 if (menu.id === 'account') navigation.navigate('AccountDetail');
+                else if (menu.id === 'addresses') navigation.navigate('AddressManagement');
                 else if (menu.id === 'orders') navigation.navigate('OrdersTab');
               }}
             >

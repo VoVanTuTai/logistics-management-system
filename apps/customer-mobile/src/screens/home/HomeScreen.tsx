@@ -99,11 +99,12 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
 
   const fetchRecentShipments = async (showLoading = true) => {
     const token = authStore.getAccessToken();
+    const user = authStore.getUser();
     if (!token) return;
 
     if (showLoading) setLoadingOrders(true);
     try {
-      const response = await shipmentApi.getShipments(token, { limit: 1 });
+      const response = await shipmentApi.getShipments(token, { limit: 5, userId: user?.id });
       const rawItems: ShipmentResponse[] = Array.isArray(response)
         ? response
         : response.items || [];
