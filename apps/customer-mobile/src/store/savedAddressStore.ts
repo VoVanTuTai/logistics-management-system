@@ -16,38 +16,23 @@ export interface SavedAddress {
 
 const STORAGE_KEY = 'NEXUS_SAVED_ADDRESSES_V1';
 
-const INITIAL_DEFAULT_ADDRESSES: SavedAddress[] = [
-  {
-    id: 'addr_default_1',
-    name: 'Trần Tấn Tài',
-    phone: '0908123456',
-    province: 'Thành phố Hồ Chí Minh',
-    district: 'Quận 1',
-    ward: 'Phường Bến Nghé',
-    addressDetail: '123 Đường Nguyễn Huệ',
-    composedAddress: '123 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, Thành phố Hồ Chí Minh',
-    hubCode: 'HUB_SGN_01',
-    hubName: 'Hub Trung tâm Sài Gòn',
-    isDefault: true,
-  },
-];
-
 export const savedAddressStore = {
   getAddresses: async (): Promise<SavedAddress[]> => {
     try {
       const raw = await AsyncStorage.getItem(STORAGE_KEY);
-      if (!raw) {
-        // Save initial default mock address on first run
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_DEFAULT_ADDRESSES));
-        return INITIAL_DEFAULT_ADDRESSES;
-      }
+      if (!raw) return [];
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed as SavedAddress[];
+      if (Array.isArray(parsed)) {
+        // Filter out old initial mock address 'addr_default_1'
+        const cleanList = (parsed as SavedAddress[]).filter((item) => item.id !== 'addr_default_1');
+        if (cleanList.length !== parsed.length) {
+          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(cleanList));
+        }
+        return cleanList;
       }
-      return INITIAL_DEFAULT_ADDRESSES;
+      return [];
     } catch {
-      return INITIAL_DEFAULT_ADDRESSES;
+      return [];
     }
   },
 
