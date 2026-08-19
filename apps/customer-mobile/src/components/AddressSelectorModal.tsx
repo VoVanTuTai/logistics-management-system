@@ -158,7 +158,7 @@ export function AddressSelectorModal({
   onClose,
   accessToken,
 }: Props): React.JSX.Element {
-  const [provinceList, setProvinceList] = useState<VietnamProvince[]>([]);
+  const [provinceList, setProvinceList] = useState<VietnamProvince[]>(FALLBACK_VIETNAM_PROVINCES);
   const [hubList, setHubList] = useState<HubRecord[]>([]);
 
   const [selectedProvince, setSelectedProvince] = useState<VietnamProvince | null>(null);
@@ -182,7 +182,7 @@ export function AddressSelectorModal({
         ]);
 
         if (isMounted) {
-          const validProvinces = Array.isArray(provinces) ? provinces : [];
+          const validProvinces = Array.isArray(provinces) && provinces.length > 0 ? provinces : FALLBACK_VIETNAM_PROVINCES;
           const validHubs = Array.isArray(hubs) ? hubs : [];
 
           setProvinceList(validProvinces);
@@ -208,7 +208,7 @@ export function AddressSelectorModal({
           }
         }
       } catch {
-        // Ignore API load error
+        // Keep initial FALLBACK_VIETNAM_PROVINCES on error
       } finally {
         if (isMounted) setLoadingData(false);
       }

@@ -1,4 +1,5 @@
 import { customerApiClient } from './client';
+import { FALLBACK_VIETNAM_PROVINCES } from '../../utils/vietnamProvincesData';
 
 export interface HubRecord {
   id?: string;
@@ -108,6 +109,6 @@ export const masterdataApi = {
         // try next endpoint
       }
     }
-    return [];
+    return FALLBACK_VIETNAM_PROVINCES;
   },
 };
