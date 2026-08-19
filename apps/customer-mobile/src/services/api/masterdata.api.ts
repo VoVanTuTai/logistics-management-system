@@ -70,22 +70,44 @@ export function parseHubRecord(raw: any): HubRecord {
 
 export const masterdataApi = {
   getHubs: async (accessToken?: string): Promise<HubRecord[]> => {
-    const rawList = await customerApiClient.request<any[]>('/customer/masterdata/hubs?isActive=true', {
-      method: 'GET',
-      accessToken,
-    });
-    if (!Array.isArray(rawList)) return [];
-    return rawList.map(parseHubRecord);
+    const endpoints = [
+      '/public/masterdata/hubs?isActive=true',
+      '/customer/masterdata/hubs?isActive=true',
+    ];
+    for (const ep of endpoints) {
+      try {
+        const rawList = await customerApiClient.request<any[]>(ep, {
+          method: 'GET',
+          accessToken,
+        });
+        if (Array.isArray(rawList) && rawList.length > 0) {
+          return rawList.map(parseHubRecord);
+        }
+      } catch {
+        // try next endpoint
+      }
+    }
+    return [];
   },
 
   getAdministrativeUnits: async (accessToken?: string): Promise<VietnamProvince[]> => {
-    try {
-      return await customerApiClient.request<VietnamProvince[]>(
-        '/customer/masterdata/locations/vietnam-administrative-units',
-        { method: 'GET', accessToken },
-      );
-    } catch {
-      return [];
+    const endpoints = [
+      '/public/masterdata/locations/vietnam-administrative-units',
+      '/customer/masterdata/locations/vietnam-administrative-units',
+    ];
+    for (const ep of endpoints) {
+      try {
+        const res = await customerApiClient.request<VietnamProvince[]>(ep, {
+          method: 'GET',
+          accessToken,
+        });
+        if (Array.isArray(res) && res.length > 0) {
+          return res;
+        }
+      } catch {
+        // try next endpoint
+      }
     }
+    return [];
   },
 };
