@@ -7,6 +7,8 @@ import type { OrderModel } from '../types';
 import { copyToClipboard } from '../utils/clipboard';
 import { StatusBadge } from './StatusBadge';
 
+import { printOrShareShippingLabel } from '../services/shippingLabelPrinter';
+
 interface OrderCardProps {
   order: OrderModel;
   onPressDetail: (order: OrderModel) => void;
@@ -21,6 +23,14 @@ export function OrderCard({ order, onPressDetail }: OrderCardProps): React.JSX.E
     order.sender.composedAddress || order.sender.addressDetail || 'Chưa có địa chỉ gửi';
   const receiverAddressText =
     order.receiver.composedAddress || order.receiver.addressDetail || 'Chưa có địa chỉ nhận';
+
+  const handlePrint = async () => {
+    try {
+      await printOrShareShippingLabel(order as any);
+    } catch {
+      // Ignore print cancel
+    }
+  };
 
   return (
     <View style={styles.card}>
@@ -97,14 +107,25 @@ export function OrderCard({ order, onPressDetail }: OrderCardProps): React.JSX.E
           {new Date(order.createdAt).toLocaleDateString('vi-VN')}
         </Text>
 
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => onPressDetail(order)}
-          style={styles.detailBtn}
-        >
-          <Text style={styles.detailBtnText}>Xem chi tiết</Text>
-          <Ionicons name="chevron-forward" size={16} color={colors.primary} />
-        </TouchableOpacity>
+        <View style={styles.footerActions}>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={handlePrint}
+            style={styles.printChipBtn}
+          >
+            <Ionicons name="print-outline" size={15} color={colors.primary} />
+            <Text style={styles.printChipText}>In vận đơn</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => onPressDetail(order)}
+            style={styles.detailBtn}
+          >
+            <Text style={styles.detailBtnText}>Chi tiết</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -225,16 +246,32 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textMuted,
   },
+  footerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  printChipBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    gap: 4,
+  },
+  printChipText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.primary,
+  },
   detailBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 2,
-    paddingHorizontal: 6,
   },
   detailBtnText: {
     fontSize: 13,
     fontWeight: '700',
     color: colors.primary,
-    marginRight: 2,
   },
 });

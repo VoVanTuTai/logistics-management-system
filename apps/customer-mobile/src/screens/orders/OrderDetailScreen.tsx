@@ -20,6 +20,8 @@ import type { ShipmentStatus, TrackingEvent } from '../../types';
 import { copyToClipboard } from '../../utils/clipboard';
 import { mapTimelineEventsForCustomer } from '../../utils/customerTrackingMapper';
 
+import { printOrShareShippingLabel } from '../../services/shippingLabelPrinter';
+
 type Props = NativeStackScreenProps<RootStackParamList, 'OrderDetail'>;
 
 function formatVnd(val: number): string {
@@ -31,6 +33,7 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
   const [liveStatus, setLiveStatus] = useState<ShipmentStatus | string>(order.status);
   const [liveTimeline, setLiveTimeline] = useState<TrackingEvent[]>(order.timeline || []);
   const [refreshing, setRefreshing] = useState(false);
+  const [printing, setPrinting] = useState(false);
 
   const senderAddressText =
     order.sender.composedAddress || order.sender.addressDetail || 'Chưa có địa chỉ gửi';
@@ -72,14 +75,25 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
     fetchLiveTracking();
   };
 
+  const handlePrintWaybill = async () => {
+    setPrinting(true);
+    try {
+      await printOrShareShippingLabel(order);
+    } catch {
+      // Ignore print cancel
+    } finally {
+      setPrinting(false);
+    }
+  };
+
   return (
     <View style={styles.flex}>
       <AppHeader
         title="Chi tiết đơn hàng"
         onBackPress={() => navigation.goBack()}
         rightAction={
-          <TouchableOpacity style={styles.shareBtn} onPress={() => copyToClipboard(order.code, 'mã đơn')}>
-            <Ionicons name="copy-outline" size={20} color={colors.primary} />
+          <TouchableOpacity style={styles.shareBtn} onPress={handlePrintWaybill}>
+            <Ionicons name="print-outline" size={20} color={colors.primary} />
           </TouchableOpacity>
         }
       />
@@ -114,6 +128,19 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
               Ngày tạo: {new Date(order.createdAt).toLocaleString('vi-VN')}
             </Text>
           </View>
+
+          {/* PRINT WAYBILL PDF ACTION BUTTON */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={[styles.printWaybillBtn, printing && styles.printWaybillBtnDisabled]}
+            disabled={printing}
+            onPress={handlePrintWaybill}
+          >
+            <Ionicons name="print" size={18} color="#ffffff" />
+            <Text style={styles.printWaybillText}>
+              {printing ? 'Đang tạo PDF mã vận đơn...' : 'In / Tải PDF Mã vận đơn'}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* 2. TIMELINE JOURNEY */}
@@ -252,6 +279,26 @@ const styles = StyleSheet.create({
   heroDate: {
     fontSize: 12,
     color: colors.textMuted,
+  },
+  printWaybillBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    gap: 8,
+    marginTop: 12,
+    ...shadows.sm,
+  },
+  printWaybillBtnDisabled: {
+    opacity: 0.7,
+  },
+  printWaybillText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#ffffff',
   },
   card: {
     backgroundColor: colors.surface,
