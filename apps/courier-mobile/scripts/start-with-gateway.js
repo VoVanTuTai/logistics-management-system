@@ -1,7 +1,7 @@
 const os = require('os');
 const { spawn } = require('child_process');
 
-const DEFAULT_GATEWAY_BASE_URL = 'http://222.255.181.210:13000';
+const DEFAULT_GATEWAY_BASE_URL = 'http://localhost:3000';
 const DEFAULT_EXPO_PORT = 8081;
 const DEFAULT_NODE_MAX_OLD_SPACE_MB = 4096;
 

@@ -40,12 +40,31 @@ export function captureRawBody(request: RequestWithRawBody, _response: Response,
 
 export function createPayloadErrorHandler(): ErrorRequestHandler {
   return (error: HttpPayloadError, _request: Request, response: Response, next: NextFunction): void => {
-    const status = error.status ?? error.statusCode;
+    if (response.headersSent) {
+      return next(error);
+    }
+
+    const nestStatus =
+      typeof (error as unknown as { getStatus?: () => number }).getStatus === 'function'
+        ? (error as unknown as { getStatus: () => number }).getStatus()
+        : undefined;
+    const status = error.status ?? error.statusCode ?? nestStatus;
+
     if (status === 413 || error.type === 'entity.too.large') {
       response.status(413).json({
         code: 'PAYLOAD_TOO_LARGE',
         message: 'Request payload exceeds the gateway body limit.',
       });
+      return;
+    }
+
+    if (status && status >= 400 && status < 500) {
+      const responsePayload =
+        typeof (error as unknown as { getResponse?: () => unknown }).getResponse === 'function'
+          ? (error as unknown as { getResponse: () => unknown }).getResponse()
+          : { statusCode: status, message: error.message };
+
+      response.status(status).json(responsePayload);
       return;
     }
 

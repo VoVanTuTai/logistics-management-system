@@ -94,3 +94,5 @@ export function useAuthSession(): AuthSession | null {
 
   return session;
 }
+
+export default authStore;

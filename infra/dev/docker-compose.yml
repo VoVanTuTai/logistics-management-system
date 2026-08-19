@@ -72,7 +72,7 @@ services:
       /bin/sh -c '
       /usr/bin/mc alias set myminio http://minio:9000 minioadmin minioadmin123;
       /usr/bin/mc mb myminio/nexus-pod-images --ignore-existing;
-      /usr/bin/mc anonymous set download myminio/nexus-pod-images;
+      /usr/bin/mc anonymous set public myminio/nexus-pod-images;
       cat >/tmp/minio-cors.json <<EOF
       [
         {

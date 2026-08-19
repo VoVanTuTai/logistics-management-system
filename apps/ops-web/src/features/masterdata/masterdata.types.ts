@@ -142,3 +142,15 @@ export interface VietnamProvinceDto {
   phoneCode: number | null;
   wards: VietnamWardDto[];
 }
+
+export interface RegionalHierarchyItemDto {
+  regionKey: 'NORTH' | 'CENTRAL' | 'SOUTH';
+  regionName: string;
+  zoneCode: string;
+  regionalHub: HubDto | null;
+  provincesCount: number;
+  provinces: string[];
+  branchHubsCount: number;
+  branchHubs: HubDto[];
+  totalHubsCount: number;
+}

@@ -49,4 +49,14 @@ export class ReportsController {
   ): Promise<ShipmentStatusSummaryItem[]> {
     return this.reportingQueryService.getShipmentStatusSummary(query);
   }
+
+  @Get('network-overview')
+  getNetworkOverview(@Query() query: DailyReportQuery) {
+    return this.reportingQueryService.getNetworkOverview(query);
+  }
+
+  @Get('regional-summary')
+  getRegionalSummary(@Query() query: DailyReportQuery) {
+    return this.reportingQueryService.getRegionalSummary(query);
+  }
 }

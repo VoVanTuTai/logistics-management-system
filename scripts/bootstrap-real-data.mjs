@@ -22,6 +22,7 @@ const SHOULD_BACKDATE = process.env.BOOTSTRAP_BACKDATE !== '0';
 
 const USERS = [
   { username: '10000001', roles: ['SYSTEM_ADMIN'], displayName: 'Admin Nexus', phone: '0901000001', hubCodes: ['HCM-001'] },
+  { username: '20000000', roles: ['OPS_ADMIN'], displayName: 'Điều hành HQ Toàn Quốc', phone: '0902000000', hubCodes: ['HCM-001', 'HN-001', 'DN-001'] },
   { username: '20000001', roles: ['OPS_ADMIN'], displayName: 'Điều phối HCM', phone: '0902000001', hubCodes: ['HCM-001'] },
   { username: '20000002', roles: ['OPS_VIEWER'], displayName: 'Giám sát Hà Nội', phone: '0902000002', hubCodes: ['HN-001'] },
   { username: '20000003', roles: ['OPS_ADMIN'], displayName: 'Điều phối Đà Nẵng', phone: '0902000003', hubCodes: ['DN-001'] },

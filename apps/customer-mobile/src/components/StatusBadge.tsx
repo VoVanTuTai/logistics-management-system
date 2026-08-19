@@ -5,29 +5,60 @@ import { colors } from '../theme';
 import type { ShipmentStatus } from '../types';
 
 interface StatusBadgeProps {
-  status: ShipmentStatus;
+  status: ShipmentStatus | string;
 }
 
-export function formatStatusLabel(status: ShipmentStatus): string {
-  switch (status) {
+export function formatStatusLabel(status: string): string {
+  if (!status) return 'Chờ xử lý';
+  const s = String(status).trim().toUpperCase();
+
+  switch (s) {
     case 'CREATED':
+    case 'PENDING':
+    case 'REQUESTED':
       return 'Chờ lấy hàng';
+
+    case 'PICKUP_ASSIGNED':
+      return 'Đã phân công lấy';
+
     case 'PICKUP_COMPLETED':
+    case 'PICKED_UP':
+    case 'SCAN_PICKUP':
       return 'Đã lấy hàng';
+
     case 'IN_TRANSIT':
+    case 'MANIFEST_DISPATCHED':
+    case 'OUTBOUND':
       return 'Đang vận chuyển';
+
     case 'ARRIVED_HUB':
+    case 'SCAN_INBOUND':
+    case 'HUB_ARRIVED':
+    case 'MANIFEST_RECEIVED':
       return 'Đã đến Hub';
+
     case 'READY_FOR_DELIVERY':
-      return 'Đang giao';
+    case 'DELIVERY_ASSIGNED':
+    case 'DELIVERY_DISPATCHED':
+    case 'DELIVERING':
+      return 'Đang giao hàng';
+
     case 'DELIVERED':
+    case 'DELIVERY_SUCCESS':
       return 'Giao thành công';
+
     case 'DELIVERY_FAILED':
+    case 'NDR_CREATED':
       return 'Giao thất bại';
+
     case 'RETURNED':
+    case 'RETURN_COMPLETED':
+    case 'RETURN_STARTED':
       return 'Chuyển hoàn';
+
     case 'CANCELLED':
       return 'Đã hủy';
+
     default:
       return status;
   }
@@ -35,20 +66,40 @@ export function formatStatusLabel(status: ShipmentStatus): string {
 
 export function StatusBadge({ status }: StatusBadgeProps): React.JSX.Element {
   const getStyle = () => {
-    switch (status) {
+    const s = String(status || '').trim().toUpperCase();
+    switch (s) {
       case 'DELIVERED':
+      case 'DELIVERY_SUCCESS':
         return { bg: colors.successLight, text: colors.success, dot: colors.success };
+
       case 'READY_FOR_DELIVERY':
+      case 'DELIVERY_ASSIGNED':
+      case 'DELIVERY_DISPATCHED':
+      case 'DELIVERING':
       case 'IN_TRANSIT':
+      case 'MANIFEST_DISPATCHED':
+      case 'OUTBOUND':
         return { bg: colors.infoLight, text: colors.info, dot: colors.info };
+
       case 'CREATED':
+      case 'PENDING':
+      case 'PICKUP_ASSIGNED':
       case 'PICKUP_COMPLETED':
+      case 'PICKED_UP':
+      case 'SCAN_PICKUP':
       case 'ARRIVED_HUB':
+      case 'SCAN_INBOUND':
+      case 'HUB_ARRIVED':
         return { bg: colors.warningLight, text: colors.warning, dot: colors.warning };
+
       case 'DELIVERY_FAILED':
+      case 'NDR_CREATED':
       case 'RETURNED':
+      case 'RETURN_COMPLETED':
+      case 'RETURN_STARTED':
       case 'CANCELLED':
         return { bg: colors.dangerLight, text: colors.danger, dot: colors.danger };
+
       default:
         return { bg: colors.background, text: colors.textSecondary, dot: colors.textMuted };
     }

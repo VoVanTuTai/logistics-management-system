@@ -6,7 +6,7 @@ import { authClient } from './auth.client';
 import { clearAuthSession, persistAuthSession } from './auth.session';
 import type { LoginFormValues } from './auth.types';
 
-const OPS_ALLOWED_ROLES = new Set(['SYSTEM_ADMIN', 'OPS_ADMIN', 'OPS_VIEWER']);
+const OPS_ALLOWED_ROLES = new Set(['SYSTEM_ADMIN', 'OPS_ADMIN', 'OPS_VIEWER', 'OPS_MANAGER']);
 
 export const authApi = {
   login: authClient.login,

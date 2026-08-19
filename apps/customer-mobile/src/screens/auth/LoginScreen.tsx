@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -9,9 +8,11 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
+import { AppErrorModal } from '../../components/common/AppErrorModal';
 import { InputField } from '../../components/InputField';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import type { RootStackParamList } from '../../navigation/types';
@@ -22,19 +23,104 @@ import { colors, spacing } from '../../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
+const REMEMBER_ME_STORAGE_KEY = 'NEXUS_REMEMBER_ME_CREDS_V1';
+
+interface ErrorModalState {
+  visible: boolean;
+  title: string;
+  message: string;
+}
+
+function getErrorContent(error: unknown): { title: string; message: string } {
+  if (error instanceof ApiClientError) {
+    if (error.isNetworkError) {
+      const lowerMsg = (error.message || '').toLowerCase();
+      if (lowerMsg.includes('aborted') || lowerMsg.includes('timeout')) {
+        return {
+          title: 'Kết nối quá lâu',
+          message: 'Máy chủ phản hồi quá lâu. Vui lòng thử lại.',
+        };
+      }
+      return {
+        title: 'Không thể kết nối',
+        message: 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại.',
+      };
+    }
+
+    if (error.status === 401) {
+      return {
+        title: 'Đăng nhập thất bại',
+        message: 'Số điện thoại hoặc mật khẩu không đúng. Vui lòng kiểm tra và thử lại.',
+      };
+    }
+
+    if (error.status === 500) {
+      return {
+        title: 'Có lỗi xảy ra',
+        message: 'Hệ thống đang gặp sự cố. Vui lòng thử lại sau.',
+      };
+    }
+  }
+
+  return {
+    title: 'Đăng nhập thất bại',
+    message: 'Số điện thoại hoặc mật khẩu không đúng. Vui lòng kiểm tra và thử lại.',
+  };
+}
+
 export function LoginScreen({ navigation }: Props): React.JSX.Element {
-  const [phone, setPhone] = useState('0901234567');
-  const [password, setPassword] = useState('123456');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorModal, setErrorModal] = useState<ErrorModalState>({
+    visible: false,
+    title: '',
+    message: '',
+  });
+
+  // Load saved "Ghi nhớ đăng nhập" credentials on screen mount
+  useEffect(() => {
+    let isMounted = true;
+    const loadSavedCredentials = async () => {
+      try {
+        const raw = await AsyncStorage.getItem(REMEMBER_ME_STORAGE_KEY);
+        if (raw && isMounted) {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.rememberMe) {
+            setPhone(parsed.username || '');
+            setPassword(parsed.password || '');
+            setRememberMe(true);
+          }
+        }
+      } catch {
+        // Ignore storage read error
+      }
+    };
+    loadSavedCredentials();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleLogin = async () => {
+    if (loading) return;
+
     if (!phone.trim()) {
-      Alert.alert('Lỗi', 'Vui lòng nhập số điện thoại hoặc tên đăng nhập.');
+      setErrorModal({
+        visible: true,
+        title: 'Thiếu thông tin',
+        message: 'Vui lòng nhập số điện thoại hoặc tên đăng nhập.',
+      });
       return;
     }
     if (!password.trim()) {
-      Alert.alert('Lỗi', 'Vui lòng nhập mật khẩu.');
+      setErrorModal({
+        visible: true,
+        title: 'Thiếu thông tin',
+        message: 'Vui lòng nhập mật khẩu.',
+      });
       return;
     }
 
@@ -50,6 +136,20 @@ export function LoginScreen({ navigation }: Props): React.JSX.Element {
         throw new Error('Không nhận được token xác thực từ máy chủ.');
       }
 
+      // Handle Remember Me persistence
+      if (rememberMe) {
+        await AsyncStorage.setItem(
+          REMEMBER_ME_STORAGE_KEY,
+          JSON.stringify({
+            username: phone.trim(),
+            password: password.trim(),
+            rememberMe: true,
+          }),
+        ).catch(() => {});
+      } else {
+        await AsyncStorage.removeItem(REMEMBER_ME_STORAGE_KEY).catch(() => {});
+      }
+
       authStore.setSession({
         accessToken: token,
         user: {
@@ -57,14 +157,18 @@ export function LoginScreen({ navigation }: Props): React.JSX.Element {
           username: result.user.username,
           displayName: result.user.displayName || result.user.username,
           phone: result.user.phone || result.user.username,
-          roles: result.user.roles || ['MERCHANT'],
+          roles: result.user.roles || ['CUSTOMER'],
         },
       });
 
       navigation.replace('MainTabs', { screen: 'HomeTab' });
     } catch (error) {
-      const msg = error instanceof ApiClientError ? error.message : 'Tài khoản hoặc mật khẩu không chính xác.';
-      Alert.alert('Đăng nhập thất bại', msg);
+      const errContent = getErrorContent(error);
+      setErrorModal({
+        visible: true,
+        title: errContent.title,
+        message: errContent.message,
+      });
     } finally {
       setLoading(false);
     }
@@ -73,9 +177,14 @@ export function LoginScreen({ navigation }: Props): React.JSX.Element {
   return (
     <KeyboardAvoidingView
       style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 20}
     >
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.headerArea}>
           <View style={styles.logoBadge}>
             <Ionicons name="cube" size={38} color={colors.surface} />
@@ -110,12 +219,29 @@ export function LoginScreen({ navigation }: Props): React.JSX.Element {
             required
           />
 
-          <TouchableOpacity style={styles.forgotPassBtn}>
-            <Text style={styles.forgotPassText}>Quên mật khẩu?</Text>
-          </TouchableOpacity>
+          {/* OPTIONS ROW: REMEMBER ME CHECKBOX + FORGOT PASSWORD */}
+          <View style={styles.optionsRow}>
+            <TouchableOpacity
+              style={styles.rememberRow}
+              activeOpacity={0.8}
+              onPress={() => setRememberMe(!rememberMe)}
+            >
+              <Ionicons
+                name={rememberMe ? 'checkbox' : 'square-outline'}
+                size={20}
+                color={rememberMe ? colors.primary : colors.textMuted}
+              />
+              <Text style={styles.rememberText}>Ghi nhớ đăng nhập</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.forgotPassBtn}>
+              <Text style={styles.forgotPassText}>Quên mật khẩu?</Text>
+            </TouchableOpacity>
+          </View>
 
           <PrimaryButton
             title="Đăng nhập"
+            loadingTitle="Đang đăng nhập..."
             onPress={handleLogin}
             loading={loading}
             size="lg"
@@ -130,6 +256,13 @@ export function LoginScreen({ navigation }: Props): React.JSX.Element {
           </View>
         </View>
       </ScrollView>
+
+      <AppErrorModal
+        visible={errorModal.visible}
+        title={errorModal.title}
+        message={errorModal.message}
+        onClose={() => setErrorModal((prev) => ({ ...prev, visible: false }))}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -186,10 +319,23 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: spacing.lg,
   },
-  forgotPassBtn: {
-    alignSelf: 'flex-end',
-    marginBottom: spacing.lg,
+  optionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginVertical: spacing.md,
   },
+  rememberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  rememberText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  forgotPassBtn: {},
   forgotPassText: {
     fontSize: 13,
     color: colors.primary,

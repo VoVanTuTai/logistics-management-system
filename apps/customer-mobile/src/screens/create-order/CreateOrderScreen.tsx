@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -13,7 +12,9 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
 import { AddressSelectorModal, type StructuredAddress } from '../../components/AddressSelectorModal';
+import { SavedAddressPickerModal } from '../../components/SavedAddressPickerModal';
 import { AppHeader } from '../../components/AppHeader';
+import { AppModal, type ModalVariant } from '../../components/common/AppModal';
 import { InputField } from '../../components/InputField';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { StepIndicator } from '../../components/StepIndicator';
@@ -23,6 +24,7 @@ import { ApiClientError } from '../../services/api/client';
 import { pricingApi, type PricingQuoteResponse } from '../../services/api/pricing.api';
 import { shipmentApi } from '../../services/api/shipment.api';
 import { authStore, useAuthSession } from '../../store/authStore';
+import { savedAddressStore } from '../../store/savedAddressStore';
 import { colors, shadows, spacing } from '../../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateOrder'>;
@@ -31,7 +33,7 @@ function formatVnd(val: number): string {
   return new Intl.NumberFormat('vi-VN').format(val) + 'đ';
 }
 
-export function CreateOrderScreen({ navigation }: Props): React.JSX.Element {
+export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Element {
   const session = useAuthSession();
   const user = session?.user;
 
@@ -43,11 +45,37 @@ export function CreateOrderScreen({ navigation }: Props): React.JSX.Element {
   // Address Modals state
   const [showSenderAddressModal, setShowSenderAddressModal] = useState(false);
   const [showReceiverAddressModal, setShowReceiverAddressModal] = useState(false);
+  const [showSavedAddressPickerModal, setShowSavedAddressPickerModal] = useState(false);
 
   // Sender details
+  const [senderAddressMode, setSenderAddressMode] = useState<'SAVED' | 'MANUAL'>('SAVED');
   const [senderName, setSenderName] = useState(user?.displayName || user?.username || '');
   const [senderPhone, setSenderPhone] = useState(user?.phone || user?.username || '');
   const [senderAddress, setSenderAddress] = useState<StructuredAddress | null>(null);
+
+  const handleSelectSenderMode = async (mode: 'SAVED' | 'MANUAL') => {
+    setSenderAddressMode(mode);
+    if (mode === 'SAVED') {
+      const def = await savedAddressStore.getDefaultAddress();
+      if (def) {
+        setSenderName(def.name);
+        setSenderPhone(def.phone);
+        setSenderAddress({
+          province: def.province || '',
+          district: def.district || '',
+          ward: def.ward || '',
+          addressDetail: def.addressDetail || '',
+          composedAddress: def.composedAddress || '',
+          hubCode: def.hubCode || '',
+          hubName: def.hubName || '',
+        });
+      }
+    } else {
+      setSenderName(user?.displayName || user?.username || '');
+      setSenderPhone(user?.phone || user?.username || '');
+      setSenderAddress(null);
+    }
+  };
 
   // Receiver details
   const [receiverName, setReceiverName] = useState('');
@@ -76,6 +104,44 @@ export function CreateOrderScreen({ navigation }: Props): React.JSX.Element {
       if (!senderPhone) setSenderPhone(user.phone || user.username || '');
     }
   }, [user]);
+
+  // Auto-prefill default sender address from savedAddressStore if no route params override
+  useEffect(() => {
+    let isMounted = true;
+    savedAddressStore.getDefaultAddress().then((def) => {
+      if (def && isMounted && !route.params?.prefilledSenderAddress) {
+        setSenderName(def.name);
+        setSenderPhone(def.phone);
+        setSenderAddress({
+          province: def.province || '',
+          district: def.district || '',
+          ward: def.ward || '',
+          addressDetail: def.addressDetail || '',
+          composedAddress: def.composedAddress || '',
+          hubCode: def.hubCode || '',
+          hubName: def.hubName || '',
+        });
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Sync prefilled params from PriceCalculatorScreen
+  useEffect(() => {
+    const params = route.params;
+    if (params) {
+      if (params.prefilledSenderAddress) setSenderAddress(params.prefilledSenderAddress);
+      if (params.prefilledReceiverAddress) setReceiverAddress(params.prefilledReceiverAddress);
+      if (params.prefilledWeightKg) setWeightKg(params.prefilledWeightKg);
+      if (params.prefilledLengthCm) setLengthCm(params.prefilledLengthCm);
+      if (params.prefilledWidthCm) setWidthCm(params.prefilledWidthCm);
+      if (params.prefilledHeightCm) setHeightCm(params.prefilledHeightCm);
+      if (params.prefilledHasCod !== undefined) setHasCod(params.prefilledHasCod);
+      if (params.prefilledCodAmount) setCodAmount(params.prefilledCodAmount);
+    }
+  }, [route.params]);
 
   // Calculate pricing quote dynamically from live backend pricing-service
   useEffect(() => {
@@ -134,28 +200,56 @@ export function CreateOrderScreen({ navigation }: Props): React.JSX.Element {
     receiverAddress?.hubCode,
   ]);
 
+  const [modalConfig, setModalConfig] = useState<{
+    visible: boolean;
+    variant: ModalVariant;
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+  }>({
+    visible: false,
+    variant: 'warning',
+    title: '',
+    message: '',
+  });
+
+  const showModal = (
+    title: string,
+    message: string,
+    variant: ModalVariant = 'warning',
+    onConfirm?: () => void,
+  ) => {
+    setModalConfig({
+      visible: true,
+      variant,
+      title,
+      message,
+      onConfirm,
+    });
+  };
+
   const handleNextStep = async () => {
     if (step === 1) {
       if (!senderName.trim() || !senderPhone.trim()) {
-        Alert.alert('Thiếu thông tin', 'Vui lòng nhập tên và số điện thoại người gửi.');
+        showModal('Thiếu thông tin', 'Vui lòng nhập tên và số điện thoại người gửi.');
         return;
       }
       if (!senderAddress) {
-        Alert.alert('Thiếu thông tin', 'Vui lòng chọn địa chỉ người gửi.');
+        showModal('Thiếu thông tin', 'Vui lòng chọn địa chỉ người gửi.');
         return;
       }
       if (!receiverName.trim() || !receiverPhone.trim()) {
-        Alert.alert('Thiếu thông tin', 'Vui lòng nhập tên và số điện thoại người nhận.');
+        showModal('Thiếu thông tin', 'Vui lòng nhập tên và số điện thoại người nhận.');
         return;
       }
       if (!receiverAddress) {
-        Alert.alert('Thiếu thông tin', 'Vui lòng chọn địa chỉ người nhận.');
+        showModal('Thiếu thông tin', 'Vui lòng chọn địa chỉ người nhận.');
         return;
       }
       setStep(2);
     } else if (step === 2) {
       if (!itemName.trim() || !weightKg.trim()) {
-        Alert.alert('Thiếu thông tin', 'Vui lòng nhập tên hàng hóa và khối lượng.');
+        showModal('Thiếu thông tin', 'Vui lòng nhập tên hàng hóa và khối lượng.');
         return;
       }
       setStep(3);
@@ -163,13 +257,12 @@ export function CreateOrderScreen({ navigation }: Props): React.JSX.Element {
       // Step 3 -> Create Shipment on Live Backend using SAME Merchant API & DTO
       const token = authStore.getAccessToken() || session?.accessToken;
       if (!token) {
-        Alert.alert('Phiên làm việc', 'Vui lòng đăng nhập lại để tiếp tục tạo đơn.');
-        navigation.replace('Login');
+        showModal('Phiên làm việc', 'Vui lòng đăng nhập lại để tiếp tục tạo đơn.', 'warning', () => navigation.replace('Login'));
         return;
       }
 
       if (!senderAddress || !receiverAddress) {
-        Alert.alert('Lỗi địa chỉ', 'Vui lòng chọn đầy đủ địa chỉ gửi và địa chỉ nhận.');
+        showModal('Lỗi địa chỉ', 'Vui lòng chọn đầy đủ địa chỉ gửi và địa chỉ nhận.');
         return;
       }
 
@@ -241,7 +334,7 @@ export function CreateOrderScreen({ navigation }: Props): React.JSX.Element {
         navigation.replace('CreateOrderSuccess', { orderCode: createdShipment.code });
       } catch (error) {
         const msg = error instanceof ApiClientError ? error.message : 'Tạo vận đơn thất bại.';
-        Alert.alert('Lỗi tạo đơn', msg);
+        showModal('Lỗi tạo đơn', msg, 'error');
       } finally {
         setSubmitting(false);
       }
@@ -259,12 +352,17 @@ export function CreateOrderScreen({ navigation }: Props): React.JSX.Element {
   return (
     <KeyboardAvoidingView
       style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 20}
     >
       <AppHeader title="Tạo đơn hàng mới" onBackPress={handlePrevStep} />
       <StepIndicator currentStep={step} />
 
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         {/* STEP 1: ĐỊA CHỈ GỬI & NHẬN (Lấy từ Database Masterdata) */}
         {step === 1 ? (
           <View style={styles.stepBlock}>
@@ -275,38 +373,123 @@ export function CreateOrderScreen({ navigation }: Props): React.JSX.Element {
                 <Text style={styles.cardTitle}>Thông tin người gửi</Text>
               </View>
 
-              <InputField
-                label="Họ và tên người gửi"
-                placeholder="Nhập tên người gửi"
-                value={senderName}
-                onChangeText={setSenderName}
-                required
-              />
-              <InputField
-                label="Số điện thoại người gửi"
-                placeholder="09xxxxxxxx"
-                keyboardType="phone-pad"
-                value={senderPhone}
-                onChangeText={setSenderPhone}
-                required
-              />
+              {/* MODE SELECTOR: SAVED ADDRESS vs MANUAL ENTRY */}
+              <View style={styles.senderModeGroup}>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  style={[styles.senderModePill, senderAddressMode === 'SAVED' && styles.senderModePillActive]}
+                  onPress={() => handleSelectSenderMode('SAVED')}
+                >
+                  <Ionicons
+                    name={senderAddressMode === 'SAVED' ? 'radio-button-on' : 'radio-button-off'}
+                    size={17}
+                    color={senderAddressMode === 'SAVED' ? colors.primary : colors.textMuted}
+                  />
+                  <Text style={[styles.senderModeText, senderAddressMode === 'SAVED' && styles.senderModeTextActive]}>
+                    Địa chỉ của tôi (Mặc định)
+                  </Text>
+                </TouchableOpacity>
 
-              <Text style={styles.fieldLabel}>Địa chỉ người gửi (Chọn từ Database) *</Text>
-              <TouchableOpacity
-                activeOpacity={0.8}
-                style={[styles.addressBoxSelect, !senderAddress && styles.addressBoxUnselected]}
-                onPress={() => setShowSenderAddressModal(true)}
-              >
-                {senderAddress ? (
-                  <View style={styles.addressBoxTextCol}>
-                    <Text style={styles.addressComposedText}>{senderAddress.composedAddress}</Text>
-                    <Text style={styles.addressHubText}>📍 Bưu cục gửi: {senderAddress.hubName} [{senderAddress.hubCode}]</Text>
-                  </View>
-                ) : (
-                  <Text style={styles.addressPlaceholderText}>+ Bấm để chọn Tỉnh / Thành / Bưu cục gửi</Text>
-                )}
-                <Ionicons name="chevron-forward" size={20} color={colors.primary} />
-              </TouchableOpacity>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  style={[styles.senderModePill, senderAddressMode === 'MANUAL' && styles.senderModePillActive]}
+                  onPress={() => handleSelectSenderMode('MANUAL')}
+                >
+                  <Ionicons
+                    name={senderAddressMode === 'MANUAL' ? 'radio-button-on' : 'radio-button-off'}
+                    size={17}
+                    color={senderAddressMode === 'MANUAL' ? colors.primary : colors.textMuted}
+                  />
+                  <Text style={[styles.senderModeText, senderAddressMode === 'MANUAL' && styles.senderModeTextActive]}>
+                    Tự nhập địa chỉ mới
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* SAVED ADDRESS MODE */}
+              {senderAddressMode === 'SAVED' ? (
+                <View style={styles.modeSection}>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    style={styles.pickSavedBtn}
+                    onPress={() => setShowSavedAddressPickerModal(true)}
+                  >
+                    <Ionicons name="book-outline" size={16} color={colors.primary} />
+                    <Text style={styles.pickSavedBtnText}>Đổi từ danh sách Địa chỉ của tôi</Text>
+                    <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+                  </TouchableOpacity>
+
+                  {/* PRE-FILLED SENDER FORM */}
+                  <InputField
+                    label="Họ và tên người gửi"
+                    placeholder="Nhập tên người gửi"
+                    value={senderName}
+                    onChangeText={setSenderName}
+                    required
+                  />
+                  <InputField
+                    label="Số điện thoại người gửi"
+                    placeholder="09xxxxxxxx"
+                    keyboardType="phone-pad"
+                    value={senderPhone}
+                    onChangeText={setSenderPhone}
+                    required
+                  />
+
+                  <Text style={styles.fieldLabel}>Địa chỉ người gửi (Đã chọn từ Địa chỉ của tôi) *</Text>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    style={[styles.addressBoxSelect, !senderAddress && styles.addressBoxUnselected]}
+                    onPress={() => setShowSavedAddressPickerModal(true)}
+                  >
+                    {senderAddress ? (
+                      <View style={styles.addressBoxTextCol}>
+                        <Text style={styles.addressComposedText}>{senderAddress.composedAddress}</Text>
+                        <Text style={styles.addressHubText}>📍 Bưu cục gửi: {senderAddress.hubName} [{senderAddress.hubCode}]</Text>
+                      </View>
+                    ) : (
+                      <Text style={styles.addressPlaceholderText}>+ Bấm để chọn từ danh sách Địa chỉ của tôi</Text>
+                    )}
+                    <Ionicons name="chevron-forward" size={20} color={colors.primary} />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                /* MANUAL ENTRY MODE */
+                <View style={styles.modeSection}>
+                  <InputField
+                    label="Họ và tên người gửi"
+                    placeholder="Nhập tên người gửi mới"
+                    value={senderName}
+                    onChangeText={setSenderName}
+                    required
+                  />
+                  <InputField
+                    label="Số điện thoại người gửi"
+                    placeholder="09xxxxxxxx"
+                    keyboardType="phone-pad"
+                    value={senderPhone}
+                    onChangeText={setSenderPhone}
+                    required
+                  />
+
+                  <Text style={styles.fieldLabel}>Địa chỉ người gửi mới (Chọn từ Database) *</Text>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    style={[styles.addressBoxSelect, !senderAddress && styles.addressBoxUnselected]}
+                    onPress={() => setShowSenderAddressModal(true)}
+                  >
+                    {senderAddress ? (
+                      <View style={styles.addressBoxTextCol}>
+                        <Text style={styles.addressComposedText}>{senderAddress.composedAddress}</Text>
+                        <Text style={styles.addressHubText}>📍 Bưu cục gửi: {senderAddress.hubName} [{senderAddress.hubCode}]</Text>
+                      </View>
+                    ) : (
+                      <Text style={styles.addressPlaceholderText}>+ Bấm để chọn Tỉnh / Thành / Bưu cục gửi mới</Text>
+                    )}
+                    <Ionicons name="chevron-forward" size={20} color={colors.primary} />
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
 
             {/* RECEIVER CARD */}
@@ -570,6 +753,39 @@ export function CreateOrderScreen({ navigation }: Props): React.JSX.Element {
         onConfirm={(addr) => setReceiverAddress(addr)}
         onClose={() => setShowReceiverAddressModal(false)}
       />
+
+      {/* SAVED ADDRESS PICKER MODAL */}
+      <SavedAddressPickerModal
+        visible={showSavedAddressPickerModal}
+        onClose={() => setShowSavedAddressPickerModal(false)}
+        onSelectAddress={(picked) => {
+          setSenderName(picked.name);
+          setSenderPhone(picked.phone);
+          setSenderAddress({
+            province: picked.province || '',
+            district: picked.district || '',
+            ward: picked.ward || '',
+            addressDetail: picked.addressDetail || '',
+            composedAddress: picked.composedAddress || '',
+            hubCode: picked.hubCode || '',
+            hubName: picked.hubName || '',
+          });
+        }}
+        onManageAddresses={() => navigation.navigate('AddressManagement')}
+      />
+
+      <AppModal
+        visible={modalConfig.visible}
+        variant={modalConfig.variant}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        onConfirm={() => {
+          setModalConfig((prev) => ({ ...prev, visible: false }));
+          if (modalConfig.onConfirm) {
+            modalConfig.onConfirm();
+          }
+        }}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -581,7 +797,7 @@ const styles = StyleSheet.create({
   },
   container: {
     padding: spacing.lg,
-    paddingBottom: spacing.xxl,
+    paddingBottom: 220,
   },
   stepBlock: {
     gap: spacing.lg,
@@ -812,5 +1028,56 @@ const styles = StyleSheet.create({
   },
   nextStepBtnCol: {
     flex: 1,
+  },
+  senderModeGroup: {
+    flexDirection: 'column',
+    gap: 8,
+    marginBottom: spacing.md,
+  },
+  senderModePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: colors.borderSubtle,
+    borderRadius: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+    gap: 8,
+  },
+  senderModePillActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryLight,
+  },
+  senderModeText: {
+    fontSize: 13.5,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  senderModeTextActive: {
+    color: colors.primary,
+    fontWeight: '800',
+  },
+  modeSection: {
+    gap: spacing.xs,
+  },
+  pickSavedBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+    marginBottom: spacing.xs,
+  },
+  pickSavedBtnText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.primary,
+    marginLeft: 6,
   },
 });

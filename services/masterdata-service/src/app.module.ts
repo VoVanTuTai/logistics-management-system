@@ -4,6 +4,7 @@ import { AdminAuditController } from './api/controllers/admin-audit.controller';
 import { ConfigsController } from './api/controllers/configs.controller';
 import { HubsController } from './api/controllers/hubs.controller';
 import { MerchantProfilesController } from './api/controllers/merchant-profiles.controller';
+import { CustomerProfilesController } from './api/controllers/customer-profiles.controller';
 import { NdrReasonsController } from './api/controllers/ndr-reasons.controller';
 import { VietnamAdministrativeUnitsController } from './api/controllers/vietnam-administrative-units.controller';
 import { ZonesController } from './api/controllers/zones.controller';
@@ -12,6 +13,7 @@ import { AdminAuditService } from './application/services/admin-audit.service';
 import { ConfigsService } from './application/services/configs.service';
 import { HubsService } from './application/services/hubs.service';
 import { MerchantProfilesService } from './application/services/merchant-profiles.service';
+import { CustomerProfilesService } from './application/services/customer-profiles.service';
 import { NdrReasonsService } from './application/services/ndr-reasons.service';
 import { VietnamAdministrativeUnitsService } from './application/services/vietnam-administrative-units.service';
 import { ZonesService } from './application/services/zones.service';
@@ -19,6 +21,7 @@ import { CourierAreaAssignmentsService } from './application/services/courier-ar
 import { ConfigRepository } from './domain/repositories/config.repository';
 import { HubRepository } from './domain/repositories/hub.repository';
 import { MerchantProfileRepository } from './domain/repositories/merchant-profile.repository';
+import { CustomerProfileRepository } from './domain/repositories/customer-profile.repository';
 import { NdrReasonRepository } from './domain/repositories/ndr-reason.repository';
 import { OutboxEventRepository } from './domain/repositories/outbox-event.repository';
 import { ZoneRepository } from './domain/repositories/zone.repository';
@@ -27,6 +30,7 @@ import { HealthModule } from './health/health.module';
 import { ConfigPrismaRepository } from './infrastructure/prisma/config-prisma.repository';
 import { HubPrismaRepository } from './infrastructure/prisma/hub-prisma.repository';
 import { MerchantProfilePrismaRepository } from './infrastructure/prisma/merchant-profile-prisma.repository';
+import { CustomerProfilePrismaRepository } from './infrastructure/prisma/customer-profile-prisma.repository';
 import { NdrReasonPrismaRepository } from './infrastructure/prisma/ndr-reason-prisma.repository';
 import { OutboxEventPrismaRepository } from './infrastructure/prisma/outbox-event-prisma.repository';
 import { PrismaService } from './infrastructure/prisma/prisma.service';
@@ -45,6 +49,7 @@ import { MasterdataOutboxService } from './messaging/outbox/masterdata-outbox.se
     NdrReasonsController,
     ConfigsController,
     MerchantProfilesController,
+    CustomerProfilesController,
     VietnamAdministrativeUnitsController,
     CourierAreaAssignmentsController,
   ],
@@ -56,6 +61,7 @@ import { MasterdataOutboxService } from './messaging/outbox/masterdata-outbox.se
     NdrReasonsService,
     ConfigsService,
     MerchantProfilesService,
+    CustomerProfilesService,
     VietnamAdministrativeUnitsService,
     CourierAreaAssignmentsService,
     MasterdataEventsProducer,
@@ -80,6 +86,10 @@ import { MasterdataOutboxService } from './messaging/outbox/masterdata-outbox.se
     {
       provide: MerchantProfileRepository,
       useClass: MerchantProfilePrismaRepository,
+    },
+    {
+      provide: CustomerProfileRepository,
+      useClass: CustomerProfilePrismaRepository,
     },
     {
       provide: OutboxEventRepository,

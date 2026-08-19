@@ -103,9 +103,18 @@ export class ShipmentsService {
   async create(input: CreateShipmentInput): Promise<Shipment> {
     const pricedInput = await this.pricingClientService.applyQuote(input);
     const normalizedCode = this.normalizeCode(pricedInput.code ?? null);
+    const receiverPhone = extractReceiverPhoneFromMetadata(pricedInput.metadata);
+
+    const inputWithOwnership: CreateShipmentInput = {
+      ...pricedInput,
+      createdByUserId: pricedInput.createdByUserId ?? null,
+      createdByType: pricedInput.createdByType ?? null,
+      receiverPhone,
+    };
+
     const shipment = normalizedCode
-      ? await this.createWithRequestedCode(pricedInput, normalizedCode)
-      : await this.createWithGeneratedCode(pricedInput);
+      ? await this.createWithRequestedCode(inputWithOwnership, normalizedCode)
+      : await this.createWithGeneratedCode(inputWithOwnership);
 
     await this.shipmentOutboxService.enqueueShipmentCreated(shipment);
 
@@ -655,23 +664,44 @@ function isSameHubOrScopedLocation(
   targetCode: string,
   assignedHubCode: string,
 ): boolean {
-  const targetProvinceScope = getBranchHubProvinceScopePrefix(targetCode);
-  const assignedProvinceScope = getBranchHubProvinceScopePrefix(assignedHubCode);
+  const targetPrefixes = getBranchHubProvinceScopePrefixes(targetCode);
+  const assignedPrefixes = getBranchHubProvinceScopePrefixes(assignedHubCode);
+
+  const hasCommonPrefix = targetPrefixes.some((tp) =>
+    assignedPrefixes.some((ap) => tp === ap || tp.startsWith(ap) || ap.startsWith(tp)),
+  );
 
   return (
     targetCode === assignedHubCode ||
     targetCode.startsWith(`${assignedHubCode}-`) ||
     targetCode.startsWith(`${assignedHubCode}_`) ||
     targetCode.startsWith(`${assignedHubCode}.`) ||
-    (Boolean(targetProvinceScope) &&
-      targetProvinceScope === assignedProvinceScope)
+    hasCommonPrefix
   );
 }
 
-function getBranchHubProvinceScopePrefix(hubCode: string): string | null {
+function getBranchHubProvinceScopePrefixes(hubCode: string): string[] {
   const normalizedHubCode = hubCode.trim().toUpperCase();
 
-  return /^\d{6}[A-Z][A-Z0-9]*$/.test(normalizedHubCode)
-    ? normalizedHubCode.slice(0, 6)
-    : null;
+  // Regional Hubs (e.g. 001N001, 002C001, 003S001) -> Match 3-digit region prefix (001, 002, 003)
+  if (/^\d{3}[A-Z]\d{3}$/.test(normalizedHubCode)) {
+    return [normalizedHubCode.slice(0, 3)];
+  }
+
+  // Branch Hubs (e.g. 003079B001) -> Match 6-digit province prefix (003079) and 3-digit region prefix (003)
+  if (/^\d{6}[A-Z][A-Z0-9]*$/.test(normalizedHubCode)) {
+    return [normalizedHubCode.slice(0, 6), normalizedHubCode.slice(0, 3)];
+  }
+
+  return [];
+}
+
+function extractReceiverPhoneFromMetadata(
+  metadata: JsonValue | null | undefined,
+): string | null {
+  const metadataRecord = asJsonRecord(metadata);
+  const receiverRecord = asJsonRecord(metadataRecord.receiver);
+  const phone = readString(receiverRecord.phone);
+
+  return phone ? phone.trim() : null;
 }

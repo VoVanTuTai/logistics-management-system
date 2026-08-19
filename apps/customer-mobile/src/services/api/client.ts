@@ -31,6 +31,7 @@ export class ApiClientError extends Error {
 
 export class CustomerApiClient {
   private readonly gatewayCandidates: string[];
+  private activeBaseUrl: string | null = null;
 
   constructor(
     private readonly baseUrl: string,
@@ -40,26 +41,29 @@ export class CustomerApiClient {
     this.gatewayCandidates = [baseUrl, ...fallbackBaseUrls].filter(
       (candidate, index, array) => candidate.length > 0 && array.indexOf(candidate) === index,
     );
+    if (this.gatewayCandidates.length > 0) {
+      this.activeBaseUrl = this.gatewayCandidates[0];
+    }
   }
 
   async request<T>(path: string, options: RequestOptions = {}): Promise<T> {
     let lastNetworkError: unknown = null;
-    let lastHttpError: ApiClientError | null = null;
 
-    for (const candidateBaseUrl of this.gatewayCandidates) {
+    const candidates = this.activeBaseUrl
+      ? [this.activeBaseUrl, ...this.gatewayCandidates.filter((c) => c !== this.activeBaseUrl)]
+      : this.gatewayCandidates;
+
+    for (const candidateBaseUrl of candidates) {
       try {
-        return await this.requestWithCandidateBaseUrl<T>(candidateBaseUrl, path, options);
+        const result = await this.requestWithCandidateBaseUrl<T>(candidateBaseUrl, path, options);
+        this.activeBaseUrl = candidateBaseUrl;
+        return result;
       } catch (error) {
         if (error instanceof ApiClientError && !error.isNetworkError) {
-          lastHttpError = error;
-          continue;
+          throw error;
         }
         lastNetworkError = error;
       }
-    }
-
-    if (lastHttpError) {
-      throw lastHttpError;
     }
 
     const fallbackMessage =
@@ -77,7 +81,8 @@ export class CustomerApiClient {
     options: RequestOptions,
   ): Promise<T> {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
+    const effectiveTimeout = Math.min(this.timeoutMs || 5000, 6000);
+    const timeoutId = setTimeout(() => controller.abort(), effectiveTimeout);
 
     try {
       const response = await fetch(`${candidateBaseUrl}${path}`, {
@@ -109,9 +114,9 @@ export class CustomerApiClient {
         throw error;
       }
 
-      const baseMessage = error instanceof Error ? error.message : 'Không thể kết nối đến máy chủ.';
       throw new ApiClientError({
-        message: `${baseMessage} (gateway: ${candidateBaseUrl})`,
+        message: extractNetworkErrorMessage(error, candidateBaseUrl),
+        status: null,
         isNetworkError: true,
       });
     } finally {
@@ -120,29 +125,41 @@ export class CustomerApiClient {
   }
 }
 
-function safeParseJson(rawText: string): unknown {
+function safeParseJson(value: string): unknown {
   try {
-    return JSON.parse(rawText);
+    return JSON.parse(value);
   } catch {
-    return rawText;
+    return value;
   }
 }
 
 function extractErrorMessage(payload: unknown, status: number): string {
-  if (typeof payload === 'string' && payload.length > 0) {
-    return payload;
+  if (payload && typeof payload === 'object') {
+    const record = payload as Record<string, unknown>;
+
+    if (typeof record.message === 'string' && record.message.trim().length > 0) {
+      return record.message;
+    }
+
+    if (
+      Array.isArray(record.message) &&
+      record.message.length > 0 &&
+      typeof record.message[0] === 'string'
+    ) {
+      return record.message.join(', ');
+    }
+
+    if (typeof record.error === 'string' && record.error.trim().length > 0) {
+      return record.error;
+    }
   }
 
-  if (
-    payload !== null &&
-    typeof payload === 'object' &&
-    'message' in payload &&
-    typeof payload.message === 'string'
-  ) {
-    return payload.message;
-  }
+  return `Yêu cầu máy chủ thất bại với mã ${status}.`;
+}
 
-  return `Lỗi kết nối máy chủ (Mã: ${status}).`;
+function extractNetworkErrorMessage(error: unknown, candidateBaseUrl: string): string {
+  const baseMessage = error instanceof Error && error.message ? error.message : 'Network request failed.';
+  return `${baseMessage} (gateway: ${candidateBaseUrl})`;
 }
 
 export const customerApiClient = new CustomerApiClient(

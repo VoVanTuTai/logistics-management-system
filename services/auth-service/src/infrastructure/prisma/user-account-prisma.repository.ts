@@ -9,14 +9,16 @@ import type {
   UserAccountCreateInput,
   UserAccountListFilters,
   UserAccountUpdateInput,
+  UserRoleGroup,
 } from '../../domain/entities/user-account.entity';
 import { UserAccountRepository } from '../../domain/repositories/user-account.repository';
 import { PrismaService } from './prisma.service';
 
-const ROLE_GROUPS: Record<'OPS' | 'SHIPPER' | 'MERCHANT', string[]> = {
+const ROLE_GROUPS: Record<UserRoleGroup, string[]> = {
   OPS: ['OPS_ADMIN', 'OPS_VIEWER'],
   SHIPPER: ['COURIER'],
   MERCHANT: ['MERCHANT'],
+  CUSTOMER: ['CUSTOMER'],
 };
 
 @Injectable()
@@ -87,8 +89,14 @@ export class UserAccountPrismaRepository extends UserAccountRepository {
   }
 
   async findByUsername(username: string): Promise<UserAccount | null> {
-    const record = await this.prisma.userAccount.findUnique({
-      where: { username },
+    const trimmedUsername = username.trim();
+    const record = await this.prisma.userAccount.findFirst({
+      where: {
+        OR: [
+          { username: trimmedUsername },
+          { phone: trimmedUsername },
+        ],
+      },
     });
 
     return record ? this.toEntity(record) : null;

@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
 import {
   useAdminUsersQuery,
@@ -8,6 +8,7 @@ import type { AdminUserDto } from '../../features/auth/auth.types';
 import {
   useCreateHubMutation,
   useHubsQuery,
+  useRegionalHierarchyQuery,
   useUpdateHubMutation,
   useZonesQuery,
 } from '../../features/masterdata/masterdata.api';
@@ -203,6 +204,7 @@ export function HubManagementPage(): React.JSX.Element {
 
   const [appliedFilters, setAppliedFilters] = useState<HubFilters>({});
   const [draftFilters, setDraftFilters] = useState<HubFilters>({});
+  const [expandedRegionKey, setExpandedRegionKey] = useState<string | null>(null);
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingHub, setEditingHub] = useState<HubDto | null>(null);
@@ -212,6 +214,7 @@ export function HubManagementPage(): React.JSX.Element {
   const [actionError, setActionError] = useState<string | null>(null);
 
   const hubsQuery = useHubsQuery(accessToken, appliedFilters);
+  const regionalHierarchyQuery = useRegionalHierarchyQuery(accessToken);
   const zonesQuery = useZonesQuery(accessToken, { isActive: 'true' });
   const opsUsersQuery = useAdminUsersQuery(accessToken, {
     roleGroup: 'OPS',
@@ -527,6 +530,106 @@ export function HubManagementPage(): React.JSX.Element {
         Quản lý bưu cục theo vùng hoạt động và gán nhân sự vận hành.
       </p>
 
+      {/* Thống kê Hub Khu vực 3 Miền */}
+      <div style={{ marginBottom: '24px' }}>
+        <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#1e293b', marginBottom: '12px' }}>
+          Mạng Lưới Hub Tổng 3 Miền (Regional Hub Network)
+        </h3>
+        {regionalHierarchyQuery.isLoading ? <p>Đang tải dữ liệu mạng lưới Hub 3 Miền...</p> : null}
+        {regionalHierarchyQuery.isSuccess && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+            {(regionalHierarchyQuery.data ?? []).map((region) => {
+              const isExpanded = expandedRegionKey === region.regionKey;
+              return (
+                <div
+                  key={region.regionKey}
+                  style={{
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '10px',
+                    padding: '16px',
+                    backgroundColor: '#ffffff',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                    <div>
+                      <span style={{ fontSize: '12px', fontWeight: 700, padding: '2px 8px', borderRadius: '4px', backgroundColor: '#e0f2fe', color: '#0369a1' }}>
+                        Zone {region.zoneCode}
+                      </span>
+                      <h4 style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a', margin: '4px 0 2px 0' }}>
+                        {region.regionName}
+                      </h4>
+                      <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
+                        Hub Tổng: <strong>{region.regionalHub?.name ?? 'Hub Khu vực'}</strong> ({region.regionalHub?.code ?? 'N/A'})
+                      </p>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '16px', margin: '12px 0', padding: '10px', backgroundColor: '#f8fafc', borderRadius: '8px' }}>
+                    <div>
+                      <div style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase' }}>Số Tỉnh/Thành</div>
+                      <div style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>{region.provincesCount} Tỉnh</div>
+                    </div>
+                    <div style={{ borderLeft: '1px solid #e2e8f0', paddingLeft: '16px' }}>
+                      <div style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase' }}>Bưu Cục Tỉnh</div>
+                      <div style={{ fontSize: '20px', fontWeight: 700, color: '#2563eb' }}>{region.branchHubsCount} Bưu cục</div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setExpandedRegionKey(isExpanded ? null : region.regionKey)}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      color: '#2563eb',
+                      backgroundColor: '#eff6ff',
+                      border: '1px solid #bfdbfe',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {isExpanded ? '▼ Thu gọn danh sách Tỉnh & Bưu cục' : `▶ Xem ${region.provincesCount} Tỉnh/Thành & Bưu cục trực thuộc`}
+                  </button>
+
+                  {isExpanded && (
+                    <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px dashed #cbd5e1' }}>
+                      <div style={{ marginBottom: '10px' }}>
+                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                          Danh sách Tỉnh/Thành phủ sóng ({region.provinces.length}):
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                          {region.provinces.map((prov) => (
+                            <span key={prov} style={{ fontSize: '11px', padding: '2px 6px', backgroundColor: '#f1f5f9', borderRadius: '4px', color: '#475569' }}>
+                              {prov}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                          Bưu cục Tỉnh trực thuộc ({region.branchHubs.length}):
+                        </div>
+                        <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '12px', color: '#475569' }}>
+                          {region.branchHubs.map((bh) => (
+                            <li key={bh.id}>
+                              <strong>{bh.name}</strong> ({bh.code})
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       <form onSubmit={onApplyFilters} style={styles.filterForm}>
         <input
           placeholder="Mã bưu cục"
@@ -620,6 +723,7 @@ export function HubManagementPage(): React.JSX.Element {
             <tr>
               <th style={styles.headerCell}>Mã hub</th>
               <th style={styles.headerCell}>Tên hub</th>
+              <th style={styles.headerCell}>Phân cấp Hub</th>
               <th style={styles.headerCell}>Mã zone</th>
               <th style={styles.headerCell}>Địa chỉ</th>
               <th style={styles.headerCell}>Liên hệ</th>
@@ -635,11 +739,23 @@ export function HubManagementPage(): React.JSX.Element {
               const addressPayload = parseHubAddress(hub.address);
               const assignedOps = opsByHub.get(hub.code) ?? [];
               const assignedCouriers = couriersByHub.get(hub.code) ?? [];
+              const isRegionalHub = hub.code === '001N001' || hub.code === '002C001' || hub.code === '003S001';
 
               return (
                 <tr key={hub.id}>
                   <td style={styles.cell}>{hub.code}</td>
                   <td style={styles.cell}>{hub.name}</td>
+                  <td style={styles.cell}>
+                    {isRegionalHub ? (
+                      <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '4px', backgroundColor: '#f3e8ff', color: '#6b21a8' }}>
+                        ★ HUB TỔNG MIỀN
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 8px', borderRadius: '4px', backgroundColor: '#e0f2fe', color: '#0369a1' }}>
+                        BƯU CỤC TỈNH
+                      </span>
+                    )}
+                  </td>
                   <td style={styles.cell}>{hub.zoneCode ?? 'Không có'}</td>
                   <td style={styles.cell}>{formatAddressSummary(addressPayload)}</td>
                   <td style={styles.cell}>{formatContactSummary(addressPayload)}</td>

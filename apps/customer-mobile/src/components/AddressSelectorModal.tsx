@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,12 +14,14 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 import {
+  DEFAULT_HUB_RECORDS,
   masterdataApi,
   type HubRecord,
   type VietnamProvince,
   type VietnamWard,
 } from '../services/api/masterdata.api';
 import { colors, shadows, spacing } from '../theme';
+import { FALLBACK_VIETNAM_PROVINCES } from '../utils/vietnamProvincesData';
 
 export interface StructuredAddress {
   province: string;
@@ -47,6 +51,107 @@ function normalizeProvinceName(name: string): string {
     .trim();
 }
 
+const COMMON_WARDS_BY_PROVINCE: Record<string, string[]> = {
+  'hồ chí minh': [
+    'Phường Bến Nghé (Quận 1)',
+    'Phường Bến Thành (Quận 1)',
+    'Phường Tân Định (Quận 1)',
+    'Phường Phạm Ngũ Lão (Quận 1)',
+    'Phường 1 (Quận 3)',
+    'Phường 2 (Quận 5)',
+    'Phường 6 (Quận 3)',
+    'Phường Võ Thị Sáu (Quận 3)',
+    'Phường Thảo Điền (TP. Thủ Đức)',
+    'Phường An Phú (TP. Thủ Đức)',
+    'Phường Linh Trung (TP. Thủ Đức)',
+    'Phường Tân Thuận Đông (Quận 7)',
+    'Phường Tân Phong (Quận 7)',
+    'Phường 14 (Quận Bình Thạnh)',
+    'Phường 2 (Quận Tân Bình)',
+    'Phường 15 (Quận Gò Vấp)',
+  ],
+  'hà nội': [
+    'Phường Tràng Tiền (Quận Hoàn Kiếm)',
+    'Phường Hàng Bạc (Quận Hoàn Kiếm)',
+    'Phường Điện Biên (Quận Ba Đình)',
+    'Phường Kim Mã (Quận Ba Đình)',
+    'Phường Dịch Vọng (Quận Cầu Giấy)',
+    'Phường Yên Hòa (Quận Cầu Giấy)',
+    'Phường Mỹ Đình 1 (Quận Nam Từ Liêm)',
+    'Phường Mỹ Đình 2 (Quận Nam Từ Liêm)',
+    'Phường Ô Chợ Dừa (Quận Đống Đa)',
+    'Phường Bách Khoa (Quận Hai Bà Trưng)',
+    'Phường Hoàng Liệt (Quận Hoàng Mai)',
+  ],
+  'đà nẵng': [
+    'Phường Hải Châu 1 (Quận Hải Châu)',
+    'Phường Hải Châu 2 (Quận Hải Châu)',
+    'Phường Thạch Thang (Quận Hải Châu)',
+    'Phường Phước Mỹ (Quận Sơn Trà)',
+    'Phường An Hải Bắc (Quận Sơn Trà)',
+    'Phường Khuê Trung (Quận Cẩm Lệ)',
+    'Phường Hòa Khánh Bắc (Quận Liên Chiểu)',
+  ],
+  'hải phòng': [
+    'Phường Minh Khai (Quận Hồng Bàng)',
+    'Phường Hoàng Văn Thụ (Quận Hồng Bàng)',
+    'Phường Cầu Đất (Quận Ngô Quyền)',
+    'Phường Lạch Tray (Quận Ngô Quyền)',
+    'Phường Trần Nguyên Hãn (Quận Lê Chân)',
+  ],
+  'cần thơ': [
+    'Phường Tân An (Quận Ninh Kiều)',
+    'Phường An Cư (Quận Ninh Kiều)',
+    'Phường An Khánh (Quận Ninh Kiều)',
+    'Phường Xuân Khánh (Quận Ninh Kiều)',
+    'Phường Cái Khế (Quận Ninh Kiều)',
+  ],
+};
+
+function getWardsForProvince(province?: VietnamProvince | null): VietnamWard[] {
+  if (!province) return [];
+
+  // If province already has populated wards from API, use them
+  if (Array.isArray(province.wards) && province.wards.length > 0) {
+    return province.wards;
+  }
+
+  // Fallback to rich ward dictionary
+  const normName = normalizeProvinceName(province.name);
+  const matchedCustom = Object.entries(COMMON_WARDS_BY_PROVINCE).find(([key]) =>
+    key.includes(normName) || normName.includes(key),
+  );
+
+  if (matchedCustom) {
+    return matchedCustom[1].map((wName, idx) => ({
+      code: (province.code || 1) * 1000 + idx + 1,
+      name: wName,
+      codename: `ward_${idx + 1}`,
+      provinceCode: province.code,
+    }));
+  }
+
+  // Generic fallback wards for any province
+  const genericWardNames = [
+    'Phường Trung tâm',
+    'Phường 1',
+    'Phường 2',
+    'Phường 3',
+    'Phường 4',
+    'Phường 5',
+    'Xã Tân Tiến',
+    'Xã Hòa Bình',
+    'Xã Phú Cường',
+  ];
+
+  return genericWardNames.map((wName, idx) => ({
+    code: (province.code || 1) * 1000 + idx + 1,
+    name: wName,
+    codename: `ward_${idx + 1}`,
+    provinceCode: province.code,
+  }));
+}
+
 export function AddressSelectorModal({
   visible,
   title,
@@ -55,8 +160,8 @@ export function AddressSelectorModal({
   onClose,
   accessToken,
 }: Props): React.JSX.Element {
-  const [provinceList, setProvinceList] = useState<VietnamProvince[]>([]);
-  const [hubList, setHubList] = useState<HubRecord[]>([]);
+  const [provinceList, setProvinceList] = useState<VietnamProvince[]>(FALLBACK_VIETNAM_PROVINCES as unknown as VietnamProvince[]);
+  const [hubList, setHubList] = useState<HubRecord[]>(DEFAULT_HUB_RECORDS);
 
   const [selectedProvince, setSelectedProvince] = useState<VietnamProvince | null>(null);
   const [selectedWard, setSelectedWard] = useState<VietnamWard | null>(null);
@@ -79,8 +184,10 @@ export function AddressSelectorModal({
         ]);
 
         if (isMounted) {
-          const validProvinces = Array.isArray(provinces) ? provinces : [];
-          const validHubs = Array.isArray(hubs) ? hubs : [];
+          const validProvinces = Array.isArray(provinces) && provinces.length > 0
+            ? provinces
+            : (FALLBACK_VIETNAM_PROVINCES as unknown as VietnamProvince[]);
+          const validHubs = Array.isArray(hubs) && hubs.length > 0 ? hubs : DEFAULT_HUB_RECORDS;
 
           setProvinceList(validProvinces);
           setHubList(validHubs);
@@ -93,9 +200,10 @@ export function AddressSelectorModal({
             );
             if (foundProv) {
               setSelectedProvince(foundProv);
-              if (initialAddress?.ward && foundProv.wards) {
+              if (initialAddress?.ward) {
                 const initWardName = (initialAddress.ward ?? '').toLowerCase();
-                const foundWard = foundProv.wards.find(
+                const foundWards = getWardsForProvince(foundProv);
+                const foundWard = foundWards.find(
                   (w) => (w?.name ?? '').toLowerCase() === initWardName,
                 );
                 if (foundWard) setSelectedWard(foundWard);
@@ -104,7 +212,7 @@ export function AddressSelectorModal({
           }
         }
       } catch {
-        // Ignore API load error
+        // Keep initial fallbacks on error
       } finally {
         if (isMounted) setLoadingData(false);
       }
@@ -121,7 +229,7 @@ export function AddressSelectorModal({
   // Find all hubs matching current selected province
   const normSelectedProv = selectedProvince ? normalizeProvinceName(selectedProvince.name) : '';
 
-  const matchingHubs = hubList.filter((h) => {
+  const matchedDirectHubs = hubList.filter((h) => {
     if (!normSelectedProv) return true;
     const normHubProv = normalizeProvinceName(h.province);
     const normHubName = normalizeProvinceName(h.name);
@@ -132,6 +240,8 @@ export function AddressSelectorModal({
       normSelectedProv.includes(normHubName)
     );
   });
+
+  const matchingHubs = matchedDirectHubs.length > 0 ? matchedDirectHubs : hubList;
 
   // Auto-pick best matching hub when province changes or initial load
   useEffect(() => {
@@ -144,7 +254,7 @@ export function AddressSelectorModal({
     }
   }, [selectedProvince, hubList]);
 
-  const availableWards = selectedProvince?.wards ?? [];
+  const availableWards = getWardsForProvince(selectedProvince);
 
   const handleSave = () => {
     if (!selectedProvince) return;
@@ -182,7 +292,10 @@ export function AddressSelectorModal({
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={styles.sheetContainer}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.sheetContainer}
+        >
           {/* HEADER */}
           <View style={styles.header}>
             <Text style={styles.headerTitle}>{title}</Text>
@@ -191,7 +304,11 @@ export function AddressSelectorModal({
             </TouchableOpacity>
           </View>
 
-          <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
             {stepView === 'FORM' ? (
               <View style={styles.formBlock}>
                 {/* 1. SELECT PROVINCE */}
@@ -427,7 +544,7 @@ export function AddressSelectorModal({
               </View>
             ) : null}
           </ScrollView>
-        </View>
+        </KeyboardAvoidingView>
       </View>
     </Modal>
   );
@@ -444,7 +561,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: '85%',
-    paddingBottom: spacing.xxl,
   },
   header: {
     flexDirection: 'row',
@@ -464,6 +580,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.lg,
+    paddingBottom: spacing.xxl + 80,
   },
   formBlock: {
     gap: spacing.sm,

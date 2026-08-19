@@ -62,6 +62,8 @@ export interface ShipmentFilters {
   createdTo?: string;
   limit?: number;
   offset?: number;
+  userId?: string | null;
+  phone?: string | null;
 }
 
 export const shipmentApi = {
@@ -69,7 +71,7 @@ export const shipmentApi = {
     accessToken: string,
     metadata: CreateShipmentMetadata,
   ): Promise<ShipmentResponse> => {
-    return customerApiClient.request<ShipmentResponse>('/merchant/shipment/shipments', {
+    return customerApiClient.request<ShipmentResponse>('/customer/shipment/shipments', {
       method: 'POST',
       accessToken,
       body: { metadata },
@@ -87,9 +89,32 @@ export const shipmentApi = {
     if (filters.createdTo) params.append('createdTo', filters.createdTo);
     if (filters.limit) params.append('limit', String(filters.limit));
     if (filters.offset) params.append('offset', String(filters.offset));
+    if (filters.userId) params.append('userId', filters.userId);
 
     const queryString = params.toString();
-    const url = `/merchant/shipment/shipments${queryString ? `?${queryString}` : ''}`;
+    const url = `/customer/shipment/shipments/sent${queryString ? `?${queryString}` : ''}`;
+
+    return customerApiClient.request<ShipmentResponse[] | ShipmentListPageResponse>(url, {
+      method: 'GET',
+      accessToken,
+    });
+  },
+
+  getReceivedShipments: async (
+    accessToken: string,
+    filters: ShipmentFilters = {},
+  ): Promise<ShipmentResponse[] | ShipmentListPageResponse> => {
+    const params = new URLSearchParams();
+    if (filters.q) params.append('q', filters.q);
+    if (filters.status && filters.status !== 'ALL') params.append('status', filters.status);
+    if (filters.createdFrom) params.append('createdFrom', filters.createdFrom);
+    if (filters.createdTo) params.append('createdTo', filters.createdTo);
+    if (filters.limit) params.append('limit', String(filters.limit));
+    if (filters.offset) params.append('offset', String(filters.offset));
+    if (filters.phone) params.append('phone', filters.phone);
+
+    const queryString = params.toString();
+    const url = `/customer/shipment/shipments/received${queryString ? `?${queryString}` : ''}`;
 
     return customerApiClient.request<ShipmentResponse[] | ShipmentListPageResponse>(url, {
       method: 'GET',
@@ -101,7 +126,7 @@ export const shipmentApi = {
     accessToken: string,
     code: string,
   ): Promise<ShipmentResponse> => {
-    return customerApiClient.request<ShipmentResponse>(`/merchant/shipment/shipments/${code}`, {
+    return customerApiClient.request<ShipmentResponse>(`/customer/shipment/shipments/${code}`, {
       method: 'GET',
       accessToken,
     });

@@ -8,6 +8,7 @@ export {
   useHubsQuery,
   useMerchantProfilesQuery,
   useNdrReasonsQuery,
+  useRegionalHierarchyQuery,
   useUpdateConfigMutation,
   useUpdateHubMutation,
   useUpdateNdrReasonMutation,
