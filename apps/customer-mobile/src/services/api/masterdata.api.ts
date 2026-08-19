@@ -28,8 +28,47 @@ export interface VietnamProvince {
   wards?: VietnamWard[];
 }
 
+export const DEFAULT_HUB_RECORDS: HubRecord[] = [
+  {
+    code: 'HUB-HN-001',
+    name: 'Bưu cục Khai thác Hà Nội',
+    province: 'Thành phố Hà Nội',
+    district: 'Quận Ba Đình',
+    ward: 'Phường Điện Biên',
+    addressDetail: '12 Tràng Tiền, Quận Hoàn Kiếm, TP. Hà Nội',
+    isActive: true,
+  },
+  {
+    code: 'HUB-CB-001',
+    name: 'Bưu cục Khai thác Cao Bằng',
+    province: 'Tỉnh Cao Bằng',
+    district: 'Thành phố Cao Bằng',
+    ward: 'Phường Thục Phán',
+    addressDetail: 'Trung tâm khai thác Cao Bằng, Phường Thục Phán, Tỉnh Cao Bằng',
+    isActive: true,
+  },
+  {
+    code: 'HUB-HCM-001',
+    name: 'Bưu cục Khai thác TP. Hồ Chí Minh',
+    province: 'Thành phố Hồ Chí Minh',
+    district: 'Quận 1',
+    ward: 'Phường Bến Nghé',
+    addressDetail: '100 Nguyễn Huệ, Quận 1, TP. Hồ Chí Minh',
+    isActive: true,
+  },
+  {
+    code: 'HUB-DN-001',
+    name: 'Bưu cục Khai thác Đà Nẵng',
+    province: 'Thành phố Đà Nẵng',
+    district: 'Quận Hải Châu',
+    ward: 'Phường Hải Châu 1',
+    addressDetail: '50 Bạch Đằng, Quận Hải Châu, TP. Đà Nẵng',
+    isActive: true,
+  },
+];
+
 export function parseHubRecord(raw: any): HubRecord {
-  if (!raw) return { code: 'HUB-DEFAULT', name: 'Bưu cục trung tâm', province: '' };
+  if (!raw) return DEFAULT_HUB_RECORDS[0];
   
   let addrObj: any = {};
   if (typeof raw.address === 'string') {
@@ -49,6 +88,7 @@ export function parseHubRecord(raw: any): HubRecord {
     if (nameStr.includes('Hồ Chí Minh')) province = 'Thành phố Hồ Chí Minh';
     else if (nameStr.includes('Hà Nội')) province = 'Thành phố Hà Nội';
     else if (nameStr.includes('Đà Nẵng')) province = 'Thành phố Đà Nẵng';
+    else if (nameStr.includes('Cao Bằng')) province = 'Tỉnh Cao Bằng';
     else if (nameStr.includes('Bưu cục ')) province = nameStr.replace('Bưu cục ', 'Tỉnh ');
     else province = nameStr;
   }
@@ -88,7 +128,7 @@ export const masterdataApi = {
         // try next endpoint
       }
     }
-    return [];
+    return DEFAULT_HUB_RECORDS;
   },
 
   getAdministrativeUnits: async (accessToken?: string): Promise<VietnamProvince[]> => {

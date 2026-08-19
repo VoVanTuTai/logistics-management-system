@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 import {
+  DEFAULT_HUB_RECORDS,
   masterdataApi,
   type HubRecord,
   type VietnamProvince,
@@ -160,7 +161,7 @@ export function AddressSelectorModal({
   accessToken,
 }: Props): React.JSX.Element {
   const [provinceList, setProvinceList] = useState<VietnamProvince[]>(FALLBACK_VIETNAM_PROVINCES as unknown as VietnamProvince[]);
-  const [hubList, setHubList] = useState<HubRecord[]>([]);
+  const [hubList, setHubList] = useState<HubRecord[]>(DEFAULT_HUB_RECORDS);
 
   const [selectedProvince, setSelectedProvince] = useState<VietnamProvince | null>(null);
   const [selectedWard, setSelectedWard] = useState<VietnamWard | null>(null);
@@ -186,7 +187,7 @@ export function AddressSelectorModal({
           const validProvinces = Array.isArray(provinces) && provinces.length > 0
             ? provinces
             : (FALLBACK_VIETNAM_PROVINCES as unknown as VietnamProvince[]);
-          const validHubs = Array.isArray(hubs) ? hubs : [];
+          const validHubs = Array.isArray(hubs) && hubs.length > 0 ? hubs : DEFAULT_HUB_RECORDS;
 
           setProvinceList(validProvinces);
           setHubList(validHubs);
@@ -211,7 +212,7 @@ export function AddressSelectorModal({
           }
         }
       } catch {
-        // Keep initial FALLBACK_VIETNAM_PROVINCES on error
+        // Keep initial fallbacks on error
       } finally {
         if (isMounted) setLoadingData(false);
       }
@@ -228,7 +229,7 @@ export function AddressSelectorModal({
   // Find all hubs matching current selected province
   const normSelectedProv = selectedProvince ? normalizeProvinceName(selectedProvince.name) : '';
 
-  const matchingHubs = hubList.filter((h) => {
+  const matchedDirectHubs = hubList.filter((h) => {
     if (!normSelectedProv) return true;
     const normHubProv = normalizeProvinceName(h.province);
     const normHubName = normalizeProvinceName(h.name);
@@ -239,6 +240,8 @@ export function AddressSelectorModal({
       normSelectedProv.includes(normHubName)
     );
   });
+
+  const matchingHubs = matchedDirectHubs.length > 0 ? matchedDirectHubs : hubList;
 
   // Auto-pick best matching hub when province changes or initial load
   useEffect(() => {
