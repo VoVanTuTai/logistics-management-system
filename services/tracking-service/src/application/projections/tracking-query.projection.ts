@@ -220,8 +220,16 @@ export class TrackingQueryProjection {
       const eventText = toTimelineTextVi(event.payload, locationCode);
       const source = event.actor?.trim() ? event.actor : 'Hệ thống';
 
+      const rawLocText =
+        (typeof event.payload?.location?.name === 'string'
+          ? event.payload.location.name
+          : null) ||
+        (typeof (event.payload?.data as any)?.locationText === 'string'
+          ? (event.payload.data as any).locationText
+          : null);
+
       let locationText =
-        event.locationText ||
+        rawLocText ||
         (locationCode ? `Kho ${locationCode}` : null);
 
       if (
