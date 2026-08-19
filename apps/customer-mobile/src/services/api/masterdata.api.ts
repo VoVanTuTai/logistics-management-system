@@ -109,6 +109,6 @@ export const masterdataApi = {
         // try next endpoint
       }
     }
-    return FALLBACK_VIETNAM_PROVINCES;
+    return FALLBACK_VIETNAM_PROVINCES as unknown as VietnamProvince[];
   },
 };

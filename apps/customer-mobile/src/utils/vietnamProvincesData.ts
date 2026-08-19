@@ -1,6 +1,20 @@
-import type { VietnamProvince } from '../services/api/masterdata.api';
+export interface FallbackWard {
+  code: number;
+  name: string;
+  codename: string;
+  provinceCode?: number;
+}
 
-export const FALLBACK_VIETNAM_PROVINCES: VietnamProvince[] = [
+export interface FallbackProvince {
+  code: number;
+  name: string;
+  codename: string;
+  divisionType?: string;
+  phoneCode?: number | null;
+  wards?: FallbackWard[];
+}
+
+export const FALLBACK_VIETNAM_PROVINCES: FallbackProvince[] = [
   {
     code: 1,
     name: 'Thành phố Hà Nội',

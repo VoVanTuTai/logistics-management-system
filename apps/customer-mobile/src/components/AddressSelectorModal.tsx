@@ -20,6 +20,7 @@ import {
   type VietnamWard,
 } from '../services/api/masterdata.api';
 import { colors, shadows, spacing } from '../theme';
+import { FALLBACK_VIETNAM_PROVINCES } from '../utils/vietnamProvincesData';
 
 export interface StructuredAddress {
   province: string;
@@ -158,7 +159,7 @@ export function AddressSelectorModal({
   onClose,
   accessToken,
 }: Props): React.JSX.Element {
-  const [provinceList, setProvinceList] = useState<VietnamProvince[]>(FALLBACK_VIETNAM_PROVINCES);
+  const [provinceList, setProvinceList] = useState<VietnamProvince[]>(FALLBACK_VIETNAM_PROVINCES as unknown as VietnamProvince[]);
   const [hubList, setHubList] = useState<HubRecord[]>([]);
 
   const [selectedProvince, setSelectedProvince] = useState<VietnamProvince | null>(null);
@@ -182,7 +183,9 @@ export function AddressSelectorModal({
         ]);
 
         if (isMounted) {
-          const validProvinces = Array.isArray(provinces) && provinces.length > 0 ? provinces : FALLBACK_VIETNAM_PROVINCES;
+          const validProvinces = Array.isArray(provinces) && provinces.length > 0
+            ? provinces
+            : (FALLBACK_VIETNAM_PROVINCES as unknown as VietnamProvince[]);
           const validHubs = Array.isArray(hubs) ? hubs : [];
 
           setProvinceList(validProvinces);
