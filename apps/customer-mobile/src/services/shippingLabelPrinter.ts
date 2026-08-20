@@ -65,20 +65,24 @@ function resolveHubCodes(order: OrderModel | any): { senderHubCode: string; rece
   const senderProv = (order.sender?.province || senderMeta?.province || '').toLowerCase();
   const receiverProv = (order.receiver?.province || receiverMeta?.province || '').toLowerCase();
 
-  if (!senderHub) {
-    if (senderProv.includes('hà nội')) senderHub = '001001B001';
-    else if (senderProv.includes('hồ chí minh') || senderProv.includes('hcm')) senderHub = '003S001';
+  // Normalize sender hub code (003079B001 for Hồ Chí Minh)
+  if (!senderHub || senderHub === '003S001') {
+    if (senderProv.includes('hồ chí minh') || senderProv.includes('hcm')) senderHub = '003079B001';
+    else if (senderProv.includes('hà nội')) senderHub = '001001B001';
     else if (senderProv.includes('đà nẵng')) senderHub = '002C001';
     else if (senderProv.includes('cao bằng')) senderHub = '001004B001';
+    else if (senderProv.includes('cần thơ')) senderHub = '003092B001';
     else senderHub = '001N001';
   }
 
-  if (!receiverHub) {
+  // Normalize receiver hub code
+  if (!receiverHub || receiverHub === '003S001') {
     if (receiverProv.includes('hồ chí minh') || receiverProv.includes('hcm')) receiverHub = '003079B001';
     else if (receiverProv.includes('cần thơ')) receiverHub = '003092B001';
     else if (receiverProv.includes('hà nội')) receiverHub = '001001B001';
     else if (receiverProv.includes('đà nẵng')) receiverHub = '002C001';
-    else receiverHub = '003S001';
+    else if (receiverProv.includes('cao bằng')) receiverHub = '001004B001';
+    else receiverHub = '003079B001';
   }
 
   return {
