@@ -42,9 +42,49 @@ function formatDate(val?: string): string {
   return `${timeStr} ${dateStr}`;
 }
 
-function compactCode(value: string, fallback: string): string {
-  const normalized = (value || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
-  return normalized.length > 0 ? normalized.slice(0, 9) : fallback;
+function resolveHubCodes(order: OrderModel | any): { senderHubCode: string; receiverHubCode: string } {
+  const metadata = order?.metadata || {};
+  const senderMeta = metadata?.sender || {};
+  const receiverMeta = metadata?.receiver || {};
+  const routingMeta = metadata?.routing || {};
+
+  let senderHub =
+    order.senderHubCode ||
+    order.sender?.hubCode ||
+    senderMeta?.hubCode ||
+    routingMeta?.originHubCode ||
+    order.originHubCode;
+
+  let receiverHub =
+    order.receiverHubCode ||
+    order.receiver?.hubCode ||
+    receiverMeta?.hubCode ||
+    routingMeta?.destinationHubCode ||
+    order.destinationHubCode;
+
+  const senderProv = (order.sender?.province || senderMeta?.province || '').toLowerCase();
+  const receiverProv = (order.receiver?.province || receiverMeta?.province || '').toLowerCase();
+
+  if (!senderHub) {
+    if (senderProv.includes('hà nội')) senderHub = '001001B001';
+    else if (senderProv.includes('hồ chí minh') || senderProv.includes('hcm')) senderHub = '003S001';
+    else if (senderProv.includes('đà nẵng')) senderHub = '002C001';
+    else if (senderProv.includes('cao bằng')) senderHub = '001004B001';
+    else senderHub = '001N001';
+  }
+
+  if (!receiverHub) {
+    if (receiverProv.includes('hồ chí minh') || receiverProv.includes('hcm')) receiverHub = '003079B001';
+    else if (receiverProv.includes('cần thơ')) receiverHub = '003092B001';
+    else if (receiverProv.includes('hà nội')) receiverHub = '001001B001';
+    else if (receiverProv.includes('đà nẵng')) receiverHub = '002C001';
+    else receiverHub = '003S001';
+  }
+
+  return {
+    senderHubCode: String(senderHub).toUpperCase(),
+    receiverHubCode: String(receiverHub).toUpperCase(),
+  };
 }
 
 export function buildShippingLabelHtml(order: OrderModel | any): string {
@@ -61,10 +101,13 @@ export function buildShippingLabelHtml(order: OrderModel | any): string {
     order.receiver?.composedAddress || order.receiver?.addressDetail || 'N/A',
   );
 
-  const hubCode = escapeHtml(order.receiverHubCode || order.receiver?.hubCode || order.senderHubCode || order.sender?.hubCode || '003092B001');
-  const zoneCode = escapeHtml(order.receiverProvince || order.receiver?.province || 'THÀNH PHỐ CẦN THƠ');
-  const routeTag = compactCode(hubCode || zoneCode, '003092B00');
-  const sortCode = newlineToBreaks(`Hub đích: ${hubCode}\nKhu vực: ${zoneCode}`);
+  const { senderHubCode, receiverHubCode } = resolveHubCodes(order);
+  const senderProvinceUpper = escapeHtml(
+    (order.sender?.province || 'THÀNH PHỐ HÀ NỘI').toUpperCase(),
+  );
+  const receiverProvince = escapeHtml(
+    order.receiverProvince || order.receiver?.province || 'Thành phố Hồ Chí Minh',
+  );
 
   const itemTypeStr = order.itemName || order.itemType || 'hhh';
   const itemDescription = escapeHtml(itemTypeStr);
@@ -95,222 +138,201 @@ export function buildShippingLabelHtml(order: OrderModel | any): string {
     <style>
       @page { size: 100mm 150mm; margin: 0; }
       * { box-sizing: border-box; }
-      html, body { width: 100%; height: 100%; margin: 0; padding: 0; background: #fff; }
+      html, body { width: 100mm; height: 150mm; margin: 0; padding: 0; background: #fff; }
       body { font-family: "Segoe UI", Arial, Helvetica, sans-serif; color: #000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .sheet {
         width: 100mm;
         height: 150mm;
-        min-height: 150mm;
         margin: 0 auto;
-        padding: 3mm;
-        border: 0.2mm solid #111;
-        display: grid;
-        grid-template-rows: auto auto auto auto auto auto auto 1fr;
-        gap: 1.6mm;
-        page-break-inside: avoid;
+        padding: 2.5mm;
+        border: 0.3mm solid #111;
+        display: flex;
+        flex-direction: column;
+        gap: 1.2mm;
         overflow: hidden;
-      }
-      .block { border: 0.2mm solid #222; padding: 1.4mm; }
-      .dash { border-style: dashed; }
-      .header { display: grid; grid-template-columns: minmax(0, 38fr) minmax(0, 62fr); gap: 1.2mm; }
-      .brand { display: grid; gap: 0.8mm; }
-      .brand-title { font-size: 4.3mm; font-weight: 800; letter-spacing: 0.2px; text-transform: uppercase; }
-      .service { font-size: 5.1mm; font-weight: 800; letter-spacing: 0.3px; }
-      .barcode-wrap { display: grid; gap: 0.8mm; }
-      .barcode {
-        height: 16mm;
-        border: 0.2mm solid #111;
-        background:
-          repeating-linear-gradient(
-            90deg,
-            #111 0mm,
-            #111 0.45mm,
-            #fff 0.45mm,
-            #fff 0.85mm,
-            #111 0.85mm,
-            #111 1.05mm,
-            #fff 1.05mm,
-            #fff 1.45mm
-          );
-      }
-      .ship-code { font-size: 3.2mm; font-weight: 700; line-height: 1.2; }
-      .two-col { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.2mm; }
-      .label { font-size: 2.6mm; font-weight: 700; text-transform: uppercase; margin-bottom: 0.6mm; }
-      .name { font-size: 3mm; font-weight: 700; line-height: 1.2; margin-bottom: 0.3mm; }
-      .text { font-size: 2.5mm; line-height: 1.24; word-break: break-word; }
-      .route { display: grid; grid-template-columns: minmax(0, 72fr) minmax(0, 28fr); gap: 1.2mm; }
-      .route-main, .route-sub {
-        border: 0.24mm solid #111;
-        text-align: center;
-        font-weight: 800;
-        line-height: 1;
-        padding: 2.1mm 1mm;
-        min-width: 0;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: clip;
-      }
-      .route-main { font-size: 6.8mm; letter-spacing: 0.25px; text-transform: uppercase; }
-      .route-sub { font-size: 5mm; text-transform: uppercase; }
-      .item-qr { display: grid; grid-template-columns: minmax(0, 74fr) minmax(0, 26fr); gap: 1.2mm; }
-      .qr-box { border: 0.2mm solid #111; padding: 1mm; display: grid; justify-items: center; gap: 0.8mm; }
-      .qr-svg {
-        width: 24mm;
-        height: 24mm;
-        display: block;
-        border: 0.15mm solid #111;
         background: #fff;
       }
-      .qr-fallback {
-        width: 24mm;
-        height: 24mm;
-        border: 0.15mm solid #111;
+      .block { border: 0.25mm solid #222; padding: 1.2mm; }
+      .header {
+        height: 20mm;
         display: grid;
-        place-items: center;
-        font-size: 3.2mm;
-        font-weight: 700;
+        grid-template-columns: 38% 62%;
+        gap: 1.2mm;
+        align-items: center;
       }
-      .big-row { display: grid; grid-template-columns: minmax(0, 66fr) minmax(0, 34fr); gap: 1.2mm; }
-      .route-tag {
-        border: 0.2mm solid #111;
-        font-size: 9.6mm;
-        font-weight: 900;
-        letter-spacing: 0.2px;
-        text-align: center;
-        padding: 1.8mm 1mm;
-        min-width: 0;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: clip;
+      .brand { display: flex; flex-direction: column; gap: 0.5mm; }
+      .brand-title { font-size: 3.6mm; font-weight: 800; letter-spacing: 0.2px; text-transform: uppercase; line-height: 1.1; }
+      .service { font-size: 4.2mm; font-weight: 800; letter-spacing: 0.3px; line-height: 1.1; }
+      .barcode-wrap { text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5mm; }
+      .barcode {
+        width: 95%;
+        height: 12mm;
+        border: 0.2mm solid #000;
+        background: repeating-linear-gradient(
+          90deg,
+          #000 0mm, #000 0.45mm,
+          #fff 0.45mm, #fff 0.85mm,
+          #000 0.85mm, #000 1.1mm,
+          #fff 1.1mm, #fff 1.5mm
+        );
       }
-      .meta { border: 0.2mm solid #111; padding: 1.3mm; }
-      .cod-sign { display: grid; grid-template-columns: minmax(0, 70fr) minmax(0, 30fr); gap: 1.2mm; }
-      .cod-value { font-size: 6.2mm; font-weight: 900; line-height: 1; margin: 0.6mm 0 1mm; }
-      .signature {
-        border: 0.2mm solid #111;
-        min-height: 26mm;
+      .ship-code { font-size: 2.8mm; font-weight: 700; line-height: 1.1; margin-top: 0.5mm; }
+      .two-col {
+        height: 28mm;
         display: grid;
-        grid-template-rows: auto 1fr auto;
-        padding: 1.3mm;
-      }
-      .sign-hint { font-size: 2.2mm; line-height: 1.2; color: #222; }
-      .footer { font-size: 2.3mm; border-top: 0.2mm dashed #333; padding-top: 1.1mm; line-height: 1.25; }
-      .header > *,
-      .two-col > *,
-      .route > *,
-      .item-qr > *,
-      .big-row > *,
-      .cod-sign > * {
-        min-width: 0;
-      }
-      .sheet {
-        padding: 2.4mm;
-        grid-template-rows: 22mm 30mm 11mm 28mm 14mm 27mm minmax(0, 1fr);
-        gap: 0.8mm;
-      }
-      .block,
-      .header,
-      .two-col > *,
-      .route > *,
-      .item-qr > *,
-      .big-row > *,
-      .cod-sign > * {
-        min-height: 0;
-        overflow: hidden;
-      }
-      .block { padding: 1.1mm; }
-      .header { align-items: stretch; }
-      .brand { align-content: center; gap: 0.6mm; }
-      .brand-title { font-size: 3.8mm; line-height: 1; }
-      .service { font-size: 4.3mm; line-height: 1.05; }
-      .barcode-wrap { gap: 0.5mm; }
-      .barcode { height: 12.5mm; }
-      .ship-code { font-size: 2.9mm; line-height: 1.1; }
-      .two-col,
-      .route,
-      .item-qr,
-      .big-row,
-      .cod-sign {
-        height: 100%;
-      }
-      .label { font-size: 2.35mm; line-height: 1; margin-bottom: 0.45mm; }
-      .name { font-size: 2.75mm; line-height: 1.08; margin-bottom: 0.25mm; }
-      .text {
-        font-size: 2.25mm;
-        line-height: 1.16;
-        overflow-wrap: anywhere;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.2mm;
       }
       .two-col .block {
-        display: grid;
-        grid-template-rows: auto auto auto minmax(0, 1fr);
-      }
-      .two-col .block .text:last-child,
-      .item-qr .block .text:last-child,
-      .cod-sign .block .text:last-child {
-        display: -webkit-box;
-        -webkit-box-orient: vertical;
+        padding: 1.2mm;
         overflow: hidden;
       }
-      .two-col .block .text:last-child { -webkit-line-clamp: 6; }
-      .item-qr .block .text:last-child { -webkit-line-clamp: 4; }
-      .cod-sign .block .text:last-child { -webkit-line-clamp: 5; }
-      .route-main,
-      .route-sub {
+      .label { font-size: 2.4mm; font-weight: 800; text-transform: uppercase; margin-bottom: 0.4mm; }
+      .name { font-size: 2.8mm; font-weight: 800; line-height: 1.15; margin-bottom: 0.2mm; }
+      .text { font-size: 2.2mm; line-height: 1.2; word-break: break-word; overflow: hidden; }
+      .route {
+        height: 13mm;
         display: grid;
-        place-items: center;
-        padding: 0.8mm 1mm;
+        grid-template-columns: 68% 32%;
+        gap: 1.2mm;
       }
-      .route-main { font-size: 6mm; }
-      .route-sub { font-size: 4.2mm; }
-      .item-qr { grid-template-columns: minmax(0, 70fr) 25mm; }
-      .item-qr .block {
+      .route-main {
+        border: 0.25mm solid #111;
+        font-size: 6.8mm;
+        font-weight: 900;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        background: #fff;
+      }
+      .route-sub {
+        border: 0.25mm solid #111;
+        font-size: 2.8mm;
+        font-weight: 800;
+        text-transform: uppercase;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 1mm;
+        line-height: 1.15;
+        word-break: break-word;
+        overflow: hidden;
+        background: #fff;
+      }
+      .item-qr {
+        height: 30mm;
         display: grid;
-        align-content: start;
+        grid-template-columns: 68% 32%;
+        gap: 1.2mm;
+      }
+      .item-qr .dash {
+        border: 0.25mm dashed #111;
+        padding: 1.2mm;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5mm;
+        overflow: hidden;
       }
       .qr-box {
-        padding: 0.8mm;
-        align-content: center;
+        border: 0.25mm solid #111;
+        padding: 1mm;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
         gap: 0.5mm;
+        overflow: hidden;
+        background: #fff;
       }
-      .qr-svg,
+      .qr-svg {
+        width: 17mm;
+        height: 17mm;
+        display: block;
+      }
       .qr-fallback {
-        width: 20.5mm;
-        height: 20.5mm;
+        width: 17mm;
+        height: 17mm;
+        border: 0.15mm solid #111;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3mm;
+        font-weight: 800;
+      }
+      .qr-info {
+        font-size: 2mm;
+        line-height: 1.15;
+        text-align: center;
+        word-break: break-word;
+        width: 100%;
+      }
+      .big-row {
+        height: 13mm;
+        display: grid;
+        grid-template-columns: 68% 32%;
+        gap: 1.2mm;
       }
       .route-tag {
-        display: grid;
-        place-items: center;
-        font-size: 7.4mm;
-        line-height: 1;
-        padding: 0.8mm 1mm;
+        border: 0.25mm solid #111;
+        font-size: 6.8mm;
+        font-weight: 900;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        background: #fff;
       }
       .meta {
+        border: 0.25mm solid #111;
+        padding: 1.2mm;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        background: #fff;
+      }
+      .cod-sign {
+        height: 33mm;
         display: grid;
-        align-content: center;
-        padding: 1mm;
+        grid-template-columns: 68% 32%;
+        gap: 1.2mm;
       }
       .cod-sign .block {
-        display: grid;
-        grid-template-rows: auto auto auto minmax(0, 1fr);
-        padding: 1.1mm;
+        padding: 1.2mm;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
       }
       .cod-value {
-        font-size: 5.2mm;
+        font-size: 5.5mm;
+        font-weight: 900;
         line-height: 1;
-        margin: 0.25mm 0 0.7mm;
+        margin: 0.5mm 0 1mm;
       }
       .signature {
-        min-height: 0;
-        height: 100%;
-        padding: 1.1mm;
+        border: 0.25mm solid #111;
+        padding: 1.2mm;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
       }
-      .sign-hint { font-size: 2mm; }
-      .footer {
-        min-height: 0;
-        overflow: hidden;
-        font-size: 2.05mm;
+      .sign-hint {
+        font-size: 1.9mm;
         line-height: 1.15;
-        padding-top: 0.7mm;
+        color: #333;
+      }
+      .footer {
+        height: 6mm;
+        font-size: 2.2mm;
+        border-top: 0.25mm dashed #333;
+        padding-top: 0.8mm;
+        text-align: left;
+        line-height: 1.2;
       }
       @media print {
         html, body { width: 100mm; height: 150mm; }
@@ -321,6 +343,7 @@ export function buildShippingLabelHtml(order: OrderModel | any): string {
   </head>
   <body>
     <article class="sheet">
+      <!-- ROW 1: HEADER & BARCODE -->
       <section class="header block">
         <div class="brand">
           <div class="brand-title">${brandName}</div>
@@ -328,64 +351,73 @@ export function buildShippingLabelHtml(order: OrderModel | any): string {
         </div>
         <div class="barcode-wrap">
           <div class="barcode" role="img" aria-label="Barcode"></div>
-          <div class="ship-code">Mã vận đơn: ${codeText}</div>
+          <div class="ship-code">Mã vận đơn: <strong>${codeText}</strong></div>
         </div>
       </section>
 
+      <!-- ROW 2: SENDER & RECEIVER -->
       <section class="two-col">
         <div class="block">
-          <div class="label">Từ</div>
+          <div class="label">TỪ</div>
           <div class="name">${senderName}</div>
           <div class="text">${senderPhone}</div>
           <div class="text">${senderAddress}</div>
         </div>
         <div class="block">
-          <div class="label">Đến</div>
+          <div class="label">ĐẾN</div>
           <div class="name">${receiverName}</div>
           <div class="text">${receiverPhone}</div>
           <div class="text">${receiverAddress}</div>
         </div>
       </section>
 
+      <!-- ROW 3: SENDER HUB (TOP BIG CODE) & SENDER PROVINCE -->
       <section class="route">
-        <div class="route-main">${hubCode}</div>
-        <div class="route-sub">${zoneCode}</div>
+        <div class="route-main">${senderHubCode}</div>
+        <div class="route-sub">${senderProvinceUpper}</div>
       </section>
 
+      <!-- ROW 4: ITEM CONTENT & QR CODE BOX -->
       <section class="item-qr">
         <div class="block dash">
-          <div class="label">Nội dung hàng</div>
+          <div class="label">NỘI DUNG HÀNG</div>
           <div class="text">${itemDescription}</div>
           <div class="text">${parcelNote}</div>
         </div>
         <div class="qr-box">
           ${qrSvg}
-          <div class="text" style="text-align:center;">${sortCode}</div>
+          <div class="qr-info">
+            <div>Hub đích: <strong>${receiverHubCode}</strong></div>
+            <div>Khu vực: ${receiverProvince}</div>
+          </div>
         </div>
       </section>
 
+      <!-- ROW 5: RECEIVER HUB (BOTTOM BIG CODE) & ORDER CREATED DATE -->
       <section class="big-row">
-        <div class="route-tag">${routeTag}</div>
+        <div class="route-tag">${receiverHubCode}</div>
         <div class="meta">
-          <div class="label">Ngày đặt hàng</div>
+          <div class="label">NGÀY ĐẶT HÀNG</div>
           <div class="text">${createdAtText}</div>
         </div>
       </section>
 
+      <!-- ROW 6: COD & RECIPIENT SIGNATURE -->
       <section class="cod-sign">
         <div class="block">
-          <div class="label">Tiền thu người nhận</div>
+          <div class="label">TIỀN THU NGƯỜI NHẬN</div>
           <div class="cod-value">${codAmountText}</div>
-          <div class="label">Chỉ dẫn giao hàng</div>
+          <div class="label">CHỈ DẪN GIAO HÀNG</div>
           <div class="text">${deliveryInstruction}</div>
         </div>
         <div class="signature">
-          <div class="label">Chữ ký người nhận</div>
+          <div class="label">CHỮ KÝ NGƯỜI NHẬN</div>
           <div></div>
           <div class="sign-hint">Vui lòng ký và ghi rõ họ tên khi nhận hàng.</div>
         </div>
       </section>
 
+      <!-- ROW 7: FOOTER -->
       <footer class="footer">
         ${hotlineText}
       </footer>
@@ -398,7 +430,6 @@ export async function printOrShareShippingLabel(order: OrderModel | any): Promis
   const html = buildShippingLabelHtml(order);
 
   try {
-    // Generate PDF file
     const { uri } = await Print.printToFileAsync({
       html,
       width: 283, // 100mm in points (~72 dpi)
@@ -415,7 +446,6 @@ export async function printOrShareShippingLabel(order: OrderModel | any): Promis
       await Print.printAsync({ uri });
     }
   } catch (error) {
-    // Direct fallback print dialog
     await Print.printAsync({ html });
   }
 }
