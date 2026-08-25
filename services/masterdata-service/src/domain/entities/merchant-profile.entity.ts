@@ -7,6 +7,8 @@ export interface MerchantProfile {
   defaultHubCode: string | null;
   defaultHubName: string | null;
   defaultSenderAddress: string | null;
+  latitude: number | null;
+  longitude: number | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,4 +29,6 @@ export interface MerchantProfileWriteInput {
   defaultHubCode?: string | null;
   defaultHubName?: string | null;
   defaultSenderAddress?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }

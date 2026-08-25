@@ -11,6 +11,8 @@ export interface SavedAddress {
   composedAddress: string;
   hubCode?: string;
   hubName?: string;
+  latitude?: number;
+  longitude?: number;
   isDefault: boolean;
 }
 

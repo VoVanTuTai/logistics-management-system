@@ -50,6 +50,10 @@ model Shipment {
   createdByUserId    String?
   createdByType      String?
   receiverPhone      String?
+  pickupLatitude     Float?
+  pickupLongitude    Float?
+  deliveryLatitude   Float?
+  deliveryLongitude  Float?
   metadata           Json?
   cancellationReason String?
   createdAt          DateTime              @default(now())

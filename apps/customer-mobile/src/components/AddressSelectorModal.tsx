@@ -31,6 +31,8 @@ export interface StructuredAddress {
   composedAddress: string;
   hubCode: string;
   hubName: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 interface Props {
@@ -220,6 +222,11 @@ export function AddressSelectorModal({
   const [selectedWard, setSelectedWard] = useState<VietnamWard | null>(null);
   const [addressDetail, setAddressDetail] = useState<string>(initialAddress?.addressDetail ?? '');
   const [selectedHub, setSelectedHub] = useState<HubRecord | null>(null);
+  const [coords, setCoords] = useState<{ latitude?: number; longitude?: number } | null>(
+    initialAddress?.latitude && initialAddress?.longitude
+      ? { latitude: initialAddress.latitude, longitude: initialAddress.longitude }
+      : null,
+  );
 
   const [loadingData, setLoadingData] = useState(false);
   const [stepView, setStepView] = useState<'FORM' | 'SELECT_PROVINCE' | 'SELECT_WARD' | 'SELECT_HUB'>('FORM');
@@ -299,17 +306,17 @@ export function AddressSelectorModal({
 
   // Auto-pick best matching hub when province changes or initial load
   useEffect(() => {
-    if (matchingHubs.length > 0) {
-      if (!selectedHub || !matchingHubs.some((h) => h.code === selectedHub.code)) {
+    if (selectedProvince && matchingHubs.length > 0) {
+      // Prioritize existing hub if it already matches
+      const currentMatches = selectedHub && matchingHubs.some((h) => h.code === selectedHub.code);
+      if (!currentMatches) {
         setSelectedHub(matchingHubs[0]);
       }
-    } else if (hubList.length > 0 && !selectedHub) {
-      setSelectedHub(hubList[0]);
     }
   }, [selectedProvince, hubList]);
 
-  const rawAvailableWards = getWardsForProvince(selectedProvince);
-  const availableWards = selectedWard && !rawAvailableWards.some((w) => w.name === selectedWard.name)
+  const rawAvailableWards = selectedProvince ? getWardsForProvince(selectedProvince) : [];
+  const availableWards = selectedWard && !rawAvailableWards.some((w) => w.code === selectedWard.code)
     ? [selectedWard, ...rawAvailableWards]
     : rawAvailableWards;
 
@@ -331,6 +338,8 @@ export function AddressSelectorModal({
       composedAddress: composed,
       hubCode: hub.code,
       hubName: hub.name,
+      latitude: coords?.latitude ?? initialAddress?.latitude,
+      longitude: coords?.longitude ?? initialAddress?.longitude,
     });
     onClose();
   };
@@ -342,6 +351,8 @@ export function AddressSelectorModal({
     composedAddress: string;
     hubCode: string;
     hubName: string;
+    latitude?: number;
+    longitude?: number;
   }) => {
     const foundProv = provinceList.find(
       (p) =>

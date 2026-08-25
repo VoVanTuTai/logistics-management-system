@@ -238,3 +238,73 @@ export function useUpsertMerchantProfileMutation(accessToken: string | null) {
     },
   });
 }
+
+export function useCourierAreaAssignmentsQuery(
+  accessToken: string | null,
+  filters: import('./masterdata.types').CourierAreaAssignmentFilters,
+) {
+  return useQuery({
+    queryKey: [
+      ...queryKeys.courierAreaAssignments,
+      filters.courierId ?? '',
+      filters.hubCode ?? '',
+      filters.province ?? '',
+      filters.district ?? '',
+      filters.ward ?? '',
+      filters.isActive ?? '',
+    ],
+    queryFn: () =>
+      masterdataClient.listCourierAreaAssignments(accessToken, filters),
+    enabled: Boolean(accessToken),
+  });
+}
+
+export function useCreateCourierAreaAssignmentMutation(accessToken: string | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: import('./masterdata.types').CourierAreaAssignmentWriteInput) =>
+      masterdataClient.createCourierAreaAssignment(accessToken, payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.courierAreaAssignments,
+      });
+    },
+  });
+}
+
+export function useUpdateCourierAreaAssignmentMutation(accessToken: string | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (params: {
+      id: string;
+      payload: Partial<import('./masterdata.types').CourierAreaAssignmentWriteInput>;
+    }) =>
+      masterdataClient.updateCourierAreaAssignment(
+        accessToken,
+        params.id,
+        params.payload,
+      ),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.courierAreaAssignments,
+      });
+    },
+  });
+}
+
+export function useDeleteCourierAreaAssignmentMutation(accessToken: string | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) =>
+      masterdataClient.deleteCourierAreaAssignment(accessToken, id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.courierAreaAssignments,
+      });
+    },
+  });
+}
+

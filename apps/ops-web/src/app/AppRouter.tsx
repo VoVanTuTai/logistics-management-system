@@ -37,6 +37,11 @@ const MasterOpsCommandCenterPage = lazy(() =>
     default: module.MasterOpsCommandCenterPage,
   })),
 );
+const HqNetworkGeofenceMapPage = lazy(() =>
+  import('../pages/dashboard/HqNetworkGeofenceMapPage').then((module) => ({
+    default: module.HqNetworkGeofenceMapPage,
+  })),
+);
 const DownloadCenterPage = lazy(() =>
   import('../pages/download/DownloadCenterPage').then((module) => ({
     default: module.DownloadCenterPage,
@@ -619,6 +624,11 @@ function DashboardLayout(): React.JSX.Element {
       label: 'Trung tâm chỉ huy toàn quốc',
       icon: 'hq_command',
       to: routePaths.masterOpsCommandCenter,
+    },
+    {
+      label: 'Bản đồ Mạng lưới & Phân vùng Hub',
+      icon: 'tracking_lookup',
+      to: routePaths.masterdataHubNetworkMap,
     },
     {
       label: 'Xe tuyến trục Bắc - Trung - Nam',
@@ -1253,6 +1263,14 @@ function AppIndexRedirect(): React.JSX.Element {
               element={
                 <OpsModuleRoute title="HQ Master Ops Command Center">
                   {lazyRoute(<MasterOpsCommandCenterPage />)}
+                </OpsModuleRoute>
+              }
+            />
+            <Route
+              path={routePaths.masterdataHubNetworkMapLeaf}
+              element={
+                <OpsModuleRoute title="Bản Đồ Mạng Lưới & Phân Vùng Hub">
+                  {lazyRoute(<HqNetworkGeofenceMapPage />)}
                 </OpsModuleRoute>
               }
             />

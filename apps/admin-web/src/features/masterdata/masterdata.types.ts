@@ -16,6 +16,14 @@ export interface HubDto extends MasterdataBaseDto {
   name: string;
   zoneCode: string | null;
   address: string | null;
+  level?: number;
+  parentCode?: string | null;
+  district?: string | null;
+  ward?: string | null;
+  coverageRadiusKm?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  boundaryPolygon?: Array<[number, number]> | null;
   isActive: boolean;
 }
 
@@ -92,6 +100,14 @@ export interface HubWriteInput {
   name: string;
   zoneCode?: string | null;
   address?: string | null;
+  level?: number;
+  parentCode?: string | null;
+  district?: string | null;
+  ward?: string | null;
+  coverageRadiusKm?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  boundaryPolygon?: Array<[number, number]> | null;
   isActive?: boolean;
 }
 
@@ -137,4 +153,41 @@ export interface RegionalHierarchyItemDto {
   branchHubs: HubDto[];
   totalHubsCount: number;
 }
+
+export interface CourierAreaAssignmentDto {
+  id: string;
+  courierId: string;
+  hubCode: string;
+  province: string;
+  district: string;
+  ward: string;
+  zoneName?: string | null;
+  colorHex?: string | null;
+  boundaryPolygon?: Array<[number, number]> | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CourierAreaAssignmentFilters {
+  courierId?: string;
+  hubCode?: string;
+  province?: string;
+  district?: string;
+  ward?: string;
+  isActive?: string;
+}
+
+export interface CourierAreaAssignmentWriteInput {
+  courierId: string;
+  hubCode: string;
+  province: string;
+  district: string;
+  ward: string;
+  zoneName?: string | null;
+  colorHex?: string | null;
+  boundaryPolygon?: Array<[number, number]> | null;
+  isActive?: boolean;
+}
+
 

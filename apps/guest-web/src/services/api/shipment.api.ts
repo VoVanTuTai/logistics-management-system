@@ -5,18 +5,34 @@ export interface CreateShipmentMetadata {
     name?: string;
     phone?: string;
     addressDetail?: string;
+    address?: string;
     province?: string;
     district?: string;
     ward?: string;
+    hubCode?: string;
+    latitude?: number;
+    longitude?: number;
+    coordinate?: { latitude: number; longitude: number };
   };
   receiver?: {
     name?: string;
     phone?: string;
     addressDetail?: string;
+    address?: string;
     province?: string;
     district?: string;
     ward?: string;
+    hubCode?: string;
+    latitude?: number;
+    longitude?: number;
+    coordinate?: { latitude: number; longitude: number };
   };
+  pickupLatitude?: number;
+  pickupLongitude?: number;
+  pickupCoordinate?: { latitude: number; longitude: number };
+  deliveryLatitude?: number;
+  deliveryLongitude?: number;
+  deliveryCoordinate?: { latitude: number; longitude: number };
   package?: {
     itemName?: string;
     weightKg?: number;

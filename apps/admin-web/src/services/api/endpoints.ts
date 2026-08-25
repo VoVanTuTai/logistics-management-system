@@ -82,5 +82,8 @@ export const opsEndpoints = {
     merchantProfileDetail: (profileId: string) =>
       `/ops/masterdata/merchant-profiles/${profileId}`,
     adminAuditLogs: '/ops/masterdata/admin-audit-logs',
+    courierAreaAssignments: '/ops/masterdata/courier-area-assignments',
+    courierAreaAssignmentDetail: (id: string) =>
+      `/ops/masterdata/courier-area-assignments/${id}`,
   },
 } as const;
