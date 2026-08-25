@@ -9,7 +9,7 @@ import type { Request } from 'express';
 
 import { AuthServiceClient } from '../../infrastructure/clients/auth-service.client';
 
-type GatewayRoleGroup = 'OPS' | 'COURIER' | 'MERCHANT';
+type GatewayRoleGroup = 'OPS' | 'COURIER' | 'MERCHANT' | 'CUSTOMER';
 
 const OPS_ALLOWED_ROLES = new Set(['SYSTEM_ADMIN', 'OPS_ADMIN', 'OPS_VIEWER']);
 const COURIER_ALLOWED_ROLES = new Set([
@@ -19,6 +19,7 @@ const COURIER_ALLOWED_ROLES = new Set([
   'COURIER',
 ]);
 const MERCHANT_ALLOWED_ROLES = new Set(['MERCHANT']);
+const CUSTOMER_ALLOWED_ROLES = new Set(['CUSTOMER']);
 
 @Injectable()
 export class GatewayRoleGuard implements CanActivate {
@@ -53,6 +54,13 @@ export class GatewayRoleGuard implements CanActivate {
       );
     }
 
+    request.headers['x-user-id'] = introspection.user.id;
+    request.headers['x-user-username'] = introspection.user.username;
+    request.headers['x-user-roles'] = roles.join(',');
+    if (introspection.user.phone) {
+      request.headers['x-user-phone'] = introspection.user.phone;
+    }
+
     return true;
   }
 }
@@ -73,13 +81,17 @@ function resolveGatewayRoleGroup(request: Request): GatewayRoleGroup | null {
     return 'MERCHANT';
   }
 
+  if (firstSegment === 'customer') {
+    return 'CUSTOMER';
+  }
+
   return null;
 }
 
 function isAuthPassthroughRoute(request: Request): boolean {
-  const path = request.path ?? request.originalUrl.split('?')[0] ?? '';
+  const path = request.originalUrl ? request.originalUrl.split('?')[0] : (request.path ?? '');
 
-  return /^\/(?:ops|merchant|courier)\/auth\/auth\/(?:login|refresh|logout|introspect)$/.test(
+  return /^\/(?:ops|merchant|courier|customer)\/auth\/auth\/(?:login|refresh|logout|introspect|register-customer)$/.test(
     path,
   );
 }
@@ -122,7 +134,9 @@ function hasGatewayRoleGroup(
       ? OPS_ALLOWED_ROLES
       : roleGroup === 'COURIER'
         ? COURIER_ALLOWED_ROLES
-        : MERCHANT_ALLOWED_ROLES;
+        : roleGroup === 'MERCHANT'
+          ? MERCHANT_ALLOWED_ROLES
+          : CUSTOMER_ALLOWED_ROLES;
 
   return roles.some((role) => allowedRoles.has(role));
 }

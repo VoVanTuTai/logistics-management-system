@@ -23,6 +23,7 @@ import type {
 } from '../../domain/entities/auth-session.entity';
 import type {
   AuthenticatedUser,
+  RegisterCustomerInput,
   UserAccount,
   UserAccountListFilters,
   UserAccountUpdateInput,
@@ -49,10 +50,11 @@ const COURIER_CODE_PATTERN = /^3000\d{4}$/;
 const MERCHANT_CODE_PATTERN = /^411\d{5}$/;
 const DEFAULT_EMPLOYEE_PASSWORD = 'password';
 
-const OPS_ROLE_SET = new Set(['OPS_ADMIN', 'OPS_VIEWER']);
+const OPS_ROLE_SET = new Set(['OPS_ADMIN', 'OPS_VIEWER', 'OPS_MANAGER']);
 const ADMIN_ROLE_SET = new Set(['SYSTEM_ADMIN']);
 const COURIER_ROLE_SET = new Set(['COURIER']);
 const MERCHANT_ROLE_SET = new Set(['MERCHANT']);
+const CUSTOMER_ROLE_SET = new Set(['CUSTOMER']);
 
 @Injectable()
 export class AuthService {
@@ -327,6 +329,65 @@ export class AuthService {
     return this.toUserAccountView(user);
   }
 
+  async registerCustomer(
+    input: RegisterCustomerInput,
+    auditContext?: AdminAuditContext,
+  ): Promise<UserAccountView> {
+    const username = this.normalizeLoginCode(input.username, 'username');
+    const password = input.password
+      ? this.normalizeRequiredText(input.password, 'password', 128)
+      : DEFAULT_EMPLOYEE_PASSWORD;
+    const displayName =
+      this.normalizeOptionalText(input.displayName, 120) ?? username;
+    const phone =
+      this.normalizeOptionalText(input.phone, 30) ?? username;
+
+    const existingUser = await this.userAccountRepository.findByUsername(username);
+
+    if (existingUser) {
+      throw new ConflictException(`Username "${username}" already exists.`);
+    }
+
+    const user = await this.userAccountRepository.create({
+      id: username,
+      username,
+      passwordHash: this.hashService.digest(password),
+      roles: ['CUSTOMER'],
+      status: 'ACTIVE',
+      displayName,
+      phone,
+      hubCodes: [],
+    });
+
+    try {
+      const masterdataUrl =
+        process.env.MASTERDATA_SERVICE_URL || 'http://localhost:3001';
+      await fetch(`${masterdataUrl}/customer-profiles`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          fullName: displayName,
+          phone,
+          email: input.email ? input.email.trim() : null,
+        }),
+      });
+    } catch (err) {
+      console.error('Failed to sync CustomerProfile in masterdata-service:', err);
+    }
+
+    await this.adminAuditService.record({
+      context: auditContext,
+      action: 'CUSTOMER_REGISTERED',
+      targetType: 'USER',
+      targetId: user.id,
+      before: null,
+      after: this.toUserAccountView(user),
+    });
+
+    return this.toUserAccountView(user);
+  }
+
   async updateUser(
     id: string,
     input: UserUpdateInput,
@@ -587,13 +648,7 @@ export class AuthService {
   }
 
   private normalizeLoginCode(value: unknown, field: string): string {
-    const normalizedValue = this.normalizeRequiredText(value, field, 8);
-
-    if (!EMPLOYEE_LOGIN_CODE_PATTERN.test(normalizedValue)) {
-      throw new BadRequestException(`${field} must be exactly 8 digits.`);
-    }
-
-    return normalizedValue;
+    return this.normalizeRequiredText(value, field, 64);
   }
 
   private normalizeOptionalPassword(value: unknown): string | undefined {
@@ -681,16 +736,11 @@ export class AuthService {
     }
 
     if (roles.some((role) => MERCHANT_ROLE_SET.has(role))) {
-      if (!MERCHANT_CODE_PATTERN.test(username)) {
-        throw new BadRequestException(
-          'Merchant account code must match 411xxxxx.',
-        );
-      }
       return;
     }
 
-    if (!EMPLOYEE_LOGIN_CODE_PATTERN.test(username)) {
-      throw new BadRequestException('username must be exactly 8 digits.');
+    if (roles.some((role) => CUSTOMER_ROLE_SET.has(role))) {
+      return;
     }
   }
 
@@ -712,6 +762,10 @@ export class AuthService {
   }
 
   private userHasRoleGroup(roles: string[], roleGroup: AuthPortalRoleGroup): boolean {
+    if (roleGroup === 'CUSTOMER_APP' || roleGroup === 'CUSTOMER') {
+      return roles.some((role) => CUSTOMER_ROLE_SET.has(role));
+    }
+
     if (roleGroup === 'COURIER_APP') {
       return roles.some(
         (role) =>
@@ -735,6 +789,10 @@ export class AuthService {
   }
 
   private roleGroupLabel(roleGroup: AuthPortalRoleGroup): string {
+    if (roleGroup === 'CUSTOMER_APP' || roleGroup === 'CUSTOMER') {
+      return 'CUSTOMER';
+    }
+
     if (roleGroup === 'COURIER_APP') {
       return 'COURIER hoặc OPS';
     }
@@ -837,11 +895,18 @@ export class AuthService {
       return undefined;
     }
 
-    if (value === 'OPS' || value === 'SHIPPER' || value === 'MERCHANT') {
+    if (
+      value === 'OPS' ||
+      value === 'SHIPPER' ||
+      value === 'MERCHANT' ||
+      value === 'CUSTOMER'
+    ) {
       return value;
     }
 
-    throw new BadRequestException('roleGroup must be OPS, SHIPPER, or MERCHANT.');
+    throw new BadRequestException(
+      'roleGroup must be OPS, SHIPPER, MERCHANT, or CUSTOMER.',
+    );
   }
 
   private normalizeLoginRoleGroup(value: unknown): AuthPortalRoleGroup | undefined {
@@ -853,13 +918,15 @@ export class AuthService {
       value === 'OPS' ||
       value === 'SHIPPER' ||
       value === 'MERCHANT' ||
-      value === 'COURIER_APP'
+      value === 'COURIER_APP' ||
+      value === 'CUSTOMER' ||
+      value === 'CUSTOMER_APP'
     ) {
       return value;
     }
 
     throw new BadRequestException(
-      'roleGroup must be OPS, SHIPPER, MERCHANT, or COURIER_APP.',
+      'roleGroup must be OPS, SHIPPER, MERCHANT, COURIER_APP, CUSTOMER, or CUSTOMER_APP.',
     );
   }
 }

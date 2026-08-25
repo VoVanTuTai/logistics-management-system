@@ -87,6 +87,14 @@ async function seedUsers() {
       hubCodes: Object.values(REGIONAL_HUBS).map((hub) => hub.code),
     },
     {
+      id: '20000000',
+      username: '20000000',
+      roles: ['OPS_ADMIN'],
+      displayName: 'Giám đốc Điều hành HQ Toàn quốc',
+      phone: '0902000000',
+      hubCodes: Object.values(REGIONAL_HUBS).map((hub) => hub.code),
+    },
+    {
       id: '20000001',
       username: '20000001',
       roles: ['OPS_ADMIN'],

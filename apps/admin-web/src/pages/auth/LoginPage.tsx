@@ -92,14 +92,14 @@ export function LoginPage(): React.JSX.Element {
             
             <div className="login-header-group">
               <h2 className="login-title-new">Đăng nhập Quản trị</h2>
-              <p className="login-subtitle-new">Nhập tài khoản quản trị hệ thống để tiếp tục</p>
+              <p className="login-subtitle-new">Nhập Mã nhân viên (8 chữ số) và Mật khẩu để tiếp tục</p>
             </div>
 
             <LoginForm
               isSubmitting={isSubmitting || loginMutation.isPending}
               errorMessage={authError}
               onSubmit={onSubmit}
-              usernamePlaceholder="10000001"
+              usernamePlaceholder="VD: 10000001"
             />
 
             <div className="login-footer-support">

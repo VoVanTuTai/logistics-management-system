@@ -29,6 +29,10 @@ import {
   OpsAuditService,
   type OpsAuditContext,
 } from './ops-audit.service';
+import {
+  normalizeWardKey,
+  parseVietnameseAddress,
+} from '../utils/vietnamese-address-parser.utility';
 
 const DESTINATION_VISIBLE_STATUSES = new Set<string>([
   'MANIFEST_RECEIVED',
@@ -223,13 +227,19 @@ export class TasksService {
     return task;
   }
 
+  private readonly pickupTaskCreationPromises = new Map<string, Promise<Task>>();
+
   async createTaskFromPickupApproved(payload: {
     pickup_request_id?: string | null;
     shipment_code?: string | null;
     note?: string | null;
   }): Promise<Task> {
     const pickupRequestId = payload.pickup_request_id?.trim() ?? null;
-    const shipmentCode = payload.shipment_code?.trim() ?? null;
+    const shipmentCode = payload.shipment_code?.trim()?.toUpperCase() ?? null;
+
+    if (shipmentCode && this.pickupTaskCreationPromises.has(shipmentCode)) {
+      await this.pickupTaskCreationPromises.get(shipmentCode)?.catch(() => undefined);
+    }
 
     if (pickupRequestId) {
       const existingTask = await this.taskRepository.findByPickupRequestId(
@@ -241,24 +251,53 @@ export class TasksService {
     }
 
     if (shipmentCode) {
-      const existingPickupTask = await this.taskRepository.list({
+      const existingPickupTasks = await this.taskRepository.list({
         shipmentCode,
         taskType: 'PICKUP',
       });
-      if (existingPickupTask.length > 0) {
-        return existingPickupTask[0];
+      const activeTask = existingPickupTasks.find(
+        (t) => t.status !== 'CANCELLED',
+      );
+      if (activeTask) {
+        if (pickupRequestId && !activeTask.pickupRequestId) {
+          return this.taskRepository.updatePickupRequestId(
+            activeTask.id,
+            pickupRequestId,
+          );
+        }
+        return activeTask;
       }
     }
 
-    const task = await this.create({
-      taskCode: `task-${randomUUID()}`,
-      taskType: 'PICKUP',
-      pickupRequestId,
-      shipmentCode,
-      note: payload.note ?? null,
-    });
+    const executeCreate = async (): Promise<Task> => {
+      const task = await this.create({
+        taskCode: `task-${randomUUID()}`,
+        taskType: 'PICKUP',
+        pickupRequestId,
+        shipmentCode,
+        note: payload.note ?? null,
+      });
 
-    return task;
+      if (shipmentCode) {
+        void this.autoAssignPickupTask(task.id, shipmentCode);
+      }
+
+      return task;
+    };
+
+    const creationPromise = executeCreate();
+    if (shipmentCode) {
+      this.pickupTaskCreationPromises.set(shipmentCode, creationPromise);
+    }
+
+    try {
+      const createdTask = await creationPromise;
+      return createdTask;
+    } finally {
+      if (shipmentCode) {
+        this.pickupTaskCreationPromises.delete(shipmentCode);
+      }
+    }
   }
 
   async handleDeliveryFailed(payload: {
@@ -277,6 +316,19 @@ export class TasksService {
 
     if (!shipmentCode) {
       return null;
+    }
+
+    // Cancel active delivery / redelivery tasks so courier app clears the task
+    const activeDeliveryTasks = await this.taskRepository.list({
+      shipmentCode,
+      taskType: 'DELIVERY',
+    });
+    for (const deliveryTask of activeDeliveryTasks) {
+      if (deliveryTask.status !== 'COMPLETED' && deliveryTask.status !== 'CANCELLED') {
+        await this.taskRepository.updateStatus(deliveryTask.id, {
+          status: 'CANCELLED',
+        });
+      }
     }
 
     const existingReturnTasks = await this.taskRepository.list({
@@ -332,14 +384,24 @@ export class TasksService {
       return null;
     }
 
-    const province = normalizeNonEmptyString(receiver?.province);
-    const district = normalizeNonEmptyString(receiver?.district);
-    const ward = normalizeNonEmptyString(receiver?.ward);
+    const receiverAddressText = normalizeNonEmptyString(
+      receiver?.address ?? receiver?.addressDetail ?? metadata?.receiverAddress,
+    );
+
+    const parsedAddress = parseVietnameseAddress(receiverAddressText, {
+      province: normalizeNonEmptyString(receiver?.province),
+      district: normalizeNonEmptyString(receiver?.district),
+      ward: normalizeNonEmptyString(receiver?.ward),
+    });
+
+    const province = parsedAddress.province;
+    const district = parsedAddress.district;
+    const ward = parsedAddress.ward;
 
     if (!province || !district || !ward) {
       return this.getOrCreateUnassignedDeliveryTask(
         shipmentCode,
-        'Thiếu thông tin địa chỉ để tự động gán',
+        'Thiếu hoặc không cắt được đủ địa chỉ (Phường/Quận/Tỉnh) để tự động gán',
       );
     }
 
@@ -380,13 +442,44 @@ export class TasksService {
       // Ignore network error and default to unassigned
     }
 
-    const assignmentList = Array.isArray(assignments) ? assignments : [];
+    let assignmentList = Array.isArray(assignments) ? assignments : [];
+
+    // Fallback: nếu truy vấn trùng khớp hoàn toàn chuỗi trả về rỗng, thử tải phân công của hub và so khớp linh hoạt tên Phường
+    if (assignmentList.length === 0) {
+      try {
+        const fallbackQuery = new URLSearchParams({
+          hubCode: destinationHubCode,
+          isActive: 'true',
+        });
+        const fallbackUrl = new URL(
+          `courier-area-assignments?${fallbackQuery.toString()}`,
+          masterdataUrl.endsWith('/') ? masterdataUrl : `${masterdataUrl}/`,
+        );
+        const fallbackResponse = await fetch(fallbackUrl, {
+          method: 'GET',
+          headers: { accept: 'application/json' },
+        });
+
+        if (fallbackResponse.ok) {
+          const allHubAssignments = await fallbackResponse.json().catch(() => []);
+          if (Array.isArray(allHubAssignments)) {
+            const targetWardKey = normalizeWardKey(ward);
+            assignmentList = allHubAssignments.filter((item: any) => {
+              return normalizeWardKey(item.ward) === targetWardKey;
+            });
+          }
+        }
+      } catch (error) {
+        // Ignore fallback error
+      }
+    }
+
     const firstAssignment = assignmentList[0];
 
     if (!firstAssignment || !firstAssignment.courierId) {
       return this.getOrCreateUnassignedDeliveryTask(
         shipmentCode,
-        'Không tìm thấy shipper phụ trách khu vực này',
+        `Không tìm thấy shipper phụ trách tuyến ${ward}, ${district}, ${province}`,
       );
     }
 
@@ -405,7 +498,7 @@ export class TasksService {
         return this.assign(activeTask.id, {
           courierId,
           hubCode: destinationHubCode,
-          note: `Tự động gán cho shipper ${courierId} phụ trách tuyến ${ward}`,
+          note: `Tự động cắt địa chỉ (${ward}, ${district}) và gán cho shipper ${courierId} phụ trách tuyến`,
         });
       }
 
@@ -416,14 +509,137 @@ export class TasksService {
       taskCode: `DLV-AUTO-${randomUUID()}`,
       taskType: 'DELIVERY',
       shipmentCode,
-      note: `Tự động gán cho shipper ${courierId} phụ trách tuyến ${ward}`,
+      note: `Tự động cắt địa chỉ (${ward}, ${district}) và gán cho shipper ${courierId} phụ trách tuyến`,
     });
 
     return this.assign(task.id, {
       courierId,
       hubCode: destinationHubCode,
-      note: 'Hệ thống tự động phân công theo tuyến',
+      note: `Hệ thống tự động phân công theo tuyến: ${ward}, ${district}`,
     });
+  }
+
+  async autoAssignPickupTask(
+    taskId: string,
+    shipmentCode: string,
+  ): Promise<Task | null> {
+    const shipment = await this.fetchServiceJson(
+      'SHIPMENT_SERVICE_URL',
+      `shipments/${encodeURIComponent(shipmentCode)}`,
+    );
+
+    if (!shipment) {
+      return null;
+    }
+
+    const shipmentRecord = asRecord(shipment);
+    const metadata = asRecord(shipmentRecord?.metadata);
+    const sender = asRecord(metadata?.sender);
+    const routing = asRecord(metadata?.routing);
+
+    const originHubCode = normalizeNonEmptyString(
+      routing?.originHubCode ?? sender?.hubCode ?? metadata?.senderHubCode,
+    );
+
+    if (!originHubCode) {
+      return null;
+    }
+
+    const senderAddressText = normalizeNonEmptyString(
+      sender?.address ?? sender?.addressDetail ?? metadata?.senderAddress,
+    );
+
+    const parsedAddress = parseVietnameseAddress(senderAddressText, {
+      province: normalizeNonEmptyString(sender?.province),
+      district: normalizeNonEmptyString(sender?.district),
+      ward: normalizeNonEmptyString(sender?.ward),
+    });
+
+    const province = parsedAddress.province;
+    const district = parsedAddress.district;
+    const ward = parsedAddress.ward;
+
+    if (!province || !ward) {
+      return null;
+    }
+
+    const masterdataUrl = process.env.MASTERDATA_SERVICE_URL?.trim();
+    if (!masterdataUrl) {
+      return null;
+    }
+
+    const queryParams: Record<string, string> = {
+      hubCode: originHubCode,
+      province,
+      ward,
+      isActive: 'true',
+    };
+    if (district) {
+      queryParams.district = district;
+    }
+
+    const query = new URLSearchParams(queryParams);
+
+    const url = new URL(
+      `courier-area-assignments?${query.toString()}`,
+      masterdataUrl.endsWith('/') ? masterdataUrl : `${masterdataUrl}/`,
+    );
+
+    let assignments: any = null;
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: { accept: 'application/json' },
+      });
+      if (response.ok) {
+        assignments = await response.json().catch(() => null);
+      }
+    } catch {
+      // Ignore network error
+    }
+
+    let assignmentList = Array.isArray(assignments) ? assignments : [];
+
+    if (assignmentList.length === 0) {
+      try {
+        const fallbackQuery = new URLSearchParams({
+          hubCode: originHubCode,
+          isActive: 'true',
+        });
+        const fallbackUrl = new URL(
+          `courier-area-assignments?${fallbackQuery.toString()}`,
+          masterdataUrl.endsWith('/') ? masterdataUrl : `${masterdataUrl}/`,
+        );
+        const fallbackResponse = await fetch(fallbackUrl, {
+          method: 'GET',
+          headers: { accept: 'application/json' },
+        });
+
+        if (fallbackResponse.ok) {
+          const allHubAssignments = await fallbackResponse.json().catch(() => []);
+          if (Array.isArray(allHubAssignments)) {
+            const targetWardKey = normalizeWardKey(ward);
+            assignmentList = allHubAssignments.filter((item: any) => {
+              return normalizeWardKey(item.ward) === targetWardKey;
+            });
+          }
+        }
+      } catch {
+        // Ignore fallback error
+      }
+    }
+
+    const firstAssignment = assignmentList[0];
+    if (!firstAssignment || !firstAssignment.courierId) {
+      return null;
+    }
+
+    const courierId = firstAssignment.courierId;
+    return this.assign(taskId, {
+      courierId,
+      hubCode: originHubCode,
+      note: `Tự động phân công lấy hàng theo tuyến: ${ward}, ${district}`,
+    }).catch(() => null);
   }
 
   private async getOrCreateUnassignedDeliveryTask(
@@ -740,10 +956,23 @@ function isSameHubOrScopedLocation(
   targetCode: string,
   assignedHubCode: string,
 ): boolean {
-  return (
+  if (
     targetCode === assignedHubCode ||
     targetCode.startsWith(`${assignedHubCode}-`) ||
     targetCode.startsWith(`${assignedHubCode}_`) ||
     targetCode.startsWith(`${assignedHubCode}.`)
-  );
+  ) {
+    return true;
+  }
+
+  // Regional hub matching (e.g. 003S001 regional hub matches 003079B001 branch hub)
+  if (assignedHubCode.length >= 3 && targetCode.length >= 3) {
+    const assignedRegion = assignedHubCode.substring(0, 3);
+    const targetRegion = targetCode.substring(0, 3);
+    if (assignedRegion === targetRegion) {
+      return true;
+    }
+  }
+
+  return false;
 }

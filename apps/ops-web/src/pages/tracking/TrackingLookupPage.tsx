@@ -54,6 +54,9 @@ export function TrackingLookupPage(): React.JSX.Element {
         <article className="ops-tracking-lookup__left-column">
           <section className="ops-tracking-lookup__panel">
             <h3>Cột mã vận đơn</h3>
+            <p style={{ fontSize: '12px', color: '#059669', fontWeight: 600, margin: '2px 0 10px 0' }}>
+              🌐 Tra cứu toàn hệ thống (Không giới hạn bưu cục/miền)
+            </p>
             <form onSubmit={onSubmit} className="ops-tracking-lookup__form">
               <textarea
                 value={shipmentCodeInput}

@@ -1,0 +1,545 @@
+/* ==========================================================================
+   MasterOpsCommandCenterPage.css
+   Clean, authentic enterprise Logistics Control Tower design
+   ========================================================================== */
+
+.ops-hq-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  background-color: #f8fafc;
+  min-height: 100vh;
+  color: #1e293b;
+  font-family: inherit;
+}
+
+/* 1. TOP HEADER & SCOPE BAR */
+.ops-hq-header {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.ops-hq-header__title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ops-hq-header__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #3b82f6;
+  background-color: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 3px 10px;
+  border-radius: 6px;
+  width: fit-content;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.ops-hq-header__title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 2px 0 0 0;
+  letter-spacing: -0.3px;
+}
+
+.ops-hq-header__subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  max-width: 680px;
+  line-height: 1.4;
+}
+
+.ops-hq-header__controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.ops-hq-scope-selector {
+  display: flex;
+  background-color: #f1f5f9;
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  gap: 2px;
+}
+
+.ops-hq-scope-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ops-hq-scope-btn:hover {
+  color: #0f172a;
+}
+
+.ops-hq-scope-btn--active {
+  background-color: #ffffff;
+  color: #1e40af;
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.ops-hq-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ops-hq-btn-export {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffffff;
+  background-color: #059669;
+  border: 1px solid #047857;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.ops-hq-btn-export:hover {
+  background-color: #047857;
+}
+
+.ops-hq-btn-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ops-hq-btn-refresh:hover {
+  background-color: #f8fafc;
+  border-color: #94a3b8;
+}
+
+/* 2. KPI METRICS CARDS */
+.ops-hq-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.ops-hq-kpi-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.ops-hq-kpi-card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.ops-hq-kpi-card__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.ops-hq-kpi-card__icon {
+  font-size: 18px;
+  color: #64748b;
+}
+
+.ops-hq-kpi-card__value {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 4px;
+  letter-spacing: -0.3px;
+}
+
+.ops-hq-kpi-card__value small {
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.ops-hq-kpi-card__sub {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.ops-hq-kpi-card__sub--success {
+  color: #16a34a;
+}
+
+.ops-hq-kpi-card__sub--info {
+  color: #2563eb;
+}
+
+.ops-hq-kpi-card__sub--warning {
+  color: #ea580c;
+}
+
+.ops-hq-kpi-card__sub--muted {
+  color: #64748b;
+}
+
+/* 3. MAIN SECTION WITH TABS */
+.ops-hq-panel {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.ops-hq-tabs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.ops-hq-tabs-nav {
+  display: flex;
+  gap: 8px;
+}
+
+.ops-hq-tab-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  border: none;
+  background-color: transparent;
+  color: #64748b;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.ops-hq-tab-btn:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+.ops-hq-tab-btn--active {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+}
+
+.ops-hq-tab-sync-info {
+  font-size: 12px;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 4. REGIONAL COMPARISON GRID */
+.ops-hq-regional-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.ops-hq-regional-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px;
+  background-color: #f8fafc;
+}
+
+.ops-hq-regional-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.ops-hq-regional-card__name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.ops-hq-regional-card__sla {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background-color: #dcfce7;
+  color: #15803d;
+}
+
+.ops-hq-regional-card__stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  font-size: 12px;
+  color: #475569;
+  margin-bottom: 12px;
+}
+
+.ops-hq-regional-card__stats strong {
+  color: #0f172a;
+}
+
+.ops-hq-regional-card__footer {
+  font-size: 11px;
+  color: #64748b;
+  padding-top: 8px;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* 5. TABLE STYLES */
+.ops-hq-table-wrap {
+  overflow-x: auto;
+}
+
+.ops-hq-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  text-align: left;
+}
+
+.ops-hq-table th {
+  background-color: #f1f5f9;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #cbd5e1;
+}
+
+.ops-hq-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #e2e8f0;
+  vertical-align: middle;
+}
+
+.ops-hq-table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+.ops-hq-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ops-hq-badge--success {
+  background-color: #dcfce7;
+  color: #15803d;
+}
+
+.ops-hq-badge--warning {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.ops-hq-badge--info {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.ops-hq-badge--danger {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+/* 6. BOTTLENECK & SALE RELIEF NOTICES */
+.ops-hq-notice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ops-hq-notice-card {
+  padding: 14px 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid;
+}
+
+.ops-hq-notice-card--danger {
+  background-color: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.ops-hq-notice-card--warning {
+  background-color: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+
+.ops-hq-notice-card--primary {
+  background-color: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1e40af;
+}
+
+.ops-hq-notice-card__icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.ops-hq-notice-card__content {
+  flex: 1;
+}
+
+.ops-hq-notice-card__content strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+
+.ops-hq-notice-card__content span {
+  font-size: 12px;
+  opacity: 0.9;
+  line-height: 1.4;
+}
+
+.ops-hq-notice-card__btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  border: none;
+  transition: all 0.15s ease;
+}
+
+.ops-hq-notice-card__btn--danger {
+  background-color: #dc2626;
+  color: #ffffff;
+}
+
+.ops-hq-notice-card__btn--danger:hover {
+  background-color: #b91c1c;
+}
+
+.ops-hq-notice-card__btn--warning {
+  background-color: #d97706;
+  color: #ffffff;
+}
+
+.ops-hq-notice-card__btn--warning:hover {
+  background-color: #b45309;
+}
+
+.ops-hq-notice-card__btn--primary {
+  background-color: #2563eb;
+  color: #ffffff;
+}
+
+.ops-hq-notice-card__btn--primary:hover {
+  background-color: #1d4ed8;
+}
+
+/* 7. QUICK ACCESS MODULES GRID */
+.ops-hq-modules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.ops-hq-module-card {
+  text-decoration: none;
+  padding: 14px;
+  border-radius: 10px;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.15s ease;
+}
+
+.ops-hq-module-card:hover {
+  border-color: #cbd5e1;
+  background-color: #f8fafc;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.ops-hq-module-card__icon {
+  font-size: 20px;
+  padding: 8px;
+  border-radius: 8px;
+  background-color: #eff6ff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ops-hq-module-card strong {
+  font-size: 13px;
+  color: #0f172a;
+  display: block;
+}
+
+.ops-hq-module-card span {
+  font-size: 11px;
+  color: #64748b;
+}

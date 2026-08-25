@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { useHubsQuery } from '../../features/masterdata/masterdata.api';
+import { canAccessOpsFeature } from '../../features/permissions/opsPermissions';
 import { routePaths } from '../../navigation/routes';
 import { useAuthStore } from '../../store/authStore';
 import { appEnv } from '../../utils/env';
@@ -23,6 +24,7 @@ function dedupeCodes(codes: string[]): string[] {
 }
 
 type DashboardMenuIcon =
+  | 'hq_operations'
   | 'basic_data'
   | 'operations_platform'
   | 'integration_services'
@@ -55,6 +57,16 @@ function DashboardMenuOutlineIcon({
   const accentFill = 'var(--ops-menu-accent, var(--ops-primary))';
 
   switch (icon) {
+    case 'hq_operations':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="8.5" {...outlineProps} />
+          <path d="M3.5 12h17" {...outlineProps} />
+          <path d="M12 3.5a13 13 0 0 0 0 17" {...outlineProps} />
+          <path d="M12 3.5a13 13 0 0 1 0 17" {...outlineProps} />
+          <circle cx="12" cy="12" r="2.2" fill={accentFill} />
+        </svg>
+      );
     case 'basic_data':
       return (
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -211,6 +223,8 @@ export function DashboardPage(): React.JSX.Element {
     );
   }, [effectiveHubCode, scopedHubs]);
 
+  const canViewHq = canAccessOpsFeature(session?.user, 'nav.hq-command-center');
+
   const quickMenu: ReadonlyArray<{
     title: string;
     to?: string;
@@ -219,11 +233,21 @@ export function DashboardPage(): React.JSX.Element {
     featured?: boolean;
   }> = appEnv.enableFullOpsModules
     ? [
+        ...(canViewHq
+          ? [
+              {
+                title: '🌐 Điều hành HQ',
+                to: routePaths.masterOpsCommandCenter,
+                icon: 'hq_operations' as const,
+                featured: true,
+              },
+            ]
+          : []),
         {
           title: 'Nền tảng điều hành',
           to: routePaths.groupOperationsPlatform,
           icon: 'operations_platform',
-          featured: true,
+          featured: !canViewHq,
         },
         {
           title: 'Kinh doanh bưu cục',
@@ -260,6 +284,11 @@ export function DashboardPage(): React.JSX.Element {
         {
           title: 'Điều phối vận đơn',
           to: routePaths.operationsPlatformPickupDispatch,
+          icon: 'operations_platform',
+        },
+        {
+          title: 'Chuyển đơn bàn giao',
+          to: routePaths.courierTaskTransfer,
           icon: 'operations_platform',
         },
         {

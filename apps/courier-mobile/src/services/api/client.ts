@@ -32,6 +32,7 @@ export class ApiClientError extends Error implements ApiProblem {
 
 export class CourierApiClient {
   private readonly gatewayCandidates: string[];
+  private activeBaseUrl: string | null = null;
 
   constructor(
     private readonly baseUrl: string,
@@ -42,6 +43,9 @@ export class CourierApiClient {
       (candidateBaseUrl, index, array) =>
         candidateBaseUrl.length > 0 && array.indexOf(candidateBaseUrl) === index,
     );
+    if (this.gatewayCandidates.length > 0) {
+      this.activeBaseUrl = this.gatewayCandidates[0];
+    }
   }
 
   async request<T>(
@@ -51,19 +55,24 @@ export class CourierApiClient {
     let lastNetworkError: unknown = null;
     let lastHttpError: ApiClientError | null = null;
 
-    for (const candidateBaseUrl of this.gatewayCandidates) {
+    // Prioritize active working candidate first
+    const candidates = this.activeBaseUrl
+      ? [this.activeBaseUrl, ...this.gatewayCandidates.filter((c) => c !== this.activeBaseUrl)]
+      : this.gatewayCandidates;
+
+    for (const candidateBaseUrl of candidates) {
       try {
-        return await this.requestWithCandidateBaseUrl(
+        const result = await this.requestWithCandidateBaseUrl<T>(
           candidateBaseUrl,
           path,
           options,
         );
+        // Cache working candidate for instant subsequent requests (< 50ms)
+        this.activeBaseUrl = candidateBaseUrl;
+        return result;
       } catch (error) {
         if (error instanceof ApiClientError && !error.isNetworkError) {
-          // Candidate may point to a reachable but wrong host.
-          // Continue trying other candidates before failing.
-          lastHttpError = error;
-          continue;
+          throw error;
         }
 
         lastNetworkError = error;
@@ -91,7 +100,9 @@ export class CourierApiClient {
     options: RequestOptions,
   ): Promise<T> {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
+    // Fast timeout for responsive UI (max 5s)
+    const effectiveTimeout = Math.min(this.timeoutMs || 5000, 6000);
+    const timeoutId = setTimeout(() => controller.abort(), effectiveTimeout);
 
     try {
       const response = await fetch(`${candidateBaseUrl}${path}`, {
@@ -125,11 +136,9 @@ export class CourierApiClient {
         throw error;
       }
 
-      const baseMessage =
-        error instanceof Error ? error.message : 'Network request failed.';
-
       throw new ApiClientError({
-        message: `${baseMessage} (gateway: ${candidateBaseUrl})`,
+        message: extractNetworkErrorMessage(error, candidateBaseUrl),
+        status: null,
         isNetworkError: true,
       });
     } finally {
@@ -138,29 +147,46 @@ export class CourierApiClient {
   }
 }
 
-function safeParseJson(rawText: string): unknown {
+function safeParseJson(value: string): unknown {
   try {
-    return JSON.parse(rawText);
+    return JSON.parse(value);
   } catch {
-    return rawText;
+    return value;
   }
 }
 
 function extractErrorMessage(payload: unknown, status: number): string {
-  if (typeof payload === 'string' && payload.length > 0) {
-    return payload;
-  }
+  if (payload && typeof payload === 'object') {
+    const record = payload as Record<string, unknown>;
 
-  if (
-    payload !== null &&
-    typeof payload === 'object' &&
-    'message' in payload &&
-    typeof payload.message === 'string'
-  ) {
-    return payload.message;
+    if (typeof record.message === 'string' && record.message.trim().length > 0) {
+      return record.message;
+    }
+
+    if (
+      Array.isArray(record.message) &&
+      record.message.length > 0 &&
+      typeof record.message[0] === 'string'
+    ) {
+      return record.message.join(', ');
+    }
+
+    if (typeof record.error === 'string' && record.error.trim().length > 0) {
+      return record.error;
+    }
   }
 
   return `Gateway request failed with status ${status}.`;
+}
+
+function extractNetworkErrorMessage(
+  error: unknown,
+  candidateBaseUrl: string,
+): string {
+  const baseMessage =
+    error instanceof Error && error.message ? error.message : 'Network request failed.';
+
+  return `${baseMessage} (gateway: ${candidateBaseUrl})`;
 }
 
 export function shouldQueueOffline(error: unknown): boolean {
@@ -168,7 +194,7 @@ export function shouldQueueOffline(error: unknown): boolean {
     return false;
   }
 
-  return error.isNetworkError || error.status === 408;
+  return error.isNetworkError || error.status === null;
 }
 
 export const courierApiClient = new CourierApiClient(

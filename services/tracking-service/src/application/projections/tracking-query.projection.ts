@@ -220,24 +220,35 @@ export class TrackingQueryProjection {
       const eventText = toTimelineTextVi(event.payload, locationCode);
       const source = event.actor?.trim() ? event.actor : 'Hệ thống';
 
-      let locationText = locationCode ? `Kho ${locationCode}` : null;
+      const rawLocText =
+        (typeof event.payload?.location?.name === 'string'
+          ? event.payload.location.name
+          : null) ||
+        (typeof (event.payload?.data as any)?.locationText === 'string'
+          ? (event.payload.data as any).locationText
+          : null);
+
+      let locationText =
+        rawLocText ||
+        (locationCode ? `Kho ${locationCode}` : null);
+
       if (
-        statusCursor === 'PICKUP_REQUESTED' ||
-        statusCursor === 'PICKUP_ASSIGNED' ||
-        statusCursor === 'UPDATED' ||
-        statusCursor === 'TASK_ASSIGNED'
+        (statusCursor === 'PICKUP_REQUESTED' ||
+          statusCursor === 'PICKUP_ASSIGNED' ||
+          statusCursor === 'UPDATED' ||
+          statusCursor === 'TASK_ASSIGNED') &&
+        !locationText &&
+        senderAddress
       ) {
-        if (senderAddress) {
-          locationText = senderAddress;
-        }
+        locationText = senderAddress;
       } else if (
-        statusCursor === 'DELIVERING' ||
-        statusCursor === 'OUT_FOR_DELIVERY' ||
-        statusCursor === 'DELIVERED'
+        (statusCursor === 'DELIVERING' ||
+          statusCursor === 'OUT_FOR_DELIVERY' ||
+          statusCursor === 'DELIVERED') &&
+        !locationText &&
+        receiverAddress
       ) {
-        if (receiverAddress) {
-          locationText = receiverAddress;
-        }
+        locationText = receiverAddress;
       }
 
       return {
@@ -320,6 +331,11 @@ export class TrackingQueryProjection {
 
     if (fromCurrent) {
       return fromCurrent;
+    }
+
+    const viewPayloadRecord = this.asRecord(current?.viewPayload);
+    if (viewPayloadRecord) {
+      return viewPayloadRecord;
     }
 
     for (const record of [...timelineRecords].reverse()) {

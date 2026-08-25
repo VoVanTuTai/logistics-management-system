@@ -20,6 +20,7 @@ import { createIdempotencyKey } from '../../utils/idempotency';
 import { resolveBranchHubByProvince } from '../../utils/locationScope';
 import { formatShipmentStatusLabel } from '../../utils/logisticsLabels';
 import { queryKeys } from '../../utils/queryKeys';
+import { exportShipmentsToExcel } from '../../utils/shipmentExcelExporter';
 import { ShipmentsTable } from './ShipmentsTable';
 
 type ServiceType = 'STANDARD' | 'EXPRESS' | 'SAME_DAY';
@@ -507,6 +508,10 @@ export function ShipmentListPage(): React.JSX.Element {
   const branchGoodsFilter = normalizeBranchGoodsFilter(searchParams.get('branchGoods'));
   const inventoryDate = searchParams.get('inventoryDate') || today;
   const courierFilter = searchParams.get('courierId') ?? '';
+  const senderPhoneFilter = searchParams.get('senderPhone') ?? '';
+  const receiverPhoneFilter = searchParams.get('receiverPhone') ?? '';
+  const senderAddressFilter = searchParams.get('senderAddress') ?? '';
+  const receiverAddressFilter = searchParams.get('receiverAddress') ?? '';
   const pageSize = toPageNumber(searchParams.get('limit'), DEFAULT_PAGE_SIZE, 10, 100);
   const offset = toPageNumber(searchParams.get('offset'), 0, 0, 1_000_000);
   const pageNumber = Math.floor(offset / pageSize) + 1;
@@ -518,6 +523,10 @@ export function ShipmentListPage(): React.JSX.Element {
   const [branchGoodsInput, setBranchGoodsInput] = useState<BranchGoodsFilter>(branchGoodsFilter);
   const [inventoryDateInput, setInventoryDateInput] = useState(inventoryDate);
   const [courierInput, setCourierInput] = useState(courierFilter);
+  const [senderPhoneInput, setSenderPhoneInput] = useState(senderPhoneFilter);
+  const [receiverPhoneInput, setReceiverPhoneInput] = useState(receiverPhoneFilter);
+  const [senderAddressInput, setSenderAddressInput] = useState(senderAddressFilter);
+  const [receiverAddressInput, setReceiverAddressInput] = useState(receiverAddressFilter);
   const [selectedShipmentCodes, setSelectedShipmentCodes] = useState<string[]>([]);
 
   const [counterShipmentCode, setCounterShipmentCode] = useState('');
@@ -641,8 +650,29 @@ export function ShipmentListPage(): React.JSX.Element {
       const assignedCourier =
         deliveryCourierByShipment.get(normalizeOpsCode(shipment.shipmentCode)) ?? 'Chưa bàn giao';
       const courierMatched = !courierFilter || assignedCourier === courierFilter;
+      const senderPhoneMatched =
+        !senderPhoneFilter || (shipment.senderPhone ?? '').includes(senderPhoneFilter.trim());
+      const receiverPhoneMatched =
+        !receiverPhoneFilter || (shipment.receiverPhone ?? '').includes(receiverPhoneFilter.trim());
+      const senderAddressMatched =
+        !senderAddressFilter ||
+        (shipment.senderAddress ?? '').toLowerCase().includes(senderAddressFilter.trim().toLowerCase()) ||
+        (shipment.senderProvince ?? '').toLowerCase().includes(senderAddressFilter.trim().toLowerCase()) ||
+        (shipment.senderDistrict ?? '').toLowerCase().includes(senderAddressFilter.trim().toLowerCase()) ||
+        (shipment.senderWard ?? '').toLowerCase().includes(senderAddressFilter.trim().toLowerCase());
+      const receiverAddressMatched =
+        !receiverAddressFilter ||
+        (shipment.receiverAddress ?? '').toLowerCase().includes(receiverAddressFilter.trim().toLowerCase()) ||
+        (shipment.receiverRegion ?? '').toLowerCase().includes(receiverAddressFilter.trim().toLowerCase());
 
-      return statusMatched && courierMatched;
+      return (
+        statusMatched &&
+        courierMatched &&
+        senderPhoneMatched &&
+        receiverPhoneMatched &&
+        senderAddressMatched &&
+        receiverAddressMatched
+      );
     });
   }, [
     branchGoodsFilter,
@@ -651,6 +681,10 @@ export function ShipmentListPage(): React.JSX.Element {
     hasShipmentSearch,
     inventoryDate,
     pageShipments,
+    senderPhoneFilter,
+    receiverPhoneFilter,
+    senderAddressFilter,
+    receiverAddressFilter,
   ]);
   const visibleShipmentCodes = useMemo(
     () => new Set(visibleShipments.map((shipment) => shipment.shipmentCode)),
@@ -676,14 +710,18 @@ export function ShipmentListPage(): React.JSX.Element {
     setBranchGoodsInput(branchGoodsFilter);
     setInventoryDateInput(inventoryDate);
     setCourierInput(courierFilter);
+    setSenderPhoneInput(senderPhoneFilter);
+    setReceiverPhoneInput(receiverPhoneFilter);
   }, [
     branchGoodsFilter,
     courierFilter,
     filters.q,
     filters.status,
     inventoryDate,
+    receiverPhoneFilter,
     selectedDateFrom,
     selectedDateTo,
+    senderPhoneFilter,
     timeFilter,
   ]);
 
@@ -713,6 +751,10 @@ export function ShipmentListPage(): React.JSX.Element {
     const nextBranchGoodsFilter = normalizeBranchGoodsFilter(String(formData.get('branchGoods') ?? ''));
     const nextInventoryDate = String(formData.get('inventoryDate') ?? '').trim() || today;
     const nextCourierId = String(formData.get('courierId') ?? '').trim();
+    const nextSenderPhone = String(formData.get('senderPhone') ?? '').trim();
+    const nextReceiverPhone = String(formData.get('receiverPhone') ?? '').trim();
+    const nextSenderAddress = String(formData.get('senderAddress') ?? '').trim();
+    const nextReceiverAddress = String(formData.get('receiverAddress') ?? '').trim();
     const next = new URLSearchParams();
 
     next.set('time', time);
@@ -737,11 +779,25 @@ export function ShipmentListPage(): React.JSX.Element {
     if (nextCourierId) {
       next.set('courierId', nextCourierId);
     }
+    if (nextSenderPhone) {
+      next.set('senderPhone', nextSenderPhone);
+    }
+    if (nextReceiverPhone) {
+      next.set('receiverPhone', nextReceiverPhone);
+    }
+    if (nextSenderAddress) {
+      next.set('senderAddress', nextSenderAddress);
+    }
+    if (nextReceiverAddress) {
+      next.set('receiverAddress', nextReceiverAddress);
+    }
 
     setSearchParams(next, { replace: true });
   };
 
   const onResetFilters = () => {
+    setSenderAddressInput('');
+    setReceiverAddressInput('');
     const next = new URLSearchParams();
     next.set('time', DEFAULT_TIME_FILTER);
     next.set('limit', String(DEFAULT_PAGE_SIZE));
@@ -755,6 +811,8 @@ export function ShipmentListPage(): React.JSX.Element {
     setBranchGoodsInput(DEFAULT_BRANCH_GOODS_FILTER);
     setInventoryDateInput(today);
     setCourierInput('');
+    setSenderPhoneInput('');
+    setReceiverPhoneInput('');
   };
 
   const updatePagination = (nextLimit: number, nextOffset: number) => {
@@ -1026,130 +1084,238 @@ export function ShipmentListPage(): React.JSX.Element {
 
   return (
     <div>
-      <form onSubmit={onFilterSubmit} style={styles.filterForm}>
-        <div style={styles.filterControls}>
-          <textarea
-            name="q"
-            rows={2}
-            placeholder="Tìm mã vận đơn trong toàn bộ dữ liệu hub đã thao tác. Có thể dán nhiều mã, mỗi mã một dòng hoặc cách nhau bằng dấu phẩy."
-            value={qInput}
-            onChange={(event) => setQInput(event.target.value)}
-            style={styles.searchInput}
-          />
-          <select
-            name="status"
-            value={statusInput}
-            onChange={(event) => setStatusInput(event.target.value)}
-            style={styles.select}
-          >
-            <option value="">Tất cả trạng thái</option>
-            {SHIPMENT_STATUS_OPTIONS.map((status) => (
-              <option key={status} value={status}>
-                {formatShipmentStatusLabel(status)}
-              </option>
-            ))}
-          </select>
-          <select
-            name="time"
-            value={timeInput}
-            onChange={(event) => setTimeInput(normalizeTimeFilter(event.target.value))}
-            style={styles.select}
-          >
-            <option value="today">Hôm nay</option>
-            <option value="last7Days">7 ngày gần nhất</option>
-            <option value="last30Days">30 ngày gần nhất</option>
-            <option value="custom">Tùy chọn ngày</option>
-            <option value="all">Tất cả thời gian</option>
-          </select>
-          <input
-            type="date"
-            name="dateFrom"
-            value={dateFromInput}
-            onChange={(event) => setDateFromInput(event.target.value)}
-            style={styles.dateInput}
-            disabled={timeInput !== 'custom'}
-          />
-          <input
-            type="date"
-            name="dateTo"
-            value={dateToInput}
-            onChange={(event) => setDateToInput(event.target.value)}
-            style={styles.dateInput}
-            disabled={timeInput !== 'custom'}
-          />
-          <select
-            name="branchGoods"
-            value={branchGoodsInput}
-            onChange={(event) => setBranchGoodsInput(normalizeBranchGoodsFilter(event.target.value))}
-            style={styles.select}
-          >
-            <option value="all">Tất cả đơn đã thao tác tại bưu cục</option>
-            <option value="readyForDelivery">Hàng đã đến hub, chưa ký nhận</option>
-            <option value="inventoryByDay">Hàng tồn kho theo ngày</option>
-            <option value="problemOrders">Đơn vấn đề</option>
-            <option value="returnNeeded">Đơn cần chuyển hoàn</option>
-          </select>
-          <input
-            type="date"
-            name="inventoryDate"
-            value={inventoryDateInput}
-            onChange={(event) => setInventoryDateInput(event.target.value)}
-            style={styles.dateInput}
-            disabled={branchGoodsInput !== 'inventoryByDay'}
-          />
-          <select
-            name="courierId"
-            value={courierInput}
-            onChange={(event) => setCourierInput(event.target.value)}
-            style={styles.select}
-            disabled={deliveryTasksQuery.isLoading && courierFilterOptions.length === 0}
-          >
-            <option value="">Tất cả courier</option>
-            {courierFilterOptions.map((courierId) => (
-              <option key={courierId} value={courierId}>
-                {courierId}
-              </option>
-            ))}
-          </select>
-          <label style={styles.pageSizeControl}>
-            <span>Số dòng/trang</span>
-            <select value={pageSize} onChange={onPageSizeChange} style={styles.pageSizeSelect}>
-              {PAGE_SIZE_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
+      <form onSubmit={onFilterSubmit} style={styles.systemFilterForm}>
+        {/* Header Label */}
+        <div style={styles.systemFilterHeader}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#334155' }}>
+              tune
+            </span>
+            <span style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.2px' }}>
+              BỘ LỌC THÔNG TIN VẬN ĐƠN (SYSTEM ADMIN)
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#475569', fontWeight: 600 }}>
+              <span>Hiển thị:</span>
+              <select value={pageSize} onChange={onPageSizeChange} style={styles.systemSelectSmall}>
+                {PAGE_SIZE_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option} dòng/trang
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </div>
+
+        {/* Row 1: Main Search & Core Attributes */}
+        <div style={styles.systemFilterRow}>
+          <div style={{ flex: '2 1 280px' }}>
+            <label style={styles.systemLabel}>Mã vận đơn (Có thể dán nhiều mã)</label>
+            <input
+              type="text"
+              name="q"
+              placeholder="Mã VĐ (Nhập 1 hoặc dán nhiều mã cách nhau bằng phẩy)..."
+              value={qInput}
+              onChange={(event) => setQInput(event.target.value)}
+              style={styles.systemInput}
+            />
+          </div>
+
+          <div style={{ flex: '1 1 160px' }}>
+            <label style={styles.systemLabel}>Trạng thái đơn hàng</label>
+            <select
+              name="status"
+              value={statusInput}
+              onChange={(event) => setStatusInput(event.target.value)}
+              style={styles.systemSelect}
+            >
+              <option value="">Tất cả trạng thái</option>
+              {SHIPMENT_STATUS_OPTIONS.map((status) => (
+                <option key={status} value={status}>
+                  {formatShipmentStatusLabel(status)}
                 </option>
               ))}
             </select>
-          </label>
-          <button type="submit">Áp dụng</button>
-          <button type="button" onClick={onResetFilters}>
-            Đặt lại
-          </button>
+          </div>
+
+          <div style={{ flex: '1 1 160px' }}>
+            <label style={styles.systemLabel}>Phân loại đơn bưu cục</label>
+            <select
+              name="branchGoods"
+              value={branchGoodsInput}
+              onChange={(event) => setBranchGoodsInput(normalizeBranchGoodsFilter(event.target.value))}
+              style={styles.systemSelect}
+            >
+              <option value="all">Tất cả đơn đã thao tác</option>
+              <option value="readyForDelivery">Hàng đến hub, chưa ký nhận</option>
+              <option value="inventoryByDay">Hàng tồn kho theo ngày</option>
+              <option value="problemOrders">Đơn vấn đề</option>
+              <option value="returnNeeded">Đơn cần chuyển hoàn</option>
+            </select>
+          </div>
+
+          <div style={{ flex: '1 1 160px' }}>
+            <label style={styles.systemLabel}>Thời gian tạo</label>
+            <select
+              name="time"
+              value={timeInput}
+              onChange={(event) => setTimeInput(normalizeTimeFilter(event.target.value))}
+              style={styles.systemSelect}
+            >
+              <option value="today">Hôm nay</option>
+              <option value="last7Days">7 ngày gần nhất</option>
+              <option value="last30Days">30 ngày gần nhất</option>
+              <option value="custom">Tùy chọn ngày</option>
+              <option value="all">Tất cả thời gian</option>
+            </select>
+          </div>
+
+          <div style={{ display: 'flex', gap: '6px', flex: '1 1 220px' }}>
+            <div style={{ flex: 1 }}>
+              <label style={styles.systemLabel}>Từ ngày</label>
+              <input
+                type="date"
+                name="dateFrom"
+                value={dateFromInput}
+                onChange={(event) => {
+                  setDateFromInput(event.target.value);
+                  if (timeInput !== 'custom') setTimeInput('custom');
+                }}
+                style={styles.systemInput}
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={styles.systemLabel}>Đến ngày</label>
+              <input
+                type="date"
+                name="dateTo"
+                value={dateToInput}
+                onChange={(event) => {
+                  setDateToInput(event.target.value);
+                  if (timeInput !== 'custom') setTimeInput('custom');
+                }}
+                style={styles.systemInput}
+              />
+            </div>
+          </div>
         </div>
 
-        <div style={styles.filterActions}>
-          <button type="button" style={styles.actionButton} onClick={() => setIsCounterModalOpen(true)}>
-            Tiếp nhận đơn hàng
-          </button>
-          <button type="button" style={styles.actionButton} onClick={() => setIsWalkInModalOpen(true)}>
-            Tạo đơn hàng
-          </button>
-          <span style={styles.selectionSummary}>
-            {selectedShipments.length > 0
-              ? `${selectedShipments.length} vận đơn đã chọn`
-              : 'Chưa chọn vận đơn'}
-          </span>
-          <button
-            type="button"
-            style={{
-              ...styles.actionButton,
-              ...(selectedShipments.length === 0 ? styles.actionButtonDisabled : null),
-            }}
-            disabled={selectedShipments.length === 0}
-            onClick={() => void printSelectedLabels()}
-          >
-            In tem đơn hàng
-          </button>
+        {/* Row 2: Customer Info, Addresses & Courier Instant Search */}
+        <div style={{ ...styles.systemFilterRow, marginTop: '10px' }}>
+          <div style={{ flex: '1 1 140px' }}>
+            <label style={styles.systemLabel}>SĐT Người gửi</label>
+            <input
+              type="text"
+              name="senderPhone"
+              placeholder="SĐT người gửi..."
+              value={senderPhoneInput}
+              onChange={(event) => setSenderPhoneInput(event.target.value)}
+              style={styles.systemInput}
+            />
+          </div>
+
+          <div style={{ flex: '1 1 140px' }}>
+            <label style={styles.systemLabel}>SĐT Người nhận</label>
+            <input
+              type="text"
+              name="receiverPhone"
+              placeholder="SĐT người nhận..."
+              value={receiverPhoneInput}
+              onChange={(event) => setReceiverPhoneInput(event.target.value)}
+              style={styles.systemInput}
+            />
+          </div>
+
+          <div style={{ flex: '1.5 1 180px' }}>
+            <label style={styles.systemLabel}>Địa chỉ người gửi (Tỉnh/Huyện/Chi tiết)</label>
+            <input
+              type="text"
+              name="senderAddress"
+              placeholder="Lọc theo địa chỉ gửi..."
+              value={senderAddressInput}
+              onChange={(event) => setSenderAddressInput(event.target.value)}
+              style={styles.systemInput}
+            />
+          </div>
+
+          <div style={{ flex: '1.5 1 180px' }}>
+            <label style={styles.systemLabel}>Địa chỉ người nhận (Miền/Tỉnh/Chi tiết)</label>
+            <input
+              type="text"
+              name="receiverAddress"
+              placeholder="Lọc theo địa chỉ nhận..."
+              value={receiverAddressInput}
+              onChange={(event) => setReceiverAddressInput(event.target.value)}
+              style={styles.systemInput}
+            />
+          </div>
+
+          <div style={{ flex: '1.5 1 180px' }}>
+            <label style={styles.systemLabel}>Nhân viên Giao nhận (Mã / Tên Courier)</label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type="text"
+                name="courierId"
+                list="courier-list-options"
+                placeholder="Gõ mã hoặc tên courier..."
+                value={courierInput}
+                onChange={(event) => setCourierInput(event.target.value)}
+                style={styles.systemInput}
+              />
+              <datalist id="courier-list-options">
+                <option value="">Tất cả courier</option>
+                {courierFilterOptions.map((cid) => (
+                  <option key={cid} value={cid} />
+                ))}
+              </datalist>
+            </div>
+          </div>
+        </div>
+
+        {/* System Action Toolbar */}
+        <div style={styles.systemActionBar}>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button type="submit" style={styles.btnPrimaryApply}>
+              Áp dụng lọc
+            </button>
+            <button type="button" onClick={onResetFilters} style={styles.btnGhostReset}>
+              Đặt lại
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              style={styles.btnExportExcel}
+              onClick={() => exportShipmentsToExcel(visibleShipments, 'Danh sách Vận đơn Bưu cục', 'Quản lý Vận đơn')}
+            >
+              📊 Xuất Excel (Full Fields)
+            </button>
+            <button type="button" style={styles.btnSolidSystem} onClick={() => setIsCounterModalOpen(true)}>
+              Tiếp nhận đơn hàng
+            </button>
+            <button type="button" style={styles.btnSolidSystem} onClick={() => setIsWalkInModalOpen(true)}>
+              Tạo đơn hàng
+            </button>
+            <span style={styles.selectionSummaryText}>
+              {selectedShipments.length > 0
+                ? `${selectedShipments.length} vận đơn đã chọn`
+                : 'Chưa chọn vận đơn'}
+            </span>
+            <button
+              type="button"
+              style={{
+                ...styles.btnSolidSystem,
+                ...(selectedShipments.length === 0 ? styles.actionButtonDisabled : null),
+              }}
+              disabled={selectedShipments.length === 0}
+              onClick={() => void printSelectedLabels()}
+            >
+              In tem đơn hàng ({selectedShipments.length})
+            </button>
+          </div>
         </div>
       </form>
 
@@ -1466,6 +1632,9 @@ export function ShipmentListPage(): React.JSX.Element {
       ) : null}
       {shipmentQuery.isSuccess ? (
         <>
+          <h2 style={{ fontSize: '18px', fontWeight: 700, margin: '14px 0 8px 0', color: '#0f172a' }}>
+            Danh sách vận đơn
+          </h2>
           <div style={styles.paginationBar}>
             <span>
               Trang {pageNumber} | {formatTotal(pageInfo.total)}
@@ -1555,7 +1724,13 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid #d9def3',
     borderRadius: 10,
     padding: '8px 10px',
-    minWidth: 170,
+    minWidth: 160,
+  },
+  phoneInput: {
+    border: '1px solid #d9def3',
+    borderRadius: 10,
+    padding: '8px 10px',
+    minWidth: 160,
   },
   pageSizeControl: {
     display: 'flex',
@@ -1590,6 +1765,139 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#1f2b6f',
     fontSize: 13,
     fontWeight: 700,
+  },
+  systemFilterForm: {
+    backgroundColor: '#ffffff',
+    border: '1px solid #cbd5e1',
+    borderRadius: 12,
+    padding: '16px 20px',
+    marginBottom: 16,
+    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+  },
+  systemFilterHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+    paddingBottom: 10,
+    borderBottom: '1px solid #e2e8f0',
+  },
+  systemFilterRow: {
+    display: 'flex',
+    gap: 12,
+    flexWrap: 'wrap',
+    alignItems: 'flex-end',
+  },
+  systemLabel: {
+    display: 'block',
+    fontSize: 11,
+    fontWeight: 700,
+    color: '#475569',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: '0.3px',
+  },
+  systemInput: {
+    width: '100%',
+    height: 36,
+    border: '1px solid #cbd5e1',
+    borderRadius: 8,
+    padding: '0 10px',
+    fontSize: 13,
+    color: '#0f172a',
+    backgroundColor: '#f8fafc',
+    boxSizing: 'border-box',
+    outline: 'none',
+    transition: 'border-color 0.15s ease',
+  },
+  systemSelect: {
+    width: '100%',
+    height: 36,
+    border: '1px solid #cbd5e1',
+    borderRadius: 8,
+    padding: '0 10px',
+    fontSize: 13,
+    color: '#0f172a',
+    backgroundColor: '#f8fafc',
+    boxSizing: 'border-box',
+    outline: 'none',
+  },
+  systemSelectSmall: {
+    height: 30,
+    border: '1px solid #cbd5e1',
+    borderRadius: 6,
+    padding: '0 8px',
+    fontSize: 12,
+    color: '#0f172a',
+    backgroundColor: '#ffffff',
+  },
+  systemActionBar: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+    flexWrap: 'wrap',
+    marginTop: 16,
+    paddingTop: 12,
+    borderTop: '1px solid #e2e8f0',
+  },
+  btnPrimaryApply: {
+    height: 36,
+    padding: '0 20px',
+    borderRadius: 8,
+    border: '1px solid #0f172a',
+    backgroundColor: '#0f172a',
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: 700,
+    cursor: 'pointer',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+  },
+  btnGhostReset: {
+    height: 36,
+    padding: '0 16px',
+    borderRadius: 8,
+    border: '1px solid #cbd5e1',
+    backgroundColor: '#f1f5f9',
+    color: '#475569',
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: 'pointer',
+  },
+  btnExportExcel: {
+    height: 36,
+    padding: '0 16px',
+    borderRadius: 8,
+    border: '1px solid #059669',
+    backgroundColor: '#059669',
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: 700,
+    cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+  },
+  btnSolidSystem: {
+    height: 36,
+    padding: '0 16px',
+    borderRadius: 8,
+    border: '1px solid #334155',
+    backgroundColor: '#334155',
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+  },
+  selectionSummaryText: {
+    fontSize: 13,
+    fontWeight: 600,
+    color: '#475569',
+    whiteSpace: 'nowrap',
   },
   paginationBar: {
     display: 'flex',

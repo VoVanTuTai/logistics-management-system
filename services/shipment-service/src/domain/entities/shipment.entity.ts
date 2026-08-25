@@ -13,6 +13,9 @@ export interface Shipment {
   code: string;
   currentStatus: ShipmentCurrentStatus;
   isLocked: boolean;
+  createdByUserId?: string | null;
+  createdByType?: string | null;
+  receiverPhone?: string | null;
   metadata: JsonValue | null;
   cancellationReason: string | null;
   createdAt: Date;
@@ -22,6 +25,9 @@ export interface Shipment {
 export interface CreateShipmentInput {
   code?: string | null;
   metadata?: JsonValue | null;
+  createdByUserId?: string | null;
+  createdByType?: string | null;
+  receiverPhone?: string | null;
 }
 
 export interface UpdateShipmentInput {
@@ -43,6 +49,8 @@ export interface ShipmentListFilters {
   status?: string | null;
   hubCodes?: string | string[] | null;
   opsArrivedUnsigned?: string | boolean | null;
+  createdByUserId?: string | null;
+  receiverPhone?: string | null;
   createdFrom?: string | null;
   createdTo?: string | null;
   limit?: string | number | null;

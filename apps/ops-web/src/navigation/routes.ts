@@ -2,17 +2,21 @@ export const routePaths = {
   login: '/login',
   appRoot: '/app',
   dashboard: '/app/dashboard',
+  masterOpsCommandCenter: '/app/hq-ops',
+  downloadCenter: '/app/download-center',
   analyticsDashboard: '/app/analytics',
   comingSoonDebtReport: '/app/coming-soon/bao-cao-cong-no',
   comingSoonAiCashflow: '/app/coming-soon/ai-du-doan-dong-tien',
   groupsRoot: '/app/function-groups',
-
+  groupHqOperations: '/app/function-groups/hq-operations',
   groupOperationsPlatform: '/app/function-groups/operations-platform',
   groupIntegrationServices: '/app/function-groups/integration-services',
   operationsPlatformPickupDispatch:
     '/app/function-groups/operations-platform/dieu-phoi-lay-hang',
   operationsPlatformDeliveryDispatch:
     '/app/function-groups/operations-platform/dieu-phoi-phat-hang',
+  courierTaskTransfer:
+    '/app/function-groups/operations-platform/chuyen-don',
   groupBranchBusiness: '/app/function-groups/branch-business',
   branchBusinessOrderManagementRoot:
     '/app/function-groups/branch-business/quan-ly-van-don',
@@ -95,6 +99,8 @@ export const routePaths = {
     'function-groups/operations-platform/dieu-phoi-lay-hang',
   operationsPlatformDeliveryDispatchLeaf:
     'function-groups/operations-platform/dieu-phoi-phat-hang',
+  courierTaskTransferLeaf:
+    'function-groups/operations-platform/chuyen-don',
   returnBlockRoot: '/app/function-groups/service-quality/chuyen-hoan',
   returnBlockRegistration:
     '/app/function-groups/service-quality/chuyen-hoan/dang-ky-chuyen-hoan',
@@ -139,10 +145,13 @@ export const routePaths = {
   trackingDetail: (shipmentCode: string) => `/app/tracking/${encodeURIComponent(shipmentCode)}`,
 
   dashboardLeaf: 'dashboard',
+  masterOpsCommandCenterLeaf: 'hq-ops',
+  downloadCenterLeaf: 'download-center',
   analyticsDashboardLeaf: 'analytics',
   comingSoonDebtReportLeaf: 'coming-soon/bao-cao-cong-no',
   comingSoonAiCashflowLeaf: 'coming-soon/ai-du-doan-dong-tien',
 
+  groupHqOperationsLeaf: 'function-groups/hq-operations',
   groupOperationsPlatformLeaf: 'function-groups/operations-platform',
   groupIntegrationServicesLeaf: 'function-groups/integration-services',
 

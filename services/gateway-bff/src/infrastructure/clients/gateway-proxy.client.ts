@@ -4,7 +4,7 @@ import type { Request, Response as ExpressResponse } from 'express';
 import { ApiGroup, ServiceRegistryClient } from './service-registry.client';
 
 type RequestWithRawBody = Request & { rawBody?: Buffer };
-type AuthRoleGroup = 'OPS' | 'SHIPPER' | 'MERCHANT' | 'COURIER_APP';
+type AuthRoleGroup = 'OPS' | 'SHIPPER' | 'MERCHANT' | 'COURIER_APP' | 'CUSTOMER_APP';
 
 const HOP_BY_HOP_HEADERS = new Set([
   'connection',
@@ -61,7 +61,8 @@ export class GatewayProxyClient {
       response.status(upstreamResponse.status);
 
       upstreamResponse.headers.forEach((value, key) => {
-        if (key.toLowerCase() === 'transfer-encoding') {
+        const normalizedKey = key.toLowerCase();
+        if (HOP_BY_HOP_HEADERS.has(normalizedKey)) {
           return;
         }
 
@@ -214,6 +215,10 @@ function resolveAuthRoleGroup(group: ApiGroup): AuthRoleGroup | null {
 
   if (group === 'merchant') {
     return 'MERCHANT';
+  }
+
+  if (group === 'customer') {
+    return 'CUSTOMER_APP';
   }
 
   return null;

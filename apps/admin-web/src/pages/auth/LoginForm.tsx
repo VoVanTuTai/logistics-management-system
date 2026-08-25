@@ -15,7 +15,7 @@ export function LoginForm({
   isSubmitting,
   errorMessage,
   onSubmit,
-  usernamePlaceholder = '10000001',
+  usernamePlaceholder = 'Nhập mã 8 chữ số (VD: 10000001)',
 }: LoginFormProps): React.JSX.Element {
   const [showPassword, setShowPassword] = React.useState(false);
   const form = useForm<LoginFormValues>({
@@ -30,10 +30,10 @@ export function LoginForm({
     <form onSubmit={form.handleSubmit(onSubmit)} className="login-form-new">
       <div className="login-field-group">
         <label className="login-field-label" htmlFor="username">
-          Tên đăng nhập
+          Mã nhân viên
         </label>
         <div className="login-input-wrapper">
-          <span className="material-symbols-outlined login-input-icon">person</span>
+          <span className="material-symbols-outlined login-input-icon">badge</span>
           <input
             id="username"
             data-testid="admin-login-username"
@@ -42,6 +42,9 @@ export function LoginForm({
             placeholder={usernamePlaceholder}
           />
         </div>
+        <small className="login-field-hint" style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '4px', display: 'block' }}>
+          Đăng nhập bằng Mã nhân viên (8 chữ số) & Mật khẩu — Không dùng Email.
+        </small>
         {form.formState.errors.username ? (
           <small className="auth-error">{form.formState.errors.username.message}</small>
         ) : null}

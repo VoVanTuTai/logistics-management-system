@@ -1,0 +1,272 @@
+import React, { useState } from 'react';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+
+import { AppHeader } from '../../components/AppHeader';
+import { AppErrorModal } from '../../components/common/AppErrorModal';
+import { InputField } from '../../components/InputField';
+import { PrimaryButton } from '../../components/PrimaryButton';
+import type { RootStackParamList } from '../../navigation/types';
+import { authApi } from '../../services/api/auth.api';
+import { ApiClientError } from '../../services/api/client';
+import { authStore } from '../../store/authStore';
+import { colors, spacing } from '../../theme';
+
+type Props = NativeStackScreenProps<RootStackParamList, 'Register'>;
+
+interface ErrorModalState {
+  visible: boolean;
+  title: string;
+  message: string;
+}
+
+export function RegisterScreen({ navigation }: Props): React.JSX.Element {
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errorModal, setErrorModal] = useState<ErrorModalState>({
+    visible: false,
+    title: '',
+    message: '',
+  });
+
+  const handleRegister = async () => {
+    if (loading) return;
+
+    if (!fullName.trim()) {
+      setErrorModal({
+        visible: true,
+        title: 'Thiếu thông tin',
+        message: 'Vui lòng nhập họ và tên.',
+      });
+      return;
+    }
+    if (!phone.trim()) {
+      setErrorModal({
+        visible: true,
+        title: 'Thiếu thông tin',
+        message: 'Vui lòng nhập số điện thoại.',
+      });
+      return;
+    }
+    if (!password.trim()) {
+      setErrorModal({
+        visible: true,
+        title: 'Thiếu thông tin',
+        message: 'Vui lòng nhập mật khẩu.',
+      });
+      return;
+    }
+    if (password !== confirmPassword) {
+      setErrorModal({
+        visible: true,
+        title: 'Mật khẩu không khớp',
+        message: 'Mật khẩu xác nhận không trùng khớp. Vui lòng kiểm tra lại.',
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // 1. Register new user
+      await authApi.register({
+        username: phone.trim(),
+        password: password.trim(),
+        displayName: fullName.trim(),
+        phone: phone.trim(),
+      });
+
+      // 2. Auto login
+      const loginRes = await authApi.login({
+        username: phone.trim(),
+        password: password.trim(),
+      });
+
+      const token = loginRes.tokens?.accessToken || loginRes.accessToken;
+      if (!token) {
+        throw new Error('Không nhận được token xác thực từ máy chủ.');
+      }
+
+      authStore.setSession({
+        accessToken: token,
+        user: {
+          id: loginRes.user.id,
+          username: loginRes.user.username,
+          displayName: loginRes.user.displayName || fullName.trim(),
+          phone: loginRes.user.phone || phone.trim(),
+          roles: loginRes.user.roles || ['CUSTOMER'],
+        },
+      });
+
+      navigation.replace('MainTabs', { screen: 'HomeTab' });
+    } catch (error) {
+      let msg = 'Đăng ký tài khoản thất bại.';
+      if (error instanceof ApiClientError) {
+        if (error.isNetworkError) {
+          msg = 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng và thử lại.';
+        } else if (error.message) {
+          msg = error.message.includes('already exists')
+            ? `Số điện thoại / Tên đăng nhập "${phone.trim()}" đã được sử dụng. Vui lòng đăng nhập hoặc dùng số khác.`
+            : error.message;
+        }
+      } else if (error instanceof Error && error.message) {
+        msg = error.message;
+      }
+      setErrorModal({
+        visible: true,
+        title: 'Lỗi đăng ký',
+        message: msg,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 20}
+    >
+      <AppHeader title="Đăng ký tài khoản" onBackPress={() => navigation.goBack()} />
+
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Tạo tài khoản mới</Text>
+          <Text style={styles.cardSub}>Trở thành thành viên NEXUS Express ngay hôm nay</Text>
+
+          <InputField
+            label="Họ và tên"
+            placeholder="Nguyễn Văn A"
+            value={fullName}
+            onChangeText={setFullName}
+            iconName="person-outline"
+            required
+          />
+
+          <InputField
+            label="Số điện thoại / Tên đăng nhập"
+            placeholder="09xxxxxxxx"
+            keyboardType="phone-pad"
+            value={phone}
+            onChangeText={setPhone}
+            iconName="call-outline"
+            required
+          />
+
+          <InputField
+            label="Email (Không bắt buộc)"
+            placeholder="example@email.com"
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
+            iconName="mail-outline"
+          />
+
+          <InputField
+            label="Mật khẩu"
+            placeholder="••••••••"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+            iconName="lock-closed-outline"
+            required
+          />
+
+          <InputField
+            label="Xác nhận mật khẩu"
+            placeholder="••••••••"
+            secureTextEntry
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            iconName="checkmark-circle-outline"
+            required
+          />
+
+          <PrimaryButton
+            title="Đăng ký tài khoản"
+            loadingTitle="Đang đăng ký..."
+            onPress={handleRegister}
+            loading={loading}
+            size="lg"
+            style={styles.submitBtn}
+          />
+
+          <View style={styles.loginRow}>
+            <Text style={styles.loginText}>Đã có tài khoản? </Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+              <Text style={styles.loginLink}>Đăng nhập</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
+
+      <AppErrorModal
+        visible={errorModal.visible}
+        title={errorModal.title}
+        message={errorModal.message}
+        onClose={() => setErrorModal((prev) => ({ ...prev, visible: false }))}
+      />
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  container: {
+    padding: spacing.lg,
+  },
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: 18,
+    padding: spacing.xl,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+  },
+  cardTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  cardSub: {
+    fontSize: 13,
+    color: colors.textMuted,
+    marginTop: 4,
+    marginBottom: spacing.lg,
+  },
+  submitBtn: {
+    marginTop: spacing.md,
+  },
+  loginRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: spacing.xl,
+  },
+  loginText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  loginLink: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+});

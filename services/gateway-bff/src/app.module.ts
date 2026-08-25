@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { CourierModule } from './api/courier/courier.module';
+import { CustomerModule } from './api/customer/customer.module';
 import { ChatModule } from './api/chat/chat.module';
 import { MerchantModule } from './api/merchant/merchant.module';
 import { OpsModule } from './api/ops/ops.module';
@@ -20,6 +21,7 @@ import { HealthModule } from './health/health.module';
     MerchantModule,
     OpsModule,
     CourierModule,
+    CustomerModule,
     MediaModule,
   ],
 })

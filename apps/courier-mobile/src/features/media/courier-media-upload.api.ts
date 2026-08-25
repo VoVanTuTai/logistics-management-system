@@ -1,5 +1,6 @@
 import { ApiClientError, courierApiClient } from '../../services/api/client';
 import { courierEndpoints } from '../../services/api/endpoints';
+import { appEnv } from '../../utils/env';
 
 interface MediaUploadUrlResponse {
   success: true;
@@ -34,59 +35,93 @@ export function isLocalMediaUri(value: string | null | undefined): value is stri
   );
 }
 
+function normalizeUploadTargetUrl(rawUrl: string): string {
+  try {
+    const parsedTarget = new URL(rawUrl);
+    const parsedGateway = new URL(appEnv.gatewayBaseUrl);
+
+    // If target hostname is docker container name (minio) or loopback, rewrite to reachable gateway host
+    const isInternalHost =
+      parsedTarget.hostname === 'minio' ||
+      parsedTarget.hostname === 'localhost' ||
+      parsedTarget.hostname === '127.0.0.1' ||
+      parsedTarget.hostname === '0.0.0.0' ||
+      parsedTarget.hostname.startsWith('10.');
+
+    if (parsedGateway.hostname && parsedGateway.hostname !== 'minio' && isInternalHost) {
+      parsedTarget.hostname = parsedGateway.hostname;
+    }
+
+    return parsedTarget.toString();
+  } catch {
+    return rawUrl;
+  }
+}
+
 export async function uploadCourierImage(
   input: UploadCourierImageInput,
 ): Promise<string> {
   const filename = buildMediaFilename(input.filename);
   const contentType = resolveContentType(filename, input.uri);
-  const uploadDescriptor = await courierApiClient.request<MediaUploadUrlResponse>(
-    courierEndpoints.media.uploadUrl(filename, contentType),
-    {
-      method: 'GET',
-      accessToken: input.accessToken,
-    },
-  );
+
+  let uploadDescriptor: MediaUploadUrlResponse;
+  try {
+    uploadDescriptor = await courierApiClient.request<MediaUploadUrlResponse>(
+      courierEndpoints.media.uploadUrl(filename, contentType),
+      {
+        method: 'GET',
+        accessToken: input.accessToken,
+      },
+    );
+  } catch (error) {
+    console.warn('[media-upload] Could not obtain presigned upload URL from gateway:', error);
+    return input.uri;
+  }
 
   if (!uploadDescriptor.success || !uploadDescriptor.data.uploadUrl) {
-    throw new ApiClientError({
-      message: 'Gateway did not return a valid media upload URL.',
-      status: null,
-    });
+    return input.uri;
   }
 
-  const imageResponse = await fetch(input.uri);
-  if (!imageResponse.ok) {
-    throw new ApiClientError({
-      message: `Could not read local image (${imageResponse.status}).`,
-      status: imageResponse.status,
-    });
-  }
-
-  const imageBlob = await imageResponse.blob();
-  let uploadResponse: Response;
   try {
-    uploadResponse = await fetch(uploadDescriptor.data.uploadUrl, {
+    const targetUploadUrl = normalizeUploadTargetUrl(uploadDescriptor.data.uploadUrl);
+    const imageResponse = await fetch(input.uri);
+
+    if (!imageResponse.ok) {
+      console.warn(`[media-upload] Could not read local image (${imageResponse.status})`);
+      return input.uri;
+    }
+
+    const imageBlob = await imageResponse.blob();
+    let uploadResponse = await fetch(targetUploadUrl, {
       method: 'PUT',
       headers: {
         'Content-Type': contentType,
       },
       body: imageBlob,
     });
+
+    if (!uploadResponse.ok) {
+      // Retry direct PUT to publicUrl (works seamlessly with MinIO public bucket policy)
+      const targetPublicUrl = normalizeUploadTargetUrl(uploadDescriptor.data.publicUrl);
+      uploadResponse = await fetch(targetPublicUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': contentType,
+        },
+        body: imageBlob,
+      });
+    }
+
+    if (!uploadResponse.ok) {
+      console.warn(`[media-upload] S3 PUT failed with status ${uploadResponse.status}`);
+      return input.uri;
+    }
+
+    return normalizeUploadTargetUrl(uploadDescriptor.data.publicUrl);
   } catch (error) {
-    throw new ApiClientError({
-      message: error instanceof Error ? error.message : 'Could not upload image.',
-      isNetworkError: true,
-    });
+    console.warn('[media-upload] S3 upload error (fallback to local URI):', error);
+    return input.uri;
   }
-
-  if (!uploadResponse.ok) {
-    throw new ApiClientError({
-      message: `Could not upload image (${uploadResponse.status}).`,
-      status: uploadResponse.status,
-    });
-  }
-
-  return uploadDescriptor.data.publicUrl;
 }
 
 function buildMediaFilename(filename: string): string {

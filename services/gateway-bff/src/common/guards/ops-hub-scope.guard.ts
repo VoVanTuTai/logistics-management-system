@@ -444,6 +444,19 @@ function buildForwardHeaders(request: Request): Headers {
     headers.set('x-request-id', String(request.headers['x-request-id']));
   }
 
+  if (request.headers['x-ops-user-id']) {
+    headers.set('x-ops-user-id', String(request.headers['x-ops-user-id']));
+  }
+  if (request.headers['x-ops-username']) {
+    headers.set('x-ops-username', String(request.headers['x-ops-username']));
+  }
+  if (request.headers['x-ops-roles']) {
+    headers.set('x-ops-roles', String(request.headers['x-ops-roles']));
+  }
+  if (request.headers['x-ops-hub-codes']) {
+    headers.set('x-ops-hub-codes', String(request.headers['x-ops-hub-codes']));
+  }
+
   headers.set('accept', 'application/json');
   headers.set('x-forwarded-for', request.ip ?? '');
   headers.set('x-forwarded-host', request.hostname ?? '');
@@ -590,23 +603,34 @@ function getShipmentOperationBlockReason(
 }
 
 function isSameHubOrScopedLocation(targetCode: string, assignedHubCode: string): boolean {
-  const targetProvinceScope = getBranchHubProvinceScopePrefix(targetCode);
-  const assignedProvinceScope = getBranchHubProvinceScopePrefix(assignedHubCode);
+  const targetPrefixes = getBranchHubProvinceScopePrefixes(targetCode);
+  const assignedPrefixes = getBranchHubProvinceScopePrefixes(assignedHubCode);
+
+  const hasCommonPrefix = targetPrefixes.some((tp) =>
+    assignedPrefixes.some((ap) => tp === ap || tp.startsWith(ap) || ap.startsWith(tp)),
+  );
 
   return (
     targetCode === assignedHubCode ||
     targetCode.startsWith(`${assignedHubCode}-`) ||
     targetCode.startsWith(`${assignedHubCode}_`) ||
     targetCode.startsWith(`${assignedHubCode}.`) ||
-    (Boolean(targetProvinceScope) &&
-      targetProvinceScope === assignedProvinceScope)
+    hasCommonPrefix
   );
 }
 
-function getBranchHubProvinceScopePrefix(hubCode: string): string | null {
+function getBranchHubProvinceScopePrefixes(hubCode: string): string[] {
   const normalizedHubCode = hubCode.trim().toUpperCase();
 
-  return /^\d{6}[A-Z][A-Z0-9]*$/.test(normalizedHubCode)
-    ? normalizedHubCode.slice(0, 6)
-    : null;
+  // Regional Hubs (e.g. 001N001, 002C001, 003S001) -> Match 3-digit region prefix (001, 002, 003)
+  if (/^\d{3}[A-Z]\d{3}$/.test(normalizedHubCode)) {
+    return [normalizedHubCode.slice(0, 3)];
+  }
+
+  // Branch Hubs (e.g. 003079B001) -> Match 6-digit province prefix (003079) and 3-digit region prefix (003)
+  if (/^\d{6}[A-Z][A-Z0-9]*$/.test(normalizedHubCode)) {
+    return [normalizedHubCode.slice(0, 6), normalizedHubCode.slice(0, 3)];
+  }
+
+  return [];
 }
