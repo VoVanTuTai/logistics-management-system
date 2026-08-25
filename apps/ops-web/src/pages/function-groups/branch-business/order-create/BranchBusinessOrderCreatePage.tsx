@@ -125,6 +125,8 @@ function buildMetadata(
       province: form.receiverRegion.trim() || null,
       hubCode: receiverHubCode,
       resolvedHubName: route.receiverHub.name,
+      latitude: route.receiverHub.latitude ?? undefined,
+      longitude: route.receiverHub.longitude ?? undefined,
     },
     package: {
       itemType: form.itemType.trim() || null,

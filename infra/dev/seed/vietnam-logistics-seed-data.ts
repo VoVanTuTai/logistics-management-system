@@ -30,6 +30,8 @@ export interface RegionalHubSeed {
   addressLine: string;
   phone: string;
   contactName: string;
+  latitude: number;
+  longitude: number;
 }
 
 const VIETNAM_PROVINCES_API_URL = 'https://provinces.open-api.vn/api/v2/?depth=2';
@@ -77,6 +79,414 @@ const SOUTH_PROVINCES = new Set([
   'ca_mau',
 ]);
 
+export interface NationalHqSeed {
+  code: string;
+  name: string;
+  zoneCode: string;
+  zoneName: string;
+  addressLine: string;
+  phone: string;
+  contactName: string;
+  latitude: number;
+  longitude: number;
+}
+
+export const NATIONAL_HQ_HUB: NationalHqSeed = {
+  code: '000HQ001',
+  name: 'Trụ sở Điều hành NEXUS Toàn quốc',
+  zoneCode: '000',
+  zoneName: 'Zone Toàn quốc',
+  addressLine: 'Tòa nhà NEXUS Tower, 01 Tràng Tiền, Hoàn Kiếm, Hà Nội',
+  phone: '19006868',
+  contactName: 'Ban Giám Đốc NEXUS',
+  latitude: 21.028511,
+  longitude: 105.854444,
+};
+
+export interface WardHubSeed {
+  code: string;
+  name: string;
+  parentHubCode: string;
+  provinceCode: number;
+  provinceName: string;
+  district: string;
+  ward: string;
+  addressLine: string;
+  phone: string;
+  contactName: string;
+  latitude: number;
+  longitude: number;
+  coverageRadiusKm?: number;
+  boundaryPolygon: Array<[number, number]>; // Array of [latitude, longitude] boundary points (Google Maps / OSM administrative borders)
+}
+
+export const SAMPLE_WARD_HUBS: WardHubSeed[] = [
+  // TP. Hồ Chí Minh
+  {
+    code: '07901W001',
+    name: 'Bưu cục Phường Bến Thành',
+    parentHubCode: '003079B001',
+    provinceCode: 79,
+    provinceName: 'Thành phố Hồ Chí Minh',
+    district: 'Quận 1',
+    ward: 'Phường Bến Thành',
+    addressLine: '123 Nguyễn Trãi, Phường Bến Thành, Quận 1',
+    phone: '0283811001',
+    contactName: 'Trưởng Bưu cục Bến Thành',
+    latitude: 10.7715,
+    longitude: 106.6932,
+    boundaryPolygon: [
+      [10.766, 106.687],
+      [10.777, 106.689],
+      [10.779, 106.696],
+      [10.774, 106.699],
+      [10.768, 106.696],
+      [10.765, 106.691],
+      [10.766, 106.687],
+    ],
+  },
+  {
+    code: '07901W002',
+    name: 'Bưu cục Phường Bến Nghé',
+    parentHubCode: '003079B001',
+    provinceCode: 79,
+    provinceName: 'Thành phố Hồ Chí Minh',
+    district: 'Quận 1',
+    ward: 'Phường Bến Nghé',
+    addressLine: '45 Lê Lợi, Phường Bến Nghé, Quận 1',
+    phone: '0283811002',
+    contactName: 'Trưởng Bưu cục Bến Nghé',
+    latitude: 10.7758,
+    longitude: 106.7012,
+    boundaryPolygon: [
+      [10.772, 106.698],
+      [10.785, 106.701],
+      [10.789, 106.707],
+      [10.778, 106.712],
+      [10.770, 106.706],
+      [10.772, 106.698],
+    ],
+  },
+  {
+    code: '07903W001',
+    name: 'Bưu cục Phường 13 - Quận 3',
+    parentHubCode: '003079B001',
+    provinceCode: 79,
+    provinceName: 'Thành phố Hồ Chí Minh',
+    district: 'Quận 3',
+    ward: 'Phường 13',
+    addressLine: '78 Lê Văn Sỹ, Phường 13, Quận 3',
+    phone: '0283811003',
+    contactName: 'Trưởng Bưu cục Quận 3',
+    latitude: 10.7891,
+    longitude: 106.6775,
+    boundaryPolygon: [
+      [10.782, 106.671],
+      [10.794, 106.673],
+      [10.795, 106.684],
+      [10.784, 106.683],
+      [10.782, 106.671],
+    ],
+  },
+  {
+    code: '07905W001',
+    name: 'Bưu cục Phường 2 - Quận 5',
+    parentHubCode: '003079B001',
+    provinceCode: 79,
+    provinceName: 'Thành phố Hồ Chí Minh',
+    district: 'Quận 5',
+    ward: 'Phường 2',
+    addressLine: '88 Trần Hưng Đạo, Phường 2, Quận 5',
+    phone: '0283811004',
+    contactName: 'Trưởng Bưu cục Quận 5',
+    latitude: 10.7538,
+    longitude: 106.6782,
+    boundaryPolygon: [
+      [10.746, 106.672],
+      [10.759, 106.673],
+      [10.760, 106.685],
+      [10.748, 106.684],
+      [10.746, 106.672],
+    ],
+  },
+  {
+    code: '07912W001',
+    name: 'Bưu cục Phường An Phú Đông - Quận 12',
+    parentHubCode: '003079B001',
+    provinceCode: 79,
+    provinceName: 'Thành phố Hồ Chí Minh',
+    district: 'Quận 12',
+    ward: 'Phường An Phú Đông',
+    addressLine: '1013A Hà Huy Giáp, Phường An Phú Đông, Quận 12',
+    phone: '0283811005',
+    contactName: 'Trưởng Bưu cục An Phú Đông',
+    latitude: 10.867,
+    longitude: 106.696,
+    boundaryPolygon: [
+      [10.850, 106.683],
+      [10.880, 106.686],
+      [10.885, 106.713],
+      [10.857, 106.715],
+      [10.850, 106.683],
+    ],
+  },
+  {
+    code: '07913W001',
+    name: 'Bưu cục Phường 13 - Tân Bình',
+    parentHubCode: '003079B001',
+    provinceCode: 79,
+    provinceName: 'Thành phố Hồ Chí Minh',
+    district: 'Quận Tân Bình',
+    ward: 'Phường 13',
+    addressLine: '789 Cộng Hòa, Phường 13, Quận Tân Bình',
+    phone: '0283811006',
+    contactName: 'Trưởng Bưu cục Tân Bình',
+    latitude: 10.8035,
+    longitude: 106.6436,
+    boundaryPolygon: [
+      [10.794, 106.633],
+      [10.815, 106.636],
+      [10.813, 106.655],
+      [10.796, 106.652],
+      [10.794, 106.633],
+    ],
+  },
+
+  // Hà Nội
+  {
+    code: '00101W001',
+    name: 'Bưu cục Phường Hàng Bài - Hoàn Kiếm',
+    parentHubCode: '001001B001',
+    provinceCode: 1,
+    provinceName: 'Thành phố Hà Nội',
+    district: 'Quận Hoàn Kiếm',
+    ward: 'Phường Hàng Bài',
+    addressLine: '15 Phố Huế, Phường Hàng Bài, Quận Hoàn Kiếm',
+    phone: '0243811001',
+    contactName: 'Trưởng Bưu cục Hàng Bài',
+    latitude: 21.0185,
+    longitude: 105.8524,
+    boundaryPolygon: [
+      [21.012, 105.847],
+      [21.024, 105.849],
+      [21.025, 105.858],
+      [21.013, 105.857],
+      [21.012, 105.847],
+    ],
+  },
+  {
+    code: '00102W001',
+    name: 'Bưu cục Phường Kim Mã - Ba Đình',
+    parentHubCode: '001001B001',
+    provinceCode: 1,
+    provinceName: 'Thành phố Hà Nội',
+    district: 'Quận Ba Đình',
+    ward: 'Phường Kim Mã',
+    addressLine: '56 Kim Mã, Phường Kim Mã, Quận Ba Đình',
+    phone: '0243811002',
+    contactName: 'Trưởng Bưu cục Kim Mã',
+    latitude: 21.0318,
+    longitude: 105.8247,
+    boundaryPolygon: [
+      [21.025, 105.817],
+      [21.037, 105.819],
+      [21.038, 105.831],
+      [21.026, 105.829],
+      [21.025, 105.817],
+    ],
+  },
+  {
+    code: '00103W001',
+    name: 'Bưu cục Phường Dịch Vọng - Cầu Giấy',
+    parentHubCode: '001001B001',
+    provinceCode: 1,
+    provinceName: 'Thành phố Hà Nội',
+    district: 'Quận Cầu Giấy',
+    ward: 'Phường Dịch Vọng',
+    addressLine: '234 Cầu Giấy, Phường Dịch Vọng, Quận Cầu Giấy',
+    phone: '0243811003',
+    contactName: 'Trưởng Bưu cục Cầu Giấy',
+    latitude: 21.0336,
+    longitude: 105.7958,
+    boundaryPolygon: [
+      [21.025, 105.787],
+      [21.041, 105.789],
+      [21.042, 105.804],
+      [21.027, 105.803],
+      [21.025, 105.787],
+    ],
+  },
+  {
+    code: '00104W001',
+    name: 'Bưu cục Phường Trung Liệt - Đống Đa',
+    parentHubCode: '001001B001',
+    provinceCode: 1,
+    provinceName: 'Thành phố Hà Nội',
+    district: 'Quận Đống Đa',
+    ward: 'Phường Trung Liệt',
+    addressLine: '88 Thái Hà, Phường Trung Liệt, Quận Đống Đa',
+    phone: '0243811004',
+    contactName: 'Trưởng Bưu cục Đống Đa',
+    latitude: 21.0135,
+    longitude: 105.8194,
+    boundaryPolygon: [
+      [21.007, 105.811],
+      [21.019, 105.813],
+      [21.020, 105.826],
+      [21.008, 105.825],
+      [21.007, 105.811],
+    ],
+  },
+
+  // Đà Nẵng
+  {
+    code: '04801W001',
+    name: 'Bưu cục Phường Thạch Thang - Hải Châu',
+    parentHubCode: '002048B001',
+    provinceCode: 48,
+    provinceName: 'Thành phố Đà Nẵng',
+    district: 'Quận Hải Châu',
+    ward: 'Phường Thạch Thang',
+    addressLine: '12 Bạch Đằng, Phường Thạch Thang, Quận Hải Châu',
+    phone: '0236381101',
+    contactName: 'Trưởng Bưu cục Hải Châu',
+    latitude: 16.0742,
+    longitude: 108.2239,
+    boundaryPolygon: [
+      [16.067, 108.217],
+      [16.081, 108.219],
+      [16.082, 108.229],
+      [16.068, 108.228],
+      [16.067, 108.217],
+    ],
+  },
+];
+
+/**
+ * Ray Casting Algorithm (Point-in-Polygon)
+ * Determines whether a GPS coordinate is strictly inside a closed boundary polygon.
+ */
+export function isPointInPolygon(
+  point: { latitude: number; longitude: number },
+  polygon: Array<[number, number]>,
+): boolean {
+  if (!polygon || polygon.length < 3) return false;
+  const x = point.latitude;
+  const y = point.longitude;
+  let inside = false;
+
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i][0];
+    const yi = polygon[i][1];
+    const xj = polygon[j][0];
+    const yj = polygon[j][1];
+
+    const intersect =
+      yi > y !== yj > y &&
+      x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+
+    if (intersect) {
+      inside = !inside;
+    }
+  }
+
+  return inside;
+}
+
+export function calculateHaversineDistanceKm(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
+  const R = 6371; // Earth radius in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+export function findResponsibleHubByCoordinates(
+  lat: number | null | undefined,
+  lng: number | null | undefined,
+  fallbackProvinceCodenameOrName?: string | null,
+): { hubCode: string; hubName: string; level: number; parentHubCode?: string } {
+  if (
+    typeof lat === 'number' &&
+    typeof lng === 'number' &&
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180
+  ) {
+    const point = { latitude: lat, longitude: lng };
+
+    // 1. Check exact match with Ward Boundary Polygon (Ray Casting)
+    for (const wardHub of SAMPLE_WARD_HUBS) {
+      if (wardHub.boundaryPolygon && isPointInPolygon(point, wardHub.boundaryPolygon)) {
+        return {
+          hubCode: wardHub.code,
+          hubName: wardHub.name,
+          level: 3,
+          parentHubCode: wardHub.parentHubCode,
+        };
+      }
+    }
+
+    // 2. Secondary fallback: nearest Ward Hub within small distance
+    let closestWardHub: WardHubSeed | null = null;
+    let minDistance = Infinity;
+
+    for (const wardHub of SAMPLE_WARD_HUBS) {
+      const dist = calculateHaversineDistanceKm(lat, lng, wardHub.latitude, wardHub.longitude);
+      if (dist <= 3.5 && dist < minDistance) {
+        minDistance = dist;
+        closestWardHub = wardHub;
+      }
+    }
+
+    if (closestWardHub) {
+      return {
+        hubCode: closestWardHub.code,
+        hubName: closestWardHub.name,
+        level: 3,
+        parentHubCode: closestWardHub.parentHubCode,
+      };
+    }
+  }
+
+  // 3. Fallback to Provincial Hub by codename/name
+  if (fallbackProvinceCodenameOrName) {
+    const norm = fallbackProvinceCodenameOrName
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/^(thanh pho|tinh|tp)\s+/i, '')
+      .trim();
+
+    if (norm.includes('ho chi minh') || norm.includes('sai gon') || norm.includes('tphcm')) {
+      return { hubCode: '003079B001', hubName: 'Bưu cục Hồ Chí Minh', level: 2, parentHubCode: '003S001' };
+    }
+    if (norm.includes('ha noi') || norm.includes('hanoi')) {
+      return { hubCode: '001001B001', hubName: 'Bưu cục Hà Nội', level: 2, parentHubCode: '001N001' };
+    }
+    if (norm.includes('da nang') || norm.includes('danang')) {
+      return { hubCode: '002048B001', hubName: 'Bưu cục Đà Nẵng', level: 2, parentHubCode: '002C001' };
+    }
+  }
+
+  // 4. Fallback to Region / Default Hub
+  return { hubCode: '003079B001', hubName: 'Bưu cục Hồ Chí Minh', level: 2, parentHubCode: '003S001' };
+}
+
 export const REGIONAL_HUBS: Record<VietnamRegion, RegionalHubSeed> = {
   NORTH: {
     code: '001N001',
@@ -90,6 +500,8 @@ export const REGIONAL_HUBS: Record<VietnamRegion, RegionalHubSeed> = {
     addressLine: '12 Tràng Tiền',
     phone: '0241000001',
     contactName: 'Điều phối miền Bắc',
+    latitude: 21.0253,
+    longitude: 105.8572,
   },
   CENTRAL: {
     code: '002C001',
@@ -103,6 +515,8 @@ export const REGIONAL_HUBS: Record<VietnamRegion, RegionalHubSeed> = {
     addressLine: '08 Bạch Đằng',
     phone: '0236100001',
     contactName: 'Điều phối miền Trung',
+    latitude: 16.0718,
+    longitude: 108.2241,
   },
   SOUTH: {
     code: '003S001',
@@ -116,8 +530,54 @@ export const REGIONAL_HUBS: Record<VietnamRegion, RegionalHubSeed> = {
     addressLine: '02 Công xã Paris',
     phone: '0281000001',
     contactName: 'Điều phối miền Nam',
+    latitude: 10.7797,
+    longitude: 106.6991,
   },
 };
+
+export const PROVINCE_COORDINATES: Record<string, { latitude: number; longitude: number }> = {
+  ha_noi: { latitude: 21.028511, longitude: 105.854444 },
+  cao_bang: { latitude: 22.6657, longitude: 106.2577 },
+  tuyen_quang: { latitude: 21.8233, longitude: 105.2181 },
+  dien_bien: { latitude: 21.386, longitude: 103.023 },
+  lai_chau: { latitude: 22.3965, longitude: 103.4682 },
+  son_la: { latitude: 21.3283, longitude: 103.9148 },
+  lao_cai: { latitude: 22.4856, longitude: 103.9707 },
+  thai_nguyen: { latitude: 21.5942, longitude: 105.8482 },
+  lang_son: { latitude: 21.8537, longitude: 106.7615 },
+  quang_ninh: { latitude: 20.9505, longitude: 107.0734 },
+  bac_ninh: { latitude: 21.1861, longitude: 106.0763 },
+  phu_tho: { latitude: 21.3227, longitude: 105.2280 },
+  hai_phong: { latitude: 20.8449, longitude: 106.6881 },
+  hung_yen: { latitude: 20.6464, longitude: 106.0511 },
+  ninh_binh: { latitude: 20.2506, longitude: 105.9745 },
+  thanh_hoa: { latitude: 19.8067, longitude: 105.7852 },
+  nghe_an: { latitude: 18.6734, longitude: 105.6813 },
+  ha_tinh: { latitude: 18.3435, longitude: 105.9058 },
+  quang_tri: { latitude: 16.8163, longitude: 107.1006 },
+  hue: { latitude: 16.4637, longitude: 107.5909 },
+  da_nang: { latitude: 16.067780, longitude: 108.220830 },
+  quang_ngai: { latitude: 15.1205, longitude: 108.7923 },
+  gia_lai: { latitude: 13.9833, longitude: 108.0000 },
+  khanh_hoa: { latitude: 12.2388, longitude: 109.1967 },
+  dak_lak: { latitude: 12.6667, longitude: 108.0500 },
+  lam_dong: { latitude: 11.9404, longitude: 108.4583 },
+  dong_nai: { latitude: 10.9574, longitude: 106.8427 },
+  ho_chi_minh: { latitude: 10.776889, longitude: 106.700806 },
+  tay_ninh: { latitude: 11.3101, longitude: 106.0983 },
+  dong_thap: { latitude: 10.4577, longitude: 105.6331 },
+  vinh_long: { latitude: 10.2537, longitude: 105.9722 },
+  an_giang: { latitude: 10.3759, longitude: 105.4185 },
+  can_tho: { latitude: 10.0452, longitude: 105.7469 },
+  ca_mau: { latitude: 9.1769, longitude: 105.1524 },
+};
+
+export function resolveProvinceCoordinates(codename?: string | null): { latitude: number; longitude: number } {
+  if (codename && PROVINCE_COORDINATES[codename]) {
+    return PROVINCE_COORDINATES[codename];
+  }
+  return { latitude: 10.776889, longitude: 106.700806 };
+}
 
 export function resolveProvinceRegion(codename: string): VietnamRegion {
   if (NORTH_PROVINCES.has(codename)) {
@@ -186,44 +646,7 @@ export function buildAddressLine(input: {
 }
 
 export async function loadVietnamProvinces(): Promise<VietnamProvinceSeed[]> {
-  try {
-    const response = await fetch(VIETNAM_PROVINCES_API_URL, {
-      headers: {
-        Accept: 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Vietnam province API returned ${response.status}.`);
-    }
-
-    const payload = (await response.json()) as unknown;
-    if (!Array.isArray(payload)) {
-      throw new Error('Vietnam province API returned an invalid payload.');
-    }
-
-    const provinces = payload
-      .map(mapProvince)
-      .filter((province): province is VietnamProvinceSeed => Boolean(province))
-      .filter(
-        (province) =>
-          NORTH_PROVINCES.has(province.codename) ||
-          CENTRAL_PROVINCES.has(province.codename) ||
-          SOUTH_PROVINCES.has(province.codename),
-      )
-      .sort((left, right) => left.code - right.code);
-
-    assertProvinceCoverage(provinces);
-
-    return provinces;
-  } catch (error) {
-    console.warn(
-      `Cannot load provinces.open-api.vn data, using fallback province list: ${
-        error instanceof Error ? error.message : String(error)
-      }`,
-    );
-    return FALLBACK_PROVINCES;
-  }
+  return FALLBACK_PROVINCES;
 }
 
 function mapProvince(value: unknown): VietnamProvinceSeed | null {

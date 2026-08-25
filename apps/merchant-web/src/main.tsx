@@ -75,6 +75,8 @@ interface HubApiRecord {
   name: string;
   zoneCode: string | null;
   address: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   isActive: boolean;
 }
 
@@ -87,6 +89,8 @@ interface HubLocationOption {
   type: 'BRANCH' | 'SORTING_CENTER' | 'TRANSIT_HUB' | 'UNKNOWN';
   regionCode: MerchantRegionCode | null;
   fullAddress: string;
+  latitude?: number | null;
+  longitude?: number | null;
   label: string;
 }
 
@@ -108,6 +112,8 @@ interface MerchantProfileConfigPayload {
   defaultHubName: string | null;
   defaultSenderAddress: string | null;
   businessAddressDetail: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 interface MerchantProfileApiRecord {
@@ -119,6 +125,8 @@ interface MerchantProfileApiRecord {
   defaultHubCode: string | null;
   defaultHubName: string | null;
   defaultSenderAddress: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -386,6 +394,8 @@ function mapMerchantProfileRecord(
     defaultHubName: record.defaultHubName?.trim() || null,
     defaultSenderAddress: record.defaultSenderAddress?.trim() || null,
     businessAddressDetail: null,
+    latitude: record.latitude ?? null,
+    longitude: record.longitude ?? null,
   };
 }
 
@@ -515,6 +525,8 @@ function parseHubLocation(hub: HubApiRecord): HubLocationOption | null {
     type,
     regionCode: resolveRegionCode(normalizedProvince) ?? resolveRegionCodeByZoneCode(hub.zoneCode),
     fullAddress: normalizedFullAddress || hub.name,
+    latitude: hub.latitude ?? null,
+    longitude: hub.longitude ?? null,
     label: `${hub.name} (${wardOrDistrict}, ${normalizedProvince})`,
   };
 }
@@ -1633,6 +1645,14 @@ function MerchantApp(): React.JSX.Element {
           defaultProfileAddress ||
           previous.defaultPickupAddress ||
           lockedSenderHub.fullAddress,
+        latitude:
+          merchantProfileConfig?.latitude ??
+          lockedSenderHub.latitude ??
+          previous.latitude,
+        longitude:
+          merchantProfileConfig?.longitude ??
+          lockedSenderHub.longitude ??
+          previous.longitude,
       };
 
       if (
@@ -2054,9 +2074,13 @@ function MerchantApp(): React.JSX.Element {
       senderProvince: senderHub.province,
       senderWard: senderHub.ward,
       senderHubCode: senderHub.hubCode,
+      senderLatitude: senderHub.latitude ?? profile.latitude ?? undefined,
+      senderLongitude: senderHub.longitude ?? profile.longitude ?? undefined,
       receiverProvince: receiverHub.province,
       receiverWard: receiverHub.ward,
       receiverHubCode: receiverHub.hubCode,
+      receiverLatitude: receiverHub.latitude ?? undefined,
+      receiverLongitude: receiverHub.longitude ?? undefined,
       senderAddress: [
         createForm.senderAddressDetail.trim(),
         senderHub.ward,

@@ -32,6 +32,8 @@ interface LocationPickerMapModalProps {
     composedAddress: string;
     hubCode: string;
     hubName: string;
+    latitude: number;
+    longitude: number;
   }) => void;
   accessToken?: string;
 }
@@ -140,7 +142,8 @@ export function LocationPickerMapModal({
         }
       }
       if (data.type === 'MOVE_END' && data.lat && data.lng) {
-        // Update local address state WITHOUT causing WebView HTML reload
+        // Update local address and coords state WITHOUT causing WebView HTML reload
+        setCoords({ latitude: data.lat, longitude: data.lng });
         updateAddressForCoords(data.lat, data.lng);
       }
     } catch {
@@ -158,6 +161,8 @@ export function LocationPickerMapModal({
       composedAddress: geocoded.composedAddress,
       hubCode: hub.code,
       hubName: hub.name,
+      latitude: coords.latitude,
+      longitude: coords.longitude,
     });
     onClose();
   };

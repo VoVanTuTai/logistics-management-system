@@ -15,4 +15,8 @@ export {
   useUpsertMerchantProfileMutation,
   useUpdateZoneMutation,
   useZonesQuery,
+  useCourierAreaAssignmentsQuery,
+  useCreateCourierAreaAssignmentMutation,
+  useUpdateCourierAreaAssignmentMutation,
+  useDeleteCourierAreaAssignmentMutation,
 } from './masterdata.hooks';

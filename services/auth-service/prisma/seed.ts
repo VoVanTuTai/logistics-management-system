@@ -7,7 +7,9 @@ import {
   branchHubNameForProvince,
   loadVietnamProvinces,
   merchantUsernameForProvinceIndex,
+  NATIONAL_HQ_HUB,
   REGIONAL_HUBS,
+  SAMPLE_WARD_HUBS,
 } from '../../../infra/dev/seed/vietnam-logistics-seed-data';
 
 const prisma = new PrismaClient();
@@ -41,6 +43,16 @@ function allPermissions(enabled: boolean): Record<string, boolean> {
 
 async function seedUsers() {
   const provinces = await loadVietnamProvinces();
+  const allRegionalHubCodes = Object.values(REGIONAL_HUBS).map((hub) => hub.code);
+  const allBranchHubCodes = provinces.map((province) => branchHubCodeForProvince(province));
+  const allWardHubCodes = SAMPLE_WARD_HUBS.map((hub) => hub.code);
+  const allSystemHubCodes = [
+    NATIONAL_HQ_HUB.code,
+    ...allRegionalHubCodes,
+    ...allBranchHubCodes,
+    ...allWardHubCodes,
+  ];
+
   const branchOpsUsers = provinces.map((province, index) => {
     const sequence = index + 7;
     const username = `20000${String(sequence).padStart(3, '0')}`;
@@ -54,6 +66,7 @@ async function seedUsers() {
       hubCodes: [branchHubCodeForProvince(province)],
     };
   });
+
   const branchCourierUsers = provinces.map((province, index) => {
     const sequence = index + 4;
     const username = `30000${String(sequence).padStart(3, '0')}`;
@@ -67,6 +80,35 @@ async function seedUsers() {
       hubCodes: [branchHubCodeForProvince(province)],
     };
   });
+
+  const wardOpsUsers = SAMPLE_WARD_HUBS.map((hub, index) => {
+    const sequence = index + 1;
+    const username = `20001${String(sequence).padStart(3, '0')}`;
+
+    return {
+      id: username,
+      username,
+      roles: ['OPS_VIEWER'],
+      displayName: `Ops ${hub.name}`,
+      phone: `09021${String(sequence).padStart(5, '0')}`,
+      hubCodes: [hub.code, hub.parentHubCode],
+    };
+  });
+
+  const wardCourierUsers = SAMPLE_WARD_HUBS.map((hub, index) => {
+    const sequence = index + 1;
+    const username = `30001${String(sequence).padStart(3, '0')}`;
+
+    return {
+      id: username,
+      username,
+      roles: ['COURIER'],
+      displayName: `Courier ${hub.name}`,
+      phone: `09031${String(sequence).padStart(5, '0')}`,
+      hubCodes: [hub.code],
+    };
+  });
+
   const merchantUsers = provinces.map((province, index) => {
     return {
       id: merchantUsernameForProvinceIndex(index),
@@ -77,14 +119,15 @@ async function seedUsers() {
       hubCodes: [branchHubCodeForProvince(province)],
     };
   });
+
   const regionalHubUsers = [
     {
       id: '10000001',
       username: '10000001',
       roles: ['SYSTEM_ADMIN'],
-      displayName: 'Admin Tổng NEXUS',
+      displayName: 'Admin Tổng NEXUS Toàn quốc',
       phone: '0901000001',
-      hubCodes: Object.values(REGIONAL_HUBS).map((hub) => hub.code),
+      hubCodes: allSystemHubCodes,
     },
     {
       id: '20000000',
@@ -92,7 +135,7 @@ async function seedUsers() {
       roles: ['OPS_ADMIN'],
       displayName: 'Giám đốc Điều hành HQ Toàn quốc',
       phone: '0902000000',
-      hubCodes: Object.values(REGIONAL_HUBS).map((hub) => hub.code),
+      hubCodes: allSystemHubCodes,
     },
     {
       id: '20000001',
@@ -167,10 +210,13 @@ async function seedUsers() {
       hubCodes: [REGIONAL_HUBS.SOUTH.code],
     },
   ];
+
   const users = [
     ...regionalHubUsers,
     ...branchOpsUsers,
+    ...wardOpsUsers,
     ...branchCourierUsers,
+    ...wardCourierUsers,
     ...merchantUsers,
   ];
 

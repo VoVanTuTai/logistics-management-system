@@ -68,6 +68,8 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
           composedAddress: def.composedAddress || '',
           hubCode: def.hubCode || '',
           hubName: def.hubName || '',
+          latitude: def.latitude,
+          longitude: def.longitude,
         });
       }
     } else {
@@ -120,6 +122,8 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
           composedAddress: def.composedAddress || '',
           hubCode: def.hubCode || '',
           hubName: def.hubName || '',
+          latitude: def.latitude,
+          longitude: def.longitude,
         });
       }
     });
@@ -268,6 +272,13 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
 
       setSubmitting(true);
       try {
+        const senderCoords = senderAddress.latitude && senderAddress.longitude
+          ? { latitude: senderAddress.latitude, longitude: senderAddress.longitude }
+          : null;
+        const receiverCoords = receiverAddress.latitude && receiverAddress.longitude
+          ? { latitude: receiverAddress.latitude, longitude: receiverAddress.longitude }
+          : null;
+
         const metadataPayload = {
           createdBy: {
             username: user?.username || senderPhone,
@@ -283,6 +294,9 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
             province: senderAddress.province,
             ward: senderAddress.ward,
             hubCode: senderAddress.hubCode,
+            latitude: senderCoords?.latitude,
+            longitude: senderCoords?.longitude,
+            coordinate: senderCoords ?? undefined,
           },
           receiver: {
             name: receiverName.trim(),
@@ -293,7 +307,16 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
             province: receiverAddress.province,
             ward: receiverAddress.ward,
             hubCode: receiverAddress.hubCode,
+            latitude: receiverCoords?.latitude,
+            longitude: receiverCoords?.longitude,
+            coordinate: receiverCoords ?? undefined,
           },
+          pickupLatitude: senderCoords?.latitude,
+          pickupLongitude: senderCoords?.longitude,
+          pickupCoordinate: senderCoords ?? undefined,
+          deliveryLatitude: receiverCoords?.latitude,
+          deliveryLongitude: receiverCoords?.longitude,
+          deliveryCoordinate: receiverCoords ?? undefined,
           package: {
             itemType: itemName.trim(),
             weightKg: Number(weightKg) || 0.5,
