@@ -8,11 +8,14 @@ import {
   loadVietnamProvinces,
   merchantCitizenId,
   merchantUsernameForProvinceIndex,
+  NATIONAL_BOUNDARY_POLYGON,
   NATIONAL_HQ_HUB,
   provinceShortName,
   REGIONAL_HUBS,
+  resolveProvinceBoundary,
   resolveProvinceCoordinates,
   resolveProvinceRegion,
+  resolveRegionalBoundary,
   resolveRegionalHub,
   SAMPLE_WARD_HUBS,
   type VietnamProvinceSeed,
@@ -170,6 +173,7 @@ async function seedHubs(provinces: VietnamProvinceSeed[]) {
     }),
     latitude: NATIONAL_HQ_HUB.latitude,
     longitude: NATIONAL_HQ_HUB.longitude,
+    boundaryPolygon: NATIONAL_BOUNDARY_POLYGON,
     isActive: true,
   };
 
@@ -210,6 +214,7 @@ async function seedHubs(provinces: VietnamProvinceSeed[]) {
       }),
       latitude: hub.latitude,
       longitude: hub.longitude,
+      boundaryPolygon: resolveRegionalBoundary(hub.region) ?? undefined,
       isActive: true,
     };
   });
@@ -248,6 +253,7 @@ async function seedHubs(provinces: VietnamProvinceSeed[]) {
       }),
       latitude: coords.latitude,
       longitude: coords.longitude,
+      boundaryPolygon: resolveProvinceBoundary(province.codename) ?? undefined,
       isActive: true,
     };
   });
