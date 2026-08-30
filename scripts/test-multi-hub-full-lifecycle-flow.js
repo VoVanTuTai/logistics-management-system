@@ -52,7 +52,7 @@ function assert(condition, errorMsg) {
   }
 }
 
-async function request(pathname, options = {}) {
+async function request(pathname, options = {}, retries = 3) {
   const url = pathname.startsWith('http://') || pathname.startsWith('https://')
     ? pathname
     : `${DEFAULT_GATEWAY_URL.replace(/\/+$/, '')}${pathname}`;
@@ -75,6 +75,12 @@ async function request(pathname, options = {}) {
     data = JSON.parse(text);
   } catch {
     data = text;
+  }
+
+  if (res.status === 429 && !options.allowError && retries > 0) {
+    const waitSec = Number(data?.retryAfterSeconds) || 2;
+    await new Promise(r => setTimeout(r, (waitSec + 1) * 1000));
+    return request(pathname, options, retries - 1);
   }
 
   if (!res.ok && !options.allowError) {
@@ -282,40 +288,12 @@ async function runDetailedMultiHubFlow() {
   info(`Tuyến luân chuyển:      ${originHub} (TP.HCM) ➔ ${transitHub} (Đà Nẵng) ➔ ${destHub} (Hà Nội)`);
   success('Đơn hàng đã được tạo thành công với 100% thuộc tính nghiệp vụ hợp lệ.');
 
-  // BƯỚC 3: MERCHANT TẠO YÊU CẦU LẤY HÀNG (PICKUP REQUEST) & OPS PHÊ DUYỆT
-  logStep('3', 'Merchant gửi yêu cầu lấy hàng tại kho & Ops bưu cục gốc phê duyệt');
+  // BƯỚC 3: TỰ ĐỘNG KÍCH HOẠT ĐIỀU PHỐI (SHOP ĐÃ CÓ HỢP ĐỒNG, KHÔNG CẦN OPS DUYỆT THỦ CÔNG)
+  logStep('3', 'Tự động kích hoạt quy trình lấy hàng (Shop đã ký hợp đồng, hệ thống tự động điều phối trực tiếp không qua Ops duyệt)');
+  info('Quy tắc nghiệp vụ: Merchant đã ký hợp đồng & có tài khoản hợp lệ, đơn hàng tạo ra trong khu vực bưu cục quản lý sẽ được TỰ ĐỘNG ĐIỀU PHỐI trực tiếp đến App của Shipper phụ trách phân vùng.');
 
-  const pickupRequestCode = `PU-${shipmentCode}`;
-  const { data: pickupReq } = await request('/merchant/pickup/pickups', {
-    method: 'POST',
-    token: merchantSession.token,
-    body: {
-      pickupCode: pickupRequestCode,
-      requesterName: fullShipmentPayload.metadata.sender.name,
-      contactPhone: fullShipmentPayload.metadata.sender.phone,
-      pickupAddress: fullShipmentPayload.metadata.sender.address,
-      scheduledTime: new Date(Date.now() + 3600000).toISOString(),
-      items: [{ shipmentCode, quantity: 1 }],
-      note: 'Lấy hàng tại kho tổng lầu 4, liên hệ lễ tân gặp Mr. Tuấn',
-    },
-  });
-
-  info(`Yêu cầu Pickup tạo thành công: Mã \x1b[33m${pickupReq.pickupCode}\x1b[0m | Trạng thái: ${pickupReq.status}`);
-
-  const { data: approvedPickup } = await request(`/ops/pickup/pickups/${pickupReq.id}/approve`, {
-    method: 'POST',
-    token: opsOriginSession.token,
-    body: {
-      approvedBy: accounts.opsOrigin,
-      note: 'Đã phê duyệt yêu cầu lấy hàng - chuyển giao bộ máy tự động điều phối',
-    },
-  });
-
-  info(`Ops bưu cục ${originHub} đã duyệt: Trạng thái \x1b[32m${approvedPickup.status}\x1b[0m`);
-  success('Yêu cầu lấy hàng đã được duyệt.');
-
-  // Chờ Dispatch Engine tiêu thụ sự kiện và so khớp Geofence
-  info('Đang chờ bộ máy điều phối tự động (Dispatch Engine) so khớp tọa độ...');
+  // Chờ Dispatch Engine tiêu thụ sự kiện shipment.created và so khớp Geofence
+  info('Đang chờ bộ máy điều phối tự động (Dispatch Engine) so khớp tọa độ kho gửi và tuyến Shipper...');
   await new Promise((r) => setTimeout(r, 2000));
 
   // BƯỚC 4: HỆ THỐNG TỰ ĐỘNG ĐIỀU PHỐI SHIPPER LẤY HÀNG (AUTO-DISPATCH PICKUP)

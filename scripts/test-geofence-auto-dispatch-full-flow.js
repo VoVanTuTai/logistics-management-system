@@ -202,29 +202,9 @@ async function runTest() {
   info(`Tọa độ giao: (${createdShipment.deliveryLatitude || 21.0360}, ${createdShipment.deliveryLongitude || 105.8150})`);
   success('Đơn hàng đã được tạo thành công kèm đầy đủ tọa độ GPS và phân vùng địa lý.');
 
-  // 3. Merchant yêu cầu lấy hàng (Pickup Request) & Ops duyệt
-  log('3', 'Merchant gửi yêu cầu lấy hàng và Ops duyệt yêu cầu...');
-  const { data: pickupReq } = await request('/merchant/pickup/pickups', {
-    method: 'POST',
-    token: merchantSession.token,
-    body: {
-      pickupCode: `PU-${shipmentCode}`,
-      requesterName: 'Shop Thời Trang Tân Bình',
-      contactPhone: '0909123456',
-      pickupAddress: '120 Trường Sơn, Phường 2, Tân Bình',
-      items: [{ shipmentCode, quantity: 1 }],
-      note: 'Hàng dễ vỡ, cần lấy buổi sáng',
-    },
-  });
-
-  info(`Yêu cầu pickup mã: ${pickupReq.pickupCode}`);
-
-  const { data: approvedPickup } = await request(`/ops/pickup/pickups/${pickupReq.id}/approve`, {
-    method: 'POST',
-    token: opsOriginSession.token,
-    body: { approvedBy: accounts.opsOrigin, note: 'Duyệt yêu cầu lấy hàng' },
-  });
-  info(`Yêu cầu pickup đã duyệt: ${approvedPickup.status}`);
+  // 3. Hệ thống tự động kích hoạt điều phối lấy hàng (Shop đã có tài khoản/hợp đồng, không qua Ops duyệt)
+  log('3', 'Tự động kích hoạt điều phối lấy hàng ngay khi đơn được tạo (Không cần Ops duyệt thủ công)...');
+  info('Quy tắc nghiệp vụ: Shop đã ký hợp đồng/tài khoản hợp lệ ➔ Hệ thống tự động phân công Shipper lấy hàng theo phân vùng.');
 
   // Chờ 2s để RabbitMQ & Dispatch Engine tự động so khớp phân vùng
   await new Promise((r) => setTimeout(r, 2000));
