@@ -350,19 +350,23 @@ export function HqNetworkGeofenceMapPage(): React.JSX.Element {
 
     // ----------------------------------------------------
     // LAYER B: 3 VÙNG MIỀN (BẮC - TRUNG - NAM)
+    // Phân biệt màu sắc đặc trưng theo từng miền
     // ----------------------------------------------------
     if (coverageLayer === 'REGIONS' || coverageLayer === 'ALL_LAYERS') {
       VIETNAM_REGION_BOUNDARIES.forEach((reg) => {
+        const isSelected = selectedHub?.code === reg.code;
+        const regColor = reg.colorHex || '#2563eb';
+
         const regPoly = L.polygon(reg.polygon, {
-          color: reg.colorHex || '#3b82f6',
-          weight: 2.8,
-          fillColor: reg.colorHex || '#3b82f6',
-          fillOpacity: 0.12,
-          dashArray: '6, 6',
+          color: isSelected ? '#ffffff' : regColor,
+          weight: isSelected ? 4 : 3.2,
+          fillColor: regColor,
+          fillOpacity: isSelected ? 0.22 : 0.08,
+          dashArray: '8, 8',
         });
 
         regPoly.bindTooltip(
-          `<div style="font-weight:bold; color:${reg.colorHex}; font-size:13px;">🗺️ ${reg.name}</div>
+          `<div style="font-weight:bold; color:${regColor}; font-size:13px;">🗺️ ${reg.name}</div>
            <div style="font-size:11px; color:#cbd5e1;">${reg.description}</div>`,
           { sticky: true },
         );
@@ -378,34 +382,35 @@ export function HqNetworkGeofenceMapPage(): React.JSX.Element {
 
     // ----------------------------------------------------
     // LAYER C: TOÀN BỘ TỈNH / THÀNH PHỐ (100% COVERAGE)
-    // Phong cách viền nét đứt đỏ chuẩn Google Maps
+    // Mỗi tỉnh có màu sắc chuyên biệt (Province Chroma Spectrum)
     // ----------------------------------------------------
     if (coverageLayer === 'ALL_PROVINCES' || coverageLayer === 'ALL_LAYERS') {
       VIETNAM_PROVINCE_BOUNDARIES.forEach((prov) => {
         const isSelected = selectedHub?.code === prov.code;
+        const provColor = prov.colorHex || '#ea580c';
 
         const provPoly = L.polygon(prov.polygon, {
-          color: isSelected ? '#ef4444' : '#dc2626',
+          color: isSelected ? '#ffffff' : provColor,
           weight: isSelected ? 3.5 : 2,
-          fillColor: isSelected ? '#ef4444' : '#ea4335',
-          fillOpacity: isSelected ? 0.22 : 0.08,
-          dashArray: '6, 6',
+          fillColor: provColor,
+          fillOpacity: isSelected ? 0.35 : 0.14,
+          dashArray: '4, 4',
         });
 
         provPoly.bindTooltip(
-          `<div style="font-weight:bold; color:#ea4335; font-size:13px;">📍 ${prov.name}</div>
+          `<div style="font-weight:bold; color:${provColor}; font-size:13px;">📍 ${prov.name}</div>
            <div style="font-size:11px; color:#e2e8f0;">Diện tích ước tính: ${prov.areaKm2 ? prov.areaKm2.toLocaleString() : 'N/A'} km²</div>
            <div style="font-size:10px; color:#94a3b8;">${prov.polygon.length} đỉnh tọa độ viền khép kín</div>`,
           { sticky: true },
         );
 
         provPoly.on('mouseover', () => {
-          provPoly.setStyle({ weight: 3.5, fillOpacity: 0.2 });
+          provPoly.setStyle({ weight: 3.5, fillOpacity: 0.3 });
         });
 
         provPoly.on('mouseout', () => {
           if (selectedHub?.code !== prov.code) {
-            provPoly.setStyle({ weight: 2, fillOpacity: 0.08 });
+            provPoly.setStyle({ weight: 2, fillOpacity: 0.14 });
           }
         });
 
@@ -422,7 +427,7 @@ export function HqNetworkGeofenceMapPage(): React.JSX.Element {
           className: 'hq-prov-pin',
           html: `
             <div style="
-              background: #dc2626; color: #ffffff; padding: 2px 7px; border-radius: 9999px;
+              background: ${provColor}; color: #ffffff; padding: 2px 8px; border-radius: 9999px;
               font-size: 11px; font-weight: 700; border: 1.5px solid #ffffff; white-space: nowrap;
               box-shadow: 0 2px 8px rgba(0,0,0,0.5); cursor: pointer;
             ">
@@ -445,18 +450,19 @@ export function HqNetworkGeofenceMapPage(): React.JSX.Element {
 
     // ----------------------------------------------------
     // LAYER D: BƯU CỤC CẤP PHƯỜNG / XÃ (483 PHƯỜNG GEOJSON CHUẨN QUỐC GIA)
+    // Nét liền Tím Violet / Xanh Đậm nổi bật rõ nét
     // ----------------------------------------------------
     if (coverageLayer === 'WARD_HUBS' || coverageLayer === 'ALL_LAYERS') {
       // Render 483 phường/xã GeoJSON chuẩn quốc gia (khớp 100% Google Maps)
       OFFICIAL_WARD_BOUNDARIES.forEach((ward) => {
         const isSelected = selectedHub?.code === ward.code;
-        const wardColor = ward.colorHex || '#0052cc';
+        const wardColor = ward.colorHex || '#9333ea';
 
         const wardPoly = L.polygon(ward.boundaryPolygon, {
-          color: isSelected ? '#0052cc' : wardColor,
+          color: isSelected ? '#ffffff' : wardColor,
           weight: isSelected ? 3 : 1.5,
           fillColor: wardColor,
-          fillOpacity: isSelected ? 0.35 : 0.18,
+          fillOpacity: isSelected ? 0.45 : 0.22,
         });
 
         wardPoly.bindTooltip(
@@ -468,12 +474,12 @@ export function HqNetworkGeofenceMapPage(): React.JSX.Element {
         );
 
         wardPoly.on('mouseover', () => {
-          wardPoly.setStyle({ weight: 3, fillOpacity: 0.35 });
+          wardPoly.setStyle({ weight: 3, fillOpacity: 0.4 });
         });
 
         wardPoly.on('mouseout', () => {
           if (selectedHub?.code !== ward.code) {
-            wardPoly.setStyle({ weight: 1.5, fillOpacity: 0.18 });
+            wardPoly.setStyle({ weight: 1.5, fillOpacity: 0.22 });
           }
         });
 

@@ -9,6 +9,28 @@ export { OFFICIAL_WARD_BOUNDARIES, findOfficialWardForCoordinate } from './vietn
 export type { OfficialWardBoundary } from './vietnamWardBoundariesOfficial';
 import { findOfficialWardForCoordinate } from './vietnamWardBoundariesOfficial';
 
+
+export interface LocalWardHubItem {
+  id: string;
+  code: string;
+  name: string;
+  level: number;
+  parentHubCode?: string;
+  parentName?: string;
+  zoneCode?: string;
+  region: 'NORTH' | 'CENTRAL' | 'SOUTH';
+  province: string;
+  district: string;
+  ward: string;
+  address: string;
+  phone?: string;
+  latitude: number;
+  longitude: number;
+  isActive: boolean;
+  colorHex?: string;
+  boundaryPolygon: Array<[number, number]>;
+}
+
 export interface BoundaryItem {
   id: string;
   code: string;
@@ -60,7 +82,7 @@ export const VIETNAM_NATIONAL_BOUNDARY: BoundaryItem = {
     [17.8500, 106.5000], // Đèo Ngang / Vũng Áng
     [17.4800, 106.6300], // Đồng Hới, Quảng Bình
     [17.0000, 107.1200], // Cửa Tùng, Vĩnh Linh, Quảng Trị
-    [16.7500, 107.2500], // Thuận An, Thừa Thiên Huế
+    [16.6000, 107.6500], // Thuận An, Thừa Thiên Huế
     [16.3200, 107.9000], // Vịnh Lăng Cô / Đèo Hải Vân
     [16.1200, 108.2800], // Bán đảo Sơn Trà, Đà Nẵng
     [15.8800, 108.3800], // Cửa Đại, Hội An, Quảng Nam
@@ -164,7 +186,7 @@ export const VIETNAM_NATIONAL_BOUNDARY: BoundaryItem = {
 // 2. TẦNG 1: 3 VÙNG MIỀN LOGISTICS QUỐC GIA (3 MACRO REGIONS)
 // ---------------------------------------------------------------------------
 export const VIETNAM_REGION_BOUNDARIES: BoundaryItem[] = [
-  // ZONE 001: MIỀN BẮC (North Region)
+  // Zone Miền Bắc (Bắc Bộ)
   {
     id: 'region-001-north',
     code: '001',
@@ -173,23 +195,34 @@ export const VIETNAM_REGION_BOUNDARIES: BoundaryItem[] = [
     region: 'NORTH',
     category: 'REGION',
     center: [21.0285, 105.8544],
-    colorHex: '#3b82f6', // Blue
-    description: 'Bao gồm 15 tỉnh Đông Bắc, Tây Bắc và Đồng bằng Sông Hồng (Hà Nội, Hải Phòng, Quảng Ninh...)',
+    colorHex: '#3b82f6',
+    description: 'Bao gồm 15 tỉnh thành Đông Bắc, Tây Bắc và Đồng bằng Sông Hồng (Hà Nội, Hải Phòng, Quảng Ninh, Điện Biên, Cao Bằng...)',
     polygon: [
       [23.3927, 105.3238],
+      [23.2840, 105.7600],
       [23.0600, 106.1200],
+      [22.8800, 106.5500],
       [22.4500, 106.7200],
+      [22.1200, 106.7800],
       [21.8500, 107.0300],
       [21.5400, 107.6200],
+      [21.5300, 107.9700],
       [21.4880, 108.0650],
+      [21.1500, 107.8500],
       [20.9400, 107.2500],
+      [20.8500, 107.0500],
       [20.8000, 106.9000],
+      [20.5500, 106.5800],
       [20.2500, 106.3500],
       [20.0000, 106.0500],
+      [20.0500, 105.9500],
       [20.1500, 105.6500],
       [20.5500, 104.8500],
       [20.9500, 103.5500],
+      [21.0500, 102.9500],
+      [21.7500, 102.6500],
       [22.4000, 102.1500],
+      [22.6500, 102.8000],
       [22.7500, 103.4500],
       [22.6000, 103.9500],
       [22.9500, 104.6500],
@@ -197,58 +230,78 @@ export const VIETNAM_REGION_BOUNDARIES: BoundaryItem[] = [
     ],
   },
 
-  // ZONE 002: MIỀN TRUNG & TÂY NGUYÊN (Central Region)
+  // Zone Miền Trung & Tây Nguyên (Trung Bộ)
   {
     id: 'region-002-central',
     code: '002',
-    name: 'Zone Miền Trung (Bắc Trung Bộ, Duyên Hải & Tây Nguyên)',
+    name: 'Zone Miền Trung & Tây Nguyên (Trung Bộ)',
     level: 1,
     region: 'CENTRAL',
     category: 'REGION',
-    center: [16.0718, 108.2241],
-    colorHex: '#f59e0b', // Amber / Orange
-    description: 'Bao gồm 11 tỉnh thành Duyên hải Miền Trung và Tây Nguyên (Đà Nẵng, Huế, Thanh Hóa, Nghệ An, Đắk Lắk...)',
+    center: [16.0544, 108.2022],
+    colorHex: '#f59e0b',
+    description: 'Bao gồm 11 tỉnh thành Bắc Trung Bộ, Duyên hải Nam Trung Bộ và Tây Nguyên (Đà Nẵng, Huế, Khánh Hòa, Nghệ An, Đắk Lắk...)',
     polygon: [
       [20.0000, 106.0500],
       [19.7800, 105.9000],
       [18.8200, 105.7500],
       [18.3500, 105.9500],
+      [17.8500, 106.5000],
       [17.4800, 106.6300],
-      [16.7500, 107.2500],
+      [17.0000, 107.1200],
+      [16.6000, 107.6500],
+      [16.3200, 107.9000],
       [16.1200, 108.2800],
+      [15.8800, 108.3800],
       [15.4200, 108.7500],
+      [14.9500, 108.9800],
       [14.0500, 109.2800],
+      [13.2500, 109.3500],
       [12.9200, 109.4200],
       [12.4500, 109.2800],
+      [11.9000, 109.1800],
       [11.5500, 109.0500],
+      [11.1500, 108.7800],
       [10.9300, 108.2800],
       [11.3500, 107.6500],
-      [11.9500, 107.2500],
+      [11.4500, 107.3500],
+      [11.7500, 107.4500],
+      [12.3500, 107.4500],
       [12.7500, 107.6000],
       [13.4000, 107.5000],
+      [14.1500, 107.5500],
       [14.7000, 107.5500],
+      [15.5500, 107.4500],
       [16.1500, 107.2500],
+      [16.6500, 106.6500],
       [17.4500, 106.0500],
       [18.3800, 105.2000],
+      [18.5500, 105.2000],
+      [18.9500, 104.5500],
       [19.2500, 104.2500],
+      [19.7500, 105.1500],
       [20.2500, 104.6000],
+      [20.5500, 104.8500],
       [20.1500, 105.6500],
+      [20.0500, 105.9500],
       [20.0000, 106.0500],
     ],
   },
 
-  // ZONE 003: MIỀN NAM (South Region)
+  // Zone Miền Nam (Nam Bộ)
   {
     id: 'region-003-south',
     code: '003',
-    name: 'Zone Miền Nam (Đông Nam Bộ & Tây Nam Bộ)',
+    name: 'Zone Miền Nam (Nam Bộ)',
     level: 1,
     region: 'SOUTH',
     category: 'REGION',
-    center: [10.7797, 106.6991],
-    colorHex: '#10b981', // Emerald Green
-    description: 'Bao gồm 8 tỉnh thành Đông Nam Bộ và Đồng Bằng Sông Cửu Long (TP.HCM, Bình Dương, Đồng Nai, Cần Thơ, Cà Mau...)',
+    center: [10.8231, 106.6297],
+    colorHex: '#10b981',
+    description: 'Bao gồm 9 tỉnh thành Đông Nam Bộ và Đồng bằng Sông Cửu Long (TP.HCM, Bình Dương, Đồng Nai, Cần Thơ, Cà Mau, An Giang...)',
     polygon: [
+      [11.4500, 107.3500],
+      [11.3500, 107.6500],
       [10.9300, 108.2800],
       [10.6800, 107.7500],
       [10.3500, 107.0800],
@@ -258,28 +311,35 @@ export const VIETNAM_REGION_BOUNDARIES: BoundaryItem[] = [
       [9.6500, 106.4500],
       [9.3500, 105.9500],
       [9.1500, 105.6500],
+      [8.6000, 105.2000],
       [8.5800, 104.7500],
+      [8.9500, 104.8200],
       [9.4500, 104.9000],
       [9.8500, 105.0200],
+      [10.2000, 104.7500],
       [10.3800, 104.4800],
+      [10.5500, 104.8500],
       [10.7500, 105.1000],
       [10.9200, 105.3500],
+      [10.9800, 105.8000],
       [11.0800, 106.0500],
+      [11.6000, 105.9500],
       [11.8500, 106.4000],
-      [11.9500, 107.2500],
-      [11.3500, 107.6500],
-      [10.9300, 108.2800],
+      [12.0500, 107.0500],
+      [11.4500, 107.3500],
     ],
   },
+
 ];
 
 // ---------------------------------------------------------------------------
-// 3. TẦNG 2: 34 VÙNG LOGISTICS TỈNH / THÀNH PHỐ TOÀN DIỆN (100% COVERAGE)
+// 2. TẦNG 2: 35 TỈNH THÀNH TRỌNG ĐIỂM (PROVINCES)
 // ---------------------------------------------------------------------------
 export const VIETNAM_PROVINCE_BOUNDARIES: BoundaryItem[] = [
-  // 1. HÀ NỘI
+  // prov-001: Thành phố Hà Nội
   {
     id: 'prov-001',
+    colorHex: '#dc2626',
     code: '001001B001',
     name: 'Thành phố Hà Nội',
     level: 2,
@@ -290,23 +350,23 @@ export const VIETNAM_PROVINCE_BOUNDARIES: BoundaryItem[] = [
     areaKm2: 3359,
     description: 'Trung tâm hành chính quốc gia, 30 quận/huyện/thị xã (Ba Đình, Cầu Giấy, Hoàn Kiếm, Gia Lâm, Sóc Sơn...)',
     polygon: [
-      [21.3500, 105.8200],
-      [21.3200, 105.9500],
-      [21.1500, 106.0200],
-      [20.9500, 105.9800],
-      [20.7500, 105.8800],
-      [20.6500, 105.7500],
-      [20.8500, 105.5500],
+      [21.3500, 105.4500],
       [21.0500, 105.4200],
-      [21.2200, 105.4500],
-      [21.3000, 105.6500],
+      [20.8500, 105.5500],
+      [20.6500, 105.7500],
+      [20.7500, 105.9200],
+      [20.9800, 105.9500],
+      [21.0800, 106.0200],
+      [21.1500, 105.9500],
       [21.3500, 105.8200],
+      [21.3500, 105.4500],
     ],
   },
 
-  // 2. TP. HỒ CHÍ MINH
+  // prov-079: Thành phố Hồ Chí Minh
   {
     id: 'prov-079',
+    colorHex: '#e11d48',
     code: '003079B001',
     name: 'Thành phố Hồ Chí Minh',
     level: 2,
@@ -318,22 +378,24 @@ export const VIETNAM_PROVINCE_BOUNDARIES: BoundaryItem[] = [
     description: 'Trung tâm kinh tế đầu tàu cả nước (Quận 1, 3, 5, Tân Bình, TP. Thủ Đức, Củ Chi, Cần Giờ...)',
     polygon: [
       [11.1500, 106.5000],
-      [11.0800, 106.6500],
-      [10.9500, 106.7500],
-      [10.8800, 106.8500],
-      [10.7500, 106.8200],
-      [10.5500, 106.9200],
-      [10.3500, 106.8500],
-      [10.4500, 106.6500],
-      [10.6500, 106.5500],
       [10.8500, 106.4800],
+      [10.6500, 106.5500],
+      [10.4500, 106.6500],
+      [10.2200, 106.7500],
+      [10.4000, 106.8500],
+      [10.6500, 106.9500],
+      [10.8500, 106.8200],
+      [10.8800, 106.7800],
+      [10.8900, 106.6800],
+      [11.0200, 106.6000],
       [11.1500, 106.5000],
     ],
   },
 
-  // 3. TỈNH BÌNH DƯƠNG
+  // prov-074: Tỉnh Bình Dương
   {
     id: 'prov-074',
+    colorHex: '#0284c7',
     code: '003074B001',
     name: 'Tỉnh Bình Dương',
     level: 2,
@@ -344,21 +406,25 @@ export const VIETNAM_PROVINCE_BOUNDARIES: BoundaryItem[] = [
     areaKm2: 2694,
     description: 'Thủ phủ công nghiệp Đông Nam Bộ (TP. Dĩ An, Thuận An, Thủ Dầu Một, Bến Cát, Tân Uyên...)',
     polygon: [
+      [11.8500, 106.4000],
       [11.4200, 106.5500],
-      [11.3800, 106.8500],
-      [11.1500, 106.9500],
-      [10.9800, 106.8200],
-      [10.8800, 106.7800],
-      [10.8900, 106.6800],
+      [11.1500, 106.5000],
       [11.0200, 106.6000],
-      [11.2500, 106.4800],
-      [11.4200, 106.5500],
+      [10.8900, 106.6800],
+      [10.8800, 106.7800],
+      [10.9800, 106.8200],
+      [11.1500, 106.9500],
+      [11.3800, 106.8500],
+      [11.4500, 107.3500],
+      [12.0500, 107.0500],
+      [11.8500, 106.4000],
     ],
   },
 
-  // 4. THÀNH PHỐ ĐÀ NẴNG
+  // prov-048: Thành phố Đà Nẵng
   {
     id: 'prov-048',
+    colorHex: '#2563eb',
     code: '002048B001',
     name: 'Thành phố Đà Nẵng',
     level: 2,
@@ -369,20 +435,21 @@ export const VIETNAM_PROVINCE_BOUNDARIES: BoundaryItem[] = [
     areaKm2: 1285,
     description: 'Thành phố đầu tàu kinh tế Miền Trung (Hải Châu, Thanh Khê, Sơn Trà, Ngũ Hành Sơn, Hòa Vang...)',
     polygon: [
-      [16.2200, 108.1200],
-      [16.1500, 108.3200],
-      [16.0500, 108.2800],
-      [15.9200, 108.2500],
+      [16.0500, 107.7500],
+      [15.5500, 107.4500],
       [15.9000, 108.0500],
-      [16.0500, 107.8500],
+      [15.8800, 108.3800],
+      [16.1200, 108.2800],
+      [16.3200, 107.9000],
       [16.2000, 107.9500],
-      [16.2200, 108.1200],
+      [16.0500, 107.7500],
     ],
   },
 
-  // 5. THÀNH PHỐ HẢI PHÒNG
+  // prov-031: Thành phố Hải Phòng
   {
     id: 'prov-031',
+    colorHex: '#0d9488',
     code: '001031B001',
     name: 'Thành phố Hải Phòng',
     level: 2,
@@ -391,21 +458,22 @@ export const VIETNAM_PROVINCE_BOUNDARIES: BoundaryItem[] = [
     category: 'PROVINCE',
     center: [20.8449, 106.6881],
     areaKm2: 1527,
-    description: 'Thành phố Cảng lớn nhất Miền Bắc (Hồng Bàng, Ngô Quyền, Lê Chân, Đồ Sơn, Cát Bà...)',
+    description: 'Thành phố Cảng lớn nhất Miền Bắc (Hồng Bàng, Ngô Quyền, Lê Chân, Đồ Sơn, Cát Bà, Thái Bình...)',
     polygon: [
-      [21.0500, 106.6500],
-      [20.9500, 106.9500],
-      [20.7500, 106.9000],
-      [20.6200, 106.6500],
-      [20.7200, 106.4800],
+      [21.0000, 106.7500],
       [20.9000, 106.5200],
-      [21.0500, 106.6500],
+      [20.7200, 106.4800],
+      [20.5500, 106.5800],
+      [20.8000, 106.9000],
+      [20.8500, 107.0500],
+      [21.0000, 106.7500],
     ],
   },
 
-  // 6. THÀNH PHỐ CẦN THƠ
+  // prov-092: Thành phố Cần Thơ
   {
     id: 'prov-092',
+    colorHex: '#10b981',
     code: '003092B001',
     name: 'Thành phố Cần Thơ',
     level: 2,
@@ -414,21 +482,25 @@ export const VIETNAM_PROVINCE_BOUNDARIES: BoundaryItem[] = [
     category: 'PROVINCE',
     center: [10.0452, 105.7469],
     areaKm2: 1439,
-    description: 'Đô thị trung tâm Tây Nam Bộ (Ninh Kiều, Bình Thủy, Cái Răng, Ô Môn, Thốt Nốt...)',
+    description: 'Đô thị trung tâm Tây Nam Bộ (Ninh Kiều, Bình Thủy, Cái Răng, Hậu Giang, Sóc Trăng, Bạc Liêu...)',
     polygon: [
-      [10.3200, 105.5500],
-      [10.2000, 105.7500],
-      [10.0500, 105.8500],
+      [10.3500, 105.5500],
+      [10.1500, 105.1500],
+      [9.8500, 105.0200],
+      [9.3500, 105.3500],
+      [9.1500, 105.6500],
+      [9.3500, 105.9500],
       [9.8500, 105.7500],
-      [9.9500, 105.4500],
-      [10.1800, 105.3500],
-      [10.3200, 105.5500],
+      [10.0500, 105.8500],
+      [10.2500, 105.7500],
+      [10.3500, 105.5500],
     ],
   },
 
-  // 7. TỈNH QUẢNG NINH
+  // prov-022: Tỉnh Quảng Ninh
   {
     id: 'prov-022',
+    colorHex: '#0ea5e9',
     code: '001022B001',
     name: 'Tỉnh Quảng Ninh',
     level: 2,
@@ -439,20 +511,24 @@ export const VIETNAM_PROVINCE_BOUNDARIES: BoundaryItem[] = [
     areaKm2: 6102,
     description: 'Kỳ quan Vịnh Hạ Long, Móng Cái, Cẩm Phả, Uông Bí, Vân Đồn',
     polygon: [
-      [21.5800, 107.5500],
-      [21.5300, 107.9700],
-      [21.1500, 107.8500],
-      [20.9500, 107.4500],
-      [20.8500, 107.0500],
+      [21.8500, 107.0300],
+      [21.5800, 107.1500],
+      [21.4500, 106.8500],
       [21.0000, 106.7500],
-      [21.2500, 106.8500],
-      [21.5800, 107.5500],
+      [20.8500, 107.0500],
+      [20.9400, 107.2500],
+      [21.1500, 107.8500],
+      [21.4880, 108.0650],
+      [21.5300, 107.9700],
+      [21.5400, 107.6200],
+      [21.8500, 107.0300],
     ],
   },
 
-  // 8. TỈNH ĐỒNG NAI
+  // prov-075: Tỉnh Đồng Nai
   {
     id: 'prov-075',
+    colorHex: '#f97316',
     code: '003075B001',
     name: 'Tỉnh Đồng Nai',
     level: 2,
@@ -461,21 +537,28 @@ export const VIETNAM_PROVINCE_BOUNDARIES: BoundaryItem[] = [
     category: 'PROVINCE',
     center: [10.9574, 106.8427],
     areaKm2: 5907,
-    description: 'Thành phố Biên Hòa, Long Thành, Trảng Bom, Nhơn Trạch, Xuân Lộc',
+    description: 'Thành phố Biên Hòa, Long Thành, Trảng Bom, Bà Rịa - Vũng Tàu, Xuân Lộc',
     polygon: [
       [11.4500, 107.3500],
-      [11.2000, 107.5500],
-      [10.8500, 107.3500],
-      [10.6500, 106.9500],
-      [10.8500, 106.8200],
+      [11.3800, 106.8500],
       [11.1500, 106.9500],
+      [10.9800, 106.8200],
+      [10.8800, 106.7800],
+      [10.8500, 106.8200],
+      [10.6500, 106.9500],
+      [10.4000, 106.8500],
+      [10.3500, 107.0800],
+      [10.6800, 107.7500],
+      [10.9300, 108.2800],
+      [11.3500, 107.6500],
       [11.4500, 107.3500],
     ],
   },
 
-  // 9. TỈNH KHÁNH HÒA
+  // prov-056: Tỉnh Khánh Hòa
   {
     id: 'prov-056',
+    colorHex: '#06b6d4',
     code: '002056B001',
     name: 'Tỉnh Khánh Hòa',
     level: 2,
@@ -484,21 +567,29 @@ export const VIETNAM_PROVINCE_BOUNDARIES: BoundaryItem[] = [
     category: 'PROVINCE',
     center: [12.2388, 109.1967],
     areaKm2: 5217,
-    description: 'Thành phố Nha Trang, Cam Ranh, Vịnh Vân Phong, Quần đảo Trường Sa',
+    description: 'Thành phố Nha Trang, Cam Ranh, Phú Yên, Ninh Thuận, Bình Thuận',
     polygon: [
-      [12.8500, 109.2000],
-      [12.6500, 109.3000],
-      [12.2500, 109.2500],
-      [11.8500, 109.1800],
-      [12.0500, 108.8500],
-      [12.3500, 108.8000],
-      [12.8500, 109.2000],
+      [14.0500, 109.2800],
+      [13.6500, 108.7500],
+      [13.1500, 108.7500],
+      [12.4500, 108.4500],
+      [12.0500, 108.6500],
+      [11.5500, 108.3500],
+      [10.9300, 108.2800],
+      [11.1500, 108.7800],
+      [11.5500, 109.0500],
+      [11.9000, 109.1800],
+      [12.4500, 109.2800],
+      [12.9200, 109.4200],
+      [13.2500, 109.3500],
+      [14.0500, 109.2800],
     ],
   },
 
-  // 10. TỈNH THỪA THIÊN HUẾ
+  // prov-046: Thành phố Huế
   {
     id: 'prov-046',
+    colorHex: '#9333ea',
     code: '002046B001',
     name: 'Thành phố Huế',
     level: 2,
@@ -509,19 +600,21 @@ export const VIETNAM_PROVINCE_BOUNDARIES: BoundaryItem[] = [
     areaKm2: 5048,
     description: 'Cố đô Huế, Hương Thủy, Hương Trà, Phú Vang, Phú Lộc, A Lưới',
     polygon: [
-      [16.7500, 107.2500],
-      [16.5500, 107.6500],
-      [16.3200, 107.9000],
-      [16.0500, 107.7500],
       [16.1500, 107.2500],
+      [16.0500, 107.7500],
+      [16.2000, 107.9500],
+      [16.3200, 107.9000],
+      [16.6000, 107.6500],
+      [16.5500, 107.4500],
       [16.5000, 107.1500],
-      [16.7500, 107.2500],
+      [16.1500, 107.2500],
     ],
   },
 
-  // 11. TỈNH THANH HÓA
+  // prov-038: Tỉnh Thanh Hóa
   {
     id: 'prov-038',
+    colorHex: '#ea580c',
     code: '002038B001',
     name: 'Tỉnh Thanh Hóa',
     level: 2,
@@ -532,20 +625,22 @@ export const VIETNAM_PROVINCE_BOUNDARIES: BoundaryItem[] = [
     areaKm2: 11114,
     description: 'Cửa ngõ Bắc Trung Bộ, TP. Thanh Hóa, Sầm Sơn, Bỉm Sơn, Nghi Sơn',
     polygon: [
-      [20.4500, 105.1500],
+      [20.5500, 104.8500],
       [20.2500, 104.6000],
       [19.7500, 105.1500],
       [19.3500, 105.7500],
       [19.7800, 105.9000],
+      [20.0000, 106.0500],
       [20.0500, 105.9500],
       [20.1500, 105.6500],
-      [20.4500, 105.1500],
+      [20.5500, 104.8500],
     ],
   },
 
-  // 12. TỈNH NGHỆ AN
+  // prov-040: Tỉnh Nghệ An
   {
     id: 'prov-040',
+    colorHex: '#b45309',
     code: '002040B001',
     name: 'Tỉnh Nghệ An',
     level: 2,
@@ -557,42 +652,47 @@ export const VIETNAM_PROVINCE_BOUNDARIES: BoundaryItem[] = [
     description: 'Tỉnh có diện tích lớn nhất Việt Nam, TP. Vinh, Cửa Lò, Diễn Châu, Quỳnh Lưu',
     polygon: [
       [19.7500, 105.1500],
-      [19.2500, 105.7500],
-      [18.8200, 105.7500],
-      [18.6000, 105.6500],
-      [18.5500, 105.2000],
-      [18.9500, 104.5500],
       [19.2500, 104.2500],
+      [18.9500, 104.5500],
+      [18.5500, 105.2000],
+      [18.6000, 105.6500],
+      [18.8200, 105.7500],
+      [19.7800, 105.9000],
+      [19.3500, 105.7500],
       [19.7500, 105.1500],
     ],
   },
 
-  // 13. TỈNH ĐẮK LẮK
+  // prov-066: Tỉnh Đắk Lắk
   {
     id: 'prov-066',
+    colorHex: '#854d0e',
     code: '002066B001',
     name: 'Tỉnh Đắk Lắk',
     level: 2,
     parentCode: '002C001',
     region: 'CENTRAL',
     category: 'PROVINCE',
-    center: [12.6667, 108.0500],
+    center: [12.6667, 108.05],
     areaKm2: 13030,
-    description: 'Thủ phủ cà phê Tây Nguyên, TP. Buôn Ma Thuột, Ea Kar, Cư Mgar, Krông Pắc',
+    description: 'Thủ phủ cà phê Tây Nguyên, TP. Buôn Ma Thuột, Ea Kar, Đắk Nông, Buôn Đôn',
     polygon: [
-      [13.4000, 108.2500],
-      [13.1500, 108.7500],
-      [12.4500, 108.4500],
-      [12.3500, 107.8500],
+      [13.4000, 107.5000],
       [12.7500, 107.6000],
-      [13.2000, 107.9000],
+      [12.3500, 107.4500],
+      [12.1500, 108.1500],
+      [12.4500, 108.4500],
+      [13.1500, 108.7500],
+      [13.6500, 108.7500],
       [13.4000, 108.2500],
+      [13.4000, 107.5000],
     ],
   },
 
-  // 14. TỈNH LÂM ĐỒNG
+  // prov-068: Tỉnh Lâm Đồng
   {
     id: 'prov-068',
+    colorHex: '#16a34a',
     code: '002068B001',
     name: 'Tỉnh Lâm Đồng',
     level: 2,
@@ -601,21 +701,25 @@ export const VIETNAM_PROVINCE_BOUNDARIES: BoundaryItem[] = [
     category: 'PROVINCE',
     center: [11.9404, 108.4583],
     areaKm2: 9783,
-    description: 'Thành phố hoa Đà Lạt, Bảo Lộc, Đức Trọng, Đơn Dương, Di Linh',
+    description: 'Thành phố hoa Đà Lạt, Bảo Lộc, Đức Trọng, Đơn Dương, Di Linh, Cát Tiên',
     polygon: [
-      [12.4500, 108.4500],
-      [12.0500, 108.6500],
-      [11.5500, 108.3500],
-      [11.3500, 107.6500],
+      [12.3500, 107.4500],
       [11.7500, 107.4500],
-      [12.1500, 108.1500],
+      [11.4500, 107.3500],
+      [11.3500, 107.6500],
+      [10.9300, 108.2800],
+      [11.5500, 108.3500],
+      [12.0500, 108.6500],
       [12.4500, 108.4500],
+      [12.1500, 108.1500],
+      [12.3500, 107.4500],
     ],
   },
 
-  // 15. TỈNH CÀ MAU
+  // prov-096: Tỉnh Cà Mau
   {
     id: 'prov-096',
+    colorHex: '#059669',
     code: '003096B001',
     name: 'Tỉnh Cà Mau',
     level: 2,
@@ -624,21 +728,26 @@ export const VIETNAM_PROVINCE_BOUNDARIES: BoundaryItem[] = [
     category: 'PROVINCE',
     center: [9.1769, 105.1524],
     areaKm2: 5294,
-    description: 'Cực Nam Tổ quốc, TP. Cà Mau, Năm Căn, Ngọc Hiển, Đầm Dơi, U Minh',
+    description: 'Cực Nam Tổ quốc, TP. Cà Mau, Năm Căn, Ngọc Hiển, Kiên Giang, U Minh',
     polygon: [
+      [10.3800, 104.4800],
       [9.4500, 104.9000],
-      [9.3500, 105.3500],
-      [9.1500, 105.4500],
-      [8.6000, 105.2000],
-      [8.5800, 104.7500],
       [8.9500, 104.8200],
-      [9.4500, 104.9000],
+      [8.5800, 104.7500],
+      [8.6000, 105.2000],
+      [9.1500, 105.6500],
+      [9.3500, 105.3500],
+      [9.8500, 105.0200],
+      [10.1500, 105.1500],
+      [10.2000, 104.7500],
+      [10.3800, 104.4800],
     ],
   },
 
-  // 16. TỈNH AN GIANG
+  // prov-091: Tỉnh An Giang
   {
     id: 'prov-091',
+    colorHex: '#84cc16',
     code: '003091B001',
     name: 'Tỉnh An Giang',
     level: 2,
@@ -647,21 +756,24 @@ export const VIETNAM_PROVINCE_BOUNDARIES: BoundaryItem[] = [
     category: 'PROVINCE',
     center: [10.3759, 105.4185],
     areaKm2: 3536,
-    description: 'TP. Long Xuyên, Châu Đốc, Núi Sam, Vùng Bảy Núi Thất Sơn',
+    description: 'TP. Long Xuyên, Châu Đốc, Núi Sam, Vùng Bảy Núi Thất Sơn, Tri Tôn',
     polygon: [
-      [10.9200, 105.1500],
-      [10.7500, 105.3500],
-      [10.3500, 105.5500],
-      [10.1500, 105.1500],
-      [10.5500, 104.8500],
+      [10.9200, 105.3500],
       [10.7500, 105.1000],
-      [10.9200, 105.1500],
+      [10.5500, 104.8500],
+      [10.3800, 104.4800],
+      [10.2000, 104.7500],
+      [10.1500, 105.1500],
+      [10.3500, 105.5500],
+      [10.7500, 105.3500],
+      [10.9200, 105.3500],
     ],
   },
 
-  // 17. TỈNH ĐỒNG THÁP
+  // prov-082: Tỉnh Đồng Tháp
   {
     id: 'prov-082',
+    colorHex: '#ec4899',
     code: '003082B001',
     name: 'Tỉnh Đồng Tháp',
     level: 2,
@@ -670,21 +782,27 @@ export const VIETNAM_PROVINCE_BOUNDARIES: BoundaryItem[] = [
     category: 'PROVINCE',
     center: [10.4577, 105.6331],
     areaKm2: 3383,
-    description: 'Xứ sở hoa sen, TP. Cao Lãnh, Sa Đéc, Hồng Ngự',
+    description: 'Xứ sở hoa sen, TP. Cao Lãnh, Sa Đéc, Hồng Ngự, Long An',
     polygon: [
       [10.9200, 105.3500],
-      [10.8500, 105.7500],
-      [10.5500, 105.8500],
-      [10.2500, 105.7500],
-      [10.3500, 105.4500],
       [10.7500, 105.3500],
+      [10.3500, 105.5500],
+      [10.2500, 105.7500],
+      [10.3200, 105.9500],
+      [10.5500, 106.3500],
+      [10.6500, 106.5500],
+      [10.8500, 106.4800],
+      [11.0800, 106.2500],
+      [11.0800, 106.0500],
+      [10.9800, 105.8000],
       [10.9200, 105.3500],
     ],
   },
 
-  // 18. TỈNH VĨNH LONG
+  // prov-086: Tỉnh Vĩnh Long
   {
     id: 'prov-086',
+    colorHex: '#6366f1',
     code: '003086B001',
     name: 'Tỉnh Vĩnh Long',
     level: 2,
@@ -693,20 +811,26 @@ export const VIETNAM_PROVINCE_BOUNDARIES: BoundaryItem[] = [
     category: 'PROVINCE',
     center: [10.2537, 105.9722],
     areaKm2: 1525,
-    description: 'Trái tim Miền Tây Nam Bộ, TP. Vĩnh Long, Bình Minh, Long Hồ',
+    description: 'Trái tim Miền Tây Nam Bộ, TP. Vĩnh Long, Tiền Giang, Bến Tre, Trà Vinh',
     polygon: [
+      [10.2500, 105.7500],
+      [10.0500, 105.8500],
+      [9.8500, 105.7500],
+      [9.6500, 106.4500],
+      [9.9500, 106.6000],
+      [10.2200, 106.7500],
+      [10.4500, 106.6500],
+      [10.6500, 106.5500],
+      [10.5500, 106.3500],
       [10.3200, 105.9500],
-      [10.2000, 106.1500],
-      [9.9500, 106.0500],
-      [10.0500, 105.8200],
-      [10.2500, 105.7800],
-      [10.3200, 105.9500],
+      [10.2500, 105.7500],
     ],
   },
 
-  // 19. TỈNH TÂY NINH
+  // prov-080: Tỉnh Tây Ninh
   {
     id: 'prov-080',
+    colorHex: '#d97706',
     code: '003080B001',
     name: 'Tỉnh Tây Ninh',
     level: 2,
@@ -715,21 +839,23 @@ export const VIETNAM_PROVINCE_BOUNDARIES: BoundaryItem[] = [
     category: 'PROVINCE',
     center: [11.3101, 106.0983],
     areaKm2: 4041,
-    description: 'Núi Bà Đen, Tòa Thánh Tây Ninh, Cửa khẩu Mộc Bài, Xa Mát',
+    description: 'Núi Bà Đen, Tòa Thánh Tây Ninh, Cửa khẩu Mộc Bài, Xa Mát, Bình Phước',
     polygon: [
-      [11.7500, 106.1000],
-      [11.6000, 106.4000],
-      [11.3500, 106.3500],
+      [11.8500, 106.4000],
+      [11.6000, 105.9500],
+      [11.0800, 106.0500],
       [11.0800, 106.2500],
-      [11.0500, 105.9500],
-      [11.4500, 105.8500],
-      [11.7500, 106.1000],
+      [10.8500, 106.4800],
+      [11.1500, 106.5000],
+      [11.4200, 106.5500],
+      [11.8500, 106.4000],
     ],
   },
 
-  // 20. TỈNH BẮC NINH
+  // prov-024: Tỉnh Bắc Ninh
   {
     id: 'prov-024',
+    colorHex: '#8b5cf6',
     code: '001024B001',
     name: 'Tỉnh Bắc Ninh',
     level: 2,
@@ -738,20 +864,25 @@ export const VIETNAM_PROVINCE_BOUNDARIES: BoundaryItem[] = [
     category: 'PROVINCE',
     center: [21.1861, 106.0763],
     areaKm2: 822,
-    description: 'Thủ phủ công nghệ điện tử phía Bắc, TP. Bắc Ninh, Từ Sơn, Yên Phong, Quế Võ',
+    description: 'Thủ phủ công nghệ điện tử phía Bắc, TP. Bắc Ninh, Từ Sơn, Bắc Giang, Hải Dương',
     polygon: [
+      [21.7500, 106.0500],
       [21.2800, 106.0500],
-      [21.2200, 106.2500],
-      [21.0500, 106.2200],
-      [21.0800, 106.0200],
+      [21.3500, 105.8200],
       [21.1500, 105.9500],
-      [21.2800, 106.0500],
+      [21.0800, 106.0200],
+      [20.9500, 106.1500],
+      [20.9000, 106.5200],
+      [21.0000, 106.7500],
+      [21.4500, 106.8500],
+      [21.7500, 106.0500],
     ],
   },
 
-  // 21. TỈNH HƯNG YÊN
+  // prov-033: Tỉnh Hưng Yên
   {
     id: 'prov-033',
+    colorHex: '#f59e0b',
     code: '001033B001',
     name: 'Tỉnh Hưng Yên',
     level: 2,
@@ -760,20 +891,25 @@ export const VIETNAM_PROVINCE_BOUNDARIES: BoundaryItem[] = [
     category: 'PROVINCE',
     center: [20.6464, 106.0511],
     areaKm2: 930,
-    description: 'Phố Hiến xưa, TP. Hưng Yên, Văn Giang, Mỹ Hào, Yên Mỹ',
+    description: 'Phố Hiến xưa, TP. Hưng Yên, Văn Giang, Mỹ Hào, Hà Nam',
     polygon: [
+      [21.0800, 106.0200],
       [20.9800, 105.9500],
-      [20.9500, 106.1500],
-      [20.7500, 106.2000],
-      [20.6000, 106.0500],
       [20.7500, 105.9200],
-      [20.9800, 105.9500],
+      [20.6000, 106.0500],
+      [20.3500, 106.0500],
+      [20.5500, 106.5800],
+      [20.7200, 106.4800],
+      [20.9000, 106.5200],
+      [20.9500, 106.1500],
+      [21.0800, 106.0200],
     ],
   },
 
-  // 22. TỈNH NINH BÌNH
+  // prov-037: Tỉnh Ninh Bình
   {
     id: 'prov-037',
+    colorHex: '#14b8a6',
     code: '001037B001',
     name: 'Tỉnh Ninh Bình',
     level: 2,
@@ -782,20 +918,28 @@ export const VIETNAM_PROVINCE_BOUNDARIES: BoundaryItem[] = [
     category: 'PROVINCE',
     center: [20.2506, 105.9745],
     areaKm2: 1386,
-    description: 'Di sản Tràng An, Cố đô Hoa Lư, Tam Cốc, Bái Đính, Kim Sơn',
+    description: 'Di sản Tràng An, Cố đô Hoa Lư, Nam Định, Kim Sơn, Tam Điệp',
     polygon: [
-      [20.3500, 105.8500],
-      [20.3200, 106.0500],
+      [20.5500, 104.8500],
+      [20.1500, 105.6500],
+      [20.0500, 105.9500],
       [20.0000, 106.0500],
-      [19.9800, 105.8500],
-      [20.2500, 105.7000],
-      [20.3500, 105.8500],
+      [20.2500, 106.3500],
+      [20.5500, 106.5800],
+      [20.3500, 106.0500],
+      [20.6000, 106.0500],
+      [20.7500, 105.9200],
+      [20.6500, 105.7500],
+      [20.8500, 105.5500],
+      [20.8500, 105.0500],
+      [20.5500, 104.8500],
     ],
   },
 
-  // 23. TỈNH THÁI NGUYÊN
+  // prov-019: Tỉnh Thái Nguyên
   {
     id: 'prov-019',
+    colorHex: '#15803d',
     code: '001019B001',
     name: 'Tỉnh Thái Nguyên',
     level: 2,
@@ -804,42 +948,50 @@ export const VIETNAM_PROVINCE_BOUNDARIES: BoundaryItem[] = [
     category: 'PROVINCE',
     center: [21.5942, 105.8482],
     areaKm2: 3526,
-    description: 'Thủ phủ chè, TP. Thái Nguyên, Sông Công, Phổ Yên',
+    description: 'Thủ phủ chè, TP. Thái Nguyên, Sông Công, Phổ Yên, Bắc Kạn',
     polygon: [
-      [21.9500, 105.7500],
-      [21.7500, 106.0500],
-      [21.4500, 106.0000],
+      [22.6500, 105.7500],
+      [22.2500, 105.5500],
+      [21.7500, 105.4500],
+      [21.3500, 105.4500],
       [21.3500, 105.8200],
-      [21.4500, 105.6500],
-      [21.9500, 105.7500],
+      [21.2800, 106.0500],
+      [21.7500, 106.0500],
+      [22.3500, 106.1500],
+      [22.6500, 105.7500],
     ],
   },
 
-  // 24. TỈNH PHÚ THỌ
+  // prov-025: Tỉnh Phú Thọ
   {
     id: 'prov-025',
+    colorHex: '#b91c1c',
     code: '001025B001',
     name: 'Tỉnh Phú Thọ',
     level: 2,
     parentCode: '001N001',
     region: 'NORTH',
     category: 'PROVINCE',
-    center: [21.3227, 105.2280],
+    center: [21.3227, 105.228],
     areaKm2: 3534,
-    description: 'Đất Tổ Hùng Vương, TP. Việt Trì, Thị xã Phú Thọ, Lâm Thao',
+    description: 'Đất Tổ Hùng Vương, TP. Việt Trì, Thị xã Phú Thọ, Vĩnh Phúc, Hòa Bình',
     polygon: [
-      [21.6500, 105.0500],
-      [21.4500, 105.4000],
-      [21.1500, 105.3500],
-      [21.0500, 105.0500],
+      [21.8500, 104.3500],
       [21.3500, 104.8500],
+      [20.8500, 105.0500],
+      [20.8500, 105.5500],
+      [21.0500, 105.4200],
+      [21.3500, 105.4500],
+      [21.7500, 105.4500],
       [21.6500, 105.0500],
+      [21.8500, 104.3500],
     ],
   },
 
-  // 25. TỈNH LÀO CAI
+  // prov-015: Tỉnh Lào Cai
   {
     id: 'prov-015',
+    colorHex: '#0284c7',
     code: '001015B001',
     name: 'Tỉnh Lào Cai',
     level: 2,
@@ -848,20 +1000,24 @@ export const VIETNAM_PROVINCE_BOUNDARIES: BoundaryItem[] = [
     category: 'PROVINCE',
     center: [22.4856, 103.9707],
     areaKm2: 6364,
-    description: 'Đỉnh Fansipan, Thị xã Sa Pa, Cửa khẩu Quốc tế Lào Cai, Bắc Hà',
+    description: 'Đỉnh Fansipan, Thị xã Sa Pa, Cửa khẩu Quốc tế Lào Cai, Yên Bái',
     polygon: [
-      [22.8500, 103.8500],
-      [22.7500, 104.3500],
+      [22.7500, 103.4500],
+      [22.4500, 103.7500],
+      [22.0500, 103.6500],
+      [21.8500, 104.3500],
       [22.3500, 104.4500],
-      [22.0500, 104.0500],
-      [22.3500, 103.7500],
-      [22.8500, 103.8500],
+      [22.7500, 104.3500],
+      [22.9500, 104.6500],
+      [22.6000, 103.9500],
+      [22.7500, 103.4500],
     ],
   },
 
-  // 26. TỈNH SƠN LA
+  // prov-014: Tỉnh Sơn La
   {
     id: 'prov-014',
+    colorHex: '#4d7c0f',
     code: '001014B001',
     name: 'Tỉnh Sơn La',
     level: 2,
@@ -872,42 +1028,47 @@ export const VIETNAM_PROVINCE_BOUNDARIES: BoundaryItem[] = [
     areaKm2: 14123,
     description: 'Thủy điện Sơn La, Cao nguyên Mộc Châu, Mai Sơn, Thuận Châu',
     polygon: [
-      [21.8500, 103.7500],
-      [21.5500, 104.3500],
-      [20.8500, 104.8500],
-      [20.5500, 104.5500],
       [20.9500, 103.5500],
+      [20.5500, 104.8500],
+      [20.8500, 105.0500],
+      [21.3500, 104.8500],
+      [21.8500, 104.3500],
+      [22.0500, 103.6500],
+      [21.8500, 103.3500],
       [21.4500, 103.4500],
-      [21.8500, 103.7500],
+      [20.9500, 103.5500],
     ],
   },
 
-  // 27. TỈNH ĐIỆN BIÊN
+  // prov-011: Tỉnh Điện Biên
   {
     id: 'prov-011',
+    colorHex: '#c026d3',
     code: '001011B001',
     name: 'Tỉnh Điện Biên',
     level: 2,
     parentCode: '001N001',
     region: 'NORTH',
     category: 'PROVINCE',
-    center: [21.3860, 103.0230],
+    center: [21.386, 103.023],
     areaKm2: 9541,
     description: 'Chiến trường Điện Biên Phủ, Mường Phăng, Cực Tây A Pa Chải',
     polygon: [
       [22.4000, 102.1500],
-      [22.2500, 102.8500],
-      [21.8500, 103.2500],
-      [21.2500, 103.3500],
-      [21.0500, 102.9500],
       [21.7500, 102.6500],
+      [21.0500, 102.9500],
+      [20.9500, 103.5500],
+      [21.4500, 103.4500],
+      [21.8500, 103.3500],
+      [22.2500, 102.8500],
       [22.4000, 102.1500],
     ],
   },
 
-  // 28. TỈNH LAI CHÂU
+  // prov-012: Tỉnh Lai Châu
   {
     id: 'prov-012',
+    colorHex: '#0891b2',
     code: '001012B001',
     name: 'Tỉnh Lai Châu',
     level: 2,
@@ -918,18 +1079,21 @@ export const VIETNAM_PROVINCE_BOUNDARIES: BoundaryItem[] = [
     areaKm2: 9068,
     description: 'TP. Lai Châu, Mường Tè, Sin Hồ, Đèo Ô Quy Hồ',
     polygon: [
-      [22.7500, 103.4500],
-      [22.5500, 103.8500],
+      [22.4000, 102.1500],
+      [22.2500, 102.8500],
+      [21.8500, 103.3500],
       [22.0500, 103.6500],
-      [21.9500, 103.1500],
-      [22.4500, 102.5500],
+      [22.4500, 103.7500],
       [22.7500, 103.4500],
+      [22.6500, 102.8000],
+      [22.4000, 102.1500],
     ],
   },
 
-  // 29. TỈNH CAO BẰNG
+  // prov-004: Tỉnh Cao Bằng
   {
     id: 'prov-004',
+    colorHex: '#4338ca',
     code: '001004B001',
     name: 'Tỉnh Cao Bằng',
     level: 2,
@@ -940,18 +1104,21 @@ export const VIETNAM_PROVINCE_BOUNDARIES: BoundaryItem[] = [
     areaKm2: 6700,
     description: 'Thác Bản Giốc, Pác Bó, TP. Cao Bằng, Trùng Khánh, Bảo Lạc',
     polygon: [
-      [23.0600, 106.1200],
-      [22.8800, 106.5500],
-      [22.4500, 106.7200],
-      [22.3500, 106.1500],
+      [23.3927, 105.3238],
       [22.6500, 105.7500],
+      [22.3500, 106.1500],
+      [22.4500, 106.7200],
+      [22.8800, 106.5500],
       [23.0600, 106.1200],
+      [23.2840, 105.7600],
+      [23.3927, 105.3238],
     ],
   },
 
-  // 30. TỈNH LẠNG SƠN
+  // prov-020: Tỉnh Lạng Sơn
   {
     id: 'prov-020',
+    colorHex: '#7c2d12',
     code: '001020B001',
     name: 'Tỉnh Lạng Sơn',
     level: 2,
@@ -963,18 +1130,20 @@ export const VIETNAM_PROVINCE_BOUNDARIES: BoundaryItem[] = [
     description: 'Cửa khẩu Hữu Nghị, Tân Thanh, Ải Chi Lăng, Động Tam Thanh',
     polygon: [
       [22.4500, 106.7200],
-      [22.1200, 107.1500],
-      [21.7500, 107.3500],
+      [22.3500, 106.1500],
+      [21.7500, 106.0500],
       [21.4500, 106.8500],
-      [21.6500, 106.3500],
-      [22.0500, 106.3500],
+      [21.5800, 107.1500],
+      [21.8500, 107.0300],
+      [22.1200, 106.7800],
       [22.4500, 106.7200],
     ],
   },
 
-  // 31. TỈNH TUYÊN QUANG
+  // prov-008: Tỉnh Tuyên Quang
   {
     id: 'prov-008',
+    colorHex: '#047857',
     code: '001008B001',
     name: 'Tỉnh Tuyên Quang',
     level: 2,
@@ -983,20 +1152,25 @@ export const VIETNAM_PROVINCE_BOUNDARIES: BoundaryItem[] = [
     category: 'PROVINCE',
     center: [21.8233, 105.2181],
     areaKm2: 5867,
-    description: 'Thủ đô kháng chiến Tân Trào, Hồ Na Hang, TP. Tuyên Quang',
+    description: 'Thủ đô kháng chiến Tân Trào, Hà Giang, Hồ Na Hang, TP. Tuyên Quang',
     polygon: [
-      [22.5500, 105.3500],
-      [22.2500, 105.5500],
-      [21.7500, 105.4500],
+      [23.3927, 105.3238],
+      [22.9500, 104.6500],
+      [22.7500, 104.3500],
+      [22.3500, 104.4500],
+      [21.8500, 104.3500],
       [21.6500, 105.0500],
-      [22.1500, 104.9500],
-      [22.5500, 105.3500],
+      [21.7500, 105.4500],
+      [22.2500, 105.5500],
+      [22.6500, 105.7500],
+      [23.3927, 105.3238],
     ],
   },
 
-  // 32. TỈNH HÀ TĨNH
+  // prov-042: Tỉnh Hà Tĩnh
   {
     id: 'prov-042',
+    colorHex: '#c2410c',
     code: '002042B001',
     name: 'Tỉnh Hà Tĩnh',
     level: 2,
@@ -1007,19 +1181,21 @@ export const VIETNAM_PROVINCE_BOUNDARIES: BoundaryItem[] = [
     areaKm2: 5997,
     description: 'TP. Hà Tĩnh, Khu kinh tế Vũng Áng, Ngã ba Đồng Lộc, Biển Thiên Cầm',
     polygon: [
-      [18.6000, 105.6500],
-      [18.3500, 105.9500],
-      [18.0500, 106.4000],
-      [17.9500, 106.0500],
+      [18.5500, 105.2000],
       [18.3800, 105.2000],
-      [18.5500, 105.4500],
+      [17.4500, 106.0500],
+      [17.8500, 106.5000],
+      [18.3500, 105.9500],
+      [18.8200, 105.7500],
       [18.6000, 105.6500],
+      [18.5500, 105.2000],
     ],
   },
 
-  // 33. TỈNH QUẢNG TRỊ
+  // prov-044: Tỉnh Quảng Trị
   {
     id: 'prov-044',
+    colorHex: '#6d28d9',
     code: '002044B001',
     name: 'Tỉnh Quảng Trị',
     level: 2,
@@ -1028,21 +1204,25 @@ export const VIETNAM_PROVINCE_BOUNDARIES: BoundaryItem[] = [
     category: 'PROVINCE',
     center: [16.8163, 107.1006],
     areaKm2: 4739,
-    description: 'Thành cổ Quảng Trị, Vĩ tuyến 17 Sông Bến Hải, Cửa Việt, Lao Bảo',
+    description: 'Thành cổ Quảng Trị, Vĩ tuyến 17 Sông Bến Hải, Quảng Bình, Lao Bảo',
     polygon: [
-      [17.1500, 107.0500],
-      [16.8500, 107.2500],
-      [16.6500, 107.3500],
-      [16.4500, 106.8500],
+      [17.4500, 106.0500],
       [16.6500, 106.6500],
-      [16.9500, 106.7500],
-      [17.1500, 107.0500],
+      [16.1500, 107.2500],
+      [16.5000, 107.1500],
+      [16.5500, 107.4500],
+      [16.6000, 107.6500],
+      [17.0000, 107.1200],
+      [17.4800, 106.6300],
+      [17.8500, 106.5000],
+      [17.4500, 106.0500],
     ],
   },
 
-  // 34. TỈNH QUẢNG NGÃI
+  // prov-051: Tỉnh Quảng Ngãi
   {
     id: 'prov-051',
+    colorHex: '#d946ef',
     code: '002051B001',
     name: 'Tỉnh Quảng Ngãi',
     level: 2,
@@ -1051,67 +1231,52 @@ export const VIETNAM_PROVINCE_BOUNDARIES: BoundaryItem[] = [
     category: 'PROVINCE',
     center: [15.1205, 108.7923],
     areaKm2: 5153,
-    description: 'Khu kinh tế Dung Quất, Đảo Lý Sơn, Sa Huỳnh, TP. Quảng Ngãi',
+    description: 'Khu kinh tế Dung Quất, Đảo Lý Sơn, Quảng Nam, Bình Định, Sa Huỳnh',
     polygon: [
+      [15.5500, 107.4500],
+      [14.5500, 108.1500],
+      [14.2500, 108.7500],
+      [13.6500, 108.7500],
+      [14.0500, 109.2800],
+      [14.9500, 108.9800],
       [15.4200, 108.7500],
-      [15.0500, 108.9500],
-      [14.7500, 109.0500],
-      [14.6500, 108.6500],
-      [14.9500, 108.3500],
-      [15.4200, 108.7500],
+      [15.8800, 108.3800],
+      [15.9000, 108.0500],
+      [15.5500, 107.4500],
     ],
   },
 
-  // 35. TỈNH GIA LAI
+  // prov-052: Tỉnh Gia Lai
   {
     id: 'prov-052',
+    colorHex: '#a16207',
     code: '002052B001',
     name: 'Tỉnh Gia Lai',
     level: 2,
     parentCode: '002C001',
     region: 'CENTRAL',
     category: 'PROVINCE',
-    center: [13.9833, 108.0000],
+    center: [13.9833, 108],
     areaKm2: 15510,
-    description: 'Thành phố Pleiku, Biển Hồ Tơ Nưng, Đắk Đoa, Cửa khẩu Lệ Thanh',
+    description: 'Thành phố Pleiku, Biển Hồ Tơ Nưng, Đắk Đoa, Kon Tum, Cửa khẩu Lệ Thanh',
     polygon: [
-      [14.5500, 108.1500],
-      [14.2500, 108.7500],
-      [13.6500, 108.7500],
-      [13.3500, 108.2500],
+      [15.5500, 107.4500],
+      [14.7000, 107.5500],
+      [14.1500, 107.5500],
       [13.4000, 107.5000],
-      [13.9500, 107.4500],
+      [13.4000, 108.2500],
+      [13.6500, 108.7500],
+      [14.2500, 108.7500],
       [14.5500, 108.1500],
+      [15.5500, 107.4500],
     ],
   },
+
 ];
 
 // ---------------------------------------------------------------------------
-// 4. TẦNG 3: BỘ DỮ LIỆU ĐA GIÁC ĐỘ NÉT CAO CHO CÁC PHƯỜNG ĐÔ THỊ (WARD HUBS)
-// Các phường xã tiếp giáp bám sát khít nhau 100% (Seamless Topology - Shared Boundary Edges)
-// Đảm bảo đơn hàng không bao giờ bị lọt ra ngoài giữa các phường
+// 3. TẦNG 3: BƯU CỤC & PHƯỜNG / XÃ TRỌNG ĐIỂM CHI TIẾT (EXPANDED WARD HUBS)
 // ---------------------------------------------------------------------------
-export interface LocalWardHubItem {
-  id: string;
-  code: string;
-  name: string;
-  level: number;
-  parentHubCode: string;
-  parentName: string;
-  zoneCode: string;
-  region: 'NORTH' | 'CENTRAL' | 'SOUTH';
-  province: string;
-  district: string;
-  ward: string;
-  address: string;
-  phone: string;
-  latitude: number;
-  longitude: number;
-  isActive: boolean;
-  colorHex?: string;
-  boundaryPolygon: Array<[number, number]>;
-}
-
 export const EXPANDED_WARD_HUBS: LocalWardHubItem[] = [
   // =========================================================================
   // CỤM 1: THÀNH PHỐ DĨ AN (BÌNH DƯƠNG) - TIẾP GIÁP KHÍT 100% 4 PHƯỜNG ĐÔ THỊ
