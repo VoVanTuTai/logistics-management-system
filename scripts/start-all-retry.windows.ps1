@@ -233,7 +233,7 @@ try {
   Start-WebUiProcess -name 'ops-web' -relativePath 'apps/ops-web' -port 5173
   Start-WebUiProcess -name 'merchant-web' -relativePath 'apps/merchant-web' -port 5174
   Start-WebUiProcess -name 'admin-web' -relativePath 'apps/admin-web' -port 5175
-  Start-WebUiProcess -name 'public-tracking' -relativePath 'apps/public-tracking' -port 5176
+  Start-WebUiProcess -name 'guest-web' -relativePath 'apps/guest-web' -port 5177
 
   if (-not $SkipMobile) {
     Write-Host '[ui] starting courier-mobile & customer-mobile'
@@ -263,7 +263,7 @@ try {
     @{ Name = 'ops-web'; Port = 5173 },
     @{ Name = 'merchant-web'; Port = 5174 },
     @{ Name = 'admin-web'; Port = 5175 },
-    @{ Name = 'public-tracking'; Port = 5176 },
+    @{ Name = 'customer-web'; Port = 5177 },
     @{ Name = 'courier-mobile'; Port = 8081 },
     @{ Name = 'customer-mobile'; Port = 8082 }
   )
@@ -286,7 +286,7 @@ try {
   Write-Host 'ops-web:         http://localhost:5173'
   Write-Host 'merchant-web:    http://localhost:5174'
   Write-Host 'admin-web:       http://localhost:5175'
-  Write-Host 'public-tracking: http://localhost:5176'
+  Write-Host 'customer-web:    http://localhost:5177'
   Write-Host 'courier-mobile:  http://localhost:8081'
   Write-Host 'customer-mobile: http://localhost:8082'
 

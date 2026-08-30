@@ -653,7 +653,7 @@ print_summary() {
   echo "ops-web:          https://${OPS_DOMAIN}"
   echo "merchant-web:     https://${MERCHANT_DOMAIN}"
   echo "admin-web:        https://${ADMIN_DOMAIN}"
-  echo "public-tracking:  https://${TRACKING_DOMAIN}"
+  echo "customer-web:     https://${TRACKING_DOMAIN}"
   echo
   echo "Demo ops login: username=20000001 password=password"
 }
