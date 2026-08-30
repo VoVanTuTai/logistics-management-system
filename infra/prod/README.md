@@ -31,11 +31,12 @@ PUBLIC_HOST=103.179.172.53
 OPS_PUBLIC_URL=https://ops.nexus-ex.site
 MERCHANT_PUBLIC_URL=https://merchant.nexus-ex.site
 ADMIN_PUBLIC_URL=https://admin.nexus-ex.site
-GUEST_PUBLIC_URL=https://tracking.nexus-ex.site
+CUSTOMER_PUBLIC_URL=https://customer.nexus-ex.site
+GUEST_PUBLIC_URL=https://customer.nexus-ex.site
 COURIER_MOBILE_PUBLIC_URL=http://103.179.172.53:5177
 GATEWAY_PUBLIC_URL=https://ops.nexus-ex.site
 MINIO_PUBLIC_ENDPOINT=https://minio.nexus-ex.site
-CORS_ORIGINS=https://ops.nexus-ex.site,https://merchant.nexus-ex.site,https://admin.nexus-ex.site,https://tracking.nexus-ex.site,http://103.179.172.53:5177
+CORS_ORIGINS=https://ops.nexus-ex.site,https://merchant.nexus-ex.site,https://admin.nexus-ex.site,https://customer.nexus-ex.site,https://tracking.nexus-ex.site,http://103.179.172.53:5177
 GATEWAY_PORT=13000
 MINIO_API_PORT=19000
 ```
@@ -56,6 +57,7 @@ sudo certbot --nginx \
   -d ops.nexus-ex.site \
   -d merchant.nexus-ex.site \
   -d admin.nexus-ex.site \
+  -d customer.nexus-ex.site \
   -d tracking.nexus-ex.site \
   -d minio.nexus-ex.site
 ```
@@ -76,7 +78,7 @@ gateway API port: http://103.179.172.53:13000/health
 ops-web:          https://ops.nexus-ex.site
 merchant-web:     https://merchant.nexus-ex.site
 admin-web:        https://admin.nexus-ex.site
-customer-web:     https://tracking.nexus-ex.site
+customer-web:     https://customer.nexus-ex.site (alias: https://tracking.nexus-ex.site)
 courier-mobile:   http://103.179.172.53:5177
 minio API:        https://minio.nexus-ex.site
 ```
