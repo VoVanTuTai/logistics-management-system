@@ -195,14 +195,14 @@ load_env() {
   set_env_value OPS_PUBLIC_URL "https://${OPS_DOMAIN}"
   set_env_value MERCHANT_PUBLIC_URL "https://${MERCHANT_DOMAIN}"
   set_env_value ADMIN_PUBLIC_URL "https://${ADMIN_DOMAIN}"
-  set_env_value PUBLIC_TRACKING_PUBLIC_URL "https://${TRACKING_DOMAIN}"
+  set_env_value GUEST_PUBLIC_URL "https://${TRACKING_DOMAIN}"
   set_env_value GATEWAY_PUBLIC_URL "https://${OPS_DOMAIN}"
   set_env_value MINIO_PUBLIC_ENDPOINT "https://${MINIO_DOMAIN}"
   set_env_value CORS_ORIGINS "https://${OPS_DOMAIN},https://${MERCHANT_DOMAIN},https://${ADMIN_DOMAIN},https://${TRACKING_DOMAIN}"
   set_env_value OPS_WEB_PORT "5173"
   set_env_value MERCHANT_WEB_PORT "5174"
   set_env_value ADMIN_WEB_PORT "5175"
-  set_env_value PUBLIC_TRACKING_PORT "5176"
+  set_env_value GUEST_WEB_PORT "5178"
   set_env_value GATEWAY_PORT "13000"
   set_env_value MINIO_API_PORT "19000"
 
@@ -456,7 +456,7 @@ server {
   ssl_protocols TLSv1.2 TLSv1.3;
 
   location / {
-    proxy_pass http://127.0.0.1:5176;
+    proxy_pass http://127.0.0.1:5178;
     proxy_http_version 1.1;
     proxy_set_header Host \$host;
     proxy_set_header X-Forwarded-Proto \$scheme;

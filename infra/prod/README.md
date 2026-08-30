@@ -20,7 +20,7 @@ served by Nginx runtime containers:
 nexus/ops-web:local
 nexus/merchant-web:local
 nexus/admin-web:local
-nexus/public-tracking:local
+nexus/guest-web:local
 nexus/courier-mobile:local
 ```
 
@@ -31,7 +31,7 @@ PUBLIC_HOST=103.179.172.53
 OPS_PUBLIC_URL=https://ops.nexus-ex.site
 MERCHANT_PUBLIC_URL=https://merchant.nexus-ex.site
 ADMIN_PUBLIC_URL=https://admin.nexus-ex.site
-PUBLIC_TRACKING_PUBLIC_URL=https://tracking.nexus-ex.site
+GUEST_PUBLIC_URL=https://tracking.nexus-ex.site
 COURIER_MOBILE_PUBLIC_URL=http://103.179.172.53:5177
 GATEWAY_PUBLIC_URL=https://ops.nexus-ex.site
 MINIO_PUBLIC_ENDPOINT=https://minio.nexus-ex.site
@@ -76,7 +76,7 @@ gateway API port: http://103.179.172.53:13000/health
 ops-web:          https://ops.nexus-ex.site
 merchant-web:     https://merchant.nexus-ex.site
 admin-web:        https://admin.nexus-ex.site
-public-tracking:  https://tracking.nexus-ex.site
+customer-web:     https://tracking.nexus-ex.site
 courier-mobile:   http://103.179.172.53:5177
 minio API:        https://minio.nexus-ex.site
 ```
