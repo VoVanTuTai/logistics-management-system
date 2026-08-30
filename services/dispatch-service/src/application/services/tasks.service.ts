@@ -495,11 +495,20 @@ export class TasksService {
 
     if (activeTask) {
       if (activeTask.status === 'CREATED') {
-        return this.assign(activeTask.id, {
-          courierId,
-          hubCode: destinationHubCode,
-          note: `Tự động cắt địa chỉ (${ward}, ${district}) và gán cho shipper ${courierId} phụ trách tuyến`,
-        });
+        return this.assign(
+          activeTask.id,
+          {
+            courierId,
+            hubCode: destinationHubCode,
+            note: `Hệ thống tự động điều phối giao hàng cho Shipper ${courierId} theo phân vùng: ${ward}, ${district} thuộc bưu cục ${destinationHubCode}`,
+          },
+          {
+            actorId: 'SYSTEM',
+            actorUsername: 'SYSTEM_AUTO_DISPATCH',
+            ipAddress: '127.0.0.1',
+            userAgent: 'DispatchService-AutoEngine',
+          },
+        );
       }
 
       return activeTask;
@@ -509,14 +518,23 @@ export class TasksService {
       taskCode: `DLV-AUTO-${randomUUID()}`,
       taskType: 'DELIVERY',
       shipmentCode,
-      note: `Tự động cắt địa chỉ (${ward}, ${district}) và gán cho shipper ${courierId} phụ trách tuyến`,
+      note: `Hệ thống tự động tạo và phân công giao hàng cho Shipper ${courierId} theo phân vùng: ${ward}, ${district}`,
     });
 
-    return this.assign(task.id, {
-      courierId,
-      hubCode: destinationHubCode,
-      note: `Hệ thống tự động phân công theo tuyến: ${ward}, ${district}`,
-    });
+    return this.assign(
+      task.id,
+      {
+        courierId,
+        hubCode: destinationHubCode,
+        note: `Hệ thống tự động điều phối theo phân vùng tuyến: ${ward}, ${district} thuộc bưu cục ${destinationHubCode}`,
+      },
+      {
+        actorId: 'SYSTEM',
+        actorUsername: 'SYSTEM_AUTO_DISPATCH',
+        ipAddress: '127.0.0.1',
+        userAgent: 'DispatchService-AutoEngine',
+      },
+    );
   }
 
   async autoAssignPickupTask(
@@ -635,11 +653,20 @@ export class TasksService {
     }
 
     const courierId = firstAssignment.courierId;
-    return this.assign(taskId, {
-      courierId,
-      hubCode: originHubCode,
-      note: `Tự động phân công lấy hàng theo tuyến: ${ward}, ${district}`,
-    }).catch(() => null);
+    return this.assign(
+      taskId,
+      {
+        courierId,
+        hubCode: originHubCode,
+        note: `Hệ thống tự động điều phối lấy hàng cho Shipper ${courierId} theo phân vùng: ${ward}, ${district || ''} thuộc bưu cục ${originHubCode}`,
+      },
+      {
+        actorId: 'SYSTEM',
+        actorUsername: 'SYSTEM_AUTO_DISPATCH',
+        ipAddress: '127.0.0.1',
+        userAgent: 'DispatchService-AutoEngine',
+      },
+    ).catch(() => null);
   }
 
   private async getOrCreateUnassignedDeliveryTask(

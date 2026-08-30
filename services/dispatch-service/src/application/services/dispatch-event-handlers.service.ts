@@ -119,12 +119,20 @@ export class DispatchEventHandlersService {
     });
   }
 
-  async handleScanInbound(payload: {
-    shipment_code?: string | null;
-    location?: { location_code?: string | null } | null;
-  }): Promise<void> {
-    const shipmentCode = payload.shipment_code?.trim() || null;
-    const locationCode = payload.location?.location_code?.trim() || null;
+  async handleScanInbound(payload: Record<string, any>): Promise<void> {
+    const shipmentCode =
+      this.readString(payload?.shipment_code) ||
+      this.readString(payload?.shipmentCode) ||
+      this.readString(payload?.data?.scanEvent?.shipmentCode) ||
+      null;
+
+    const locationCode =
+      this.readString(payload?.location?.location_code) ||
+      this.readString(payload?.location?.locationCode) ||
+      (typeof payload?.location === 'string' ? payload.location.trim() : null) ||
+      this.readString(payload?.data?.scanEvent?.locationCode) ||
+      this.readString(payload?.data?.locationCode) ||
+      null;
 
     if (!shipmentCode || !locationCode) {
       return;
