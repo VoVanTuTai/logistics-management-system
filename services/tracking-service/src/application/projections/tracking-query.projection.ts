@@ -218,7 +218,9 @@ export class TrackingQueryProjection {
       const locationCode =
         event.locationCode ?? this.extractLocationCode(event.payload);
       const eventText = toTimelineTextVi(event.payload, locationCode);
-      const source = event.actor?.trim() ? event.actor : 'Hệ thống';
+      const rawActor = event.actor?.trim();
+      const isSystem = !rawActor || rawActor === 'SYSTEM' || rawActor === 'SYSTEM_AUTO_DISPATCH';
+      const source = isSystem ? 'Hệ thống' : `Ops (${rawActor})`;
 
       const rawLocText =
         (typeof event.payload?.location?.name === 'string'
