@@ -26,6 +26,7 @@ export const courierEndpoints = {
       `${COURIER_PREFIX}/dispatch/tasks/${taskId}/reassign`,
     updateStatus: (taskId: string) =>
       `${COURIER_PREFIX}/dispatch/tasks/${taskId}/status`,
+    routeOptimization: `${COURIER_PREFIX}/dispatch/tasks/route-optimization`,
   },
   shipment: {
     detail: (shipmentCode: string) =>

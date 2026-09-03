@@ -756,7 +756,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cameraOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(2, 6, 23, 0.45)',
     alignItems: 'center',
     justifyContent: 'center',

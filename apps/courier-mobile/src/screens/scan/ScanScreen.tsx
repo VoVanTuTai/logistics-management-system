@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
     opacity: 0.72,
   },
   headerOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(18, 38, 86, 0.74)',
   },
   headerContent: {

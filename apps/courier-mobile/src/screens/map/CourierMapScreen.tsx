@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Linking,
   Platform,
   Pressable,
@@ -20,8 +21,10 @@ import { Card } from '../../components/ui/Card';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { shipmentApi } from '../../features/shipment/shipment.api';
 import type { ShipmentDto, ShipmentMetadata } from '../../features/shipment/shipment.types';
+import { tasksApi } from '../../features/tasks/tasks.api';
 import { useAssignedTasksQuery } from '../../features/tasks/tasks.queries';
 import type { TaskDto, TaskStatus, TaskType } from '../../features/tasks/tasks.types';
+import { optimizeClientRoute } from '../../utils/routeOptimizer';
 import type { AppNavigatorParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
@@ -1115,6 +1118,15 @@ export function CourierMapScreen(): React.JSX.Element {
   const [selectedClusterId, setSelectedClusterId] = useState<string | null>(null);
   const [clusterRadius, setClusterRadius] = useState<ClusterRadiusMeters>(1000);
   const [manualRouteOrderIds, setManualRouteOrderIds] = useState<string[]>([]);
+  const [isTspOptimizing, setIsTspOptimizing] = useState<boolean>(false);
+  const [isTspOptimized, setIsTspOptimized] = useState<boolean>(false);
+  const [tspStats, setTspStats] = useState<{
+    totalDistanceMeters: number;
+    estimatedDurationMinutes: number;
+    savedDistanceMeters: number;
+    savedMinutes: number;
+    improvementPercent: number;
+  } | null>(null);
   const [currentLocation, setCurrentLocation] = useState<GeoCoordinate | null>(null);
   const [locationState, setLocationState] = useState<LocationState>('idle');
   const [lastLocationUpdatedAt, setLastLocationUpdatedAt] = useState<Date | null>(null);
@@ -1479,6 +1491,87 @@ export function CourierMapScreen(): React.JSX.Element {
     setManualRouteOrderIds([]);
   };
 
+  const handleRunTspOptimization = async () => {
+    const candidates = mapPoints.filter(isRouteEligiblePoint);
+    if (candidates.length === 0) {
+      Alert.alert('Chưa có điểm giao', 'Không có nhiệm vụ nào cần giao để tối ưu tuyến.');
+      return;
+    }
+
+    setIsTspOptimizing(true);
+    try {
+      const startCoord = currentLocation ?? { latitude: 10.8000, longitude: 106.6600 };
+
+      let orderedIds: string[] = [];
+      let totalDistanceMeters = 0;
+      let estimatedDurationSeconds = 0;
+      let apiSucceeded = false;
+
+      if (session?.tokens.accessToken) {
+        try {
+          const res = await tasksApi.optimizeRoute(session.tokens.accessToken, {
+            courierId,
+            startLatitude: startCoord.latitude,
+            startLongitude: startCoord.longitude,
+            taskIds: candidates.map((c) => c.task.id),
+          });
+          if (res && Array.isArray(res.orderedTaskIds) && res.orderedTaskIds.length > 0) {
+            orderedIds = res.orderedTaskIds;
+            totalDistanceMeters = res.totalDistanceMeters;
+            estimatedDurationSeconds = res.estimatedDurationSeconds;
+            apiSucceeded = true;
+          }
+        } catch (apiErr) {
+          console.warn('Backend optimizeRoute failed, using client fallback:', apiErr);
+        }
+      }
+
+      if (!apiSucceeded) {
+        const clientNodes = candidates.map((c) => ({
+          id: c.id,
+          coordinate: c.coordinate ?? startCoord,
+          data: c,
+        }));
+        const clientRes = optimizeClientRoute(startCoord, clientNodes);
+        orderedIds = clientRes.orderedIds;
+        totalDistanceMeters = Math.round(clientRes.totalDistanceKm * 1000);
+        estimatedDurationSeconds = clientRes.totalDurationMinutes * 60;
+      }
+
+      setManualRouteOrderIds(orderedIds);
+      setIsTspOptimized(true);
+
+      const defaultDist = defaultRoute.totalDistanceMeters;
+      const savedDist = Math.max(0, defaultDist - totalDistanceMeters);
+      const defaultMin = defaultRoute.estimatedDurationMinutes ?? 0;
+      const optMin = Math.round(estimatedDurationSeconds / 60);
+      const savedMin = Math.max(0, defaultMin - optMin);
+      const improvement = defaultDist > 0 ? Math.round((savedDist / defaultDist) * 100) : 0;
+
+      setTspStats({
+        totalDistanceMeters,
+        estimatedDurationMinutes: optMin,
+        savedDistanceMeters: savedDist,
+        savedMinutes: savedMin,
+        improvementPercent: improvement,
+      });
+
+      if (orderedIds.length > 0) {
+        setSelectedPointId(orderedIds[0]);
+      }
+    } catch (err) {
+      Alert.alert('Lỗi tối ưu', err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsTspOptimizing(false);
+    }
+  };
+
+  const handleResetTspOptimization = () => {
+    setManualRouteOrderIds([]);
+    setIsTspOptimized(false);
+    setTspStats(null);
+  };
+
   return (
     <View style={styles.safeArea}>
       <ScrollView
@@ -1643,6 +1736,80 @@ export function CourierMapScreen(): React.JSX.Element {
               <Text style={styles.mapNoticeText}>{routeNotice}</Text>
             </View>
           ) : null}
+
+          {/* DEMO TOOLBAR: Chế độ tối ưu 2-Opt TSP */}
+          <View style={styles.demoToolbar}>
+            <View style={styles.demoToolbarHeader}>
+              <View style={styles.demoToolbarTitleRow}>
+                <Ionicons name="sparkles" size={16} color="#0284c7" />
+                <Text style={styles.demoToolbarTitle}>Tối ưu hành trình ngắn nhất (TSP)</Text>
+              </View>
+              {isTspOptimized ? (
+                <View style={styles.demoActiveBadge}>
+                  <Text style={styles.demoActiveBadgeText}>2-OPT ĐÃ TỐI ƯU</Text>
+                </View>
+              ) : null}
+            </View>
+
+            <View style={styles.demoButtonGroup}>
+              <Pressable
+                onPress={handleRunTspOptimization}
+                disabled={isTspOptimizing}
+                style={({ pressed }) => [
+                  styles.demoOptimizeBtn,
+                  isTspOptimized && styles.demoOptimizeBtnActive,
+                  pressed && styles.actionPressed,
+                ]}
+              >
+                {isTspOptimizing ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Ionicons name="flash" size={15} color="#FFFFFF" />
+                    <Text style={styles.demoOptimizeBtnText}>
+                      {isTspOptimized ? 'Tối ưu lại (2-Opt TSP)' : '⚡ Tối ưu đường ngắn nhất'}
+                    </Text>
+                  </>
+                )}
+              </Pressable>
+
+              {isTspOptimized ? (
+                <Pressable
+                  onPress={handleResetTspOptimization}
+                  style={({ pressed }) => [styles.demoResetBtn, pressed && styles.actionPressed]}
+                >
+                  <Ionicons name="refresh-outline" size={14} color="#64748B" />
+                  <Text style={styles.demoResetBtnText}>Xem ban đầu</Text>
+                </Pressable>
+              ) : null}
+            </View>
+
+            {/* DEMO IMPACT STATS */}
+            {isTspOptimized && tspStats ? (
+              <View style={styles.demoStatsBanner}>
+                <View style={styles.demoStatCol}>
+                  <Text style={styles.demoStatLabel}>Tổng cự ly</Text>
+                  <Text style={styles.demoStatValue}>
+                    {formatDistance(suggestedRoute.totalDistanceMeters)}
+                  </Text>
+                </View>
+                <View style={styles.demoStatDivider} />
+                <View style={styles.demoStatCol}>
+                  <Text style={styles.demoStatLabel}>Tiết kiệm cự ly</Text>
+                  <Text style={[styles.demoStatValue, { color: theme.colors.success }]}>
+                    -{formatDistance(tspStats.savedDistanceMeters)} ({tspStats.improvementPercent}%)
+                  </Text>
+                </View>
+                <View style={styles.demoStatDivider} />
+                <View style={styles.demoStatCol}>
+                  <Text style={styles.demoStatLabel}>Thời gian đi</Text>
+                  <Text style={[styles.demoStatValue, { color: '#0284c7' }]}>
+                    ~{suggestedRoute.estimatedDurationMinutes ?? 0} phút
+                  </Text>
+                </View>
+              </View>
+            ) : null}
+          </View>
 
           <View style={styles.mapSurface}>
             {canUseNativeMap ? (
@@ -1899,6 +2066,78 @@ export function CourierMapScreen(): React.JSX.Element {
               </View>
             )}
           </View>
+
+          {/* HORIZONTAL ROUTE STEPS CAROUSEL FOR DEMO */}
+          {suggestedRoute.steps.length > 0 ? (
+            <View style={styles.stepsCarouselContainer}>
+              <View style={styles.stepsCarouselHeader}>
+                <Text style={styles.stepsCarouselTitle}>
+                  {isTspOptimized ? '⭐ Lộ trình tối ưu:' : 'Thứ tự tuyến:'} {suggestedRoute.steps.length} chặng
+                </Text>
+                <Text style={styles.stepsCarouselSubtitle}>
+                  Chạm chọn chặng • Bấm chỉ đường
+                </Text>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.stepsCarouselScroll}
+              >
+                {suggestedRoute.steps.map((step, idx) => {
+                  const isSelected = selectedPoint?.id === step.point.id;
+                  const legDist = step.distanceFromPreviousMeters ?? 0;
+                  return (
+                    <Pressable
+                      key={step.point.id}
+                      onPress={() => {
+                        setSelectedPointId(step.point.id);
+                        if (!selectedClusterPointIds.has(step.point.id)) {
+                          setSelectedClusterId(null);
+                        }
+                      }}
+                      style={({ pressed }) => [
+                        styles.stepCard,
+                        isSelected && styles.stepCardSelected,
+                        pressed && styles.actionPressed,
+                      ]}
+                    >
+                      <View style={styles.stepCardTop}>
+                        <View
+                          style={[
+                            styles.stepBadgeCircle,
+                            { backgroundColor: typeColor(step.point.task.taskType) },
+                          ]}
+                        >
+                          <Text style={styles.stepBadgeCircleText}>{idx + 1}</Text>
+                        </View>
+                        <Text style={styles.stepDistanceText}>
+                          {idx === 0
+                            ? 'Điểm đầu'
+                            : `Cách ~${(legDist / 1000).toFixed(1)} km`}
+                        </Text>
+                      </View>
+                      <Text numberOfLines={1} style={styles.stepReceiverText}>
+                        {step.point.title}
+                      </Text>
+                      <Text numberOfLines={1} style={styles.stepAddressText}>
+                        {step.point.subtitle}
+                      </Text>
+                      <Pressable
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          void handleOpenDirections(step.point.destination);
+                        }}
+                        style={styles.stepNavigateBtn}
+                      >
+                        <Ionicons name="navigate" size={12} color="#FFFFFF" />
+                        <Text style={styles.stepNavigateBtnText}>Chỉ đường</Text>
+                      </Pressable>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          ) : null}
         </Card>
 
         {!tasksQuery.isLoading && !tasksQuery.isError ? (
@@ -2728,7 +2967,7 @@ const styles = StyleSheet.create({
     ...theme.shadow.sm,
   },
   nativeMap: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   nativeCurrentMarker: {
     width: 32,
@@ -3784,6 +4023,196 @@ const styles = StyleSheet.create({
     width: 1,
     height: 28,
     backgroundColor: '#BBF7D0',
+  },
+  demoToolbar: {
+    marginBottom: theme.spacing.sm,
+    padding: theme.spacing.sm,
+    borderRadius: theme.radius.lg,
+    backgroundColor: '#F0F9FF',
+    borderColor: '#BAE6FD',
+    borderWidth: 1,
+    gap: theme.spacing.xs,
+  },
+  demoToolbarHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  demoToolbarTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  demoToolbarTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0369A1',
+  },
+  demoActiveBadge: {
+    backgroundColor: '#0284C7',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: theme.radius.sm,
+  },
+  demoActiveBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  demoButtonGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    marginTop: 2,
+  },
+  demoOptimizeBtn: {
+    flex: 1,
+    minHeight: 38,
+    borderRadius: theme.radius.md,
+    backgroundColor: '#0284C7',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingHorizontal: theme.spacing.sm,
+  },
+  demoOptimizeBtnActive: {
+    backgroundColor: '#0369A1',
+  },
+  demoOptimizeBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  demoResetBtn: {
+    minHeight: 38,
+    borderRadius: theme.radius.md,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingHorizontal: theme.spacing.sm,
+  },
+  demoResetBtnText: {
+    color: '#475569',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  demoStatsBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderRadius: theme.radius.md,
+    padding: theme.spacing.xs,
+    borderWidth: 1,
+    borderColor: '#E0F2FE',
+    marginTop: 4,
+  },
+  demoStatCol: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  demoStatLabel: {
+    fontSize: 10,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  demoStatValue: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#0F172A',
+    marginTop: 1,
+  },
+  demoStatDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: '#E2E8F0',
+  },
+  stepsCarouselContainer: {
+    paddingTop: theme.spacing.sm,
+    gap: theme.spacing.xs,
+  },
+  stepsCarouselHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  stepsCarouselTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
+  },
+  stepsCarouselSubtitle: {
+    fontSize: 11,
+    color: theme.colors.textMuted,
+  },
+  stepsCarouselScroll: {
+    gap: theme.spacing.xs,
+    paddingVertical: 4,
+  },
+  stepCard: {
+    width: 180,
+    backgroundColor: '#FFFFFF',
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    padding: theme.spacing.sm,
+    gap: 4,
+  },
+  stepCardSelected: {
+    borderColor: '#0284C7',
+    backgroundColor: '#F0F9FF',
+    borderWidth: 1.5,
+  },
+  stepCardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  stepBadgeCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepBadgeCircleText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  stepDistanceText: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '700',
+  },
+  stepReceiverText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
+  },
+  stepAddressText: {
+    fontSize: 11,
+    color: theme.colors.textSecondary,
+  },
+  stepNavigateBtn: {
+    marginTop: 4,
+    minHeight: 28,
+    borderRadius: theme.radius.sm,
+    backgroundColor: '#0284C7',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  stepNavigateBtnText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
   },
 });
 
