@@ -268,6 +268,18 @@ seed_auth_demo_users() {
   )
 }
 
+seed_masterdata_demo_data() {
+  local dir="$ROOT_DIR/services/masterdata-service"
+
+  install_deps_if_needed "$dir" "masterdata-service"
+  echo "[seed] masterdata demo data (zones, hubs, couriers assignments)"
+  (
+    cd "$dir"
+    DATABASE_URL="postgresql://postgres:postgres@localhost:15432/masterdata_db" \
+      node node_modules/ts-node/dist/bin.js --transpile-only prisma/seed.ts
+  )
+}
+
 start_container_backend() {
   echo "[backend] mode=container"
   ensure_service_images
@@ -281,6 +293,7 @@ start_container_backend() {
 
   prepare_service_databases
   seed_auth_demo_users
+  seed_masterdata_demo_data
 
   echo "[backend] starting service containers"
   docker compose \
@@ -455,6 +468,7 @@ elif [[ "$BACKEND_MODE" == "local" ]]; then
   start_service pricing-service services/pricing-service 3012
 
   seed_auth_demo_users
+  seed_masterdata_demo_data
   node "$ROOT_DIR/scripts/seed-master-logistics-flow.js"
   node "$ROOT_DIR/scripts/seed-hcm-5-couriers.js"
 
