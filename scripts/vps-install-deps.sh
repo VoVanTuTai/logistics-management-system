@@ -20,7 +20,10 @@ ufw allow 'Nginx Full'
 ufw allow 5173/tcp
 ufw allow 5174/tcp
 ufw allow 5175/tcp
-ufw allow 5176/tcp
+ufw allow 5177/tcp
+ufw allow 5178/tcp
+ufw allow 13000/tcp
+ufw allow 19000/tcp
 ufw --force enable
 
 echo "VPS dependencies are ready."

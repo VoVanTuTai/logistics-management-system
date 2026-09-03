@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import {
   BrowserRouter,
   Navigate,
@@ -29,12 +29,17 @@ function lazyRoutePage<T extends React.ComponentType<any>>(
   }));
 }
 
-import { SCOPE_OPTIONS, resolveAllowedScopes, useOpsScopeStore } from '../store/opsScopeStore';
+import { SCOPE_OPTIONS, resolveAllowedScopes, resolveOpsTier, useOpsScopeStore, type ScopeLevel } from '../store/opsScopeStore';
 import { canAccessOpsFeature, resolveOpsActor } from '../features/permissions/opsPermissions';
 
 const MasterOpsCommandCenterPage = lazy(() =>
   import('../pages/dashboard/MasterOpsCommandCenterPage').then((module) => ({
     default: module.MasterOpsCommandCenterPage,
+  })),
+);
+const HqNetworkGeofenceMapPage = lazy(() =>
+  import('../pages/dashboard/HqNetworkGeofenceMapPage').then((module) => ({
+    default: module.HqNetworkGeofenceMapPage,
   })),
 );
 const DownloadCenterPage = lazy(() =>
@@ -497,6 +502,25 @@ function DashboardLayout(): React.JSX.Element {
   const enableFullOpsModules = appEnv.enableFullOpsModules;
   const operatorName = session?.user.username ?? 'OPS User';
   const operatorInitial = operatorName.trim().charAt(0).toUpperCase() || 'O';
+
+  const scopeLevel = useOpsScopeStore((state) => state.scopeLevel);
+  const setScopeLevel = useOpsScopeStore((state) => state.setScopeLevel);
+
+  const opsTierMeta = useMemo(() => {
+    return resolveOpsTier(
+      session?.user.username,
+      session?.user.roles,
+      session?.user.hubCodes,
+    );
+  }, [session?.user.username, session?.user.roles, session?.user.hubCodes]);
+
+  const allowedScopes = useMemo(() => {
+    return resolveAllowedScopes(
+      session?.user.username,
+      session?.user.roles,
+      session?.user.hubCodes,
+    );
+  }, [session?.user.username, session?.user.roles, session?.user.hubCodes]);
   const isDashboardRoute = pathMatches(location.pathname, routePaths.dashboard)
     || pathMatches(location.pathname, routePaths.analyticsDashboard)
     || location.pathname.startsWith('/app/coming-soon');
@@ -619,6 +643,11 @@ function DashboardLayout(): React.JSX.Element {
       label: 'Trung tâm chỉ huy toàn quốc',
       icon: 'hq_command',
       to: routePaths.masterOpsCommandCenter,
+    },
+    {
+      label: 'Bản đồ Mạng lưới & Phân vùng Hub',
+      icon: 'tracking_lookup',
+      to: routePaths.masterdataHubNetworkMap,
     },
     {
       label: 'Xe tuyến trục Bắc - Trung - Nam',
@@ -993,6 +1022,55 @@ function DashboardLayout(): React.JSX.Element {
                   </svg>
                 </button>
 
+                <div className="ops-topbar-tier" style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '0 4px' }}>
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      padding: '4px 10px',
+                      borderRadius: '8px',
+                      backgroundColor: `${opsTierMeta.badgeColor}18`,
+                      color: opsTierMeta.badgeColor,
+                      border: `1px solid ${opsTierMeta.badgeColor}40`,
+                      letterSpacing: '0.3px',
+                    }}
+                    title={opsTierMeta.description}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
+                      {opsTierMeta.icon}
+                    </span>
+                    <span>{opsTierMeta.badgeLabel}</span>
+                  </span>
+                  {allowedScopes.length > 1 && (
+                    <select
+                      value={scopeLevel}
+                      onChange={(e) => setScopeLevel(e.target.value as ScopeLevel)}
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        color: '#1e293b',
+                        backgroundColor: '#f8fafc',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '8px',
+                        padding: '4px 10px',
+                        outline: 'none',
+                        cursor: 'pointer',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                      }}
+                      aria-label="Phạm vi dữ liệu"
+                    >
+                      {allowedScopes.map((opt) => (
+                        <option key={opt.key} value={opt.key}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
                 <div className="ops-topbar-profile" aria-label="Tài khoản">
                   <span className="ops-topbar-avatar">{operatorInitial}</span>
                   <span className="ops-topbar-user">{operatorName}</span>
@@ -1069,6 +1147,55 @@ function DashboardLayout(): React.JSX.Element {
               <path d="M10 17.5a2 2 0 0 0 4 0" />
             </svg>
           </button>
+
+          <div className="ops-func-tier" style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '0 4px' }}>
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                fontSize: '11px',
+                fontWeight: 700,
+                padding: '4px 10px',
+                borderRadius: '8px',
+                backgroundColor: `${opsTierMeta.badgeColor}18`,
+                color: opsTierMeta.badgeColor,
+                border: `1px solid ${opsTierMeta.badgeColor}40`,
+                letterSpacing: '0.3px',
+              }}
+              title={opsTierMeta.description}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
+                {opsTierMeta.icon}
+              </span>
+              <span>{opsTierMeta.badgeLabel}</span>
+            </span>
+            {allowedScopes.length > 1 && (
+              <select
+                value={scopeLevel}
+                onChange={(e) => setScopeLevel(e.target.value as ScopeLevel)}
+                style={{
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: '#1e293b',
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '8px',
+                  padding: '4px 10px',
+                  outline: 'none',
+                  cursor: 'pointer',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                }}
+                aria-label="Phạm vi dữ liệu"
+              >
+                {allowedScopes.map((opt) => (
+                  <option key={opt.key} value={opt.key}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
 
           <div className="ops-func-user" aria-label="Tài khoản">
             <span className="ops-func-user-avatar">{operatorInitial}</span>
@@ -1253,6 +1380,14 @@ function AppIndexRedirect(): React.JSX.Element {
               element={
                 <OpsModuleRoute title="HQ Master Ops Command Center">
                   {lazyRoute(<MasterOpsCommandCenterPage />)}
+                </OpsModuleRoute>
+              }
+            />
+            <Route
+              path={routePaths.masterdataHubNetworkMapLeaf}
+              element={
+                <OpsModuleRoute title="Bản Đồ Mạng Lưới & Phân Vùng Hub">
+                  {lazyRoute(<HqNetworkGeofenceMapPage />)}
                 </OpsModuleRoute>
               }
             />

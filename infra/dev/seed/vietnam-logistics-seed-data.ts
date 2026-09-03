@@ -30,6 +30,8 @@ export interface RegionalHubSeed {
   addressLine: string;
   phone: string;
   contactName: string;
+  latitude: number;
+  longitude: number;
 }
 
 const VIETNAM_PROVINCES_API_URL = 'https://provinces.open-api.vn/api/v2/?depth=2';
@@ -77,6 +79,414 @@ const SOUTH_PROVINCES = new Set([
   'ca_mau',
 ]);
 
+export interface NationalHqSeed {
+  code: string;
+  name: string;
+  zoneCode: string;
+  zoneName: string;
+  addressLine: string;
+  phone: string;
+  contactName: string;
+  latitude: number;
+  longitude: number;
+}
+
+export const NATIONAL_HQ_HUB: NationalHqSeed = {
+  code: '000HQ001',
+  name: 'Trụ sở Điều hành NEXUS Toàn quốc',
+  zoneCode: '000',
+  zoneName: 'Zone Toàn quốc',
+  addressLine: 'Tòa nhà NEXUS Tower, 01 Tràng Tiền, Hoàn Kiếm, Hà Nội',
+  phone: '19006868',
+  contactName: 'Ban Giám Đốc NEXUS',
+  latitude: 21.028511,
+  longitude: 105.854444,
+};
+
+export interface WardHubSeed {
+  code: string;
+  name: string;
+  parentHubCode: string;
+  provinceCode: number;
+  provinceName: string;
+  district: string;
+  ward: string;
+  addressLine: string;
+  phone: string;
+  contactName: string;
+  latitude: number;
+  longitude: number;
+  coverageRadiusKm?: number;
+  boundaryPolygon: Array<[number, number]>; // Array of [latitude, longitude] boundary points (Google Maps / OSM administrative borders)
+}
+
+export const SAMPLE_WARD_HUBS: WardHubSeed[] = [
+  // TP. Hồ Chí Minh
+  {
+    code: '07901W001',
+    name: 'Bưu cục Phường Bến Thành',
+    parentHubCode: '003079B001',
+    provinceCode: 79,
+    provinceName: 'Thành phố Hồ Chí Minh',
+    district: 'Quận 1',
+    ward: 'Phường Bến Thành',
+    addressLine: '123 Nguyễn Trãi, Phường Bến Thành, Quận 1',
+    phone: '0283811001',
+    contactName: 'Trưởng Bưu cục Bến Thành',
+    latitude: 10.7715,
+    longitude: 106.6932,
+    boundaryPolygon: [
+      [10.766, 106.687],
+      [10.777, 106.689],
+      [10.779, 106.696],
+      [10.774, 106.699],
+      [10.768, 106.696],
+      [10.765, 106.691],
+      [10.766, 106.687],
+    ],
+  },
+  {
+    code: '07901W002',
+    name: 'Bưu cục Phường Bến Nghé',
+    parentHubCode: '003079B001',
+    provinceCode: 79,
+    provinceName: 'Thành phố Hồ Chí Minh',
+    district: 'Quận 1',
+    ward: 'Phường Bến Nghé',
+    addressLine: '45 Lê Lợi, Phường Bến Nghé, Quận 1',
+    phone: '0283811002',
+    contactName: 'Trưởng Bưu cục Bến Nghé',
+    latitude: 10.7758,
+    longitude: 106.7012,
+    boundaryPolygon: [
+      [10.772, 106.698],
+      [10.785, 106.701],
+      [10.789, 106.707],
+      [10.778, 106.712],
+      [10.770, 106.706],
+      [10.772, 106.698],
+    ],
+  },
+  {
+    code: '07903W001',
+    name: 'Bưu cục Phường 13 - Quận 3',
+    parentHubCode: '003079B001',
+    provinceCode: 79,
+    provinceName: 'Thành phố Hồ Chí Minh',
+    district: 'Quận 3',
+    ward: 'Phường 13',
+    addressLine: '78 Lê Văn Sỹ, Phường 13, Quận 3',
+    phone: '0283811003',
+    contactName: 'Trưởng Bưu cục Quận 3',
+    latitude: 10.7891,
+    longitude: 106.6775,
+    boundaryPolygon: [
+      [10.782, 106.671],
+      [10.794, 106.673],
+      [10.795, 106.684],
+      [10.784, 106.683],
+      [10.782, 106.671],
+    ],
+  },
+  {
+    code: '07905W001',
+    name: 'Bưu cục Phường 2 - Quận 5',
+    parentHubCode: '003079B001',
+    provinceCode: 79,
+    provinceName: 'Thành phố Hồ Chí Minh',
+    district: 'Quận 5',
+    ward: 'Phường 2',
+    addressLine: '88 Trần Hưng Đạo, Phường 2, Quận 5',
+    phone: '0283811004',
+    contactName: 'Trưởng Bưu cục Quận 5',
+    latitude: 10.7538,
+    longitude: 106.6782,
+    boundaryPolygon: [
+      [10.746, 106.672],
+      [10.759, 106.673],
+      [10.760, 106.685],
+      [10.748, 106.684],
+      [10.746, 106.672],
+    ],
+  },
+  {
+    code: '07912W001',
+    name: 'Bưu cục Phường An Phú Đông - Quận 12',
+    parentHubCode: '003079B001',
+    provinceCode: 79,
+    provinceName: 'Thành phố Hồ Chí Minh',
+    district: 'Quận 12',
+    ward: 'Phường An Phú Đông',
+    addressLine: '1013A Hà Huy Giáp, Phường An Phú Đông, Quận 12',
+    phone: '0283811005',
+    contactName: 'Trưởng Bưu cục An Phú Đông',
+    latitude: 10.867,
+    longitude: 106.696,
+    boundaryPolygon: [
+      [10.850, 106.683],
+      [10.880, 106.686],
+      [10.885, 106.713],
+      [10.857, 106.715],
+      [10.850, 106.683],
+    ],
+  },
+  {
+    code: '07913W001',
+    name: 'Bưu cục Phường 13 - Tân Bình',
+    parentHubCode: '003079B001',
+    provinceCode: 79,
+    provinceName: 'Thành phố Hồ Chí Minh',
+    district: 'Quận Tân Bình',
+    ward: 'Phường 13',
+    addressLine: '789 Cộng Hòa, Phường 13, Quận Tân Bình',
+    phone: '0283811006',
+    contactName: 'Trưởng Bưu cục Tân Bình',
+    latitude: 10.8035,
+    longitude: 106.6436,
+    boundaryPolygon: [
+      [10.794, 106.633],
+      [10.815, 106.636],
+      [10.813, 106.655],
+      [10.796, 106.652],
+      [10.794, 106.633],
+    ],
+  },
+
+  // Hà Nội
+  {
+    code: '00101W001',
+    name: 'Bưu cục Phường Hàng Bài - Hoàn Kiếm',
+    parentHubCode: '001001B001',
+    provinceCode: 1,
+    provinceName: 'Thành phố Hà Nội',
+    district: 'Quận Hoàn Kiếm',
+    ward: 'Phường Hàng Bài',
+    addressLine: '15 Phố Huế, Phường Hàng Bài, Quận Hoàn Kiếm',
+    phone: '0243811001',
+    contactName: 'Trưởng Bưu cục Hàng Bài',
+    latitude: 21.0185,
+    longitude: 105.8524,
+    boundaryPolygon: [
+      [21.012, 105.847],
+      [21.024, 105.849],
+      [21.025, 105.858],
+      [21.013, 105.857],
+      [21.012, 105.847],
+    ],
+  },
+  {
+    code: '00102W001',
+    name: 'Bưu cục Phường Kim Mã - Ba Đình',
+    parentHubCode: '001001B001',
+    provinceCode: 1,
+    provinceName: 'Thành phố Hà Nội',
+    district: 'Quận Ba Đình',
+    ward: 'Phường Kim Mã',
+    addressLine: '56 Kim Mã, Phường Kim Mã, Quận Ba Đình',
+    phone: '0243811002',
+    contactName: 'Trưởng Bưu cục Kim Mã',
+    latitude: 21.0318,
+    longitude: 105.8247,
+    boundaryPolygon: [
+      [21.025, 105.817],
+      [21.037, 105.819],
+      [21.038, 105.831],
+      [21.026, 105.829],
+      [21.025, 105.817],
+    ],
+  },
+  {
+    code: '00103W001',
+    name: 'Bưu cục Phường Dịch Vọng - Cầu Giấy',
+    parentHubCode: '001001B001',
+    provinceCode: 1,
+    provinceName: 'Thành phố Hà Nội',
+    district: 'Quận Cầu Giấy',
+    ward: 'Phường Dịch Vọng',
+    addressLine: '234 Cầu Giấy, Phường Dịch Vọng, Quận Cầu Giấy',
+    phone: '0243811003',
+    contactName: 'Trưởng Bưu cục Cầu Giấy',
+    latitude: 21.0336,
+    longitude: 105.7958,
+    boundaryPolygon: [
+      [21.025, 105.787],
+      [21.041, 105.789],
+      [21.042, 105.804],
+      [21.027, 105.803],
+      [21.025, 105.787],
+    ],
+  },
+  {
+    code: '00104W001',
+    name: 'Bưu cục Phường Trung Liệt - Đống Đa',
+    parentHubCode: '001001B001',
+    provinceCode: 1,
+    provinceName: 'Thành phố Hà Nội',
+    district: 'Quận Đống Đa',
+    ward: 'Phường Trung Liệt',
+    addressLine: '88 Thái Hà, Phường Trung Liệt, Quận Đống Đa',
+    phone: '0243811004',
+    contactName: 'Trưởng Bưu cục Đống Đa',
+    latitude: 21.0135,
+    longitude: 105.8194,
+    boundaryPolygon: [
+      [21.007, 105.811],
+      [21.019, 105.813],
+      [21.020, 105.826],
+      [21.008, 105.825],
+      [21.007, 105.811],
+    ],
+  },
+
+  // Đà Nẵng
+  {
+    code: '04801W001',
+    name: 'Bưu cục Phường Thạch Thang - Hải Châu',
+    parentHubCode: '002048B001',
+    provinceCode: 48,
+    provinceName: 'Thành phố Đà Nẵng',
+    district: 'Quận Hải Châu',
+    ward: 'Phường Thạch Thang',
+    addressLine: '12 Bạch Đằng, Phường Thạch Thang, Quận Hải Châu',
+    phone: '0236381101',
+    contactName: 'Trưởng Bưu cục Hải Châu',
+    latitude: 16.0742,
+    longitude: 108.2239,
+    boundaryPolygon: [
+      [16.067, 108.217],
+      [16.081, 108.219],
+      [16.082, 108.229],
+      [16.068, 108.228],
+      [16.067, 108.217],
+    ],
+  },
+];
+
+/**
+ * Ray Casting Algorithm (Point-in-Polygon)
+ * Determines whether a GPS coordinate is strictly inside a closed boundary polygon.
+ */
+export function isPointInPolygon(
+  point: { latitude: number; longitude: number },
+  polygon: Array<[number, number]>,
+): boolean {
+  if (!polygon || polygon.length < 3) return false;
+  const x = point.latitude;
+  const y = point.longitude;
+  let inside = false;
+
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i][0];
+    const yi = polygon[i][1];
+    const xj = polygon[j][0];
+    const yj = polygon[j][1];
+
+    const intersect =
+      yi > y !== yj > y &&
+      x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+
+    if (intersect) {
+      inside = !inside;
+    }
+  }
+
+  return inside;
+}
+
+export function calculateHaversineDistanceKm(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
+  const R = 6371; // Earth radius in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+export function findResponsibleHubByCoordinates(
+  lat: number | null | undefined,
+  lng: number | null | undefined,
+  fallbackProvinceCodenameOrName?: string | null,
+): { hubCode: string; hubName: string; level: number; parentHubCode?: string } {
+  if (
+    typeof lat === 'number' &&
+    typeof lng === 'number' &&
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180
+  ) {
+    const point = { latitude: lat, longitude: lng };
+
+    // 1. Check exact match with Ward Boundary Polygon (Ray Casting)
+    for (const wardHub of SAMPLE_WARD_HUBS) {
+      if (wardHub.boundaryPolygon && isPointInPolygon(point, wardHub.boundaryPolygon)) {
+        return {
+          hubCode: wardHub.code,
+          hubName: wardHub.name,
+          level: 3,
+          parentHubCode: wardHub.parentHubCode,
+        };
+      }
+    }
+
+    // 2. Secondary fallback: nearest Ward Hub within small distance
+    let closestWardHub: WardHubSeed | null = null;
+    let minDistance = Infinity;
+
+    for (const wardHub of SAMPLE_WARD_HUBS) {
+      const dist = calculateHaversineDistanceKm(lat, lng, wardHub.latitude, wardHub.longitude);
+      if (dist <= 3.5 && dist < minDistance) {
+        minDistance = dist;
+        closestWardHub = wardHub;
+      }
+    }
+
+    if (closestWardHub) {
+      return {
+        hubCode: closestWardHub.code,
+        hubName: closestWardHub.name,
+        level: 3,
+        parentHubCode: closestWardHub.parentHubCode,
+      };
+    }
+  }
+
+  // 3. Fallback to Provincial Hub by codename/name
+  if (fallbackProvinceCodenameOrName) {
+    const norm = fallbackProvinceCodenameOrName
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/^(thanh pho|tinh|tp)\s+/i, '')
+      .trim();
+
+    if (norm.includes('ho chi minh') || norm.includes('sai gon') || norm.includes('tphcm')) {
+      return { hubCode: '003079B001', hubName: 'Bưu cục Hồ Chí Minh', level: 2, parentHubCode: '003S001' };
+    }
+    if (norm.includes('ha noi') || norm.includes('hanoi')) {
+      return { hubCode: '001001B001', hubName: 'Bưu cục Hà Nội', level: 2, parentHubCode: '001N001' };
+    }
+    if (norm.includes('da nang') || norm.includes('danang')) {
+      return { hubCode: '002048B001', hubName: 'Bưu cục Đà Nẵng', level: 2, parentHubCode: '002C001' };
+    }
+  }
+
+  // 4. Fallback to Region / Default Hub
+  return { hubCode: '003079B001', hubName: 'Bưu cục Hồ Chí Minh', level: 2, parentHubCode: '003S001' };
+}
+
 export const REGIONAL_HUBS: Record<VietnamRegion, RegionalHubSeed> = {
   NORTH: {
     code: '001N001',
@@ -90,6 +500,8 @@ export const REGIONAL_HUBS: Record<VietnamRegion, RegionalHubSeed> = {
     addressLine: '12 Tràng Tiền',
     phone: '0241000001',
     contactName: 'Điều phối miền Bắc',
+    latitude: 21.0253,
+    longitude: 105.8572,
   },
   CENTRAL: {
     code: '002C001',
@@ -103,6 +515,8 @@ export const REGIONAL_HUBS: Record<VietnamRegion, RegionalHubSeed> = {
     addressLine: '08 Bạch Đằng',
     phone: '0236100001',
     contactName: 'Điều phối miền Trung',
+    latitude: 16.0718,
+    longitude: 108.2241,
   },
   SOUTH: {
     code: '003S001',
@@ -116,8 +530,255 @@ export const REGIONAL_HUBS: Record<VietnamRegion, RegionalHubSeed> = {
     addressLine: '02 Công xã Paris',
     phone: '0281000001',
     contactName: 'Điều phối miền Nam',
+    latitude: 10.7797,
+    longitude: 106.6991,
   },
 };
+
+export const PROVINCE_COORDINATES: Record<string, { latitude: number; longitude: number }> = {
+  ha_noi: { latitude: 21.028511, longitude: 105.854444 },
+  cao_bang: { latitude: 22.6657, longitude: 106.2577 },
+  tuyen_quang: { latitude: 21.8233, longitude: 105.2181 },
+  dien_bien: { latitude: 21.386, longitude: 103.023 },
+  lai_chau: { latitude: 22.3965, longitude: 103.4682 },
+  son_la: { latitude: 21.3283, longitude: 103.9148 },
+  lao_cai: { latitude: 22.4856, longitude: 103.9707 },
+  thai_nguyen: { latitude: 21.5942, longitude: 105.8482 },
+  lang_son: { latitude: 21.8537, longitude: 106.7615 },
+  quang_ninh: { latitude: 20.9505, longitude: 107.0734 },
+  bac_ninh: { latitude: 21.1861, longitude: 106.0763 },
+  phu_tho: { latitude: 21.3227, longitude: 105.2280 },
+  hai_phong: { latitude: 20.8449, longitude: 106.6881 },
+  hung_yen: { latitude: 20.6464, longitude: 106.0511 },
+  ninh_binh: { latitude: 20.2506, longitude: 105.9745 },
+  thanh_hoa: { latitude: 19.8067, longitude: 105.7852 },
+  nghe_an: { latitude: 18.6734, longitude: 105.6813 },
+  ha_tinh: { latitude: 18.3435, longitude: 105.9058 },
+  quang_tri: { latitude: 16.8163, longitude: 107.1006 },
+  hue: { latitude: 16.4637, longitude: 107.5909 },
+  da_nang: { latitude: 16.067780, longitude: 108.220830 },
+  quang_ngai: { latitude: 15.1205, longitude: 108.7923 },
+  gia_lai: { latitude: 13.9833, longitude: 108.0000 },
+  khanh_hoa: { latitude: 12.2388, longitude: 109.1967 },
+  dak_lak: { latitude: 12.6667, longitude: 108.0500 },
+  lam_dong: { latitude: 11.9404, longitude: 108.4583 },
+  dong_nai: { latitude: 10.9574, longitude: 106.8427 },
+  ho_chi_minh: { latitude: 10.776889, longitude: 106.700806 },
+  tay_ninh: { latitude: 11.3101, longitude: 106.0983 },
+  dong_thap: { latitude: 10.4577, longitude: 105.6331 },
+  vinh_long: { latitude: 10.2537, longitude: 105.9722 },
+  an_giang: { latitude: 10.3759, longitude: 105.4185 },
+  can_tho: { latitude: 10.0452, longitude: 105.7469 },
+  ca_mau: { latitude: 9.1769, longitude: 105.1524 },
+};
+
+export function resolveProvinceCoordinates(codename?: string | null): { latitude: number; longitude: number } {
+  if (codename && PROVINCE_COORDINATES[codename]) {
+    return PROVINCE_COORDINATES[codename];
+  }
+  return { latitude: 10.776889, longitude: 106.700806 };
+}
+
+export const NATIONAL_BOUNDARY_POLYGON: Array<[number, number]> = [
+  [23.3927, 105.3238], [23.2840, 105.7600], [23.0600, 106.1200], [22.8800, 106.5500],
+  [22.4500, 106.7200], [22.1200, 106.7800], [21.8500, 107.0300], [21.5400, 107.6200],
+  [21.5300, 107.9700], [21.4880, 108.0650], [20.9400, 107.2500], [20.8000, 106.9000],
+  [20.5500, 106.5800], [20.2500, 106.3500], [20.0000, 106.0500], [19.7800, 105.9000],
+  [18.8200, 105.7500], [18.3500, 105.9500], [17.8500, 106.5000], [17.4800, 106.6300],
+  [17.0000, 107.1200], [16.7500, 107.2500], [16.3200, 107.9000], [16.1200, 108.2800],
+  [15.8800, 108.3800], [15.4200, 108.7500], [14.9500, 108.9800], [14.0500, 109.2800],
+  [13.2500, 109.3500], [12.9200, 109.4200], [12.4500, 109.2800], [11.9000, 109.1800],
+  [11.5500, 109.0500], [11.1500, 108.7800], [10.9300, 108.2800], [10.6800, 107.7500],
+  [10.3500, 107.0800], [10.4000, 106.8500], [10.2200, 106.7500], [9.9500, 106.6000],
+  [9.6500, 106.4500], [9.3500, 105.9500], [9.1500, 105.6500], [8.6000, 105.2000],
+  [8.5800, 104.7500], [8.9500, 104.8200], [9.4500, 104.9000], [9.8500, 105.0200],
+  [10.2000, 104.7500], [10.3800, 104.4800], [10.5500, 104.8500], [10.7500, 105.1000],
+  [10.9200, 105.3500], [10.9800, 105.8000], [11.0800, 106.0500], [11.6000, 105.9500],
+  [11.8500, 106.4000], [12.0500, 107.0500], [12.3500, 107.4500], [12.7500, 107.6000],
+  [13.4000, 107.5000], [14.1500, 107.5500], [14.7000, 107.5500], [15.5500, 107.4500],
+  [16.1500, 107.2500], [16.6500, 106.6500], [17.4500, 106.0500], [18.3800, 105.2000],
+  [19.2500, 104.2500], [20.2500, 104.6000], [20.9500, 103.5500], [21.6500, 103.0000],
+  [22.4000, 102.1500], [22.6500, 102.8000], [22.7500, 103.4500], [22.6000, 103.9500],
+  [22.9500, 104.6500], [23.3927, 105.3238],
+];
+
+export const REGIONAL_BOUNDARY_POLYGONS: Record<VietnamRegion, Array<[number, number]>> = {
+  NORTH: [
+    [23.3927, 105.3238], [23.0600, 106.1200], [22.4500, 106.7200], [21.8500, 107.0300],
+    [21.5400, 107.6200], [21.4880, 108.0650], [20.9400, 107.2500], [20.8000, 106.9000],
+    [20.2500, 106.3500], [20.0000, 106.0500], [20.1500, 105.6500], [20.5500, 104.8500],
+    [20.9500, 103.5500], [22.4000, 102.1500], [22.7500, 103.4500], [22.6000, 103.9500],
+    [22.9500, 104.6500], [23.3927, 105.3238],
+  ],
+  CENTRAL: [
+    [20.0000, 106.0500], [19.7800, 105.9000], [18.8200, 105.7500], [18.3500, 105.9500],
+    [17.4800, 106.6300], [16.7500, 107.2500], [16.1200, 108.2800], [15.4200, 108.7500],
+    [14.0500, 109.2800], [12.9200, 109.4200], [12.4500, 109.2800], [11.5500, 109.0500],
+    [10.9300, 108.2800], [11.3500, 107.6500], [11.9500, 107.2500], [12.7500, 107.6000],
+    [13.4000, 107.5000], [14.7000, 107.5500], [16.1500, 107.2500], [17.4500, 106.0500],
+    [18.3800, 105.2000], [19.2500, 104.2500], [20.2500, 104.6000], [20.1500, 105.6500],
+    [20.0000, 106.0500],
+  ],
+  SOUTH: [
+    [10.9300, 108.2800], [10.6800, 107.7500], [10.3500, 107.0800], [10.4000, 106.8500],
+    [10.2200, 106.7500], [9.9500, 106.6000], [9.6500, 106.4500], [9.3500, 105.9500],
+    [9.1500, 105.6500], [8.5800, 104.7500], [9.4500, 104.9000], [9.8500, 105.0200],
+    [10.3800, 104.4800], [10.7500, 105.1000], [10.9200, 105.3500], [11.0800, 106.0500],
+    [11.8500, 106.4000], [11.9500, 107.2500], [11.3500, 107.6500], [10.9300, 108.2800],
+  ],
+};
+
+export const PROVINCE_BOUNDARY_POLYGONS: Record<string, Array<[number, number]>> = {
+  ha_noi: [
+    [21.3500, 105.8200], [21.3200, 105.9500], [21.1500, 106.0200], [20.9500, 105.9800],
+    [20.7500, 105.8800], [20.6500, 105.7500], [20.8500, 105.5500], [21.0500, 105.4200],
+    [21.2200, 105.4500], [21.3000, 105.6500], [21.3500, 105.8200],
+  ],
+  ho_chi_minh: [
+    [11.1500, 106.5000], [11.0800, 106.6500], [10.9500, 106.7500], [10.8800, 106.8500],
+    [10.7500, 106.8200], [10.5500, 106.9200], [10.3500, 106.8500], [10.4500, 106.6500],
+    [10.6500, 106.5500], [10.8500, 106.4800], [11.1500, 106.5000],
+  ],
+  dong_nai: [
+    [11.4500, 107.3500], [11.2000, 107.5500], [10.8500, 107.3500], [10.6500, 106.9500],
+    [10.8500, 106.8200], [11.1500, 106.9500], [11.4500, 107.3500],
+  ],
+  da_nang: [
+    [16.2200, 108.1200], [16.1500, 108.3200], [16.0500, 108.2800], [15.9200, 108.2500],
+    [15.9000, 108.0500], [16.0500, 107.8500], [16.2000, 107.9500], [16.2200, 108.1200],
+  ],
+  hai_phong: [
+    [21.0500, 106.6500], [20.9500, 106.9500], [20.7500, 106.9000], [20.6200, 106.6500],
+    [20.7200, 106.4800], [20.9000, 106.5200], [21.0500, 106.6500],
+  ],
+  can_tho: [
+    [10.3200, 105.5500], [10.2000, 105.7500], [10.0500, 105.8500], [9.8500, 105.7500],
+    [9.9500, 105.4500], [10.1800, 105.3500], [10.3200, 105.5500],
+  ],
+  quang_ninh: [
+    [21.5800, 107.5500], [21.5300, 107.9700], [21.1500, 107.8500], [20.9500, 107.4500],
+    [20.8500, 107.0500], [21.0000, 106.7500], [21.2500, 106.8500], [21.5800, 107.5500],
+  ],
+  khanh_hoa: [
+    [12.8500, 109.2000], [12.6500, 109.3000], [12.2500, 109.2500], [11.8500, 109.1800],
+    [12.0500, 108.8500], [12.3500, 108.8000], [12.8500, 109.2000],
+  ],
+  hue: [
+    [16.7500, 107.2500], [16.5500, 107.6500], [16.3200, 107.9000], [16.0500, 107.7500],
+    [16.1500, 107.2500], [16.5000, 107.1500], [16.7500, 107.2500],
+  ],
+  thanh_hoa: [
+    [20.4500, 105.1500], [20.2500, 104.6000], [19.7500, 105.1500], [19.3500, 105.7500],
+    [19.7800, 105.9000], [20.0500, 105.9500], [20.1500, 105.6500], [20.4500, 105.1500],
+  ],
+  nghe_an: [
+    [19.7500, 105.1500], [19.2500, 105.7500], [18.8200, 105.7500], [18.6000, 105.6500],
+    [18.5500, 105.2000], [18.9500, 104.5500], [19.2500, 104.2500], [19.7500, 105.1500],
+  ],
+  dak_lak: [
+    [13.4000, 108.2500], [13.1500, 108.7500], [12.4500, 108.4500], [12.3500, 107.8500],
+    [12.7500, 107.6000], [13.2000, 107.9000], [13.4000, 108.2500],
+  ],
+  lam_dong: [
+    [12.4500, 108.4500], [12.0500, 108.6500], [11.5500, 108.3500], [11.3500, 107.6500],
+    [11.7500, 107.4500], [12.1500, 108.1500], [12.4500, 108.4500],
+  ],
+  ca_mau: [
+    [9.4500, 104.9000], [9.3500, 105.3500], [9.1500, 105.4500], [8.6000, 105.2000],
+    [8.5800, 104.7500], [8.9500, 104.8200], [9.4500, 104.9000],
+  ],
+  an_giang: [
+    [10.9200, 105.1500], [10.7500, 105.3500], [10.3500, 105.5500], [10.1500, 105.1500],
+    [10.5500, 104.8500], [10.7500, 105.1000], [10.9200, 105.1500],
+  ],
+  dong_thap: [
+    [10.9200, 105.3500], [10.8500, 105.7500], [10.5500, 105.8500], [10.2500, 105.7500],
+    [10.3500, 105.4500], [10.7500, 105.3500], [10.9200, 105.3500],
+  ],
+  vinh_long: [
+    [10.3200, 105.9500], [10.2000, 106.1500], [9.9500, 106.0500], [10.0500, 105.8200],
+    [10.2500, 105.7800], [10.3200, 105.9500],
+  ],
+  tay_ninh: [
+    [11.7500, 106.1000], [11.6000, 106.4000], [11.3500, 106.3500], [11.0800, 106.2500],
+    [11.0500, 105.9500], [11.4500, 105.8500], [11.7500, 106.1000],
+  ],
+  bac_ninh: [
+    [21.2800, 106.0500], [21.2200, 106.2500], [21.0500, 106.2200], [21.0800, 106.0200],
+    [21.1500, 105.9500], [21.2800, 106.0500],
+  ],
+  hung_yen: [
+    [20.9800, 105.9500], [20.9500, 106.1500], [20.7500, 106.2000], [20.6000, 106.0500],
+    [20.7500, 105.9200], [20.9800, 105.9500],
+  ],
+  ninh_binh: [
+    [20.3500, 105.8500], [20.3200, 106.0500], [20.0000, 106.0500], [19.9800, 105.8500],
+    [20.2500, 105.7000], [20.3500, 105.8500],
+  ],
+  thai_nguyen: [
+    [21.9500, 105.7500], [21.7500, 106.0500], [21.4500, 106.0000], [21.3500, 105.8200],
+    [21.4500, 105.6500], [21.9500, 105.7500],
+  ],
+  phu_tho: [
+    [21.6500, 105.0500], [21.4500, 105.4000], [21.1500, 105.3500], [21.0500, 105.0500],
+    [21.3500, 104.8500], [21.6500, 105.0500],
+  ],
+  lao_cai: [
+    [22.8500, 103.8500], [22.7500, 104.3500], [22.3500, 104.4500], [22.0500, 104.0500],
+    [22.3500, 103.7500], [22.8500, 103.8500],
+  ],
+  son_la: [
+    [21.8500, 103.7500], [21.5500, 104.3500], [20.8500, 104.8500], [20.5500, 104.5500],
+    [20.9500, 103.5500], [21.4500, 103.4500], [21.8500, 103.7500],
+  ],
+  dien_bien: [
+    [22.4000, 102.1500], [22.2500, 102.8500], [21.8500, 103.2500], [21.2500, 103.3500],
+    [21.0500, 102.9500], [21.7500, 102.6500], [22.4000, 102.1500],
+  ],
+  lai_chau: [
+    [22.7500, 103.4500], [22.5500, 103.8500], [22.0500, 103.6500], [21.9500, 103.1500],
+    [22.4500, 102.5500], [22.7500, 103.4500],
+  ],
+  cao_bang: [
+    [23.0600, 106.1200], [22.8800, 106.5500], [22.4500, 106.7200], [22.3500, 106.1500],
+    [22.6500, 105.7500], [23.0600, 106.1200],
+  ],
+  lang_son: [
+    [22.4500, 106.7200], [22.1200, 107.1500], [21.7500, 107.3500], [21.4500, 106.8500],
+    [21.6500, 106.3500], [22.0500, 106.3500], [22.4500, 106.7200],
+  ],
+  tuyen_quang: [
+    [22.5500, 105.3500], [22.2500, 105.5500], [21.7500, 105.4500], [21.6500, 105.0500],
+    [22.1500, 104.9500], [22.5500, 105.3500],
+  ],
+  ha_tinh: [
+    [18.6000, 105.6500], [18.3500, 105.9500], [18.0500, 106.4000], [17.9500, 106.0500],
+    [18.3800, 105.2000], [18.5500, 105.4500], [18.6000, 105.6500],
+  ],
+  quang_tri: [
+    [17.1500, 107.0500], [16.8500, 107.2500], [16.6500, 107.3500], [16.4500, 106.8500],
+    [16.6500, 106.6500], [16.9500, 106.7500], [17.1500, 107.0500],
+  ],
+  quang_ngai: [
+    [15.4200, 108.7500], [15.0500, 108.9500], [14.7500, 109.0500], [14.6500, 108.6500],
+    [14.9500, 108.3500], [15.4200, 108.7500],
+  ],
+  gia_lai: [
+    [14.5500, 108.1500], [14.2500, 108.7500], [13.6500, 108.7500], [13.3500, 108.2500],
+    [13.4000, 107.5000], [13.9500, 107.4500], [14.5500, 108.1500],
+  ],
+};
+
+export function resolveProvinceBoundary(codename?: string | null): Array<[number, number]> | null {
+  if (codename && PROVINCE_BOUNDARY_POLYGONS[codename]) {
+    return PROVINCE_BOUNDARY_POLYGONS[codename];
+  }
+  return null;
+}
+
+export function resolveRegionalBoundary(region: VietnamRegion): Array<[number, number]> | null {
+  return REGIONAL_BOUNDARY_POLYGONS[region] ?? null;
+}
 
 export function resolveProvinceRegion(codename: string): VietnamRegion {
   if (NORTH_PROVINCES.has(codename)) {
@@ -186,44 +847,7 @@ export function buildAddressLine(input: {
 }
 
 export async function loadVietnamProvinces(): Promise<VietnamProvinceSeed[]> {
-  try {
-    const response = await fetch(VIETNAM_PROVINCES_API_URL, {
-      headers: {
-        Accept: 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Vietnam province API returned ${response.status}.`);
-    }
-
-    const payload = (await response.json()) as unknown;
-    if (!Array.isArray(payload)) {
-      throw new Error('Vietnam province API returned an invalid payload.');
-    }
-
-    const provinces = payload
-      .map(mapProvince)
-      .filter((province): province is VietnamProvinceSeed => Boolean(province))
-      .filter(
-        (province) =>
-          NORTH_PROVINCES.has(province.codename) ||
-          CENTRAL_PROVINCES.has(province.codename) ||
-          SOUTH_PROVINCES.has(province.codename),
-      )
-      .sort((left, right) => left.code - right.code);
-
-    assertProvinceCoverage(provinces);
-
-    return provinces;
-  } catch (error) {
-    console.warn(
-      `Cannot load provinces.open-api.vn data, using fallback province list: ${
-        error instanceof Error ? error.message : String(error)
-      }`,
-    );
-    return FALLBACK_PROVINCES;
-  }
+  return FALLBACK_PROVINCES;
 }
 
 function mapProvince(value: unknown): VietnamProvinceSeed | null {

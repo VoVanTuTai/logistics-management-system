@@ -11,6 +11,7 @@ export const queryKeys = {
   masterdataNdrReasons: ['masterdata', 'ndr-reasons'],
   masterdataConfigs: ['masterdata', 'configs'],
   merchantProfiles: ['masterdata', 'merchant-profiles'],
+  courierAreaAssignments: ['masterdata', 'courier-area-assignments'],
   adminUsers: ['admin', 'users'],
   adminAuditLogs: ['admin', 'audit-logs'],
 } as const;

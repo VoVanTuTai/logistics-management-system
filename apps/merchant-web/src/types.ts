@@ -156,6 +156,8 @@ export interface CreateShipmentForm {
   senderAddressDetail: string;
   senderHubCode: string;
   senderAddress: string;
+  senderLatitude?: number;
+  senderLongitude?: number;
   receiverName: string;
   receiverPhone: string;
   receiverProvince: string;
@@ -164,6 +166,8 @@ export interface CreateShipmentForm {
   receiverHubCode: string;
   receiverAddress: string;
   receiverRegion: string;
+  receiverLatitude?: number;
+  receiverLongitude?: number;
   itemType: string;
   weightKg: string;
   lengthCm: string;
@@ -180,6 +184,15 @@ export interface ShipmentDraft {
   name: string;
   quoteFee: number;
   form: CreateShipmentForm;
+}
+
+export interface HubLocation {
+  province: string;
+  ward: string;
+  hubCode: string;
+  hubName: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface PricingBreakdownItem {
@@ -219,6 +232,8 @@ export interface MerchantProfile {
   defaultPickupProvince: string;
   defaultPickupAddressDetail: string;
   defaultPickupAddress: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export const DEFAULT_CREATE_FORM: CreateShipmentForm = {

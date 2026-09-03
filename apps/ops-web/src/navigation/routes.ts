@@ -3,6 +3,7 @@ export const routePaths = {
   appRoot: '/app',
   dashboard: '/app/dashboard',
   masterOpsCommandCenter: '/app/hq-ops',
+  masterdataHubNetworkMap: '/app/network-map',
   downloadCenter: '/app/download-center',
   analyticsDashboard: '/app/analytics',
   comingSoonDebtReport: '/app/coming-soon/bao-cao-cong-no',
@@ -146,6 +147,7 @@ export const routePaths = {
 
   dashboardLeaf: 'dashboard',
   masterOpsCommandCenterLeaf: 'hq-ops',
+  masterdataHubNetworkMapLeaf: 'network-map',
   downloadCenterLeaf: 'download-center',
   analyticsDashboardLeaf: 'analytics',
   comingSoonDebtReportLeaf: 'coming-soon/bao-cao-cong-no',

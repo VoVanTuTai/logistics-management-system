@@ -14,8 +14,15 @@ interface MasterdataBaseDto {
 export interface HubDto extends MasterdataBaseDto {
   code: string;
   name: string;
+  level?: number;
+  parentCode?: string | null;
   zoneCode: string | null;
   address: string | null;
+  district?: string | null;
+  ward?: string | null;
+  coverageRadiusKm?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
   isActive: boolean;
 }
 
@@ -103,6 +110,9 @@ export interface CourierAreaAssignmentDto {
   province: string;
   district: string;
   ward: string;
+  zoneName?: string | null;
+  colorHex?: string | null;
+  boundaryPolygon?: Array<[number, number]> | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -123,6 +133,9 @@ export interface CourierAreaAssignmentWriteInput {
   province: string;
   district: string;
   ward: string;
+  zoneName?: string | null;
+  colorHex?: string | null;
+  boundaryPolygon?: Array<[number, number]> | null;
   isActive?: boolean;
 }
 

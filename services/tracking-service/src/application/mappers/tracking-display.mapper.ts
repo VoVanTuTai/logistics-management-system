@@ -301,27 +301,40 @@ export function extractTimelineNote(event: TrackingEventEnvelope): string | null
   if (event.event_type === 'task.assigned') {
     const taskType = readTaskType(event.data);
     const taskNote = readNestedString(event.data, ['task', 'note']);
-    if (taskType === 'DELIVERY') {
-      const assignments = readNestedValue(event.data, ['task', 'assignments']);
-      let courierId: string | null = null;
-      if (Array.isArray(assignments) && assignments.length > 0) {
-        const activeAssignment = assignments.find((a: any) => !a.unassignedAt) || assignments[assignments.length - 1];
-        if (activeAssignment && typeof activeAssignment === 'object') {
-          courierId = (activeAssignment as any).courierId || null;
-        }
+    const actorName =
+      readNestedString(event.data, ['actor', 'name']) ??
+      readNestedString(event.data, ['actor', 'id']) ??
+      (typeof event.actor === 'string' ? event.actor.trim() : typeof (event.actor as any)?.name === 'string' ? (event.actor as any).name : null);
+    const isSystem =
+      !actorName ||
+      actorName === 'SYSTEM' ||
+      actorName === 'SYSTEM_AUTO_DISPATCH' ||
+      (taskNote && taskNote.toLowerCase().includes('tự động'));
+
+    const dispatchTag = isSystem
+      ? '🤖 [Hệ thống tự động điều phối]'
+      : `👤 [Điều hành viên ${actorName} điều phối]`;
+
+    const assignments = readNestedValue(event.data, ['task', 'assignments']);
+    let courierId: string | null = null;
+    if (Array.isArray(assignments) && assignments.length > 0) {
+      const activeAssignment = assignments.find((a: any) => !a.unassignedAt) || assignments[assignments.length - 1];
+      if (activeAssignment && typeof activeAssignment === 'object') {
+        courierId = (activeAssignment as any).courierId || null;
       }
-      const hubCode = readNestedString(event.data, ['location', 'locationCode'])
-        ?? readNestedString(event.data, ['location', 'hubCode'])
-        ?? readNestedString(event.data, ['task', 'hubCode'])
-        ?? readNestedString(event.data, ['task', 'hub_code'])
-        ?? null;
-      let infoParts: string[] = [];
-      if (courierId) infoParts.push(`Courier: ${courierId}`);
-      if (hubCode) infoParts.push(`Hub: ${hubCode}`);
-      const infoText = infoParts.join(' - ');
-      return joinTimelineNoteParts([infoText || null, taskNote]);
     }
-    return taskNote;
+    const hubCode = readNestedString(event.data, ['location', 'locationCode'])
+      ?? readNestedString(event.data, ['location', 'hubCode'])
+      ?? readNestedString(event.data, ['task', 'hubCode'])
+      ?? readNestedString(event.data, ['task', 'hub_code'])
+      ?? null;
+
+    let infoParts: string[] = [dispatchTag];
+    if (courierId) infoParts.push(`Shipper: ${courierId}`);
+    if (hubCode) infoParts.push(`Hub: ${hubCode}`);
+    const infoText = infoParts.join(' - ');
+
+    return joinTimelineNoteParts([infoText, taskNote]);
   }
 
   return null;

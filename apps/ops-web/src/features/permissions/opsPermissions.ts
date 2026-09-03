@@ -1,4 +1,4 @@
-export type OpsActor = 'HQ_OPS' | 'REGIONAL_OPS' | 'HUB_OPS';
+export type OpsActor = 'HQ_OPS' | 'REGIONAL_OPS' | 'PROVINCIAL_OPS' | 'HUB_OPS';
 
 export type OpsFeatureKey =
   | 'nav.hq-command-center'       // Macro Command Center (/app/hq-ops)
@@ -29,10 +29,21 @@ const OPS_PERMISSION_MATRIX: Record<OpsActor, Record<OpsFeatureKey, boolean>> = 
     'nav.linehaul-fleet-control': true,
     'nav.sla-overdue-radar': true,
     'nav.operations-platform': true,
-    'nav.branch-business': true,
+    'nav.branch-business': false,
+    'nav.barcode-scan-hub': false,
+    'nav.local-counter-create': false,
+    'action.fast-track-return': true,
+  },
+  PROVINCIAL_OPS: {
+    'nav.hq-command-center': false,
+    'nav.regional-flow-monitor': false,
+    'nav.linehaul-fleet-control': false,
+    'nav.sla-overdue-radar': false,
+    'nav.operations-platform': true,
+    'nav.branch-business': true, // Đảm nhiệm phường sở tại
     'nav.barcode-scan-hub': true,
     'nav.local-counter-create': true,
-    'action.fast-track-return': true,
+    'action.fast-track-return': true, // Có quyền duyệt trả hàng cấp tỉnh
   },
   HUB_OPS: {
     'nav.hq-command-center': false,
@@ -50,6 +61,7 @@ const OPS_PERMISSION_MATRIX: Record<OpsActor, Record<OpsFeatureKey, boolean>> = 
 export function resolveOpsActor(
   username?: string | null,
   roles: string[] = [],
+  hubCodes: string[] = [],
 ): OpsActor {
   const normUsername = (username ?? '').trim();
   if (
@@ -62,26 +74,42 @@ export function resolveOpsActor(
     return 'HQ_OPS';
   }
 
+  // Cấp miền: 20000001 - 20000006
   if (
-    normUsername === '20000001' ||
-    normUsername === '20000002' ||
-    normUsername === '20000003' ||
-    roles.includes('OPS_ADMIN')
+    (normUsername >= '20000001' && normUsername <= '20000006') ||
+    (roles.includes('OPS_ADMIN') && !normUsername.startsWith('20001') && normUsername < '20000007')
   ) {
     return 'REGIONAL_OPS';
   }
 
+  // Cấp tỉnh: 20000007 - 20000069 hoặc role PROVINCIAL_OPS hoặc có chữ B trong hub code
+  if (
+    roles.includes('PROVINCIAL_OPS') ||
+    (normUsername >= '20000007' && normUsername <= '20000069') ||
+    hubCodes.some((h) => h.includes('B'))
+  ) {
+    return 'PROVINCIAL_OPS';
+  }
+
+  // Cấp xã / phường (bưu cục cơ sở)
   return 'HUB_OPS';
 }
 
 export function canAccessOpsFeature(
-  user: { username?: string | null; roles?: string[] } | null | undefined,
+  actorOrUser: OpsActor | { username?: string | null; roles?: string[]; hubCodes?: string[] } | null | undefined,
   feature: OpsFeatureKey,
 ): boolean {
-  if (!user) {
+  if (!actorOrUser) {
     return false;
   }
 
-  const actor = resolveOpsActor(user.username, user.roles ?? []);
+  let actor: OpsActor;
+  if (typeof actorOrUser === 'string') {
+    actor = actorOrUser;
+  } else {
+    actor = resolveOpsActor(actorOrUser.username, actorOrUser.roles ?? [], actorOrUser.hubCodes ?? []);
+  }
+
   return OPS_PERMISSION_MATRIX[actor]?.[feature] === true;
 }
+

@@ -2,8 +2,16 @@ export interface Hub {
   id: string;
   code: string;
   name: string;
+  level: number;
+  parentCode: string | null;
   zoneCode: string | null;
   address: string | null;
+  district: string | null;
+  ward: string | null;
+  coverageRadiusKm: number | null;
+  boundaryPolygon: unknown | null;
+  latitude: number | null;
+  longitude: number | null;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -12,8 +20,16 @@ export interface Hub {
 export interface HubWriteInput {
   code?: string;
   name: string;
+  level?: number;
+  parentCode?: string | null;
   zoneCode?: string | null;
   address?: string | null;
+  district?: string | null;
+  ward?: string | null;
+  coverageRadiusKm?: number | null;
+  boundaryPolygon?: unknown | null;
+  latitude?: number | null;
+  longitude?: number | null;
   isActive?: boolean;
 }
 

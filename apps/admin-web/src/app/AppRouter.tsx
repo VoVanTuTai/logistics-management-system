@@ -20,6 +20,7 @@ import { LoginPage } from '../pages/auth/LoginPage';
 import { AdminDashboardPage } from '../pages/dashboard/AdminDashboardPage';
 import { ConfigManagementPage } from '../pages/masterdata/ConfigManagementPage';
 import { HubManagementPage } from '../pages/masterdata/HubManagementPage';
+import { AdminHubGeofenceMapPage } from '../pages/masterdata/AdminHubGeofenceMapPage';
 import { NdrReasonManagementPage } from '../pages/masterdata/NdrReasonManagementPage';
 import { ZoneManagementPage } from '../pages/masterdata/ZoneManagementPage';
 import { CourierPermissionMatrixPage } from '../pages/permissions/CourierPermissionMatrixPage';
@@ -68,6 +69,7 @@ function AdminLayout(): React.JSX.Element {
   const masterdataNavItems = useMemo(
     () => [
       { label: 'Tổng quan hệ thống', to: routePaths.dashboard, testId: 'nav-dashboard', icon: 'dashboard' },
+      { label: 'Bản đồ Mạng lưới & Geofence', to: routePaths.masterdataHubNetworkMap, testId: 'nav-network-map', icon: 'travel_explore' },
       { label: 'Quản lý Hub & 3 Miền', to: routePaths.masterdataHubs, testId: 'nav-hubs', icon: 'hub' },
       { label: 'Quản lý Zone Vùng', to: routePaths.masterdataZones, testId: 'nav-zones', icon: 'map' },
       { label: 'Lý do lỗi NDR', to: routePaths.masterdataNdrReasons, testId: 'nav-ndr-reasons', icon: 'report_problem' },
@@ -174,6 +176,7 @@ export function AppRouter(): React.JSX.Element {
             <Route path={routePaths.courierPermissionsLeaf} element={<CourierPermissionMatrixPage />} />
             <Route path={routePaths.auditLogsLeaf} element={<AdminAuditLogPage />} />
             <Route path={routePaths.masterdataHubsLeaf} element={<HubManagementPage />} />
+            <Route path={routePaths.masterdataHubNetworkMapLeaf} element={<AdminHubGeofenceMapPage />} />
             <Route path={routePaths.masterdataZonesLeaf} element={<ZoneManagementPage />} />
             <Route path={routePaths.masterdataNdrReasonsLeaf} element={<NdrReasonManagementPage />} />
             <Route path={routePaths.masterdataConfigsLeaf} element={<ConfigManagementPage />} />

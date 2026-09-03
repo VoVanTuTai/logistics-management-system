@@ -31,6 +31,8 @@ export interface StructuredAddress {
   composedAddress: string;
   hubCode: string;
   hubName: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 interface Props {
@@ -40,6 +42,16 @@ interface Props {
   onConfirm: (address: StructuredAddress) => void;
   onClose: () => void;
   accessToken?: string;
+}
+
+function removeAccents(str: string): string {
+  if (!str) return '';
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase();
 }
 
 function normalizeProvinceName(name: string): string {
@@ -53,6 +65,10 @@ function normalizeProvinceName(name: string): string {
 
 const COMMON_WARDS_BY_PROVINCE: Record<string, string[]> = {
   'hồ chí minh': [
+    'Phường An Phú Đông (Quận 12)',
+    'Phường Thạnh Lộc (Quận 12)',
+    'Phường Tân Chánh Hiệp (Quận 12)',
+    'Phường Hiệp Thành (Quận 12)',
     'Phường Bến Nghé (Quận 1)',
     'Phường Bến Thành (Quận 1)',
     'Phường Tân Định (Quận 1)',
@@ -82,6 +98,24 @@ const COMMON_WARDS_BY_PROVINCE: Record<string, string[]> = {
     'Phường Ô Chợ Dừa (Quận Đống Đa)',
     'Phường Bách Khoa (Quận Hai Bà Trưng)',
     'Phường Hoàng Liệt (Quận Hoàng Mai)',
+  ],
+  'cao bằng': [
+    'Thành phố Cao Bằng',
+    'Huyện Bảo Lâm',
+    'Huyện Bảo Lạc',
+    'Huyện Hà Quảng',
+    'Huyện Trùng Khánh',
+    'Huyện Hạ Lang',
+    'Huyện Quảng Hòa',
+    'Huyện Hòa An',
+    'Huyện Nguyên Bình',
+    'Huyện Thạch An',
+    'Phường Hợp Giang (TP. Cao Bằng)',
+    'Phường Sông Hiến (TP. Cao Bằng)',
+    'Phường Đề Thám (TP. Cao Bằng)',
+    'Phường Tân Giang (TP. Cao Bằng)',
+    'Thị trấn Bảo Lạc (Huyện Bảo Lạc)',
+    'Thị trấn Pác Miầu (Huyện Bảo Lâm)',
   ],
   'đà nẵng': [
     'Phường Hải Châu 1 (Quận Hải Châu)',
@@ -152,6 +186,27 @@ function getWardsForProvince(province?: VietnamProvince | null): VietnamWard[] {
   }));
 }
 
+import { LocationPickerMapModal } from './LocationPickerMapModal';
+
+export interface StructuredAddress {
+  province: string;
+  district: string;
+  ward: string;
+  addressDetail: string;
+  composedAddress: string;
+  hubCode: string;
+  hubName: string;
+}
+
+interface Props {
+  visible: boolean;
+  title: string;
+  initialAddress?: StructuredAddress | null;
+  onConfirm: (address: StructuredAddress) => void;
+  onClose: () => void;
+  accessToken?: string;
+}
+
 export function AddressSelectorModal({
   visible,
   title,
@@ -167,10 +222,16 @@ export function AddressSelectorModal({
   const [selectedWard, setSelectedWard] = useState<VietnamWard | null>(null);
   const [addressDetail, setAddressDetail] = useState<string>(initialAddress?.addressDetail ?? '');
   const [selectedHub, setSelectedHub] = useState<HubRecord | null>(null);
+  const [coords, setCoords] = useState<{ latitude?: number; longitude?: number } | null>(
+    initialAddress?.latitude && initialAddress?.longitude
+      ? { latitude: initialAddress.latitude, longitude: initialAddress.longitude }
+      : null,
+  );
 
   const [loadingData, setLoadingData] = useState(false);
   const [stepView, setStepView] = useState<'FORM' | 'SELECT_PROVINCE' | 'SELECT_WARD' | 'SELECT_HUB'>('FORM');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showMapPickerModal, setShowMapPickerModal] = useState(false);
 
   // Load provinces & hubs from masterdata-service DB
   useEffect(() => {
@@ -245,16 +306,19 @@ export function AddressSelectorModal({
 
   // Auto-pick best matching hub when province changes or initial load
   useEffect(() => {
-    if (matchingHubs.length > 0) {
-      if (!selectedHub || !matchingHubs.some((h) => h.code === selectedHub.code)) {
+    if (selectedProvince && matchingHubs.length > 0) {
+      // Prioritize existing hub if it already matches
+      const currentMatches = selectedHub && matchingHubs.some((h) => h.code === selectedHub.code);
+      if (!currentMatches) {
         setSelectedHub(matchingHubs[0]);
       }
-    } else if (hubList.length > 0 && !selectedHub) {
-      setSelectedHub(hubList[0]);
     }
   }, [selectedProvince, hubList]);
 
-  const availableWards = getWardsForProvince(selectedProvince);
+  const rawAvailableWards = selectedProvince ? getWardsForProvince(selectedProvince) : [];
+  const availableWards = selectedWard && !rawAvailableWards.some((w) => w.code === selectedWard.code)
+    ? [selectedWard, ...rawAvailableWards]
+    : rawAvailableWards;
 
   const handleSave = () => {
     if (!selectedProvince) return;
@@ -274,19 +338,51 @@ export function AddressSelectorModal({
       composedAddress: composed,
       hubCode: hub.code,
       hubName: hub.name,
+      latitude: coords?.latitude ?? initialAddress?.latitude,
+      longitude: coords?.longitude ?? initialAddress?.longitude,
     });
     onClose();
   };
 
+  const handleConfirmFromMap = (res: {
+    province: string;
+    ward: string;
+    street: string;
+    composedAddress: string;
+    hubCode: string;
+    hubName: string;
+    latitude?: number;
+    longitude?: number;
+  }) => {
+    const foundProv = provinceList.find(
+      (p) =>
+        normalizeProvinceName(p.name) === normalizeProvinceName(res.province) ||
+        p.name.toLowerCase().includes(res.province.toLowerCase()),
+    ) || provinceList[0];
+
+    setSelectedProvince(foundProv);
+    setSelectedWard({
+      code: Math.floor(Math.random() * 9000) + 1000,
+      name: res.ward,
+      codename: 'map_ward',
+      provinceCode: foundProv?.code || 1,
+    });
+    setAddressDetail(res.street);
+
+    const foundHub = hubList.find((h) => h.code === res.hubCode) || hubList[0];
+    setSelectedHub(foundHub);
+  };
+
+  const queryNorm = removeAccents(searchQuery ?? '');
   const filteredProvinces = provinceList.filter((p) =>
-    (p?.name ?? '').toLowerCase().includes((searchQuery ?? '').toLowerCase()),
+    removeAccents(p?.name ?? '').includes(queryNorm),
   );
   const filteredWards = availableWards.filter((w) =>
-    (w?.name ?? '').toLowerCase().includes((searchQuery ?? '').toLowerCase()),
+    removeAccents(w?.name ?? '').includes(queryNorm),
   );
   const filteredMatchingHubs = matchingHubs.filter((h) =>
-    (h?.name ?? '').toLowerCase().includes((searchQuery ?? '').toLowerCase()) ||
-    (h?.code ?? '').toLowerCase().includes((searchQuery ?? '').toLowerCase()),
+    removeAccents(h?.name ?? '').includes(queryNorm) ||
+    removeAccents(h?.code ?? '').includes(queryNorm),
   );
 
   return (
@@ -311,6 +407,22 @@ export function AddressSelectorModal({
           >
             {stepView === 'FORM' ? (
               <View style={styles.formBlock}>
+                {/* 0. GPS MAP PICKER ACTION BUTTON */}
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  style={styles.gpsMapPickerBtn}
+                  onPress={() => setShowMapPickerModal(true)}
+                >
+                  <Ionicons name="location" size={18} color={colors.primary} />
+                  <Text style={styles.gpsMapPickerBtnText}>📍 Định vị vị trí GPS / Chọn trên bản đồ</Text>
+                  <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+                </TouchableOpacity>
+
+                <View style={styles.orDividerRow}>
+                  <View style={styles.orDividerLine} />
+                  <Text style={styles.orDividerText}>hoặc chọn bên dưới</Text>
+                  <View style={styles.orDividerLine} />
+                </View>
                 {/* 1. SELECT PROVINCE */}
                 <Text style={styles.fieldLabel}>1. Chọn Tỉnh / Thành phố *</Text>
                 <TouchableOpacity
@@ -546,6 +658,14 @@ export function AddressSelectorModal({
           </ScrollView>
         </KeyboardAvoidingView>
       </View>
+
+      {/* GPS MAP PICKER MODAL */}
+      <LocationPickerMapModal
+        visible={showMapPickerModal}
+        onClose={() => setShowMapPickerModal(false)}
+        onConfirmLocation={handleConfirmFromMap}
+        accessToken={accessToken}
+      />
     </Modal>
   );
 }
@@ -561,6 +681,41 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: '85%',
+  },
+  gpsMapPickerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.primary + '44',
+    marginBottom: spacing.xs,
+  },
+  gpsMapPickerBtnText: {
+    fontSize: 13.5,
+    fontWeight: '800',
+    color: colors.primary,
+    flex: 1,
+    marginLeft: 6,
+  },
+  orDividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: spacing.xs,
+    gap: 8,
+  },
+  orDividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.borderSubtle,
+  },
+  orDividerText: {
+    fontSize: 11,
+    color: colors.textMuted,
+    fontWeight: '600',
   },
   header: {
     flexDirection: 'row',
@@ -610,6 +765,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textPrimary,
     fontWeight: '600',
+    flex: 1,
+    paddingRight: 8,
   },
   placeholderText: {
     color: colors.textMuted,
@@ -740,6 +897,8 @@ const styles = StyleSheet.create({
   optionText: {
     fontSize: 14,
     color: colors.textPrimary,
+    flex: 1,
+    paddingRight: 8,
   },
   optionSubText: {
     fontSize: 12,

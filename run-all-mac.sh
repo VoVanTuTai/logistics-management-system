@@ -268,6 +268,18 @@ seed_auth_demo_users() {
   )
 }
 
+seed_masterdata_demo_data() {
+  local dir="$ROOT_DIR/services/masterdata-service"
+
+  install_deps_if_needed "$dir" "masterdata-service"
+  echo "[seed] masterdata demo data (zones, hubs, couriers assignments)"
+  (
+    cd "$dir"
+    DATABASE_URL="postgresql://postgres:postgres@localhost:15432/masterdata_db" \
+      node node_modules/ts-node/dist/bin.js --transpile-only prisma/seed.ts
+  )
+}
+
 start_container_backend() {
   echo "[backend] mode=container"
   ensure_service_images
@@ -281,6 +293,7 @@ start_container_backend() {
 
   prepare_service_databases
   seed_auth_demo_users
+  seed_masterdata_demo_data
 
   echo "[backend] starting service containers"
   docker compose \
@@ -455,6 +468,7 @@ elif [[ "$BACKEND_MODE" == "local" ]]; then
   start_service pricing-service services/pricing-service 3012
 
   seed_auth_demo_users
+  seed_masterdata_demo_data
   node "$ROOT_DIR/scripts/seed-master-logistics-flow.js"
   node "$ROOT_DIR/scripts/seed-hcm-5-couriers.js"
 
@@ -482,7 +496,6 @@ fi
 start_web_app ops-web apps/ops-web 5173
 start_web_app merchant-web apps/merchant-web 5174
 start_web_app admin-web apps/admin-web 5175
-start_web_app public-tracking apps/public-tracking 5176
 start_web_app guest-web apps/guest-web 5177
 start_mobile_app
 
@@ -490,7 +503,6 @@ echo "[wait] UI ports"
 wait_port ops-web 5173 30
 wait_port merchant-web 5174 30
 wait_port admin-web 5175 30
-wait_port public-tracking 5176 30
 wait_port guest-web 5177 30
 
 echo
@@ -500,8 +512,7 @@ echo "postgres UI:      http://localhost:5050  (admin@nexus.dev / admin)"
 echo "merchant-web:    http://localhost:5174"
 echo "ops-web:         http://localhost:5173"
 echo "admin-web:       http://localhost:5175"
-echo "public-tracking: http://localhost:5176"
-echo "guest-web:       http://localhost:5177"
+echo "customer-web:    http://localhost:5177"
 echo "courier-mobile:  http://localhost:8081"
 echo
 echo "Demo login: merchant 41100001 / password"

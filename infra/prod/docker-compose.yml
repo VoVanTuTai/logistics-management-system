@@ -380,17 +380,6 @@ services:
     ports:
       - "${ADMIN_WEB_PORT}:80"
 
-  public-tracking:
-    <<: *static-web
-    image: nexus/public-tracking:local
-    build:
-      context: ../../apps/public-tracking
-      args:
-        VITE_GATEWAY_BFF_URL: ${GATEWAY_PUBLIC_URL}
-        VITE_REQUEST_TIMEOUT_MS: 15000
-    ports:
-      - "${PUBLIC_TRACKING_PORT}:80"
-
   courier-mobile:
     <<: *static-web
     image: nexus/courier-mobile:local

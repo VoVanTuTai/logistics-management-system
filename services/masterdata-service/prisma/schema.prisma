@@ -15,15 +15,25 @@ enum OutboxStatus {
 }
 
 model Hub {
-  id        String   @id @default(cuid())
-  code      String   @unique
-  name      String
-  zoneCode  String?
-  address   String?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String   @id @default(cuid())
+  code             String   @unique
+  name             String
+  level            Int      @default(2) // 0: HQ, 1: Regional Hub, 2: Provincial Hub, 3: Ward Hub
+  parentCode       String?
+  zoneCode         String?
+  address          String?
+  district         String?
+  ward             String?
+  coverageRadiusKm Float?
+  boundaryPolygon  Json?    // Array of [latitude, longitude] boundary points
+  latitude         Float?
+  longitude        Float?
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
+  @@index([parentCode])
+  @@index([level])
   @@map("hubs")
 }
 
@@ -71,6 +81,8 @@ model MerchantProfile {
   defaultHubCode       String?
   defaultHubName       String?
   defaultSenderAddress String?
+  latitude             Float?
+  longitude            Float?
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
@@ -136,15 +148,18 @@ model OutboxEvent {
 }
 
 model CourierAreaAssignment {
-  id            String   @id @default(cuid())
-  courierId     String
-  hubCode       String
-  province      String
-  district      String
-  ward          String
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id              String   @id @default(cuid())
+  courierId       String
+  hubCode         String
+  province        String
+  district        String
+  ward            String
+  zoneName        String?
+  colorHex        String?
+  boundaryPolygon Json?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@unique([courierId, province, district, ward])
   @@index([hubCode])
