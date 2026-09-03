@@ -1032,7 +1032,7 @@ const styles = StyleSheet.create({
     color: theme.colors.textInverse,
   },
   cameraOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
     gap: theme.spacing.xs,

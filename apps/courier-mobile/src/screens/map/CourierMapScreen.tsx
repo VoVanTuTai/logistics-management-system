@@ -2967,7 +2967,7 @@ const styles = StyleSheet.create({
     ...theme.shadow.sm,
   },
   nativeMap: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   nativeCurrentMarker: {
     width: 32,
