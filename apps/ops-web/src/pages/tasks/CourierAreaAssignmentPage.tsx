@@ -4,13 +4,18 @@ import {
   AlertTriangle,
   CheckCircle,
   Compass,
+  Crosshair,
   Layers,
   List,
   Loader2,
   Map as MapIcon,
   MapPin,
+  Navigation,
+  Pencil,
   Plus,
   RefreshCw,
+  RotateCcw,
+  Save,
   Search,
   ShieldCheck,
   ToggleLeft,
@@ -19,6 +24,7 @@ import {
   Truck,
   User,
   Users,
+  X,
   Zap,
 } from 'lucide-react';
 
@@ -61,15 +67,58 @@ const COURIER_COLOR_PRESETS = [
 
 // Fallback Hub Coordinates
 const HUB_COORDINATE_MAP: Record<string, { lat: number; lng: number; name: string; province: string; district: string; radiusKm: number }> = {
+  // Trọng điểm TP. Hồ Chí Minh
   'HCM-001': { lat: 10.8010, lng: 106.6570, name: 'Bưu cục Tân Bình / TP.HCM', province: 'Thành phố Hồ Chí Minh', district: 'Quận Tân Bình', radiusKm: 15 },
+  '003079B001': { lat: 10.7715, lng: 106.6932, name: 'Kho Tỉnh TP. Hồ Chí Minh', province: 'Thành phố Hồ Chí Minh', district: 'Quận 1', radiusKm: 25 },
+  '07901W001': { lat: 10.7715, lng: 106.6932, name: 'Bưu cục Phường Bến Thành / Q1', province: 'Thành phố Hồ Chí Minh', district: 'Quận 1', radiusKm: 8 },
+  '07903W001': { lat: 10.7891, lng: 106.6775, name: 'Bưu cục Phường 13 / Q3', province: 'Thành phố Hồ Chí Minh', district: 'Quận 3', radiusKm: 8 },
+  '07905W001': { lat: 10.7538, lng: 106.6782, name: 'Bưu cục Phường 2 / Q5', province: 'Thành phố Hồ Chí Minh', district: 'Quận 5', radiusKm: 8 },
+  '07912W001': { lat: 10.8670, lng: 106.6960, name: 'Bưu cục An Phú Đông / Q12', province: 'Thành phố Hồ Chí Minh', district: 'Quận 12', radiusKm: 10 },
+
+  // Trọng điểm Hà Nội
   'HN-001': { lat: 21.0285, lng: 105.8544, name: 'Bưu cục Đống Đa / Hà Nội', province: 'Thành phố Hà Nội', district: 'Quận Đống Đa', radiusKm: 15 },
+  '001001B001': { lat: 21.0285, lng: 105.8544, name: 'Kho Tỉnh Hà Nội', province: 'Thành phố Hà Nội', district: 'Quận Hoàn Kiếm', radiusKm: 25 },
+  '00101W001': { lat: 21.0185, lng: 105.8524, name: 'Bưu cục Tràng Tiền / Hoàn Kiếm', province: 'Thành phố Hà Nội', district: 'Quận Hoàn Kiếm', radiusKm: 8 },
+  '00105W001': { lat: 21.0336, lng: 105.7958, name: 'Bưu cục Dịch Vọng Hậu / Cầu Giấy', province: 'Thành phố Hà Nội', district: 'Quận Cầu Giấy', radiusKm: 8 },
+  '00108W001': { lat: 21.0050, lng: 105.8450, name: 'Bưu cục Bách Khoa / Hai Bà Trưng', province: 'Thành phố Hà Nội', district: 'Quận Hai Bà Trưng', radiusKm: 8 },
+
+  // Trọng điểm Đà Nẵng
   'DN-001': { lat: 16.0678, lng: 108.2208, name: 'Bưu cục Hải Châu / Đà Nẵng', province: 'Thành phố Đà Nẵng', district: 'Quận Hải Châu', radiusKm: 12 },
-  'BD-001': { lat: 10.9069, lng: 106.7722, name: 'Bưu cục Dĩ An / Bình Dương', province: 'Tỉnh Bình Dương', district: 'Thành phố Dĩ An', radiusKm: 10 },
-  'HP-001': { lat: 20.8449, lng: 106.6881, name: 'Bưu cục Hồng Bàng / Hải Phòng', province: 'Thành phố Hải Phòng', district: 'Quận Hồng Bàng', radiusKm: 12 },
-  'CT-001': { lat: 10.0452, lng: 105.7469, name: 'Bưu cục Ninh Kiều / Cần Thơ', province: 'Thành phố Cần Thơ', district: 'Quận Ninh Kiều', radiusKm: 12 },
+  '002048B001': { lat: 16.0678, lng: 108.2208, name: 'Kho Tỉnh Đà Nẵng', province: 'Thành phố Đà Nẵng', district: 'Quận Hải Châu', radiusKm: 20 },
+
+  // Cấp Miền
+  '001': { lat: 21.0285, lng: 105.8544, name: 'Trung tâm Vận hành Miền Bắc', province: 'Thành phố Hà Nội', district: 'Quận Hoàn Kiếm', radiusKm: 50 },
+  '002': { lat: 16.0678, lng: 108.2208, name: 'Trung tâm Vận hành Miền Trung', province: 'Thành phố Đà Nẵng', district: 'Quận Hải Châu', radiusKm: 50 },
+  '003': { lat: 10.7715, lng: 106.6932, name: 'Trung tâm Vận hành Miền Nam', province: 'Thành phố Hồ Chí Minh', district: 'Quận 1', radiusKm: 50 },
+  '000HQ001': { lat: 21.0285, lng: 105.8544, name: 'HQ NEXUS Toàn Quốc', province: 'Thành phố Hà Nội', district: 'Quận Hoàn Kiếm', radiusKm: 100 },
 };
 
-type ViewTabType = 'MAP' | 'ROSTER' | 'COURIER_MATRIX';
+// Danh sách Courier mặc định chuẩn 4 tầng phục vụ phân tuyến & kiểm thử
+const DEFAULT_TEST_COURIERS: Array<{ courierId: string; label: string }> = [
+  // TP. Hồ Chí Minh
+  { courierId: '30001001', label: 'Nguyễn Văn An (Tân Bình - Tuyến Phổ Quang)' },
+  { courierId: '30001002', label: 'Trần Văn Bình (Tân Bình - Tuyến Cộng Hòa)' },
+  { courierId: '30001003', label: 'Lê Hoàng Cường (Tân Bình - Tuyến Phường 13)' },
+  { courierId: '30001004', label: 'Phạm Văn Dũng (Q1 - Tuyến Bến Thành)' },
+  { courierId: '30001005', label: 'Hoàng Minh Đức (Q3 - Tuyến Lê Văn Sỹ)' },
+  { courierId: '30001006', label: 'Vũ Quốc Hùng (Q5 - Tuyến Trần Hưng Đạo)' },
+  { courierId: '30001007', label: 'Đỗ Tuấn Kiệt (Q12 - Tuyến Hà Huy Giáp)' },
+  { courierId: '30000079', label: 'Đội trưởng Giao nhận TP.HCM' },
+  // Hà Nội
+  { courierId: '30001010', label: 'Nguyễn Tiến Dũng (Đống Đa - Tuyến Láng Hạ)' },
+  { courierId: '30001011', label: 'Trần Quang Huy (Đống Đa - Tuyến Thái Hà)' },
+  { courierId: '30001012', label: 'Lê Minh Khôi (Hoàn Kiếm - Tuyến Phố Cổ)' },
+  { courierId: '30001013', label: 'Phạm Đức Long (Cầu Giấy - Tuyến Duy Tân)' },
+  { courierId: '30001014', label: 'Bùi Tuấn Nam (Hai Bà Trưng - Tuyến Bách Khoa)' },
+  { courierId: '30000007', label: 'Đội trưởng Giao nhận Hà Nội' },
+  // Miền & Tuyến Trục
+  { courierId: '30000001', label: 'Tài xế Linehaul Tuyến Trục Miền Bắc' },
+  { courierId: '30000002', label: 'Tài xế Linehaul Tuyến Trục Miền Trung' },
+  { courierId: '30000003', label: 'Tài xế Linehaul Tuyến Trục Miền Nam' },
+  { courierId: '30000048', label: 'Đội trưởng Giao nhận Đà Nẵng' },
+];
+
+type ViewTabType = 'MAP' | 'CUSTOM_ZONES' | 'ROSTER' | 'COURIER_MATRIX';
 
 export function CourierAreaAssignmentPage(): React.JSX.Element {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -115,10 +164,20 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Drawing Mode States
+  const [isDrawingMode, setIsDrawingMode] = useState<boolean>(false);
+  const [drawnPoints, setDrawnPoints] = useState<Array<[number, number]>>([]);
+  const [drawingZoneName, setDrawingZoneName] = useState<string>('');
+  const [drawingCourierId, setDrawingCourierId] = useState<string>('');
+  const [drawingColorHex, setDrawingColorHex] = useState<string>(COURIER_COLOR_PRESETS[0]);
+  const [drawingIsActive, setDrawingIsActive] = useState<boolean>(true);
+
   // Leaflet references
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const wardLayersGroupRef = useRef<any>(null);
+  const customZonesLayerRef = useRef<any>(null);
+  const drawingLayerRef = useRef<any>(null);
   const hubMarkerGroupRef = useRef<any>(null);
   const simMarkerRef = useRef<any>(null);
   const [leafletLoaded, setLeafletLoaded] = useState(false);
@@ -147,12 +206,20 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
     }
   }, [successMsg, errorMsg]);
 
+  // Available Couriers (Ưu tiên từ API, dự phòng danh sách Courier 4 tầng mặc định)
+  const availableCouriers = useMemo(() => {
+    if (couriersQuery.data && couriersQuery.data.length > 0) {
+      return couriersQuery.data;
+    }
+    return DEFAULT_TEST_COURIERS;
+  }, [couriersQuery.data]);
+
   // Sync default courier when couriers data loaded
   useEffect(() => {
-    if (couriersQuery.data && couriersQuery.data.length > 0 && !formCourierId) {
-      setFormCourierId(couriersQuery.data[0].courierId);
+    if (availableCouriers.length > 0 && !formCourierId) {
+      setFormCourierId(availableCouriers[0].courierId);
     }
-  }, [couriersQuery.data, formCourierId]);
+  }, [availableCouriers, formCourierId]);
 
   // 1. Inject Leaflet CDN assets dynamically
   useEffect(() => {
@@ -303,6 +370,21 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
     };
   }, [hubWards, assignmentLookup]);
 
+  // Custom drawn zones for current Hub
+  const customDrawnZones = useMemo(() => {
+    return (assignmentsQuery.data ?? []).filter(
+      (a) => a.boundaryPolygon && Array.isArray(a.boundaryPolygon) && a.boundaryPolygon.length >= 3,
+    );
+  }, [assignmentsQuery.data]);
+
+  // Connect window helpers for map drawing
+  useEffect(() => {
+    (window as any).__isOpsDrawingMode = isDrawingMode;
+    (window as any).__addOpsPoint = (pt: [number, number]) => {
+      setDrawnPoints((prev) => [...prev, pt]);
+    };
+  }, [isDrawingMode]);
+
   // 3. Initialize & Render Leaflet Map
   useEffect(() => {
     if (!leafletLoaded || !mapContainerRef.current) {
@@ -323,11 +405,18 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
       }).addTo(map);
 
       wardLayersGroupRef.current = L.layerGroup().addTo(map);
+      customZonesLayerRef.current = L.layerGroup().addTo(map);
+      drawingLayerRef.current = L.layerGroup().addTo(map);
       hubMarkerGroupRef.current = L.layerGroup().addTo(map);
 
-      // Map Click Handler for GPS Simulation
+      // Map Click Handler: In drawing mode add point, else simulate GPS
       map.on('click', (e: any) => {
-        handleMapClickSimulate(e.latlng.lat, e.latlng.lng);
+        if ((window as any).__isOpsDrawingMode) {
+          const newPt: [number, number] = [e.latlng.lat, e.latlng.lng];
+          (window as any).__addOpsPoint(newPt);
+        } else {
+          handleMapClickSimulate(e.latlng.lat, e.latlng.lng);
+        }
       });
 
       mapRef.current = map;
@@ -388,7 +477,98 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
     `);
   }, [leafletLoaded, currentHubInfo]);
 
-  // 5. Render Ward Polygons & Courier Zones on Map
+  // 5. Update Drawing Layer on point addition
+  useEffect(() => {
+    if (!drawingLayerRef.current || !leafletLoaded) return;
+    const L = (window as any).L;
+    if (!L) return;
+
+    drawingLayerRef.current.clearLayers();
+
+    if (drawnPoints.length > 0) {
+      drawnPoints.forEach((pt, idx) => {
+        const marker = L.circleMarker(pt, {
+          radius: 6,
+          fillColor: drawingColorHex,
+          color: '#ffffff',
+          weight: 2,
+          fillOpacity: 1,
+        });
+        marker.bindTooltip(`Điểm ${idx + 1}: [${pt[0].toFixed(5)}, ${pt[1].toFixed(5)}]`, { permanent: false });
+        drawingLayerRef.current.addLayer(marker);
+      });
+
+      if (drawnPoints.length >= 2) {
+        const polyline = L.polyline(drawnPoints, {
+          color: drawingColorHex,
+          weight: 3,
+          dashArray: '5, 5',
+        });
+        drawingLayerRef.current.addLayer(polyline);
+      }
+
+      if (drawnPoints.length >= 3) {
+        const polygon = L.polygon(drawnPoints, {
+          color: drawingColorHex,
+          weight: 2.5,
+          fillColor: drawingColorHex,
+          fillOpacity: 0.35,
+        });
+        drawingLayerRef.current.addLayer(polygon);
+      }
+    }
+  }, [drawnPoints, drawingColorHex, leafletLoaded]);
+
+  // 6. Render Custom Drawn Zones on Map
+  useEffect(() => {
+    if (!customZonesLayerRef.current || !leafletLoaded || !mapRef.current) return;
+    const L = (window as any).L;
+    if (!L) return;
+
+    customZonesLayerRef.current.clearLayers();
+
+    customDrawnZones.forEach((zone) => {
+      if (zone.boundaryPolygon && zone.boundaryPolygon.length >= 3) {
+        const zoneColor = zone.colorHex || '#0284c7';
+        const courierObj = couriersQuery.data?.find((c) => c.courierId === zone.courierId);
+
+        const subZone = L.polygon(zone.boundaryPolygon, {
+          color: zone.isActive ? zoneColor : '#94a3b8',
+          weight: 3,
+          fillColor: zoneColor,
+          fillOpacity: zone.isActive ? 0.38 : 0.1,
+          dashArray: zone.isActive ? undefined : '6, 6',
+        });
+
+        subZone.bindTooltip(
+          `<div style="font-family: inherit; font-size: 12px;">
+            <div style="font-weight: 700; color: ${zoneColor}; font-size: 13px;">
+              📍 Dải toạ độ: ${zone.zoneName || zone.ward}
+            </div>
+            <div style="color: #475569; font-size: 11px;">${zone.district}, ${zone.province}</div>
+            <div style="margin-top: 4px; padding-top: 4px; border-top: 1px solid #e2e8f0;">
+              <strong>Shipper:</strong> ${courierObj?.label || zone.courierId}
+            </div>
+            <div style="font-size: 10px; color: #64748b; margin-top: 2px;">
+              📐 ${zone.boundaryPolygon.length} điểm toạ độ khép kín
+            </div>
+          </div>`,
+          { sticky: true },
+        );
+
+        subZone.on('click', (e: any) => {
+          L.DomEvent.stopPropagation(e);
+          setSimLat(zone.boundaryPolygon[0][0]);
+          setSimLng(zone.boundaryPolygon[0][1]);
+          handleMapClickSimulate(zone.boundaryPolygon[0][0], zone.boundaryPolygon[0][1]);
+        });
+
+        customZonesLayerRef.current.addLayer(subZone);
+      }
+    });
+  }, [customDrawnZones, leafletLoaded, couriersQuery.data]);
+
+  // 7. Render Ward Polygons & Courier Zones on Map
   useEffect(() => {
     if (!leafletLoaded || !mapRef.current || !wardLayersGroupRef.current) return;
     const L = (window as any).L;
@@ -483,24 +663,89 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
     }
   };
 
-  // 6. Handle Map Click for GPS Point-in-Polygon & Auto-Dispatch Simulation
-  const handleMapClickSimulate = (lat: number, lng: number) => {
-    setSimLat(parseFloat(lat.toFixed(6)));
-    setSimLng(parseFloat(lng.toFixed(6)));
+  // Drawing Handlers
+  const handleStartDrawing = () => {
+    setIsDrawingMode(true);
+    setDrawnPoints([]);
+    setDrawingZoneName(`Tuyến Toạ Độ ${customDrawnZones.length + 1} - ${currentHubInfo.name}`);
+    setDrawingCourierId(availableCouriers[0]?.courierId || formCourierId || '');
+    setDrawingColorHex(COURIER_COLOR_PRESETS[customDrawnZones.length % COURIER_COLOR_PRESETS.length]);
+  };
 
-    // Point in polygon check
-    let matchedWard: OfficialWardBoundary | LocalWardHubItem | null = null;
-    for (const w of hubWards) {
-      if (isPointInPolygon({ latitude: lat, longitude: lng }, w.boundaryPolygon)) {
-        matchedWard = w;
-        break;
+  const handleCancelDrawing = () => {
+    setIsDrawingMode(false);
+    setDrawnPoints([]);
+    if (drawingLayerRef.current) {
+      drawingLayerRef.current.clearLayers();
+    }
+  };
+
+  const handleUndoPoint = () => {
+    setDrawnPoints((prev) => prev.slice(0, -1));
+  };
+
+  const handleSaveDrawnZone = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (drawnPoints.length < 3) {
+      setErrorMsg('Vui lòng click trên bản đồ chấm ít nhất 3 điểm toạ độ để tạo thành đa giác khép kín!');
+      return;
+    }
+    if (!drawingCourierId) {
+      setErrorMsg('Vui lòng chọn Shipper phụ trách dải toạ độ này!');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const closedPoints: Array<[number, number]> = [...drawnPoints, drawnPoints[0]];
+      const courierObj = couriersQuery.data?.find((c) => c.courierId === drawingCourierId);
+      const zoneLabel = drawingZoneName.trim() || `Tuyến Toạ Độ - ${courierObj?.label || drawingCourierId}`;
+
+      await createMutation.mutateAsync({
+        hubCode: activeHubCode,
+        courierId: drawingCourierId,
+        province: currentHubInfo.province || 'Hồ Chí Minh',
+        district: currentHubInfo.district || 'Quận Trung Tâm',
+        ward: zoneLabel,
+        zoneName: zoneLabel,
+        colorHex: drawingColorHex,
+        boundaryPolygon: closedPoints,
+        isActive: drawingIsActive,
+      });
+
+      setSuccessMsg(`✅ Đã lưu dải toạ độ [${zoneLabel}] (${closedPoints.length} điểm) cho Shipper [${courierObj?.label || drawingCourierId}] thành công!`);
+      handleCancelDrawing();
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Lỗi khi lưu dải toạ độ cho Shipper.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteCustomZone = async (zone: CourierAreaAssignmentDto) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa dải toạ độ "${zone.zoneName || zone.ward}"?`)) {
+      return;
+    }
+    try {
+      await deleteMutation.mutateAsync(zone.id);
+      setSuccessMsg(`Đã xóa dải toạ độ "${zone.zoneName || zone.ward}" thành công!`);
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Lỗi khi xóa dải toạ độ.');
+    }
+  };
+
+  const handleZoomToZone = (zone: CourierAreaAssignmentDto) => {
+    if (mapRef.current && zone.boundaryPolygon && zone.boundaryPolygon.length >= 3) {
+      const L = (window as any).L;
+      if (L) {
+        const poly = L.polygon(zone.boundaryPolygon);
+        mapRef.current.fitBounds(poly.getBounds(), { padding: [40, 40] });
       }
     }
+  };
 
-    if (!matchedWard) {
-      matchedWard = findOfficialWardForCoordinate(lat, lng) || findWardForCoordinate(lat, lng);
-    }
-
+  // Helper for rendering simulation marker
+  const renderSimMarker = (lat: number, lng: number) => {
     const L = (window as any).L;
     if (L && mapRef.current) {
       if (simMarkerRef.current) {
@@ -522,6 +767,56 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
 
       simMarkerRef.current = L.marker([lat, lng], { icon: simIcon }).addTo(mapRef.current);
     }
+  };
+
+  // 8. Handle Map Click for GPS Point-in-Polygon & Auto-Dispatch Simulation
+  const handleMapClickSimulate = (lat: number, lng: number) => {
+    setSimLat(parseFloat(lat.toFixed(6)));
+    setSimLng(parseFloat(lng.toFixed(6)));
+
+    renderSimMarker(lat, lng);
+
+    // PRIORITY 1: Check Custom Drawn Coordinate Geofences
+    let matchedCustomZone: CourierAreaAssignmentDto | null = null;
+    for (const zone of customDrawnZones) {
+      if (zone.boundaryPolygon && zone.boundaryPolygon.length >= 3 && zone.isActive) {
+        if (isPointInPolygon({ latitude: lat, longitude: lng }, zone.boundaryPolygon)) {
+          matchedCustomZone = zone;
+          break;
+        }
+      }
+    }
+
+    if (matchedCustomZone) {
+      const courier = couriersQuery.data?.find((c) => c.courierId === matchedCustomZone?.courierId);
+      const simulatedLog = `🤖 [Hệ thống tự động điều phối - Geofence Tọa Độ] Tọa độ điểm lấy hàng (${lat.toFixed(5)}, ${lng.toFixed(5)}) nằm chính xác trong Dải toạ độ đã vẽ [${matchedCustomZone.zoneName || matchedCustomZone.ward}] ➔ Tự động gán ngay cho Shipper: ${matchedCustomZone.courierId} (${courier?.label || 'Shipper'}).`;
+
+      setSimResult({
+        lat,
+        lng,
+        wardName: `Dải toạ độ: ${matchedCustomZone.zoneName || matchedCustomZone.ward}`,
+        district: matchedCustomZone.district,
+        province: matchedCustomZone.province,
+        courierId: matchedCustomZone.courierId,
+        courierName: courier?.label || matchedCustomZone.courierId,
+        isAutoDispatched: true,
+        simulatedLog,
+      });
+      return;
+    }
+
+    // PRIORITY 2: Check Official Ward Boundary Polygons
+    let matchedWard: OfficialWardBoundary | LocalWardHubItem | null = null;
+    for (const w of hubWards) {
+      if (isPointInPolygon({ latitude: lat, longitude: lng }, w.boundaryPolygon)) {
+        matchedWard = w;
+        break;
+      }
+    }
+
+    if (!matchedWard) {
+      matchedWard = findOfficialWardForCoordinate(lat, lng) || findWardForCoordinate(lat, lng);
+    }
 
     if (matchedWard) {
       const key = `${matchedWard.province}_${matchedWard.district}_${matchedWard.name}`.toLowerCase();
@@ -533,8 +828,8 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
         : null;
 
       const simulatedLog = isAssigned
-        ? `🤖 [Hệ thống tự động điều phối] Shipper: ${assignment?.courierId} (${courier?.label || 'Shipper'}) - Hub: ${activeHubCode} | Hệ thống tự động so khớp tọa độ GPS rơi vào phân vùng [${matchedWard.name}, ${matchedWard.district}]`
-        : `⚠️ [Cảnh báo Điều phối] Tọa độ rơi vào ${matchedWard.name}, ${matchedWard.district} chưa có Shipper phụ trách -> Đơn sẽ chuyển vào Hàng đợi Điều phối Thủ công (Ops Manual Queue).`;
+        ? `🤖 [Hệ thống tự động điều phối - Địa giới Phường] Tọa độ (${lat.toFixed(5)}, ${lng.toFixed(5)}) rơi vào ${matchedWard.name}, ${matchedWard.district} ➔ Gán Shipper: ${assignment?.courierId} (${courier?.label || 'Shipper'}) thuộc Hub ${activeHubCode}.`
+        : `⚠️ [Cảnh báo Điều phối] Tọa độ rơi vào ${matchedWard.name}, ${matchedWard.district} chưa được phân công dải toạ độ hoặc Shipper phụ trách ➔ Đơn chuyển vào hàng đợi điều phối thủ công.`;
 
       setSimResult({
         lat,
@@ -557,7 +852,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
         courierId: null,
         courierName: null,
         isAutoDispatched: false,
-        simulatedLog: `⚠️ Tọa độ (${lat.toFixed(4)}, ${lng.toFixed(4)}) nằm ngoài ranh giới phục vụ của Hub ${activeHubCode}. Đơn hàng cần trung chuyển sang Hub phụ trách khác.`,
+        simulatedLog: `⚠️ Tọa độ (${lat.toFixed(4)}, ${lng.toFixed(4)}) nằm ngoài ranh giới phục vụ của Hub ${activeHubCode}. Đơn hàng cần chuyển tiếp sang bưu cục phụ trách khác.`,
       });
     }
   };
@@ -807,11 +1102,19 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
           </button>
           <button
             type="button"
+            className={`hub-tab-btn ${activeTab === 'CUSTOM_ZONES' ? 'active' : ''}`}
+            onClick={() => setActiveTab('CUSTOM_ZONES')}
+          >
+            <Layers size={16} />
+            Dải Toạ Độ Đã Vẽ ({customDrawnZones.length})
+          </button>
+          <button
+            type="button"
             className={`hub-tab-btn ${activeTab === 'ROSTER' ? 'active' : ''}`}
             onClick={() => setActiveTab('ROSTER')}
           >
             <List size={16} />
-            Danh sách Phân công ({hubWards.length})
+            Danh sách Phường xã ({hubWards.length})
           </button>
           <button
             type="button"
@@ -827,7 +1130,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
           <Search size={16} style={{ color: '#94a3b8' }} />
           <input
             type="text"
-            placeholder="Tìm kiếm phường, quận hoặc Shipper..."
+            placeholder="Tìm kiếm tuyến, phường, quận hoặc Shipper..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -839,8 +1142,57 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
         <div className="hub-workbench-grid">
           {/* Left Column: Interactive Map */}
           <div className="hub-map-card">
+            {/* Drawing Mode Toolbar */}
+            <div className="hub-draw-toolbar">
+              {isDrawingMode ? (
+                <>
+                  <div className="hub-draw-status-badge">
+                    <Pencil size={15} />
+                    <span>Đang ở Chế độ Vẽ Tuyến: Click trên bản đồ để chấm các đỉnh dải toạ độ ({drawnPoints.length} điểm)</span>
+                  </div>
+                  <div className="hub-draw-actions">
+                    {drawnPoints.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleUndoPoint}
+                        className="hub-btn-draw-undo"
+                        title="Hoàn tác điểm vừa chấm"
+                      >
+                        <RotateCcw size={14} />
+                        Hoàn tác
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleCancelDrawing}
+                      className="hub-btn-draw-cancel"
+                      title="Hủy vẽ dải toạ độ"
+                    >
+                      <X size={14} />
+                      Hủy vẽ
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#475569' }}>
+                    <Compass size={16} style={{ color: '#0284c7' }} />
+                    <span>Click bản đồ để gán Shipper hoặc vẽ dải toạ độ đa giác riêng.</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleStartDrawing}
+                    className="hub-btn-draw-start"
+                  >
+                    <Pencil size={15} />
+                    ✏️ Vẽ Dải Toạ Độ Mới Cho Shipper
+                  </button>
+                </>
+              )}
+            </div>
+
             <div className="hub-map-action-tip">
-              <span>💡 Click vào bất kỳ đa giác Phường trên bản đồ để gán Shipper | Click để thử giả lập GPS</span>
+              <span>{isDrawingMode ? '🎯 Hãy nhấp chuột vào các góc đường, khu phố trên bản đồ để tạo thành đa giác khép kín' : '💡 Click vào đa giác Phường để gán Shipper | Click để thử giả lập GPS điều phối'}</span>
             </div>
 
             <div ref={mapContainerRef} className="hub-map-canvas" />
@@ -851,6 +1203,10 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
               <div className="hub-legend-item">
                 <div className="hub-legend-color-box" style={{ background: '#2563eb' }} />
                 <span>🏢 Tâm Hub & Bán kính phục vụ</span>
+              </div>
+              <div className="hub-legend-item">
+                <div className="hub-legend-color-box" style={{ background: '#0284c7', border: '1.5px solid #ffffff' }} />
+                <span>📍 Dải toạ độ đã vẽ ({customDrawnZones.length} tuyến)</span>
               </div>
               <div className="hub-legend-item">
                 <div className="hub-legend-color-box" style={{ background: '#10b981' }} />
@@ -868,16 +1224,123 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
 
           {/* Right Column: Assignment Form & Live Simulator */}
           <div className="hub-sidebar-panel">
-            {/* Quick Assignment Card */}
-            <div className="hub-card-panel">
-              <div className="hub-panel-title">
-                <span>📝 Phân công Tuyến Shipper</span>
-                {selectedWard && (
-                  <span style={{ fontSize: '11px', color: '#2563eb', fontWeight: 600 }}>
-                    {selectedWard.name}
+            {/* Quick Assignment / Drawing Card */}
+            {isDrawingMode ? (
+              <div className="hub-card-panel hub-draw-panel-active">
+                <div className="hub-panel-title" style={{ color: '#0284c7' }}>
+                  <span>✏️ Thiết lập Tuyến Dải Toạ Độ Mới</span>
+                  <span style={{ fontSize: '11px', background: '#e0f2fe', color: '#0369a1', padding: '2px 6px', borderRadius: 4 }}>
+                    {drawnPoints.length} điểm chấm
                   </span>
-                )}
+                </div>
+
+                <form onSubmit={handleSaveDrawnZone}>
+                  <div className="hub-form-group">
+                    <label>Tên Tuyến / Dải Toạ Độ:</label>
+                    <input
+                      type="text"
+                      className="hub-form-input"
+                      value={drawingZoneName}
+                      onChange={(e) => setDrawingZoneName(e.target.value)}
+                      placeholder="VD: Tuyến Phố 30/4 - Chợ Dĩ An"
+                      required
+                    />
+                  </div>
+
+                  <div className="hub-form-group">
+                    <label>Shipper phụ trách tuyến:</label>
+                    <select
+                      className="hub-form-select"
+                      value={drawingCourierId}
+                      onChange={(e) => {
+                        setDrawingCourierId(e.target.value);
+                        const clr = courierColorMap.get(e.target.value);
+                        if (clr) setDrawingColorHex(clr);
+                      }}
+                      required
+                    >
+                      <option value="">-- Chọn Shipper phụ trách --</option>
+                      {availableCouriers.map((c) => (
+                        <option key={c.courierId} value={c.courierId}>
+                          {c.label} ({c.courierId})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="hub-form-group">
+                    <label>Màu nhận diện tuyến:</label>
+                    <div className="hub-color-picker-group">
+                      <input
+                        type="color"
+                        className="hub-color-input"
+                        value={drawingColorHex}
+                        onChange={(e) => setDrawingColorHex(e.target.value)}
+                      />
+                      <div className="hub-color-presets">
+                        {COURIER_COLOR_PRESETS.map((preset) => (
+                          <button
+                            key={preset}
+                            type="button"
+                            className="hub-color-preset-btn"
+                            style={{ background: preset }}
+                            onClick={() => setDrawingColorHex(preset)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="hub-form-group" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
+                    <label style={{ margin: 0 }}>Tự động điều phối theo tuyến:</label>
+                    <button
+                      type="button"
+                      onClick={() => setDrawingIsActive(!drawingIsActive)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: drawingIsActive ? '#10b981' : '#94a3b8' }}
+                    >
+                      {drawingIsActive ? <ToggleRight size={28} /> : <ToggleLeft size={28} />}
+                    </button>
+                  </div>
+
+                  <div style={{ marginTop: 12, padding: 10, background: '#f8fafc', borderRadius: 8, fontSize: 11, color: '#64748b' }}>
+                    {drawnPoints.length < 3 ? (
+                      <span style={{ color: '#dc2626' }}>⚠️ Cần chấm thêm ít nhất {3 - drawnPoints.length} điểm trên bản đồ để tạo thành đa giác khép kín.</span>
+                    ) : (
+                      <span style={{ color: '#059669' }}>✅ Đã có {drawnPoints.length} điểm. Sẵn sàng lưu đa giác khép kín ({drawnPoints.length + 1} toạ độ).</span>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+                    <button
+                      type="submit"
+                      disabled={submitting || drawnPoints.length < 3}
+                      className="hub-btn-primary"
+                      style={{ flex: 1 }}
+                    >
+                      {submitting ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+                      Lưu Tuyến Dải Toạ Độ
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCancelDrawing}
+                      className="hub-btn-danger"
+                      title="Hủy vẽ"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                </form>
               </div>
+            ) : (
+              <div className="hub-card-panel">
+                <div className="hub-panel-title">
+                  <span>📝 Phân công Tuyến Shipper (Theo Phường)</span>
+                  {selectedWard && (
+                    <span style={{ fontSize: '11px', color: '#2563eb', fontWeight: 600 }}>
+                      {selectedWard.name}
+                    </span>
+                  )}
+                </div>
 
               {selectedWard ? (
                 <form onSubmit={handleSaveAssignment}>
@@ -915,7 +1378,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
                       }}
                     >
                       <option value="">-- Chọn Shipper --</option>
-                      {couriersQuery.data?.map((c) => (
+                      {availableCouriers.map((c) => (
                         <option key={c.courierId} value={c.courierId}>
                           {c.label} ({c.courierId})
                         </option>
@@ -990,6 +1453,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
                 </div>
               )}
             </div>
+          )}
 
             {/* Live Point-in-Polygon & Dispatch Simulator */}
             <div className="hub-simulator-card">
@@ -1038,6 +1502,193 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* TAB: CUSTOM DRAWN GEOFENCE ZONES */}
+      {activeTab === 'CUSTOM_ZONES' && (
+        <div className="hub-table-card">
+          <div className="hub-table-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <h4 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>
+                Danh sách Dải Toạ Độ Tuyến Vẽ Riêng tại Bưu cục {activeHubCode} ({customDrawnZones.length} tuyến)
+              </h4>
+              <p style={{ margin: '4px 0 0 0', fontSize: 12, color: '#64748b' }}>
+                Các dải toạ độ đa giác tuỳ chỉnh do bưu cục tự thiết lập để tự động so khớp điểm lấy hàng GPS cho từng Shipper.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('MAP');
+                handleStartDrawing();
+              }}
+              className="hub-btn-draw-start"
+            >
+              <Pencil size={15} />
+              ✏️ Vẽ Dải Toạ Độ Mới
+            </button>
+          </div>
+
+          {customDrawnZones.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '48px 20px', color: '#64748b' }}>
+              <Layers size={48} style={{ color: '#cbd5e1', marginBottom: 12 }} />
+              <h4 style={{ margin: '0 0 8px 0', fontSize: 16, color: '#334155' }}>Chưa có dải toạ độ vẽ riêng nào</h4>
+              <p style={{ margin: 0, fontSize: 13, maxWidth: 500, marginInline: 'auto' }}>
+                Bưu cục hiện đang phân tuyến theo ranh giới phường hành chính. Bạn có thể sử dụng công cụ vẽ đa giác trên bản đồ để chia nhỏ khu phố/dải đường cụ thể cho Shipper!
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('MAP');
+                  handleStartDrawing();
+                }}
+                className="hub-btn-draw-start"
+                style={{ marginTop: 16 }}
+              >
+                <Pencil size={15} />
+                Bắt đầu vẽ dải toạ độ đầu tiên
+              </button>
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table className="hub-data-table">
+                <thead>
+                  <tr>
+                    <th>Tên Tuyến / Dải Toạ Độ</th>
+                    <th>Địa bàn Phụ trách</th>
+                    <th>Shipper Đảm nhiệm</th>
+                    <th>Số đỉnh toạ độ (Polygon)</th>
+                    <th>Màu nhận diện</th>
+                    <th>Tự động điều phối</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {customDrawnZones.map((zone) => {
+                    const courier = couriersQuery.data?.find((c) => c.courierId === zone.courierId);
+                    return (
+                      <tr key={zone.id}>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div
+                              style={{
+                                width: 12,
+                                height: 12,
+                                borderRadius: 3,
+                                background: zone.colorHex || '#0284c7',
+                              }}
+                            />
+                            <strong style={{ color: '#0f172a' }}>{zone.zoneName || zone.ward}</strong>
+                          </div>
+                        </td>
+                        <td>
+                          <span style={{ fontSize: 12, color: '#475569' }}>
+                            {zone.district}, {zone.province}
+                          </span>
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <Truck size={14} style={{ color: '#0284c7' }} />
+                            <span>
+                              <strong>{courier?.label || zone.courierId}</strong> ({zone.courierId})
+                            </span>
+                          </div>
+                        </td>
+                        <td>
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              background: '#f1f5f9',
+                              padding: '2px 8px',
+                              borderRadius: 6,
+                              fontSize: 12,
+                              fontWeight: 600,
+                            }}
+                          >
+                            📐 {zone.boundaryPolygon.length} điểm khép kín
+                          </span>
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <div
+                              style={{
+                                width: 22,
+                                height: 22,
+                                borderRadius: 6,
+                                background: zone.colorHex || '#0284c7',
+                                border: '1px solid #cbd5e1',
+                              }}
+                            />
+                            <span style={{ fontSize: 12, fontFamily: 'monospace' }}>
+                              {zone.colorHex || '#0284c7'}
+                            </span>
+                          </div>
+                        </td>
+                        <td>
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              fontSize: 12,
+                              fontWeight: 600,
+                              color: zone.isActive ? '#16a34a' : '#94a3b8',
+                            }}
+                          >
+                            {zone.isActive ? <CheckCircle size={14} /> : <AlertTriangle size={14} />}
+                            {zone.isActive ? 'Đang kích hoạt' : 'Tạm dừng'}
+                          </span>
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveTab('MAP');
+                                handleZoomToZone(zone);
+                              }}
+                              style={{
+                                padding: '4px 10px',
+                                background: '#f0f9ff',
+                                color: '#0284c7',
+                                border: '1px solid #bae6fd',
+                                borderRadius: 6,
+                                fontSize: 12,
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                              }}
+                              title="Xem và phóng to trên bản đồ"
+                            >
+                              Xem bản đồ
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteCustomZone(zone)}
+                              style={{
+                                padding: '4px 8px',
+                                background: '#fef2f2',
+                                color: '#dc2626',
+                                border: '1px solid #fecaca',
+                                borderRadius: 6,
+                                fontSize: 12,
+                                cursor: 'pointer',
+                              }}
+                              title="Xóa dải toạ độ này"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 

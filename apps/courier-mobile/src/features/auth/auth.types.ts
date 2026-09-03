@@ -104,8 +104,9 @@ export interface IntrospectResultDto {
 export const loginSchema = z.object({
   username: z
     .string()
-    .regex(/^\d{8}$/, 'Tai khoan phai la ma 8 chu so.'),
-  password: z.string().min(1, 'Mat khau la bat buoc.'),
+    .trim()
+    .regex(/^\d{8}$/, 'Tài khoản phải là mã 8 chữ số (VD: 30001001).'),
+  password: z.string().trim().min(1, 'Mật khẩu là bắt buộc.'),
 });
 
 export type LoginFormValues = z.infer<typeof loginSchema>;

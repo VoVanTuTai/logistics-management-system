@@ -56,7 +56,7 @@ function waybill(offset = 0) {
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-async function request(pathname, options = {}) {
+async function request(pathname, options = {}, retries = 3) {
   const url = pathname.startsWith('http://') || pathname.startsWith('https://')
     ? pathname
     : `${DEFAULT_GATEWAY_URL.replace(/\/+$/, '')}${pathname}`;
@@ -73,6 +73,13 @@ async function request(pathname, options = {}) {
   const text = await res.text();
   let data = null;
   try { data = JSON.parse(text); } catch { data = text; }
+
+  if (res.status === 429 && !options.allowError && retries > 0) {
+    const waitSec = Number(data?.retryAfterSeconds) || 2;
+    await sleep((waitSec + 1) * 1000);
+    return request(pathname, options, retries - 1);
+  }
+
   if (!res.ok && !options.allowError) {
     throw new Error(`${options.method || 'GET'} ${pathname} → ${res.status}: ${typeof data === 'object' ? JSON.stringify(data) : text}`);
   }
@@ -113,7 +120,7 @@ async function waitForStatus(token, code, expected, label) {
 // ─── Shared: Create Shipment + Pickup + Approve ───────────────────
 
 async function createShipmentWithPickup(sessions, code, originHub, destHub) {
-  await request('/merchant/shipment/shipments', {
+  const { data: shipment } = await request('/merchant/shipment/shipments', {
     method: 'POST', token: sessions.merchant.token,
     body: {
       code,
@@ -142,23 +149,7 @@ async function createShipmentWithPickup(sessions, code, originHub, destHub) {
     },
   });
 
-  const { data: pickupReq } = await request('/merchant/pickup/pickups', {
-    method: 'POST', token: sessions.merchant.token,
-    body: {
-      pickupCode: `PU-${code}`,
-      requesterName: 'Test Sender', contactPhone: '0909123456',
-      pickupAddress: '120 Trường Sơn, Phường 2, Tân Bình',
-      items: [{ shipmentCode: code, quantity: 1 }],
-      note: 'E2E test pickup',
-    },
-  });
-
-  await request(`/ops/pickup/pickups/${pickupReq.id}/approve`, {
-    method: 'POST', token: sessions.opsOrigin.token,
-    body: { approvedBy: accounts.opsOrigin, note: 'Approved' },
-  });
-
-  return pickupReq;
+  return shipment;
 }
 
 // ─── Shared: Courier Pickup Scan + Origin Inbound ─────────────────
