@@ -577,12 +577,82 @@ export class TasksService {
     const district = parsedAddress.district;
     const ward = parsedAddress.ward;
 
-    if (!province || !ward) {
+    const masterdataUrl = process.env.MASTERDATA_SERVICE_URL?.trim();
+    if (!masterdataUrl) {
       return null;
     }
 
-    const masterdataUrl = process.env.MASTERDATA_SERVICE_URL?.trim();
-    if (!masterdataUrl) {
+    const pickupLatitude =
+      typeof shipmentRecord?.pickupLatitude === 'number'
+        ? shipmentRecord.pickupLatitude
+        : typeof metadata?.pickupLatitude === 'number'
+          ? (metadata.pickupLatitude as number)
+          : null;
+    const pickupLongitude =
+      typeof shipmentRecord?.pickupLongitude === 'number'
+        ? shipmentRecord.pickupLongitude
+        : typeof metadata?.pickupLongitude === 'number'
+          ? (metadata.pickupLongitude as number)
+          : null;
+
+    // PRIORITY 1: Geofence coordinate polygon matching (Point-in-Polygon)
+    if (pickupLatitude !== null && pickupLongitude !== null) {
+      try {
+        const hubQuery = new URLSearchParams({
+          hubCode: originHubCode,
+          isActive: 'true',
+        });
+        const hubUrl = new URL(
+          `courier-area-assignments?${hubQuery.toString()}`,
+          masterdataUrl.endsWith('/') ? masterdataUrl : `${masterdataUrl}/`,
+        );
+        const hubRes = await fetch(hubUrl, {
+          method: 'GET',
+          headers: { accept: 'application/json' },
+        });
+        if (hubRes.ok) {
+          const assignments = await hubRes.json().catch(() => []);
+          if (Array.isArray(assignments)) {
+            for (const item of assignments) {
+              if (
+                item?.isActive &&
+                item?.courierId &&
+                Array.isArray(item?.boundaryPolygon) &&
+                item.boundaryPolygon.length >= 3
+              ) {
+                if (
+                  isPointInPolygon(
+                    { latitude: pickupLatitude, longitude: pickupLongitude },
+                    item.boundaryPolygon,
+                  )
+                ) {
+                  const courierId = item.courierId;
+                  const zoneLabel = item.zoneName || item.ward || 'Dải toạ độ';
+                  return this.assign(
+                    taskId,
+                    {
+                      courierId,
+                      hubCode: originHubCode,
+                      note: `[Hệ thống tự động điều phối] Tọa độ GPS lấy hàng (${pickupLatitude.toFixed(5)}, ${pickupLongitude.toFixed(5)}) khớp chính xác Dải toạ độ [${zoneLabel}] của Shipper ${courierId} thuộc Hub ${originHubCode}`,
+                    },
+                    {
+                      actorId: 'SYSTEM',
+                      actorUsername: 'SYSTEM_AUTO_DISPATCH',
+                      ipAddress: '127.0.0.1',
+                      userAgent: 'DispatchService-GeofenceEngine',
+                    },
+                  ).catch(() => null);
+                }
+              }
+            }
+          }
+        }
+      } catch {
+        // Fallback to address matching
+      }
+    }
+
+    if (!province || !ward) {
       return null;
     }
 
@@ -1002,4 +1072,29 @@ function isSameHubOrScopedLocation(
   }
 
   return false;
+}
+
+function isPointInPolygon(
+  point: { latitude: number; longitude: number },
+  polygon: Array<[number, number]>,
+): boolean {
+  if (!polygon || polygon.length < 3) return false;
+  const x = point.latitude;
+  const y = point.longitude;
+  let inside = false;
+
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i][0];
+    const yi = polygon[i][1];
+    const xj = polygon[j][0];
+    const yj = polygon[j][1];
+
+    const intersect =
+      yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+    if (intersect) {
+      inside = !inside;
+    }
+  }
+
+  return inside;
 }

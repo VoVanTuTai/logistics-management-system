@@ -469,11 +469,23 @@ async function seedConfigs(provinces: VietnamProvinceSeed[]) {
 }
 
 async function seedMerchantProfiles(provinces: VietnamProvinceSeed[]) {
-  const profiles = provinces.map((province, index) =>
-    merchantProfileSeed(province, index),
-  );
+  const targetConfigs = [
+    { code: 1, index: 0, username: '41100001' },
+    { code: 48, index: 47, username: '41100048' },
+    { code: 79, index: 78, username: '41100079' },
+  ];
 
-  for (const profile of profiles) {
+  const allowedUsernames = targetConfigs.map((t) => t.username);
+  await prisma.merchantProfile.deleteMany({
+    where: { username: { notIn: allowedUsernames } },
+  });
+
+  for (const item of targetConfigs) {
+    const province = provinces.find((p) => p.code === item.code) ?? provinces[0];
+    const profile = merchantProfileSeed(province, item.index);
+    profile.username = item.username;
+    profile.id = `merchant-profile-${item.username}`;
+
     await prisma.merchantProfile.upsert({
       where: { username: profile.username },
       create: profile,
@@ -489,6 +501,176 @@ async function seedMerchantProfiles(provinces: VietnamProvinceSeed[]) {
       },
     });
   }
+}
+
+async function seedCourierAreaAssignments() {
+  const assignments = [
+    // --- TP. Hồ Chí Minh: Hub Tân Bình (HCM-001) ---
+    {
+      courierId: '30001001',
+      hubCode: 'HCM-001',
+      province: 'Thành phố Hồ Chí Minh',
+      district: 'Quận Tân Bình',
+      ward: 'Phường 2',
+      zoneName: 'Tuyến Phổ Quang - Sân Bay',
+      colorHex: '#2563eb',
+      boundaryPolygon: [
+        [10.8000, 106.6500],
+        [10.8200, 106.6500],
+        [10.8200, 106.6700],
+        [10.8000, 106.6700],
+        [10.8000, 106.6500],
+      ],
+      isActive: true,
+    },
+    {
+      courierId: '30001002',
+      hubCode: 'HCM-001',
+      province: 'Thành phố Hồ Chí Minh',
+      district: 'Quận Tân Bình',
+      ward: 'Phường 13',
+      zoneName: 'Tuyến Cộng Hòa - Hoàng Hoa Thám',
+      colorHex: '#10b981',
+      boundaryPolygon: [
+        [10.7900, 106.6300],
+        [10.8100, 106.6300],
+        [10.8100, 106.6500],
+        [10.7900, 106.6500],
+        [10.7900, 106.6300],
+      ],
+      isActive: true,
+    },
+    {
+      courierId: '30001003',
+      hubCode: 'HCM-001',
+      province: 'Thành phố Hồ Chí Minh',
+      district: 'Quận Tân Bình',
+      ward: 'Phường 15',
+      zoneName: 'Tuyến Phường 15 Mở rộng',
+      colorHex: '#f59e0b',
+      boundaryPolygon: null,
+      isActive: true,
+    },
+    {
+      courierId: '30001004',
+      hubCode: '07901W001',
+      province: 'Thành phố Hồ Chí Minh',
+      district: 'Quận 1',
+      ward: 'Phường Bến Thành',
+      zoneName: 'Tuyến Chợ Bến Thành - Lê Lai',
+      colorHex: '#3b82f6',
+      boundaryPolygon: [
+        [10.766, 106.687],
+        [10.777, 106.689],
+        [10.779, 106.696],
+        [10.774, 106.699],
+        [10.768, 106.696],
+        [10.765, 106.691],
+        [10.766, 106.687],
+      ],
+      isActive: true,
+    },
+
+    // --- Hà Nội: Hub Đống Đa (HN-001) ---
+    {
+      courierId: '30001010',
+      hubCode: 'HN-001',
+      province: 'Thành phố Hà Nội',
+      district: 'Quận Đống Đa',
+      ward: 'Phường Láng Hạ',
+      zoneName: 'Tuyến Láng Hạ - Giảng Võ',
+      colorHex: '#7c3aed',
+      boundaryPolygon: [
+        [21.0150, 105.8100],
+        [21.0250, 105.8100],
+        [21.0250, 105.8250],
+        [21.0150, 105.8250],
+        [21.0150, 105.8100],
+      ],
+      isActive: true,
+    },
+    {
+      courierId: '30001011',
+      hubCode: 'HN-001',
+      province: 'Thành phố Hà Nội',
+      district: 'Quận Đống Đa',
+      ward: 'Phường Trung Liệt',
+      zoneName: 'Tuyến Thái Hà - Chùa Bộc',
+      colorHex: '#ec4899',
+      boundaryPolygon: [
+        [21.0050, 105.8150],
+        [21.0160, 105.8150],
+        [21.0160, 105.8300],
+        [21.0050, 105.8300],
+    // --- TP. Hồ Chí Minh: Kho Merchant Tổng (Quận 1 / Bến Nghé) gán cho Courier 30001001 ---
+    {
+      courierId: '30001001',
+      hubCode: '003079B001',
+      province: 'Thành phố Hồ Chí Minh',
+      district: 'Quận 1',
+      ward: 'Phường Bến Nghé',
+      zoneName: 'Tuyến Kho Tổng Merchant TP.HCM (Bến Nghé - Lê Duẩn)',
+      colorHex: '#2563eb',
+      boundaryPolygon: [
+        [10.7700, 106.6950],
+        [10.7850, 106.6950],
+        [10.7850, 106.7100],
+        [10.7700, 106.7100],
+        [10.7700, 106.6950],
+      ],
+      isActive: true,
+    },
+    {
+      courierId: '30001001',
+      hubCode: '003079B001',
+      province: 'Thành phố Hồ Chí Minh',
+      district: 'Quận 1',
+      ward: 'Phường Sài Gòn',
+      zoneName: 'Tuyến Trung Tâm Phường Sài Gòn',
+      colorHex: '#2563eb',
+      boundaryPolygon: [
+        [10.7700, 106.6950],
+        [10.7850, 106.6950],
+        [10.7850, 106.7100],
+        [10.7700, 106.7100],
+        [10.7700, 106.6950],
+      ],
+      isActive: true,
+    },
+  ];
+
+  // Dọn dẹp các phân công cũ của courier-hcm-* và 30000001-30000005
+  await prisma.courierAreaAssignment.deleteMany({
+    where: {
+      OR: [
+        { courierId: { startsWith: 'courier-' } },
+        { courierId: { in: ['30000001', '30000002', '30000003', '30000004', '30000005'] } },
+      ],
+    },
+  });
+
+  for (const item of assignments) {
+    await prisma.courierAreaAssignment.upsert({
+      where: {
+        courierId_province_district_ward: {
+          courierId: item.courierId,
+          province: item.province,
+          district: item.district,
+          ward: item.ward,
+        },
+      },
+      create: item,
+      update: {
+        hubCode: item.hubCode,
+        zoneName: item.zoneName,
+        colorHex: item.colorHex,
+        boundaryPolygon: item.boundaryPolygon,
+        isActive: item.isActive,
+      },
+    });
+  }
+
+  console.log(`Đã seed ${assignments.length} phân vùng & dải toạ độ mẫu cho Courier tại Hà Nội và TP.HCM.`);
 }
 
 async function seedAuditLogs(provinces: VietnamProvinceSeed[]) {
@@ -586,6 +768,7 @@ async function main() {
   await seedNdrReasons();
   await seedConfigs(provinces);
   await seedMerchantProfiles(provinces);
+  await seedCourierAreaAssignments();
   await seedAuditLogs(provinces);
   console.log('masterdata-service demo seed completed.');
 }
