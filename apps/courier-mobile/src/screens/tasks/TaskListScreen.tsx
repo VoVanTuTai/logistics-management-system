@@ -14,11 +14,14 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useQueries } from '@tanstack/react-query';
 
+import * as Location from 'expo-location';
+
 import { Card } from '../../components/ui/Card';
 import { Screen } from '../../components/ui/Screen';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { shipmentApi } from '../../features/shipment/shipment.api';
 import type { ShipmentDto, ShipmentMetadata } from '../../features/shipment/shipment.types';
+import { tasksApi } from '../../features/tasks/tasks.api';
 import { useAssignedTasksQuery } from '../../features/tasks/tasks.queries';
 import type { TaskDto, TaskStatus, TaskType } from '../../features/tasks/tasks.types';
 import type { AppNavigatorParamList } from '../../navigation/types';
@@ -30,6 +33,7 @@ import {
   resolveShipmentNavigationDestination,
   type NavigationDestination,
 } from '../../utils/directions';
+import { optimizeClientRoute } from '../../utils/routeOptimizer';
 import { theme } from '../../theme';
 
 type TaskListRouteParams = AppNavigatorParamList['TaskList'];
@@ -257,6 +261,14 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
     'ALL' | 'CREATED' | 'ASSIGNED' | 'COMPLETED' | 'CANCELLED'
   >(route?.params?.initialStatus ?? 'ALL');
   const [viewMode, setViewMode] = useState<TaskViewMode>('ORDER');
+  const [isOptimizedRoute, setIsOptimizedRoute] = useState<boolean>(false);
+  const [optimizing, setOptimizing] = useState<boolean>(false);
+  const [routeStats, setRouteStats] = useState<{
+    totalDistanceKm: number;
+    totalDurationMinutes: number;
+    legDistanceMap: Record<string, number>;
+    stepOrderMap: Record<string, number>;
+  } | null>(null);
 
   const tasks = tasksQuery.data ?? [];
 
@@ -315,9 +327,21 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
       ),
     [filteredTasks, shipmentByCode],
   );
+
+  const sortedDisplayItems = useMemo(() => {
+    if (!isOptimizedRoute || !routeStats) {
+      return displayItems;
+    }
+    return [...displayItems].sort((a, b) => {
+      const orderA = routeStats.stepOrderMap[a.task.id] ?? 9999;
+      const orderB = routeStats.stepOrderMap[b.task.id] ?? 9999;
+      return orderA - orderB;
+    });
+  }, [displayItems, isOptimizedRoute, routeStats]);
+
   const customerGroups = useMemo(
-    () => groupTasksByCustomer(displayItems),
-    [displayItems],
+    () => groupTasksByCustomer(sortedDisplayItems),
+    [sortedDisplayItems],
   );
 
   const typeOptions: { value: TaskType | 'ALL'; label: string }[] = [
@@ -368,6 +392,110 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
     await openGoogleMapsDirections(destination);
   };
 
+  const handleToggleOptimizedRoute = async () => {
+    if (isOptimizedRoute) {
+      setIsOptimizedRoute(false);
+      setRouteStats(null);
+      return;
+    }
+
+    if (displayItems.length === 0) {
+      Alert.alert('Không có nhiệm vụ', 'Danh sách hiện tại không có đơn để tối ưu lộ trình.');
+      return;
+    }
+
+    setOptimizing(true);
+    try {
+      let currentLat = 10.8000;
+      let currentLng = 106.6600;
+
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const loc = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          });
+          currentLat = loc.coords.latitude;
+          currentLng = loc.coords.longitude;
+        }
+      } catch (locErr) {
+        console.warn('GPS location fallback used:', locErr);
+      }
+
+      const clientNodes = displayItems.map((item) => {
+        const dest = item.navigationDestination;
+        const lat = dest?.latitude ?? currentLat + (Math.random() - 0.5) * 0.01;
+        const lng = dest?.longitude ?? currentLng + (Math.random() - 0.5) * 0.01;
+        return {
+          id: item.task.id,
+          coordinate: { latitude: lat, longitude: lng },
+          data: item,
+        };
+      });
+
+      let orderedIds: string[] = [];
+      let totalDistanceKm = 0;
+      let totalDurationMinutes = 0;
+      const legDistMap: Record<string, number> = {};
+      const stepMap: Record<string, number> = {};
+
+      let apiSuccess = false;
+      if (session?.tokens.accessToken) {
+        try {
+          const apiResult = await tasksApi.optimizeRoute(session.tokens.accessToken, {
+            courierId,
+            startLatitude: currentLat,
+            startLongitude: currentLng,
+            taskIds: displayItems.map((d) => d.task.id),
+          });
+          if (apiResult && Array.isArray(apiResult.orderedTaskIds) && apiResult.orderedTaskIds.length > 0) {
+            orderedIds = apiResult.orderedTaskIds;
+            totalDistanceKm = Number((apiResult.totalDistanceMeters / 1000).toFixed(1));
+            totalDurationMinutes = Math.round(apiResult.estimatedDurationSeconds / 60);
+
+            apiResult.legs?.forEach((leg) => {
+              if (leg.toId && leg.toId !== 'START') {
+                legDistMap[leg.toId] = Number((leg.distanceMeters / 1000).toFixed(1));
+              }
+            });
+            apiSuccess = true;
+          }
+        } catch (apiErr) {
+          console.warn('Backend route optimization failed, using client fallback:', apiErr);
+        }
+      }
+
+      if (!apiSuccess) {
+        const clientRes = optimizeClientRoute({ latitude: currentLat, longitude: currentLng }, clientNodes);
+        orderedIds = clientRes.orderedIds;
+        totalDistanceKm = clientRes.totalDistanceKm;
+        totalDurationMinutes = clientRes.totalDurationMinutes;
+
+        clientRes.legs.forEach((leg) => {
+          if (leg.toId && leg.toId !== 'START') {
+            legDistMap[leg.toId] = leg.distanceKm;
+          }
+        });
+      }
+
+      orderedIds.forEach((taskId, index) => {
+        stepMap[taskId] = index + 1;
+      });
+
+      setRouteStats({
+        totalDistanceKm,
+        totalDurationMinutes,
+        legDistanceMap: legDistMap,
+        stepOrderMap: stepMap,
+      });
+      setIsOptimizedRoute(true);
+    } catch (error) {
+      Alert.alert('Lỗi tối ưu lộ trình', error instanceof Error ? error.message : String(error));
+    } finally {
+      setOptimizing(false);
+    }
+  };
+
   return (
     <Screen
       style={{ backgroundColor: theme.colors.background }}
@@ -382,13 +510,44 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
             <Text style={styles.headerTitle}>Nhiệm vụ hàng ngày</Text>
             <Text style={styles.headerSubtitle}>{visibleCountText}</Text>
           </View>
-          <Pressable
-            onPress={() => navigation.navigate('TrackingLookup')}
-            style={({ pressed }) => [styles.trackButton, pressed && styles.trackButtonPressed]}
-          >
-            <Ionicons name="search" size={13} color={theme.colors.primary} />
-            <Text style={styles.trackButtonText}>Tra cứu</Text>
-          </Pressable>
+          <View style={styles.headerActionRow}>
+            <Pressable
+              onPress={handleToggleOptimizedRoute}
+              disabled={optimizing}
+              style={({ pressed }) => [
+                styles.optimizeButton,
+                isOptimizedRoute && styles.optimizeButtonActive,
+                pressed && styles.optimizeButtonPressed,
+              ]}
+            >
+              {optimizing ? (
+                <ActivityIndicator size="small" color={isOptimizedRoute ? '#FFFFFF' : theme.colors.primary} />
+              ) : (
+                <>
+                  <Ionicons
+                    name={isOptimizedRoute ? 'map' : 'compass-outline'}
+                    size={14}
+                    color={isOptimizedRoute ? '#FFFFFF' : theme.colors.primary}
+                  />
+                  <Text
+                    style={[
+                      styles.optimizeButtonText,
+                      isOptimizedRoute && styles.optimizeButtonTextActive,
+                    ]}
+                  >
+                    {isOptimizedRoute ? 'Đã xếp' : 'Xếp lộ trình'}
+                  </Text>
+                </>
+              )}
+            </Pressable>
+            <Pressable
+              onPress={() => navigation.navigate('TrackingLookup')}
+              style={({ pressed }) => [styles.trackButton, pressed && styles.trackButtonPressed]}
+            >
+              <Ionicons name="search" size={13} color={theme.colors.primary} />
+              <Text style={styles.trackButtonText}>Tra cứu</Text>
+            </Pressable>
+          </View>
         </View>
 
         <View style={styles.filterPanel}>
@@ -554,13 +713,51 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
         </Card>
       ) : null}
 
+      {isOptimizedRoute && routeStats ? (
+        <Card style={styles.routeBanner}>
+          <View style={styles.routeBannerHeader}>
+            <View style={styles.routeBannerTitleBlock}>
+              <View style={styles.routeBannerBadge}>
+                <Ionicons name="sparkles" size={14} color="#0284c7" />
+                <Text style={styles.routeBannerBadgeText}>Lộ trình tối ưu thông minh</Text>
+              </View>
+              <Text style={styles.routeBannerStats}>
+                {sortedDisplayItems.length} chặng • ~{routeStats.totalDistanceKm} km • ~{routeStats.totalDurationMinutes} phút
+              </Text>
+            </View>
+            <Pressable onPress={handleToggleOptimizedRoute} style={styles.routeBannerResetBtn}>
+              <Text style={styles.routeBannerResetText}>Khôi phục</Text>
+            </Pressable>
+          </View>
+          {sortedDisplayItems[0]?.navigationDestination ? (
+            <Pressable
+              style={styles.startLegButton}
+              onPress={() => void handleOpenDirections(sortedDisplayItems[0].navigationDestination)}
+            >
+              <Ionicons name="navigate" size={14} color="#FFFFFF" />
+              <Text style={styles.startLegButtonText}>
+                Bắt đầu Chặng 1 ({sortedDisplayItems[0].receiverName})
+              </Text>
+            </Pressable>
+          ) : null}
+        </Card>
+      ) : null}
+
       {!tasksQuery.isLoading && !tasksQuery.isError && viewMode === 'ORDER'
-        ? displayItems.map((item, index) => (
+        ? sortedDisplayItems.map((item, index) => (
             <Card
               key={item.task.id}
               style={[styles.taskCard, index === 0 && { marginTop: theme.spacing.xs }]}
               onPress={() => navigation.navigate('TaskDetail', { taskId: item.task.id })}
             >
+              {isOptimizedRoute && routeStats?.stepOrderMap[item.task.id] ? (
+                <View style={styles.stepBadge}>
+                  <Ionicons name="flag" size={12} color="#0369a1" />
+                  <Text style={styles.stepBadgeText}>
+                    CHẶNG #{routeStats.stepOrderMap[item.task.id]} • CÁCH ~{routeStats.legDistanceMap[item.task.id] ?? 0} KM
+                  </Text>
+                </View>
+              ) : null}
               <View style={styles.taskTopRow}>
                 <View style={styles.taskTitleBlock}>
                   <Text style={styles.shipmentCode}>{formatShipmentCode(item.task)}</Text>
@@ -1070,5 +1267,115 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
     fontSize: 12,
     marginTop: 2,
+  },
+  headerActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+  },
+  optimizeButton: {
+    minHeight: 32,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: theme.spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  optimizeButtonActive: {
+    backgroundColor: '#0284c7',
+    borderColor: '#0284c7',
+  },
+  optimizeButtonPressed: {
+    opacity: 0.85,
+  },
+  optimizeButtonText: {
+    color: theme.colors.primary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  optimizeButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  routeBanner: {
+    marginHorizontal: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
+    padding: theme.spacing.md,
+    borderRadius: theme.radius.lg,
+    backgroundColor: '#F0F9FF',
+    borderColor: '#BAE6FD',
+    borderWidth: 1,
+    gap: theme.spacing.sm,
+  },
+  routeBannerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  routeBannerTitleBlock: {
+    gap: 4,
+  },
+  routeBannerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  routeBannerBadgeText: {
+    color: '#0284c7',
+    fontSize: 13,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  routeBannerStats: {
+    color: '#0369a1',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  routeBannerResetBtn: {
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 4,
+    borderRadius: theme.radius.sm,
+    backgroundColor: '#E0F2FE',
+  },
+  routeBannerResetText: {
+    color: '#0369a1',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  startLegButton: {
+    backgroundColor: '#0284c7',
+    borderRadius: theme.radius.md,
+    paddingVertical: 8,
+    paddingHorizontal: theme.spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  startLegButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  stepBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#E0F2FE',
+    borderColor: '#7DD3FC',
+    borderWidth: 1,
+    borderRadius: theme.radius.sm,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 4,
+  },
+  stepBadgeText: {
+    color: '#0369a1',
+    fontSize: 11,
+    fontWeight: '800',
   },
 });

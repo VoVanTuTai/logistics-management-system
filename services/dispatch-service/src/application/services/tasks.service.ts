@@ -33,6 +33,12 @@ import {
   normalizeWardKey,
   parseVietnameseAddress,
 } from '../utils/vietnamese-address-parser.utility';
+import {
+  optimizeRouteTSP,
+  type GeoPoint,
+  type RouteLeg,
+  type RouteTargetNode,
+} from '../utils/route-optimizer.utility';
 
 const DESTINATION_VISIBLE_STATUSES = new Set<string>([
   'MANIFEST_RECEIVED',
@@ -947,6 +953,129 @@ export class TasksService {
     }
 
     return normalizedStatus as (typeof TASK_STATUSES)[number];
+  }
+
+  async optimizeRoute(input: {
+    courierId: string;
+    startLatitude: number;
+    startLongitude: number;
+    taskIds?: string[];
+    taskType?: TaskType;
+  }): Promise<{
+    orderedTaskIds: string[];
+    orderedTasks: Task[];
+    legs: RouteLeg[];
+    totalDistanceMeters: number;
+    estimatedDurationSeconds: number;
+  }> {
+    const courierId = this.requireCourierId(input.courierId);
+    const startLocation: GeoPoint = {
+      latitude: input.startLatitude,
+      longitude: input.startLongitude,
+    };
+
+    let tasks = await this.taskRepository.list({
+      courierId,
+      status: 'ASSIGNED',
+      taskType: input.taskType,
+    });
+
+    if (Array.isArray(input.taskIds) && input.taskIds.length > 0) {
+      const allowedSet = new Set(input.taskIds);
+      tasks = tasks.filter((t) => allowedSet.has(t.id));
+    }
+
+    if (tasks.length === 0) {
+      return {
+        orderedTaskIds: [],
+        orderedTasks: [],
+        legs: [],
+        totalDistanceMeters: 0,
+        estimatedDurationSeconds: 0,
+      };
+    }
+
+    const nodes: RouteTargetNode[] = [];
+    const taskMap = new Map<string, Task>();
+
+    for (const task of tasks) {
+      taskMap.set(task.id, task);
+      let coord: GeoPoint | null = null;
+
+      if (task.shipmentCode) {
+        const shipment = await this.fetchServiceJson(
+          'SHIPMENT_SERVICE_URL',
+          `shipments/${encodeURIComponent(task.shipmentCode)}`,
+        );
+        const sRecord = asRecord(shipment);
+        const metadata = asRecord(sRecord?.metadata);
+        const sender = asRecord(metadata?.sender);
+        const receiver = asRecord(metadata?.receiver);
+
+        if (task.taskType === 'PICKUP') {
+          const lat =
+            sRecord?.pickupLatitude ??
+            metadata?.pickupLatitude ??
+            sender?.latitude ??
+            asRecord(sender?.coordinate)?.latitude;
+          const lng =
+            sRecord?.pickupLongitude ??
+            metadata?.pickupLongitude ??
+            sender?.longitude ??
+            asRecord(sender?.coordinate)?.longitude;
+          if (typeof lat === 'number' && typeof lng === 'number') {
+            coord = { latitude: lat, longitude: lng };
+          }
+        } else if (task.taskType === 'DELIVERY') {
+          const lat =
+            sRecord?.deliveryLatitude ??
+            metadata?.deliveryLatitude ??
+            receiver?.latitude ??
+            asRecord(receiver?.coordinate)?.latitude;
+          const lng =
+            sRecord?.deliveryLongitude ??
+            metadata?.deliveryLongitude ??
+            receiver?.longitude ??
+            asRecord(receiver?.coordinate)?.longitude;
+          if (typeof lat === 'number' && typeof lng === 'number') {
+            coord = { latitude: lat, longitude: lng };
+          }
+        } else if (task.taskType === 'RETURN') {
+          const lat = sender?.latitude ?? sRecord?.pickupLatitude;
+          const lng = sender?.longitude ?? sRecord?.pickupLongitude;
+          if (typeof lat === 'number' && typeof lng === 'number') {
+            coord = { latitude: lat, longitude: lng };
+          }
+        }
+      }
+
+      if (!coord) {
+        coord = {
+          latitude: startLocation.latitude + (Math.random() - 0.5) * 0.005,
+          longitude: startLocation.longitude + (Math.random() - 0.5) * 0.005,
+        };
+      }
+
+      nodes.push({
+        id: task.id,
+        coordinate: coord,
+        taskType: task.taskType,
+      });
+    }
+
+    const result = optimizeRouteTSP(startLocation, nodes);
+
+    const orderedTasks = result.orderedIds
+      .map((id) => taskMap.get(id))
+      .filter((t): t is Task => Boolean(t));
+
+    return {
+      orderedTaskIds: result.orderedIds,
+      orderedTasks,
+      legs: result.legs,
+      totalDistanceMeters: result.totalDistanceMeters,
+      estimatedDurationSeconds: result.estimatedDurationSeconds,
+    };
   }
 }
 
