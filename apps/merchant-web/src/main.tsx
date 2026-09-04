@@ -40,7 +40,7 @@ import type {
   ViewId,
 } from './types';
 import { DEFAULT_CREATE_FORM, DEFAULT_PROFILE } from './types';
-import { openShippingLabelPrint } from './printing/shippingLabelPrint';
+import { openShippingLabelPrint, resolveRouteAndCourier } from './printing/shippingLabelPrint';
 
 const STORAGE_KEY_SESSION = 'merchant-web.session.v1';
 const STORAGE_KEY_DRAFTS = 'merchant-web.shipment-drafts.v1';
@@ -1914,16 +1914,45 @@ function MerchantApp(): React.JSX.Element {
     setDataLoading(false);
   }
 
+  function fillDemoAccount(code: string, pass = 'password') {
+    setLoginUsername(code);
+    setLoginPassword(pass);
+    setLoginError(null);
+  }
+
   async function handleLogin(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     setLoginLoading(true);
     setLoginError(null);
     try {
+      let resolvedUsername = loginUsername.trim();
+
+      // Hỗ trợ map thông minh nếu người dùng/thầy nhập dạng Email hoặc Email demo
+      const demoEmailMap: Record<string, string> = {
+        'nexus.merchant@example.com': '41100001',
+        'merchant@nexus.vn': '41100001',
+        'merchant.hanoi@nexus.vn': '41100001',
+        'merchant.hcm@nexus.vn': '41100079',
+        'merchant.danang@nexus.vn': '41100048',
+        'shop.hoankiem@nexus.vn': '41100001',
+        'shop.benthanh@nexus.vn': '41100079',
+        'shop.haichau@nexus.vn': '41100048',
+      };
+
+      if (demoEmailMap[resolvedUsername.toLowerCase()]) {
+        resolvedUsername = demoEmailMap[resolvedUsername.toLowerCase()];
+      } else if (resolvedUsername.includes('@')) {
+        const prefix = resolvedUsername.split('@')[0].trim();
+        if (prefix) {
+          resolvedUsername = prefix;
+        }
+      }
+
       const result = await request<LoginResponse>('/merchant/auth/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          username: loginUsername.trim(),
+          username: resolvedUsername,
           password: loginPassword,
           roleGroup: 'MERCHANT',
         }),
@@ -1932,7 +1961,7 @@ function MerchantApp(): React.JSX.Element {
       setSession(nextSession);
       await refreshAllData(nextSession.accessToken, nextSession.user);
       setActiveView('dashboard');
-      pushNotification('success', 'Đăng nhập thành công', `Xin chào ${nextSession.user.username}`);
+      pushNotification('success', 'Đăng nhập thành công', `Xin chào ${nextSession.user.displayName || nextSession.user.username}`);
     } catch (error) {
       setLoginError(extractErrorMessage(error));
     } finally {
@@ -2662,6 +2691,44 @@ function MerchantApp(): React.JSX.Element {
       `COD: ${formatCurrency(row.codAmount)}`,
     ].join(' | ');
 
+    const resolvedPickup = resolveRouteAndCourier(
+      row.senderAddress,
+      row.senderWard,
+      undefined,
+      senderHubCode,
+      true,
+    );
+    const resolvedDelivery = resolveRouteAndCourier(
+      row.receiverAddress,
+      row.receiverWard,
+      undefined,
+      receiverHubCode || destinationHubCode,
+      false,
+    );
+
+    const pickupRouteName =
+      readText(metadata?.pickupRouteName) ||
+      readText(metadata?.pickupRouteCode) ||
+      readText(routingMeta?.pickupRouteName) ||
+      resolvedPickup.routeName;
+
+    const pickupCourierId =
+      readText(metadata?.pickupCourierId) ||
+      readText(metadata?.courierId) ||
+      readText(senderMeta?.courierId) ||
+      resolvedPickup.courierId;
+
+    const deliveryRouteName =
+      readText(metadata?.deliveryRouteName) ||
+      readText(metadata?.deliveryRouteCode) ||
+      readText(routingMeta?.deliveryRouteName) ||
+      resolvedDelivery.routeName;
+
+    const deliveryCourierId =
+      readText(metadata?.deliveryCourierId) ||
+      readText(receiverMeta?.courierId) ||
+      resolvedDelivery.courierId;
+
     const opened = openShippingLabelPrint({
       brandName: 'NEXUS LOGISTICS',
       serviceName: row.serviceType || 'STANDARD',
@@ -2683,6 +2750,10 @@ function MerchantApp(): React.JSX.Element {
       createdAtText: formatDate(row.shipment.createdAt),
       deliveryInstruction,
       hotlineText: 'Hotline vận hành: 1900-1234',
+      pickupRouteName,
+      pickupCourierId,
+      deliveryRouteName,
+      deliveryCourierId,
     });
 
     if (!opened) {
@@ -2755,18 +2826,21 @@ function MerchantApp(): React.JSX.Element {
 
               <form className="login-form-new" onSubmit={handleLogin}>
                 <div className="login-field-group">
-                  <label className="login-field-label" htmlFor="username">Tên đăng nhập hoặc Email</label>
+                  <label className="login-field-label" htmlFor="username">Mã Shop / SĐT / Email</label>
                   <div className="login-input-wrapper">
-                    <span className="material-symbols-outlined login-input-icon">person</span>
+                    <span className="material-symbols-outlined login-input-icon">storefront</span>
                     <input 
                       className="login-input" 
                       id="username" 
                       value={loginUsername} 
                       onChange={(e) => setLoginUsername(e.target.value)} 
-                      placeholder="nexus.merchant@example.com" 
+                      placeholder="VD: 41100001 hoặc 0941000001" 
                       type="text" 
                     />
                   </div>
+                  <span className="login-field-hint">
+                    Đăng nhập bằng Mã bưu cục shop (41100001), Số điện thoại (0941000001) hoặc Email demo
+                  </span>
                 </div>
 
                 <div className="login-field-group">
@@ -2789,6 +2863,46 @@ function MerchantApp(): React.JSX.Element {
                       <span className="material-symbols-outlined">
                         {showPassword ? "visibility_off" : "visibility"}
                       </span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Quick Demo Preset Selector */}
+                <div className="login-demo-presets">
+                  <div className="login-demo-header">
+                    <span className="material-symbols-outlined login-demo-icon">bolt</span>
+                    <span className="login-demo-title">Tài khoản Demo Nhanh (Click tự điền)</span>
+                  </div>
+                  <div className="login-demo-chip-list">
+                    <button
+                      type="button"
+                      className={`login-demo-chip ${loginUsername === '41100001' ? 'active' : ''}`}
+                      onClick={() => fillDemoAccount('41100001')}
+                      title="Shop Hàng Bài - Hoàn Kiếm, Hà Nội (SĐT: 0941000001)"
+                    >
+                      <span className="login-chip-badge hn">HN</span>
+                      <span className="login-chip-code">41100001</span>
+                      <span className="login-chip-name">P. Hàng Bài</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`login-demo-chip ${loginUsername === '41100048' ? 'active' : ''}`}
+                      onClick={() => fillDemoAccount('41100048')}
+                      title="Shop Thạch Thang - Hải Châu, Đà Nẵng (SĐT: 0941000048)"
+                    >
+                      <span className="login-chip-badge dn">ĐN</span>
+                      <span className="login-chip-code">41100048</span>
+                      <span className="login-chip-name">P. Thạch Thang</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`login-demo-chip ${loginUsername === '41100079' ? 'active' : ''}`}
+                      onClick={() => fillDemoAccount('41100079')}
+                      title="Shop Bến Thành - Quận 1, TP.HCM (SĐT: 0941000079)"
+                    >
+                      <span className="login-chip-badge hcm">HCM</span>
+                      <span className="login-chip-code">41100079</span>
+                      <span className="login-chip-name">P. Bến Thành</span>
                     </button>
                   </div>
                 </div>
@@ -2882,6 +2996,114 @@ function MerchantApp(): React.JSX.Element {
                   <button className="btn btn-primary dashboard-search__btn" type="submit">Tra cứu</button>
                 </form>
               </div>
+
+              {/* Thẻ thông tin địa chỉ kho đăng ký & Bưu cục tiếp nhận của Shop phục vụ demo */}
+              {(() => {
+                const regShopAddress =
+                  profile.defaultPickupAddressDetail ||
+                  profile.defaultPickupAddress ||
+                  merchantProfileConfig?.defaultSenderAddress ||
+                  'Chưa cấu hình địa chỉ kho';
+
+                const regProvince =
+                  profile.defaultPickupProvince ||
+                  merchantProfileConfig?.regionLabel ||
+                  'Toàn quốc';
+
+                const defaultHub = lockedSenderHub ?? selectedAccountProvinceHub;
+                const regHubName =
+                  defaultHub?.hubName ||
+                  merchantProfileConfig?.defaultHubName ||
+                  'Bưu cục phụ trách';
+
+                const regHubCode =
+                  defaultHub?.hubCode ||
+                  merchantProfileConfig?.defaultHubCode ||
+                  'HUB_DEFAULT';
+
+                const regLat = profile.latitude ?? merchantProfileConfig?.latitude ?? defaultHub?.latitude;
+                const regLng = profile.longitude ?? merchantProfileConfig?.longitude ?? defaultHub?.longitude;
+
+                const regRoute = resolveRouteAndCourier(
+                  regShopAddress,
+                  defaultHub?.ward,
+                  undefined,
+                  regHubCode,
+                  true,
+                );
+
+                return (
+                  <div className="card merchant-location-card">
+                    <div className="merchant-location-card__header">
+                      <div className="merchant-location-card__title-box">
+                        <span className="material-symbols-outlined merchant-location-card__icon">storefront</span>
+                        <div>
+                          <div className="merchant-location-card__kicker">
+                            <span className="badge" style={{ backgroundColor: '#dcfce7', color: '#15803d', border: '1px solid #bbf7d0', fontWeight: 700 }}>Đang hoạt động</span>
+                            <span className="badge" style={{ backgroundColor: '#f1f5f9', color: '#334155', border: '1px solid #e2e8f0' }}>Tài khoản: {session.user.username}</span>
+                            {merchantProfileConfig?.citizenId ? (
+                              <span className="badge" style={{ backgroundColor: '#f1f5f9', color: '#334155', border: '1px solid #e2e8f0' }}>CCCD: {merchantProfileConfig.citizenId}</span>
+                            ) : null}
+                          </div>
+                          <h3 className="merchant-location-card__shop-name">
+                            {profile.shopName || session.user.displayName || 'Shop Đối Tác NEXUS'}
+                          </h3>
+                        </div>
+                      </div>
+                      <div className="merchant-location-card__hotline">
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#0284c7' }}>call</span>
+                        <span>Hotline Shop: <strong>{profile.contactPhone || session.user.phone || '0988-111-222'}</strong></span>
+                      </div>
+                    </div>
+
+                    <div className="merchant-location-grid">
+                      <div className="merchant-location-col">
+                        <div className="merchant-location-label">
+                          <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#dc2626' }}>location_on</span>
+                          <span>Kho hàng đăng ký lấy hàng</span>
+                        </div>
+                        <div className="merchant-location-value merchant-location-value--highlight">
+                          {regShopAddress}
+                        </div>
+                        <div className="merchant-location-sub">
+                          Khu vực: <strong>{regProvince}</strong>
+                          {regLat && regLng ? (
+                            <span className="merchant-location-coords" title="Tọa độ GPS kho hàng">
+                              • 🎯 GPS: {regLat.toFixed(5)}, {regLng.toFixed(5)}
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      <div className="merchant-location-col">
+                        <div className="merchant-location-label">
+                          <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#2563eb' }}>domain</span>
+                          <span>Bưu cục (Hub) phụ trách tiếp nhận</span>
+                        </div>
+                        <div className="merchant-location-value">
+                          {regHubName}
+                        </div>
+                        <div className="merchant-location-sub">
+                          Mã bưu cục: <span className="badge" style={{ backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', fontWeight: 700 }}>{regHubCode}</span>
+                        </div>
+                      </div>
+
+                      <div className="merchant-location-col">
+                        <div className="merchant-location-label">
+                          <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#16a34a' }}>local_shipping</span>
+                          <span>Tuyến lấy & Shipper đảm nhiệm</span>
+                        </div>
+                        <div className="merchant-location-value" style={{ color: '#15803d', fontWeight: 700 }}>
+                          {regRoute.routeName}
+                        </div>
+                        <div className="merchant-location-sub">
+                          Shipper ID: <strong style={{ color: '#0f766e' }}>{regRoute.courierId}</strong> (Khớp phân vùng Geofence)
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div className="metric-grid dashboard-metrics">
                 <div className="metric dashboard-metric"><div className="metric-title">Tổng số đơn hôm nay</div><div className="metric-value">{dashboardStats.totalToday}</div><div className="dashboard-metric__hint">Tạo mới trong ngày</div></div>

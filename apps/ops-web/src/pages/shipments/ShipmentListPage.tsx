@@ -12,7 +12,7 @@ import { shipmentsClient } from '../../features/shipments/shipments.client';
 import type { ShipmentListFilters, ShipmentListItemDto } from '../../features/shipments/shipments.types';
 import { tasksClient, useCourierOptionsQuery, useTasksQuery } from '../../features/tasks/tasks.api';
 import type { TaskListItemDto } from '../../features/tasks/tasks.types';
-import { openShippingLabelPrint } from '../../printing/shippingLabelPrint';
+import { openShippingLabelPrint, resolveRouteAndCourier } from '../../printing/shippingLabelPrint';
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
 import { useUiStore } from '../../store/uiStore';
@@ -455,6 +455,26 @@ function printWaybill(shipment: ShipmentListItemDto): boolean {
   const deliveryInstruction =
     shipment.deliveryNote?.trim() || 'Gọi trước khi giao. Không cho thử hàng.';
 
+  const resolvedPickup = resolveRouteAndCourier(
+    senderAddress,
+    shipment.senderWard,
+    shipment.senderDistrict,
+    shipment.senderHubCode || shipment.originHubCode,
+    true,
+  );
+  const resolvedDelivery = resolveRouteAndCourier(
+    receiverAddress,
+    undefined,
+    undefined,
+    shipment.receiverHubCode || shipment.destinationHubCode || hubCode,
+    false,
+  );
+
+  const pickupRouteName = resolvedPickup.routeName;
+  const pickupCourierId = resolvedPickup.courierId;
+  const deliveryRouteName = resolvedDelivery.routeName;
+  const deliveryCourierId = resolvedDelivery.courierId;
+
   const opened = openShippingLabelPrint({
     brandName: 'NEXUS LOGISTICS',
     serviceName: shipment.serviceType?.trim() || 'STANDARD',
@@ -476,6 +496,10 @@ function printWaybill(shipment: ShipmentListItemDto): boolean {
     createdAtText: formatDateTime(shipment.createdAt),
     deliveryInstruction,
     hotlineText: 'Hotline vận hành: 1900-1234',
+    pickupRouteName,
+    pickupCourierId,
+    deliveryRouteName,
+    deliveryCourierId,
   });
 
   if (!opened) {
