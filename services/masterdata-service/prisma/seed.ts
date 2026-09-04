@@ -312,6 +312,10 @@ async function seedHubs(provinces: VietnamProvinceSeed[]) {
       },
     });
   }
+
+  console.log(
+    `Đã seed thành công ${hubs.length} Hubs (1 HQ, ${regionalHubs.length} Hub Vùng, ${branchHubs.length} Hub Tỉnh, ${wardHubs.length} Bưu cục cấp Phường Level 3).`,
+  );
 }
 
 async function seedNdrReasons() {
