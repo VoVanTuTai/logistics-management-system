@@ -77,4 +77,5 @@ export type AppNavigatorParamList = {
     shipmentCode?: string;
     codAmount?: number;
   };
+  MyRoute: undefined;
 };

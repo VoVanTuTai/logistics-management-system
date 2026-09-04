@@ -105,4 +105,11 @@ export const courierEndpoints = {
       )}&date=${encodeURIComponent(date)}`,
     createSettlement: `${COURIER_PREFIX}/payment/cod/settlements`,
   },
+  masterdata: {
+    areaAssignments: (courierId: string) =>
+      `${COURIER_PREFIX}/masterdata/courier-area-assignments?courierId=${encodeURIComponent(
+        courierId,
+      )}&isActive=true`,
+    allAreaAssignments: `${COURIER_PREFIX}/masterdata/courier-area-assignments?isActive=true`,
+  },
 } as const;

@@ -12,8 +12,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 
 import { theme } from '../../theme';
+import { courierApiClient } from '../../services/api/client';
+import { courierEndpoints } from '../../services/api/endpoints';
 import {
   ProfileHeader,
   type ProfileHeaderData,
@@ -38,6 +41,7 @@ export function ProfileScreen(): React.JSX.Element {
   const setCourierAvatarUri = useAppStore((state) => state.setCourierAvatarUri);
   const logout = useAuthStore((state) => state.logout);
   const authLoading = useAuthStore((state) => state.isLoading);
+  const navigation = useNavigation<any>();
   const [avatarModalVisible, setAvatarModalVisible] = React.useState(false);
   const [avatarInputValue, setAvatarInputValue] = React.useState(courierAvatarUri ?? '');
   const [passwordModalVisible, setPasswordModalVisible] = React.useState(false);
@@ -45,6 +49,14 @@ export function ProfileScreen(): React.JSX.Element {
   const [newPassword, setNewPassword] = React.useState('');
   const [confirmPassword, setConfirmPassword] = React.useState('');
   const [passwordLoading, setPasswordLoading] = React.useState(false);
+  const [assignedArea, setAssignedArea] = React.useState<{
+    zoneName?: string | null;
+    colorHex?: string | null;
+    hubCode?: string;
+    ward?: string;
+    district?: string;
+    province?: string;
+  } | null>(null);
 
   const changePasswordMutation = useChangePasswordMutation(
     session?.tokens.accessToken ?? null,
@@ -104,6 +116,21 @@ export function ProfileScreen(): React.JSX.Element {
     courierId,
   });
 
+  React.useEffect(() => {
+    if (!courierId || !session?.tokens.accessToken) return;
+    courierApiClient
+      .request<any[]>(
+        courierEndpoints.masterdata.areaAssignments(courierId),
+        { accessToken: session.tokens.accessToken },
+      )
+      .then((res) => {
+        if (Array.isArray(res) && res.length > 0) {
+          setAssignedArea(res[0]);
+        }
+      })
+      .catch(() => undefined);
+  }, [courierId, session?.tokens.accessToken]);
+
   const permittedCatalog = React.useMemo(() => {
     return QUICK_APP_CATALOG.filter(
       (item) => !item.permission || canAccessCourierFeature(session?.user, item.permission),
@@ -160,6 +187,59 @@ export function ProfileScreen(): React.JSX.Element {
               Alert.alert('Hạng sao', 'Chi tiết hạng sao sẽ cập nhật theo API.');
             }}
           />
+
+          {/* ASSIGNED ROUTE CARD */}
+          <Pressable
+            style={({ pressed }) => [
+              styles.routeProfileCard,
+              pressed && styles.routeProfileCardPressed,
+            ]}
+            onPress={() => navigation.navigate('MyRoute')}
+          >
+            <View style={styles.routeProfileHeader}>
+              <View
+                style={[
+                  styles.routeProfileDot,
+                  { backgroundColor: assignedArea?.colorHex || theme.colors.primary },
+                ]}
+              />
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <View style={styles.routeBadgeRow}>
+                  <Text style={styles.routeProfileTitle} numberOfLines={1}>
+                    {assignedArea?.zoneName || 'Tuyến giao nhận của tôi'}
+                  </Text>
+                  {assignedArea?.hubCode ? (
+                    <View style={styles.routeHubTag}>
+                      <Text style={styles.routeHubTagText}>Hub {assignedArea.hubCode}</Text>
+                    </View>
+                  ) : null}
+                </View>
+                <Text style={styles.routeProfileSub} numberOfLines={1}>
+                  {assignedArea
+                    ? `${assignedArea.ward} • ${assignedArea.district}`
+                    : 'Xem bản đồ ranh giới và thông tin phân bổ tuyến'}
+                </Text>
+              </View>
+              <View style={styles.routeProfileArrowBtn}>
+                <Ionicons name="chevron-forward" size={18} color={theme.colors.primary} />
+              </View>
+            </View>
+
+            <View style={styles.routeProfileDivider} />
+
+            <View style={styles.routeProfileFooter}>
+              <View style={styles.routeProfileTag}>
+                <Ionicons name="shield-checkmark" size={13} color="#059669" />
+                <Text style={styles.routeProfileTagText}>
+                  {assignedArea ? 'Tự động gán theo ranh giới' : 'Điều phối linh hoạt'}
+                </Text>
+              </View>
+              <View style={styles.routeProfileViewAction}>
+                <Ionicons name="map" size={13} color={theme.colors.primary} />
+                <Text style={styles.routeProfileViewActionText}>Xem bản đồ tuyến</Text>
+              </View>
+            </View>
+          </Pressable>
 
           <QuickAppCustomizeCard
             appItems={permittedCatalog}
@@ -719,5 +799,97 @@ const styles = StyleSheet.create({
     ...theme.typography.caption.md,
     color: theme.colors.textSecondary,
     fontWeight: '700',
+  },
+  routeProfileCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: '#DFE7F2',
+    ...theme.shadow.card,
+    gap: 10,
+  },
+  routeProfileCardPressed: {
+    opacity: 0.92,
+    backgroundColor: '#F8FAFC',
+  },
+  routeProfileHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  routeBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  routeProfileDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+  },
+  routeProfileTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
+  },
+  routeHubTag: {
+    backgroundColor: '#EEF4FF',
+    borderRadius: theme.radius.pill,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: '#D0E1FD',
+  },
+  routeHubTagText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: theme.colors.primary,
+  },
+  routeProfileSub: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
+  },
+  routeProfileArrowBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  routeProfileDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+  },
+  routeProfileFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  routeProfileTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: theme.radius.sm,
+  },
+  routeProfileTagText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#065F46',
+  },
+  routeProfileViewAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  routeProfileViewActionText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: theme.colors.primary,
   },
 });

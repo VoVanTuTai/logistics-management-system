@@ -121,6 +121,11 @@ function run() {
       `${nodeOptions}${separator}--max-old-space-size=${DEFAULT_NODE_MAX_OLD_SPACE_MB}`.trim();
   }
 
+  const lanIp = resolveLanIp();
+  if (!process.env.EXPO_PUBLIC_GATEWAY_FALLBACK_BASE_URLS && lanIp) {
+    process.env.EXPO_PUBLIC_GATEWAY_FALLBACK_BASE_URLS = `http://${lanIp}:3000,http://10.0.2.2:3000,http://localhost:3000,http://127.0.0.1:3000`;
+  }
+
   const extraArgs = process.argv.slice(2);
   const hasHostArg = extraArgs.some(
     (arg) => arg === '--host' || arg.startsWith('--host='),
@@ -128,10 +133,14 @@ function run() {
   const hasPortArg = extraArgs.some(
     (arg) => arg === '--port' || arg.startsWith('--port='),
   );
+  const hasClearArg = extraArgs.some(
+    (arg) => arg === '--clear' || arg === '-c',
+  );
 
   const expoArgs = [
     'expo',
     'start',
+    ...(hasClearArg ? [] : ['--clear']),
     ...(hasHostArg ? [] : ['--host', 'lan']),
     ...(hasPortArg ? [] : ['--port', String(DEFAULT_EXPO_PORT)]),
     ...extraArgs,
