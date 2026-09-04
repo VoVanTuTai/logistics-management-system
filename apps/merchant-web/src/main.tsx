@@ -1914,16 +1914,45 @@ function MerchantApp(): React.JSX.Element {
     setDataLoading(false);
   }
 
+  function fillDemoAccount(code: string, pass = 'password') {
+    setLoginUsername(code);
+    setLoginPassword(pass);
+    setLoginError(null);
+  }
+
   async function handleLogin(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     setLoginLoading(true);
     setLoginError(null);
     try {
+      let resolvedUsername = loginUsername.trim();
+
+      // Hỗ trợ map thông minh nếu người dùng/thầy nhập dạng Email hoặc Email demo
+      const demoEmailMap: Record<string, string> = {
+        'nexus.merchant@example.com': '41100001',
+        'merchant@nexus.vn': '41100001',
+        'merchant.hanoi@nexus.vn': '41100001',
+        'merchant.hcm@nexus.vn': '41100079',
+        'merchant.danang@nexus.vn': '41100048',
+        'shop.hoankiem@nexus.vn': '41100001',
+        'shop.benthanh@nexus.vn': '41100079',
+        'shop.haichau@nexus.vn': '41100048',
+      };
+
+      if (demoEmailMap[resolvedUsername.toLowerCase()]) {
+        resolvedUsername = demoEmailMap[resolvedUsername.toLowerCase()];
+      } else if (resolvedUsername.includes('@')) {
+        const prefix = resolvedUsername.split('@')[0].trim();
+        if (prefix) {
+          resolvedUsername = prefix;
+        }
+      }
+
       const result = await request<LoginResponse>('/merchant/auth/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          username: loginUsername.trim(),
+          username: resolvedUsername,
           password: loginPassword,
           roleGroup: 'MERCHANT',
         }),
@@ -1932,7 +1961,7 @@ function MerchantApp(): React.JSX.Element {
       setSession(nextSession);
       await refreshAllData(nextSession.accessToken, nextSession.user);
       setActiveView('dashboard');
-      pushNotification('success', 'Đăng nhập thành công', `Xin chào ${nextSession.user.username}`);
+      pushNotification('success', 'Đăng nhập thành công', `Xin chào ${nextSession.user.displayName || nextSession.user.username}`);
     } catch (error) {
       setLoginError(extractErrorMessage(error));
     } finally {
@@ -2797,18 +2826,21 @@ function MerchantApp(): React.JSX.Element {
 
               <form className="login-form-new" onSubmit={handleLogin}>
                 <div className="login-field-group">
-                  <label className="login-field-label" htmlFor="username">Tên đăng nhập hoặc Email</label>
+                  <label className="login-field-label" htmlFor="username">Mã Shop / SĐT / Email</label>
                   <div className="login-input-wrapper">
-                    <span className="material-symbols-outlined login-input-icon">person</span>
+                    <span className="material-symbols-outlined login-input-icon">storefront</span>
                     <input 
                       className="login-input" 
                       id="username" 
                       value={loginUsername} 
                       onChange={(e) => setLoginUsername(e.target.value)} 
-                      placeholder="nexus.merchant@example.com" 
+                      placeholder="VD: 41100001 hoặc 0941000001" 
                       type="text" 
                     />
                   </div>
+                  <span className="login-field-hint">
+                    Đăng nhập bằng Mã bưu cục shop (41100001), Số điện thoại (0941000001) hoặc Email demo
+                  </span>
                 </div>
 
                 <div className="login-field-group">
@@ -2831,6 +2863,46 @@ function MerchantApp(): React.JSX.Element {
                       <span className="material-symbols-outlined">
                         {showPassword ? "visibility_off" : "visibility"}
                       </span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Quick Demo Preset Selector */}
+                <div className="login-demo-presets">
+                  <div className="login-demo-header">
+                    <span className="material-symbols-outlined login-demo-icon">bolt</span>
+                    <span className="login-demo-title">Tài khoản Demo Nhanh (Click tự điền)</span>
+                  </div>
+                  <div className="login-demo-chip-list">
+                    <button
+                      type="button"
+                      className={`login-demo-chip ${loginUsername === '41100001' ? 'active' : ''}`}
+                      onClick={() => fillDemoAccount('41100001')}
+                      title="Shop Hàng Bài - Hoàn Kiếm, Hà Nội (SĐT: 0941000001)"
+                    >
+                      <span className="login-chip-badge hn">HN</span>
+                      <span className="login-chip-code">41100001</span>
+                      <span className="login-chip-name">P. Hàng Bài</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`login-demo-chip ${loginUsername === '41100048' ? 'active' : ''}`}
+                      onClick={() => fillDemoAccount('41100048')}
+                      title="Shop Thạch Thang - Hải Châu, Đà Nẵng (SĐT: 0941000048)"
+                    >
+                      <span className="login-chip-badge dn">ĐN</span>
+                      <span className="login-chip-code">41100048</span>
+                      <span className="login-chip-name">P. Thạch Thang</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`login-demo-chip ${loginUsername === '41100079' ? 'active' : ''}`}
+                      onClick={() => fillDemoAccount('41100079')}
+                      title="Shop Bến Thành - Quận 1, TP.HCM (SĐT: 0941000079)"
+                    >
+                      <span className="login-chip-badge hcm">HCM</span>
+                      <span className="login-chip-code">41100079</span>
+                      <span className="login-chip-name">P. Bến Thành</span>
                     </button>
                   </div>
                 </div>

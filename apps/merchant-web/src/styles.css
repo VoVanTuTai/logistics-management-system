@@ -4703,3 +4703,115 @@ tbody tr:hover {
   color: var(--stitch-primary);
 }
 
+.login-field-hint {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--stitch-on-surface-variant);
+  opacity: 0.85;
+}
+
+.login-demo-presets {
+  margin-top: 4px;
+  padding: 10px 12px;
+  background-color: var(--stitch-surface-container-low);
+  border: 1px dashed var(--stitch-outline-variant);
+  border-radius: var(--stitch-rounded);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.login-demo-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.login-demo-icon {
+  font-size: 16px;
+  color: #eab308;
+}
+
+.login-demo-title {
+  font-family: 'Inter', sans-serif;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--stitch-on-surface-variant);
+}
+
+.login-demo-chip-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.login-demo-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 4px;
+  background-color: var(--stitch-surface-bright);
+  border: 1px solid var(--stitch-outline-variant);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.login-demo-chip:hover {
+  border-color: var(--stitch-primary);
+  background-color: var(--stitch-surface-container-high);
+  transform: translateY(-1px);
+}
+
+.login-demo-chip.active {
+  border-color: var(--stitch-primary);
+  background-color: rgba(0, 61, 155, 0.08);
+  box-shadow: 0 0 0 1px var(--stitch-primary);
+}
+
+.login-chip-badge {
+  font-family: 'Inter', sans-serif;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+}
+
+.login-chip-badge.hn {
+  background-color: #e0f2fe;
+  color: #0369a1;
+}
+
+.login-chip-badge.dn {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.login-chip-badge.hcm {
+  background-color: #dcfce7;
+  color: #15803d;
+}
+
+.login-chip-code {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--stitch-on-surface);
+  margin-top: 3px;
+}
+
+.login-chip-name {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  color: var(--stitch-on-surface-variant);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+
