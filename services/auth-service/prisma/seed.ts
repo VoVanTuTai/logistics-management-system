@@ -45,8 +45,9 @@ async function seedUsers() {
   const allRegionalHubCodes = Object.values(REGIONAL_HUBS).map((hub) => hub.code);
   const keyBranchHubCodes = ['001001B001', '003079B001', '002048B001', 'HN-001', 'HCM-001', 'DN-001'];
   const keyWardHubCodes = [
-    '07925W001', 'HCM-001', '07901W001', '07903W001', '07905W001', '07912W001', // TP.HCM
-    '00106W001', 'HN-001', '00101W001', '00105W001', '00108W001', // Hà Nội
+    '00101W001', '00102W001', '00103W001', '00104W001',                     // Hà Nội
+    '04801W001', '04801W002', '04802W001',                                  // Đà Nẵng
+    '07901W001', '07901W002', '07903W001', '07905W001', '07912W001', '07913W001', // TP.HCM
   ];
   const allSystemHubCodes = [
     NATIONAL_HQ_HUB.code,
@@ -186,9 +187,33 @@ async function seedUsers() {
       id: '41100001',
       username: '41100001',
       roles: ['MERCHANT'],
-      displayName: 'Merchant Đối tác Tổng Hà Nội',
+      displayName: 'Merchant Phường Hàng Bài - Hoàn Kiếm',
       phone: '0941000001',
-      hubCodes: ['001001B001'],
+      hubCodes: ['00101W001', '001001B001', 'HN-001'],
+    },
+    {
+      id: '41100002',
+      username: '41100002',
+      roles: ['MERCHANT'],
+      displayName: 'Merchant Phường Kim Mã - Ba Đình',
+      phone: '0941000002',
+      hubCodes: ['00102W001', '001001B001', 'HN-001'],
+    },
+    {
+      id: '41100003',
+      username: '41100003',
+      roles: ['MERCHANT'],
+      displayName: 'Merchant Phường Dịch Vọng - Cầu Giấy',
+      phone: '0941000003',
+      hubCodes: ['00103W001', '001001B001', 'HN-001'],
+    },
+    {
+      id: '41100004',
+      username: '41100004',
+      roles: ['MERCHANT'],
+      displayName: 'Merchant Phường Trung Liệt - Đống Đa',
+      phone: '0941000004',
+      hubCodes: ['00104W001', '001001B001', 'HN-001'],
     },
 
     // --- TP. Hồ Chí Minh ---
@@ -212,9 +237,33 @@ async function seedUsers() {
       id: '41100079',
       username: '41100079',
       roles: ['MERCHANT'],
-      displayName: 'Merchant Đối tác Tổng TP. Hồ Chí Minh',
+      displayName: 'Merchant Phường Bến Thành - Quận 1',
       phone: '0941000079',
-      hubCodes: ['003079B001'],
+      hubCodes: ['07901W001', '003079B001', 'HCM-001'],
+    },
+    {
+      id: '41100080',
+      username: '41100080',
+      roles: ['MERCHANT'],
+      displayName: 'Merchant Phường 13 - Quận 3',
+      phone: '0941000080',
+      hubCodes: ['07903W001', '003079B001', 'HCM-001'],
+    },
+    {
+      id: '41100081',
+      username: '41100081',
+      roles: ['MERCHANT'],
+      displayName: 'Merchant Phường 13 - Tân Bình',
+      phone: '0941000081',
+      hubCodes: ['07913W001', '003079B001', 'HCM-001'],
+    },
+    {
+      id: '41100082',
+      username: '41100082',
+      roles: ['MERCHANT'],
+      displayName: 'Merchant Phường An Phú Đông - Quận 12',
+      phone: '0941000082',
+      hubCodes: ['07912W001', '003079B001', 'HCM-001'],
     },
 
     // --- Đà Nẵng (Trung tâm Miền Trung) ---
@@ -238,200 +287,329 @@ async function seedUsers() {
       id: '41100048',
       username: '41100048',
       roles: ['MERCHANT'],
-      displayName: 'Merchant Đối tác Tổng Đà Nẵng',
+      displayName: 'Merchant Phường Thạch Thang - Hải Châu',
       phone: '0941000048',
-      hubCodes: ['002048B001'],
+      hubCodes: ['04801W001', '002048B001', 'DN-001'],
+    },
+    {
+      id: '41100049',
+      username: '41100049',
+      roles: ['MERCHANT'],
+      displayName: 'Merchant Phường Thanh Bình - Hải Châu',
+      phone: '0941000049',
+      hubCodes: ['04801W002', '002048B001', 'DN-001'],
+    },
+    {
+      id: '41100050',
+      username: '41100050',
+      roles: ['MERCHANT'],
+      displayName: 'Merchant Phường An Hải Bắc - Sơn Trà',
+      phone: '0941000050',
+      hubCodes: ['04802W001', '002048B001', 'DN-001'],
     },
   ];
 
   // =========================================================================
-  // 4. BƯU CỤC XÃ / PHƯỜNG & COURIER TRỰC THUỘC (Cấp 3 - Hà Nội & TP.HCM)
+  // 4. BƯU CỤC PHƯỜNG & COURIER — 3 TỈNH × 11 PHƯỜNG × 2 COURIER/PHƯỜNG
+  // Quy chuẩn mã: 30002001 → 30002022
   // =========================================================================
   const wardAndCourierUsers = [
-    // --- 4.1 Bưu cục Tân Bình (HCM-001 / TP.HCM) & Couriers vẽ dải toạ độ ---
-    {
-      id: '20001001',
-      username: '20001001',
-      roles: ['HUB_OPS', 'OPS_VIEWER'],
-      displayName: 'Trưởng Bưu cục Tân Bình (HCM)',
-      phone: '0902100001',
-      hubCodes: ['HCM-001', '003079B001'],
-    },
-    {
-      id: '30001001',
-      username: '30001001',
-      roles: ['COURIER'],
-      displayName: 'Courier Tân Bình - Tuyến Phổ Quang Sân Bay',
-      phone: '0903100001',
-      hubCodes: ['HCM-001'],
-    },
-    {
-      id: '30001002',
-      username: '30001002',
-      roles: ['COURIER'],
-      displayName: 'Courier Tân Bình - Tuyến Cộng Hòa Hoàng Hoa Thám',
-      phone: '0903100002',
-      hubCodes: ['HCM-001'],
-    },
-    {
-      id: '30001003',
-      username: '30001003',
-      roles: ['COURIER'],
-      displayName: 'Courier Tân Bình - Tuyến Phường 13',
-      phone: '0903100003',
-      hubCodes: ['HCM-001'],
-    },
+    // =====================================================================
+    // 4.1 HÀ NỘI — 4 Phường × 2 Courier = 8 Courier
+    // =====================================================================
 
-    // --- 4.2 Bưu cục Phường Bến Thành - Q1 (TP.HCM) ---
+    // --- Phường Hàng Bài - Hoàn Kiếm (00101W001) ---
     {
-      id: '20001002',
-      username: '20001002',
+      id: '20002001',
+      username: '20002001',
       roles: ['HUB_OPS', 'OPS_VIEWER'],
-      displayName: 'Trưởng Bưu cục Phường Bến Thành (Q1)',
-      phone: '0902100002',
-      hubCodes: ['07901W001', '003079B001'],
-    },
-    {
-      id: '30001004',
-      username: '30001004',
-      roles: ['COURIER'],
-      displayName: 'Courier Bến Thành - Tuyến Chợ Bến Thành',
-      phone: '0903100004',
-      hubCodes: ['07901W001'],
-    },
-
-    // --- 4.3 Bưu cục Phường 13 - Quận 3 (TP.HCM) ---
-    {
-      id: '20001003',
-      username: '20001003',
-      roles: ['HUB_OPS', 'OPS_VIEWER'],
-      displayName: 'Trưởng Bưu cục Phường 13 (Q3)',
-      phone: '0902100003',
-      hubCodes: ['07903W001', '003079B001'],
-    },
-    {
-      id: '30001005',
-      username: '30001005',
-      roles: ['COURIER'],
-      displayName: 'Courier Q3 - Tuyến Lê Văn Sỹ',
-      phone: '0903100005',
-      hubCodes: ['07903W001'],
-    },
-
-    // --- 4.4 Bưu cục Phường 2 - Quận 5 (TP.HCM) ---
-    {
-      id: '20001004',
-      username: '20001004',
-      roles: ['HUB_OPS', 'OPS_VIEWER'],
-      displayName: 'Trưởng Bưu cục Phường 2 (Q5)',
-      phone: '0902100004',
-      hubCodes: ['07905W001', '003079B001'],
-    },
-    {
-      id: '30001006',
-      username: '30001006',
-      roles: ['COURIER'],
-      displayName: 'Courier Q5 - Tuyến Trần Hưng Đạo',
-      phone: '0903100006',
-      hubCodes: ['07905W001'],
-    },
-
-    // --- 4.5 Bưu cục An Phú Đông - Quận 12 (TP.HCM) ---
-    {
-      id: '20001005',
-      username: '20001005',
-      roles: ['HUB_OPS', 'OPS_VIEWER'],
-      displayName: 'Trưởng Bưu cục An Phú Đông (Q12)',
-      phone: '0902100005',
-      hubCodes: ['07912W001', '003079B001'],
-    },
-    {
-      id: '30001007',
-      username: '30001007',
-      roles: ['COURIER'],
-      displayName: 'Courier Q12 - Tuyến Hà Huy Giáp',
-      phone: '0903100007',
-      hubCodes: ['07912W001'],
-    },
-
-    // --- 4.6 Bưu cục Đống Đa (HN-001 / Hà Nội) & Couriers vẽ dải toạ độ ---
-    {
-      id: '20001010',
-      username: '20001010',
-      roles: ['HUB_OPS', 'OPS_VIEWER'],
-      displayName: 'Trưởng Bưu cục Đống Đa (HN)',
-      phone: '0902100010',
-      hubCodes: ['HN-001', '001001B001'],
-    },
-    {
-      id: '30001010',
-      username: '30001010',
-      roles: ['COURIER'],
-      displayName: 'Courier Đống Đa - Tuyến Láng Hạ Giảng Võ',
-      phone: '0903100010',
-      hubCodes: ['HN-001'],
-    },
-    {
-      id: '30001011',
-      username: '30001011',
-      roles: ['COURIER'],
-      displayName: 'Courier Đống Đa - Tuyến Thái Hà Chùa Bộc',
-      phone: '0903100011',
-      hubCodes: ['HN-001'],
-    },
-
-    // --- 4.7 Bưu cục Tràng Tiền - Hoàn Kiếm (Hà Nội) ---
-    {
-      id: '20001011',
-      username: '20001011',
-      roles: ['HUB_OPS', 'OPS_VIEWER'],
-      displayName: 'Trưởng Bưu cục Tràng Tiền (Hoàn Kiếm)',
-      phone: '0902100011',
+      displayName: 'Trưởng Bưu cục Hàng Bài (Hoàn Kiếm)',
+      phone: '0902200001',
       hubCodes: ['00101W001', '001001B001'],
     },
     {
-      id: '30001012',
-      username: '30001012',
+      id: '30002001',
+      username: '30002001',
       roles: ['COURIER'],
-      displayName: 'Courier Hoàn Kiếm - Tuyến Phố Cổ',
-      phone: '0903100012',
+      displayName: 'Courier Hoàn Kiếm A - Bắc Hàng Bài',
+      phone: '0903200001',
+      hubCodes: ['00101W001'],
+    },
+    {
+      id: '30002002',
+      username: '30002002',
+      roles: ['COURIER'],
+      displayName: 'Courier Hoàn Kiếm B - Nam Hàng Bài',
+      phone: '0903200002',
       hubCodes: ['00101W001'],
     },
 
-    // --- 4.8 Bưu cục Dịch Vọng Hậu - Cầu Giấy (Hà Nội) ---
+    // --- Phường Kim Mã - Ba Đình (00102W001) ---
     {
-      id: '20001012',
-      username: '20001012',
+      id: '20002002',
+      username: '20002002',
       roles: ['HUB_OPS', 'OPS_VIEWER'],
-      displayName: 'Trưởng Bưu cục Dịch Vọng Hậu (Cầu Giấy)',
-      phone: '0902100012',
-      hubCodes: ['00105W001', '001001B001'],
+      displayName: 'Trưởng Bưu cục Kim Mã (Ba Đình)',
+      phone: '0902200002',
+      hubCodes: ['00102W001', '001001B001'],
     },
     {
-      id: '30001013',
-      username: '30001013',
+      id: '30002003',
+      username: '30002003',
       roles: ['COURIER'],
-      displayName: 'Courier Cầu Giấy - Tuyến Duy Tân',
-      phone: '0903100013',
-      hubCodes: ['00105W001'],
+      displayName: 'Courier Ba Đình A - Đông Kim Mã',
+      phone: '0903200003',
+      hubCodes: ['00102W001'],
+    },
+    {
+      id: '30002004',
+      username: '30002004',
+      roles: ['COURIER'],
+      displayName: 'Courier Ba Đình B - Tây Kim Mã',
+      phone: '0903200004',
+      hubCodes: ['00102W001'],
     },
 
-    // --- 4.9 Bưu cục Bách Khoa - Hai Bà Trưng (Hà Nội) ---
+    // --- Phường Dịch Vọng - Cầu Giấy (00103W001) ---
     {
-      id: '20001013',
-      username: '20001013',
+      id: '20002003',
+      username: '20002003',
       roles: ['HUB_OPS', 'OPS_VIEWER'],
-      displayName: 'Trưởng Bưu cục Bách Khoa (Hai Bà Trưng)',
-      phone: '0902100013',
-      hubCodes: ['00108W001', '001001B001'],
+      displayName: 'Trưởng Bưu cục Dịch Vọng (Cầu Giấy)',
+      phone: '0902200003',
+      hubCodes: ['00103W001', '001001B001'],
     },
     {
-      id: '30001014',
-      username: '30001014',
+      id: '30002005',
+      username: '30002005',
       roles: ['COURIER'],
-      displayName: 'Courier Hai Bà Trưng - Tuyến Đại Cồ Việt',
-      phone: '0903100014',
-      hubCodes: ['00108W001'],
+      displayName: 'Courier Cầu Giấy A - Bắc Dịch Vọng',
+      phone: '0903200005',
+      hubCodes: ['00103W001'],
+    },
+    {
+      id: '30002006',
+      username: '30002006',
+      roles: ['COURIER'],
+      displayName: 'Courier Cầu Giấy B - Nam Dịch Vọng',
+      phone: '0903200006',
+      hubCodes: ['00103W001'],
+    },
+
+    // --- Phường Trung Liệt - Đống Đa (00104W001) ---
+    {
+      id: '20002004',
+      username: '20002004',
+      roles: ['HUB_OPS', 'OPS_VIEWER'],
+      displayName: 'Trưởng Bưu cục Trung Liệt (Đống Đa)',
+      phone: '0902200004',
+      hubCodes: ['00104W001', '001001B001'],
+    },
+    {
+      id: '30002007',
+      username: '30002007',
+      roles: ['COURIER'],
+      displayName: 'Courier Đống Đa A - Đông Thái Hà',
+      phone: '0903200007',
+      hubCodes: ['00104W001'],
+    },
+    {
+      id: '30002008',
+      username: '30002008',
+      roles: ['COURIER'],
+      displayName: 'Courier Đống Đa B - Tây Thái Hà',
+      phone: '0903200008',
+      hubCodes: ['00104W001'],
+    },
+
+    // =====================================================================
+    // 4.2 ĐÀ NẴNG — 3 Phường × 2 Courier = 6 Courier
+    // =====================================================================
+
+    // --- Phường Thạch Thang - Hải Châu (04801W001) ---
+    {
+      id: '20002005',
+      username: '20002005',
+      roles: ['HUB_OPS', 'OPS_VIEWER'],
+      displayName: 'Trưởng Bưu cục Thạch Thang (Hải Châu)',
+      phone: '0902200005',
+      hubCodes: ['04801W001', '002048B001'],
+    },
+    {
+      id: '30002009',
+      username: '30002009',
+      roles: ['COURIER'],
+      displayName: 'Courier Hải Châu A - Bắc Bạch Đằng',
+      phone: '0903200009',
+      hubCodes: ['04801W001'],
+    },
+    {
+      id: '30002010',
+      username: '30002010',
+      roles: ['COURIER'],
+      displayName: 'Courier Hải Châu B - Nam Bạch Đằng',
+      phone: '0903200010',
+      hubCodes: ['04801W001'],
+    },
+
+    // --- Phường Thanh Bình - Hải Châu (04801W002) ---
+    {
+      id: '20002006',
+      username: '20002006',
+      roles: ['HUB_OPS', 'OPS_VIEWER'],
+      displayName: 'Trưởng Bưu cục Thanh Bình (Hải Châu)',
+      phone: '0902200006',
+      hubCodes: ['04801W002', '002048B001'],
+    },
+    {
+      id: '30002011',
+      username: '30002011',
+      roles: ['COURIER'],
+      displayName: 'Courier Thanh Bình A - Đông',
+      phone: '0903200011',
+      hubCodes: ['04801W002'],
+    },
+    {
+      id: '30002012',
+      username: '30002012',
+      roles: ['COURIER'],
+      displayName: 'Courier Thanh Bình B - Tây',
+      phone: '0903200012',
+      hubCodes: ['04801W002'],
+    },
+
+    // --- Phường An Hải Bắc - Sơn Trà (04802W001) ---
+    {
+      id: '20002007',
+      username: '20002007',
+      roles: ['HUB_OPS', 'OPS_VIEWER'],
+      displayName: 'Trưởng Bưu cục An Hải Bắc (Sơn Trà)',
+      phone: '0902200007',
+      hubCodes: ['04802W001', '002048B001'],
+    },
+    {
+      id: '30002013',
+      username: '30002013',
+      roles: ['COURIER'],
+      displayName: 'Courier Sơn Trà A - Bắc Sông Hàn',
+      phone: '0903200013',
+      hubCodes: ['04802W001'],
+    },
+    {
+      id: '30002014',
+      username: '30002014',
+      roles: ['COURIER'],
+      displayName: 'Courier Sơn Trà B - Nam Sông Hàn',
+      phone: '0903200014',
+      hubCodes: ['04802W001'],
+    },
+
+    // =====================================================================
+    // 4.3 TP. HỒ CHÍ MINH — 4 Phường × 2 Courier = 8 Courier
+    // =====================================================================
+
+    // --- Phường Bến Thành - Quận 1 (07901W001) ---
+    {
+      id: '20002008',
+      username: '20002008',
+      roles: ['HUB_OPS', 'OPS_VIEWER'],
+      displayName: 'Trưởng Bưu cục Bến Thành (Q1)',
+      phone: '0902200008',
+      hubCodes: ['07901W001', '003079B001'],
+    },
+    {
+      id: '30002015',
+      username: '30002015',
+      roles: ['COURIER'],
+      displayName: 'Courier Q1 A - Đông Chợ Bến Thành',
+      phone: '0903200015',
+      hubCodes: ['07901W001'],
+    },
+    {
+      id: '30002016',
+      username: '30002016',
+      roles: ['COURIER'],
+      displayName: 'Courier Q1 B - Tây Chợ Bến Thành',
+      phone: '0903200016',
+      hubCodes: ['07901W001'],
+    },
+
+    // --- Phường 13 - Quận 3 (07903W001) ---
+    {
+      id: '20002009',
+      username: '20002009',
+      roles: ['HUB_OPS', 'OPS_VIEWER'],
+      displayName: 'Trưởng Bưu cục Phường 13 (Q3)',
+      phone: '0902200009',
+      hubCodes: ['07903W001', '003079B001'],
+    },
+    {
+      id: '30002017',
+      username: '30002017',
+      roles: ['COURIER'],
+      displayName: 'Courier Q3 A - Bắc Lê Văn Sỹ',
+      phone: '0903200017',
+      hubCodes: ['07903W001'],
+    },
+    {
+      id: '30002018',
+      username: '30002018',
+      roles: ['COURIER'],
+      displayName: 'Courier Q3 B - Nam Lê Văn Sỹ',
+      phone: '0903200018',
+      hubCodes: ['07903W001'],
+    },
+
+    // --- Phường 13 - Tân Bình (07913W001) ---
+    {
+      id: '20002010',
+      username: '20002010',
+      roles: ['HUB_OPS', 'OPS_VIEWER'],
+      displayName: 'Trưởng Bưu cục Phường 13 (Tân Bình)',
+      phone: '0902200010',
+      hubCodes: ['07913W001', '003079B001'],
+    },
+    {
+      id: '30002019',
+      username: '30002019',
+      roles: ['COURIER'],
+      displayName: 'Courier Tân Bình A - Đông Cộng Hòa',
+      phone: '0903200019',
+      hubCodes: ['07913W001'],
+    },
+    {
+      id: '30002020',
+      username: '30002020',
+      roles: ['COURIER'],
+      displayName: 'Courier Tân Bình B - Tây Cộng Hòa',
+      phone: '0903200020',
+      hubCodes: ['07913W001'],
+    },
+
+    // --- Phường An Phú Đông - Quận 12 (07912W001) ---
+    {
+      id: '20002011',
+      username: '20002011',
+      roles: ['HUB_OPS', 'OPS_VIEWER'],
+      displayName: 'Trưởng Bưu cục An Phú Đông (Q12)',
+      phone: '0902200011',
+      hubCodes: ['07912W001', '003079B001'],
+    },
+    {
+      id: '30002021',
+      username: '30002021',
+      roles: ['COURIER'],
+      displayName: 'Courier Q12 A - Bắc Hà Huy Giáp',
+      phone: '0903200021',
+      hubCodes: ['07912W001'],
+    },
+    {
+      id: '30002022',
+      username: '30002022',
+      roles: ['COURIER'],
+      displayName: 'Courier Q12 B - Nam Hà Huy Giáp',
+      phone: '0903200022',
+      hubCodes: ['07912W001'],
     },
   ];
 

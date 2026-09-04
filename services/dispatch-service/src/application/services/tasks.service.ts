@@ -34,6 +34,7 @@ import {
   parseVietnameseAddress,
 } from '../utils/vietnamese-address-parser.utility';
 import {
+  haversineDistanceMeters,
   optimizeRouteTSP,
   type GeoPoint,
   type RouteLeg,
@@ -601,57 +602,184 @@ export class TasksService {
           ? (metadata.pickupLongitude as number)
           : null;
 
-    // PRIORITY 1: Geofence coordinate polygon matching (Point-in-Polygon)
+    // =========================================================================
+    // PRIORITY 1: EXACT GEOFENCE ROUTE MATCH (Point-in-Polygon)
+    // Ưu tiên tuyệt đối: Nếu tọa độ nằm trong bất kỳ đa giác tuyến nào đang active,
+    // gán ngay cho Courier phụ trách tuyến đó (kiểm tra Hub gốc trước, sau đó toàn bộ hệ thống).
+    // =========================================================================
     if (pickupLatitude !== null && pickupLongitude !== null) {
       try {
-        const hubQuery = new URLSearchParams({
-          hubCode: originHubCode,
-          isActive: 'true',
-        });
-        const hubUrl = new URL(
-          `courier-area-assignments?${hubQuery.toString()}`,
-          masterdataUrl.endsWith('/') ? masterdataUrl : `${masterdataUrl}/`,
+        // 1. Lấy toàn bộ các tuyến đang hoạt động
+        const allRes = await fetch(
+          new URL('courier-area-assignments?isActive=true', masterdataUrl.endsWith('/') ? masterdataUrl : `${masterdataUrl}/`),
+          { headers: { accept: 'application/json' } },
         );
-        const hubRes = await fetch(hubUrl, {
-          method: 'GET',
-          headers: { accept: 'application/json' },
-        });
-        if (hubRes.ok) {
-          const assignments = await hubRes.json().catch(() => []);
-          if (Array.isArray(assignments)) {
-            for (const item of assignments) {
-              if (
-                item?.isActive &&
-                item?.courierId &&
-                Array.isArray(item?.boundaryPolygon) &&
-                item.boundaryPolygon.length >= 3
-              ) {
-                if (
-                  isPointInPolygon(
-                    { latitude: pickupLatitude, longitude: pickupLongitude },
-                    item.boundaryPolygon,
-                  )
-                ) {
-                  const courierId = item.courierId;
-                  const zoneLabel = item.zoneName || item.ward || 'Dải toạ độ';
-                  return this.assign(
-                    taskId,
-                    {
-                      courierId,
-                      hubCode: originHubCode,
-                      note: `[Hệ thống tự động điều phối] Tọa độ GPS lấy hàng (${pickupLatitude.toFixed(5)}, ${pickupLongitude.toFixed(5)}) khớp chính xác Dải toạ độ [${zoneLabel}] của Shipper ${courierId} thuộc Hub ${originHubCode}`,
-                    },
-                    {
-                      actorId: 'SYSTEM',
-                      actorUsername: 'SYSTEM_AUTO_DISPATCH',
-                      ipAddress: '127.0.0.1',
-                      userAgent: 'DispatchService-GeofenceEngine',
-                    },
-                  ).catch(() => null);
-                }
-              }
+        const allActiveAssignments = allRes.ok ? await allRes.json().catch(() => []) : [];
+        const activeList = Array.isArray(allActiveAssignments) ? allActiveAssignments : [];
+
+        // 1A. Ưu tiên kiểm tra các tuyến thuộc originHubCode trước
+        const hubAssignments = originHubCode
+          ? activeList.filter((item: any) => item?.hubCode === originHubCode)
+          : [];
+
+        for (const item of hubAssignments) {
+          if (
+            item?.isActive &&
+            item?.courierId &&
+            Array.isArray(item?.boundaryPolygon) &&
+            item.boundaryPolygon.length >= 3
+          ) {
+            if (
+              isPointInPolygon(
+                { latitude: pickupLatitude, longitude: pickupLongitude },
+                item.boundaryPolygon,
+              )
+            ) {
+              const courierId = item.courierId;
+              const zoneLabel = item.zoneName || item.ward || 'Dải toạ độ';
+              const assignedHub = item.hubCode || originHubCode;
+              return this.assign(
+                taskId,
+                {
+                  courierId,
+                  hubCode: assignedHub,
+                  note: `[Tự động điều phối - Đúng tuyến] Tọa độ (${pickupLatitude.toFixed(5)}, ${pickupLongitude.toFixed(5)}) khớp chính xác Tuyến [${zoneLabel}] của Shipper ${courierId} thuộc Hub ${assignedHub}`,
+                },
+                {
+                  actorId: 'SYSTEM',
+                  actorUsername: 'SYSTEM_AUTO_DISPATCH',
+                  ipAddress: '127.0.0.1',
+                  userAgent: 'DispatchService-GeofenceEngine',
+                },
+              ).catch(() => null);
             }
           }
+        }
+
+        // 1B. Kiểm tra Point-in-Polygon trên toàn bộ các tuyến còn lại trong hệ thống
+        const otherAssignments = originHubCode
+          ? activeList.filter((item: any) => item?.hubCode !== originHubCode)
+          : activeList;
+
+        for (const item of otherAssignments) {
+          if (
+            item?.isActive &&
+            item?.courierId &&
+            Array.isArray(item?.boundaryPolygon) &&
+            item.boundaryPolygon.length >= 3
+          ) {
+            if (
+              isPointInPolygon(
+                { latitude: pickupLatitude, longitude: pickupLongitude },
+                item.boundaryPolygon,
+              )
+            ) {
+              const courierId = item.courierId;
+              const zoneLabel = item.zoneName || item.ward || 'Dải toạ độ';
+              const assignedHub = item.hubCode || originHubCode;
+              return this.assign(
+                taskId,
+                {
+                  courierId,
+                  hubCode: assignedHub,
+                  note: `[Tự động điều phối - Đúng tuyến liên Hub] Tọa độ (${pickupLatitude.toFixed(5)}, ${pickupLongitude.toFixed(5)}) khớp chính xác Tuyến [${zoneLabel}] của Shipper ${courierId} thuộc Hub ${assignedHub}`,
+                },
+                {
+                  actorId: 'SYSTEM',
+                  actorUsername: 'SYSTEM_AUTO_DISPATCH',
+                  ipAddress: '127.0.0.1',
+                  userAgent: 'DispatchService-GeofenceEngine',
+                },
+              ).catch(() => null);
+            }
+          }
+        }
+
+        // =========================================================================
+        // PRIORITY 2: EXACT WARD MATCH (Khớp theo tên Phường nếu toạ độ nằm mép ngoài)
+        // =========================================================================
+        if (ward) {
+          const targetWardKey = normalizeWardKey(ward);
+          const wardMatch = activeList.find(
+            (item: any) =>
+              item?.isActive &&
+              item?.courierId &&
+              normalizeWardKey(item?.ward) === targetWardKey,
+          );
+          if (wardMatch) {
+            const courierId = wardMatch.courierId;
+            const zoneLabel = wardMatch.zoneName || wardMatch.ward || 'Tuyến Phường';
+            const assignedHub = wardMatch.hubCode || originHubCode;
+            return this.assign(
+              taskId,
+              {
+                courierId,
+                hubCode: assignedHub,
+                note: `[Tự động điều phối - Đúng Phường] Khớp theo địa bàn ${ward} vào Tuyến [${zoneLabel}] của Shipper ${courierId} thuộc Hub ${assignedHub}`,
+              },
+              {
+                actorId: 'SYSTEM',
+                actorUsername: 'SYSTEM_AUTO_DISPATCH',
+                ipAddress: '127.0.0.1',
+                userAgent: 'DispatchService-GeofenceEngine',
+              },
+            ).catch(() => null);
+          }
+        }
+
+        // =========================================================================
+        // PRIORITY 3: NEAREST CENTROID FALLBACK (Dự phòng cuối - Tâm tuyến gần nhất <= 25km)
+        // =========================================================================
+        let nearestItem: any = null;
+        let minDistanceMeters = Infinity;
+        for (const item of activeList) {
+          if (
+            item?.isActive &&
+            item?.courierId &&
+            Array.isArray(item?.boundaryPolygon) &&
+            item.boundaryPolygon.length >= 3
+          ) {
+            const centerLat =
+              item.boundaryPolygon.reduce(
+                (s: number, p: [number, number]) => s + p[0],
+                0,
+              ) / item.boundaryPolygon.length;
+            const centerLng =
+              item.boundaryPolygon.reduce(
+                (s: number, p: [number, number]) => s + p[1],
+                0,
+              ) / item.boundaryPolygon.length;
+            const dist = haversineDistanceMeters(
+              { latitude: pickupLatitude, longitude: pickupLongitude },
+              { latitude: centerLat, longitude: centerLng },
+            );
+            if (dist < minDistanceMeters) {
+              minDistanceMeters = dist;
+              nearestItem = item;
+            }
+          }
+        }
+
+        if (nearestItem && minDistanceMeters <= 25000) {
+          const courierId = nearestItem.courierId;
+          const zoneLabel =
+            nearestItem.zoneName || nearestItem.ward || 'Tuyến gần nhất';
+          const assignedHub = nearestItem.hubCode || originHubCode;
+          const distKm = (minDistanceMeters / 1000).toFixed(1);
+          return this.assign(
+            taskId,
+            {
+              courierId,
+              hubCode: assignedHub,
+              note: `[Tự động điều phối - Gần nhất dự phòng] Tọa độ GPS (${pickupLatitude.toFixed(5)}, ${pickupLongitude.toFixed(5)}) cách ~${distKm}km tâm Tuyến [${zoneLabel}] của Shipper ${courierId} thuộc Hub ${assignedHub}`,
+            },
+            {
+              actorId: 'SYSTEM',
+              actorUsername: 'SYSTEM_AUTO_DISPATCH',
+              ipAddress: '127.0.0.1',
+              userAgent: 'DispatchService-GeofenceEngine',
+            },
+          ).catch(() => null);
         }
       } catch {
         // Fallback to address matching
@@ -696,12 +824,8 @@ export class TasksService {
 
     if (assignmentList.length === 0) {
       try {
-        const fallbackQuery = new URLSearchParams({
-          hubCode: originHubCode,
-          isActive: 'true',
-        });
         const fallbackUrl = new URL(
-          `courier-area-assignments?${fallbackQuery.toString()}`,
+          `courier-area-assignments?isActive=true`,
           masterdataUrl.endsWith('/') ? masterdataUrl : `${masterdataUrl}/`,
         );
         const fallbackResponse = await fetch(fallbackUrl, {
@@ -729,12 +853,13 @@ export class TasksService {
     }
 
     const courierId = firstAssignment.courierId;
+    const assignedHub = firstAssignment.hubCode || originHubCode;
     return this.assign(
       taskId,
       {
         courierId,
-        hubCode: originHubCode,
-        note: `Hệ thống tự động điều phối lấy hàng cho Shipper ${courierId} theo phân vùng: ${ward}, ${district || ''} thuộc bưu cục ${originHubCode}`,
+        hubCode: assignedHub,
+        note: `Hệ thống tự động điều phối lấy hàng cho Shipper ${courierId} theo phân vùng: ${ward}, ${district || ''} thuộc bưu cục ${assignedHub}`,
       },
       {
         actorId: 'SYSTEM',
