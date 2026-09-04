@@ -83,19 +83,22 @@ async function runSeed() {
   });
 
   const senders = [
-    { name: 'Shop Thời Trang Phố Huế', phone: '0988111222', address: '15 Phố Huế, Phường Hàng Bài, Quận Hoàn Kiếm, Hà Nội', hubCode: '001001B001', hubName: 'Bưu cục Hà Nội', latitude: 21.0185, longitude: 105.8524 },
-    { name: 'Shop Điện Máy Cầu Giấy', phone: '0977333444', address: '234 Cầu Giấy, Phường Dịch Vọng, Quận Cầu Giấy, Hà Nội', hubCode: '001001B001', hubName: 'Bưu cục Hà Nội', latitude: 21.0336, longitude: 105.7958 },
-    { name: 'Tổng Kho Sách Đống Đa', phone: '0966555666', address: '88 Thái Hà, Phường Trung Liệt, Quận Đống Đa, Hà Nội', hubCode: '001001B001', hubName: 'Bưu cục Hà Nội', latitude: 21.0135, longitude: 105.8194 },
-    { name: 'Shop Mỹ Phẩm Sài Gòn', phone: '0911888999', address: '456 Nguyễn Trãi, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh', hubCode: '003079B001', hubName: 'Bưu cục Hồ Chí Minh', latitude: 10.7682, longitude: 106.6912 },
-    { name: 'Tổng Kho Giày Tân Bình', phone: '0922444555', address: '789 Cộng Hòa, Phường 13, Quận Tân Bình, TP. Hồ Chí Minh', hubCode: '003079B001', hubName: 'Bưu cục Hồ Chí Minh', latitude: 10.8035, longitude: 106.6436 },
+    { name: 'Shop Thời Trang Phố Huế', phone: '0988111222', address: '15 Phố Huế, Phường Hàng Bài, Quận Hoàn Kiếm, Hà Nội', hubCode: '00101W001', hubName: 'Bưu cục Phường Hàng Bài', latitude: 21.0185, longitude: 105.8524, courierId: '30002001' },
+    { name: 'Shop Điện Máy Cầu Giấy', phone: '0977333444', address: '234 Cầu Giấy, Phường Dịch Vọng, Quận Cầu Giấy, Hà Nội', hubCode: '00103W001', hubName: 'Bưu cục Phường Dịch Vọng', latitude: 21.0336, longitude: 105.7958, courierId: '30002005' },
+    { name: 'Tổng Kho Sách Đống Đa', phone: '0966555666', address: '88 Thái Hà, Phường Trung Liệt, Quận Đống Đa, Hà Nội', hubCode: '00104W001', hubName: 'Bưu cục Phường Trung Liệt', latitude: 21.0135, longitude: 105.8194, courierId: '30002007' },
+    { name: 'Shop Công Nghệ Kim Mã', phone: '0955666777', address: '56 Kim Mã, Phường Kim Mã, Quận Ba Đình, Hà Nội', hubCode: '00102W001', hubName: 'Bưu cục Phường Kim Mã', latitude: 21.0318, longitude: 105.8247, courierId: '30002003' },
+    { name: 'Shop Mỹ Phẩm Sài Gòn', phone: '0911888999', address: '456 Nguyễn Trãi, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh', hubCode: '07901W001', hubName: 'Bưu cục Phường Bến Thành', latitude: 10.7682, longitude: 106.6912, courierId: '30002015' },
+    { name: 'Shop Thời Trang Quận 3', phone: '0933777888', address: '78 Lê Văn Sỹ, Phường 13, Quận 3, TP. Hồ Chí Minh', hubCode: '07903W001', hubName: 'Bưu cục Phường 13 - Q3', latitude: 10.7891, longitude: 106.6775, courierId: '30002017' },
+    { name: 'Tổng Kho Giày Tân Bình', phone: '0922444555', address: '789 Cộng Hòa, Phường 13, Quận Tân Bình, TP. Hồ Chí Minh', hubCode: '07913W001', hubName: 'Bưu cục Phường 13 - Tân Bình', latitude: 10.8035, longitude: 106.6436, courierId: '30002019' },
+    { name: 'Đặc Sản Đà Nẵng Hải Châu', phone: '0944111333', address: '12 Bạch Đằng, Phường Thạch Thang, Quận Hải Châu, Đà Nẵng', hubCode: '04801W001', hubName: 'Bưu cục Phường Thạch Thang', latitude: 16.0742, longitude: 108.2239, courierId: '30002009' },
   ];
 
   const receivers = [
-    { name: 'Nguyễn Văn Anh', phone: '0912345678', address: '123 Nguyễn Trãi, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh', hubCode: '003079B001', hubName: 'Bưu cục Hồ Chí Minh', latitude: 10.7695, longitude: 106.6934 },
-    { name: 'Trần Thị Bình', phone: '0923456789', address: '45 Lê Văn Sỹ, Phường 13, Quận 3, TP. Hồ Chí Minh', hubCode: '003079B001', hubName: 'Bưu cục Hồ Chí Minh', latitude: 10.7891, longitude: 106.6775 },
+    { name: 'Nguyễn Văn Anh', phone: '0912345678', address: '123 Nguyễn Trãi, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh', hubCode: '07901W001', hubName: 'Bưu cục Phường Bến Thành', latitude: 10.7695, longitude: 106.6934 },
+    { name: 'Trần Thị Bình', phone: '0923456789', address: '45 Lê Văn Sỹ, Phường 13, Quận 3, TP. Hồ Chí Minh', hubCode: '07903W001', hubName: 'Bưu cục Phường 13 - Q3', latitude: 10.7891, longitude: 106.6775 },
     { name: 'Lê Hoàng Cường', phone: '0934567890', address: '88 Võ Văn Ngân, Phường Bình Thọ, Thành phố Thủ Đức, TP. Hồ Chí Minh', hubCode: '003079B001', hubName: 'Bưu cục Hồ Chí Minh', latitude: 10.8504, longitude: 106.7718 },
-    { name: 'Phạm Minh Dung', phone: '0945678901', address: '12 Bạch Đằng, Phường Thạch Thang, Quận Hải Châu, Thành phố Đà Nẵng', hubCode: '002048B001', hubName: 'Bưu cục Đà Nẵng', latitude: 16.0742, longitude: 108.2239 },
-    { name: 'Đỗ Quốc Dung', phone: '0956789012', address: '56 Kim Mã, Phường Kim Mã, Quận Ba Đình, Hà Nội', hubCode: '001001B001', hubName: 'Bưu cục Hà Nội', latitude: 21.0318, longitude: 105.8247 },
+    { name: 'Phạm Minh Dung', phone: '0945678901', address: '12 Bạch Đằng, Phường Thạch Thang, Quận Hải Châu, Thành phố Đà Nẵng', hubCode: '04801W001', hubName: 'Bưu cục Phường Thạch Thang', latitude: 16.0742, longitude: 108.2239 },
+    { name: 'Đỗ Quốc Dũng', phone: '0956789012', address: '56 Kim Mã, Phường Kim Mã, Quận Ba Đình, Hà Nội', hubCode: '00102W001', hubName: 'Bưu cục Phường Kim Mã', latitude: 21.0318, longitude: 105.8247 },
   ];
 
   const ndrReasons = [
@@ -108,7 +111,7 @@ async function runSeed() {
   const demoShipments = [];
   let shipmentIndex = 1;
 
-  // 1. Stage 1: CREATED (15 shipments)
+  // 1. Stage 1: CREATED - Đang chờ Courier lấy hàng (15 shipments)
   for (let i = 0; i < 15; i++) {
     const code = `101${String(shipmentIndex).padStart(9, '0')}`;
     const s = senders[i % senders.length];
@@ -134,8 +137,9 @@ async function runSeed() {
       weightKg: Number((0.5 + (i * 0.3) % 4).toFixed(1)),
       codAmount: 150000 + (i * 50000),
       serviceType: 'STANDARD',
-      dayOffset: Math.floor(i / 3),
+      dayOffset: 0,
       stage: 'CREATED',
+      courierId: s.courierId,
     });
     shipmentIndex++;
   }
@@ -409,9 +413,13 @@ async function runSeed() {
       { type: 'ORDER_CREATED', time: t1, location: item.originHubName, actor: 'Merchant Shop', desc: `Tạo vận đơn ${item.code} thành công` },
     ];
 
+    if (item.stage === 'CREATED' && item.courierId) {
+      events.push({ type: 'PICKUP_ASSIGNED', time: t1, location: item.originHubName, actor: 'Hệ thống Auto-Dispatch', desc: `Đã phân công Courier ${item.courierId} phụ trách tuyến đến lấy hàng tại Shop` });
+    }
+
     if (item.stage !== 'CREATED') {
-      events.push({ type: 'PICKUP_ASSIGNED', time: t2, location: item.originHubName, actor: 'Ops Hà Nội', desc: 'Đã phân công Courier đến shop nhận kiện hàng' });
-      events.push({ type: 'PICKED_UP', time: t3, location: item.senderAddress, actor: `Courier ${item.courierId ?? '30000004'}`, desc: 'Courier đã lấy hàng thành công tại shop' });
+      events.push({ type: 'PICKUP_ASSIGNED', time: t2, location: item.originHubName, actor: 'Ops Bưu cục', desc: 'Đã phân công Courier đến shop nhận kiện hàng' });
+      events.push({ type: 'PICKED_UP', time: t3, location: item.senderAddress, actor: `Courier ${item.courierId ?? '30002015'}`, desc: 'Courier đã lấy hàng thành công tại shop' });
       events.push({ type: 'SCAN_INBOUND', time: t4, location: item.originHubName, actor: 'Nhân viên Kho', desc: `Quét nhập kho tại ${item.originHubName}` });
     }
 
@@ -422,16 +430,16 @@ async function runSeed() {
 
     if (item.stage === 'OUT_FOR_DELIVERY' || item.stage === 'NDR_CASE' || item.stage === 'DELIVERED') {
       events.push({ type: 'MANIFEST_UNSEALED', time: t5, location: item.receiverHubName, actor: 'Bưu cục Đích', desc: `Bắt bao và dỡ kiện hàng tại ${item.receiverHubName}` });
-      events.push({ type: 'OUT_FOR_DELIVERY', time: t6, location: item.receiverAddress, actor: `Courier ${item.courierId ?? '30000001'}`, desc: 'Courier xuất phát đi phát hàng' });
+      events.push({ type: 'OUT_FOR_DELIVERY', time: t6, location: item.receiverAddress, actor: `Courier ${item.courierId ?? '30002017'}`, desc: 'Courier xuất phát đi phát hàng' });
     }
 
     if (item.stage === 'NDR_CASE') {
-      events.push({ type: 'DELIVERY_FAILED', time: t6, location: item.receiverAddress, actor: `Courier ${item.courierId ?? '30000001'}`, desc: `Giao hàng thất bại: ${item.ndrReason}` });
+      events.push({ type: 'DELIVERY_FAILED', time: t6, location: item.receiverAddress, actor: `Courier ${item.courierId ?? '30002017'}`, desc: `Giao hàng thất bại: ${item.ndrReason}` });
       events.push({ type: 'NDR_CREATED', time: t6, location: item.receiverHubName, actor: 'Hệ thống CS', desc: 'Khởi tạo ca xử lý NDR giao lại' });
     }
 
     if (item.stage === 'DELIVERED') {
-      events.push({ type: 'DELIVERED', time: t6, location: item.receiverAddress, actor: `Courier ${item.courierId ?? '30000001'}`, desc: `Giao hàng thành công. Ký nhận POD. Thu hộ COD ${item.codAmount.toLocaleString('vi-VN')}đ` });
+      events.push({ type: 'DELIVERED', time: t6, location: item.receiverAddress, actor: `Courier ${item.courierId ?? '30002017'}`, desc: `Giao hàng thành công. Ký nhận POD. Thu hộ COD ${item.codAmount.toLocaleString('vi-VN')}đ` });
     }
 
     // Insert timeline events in tracking_db
@@ -493,8 +501,13 @@ async function runSeed() {
     // Insert Task in dispatch_db if courier assigned
     if (item.courierId) {
       const taskCode = `TASK_${item.code}`;
-      const taskType = item.stage === 'INBOUND_HUB' ? 'PICKUP' : 'DELIVERY';
-      const taskStatus = item.stage === 'DELIVERED' ? 'COMPLETED' : 'ASSIGNED';
+      const isPickup = item.stage === 'CREATED' || item.stage === 'INBOUND_HUB';
+      const taskType = isPickup ? 'PICKUP' : 'DELIVERY';
+      const taskStatus = item.stage === 'DELIVERED' || item.stage === 'INBOUND_HUB' ? 'COMPLETED' : 'ASSIGNED';
+      const taskTime = item.stage === 'CREATED' ? t1 : t6;
+      const taskNote = item.stage === 'CREATED'
+        ? `[Lấy hàng theo tuyến] Phân công Shipper ${item.courierId} lấy hàng tại ${item.senderAddress}`
+        : 'Task demo cho bưu cục';
 
       const taskObj = await dispatchDb.task.upsert({
         where: { taskCode },
@@ -504,25 +517,33 @@ async function runSeed() {
           taskType,
           status: taskStatus,
           shipmentCode: item.code,
-          note: 'Task demo cho bưu cục',
-          createdAt: t6,
-          updatedAt: t6,
+          note: taskNote,
+          createdAt: taskTime,
+          updatedAt: taskTime,
         },
         update: {
+          taskType,
           status: taskStatus,
-          updatedAt: t6,
+          note: taskNote,
+          updatedAt: taskTime,
         },
       });
 
       try {
-        await dispatchDb.taskAssignment.create({
-          data: {
+        await dispatchDb.taskAssignment.upsert({
+          where: { id: `asg_${item.code}` },
+          create: {
             id: `asg_${item.code}`,
             taskId: taskObj.id,
             courierId: item.courierId,
-            assignedAt: t6,
-            createdAt: t6,
-            updatedAt: t6,
+            assignedAt: taskTime,
+            createdAt: taskTime,
+            updatedAt: taskTime,
+          },
+          update: {
+            courierId: item.courierId,
+            assignedAt: taskTime,
+            updatedAt: taskTime,
           },
         });
       } catch (err) {
