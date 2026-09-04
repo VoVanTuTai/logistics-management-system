@@ -18,3 +18,4 @@ dist/
 tmp/
 .tmp/service-logs/
 _local_backup/
+brain/

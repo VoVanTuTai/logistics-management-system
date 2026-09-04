@@ -394,10 +394,11 @@ start_mobile_app() {
     printf 'echo $$ > %q\n' "$PID_DIR/courier-mobile.pid"
     printf 'cd %q\n' "$dir"
     printf 'export EXPO_PUBLIC_GATEWAY_BASE_URL=%q\n' "$MOBILE_GATEWAY_URL"
+    printf 'export EXPO_PUBLIC_GATEWAY_FALLBACK_BASE_URLS=%q\n' "$MOBILE_GATEWAY_URL,http://10.0.2.2:3000,http://localhost:3000,http://127.0.0.1:3000"
     printf 'echo "[expo] gateway=%s"\n' "$MOBILE_GATEWAY_URL"
     printf 'echo "[expo] host=%s port=8081"\n' "$host_mode"
     echo 'echo "[expo] QR will appear below. Scan it with Expo Go."'
-    printf 'exec npm run start -- --host %q --port 8081\n' "$host_mode"
+    printf 'exec npm run start -- --host %q --port 8081 --clear\n' "$host_mode"
   } > "$runner"
   chmod +x "$runner"
 
@@ -428,6 +429,8 @@ else
 fi
 
 set_env_value "$ROOT_DIR/apps/courier-mobile/.env" EXPO_PUBLIC_GATEWAY_BASE_URL "$MOBILE_GATEWAY_URL"
+set_env_value "$ROOT_DIR/apps/courier-mobile/.env" EXPO_PUBLIC_GATEWAY_FALLBACK_BASE_URLS "http://$LAN_IP:3000,http://10.0.2.2:3000,http://localhost:3000,http://127.0.0.1:3000"
+set_env_value "$ROOT_DIR/apps/courier-mobile/.env" EXPO_PUBLIC_COURIER_ID "30002015"
 set_env_value "$ROOT_DIR/services/gateway-bff/.env" S3_ENDPOINT "$S3_ENDPOINT"
 set_env_value "$ROOT_DIR/services/gateway-bff/.env" AUTH_SERVICE_URL "http://localhost:3010"
 set_env_value "$ROOT_DIR/services/gateway-bff/.env" DELIVERY_SERVICE_URL "http://localhost:3007"
@@ -448,7 +451,6 @@ set_env_value "$ROOT_DIR/apps/guest-web/.env" VITE_GATEWAY_BFF_URL "http://local
 if [[ "$BACKEND_MODE" == "container" ]]; then
   start_container_backend
   node "$ROOT_DIR/scripts/seed-master-logistics-flow.js"
-  node "$ROOT_DIR/scripts/seed-hcm-5-couriers.js"
 elif [[ "$BACKEND_MODE" == "local" ]]; then
   echo "[backend] mode=local"
   echo "[infra] starting docker dependencies"
@@ -470,7 +472,6 @@ elif [[ "$BACKEND_MODE" == "local" ]]; then
   seed_auth_demo_users
   seed_masterdata_demo_data
   node "$ROOT_DIR/scripts/seed-master-logistics-flow.js"
-  node "$ROOT_DIR/scripts/seed-hcm-5-couriers.js"
 
   echo "[wait] backend ports"
   wait_port masterdata-service 3001
