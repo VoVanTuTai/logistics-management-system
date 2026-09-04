@@ -17,7 +17,9 @@ import { DashboardPage } from '../pages/dashboard/DashboardPage';
 import { ComingSoonPlaceholder } from '../pages/shared/ComingSoonPlaceholder';
 import { routePaths } from '../navigation/routes';
 import { useAuthStore } from '../store/authStore';
+import { useHubsQuery } from '../features/masterdata/masterdata.api';
 import { appEnv } from '../utils/env';
+import { formatHubFullAddress } from '../utils/locationScope';
 import { formatRoleLabel } from '../utils/logisticsLabels';
 
 function lazyRoutePage<T extends React.ComponentType<any>>(
@@ -521,6 +523,21 @@ function DashboardLayout(): React.JSX.Element {
       session?.user.hubCodes,
     );
   }, [session?.user.username, session?.user.roles, session?.user.hubCodes]);
+
+  const hubsQuery = useHubsQuery(accessToken, {});
+  const primaryHubCode = (session?.user.hubCodes ?? [])[0] ?? '';
+  const currentOperatorHub = useMemo(() => {
+    const list = hubsQuery.data ?? [];
+    if (!primaryHubCode) {
+      return list[0] ?? null;
+    }
+    const norm = primaryHubCode.trim().toUpperCase();
+    return list.find((h) => h.code.trim().toUpperCase() === norm) ?? list[0] ?? null;
+  }, [hubsQuery.data, primaryHubCode]);
+
+  const currentOperatorHubAddress = useMemo(() => {
+    return formatHubFullAddress(currentOperatorHub);
+  }, [currentOperatorHub]);
   const isDashboardRoute = pathMatches(location.pathname, routePaths.dashboard)
     || pathMatches(location.pathname, routePaths.analyticsDashboard)
     || location.pathname.startsWith('/app/coming-soon');
@@ -1071,6 +1088,37 @@ function DashboardLayout(): React.JSX.Element {
                   )}
                 </div>
 
+                {currentOperatorHub && (
+                  <div
+                    className="ops-topbar-hub-pill"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      padding: '4px 10px',
+                      borderRadius: '8px',
+                      backgroundColor: '#f8fafc',
+                      color: '#0f172a',
+                      border: '1px solid #cbd5e1',
+                      maxWidth: '360px',
+                      overflow: 'hidden',
+                      whiteSpace: 'nowrap',
+                      textOverflow: 'ellipsis',
+                    }}
+                    title={`🏢 Bưu cục: ${currentOperatorHub.name} (${currentOperatorHub.code})\n📍 Địa chỉ: ${currentOperatorHubAddress || 'Đang cập nhật'}`}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '15px', color: '#0284c7', flexShrink: 0 }}>
+                      apartment
+                    </span>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <strong style={{ color: '#0284c7' }}>{currentOperatorHub.name}</strong>
+                      {currentOperatorHubAddress ? ` • 📍 ${currentOperatorHubAddress}` : ''}
+                    </span>
+                  </div>
+                )}
+
                 <div className="ops-topbar-profile" aria-label="Tài khoản">
                   <span className="ops-topbar-avatar">{operatorInitial}</span>
                   <span className="ops-topbar-user">{operatorName}</span>
@@ -1196,6 +1244,37 @@ function DashboardLayout(): React.JSX.Element {
               </select>
             )}
           </div>
+
+          {currentOperatorHub && (
+            <div
+              className="ops-topbar-hub-pill"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '11px',
+                fontWeight: 600,
+                padding: '4px 10px',
+                borderRadius: '8px',
+                backgroundColor: '#f8fafc',
+                color: '#0f172a',
+                border: '1px solid #cbd5e1',
+                maxWidth: '360px',
+                overflow: 'hidden',
+                whiteSpace: 'nowrap',
+                textOverflow: 'ellipsis',
+              }}
+              title={`🏢 Bưu cục: ${currentOperatorHub.name} (${currentOperatorHub.code})\n📍 Địa chỉ: ${currentOperatorHubAddress || 'Đang cập nhật'}`}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '15px', color: '#0284c7', flexShrink: 0 }}>
+                apartment
+              </span>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <strong style={{ color: '#0284c7' }}>{currentOperatorHub.name}</strong>
+                {currentOperatorHubAddress ? ` • 📍 ${currentOperatorHubAddress}` : ''}
+              </span>
+            </div>
+          )}
 
           <div className="ops-func-user" aria-label="Tài khoản">
             <span className="ops-func-user-avatar">{operatorInitial}</span>

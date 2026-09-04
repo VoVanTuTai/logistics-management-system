@@ -6,6 +6,7 @@ import { canAccessOpsFeature } from '../../features/permissions/opsPermissions';
 import { routePaths } from '../../navigation/routes';
 import { useAuthStore } from '../../store/authStore';
 import { appEnv } from '../../utils/env';
+import { formatHubFullAddress } from '../../utils/locationScope';
 import { AnalyticsDashboardPage } from './analytics/AnalyticsDashboardPage';
 import './DashboardPage.css';
 
@@ -223,6 +224,10 @@ export function DashboardPage(): React.JSX.Element {
     );
   }, [effectiveHubCode, scopedHubs]);
 
+  const currentHubAddress = useMemo(() => {
+    return formatHubFullAddress(currentHub);
+  }, [currentHub]);
+
   const canViewHq = canAccessOpsFeature(session?.user, 'nav.hq-command-center');
 
   const quickMenu: ReadonlyArray<{
@@ -402,9 +407,27 @@ export function DashboardPage(): React.JSX.Element {
         >
           <span aria-hidden="true">&#x203A;</span>
         </button>
-        <div className="ops-dashboard__hero-badge" aria-label="Hub đang theo dõi">
-          <small>Hub đang theo dõi</small>
-          <strong>{currentHub?.code ?? effectiveHubCode ?? 'Chưa gán'}</strong>
+        <div className="ops-dashboard__hero-badge ops-dashboard__hero-badge--detailed" aria-label="Hub đang theo dõi">
+          <div className="ops-dashboard__hero-badge-top">
+            <span className="material-symbols-outlined ops-dashboard__hero-badge-icon">apartment</span>
+            <div>
+              <small>Bưu cục vận hành</small>
+              <strong>{currentHub?.name ?? currentHub?.code ?? effectiveHubCode ?? 'Chưa gán'}</strong>
+              <span className="ops-dashboard__hero-badge-code">Mã: <span>{currentHub?.code ?? effectiveHubCode ?? 'N/A'}</span></span>
+            </div>
+          </div>
+          {currentHubAddress ? (
+            <div className="ops-dashboard__hero-badge-address" title={currentHubAddress}>
+              <span className="material-symbols-outlined" style={{ fontSize: '14px', verticalAlign: 'text-bottom', marginRight: '3px' }}>location_on</span>
+              <span>{currentHubAddress}</span>
+            </div>
+          ) : null}
+          <div className="ops-dashboard__hero-badge-meta">
+            <span>🎯 Bán kính: {currentHub?.coverageRadiusKm ?? 5} km</span>
+            {currentHub?.latitude && currentHub?.longitude ? (
+              <span>📍 GPS: {currentHub.latitude.toFixed(4)}, {currentHub.longitude.toFixed(4)}</span>
+            ) : null}
+          </div>
         </div>
       </section>
 
