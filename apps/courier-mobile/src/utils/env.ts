@@ -118,6 +118,36 @@ function collectRuntimeHosts(): string[] {
     appendHostHint(runtimeHosts, sourceCodeModule.scriptURL);
   }
 
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const Constants = require('expo-constants')?.default ?? require('expo-constants');
+    if (Constants) {
+      if (Constants.expoConfig?.hostUri) {
+        appendHostHint(runtimeHosts, Constants.expoConfig.hostUri);
+      }
+      if (Constants.manifest2?.extra?.expoClient?.hostUri) {
+        appendHostHint(runtimeHosts, Constants.manifest2.extra.expoClient.hostUri);
+      }
+      if (Constants.manifest?.debuggerHost) {
+        appendHostHint(runtimeHosts, Constants.manifest.debuggerHost);
+      }
+      if (Constants.experienceUrl) {
+        appendHostHint(runtimeHosts, Constants.experienceUrl);
+      }
+      if (Constants.linkingUri) {
+        appendHostHint(runtimeHosts, Constants.linkingUri);
+      }
+      scanHostHintsFromUnknown(
+        Constants,
+        runtimeHosts,
+        new Set<unknown>(),
+        0,
+      );
+    }
+  } catch {
+    // ignore if expo-constants not loaded
+  }
+
   const nativeModulesRecord = NativeModules as Record<string, unknown>;
   const expoConstantsModule =
     nativeModulesRecord.ExpoConstants ?? nativeModulesRecord.ExponentConstants;

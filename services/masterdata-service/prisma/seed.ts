@@ -470,9 +470,149 @@ async function seedConfigs(provinces: VietnamProvinceSeed[]) {
 
 async function seedMerchantProfiles(provinces: VietnamProvinceSeed[]) {
   const targetConfigs = [
-    { code: 1, index: 0, username: '41100001' },
-    { code: 48, index: 47, username: '41100048' },
-    { code: 79, index: 78, username: '41100079' },
+    // =========================================================================
+    // HÀ NỘI — 4 Phường Trọng Điểm
+    // =========================================================================
+    {
+      code: 1,
+      username: '41100001',
+      citizenId: '001200000001',
+      regionCode: 'NORTH',
+      regionLabel: 'miền Bắc',
+      defaultHubCode: '00101W001',
+      defaultHubName: 'Bưu cục Phường Hàng Bài - Hoàn Kiếm',
+      defaultSenderAddress: 'Kho Hàng Bài, Phường Hàng Bài, Quận Hoàn Kiếm, Thành phố Hà Nội',
+      latitude: 21.0217,
+      longitude: 105.8525,
+    },
+    {
+      code: 1,
+      username: '41100002',
+      citizenId: '001200000002',
+      regionCode: 'NORTH',
+      regionLabel: 'miền Bắc',
+      defaultHubCode: '00102W001',
+      defaultHubName: 'Bưu cục Phường Kim Mã - Ba Đình',
+      defaultSenderAddress: 'Kho Kim Mã, Phường Kim Mã, Quận Ba Đình, Thành phố Hà Nội',
+      latitude: 21.0315,
+      longitude: 105.8270,
+    },
+    {
+      code: 1,
+      username: '41100003',
+      citizenId: '001200000003',
+      regionCode: 'NORTH',
+      regionLabel: 'miền Bắc',
+      defaultHubCode: '00103W001',
+      defaultHubName: 'Bưu cục Phường Dịch Vọng - Cầu Giấy',
+      defaultSenderAddress: 'Kho Dịch Vọng, Phường Dịch Vọng, Quận Cầu Giấy, Thành phố Hà Nội',
+      latitude: 21.0365,
+      longitude: 105.7955,
+    },
+    {
+      code: 1,
+      username: '41100004',
+      citizenId: '001200000004',
+      regionCode: 'NORTH',
+      regionLabel: 'miền Bắc',
+      defaultHubCode: '00104W001',
+      defaultHubName: 'Bưu cục Phường Trung Liệt - Đống Đa',
+      defaultSenderAddress: 'Kho Trung Liệt, Phường Trung Liệt, Quận Đống Đa, Thành phố Hà Nội',
+      latitude: 21.0135,
+      longitude: 105.8220,
+    },
+
+    // =========================================================================
+    // ĐÀ NẴNG — 3 Phường Trọng Điểm
+    // =========================================================================
+    {
+      code: 48,
+      username: '41100048',
+      citizenId: '048200000048',
+      regionCode: 'CENTRAL',
+      regionLabel: 'miền Trung',
+      defaultHubCode: '04801W001',
+      defaultHubName: 'Bưu cục Phường Thạch Thang - Hải Châu',
+      defaultSenderAddress: 'Kho Thạch Thang, Phường Thạch Thang, Quận Hải Châu, Thành phố Đà Nẵng',
+      latitude: 16.0783,
+      longitude: 108.2230,
+    },
+    {
+      code: 48,
+      username: '41100049',
+      citizenId: '048200000049',
+      regionCode: 'CENTRAL',
+      regionLabel: 'miền Trung',
+      defaultHubCode: '04801W002',
+      defaultHubName: 'Bưu cục Phường Thanh Bình - Hải Châu',
+      defaultSenderAddress: 'Kho Thanh Bình, Phường Thanh Bình, Quận Hải Châu, Thành phố Đà Nẵng',
+      latitude: 16.0770,
+      longitude: 108.2120,
+    },
+    {
+      code: 48,
+      username: '41100050',
+      citizenId: '048200000050',
+      regionCode: 'CENTRAL',
+      regionLabel: 'miền Trung',
+      defaultHubCode: '04802W001',
+      defaultHubName: 'Bưu cục Phường An Hải Bắc - Sơn Trà',
+      defaultSenderAddress: 'Kho An Hải Bắc, Phường An Hải Bắc, Quận Sơn Trà, Thành phố Đà Nẵng',
+      latitude: 16.0755,
+      longitude: 108.2370,
+    },
+
+    // =========================================================================
+    // TP. HỒ CHÍ MINH — 4 Phường Trọng Điểm
+    // =========================================================================
+    {
+      code: 79,
+      username: '41100079',
+      citizenId: '079200000079',
+      regionCode: 'SOUTH',
+      regionLabel: 'miền Nam',
+      defaultHubCode: '07901W001',
+      defaultHubName: 'Bưu cục Phường Bến Thành - Quận 1',
+      defaultSenderAddress: 'Kho Bến Thành, Phường Bến Thành, Quận 1, Thành phố Hồ Chí Minh',
+      latitude: 10.7720,
+      longitude: 106.6960,
+    },
+    {
+      code: 79,
+      username: '41100080',
+      citizenId: '079200000080',
+      regionCode: 'SOUTH',
+      regionLabel: 'miền Nam',
+      defaultHubCode: '07903W001',
+      defaultHubName: 'Bưu cục Phường 13 - Quận 3',
+      defaultSenderAddress: 'Kho Phường 13, Phường 13, Quận 3, Thành phố Hồ Chí Minh',
+      latitude: 10.7915,
+      longitude: 106.6780,
+    },
+    {
+      code: 79,
+      username: '41100081',
+      citizenId: '079200000081',
+      regionCode: 'SOUTH',
+      regionLabel: 'miền Nam',
+      defaultHubCode: '07913W001',
+      defaultHubName: 'Bưu cục Phường 13 - Tân Bình',
+      defaultSenderAddress: 'Kho Phường 13, Phường 13, Quận Tân Bình, Thành phố Hồ Chí Minh',
+      latitude: 10.8035,
+      longitude: 106.6436,
+    },
+    {
+      code: 79,
+      username: '41100082',
+      citizenId: '079200000082',
+      regionCode: 'SOUTH',
+      regionLabel: 'miền Nam',
+      defaultHubCode: '07912W001',
+      defaultHubName: 'Bưu cục Phường An Phú Đông - Quận 12',
+      defaultSenderAddress: 'Kho An Phú Đông, Phường An Phú Đông, Quận 12, Thành phố Hồ Chí Minh',
+      latitude: 10.8670,
+      longitude: 106.6960,
+    },
   ];
 
   const allowedUsernames = targetConfigs.map((t) => t.username);
@@ -481,170 +621,467 @@ async function seedMerchantProfiles(provinces: VietnamProvinceSeed[]) {
   });
 
   for (const item of targetConfigs) {
-    const province = provinces.find((p) => p.code === item.code) ?? provinces[0];
-    const profile = merchantProfileSeed(province, item.index);
-    profile.username = item.username;
-    profile.id = `merchant-profile-${item.username}`;
+    const profile = {
+      id: `merchant-profile-${item.username}`,
+      username: item.username,
+      citizenId: item.citizenId,
+      regionCode: item.regionCode,
+      regionLabel: item.regionLabel,
+      defaultHubCode: item.defaultHubCode,
+      defaultHubName: item.defaultHubName,
+      defaultSenderAddress: item.defaultSenderAddress,
+      latitude: item.latitude,
+      longitude: item.longitude,
+    };
 
     await prisma.merchantProfile.upsert({
       where: { username: profile.username },
       create: profile,
-      update: {
-        citizenId: profile.citizenId,
-        regionCode: profile.regionCode,
-        regionLabel: profile.regionLabel,
-        defaultHubCode: profile.defaultHubCode,
-        defaultHubName: profile.defaultHubName,
-        defaultSenderAddress: profile.defaultSenderAddress,
-        latitude: profile.latitude,
-        longitude: profile.longitude,
-      },
+      update: profile,
     });
   }
 }
 
 async function seedCourierAreaAssignments() {
   const assignments = [
-    // --- TP. Hồ Chí Minh: Hub Tân Bình (HCM-001) ---
+    // =====================================================================
+    // HÀ NỘI — 4 Phường × 2 Courier = 8 Assignments
+    // =====================================================================
+
+    // --- Phường Hàng Bài - Hoàn Kiếm (00101W001) ---
+    // Ward boundary: [21.012,105.847] → [21.025,105.858]
+    // Split at lat 21.0185 (North A / South B)
     {
-      courierId: '30001001',
-      hubCode: 'HCM-001',
-      province: 'Thành phố Hồ Chí Minh',
-      district: 'Quận Tân Bình',
-      ward: 'Phường 2',
-      zoneName: 'Tuyến Phổ Quang - Sân Bay',
+      courierId: '30002001',
+      hubCode: '00101W001',
+      province: 'Thành phố Hà Nội',
+      district: 'Quận Hoàn Kiếm',
+      ward: 'Phường Hàng Bài',
+      zoneName: 'Hoàn Kiếm A - Bắc Hàng Bài',
       colorHex: '#2563eb',
       boundaryPolygon: [
-        [10.8000, 106.6500],
-        [10.8200, 106.6500],
-        [10.8200, 106.6700],
-        [10.8000, 106.6700],
-        [10.8000, 106.6500],
+        [21.0185, 105.847],
+        [21.025, 105.847],
+        [21.025, 105.858],
+        [21.0185, 105.858],
+        [21.0185, 105.847],
       ],
       isActive: true,
     },
     {
-      courierId: '30001002',
-      hubCode: 'HCM-001',
-      province: 'Thành phố Hồ Chí Minh',
-      district: 'Quận Tân Bình',
-      ward: 'Phường 13',
-      zoneName: 'Tuyến Cộng Hòa - Hoàng Hoa Thám',
+      courierId: '30002002',
+      hubCode: '00101W001',
+      province: 'Thành phố Hà Nội',
+      district: 'Quận Hoàn Kiếm',
+      ward: 'Phường Hàng Bài',
+      zoneName: 'Hoàn Kiếm B - Nam Hàng Bài',
       colorHex: '#10b981',
       boundaryPolygon: [
-        [10.7900, 106.6300],
-        [10.8100, 106.6300],
-        [10.8100, 106.6500],
-        [10.7900, 106.6500],
-        [10.7900, 106.6300],
-      ],
-      isActive: true,
-    },
-    {
-      courierId: '30001003',
-      hubCode: 'HCM-001',
-      province: 'Thành phố Hồ Chí Minh',
-      district: 'Quận Tân Bình',
-      ward: 'Phường 15',
-      zoneName: 'Tuyến Phường 15 Mở rộng',
-      colorHex: '#f59e0b',
-      boundaryPolygon: null,
-      isActive: true,
-    },
-    {
-      courierId: '30001004',
-      hubCode: '07901W001',
-      province: 'Thành phố Hồ Chí Minh',
-      district: 'Quận 1',
-      ward: 'Phường Bến Thành',
-      zoneName: 'Tuyến Chợ Bến Thành - Lê Lai',
-      colorHex: '#3b82f6',
-      boundaryPolygon: [
-        [10.766, 106.687],
-        [10.777, 106.689],
-        [10.779, 106.696],
-        [10.774, 106.699],
-        [10.768, 106.696],
-        [10.765, 106.691],
-        [10.766, 106.687],
+        [21.012, 105.847],
+        [21.0185, 105.847],
+        [21.0185, 105.858],
+        [21.012, 105.858],
+        [21.012, 105.847],
       ],
       isActive: true,
     },
 
-    // --- Hà Nội: Hub Đống Đa (HN-001) ---
+    // --- Phường Kim Mã - Ba Đình (00102W001) ---
+    // Ward boundary: [21.025,105.817] → [21.038,105.831]
+    // Split at lng 105.824 (East A / West B)
     {
-      courierId: '30001010',
-      hubCode: 'HN-001',
+      courierId: '30002003',
+      hubCode: '00102W001',
       province: 'Thành phố Hà Nội',
-      district: 'Quận Đống Đa',
-      ward: 'Phường Láng Hạ',
-      zoneName: 'Tuyến Láng Hạ - Giảng Võ',
-      colorHex: '#7c3aed',
+      district: 'Quận Ba Đình',
+      ward: 'Phường Kim Mã',
+      zoneName: 'Ba Đình A - Đông Kim Mã',
+      colorHex: '#f59e0b',
       boundaryPolygon: [
-        [21.0150, 105.8100],
-        [21.0250, 105.8100],
-        [21.0250, 105.8250],
-        [21.0150, 105.8250],
-        [21.0150, 105.8100],
+        [21.025, 105.824],
+        [21.038, 105.824],
+        [21.038, 105.831],
+        [21.025, 105.831],
+        [21.025, 105.824],
       ],
       isActive: true,
     },
     {
-      courierId: '30001011',
-      hubCode: 'HN-001',
+      courierId: '30002004',
+      hubCode: '00102W001',
+      province: 'Thành phố Hà Nội',
+      district: 'Quận Ba Đình',
+      ward: 'Phường Kim Mã',
+      zoneName: 'Ba Đình B - Tây Kim Mã',
+      colorHex: '#8b5cf6',
+      boundaryPolygon: [
+        [21.025, 105.817],
+        [21.038, 105.817],
+        [21.038, 105.824],
+        [21.025, 105.824],
+        [21.025, 105.817],
+      ],
+      isActive: true,
+    },
+
+    // --- Phường Dịch Vọng - Cầu Giấy (00103W001) ---
+    // Ward boundary: [21.025,105.787] → [21.042,105.804]
+    // Split at lat 21.0335 (North A / South B)
+    {
+      courierId: '30002005',
+      hubCode: '00103W001',
+      province: 'Thành phố Hà Nội',
+      district: 'Quận Cầu Giấy',
+      ward: 'Phường Dịch Vọng',
+      zoneName: 'Cầu Giấy A - Bắc Dịch Vọng',
+      colorHex: '#ec4899',
+      boundaryPolygon: [
+        [21.0335, 105.787],
+        [21.042, 105.787],
+        [21.042, 105.804],
+        [21.0335, 105.804],
+        [21.0335, 105.787],
+      ],
+      isActive: true,
+    },
+    {
+      courierId: '30002006',
+      hubCode: '00103W001',
+      province: 'Thành phố Hà Nội',
+      district: 'Quận Cầu Giấy',
+      ward: 'Phường Dịch Vọng',
+      zoneName: 'Cầu Giấy B - Nam Dịch Vọng',
+      colorHex: '#06b6d4',
+      boundaryPolygon: [
+        [21.025, 105.787],
+        [21.0335, 105.787],
+        [21.0335, 105.804],
+        [21.025, 105.804],
+        [21.025, 105.787],
+      ],
+      isActive: true,
+    },
+
+    // --- Phường Trung Liệt - Đống Đa (00104W001) ---
+    // Ward boundary: [21.007,105.811] → [21.020,105.826]
+    // Split at lng 105.8185 (East A / West B)
+    {
+      courierId: '30002007',
+      hubCode: '00104W001',
       province: 'Thành phố Hà Nội',
       district: 'Quận Đống Đa',
       ward: 'Phường Trung Liệt',
-      zoneName: 'Tuyến Thái Hà - Chùa Bộc',
-      colorHex: '#ec4899',
+      zoneName: 'Đống Đa A - Đông Thái Hà',
+      colorHex: '#ef4444',
       boundaryPolygon: [
-        [21.0050, 105.8150],
-        [21.0160, 105.8150],
-        [21.0160, 105.8300],
-        [21.0050, 105.8300],
-    // --- TP. Hồ Chí Minh: Kho Merchant Tổng (Quận 1 / Bến Nghé) gán cho Courier 30001001 ---
-    {
-      courierId: '30001001',
-      hubCode: '003079B001',
-      province: 'Thành phố Hồ Chí Minh',
-      district: 'Quận 1',
-      ward: 'Phường Bến Nghé',
-      zoneName: 'Tuyến Kho Tổng Merchant TP.HCM (Bến Nghé - Lê Duẩn)',
-      colorHex: '#2563eb',
-      boundaryPolygon: [
-        [10.7700, 106.6950],
-        [10.7850, 106.6950],
-        [10.7850, 106.7100],
-        [10.7700, 106.7100],
-        [10.7700, 106.6950],
+        [21.007, 105.8185],
+        [21.020, 105.8185],
+        [21.020, 105.826],
+        [21.007, 105.826],
+        [21.007, 105.8185],
       ],
       isActive: true,
     },
     {
-      courierId: '30001001',
-      hubCode: '003079B001',
+      courierId: '30002008',
+      hubCode: '00104W001',
+      province: 'Thành phố Hà Nội',
+      district: 'Quận Đống Đa',
+      ward: 'Phường Trung Liệt',
+      zoneName: 'Đống Đa B - Tây Thái Hà',
+      colorHex: '#84cc16',
+      boundaryPolygon: [
+        [21.007, 105.811],
+        [21.020, 105.811],
+        [21.020, 105.8185],
+        [21.007, 105.8185],
+        [21.007, 105.811],
+      ],
+      isActive: true,
+    },
+
+    // =====================================================================
+    // ĐÀ NẴNG — 3 Phường × 2 Courier = 6 Assignments
+    // =====================================================================
+
+    // --- Phường Thạch Thang - Hải Châu (04801W001) ---
+    // Ward boundary: [16.067,108.217] → [16.082,108.229]
+    // Split at lat 16.0745 (North A / South B)
+    {
+      courierId: '30002009',
+      hubCode: '04801W001',
+      province: 'Thành phố Đà Nẵng',
+      district: 'Quận Hải Châu',
+      ward: 'Phường Thạch Thang',
+      zoneName: 'Hải Châu A - Bắc Bạch Đằng',
+      colorHex: '#7c3aed',
+      boundaryPolygon: [
+        [16.0745, 108.217],
+        [16.082, 108.217],
+        [16.082, 108.229],
+        [16.0745, 108.229],
+        [16.0745, 108.217],
+      ],
+      isActive: true,
+    },
+    {
+      courierId: '30002010',
+      hubCode: '04801W001',
+      province: 'Thành phố Đà Nẵng',
+      district: 'Quận Hải Châu',
+      ward: 'Phường Thạch Thang',
+      zoneName: 'Hải Châu B - Nam Bạch Đằng',
+      colorHex: '#f97316',
+      boundaryPolygon: [
+        [16.067, 108.217],
+        [16.0745, 108.217],
+        [16.0745, 108.229],
+        [16.067, 108.229],
+        [16.067, 108.217],
+      ],
+      isActive: true,
+    },
+
+    // --- Phường Thanh Bình - Hải Châu (04801W002) ---
+    // Ward boundary: [16.057,108.203] → [16.071,108.218]
+    // Split at lng 108.2105 (East A / West B)
+    {
+      courierId: '30002011',
+      hubCode: '04801W002',
+      province: 'Thành phố Đà Nẵng',
+      district: 'Quận Hải Châu',
+      ward: 'Phường Thanh Bình',
+      zoneName: 'Thanh Bình A - Đông',
+      colorHex: '#0ea5e9',
+      boundaryPolygon: [
+        [16.057, 108.2105],
+        [16.071, 108.2105],
+        [16.071, 108.218],
+        [16.057, 108.218],
+        [16.057, 108.2105],
+      ],
+      isActive: true,
+    },
+    {
+      courierId: '30002012',
+      hubCode: '04801W002',
+      province: 'Thành phố Đà Nẵng',
+      district: 'Quận Hải Châu',
+      ward: 'Phường Thanh Bình',
+      zoneName: 'Thanh Bình B - Tây',
+      colorHex: '#d946ef',
+      boundaryPolygon: [
+        [16.057, 108.203],
+        [16.071, 108.203],
+        [16.071, 108.2105],
+        [16.057, 108.2105],
+        [16.057, 108.203],
+      ],
+      isActive: true,
+    },
+
+    // --- Phường An Hải Bắc - Sơn Trà (04802W001) ---
+    // Ward boundary: [16.072,108.230] → [16.086,108.244]
+    // Split at lat 16.079 (North A / South B)
+    {
+      courierId: '30002013',
+      hubCode: '04802W001',
+      province: 'Thành phố Đà Nẵng',
+      district: 'Quận Sơn Trà',
+      ward: 'Phường An Hải Bắc',
+      zoneName: 'Sơn Trà A - Bắc Sông Hàn',
+      colorHex: '#14b8a6',
+      boundaryPolygon: [
+        [16.079, 108.230],
+        [16.086, 108.230],
+        [16.086, 108.244],
+        [16.079, 108.244],
+        [16.079, 108.230],
+      ],
+      isActive: true,
+    },
+    {
+      courierId: '30002014',
+      hubCode: '04802W001',
+      province: 'Thành phố Đà Nẵng',
+      district: 'Quận Sơn Trà',
+      ward: 'Phường An Hải Bắc',
+      zoneName: 'Sơn Trà B - Nam Sông Hàn',
+      colorHex: '#a855f7',
+      boundaryPolygon: [
+        [16.072, 108.230],
+        [16.079, 108.230],
+        [16.079, 108.244],
+        [16.072, 108.244],
+        [16.072, 108.230],
+      ],
+      isActive: true,
+    },
+
+    // =====================================================================
+    // TP. HỒ CHÍ MINH — 4 Phường × 2 Courier = 8 Assignments
+    // =====================================================================
+
+    // --- Phường Bến Thành - Quận 1 (07901W001) ---
+    // Ward boundary: [10.765,106.687] → [10.779,106.699]
+    // Split at lng 106.693 (East A / West B)
+    {
+      courierId: '30002015',
+      hubCode: '07901W001',
       province: 'Thành phố Hồ Chí Minh',
       district: 'Quận 1',
-      ward: 'Phường Sài Gòn',
-      zoneName: 'Tuyến Trung Tâm Phường Sài Gòn',
-      colorHex: '#2563eb',
+      ward: 'Phường Bến Thành',
+      zoneName: 'Q1 A - Đông Chợ Bến Thành',
+      colorHex: '#3b82f6',
       boundaryPolygon: [
-        [10.7700, 106.6950],
-        [10.7850, 106.6950],
-        [10.7850, 106.7100],
-        [10.7700, 106.7100],
-        [10.7700, 106.6950],
+        [10.765, 106.693],
+        [10.779, 106.693],
+        [10.779, 106.699],
+        [10.765, 106.699],
+        [10.765, 106.693],
+      ],
+      isActive: true,
+    },
+    {
+      courierId: '30002016',
+      hubCode: '07901W001',
+      province: 'Thành phố Hồ Chí Minh',
+      district: 'Quận 1',
+      ward: 'Phường Bến Thành',
+      zoneName: 'Q1 B - Tây Chợ Bến Thành',
+      colorHex: '#22c55e',
+      boundaryPolygon: [
+        [10.765, 106.687],
+        [10.779, 106.687],
+        [10.779, 106.693],
+        [10.765, 106.693],
+        [10.765, 106.687],
+      ],
+      isActive: true,
+    },
+
+    // --- Phường 13 - Quận 3 (07903W001) ---
+    // Ward boundary: [10.782,106.671] → [10.795,106.684]
+    // Split at lat 10.7885 (North A / South B)
+    {
+      courierId: '30002017',
+      hubCode: '07903W001',
+      province: 'Thành phố Hồ Chí Minh',
+      district: 'Quận 3',
+      ward: 'Phường 13',
+      zoneName: 'Q3 A - Bắc Lê Văn Sỹ',
+      colorHex: '#f43f5e',
+      boundaryPolygon: [
+        [10.7885, 106.671],
+        [10.795, 106.671],
+        [10.795, 106.684],
+        [10.7885, 106.684],
+        [10.7885, 106.671],
+      ],
+      isActive: true,
+    },
+    {
+      courierId: '30002018',
+      hubCode: '07903W001',
+      province: 'Thành phố Hồ Chí Minh',
+      district: 'Quận 3',
+      ward: 'Phường 13',
+      zoneName: 'Q3 B - Nam Lê Văn Sỹ',
+      colorHex: '#eab308',
+      boundaryPolygon: [
+        [10.782, 106.671],
+        [10.7885, 106.671],
+        [10.7885, 106.684],
+        [10.782, 106.684],
+        [10.782, 106.671],
+      ],
+      isActive: true,
+    },
+
+    // --- Phường 13 - Tân Bình (07913W001) ---
+    // Ward boundary: [10.794,106.633] → [10.815,106.655]
+    // Split at lng 106.644 (East A / West B)
+    {
+      courierId: '30002019',
+      hubCode: '07913W001',
+      province: 'Thành phố Hồ Chí Minh',
+      district: 'Quận Tân Bình',
+      ward: 'Phường 13',
+      zoneName: 'Tân Bình A - Đông Cộng Hòa',
+      colorHex: '#6366f1',
+      boundaryPolygon: [
+        [10.794, 106.644],
+        [10.815, 106.644],
+        [10.815, 106.655],
+        [10.794, 106.655],
+        [10.794, 106.644],
+      ],
+      isActive: true,
+    },
+    {
+      courierId: '30002020',
+      hubCode: '07913W001',
+      province: 'Thành phố Hồ Chí Minh',
+      district: 'Quận Tân Bình',
+      ward: 'Phường 13',
+      zoneName: 'Tân Bình B - Tây Cộng Hòa',
+      colorHex: '#f472b6',
+      boundaryPolygon: [
+        [10.794, 106.633],
+        [10.815, 106.633],
+        [10.815, 106.644],
+        [10.794, 106.644],
+        [10.794, 106.633],
+      ],
+      isActive: true,
+    },
+
+    // --- Phường An Phú Đông - Quận 12 (07912W001) ---
+    // Ward boundary: [10.850,106.683] → [10.885,106.715]
+    // Split at lat 10.8675 (North A / South B)
+    {
+      courierId: '30002021',
+      hubCode: '07912W001',
+      province: 'Thành phố Hồ Chí Minh',
+      district: 'Quận 12',
+      ward: 'Phường An Phú Đông',
+      zoneName: 'Q12 A - Bắc Hà Huy Giáp',
+      colorHex: '#0d9488',
+      boundaryPolygon: [
+        [10.8675, 106.683],
+        [10.885, 106.683],
+        [10.885, 106.715],
+        [10.8675, 106.715],
+        [10.8675, 106.683],
+      ],
+      isActive: true,
+    },
+    {
+      courierId: '30002022',
+      hubCode: '07912W001',
+      province: 'Thành phố Hồ Chí Minh',
+      district: 'Quận 12',
+      ward: 'Phường An Phú Đông',
+      zoneName: 'Q12 B - Nam Hà Huy Giáp',
+      colorHex: '#be185d',
+      boundaryPolygon: [
+        [10.850, 106.683],
+        [10.8675, 106.683],
+        [10.8675, 106.715],
+        [10.850, 106.715],
+        [10.850, 106.683],
       ],
       isActive: true,
     },
   ];
 
-  // Dọn dẹp các phân công cũ của courier-hcm-* và 30000001-30000005
+  // Dọn dẹp tất cả phân công cũ (30001xxx, 30000xxx, courier-*)
   await prisma.courierAreaAssignment.deleteMany({
     where: {
       OR: [
         { courierId: { startsWith: 'courier-' } },
-        { courierId: { in: ['30000001', '30000002', '30000003', '30000004', '30000005'] } },
+        { courierId: { startsWith: '30000' } },
+        { courierId: { startsWith: '30001' } },
       ],
     },
   });
@@ -670,7 +1107,7 @@ async function seedCourierAreaAssignments() {
     });
   }
 
-  console.log(`Đã seed ${assignments.length} phân vùng & dải toạ độ mẫu cho Courier tại Hà Nội và TP.HCM.`);
+  console.log(`Đã seed ${assignments.length} phân vùng geofence chuẩn: 3 Tỉnh × 11 Phường × 2 Courier/Phường.`);
 }
 
 async function seedAuditLogs(provinces: VietnamProvinceSeed[]) {

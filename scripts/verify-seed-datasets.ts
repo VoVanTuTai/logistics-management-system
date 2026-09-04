@@ -99,29 +99,34 @@ for (const acc of provAccounts) {
 }
 console.log('  [PASS] Cấp 2 (Tỉnh Trọng Điểm): Có đủ Trưởng kho tỉnh, Đội trưởng giao nhận và Merchant cho Hà Nội, TP.HCM, Đà Nẵng');
 
-// 2.4 Kiểm tra tài khoản Bưu Cục Phường & Couriers
-const wardOpsAccounts = ['20001001', '20001002', '20001003', '20001004', '20001005', '20001010', '20001011', '20001012', '20001013'];
+// 2.4 Kiểm tra tài khoản Bưu Cục Phường & Couriers (quy chuẩn mới 3 tỉnh × 11 phường)
+const wardOpsAccounts = [
+  '20002001', '20002002', '20002003', '20002004', // Hà Nội
+  '20002005', '20002006', '20002007',             // Đà Nẵng
+  '20002008', '20002009', '20002010', '20002011', // TP.HCM
+];
 for (const acc of wardOpsAccounts) {
   assert.ok(authSeedContent.includes(`'${acc}'`), `Phải có tài khoản bưu cục trưởng ${acc}`);
 }
-console.log(`  [PASS] Cấp 3 (Trưởng Bưu Cục): Có đủ ${wardOpsAccounts.length} trưởng bưu cục phường tại Hà Nội và TP.HCM`);
+console.log(`  [PASS] Cấp 3 (Trưởng Bưu Cục): Có đủ ${wardOpsAccounts.length} trưởng bưu cục phường tại 3 tỉnh`);
 
 const courierAccounts = [
-  '30001001', '30001002', '30001003', '30001004', '30001005', '30001006', '30001007', // TP.HCM
-  '30001010', '30001011', '30001012', '30001013', '30001014', // Hà Nội
+  '30002001', '30002002', '30002003', '30002004', '30002005', '30002006', '30002007', '30002008', // Hà Nội
+  '30002009', '30002010', '30002011', '30002012', '30002013', '30002014', // Đà Nẵng
+  '30002015', '30002016', '30002017', '30002018', '30002019', '30002020', '30002021', '30002022', // TP.HCM
 ];
 for (const acc of courierAccounts) {
   assert.ok(authSeedContent.includes(`'${acc}'`), `Phải có tài khoản courier ${acc}`);
   assert.ok(dispatchEnvContent.includes(acc), `DISPATCH_COURIER_OPTIONS phải chứa courier ${acc}`);
 }
-console.log(`  [PASS] Cấp 3 (Couriers Tuyến): Có đủ ${courierAccounts.length} Courier phân tuyến toạ độ tại Hà Nội và TP.HCM, đã tích hợp vào dispatch-service`);
+console.log(`  [PASS] Cấp 3 (Couriers Tuyến): Có đủ ${courierAccounts.length} Courier phân tuyến geofence tại 3 tỉnh, đã tích hợp vào dispatch-service`);
 
 // 2.5 Kiểm tra dữ liệu dải toạ độ mẫu cho Couriers trong masterdata-service
 assert.ok(masterdataSeedContent.includes('seedCourierAreaAssignments'), 'masterdata seed phải có hàm seedCourierAreaAssignments');
-assert.ok(masterdataSeedContent.includes('Tuyến Phổ Quang - Sân Bay'), 'Phải có dải toạ độ Phổ Quang');
-assert.ok(masterdataSeedContent.includes('Tuyến Cộng Hòa - Hoàng Hoa Thám'), 'Phải có dải toạ độ Cộng Hòa');
-assert.ok(masterdataSeedContent.includes('Tuyến Láng Hạ - Giảng Võ'), 'Phải có dải toạ độ Láng Hạ');
-console.log('  [PASS] Phân tuyến Dải toạ độ: Đã seed sẵn các đa giác toạ độ mẫu cho Courier trong masterdata-service');
+assert.ok(masterdataSeedContent.includes('Hoàn Kiếm A - Bắc Hàng Bài'), 'Phải có geofence Hoàn Kiếm A');
+assert.ok(masterdataSeedContent.includes('Hải Châu A - Bắc Bạch Đằng'), 'Phải có geofence Hải Châu A');
+assert.ok(masterdataSeedContent.includes('Q1 A - Đông Chợ Bến Thành'), 'Phải có geofence Q1 A');
+console.log('  [PASS] Phân tuyến Geofence: Đã seed 22 đa giác toạ độ chia đôi phường cho 3 tỉnh (HN, DN, HCM)');
 
 // 2.6 Kiểm tra cơ chế tự động dọn dẹp các tài khoản thừa
 assert.ok(authSeedContent.includes('prisma.userAccount.deleteMany'), 'Phải có lệnh xóa dọn dẹp tài khoản cũ thừa');

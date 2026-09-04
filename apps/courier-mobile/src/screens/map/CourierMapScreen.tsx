@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  Modal,
   Platform,
   Pressable,
   RefreshControl,
@@ -37,12 +38,39 @@ import {
 } from '../../utils/directions';
 import { appEnv } from '../../utils/env';
 import { reportLocationToServer } from '../../services/location-reporter.service';
+import { courierApiClient } from '../../services/api/client';
+import { courierEndpoints } from '../../services/api/endpoints';
 import {
   MapView as NativeMapView,
   Marker as NativeMarker,
   Polyline as NativePolyline,
+  Polygon as NativePolygon,
   PROVIDER_GOOGLE,
 } from './nativeMaps';
+
+interface AssignedCourierArea {
+  id: string;
+  courierId: string;
+  hubCode: string;
+  province: string;
+  district: string;
+  ward: string;
+  zoneName?: string | null;
+  colorHex?: string | null;
+  boundaryPolygon?: Array<[number, number]> | null;
+  isActive: boolean;
+}
+
+function hexToRgba(hex: string | null | undefined, alpha: number): string {
+  const clean = (hex ?? '').replace('#', '');
+  if (clean.length === 6) {
+    const r = parseInt(clean.substring(0, 2), 16);
+    const g = parseInt(clean.substring(2, 4), 16);
+    const b = parseInt(clean.substring(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+  return `rgba(37, 99, 235, ${alpha})`;
+}
 
 type LocationState = 'idle' | 'loading' | 'ready' | 'unavailable' | 'error';
 
@@ -1132,6 +1160,61 @@ export function CourierMapScreen(): React.JSX.Element {
   const [lastLocationUpdatedAt, setLastLocationUpdatedAt] = useState<Date | null>(null);
   const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
 
+  // Assigned Area / Route Geofence State
+  const [assignedArea, setAssignedArea] = useState<AssignedCourierArea | null>(null);
+  const [showBoundary, setShowBoundary] = useState<boolean>(true);
+  const [isZoneDetailsVisible, setIsZoneDetailsVisible] = useState<boolean>(false);
+  const [customFocusedRegion, setCustomFocusedRegion] = useState<MapRegion | null>(null);
+
+  useEffect(() => {
+    if (!courierId || !session?.tokens.accessToken) {
+      return;
+    }
+
+    courierApiClient
+      .request<AssignedCourierArea[]>(
+        courierEndpoints.masterdata.areaAssignments(courierId),
+        { accessToken: session.tokens.accessToken },
+      )
+      .then((items) => {
+        if (Array.isArray(items) && items.length > 0) {
+          setAssignedArea(items[0]);
+        }
+      })
+      .catch(() => undefined);
+  }, [courierId, session?.tokens.accessToken]);
+
+  const boundaryCoordinates = useMemo((): GeoCoordinate[] => {
+    if (!assignedArea?.boundaryPolygon || !Array.isArray(assignedArea.boundaryPolygon)) {
+      return [];
+    }
+    return assignedArea.boundaryPolygon.map(([lat, lng]) => ({
+      latitude: lat,
+      longitude: lng,
+    }));
+  }, [assignedArea?.boundaryPolygon]);
+
+  const zoneCenterCoordinate = useMemo((): GeoCoordinate | null => {
+    if (boundaryCoordinates.length === 0) return null;
+    const sumLat = boundaryCoordinates.reduce((s, c) => s + c.latitude, 0);
+    const sumLng = boundaryCoordinates.reduce((s, c) => s + c.longitude, 0);
+    return {
+      latitude: sumLat / boundaryCoordinates.length,
+      longitude: sumLng / boundaryCoordinates.length,
+    };
+  }, [boundaryCoordinates]);
+
+  const zoneRegion = useMemo((): MapRegion | null => {
+    if (boundaryCoordinates.length === 0) return null;
+    return buildMapRegion(boundaryCoordinates);
+  }, [boundaryCoordinates]);
+
+  const handleFocusZone = useCallback(() => {
+    if (zoneRegion) {
+      setCustomFocusedRegion(zoneRegion);
+    }
+  }, [zoneRegion]);
+
   const tasks = tasksQuery.data ?? [];
   const shipmentCodes = useMemo(
     () =>
@@ -1284,10 +1367,18 @@ export function CourierMapScreen(): React.JSX.Element {
     ],
     [currentLocation, routeCoordinates],
   );
-  const nativeMapRegion = useMemo(
-    () => buildMapRegion(polylineCoordinates),
-    [polylineCoordinates],
-  );
+  const nativeMapRegion = useMemo(() => {
+    if (customFocusedRegion) {
+      return customFocusedRegion;
+    }
+    if (polylineCoordinates.length > 0) {
+      return buildMapRegion(polylineCoordinates);
+    }
+    if (zoneRegion) {
+      return zoneRegion;
+    }
+    return DEFAULT_MAP_REGION;
+  }, [customFocusedRegion, polylineCoordinates, zoneRegion]);
   const selectedPoint =
     mapPoints.find((point) => point.id === selectedPointId) ?? mapPoints[0] ?? null;
   const nextRoutePoint = suggestedRoute.steps[0]?.point ?? null;
@@ -1811,6 +1902,69 @@ export function CourierMapScreen(): React.JSX.Element {
             ) : null}
           </View>
 
+          {/* GEOFENCE ROUTE CONTROL BAR */}
+          {assignedArea ? (
+            <View style={styles.zoneControlCard}>
+              <View style={styles.zoneControlHeader}>
+                <View style={styles.zoneBadgeShell}>
+                  <View
+                    style={[
+                      styles.zoneColorDot,
+                      { backgroundColor: assignedArea.colorHex || theme.colors.primary },
+                    ]}
+                  />
+                  <View style={styles.zoneTitleWrap}>
+                    <Text style={styles.zoneTitleText} numberOfLines={1}>
+                      {assignedArea.zoneName || 'Tuyến giao nhận'}
+                    </Text>
+                    <Text style={styles.zoneSubtitleText}>
+                      {assignedArea.ward} • Hub {assignedArea.hubCode}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.zoneActionsRow}>
+                  <Pressable
+                    style={styles.zoneActionBtn}
+                    onPress={handleFocusZone}
+                    accessibilityLabel="Căn vào tuyến"
+                  >
+                    <Ionicons name="scan-outline" size={15} color={theme.colors.primary} />
+                    <Text style={styles.zoneActionBtnText}>Căn tuyến</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[
+                      styles.zoneActionBtn,
+                      showBoundary && styles.zoneActionBtnActive,
+                    ]}
+                    onPress={() => setShowBoundary((prev) => !prev)}
+                    accessibilityLabel="Bật tắt đường biên"
+                  >
+                    <Ionicons
+                      name={showBoundary ? 'eye' : 'eye-off-outline'}
+                      size={15}
+                      color={showBoundary ? '#FFFFFF' : '#64748B'}
+                    />
+                    <Text
+                      style={[
+                        styles.zoneActionBtnText,
+                        showBoundary && styles.zoneActionBtnTextActive,
+                      ]}
+                    >
+                      {showBoundary ? 'Đường biên' : 'Ẩn biên'}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={styles.zoneActionBtnIconOnly}
+                    onPress={() => setIsZoneDetailsVisible(true)}
+                    accessibilityLabel="Chi tiết tuyến"
+                  >
+                    <Ionicons name="information-circle-outline" size={19} color="#64748B" />
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          ) : null}
+
           <View style={styles.mapSurface}>
             {canUseNativeMap ? (
               <NativeMapView
@@ -1822,6 +1976,47 @@ export function CourierMapScreen(): React.JSX.Element {
                 loadingEnabled
                 toolbarEnabled={false}
               >
+                {/* GEOFENCE BOUNDARY POLYGON */}
+                {showBoundary && boundaryCoordinates.length >= 3 && NativePolygon ? (
+                  <NativePolygon
+                    coordinates={boundaryCoordinates}
+                    strokeColor={assignedArea?.colorHex || theme.colors.primary}
+                    fillColor={hexToRgba(assignedArea?.colorHex || theme.colors.primary, 0.2)}
+                    strokeWidth={3}
+                  />
+                ) : null}
+
+                {/* GEOFENCE ZONE CENTER BADGE */}
+                {showBoundary && zoneCenterCoordinate ? (
+                  <NativeMarker
+                    coordinate={zoneCenterCoordinate}
+                    title={assignedArea?.zoneName ?? 'Tuyến phụ trách'}
+                    description={`${assignedArea?.ward ?? ''} - Hub ${assignedArea?.hubCode ?? ''}`}
+                  >
+                    <View
+                      style={[
+                        styles.zoneCenterBadge,
+                        { borderColor: assignedArea?.colorHex || theme.colors.primary },
+                      ]}
+                    >
+                      <Ionicons
+                        name="map"
+                        size={12}
+                        color={assignedArea?.colorHex || theme.colors.primary}
+                      />
+                      <Text
+                        style={[
+                          styles.zoneCenterBadgeText,
+                          { color: assignedArea?.colorHex || theme.colors.primary },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {assignedArea?.zoneName ?? 'Tuyến'}
+                      </Text>
+                    </View>
+                  </NativeMarker>
+                ) : null}
+
                 {polylineCoordinates.length > 1 ? (
                   <NativePolyline
                     coordinates={polylineCoordinates}
@@ -1885,6 +2080,42 @@ export function CourierMapScreen(): React.JSX.Element {
               </NativeMapView>
             ) : (
               <>
+                {/* FALLBACK GEOFENCE BOUNDARY DISPLAY */}
+                {showBoundary && assignedArea ? (
+                  <View
+                    style={[
+                      styles.fallbackBoundaryBox,
+                      { borderColor: assignedArea.colorHex || theme.colors.primary },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.fallbackBoundaryRibbon,
+                        {
+                          backgroundColor: hexToRgba(
+                            assignedArea.colorHex || theme.colors.primary,
+                            0.15,
+                          ),
+                        },
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.fallbackBoundaryBadge,
+                        {
+                          backgroundColor:
+                            assignedArea.colorHex || theme.colors.primary,
+                        },
+                      ]}
+                    >
+                      <Ionicons name="map" size={11} color="#FFFFFF" />
+                      <Text style={styles.fallbackBoundaryBadgeText}>
+                        Ranh giới: {assignedArea.zoneName ?? 'Tuyến chạy'}
+                      </Text>
+                    </View>
+                  </View>
+                ) : null}
+
                 <View style={styles.mapDistrictA} />
                 <View style={styles.mapDistrictB} />
                 <View style={styles.mapDistrictC} />
@@ -2690,6 +2921,115 @@ export function CourierMapScreen(): React.JSX.Element {
             </View>
           </Card>
         ) : null}
+
+        {/* ZONE DETAILS MODAL */}
+        <Modal
+          visible={isZoneDetailsVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setIsZoneDetailsVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <View style={styles.modalHeaderTitleRow}>
+                  <View
+                    style={[
+                      styles.zoneColorDotLarge,
+                      {
+                        backgroundColor:
+                          assignedArea?.colorHex || theme.colors.primary,
+                      },
+                    ]}
+                  />
+                  <Text style={styles.modalTitle} numberOfLines={1}>
+                    {assignedArea?.zoneName || 'Thông tin Tuyến chạy'}
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={() => setIsZoneDetailsVisible(false)}
+                  style={styles.modalCloseBtn}
+                >
+                  <Ionicons name="close" size={20} color="#64748B" />
+                </Pressable>
+              </View>
+
+              <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+                <View style={styles.modalInfoRow}>
+                  <Text style={styles.modalInfoLabel}>Trạng thái tuyến</Text>
+                  <View style={styles.modalStatusBadge}>
+                    <View style={styles.modalStatusDot} />
+                    <Text style={styles.modalStatusText}>Đang kích hoạt</Text>
+                  </View>
+                </View>
+
+                <View style={styles.modalInfoRow}>
+                  <Text style={styles.modalInfoLabel}>Mã Hub phụ trách</Text>
+                  <Text style={styles.modalInfoValueBold}>
+                    {assignedArea?.hubCode ?? 'N/A'}
+                  </Text>
+                </View>
+
+                <View style={styles.modalInfoRow}>
+                  <Text style={styles.modalInfoLabel}>Địa bàn</Text>
+                  <Text style={styles.modalInfoValue}>
+                    {assignedArea?.ward}, {assignedArea?.district}
+                  </Text>
+                </View>
+
+                <View style={styles.modalInfoRow}>
+                  <Text style={styles.modalInfoLabel}>Tỉnh / Thành phố</Text>
+                  <Text style={styles.modalInfoValue}>
+                    {assignedArea?.province}
+                  </Text>
+                </View>
+
+                <View style={styles.modalInfoRow}>
+                  <Text style={styles.modalInfoLabel}>Số đỉnh ranh giới (GPS)</Text>
+                  <Text style={styles.modalInfoValueBold}>
+                    {boundaryCoordinates.length} mốc tọa độ
+                  </Text>
+                </View>
+
+                {/* Boundary points preview */}
+                {assignedArea?.boundaryPolygon && assignedArea.boundaryPolygon.length > 0 ? (
+                  <View style={styles.polygonBox}>
+                    <Text style={styles.polygonTitle}>Tọa độ đa giác ranh giới tuyến:</Text>
+                    {assignedArea.boundaryPolygon.slice(0, 5).map((point, idx) => (
+                      <Text key={idx} style={styles.polygonPointText}>
+                        • Mốc {idx + 1}: ({point[0].toFixed(5)}, {point[1].toFixed(5)})
+                      </Text>
+                    ))}
+                    {assignedArea.boundaryPolygon.length > 5 ? (
+                      <Text style={styles.polygonPointMore}>
+                        ... và {assignedArea.boundaryPolygon.length - 5} mốc tọa độ khác
+                      </Text>
+                    ) : null}
+                  </View>
+                ) : null}
+              </ScrollView>
+
+              <View style={styles.modalActionsRow}>
+                <Pressable
+                  style={styles.modalFocusBtn}
+                  onPress={() => {
+                    handleFocusZone();
+                    setIsZoneDetailsVisible(false);
+                  }}
+                >
+                  <Ionicons name="scan-outline" size={16} color="#FFFFFF" />
+                  <Text style={styles.modalFocusBtnText}>Căn bản đồ vào tuyến</Text>
+                </Pressable>
+                <Pressable
+                  style={styles.modalDismissBtn}
+                  onPress={() => setIsZoneDetailsVisible(false)}
+                >
+                  <Text style={styles.modalDismissBtnText}>Đóng</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </ScrollView>
     </View>
   );
@@ -4213,6 +4553,282 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '800',
+  },
+
+  // ZONE / GEOFENCE CONTROL STYLES
+  zoneControlCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: theme.radius.md,
+    padding: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: theme.spacing.xs,
+    ...theme.shadow.sm,
+  },
+  zoneControlHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: theme.spacing.sm,
+  },
+  zoneBadgeShell: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    flex: 1,
+    minWidth: 0,
+  },
+  zoneColorDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  zoneColorDotLarge: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+  },
+  zoneTitleWrap: {
+    flex: 1,
+    minWidth: 0,
+  },
+  zoneTitleText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
+  },
+  zoneSubtitleText: {
+    fontSize: 11,
+    color: theme.colors.textSecondary,
+    marginTop: 1,
+  },
+  zoneActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  zoneActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: theme.radius.sm,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  zoneActionBtnActive: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+  },
+  zoneActionBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+  },
+  zoneActionBtnTextActive: {
+    color: '#FFFFFF',
+  },
+  zoneActionBtnIconOnly: {
+    padding: 5,
+    borderRadius: theme.radius.sm,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  zoneCenterBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: theme.radius.pill,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderWidth: 1.5,
+    ...theme.shadow.sm,
+  },
+  zoneCenterBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  fallbackBoundaryBox: {
+    position: 'absolute',
+    left: '12%',
+    top: '18%',
+    right: '12%',
+    bottom: '22%',
+    borderWidth: 2.5,
+    borderRadius: theme.radius.md,
+    borderStyle: 'dashed',
+    zIndex: 1,
+    pointerEvents: 'none',
+  },
+  fallbackBoundaryRibbon: {
+    ...StyleSheet.absoluteFill,
+    borderRadius: theme.radius.md,
+  },
+  fallbackBoundaryBadge: {
+    position: 'absolute',
+    top: 6,
+    left: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: theme.radius.xs,
+  },
+  fallbackBoundaryBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '800',
+  },
+
+  // MODAL STYLES
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: theme.spacing.lg,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: '#FFFFFF',
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.lg,
+    ...theme.shadow.lg,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: theme.spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  modalHeaderTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+    minWidth: 0,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
+  },
+  modalCloseBtn: {
+    padding: 4,
+  },
+  modalBody: {
+    marginTop: theme.spacing.md,
+    maxHeight: 320,
+  },
+  modalInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F8FAFC',
+  },
+  modalInfoLabel: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+  },
+  modalInfoValue: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: theme.colors.textPrimary,
+  },
+  modalInfoValueBold: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
+  },
+  modalStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: theme.radius.pill,
+    backgroundColor: '#DCFCE7',
+  },
+  modalStatusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#16A34A',
+  },
+  modalStatusText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#15803D',
+  },
+  polygonBox: {
+    marginTop: theme.spacing.md,
+    padding: theme.spacing.sm,
+    backgroundColor: '#F8FAFC',
+    borderRadius: theme.radius.sm,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  polygonTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#475569',
+    marginBottom: 4,
+  },
+  polygonPointText: {
+    fontSize: 11,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    color: '#334155',
+    lineHeight: 18,
+  },
+  polygonPointMore: {
+    fontSize: 10,
+    fontStyle: 'italic',
+    color: '#64748B',
+    marginTop: 3,
+  },
+  modalActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    marginTop: theme.spacing.lg,
+  },
+  modalFocusBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    height: 40,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.primary,
+  },
+  modalFocusBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  modalDismissBtn: {
+    paddingHorizontal: 16,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: theme.radius.md,
+    backgroundColor: '#F1F5F9',
+  },
+  modalDismissBtnText: {
+    color: '#475569',
+    fontSize: 13,
+    fontWeight: '700',
   },
 });
 

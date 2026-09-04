@@ -27,6 +27,7 @@ import { TaskDetailScreen } from '../screens/tasks/TaskDetailScreen';
 import { TrackingLookupScreen } from '../screens/tasks/TrackingLookupScreen';
 import { CodStatsScreen } from '../screens/cod/CodStatsScreen';
 import { CodCollectScreen } from '../screens/cod/CodCollectScreen';
+import { MyRouteScreen } from '../screens/profile/MyRouteScreen';
 import { theme } from '../theme';
 
 const Stack = createNativeStackNavigator<AppNavigatorParamList>();
@@ -166,6 +167,11 @@ export function AppNavigator(): React.JSX.Element {
             name="CodCollect"
             component={CodCollectScreen}
             options={{ title: 'Thu tiền COD' }}
+          />
+          <Stack.Screen
+            name="MyRoute"
+            component={MyRouteScreen}
+            options={{ title: 'Tuyến giao nhận của tôi' }}
           />
         </>
       ) : (
