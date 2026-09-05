@@ -13,6 +13,12 @@ ENV EXPO_NO_DEPENDENCY_VALIDATION=1
 ENV EXPO_NO_DOCTOR=1
 ENV EXPO_NO_METRO_WORKSPACE_ROOT=1
 
+RUN npm config set registry https://registry.npmmirror.com \
+    && npm config set fetch-retries 5 \
+    && npm config set fetch-retry-mintimeout 20000 \
+    && npm config set fetch-retry-maxtimeout 120000 \
+    && npm config set fetch-timeout 600000
+
 COPY package.json package-lock.json ./
 RUN --mount=type=cache,id=npm-courier-mobile,target=/root/.npm npm ci
 
