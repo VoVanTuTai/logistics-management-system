@@ -112,6 +112,15 @@ function parseApiError(payload: unknown, status: number): string {
 }
 
 function resolveApiUrl(path: string): string {
+  if (typeof window !== 'undefined') {
+    if (window.location.hostname === 'merchant.nexus-ex.site') {
+      return path;
+    }
+    if (window.location.protocol === 'https:' && gatewayBaseUrl.startsWith('http://')) {
+      return path;
+    }
+  }
+
   if (!gatewayBaseUrl) {
     return path;
   }
