@@ -7,10 +7,11 @@ if [[ "$(id -u)" -ne 0 ]]; then
 fi
 
 apt-get update
-apt-get install -y ca-certificates curl git ufw nginx certbot python3-certbot-nginx docker-compose-plugin
+apt-get install -y ca-certificates curl git ufw nginx certbot python3-certbot-nginx
 
 if ! command -v docker >/dev/null 2>&1; then
-  apt-get install -y docker.io
+  echo "[vps] Installing Docker Engine & Docker Compose via official Docker script..."
+  curl -fsSL https://get.docker.com | sh
 fi
 
 systemctl enable --now docker
