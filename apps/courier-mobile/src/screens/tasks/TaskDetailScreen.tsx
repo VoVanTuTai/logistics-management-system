@@ -11,9 +11,11 @@ import {
   View,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Card } from '../../components/ui/Card';
+import { useAuthStore } from '../../features/auth/auth.store';
 import { canAccessCourierFeature } from '../../features/permissions/courier-permissions';
 import { Screen } from '../../components/ui/Screen';
 import { StatusBadge } from '../../components/ui/StatusBadge';
@@ -164,6 +166,16 @@ function toTaskStatusLabelVi(status: string): string {
 
 export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Element {
   const session = useAppStore((state) => state.session);
+  const refreshMobilePermissions = useAuthStore(
+    (state) => state.refreshMobilePermissions,
+  );
+
+  useFocusEffect(
+    React.useCallback(() => {
+      void refreshMobilePermissions();
+    }, [refreshMobilePermissions]),
+  );
+
   const taskQuery = useTaskDetailQuery({
     accessToken: session?.tokens.accessToken ?? null,
     taskId: route.params.taskId,
@@ -374,9 +386,13 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
   const taskAddress =
     navigationDestination?.address ?? (isPickupTask ? pickupAddress : deliveryAddress);
   const isReloadingStatus = taskQuery.isRefetching || shipmentQuery.isRefetching;
+  const isReturnTask = task.taskType === 'RETURN';
   const canRunPrimaryAction = isPickupTask
     ? canAccessCourierFeature(session?.user, 'scan.pickup')
-    : canAccessCourierFeature(session?.user, 'scan.delivery-sign');
+    : isReturnTask
+      ? canAccessCourierFeature(session?.user, 'scan.return-sign')
+      : canAccessCourierFeature(session?.user, 'scan.delivery-sign') ||
+        canAccessCourierFeature(session?.user, 'scan.delivery');
   const canReportIssue = canAccessCourierFeature(session?.user, 'scan.issue');
 
   return (
@@ -518,57 +534,74 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
             <Text style={styles.actionButtonText}>gọi</Text>
           </Pressable>
 
-          <Pressable
-            disabled={!hasShipmentCode || !canRunPrimaryAction}
-            onPress={() => {
-              if (isPickupTask) {
-                navigation.navigate('PickupScan', {
+          {canRunPrimaryAction ? (
+            <Pressable
+              disabled={!hasShipmentCode}
+              onPress={() => {
+                if (isPickupTask) {
+                  navigation.navigate('PickupScan', {
+                    taskId: task.id,
+                    shipmentCode: task.shipmentCode ?? undefined,
+                  });
+                  return;
+                }
+
+                if (isReturnTask) {
+                  navigation.navigate('ReturnRegistration', {
+                    shipmentCode: task.shipmentCode ?? undefined,
+                  });
+                  return;
+                }
+
+                navigation.navigate('DeliveryProof', {
                   taskId: task.id,
+                  taskCode: task.taskCode,
                   shipmentCode: task.shipmentCode ?? undefined,
                 });
-                return;
+              }}
+              style={[
+                styles.actionButton,
+                styles.midActionButton,
+                !hasShipmentCode && styles.actionButtonDisabled,
+              ]}
+            >
+              <Ionicons
+                name={
+                  isPickupTask
+                    ? 'cube-outline'
+                    : isReturnTask
+                      ? 'return-up-back-outline'
+                      : 'document-text-outline'
+                }
+                size={18}
+                color="#FFFFFF"
+              />
+              <Text style={styles.actionButtonText}>
+                {isPickupTask ? 'Nhận hàng' : isReturnTask ? 'Ký hoàn' : 'Ký nhận'}
+              </Text>
+            </Pressable>
+          ) : null}
+
+          {canReportIssue ? (
+            <Pressable
+              disabled={!hasShipmentCode}
+              onPress={() =>
+                navigation.navigate('TaskIssue', {
+                  taskId: task.id,
+                  taskCode: task.taskCode,
+                  shipmentCode: task.shipmentCode ?? undefined,
+                })
               }
-
-              navigation.navigate('DeliveryProof', {
-                taskId: task.id,
-                taskCode: task.taskCode,
-                shipmentCode: task.shipmentCode ?? undefined,
-              });
-            }}
-            style={[
-              styles.actionButton,
-              styles.midActionButton,
-              (!hasShipmentCode || !canRunPrimaryAction) && styles.actionButtonDisabled,
-            ]}
-          >
-            <Ionicons
-              name={isPickupTask ? 'cube-outline' : 'document-text-outline'}
-              size={18}
-              color="#FFFFFF"
-            />
-            <Text style={styles.actionButtonText}>
-              {isPickupTask ? 'Nhận hàng' : 'Ký nhận'}
-            </Text>
-          </Pressable>
-
-          <Pressable
-            disabled={!hasShipmentCode || !canReportIssue}
-            onPress={() =>
-              navigation.navigate('TaskIssue', {
-                taskId: task.id,
-                taskCode: task.taskCode,
-                shipmentCode: task.shipmentCode ?? undefined,
-              })
-            }
-            style={[
-              styles.actionButton,
-              styles.issueActionButton,
-              (!hasShipmentCode || !canReportIssue) && styles.actionButtonDisabled,
-            ]}
-          >
-            <Ionicons name="alert-circle-outline" size={18} color="#FFFFFF" />
-            <Text style={styles.actionButtonText}>Vấn đề</Text>
-          </Pressable>
+              style={[
+                styles.actionButton,
+                styles.issueActionButton,
+                !hasShipmentCode && styles.actionButtonDisabled,
+              ]}
+            >
+              <Ionicons name="alert-circle-outline" size={18} color="#FFFFFF" />
+              <Text style={styles.actionButtonText}>Vấn đề</Text>
+            </Pressable>
+          ) : null}
         </View>
       </View>
 

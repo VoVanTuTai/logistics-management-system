@@ -241,6 +241,54 @@ export function ProfileScreen(): React.JSX.Element {
             </View>
           </Pressable>
 
+          {/* STATS & COD PERFORMANCE CARD */}
+          <Pressable
+            style={({ pressed }) => [
+              styles.routeProfileCard,
+              { marginTop: theme.spacing.sm },
+              pressed && styles.routeProfileCardPressed,
+            ]}
+            onPress={() => navigation.navigate('Stats')}
+          >
+            <View style={styles.routeProfileHeader}>
+              <View
+                style={[
+                  styles.routeProfileDot,
+                  { backgroundColor: '#2563EB' },
+                ]}
+              />
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <View style={styles.routeBadgeRow}>
+                  <Text style={styles.routeProfileTitle} numberOfLines={1}>
+                    Thống kê hiệu suất & COD
+                  </Text>
+                  <View style={[styles.routeHubTag, { backgroundColor: '#EFF6FF' }]}>
+                    <Text style={[styles.routeHubTagText, { color: '#2563EB' }]}>Báo cáo</Text>
+                  </View>
+                </View>
+                <Text style={styles.routeProfileSub} numberOfLines={1}>
+                  Xem tỷ lệ giao thành công, tiền hàng COD và biểu đồ tuần
+                </Text>
+              </View>
+              <View style={styles.routeProfileArrowBtn}>
+                <Ionicons name="chevron-forward" size={18} color="#2563EB" />
+              </View>
+            </View>
+
+            <View style={styles.routeProfileDivider} />
+
+            <View style={styles.routeProfileFooter}>
+              <View style={styles.routeProfileTag}>
+                <Ionicons name="stats-chart" size={13} color="#2563EB" />
+                <Text style={styles.routeProfileTagText}>Theo dõi chỉ số KPI</Text>
+              </View>
+              <View style={styles.routeProfileViewAction}>
+                <Ionicons name="arrow-forward-circle" size={13} color="#2563EB" />
+                <Text style={[styles.routeProfileViewActionText, { color: '#2563EB' }]}>Mở chi tiết</Text>
+              </View>
+            </View>
+          </Pressable>
+
           <QuickAppCustomizeCard
             appItems={permittedCatalog}
             selectedAppIds={quickAppIds}

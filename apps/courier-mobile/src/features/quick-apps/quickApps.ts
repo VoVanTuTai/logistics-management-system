@@ -99,6 +99,16 @@ export const QUICK_APP_CATALOG: QuickAppItem[] = [
     iconName: 'wallet-outline',
     iconColor: theme.colors.primary,
     iconBgColor: theme.colors.infoSurface,
+    permission: 'scan.delivery-sign',
+  },
+  {
+    id: 'return-registration',
+    label: 'Đăng ký hoàn',
+    description: 'Đăng ký chuyển hoàn đơn hàng',
+    iconName: 'return-up-back-outline',
+    iconColor: theme.colors.primary,
+    iconBgColor: theme.colors.infoSurface,
+    permission: 'scan.return-sign',
   },
   {
     id: 'tracking',
@@ -225,6 +235,11 @@ export function navigateToQuickApp(
     return;
   }
 
+  if (appId === 'return-registration') {
+    navigation.navigate('ReturnRegistration');
+    return;
+  }
+
   if (appId === 'tracking') {
     navigation.navigate('TrackingLookup');
     return;
@@ -236,7 +251,7 @@ export function navigateToQuickApp(
   }
 
   if (appId === 'stats') {
-    navigation.navigate('MainTabs', { screen: 'Stats' });
+    navigation.navigate('Stats');
     return;
   }
 

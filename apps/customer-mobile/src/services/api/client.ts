@@ -38,9 +38,14 @@ export class CustomerApiClient {
     private readonly timeoutMs: number,
     fallbackBaseUrls: string[] = [],
   ) {
-    this.gatewayCandidates = [baseUrl, ...fallbackBaseUrls].filter(
-      (candidate, index, array) => candidate.length > 0 && array.indexOf(candidate) === index,
-    );
+    this.gatewayCandidates = [baseUrl, ...fallbackBaseUrls]
+      .map((c) => (typeof c === 'string' ? c.trim() : ''))
+      .filter((candidate, index, array) => {
+        if (candidate.length === 0 && typeof window === 'undefined') {
+          return false;
+        }
+        return array.indexOf(candidate) === index;
+      });
     if (this.gatewayCandidates.length > 0) {
       this.activeBaseUrl = this.gatewayCandidates[0];
     }
@@ -68,9 +73,10 @@ export class CustomerApiClient {
 
     const fallbackMessage =
       lastNetworkError instanceof Error ? lastNetworkError.message : 'Network request failed.';
+    const candidateLabels = this.gatewayCandidates.map((c) => c || 'same-origin').join(', ');
 
     throw new ApiClientError({
-      message: `${fallbackMessage} (gateway candidates: ${this.gatewayCandidates.join(', ')})`,
+      message: `${fallbackMessage} (gateway candidates: ${candidateLabels})`,
       isNetworkError: true,
     });
   }
@@ -84,8 +90,12 @@ export class CustomerApiClient {
     const effectiveTimeout = this.timeoutMs || 15000;
     const timeoutId = setTimeout(() => controller.abort(), effectiveTimeout);
 
+    const trimmedBase = candidateBaseUrl.trim().replace(/\/+$/, '');
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    const url = trimmedBase ? `${trimmedBase}${normalizedPath}` : normalizedPath;
+
     try {
-      const response = await fetch(`${candidateBaseUrl}${path}`, {
+      const response = await fetch(url, {
         method: options.method ?? 'GET',
         headers: {
           Accept: 'application/json',
@@ -159,7 +169,8 @@ function extractErrorMessage(payload: unknown, status: number): string {
 
 function extractNetworkErrorMessage(error: unknown, candidateBaseUrl: string): string {
   const baseMessage = error instanceof Error && error.message ? error.message : 'Network request failed.';
-  return `${baseMessage} (gateway: ${candidateBaseUrl})`;
+  const gatewayLabel = candidateBaseUrl || 'same-origin';
+  return `${baseMessage} (gateway: ${gatewayLabel})`;
 }
 
 export const customerApiClient = new CustomerApiClient(

@@ -15,9 +15,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useQueryClient } from '@tanstack/react-query';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
 
 import { Card } from '../../components/ui/Card';
 import { Screen } from '../../components/ui/Screen';
+import { useAuthStore } from '../../features/auth/auth.store';
+import { canAccessCourierFeature } from '../../features/permissions/courier-permissions';
 import { enqueueCodCollectOffline } from '../../features/cod/cod.offline';
 import type { CollectCodPayload } from '../../features/cod/cod.types';
 import { enqueueDeliverySuccessOffline } from '../../features/delivery/delivery-success.offline';
@@ -92,6 +95,20 @@ function readMetadataString(
 
 export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Element {
   const session = useAppStore((state) => state.session);
+  const refreshMobilePermissions = useAuthStore(
+    (state) => state.refreshMobilePermissions,
+  );
+
+  useFocusEffect(
+    React.useCallback(() => {
+      void refreshMobilePermissions();
+    }, [refreshMobilePermissions]),
+  );
+
+  const canDeliverySign =
+    canAccessCourierFeature(session?.user, 'scan.delivery-sign') ||
+    canAccessCourierFeature(session?.user, 'scan.delivery');
+
   const setGlobalError = useAppStore((state) => state.setGlobalError);
   const queryClient = useQueryClient();
   const mutation = useDeliverySuccessActionMutation(
@@ -186,13 +203,18 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
     try {
       const picture = await cameraRef.current.takePictureAsync({
         quality: 0.6,
+        base64: true,
       });
 
-      if (!picture.uri) {
+      const capturedUri = picture.base64
+        ? `data:image/jpeg;base64,${picture.base64}`
+        : picture.uri;
+
+      if (!capturedUri) {
         throw new Error('Không chụp được ảnh.');
       }
 
-      setPhotoUri(picture.uri);
+      setPhotoUri(capturedUri);
       setCameraVisible(false);
       setSubmitMessage(null);
     } catch (error) {
@@ -638,32 +660,34 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
           ) : null}
         </ScrollView>
 
-        <View style={styles.footer}>
-          {hasAmountToPay && paymentMethod === 'BANK_TRANSFER' ? (
-            <View style={[styles.submitButton, styles.submitButtonDisabled, { backgroundColor: '#F3F4F6', borderColor: '#E5E7EB', borderWidth: 1, flexDirection: 'row', gap: 8 }]}>
-              <ActivityIndicator size="small" color="#4B5563" />
-              <Text style={[styles.submitButtonText, { color: '#4B5563' }]}>
-                Đang chờ chuyển khoản QR...
-              </Text>
-            </View>
-          ) : (
-            <Pressable
-              onPress={() => void handleSubmit()}
-              disabled={isSubmitting}
-              style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
-            >
-              {isSubmitting ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <Text style={styles.submitButtonText}>
-                  {hasAmountToPay
-                    ? `Xác nhận ký nhận - Thu ${totalAmountDue.toLocaleString('vi-VN')}đ`
-                    : 'Xác nhận ký nhận giao hàng'}
+        {canDeliverySign ? (
+          <View style={styles.footer}>
+            {hasAmountToPay && paymentMethod === 'BANK_TRANSFER' ? (
+              <View style={[styles.submitButton, styles.submitButtonDisabled, { backgroundColor: '#F3F4F6', borderColor: '#E5E7EB', borderWidth: 1, flexDirection: 'row', gap: 8 }]}>
+                <ActivityIndicator size="small" color="#4B5563" />
+                <Text style={[styles.submitButtonText, { color: '#4B5563' }]}>
+                  Đang chờ chuyển khoản QR...
                 </Text>
-              )}
-            </Pressable>
-          )}
-        </View>
+              </View>
+            ) : (
+              <Pressable
+                onPress={() => void handleSubmit()}
+                disabled={isSubmitting}
+                style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.submitButtonText}>
+                    {hasAmountToPay
+                      ? `Xác nhận ký nhận - Thu ${totalAmountDue.toLocaleString('vi-VN')}đ`
+                      : 'Xác nhận ký nhận giao hàng'}
+                  </Text>
+                )}
+              </Pressable>
+            )}
+          </View>
+        ) : null}
       </View>
 
       <Modal

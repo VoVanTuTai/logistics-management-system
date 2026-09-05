@@ -4,7 +4,6 @@ export type AppTabsParamList = {
     initialStatus?: 'ALL' | 'CREATED' | 'ASSIGNED' | 'COMPLETED' | 'CANCELLED';
   } | undefined;
   Map: undefined;
-  Stats: undefined;
   Scan: undefined;
   Chat: undefined;
   Profile: undefined;
@@ -78,4 +77,5 @@ export type AppNavigatorParamList = {
     codAmount?: number;
   };
   MyRoute: undefined;
+  Stats: undefined;
 };

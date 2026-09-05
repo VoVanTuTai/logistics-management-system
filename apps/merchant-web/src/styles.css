@@ -4814,4 +4814,406 @@ tbody tr:hover {
   max-width: 100%;
 }
 
+/* ==========================================================================
+   STITCH NEXUS MERCHANT - CREATE SHIPMENT & ACCOUNT GEOCODING REDESIGN
+   ========================================================================== */
+
+.create-shipment-bento {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(320px, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 1080px) {
+  .create-shipment-bento {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bento-left-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.bento-right-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: sticky;
+  top: 80px;
+}
+
+.form-section-card {
+  background: var(--stitch-surface-container-lowest);
+  border: 1px solid var(--stitch-outline-variant);
+  border-radius: var(--stitch-rounded-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.form-section-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--stitch-primary-container);
+}
+
+.form-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--stitch-surface-container-high);
+}
+
+.form-section-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.form-section-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--stitch-surface-container);
+  color: var(--stitch-primary);
+  font-size: 22px;
+}
+
+.form-section-title-group h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--stitch-on-surface);
+}
+
+.form-section-subtitle {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--stitch-on-surface-variant);
+}
+
+/* Contract Locked Pickup Card */
+.contract-pickup-card {
+  background: linear-gradient(180deg, #f8faff 0%, #ffffff 100%);
+  border: 1.5px solid #c4d4f5;
+  border-left: 5px solid var(--stitch-primary);
+  border-radius: var(--stitch-rounded-lg);
+  padding: 22px;
+  box-shadow: 0 4px 16px rgba(0, 61, 155, 0.05);
+}
+
+.contract-pickup-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.contract-pickup-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: #e7efff;
+  color: var(--stitch-primary);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.contract-pickup-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 640px) {
+  .contract-pickup-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.contract-pickup-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.contract-pickup-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--stitch-on-surface-variant);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.contract-pickup-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--stitch-on-surface);
+}
+
+.contract-pickup-full-address {
+  grid-column: 1 / -1;
+  background: #f1f4ff;
+  border-radius: 10px;
+  padding: 12px 14px;
+  border: 1px solid #dce4ff;
+}
+
+.pickup-gps-badge {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #166534;
+}
+
+.gps-indicator-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.25);
+  animation: pulse-dot 2s infinite;
+}
+
+@keyframes pulse-dot {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
+}
+
+.gps-verified-tag {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  background: #dcfce7;
+  color: #15803d;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid #86efac;
+}
+
+.contract-pickup-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: #536b8e;
+}
+
+/* Receiver & Item Grids */
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.form-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+@media (max-width: 768px) {
+  .form-grid-2,
+  .form-grid-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-field-group--span-2 {
+  grid-column: 1 / -1;
+}
+
+.field-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--stitch-on-surface);
+}
+
+.field-required {
+  color: var(--stitch-error);
+  margin-left: 3px;
+}
+
+.field-hint {
+  font-size: 11px;
+  color: var(--stitch-on-surface-variant);
+  font-weight: normal;
+}
+
+/* Dimension preview box */
+.dimension-summary-box {
+  background: var(--stitch-surface-container-low);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--stitch-on-surface-variant);
+  margin-top: 4px;
+}
+
+.dimension-summary-highlight {
+  font-weight: 700;
+  color: var(--stitch-primary);
+}
+
+/* Summary Card */
+.order-summary-card {
+  background: var(--stitch-surface-container-lowest);
+  border: 1px solid var(--stitch-outline-variant);
+  border-radius: var(--stitch-rounded-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.order-summary-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--stitch-surface-container-high);
+}
+
+.order-summary-header h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--stitch-on-surface);
+}
+
+.summary-rows-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--stitch-on-surface-variant);
+}
+
+.summary-row.total {
+  padding-top: 14px;
+  margin-top: 6px;
+  border-top: 1px dashed var(--stitch-outline-variant);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--stitch-on-surface);
+}
+
+.summary-total-fee {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--stitch-primary);
+}
+
+.summary-actions-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.btn-primary-action {
+  width: 100%;
+  padding: 13px;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 12px;
+}
+
+.btn-secondary-actions-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* Account GPS Badge */
+.account-gps-card {
+  margin-top: 12px;
+  padding: 14px 16px;
+  background: #f0f7ff;
+  border: 1px solid #c8ddfd;
+  border-radius: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.account-gps-icon {
+  font-size: 24px;
+  color: var(--stitch-primary);
+  flex-shrink: 0;
+}
+
+.account-gps-content h4 {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--stitch-primary);
+}
+
+.account-gps-content p {
+  margin: 0;
+  font-size: 12px;
+  color: #3b5074;
+}
+
+.account-gps-coords {
+  display: inline-block;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: #0b3d91;
+  background: #e0ecfd;
+  padding: 2px 8px;
+  border-radius: 6px;
+  margin-top: 6px;
+}
+
+
 
