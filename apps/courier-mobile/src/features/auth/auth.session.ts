@@ -153,3 +153,38 @@ export async function clearAuthSession(): Promise<void> {
   await deleteSessionRaw();
   useAppStore.getState().clearSession();
 }
+
+const REMEMBERED_CREDENTIALS_STORAGE_KEY = 'courier-mobile.remembered-credentials';
+
+export interface RememberedCredentials {
+  username: string;
+  password?: string;
+  rememberMe: boolean;
+}
+
+export async function loadRememberedCredentials(): Promise<RememberedCredentials | null> {
+  try {
+    const raw = await AsyncStorage.getItem(REMEMBERED_CREDENTIALS_STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as RememberedCredentials;
+  } catch {
+    return null;
+  }
+}
+
+export async function saveRememberedCredentials(creds: RememberedCredentials): Promise<void> {
+  try {
+    await AsyncStorage.setItem(REMEMBERED_CREDENTIALS_STORAGE_KEY, JSON.stringify(creds));
+  } catch {
+    // ignore
+  }
+}
+
+export async function clearRememberedCredentials(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(REMEMBERED_CREDENTIALS_STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
+

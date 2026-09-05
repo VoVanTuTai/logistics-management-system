@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -12,6 +12,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 
 import { loginSchema, type LoginFormValues } from './auth.types';
+import {
+  clearRememberedCredentials,
+  loadRememberedCredentials,
+  saveRememberedCredentials,
+} from './auth.session';
 import { theme } from '../../theme';
 
 interface LoginFormProps {
@@ -26,13 +31,48 @@ export function LoginForm({
   onSubmit,
 }: LoginFormProps): React.JSX.Element {
   const [showPassword, setShowPassword] = useState(false);
-  const { control, handleSubmit, formState } = useForm<LoginFormValues>({
+  const [rememberMe, setRememberMe] = useState(true);
+
+  const { control, handleSubmit, formState, setValue } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       username: '',
       password: '',
     },
   });
+
+  // Load remembered credentials on mount to auto-fill username/password
+  useEffect(() => {
+    let isMounted = true;
+    void loadRememberedCredentials().then((saved) => {
+      if (saved && isMounted) {
+        if (saved.username) {
+          setValue('username', saved.username, { shouldValidate: true });
+        }
+        if (saved.password) {
+          setValue('password', saved.password, { shouldValidate: true });
+        }
+        setRememberMe(saved.rememberMe ?? true);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [setValue]);
+
+  const handleFormSubmit = async (values: LoginFormValues) => {
+    if (rememberMe) {
+      await saveRememberedCredentials({
+        username: values.username,
+        password: values.password,
+        rememberMe: true,
+      });
+    } else {
+      await clearRememberedCredentials();
+    }
+    await onSubmit(values);
+  };
 
   return (
     <View>
@@ -103,6 +143,26 @@ export function LoginForm({
         )}
       />
 
+      {/* OPTIONS ROW: REMEMBER ME CHECKBOX */}
+      <View style={styles.optionsRow}>
+        <Pressable
+          testID="login-remember-me-checkbox"
+          accessibilityLabel="Ghi nhớ đăng nhập"
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: rememberMe }}
+          onPress={() => setRememberMe((prev) => !prev)}
+          style={styles.rememberRow}
+          hitSlop={8}
+        >
+          <Ionicons
+            name={rememberMe ? 'checkbox' : 'square-outline'}
+            size={20}
+            color={rememberMe ? theme.colors.primary : '#8EA1BA'}
+          />
+          <Text style={styles.rememberText}>Ghi nhớ đăng nhập</Text>
+        </Pressable>
+      </View>
+
       {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
 
       {formState.isSubmitted && !formState.isValid ? (
@@ -113,7 +173,7 @@ export function LoginForm({
         testID="login-submit-button"
         accessibilityLabel="Đăng nhập"
         disabled={loading}
-        onPress={handleSubmit(onSubmit)}
+        onPress={handleSubmit(handleFormSubmit)}
         style={styles.primaryButton}
       >
         {loading ? (
@@ -168,8 +228,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 4,
   },
+  optionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: theme.spacing.md,
+    marginTop: 2,
+  },
+  rememberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  rememberText: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    fontWeight: '600',
+  },
   primaryButton: {
-    marginTop: theme.spacing.sm,
+    marginTop: theme.spacing.xs,
     backgroundColor: theme.colors.primary,
     borderRadius: theme.radius.md,
     paddingVertical: 14,
