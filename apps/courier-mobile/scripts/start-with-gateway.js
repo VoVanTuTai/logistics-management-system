@@ -98,6 +98,10 @@ function run() {
     process.env.EXPO_PUBLIC_GATEWAY_BASE_URL = gatewayBaseUrl;
   }
 
+  if (!process.env.EXPO_PUBLIC_BUILD_ID) {
+    process.env.EXPO_PUBLIC_BUILD_ID = `build-${Date.now()}`;
+  }
+
   // Avoid blocking `expo start` when the CLI cannot reach Expo version endpoints
   // (common in restricted networks / unstable DNS / campus Wi-Fi).
   if (!process.env.EXPO_NO_DEPENDENCY_VALIDATION) {

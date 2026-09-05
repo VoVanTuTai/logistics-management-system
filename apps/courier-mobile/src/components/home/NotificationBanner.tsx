@@ -7,12 +7,14 @@ import { theme } from '../../theme';
 interface NotificationBannerProps {
   title: string;
   message: string;
+  badgeCount?: number;
   onPress?: () => void;
 }
 
 export function NotificationBanner({
   title,
   message,
+  badgeCount,
   onPress,
 }: NotificationBannerProps): React.JSX.Element {
   return (
@@ -25,9 +27,16 @@ export function NotificationBanner({
       </View>
 
       <View style={styles.textWrap}>
-        <Text numberOfLines={1} style={styles.title}>
-          {title}
-        </Text>
+        <View style={styles.titleRow}>
+          <Text numberOfLines={1} style={styles.title}>
+            {title}
+          </Text>
+          {typeof badgeCount === 'number' && badgeCount > 0 ? (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{badgeCount > 99 ? '99+' : badgeCount}</Text>
+            </View>
+          ) : null}
+        </View>
         <Text numberOfLines={2} style={styles.message}>
           {message}
         </Text>
@@ -62,6 +71,25 @@ const styles = StyleSheet.create({
   },
   textWrap: {
     flex: 1,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  badge: {
+    backgroundColor: '#DC2626',
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    minWidth: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '700',
   },
   title: {
     ...theme.typography.subtitle.sm,

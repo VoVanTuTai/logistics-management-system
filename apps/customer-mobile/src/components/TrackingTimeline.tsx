@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
   Image,
   Modal,
   StyleSheet,
@@ -11,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { colors, shadows, spacing } from '../theme';
 import type { TrackingEvent } from '../types';
+import { normalizeMediaPublicUrl } from '../utils/customerTrackingMapper';
 
 interface TrackingTimelineProps {
   timeline: TrackingEvent[];
@@ -18,6 +20,8 @@ interface TrackingTimelineProps {
 
 export function TrackingTimeline({ timeline }: TrackingTimelineProps): React.JSX.Element {
   const [selectedProofImage, setSelectedProofImage] = useState<string | null>(null);
+  const [failedUrls, setFailedUrls] = useState<Record<string, boolean>>({});
+  const [loadingUrls, setLoadingUrls] = useState<Record<string, boolean>>({});
 
   if (!timeline || timeline.length === 0) {
     return (
@@ -121,22 +125,55 @@ export function TrackingTimeline({ timeline }: TrackingTimelineProps): React.JSX
               ) : null}
 
               {/* MINH CHỨNG / ẢNH THẬT TỪ API (Ops: MINH CHỨNG - XEM ẢNH) */}
-              {item.proofImageUrl ? (
-                <View style={styles.proofSection}>
-                  <Text style={styles.proofTitle}>Minh chứng hình ảnh quét:</Text>
-                  <TouchableOpacity
-                    activeOpacity={0.85}
-                    style={styles.proofImgWrap}
-                    onPress={() => setSelectedProofImage(item.proofImageUrl || null)}
-                  >
-                    <Image source={{ uri: item.proofImageUrl }} style={styles.proofThumbnail} resizeMode="cover" />
-                    <View style={styles.viewProofBadge}>
-                      <Ionicons name="eye-outline" size={13} color={colors.surface} />
-                      <Text style={styles.viewProofText}>Xem ảnh minh chứng</Text>
-                    </View>
-                  </TouchableOpacity>
-                </View>
-              ) : null}
+              {(() => {
+                const proofUrl = normalizeMediaPublicUrl(item.proofImageUrl);
+                if (!proofUrl) return null;
+                const isFailed = !!failedUrls[proofUrl];
+                const isLoading = !!loadingUrls[proofUrl];
+
+                return (
+                  <View style={styles.proofSection}>
+                    <Text style={styles.proofTitle}>Minh chứng hình ảnh quét:</Text>
+                    {isFailed ? (
+                      <View style={styles.proofErrorBox}>
+                        <Ionicons name="image-outline" size={18} color={colors.textMuted} />
+                        <Text style={styles.proofErrorText}>Ảnh minh chứng không thể tải</Text>
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        activeOpacity={0.85}
+                        style={styles.proofImgWrap}
+                        onPress={() => setSelectedProofImage(proofUrl)}
+                      >
+                        <Image
+                          source={{ uri: proofUrl }}
+                          style={styles.proofThumbnail}
+                          resizeMode="cover"
+                          onLoadStart={() => {
+                            setLoadingUrls((prev) => ({ ...prev, [proofUrl]: true }));
+                          }}
+                          onLoadEnd={() => {
+                            setLoadingUrls((prev) => ({ ...prev, [proofUrl]: false }));
+                          }}
+                          onError={() => {
+                            setFailedUrls((prev) => ({ ...prev, [proofUrl]: true }));
+                            setLoadingUrls((prev) => ({ ...prev, [proofUrl]: false }));
+                          }}
+                        />
+                        {isLoading ? (
+                          <View style={styles.proofLoadingOverlay}>
+                            <ActivityIndicator size="small" color={colors.primary} />
+                          </View>
+                        ) : null}
+                        <View style={styles.viewProofBadge}>
+                          <Ionicons name="eye-outline" size={13} color={colors.surface} />
+                          <Text style={styles.viewProofText}>Xem ảnh minh chứng</Text>
+                        </View>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                );
+              })()}
             </View>
           </View>
         );
@@ -149,7 +186,26 @@ export function TrackingTimeline({ timeline }: TrackingTimelineProps): React.JSX
             <Ionicons name="close" size={28} color={colors.surface} />
           </TouchableOpacity>
           {selectedProofImage ? (
-            <Image source={{ uri: selectedProofImage }} style={styles.fullscreenImage} resizeMode="contain" />
+            failedUrls[selectedProofImage] ? (
+              <View style={styles.modalErrorWrap}>
+                <Ionicons name="alert-circle-outline" size={44} color={colors.danger} />
+                <Text style={styles.modalErrorTitle}>Không thể tải ảnh minh chứng</Text>
+                <Text style={styles.modalErrorSubText} numberOfLines={2}>
+                  {selectedProofImage}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.modalImageContainer}>
+                <Image
+                  source={{ uri: selectedProofImage }}
+                  style={styles.fullscreenImage}
+                  resizeMode="contain"
+                  onError={() => {
+                    setFailedUrls((prev) => ({ ...prev, [selectedProofImage]: true }));
+                  }}
+                />
+              </View>
+            )
           ) : null}
         </View>
       </Modal>
@@ -367,5 +423,55 @@ const styles = StyleSheet.create({
   fullscreenImage: {
     width: '90%',
     height: '80%',
+  },
+  modalImageContainer: {
+    width: '90%',
+    height: '80%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  proofLoadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 5,
+  },
+  proofErrorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    backgroundColor: colors.surfaceSubtle,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  proofErrorText: {
+    fontSize: 11,
+    color: colors.textMuted,
+    fontStyle: 'italic',
+  },
+  modalErrorWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.xl,
+    gap: spacing.sm,
+    maxWidth: '85%',
+  },
+  modalErrorTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.surface,
+    textAlign: 'center',
+  },
+  modalErrorSubText: {
+    fontSize: 11,
+    color: 'rgba(255, 255, 255, 0.7)',
+    textAlign: 'center',
   },
 });

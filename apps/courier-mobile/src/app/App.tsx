@@ -2,6 +2,7 @@ import React from 'react';
 import { useEffect } from 'react';
 import {
   ActivityIndicator,
+  AppState,
   Pressable,
   StyleSheet,
   Text,
@@ -17,6 +18,7 @@ import { AppProviders } from './providers/AppProviders';
 export default function App(): React.JSX.Element {
   const status = useAuthStore((state) => state.status);
   const restoreSession = useAuthStore((state) => state.restoreSession);
+  const checkDayExpiry = useAuthStore((state) => state.checkDayExpiry);
   const globalLoadingMessage = useAppStore((state) => state.globalLoadingMessage);
   const globalErrorMessage = useAppStore((state) => state.globalErrorMessage);
   const clearGlobalError = useAppStore((state) => state.clearGlobalError);
@@ -26,6 +28,23 @@ export default function App(): React.JSX.Element {
   useEffect(() => {
     void restoreSession();
   }, [restoreSession]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      void checkDayExpiry();
+    }, 60_000);
+
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        void checkDayExpiry();
+      }
+    });
+
+    return () => {
+      clearInterval(interval);
+      subscription.remove();
+    };
+  }, [checkDayExpiry]);
 
   useEffect(() => {
     void hydrateQuickApps();

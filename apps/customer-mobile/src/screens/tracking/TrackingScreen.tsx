@@ -23,7 +23,7 @@ import { authStore } from '../../store/authStore';
 import { colors, shadows, spacing } from '../../theme';
 import type { OrderModel, ShipmentStatus, TrackingEvent } from '../../types';
 import { copyToClipboard } from '../../utils/clipboard';
-import { mapTrackingToCustomerOrderModel } from '../../utils/customerTrackingMapper';
+import { mapTrackingToCustomerOrderModel, normalizeMediaPublicUrl } from '../../utils/customerTrackingMapper';
 
 type Props = CompositeScreenProps<
   BottomTabScreenProps<MainTabParamList, 'TrackingTab'>,
@@ -104,6 +104,8 @@ function mapTrackingToOrderModel(
     if (!proofImageUrl && textUrlMatch) {
       proofImageUrl = textUrlMatch[0];
     }
+
+    proofImageUrl = normalizeMediaPublicUrl(proofImageUrl);
 
     // Clean note text by removing raw URL links & "Minh chứng: Xem ảnh" placeholders
     let cleanNote: string | undefined = noteRaw

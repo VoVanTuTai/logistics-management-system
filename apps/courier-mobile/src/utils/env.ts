@@ -277,4 +277,8 @@ export const appEnv = {
     process.env.EXPO_PUBLIC_ALLOW_ALL_COURIER_MOBILE_PERMISSIONS_FOR_TESTING ??
       process.env.ALLOW_ALL_COURIER_MOBILE_PERMISSIONS_FOR_TESTING,
   ),
+  buildId:
+    process.env.EXPO_PUBLIC_BUILD_ID ??
+    process.env.BUILD_ID ??
+    'courier-v1.0.5-build20260905',
 } as const;
