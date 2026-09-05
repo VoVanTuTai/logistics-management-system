@@ -333,6 +333,10 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
           codAmount: hasCod ? Number(codAmount) || 0 : 0,
           deliveryNote: notes.trim() || null,
           estimatedFee: liveFee,
+          originHubCode: senderAddress.hubCode,
+          destinationHubCode: receiverAddress.hubCode,
+          senderHubCode: senderAddress.hubCode,
+          receiverHubCode: receiverAddress.hubCode,
           routing: {
             originHubCode: senderAddress.hubCode,
             destinationHubCode: receiverAddress.hubCode,

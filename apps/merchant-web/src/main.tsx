@@ -2135,6 +2135,10 @@ function MerchantApp(): React.JSX.Element {
         updateUi: false,
       });
       const payload: Record<string, unknown> = {
+        pickupLatitude: normalizedForm.senderLatitude ?? undefined,
+        pickupLongitude: normalizedForm.senderLongitude ?? undefined,
+        deliveryLatitude: normalizedForm.receiverLatitude ?? undefined,
+        deliveryLongitude: normalizedForm.receiverLongitude ?? undefined,
         metadata: buildShipmentMetadata(normalizedForm, pricingQuoteForCreate.totalFee, {
           username: session.user.username,
           userId: session.user.id,
