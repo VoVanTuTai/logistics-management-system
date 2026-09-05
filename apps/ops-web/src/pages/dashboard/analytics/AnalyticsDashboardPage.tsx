@@ -564,47 +564,49 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
               {urgentAlerts.length} cảnh báo · {tasks.length} task · {manifests.length} manifest
             </span>
           </header>
-          <table className="analytics-alerts-table">
-            <thead>
-              <tr>
-                <th>Mã vận đơn</th>
-                <th>Vấn đề</th>
-                <th>Hub</th>
-                <th>Mức độ</th>
-                <th>Thời gian</th>
-                <th>Khách</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {urgentAlerts.map(({ shipment, elapsedHours }) => (
-                <tr key={shipment.id}>
-                  <td>
-                    <CopyableShipmentCode code={shipment.shipmentCode} className="analytics-alert-code" />
-                  </td>
-                  <td>{formatShipmentStatusLabel(shipment.currentStatus)}</td>
-                  <td>{resolveShipmentHub(shipment)}</td>
-                  <td>
-                    <span className={`analytics-severity analytics-severity--${elapsedHours >= 48 ? 'critical' : 'high'}`}>
-                      <span className="analytics-severity__dot" />
-                      {elapsedHours >= 48 ? 'Nghiêm trọng' : 'Cao'}
-                    </span>
-                  </td>
-                  <td>
-                    <span className="analytics-elapsed">{elapsedHours}h</span>
-                  </td>
-                  <td>{shipment.receiverName ?? shipment.senderName ?? 'Không có'}</td>
-                  <td>
-                    <div className="analytics-row-actions">
-                      <Link className="analytics-action-btn analytics-action-btn--secondary" to={routePaths.operationsPlatformDeliveryDispatch}>
-                        Điều phối
-                      </Link>
-                    </div>
-                  </td>
+          <div className="analytics-alerts-table-wrap">
+            <table className="analytics-alerts-table">
+              <thead>
+                <tr>
+                  <th>Mã vận đơn</th>
+                  <th>Vấn đề</th>
+                  <th>Hub</th>
+                  <th>Mức độ</th>
+                  <th>Thời gian</th>
+                  <th>Khách</th>
+                  <th></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {urgentAlerts.map(({ shipment, elapsedHours }) => (
+                  <tr key={shipment.id}>
+                    <td>
+                      <CopyableShipmentCode code={shipment.shipmentCode} className="analytics-alert-code" />
+                    </td>
+                    <td>{formatShipmentStatusLabel(shipment.currentStatus)}</td>
+                    <td>{resolveShipmentHub(shipment)}</td>
+                    <td>
+                      <span className={`analytics-severity analytics-severity--${elapsedHours >= 48 ? 'critical' : 'high'}`}>
+                        <span className="analytics-severity__dot" />
+                        {elapsedHours >= 48 ? 'Nghiêm trọng' : 'Cao'}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="analytics-elapsed">{elapsedHours}h</span>
+                    </td>
+                    <td>{shipment.receiverName ?? shipment.senderName ?? 'Không có'}</td>
+                    <td>
+                      <div className="analytics-row-actions">
+                        <Link className="analytics-action-btn analytics-action-btn--secondary" to={routePaths.operationsPlatformDeliveryDispatch}>
+                          Điều phối
+                        </Link>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           {urgentAlerts.length === 0 ? (
             <p className="analytics-empty-note">Không có cảnh báo quá hạn từ dữ liệu hiện tại.</p>
           ) : null}

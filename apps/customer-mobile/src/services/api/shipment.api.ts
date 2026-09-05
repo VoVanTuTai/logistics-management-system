@@ -51,6 +51,15 @@ export interface CreateShipmentMetadata {
   shippingFee?: number;
   codAmount?: number;
   notes?: string;
+  originHubCode?: string;
+  destinationHubCode?: string;
+  senderHubCode?: string;
+  receiverHubCode?: string;
+  routing?: {
+    originHubCode?: string;
+    destinationHubCode?: string;
+  };
+  [key: string]: unknown;
 }
 
 export interface ShipmentResponse {
@@ -90,7 +99,13 @@ export const shipmentApi = {
     return customerApiClient.request<ShipmentResponse>('/customer/shipment/shipments', {
       method: 'POST',
       accessToken,
-      body: { metadata },
+      body: {
+        pickupLatitude: metadata.pickupLatitude,
+        pickupLongitude: metadata.pickupLongitude,
+        deliveryLatitude: metadata.deliveryLatitude,
+        deliveryLongitude: metadata.deliveryLongitude,
+        metadata,
+      },
     });
   },
 

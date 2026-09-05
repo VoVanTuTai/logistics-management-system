@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
@@ -62,3 +62,28 @@ export function useLogoutMutation(accessToken: string | null) {
     },
   });
 }
+
+export function useShipperUsersQuery(
+  accessToken: string | null,
+  filters?: { hubCode?: string; status?: 'ACTIVE' | 'DISABLED'; q?: string },
+) {
+  return useQuery({
+    queryKey: [
+      'auth',
+      'users',
+      'shipper',
+      filters?.hubCode ?? 'all',
+      filters?.status ?? 'all',
+      filters?.q ?? '',
+    ],
+    queryFn: () =>
+      authClient.listUsers(accessToken, {
+        roleGroup: 'SHIPPER',
+        hubCode: filters?.hubCode,
+        status: filters?.status,
+        q: filters?.q,
+      }),
+    enabled: Boolean(accessToken),
+  });
+}
+

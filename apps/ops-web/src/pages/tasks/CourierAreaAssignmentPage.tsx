@@ -47,6 +47,7 @@ import {
   type LocalWardHubItem,
   type OfficialWardBoundary,
 } from '../../features/masterdata/vietnamBoundaryData';
+import { useShipperUsersQuery } from '../../features/auth/auth.api';
 import { useCourierOptionsQuery } from '../../features/tasks/tasks.api';
 import { useAuthStore } from '../../store/authStore';
 import './CourierAreaAssignmentPage.css';
@@ -92,31 +93,6 @@ const HUB_COORDINATE_MAP: Record<string, { lat: number; lng: number; name: strin
   '003': { lat: 10.7715, lng: 106.6932, name: 'Trung tâm Vận hành Miền Nam', province: 'Thành phố Hồ Chí Minh', district: 'Quận 1', radiusKm: 50 },
   '000HQ001': { lat: 21.0285, lng: 105.8544, name: 'HQ NEXUS Toàn Quốc', province: 'Thành phố Hà Nội', district: 'Quận Hoàn Kiếm', radiusKm: 100 },
 };
-
-// Danh sách Courier mặc định chuẩn 4 tầng phục vụ phân tuyến & kiểm thử
-const DEFAULT_TEST_COURIERS: Array<{ courierId: string; label: string }> = [
-  // TP. Hồ Chí Minh
-  { courierId: '30001001', label: 'Nguyễn Văn An (Tân Bình - Tuyến Phổ Quang)' },
-  { courierId: '30001002', label: 'Trần Văn Bình (Tân Bình - Tuyến Cộng Hòa)' },
-  { courierId: '30001003', label: 'Lê Hoàng Cường (Tân Bình - Tuyến Phường 13)' },
-  { courierId: '30001004', label: 'Phạm Văn Dũng (Q1 - Tuyến Bến Thành)' },
-  { courierId: '30001005', label: 'Hoàng Minh Đức (Q3 - Tuyến Lê Văn Sỹ)' },
-  { courierId: '30001006', label: 'Vũ Quốc Hùng (Q5 - Tuyến Trần Hưng Đạo)' },
-  { courierId: '30001007', label: 'Đỗ Tuấn Kiệt (Q12 - Tuyến Hà Huy Giáp)' },
-  { courierId: '30000079', label: 'Đội trưởng Giao nhận TP.HCM' },
-  // Hà Nội
-  { courierId: '30001010', label: 'Nguyễn Tiến Dũng (Đống Đa - Tuyến Láng Hạ)' },
-  { courierId: '30001011', label: 'Trần Quang Huy (Đống Đa - Tuyến Thái Hà)' },
-  { courierId: '30001012', label: 'Lê Minh Khôi (Hoàn Kiếm - Tuyến Phố Cổ)' },
-  { courierId: '30001013', label: 'Phạm Đức Long (Cầu Giấy - Tuyến Duy Tân)' },
-  { courierId: '30001014', label: 'Bùi Tuấn Nam (Hai Bà Trưng - Tuyến Bách Khoa)' },
-  { courierId: '30000007', label: 'Đội trưởng Giao nhận Hà Nội' },
-  // Miền & Tuyến Trục
-  { courierId: '30000001', label: 'Tài xế Linehaul Tuyến Trục Miền Bắc' },
-  { courierId: '30000002', label: 'Tài xế Linehaul Tuyến Trục Miền Trung' },
-  { courierId: '30000003', label: 'Tài xế Linehaul Tuyến Trục Miền Nam' },
-  { courierId: '30000048', label: 'Đội trưởng Giao nhận Đà Nẵng' },
-];
 
 type ViewTabType = 'MAP' | 'CUSTOM_ZONES' | 'ROSTER' | 'COURIER_MATRIX';
 
@@ -187,8 +163,50 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
   const assignmentsQuery = useCourierAreaAssignmentsQuery(accessToken, {
     hubCode: activeHubCode || undefined,
   });
-  const couriersQuery = useCourierOptionsQuery(accessToken);
+  // Lấy danh sách tài khoản Shipper thực tế trong CSDL
+  const shipperUsersQuery = useShipperUsersQuery(accessToken, { status: 'ACTIVE' });
   const adminUnitsQuery = useVietnamAdministrativeUnitsQuery(accessToken);
+
+  // Tùy chọn lọc: chỉ tài khoản thuộc Hub này hay toàn bộ tài khoản Shipper trong CSDL
+  const [filterByActiveHub, setFilterByActiveHub] = useState<boolean>(true);
+
+  // Available Couriers: Lấy đúng dữ liệu tài khoản có trong database.
+  // Tuyệt đối không fallback về dữ liệu ảo! Nếu không có thì danh sách rỗng ([]).
+  const availableCouriers = useMemo(() => {
+    const rawUsers = shipperUsersQuery.data ?? [];
+    if (rawUsers.length === 0) return [];
+
+    let filtered = rawUsers;
+    if (filterByActiveHub && activeHubCode) {
+      filtered = rawUsers.filter((u) => {
+        if (!u.hubCodes || u.hubCodes.length === 0) return false;
+        return u.hubCodes.some(
+          (code) => code.trim().toUpperCase() === activeHubCode.trim().toUpperCase(),
+        );
+      });
+    }
+
+    return filtered.map((u) => ({
+      courierId: u.username,
+      label: u.displayName ? `${u.displayName} (${u.username})` : u.username,
+      name: u.displayName || u.username,
+      phone: u.phone || '',
+      hubCodes: u.hubCodes || [],
+    }));
+  }, [shipperUsersQuery.data, filterByActiveHub, activeHubCode]);
+
+  // Map tra cứu tất cả tài khoản Courier trong CSDL
+  const allCouriersMap = useMemo(() => {
+    const map = new Map<string, { label: string; name: string; phone: string }>();
+    (shipperUsersQuery.data ?? []).forEach((u) => {
+      map.set(u.username, {
+        label: u.displayName ? `${u.displayName} (${u.username})` : u.username,
+        name: u.displayName || u.username,
+        phone: u.phone || '',
+      });
+    });
+    return map;
+  }, [shipperUsersQuery.data]);
 
   // Mutations
   const createMutation = useCreateCourierAreaAssignmentMutation(accessToken);
@@ -206,18 +224,14 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
     }
   }, [successMsg, errorMsg]);
 
-  // Available Couriers (Ưu tiên từ API, dự phòng danh sách Courier 4 tầng mặc định)
-  const availableCouriers = useMemo(() => {
-    if (couriersQuery.data && couriersQuery.data.length > 0) {
-      return couriersQuery.data;
-    }
-    return DEFAULT_TEST_COURIERS;
-  }, [couriersQuery.data]);
-
   // Sync default courier when couriers data loaded
   useEffect(() => {
-    if (availableCouriers.length > 0 && !formCourierId) {
-      setFormCourierId(availableCouriers[0].courierId);
+    if (availableCouriers.length > 0) {
+      if (!formCourierId || !availableCouriers.some((c) => c.courierId === formCourierId)) {
+        setFormCourierId(availableCouriers[0].courierId);
+      }
+    } else {
+      setFormCourierId('');
     }
   }, [availableCouriers, formCourierId]);
 
@@ -331,7 +345,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
   // Assign courier color map for consistent styling
   const courierColorMap = useMemo(() => {
     const map = new Map<string, string>();
-    (couriersQuery.data ?? []).forEach((c, idx) => {
+    availableCouriers.forEach((c, idx) => {
       map.set(c.courierId, COURIER_COLOR_PRESETS[idx % COURIER_COLOR_PRESETS.length]);
     });
     // Overlay custom saved colors from DB
@@ -341,7 +355,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
       }
     });
     return map;
-  }, [couriersQuery.data, assignmentsQuery.data]);
+  }, [availableCouriers, assignmentsQuery.data]);
 
   // KPI Metrics Calculation
   const metrics = useMemo(() => {
@@ -530,7 +544,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
     customDrawnZones.forEach((zone) => {
       if (zone.boundaryPolygon && zone.boundaryPolygon.length >= 3) {
         const zoneColor = zone.colorHex || '#0284c7';
-        const courierObj = couriersQuery.data?.find((c) => c.courierId === zone.courierId);
+        const courierObj = allCouriersMap.get(zone.courierId);
 
         const subZone = L.polygon(zone.boundaryPolygon, {
           color: zone.isActive ? zoneColor : '#94a3b8',
@@ -566,7 +580,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
         customZonesLayerRef.current.addLayer(subZone);
       }
     });
-  }, [customDrawnZones, leafletLoaded, couriersQuery.data]);
+  }, [customDrawnZones, leafletLoaded, allCouriersMap]);
 
   // 7. Render Ward Polygons & Courier Zones on Map
   useEffect(() => {
@@ -583,7 +597,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
       const isSelected = selectedWard?.code === ward.code;
 
       const courierId = assignment?.courierId;
-      const courier = couriersQuery.data?.find((c) => c.courierId === courierId);
+      const courier = courierId ? allCouriersMap.get(courierId) : null;
       const zoneColor = isAssigned
         ? assignment?.colorHex || courierColorMap.get(courierId!) || '#10b981'
         : '#f59e0b'; // Amber for unassigned
@@ -636,7 +650,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
 
       poly.addTo(wardLayersGroupRef.current);
     });
-  }, [leafletLoaded, hubWards, assignmentLookup, selectedWard, couriersQuery.data, courierColorMap]);
+  }, [leafletLoaded, hubWards, assignmentLookup, selectedWard, allCouriersMap, courierColorMap]);
 
   // Handle Select Ward from Map or Table
   const handleSelectWard = (
@@ -654,8 +668,8 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
       setFormIsActive(assignment.isActive);
       setFormZoneName(assignment.zoneName || `Tuyến ${ward.name}`);
     } else {
-      if (couriersQuery.data && couriersQuery.data.length > 0 && !formCourierId) {
-        setFormCourierId(couriersQuery.data[0].courierId);
+      if (availableCouriers.length > 0 && !formCourierId) {
+        setFormCourierId(availableCouriers[0].courierId);
       }
       setFormColorHex(COURIER_COLOR_PRESETS[0]);
       setFormIsActive(true);
@@ -698,7 +712,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
     setSubmitting(true);
     try {
       const closedPoints: Array<[number, number]> = [...drawnPoints, drawnPoints[0]];
-      const courierObj = couriersQuery.data?.find((c) => c.courierId === drawingCourierId);
+      const courierObj = allCouriersMap.get(drawingCourierId);
       const zoneLabel = drawingZoneName.trim() || `Tuyến Toạ Độ - ${courierObj?.label || drawingCourierId}`;
 
       await createMutation.mutateAsync({
@@ -713,10 +727,10 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
         isActive: drawingIsActive,
       });
 
-      setSuccessMsg(`✅ Đã lưu dải toạ độ [${zoneLabel}] (${closedPoints.length} điểm) cho Shipper [${courierObj?.label || drawingCourierId}] thành công!`);
+      setSuccessMsg(`Đã lưu dải toạ độ tùy biến "${zoneLabel}" thành công!`);
       handleCancelDrawing();
-    } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Lỗi khi lưu dải toạ độ cho Shipper.');
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : 'Lỗi khi lưu dải toạ độ.');
     } finally {
       setSubmitting(false);
     }
@@ -728,41 +742,34 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
     }
     try {
       await deleteMutation.mutateAsync(zone.id);
-      setSuccessMsg(`Đã xóa dải toạ độ "${zone.zoneName || zone.ward}" thành công!`);
-    } catch (err) {
+      setSuccessMsg(`Đã xóa dải toạ độ thành công.`);
+    } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : 'Lỗi khi xóa dải toạ độ.');
     }
   };
 
   const handleZoomToZone = (zone: CourierAreaAssignmentDto) => {
-    if (mapRef.current && zone.boundaryPolygon && zone.boundaryPolygon.length >= 3) {
-      const L = (window as any).L;
-      if (L) {
-        const poly = L.polygon(zone.boundaryPolygon);
-        mapRef.current.fitBounds(poly.getBounds(), { padding: [40, 40] });
-      }
-    }
+    if (!mapRef.current || !zone.boundaryPolygon || zone.boundaryPolygon.length === 0) return;
+    const L = (window as any).L;
+    if (!L) return;
+    const bounds = L.latLngBounds(zone.boundaryPolygon);
+    mapRef.current.fitBounds(bounds, { padding: [50, 50] });
   };
 
   // Helper for rendering simulation marker
   const renderSimMarker = (lat: number, lng: number) => {
+    if (!mapRef.current) return;
     const L = (window as any).L;
-    if (L && mapRef.current) {
-      if (simMarkerRef.current) {
-        mapRef.current.removeLayer(simMarkerRef.current);
-      }
+    if (!L) return;
 
+    if (simMarkerRef.current) {
+      simMarkerRef.current.setLatLng([lat, lng]);
+    } else {
       const simIcon = L.divIcon({
-        className: 'sim-radar-pin',
-        html: `
-          <div style="
-            position: relative; width: 24px; height: 24px; border-radius: 9999px;
-            background: #ef4444; border: 2px solid #ffffff; box-shadow: 0 0 12px #ef4444;
-            animation: pulse 1.5s infinite;
-          "></div>
-        `,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12],
+        className: 'sim-gps-marker',
+        html: `<div style="background: #ef4444; width: 16px; height: 16px; border-radius: 50%; border: 2px solid #ffffff; box-shadow: 0 0 10px rgba(239, 68, 68, 0.8); animation: pulse 1.5s infinite;"></div>`,
+        iconSize: [16, 16],
+        iconAnchor: [8, 8],
       });
 
       simMarkerRef.current = L.marker([lat, lng], { icon: simIcon }).addTo(mapRef.current);
@@ -788,7 +795,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
     }
 
     if (matchedCustomZone) {
-      const courier = couriersQuery.data?.find((c) => c.courierId === matchedCustomZone?.courierId);
+      const courier = allCouriersMap.get(matchedCustomZone.courierId);
       const simulatedLog = `🤖 [Hệ thống tự động điều phối - Geofence Tọa Độ] Tọa độ điểm lấy hàng (${lat.toFixed(5)}, ${lng.toFixed(5)}) nằm chính xác trong Dải toạ độ đã vẽ [${matchedCustomZone.zoneName || matchedCustomZone.ward}] ➔ Tự động gán ngay cho Shipper: ${matchedCustomZone.courierId} (${courier?.label || 'Shipper'}).`;
 
       setSimResult({
@@ -823,8 +830,8 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
       const assignment =
         assignmentLookup.get(key) || assignmentLookup.get(matchedWard.name.toLowerCase());
       const isAssigned = !!assignment && assignment.isActive;
-      const courier = isAssigned
-        ? couriersQuery.data?.find((c) => c.courierId === assignment.courierId)
+      const courier = isAssigned && assignment
+        ? allCouriersMap.get(assignment.courierId)
         : null;
 
       const simulatedLog = isAssigned
@@ -960,22 +967,53 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
           </p>
         </div>
 
-        <div className="hub-selector-group">
-          <label>🏢 Bưu cục đang quản lý:</label>
-          <select
-            value={activeHubCode}
-            onChange={(e) => {
-              setActiveHubCode(e.target.value);
-              setSelectedWard(null);
+        <div className="hub-selector-group" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <div>
+            <label>🏢 Bưu cục đang quản lý:</label>
+            <select
+              value={activeHubCode}
+              onChange={(e) => {
+                setActiveHubCode(e.target.value);
+                setSelectedWard(null);
+              }}
+              className="hub-select-input"
+            >
+              {availableHubs.map((h) => (
+                <option key={h.code} value={h.code}>
+                  {h.code} - {h.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <label
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              fontSize: 12,
+              cursor: 'pointer',
+              background: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              padding: '6px 12px',
+              borderRadius: 8,
+              color: '#334155',
+              fontWeight: 500,
+              marginTop: 18,
             }}
-            className="hub-select-input"
           >
-            {availableHubs.map((h) => (
-              <option key={h.code} value={h.code}>
-                {h.code} - {h.name}
-              </option>
-            ))}
-          </select>
+            <input
+              type="checkbox"
+              checked={filterByActiveHub}
+              onChange={(e) => setFilterByActiveHub(e.target.checked)}
+              style={{ accentColor: '#2563eb' }}
+            />
+            <span>
+              Chỉ lọc Shipper thuộc Hub <strong>{activeHubCode}</strong> (
+              {shipperUsersQuery.isLoading ? 'Đang tải...' : `${availableCouriers.length} tài khoản CSDL`}
+              )
+            </span>
+          </label>
         </div>
       </div>
 
@@ -1063,15 +1101,21 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
 
         <div className="hub-kpi-card">
           <div className="hub-kpi-header">
-            <span>Shipper Đang Hoạt động</span>
+            <span>Shipper Có Trong CSDL</span>
             <div className="hub-kpi-icon" style={{ background: '#f5f3ff', color: '#7c3aed' }}>
               <Truck size={18} />
             </div>
           </div>
           <div className="hub-kpi-value" style={{ color: '#7c3aed' }}>
-            {metrics.activeCouriersCount}
+            {shipperUsersQuery.isLoading ? '...' : availableCouriers.length}
           </div>
-          <div className="hub-kpi-subtext">Nhân sự giao nhận tại bưu cục</div>
+          <div className="hub-kpi-subtext">
+            {shipperUsersQuery.isLoading
+              ? 'Đang tải tài khoản CSDL...'
+              : filterByActiveHub
+              ? `${metrics.activeCouriersCount} Shipper đã phân công tuyến tại Hub`
+              : `Toàn bộ Shipper CSDL (${metrics.activeCouriersCount} đã gán tuyến)`}
+          </div>
         </div>
       </div>
 
@@ -1258,14 +1302,26 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
                         if (clr) setDrawingColorHex(clr);
                       }}
                       required
+                      disabled={availableCouriers.length === 0}
                     >
-                      <option value="">-- Chọn Shipper phụ trách --</option>
-                      {availableCouriers.map((c) => (
-                        <option key={c.courierId} value={c.courierId}>
-                          {c.label} ({c.courierId})
-                        </option>
-                      ))}
+                      {availableCouriers.length === 0 ? (
+                        <option value="">-- Không có tài khoản Shipper nào trong CSDL --</option>
+                      ) : (
+                        <>
+                          <option value="">-- Chọn Shipper phụ trách ({availableCouriers.length} tài xế) --</option>
+                          {availableCouriers.map((c) => (
+                            <option key={c.courierId} value={c.courierId}>
+                              {c.label} ({c.courierId})
+                            </option>
+                          ))}
+                        </>
+                      )}
                     </select>
+                    {availableCouriers.length === 0 && (
+                      <div style={{ marginTop: 6, fontSize: 11, color: '#dc2626' }}>
+                        ⚠️ CSDL chưa có tài khoản Shipper {filterByActiveHub ? `thuộc bưu cục ${activeHubCode}` : ''}. Vui lòng tạo tài khoản nhân sự trước khi gán tuyến.
+                      </div>
+                    )}
                   </div>
 
                   <div className="hub-form-group">
@@ -1313,7 +1369,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
                   <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
                     <button
                       type="submit"
-                      disabled={submitting || drawnPoints.length < 3}
+                      disabled={submitting || drawnPoints.length < 3 || availableCouriers.length === 0}
                       className="hub-btn-primary"
                       style={{ flex: 1 }}
                     >
@@ -1376,14 +1432,26 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
                         const defaultColor = courierColorMap.get(e.target.value);
                         if (defaultColor) setFormColorHex(defaultColor);
                       }}
+                      disabled={availableCouriers.length === 0}
                     >
-                      <option value="">-- Chọn Shipper --</option>
-                      {availableCouriers.map((c) => (
-                        <option key={c.courierId} value={c.courierId}>
-                          {c.label} ({c.courierId})
-                        </option>
-                      ))}
+                      {availableCouriers.length === 0 ? (
+                        <option value="">-- Không có tài khoản Shipper nào trong CSDL --</option>
+                      ) : (
+                        <>
+                          <option value="">-- Chọn Shipper ({availableCouriers.length} tài xế) --</option>
+                          {availableCouriers.map((c) => (
+                            <option key={c.courierId} value={c.courierId}>
+                              {c.label} ({c.courierId})
+                            </option>
+                          ))}
+                        </>
+                      )}
                     </select>
+                    {availableCouriers.length === 0 && (
+                      <div style={{ marginTop: 6, fontSize: 11, color: '#dc2626' }}>
+                        ⚠️ CSDL chưa có tài khoản Shipper {filterByActiveHub ? `thuộc bưu cục ${activeHubCode}` : ''}.
+                      </div>
+                    )}
                   </div>
 
                   <div className="hub-form-group">
@@ -1423,7 +1491,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
                   <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
                     <button
                       type="submit"
-                      disabled={submitting}
+                      disabled={submitting || availableCouriers.length === 0}
                       className="hub-btn-primary"
                     >
                       {submitting ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle size={16} />}
@@ -1566,7 +1634,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
                 </thead>
                 <tbody>
                   {customDrawnZones.map((zone) => {
-                    const courier = couriersQuery.data?.find((c) => c.courierId === zone.courierId);
+                    const courier = allCouriersMap.get(zone.courierId);
                     return (
                       <tr key={zone.id}>
                         <td>
@@ -1720,7 +1788,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
                   const assignment =
                     assignmentLookup.get(key) || assignmentLookup.get(w.name.toLowerCase());
                   const isAssigned = !!assignment && assignment.isActive;
-                  const courier = couriersQuery.data?.find((c) => c.courierId === assignment?.courierId);
+                  const courier = assignment ? allCouriersMap.get(assignment.courierId) : null;
 
                   return (
                     <tr key={w.code}>
@@ -1805,65 +1873,79 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
             </h4>
           </div>
 
-          <div style={{ padding: 20, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
-            {couriersQuery.data?.map((courier) => {
-              const assignedWards = hubWards.filter((w) => {
-                const key = `${w.province}_${w.district}_${w.name}`.toLowerCase();
-                const assignment =
-                  assignmentLookup.get(key) || assignmentLookup.get(w.name.toLowerCase());
-                return assignment?.courierId === courier.courierId && assignment.isActive;
-              });
+          {availableCouriers.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '48px 24px', color: '#64748b' }}>
+              <Truck size={40} style={{ color: '#94a3b8', marginBottom: 12 }} />
+              <h5 style={{ margin: '0 0 6px 0', fontSize: 15, color: '#1e293b' }}>
+                Chưa có tài khoản Shipper nào trong Cơ sở dữ liệu
+              </h5>
+              <p style={{ margin: 0, fontSize: 13, maxWidth: 500, marginInline: 'auto' }}>
+                {filterByActiveHub
+                  ? `Không tìm thấy tài khoản Shipper nào được gán bưu cục "${activeHubCode}". Hãy thử bỏ chọn "Chỉ lọc Shipper thuộc Hub" hoặc tạo tài khoản nhân sự mới trong Auth Service.`
+                  : 'Hệ thống chưa có tài khoản người dùng thuộc nhóm Shipper. Vui lòng tạo tài khoản nhân sự giao hàng trong CSDL.'}
+              </p>
+            </div>
+          ) : (
+            <div style={{ padding: 20, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
+              {availableCouriers.map((courier) => {
+                const assignedWards = hubWards.filter((w) => {
+                  const key = `${w.province}_${w.district}_${w.name}`.toLowerCase();
+                  const assignment =
+                    assignmentLookup.get(key) || assignmentLookup.get(w.name.toLowerCase());
+                  return assignment?.courierId === courier.courierId && assignment.isActive;
+                });
 
-              const courierColor = courierColorMap.get(courier.courierId) || '#2563eb';
+                const courierColor = courierColorMap.get(courier.courierId) || '#2563eb';
 
-              return (
-                <div
-                  key={courier.courierId}
-                  style={{
-                    background: '#ffffff',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: 12,
-                    padding: 16,
-                    borderLeft: `4px solid ${courierColor}`,
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                    <div>
-                      <h4 style={{ margin: 0, fontSize: 14, color: '#0f172a' }}>{courier.label}</h4>
-                      <span style={{ fontSize: 11, color: '#64748b' }}>Mã Shipper: {courier.courierId}</span>
-                    </div>
-                    <span style={{ background: '#f1f5f9', padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 600 }}>
-                      {assignedWards.length} Phường
-                    </span>
-                  </div>
-
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
-                    {assignedWards.length > 0 ? (
-                      assignedWards.map((w) => (
-                        <span
-                          key={w.code}
-                          style={{
-                            background: '#f8fafc',
-                            border: '1px solid #cbd5e1',
-                            padding: '2px 8px',
-                            borderRadius: 6,
-                            fontSize: 11,
-                            color: '#334155',
-                          }}
-                        >
-                          {w.name}
-                        </span>
-                      ))
-                    ) : (
-                      <span style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>
-                        Chưa được phân công phụ trách tuyến nào
+                return (
+                  <div
+                    key={courier.courierId}
+                    style={{
+                      background: '#ffffff',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: 12,
+                      padding: 16,
+                      borderLeft: `4px solid ${courierColor}`,
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: 14, color: '#0f172a' }}>{courier.label}</h4>
+                        <span style={{ fontSize: 11, color: '#64748b' }}>Mã Shipper: {courier.courierId}</span>
+                      </div>
+                      <span style={{ background: '#f1f5f9', padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 600 }}>
+                        {assignedWards.length} Phường
                       </span>
-                    )}
+                    </div>
+
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                      {assignedWards.length > 0 ? (
+                        assignedWards.map((w) => (
+                          <span
+                            key={w.code}
+                            style={{
+                              background: '#f8fafc',
+                              border: '1px solid #cbd5e1',
+                              padding: '2px 8px',
+                              borderRadius: 6,
+                              fontSize: 11,
+                              color: '#334155',
+                            }}
+                          >
+                            {w.name}
+                          </span>
+                        ))
+                      ) : (
+                        <span style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>
+                          Chưa được phân công phụ trách tuyến nào
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>
