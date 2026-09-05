@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { theme } from '../../theme';
@@ -22,6 +22,7 @@ import { AppGrid } from '../../components/home/AppGrid';
 import type { TaskDto, TaskStatus } from '../../features/tasks/tasks.types';
 import { useAssignedTasksQuery } from '../../features/tasks/tasks.queries';
 import type { AppNavigatorParamList } from '../../navigation/types';
+import { useAuthStore } from '../../features/auth/auth.store';
 import { useAppStore } from '../../store/appStore';
 import { appEnv } from '../../utils/env';
 import { resolveCourierDisplayName, resolveCourierId } from '../../utils/courier';
@@ -57,13 +58,30 @@ export function HomeScreen(): React.JSX.Element {
     useNavigation<NativeStackNavigationProp<AppNavigatorParamList>>();
   const session = useAppStore((state) => state.session);
   const quickAppIds = useAppStore((state) => state.quickAppIds);
+  const refreshMobilePermissions = useAuthStore(
+    (state) => state.refreshMobilePermissions,
+  );
   const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
   const tasksQuery = useAssignedTasksQuery({
     accessToken: session?.tokens.accessToken ?? null,
     courierId,
   });
-  const onRefresh = () => void tasksQuery.refetch();
+  const onRefresh = () => {
+    void tasksQuery.refetch();
+    void refreshMobilePermissions();
+  };
   const refreshing = tasksQuery.isRefetching;
+
+  useFocusEffect(
+    React.useCallback(() => {
+      void refreshMobilePermissions();
+    }, [refreshMobilePermissions]),
+  );
+
+  const canScanPickup = canAccessCourierFeature(session?.user, 'scan.pickup');
+  const canScanDelivery =
+    canAccessCourierFeature(session?.user, 'scan.delivery') ||
+    canAccessCourierFeature(session?.user, 'scan.delivery-sign');
 
   const tasks = tasksQuery.data ?? [];
   const waitingPickupTasks = useMemo(
@@ -137,6 +155,8 @@ export function HomeScreen(): React.JSX.Element {
           <QuickStatsRow
             waitingPickup={pickupCount}
             waitingDelivery={deliveryCount}
+            showPickup={canScanPickup}
+            showDelivery={canScanDelivery}
             activeStat={null}
             onPressWaitingPickup={() =>
               navigation.navigate('TaskList', {
@@ -152,17 +172,19 @@ export function HomeScreen(): React.JSX.Element {
             }
           />
 
-          <OverdueCard
-            title="Đơn đang xử lý"
-            overdueCount={processingCount}
-            subtitle="Hiển thị số task có trạng thái ASSIGNED theo payload server."
-            onPress={() =>
-              navigation.navigate('TaskList', {
-                initialTaskType: 'ALL',
-                initialStatus: 'ASSIGNED',
-              })
-            }
-          />
+          {canScanPickup || canScanDelivery ? (
+            <OverdueCard
+              title="Đơn đang xử lý"
+              overdueCount={processingCount}
+              subtitle="Hiển thị số task có trạng thái ASSIGNED theo payload server."
+              onPress={() =>
+                navigation.navigate('TaskList', {
+                  initialTaskType: 'ALL',
+                  initialStatus: 'ASSIGNED',
+                })
+              }
+            />
+          ) : null}
 
           {tasksQuery.isLoading ? (
             <View style={styles.centeredBlock}>

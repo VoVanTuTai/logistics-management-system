@@ -9,7 +9,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useQueries } from '@tanstack/react-query';
@@ -19,6 +19,8 @@ import * as Location from 'expo-location';
 import { Card } from '../../components/ui/Card';
 import { Screen } from '../../components/ui/Screen';
 import { StatusBadge } from '../../components/ui/StatusBadge';
+import { useAuthStore } from '../../features/auth/auth.store';
+import { canAccessCourierFeature } from '../../features/permissions/courier-permissions';
 import { shipmentApi } from '../../features/shipment/shipment.api';
 import type { ShipmentDto, ShipmentMetadata } from '../../features/shipment/shipment.types';
 import { tasksApi } from '../../features/tasks/tasks.api';
@@ -248,15 +250,69 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
   });
   const offlinePendingCount = useAppStore((state) => state.offlinePendingCount);
 
+  const refreshMobilePermissions = useAuthStore(
+    (state) => state.refreshMobilePermissions,
+  );
+
+  useFocusEffect(
+    React.useCallback(() => {
+      void refreshMobilePermissions();
+    }, [refreshMobilePermissions]),
+  );
+
+  const canPickup = canAccessCourierFeature(session?.user, 'scan.pickup');
+  const canDelivery =
+    canAccessCourierFeature(session?.user, 'scan.delivery') ||
+    canAccessCourierFeature(session?.user, 'scan.delivery-sign');
+  const canReturn = canAccessCourierFeature(session?.user, 'scan.return-sign');
+
+  const isTaskTypeAllowed = React.useCallback(
+    (taskType: TaskType) => {
+      if (taskType === 'PICKUP') return canPickup;
+      if (taskType === 'DELIVERY') return canDelivery;
+      if (taskType === 'RETURN') return canReturn;
+      return false;
+    },
+    [canPickup, canDelivery, canReturn],
+  );
+
+  const typeOptions: { value: TaskType | 'ALL'; label: string }[] = useMemo(() => {
+    const options: { value: TaskType | 'ALL'; label: string }[] = [];
+    const allowedTypes: TaskType[] = [];
+    if (canPickup) allowedTypes.push('PICKUP');
+    if (canDelivery) allowedTypes.push('DELIVERY');
+    if (canReturn) allowedTypes.push('RETURN');
+
+    if (allowedTypes.length > 1) {
+      options.push({ value: 'ALL', label: 'Tất cả' });
+    }
+    if (canPickup) options.push({ value: 'PICKUP', label: 'Đợi lấy' });
+    if (canDelivery) options.push({ value: 'DELIVERY', label: 'Đợi phát' });
+    if (canReturn) options.push({ value: 'RETURN', label: 'Hoàn hàng' });
+    return options;
+  }, [canPickup, canDelivery, canReturn]);
+
   const tasksQuery = useAssignedTasksQuery({
     accessToken: session?.tokens.accessToken ?? null,
     courierId,
   });
-  const onRefresh = () => void tasksQuery.refetch();
+  const onRefresh = () => {
+    void tasksQuery.refetch();
+    void refreshMobilePermissions();
+  };
 
   const [taskTypeFilter, setTaskTypeFilter] = useState<TaskType | 'ALL'>(
     route?.params?.initialTaskType ?? 'ALL',
   );
+
+  React.useEffect(() => {
+    if (typeOptions.length === 0) return;
+    const isCurrentValid = typeOptions.some((opt) => opt.value === taskTypeFilter);
+    if (!isCurrentValid) {
+      setTaskTypeFilter(typeOptions[0].value);
+    }
+  }, [typeOptions, taskTypeFilter]);
+
   const [statusFilter, setStatusFilter] = useState<
     'ALL' | 'CREATED' | 'ASSIGNED' | 'COMPLETED' | 'CANCELLED'
   >(route?.params?.initialStatus ?? 'ALL');
@@ -276,10 +332,11 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
     () =>
       tasks.filter(
         (task) =>
+          isTaskTypeAllowed(task.taskType) &&
           (taskTypeFilter === 'ALL' || task.taskType === taskTypeFilter) &&
           (statusFilter === 'ALL' || task.status === statusFilter),
       ),
-    [tasks, taskTypeFilter, statusFilter],
+    [tasks, taskTypeFilter, statusFilter, isTaskTypeAllowed],
   );
 
   const filteredShipmentCodes = useMemo(
@@ -343,13 +400,6 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
     () => groupTasksByCustomer(sortedDisplayItems),
     [sortedDisplayItems],
   );
-
-  const typeOptions: { value: TaskType | 'ALL'; label: string }[] = [
-    { value: 'ALL', label: 'Tất cả' },
-    { value: 'PICKUP', label: 'Đợi lấy' },
-    { value: 'DELIVERY', label: 'Đợi phát' },
-    { value: 'RETURN', label: 'Hoàn hàng' },
-  ];
 
   const statusOptions: {
     value: 'ALL' | 'CREATED' | 'ASSIGNED' | 'COMPLETED' | 'CANCELLED';
@@ -551,43 +601,45 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
         </View>
 
         <View style={styles.filterPanel}>
-          <View style={styles.filterSection}>
-            <View style={styles.filterHeader}>
-              <Ionicons name="cube-outline" size={13} color={theme.colors.textSecondary} />
-              <Text style={styles.filterLabel}>Nhiệm vụ</Text>
-            </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.filterChipRow}
-              style={styles.filterScrollView}
-            >
-              {typeOptions.map((option) => {
-                const active = option.value === taskTypeFilter;
+          {typeOptions.length > 1 ? (
+            <View style={styles.filterSection}>
+              <View style={styles.filterHeader}>
+                <Ionicons name="cube-outline" size={13} color={theme.colors.textSecondary} />
+                <Text style={styles.filterLabel}>Nhiệm vụ</Text>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.filterChipRow}
+                style={styles.filterScrollView}
+              >
+                {typeOptions.map((option) => {
+                  const active = option.value === taskTypeFilter;
 
-                return (
-                  <Pressable
-                    key={option.value}
-                    onPress={() => setTaskTypeFilter(option.value)}
-                    style={({ pressed }) => [
-                      styles.filterChip,
-                      active && styles.filterChipActive,
-                      pressed && styles.filterChipPressed,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.filterChipText,
-                        active && styles.filterChipTextActive,
+                  return (
+                    <Pressable
+                      key={option.value}
+                      onPress={() => setTaskTypeFilter(option.value)}
+                      style={({ pressed }) => [
+                        styles.filterChip,
+                        active && styles.filterChipActive,
+                        pressed && styles.filterChipPressed,
                       ]}
                     >
-                      {option.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </View>
+                      <Text
+                        style={[
+                          styles.filterChipText,
+                          active && styles.filterChipTextActive,
+                        ]}
+                      >
+                        {option.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          ) : null}
 
           <View style={styles.filterSection}>
             <View style={styles.filterHeader}>

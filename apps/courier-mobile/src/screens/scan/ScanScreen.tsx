@@ -133,6 +133,30 @@ const actions: PermissionedScanAction[] = [
     iconColor: '#8A5A0A',
     iconBgColor: '#FFF4DD',
   },
+  {
+    id: 'lay-tai-buu-cuc',
+    label: 'Lấy tại bưu cục',
+    permission: 'scan.branch-pickup',
+    iconName: 'business-outline',
+    iconColor: '#1A6B4A',
+    iconBgColor: '#E6FAF1',
+  },
+  {
+    id: 'tem-gia-tri-cao',
+    label: 'Dán tem GTC',
+    permission: 'scan.high-value-label',
+    iconName: 'shield-checkmark-outline',
+    iconColor: '#8A5A0A',
+    iconBgColor: '#FFF4DD',
+  },
+  {
+    id: 'kiem-gia-tri-cao',
+    label: 'Kiểm tra GTC',
+    permission: 'scan.high-value-check',
+    iconName: 'search-outline',
+    iconColor: theme.colors.primary,
+    iconBgColor: theme.colors.infoSurface,
+  },
 ];
 
 export function ScanScreen(): React.JSX.Element {
