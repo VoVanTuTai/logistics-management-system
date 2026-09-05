@@ -1365,6 +1365,8 @@ export function CourierMapScreen(): React.JSX.Element {
   const selectedPoint =
     mapPoints.find((point) => point.id === selectedPointId) ?? mapPoints[0] ?? null;
   const nextRoutePoint = suggestedRoute.steps[0]?.point ?? null;
+  const activePoint = (selectedPointId ? selectedPoint : nextRoutePoint) ?? selectedPoint;
+  const activePointSequence = activePoint ? routePointNumberById.get(activePoint.id) : null;
   const currentLocationPlot =
     currentLocation && coordinateBounds
       ? projectCoordinate(currentLocation, coordinateBounds)
@@ -1674,12 +1676,12 @@ export function CourierMapScreen(): React.JSX.Element {
 
         <Card style={styles.mapCard}>
           <View style={styles.mapHeaderRow}>
-            <View>
+            <View style={styles.mapTitleBlock}>
               <Text style={styles.mapTitle}>Tuyến hôm nay</Text>
-              <Text style={styles.mapSubtitle}>
+              <Text numberOfLines={1} style={styles.mapSubtitle}>
                 {isShipmentLoading
                   ? 'Đang nạp địa chỉ đơn...'
-                  : `${mapPoints.length} điểm, ${pendingCount} chờ nhận, ${completedCount} hoàn thành - GPS ${formatLocationUpdatedAt(lastLocationUpdatedAt)}`}
+                  : `${mapPoints.length} điểm • ${pendingCount} chờ nhận • ${completedCount} đã xong`}
               </Text>
             </View>
             <StatusBadge
@@ -1691,15 +1693,15 @@ export function CourierMapScreen(): React.JSX.Element {
           <View style={styles.legendGrid}>
             <View style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: typeColor('PICKUP') }]} />
-              <Text style={styles.legendText}>Pickup</Text>
+              <Text style={styles.legendText}>Lấy hàng</Text>
             </View>
             <View style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: typeColor('DELIVERY') }]} />
-              <Text style={styles.legendText}>Delivery</Text>
+              <Text style={styles.legendText}>Giao hàng</Text>
             </View>
             <View style={styles.legendItem}>
               <View style={[styles.legendRing, { borderColor: statusColor('COMPLETED') }]} />
-              <Text style={styles.legendText}>Đã hoàn thành</Text>
+              <Text style={styles.legendText}>Đã xong</Text>
             </View>
             <View style={styles.legendItem}>
               <View style={[styles.legendRing, { borderColor: statusColor('ASSIGNED') }]} />
@@ -2015,173 +2017,150 @@ export function CourierMapScreen(): React.JSX.Element {
               <View style={styles.mapStatusChip}>
                 <Ionicons
                   name={locationState === 'ready' ? 'locate' : 'locate-outline'}
-                  size={13}
+                  size={12}
                   color={locationState === 'ready' ? '#16A34A' : '#64748B'}
                 />
                 <Text style={styles.mapStatusChipText}>
                   {locationState === 'ready' ? 'GPS sẵn sàng' : 'Chưa có GPS'}
                 </Text>
               </View>
-              <View style={styles.mapStatusChip}>
-                <Ionicons name="git-branch-outline" size={13} color={theme.colors.primary} />
-                <Text style={styles.mapStatusChipText}>
-                  {canUseNativeMap ? 'MapView + polyline' : 'Polyline dự phòng'}
-                </Text>
-              </View>
             </View>
 
-            {nextRoutePoint ? (
-              <View style={styles.nextStopSheet}>
-                <View style={styles.nextStopHeader}>
-                  <View style={styles.nextStopTextBlock}>
-                    <Text style={styles.nextStopEyebrow}>Điểm tiếp theo</Text>
-                    <Text numberOfLines={1} style={styles.nextStopTitle}>
-                      {nextRoutePoint.title}
-                    </Text>
-                  </View>
-                  <View
-                    style={[
-                      styles.nextStopNumber,
-                      { backgroundColor: typeColor(nextRoutePoint.task.taskType) },
-                    ]}
-                  >
-                    <Text style={styles.nextStopNumberText}>
-                      {routePointNumberById.get(nextRoutePoint.id) ?? 1}
-                    </Text>
-                  </View>
-                </View>
-                <Text numberOfLines={2} style={styles.nextStopAddress}>
-                  {nextRoutePoint.subtitle}
-                </Text>
-                <View style={styles.nextStopBadgeRow}>
-                  <StatusBadge
-                    label={toTaskTypeLabel(nextRoutePoint.task.taskType)}
-                    variant="info"
-                  />
-                  <StatusBadge
-                    label={toTaskStatusLabel(nextRoutePoint.task.status)}
-                    variant={statusVariant(nextRoutePoint.task.status)}
-                  />
-                </View>
-                <View style={styles.nextStopActionRow}>
-                  <Pressable
-                    disabled={!nextRoutePoint.contact}
-                    onPress={() => void handleCallContact(nextRoutePoint.contact)}
-                    style={({ pressed }) => [
-                      styles.nextStopSecondaryAction,
-                      !nextRoutePoint.contact && styles.actionDisabled,
-                      pressed && styles.actionPressed,
-                    ]}
-                  >
-                    <Ionicons name="call-outline" size={15} color={theme.colors.primary} />
-                    <Text style={styles.nextStopSecondaryText}>Gọi</Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={() =>
-                      navigation.navigate('TaskDetail', { taskId: nextRoutePoint.task.id })
-                    }
-                    style={({ pressed }) => [
-                      styles.nextStopSecondaryAction,
-                      pressed && styles.actionPressed,
-                    ]}
-                  >
-                    <Ionicons name="document-text-outline" size={15} color={theme.colors.primary} />
-                    <Text style={styles.nextStopSecondaryText}>Chi tiết</Text>
-                  </Pressable>
-                  <Pressable
-                    disabled={!nextRoutePoint.destination}
-                    onPress={() => void handleOpenDirections(nextRoutePoint.destination)}
-                    style={({ pressed }) => [
-                      styles.nextStopPrimaryAction,
-                      !nextRoutePoint.destination && styles.actionDisabled,
-                      pressed && styles.actionPressed,
-                    ]}
-                  >
-                    <Ionicons name="navigate-outline" size={15} color="#FFFFFF" />
-                    <Text style={styles.nextStopPrimaryText}>Bắt đầu</Text>
-                  </Pressable>
-                </View>
-              </View>
-            ) : (
+            {mapPoints.length === 0 ? (
               <View style={styles.mapEmptyOverlay}>
                 <Ionicons name="map-outline" size={24} color={theme.colors.textMuted} />
-                <Text style={styles.mapEmptyTitle}>Chưa có tuyến để vẽ</Text>
+                <Text style={styles.mapEmptyTitle}>Chưa có đơn trên bản đồ</Text>
                 <Text style={styles.mapEmptyText}>
-                  Các đơn thiếu tọa độ vẫn nằm trong danh sách bên dưới.
+                  Kéo xuống để làm mới khi có nhiệm vụ mới.
                 </Text>
               </View>
-            )}
+            ) : null}
           </View>
 
-          {/* HORIZONTAL ROUTE STEPS CAROUSEL FOR DEMO */}
-          {suggestedRoute.steps.length > 0 ? (
-            <View style={styles.stepsCarouselContainer}>
-              <View style={styles.stepsCarouselHeader}>
-                <Text style={styles.stepsCarouselTitle}>
-                  {isTspOptimized ? '⭐ Lộ trình tối ưu:' : 'Thứ tự tuyến:'} {suggestedRoute.steps.length} chặng
-                </Text>
-                <Text style={styles.stepsCarouselSubtitle}>
-                  Chạm chọn chặng • Bấm chỉ đường
-                </Text>
-              </View>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.stepsCarouselScroll}
-              >
-                {suggestedRoute.steps.map((step, idx) => {
-                  const isSelected = selectedPoint?.id === step.point.id;
-                  const legDist = step.distanceFromPreviousMeters ?? 0;
-                  return (
-                    <Pressable
-                      key={step.point.id}
-                      onPress={() => {
-                        setSelectedPointId(step.point.id);
-                        if (!selectedClusterPointIds.has(step.point.id)) {
-                          setSelectedClusterId(null);
-                        }
-                      }}
-                      style={({ pressed }) => [
-                        styles.stepCard,
-                        isSelected && styles.stepCardSelected,
-                        pressed && styles.actionPressed,
+          {/* THẺ TÁC VỤ ĐIỂM DỪNG ĐANG CHỌN / KẾ TIẾP */}
+          {activePoint ? (
+            <View style={styles.activeStopCard}>
+              <View style={styles.activeStopTopRow}>
+                <View style={styles.activeStopTitleCol}>
+                  <View style={styles.activeStopTagRow}>
+                    <View
+                      style={[
+                        styles.activeStopSeqBadge,
+                        { backgroundColor: typeColor(activePoint.task.taskType) },
                       ]}
                     >
-                      <View style={styles.stepCardTop}>
-                        <View
-                          style={[
-                            styles.stepBadgeCircle,
-                            { backgroundColor: typeColor(step.point.task.taskType) },
-                          ]}
-                        >
-                          <Text style={styles.stepBadgeCircleText}>{idx + 1}</Text>
-                        </View>
-                        <Text style={styles.stepDistanceText}>
-                          {idx === 0
-                            ? 'Điểm đầu'
-                            : `Cách ~${(legDist / 1000).toFixed(1)} km`}
-                        </Text>
-                      </View>
-                      <Text numberOfLines={1} style={styles.stepReceiverText}>
-                        {step.point.title}
+                      <Text style={styles.activeStopSeqText}>
+                        {activePointSequence ? `Chặng #${activePointSequence}` : 'Điểm dừng'}
                       </Text>
-                      <Text numberOfLines={1} style={styles.stepAddressText}>
-                        {step.point.subtitle}
-                      </Text>
-                      <Pressable
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          void handleOpenDirections(step.point.destination);
-                        }}
-                        style={styles.stepNavigateBtn}
+                    </View>
+                    <View
+                      style={[
+                        styles.activeStopTypeBadge,
+                        activePoint.task.taskType === 'PICKUP'
+                          ? styles.activeStopTypePickup
+                          : styles.activeStopTypeDelivery,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.activeStopTypeBadgeText,
+                          activePoint.task.taskType === 'PICKUP'
+                            ? styles.activeStopTypePickupText
+                            : styles.activeStopTypeDeliveryText,
+                        ]}
                       >
-                        <Ionicons name="navigate" size={12} color="#FFFFFF" />
-                        <Text style={styles.stepNavigateBtnText}>Chỉ đường</Text>
-                      </Pressable>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
+                        {toTaskTypeLabel(activePoint.task.taskType)}
+                      </Text>
+                    </View>
+                    <Text style={styles.activeStopShipmentCode} numberOfLines={1}>
+                      {activePoint.task.shipmentCode ?? activePoint.task.taskCode}
+                    </Text>
+                  </View>
+                  <Text style={styles.activeStopName} numberOfLines={1}>
+                    {activePoint.title}
+                  </Text>
+                </View>
+                <StatusBadge
+                  label={toTaskStatusLabel(activePoint.task.status)}
+                  variant={statusVariant(activePoint.task.status)}
+                />
+              </View>
+
+              <View style={styles.activeStopAddressRow}>
+                <Ionicons
+                  name="location-outline"
+                  size={14}
+                  color={theme.colors.textMuted}
+                  style={styles.activeStopAddressIcon}
+                />
+                <Text style={styles.activeStopAddressText} numberOfLines={2}>
+                  {activePoint.subtitle}
+                </Text>
+              </View>
+
+              <View style={styles.activeStopMetaRow}>
+                {activePoint.contact ? (
+                  <Pressable
+                    onPress={() => void handleCallContact(activePoint.contact)}
+                    style={styles.activeStopMetaPill}
+                  >
+                    <Ionicons name="call" size={11} color={theme.colors.primary} />
+                    <Text style={styles.activeStopMetaPillText}>{activePoint.contact}</Text>
+                  </Pressable>
+                ) : null}
+                {activePoint.codAmount && activePoint.codAmount > 0 ? (
+                  <View style={styles.activeStopCodPill}>
+                    <Ionicons name="cash" size={12} color="#DC2626" />
+                    <Text style={styles.activeStopCodPillText}>
+                      COD: {formatMoney(activePoint.codAmount)}
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+
+              <View style={styles.activeStopActionRow}>
+                <Pressable
+                  disabled={!activePoint.contact}
+                  onPress={() => void handleCallContact(activePoint.contact)}
+                  style={({ pressed }) => [
+                    styles.activeStopBtn,
+                    styles.activeStopBtnSecondary,
+                    !activePoint.contact && styles.actionDisabled,
+                    pressed && styles.actionPressed,
+                  ]}
+                >
+                  <Ionicons name="call-outline" size={14} color={theme.colors.primary} />
+                  <Text style={styles.activeStopBtnSecondaryText}>Gọi khách</Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={() =>
+                    navigation.navigate('TaskDetail', { taskId: activePoint.task.id })
+                  }
+                  style={({ pressed }) => [
+                    styles.activeStopBtn,
+                    styles.activeStopBtnSecondary,
+                    pressed && styles.actionPressed,
+                  ]}
+                >
+                  <Ionicons name="document-text-outline" size={14} color={theme.colors.primary} />
+                  <Text style={styles.activeStopBtnSecondaryText}>Chi tiết</Text>
+                </Pressable>
+
+                <Pressable
+                  disabled={!activePoint.destination}
+                  onPress={() => void handleOpenDirections(activePoint.destination)}
+                  style={({ pressed }) => [
+                    styles.activeStopBtn,
+                    styles.activeStopBtnPrimary,
+                    !activePoint.destination && styles.actionDisabled,
+                    pressed && styles.actionPressed,
+                  ]}
+                >
+                  <Ionicons name="navigate" size={14} color="#FFFFFF" />
+                  <Text style={styles.activeStopBtnPrimaryText}>Chỉ đường</Text>
+                </Pressable>
+              </View>
             </View>
           ) : null}
         </Card>
@@ -2260,7 +2239,7 @@ export function CourierMapScreen(): React.JSX.Element {
                         onPress={() => setSelectedPointId(step.point.id)}
                         style={({ pressed }) => [
                           styles.routeStepRow,
-                          selectedPoint?.id === step.point.id && styles.routeStepRowActive,
+                          activePoint?.id === step.point.id && styles.routeStepRowActive,
                           pressed && styles.pointRowPressed,
                         ]}
                       >
@@ -2279,7 +2258,7 @@ export function CourierMapScreen(): React.JSX.Element {
                             <Text numberOfLines={1} style={styles.routeStepTitle}>
                               {step.point.title}
                             </Text>
-                            <Text style={styles.routeStepCode}>
+                            <Text numberOfLines={1} style={styles.routeStepCode}>
                               {step.point.task.shipmentCode ?? step.point.task.taskCode}
                             </Text>
                           </View>
@@ -2408,64 +2387,6 @@ export function CourierMapScreen(): React.JSX.Element {
             <Text style={styles.stateText}>Kéo để làm mới khi có nhiệm vụ mới.</Text>
           </Card>
         ) : null}
-
-        {selectedPoint ? (
-          <Card style={styles.detailCard}>
-            <View style={styles.detailTopRow}>
-              <View style={styles.detailTitleBlock}>
-                <Text style={styles.detailEyebrow}>
-                  {toTaskTypeLabel(selectedPoint.task.taskType)} - {selectedPoint.task.taskCode}
-                </Text>
-                <Text style={styles.detailTitle}>
-                  {selectedPoint.task.shipmentCode ?? 'Chưa có mã vận đơn'}
-                </Text>
-              </View>
-              <StatusBadge
-                label={toTaskStatusLabel(selectedPoint.task.status)}
-                variant={statusVariant(selectedPoint.task.status)}
-              />
-            </View>
-            <Text style={styles.detailName}>{selectedPoint.title}</Text>
-            <Text style={styles.detailAddress}>{selectedPoint.subtitle}</Text>
-            <View style={styles.detailMetaRow}>
-              <Ionicons name="call-outline" size={14} color={theme.colors.textMuted} />
-              <Text style={styles.detailMetaText}>
-                {selectedPoint.contact ?? 'Chưa có số liên hệ'}
-              </Text>
-            </View>
-            <View style={styles.detailMetaRow}>
-              <Ionicons name="cash-outline" size={14} color={theme.colors.textMuted} />
-              <Text style={styles.detailMetaText}>
-                COD {formatMoney(selectedPoint.codAmount)}
-              </Text>
-            </View>
-            <View style={styles.actionRow}>
-              <Pressable
-                onPress={() =>
-                  navigation.navigate('TaskDetail', { taskId: selectedPoint.task.id })
-                }
-                style={({ pressed }) => [
-                  styles.secondaryAction,
-                  pressed && styles.actionPressed,
-                ]}
-              >
-                <Ionicons name="document-text-outline" size={15} color={theme.colors.primary} />
-                <Text style={styles.secondaryActionText}>Chi tiết đơn</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => void handleOpenDirections(selectedPoint.destination)}
-                style={({ pressed }) => [
-                  styles.primaryAction,
-                  !selectedPoint.destination && styles.actionDisabled,
-                  pressed && styles.actionPressed,
-                ]}
-              >
-                <Ionicons name="navigate-outline" size={15} color="#FFFFFF" />
-                <Text style={styles.primaryActionText}>Đi tới điểm này</Text>
-              </Pressable>
-            </View>
-          </Card>
-        ) : null}
       </ScrollView>
     </View>
   );
@@ -2543,6 +2464,11 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: theme.spacing.sm,
+  },
+  mapTitleBlock: {
+    flex: 1,
+    minWidth: 0,
+    paddingRight: theme.spacing.xs,
   },
   mapTitle: {
     color: theme.colors.textPrimary,
@@ -2625,7 +2551,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   mapSurface: {
-    height: 480,
+    height: 380,
     borderRadius: theme.radius.xl,
     borderWidth: 1,
     borderColor: theme.colors.border,
@@ -2678,126 +2604,191 @@ const styles = StyleSheet.create({
   },
   mapStatusChipRow: {
     position: 'absolute',
-    left: theme.spacing.xs,
-    right: theme.spacing.xs,
-    top: theme.spacing.xs,
+    top: 8,
+    right: 8,
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: theme.spacing.xxs,
+    alignItems: 'center',
+    gap: 6,
     zIndex: 20,
   },
   mapStatusChip: {
     minHeight: 26,
     borderRadius: theme.radius.pill,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    paddingHorizontal: theme.spacing.sm,
+    borderColor: 'rgba(203, 213, 225, 0.8)',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    ...theme.shadow.sm,
   },
   mapStatusChipText: {
     color: theme.colors.textSecondary,
     fontSize: 10,
     fontWeight: '800',
   },
-  nextStopSheet: {
-    position: 'absolute',
-    left: theme.spacing.xs,
-    right: theme.spacing.xs,
-    bottom: theme.spacing.xs,
-    borderRadius: theme.radius.xl,
+  activeStopCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+    borderColor: '#E2E8F0',
     padding: theme.spacing.md,
-    gap: theme.spacing.sm,
-    zIndex: 25,
-    ...theme.shadow.lg,
+    gap: 8,
+    marginTop: theme.spacing.xs,
+    ...theme.shadow.sm,
   },
-  nextStopHeader: {
+  activeStopTopRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
     gap: theme.spacing.sm,
   },
-  nextStopTextBlock: {
+  activeStopTitleCol: {
     flex: 1,
     minWidth: 0,
-  },
-  nextStopEyebrow: {
-    color: theme.colors.primary,
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  nextStopTitle: {
-    color: theme.colors.textPrimary,
-    fontSize: 15,
-    fontWeight: '900',
-    marginTop: 1,
-  },
-  nextStopNumber: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  nextStopNumberText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '900',
-  },
-  nextStopAddress: {
-    color: theme.colors.textSecondary,
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 16,
-  },
-  nextStopBadgeRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: theme.spacing.xs,
-  },
-  nextStopActionRow: {
-    flexDirection: 'row',
-    gap: theme.spacing.sm,
-    marginTop: 2,
-  },
-  nextStopSecondaryAction: {
-    minHeight: 38,
-    borderRadius: theme.radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.background,
-    paddingHorizontal: theme.spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
     gap: 4,
   },
-  nextStopSecondaryText: {
-    color: theme.colors.textSecondary,
-    fontSize: 12,
-    fontWeight: '700',
+  activeStopTagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
   },
-  nextStopPrimaryAction: {
+  activeStopSeqBadge: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: theme.radius.xs,
+  },
+  activeStopSeqText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  activeStopTypeBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: theme.radius.xs,
+  },
+  activeStopTypePickup: {
+    backgroundColor: '#FEF3C7',
+  },
+  activeStopTypeDelivery: {
+    backgroundColor: '#DCFCE7',
+  },
+  activeStopTypeBadgeText: {
+    fontSize: 10.5,
+    fontWeight: '800',
+  },
+  activeStopTypePickupText: {
+    color: '#B45309',
+  },
+  activeStopTypeDeliveryText: {
+    color: '#15803D',
+  },
+  activeStopShipmentCode: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#64748B',
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: theme.radius.xs,
+  },
+  activeStopName: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
+  },
+  activeStopAddressRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 5,
+  },
+  activeStopAddressIcon: {
+    marginTop: 2,
+  },
+  activeStopAddressText: {
+    flex: 1,
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    lineHeight: 17,
+  },
+  activeStopMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingTop: 2,
+  },
+  activeStopMetaPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  activeStopMetaPillText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: theme.colors.primary,
+  },
+  activeStopCodPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FEF2F2',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  activeStopCodPillText: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: '#DC2626',
+  },
+  activeStopActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 6,
+  },
+  activeStopBtn: {
     flex: 1,
     minHeight: 38,
-    borderRadius: theme.radius.lg,
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.radius.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 5,
+    paddingHorizontal: 6,
   },
-  nextStopPrimaryText: {
-    color: '#FFFFFF',
+  activeStopBtnSecondary: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  activeStopBtnSecondaryText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
+  },
+  activeStopBtnPrimary: {
+    flex: 1.25,
+    backgroundColor: theme.colors.primary,
+    ...theme.shadow.sm,
+  },
+  activeStopBtnPrimaryText: {
     fontSize: 12,
     fontWeight: '900',
+    color: '#FFFFFF',
   },
   mapEmptyOverlay: {
     position: 'absolute',
@@ -3250,102 +3241,14 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     marginTop: theme.spacing.sm,
   },
-  detailCard: {
-    gap: theme.spacing.sm,
-    borderRadius: theme.radius.xl,
-    backgroundColor: theme.colors.surface,
-    borderColor: theme.colors.border,
-    borderWidth: 1,
-    ...theme.shadow.lg,
-  },
-  detailTopRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: theme.spacing.sm,
-  },
-  detailTitleBlock: {
-    flex: 1,
-    minWidth: 0,
-  },
-  detailEyebrow: {
-    color: theme.colors.textMuted,
-    fontSize: 11,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-  },
-  detailTitle: {
-    color: theme.colors.primary,
-    fontSize: 16,
-    fontWeight: '900',
-    marginTop: 1,
-  },
-  detailName: {
-    color: theme.colors.textPrimary,
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  detailAddress: {
-    color: theme.colors.textSecondary,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  detailMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.xs,
-  },
-  detailMetaText: {
-    color: theme.colors.textSecondary,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  actionRow: {
-    flexDirection: 'row',
-    gap: theme.spacing.sm,
-    marginTop: theme.spacing.xs,
-  },
-  primaryAction: {
-    flex: 1,
-    minHeight: 40,
-    borderRadius: theme.radius.lg,
-    backgroundColor: theme.colors.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: theme.spacing.xs,
-    ...theme.shadow.sm,
-  },
-  secondaryAction: {
-    flex: 1,
-    minHeight: 40,
-    borderRadius: theme.radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.background,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: theme.spacing.xs,
+  pointRowPressed: {
+    opacity: 0.85,
   },
   actionPressed: {
     opacity: 0.82,
   },
   actionDisabled: {
-    opacity: 0.5,
-  },
-  primaryActionText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '900',
-  },
-  secondaryActionText: {
-    color: theme.colors.primary,
-    fontSize: 12,
-    fontWeight: '900',
-  },
-  pointRowPressed: {
-    opacity: 0.85,
+    opacity: 0.45,
   },
   tspQuickBar: {
     flexDirection: 'row',
@@ -3438,88 +3341,6 @@ const styles = StyleSheet.create({
     borderColor: '#CBD5E1',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  stepsCarouselContainer: {
-    paddingTop: theme.spacing.sm,
-    gap: theme.spacing.xs,
-  },
-  stepsCarouselHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  stepsCarouselTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: theme.colors.textPrimary,
-  },
-  stepsCarouselSubtitle: {
-    fontSize: 11,
-    color: theme.colors.textMuted,
-  },
-  stepsCarouselScroll: {
-    gap: theme.spacing.xs,
-    paddingVertical: 4,
-  },
-  stepCard: {
-    width: 180,
-    backgroundColor: '#FFFFFF',
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    padding: theme.spacing.sm,
-    gap: 4,
-  },
-  stepCardSelected: {
-    borderColor: '#0284C7',
-    backgroundColor: '#F0F9FF',
-    borderWidth: 1.5,
-  },
-  stepCardTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  stepBadgeCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepBadgeCircleText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '900',
-  },
-  stepDistanceText: {
-    fontSize: 11,
-    color: '#64748B',
-    fontWeight: '700',
-  },
-  stepReceiverText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: theme.colors.textPrimary,
-  },
-  stepAddressText: {
-    fontSize: 11,
-    color: theme.colors.textSecondary,
-  },
-  stepNavigateBtn: {
-    marginTop: 4,
-    minHeight: 28,
-    borderRadius: theme.radius.sm,
-    backgroundColor: '#0284C7',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-  },
-  stepNavigateBtnText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '800',
   },
 
   // ZONE CENTER BADGE & FALLBACK STYLES
