@@ -1,8 +1,9 @@
 const os = require('os');
 const { spawn } = require('child_process');
 
-const DEFAULT_GATEWAY_PORT = 3000;
-const DEFAULT_PUBLIC_GATEWAY_BASE_URL = 'http://localhost:3000';
+const DEFAULT_VPS_GATEWAY_PORT = 13000;
+const DEFAULT_LOCAL_GATEWAY_PORT = 3000;
+const DEFAULT_PUBLIC_GATEWAY_BASE_URL = 'https://customer.nexus-ex.site';
 const DEFAULT_EXPO_PORT = 8082;
 const DEFAULT_NODE_MAX_OLD_SPACE_MB = 4096;
 
@@ -59,11 +60,6 @@ function resolveGatewayBaseUrl() {
     return normalizeBaseUrl(explicitBaseUrl);
   }
 
-  const lanIp = resolveLanIp();
-  if (lanIp) {
-    return `http://${lanIp}:${DEFAULT_GATEWAY_PORT}`;
-  }
-
   return DEFAULT_PUBLIC_GATEWAY_BASE_URL;
 }
 
@@ -71,7 +67,14 @@ function run() {
   const gatewayBaseUrl = resolveGatewayBaseUrl();
   if (gatewayBaseUrl) {
     process.env.EXPO_PUBLIC_GATEWAY_BASE_URL = gatewayBaseUrl;
-    console.log(`[customer-mobile] Auto-detected Gateway Base URL for LAN/Expo Go: ${gatewayBaseUrl}`);
+    console.log(`[customer-mobile] Using Gateway Base URL: ${gatewayBaseUrl}`);
+  }
+
+  const lanIp = resolveLanIp();
+  if (!process.env.EXPO_PUBLIC_GATEWAY_FALLBACK_BASE_URLS) {
+    const lanFallbacks = lanIp ? `http://${lanIp}:${DEFAULT_VPS_GATEWAY_PORT},http://${lanIp}:${DEFAULT_LOCAL_GATEWAY_PORT},` : '';
+    process.env.EXPO_PUBLIC_GATEWAY_FALLBACK_BASE_URLS =
+      `${lanFallbacks}https://ops.nexus-ex.site,http://103.82.20.51:${DEFAULT_VPS_GATEWAY_PORT},http://10.0.2.2:${DEFAULT_VPS_GATEWAY_PORT},http://10.0.2.2:${DEFAULT_LOCAL_GATEWAY_PORT},http://localhost:${DEFAULT_VPS_GATEWAY_PORT},http://localhost:${DEFAULT_LOCAL_GATEWAY_PORT},http://127.0.0.1:${DEFAULT_VPS_GATEWAY_PORT},http://127.0.0.1:${DEFAULT_LOCAL_GATEWAY_PORT}`;
   }
 
   if (!process.env.EXPO_NO_DEPENDENCY_VALIDATION) {
@@ -94,10 +97,12 @@ function run() {
   const extraArgs = process.argv.slice(2);
   const hasHostArg = extraArgs.some((arg) => arg === '--host' || arg.startsWith('--host='));
   const hasPortArg = extraArgs.some((arg) => arg === '--port' || arg.startsWith('--port='));
+  const hasClearArg = extraArgs.some((arg) => arg === '--clear' || arg === '-c');
 
   const expoArgs = [
     'expo',
     'start',
+    ...(hasClearArg ? [] : ['--clear']),
     ...(hasHostArg ? [] : ['--host', 'lan']),
     ...(hasPortArg ? [] : ['--port', String(DEFAULT_EXPO_PORT)]),
     ...extraArgs,
@@ -120,3 +125,4 @@ function run() {
 }
 
 run();
+
