@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -16,6 +16,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { theme } from '../../theme';
 import { HomeHeader } from '../../components/home/HomeHeader';
 import { NotificationBanner } from '../../components/home/NotificationBanner';
+import { NotificationModal } from '../../components/notifications/NotificationModal';
 import { QuickStatsRow } from '../../components/home/QuickStatsRow';
 import { OverdueCard } from '../../components/home/OverdueCard';
 import { AppGrid } from '../../components/home/AppGrid';
@@ -66,6 +67,7 @@ export function HomeScreen(): React.JSX.Element {
     accessToken: session?.tokens.accessToken ?? null,
     courierId,
   });
+  const [notificationModalVisible, setNotificationModalVisible] = useState(false);
   const onRefresh = () => {
     void tasksQuery.refetch();
     void refreshMobilePermissions();
@@ -103,6 +105,24 @@ export function HomeScreen(): React.JSX.Element {
     );
   }, [quickAppIds, session?.user]);
 
+  const transferredTasks = useMemo(() => {
+    return tasks.filter((task) => {
+      const isReassigned = task.assignments && task.assignments.length > 1;
+      const noteText = task.note || '';
+      const hasTransferNote =
+        noteText.toLowerCase().includes('chuyển') ||
+        noteText.toLowerCase().includes('reassign') ||
+        noteText.toLowerCase().includes('điều phối lại');
+      return isReassigned || hasTransferNote;
+    });
+  }, [tasks]);
+
+  const newTasks = useMemo(() => {
+    return tasks.filter((task) => task.status === 'ASSIGNED');
+  }, [tasks]);
+
+  const notificationCount = transferredTasks.length + newTasks.length;
+
   const todayTasksCount = useMemo(() => {
     const todayStr = new Date().toDateString();
     return tasks.filter((task) => {
@@ -134,8 +154,9 @@ export function HomeScreen(): React.JSX.Element {
           greeting="Xin chào"
           userName={displayName}
           hubName={hubLabel}
+          notificationCount={notificationCount}
           onPressQr={() => navigation.navigate('MainTabs', { screen: 'Scan' })}
-          onPressNotification={() => Alert.alert('Thông báo', 'Mở danh sách thông báo')}
+          onPressNotification={() => setNotificationModalVisible(true)}
         />
 
         <ScrollView
@@ -147,9 +168,14 @@ export function HomeScreen(): React.JSX.Element {
           }
         >
           <NotificationBanner
-            title="Thông báo vận hành"
-            message={`Đã nhận ${todayTasksCount} nhiệm vụ trong ngày.`}
-            onPress={() => Alert.alert('Thông báo', 'Chi tiết thông báo vận hành')}
+            title={transferredTasks.length > 0 ? 'Có đơn điều phối mới' : 'Thông báo vận hành'}
+            message={
+              transferredTasks.length > 0
+                ? `Có ${transferredTasks.length} đơn chuyển từ shipper khác & ${newTasks.length} đơn cần giao nhận.`
+                : `Đã nhận ${todayTasksCount} nhiệm vụ trong ca hôm nay.`
+            }
+            badgeCount={notificationCount}
+            onPress={() => setNotificationModalVisible(true)}
           />
 
           <QuickStatsRow
@@ -216,6 +242,15 @@ export function HomeScreen(): React.JSX.Element {
             }}
           />
         </ScrollView>
+
+        <NotificationModal
+          visible={notificationModalVisible}
+          onClose={() => setNotificationModalVisible(false)}
+          tasks={tasks}
+          onSelectTask={(taskId) => {
+            navigation.navigate('TaskDetail', { taskId });
+          }}
+        />
       </View>
     </SafeAreaView>
   );

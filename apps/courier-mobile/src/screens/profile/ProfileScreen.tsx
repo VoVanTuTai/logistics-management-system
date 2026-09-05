@@ -140,10 +140,9 @@ export function ProfileScreen(): React.JSX.Element {
   const roles = session?.user.roles ?? [];
   const userData: ProfileHeaderData = {
     fullName: courierName,
-    branchName: roles.length > 0 ? `Vai trò: ${roles.join(', ')}` : 'Vai trò: courier',
+    branchName: roles.length > 0 ? `Vai trò: ${roles.join(', ')}` : 'Nhân viên giao nhận Nexus',
     employeeCode: courierId,
     phoneNumber: session?.user.phone?.trim() || 'Chưa cập nhật',
-    starTierLabel: 'Đang cập nhật',
   };
 
   const handleLogout = () => {
@@ -183,9 +182,6 @@ export function ProfileScreen(): React.JSX.Element {
             user={userData}
             avatarUri={courierAvatarUri}
             onPressAvatar={openAvatarModal}
-            onPressStarDetail={() => {
-              Alert.alert('Hạng sao', 'Chi tiết hạng sao sẽ cập nhật theo API.');
-            }}
           />
 
           {/* ASSIGNED ROUTE CARD */}
@@ -303,7 +299,9 @@ export function ProfileScreen(): React.JSX.Element {
               pressed && styles.changePasswordButtonPressed,
             ]}
           >
-            <Text style={styles.changePasswordButtonText}>Đổi mật khẩu</Text>
+            <Ionicons name="key-outline" size={18} color={theme.colors.textPrimary} />
+            <Text style={styles.changePasswordButtonText}>Đổi mật khẩu tài khoản</Text>
+            <Ionicons name="chevron-forward" size={16} color="#94A3B8" style={{ marginLeft: 'auto' }} />
           </Pressable>
 
           <Pressable
@@ -316,9 +314,12 @@ export function ProfileScreen(): React.JSX.Element {
             ]}
           >
             {authLoading ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <ActivityIndicator color="#EF4444" />
             ) : (
-              <Text style={styles.logoutButtonText}>Đăng xuất</Text>
+              <View style={styles.logoutContent}>
+                <Ionicons name="log-out-outline" size={19} color="#DC2626" />
+                <Text style={styles.logoutButtonText}>Đăng xuất tài khoản</Text>
+              </View>
             )}
           </Pressable>
         </ScrollView>
@@ -585,21 +586,30 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     borderRadius: theme.radius.lg,
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 50,
-    ...theme.shadow.card,
+    minHeight: 48,
+    ...theme.shadow.sm,
   },
   logoutButtonPressed: {
-    opacity: 0.9,
+    backgroundColor: '#FEE2E2',
+    opacity: 0.92,
   },
   logoutButtonDisabled: {
     opacity: 0.65,
   },
+  logoutContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   logoutButtonText: {
-    ...theme.typography.subtitle.md,
-    color: '#FFFFFF',
+    ...theme.typography.subtitle.sm,
+    color: '#DC2626',
+    fontWeight: '700',
   },
   quickAppCard: {
     backgroundColor: theme.colors.surface,
@@ -776,17 +786,19 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.lg,
     backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: '#E2E8F0',
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: theme.spacing.md,
+    gap: theme.spacing.sm,
     minHeight: 50,
     ...theme.shadow.card,
   },
   changePasswordButtonPressed: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#F8FAFC',
   },
   changePasswordButtonText: {
-    ...theme.typography.subtitle.md,
+    ...theme.typography.subtitle.sm,
     color: theme.colors.textPrimary,
     fontWeight: '600',
   },

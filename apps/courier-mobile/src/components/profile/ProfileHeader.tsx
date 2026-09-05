@@ -9,14 +9,12 @@ export interface ProfileHeaderData {
   branchName: string;
   employeeCode: string;
   phoneNumber: string;
-  starTierLabel: string;
 }
 
 interface ProfileHeaderProps {
   user: ProfileHeaderData;
   avatarUri?: string | null;
   onPressAvatar?: () => void;
-  onPressStarDetail?: () => void;
 }
 
 function getInitials(fullName: string): string {
@@ -40,7 +38,6 @@ export function ProfileHeader({
   user,
   avatarUri,
   onPressAvatar,
-  onPressStarDetail,
 }: ProfileHeaderProps): React.JSX.Element {
   return (
     <View style={styles.card}>
@@ -55,40 +52,42 @@ export function ProfileHeader({
             <Text style={styles.avatarText}>{getInitials(user.fullName)}</Text>
           )}
           <View style={styles.avatarEditBadge}>
-            <Ionicons name="camera-outline" size={13} color="#FFFFFF" />
+            <Ionicons name="camera" size={12} color="#FFFFFF" />
           </View>
         </Pressable>
 
         <View style={styles.userInfoWrap}>
-          <Text style={styles.fullName}>{user.fullName}</Text>
-          <Text style={styles.branchName}>{user.branchName}</Text>
+          <View style={styles.statusRow}>
+            <View style={styles.statusDot} />
+            <Text style={styles.statusText}>Đang trực tuyến</Text>
+          </View>
+
+          <Text style={styles.fullName} numberOfLines={1}>
+            {user.fullName}
+          </Text>
+          <Text style={styles.branchName} numberOfLines={1}>
+            {user.branchName}
+          </Text>
         </View>
       </View>
 
-      <View style={styles.metaList}>
-        <View style={styles.metaRow}>
-          <Ionicons name="card-outline" size={16} color="#4E6789" />
-          <Text style={styles.metaText}>Mã nhân viên: {user.employeeCode}</Text>
+      <View style={styles.metaContainer}>
+        <View style={styles.metaChip}>
+          <Ionicons name="id-card-outline" size={15} color="#2563EB" />
+          <View style={styles.metaTextWrap}>
+            <Text style={styles.metaLabel}>Mã nhân viên</Text>
+            <Text style={styles.metaValue}>{user.employeeCode}</Text>
+          </View>
         </View>
 
-        <View style={styles.metaRow}>
-          <Ionicons name="call-outline" size={16} color="#4E6789" />
-          <Text style={styles.metaText}>Số điện thoại: {user.phoneNumber}</Text>
+        <View style={styles.metaChip}>
+          <Ionicons name="call-outline" size={15} color="#059669" />
+          <View style={styles.metaTextWrap}>
+            <Text style={styles.metaLabel}>Số điện thoại</Text>
+            <Text style={styles.metaValue}>{user.phoneNumber}</Text>
+          </View>
         </View>
       </View>
-
-      <Pressable
-        onPress={onPressStarDetail}
-        style={({ pressed }) => [styles.starLink, pressed && styles.pressed]}
-      >
-        <View style={styles.starPill}>
-          <Ionicons name="star-outline" size={14} color="#1D4ED8" />
-          <Text style={styles.starTierText}>{user.starTierLabel}</Text>
-        </View>
-
-        <Text style={styles.starLinkText}>Chi tiết hạng sao</Text>
-        <Ionicons name="chevron-forward" size={16} color="#4E6789" />
-      </Pressable>
     </View>
   );
 }
@@ -144,62 +143,67 @@ const styles = StyleSheet.create({
   userInfoWrap: {
     flex: 1,
   },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginBottom: 3,
+  },
+  statusDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: '#10B981',
+  },
+  statusText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#059669',
+  },
   fullName: {
     ...theme.typography.title.sm,
     color: theme.colors.textPrimary,
   },
   branchName: {
-    ...theme.typography.body.md,
+    ...theme.typography.caption.md,
     color: theme.colors.textSecondary,
     marginTop: 2,
   },
-  metaList: {
-    marginTop: theme.spacing.md,
-    gap: theme.spacing.xs,
-  },
-  metaRow: {
+  metaContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  metaText: {
-    ...theme.typography.caption.md,
-    color: '#4E6789',
-  },
-  starLink: {
+    gap: 10,
     marginTop: theme.spacing.md,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    backgroundColor: '#F4F8FF',
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
+    paddingTop: theme.spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+  },
+  metaChip: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  metaTextWrap: {
+    flex: 1,
+  },
+  metaLabel: {
+    fontSize: 10,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  metaValue: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginTop: 1,
   },
   pressed: {
     opacity: 0.9,
-  },
-  starPill: {
-    borderRadius: theme.radius.pill,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  starTierText: {
-    ...theme.typography.caption.sm,
-    color: '#1D4ED8',
-    fontWeight: '700',
-  },
-  starLinkText: {
-    ...theme.typography.caption.md,
-    color: theme.colors.textSecondary,
-    marginLeft: 'auto',
   },
 });
