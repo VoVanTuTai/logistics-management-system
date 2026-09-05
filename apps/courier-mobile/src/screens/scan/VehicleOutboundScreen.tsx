@@ -329,13 +329,18 @@ export function VehicleOutboundScreen(): React.JSX.Element {
     try {
       const picture = await cameraRef.current.takePictureAsync({
         quality: 0.6,
+        base64: true,
       });
 
-      if (!picture.uri) {
+      const capturedUri = picture.base64
+        ? `data:image/jpeg;base64,${picture.base64}`
+        : picture.uri;
+
+      if (!capturedUri) {
         throw new Error('Không chụp được minh chứng.');
       }
 
-      setProofPhotoUri(picture.uri);
+      setProofPhotoUri(capturedUri);
       setScreenMessage('Đã chụp minh chứng. Tiếp tục quét seal xe.');
     } catch (error) {
       setScreenMessage(toErrorMessage(error));

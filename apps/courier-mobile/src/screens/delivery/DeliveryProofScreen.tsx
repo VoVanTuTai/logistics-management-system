@@ -186,13 +186,18 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
     try {
       const picture = await cameraRef.current.takePictureAsync({
         quality: 0.6,
+        base64: true,
       });
 
-      if (!picture.uri) {
+      const capturedUri = picture.base64
+        ? `data:image/jpeg;base64,${picture.base64}`
+        : picture.uri;
+
+      if (!capturedUri) {
         throw new Error('Không chụp được ảnh.');
       }
 
-      setPhotoUri(picture.uri);
+      setPhotoUri(capturedUri);
       setCameraVisible(false);
       setSubmitMessage(null);
     } catch (error) {

@@ -180,8 +180,11 @@ export function InventoryCheckScreen(): React.JSX.Element {
       try {
         const picture = await cameraRef.current.takePictureAsync({
           quality: 0.6,
+          base64: true,
         });
-        photoUri = picture.uri || null;
+        photoUri = picture.base64
+          ? `data:image/jpeg;base64,${picture.base64}`
+          : picture.uri || null;
       } catch (err) {
         console.error('Failed to capture auto proof photo for inventory check:', err);
       }
