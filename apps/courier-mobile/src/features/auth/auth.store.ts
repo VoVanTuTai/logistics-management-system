@@ -2,9 +2,12 @@ import { create } from 'zustand';
 
 import { useAppStore } from '../../store/appStore';
 import { queryClient } from '../../store/queryClient';
+import { ApiClientError } from '../../services/api/client';
+import { appEnv } from '../../utils/env';
 import { authApi } from './auth.api';
 import {
   clearAuthSession,
+  getTodayDateString,
   loadStoredAuthSession,
   persistAuthSession,
 } from './auth.session';
@@ -23,6 +26,7 @@ interface AuthStoreState {
   login: (credentials: LoginFormValues) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
+  checkDayExpiry: () => Promise<boolean>;
 }
 
 const ACCESS_TOKEN_REFRESH_SKEW_MS = 60_000;
@@ -86,12 +90,24 @@ async function withEffectiveMobilePermissions(
       },
     };
   } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
     console.warn(
       '[permissions] FAILED to load effective permissions for user',
       session.user.id,
       'error=',
-      error instanceof Error ? error.message : String(error),
+      errorMsg,
     );
+
+    // If unauthorized or token is expired/invalid, reject session restoration
+    if (
+      (error instanceof ApiClientError && error.status === 401) ||
+      /invalid or expired/i.test(errorMsg) ||
+      /unauthorized/i.test(errorMsg) ||
+      /jwt/i.test(errorMsg)
+    ) {
+      throw error;
+    }
+
     return session;
   }
 }
@@ -127,9 +143,79 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
         return;
       }
 
+      // 1. Build check: If app was rebuilt or build ID mismatch, require fresh login
+      if (
+        !storedSession.buildId ||
+        (appEnv.buildId && storedSession.buildId !== appEnv.buildId)
+      ) {
+        console.warn('[auth] App build updated or re-bundled. Requiring fresh login.');
+        await clearAuthSession();
+        useAppStore.getState().setGuest();
+        set({
+          status: 'guest',
+          session: null,
+          errorMessage: 'Ứng dụng đã được cập nhật phiên bản mới. Vui lòng đăng nhập lại.',
+        });
+        return;
+      }
+
+      // 2. Day check: Shift session expires when the day ends (same-day retention)
+      const today = getTodayDateString();
+      if (!storedSession.sessionDate || storedSession.sessionDate !== today) {
+        console.warn('[auth] Session has expired for the day. Requiring fresh login.');
+        await clearAuthSession();
+        useAppStore.getState().setGuest();
+        set({
+          status: 'guest',
+          session: null,
+          errorMessage: 'Phiên làm việc trong ngày đã kết thúc. Vui lòng đăng nhập lại ca mới.',
+        });
+        return;
+      }
+
       assertCourierSession(storedSession);
+
+      // 3. Token check: If access token is expiring, refresh it
+      let activeSession = storedSession;
+      if (isExpiringAt(storedSession.tokens.accessTokenExpiresAt, ACCESS_TOKEN_REFRESH_SKEW_MS)) {
+        if (isExpiringAt(storedSession.tokens.refreshTokenExpiresAt)) {
+          console.warn('[auth] Refresh token expired. Requiring login.');
+          await clearAuthSession();
+          useAppStore.getState().setGuest();
+          set({
+            status: 'guest',
+            session: null,
+            errorMessage: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
+          });
+          return;
+        }
+
+        try {
+          const refreshed = await authApi.refresh({
+            refreshToken: storedSession.tokens.refreshToken,
+          });
+          assertCourierSession(refreshed);
+          activeSession = {
+            ...refreshed,
+            sessionDate: today,
+            loggedInAt: storedSession.loggedInAt ?? new Date().toISOString(),
+            buildId: appEnv.buildId,
+          };
+        } catch (refreshErr) {
+          console.warn('[auth] Token refresh failed on restore:', refreshErr);
+          await clearAuthSession();
+          useAppStore.getState().setGuest();
+          set({
+            status: 'guest',
+            session: null,
+            errorMessage: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
+          });
+          return;
+        }
+      }
+
       const sessionWithPermissions =
-        await withEffectiveMobilePermissions(storedSession);
+        await withEffectiveMobilePermissions(activeSession);
       await persistAuthSession(sessionWithPermissions);
       useAppStore.getState().setSession(sessionWithPermissions);
       set({
@@ -137,11 +223,13 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
         session: sessionWithPermissions,
       });
     } catch (error) {
+      console.warn('[auth] Session restoration error:', error);
+      await clearAuthSession();
       useAppStore.getState().setGuest();
       set({
         status: 'guest',
         session: null,
-        errorMessage: toErrorMessage(error, 'Khôi phục phiên đăng nhập thất bại.'),
+        errorMessage: toErrorMessage(error, 'Khôi phục phiên đăng nhập thất bại. Vui lòng đăng nhập lại.'),
       });
     }
   },
@@ -234,12 +322,17 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
       const loginResult = await withEffectiveMobilePermissions(
         await authApi.login(credentials),
       );
-      assertCourierSession(loginResult);
-      await persistAuthSession(loginResult);
-      useAppStore.getState().setSession(loginResult);
+      const sessionForToday: LoginResultDto = {
+        ...loginResult,
+        sessionDate: getTodayDateString(),
+        loggedInAt: new Date().toISOString(),
+        buildId: appEnv.buildId,
+      };
+      await persistAuthSession(sessionForToday);
+      useAppStore.getState().setSession(sessionForToday);
       set({
         status: 'authenticated',
-        session: loginResult,
+        session: sessionForToday,
       });
     } catch (error) {
       set({
@@ -279,5 +372,22 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
         isLoading: false,
       });
     }
+  },
+  checkDayExpiry: async () => {
+    const currentSession = get().session;
+    if (!currentSession) {
+      return false;
+    }
+
+    const today = getTodayDateString();
+    if (currentSession.sessionDate && currentSession.sessionDate !== today) {
+      console.warn('[auth] Session expired for the day. Auto logging out.');
+      await get().logout();
+      useAppStore.getState().setGlobalError(
+        'Phiên làm việc trong ngày đã kết thúc. Vui lòng đăng nhập lại ca mới.',
+      );
+      return true;
+    }
+    return false;
   },
 }));

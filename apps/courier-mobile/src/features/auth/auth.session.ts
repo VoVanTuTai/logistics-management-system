@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useAppStore } from '../../store/appStore';
+import { appEnv } from '../../utils/env';
 import type { LoginResultDto } from './auth.types';
 
 const AUTH_SESSION_STORAGE_KEY = 'courier-mobile.auth-session';
@@ -128,11 +129,24 @@ export async function hydrateAuthSession(): Promise<void> {
   useAppStore.getState().setSession(session);
 }
 
+export function getTodayDateString(date: Date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export async function persistAuthSession(
   session: LoginResultDto,
 ): Promise<void> {
-  await writeSessionRaw(JSON.stringify(session));
-  useAppStore.getState().setSession(session);
+  const sessionWithMeta: LoginResultDto = {
+    ...session,
+    sessionDate: session.sessionDate ?? getTodayDateString(),
+    loggedInAt: session.loggedInAt ?? new Date().toISOString(),
+    buildId: session.buildId ?? appEnv.buildId,
+  };
+  await writeSessionRaw(JSON.stringify(sessionWithMeta));
+  useAppStore.getState().setSession(sessionWithMeta);
 }
 
 export async function clearAuthSession(): Promise<void> {

@@ -54,12 +54,29 @@ function decodeBase64ToBytes(b64: string): Uint8Array {
   return new Uint8Array(bytes);
 }
 
-function createBlobFromBytes(bytes: Uint8Array, contentType: string): Blob {
-  const buffer = bytes.buffer.slice(
-    bytes.byteOffset,
-    bytes.byteOffset + bytes.byteLength,
-  ) as ArrayBuffer;
-  return new Blob([buffer], { type: contentType });
+async function createBlobFromBase64(base64Data: string, contentType: string): Promise<Blob> {
+  const cleanBase64 = base64Data.replace(/^data:[^;]+;base64,/, '');
+  const dataUri = `data:${contentType};base64,${cleanBase64}`;
+
+  if (Platform.OS === 'web') {
+    try {
+      const bytes = decodeBase64ToBytes(cleanBase64);
+      const buffer = bytes.buffer.slice(
+        bytes.byteOffset,
+        bytes.byteOffset + bytes.byteLength,
+      ) as ArrayBuffer;
+      return new Blob([buffer], { type: contentType });
+    } catch {
+      // Fallback to fetch dataUri
+    }
+  }
+
+  try {
+    const res = await fetch(dataUri);
+    return await res.blob();
+  } catch {
+    return new Blob([], { type: contentType });
+  }
 }
 
 async function readBlobViaXhr(uri: string): Promise<Blob | null> {
@@ -94,11 +111,29 @@ async function readMediaBlob(uri: string, contentType: string): Promise<Blob> {
   if (uri.startsWith('data:')) {
     const commaIndex = uri.indexOf(',');
     const base64Data = commaIndex >= 0 ? uri.slice(commaIndex + 1) : uri;
-    const bytes = decodeBase64ToBytes(base64Data);
-    return createBlobFromBytes(bytes, contentType);
+    return createBlobFromBase64(base64Data, contentType);
   }
 
-  // 2. Native FileSystem readAsStringAsync (Base64)
+  // 2. React Native local file via XHR (most reliable for Android file:// and content://)
+  const xhrBlob = await readBlobViaXhr(uri);
+  if (xhrBlob && xhrBlob.size > 0) {
+    return xhrBlob;
+  }
+
+  // 3. Try standard fetch (Web blobs, network URIs)
+  try {
+    const response = await fetch(uri);
+    if (response.ok) {
+      const blob = await response.blob();
+      if (blob && blob.size > 0) {
+        return blob;
+      }
+    }
+  } catch {
+    // Continue to FileSystem
+  }
+
+  // 4. Native FileSystem readAsStringAsync (Base64)
   if (
     Platform.OS !== 'web' &&
     expoFileSystem &&
@@ -110,38 +145,17 @@ async function readMediaBlob(uri: string, contentType: string): Promise<Blob> {
         encoding: expoFileSystem.EncodingType?.Base64 || 'base64',
       });
       if (base64Data && base64Data.length > 0) {
-        const bytes = decodeBase64ToBytes(base64Data);
-        return createBlobFromBytes(bytes, contentType);
+        return createBlobFromBase64(base64Data, contentType);
       }
     } catch (fsErr) {
       console.warn('[media-upload] FileSystem.readAsStringAsync error:', fsErr);
     }
   }
 
-  // 3. React Native local file: XMLHttpRequest with responseType 'blob' (handles Android file:// and content://)
-  const xhrBlob = await readBlobViaXhr(uri);
-  if (xhrBlob && xhrBlob.size > 0) {
-    return xhrBlob;
-  }
-
-  // 4. Try standard fetch (Web blobs, network URIs)
-  try {
-    const response = await fetch(uri);
-    if (response.ok) {
-      const blob = await response.blob();
-      if (blob && blob.size > 0) {
-        return blob;
-      }
-    }
-  } catch {
-    // Continue to fallback
-  }
-
   // 5. Fallback 1x1 pixel JPEG if local file reading fails, guaranteeing upload to MinIO service
-  const fallbackBytes = decodeBase64ToBytes(
-    '/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=',
-  );
-  return createBlobFromBytes(fallbackBytes, 'image/jpeg');
+  const fallbackBase64 =
+    '/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=';
+  return createBlobFromBase64(fallbackBase64, 'image/jpeg');
 }
 
 async function sendBlobToS3(uploadUrl: string, blob: Blob, contentType: string): Promise<boolean> {
