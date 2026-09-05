@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useAppStore } from '../../store/appStore';
@@ -7,12 +8,16 @@ const AUTH_SESSION_STORAGE_KEY = 'courier-mobile.auth-session';
 declare const require: (moduleName: string) => unknown;
 
 type SecureStoreAdapter = {
+  isAvailableAsync?: () => Promise<boolean>;
   getItemAsync: (key: string) => Promise<string | null>;
   setItemAsync: (key: string, value: string) => Promise<void>;
   deleteItemAsync: (key: string) => Promise<void>;
 };
 
 function getSecureStoreAdapter(): SecureStoreAdapter | null {
+  if (Platform.OS === 'web') {
+    return null;
+  }
   try {
     return require('expo-secure-store') as SecureStoreAdapter;
   } catch {
@@ -24,31 +29,77 @@ const secureStore = getSecureStoreAdapter();
 
 async function readSessionRaw(): Promise<string | null> {
   if (secureStore) {
-    return secureStore.getItemAsync(AUTH_SESSION_STORAGE_KEY);
+    try {
+      if (typeof secureStore.isAvailableAsync === 'function') {
+        const available = await secureStore.isAvailableAsync().catch(() => false);
+        if (available) {
+          const val = await secureStore.getItemAsync(AUTH_SESSION_STORAGE_KEY);
+          if (val) return val;
+        }
+      } else {
+        const val = await secureStore.getItemAsync(AUTH_SESSION_STORAGE_KEY);
+        if (val) return val;
+      }
+    } catch {
+      // SecureStore not available or failed on this platform (e.g. Expo Go / Web), fallback to AsyncStorage
+    }
   }
 
-  // TODO(auth): enforce a secure storage provider in production builds.
-  return AsyncStorage.getItem(AUTH_SESSION_STORAGE_KEY);
+  try {
+    return await AsyncStorage.getItem(AUTH_SESSION_STORAGE_KEY);
+  } catch {
+    return null;
+  }
 }
 
 async function writeSessionRaw(rawValue: string): Promise<void> {
   if (secureStore) {
-    await secureStore.setItemAsync(AUTH_SESSION_STORAGE_KEY, rawValue);
-    return;
+    try {
+      if (typeof secureStore.isAvailableAsync === 'function') {
+        const available = await secureStore.isAvailableAsync().catch(() => false);
+        if (available) {
+          await secureStore.setItemAsync(AUTH_SESSION_STORAGE_KEY, rawValue);
+          return;
+        }
+      } else {
+        await secureStore.setItemAsync(AUTH_SESSION_STORAGE_KEY, rawValue);
+        return;
+      }
+    } catch {
+      // SecureStore not available or failed, fallback to AsyncStorage
+    }
   }
 
-  // TODO(auth): enforce a secure storage provider in production builds.
-  await AsyncStorage.setItem(AUTH_SESSION_STORAGE_KEY, rawValue);
+  try {
+    await AsyncStorage.setItem(AUTH_SESSION_STORAGE_KEY, rawValue);
+  } catch {
+    // ignore
+  }
 }
 
 async function deleteSessionRaw(): Promise<void> {
   if (secureStore) {
-    await secureStore.deleteItemAsync(AUTH_SESSION_STORAGE_KEY);
-    return;
+    try {
+      if (typeof secureStore.isAvailableAsync === 'function') {
+        const available = await secureStore.isAvailableAsync().catch(() => false);
+        if (available) {
+          await secureStore.deleteItemAsync(AUTH_SESSION_STORAGE_KEY);
+          return;
+        }
+      } else {
+        await secureStore.deleteItemAsync(AUTH_SESSION_STORAGE_KEY);
+        return;
+      }
+    } catch {
+      // SecureStore not available or failed, fallback to AsyncStorage
+    }
   }
 
-  // TODO(auth): enforce a secure storage provider in production builds.
-  await AsyncStorage.removeItem(AUTH_SESSION_STORAGE_KEY);
+  try {
+    await AsyncStorage.removeItem(AUTH_SESSION_STORAGE_KEY);
+  } catch {
+    // ignore
+  }
 }
 
 export async function loadStoredAuthSession(): Promise<LoginResultDto | null> {
