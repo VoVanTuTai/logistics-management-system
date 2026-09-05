@@ -374,39 +374,41 @@ export function DashboardPage(): React.JSX.Element {
   return (
     <div className="ops-dashboard">
       <section className="ops-dashboard__hero" aria-label="Hero carousel">
-        <button
-          type="button"
-          className="ops-dashboard__hero-nav"
-          aria-label="Trang trước"
-          onClick={onPrevHero}
-        >
-          <span aria-hidden="true">&#x2039;</span>
-        </button>
-        <div className="ops-dashboard__hero-content">
-          <p className="ops-dashboard__hero-company">{activeHeroSlide.title}</p>
-          <h2 className="ops-dashboard__hero-title">{activeHeroSlide.slogan}</h2>
-          <p className="ops-dashboard__hero-subtitle">{activeHeroSlide.description}</p>
-          <div className="ops-dashboard__hero-dots" aria-hidden="true">
-            {heroSlides.map((slide, index) => (
-              <span
-                key={slide.id}
-                className={
-                  index === activeHeroIndex
-                    ? 'ops-dashboard__hero-dot ops-dashboard__hero-dot--active'
-                    : 'ops-dashboard__hero-dot'
-                }
-              />
-            ))}
+        <div className="ops-dashboard__hero-slider">
+          <button
+            type="button"
+            className="ops-dashboard__hero-nav"
+            aria-label="Trang trước"
+            onClick={onPrevHero}
+          >
+            <span aria-hidden="true">&#x2039;</span>
+          </button>
+          <div className="ops-dashboard__hero-content">
+            <p className="ops-dashboard__hero-company">{activeHeroSlide.title}</p>
+            <h2 className="ops-dashboard__hero-title">{activeHeroSlide.slogan}</h2>
+            <p className="ops-dashboard__hero-subtitle">{activeHeroSlide.description}</p>
+            <div className="ops-dashboard__hero-dots" aria-hidden="true">
+              {heroSlides.map((slide, index) => (
+                <span
+                  key={slide.id}
+                  className={
+                    index === activeHeroIndex
+                      ? 'ops-dashboard__hero-dot ops-dashboard__hero-dot--active'
+                      : 'ops-dashboard__hero-dot'
+                  }
+                />
+              ))}
+            </div>
           </div>
+          <button
+            type="button"
+            className="ops-dashboard__hero-nav"
+            aria-label="Trang sau"
+            onClick={onNextHero}
+          >
+            <span aria-hidden="true">&#x203A;</span>
+          </button>
         </div>
-        <button
-          type="button"
-          className="ops-dashboard__hero-nav"
-          aria-label="Trang sau"
-          onClick={onNextHero}
-        >
-          <span aria-hidden="true">&#x203A;</span>
-        </button>
         <div className="ops-dashboard__hero-badge ops-dashboard__hero-badge--detailed" aria-label="Hub đang theo dõi">
           <div className="ops-dashboard__hero-badge-top">
             <span className="material-symbols-outlined ops-dashboard__hero-badge-icon">apartment</span>

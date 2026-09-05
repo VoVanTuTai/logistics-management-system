@@ -29,6 +29,10 @@
   padding: 20px 24px 32px;
   display: grid;
   gap: 16px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   animation: analytics-dash-fadein 0.6s ease-out both;
 }
 
@@ -386,10 +390,14 @@
 .analytics-charts-row {
   display: grid;
   gap: 16px;
-  grid-template-columns: 1.6fr 1fr;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  width: 100%;
+  min-width: 0;
 }
 
 .analytics-chart-card {
+  min-width: 0;
+  overflow: hidden;
   border: 1px solid var(--ad-glass-border);
   border-radius: var(--ad-radius);
   background: var(--ad-surface);
@@ -550,8 +558,15 @@
   letter-spacing: 0;
 }
 
+.analytics-alerts-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .analytics-alerts-table {
   width: 100%;
+  min-width: 680px;
   border-collapse: separate;
   border-spacing: 0 6px;
 }
