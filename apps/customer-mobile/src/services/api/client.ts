@@ -81,7 +81,7 @@ export class CustomerApiClient {
     options: RequestOptions,
   ): Promise<T> {
     const controller = new AbortController();
-    const effectiveTimeout = Math.min(this.timeoutMs || 5000, 6000);
+    const effectiveTimeout = this.timeoutMs || 15000;
     const timeoutId = setTimeout(() => controller.abort(), effectiveTimeout);
 
     try {

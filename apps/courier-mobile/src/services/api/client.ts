@@ -100,8 +100,7 @@ export class CourierApiClient {
     options: RequestOptions,
   ): Promise<T> {
     const controller = new AbortController();
-    // Fast timeout for responsive UI (max 5s)
-    const effectiveTimeout = Math.min(this.timeoutMs || 5000, 6000);
+    const effectiveTimeout = this.timeoutMs || 15000;
     const timeoutId = setTimeout(() => controller.abort(), effectiveTimeout);
 
     try {
