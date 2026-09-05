@@ -69,7 +69,7 @@ async function withEffectiveMobilePermissions(
       session.user.id,
     );
 
-    console.warn(
+    console.info(
       '[permissions] Loaded effective permissions for user',
       session.user.id,
       'actor=',
@@ -91,22 +91,60 @@ async function withEffectiveMobilePermissions(
     };
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
+    const isTokenExpired =
+      (error instanceof ApiClientError && error.status === 401) ||
+      /invalid or expired/i.test(errorMsg) ||
+      /unauthorized/i.test(errorMsg) ||
+      /jwt/i.test(errorMsg);
+
+    // If token expired but refresh token is valid, attempt silent refresh
+    if (
+      isTokenExpired &&
+      session.tokens?.refreshToken &&
+      !isExpiringAt(session.tokens.refreshTokenExpiresAt)
+    ) {
+      try {
+        const refreshed = await authApi.refresh({
+          refreshToken: session.tokens.refreshToken,
+        });
+        assertCourierSession(refreshed);
+        const retryPermissions = await authApi.getMobilePermissionEffective(
+          refreshed.tokens.accessToken,
+          refreshed.user.id,
+        );
+        console.info(
+          '[permissions] Silently refreshed token and loaded permissions for user',
+          session.user.id,
+        );
+        return {
+          ...refreshed,
+          user: {
+            ...refreshed.user,
+            mobilePermissionActor: retryPermissions.actor,
+            mobilePermissions: retryPermissions.permissions,
+            mobilePermissionsLoadedAt: new Date().toISOString(),
+          },
+        };
+      } catch {
+        // Fall through to throw below
+      }
+    }
+
+    if (isTokenExpired) {
+      console.info(
+        '[permissions] Token expired or invalid for user',
+        session.user.id,
+        '- requiring fresh login',
+      );
+      throw error;
+    }
+
     console.warn(
-      '[permissions] FAILED to load effective permissions for user',
+      '[permissions] Non-critical error loading permissions for user',
       session.user.id,
       'error=',
       errorMsg,
     );
-
-    // If unauthorized or token is expired/invalid, reject session restoration
-    if (
-      (error instanceof ApiClientError && error.status === 401) ||
-      /invalid or expired/i.test(errorMsg) ||
-      /unauthorized/i.test(errorMsg) ||
-      /jwt/i.test(errorMsg)
-    ) {
-      throw error;
-    }
 
     return session;
   }
