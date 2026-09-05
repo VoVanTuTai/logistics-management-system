@@ -47,8 +47,12 @@ function BreakdownRow({
   return (
     <View style={s.breakdownRow}>
       <View style={[s.breakdownDot, { backgroundColor: color }]} />
-      <Text style={s.breakdownLabel}>{label}</Text>
-      <Text style={[s.breakdownValue, { color }]}>{value}</Text>
+      <Text style={s.breakdownLabel} numberOfLines={1} ellipsizeMode="tail">
+        {label}
+      </Text>
+      <Text style={[s.breakdownValue, { color }]} numberOfLines={1} ellipsizeMode="tail">
+        {value}
+      </Text>
     </View>
   );
 }
@@ -205,17 +209,19 @@ export function CodStatsScreen({ navigation }: Props): React.JSX.Element {
           <View style={s.grandBanner}>
             <Ionicons name="wallet-outline" size={22} color="rgba(255,255,255,0.85)" />
             <Text style={s.grandLabel}>Tổng tiền hàng hôm nay</Text>
-            <Text style={s.grandAmount}>{formatVnd(grandTotal)}</Text>
+            <Text style={s.grandAmount} numberOfLines={1} ellipsizeMode="tail">
+              {formatVnd(grandTotal)}
+            </Text>
             <View style={s.grandRow}>
               <View style={s.grandChip}>
                 <View style={[s.chipDot, { backgroundColor: '#34D399' }]} />
-                <Text style={s.grandChipText}>
+                <Text style={s.grandChipText} numberOfLines={1} ellipsizeMode="tail">
                   Đã thu {formatVnd(summary.collectedAmount + summary.remittedAmount)}
                 </Text>
               </View>
               <View style={s.grandChip}>
                 <View style={[s.chipDot, { backgroundColor: '#FBBF24' }]} />
-                <Text style={s.grandChipText}>
+                <Text style={s.grandChipText} numberOfLines={1} ellipsizeMode="tail">
                   Chờ thu {formatVnd(summary.pendingAmount)}
                 </Text>
               </View>
@@ -460,7 +466,8 @@ const s = StyleSheet.create({
   },
   grandRow: {
     flexDirection: 'row',
-    gap: theme.spacing.sm,
+    flexWrap: 'wrap',
+    gap: 6,
     marginTop: 4,
   },
   grandChip: {
@@ -471,6 +478,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     gap: 6,
+    maxWidth: '100%',
   },
   chipDot: {
     width: 8,
@@ -481,6 +489,7 @@ const s = StyleSheet.create({
     ...theme.typography.caption.sm,
     color: '#FFFFFF',
     fontWeight: '700',
+    flexShrink: 1,
   },
 
   /* method section wrapper */
@@ -503,6 +512,7 @@ const s = StyleSheet.create({
   },
   methodHeaderText: {
     flex: 1,
+    minWidth: 0,
   },
   methodTitle: {
     ...theme.typography.subtitle.lg,
@@ -528,21 +538,24 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
+    gap: 8,
   },
   breakdownDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    marginRight: 10,
+    flexShrink: 0,
   },
   breakdownLabel: {
     ...theme.typography.body.sm,
     color: theme.colors.textSecondary,
     flex: 1,
+    minWidth: 0,
   },
   breakdownValue: {
     ...theme.typography.subtitle.md,
     fontWeight: '800',
+    flexShrink: 0,
   },
   breakdownDivider: {
     height: 1,

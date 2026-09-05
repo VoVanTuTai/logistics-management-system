@@ -57,15 +57,15 @@ export function ProfileHeader({
         </Pressable>
 
         <View style={styles.userInfoWrap}>
-          <View style={styles.statusRow}>
+          <View style={styles.statusBadge}>
             <View style={styles.statusDot} />
             <Text style={styles.statusText}>Đang trực tuyến</Text>
           </View>
 
-          <Text style={styles.fullName} numberOfLines={1}>
+          <Text style={styles.fullName} numberOfLines={1} ellipsizeMode="tail">
             {user.fullName}
           </Text>
-          <Text style={styles.branchName} numberOfLines={1}>
+          <Text style={styles.branchName} numberOfLines={1} ellipsizeMode="tail">
             {user.branchName}
           </Text>
         </View>
@@ -73,18 +73,26 @@ export function ProfileHeader({
 
       <View style={styles.metaContainer}>
         <View style={styles.metaChip}>
-          <Ionicons name="id-card-outline" size={15} color="#2563EB" />
+          <View style={styles.metaIconWrap}>
+            <Ionicons name="id-card-outline" size={15} color="#2563EB" />
+          </View>
           <View style={styles.metaTextWrap}>
-            <Text style={styles.metaLabel}>Mã nhân viên</Text>
-            <Text style={styles.metaValue}>{user.employeeCode}</Text>
+            <Text style={styles.metaLabel} numberOfLines={1}>Mã nhân viên</Text>
+            <Text style={styles.metaValue} numberOfLines={1} ellipsizeMode="tail">
+              {user.employeeCode}
+            </Text>
           </View>
         </View>
 
         <View style={styles.metaChip}>
-          <Ionicons name="call-outline" size={15} color="#059669" />
+          <View style={[styles.metaIconWrap, { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' }]}>
+            <Ionicons name="call-outline" size={15} color="#059669" />
+          </View>
           <View style={styles.metaTextWrap}>
-            <Text style={styles.metaLabel}>Số điện thoại</Text>
-            <Text style={styles.metaValue}>{user.phoneNumber}</Text>
+            <Text style={styles.metaLabel} numberOfLines={1}>Số điện thoại</Text>
+            <Text style={styles.metaValue} numberOfLines={1} ellipsizeMode="tail">
+              {user.phoneNumber}
+            </Text>
           </View>
         </View>
       </View>
@@ -126,9 +134,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 4,
     bottom: 4,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     backgroundColor: theme.colors.primary,
     borderWidth: 2,
     borderColor: '#FFFFFF',
@@ -142,22 +150,30 @@ const styles = StyleSheet.create({
   },
   userInfoWrap: {
     flex: 1,
+    minWidth: 0,
   },
-  statusRow: {
+  statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'flex-start',
     gap: 5,
-    marginBottom: 3,
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#D1FAE5',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: theme.radius.pill,
+    marginBottom: 4,
   },
   statusDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: '#10B981',
   },
   statusText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#059669',
   },
   fullName: {
@@ -171,7 +187,7 @@ const styles = StyleSheet.create({
   },
   metaContainer: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
     marginTop: theme.spacing.md,
     paddingTop: theme.spacing.sm,
     borderTopWidth: 1,
@@ -179,6 +195,7 @@ const styles = StyleSheet.create({
   },
   metaChip: {
     flex: 1,
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -189,8 +206,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
   },
+  metaIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
   metaTextWrap: {
     flex: 1,
+    minWidth: 0,
   },
   metaLabel: {
     fontSize: 10,
