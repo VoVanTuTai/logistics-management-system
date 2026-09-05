@@ -28,6 +28,7 @@ import { TrackingLookupScreen } from '../screens/tasks/TrackingLookupScreen';
 import { CodStatsScreen } from '../screens/cod/CodStatsScreen';
 import { CodCollectScreen } from '../screens/cod/CodCollectScreen';
 import { MyRouteScreen } from '../screens/profile/MyRouteScreen';
+import { StatsScreen } from '../screens/stats/StatsScreen';
 import { theme } from '../theme';
 
 const Stack = createNativeStackNavigator<AppNavigatorParamList>();
@@ -172,6 +173,11 @@ export function AppNavigator(): React.JSX.Element {
             name="MyRoute"
             component={MyRouteScreen}
             options={{ title: 'Tuyến giao nhận của tôi' }}
+          />
+          <Stack.Screen
+            name="Stats"
+            component={StatsScreen}
+            options={{ title: 'Thống kê hiệu suất' }}
           />
         </>
       ) : (

@@ -236,7 +236,7 @@ export function navigateToQuickApp(
   }
 
   if (appId === 'stats') {
-    navigation.navigate('MainTabs', { screen: 'Stats' });
+    navigation.navigate('Stats');
     return;
   }
 
