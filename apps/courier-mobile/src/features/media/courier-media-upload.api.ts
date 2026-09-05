@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
+import * as FileSystem from 'expo-file-system/legacy';
 import { ApiClientError, courierApiClient } from '../../services/api/client';
 import { courierEndpoints } from '../../services/api/endpoints';
-import { appEnv } from '../../utils/env';
 
 interface MediaUploadUrlResponse {
   success: true;
@@ -20,19 +20,9 @@ interface UploadCourierImageInput {
 }
 
 const DEFAULT_CONTENT_TYPE = 'image/jpeg';
+const PUBLIC_MINIO_ORIGIN = 'https://minio.nexus-ex.site';
 
 const B64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-
-let expoFileSystem: any = null;
-try {
-  expoFileSystem = require('expo-file-system/legacy');
-} catch {
-  try {
-    expoFileSystem = require('expo-file-system');
-  } catch {
-    expoFileSystem = null;
-  }
-}
 
 function decodeBase64ToBytes(b64: string): Uint8Array {
   const clean = b64.replace(/[^A-Za-z0-9+/]/g, '');
@@ -130,36 +120,14 @@ async function readMediaBlob(uri: string, contentType: string): Promise<Blob> {
       }
     }
   } catch {
-    // Continue to FileSystem
+    // Continue
   }
 
-  // 4. Native FileSystem readAsStringAsync (Base64)
-  if (
-    Platform.OS !== 'web' &&
-    expoFileSystem &&
-    typeof expoFileSystem.readAsStringAsync === 'function' &&
-    (uri.startsWith('file:') || uri.startsWith('content:'))
-  ) {
-    try {
-      const base64Data = await expoFileSystem.readAsStringAsync(uri, {
-        encoding: expoFileSystem.EncodingType?.Base64 || 'base64',
-      });
-      if (base64Data && base64Data.length > 0) {
-        return createBlobFromBase64(base64Data, contentType);
-      }
-    } catch (fsErr) {
-      console.warn('[media-upload] FileSystem.readAsStringAsync error:', fsErr);
-    }
-  }
-
-  // 5. Fallback 1x1 pixel JPEG if local file reading fails, guaranteeing upload to MinIO service
-  const fallbackBase64 =
-    '/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=';
-  return createBlobFromBase64(fallbackBase64, 'image/jpeg');
+  return new Blob([], { type: contentType });
 }
 
 async function sendBlobToS3(uploadUrl: string, blob: Blob, contentType: string): Promise<boolean> {
-  // 1. Try XMLHttpRequest PUT (most reliable for binary Blob uploads in React Native)
+  // 1. Try XMLHttpRequest PUT
   if (typeof XMLHttpRequest !== 'undefined') {
     try {
       const ok = await new Promise<boolean>((resolve) => {
@@ -221,21 +189,26 @@ export function isLocalMediaUri(value: string | null | undefined): value is stri
   );
 }
 
-function normalizeUploadTargetUrl(rawUrl: string): string {
+export function normalizeUploadTargetUrl(rawUrl: string): string {
   try {
     const parsedTarget = new URL(rawUrl);
-    const parsedGateway = new URL(appEnv.gatewayBaseUrl);
 
-    // If target hostname is docker container name (minio) or loopback, rewrite to reachable gateway host
+    // If target hostname is docker container name (minio), loopback, or internal IP
     const isInternalHost =
       parsedTarget.hostname === 'minio' ||
       parsedTarget.hostname === 'localhost' ||
       parsedTarget.hostname === '127.0.0.1' ||
       parsedTarget.hostname === '0.0.0.0' ||
-      parsedTarget.hostname.startsWith('10.');
+      parsedTarget.hostname === '10.0.2.2' ||
+      parsedTarget.hostname.startsWith('172.') ||
+      parsedTarget.hostname.startsWith('192.168.') ||
+      (parsedTarget.hostname === '103.82.20.51' && (parsedTarget.port === '19000' || parsedTarget.port === '9000'));
 
-    if (parsedGateway.hostname && parsedGateway.hostname !== 'minio' && isInternalHost) {
-      parsedTarget.hostname = parsedGateway.hostname;
+    if (isInternalHost) {
+      const publicOrigin = new URL(PUBLIC_MINIO_ORIGIN);
+      parsedTarget.protocol = publicOrigin.protocol;
+      parsedTarget.hostname = publicOrigin.hostname;
+      parsedTarget.port = publicOrigin.port;
     }
 
     return parsedTarget.toString();
@@ -260,61 +233,94 @@ export async function uploadCourierImage(
       },
     );
   } catch (error) {
-    console.warn('[media-upload] Could not obtain presigned upload URL from gateway:', error);
-    return input.uri;
+    console.error('[media-upload] Could not obtain presigned upload URL from gateway:', error);
+    throw new ApiClientError({
+      message: 'Không thể lấy đường dẫn tải ảnh lên MinIO. Vui lòng thử lại.',
+    });
   }
 
   if (!uploadDescriptor.success || !uploadDescriptor.data.uploadUrl) {
-    return input.uri;
+    throw new ApiClientError({
+      message: 'Dịch vụ tải ảnh MinIO phản hồi không hợp lệ.',
+    });
   }
 
   const targetUploadUrl = normalizeUploadTargetUrl(uploadDescriptor.data.uploadUrl);
   const targetPublicUrl = normalizeUploadTargetUrl(uploadDescriptor.data.publicUrl);
 
-  // Strategy 1: Native FileSystem uploadAsync (direct binary file stream to MinIO)
-  if (
-    Platform.OS !== 'web' &&
-    expoFileSystem &&
-    typeof expoFileSystem.uploadAsync === 'function' &&
-    (input.uri.startsWith('file:') || input.uri.startsWith('content:'))
-  ) {
-    try {
-      const uploadResult = await expoFileSystem.uploadAsync(targetUploadUrl, input.uri, {
-        httpMethod: 'PUT',
-        uploadType: expoFileSystem.FileSystemUploadType?.BINARY_CONTENT ?? 0,
-        headers: {
-          'Content-Type': contentType,
-        },
-      });
+  let uploadedSuccessfully = false;
 
-      if (uploadResult.status >= 200 && uploadResult.status < 300) {
-        return targetPublicUrl;
+  // Strategy 1: Native Mobile (Android / iOS) via FileSystem.uploadAsync
+  if (Platform.OS !== 'web') {
+    let localFileToUpload = input.uri;
+    let tempFileCreated: string | null = null;
+
+    try {
+      if (input.uri.startsWith('data:')) {
+        const commaIndex = input.uri.indexOf(',');
+        const base64Data = commaIndex >= 0 ? input.uri.slice(commaIndex + 1) : input.uri;
+        const cacheDir = FileSystem.cacheDirectory || FileSystem.documentDirectory || '';
+        const tempName = `proof_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.jpg`;
+        const tempPath = `${cacheDir}${tempName}`;
+
+        await FileSystem.writeAsStringAsync(tempPath, base64Data, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+
+        tempFileCreated = tempPath;
+        localFileToUpload = tempPath;
+      }
+
+      if (
+        localFileToUpload.startsWith('file:') ||
+        localFileToUpload.startsWith('content:')
+      ) {
+        const uploadResult = await FileSystem.uploadAsync(targetUploadUrl, localFileToUpload, {
+          httpMethod: 'PUT',
+          uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
+          headers: {
+            'Content-Type': contentType,
+          },
+        });
+
+        if (uploadResult.status >= 200 && uploadResult.status < 300) {
+          uploadedSuccessfully = true;
+        } else {
+          console.warn(`[media-upload] FileSystem.uploadAsync status ${uploadResult.status}:`, uploadResult.body);
+        }
       }
     } catch (nativeUploadErr) {
-      console.warn('[media-upload] FileSystem.uploadAsync error, falling back to Blob read:', nativeUploadErr);
+      console.warn('[media-upload] FileSystem.uploadAsync error:', nativeUploadErr);
+    } finally {
+      if (tempFileCreated) {
+        try {
+          await FileSystem.deleteAsync(tempFileCreated, { idempotent: true });
+        } catch {
+          // ignore cleanup error
+        }
+      }
     }
   }
 
-  // Strategy 2: Read image content into Blob and send via HTTP PUT
-  try {
-    const imageBlob = await readMediaBlob(input.uri, contentType);
-
-    let uploadOk = await sendBlobToS3(targetUploadUrl, imageBlob, contentType);
-
-    if (!uploadOk) {
-      // Retry direct PUT to publicUrl (MinIO public bucket policy)
-      uploadOk = await sendBlobToS3(targetPublicUrl, imageBlob, contentType);
+  // Strategy 2: Web / Fallback via HTTP PUT
+  if (!uploadedSuccessfully) {
+    try {
+      const imageBlob = await readMediaBlob(input.uri, contentType);
+      if (imageBlob.size > 0) {
+        uploadedSuccessfully = await sendBlobToS3(targetUploadUrl, imageBlob, contentType);
+      }
+    } catch (error) {
+      console.warn('[media-upload] S3 upload error:', error);
     }
-
-    if (!uploadOk) {
-      console.warn('[media-upload] S3 PUT failed to both uploadUrl and publicUrl');
-    }
-
-    return targetPublicUrl;
-  } catch (error) {
-    console.warn('[media-upload] S3 upload error:', error);
-    return targetPublicUrl;
   }
+
+  if (!uploadedSuccessfully) {
+    throw new ApiClientError({
+      message: 'Tải ảnh minh chứng lên máy chủ thất bại. Vui lòng kiểm tra kết nối mạng và thử lại.',
+    });
+  }
+
+  return targetPublicUrl;
 }
 
 function buildMediaFilename(filename: string): string {

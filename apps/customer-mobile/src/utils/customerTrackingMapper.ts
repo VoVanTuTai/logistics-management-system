@@ -4,6 +4,28 @@ import type { OrderModel, ShipmentStatus, TrackingEvent } from '../types';
 import { resolveHubFullAddress } from './hubResolver';
 
 /**
+ * Normalizes any MinIO image URL (including internal docker aliases or IP hosts)
+ * to the configured public MinIO endpoint (https://minio.nexus-ex.site).
+ */
+export function normalizeMediaPublicUrl(url?: string | null): string | undefined {
+  if (!url || typeof url !== 'string') return undefined;
+  const trimmed = url.trim();
+  if (!trimmed) return undefined;
+
+  if (trimmed.startsWith('https://minio.nexus-ex.site')) {
+    return trimmed;
+  }
+
+  return trimmed
+    .replace(/^http:\/\/minio:9000\/?/i, 'https://minio.nexus-ex.site/')
+    .replace(/^http:\/\/localhost:9000\/?/i, 'https://minio.nexus-ex.site/')
+    .replace(/^http:\/\/127\.0\.0\.1:9000\/?/i, 'https://minio.nexus-ex.site/')
+    .replace(/^http:\/\/103\.82\.20\.51:19000\/?/i, 'https://minio.nexus-ex.site/')
+    .replace(/^http:\/\/103\.82\.20\.51:9000\/?/i, 'https://minio.nexus-ex.site/')
+    .replace(/^http:\/\/minio\.nexus-ex\.site\/?/i, 'https://minio.nexus-ex.site/');
+}
+
+/**
  * Clean internal noise (mã bao MB..., MB..., MANIFEST-..., Mã NV..., Biển xe..., URLs)
  * from notes so customer sees clean real notes without Ops operational noise.
  */
@@ -227,15 +249,20 @@ export function mapTimelineEventsForCustomer(
       proofImageUrl = ev.metadata.podImageUrl;
     } else if (ev.metadata?.proofImageUrl && typeof ev.metadata.proofImageUrl === 'string') {
       proofImageUrl = ev.metadata.proofImageUrl;
+    } else if (ev.metadata?.photoUrl && typeof ev.metadata.photoUrl === 'string') {
+      proofImageUrl = ev.metadata.photoUrl;
     }
 
-    const noteUrlMatch = (ev.note || '').match(/https?:\/\/[^\s"'<>()]+/i);
+    const noteUrlMatch = (ev.note || '').match(/https?:\/\/[^\s"'<>()]+/i) ||
+      (ev.actor || '').match(/https?:\/\/[^\s"'<>()]+/i);
     if (!proofImageUrl && noteUrlMatch) {
       proofImageUrl = noteUrlMatch[0];
     }
     if (!proofImageUrl && isLastInTimeline && metaPodImageUrl) {
       proofImageUrl = metaPodImageUrl;
     }
+
+    proofImageUrl = normalizeMediaPublicUrl(proofImageUrl);
 
     const fullMessage = `${boldPrefix}${addressSuffix}`;
 
@@ -290,7 +317,9 @@ export function mapTrackingToCustomerOrderModel(
     [receiver.addressDetail, receiver.ward, receiver.province].filter(Boolean).join(', ') ||
     '';
 
-  const metaPodImageUrl = (meta.podImageUrl || meta.proofImageUrl) as string | undefined;
+  const metaPodImageUrl = normalizeMediaPublicUrl(
+    (meta.podImageUrl || meta.proofImageUrl) as string | undefined,
+  );
 
   const mappedTimeline = mapTimelineEventsForCustomer(
     res.timeline || [],
