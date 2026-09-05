@@ -274,6 +274,15 @@ export class MerchantProfilesService {
       await this.ensureHubCodeExists(defaultHubCode);
     }
 
+    const latitude =
+      typeof input.latitude === 'number' && Number.isFinite(input.latitude)
+        ? input.latitude
+        : null;
+    const longitude =
+      typeof input.longitude === 'number' && Number.isFinite(input.longitude)
+        ? input.longitude
+        : null;
+
     return {
       username,
       citizenId,
@@ -282,6 +291,8 @@ export class MerchantProfilesService {
       defaultHubCode: defaultHubCode ?? null,
       defaultHubName: defaultHubName ?? null,
       defaultSenderAddress: defaultSenderAddress ?? null,
+      latitude,
+      longitude,
     };
   }
 
@@ -306,6 +317,14 @@ export class MerchantProfilesService {
         input.defaultSenderAddress !== undefined
           ? input.defaultSenderAddress
           : currentProfile.defaultSenderAddress,
+      latitude:
+        input.latitude !== undefined
+          ? input.latitude
+          : currentProfile.latitude,
+      longitude:
+        input.longitude !== undefined
+          ? input.longitude
+          : currentProfile.longitude,
     });
 
     const normalizedInput: Partial<MerchantProfileWriteInput> = {};
@@ -338,6 +357,14 @@ export class MerchantProfilesService {
       mergedInput.defaultSenderAddress !== currentProfile.defaultSenderAddress
     ) {
       normalizedInput.defaultSenderAddress = mergedInput.defaultSenderAddress;
+    }
+
+    if (mergedInput.latitude !== currentProfile.latitude) {
+      normalizedInput.latitude = mergedInput.latitude;
+    }
+
+    if (mergedInput.longitude !== currentProfile.longitude) {
+      normalizedInput.longitude = mergedInput.longitude;
     }
 
     return normalizedInput;
