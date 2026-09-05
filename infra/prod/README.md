@@ -20,23 +20,24 @@ served by Nginx runtime containers:
 nexus/ops-web:local
 nexus/merchant-web:local
 nexus/admin-web:local
-nexus/guest-web:local
+nexus/customer-mobile:local
 nexus/courier-mobile:local
+nexus/guest-web:local
 ```
 
 For HTTPS domain deployment, use HTTPS public URLs in these values:
 
 ```dotenv
-PUBLIC_HOST=103.179.172.53
+PUBLIC_HOST=103.82.20.51
 OPS_PUBLIC_URL=https://ops.nexus-ex.site
 MERCHANT_PUBLIC_URL=https://merchant.nexus-ex.site
 ADMIN_PUBLIC_URL=https://admin.nexus-ex.site
-CUSTOMER_PUBLIC_URL=https://customer.nexus-ex.site
-GUEST_PUBLIC_URL=https://customer.nexus-ex.site
-COURIER_MOBILE_PUBLIC_URL=http://103.179.172.53:5177
+CUSTOMER_MOBILE_PUBLIC_URL=https://customer.nexus-ex.site
+COURIER_MOBILE_PUBLIC_URL=https://courier.nexus-ex.site
+GUEST_PUBLIC_URL=https://tracking.nexus-ex.site
 GATEWAY_PUBLIC_URL=https://ops.nexus-ex.site
 MINIO_PUBLIC_ENDPOINT=https://minio.nexus-ex.site
-CORS_ORIGINS=https://ops.nexus-ex.site,https://merchant.nexus-ex.site,https://admin.nexus-ex.site,https://customer.nexus-ex.site,https://tracking.nexus-ex.site,http://103.179.172.53:5177
+CORS_ORIGINS=https://ops.nexus-ex.site,https://merchant.nexus-ex.site,https://admin.nexus-ex.site,https://customer.nexus-ex.site,https://courier.nexus-ex.site,https://tracking.nexus-ex.site,http://103.82.20.51:5176,http://103.82.20.51:5177
 GATEWAY_PORT=13000
 MINIO_API_PORT=19000
 ```
@@ -74,13 +75,14 @@ MINIO_ROOT_PASSWORD=...
 
 ```text
 gateway API:      https://ops.nexus-ex.site/health
-gateway API port: http://103.179.172.53:13000/health
-ops-web:          https://ops.nexus-ex.site
-merchant-web:     https://merchant.nexus-ex.site
-admin-web:        https://admin.nexus-ex.site
-customer-web:     https://customer.nexus-ex.site (alias: https://tracking.nexus-ex.site)
-courier-mobile:   http://103.179.172.53:5177
-minio API:        https://minio.nexus-ex.site
+gateway API port: http://103.82.20.51:13000/health
+ops-web:          https://ops.nexus-ex.site (or http://103.82.20.51:5173)
+merchant-web:     https://merchant.nexus-ex.site (or http://103.82.20.51:5174)
+admin-web:        https://admin.nexus-ex.site (or http://103.82.20.51:5175)
+customer-mobile:  https://customer.nexus-ex.site (or http://103.82.20.51:5176)
+courier-mobile:   https://courier.nexus-ex.site (or http://103.82.20.51:5177)
+guest-web:        https://tracking.nexus-ex.site (or http://103.82.20.51:5178)
+minio API:        https://minio.nexus-ex.site (or http://103.82.20.51:19000)
 ```
 
 MinIO binds on `127.0.0.1:${MINIO_API_PORT}` and is exposed publicly through
