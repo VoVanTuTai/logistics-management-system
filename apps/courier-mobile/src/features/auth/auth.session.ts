@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useAppStore } from '../../store/appStore';
+import { appEnv } from '../../utils/env';
 import type { LoginResultDto } from './auth.types';
 
 const AUTH_SESSION_STORAGE_KEY = 'courier-mobile.auth-session';
@@ -128,14 +129,62 @@ export async function hydrateAuthSession(): Promise<void> {
   useAppStore.getState().setSession(session);
 }
 
+export function getTodayDateString(date: Date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export async function persistAuthSession(
   session: LoginResultDto,
 ): Promise<void> {
-  await writeSessionRaw(JSON.stringify(session));
-  useAppStore.getState().setSession(session);
+  const sessionWithMeta: LoginResultDto = {
+    ...session,
+    sessionDate: session.sessionDate ?? getTodayDateString(),
+    loggedInAt: session.loggedInAt ?? new Date().toISOString(),
+    buildId: session.buildId ?? appEnv.buildId,
+  };
+  await writeSessionRaw(JSON.stringify(sessionWithMeta));
+  useAppStore.getState().setSession(sessionWithMeta);
 }
 
 export async function clearAuthSession(): Promise<void> {
   await deleteSessionRaw();
   useAppStore.getState().clearSession();
 }
+
+const REMEMBERED_CREDENTIALS_STORAGE_KEY = 'courier-mobile.remembered-credentials';
+
+export interface RememberedCredentials {
+  username: string;
+  password?: string;
+  rememberMe: boolean;
+}
+
+export async function loadRememberedCredentials(): Promise<RememberedCredentials | null> {
+  try {
+    const raw = await AsyncStorage.getItem(REMEMBERED_CREDENTIALS_STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as RememberedCredentials;
+  } catch {
+    return null;
+  }
+}
+
+export async function saveRememberedCredentials(creds: RememberedCredentials): Promise<void> {
+  try {
+    await AsyncStorage.setItem(REMEMBERED_CREDENTIALS_STORAGE_KEY, JSON.stringify(creds));
+  } catch {
+    // ignore
+  }
+}
+
+export async function clearRememberedCredentials(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(REMEMBERED_CREDENTIALS_STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
+

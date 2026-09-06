@@ -28,6 +28,7 @@ interface LocationPickerMapModalProps {
   onConfirmLocation: (result: {
     province: string;
     ward: string;
+    district?: string;
     street: string;
     composedAddress: string;
     hubCode: string;
@@ -157,6 +158,7 @@ export function LocationPickerMapModal({
     onConfirmLocation({
       province: geocoded.province,
       ward: geocoded.ward,
+      district: geocoded.district || '',
       street: geocoded.street,
       composedAddress: geocoded.composedAddress,
       hubCode: hub.code,

@@ -326,14 +326,25 @@ export function AddressSelectorModal({
     if (!addressDetail.trim()) return;
 
     const hub = selectedHub || matchingHubs[0] || { code: 'HUB-DEFAULT', name: 'Bưu cục trung tâm' };
-    const composed = [addressDetail.trim(), selectedWard.name, selectedProvince.name]
+
+    let cleanWard = selectedWard.wardName || selectedWard.name;
+    let cleanDistrict = selectedWard.district || '';
+    if (!cleanDistrict) {
+      const match = selectedWard.name.match(/^(.*?)\s*\((.*?)\)$/);
+      if (match) {
+        cleanWard = match[1].trim();
+        cleanDistrict = match[2].trim();
+      }
+    }
+
+    const composed = [addressDetail.trim(), cleanWard, cleanDistrict, selectedProvince.name]
       .filter(Boolean)
       .join(', ');
 
     onConfirm({
       province: selectedProvince.name,
-      district: '',
-      ward: selectedWard.name,
+      district: cleanDistrict,
+      ward: cleanWard,
       addressDetail: addressDetail.trim(),
       composedAddress: composed,
       hubCode: hub.code,
@@ -347,6 +358,7 @@ export function AddressSelectorModal({
   const handleConfirmFromMap = (res: {
     province: string;
     ward: string;
+    district?: string;
     street: string;
     composedAddress: string;
     hubCode: string;
@@ -360,14 +372,29 @@ export function AddressSelectorModal({
         p.name.toLowerCase().includes(res.province.toLowerCase()),
     ) || provinceList[0];
 
+    let cleanWard = res.ward;
+    let cleanDistrict = res.district || '';
+    if (!cleanDistrict) {
+      const match = res.ward.match(/^(.*?)\s*\((.*?)\)$/);
+      if (match) {
+        cleanWard = match[1].trim();
+        cleanDistrict = match[2].trim();
+      }
+    }
+
     setSelectedProvince(foundProv);
     setSelectedWard({
       code: Math.floor(Math.random() * 9000) + 1000,
-      name: res.ward,
+      name: cleanDistrict ? `${cleanWard} (${cleanDistrict})` : cleanWard,
+      wardName: cleanWard,
+      district: cleanDistrict,
       codename: 'map_ward',
       provinceCode: foundProv?.code || 1,
     });
     setAddressDetail(res.street);
+    if (res.latitude && res.longitude) {
+      setCoords({ latitude: res.latitude, longitude: res.longitude });
+    }
 
     const foundHub = hubList.find((h) => h.code === res.hubCode) || hubList[0];
     setSelectedHub(foundHub);

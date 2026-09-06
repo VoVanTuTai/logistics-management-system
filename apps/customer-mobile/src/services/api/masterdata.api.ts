@@ -15,6 +15,8 @@ export interface HubRecord {
 export interface VietnamWard {
   code: number;
   name: string;
+  wardName?: string;
+  district?: string;
   codename: string;
   provinceCode?: number;
 }

@@ -67,6 +67,9 @@ export interface LoginResultDto {
   user: AuthenticatedUserDto;
   session: AuthSessionDto;
   tokens: AuthTokensDto;
+  sessionDate?: string;
+  loggedInAt?: string;
+  buildId?: string;
 }
 
 export interface MobilePermissionEffectiveDto {

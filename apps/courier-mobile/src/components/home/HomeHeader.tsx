@@ -11,6 +11,7 @@ interface HomeHeaderProps {
   greeting: string;
   userName: string;
   hubName: string;
+  notificationCount?: number;
   onPressQr?: () => void;
   onPressNotification?: () => void;
 }
@@ -18,9 +19,11 @@ interface HomeHeaderProps {
 function HeaderIconButton({
   icon,
   onPress,
+  badgeCount,
 }: {
   icon: IconName;
   onPress?: () => void;
+  badgeCount?: number;
 }): React.JSX.Element {
   return (
     <Pressable
@@ -29,6 +32,13 @@ function HeaderIconButton({
       hitSlop={8}
     >
       <Ionicons name={icon} size={20} color="#FFFFFF" />
+      {badgeCount && badgeCount > 0 ? (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>
+            {badgeCount > 99 ? '99+' : badgeCount}
+          </Text>
+        </View>
+      ) : null}
     </Pressable>
   );
 }
@@ -37,6 +47,7 @@ export function HomeHeader({
   greeting,
   userName,
   hubName,
+  notificationCount,
   onPressQr,
   onPressNotification,
 }: HomeHeaderProps): React.JSX.Element {
@@ -66,6 +77,7 @@ export function HomeHeader({
               <HeaderIconButton
                 icon="notifications-outline"
                 onPress={onPressNotification}
+                badgeCount={notificationCount}
               />
             </View>
           </View>
@@ -144,6 +156,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.18)',
+    position: 'relative',
+  },
+  badge: {
+    position: 'absolute',
+    top: -3,
+    right: -3,
+    backgroundColor: '#EF4444',
+    borderRadius: 9,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 9.5,
+    fontWeight: '800',
   },
   iconBtnPressed: {
     opacity: 0.85,

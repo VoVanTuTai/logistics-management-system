@@ -1162,8 +1162,7 @@ export function CourierMapScreen(): React.JSX.Element {
 
   // Assigned Area / Route Geofence State
   const [assignedArea, setAssignedArea] = useState<AssignedCourierArea | null>(null);
-  const [showBoundary, setShowBoundary] = useState<boolean>(true);
-  const [isZoneDetailsVisible, setIsZoneDetailsVisible] = useState<boolean>(false);
+  const showBoundary = true;
   const [customFocusedRegion, setCustomFocusedRegion] = useState<MapRegion | null>(null);
 
   useEffect(() => {
@@ -1203,17 +1202,6 @@ export function CourierMapScreen(): React.JSX.Element {
       longitude: sumLng / boundaryCoordinates.length,
     };
   }, [boundaryCoordinates]);
-
-  const zoneRegion = useMemo((): MapRegion | null => {
-    if (boundaryCoordinates.length === 0) return null;
-    return buildMapRegion(boundaryCoordinates);
-  }, [boundaryCoordinates]);
-
-  const handleFocusZone = useCallback(() => {
-    if (zoneRegion) {
-      setCustomFocusedRegion(zoneRegion);
-    }
-  }, [zoneRegion]);
 
   const tasks = tasksQuery.data ?? [];
   const shipmentCodes = useMemo(
@@ -1330,11 +1318,6 @@ export function CourierMapScreen(): React.JSX.Element {
     },
     [mapPoints, currentLocation, smartClusters]
   );
-  const savedDistanceMeters = Math.max(0, defaultRoute.totalDistanceMeters - suggestedRoute.totalDistanceMeters);
-  const savedMinutes = Math.max(0, (defaultRoute.estimatedDurationMinutes ?? 0) - (suggestedRoute.estimatedDurationMinutes ?? 0));
-  const improvementRatio = defaultRoute.totalDistanceMeters > 0 
-    ? (savedDistanceMeters / defaultRoute.totalDistanceMeters) * 100 
-    : 0;
   const routePointIds = useMemo(
     () => new Set(suggestedRoute.steps.map((step) => step.point.id)),
     [suggestedRoute.steps],
@@ -1374,14 +1357,16 @@ export function CourierMapScreen(): React.JSX.Element {
     if (polylineCoordinates.length > 0) {
       return buildMapRegion(polylineCoordinates);
     }
-    if (zoneRegion) {
-      return zoneRegion;
+    if (boundaryCoordinates.length >= 3) {
+      return buildMapRegion(boundaryCoordinates);
     }
     return DEFAULT_MAP_REGION;
-  }, [customFocusedRegion, polylineCoordinates, zoneRegion]);
+  }, [customFocusedRegion, polylineCoordinates, boundaryCoordinates]);
   const selectedPoint =
     mapPoints.find((point) => point.id === selectedPointId) ?? mapPoints[0] ?? null;
   const nextRoutePoint = suggestedRoute.steps[0]?.point ?? null;
+  const activePoint = (selectedPointId ? selectedPoint : nextRoutePoint) ?? selectedPoint;
+  const activePointSequence = activePoint ? routePointNumberById.get(activePoint.id) : null;
   const currentLocationPlot =
     currentLocation && coordinateBounds
       ? projectCoordinate(currentLocation, coordinateBounds)
@@ -1554,11 +1539,6 @@ export function CourierMapScreen(): React.JSX.Element {
     await Linking.openURL(`tel:${normalizedPhone}`);
   };
 
-  const handleSelectCluster = (cluster: SmartCluster) => {
-    setSelectedClusterId(cluster.id);
-    setSelectedPointId(cluster.points[0]?.id ?? null);
-  };
-
   const handleMoveRouteStep = (fromIndex: number, direction: -1 | 1) => {
     const orderedPoints = suggestedRoute.steps.map((step) => step.point);
     const toIndex = fromIndex + direction;
@@ -1694,96 +1674,14 @@ export function CourierMapScreen(): React.JSX.Element {
           </Pressable>
         </View>
 
-        <Card style={styles.overviewCard}>
-          <View style={styles.overviewHeader}>
-            <View style={styles.overviewHeaderLeft}>
-              <Text style={styles.overviewEyebrow}>TỔNG QUAN HÀNH TRÌNH</Text>
-              <Text style={styles.overviewTitle}>Hoàn thành đơn trong ngày</Text>
-            </View>
-            <View style={styles.overviewProgressBadge}>
-              <Text style={styles.overviewProgressText}>
-                {mapPoints.length > 0
-                  ? `${Math.round((completedCount / mapPoints.length) * 100)}%`
-                  : '0%'}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.progressBarBg}>
-            <View
-              style={[
-                styles.progressBarFill,
-                {
-                  width: mapPoints.length > 0
-                    ? `${(completedCount / mapPoints.length) * 100}%`
-                    : '0%',
-                },
-              ]}
-            />
-          </View>
-
-          <View style={styles.overviewStatsRow}>
-            <View style={styles.overviewStatItem}>
-              <Text style={styles.overviewStatLabel}>Hoàn thành</Text>
-              <Text style={styles.overviewStatValue}>
-                {completedCount}/{mapPoints.length}
-              </Text>
-            </View>
-            <View style={styles.overviewStatDivider} />
-            <View style={styles.overviewStatItem}>
-              <Text style={styles.overviewStatLabel}>Dự kiến COD</Text>
-              <Text style={[styles.overviewStatValue, { color: theme.colors.success }]}>
-                {formatMoney(codTotal)}
-              </Text>
-            </View>
-            <View style={styles.overviewStatDivider} />
-            <View style={styles.overviewStatItem}>
-              <Text style={styles.overviewStatLabel}>Gom cụm</Text>
-              <Text style={styles.overviewStatValue}>
-                {smartClusters.length} cụm
-              </Text>
-            </View>
-          </View>
-        </Card>
-
-        <View style={styles.summaryRow}>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryValue}>{mapPoints.length}</Text>
-            <Text style={styles.summaryLabel}>đơn hôm nay</Text>
-          </View>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryValue}>{processingCount}</Text>
-            <Text style={styles.summaryLabel}>đang xử lý</Text>
-          </View>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryValue}>{routeEligibleCount}</Text>
-            <Text style={styles.summaryLabel}>có tuyến</Text>
-          </View>
-        </View>
-
-        <View style={styles.summaryRow}>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryValue}>{smartClusters.length}</Text>
-            <Text style={styles.summaryLabel}>nhóm gần</Text>
-          </View>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryValue}>{clusteredPointCount}</Text>
-            <Text style={styles.summaryLabel}>đơn gom cụm</Text>
-          </View>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryValue}>{formatMoney(codTotal)}</Text>
-            <Text style={styles.summaryLabel}>COD dự kiến</Text>
-          </View>
-        </View>
-
         <Card style={styles.mapCard}>
           <View style={styles.mapHeaderRow}>
-            <View>
+            <View style={styles.mapTitleBlock}>
               <Text style={styles.mapTitle}>Tuyến hôm nay</Text>
-              <Text style={styles.mapSubtitle}>
+              <Text numberOfLines={1} style={styles.mapSubtitle}>
                 {isShipmentLoading
                   ? 'Đang nạp địa chỉ đơn...'
-                  : `${mapPoints.length} điểm, ${pendingCount} chờ nhận, ${completedCount} hoàn thành - GPS ${formatLocationUpdatedAt(lastLocationUpdatedAt)}`}
+                  : `${mapPoints.length} điểm • ${pendingCount} chờ nhận • ${completedCount} đã xong`}
               </Text>
             </View>
             <StatusBadge
@@ -1795,15 +1693,15 @@ export function CourierMapScreen(): React.JSX.Element {
           <View style={styles.legendGrid}>
             <View style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: typeColor('PICKUP') }]} />
-              <Text style={styles.legendText}>Pickup</Text>
+              <Text style={styles.legendText}>Lấy hàng</Text>
             </View>
             <View style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: typeColor('DELIVERY') }]} />
-              <Text style={styles.legendText}>Delivery</Text>
+              <Text style={styles.legendText}>Giao hàng</Text>
             </View>
             <View style={styles.legendItem}>
               <View style={[styles.legendRing, { borderColor: statusColor('COMPLETED') }]} />
-              <Text style={styles.legendText}>Đã hoàn thành</Text>
+              <Text style={styles.legendText}>Đã xong</Text>
             </View>
             <View style={styles.legendItem}>
               <View style={[styles.legendRing, { borderColor: statusColor('ASSIGNED') }]} />
@@ -1828,142 +1726,61 @@ export function CourierMapScreen(): React.JSX.Element {
             </View>
           ) : null}
 
-          {/* DEMO TOOLBAR: Chế độ tối ưu 2-Opt TSP */}
-          <View style={styles.demoToolbar}>
-            <View style={styles.demoToolbarHeader}>
-              <View style={styles.demoToolbarTitleRow}>
-                <Ionicons name="sparkles" size={16} color="#0284c7" />
-                <Text style={styles.demoToolbarTitle}>Tối ưu hành trình ngắn nhất (TSP)</Text>
+          {/* THANH TỐI ƯU HÀNH TRÌNH 2-OPT TSP */}
+          <View style={styles.tspQuickBar}>
+            <View style={styles.tspQuickInfo}>
+              <View style={styles.tspIconCircle}>
+                <Ionicons name="flash" size={15} color="#0284C7" />
               </View>
-              {isTspOptimized ? (
-                <View style={styles.demoActiveBadge}>
-                  <Text style={styles.demoActiveBadgeText}>2-OPT ĐÃ TỐI ƯU</Text>
+              <View style={styles.tspTextCol}>
+                <View style={styles.tspTitleRow}>
+                  <Text style={styles.tspQuickTitle}>Tối ưu chặng ngắn nhất</Text>
+                  {isTspOptimized && tspStats ? (
+                    <View style={styles.tspSavingsBadge}>
+                      <Text style={styles.tspSavingsBadgeText}>
+                        -{formatDistance(tspStats.savedDistanceMeters)} ({tspStats.improvementPercent}%)
+                      </Text>
+                    </View>
+                  ) : null}
                 </View>
-              ) : null}
+                <Text style={styles.tspQuickSubtitle} numberOfLines={1}>
+                  {isTspOptimized && tspStats
+                    ? `Tổng ~${formatDistance(suggestedRoute.totalDistanceMeters)} • ~${suggestedRoute.estimatedDurationMinutes ?? 0} phút`
+                    : 'Thuật toán 2-Opt TSP sắp xếp thứ tự chặng nhanh nhất'}
+                </Text>
+              </View>
             </View>
 
-            <View style={styles.demoButtonGroup}>
+            <View style={styles.tspActionGroup}>
               <Pressable
                 onPress={handleRunTspOptimization}
                 disabled={isTspOptimizing}
                 style={({ pressed }) => [
-                  styles.demoOptimizeBtn,
-                  isTspOptimized && styles.demoOptimizeBtnActive,
+                  styles.tspActionBtn,
+                  isTspOptimized && styles.tspActionBtnActive,
                   pressed && styles.actionPressed,
                 ]}
               >
                 {isTspOptimizing ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
-                  <>
-                    <Ionicons name="flash" size={15} color="#FFFFFF" />
-                    <Text style={styles.demoOptimizeBtnText}>
-                      {isTspOptimized ? 'Tối ưu lại (2-Opt TSP)' : '⚡ Tối ưu đường ngắn nhất'}
-                    </Text>
-                  </>
+                  <Text style={styles.tspActionBtnText}>
+                    {isTspOptimized ? 'Tối ưu lại' : '⚡ Tối ưu'}
+                  </Text>
                 )}
               </Pressable>
 
               {isTspOptimized ? (
                 <Pressable
                   onPress={handleResetTspOptimization}
-                  style={({ pressed }) => [styles.demoResetBtn, pressed && styles.actionPressed]}
+                  style={({ pressed }) => [styles.tspResetBtn, pressed && styles.actionPressed]}
+                  hitSlop={6}
                 >
-                  <Ionicons name="refresh-outline" size={14} color="#64748B" />
-                  <Text style={styles.demoResetBtnText}>Xem ban đầu</Text>
+                  <Ionicons name="refresh-outline" size={15} color="#64748B" />
                 </Pressable>
               ) : null}
             </View>
-
-            {/* DEMO IMPACT STATS */}
-            {isTspOptimized && tspStats ? (
-              <View style={styles.demoStatsBanner}>
-                <View style={styles.demoStatCol}>
-                  <Text style={styles.demoStatLabel}>Tổng cự ly</Text>
-                  <Text style={styles.demoStatValue}>
-                    {formatDistance(suggestedRoute.totalDistanceMeters)}
-                  </Text>
-                </View>
-                <View style={styles.demoStatDivider} />
-                <View style={styles.demoStatCol}>
-                  <Text style={styles.demoStatLabel}>Tiết kiệm cự ly</Text>
-                  <Text style={[styles.demoStatValue, { color: theme.colors.success }]}>
-                    -{formatDistance(tspStats.savedDistanceMeters)} ({tspStats.improvementPercent}%)
-                  </Text>
-                </View>
-                <View style={styles.demoStatDivider} />
-                <View style={styles.demoStatCol}>
-                  <Text style={styles.demoStatLabel}>Thời gian đi</Text>
-                  <Text style={[styles.demoStatValue, { color: '#0284c7' }]}>
-                    ~{suggestedRoute.estimatedDurationMinutes ?? 0} phút
-                  </Text>
-                </View>
-              </View>
-            ) : null}
           </View>
-
-          {/* GEOFENCE ROUTE CONTROL BAR */}
-          {assignedArea ? (
-            <View style={styles.zoneControlCard}>
-              <View style={styles.zoneControlHeader}>
-                <View style={styles.zoneBadgeShell}>
-                  <View
-                    style={[
-                      styles.zoneColorDot,
-                      { backgroundColor: assignedArea.colorHex || theme.colors.primary },
-                    ]}
-                  />
-                  <View style={styles.zoneTitleWrap}>
-                    <Text style={styles.zoneTitleText} numberOfLines={1}>
-                      {assignedArea.zoneName || 'Tuyến giao nhận'}
-                    </Text>
-                    <Text style={styles.zoneSubtitleText}>
-                      {assignedArea.ward} • Hub {assignedArea.hubCode}
-                    </Text>
-                  </View>
-                </View>
-                <View style={styles.zoneActionsRow}>
-                  <Pressable
-                    style={styles.zoneActionBtn}
-                    onPress={handleFocusZone}
-                    accessibilityLabel="Căn vào tuyến"
-                  >
-                    <Ionicons name="scan-outline" size={15} color={theme.colors.primary} />
-                    <Text style={styles.zoneActionBtnText}>Căn tuyến</Text>
-                  </Pressable>
-                  <Pressable
-                    style={[
-                      styles.zoneActionBtn,
-                      showBoundary && styles.zoneActionBtnActive,
-                    ]}
-                    onPress={() => setShowBoundary((prev) => !prev)}
-                    accessibilityLabel="Bật tắt đường biên"
-                  >
-                    <Ionicons
-                      name={showBoundary ? 'eye' : 'eye-off-outline'}
-                      size={15}
-                      color={showBoundary ? '#FFFFFF' : '#64748B'}
-                    />
-                    <Text
-                      style={[
-                        styles.zoneActionBtnText,
-                        showBoundary && styles.zoneActionBtnTextActive,
-                      ]}
-                    >
-                      {showBoundary ? 'Đường biên' : 'Ẩn biên'}
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    style={styles.zoneActionBtnIconOnly}
-                    onPress={() => setIsZoneDetailsVisible(true)}
-                    accessibilityLabel="Chi tiết tuyến"
-                  >
-                    <Ionicons name="information-circle-outline" size={19} color="#64748B" />
-                  </Pressable>
-                </View>
-              </View>
-            </View>
-          ) : null}
 
           <View style={styles.mapSurface}>
             {canUseNativeMap ? (
@@ -2200,343 +2017,153 @@ export function CourierMapScreen(): React.JSX.Element {
               <View style={styles.mapStatusChip}>
                 <Ionicons
                   name={locationState === 'ready' ? 'locate' : 'locate-outline'}
-                  size={13}
+                  size={12}
                   color={locationState === 'ready' ? '#16A34A' : '#64748B'}
                 />
                 <Text style={styles.mapStatusChipText}>
                   {locationState === 'ready' ? 'GPS sẵn sàng' : 'Chưa có GPS'}
                 </Text>
               </View>
-              <View style={styles.mapStatusChip}>
-                <Ionicons name="git-branch-outline" size={13} color={theme.colors.primary} />
-                <Text style={styles.mapStatusChipText}>
-                  {canUseNativeMap ? 'MapView + polyline' : 'Polyline dự phòng'}
-                </Text>
-              </View>
             </View>
 
-            {nextRoutePoint ? (
-              <View style={styles.nextStopSheet}>
-                <View style={styles.nextStopHeader}>
-                  <View style={styles.nextStopTextBlock}>
-                    <Text style={styles.nextStopEyebrow}>Điểm tiếp theo</Text>
-                    <Text numberOfLines={1} style={styles.nextStopTitle}>
-                      {nextRoutePoint.title}
-                    </Text>
-                  </View>
-                  <View
-                    style={[
-                      styles.nextStopNumber,
-                      { backgroundColor: typeColor(nextRoutePoint.task.taskType) },
-                    ]}
-                  >
-                    <Text style={styles.nextStopNumberText}>
-                      {routePointNumberById.get(nextRoutePoint.id) ?? 1}
-                    </Text>
-                  </View>
-                </View>
-                <Text numberOfLines={2} style={styles.nextStopAddress}>
-                  {nextRoutePoint.subtitle}
-                </Text>
-                <View style={styles.nextStopBadgeRow}>
-                  <StatusBadge
-                    label={toTaskTypeLabel(nextRoutePoint.task.taskType)}
-                    variant="info"
-                  />
-                  <StatusBadge
-                    label={toTaskStatusLabel(nextRoutePoint.task.status)}
-                    variant={statusVariant(nextRoutePoint.task.status)}
-                  />
-                </View>
-                <View style={styles.nextStopActionRow}>
-                  <Pressable
-                    disabled={!nextRoutePoint.contact}
-                    onPress={() => void handleCallContact(nextRoutePoint.contact)}
-                    style={({ pressed }) => [
-                      styles.nextStopSecondaryAction,
-                      !nextRoutePoint.contact && styles.actionDisabled,
-                      pressed && styles.actionPressed,
-                    ]}
-                  >
-                    <Ionicons name="call-outline" size={15} color={theme.colors.primary} />
-                    <Text style={styles.nextStopSecondaryText}>Gọi</Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={() =>
-                      navigation.navigate('TaskDetail', { taskId: nextRoutePoint.task.id })
-                    }
-                    style={({ pressed }) => [
-                      styles.nextStopSecondaryAction,
-                      pressed && styles.actionPressed,
-                    ]}
-                  >
-                    <Ionicons name="document-text-outline" size={15} color={theme.colors.primary} />
-                    <Text style={styles.nextStopSecondaryText}>Chi tiết</Text>
-                  </Pressable>
-                  <Pressable
-                    disabled={!nextRoutePoint.destination}
-                    onPress={() => void handleOpenDirections(nextRoutePoint.destination)}
-                    style={({ pressed }) => [
-                      styles.nextStopPrimaryAction,
-                      !nextRoutePoint.destination && styles.actionDisabled,
-                      pressed && styles.actionPressed,
-                    ]}
-                  >
-                    <Ionicons name="navigate-outline" size={15} color="#FFFFFF" />
-                    <Text style={styles.nextStopPrimaryText}>Bắt đầu</Text>
-                  </Pressable>
-                </View>
-              </View>
-            ) : (
+            {mapPoints.length === 0 ? (
               <View style={styles.mapEmptyOverlay}>
                 <Ionicons name="map-outline" size={24} color={theme.colors.textMuted} />
-                <Text style={styles.mapEmptyTitle}>Chưa có tuyến để vẽ</Text>
+                <Text style={styles.mapEmptyTitle}>Chưa có đơn trên bản đồ</Text>
                 <Text style={styles.mapEmptyText}>
-                  Các đơn thiếu tọa độ vẫn nằm trong danh sách bên dưới.
+                  Kéo xuống để làm mới khi có nhiệm vụ mới.
                 </Text>
               </View>
-            )}
+            ) : null}
           </View>
 
-          {/* HORIZONTAL ROUTE STEPS CAROUSEL FOR DEMO */}
-          {suggestedRoute.steps.length > 0 ? (
-            <View style={styles.stepsCarouselContainer}>
-              <View style={styles.stepsCarouselHeader}>
-                <Text style={styles.stepsCarouselTitle}>
-                  {isTspOptimized ? '⭐ Lộ trình tối ưu:' : 'Thứ tự tuyến:'} {suggestedRoute.steps.length} chặng
-                </Text>
-                <Text style={styles.stepsCarouselSubtitle}>
-                  Chạm chọn chặng • Bấm chỉ đường
-                </Text>
-              </View>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.stepsCarouselScroll}
-              >
-                {suggestedRoute.steps.map((step, idx) => {
-                  const isSelected = selectedPoint?.id === step.point.id;
-                  const legDist = step.distanceFromPreviousMeters ?? 0;
-                  return (
-                    <Pressable
-                      key={step.point.id}
-                      onPress={() => {
-                        setSelectedPointId(step.point.id);
-                        if (!selectedClusterPointIds.has(step.point.id)) {
-                          setSelectedClusterId(null);
-                        }
-                      }}
-                      style={({ pressed }) => [
-                        styles.stepCard,
-                        isSelected && styles.stepCardSelected,
-                        pressed && styles.actionPressed,
+          {/* THẺ TÁC VỤ ĐIỂM DỪNG ĐANG CHỌN / KẾ TIẾP */}
+          {activePoint ? (
+            <View style={styles.activeStopCard}>
+              <View style={styles.activeStopTopRow}>
+                <View style={styles.activeStopTitleCol}>
+                  <View style={styles.activeStopTagRow}>
+                    <View
+                      style={[
+                        styles.activeStopSeqBadge,
+                        { backgroundColor: typeColor(activePoint.task.taskType) },
                       ]}
                     >
-                      <View style={styles.stepCardTop}>
-                        <View
-                          style={[
-                            styles.stepBadgeCircle,
-                            { backgroundColor: typeColor(step.point.task.taskType) },
-                          ]}
-                        >
-                          <Text style={styles.stepBadgeCircleText}>{idx + 1}</Text>
-                        </View>
-                        <Text style={styles.stepDistanceText}>
-                          {idx === 0
-                            ? 'Điểm đầu'
-                            : `Cách ~${(legDist / 1000).toFixed(1)} km`}
-                        </Text>
-                      </View>
-                      <Text numberOfLines={1} style={styles.stepReceiverText}>
-                        {step.point.title}
+                      <Text style={styles.activeStopSeqText}>
+                        {activePointSequence ? `Chặng #${activePointSequence}` : 'Điểm dừng'}
                       </Text>
-                      <Text numberOfLines={1} style={styles.stepAddressText}>
-                        {step.point.subtitle}
-                      </Text>
-                      <Pressable
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          void handleOpenDirections(step.point.destination);
-                        }}
-                        style={styles.stepNavigateBtn}
+                    </View>
+                    <View
+                      style={[
+                        styles.activeStopTypeBadge,
+                        activePoint.task.taskType === 'PICKUP'
+                          ? styles.activeStopTypePickup
+                          : styles.activeStopTypeDelivery,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.activeStopTypeBadgeText,
+                          activePoint.task.taskType === 'PICKUP'
+                            ? styles.activeStopTypePickupText
+                            : styles.activeStopTypeDeliveryText,
+                        ]}
                       >
-                        <Ionicons name="navigate" size={12} color="#FFFFFF" />
-                        <Text style={styles.stepNavigateBtnText}>Chỉ đường</Text>
-                      </Pressable>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
+                        {toTaskTypeLabel(activePoint.task.taskType)}
+                      </Text>
+                    </View>
+                    <Text style={styles.activeStopShipmentCode} numberOfLines={1}>
+                      {activePoint.task.shipmentCode ?? activePoint.task.taskCode}
+                    </Text>
+                  </View>
+                  <Text style={styles.activeStopName} numberOfLines={1}>
+                    {activePoint.title}
+                  </Text>
+                </View>
+                <StatusBadge
+                  label={toTaskStatusLabel(activePoint.task.status)}
+                  variant={statusVariant(activePoint.task.status)}
+                />
+              </View>
+
+              <View style={styles.activeStopAddressRow}>
+                <Ionicons
+                  name="location-outline"
+                  size={14}
+                  color={theme.colors.textMuted}
+                  style={styles.activeStopAddressIcon}
+                />
+                <Text style={styles.activeStopAddressText} numberOfLines={2}>
+                  {activePoint.subtitle}
+                </Text>
+              </View>
+
+              <View style={styles.activeStopMetaRow}>
+                {activePoint.contact ? (
+                  <Pressable
+                    onPress={() => void handleCallContact(activePoint.contact)}
+                    style={styles.activeStopMetaPill}
+                  >
+                    <Ionicons name="call" size={11} color={theme.colors.primary} />
+                    <Text style={styles.activeStopMetaPillText}>{activePoint.contact}</Text>
+                  </Pressable>
+                ) : null}
+                {activePoint.codAmount && activePoint.codAmount > 0 ? (
+                  <View style={styles.activeStopCodPill}>
+                    <Ionicons name="cash" size={12} color="#DC2626" />
+                    <Text style={styles.activeStopCodPillText}>
+                      COD: {formatMoney(activePoint.codAmount)}
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+
+              <View style={styles.activeStopActionRow}>
+                <Pressable
+                  disabled={!activePoint.contact}
+                  onPress={() => void handleCallContact(activePoint.contact)}
+                  style={({ pressed }) => [
+                    styles.activeStopBtn,
+                    styles.activeStopBtnSecondary,
+                    !activePoint.contact && styles.actionDisabled,
+                    pressed && styles.actionPressed,
+                  ]}
+                >
+                  <Ionicons name="call-outline" size={14} color={theme.colors.primary} />
+                  <Text style={styles.activeStopBtnSecondaryText}>Gọi khách</Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={() =>
+                    navigation.navigate('TaskDetail', { taskId: activePoint.task.id })
+                  }
+                  style={({ pressed }) => [
+                    styles.activeStopBtn,
+                    styles.activeStopBtnSecondary,
+                    pressed && styles.actionPressed,
+                  ]}
+                >
+                  <Ionicons name="document-text-outline" size={14} color={theme.colors.primary} />
+                  <Text style={styles.activeStopBtnSecondaryText}>Chi tiết</Text>
+                </Pressable>
+
+                <Pressable
+                  disabled={!activePoint.destination}
+                  onPress={() => void handleOpenDirections(activePoint.destination)}
+                  style={({ pressed }) => [
+                    styles.activeStopBtn,
+                    styles.activeStopBtnPrimary,
+                    !activePoint.destination && styles.actionDisabled,
+                    pressed && styles.actionPressed,
+                  ]}
+                >
+                  <Ionicons name="navigate" size={14} color="#FFFFFF" />
+                  <Text style={styles.activeStopBtnPrimaryText}>Chỉ đường</Text>
+                </Pressable>
+              </View>
             </View>
           ) : null}
         </Card>
-
-        {!tasksQuery.isLoading && !tasksQuery.isError ? (
-          <Card style={styles.clusterCard}>
-            <View style={styles.clusterHeaderRow}>
-              <View style={styles.clusterTitleBlock}>
-                <Text style={styles.clusterEyebrow}>Gợi ý thông minh</Text>
-                <Text style={styles.clusterTitle}>Gom đơn gần nhau</Text>
-              </View>
-              <StatusBadge
-                label={`${smartClusters.length} nhóm`}
-                variant={smartClusters.length > 0 ? 'info' : 'neutral'}
-              />
-            </View>
-
-            <View style={styles.radiusControl}>
-              {CLUSTER_RADII.map((radius) => {
-                const active = clusterRadius === radius;
-
-                return (
-                  <Pressable
-                    key={radius}
-                    onPress={() => setClusterRadius(radius)}
-                    style={({ pressed }) => [
-                      styles.radiusButton,
-                      active && styles.radiusButtonActive,
-                      pressed && styles.actionPressed,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.radiusButtonText,
-                        active && styles.radiusButtonTextActive,
-                      ]}
-                    >
-                      {formatDistance(radius)}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            {smartClusters.length === 0 ? (
-              <View style={styles.clusterEmptyState}>
-                <Ionicons name="git-merge-outline" size={22} color={theme.colors.textMuted} />
-                <Text style={styles.clusterEmptyTitle}>Chưa có cụm phù hợp</Text>
-                <Text style={styles.clusterEmptyText}>
-                  Cần ít nhất 2 đơn có tọa độ, đúng thứ tự pickup/delivery và cùng khu vực khi có dữ liệu hub.
-                </Text>
-              </View>
-            ) : (
-              <View style={styles.clusterList}>
-                {smartClusters.map((cluster) => {
-                  const active = selectedCluster?.id === cluster.id;
-                  const firstPoint = cluster.points[0] ?? null;
-
-                  return (
-                    <Pressable
-                      key={cluster.id}
-                      onPress={() => handleSelectCluster(cluster)}
-                      style={({ pressed }) => [
-                        styles.clusterItem,
-                        active && styles.clusterItemActive,
-                        pressed && styles.pointRowPressed,
-                      ]}
-                    >
-                      <View style={styles.clusterItemTop}>
-                        <View style={styles.clusterCountBadge}>
-                          <Text style={styles.clusterCountText}>{cluster.points.length}</Text>
-                        </View>
-                        <View style={styles.clusterItemTextBlock}>
-                          <Text style={styles.clusterItemTitle}>
-                            Nhóm {cluster.points.length} đơn gần nhau
-                          </Text>
-                          <Text style={styles.clusterItemSubtitle}>
-                            Đề xuất xử lý cùng lượt trong bán kính {formatDistance(cluster.radiusMeters)}
-                          </Text>
-                        </View>
-                      </View>
-
-                      <View style={styles.clusterMetaRow}>
-                        <View style={styles.clusterMetaPill}>
-                          <Ionicons name="map-outline" size={13} color={theme.colors.textSecondary} />
-                          <Text style={styles.clusterMetaText}>
-                            {cluster.areaLabel} - xa nhất {formatDistance(cluster.maxDistanceMeters)}
-                          </Text>
-                        </View>
-                        <View style={styles.clusterMetaPill}>
-                          <Ionicons name="cash-outline" size={13} color={theme.colors.textSecondary} />
-                          <Text style={styles.clusterMetaText}>
-                            COD {formatMoney(cluster.codTotal)} ({cluster.codCount} đơn)
-                          </Text>
-                        </View>
-                      </View>
-
-                      {active ? (
-                        <View style={styles.clusterDetailList}>
-                          {cluster.points.map((point) => (
-                            <Pressable
-                              key={point.id}
-                              onPress={() => setSelectedPointId(point.id)}
-                              style={({ pressed }) => [
-                                styles.clusterPointRow,
-                                selectedPoint?.id === point.id && styles.clusterPointRowActive,
-                                pressed && styles.pointRowPressed,
-                              ]}
-                            >
-                              <View
-                                style={[
-                                  styles.clusterPointDot,
-                                  { backgroundColor: typeColor(point.task.taskType) },
-                                ]}
-                              />
-                              <View style={styles.clusterPointTextBlock}>
-                                <Text numberOfLines={1} style={styles.clusterPointTitle}>
-                                  {point.task.shipmentCode ?? point.task.taskCode}
-                                </Text>
-                                <Text numberOfLines={1} style={styles.clusterPointSubtitle}>
-                                  {toTaskTypeLabel(point.task.taskType)} - {formatMoney(point.codAmount)}
-                                </Text>
-                              </View>
-                              <Ionicons
-                                name="chevron-forward"
-                                size={16}
-                                color={theme.colors.textMuted}
-                              />
-                            </Pressable>
-                          ))}
-                          {firstPoint ? (
-                            <View style={styles.actionRow}>
-                              <Pressable
-                                onPress={() =>
-                                  navigation.navigate('TaskDetail', { taskId: firstPoint.task.id })
-                                }
-                                style={({ pressed }) => [
-                                  styles.secondaryAction,
-                                  pressed && styles.actionPressed,
-                                ]}
-                              >
-                                <Ionicons
-                                  name="document-text-outline"
-                                  size={15}
-                                  color={theme.colors.primary}
-                                />
-                                <Text style={styles.secondaryActionText}>Xem điểm đầu</Text>
-                              </Pressable>
-                              <Pressable
-                                onPress={() => void handleOpenDirections(firstPoint.destination)}
-                                style={({ pressed }) => [
-                                  styles.primaryAction,
-                                  !firstPoint.destination && styles.actionDisabled,
-                                  pressed && styles.actionPressed,
-                                ]}
-                              >
-                                <Ionicons name="navigate-outline" size={15} color="#FFFFFF" />
-                                <Text style={styles.primaryActionText}>Đi điểm đầu</Text>
-                              </Pressable>
-                            </View>
-                          ) : null}
-                        </View>
-                      ) : null}
-                    </Pressable>
-                  );
-                })}
-              </View>
-            )}
-          </Card>
-        ) : null}
 
         {!tasksQuery.isLoading && !tasksQuery.isError ? (
           <Card style={styles.routeCard}>
@@ -2593,92 +2220,6 @@ export function CourierMapScreen(): React.JSX.Element {
                   </View>
                 </View>
 
-                <View style={styles.evaluationBox}>
-                  <View style={styles.evaluationHeader}>
-                    <Ionicons name="analytics-outline" size={16} color={theme.colors.primary} />
-                    <Text style={styles.evaluationTitle}>Đánh giá hiệu quả tối ưu hóa</Text>
-                  </View>
-
-                  {/* Comparison table header */}
-                  <View style={styles.evalCompareHeader}>
-                    <View style={styles.evalCompareHeaderCell} />
-                    <Text style={styles.evalCompareHeaderLabel}>Quãng đường</Text>
-                    <Text style={styles.evalCompareHeaderLabel}>ETA</Text>
-                  </View>
-
-                  {/* Default route row */}
-                  <View style={styles.evalCompareRow}>
-                    <View style={styles.evalCompareIconCell}>
-                      <View style={[styles.evalDot, { backgroundColor: '#94A3B8' }]} />
-                      <Text style={styles.evalCompareRowLabel}>Mặc định</Text>
-                    </View>
-                    <Text style={styles.evalCompareRowValue}>
-                      {formatDistance(defaultRoute.totalDistanceMeters)}
-                    </Text>
-                    <Text style={styles.evalCompareRowValue}>
-                      {formatDuration(defaultRoute.estimatedDurationMinutes)}
-                    </Text>
-                  </View>
-
-                  {/* Distance comparison bar (default) */}
-                  <View style={styles.evalBarTrack}>
-                    <View style={[styles.evalBarFill, styles.evalBarDefault, { width: '100%' }]} />
-                  </View>
-
-                  {/* Optimized route row */}
-                  <View style={[styles.evalCompareRow, { marginTop: theme.spacing.sm }]}>
-                    <View style={styles.evalCompareIconCell}>
-                      <View style={[styles.evalDot, { backgroundColor: theme.colors.success }]} />
-                      <Text style={[styles.evalCompareRowLabel, { color: theme.colors.success }]}>Tối ưu</Text>
-                    </View>
-                    <Text style={[styles.evalCompareRowValue, { color: theme.colors.success, fontWeight: '900' }]}>
-                      {formatDistance(suggestedRoute.totalDistanceMeters)}
-                    </Text>
-                    <Text style={[styles.evalCompareRowValue, { color: theme.colors.success, fontWeight: '900' }]}>
-                      {formatDuration(suggestedRoute.estimatedDurationMinutes)}
-                    </Text>
-                  </View>
-
-                  {/* Distance comparison bar (optimized) */}
-                  <View style={styles.evalBarTrack}>
-                    <View
-                      style={[
-                        styles.evalBarFill,
-                        styles.evalBarOptimized,
-                        {
-                          width: defaultRoute.totalDistanceMeters > 0
-                            ? `${Math.max(5, (suggestedRoute.totalDistanceMeters / defaultRoute.totalDistanceMeters) * 100)}%`
-                            : '100%',
-                        },
-                      ]}
-                    />
-                  </View>
-
-                  {/* Savings summary */}
-                  <View style={styles.evalSavingsBox}>
-                    <View style={styles.evalSavingsRow}>
-                      <Ionicons name="trending-down-outline" size={16} color={theme.colors.success} />
-                      <Text style={styles.evalSavingsTitle}>Tiết kiệm</Text>
-                    </View>
-                    <View style={styles.evalSavingsMetrics}>
-                      <View style={styles.evalSavingsMetric}>
-                        <Text style={styles.evalSavingsNumber}>{formatDistance(savedDistanceMeters)}</Text>
-                        <Text style={styles.evalSavingsUnit}>quãng đường</Text>
-                      </View>
-                      <View style={styles.evalSavingsDivider} />
-                      <View style={styles.evalSavingsMetric}>
-                        <Text style={styles.evalSavingsNumber}>~{savedMinutes} phút</Text>
-                        <Text style={styles.evalSavingsUnit}>thời gian</Text>
-                      </View>
-                      <View style={styles.evalSavingsDivider} />
-                      <View style={styles.evalSavingsMetric}>
-                        <Text style={styles.evalSavingsPercent}>{improvementRatio.toFixed(1)}%</Text>
-                        <Text style={styles.evalSavingsUnit}>cải thiện</Text>
-                      </View>
-                    </View>
-                  </View>
-                </View>
-
                 <View style={styles.routeStepList}>
                   {suggestedRoute.steps.map((step, index) => {
                     const canMoveUp = canMoveRouteStep(
@@ -2698,62 +2239,117 @@ export function CourierMapScreen(): React.JSX.Element {
                         onPress={() => setSelectedPointId(step.point.id)}
                         style={({ pressed }) => [
                           styles.routeStepRow,
-                          selectedPoint?.id === step.point.id && styles.routeStepRowActive,
+                          activePoint?.id === step.point.id && styles.routeStepRowActive,
                           pressed && styles.pointRowPressed,
                         ]}
                       >
                         <View
                           style={[
                             styles.routeStepNumber,
+                            { backgroundColor: typeColor(step.point.task.taskType) },
                             !step.point.coordinate && styles.routeStepNumberMuted,
                           ]}
                         >
                           <Text style={styles.routeStepNumberText}>{index + 1}</Text>
                         </View>
+
                         <View style={styles.routeStepTextBlock}>
-                          <Text numberOfLines={1} style={styles.routeStepTitle}>
-                            {step.point.task.shipmentCode ?? step.point.task.taskCode}
-                          </Text>
+                          <View style={styles.routeStepHeaderRow}>
+                            <Text numberOfLines={1} style={styles.routeStepTitle}>
+                              {step.point.title}
+                            </Text>
+                            <Text numberOfLines={1} style={styles.routeStepCode}>
+                              {step.point.task.shipmentCode ?? step.point.task.taskCode}
+                            </Text>
+                          </View>
                           <Text numberOfLines={1} style={styles.routeStepSubtitle}>
-                            {toTaskTypeLabel(step.point.task.taskType)} - {step.point.coordinate
-                              ? step.priorityLabel
-                              : 'Chưa có tọa độ'}
+                            {step.point.subtitle}
                           </Text>
-                          <Text numberOfLines={1} style={styles.routeStepMeta}>
-                            {formatRouteStepMeta(step)}
-                          </Text>
+                          <View style={styles.routeStepTagRow}>
+                            <View
+                              style={[
+                                styles.routeStepTypeBadge,
+                                step.point.task.taskType === 'PICKUP'
+                                  ? styles.routeStepTypePickup
+                                  : styles.routeStepTypeDelivery,
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  styles.routeStepTypeBadgeText,
+                                  step.point.task.taskType === 'PICKUP'
+                                    ? styles.routeStepTypePickupText
+                                    : styles.routeStepTypeDeliveryText,
+                                ]}
+                              >
+                                {toTaskTypeLabel(step.point.task.taskType)}
+                              </Text>
+                            </View>
+                            {step.point.codAmount && step.point.codAmount > 0 ? (
+                              <Text style={styles.routeStepCodText}>
+                                COD: {formatMoney(step.point.codAmount)}
+                              </Text>
+                            ) : null}
+                          </View>
                         </View>
+
                         <View style={styles.routeStepActions}>
                           <Pressable
-                            disabled={!canMoveUp}
-                            onPress={() => handleMoveRouteStep(index, -1)}
+                            disabled={!step.point.destination}
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              void handleOpenDirections(step.point.destination);
+                            }}
                             style={({ pressed }) => [
-                              styles.routeStepActionButton,
-                              !canMoveUp && styles.routeStepActionButtonDisabled,
+                              styles.routeStepNavBtn,
+                              !step.point.destination && styles.actionDisabled,
                               pressed && styles.actionPressed,
                             ]}
                           >
-                            <Ionicons
-                              name="chevron-up"
-                              size={16}
-                              color={canMoveUp ? theme.colors.primary : theme.colors.textMuted}
-                            />
+                            <Ionicons name="navigate-outline" size={13} color="#FFFFFF" />
+                            <Text style={styles.routeStepNavBtnText}>Đi</Text>
                           </Pressable>
-                          <Pressable
-                            disabled={!canMoveDown}
-                            onPress={() => handleMoveRouteStep(index, 1)}
-                            style={({ pressed }) => [
-                              styles.routeStepActionButton,
-                              !canMoveDown && styles.routeStepActionButtonDisabled,
-                              pressed && styles.actionPressed,
-                            ]}
-                          >
-                            <Ionicons
-                              name="chevron-down"
-                              size={16}
-                              color={canMoveDown ? theme.colors.primary : theme.colors.textMuted}
-                            />
-                          </Pressable>
+
+                          <View style={styles.routeStepMoveCol}>
+                            <Pressable
+                              disabled={!canMoveUp}
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                handleMoveRouteStep(index, -1);
+                              }}
+                              style={({ pressed }) => [
+                                styles.routeStepMoveBtn,
+                                !canMoveUp && styles.routeStepActionButtonDisabled,
+                                pressed && styles.actionPressed,
+                              ]}
+                              hitSlop={4}
+                            >
+                              <Ionicons
+                                name="chevron-up"
+                                size={14}
+                                color={canMoveUp ? theme.colors.primary : '#CBD5E1'}
+                              />
+                            </Pressable>
+                            <Pressable
+                              disabled={!canMoveDown}
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                handleMoveRouteStep(index, 1);
+                              }}
+                              style={({ pressed }) => [
+                                styles.routeStepMoveBtn,
+                                !canMoveDown && styles.routeStepActionButtonDisabled,
+                                pressed && styles.actionPressed,
+                              ]}
+                              hitSlop={4}
+                            >
+                              <Ionicons
+                                name="chevron-down"
+                                size={14}
+                                color={canMoveDown ? theme.colors.primary : '#CBD5E1'}
+                              />
+                            </Pressable>
+                          </View>
                         </View>
                       </Pressable>
                     );
@@ -2791,245 +2387,6 @@ export function CourierMapScreen(): React.JSX.Element {
             <Text style={styles.stateText}>Kéo để làm mới khi có nhiệm vụ mới.</Text>
           </Card>
         ) : null}
-
-        {selectedPoint ? (
-          <Card style={styles.detailCard}>
-            <View style={styles.detailTopRow}>
-              <View style={styles.detailTitleBlock}>
-                <Text style={styles.detailEyebrow}>
-                  {toTaskTypeLabel(selectedPoint.task.taskType)} - {selectedPoint.task.taskCode}
-                </Text>
-                <Text style={styles.detailTitle}>
-                  {selectedPoint.task.shipmentCode ?? 'Chưa có mã vận đơn'}
-                </Text>
-              </View>
-              <StatusBadge
-                label={toTaskStatusLabel(selectedPoint.task.status)}
-                variant={statusVariant(selectedPoint.task.status)}
-              />
-            </View>
-            <Text style={styles.detailName}>{selectedPoint.title}</Text>
-            <Text style={styles.detailAddress}>{selectedPoint.subtitle}</Text>
-            <View style={styles.detailMetaRow}>
-              <Ionicons name="call-outline" size={14} color={theme.colors.textMuted} />
-              <Text style={styles.detailMetaText}>
-                {selectedPoint.contact ?? 'Chưa có số liên hệ'}
-              </Text>
-            </View>
-            <View style={styles.detailMetaRow}>
-              <Ionicons name="cash-outline" size={14} color={theme.colors.textMuted} />
-              <Text style={styles.detailMetaText}>
-                COD {formatMoney(selectedPoint.codAmount)}
-              </Text>
-            </View>
-            <View style={styles.actionRow}>
-              <Pressable
-                onPress={() =>
-                  navigation.navigate('TaskDetail', { taskId: selectedPoint.task.id })
-                }
-                style={({ pressed }) => [
-                  styles.secondaryAction,
-                  pressed && styles.actionPressed,
-                ]}
-              >
-                <Ionicons name="document-text-outline" size={15} color={theme.colors.primary} />
-                <Text style={styles.secondaryActionText}>Chi tiết đơn</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => void handleOpenDirections(selectedPoint.destination)}
-                style={({ pressed }) => [
-                  styles.primaryAction,
-                  !selectedPoint.destination && styles.actionDisabled,
-                  pressed && styles.actionPressed,
-                ]}
-              >
-                <Ionicons name="navigate-outline" size={15} color="#FFFFFF" />
-                <Text style={styles.primaryActionText}>Đi tới điểm này</Text>
-              </Pressable>
-            </View>
-          </Card>
-        ) : null}
-
-        {!tasksQuery.isLoading && !tasksQuery.isError && mapPoints.length > 0 ? (
-          <Card style={styles.todayListCard}>
-            <View style={styles.todayListHeader}>
-              <View>
-                <Text style={styles.todayListEyebrow}>Danh sách đơn hôm nay</Text>
-                <Text style={styles.todayListTitle}>
-                  {mapPoints.length} điểm cần lấy/giao
-                </Text>
-              </View>
-              <StatusBadge
-                label={`${routeEligibleCount} có chỉ đường`}
-                variant={routeEligibleCount > 0 ? 'info' : 'neutral'}
-              />
-            </View>
-
-            <View style={styles.pointList}>
-              {mapPoints.map((point, index) => (
-                <Pressable
-                  key={point.id}
-                  onPress={() => setSelectedPointId(point.id)}
-                  style={({ pressed }) => [
-                    styles.pointRow,
-                    selectedPoint?.id === point.id && styles.pointRowActive,
-                    pressed && styles.pointRowPressed,
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.pointNumber,
-                      {
-                        backgroundColor: typeColor(point.task.taskType),
-                        borderColor: statusColor(point.task.status),
-                      },
-                    ]}
-                  >
-                    <Text style={styles.pointNumberText}>{index + 1}</Text>
-                  </View>
-                  <View style={styles.pointTextBlock}>
-                    <Text numberOfLines={1} style={styles.pointTitle}>
-                      {point.task.shipmentCode ?? point.task.taskCode}
-                    </Text>
-                    <Text numberOfLines={1} style={styles.pointSubtitle}>
-                      {toTaskTypeLabel(point.task.taskType)} - COD {formatMoney(point.codAmount)}
-                    </Text>
-                    <Text numberOfLines={1} style={styles.pointAddress}>
-                      {point.subtitle}
-                    </Text>
-                  </View>
-                  <View style={styles.pointRightBlock}>
-                    <StatusBadge
-                      label={toTaskStatusLabel(point.task.status)}
-                      variant={statusVariant(point.task.status)}
-                    />
-                    <Pressable
-                      disabled={!point.destination}
-                      onPress={() => void handleOpenDirections(point.destination)}
-                      style={({ pressed }) => [
-                        styles.pointDirectionButton,
-                        !point.destination && styles.actionDisabled,
-                        pressed && styles.actionPressed,
-                      ]}
-                    >
-                      <Ionicons name="navigate-outline" size={14} color="#FFFFFF" />
-                      <Text style={styles.pointDirectionText}>Đi</Text>
-                    </Pressable>
-                  </View>
-                </Pressable>
-              ))}
-            </View>
-          </Card>
-        ) : null}
-
-        {/* ZONE DETAILS MODAL */}
-        <Modal
-          visible={isZoneDetailsVisible}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setIsZoneDetailsVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <View style={styles.modalHeaderTitleRow}>
-                  <View
-                    style={[
-                      styles.zoneColorDotLarge,
-                      {
-                        backgroundColor:
-                          assignedArea?.colorHex || theme.colors.primary,
-                      },
-                    ]}
-                  />
-                  <Text style={styles.modalTitle} numberOfLines={1}>
-                    {assignedArea?.zoneName || 'Thông tin Tuyến chạy'}
-                  </Text>
-                </View>
-                <Pressable
-                  onPress={() => setIsZoneDetailsVisible(false)}
-                  style={styles.modalCloseBtn}
-                >
-                  <Ionicons name="close" size={20} color="#64748B" />
-                </Pressable>
-              </View>
-
-              <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-                <View style={styles.modalInfoRow}>
-                  <Text style={styles.modalInfoLabel}>Trạng thái tuyến</Text>
-                  <View style={styles.modalStatusBadge}>
-                    <View style={styles.modalStatusDot} />
-                    <Text style={styles.modalStatusText}>Đang kích hoạt</Text>
-                  </View>
-                </View>
-
-                <View style={styles.modalInfoRow}>
-                  <Text style={styles.modalInfoLabel}>Mã Hub phụ trách</Text>
-                  <Text style={styles.modalInfoValueBold}>
-                    {assignedArea?.hubCode ?? 'N/A'}
-                  </Text>
-                </View>
-
-                <View style={styles.modalInfoRow}>
-                  <Text style={styles.modalInfoLabel}>Địa bàn</Text>
-                  <Text style={styles.modalInfoValue}>
-                    {assignedArea?.ward}, {assignedArea?.district}
-                  </Text>
-                </View>
-
-                <View style={styles.modalInfoRow}>
-                  <Text style={styles.modalInfoLabel}>Tỉnh / Thành phố</Text>
-                  <Text style={styles.modalInfoValue}>
-                    {assignedArea?.province}
-                  </Text>
-                </View>
-
-                <View style={styles.modalInfoRow}>
-                  <Text style={styles.modalInfoLabel}>Số đỉnh ranh giới (GPS)</Text>
-                  <Text style={styles.modalInfoValueBold}>
-                    {boundaryCoordinates.length} mốc tọa độ
-                  </Text>
-                </View>
-
-                {/* Boundary points preview */}
-                {assignedArea?.boundaryPolygon && assignedArea.boundaryPolygon.length > 0 ? (
-                  <View style={styles.polygonBox}>
-                    <Text style={styles.polygonTitle}>Tọa độ đa giác ranh giới tuyến:</Text>
-                    {assignedArea.boundaryPolygon.slice(0, 5).map((point, idx) => (
-                      <Text key={idx} style={styles.polygonPointText}>
-                        • Mốc {idx + 1}: ({point[0].toFixed(5)}, {point[1].toFixed(5)})
-                      </Text>
-                    ))}
-                    {assignedArea.boundaryPolygon.length > 5 ? (
-                      <Text style={styles.polygonPointMore}>
-                        ... và {assignedArea.boundaryPolygon.length - 5} mốc tọa độ khác
-                      </Text>
-                    ) : null}
-                  </View>
-                ) : null}
-              </ScrollView>
-
-              <View style={styles.modalActionsRow}>
-                <Pressable
-                  style={styles.modalFocusBtn}
-                  onPress={() => {
-                    handleFocusZone();
-                    setIsZoneDetailsVisible(false);
-                  }}
-                >
-                  <Ionicons name="scan-outline" size={16} color="#FFFFFF" />
-                  <Text style={styles.modalFocusBtnText}>Căn bản đồ vào tuyến</Text>
-                </Pressable>
-                <Pressable
-                  style={styles.modalDismissBtn}
-                  onPress={() => setIsZoneDetailsVisible(false)}
-                >
-                  <Text style={styles.modalDismissBtnText}>Đóng</Text>
-                </Pressable>
-              </View>
-            </View>
-          </View>
-        </Modal>
       </ScrollView>
     </View>
   );
@@ -3093,114 +2450,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
   },
-  overviewCard: {
-    padding: theme.spacing.lg,
-    backgroundColor: theme.colors.surface,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radius.xl,
-    borderWidth: 1,
-    ...theme.shadow.md,
-  },
-  overviewHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: theme.spacing.md,
-  },
-  overviewHeaderLeft: {
-    flex: 1,
-    minWidth: 0,
-  },
-  overviewEyebrow: {
-    color: theme.colors.primary,
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.8,
-  },
-  overviewTitle: {
-    color: theme.colors.textPrimary,
-    fontSize: 16,
-    fontWeight: '900',
-    marginTop: 2,
-  },
-  overviewProgressBadge: {
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: 4,
-    borderRadius: theme.radius.pill,
-    backgroundColor: theme.colors.successSoft,
-  },
-  overviewProgressText: {
-    color: theme.colors.success,
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  progressBarBg: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: theme.colors.border,
-    overflow: 'hidden',
-    marginBottom: theme.spacing.lg,
-  },
-  progressBarFill: {
-    height: '100%',
-    borderRadius: 3,
-    backgroundColor: theme.colors.success,
-  },
-  overviewStatsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingTop: theme.spacing.xs,
-  },
-  overviewStatItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  overviewStatLabel: {
-    color: theme.colors.textMuted,
-    fontSize: 10,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-  },
-  overviewStatValue: {
-    color: theme.colors.textPrimary,
-    fontSize: 14,
-    fontWeight: '900',
-    marginTop: 4,
-  },
-  overviewStatDivider: {
-    width: 1,
-    height: 24,
-    backgroundColor: theme.colors.border,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    gap: theme.spacing.sm,
-  },
-  summaryItem: {
-    flex: 1,
-    minHeight: 64,
-    borderRadius: theme.radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...theme.shadow.sm,
-  },
-  summaryValue: {
-    color: theme.colors.primary,
-    fontSize: 18,
-    fontWeight: '900',
-  },
-  summaryLabel: {
-    color: theme.colors.textMuted,
-    fontSize: 10,
-    fontWeight: '700',
-    marginTop: 2,
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-  },
   mapCard: {
     gap: theme.spacing.md,
     padding: theme.spacing.md,
@@ -3215,6 +2464,11 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: theme.spacing.sm,
+  },
+  mapTitleBlock: {
+    flex: 1,
+    minWidth: 0,
+    paddingRight: theme.spacing.xs,
   },
   mapTitle: {
     color: theme.colors.textPrimary,
@@ -3297,7 +2551,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   mapSurface: {
-    height: 320,
+    height: 380,
     borderRadius: theme.radius.xl,
     borderWidth: 1,
     borderColor: theme.colors.border,
@@ -3350,126 +2604,191 @@ const styles = StyleSheet.create({
   },
   mapStatusChipRow: {
     position: 'absolute',
-    left: theme.spacing.xs,
-    right: theme.spacing.xs,
-    top: theme.spacing.xs,
+    top: 8,
+    right: 8,
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: theme.spacing.xxs,
+    alignItems: 'center',
+    gap: 6,
     zIndex: 20,
   },
   mapStatusChip: {
     minHeight: 26,
     borderRadius: theme.radius.pill,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    paddingHorizontal: theme.spacing.sm,
+    borderColor: 'rgba(203, 213, 225, 0.8)',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    ...theme.shadow.sm,
   },
   mapStatusChipText: {
     color: theme.colors.textSecondary,
     fontSize: 10,
     fontWeight: '800',
   },
-  nextStopSheet: {
-    position: 'absolute',
-    left: theme.spacing.xs,
-    right: theme.spacing.xs,
-    bottom: theme.spacing.xs,
-    borderRadius: theme.radius.xl,
+  activeStopCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+    borderColor: '#E2E8F0',
     padding: theme.spacing.md,
-    gap: theme.spacing.sm,
-    zIndex: 25,
-    ...theme.shadow.lg,
+    gap: 8,
+    marginTop: theme.spacing.xs,
+    ...theme.shadow.sm,
   },
-  nextStopHeader: {
+  activeStopTopRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
     gap: theme.spacing.sm,
   },
-  nextStopTextBlock: {
+  activeStopTitleCol: {
     flex: 1,
     minWidth: 0,
-  },
-  nextStopEyebrow: {
-    color: theme.colors.primary,
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  nextStopTitle: {
-    color: theme.colors.textPrimary,
-    fontSize: 15,
-    fontWeight: '900',
-    marginTop: 1,
-  },
-  nextStopNumber: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  nextStopNumberText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '900',
-  },
-  nextStopAddress: {
-    color: theme.colors.textSecondary,
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 16,
-  },
-  nextStopBadgeRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: theme.spacing.xs,
-  },
-  nextStopActionRow: {
-    flexDirection: 'row',
-    gap: theme.spacing.sm,
-    marginTop: 2,
-  },
-  nextStopSecondaryAction: {
-    minHeight: 38,
-    borderRadius: theme.radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.background,
-    paddingHorizontal: theme.spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
     gap: 4,
   },
-  nextStopSecondaryText: {
-    color: theme.colors.textSecondary,
-    fontSize: 12,
-    fontWeight: '700',
+  activeStopTagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
   },
-  nextStopPrimaryAction: {
+  activeStopSeqBadge: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: theme.radius.xs,
+  },
+  activeStopSeqText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  activeStopTypeBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: theme.radius.xs,
+  },
+  activeStopTypePickup: {
+    backgroundColor: '#FEF3C7',
+  },
+  activeStopTypeDelivery: {
+    backgroundColor: '#DCFCE7',
+  },
+  activeStopTypeBadgeText: {
+    fontSize: 10.5,
+    fontWeight: '800',
+  },
+  activeStopTypePickupText: {
+    color: '#B45309',
+  },
+  activeStopTypeDeliveryText: {
+    color: '#15803D',
+  },
+  activeStopShipmentCode: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#64748B',
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: theme.radius.xs,
+  },
+  activeStopName: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
+  },
+  activeStopAddressRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 5,
+  },
+  activeStopAddressIcon: {
+    marginTop: 2,
+  },
+  activeStopAddressText: {
+    flex: 1,
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    lineHeight: 17,
+  },
+  activeStopMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingTop: 2,
+  },
+  activeStopMetaPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  activeStopMetaPillText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: theme.colors.primary,
+  },
+  activeStopCodPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FEF2F2',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  activeStopCodPillText: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: '#DC2626',
+  },
+  activeStopActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 6,
+  },
+  activeStopBtn: {
     flex: 1,
     minHeight: 38,
-    borderRadius: theme.radius.lg,
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.radius.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 5,
+    paddingHorizontal: 6,
   },
-  nextStopPrimaryText: {
-    color: '#FFFFFF',
+  activeStopBtnSecondary: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  activeStopBtnSecondaryText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
+  },
+  activeStopBtnPrimary: {
+    flex: 1.25,
+    backgroundColor: theme.colors.primary,
+    ...theme.shadow.sm,
+  },
+  activeStopBtnPrimaryText: {
     fontSize: 12,
     fontWeight: '900',
+    color: '#FFFFFF',
   },
   mapEmptyOverlay: {
     position: 'absolute',
@@ -3622,199 +2941,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '900',
   },
-  clusterCard: {
-    gap: theme.spacing.md,
-    borderRadius: theme.radius.xl,
-    backgroundColor: theme.colors.surface,
-    borderColor: theme.colors.border,
-    borderWidth: 1,
-    ...theme.shadow.md,
-  },
-  clusterHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: theme.spacing.sm,
-  },
-  clusterTitleBlock: {
-    flex: 1,
-    minWidth: 0,
-  },
-  clusterEyebrow: {
-    color: '#0F766E',
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  clusterTitle: {
-    color: theme.colors.textPrimary,
-    fontSize: 16,
-    fontWeight: '900',
-    marginTop: 2,
-  },
-  radiusControl: {
-    minHeight: 38,
-    borderRadius: theme.radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.background,
-    padding: 3,
-    flexDirection: 'row',
-    gap: 4,
-  },
-  radiusButton: {
-    flex: 1,
-    minHeight: 30,
-    borderRadius: theme.radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  radiusButtonActive: {
-    backgroundColor: '#0F766E',
-    ...theme.shadow.sm,
-  },
-  radiusButtonText: {
-    color: theme.colors.textMuted,
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  radiusButtonTextActive: {
-    color: '#FFFFFF',
-  },
-  clusterEmptyState: {
-    borderRadius: theme.radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.background,
-    padding: theme.spacing.lg,
-    alignItems: 'center',
-  },
-  clusterEmptyTitle: {
-    color: theme.colors.textPrimary,
-    fontSize: 14,
-    fontWeight: '900',
-    marginTop: theme.spacing.xs,
-  },
-  clusterEmptyText: {
-    color: theme.colors.textMuted,
-    fontSize: 12,
-    lineHeight: 17,
-    textAlign: 'center',
-    marginTop: 4,
-  },
-  clusterList: {
-    gap: theme.spacing.sm,
-  },
-  clusterItem: {
-    borderRadius: theme.radius.lg,
-    borderWidth: 1,
-    borderColor: '#CCFBF1',
-    backgroundColor: '#F0FDFA',
-    padding: theme.spacing.md,
-    gap: theme.spacing.sm,
-    ...theme.shadow.sm,
-  },
-  clusterItemActive: {
-    borderColor: '#0F766E',
-    backgroundColor: '#ECFDF5',
-  },
-  clusterItemTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.sm,
-  },
-  clusterCountBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#0F766E',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  clusterCountText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '900',
-  },
-  clusterItemTextBlock: {
-    flex: 1,
-    minWidth: 0,
-  },
-  clusterItemTitle: {
-    color: theme.colors.textPrimary,
-    fontSize: 14,
-    fontWeight: '900',
-  },
-  clusterItemSubtitle: {
-    color: theme.colors.textSecondary,
-    fontSize: 12,
-    lineHeight: 16,
-    marginTop: 1,
-  },
-  clusterMetaRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: theme.spacing.xs,
-  },
-  clusterMetaPill: {
-    minHeight: 26,
-    borderRadius: theme.radius.pill,
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
-    backgroundColor: theme.colors.surface,
-    paddingHorizontal: theme.spacing.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  clusterMetaText: {
-    color: theme.colors.textSecondary,
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  clusterDetailList: {
-    gap: theme.spacing.xs,
-    marginTop: theme.spacing.xs,
-    paddingTop: theme.spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: '#CCFBF1',
-  },
-  clusterPointRow: {
-    minHeight: 46,
-    borderRadius: theme.radius.md,
-    backgroundColor: theme.colors.surface,
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.sm,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  clusterPointRowActive: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#BFDBFE',
-  },
-  clusterPointDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  clusterPointTextBlock: {
-    flex: 1,
-    minWidth: 0,
-  },
-  clusterPointTitle: {
-    color: theme.colors.textPrimary,
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  clusterPointSubtitle: {
-    color: theme.colors.textMuted,
-    fontSize: 11,
-    marginTop: 1,
-  },
   routeCard: {
     gap: theme.spacing.md,
     borderRadius: theme.radius.xl,
@@ -3958,16 +3084,64 @@ const styles = StyleSheet.create({
   routeStepTextBlock: {
     flex: 1,
     minWidth: 0,
+    gap: 2,
+  },
+  routeStepHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 6,
   },
   routeStepTitle: {
+    flex: 1,
     color: theme.colors.textPrimary,
     fontSize: 13,
-    fontWeight: '900',
+    fontWeight: '800',
+  },
+  routeStepCode: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#64748B',
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: theme.radius.xs,
   },
   routeStepSubtitle: {
     color: theme.colors.textSecondary,
     fontSize: 12,
-    marginTop: 1,
+  },
+  routeStepTagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 2,
+  },
+  routeStepTypeBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: theme.radius.xs,
+  },
+  routeStepTypePickup: {
+    backgroundColor: '#FEF3C7',
+  },
+  routeStepTypeDelivery: {
+    backgroundColor: '#DCFCE7',
+  },
+  routeStepTypeBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  routeStepTypePickupText: {
+    color: '#B45309',
+  },
+  routeStepTypeDeliveryText: {
+    color: '#15803D',
+  },
+  routeStepCodText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#DC2626',
   },
   routeStepMeta: {
     color: theme.colors.textMuted,
@@ -3975,7 +3149,38 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   routeStepActions: {
+    alignItems: 'flex-end',
     gap: 4,
+  },
+  routeStepNavBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 3,
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: theme.radius.sm,
+  },
+  routeStepNavBtnText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  routeStepMoveCol: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  routeStepMoveBtn: {
+    width: 24,
+    height: 22,
+    borderRadius: theme.radius.xs,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   routeStepActionButton: {
     width: 30,
@@ -4036,607 +3241,109 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     marginTop: theme.spacing.sm,
   },
-  detailCard: {
-    gap: theme.spacing.sm,
-    borderRadius: theme.radius.xl,
-    backgroundColor: theme.colors.surface,
-    borderColor: theme.colors.border,
-    borderWidth: 1,
-    ...theme.shadow.lg,
-  },
-  detailTopRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: theme.spacing.sm,
-  },
-  detailTitleBlock: {
-    flex: 1,
-    minWidth: 0,
-  },
-  detailEyebrow: {
-    color: theme.colors.textMuted,
-    fontSize: 11,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-  },
-  detailTitle: {
-    color: theme.colors.primary,
-    fontSize: 16,
-    fontWeight: '900',
-    marginTop: 1,
-  },
-  detailName: {
-    color: theme.colors.textPrimary,
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  detailAddress: {
-    color: theme.colors.textSecondary,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  detailMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.xs,
-  },
-  detailMetaText: {
-    color: theme.colors.textSecondary,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  actionRow: {
-    flexDirection: 'row',
-    gap: theme.spacing.sm,
-    marginTop: theme.spacing.xs,
-  },
-  primaryAction: {
-    flex: 1,
-    minHeight: 40,
-    borderRadius: theme.radius.lg,
-    backgroundColor: theme.colors.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: theme.spacing.xs,
-    ...theme.shadow.sm,
-  },
-  secondaryAction: {
-    flex: 1,
-    minHeight: 40,
-    borderRadius: theme.radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.background,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: theme.spacing.xs,
+  pointRowPressed: {
+    opacity: 0.85,
   },
   actionPressed: {
     opacity: 0.82,
   },
   actionDisabled: {
-    opacity: 0.5,
+    opacity: 0.45,
   },
-  primaryActionText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '900',
-  },
-  secondaryActionText: {
-    color: theme.colors.primary,
-    fontSize: 12,
-    fontWeight: '900',
-  },
-  todayListCard: {
-    gap: theme.spacing.md,
-    borderRadius: theme.radius.xl,
-    backgroundColor: theme.colors.surface,
-    borderColor: theme.colors.border,
-    borderWidth: 1,
-    ...theme.shadow.md,
-  },
-  todayListHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: theme.spacing.sm,
-  },
-  todayListEyebrow: {
-    color: theme.colors.primary,
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  todayListTitle: {
-    color: theme.colors.textPrimary,
-    fontSize: 16,
-    fontWeight: '900',
-    marginTop: 2,
-  },
-  pointList: {
-    gap: theme.spacing.sm,
-  },
-  pointRow: {
-    minHeight: 64,
-    borderRadius: theme.radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
+  tspQuickBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.sm,
+    justifyContent: 'space-between',
+    backgroundColor: '#F0F9FF',
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    borderRadius: theme.radius.lg,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 10,
+    gap: theme.spacing.xs,
+    marginBottom: theme.spacing.xs,
     ...theme.shadow.sm,
   },
-  pointRowActive: {
-    borderColor: theme.colors.primary,
-    backgroundColor: '#EFF6FF',
+  tspQuickInfo: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    minWidth: 0,
   },
-  pointRowPressed: {
-    opacity: 0.85,
-  },
-  pointNumber: {
+  tspIconCircle: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    borderWidth: 2,
+    backgroundColor: '#E0F2FE',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pointNumberText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '900',
-  },
-  pointTextBlock: {
+  tspTextCol: {
     flex: 1,
     minWidth: 0,
   },
-  pointTitle: {
-    color: theme.colors.textPrimary,
-    fontSize: 13,
-    fontWeight: '900',
-  },
-  pointSubtitle: {
-    color: theme.colors.textMuted,
-    fontSize: 12,
-    marginTop: 1,
-  },
-  pointAddress: {
-    color: theme.colors.textSecondary,
-    fontSize: 11,
-    marginTop: 2,
-  },
-  pointRightBlock: {
-    alignItems: 'flex-end',
-    gap: theme.spacing.xs,
-  },
-  pointDirectionButton: {
-    minHeight: 28,
-    borderRadius: theme.radius.pill,
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: theme.spacing.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  pointDirectionText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '900',
-  },
-  evaluationBox: {
-    padding: theme.spacing.md,
-    borderRadius: theme.radius.lg,
-    backgroundColor: theme.colors.background,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    gap: theme.spacing.xxs,
-  },
-  evaluationHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.xs,
-    marginBottom: theme.spacing.sm,
-  },
-  evaluationTitle: {
-    color: theme.colors.textPrimary,
-    fontSize: 13,
-    fontWeight: '900',
-  },
-  evalCompareHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingBottom: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
-    marginBottom: theme.spacing.xs,
-  },
-  evalCompareHeaderCell: {
-    flex: 1.2,
-  },
-  evalCompareHeaderLabel: {
-    flex: 1,
-    fontSize: 9,
-    fontWeight: '800',
-    color: theme.colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    textAlign: 'right',
-  },
-  evalCompareRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  evalCompareIconCell: {
-    flex: 1.2,
+  tspTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    flexWrap: 'wrap',
   },
-  evalDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  evalCompareRowLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: theme.colors.textSecondary,
-  },
-  evalCompareRowValue: {
-    flex: 1,
-    fontSize: 12,
-    fontWeight: '700',
-    color: theme.colors.textPrimary,
-    textAlign: 'right',
-  },
-  evalBarTrack: {
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: theme.colors.border,
-    marginTop: 3,
-    marginBottom: 2,
-    overflow: 'hidden',
-  },
-  evalBarFill: {
-    height: '100%',
-    borderRadius: 2.5,
-  },
-  evalBarDefault: {
-    backgroundColor: '#94A3B8',
-    opacity: 0.5,
-  },
-  evalBarOptimized: {
-    backgroundColor: theme.colors.success,
-  },
-  evalSavingsBox: {
-    marginTop: theme.spacing.sm,
-    padding: theme.spacing.sm,
-    borderRadius: theme.radius.md,
-    backgroundColor: theme.colors.successSoft,
-    borderWidth: 1,
-    borderColor: '#BBF7D0',
-  },
-  evalSavingsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: theme.spacing.xs,
-  },
-  evalSavingsTitle: {
-    fontSize: 12,
-    fontWeight: '900',
-    color: theme.colors.success,
-  },
-  evalSavingsMetrics: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-  },
-  evalSavingsMetric: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  evalSavingsNumber: {
-    fontSize: 14,
-    fontWeight: '900',
-    color: theme.colors.success,
-  },
-  evalSavingsPercent: {
-    fontSize: 16,
-    fontWeight: '900',
-    color: theme.colors.primary,
-  },
-  evalSavingsUnit: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: theme.colors.textMuted,
-    marginTop: 2,
-  },
-  evalSavingsDivider: {
-    width: 1,
-    height: 28,
-    backgroundColor: '#BBF7D0',
-  },
-  demoToolbar: {
-    marginBottom: theme.spacing.sm,
-    padding: theme.spacing.sm,
-    borderRadius: theme.radius.lg,
-    backgroundColor: '#F0F9FF',
-    borderColor: '#BAE6FD',
-    borderWidth: 1,
-    gap: theme.spacing.xs,
-  },
-  demoToolbarHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  demoToolbarTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  demoToolbarTitle: {
+  tspQuickTitle: {
     fontSize: 13,
     fontWeight: '800',
     color: '#0369A1',
   },
-  demoActiveBadge: {
+  tspSavingsBadge: {
     backgroundColor: '#0284C7',
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: theme.radius.sm,
+    borderRadius: theme.radius.xs,
   },
-  demoActiveBadgeText: {
+  tspSavingsBadgeText: {
     color: '#FFFFFF',
     fontSize: 10,
     fontWeight: '900',
   },
-  demoButtonGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.xs,
-    marginTop: 2,
-  },
-  demoOptimizeBtn: {
-    flex: 1,
-    minHeight: 38,
-    borderRadius: theme.radius.md,
-    backgroundColor: '#0284C7',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingHorizontal: theme.spacing.sm,
-  },
-  demoOptimizeBtnActive: {
-    backgroundColor: '#0369A1',
-  },
-  demoOptimizeBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  demoResetBtn: {
-    minHeight: 38,
-    borderRadius: theme.radius.md,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    paddingHorizontal: theme.spacing.sm,
-  },
-  demoResetBtnText: {
-    color: '#475569',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  demoStatsBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    borderRadius: theme.radius.md,
-    padding: theme.spacing.xs,
-    borderWidth: 1,
-    borderColor: '#E0F2FE',
-    marginTop: 4,
-  },
-  demoStatCol: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  demoStatLabel: {
-    fontSize: 10,
-    color: '#64748B',
-    fontWeight: '600',
-  },
-  demoStatValue: {
-    fontSize: 13,
-    fontWeight: '900',
-    color: '#0F172A',
+  tspQuickSubtitle: {
+    fontSize: 11,
+    color: '#0284C7',
     marginTop: 1,
   },
-  demoStatDivider: {
-    width: 1,
-    height: 24,
-    backgroundColor: '#E2E8F0',
-  },
-  stepsCarouselContainer: {
-    paddingTop: theme.spacing.sm,
-    gap: theme.spacing.xs,
-  },
-  stepsCarouselHeader: {
+  tspActionGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 6,
   },
-  stepsCarouselTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: theme.colors.textPrimary,
-  },
-  stepsCarouselSubtitle: {
-    fontSize: 11,
-    color: theme.colors.textMuted,
-  },
-  stepsCarouselScroll: {
-    gap: theme.spacing.xs,
-    paddingVertical: 4,
-  },
-  stepCard: {
-    width: 180,
-    backgroundColor: '#FFFFFF',
+  tspActionBtn: {
+    minHeight: 34,
     borderRadius: theme.radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    padding: theme.spacing.sm,
-    gap: 4,
-  },
-  stepCardSelected: {
-    borderColor: '#0284C7',
-    backgroundColor: '#F0F9FF',
-    borderWidth: 1.5,
-  },
-  stepCardTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  stepBadgeCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepBadgeCircleText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '900',
-  },
-  stepDistanceText: {
-    fontSize: 11,
-    color: '#64748B',
-    fontWeight: '700',
-  },
-  stepReceiverText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: theme.colors.textPrimary,
-  },
-  stepAddressText: {
-    fontSize: 11,
-    color: theme.colors.textSecondary,
-  },
-  stepNavigateBtn: {
-    marginTop: 4,
-    minHeight: 28,
-    borderRadius: theme.radius.sm,
     backgroundColor: '#0284C7',
-    flexDirection: 'row',
+    paddingHorizontal: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
-  },
-  stepNavigateBtnText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '800',
-  },
-
-  // ZONE / GEOFENCE CONTROL STYLES
-  zoneControlCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: theme.radius.md,
-    padding: theme.spacing.sm,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginBottom: theme.spacing.xs,
     ...theme.shadow.sm,
   },
-  zoneControlHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: theme.spacing.sm,
+  tspActionBtnActive: {
+    backgroundColor: '#0369A1',
   },
-  zoneBadgeShell: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.xs,
-    flex: 1,
-    minWidth: 0,
-  },
-  zoneColorDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  zoneColorDotLarge: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-  },
-  zoneTitleWrap: {
-    flex: 1,
-    minWidth: 0,
-  },
-  zoneTitleText: {
-    fontSize: 13,
+  tspActionBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
     fontWeight: '800',
-    color: theme.colors.textPrimary,
   },
-  zoneSubtitleText: {
-    fontSize: 11,
-    color: theme.colors.textSecondary,
-    marginTop: 1,
-  },
-  zoneActionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  zoneActionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: theme.radius.sm,
-    backgroundColor: '#F1F5F9',
+  tspResetBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: theme.radius.md,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  zoneActionBtnActive: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
-  },
-  zoneActionBtnText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: theme.colors.textPrimary,
-  },
-  zoneActionBtnTextActive: {
-    color: '#FFFFFF',
-  },
-  zoneActionBtnIconOnly: {
-    padding: 5,
-    borderRadius: theme.radius.sm,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
+
+  // ZONE CENTER BADGE & FALLBACK STYLES
   zoneCenterBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -4683,152 +3390,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 9,
     fontWeight: '800',
-  },
-
-  // MODAL STYLES
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.65)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: theme.spacing.lg,
-  },
-  modalContent: {
-    width: '100%',
-    maxWidth: 420,
-    backgroundColor: '#FFFFFF',
-    borderRadius: theme.radius.lg,
-    padding: theme.spacing.lg,
-    ...theme.shadow.lg,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingBottom: theme.spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  modalHeaderTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flex: 1,
-    minWidth: 0,
-  },
-  modalTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: theme.colors.textPrimary,
-  },
-  modalCloseBtn: {
-    padding: 4,
-  },
-  modalBody: {
-    marginTop: theme.spacing.md,
-    maxHeight: 320,
-  },
-  modalInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F8FAFC',
-  },
-  modalInfoLabel: {
-    fontSize: 13,
-    color: theme.colors.textSecondary,
-  },
-  modalInfoValue: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: theme.colors.textPrimary,
-  },
-  modalInfoValueBold: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: theme.colors.textPrimary,
-  },
-  modalStatusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: theme.radius.pill,
-    backgroundColor: '#DCFCE7',
-  },
-  modalStatusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#16A34A',
-  },
-  modalStatusText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#15803D',
-  },
-  polygonBox: {
-    marginTop: theme.spacing.md,
-    padding: theme.spacing.sm,
-    backgroundColor: '#F8FAFC',
-    borderRadius: theme.radius.sm,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  polygonTitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#475569',
-    marginBottom: 4,
-  },
-  polygonPointText: {
-    fontSize: 11,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-    color: '#334155',
-    lineHeight: 18,
-  },
-  polygonPointMore: {
-    fontSize: 10,
-    fontStyle: 'italic',
-    color: '#64748B',
-    marginTop: 3,
-  },
-  modalActionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.sm,
-    marginTop: theme.spacing.lg,
-  },
-  modalFocusBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    height: 40,
-    borderRadius: theme.radius.md,
-    backgroundColor: theme.colors.primary,
-  },
-  modalFocusBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  modalDismissBtn: {
-    paddingHorizontal: 16,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: theme.radius.md,
-    backgroundColor: '#F1F5F9',
-  },
-  modalDismissBtnText: {
-    color: '#475569',
-    fontSize: 13,
-    fontWeight: '700',
   },
 });
 
