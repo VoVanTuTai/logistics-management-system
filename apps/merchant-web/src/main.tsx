@@ -3981,33 +3981,82 @@ function MerchantApp(): React.JSX.Element {
                       <th>Phí</th>
                       <th>Dịch vụ</th>
                       <th>Ngày tạo</th>
-                      <th>Thao tác</th>
+                      <th className="shipment-actions-th">Thao tác</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {visibleRows.map((row) => <tr key={row.shipment.id}>
-                      <td className="shipment-code-cell">{row.shipment.code}</td>
-                      <td>
-                        <div className="shipment-recipient">
-                          <strong>{row.receiverName}</strong>
-                        </div>
-                      </td>
-                      <td>{row.receiverPhone}</td>
-                      <td><span className={resolveShipmentStatusClass(row.shipment)}>{resolveShipmentStatusLabel(row.shipment)}</span></td>
-                      <td>{formatCurrency(row.codAmount)}</td>
-                      <td>{formatCurrency(row.feeEstimate)}</td>
-                      <td><span className="shipment-service-chip">{row.serviceType}</span></td>
-                      <td>{formatDate(row.shipment.createdAt)}</td>
-                      <td>
-                        <div className="shipment-actions">
-                          <button className="btn btn-ghost shipment-action-btn" onClick={() => { void openShipmentDetail(row.shipment.code); }}>Xem</button>
-                          <button className="btn btn-secondary shipment-action-btn" onClick={() => { void openShipmentDetail(row.shipment.code); }}>Cập nhật</button>
-                          <button className="btn btn-danger shipment-action-btn" onClick={() => { const reason = window.prompt('Lý do hủy đơn', '') ?? ''; void cancelShipment(row.shipment.code, reason); }}>Hủy</button>
-                          <button className="btn btn-secondary shipment-action-btn" disabled={pickupByShipmentCode.has(normalizeCode(row.shipment.code))} onClick={() => { const normalizedShipmentCode = normalizeCode(row.shipment.code); if (pickupByShipmentCode.has(normalizedShipmentCode)) return; void createPickupForShipment(row.shipment.code, `manual pickup ${row.shipment.code}`).then((createdPickup) => { pushNotification('success', 'Đã tạo pickup', `Pickup ${createdPickup.pickupCode} cho ${row.shipment.code}`); }).catch((error) => { pushNotification('error', 'Không tạo được pickup', extractErrorMessage(error)); }); }}>{pickupByShipmentCode.has(normalizeCode(row.shipment.code)) ? 'Đã tạo pickup' : 'Tạo pickup'}</button>
-                          <button className="btn btn-ghost shipment-action-btn" onClick={() => printShipment(row)}>In</button>
-                        </div>
-                      </td>
-                    </tr>)}
+                    {visibleRows.map((row) => {
+                      const normalizedShipmentCode = normalizeCode(row.shipment.code);
+                      const hasPickup = pickupByShipmentCode.has(normalizedShipmentCode);
+                      return (
+                        <tr key={row.shipment.id}>
+                          <td className="shipment-code-cell">{row.shipment.code}</td>
+                          <td>
+                            <div className="shipment-recipient">
+                              <strong>{row.receiverName}</strong>
+                            </div>
+                          </td>
+                          <td>{row.receiverPhone}</td>
+                          <td><span className={resolveShipmentStatusClass(row.shipment)}>{resolveShipmentStatusLabel(row.shipment)}</span></td>
+                          <td>{formatCurrency(row.codAmount)}</td>
+                          <td>{formatCurrency(row.feeEstimate)}</td>
+                          <td><span className="shipment-service-chip">{row.serviceType}</span></td>
+                          <td>{formatDate(row.shipment.createdAt)}</td>
+                          <td>
+                            <div className="shipment-actions">
+                              <button
+                                type="button"
+                                className="btn shipment-action-btn shipment-action-btn--primary"
+                                title="Xem chi tiết & cập nhật đơn hàng"
+                                onClick={() => { void openShipmentDetail(row.shipment.code); }}
+                              >
+                                <span className="material-symbols-outlined shipment-action-icon">visibility</span>
+                                <span>Chi tiết</span>
+                              </button>
+                              <button
+                                type="button"
+                                className="btn shipment-action-btn shipment-action-btn--icon"
+                                title="In vận đơn"
+                                onClick={() => printShipment(row)}
+                              >
+                                <span className="material-symbols-outlined shipment-action-icon">print</span>
+                              </button>
+                              <button
+                                type="button"
+                                className={`btn shipment-action-btn shipment-action-btn--icon ${hasPickup ? 'shipment-action-btn--pickup-done' : 'shipment-action-btn--pickup'}`}
+                                title={hasPickup ? 'Đã tạo yêu cầu lấy hàng' : 'Tạo yêu cầu lấy hàng (Pickup)'}
+                                disabled={hasPickup}
+                                onClick={() => {
+                                  if (hasPickup) return;
+                                  void createPickupForShipment(row.shipment.code, `manual pickup ${row.shipment.code}`)
+                                    .then((createdPickup) => {
+                                      pushNotification('success', 'Đã tạo pickup', `Pickup ${createdPickup.pickupCode} cho ${row.shipment.code}`);
+                                    })
+                                    .catch((error) => {
+                                      pushNotification('error', 'Không tạo được pickup', extractErrorMessage(error));
+                                    });
+                                }}
+                              >
+                                <span className="material-symbols-outlined shipment-action-icon">
+                                  {hasPickup ? 'check_circle' : 'local_shipping'}
+                                </span>
+                              </button>
+                              <button
+                                type="button"
+                                className="btn shipment-action-btn shipment-action-btn--icon shipment-action-btn--cancel"
+                                title="Hủy đơn hàng"
+                                onClick={() => {
+                                  const reason = window.prompt('Lý do hủy đơn', '') ?? '';
+                                  void cancelShipment(row.shipment.code, reason);
+                                }}
+                              >
+                                <span className="material-symbols-outlined shipment-action-icon">cancel</span>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
