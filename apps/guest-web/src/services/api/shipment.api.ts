@@ -51,6 +51,7 @@ export interface CreateShipmentMetadata {
   shippingFee?: number;
   codAmount?: number;
   notes?: string;
+  deliveryNote?: string;
 }
 
 export interface ShipmentResponse {
@@ -78,6 +79,8 @@ export interface ShipmentFilters {
   createdTo?: string;
   limit?: number;
   offset?: number;
+  userId?: string | null;
+  phone?: string | null;
 }
 
 export const shipmentApi = {
@@ -103,6 +106,7 @@ export const shipmentApi = {
     if (filters.createdTo) params.append('createdTo', filters.createdTo);
     if (filters.limit) params.append('limit', String(filters.limit));
     if (filters.offset) params.append('offset', String(filters.offset));
+    if (filters.userId) params.append('userId', filters.userId);
 
     const queryString = params.toString();
     const url = `/customer/shipment/shipments/sent${queryString ? `?${queryString}` : ''}`;
@@ -118,5 +122,44 @@ export const shipmentApi = {
     } catch {
       return [];
     }
+  },
+
+  getReceivedShipments: async (
+    accessToken: string,
+    filters: ShipmentFilters = {},
+  ): Promise<ShipmentResponse[]> => {
+    const params = new URLSearchParams();
+    if (filters.q) params.append('q', filters.q);
+    if (filters.status && filters.status !== 'ALL') params.append('status', filters.status);
+    if (filters.createdFrom) params.append('createdFrom', filters.createdFrom);
+    if (filters.createdTo) params.append('createdTo', filters.createdTo);
+    if (filters.limit) params.append('limit', String(filters.limit));
+    if (filters.offset) params.append('offset', String(filters.offset));
+    if (filters.phone) params.append('phone', filters.phone);
+
+    const queryString = params.toString();
+    const url = `/customer/shipment/shipments/received${queryString ? `?${queryString}` : ''}`;
+
+    try {
+      const res = await apiClient<any>(url, {
+        method: 'GET',
+        accessToken,
+      });
+      if (Array.isArray(res)) return res;
+      if (res && Array.isArray(res.items)) return res.items;
+      return [];
+    } catch {
+      return [];
+    }
+  },
+
+  getShipmentByCode: async (
+    accessToken: string,
+    code: string,
+  ): Promise<ShipmentResponse> => {
+    return apiClient<ShipmentResponse>(`/customer/shipment/shipments/${encodeURIComponent(code)}`, {
+      method: 'GET',
+      accessToken,
+    });
   },
 };
