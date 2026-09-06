@@ -2025,11 +2025,17 @@ tbody tr:hover {
 }
 
 .shipment-table td {
-  padding: 16px;
+  padding: 12px 16px;
   border-bottom: 1px solid #f0f2f5;
   font-size: 14px;
   color: var(--stitch-on-surface);
   vertical-align: middle;
+}
+
+.shipment-actions-th {
+  text-align: right !important;
+  min-width: 195px;
+  width: 200px;
 }
 
 .shipment-table tr:last-child td {
@@ -2065,13 +2071,89 @@ tbody tr:hover {
 
 .shipment-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 6px;
+  white-space: nowrap;
 }
 
 .shipment-action-btn {
-  min-width: 74px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  border: 1px solid var(--stitch-outline-variant, #e0e4eb);
+  background: #ffffff;
+  color: var(--stitch-on-surface-variant, #44474f);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  box-shadow: none;
+  transition: all 0.15s ease;
+}
+
+.shipment-action-btn:hover:not(:disabled) {
+  transform: none;
+  background: var(--stitch-surface-container-high, #e8edf5);
+  border-color: var(--stitch-outline, #74777f);
+  color: var(--stitch-on-surface, #1b1b1f);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.06);
+}
+
+.shipment-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.shipment-action-btn--primary {
+  padding: 0 10px;
+  gap: 4px;
+  background: rgba(0, 89, 184, 0.08);
+  border-color: rgba(0, 89, 184, 0.25);
+  color: var(--stitch-primary, #0059b8);
+}
+
+.shipment-action-btn--primary:hover:not(:disabled) {
+  background: var(--stitch-primary, #0059b8);
+  border-color: var(--stitch-primary, #0059b8);
+  color: #ffffff;
+}
+
+.shipment-action-btn--icon {
+  width: 32px;
+  min-width: 32px;
+  max-width: 32px;
+}
+
+.shipment-action-btn--pickup:hover:not(:disabled) {
+  background: rgba(0, 89, 184, 0.08);
+  border-color: var(--stitch-primary, #0059b8);
+  color: var(--stitch-primary, #0059b8);
+}
+
+.shipment-action-btn--pickup-done {
+  background: #e8f7f0;
+  border-color: #bbf0d7;
+  color: #127a56;
+  opacity: 0.9;
+}
+
+.shipment-action-btn--cancel:hover:not(:disabled) {
+  background: #ffebe8;
+  border-color: #fecaca;
+  color: #ba1a1a;
+}
+
+.shipment-action-icon {
+  font-size: 17px !important;
+  line-height: 1 !important;
 }
 
 .shipment-empty {
