@@ -1,4 +1,5 @@
 import { apiClient } from '../client';
+import { normalizeMediaPublicUrl } from '../../utils/trackingUtils';
 
 export interface TimelineEventResponse {
   id: string;
@@ -13,6 +14,9 @@ export interface TimelineEventResponse {
   statusAfterEvent?: string | null;
   occurredAt: string;
   note?: string | null;
+  metadata?: Record<string, any> | null;
+  photoUrl?: string | null;
+  proofImageUrl?: string | null;
 }
 
 export interface TrackingCurrentResponse {
@@ -95,7 +99,7 @@ export const trackingApi = {
     const phoneParam = receiverPhone?.trim() ? `?receiverPhone=${encodeURIComponent(receiverPhone.trim())}` : '';
 
     if (!accessToken) {
-      // Public / Guest tracking endpoint
+      // Public / Guest tracking endpoint (strict security)
       try {
         const publicData = await apiClient<any>(`/public/tracking/public/track/${code}${phoneParam}`, {
           method: 'GET',
@@ -110,16 +114,37 @@ export const trackingApi = {
           // GPS is optional
         }
 
+        const rawTimeline: any[] = Array.isArray(publicData.timeline) ? publicData.timeline : [];
+        const processedTimeline: TimelineEventResponse[] = rawTimeline.map((ev, idx) => {
+          let proof = ev.metadata?.podImageUrl || ev.metadata?.proofImageUrl || ev.metadata?.photoUrl || ev.photoUrl;
+          if (!proof && idx === rawTimeline.length - 1 && publicData.order?.metadata?.podImageUrl) {
+            proof = publicData.order.metadata.podImageUrl;
+          }
+          if (!proof && ev.note) {
+            const match = ev.note.match(/https?:\/\/[^\s"'<>()]+/i);
+            if (match) proof = match[0];
+          }
+          return {
+            ...ev,
+            proofImageUrl: normalizeMediaPublicUrl(proof),
+          };
+        });
+
         return {
           shipmentCode,
           current: publicData.current ?? null,
-          timeline: Array.isArray(publicData.timeline) ? publicData.timeline : [],
+          timeline: processedTimeline,
           order: publicData.order ?? null,
           gpsPosition,
           requiresReceiverPhone: false,
         };
       } catch (err: any) {
-        if (err?.status === 403 || err?.message?.includes('receiver phone') || err?.message?.includes('số điện thoại')) {
+        if (
+          err?.status === 400 ||
+          err?.status === 403 ||
+          err?.message?.includes('receiver phone') ||
+          err?.message?.includes('số điện thoại')
+        ) {
           return {
             shipmentCode,
             current: null,
@@ -132,13 +157,71 @@ export const trackingApi = {
     }
 
     // Logged-in Customer tracking endpoints
-    const [timelineRes, currentRes] = await Promise.allSettled([
+    const [timelineRes, currentRes, shipmentRes] = await Promise.allSettled([
       apiClient<any>(`/customer/tracking/tracking/${code}/timeline`, { method: 'GET', accessToken }),
       apiClient<any>(`/customer/tracking/tracking/${code}/current`, { method: 'GET', accessToken }),
+      apiClient<any>(`/customer/shipment/shipments/${code}`, { method: 'GET', accessToken }),
     ]);
 
-    const timeline = timelineRes.status === 'fulfilled' && Array.isArray(timelineRes.value) ? timelineRes.value : [];
+    const rawTimeline: any[] = timelineRes.status === 'fulfilled' && Array.isArray(timelineRes.value) ? timelineRes.value : [];
     const current = currentRes.status === 'fulfilled' ? currentRes.value : null;
+    const shipmentData = shipmentRes.status === 'fulfilled' ? shipmentRes.value : null;
+
+    let order: PublicOrderView | null = null;
+    if (shipmentData) {
+      const meta = shipmentData.metadata || {};
+      const s = meta.sender || {};
+      const r = meta.receiver || {};
+      const p = meta.package || {};
+      order = {
+        code: shipmentData.code,
+        statusCode: shipmentData.currentStatus,
+        createdAt: shipmentData.createdAt,
+        updatedAt: shipmentData.updatedAt,
+        sender: {
+          name: s.name || null,
+          phone: s.phone || null,
+          address: s.address || null,
+          addressDetail: s.addressDetail || null,
+          ward: s.ward || null,
+          district: s.district || null,
+          province: s.province || null,
+          region: s.region || null,
+          hubCode: s.hubCode || null,
+        },
+        receiver: {
+          name: r.name || null,
+          phone: r.phone || null,
+          address: r.address || null,
+          addressDetail: r.addressDetail || null,
+          ward: r.ward || null,
+          district: r.district || null,
+          province: r.province || null,
+          region: r.region || null,
+          hubCode: r.hubCode || null,
+        },
+        package: {
+          itemType: p.itemName || p.itemType || null,
+          weightKg: Number(p.weightKg) || null,
+          dimensionsCm: {
+            length: Number(p.dimensionsCm?.length) || null,
+            width: Number(p.dimensionsCm?.width) || null,
+            height: Number(p.dimensionsCm?.height) || null,
+          },
+          declaredValue: Number(p.declaredValue) || null,
+        },
+        serviceType: meta.service?.type || meta.serviceType || 'TIÊU CHUẨN',
+        codAmount: Number(meta.codAmount || p.codAmount) || 0,
+        estimatedFee: Number(meta.estimatedFee || meta.shippingFee || meta.service?.fee) || 0,
+        currency: 'VND',
+        deliveryNote: meta.deliveryNote || meta.notes || null,
+        source: 'CUSTOMER_PORTAL',
+        routing: {
+          originHubCode: s.hubCode || null,
+          destinationHubCode: r.hubCode || null,
+        },
+      };
+    }
 
     let gpsPosition: GpsPositionView | null = null;
     try {
@@ -149,11 +232,28 @@ export const trackingApi = {
       // Optional
     }
 
+    const processedTimeline: TimelineEventResponse[] = rawTimeline.map((ev, idx) => {
+      let proof = ev.metadata?.podImageUrl || ev.metadata?.proofImageUrl || ev.metadata?.photoUrl || ev.photoUrl;
+      if (!proof && idx === rawTimeline.length - 1 && shipmentData?.metadata?.podImageUrl) {
+        proof = shipmentData.metadata.podImageUrl;
+      }
+      if (!proof && ev.note) {
+        const match = ev.note.match(/https?:\/\/[^\s"'<>()]+/i);
+        if (match) proof = match[0];
+      }
+      return {
+        ...ev,
+        proofImageUrl: normalizeMediaPublicUrl(proof),
+      };
+    });
+
     return {
       shipmentCode,
       current,
-      timeline,
+      timeline: processedTimeline,
+      order,
       gpsPosition,
+      requiresReceiverPhone: false,
     };
   },
 };

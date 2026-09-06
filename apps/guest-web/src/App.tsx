@@ -46,6 +46,15 @@ import {
   Sparkles,
   Bot,
   UserCheck,
+  Filter,
+  Calendar,
+  Eye,
+  Send,
+  Inbox,
+  ArrowUpRight,
+  ArrowDownLeft,
+  Image as ImageIcon,
+  Lock,
 } from 'lucide-react';
 import qrcode from 'qrcode-generator';
 
@@ -59,6 +68,11 @@ import {
 import { pricingApi, type PricingQuoteResponse } from './services/api/pricing.api';
 import { shipmentApi, type ShipmentResponse } from './services/api/shipment.api';
 import { masterdataApi, type HubRecord } from './services/api/masterdata.api';
+import {
+  normalizeMediaPublicUrl,
+  cleanCustomerNote,
+  formatVnd,
+} from './utils/trackingUtils';
 
 const navItems = [
   { to: '/', icon: Search, label: 'Tra cứu & Cước phí' },
@@ -300,12 +314,14 @@ function GuestNavLink({
 function TrackingPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { code: routeCode } = useParams<{ code?: string }>();
-  const token = useAuthStore((state) => state.token);
+  const { phone, token, user } = useAuthStore();
+  const isLoggedIn = Boolean(token);
   const navigate = useNavigate();
 
   // Search state
   const [trackingCode, setTrackingCode] = useState('');
   const [receiverPhone, setReceiverPhone] = useState('');
+  const [selectedPodImage, setSelectedPodImage] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [searchResult, setSearchResult] = useState<UnifiedTrackingResponse | null>(null);
@@ -333,28 +349,51 @@ function TrackingPage() {
   useEffect(() => {
     masterdataApi.getHubs().then(setHubs).catch(() => {});
     const initialCode = routeCode || searchParams.get('track') || searchParams.get('code');
-    if (initialCode) {
-      setTrackingCode(initialCode.trim().toUpperCase());
-      doSearch(initialCode.trim().toUpperCase());
+    const initialPhone = searchParams.get('phone') || searchParams.get('receiverPhone') || '';
+    if (initialPhone) {
+      setReceiverPhone(initialPhone);
     }
-  }, [routeCode, searchParams]);
+    if (initialCode) {
+      const codeTrimmed = initialCode.trim().toUpperCase();
+      setTrackingCode(codeTrimmed);
+      if (token || initialPhone) {
+        doSearch(codeTrimmed, initialPhone || (token ? (phone || undefined) : undefined));
+      }
+    }
+  }, [routeCode, searchParams, token, phone]);
 
   const doSearch = async (code: string, phoneInput?: string) => {
     if (!code) return;
+    const phoneToUse = (phoneInput !== undefined ? phoneInput : receiverPhone).trim();
+
+    // Security check: Guest users must supply receiver phone
+    if (!token && !phoneToUse) {
+      setSearchError('Theo chính sách bảo mật bưu gửi, quý khách chưa đăng nhập vui lòng nhập cả mã vận đơn và số điện thoại người nhận.');
+      return;
+    }
+
     setIsSearching(true);
     setSearchError(null);
 
     try {
-      const data = await trackingApi.getTracking(code, token, phoneInput || receiverPhone);
+      const data = await trackingApi.getTracking(
+        code,
+        token,
+        phoneToUse || (token ? (phone || undefined) : undefined),
+      );
       if (data.requiresReceiverPhone) {
         setSearchResult(data);
         setSearchError('Đơn hàng yêu cầu xác thực số điện thoại người nhận để mở khóa chi tiết.');
       } else if (!data.current && data.timeline.length === 0 && !data.order) {
-        setSearchError(`Không tìm thấy hành trình vận đơn "${code}". Vui lòng kiểm tra lại mã.`);
+        setSearchError(`Không tìm thấy hành trình vận đơn "${code}". Vui lòng kiểm tra lại mã hoặc số điện thoại.`);
         setSearchResult(null);
       } else {
         setSearchResult(data);
-        setSearchParams({ track: code });
+        const nextParams: Record<string, string> = { track: code };
+        if (!token && phoneToUse) {
+          nextParams.phone = phoneToUse;
+        }
+        setSearchParams(nextParams);
       }
     } catch (err: any) {
       setSearchError(err?.message || 'Tra cứu vận đơn thất bại.');
@@ -457,7 +496,31 @@ function TrackingPage() {
           </div>
 
           {/* Quick Universal Tracking Search Form */}
-          <div className="bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/20 shadow-lg">
+          <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 shadow-lg space-y-3">
+            {/* Status / Privacy Policy Notice */}
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+              {isLoggedIn ? (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-100 font-bold text-[11px]">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                  Tài khoản đã đăng nhập: {user?.displayName || phone} (Tự động mở khóa vận đơn của bạn)
+                </div>
+              ) : (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-100 font-bold text-[11px]">
+                  <Lock className="h-3 w-3 text-amber-300" />
+                  Tra cứu bảo mật: Khách chưa đăng nhập vui lòng nhập Mã vận đơn & Số điện thoại nhận
+                </div>
+              )}
+
+              {!isLoggedIn && (
+                <RouterLink
+                  to="/login"
+                  className="text-[11px] font-bold text-blue-200 hover:text-white underline flex items-center gap-1 ml-auto"
+                >
+                  Đăng nhập để xem nhanh <ChevronRight className="h-3 w-3" />
+                </RouterLink>
+              )}
+            </div>
+
             <form onSubmit={handleTrackingSubmit} className="flex flex-col sm:flex-row gap-2">
               <div className="relative flex-1">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -478,6 +541,20 @@ function TrackingPage() {
                   </button>
                 )}
               </div>
+
+              {!isLoggedIn && (
+                <div className="relative sm:w-64">
+                  <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input
+                    type="tel"
+                    value={receiverPhone}
+                    onChange={(e) => setReceiverPhone(e.target.value)}
+                    placeholder="SĐT người nhận (VD: 09xx)..."
+                    className="w-full rounded-xl bg-white pl-10 pr-3 py-3 text-sm font-bold text-slate-900 placeholder-slate-400 outline-none shadow-sm focus:ring-2 focus:ring-blue-400"
+                  />
+                </div>
+              )}
+
               <button
                 type="submit"
                 disabled={isSearching}
@@ -488,7 +565,7 @@ function TrackingPage() {
               </button>
             </form>
 
-            <div className="flex flex-wrap items-center gap-1.5 text-xs text-blue-100 pt-2 px-1">
+            <div className="flex flex-wrap items-center gap-1.5 text-xs text-blue-100 pt-1 px-1">
               <span className="font-bold text-[11px] text-blue-200">Mã đơn mẫu trong hệ thống:</span>
               {['111089343576', '111000000074', '111000000064'].map((sample) => (
                 <button
@@ -496,7 +573,9 @@ function TrackingPage() {
                   type="button"
                   onClick={() => {
                     setTrackingCode(sample);
-                    doSearch(sample);
+                    if (isLoggedIn) {
+                      doSearch(sample);
+                    }
                   }}
                   className="px-2 py-0.5 rounded-md bg-white/20 text-white hover:bg-white/30 font-mono text-[11px] font-bold border border-white/20 transition"
                 >
@@ -682,7 +761,7 @@ function TrackingPage() {
                             <div className={`mt-0.5 p-1.5 rounded-xl ${isLatest ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700'}`}>
                               <Truck className="h-3.5 w-3.5" />
                             </div>
-                            <div>
+                            <div className="flex-1">
                               <p className="font-extrabold text-xs text-slate-900">
                                 {ev.statusAfterEvent || ev.eventType || ev.eventTypeCode || 'Sự kiện cập nhật'}
                               </p>
@@ -698,10 +777,37 @@ function TrackingPage() {
                                   </span>
                                 )}
                               </div>
-                              {ev.note && (
+                              {cleanCustomerNote(ev.note) && (
                                 <p className="text-[11px] text-slate-600 font-normal mt-1 leading-relaxed bg-white/60 p-2 rounded-lg border border-slate-100">
-                                  {ev.note}
+                                  {cleanCustomerNote(ev.note)}
                                 </p>
+                              )}
+
+                              {/* Proof Image (POD) */}
+                              {ev.proofImageUrl && (
+                                <div className="mt-2.5 pt-2 border-t border-slate-200/60">
+                                  <div className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase text-slate-500 mb-1.5">
+                                    <ImageIcon className="h-3.5 w-3.5 text-blue-600" />
+                                    <span>Ảnh minh chứng giao hàng (POD):</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedPodImage(ev.proofImageUrl || null)}
+                                    className="group relative inline-block cursor-pointer overflow-hidden rounded-xl border border-slate-200 bg-slate-100 shadow-sm hover:shadow-md transition text-left"
+                                    title="Bấm để xem ảnh phóng to"
+                                  >
+                                    <img
+                                      src={ev.proofImageUrl}
+                                      alt="Minh chứng giao hàng POD"
+                                      className="h-20 w-28 object-cover rounded-xl transition duration-300 group-hover:scale-105"
+                                      loading="lazy"
+                                    />
+                                    <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 text-white text-[11px] font-bold">
+                                      <Eye className="h-3.5 w-3.5" />
+                                      <span>Xem ảnh</span>
+                                    </div>
+                                  </button>
+                                </div>
                               )}
                             </div>
                           </div>
@@ -990,6 +1096,52 @@ function TrackingPage() {
             >
               Đóng Cửa Sổ
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox / POD Proof Image Preview Modal */}
+      {selectedPodImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="relative max-w-2xl w-full bg-white rounded-3xl p-4 md:p-6 shadow-2xl border border-slate-200 space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="h-5 w-5 text-blue-600" />
+                <h3 className="text-sm font-black text-slate-900">Ảnh Minh Chứng Giao Hàng (POD)</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedPodImage(null)}
+                className="p-1 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+                aria-label="Đóng xem ảnh"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="max-h-[68vh] overflow-hidden rounded-2xl bg-slate-950 flex items-center justify-center p-2">
+              <img
+                src={selectedPodImage}
+                alt="Minh chứng POD phóng to"
+                className="max-h-[64vh] w-auto max-w-full object-contain rounded-xl"
+              />
+            </div>
+            <div className="flex items-center justify-between pt-1 text-xs">
+              <span className="text-[11px] text-slate-500 font-medium">
+                Ảnh ký nhận POD được đồng bộ từ thiết bị bưu tá Nexus Delivery (MinIO).
+              </span>
+              <a
+                href={selectedPodImage}
+                target="_blank"
+                rel="noreferrer"
+                className="text-blue-600 hover:underline font-bold text-xs flex items-center gap-1"
+              >
+                Mở trong tab mới <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            </div>
           </div>
         </div>
       )}
@@ -1408,41 +1560,96 @@ function CreateOrderPage() {
 // 4. HISTORY / SHIPMENT MANAGEMENT PAGE
 // ==========================================
 function HistoryPage() {
-  const { phone, token } = useAuthStore();
+  const { phone, token, user } = useAuthStore();
   const navigate = useNavigate();
-  const [shipments, setShipments] = useState<ShipmentResponse[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('ALL');
 
-  useEffect(() => {
+  const [activeTab, setActiveTab] = useState<'SENT' | 'RECEIVED'>('SENT');
+  const [sentOrders, setSentOrders] = useState<ShipmentResponse[]>([]);
+  const [receivedOrders, setReceivedOrders] = useState<ShipmentResponse[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [timeFilter, setTimeFilter] = useState('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const [selectedOrderForModal, setSelectedOrderForModal] = useState<ShipmentResponse | null>(null);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+  const loadShipments = async (showLoading = true) => {
     if (!token) {
       setIsLoading(false);
       return;
     }
-    shipmentApi.getShipments(token).then((data: ShipmentResponse[]) => {
-      setShipments(data);
+    if (showLoading) setIsLoading(true);
+    try {
+      const [sentRes, recRes] = await Promise.allSettled([
+        shipmentApi.getShipments(token, { limit: 100, userId: user?.id }),
+        shipmentApi.getReceivedShipments(token, { limit: 100, phone: phone || user?.phone }),
+      ]);
+      if (sentRes.status === 'fulfilled') {
+        setSentOrders(sentRes.value || []);
+      }
+      if (recRes.status === 'fulfilled') {
+        setReceivedOrders(recRes.value || []);
+      }
+    } finally {
       setIsLoading(false);
-    }).catch(() => setIsLoading(false));
-  }, [token]);
+      setIsRefreshing(false);
+    }
+  };
 
-  if (!phone) {
+  useEffect(() => {
+    loadShipments(true);
+  }, [token, phone]);
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    loadShipments(false);
+  };
+
+  const handleCopy = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode(null), 2000);
+  };
+
+  // If user is not logged in, enforce login screen
+  if (!token || !phone) {
     return (
-      <div className="mx-auto flex min-h-[70vh] max-w-lg items-center justify-center px-4">
-        <div className="w-full bg-white p-8 text-center rounded-3xl border border-slate-200 shadow-md space-y-5">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 border border-blue-100">
-            <Clock className="h-7 w-7" strokeWidth={1.75} />
+      <div className="mx-auto flex min-h-[75vh] max-w-lg items-center justify-center px-4 py-8">
+        <div className="w-full bg-white p-8 text-center rounded-3xl border border-slate-200 shadow-xl space-y-6">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 border border-blue-100 shadow-inner">
+            <Lock className="h-8 w-8" strokeWidth={1.8} />
           </div>
-          <div className="space-y-1">
-            <h1 className="text-2xl font-bold text-slate-900">Lịch Sử Đơn Hàng</h1>
-            <p className="text-xs text-slate-500 leading-relaxed max-w-xs mx-auto font-medium">
-              Vui lòng đăng nhập để xem danh sách và theo dõi các đơn hàng bạn đã tạo hoặc đã nhận.
+          <div className="space-y-2">
+            <h1 className="text-2xl font-black text-slate-900">Lịch Sử & Quản Lý Đơn Hàng</h1>
+            <p className="text-xs text-slate-500 leading-relaxed max-w-sm mx-auto font-medium">
+              Vui lòng đăng nhập hoặc đăng ký tài khoản để xem toàn bộ danh sách đơn bạn đã gửi và các kiện hàng đang được giao đến số điện thoại của bạn.
             </p>
           </div>
+
+          <div className="p-4 bg-gradient-to-br from-blue-50/80 to-indigo-50/60 rounded-2xl border border-blue-100 text-left text-xs space-y-2 text-blue-900 font-medium">
+            <div className="flex items-center gap-2 font-bold text-blue-800">
+              <ShieldCheck className="h-4 w-4 text-blue-600 shrink-0" />
+              <span>Đặc quyền tài khoản Nexus:</span>
+            </div>
+            <p className="pl-6 text-[11px] text-blue-700 leading-relaxed">
+              • Quản lý 2 chiều: <strong className="font-bold">Đơn gửi</strong> (do bạn tạo) và <strong className="font-bold">Đơn nhận</strong> (gửi tới SĐT của bạn).
+            </p>
+            <p className="pl-6 text-[11px] text-blue-700 leading-relaxed">
+              • Bộ lọc trực quan theo trạng thái (Chờ lấy, Đang giao, Thành công, Hoàn).
+            </p>
+            <p className="pl-6 text-[11px] text-blue-700 leading-relaxed">
+              • Xem ảnh chữ ký / ảnh chụp POD bưu tá giao hàng từ MinIO và tra cứu tọa độ GPS.
+            </p>
+          </div>
+
           <button
             onClick={() => navigate('/login')}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 px-6 py-3.5 text-xs font-bold uppercase tracking-wider text-white shadow-md transition"
+            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 px-6 py-3.5 text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-blue-600/25 transition"
           >
-            Đăng Nhập Ngay
+            Đăng Nhập / Đăng Ký Ngay
             <ChevronRight className="h-4 w-4" strokeWidth={2} />
           </button>
         </div>
@@ -1450,80 +1657,662 @@ function HistoryPage() {
     );
   }
 
-  const filtered = shipments.filter((s) => {
-    if (statusFilter === 'ALL') return true;
-    return s.currentStatus === statusFilter;
+  const currentList = activeTab === 'SENT' ? sentOrders : receivedOrders;
+
+  // Compute 4 KPI stats for the active category
+  const stats = {
+    total: currentList.length,
+    inTransit: currentList.filter((s) => {
+      const st = (s.currentStatus || '').toUpperCase();
+      return (
+        st === 'IN_TRANSIT' ||
+        st === 'SCAN_INBOUND' ||
+        st === 'SCAN_OUTBOUND' ||
+        st === 'SORTED' ||
+        st === 'DELIVERING' ||
+        st === 'OUT_FOR_DELIVERY' ||
+        st === 'TASK_ASSIGNED' ||
+        st === 'PICKED_UP' ||
+        st === 'PICKUP_COMPLETED' ||
+        st === 'ARRIVED_DEST_HUB'
+      );
+    }).length,
+    delivered: currentList.filter((s) => {
+      const st = (s.currentStatus || '').toUpperCase();
+      return st === 'DELIVERED' || st === 'COMPLETED';
+    }).length,
+    issues: currentList.filter((s) => {
+      const st = (s.currentStatus || '').toUpperCase();
+      return (
+        st === 'DELIVERY_FAILED' ||
+        st === 'NDR_CREATED' ||
+        st === 'CANCELLED' ||
+        st === 'RETURN_STARTED' ||
+        st === 'RETURN_COMPLETED' ||
+        st === 'RETURNED' ||
+        st === 'RETURNING'
+      );
+    }).length,
+  };
+
+  // Filter logic
+  const filteredShipments = currentList.filter((s) => {
+    // 1. Status Filter
+    if (statusFilter !== 'ALL') {
+      const st = (s.currentStatus || '').toUpperCase();
+      if (statusFilter === 'CREATED' && st !== 'CREATED') return false;
+      if (
+        statusFilter === 'PICKED_UP' &&
+        !['PICKED_UP', 'PICKUP_COMPLETED', 'SCAN_PICKUP', 'ARRIVED_ORIGIN_HUB'].includes(st)
+      )
+        return false;
+      if (
+        statusFilter === 'IN_TRANSIT' &&
+        !['IN_TRANSIT', 'SCAN_INBOUND', 'SCAN_OUTBOUND', 'SORTED', 'ARRIVED_HUB', 'ARRIVED_DEST_HUB'].includes(st)
+      )
+        return false;
+      if (
+        statusFilter === 'DELIVERING' &&
+        !['DELIVERING', 'OUT_FOR_DELIVERY', 'TASK_ASSIGNED', 'READY_FOR_DELIVERY'].includes(st)
+      )
+        return false;
+      if (statusFilter === 'DELIVERED' && !['DELIVERED', 'COMPLETED'].includes(st)) return false;
+      if (statusFilter === 'DELIVERY_FAILED' && !['DELIVERY_FAILED', 'NDR_CREATED'].includes(st))
+        return false;
+      if (
+        statusFilter === 'RETURNED' &&
+        !['RETURNED', 'RETURN_STARTED', 'RETURN_COMPLETED', 'RETURNING'].includes(st)
+      )
+        return false;
+    }
+
+    // 2. Time Filter
+    if (timeFilter !== 'ALL' && s.createdAt) {
+      const createdTime = new Date(s.createdAt).getTime();
+      const now = Date.now();
+      const oneDay = 24 * 60 * 60 * 1000;
+      if (timeFilter === 'TODAY' && now - createdTime > oneDay) return false;
+      if (timeFilter === '7DAYS' && now - createdTime > 7 * oneDay) return false;
+      if (timeFilter === '30DAYS' && now - createdTime > 30 * oneDay) return false;
+      if (timeFilter === 'THIS_MONTH') {
+        const cDate = new Date(s.createdAt);
+        const nowDate = new Date();
+        if (cDate.getMonth() !== nowDate.getMonth() || cDate.getFullYear() !== nowDate.getFullYear()) {
+          return false;
+        }
+      }
+    }
+
+    // 3. Search Query
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      const code = (s.code || '').toLowerCase();
+      const sName = (s.metadata?.sender?.name || '').toLowerCase();
+      const rName = (s.metadata?.receiver?.name || '').toLowerCase();
+      const rPhone = (s.metadata?.receiver?.phone || '').toLowerCase();
+      const sPhone = (s.metadata?.sender?.phone || '').toLowerCase();
+      const addr = (
+        s.metadata?.receiver?.address ||
+        s.metadata?.receiver?.addressDetail ||
+        s.metadata?.receiver?.province ||
+        ''
+      ).toLowerCase();
+      const item = (s.metadata?.package?.itemName || '').toLowerCase();
+      const matches =
+        code.includes(q) ||
+        sName.includes(q) ||
+        rName.includes(q) ||
+        rPhone.includes(q) ||
+        sPhone.includes(q) ||
+        addr.includes(q) ||
+        item.includes(q);
+      if (!matches) return false;
+    }
+
+    return true;
   });
 
   return (
     <div className="space-y-6 pb-12">
-      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between border-b border-slate-200 pb-4">
+      {/* 1. TOP HEADER & REFRESH ACTION */}
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between border-b border-slate-200 pb-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Lịch Sử & Quản Lý Đơn Hàng</h1>
-          <p className="text-xs text-slate-500 font-medium">
-            Danh sách tất cả các vận đơn liên kết với số điện thoại {phone}.
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+              Lịch Sử & Quản Lý Đơn Hàng
+            </h1>
+            <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-100">
+              <User className="h-3 w-3" />
+              {phone}
+            </span>
+          </div>
+          <p className="text-xs text-slate-500 font-medium mt-1">
+            Theo dõi, tra cứu chi tiết hành trình và quản lý danh sách đơn gửi / đơn nhận của bạn.
           </p>
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-900 outline-none focus:border-blue-600"
-        >
-          <option value="ALL">Tất cả trạng thái ({shipments.length})</option>
-          <option value="CREATED">Mới tạo (CREATED)</option>
-          <option value="DELIVERED">Đã giao thành công (DELIVERED)</option>
-          <option value="IN_TRANSIT">Đang trung chuyển (IN_TRANSIT)</option>
-          <option value="DELIVERY_FAILED">Sự cố giao hàng (DELIVERY_FAILED)</option>
-        </select>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={isRefreshing || isLoading}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-bold transition shadow-sm disabled:opacity-50"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin text-blue-600' : ''}`} />
+            <span>Làm Mới</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/create')}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase tracking-wider transition shadow-md shadow-blue-600/20"
+          >
+            <PlusCircle className="h-3.5 w-3.5" />
+            <span>Tạo Vận Đơn</span>
+          </button>
+        </div>
       </div>
 
-      {isLoading ? (
-        <div className="p-12 text-center text-xs text-slate-500">Đang tải lịch sử đơn hàng...</div>
-      ) : filtered.length === 0 ? (
-        <div className="p-12 bg-white rounded-2xl border border-slate-200 text-center space-y-3">
-          <p className="text-sm font-bold text-slate-700">Chưa có vận đơn nào phù hợp.</p>
-          <button
-            onClick={() => navigate('/create')}
-            className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold uppercase"
+      {/* 2. KPI QUICK STATS CARDS */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm space-y-1">
+          <div className="flex items-center justify-between text-xs text-slate-500 font-bold">
+            <span>Tổng Đơn {activeTab === 'SENT' ? 'Gửi' : 'Nhận'}</span>
+            <Package className="h-4 w-4 text-blue-600" />
+          </div>
+          <p className="text-2xl font-black text-slate-900 font-mono">{stats.total}</p>
+          <p className="text-[10px] text-slate-400 font-medium">Tất cả thời gian</p>
+        </div>
+
+        <div className="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm space-y-1">
+          <div className="flex items-center justify-between text-xs text-indigo-600 font-bold">
+            <span>Đang Giao / Vận Chuyển</span>
+            <Truck className="h-4 w-4 text-indigo-600" />
+          </div>
+          <p className="text-2xl font-black text-indigo-700 font-mono">{stats.inTransit}</p>
+          <p className="text-[10px] text-indigo-500 font-medium">Bưu tá & Trung chuyển</p>
+        </div>
+
+        <div className="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm space-y-1">
+          <div className="flex items-center justify-between text-xs text-emerald-600 font-bold">
+            <span>Giao Thành Công</span>
+            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+          </div>
+          <p className="text-2xl font-black text-emerald-700 font-mono">{stats.delivered}</p>
+          <p className="text-[10px] text-emerald-500 font-medium">Đã ký nhận POD</p>
+        </div>
+
+        <div className="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm space-y-1">
+          <div className="flex items-center justify-between text-xs text-amber-600 font-bold">
+            <span>Sự Cố / NDR / Hoàn</span>
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+          </div>
+          <p className="text-2xl font-black text-amber-700 font-mono">{stats.issues}</p>
+          <p className="text-[10px] text-amber-500 font-medium">Cần xử lý & Hoàn</p>
+        </div>
+      </div>
+
+      {/* 3. DUAL CATEGORY TABS (SENT vs RECEIVED) */}
+      <div className="bg-slate-100 p-1 rounded-2xl flex gap-1 border border-slate-200/80">
+        <button
+          type="button"
+          onClick={() => setActiveTab('SENT')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-extrabold transition-all duration-200 ${
+            activeTab === 'SENT'
+              ? 'bg-white text-blue-700 shadow-sm'
+              : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          <Send className="h-4 w-4" />
+          <span>Đơn Đã Gửi</span>
+          <span
+            className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-bold ${
+              activeTab === 'SENT'
+                ? 'bg-blue-100 text-blue-800'
+                : 'bg-slate-200 text-slate-700'
+            }`}
           >
-            Tạo Đơn Hàng Đầu Tiên
-          </button>
+            {sentOrders.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('RECEIVED')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-extrabold transition-all duration-200 ${
+            activeTab === 'RECEIVED'
+              ? 'bg-white text-purple-700 shadow-sm'
+              : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          <Inbox className="h-4 w-4" />
+          <span>Đơn Nhận Hàng</span>
+          <span
+            className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-bold ${
+              activeTab === 'RECEIVED'
+                ? 'bg-purple-100 text-purple-800'
+                : 'bg-slate-200 text-slate-700'
+            }`}
+          >
+            {receivedOrders.length}
+          </span>
+        </button>
+      </div>
+
+      {/* 4. FILTER TOOLBAR: SEARCH + STATUS + TIME */}
+      <div className="bg-white rounded-2xl p-3 border border-slate-200 shadow-sm flex flex-col md:flex-row gap-2.5">
+        <div className="relative flex-1">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Tìm theo mã vận đơn, tên người nhận, SĐT, địa chỉ..."
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-10 py-2 text-xs font-semibold text-slate-900 placeholder-slate-400 outline-none focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 transition"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        <div className="flex gap-2">
+          {/* Status Dropdown */}
+          <div className="relative flex-1 md:w-52">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-blue-600"
+            >
+              <option value="ALL">Tất cả trạng thái</option>
+              <option value="CREATED">Chờ lấy hàng (CREATED)</option>
+              <option value="PICKED_UP">Đã lấy hàng (PICKED_UP)</option>
+              <option value="IN_TRANSIT">Đang trung chuyển (IN_TRANSIT)</option>
+              <option value="DELIVERING">Đang giao hàng (DELIVERING)</option>
+              <option value="DELIVERED">Giao thành công (DELIVERED)</option>
+              <option value="DELIVERY_FAILED">Sự cố giao hàng (NDR)</option>
+              <option value="RETURNED">Đang chuyển hoàn (RETURNED)</option>
+            </select>
+          </div>
+
+          {/* Time Dropdown */}
+          <div className="relative flex-1 md:w-44">
+            <select
+              value={timeFilter}
+              onChange={(e) => setTimeFilter(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-blue-600"
+            >
+              <option value="ALL">Tất cả thời gian</option>
+              <option value="TODAY">Hôm nay</option>
+              <option value="7DAYS">7 ngày qua</option>
+              <option value="30DAYS">30 ngày qua</option>
+              <option value="THIS_MONTH">Tháng này</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* 5. ORDERS LIST / GRID */}
+      {isLoading ? (
+        <div className="p-16 bg-white rounded-3xl border border-slate-200 text-center space-y-3">
+          <RefreshCw className="h-7 w-7 text-blue-600 animate-spin mx-auto" />
+          <p className="text-xs font-bold text-slate-600">Đang đồng bộ danh sách vận đơn từ máy chủ Nexus...</p>
+        </div>
+      ) : filteredShipments.length === 0 ? (
+        <div className="p-16 bg-white rounded-3xl border border-slate-200 text-center space-y-4 shadow-sm">
+          <div className="mx-auto w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400">
+            <Package className="h-7 w-7" strokeWidth={1.8} />
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-extrabold text-slate-800">
+              {activeTab === 'SENT' ? 'Không có đơn gửi nào phù hợp.' : 'Chưa có đơn hàng nào gửi tới bạn.'}
+            </p>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto font-medium">
+              {searchQuery || statusFilter !== 'ALL' || timeFilter !== 'ALL'
+                ? 'Thử thay đổi bộ lọc trạng thái hoặc từ khóa tìm kiếm.'
+                : activeTab === 'SENT'
+                ? 'Tạo đơn bưu gửi đầu tiên để trải nghiệm dịch vụ giao hàng thông minh Nexus.'
+                : 'Khi shop gửi hàng với số điện thoại của bạn, đơn sẽ tự động xuất hiện tại đây.'}
+            </p>
+          </div>
+          {activeTab === 'SENT' && (
+            <button
+              onClick={() => navigate('/create')}
+              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-md shadow-blue-600/20 transition inline-flex items-center gap-1.5"
+            >
+              <PlusCircle className="h-4 w-4" />
+              Tạo Vận Đơn Ngay
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filtered.map((s) => {
+          {filteredShipments.map((s) => {
             const badge = getStatusBadgeDetails(s.currentStatus);
+            const meta = s.metadata || {};
+            const sender = meta.sender || {};
+            const receiver = meta.receiver || {};
+            const pkg = meta.package || {};
+
+            const weight = pkg.weightKg || meta.weightKg || 1;
+            const cod = meta.codAmount || pkg.codAmount || 0;
+            const shippingFee = meta.shippingFee || meta.estimatedFee || 22000;
+
+            const senderAddr = sender.province || sender.address || sender.addressDetail || 'Bưu cục gửi';
+            const receiverAddr = receiver.address || receiver.addressDetail || receiver.province || 'Địa chỉ nhận';
+
             return (
-              <div key={s.id || s.code} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3 hover:border-blue-300 transition">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs font-extrabold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
-                    #{s.code}
-                  </span>
-                  <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${badge.bg}`}>
-                    {s.currentStatus}
-                  </span>
+              <div
+                key={s.id || s.code}
+                className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3.5 hover:border-blue-300 hover:shadow-md transition-all duration-200 flex flex-col justify-between"
+              >
+                {/* Top Row: Code, Category badge, Status badge */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono text-xs font-black text-blue-900 bg-blue-50 px-2 py-1 rounded-lg border border-blue-100">
+                        #{s.code}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(s.code)}
+                        className="p-1 text-slate-400 hover:text-blue-600 rounded transition"
+                        title="Sao chép mã"
+                      >
+                        {copiedCode === s.code ? (
+                          <Check className="h-3.5 w-3.5 text-emerald-600" />
+                        ) : (
+                          <Copy className="h-3.5 w-3.5" />
+                        )}
+                      </button>
+                      <span
+                        className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                          activeTab === 'SENT'
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-purple-100 text-purple-800'
+                        }`}
+                      >
+                        {activeTab === 'SENT' ? 'Đơn gửi' : 'Đơn nhận'}
+                      </span>
+                    </div>
+
+                    <span
+                      className={`inline-flex items-center gap-1.5 text-[10px] font-extrabold px-2.5 py-1 rounded-full border ${badge.bg}`}
+                    >
+                      <span className={`h-2 w-2 rounded-full ${badge.dot}`} />
+                      {badge.label}
+                    </span>
+                  </div>
+
+                  {/* Route: Sender -> Receiver */}
+                  <div className="bg-slate-50/80 rounded-xl p-2.5 border border-slate-100 text-xs space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-blue-500 shrink-0" />
+                      <div className="truncate">
+                        <span className="text-[10px] text-slate-400 uppercase font-bold mr-1">Từ:</span>
+                        <span className="font-bold text-slate-800">{sender.name || 'Người gửi'}</span>
+                        <span className="text-slate-500 text-[11px] ml-1">({senderAddr})</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
+                      <div className="truncate">
+                        <span className="text-[10px] text-slate-400 uppercase font-bold mr-1">Đến:</span>
+                        <span className="font-bold text-slate-800">{receiver.name || 'Người nhận'}</span>
+                        <span className="text-slate-500 text-[11px] ml-1">({receiverAddr})</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Info Chips: Weight, COD, Shipping Fee */}
+                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                    <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase block">Khối lượng</span>
+                      <span className="font-bold text-slate-800 font-mono text-[11px]">{weight} kg</span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase block">Tiền Thu Hộ</span>
+                      <span className="font-bold text-blue-700 font-mono text-[11px]">{formatVnd(cod)}</span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase block">Cước Phí</span>
+                      <span className="font-bold text-slate-800 font-mono text-[11px]">{formatVnd(shippingFee)}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-xs space-y-1 text-slate-600">
-                  <p><span className="font-bold text-slate-800">Người nhận:</span> {s.metadata?.receiver?.name || 'Khách hàng'}</p>
-                  <p><span className="font-bold text-slate-800">Địa chỉ:</span> {s.metadata?.receiver?.address || s.metadata?.receiver?.province || '-'}</p>
-                  <p><span className="font-bold text-slate-800">COD:</span> {(s.metadata?.codAmount || 0).toLocaleString('vi-VN')} VNĐ</p>
-                </div>
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+
+                {/* Footer Actions */}
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
                   <span className="text-[10px] text-slate-400 font-mono">
-                    {s.createdAt ? new Date(s.createdAt).toLocaleDateString('vi-VN') : ''}
+                    {s.createdAt
+                      ? new Date(s.createdAt).toLocaleDateString('vi-VN', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                        })
+                      : ''}
                   </span>
-                  <RouterLink
-                    to={`/?track=${encodeURIComponent(s.code)}`}
-                    className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1"
-                  >
-                    Xem hành trình <ChevronRight className="h-3.5 w-3.5" />
-                  </RouterLink>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedOrderForModal(s)}
+                      className="px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-1 transition"
+                    >
+                      <Eye className="h-3 w-3" /> Chi tiết
+                    </button>
+                    <RouterLink
+                      to={`/?track=${encodeURIComponent(s.code)}`}
+                      className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1 shadow-sm transition"
+                    >
+                      Hành trình <ChevronRight className="h-3 w-3" />
+                    </RouterLink>
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
       )}
+
+      {/* 6. ORDER DETAIL MODAL */}
+      {selectedOrderForModal && (
+        <OrderDetailModal
+          shipment={selectedOrderForModal}
+          onClose={() => setSelectedOrderForModal(null)}
+          onTrack={(code) => {
+            setSelectedOrderForModal(null);
+            navigate(`/?track=${encodeURIComponent(code)}`);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ==========================================
+// ORDER DETAIL MODAL (FULL SPECS VIEW)
+// ==========================================
+function OrderDetailModal({
+  shipment,
+  onClose,
+  onTrack,
+}: {
+  shipment: ShipmentResponse;
+  onClose: () => void;
+  onTrack: (code: string) => void;
+}) {
+  const [copied, setCopied] = useState(false);
+  const meta = shipment.metadata || {};
+  const sender = meta.sender || {};
+  const receiver = meta.receiver || {};
+  const pkg = meta.package || {};
+  const badge = getStatusBadgeDetails(shipment.currentStatus);
+
+  const qrDataUrl = useMemo(() => {
+    return generateQrDataUrl(`${window.location.origin}/?track=${encodeURIComponent(shipment.code)}`);
+  }, [shipment.code]);
+
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(shipment.code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm overflow-y-auto"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="relative max-w-xl w-full bg-white rounded-3xl p-6 shadow-2xl border border-slate-200 my-8 space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                Chi Tiết Vận Đơn Nexus
+              </span>
+              <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${badge.bg}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${badge.dot}`} />
+                {badge.label}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 mt-0.5">
+              <h2 className="text-xl font-black text-blue-950 font-mono tracking-tight">
+                #{shipment.code}
+              </h2>
+              <button
+                type="button"
+                onClick={handleCopyCode}
+                className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-slate-100 transition"
+                title="Sao chép mã đơn"
+              >
+                {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Sender & Receiver Info */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <div className="p-3.5 rounded-2xl bg-blue-50/50 border border-blue-100 space-y-1">
+            <div className="flex items-center gap-1.5 text-blue-800 font-extrabold uppercase text-[10px]">
+              <Send className="h-3 w-3" />
+              <span>Người Gửi</span>
+            </div>
+            <p className="font-extrabold text-slate-900">{sender.name || 'Chủ hàng'}</p>
+            {sender.phone && <p className="text-slate-600 font-mono text-[11px]">{sender.phone}</p>}
+            <p className="text-slate-600 text-[11px] leading-relaxed">
+              {sender.address || sender.addressDetail || sender.province || 'Bưu cục gửi'}
+            </p>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-emerald-50/50 border border-emerald-100 space-y-1">
+            <div className="flex items-center gap-1.5 text-emerald-800 font-extrabold uppercase text-[10px]">
+              <Inbox className="h-3 w-3" />
+              <span>Người Nhận</span>
+            </div>
+            <p className="font-extrabold text-slate-900">{receiver.name || 'Khách hàng nhận'}</p>
+            {receiver.phone && <p className="text-slate-600 font-mono text-[11px]">{receiver.phone}</p>}
+            <p className="text-slate-600 text-[11px] leading-relaxed">
+              {receiver.address || receiver.addressDetail || receiver.province || 'Địa chỉ giao hàng'}
+            </p>
+          </div>
+        </div>
+
+        {/* Package Specs & Financials */}
+        <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-2.5 text-xs">
+          <div className="flex items-center gap-1.5 font-extrabold uppercase text-slate-700 text-[11px]">
+            <Package className="h-3.5 w-3.5 text-blue-600" />
+            <span>Quy Cách Kiện Hàng & Cước Phí</span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <div className="p-2.5 rounded-xl bg-white border border-slate-200">
+              <span className="text-[10px] font-bold text-slate-400 uppercase block">Tên hàng hóa</span>
+              <span className="font-extrabold text-slate-900 text-xs">{pkg.itemName || 'Hàng hóa bưu gửi'}</span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-white border border-slate-200">
+              <span className="text-[10px] font-bold text-slate-400 uppercase block">Khối lượng</span>
+              <span className="font-extrabold text-slate-900 font-mono text-xs">{pkg.weightKg || 1} kg</span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-white border border-slate-200">
+              <span className="text-[10px] font-bold text-slate-400 uppercase block">Dịch vụ</span>
+              <span className="font-extrabold text-blue-700 text-xs">{meta.service?.type || 'TIÊU CHUẨN'}</span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-white border border-slate-200">
+              <span className="text-[10px] font-bold text-slate-400 uppercase block">Tiền Thu Hộ (COD)</span>
+              <span className="font-extrabold text-blue-700 font-mono text-xs">
+                {formatVnd(meta.codAmount || pkg.codAmount || 0)}
+              </span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-white border border-slate-200">
+              <span className="text-[10px] font-bold text-slate-400 uppercase block">Cước Vận Chuyển</span>
+              <span className="font-extrabold text-slate-900 font-mono text-xs">
+                {formatVnd(meta.shippingFee || meta.estimatedFee || 22000)}
+              </span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-white border border-slate-200">
+              <span className="text-[10px] font-bold text-slate-400 uppercase block">Khai Giá Hàng</span>
+              <span className="font-extrabold text-slate-900 font-mono text-xs">
+                {formatVnd(pkg.declaredValue || 0)}
+              </span>
+            </div>
+          </div>
+
+          {meta.notes && (
+            <div className="p-2.5 rounded-xl bg-white border border-slate-200">
+              <span className="text-[10px] font-bold text-slate-400 uppercase block">Ghi chú giao hàng:</span>
+              <p className="text-slate-700 text-xs mt-0.5">{meta.notes}</p>
+            </div>
+          )}
+        </div>
+
+        {/* QR Code Quick Scan */}
+        {qrDataUrl && (
+          <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200">
+            <img src={qrDataUrl} alt="Mã QR tra cứu" className="w-16 h-16 rounded-lg border bg-white p-1 shrink-0" />
+            <div className="text-xs">
+              <p className="font-bold text-slate-900">Mã QR Tra Cứu Tức Thì</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Quét bằng camera điện thoại để mở trực tiếp hành trình đơn hàng trên Nexus Mobile/Web.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition"
+          >
+            Đóng
+          </button>
+          <button
+            type="button"
+            onClick={() => onTrack(shipment.code)}
+            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase tracking-wider shadow-md shadow-blue-600/25 transition flex items-center gap-1.5"
+          >
+            Theo Dõi Hành Trình <ArrowRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
