@@ -76,6 +76,9 @@ import {
 import {
   getWardsForProvince,
   findMatchingHubsForLocation,
+  parseApiAdministrativeUnits,
+  VIETNAM_ADMINISTRATIVE_DATA,
+  type AdminUnitProvince,
   type AdminUnitWard,
 } from './utils/vietnamAdministrativeData';
 
@@ -86,20 +89,7 @@ const navItems = [
   { to: '/network', icon: Building2, label: 'Mạng lưới bưu cục' },
 ];
 
-const PROVINCES = [
-  'Thành phố Hồ Chí Minh',
-  'Thành phố Hà Nội',
-  'Thành phố Đà Nẵng',
-  'Tỉnh Bình Dương',
-  'Tỉnh Đồng Nai',
-  'Thành phố Cần Thơ',
-  'Thành phố Hải Phòng',
-  'Tỉnh Quảng Ninh',
-  'Tỉnh Thừa Thiên Huế',
-  'Tỉnh Khánh Hòa',
-  'Tỉnh Nghệ An',
-  'Tỉnh Lâm Đồng',
-];
+const PROVINCES = VIETNAM_ADMINISTRATIVE_DATA.map((p) => p.name);
 
 const OPS_HERO_BG =
   'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=2000&q=80';
@@ -1255,8 +1245,9 @@ function CreateOrderPage() {
   // Mode: Lấy hàng tại nhà vs Gửi hàng tại bưu cục
   const [pickupMethod, setPickupMethod] = useState<'PICKUP' | 'DROP_OFF'>('PICKUP');
 
-  // Masterdata Hubs
+  // Masterdata Hubs & Administrative Units
   const [allHubs, setAllHubs] = useState<HubRecord[]>([]);
+  const [adminUnits, setAdminUnits] = useState<AdminUnitProvince[]>(VIETNAM_ADMINISTRATIVE_DATA);
 
   // Sender details
   const [senderName, setSenderName] = useState(user?.displayName || 'Chủ hàng');
@@ -1290,8 +1281,18 @@ function CreateOrderPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Load hubs on mount
+  // Load hubs and administrative units on mount
   useEffect(() => {
+    masterdataApi
+      .getAdministrativeUnits()
+      .then((units) => {
+        if (Array.isArray(units) && units.length > 0) {
+          const parsed = parseApiAdministrativeUnits(units);
+          if (parsed.length > 0) setAdminUnits(parsed);
+        }
+      })
+      .catch(() => {});
+
     masterdataApi
       .getHubs()
       .then((hubs) => {
@@ -1306,9 +1307,11 @@ function CreateOrderPage() {
       .catch(() => {});
   }, []);
 
+  const availableProvinces = useMemo(() => adminUnits.map((p) => p.name), [adminUnits]);
+
   // Wards list based on selected provinces
-  const senderWards = useMemo(() => getWardsForProvince(senderProvince), [senderProvince]);
-  const receiverWards = useMemo(() => getWardsForProvince(receiverProvince), [receiverProvince]);
+  const senderWards = useMemo(() => getWardsForProvince(senderProvince, adminUnits), [senderProvince, adminUnits]);
+  const receiverWards = useMemo(() => getWardsForProvince(receiverProvince, adminUnits), [receiverProvince, adminUnits]);
 
   // Matching hubs for sender & receiver provinces
   const senderMatchingHubs = useMemo(
@@ -1643,7 +1646,7 @@ function CreateOrderPage() {
                   value={senderProvince}
                   onChange={(e) => setSenderProvince(e.target.value)}
                 >
-                  {PROVINCES.map((p) => (
+                  {availableProvinces.map((p) => (
                     <option key={p} value={p}>
                       {p}
                     </option>
@@ -1773,7 +1776,7 @@ function CreateOrderPage() {
                   value={receiverProvince}
                   onChange={(e) => setReceiverProvince(e.target.value)}
                 >
-                  {PROVINCES.map((p) => (
+                  {availableProvinces.map((p) => (
                     <option key={p} value={p}>
                       {p}
                     </option>

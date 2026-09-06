@@ -1,4 +1,4 @@
-import type { HubRecord } from '../services/api/masterdata.api';
+import type { HubRecord, VietnamProvince } from '../services/api/masterdata.api';
 
 export interface AdminUnitWard {
   code: number | string;
@@ -188,12 +188,54 @@ export const VIETNAM_ADMINISTRATIVE_DATA: AdminUnitProvince[] = [
       { code: '404', name: 'Thị trấn Quảng Uyên', district: 'Huyện Quảng Hòa', displayName: 'Thị trấn Quảng Uyên (Huyện Quảng Hòa)' },
     ],
   },
+  {
+    name: 'Tỉnh Bắc Ninh',
+    wards: [
+      { code: '2401', name: 'Phường Tiền An', district: 'Thành phố Bắc Ninh', displayName: 'Phường Tiền An (Thành phố Bắc Ninh)' },
+      { code: '2402', name: 'Phường Ninh Xá', district: 'Thành phố Bắc Ninh', displayName: 'Phường Ninh Xá (Thành phố Bắc Ninh)' },
+      { code: '2403', name: 'Phường Đông Ngàn', district: 'Thành phố Từ Sơn', displayName: 'Phường Đông Ngàn (Thành phố Từ Sơn)' },
+      { code: '2404', name: 'Thị trấn Chờ', district: 'Huyện Yên Phong', displayName: 'Thị trấn Chờ (Huyện Yên Phong)' },
+    ],
+  },
 ];
 
-export function getWardsForProvince(provinceName: string): AdminUnitWard[] {
+export function parseApiAdministrativeUnits(
+  apiProvinces: VietnamProvince[],
+): AdminUnitProvince[] {
+  if (!Array.isArray(apiProvinces) || apiProvinces.length === 0) {
+    return VIETNAM_ADMINISTRATIVE_DATA;
+  }
+  return apiProvinces.map((p) => {
+    const wards: AdminUnitWard[] = (p.wards || []).map((w) => {
+      let cleanWard = w.name;
+      let district: string | undefined;
+      const match = w.name.match(/^(.*?)\s*\((.*?)\)$/);
+      if (match) {
+        cleanWard = match[1].trim();
+        district = match[2].trim();
+      }
+      return {
+        code: String(w.code),
+        name: cleanWard,
+        district,
+        displayName: w.name,
+      };
+    });
+    return {
+      name: p.name,
+      wards: wards.length > 0 ? wards : getWardsForProvince(p.name),
+    };
+  });
+}
+
+export function getWardsForProvince(
+  provinceName: string,
+  customDataset?: AdminUnitProvince[],
+): AdminUnitWard[] {
   if (!provinceName) return [];
   const normalized = provinceName.trim().toLowerCase();
-  const matched = VIETNAM_ADMINISTRATIVE_DATA.find((p) => {
+  const dataset = customDataset && customDataset.length > 0 ? customDataset : VIETNAM_ADMINISTRATIVE_DATA;
+  const matched = dataset.find((p) => {
     const pNorm = p.name.toLowerCase();
     return pNorm.includes(normalized) || normalized.includes(pNorm);
   });
