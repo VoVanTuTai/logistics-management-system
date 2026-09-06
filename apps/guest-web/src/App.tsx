@@ -73,6 +73,11 @@ import {
   cleanCustomerNote,
   formatVnd,
 } from './utils/trackingUtils';
+import {
+  getWardsForProvince,
+  findMatchingHubsForLocation,
+  type AdminUnitWard,
+} from './utils/vietnamAdministrativeData';
 
 const navItems = [
   { to: '/', icon: Search, label: 'Tra cứu & Cước phí' },
@@ -1247,24 +1252,129 @@ function CreateOrderPage() {
   const { phone, user, token } = useAuthStore();
   const navigate = useNavigate();
 
+  // Mode: Lấy hàng tại nhà vs Gửi hàng tại bưu cục
+  const [pickupMethod, setPickupMethod] = useState<'PICKUP' | 'DROP_OFF'>('PICKUP');
+
+  // Masterdata Hubs
+  const [allHubs, setAllHubs] = useState<HubRecord[]>([]);
+
+  // Sender details
   const [senderName, setSenderName] = useState(user?.displayName || 'Chủ hàng');
   const [senderAddress, setSenderAddress] = useState('');
   const [senderProvince, setSenderProvince] = useState('Thành phố Hồ Chí Minh');
+  const [senderWard, setSenderWard] = useState('Phường Bến Nghé');
+  const [senderDistrict, setSenderDistrict] = useState('Quận 1');
+  const [senderHubCode, setSenderHubCode] = useState('HUB-HCM-001');
 
+  // Receiver details
   const [receiverName, setReceiverName] = useState('');
   const [receiverPhone, setReceiverPhone] = useState('');
   const [receiverAddress, setReceiverAddress] = useState('');
   const [receiverProvince, setReceiverProvince] = useState('Thành phố Hà Nội');
+  const [receiverWard, setReceiverWard] = useState('Phường Tràng Tiền');
+  const [receiverDistrict, setReceiverDistrict] = useState('Quận Hoàn Kiếm');
+  const [receiverHubCode, setReceiverHubCode] = useState('HUB-HN-001');
 
+  // Cargo & Service details
   const [cargoName, setCargoName] = useState('Kiện hàng mẫu');
   const [cargoWeight, setCargoWeight] = useState(1);
   const [serviceType, setServiceType] = useState<'STANDARD' | 'EXPRESS'>('STANDARD');
   const [codAmount, setCodAmount] = useState(0);
   const [notes, setNotes] = useState('');
 
+  // Live fee state
+  const [liveFee, setLiveFee] = useState(22000);
+  const [isCalculatingFee, setIsCalculatingFee] = useState(false);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Load hubs on mount
+  useEffect(() => {
+    masterdataApi
+      .getHubs()
+      .then((hubs) => {
+        if (Array.isArray(hubs) && hubs.length > 0) {
+          setAllHubs(hubs);
+          const sMatching = findMatchingHubsForLocation(hubs, senderProvince);
+          if (sMatching.length > 0) setSenderHubCode(sMatching[0].code);
+          const rMatching = findMatchingHubsForLocation(hubs, receiverProvince);
+          if (rMatching.length > 0) setReceiverHubCode(rMatching[0].code);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Wards list based on selected provinces
+  const senderWards = useMemo(() => getWardsForProvince(senderProvince), [senderProvince]);
+  const receiverWards = useMemo(() => getWardsForProvince(receiverProvince), [receiverProvince]);
+
+  // Matching hubs for sender & receiver provinces
+  const senderMatchingHubs = useMemo(
+    () => findMatchingHubsForLocation(allHubs, senderProvince),
+    [allHubs, senderProvince],
+  );
+  const receiverMatchingHubs = useMemo(
+    () => findMatchingHubsForLocation(allHubs, receiverProvince),
+    [allHubs, receiverProvince],
+  );
+
+  // Sync sender wards & hub when sender province changes
+  useEffect(() => {
+    if (senderWards.length > 0) {
+      setSenderWard(senderWards[0].name);
+      setSenderDistrict(senderWards[0].district || '');
+    }
+    if (senderMatchingHubs.length > 0) {
+      setSenderHubCode(senderMatchingHubs[0].code);
+    }
+  }, [senderProvince, senderWards, senderMatchingHubs]);
+
+  // Sync receiver wards & hub when receiver province changes
+  useEffect(() => {
+    if (receiverWards.length > 0) {
+      setReceiverWard(receiverWards[0].name);
+      setReceiverDistrict(receiverWards[0].district || '');
+    }
+    if (receiverMatchingHubs.length > 0) {
+      setReceiverHubCode(receiverMatchingHubs[0].code);
+    }
+  }, [receiverProvince, receiverWards, receiverMatchingHubs]);
+
+  // Real-time Pricing Engine calculation
+  useEffect(() => {
+    let active = true;
+    setIsCalculatingFee(true);
+
+    pricingApi
+      .calculateQuote({
+        serviceType,
+        sender: { province: senderProvince, hubCode: senderHubCode },
+        receiver: { province: receiverProvince, hubCode: receiverHubCode },
+        package: { weightKg: cargoWeight },
+        codAmount: codAmount,
+      })
+      .then((res) => {
+        if (active && res?.totalFee) {
+          setLiveFee(res.totalFee);
+        }
+      })
+      .catch(() => {
+        const isSame = senderProvince === receiverProvince;
+        const base = isSame ? 16500 : 32000;
+        const extra = Math.max(0, cargoWeight - 1) * (isSame ? 3000 : 7000);
+        const mult = serviceType === 'EXPRESS' ? 1.4 : 1.0;
+        if (active) setLiveFee(Math.round((base + extra) * mult));
+      })
+      .finally(() => {
+        if (active) setIsCalculatingFee(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [senderProvince, senderHubCode, receiverProvince, receiverHubCode, cargoWeight, serviceType, codAmount]);
 
   if (!phone) {
     return (
@@ -1299,7 +1409,12 @@ function CreateOrderPage() {
     }
 
     if (!receiverName.trim() || !receiverPhone.trim() || !receiverAddress.trim()) {
-      setErrorMsg('Vui lòng điền đầy đủ thông tin người nhận (Tên, SĐT, Địa chỉ).');
+      setErrorMsg('Vui lòng điền đầy đủ thông tin người nhận (Tên, SĐT, Địa chỉ chi tiết).');
+      return;
+    }
+
+    if (pickupMethod === 'PICKUP' && !senderAddress.trim()) {
+      setErrorMsg('Vui lòng nhập địa chỉ lấy hàng tại nhà chi tiết (số nhà, tên đường).');
       return;
     }
 
@@ -1308,29 +1423,63 @@ function CreateOrderPage() {
     setSuccessMsg(null);
 
     try {
+      const selectedDropOffHub = allHubs.find((h) => h.code === senderHubCode);
+      const fullSenderAddress =
+        pickupMethod === 'DROP_OFF'
+          ? (selectedDropOffHub
+              ? `${selectedDropOffHub.name} - ${selectedDropOffHub.addressDetail || selectedDropOffHub.province}`
+              : `Bưu cục ${senderHubCode}, ${senderWard}, ${senderProvince}`)
+          : `${senderAddress.trim()}, ${senderWard}, ${senderProvince}`;
+
+      const fullReceiverAddress = `${receiverAddress.trim()}, ${receiverWard}, ${receiverProvince}`;
+
       const res = await shipmentApi.createShipment(token, {
         sender: {
           name: senderName.trim(),
           phone: phone,
-          addressDetail: senderAddress.trim() || 'Địa chỉ người gửi',
+          addressDetail:
+            pickupMethod === 'DROP_OFF'
+              ? (selectedDropOffHub?.addressDetail || selectedDropOffHub?.name || 'Gửi tại quầy bưu cục')
+              : senderAddress.trim(),
+          address: fullSenderAddress,
           province: senderProvince,
+          district: senderDistrict,
+          ward: senderWard,
+          hubCode: senderHubCode,
         },
         receiver: {
           name: receiverName.trim(),
           phone: receiverPhone.trim(),
           addressDetail: receiverAddress.trim(),
+          address: fullReceiverAddress,
           province: receiverProvince,
+          district: receiverDistrict,
+          ward: receiverWard,
+          hubCode: receiverHubCode,
         },
         package: {
           itemName: cargoName.trim(),
           weightKg: cargoWeight,
           codAmount: codAmount,
         },
+        pickupType: pickupMethod,
         service: {
           type: serviceType,
+          pickupType: pickupMethod,
+          fee: liveFee,
         },
+        shippingFee: liveFee,
         codAmount: codAmount,
         notes: notes.trim(),
+        deliveryNote: notes.trim(),
+        originHubCode: senderHubCode,
+        destinationHubCode: receiverHubCode,
+        senderHubCode: senderHubCode,
+        receiverHubCode: receiverHubCode,
+        routing: {
+          originHubCode: senderHubCode,
+          destinationHubCode: receiverHubCode,
+        },
       });
 
       setSuccessMsg(`Tạo vận đơn #${res.code} thành công! Đang chuyển đến lịch sử...`);
@@ -1344,13 +1493,16 @@ function CreateOrderPage() {
     }
   };
 
+  const currentSenderHub = allHubs.find((h) => h.code === senderHubCode);
+  const currentReceiverHub = allHubs.find((h) => h.code === receiverHubCode);
+
   return (
     <div className="space-y-6 pb-12">
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between border-b border-slate-200 pb-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Tạo Đơn Hàng Vận Chuyển Mới</h1>
           <p className="text-xs text-slate-500 font-medium">
-            Tự động kích hoạt Dispatch Engine điều phối bưu tá lấy hàng trực tiếp.
+            Hỗ trợ tùy chọn lấy hàng tận nhà (Auto Dispatch bưu tá) hoặc gửi trực tiếp tại bưu cục.
           </p>
         </div>
         <div className="rounded-xl border border-blue-200 bg-blue-50/60 px-3.5 py-2 flex items-center gap-3">
@@ -1373,18 +1525,101 @@ function CreateOrderPage() {
         </div>
       )}
 
+      {/* HÌNH THỨC GỬI HÀNG (PICKUP vs DROP_OFF) */}
+      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="text-xs font-extrabold uppercase text-slate-800 flex items-center gap-2">
+            <Truck className="h-4 w-4 text-blue-600" />
+            Hình Thức Gửi Hàng
+          </div>
+          <span className="text-[11px] font-semibold text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-100">
+            {pickupMethod === 'PICKUP' ? 'Điều phối Shipper đến lấy' : 'Gửi tại quầy bưu cục'}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
+          <button
+            type="button"
+            onClick={() => setPickupMethod('PICKUP')}
+            className={`flex items-start gap-3.5 p-4 rounded-2xl border text-left transition-all ${
+              pickupMethod === 'PICKUP'
+                ? 'border-blue-600 bg-blue-50/70 shadow-sm ring-1 ring-blue-600'
+                : 'border-slate-200 bg-slate-50/50 hover:bg-slate-50'
+            }`}
+          >
+            <div
+              className={`p-2.5 rounded-xl shrink-0 ${
+                pickupMethod === 'PICKUP' ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600'
+              }`}
+            >
+              <Truck className="h-5 w-5" />
+            </div>
+            <div className="space-y-0.5">
+              <div className="font-bold text-xs text-slate-900 flex items-center gap-1.5">
+                🚚 Lấy hàng tại nhà (PICKUP)
+                {pickupMethod === 'PICKUP' && (
+                  <span className="inline-block w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+                )}
+              </div>
+              <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                Bưu tá Nexus sẽ đến tận nơi theo địa chỉ lấy hàng của bạn. Hệ thống tự động phân tuyến theo Phường/Xã.
+              </p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setPickupMethod('DROP_OFF')}
+            className={`flex items-start gap-3.5 p-4 rounded-2xl border text-left transition-all ${
+              pickupMethod === 'DROP_OFF'
+                ? 'border-blue-600 bg-blue-50/70 shadow-sm ring-1 ring-blue-600'
+                : 'border-slate-200 bg-slate-50/50 hover:bg-slate-50'
+            }`}
+          >
+            <div
+              className={`p-2.5 rounded-xl shrink-0 ${
+                pickupMethod === 'DROP_OFF' ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600'
+              }`}
+            >
+              <Building2 className="h-5 w-5" />
+            </div>
+            <div className="space-y-0.5">
+              <div className="font-bold text-xs text-slate-900 flex items-center gap-1.5">
+                🏢 Gửi hàng tại bưu cục (DROP_OFF)
+                {pickupMethod === 'DROP_OFF' && (
+                  <span className="inline-block w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+                )}
+              </div>
+              <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                Bạn chủ động mang hàng ra điểm bưu cục / bưu cục khai thác Nexus gần nhất để làm thủ tục gửi.
+              </p>
+            </div>
+          </button>
+        </div>
+      </div>
+
       <form onSubmit={handleCreateOrder} className="grid md:grid-cols-12 gap-6">
         <div className="md:col-span-7 space-y-5">
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 space-y-3">
-            <div className="flex items-center gap-2 text-xs font-extrabold uppercase text-slate-700">
-              <MapPin className="h-4 w-4 text-blue-600" />
-              Thông Tin Người Gửi
+          {/* THÔNG TIN NGƯỜI GỬI */}
+          <div className="bg-white rounded-2xl p-5 border border-slate-200 space-y-3.5 shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+              <div className="flex items-center gap-2 text-xs font-extrabold uppercase text-slate-700">
+                <MapPin className="h-4 w-4 text-blue-600" />
+                Thông Tin Người Gửi
+              </div>
+              {currentSenderHub && (
+                <span className="text-[10px] font-mono font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                  Hub gửi: {currentSenderHub.code}
+                </span>
+              )}
             </div>
+
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <div>
-                <label className="block text-[11px] font-bold text-slate-600 uppercase">Tên người gửi</label>
+                <label className="block text-[11px] font-bold text-slate-600 uppercase">Tên người gửi *</label>
                 <input
                   type="text"
+                  required
                   className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-900 outline-none focus:bg-white focus:border-blue-600"
                   value={senderName}
                   onChange={(e) => setSenderName(e.target.value)}
@@ -1394,41 +1629,118 @@ function CreateOrderPage() {
                 <label className="block text-[11px] font-bold text-slate-600 uppercase">Số điện thoại gửi</label>
                 <input
                   type="tel"
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 cursor-not-allowed"
                   value={phone}
                   disabled
                 />
               </div>
+
+              {/* TỈNH / THÀNH PHỐ GỬI */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-600 uppercase">Tỉnh / Thành gửi</label>
+                <label className="block text-[11px] font-bold text-slate-600 uppercase">Tỉnh / Thành gửi *</label>
                 <select
                   className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-900 outline-none focus:bg-white focus:border-blue-600"
                   value={senderProvince}
                   onChange={(e) => setSenderProvince(e.target.value)}
                 >
                   {PROVINCES.map((p) => (
-                    <option key={p} value={p}>{p}</option>
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
                   ))}
                 </select>
               </div>
+
+              {/* PHƯỜNG / XÃ GỬI (ĐỒNG BỘ AUTO ĐIỀU PHỐI) */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-600 uppercase">Địa chỉ lấy hàng</label>
-                <input
-                  type="text"
+                <label className="block text-[11px] font-bold text-slate-600 uppercase">
+                  Phường / Xã gửi (Tuyến bưu tá) *
+                </label>
+                <select
                   className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-900 outline-none focus:bg-white focus:border-blue-600"
-                  placeholder="Số nhà, tên đường..."
-                  value={senderAddress}
-                  onChange={(e) => setSenderAddress(e.target.value)}
-                />
+                  value={senderWard}
+                  onChange={(e) => {
+                    const found = senderWards.find((w) => w.name === e.target.value);
+                    setSenderWard(e.target.value);
+                    if (found?.district) setSenderDistrict(found.district);
+                  }}
+                >
+                  {senderWards.map((w) => (
+                    <option key={w.name} value={w.name}>
+                      {w.displayName}
+                    </option>
+                  ))}
+                </select>
               </div>
+
+              {/* ĐIỀU KIỆN THEO HÌNH THỨC GỬI */}
+              {pickupMethod === 'DROP_OFF' ? (
+                <div className="md:col-span-2">
+                  <label className="block text-[11px] font-bold text-blue-700 uppercase">
+                    🏢 Chọn bưu cục Nexus tiếp nhận gửi hàng *
+                  </label>
+                  <select
+                    className="mt-1 w-full rounded-xl border border-blue-200 bg-blue-50/50 px-3 py-2 text-xs font-bold text-blue-900 outline-none focus:bg-white focus:border-blue-600"
+                    value={senderHubCode}
+                    onChange={(e) => setSenderHubCode(e.target.value)}
+                  >
+                    {senderMatchingHubs.length > 0 ? (
+                      senderMatchingHubs.map((h) => (
+                        <option key={h.code} value={h.code}>
+                          {h.name} [{h.code}] - {h.addressDetail || h.province}
+                        </option>
+                      ))
+                    ) : (
+                      allHubs.map((h) => (
+                        <option key={h.code} value={h.code}>
+                          {h.name} [{h.code}] - {h.province}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                  <p className="mt-1 text-[11px] text-slate-500 font-medium">
+                    Quý khách vui lòng mang hàng hóa ra điểm bưu cục đã chọn trong giờ làm việc.
+                  </p>
+                </div>
+              ) : (
+                <div className="md:col-span-2">
+                  <label className="block text-[11px] font-bold text-slate-600 uppercase">
+                    Địa chỉ lấy hàng chi tiết (Số nhà, ngõ, tên đường) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-900 outline-none focus:bg-white focus:border-blue-600"
+                    placeholder="Ví dụ: 123 Nguyễn Văn Cừ, Tòa nhà Bitexco..."
+                    value={senderAddress}
+                    onChange={(e) => setSenderAddress(e.target.value)}
+                  />
+                  <div className="mt-1.5 flex items-center gap-2 text-[11px] text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg">
+                    <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                    <span>
+                      Tự động gán bưu tá lấy hàng phụ trách khu vực <b>{senderWard}</b> thuộc bưu cục{' '}
+                      <b>{senderHubCode}</b>.
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 space-y-3">
-            <div className="flex items-center gap-2 text-xs font-extrabold uppercase text-slate-700">
-              <User className="h-4 w-4 text-blue-600" />
-              Thông Tin Người Nhận
+          {/* THÔNG TIN NGƯỜI NHẬN */}
+          <div className="bg-white rounded-2xl p-5 border border-slate-200 space-y-3.5 shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+              <div className="flex items-center gap-2 text-xs font-extrabold uppercase text-slate-700">
+                <User className="h-4 w-4 text-blue-600" />
+                Thông Tin Người Nhận
+              </div>
+              {currentReceiverHub && (
+                <span className="text-[10px] font-mono font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                  Hub nhận: {currentReceiverHub.code}
+                </span>
+              )}
             </div>
+
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <div>
                 <label className="block text-[11px] font-bold text-slate-600 uppercase">Tên người nhận *</label>
@@ -1452,25 +1764,54 @@ function CreateOrderPage() {
                   onChange={(e) => setReceiverPhone(e.target.value)}
                 />
               </div>
+
+              {/* TỈNH / THÀNH PHỐ NHẬN */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-600 uppercase">Tỉnh / Thành nhận</label>
+                <label className="block text-[11px] font-bold text-slate-600 uppercase">Tỉnh / Thành nhận *</label>
                 <select
                   className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-900 outline-none focus:bg-white focus:border-blue-600"
                   value={receiverProvince}
                   onChange={(e) => setReceiverProvince(e.target.value)}
                 >
                   {PROVINCES.map((p) => (
-                    <option key={p} value={p}>{p}</option>
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
                   ))}
                 </select>
               </div>
+
+              {/* PHƯỜNG / XÃ NHẬN (ĐỒNG BỘ AUTO ĐIỀU PHỐI GIAO) */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-600 uppercase">Địa chỉ giao hàng *</label>
+                <label className="block text-[11px] font-bold text-slate-600 uppercase">
+                  Phường / Xã nhận (Tuyến bưu tá) *
+                </label>
+                <select
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-900 outline-none focus:bg-white focus:border-blue-600"
+                  value={receiverWard}
+                  onChange={(e) => {
+                    const found = receiverWards.find((w) => w.name === e.target.value);
+                    setReceiverWard(e.target.value);
+                    if (found?.district) setReceiverDistrict(found.district);
+                  }}
+                >
+                  {receiverWards.map((w) => (
+                    <option key={w.name} value={w.name}>
+                      {w.displayName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-[11px] font-bold text-slate-600 uppercase">
+                  Địa chỉ giao hàng chi tiết (Số nhà, ngõ, tên đường) *
+                </label>
                 <input
                   type="text"
                   required
                   className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-900 outline-none focus:bg-white focus:border-blue-600"
-                  placeholder="Số nhà, đường, phường/xã..."
+                  placeholder="Ví dụ: Số 45 Tràng Tiền, Phường Tràng Tiền, Quận Hoàn Kiếm..."
                   value={receiverAddress}
                   onChange={(e) => setReceiverAddress(e.target.value)}
                 />
@@ -1479,22 +1820,26 @@ function CreateOrderPage() {
           </div>
         </div>
 
+        {/* CỘT PHẢI: THÔNG TIN KIỆN HÀNG, DỊCH VỤ, CƯỚC PHÍ */}
         <div className="md:col-span-5 space-y-5">
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 space-y-3">
-            <div className="flex items-center gap-2 text-xs font-extrabold uppercase text-slate-700">
+          <div className="bg-white rounded-2xl p-5 border border-slate-200 space-y-3.5 shadow-sm">
+            <div className="flex items-center gap-2 text-xs font-extrabold uppercase text-slate-700 border-b border-slate-100 pb-2.5">
               <Package className="h-4 w-4 text-blue-600" />
               Thông Tin Kiện Hàng & Dịch Vụ
             </div>
+
             <div className="space-y-3">
               <div>
-                <label className="block text-[11px] font-bold text-slate-600 uppercase">Tên hàng hóa</label>
+                <label className="block text-[11px] font-bold text-slate-600 uppercase">Tên hàng hóa *</label>
                 <input
                   type="text"
+                  required
                   className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-900 outline-none focus:bg-white focus:border-blue-600"
                   value={cargoName}
                   onChange={(e) => setCargoName(e.target.value)}
                 />
               </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 uppercase">Khối lượng (kg)</label>
@@ -1519,6 +1864,7 @@ function CreateOrderPage() {
                   </select>
                 </div>
               </div>
+
               <div>
                 <label className="block text-[11px] font-bold text-slate-600 uppercase">Tiền Thu Hộ COD (VNĐ)</label>
                 <input
@@ -1530,6 +1876,7 @@ function CreateOrderPage() {
                   onChange={(e) => setCodAmount(parseFloat(e.target.value) || 0)}
                 />
               </div>
+
               <div>
                 <label className="block text-[11px] font-bold text-slate-600 uppercase">Ghi chú giao hàng</label>
                 <input
@@ -1541,14 +1888,44 @@ function CreateOrderPage() {
                 />
               </div>
             </div>
+
+            {/* BẢNG TỔNG CƯỚC TÍNH TOÁN */}
+            <div className="pt-3 border-t border-slate-100 space-y-2">
+              <div className="flex items-center justify-between text-xs text-slate-600">
+                <span>Cước vận chuyển ({serviceType === 'EXPRESS' ? 'Hỏa Tốc' : 'Tiêu Chuẩn'}):</span>
+                <span className="font-bold font-mono text-slate-900">
+                  {isCalculatingFee ? 'Đang tính...' : formatVnd(liveFee)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs text-slate-600">
+                <span>Tiền thu hộ COD:</span>
+                <span className="font-bold font-mono text-slate-900">{formatVnd(codAmount)}</span>
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t border-dashed border-slate-200 text-xs font-extrabold text-blue-800">
+                <span>TỔNG CƯỚC ƯỚC TÍNH:</span>
+                <span className="text-base font-black font-mono text-blue-700">
+                  {formatVnd(liveFee)}
+                </span>
+              </div>
+            </div>
           </div>
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider shadow-md shadow-blue-600/25 transition disabled:opacity-50"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider shadow-md shadow-blue-600/25 transition disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {isSubmitting ? 'Đang gửi thông tin...' : 'Xác Nhận Tạo Đơn Hàng'}
+            {isSubmitting ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                Đang gửi thông tin...
+              </>
+            ) : (
+              <>
+                <Check className="w-4 h-4" />
+                Xác Nhận Tạo Đơn Hàng
+              </>
+            )}
           </button>
         </div>
       </form>

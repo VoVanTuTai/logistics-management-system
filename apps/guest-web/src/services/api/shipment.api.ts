@@ -44,14 +44,24 @@ export interface CreateShipmentMetadata {
     declaredValue?: number;
     codAmount?: number;
   };
+  pickupType?: 'PICKUP' | 'DROP_OFF';
   service?: {
     type?: string;
+    pickupType?: 'PICKUP' | 'DROP_OFF';
     fee?: number;
   };
   shippingFee?: number;
   codAmount?: number;
-  notes?: string;
-  deliveryNote?: string;
+  notes?: string | null;
+  deliveryNote?: string | null;
+  originHubCode?: string;
+  destinationHubCode?: string;
+  senderHubCode?: string;
+  receiverHubCode?: string;
+  routing?: {
+    originHubCode?: string;
+    destinationHubCode?: string;
+  };
 }
 
 export interface ShipmentResponse {
