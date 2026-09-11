@@ -77,11 +77,11 @@ export class AuthService {
     const user = await this.userAccountRepository.findByUsername(input.username);
 
     if (!user || user.status !== 'ACTIVE') {
-      throw new UnauthorizedException('Invalid credentials.');
+      throw new UnauthorizedException('Sai tên đăng nhập hoặc mật khẩu.');
     }
 
     if (!this.hashService.verify(input.password, user.passwordHash)) {
-      throw new UnauthorizedException('Invalid credentials.');
+      throw new UnauthorizedException('Sai tên đăng nhập hoặc mật khẩu.');
     }
 
     this.assertUserMatchesLoginRoleGroup(

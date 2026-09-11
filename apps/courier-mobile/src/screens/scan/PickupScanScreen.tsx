@@ -21,6 +21,7 @@ import { submitPickupScanAction } from '../../features/scan/pickup.api';
 import { enqueuePickupScanOffline } from '../../features/scan/pickup.offline';
 import { parsePickupScannedCode } from '../../features/scan/pickup.scanner.adapter';
 import type { PickupScanCommand } from '../../features/scan/pickup.types';
+import { uploadCourierImage } from '../../features/media/courier-media-upload.api';
 import { useAuthStore } from '../../features/auth/auth.store';
 import { scanApi } from '../../features/scan/scan.api';
 import type { CurrentLocationDto } from '../../features/scan/scan.types';
@@ -170,8 +171,11 @@ function validateShipmentForReceive(
     return `Đơn ${shipmentCode} đã có trạng thái đã nhận hàng (${shipment.currentStatus}).`;
   }
 
+  const isAssignedToThisCourier = hasAssignedPickupTask(input.assignedPickupTasks, shipmentCode);
+
   const processingHubCode = readProcessingHubCode(shipment.metadata);
   if (
+    !isAssignedToThisCourier &&
     processingHubCode &&
     input.assignedHubCodes.length > 0 &&
     !input.assignedHubCodes.includes(processingHubCode)
@@ -181,7 +185,7 @@ function validateShipmentForReceive(
 
   if (
     isHomePickupShipment(shipment.metadata) &&
-    !hasAssignedPickupTask(input.assignedPickupTasks, shipmentCode)
+    !isAssignedToThisCourier
   ) {
     return `Đơn ${shipmentCode} là đơn lấy hàng tại nhà. Vui lòng xử lý trong mục Đợi lấy khi đã được phân công.`;
   }
@@ -507,12 +511,36 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
         courierId,
         hubCode: receiveHubCode,
       });
+
+      let resolvedProofText: string | null = null;
+      if (isTaskReceiveMode && proofPhotoUri) {
+        try {
+          if (
+            proofPhotoUri.startsWith('data:') ||
+            proofPhotoUri.startsWith('file:') ||
+            proofPhotoUri.startsWith('content:')
+          ) {
+            const uploadedUrl = await uploadCourierImage({
+              accessToken: currentAccessToken,
+              uri: proofPhotoUri,
+              filename: `pickup-proof-${item.code}.jpg`,
+            });
+            resolvedProofText = uploadedUrl;
+          } else {
+            resolvedProofText = proofPhotoUri;
+          }
+        } catch {
+          // If MinIO upload is unavailable, fallback to clean indicator text
+          resolvedProofText = '[Đã chụp ảnh minh chứng nhận hàng]';
+        }
+      }
+
       const command: PickupScanCommand = {
         shipmentCode: item.code,
         locationCode: receiveHubCode,
         note:
-          isTaskReceiveMode && proofPhotoUri
-            ? `${baseNote} | Minh chứng: ${proofPhotoUri}`
+          resolvedProofText
+            ? `${baseNote} | Minh chứng: ${resolvedProofText}`
             : baseNote,
         actor: (courierId || session?.user.username) ?? null,
         occurredAt: new Date().toISOString(),
@@ -575,14 +603,14 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
       setSelectedCodes(new Set());
       setInfoMessage(
         `Đã cập nhật nhận hàng ${successCodes.length} mã` +
-          (queuedCodes.length > 0
-            ? `, ${queuedCodes.length} mã được lưu offline.`
-            : '.') +
-          (routeTaskCompleted
-            ? ' Task Đợi lấy đã chuyển hoàn tất.'
-            : routeTaskCompleteFailed
-              ? ' Chưa cập nhật được trạng thái task, vui lòng tải lại và thử lại.'
-              : ''),
+        (queuedCodes.length > 0
+          ? `, ${queuedCodes.length} mã được lưu offline.`
+          : '.') +
+        (routeTaskCompleted
+          ? ' Task Đợi lấy đã chuyển hoàn tất.'
+          : routeTaskCompleteFailed
+            ? ' Chưa cập nhật được trạng thái task, vui lòng tải lại và thử lại.'
+            : ''),
       );
       await queryClient.invalidateQueries({ queryKey: ['tasks'] });
       if (route.params?.taskId) {
@@ -621,14 +649,14 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
 
     setInfoMessage(
       `Đã cập nhật nhận hàng ${successCodes.length} mã` +
-        (queuedCodes.length > 0
-          ? `, ${queuedCodes.length} mã được lưu offline.`
-          : '.') +
-        (routeTaskCompleted
-          ? ' Task Đợi lấy đã chuyển hoàn tất.'
-          : routeTaskCompleteFailed
-            ? ' Chưa cập nhật được trạng thái task, vui lòng tải lại và thử lại.'
-            : ''),
+      (queuedCodes.length > 0
+        ? `, ${queuedCodes.length} mã được lưu offline.`
+        : '.') +
+      (routeTaskCompleted
+        ? ' Task Đợi lấy đã chuyển hoàn tất.'
+        : routeTaskCompleteFailed
+          ? ' Chưa cập nhật được trạng thái task, vui lòng tải lại và thử lại.'
+          : ''),
     );
     await queryClient.invalidateQueries({ queryKey: ['tasks'] });
     if (route.params?.taskId) {
@@ -714,7 +742,7 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
               style={[
                 styles.captureProofButton,
                 (!cameraIsReady || isCapturingProof || isUploading) &&
-                  styles.captureProofButtonDisabled,
+                styles.captureProofButtonDisabled,
               ]}
             >
               {isCapturingProof ? (
@@ -873,7 +901,7 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
               isVerifyingScan ||
               pickedShipments.length === 0 ||
               (isTaskReceiveMode && !proofPhotoUri)) &&
-              styles.uploadButtonDisabled,
+            styles.uploadButtonDisabled,
           ]}
         >
           {isUploading ? (

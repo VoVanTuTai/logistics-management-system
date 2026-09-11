@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import { ApiClientError, courierApiClient } from '../../services/api/client';
 import { courierEndpoints } from '../../services/api/endpoints';
+import { appEnv } from '../../utils/env';
 
 interface MediaUploadUrlResponse {
   success: true;
@@ -192,8 +193,26 @@ export function isLocalMediaUri(value: string | null | undefined): value is stri
 export function normalizeUploadTargetUrl(rawUrl: string): string {
   try {
     const parsedTarget = new URL(rawUrl);
+    const gatewayUrl = (appEnv.gatewayBaseUrl || '').toLowerCase();
+    const isLocalDev =
+      gatewayUrl.includes('localhost') ||
+      gatewayUrl.includes('127.0.0.1') ||
+      gatewayUrl.includes('10.0.2.2') ||
+      gatewayUrl.includes('192.168.');
 
-    // If target hostname is docker container name (minio), loopback, or internal IP
+    if (isLocalDev) {
+      if (parsedTarget.hostname === 'minio' || parsedTarget.hostname === 'localhost' || parsedTarget.hostname === '127.0.0.1') {
+        try {
+          const gw = new URL(appEnv.gatewayBaseUrl);
+          parsedTarget.hostname = gw.hostname;
+        } catch {
+          // ignore
+        }
+      }
+      return parsedTarget.toString();
+    }
+
+    // VPS environment
     const isInternalHost =
       parsedTarget.hostname === 'minio' ||
       parsedTarget.hostname === 'localhost' ||
@@ -201,10 +220,9 @@ export function normalizeUploadTargetUrl(rawUrl: string): string {
       parsedTarget.hostname === '0.0.0.0' ||
       parsedTarget.hostname === '10.0.2.2' ||
       parsedTarget.hostname.startsWith('172.') ||
-      parsedTarget.hostname.startsWith('192.168.') ||
       (parsedTarget.hostname === '103.82.20.51' && (parsedTarget.port === '19000' || parsedTarget.port === '9000'));
 
-    if (isInternalHost) {
+    if (isInternalHost && gatewayUrl.includes('nexus-ex.site')) {
       const publicOrigin = new URL(PUBLIC_MINIO_ORIGIN);
       parsedTarget.protocol = publicOrigin.protocol;
       parsedTarget.hostname = publicOrigin.hostname;

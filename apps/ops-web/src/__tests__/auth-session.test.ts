@@ -57,9 +57,12 @@ vi.mock('../store/authStore', () => ({
 
 import {
   clearAuthSession,
+  clearRememberedCredentials,
+  getRememberedCredentials,
   getStoredAuthSession,
   persistAuthSession,
   refreshAuthSession,
+  saveRememberedCredentials,
   subscribeToAuthSessionStorage,
 } from '../features/auth/auth.session';
 import type { AuthSessionDto } from '../features/auth/auth.types';
@@ -151,4 +154,20 @@ describe('auth session refresh', () => {
 
     unsubscribe();
   });
+
+  it('persists and restores remembered login credentials across login/logout', () => {
+    clearRememberedCredentials();
+    expect(getRememberedCredentials()).toBeNull();
+
+    saveRememberedCredentials({ username: '20002008', password: 'secretpassword', rememberMe: true });
+    expect(getRememberedCredentials()).toEqual({
+      username: '20002008',
+      password: 'secretpassword',
+      rememberMe: true,
+    });
+
+    clearRememberedCredentials();
+    expect(getRememberedCredentials()).toBeNull();
+  });
 });
+
