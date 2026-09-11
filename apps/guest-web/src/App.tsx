@@ -59,6 +59,7 @@ import {
 import qrcode from 'qrcode-generator';
 
 import LoginPage from './pages/LoginPage';
+import { OrdersPage } from './pages/OrdersPage';
 import { useAuthStore } from './store/useAuthStore';
 import {
   trackingApi,
@@ -85,7 +86,7 @@ import {
 const navItems = [
   { to: '/', icon: Search, label: 'Tra cứu & Cước phí' },
   { to: '/create', icon: PlusCircle, label: 'Tạo vận đơn' },
-  { to: '/history', icon: Clock, label: 'Lịch sử đơn hàng' },
+  { to: '/orders', icon: Package, label: 'Đơn hàng' },
   { to: '/network', icon: Building2, label: 'Mạng lưới bưu cục' },
 ];
 
@@ -1485,9 +1486,9 @@ function CreateOrderPage() {
         },
       });
 
-      setSuccessMsg(`Tạo vận đơn #${res.code} thành công! Đang chuyển đến lịch sử...`);
+      setSuccessMsg(`Tạo vận đơn #${res.code} thành công! Đang chuyển đến danh sách đơn hàng...`);
       setTimeout(() => {
-        navigate('/history');
+        navigate('/orders');
       }, 1200);
     } catch (err: any) {
       setErrorMsg(err?.message || 'Tạo vận đơn thất bại. Vui lòng thử lại.');
@@ -2708,7 +2709,8 @@ export default function App() {
           <Route index element={<TrackingPage />} />
           <Route path="track/:code" element={<TrackingPage />} />
           <Route path="create" element={<CreateOrderPage />} />
-          <Route path="history" element={<HistoryPage />} />
+          <Route path="orders" element={<OrdersPage />} />
+          <Route path="history" element={<OrdersPage />} />
           <Route path="network" element={<NetworkDirectoryPage />} />
           <Route path="login" element={<LoginPage />} />
         </Route>
