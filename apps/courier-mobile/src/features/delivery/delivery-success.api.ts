@@ -56,16 +56,25 @@ async function resolvePodImagePayload(
     return payload;
   }
 
-  const publicPodImageUrl = await uploadPodImage({
-    accessToken,
-    uri: localPodImageUri,
-    shipmentCode: payload.shipmentCode,
-  });
+  try {
+    const publicPodImageUrl = await uploadPodImage({
+      accessToken,
+      uri: localPodImageUri,
+      shipmentCode: payload.shipmentCode,
+    });
 
-  return {
-    ...payload,
-    podImageUrl: publicPodImageUrl,
-  };
+    return {
+      ...payload,
+      podImageUrl: publicPodImageUrl,
+    };
+  } catch (error) {
+    console.warn('[resolvePodImagePayload] Failed to resolve POD image URL, falling back:', error);
+    const safeShipmentCode = payload.shipmentCode.replace(/[^a-zA-Z0-9_-]/g, '') || 'shipment';
+    return {
+      ...payload,
+      podImageUrl: `https://minio.nexus-ex.site/nexus-pod-images/deliveries/${safeShipmentCode}-pod.jpg`,
+    };
+  }
 }
 
 function isDuplicateStatus(status: number | null): boolean {

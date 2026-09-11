@@ -54,7 +54,7 @@ export class ShipmentsService {
     private readonly shipmentOutboxService: ShipmentOutboxService,
     private readonly marketplaceWebhookSenderService: MarketplaceWebhookSenderService,
     private readonly pricingClientService: PricingClientService,
-  ) {}
+  ) { }
 
   list(
     filters: ShipmentListFilters = {},
@@ -68,12 +68,12 @@ export class ShipmentsService {
       return Promise.resolve(
         shouldReturnPage
           ? {
-              items: [],
-              pageInfo: {
-                hasNextPage: false,
-                total: 0,
-              },
-            }
+            items: [],
+            pageInfo: {
+              hasNextPage: false,
+              total: 0,
+            },
+          }
           : [],
       );
     }
@@ -208,10 +208,10 @@ export class ShipmentsService {
     const requestedHubCodes = normalizeStringList(filters.hubCodes);
     const hubCodes = requestedHubCodes.length > 0
       ? requestedHubCodes.filter((requestedHubCode) =>
-          opsScope.hubCodes.some((assignedHubCode) =>
-            isSameHubOrScopedLocation(requestedHubCode, assignedHubCode),
-          ),
-        )
+        opsScope.hubCodes.some((assignedHubCode) =>
+          isSameHubOrScopedLocation(requestedHubCode, assignedHubCode),
+        ),
+      )
       : opsScope.hubCodes;
 
     if (hubCodes.length === 0) {
@@ -331,16 +331,16 @@ export class ShipmentsService {
     if (nextStatus === 'INVENTORY_CHECK') {
       const updatedShipment = movementMetadata
         ? await this.shipmentRepository.updateCurrentStatusMetadataAndLock(
-            normalizedCode,
-            nextStatus,
-            movementMetadata,
-            false,
-          )
+          normalizedCode,
+          nextStatus,
+          movementMetadata,
+          false,
+        )
         : await this.shipmentRepository.updateCurrentStatusAndLock(
-            normalizedCode,
-            nextStatus,
-            false,
-          );
+          normalizedCode,
+          nextStatus,
+          false,
+        );
 
       await this.marketplaceWebhookSenderService.notifyStatusChanged(
         updatedShipment,
@@ -352,15 +352,15 @@ export class ShipmentsService {
 
     const updatedShipment = movementMetadata
       ? await this.shipmentRepository.updateCurrentStatusMetadataAndLock(
-          normalizedCode,
-          nextStatus,
-          movementMetadata,
-          shipment.isLocked,
-        )
+        normalizedCode,
+        nextStatus,
+        movementMetadata,
+        shipment.isLocked,
+      )
       : await this.shipmentRepository.updateCurrentStatus(
-          normalizedCode,
-          nextStatus,
-        );
+        normalizedCode,
+        nextStatus,
+      );
 
     await this.marketplaceWebhookSenderService.notifyStatusChanged(
       updatedShipment,
@@ -642,11 +642,11 @@ function collectHubCodes(shipment: Shipment): string[] {
   const movement = asJsonRecord(metadata.movement);
   const destinationCodes = DESTINATION_VISIBLE_STATUSES.has(shipment.currentStatus)
     ? [
-        metadata.receiverHubCode,
-        metadata.destinationHubCode,
-        receiver.hubCode,
-        routing.destinationHubCode,
-      ]
+      metadata.receiverHubCode,
+      metadata.destinationHubCode,
+      receiver.hubCode,
+      routing.destinationHubCode,
+    ]
     : [];
 
   return normalizeStringList([
@@ -1120,9 +1120,9 @@ function calculateHaversineDistanceKm(
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }

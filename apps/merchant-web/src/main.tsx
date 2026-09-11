@@ -843,16 +843,113 @@ function filterPickupRequestsByUser(
     .filter((pickup) => pickup.items.length > 0);
 }
 
+interface RememberedMerchantCredentials {
+  username: string;
+  password?: string;
+  rememberMe: boolean;
+}
+
+const REMEMBERED_CREDENTIALS_STORAGE_KEY = 'merchant-web.remembered-credentials';
+
+function getRememberedCredentials(): RememberedMerchantCredentials | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(REMEMBERED_CREDENTIALS_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<RememberedMerchantCredentials>;
+    if (!parsed || typeof parsed !== 'object' || typeof parsed.username !== 'string') {
+      return null;
+    }
+    return {
+      username: parsed.username.trim(),
+      password: typeof parsed.password === 'string' ? parsed.password : '',
+      rememberMe: Boolean(parsed.rememberMe ?? true),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function saveRememberedCredentials(credentials: {
+  username: string;
+  password?: string;
+  rememberMe: boolean;
+}): void {
+  if (typeof window === 'undefined') return;
+  try {
+    if (!credentials.rememberMe || !credentials.username.trim()) {
+      window.localStorage.removeItem(REMEMBERED_CREDENTIALS_STORAGE_KEY);
+      return;
+    }
+    const payload: RememberedMerchantCredentials = {
+      username: credentials.username.trim(),
+      password: credentials.password || '',
+      rememberMe: true,
+    };
+    window.localStorage.setItem(REMEMBERED_CREDENTIALS_STORAGE_KEY, JSON.stringify(payload));
+  } catch {
+    // Ignore localStorage write failures
+  }
+}
+
+function clearRememberedCredentials(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.removeItem(REMEMBERED_CREDENTIALS_STORAGE_KEY);
+  } catch {
+    // Ignore
+  }
+}
+
+function formatMerchantAuthErrorMessage(rawMessage: string | null | undefined): string {
+  if (!rawMessage) {
+    return 'Sai tên đăng nhập hoặc mật khẩu. Vui lòng kiểm tra lại.';
+  }
+  const normalized = rawMessage.trim().toLowerCase();
+  if (
+    normalized.includes('invalid credentials') ||
+    normalized.includes('unauthorized') ||
+    normalized.includes('sai tên') ||
+    normalized.includes('mật khẩu không đúng') ||
+    normalized.includes('wrong password')
+  ) {
+    return 'Sai tên đăng nhập hoặc mật khẩu. Vui lòng kiểm tra lại.';
+  }
+  return rawMessage;
+}
+
 function MerchantApp(): React.JSX.Element {
   const [booting, setBooting] = useState(true);
   const [session, setSession] = useState<MerchantSession | null>(null);
   const [activeView, setActiveView] = useState<ViewId>('dashboard');
 
-  const [loginUsername, setLoginUsername] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
+  const remembered = useMemo(() => getRememberedCredentials(), []);
+  const [loginUsername, setLoginUsername] = useState(remembered?.username ?? '');
+  const [loginPassword, setLoginPassword] = useState(remembered?.password ?? '');
+  const [rememberMe, setRememberMe] = useState(remembered ? remembered.rememberMe : true);
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    const saved = getRememberedCredentials();
+    if (saved && saved.rememberMe) {
+      if (saved.username) setLoginUsername(saved.username);
+      if (saved.password) setLoginPassword(saved.password);
+      setRememberMe(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!loginError) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setLoginError(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [loginError]);
 
   const [shipments, setShipments] = useState<ShipmentResponse[]>([]);
   const [pickups, setPickups] = useState<PickupRequest[]>([]);
@@ -2061,13 +2158,24 @@ function MerchantApp(): React.JSX.Element {
           roleGroup: 'MERCHANT',
         }),
       });
+
+      if (rememberMe) {
+        saveRememberedCredentials({
+          username: loginUsername.trim(),
+          password: loginPassword,
+          rememberMe: true,
+        });
+      } else {
+        clearRememberedCredentials();
+      }
+
       const nextSession = mapLoginResponseToMerchantSession(result);
       setSession(nextSession);
       await refreshAllData(nextSession.accessToken, nextSession.user);
       setActiveView('dashboard');
       pushNotification('success', 'Đăng nhập thành công', `Xin chào ${nextSession.user.displayName || nextSession.user.username}`);
     } catch (error) {
-      setLoginError(extractErrorMessage(error));
+      setLoginError(formatMerchantAuthErrorMessage(extractErrorMessage(error)));
     } finally {
       setLoginLoading(false);
     }
@@ -3081,7 +3189,12 @@ function MerchantApp(): React.JSX.Element {
 
                 <div className="login-utilities">
                   <label className="login-remember-label">
-                    <input className="login-remember-checkbox" type="checkbox" />
+                    <input
+                      className="login-remember-checkbox"
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                    />
                     <span className="login-remember-text">Ghi nhớ đăng nhập</span>
                   </label>
                   <a className="login-forgot-link" href="#" onClick={(e) => e.preventDefault()}>Quên mật khẩu?</a>
@@ -3093,7 +3206,53 @@ function MerchantApp(): React.JSX.Element {
                 </button>
               </form>
 
-              {loginError ? <p className="message error" style={{ marginTop: 12 }}>{loginError}</p> : null}
+              {/* Login Error Modal Dialog */}
+              {loginError && (
+                <div className="ops-modal-backdrop" onClick={() => setLoginError(null)}>
+                  <div
+                    className="ops-modal-card ops-modal-card--sm ops-login-error-modal"
+                    onClick={(e) => e.stopPropagation()}
+                    role="alertdialog"
+                    aria-modal="true"
+                    aria-labelledby="merchant-login-error-title"
+                  >
+                    <div className="ops-login-error-header">
+                      <div className="ops-login-error-icon-circle">
+                        <span className="material-symbols-outlined">error</span>
+                      </div>
+                      <button
+                        type="button"
+                        className="ops-modal-close-btn"
+                        onClick={() => setLoginError(null)}
+                        aria-label="Đóng thông báo"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <div className="ops-login-error-body">
+                      <h3 id="merchant-login-error-title" className="ops-login-error-title">
+                        Đăng nhập không thành công
+                      </h3>
+                      <p className="ops-login-error-message">
+                        {loginError}
+                      </p>
+                    </div>
+
+                    <div className="ops-login-error-footer">
+                      <button
+                        type="button"
+                        className="ops-login-error-btn"
+                        onClick={() => setLoginError(null)}
+                        autoFocus
+                      >
+                        <span>Đã hiểu & Đăng nhập lại</span>
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>check_circle</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="login-footer-support">
                 <p className="login-footer-support-text">

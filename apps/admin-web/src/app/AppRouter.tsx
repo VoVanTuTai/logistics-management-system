@@ -24,6 +24,7 @@ import { AdminHubGeofenceMapPage } from '../pages/masterdata/AdminHubGeofenceMap
 import { NdrReasonManagementPage } from '../pages/masterdata/NdrReasonManagementPage';
 import { ZoneManagementPage } from '../pages/masterdata/ZoneManagementPage';
 import { CourierPermissionMatrixPage } from '../pages/permissions/CourierPermissionMatrixPage';
+import { CustomerUsersPage } from '../pages/users/CustomerUsersPage';
 import { MerchantUsersPage } from '../pages/users/MerchantUsersPage';
 import { OpsUsersPage } from '../pages/users/OpsUsersPage';
 import { ShipperUsersPage } from '../pages/users/ShipperUsersPage';
@@ -60,6 +61,7 @@ function AdminLayout(): React.JSX.Element {
       { label: 'Tài khoản Ops', to: routePaths.opsUsers, testId: 'nav-users-ops', icon: 'badge' },
       { label: 'Tài khoản Shipper', to: routePaths.shipperUsers, testId: 'nav-users-shippers', icon: 'two_wheeler' },
       { label: 'Tài khoản Merchant', to: routePaths.merchantUsers, testId: 'nav-users-merchants', icon: 'storefront' },
+      { label: 'Tài khoản Khách hàng (Mobile)', to: routePaths.customerUsers, testId: 'nav-users-customers', icon: 'person' },
       { label: 'Phân quyền Mobile', to: routePaths.courierPermissions, testId: 'nav-permissions', icon: 'admin_panel_settings' },
       { label: 'Nhật ký Audit Log', to: routePaths.auditLogs, testId: 'nav-audit', icon: 'receipt_long' },
     ],
@@ -173,6 +175,7 @@ export function AppRouter(): React.JSX.Element {
             <Route path={routePaths.opsUsersLeaf} element={<OpsUsersPage />} />
             <Route path={routePaths.shipperUsersLeaf} element={<ShipperUsersPage />} />
             <Route path={routePaths.merchantUsersLeaf} element={<MerchantUsersPage />} />
+            <Route path={routePaths.customerUsersLeaf} element={<CustomerUsersPage />} />
             <Route path={routePaths.courierPermissionsLeaf} element={<CourierPermissionMatrixPage />} />
             <Route path={routePaths.auditLogsLeaf} element={<AdminAuditLogPage />} />
             <Route path={routePaths.masterdataHubsLeaf} element={<HubManagementPage />} />

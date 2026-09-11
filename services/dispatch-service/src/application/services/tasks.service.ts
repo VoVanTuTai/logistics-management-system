@@ -65,7 +65,7 @@ export class TasksService {
     private readonly dispatchOutboxService: DispatchOutboxService,
     private readonly tasksRealtimeGateway: TasksRealtimeGateway,
     private readonly opsAuditService: OpsAuditService,
-  ) {}
+  ) { }
 
   async list(
     filters: {
@@ -978,7 +978,7 @@ export class TasksService {
         const shipmentCode = normalizeNonEmptyString(asRecord(item)?.shipmentCode);
         if (!shipmentCode) {
           continue;
-      }
+        }
 
         const shipmentHubCodes = await this.resolveShipmentHubCodes(
           shipmentCode,

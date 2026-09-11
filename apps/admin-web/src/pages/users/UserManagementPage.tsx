@@ -45,6 +45,10 @@ function roleOptionsByGroup(roleGroup: UserRoleGroup): string[] {
     return ['MERCHANT'];
   }
 
+  if (roleGroup === 'CUSTOMER') {
+    return ['CUSTOMER'];
+  }
+
   if (roleGroup === 'SHIPPER') {
     return ['COURIER'];
   }
@@ -55,6 +59,10 @@ function roleOptionsByGroup(roleGroup: UserRoleGroup): string[] {
 function pageTitleByGroup(roleGroup: UserRoleGroup): string {
   if (roleGroup === 'MERCHANT') {
     return 'Quản trị - Quản lý tài khoản Merchant';
+  }
+
+  if (roleGroup === 'CUSTOMER') {
+    return 'Quản trị - Quản lý tài khoản Khách hàng Mobile (Customer)';
   }
 
   return roleGroup === 'SHIPPER'

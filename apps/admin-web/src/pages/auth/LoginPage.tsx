@@ -7,6 +7,7 @@ import { clearAuthSession } from '../../features/auth/auth.session';
 import type { LoginFormValues } from '../../features/auth/auth.types';
 import { routePaths } from '../../navigation/routes';
 import { useAuthStore } from '../../store/authStore';
+import { useUiStore } from '../../store/uiStore';
 import { LoginForm } from './LoginForm';
 
 export function LoginPage(): React.JSX.Element {
@@ -20,7 +21,12 @@ export function LoginPage(): React.JSX.Element {
   const authError = useAuthStore((state) => state.authError);
   const clearAuthError = useAuthStore((state) => state.clearAuthError);
   const setAuthError = useAuthStore((state) => state.setAuthError);
+  const clearGlobalError = useUiStore((state) => state.clearGlobalError);
   const redirectTo = getRedirectPath(location.state);
+
+  useEffect(() => {
+    clearGlobalError();
+  }, [clearGlobalError]);
 
   useEffect(() => {
     if (isAuthenticated && hasAdminRole(session)) {
@@ -30,6 +36,7 @@ export function LoginPage(): React.JSX.Element {
 
   const onSubmit = async (values: LoginFormValues) => {
     clearAuthError();
+    clearGlobalError();
 
     try {
       const session = await loginMutation.mutateAsync(values);
@@ -45,6 +52,20 @@ export function LoginPage(): React.JSX.Element {
       // Error message is mapped into auth store by useLoginMutation.
     }
   };
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape' && authError) {
+        clearAuthError();
+      }
+    }
+    if (authError) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [authError, clearAuthError]);
 
   if (status === 'restoring') {
     return <div className="admin-route-loading">Đang khôi phục phiên đăng nhập...</div>;
@@ -97,7 +118,7 @@ export function LoginPage(): React.JSX.Element {
 
             <LoginForm
               isSubmitting={isSubmitting || loginMutation.isPending}
-              errorMessage={authError}
+              errorMessage={null}
               onSubmit={onSubmit}
               usernamePlaceholder="VD: 10000001"
             />
@@ -123,6 +144,54 @@ export function LoginPage(): React.JSX.Element {
           </div>
         </div>
       </div>
+
+      {/* Login Error Modal Dialog */}
+      {authError && (
+        <div className="ops-modal-backdrop" onClick={clearAuthError}>
+          <div
+            className="ops-modal-card ops-modal-card--sm ops-login-error-modal"
+            onClick={(e) => e.stopPropagation()}
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="login-error-title"
+          >
+            <div className="ops-login-error-header">
+              <div className="ops-login-error-icon-circle">
+                <span className="material-symbols-outlined">error</span>
+              </div>
+              <button
+                type="button"
+                className="ops-modal-close-btn"
+                onClick={clearAuthError}
+                aria-label="Đóng thông báo"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="ops-login-error-body">
+              <h3 id="login-error-title" className="ops-login-error-title">
+                Đăng nhập không thành công
+              </h3>
+              <p className="ops-login-error-message">
+                {authError}
+              </p>
+            </div>
+
+            <div className="ops-login-error-footer">
+              <button
+                type="button"
+                className="ops-login-error-btn"
+                onClick={clearAuthError}
+                autoFocus
+              >
+                <span>Đã hiểu & Đăng nhập lại</span>
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>check_circle</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
