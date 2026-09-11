@@ -1,8 +1,12 @@
 import { Module } from '@nestjs/common';
 
 import { ChangeRequestController } from './api/controllers/change-request.controller';
+import { ClaimsController } from './api/controllers/claims.controller';
+import { InvestigationsController } from './api/controllers/investigations.controller';
 import { ShipmentController } from './api/controllers/shipment.controller';
 import { ChangeRequestsService } from './application/services/change-requests.service';
+import { ClaimsService } from './application/services/claims.service';
+import { InvestigationsService } from './application/services/investigations.service';
 import { PricingClientService } from './application/services/pricing-client.service';
 import { ShipmentEventHandlersService } from './application/services/shipment-event-handlers.service';
 import { ShipmentRetentionCleanupService } from './application/services/shipment-retention-cleanup.service';
@@ -25,11 +29,18 @@ import { ShipmentOutboxService } from './messaging/outbox/shipment-outbox.servic
 
 @Module({
   imports: [HealthModule],
-  controllers: [ShipmentController, ChangeRequestController],
+  controllers: [
+    ShipmentController,
+    ChangeRequestController,
+    InvestigationsController,
+    ClaimsController,
+  ],
   providers: [
     PrismaService,
     ShipmentStateMachine,
     ShipmentsService,
+    InvestigationsService,
+    ClaimsService,
     ShipmentRetentionCleanupService,
     PricingClientService,
     ChangeRequestsService,

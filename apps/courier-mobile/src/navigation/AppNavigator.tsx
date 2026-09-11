@@ -29,6 +29,7 @@ import { CodStatsScreen } from '../screens/cod/CodStatsScreen';
 import { CodCollectScreen } from '../screens/cod/CodCollectScreen';
 import { MyRouteScreen } from '../screens/profile/MyRouteScreen';
 import { StatsScreen } from '../screens/stats/StatsScreen';
+import { OverdueAlertScreen } from '../screens/tasks/OverdueAlertScreen';
 import { theme } from '../theme';
 
 const Stack = createNativeStackNavigator<AppNavigatorParamList>();
@@ -178,6 +179,11 @@ export function AppNavigator(): React.JSX.Element {
             name="Stats"
             component={StatsScreen}
             options={{ title: 'Thống kê hiệu suất' }}
+          />
+          <Stack.Screen
+            name="OverdueAlert"
+            component={OverdueAlertScreen}
+            options={{ title: 'Cảnh báo quá hạn SLA' }}
           />
         </>
       ) : (
