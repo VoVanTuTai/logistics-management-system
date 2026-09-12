@@ -176,6 +176,18 @@ const ServiceQualityActionBoardPage = lazyRoutePage(
   () => import('../pages/function-groups/service-quality/proactive/ServiceQualityActionBoardPage'),
   'ServiceQualityActionBoardPage',
 );
+const StrayShipmentInvestigationPage = lazyRoutePage(
+  () => import('../pages/function-groups/service-quality/investigation/StrayShipmentInvestigationPage'),
+  'StrayShipmentInvestigationPage',
+);
+const ClaimsLiabilityManagementPage = lazyRoutePage(
+  () => import('../pages/function-groups/service-quality/claims/ClaimsLiabilityManagementPage'),
+  'ClaimsLiabilityManagementPage',
+);
+const HubCompensationStatisticsPage = lazyRoutePage(
+  () => import('../pages/function-groups/service-quality/claims/HubCompensationStatisticsPage'),
+  'HubCompensationStatisticsPage',
+);
 const SmartDevicesGroupPage = lazyRoutePage(
   () => import('../pages/function-groups/smart-devices/SmartDevicesGroupPage'),
   'SmartDevicesGroupPage',
@@ -544,102 +556,385 @@ function DashboardLayout(): React.JSX.Element {
     || pathMatches(location.pathname, routePaths.analyticsDashboard)
     || location.pathname.startsWith('/app/coming-soon');
 
-  const isReturnBlockSection = pathMatches(location.pathname, routePaths.returnBlockRoot);
-
-  const isFinanceSettlementSection =
-    pathMatches(location.pathname, routePaths.groupFinanceSettlement);
-  const isOperationsPlatformSection =
-    pathMatches(location.pathname, routePaths.groupOperationsPlatform) &&
-    !isReturnBlockSection;
-  const isServiceQualitySection =
-    pathMatches(location.pathname, routePaths.groupServiceQuality) ||
-    pathMatches(location.pathname, routePaths.ndr) ||
-    isReturnBlockSection;
-  const isOperationsMetricsSection = pathMatches(
-    location.pathname,
-    routePaths.groupOperationsMetrics,
-  );
-  const isBranchBusinessSection =
-    pathMatches(location.pathname, routePaths.groupBranchBusiness) ||
-    isFinanceSettlementSection;
-
-  const isCapabilityPlatformSection = pathMatches(
-    location.pathname,
-    routePaths.groupCapabilityPlatform,
-  );
-  const isPlanningPlatformSection = pathMatches(
-    location.pathname,
-    routePaths.groupPlanningPlatform,
-  );
-  const isHqSection =
-    pathMatches(location.pathname, routePaths.masterOpsCommandCenter) ||
-    pathMatches(location.pathname, routePaths.groupHqOperations) ||
-    location.pathname.startsWith('/app/hq-');
-
   const canViewHq = canAccessOpsFeature(session?.user, 'nav.hq-command-center');
   const canViewBranch = canAccessOpsFeature(session?.user, 'nav.branch-business');
   const canViewFleet = canAccessOpsFeature(session?.user, 'nav.linehaul-fleet-control');
 
+  interface ClusterMenuItem {
+    label: string;
+    icon: SidebarIconName;
+    to: string;
+    keywords: string;
+  }
+
+  interface MenuCluster {
+    id: string;
+    label: string;
+    shortLabel: string;
+    icon: SidebarIconName;
+    to: string;
+    visible?: boolean;
+    items: ClusterMenuItem[];
+  }
+
+  const menuClusters: MenuCluster[] = useMemo(
+    () => [
+      {
+        id: 'hq',
+        label: 'Điều hành & Chỉ huy Vĩ mô',
+        shortLabel: 'Điều hành HQ',
+        icon: 'hq_command',
+        to: routePaths.masterOpsCommandCenter,
+        visible: canViewHq,
+        items: [
+          {
+            label: 'Trung tâm chỉ huy HQ',
+            icon: 'hq_command',
+            to: routePaths.masterOpsCommandCenter,
+            keywords: 'chi huy hq command center vi mo bac trung nam',
+          },
+          {
+            label: 'Bản đồ Mạng lưới & Hub',
+            icon: 'tracking_lookup',
+            to: routePaths.masterdataHubNetworkMap,
+            keywords: 'ban do mang luoi hub geofence phan vung',
+          },
+          {
+            label: 'Báo cáo Vận hành & KPI',
+            icon: 'operation_report',
+            to: routePaths.opsMetricsReport,
+            keywords: 'bao cao van hanh kpi san luong',
+          },
+          {
+            label: 'Quy hoạch & Dự báo tải',
+            icon: 'metrics_planning',
+            to: routePaths.groupPlanningPlatform,
+            keywords: 'quy hoach du bao tai san luong mua sale',
+          },
+        ],
+      },
+      {
+        id: 'branch',
+        label: 'Vận hành Bưu cục & Giao nhận',
+        shortLabel: 'Bưu cục',
+        icon: 'branch_order_management',
+        to: routePaths.shipments,
+        visible: canViewBranch,
+        items: [
+          {
+            label: 'Quét mã vạch tại Hub',
+            icon: 'tracking_lookup',
+            to: routePaths.scans,
+            keywords: 'quet ma vach hub inbound outbound scan lay hang nhan hang',
+          },
+          {
+            label: 'Giám sát hàng đến',
+            icon: 'monitor_data',
+            to: routePaths.monitorDataHangDen,
+            keywords: 'giam sat hang den inbound trong ngay',
+          },
+          {
+            label: 'Quản lý vận đơn',
+            icon: 'branch_order_management',
+            to: routePaths.shipments,
+            keywords: 'quan ly van don don hang danh sach tra cuu',
+          },
+          {
+            label: 'Tạo vận đơn tại quầy',
+            icon: 'branch_order_management',
+            to: routePaths.branchBusinessOrderCreate,
+            keywords: 'tao van don tai quay khach le gui hang',
+          },
+          {
+            label: 'Điều phối lấy hàng',
+            icon: 'shipment_dispatch',
+            to: routePaths.operationsPlatformPickupDispatch,
+            keywords: 'dieu phoi lay hang gom don shop',
+          },
+          {
+            label: 'Điều phối phát hàng',
+            icon: 'shipment_dispatch',
+            to: routePaths.operationsPlatformDeliveryDispatch,
+            keywords: 'dieu phoi phat hang giao hang shipper',
+          },
+          {
+            label: 'Phân vùng Shipper',
+            icon: 'tracking_lookup',
+            to: routePaths.courierAreaAssignment,
+            keywords: 'phan vung shipper tuyen buu ta khu vuc',
+          },
+          {
+            label: 'Chuyển đơn Shipper',
+            icon: 'shipment_dispatch',
+            to: routePaths.courierTaskTransfer,
+            keywords: 'chuyen don shipper chuyen giao dieu chuyen',
+          },
+          {
+            label: 'Kiểm kê tồn kho bưu cục',
+            icon: 'metrics_deadline',
+            to: routePaths.opsMetricsDeadlineInventory,
+            keywords: 'kiem ke ton kho buu cuc don ton luu kho',
+          },
+          {
+            label: 'Chốt ca cuối ngày',
+            icon: 'metrics_action',
+            to: routePaths.branchBusinessShiftClosing,
+            keywords: 'chot ca cuoi ngay ban giao ca sang chieu',
+          },
+        ],
+      },
+      {
+        id: 'linehaul',
+        label: 'Trung chuyển & Tuyến xe',
+        shortLabel: 'Tuyến xe',
+        icon: 'linehaul_transport',
+        to: routePaths.linehaulTripManagement,
+        visible: canViewFleet,
+        items: [
+          {
+            label: 'Quản lý chuyến xe tải',
+            icon: 'linehaul_transport',
+            to: routePaths.linehaulTripManagement,
+            keywords: 'quan ly chuyen xe tai linehaul xuat ben',
+          },
+          {
+            label: 'Niêm phong & Kẹp chì xe',
+            icon: 'thermal_label',
+            to: routePaths.linehaulVehicleSeal,
+            keywords: 'niem phong kep chi seal xe tai thung xe',
+          },
+          {
+            label: 'Quản lý tem bao tải',
+            icon: 'thermal_label',
+            to: routePaths.linehaulBagLabelManagement,
+            keywords: 'quan ly tem bao tai dong bao bagging',
+          },
+          {
+            label: 'In tem bao tải',
+            icon: 'thermal_label',
+            to: routePaths.linehaulBagLabelPrint,
+            keywords: 'in tem bao tai thermal print',
+          },
+          {
+            label: 'Giám sát dữ liệu xe',
+            icon: 'monitor_data',
+            to: routePaths.linehaulTripDataMonitor,
+            keywords: 'giam sat du lieu chuyen xe hanh trinh',
+          },
+        ],
+      },
+      {
+        id: 'quality',
+        label: 'Sự cố & Chất lượng Dịch vụ',
+        shortLabel: 'Chất lượng',
+        icon: 'service_proactive',
+        to: routePaths.serviceQualityProactiveActionBoard,
+        items: [
+          {
+            label: 'Radar cảnh báo SLA',
+            icon: 'service_proactive',
+            to: routePaths.serviceQualityProactiveActionBoard,
+            keywords: 'radar canh bao chu dong sla tre han',
+          },
+          {
+            label: 'Xử lý giao thất bại (NDR)',
+            icon: 'service_abnormal',
+            to: routePaths.ndr,
+            keywords: 'xu ly giao that bai ndr hen lai sai dia chi',
+          },
+          {
+            label: 'Quản lý chuyển hoàn',
+            icon: 'return_block',
+            to: routePaths.returnBlockManagement,
+            keywords: 'quan ly chuyen hoan tra hang ve shop',
+          },
+          {
+            label: 'Hàng bất thường & Hư hỏng',
+            icon: 'service_abnormal',
+            to: routePaths.serviceQualityAbnormalManagement,
+            keywords: 'hang bat thuong hu hong be vo bien ban',
+          },
+          {
+            label: 'Giám định đơn lạc & Log',
+            icon: 'metrics_action',
+            to: routePaths.strayShipmentInvestigation,
+            keywords: 'giam dinh don lac phan tich log vet thao tac mat kien cctv giai trinh',
+          },
+          {
+            label: 'Hồ sơ đền bù & Phân định',
+            icon: 'metrics_action',
+            to: routePaths.claimsLiabilityManagement,
+            keywords: 'ho so den bu phan dinh trach nhiem boi thuong hu hong mat kien ai chiu hub nao chiu',
+          },
+          {
+            label: 'Thống kê bồi thường Hub',
+            icon: 'operation_report',
+            to: routePaths.claimsHubStatistics,
+            keywords: 'thong ke boi thuong theo hub bao cao rui ro loss rate che tai',
+          },
+          {
+            label: 'Tra cứu chất lượng sự cố',
+            icon: 'service_lookup',
+            to: routePaths.serviceQualityIntegratedLookup,
+            keywords: 'tra cuu chat luong su co lich su khieu nai',
+          },
+        ],
+      },
+      {
+        id: 'finance',
+        label: 'Tài chính & Đối soát',
+        shortLabel: 'Tài chính',
+        icon: 'branch_finance_settlement',
+        to: routePaths.branchBusinessFinanceCod,
+        items: [
+          {
+            label: 'Quyết toán thu hộ COD',
+            icon: 'branch_finance_settlement',
+            to: routePaths.branchBusinessFinanceCod,
+            keywords: 'quyet toan thu ho cod nop tien ket buu ta',
+          },
+          {
+            label: 'Đối soát công nợ bưu cục',
+            icon: 'branch_finance_settlement',
+            to: routePaths.branchBusinessFinanceReconcile,
+            keywords: 'doi soat cong no buu cuc tai chinh dong tien',
+          },
+          {
+            label: 'Đối soát chế tài bồi thường',
+            icon: 'operation_report',
+            to: routePaths.claimsHubStatistics,
+            keywords: 'doi soat che tai boi thuong khau tru cong no rui ro',
+          },
+        ],
+      },
+    ],
+    [canViewBranch, canViewFleet, canViewHq],
+  );
+
+  const quickTools = useMemo(
+    () => [
+      {
+        label: 'Chat',
+        title: 'Chat với Bưu tá',
+        icon: 'chat' as SidebarIconName,
+        to: routePaths.operationsPlatformChat,
+      },
+      {
+        label: 'Tra cứu',
+        title: 'Tra cứu hành trình vận đơn',
+        icon: 'tracking_lookup' as SidebarIconName,
+        to: routePaths.tracking,
+      },
+      {
+        label: 'In nhãn',
+        title: 'In tem nhãn vận đơn',
+        icon: 'thermal_label' as SidebarIconName,
+        to: routePaths.thermalLabelPrint,
+      },
+      {
+        label: 'Tải về',
+        title: 'Trung tâm tải về',
+        icon: 'operation_report' as SidebarIconName,
+        to: routePaths.downloadCenter,
+      },
+    ],
+    [],
+  );
+
+  const activeClusterId = useMemo(() => {
+    for (const cluster of menuClusters) {
+      if (
+        cluster.visible !== false &&
+        cluster.items.some((item) => pathMatches(location.pathname, item.to))
+      ) {
+        return cluster.id;
+      }
+    }
+    if (
+      pathMatches(location.pathname, routePaths.masterOpsCommandCenter) ||
+      pathMatches(location.pathname, routePaths.groupHqOperations) ||
+      location.pathname.startsWith('/app/hq-')
+    ) {
+      return 'hq';
+    }
+    if (
+      pathMatches(location.pathname, routePaths.shipments) ||
+      pathMatches(location.pathname, routePaths.scans) ||
+      pathMatches(location.pathname, routePaths.groupBranchBusiness) ||
+      pathMatches(location.pathname, routePaths.groupOperationsPlatform)
+    ) {
+      return 'branch';
+    }
+    if (
+      pathMatches(location.pathname, routePaths.linehaulRoot) ||
+      pathMatches(location.pathname, routePaths.groupCapabilityPlatform)
+    ) {
+      return 'linehaul';
+    }
+    if (
+      pathMatches(location.pathname, routePaths.groupServiceQuality) ||
+      pathMatches(location.pathname, routePaths.ndr) ||
+      pathMatches(location.pathname, routePaths.returnBlockRoot)
+    ) {
+      return 'quality';
+    }
+    if (
+      pathMatches(location.pathname, routePaths.groupFinanceSettlement) ||
+      pathMatches(location.pathname, routePaths.branchBusinessFinanceSettlementRoot)
+    ) {
+      return 'finance';
+    }
+    return null;
+  }, [location.pathname, menuClusters]);
+
+  const [openClusters, setOpenClusters] = useState<Record<string, boolean>>({
+    hq: true,
+    branch: true,
+    linehaul: true,
+    quality: true,
+    finance: true,
+  });
+
+  useEffect(() => {
+    if (activeClusterId) {
+      setOpenClusters((prev) =>
+        prev[activeClusterId] ? prev : { ...prev, [activeClusterId]: true },
+      );
+    }
+  }, [activeClusterId]);
+
+  const [menuSearchKeyword, setMenuSearchKeyword] = useState('');
+  const normalizedSearch = menuSearchKeyword.trim().toLowerCase();
+  const isSearching = Boolean(normalizedSearch);
+
+  const filteredClusters = useMemo(() => {
+    return menuClusters
+      .filter((cluster) => cluster.visible !== false)
+      .map((cluster) => {
+        if (!isSearching) {
+          return cluster;
+        }
+        const matched = cluster.items.filter(
+          (item) =>
+            item.label.toLowerCase().includes(normalizedSearch) ||
+            item.keywords.toLowerCase().includes(normalizedSearch),
+        );
+        return { ...cluster, items: matched };
+      })
+      .filter((cluster) => !isSearching || cluster.items.length > 0);
+  }, [isSearching, menuClusters, normalizedSearch]);
+
   const topNavItems: TopNavItem[] = enableFullOpsModules
     ? [
-        ...(canViewHq
-          ? [
-              {
-                label: '🌐 Điều hành HQ',
-                to: routePaths.masterOpsCommandCenter,
-                isActive: isHqSection,
-              },
-            ]
-          : []),
+        ...menuClusters
+          .filter((c) => c.visible !== false)
+          .map((c) => ({
+            label: `${c.id === 'hq' ? '🌐 ' : c.id === 'branch' ? '🏬 ' : c.id === 'linehaul' ? '🚛 ' : c.id === 'quality' ? '🛡️ ' : '💰 '}${c.shortLabel}`,
+            to: c.to,
+            isActive: activeClusterId === c.id,
+          })),
         {
-          label: 'Nền tảng điều hành',
-          to: routePaths.shipments,
-            isActive:
-              pathMatches(location.pathname, routePaths.shipments) ||
-            pathMatches(location.pathname, routePaths.opsChat) ||
-            pathMatches(location.pathname, routePaths.scans) ||
-            pathMatches(location.pathname, routePaths.tracking) ||
-            isOperationsPlatformSection ||
-            pathMatches(location.pathname, routePaths.operationsPlatformPickupDispatch) ||
-            pathMatches(location.pathname, routePaths.operationsPlatformDeliveryDispatch) ||
-            pathMatches(location.pathname, routePaths.courierTaskTransfer) ||
-            pathMatches(location.pathname, routePaths.monitorDataRoot),
-        },
-        ...(canViewBranch
-          ? [
-              {
-                label: 'Kinh doanh bưu cục',
-                to: routePaths.groupBranchBusiness,
-                isActive: isBranchBusinessSection,
-              },
-            ]
-          : []),
-        ...(canViewFleet
-          ? [
-              {
-                label: 'Vận chuyển tuyến',
-                to: routePaths.groupCapabilityPlatform,
-                isActive: isCapabilityPlatformSection,
-              },
-            ]
-          : []),
-        {
-          label: 'Chỉ số vận hành',
-          to: routePaths.groupOperationsMetrics,
-          isActive: isOperationsMetricsSection,
-        },
-        {
-          label: 'Chất lượng dịch vụ',
-          to: routePaths.groupServiceQuality,
-          isActive: isServiceQualitySection,
-        },
-        {
-          label: 'Quy hoạch & Dự báo',
-          to: routePaths.groupPlanningPlatform,
-          isActive: isPlanningPlatformSection,
-        },
-        {
-          label: '📥 Trung tâm Tải về',
+          label: '📥 Tải về',
           to: routePaths.downloadCenter,
           isActive: pathMatches(location.pathname, routePaths.downloadCenter),
         },
@@ -657,327 +952,24 @@ function DashboardLayout(): React.JSX.Element {
         },
       ];
 
-  const hqSidebarItems: SidebarItem[] = [
-    {
-      label: 'Trung tâm chỉ huy toàn quốc',
-      icon: 'hq_command',
-      to: routePaths.masterOpsCommandCenter,
-    },
-    {
-      label: 'Bản đồ Mạng lưới & Phân vùng Hub',
-      icon: 'tracking_lookup',
-      to: routePaths.masterdataHubNetworkMap,
-    },
-    {
-      label: 'Xe tuyến trục Bắc - Trung - Nam',
-      icon: 'linehaul_transport',
-      to: routePaths.linehaulTripManagement,
-    },
-    {
-      label: 'Duyệt chuyển hoàn mùa Sale',
-      icon: 'return_block',
-      to: routePaths.returnBlockManagement,
-    },
-    {
-      label: 'Radar cảnh báo & SLA',
-      icon: 'service_proactive',
-      to: routePaths.serviceQualityProactiveActionBoard,
-    },
-    {
-      label: 'Báo cáo chỉ số vĩ mô',
-      icon: 'operation_report',
-      to: routePaths.opsMetricsReport,
-    },
-    {
-      label: 'Quy hoạch & Dự báo tải',
-      icon: 'metrics_planning',
-      to: routePaths.groupPlanningPlatform,
-    },
-    {
-      label: 'Trung tâm tải báo cáo HQ',
-      icon: 'operation_report',
-      to: routePaths.downloadCenter,
-    },
-  ];
-
-  const operationsSidebarItems: SidebarItem[] = enableFullOpsModules
-    ? [
-        { label: 'Vận đơn', icon: 'branch_order_management', to: routePaths.shipments },
-        { label: 'Chat courier', icon: 'chat', to: routePaths.operationsPlatformChat },
-        { label: 'Điều phối vận đơn', icon: 'shipment_dispatch', kind: 'shipment_dispatch' },
-        { label: 'Quét tại hub', icon: 'tracking_lookup', to: routePaths.scans },
-        { label: 'Tra cứu hành trình', icon: 'tracking_lookup', to: routePaths.tracking },
-        { label: 'Giám sát dữ liệu', icon: 'monitor_data', kind: 'monitor_data' },
-      ]
-    : [
-        { label: 'Vận đơn', icon: 'branch_order_management', to: routePaths.shipments },
-        { label: 'Chat courier', icon: 'chat', to: routePaths.operationsPlatformChat },
-        { label: 'Điều phối vận đơn', icon: 'shipment_dispatch', kind: 'shipment_dispatch' },
-        { label: 'Quét tại hub', icon: 'tracking_lookup', to: routePaths.scans },
-        { label: 'Tra cứu hành trình', icon: 'tracking_lookup', to: routePaths.tracking },
-  ];
-
-  const serviceQualitySidebarItems: SidebarItem[] = [
-    { label: 'Bảng cảnh báo chất lượng', icon: 'service_proactive', to: routePaths.serviceQualityProactiveActionBoard },
-    { label: 'Tra cứu sự cố / chất lượng', icon: 'service_lookup', to: routePaths.serviceQualityIntegratedLookup },
-    { label: 'Quản lý hàng bất thường', icon: 'service_abnormal', to: routePaths.serviceQualityAbnormalManagement },
-    { label: 'Chuyển hoàn', icon: 'return_block', kind: 'return_block' },
-  ];
-  const operationsMetricsSidebarItems: SidebarItem[] = [
-    { label: 'Báo cáo vận hành', icon: 'operation_report', to: routePaths.opsMetricsReport },
-    { label: 'Tồn kho & quá hạn', icon: 'metrics_deadline', to: routePaths.opsMetricsDeadlineInventory },
-    { label: 'Đơn cần chú ý', icon: 'metrics_abnormal', to: routePaths.opsMetricsAbnormalHandling },
-  ];
-  const branchBusinessSidebarItems: SidebarItem[] = [
-    {
-      label: 'Tạo vận đơn tại quầy',
-      icon: 'branch_order_management',
-      to: routePaths.branchBusinessOrderCreate,
-    },
-    {
-      label: 'Báo cáo cuối ngày',
-      icon: 'metrics_action',
-      to: routePaths.branchBusinessShiftClosing,
-    },
-    {
-      label: 'Quyết toán tài chính',
-      icon: 'branch_finance_settlement',
-      kind: 'branch_finance_settlement',
-    },
-  ];
-
-  const capabilityPlatformSidebarItems: SidebarItem[] = [
-    { label: 'Quản lý chuyến xe', icon: 'linehaul_transport', to: routePaths.linehaulTripManagement },
-    { label: 'Tem xe / chuyến', icon: 'thermal_label', to: routePaths.linehaulVehicleSeal },
-    { label: 'Quản lý tem bao', icon: 'thermal_label', to: routePaths.linehaulBagLabelManagement },
-    { label: 'In tem bao', icon: 'thermal_label', to: routePaths.linehaulBagLabelPrint },
-    { label: 'Giám sát dữ liệu chuyến xe', icon: 'monitor_data', to: routePaths.linehaulTripDataMonitor },
-  ];
-  const planningPlatformSidebarItems: SidebarItem[] = [
-    { label: 'Dự báo tải vận hành', icon: 'metrics_planning', to: routePaths.groupPlanningPlatform },
-  ];
-  const sidebarItems = isHqSection
-    ? hqSidebarItems
-    : isServiceQualitySection
-    ? serviceQualitySidebarItems
-    : isOperationsMetricsSection
-    ? operationsMetricsSidebarItems
-    : isBranchBusinessSection
-    ? branchBusinessSidebarItems
-    : isCapabilityPlatformSection
-    ? capabilityPlatformSidebarItems
-    : isPlanningPlatformSection
-    ? planningPlatformSidebarItems
-    : operationsSidebarItems;
-
-  const monitorDataChildItems = [
-    { label: 'Giám sát hàng đến', to: routePaths.monitorDataHangDen },
-    { label: 'Giám sát hàng gửi', to: routePaths.monitorDataHangGui },
-    { label: 'Giám sát hàng phát', to: routePaths.monitorDataHangPhat },
-    { label: 'Giám sát đóng bao', to: routePaths.monitorDataDongBao },
-  ] as const;
-  const linehaulChildItems = [
-    { label: 'Quản lý chuyến xe', to: routePaths.linehaulTripManagement },
-    { label: 'Tem xe / chuyến', to: routePaths.linehaulVehicleSeal },
-    { label: 'Quản lý tem bao', to: routePaths.linehaulBagLabelManagement },
-    { label: 'In tem bao', to: routePaths.linehaulBagLabelPrint },
-    { label: 'Giám sát dữ liệu chuyến xe', to: routePaths.linehaulTripDataMonitor },
-  ] as const;
-  const returnBlockChildItems = [
-    { label: 'Đăng ký chuyển hoàn', to: routePaths.returnBlockRegistration },
-    { label: 'Quản lý chuyển hoàn', to: routePaths.returnBlockManagement },
-  ] as const;
-  const shipmentDispatchChildItems = [
-    { label: 'Điều phối lấy hàng', to: routePaths.operationsPlatformPickupDispatch },
-    { label: 'Điều phối phát hàng', to: routePaths.operationsPlatformDeliveryDispatch },
-    { label: 'Chuyển đơn', to: routePaths.courierTaskTransfer },
-    { label: 'Phân vùng Shipper', to: routePaths.courierAreaAssignment },
-  ] as const;
-  const branchBusinessDirectItems = [
-    { label: 'Tạo vận đơn tại quầy', to: routePaths.branchBusinessOrderCreate },
-    { label: 'Báo cáo cuối ngày', to: routePaths.branchBusinessShiftClosing },
-  ] as const;
-  const branchBusinessFinanceSettlementChildItems = [
-    { label: 'Quyết toán thu hộ', to: routePaths.branchBusinessFinanceCod },
-    { label: 'Đối soát công nợ', to: routePaths.branchBusinessFinanceReconcile },
-  ] as const;
-
-
-  const panelItemsMap: Record<SidebarPanelKind, ReadonlyArray<{ label: string; to: string }>> = {
-    linehaul_transport: linehaulChildItems,
-    shipment_dispatch: shipmentDispatchChildItems,
-    return_block: returnBlockChildItems,
-    monitor_data: monitorDataChildItems,
-
-    branch_finance_settlement: branchBusinessFinanceSettlementChildItems,
-  };
-
-  const panelTitleMap: Record<SidebarPanelKind, string> = {
-    linehaul_transport: 'Vận chuyển tuyến nhánh',
-    shipment_dispatch: 'Điều phối vận đơn',
-    return_block: 'Chuyển hoàn',
-    monitor_data: 'Giám sát dữ liệu',
-
-    branch_finance_settlement: 'Quyết toán tài chính',
-  };
-
-  const isMonitorDataRoute = monitorDataChildItems.some((item) =>
-    pathMatches(location.pathname, item.to),
-  );
-  const isLinehaulRoute =
-    pathMatches(location.pathname, routePaths.linehaulRoot) ||
-    linehaulChildItems.some((item) => pathMatches(location.pathname, item.to));
-  const isReturnBlockRoute =
-    pathMatches(location.pathname, routePaths.returnBlockRoot) ||
-    returnBlockChildItems.some((item) => pathMatches(location.pathname, item.to));
-  const isShipmentDispatchRoute = shipmentDispatchChildItems.some((item) =>
-    pathMatches(location.pathname, item.to),
-  );
-  const isServiceQualityActionBoardRoute = pathMatches(
-    location.pathname,
-    routePaths.serviceQualityProactiveActionBoard,
-  );
-  const isServiceQualityIntegratedLookupRoute = pathMatches(
-    location.pathname,
-    routePaths.serviceQualityIntegratedLookup,
-  );
-  const isServiceQualityAbnormalManagementRoute = pathMatches(
-    location.pathname,
-    routePaths.serviceQualityAbnormalManagement,
-  );
-  const isBranchFinanceSettlementRoute = branchBusinessFinanceSettlementChildItems.some((item) =>
-    pathMatches(location.pathname, item.to),
-  );
-
-
-  const routeDrivenPanel: SidebarPanelKind | null = isLinehaulRoute
-    ? 'linehaul_transport'
-    : isReturnBlockRoute
-    ? 'return_block'
-    : isShipmentDispatchRoute
-    ? 'shipment_dispatch'
-    : isMonitorDataRoute
-    ? 'monitor_data'
-    : isBranchFinanceSettlementRoute || isFinanceSettlementSection
-    ? 'branch_finance_settlement'
-    : null;
-
-  const [activeSidebarPanel, setActiveSidebarPanel] = useState<SidebarPanelKind | null>(
-    routeDrivenPanel,
-  );
-
-  useEffect(() => {
-    if (routeDrivenPanel) {
-      setActiveSidebarPanel(routeDrivenPanel);
+  const activeTabLabel = useMemo(() => {
+    for (const cluster of menuClusters) {
+      for (const item of cluster.items) {
+        if (pathMatches(location.pathname, item.to)) {
+          return item.label;
+        }
+      }
     }
-  }, [routeDrivenPanel]);
-
-  const activePanelKinds: ReadonlyArray<SidebarPanelKind> = isServiceQualitySection
-    ? ['return_block']
-    : isOperationsMetricsSection
-    ? []
-    : isBranchBusinessSection
-    ? ['branch_finance_settlement']
-    : isCapabilityPlatformSection
-    ? []
-    : ['shipment_dispatch', 'monitor_data'];
-
-  const activeSidebarPanelInSection =
-    activeSidebarPanel &&
-    activePanelKinds.some((panelKind) => panelKind === activeSidebarPanel)
-      ? activeSidebarPanel
-      : null;
-
-  const isSidebarSecondaryOpen = activeSidebarPanelInSection !== null;
-  const sidebarSecondaryItems = activeSidebarPanelInSection
-    ? panelItemsMap[activeSidebarPanelInSection]
-    : [];
-  const sidebarSecondaryTitle = activeSidebarPanelInSection
-    ? panelTitleMap[activeSidebarPanelInSection]
-    : '';
-  const sidebarTitle = isServiceQualitySection
-    ? 'Chất lượng dịch vụ'
-    : isOperationsMetricsSection
-    ? 'Chỉ số vận hành'
-
-    : isBranchBusinessSection
-    ? 'Kinh doanh bưu cục'
-    : isCapabilityPlatformSection
-    ? 'Vận chuyển tuyến'
-    : isPlanningPlatformSection
-    ? 'Nền tảng quy hoạch'
-    : !enableFullOpsModules
-    ? 'Ops production'
-    : 'Nền tảng điều hành';
-
-  const operationsMetricsAllChildItems = [
-    { label: 'Báo cáo vận hành', to: routePaths.opsMetricsReport },
-    { label: 'Tồn kho & quá hạn', to: routePaths.opsMetricsDeadlineInventory },
-    { label: 'Đơn cần chú ý', to: routePaths.opsMetricsAbnormalHandling },
-  ];
-  const activeOperationsMetricsItem =
-    operationsMetricsAllChildItems.find((item) => pathMatches(location.pathname, item.to)) ?? null;
-  const activeReturnBlockItem =
-    returnBlockChildItems.find((item) => pathMatches(location.pathname, item.to)) ?? null;
-  const branchBusinessAllChildItems = [
-    ...branchBusinessDirectItems,
-    ...branchBusinessFinanceSettlementChildItems,
-  ];
-  const activeBranchBusinessItem =
-    branchBusinessAllChildItems.find((item) => pathMatches(location.pathname, item.to)) ?? null;
-  const activeLinehaulItem =
-    linehaulChildItems.find((item) => pathMatches(location.pathname, item.to)) ?? null;
-
-  const activeTabLabel = pathMatches(location.pathname, routePaths.tracking)
-    ? 'Tra cứu hành trình'
-    : pathMatches(location.pathname, routePaths.shipments)
-    ? 'Vận đơn'
-    : pathMatches(location.pathname, routePaths.scans)
-    ? 'Quét hub'
-    : pathMatches(location.pathname, routePaths.ndr)
-    ? 'NDR'
-    : pathMatches(location.pathname, routePaths.operationsPlatformPickupDispatch)
-    ? 'Điều phối lấy hàng'
-    : pathMatches(location.pathname, routePaths.operationsPlatformDeliveryDispatch)
-    ? 'Điều phối phát hàng'
-    : isMonitorDataRoute
-    ? 'Giám sát dữ liệu'
-    : activeLinehaulItem
-    ? activeLinehaulItem.label
-    : isLinehaulRoute
-    ? 'Vận chuyển tuyến nhánh'
-    : activeReturnBlockItem
-    ? activeReturnBlockItem.label
-    : isReturnBlockRoute
-    ? 'Chuyển hoàn'
-    : isServiceQualityActionBoardRoute
-    ? 'Bảng cảnh báo chất lượng'
-    : activeOperationsMetricsItem
-    ? activeOperationsMetricsItem.label
-    : isOperationsMetricsSection
-    ? 'Chỉ số vận hành'
-    : activeBranchBusinessItem
-    ? activeBranchBusinessItem.label
-    : isFinanceSettlementSection
-    ? 'Quyết toán tài chính'
-    : isBranchBusinessSection
-    ? 'Kinh doanh bưu cục'
-    : isServiceQualityIntegratedLookupRoute
-    ? 'Tra cứu sự cố / chất lượng'
-    : isServiceQualityAbnormalManagementRoute
-    ? 'Quản lý hàng bất thường'
-    : pathMatches(location.pathname, routePaths.groupServiceQuality)
-    ? 'Chất lượng dịch vụ'
-    : isPlanningPlatformSection
-    ? 'Dự báo tải vận hành'
-    : 'Trang chủ';
-  const sidebarClassName = [
-    'ops-func-sidebar',
-    isSidebarSecondaryOpen ? 'ops-func-sidebar--expanded' : '',
-    isOperationsMetricsSection ? 'ops-func-sidebar--ops-metrics' : '',
-  ]
-    .filter(Boolean)
-    .join(' ');
+    for (const tool of quickTools) {
+      if (pathMatches(location.pathname, tool.to)) {
+        return tool.title;
+      }
+    }
+    if (pathMatches(location.pathname, routePaths.tracking)) {
+      return 'Tra cứu hành trình';
+    }
+    return 'Trang chủ';
+  }, [location.pathname, menuClusters, quickTools]);
 
   const onQuickSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -1007,140 +999,107 @@ function DashboardLayout(): React.JSX.Element {
                 onClick={() => navigate(routePaths.dashboard)}
                 aria-label="Go to dashboard"
               >
-                <span className="ops-topbar-logo">NEXUS</span>
+                <span className="ops-topbar-logo" aria-hidden="true">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M4.5 19.5V4.5L16.5 17.5V4.5"
+                      stroke="#ffffff"
+                      strokeWidth="3.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <circle cx="19.5" cy="5" r="2.2" fill="#93c5fd" />
+                  </svg>
+                </span>
                 <span className="ops-topbar-brand-text">
                   <strong>NEXUS VN</strong>
-                  <span>NEXUS logistics control tower</span>
+                  <span>Logistics Control Tower</span>
                 </span>
               </button>
 
               <div className="ops-topbar-actions">
-                <form onSubmit={onQuickSearch} className="ops-topbar-search" role="search">
-                  <span className="ops-topbar-search-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24">
-                      <circle cx="11" cy="11" r="6.5" />
-                      <path d="m16 16 4 4" />
-                    </svg>
+                <form onSubmit={onQuickSearch} className="ops-header-search" role="search">
+                  <span className="material-symbols-outlined ops-header-search-icon" aria-hidden="true">
+                    search
                   </span>
                   <input
                     type="text"
                     value={quickSearchCode}
                     onChange={(event) => setQuickSearchCode(event.target.value)}
-                    placeholder="Tra cứu mã vận đơn"
+                    placeholder="Tra cứu vận đơn..."
                     aria-label="Tra cứu mã vận đơn"
+                    className="ops-header-search-input"
                   />
-                  <button type="submit" className="ops-topbar-search-submit">
-                    Tìm
-                  </button>
+                  <kbd className="ops-header-search-shortcut" title="Nhấn Enter để tra cứu">↵ Enter</kbd>
                 </form>
 
-                <button
-                  type="button"
-                  className="ops-topbar-icon-btn"
-                  aria-label="Thông báo"
-                  onClick={() => setIsNotificationsOpen(true)}
-                  title="Thông báo hệ thống"
-                >
-                  <svg viewBox="0 0 24 24">
-                    <path d="M12 4.5a4.5 4.5 0 0 0-4.5 4.5v2.5c0 .9-.36 1.77-1 2.4l-1.2 1.2h13.4l-1.2-1.2a3.4 3.4 0 0 1-1-2.4V9A4.5 4.5 0 0 0 12 4.5Z" />
-                    <path d="M10 17.5a2 2 0 0 0 4 0" />
-                  </svg>
-                </button>
+                <div className="ops-header-divider" />
 
-                <div className="ops-topbar-tier" style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '0 4px' }}>
+                <div className="ops-header-scope-group">
                   <span
+                    className="ops-scope-badge"
                     style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      padding: '4px 10px',
-                      borderRadius: '8px',
-                      backgroundColor: `${opsTierMeta.badgeColor}18`,
+                      backgroundColor: `${opsTierMeta.badgeColor}15`,
                       color: opsTierMeta.badgeColor,
-                      border: `1px solid ${opsTierMeta.badgeColor}40`,
-                      letterSpacing: '0.3px',
+                      borderColor: `${opsTierMeta.badgeColor}35`,
                     }}
                     title={opsTierMeta.description}
                   >
-                    <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
+                    <span className="material-symbols-outlined ops-scope-badge-icon">
                       {opsTierMeta.icon}
                     </span>
                     <span>{opsTierMeta.badgeLabel}</span>
                   </span>
                   {allowedScopes.length > 1 && (
-                    <select
-                      value={scopeLevel}
-                      onChange={(e) => setScopeLevel(e.target.value as ScopeLevel)}
-                      style={{
-                        fontSize: '12px',
-                        fontWeight: 600,
-                        color: '#1e293b',
-                        backgroundColor: '#f8fafc',
-                        border: '1px solid #cbd5e1',
-                        borderRadius: '8px',
-                        padding: '4px 10px',
-                        outline: 'none',
-                        cursor: 'pointer',
-                        boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-                      }}
-                      aria-label="Phạm vi dữ liệu"
-                    >
-                      {allowedScopes.map((opt) => (
-                        <option key={opt.key} value={opt.key}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="ops-scope-select-wrap">
+                      <select
+                        value={scopeLevel}
+                        onChange={(e) => setScopeLevel(e.target.value as ScopeLevel)}
+                        className="ops-scope-select"
+                        aria-label="Phạm vi dữ liệu"
+                      >
+                        {allowedScopes.map((opt) => (
+                          <option key={opt.key} value={opt.key}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                      <span className="material-symbols-outlined ops-scope-select-arrow" aria-hidden="true">
+                        expand_more
+                      </span>
+                    </div>
                   )}
                 </div>
 
-                {currentOperatorHub && (
-                  <div
-                    className="ops-topbar-hub-pill"
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      fontSize: '11px',
-                      fontWeight: 600,
-                      padding: '4px 10px',
-                      borderRadius: '8px',
-                      backgroundColor: '#f8fafc',
-                      color: '#0f172a',
-                      border: '1px solid #cbd5e1',
-                      maxWidth: '360px',
-                      overflow: 'hidden',
-                      whiteSpace: 'nowrap',
-                      textOverflow: 'ellipsis',
-                    }}
-                    title={`🏢 Bưu cục: ${currentOperatorHub.name} (${currentOperatorHub.code})\n📍 Địa chỉ: ${currentOperatorHubAddress || 'Đang cập nhật'}`}
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: '15px', color: '#0284c7', flexShrink: 0 }}>
-                      apartment
-                    </span>
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      <strong style={{ color: '#0284c7' }}>{currentOperatorHub.name}</strong>
-                      {currentOperatorHubAddress ? ` • 📍 ${currentOperatorHubAddress}` : ''}
-                    </span>
-                  </div>
-                )}
+                <button type="button" className="ops-header-icon-btn" aria-label="Thông báo" title="Thông báo hệ thống">
+                  <span className="material-symbols-outlined">notifications</span>
+                  <span className="ops-header-badge-dot" />
+                </button>
 
-                <OpsUserAccountMenu
-                  session={session}
-                  operatorName={operatorName}
-                  operatorInitial={operatorInitial}
-                  roleText={roleText}
-                  opsTierMeta={opsTierMeta}
-                  currentOperatorHub={currentOperatorHub}
-                  currentOperatorHubAddress={currentOperatorHubAddress}
-                  onLogout={onLogout}
-                  isLoggingOut={logoutMutation.isPending}
-                  variant="topbar"
-                  isNotificationsOpen={isNotificationsOpen}
-                  onToggleNotifications={() => setIsNotificationsOpen((prev) => !prev)}
-                />
+                <div className="ops-header-divider" />
+
+                <div className="ops-header-user-group" aria-label="Tài khoản">
+                  <div className="ops-header-user-card" title={`${operatorName} (${roleText})`}>
+                    <div className="ops-header-avatar">
+                      {operatorInitial}
+                      <span className="ops-header-online-dot" />
+                    </div>
+                    <div className="ops-header-user-info">
+                      <span className="ops-header-username">{operatorName}</span>
+                      <span className="ops-header-userrole">{roleText.split(',')[0]}</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="ops-header-logout-btn"
+                    disabled={logoutMutation.isPending}
+                    onClick={() => void onLogout()}
+                    aria-label="Đăng xuất"
+                    title={logoutMutation.isPending ? 'Đang đăng xuất...' : 'Đăng xuất tài khoản'}
+                  >
+                    <span className="material-symbols-outlined">logout</span>
+                  </button>
+                </div>
               </div>
             </header>
 
@@ -1163,8 +1122,21 @@ function DashboardLayout(): React.JSX.Element {
             className="ops-func-logo ops-func-logo--button"
             onClick={() => navigate(routePaths.dashboard)}
             aria-label="Go to dashboard"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
           >
-            NEXUS VN
+            <span className="ops-topbar-logo" style={{ width: '30px', height: '30px', borderRadius: '8px' }} aria-hidden="true">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                  d="M4.5 19.5V4.5L16.5 17.5V4.5"
+                  stroke="#ffffff"
+                  strokeWidth="3.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <circle cx="19.5" cy="5" r="2.2" fill="#93c5fd" />
+              </svg>
+            </span>
+            <span style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '0.04em', color: '#0052cc' }}>NEXUS VN</span>
           </button>
 
         <nav className="ops-func-main-nav" aria-label="Main navigation">
@@ -1308,132 +1280,122 @@ function DashboardLayout(): React.JSX.Element {
       </header>
 
       <div className="ops-func-body">
-        <aside
-          className={sidebarClassName}
-        >
+        <aside className="ops-func-sidebar">
           <label className="ops-func-sidebar-search">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <circle cx="11" cy="11" r="6.5" />
               <path d="m16 16 4 4" />
             </svg>
-            <input type="text" placeholder="Tra cứu menu" aria-label="Tra cứu menu" />
+            <input
+              type="text"
+              value={menuSearchKeyword}
+              onChange={(e) => setMenuSearchKeyword(e.target.value)}
+              placeholder="Tra cứu menu nhanh..."
+              aria-label="Tra cứu menu"
+            />
+            {menuSearchKeyword ? (
+              <button
+                type="button"
+                className="ops-func-sidebar-search-clear"
+                onClick={() => setMenuSearchKeyword('')}
+                aria-label="Xoá tìm kiếm"
+              >
+                ✕
+              </button>
+            ) : null}
           </label>
 
-          <div className="ops-func-sidebar-title">
-            <span />
-            {sidebarTitle}
-          </div>
+          <nav className="ops-func-sidebar-nav" aria-label="Sidebar navigation">
+            {filteredClusters.length === 0 ? (
+              <div className="ops-func-sidebar-search-empty">
+                Không tìm thấy menu khớp với "{menuSearchKeyword}"
+              </div>
+            ) : (
+              filteredClusters.map((cluster) => {
+                const isOpen = isSearching || Boolean(openClusters[cluster.id]);
+                const isClusterCurrent = activeClusterId === cluster.id;
 
-          <nav
-            className={
-              isSidebarSecondaryOpen
-                ? 'ops-func-sidebar-nav ops-func-sidebar-nav--two-cols'
-                : 'ops-func-sidebar-nav'
-            }
-            aria-label="Sidebar navigation"
-          >
-            <div className="ops-func-sidebar-primary-list">
-              {sidebarItems.map((item) => {
-                if (item.sectionLabel) {
-                  return (
-                    <div key={item.sectionLabel} className="ops-func-sidebar-section">
-                      {item.sectionLabel}
-                    </div>
-                  );
-                }
-
-                const isActive =
-                  item.kind === 'return_block'
-                    ? isReturnBlockRoute
-                    : item.kind === 'shipment_dispatch'
-                    ? isShipmentDispatchRoute
-                    : item.kind === 'monitor_data'
-                    ? isMonitorDataRoute
-                    : item.kind === 'branch_finance_settlement'
-                    ? isBranchFinanceSettlementRoute
-                    : item.to
-                    ? pathMatches(location.pathname, item.to)
-                    : false;
-
-                if (item.kind) {
-                  const isOpen = activeSidebarPanelInSection === item.kind;
-                  return (
+                return (
+                  <div key={cluster.id} className="ops-func-cluster">
                     <button
-                      key={item.label}
                       type="button"
+                      className={`ops-func-cluster-header ${
+                        isClusterCurrent ? 'ops-func-cluster-header--active' : ''
+                      }`}
                       onClick={() => {
-                        setActiveSidebarPanel((currentPanel) =>
-                          currentPanel === item.kind ? null : item.kind,
-                        );
+                        if (!isSearching) {
+                          setOpenClusters((prev) => ({
+                            ...prev,
+                            [cluster.id]: !prev[cluster.id],
+                          }));
+                        }
                       }}
-                      className={
-                        isActive
-                          ? 'ops-func-sidebar-item ops-func-sidebar-item--active'
-                          : 'ops-func-sidebar-item'
-                      }
+                      aria-expanded={isOpen}
                     >
-                      <span className="ops-func-sidebar-icon">
-                        <SidebarIcon name={item.icon} />
+                      <span className="ops-func-cluster-icon">
+                        <SidebarIcon name={cluster.icon} />
                       </span>
-                      <span className="ops-func-sidebar-label">{item.label}</span>
-                      <span className="ops-func-sidebar-chevron" aria-hidden="true">
+                      <span className="ops-func-cluster-title">{cluster.label}</span>
+                      <span className="ops-func-cluster-badge">{cluster.items.length}</span>
+                      <span
+                        className={`ops-func-cluster-chevron ${
+                          isOpen ? 'ops-func-cluster-chevron--open' : ''
+                        }`}
+                        aria-hidden="true"
+                      >
                         <svg viewBox="0 0 24 24">
-                          <path d={isOpen ? 'm7 14 5-5 5 5' : 'm7 10 5 5 5-5'} />
+                          <path d="m6 9 6 6 6-6" fill="none" />
                         </svg>
                       </span>
                     </button>
-                  );
-                }
 
-                return (
-                  <button
-                    key={item.label}
-                    type="button"
-                    onClick={() => {
-                      if (item.to) {
-                        navigate(item.to);
-                      }
-                    }}
-                    className={
-                      isActive
-                        ? 'ops-func-sidebar-item ops-func-sidebar-item--active'
-                        : 'ops-func-sidebar-item'
-                    }
-                  >
-                    <span className="ops-func-sidebar-icon">
-                      <SidebarIcon name={item.icon} />
-                    </span>
-                    <span className="ops-func-sidebar-label">{item.label}</span>
-                    <span className="ops-func-sidebar-chevron" aria-hidden="true">
-                      <svg viewBox="0 0 24 24">
-                        <path d="m7 10 5 5 5-5" />
-                      </svg>
-                    </span>
-                  </button>
+                    {isOpen ? (
+                      <div className="ops-func-cluster-items">
+                        {cluster.items.map((item) => {
+                          const isItemActive = pathMatches(location.pathname, item.to);
+                          return (
+                            <button
+                              key={item.label}
+                              type="button"
+                              className={`ops-func-sidebar-item ${
+                                isItemActive ? 'ops-func-sidebar-item--active' : ''
+                              }`}
+                              onClick={() => navigate(item.to)}
+                            >
+                              <span className="ops-func-sidebar-icon">
+                                <SidebarIcon name={item.icon} />
+                              </span>
+                              <span className="ops-func-sidebar-label">{item.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : null}
+                  </div>
                 );
-              })}
-            </div>
-
-            {isSidebarSecondaryOpen ? (
-              <div className="ops-func-sidebar-secondary-list">
-                <p className="ops-func-sidebar-secondary-title">{sidebarSecondaryTitle}</p>
-                {sidebarSecondaryItems.map((item) => (
-                  <button
-                    key={item.to}
-                    type="button"
-                    className={
-                      pathMatches(location.pathname, item.to)
-                        ? 'ops-func-sidebar-secondary-item ops-func-sidebar-secondary-item--active'
-                        : 'ops-func-sidebar-secondary-item'
-                    }
-                    onClick={() => navigate(item.to)}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            ) : null}
+              })
+            )}
           </nav>
+
+          <div className="ops-func-quick-tools" aria-label="Tiện ích nhanh">
+            {quickTools.map((tool) => {
+              const isToolActive = pathMatches(location.pathname, tool.to);
+              return (
+                <button
+                  key={tool.label}
+                  type="button"
+                  className={`ops-func-quick-tool-btn ${
+                    isToolActive ? 'ops-func-quick-tool-btn--active' : ''
+                  }`}
+                  title={tool.title}
+                  onClick={() => navigate(tool.to)}
+                >
+                  <SidebarIcon name={tool.icon} />
+                  <span>{tool.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </aside>
 
         <main className="ops-func-main">
@@ -1793,6 +1755,18 @@ function AppIndexRedirect(): React.JSX.Element {
             <Route
               path={routePaths.serviceQualityProactiveDeliveredLeaf}
               element={<Navigate to={routePaths.serviceQualityAbnormalManagement} replace />}
+            />
+            <Route
+              path={routePaths.strayShipmentInvestigationLeaf}
+              element={opsModuleRoute('Giám định đơn lạc & phân tích log', <StrayShipmentInvestigationPage />)}
+            />
+            <Route
+              path={routePaths.claimsLiabilityManagementLeaf}
+              element={opsModuleRoute('Hồ sơ đền bù & phân định trách nhiệm', <ClaimsLiabilityManagementPage />)}
+            />
+            <Route
+              path={routePaths.claimsHubStatisticsLeaf}
+              element={opsModuleRoute('Thống kê bồi thường theo Hub', <HubCompensationStatisticsPage />)}
             />
             <Route
               path={routePaths.groupDatabaseLeaf}

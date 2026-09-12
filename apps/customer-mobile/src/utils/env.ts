@@ -26,6 +26,14 @@ function normalizeBaseUrl(value: string): string {
   return value.trim().replace(/\/+$/, '');
 }
 
+function isValidHost(host: string): boolean {
+  if (!host || host.length > 255) return false;
+  if (LOCALHOST_HOSTS.has(host.toLowerCase())) return true;
+  if (/^(\d{1,3}\.){3}\d{1,3}$/.test(host)) return true;
+  if (/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/i.test(host)) return true;
+  return false;
+}
+
 function resolveHostFromRuntimeValue(rawValue: string): string | null {
   const trimmedValue = rawValue.trim();
   if (!trimmedValue) return null;
@@ -36,10 +44,12 @@ function resolveHostFromRuntimeValue(rawValue: string): string | null {
 
   try {
     const parsedUrl = new URL(normalizedInput);
-    return parsedUrl.hostname || null;
+    const host = parsedUrl.hostname || null;
+    return host && isValidHost(host) ? host : null;
   } catch {
     const hostMatch = trimmedValue.match(/^([^/:?#]+)(?::\d+)?(?:[/?#]|$)/);
-    return hostMatch?.[1] ?? null;
+    const host = hostMatch?.[1] ?? null;
+    return host && isValidHost(host) ? host : null;
   }
 }
 
@@ -96,6 +106,17 @@ function scanHostHintsFromUnknown(
 
 function collectRuntimeHosts(): string[] {
   const runtimeHosts: string[] = [];
+
+  if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined' && window.location?.hostname) {
+      if (isValidHost(window.location.hostname)) {
+        appendUnique(runtimeHosts, window.location.hostname);
+      }
+    }
+    appendUnique(runtimeHosts, 'localhost');
+    appendUnique(runtimeHosts, '127.0.0.1');
+    return runtimeHosts;
+  }
 
   // Extract from Expo Constants (Expo Go host IP)
   const hostUri = Constants.expoConfig?.hostUri || (Constants.manifest as any)?.debuggerHost || (Constants.manifest2 as any)?.extra?.expoGo?.developer?.tool;

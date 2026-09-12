@@ -160,6 +160,14 @@ export const QUICK_APP_CATALOG: QuickAppItem[] = [
     iconBgColor: '#E6FAF1',
     permission: 'scan.outbound',
   },
+  {
+    id: 'overdue-alerts',
+    label: 'Cảnh báo SLA',
+    description: 'Xem đơn quá hạn và sắp quá hạn',
+    iconName: 'alarm-outline',
+    iconColor: '#DC2626',
+    iconBgColor: '#FEF2F2',
+  },
 ];
 
 const quickAppById = new Map(QUICK_APP_CATALOG.map((item) => [item.id, item]));
@@ -267,5 +275,10 @@ export function navigateToQuickApp(
 
   if (appId === 'send-goods') {
     navigation.navigate('SendGoods');
+    return;
+  }
+
+  if (appId === 'overdue-alerts') {
+    navigation.navigate('OverdueAlert');
   }
 }

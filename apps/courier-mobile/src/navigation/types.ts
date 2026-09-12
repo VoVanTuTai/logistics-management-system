@@ -78,4 +78,7 @@ export type AppNavigatorParamList = {
   };
   MyRoute: undefined;
   Stats: undefined;
+  OverdueAlert: {
+    filter?: 'ALL_ALERTS' | 'OVERDUE' | 'NEAR_OVERDUE';
+  } | undefined;
 };

@@ -59,6 +59,12 @@ export const routePaths = {
     '/app/function-groups/service-quality/proactive/monitor-received',
   serviceQualityProactiveDelivered:
     '/app/function-groups/service-quality/proactive/monitor-delivered',
+  strayShipmentInvestigation:
+    '/app/function-groups/service-quality/stray-investigation',
+  claimsLiabilityManagement:
+    '/app/function-groups/service-quality/claims-liability',
+  claimsHubStatistics:
+    '/app/function-groups/service-quality/hub-compensation-statistics',
   groupDatabase: '/app/function-groups/database',
   groupSmartDevices: '/app/function-groups/smart-devices',
   groupPlanningPlatform: '/app/function-groups/planning-platform',
@@ -192,6 +198,12 @@ export const routePaths = {
     'function-groups/service-quality/proactive/monitor-received',
   serviceQualityProactiveDeliveredLeaf:
     'function-groups/service-quality/proactive/monitor-delivered',
+  strayShipmentInvestigationLeaf:
+    'function-groups/service-quality/stray-investigation',
+  claimsLiabilityManagementLeaf:
+    'function-groups/service-quality/claims-liability',
+  claimsHubStatisticsLeaf:
+    'function-groups/service-quality/hub-compensation-statistics',
   groupDatabaseLeaf: 'function-groups/database',
   groupSmartDevicesLeaf: 'function-groups/smart-devices',
   groupPlanningPlatformLeaf: 'function-groups/planning-platform',

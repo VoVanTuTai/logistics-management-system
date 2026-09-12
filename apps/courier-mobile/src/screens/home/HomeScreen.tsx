@@ -29,6 +29,7 @@ import { appEnv } from '../../utils/env';
 import { resolveCourierDisplayName, resolveCourierId } from '../../utils/courier';
 import { getQuickAppItems, navigateToQuickApp } from '../../features/quick-apps/quickApps';
 import { canAccessCourierFeature } from '../../features/permissions/courier-permissions';
+import { countSlaSummary } from '../../utils/pickupSla';
 
 const WAITING_TASK_STATUSES: ReadonlySet<TaskStatus> = new Set(['CREATED', 'ASSIGNED']);
 
@@ -97,7 +98,7 @@ export function HomeScreen(): React.JSX.Element {
 
   const pickupCount = waitingPickupTasks.length;
   const deliveryCount = waitingDeliveryTasks.length;
-  const processingCount = tasks.filter((task) => task.status === 'ASSIGNED').length;
+  const slaSummary = useMemo(() => countSlaSummary(tasks), [tasks]);
   const quickAppItems = useMemo(() => {
     const items = getQuickAppItems(quickAppIds);
     return items.filter(
@@ -200,15 +201,9 @@ export function HomeScreen(): React.JSX.Element {
 
           {canScanPickup || canScanDelivery ? (
             <OverdueCard
-              title="Đơn đang xử lý"
-              overdueCount={processingCount}
-              subtitle="Hiển thị số task có trạng thái ASSIGNED theo payload server."
-              onPress={() =>
-                navigation.navigate('TaskList', {
-                  initialTaskType: 'ALL',
-                  initialStatus: 'ASSIGNED',
-                })
-              }
+              overdueCount={slaSummary.overdueCount}
+              nearOverdueCount={slaSummary.nearOverdueCount}
+              onPress={() => navigation.navigate('OverdueAlert')}
             />
           ) : null}
 

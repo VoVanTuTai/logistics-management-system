@@ -59,6 +59,8 @@ model Shipment {
   createdAt          DateTime              @default(now())
   updatedAt          DateTime              @updatedAt
   changeRequests     ChangeRequest[]
+  investigations     InvestigationCase[]
+  claims             CompensationClaim[]
 
   @@index([createdByUserId])
   @@index([receiverPhone])
@@ -100,3 +102,193 @@ model OutboxEvent {
   @@index([status, occurredAt])
   @@map("outbox_events")
 }
+
+enum InvestigationStatus {
+  ANALYZING
+  PRELIMINARY_REPORT
+  IN_HEARING
+  RESOLVED_FOUND
+  ESCALATED_TO_CLAIM
+}
+
+enum BreakPointType {
+  WAREHOUSE_STALE_LOSS
+  LINEHAUL_IN_TRANSIT_LOSS
+  MISROUTED_SORTING
+  LAST_MILE_UNACCOUNTED
+}
+
+enum InvestigationPriority {
+  CRITICAL
+  HIGH
+  NORMAL
+}
+
+enum DisputeStatus {
+  PENDING_REVIEW
+  ACCEPTED
+  REJECTED
+}
+
+enum ClaimStatus {
+  DRAFT
+  PENDING_INSPECTION
+  LIABILITY_DETERMINED
+  APPROVED_COMPENSATION
+  SETTLED
+  REJECTED
+}
+
+enum IncidentType {
+  DAMAGED
+  LOST_IN_TRANSIT
+}
+
+enum ResponsiblePartyType {
+  ORIGIN_HUB
+  LINEHAUL_FLEET
+  TRANSIT_HUB
+  DELIVERY_HUB
+  INSURANCE_FORCE_MAJEURE
+  UNASSIGNED
+}
+
+enum RootCauseCategory {
+  PACKAGING_SOP_VIOLATION
+  ROUGH_HANDLING_STACKING
+  TRUCK_SEAL_BREACH
+  WAREHOUSE_INVENTORY_LOSS
+  COURIER_TRANSIT_DROP
+  FORCE_MAJEURE_ACCIDENT
+}
+
+model InvestigationCase {
+  id                         String                 @id @default(cuid())
+  investigationCode          String                 @unique
+  shipmentCode               String
+  customerName               String?
+  customerPhone              String?
+  originHubCode              String
+  originHubName              String?
+  destinationHubCode         String
+  destinationHubName         String?
+  declaredValue              Float                  @default(0)
+  declaredWeightKg           Float                  @default(0)
+  packageDescription         String
+  status                     InvestigationStatus    @default(IN_HEARING)
+  priority                   InvestigationPriority  @default(NORMAL)
+  breakPointType             BreakPointType
+  suspectPartyType           ResponsiblePartyType   @default(UNASSIGNED)
+  suspectPartyCode           String
+  suspectPartyName           String
+  confidenceScorePercent     Int                    @default(0)
+  suggestedRootCause         RootCauseCategory      @default(WAREHOUSE_INVENTORY_LOSS)
+  suggestedCompensationAmount Float                 @default(0)
+  breakPointDescription      String?
+  supportingEvidences        Json?
+  hearingDeadlineAt          DateTime?
+  closedAt                   DateTime?
+  foundLocation              String?
+  resolutionNote             String?
+  linkedClaimCode            String?
+  openedAt                   DateTime               @default(now())
+  createdAt                  DateTime               @default(now())
+  updatedAt                  DateTime               @updatedAt
+
+  shipment                   Shipment               @relation(fields: [shipmentCode], references: [code], onDelete: Cascade)
+  auditTrail                 InvestigationAuditScan[]
+  disputeEvidences           InvestigationDispute[]
+
+  @@index([shipmentCode])
+  @@index([status])
+  @@index([breakPointType])
+  @@map("investigation_cases")
+}
+
+model InvestigationAuditScan {
+  id                  String            @id @default(cuid())
+  investigationCaseId String
+  timestamp           DateTime
+  locationCode        String
+  locationName        String
+  action              String
+  operator            String
+  bagCode             String?
+  sealNumber          String?
+  recordedWeightKg    Float?
+  weightDeltaKg       Float?
+  isBreakPoint        Boolean           @default(false)
+  anomalyNote         String?
+  createdAt           DateTime          @default(now())
+
+  investigationCase   InvestigationCase @relation(fields: [investigationCaseId], references: [id], onDelete: Cascade)
+
+  @@index([investigationCaseId])
+  @@map("investigation_audit_scans")
+}
+
+model InvestigationDispute {
+  id                  String            @id @default(cuid())
+  investigationCaseId String
+  submittedBy         String
+  partyCode           String
+  partyName           String
+  cctvVideoUrl        String?
+  cctvTimestampRange  String?
+  handoverSlipUrl     String?
+  notes               String
+  status              DisputeStatus     @default(PENDING_REVIEW)
+  submittedAt         DateTime          @default(now())
+  createdAt           DateTime          @default(now())
+
+  investigationCase   InvestigationCase @relation(fields: [investigationCaseId], references: [id], onDelete: Cascade)
+
+  @@index([investigationCaseId])
+  @@map("investigation_disputes")
+}
+
+model CompensationClaim {
+  id                         String               @id @default(cuid())
+  claimCode                  String               @unique
+  shipmentCode               String
+  customerName               String?
+  customerPhone              String?
+  originHubCode              String
+  destinationHubCode         String
+  incidentType               IncidentType         @default(DAMAGED)
+  incidentDate               DateTime?
+  reportedAt                 DateTime             @default(now())
+  reportedBy                 String
+  declaredValue              Float                @default(0)
+  codAmount                  Float                @default(0)
+  claimRequestedAmount       Float                @default(0)
+  approvedCompensationAmount Float                @default(0)
+  penaltyAmount              Float                @default(0)
+  status                     ClaimStatus          @default(PENDING_INSPECTION)
+  responsibleParty           ResponsiblePartyType @default(UNASSIGNED)
+  responsibleEntityCode      String?
+  responsibleEntityName      String?
+  liabilityRatioPercent      Int                  @default(0)
+  rootCause                  RootCauseCategory    @default(PACKAGING_SOP_VIOLATION)
+  adjudicationNotes          String?
+  adjudicatedAt              DateTime?
+  adjudicatedBy              String?
+  declaredWeightKg           Float                @default(0)
+  arrivalWeightKg            Float?
+  weightDiscrepancyKg        Float?
+  packageDescription         String
+  damageDescription          String?
+  evidencePhotos             Json?
+  merchantPaidAt             DateTime?
+  hubDeductedAt              DateTime?
+  createdAt                  DateTime             @default(now())
+  updatedAt                  DateTime             @updatedAt
+
+  shipment                   Shipment             @relation(fields: [shipmentCode], references: [code], onDelete: Cascade)
+
+  @@index([shipmentCode])
+  @@index([status])
+  @@index([responsibleParty])
+  @@map("compensation_claims")
+}
+

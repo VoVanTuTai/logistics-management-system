@@ -9,6 +9,7 @@
     "android": "node ./scripts/start-with-gateway.js --android",
     "ios": "node ./scripts/start-with-gateway.js --ios",
     "web": "node ./scripts/start-with-gateway.js --web",
+    "test:qr": "node ./scripts/start-with-gateway.js --lan",
     "build:web": "expo export --platform web",
     "typecheck": "tsc --noEmit"
   },
