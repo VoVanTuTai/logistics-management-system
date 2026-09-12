@@ -23,7 +23,9 @@ import { HubManagementPage } from '../pages/masterdata/HubManagementPage';
 import { AdminHubGeofenceMapPage } from '../pages/masterdata/AdminHubGeofenceMapPage';
 import { NdrReasonManagementPage } from '../pages/masterdata/NdrReasonManagementPage';
 import { ZoneManagementPage } from '../pages/masterdata/ZoneManagementPage';
+import { PolicyManagementPage } from '../pages/policies/PolicyManagementPage';
 import { CourierPermissionMatrixPage } from '../pages/permissions/CourierPermissionMatrixPage';
+
 import { CustomerUsersPage } from '../pages/users/CustomerUsersPage';
 import { MerchantUsersPage } from '../pages/users/MerchantUsersPage';
 import { OpsUsersPage } from '../pages/users/OpsUsersPage';
@@ -76,6 +78,7 @@ function AdminLayout(): React.JSX.Element {
       { label: 'Quản lý Zone Vùng', to: routePaths.masterdataZones, testId: 'nav-zones', icon: 'map' },
       { label: 'Lý do lỗi NDR', to: routePaths.masterdataNdrReasons, testId: 'nav-ndr-reasons', icon: 'report_problem' },
       { label: 'Cấu hình tham số', to: routePaths.masterdataConfigs, testId: 'nav-configs', icon: 'tune' },
+      { label: 'Điều khoản & Chính sách', to: routePaths.policies, testId: 'nav-policies', icon: 'gavel' },
     ],
     [],
   );
@@ -183,10 +186,14 @@ export function AppRouter(): React.JSX.Element {
             <Route path={routePaths.masterdataZonesLeaf} element={<ZoneManagementPage />} />
             <Route path={routePaths.masterdataNdrReasonsLeaf} element={<NdrReasonManagementPage />} />
             <Route path={routePaths.masterdataConfigsLeaf} element={<ConfigManagementPage />} />
+            <Route path={routePaths.policiesLeaf} element={<PolicyManagementPage />} />
+            <Route path="terms" element={<Navigate to={routePaths.policies} replace />} />
           </Route>
         </Route>
+        <Route path="/admin/terms" element={<Navigate to={routePaths.policies} replace />} />
         <Route path="*" element={<Navigate to={routePaths.login} replace />} />
       </Routes>
     </BrowserRouter>
   );
 }
+

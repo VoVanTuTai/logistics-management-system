@@ -60,6 +60,7 @@ import qrcode from 'qrcode-generator';
 
 import LoginPage from './pages/LoginPage';
 import { OrdersPage } from './pages/OrdersPage';
+import { TermsOfServicePage } from './pages/terms/TermsOfServicePage';
 import { useAuthStore } from './store/useAuthStore';
 import {
   trackingApi,
@@ -88,6 +89,7 @@ const navItems = [
   { to: '/create', icon: PlusCircle, label: 'Tạo vận đơn' },
   { to: '/orders', icon: Package, label: 'Đơn hàng' },
   { to: '/network', icon: Building2, label: 'Mạng lưới bưu cục' },
+  { to: '/terms-of-service', icon: ShieldCheck, label: 'Điều khoản dịch vụ' },
 ];
 
 const PROVINCES = VIETNAM_ADMINISTRATIVE_DATA.map((p) => p.name);
@@ -2712,6 +2714,8 @@ export default function App() {
           <Route path="orders" element={<OrdersPage />} />
           <Route path="history" element={<OrdersPage />} />
           <Route path="network" element={<NetworkDirectoryPage />} />
+          <Route path="terms-of-service" element={<TermsOfServicePage />} />
+          <Route path="terms" element={<TermsOfServicePage />} />
           <Route path="login" element={<LoginPage />} />
         </Route>
       </Routes>

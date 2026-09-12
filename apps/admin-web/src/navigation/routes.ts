@@ -13,6 +13,7 @@ export const routePaths = {
   masterdataZones: '/app/masterdata/zones',
   masterdataNdrReasons: '/app/masterdata/ndr-reasons',
   masterdataConfigs: '/app/masterdata/configs',
+  policies: '/app/policies',
   dashboardLeaf: 'dashboard',
   opsUsersLeaf: 'users/ops',
   shipperUsersLeaf: 'users/shippers',
@@ -25,4 +26,6 @@ export const routePaths = {
   masterdataZonesLeaf: 'masterdata/zones',
   masterdataNdrReasonsLeaf: 'masterdata/ndr-reasons',
   masterdataConfigsLeaf: 'masterdata/configs',
+  policiesLeaf: 'policies',
 } as const;
+

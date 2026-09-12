@@ -166,3 +166,66 @@ model CourierAreaAssignment {
   @@map("courier_area_assignments")
 }
 
+enum PolicyStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum PolicyCategory {
+  GENERAL
+  SHIPMENT
+  DELIVERY
+  PROHIBITED_GOODS
+  COMPENSATION
+  RETURN
+  CUSTOMER_RESPONSIBILITY
+  COMPANY_RESPONSIBILITY
+}
+
+model Policy {
+  id            String         @id @default(cuid())
+  title         String
+  slug          String         @unique
+  category      PolicyCategory @default(GENERAL)
+  summary       String?        @db.Text
+  content       String         @db.Text
+  status        PolicyStatus   @default(DRAFT)
+  version       Int            @default(1)
+  displayOrder  Int            @default(0)
+  metadata      Json?
+  effectiveDate DateTime?
+  publishedAt   DateTime?
+  createdBy     String?
+  updatedBy     String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  versions      PolicyVersion[]
+
+  @@index([status])
+  @@index([category])
+  @@index([displayOrder])
+  @@map("policies")
+}
+
+model PolicyVersion {
+  id         String         @id @default(cuid())
+  policyId   String
+  version    Int
+  title      String
+  category   PolicyCategory
+  summary    String?        @db.Text
+  content    String         @db.Text
+  status     PolicyStatus
+  changeNote String?
+  createdBy  String?
+  createdAt  DateTime       @default(now())
+
+  policy     Policy         @relation(fields: [policyId], references: [id], onDelete: Cascade)
+
+  @@unique([policyId, version])
+  @@index([policyId])
+  @@map("policy_versions")
+}
+
