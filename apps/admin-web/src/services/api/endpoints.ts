@@ -85,5 +85,11 @@ export const opsEndpoints = {
     courierAreaAssignments: '/ops/masterdata/courier-area-assignments',
     courierAreaAssignmentDetail: (id: string) =>
       `/ops/masterdata/courier-area-assignments/${id}`,
+    policies: '/ops/masterdata/admin/policies',
+    policyDetail: (id: string) => `/ops/masterdata/admin/policies/${id}`,
+    policyPublish: (id: string) => `/ops/masterdata/admin/policies/${id}/publish`,
+    policyArchive: (id: string) => `/ops/masterdata/admin/policies/${id}/archive`,
+    policyRestore: (id: string) => `/ops/masterdata/admin/policies/${id}/restore`,
   },
 } as const;
+
