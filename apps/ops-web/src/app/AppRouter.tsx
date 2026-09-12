@@ -21,6 +21,7 @@ import { useHubsQuery } from '../features/masterdata/masterdata.api';
 import { appEnv } from '../utils/env';
 import { formatHubFullAddress } from '../utils/locationScope';
 import { formatRoleLabel } from '../utils/logisticsLabels';
+import { OpsUserAccountMenu } from '../features/auth/components/OpsUserAccountMenu';
 
 function lazyRoutePage<T extends React.ComponentType<any>>(
   loader: () => Promise<Record<string, T>>,
@@ -509,6 +510,7 @@ function DashboardLayout(): React.JSX.Element {
   const location = useLocation();
   const logoutMutation = useLogoutMutation(accessToken);
   const [quickSearchCode, setQuickSearchCode] = useState('');
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
   const roleText =
     (session?.user.roles ?? []).map((role) => formatRoleLabel(role)).join(', ') ||
@@ -1167,7 +1169,13 @@ function DashboardLayout(): React.JSX.Element {
             />
           </form>
 
-          <button type="button" className="ops-func-bell" aria-label="Thông báo">
+          <button
+            type="button"
+            className="ops-func-bell"
+            aria-label="Thông báo"
+            onClick={() => setIsNotificationsOpen(true)}
+            title="Thông báo hệ thống"
+          >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 4.5a4.5 4.5 0 0 0-4.5 4.5v2.5c0 .9-.36 1.77-1 2.4l-1.2 1.2h13.4l-1.2-1.2a3.4 3.4 0 0 1-1-2.4V9A4.5 4.5 0 0 0 12 4.5Z" />
               <path d="M10 17.5a2 2 0 0 0 4 0" />
@@ -1254,10 +1262,20 @@ function DashboardLayout(): React.JSX.Element {
             </div>
           )}
 
-          <div className="ops-func-user" aria-label="Tài khoản">
-            <span className="ops-func-user-avatar">{operatorInitial}</span>
-            <span className="ops-func-user-name">{operatorName}</span>
-          </div>
+          <OpsUserAccountMenu
+            session={session}
+            operatorName={operatorName}
+            operatorInitial={operatorInitial}
+            roleText={roleText}
+            opsTierMeta={opsTierMeta}
+            currentOperatorHub={currentOperatorHub}
+            currentOperatorHubAddress={currentOperatorHubAddress}
+            onLogout={onLogout}
+            isLoggingOut={logoutMutation.isPending}
+            variant="func"
+            isNotificationsOpen={isNotificationsOpen}
+            onToggleNotifications={() => setIsNotificationsOpen((prev) => !prev)}
+          />
         </div>
       </header>
 

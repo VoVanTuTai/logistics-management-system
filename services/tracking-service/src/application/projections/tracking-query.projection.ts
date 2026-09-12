@@ -238,7 +238,9 @@ export class TrackingQueryProjection {
         (statusCursor === 'PICKUP_REQUESTED' ||
           statusCursor === 'PICKUP_ASSIGNED' ||
           statusCursor === 'UPDATED' ||
-          statusCursor === 'TASK_ASSIGNED') &&
+          statusCursor === 'TASK_ASSIGNED' ||
+          statusCursor === 'PICKED_UP' ||
+          statusCursor === 'PICKUP_COMPLETED') &&
         !locationText &&
         senderAddress
       ) {

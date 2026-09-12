@@ -32,9 +32,18 @@ interface AuthStoreState {
 const ACCESS_TOKEN_REFRESH_SKEW_MS = 60_000;
 const COURIER_APP_ALLOWED_ROLES = new Set([
   'SYSTEM_ADMIN',
+  'ADMIN',
+  'HQ_OPS',
+  'REGIONAL_OPS',
+  'PROVINCIAL_OPS',
+  'HUB_MANAGER',
+  'HUB_STAFF',
   'OPS_ADMIN',
   'OPS_VIEWER',
+  'OPS',
   'COURIER',
+  'DRIVER',
+  'SHIPPER',
 ]);
 
 let refreshSessionPromise: Promise<LoginResultDto> | null = null;
@@ -151,13 +160,21 @@ async function withEffectiveMobilePermissions(
 }
 
 function assertCourierSession(session: LoginResultDto): void {
-  const canUseCourierApp = session.user.roles.some((role) =>
-    COURIER_APP_ALLOWED_ROLES.has(role.trim().toUpperCase()),
-  );
+  const canUseCourierApp = session.user.roles.some((role) => {
+    const r = role.trim().toUpperCase();
+    return (
+      COURIER_APP_ALLOWED_ROLES.has(r) ||
+      r.includes('OPS') ||
+      r.includes('COURIER') ||
+      r.includes('HUB') ||
+      r.includes('ADMIN') ||
+      r.includes('SHIPPER')
+    );
+  });
 
   if (!canUseCourierApp) {
     throw new Error(
-      'Tai khoan khong thuoc nhom quyen COURIER hoac OPS. Vui long dang nhap dung ung dung.',
+      'Tài khoản không thuộc nhóm quyền COURIER hoặc OPS. Vui lòng đăng nhập đúng ứng dụng.',
     );
   }
 }

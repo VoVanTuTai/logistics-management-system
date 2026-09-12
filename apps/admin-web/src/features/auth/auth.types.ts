@@ -1,4 +1,4 @@
-﻿import { z } from 'zod';
+import { z } from 'zod';
 
 export interface AuthUserDto {
   id: string;
@@ -10,7 +10,7 @@ export interface AuthUserDto {
 }
 
 export type UserStatus = 'ACTIVE' | 'DISABLED';
-export type UserRoleGroup = 'OPS' | 'SHIPPER' | 'MERCHANT';
+export type UserRoleGroup = 'OPS' | 'SHIPPER' | 'MERCHANT' | 'CUSTOMER';
 
 export interface AdminUserDto {
   id: string;
