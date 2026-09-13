@@ -675,4 +675,43 @@
   color: #2563eb;
 }
 
+/* ==========================================================================
+   THAO TÁC IN TEM NHÃN NHIỆT NHANH TẠI QUẦY BƯU CỤC
+   ========================================================================== */
+
+.ops-branch-order-create__success-banner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.ops-branch-order-create__print-now-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid #334155;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.15);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ops-branch-order-create__print-now-btn:hover {
+  background: #1e293b;
+  border-color: #475569;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
+}
+
+.ops-branch-order-create__print-now-btn:active {
+  transform: translateY(0);
+}
+
+
 
