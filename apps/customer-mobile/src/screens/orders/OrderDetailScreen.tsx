@@ -184,11 +184,29 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
           </View>
         </View>
 
+        {/* RECEIVER COD & DELIVERY NOTICE BANNER */}
+        {order.category === 'RECEIVED' ? (
+          <View style={styles.receiverNoticeCard}>
+            <Text style={styles.receiverNoticeTitle}>THÔNG BÁO NHẬN HÀNG</Text>
+            <Text style={styles.receiverNoticeDesc}>
+              Bưu phẩm đang được điều phối giao. Quý khách chỉ thanh toán số tiền COD bên dưới cho bưu tá khi nhận kiện:
+            </Text>
+            <View style={styles.receiverNoticeAmountRow}>
+              <Text style={styles.receiverNoticeAmountLabel}>Số tiền cần thanh toán (COD):</Text>
+              <Text style={styles.receiverNoticeAmountVal}>
+                {order.codAmountVnd > 0 ? formatVnd(order.codAmountVnd) : '0đ (Không thu tiền)'}
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
         {/* 4. ITEM & PACKAGE INFO */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Ionicons name="cube-outline" size={20} color={colors.primary} />
-            <Text style={styles.cardTitle}>Thông tin hàng hóa</Text>
+            <Ionicons name="cube-outline" size={18} color={colors.primary} />
+            <Text style={styles.cardTitle}>
+              {order.category === 'RECEIVED' ? 'Thông tin kiện hàng & Thanh toán' : 'Thông tin hàng hóa & Cước phí'}
+            </Text>
           </View>
 
           <View style={styles.infoGrid}>
@@ -200,10 +218,12 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
               <Text style={styles.infoLabel}>Khối lượng:</Text>
               <Text style={styles.infoVal}>{order.weightKg} kg</Text>
             </View>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Khai giá:</Text>
-              <Text style={styles.infoVal}>{formatVnd(order.declaredValueVnd)}</Text>
-            </View>
+            {order.category !== 'RECEIVED' ? (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Khai giá:</Text>
+                <Text style={styles.infoVal}>{formatVnd(order.declaredValueVnd)}</Text>
+              </View>
+            ) : null}
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Tiền thu hộ (COD):</Text>
               <Text style={[styles.infoVal, { color: colors.primary }]}>
@@ -212,8 +232,17 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
             </View>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Cước vận chuyển:</Text>
-              <Text style={styles.infoVal}>{formatVnd(order.shippingFeeVnd)}</Text>
+              <Text style={styles.infoVal}>
+                {order.category === 'RECEIVED' ? 'Người gửi đã thanh toán' : formatVnd(order.shippingFeeVnd)}
+              </Text>
             </View>
+            {order.category === 'RECEIVED' ? (
+              <View style={styles.privacyNoticeBox}>
+                <Text style={styles.privacyNoticeText}>
+                  Bảo mật bưu chính: Biểu phí chi tiết và hợp đồng thương mại giữa Người gửi và hệ thống được bảo mật theo quy định.
+                </Text>
+              </View>
+            ) : null}
           </View>
         </View>
       </ScrollView>
@@ -376,4 +405,68 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.textPrimary,
   },
+  receiverNoticeCard: {
+    backgroundColor: '#eff6ff',
+    borderRadius: 16,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    ...shadows.sm,
+  },
+  receiverNoticeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  receiverNoticeTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: colors.primary,
+    letterSpacing: 0.5,
+  },
+  receiverNoticeDesc: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    lineHeight: 18,
+    marginBottom: 10,
+  },
+  receiverNoticeAmountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#dbeafe',
+  },
+  receiverNoticeAmountLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  receiverNoticeAmountVal: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: colors.primary,
+  },
+  privacyNoticeBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.background,
+    padding: 8,
+    borderRadius: 8,
+    marginTop: 6,
+  },
+  privacyNoticeText: {
+    fontSize: 11,
+    color: colors.textMuted,
+    flex: 1,
+    lineHeight: 15,
+  },
 });
+

@@ -5913,6 +5913,113 @@ tbody tr:hover {
   color: var(--stitch-primary);
 }
 
+/* IATA & Fee Breakdown Enhancements */
+.summary-weight-breakdown-box {
+  background: var(--stitch-surface-container-low, #f8f9fa);
+  border: 1px solid var(--stitch-outline-variant, #e5e7eb);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.summary-weight-row {
+  display: flex;
+  justify-content: space-between;
+  color: var(--stitch-on-surface-variant);
+}
+
+.summary-weight-highlight {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 5px;
+  border-top: 1px dashed var(--stitch-outline-variant, #e5e7eb);
+  font-weight: 600;
+  color: var(--stitch-on-surface);
+}
+
+.summary-breakdown-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--stitch-surface-container-low, #f8f9fa);
+  padding: 8px 10px;
+  border-radius: 8px;
+  border-left: 3px solid var(--stitch-primary);
+}
+
+.summary-row-sub {
+  font-size: 12px;
+  color: var(--stitch-on-surface-variant);
+}
+
+.summary-formula-box {
+  margin-top: 4px;
+}
+
+.summary-formula-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--stitch-primary);
+  padding: 6px 0;
+  transition: opacity 0.2s;
+}
+
+.summary-formula-btn:hover {
+  opacity: 0.85;
+}
+
+.summary-formula-popover {
+  background: var(--stitch-surface-container-high, #f8fafc);
+  border: 1px solid var(--stitch-outline-variant, #e2e8f0);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--stitch-on-surface-variant);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 6px;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.summary-formula-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.summary-formula-item strong {
+  color: var(--stitch-on-surface);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.summary-formula-popover code {
+  background: var(--stitch-surface, #ffffff);
+  border: 1px solid var(--stitch-outline-variant, #e2e8f0);
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--stitch-primary);
+  font-weight: 600;
+  display: inline-block;
+  margin-top: 2px;
+  font-family: monospace;
+}
+
+
 .summary-actions-grid {
   display: flex;
   flex-direction: column;

@@ -94,8 +94,14 @@ function toPositiveNumber(value: string): number {
 }
 
 export interface FeeBreakdown {
+  actualWeightKg: number;
+  volumetricWeightKg: number;
+  chargeableWeightKg: number;
+  isVolumetricApplied: boolean;
   serviceBase: number;
   weightFee: number;
+  extraHalfKgUnits: number;
+  zoneFee: number;
   volumeFee: number;
   transportFee: number;
   insuranceFee: number;
@@ -109,16 +115,34 @@ function calculateFeeBreakdown(form: BranchOrderFormState): FeeBreakdown {
     EXPRESS: 28000,
     SAME_DAY: 42000,
   }[form.serviceType];
-  const weightKg = toPositiveNumber(form.weightKg);
+  const actualWeightKg = toPositiveNumber(form.weightKg);
   const length = toPositiveNumber(form.lengthCm);
   const width = toPositiveNumber(form.widthCm);
   const height = toPositiveNumber(form.heightCm);
   const declaredValue = toPositiveNumber(form.declaredValue);
   const codAmount = toPositiveNumber(form.codAmount);
 
-  const weightFee = Math.round(weightKg * 4500);
-  const volumeFee = Math.round(((length * width * height) / 6000) * 3200);
-  const transportFee = serviceBase + weightFee + volumeFee;
+  // Chuẩn quốc tế IATA / VLA: Trọng lượng quy đổi thể tích (cm³ / 6000)
+  const rawVolumetric = (length * width * height) / 6000;
+  const volumetricWeightKg = Math.round(rawVolumetric * 100) / 100;
+  const chargeableWeightKg = Math.round(Math.max(actualWeightKg, volumetricWeightKg) * 100) / 100;
+  const isVolumetricApplied = volumetricWeightKg > actualWeightKg;
+
+  // Cước vượt cân: tính nấc 0.5kg vượt quá nấc đầu 0.5kg
+  const extraWeight = Math.max(0, chargeableWeightKg - 0.5);
+  const extraHalfKgUnits = Math.ceil(extraWeight / 0.5);
+  const unitRate = form.serviceType === 'SAME_DAY' ? 8000 : form.serviceType === 'EXPRESS' ? 5000 : 3500;
+  const weightFee = extraHalfKgUnits * unitRate;
+
+  // Phụ phí tuyến vùng miền (căn cứ tỉnh/thành người nhận)
+  const isSameRegion =
+    !form.receiverRegion ||
+    form.receiverRegion.includes('Hà Nội') ||
+    form.receiverRegion.includes('HN');
+  const zoneFee = isSameRegion ? 0 : 7000;
+
+  const volumeFee = Math.round(volumetricWeightKg * 3200);
+  const transportFee = serviceBase + weightFee + zoneFee;
 
   // Thu 0.5% giá trị khai báo khi chọn Gói bảo hiểm 100%, tối thiểu 5.000 VNĐ
   const insuranceFee =
@@ -130,8 +154,14 @@ function calculateFeeBreakdown(form: BranchOrderFormState): FeeBreakdown {
   const totalFee = transportFee + insuranceFee + codFee;
 
   return {
+    actualWeightKg,
+    volumetricWeightKg,
+    chargeableWeightKg,
+    isVolumetricApplied,
     serviceBase,
     weightFee,
+    extraHalfKgUnits,
+    zoneFee,
     volumeFee,
     transportFee,
     insuranceFee,
@@ -291,6 +321,7 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [lastCreatedLabel, setLastCreatedLabel] = useState<ShippingLabelPrintPayload | null>(null);
+  const [showFormulaDetails, setShowFormulaDetails] = useState<boolean>(true);
 
   // Tự động gán thông tin bưu cục vào form nếu chế độ bưu cục gửi được bật
   useEffect(() => {
@@ -1075,8 +1106,8 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
               value={form.declaredValue}
               onChange={(event) => updateForm('declaredValue', event.target.value)}
             />
-            <small style={{ color: '#64748b', fontSize: '11.5px', marginTop: '2px' }}>
-              💡 Giá trị khai báo là căn cứ xác thực hạn mức bảo hiểm và thẩm định bồi thường khi xảy ra sự cố.
+            <small className="ops-branch-order-create__help-text">
+              Giá trị khai báo là căn cứ xác định mức bồi hoàn theo Điều 25 Luật Bưu chính khi phát sinh sự cố.
             </small>
           </label>
 
@@ -1108,7 +1139,7 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
                   Phù hợp cho quần áo, tài liệu, hàng thông thường giá trị thấp (&le; 1.000.000đ).
                 </div>
                 <div className="ops-branch-order-create__tier-policy">
-                  🛡️ Hạn mức bồi thường: <strong>Tối đa 04 lần cước vận chuyển</strong> (Trần tối đa 1.000.000đ theo Điều 25 Luật Bưu chính).
+                  Hạn mức bồi thường: <strong>Tối đa 04 lần cước vận chuyển</strong> (Trần tối đa 1.000.000đ theo Điều 25 Luật Bưu chính).
                 </div>
               </div>
 
@@ -1135,15 +1166,45 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
                   <span className="ops-branch-order-create__tier-price">
                     + {formatCurrency(feeBreakdown.insuranceFee)}
                     <span style={{ fontSize: '10.5px', fontWeight: '500', color: '#64748b', display: 'block', textAlign: 'right' }}>
-                      (0.5% giá trị khai báo, min 5k)
+                      (0.5% giá trị khai báo, tối thiểu 5.000đ)
                     </span>
                   </span>
                 </div>
                 <div className="ops-branch-order-create__tier-desc">
                   Kiện hàng được dán tem định danh an ninh, giám sát camera riêng trên toàn bộ hành trình.
                 </div>
-                <div className="ops-branch-order-create__tier-policy" style={{ background: '#eff6ff', color: '#1d4ed8' }}>
-                  🛡️ Cam kết bồi thường: <strong>ĐÚNG 100% GIÁ TRỊ KHAI BÁO THỰC TẾ</strong> khi mất hàng hoặc bể vỡ (Kèm hóa đơn/chứng từ hợp lệ).
+                <div className="ops-branch-order-create__tier-policy ops-branch-order-create__tier-policy--comprehensive">
+                  Cam kết bồi thường: <strong>100% GIÁ TRỊ KHAI BÁO THỰC TẾ</strong> khi mất hàng hoặc bể vỡ (kèm hóa đơn/chứng từ hợp lệ).
+                </div>
+              </div>
+            </div>
+
+            {/* THẺ SO SÁNH TRỌNG LƯỢNG TÍNH CƯỚC IATA */}
+            <div className="ops-branch-order-create__weight-compare-box">
+              <div className="ops-branch-order-create__weight-compare-title">
+                CĂN CỨ TÍNH CƯỚC TRỌNG LƯỢNG (QUY CHUẨN IATA & BƯU CHÍNH)
+              </div>
+              <div className="ops-branch-order-create__weight-compare-grid">
+                <div className="ops-branch-order-create__weight-item">
+                  <span className="ops-branch-order-create__weight-item-label">Cân nặng thực tế</span>
+                  <strong className="ops-branch-order-create__weight-item-val">{feeBreakdown.actualWeightKg} kg</strong>
+                </div>
+                <div className="ops-branch-order-create__weight-item">
+                  <span className="ops-branch-order-create__weight-item-label">Thể tích quy đổi (D×R×C/6000)</span>
+                  <strong className="ops-branch-order-create__weight-item-val">{feeBreakdown.volumetricWeightKg} kg</strong>
+                </div>
+                <div className="ops-branch-order-create__weight-item ops-branch-order-create__weight-item--highlight">
+                  <span className="ops-branch-order-create__weight-item-label">Khối lượng tính cước</span>
+                  <strong className="ops-branch-order-create__weight-item-val">{feeBreakdown.chargeableWeightKg} kg</strong>
+                  {feeBreakdown.isVolumetricApplied ? (
+                    <span className="ops-branch-order-create__weight-tag-volumetric">
+                      Áp dụng quy đổi thể tích
+                    </span>
+                  ) : (
+                    <span className="ops-branch-order-create__weight-tag-actual">
+                      Áp dụng cân nặng thực tế
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -1152,33 +1213,94 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
             <div className="ops-branch-order-create__fee-summary-box">
               <div className="ops-branch-order-create__fee-rows">
                 <div className="ops-branch-order-create__fee-item">
-                  <span className="ops-branch-order-create__fee-label">Cước vận chuyển ({form.serviceType}):</span>
-                  <span className="ops-branch-order-create__fee-val">{formatCurrency(feeBreakdown.transportFee)}</span>
+                  <span className="ops-branch-order-create__fee-label">
+                    Cước cơ bản ({form.serviceType} - 0.5kg đầu)
+                  </span>
+                  <span className="ops-branch-order-create__fee-val">{formatCurrency(feeBreakdown.serviceBase)}</span>
                 </div>
+                {feeBreakdown.weightFee > 0 ? (
+                  <div className="ops-branch-order-create__fee-item">
+                    <span className="ops-branch-order-create__fee-label">
+                      Cước vượt cân ({feeBreakdown.extraHalfKgUnits} nấc 0.5kg)
+                    </span>
+                    <span className="ops-branch-order-create__fee-val">+{formatCurrency(feeBreakdown.weightFee)}</span>
+                  </div>
+                ) : null}
+                {feeBreakdown.zoneFee > 0 ? (
+                  <div className="ops-branch-order-create__fee-item">
+                    <span className="ops-branch-order-create__fee-label">
+                      Phụ phí tuyến liên kết ({form.receiverRegion || 'Liên tỉnh'})
+                    </span>
+                    <span className="ops-branch-order-create__fee-val">+{formatCurrency(feeBreakdown.zoneFee)}</span>
+                  </div>
+                ) : null}
                 <div className="ops-branch-order-create__fee-item">
                   <span className="ops-branch-order-create__fee-label">
-                    Phí bảo hiểm ({form.insuranceTier === 'COMPREHENSIVE_100' ? 'Gói 100%' : 'Tiêu chuẩn'}):
+                    Phí bảo hiểm ({form.insuranceTier === 'COMPREHENSIVE_100' ? 'Toàn diện 100%' : 'Gói tiêu chuẩn'})
                   </span>
                   <span className="ops-branch-order-create__fee-val" style={{ color: form.insuranceTier === 'COMPREHENSIVE_100' ? '#2563eb' : '#16a34a' }}>
                     {formatCurrency(feeBreakdown.insuranceFee)}
                   </span>
                 </div>
                 <div className="ops-branch-order-create__fee-item">
-                  <span className="ops-branch-order-create__fee-label">Tiền thu hộ COD:</span>
+                  <span className="ops-branch-order-create__fee-label">
+                    Tiền thu hộ COD (Thu hộ Shop)
+                  </span>
                   <span className="ops-branch-order-create__fee-val">{formatCurrency(toPositiveNumber(form.codAmount))}</span>
                 </div>
-                <div className="ops-branch-order-create__fee-item">
-                  <span className="ops-branch-order-create__fee-label">Phí dịch vụ COD:</span>
-                  <span className="ops-branch-order-create__fee-val">{formatCurrency(feeBreakdown.codFee)}</span>
-                </div>
+                {feeBreakdown.codFee > 0 ? (
+                  <div className="ops-branch-order-create__fee-item">
+                    <span className="ops-branch-order-create__fee-label">
+                      Phí xử lý tiền thu hộ COD
+                    </span>
+                    <span className="ops-branch-order-create__fee-val">{formatCurrency(feeBreakdown.codFee)}</span>
+                  </div>
+                ) : null}
               </div>
 
               <div className="ops-branch-order-create__fee-total-row">
                 <span className="ops-branch-order-create__total-label">
-                  🧾 TỔNG CƯỚC THU TẠI QUẦY (ĐÃ GỒM CƯỚC + PHÍ BẢO HIỂM):
+                  Tổng cước dịch vụ tại quầy
                 </span>
                 <span className="ops-branch-order-create__total-val">{formatCurrency(feeBreakdown.totalFee)}</span>
               </div>
+            </div>
+
+            {/* THANH THUYẾT MINH CÔNG THỨC CHO BẢO VỆ ĐỒ ÁN */}
+            <div className="ops-branch-order-create__formula-guide-box">
+              <button
+                type="button"
+                className="ops-branch-order-create__formula-toggle-btn"
+                onClick={() => setShowFormulaDetails(!showFormulaDetails)}
+              >
+                <span>Thuyết minh phương pháp chiết tính cước bưu chính</span>
+                <span className="ops-branch-order-create__formula-toggle-badge">
+                  {showFormulaDetails ? 'Thu gọn' : 'Xem chi tiết'}
+                </span>
+              </button>
+
+              {showFormulaDetails ? (
+                <div className="ops-branch-order-create__formula-details">
+                  <div className="ops-branch-order-create__formula-item">
+                    <strong>1. Khối lượng tính cước (Chargeable Weight)</strong>
+                    <code>Chargeable Weight = max(Cân thực tế, (Dài × Rộng × Cao)/6000)</code>
+                    <small>Theo quy chuẩn Hiệp hội Vận tải Hàng không Quốc tế (IATA) & Hiệp hội Logistics Việt Nam (VLA).</small>
+                  </div>
+                  <div className="ops-branch-order-create__formula-item">
+                    <strong>2. Cước vận chuyển lũy tiến theo nấc</strong>
+                    <code>Cước vận chuyển = Cước cơ sở (0.5kg đầu) + Nấc 0.5kg vượt × Đơn giá nấc + Phụ phí tuyến</code>
+                  </div>
+                  <div className="ops-branch-order-create__formula-item">
+                    <strong>3. Phí bảo hiểm hàng hóa 100%</strong>
+                    <code>Phí bảo hiểm = max(5.000 VNĐ, Giá trị khai báo × 0.5%)</code>
+                    <small>Cam kết bồi hoàn 100% giá trị thiệt hại thực tế theo hóa đơn chứng từ.</small>
+                  </div>
+                  <div className="ops-branch-order-create__formula-item">
+                    <strong>4. Phân quyền hiển thị tài chính cho Người nhận (Receiver Privacy)</strong>
+                    <small>Người nhận tra cứu mã vận đơn chỉ thấy số tiền COD cần thanh toán, hoàn toàn bảo mật công thức cước và chiết khấu giữa Shop và Bưu cục.</small>
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>

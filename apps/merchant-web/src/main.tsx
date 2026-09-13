@@ -960,6 +960,7 @@ function MerchantApp(): React.JSX.Element {
   const [createForm, setCreateForm] = useState<CreateShipmentForm>(DEFAULT_CREATE_FORM);
   const [quotedFee, setQuotedFee] = useState<number | null>(null);
   const [pricingQuote, setPricingQuote] = useState<PricingQuoteResponse | null>(null);
+  const [showMerchantFormulaHelp, setShowMerchantFormulaHelp] = useState(false);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [createLoading, setCreateLoading] = useState(false);
@@ -3945,10 +3946,41 @@ function MerchantApp(): React.JSX.Element {
                       <span>Hub phát hàng</span>
                       <strong>{createForm.receiverHubCode || 'Chưa chọn'}</strong>
                     </div>
-                    <div className="summary-row">
-                      <span>Cước phí ước tính</span>
-                      <strong>{formatCurrency(effectiveFee)}</strong>
+
+                    {/* Khối phân tích trọng lượng IATA */}
+                    <div className="summary-weight-breakdown-box">
+                      <div className="summary-weight-row">
+                        <span>Cân thực: <strong>{Number(createForm.weightKg || 0).toFixed(2)} kg</strong></span>
+                        <span>Thể tích: <strong>{((Number(createForm.lengthCm || 0) * Number(createForm.widthCm || 0) * Number(createForm.heightCm || 0)) / 6000).toFixed(2)} kg</strong></span>
+                      </div>
+                      <div className="summary-weight-highlight">
+                        <span>Khối lượng tính cước:</span>
+                        <strong style={{ color: 'var(--stitch-primary)', fontSize: '13px' }}>
+                          {Math.max(
+                            Number(createForm.weightKg || 0),
+                            Number(((Number(createForm.lengthCm || 0) * Number(createForm.widthCm || 0) * Number(createForm.heightCm || 0)) / 6000).toFixed(2)),
+                          ).toFixed(2)} kg
+                        </strong>
+                      </div>
                     </div>
+
+                    {/* Chi tiết từng khoản phí nếu có quote breakdown */}
+                    {pricingQuote?.breakdown && pricingQuote.breakdown.length > 0 ? (
+                      <div className="summary-breakdown-items">
+                        {pricingQuote.breakdown.map((item, idx) => (
+                          <div key={idx} className="summary-row summary-row-sub">
+                            <span>{item.label}</span>
+                            <span>{formatCurrency(item.amount)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="summary-row">
+                        <span>Cước phí ước tính</span>
+                        <strong>{formatCurrency(effectiveFee)}</strong>
+                      </div>
+                    )}
+
                     <div className="summary-row">
                       <span>Tiền thu hộ COD</span>
                       <strong>{formatCurrency(codAmount)}</strong>
@@ -3956,6 +3988,37 @@ function MerchantApp(): React.JSX.Element {
                     <div className="summary-row total">
                       <span>Tổng cước tạm tính</span>
                       <span className="summary-total-fee">{formatCurrency(effectiveFee)}</span>
+                    </div>
+
+                    {/* Nút bấm & Hộp giải thích công thức chuẩn bưu chính */}
+                    <div className="summary-formula-box">
+                      <button
+                        type="button"
+                        className="summary-formula-btn"
+                        onClick={() => setShowMerchantFormulaHelp(!showMerchantFormulaHelp)}
+                      >
+                        <span>{showMerchantFormulaHelp ? 'Thu gọn thuyết minh' : 'Chi tiết công thức chiết tính'}</span>
+                        <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                          {showMerchantFormulaHelp ? 'expand_less' : 'expand_more'}
+                        </span>
+                      </button>
+
+                      {showMerchantFormulaHelp ? (
+                        <div className="summary-formula-popover">
+                          <div className="summary-formula-item">
+                            <strong>Khối lượng tính cước (Chuẩn IATA)</strong>
+                            <code>max(Cân thực, (D×R×C)/6000)</code>
+                          </div>
+                          <div className="summary-formula-item">
+                            <strong>Cơ chế lũy tiến</strong>
+                            <span>Cước cơ sở (0.5kg đầu) + Nấc 0.5kg vượt + Phụ phí tuyến vùng miền.</span>
+                          </div>
+                          <div className="summary-formula-item">
+                            <strong>Bảo mật thông tin Người nhận</strong>
+                            <span>Người nhận chỉ thấy số tiền COD cần thanh toán, hoàn toàn bảo mật biểu phí chi tiết của Shop.</span>
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
                   </div>
 
