@@ -48,6 +48,7 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
   const [submitting, setSubmitting] = useState(false);
   const [liveFee, setLiveFee] = useState<number>(22000);
   const [liveQuote, setLiveQuote] = useState<PricingQuoteResponse | null>(null);
+  const [showFormulaHelp, setShowFormulaHelp] = useState<boolean>(false);
 
   // Address Modals state
   const [showSenderAddressModal, setShowSenderAddressModal] = useState(false);
@@ -921,30 +922,92 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
             </View>
 
             {/* SUMMARY REVIEW */}
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryTitle}>Tổng quan chi phí (API Pricing Quote)</Text>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Hình thức gửi hàng:</Text>
-                <Text style={styles.summaryVal}>
-                  {pickupMethod === 'PICKUP' ? '🚚 Lấy hàng tại nhà' : '🏢 Gửi tại bưu cục'}
-                </Text>
-              </View>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Cước vận chuyển:</Text>
-                <Text style={styles.summaryVal}>{formatVnd(liveFee)}</Text>
-              </View>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Thu hộ COD:</Text>
-                <Text style={styles.summaryVal}>
-                  {hasCod ? formatVnd(Number(codAmount) || 0) : '0đ'}
-                </Text>
-              </View>
-              <View style={styles.divider} />
-              <View style={styles.summaryRowTotal}>
-                <Text style={styles.summaryLabelTotal}>TỔNG CƯỚC THANH TOÁN:</Text>
-                <Text style={styles.summaryValTotal}>{formatVnd(liveFee)}</Text>
-              </View>
-            </View>
+            {(() => {
+              const actW = Number(weightKg) || 0.5;
+              const volW = Number(((Number(lengthCm || 10) * Number(widthCm || 10) * Number(heightCm || 10)) / 6000).toFixed(2));
+              const chargeW = Math.max(actW, volW);
+              const isVolApplied = volW > actW;
+
+              return (
+                <View style={styles.summaryCard}>
+                  <Text style={styles.summaryTitle}>Tổng quan chi phí bưu gửi</Text>
+
+                  {/* Khối so sánh trọng lượng IATA V/6000 */}
+                  <View style={styles.weightCompareBox}>
+                    <View style={styles.weightCompareRow}>
+                      <Text style={styles.weightCompareLabel}>Cân thực: <Text style={styles.boldText}>{actW.toFixed(2)} kg</Text></Text>
+                      <Text style={styles.weightCompareLabel}>Thể tích (V/6000): <Text style={styles.boldText}>{volW.toFixed(2)} kg</Text></Text>
+                    </View>
+                    <View style={styles.weightChargeRow}>
+                      <Text style={styles.weightChargeLabel}>Khối lượng tính cước:</Text>
+                      <Text style={styles.weightChargeVal}>
+                        {chargeW.toFixed(2)} kg {isVolApplied ? '(Theo thể tích)' : '(Theo cân nặng)'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Hình thức gửi hàng:</Text>
+                    <Text style={styles.summaryVal}>
+                      {pickupMethod === 'PICKUP' ? 'Lấy hàng tại nhà' : 'Gửi tại bưu cục'}
+                    </Text>
+                  </View>
+
+                  {/* Chi tiết từng khoản cước nếu có breakdown từ API */}
+                  {liveQuote?.breakdown && liveQuote.breakdown.length > 0 ? (
+                    <View style={styles.breakdownList}>
+                      {liveQuote.breakdown.map((item, idx) => (
+                        <View key={idx} style={styles.summaryRow}>
+                          <Text style={styles.breakdownItemLabel}>{item.label}:</Text>
+                          <Text style={styles.breakdownItemVal}>{formatVnd(item.amount)}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  ) : (
+                    <View style={styles.summaryRow}>
+                      <Text style={styles.summaryLabel}>Cước vận chuyển:</Text>
+                      <Text style={styles.summaryVal}>{formatVnd(liveFee)}</Text>
+                    </View>
+                  )}
+
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Thu hộ COD:</Text>
+                    <Text style={styles.summaryVal}>
+                      {hasCod ? formatVnd(Number(codAmount) || 0) : '0đ'}
+                    </Text>
+                  </View>
+                  <View style={styles.divider} />
+                  <View style={styles.summaryRowTotal}>
+                    <Text style={styles.summaryLabelTotal}>TỔNG CƯỚC THANH TOÁN:</Text>
+                    <Text style={styles.summaryValTotal}>{formatVnd(liveFee)}</Text>
+                  </View>
+
+                  {/* Nút thuyết minh công thức tính cước */}
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    style={styles.formulaHelpBtn}
+                    onPress={() => setShowFormulaHelp(!showFormulaHelp)}
+                  >
+                    <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
+                    <Text style={styles.formulaHelpBtnText}>
+                      {showFormulaHelp ? 'Đóng thuyết minh cước' : 'Chi tiết công thức chiết tính'}
+                    </Text>
+                    <Ionicons name={showFormulaHelp ? 'chevron-up' : 'chevron-down'} size={14} color={colors.primary} />
+                  </TouchableOpacity>
+
+                  {showFormulaHelp ? (
+                    <View style={styles.formulaHelpBox}>
+                      <Text style={styles.formulaHelpTitle}>Quy chuẩn chiết tính cước bưu chính:</Text>
+                      <Text style={styles.formulaHelpText}>
+                        1. Khối lượng IATA: max(Cân thực tế, (Dài × Rộng × Cao)/6000){'\n'}
+                        2. Cơ chế nấc: Cước cơ sở (0.5kg đầu) + Nấc 0.5kg vượt + Phụ phí tuyến vùng miền{'\n'}
+                        3. Bảo mật: Người nhận chỉ thấy số tiền COD cần thanh toán, biểu phí dịch vụ của người gửi được bảo mật.
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+              );
+            })()}
           </View>
         ) : null}
 
@@ -1327,6 +1390,95 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '800',
     color: colors.primary,
+  },
+  weightCompareBox: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    marginBottom: spacing.md,
+    gap: 6,
+  },
+  weightCompareRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  weightCompareLabel: {
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  boldText: {
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  weightChargeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f0',
+  },
+  weightChargeLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  weightChargeVal: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.primary,
+  },
+  breakdownList: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 10,
+    padding: 8,
+    marginBottom: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.primary,
+  },
+  breakdownItemLabel: {
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  breakdownItemVal: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  formulaHelpBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    marginTop: 10,
+  },
+  formulaHelpBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  formulaHelpBox: {
+    backgroundColor: '#f1f5f9',
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+  },
+  formulaHelpTitle: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: colors.textPrimary,
+    marginBottom: 4,
+  },
+  formulaHelpText: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    lineHeight: 16,
   },
   footerRow: {
     flexDirection: 'row',

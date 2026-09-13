@@ -859,42 +859,69 @@ function TrackingPage() {
                 </div>
               </div>
 
-              {/* Package Specs & Financials */}
-              <div className="rounded-2xl border border-slate-200 p-4 bg-slate-50/50 space-y-3">
-                <div className="flex items-center gap-2 text-xs font-extrabold uppercase text-slate-700">
-                  <Package className="h-4 w-4 text-blue-600" />
-                  Quy Cách Kiện Hàng & Tiền COD
+              {/* Package Specs & Financials - Delivery Receipt for Receiver */}
+              <div className="rounded-2xl border border-slate-200 p-4 bg-white space-y-3.5 shadow-sm">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                    Phiếu Giao Nhận & Thanh Toán
+                  </span>
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                    Bản người nhận
+                  </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="p-2.5 rounded-xl bg-white border border-slate-200">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase">Khối Lượng</span>
-                    <p className="font-extrabold text-slate-900 font-mono">
-                      {searchResult.order?.package?.weightKg ? `${searchResult.order.package.weightKg} kg` : '1.2 kg'}
-                    </p>
-                  </div>
-
-                  <div className="p-2.5 rounded-xl bg-white border border-slate-200">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase">Kích Thước</span>
-                    <p className="font-extrabold text-slate-900 font-mono">
-                      {searchResult.order?.package?.dimensionsCm
-                        ? `${searchResult.order.package.dimensionsCm.length}x${searchResult.order.package.dimensionsCm.width}x${searchResult.order.package.dimensionsCm.height} cm`
-                        : '20x15x10 cm'}
-                    </p>
-                  </div>
-
-                  <div className="p-2.5 rounded-xl bg-white border border-slate-200 col-span-2 flex items-center justify-between">
-                    <div>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">Tiền Thu Hộ (COD)</span>
-                      <p className="text-base font-extrabold text-blue-700 font-mono">
-                        {(searchResult.order?.codAmount || 0).toLocaleString('vi-VN')} VNĐ
+                <div className="space-y-2.5 text-xs">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                      <span className="text-[10px] font-semibold text-slate-400 uppercase block">Khối lượng kiện</span>
+                      <p className="font-bold text-slate-800 font-mono mt-0.5">
+                        {searchResult.order?.package?.weightKg ? `${searchResult.order.package.weightKg} kg` : '1.2 kg'}
                       </p>
                     </div>
-                    <span className="text-[10px] font-extrabold px-2.5 py-1 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
-                      Miễn Phí COD
+
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                      <span className="text-[10px] font-semibold text-slate-400 uppercase block">Kích thước (D×R×C)</span>
+                      <p className="font-bold text-slate-800 font-mono mt-0.5">
+                        {searchResult.order?.package?.dimensionsCm
+                          ? `${searchResult.order.package.dimensionsCm.length}×${searchResult.order.package.dimensionsCm.width}×${searchResult.order.package.dimensionsCm.height} cm`
+                          : '20×15×10 cm'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Cước vận chuyển: Người gửi trả */}
+                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] font-semibold text-slate-400 uppercase block">Cước vận chuyển</span>
+                      <p className="text-xs font-medium text-slate-700 mt-0.5">Người gửi đã thanh toán</p>
+                    </div>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      Miễn cước người nhận
+                    </span>
+                  </div>
+
+                  {/* COD & Số tiền người nhận cần thanh toán */}
+                  <div className="p-3.5 rounded-xl bg-slate-900 text-white flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] font-semibold text-slate-300 uppercase tracking-wider block">
+                        Số tiền cần thanh toán khi nhận (COD)
+                      </span>
+                      <p className="text-lg font-bold text-white font-mono mt-0.5">
+                        {(searchResult.order?.codAmount || 0) > 0
+                          ? `${(searchResult.order?.codAmount || 0).toLocaleString('vi-VN')} VNĐ`
+                          : '0 VNĐ (Không thu tiền)'}
+                      </p>
+                    </div>
+                    <span className="text-[11px] font-medium text-slate-400">
+                      Thanh toán cho Shipper
                     </span>
                   </div>
                 </div>
+
+                {/* Privacy disclaimer */}
+                <p className="text-[11px] text-slate-400 leading-relaxed pt-1">
+                  Bảo mật bưu chính: Biểu phí chi tiết và hợp đồng thương mại giữa Người gửi và Nexus Logistics được bảo mật theo quy định.
+                </p>
               </div>
 
               {/* Live GPS Position Badge (If available) */}

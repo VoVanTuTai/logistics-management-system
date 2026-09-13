@@ -761,7 +761,7 @@ export function OrdersPage(): React.JSX.Element {
                     </div>
                   </div>
 
-                  {/* Info Chips: Weight, COD, Shipping Fee */}
+                  {/* Info Chips: Weight, COD, Shipping Fee / Receiver Payment */}
                   <div className="grid grid-cols-3 gap-2 text-center text-xs">
                     <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
                       <span className="text-[9px] font-bold text-slate-400 uppercase block">Khối lượng</span>
@@ -772,8 +772,14 @@ export function OrdersPage(): React.JSX.Element {
                       <span className="font-bold text-blue-700 font-mono text-[11px]">{formatVnd(cod)}</span>
                     </div>
                     <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
-                      <span className="text-[9px] font-bold text-slate-400 uppercase block">Cước Phí</span>
-                      <span className="font-bold text-slate-800 font-mono text-[11px]">{formatVnd(shippingFee)}</span>
+                      <span className="text-[9px] font-bold text-slate-400 uppercase block">
+                        {activeCategory === 'RECEIVED' ? 'Cần Trả Shipper' : 'Cước Phí'}
+                      </span>
+                      <span className="font-bold text-slate-800 font-mono text-[11px]">
+                        {activeCategory === 'RECEIVED'
+                          ? (cod > 0 ? formatVnd(cod) : '0 đ (Miễn cước)')
+                          : formatVnd(shippingFee)}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -826,6 +832,7 @@ export function OrdersPage(): React.JSX.Element {
       {selectedOrderForModal && (
         <OrderDetailModal
           shipment={selectedOrderForModal}
+          isReceiver={activeCategory === 'RECEIVED'}
           onClose={() => setSelectedOrderForModal(null)}
           onTrack={(code) => {
             setSelectedOrderForModal(null);
@@ -843,11 +850,13 @@ export function OrdersPage(): React.JSX.Element {
 // ==========================================
 function OrderDetailModal({
   shipment,
+  isReceiver = false,
   onClose,
   onTrack,
   onPrint,
 }: {
   shipment: ShipmentResponse;
+  isReceiver?: boolean;
   onClose: () => void;
   onTrack: (code: string) => void;
   onPrint: (shipment: ShipmentResponse) => void;
@@ -1008,7 +1017,9 @@ function OrderDetailModal({
           {/* Package & Billing Summary */}
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
             <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
-              <span className="text-[11px] font-extrabold uppercase text-slate-700">Chi Tiết Kiện Hàng & Cước Phí</span>
+              <span className="text-[11px] font-extrabold uppercase text-slate-700">
+                {isReceiver ? 'Chi Tiết Kiện Hàng & Thanh Toán Nhận Hàng' : 'Chi Tiết Kiện Hàng & Cước Phí'}
+              </span>
               <span className="font-mono text-slate-500 font-bold">
                 {pkg.itemName || 'Hàng hóa thông thường'}
               </span>
@@ -1036,10 +1047,28 @@ function OrderDetailModal({
               <div className="p-2.5 bg-white rounded-xl border border-slate-200">
                 <span className="text-[10px] text-slate-400 font-bold uppercase block">Cước vận chuyển</span>
                 <span className="font-mono font-black text-slate-800 text-xs">
-                  {formatVnd(Number(meta.shippingFee || meta.estimatedFee || 22000))}
+                  {isReceiver ? 'Người gửi trả' : formatVnd(Number(meta.shippingFee || meta.estimatedFee || 22000))}
                 </span>
               </div>
             </div>
+
+            {isReceiver ? (
+              <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-extrabold uppercase text-blue-900 block">
+                    Số Tiền Cần Thanh Toán Cho Shipper
+                  </span>
+                  <span className="text-base font-black text-blue-700 font-mono">
+                    {Number(meta.codAmount || pkg.codAmount || 0) > 0
+                      ? formatVnd(Number(meta.codAmount || pkg.codAmount || 0))
+                      : '0 đ (Không thu tiền)'}
+                  </span>
+                </div>
+                <span className="text-[10px] text-slate-500 max-w-[200px] text-right leading-tight">
+                  Quý khách chỉ trả đúng số tiền COD hiển thị khi nhận kiện hàng.
+                </span>
+              </div>
+            ) : null}
 
             {(meta.deliveryNote || meta.notes) && (
               <div className="p-2.5 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-[11px]">

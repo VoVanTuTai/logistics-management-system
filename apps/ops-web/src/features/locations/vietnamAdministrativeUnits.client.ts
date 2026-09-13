@@ -89,40 +89,40 @@ function mapProvince(payload: VietnamProvinceApiResponse): VietnamProvinceDto | 
 
 const DEFAULT_OFFLINE_PROVINCES: VietnamProvinceDto[] = [
   {
-    code: '01',
+    code: 1,
     name: 'Thành phố Hà Nội',
     divisionType: 'thanh-pho-trung-uong',
     codename: 'ha_noi',
     phoneCode: 24,
     wards: [
-      { code: '00001', name: 'Phường Hàng Bài', divisionType: 'phuong', codename: 'hang_bai', districtCode: '001', provinceCode: '01' },
-      { code: '00002', name: 'Phường Tràng Tiền', divisionType: 'phuong', codename: 'trang_tien', districtCode: '001', provinceCode: '01' },
-      { code: '00003', name: 'Phường Lý Thái Tổ', divisionType: 'phuong', codename: 'ly_thai_to', districtCode: '001', provinceCode: '01' },
-      { code: '00004', name: 'Phường Kim Mã', divisionType: 'phuong', codename: 'kim_ma', districtCode: '002', provinceCode: '01' },
-      { code: '00005', name: 'Phường Dịch Vọng', divisionType: 'phuong', codename: 'dich_vong', districtCode: '003', provinceCode: '01' },
+      { code: 1, name: 'Phường Hàng Bài', divisionType: 'phuong', codename: 'hang_bai', provinceCode: 1 },
+      { code: 2, name: 'Phường Tràng Tiền', divisionType: 'phuong', codename: 'trang_tien', provinceCode: 1 },
+      { code: 3, name: 'Phường Lý Thái Tổ', divisionType: 'phuong', codename: 'ly_thai_to', provinceCode: 1 },
+      { code: 4, name: 'Phường Kim Mã', divisionType: 'phuong', codename: 'kim_ma', provinceCode: 1 },
+      { code: 5, name: 'Phường Dịch Vọng', divisionType: 'phuong', codename: 'dich_vong', provinceCode: 1 },
     ],
   },
   {
-    code: '79',
+    code: 79,
     name: 'Thành phố Hồ Chí Minh',
     divisionType: 'thanh-pho-trung-uong',
     codename: 'ho_chi_minh',
     phoneCode: 28,
     wards: [
-      { code: '26734', name: 'Phường Bến Nghé', divisionType: 'phuong', codename: 'ben_nghe', districtCode: '760', provinceCode: '79' },
-      { code: '26737', name: 'Phường Bến Thành', divisionType: 'phuong', codename: 'ben_thanh', districtCode: '760', provinceCode: '79' },
-      { code: '26740', name: 'Phường Tân Định', divisionType: 'phuong', codename: 'tan_dinh', districtCode: '760', provinceCode: '79' },
+      { code: 26734, name: 'Phường Bến Nghé', divisionType: 'phuong', codename: 'ben_nghe', provinceCode: 79 },
+      { code: 26737, name: 'Phường Bến Thành', divisionType: 'phuong', codename: 'ben_thanh', provinceCode: 79 },
+      { code: 26740, name: 'Phường Tân Định', divisionType: 'phuong', codename: 'tan_dinh', provinceCode: 79 },
     ],
   },
   {
-    code: '48',
+    code: 48,
     name: 'Thành phố Đà Nẵng',
     divisionType: 'thanh-pho-trung-uong',
     codename: 'da_nang',
     phoneCode: 236,
     wards: [
-      { code: '20194', name: 'Phường Hải Châu 1', divisionType: 'phuong', codename: 'hai_chau_1', districtCode: '490', provinceCode: '48' },
-      { code: '20197', name: 'Phường Thạch Thang', divisionType: 'phuong', codename: 'thach_thang', districtCode: '490', provinceCode: '48' },
+      { code: 20194, name: 'Phường Hải Châu 1', divisionType: 'phuong', codename: 'hai_chau_1', provinceCode: 48 },
+      { code: 20197, name: 'Phường Thạch Thang', divisionType: 'phuong', codename: 'thach_thang', provinceCode: 48 },
     ],
   },
 ];
