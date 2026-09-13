@@ -14,6 +14,8 @@ import { queryKeys } from '../../../../utils/queryKeys';
 import './BranchBusinessOrderCreatePage.css';
 
 type ServiceType = 'STANDARD' | 'EXPRESS' | 'SAME_DAY';
+type FragileCategory = 'CERAMICS' | 'GLASS' | 'LIQUID' | 'ELECTRONICS' | 'OTHER';
+type InsuranceTier = 'NONE' | 'COMPREHENSIVE_100';
 
 interface BranchOrderFormState {
   manualCode: string;
@@ -36,6 +38,13 @@ interface BranchOrderFormState {
   deliveryNote: string;
   platform: string;
   pickupLocationCode: string;
+  // Kiểm soát Hàng dễ vỡ & Quy chuẩn SOP
+  isFragile: boolean;
+  fragileCategory: FragileCategory;
+  packagingStandardMet: boolean;
+  packagingWaiver: boolean;
+  // Chính sách Bảo hiểm hàng hóa
+  insuranceTier: InsuranceTier;
 }
 
 const DEFAULT_FORM: BranchOrderFormState = {
@@ -59,6 +68,11 @@ const DEFAULT_FORM: BranchOrderFormState = {
   deliveryNote: '',
   platform: 'OPS_BRANCH',
   pickupLocationCode: '',
+  isFragile: false,
+  fragileCategory: 'CERAMICS',
+  packagingStandardMet: true,
+  packagingWaiver: false,
+  insuranceTier: 'NONE',
 };
 
 function CollapseIcon(): React.JSX.Element {
@@ -74,7 +88,17 @@ function toPositiveNumber(value: string): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 }
 
-function estimateFee(form: BranchOrderFormState): number {
+export interface FeeBreakdown {
+  serviceBase: number;
+  weightFee: number;
+  volumeFee: number;
+  transportFee: number;
+  insuranceFee: number;
+  codFee: number;
+  totalFee: number;
+}
+
+function calculateFeeBreakdown(form: BranchOrderFormState): FeeBreakdown {
   const serviceBase = {
     STANDARD: 18000,
     EXPRESS: 28000,
@@ -87,13 +111,32 @@ function estimateFee(form: BranchOrderFormState): number {
   const declaredValue = toPositiveNumber(form.declaredValue);
   const codAmount = toPositiveNumber(form.codAmount);
 
-  return Math.round(
-    serviceBase +
-      weightKg * 4500 +
-      ((length * width * height) / 6000) * 3200 +
-      declaredValue * 0.002 +
-      Math.min(codAmount * 0.005, 35000),
-  );
+  const weightFee = Math.round(weightKg * 4500);
+  const volumeFee = Math.round(((length * width * height) / 6000) * 3200);
+  const transportFee = serviceBase + weightFee + volumeFee;
+
+  // Thu 0.5% giá trị khai báo khi chọn Gói bảo hiểm 100%, tối thiểu 5.000 VNĐ
+  const insuranceFee =
+    form.insuranceTier === 'COMPREHENSIVE_100' && declaredValue > 0
+      ? Math.max(5000, Math.round(declaredValue * 0.005))
+      : 0;
+
+  const codFee = Math.round(Math.min(codAmount * 0.005, 35000));
+  const totalFee = transportFee + insuranceFee + codFee;
+
+  return {
+    serviceBase,
+    weightFee,
+    volumeFee,
+    transportFee,
+    insuranceFee,
+    codFee,
+    totalFee,
+  };
+}
+
+function estimateFee(form: BranchOrderFormState): number {
+  return calculateFeeBreakdown(form).totalFee;
 }
 
 function formatCurrency(value: number): string {
@@ -122,6 +165,9 @@ function buildMetadata(
     senderLat && senderLng ? { latitude: senderLat, longitude: senderLng } : undefined;
   const receiverCoordinate =
     receiverLat && receiverLng ? { latitude: receiverLat, longitude: receiverLng } : undefined;
+
+  const declaredVal = toPositiveNumber(form.declaredValue);
+  const fees = calculateFeeBreakdown(form);
 
   return {
     sender: {
@@ -166,8 +212,29 @@ function buildMetadata(
         width: toPositiveNumber(form.widthCm),
         height: toPositiveNumber(form.heightCm),
       },
-      declaredValue: toPositiveNumber(form.declaredValue),
+      declaredValue: declaredVal,
+      isFragile: form.isFragile,
+      fragileCategory: form.isFragile ? form.fragileCategory : null,
+      packagingStandardMet: form.isFragile ? form.packagingStandardMet : true,
+      packagingWaiver: form.isFragile ? form.packagingWaiver : false,
+      insuranceTier: form.insuranceTier,
+      insuranceFee: fees.insuranceFee,
     },
+    insurance: {
+      tier: form.insuranceTier,
+      declaredValue: declaredVal,
+      insuranceFee: fees.insuranceFee,
+      liabilityLimit:
+        form.insuranceTier === 'COMPREHENSIVE_100'
+          ? declaredVal
+          : Math.min(1000000, fees.transportFee * 4),
+      liabilityPolicy:
+        form.insuranceTier === 'COMPREHENSIVE_100'
+          ? 'Bảo hiểm toàn diện 100% giá trị thực tế theo hóa đơn/chứng từ hợp lệ'
+          : 'Hạn mức luật định tối đa 04 lần cước vận chuyển (Luật Bưu chính 2010)',
+      packagingWaiver: form.isFragile ? form.packagingWaiver : false,
+    },
+    feeBreakdown: fees,
     service: {
       type: form.serviceType,
     },
@@ -236,7 +303,8 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
     }
   }, [isSenderFromHub, operatorHub, session?.user]);
 
-  const estimatedFee = useMemo(() => estimateFee(form), [form]);
+  const feeBreakdown = useMemo(() => calculateFeeBreakdown(form), [form]);
+  const estimatedFee = feeBreakdown.totalFee;
   const isSubmitting = createShipmentMutation.isPending || pickupScanMutation.isPending;
 
   // Lấy danh sách phường/xã theo tỉnh đã chọn
@@ -264,8 +332,36 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
     );
   }, [activeHubs, form.pickupLocationCode, defaultHubCode, operatorHub]);
 
-  const updateForm = (key: keyof BranchOrderFormState, value: string) => {
+  const updateForm = <K extends keyof BranchOrderFormState>(
+    key: K,
+    value: BranchOrderFormState[K],
+  ) => {
     setForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const handleFragileToggle = (isFragile: boolean) => {
+    setForm((current) => ({
+      ...current,
+      isFragile,
+      packagingStandardMet: isFragile ? true : true,
+      packagingWaiver: false,
+    }));
+  };
+
+  const handlePackagingWaiverToggle = (waiver: boolean) => {
+    setForm((current) => ({
+      ...current,
+      packagingWaiver: waiver,
+      packagingStandardMet: !waiver,
+    }));
+  };
+
+  const handlePackagingStandardToggle = (standard: boolean) => {
+    setForm((current) => ({
+      ...current,
+      packagingStandardMet: standard,
+      packagingWaiver: !standard,
+    }));
   };
 
   const handleToggleSenderMode = (checked: boolean) => {
@@ -319,6 +415,14 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
 
     if (!form.receiverRegion.trim() || !form.receiverAddress.trim()) {
       return 'Cần nhập tỉnh/thành và địa chỉ chi tiết người nhận.';
+    }
+
+    if (form.insuranceTier === 'COMPREHENSIVE_100' && toPositiveNumber(form.declaredValue) <= 0) {
+      return 'Vui lòng nhập giá trị khai báo hàng hóa khi chọn Gói Bảo Hiểm Toàn Diện 100%.';
+    }
+
+    if (form.isFragile && !form.packagingStandardMet && !form.packagingWaiver) {
+      return 'Đối với hàng dễ vỡ, bưu kiện cần xác nhận bọc đạt chuẩn SOP hoặc khách hàng phải ký biên bản miễn trừ bể vỡ.';
     }
 
     if (createAndScanPickup && !form.pickupLocationCode.trim()) {
@@ -574,10 +678,11 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
         </div>
       </article>
 
+      {/* PANEL 3: THÔNG TIN NGƯỜI NHẬN */}
       <article className="ops-branch-order-create__panel">
         <header className="ops-branch-order-create__panel-header">
           <h2>
-            Thông tin người nhận và hàng hóa
+            Thông tin người nhận & tuyến phát
             <span aria-hidden="true">&#128274;</span>
           </h2>
           <button
@@ -613,6 +718,7 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
             </span>
             <input
               type="text"
+              placeholder="Nguyễn Văn A"
               value={form.receiverName}
               onChange={(event) => updateForm('receiverName', event.target.value)}
             />
@@ -623,6 +729,7 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
             </span>
             <input
               type="text"
+              placeholder="09xx..."
               value={form.receiverPhone}
               onChange={(event) => updateForm('receiverPhone', event.target.value)}
             />
@@ -681,17 +788,38 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
             </span>
             <input
               type="text"
-              placeholder="Số nhà, tên đường, thôn xóm..."
+              placeholder="Số nhà, tên đường, tòa nhà, thôn xóm..."
               value={form.receiverAddress}
               onChange={(event) => updateForm('receiverAddress', event.target.value)}
             />
           </label>
+        </div>
+      </article>
+
+      {/* PANEL 4: THÔNG SỐ BƯU KIỆN & QUY CHUẨN ĐÓNG GÓI HÀNG DỄ VỠ (SOP) */}
+      <article className="ops-branch-order-create__panel">
+        <header className="ops-branch-order-create__panel-header">
+          <h2>
+            Thông số kiện hàng & Quy chuẩn đóng gói SOP
+            <span aria-hidden="true">&#128230;</span>
+          </h2>
+          <button
+            type="button"
+            className="ops-branch-order-create__collapse-btn"
+            aria-label="Thu gọn thông số kiện hàng"
+          >
+            <CollapseIcon />
+          </button>
+        </header>
+
+        <div className="ops-branch-order-create__form">
           <label className="ops-branch-order-create__field">
-            <span>Khối lượng (kg)</span>
+            <span>Khối lượng thực tế (kg)</span>
             <input
               type="number"
               min="0"
               step="0.1"
+              placeholder="0.5"
               value={form.weightKg}
               onChange={(event) => updateForm('weightKg', event.target.value)}
             />
@@ -701,6 +829,7 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
             <input
               type="number"
               min="0"
+              placeholder="20"
               value={form.lengthCm}
               onChange={(event) => updateForm('lengthCm', event.target.value)}
             />
@@ -710,6 +839,7 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
             <input
               type="number"
               min="0"
+              placeholder="15"
               value={form.widthCm}
               onChange={(event) => updateForm('widthCm', event.target.value)}
             />
@@ -719,17 +849,9 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
             <input
               type="number"
               min="0"
+              placeholder="10"
               value={form.heightCm}
               onChange={(event) => updateForm('heightCm', event.target.value)}
-            />
-          </label>
-          <label className="ops-branch-order-create__field">
-            <span>Giá trị khai báo</span>
-            <input
-              type="number"
-              min="0"
-              value={form.declaredValue}
-              onChange={(event) => updateForm('declaredValue', event.target.value)}
             />
           </label>
           <label className="ops-branch-order-create__field">
@@ -737,18 +859,245 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
             <input
               type="number"
               min="0"
+              placeholder="0"
               value={form.codAmount}
               onChange={(event) => updateForm('codAmount', event.target.value)}
             />
           </label>
           <label className="ops-branch-order-create__field ops-branch-order-create__field--wide">
-            <span>Ghi chú giao hàng</span>
+            <span>Ghi chú bưu tá giao hàng</span>
             <textarea
-              rows={3}
+              rows={2}
+              placeholder="Ví dụ: Gọi trước khi giao, giao giờ hành chính..."
               value={form.deliveryNote}
               onChange={(event) => updateForm('deliveryNote', event.target.value)}
             />
           </label>
+
+          {/* KHỐI KIỂM SOÁT HÀNG DỄ VỠ & QUY CHUẨN SOP */}
+          <div className="ops-branch-order-create__fragile-wrapper">
+            <div className="ops-branch-order-create__fragile-header">
+              <label className="ops-branch-order-create__fragile-toggle">
+                <input
+                  type="checkbox"
+                  checked={form.isFragile}
+                  onChange={(e) => handleFragileToggle(e.target.checked)}
+                />
+                <span className="ops-branch-order-create__fragile-title">
+                  📦 Bưu kiện thuộc nhóm HÀNG DỄ VỠ / CHẤT LỎNG / ĐIỆN TỬ NHẠY CẢM
+                </span>
+              </label>
+              <span className="ops-branch-order-create__fragile-badge">
+                {form.isFragile
+                  ? '⚠️ Yêu cầu bọc SOP & Tem Ly nứt (FRAGILE)'
+                  : 'Hàng thông thường'}
+              </span>
+            </div>
+
+            {form.isFragile ? (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
+                  <label className="ops-branch-order-create__field">
+                    <span>Phân loại nhóm dễ vỡ</span>
+                    <select
+                      value={form.fragileCategory}
+                      onChange={(e) => updateForm('fragileCategory', e.target.value as FragileCategory)}
+                    >
+                      <option value="CERAMICS">Đồ gốm sứ, sành, đất nung</option>
+                      <option value="GLASS">Thủy tinh, pha lê, gương, bóng đèn</option>
+                      <option value="LIQUID">Chất lỏng, nước hoa, rượu, mỹ phẩm</option>
+                      <option value="ELECTRONICS">Thiết bị điện tử có màn hình kính, camera</option>
+                      <option value="OTHER">Thực phẩm bánh hộp mềm, đồ mỹ nghệ</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div className="ops-branch-order-create__sop-box">
+                  <div className="ops-branch-order-create__sop-title">
+                    🛡️ QUY CHUẨN ĐÓNG GÓI CHỐNG SỐC BẮT BUỘC (SOP TIÊU CHUẨN):
+                  </div>
+                  <div className="ops-branch-order-create__sop-grid">
+                    <div className="ops-branch-order-create__sop-item">
+                      <span>✓</span> Quấn tối thiểu 3 - 4 lớp xốp bọt khí (Bubble Wrap) bảo vệ mọi góc cạnh.
+                    </div>
+                    <div className="ops-branch-order-create__sop-item">
+                      <span>✓</span> Chèn mút xốp hoặc túi khí kín 6 mặt đáy - thành - nắp hộp (Lắc nhẹ không phát ra tiếng động).
+                    </div>
+                    <div className="ops-branch-order-create__sop-item">
+                      <span>✓</span> Sử dụng thùng carton sóng cứng, niêm phong băng dính hình chữ H chắc chắn.
+                    </div>
+                    <div className="ops-branch-order-create__sop-item">
+                      <span>✓</span> Tự động in tem cảnh báo Ly vỡ & Xếp tầng trên cùng (Top Stacking) trên xe tải.
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: '600', color: '#166534', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={form.packagingStandardMet}
+                      onChange={(e) => handlePackagingStandardToggle(e.target.checked)}
+                      style={{ accentColor: '#16a34a', width: '16px', height: '16px' }}
+                    />
+                    ✅ Kiện hàng đã được kiểm tra: Đóng gói đạt chuẩn an toàn chống sốc SOP.
+                  </label>
+
+                  <div className="ops-branch-order-create__waiver-box">
+                    <label className="ops-branch-order-create__waiver-label">
+                      <input
+                        type="checkbox"
+                        checked={form.packagingWaiver}
+                        onChange={(e) => handlePackagingWaiverToggle(e.target.checked)}
+                      />
+                      <span>⚠️ Khách hàng tự đóng gói sơ sài & từ chối bọc lại - Ký Biên bản cam kết miễn trừ trách nhiệm bể vỡ do tự đóng gói</span>
+                    </label>
+                    <div className="ops-branch-order-create__waiver-note">
+                      * Căn cứ Điều 24 Luật Bưu chính 2010: NEXUS chỉ bồi thường khi mất nguyên kiện, được miễn trừ 100% trách nhiệm bể vỡ bên trong nếu vỏ thùng bên ngoài còn nguyên niêm phong.
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : null}
+          </div>
+        </div>
+      </article>
+
+      {/* PANEL 5: BẢO HIỂM HÀNG HÓA & CHIẾT TÍNH CƯỚC TẠI QUẦY */}
+      <article className="ops-branch-order-create__panel">
+        <header className="ops-branch-order-create__panel-header">
+          <h2>
+            Chính sách bảo hiểm hàng hóa & Chiết tính cước tại quầy
+            <span aria-hidden="true">&#128176;</span>
+          </h2>
+          <button
+            type="button"
+            className="ops-branch-order-create__collapse-btn"
+            aria-label="Thu gọn bảo hiểm và cước phí"
+          >
+            <CollapseIcon />
+          </button>
+        </header>
+
+        <div className="ops-branch-order-create__form">
+          <label className="ops-branch-order-create__field ops-branch-order-create__field--wide">
+            <span>
+              <i>*</i> Giá trị hàng hóa khai báo (VNĐ)
+            </span>
+            <input
+              type="number"
+              min="0"
+              step="50000"
+              placeholder="Nhập giá trị món hàng (VD: 5000000)"
+              value={form.declaredValue}
+              onChange={(event) => updateForm('declaredValue', event.target.value)}
+            />
+            <small style={{ color: '#64748b', fontSize: '11.5px', marginTop: '2px' }}>
+              💡 Giá trị khai báo là căn cứ xác thực hạn mức bảo hiểm và thẩm định bồi thường khi xảy ra sự cố.
+            </small>
+          </label>
+
+          <div className="ops-branch-order-create__insurance-section">
+            <div className="ops-branch-order-create__insurance-cards">
+              {/* Card 1: Gói Tiêu chuẩn */}
+              <div
+                className={`ops-branch-order-create__tier-card ${
+                  form.insuranceTier === 'NONE' ? 'ops-branch-order-create__tier-card--selected' : ''
+                }`}
+                onClick={() => updateForm('insuranceTier', 'NONE')}
+              >
+                <div className="ops-branch-order-create__tier-top">
+                  <span className="ops-branch-order-create__tier-title">
+                    <input
+                      type="radio"
+                      name="insuranceTier"
+                      value="NONE"
+                      checked={form.insuranceTier === 'NONE'}
+                      onChange={() => updateForm('insuranceTier', 'NONE')}
+                    />
+                    GÓI VẬN CHUYỂN TIÊU CHUẨN
+                  </span>
+                  <span className="ops-branch-order-create__tier-price ops-branch-order-create__tier-price--free">
+                    0 VNĐ (Miễn phí)
+                  </span>
+                </div>
+                <div className="ops-branch-order-create__tier-desc">
+                  Phù hợp cho quần áo, tài liệu, hàng thông thường giá trị thấp (&le; 1.000.000đ).
+                </div>
+                <div className="ops-branch-order-create__tier-policy">
+                  🛡️ Hạn mức bồi thường: <strong>Tối đa 04 lần cước vận chuyển</strong> (Trần tối đa 1.000.000đ theo Điều 25 Luật Bưu chính).
+                </div>
+              </div>
+
+              {/* Card 2: Gói Bảo hiểm Toàn diện 100% */}
+              <div
+                className={`ops-branch-order-create__tier-card ${
+                  form.insuranceTier === 'COMPREHENSIVE_100'
+                    ? 'ops-branch-order-create__tier-card--selected'
+                    : ''
+                }`}
+                onClick={() => updateForm('insuranceTier', 'COMPREHENSIVE_100')}
+              >
+                <div className="ops-branch-order-create__tier-top">
+                  <span className="ops-branch-order-create__tier-title">
+                    <input
+                      type="radio"
+                      name="insuranceTier"
+                      value="COMPREHENSIVE_100"
+                      checked={form.insuranceTier === 'COMPREHENSIVE_100'}
+                      onChange={() => updateForm('insuranceTier', 'COMPREHENSIVE_100')}
+                    />
+                    BẢO HIỂM TOÀN DIỆN 100%
+                  </span>
+                  <span className="ops-branch-order-create__tier-price">
+                    + {formatCurrency(feeBreakdown.insuranceFee)}
+                    <span style={{ fontSize: '10.5px', fontWeight: '500', color: '#64748b', display: 'block', textAlign: 'right' }}>
+                      (0.5% giá trị khai báo, min 5k)
+                    </span>
+                  </span>
+                </div>
+                <div className="ops-branch-order-create__tier-desc">
+                  Kiện hàng được dán tem định danh an ninh, giám sát camera riêng trên toàn bộ hành trình.
+                </div>
+                <div className="ops-branch-order-create__tier-policy" style={{ background: '#eff6ff', color: '#1d4ed8' }}>
+                  🛡️ Cam kết bồi thường: <strong>ĐÚNG 100% GIÁ TRỊ KHAI BÁO THỰC TẾ</strong> khi mất hàng hoặc bể vỡ (Kèm hóa đơn/chứng từ hợp lệ).
+                </div>
+              </div>
+            </div>
+
+            {/* BẢNG KÊ CHI TIẾT CƯỚC TẠI QUẦY */}
+            <div className="ops-branch-order-create__fee-summary-box">
+              <div className="ops-branch-order-create__fee-rows">
+                <div className="ops-branch-order-create__fee-item">
+                  <span className="ops-branch-order-create__fee-label">Cước vận chuyển ({form.serviceType}):</span>
+                  <span className="ops-branch-order-create__fee-val">{formatCurrency(feeBreakdown.transportFee)}</span>
+                </div>
+                <div className="ops-branch-order-create__fee-item">
+                  <span className="ops-branch-order-create__fee-label">
+                    Phí bảo hiểm ({form.insuranceTier === 'COMPREHENSIVE_100' ? 'Gói 100%' : 'Tiêu chuẩn'}):
+                  </span>
+                  <span className="ops-branch-order-create__fee-val" style={{ color: form.insuranceTier === 'COMPREHENSIVE_100' ? '#2563eb' : '#16a34a' }}>
+                    {formatCurrency(feeBreakdown.insuranceFee)}
+                  </span>
+                </div>
+                <div className="ops-branch-order-create__fee-item">
+                  <span className="ops-branch-order-create__fee-label">Tiền thu hộ COD:</span>
+                  <span className="ops-branch-order-create__fee-val">{formatCurrency(toPositiveNumber(form.codAmount))}</span>
+                </div>
+                <div className="ops-branch-order-create__fee-item">
+                  <span className="ops-branch-order-create__fee-label">Phí dịch vụ COD:</span>
+                  <span className="ops-branch-order-create__fee-val">{formatCurrency(feeBreakdown.codFee)}</span>
+                </div>
+              </div>
+
+              <div className="ops-branch-order-create__fee-total-row">
+                <span className="ops-branch-order-create__total-label">
+                  🧾 TỔNG CƯỚC THU TẠI QUẦY (ĐÃ GỒM CƯỚC + PHÍ BẢO HIỂM):
+                </span>
+                <span className="ops-branch-order-create__total-val">{formatCurrency(feeBreakdown.totalFee)}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </article>
 
