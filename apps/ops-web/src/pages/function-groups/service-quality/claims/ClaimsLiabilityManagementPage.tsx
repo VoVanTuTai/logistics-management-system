@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   ArrowRight,
+  Ban,
   Building2,
   CheckCircle2,
   ChevronRight,
@@ -19,6 +20,7 @@ import {
   RefreshCw,
   Scale,
   Search,
+  Shield,
   ShieldAlert,
   ShieldCheck,
   Truck,
@@ -57,6 +59,104 @@ function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr) return '---';
   const d = new Date(dateStr);
   return Number.isNaN(d.getTime()) ? dateStr : d.toLocaleString('vi-VN');
+}
+
+// =============================================
+// MA TRẬN PHÂN ĐỊNH TRÁCH NHIỆM BỒI THƯỜNG 4 Ô
+// =============================================
+type MatrixCell =
+  | 'INSURED_LOST'       // Thất lạc + Có BH → Đền 100%
+  | 'UNINSURED_LOST'     // Thất lạc + Không BH → Đền 4x cước
+  | 'INSURED_DAMAGED_SOP' // Bể vỡ, SOP đạt, Có BH → Đền 100%
+  | 'UNINSURED_DAMAGED_SOP' // Bể vỡ, SOP đạt, Không BH → Đền 4x cước
+  | 'WAIVER_DAMAGED';     // Bể vỡ + Miễn trừ đóng gói → Từ chối
+
+interface MatrixVerdict {
+  verdictLabel: string;
+  verdictExplanation: string;
+  suggestedAmount: number;
+  matrixCell: MatrixCell;
+  legalBasis: string;
+  isRejected: boolean;
+}
+
+const FOUR_X_FREIGHT_CAP = 1000000; // Trần tối đa 4x cước: 1.000.000đ
+
+function computeMatrixVerdict(claim: CompensationClaim): MatrixVerdict {
+  const hasInsurance = claim.insuranceTier === 'COMPREHENSIVE_100';
+  const hasWaiver = claim.packagingWaiver === true;
+  const isDamaged = claim.incidentType === 'DAMAGED';
+  const isLost = claim.incidentType === 'LOST_IN_TRANSIT';
+  const shippingFee = claim.shippingFee || 30000;
+  const fourXFreight = Math.min(shippingFee * 4, FOUR_X_FREIGHT_CAP);
+
+  // Ô 1: Bể vỡ + Có Biên bản miễn trừ → TỪ CHỐI
+  if (isDamaged && hasWaiver) {
+    return {
+      verdictLabel: 'Từ chối bồi thường bể vỡ',
+      verdictExplanation:
+        'Khách hàng đã ký Biên bản Miễn trừ trách nhiệm bể vỡ do tự đóng gói (packagingWaiver). ' +
+        'Thùng ngoài nguyên vẹn, hàng vỡ bên trong thuộc lỗi đóng gói của người gửi.',
+      suggestedAmount: 0,
+      matrixCell: 'WAIVER_DAMAGED',
+      legalBasis: 'Điều 24 Luật Bưu chính 2010 - Miễn trừ trách nhiệm do lỗi người gửi đóng gói không đúng quy chuẩn',
+      isRejected: true,
+    };
+  }
+
+  // Ô 2: Thất lạc/Mất + Có BH → Đền 100%
+  if (isLost && hasInsurance) {
+    return {
+      verdictLabel: 'Đền 100% giá trị thực tế (theo hóa đơn)',
+      verdictExplanation:
+        'Kiện hàng thất lạc/mất nguyên kiện. Đã tham gia Gói Bảo hiểm Toàn diện 100%. ' +
+        'Bồi thường đúng giá trị khai báo, yêu cầu khách xuất trình hóa đơn mua hàng.',
+      suggestedAmount: claim.declaredValue,
+      matrixCell: 'INSURED_LOST',
+      legalBasis: 'Điều 25 Luật Bưu chính 2010 - Bồi thường theo giá trị khai giá đã đóng phí bảo hiểm',
+      isRejected: false,
+    };
+  }
+
+  // Ô 3: Thất lạc + Không BH → Đền 4x cước
+  if (isLost && !hasInsurance) {
+    return {
+      verdictLabel: `Đền 04 lần cước vận chuyển (${formatCurrency(fourXFreight)})`,
+      verdictExplanation:
+        'Kiện hàng thất lạc/mất. Không tham gia dịch vụ khai giá bảo hiểm. ' +
+        `Mức bồi thường tối đa: 4 × ${formatCurrency(shippingFee)} = ${formatCurrency(fourXFreight)}, trần 1.000.000đ.`,
+      suggestedAmount: fourXFreight,
+      matrixCell: 'UNINSURED_LOST',
+      legalBasis: 'Điều 25 Khoản 2 Luật Bưu chính 2010 - Hạn mức luật định cho bưu gửi không khai giá',
+      isRejected: false,
+    };
+  }
+
+  // Ô 4: Bể vỡ + Đóng gói đạt SOP + Có BH → Đền 100%
+  if (isDamaged && hasInsurance) {
+    return {
+      verdictLabel: 'Đền 100% giá trị thực tế (theo hóa đơn)',
+      verdictExplanation:
+        'Hàng bể vỡ/hư hỏng dù đã đóng gói đạt chuẩn SOP. Đã tham gia Gói Bảo hiểm Toàn diện 100%. ' +
+        'Bồi thường theo giá trị thiệt hại thực tế, tối đa bằng giá khai báo.',
+      suggestedAmount: claim.declaredValue,
+      matrixCell: 'INSURED_DAMAGED_SOP',
+      legalBasis: 'Điều 25 Luật Bưu chính 2010 - Bồi thường theo giá trị khai giá đã đóng phí bảo hiểm',
+      isRejected: false,
+    };
+  }
+
+  // Ô 5: Bể vỡ + Đóng gói đạt SOP + Không BH → Đền 4x cước
+  return {
+    verdictLabel: `Đền 04 lần cước vận chuyển (${formatCurrency(fourXFreight)})`,
+    verdictExplanation:
+      'Hàng bể vỡ/hư hỏng, đóng gói đạt chuẩn SOP. Không tham gia dịch vụ khai giá bảo hiểm. ' +
+      `Mức bồi thường: 4 × ${formatCurrency(shippingFee)} = ${formatCurrency(fourXFreight)}, trần 1.000.000đ.`,
+    suggestedAmount: fourXFreight,
+    matrixCell: 'UNINSURED_DAMAGED_SOP',
+    legalBasis: 'Điều 25 Khoản 2 Luật Bưu chính 2010 - Hạn mức luật định cho bưu gửi không khai giá',
+    isRejected: false,
+  };
 }
 
 type TabType = 'ALL' | 'PENDING' | 'ADJUDICATED' | 'SETTLED';
@@ -793,6 +893,41 @@ export function ClaimsLiabilityManagementPage(): React.JSX.Element {
                       <span>Hụt cân: {Math.abs(selectedClaim.weightDiscrepancyKg)} kg (Có dấu hiệu rút ruột kiện)</span>
                     </div>
                   )}
+                </div>
+
+                {/* Insurance & Packaging Metadata Card */}
+                <div className="claims-insurance-card">
+                  <div className="claims-insurance-card-title">
+                    <Shield size={14} />
+                    <span>Thông tin Bảo hiểm & Đóng gói (Metadata từ lúc tiếp nhận)</span>
+                  </div>
+                  <div className="claims-insurance-badges">
+                    <span className={`claims-badge-meta ${selectedClaim.isFragile ? 'claims-badge-meta--danger' : 'claims-badge-meta--muted'}`}>
+                      {selectedClaim.isFragile ? 'Hàng dễ vỡ' : 'Hàng thường'}
+                    </span>
+                    <span className={`claims-badge-meta ${selectedClaim.insuranceTier === 'COMPREHENSIVE_100' ? 'claims-badge-meta--success' : 'claims-badge-meta--warning'}`}>
+                      {selectedClaim.insuranceTier === 'COMPREHENSIVE_100' ? 'Bảo hiểm 100%' : 'Không có BH'}
+                    </span>
+                    {selectedClaim.packagingWaiver && (
+                      <span className="claims-badge-meta claims-badge-meta--orange">
+                        Miễn trừ bể vỡ (Waiver)
+                      </span>
+                    )}
+                    {!selectedClaim.packagingWaiver && selectedClaim.isFragile && (
+                      <span className="claims-badge-meta claims-badge-meta--teal">
+                        Đóng gói đạt SOP
+                      </span>
+                    )}
+                  </div>
+                  <div className="claims-insurance-details">
+                    <span>Khai giá: <strong>{formatCurrency(selectedClaim.declaredValue)}</strong></span>
+                    {selectedClaim.insuranceFee != null && selectedClaim.insuranceFee > 0 && (
+                      <span>Phí BH: <strong>{formatCurrency(selectedClaim.insuranceFee)}</strong></span>
+                    )}
+                    {selectedClaim.shippingFee != null && (
+                      <span>Cước VC: <strong>{formatCurrency(selectedClaim.shippingFee)}</strong></span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Incident Description */}

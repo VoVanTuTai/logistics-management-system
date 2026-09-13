@@ -47,6 +47,7 @@ export const ROOT_CAUSE_LABELS: Record<RootCauseCategory, string> = {
 
 const SEED_CLAIMS: CompensationClaim[] = [
   {
+    // Ô Ma trận: Bể vỡ + Đóng gói đạt SOP + Không BH → Đền 4x cước
     id: 'clm-001',
     claimCode: 'CLM-202609-001',
     shipmentCode: 'NXS000108',
@@ -73,6 +74,11 @@ const SEED_CLAIMS: CompensationClaim[] = [
       'Gốm sứ vỡ vụn khi mở bao. Kiểm tra ảnh nhận hàng tại quầy HN01: Nhân viên nhận hàng chỉ bọc 1 lớp màng co PE mỏng, không có xốp khí nổ Bubble Wrap 5 lớp theo SOP đóng gói dễ vỡ. Quy lỗi bưu cục gửi HN01 chịu 100%.',
     adjudicatedAt: '2026-09-09T09:15:00Z',
     adjudicatedBy: 'Trần Minh Tuấn (QA Lead)',
+    isFragile: true,
+    insuranceTier: 'NONE',
+    insuranceFee: 0,
+    packagingWaiver: false,
+    shippingFee: 30000,
     declaredWeightKg: 1.8,
     arrivalWeightKg: 1.8,
     weightDiscrepancyKg: 0,
@@ -132,6 +138,7 @@ const SEED_CLAIMS: CompensationClaim[] = [
     updatedAt: '2026-09-10T11:00:00Z',
   },
   {
+    // Ô Ma trận: Thất lạc + Có BH 100% → Đền 100% giá trị thực tế
     id: 'clm-002',
     claimCode: 'CLM-202609-002',
     shipmentCode: 'NXS000214',
@@ -158,6 +165,11 @@ const SEED_CLAIMS: CompensationClaim[] = [
       'Đơn hàng điện thoại iPhone 15 Pro Max. Khi xe tải 29H-882.19 đến Hub Hà Nội 01, phát hiện kẹp chì Seal sau thùng xe bị đứt và nối lại bằng kẽm, bạt xe góc trái có vết rạch. Đối chiếu cân nặng bao BAG-SGN-HAN-088 hụt 0.45kg so với lúc xuất bến. Lập biên bản công an giao thông & quy lỗi đội xe tuyến Linehaul chịu 100%.',
     adjudicatedAt: '2026-09-08T10:30:00Z',
     adjudicatedBy: 'Hoàng Minh Châu (Trưởng Ban Giám Sát HQ)',
+    isFragile: false,
+    insuranceTier: 'COMPREHENSIVE_100',
+    insuranceFee: 122500,
+    packagingWaiver: false,
+    shippingFee: 35000,
     declaredWeightKg: 0.55,
     arrivalWeightKg: 0.1,
     weightDiscrepancyKg: 0.45,
@@ -209,6 +221,7 @@ const SEED_CLAIMS: CompensationClaim[] = [
     updatedAt: '2026-09-08T15:00:00Z',
   },
   {
+    // Ô Ma trận: Bể vỡ + Đóng gói đạt SOP + Có BH 100% → Đền 100%
     id: 'clm-003',
     claimCode: 'CLM-202609-003',
     shipmentCode: 'NXS000305',
@@ -235,6 +248,11 @@ const SEED_CLAIMS: CompensationClaim[] = [
       'Nồi chiên không dầu bị đè bẹp móp méo vỏ kim loại và gãy tay cầm. Đóng gói thùng carton xốp chuẩn của hãng. Kiểm tra thùng xe phát hiện kiện hàng bị xếp ở tầng đáy dưới 3 thùng phụ tùng máy bơm nặng 40kg. Quy lỗi đội bốc xếp xe tuyến vi phạm quy tắc chèn lót hàng.',
     adjudicatedAt: '2026-09-10T08:30:00Z',
     adjudicatedBy: 'Trần Minh Tuấn (QA Lead)',
+    isFragile: true,
+    insuranceTier: 'COMPREHENSIVE_100',
+    insuranceFee: 9250,
+    packagingWaiver: false,
+    shippingFee: 28000,
     declaredWeightKg: 5.5,
     arrivalWeightKg: 5.5,
     weightDiscrepancyKg: 0,
@@ -269,6 +287,7 @@ const SEED_CLAIMS: CompensationClaim[] = [
     updatedAt: '2026-09-10T08:30:00Z',
   },
   {
+    // Ô Ma trận: Thất lạc + Không BH → Đền 4x cước
     id: 'clm-004',
     claimCode: 'CLM-202609-004',
     shipmentCode: 'NXS000412',
@@ -295,6 +314,11 @@ const SEED_CLAIMS: CompensationClaim[] = [
       'Đơn hàng thời trang. Đã quét SCAN_INBOUND nhận kiện tại Hub Trung Chuyển Đà Nẵng lúc 02:15 ngày 06/09. Sau đó lưu kho quá 72 giờ không có vết quét xuất SCAN_OUTBOUND đi Cần Thơ. Đã rà soát camera không thấy trên băng tải. Quy lỗi Hub Trung Chuyển Đà Nẵng làm thất lạc hàng lưu kho.',
     adjudicatedAt: '2026-09-09T11:00:00Z',
     adjudicatedBy: 'Hoàng Minh Châu (Trưởng Ban Giám Sát HQ)',
+    isFragile: false,
+    insuranceTier: 'NONE',
+    insuranceFee: 0,
+    packagingWaiver: false,
+    shippingFee: 32000,
     declaredWeightKg: 1.2,
     packageDescription: 'Kiện hàng 2 áo măng tô dạ nam cao cấp',
     damageDescription: 'Thất lạc hoàn toàn không tìm thấy dấu vết kiện hàng',
@@ -321,6 +345,7 @@ const SEED_CLAIMS: CompensationClaim[] = [
     updatedAt: '2026-09-10T09:00:00Z',
   },
   {
+    // Ô Ma trận: Bể vỡ + Có BH 100% + Đóng gói SOP → Đền 100%
     id: 'clm-005',
     claimCode: 'CLM-202609-005',
     shipmentCode: 'NXS000520',
@@ -347,6 +372,11 @@ const SEED_CLAIMS: CompensationClaim[] = [
       'Bưu tá Lộc đi giao hàng gặp trời mưa trượt ngã xe máy, thùng hàng rơi xuống đường va đập mạnh làm nứt vỡ kính đồng hồ Seiko. Shipper đã thành khẩn nhận lỗi và lập biên bản sự cố. Bưu cục phát HCM 01 và Shipper chịu 100% chi phí bồi thường.',
     adjudicatedAt: '2026-09-11T09:00:00Z',
     adjudicatedBy: 'Trần Minh Tuấn (QA Lead)',
+    isFragile: true,
+    insuranceTier: 'COMPREHENSIVE_100',
+    insuranceFee: 28000,
+    packagingWaiver: false,
+    shippingFee: 25000,
     declaredWeightKg: 0.4,
     arrivalWeightKg: 0.4,
     weightDiscrepancyKg: 0,
@@ -382,6 +412,7 @@ const SEED_CLAIMS: CompensationClaim[] = [
     updatedAt: '2026-09-11T09:00:00Z',
   },
   {
+    // Ô Ma trận: Bể vỡ + Miễn trừ đóng gói (packagingWaiver) → TỪ CHỐI BỒI THƯỜNG
     id: 'clm-006',
     claimCode: 'CLM-202609-006',
     shipmentCode: 'NXS000631',
@@ -404,6 +435,11 @@ const SEED_CLAIMS: CompensationClaim[] = [
     responsibleEntityName: 'Đang xác minh đối chiếu camera bàn dỡ',
     liabilityRatioPercent: 0,
     rootCause: 'ROUGH_HANDLING_STACKING',
+    isFragile: true,
+    insuranceTier: 'NONE',
+    insuranceFee: 0,
+    packagingWaiver: true,
+    shippingFee: 45000,
     declaredWeightKg: 6.8,
     packageDescription: 'Màn hình máy tính đồ họa Dell Ultrasharp 27 inch',
     damageDescription: 'Thùng carton nứt góc, cắm điện màn hình chảy mực sọc ngang',
