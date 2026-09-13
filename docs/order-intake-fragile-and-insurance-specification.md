@@ -1,214 +1,213 @@
-# ĐẶC TẢ NGHIỆP VỤ: TIẾP NHẬN ĐƠN HÀNG, ĐÓNG GÓI HÀNG DỄ VỠ & CHÍNH SÁCH BẢO HIỂM HÀNG HÓA
-*(Phục Vụ Tư Vấn Khách Hàng, Đào Tạo Vận Hành & Báo Cáo Đồ Án Tốt Nghiệp Hệ Thống Logistics)*
+# ĐẶC TẢ NGHIỆP VỤ LOGISTICS: MÔ HÌNH THIẾT GIÁP TINH GỌN (IRONCLAD LEAN MODEL)
+## TIẾP NHẬN HÀNG, ĐÓNG GÓI DỄ VỠ, BẢO HIỂM HÀNG HÓA & PHÒNG CHỐNG TRỤC LỢI BỒI THƯỜNG
+*(Tài liệu chính thức phục vụ: Viết thuyết minh Đồ án Tốt nghiệp, Slide Phản biện Hội đồng & Cẩm nang Tư vấn Khách hàng)*
 
 ---
 
-## 1. TỔNG QUAN & BỐI CẢNH NGHIỆP VỤ
+## 1. TỔNG QUAN: TẠI SAO PHẢI LÀ "MÔ HÌNH THIẾT GIÁP TINH GỌN"?
 
-### 1.1. Bối cảnh ngành chuyển phát nhanh (Express Logistics)
-Trong chuỗi cung ứng logistics thương mại điện tử (E-Commerce Logistics), khâu **Tiếp nhận đơn hàng (Order Intake / First-mile Reception)** là "cửa ngõ" quyết định chất lượng toàn bộ hành trình vận chuyển. 
+### 1.1. Triết lý cốt lõi của mô hình
+Nhiều hệ thống logistics gặp thất bại hoặc bị giảng viên hội đồng đánh giá thấp vì rơi vào hai thái cực:
+1. **Quá ngây thơ (Lý thuyết suông):** Áp dụng "mất hoặc hỏng thì đền 100% tiền hàng" cho tất cả mọi đơn &rarr; *Hội đồng sẽ phản biện ngay: Tiền đâu ra mà đền? Khách gửi cục gạch cũ khai 20 triệu rồi cố tình làm vỡ để đòi đền thì doanh nghiệp phá sản à?*
+2. **Quá rườm rà (Phức tạp hóa):** Đẻ ra hàng chục loại phụ phí, phân loại hàng chục nhóm hàng, bắt nhân viên đo đạc quá nhiều bước &rarr; *Gây tắc nghẽn quầy tiếp nhận bưu cục, khách hàng phản ứng, lập trình viên frontend/backend bị rối loạn logic.*
 
-Một kiện hàng từ lúc nhận đến lúc phát phải trải qua trung bình:
-- **02 lần vận chuyển chặng đầu / chặng cuối (First-mile & Last-mile):** Bằng xe máy hoặc xe tải van nhỏ, chịu rung lắc đường phố.
-- **02 đến 04 lần phân loại tự động tại Hub:** Qua băng chuyền con lăn, máng trượt dốc (Chute) với tốc độ cao.
-- **01 đến 02 chuyến xe tải đường dài (Linehaul):** Xếp chồng các bao tải hàng (Stacking) lên đến 2 - 3 tầng trong thùng xe tải liên tỉnh.
-
-### 1.2. Bài toán rủi ro: Tại sao không thể đền 100% vô điều kiện?
-Nếu doanh nghiệp vận chuyển áp dụng chính sách **mặc định đền 100% giá trị hàng hóa cho mọi trường hợp hư hỏng hoặc mất mát**, hệ thống sẽ lập tức đối mặt với các nguy cơ nghiêm trọng:
-
-1. **Rủi ro đạo đức và trục lợi bồi thường (Moral Hazard & Fraud):**
-   - Khách hàng có thể gửi các mặt hàng đã qua sử dụng, hàng lỗi sẵn, hoặc đóng gói cực kỳ sơ sài, sau đó kê khai giá khống (ví dụ: món đồ cũ trị giá 200.000 VNĐ nhưng khai giá 10.000.000 VNĐ).
-   - Khi xảy ra vỡ nát bên trong thùng carton (mà bên ngoài hộp vẫn nguyên vẹn), khách hàng sẽ đòi bồi thường 100% số tiền 10.000.000 VNĐ.
-2. **Hàng dễ vỡ không được phân luồng xử lý riêng (Fragile Special Handling):**
-   - Nếu không có cơ chế đánh dấu phân loại **"Hàng dễ vỡ (Fragile)"** ngay tại quầy tiếp nhận, kiện hàng thủy tinh, gốm sứ, màn hình điện tử sẽ bị xử lý như một kiện quần áo: bị ném qua máng chia chọn tự động hoặc bị các bao tải nặng đè lên trong xe tải tuyến.
-3. **Mất cân đối tài chính (Financial Deficit):**
-   - Cước phí vận chuyển cơ bản thông thường chỉ từ 18.000 VNĐ – 35.000 VNĐ/kiện. Nếu không thu **Phí bảo hiểm khai giá (Insurance Fee)** để trích lập quỹ dự phòng rủi ro, một đơn hàng bị đền 10.000.000 VNĐ sẽ làm xóa sạch toàn bộ lợi nhuận của hơn 500 – 1.000 đơn hàng vận chuyển thành công khác.
+**MÔ HÌNH THIẾT GIÁP TINH GỌN (IRONCLAD LEAN MODEL)** giải quyết triệt để vấn đề này bằng cách:
+* **TINH GỌN:** Chỉ có **02 cờ kiểm soát tại quầy** và **02 gói lựa chọn bảo hiểm** (Khách mất chưa tới 30 giây để hoàn tất).
+* **DỄ PHẢN BIỆN:** Bám chặt 100% vào **Luật Bưu chính Việt Nam (Điều 24, Điều 25 Luật số 49/2010/QH12)**.
+* **BỊT KÍN MỌI LỖ HỔNG:** Không để lại bất kỳ "vùng xám" (Grey Zone) nào cho hành vi trục lợi bảo hiểm hoặc tranh chấp dân sự.
 
 ---
 
-## 2. CƠ SỞ PHÁP LÝ & QUY CHUẨN NGÀNH
+## 2. BỊT KÍN 5 LỖ HỔNG NGHIỆP VỤ CHÍ SƠ TRONG CHUYỂN PHÁT NHANH
 
-Hệ thống quản lý logistics NEXUS được thiết kế tuân thủ nghiêm ngặt khung pháp lý bưu chính Việt Nam và tập quán thương mại quốc tế:
-
-1. **Luật Bưu chính số 49/2010/QH12:**
-   - **Điều 24 (Trách nhiệm bồi thường thiệt hại):** Doanh nghiệp cung ứng dịch vụ bưu chính có trách nhiệm bồi thường thiệt hại do lỗi của mình gây ra đối với bưu phẩm, bưu kiện. Doanh nghiệp được **miễn trừ trách nhiệm** nếu thiệt hại xảy ra do lỗi của người gửi (đóng gói không đúng quy chuẩn kỹ thuật) hoặc do bản chất tự nhiên của hàng hóa.
-   - **Điều 25 (Nguyên tắc và mức bồi thường):**
-     - Đối với dịch vụ bưu chính **có kê khai giá (có bảo hiểm):** Mức bồi thường thiệt hại được tính theo giá trị thiệt hại thực tế, tối đa bằng giá trị đã kê khai.
-     - Đối với dịch vụ bưu chính **không kê khai giá (không mua bảo hiểm):** Mức bồi thường được xác định theo hạn mức giới hạn luật định, thông thường tối đa từ **04 đến 10 lần cước phí dịch vụ đã thu**.
-2. **Nghị định 47/2011/NĐ-CP:** Hướng dẫn chi tiết thi hành Luật Bưu chính về hợp đồng cung ứng và sử dụng dịch vụ bưu chính.
-3. **Tiêu chuẩn đóng gói hàng hóa dễ vỡ TCVN / IATA Standard:** Hàng hóa lỏng, dễ vỡ phải được đệm lót tối thiểu 3 lớp xốp khí chống sốc và chịu được bài kiểm tra rơi tự do ở độ cao 80cm.
-
----
-
-## 3. QUY TRÌNH TIẾP NHẬN ĐƠN HÀNG 3 BƯỚC (3-STEP ORDER INTAKE)
+Dưới đây là 5 lỗ hổng thực tế khiến các công ty vận chuyển mất hàng tỷ đồng mỗi năm và giải pháp "khóa van rủi ro" bằng phần mềm NEXUS:
 
 ```mermaid
 flowchart TD
-    Start(["Khách hàng gửi đơn hàng<br/>(Tại quầy POS / Merchant API)"]) --> Step1["Bước 1: Tiếp nhận thông tin & Khai báo"]
+    subgraph LoHong ["5 LỖ HỔNG THỰC TẾ"]
+        L1["1. Khai khống giá trị (Fraud)"]
+        L2["2. Tự gói sơ sài rồi đổ lỗi va đập"]
+        L3["3. Giấu hàng dễ vỡ / chất lỏng"]
+        L4["4. Cước 30k đòi bảo hiểm vô hạn"]
+        L5["5. Không có bằng chứng lúc nhận hàng"]
+    end
+
+    subgraph GiaiPhap ["5 CHỐT CHẶN HỆ THỐNG NEXUS"]
+        C1["Chốt 1: Đền theo Hóa đơn thực tế &le; Khai giá"]
+        C2["Chốt 2: Cờ packagingWaiver (Biên bản miễn trừ)"]
+        C3["Chốt 3: Tem cảnh báo Ly vỡ & Top Stacking"]
+        C4["Chốt 4: Tách bạch Cước phí vs. Phí bảo hiểm 0.5%"]
+        C5["Chốt 5: Niêm phong QR + Ảnh chụp gói hàng"]
+    end
+
+    L1 --> C1
+    L2 --> C2
+    L3 --> C3
+    L4 --> C4
+    L5 --> C5
+```
+
+### Lỗ hổng 1: Khách hàng khai khống giá trị để trục lợi (Moral Hazard & Valuation Fraud)
+* **Kịch bản gian lận:** Món đồ cũ trị giá 300.000 VNĐ nhưng người gửi khai giá 15.000.000 VNĐ. Khi xảy ra sự cố, người gửi đòi đền đủ 15.000.000 VNĐ.
+* **Chốt chặn phần mềm:** 
+  * Nguyên tắc bồi thường được cố định bằng hợp đồng: **"Bồi thường theo GIÁ TRỊ THIỆT HẠI THỰC TẾ, tối đa bằng Giá trị khai báo"** (Chuẩn Điều 25 Luật Bưu chính).
+  * Điều kiện nhận bồi thường 100%: Người gửi phải xuất trình được **Hóa đơn mua hàng hợp lệ (VAT / Hóa đơn điện tử sàn TMĐT / Lịch sử chuyển khoản ngân hàng giao dịch mua bán)**.
+  * Nếu không chứng minh được hóa đơn: Hệ thống tự động chuyển sang mức đền bù tối đa theo định mức luật định (tối đa 4 lần cước).
+
+### Lỗ hổng 2: Người gửi tự đóng gói sơ sài rồi đổ lỗi cho nhà vận chuyển làm vỡ
+* **Kịch bản gian lận:** Khách tự bỏ lọ nước hoa/đồ gốm vào một chiếc hộp carton mỏng manh không có xốp chèn. Dọc đường xe tải rung lắc khiến lọ tự va vào thành hộp nứt vỡ, nhưng bên ngoài vỏ thùng vẫn còn nguyên vẹn. Khách làm ầm lên đòi bưu điện đền tiền.
+* **Chốt chặn phần mềm:** 
+  * Khi hàng là Dễ vỡ (`isFragile: true`), nhân viên giao dịch kiểm tra theo chuẩn 3 lớp xốp (Bubble Wrap).
+  * Nếu khách hàng từ chối đóng gói chuẩn, nhân viên bật cờ **`packagingWaiver: true` (Biên bản cam kết miễn trừ bể vỡ do người gửi tự đóng gói)**.
+  * Bưu điện **chỉ bồi thường nếu làm mất nguyên kiện**, và **miễn trừ 100% trách nhiệm bể vỡ bên trong nếu vỏ thùng bên ngoài còn nguyên niêm phong**.
+
+### Lỗ hổng 3: Khách cố tình giấu không khai báo hàng dễ vỡ / chất lỏng
+* **Kịch bản rủi ro:** Gửi chai mật ong hoặc rượu thủy tinh nhưng khai là "quần áo" để trốn đóng gói. Chai bị bục vỡ chảy tràn làm ướt hỏng hàng chục bưu kiện của người khác trên xe.
+* **Chốt chặn phần mềm:**
+  * Điều khoản giao dịch ghi rõ: Nếu người gửi cố ý che giấu thông tin hàng hóa, người gửi không những **không được bồi thường** mà còn phải **chịu trách nhiệm liên đới bồi hoàn thiệt hại** cho các bưu kiện khác bị ảnh hưởng theo Bộ luật Dân sự 2015.
+
+### Lỗ hổng 4: Cước vận chuyển 30.000đ nhưng đòi hỏi bảo hiểm vô hạn
+* **Kịch bản thâm hụt:** Cước thu 30.000đ chỉ đủ trang trải chi phí xăng xe, lương bưu tá, khấu hao xe tải. Nếu một đơn 20.000.000đ bị mất mà phải đền, công ty mất đứt lợi nhuận của gần 1.000 đơn hàng khác.
+* **Chốt chặn phần mềm:**
+  * Tách bạch 2 dòng tiền: **Cước vận chuyển (Service Fee)** và **Phí bảo hiểm khai giá (Insurance Fee - 0.5%)**.
+  * Khoản phí 0.5% được đưa thẳng vào **Quỹ dự phòng bồi thường rủi ro (Risk Reserve Fund)**. Ai có nhu cầu bảo vệ tài sản giá trị cao thì đóng góp vào quỹ, ai không tham gia thì chấp nhận rủi ro theo hạn mức cơ bản.
+
+### Lỗ hổng 5: Tranh cãi về tình trạng hàng hóa trước và sau khi vận chuyển
+* **Kịch bản tranh cãi:** Lúc gửi không rõ bưu kiện méo hay tròn, lúc phát người nhận bảo hàng bị cấn móp từ trước.
+* **Chốt chặn phần mềm:**
+  * Cho phép nhân viên chụp nhanh 01 bức ảnh gói hàng dán tem niêm phong lúc tiếp nhận và upload lên trường `packagePhotoUrl`. Ảnh được ghim vĩnh viễn vào mã vận đơn, xóa tan mọi tranh cãi lúc giao nhận.
+
+---
+
+## 3. QUY TRÌNH TIẾP NHẬN ĐƠN HÀNG 3 BƯỚC TẠI QUẦY (3-STEP POS INTAKE)
+
+Quy trình tại màn hình tiếp nhận bưu cục (`BranchBusinessOrderCreatePage`) được thiết kế trực quan, thao tác trong 30 giây:
+
+```mermaid
+flowchart TD
+    A["Khách mang hàng tới quầy"] --> B["Bước 1: Khai báo Phân loại hàng hóa"]
     
-    Step1 --> CheckFragile{"Kiểm tra tính chất hàng hóa:<br/>Có thuộc nhóm DỄ VỠ / CHẤT LỎNG / ĐIỆN TỬ?"}
+    B --> C{"Hàng có thuộc nhóm DỄ VỠ / CHẤT LỎNG?<br/>(Gốm, thủy tinh, mỹ phẩm lỏng, màn hình điện tử)"}
     
-    CheckFragile -- "CÓ (HÀNG DỄ VỠ)" --> Step2A["Bước 2A: Áp dụng Quy chuẩn Đóng gói SOP<br/>(Xốp bọt khí 3-5 lớp, chèn góc, hộp cứng)"]
-    Step2A --> InspectPackaging{"Kiểm tra đóng gói thực tế<br/>đạt chuẩn an toàn?"}
+    C -- "HÀNG THƯỜNG" --> E["isFragile = false<br/>(Đóng gói túi niêm phong / hộp tiêu chuẩn)"]
     
-    InspectPackaging -- "ĐẠT CHUẨN" --> TagFragile["Bật cờ: isFragile = true<br/>In nhãn cảnh báo FRAGILE hình ly vỡ"]
-    InspectPackaging -- "TỪ CHỐI BỌC CHUẨN" --> SignWaiver["Khách hàng ký BIÊN BẢN MIỄN TRỪ<br/>(Miễn trách nhiệm bể vỡ do tự đóng gói)"]
-    SignWaiver --> TagFragile
+    C -- "HÀNG DỄ VỠ" --> D["Bật cờ: isFragile = true<br/>Kiểm tra chuẩn SOP bọc xốp 3 lớp"]
     
-    CheckFragile -- "KHÔNG (HÀNG TIÊU CHUẨN)" --> Step2B["Bước 2B: Đóng gói tiêu chuẩn bì thư / túi niêm phong"]
+    D --> D1{"Khách đồng ý bọc chuẩn SOP?"}
+    D1 -- "ĐỒNG Ý" --> D2["packagingStandard = true<br/>Dán tem FRAGILE cảnh báo ly vỡ"]
+    D1 -- "TỪ CHỐI BỌC LẠI" --> D3["packagingWaiver = true<br/>Ký Biên bản miễn trừ bể vỡ do tự đóng gói"]
     
-    TagFragile --> Step3["Bước 3: Lựa chọn Gói Bảo Hiểm & Khai Giá"]
-    Step2B --> Step3
+    E --> F["Bước 2: Lựa chọn Gói Bảo Hiểm"]
+    D2 --> F
+    D3 --> F
     
-    Step3 --> CheckInsurance{"Khách chọn gói bảo hiểm nào?"}
+    F --> G{"Khách chọn Gói bảo hiểm nào?"}
     
-    CheckInsurance -- "GÓI 1: KHÔNG BẢO HIỂM<br/>(Miễn phí bảo hiểm)" --> PolicyBasic["ÁP DỤNG HẠN MỨC LUẬT ĐỊNH:<br/>- Mất hàng: Đền tối đa 04 lần cước gửi<br/>- Trần tối đa: 1.000.000 VNĐ/đơn"]
+    G -- "GÓI TIÊU CHUẨN (0đ)" --> H["insuranceTier = 'NONE'<br/>Phí BH = 0đ<br/>Hạn mức đền: Tối đa 04 lần cước (Max 1.000.000đ)"]
     
-    CheckInsurance -- "GÓI 2: BẢO HIỂM TOÀN DIỆN 100%<br/>(Phí: 0.5% giá trị khai giá)" --> Policy100["CAM KẾT HỢP ĐỒNG 100%:<br/>- Mất hàng hoặc vỡ nát: Đền đúng 100% giá trị khai báo<br/>- Điều kiện: Cung cấp hóa đơn/chứng từ hợp lệ"]
+    G -- "BẢO HIỂM 100%" --> I["insuranceTier = 'COMPREHENSIVE_100'<br/>Phí BH = 0.5% * Giá trị khai báo (Min 5.000đ)<br/>Cam kết đền: 100% Giá trị thực tế khi mất/hỏng"]
     
-    PolicyBasic --> Finalize["Hoàn tất tạo đơn & In tem nhãn nhiệt Thermal Label"]
-    Policy100 --> Finalize
-    
-    Finalize --> End(["Đưa đơn vào luồng luân chuyển an toàn"])
+    H --> K["Bước 3: In Nhãn Nhiệt Thermal Waybill & Quét Pickup"]
+    I --> K
 ```
 
 ---
 
-### BƯỚC 1: TIẾP NHẬN THÔNG TIN & PHÂN LOẠI TÍNH CHẤT HÀNG HÓA
+## 4. MA TRẬN PHÂN ĐỊNH TRÁCH NHIỆM BỒI THƯỜNG (2X2 IRONCLAD MATRIX)
+*(Bảng ma trận xử lý tự động trong Module Claims & Liability Management)*
 
-Khi khách hàng mang hàng đến quầy bưu cục (Walk-in) hoặc tạo đơn qua phần mềm Merchant, nhân viên tiếp nhận thực hiện rà soát danh mục hàng hóa:
+Hội đồng chấm đồ án hoặc khách hàng có thể hỏi bất kỳ tình huống nào, bạn chỉ cần chiếu vào bảng 4 ô kinh điển này:
 
-#### Danh mục hàng hóa bắt buộc gắn cờ `isFragile` (Hàng dễ vỡ):
-1. **Đồ gốm, sứ, thủy tinh, pha lê:** Chai lọ, chén dĩa, đồ mỹ nghệ, gương, bóng đèn.
-2. **Chất lỏng và hóa chất đóng chai:** Nước hoa, rượu, mỹ phẩm dạng lỏng, mật ong, dầu gội (yêu cầu thêm nắp khóa seal chống rò rỉ).
-3. **Thiết bị công nghệ có linh kiện màn hình / kính:** Điện thoại, máy tính bảng, màn hình vi tính, linh kiện phần cứng dễ gãy.
-4. **Hàng thực phẩm / bánh trái dễ biến dạng:** Bánh quy hộp mềm, socola nhạy nhiệt độ, hoa quả tươi.
-
----
-
-### BƯỚC 2: QUY CHUẨN ĐÓNG GÓI SOP & BIÊN BẢN MIỄN TRỪ
-
-Đối với các đơn hàng có đánh dấu `isFragile`, quy trình tiếp nhận phân nhánh như sau:
-
-#### 1. Quy chuẩn đóng gói SOP bắt buộc (Standard Operating Procedure):
-- **Lớp bảo vệ trực tiếp:** Quấn bọc xốp bọt khí (Bubble Wrap) hạt lớn dày tối thiểu 3 đến 5 lớp xung quanh sản phẩm.
-- **Lớp chèn cố định:** Không để khoảng trống bên trong hộp. Sử dụng xốp định hình EPS/PE Foam hoặc giấy chèn chặt 6 mặt để khi lắc hộp không có tiếng lạch cạch.
-- **Hộp bảo vệ:** Thùng carton sóng cứng (tối thiểu 3 lớp sóng hoặc 5 lớp sóng với hàng nặng).
-- **Tem nhãn nhận diện:** Hệ thống tự động in ký hiệu **`FRAGILE - HÀNG DỄ VỠ - XIN NHẸ TAY` (Biểu tượng ly vỡ màu đỏ)** trên tem nhiệt bưu chính.
-- **Chế độ phân loại đặc biệt:** Kiện có tem FRAGILE sẽ **không được đổ vào máng trượt tự động**, được chuyển qua luồng phân loại thủ công (Manual Chute) và luôn xếp ở **tầng trên cùng (Top Stacking)** trên xe tải.
-
-#### 2. Cơ chế xử lý khi khách hàng từ chối đóng gói chuẩn (Packaging Waiver):
-- Nhiều trường hợp khách hàng tự mang gói hàng đã bọc sơ sài (chỉ bọc 1 lớp túi nylon hoặc hộp carton mềm) và từ chối trả thêm phí đóng gói xốp/hộp gỗ.
-- **Quy tắc vận hành:** 
-  - Nhân viên tiếp nhận cảnh báo nguy cơ bể vỡ.
-  - Nếu khách hàng vẫn yêu cầu gửi, hệ thống bật cờ **`packagingWaiver: true` (Biên bản miễn trừ trách nhiệm bể vỡ do đóng gói không đạt chuẩn SOP)**.
-  - Khách hàng xác nhận điện tử hoặc ký biên lai miễn trừ: *"NEXUS chỉ bồi thường nếu mất nguyên đai nguyên kiện, không bồi thường trường hợp bể vỡ, móp méo bên trong do người gửi tự đóng gói không đạt chuẩn."*
-
----
-
-### BƯỚC 3: LỰA CHỌN GÓI BẢO HIỂM HÀNG HÓA & KHAI GIÁ
-
-Doanh nghiệp bưu chính cung cấp **02 Gói dịch vụ bảo hiểm** minh bạch để khách hàng lựa chọn:
-
-| Tiêu chí | GÓI 1: VẬN CHUYỂN TIÊU CHUẨN<br/>*(Không mua bảo hiểm)* | GÓI 2: BẢO HIỂM TOÀN DIỆN 100%<br/>*(Có mua bảo hiểm khai giá)* |
+| TÌNH HUỐNG SỰ CỐ | CÓ MUA BẢO HIỂM 100%<br/>*(Đã đóng phí 0.5%)* | KHÔNG MUA BẢO HIỂM<br/>*(Phí bảo hiểm 0đ)* |
 | :--- | :--- | :--- |
-| **Đối tượng phù hợp** | Quần áo, tài liệu, hàng hóa giá trị thấp (&le; 1.000.000 VNĐ). | Điện thoại, laptop, mỹ phẩm cao cấp, hàng trị giá &gt; 1.000.000 VNĐ. |
-| **Phí bảo hiểm** | **0 VNĐ (Miễn phí)** | **0.5% giá trị khai báo** (Tối thiểu 5.000 VNĐ).<br/>*VD: Hàng 10 triệu &rarr; Phí bảo hiểm 50.000 VNĐ.* |
-| **Chứng từ khi gửi** | Không bắt buộc hóa đơn. | Khuyến nghị chụp ảnh sản phẩm, lưu hóa đơn mua hàng / link sản phẩm. |
-| **Hạn mức bồi thường nếu MẤT HÀNG** | **Tối đa 04 lần cước vận chuyển**<br/>*(Trần tối đa không quá 1.000.000 VNĐ/đơn theo Luật Bưu chính).* | **BỒI THƯỜNG ĐÚNG 100% GIÁ TRỊ KHAI BÁO**<br/>*(Tối đa lên tới 50.000.000 VNĐ/đơn).* |
-| **Hạn mức bồi thường nếu BỂ VỠ / HƯ HỎNG** | Bồi thường theo tỷ lệ hư hại thực tế nhân với hạn mức cước (tối đa 4 lần cước). | **Bồi thường theo tỷ lệ hư hại thực tế nhân với 100% giá trị khai báo** (hoặc đền 100% nếu hỏng toàn bộ). |
-| **Điều kiện bồi thường bể vỡ** | Đóng gói đạt chuẩn cơ bản. | Bắt buộc đóng gói đúng quy chuẩn SOP của hàng dễ vỡ. |
+| **THẤT LẠC / MẤT NGUYÊN KIỆN**<br/>*(Lỗi mạng lưới Hub/Tài xế làm mất)* | **ĐỀN ĐÚNG 100% GIÁ TRỊ KHAI BÁO**<br/>*(Căn cứ theo hóa đơn/chứng từ hợp lệ)* | **ĐỀN 04 LẦN CƯỚC VẬN CHUYỂN**<br/>*(Trần tối đa 1.000.000 VNĐ theo Luật Bưu chính)* |
+| **BỂ VỠ / HƯ HỎNG BÊN TRONG**<br/>*(Đã đóng gói chuẩn 3 lớp xốp SOP)* | **ĐỀN 100% GIÁ TRỊ THỰC TẾ**<br/>*(Hoặc đền theo tỷ lệ % hư hại nếu vỡ một phần)* | **ĐỀN 04 LẦN CƯỚC GỬI**<br/>*(Theo tỷ lệ hư hại thực tế)* |
+| **BỂ VỠ KHI CÓ BIÊN BẢN MIỄN TRỪ**<br/>*(Khách tự đóng gói sơ sài, thùng ngoài nguyên)* | **TỪ CHỐI BỒI THƯỜNG BỂ VỠ**<br/>*(Do khách đã ký cam kết packagingWaiver)* | **TỪ CHỐI BỒI THƯỜNG BỂ VỠ**<br/>*(Miễn trừ trách nhiệm theo Điều 24 Luật Bưu chính)* |
 
 ---
 
-## 4. MA TRẬN PHÂN ĐỊNH TRÁCH NHIỆM BỒI THƯỜNG (COMPENSATION MATRIX)
+## 5. BỘ CÂU HỎI PHẢN BIỆN TRƯỚC HỘI ĐỒNG ĐỒ ÁN (DEFENSE Q&A)
 
-Bảng ma trận xử lý sau đây là cơ sở cho các buổi họp thẩm định giám định tranh chấp (Claims & Liability Hearing):
+Dưới đây là 5 câu hỏi "bẫy" kinh điển mà Hội đồng Thầy Cô thường hỏi và câu trả lời chuẩn xác nhất:
 
-| Tình huống sự cố | Trạng thái bảo hiểm | Quy chuẩn đóng gói SOP | Kết luận phán quyết của Ban Giám Định | Mức chi trả bồi thường |
-| :--- | :---: | :---: | :--- | :--- |
-| **1. Mất tích / Thất lạc nguyên kiện** | CÓ MUA (100%) | Đạt / Không xét | Lỗi thuộc về mạng lưới vận chuyển (Hub/Tài xế làm mất). | **Đền đúng 100% giá trị khai giá** |
-| **2. Mất tích / Thất lạc nguyên kiện** | KHÔNG MUA | Đạt / Không xét | Lỗi thuộc về mạng lưới vận chuyển, áp dụng hạn mức cơ bản. | **Đền 04 lần cước gửi** (Tối đa 1.000.000 đ) |
-| **3. Bể vỡ nát hoàn toàn bên trong** | CÓ MUA (100%) | ĐẠT CHUẨN SOP | Lỗi do va đập chèn lót hoặc tai nạn vận chuyển. | **Đền đúng 100% giá trị khai giá** |
-| **4. Bể vỡ bên trong (Hộp ngoài nguyên)** | CÓ MUA (100%) | CÓ BIÊN BẢN MIỄN TRỪ (Không đạt SOP) | Người gửi tự đóng gói không đạt tiêu chuẩn chống sốc. | **TỪ CHỐI BỒI THƯỜNG** (Theo biên bản miễn trừ) |
-| **5. Bể vỡ nát hoàn toàn** | KHÔNG MUA | ĐẠT CHUẨN | Lỗi vận chuyển nhưng khách không mua bảo hiểm. | **Đền 04 lần cước gửi** |
-| **6. Bể vỡ một phần (VD: Vỡ 1/4 chai lọ)** | CÓ MUA (100%) | ĐẠT CHUẨN SOP | Xác định tỷ lệ hư hại thực tế (25%). | **Đền 25% giá trị khai giá** |
+### Câu 1: *"Hệ thống của em lấy cơ sở pháp lý nào để giới hạn mức đền bù chỉ có 4 lần cước khi khách không mua bảo hiểm?"*
+> **Câu trả lời chuẩn:**  
+> *"Dạ thưa Thầy/Cô, hệ thống áp dụng đúng theo **Điều 25 Khoản 2 Luật Bưu chính số 49/2010/QH12** và **Nghị định 47/2011/NĐ-CP**. Luật quy định đối với bưu gửi không sử dụng dịch vụ khai giá, doanh nghiệp bưu chính được quyền ấn định mức bồi thường theo giới hạn luật định (từ 4 đến 10 lần cước). Các doanh nghiệp chuyển phát thực tế tại Việt Nam như Viettel Post, VNPost, J&T Express đều áp dụng mức 4 lần cước này để đảm bảo cân đối quỹ hoạt động."*
+
+### Câu 2: *"Nếu khách hàng gửi một chiếc iPhone cũ hỏng sẵn, bọc kỹ, khai giá 20 triệu và mua bảo hiểm 100%, sau đó cố tình đổ lỗi làm hỏng thì hệ thống giải quyết thế nào?"*
+> **Câu trả lời chuẩn:**  
+> *"Dạ thưa Thầy/Cô, hệ thống đã bịt kín kẽ hở này bằng 2 chốt chặn:  
+> 1. Quy định bồi thường yêu cầu khách phải cung cấp **Hóa đơn mua bán/chứng từ chứng minh giá trị thực tế**.  
+> 2. Quy trình giám định đối chiếu với **ảnh chụp gói hàng lúc gửi (`packagePhotoUrl`)** và video kiểm hàng mở kiện đồng kiểm của bưu tá. Nếu phát hiện dấu hiệu gian lận khai giá khống, hồ sơ sẽ chuyển sang trạng thái từ chối chi trả theo điều khoản gian lận thương mại."*
+
+### Câu 3: *"Tại sao không bắt buộc 100% đơn hàng đều phải mua bảo hiểm?"*
+> **Câu trả lời chuẩn:**  
+> *"Dạ thưa Thầy/Cô, trong thương mại điện tử, trên 70% đơn hàng là quần áo, đồ chơi, sách vở có giá trị thấp hoặc khó vỡ. Nếu bắt buộc mua bảo hiểm sẽ làm đội chi phí đơn hàng, giảm năng lực cạnh tranh của doanh nghiệp so với thị trường. Việc chia thành 2 gói minh bạch giúp tối ưu chi phí cho khách gửi hàng thông thường, đồng thời bảo vệ tối đa cho khách gửi hàng giá trị cao."*
+
+### Câu 4: *"Cờ packagingWaiver có giá trị pháp lý không nếu khách kiện ra tòa?"*
+> **Câu trả lời chuẩn:**  
+> *"Dạ thưa Thầy/Cô, hoàn toàn có giá trị pháp lý. Theo **Điều 24 Luật Bưu chính**, doanh nghiệp được miễn trừ trách nhiệm bồi thường nếu thiệt hại xảy ra do lỗi của người gửi không tuân thủ hướng dẫn đóng gói. Khi khách hàng đồng ý gửi với cờ `packagingWaiver: true`, hợp đồng vận chuyển điện tử đã ghi nhận sự thỏa thuận miễn trừ trách nhiệm bể vỡ giữa hai bên."*
+
+### Câu 5: *"Phí bảo hiểm 0.5% được tính toán dựa trên cơ sở kinh tế nào?"*
+> **Câu trả lời chuẩn:**  
+> *"Dạ thưa Thầy/Cô, tỷ lệ 0.5% (tương đương 5.000đ trên mỗi 1.000.000đ giá trị) là tỷ lệ bảo hiểm tiêu chuẩn của ngành logistics nội địa (tương đương với J&T Express, GHTK, GHN). Theo thống kê thực tế, tỷ lệ thất lạc hoặc hư hại nghiêm trọng của mạng lưới vận chuyển hiện đại được kiểm soát ở mức dưới 0.1% - 0.2%. Do đó, tỷ lệ phí 0.5% vừa đủ để trích lập Quỹ dự phòng rủi ro chi trả sòng phẳng 100%, vừa có biên độ an toàn tài chính cho doanh nghiệp."*
 
 ---
 
-## 5. MÔ HÌNH DỮ LIỆU ĐỀ XUẤT (DATA SCHEMA & MOCKUP)
+## 6. THIẾT KẾ DỮ LIỆU & GIAO DIỆN HỆ THỐNG NEXUS
 
-### 5.1. Các trường dữ liệu bổ sung trong bảng `Shipment`
-```prisma
-model Shipment {
-  // ... các trường định danh hiện tại
-  code              String   @unique
-  declaredValue     Float    @default(0)     // Giá trị hàng hóa khai báo (VNĐ)
+### 6.1. Cấu trúc trường dữ liệu (Shipment Metadata Schema)
+```typescript
+interface ShipmentIntakeData {
+  // Định danh & Thông số cơ bản
+  shipmentCode: string;          // Mã vận đơn (VD: 333000000001)
+  itemType: string;              // Phân loại: "Đồ gốm", "Quần áo", "Điện tử"...
+  weightKg: number;              // Trọng lượng thực tế (kg)
+  declaredValue: number;         // Giá trị hàng hóa khai báo (VNĐ)
   
-  // Kiểm soát Hàng dễ vỡ
-  isFragile         Boolean  @default(false) // Cờ hàng dễ vỡ / chất lỏng
-  fragileCategory   String?                  // 'CERAMICS' | 'LIQUID' | 'ELECTRONICS' | 'GLASS'
-  packagingStandard Boolean  @default(true)  // Đã bọc xốp chống sốc đạt chuẩn SOP
-  packagingWaiver   Boolean  @default(false) // Khách ký cam kết miễn trừ bể vỡ do tự gói
+  // Chốt chặn 1: Kiểm soát Hàng dễ vỡ & Đóng gói SOP
+  isFragile: boolean;            // true nếu là hàng dễ vỡ/chất lỏng
+  packagingStandardMet: boolean; // true nếu bọc bubble wrap 3 lớp đạt chuẩn
+  packagingWaiver: boolean;      // true nếu khách ký cam kết miễn trừ bể vỡ
   
-  // Hợp đồng Bảo hiểm
-  insuranceTier     String   @default("NONE") // 'NONE' | 'COMPREHENSIVE_100'
-  insuranceFee      Float    @default(0)      // Phí bảo hiểm tự động tính (0.5% giá trị)
-  maxLiabilityLimit Float    @default(0)      // Hạn mức đền bù tối đa được bảo vệ
+  // Chốt chặn 2: Gói Bảo hiểm & Phí rủi ro
+  insuranceTier: 'NONE' | 'COMPREHENSIVE_100';
+  insuranceFee: number;          // 0đ nếu NONE, 0.5% declaredValue nếu COMPREHENSIVE_100 (min 5.000đ)
+  maxLiabilityLimit: number;     // Hạn mức bảo vệ: 4x cước hoặc 100% declaredValue
   
-  // Chứng từ chứng minh giá trị
-  invoiceUrl        String?                  // Ảnh chụp hóa đơn VAT / Hóa đơn mua hàng
-  packagePhotoUrl   String?                  // Ảnh chụp gói hàng trước khi niêm phong
+  // Bằng chứng số hóa
+  packagePhotoUrl?: string;      // Ảnh chụp gói hàng tại quầy
+  invoiceProofRequired: boolean; // Bắt buộc hóa đơn khi khiếu nại nếu mua gói 100%
 }
 ```
 
-### 5.2. Nhãn in nhiệt bưu chính tiêu chuẩn (Thermal Label Mockup)
-
+### 6.2. Nhãn in nhiệt Thermal Label (Dán lên kiện hàng)
 ```text
-+-------------------------------------------------------------------+
-|  NEXUS EXPRESS - CHUYỂN PHÁT NHANH TOÀN QUỐC                     |
-|  MÃ ĐƠN: 101000000005                      NGÀY GỬI: 12/09/2026   |
-+-------------------------------------------------------------------+
-|  [BARCODE CHÍNH: 101000000005]                                    |
-|                                                                   |
-|  TUYẾN: BƯU CỤC TÂN BÌNH (SGN) ➔ BƯU CỤC HOÀN KIẾM (HAN)         |
-+-------------------------------------------------------------------+
-|  CẢNH BÁO ĐẶC BIỆT:                                               |
-|  [!] HÀNG DỄ VỠ - XIN NHẸ TAY (FRAGILE)    |  [BẢO HIỂM 100%]     |
-|  (Biểu tượng: Ly nứt | Top Stacking)      |  Khai giá: 18.500.000đ|
-+-------------------------------------------------------------------+
-|  Người gửi: Cửa Hàng Apple Care Authorized - 0918.888.xxx         |
-|  Người nhận: Trần Văn Long - 0988.123.xxx                         |
-|  Đ/c nhận: Số 45 Tràng Tiền, Quận Hoàn Kiếm, Hà Nội               |
-|  Nội dung: Máy tính bảng iPad Air M2 11-inch (0.85 kg)            |
-+-------------------------------------------------------------------+
-|  TIỀN THU HỘ (COD): 18.500.000 đ                                  |
-|  CƯỚC CHUYỂN PHÁT: 45.000 đ | PHÍ BẢO HIỂM 100%: 92.500 đ        |
-+-------------------------------------------------------------------+
++------------------------------------------------------------------------+
+|  NEXUS LOGISTICS SYSTEM - CHI NHÁNH TIẾP NHẬN                          |
+|  MÃ VẬN ĐƠN: 333000000001                   NGÀY: 13/09/2026           |
++------------------------------------------------------------------------+
+|  ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||    |
+|                          333000000001                                  |
++------------------------------------------------------------------------+
+|  [!] CẢNH BÁO: HÀNG DỄ VỠ - XIN NHẸ TAY    |  GÓI: BẢO HIỂM 100%       |
+|  (Biểu tượng ly vỡ | Xếp hàng tầng trên)   |  Khai giá: 12.000.000 đ   |
+|  Đóng gói: ĐẠT CHUẨN SOP 3 LỚP             |  Phí BH: 60.000 đ         |
++------------------------------------------------------------------------+
+|  Người gửi: Cửa Hàng Gốm Bát Tràng - 0912.345.xxx                     |
+|  Người nhận: Nguyễn Văn An - 0988.765.xxx                              |
+|  Địa chỉ: Tòa nhà Bitexco, Q.1, TP. Hồ Chí Minh                        |
+|  Hàng hóa: Bộ ấm chén hoàng gia cao cấp (1.2 kg)                       |
++------------------------------------------------------------------------+
+|  TIỀN THU HỘ COD: 12.000.000 đ | TỔNG CƯỚC THU: 95.000 đ               |
++------------------------------------------------------------------------+
 ```
 
 ---
 
-## 6. KỊCH BẢN TƯ VẤN KHÁCH HÀNG THỰC TẾ (CONSULTING SCRIPTS)
+## 7. KẾT LUẬN
 
-### Kịch bản 1: Tư vấn khách hàng gửi hàng giá trị cao (Điện thoại, Laptop)
-- **Khách hàng:** *"Sao đơn hàng 15 triệu của tôi phí ship 40.000đ mà lại có thêm phí bảo hiểm 75.000đ nữa vậy shop?"*
-- **Nhân viên tiếp nhận:** 
-  > *"Dạ em chào anh/chị, kiện hàng của mình là sản phẩm công nghệ giá trị cao (15.000.000đ). Phí 40.000đ là cước vận chuyển tiêu chuẩn. Khoản phí 75.000đ (tương đương 0.5%) là **Gói bảo hiểm toàn diện 100% giá trị hàng hóa** của NEXUS.  
-  > Khi tham gia gói bảo hiểm này, đơn hàng sẽ được đưa vào luồng giám sát an ninh camera và kẹp chì riêng. Nếu có bất kỳ sự cố rủi ro mất mát hoặc hư hỏng nào dọc đường, NEXUS cam kết **bồi thường đúng 100% toàn bộ 15.000.000đ** cho anh/chị. Nếu không mua bảo hiểm, theo quy định Luật Bưu chính mức đền bù tối đa chỉ được 4 lần cước (khoảng 160.000đ) thôi ạ. Anh/chị hoàn toàn yên tâm khi sử dụng gói bảo hiểm 100% này nhé!"*
-
-### Kịch bản 2: Tư vấn khách hàng gửi đồ dễ vỡ nhưng đóng gói chưa đạt chuẩn
-- **Khách hàng:** *"Hàng này tôi bọc trong thùng carton này rồi, dán băng keo là xong, cần gì phải quấn xốp nổ thêm tốn tiền?"*
-- **Nhân viên tiếp nhận:**
-  > *"Dạ thưa anh/chị, chai nước hoa / đồ gốm bên trong là chất liệu rất dễ nứt vỡ khi xe tải rung lắc liên tỉnh hoặc xếp dỡ. Theo quy chuẩn bảo đảm an toàn của NEXUS, kiện hàng bắt buộc phải quấn tối thiểu 3 lớp xốp khí giảm chấn và chèn mút cố định các góc.  
-  > Nếu mình để nguyên hiện trạng này chuyển đi, khi va đập rất dễ vỡ bên trong. Nếu anh/chị nhất quyết không gia cố đóng gói lại, em buộc phải tích vào hệ thống biên bản **'Miễn trừ trách nhiệm bể vỡ do người gửi tự đóng gói'**. Khi đó nếu xảy ra nứt vỡ bên trong, bên em sẽ không thể giải quyết bồi thường bể vỡ được ạ. Để an tâm tuyệt đối, anh/chị để bên em hỗ trợ bọc xốp đạt chuẩn SOP chỉ mất 2 phút thôi ạ!"*
-
----
-
-## 7. KẾT LUẬN & ĐÓNG GÓP CHO ĐỒ ÁN HỆ THỐNG
-
-1. **Về mặt học thuật và bảo vệ đồ án:**
-   - Đồ án chứng minh được **tính thực tiễn sâu sắc (Real-world applicability)**: Không vẽ ra một hệ thống "mơ mộng đền 100% cho mọi thứ" mà giải quyết bài toán cốt lõi của ngành: Quản trị rủi ro, phân loại hàng hóa và tính toán kinh tế bưu chính.
-   - Bám sát **khung pháp lý bưu chính Việt Nam (Luật Bưu chính 2010)** và cơ chế tự động hóa phân luồng trên hệ thống phần mềm.
-2. **Về mặt kỹ thuật triển khai:**
-   - Dữ liệu được cấu trúc tường minh từ bảng `Shipment` sang `Pricing Service`, in ấn `Thermal Label` và đồng bộ sang module `Claims & Investigation` để phân xử trách nhiệm tự động bằng phần mềm.
+Mô hình này đạt được **3 mục tiêu lớn nhất** của một đồ án tốt nghiệp xuất sắc:
+1. **Tính khả thi và thực tế (Feasibility):** Không xa rời thực tế, giải quyết đúng nỗi đau lớn nhất của ngành chuyển phát nhanh Việt Nam.
+2. **Tính chặt chẽ về học thuật & pháp lý (Academic Rigor):** Căn cứ chuẩn xác theo Luật Bưu chính 2010, Bộ luật Dân sự 2015 và các thông tư liên bộ.
+3. **Tính hoàn chỉnh về kỹ thuật phần mềm (Software Engineering Excellence):** Luồng dữ liệu khép kín từ Tiếp nhận &rarr; In ấn vận đơn &rarr; Giám định bồi thường tự động.
