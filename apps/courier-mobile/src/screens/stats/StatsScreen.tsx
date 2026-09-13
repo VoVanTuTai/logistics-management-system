@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -17,6 +17,7 @@ import { StatsShortcutCard } from '../../components/stats/StatsShortcutCard';
 import { StatsOverviewCard } from '../../components/stats/StatsOverviewCard';
 import { useAssignedTasksQuery } from '../../features/tasks/tasks.queries';
 import { useCodSummaryQuery } from '../../features/cod/cod.queries';
+import { useLiabilitiesStore } from '../../features/liabilities/liabilities.store';
 import type { AppNavigatorParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
 import { appEnv } from '../../utils/env';
@@ -49,6 +50,33 @@ export function StatsScreen(): React.JSX.Element {
   const pickupCount = tasks.filter((task) => task.taskType === 'PICKUP').length;
   const returnCount = tasks.filter((task) => task.taskType === 'RETURN').length;
 
+  const completedDeliveryCount = tasks.filter(
+    (task) => task.taskType === 'DELIVERY' && task.status === 'COMPLETED',
+  ).length;
+  const completedPickupCount = tasks.filter(
+    (task) => task.taskType === 'PICKUP' && task.status === 'COMPLETED',
+  ).length;
+
+  const {
+    items: liabilityItems,
+    hydrateLiabilities,
+    getActiveDeductionsTotal,
+  } = useLiabilitiesStore();
+
+  useEffect(() => {
+    void hydrateLiabilities();
+  }, [hydrateLiabilities]);
+
+  const deliveryEarnings = completedDeliveryCount * 3000;
+  const pickupEarnings = completedPickupCount * 1500;
+  const grossEarnings = deliveryEarnings + pickupEarnings;
+  const activeDeductions = getActiveDeductionsTotal();
+  const netEarnings = Math.max(0, grossEarnings - activeDeductions);
+
+  const pendingExplanationCount = liabilityItems.filter(
+    (i) => i.status === 'PENDING_EXPLANATION',
+  ).length;
+
   const completionRate = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   const codSummary = codSummaryQuery.data;
@@ -66,6 +94,19 @@ export function StatsScreen(): React.JSX.Element {
       iconColor: '#059669',
       iconBgColor: '#ECFDF5',
       onPress: () => navigation.navigate('CodStats'),
+    },
+    {
+      id: 'liabilities',
+      title: 'Đơn bồi thường',
+      subtitle:
+        pendingExplanationCount > 0
+          ? `${pendingExplanationCount} đơn cần giải trình`
+          : 'Khiếu nại & Kháng cáo',
+      value: `${liabilityItems.length} hồ sơ`,
+      iconName: 'shield-outline' as const,
+      iconColor: pendingExplanationCount > 0 ? '#DC2626' : '#7C3AED',
+      iconBgColor: pendingExplanationCount > 0 ? '#FEF2F2' : '#F5F3FF',
+      onPress: () => navigation.navigate('CourierLiabilities'),
     },
     {
       id: 'efficiency',
@@ -180,11 +221,104 @@ export function StatsScreen(): React.JSX.Element {
             </View>
           </View>
 
+          {/* Card: Ước tính thu nhập ca trực */}
+          <View style={styles.earningsCard}>
+            <View style={styles.earningsHeader}>
+              <View style={styles.earningsHeaderLeft}>
+                <View style={styles.earningsIconBadge}>
+                  <Ionicons name="wallet" size={20} color="#059669" />
+                </View>
+                <View>
+                  <Text style={styles.earningsCardTitle}>Ước tính thu nhập ca trực</Text>
+                  <Text style={styles.earningsCardSubtitle}>Công giao 3.000đ • Công lấy 1.500đ</Text>
+                </View>
+              </View>
+              <View style={styles.earningsNetBadge}>
+                <Text style={styles.earningsNetLabel}>Thực nhận ước tính</Text>
+                <Text style={styles.earningsNetValue}>
+                  {netEarnings.toLocaleString('vi-VN')} đ
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.earningsDivider} />
+
+            <View style={styles.earningsRows}>
+              <View style={styles.earningsRow}>
+                <View style={styles.earningsRowLeft}>
+                  <Ionicons name="paper-plane-outline" size={14} color="#2563EB" />
+                  <Text style={styles.earningsRowLabel}>
+                    Công giao hàng ({completedDeliveryCount} đơn × 3.000đ)
+                  </Text>
+                </View>
+                <Text style={[styles.earningsRowVal, { color: '#2563EB' }]}>
+                  +{deliveryEarnings.toLocaleString('vi-VN')} đ
+                </Text>
+              </View>
+
+              <View style={styles.earningsRow}>
+                <View style={styles.earningsRowLeft}>
+                  <Ionicons name="download-outline" size={14} color="#059669" />
+                  <Text style={styles.earningsRowLabel}>
+                    Công lấy hàng ({completedPickupCount} đơn × 1.500đ)
+                  </Text>
+                </View>
+                <Text style={[styles.earningsRowVal, { color: '#059669' }]}>
+                  +{pickupEarnings.toLocaleString('vi-VN')} đ
+                </Text>
+              </View>
+
+              {activeDeductions > 0 ? (
+                <View style={styles.earningsRow}>
+                  <View style={styles.earningsRowLeft}>
+                    <Ionicons name="alert-circle-outline" size={14} color="#DC2626" />
+                    <Text style={[styles.earningsRowLabel, { color: '#DC2626' }]}>
+                      Khấu trừ bồi thường sự cố
+                    </Text>
+                  </View>
+                  <Text style={[styles.earningsRowVal, { color: '#DC2626' }]}>
+                    -{activeDeductions.toLocaleString('vi-VN')} đ
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+
+            {pendingExplanationCount > 0 ? (
+              <Pressable
+                style={({ pressed }) => [
+                  styles.liabilityAlertBox,
+                  pressed && { opacity: 0.8 },
+                ]}
+                onPress={() => navigation.navigate('CourierLiabilities')}
+              >
+                <Ionicons name="warning" size={16} color="#D97706" />
+                <Text style={styles.liabilityAlertText}>
+                  Có {pendingExplanationCount} đơn chỉ định bồi hoàn cần bạn xem xét hoặc gửi kháng cáo!
+                </Text>
+                <Ionicons name="chevron-forward" size={15} color="#D97706" />
+              </Pressable>
+            ) : null}
+          </View>
+
           {/* Lối tắt nhanh */}
           <View style={styles.sectionWrap}>
             <Text style={styles.sectionTitle}>Lối tắt nhanh</Text>
             <View style={styles.shortcutRow}>
-              {shortcutData.map((item) => (
+              {shortcutData.slice(0, 2).map((item) => (
+                <StatsShortcutCard
+                  key={item.id}
+                  title={item.title}
+                  subtitle={item.subtitle}
+                  value={item.value}
+                  iconName={item.iconName}
+                  iconColor={item.iconColor}
+                  iconBgColor={item.iconBgColor}
+                  onPress={item.onPress}
+                />
+              ))}
+            </View>
+            <View style={[styles.shortcutRow, { marginTop: 8 }]}>
+              {shortcutData.slice(2).map((item) => (
                 <StatsShortcutCard
                   key={item.id}
                   title={item.title}
@@ -567,5 +701,113 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: theme.colors.primary,
+  },
+  earningsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: theme.radius.lg,
+    borderWidth: 1,
+    borderColor: '#DFE7F2',
+    padding: theme.spacing.md,
+    gap: 12,
+    ...theme.shadow.card,
+  },
+  earningsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  earningsHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  earningsIconBadge: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  earningsCardTitle: {
+    fontSize: 14.5,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
+  },
+  earningsCardSubtitle: {
+    fontSize: 11,
+    color: theme.colors.textMuted,
+    marginTop: 2,
+  },
+  earningsNetBadge: {
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#86EFAC',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    alignItems: 'flex-end',
+  },
+  earningsNetLabel: {
+    fontSize: 9.5,
+    fontWeight: '700',
+    color: '#166534',
+    textTransform: 'uppercase',
+  },
+  earningsNetValue: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: '#15803D',
+    marginTop: 1,
+  },
+  earningsDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+  },
+  earningsRows: {
+    gap: 8,
+  },
+  earningsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  earningsRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+  },
+  earningsRowLabel: {
+    fontSize: 12,
+    color: '#475569',
+    fontWeight: '500',
+  },
+  earningsRowVal: {
+    fontSize: 12.5,
+    fontWeight: '700',
+  },
+  liabilityAlertBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FFFBEB',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    marginTop: 2,
+  },
+  liabilityAlertText: {
+    flex: 1,
+    fontSize: 11,
+    color: '#B45309',
+    fontWeight: '600',
+    lineHeight: 15,
   },
 });

@@ -299,8 +299,27 @@ export function ProfileScreen(): React.JSX.Element {
               <View style={styles.accountCardHeaderIcon}>
                 <Ionicons name="shield-checkmark" size={15} color={theme.colors.primary} />
               </View>
-              <Text style={styles.accountCardHeaderTitle}>Tài khoản & Bảo mật</Text>
+              <Text style={styles.accountCardHeaderTitle}>Tài khoản & Chế tài</Text>
             </View>
+
+            <Pressable
+              onPress={() => navigation.navigate('CourierLiabilities')}
+              style={({ pressed }) => [
+                styles.accountRow,
+                pressed && styles.accountRowPressed,
+              ]}
+            >
+              <View style={[styles.accountRowIconWrap, { backgroundColor: '#FEF2F2', borderColor: '#FEE2E2' }]}>
+                <Ionicons name="shield-outline" size={16} color="#DC2626" />
+              </View>
+              <View style={styles.accountRowTextWrap}>
+                <Text style={styles.accountRowTitle}>Đơn bồi thường & Khiếu nại</Text>
+                <Text style={styles.accountRowSubtitle}>Xem hồ sơ sự cố & nộp đơn kháng cáo</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color="#94A3B8" />
+            </Pressable>
+
+            <View style={styles.accountRowDivider} />
 
             <Pressable
               onPress={() => setPasswordModalVisible(true)}
