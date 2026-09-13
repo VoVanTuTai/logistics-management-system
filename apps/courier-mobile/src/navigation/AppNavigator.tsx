@@ -29,6 +29,7 @@ import { CodStatsScreen } from '../screens/cod/CodStatsScreen';
 import { CodCollectScreen } from '../screens/cod/CodCollectScreen';
 import { MyRouteScreen } from '../screens/profile/MyRouteScreen';
 import { StatsScreen } from '../screens/stats/StatsScreen';
+import { CourierLiabilitiesScreen } from '../screens/liabilities/CourierLiabilitiesScreen';
 import { OverdueAlertScreen } from '../screens/tasks/OverdueAlertScreen';
 import { theme } from '../theme';
 
@@ -179,6 +180,11 @@ export function AppNavigator(): React.JSX.Element {
             name="Stats"
             component={StatsScreen}
             options={{ title: 'Thống kê hiệu suất' }}
+          />
+          <Stack.Screen
+            name="CourierLiabilities"
+            component={CourierLiabilitiesScreen}
+            options={{ title: 'Đơn bồi thường & Khiếu nại' }}
           />
           <Stack.Screen
             name="OverdueAlert"
