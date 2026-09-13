@@ -476,6 +476,20 @@ function printWaybill(shipment: ShipmentListItemDto): boolean {
   const deliveryRouteName = resolvedDelivery.routeName;
   const deliveryCourierId = resolvedDelivery.courierId;
 
+  const meta = (shipment.metadata as Record<string, unknown> | null | undefined) || {};
+  const metaPackage = (meta.package as Record<string, unknown> | undefined) || {};
+  const metaInsurance = (meta.insurance as Record<string, unknown> | undefined) || {};
+
+  const isFragile = Boolean(metaPackage.isFragile);
+  const fragileCategory = typeof metaPackage.fragileCategory === 'string' ? metaPackage.fragileCategory : undefined;
+  const packagingStandardMet = Boolean(metaPackage.packagingStandardMet);
+  const packagingWaiver = Boolean(metaPackage.packagingWaiver || metaInsurance.packagingWaiver);
+  const insuranceTier = typeof metaInsurance.tier === 'string' ? metaInsurance.tier : typeof metaPackage.insuranceTier === 'string' ? metaPackage.insuranceTier : 'NONE';
+  const declaredValue = Number(metaInsurance.declaredValue || metaPackage.declaredValue || 0);
+  const insuranceFee = Number(metaInsurance.insuranceFee || 0);
+  const declaredValueText = declaredValue > 0 ? formatCurrency(declaredValue) : undefined;
+  const insuranceFeeText = insuranceFee > 0 ? formatCurrency(insuranceFee) : undefined;
+
   const opened = openShippingLabelPrint({
     brandName: 'NEXUS LOGISTICS',
     serviceName: shipment.serviceType?.trim() || 'STANDARD',
@@ -501,6 +515,13 @@ function printWaybill(shipment: ShipmentListItemDto): boolean {
     pickupCourierId,
     deliveryRouteName,
     deliveryCourierId,
+    isFragile,
+    fragileCategory,
+    packagingStandardMet,
+    packagingWaiver,
+    insuranceTier,
+    declaredValueText,
+    insuranceFeeText,
   });
 
   if (!opened) {

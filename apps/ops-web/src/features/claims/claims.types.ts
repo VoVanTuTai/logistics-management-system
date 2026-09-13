@@ -74,6 +74,13 @@ export interface CompensationClaim {
   adjudicatedAt?: string;
   adjudicatedBy?: string;
   
+  // Intake metadata (from BranchBusinessOrderCreatePage)
+  isFragile?: boolean;
+  insuranceTier?: 'NONE' | 'COMPREHENSIVE_100';
+  insuranceFee?: number;
+  packagingWaiver?: boolean;
+  shippingFee?: number; // Cước vận chuyển, dùng để tính trần "4x cước"
+
   // Physical Inspection & Evidence
   declaredWeightKg: number;
   arrivalWeightKg?: number;

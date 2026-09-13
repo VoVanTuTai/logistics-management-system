@@ -25,6 +25,13 @@ export interface ShippingLabelPrintPayload {
   pickupCourierId?: string;
   deliveryRouteName?: string;
   deliveryCourierId?: string;
+  isFragile?: boolean;
+  fragileCategory?: string;
+  packagingStandardMet?: boolean;
+  packagingWaiver?: boolean;
+  insuranceTier?: string;
+  declaredValueText?: string;
+  insuranceFeeText?: string;
 }
 
 function escapeHtml(value: string): string {
@@ -38,6 +45,14 @@ function escapeHtml(value: string): string {
 
 function newlineToBreaks(value: string): string {
   return escapeHtml(value).replace(/\r?\n/g, '<br />');
+}
+
+function buildWineGlassSvg(): string {
+  return `<svg class="symbol-svg" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 22h8" /><path d="M12 15v7" /><path d="M12 15a5 5 0 0 0 5-5c0-2-.5-4-2-8H9c-1.5 4-2 6-2 8a5 5 0 0 0 5 5Z" /><path d="m10 7 2 2-1 3 2 1" /></svg>`;
+}
+
+function buildShieldSvg(): string {
+  return `<svg class="symbol-svg" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="m9 12 2 2 4-4" /></svg>`;
 }
 
 function buildQrSvg(value: string): string {
@@ -180,11 +195,93 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
       }
       .sheet {
         padding: 2.2mm;
-        grid-template-rows: 20mm 26mm 14mm 9mm 25mm 12mm 24mm minmax(0, 1fr);
+        grid-template-rows: 19mm 9.5mm 23mm 13mm 8mm 24mm 11mm 23mm minmax(0, 1fr);
         gap: 0.8mm;
+      }
+      .special-handling-box {
+        display: grid;
+        grid-template-rows: minmax(0, 1fr) auto;
+        gap: 0.5mm;
+        padding: 0.6mm 0.8mm;
+        border: 0.25mm solid #111;
+        background: #fff;
+      }
+      .fragile-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #000;
+        color: #fff;
+        padding: 0.4mm 0.9mm;
+        line-height: 1.1;
+      }
+      .fragile-bar-left {
+        display: flex;
+        align-items: center;
+        gap: 1mm;
+        font-size: 2.5mm;
+        font-weight: 900;
+        letter-spacing: 0.2px;
+      }
+      .fragile-bar-left .symbol-svg {
+        stroke: #fff;
+        width: 3.2mm;
+        height: 3.2mm;
+      }
+      .fragile-bar-right {
+        font-size: 2mm;
+        font-weight: 900;
+        border: 0.15mm solid #fff;
+        padding: 0.1mm 0.6mm;
+        letter-spacing: 0.2px;
+      }
+      .standard-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f8fafc;
+        border: 0.2mm solid #94a3b8;
+        padding: 0.4mm 0.9mm;
+        font-size: 2.2mm;
+        font-weight: 800;
+        color: #0f172a;
+      }
+      .handling-sub-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        overflow: hidden;
+      }
+      .handling-badges {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 0.6mm;
+        align-items: center;
+        overflow: hidden;
+      }
+      .badge-tag {
+        font-size: 1.9mm;
+        font-weight: 800;
+        padding: 0.15mm 0.6mm;
+        border: 0.2mm solid #111;
+        white-space: nowrap;
+        line-height: 1.1;
+      }
+      .badge-tag--waiver {
+        background: #000;
+        color: #fff;
+      }
+      .badge-tag--sop {
+        background: #f8fafc;
+        color: #000;
+      }
+      .badge-tag--insurance {
+        background: #000;
+        color: #fff;
       }
       .block,
       .header,
+      .special-handling-box,
       .two-col > *,
       .route-courier-box > *,
       .route > *,
@@ -278,7 +375,7 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
         overflow: hidden;
       }
       .two-col .block .text:last-child { -webkit-line-clamp: 6; }
-      .item-qr .block .text:last-child { -webkit-line-clamp: 4; }
+      .item-qr .block .text:last-child { -webkit-line-clamp: 5; }
       .cod-sign .block .text:last-child { -webkit-line-clamp: 5; }
       .route-main,
       .route-sub {
@@ -358,6 +455,40 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
         </div>
       </section>
 
+      <section class="special-handling-box block">
+        ${payload.isFragile ? `
+          <div class="fragile-bar">
+            <div class="fragile-bar-left">
+              ${buildWineGlassSvg()}
+              <span>HÀNG DỄ VỠ - XIN NHẸ TAY (FRAGILE)</span>
+            </div>
+            <div class="fragile-bar-right">TOP STACKING</div>
+          </div>
+        ` : `
+          <div class="standard-bar">
+            <span>KIỆN HÀNG TIÊU CHUẨN (STANDARD PARCEL)</span>
+            <span>GIAO HÀNG ĐẢM BẢO</span>
+          </div>
+        `}
+        <div class="handling-sub-row">
+          <div class="handling-badges">
+            ${payload.isFragile && payload.fragileCategory ? `
+              <span class="badge-tag">NHÓM: ${escapeHtml(payload.fragileCategory.toUpperCase())}</span>
+            ` : ''}
+            ${payload.packagingWaiver ? `
+              <span class="badge-tag badge-tag--waiver">⚠️ MIỄN TRỪ BỂ VỠ (WAIVER)</span>
+            ` : (payload.isFragile && payload.packagingStandardMet) ? `
+              <span class="badge-tag badge-tag--sop">✓ CHUẨN ĐÓNG GÓI SOP</span>
+            ` : ''}
+            ${payload.insuranceTier === 'COMPREHENSIVE_100' ? `
+              <span class="badge-tag badge-tag--insurance">🛡️ BẢO HIỂM 100% (${escapeHtml(payload.declaredValueText || 'ĐÃ KHAI GIÁ')})</span>
+            ` : `
+              <span class="badge-tag">HẠN MỨC ĐỀN BÙ: Đ.25 LUẬT BƯU CHÍNH</span>
+            `}
+          </div>
+        </div>
+      </section>
+
       <section class="two-col">
         <div class="block">
           <div class="label">Từ (Người gửi)</div>
@@ -399,9 +530,12 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
 
       <section class="item-qr">
         <div class="block dash">
-          <div class="label">Nội dung hàng</div>
+          <div class="label">Nội dung hàng & Ghi chú bưu cục</div>
           <div class="text">${escapeHtml(payload.itemDescription || '-')}</div>
           <div class="text">${escapeHtml(payload.parcelNote || '-')}</div>
+          ${payload.isFragile ? `<div class="text" style="font-weight:800;">[!] HÀNG DỄ VỠ - Phân loại: ${escapeHtml(payload.fragileCategory || 'Tiêu chuẩn')}</div>` : ''}
+          ${payload.packagingWaiver ? `<div class="text" style="font-weight:800;">[!] ĐÃ KÝ MIỄN TRỪ BỂ VỠ: Thùng ngoài nguyên vẹn miễn trừ bên trong</div>` : ''}
+          ${payload.insuranceTier === 'COMPREHENSIVE_100' ? `<div class="text" style="font-weight:800;">[🛡️] BẢO HIỂM 100%: Khai giá ${escapeHtml(payload.declaredValueText || 'Đã khai')}${payload.insuranceFeeText ? ` (Phí BH: ${escapeHtml(payload.insuranceFeeText)})` : ''}</div>` : ''}
         </div>
         <div class="qr-box">
           ${qr}
