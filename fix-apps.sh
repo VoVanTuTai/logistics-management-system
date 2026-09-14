@@ -10,7 +10,6 @@ APPS=(
   merchant-web
   admin-web
   guest-web
-  public-tracking
 )
 
 for app in "${APPS[@]}"; do

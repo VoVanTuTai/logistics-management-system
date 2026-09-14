@@ -3,6 +3,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
 import { loginSchema, type LoginFormValues } from '../../features/auth/auth.types';
+import {
+  clearRememberedCredentials,
+  getRememberedCredentials,
+  saveRememberedCredentials,
+} from '../../features/auth/auth.session';
 
 interface LoginFormProps {
   isSubmitting: boolean;
@@ -13,21 +18,48 @@ interface LoginFormProps {
 
 export function LoginForm({
   isSubmitting,
-  errorMessage,
+  errorMessage: _errorMessage,
   onSubmit,
   usernamePlaceholder = 'Nhập mã 8 chữ số (VD: 10000001)',
 }: LoginFormProps): React.JSX.Element {
+  const remembered = React.useMemo(() => getRememberedCredentials(), []);
   const [showPassword, setShowPassword] = React.useState(false);
+  const [rememberMe, setRememberMe] = React.useState(remembered ? remembered.rememberMe : true);
+
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: '',
-      password: '',
+      username: remembered?.username ?? '',
+      password: remembered?.password ?? '',
     },
   });
 
+  React.useEffect(() => {
+    const current = getRememberedCredentials();
+    if (current) {
+      setRememberMe(current.rememberMe);
+      form.reset({
+        username: current.username ?? '',
+        password: current.password ?? '',
+      });
+    }
+  }, [form]);
+
+  const handleFormSubmit = async (values: LoginFormValues) => {
+    if (rememberMe) {
+      saveRememberedCredentials({
+        username: values.username,
+        password: values.password,
+        rememberMe: true,
+      });
+    } else {
+      clearRememberedCredentials();
+    }
+    await onSubmit(values);
+  };
+
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="login-form-new">
+    <form onSubmit={form.handleSubmit(handleFormSubmit)} className="login-form-new">
       <div className="login-field-group">
         <label className="login-field-label" htmlFor="username">
           Mã nhân viên
@@ -40,6 +72,7 @@ export function LoginForm({
             {...form.register('username')}
             className="login-input"
             placeholder={usernamePlaceholder}
+            autoComplete="username"
           />
         </div>
         <small className="login-field-hint" style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '4px', display: 'block' }}>
@@ -63,6 +96,7 @@ export function LoginForm({
             {...form.register('password')}
             className="login-input login-input-password"
             placeholder="••••••••"
+            autoComplete="current-password"
           />
           <button
             className="login-input-toggle-btn"
@@ -79,11 +113,14 @@ export function LoginForm({
         ) : null}
       </div>
 
-      {errorMessage ? <div className="auth-error-banner">{errorMessage}</div> : null}
-
       <div className="login-utilities">
         <label className="login-remember-label">
-          <input className="login-remember-checkbox" type="checkbox" />
+          <input
+            className="login-remember-checkbox"
+            type="checkbox"
+            checked={rememberMe}
+            onChange={(e) => setRememberMe(e.target.checked)}
+          />
           <span className="login-remember-text">Ghi nhớ đăng nhập</span>
         </label>
         <a className="login-forgot-link" href="#" onClick={(e) => e.preventDefault()}>Quên mật khẩu?</a>
@@ -101,3 +138,4 @@ export function LoginForm({
     </form>
   );
 }
+

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -10,23 +10,26 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { theme } from '../../theme';
 import { HomeHeader } from '../../components/home/HomeHeader';
 import { NotificationBanner } from '../../components/home/NotificationBanner';
+import { NotificationModal } from '../../components/notifications/NotificationModal';
 import { QuickStatsRow } from '../../components/home/QuickStatsRow';
 import { OverdueCard } from '../../components/home/OverdueCard';
 import { AppGrid } from '../../components/home/AppGrid';
 import type { TaskDto, TaskStatus } from '../../features/tasks/tasks.types';
 import { useAssignedTasksQuery } from '../../features/tasks/tasks.queries';
 import type { AppNavigatorParamList } from '../../navigation/types';
+import { useAuthStore } from '../../features/auth/auth.store';
 import { useAppStore } from '../../store/appStore';
 import { appEnv } from '../../utils/env';
 import { resolveCourierDisplayName, resolveCourierId } from '../../utils/courier';
 import { getQuickAppItems, navigateToQuickApp } from '../../features/quick-apps/quickApps';
 import { canAccessCourierFeature } from '../../features/permissions/courier-permissions';
+import { countSlaSummary } from '../../utils/pickupSla';
 
 const WAITING_TASK_STATUSES: ReadonlySet<TaskStatus> = new Set(['CREATED', 'ASSIGNED']);
 
@@ -57,13 +60,31 @@ export function HomeScreen(): React.JSX.Element {
     useNavigation<NativeStackNavigationProp<AppNavigatorParamList>>();
   const session = useAppStore((state) => state.session);
   const quickAppIds = useAppStore((state) => state.quickAppIds);
+  const refreshMobilePermissions = useAuthStore(
+    (state) => state.refreshMobilePermissions,
+  );
   const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
   const tasksQuery = useAssignedTasksQuery({
     accessToken: session?.tokens.accessToken ?? null,
     courierId,
   });
-  const onRefresh = () => void tasksQuery.refetch();
+  const [notificationModalVisible, setNotificationModalVisible] = useState(false);
+  const onRefresh = () => {
+    void tasksQuery.refetch();
+    void refreshMobilePermissions();
+  };
   const refreshing = tasksQuery.isRefetching;
+
+  useFocusEffect(
+    React.useCallback(() => {
+      void refreshMobilePermissions();
+    }, [refreshMobilePermissions]),
+  );
+
+  const canScanPickup = canAccessCourierFeature(session?.user, 'scan.pickup');
+  const canScanDelivery =
+    canAccessCourierFeature(session?.user, 'scan.delivery') ||
+    canAccessCourierFeature(session?.user, 'scan.delivery-sign');
 
   const tasks = tasksQuery.data ?? [];
   const waitingPickupTasks = useMemo(
@@ -77,13 +98,31 @@ export function HomeScreen(): React.JSX.Element {
 
   const pickupCount = waitingPickupTasks.length;
   const deliveryCount = waitingDeliveryTasks.length;
-  const processingCount = tasks.filter((task) => task.status === 'ASSIGNED').length;
+  const slaSummary = useMemo(() => countSlaSummary(tasks), [tasks]);
   const quickAppItems = useMemo(() => {
     const items = getQuickAppItems(quickAppIds);
     return items.filter(
       (item) => !item.permission || canAccessCourierFeature(session?.user, item.permission),
     );
   }, [quickAppIds, session?.user]);
+
+  const transferredTasks = useMemo(() => {
+    return tasks.filter((task) => {
+      const isReassigned = task.assignments && task.assignments.length > 1;
+      const noteText = task.note || '';
+      const hasTransferNote =
+        noteText.toLowerCase().includes('chuyển') ||
+        noteText.toLowerCase().includes('reassign') ||
+        noteText.toLowerCase().includes('điều phối lại');
+      return isReassigned || hasTransferNote;
+    });
+  }, [tasks]);
+
+  const newTasks = useMemo(() => {
+    return tasks.filter((task) => task.status === 'ASSIGNED');
+  }, [tasks]);
+
+  const notificationCount = transferredTasks.length + newTasks.length;
 
   const todayTasksCount = useMemo(() => {
     const todayStr = new Date().toDateString();
@@ -116,8 +155,9 @@ export function HomeScreen(): React.JSX.Element {
           greeting="Xin chào"
           userName={displayName}
           hubName={hubLabel}
+          notificationCount={notificationCount}
           onPressQr={() => navigation.navigate('MainTabs', { screen: 'Scan' })}
-          onPressNotification={() => Alert.alert('Thông báo', 'Mở danh sách thông báo')}
+          onPressNotification={() => setNotificationModalVisible(true)}
         />
 
         <ScrollView
@@ -129,14 +169,21 @@ export function HomeScreen(): React.JSX.Element {
           }
         >
           <NotificationBanner
-            title="Thông báo vận hành"
-            message={`Đã nhận ${todayTasksCount} nhiệm vụ trong ngày.`}
-            onPress={() => Alert.alert('Thông báo', 'Chi tiết thông báo vận hành')}
+            title={transferredTasks.length > 0 ? 'Có đơn điều phối mới' : 'Thông báo vận hành'}
+            message={
+              transferredTasks.length > 0
+                ? `Có ${transferredTasks.length} đơn chuyển từ shipper khác & ${newTasks.length} đơn cần giao nhận.`
+                : `Đã nhận ${todayTasksCount} nhiệm vụ trong ca hôm nay.`
+            }
+            badgeCount={notificationCount}
+            onPress={() => setNotificationModalVisible(true)}
           />
 
           <QuickStatsRow
             waitingPickup={pickupCount}
             waitingDelivery={deliveryCount}
+            showPickup={canScanPickup}
+            showDelivery={canScanDelivery}
             activeStat={null}
             onPressWaitingPickup={() =>
               navigation.navigate('TaskList', {
@@ -152,17 +199,13 @@ export function HomeScreen(): React.JSX.Element {
             }
           />
 
-          <OverdueCard
-            title="Đơn đang xử lý"
-            overdueCount={processingCount}
-            subtitle="Hiển thị số task có trạng thái ASSIGNED theo payload server."
-            onPress={() =>
-              navigation.navigate('TaskList', {
-                initialTaskType: 'ALL',
-                initialStatus: 'ASSIGNED',
-              })
-            }
-          />
+          {canScanPickup || canScanDelivery ? (
+            <OverdueCard
+              overdueCount={slaSummary.overdueCount}
+              nearOverdueCount={slaSummary.nearOverdueCount}
+              onPress={() => navigation.navigate('OverdueAlert')}
+            />
+          ) : null}
 
           {tasksQuery.isLoading ? (
             <View style={styles.centeredBlock}>
@@ -194,6 +237,15 @@ export function HomeScreen(): React.JSX.Element {
             }}
           />
         </ScrollView>
+
+        <NotificationModal
+          visible={notificationModalVisible}
+          onClose={() => setNotificationModalVisible(false)}
+          tasks={tasks}
+          onSelectTask={(taskId) => {
+            navigation.navigate('TaskDetail', { taskId });
+          }}
+        />
       </View>
     </SafeAreaView>
   );

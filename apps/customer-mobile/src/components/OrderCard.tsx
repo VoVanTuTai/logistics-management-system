@@ -90,13 +90,23 @@ export function OrderCard({ order, onPressDetail }: OrderCardProps): React.JSX.E
         {/* FEES GRID */}
         <View style={styles.amountGrid}>
           <View style={styles.amountItem}>
-            <Text style={styles.amountLabel}>Phí vận chuyển</Text>
-            <Text style={styles.amountValue}>{formatVnd(order.shippingFeeVnd)}</Text>
+            <Text style={styles.amountLabel}>
+              {order.category === 'RECEIVED' ? 'Cước vận chuyển' : 'Phí vận chuyển'}
+            </Text>
+            <Text style={styles.amountValue}>
+              {order.category === 'RECEIVED' ? 'Người gửi trả' : formatVnd(order.shippingFeeVnd)}
+            </Text>
           </View>
 
           <View style={styles.amountItem}>
-            <Text style={styles.amountLabel}>Thu hộ COD</Text>
-            <Text style={styles.codValue}>{formatVnd(order.codAmountVnd)}</Text>
+            <Text style={styles.amountLabel}>
+              {order.category === 'RECEIVED' ? 'Cần trả khi nhận (COD)' : 'Thu hộ COD'}
+            </Text>
+            <Text style={styles.codValue}>
+              {order.category === 'RECEIVED' && order.codAmountVnd <= 0
+                ? '0đ (Không thu tiền)'
+                : formatVnd(order.codAmountVnd)}
+            </Text>
           </View>
         </View>
       </View>

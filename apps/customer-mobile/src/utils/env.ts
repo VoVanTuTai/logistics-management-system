@@ -1,8 +1,9 @@
 import { NativeModules, Platform } from 'react-native';
 import Constants from 'expo-constants';
 
-const DEFAULT_GATEWAY_PORT = 3000;
-const DEFAULT_PUBLIC_GATEWAY_BASE_URL = 'http://localhost:3000';
+const DEFAULT_VPS_GATEWAY_PORT = 13000;
+const DEFAULT_LOCAL_GATEWAY_PORT = 3000;
+const DEFAULT_PUBLIC_GATEWAY_BASE_URL = 'https://customer.nexus-ex.site';
 const DEFAULT_TIMEOUT_MS = 15000;
 const LOCALHOST_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '0.0.0.0']);
 const HOST_HINT_KEYS = new Set([
@@ -25,6 +26,14 @@ function normalizeBaseUrl(value: string): string {
   return value.trim().replace(/\/+$/, '');
 }
 
+function isValidHost(host: string): boolean {
+  if (!host || host.length > 255) return false;
+  if (LOCALHOST_HOSTS.has(host.toLowerCase())) return true;
+  if (/^(\d{1,3}\.){3}\d{1,3}$/.test(host)) return true;
+  if (/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/i.test(host)) return true;
+  return false;
+}
+
 function resolveHostFromRuntimeValue(rawValue: string): string | null {
   const trimmedValue = rawValue.trim();
   if (!trimmedValue) return null;
@@ -35,10 +44,12 @@ function resolveHostFromRuntimeValue(rawValue: string): string | null {
 
   try {
     const parsedUrl = new URL(normalizedInput);
-    return parsedUrl.hostname || null;
+    const host = parsedUrl.hostname || null;
+    return host && isValidHost(host) ? host : null;
   } catch {
     const hostMatch = trimmedValue.match(/^([^/:?#]+)(?::\d+)?(?:[/?#]|$)/);
-    return hostMatch?.[1] ?? null;
+    const host = hostMatch?.[1] ?? null;
+    return host && isValidHost(host) ? host : null;
   }
 }
 
@@ -96,6 +107,17 @@ function scanHostHintsFromUnknown(
 function collectRuntimeHosts(): string[] {
   const runtimeHosts: string[] = [];
 
+  if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined' && window.location?.hostname) {
+      if (isValidHost(window.location.hostname)) {
+        appendUnique(runtimeHosts, window.location.hostname);
+      }
+    }
+    appendUnique(runtimeHosts, 'localhost');
+    appendUnique(runtimeHosts, '127.0.0.1');
+    return runtimeHosts;
+  }
+
   // Extract from Expo Constants (Expo Go host IP)
   const hostUri = Constants.expoConfig?.hostUri || (Constants.manifest as any)?.debuggerHost || (Constants.manifest2 as any)?.extra?.expoGo?.developer?.tool;
   if (hostUri) {
@@ -116,22 +138,77 @@ function collectRuntimeHosts(): string[] {
   return runtimeHosts;
 }
 
+function appendBrowserRuntimeCandidates(target: string[]): void {
+  if (typeof window === 'undefined' || !window.location) {
+    return;
+  }
+
+  const hostname = window.location.hostname;
+  const port = window.location.port;
+
+  if (hostname === 'customer.nexus-ex.site' || hostname === 'ops.nexus-ex.site') {
+    appendUnique(target, '');
+    appendUnique(target, window.location.origin);
+    appendUnique(target, 'https://customer.nexus-ex.site');
+    appendUnique(target, 'https://ops.nexus-ex.site');
+    return;
+  }
+
+  if (!LOCALHOST_HOSTS.has(hostname)) {
+    appendUnique(target, `http://${hostname}:${DEFAULT_VPS_GATEWAY_PORT}`);
+    appendUnique(target, `http://${hostname}:${DEFAULT_LOCAL_GATEWAY_PORT}`);
+    if (port === '5176') {
+      appendUnique(target, `http://${hostname}:13000`);
+    }
+  } else {
+    appendUnique(target, `http://127.0.0.1:${DEFAULT_VPS_GATEWAY_PORT}`);
+    appendUnique(target, `http://localhost:${DEFAULT_VPS_GATEWAY_PORT}`);
+    appendUnique(target, `http://127.0.0.1:${DEFAULT_LOCAL_GATEWAY_PORT}`);
+    appendUnique(target, `http://localhost:${DEFAULT_LOCAL_GATEWAY_PORT}`);
+  }
+}
+
 function appendGatewayCandidatesFromHost(target: string[], host: string): void {
   if (!LOCALHOST_HOSTS.has(host)) {
-    appendUnique(target, `http://${host}:${DEFAULT_GATEWAY_PORT}`);
+    appendUnique(target, `http://${host}:${DEFAULT_VPS_GATEWAY_PORT}`);
+    appendUnique(target, `http://${host}:${DEFAULT_LOCAL_GATEWAY_PORT}`);
     return;
   }
 
   if (Platform.OS === 'android') {
-    appendUnique(target, `http://10.0.2.2:${DEFAULT_GATEWAY_PORT}`);
-    appendUnique(target, `http://10.0.3.2:${DEFAULT_GATEWAY_PORT}`);
-    appendUnique(target, `http://127.0.0.1:${DEFAULT_GATEWAY_PORT}`);
-    appendUnique(target, `http://localhost:${DEFAULT_GATEWAY_PORT}`);
+    appendUnique(target, `http://10.0.2.2:${DEFAULT_VPS_GATEWAY_PORT}`);
+    appendUnique(target, `http://10.0.2.2:${DEFAULT_LOCAL_GATEWAY_PORT}`);
+    appendUnique(target, `http://10.0.3.2:${DEFAULT_VPS_GATEWAY_PORT}`);
+    appendUnique(target, `http://10.0.3.2:${DEFAULT_LOCAL_GATEWAY_PORT}`);
+    appendUnique(target, `http://127.0.0.1:${DEFAULT_VPS_GATEWAY_PORT}`);
+    appendUnique(target, `http://127.0.0.1:${DEFAULT_LOCAL_GATEWAY_PORT}`);
+    appendUnique(target, `http://localhost:${DEFAULT_VPS_GATEWAY_PORT}`);
+    appendUnique(target, `http://localhost:${DEFAULT_LOCAL_GATEWAY_PORT}`);
     return;
   }
 
-  appendUnique(target, `http://127.0.0.1:${DEFAULT_GATEWAY_PORT}`);
-  appendUnique(target, `http://localhost:${DEFAULT_GATEWAY_PORT}`);
+  appendUnique(target, `http://127.0.0.1:${DEFAULT_VPS_GATEWAY_PORT}`);
+  appendUnique(target, `http://127.0.0.1:${DEFAULT_LOCAL_GATEWAY_PORT}`);
+  appendUnique(target, `http://localhost:${DEFAULT_VPS_GATEWAY_PORT}`);
+  appendUnique(target, `http://localhost:${DEFAULT_LOCAL_GATEWAY_PORT}`);
+}
+
+function appendConfiguredFallbackBaseUrls(target: string[]): void {
+  const rawFallbackBaseUrls =
+    process.env.EXPO_PUBLIC_GATEWAY_FALLBACK_BASE_URLS ??
+    process.env.GATEWAY_FALLBACK_BASE_URLS;
+
+  if (!rawFallbackBaseUrls) {
+    return;
+  }
+
+  const configuredFallbackBaseUrls = rawFallbackBaseUrls.split(',');
+  for (const configuredFallbackBaseUrl of configuredFallbackBaseUrls) {
+    const normalizedBaseUrl = normalizeBaseUrl(configuredFallbackBaseUrl);
+    if (normalizedBaseUrl.length > 0) {
+      appendUnique(target, normalizedBaseUrl);
+    }
+  }
 }
 
 function resolveGatewayBaseUrls(): string[] {
@@ -141,6 +218,9 @@ function resolveGatewayBaseUrls(): string[] {
   if (configuredBaseUrl && configuredBaseUrl.trim().length > 0) {
     appendUnique(gatewayBaseUrls, normalizeBaseUrl(configuredBaseUrl));
   }
+
+  appendBrowserRuntimeCandidates(gatewayBaseUrls);
+  appendConfiguredFallbackBaseUrls(gatewayBaseUrls);
 
   const runtimeHosts = collectRuntimeHosts();
   const nonLoopbackRuntimeHosts = runtimeHosts.filter((host) => !LOCALHOST_HOSTS.has(host));
@@ -154,16 +234,27 @@ function resolveGatewayBaseUrls(): string[] {
     appendGatewayCandidatesFromHost(gatewayBaseUrls, host);
   }
 
+  appendConfiguredFallbackBaseUrls(gatewayBaseUrls);
+
   appendUnique(gatewayBaseUrls, DEFAULT_PUBLIC_GATEWAY_BASE_URL);
+  appendUnique(gatewayBaseUrls, 'https://ops.nexus-ex.site');
+  appendUnique(gatewayBaseUrls, 'http://103.82.20.51:13000');
+  appendUnique(gatewayBaseUrls, 'http://222.255.181.210:13000');
 
   if (Platform.OS === 'android') {
-    appendUnique(gatewayBaseUrls, `http://10.0.2.2:${DEFAULT_GATEWAY_PORT}`);
-    appendUnique(gatewayBaseUrls, `http://10.0.3.2:${DEFAULT_GATEWAY_PORT}`);
-    appendUnique(gatewayBaseUrls, `http://127.0.0.1:${DEFAULT_GATEWAY_PORT}`);
-    appendUnique(gatewayBaseUrls, `http://localhost:${DEFAULT_GATEWAY_PORT}`);
+    appendUnique(gatewayBaseUrls, `http://10.0.2.2:${DEFAULT_VPS_GATEWAY_PORT}`);
+    appendUnique(gatewayBaseUrls, `http://10.0.2.2:${DEFAULT_LOCAL_GATEWAY_PORT}`);
+    appendUnique(gatewayBaseUrls, `http://10.0.3.2:${DEFAULT_VPS_GATEWAY_PORT}`);
+    appendUnique(gatewayBaseUrls, `http://10.0.3.2:${DEFAULT_LOCAL_GATEWAY_PORT}`);
+    appendUnique(gatewayBaseUrls, `http://127.0.0.1:${DEFAULT_VPS_GATEWAY_PORT}`);
+    appendUnique(gatewayBaseUrls, `http://127.0.0.1:${DEFAULT_LOCAL_GATEWAY_PORT}`);
+    appendUnique(gatewayBaseUrls, `http://localhost:${DEFAULT_VPS_GATEWAY_PORT}`);
+    appendUnique(gatewayBaseUrls, `http://localhost:${DEFAULT_LOCAL_GATEWAY_PORT}`);
   } else {
-    appendUnique(gatewayBaseUrls, `http://127.0.0.1:${DEFAULT_GATEWAY_PORT}`);
-    appendUnique(gatewayBaseUrls, `http://localhost:${DEFAULT_GATEWAY_PORT}`);
+    appendUnique(gatewayBaseUrls, `http://127.0.0.1:${DEFAULT_VPS_GATEWAY_PORT}`);
+    appendUnique(gatewayBaseUrls, `http://127.0.0.1:${DEFAULT_LOCAL_GATEWAY_PORT}`);
+    appendUnique(gatewayBaseUrls, `http://localhost:${DEFAULT_VPS_GATEWAY_PORT}`);
+    appendUnique(gatewayBaseUrls, `http://localhost:${DEFAULT_LOCAL_GATEWAY_PORT}`);
   }
 
   return gatewayBaseUrls;

@@ -122,6 +122,10 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
       createdByUserId: input.createdByUserId ?? null,
       createdByType: input.createdByType ?? null,
       receiverPhone: input.receiverPhone ?? null,
+      pickupLatitude: input.pickupLatitude ?? null,
+      pickupLongitude: input.pickupLongitude ?? null,
+      deliveryLatitude: input.deliveryLatitude ?? null,
+      deliveryLongitude: input.deliveryLongitude ?? null,
       metadata: (input.metadata ?? null) as unknown as Prisma.InputJsonValue,
       currentStatus: 'CREATED',
     };
@@ -163,7 +167,7 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
 
   async updateMetadataAndLock(
     code: string,
-    metadata: JsonValue | null | undefined,
+    metadata: JsonValue | null,
     isLocked: boolean,
   ): Promise<Shipment> {
     const record = await this.prisma.shipment.update({
@@ -225,12 +229,52 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
     return this.toEntity(record);
   }
 
-  async cancel(code: string, reason: string | null): Promise<Shipment> {
+  async lock(code: string): Promise<Shipment> {
+    const record = await this.prisma.shipment.update({
+      where: { code },
+      data: { isLocked: true },
+    });
+
+    return this.toEntity(record);
+  }
+
+  async unlock(code: string): Promise<Shipment> {
+    const record = await this.prisma.shipment.update({
+      where: { code },
+      data: { isLocked: false },
+    });
+
+    return this.toEntity(record);
+  }
+
+  async cancel(code: string, reason?: string | null): Promise<Shipment> {
     const record = await this.prisma.shipment.update({
       where: { code },
       data: {
         currentStatus: 'CANCELLED',
-        cancellationReason: reason,
+        isLocked: true,
+        cancellationReason: reason?.trim() || null,
+      },
+    });
+
+    return this.toEntity(record);
+  }
+
+  async save(shipment: Shipment): Promise<Shipment> {
+    const record = await this.prisma.shipment.update({
+      where: { code: shipment.code },
+      data: {
+        currentStatus: shipment.currentStatus,
+        isLocked: shipment.isLocked,
+        createdByUserId: shipment.createdByUserId ?? null,
+        createdByType: shipment.createdByType ?? null,
+        receiverPhone: shipment.receiverPhone ?? null,
+        pickupLatitude: shipment.pickupLatitude ?? null,
+        pickupLongitude: shipment.pickupLongitude ?? null,
+        deliveryLatitude: shipment.deliveryLatitude ?? null,
+        deliveryLongitude: shipment.deliveryLongitude ?? null,
+        metadata: (shipment.metadata ?? null) as unknown as Prisma.InputJsonValue,
+        cancellationReason: shipment.cancellationReason ?? null,
       },
     });
 
@@ -246,6 +290,10 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
       createdByUserId: record.createdByUserId,
       createdByType: record.createdByType,
       receiverPhone: record.receiverPhone,
+      pickupLatitude: record.pickupLatitude,
+      pickupLongitude: record.pickupLongitude,
+      deliveryLatitude: record.deliveryLatitude,
+      deliveryLongitude: record.deliveryLongitude,
       metadata: record.metadata as JsonValue | null,
       cancellationReason: record.cancellationReason,
       createdAt: record.createdAt,

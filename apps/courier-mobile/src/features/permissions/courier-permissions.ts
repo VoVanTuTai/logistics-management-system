@@ -15,27 +15,16 @@ export type CourierPermissionFeature =
   | 'scan.inbound'
   | 'scan.vehicle-inbound'
   | 'scan.vehicle-outbound'
-  | 'scan.inventory-check';
+  | 'scan.inventory-check'
+  | 'scan.branch-pickup'
+  | 'scan.high-value-label'
+  | 'scan.high-value-check';
 
 const COURIER_PERMISSION_MATRIX: Record<
   CourierActor,
   Record<CourierPermissionFeature, boolean>
 > = {
   OPS: {
-    'scan.delivery-sign': true,
-    'scan.return-sign': true,
-    'scan.pickup': true,
-    'scan.bag-seal': true,
-    'scan.bag-unseal': true,
-    'scan.delivery': false,
-    'scan.issue': true,
-    'scan.outbound': true,
-    'scan.inbound': true,
-    'scan.vehicle-inbound': true,
-    'scan.vehicle-outbound': true,
-    'scan.inventory-check': true,
-  },
-  COURIER: {
     'scan.delivery-sign': true,
     'scan.return-sign': true,
     'scan.pickup': true,
@@ -48,6 +37,26 @@ const COURIER_PERMISSION_MATRIX: Record<
     'scan.vehicle-inbound': true,
     'scan.vehicle-outbound': true,
     'scan.inventory-check': true,
+    'scan.branch-pickup': true,
+    'scan.high-value-label': true,
+    'scan.high-value-check': true,
+  },
+  COURIER: {
+    'scan.delivery-sign': true,
+    'scan.return-sign': true,
+    'scan.pickup': true,
+    'scan.bag-seal': true,
+    'scan.bag-unseal': true,
+    'scan.delivery': true,
+    'scan.issue': true,
+    'scan.outbound': true,
+    'scan.inbound': true,
+    'scan.vehicle-inbound': false,
+    'scan.vehicle-outbound': false,
+    'scan.inventory-check': false,
+    'scan.branch-pickup': true,
+    'scan.high-value-label': true,
+    'scan.high-value-check': true,
   },
 };
 

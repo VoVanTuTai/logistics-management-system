@@ -3,6 +3,8 @@ import { courierEndpoints } from '../../services/api/endpoints';
 import type {
   AssignTaskInput,
   CreateTaskInput,
+  OptimizeRoutePayloadDto,
+  RouteOptimizationResultDto,
   TaskDto,
   TaskListFilters,
   TaskStatus,
@@ -81,7 +83,7 @@ export const tasksApi = {
         courierId: payload.courierId,
       },
     }),
-  updateTaskStatus: (
+    updateTaskStatus: (
     accessToken: string,
     taskId: string,
     status: Extract<TaskStatus, 'COMPLETED' | 'CANCELLED'>,
@@ -91,4 +93,16 @@ export const tasksApi = {
       accessToken,
       body: { status },
     }),
+  optimizeRoute: (
+    accessToken: string,
+    payload: OptimizeRoutePayloadDto,
+  ): Promise<RouteOptimizationResultDto> =>
+    courierApiClient.request<RouteOptimizationResultDto>(
+      courierEndpoints.tasks.routeOptimization,
+      {
+        method: 'POST',
+        accessToken,
+        body: payload,
+      },
+    ),
 };

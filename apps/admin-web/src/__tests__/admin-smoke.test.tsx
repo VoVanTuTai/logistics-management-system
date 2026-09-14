@@ -263,6 +263,7 @@ function resetMocks() {
     OPS: [],
     SHIPPER: [],
     MERCHANT: [],
+    CUSTOMER: [],
   };
   mocks.hubs = [];
   mocks.zones = [];

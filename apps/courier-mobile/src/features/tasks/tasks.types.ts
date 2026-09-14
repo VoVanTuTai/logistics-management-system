@@ -44,3 +44,25 @@ export interface AssignTaskInput {
   taskId: string;
   courierId: string;
 }
+
+export interface RouteLegDto {
+  fromId: string;
+  toId: string;
+  distanceMeters: number;
+  durationSeconds: number;
+}
+
+export interface RouteOptimizationResultDto {
+  orderedTaskIds: string[];
+  legs: RouteLegDto[];
+  totalDistanceMeters: number;
+  estimatedDurationSeconds: number;
+}
+
+export interface OptimizeRoutePayloadDto {
+  courierId: string;
+  startLatitude: number;
+  startLongitude: number;
+  taskIds?: string[];
+  taskType?: TaskType;
+}

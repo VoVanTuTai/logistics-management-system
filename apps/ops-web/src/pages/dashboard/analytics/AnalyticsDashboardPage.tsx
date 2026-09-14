@@ -24,6 +24,11 @@ import { getErrorMessage } from '../../../services/api/errors';
 import { useAuthStore } from '../../../store/authStore';
 import { formatShipmentStatusLabel } from '../../../utils/logisticsLabels';
 import { CopyableShipmentCode } from '../../shared/CopyableShipmentCode';
+import { useHubScope } from '../../../hooks/useHubScope';
+import {
+  isShipmentInHubScope,
+  groupShipmentsByChildHubs,
+} from '../../../utils/hubScopeResolver';
 import './AnalyticsDashboard.css';
 
 const NDR_COLORS = ['var(--ops-primary)', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444'];
@@ -78,21 +83,39 @@ function buildDateWindow(): string[] {
 
 export function AnalyticsDashboardPage(): React.JSX.Element {
   const accessToken = useAuthStore((state) => state.session?.tokens.accessToken ?? null);
-  const [selectedScope, setSelectedScope] = React.useState<'ALL' | 'NORTH' | 'CENTRAL' | 'SOUTH'>('ALL');
+  const hubScope = useHubScope();
+  const [selectedScope, setSelectedScope] = React.useState<string>('ALL');
 
-  const shipmentsQuery = useShipmentsQuery(accessToken, {}, { refetchInterval: 15000 });
+  const shipmentsQuery = useShipmentsQuery(
+    accessToken,
+    hubScope.scopedHubCodes.length > 0 ? { hubCodes: hubScope.scopedHubCodes } : {},
+    { refetchInterval: 15000 },
+  );
   const tasksQuery = useTasksQuery(accessToken, {}, { refetchInterval: 15000 });
   const manifestsQuery = useManifestsQuery(accessToken);
   const ndrQuery = useNdrCasesQuery(accessToken);
   const regionalHierarchyQuery = useRegionalHierarchyQuery(accessToken);
 
-  const rawShipments = shipmentsQuery.data ?? [];
+  const rawShipments = useMemo(() => {
+    const data = shipmentsQuery.data ?? [];
+    if (hubScope.isAllSystem || hubScope.scopedHubCodes.length === 0) {
+      return data;
+    }
+    return data.filter((s) => isShipmentInHubScope(s, hubScope.scopedHubCodes));
+  }, [shipmentsQuery.data, hubScope.isAllSystem, hubScope.scopedHubCodes]);
+
   const rawTasks = tasksQuery.data ?? [];
   const manifests = manifestsQuery.data ?? [];
   const ndrCases = ndrQuery.data ?? [];
   const regionalHierarchy = regionalHierarchyQuery.data ?? [];
 
-  // Regional 3-Miền Breakdown Calculations
+  // Child Hub Breakdown (Tỉnh cho Miền, Phường cho Tỉnh)
+  const childHubBreakdowns = useMemo(() => {
+    if (hubScope.childHubs.length === 0) return [];
+    return groupShipmentsByChildHubs(rawShipments, hubScope.childHubs, hubScope.allHubs);
+  }, [rawShipments, hubScope.childHubs, hubScope.allHubs]);
+
+  // Regional 3-Miền Breakdown Calculations (dùng cho cấp HQ / Level 0)
   const regionalBreakdown = useMemo(() => {
     const north = rawShipments.filter((s) => resolveShipmentHub(s).startsWith('001') || resolveShipmentHub(s).includes('HN'));
     const central = rawShipments.filter((s) => resolveShipmentHub(s).startsWith('002'));
@@ -114,12 +137,30 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
   // Filter shipments by selected scope
   const shipments = useMemo(() => {
     if (selectedScope === 'ALL') return rawShipments;
-    const prefix = selectedScope === 'NORTH' ? '001' : selectedScope === 'CENTRAL' ? '002' : '003';
+
+    if (hubScope.hubLevel === 0) {
+      const prefix = selectedScope === 'NORTH' ? '001' : selectedScope === 'CENTRAL' ? '002' : '003';
+      return rawShipments.filter((s) => {
+        const hub = resolveShipmentHub(s);
+        return hub.startsWith(prefix) || (selectedScope === 'NORTH' && hub.includes('HN')) || (selectedScope === 'SOUTH' && hub.includes('HCM'));
+      });
+    }
+
+    const childHub = hubScope.childHubs.find((c) => c.code === selectedScope);
+    if (!childHub) return rawShipments;
+
+    const targetCodes = new Set<string>([childHub.code.toUpperCase()]);
+    hubScope.allHubs
+      .filter((h) => (h.parentCode ?? '').toUpperCase() === childHub.code.toUpperCase())
+      .forEach((h) => targetCodes.add(h.code.toUpperCase()));
+
     return rawShipments.filter((s) => {
-      const hub = resolveShipmentHub(s);
-      return hub.startsWith(prefix) || (selectedScope === 'NORTH' && hub.includes('HN')) || (selectedScope === 'SOUTH' && hub.includes('HCM'));
+      const codes = [s.senderHubCode, s.originHubCode, s.receiverHubCode, s.destinationHubCode]
+        .map((c) => (c ?? '').toUpperCase())
+        .filter(Boolean);
+      return codes.some((c) => targetCodes.has(c));
     });
-  }, [rawShipments, selectedScope]);
+  }, [rawShipments, selectedScope, hubScope]);
 
   const tasks = rawTasks;
 
@@ -214,6 +255,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
     label: string;
     value: number;
     accent: AnalyticsAccent;
+    icon: string;
     description: string;
     to: string;
   }> = [
@@ -221,6 +263,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
       label: 'Đơn mới hôm nay',
       value: todaysShipments.length,
       accent: 'primary',
+      icon: 'inventory_2',
       description: 'Mở danh sách vận đơn để rà soát đơn mới phát sinh.',
       to: routePaths.shipments,
     },
@@ -228,6 +271,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
       label: 'Đang đi giao',
       value: activeDelivery.length,
       accent: 'info',
+      icon: 'two_wheeler',
       description: 'Theo dõi các vận đơn đang ở bước phát hàng.',
       to: routePaths.shipments,
     },
@@ -235,6 +279,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
       label: 'Đã giao thành công',
       value: delivered.length,
       accent: 'success',
+      icon: 'task_alt',
       description: 'Xem hiệu quả phát và đối chiếu SLA giao hàng.',
       to: routePaths.opsMetricsReport,
     },
@@ -242,6 +287,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
       label: 'Cần can thiệp',
       value: abnormal.length + urgentAlerts.length,
       accent: 'danger',
+      icon: 'warning_amber',
       description: 'Đi tới nhóm xử lý bất thường và cảnh báo quá hạn.',
       to: routePaths.serviceQualityAbnormalManagement,
     },
@@ -250,6 +296,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
     title: string;
     summary: string;
     meta: string;
+    icon: string;
     to: string;
     accent: AnalyticsAccent;
   }> = [
@@ -257,6 +304,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
       title: 'Xử lý cảnh báo quá hạn',
       summary: 'Ưu tiên các vận đơn chưa hoàn tất sau 24h.',
       meta: `${urgentAlerts.length} cảnh báo`,
+      icon: 'alarm',
       to: routePaths.opsMetricsDeadlineInventory,
       accent: 'danger',
     },
@@ -264,6 +312,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
       title: 'Điều phối vận đơn',
       summary: 'Mở màn điều phối lấy hàng/phát hàng cho đội vận hành.',
       meta: `${tasks.length} task`,
+      icon: 'two_wheeler',
       to: routePaths.operationsPlatformPickupDispatch,
       accent: 'primary',
     },
@@ -271,6 +320,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
       title: 'Kiện bất thường / NDR',
       summary: 'Mở màn quản lý ca lỗi, giao thất bại và ngoại lệ.',
       meta: `${abnormal.length} kiện`,
+      icon: 'warning_amber',
       to: routePaths.serviceQualityAbnormalManagement,
       accent: 'warning',
     },
@@ -278,6 +328,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
       title: 'Quản lý chuyến / bao',
       summary: 'Kiểm tra manifest và luồng bàn giao tuyến.',
       meta: `${manifests.length} manifest`,
+      icon: 'local_shipping',
       to: routePaths.linehaulTripDataMonitor,
       accent: 'info',
     },
@@ -287,134 +338,224 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
     <div className="analytics-dash">
       <header className="analytics-dash__header">
         <div>
-            <h1 className="analytics-dash__title">
+          <h1 className="analytics-dash__title">
             <span className="analytics-dash__title-icon">
-              <svg viewBox="0 0 24 24">
-                <path d="M3 13h4v8H3zM9 9h4v12H9zM15 5h4v16h-4zM21 2l-3 3m3-3h-3m3 0v3" />
-              </svg>
+              <span className="material-symbols-outlined">analytics</span>
             </span>
-            Bảng phân tích vận hành toàn hệ thống
+            {hubScope.hubLevel === 0
+              ? 'Bảng phân tích vận hành toàn hệ thống'
+              : hubScope.hubLevel === 1
+              ? `Bảng phân tích vận hành · Hub Miền ${hubScope.scopeLabel}`
+              : hubScope.hubLevel === 2
+              ? `Bảng phân tích vận hành · Bưu cục ${hubScope.scopeLabel}`
+              : `Bảng phân tích vận hành · ${hubScope.scopeLabel}`}
           </h1>
           <p className="analytics-dash__subtitle">
-            Giám sát real-time luồng đơn hàng, chuyển xe trung chuyển Linehaul 3 miền và đối soát COD toàn bộ bưu cục.
+            {hubScope.hubLevel === 0
+              ? 'Giám sát real-time luồng đơn hàng, chuyển xe trung chuyển Linehaul 3 miền và đối soát COD toàn bộ bưu cục.'
+              : hubScope.hubLevel === 1
+              ? 'Thống kê tổng hợp các tỉnh trong khu vực miền và chi tiết từng bưu cục cấp tỉnh trực thuộc.'
+              : hubScope.hubLevel === 2
+              ? 'Thống kê tổng hợp các phường trong tỉnh/thành và chi tiết từng bưu cục phường cơ sở quản lý.'
+              : 'Thống kê các đơn hàng và luồng phát bưu gửi trong phạm vi bưu cục phường cơ sở.'}
           </p>
         </div>
-        <span className="analytics-dash__date-badge">Dữ liệu từ API · {new Date().toLocaleString('vi-VN')}</span>
+        <span className="analytics-dash__date-badge">
+          <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>schedule</span>
+          <span>Dữ liệu thời gian thực · {new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
+        </span>
       </header>
 
       {/* Scope Switcher Toolbar */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', padding: '12px 16px', backgroundColor: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', flexWrap: 'wrap', alignItems: 'center' }}>
-        <span style={{ fontSize: '13px', fontWeight: 700, color: '#334155', marginRight: '8px' }}>🌐 Phạm Vi Vận Hành:</span>
+      <div className="analytics-dash__scope-tabs" role="tablist" aria-label="Phạm vi vận hành">
+        <span className="analytics-dash__scope-label">
+          <span className="material-symbols-outlined">filter_alt</span>
+          <span>Phạm vi ({hubScope.scopeLabel}):</span>
+        </span>
         <button
           type="button"
+          role="tab"
+          aria-selected={selectedScope === 'ALL'}
           onClick={() => setSelectedScope('ALL')}
-          style={{
-            padding: '6px 14px',
-            fontSize: '13px',
-            fontWeight: 600,
-            borderRadius: '6px',
-            border: selectedScope === 'ALL' ? '2px solid #2563eb' : '1px solid #cbd5e1',
-            backgroundColor: selectedScope === 'ALL' ? '#eff6ff' : '#ffffff',
-            color: selectedScope === 'ALL' ? '#1d4ed8' : '#475569',
-            cursor: 'pointer',
-          }}
+          className={`analytics-scope-tab ${selectedScope === 'ALL' ? 'analytics-scope-tab--active' : ''}`}
         >
-          🌐 TOÀN QUỐC ({regionalBreakdown.total} đơn)
+          <span className="material-symbols-outlined">
+            {hubScope.hubLevel === 0 ? 'public' : hubScope.hubLevel === 1 ? 'domain' : hubScope.hubLevel === 2 ? 'apartment' : 'warehouse'}
+          </span>
+          <span>
+            {hubScope.hubLevel === 0
+              ? `Toàn Quốc (${rawShipments.length} đơn)`
+              : hubScope.hubLevel === 1
+              ? `Toàn Miền (${rawShipments.length} đơn)`
+              : hubScope.hubLevel === 2
+              ? `Toàn Tỉnh/Thành (${rawShipments.length} đơn)`
+              : `Bưu cục (${rawShipments.length} đơn)`}
+          </span>
         </button>
-        <button
-          type="button"
-          onClick={() => setSelectedScope('NORTH')}
-          style={{
-            padding: '6px 14px',
-            fontSize: '13px',
-            fontWeight: 600,
-            borderRadius: '6px',
-            border: selectedScope === 'NORTH' ? '2px solid #0284c7' : '1px solid #cbd5e1',
-            backgroundColor: selectedScope === 'NORTH' ? '#e0f2fe' : '#ffffff',
-            color: selectedScope === 'NORTH' ? '#0369a1' : '#475569',
-            cursor: 'pointer',
-          }}
-        >
-          🏢 HUB MIỀN BẮC (001N001 · {regionalBreakdown.north.count} đơn)
-        </button>
-        <button
-          type="button"
-          onClick={() => setSelectedScope('CENTRAL')}
-          style={{
-            padding: '6px 14px',
-            fontSize: '13px',
-            fontWeight: 600,
-            borderRadius: '6px',
-            border: selectedScope === 'CENTRAL' ? '2px solid #d97706' : '1px solid #cbd5e1',
-            backgroundColor: selectedScope === 'CENTRAL' ? '#fef3c7' : '#ffffff',
-            color: selectedScope === 'CENTRAL' ? '#b45309' : '#475569',
-            cursor: 'pointer',
-          }}
-        >
-          🏢 HUB MIỀN TRUNG (002C001 · {regionalBreakdown.central.count} đơn)
-        </button>
-        <button
-          type="button"
-          onClick={() => setSelectedScope('SOUTH')}
-          style={{
-            padding: '6px 14px',
-            fontSize: '13px',
-            fontWeight: 600,
-            borderRadius: '6px',
-            border: selectedScope === 'SOUTH' ? '2px solid #16a34a' : '1px solid #cbd5e1',
-            backgroundColor: selectedScope === 'SOUTH' ? '#dcfce7' : '#ffffff',
-            color: selectedScope === 'SOUTH' ? '#15803d' : '#475569',
-            cursor: 'pointer',
-          }}
-        >
-          🏢 HUB MIỀN NAM (003S001 · {regionalBreakdown.south.count} đơn)
-        </button>
+
+        {hubScope.hubLevel === 0 ? (
+          <>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={selectedScope === 'NORTH'}
+              onClick={() => setSelectedScope('NORTH')}
+              className={`analytics-scope-tab ${selectedScope === 'NORTH' ? 'analytics-scope-tab--active' : ''}`}
+            >
+              <span className="material-symbols-outlined">apartment</span>
+              <span>Hub Miền Bắc (001N001 · {regionalBreakdown.north.count} đơn)</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={selectedScope === 'CENTRAL'}
+              onClick={() => setSelectedScope('CENTRAL')}
+              className={`analytics-scope-tab ${selectedScope === 'CENTRAL' ? 'analytics-scope-tab--active' : ''}`}
+            >
+              <span className="material-symbols-outlined">domain</span>
+              <span>Hub Miền Trung (002C001 · {regionalBreakdown.central.count} đơn)</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={selectedScope === 'SOUTH'}
+              onClick={() => setSelectedScope('SOUTH')}
+              className={`analytics-scope-tab ${selectedScope === 'SOUTH' ? 'analytics-scope-tab--active' : ''}`}
+            >
+              <span className="material-symbols-outlined">location_city</span>
+              <span>Hub Miền Nam (003S001 · {regionalBreakdown.south.count} đơn)</span>
+            </button>
+          </>
+        ) : (
+          hubScope.childHubs.map((child) => {
+            const count = childHubBreakdowns.find((b) => b.hubCode === child.code)?.totalShipments ?? 0;
+            return (
+              <button
+                key={child.code}
+                type="button"
+                role="tab"
+                aria-selected={selectedScope === child.code}
+                onClick={() => setSelectedScope(child.code)}
+                className={`analytics-scope-tab ${selectedScope === child.code ? 'analytics-scope-tab--active' : ''}`}
+              >
+                <span className="material-symbols-outlined">
+                  {child.level === 2 ? 'apartment' : 'warehouse'}
+                </span>
+                <span>{child.name} ({count} đơn)</span>
+              </button>
+            );
+          })
+        )}
       </div>
 
-      {/* 3 Regional Hub Cards Summary */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-        <div style={{ padding: '14px', borderRadius: '10px', border: '1px solid #bae6fd', backgroundColor: '#f0f9ff' }}>
-          <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: '#0369a1' }}>Hub Miền Bắc (Zone 001)</div>
-          <div style={{ fontSize: '18px', fontWeight: 700, color: '#0c4a6e', margin: '4px 0' }}>Hub Hà Nội (001N001)</div>
-          <div style={{ fontSize: '13px', color: '#0369a1' }}>
-            Phủ sóng: <strong>15 Tỉnh</strong> · Bưu cục: <strong>{regionalBreakdown.north.info?.branchHubsCount ?? 15} bưu cục</strong>
-          </div>
-          <div style={{ fontSize: '13px', color: '#0369a1', marginTop: '4px' }}>
-            Đơn hàng hiện tại: <strong>{regionalBreakdown.north.count} đơn</strong> ({regionalBreakdown.total > 0 ? Math.round((regionalBreakdown.north.count / regionalBreakdown.total) * 100) : 0}%)
-          </div>
-        </div>
+      {/* Hub Level Hierarchy Summary & Breakdown Grid */}
+      <div className="analytics-region-grid">
+        {hubScope.hubLevel === 0 ? (
+          <>
+            <div className="analytics-region-card analytics-region-card--north">
+              <div className="analytics-region-card__header">
+                <span className="analytics-region-card__icon-box">
+                  <span className="material-symbols-outlined">apartment</span>
+                </span>
+                <div className="analytics-region-card__tag">Zone 001 · Miền Bắc</div>
+              </div>
+              <div className="analytics-region-card__title">Hub Hà Nội (001N001)</div>
+              <div className="analytics-region-card__meta">
+                Phủ sóng: <strong>15 Tỉnh</strong> · Bưu cục: <strong>{regionalBreakdown.north.info?.branchHubsCount ?? 15} trạm</strong>
+              </div>
+              <div className="analytics-region-card__metric">
+                Sản lượng: <strong>{regionalBreakdown.north.count} đơn</strong> ({regionalBreakdown.total > 0 ? Math.round((regionalBreakdown.north.count / regionalBreakdown.total) * 100) : 0}%)
+              </div>
+            </div>
 
-        <div style={{ padding: '14px', borderRadius: '10px', border: '1px solid #fde68a', backgroundColor: '#fffbeb' }}>
-          <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: '#b45309' }}>Hub Miền Trung (Zone 002)</div>
-          <div style={{ fontSize: '18px', fontWeight: 700, color: '#78350f', margin: '4px 0' }}>Hub Đà Nẵng (002C001)</div>
-          <div style={{ fontSize: '13px', color: '#b45309' }}>
-            Phủ sóng: <strong>11 Tỉnh</strong> · Bưu cục: <strong>{regionalBreakdown.central.info?.branchHubsCount ?? 11} bưu cục</strong>
-          </div>
-          <div style={{ fontSize: '13px', color: '#b45309', marginTop: '4px' }}>
-            Đơn hàng hiện tại: <strong>{regionalBreakdown.central.count} đơn</strong> ({regionalBreakdown.total > 0 ? Math.round((regionalBreakdown.central.count / regionalBreakdown.total) * 100) : 0}%)
-          </div>
-        </div>
+            <div className="analytics-region-card analytics-region-card--central">
+              <div className="analytics-region-card__header">
+                <span className="analytics-region-card__icon-box">
+                  <span className="material-symbols-outlined">domain</span>
+                </span>
+                <div className="analytics-region-card__tag">Zone 002 · Miền Trung</div>
+              </div>
+              <div className="analytics-region-card__title">Hub Đà Nẵng (002C001)</div>
+              <div className="analytics-region-card__meta">
+                Phủ sóng: <strong>11 Tỉnh</strong> · Bưu cục: <strong>{regionalBreakdown.central.info?.branchHubsCount ?? 11} trạm</strong>
+              </div>
+              <div className="analytics-region-card__metric">
+                Sản lượng: <strong>{regionalBreakdown.central.count} đơn</strong> ({regionalBreakdown.total > 0 ? Math.round((regionalBreakdown.central.count / regionalBreakdown.total) * 100) : 0}%)
+              </div>
+            </div>
 
-        <div style={{ padding: '14px', borderRadius: '10px', border: '1px solid #bbf7d0', backgroundColor: '#f0fdf4' }}>
-          <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: '#15803d' }}>Hub Miền Nam (Zone 003)</div>
-          <div style={{ fontSize: '18px', fontWeight: 700, color: '#14532d', margin: '4px 0' }}>Hub TP.HCM (003S001)</div>
-          <div style={{ fontSize: '13px', color: '#15803d' }}>
-            Phủ sóng: <strong>8 Tỉnh</strong> · Bưu cục: <strong>{regionalBreakdown.south.info?.branchHubsCount ?? 8} bưu cục</strong>
+            <div className="analytics-region-card analytics-region-card--south">
+              <div className="analytics-region-card__header">
+                <span className="analytics-region-card__icon-box">
+                  <span className="material-symbols-outlined">location_city</span>
+                </span>
+                <div className="analytics-region-card__tag">Zone 003 · Miền Nam</div>
+              </div>
+              <div className="analytics-region-card__title">Hub TP.HCM (003S001)</div>
+              <div className="analytics-region-card__meta">
+                Phủ sóng: <strong>8 Tỉnh</strong> · Bưu cục: <strong>{regionalBreakdown.south.info?.branchHubsCount ?? 8} trạm</strong>
+              </div>
+              <div className="analytics-region-card__metric">
+                Sản lượng: <strong>{regionalBreakdown.south.count} đơn</strong> ({regionalBreakdown.total > 0 ? Math.round((regionalBreakdown.south.count / regionalBreakdown.total) * 100) : 0}%)
+              </div>
+            </div>
+          </>
+        ) : hubScope.childHubs.length > 0 ? (
+          childHubBreakdowns.map((b) => (
+            <div key={b.hubCode} className="analytics-region-card analytics-region-card--north">
+              <div className="analytics-region-card__header">
+                <span className="analytics-region-card__icon-box">
+                  <span className="material-symbols-outlined">
+                    {b.level === 2 ? 'apartment' : 'warehouse'}
+                  </span>
+                </span>
+                <div className="analytics-region-card__tag">
+                  {b.level === 2 ? 'Bưu cục Tỉnh' : 'Bưu cục Phường'} · {b.hubCode}
+                </div>
+              </div>
+              <div className="analytics-region-card__title">{b.hubName}</div>
+              <div className="analytics-region-card__meta">
+                Đang chuyển: <strong>{b.inTransitCount}</strong> · Sự cố/NDR: <strong>{b.incidentCount}</strong>
+              </div>
+              <div className="analytics-region-card__metric">
+                Sản lượng: <strong>{b.totalShipments} đơn</strong> · Đạt chuẩn: <strong>{b.successRate}%</strong>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="analytics-region-card analytics-region-card--north">
+            <div className="analytics-region-card__header">
+              <span className="analytics-region-card__icon-box">
+                <span className="material-symbols-outlined">warehouse</span>
+              </span>
+              <div className="analytics-region-card__tag">
+                Bưu cục cơ sở · {hubScope.primaryHub?.code ?? hubScope.scopedHubCodes[0] ?? 'N/A'}
+              </div>
+            </div>
+            <div className="analytics-region-card__title">
+              {hubScope.primaryHub?.name ?? hubScope.scopeLabel}
+            </div>
+            <div className="analytics-region-card__meta">
+              Đang phát: <strong>{activeDelivery.length}</strong> · Đã giao: <strong>{delivered.length}</strong>
+            </div>
+            <div className="analytics-region-card__metric">
+              Tổng bưu gửi: <strong>{rawShipments.length} đơn</strong>
+            </div>
           </div>
-          <div style={{ fontSize: '13px', color: '#15803d', marginTop: '4px' }}>
-            Đơn hàng hiện tại: <strong>{regionalBreakdown.south.count} đơn</strong> ({regionalBreakdown.total > 0 ? Math.round((regionalBreakdown.south.count / regionalBreakdown.total) * 100) : 0}%)
-          </div>
-        </div>
+        )}
 
-        <div style={{ padding: '14px', borderRadius: '10px', border: '1px solid #e2e8f0', backgroundColor: '#ffffff' }}>
-          <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: '#64748b' }}>Thu Hộ COD Phân Vùng</div>
-          <div style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a', margin: '4px 0' }}>
-            {codFinancials.totalCod.toLocaleString('vi-VN')} đ
+        <div className="analytics-region-card analytics-region-card--cod">
+          <div className="analytics-region-card__header">
+            <span className="analytics-region-card__icon-box">
+              <span className="material-symbols-outlined">payments</span>
+            </span>
+            <div className="analytics-region-card__tag">Tài Chính & Đối Soát</div>
           </div>
-          <div style={{ fontSize: '12px', color: '#16a34a' }}>
+          <div className="analytics-region-card__title">{codFinancials.totalCod.toLocaleString('vi-VN')} đ</div>
+          <div className="analytics-region-card__meta-success">
             Đã thu: <strong>{codFinancials.deliveredCod.toLocaleString('vi-VN')} đ</strong>
           </div>
-          <div style={{ fontSize: '12px', color: '#dc2626', marginTop: '2px' }}>
+          <div className="analytics-region-card__meta-pending">
             Chờ nộp/đang phát: <strong>{codFinancials.pendingCod.toLocaleString('vi-VN')} đ</strong>
           </div>
         </div>
@@ -429,13 +570,21 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
       <section className="analytics-kpi-row" aria-label="Chỉ số vận hành chính">
         {kpiCards.map((kpi) => (
           <Link key={kpi.label} to={kpi.to} className={`analytics-kpi-card analytics-kpi-card--${kpi.accent}`}>
-            <span className="analytics-kpi-card__label">{kpi.label}</span>
+            <div className="analytics-kpi-card__top">
+              <span className="analytics-kpi-card__label">{kpi.label}</span>
+              <span className="analytics-kpi-card__icon-box">
+                <span className="material-symbols-outlined">{kpi.icon}</span>
+              </span>
+            </div>
             <div className="analytics-kpi-card__value-row">
               <span className="analytics-kpi-card__value">{kpi.value}</span>
               <span className="analytics-kpi-card__unit">đơn</span>
             </div>
             <span className="analytics-kpi-card__description">{kpi.description}</span>
-            <span className="analytics-kpi-card__action">Mở chức năng</span>
+            <span className="analytics-kpi-card__action">
+              <span>Mở chức năng</span>
+              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>arrow_forward</span>
+            </span>
           </Link>
         ))}
       </section>
@@ -455,7 +604,12 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
               to={action.to}
               className={`analytics-support-card analytics-support-card--${action.accent}`}
             >
-              <span className="analytics-support-card__meta">{action.meta}</span>
+              <div className="analytics-support-card__top">
+                <span className="analytics-support-card__icon-box">
+                  <span className="material-symbols-outlined">{action.icon}</span>
+                </span>
+                <span className="analytics-support-card__meta">{action.meta}</span>
+              </div>
               <strong>{action.title}</strong>
               <span>{action.summary}</span>
             </Link>
@@ -564,47 +718,49 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
               {urgentAlerts.length} cảnh báo · {tasks.length} task · {manifests.length} manifest
             </span>
           </header>
-          <table className="analytics-alerts-table">
-            <thead>
-              <tr>
-                <th>Mã vận đơn</th>
-                <th>Vấn đề</th>
-                <th>Hub</th>
-                <th>Mức độ</th>
-                <th>Thời gian</th>
-                <th>Khách</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {urgentAlerts.map(({ shipment, elapsedHours }) => (
-                <tr key={shipment.id}>
-                  <td>
-                    <CopyableShipmentCode code={shipment.shipmentCode} className="analytics-alert-code" />
-                  </td>
-                  <td>{formatShipmentStatusLabel(shipment.currentStatus)}</td>
-                  <td>{resolveShipmentHub(shipment)}</td>
-                  <td>
-                    <span className={`analytics-severity analytics-severity--${elapsedHours >= 48 ? 'critical' : 'high'}`}>
-                      <span className="analytics-severity__dot" />
-                      {elapsedHours >= 48 ? 'Nghiêm trọng' : 'Cao'}
-                    </span>
-                  </td>
-                  <td>
-                    <span className="analytics-elapsed">{elapsedHours}h</span>
-                  </td>
-                  <td>{shipment.receiverName ?? shipment.senderName ?? 'Không có'}</td>
-                  <td>
-                    <div className="analytics-row-actions">
-                      <Link className="analytics-action-btn analytics-action-btn--secondary" to={routePaths.operationsPlatformDeliveryDispatch}>
-                        Điều phối
-                      </Link>
-                    </div>
-                  </td>
+          <div className="analytics-alerts-table-wrap">
+            <table className="analytics-alerts-table">
+              <thead>
+                <tr>
+                  <th>Mã vận đơn</th>
+                  <th>Vấn đề</th>
+                  <th>Hub</th>
+                  <th>Mức độ</th>
+                  <th>Thời gian</th>
+                  <th>Khách</th>
+                  <th></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {urgentAlerts.map(({ shipment, elapsedHours }) => (
+                  <tr key={shipment.id}>
+                    <td>
+                      <CopyableShipmentCode code={shipment.shipmentCode} className="analytics-alert-code" />
+                    </td>
+                    <td>{formatShipmentStatusLabel(shipment.currentStatus)}</td>
+                    <td>{resolveShipmentHub(shipment)}</td>
+                    <td>
+                      <span className={`analytics-severity analytics-severity--${elapsedHours >= 48 ? 'critical' : 'high'}`}>
+                        <span className="analytics-severity__dot" />
+                        {elapsedHours >= 48 ? 'Nghiêm trọng' : 'Cao'}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="analytics-elapsed">{elapsedHours}h</span>
+                    </td>
+                    <td>{shipment.receiverName ?? shipment.senderName ?? 'Không có'}</td>
+                    <td>
+                      <div className="analytics-row-actions">
+                        <Link className="analytics-action-btn analytics-action-btn--secondary" to={routePaths.operationsPlatformDeliveryDispatch}>
+                          Điều phối
+                        </Link>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           {urgentAlerts.length === 0 ? (
             <p className="analytics-empty-note">Không có cảnh báo quá hạn từ dữ liệu hiện tại.</p>
           ) : null}

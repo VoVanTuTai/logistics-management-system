@@ -96,6 +96,7 @@ export function AdminDashboardPage(): React.JSX.Element {
   const opsUsersQuery = useAdminUsersQuery(accessToken, { roleGroup: 'OPS' });
   const shipperUsersQuery = useAdminUsersQuery(accessToken, { roleGroup: 'SHIPPER' });
   const merchantUsersQuery = useAdminUsersQuery(accessToken, { roleGroup: 'MERCHANT' });
+  const customerUsersQuery = useAdminUsersQuery(accessToken, { roleGroup: 'CUSTOMER' });
   const hubsQuery = useHubsQuery(accessToken, {});
   const zonesQuery = useZonesQuery(accessToken, {});
   const ndrReasonsQuery = useNdrReasonsQuery(accessToken, {});
@@ -106,6 +107,7 @@ export function AdminDashboardPage(): React.JSX.Element {
     opsUsersQuery,
     shipperUsersQuery,
     merchantUsersQuery,
+    customerUsersQuery,
     hubsQuery,
     zonesQuery,
     ndrReasonsQuery,
@@ -123,10 +125,12 @@ export function AdminDashboardPage(): React.JSX.Element {
     const opsUsers = opsUsersQuery.data ?? [];
     const shipperUsers = shipperUsersQuery.data ?? [];
     const merchantUsers = merchantUsersQuery.data ?? [];
+    const customerUsers = customerUsersQuery.data ?? [];
     const allUsers = uniqueUsersById([
       ...opsUsers,
       ...shipperUsers,
       ...merchantUsers,
+      ...customerUsers,
     ]);
     const activeUsers = allUsers.filter((user) => user.status === 'ACTIVE').length;
     const disabledUsers = allUsers.filter((user) => user.status === 'DISABLED').length;
@@ -173,8 +177,16 @@ export function AdminDashboardPage(): React.JSX.Element {
         value: formatCount(merchantUsers.length),
         description: 'Khách hàng / Đối tác gửi đơn',
         icon: 'storefront',
-        badge: 'Khách hàng',
+        badge: 'Shop kinh doanh',
         color: '#d97706',
+      },
+      {
+        label: 'Tài khoản Khách lẻ Mobile',
+        value: formatCount(customerUsers.length),
+        description: 'Người dùng Customer Mobile App',
+        icon: 'person',
+        badge: 'Mobile App',
+        color: '#0284c7',
       },
       {
         label: 'Hub',

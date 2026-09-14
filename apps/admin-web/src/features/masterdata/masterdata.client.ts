@@ -197,4 +197,55 @@ export const masterdataClient = {
         body: payload,
       },
     ),
+  listCourierAreaAssignments: (
+    accessToken: string | null,
+    filters: import('./masterdata.types').CourierAreaAssignmentFilters,
+  ): Promise<import('./masterdata.types').CourierAreaAssignmentDto[]> =>
+    opsApiClient.request<import('./masterdata.types').CourierAreaAssignmentDto[]>(
+      `${opsEndpoints.masterdata.courierAreaAssignments}${buildQueryString({
+        courierId: filters.courierId,
+        hubCode: filters.hubCode,
+        province: filters.province,
+        district: filters.district,
+        ward: filters.ward,
+        isActive: filters.isActive,
+      })}`,
+      { accessToken },
+    ),
+  createCourierAreaAssignment: (
+    accessToken: string | null,
+    payload: import('./masterdata.types').CourierAreaAssignmentWriteInput,
+  ): Promise<import('./masterdata.types').CourierAreaAssignmentDto> =>
+    opsApiClient.request<import('./masterdata.types').CourierAreaAssignmentDto>(
+      opsEndpoints.masterdata.courierAreaAssignments,
+      {
+        method: 'POST',
+        accessToken,
+        body: payload,
+      },
+    ),
+  updateCourierAreaAssignment: (
+    accessToken: string | null,
+    id: string,
+    payload: Partial<import('./masterdata.types').CourierAreaAssignmentWriteInput>,
+  ): Promise<import('./masterdata.types').CourierAreaAssignmentDto> =>
+    opsApiClient.request<import('./masterdata.types').CourierAreaAssignmentDto>(
+      opsEndpoints.masterdata.courierAreaAssignmentDetail(id),
+      {
+        method: 'PATCH',
+        accessToken,
+        body: payload,
+      },
+    ),
+  deleteCourierAreaAssignment: (
+    accessToken: string | null,
+    id: string,
+  ): Promise<{ success: boolean }> =>
+    opsApiClient.request<{ success: boolean }>(
+      opsEndpoints.masterdata.courierAreaAssignmentDetail(id),
+      {
+        method: 'DELETE',
+        accessToken,
+      },
+    ),
 };

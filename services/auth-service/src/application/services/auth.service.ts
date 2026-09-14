@@ -50,9 +50,23 @@ const COURIER_CODE_PATTERN = /^3000\d{4}$/;
 const MERCHANT_CODE_PATTERN = /^411\d{5}$/;
 const DEFAULT_EMPLOYEE_PASSWORD = 'password';
 
-const OPS_ROLE_SET = new Set(['OPS_ADMIN', 'OPS_VIEWER', 'OPS_MANAGER']);
-const ADMIN_ROLE_SET = new Set(['SYSTEM_ADMIN']);
-const COURIER_ROLE_SET = new Set(['COURIER']);
+const OPS_ROLE_SET = new Set([
+  'OPS',
+  'OPS_ADMIN',
+  'OPS_VIEWER',
+  'OPS_MANAGER',
+  'OPS_STAFF',
+  'HQ_OPS',
+  'REGIONAL_OPS',
+  'PROVINCIAL_OPS',
+  'HUB_OPS',
+  'DISPATCHER',
+  'SORTER',
+  'INVENTORY_CLERK',
+  'CUSTOMER_SERVICE_OPS',
+]);
+const ADMIN_ROLE_SET = new Set(['SYSTEM_ADMIN', 'ADMIN']);
+const COURIER_ROLE_SET = new Set(['COURIER', 'SHIPPER']);
 const MERCHANT_ROLE_SET = new Set(['MERCHANT']);
 const CUSTOMER_ROLE_SET = new Set(['CUSTOMER']);
 
@@ -77,11 +91,11 @@ export class AuthService {
     const user = await this.userAccountRepository.findByUsername(input.username);
 
     if (!user || user.status !== 'ACTIVE') {
-      throw new UnauthorizedException('Invalid credentials.');
+      throw new UnauthorizedException('Sai tên đăng nhập hoặc mật khẩu.');
     }
 
     if (!this.hashService.verify(input.password, user.passwordHash)) {
-      throw new UnauthorizedException('Invalid credentials.');
+      throw new UnauthorizedException('Sai tên đăng nhập hoặc mật khẩu.');
     }
 
     this.assertUserMatchesLoginRoleGroup(

@@ -112,6 +112,15 @@ function parseApiError(payload: unknown, status: number): string {
 }
 
 function resolveApiUrl(path: string): string {
+  if (typeof window !== 'undefined') {
+    if (window.location.hostname === 'merchant.nexus-ex.site') {
+      return path;
+    }
+    if (window.location.protocol === 'https:' && gatewayBaseUrl.startsWith('http://')) {
+      return path;
+    }
+  }
+
   if (!gatewayBaseUrl) {
     return path;
   }
@@ -226,6 +235,9 @@ export function buildShipmentMetadata(
       province: form.senderProvince.trim() || null,
       ward: form.senderWard.trim() || null,
       hubCode: form.senderHubCode.trim() || null,
+      latitude: form.senderLatitude,
+      longitude: form.senderLongitude,
+      coordinate: form.senderLatitude && form.senderLongitude ? { latitude: form.senderLatitude, longitude: form.senderLongitude } : undefined,
     },
     receiver: {
       name: form.receiverName.trim() || null,
@@ -236,7 +248,20 @@ export function buildShipmentMetadata(
       province: form.receiverProvince.trim() || null,
       ward: form.receiverWard.trim() || null,
       hubCode: form.receiverHubCode.trim() || null,
+      latitude: form.receiverLatitude,
+      longitude: form.receiverLongitude,
+      coordinate: form.receiverLatitude && form.receiverLongitude ? { latitude: form.receiverLatitude, longitude: form.receiverLongitude } : undefined,
     },
+    pickupLatitude: form.senderLatitude,
+    pickupLongitude: form.senderLongitude,
+    pickupCoordinate: form.senderLatitude && form.senderLongitude ? { latitude: form.senderLatitude, longitude: form.senderLongitude } : undefined,
+    deliveryLatitude: form.receiverLatitude,
+    deliveryLongitude: form.receiverLongitude,
+    deliveryCoordinate: form.receiverLatitude && form.receiverLongitude ? { latitude: form.receiverLatitude, longitude: form.receiverLongitude } : undefined,
+    originHubCode: form.senderHubCode.trim() || null,
+    destinationHubCode: form.receiverHubCode.trim() || null,
+    senderHubCode: form.senderHubCode.trim() || null,
+    receiverHubCode: form.receiverHubCode.trim() || null,
     package: {
       itemType: form.itemType.trim() || null,
       weightKg: asNumber(form.weightKg, 0),

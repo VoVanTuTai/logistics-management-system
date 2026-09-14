@@ -180,8 +180,11 @@ export function InventoryCheckScreen(): React.JSX.Element {
       try {
         const picture = await cameraRef.current.takePictureAsync({
           quality: 0.6,
+          base64: true,
         });
-        photoUri = picture.uri || null;
+        photoUri = picture.base64
+          ? `data:image/jpeg;base64,${picture.base64}`
+          : picture.uri || null;
       } catch (err) {
         console.error('Failed to capture auto proof photo for inventory check:', err);
       }
@@ -516,7 +519,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cameraOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(2, 6, 23, 0.45)',
     alignItems: 'center',
     justifyContent: 'center',

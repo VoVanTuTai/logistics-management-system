@@ -12,10 +12,11 @@ import { shipmentsClient } from '../../features/shipments/shipments.client';
 import type { ShipmentListFilters, ShipmentListItemDto } from '../../features/shipments/shipments.types';
 import { tasksClient, useCourierOptionsQuery, useTasksQuery } from '../../features/tasks/tasks.api';
 import type { TaskListItemDto } from '../../features/tasks/tasks.types';
-import { openShippingLabelPrint } from '../../printing/shippingLabelPrint';
+import { openShippingLabelPrint, resolveRouteAndCourier } from '../../printing/shippingLabelPrint';
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
 import { useUiStore } from '../../store/uiStore';
+import { useHubScope } from '../../hooks/useHubScope';
 import { createIdempotencyKey } from '../../utils/idempotency';
 import { resolveBranchHubByProvince } from '../../utils/locationScope';
 import { formatShipmentStatusLabel } from '../../utils/logisticsLabels';
@@ -455,6 +456,40 @@ function printWaybill(shipment: ShipmentListItemDto): boolean {
   const deliveryInstruction =
     shipment.deliveryNote?.trim() || 'Gọi trước khi giao. Không cho thử hàng.';
 
+  const resolvedPickup = resolveRouteAndCourier(
+    senderAddress,
+    shipment.senderWard,
+    shipment.senderDistrict,
+    shipment.senderHubCode || shipment.originHubCode,
+    true,
+  );
+  const resolvedDelivery = resolveRouteAndCourier(
+    receiverAddress,
+    undefined,
+    undefined,
+    shipment.receiverHubCode || shipment.destinationHubCode || hubCode,
+    false,
+  );
+
+  const pickupRouteName = resolvedPickup.routeName;
+  const pickupCourierId = resolvedPickup.courierId;
+  const deliveryRouteName = resolvedDelivery.routeName;
+  const deliveryCourierId = resolvedDelivery.courierId;
+
+  const meta = (shipment.metadata as Record<string, unknown> | null | undefined) || {};
+  const metaPackage = (meta.package as Record<string, unknown> | undefined) || {};
+  const metaInsurance = (meta.insurance as Record<string, unknown> | undefined) || {};
+
+  const isFragile = Boolean(metaPackage.isFragile);
+  const fragileCategory = typeof metaPackage.fragileCategory === 'string' ? metaPackage.fragileCategory : undefined;
+  const packagingStandardMet = Boolean(metaPackage.packagingStandardMet);
+  const packagingWaiver = Boolean(metaPackage.packagingWaiver || metaInsurance.packagingWaiver);
+  const insuranceTier = typeof metaInsurance.tier === 'string' ? metaInsurance.tier : typeof metaPackage.insuranceTier === 'string' ? metaPackage.insuranceTier : 'NONE';
+  const declaredValue = Number(metaInsurance.declaredValue || metaPackage.declaredValue || 0);
+  const insuranceFee = Number(metaInsurance.insuranceFee || 0);
+  const declaredValueText = declaredValue > 0 ? formatCurrency(declaredValue) : undefined;
+  const insuranceFeeText = insuranceFee > 0 ? formatCurrency(insuranceFee) : undefined;
+
   const opened = openShippingLabelPrint({
     brandName: 'NEXUS LOGISTICS',
     serviceName: shipment.serviceType?.trim() || 'STANDARD',
@@ -476,6 +511,17 @@ function printWaybill(shipment: ShipmentListItemDto): boolean {
     createdAtText: formatDateTime(shipment.createdAt),
     deliveryInstruction,
     hotlineText: 'Hotline vận hành: 1900-1234',
+    pickupRouteName,
+    pickupCourierId,
+    deliveryRouteName,
+    deliveryCourierId,
+    isFragile,
+    fragileCategory,
+    packagingStandardMet,
+    packagingWaiver,
+    insuranceTier,
+    declaredValueText,
+    insuranceFeeText,
   });
 
   if (!opened) {
@@ -496,6 +542,21 @@ export function ShipmentListPage(): React.JSX.Element {
   const currentUserRoles = session?.user.roles ?? [];
   const assignedHubCodes = session?.user.hubCodes ?? [];
   const canViewAllHubAreas = currentUserRoles.includes('SYSTEM_ADMIN');
+  const hubScope = useHubScope();
+  const [selectedChildHub, setSelectedChildHub] = useState<string>('ALL');
+
+  const effectiveScopedHubCodes = useMemo(() => {
+    if (canViewAllHubAreas || hubScope.isAllSystem) {
+      if (selectedChildHub !== 'ALL') {
+        return [selectedChildHub];
+      }
+      return undefined;
+    }
+    if (selectedChildHub !== 'ALL') {
+      return [selectedChildHub];
+    }
+    return hubScope.scopedHubCodes.length > 0 ? hubScope.scopedHubCodes : undefined;
+  }, [canViewAllHubAreas, hubScope.isAllSystem, selectedChildHub, hubScope.scopedHubCodes]);
 
   const today = useMemo(() => toDateInputValue(new Date()), []);
   const filters: ShipmentListFilters = {
@@ -562,7 +623,7 @@ export function ShipmentListPage(): React.JSX.Element {
       q: isMultiCodeSearch ? undefined : filters.q,
       shipmentCodes: isMultiCodeSearch ? shipmentSearchCodes : undefined,
       status: filters.status,
-      hubCodes: canViewAllHubAreas ? undefined : assignedHubCodes,
+      hubCodes: effectiveScopedHubCodes,
       opsArrivedUnsigned:
         !hasShipmentSearch && branchGoodsFilter === 'readyForDelivery' ? true : undefined,
       createdFrom: dateRange.createdFrom,
@@ -571,9 +632,7 @@ export function ShipmentListPage(): React.JSX.Element {
       offset,
     }),
     [
-      assignedHubCodes,
-      assignedHubCodesKey,
-      canViewAllHubAreas,
+      effectiveScopedHubCodes,
       dateRange.createdFrom,
       dateRange.createdTo,
       filters.q,
@@ -586,7 +645,11 @@ export function ShipmentListPage(): React.JSX.Element {
       shipmentSearchCodes,
     ],
   );
-  const lacksHubScope = Boolean(accessToken) && !canViewAllHubAreas && assignedHubCodes.length === 0;
+  const lacksHubScope =
+    Boolean(accessToken) &&
+    !canViewAllHubAreas &&
+    !hubScope.isAllSystem &&
+    hubScope.scopedHubCodes.length === 0;
   const canQueryShipments = Boolean(accessToken) && !lacksHubScope;
   const shipmentQuery = useShipmentPageQuery(accessToken, shipmentPageFilters, {
     enabled: canQueryShipments,
@@ -1319,14 +1382,38 @@ export function ShipmentListPage(): React.JSX.Element {
         </div>
       </form>
 
-      {!canViewAllHubAreas ? (
-        <div style={styles.scopeNotice}>
-          <strong>Phạm vi hub:</strong>{' '}
-          {assignedHubCodes.length > 0
-            ? assignedHubCodes.join(', ')
-            : 'Chưa được gán hub. Vui lòng liên hệ admin để cấp hub cho tài khoản.'}
-        </div>
-      ) : null}
+      <div style={styles.scopeNotice}>
+        <strong>Phạm vi vận hành:</strong> {hubScope.scopeLabel}
+        {hubScope.childHubs.length > 0 ? (
+          <span style={{ marginLeft: '16px' }}>
+            <label htmlFor="child-hub-select" style={{ marginRight: '6px', fontWeight: 600 }}>
+              Hub con:
+            </label>
+            <select
+              id="child-hub-select"
+              value={selectedChildHub}
+              onChange={(e) => setSelectedChildHub(e.target.value)}
+              style={{
+                padding: '3px 8px',
+                borderRadius: '6px',
+                border: '1px solid var(--ops-border, #dbe2f0)',
+                background: '#ffffff',
+                fontSize: '12px',
+                color: 'var(--ops-text, #102548)',
+              }}
+            >
+              <option value="ALL">
+                Tất cả trực thuộc ({hubScope.childHubs.length} {hubScope.hubLevel === 1 ? 'tỉnh' : 'phường'})
+              </option>
+              {hubScope.childHubs.map((child) => (
+                <option key={child.code} value={child.code}>
+                  {child.name} ({child.code})
+                </option>
+              ))}
+            </select>
+          </span>
+        ) : null}
+      </div>
 
       {dispatchMessage ? (
         <div role="status" style={{ ...styles.notice, ...styles.successNotice }}>

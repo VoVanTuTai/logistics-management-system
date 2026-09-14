@@ -4,7 +4,7 @@ const os = require('os');
 const { spawn } = require('child_process');
 
 const DEFAULT_PORT = 8081;
-const DEFAULT_GATEWAY_BASE_URL = 'http://103.179.172.53:13000';
+const DEFAULT_GATEWAY_BASE_URL = 'http://localhost:3000';
 const DEFAULT_TIMEOUT_MS = '15000';
 const DEFAULT_COURIER_ID = '30000001';
 const DEFAULT_NODE_MAX_OLD_SPACE_MB = 4096;
@@ -259,7 +259,7 @@ function applyEnv(options) {
     process.env.EXPO_PUBLIC_REQUEST_TIMEOUT_MS || DEFAULT_TIMEOUT_MS;
   process.env.EXPO_PUBLIC_COURIER_ID = options.courierId;
   process.env.EXPO_PUBLIC_ALLOW_ALL_COURIER_MOBILE_PERMISSIONS_FOR_TESTING =
-    process.env.EXPO_PUBLIC_ALLOW_ALL_COURIER_MOBILE_PERMISSIONS_FOR_TESTING || 'true';
+    process.env.EXPO_PUBLIC_ALLOW_ALL_COURIER_MOBILE_PERMISSIONS_FOR_TESTING || 'false';
   process.env.EXPO_NO_DEPENDENCY_VALIDATION =
     process.env.EXPO_NO_DEPENDENCY_VALIDATION || '1';
   process.env.EXPO_NO_DOCTOR = process.env.EXPO_NO_DOCTOR || '1';

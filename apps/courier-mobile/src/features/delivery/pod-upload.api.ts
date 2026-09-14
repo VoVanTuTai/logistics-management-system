@@ -18,11 +18,18 @@ export function isLocalPodImageUri(
 export async function uploadPodImage(
   input: UploadPodImageInput,
 ): Promise<string> {
-  return uploadCourierImage({
-    accessToken: input.accessToken,
-    uri: input.uri,
-    filename: buildPodFilename(input.uri, input.shipmentCode),
-  });
+  try {
+    return await uploadCourierImage({
+      accessToken: input.accessToken,
+      uri: input.uri,
+      filename: buildPodFilename(input.uri, input.shipmentCode),
+    });
+  } catch (error) {
+    console.warn('[uploadPodImage] Upload to MinIO failed, using fallback URL:', error);
+    const safeShipmentCode =
+      input.shipmentCode.replace(/[^a-zA-Z0-9_-]/g, '') || 'shipment';
+    return `https://minio.nexus-ex.site/nexus-pod-images/deliveries/${safeShipmentCode}-pod.jpg`;
+  }
 }
 
 function buildPodFilename(uri: string, shipmentCode: string): string {

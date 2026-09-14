@@ -5,18 +5,34 @@ export interface CreateShipmentMetadata {
     name?: string;
     phone?: string;
     addressDetail?: string;
+    address?: string;
     province?: string;
     district?: string;
     ward?: string;
+    hubCode?: string;
+    latitude?: number;
+    longitude?: number;
+    coordinate?: { latitude: number; longitude: number };
   };
   receiver?: {
     name?: string;
     phone?: string;
     addressDetail?: string;
+    address?: string;
     province?: string;
     district?: string;
     ward?: string;
+    hubCode?: string;
+    latitude?: number;
+    longitude?: number;
+    coordinate?: { latitude: number; longitude: number };
   };
+  pickupLatitude?: number;
+  pickupLongitude?: number;
+  pickupCoordinate?: { latitude: number; longitude: number };
+  deliveryLatitude?: number;
+  deliveryLongitude?: number;
+  deliveryCoordinate?: { latitude: number; longitude: number };
   package?: {
     itemName?: string;
     weightKg?: number;
@@ -28,13 +44,25 @@ export interface CreateShipmentMetadata {
     declaredValue?: number;
     codAmount?: number;
   };
+  pickupType?: 'PICKUP' | 'DROP_OFF';
   service?: {
     type?: string;
+    pickupType?: 'PICKUP' | 'DROP_OFF';
     fee?: number;
   };
   shippingFee?: number;
   codAmount?: number;
-  notes?: string;
+  notes?: string | null;
+  deliveryNote?: string | null;
+  originHubCode?: string;
+  destinationHubCode?: string;
+  senderHubCode?: string;
+  receiverHubCode?: string;
+  routing?: {
+    originHubCode?: string;
+    destinationHubCode?: string;
+  };
+  [key: string]: unknown;
 }
 
 export interface ShipmentResponse {
@@ -74,7 +102,13 @@ export const shipmentApi = {
     return customerApiClient.request<ShipmentResponse>('/customer/shipment/shipments', {
       method: 'POST',
       accessToken,
-      body: { metadata },
+      body: {
+        pickupLatitude: metadata.pickupLatitude,
+        pickupLongitude: metadata.pickupLongitude,
+        deliveryLatitude: metadata.deliveryLatitude,
+        deliveryLongitude: metadata.deliveryLongitude,
+        metadata,
+      },
     });
   },
 

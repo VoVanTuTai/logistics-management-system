@@ -16,6 +16,10 @@ export interface Shipment {
   createdByUserId?: string | null;
   createdByType?: string | null;
   receiverPhone?: string | null;
+  pickupLatitude?: number | null;
+  pickupLongitude?: number | null;
+  deliveryLatitude?: number | null;
+  deliveryLongitude?: number | null;
   metadata: JsonValue | null;
   cancellationReason: string | null;
   createdAt: Date;
@@ -28,6 +32,10 @@ export interface CreateShipmentInput {
   createdByUserId?: string | null;
   createdByType?: string | null;
   receiverPhone?: string | null;
+  pickupLatitude?: number | null;
+  pickupLongitude?: number | null;
+  deliveryLatitude?: number | null;
+  deliveryLongitude?: number | null;
 }
 
 export interface UpdateShipmentInput {

@@ -31,6 +31,8 @@ export interface StructuredAddress {
   composedAddress: string;
   hubCode: string;
   hubName: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 interface Props {
@@ -220,6 +222,11 @@ export function AddressSelectorModal({
   const [selectedWard, setSelectedWard] = useState<VietnamWard | null>(null);
   const [addressDetail, setAddressDetail] = useState<string>(initialAddress?.addressDetail ?? '');
   const [selectedHub, setSelectedHub] = useState<HubRecord | null>(null);
+  const [coords, setCoords] = useState<{ latitude?: number; longitude?: number } | null>(
+    initialAddress?.latitude && initialAddress?.longitude
+      ? { latitude: initialAddress.latitude, longitude: initialAddress.longitude }
+      : null,
+  );
 
   const [loadingData, setLoadingData] = useState(false);
   const [stepView, setStepView] = useState<'FORM' | 'SELECT_PROVINCE' | 'SELECT_WARD' | 'SELECT_HUB'>('FORM');
@@ -299,17 +306,17 @@ export function AddressSelectorModal({
 
   // Auto-pick best matching hub when province changes or initial load
   useEffect(() => {
-    if (matchingHubs.length > 0) {
-      if (!selectedHub || !matchingHubs.some((h) => h.code === selectedHub.code)) {
+    if (selectedProvince && matchingHubs.length > 0) {
+      // Prioritize existing hub if it already matches
+      const currentMatches = selectedHub && matchingHubs.some((h) => h.code === selectedHub.code);
+      if (!currentMatches) {
         setSelectedHub(matchingHubs[0]);
       }
-    } else if (hubList.length > 0 && !selectedHub) {
-      setSelectedHub(hubList[0]);
     }
   }, [selectedProvince, hubList]);
 
-  const rawAvailableWards = getWardsForProvince(selectedProvince);
-  const availableWards = selectedWard && !rawAvailableWards.some((w) => w.name === selectedWard.name)
+  const rawAvailableWards = selectedProvince ? getWardsForProvince(selectedProvince) : [];
+  const availableWards = selectedWard && !rawAvailableWards.some((w) => w.code === selectedWard.code)
     ? [selectedWard, ...rawAvailableWards]
     : rawAvailableWards;
 
@@ -319,18 +326,31 @@ export function AddressSelectorModal({
     if (!addressDetail.trim()) return;
 
     const hub = selectedHub || matchingHubs[0] || { code: 'HUB-DEFAULT', name: 'Bưu cục trung tâm' };
-    const composed = [addressDetail.trim(), selectedWard.name, selectedProvince.name]
+
+    let cleanWard = selectedWard.wardName || selectedWard.name;
+    let cleanDistrict = selectedWard.district || '';
+    if (!cleanDistrict) {
+      const match = selectedWard.name.match(/^(.*?)\s*\((.*?)\)$/);
+      if (match) {
+        cleanWard = match[1].trim();
+        cleanDistrict = match[2].trim();
+      }
+    }
+
+    const composed = [addressDetail.trim(), cleanWard, cleanDistrict, selectedProvince.name]
       .filter(Boolean)
       .join(', ');
 
     onConfirm({
       province: selectedProvince.name,
-      district: '',
-      ward: selectedWard.name,
+      district: cleanDistrict,
+      ward: cleanWard,
       addressDetail: addressDetail.trim(),
       composedAddress: composed,
       hubCode: hub.code,
       hubName: hub.name,
+      latitude: coords?.latitude ?? initialAddress?.latitude,
+      longitude: coords?.longitude ?? initialAddress?.longitude,
     });
     onClose();
   };
@@ -338,10 +358,13 @@ export function AddressSelectorModal({
   const handleConfirmFromMap = (res: {
     province: string;
     ward: string;
+    district?: string;
     street: string;
     composedAddress: string;
     hubCode: string;
     hubName: string;
+    latitude?: number;
+    longitude?: number;
   }) => {
     const foundProv = provinceList.find(
       (p) =>
@@ -349,14 +372,29 @@ export function AddressSelectorModal({
         p.name.toLowerCase().includes(res.province.toLowerCase()),
     ) || provinceList[0];
 
+    let cleanWard = res.ward;
+    let cleanDistrict = res.district || '';
+    if (!cleanDistrict) {
+      const match = res.ward.match(/^(.*?)\s*\((.*?)\)$/);
+      if (match) {
+        cleanWard = match[1].trim();
+        cleanDistrict = match[2].trim();
+      }
+    }
+
     setSelectedProvince(foundProv);
     setSelectedWard({
       code: Math.floor(Math.random() * 9000) + 1000,
-      name: res.ward,
+      name: cleanDistrict ? `${cleanWard} (${cleanDistrict})` : cleanWard,
+      wardName: cleanWard,
+      district: cleanDistrict,
       codename: 'map_ward',
       provinceCode: foundProv?.code || 1,
     });
     setAddressDetail(res.street);
+    if (res.latitude && res.longitude) {
+      setCoords({ latitude: res.latitude, longitude: res.longitude });
+    }
 
     const foundHub = hubList.find((h) => h.code === res.hubCode) || hubList[0];
     setSelectedHub(foundHub);

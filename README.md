@@ -45,7 +45,7 @@ flowchart LR
 | `apps/ops-web` | Ops staff | Shipments, pickups, tasks, manifests, scans, NDR, return, COD, reporting |
 | `apps/merchant-web` | Merchant | Create shipments, manage orders, request pickup, print labels, track shipments |
 | `apps/courier-mobile` | Courier | Assigned tasks, pickup/hub scans, POD/OTP, delivery failure, offline retry |
-| `apps/public-tracking` | Guest / receiver | Public shipment lookup |
+| `apps/guest-web` | Customer / Guest | Universal shipment tracking, rate calculator, network hubs, customer order management |
 
 ## Architecture
 
@@ -68,7 +68,7 @@ flowchart TB
         ops["ops-web"]
         merchantWeb["merchant-web"]
         courier["courier-mobile"]
-        publicTracking["public-tracking"]
+        customerWeb["customer-web (guest-web)"]
     end
 
     gateway["gateway-bff<br/>single client entry point"]
@@ -188,7 +188,7 @@ apps/
   ops-web/            React/Vite operations portal
   merchant-web/       React/Vite merchant portal
   courier-mobile/     Expo/React Native courier app
-  public-tracking/    React/Vite public tracking page
+  guest-web/          React/Vite customer portal & tracking page
 
 services/
   gateway-bff/        API gateway, media upload, marketplace adapter, chat/realtime
@@ -264,7 +264,7 @@ The local backend stack is organized around domain services. Each service owns i
 | `ops-web` | `http://127.0.0.1:5173` |
 | `merchant-web` | `http://127.0.0.1:5174` |
 | `admin-web` | `http://127.0.0.1:5175` |
-| `public-tracking` | `http://127.0.0.1:5176` |
+| `guest-web` (customer) | `http://127.0.0.1:5177` |
 | `courier-mobile` | Expo dev server / configured mobile runtime |
 
 ## Local Development
@@ -308,7 +308,7 @@ cp services/gateway-bff/.env.example services/gateway-bff/.env
 cp apps/ops-web/.env.example apps/ops-web/.env
 cp apps/merchant-web/.env.example apps/merchant-web/.env
 cp apps/admin-web/.env.example apps/admin-web/.env
-cp apps/public-tracking/.env.example apps/public-tracking/.env
+cp apps/guest-web/.env.example apps/guest-web/.env
 ```
 
 For local host-based service runs, set gateway upstream URLs to `http://localhost:<port>`. The helper scripts do this for you; if you start services manually, check `services/gateway-bff/.env`.

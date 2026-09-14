@@ -5,6 +5,9 @@ export interface CourierAreaAssignment {
   province: string;
   district: string;
   ward: string;
+  zoneName?: string | null;
+  colorHex?: string | null;
+  boundaryPolygon?: Array<[number, number]> | null;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -16,6 +19,9 @@ export interface CourierAreaAssignmentWriteInput {
   province: string;
   district: string;
   ward: string;
+  zoneName?: string | null;
+  colorHex?: string | null;
+  boundaryPolygon?: Array<[number, number]> | null;
   isActive?: boolean;
 }
 
@@ -27,3 +33,4 @@ export interface CourierAreaAssignmentListFilters {
   ward?: string;
   isActive?: boolean;
 }
+

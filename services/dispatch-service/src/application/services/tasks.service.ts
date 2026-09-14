@@ -33,6 +33,13 @@ import {
   normalizeWardKey,
   parseVietnameseAddress,
 } from '../utils/vietnamese-address-parser.utility';
+import {
+  haversineDistanceMeters,
+  optimizeRouteTSP,
+  type GeoPoint,
+  type RouteLeg,
+  type RouteTargetNode,
+} from '../utils/route-optimizer.utility';
 
 const DESTINATION_VISIBLE_STATUSES = new Set<string>([
   'MANIFEST_RECEIVED',
@@ -58,7 +65,7 @@ export class TasksService {
     private readonly dispatchOutboxService: DispatchOutboxService,
     private readonly tasksRealtimeGateway: TasksRealtimeGateway,
     private readonly opsAuditService: OpsAuditService,
-  ) {}
+  ) { }
 
   async list(
     filters: {
@@ -495,11 +502,20 @@ export class TasksService {
 
     if (activeTask) {
       if (activeTask.status === 'CREATED') {
-        return this.assign(activeTask.id, {
-          courierId,
-          hubCode: destinationHubCode,
-          note: `Tự động cắt địa chỉ (${ward}, ${district}) và gán cho shipper ${courierId} phụ trách tuyến`,
-        });
+        return this.assign(
+          activeTask.id,
+          {
+            courierId,
+            hubCode: destinationHubCode,
+            note: `Hệ thống tự động điều phối giao hàng cho Shipper ${courierId} theo phân vùng: ${ward}, ${district} thuộc bưu cục ${destinationHubCode}`,
+          },
+          {
+            actorId: 'SYSTEM',
+            actorUsername: 'SYSTEM_AUTO_DISPATCH',
+            ipAddress: '127.0.0.1',
+            userAgent: 'DispatchService-AutoEngine',
+          },
+        );
       }
 
       return activeTask;
@@ -509,14 +525,23 @@ export class TasksService {
       taskCode: `DLV-AUTO-${randomUUID()}`,
       taskType: 'DELIVERY',
       shipmentCode,
-      note: `Tự động cắt địa chỉ (${ward}, ${district}) và gán cho shipper ${courierId} phụ trách tuyến`,
+      note: `Hệ thống tự động tạo và phân công giao hàng cho Shipper ${courierId} theo phân vùng: ${ward}, ${district}`,
     });
 
-    return this.assign(task.id, {
-      courierId,
-      hubCode: destinationHubCode,
-      note: `Hệ thống tự động phân công theo tuyến: ${ward}, ${district}`,
-    });
+    return this.assign(
+      task.id,
+      {
+        courierId,
+        hubCode: destinationHubCode,
+        note: `Hệ thống tự động điều phối theo phân vùng tuyến: ${ward}, ${district} thuộc bưu cục ${destinationHubCode}`,
+      },
+      {
+        actorId: 'SYSTEM',
+        actorUsername: 'SYSTEM_AUTO_DISPATCH',
+        ipAddress: '127.0.0.1',
+        userAgent: 'DispatchService-AutoEngine',
+      },
+    );
   }
 
   async autoAssignPickupTask(
@@ -559,12 +584,209 @@ export class TasksService {
     const district = parsedAddress.district;
     const ward = parsedAddress.ward;
 
-    if (!province || !ward) {
+    const masterdataUrl = process.env.MASTERDATA_SERVICE_URL?.trim();
+    if (!masterdataUrl) {
       return null;
     }
 
-    const masterdataUrl = process.env.MASTERDATA_SERVICE_URL?.trim();
-    if (!masterdataUrl) {
+    const pickupLatitude =
+      typeof shipmentRecord?.pickupLatitude === 'number'
+        ? shipmentRecord.pickupLatitude
+        : typeof metadata?.pickupLatitude === 'number'
+          ? (metadata.pickupLatitude as number)
+          : null;
+    const pickupLongitude =
+      typeof shipmentRecord?.pickupLongitude === 'number'
+        ? shipmentRecord.pickupLongitude
+        : typeof metadata?.pickupLongitude === 'number'
+          ? (metadata.pickupLongitude as number)
+          : null;
+
+    // =========================================================================
+    // PRIORITY 1: EXACT GEOFENCE ROUTE MATCH (Point-in-Polygon)
+    // Ưu tiên tuyệt đối: Nếu tọa độ nằm trong bất kỳ đa giác tuyến nào đang active,
+    // gán ngay cho Courier phụ trách tuyến đó (kiểm tra Hub gốc trước, sau đó toàn bộ hệ thống).
+    // =========================================================================
+    if (pickupLatitude !== null && pickupLongitude !== null) {
+      try {
+        // 1. Lấy toàn bộ các tuyến đang hoạt động
+        const allRes = await fetch(
+          new URL('courier-area-assignments?isActive=true', masterdataUrl.endsWith('/') ? masterdataUrl : `${masterdataUrl}/`),
+          { headers: { accept: 'application/json' } },
+        );
+        const allActiveAssignments = allRes.ok ? await allRes.json().catch(() => []) : [];
+        const activeList = Array.isArray(allActiveAssignments) ? allActiveAssignments : [];
+
+        // 1A. Ưu tiên kiểm tra các tuyến thuộc originHubCode trước
+        const hubAssignments = originHubCode
+          ? activeList.filter((item: any) => item?.hubCode === originHubCode)
+          : [];
+
+        for (const item of hubAssignments) {
+          if (
+            item?.isActive &&
+            item?.courierId &&
+            Array.isArray(item?.boundaryPolygon) &&
+            item.boundaryPolygon.length >= 3
+          ) {
+            if (
+              isPointInPolygon(
+                { latitude: pickupLatitude, longitude: pickupLongitude },
+                item.boundaryPolygon,
+              )
+            ) {
+              const courierId = item.courierId;
+              const zoneLabel = item.zoneName || item.ward || 'Dải toạ độ';
+              const assignedHub = item.hubCode || originHubCode;
+              return this.assign(
+                taskId,
+                {
+                  courierId,
+                  hubCode: assignedHub,
+                  note: `[Tự động điều phối - Đúng tuyến] Tọa độ (${pickupLatitude.toFixed(5)}, ${pickupLongitude.toFixed(5)}) khớp chính xác Tuyến [${zoneLabel}] của Shipper ${courierId} thuộc Hub ${assignedHub}`,
+                },
+                {
+                  actorId: 'SYSTEM',
+                  actorUsername: 'SYSTEM_AUTO_DISPATCH',
+                  ipAddress: '127.0.0.1',
+                  userAgent: 'DispatchService-GeofenceEngine',
+                },
+              ).catch(() => null);
+            }
+          }
+        }
+
+        // 1B. Kiểm tra Point-in-Polygon trên toàn bộ các tuyến còn lại trong hệ thống
+        const otherAssignments = originHubCode
+          ? activeList.filter((item: any) => item?.hubCode !== originHubCode)
+          : activeList;
+
+        for (const item of otherAssignments) {
+          if (
+            item?.isActive &&
+            item?.courierId &&
+            Array.isArray(item?.boundaryPolygon) &&
+            item.boundaryPolygon.length >= 3
+          ) {
+            if (
+              isPointInPolygon(
+                { latitude: pickupLatitude, longitude: pickupLongitude },
+                item.boundaryPolygon,
+              )
+            ) {
+              const courierId = item.courierId;
+              const zoneLabel = item.zoneName || item.ward || 'Dải toạ độ';
+              const assignedHub = item.hubCode || originHubCode;
+              return this.assign(
+                taskId,
+                {
+                  courierId,
+                  hubCode: assignedHub,
+                  note: `[Tự động điều phối - Đúng tuyến liên Hub] Tọa độ (${pickupLatitude.toFixed(5)}, ${pickupLongitude.toFixed(5)}) khớp chính xác Tuyến [${zoneLabel}] của Shipper ${courierId} thuộc Hub ${assignedHub}`,
+                },
+                {
+                  actorId: 'SYSTEM',
+                  actorUsername: 'SYSTEM_AUTO_DISPATCH',
+                  ipAddress: '127.0.0.1',
+                  userAgent: 'DispatchService-GeofenceEngine',
+                },
+              ).catch(() => null);
+            }
+          }
+        }
+
+        // =========================================================================
+        // PRIORITY 2: EXACT WARD MATCH (Khớp theo tên Phường nếu toạ độ nằm mép ngoài)
+        // =========================================================================
+        if (ward) {
+          const targetWardKey = normalizeWardKey(ward);
+          const wardMatch = activeList.find(
+            (item: any) =>
+              item?.isActive &&
+              item?.courierId &&
+              normalizeWardKey(item?.ward) === targetWardKey,
+          );
+          if (wardMatch) {
+            const courierId = wardMatch.courierId;
+            const zoneLabel = wardMatch.zoneName || wardMatch.ward || 'Tuyến Phường';
+            const assignedHub = wardMatch.hubCode || originHubCode;
+            return this.assign(
+              taskId,
+              {
+                courierId,
+                hubCode: assignedHub,
+                note: `[Tự động điều phối - Đúng Phường] Khớp theo địa bàn ${ward} vào Tuyến [${zoneLabel}] của Shipper ${courierId} thuộc Hub ${assignedHub}`,
+              },
+              {
+                actorId: 'SYSTEM',
+                actorUsername: 'SYSTEM_AUTO_DISPATCH',
+                ipAddress: '127.0.0.1',
+                userAgent: 'DispatchService-GeofenceEngine',
+              },
+            ).catch(() => null);
+          }
+        }
+
+        // =========================================================================
+        // PRIORITY 3: NEAREST CENTROID FALLBACK (Dự phòng cuối - Tâm tuyến gần nhất <= 25km)
+        // =========================================================================
+        let nearestItem: any = null;
+        let minDistanceMeters = Infinity;
+        for (const item of activeList) {
+          if (
+            item?.isActive &&
+            item?.courierId &&
+            Array.isArray(item?.boundaryPolygon) &&
+            item.boundaryPolygon.length >= 3
+          ) {
+            const centerLat =
+              item.boundaryPolygon.reduce(
+                (s: number, p: [number, number]) => s + p[0],
+                0,
+              ) / item.boundaryPolygon.length;
+            const centerLng =
+              item.boundaryPolygon.reduce(
+                (s: number, p: [number, number]) => s + p[1],
+                0,
+              ) / item.boundaryPolygon.length;
+            const dist = haversineDistanceMeters(
+              { latitude: pickupLatitude, longitude: pickupLongitude },
+              { latitude: centerLat, longitude: centerLng },
+            );
+            if (dist < minDistanceMeters) {
+              minDistanceMeters = dist;
+              nearestItem = item;
+            }
+          }
+        }
+
+        if (nearestItem && minDistanceMeters <= 25000) {
+          const courierId = nearestItem.courierId;
+          const zoneLabel =
+            nearestItem.zoneName || nearestItem.ward || 'Tuyến gần nhất';
+          const assignedHub = nearestItem.hubCode || originHubCode;
+          const distKm = (minDistanceMeters / 1000).toFixed(1);
+          return this.assign(
+            taskId,
+            {
+              courierId,
+              hubCode: assignedHub,
+              note: `[Tự động điều phối - Gần nhất dự phòng] Tọa độ GPS (${pickupLatitude.toFixed(5)}, ${pickupLongitude.toFixed(5)}) cách ~${distKm}km tâm Tuyến [${zoneLabel}] của Shipper ${courierId} thuộc Hub ${assignedHub}`,
+            },
+            {
+              actorId: 'SYSTEM',
+              actorUsername: 'SYSTEM_AUTO_DISPATCH',
+              ipAddress: '127.0.0.1',
+              userAgent: 'DispatchService-GeofenceEngine',
+            },
+          ).catch(() => null);
+        }
+      } catch {
+        // Fallback to address matching
+      }
+    }
+
+    if (!province || !ward) {
       return null;
     }
 
@@ -602,12 +824,8 @@ export class TasksService {
 
     if (assignmentList.length === 0) {
       try {
-        const fallbackQuery = new URLSearchParams({
-          hubCode: originHubCode,
-          isActive: 'true',
-        });
         const fallbackUrl = new URL(
-          `courier-area-assignments?${fallbackQuery.toString()}`,
+          `courier-area-assignments?isActive=true`,
           masterdataUrl.endsWith('/') ? masterdataUrl : `${masterdataUrl}/`,
         );
         const fallbackResponse = await fetch(fallbackUrl, {
@@ -635,11 +853,21 @@ export class TasksService {
     }
 
     const courierId = firstAssignment.courierId;
-    return this.assign(taskId, {
-      courierId,
-      hubCode: originHubCode,
-      note: `Tự động phân công lấy hàng theo tuyến: ${ward}, ${district}`,
-    }).catch(() => null);
+    const assignedHub = firstAssignment.hubCode || originHubCode;
+    return this.assign(
+      taskId,
+      {
+        courierId,
+        hubCode: assignedHub,
+        note: `Hệ thống tự động điều phối lấy hàng cho Shipper ${courierId} theo phân vùng: ${ward}, ${district || ''} thuộc bưu cục ${assignedHub}`,
+      },
+      {
+        actorId: 'SYSTEM',
+        actorUsername: 'SYSTEM_AUTO_DISPATCH',
+        ipAddress: '127.0.0.1',
+        userAgent: 'DispatchService-AutoEngine',
+      },
+    ).catch(() => null);
   }
 
   private async getOrCreateUnassignedDeliveryTask(
@@ -750,7 +978,7 @@ export class TasksService {
         const shipmentCode = normalizeNonEmptyString(asRecord(item)?.shipmentCode);
         if (!shipmentCode) {
           continue;
-      }
+        }
 
         const shipmentHubCodes = await this.resolveShipmentHubCodes(
           shipmentCode,
@@ -850,6 +1078,129 @@ export class TasksService {
     }
 
     return normalizedStatus as (typeof TASK_STATUSES)[number];
+  }
+
+  async optimizeRoute(input: {
+    courierId: string;
+    startLatitude: number;
+    startLongitude: number;
+    taskIds?: string[];
+    taskType?: TaskType;
+  }): Promise<{
+    orderedTaskIds: string[];
+    orderedTasks: Task[];
+    legs: RouteLeg[];
+    totalDistanceMeters: number;
+    estimatedDurationSeconds: number;
+  }> {
+    const courierId = this.requireCourierId(input.courierId);
+    const startLocation: GeoPoint = {
+      latitude: input.startLatitude,
+      longitude: input.startLongitude,
+    };
+
+    let tasks = await this.taskRepository.list({
+      courierId,
+      status: 'ASSIGNED',
+      taskType: input.taskType,
+    });
+
+    if (Array.isArray(input.taskIds) && input.taskIds.length > 0) {
+      const allowedSet = new Set(input.taskIds);
+      tasks = tasks.filter((t) => allowedSet.has(t.id));
+    }
+
+    if (tasks.length === 0) {
+      return {
+        orderedTaskIds: [],
+        orderedTasks: [],
+        legs: [],
+        totalDistanceMeters: 0,
+        estimatedDurationSeconds: 0,
+      };
+    }
+
+    const nodes: RouteTargetNode[] = [];
+    const taskMap = new Map<string, Task>();
+
+    for (const task of tasks) {
+      taskMap.set(task.id, task);
+      let coord: GeoPoint | null = null;
+
+      if (task.shipmentCode) {
+        const shipment = await this.fetchServiceJson(
+          'SHIPMENT_SERVICE_URL',
+          `shipments/${encodeURIComponent(task.shipmentCode)}`,
+        );
+        const sRecord = asRecord(shipment);
+        const metadata = asRecord(sRecord?.metadata);
+        const sender = asRecord(metadata?.sender);
+        const receiver = asRecord(metadata?.receiver);
+
+        if (task.taskType === 'PICKUP') {
+          const lat =
+            sRecord?.pickupLatitude ??
+            metadata?.pickupLatitude ??
+            sender?.latitude ??
+            asRecord(sender?.coordinate)?.latitude;
+          const lng =
+            sRecord?.pickupLongitude ??
+            metadata?.pickupLongitude ??
+            sender?.longitude ??
+            asRecord(sender?.coordinate)?.longitude;
+          if (typeof lat === 'number' && typeof lng === 'number') {
+            coord = { latitude: lat, longitude: lng };
+          }
+        } else if (task.taskType === 'DELIVERY') {
+          const lat =
+            sRecord?.deliveryLatitude ??
+            metadata?.deliveryLatitude ??
+            receiver?.latitude ??
+            asRecord(receiver?.coordinate)?.latitude;
+          const lng =
+            sRecord?.deliveryLongitude ??
+            metadata?.deliveryLongitude ??
+            receiver?.longitude ??
+            asRecord(receiver?.coordinate)?.longitude;
+          if (typeof lat === 'number' && typeof lng === 'number') {
+            coord = { latitude: lat, longitude: lng };
+          }
+        } else if (task.taskType === 'RETURN') {
+          const lat = sender?.latitude ?? sRecord?.pickupLatitude;
+          const lng = sender?.longitude ?? sRecord?.pickupLongitude;
+          if (typeof lat === 'number' && typeof lng === 'number') {
+            coord = { latitude: lat, longitude: lng };
+          }
+        }
+      }
+
+      if (!coord) {
+        coord = {
+          latitude: startLocation.latitude + (Math.random() - 0.5) * 0.005,
+          longitude: startLocation.longitude + (Math.random() - 0.5) * 0.005,
+        };
+      }
+
+      nodes.push({
+        id: task.id,
+        coordinate: coord,
+        taskType: task.taskType,
+      });
+    }
+
+    const result = optimizeRouteTSP(startLocation, nodes);
+
+    const orderedTasks = result.orderedIds
+      .map((id) => taskMap.get(id))
+      .filter((t): t is Task => Boolean(t));
+
+    return {
+      orderedTaskIds: result.orderedIds,
+      orderedTasks,
+      legs: result.legs,
+      totalDistanceMeters: result.totalDistanceMeters,
+      estimatedDurationSeconds: result.estimatedDurationSeconds,
+    };
   }
 }
 
@@ -975,4 +1326,29 @@ function isSameHubOrScopedLocation(
   }
 
   return false;
+}
+
+function isPointInPolygon(
+  point: { latitude: number; longitude: number },
+  polygon: Array<[number, number]>,
+): boolean {
+  if (!polygon || polygon.length < 3) return false;
+  const x = point.latitude;
+  const y = point.longitude;
+  let inside = false;
+
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i][0];
+    const yi = polygon[i][1];
+    const xj = polygon[j][0];
+    const yj = polygon[j][1];
+
+    const intersect =
+      yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+    if (intersect) {
+      inside = !inside;
+    }
+  }
+
+  return inside;
 }

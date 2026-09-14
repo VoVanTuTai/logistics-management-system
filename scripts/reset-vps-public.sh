@@ -12,6 +12,7 @@ NGINX_LINK="/etc/nginx/sites-enabled/nexus-public.conf"
 OPS_DOMAIN="${OPS_DOMAIN:-ops.nexus-ex.site}"
 MERCHANT_DOMAIN="${MERCHANT_DOMAIN:-merchant.nexus-ex.site}"
 ADMIN_DOMAIN="${ADMIN_DOMAIN:-admin.nexus-ex.site}"
+CUSTOMER_DOMAIN="${CUSTOMER_DOMAIN:-customer.nexus-ex.site}"
 TRACKING_DOMAIN="${TRACKING_DOMAIN:-tracking.nexus-ex.site}"
 MINIO_DOMAIN="${MINIO_DOMAIN:-minio.nexus-ex.site}"
 
@@ -195,14 +196,15 @@ load_env() {
   set_env_value OPS_PUBLIC_URL "https://${OPS_DOMAIN}"
   set_env_value MERCHANT_PUBLIC_URL "https://${MERCHANT_DOMAIN}"
   set_env_value ADMIN_PUBLIC_URL "https://${ADMIN_DOMAIN}"
-  set_env_value PUBLIC_TRACKING_PUBLIC_URL "https://${TRACKING_DOMAIN}"
+  set_env_value CUSTOMER_PUBLIC_URL "https://${CUSTOMER_DOMAIN}"
+  set_env_value GUEST_PUBLIC_URL "https://${CUSTOMER_DOMAIN}"
   set_env_value GATEWAY_PUBLIC_URL "https://${OPS_DOMAIN}"
   set_env_value MINIO_PUBLIC_ENDPOINT "https://${MINIO_DOMAIN}"
-  set_env_value CORS_ORIGINS "https://${OPS_DOMAIN},https://${MERCHANT_DOMAIN},https://${ADMIN_DOMAIN},https://${TRACKING_DOMAIN}"
+  set_env_value CORS_ORIGINS "https://${OPS_DOMAIN},https://${MERCHANT_DOMAIN},https://${ADMIN_DOMAIN},https://${CUSTOMER_DOMAIN},https://${TRACKING_DOMAIN}"
   set_env_value OPS_WEB_PORT "5173"
   set_env_value MERCHANT_WEB_PORT "5174"
   set_env_value ADMIN_WEB_PORT "5175"
-  set_env_value PUBLIC_TRACKING_PORT "5176"
+  set_env_value GUEST_WEB_PORT "5178"
   set_env_value GATEWAY_PORT "13000"
   set_env_value MINIO_API_PORT "19000"
 
@@ -313,19 +315,21 @@ render_https_nginx_config() {
   local ops_cert
   local merchant_cert
   local admin_cert
+  local customer_cert
   local tracking_cert
   local minio_cert
 
   ops_cert="$(cert_domain_for "$OPS_DOMAIN")"
   merchant_cert="$(cert_domain_for "$MERCHANT_DOMAIN")"
   admin_cert="$(cert_domain_for "$ADMIN_DOMAIN")"
+  customer_cert="$(cert_domain_for "$CUSTOMER_DOMAIN")"
   tracking_cert="$(cert_domain_for "$TRACKING_DOMAIN")"
   minio_cert="$(cert_domain_for "$MINIO_DOMAIN")"
 
   cat <<EOF
 server {
   listen 80;
-  server_name ${OPS_DOMAIN} ${MERCHANT_DOMAIN} ${ADMIN_DOMAIN} ${TRACKING_DOMAIN} ${MINIO_DOMAIN};
+  server_name ${OPS_DOMAIN} ${MERCHANT_DOMAIN} ${ADMIN_DOMAIN} ${CUSTOMER_DOMAIN} ${TRACKING_DOMAIN} ${MINIO_DOMAIN};
 
   location ^~ /.well-known/acme-challenge/ {
     root /var/www/html;
@@ -449,14 +453,14 @@ server {
 
 server {
   listen 443 ssl;
-  server_name ${TRACKING_DOMAIN};
+  server_name ${CUSTOMER_DOMAIN} ${TRACKING_DOMAIN};
 
-  ssl_certificate /etc/letsencrypt/live/${tracking_cert}/fullchain.pem;
-  ssl_certificate_key /etc/letsencrypt/live/${tracking_cert}/privkey.pem;
+  ssl_certificate /etc/letsencrypt/live/${customer_cert:-$tracking_cert}/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/${customer_cert:-$tracking_cert}/privkey.pem;
   ssl_protocols TLSv1.2 TLSv1.3;
 
   location / {
-    proxy_pass http://127.0.0.1:5176;
+    proxy_pass http://127.0.0.1:5178;
     proxy_http_version 1.1;
     proxy_set_header Host \$host;
     proxy_set_header X-Forwarded-Proto \$scheme;
@@ -653,7 +657,7 @@ print_summary() {
   echo "ops-web:          https://${OPS_DOMAIN}"
   echo "merchant-web:     https://${MERCHANT_DOMAIN}"
   echo "admin-web:        https://${ADMIN_DOMAIN}"
-  echo "public-tracking:  https://${TRACKING_DOMAIN}"
+  echo "customer-web:     https://${CUSTOMER_DOMAIN} (alias: https://${TRACKING_DOMAIN})"
   echo
   echo "Demo ops login: username=20000001 password=password"
 }

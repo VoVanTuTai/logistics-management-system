@@ -1,4 +1,4 @@
-﻿import qrcode from 'qrcode-generator';
+import qrcode from 'qrcode-generator';
 
 export interface ShippingLabelPrintPayload {
   brandName: string;
@@ -21,6 +21,17 @@ export interface ShippingLabelPrintPayload {
   createdAtText: string;
   deliveryInstruction: string;
   hotlineText: string;
+  pickupRouteName?: string;
+  pickupCourierId?: string;
+  deliveryRouteName?: string;
+  deliveryCourierId?: string;
+  isFragile?: boolean;
+  fragileCategory?: string;
+  packagingStandardMet?: boolean;
+  packagingWaiver?: boolean;
+  insuranceTier?: string;
+  declaredValueText?: string;
+  insuranceFeeText?: string;
 }
 
 function escapeHtml(value: string): string {
@@ -34,6 +45,14 @@ function escapeHtml(value: string): string {
 
 function newlineToBreaks(value: string): string {
   return escapeHtml(value).replace(/\r?\n/g, '<br />');
+}
+
+function buildWineGlassSvg(): string {
+  return `<svg class="symbol-svg" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 22h8" /><path d="M12 15v7" /><path d="M12 15a5 5 0 0 0 5-5c0-2-.5-4-2-8H9c-1.5 4-2 6-2 8a5 5 0 0 0 5 5Z" /><path d="m10 7 2 2-1 3 2 1" /></svg>`;
+}
+
+function buildShieldSvg(): string {
+  return `<svg class="symbol-svg" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="m9 12 2 2 4-4" /></svg>`;
 }
 
 function buildQrSvg(value: string): string {
@@ -167,6 +186,7 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
       .footer { font-size: 2.3mm; border-top: 0.2mm dashed #333; padding-top: 1.1mm; line-height: 1.25; }
       .header > *,
       .two-col > *,
+      .route-courier-box > *,
       .route > *,
       .item-qr > *,
       .big-row > *,
@@ -174,13 +194,96 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
         min-width: 0;
       }
       .sheet {
-        padding: 2.4mm;
-        grid-template-rows: 22mm 30mm 11mm 28mm 14mm 27mm minmax(0, 1fr);
+        padding: 2.2mm;
+        grid-template-rows: 19mm 9.5mm 23mm 13mm 8mm 24mm 11mm 23mm minmax(0, 1fr);
         gap: 0.8mm;
+      }
+      .special-handling-box {
+        display: grid;
+        grid-template-rows: minmax(0, 1fr) auto;
+        gap: 0.5mm;
+        padding: 0.6mm 0.8mm;
+        border: 0.25mm solid #111;
+        background: #fff;
+      }
+      .fragile-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #000;
+        color: #fff;
+        padding: 0.4mm 0.9mm;
+        line-height: 1.1;
+      }
+      .fragile-bar-left {
+        display: flex;
+        align-items: center;
+        gap: 1mm;
+        font-size: 2.5mm;
+        font-weight: 900;
+        letter-spacing: 0.2px;
+      }
+      .fragile-bar-left .symbol-svg {
+        stroke: #fff;
+        width: 3.2mm;
+        height: 3.2mm;
+      }
+      .fragile-bar-right {
+        font-size: 2mm;
+        font-weight: 900;
+        border: 0.15mm solid #fff;
+        padding: 0.1mm 0.6mm;
+        letter-spacing: 0.2px;
+      }
+      .standard-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f8fafc;
+        border: 0.2mm solid #94a3b8;
+        padding: 0.4mm 0.9mm;
+        font-size: 2.2mm;
+        font-weight: 800;
+        color: #0f172a;
+      }
+      .handling-sub-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        overflow: hidden;
+      }
+      .handling-badges {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 0.6mm;
+        align-items: center;
+        overflow: hidden;
+      }
+      .badge-tag {
+        font-size: 1.9mm;
+        font-weight: 800;
+        padding: 0.15mm 0.6mm;
+        border: 0.2mm solid #111;
+        white-space: nowrap;
+        line-height: 1.1;
+      }
+      .badge-tag--waiver {
+        background: #000;
+        color: #fff;
+      }
+      .badge-tag--sop {
+        background: #f8fafc;
+        color: #000;
+      }
+      .badge-tag--insurance {
+        background: #000;
+        color: #fff;
       }
       .block,
       .header,
+      .special-handling-box,
       .two-col > *,
+      .route-courier-box > *,
       .route > *,
       .item-qr > *,
       .big-row > *,
@@ -197,11 +300,61 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
       .barcode { height: 12.5mm; }
       .ship-code { font-size: 2.9mm; line-height: 1.1; }
       .two-col,
+      .route-courier-box,
       .route,
       .item-qr,
       .big-row,
       .cod-sign {
         height: 100%;
+      }
+      .route-courier-box { gap: 1mm; }
+      .route-courier-card {
+        background: #f8fafc;
+        border: 0.25mm solid #1e293b;
+        padding: 0.9mm 1.1mm;
+        display: grid;
+        grid-template-rows: auto auto auto;
+        gap: 0.2mm;
+        min-height: 0;
+      }
+      .route-courier-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 2.1mm;
+        font-weight: 800;
+        letter-spacing: 0.2px;
+        color: #334155;
+      }
+      .route-courier-badge {
+        font-size: 1.8mm;
+        font-weight: 900;
+        background: #0f172a;
+        color: #ffffff;
+        padding: 0.2mm 0.8mm;
+        border-radius: 0.3mm;
+      }
+      .route-courier-badge--deliv {
+        background: #0369a1;
+      }
+      .route-courier-val {
+        font-size: 2.9mm;
+        font-weight: 900;
+        color: #0f172a;
+        line-height: 1.15;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .route-courier-shipper {
+        font-size: 2.2mm;
+        color: #475569;
+        line-height: 1.1;
+      }
+      .route-courier-shipper strong {
+        color: #0369a1;
+        font-weight: 800;
+        font-size: 2.4mm;
       }
       .label { font-size: 2.35mm; line-height: 1; margin-bottom: 0.45mm; }
       .name { font-size: 2.75mm; line-height: 1.08; margin-bottom: 0.25mm; }
@@ -222,7 +375,7 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
         overflow: hidden;
       }
       .two-col .block .text:last-child { -webkit-line-clamp: 6; }
-      .item-qr .block .text:last-child { -webkit-line-clamp: 4; }
+      .item-qr .block .text:last-child { -webkit-line-clamp: 5; }
       .cod-sign .block .text:last-child { -webkit-line-clamp: 5; }
       .route-main,
       .route-sub {
@@ -302,18 +455,71 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
         </div>
       </section>
 
+      <section class="special-handling-box block">
+        ${payload.isFragile ? `
+          <div class="fragile-bar">
+            <div class="fragile-bar-left">
+              ${buildWineGlassSvg()}
+              <span>HÀNG DỄ VỠ - XIN NHẸ TAY (FRAGILE)</span>
+            </div>
+            <div class="fragile-bar-right">TOP STACKING</div>
+          </div>
+        ` : `
+          <div class="standard-bar">
+            <span>KIỆN HÀNG TIÊU CHUẨN (STANDARD PARCEL)</span>
+            <span>GIAO HÀNG ĐẢM BẢO</span>
+          </div>
+        `}
+        <div class="handling-sub-row">
+          <div class="handling-badges">
+            ${payload.isFragile && payload.fragileCategory ? `
+              <span class="badge-tag">NHÓM: ${escapeHtml(payload.fragileCategory.toUpperCase())}</span>
+            ` : ''}
+            ${payload.packagingWaiver ? `
+              <span class="badge-tag badge-tag--waiver">⚠️ MIỄN TRỪ BỂ VỠ (WAIVER)</span>
+            ` : (payload.isFragile && payload.packagingStandardMet) ? `
+              <span class="badge-tag badge-tag--sop">✓ CHUẨN ĐÓNG GÓI SOP</span>
+            ` : ''}
+            ${payload.insuranceTier === 'COMPREHENSIVE_100' ? `
+              <span class="badge-tag badge-tag--insurance">🛡️ BẢO HIỂM 100% (${escapeHtml(payload.declaredValueText || 'ĐÃ KHAI GIÁ')})</span>
+            ` : `
+              <span class="badge-tag">HẠN MỨC ĐỀN BÙ: Đ.25 LUẬT BƯU CHÍNH</span>
+            `}
+          </div>
+        </div>
+      </section>
+
       <section class="two-col">
         <div class="block">
-          <div class="label">Từ</div>
+          <div class="label">Từ (Người gửi)</div>
           <div class="name">${escapeHtml(payload.senderName)}</div>
           <div class="text">${escapeHtml(payload.senderPhone)}</div>
           <div class="text">${sender}</div>
         </div>
         <div class="block">
-          <div class="label">Đến</div>
+          <div class="label">Đến (Người nhận)</div>
           <div class="name">${escapeHtml(payload.receiverName)}</div>
           <div class="text">${escapeHtml(payload.receiverPhone)}</div>
           <div class="text">${receiver}</div>
+        </div>
+      </section>
+
+      <section class="two-col route-courier-box">
+        <div class="block route-courier-card">
+          <div class="route-courier-title">
+            <span>TUYẾN LẤY HÀNG</span>
+            <span class="route-courier-badge">LẤY</span>
+          </div>
+          <div class="route-courier-val">${escapeHtml(payload.pickupRouteName || 'TUYẾN LẤY')}</div>
+          <div class="route-courier-shipper">Shipper lấy: <strong>${escapeHtml(payload.pickupCourierId || 'Tự động')}</strong></div>
+        </div>
+        <div class="block route-courier-card">
+          <div class="route-courier-title">
+            <span>TUYẾN PHÁT HÀNG</span>
+            <span class="route-courier-badge route-courier-badge--deliv">GIAO</span>
+          </div>
+          <div class="route-courier-val">${escapeHtml(payload.deliveryRouteName || 'TUYẾN PHÁT')}</div>
+          <div class="route-courier-shipper">Shipper giao: <strong>${escapeHtml(payload.deliveryCourierId || 'Tự động')}</strong></div>
         </div>
       </section>
 
@@ -324,9 +530,12 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
 
       <section class="item-qr">
         <div class="block dash">
-          <div class="label">Nội dung hàng</div>
+          <div class="label">Nội dung hàng & Ghi chú bưu cục</div>
           <div class="text">${escapeHtml(payload.itemDescription || '-')}</div>
           <div class="text">${escapeHtml(payload.parcelNote || '-')}</div>
+          ${payload.isFragile ? `<div class="text" style="font-weight:800;">[!] HÀNG DỄ VỠ - Phân loại: ${escapeHtml(payload.fragileCategory || 'Tiêu chuẩn')}</div>` : ''}
+          ${payload.packagingWaiver ? `<div class="text" style="font-weight:800;">[!] ĐÃ KÝ MIỄN TRỪ BỂ VỠ: Thùng ngoài nguyên vẹn miễn trừ bên trong</div>` : ''}
+          ${payload.insuranceTier === 'COMPREHENSIVE_100' ? `<div class="text" style="font-weight:800;">[🛡️] BẢO HIỂM 100%: Khai giá ${escapeHtml(payload.declaredValueText || 'Đã khai')}${payload.insuranceFeeText ? ` (Phí BH: ${escapeHtml(payload.insuranceFeeText)})` : ''}</div>` : ''}
         </div>
         <div class="qr-box">
           ${qr}
@@ -392,3 +601,160 @@ export function openShippingLabelPrint(payload: ShippingLabelPrintPayload): bool
 
   return true;
 }
+
+export interface RouteCourierResolution {
+  routeName: string;
+  courierId: string;
+}
+
+export function resolveRouteAndCourier(
+  address?: string | null,
+  ward?: string | null,
+  district?: string | null,
+  hubCode?: string | null,
+  isPickup: boolean = true,
+): RouteCourierResolution {
+  const text = `${address || ''} ${ward || ''} ${district || ''} ${hubCode || ''}`.toLowerCase();
+
+  // 1. Hà Nội
+  if (
+    text.includes('hàng bài') ||
+    text.includes('hoàn kiếm') ||
+    text.includes('tràng tiền') ||
+    text.includes('00101w001') ||
+    (text.includes('hub_hn_tx') && text.includes('hoàn kiếm'))
+  ) {
+    return isPickup
+      ? { routeName: 'ROUTE-HN-HK01 (Bắc Hàng Bài)', courierId: '30002001' }
+      : { routeName: 'ROUTE-HN-HK02 (Nam Hàng Bài)', courierId: '30002002' };
+  }
+  if (
+    text.includes('kim mã') ||
+    text.includes('ba đình') ||
+    text.includes('điện biên') ||
+    text.includes('00102w001') ||
+    text.includes('hub_hn_bd')
+  ) {
+    return isPickup
+      ? { routeName: 'ROUTE-HN-BD01 (Đông Kim Mã)', courierId: '30002003' }
+      : { routeName: 'ROUTE-HN-BD02 (Tây Kim Mã)', courierId: '30002004' };
+  }
+  if (
+    text.includes('dịch vọng') ||
+    text.includes('cầu giấy') ||
+    text.includes('00103w001') ||
+    text.includes('hub_hn_cg')
+  ) {
+    return isPickup
+      ? { routeName: 'ROUTE-HN-CG01 (Bắc Dịch Vọng)', courierId: '30002005' }
+      : { routeName: 'ROUTE-HN-CG02 (Nam Dịch Vọng)', courierId: '30002006' };
+  }
+  if (
+    text.includes('trung liệt') ||
+    text.includes('đống đa') ||
+    text.includes('thái hà') ||
+    text.includes('khương mai') ||
+    text.includes('thanh xuân') ||
+    text.includes('00104w001')
+  ) {
+    return isPickup
+      ? { routeName: 'ROUTE-HN-DD01 (Đông Thái Hà)', courierId: '30002007' }
+      : { routeName: 'ROUTE-HN-DD02 (Tây Thái Hà)', courierId: '30002008' };
+  }
+
+  // 2. Đà Nẵng
+  if (
+    text.includes('thạch thang') ||
+    text.includes('hải châu 1') ||
+    text.includes('bạch đằng') ||
+    text.includes('04801w001') ||
+    text.includes('hub_dn_hc')
+  ) {
+    return isPickup
+      ? { routeName: 'ROUTE-DN-HC01 (Bắc Bạch Đằng)', courierId: '30002009' }
+      : { routeName: 'ROUTE-DN-HC02 (Nam Bạch Đằng)', courierId: '30002010' };
+  }
+  if (
+    text.includes('thanh bình') ||
+    text.includes('khuê trung') ||
+    text.includes('cẩm lệ')
+  ) {
+    return isPickup
+      ? { routeName: 'ROUTE-DN-HC03 (Đông Thanh Bình)', courierId: '30002011' }
+      : { routeName: 'ROUTE-DN-HC04 (Tây Thanh Bình)', courierId: '30002012' };
+  }
+  if (
+    text.includes('an hải bắc') ||
+    text.includes('sơn trà') ||
+    text.includes('hub_dn_st')
+  ) {
+    return isPickup
+      ? { routeName: 'ROUTE-DN-ST01 (Bắc Sông Hàn)', courierId: '30002013' }
+      : { routeName: 'ROUTE-DN-ST02 (Nam Sông Hàn)', courierId: '30002014' };
+  }
+
+  // 3. TP. Hồ Chí Minh
+  if (
+    text.includes('bến thành') ||
+    text.includes('bến nghé') ||
+    (text.includes('quận 1') && !text.includes('quận 12')) ||
+    text.includes('07901w001') ||
+    text.includes('hub_hcm_q1')
+  ) {
+    return isPickup
+      ? { routeName: 'ROUTE-HCM-Q101 (Đông Bến Thành)', courierId: '30002015' }
+      : { routeName: 'ROUTE-HCM-Q102 (Tây Bến Thành)', courierId: '30002016' };
+  }
+  if (
+    text.includes('lê văn sỹ') ||
+    (text.includes('quận 3') && text.includes('13')) ||
+    text.includes('quận 4') ||
+    text.includes('hoàng diệu') ||
+    text.includes('07903w001') ||
+    text.includes('hub_hcm_q4')
+  ) {
+    return isPickup
+      ? { routeName: 'ROUTE-HCM-Q301 (Bắc Lê Văn Sỹ)', courierId: '30002017' }
+      : { routeName: 'ROUTE-HCM-Q302 (Nam Lê Văn Sỹ)', courierId: '30002018' };
+  }
+  if (
+    text.includes('cộng hòa') ||
+    text.includes('tân bình') ||
+    text.includes('quận 10') ||
+    text.includes('07913w001') ||
+    text.includes('hub_hcm_tb') ||
+    text.includes('hub_hcm_q10')
+  ) {
+    return isPickup
+      ? { routeName: 'ROUTE-HCM-TB01 (Đông Cộng Hòa)', courierId: '30002019' }
+      : { routeName: 'ROUTE-HCM-TB02 (Tây Cộng Hòa)', courierId: '30002020' };
+  }
+  if (
+    text.includes('an phú đông') ||
+    text.includes('quận 12') ||
+    text.includes('thủ đức') ||
+    text.includes('bình thọ') ||
+    text.includes('003079b001')
+  ) {
+    return isPickup
+      ? { routeName: 'ROUTE-HCM-Q1201 (Bắc Hà Huy Giáp)', courierId: '30002021' }
+      : { routeName: 'ROUTE-HCM-Q1202 (Nam Hà Huy Giáp)', courierId: '30002022' };
+  }
+
+  // Fallbacks theo vùng
+  if (text.includes('hà nội') || text.includes('ha noi')) {
+    return isPickup
+      ? { routeName: 'ROUTE-HN-GEN01 (Tuyến Lấy HN)', courierId: '30002001' }
+      : { routeName: 'ROUTE-HN-GEN02 (Tuyến Phát HN)', courierId: '30002002' };
+  }
+  if (text.includes('đà nẵng') || text.includes('da nang')) {
+    return isPickup
+      ? { routeName: 'ROUTE-DN-GEN01 (Tuyến Lấy ĐN)', courierId: '30002009' }
+      : { routeName: 'ROUTE-DN-GEN02 (Tuyến Phát ĐN)', courierId: '30002010' };
+  }
+
+  return isPickup
+    ? { routeName: 'ROUTE-HCM-GEN01 (Tuyến Lấy HCM)', courierId: '30002015' }
+    : { routeName: 'ROUTE-HCM-GEN02 (Tuyến Phát HCM)', courierId: '30002016' };
+}
+

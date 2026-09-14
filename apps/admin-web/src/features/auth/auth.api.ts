@@ -14,8 +14,34 @@ export const authApi = {
   refresh: authClient.refresh,
 };
 
+export function formatAuthErrorMessage(rawMessage: string | null | undefined): string {
+  if (!rawMessage) return 'Đã xảy ra lỗi không xác định khi đăng nhập.';
+  const lower = rawMessage.toLowerCase();
+  if (
+    lower.includes('invalid credential') ||
+    lower.includes('invalid credentials') ||
+    lower.includes('unauthorized') ||
+    lower.includes('sai mật khẩu') ||
+    lower.includes('user not found') ||
+    lower.includes('không tìm thấy') ||
+    lower.includes('401')
+  ) {
+    return 'Sai tên đăng nhập hoặc mật khẩu. Vui lòng kiểm tra lại thông tin đã nhập.';
+  }
+  if (lower.includes('tài khoản phải có vai trò')) {
+    return 'Tài khoản không có vai trò Quản trị viên (SYSTEM_ADMIN).';
+  }
+  if (lower.includes('fetch') || lower.includes('network') || lower.includes('kết nối')) {
+    return 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra lại đường truyền mạng.';
+  }
+  return rawMessage;
+}
+
 export function useLoginMutation() {
   return useMutation({
+    meta: {
+      suppressGlobalError: true,
+    },
     mutationFn: async (payload: LoginFormValues) => {
       useAuthStore.getState().setSubmitting(true);
       useAuthStore.getState().clearAuthError();
@@ -25,7 +51,7 @@ export function useLoginMutation() {
         await persistAuthSession(session);
         return session;
       } catch (error) {
-        useAuthStore.getState().setAuthError(getErrorMessage(error));
+        useAuthStore.getState().setAuthError(formatAuthErrorMessage(getErrorMessage(error)));
         throw error;
       } finally {
         useAuthStore.getState().setSubmitting(false);
