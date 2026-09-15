@@ -26,3 +26,16 @@ prod-up:
 
 prod-deploy:
 	./scripts/deploy-vps.sh
+
+rag-ingest:
+	npx tsx scripts/rag/ingest.ts
+
+rag-ask:
+	npx tsx scripts/rag/ask.ts
+
+chatbot-dev:
+	cd services/chatbot-service && pnpm run start:dev
+
+chatbot-build:
+	cd services/chatbot-service && pnpm run build
+

@@ -4,6 +4,27 @@
 
 A student logistics management practice project for shipment creation, pickup, hub operations, courier delivery, public tracking, COD settlement, and operational reporting.
 
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![NestJS](https://img.shields.io/badge/NestJS-10.x-E0234E?logo=nestjs&logoColor=white)](https://nestjs.com/)
+[![React](https://img.shields.io/badge/React-18.x-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+[![OpenAI RAG](https://img.shields.io/badge/AI_Engine-OpenAI_GPT--4o--mini-412991?logo=openai&logoColor=white)](https://openai.com/)
+[![Architecture](https://img.shields.io/badge/Architecture-Microservices-success)](#architecture)
+[![License](https://img.shields.io/badge/License-Academic_Thesis-orange)](#)
+
+> 💡 **Khóa luận Tốt nghiệp:** Hệ thống tích hợp đầy đủ chuỗi cung ứng logistics bưu chính hoàn chỉnh, kèm phân hệ **Trợ lý AI CSKH thông minh (Hybrid RAG & Function Calling)** vận hành thời gian thực.
+
+### 📑 Cổng Dẫn Đường Tài Liệu Quan Trọng (Documentation Hub)
+
+| Phân hệ / Tài liệu | Đường dẫn xem chi tiết | Mô tả trọng tâm |
+| :--- | :--- | :--- |
+| 🤖 **Kiến Trúc AI Chatbot RAG** | [`docs/architecture/ai-chatbot-service-architecture.md`](docs/architecture/ai-chatbot-service-architecture.md) | **Báo cáo khóa luận chi tiết:** Sơ đồ Mermaid, giải thuật Section-Aware Chunker, Matryoshka MRL, Token Economics |
+| 📚 **Kho Tri Thức Logistics (KB)** | [`docs/knowledge-base/README.md`](docs/knowledge-base/README.md) | Biểu phí, công thức thể tích IATA, quy trình bồi thường bể vỡ, chuẩn đóng gói SOP, hướng dẫn nạp tri thức |
+| 📦 **SOP Hàng Dễ Vỡ & Bảo Hiểm** | [`docs/NGHIEP-VU-TIEP-NHAN-HANG-DE-VO-VA-BAO-HIEM.md`](docs/NGHIEP-VU-TIEP-NHAN-HANG-DE-VO-VA-BAO-HIEM.md) | Quy chuẩn tiếp nhận hàng giá trị cao, bồi thường Điều 25 Luật Bưu chính |
+| 🏗️ **Tổng Quan Hệ Thống** | [`docs/PROJECT-OVERVIEW.md`](docs/PROJECT-OVERVIEW.md) | Bức tranh tổng thể 13 microservices, data ownership, event stream RabbitMQ |
+| ⚡ **Sổ Tay Triển Khai (Runbook)** | [`docs/runbook/trial-deploy.md`](docs/runbook/trial-deploy.md) | Hướng dẫn chạy thử nghiệm môi trường local/staging với Docker Compose |
+
+---
+
 The project is a TypeScript monorepo used to practice service-boundary design, a Gateway/BFF entry point, PostgreSQL ownership ideas, RabbitMQ event exposure, and separate client apps for different user groups.
 
 ## Core Logistics Workflow
@@ -204,6 +225,7 @@ services/
   reporting-service/  KPI and shipment-status read model
   payment-service/    COD record, settlement batch, SePay/VietQR remittance
   pricing-service/    Rule-based shipping quote calculation
+  chatbot-service/    AI Assistant RAG service (QA, Tool Calling, SSE streaming)
 
 packages/
   messaging/          Shared RabbitMQ/envelope/outbox helpers
@@ -220,6 +242,8 @@ infra/
   prod/               Single-VPS Docker Compose deployment
 
 docs/
+  architecture/       System design & AI Chatbot service architecture
+  knowledge-base/     Logistics standard SOPs, pricing matrix, vector index
   PROJECT-OVERVIEW.md Main source of truth for the system overview
   runbook/            Deploy, account, code-rule, and trial runbooks
   service-description/ Partner integration and service notes
@@ -247,6 +271,7 @@ The local backend stack is organized around domain services. Each service owns i
 | `auth-service` | 3010 | `auth_db` | User accounts, sessions, opaque tokens |
 | `payment-service` | 3011 | `payment_db` | COD settlement, QR, webhook reconciliation |
 | `pricing-service` | 3012 | none | Shipping quote/rate calculation |
+| `chatbot-service` | 3013 | in-memory / vector index | AI Assistant RAG, real-time shipment tool, IATA fee estimation, SSE streaming |
 
 ### Data Ownership
 
@@ -266,6 +291,53 @@ The local backend stack is organized around domain services. Each service owns i
 | `admin-web` | `http://127.0.0.1:5175` |
 | `guest-web` (customer) | `http://127.0.0.1:5177` |
 | `courier-mobile` | Expo dev server / configured mobile runtime |
+
+## 🤖 AI Assistant & Logistics RAG Microservice
+
+Hệ thống tích hợp một microservice chuyên biệt mang tên **`@NEXUS/chatbot-service`** (vận hành trên cổng **`3013`**), ứng dụng mô hình **Hybrid RAG (Retrieval-Augmented Generation)** kết hợp **Real-time Tool Calling** để hỗ trợ Khách hàng và Chủ hàng (Merchant) tự động 24/7.
+
+```mermaid
+flowchart LR
+    UserQuery["Khách hàng gửi câu hỏi"] --> IntentRoute{"Phân loại ý định"}
+    
+    IntentRoute -->|"Hỏi chính sách, biểu phí, đóng gói"| RAG["RAG Engine<br/>docs/knowledge-base/<br/>text-embedding-3-small"]
+    IntentRoute -->|"Hỏi mã vận đơn (NX-...)"| TrackingTool["Tool trackShipment()<br/>tracking-service (:3008)"]
+    IntentRoute -->|"Hỏi cước kiện hàng (...kg)"| PricingTool["Tool calculatePricing()<br/>pricing-service (:3012)"]
+
+    RAG --> GroundedContext["Grounded Context Assembly<br/>(Ngăn chặn ảo giác + Citations)"]
+    TrackingTool --> GroundedContext
+    PricingTool --> GroundedContext
+
+    GroundedContext --> LLM["LLM (gpt-4o-mini)<br/>Temperature: 0.2"]
+    LLM --> StreamOut["Server-Sent Events (SSE)<br/>Streaming tokens về Web/Mobile"]
+```
+
+### ✨ Các Tính Năng Nổi Bật
+
+1. **Knowledge-Grounded QA (Không ảo giác):** Truy xuất thông tin chính sách, bảo hiểm khai giá (Điều 25 Luật Bưu chính), hàng cấm bay (pin lithium, chất lỏng) và quy chuẩn đóng gói dễ vỡ từ kho tri thức chuẩn hóa tại [`docs/knowledge-base/`](docs/knowledge-base/).
+2. **Real-time Tool Calling:** Tự động bắt mã vận đơn `NX-XXXXXX` để tra cứu vị trí Hub hiện tại, lộ trình di chuyển và thời gian dự kiến phát hàng từ `tracking-service`.
+3. **Dự toán cước IATA tự động:** Áp dụng chuẩn quy đổi thể tích hàng cồng kềnh $V/6000$ và nấc cước bưu chính theo vùng miền.
+4. **Server-Sent Events (SSE) Streaming:** Truyền tải luồng token chữ thời gian thực tạo hiệu ứng gõ phím tương tự ChatGPT.
+5. **Zero-Downtime Fallback:** Thuật toán băm vector nội bộ (Deterministic Semantic Hash) cho phép chạy và demo mượt mà ngay cả khi không có mạng internet hoặc chưa nạp API key.
+
+### 🚀 Thao Tác Nhanh (Quickstart)
+
+```bash
+# 1. Nạp và đồng bộ hóa Vector Store từ các file Markdown
+make rag-ingest
+
+# 2. Thử nghiệm hỏi đáp trên Terminal (CLI)
+make rag-ask
+
+# 3. Khởi chạy Chatbot Microservice ở chế độ dev (Port 3013)
+make chatbot-dev
+
+# 4. Kiểm tra sức khỏe & số lượng Vector chunks
+curl http://localhost:3013/health
+```
+
+> 📖 **Xem toàn bộ báo cáo kiến trúc chi tiết gửi Hội đồng bảo vệ:**  
+> 👉 [`docs/architecture/ai-chatbot-service-architecture.md`](docs/architecture/ai-chatbot-service-architecture.md)
 
 ## Local Development
 
@@ -541,6 +613,8 @@ Start here:
 
 | File | Purpose |
 | --- | --- |
+| `docs/architecture/ai-chatbot-service-architecture.md` | Báo cáo kiến trúc hệ thống AI Chatbot RAG & Function Calling (Khóa luận) |
+| `docs/knowledge-base/README.md` | Kho tài liệu nghiệp vụ logistics chuẩn hóa & Hướng dẫn nạp tri thức |
 | `docs/PROJECT-OVERVIEW.md` | Canonical overview of scope, architecture, services, ports, events, data ownership, local dev |
 | `docs/AI-REPORT-HANDOFF.md` | Source-of-truth reminders for writing reports without misrepresenting service ownership |
 | `docs/order-lifecycle-report.md` | Shipment lifecycle across pickup, hub transfer, delivery, NDR, and return |
