@@ -19,7 +19,7 @@ A student logistics management practice project for shipment creation, pickup, h
 | :--- | :--- | :--- |
 | 🤖 **Kiến Trúc AI Chatbot RAG** | [`docs/architecture/ai-chatbot-service-architecture.md`](docs/architecture/ai-chatbot-service-architecture.md) | **Báo cáo khóa luận chi tiết:** Sơ đồ Mermaid, giải thuật Section-Aware Chunker, Matryoshka MRL, Token Economics |
 | 📚 **Kho Tri Thức Logistics (KB)** | [`docs/knowledge-base/README.md`](docs/knowledge-base/README.md) | Biểu phí, công thức thể tích IATA, quy trình bồi thường bể vỡ, chuẩn đóng gói SOP, hướng dẫn nạp tri thức |
-| 📦 **SOP Hàng Dễ Vỡ & Bảo Hiểm** | [`docs/NGHIEP-VU-TIEP-NHAN-HANG-DE-VO-VA-BAO-HIEM.md`](docs/NGHIEP-VU-TIEP-NHAN-HANG-DE-VO-VA-BAO-HIEM.md) | Quy chuẩn tiếp nhận hàng giá trị cao, bồi thường Điều 25 Luật Bưu chính |
+| 📦 **SOP Hàng Dễ Vỡ & Bảo Hiểm** | [`docs/business-sop/NGHIEP-VU-TIEP-NHAN-HANG-DE-VO-VA-BAO-HIEM.md`](docs/business-sop/NGHIEP-VU-TIEP-NHAN-HANG-DE-VO-VA-BAO-HIEM.md) | Quy chuẩn tiếp nhận hàng giá trị cao, bồi thường Điều 25 Luật Bưu chính |
 | 🏗️ **Tổng Quan Hệ Thống** | [`docs/PROJECT-OVERVIEW.md`](docs/PROJECT-OVERVIEW.md) | Bức tranh tổng thể 13 microservices, data ownership, event stream RabbitMQ |
 | ⚡ **Sổ Tay Triển Khai (Runbook)** | [`docs/runbook/trial-deploy.md`](docs/runbook/trial-deploy.md) | Hướng dẫn chạy thử nghiệm môi trường local/staging với Docker Compose |
 
@@ -570,7 +570,7 @@ Key rules from the COD docs:
 - Webhook processing must match account number, transfer type, amount/tolerance, memo reference, and provider event id.
 - Memo conventions are `COD <shipmentCode>` for shipment-level transfer and `COD <settlementCode>` for courier cash settlement batches.
 
-See `docs/payment-cod-settlement-implementation-plan.md` and `docs/sepay-cod-runbook.md`.
+See `docs/business-sop/payment-cod-settlement-implementation-plan.md` and `docs/runbook/sepay-cod-runbook.md`.
 
 ## Frontend Development Rules
 
@@ -609,15 +609,19 @@ Production deployment rules in `docs/runbook/github-deploy-rules.md` require PR-
 
 ## Documentation Map
 
-Start here:
+Toàn bộ bản đồ tra cứu chi tiết được quy hoạch tại [**`docs/README.md`**](docs/README.md).
+
+Bảng tra cứu nhanh các tài liệu quan trọng:
 
 | File | Purpose |
 | --- | --- |
+| `docs/README.md` | **Master Documentation Hub:** Mục lục và bản đồ toàn bộ tài liệu hệ thống |
 | `docs/architecture/ai-chatbot-service-architecture.md` | Báo cáo kiến trúc hệ thống AI Chatbot RAG & Function Calling (Khóa luận) |
 | `docs/knowledge-base/README.md` | Kho tài liệu nghiệp vụ logistics chuẩn hóa & Hướng dẫn nạp tri thức |
 | `docs/PROJECT-OVERVIEW.md` | Canonical overview of scope, architecture, services, ports, events, data ownership, local dev |
 | `docs/AI-REPORT-HANDOFF.md` | Source-of-truth reminders for writing reports without misrepresenting service ownership |
-| `docs/order-lifecycle-report.md` | Shipment lifecycle across pickup, hub transfer, delivery, NDR, and return |
+| `docs/business-sop/order-lifecycle-report.md` | Shipment lifecycle across pickup, hub transfer, delivery, NDR, and return |
+| `docs/business-sop/NGHIEP-VU-TIEP-NHAN-HANG-DE-VO-VA-BAO-HIEM.md` | Quy chuẩn tiếp nhận hàng dễ vỡ & chính sách bảo hiểm bồi thường |
 | `contracts/events/event-types.md` | Current public domain event milestone set |
 | `contracts/openapi/` | Service API contracts |
 | `docs/runbook/test-accounts.md` | Local account and username-code rules |
@@ -626,7 +630,7 @@ Start here:
 | `infra/prod/README.md` | Single-VPS deployment guide |
 | `docs/service-description/marketplace-order-integration-api.md` | Marketplace adapter API contract |
 | `docs/service-description/auth-service.md` | Detailed auth-service behavior and limitations |
-| `docs/sepay-cod-runbook.md` | SePay COD reconciliation operations |
+| `docs/runbook/sepay-cod-runbook.md` | SePay COD reconciliation operations |
 | `design-reference/codex-handoff.md` | Merchant UI redesign handoff and constraints |
 
 Some files under `docs/architecture/` and `docs/runbook/` are currently placeholders. Prefer `docs/PROJECT-OVERVIEW.md`, service READMEs, contracts, and source code when those placeholders are empty.
