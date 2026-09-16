@@ -30,3 +30,19 @@ Căn cứ vào hành trình điều phối từ Hub gốc (Origin Hub) đến Hu
 ## 4. Phí Dịch Vụ Thu Hộ COD
 - Miễn phí thu hộ COD đối với đơn hàng có số tiền thu hộ dưới 1.000.000 VNĐ.
 - Đơn hàng có tiền thu hộ từ 1.000.000 VNĐ trở lên: Phí COD bằng 0.5% số tiền thu hộ, trần tối đa 35.000 VNĐ / đơn.
+
+## 5. Chính Sách Phân Tầng Khách Hàng & Chiết Khấu Theo Sản Lượng (Customer Tiering)
+Để đảm bảo an toàn dòng tiền và kích cầu kinh doanh, Nexus Logistics phân định rõ 03 tầng đối tượng khách hàng:
+- **Tầng 1: Khách vãng lai / Khách lẻ (Walk-in / Guest):**
+  - Khách gửi tại bưu cục hoặc tạo đơn đơn lẻ trên website không qua đăng ký đối tác.
+  - Cước vận chuyển: Áp dụng 100% Biểu giá cơ sở niêm yết (Không chiết khấu).
+  - Cước chuyển hoàn: Thu 50% cước chiều đi, thu tiền mặt hoặc quét VietQR khi giao dịch viên/bưu tá trả lại hàng tận tay (POD Return).
+- **Tầng 2: Merchant Tiêu Chuẩn (Standard Merchant - Shop vừa & nhỏ):**
+  - Đã đăng ký tài khoản Shop trên portal, xác thực CCCD/MST, sản lượng dưới 1.000 đơn/tháng.
+  - Cước vận chuyển: Hưởng chiết khấu thương mại 5% - 10% theo bảng cước Merchant; hỗ trợ shipper lấy hàng tận nơi miễn phí (First-mile pickup).
+  - Cước chuyển hoàn: **Vẫn áp dụng thu 50% cước chiều đi** để bù đắp chi phí trung chuyển ngược. Khác với khách lẻ, phí hoàn được tự động khấu trừ vào Bảng kê đối soát tiền thu hộ COD (COD Settlement Batch) hoặc số dư Ví Merchant.
+- **Tầng 3: Merchant VIP Doanh Nghiệp (VIP Enterprise / Key Account):**
+  - Ký Hợp đồng Hợp tác Chiến lược (Master Service Agreement), cam kết sản lượng lớn (trên 1.000 đơn/tháng) hoặc ký quỹ bảo lãnh thanh toán.
+  - Cước vận chuyển: Bảng cước ưu đãi riêng theo hợp đồng (Contract-based Pricing), chiết khấu bậc thang theo doanh số tháng (15% - 25%).
+  - Cước chuyển hoàn: **Được Quản trị viên cấu hình Miễn phí 0 VNĐ (Free Return)** hoặc mức đồng giá siêu ưu đãi (10.000 VNĐ/đơn) đóng vai trò như chính sách hỗ trợ bán hàng và giữ chân khách hàng lớn (Customer Retention).
+  - Tài khoản VIP được quản lý bởi Chuyên viên phụ trách riêng (Dedicated Key Account Manager) và chu kỳ đối soát COD nhanh (T+1).

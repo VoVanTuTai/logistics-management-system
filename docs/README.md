@@ -21,6 +21,7 @@ docs/
 │   └── diagrams/                       # Bộ sưu tập sơ đồ Mermaid cho 5 nhóm người dùng
 │
 ├── business-sop/                       # 📦 Quy chuẩn nghiệp vụ bưu chính & quy trình vận hành (SOP)
+│   ├── CHINH-SACH-PHAN-TANG-MERCHANT-VA-CUOC-CHUYEN-HOAN.md # Quy chuẩn 3 tầng khách hàng & cước hoàn tự động
 │   ├── fragile-and-insurance-sop.md    # Nghiệp vụ tiếp nhận hàng dễ vỡ & bảo hiểm khai giá
 │   ├── order-intake-fragile-and-insurance-specification.md # Đặc tả kỹ thuật tạo đơn bưu cục
 │   ├── order-lifecycle-report.md       # Vòng đời bưu phẩm từ lấy -> trung chuyển -> phát -> hoàn
@@ -72,6 +73,7 @@ docs/
 | :--- | :--- |
 | **Báo cáo khóa luận về phân hệ AI Chatbot RAG** | [`docs/architecture/ai-chatbot-service-architecture.md`](architecture/ai-chatbot-service-architecture.md) |
 | **Bản vẽ tổng thể 13 microservices & luồng dữ liệu** | [`docs/PROJECT-OVERVIEW.md`](PROJECT-OVERVIEW.md) |
+| **Phân tầng khách hàng (3-Tier) & Cước hoàn tự động** | [`docs/business-sop/CHINH-SACH-PHAN-TANG-MERCHANT-VA-CUOC-CHUYEN-HOAN.md`](business-sop/CHINH-SACH-PHAN-TANG-MERCHANT-VA-CUOC-CHUYEN-HOAN.md) |
 | **Biểu phí bưu chính, bảo hiểm hàng vỡ & công thức IATA** | [`docs/knowledge-base/`](knowledge-base/) |
 | **Quy trình tiếp nhận hàng dễ vỡ và bồi thường bưu chính** | [`docs/business-sop/NGHIEP-VU-TIEP-NHAN-HANG-DE-VO-VA-BAO-HIEM.md`](business-sop/NGHIEP-VU-TIEP-NHAN-HANG-DE-VO-VA-BAO-HIEM.md) |
 | **Sơ đồ Mermaid quy trình luồng của từng ứng dụng** | [`docs/architecture/diagrams/`](architecture/diagrams/) |

@@ -48,6 +48,33 @@ export class ChatService {
         trackRes.timeline.map((t) => `  * ${t.time}: ${t.description}`).join('\n') + '\n';
     }
 
+    // Regex tìm mã hồ sơ khiếu nại bồi thường: CLM-XXXX
+    const claimMatch = question.match(/\b(CLM[-_]?[A-Z0-9]{4,15})\b/i);
+    if (claimMatch) {
+      const claimCode = claimMatch[1].toUpperCase();
+      toolsUsed.push(`trackClaimStatus(${claimCode})`);
+      const claimRes = await this.toolsService.trackClaimStatus(claimCode);
+      toolAugmentedContext += `\n[TIẾN ĐỘ XỬ LÝ HỒ SƠ BỒI THƯỜNG MÃ ${claimCode}]:\n` +
+        `- Trạng thái duyệt: ${claimRes.statusText} (${claimRes.status})\n` +
+        `- Số tiền bồi thường duyệt chi: ${claimRes.approvedAmount.toLocaleString('vi-VN')} VNĐ\n` +
+        `- Đơn vị chịu trách nhiệm: ${claimRes.responsibleParty}\n` +
+        `- Hình thức chi trả: ${claimRes.settlementMethod}\n` +
+        `- Ngày hoàn tất phán quyết: ${claimRes.adjudicatedAt}\n`;
+    }
+
+    // Kiểm tra ý định tính cước chuyển hoàn (Return Fee)
+    const isReturnFeeQuery =
+      (question.includes('hoàn') || question.includes('bom')) &&
+      (question.includes('cước') || question.includes('phí') || question.includes('tiền') || question.includes('ai chịu'));
+    if (isReturnFeeQuery) {
+      toolsUsed.push(`calculateReturnFee(Rule-based Policy)`);
+      const standardRes = this.toolsService.calculateReturnFee(30000, 'STANDARD');
+      const vipRes = this.toolsService.calculateReturnFee(30000, 'VIP_ENTERPRISE');
+      toolAugmentedContext += `\n[CHÍNH SÁCH CƯỚC CHUYỂN HOÀN RULE-BASED POLICY]:\n` +
+        `- ${standardRes.explanation}\n` +
+        `- ${vipRes.explanation}\n`;
+    }
+
     // Kiểm tra ý định tính cước phí bưu gửi
     const weightMatch = question.match(/(\d+(\.\d+)?)\s*(kg|kí|kilogram)/i);
     if (weightMatch && (question.includes('cước') || question.includes('phí') || question.includes('tiền'))) {

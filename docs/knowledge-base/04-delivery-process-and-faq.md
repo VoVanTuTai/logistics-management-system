@@ -18,3 +18,15 @@
 ## 4. Quyền Riêng Tư Dữ Liệu Tài Chính Người Nhận
 - Khi người nhận tra cứu mã vận đơn trên cổng trực tuyến, hệ thống chỉ hiển thị: Tên hàng hóa, Cân nặng, Trạng thái hành trình và **Số tiền thu hộ COD cần thanh toán**.
 - Biểu phí vận chuyển chi tiết, mức chiết khấu thương mại và công thức tính cước của Chủ shop/Người gửi được bảo mật tuyệt đối.
+
+## 5. Chính Sách Cước Phí Chuyển Hoàn (Return Policy & Return Fee)
+Khi đơn hàng giao không thành công sau 03 lần phát (NDR) hoặc người nhận từ chối nhận hàng (bom hàng), bưu gửi được chuyển hoàn về địa chỉ người gửi theo quy chuẩn:
+- **Mô hình Chính sách Linh hoạt theo Hợp đồng (Rule-based Configurable Policy):**
+  - **Mức Chuẩn Mặc Định (Standard Tier - Khách lẻ / Shop thông thường):** Áp dụng thu **50% cước vận chuyển chiều đi** (Forward Shipping Fee) nhằm bù đắp chi phí phương tiện, kho bãi, nhân công bốc dỡ chiều về và ngăn chặn tình trạng tạo đơn ảo gây lãng phí tài nguyên logistics.
+  - **Cấu hình Ưu Đãi Doanh Nghiệp (VIP Enterprise Tier):** Áp dụng **0 VNĐ (Miễn phí chuyển hoàn 100%)** đối với các đối tác thương mại điện tử chiến lược, các nhãn hàng hoặc chủ shop đạt cam kết sản lượng lớn (ví dụ trên 1.000 đơn/tháng) như một chính sách chiết khấu thương mại.
+  - **Cấu hình Đồng Giá (Flat Fee):** Hỗ trợ thiết lập mức phí hoàn cố định (ví dụ: 10.000 VNĐ/kiện) theo thỏa thuận khung hợp đồng riêng.
+- **Bên chịu chi phí cước hoàn:** **Người gửi (Shop / Merchant)** chịu chi phí này vì người nhận đã từ chối nhận bưu gửi.
+- **Hình thức thu tiền cước chuyển hoàn:**
+  - *Đối với Shop có tài khoản ký hợp đồng:* Hệ thống tự động khấu trừ vào **Bảng kê đối soát tiền thu hộ COD (COD Settlement Batch)** của kỳ thanh toán tiếp theo hoặc trừ vào số dư Ví điện tử của Shop.
+  - *Đối với Khách gửi hàng lẻ tại bưu cục:* Bưu tá phát hoàn hoặc giao dịch viên tại bưu cục thu tiền mặt hoặc quét mã VietQR khi bàn giao lại bưu kiện cho người gửi (Return POD).
+
