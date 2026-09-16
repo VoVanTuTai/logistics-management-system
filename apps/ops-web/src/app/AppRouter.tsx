@@ -184,6 +184,10 @@ const ClaimsLiabilityManagementPage = lazyRoutePage(
   () => import('../pages/function-groups/service-quality/claims/ClaimsLiabilityManagementPage'),
   'ClaimsLiabilityManagementPage',
 );
+const CustomerServiceTicketsPage = lazyRoutePage(
+  () => import('../pages/function-groups/service-quality/cskh/CustomerServiceTicketsPage'),
+  'CustomerServiceTicketsPage',
+);
 const HubCompensationStatisticsPage = lazyRoutePage(
   () => import('../pages/function-groups/service-quality/claims/HubCompensationStatisticsPage'),
   'HubCompensationStatisticsPage',
@@ -759,6 +763,12 @@ function DashboardLayout(): React.JSX.Element {
             icon: 'metrics_action',
             to: routePaths.strayShipmentInvestigation,
             keywords: 'giam dinh don lac phan tich log vet thao tac mat kien cctv giai trinh',
+          },
+          {
+            label: 'Trung tâm CSKH & Khiếu nại',
+            icon: 'service_care',
+            to: routePaths.customerServiceTickets,
+            keywords: 'cskh khieu nai giuc giao doi dia chi ho tro khach hang ai handover sla 24h 48h',
           },
           {
             label: 'Hồ sơ đền bù & Phân định',
@@ -1763,6 +1773,10 @@ function AppIndexRedirect(): React.JSX.Element {
             <Route
               path={routePaths.claimsLiabilityManagementLeaf}
               element={opsModuleRoute('Hồ sơ đền bù & phân định trách nhiệm', <ClaimsLiabilityManagementPage />)}
+            />
+            <Route
+              path={routePaths.customerServiceTicketsLeaf}
+              element={opsModuleRoute('Trung tâm CSKH & Khiếu nại Vận hành', <CustomerServiceTicketsPage />)}
             />
             <Route
               path={routePaths.claimsHubStatisticsLeaf}

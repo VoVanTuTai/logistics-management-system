@@ -251,6 +251,7 @@ export function DashboardPage(): React.JSX.Element {
           icon: 'service_quality',
           accent: 'incident',
           quickLinks: [
+            { label: 'CSKH & Khiếu nại', to: routePaths.customerServiceTickets, icon: 'support_agent' },
             { label: 'Đơn lạc & Log', to: routePaths.strayShipmentInvestigation, icon: 'search_insights' },
             { label: 'Hồ sơ đền bù', to: routePaths.claimsLiabilityManagement, icon: 'receipt_long' },
             { label: 'Thống kê Hub', to: routePaths.claimsHubStatistics, icon: 'query_stats' },

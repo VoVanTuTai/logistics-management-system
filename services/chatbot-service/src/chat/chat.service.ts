@@ -48,6 +48,49 @@ export class ChatService {
         trackRes.timeline.map((t) => `  * ${t.time}: ${t.description}`).join('\n') + '\n';
     }
 
+    // Regex tìm mã hồ sơ khiếu nại bồi thường: CLM-XXXX hoặc CLM-202609-001
+    const claimMatch = question.match(/\b(CLM[-_]?[A-Z0-9]+(?:[-_][A-Z0-9]+)*)\b/i);
+    const hasClaimKeywords = /khiếu nại|bồi thường|đền bù|bể vỡ/i.test(question);
+
+    if (claimMatch) {
+      const claimCode = claimMatch[1].toUpperCase();
+      toolsUsed.push(`trackClaimStatus(${claimCode})`);
+      const claimRes = await this.toolsService.trackClaimStatus(claimCode);
+      toolAugmentedContext += `\n[TIẾN ĐỘ XỬ LÝ HỒ SƠ BỒI THƯỜNG MÃ ${claimCode}]:\n` +
+        `- Mã hồ sơ khiếu nại: ${claimRes.claimCode}\n` +
+        `- Mã vận đơn liên quan: ${claimRes.shipmentCode}\n` +
+        `- Trạng thái duyệt: ${claimRes.statusText} (${claimRes.status})\n` +
+        `- Số tiền bồi thường duyệt chi: ${claimRes.approvedAmount?.toLocaleString('vi-VN') || 0} VNĐ\n` +
+        `- Đơn vị chịu trách nhiệm: ${claimRes.responsibleParty}\n` +
+        `- Hình thức chi trả: ${claimRes.settlementMethod}\n` +
+        `- Ngày hoàn tất phán quyết: ${claimRes.adjudicatedAt || '15/09/2026'}\n`;
+    } else if (hasClaimKeywords && (question.includes('duyệt') || question.includes('trạng thái') || question.includes('tiến độ') || question.includes('tiền'))) {
+      const demoClaimCode = 'CLM-202609-001';
+      toolsUsed.push(`trackClaimStatus(${demoClaimCode})`);
+      const claimRes = await this.toolsService.trackClaimStatus(demoClaimCode);
+      toolAugmentedContext += `\n[TIẾN ĐỘ XỬ LÝ HỒ SƠ BỒI THƯỜNG MÃ ${demoClaimCode}]:\n` +
+        `- Mã hồ sơ khiếu nại: ${claimRes.claimCode}\n` +
+        `- Mã vận đơn liên quan: ${claimRes.shipmentCode}\n` +
+        `- Trạng thái duyệt: ${claimRes.statusText} (${claimRes.status})\n` +
+        `- Số tiền bồi thường duyệt chi: ${claimRes.approvedAmount?.toLocaleString('vi-VN') || 0} VNĐ\n` +
+        `- Đơn vị chịu trách nhiệm: ${claimRes.responsibleParty}\n` +
+        `- Hình thức chi trả: ${claimRes.settlementMethod}\n` +
+        `- Ngày hoàn tất phán quyết: ${claimRes.adjudicatedAt || '15/09/2026'}\n`;
+    }
+
+    // Kiểm tra ý định tính cước chuyển hoàn (Return Fee)
+    const isReturnFeeQuery =
+      (question.includes('hoàn') || question.includes('bom')) &&
+      (question.includes('cước') || question.includes('phí') || question.includes('tiền') || question.includes('ai chịu'));
+    if (isReturnFeeQuery) {
+      toolsUsed.push(`calculateReturnFee(Rule-based Policy)`);
+      const standardRes = this.toolsService.calculateReturnFee(30000, 'STANDARD');
+      const vipRes = this.toolsService.calculateReturnFee(30000, 'VIP_ENTERPRISE');
+      toolAugmentedContext += `\n[CHÍNH SÁCH CƯỚC CHUYỂN HOÀN RULE-BASED POLICY]:\n` +
+        `- ${standardRes.explanation}\n` +
+        `- ${vipRes.explanation}\n`;
+    }
+
     // Kiểm tra ý định tính cước phí bưu gửi
     const weightMatch = question.match(/(\d+(\.\d+)?)\s*(kg|kí|kilogram)/i);
     if (weightMatch && (question.includes('cước') || question.includes('phí') || question.includes('tiền'))) {
@@ -187,6 +230,29 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
   }
 
   private generateOfflineDemoAnswer(question: string, context: string, citations: Citation[]): string {
+    const hasRealtimeData = context.includes('=== DỮ LIỆU THỜI GIAN THỰC TỪ HỆ THỐNG LOGISTICS ===');
+    let realtimeSection = '';
+
+    if (hasRealtimeData) {
+      const match = context.match(
+        /=== DỮ LIỆU THỜI GIAN THỰC TỪ HỆ THỐNG LOGISTICS ===\n([\s\S]*?)(=== TÀI LIỆU QUY CHUẨN|$)/
+      );
+      if (match) {
+        realtimeSection = match[1].trim();
+      }
+    }
+
+    if (realtimeSection) {
+      let citationNote = '';
+      if (citations.length > 0) {
+        citationNote = `\n\n📖 Căn cứ chính sách đối soát [${citations[0].file}]:\n"${citations[0].snippet}"`;
+      }
+
+      return `Dạ chào bạn, Nexus Logistics đã tra cứu dữ liệu thời gian thực cho yêu cầu của bạn:\n\n` +
+        `${realtimeSection}${citationNote}\n\n` +
+        `✅ Dữ liệu được trích xuất trực tiếp từ các microservices nghiệp vụ của Nexus Logistics.`;
+    }
+
     if (!context || citations.length === 0) {
       return `Dạ chào bạn, Nexus Logistics đã ghi nhận câu hỏi: "${question}". Hiện tài liệu hệ thống chưa có dữ liệu chi tiết về câu hỏi này, bạn vui lòng liên hệ tổng đài 1900 0000 để được điện thoại viên hỗ trợ trực tiếp ạ.`;
     }

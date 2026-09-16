@@ -18,6 +18,7 @@ A student logistics management practice project for shipment creation, pickup, h
 | Phân hệ / Tài liệu | Đường dẫn xem chi tiết | Mô tả trọng tâm |
 | :--- | :--- | :--- |
 | 🤖 **Kiến Trúc AI Chatbot RAG** | [`docs/architecture/ai-chatbot-service-architecture.md`](docs/architecture/ai-chatbot-service-architecture.md) | **Báo cáo khóa luận chi tiết:** Sơ đồ Mermaid, giải thuật Section-Aware Chunker, Matryoshka MRL, Token Economics |
+| 👥 **Chính Sách Phân Tầng & Cước Hoàn** | [`docs/business-sop/CHINH-SACH-PHAN-TANG-MERCHANT-VA-CUOC-CHUYEN-HOAN.md`](docs/business-sop/CHINH-SACH-PHAN-TANG-MERCHANT-VA-CUOC-CHUYEN-HOAN.md) | **Nghiệp vụ bưu chính khép kín:** Mô hình 3 tầng (Guest, Standard, VIP), quy chuẩn cước hoàn 50% vs 0đ, cấn trừ COD tự động |
 | 📚 **Kho Tri Thức Logistics (KB)** | [`docs/knowledge-base/README.md`](docs/knowledge-base/README.md) | Biểu phí, công thức thể tích IATA, quy trình bồi thường bể vỡ, chuẩn đóng gói SOP, hướng dẫn nạp tri thức |
 | 📦 **SOP Hàng Dễ Vỡ & Bảo Hiểm** | [`docs/business-sop/NGHIEP-VU-TIEP-NHAN-HANG-DE-VO-VA-BAO-HIEM.md`](docs/business-sop/NGHIEP-VU-TIEP-NHAN-HANG-DE-VO-VA-BAO-HIEM.md) | Quy chuẩn tiếp nhận hàng giá trị cao, bồi thường Điều 25 Luật Bưu chính |
 | 🏗️ **Tổng Quan Hệ Thống** | [`docs/PROJECT-OVERVIEW.md`](docs/PROJECT-OVERVIEW.md) | Bức tranh tổng thể 13 microservices, data ownership, event stream RabbitMQ |
@@ -57,6 +58,20 @@ flowchart LR
     returned --> tracking["Tracking and reporting"]
     cod --> tracking
 ```
+
+## 💼 Mô Hình Phân Tầng Khách Hàng & Cơ Chế Khép Kín Dòng Tiền (3-Tier Customer Model & Reverse Logistics)
+
+Để mô phỏng chính xác nghiệp vụ bưu chính thực tế (Viettel Post, GHN, J&T) và **loại bỏ rủi ro trục lợi tài chính**, hệ thống phân định rõ 03 tầng đối tượng khách hàng:
+
+| Tiêu Chí Nghiệp Vụ | Tầng 1: Khách Vãng Lai (Guest / Walk-in) | Tầng 2: Merchant Tiêu Chuẩn (Standard SME) | Tầng 3: Merchant VIP Doanh Nghiệp (VIP Enterprise) |
+| :--- | :--- | :--- | :--- |
+| **Phân loại** | Gửi lẻ tại quầy, chưa có tài khoản Shop | Chủ shop vừa và nhỏ, sản lượng < 1.000 đơn/tháng | Đối tác chiến lược có hợp đồng, sản lượng > 1.000 đơn/tháng |
+| **Cước chiều đi** | 100% Giá niêm yết chuẩn | Bảng giá Merchant (Chiết khấu 5% + Shipper lấy tận nơi) | Bảng giá Hợp đồng (Chiết khấu bậc thang 15% – 25%) |
+| **Cước chuyển hoàn** | **50% cước chiều đi** | **VẪN THU 50% cước chiều đi** (Ngăn chặn đơn ảo) | **0 VNĐ (Miễn phí hoàn 100%)** theo cấu hình hợp đồng |
+| **Thu hồi cước hoàn** | Tiền mặt / VietQR khi bưu tá giao trả hàng (POD Return) | **Tự động cấn trừ vào Bảng kê đối soát tiền thu hộ COD** | Miễn phí (Chiết khấu thương mại giữ chân khách lớn) |
+| **Cơ chế kích hoạt** | Mặc định đối với khách chưa định danh | Tự động khi đăng ký tài khoản Shop và xác thực CCCD/SĐT | **Quản trị viên (Admin) phê duyệt thủ công** trên cổng quản trị |
+
+> 🛡️ **Bịt kín lỗ hổng tài chính:** Hệ thống **tuyệt đối không để Merchant mới mặc định là VIP**. Việc thu 50% cước hoàn đối với Merchant thường vừa bù đắp chi phí xe tải chiều về, vừa ngăn chặn tình trạng tạo đơn ảo "bom hàng". Cơ chế tự động cấn trừ qua kỳ đối soát COD giúp vận hành không tiền mặt và triệt tiêu nợ xấu 100%.
 
 ## Client Applications
 

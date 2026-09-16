@@ -27,9 +27,10 @@ Trong hệ thống logistics bưu chính hiện đại, bộ phận Chăm sóc k
 
 ### 1.2. Mục tiêu nghiên cứu và sản phẩm thực hiện (Deliverables)
 Chúng tôi thiết kế và đóng gói một **Microservice độc lập chuyên biệt (`@NEXUS/chatbot-service`)** vận hành trên cổng `3013`, tích hợp mô hình **Hybrid RAG (Retrieval-Augmented Generation)** kết hợp **Dynamic Tool Calling (Function Calling)**:
-- **Tự động hóa hỏi đáp tri thức (Knowledge-grounded QA):** Trả lời chính xác 100% các chính sách, biểu phí, quy chuẩn đóng gói hàng dễ vỡ dựa trên kho tài liệu quy chuẩn của doanh nghiệp, loại bỏ hoàn toàn ảo giác (hallucination).
+- **Tự động hóa hỏi đáp tri thức (Knowledge-grounded QA):** Trả lời chính xác 100% các chính sách, biểu phí, chính sách chuyển hoàn (Return Policy 50% vs Miễn phí VIP), bảo hiểm bồi thường Luật bưu chính và quy chuẩn đóng gói dễ vỡ.
 - **Tra cứu hành trình vận đơn thời gian thực (Real-time Tracking Tool):** Tự động nhận diện mã bưu gửi (`NX-XXXXXX`), gọi API nội bộ tới `tracking-service` (Port 3008) để trích xuất vị trí Hub hiện tại, lộ trình di chuyển và thời gian dự kiến phát hàng.
-- **Dự toán cước phí thông minh (Dynamic Pricing Tool):** Tính toán tức thì cước cơ sở, cước vượt nấc và phụ phí liên miền Bắc - Nam theo công thức IATA $V/6000$.
+- **Dự toán cước phí & cước hoàn thông minh (Dynamic Pricing & Return Fee Tool):** Tính toán tức thì cước cơ sở, cước vượt nấc theo công thức IATA $V/6000$, đồng thời áp dụng chính sách cước chuyển hoàn Rule-based linh hoạt theo phân hạng Shop (Standard 50% vs VIP 0%).
+- **Tra cứu tiến độ bồi thường sự cố (Claims Tracking Tool):** Nhận diện mã hồ sơ khiếu nại (`CLM-XXXXXX`), tra cứu trạng thái phê duyệt bồi thường và đơn vị chịu trách nhiệm.
 - **Trải nghiệm người dùng thời gian thực (Server-Sent Events Streaming):** Trả lời từng từ (token streaming) mượt mà trên ứng dụng di động (`customer-mobile`) và trang web (`merchant-web`, `guest-web`).
 
 ---

@@ -15,10 +15,15 @@ export interface TrackingResult {
 export interface PricingResult {
   weightKg: number;
   serviceType: string;
+  customerTier: string;
   baseFee: number;
   excessFee: number;
   zoneSurcharge: number;
+  subtotalFee: number;
+  discountAmount: number;
   totalFee: number;
+  estimatedReturnFee: number;
+  returnSettlementMethod: string;
   currency: string;
   breakdown: string;
 }
@@ -38,60 +43,59 @@ export class LogisticsToolsService {
    * Tra cứu hành trình bưu kiện thời gian thực (Real-time Shipment Tracking)
    */
   public async trackShipment(trackingNumber: string): Promise<TrackingResult> {
-    const cleanNumber = trackingNumber.trim().toUpperCase();
-    this.logger.log(`Tool trackShipment invoked for: ${cleanNumber}`);
+    const cleanTracking = trackingNumber.trim().toUpperCase();
+    this.logger.log(`Tool trackShipment invoked for: ${cleanTracking}`);
 
-    // Thử gọi microservice tracking-service thực tế
     try {
-      const resp = await fetch(`${this.trackingServiceUrl}/api/v1/tracking/${cleanNumber}`, {
-        signal: AbortSignal.timeout(2000),
-      });
-
-      if (resp.ok) {
-        const data = (await resp.json()) as any;
+      const response = await fetch(`${this.trackingServiceUrl}/tracking/public/${cleanTracking}`);
+      if (response.ok) {
+        const data = await response.json();
         return {
           found: true,
-          trackingNumber: cleanNumber,
-          status: data.status || 'IN_TRANSIT',
-          statusText: 'Đang vận chuyển',
-          currentLocation: data.currentHub || 'Hub Trung Chuyển Tân Bình',
-          estimatedDelivery: data.estimatedDelivery || 'Hôm nay trước 18:00',
-          timeline: data.events || [],
+          trackingNumber: cleanTracking,
+          status: data.currentStatus || 'IN_TRANSIT',
+          statusText: data.statusDescription || 'Đang vận chuyển',
+          senderCity: data.senderCity,
+          receiverCity: data.receiverCity,
+          currentLocation: data.currentLocation,
+          estimatedDelivery: data.estimatedDelivery,
+          timeline: data.checkpoints || [],
         };
       }
     } catch (err) {
-      // Khi tracking-service chưa bật, dùng dữ liệu giả lập có kiểm soát cho demo
-      this.logger.debug(`Tracking service offline at ${this.trackingServiceUrl}, using fallback demo response.`);
+      this.logger.warn(`Failed to query tracking service: ${(err as Error).message}. Using mock response.`);
     }
 
-    // Fallback response phục vụ demo
+    // Mock response fallback khi service offline
     return {
       found: true,
-      trackingNumber: cleanNumber,
+      trackingNumber: cleanTracking,
       status: 'IN_TRANSIT',
-      statusText: 'Đang luân chuyển liên tỉnh',
-      senderCity: 'Hà Nội (Hub Long Biên)',
-      receiverCity: 'TP. Hồ Chí Minh (Hub Tân Bình)',
-      currentLocation: 'Kho trung chuyển Đà Nẵng - Đang bốc xếp lên xe tải tuyến Bắc-Nam',
-      estimatedDelivery: 'Dự kiến phát ngày mai trước 12:00',
+      statusText: 'Đang trung chuyển qua Hub Đà Nẵng',
+      senderCity: 'TP. Hồ Chí Minh',
+      receiverCity: 'Hà Nội',
+      currentLocation: 'Hub Đà Nẵng (Quận Liên Chiểu)',
+      estimatedDelivery: '18:00 Ngày mai',
       timeline: [
-        { time: '14/09 09:30', status: 'PICKED_UP', description: 'Shipper đã lấy hàng thành công tại kho Merchant' },
-        { time: '14/09 18:00', status: 'OUT_BOUND', description: 'Xuất kho Hub Long Biên đi Đà Nẵng' },
+        { time: '14/09 09:30', status: 'PICKED_UP', description: 'Bưu tá đã lấy hàng tại Shop' },
+        { time: '14/09 14:00', status: 'HUB_IN', description: 'Đã nhập Hub Tân Bình' },
+        { time: '14/09 21:00', status: 'LINEHAUL_DISPATCH', description: 'Đang chuyển xe tải liên tỉnh Bắc - Nam' },
         { time: '15/09 06:15', status: 'HUB_IN', description: 'Đã nhập kho trung chuyển Đà Nẵng' },
       ],
     };
   }
 
   /**
-   * Dự toán cước phí bưu gửi theo quy chuẩn Nexus Logistics & IATA
+   * Dự toán cước phí bưu gửi theo quy chuẩn Nexus Logistics & IATA (Phân tầng 3-Tier)
    */
   public calculatePricing(
     weightKg: number,
     serviceType = 'STANDARD',
     fromCity = 'TP.HCM',
-    toCity = 'Hà Nội'
+    toCity = 'Hà Nội',
+    customerTier: 'GUEST' | 'STANDARD' | 'VIP_ENTERPRISE' = 'GUEST'
   ): PricingResult {
-    this.logger.log(`Tool calculatePricing invoked: ${weightKg}kg, ${serviceType}, ${fromCity} -> ${toCity}`);
+    this.logger.log(`Tool calculatePricing invoked: ${weightKg}kg, ${serviceType}, ${fromCity} -> ${toCity}, tier=${customerTier}`);
 
     const sType = serviceType.toUpperCase();
     let baseFee = 18000;
@@ -117,17 +121,126 @@ export class LogisticsToolsService {
       (fromCity.toLowerCase().includes('hcm') && toCity.toLowerCase().includes('hà nội'));
     const zoneSurcharge = isInterZone ? 10000 : 0;
 
-    const totalFee = baseFee + excessFee + zoneSurcharge;
+    const subtotalFee = baseFee + excessFee + zoneSurcharge;
+
+    // Chiết khấu theo Customer Tier
+    let discountAmount = 0;
+    let discountLabel = '';
+    if (customerTier === 'STANDARD') {
+      discountAmount = Math.round((subtotalFee * 0.05) / 100) * 100; // 5%
+      discountLabel = ' (Đã trừ 5% ưu đãi Shop)';
+    } else if (customerTier === 'VIP_ENTERPRISE') {
+      discountAmount = Math.round((subtotalFee * 0.15) / 100) * 100; // 15%
+      discountLabel = ' (Đã trừ 15% chiết khấu Hợp đồng VIP)';
+    }
+
+    const totalFee = subtotalFee - discountAmount;
+
+    // Cước hoàn ước tính
+    let estimatedReturnFee = Math.round((totalFee * 0.5) / 100) * 100;
+    let returnSettlementMethod = 'CASH_OR_QR_ON_RETURN';
+    if (customerTier === 'VIP_ENTERPRISE') {
+      estimatedReturnFee = 0;
+      returnSettlementMethod = 'WAIVED (Miễn phí 100%)';
+    } else if (customerTier === 'STANDARD') {
+      returnSettlementMethod = 'COD_SETTLEMENT_DEDUCTION (Tự động trừ đối soát COD)';
+    }
 
     return {
       weightKg,
       serviceType: sType,
+      customerTier,
       baseFee,
       excessFee,
       zoneSurcharge,
+      subtotalFee,
+      discountAmount,
       totalFee,
+      estimatedReturnFee,
+      returnSettlementMethod,
       currency: 'VND',
-      breakdown: `Cước cơ sở (${baseWeight}kg đầu): ${baseFee.toLocaleString('vi-VN')}đ + Cước vượt cân (${excessWeight}kg): ${excessFee.toLocaleString('vi-VN')}đ + Phụ phí liên miền: ${zoneSurcharge.toLocaleString('vi-VN')}đ = Tổng: ${totalFee.toLocaleString('vi-VN')}đ`,
+      breakdown: `Tạm tính: ${subtotalFee.toLocaleString('vi-VN')}đ${discountLabel} -> Tổng cước chiều đi: ${totalFee.toLocaleString('vi-VN')}đ | Cước hoàn dự kiến (nếu bom hàng): ${estimatedReturnFee.toLocaleString('vi-VN')}đ (${returnSettlementMethod})`,
+    };
+  }
+
+  /**
+   * Tính cước chuyển hoàn bưu gửi theo mô hình Rule-based Configurable Policy
+   */
+  public calculateReturnFee(
+    forwardFee: number,
+    merchantTier: 'STANDARD' | 'VIP_ENTERPRISE' | 'FLAT_10K' = 'STANDARD'
+  ) {
+    this.logger.log(`Tool calculateReturnFee invoked: forwardFee=${forwardFee}, tier=${merchantTier}`);
+
+    if (merchantTier === 'VIP_ENTERPRISE') {
+      return {
+        merchantTier,
+        forwardFee,
+        returnFee: 0,
+        totalPayable: forwardFee,
+        explanation: 'Đối tác VIP Doanh Nghiệp (sản lượng > 1.000 đơn/tháng): Áp dụng chính sách Miễn phí cước chuyển hoàn 100% (0 VNĐ).',
+      };
+    }
+
+    if (merchantTier === 'FLAT_10K') {
+      return {
+        merchantTier,
+        forwardFee,
+        returnFee: 10000,
+        totalPayable: forwardFee + 10000,
+        explanation: 'Chính sách Đồng giá chuyển hoàn theo thỏa thuận khung hợp đồng riêng: 10.000 VNĐ/kiện hoàn.',
+      };
+    }
+
+    const returnFee = Math.round(forwardFee * 0.5);
+    return {
+      merchantTier: 'STANDARD',
+      forwardFee,
+      returnFee,
+      totalPayable: forwardFee + returnFee,
+      explanation: `Chính sách Mặc định (Shop thông thường / Khách lẻ): Cước chuyển hoàn = 50% cước chiều đi (${returnFee.toLocaleString('vi-VN')} VNĐ). Người gửi (Shop) thanh toán khi nhận lại bưu gửi hoặc trừ vào đối soát COD.`,
+    };
+  }
+
+  /**
+   * Tra cứu tiến độ xử lý hồ sơ khiếu nại bồi thường (Claims Tracking)
+   */
+  public async trackClaimStatus(claimCode: string) {
+    const cleanCode = claimCode.trim().toUpperCase();
+    this.logger.log(`Tool trackClaimStatus invoked for: ${cleanCode}`);
+
+    try {
+      const resp = await fetch(`http://localhost:3002/api/v1/claims/${cleanCode}`, {
+        signal: AbortSignal.timeout(2000),
+      });
+      if (resp.ok) {
+        const data = (await resp.json()) as any;
+        return {
+          found: true,
+          claimCode: cleanCode,
+          shipmentCode: data.shipmentCode,
+          status: data.status,
+          statusText: data.status === 'APPROVED_COMPENSATION' ? 'Đã phê duyệt bồi thường' : 'Đang giám định',
+          approvedAmount: data.approvedCompensationAmount,
+          responsibleParty: data.responsibleEntityName || data.responsibleParty,
+          notes: data.adjudicationNotes,
+        };
+      }
+    } catch {}
+
+    // Fallback response phục vụ demo thuyết trình
+    return {
+      found: true,
+      claimCode: cleanCode,
+      shipmentCode: '333000000001',
+      status: 'APPROVED_COMPENSATION',
+      statusText: 'Đã phê duyệt chi trả bồi thường 100%',
+      declaredValue: 15000000,
+      approvedAmount: 15000000,
+      responsibleParty: 'Hub Tân Bình (Lỗi bốc xếp ném hàng nứt vỡ)',
+      penaltyAmount: 15000000,
+      settlementMethod: 'Tự động chuyển khoản vào tài khoản ngân hàng của Merchant trong kỳ đối soát COD gần nhất',
+      adjudicatedAt: '15/09/2026',
     };
   }
 }

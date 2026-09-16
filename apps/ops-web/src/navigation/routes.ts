@@ -63,6 +63,8 @@ export const routePaths = {
     '/app/function-groups/service-quality/stray-investigation',
   claimsLiabilityManagement:
     '/app/function-groups/service-quality/claims-liability',
+  customerServiceTickets:
+    '/app/function-groups/service-quality/cskh-tickets',
   claimsHubStatistics:
     '/app/function-groups/service-quality/hub-compensation-statistics',
   groupDatabase: '/app/function-groups/database',
@@ -202,6 +204,8 @@ export const routePaths = {
     'function-groups/service-quality/stray-investigation',
   claimsLiabilityManagementLeaf:
     'function-groups/service-quality/claims-liability',
+  customerServiceTicketsLeaf:
+    'function-groups/service-quality/cskh-tickets',
   claimsHubStatisticsLeaf:
     'function-groups/service-quality/hub-compensation-statistics',
   groupDatabaseLeaf: 'function-groups/database',
@@ -313,6 +317,7 @@ export const OPS_FULL_MODULE_ROUTE_PATHS = [
   routePaths.serviceQualityIntegratedLookup,
   routePaths.serviceQualityAbnormalManagement,
   routePaths.serviceQualityProactiveActionBoard,
+  routePaths.customerServiceTickets,
   routePaths.opsMetricsReport,
   routePaths.opsMetricsAbnormalHandling,
   routePaths.opsMetricsDeadlineInventory,
