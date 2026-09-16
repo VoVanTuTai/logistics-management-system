@@ -59,6 +59,7 @@ import {
 import qrcode from 'qrcode-generator';
 
 import LoginPage from './pages/LoginPage';
+import { FloatingAiChatWidget } from './components/FloatingAiChatWidget';
 import { OrdersPage } from './pages/OrdersPage';
 import { TermsOfServicePage } from './pages/terms/TermsOfServicePage';
 import { useAuthStore } from './store/useAuthStore';
@@ -261,6 +262,9 @@ function Layout() {
       >
         <Outlet />
       </main>
+
+      {/* Floating AI Chat Assistant Widget */}
+      <FloatingAiChatWidget />
     </div>
   );
 }
