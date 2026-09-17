@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { AiAssistantModule } from './api/ai-assistant/ai-assistant.module';
 import { CourierModule } from './api/courier/courier.module';
 import { CustomerModule } from './api/customer/customer.module';
 import { ChatModule } from './api/chat/chat.module';
@@ -15,6 +16,7 @@ import { HealthModule } from './health/health.module';
   imports: [
     HealthModule,
     PublicModule,
+    AiAssistantModule,
     ChatModule,
     TasksRealtimeModule,
     LocationsRealtimeModule,

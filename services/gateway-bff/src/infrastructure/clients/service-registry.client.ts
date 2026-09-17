@@ -17,6 +17,7 @@ const SERVICE_URL_ENV = {
   tracking: 'TRACKING_SERVICE_URL',
   payment: 'PAYMENT_SERVICE_URL',
   pricing: 'PRICING_SERVICE_URL',
+  chatbot: 'CHATBOT_SERVICE_URL',
 } as const;
 
 export type ApiGroup = 'public' | 'merchant' | 'ops' | 'courier' | 'customer';

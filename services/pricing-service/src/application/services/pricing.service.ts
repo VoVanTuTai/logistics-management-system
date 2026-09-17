@@ -3,10 +3,12 @@ import { randomUUID } from 'crypto';
 import { BadRequestException, Injectable } from '@nestjs/common';
 
 import type {
+  CustomerTier,
   PricingBreakdownItem,
   PricingQuote,
   PricingQuoteInput,
   PricingZone,
+  ReturnPolicyQuote,
   ServiceType,
 } from '../../domain/entities/pricing-quote.entity';
 
@@ -45,6 +47,7 @@ const METRO_PROVINCES = new Set([
 export class PricingService {
   quote(input: PricingQuoteInput): PricingQuote {
     const serviceType = this.resolveServiceType(input);
+    const customerTier = this.resolveCustomerTier(input);
     const rates = SERVICE_RATES[serviceType];
     const actualWeightKg = this.normalizeNonNegativeNumber(input.package?.weightKg);
     const length = this.normalizeNonNegativeNumber(input.package?.dimensionsCm?.length);
@@ -106,8 +109,37 @@ export class PricingService {
       });
     }
 
-    const rawTotal = breakdown.reduce((sum, item) => sum + item.amount, 0);
-    const totalFee = this.roundMoney(rawTotal);
+    const rawSubtotal = breakdown.reduce((sum, item) => sum + item.amount, 0);
+    const subtotalFee = this.roundMoney(rawSubtotal);
+
+    // Apply Tier Commercial Discount
+    let discountAmount = 0;
+    if (customerTier === 'STANDARD') {
+      discountAmount = this.roundMoney(subtotalFee * 0.05);
+      if (discountAmount > 0) {
+        breakdown.push({
+          code: 'MERCHANT_DISCOUNT',
+          label: 'Standard Merchant discount (5%)',
+          amount: -discountAmount,
+          basis: '5% uu dai danh rieng cho Shop tieu chuan',
+        });
+      }
+    } else if (customerTier === 'VIP_ENTERPRISE') {
+      discountAmount = this.roundMoney(subtotalFee * 0.15);
+      if (discountAmount > 0) {
+        breakdown.push({
+          code: 'VIP_ENTERPRISE_DISCOUNT',
+          label: 'VIP Enterprise contract discount (15%)',
+          amount: -discountAmount,
+          basis: '15% chiet khau theo hop dong san luong lon (>1.000 don/thang)',
+        });
+      }
+    }
+
+    const totalFee = Math.max(0, subtotalFee - discountAmount);
+    const returnPolicy = this.resolveReturnPolicy(totalFee, customerTier);
+    const estimatedReturnFee = returnPolicy.fee;
+
     const quoteTtlMinutes = this.resolveQuoteTtlMinutes();
     const validUntil = new Date(Date.now() + quoteTtlMinutes * 60 * 1000).toISOString();
 
@@ -116,13 +148,61 @@ export class PricingService {
       quoteVersion: QUOTE_VERSION,
       currency,
       serviceType,
+      customerTier,
       zone,
       actualWeightKg,
       volumetricWeightKg,
       chargeableWeightKg,
+      subtotalFee,
+      discountAmount,
       totalFee,
+      estimatedReturnFee,
+      returnPolicy,
       validUntil,
       breakdown,
+    };
+  }
+
+  private resolveCustomerTier(input: PricingQuoteInput): CustomerTier {
+    const value = String(input.customerTier ?? '').trim().toUpperCase();
+
+    if (value === 'VIP_ENTERPRISE' || value === 'VIP') {
+      return 'VIP_ENTERPRISE';
+    }
+
+    if (value === 'STANDARD' || value === 'MERCHANT') {
+      return 'STANDARD';
+    }
+
+    return 'GUEST';
+  }
+
+  private resolveReturnPolicy(forwardFee: number, tier: CustomerTier): ReturnPolicyQuote {
+    if (tier === 'VIP_ENTERPRISE') {
+      return {
+        ratePercent: 0,
+        fee: 0,
+        settlementMethod: 'WAIVED',
+        description: 'Mien phi chuyen hoan 100% (0 VND) cho Doi tac VIP Doanh nghiep theo hop dong.',
+      };
+    }
+
+    if (tier === 'STANDARD') {
+      const returnFee = this.roundMoney(forwardFee * 0.5);
+      return {
+        ratePercent: 50,
+        fee: returnFee,
+        settlementMethod: 'COD_SETTLEMENT_DEDUCTION',
+        description: 'Thu 50% cuoc chieu di; he thong tu dong can tru vao ky doi soat COD tiep theo cua Shop.',
+      };
+    }
+
+    const returnFee = this.roundMoney(forwardFee * 0.5);
+    return {
+      ratePercent: 50,
+      fee: returnFee,
+      settlementMethod: 'CASH_OR_QR_ON_RETURN',
+      description: 'Thu 50% cuoc chieu di; nguoi gui thanh toan tien mat hoac VietQR khi buu ta giao tra hang.',
     };
   }
 
