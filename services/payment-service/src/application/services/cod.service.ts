@@ -1130,6 +1130,10 @@ export class CodService {
       return;
     }
 
+    if (process.env.SEPAY_WEBHOOK_ALLOW_UNAUTHENTICATED === 'true') {
+      return;
+    }
+
     if (process.env.NODE_ENV === 'production') {
       throw new UnauthorizedException(
         'SEPAY_WEBHOOK_SECRET or SEPAY_WEBHOOK_API_KEY is required in production.',

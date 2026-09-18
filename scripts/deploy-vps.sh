@@ -274,7 +274,8 @@ print_urls() {
   echo "ops-web:          ${OPS_PUBLIC_URL:-http://${PUBLIC_HOST}:${OPS_WEB_PORT}}"
   echo "merchant-web:     ${MERCHANT_PUBLIC_URL:-http://${PUBLIC_HOST}:${MERCHANT_WEB_PORT}}"
   echo "admin-web:        ${ADMIN_PUBLIC_URL:-http://${PUBLIC_HOST}:${ADMIN_WEB_PORT}}"
-  echo "public-tracking:  ${PUBLIC_TRACKING_PUBLIC_URL:-http://${PUBLIC_HOST}:${PUBLIC_TRACKING_PORT}}"
+  echo "customer-mobile:  ${CUSTOMER_MOBILE_PUBLIC_URL:-http://${PUBLIC_HOST}:${CUSTOMER_MOBILE_PORT:-5176}}"
+  echo "courier-mobile:   ${COURIER_MOBILE_PUBLIC_URL:-http://${PUBLIC_HOST}:${COURIER_MOBILE_PORT:-5177}}"
   echo "guest-web:        ${GUEST_PUBLIC_URL:-http://${PUBLIC_HOST}:${GUEST_WEB_PORT:-5178}}"
   echo "minio API:        ${MINIO_PUBLIC_ENDPOINT}"
   echo

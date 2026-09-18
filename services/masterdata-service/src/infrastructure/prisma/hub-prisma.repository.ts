@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { Hub as PrismaHubRecord, Prisma } from '@prisma/client';
+import { Prisma, type Hub as PrismaHubRecord } from '@prisma/client';
 
 import {
   Hub,
@@ -96,8 +96,16 @@ export class HubPrismaRepository extends HubRepository {
     const data: Prisma.HubCreateInput = {
       code: input.code,
       name: input.name,
+      level: input.level ?? 2,
+      parentCode: input.parentCode ?? null,
       zoneCode: input.zoneCode ?? null,
       address: input.address ?? null,
+      district: input.district ?? null,
+      ward: input.ward ?? null,
+      coverageRadiusKm: input.coverageRadiusKm ?? null,
+      boundaryPolygon: input.boundaryPolygon !== undefined ? (input.boundaryPolygon as Prisma.InputJsonValue) : Prisma.DbNull,
+      latitude: input.latitude ?? null,
+      longitude: input.longitude ?? null,
       isActive: input.isActive ?? true,
     };
 
@@ -117,12 +125,44 @@ export class HubPrismaRepository extends HubRepository {
       data.name = input.name;
     }
 
+    if (input.level !== undefined) {
+      data.level = input.level;
+    }
+
+    if (input.parentCode !== undefined) {
+      data.parentCode = input.parentCode;
+    }
+
     if (input.zoneCode !== undefined) {
       data.zoneCode = input.zoneCode;
     }
 
     if (input.address !== undefined) {
       data.address = input.address;
+    }
+
+    if (input.district !== undefined) {
+      data.district = input.district;
+    }
+
+    if (input.ward !== undefined) {
+      data.ward = input.ward;
+    }
+
+    if (input.coverageRadiusKm !== undefined) {
+      data.coverageRadiusKm = input.coverageRadiusKm;
+    }
+
+    if (input.boundaryPolygon !== undefined) {
+      data.boundaryPolygon = input.boundaryPolygon !== null ? (input.boundaryPolygon as Prisma.InputJsonValue) : Prisma.DbNull;
+    }
+
+    if (input.latitude !== undefined) {
+      data.latitude = input.latitude;
+    }
+
+    if (input.longitude !== undefined) {
+      data.longitude = input.longitude;
     }
 
     if (input.isActive !== undefined) {
@@ -150,8 +190,16 @@ export class HubPrismaRepository extends HubRepository {
       id: record.id,
       code: record.code,
       name: record.name,
+      level: record.level,
+      parentCode: record.parentCode,
       zoneCode: record.zoneCode,
       address: record.address,
+      district: record.district,
+      ward: record.ward,
+      coverageRadiusKm: record.coverageRadiusKm,
+      boundaryPolygon: record.boundaryPolygon,
+      latitude: record.latitude,
+      longitude: record.longitude,
       isActive: record.isActive,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,

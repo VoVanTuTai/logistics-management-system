@@ -1,9 +1,11 @@
 import React, { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import {
   useAdminUsersQuery,
   useUpdateAdminUserMutation,
 } from '../../features/auth/auth.api';
+import { routePaths } from '../../navigation/routes';
 import type { AdminUserDto } from '../../features/auth/auth.types';
 import {
   useCreateHubMutation,
@@ -525,10 +527,35 @@ export function HubManagementPage(): React.JSX.Element {
 
   return (
     <div>
-      <h2>Dữ Liệu Danh Mục - Quản Lý Bưu Cục</h2>
-      <p style={styles.helperText}>
-        Quản lý bưu cục theo vùng hoạt động và gán nhân sự vận hành.
-      </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+        <div>
+          <h2>Dữ Liệu Danh Mục - Quản Lý Bưu Cục</h2>
+          <p style={styles.helperText}>
+            Quản lý bưu cục theo vùng hoạt động và gán nhân sự vận hành.
+          </p>
+        </div>
+        <Link
+          to={routePaths.masterdataHubNetworkMap}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '8px 16px',
+            backgroundColor: '#0284c7',
+            color: '#ffffff',
+            borderRadius: '8px',
+            fontWeight: 600,
+            fontSize: '13px',
+            textDecoration: 'none',
+            boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)',
+          }}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+            travel_explore
+          </span>
+          <span>Bản Đồ Mạng Lưới & Geofence</span>
+        </Link>
+      </div>
 
       {/* Thống kê Hub Khu vực 3 Miền */}
       <div style={{ marginBottom: '24px' }}>

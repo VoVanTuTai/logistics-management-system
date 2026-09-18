@@ -89,4 +89,21 @@ export const opsEndpoints = {
     courierAreaAssignments: '/ops/masterdata/courier-area-assignments',
     courierAreaAssignmentDetail: (id: string) => `/ops/masterdata/courier-area-assignments/${id}`,
   },
+  investigations: {
+    list: '/ops/shipment/investigations',
+    detail: (id: string) => `/ops/shipment/investigations/${encodeURIComponent(id)}`,
+    submitDispute: (id: string) => `/ops/shipment/investigations/${encodeURIComponent(id)}/disputes`,
+    resolveFound: (id: string) => `/ops/shipment/investigations/${encodeURIComponent(id)}/resolve-found`,
+    extendHearing: (id: string) => `/ops/shipment/investigations/${encodeURIComponent(id)}/extend-hearing`,
+    escalateClaim: (id: string) => `/ops/shipment/investigations/${encodeURIComponent(id)}/escalate-claim`,
+  },
+  claims: {
+    list: '/ops/shipment/claims',
+    detail: (id: string) => `/ops/shipment/claims/${encodeURIComponent(id)}`,
+    create: '/ops/shipment/claims',
+    adjudicate: (id: string) => `/ops/shipment/claims/${encodeURIComponent(id)}/adjudicate`,
+    approvePayment: (id: string) => `/ops/shipment/claims/${encodeURIComponent(id)}/approve-payment`,
+    settleDeduction: (id: string) => `/ops/shipment/claims/${encodeURIComponent(id)}/settle-deduction`,
+    hubStatistics: '/ops/shipment/claims/statistics/hub-summary',
+  },
 } as const;

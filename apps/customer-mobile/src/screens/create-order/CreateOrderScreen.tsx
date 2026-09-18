@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -23,6 +25,11 @@ import type { RootStackParamList } from '../../navigation/types';
 import { ApiClientError } from '../../services/api/client';
 import { pricingApi, type PricingQuoteResponse } from '../../services/api/pricing.api';
 import { shipmentApi } from '../../services/api/shipment.api';
+import {
+  DEFAULT_HUB_RECORDS,
+  masterdataApi,
+  type HubRecord,
+} from '../../services/api/masterdata.api';
 import { authStore, useAuthSession } from '../../store/authStore';
 import { savedAddressStore } from '../../store/savedAddressStore';
 import { colors, shadows, spacing } from '../../theme';
@@ -41,11 +48,79 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
   const [submitting, setSubmitting] = useState(false);
   const [liveFee, setLiveFee] = useState<number>(22000);
   const [liveQuote, setLiveQuote] = useState<PricingQuoteResponse | null>(null);
+  const [showFormulaHelp, setShowFormulaHelp] = useState<boolean>(false);
 
   // Address Modals state
   const [showSenderAddressModal, setShowSenderAddressModal] = useState(false);
   const [showReceiverAddressModal, setShowReceiverAddressModal] = useState(false);
   const [showSavedAddressPickerModal, setShowSavedAddressPickerModal] = useState(false);
+
+  // Pickup mode: Lấy hàng tại nhà vs Gửi hàng tại bưu cục
+  const [pickupMethod, setPickupMethod] = useState<'PICKUP' | 'DROP_OFF'>('PICKUP');
+  const [allHubs, setAllHubs] = useState<HubRecord[]>(DEFAULT_HUB_RECORDS);
+  const [showHubPickerModal, setShowHubPickerModal] = useState(false);
+  const [hubSearchQuery, setHubSearchQuery] = useState('');
+  const [selectedDropOffHub, setSelectedDropOffHub] = useState<HubRecord | null>(null);
+
+  // Load hubs on mount
+  useEffect(() => {
+    masterdataApi
+      .getHubs()
+      .then((hubs) => {
+        if (Array.isArray(hubs) && hubs.length > 0) {
+          setAllHubs(hubs);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSelectPickupMethod = (method: 'PICKUP' | 'DROP_OFF') => {
+    setPickupMethod(method);
+    if (method === 'DROP_OFF') {
+      const hubToSelect = selectedDropOffHub || allHubs[0];
+      if (hubToSelect) {
+        setSelectedDropOffHub(hubToSelect);
+        setSenderAddress({
+          province: hubToSelect.province,
+          district: hubToSelect.district || '',
+          ward: hubToSelect.ward || '',
+          addressDetail: hubToSelect.addressDetail || hubToSelect.name,
+          composedAddress: `${hubToSelect.name} - ${hubToSelect.addressDetail || hubToSelect.province}`,
+          hubCode: hubToSelect.code,
+          hubName: hubToSelect.name,
+        });
+      }
+    } else {
+      handleSelectSenderMode(senderAddressMode);
+    }
+  };
+
+  const handleChooseDropOffHub = (hub: HubRecord) => {
+    setSelectedDropOffHub(hub);
+    setSenderAddress({
+      province: hub.province,
+      district: hub.district || '',
+      ward: hub.ward || '',
+      addressDetail: hub.addressDetail || hub.name,
+      composedAddress: `${hub.name} - ${hub.addressDetail || hub.province}`,
+      hubCode: hub.code,
+      hubName: hub.name,
+    });
+    setShowHubPickerModal(false);
+  };
+
+  const filteredHubs = useMemo(() => {
+    if (!hubSearchQuery.trim()) return allHubs;
+    const q = hubSearchQuery.trim().toLowerCase();
+    return allHubs.filter(
+      (h) =>
+        h.name.toLowerCase().includes(q) ||
+        h.code.toLowerCase().includes(q) ||
+        h.province.toLowerCase().includes(q) ||
+        (h.district || '').toLowerCase().includes(q) ||
+        (h.addressDetail || '').toLowerCase().includes(q),
+    );
+  }, [allHubs, hubSearchQuery]);
 
   // Sender details
   const [senderAddressMode, setSenderAddressMode] = useState<'SAVED' | 'MANUAL'>('SAVED');
@@ -68,6 +143,8 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
           composedAddress: def.composedAddress || '',
           hubCode: def.hubCode || '',
           hubName: def.hubName || '',
+          latitude: def.latitude,
+          longitude: def.longitude,
         });
       }
     } else {
@@ -120,6 +197,8 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
           composedAddress: def.composedAddress || '',
           hubCode: def.hubCode || '',
           hubName: def.hubName || '',
+          latitude: def.latitude,
+          longitude: def.longitude,
         });
       }
     });
@@ -234,8 +313,12 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
         showModal('Thiếu thông tin', 'Vui lòng nhập tên và số điện thoại người gửi.');
         return;
       }
-      if (!senderAddress) {
-        showModal('Thiếu thông tin', 'Vui lòng chọn địa chỉ người gửi.');
+      if (pickupMethod === 'DROP_OFF' && !senderAddress) {
+        showModal('Thiếu thông tin', 'Vui lòng chọn bưu cục tiếp nhận gửi hàng.');
+        return;
+      }
+      if (pickupMethod === 'PICKUP' && !senderAddress) {
+        showModal('Thiếu thông tin', 'Vui lòng chọn địa chỉ lấy hàng tại nhà.');
         return;
       }
       if (!receiverName.trim() || !receiverPhone.trim()) {
@@ -268,6 +351,13 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
 
       setSubmitting(true);
       try {
+        const senderCoords = senderAddress.latitude && senderAddress.longitude
+          ? { latitude: senderAddress.latitude, longitude: senderAddress.longitude }
+          : null;
+        const receiverCoords = receiverAddress.latitude && receiverAddress.longitude
+          ? { latitude: receiverAddress.latitude, longitude: receiverAddress.longitude }
+          : null;
+
         const metadataPayload = {
           createdBy: {
             username: user?.username || senderPhone,
@@ -281,8 +371,12 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
             address: senderAddress.composedAddress,
             addressDetail: senderAddress.addressDetail,
             province: senderAddress.province,
+            district: senderAddress.district,
             ward: senderAddress.ward,
             hubCode: senderAddress.hubCode,
+            latitude: senderCoords?.latitude,
+            longitude: senderCoords?.longitude,
+            coordinate: senderCoords ?? undefined,
           },
           receiver: {
             name: receiverName.trim(),
@@ -291,11 +385,23 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
             addressDetail: receiverAddress.addressDetail,
             region: receiverAddress.province,
             province: receiverAddress.province,
+            district: receiverAddress.district,
             ward: receiverAddress.ward,
             hubCode: receiverAddress.hubCode,
+            latitude: receiverCoords?.latitude,
+            longitude: receiverCoords?.longitude,
+            coordinate: receiverCoords ?? undefined,
           },
+          pickupLatitude: senderCoords?.latitude,
+          pickupLongitude: senderCoords?.longitude,
+          pickupCoordinate: senderCoords ?? undefined,
+          deliveryLatitude: receiverCoords?.latitude,
+          deliveryLongitude: receiverCoords?.longitude,
+          deliveryCoordinate: receiverCoords ?? undefined,
+          pickupType: pickupMethod,
           package: {
             itemType: itemName.trim(),
+            itemName: itemName.trim(),
             weightKg: Number(weightKg) || 0.5,
             dimensionsCm: {
               length: Number(lengthCm) || 10,
@@ -306,10 +412,15 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
           },
           service: {
             type: serviceId,
+            pickupType: pickupMethod,
           },
           codAmount: hasCod ? Number(codAmount) || 0 : 0,
           deliveryNote: notes.trim() || null,
           estimatedFee: liveFee,
+          originHubCode: senderAddress.hubCode,
+          destinationHubCode: receiverAddress.hubCode,
+          senderHubCode: senderAddress.hubCode,
+          receiverHubCode: receiverAddress.hubCode,
           routing: {
             originHubCode: senderAddress.hubCode,
             destinationHubCode: receiverAddress.hubCode,
@@ -366,6 +477,82 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
         {/* STEP 1: ĐỊA CHỈ GỬI & NHẬN (Lấy từ Database Masterdata) */}
         {step === 1 ? (
           <View style={styles.stepBlock}>
+            {/* HÌNH THỨC GỬI HÀNG */}
+            <View style={styles.card}>
+              <View style={styles.cardTitleRow}>
+                <Ionicons name="swap-horizontal" size={20} color={colors.primary} />
+                <Text style={styles.cardTitle}>Hình thức gửi hàng</Text>
+              </View>
+
+              <View style={styles.methodChoiceRow}>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  style={[
+                    styles.methodChoiceBtn,
+                    pickupMethod === 'PICKUP' && styles.methodChoiceBtnActive,
+                  ]}
+                  onPress={() => handleSelectPickupMethod('PICKUP')}
+                >
+                  <View
+                    style={[
+                      styles.methodChoiceIconCircle,
+                      pickupMethod === 'PICKUP' && styles.methodChoiceIconCircleActive,
+                    ]}
+                  >
+                    <Ionicons
+                      name="home"
+                      size={18}
+                      color={pickupMethod === 'PICKUP' ? colors.surface : colors.primary}
+                    />
+                  </View>
+                  <Text
+                    style={[
+                      styles.methodChoiceTitle,
+                      pickupMethod === 'PICKUP' && styles.methodChoiceTitleActive,
+                    ]}
+                  >
+                    Lấy hàng tại nhà
+                  </Text>
+                  <Text style={styles.methodChoiceDesc}>
+                    Bưu tá đến tận nơi nhận theo địa chỉ của bạn
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  style={[
+                    styles.methodChoiceBtn,
+                    pickupMethod === 'DROP_OFF' && styles.methodChoiceBtnActive,
+                  ]}
+                  onPress={() => handleSelectPickupMethod('DROP_OFF')}
+                >
+                  <View
+                    style={[
+                      styles.methodChoiceIconCircle,
+                      pickupMethod === 'DROP_OFF' && styles.methodChoiceIconCircleActive,
+                    ]}
+                  >
+                    <Ionicons
+                      name="business"
+                      size={18}
+                      color={pickupMethod === 'DROP_OFF' ? colors.surface : colors.primary}
+                    />
+                  </View>
+                  <Text
+                    style={[
+                      styles.methodChoiceTitle,
+                      pickupMethod === 'DROP_OFF' && styles.methodChoiceTitleActive,
+                    ]}
+                  >
+                    Gửi tại bưu cục
+                  </Text>
+                  <Text style={styles.methodChoiceDesc}>
+                    Tự mang hàng ra bưu cục Nexus gần nhất
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
             {/* SENDER CARD */}
             <View style={styles.card}>
               <View style={styles.cardTitleRow}>
@@ -373,53 +560,9 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
                 <Text style={styles.cardTitle}>Thông tin người gửi</Text>
               </View>
 
-              {/* MODE SELECTOR: SAVED ADDRESS vs MANUAL ENTRY */}
-              <View style={styles.senderModeGroup}>
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  style={[styles.senderModePill, senderAddressMode === 'SAVED' && styles.senderModePillActive]}
-                  onPress={() => handleSelectSenderMode('SAVED')}
-                >
-                  <Ionicons
-                    name={senderAddressMode === 'SAVED' ? 'radio-button-on' : 'radio-button-off'}
-                    size={17}
-                    color={senderAddressMode === 'SAVED' ? colors.primary : colors.textMuted}
-                  />
-                  <Text style={[styles.senderModeText, senderAddressMode === 'SAVED' && styles.senderModeTextActive]}>
-                    Địa chỉ của tôi (Mặc định)
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  style={[styles.senderModePill, senderAddressMode === 'MANUAL' && styles.senderModePillActive]}
-                  onPress={() => handleSelectSenderMode('MANUAL')}
-                >
-                  <Ionicons
-                    name={senderAddressMode === 'MANUAL' ? 'radio-button-on' : 'radio-button-off'}
-                    size={17}
-                    color={senderAddressMode === 'MANUAL' ? colors.primary : colors.textMuted}
-                  />
-                  <Text style={[styles.senderModeText, senderAddressMode === 'MANUAL' && styles.senderModeTextActive]}>
-                    Tự nhập địa chỉ mới
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* SAVED ADDRESS MODE */}
-              {senderAddressMode === 'SAVED' ? (
+              {pickupMethod === 'DROP_OFF' ? (
+                /* DROP-OFF MODE: Chọn Bưu cục gửi */
                 <View style={styles.modeSection}>
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    style={styles.pickSavedBtn}
-                    onPress={() => setShowSavedAddressPickerModal(true)}
-                  >
-                    <Ionicons name="book-outline" size={16} color={colors.primary} />
-                    <Text style={styles.pickSavedBtnText}>Đổi từ danh sách Địa chỉ của tôi</Text>
-                    <Ionicons name="chevron-forward" size={16} color={colors.primary} />
-                  </TouchableOpacity>
-
-                  {/* PRE-FILLED SENDER FORM */}
                   <InputField
                     label="Họ và tên người gửi"
                     placeholder="Nhập tên người gửi"
@@ -436,59 +579,143 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
                     required
                   />
 
-                  <Text style={styles.fieldLabel}>Địa chỉ người gửi (Đã chọn từ Địa chỉ của tôi) *</Text>
+                  <Text style={styles.fieldLabel}>Bưu cục tiếp nhận gửi hàng (Nexus Hub) *</Text>
                   <TouchableOpacity
                     activeOpacity={0.8}
                     style={[styles.addressBoxSelect, !senderAddress && styles.addressBoxUnselected]}
-                    onPress={() => setShowSavedAddressPickerModal(true)}
+                    onPress={() => setShowHubPickerModal(true)}
                   >
                     {senderAddress ? (
                       <View style={styles.addressBoxTextCol}>
-                        <Text style={styles.addressComposedText}>{senderAddress.composedAddress}</Text>
-                        <Text style={styles.addressHubText}>📍 Bưu cục gửi: {senderAddress.hubName} [{senderAddress.hubCode}]</Text>
+                        <Text style={styles.addressComposedText}>{senderAddress.hubName}</Text>
+                        <Text style={styles.addressHubText}>
+                          🏢 [{senderAddress.hubCode}] • {senderAddress.addressDetail || senderAddress.province}
+                        </Text>
                       </View>
                     ) : (
-                      <Text style={styles.addressPlaceholderText}>+ Bấm để chọn từ danh sách Địa chỉ của tôi</Text>
+                      <Text style={styles.addressPlaceholderText}>+ Bấm để chọn Bưu cục tiếp nhận gửi hàng</Text>
                     )}
                     <Ionicons name="chevron-forward" size={20} color={colors.primary} />
                   </TouchableOpacity>
                 </View>
               ) : (
-                /* MANUAL ENTRY MODE */
-                <View style={styles.modeSection}>
-                  <InputField
-                    label="Họ và tên người gửi"
-                    placeholder="Nhập tên người gửi mới"
-                    value={senderName}
-                    onChangeText={setSenderName}
-                    required
-                  />
-                  <InputField
-                    label="Số điện thoại người gửi"
-                    placeholder="09xxxxxxxx"
-                    keyboardType="phone-pad"
-                    value={senderPhone}
-                    onChangeText={setSenderPhone}
-                    required
-                  />
+                /* PICKUP MODE: Lấy tận nhà */
+                <>
+                  {/* MODE SELECTOR: SAVED ADDRESS vs MANUAL ENTRY */}
+                  <View style={styles.senderModeGroup}>
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      style={[styles.senderModePill, senderAddressMode === 'SAVED' && styles.senderModePillActive]}
+                      onPress={() => handleSelectSenderMode('SAVED')}
+                    >
+                      <Ionicons
+                        name={senderAddressMode === 'SAVED' ? 'radio-button-on' : 'radio-button-off'}
+                        size={17}
+                        color={senderAddressMode === 'SAVED' ? colors.primary : colors.textMuted}
+                      />
+                      <Text style={[styles.senderModeText, senderAddressMode === 'SAVED' && styles.senderModeTextActive]}>
+                        Địa chỉ của tôi (Mặc định)
+                      </Text>
+                    </TouchableOpacity>
 
-                  <Text style={styles.fieldLabel}>Địa chỉ người gửi mới (Chọn từ Database) *</Text>
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    style={[styles.addressBoxSelect, !senderAddress && styles.addressBoxUnselected]}
-                    onPress={() => setShowSenderAddressModal(true)}
-                  >
-                    {senderAddress ? (
-                      <View style={styles.addressBoxTextCol}>
-                        <Text style={styles.addressComposedText}>{senderAddress.composedAddress}</Text>
-                        <Text style={styles.addressHubText}>📍 Bưu cục gửi: {senderAddress.hubName} [{senderAddress.hubCode}]</Text>
-                      </View>
-                    ) : (
-                      <Text style={styles.addressPlaceholderText}>+ Bấm để chọn Tỉnh / Thành / Bưu cục gửi mới</Text>
-                    )}
-                    <Ionicons name="chevron-forward" size={20} color={colors.primary} />
-                  </TouchableOpacity>
-                </View>
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      style={[styles.senderModePill, senderAddressMode === 'MANUAL' && styles.senderModePillActive]}
+                      onPress={() => handleSelectSenderMode('MANUAL')}
+                    >
+                      <Ionicons
+                        name={senderAddressMode === 'MANUAL' ? 'radio-button-on' : 'radio-button-off'}
+                        size={17}
+                        color={senderAddressMode === 'MANUAL' ? colors.primary : colors.textMuted}
+                      />
+                      <Text style={[styles.senderModeText, senderAddressMode === 'MANUAL' && styles.senderModeTextActive]}>
+                        Tự nhập địa chỉ mới
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {senderAddressMode === 'SAVED' ? (
+                    <View style={styles.modeSection}>
+                      <TouchableOpacity
+                        activeOpacity={0.8}
+                        style={styles.pickSavedBtn}
+                        onPress={() => setShowSavedAddressPickerModal(true)}
+                      >
+                        <Ionicons name="book-outline" size={16} color={colors.primary} />
+                        <Text style={styles.pickSavedBtnText}>Đổi từ danh sách Địa chỉ của tôi</Text>
+                        <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+                      </TouchableOpacity>
+
+                      <InputField
+                        label="Họ và tên người gửi"
+                        placeholder="Nhập tên người gửi"
+                        value={senderName}
+                        onChangeText={setSenderName}
+                        required
+                      />
+                      <InputField
+                        label="Số điện thoại người gửi"
+                        placeholder="09xxxxxxxx"
+                        keyboardType="phone-pad"
+                        value={senderPhone}
+                        onChangeText={setSenderPhone}
+                        required
+                      />
+
+                      <Text style={styles.fieldLabel}>Địa chỉ lấy hàng (Đã chọn từ Địa chỉ của tôi) *</Text>
+                      <TouchableOpacity
+                        activeOpacity={0.8}
+                        style={[styles.addressBoxSelect, !senderAddress && styles.addressBoxUnselected]}
+                        onPress={() => setShowSavedAddressPickerModal(true)}
+                      >
+                        {senderAddress ? (
+                          <View style={styles.addressBoxTextCol}>
+                            <Text style={styles.addressComposedText}>{senderAddress.composedAddress}</Text>
+                            <Text style={styles.addressHubText}>📍 Bưu cục gửi: {senderAddress.hubName} [{senderAddress.hubCode}]</Text>
+                          </View>
+                        ) : (
+                          <Text style={styles.addressPlaceholderText}>+ Bấm để chọn từ danh sách Địa chỉ của tôi</Text>
+                        )}
+                        <Ionicons name="chevron-forward" size={20} color={colors.primary} />
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <View style={styles.modeSection}>
+                      <InputField
+                        label="Họ và tên người gửi"
+                        placeholder="Nhập tên người gửi mới"
+                        value={senderName}
+                        onChangeText={setSenderName}
+                        required
+                      />
+                      <InputField
+                        label="Số điện thoại người gửi"
+                        placeholder="09xxxxxxxx"
+                        keyboardType="phone-pad"
+                        value={senderPhone}
+                        onChangeText={setSenderPhone}
+                        required
+                      />
+
+                      <Text style={styles.fieldLabel}>Địa chỉ lấy hàng mới (Chọn từ Database) *</Text>
+                      <TouchableOpacity
+                        activeOpacity={0.8}
+                        style={[styles.addressBoxSelect, !senderAddress && styles.addressBoxUnselected]}
+                        onPress={() => setShowSenderAddressModal(true)}
+                      >
+                        {senderAddress ? (
+                          <View style={styles.addressBoxTextCol}>
+                            <Text style={styles.addressComposedText}>{senderAddress.composedAddress}</Text>
+                            <Text style={styles.addressHubText}>📍 Bưu cục gửi: {senderAddress.hubName} [{senderAddress.hubCode}]</Text>
+                          </View>
+                        ) : (
+                          <Text style={styles.addressPlaceholderText}>+ Bấm để chọn Tỉnh / Thành / Bưu cục gửi mới</Text>
+                        )}
+                        <Ionicons name="chevron-forward" size={20} color={colors.primary} />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </>
               )}
             </View>
 
@@ -695,24 +922,92 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
             </View>
 
             {/* SUMMARY REVIEW */}
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryTitle}>Tổng quan chi phí (API Pricing Quote)</Text>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Cước vận chuyển:</Text>
-                <Text style={styles.summaryVal}>{formatVnd(liveFee)}</Text>
-              </View>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Thu hộ COD:</Text>
-                <Text style={styles.summaryVal}>
-                  {hasCod ? formatVnd(Number(codAmount) || 0) : '0đ'}
-                </Text>
-              </View>
-              <View style={styles.divider} />
-              <View style={styles.summaryRowTotal}>
-                <Text style={styles.summaryLabelTotal}>TỔNG CƯỚC THANH TOÁN:</Text>
-                <Text style={styles.summaryValTotal}>{formatVnd(liveFee)}</Text>
-              </View>
-            </View>
+            {(() => {
+              const actW = Number(weightKg) || 0.5;
+              const volW = Number(((Number(lengthCm || 10) * Number(widthCm || 10) * Number(heightCm || 10)) / 6000).toFixed(2));
+              const chargeW = Math.max(actW, volW);
+              const isVolApplied = volW > actW;
+
+              return (
+                <View style={styles.summaryCard}>
+                  <Text style={styles.summaryTitle}>Tổng quan chi phí bưu gửi</Text>
+
+                  {/* Khối so sánh trọng lượng IATA V/6000 */}
+                  <View style={styles.weightCompareBox}>
+                    <View style={styles.weightCompareRow}>
+                      <Text style={styles.weightCompareLabel}>Cân thực: <Text style={styles.boldText}>{actW.toFixed(2)} kg</Text></Text>
+                      <Text style={styles.weightCompareLabel}>Thể tích (V/6000): <Text style={styles.boldText}>{volW.toFixed(2)} kg</Text></Text>
+                    </View>
+                    <View style={styles.weightChargeRow}>
+                      <Text style={styles.weightChargeLabel}>Khối lượng tính cước:</Text>
+                      <Text style={styles.weightChargeVal}>
+                        {chargeW.toFixed(2)} kg {isVolApplied ? '(Theo thể tích)' : '(Theo cân nặng)'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Hình thức gửi hàng:</Text>
+                    <Text style={styles.summaryVal}>
+                      {pickupMethod === 'PICKUP' ? 'Lấy hàng tại nhà' : 'Gửi tại bưu cục'}
+                    </Text>
+                  </View>
+
+                  {/* Chi tiết từng khoản cước nếu có breakdown từ API */}
+                  {liveQuote?.breakdown && liveQuote.breakdown.length > 0 ? (
+                    <View style={styles.breakdownList}>
+                      {liveQuote.breakdown.map((item, idx) => (
+                        <View key={idx} style={styles.summaryRow}>
+                          <Text style={styles.breakdownItemLabel}>{item.label}:</Text>
+                          <Text style={styles.breakdownItemVal}>{formatVnd(item.amount)}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  ) : (
+                    <View style={styles.summaryRow}>
+                      <Text style={styles.summaryLabel}>Cước vận chuyển:</Text>
+                      <Text style={styles.summaryVal}>{formatVnd(liveFee)}</Text>
+                    </View>
+                  )}
+
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Thu hộ COD:</Text>
+                    <Text style={styles.summaryVal}>
+                      {hasCod ? formatVnd(Number(codAmount) || 0) : '0đ'}
+                    </Text>
+                  </View>
+                  <View style={styles.divider} />
+                  <View style={styles.summaryRowTotal}>
+                    <Text style={styles.summaryLabelTotal}>TỔNG CƯỚC THANH TOÁN:</Text>
+                    <Text style={styles.summaryValTotal}>{formatVnd(liveFee)}</Text>
+                  </View>
+
+                  {/* Nút thuyết minh công thức tính cước */}
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    style={styles.formulaHelpBtn}
+                    onPress={() => setShowFormulaHelp(!showFormulaHelp)}
+                  >
+                    <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
+                    <Text style={styles.formulaHelpBtnText}>
+                      {showFormulaHelp ? 'Đóng thuyết minh cước' : 'Chi tiết công thức chiết tính'}
+                    </Text>
+                    <Ionicons name={showFormulaHelp ? 'chevron-up' : 'chevron-down'} size={14} color={colors.primary} />
+                  </TouchableOpacity>
+
+                  {showFormulaHelp ? (
+                    <View style={styles.formulaHelpBox}>
+                      <Text style={styles.formulaHelpTitle}>Quy chuẩn chiết tính cước bưu chính:</Text>
+                      <Text style={styles.formulaHelpText}>
+                        1. Khối lượng IATA: max(Cân thực tế, (Dài × Rộng × Cao)/6000){'\n'}
+                        2. Cơ chế nấc: Cước cơ sở (0.5kg đầu) + Nấc 0.5kg vượt + Phụ phí tuyến vùng miền{'\n'}
+                        3. Bảo mật: Người nhận chỉ thấy số tiền COD cần thanh toán, biểu phí dịch vụ của người gửi được bảo mật.
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+              );
+            })()}
           </View>
         ) : null}
 
@@ -786,6 +1081,94 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
           }
         }}
       />
+      {/* DROP-OFF HUB PICKER MODAL */}
+      <Modal
+        visible={showHubPickerModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowHubPickerModal(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.hubModalOverlay}
+        >
+          <View style={styles.hubModalContent}>
+            <View style={styles.hubModalHeader}>
+              <View>
+                <Text style={styles.hubModalTitle}>Chọn Bưu Cục Gửi Hàng</Text>
+                <Text style={styles.hubModalSubtitle}>
+                  Chọn điểm bưu cục thuận tiện ({allHubs.length} bưu cục)
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setShowHubPickerModal(false)}
+                style={styles.hubModalCloseBtn}
+              >
+                <Ionicons name="close" size={22} color={colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.hubSearchContainer}>
+              <Ionicons name="search" size={18} color={colors.textMuted} style={styles.hubSearchIcon} />
+              <TextInput
+                style={styles.hubSearchInput}
+                placeholder="Tìm tên bưu cục, mã Hub, Tỉnh/Thành..."
+                placeholderTextColor={colors.textMuted}
+                value={hubSearchQuery}
+                onChangeText={setHubSearchQuery}
+              />
+              {hubSearchQuery ? (
+                <TouchableOpacity onPress={() => setHubSearchQuery('')}>
+                  <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            <ScrollView style={styles.hubListScroll} keyboardShouldPersistTaps="handled">
+              {filteredHubs.map((hub) => {
+                const isSelected = selectedDropOffHub?.code === hub.code;
+                return (
+                  <TouchableOpacity
+                    key={hub.code}
+                    activeOpacity={0.8}
+                    style={[styles.hubItemCard, isSelected && styles.hubItemCardSelected]}
+                    onPress={() => handleChooseDropOffHub(hub)}
+                  >
+                    <View style={styles.hubItemLeft}>
+                      <View style={[styles.hubIconBox, isSelected && styles.hubIconBoxSelected]}>
+                        <Ionicons
+                          name="business"
+                          size={20}
+                          color={isSelected ? colors.surface : colors.primary}
+                        />
+                      </View>
+                      <View style={styles.hubItemInfo}>
+                        <Text style={[styles.hubItemName, isSelected && styles.hubItemNameSelected]}>
+                          {hub.name}
+                        </Text>
+                        <Text style={styles.hubItemAddress}>
+                          📍 {hub.addressDetail || hub.province}
+                        </Text>
+                        <View style={styles.hubBadgeRow}>
+                          <View style={styles.hubCodeBadge}>
+                            <Text style={styles.hubCodeBadgeText}>{hub.code}</Text>
+                          </View>
+                          <Text style={styles.hubProvinceText}>{hub.province}</Text>
+                        </View>
+                      </View>
+                    </View>
+                    <Ionicons
+                      name={isSelected ? 'checkmark-circle' : 'chevron-forward'}
+                      size={20}
+                      color={isSelected ? colors.primary : colors.textMuted}
+                    />
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -1008,6 +1391,95 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.primary,
   },
+  weightCompareBox: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    marginBottom: spacing.md,
+    gap: 6,
+  },
+  weightCompareRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  weightCompareLabel: {
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  boldText: {
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  weightChargeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f0',
+  },
+  weightChargeLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  weightChargeVal: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.primary,
+  },
+  breakdownList: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 10,
+    padding: 8,
+    marginBottom: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.primary,
+  },
+  breakdownItemLabel: {
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  breakdownItemVal: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  formulaHelpBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    marginTop: 10,
+  },
+  formulaHelpBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  formulaHelpBox: {
+    backgroundColor: '#f1f5f9',
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+  },
+  formulaHelpTitle: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: colors.textPrimary,
+    marginBottom: 4,
+  },
+  formulaHelpText: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    lineHeight: 16,
+  },
   footerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1079,5 +1551,173 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.primary,
     marginLeft: 6,
+  },
+  methodChoiceRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: spacing.xs,
+  },
+  methodChoiceBtn: {
+    flex: 1,
+    borderWidth: 1.5,
+    borderColor: colors.borderSubtle,
+    borderRadius: 14,
+    padding: spacing.md,
+    backgroundColor: colors.surface,
+  },
+  methodChoiceBtnActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryLight,
+  },
+  methodChoiceIconCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  methodChoiceIconCircleActive: {
+    backgroundColor: colors.primary,
+  },
+  methodChoiceTitle: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: 4,
+  },
+  methodChoiceTitleActive: {
+    color: colors.primary,
+  },
+  methodChoiceDesc: {
+    fontSize: 11,
+    color: colors.textMuted,
+    lineHeight: 15,
+  },
+  hubModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  hubModalContent: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: spacing.lg,
+    maxHeight: '80%',
+  },
+  hubModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  hubModalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: colors.textPrimary,
+  },
+  hubModalSubtitle: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  hubModalCloseBtn: {
+    padding: 6,
+  },
+  hubSearchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+    paddingHorizontal: spacing.md,
+    paddingVertical: Platform.OS === 'ios' ? 10 : 6,
+    marginBottom: spacing.md,
+  },
+  hubSearchIcon: {
+    marginRight: 8,
+  },
+  hubSearchInput: {
+    flex: 1,
+    fontSize: 13.5,
+    color: colors.textPrimary,
+  },
+  hubListScroll: {
+    maxHeight: 380,
+  },
+  hubItemCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: spacing.md,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+    backgroundColor: colors.surface,
+    marginBottom: 10,
+  },
+  hubItemCardSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryLight,
+  },
+  hubItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 10,
+  },
+  hubIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  hubIconBoxSelected: {
+    backgroundColor: colors.primary,
+  },
+  hubItemInfo: {
+    flex: 1,
+  },
+  hubItemName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: 2,
+  },
+  hubItemNameSelected: {
+    color: colors.primary,
+  },
+  hubItemAddress: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginBottom: 4,
+  },
+  hubBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  hubCodeBadge: {
+    backgroundColor: colors.borderSubtle,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  hubCodeBadgeText: {
+    fontSize: 10.5,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontWeight: '700',
+    color: colors.textSecondary,
+  },
+  hubProvinceText: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: colors.textMuted,
   },
 });

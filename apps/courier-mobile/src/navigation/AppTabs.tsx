@@ -6,7 +6,6 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type { AppTabsParamList } from './types';
 import { HomeScreen } from '../screens/home/HomeScreen';
 import { CourierMapScreen } from '../screens/map/CourierMapScreen';
-import { StatsScreen } from '../screens/stats/StatsScreen';
 import { ScanScreen } from '../screens/scan/ScanScreen';
 import { ChatScreen } from '../screens/chat/ChatScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
@@ -30,16 +29,6 @@ function renderTabIcon(
     );
   }
 
-  if (routeName === 'Stats') {
-    return (
-      <Ionicons
-        name={focused ? 'stats-chart' : 'stats-chart-outline'}
-        size={size}
-        color={color}
-      />
-    );
-  }
-
   if (routeName === 'Map') {
     return (
       <Ionicons
@@ -53,7 +42,7 @@ function renderTabIcon(
   if (routeName === 'Scan') {
     return (
       <View style={styles.scanIconShell}>
-        <Ionicons name="scan" size={24} color={theme.colors.textInverse} />
+        <Ionicons name="scan" size={26} color={theme.colors.textInverse} />
       </View>
     );
   }
@@ -80,6 +69,7 @@ function renderTabIcon(
 export function AppTabs(): React.JSX.Element {
   return (
     <Tab.Navigator
+      initialRouteName="Tasks"
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: theme.colors.primary,
@@ -100,11 +90,6 @@ export function AppTabs(): React.JSX.Element {
         name="Map"
         component={CourierMapScreen}
         options={{ tabBarLabel: 'Bản đồ' }}
-      />
-      <Tab.Screen
-        name="Stats"
-        component={StatsScreen}
-        options={{ tabBarLabel: 'Thống kê' }}
       />
       <Tab.Screen
         name="Scan"
@@ -133,21 +118,28 @@ const styles = StyleSheet.create({
   tabBar: {
     ...theme.components.bottomTab,
     borderTopWidth: 0,
+    height: 64,
+    paddingBottom: 8,
+    paddingTop: 4,
   },
   tabItem: {
     paddingTop: theme.spacing.xxs,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   tabLabel: {
     ...theme.typography.tabLabel,
+    fontSize: 11,
+    marginTop: 2,
   },
   scanIconShell: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: theme.colors.primary,
-    marginTop: -8,
+    marginTop: -12,
     ...theme.shadow.md,
   },
 });

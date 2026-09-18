@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
     opacity: 0.82,
   },
   scrim: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(8, 23, 52, 0.58)',
   },
   scrollContent: {

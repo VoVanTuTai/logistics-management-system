@@ -10,8 +10,10 @@ import {
   View,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
 
 import { useCollectCodMutation, useCompanyBankInfoQuery } from '../../features/cod/cod.queries';
+import { useAuthStore } from '../../features/auth/auth.store';
 import { canAccessCourierFeature } from '../../features/permissions/courier-permissions';
 import type { AppNavigatorParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
@@ -24,6 +26,16 @@ type Props = NativeStackScreenProps<AppNavigatorParamList, 'CodCollect'>;
 
 export function CodCollectScreen({ route, navigation }: Props): React.JSX.Element {
   const session = useAppStore((state) => state.session);
+  const refreshMobilePermissions = useAuthStore(
+    (state) => state.refreshMobilePermissions,
+  );
+
+  useFocusEffect(
+    React.useCallback(() => {
+      void refreshMobilePermissions();
+    }, [refreshMobilePermissions]),
+  );
+
   const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
   const accessToken = session?.tokens.accessToken ?? null;
   const canCollectCod = canAccessCourierFeature(session?.user, 'scan.delivery-sign');
@@ -209,24 +221,32 @@ export function CodCollectScreen({ route, navigation }: Props): React.JSX.Elemen
         </View>
       ) : null}
 
-      <Pressable
-        style={[
-          styles.submitButton,
-          (!canCollectCod || collectMutation.isPending) && styles.submitButtonDisabled,
-        ]}
-        disabled={!canCollectCod || collectMutation.isPending}
-        onPress={() => {
-          void handleSubmit();
-        }}
-      >
-        <Text style={styles.submitButtonText}>
-          {collectMutation.isPending
-            ? 'Đang xử lý...'
-            : paymentMethod === 'BANK_TRANSFER'
-              ? 'Chờ SePay xác nhận'
-              : 'Xác nhận thu tiền'}
-        </Text>
-      </Pressable>
+      {canCollectCod ? (
+        <Pressable
+          style={[
+            styles.submitButton,
+            collectMutation.isPending && styles.submitButtonDisabled,
+          ]}
+          disabled={collectMutation.isPending}
+          onPress={() => {
+            void handleSubmit();
+          }}
+        >
+          <Text style={styles.submitButtonText}>
+            {collectMutation.isPending
+              ? 'Đang xử lý...'
+              : paymentMethod === 'BANK_TRANSFER'
+                ? 'Chờ SePay xác nhận'
+                : 'Xác nhận thu tiền'}
+          </Text>
+        </Pressable>
+      ) : (
+        <View style={styles.hintCard}>
+          <Text style={styles.hintText}>
+            Tài khoản hiện tại chưa được cấp quyền xác nhận thu COD.
+          </Text>
+        </View>
+      )}
     </ScrollView>
   );
 }

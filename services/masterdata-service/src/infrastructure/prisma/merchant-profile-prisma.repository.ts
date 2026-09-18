@@ -142,6 +142,14 @@ export class MerchantProfilePrismaRepository extends MerchantProfileRepository {
       data.defaultSenderAddress = input.defaultSenderAddress;
     }
 
+    if (input.latitude !== undefined) {
+      data.latitude = input.latitude;
+    }
+
+    if (input.longitude !== undefined) {
+      data.longitude = input.longitude;
+    }
+
     const record = await this.prisma.merchantProfile.update({
       where: { id },
       data,
@@ -182,6 +190,8 @@ export class MerchantProfilePrismaRepository extends MerchantProfileRepository {
       defaultHubCode: input.defaultHubCode ?? null,
       defaultHubName: input.defaultHubName ?? null,
       defaultSenderAddress: input.defaultSenderAddress ?? null,
+      latitude: input.latitude ?? null,
+      longitude: input.longitude ?? null,
     };
   }
 
@@ -196,6 +206,8 @@ export class MerchantProfilePrismaRepository extends MerchantProfileRepository {
       defaultHubCode: input.defaultHubCode ?? null,
       defaultHubName: input.defaultHubName ?? null,
       defaultSenderAddress: input.defaultSenderAddress ?? null,
+      latitude: input.latitude ?? null,
+      longitude: input.longitude ?? null,
     };
   }
 
@@ -209,6 +221,8 @@ export class MerchantProfilePrismaRepository extends MerchantProfileRepository {
       defaultHubCode: record.defaultHubCode,
       defaultHubName: record.defaultHubName,
       defaultSenderAddress: record.defaultSenderAddress,
+      latitude: record.latitude,
+      longitude: record.longitude,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
     };

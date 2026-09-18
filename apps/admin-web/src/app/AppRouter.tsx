@@ -20,9 +20,13 @@ import { LoginPage } from '../pages/auth/LoginPage';
 import { AdminDashboardPage } from '../pages/dashboard/AdminDashboardPage';
 import { ConfigManagementPage } from '../pages/masterdata/ConfigManagementPage';
 import { HubManagementPage } from '../pages/masterdata/HubManagementPage';
+import { AdminHubGeofenceMapPage } from '../pages/masterdata/AdminHubGeofenceMapPage';
 import { NdrReasonManagementPage } from '../pages/masterdata/NdrReasonManagementPage';
 import { ZoneManagementPage } from '../pages/masterdata/ZoneManagementPage';
+import { PolicyManagementPage } from '../pages/policies/PolicyManagementPage';
 import { CourierPermissionMatrixPage } from '../pages/permissions/CourierPermissionMatrixPage';
+
+import { CustomerUsersPage } from '../pages/users/CustomerUsersPage';
 import { MerchantUsersPage } from '../pages/users/MerchantUsersPage';
 import { OpsUsersPage } from '../pages/users/OpsUsersPage';
 import { ShipperUsersPage } from '../pages/users/ShipperUsersPage';
@@ -59,6 +63,7 @@ function AdminLayout(): React.JSX.Element {
       { label: 'Tài khoản Ops', to: routePaths.opsUsers, testId: 'nav-users-ops', icon: 'badge' },
       { label: 'Tài khoản Shipper', to: routePaths.shipperUsers, testId: 'nav-users-shippers', icon: 'two_wheeler' },
       { label: 'Tài khoản Merchant', to: routePaths.merchantUsers, testId: 'nav-users-merchants', icon: 'storefront' },
+      { label: 'Tài khoản Khách hàng (Mobile)', to: routePaths.customerUsers, testId: 'nav-users-customers', icon: 'person' },
       { label: 'Phân quyền Mobile', to: routePaths.courierPermissions, testId: 'nav-permissions', icon: 'admin_panel_settings' },
       { label: 'Nhật ký Audit Log', to: routePaths.auditLogs, testId: 'nav-audit', icon: 'receipt_long' },
     ],
@@ -68,10 +73,12 @@ function AdminLayout(): React.JSX.Element {
   const masterdataNavItems = useMemo(
     () => [
       { label: 'Tổng quan hệ thống', to: routePaths.dashboard, testId: 'nav-dashboard', icon: 'dashboard' },
+      { label: 'Bản đồ Mạng lưới & Geofence', to: routePaths.masterdataHubNetworkMap, testId: 'nav-network-map', icon: 'travel_explore' },
       { label: 'Quản lý Hub & 3 Miền', to: routePaths.masterdataHubs, testId: 'nav-hubs', icon: 'hub' },
       { label: 'Quản lý Zone Vùng', to: routePaths.masterdataZones, testId: 'nav-zones', icon: 'map' },
       { label: 'Lý do lỗi NDR', to: routePaths.masterdataNdrReasons, testId: 'nav-ndr-reasons', icon: 'report_problem' },
       { label: 'Cấu hình tham số', to: routePaths.masterdataConfigs, testId: 'nav-configs', icon: 'tune' },
+      { label: 'Điều khoản & Chính sách', to: routePaths.policies, testId: 'nav-policies', icon: 'gavel' },
     ],
     [],
   );
@@ -171,16 +178,22 @@ export function AppRouter(): React.JSX.Element {
             <Route path={routePaths.opsUsersLeaf} element={<OpsUsersPage />} />
             <Route path={routePaths.shipperUsersLeaf} element={<ShipperUsersPage />} />
             <Route path={routePaths.merchantUsersLeaf} element={<MerchantUsersPage />} />
+            <Route path={routePaths.customerUsersLeaf} element={<CustomerUsersPage />} />
             <Route path={routePaths.courierPermissionsLeaf} element={<CourierPermissionMatrixPage />} />
             <Route path={routePaths.auditLogsLeaf} element={<AdminAuditLogPage />} />
             <Route path={routePaths.masterdataHubsLeaf} element={<HubManagementPage />} />
+            <Route path={routePaths.masterdataHubNetworkMapLeaf} element={<AdminHubGeofenceMapPage />} />
             <Route path={routePaths.masterdataZonesLeaf} element={<ZoneManagementPage />} />
             <Route path={routePaths.masterdataNdrReasonsLeaf} element={<NdrReasonManagementPage />} />
             <Route path={routePaths.masterdataConfigsLeaf} element={<ConfigManagementPage />} />
+            <Route path={routePaths.policiesLeaf} element={<PolicyManagementPage />} />
+            <Route path="terms" element={<Navigate to={routePaths.policies} replace />} />
           </Route>
         </Route>
+        <Route path="/admin/terms" element={<Navigate to={routePaths.policies} replace />} />
         <Route path="*" element={<Navigate to={routePaths.login} replace />} />
       </Routes>
     </BrowserRouter>
   );
 }
+

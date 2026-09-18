@@ -95,6 +95,26 @@ export class TasksController {
       getOpsTaskScopeContext(request),
     );
   }
+
+  @Post('route-optimization')
+  optimizeRoute(
+    @Body()
+    body: {
+      courierId: string;
+      startLatitude: number;
+      startLongitude: number;
+      taskIds?: string[];
+      taskType?: string;
+    },
+  ) {
+    return this.tasksService.optimizeRoute({
+      courierId: body.courierId,
+      startLatitude: Number(body.startLatitude),
+      startLongitude: Number(body.startLongitude),
+      taskIds: body.taskIds,
+      taskType: body.taskType as any,
+    });
+  }
 }
 
 function getOpsTaskScopeContext(

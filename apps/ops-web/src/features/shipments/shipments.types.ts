@@ -27,6 +27,7 @@ export interface ShipmentListItemDto {
   labelReprintReason: string | null;
   isOperationLocked: boolean;
   operationLockReason: string | null;
+  metadata?: Record<string, unknown> | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -66,6 +67,10 @@ export interface ShipmentDetailDto {
 
 export interface CreateShipmentInput {
   code?: string | null;
+  pickupLatitude?: number | null;
+  pickupLongitude?: number | null;
+  deliveryLatitude?: number | null;
+  deliveryLongitude?: number | null;
   metadata?: Record<string, unknown> | null;
 }
 

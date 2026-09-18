@@ -89,6 +89,30 @@ function parseHubAddress(address: string | null): HubAddressPayload {
   }
 }
 
+export function formatHubFullAddress(hub: HubDto | null | undefined): string {
+  if (!hub) return '';
+  if (hub.address) {
+    try {
+      const parsed = JSON.parse(hub.address);
+      if (parsed && typeof parsed === 'object') {
+        const parts = [
+          parsed.addressLine,
+          parsed.ward || hub.ward,
+          parsed.district || hub.district,
+          parsed.province,
+        ].filter((val) => typeof val === 'string' && val.trim().length > 0);
+        if (parts.length > 0) {
+          return parts.join(', ');
+        }
+      }
+    } catch {
+      return hub.address;
+    }
+  }
+  const fallbackParts = [hub.address, hub.ward, hub.district].filter(Boolean);
+  return fallbackParts.length > 0 ? fallbackParts.join(', ') : '';
+}
+
 function splitAddressTokens(address: string | null): string[] {
   if (!address) {
     return [];

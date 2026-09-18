@@ -27,6 +27,14 @@ async function bootstrap(): Promise<void> {
     'http://127.0.0.1:5174',
     'http://localhost:5175',
     'http://127.0.0.1:5175',
+    'http://localhost:5176',
+    'http://127.0.0.1:5176',
+    'http://localhost:5177',
+    'http://127.0.0.1:5177',
+    'http://localhost:8081',
+    'http://127.0.0.1:8081',
+    'http://localhost:8082',
+    'http://127.0.0.1:8082',
   ];
   const envCorsOrigins = (process.env.CORS_ORIGINS ?? '')
     .split(',')

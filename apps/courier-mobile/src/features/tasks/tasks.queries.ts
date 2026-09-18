@@ -11,6 +11,7 @@ export function useAssignedTasksQuery(params: {
     queryFn: () =>
       tasksApi.listAssignedTasks(params.accessToken as string, params.courierId),
     enabled: Boolean(params.accessToken) && Boolean(params.courierId),
+    refetchInterval: 5000,
   });
 }
 

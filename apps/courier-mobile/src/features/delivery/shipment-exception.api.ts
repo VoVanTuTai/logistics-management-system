@@ -49,13 +49,14 @@ async function resolveAttachment(
   attachment: IssueAttachmentPayload,
   index: number,
 ): Promise<IssueAttachmentPayload> {
-  if (attachment.url || !isLocalMediaUri(attachment.uri)) {
+  const targetUri = attachment.uri || attachment.url;
+  if (!targetUri || !isLocalMediaUri(targetUri)) {
     return attachment;
   }
 
   const publicUrl = await uploadCourierImage({
     accessToken,
-    uri: attachment.uri,
+    uri: targetUri,
     filename:
       attachment.name ||
       `${shipmentCode.replace(/[^a-zA-Z0-9_-]/g, '') || 'shipment'}-issue-${index + 1}.jpg`,

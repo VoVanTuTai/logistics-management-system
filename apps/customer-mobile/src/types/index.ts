@@ -34,6 +34,9 @@ export interface SenderInfo {
   district?: string;
   province?: string;
   hubCode?: string;
+  latitude?: number;
+  longitude?: number;
+  coordinate?: { latitude: number; longitude: number };
 }
 
 export interface ReceiverInfo {
@@ -45,6 +48,9 @@ export interface ReceiverInfo {
   district?: string;
   province?: string;
   hubCode?: string;
+  latitude?: number;
+  longitude?: number;
+  coordinate?: { latitude: number; longitude: number };
 }
 
 /**

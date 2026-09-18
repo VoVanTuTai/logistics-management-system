@@ -1,4 +1,4 @@
-﻿import { ApiClientError } from '../../services/api/errors';
+import { ApiClientError } from '../../services/api/errors';
 import { opsEndpoints } from '../../services/api/endpoints';
 import { useAuthStore } from '../../store/authStore';
 import { appEnv } from '../../utils/env';
@@ -237,3 +237,69 @@ function extractErrorMessage(payload: unknown, status: number): string {
 
   return `Yêu cầu làm mới phiên thất bại với mã trạng thái ${status}.`;
 }
+
+const REMEMBERED_CREDENTIALS_STORAGE_KEY = 'admin-web.remembered-credentials';
+
+export interface RememberedAdminCredentials {
+  username: string;
+  password?: string;
+  rememberMe: boolean;
+}
+
+export function getRememberedCredentials(): RememberedAdminCredentials | null {
+  if (typeof window === 'undefined' || !localStorage) {
+    return null;
+  }
+
+  try {
+    const raw = localStorage.getItem(REMEMBERED_CREDENTIALS_STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw) as Partial<RememberedAdminCredentials>;
+    if (typeof parsed?.username === 'string' && parsed.username.trim().length > 0) {
+      return {
+        username: parsed.username.trim(),
+        password: typeof parsed?.password === 'string' ? parsed.password : undefined,
+        rememberMe: Boolean(parsed.rememberMe),
+      };
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveRememberedCredentials(credentials: RememberedAdminCredentials): void {
+  if (typeof window === 'undefined' || !localStorage) {
+    return;
+  }
+
+  try {
+    localStorage.setItem(
+      REMEMBERED_CREDENTIALS_STORAGE_KEY,
+      JSON.stringify({
+        username: credentials.username.trim(),
+        password: credentials.password || '',
+        rememberMe: credentials.rememberMe,
+      }),
+    );
+  } catch {
+    // Ignore storage quota errors
+  }
+}
+
+export function clearRememberedCredentials(): void {
+  if (typeof window === 'undefined' || !localStorage) {
+    return;
+  }
+
+  try {
+    localStorage.removeItem(REMEMBERED_CREDENTIALS_STORAGE_KEY);
+  } catch {
+    // Ignore error
+  }
+}
+

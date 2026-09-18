@@ -1,0 +1,772 @@
+/* Stray & Lost Shipment Investigation Workbench Styles */
+
+.investigation-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-bottom: 40px;
+}
+
+/* Header */
+.investigation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+  background: #ffffff;
+  padding: 20px 24px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.investigation-title-box h1 {
+  margin: 0 0 6px 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.investigation-title-box p {
+  margin: 0;
+  font-size: 13.5px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.investigation-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-auto-scan {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #2563eb;
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-auto-scan:hover {
+  background-color: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+/* KPI Banner */
+.investigation-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.inv-kpi-card {
+  background: #ffffff;
+  padding: 16px 20px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: relative;
+  overflow: hidden;
+}
+
+.inv-kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+}
+
+.inv-kpi-card.active-cases::before {
+  background-color: #3b82f6;
+}
+
+.inv-kpi-card.hearing::before {
+  background-color: #f59e0b;
+}
+
+.inv-kpi-card.found-rate::before {
+  background-color: #10b981;
+}
+
+.inv-kpi-card.escalated::before {
+  background-color: #ef4444;
+}
+
+.inv-kpi-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.inv-kpi-icon.blue {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.inv-kpi-icon.amber {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.inv-kpi-icon.green {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.inv-kpi-icon.red {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.inv-kpi-info {
+  flex: 1;
+}
+
+.inv-kpi-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #64748b;
+  margin-bottom: 2px;
+}
+
+.inv-kpi-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.inv-kpi-sub {
+  font-size: 11.5px;
+  color: #94a3b8;
+}
+
+/* Master-Detail Workbench Layout */
+.investigation-workbench-grid {
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 1150px) {
+  .investigation-workbench-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Left Panel: Master List */
+.investigation-list-panel {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 220px);
+  overflow: hidden;
+}
+
+.panel-header-sticky {
+  padding: 16px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.search-and-status-row {
+  display: flex;
+  gap: 8px;
+}
+
+.inv-search-input {
+  flex: 1;
+  padding: 7px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+}
+
+.inv-search-input:focus {
+  border-color: #2563eb;
+}
+
+.inv-filter-select {
+  padding: 7px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 12.5px;
+  background: #ffffff;
+  color: #1e293b;
+}
+
+.investigation-items-scroll {
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inv-item-card {
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.inv-item-card:hover {
+  border-color: #93c5fd;
+  background: #f8fafc;
+}
+
+.inv-item-card.selected {
+  border-color: #3b82f6;
+  background: #eff6ff;
+  box-shadow: 0 0 0 1px #3b82f6;
+}
+
+.inv-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.inv-code {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.badge-status {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.badge-status.IN_HEARING {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.badge-status.PRELIMINARY_REPORT {
+  background: #e0e7ff;
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
+}
+
+.badge-status.RESOLVED_FOUND {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
+.badge-status.ESCALATED_TO_CLAIM {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+
+.inv-item-shipment {
+  font-size: 12.5px;
+  color: #475569;
+  display: flex;
+  justify-content: space-between;
+}
+
+.inv-item-route {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.inv-item-breakpoint {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #dc2626;
+  background: #fff1f2;
+  padding: 3px 8px;
+  border-radius: 4px;
+  width: fit-content;
+}
+
+/* Right Panel: Detail Investigation Workspace */
+.investigation-workspace {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.workspace-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.ws-case-info h2 {
+  margin: 0 0 4px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ws-case-meta {
+  font-size: 13px;
+  color: #64748b;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* 24-Hour Hearing Banner */
+.hearing-countdown-banner {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  padding: 14px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.hearing-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hearing-clock-icon {
+  font-size: 24px;
+}
+
+.hearing-text h4 {
+  margin: 0 0 2px 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #92400e;
+}
+
+.hearing-text p {
+  margin: 0;
+  font-size: 12.5px;
+  color: #b45309;
+}
+
+.hearing-countdown-tag {
+  background: #b45309;
+  color: #ffffff;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Section Titles */
+.ws-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Preliminary Report Box */
+.preliminary-report-box {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 18px;
+}
+
+.report-summary-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+@media (max-width: 768px) {
+  .report-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.report-suspect-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.confidence-meter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.confidence-bar-bg {
+  flex: 1;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.confidence-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #f59e0b 0%, #ef4444 100%);
+}
+
+.supporting-list {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+  color: #334155;
+  line-height: 1.6;
+}
+
+/* Domino-style Visual Audit Timeline */
+.audit-timeline-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  padding-left: 28px;
+}
+
+.audit-timeline-container::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 9px;
+  width: 2px;
+  background: #cbd5e1;
+}
+
+.audit-step-node {
+  position: relative;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: all 0.2s;
+}
+
+.audit-step-node::before {
+  content: '';
+  position: absolute;
+  left: -24px;
+  top: 16px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #94a3b8;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 2px #cbd5e1;
+}
+
+.audit-step-node.is-break-point {
+  border-color: #ef4444;
+  background: #fff5f5;
+  box-shadow: 0 0 0 1px #ef4444;
+}
+
+.audit-step-node.is-break-point::before {
+  background: #ef4444;
+  box-shadow: 0 0 0 3px #fecaca;
+  animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+.audit-step-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+
+.audit-step-time {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.audit-step-action {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.audit-step-meta {
+  font-size: 12px;
+  color: #475569;
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.audit-anomaly-tag {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+/* Dispute Evidence Box */
+.dispute-evidence-section {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.evidence-list-item {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.evidence-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12.5px;
+}
+
+.evidence-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #2563eb;
+  font-size: 12.5px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.evidence-link-btn:hover {
+  text-decoration: underline;
+}
+
+/* Action Toolbar */
+.ws-action-bar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+}
+
+.btn-resolve-found {
+  background-color: #10b981;
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-resolve-found:hover {
+  background-color: #059669;
+}
+
+.btn-escalate-claim {
+  background-color: #dc2626;
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-escalate-claim:hover {
+  background-color: #b91c1c;
+}
+
+.btn-submit-cctv {
+  background-color: #f1f5f9;
+  color: #1e293b;
+  border: 1px solid #cbd5e1;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-submit-cctv:hover {
+  background-color: #e2e8f0;
+}
+
+/* Modal Styling */
+.inv-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+  backdrop-filter: blur(2px);
+}
+
+.inv-modal-content {
+  background: #ffffff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+}
+
+.inv-modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.inv-modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.inv-modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.inv-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.inv-form-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.inv-form-input,
+.inv-form-textarea {
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+  font-family: inherit;
+}
+
+.inv-form-input:focus,
+.inv-form-textarea:focus {
+  border-color: #2563eb;
+}
+
+.inv-modal-footer {
+  padding: 14px 20px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  background: #f8fafc;
+}

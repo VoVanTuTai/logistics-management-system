@@ -4,6 +4,28 @@ import type { OrderModel, ShipmentStatus, TrackingEvent } from '../types';
 import { resolveHubFullAddress } from './hubResolver';
 
 /**
+ * Normalizes any MinIO image URL (including internal docker aliases or IP hosts)
+ * to the configured public MinIO endpoint (https://minio.nexus-ex.site).
+ */
+export function normalizeMediaPublicUrl(url?: string | null): string | undefined {
+  if (!url || typeof url !== 'string') return undefined;
+  const trimmed = url.trim();
+  if (!trimmed) return undefined;
+
+  if (trimmed.startsWith('https://minio.nexus-ex.site')) {
+    return trimmed;
+  }
+
+  return trimmed
+    .replace(/^http:\/\/minio:9000\/?/i, 'https://minio.nexus-ex.site/')
+    .replace(/^http:\/\/localhost:9000\/?/i, 'https://minio.nexus-ex.site/')
+    .replace(/^http:\/\/127\.0\.0\.1:9000\/?/i, 'https://minio.nexus-ex.site/')
+    .replace(/^http:\/\/103\.82\.20\.51:19000\/?/i, 'https://minio.nexus-ex.site/')
+    .replace(/^http:\/\/103\.82\.20\.51:9000\/?/i, 'https://minio.nexus-ex.site/')
+    .replace(/^http:\/\/minio\.nexus-ex\.site\/?/i, 'https://minio.nexus-ex.site/');
+}
+
+/**
  * Clean internal noise (mã bao MB..., MB..., MANIFEST-..., Mã NV..., Biển xe..., URLs)
  * from notes so customer sees clean real notes without Ops operational noise.
  */
@@ -103,11 +125,49 @@ export function mapTimelineEventsForCustomer(
     const evStatusLower = (ev.statusAfterEvent || '').toLowerCase();
     const evStatusCode = (ev.statusAfterEventCode || ev.eventTypeCode || '').toUpperCase();
 
+    // Stage categorization: Pickup / Origin vs Intermediate Transit vs Delivery / Destination
+    const isPickupOrOriginStage =
+      evStatusCode === 'CREATED' ||
+      evStatusCode === 'UPDATED' ||
+      evStatusCode === 'REQUESTED' ||
+      evStatusCode === 'PICKUP_REQUESTED' ||
+      evStatusCode.includes('PICKUP') ||
+      evStatusCode === 'PICKED_UP' ||
+      evTypeLower.includes('tạo') ||
+      evTypeLower.includes('chờ lấy') ||
+      evTypeLower.includes('lấy hàng') ||
+      evTypeLower.includes('nhận hàng') ||
+      evTypeLower.includes('yêu cầu pickup') ||
+      evTypeLower.includes('điều phối') ||
+      evStatusLower.includes('đã nhận hàng') ||
+      evStatusLower.includes('đã lấy hàng') ||
+      evStatusLower.includes('chờ lấy') ||
+      evStatusLower.includes('chờ');
+
+    const isDeliveryStage =
+      evStatusCode === 'DELIVERED' ||
+      evStatusCode === 'DELIVERY_FAILED' ||
+      evStatusCode.includes('DELIVERY') ||
+      evStatusCode.includes('DELIVERING') ||
+      evTypeLower.includes('giao') ||
+      evTypeLower.includes('phát') ||
+      evTypeLower.includes('ký nhận') ||
+      evStatusLower.includes('giao') ||
+      evStatusLower.includes('ký nhận') ||
+      evStatusLower.includes('phát');
+
+    // Default fallback address: Pickup events strictly use sender address; Delivery strictly uses receiver address
+    const defaultFallbackAddr = isDeliveryStage
+      ? (receiverComposedAddr || undefined)
+      : isPickupOrOriginStage
+      ? (senderComposedAddr || undefined)
+      : undefined;
+
     // 1. Resolve REAL FULL HUB ADDRESS from DB via locationCode / locationText
     const resolvedHubAddress = resolveHubFullAddress(
       ev.locationCode,
       ev.locationText,
-      isFirstInTimeline ? senderComposedAddr : isLastInTimeline ? receiverComposedAddr : undefined,
+      defaultFallbackAddr,
     );
 
     // Sender pickup address (for Created and Waiting for Pickup events)
@@ -148,13 +208,19 @@ export function mapTimelineEventsForCustomer(
       evTypeLower.includes('nhận hàng') ||
       evStatusLower.includes('đã nhận hàng') ||
       evStatusLower.includes('đã lấy hàng') ||
-      evStatusCode.includes('PICKUP_COMPLETED')
+      evStatusCode.includes('PICKUP_COMPLETED') ||
+      evStatusCode === 'PICKED_UP'
     ) {
       title = 'Lấy hàng thành công';
       statusText = 'Đã nhận hàng';
-      eventLocation = resolvedHubAddress;
+      const originHubOrSender = resolveHubFullAddress(
+        ev.locationCode,
+        ev.locationText,
+        pickupAddress,
+      );
+      eventLocation = originHubOrSender;
       boldPrefix = 'Đơn vị vận chuyển của chúng tôi đã tiếp nhận đơn hàng tại ';
-      addressSuffix = resolvedHubAddress;
+      addressSuffix = originHubOrSender;
     }
     // D. OUTBOUND / DEPARTED (Gửi hàng / Rời bưu cục)
     else if (
@@ -162,27 +228,39 @@ export function mapTimelineEventsForCustomer(
       evTypeLower.includes('rời') ||
       evTypeLower.includes('xuất kho') ||
       evStatusCode.includes('OUTBOUND') ||
+      evStatusCode === 'SEND_GOODS' ||
       evStatusLower.includes('gửi hàng')
     ) {
       title = 'Đơn hàng đã rời bưu cục gửi';
       statusText = 'Gửi hàng';
-      eventLocation = resolvedHubAddress;
+      const originHubOrSender = resolveHubFullAddress(
+        ev.locationCode,
+        ev.locationText,
+        pickupAddress,
+      );
+      eventLocation = originHubOrSender;
       boldPrefix = 'Đơn hàng đã rời ';
-      addressSuffix = resolvedHubAddress;
+      addressSuffix = originHubOrSender;
     }
-    // E. INBOUND / ARRIVED AT SORTING HUB (Đã đến Hub / Trung tâm phân loại / Đóng bao)
+    // E. INBOUND / ARRIVED AT SORTING HUB OR BRANCH HUB (Đã đến Hub / Trung tâm phân loại / Bưu cục)
     else if (
       evTypeLower.includes('đến') ||
       evTypeLower.includes('đóng bao') ||
       evStatusLower.includes('đến hub') ||
+      evStatusLower.includes('đã đến') ||
       evStatusLower.includes('đóng bao') ||
       evStatusCode.includes('INBOUND') ||
       evStatusCode.includes('MANIFEST')
     ) {
-      title = 'Đã đến trung tâm phân loại';
-      statusText = ev.statusAfterEvent || 'Đã đến Hub';
+      const isBranchHub =
+        resolvedHubAddress.startsWith('Bưu cục') ||
+        (ev.locationCode && ev.locationCode.includes('W')) ||
+        (ev.note && ev.note.toLowerCase().includes('bưu cục'));
+
+      title = isBranchHub ? 'Đã đến bưu cục phát' : 'Đã đến trung tâm phân loại';
+      statusText = ev.statusAfterEvent || (isBranchHub ? 'Đến bưu cục' : 'Đến Hub');
       eventLocation = resolvedHubAddress;
-      boldPrefix = 'Đơn hàng đã đến trung tâm phân loại ';
+      boldPrefix = 'Đơn hàng đã đến ';
       addressSuffix = resolvedHubAddress;
     }
     // F. OUT FOR DELIVERY (Phân công Courier đi phát hàng)
@@ -227,15 +305,20 @@ export function mapTimelineEventsForCustomer(
       proofImageUrl = ev.metadata.podImageUrl;
     } else if (ev.metadata?.proofImageUrl && typeof ev.metadata.proofImageUrl === 'string') {
       proofImageUrl = ev.metadata.proofImageUrl;
+    } else if (ev.metadata?.photoUrl && typeof ev.metadata.photoUrl === 'string') {
+      proofImageUrl = ev.metadata.photoUrl;
     }
 
-    const noteUrlMatch = (ev.note || '').match(/https?:\/\/[^\s"'<>()]+/i);
+    const noteUrlMatch = (ev.note || '').match(/https?:\/\/[^\s"'<>()]+/i) ||
+      (ev.actor || '').match(/https?:\/\/[^\s"'<>()]+/i);
     if (!proofImageUrl && noteUrlMatch) {
       proofImageUrl = noteUrlMatch[0];
     }
     if (!proofImageUrl && isLastInTimeline && metaPodImageUrl) {
       proofImageUrl = metaPodImageUrl;
     }
+
+    proofImageUrl = normalizeMediaPublicUrl(proofImageUrl);
 
     const fullMessage = `${boldPrefix}${addressSuffix}`;
 
@@ -290,7 +373,9 @@ export function mapTrackingToCustomerOrderModel(
     [receiver.addressDetail, receiver.ward, receiver.province].filter(Boolean).join(', ') ||
     '';
 
-  const metaPodImageUrl = (meta.podImageUrl || meta.proofImageUrl) as string | undefined;
+  const metaPodImageUrl = normalizeMediaPublicUrl(
+    (meta.podImageUrl || meta.proofImageUrl) as string | undefined,
+  );
 
   const mappedTimeline = mapTimelineEventsForCustomer(
     res.timeline || [],

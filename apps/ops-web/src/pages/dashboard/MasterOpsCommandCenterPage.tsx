@@ -424,6 +424,28 @@ export function MasterOpsCommandCenterPage(): React.JSX.Element {
           </div>
 
           <div className="ops-hq-header__actions">
+            <Link
+              to={routePaths.masterdataHubNetworkMap}
+              className="ops-hq-btn-map"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 16px',
+                background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                color: '#ffffff',
+                borderRadius: '8px',
+                fontWeight: 600,
+                fontSize: '13px',
+                textDecoration: 'none',
+                boxShadow: '0 2px 8px rgba(2, 132, 199, 0.35)',
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                map
+              </span>
+              <span>Bản Đồ Phân Vùng Geofence</span>
+            </Link>
             <button
               type="button"
               className="ops-hq-btn-export"

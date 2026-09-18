@@ -160,16 +160,21 @@ export function TaskIssueScreen({ navigation, route }: Props): React.JSX.Element
     try {
       const picture = await cameraRef.current.takePictureAsync({
         quality: 0.6,
+        base64: true,
       });
 
-      if (!picture.uri) {
+      const capturedUri = picture.base64
+        ? `data:image/jpeg;base64,${picture.base64}`
+        : picture.uri;
+
+      if (!capturedUri) {
         throw new Error('Không chụp được minh chứng.');
       }
 
       setAttachments((current) => [
         ...current,
         {
-          uri: picture.uri,
+          uri: capturedUri,
           type: 'image',
           name: `issue-${Date.now()}.jpg`,
         },

@@ -7,6 +7,8 @@ import { theme } from '../../theme';
 interface QuickStatsRowProps {
   waitingPickup: number;
   waitingDelivery: number;
+  showPickup?: boolean;
+  showDelivery?: boolean;
   activeStat?: 'PICKUP' | 'DELIVERY' | null;
   onPressWaitingPickup?: () => void;
   onPressWaitingDelivery?: () => void;
@@ -55,30 +57,40 @@ function StatCard({
 export function QuickStatsRow({
   waitingPickup,
   waitingDelivery,
+  showPickup = true,
+  showDelivery = true,
   activeStat = null,
   onPressWaitingPickup,
   onPressWaitingDelivery,
-}: QuickStatsRowProps): React.JSX.Element {
+}: QuickStatsRowProps): React.JSX.Element | null {
+  if (!showPickup && !showDelivery) {
+    return null;
+  }
+
   return (
     <View style={styles.row}>
-      <StatCard
-        label="Đợi lấy"
-        value={waitingPickup}
-        iconName="cube-outline"
-        iconBgColor="#E4F0FF"
-        iconColor="#1D4ED8"
-        active={activeStat === 'PICKUP'}
-        onPress={onPressWaitingPickup}
-      />
-      <StatCard
-        label="Đợi phát"
-        value={waitingDelivery}
-        iconName="paper-plane-outline"
-        iconBgColor="#EFF6FF"
-        iconColor="#1D4ED8"
-        active={activeStat === 'DELIVERY'}
-        onPress={onPressWaitingDelivery}
-      />
+      {showPickup ? (
+        <StatCard
+          label="Đợi lấy"
+          value={waitingPickup}
+          iconName="cube-outline"
+          iconBgColor="#E4F0FF"
+          iconColor="#1D4ED8"
+          active={activeStat === 'PICKUP'}
+          onPress={onPressWaitingPickup}
+        />
+      ) : null}
+      {showDelivery ? (
+        <StatCard
+          label="Đợi phát"
+          value={waitingDelivery}
+          iconName="paper-plane-outline"
+          iconBgColor="#EFF6FF"
+          iconColor="#1D4ED8"
+          active={activeStat === 'DELIVERY'}
+          onPress={onPressWaitingDelivery}
+        />
+      ) : null}
     </View>
   );
 }

@@ -22,7 +22,8 @@ export const authApi = {
     courierApiClient.request(courierEndpoints.auth.login, {
       method: 'POST',
       body: {
-        ...payload,
+        username: payload.username.trim(),
+        password: payload.password.trim(),
         roleGroup: 'COURIER_APP',
       },
     }),

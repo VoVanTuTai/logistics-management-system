@@ -50,7 +50,7 @@ const STATUS_FILTER_OPTIONS: FilterOptionItem<string>[] = [
   { label: 'Chuyển hoàn', value: 'RETURNED' },
 ];
 
-function mapShipmentToOrderModel(s: ShipmentResponse): OrderModel {
+function mapShipmentToOrderModel(s: ShipmentResponse, targetCategory: OrderCategory = 'SENT'): OrderModel {
   const meta = (s.metadata as Record<string, any>) || {};
   const sender = meta.sender || {};
   const receiver = meta.receiver || {};
@@ -69,7 +69,7 @@ function mapShipmentToOrderModel(s: ShipmentResponse): OrderModel {
   return {
     id: s.id,
     code: s.code,
-    category: 'SENT',
+    category: targetCategory,
     orderType: 'REGULAR',
     sender: {
       name: sender.name || 'Người gửi',
@@ -135,7 +135,7 @@ export function OrdersScreen({ route, navigation }: Props): React.JSX.Element {
         ? response
         : response.items || [];
 
-      setLiveOrders(rawItems.map(mapShipmentToOrderModel));
+      setLiveOrders(rawItems.map((s) => mapShipmentToOrderModel(s, category)));
     } catch {
       setLiveOrders([]);
     } finally {

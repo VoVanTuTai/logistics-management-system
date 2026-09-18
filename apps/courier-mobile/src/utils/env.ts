@@ -30,6 +30,14 @@ function parseBooleanEnv(value: string | null | undefined): boolean {
   return normalizedValue === '1' || normalizedValue === 'true' || normalizedValue === 'yes';
 }
 
+function isValidHost(host: string): boolean {
+  if (!host || host.length > 255) return false;
+  if (LOCALHOST_HOSTS.has(host.toLowerCase())) return true;
+  if (/^(\d{1,3}\.){3}\d{1,3}$/.test(host)) return true;
+  if (/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/i.test(host)) return true;
+  return false;
+}
+
 function resolveHostFromRuntimeValue(rawValue: string): string | null {
   const trimmedValue = rawValue.trim();
   if (!trimmedValue) {
@@ -42,10 +50,12 @@ function resolveHostFromRuntimeValue(rawValue: string): string | null {
 
   try {
     const parsedUrl = new URL(normalizedInput);
-    return parsedUrl.hostname || null;
+    const host = parsedUrl.hostname || null;
+    return host && isValidHost(host) ? host : null;
   } catch {
     const hostMatch = trimmedValue.match(/^([^/:?#]+)(?::\d+)?(?:[/?#]|$)/);
-    return hostMatch?.[1] ?? null;
+    const host = hostMatch?.[1] ?? null;
+    return host && isValidHost(host) ? host : null;
   }
 }
 
@@ -111,11 +121,52 @@ function scanHostHintsFromUnknown(
 function collectRuntimeHosts(): string[] {
   const runtimeHosts: string[] = [];
 
+  if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined' && window.location?.hostname) {
+      if (isValidHost(window.location.hostname)) {
+        appendUnique(runtimeHosts, window.location.hostname);
+      }
+    }
+    appendUnique(runtimeHosts, 'localhost');
+    appendUnique(runtimeHosts, '127.0.0.1');
+    return runtimeHosts;
+  }
+
   const sourceCodeModule = NativeModules.SourceCode as
     | { scriptURL?: string }
     | undefined;
   if (sourceCodeModule?.scriptURL) {
     appendHostHint(runtimeHosts, sourceCodeModule.scriptURL);
+  }
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const Constants = require('expo-constants')?.default ?? require('expo-constants');
+    if (Constants) {
+      if (Constants.expoConfig?.hostUri) {
+        appendHostHint(runtimeHosts, Constants.expoConfig.hostUri);
+      }
+      if (Constants.manifest2?.extra?.expoClient?.hostUri) {
+        appendHostHint(runtimeHosts, Constants.manifest2.extra.expoClient.hostUri);
+      }
+      if (Constants.manifest?.debuggerHost) {
+        appendHostHint(runtimeHosts, Constants.manifest.debuggerHost);
+      }
+      if (Constants.experienceUrl) {
+        appendHostHint(runtimeHosts, Constants.experienceUrl);
+      }
+      if (Constants.linkingUri) {
+        appendHostHint(runtimeHosts, Constants.linkingUri);
+      }
+      scanHostHintsFromUnknown(
+        Constants,
+        runtimeHosts,
+        new Set<unknown>(),
+        0,
+      );
+    }
+  } catch {
+    // ignore if expo-constants not loaded
   }
 
   const nativeModulesRecord = NativeModules as Record<string, unknown>;
@@ -247,4 +298,8 @@ export const appEnv = {
     process.env.EXPO_PUBLIC_ALLOW_ALL_COURIER_MOBILE_PERMISSIONS_FOR_TESTING ??
       process.env.ALLOW_ALL_COURIER_MOBILE_PERMISSIONS_FOR_TESTING,
   ),
+  buildId:
+    process.env.EXPO_PUBLIC_BUILD_ID ??
+    process.env.BUILD_ID ??
+    'courier-v1.0.5-build20260905',
 } as const;

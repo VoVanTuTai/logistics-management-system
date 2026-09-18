@@ -27,6 +27,8 @@ model PickupRequest {
   requesterName     String?
   contactPhone      String?
   pickupAddress     String?
+  pickupLatitude    Float?
+  pickupLongitude   Float?
   note              String?
   approvedBy        String?
   approvedAt        DateTime?

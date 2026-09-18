@@ -37,7 +37,10 @@ export class DispatchEventsProducer {
             id: context.actorId ?? 'UNKNOWN',
             name: context.actorUsername,
           }
-        : null,
+        : {
+            id: 'SYSTEM',
+            name: 'SYSTEM_AUTO_DISPATCH',
+          },
       location: context?.hubCode
         ? {
             locationCode: context.hubCode,
@@ -50,7 +53,10 @@ export class DispatchEventsProducer {
               id: context.actorId ?? 'UNKNOWN',
               name: context.actorUsername,
             }
-          : null,
+          : {
+              id: 'SYSTEM',
+              name: 'SYSTEM_AUTO_DISPATCH',
+            },
         location: context?.hubCode
           ? {
               locationCode: context.hubCode,

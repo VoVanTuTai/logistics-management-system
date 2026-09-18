@@ -268,6 +268,18 @@ seed_auth_demo_users() {
   )
 }
 
+seed_masterdata_demo_data() {
+  local dir="$ROOT_DIR/services/masterdata-service"
+
+  install_deps_if_needed "$dir" "masterdata-service"
+  echo "[seed] masterdata demo data (zones, hubs, couriers assignments)"
+  (
+    cd "$dir"
+    DATABASE_URL="postgresql://postgres:postgres@localhost:15432/masterdata_db" \
+      node node_modules/ts-node/dist/bin.js --transpile-only prisma/seed.ts
+  )
+}
+
 start_container_backend() {
   echo "[backend] mode=container"
   ensure_service_images
@@ -281,6 +293,7 @@ start_container_backend() {
 
   prepare_service_databases
   seed_auth_demo_users
+  seed_masterdata_demo_data
 
   echo "[backend] starting service containers"
   docker compose \
@@ -381,10 +394,11 @@ start_mobile_app() {
     printf 'echo $$ > %q\n' "$PID_DIR/courier-mobile.pid"
     printf 'cd %q\n' "$dir"
     printf 'export EXPO_PUBLIC_GATEWAY_BASE_URL=%q\n' "$MOBILE_GATEWAY_URL"
+    printf 'export EXPO_PUBLIC_GATEWAY_FALLBACK_BASE_URLS=%q\n' "$MOBILE_GATEWAY_URL,http://10.0.2.2:3000,http://localhost:3000,http://127.0.0.1:3000"
     printf 'echo "[expo] gateway=%s"\n' "$MOBILE_GATEWAY_URL"
     printf 'echo "[expo] host=%s port=8081"\n' "$host_mode"
     echo 'echo "[expo] QR will appear below. Scan it with Expo Go."'
-    printf 'exec npm run start -- --host %q --port 8081\n' "$host_mode"
+    printf 'exec npm run start -- --host %q --port 8081 --clear\n' "$host_mode"
   } > "$runner"
   chmod +x "$runner"
 
@@ -415,6 +429,8 @@ else
 fi
 
 set_env_value "$ROOT_DIR/apps/courier-mobile/.env" EXPO_PUBLIC_GATEWAY_BASE_URL "$MOBILE_GATEWAY_URL"
+set_env_value "$ROOT_DIR/apps/courier-mobile/.env" EXPO_PUBLIC_GATEWAY_FALLBACK_BASE_URLS "http://$LAN_IP:3000,http://10.0.2.2:3000,http://localhost:3000,http://127.0.0.1:3000"
+set_env_value "$ROOT_DIR/apps/courier-mobile/.env" EXPO_PUBLIC_COURIER_ID "30002015"
 set_env_value "$ROOT_DIR/services/gateway-bff/.env" S3_ENDPOINT "$S3_ENDPOINT"
 set_env_value "$ROOT_DIR/services/gateway-bff/.env" AUTH_SERVICE_URL "http://localhost:3010"
 set_env_value "$ROOT_DIR/services/gateway-bff/.env" DELIVERY_SERVICE_URL "http://localhost:3007"
@@ -435,7 +451,6 @@ set_env_value "$ROOT_DIR/apps/guest-web/.env" VITE_GATEWAY_BFF_URL "http://local
 if [[ "$BACKEND_MODE" == "container" ]]; then
   start_container_backend
   node "$ROOT_DIR/scripts/seed-master-logistics-flow.js"
-  node "$ROOT_DIR/scripts/seed-hcm-5-couriers.js"
 elif [[ "$BACKEND_MODE" == "local" ]]; then
   echo "[backend] mode=local"
   echo "[infra] starting docker dependencies"
@@ -455,8 +470,8 @@ elif [[ "$BACKEND_MODE" == "local" ]]; then
   start_service pricing-service services/pricing-service 3012
 
   seed_auth_demo_users
+  seed_masterdata_demo_data
   node "$ROOT_DIR/scripts/seed-master-logistics-flow.js"
-  node "$ROOT_DIR/scripts/seed-hcm-5-couriers.js"
 
   echo "[wait] backend ports"
   wait_port masterdata-service 3001
@@ -482,7 +497,6 @@ fi
 start_web_app ops-web apps/ops-web 5173
 start_web_app merchant-web apps/merchant-web 5174
 start_web_app admin-web apps/admin-web 5175
-start_web_app public-tracking apps/public-tracking 5176
 start_web_app guest-web apps/guest-web 5177
 start_mobile_app
 
@@ -490,7 +504,6 @@ echo "[wait] UI ports"
 wait_port ops-web 5173 30
 wait_port merchant-web 5174 30
 wait_port admin-web 5175 30
-wait_port public-tracking 5176 30
 wait_port guest-web 5177 30
 
 echo
@@ -500,8 +513,7 @@ echo "postgres UI:      http://localhost:5050  (admin@nexus.dev / admin)"
 echo "merchant-web:    http://localhost:5174"
 echo "ops-web:         http://localhost:5173"
 echo "admin-web:       http://localhost:5175"
-echo "public-tracking: http://localhost:5176"
-echo "guest-web:       http://localhost:5177"
+echo "customer-web:    http://localhost:5177"
 echo "courier-mobile:  http://localhost:8081"
 echo
 echo "Demo login: merchant 41100001 / password"

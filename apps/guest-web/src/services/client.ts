@@ -1,7 +1,25 @@
-export const GATEWAY_BASE_URL =
+const rawGatewayBaseUrl = (
   import.meta.env.VITE_GATEWAY_BFF_URL ||
   import.meta.env.VITE_GATEWAY_BASE_URL ||
-  'http://localhost:3000';
+  ''
+).trim();
+
+function resolveGatewayBaseUrl(): string {
+  if (typeof window !== 'undefined') {
+    if (
+      window.location.hostname === 'tracking.nexus-ex.site' ||
+      window.location.hostname === 'guest.nexus-ex.site'
+    ) {
+      return '';
+    }
+    if (window.location.protocol === 'https:' && rawGatewayBaseUrl.startsWith('http://')) {
+      return '';
+    }
+  }
+  return rawGatewayBaseUrl || 'http://localhost:3000';
+}
+
+export const GATEWAY_BASE_URL = resolveGatewayBaseUrl();
 
 export interface RequestOptions {
   method?: 'GET' | 'POST' | 'PATCH' | 'DELETE' | 'PUT';

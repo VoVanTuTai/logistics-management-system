@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { CourierAreaAssignment as PrismaCourierAreaAssignmentRecord, Prisma } from '@prisma/client';
+import { Prisma, type CourierAreaAssignment as PrismaCourierAreaAssignmentRecord } from '@prisma/client';
 
 import {
   CourierAreaAssignment,
@@ -96,6 +96,9 @@ export class CourierAreaAssignmentPrismaRepository extends CourierAreaAssignment
       province: input.province,
       district: input.district,
       ward: input.ward,
+      zoneName: input.zoneName ?? null,
+      colorHex: input.colorHex ?? null,
+      boundaryPolygon: input.boundaryPolygon ? (input.boundaryPolygon as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
       isActive: input.isActive ?? true,
     };
 
@@ -127,6 +130,20 @@ export class CourierAreaAssignmentPrismaRepository extends CourierAreaAssignment
       data.ward = input.ward;
     }
 
+    if (input.zoneName !== undefined) {
+      data.zoneName = input.zoneName;
+    }
+
+    if (input.colorHex !== undefined) {
+      data.colorHex = input.colorHex;
+    }
+
+    if (input.boundaryPolygon !== undefined) {
+      data.boundaryPolygon = input.boundaryPolygon
+        ? (input.boundaryPolygon as unknown as Prisma.InputJsonValue)
+        : Prisma.JsonNull;
+    }
+
     if (input.isActive !== undefined) {
       data.isActive = input.isActive;
     }
@@ -155,6 +172,9 @@ export class CourierAreaAssignmentPrismaRepository extends CourierAreaAssignment
       province: record.province,
       district: record.district,
       ward: record.ward,
+      zoneName: record.zoneName ?? null,
+      colorHex: record.colorHex ?? null,
+      boundaryPolygon: (record.boundaryPolygon as unknown as Array<[number, number]>) ?? null,
       isActive: record.isActive,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,

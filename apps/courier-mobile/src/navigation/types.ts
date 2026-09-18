@@ -4,7 +4,6 @@ export type AppTabsParamList = {
     initialStatus?: 'ALL' | 'CREATED' | 'ASSIGNED' | 'COMPLETED' | 'CANCELLED';
   } | undefined;
   Map: undefined;
-  Stats: undefined;
   Scan: undefined;
   Chat: undefined;
   Profile: undefined;
@@ -77,4 +76,10 @@ export type AppNavigatorParamList = {
     shipmentCode?: string;
     codAmount?: number;
   };
+  MyRoute: undefined;
+  Stats: undefined;
+  CourierLiabilities: undefined;
+  OverdueAlert: {
+    filter?: 'ALL_ALERTS' | 'OVERDUE' | 'NEAR_OVERDUE';
+  } | undefined;
 };
