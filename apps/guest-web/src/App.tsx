@@ -74,6 +74,7 @@ import { masterdataApi, type HubRecord } from './services/api/masterdata.api';
 import {
   normalizeMediaPublicUrl,
   cleanCustomerNote,
+  formatCustomerTimelineEvent,
   formatVnd,
 } from './utils/trackingUtils';
 import {
@@ -130,10 +131,10 @@ function getMilestoneIndex(status?: string | null): number {
   if (!status) return 0;
   const s = status.toUpperCase();
   if (s === 'DELIVERED' || s === 'COMPLETED') return 4;
-  if (s === 'DELIVERING' || s === 'OUT_FOR_DELIVERY' || s === 'TASK_ASSIGNED' || s === 'RESCHEDULED') return 3;
-  if (s === 'IN_TRANSIT' || s === 'SCAN_INBOUND' || s === 'SCAN_OUTBOUND' || s === 'SORTED' || s === 'ARRIVED_DEST_HUB') return 2;
-  if (s === 'PICKED_UP' || s === 'PICKUP_COMPLETED' || s === 'ARRIVED_ORIGIN_HUB') return 1;
-  return 0;
+  if (s === 'DELIVERING' || s === 'OUT_FOR_DELIVERY' || s === 'READY_FOR_DELIVERY' || s === 'RESCHEDULED') return 3;
+  if (s === 'IN_TRANSIT' || s === 'SCAN_INBOUND' || s === 'SCAN_OUTBOUND' || s === 'SORTED' || s === 'BAGGED' || s === 'MANIFEST_SEALED' || s === 'MANIFEST_RECEIVED' || s === 'MANIFEST_UNSEALED' || s === 'ARRIVED_HUB' || s === 'ARRIVED_DEST_HUB') return 2;
+  if (s === 'PICKED_UP' || s === 'PICKUP_COMPLETED' || s === 'SCAN_PICKUP' || s === 'ARRIVED_ORIGIN_HUB') return 1;
+  return 0; // CREATED, UPDATED, TASK_ASSIGNED, PICKUP_REQUESTED, PICKUP_ASSIGNED
 }
 
 function getStatusBadgeDetails(status?: string | null) {
@@ -144,20 +145,23 @@ function getStatusBadgeDetails(status?: string | null) {
   if (s === 'DELIVERY_FAILED' || s === 'NDR_CREATED') {
     return { label: 'Giao Thất Bại (Sự Cố NDR)', bg: 'bg-amber-500/10 text-amber-700 border-amber-300', dot: 'bg-amber-500' };
   }
-  if (s === 'RETURN_STARTED' || s === 'RETURN_COMPLETED' || s === 'RETURNING') {
+  if (s === 'RETURN_STARTED' || s === 'RETURN_COMPLETED' || s === 'RETURNING' || s === 'RETURNED') {
     return { label: 'Đang Chuyển Hoàn', bg: 'bg-rose-500/10 text-rose-700 border-rose-300', dot: 'bg-rose-500' };
   }
   if (s === 'CANCELLED') {
     return { label: 'Đã Hủy Đơn', bg: 'bg-slate-500/10 text-slate-700 border-slate-300', dot: 'bg-slate-500' };
   }
-  if (s === 'DELIVERING' || s === 'OUT_FOR_DELIVERY' || s === 'TASK_ASSIGNED') {
+  if (s === 'DELIVERING' || s === 'OUT_FOR_DELIVERY' || s === 'READY_FOR_DELIVERY') {
     return { label: 'Đang Phát Hàng Tận Nơi', bg: 'bg-indigo-500/10 text-indigo-700 border-indigo-300', dot: 'bg-indigo-500 animate-pulse' };
   }
-  if (s === 'IN_TRANSIT' || s === 'SCAN_INBOUND' || s === 'SCAN_OUTBOUND') {
+  if (s === 'IN_TRANSIT' || s === 'SCAN_INBOUND' || s === 'SCAN_OUTBOUND' || s === 'SORTED' || s === 'ARRIVED_HUB' || s === 'ARRIVED_DEST_HUB') {
     return { label: 'Đang Trung Chuyển Liên Tỉnh', bg: 'bg-blue-500/10 text-blue-700 border-blue-300', dot: 'bg-blue-500 animate-pulse' };
   }
-  if (s === 'PICKED_UP' || s === 'PICKUP_COMPLETED') {
+  if (s === 'PICKED_UP' || s === 'PICKUP_COMPLETED' || s === 'SCAN_PICKUP' || s === 'ARRIVED_ORIGIN_HUB') {
     return { label: 'Bưu Tá Đã Lấy Hàng', bg: 'bg-sky-500/10 text-sky-700 border-sky-300', dot: 'bg-sky-500' };
+  }
+  if (s === 'TASK_ASSIGNED' || s === 'PICKUP_ASSIGNED') {
+    return { label: 'Chờ Lấy Hàng (Đã Phân Công)', bg: 'bg-amber-500/10 text-amber-700 border-amber-300', dot: 'bg-amber-500' };
   }
   return { label: 'Đã Tiếp Nhận (Chờ Lấy)', bg: 'bg-blue-500/10 text-blue-700 border-blue-300', dot: 'bg-blue-500' };
 }
@@ -746,7 +750,8 @@ function TrackingPage() {
               {searchResult.timeline.length > 0 ? (
                 <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1 scrollbar-thin">
                   {searchResult.timeline.map((ev, i) => {
-                    const isSystemAuto = ev.note?.includes('🤖') || ev.note?.includes('tự động') || ev.actor === 'SYSTEM_AUTO_DISPATCH';
+                    const formatted = formatCustomerTimelineEvent(ev);
+                    const cleanedNote = cleanCustomerNote(ev.note);
                     const isLatest = i === 0 || i === searchResult.timeline.length - 1;
 
                     return (
@@ -765,23 +770,22 @@ function TrackingPage() {
                             </div>
                             <div className="flex-1">
                               <p className="font-extrabold text-xs text-slate-900">
-                                {ev.statusAfterEvent || ev.eventType || ev.eventTypeCode || 'Sự kiện cập nhật'}
+                                {formatted.title}
                               </p>
                               <div className="flex items-center gap-2 mt-0.5">
                                 <span className="inline-flex items-center gap-1 text-[11px] text-slate-600 font-medium">
                                   <MapPin className="h-3 w-3 text-slate-400" />
                                   {ev.locationText || ev.locationCode || 'Trạm trung chuyển'}
                                 </span>
-                                {isSystemAuto && (
+                                {formatted.badgeText && (
                                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-100 text-blue-800 text-[10px] font-extrabold border border-blue-200">
-                                    <Bot className="h-3 w-3" />
-                                    Tự động điều phối
+                                    {formatted.badgeText}
                                   </span>
                                 )}
                               </div>
-                              {cleanCustomerNote(ev.note) && (
+                              {(cleanedNote || formatted.defaultDescription) && (
                                 <p className="text-[11px] text-slate-600 font-normal mt-1 leading-relaxed bg-white/60 p-2 rounded-lg border border-slate-100">
-                                  {cleanCustomerNote(ev.note)}
+                                  {cleanedNote || formatted.defaultDescription}
                                 </p>
                               )}
 
@@ -2085,7 +2089,6 @@ function HistoryPage() {
         st === 'SORTED' ||
         st === 'DELIVERING' ||
         st === 'OUT_FOR_DELIVERY' ||
-        st === 'TASK_ASSIGNED' ||
         st === 'PICKED_UP' ||
         st === 'PICKUP_COMPLETED' ||
         st === 'ARRIVED_DEST_HUB'
@@ -2114,7 +2117,11 @@ function HistoryPage() {
     // 1. Status Filter
     if (statusFilter !== 'ALL') {
       const st = (s.currentStatus || '').toUpperCase();
-      if (statusFilter === 'CREATED' && st !== 'CREATED') return false;
+      if (
+        statusFilter === 'CREATED' &&
+        !['CREATED', 'UPDATED', 'TASK_ASSIGNED', 'PICKUP_REQUESTED', 'PICKUP_ASSIGNED'].includes(st)
+      )
+        return false;
       if (
         statusFilter === 'PICKED_UP' &&
         !['PICKED_UP', 'PICKUP_COMPLETED', 'SCAN_PICKUP', 'ARRIVED_ORIGIN_HUB'].includes(st)
@@ -2127,7 +2134,7 @@ function HistoryPage() {
         return false;
       if (
         statusFilter === 'DELIVERING' &&
-        !['DELIVERING', 'OUT_FOR_DELIVERY', 'TASK_ASSIGNED', 'READY_FOR_DELIVERY'].includes(st)
+        !['DELIVERING', 'OUT_FOR_DELIVERY', 'READY_FOR_DELIVERY'].includes(st)
       )
         return false;
       if (statusFilter === 'DELIVERED' && !['DELIVERED', 'COMPLETED'].includes(st)) return false;

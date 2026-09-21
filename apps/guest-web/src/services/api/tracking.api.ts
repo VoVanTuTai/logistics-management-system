@@ -1,5 +1,5 @@
 import { apiClient } from '../client';
-import { normalizeMediaPublicUrl } from '../../utils/trackingUtils';
+import { normalizeMediaPublicUrl, cleanCustomerNote } from '../../utils/trackingUtils';
 
 export interface TimelineEventResponse {
   id: string;
@@ -126,13 +126,24 @@ export const trackingApi = {
           }
           return {
             ...ev,
+            actor: null, // Bảo mật thông tin nội bộ: không để lộ danh tính nhân viên cho khách hàng
+            eventSource: 'Hệ thống Nexus',
+            note: cleanCustomerNote(ev.note) ?? null,
             proofImageUrl: normalizeMediaPublicUrl(proof),
           };
         });
 
+        const current = publicData.current ? {
+          ...publicData.current,
+          currentStatus:
+            publicData.current.currentStatusCode === 'TASK_ASSIGNED' || publicData.current.currentStatusCode === 'PICKUP_ASSIGNED'
+              ? 'Chờ lấy hàng'
+              : publicData.current.currentStatus,
+        } : null;
+
         return {
           shipmentCode,
-          current: publicData.current ?? null,
+          current,
           timeline: processedTimeline,
           order: publicData.order ?? null,
           gpsPosition,
@@ -243,13 +254,24 @@ export const trackingApi = {
       }
       return {
         ...ev,
+        actor: null, // Bảo mật thông tin nội bộ: không để lộ danh tính nhân viên cho khách hàng
+        eventSource: 'Hệ thống Nexus',
+        note: cleanCustomerNote(ev.note) ?? null,
         proofImageUrl: normalizeMediaPublicUrl(proof),
       };
     });
 
+    const normalizedCurrent = current ? {
+      ...current,
+      currentStatus:
+        current.currentStatusCode === 'TASK_ASSIGNED' || current.currentStatusCode === 'PICKUP_ASSIGNED'
+          ? 'Chờ lấy hàng'
+          : current.currentStatus,
+    } : null;
+
     return {
       shipmentCode,
-      current,
+      current: normalizedCurrent,
       timeline: processedTimeline,
       order,
       gpsPosition,
