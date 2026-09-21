@@ -104,17 +104,48 @@ function readMetadataString(
   return null;
 }
 
-function readProcessingHubCode(metadata: ShipmentMetadata | null): string | null {
-  return normalizeOptionalCode(
-    readMetadataString(metadata, [
+function collectShipmentReceiveHubCodes(
+  shipment: ShipmentDto,
+  currentLocation: CurrentLocationDto | null,
+): string[] {
+  const candidates = [
+    currentLocation?.locationCode,
+    readMetadataString(shipment.metadata, [
+      'currentHubCode',
+      'location.current',
+      'location.hubCode',
+      'hub.code',
+      'hub.currentCode',
+    ]),
+    readMetadataString(shipment.metadata, [
       'sender.hubCode',
       'routing.originHubCode',
       'originHubCode',
       'senderHubCode',
       'pickup.hubCode',
       'pickup.originHubCode',
+    ]),
+  ];
+
+  return Array.from(
+    new Set(candidates.map((value) => normalizeOptionalCode(value)).filter(Boolean)),
+  ) as string[];
+}
+
+function readProcessingHubCode(metadata: ShipmentMetadata | null): string | null {
+  return normalizeOptionalCode(
+    readMetadataString(metadata, [
+      'currentHubCode',
+      'location.current',
       'location.hubCode',
       'hub.code',
+      'hub.currentCode',
+      'sender.hubCode',
+      'routing.originHubCode',
+      'originHubCode',
+      'senderHubCode',
+      'pickup.hubCode',
+      'pickup.originHubCode',
     ]),
   );
 }
@@ -135,7 +166,9 @@ function isHomePickupShipment(metadata: ShipmentMetadata | null): boolean {
     classification === 'HOME_PICKUP' ||
     classification === 'PICKUP_AT_HOME' ||
     classification === 'LAY_HANG_TAI_NHA' ||
+    classification === 'PICKUP' ||
     source === 'MERCHANT-WEB' ||
+    source === 'CUSTOMER-MOBILE' ||
     Boolean(pickupCode)
   );
 }
@@ -146,7 +179,7 @@ function hasAssignedPickupTask(tasks: TaskDto[], shipmentCode: string): boolean 
   return tasks.some(
     (task) =>
       task.taskType === 'PICKUP' &&
-      task.status === 'ASSIGNED' &&
+      (task.status === 'ASSIGNED' || task.status === 'CREATED') &&
       task.shipmentCode &&
       normalizeCode(task.shipmentCode) === normalizedShipmentCode,
   );
@@ -173,12 +206,17 @@ function validateShipmentForReceive(
 
   const isAssignedToThisCourier = hasAssignedPickupTask(input.assignedPickupTasks, shipmentCode);
 
+  const receiveHubCodes = collectShipmentReceiveHubCodes(shipment, input.currentLocation);
+  const hasMatchingHub =
+    input.assignedHubCodes.length === 0 ||
+    receiveHubCodes.length === 0 ||
+    receiveHubCodes.some((code) => input.assignedHubCodes.includes(code));
+
   const processingHubCode = readProcessingHubCode(shipment.metadata);
   if (
     !isAssignedToThisCourier &&
-    processingHubCode &&
-    input.assignedHubCodes.length > 0 &&
-    !input.assignedHubCodes.includes(processingHubCode)
+    !hasMatchingHub &&
+    processingHubCode
   ) {
     return `Đơn ${shipmentCode} thuộc hub xử lý ${processingHubCode}, không thuộc hub của tài khoản này.`;
   }

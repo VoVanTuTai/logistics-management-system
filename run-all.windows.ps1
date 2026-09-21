@@ -167,6 +167,13 @@ if (-not $SkipBackend) {
 if (-not $SkipWeb) {
   Write-Host "`n>>> [3/4] Launching Web Frontends in background..." -ForegroundColor Yellow
 
+  # Clean up any lingering processes on frontend ports to avoid port collision/swapping
+  @(5173, 5174, 5175, 5176, 5177, 3013) | ForEach-Object {
+    Get-NetTCPConnection -LocalPort $_ -State Listen -ErrorAction SilentlyContinue |
+      Select-Object -ExpandProperty OwningProcess -Unique |
+      ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }
+  }
+
   $webApps = @(
     @{ Name = 'Ops Web'; Dir = 'apps/ops-web'; Port = 5173 },
     @{ Name = 'Merchant Web'; Dir = 'apps/merchant-web'; Port = 5174 },
@@ -177,7 +184,13 @@ if (-not $SkipWeb) {
   foreach ($app in $webApps) {
     $dirPath = Join-Path $rootDir $app.Dir
     Write-Host "  Starting $($app.Name) on port $($app.Port)..."
-    Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$dirPath'; npm run dev -- --host 0.0.0.0 --port $($app.Port)" -WindowStyle Minimized
+    Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$dirPath'; npm run dev -- --host 0.0.0.0 --port $($app.Port) --strictPort" -WindowStyle Minimized
+  }
+
+  $chatbotDir = Join-Path $rootDir 'services/chatbot-service'
+  if (Test-Path $chatbotDir) {
+    Write-Host "  Starting AI Chatbot Service on port 3013..."
+    Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$chatbotDir'; npm run start:dev" -WindowStyle Minimized
   }
 }
 
@@ -186,11 +199,11 @@ if (-not $SkipMobile) {
   Write-Host "`n>>> [4/4] Launching Mobile Apps Expo Dev Server..." -ForegroundColor Yellow
 
   $courierDir = Join-Path $rootDir 'apps/courier-mobile'
-  Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$courierDir'; npx expo start --port 8081 --clear"
+  Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$courierDir'; npm run start"
   Write-Host "  [OK] Courier Mobile started in a new PowerShell window (Port 8081)"
 
   $customerDir = Join-Path $rootDir 'apps/customer-mobile'
-  Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$customerDir'; npx expo start --port 8082 --clear"
+  Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$customerDir'; npm run start"
   Write-Host "  [OK] Customer Mobile started in a new PowerShell window (Port 8082)"
 }
 
@@ -198,6 +211,7 @@ Write-Host "`n=================================================" -ForegroundColo
 Write-Host " NEXUS LOGISTICS SYSTEM IS READY!" -ForegroundColor Green
 Write-Host "=================================================" -ForegroundColor Green
 Write-Host " Gateway BFF:     http://localhost:3000/health (LAN: http://$lanIp`:3000)"
+Write-Host " AI Chatbot:      http://localhost:3013/health"
 Write-Host " Ops Web:         http://localhost:5173"
 Write-Host " Merchant Web:    http://localhost:5174"
 Write-Host " Admin Web:       http://localhost:5175"
