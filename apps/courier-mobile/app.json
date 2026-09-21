@@ -52,11 +52,6 @@
         }
       ],
       "expo-audio"
-    ],
-    "extra": {
-      "eas": {
-        "projectId": "aae5906f-3a19-4e32-b7b5-b14d551f0c8e"
-      }
-    }
+    ]
   }
 }
