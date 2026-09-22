@@ -292,19 +292,43 @@ export class LogisticsToolsService {
     // 2. Dự phòng nội bộ nếu pricing-service gián đoạn
     let baseFee = 18000;
     let excessRatePerHalfKg = 3500;
-    if (sType.includes('EXPRESS')) {
+    if (sType.includes('EXPRESS') || sType.includes('NHANH')) {
       baseFee = 28000;
       excessRatePerHalfKg = 5000;
-    } else if (sType.includes('SAME')) {
+    } else if (sType.includes('SAME') || sType.includes('SUPER') || sType.includes('HOA_TOC')) {
       baseFee = 42000;
       excessRatePerHalfKg = 8000;
     }
 
-    const excessWeight = Math.max(0, weightKg - 0.5);
+    const volumetricWeight = dimensionsCm ? (dimensionsCm.length * dimensionsCm.width * dimensionsCm.height) / 6000 : 0;
+    const chargeableWeight = Math.max(weightKg, volumetricWeight);
+
+    const excessWeight = Math.max(0, chargeableWeight - 0.5);
     const excessSteps = Math.ceil(excessWeight / 0.5);
     const excessFee = excessSteps * excessRatePerHalfKg;
-    const isInterZone = cleanFrom.includes('HCM') && cleanTo.includes('NOI') || cleanFrom.includes('NOI') && cleanTo.includes('HCM');
-    const zoneSurcharge = isInterZone ? 7000 : 0;
+
+    const METRO_CITIES = ['HA NOI', 'HANOI', 'HN', 'HO CHI MINH', 'HCM', 'SAI GON', 'DA NANG'];
+    const isFromMetro = METRO_CITIES.some((m) => cleanFrom.includes(m));
+    const isToMetro = METRO_CITIES.some((m) => cleanTo.includes(m));
+    const isSameProvince =
+      cleanFrom === cleanTo ||
+      (cleanFrom.includes('HCM') && cleanTo.includes('HCM')) ||
+      (cleanFrom.includes('NOI') && cleanTo.includes('NOI')) ||
+      (cleanFrom.includes('NANG') && cleanTo.includes('NANG'));
+
+    let zoneSurcharge = 0;
+    let zoneName = 'Nội tỉnh';
+    if (isSameProvince) {
+      zoneSurcharge = 0;
+      zoneName = 'Nội tỉnh';
+    } else if (isFromMetro && isToMetro) {
+      zoneSurcharge = 7000;
+      zoneName = 'Trục chính Metro Corridor';
+    } else {
+      zoneSurcharge = 12000;
+      zoneName = 'Liên tỉnh phổ thông';
+    }
+
     const subtotalFee = baseFee + excessFee + zoneSurcharge;
     const totalFee = subtotalFee;
     const estimatedReturnFee = Math.round(totalFee * 0.5);
@@ -322,7 +346,7 @@ export class LogisticsToolsService {
       estimatedReturnFee,
       returnSettlementMethod: 'CASH_OR_QR_ON_RETURN',
       currency: 'VND',
-      breakdown: `Tuyến ${fromCity} ➔ ${toCity}: Cước cơ sở (0.5kg đầu): ${baseFee.toLocaleString('vi-VN')}đ | Phụ phí vượt nấc: ${excessFee.toLocaleString('vi-VN')}đ | Phụ phí vùng miền: ${zoneSurcharge.toLocaleString('vi-VN')}đ ➔ TỔNG CƯỚC: ${totalFee.toLocaleString('vi-VN')}đ | Cước hoàn (nếu bom hàng): ${estimatedReturnFee.toLocaleString('vi-VN')}đ`,
+      breakdown: `Tuyến ${fromCity} ➔ ${toCity}: Cân tính cước ${chargeableWeight.toFixed(2)}kg | Cước cơ sở (0.5kg đầu): ${baseFee.toLocaleString('vi-VN')}đ | Phụ phí vượt nấc: ${excessFee.toLocaleString('vi-VN')}đ | Phụ phí vùng miền (${zoneName}): ${zoneSurcharge.toLocaleString('vi-VN')}đ ➔ TỔNG CƯỚC CHIỀU ĐI: ${totalFee.toLocaleString('vi-VN')}đ | Cước hoàn (nếu bom hàng): ${estimatedReturnFee.toLocaleString('vi-VN')}đ`,
     };
   }
 
