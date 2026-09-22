@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bot, X, Send, Sparkles, Package, ShieldCheck, Calculator, RotateCcw, ChevronDown, User } from 'lucide-react';
+import { useAuthStore } from '../store/useAuthStore';
 
 interface ChatMessage {
   id: string;
@@ -94,17 +95,65 @@ const FormattedChatMessage: React.FC<{ text: string; isUser: boolean }> = ({ tex
 };
 
 export const FloatingAiChatWidget: React.FC = () => {
+  const { phone, user } = useAuthStore();
+  const currentUserId = user?.id || phone || null;
+  const userDisplayName = user?.displayName || phone || null;
+
   const [isOpen, setIsOpen] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'welcome',
-      sender: 'bot',
-      text: 'Xin chào! Tôi là **Trợ Lý AI Nexus Logistics**.\nTôi có thể hỗ trợ bạn tra cứu hành trình bưu gửi thời gian thực, tiến độ hồ sơ bồi thường hàng hóa, dự toán cước phí IATA và giải đáp chính sách bưu chính 24/7.',
-      time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-    },
-  ]);
+
+  const getStorageKey = (uid: string | null) => `nexus_guest_ai_chat_${uid || 'anonymous'}`;
+
+  const getWelcomeMessage = (uid: string | null, name: string | null): ChatMessage => ({
+    id: 'welcome_' + (uid || 'guest'),
+    sender: 'bot',
+    text: uid
+      ? `Xin chào **${name || uid}**! Tôi là **Trợ Lý AI Nexus Logistics**.\nTôi có thể hỗ trợ bạn tra cứu hành trình bưu gửi thời gian thực, đơn hàng mới nhất của bạn, kiểm tra bồi thường hoặc dự toán cước phí 24/7.`
+      : 'Xin chào! Tôi là **Trợ Lý AI Nexus Logistics**.\nTôi có thể hỗ trợ bạn tra cứu hành trình bưu gửi thời gian thực, tiến độ hồ sơ bồi thường hàng hóa, dự toán cước phí IATA và giải đáp chính sách bưu chính 24/7.',
+    time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+  });
+
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    try {
+      const key = getStorageKey(currentUserId);
+      const saved = sessionStorage.getItem(key);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [getWelcomeMessage(currentUserId, userDisplayName)];
+  });
+
+  // Tách biệt lịch sử chat khi chuyển đổi giữa các tài khoản (0773586656 vs 0773586666 vs Khách)
+  useEffect(() => {
+    try {
+      const key = getStorageKey(currentUserId);
+      const saved = sessionStorage.getItem(key);
+      if (saved) {
+        setMessages(JSON.parse(saved));
+      } else {
+        setMessages([getWelcomeMessage(currentUserId, userDisplayName)]);
+      }
+    } catch {
+      setMessages([getWelcomeMessage(currentUserId, userDisplayName)]);
+    }
+  }, [currentUserId]);
+
+  // Lưu lại tin nhắn vào session storage theo tài khoản hiện tại
+  useEffect(() => {
+    if (messages.length > 0) {
+      try {
+        sessionStorage.setItem(getStorageKey(currentUserId), JSON.stringify(messages));
+      } catch {}
+    }
+  }, [messages, currentUserId]);
+
+  const handleClearChat = () => {
+    const fresh = [getWelcomeMessage(currentUserId, userDisplayName)];
+    setMessages(fresh);
+    try {
+      sessionStorage.removeItem(getStorageKey(currentUserId));
+    } catch {}
+  };
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -138,11 +187,15 @@ export const FloatingAiChatWidget: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Gọi qua Gateway BFF (Port 3000)
+      // Gọi qua Gateway BFF (Port 3000) kèm định danh tài khoản
       const response = await fetch(`${gatewayUrl}/api/v1/ai-assistant/message`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: query }),
+        body: JSON.stringify({
+          message: query,
+          userId: currentUserId || undefined,
+          senderRole: currentUserId ? 'CUSTOMER' : 'GUEST',
+        }),
       });
 
       if (response.ok) {
@@ -267,17 +320,27 @@ export const FloatingAiChatWidget: React.FC = () => {
                 </div>
                 <p className="text-[11px] text-slate-300 flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 inline-block"></span>
-                  Sẵn sàng giải đáp 24/7 qua Gateway BFF
+                  {currentUserId ? `TK: ${currentUserId}` : 'Khách vãng lai'} • Trực tuyến 24/7
                 </p>
               </div>
             </div>
 
-            <button
-              onClick={() => setIsOpen(false)}
-              className="p-1 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
-            >
-              <ChevronDown className="h-5 w-5" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={handleClearChat}
+                title="Bắt đầu đoạn chat mới (xóa lịch sử hội thoại hiện tại)"
+                className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setIsOpen(false)}
+                title="Thu nhỏ chatbox"
+                className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+              >
+                <ChevronDown className="h-5 w-5" />
+              </button>
+            </div>
           </div>
 
           {/* Quick Suggestions Chips */}
