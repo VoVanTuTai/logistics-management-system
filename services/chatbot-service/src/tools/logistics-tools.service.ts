@@ -170,7 +170,7 @@ export class LogisticsToolsService {
   }
 
   /**
-   * Lấy đơn hàng mới nhất (theo userId nếu có, hoặc đơn mới nhất toàn hệ thống)
+   * Lấy đơn hàng mới nhất (theo userId nếu đã đăng nhập)
    */
   public async getLatestShipment(userId?: string): Promise<{
     found: boolean;
@@ -178,46 +178,45 @@ export class LogisticsToolsService {
     shipment?: any;
     tracking?: TrackingResult;
   }> {
-    this.logger.log(`Tool getLatestShipment invoked for userId: ${userId || 'all'}`);
+    this.logger.log(`Tool getLatestShipment invoked for userId: ${userId || 'anonymous'}`);
     try {
-      let queryUrl = `${this.shipmentServiceUrl}/shipments?limit=1`;
       if (userId) {
-        queryUrl += `&createdByUserId=${encodeURIComponent(userId)}`;
-      }
-
-      let res = await fetch(queryUrl, { signal: AbortSignal.timeout(2000) });
-      let data = res.ok ? await res.json() : null;
-      let items = data?.items || [];
-      let isUserSpecific = Boolean(userId && items.length > 0);
-
-      // Nếu không tìm thấy đơn cho user đó, tìm đơn mới nhất toàn hệ thống
-      if ((!items || items.length === 0) && userId) {
-        res = await fetch(`${this.shipmentServiceUrl}/shipments?limit=1`, { signal: AbortSignal.timeout(2000) });
-        data = res.ok ? await res.json() : null;
-        items = data?.items || [];
-      }
-
-      if (items && items.length > 0) {
-        const latest = items[0];
-        const tracking = await this.trackShipment(latest.code);
+        // Query danh sách đơn gửi của chính khách hàng qua endpoint /shipments/sent
+        const queryUrl = `${this.shipmentServiceUrl}/shipments/sent?limit=1&userId=${encodeURIComponent(userId)}`;
+        const res = await fetch(queryUrl, { signal: AbortSignal.timeout(3000) });
+        if (res.ok) {
+          const data = await res.json();
+          const items = Array.isArray(data) ? data : (data?.items || []);
+          if (items.length > 0) {
+            const latest = items[0];
+            const tracking = await this.trackShipment(latest.code);
+            return {
+              found: true,
+              isUserSpecific: true,
+              shipment: latest,
+              tracking,
+            };
+          }
+        }
+        // Đã đăng nhập nhưng chưa có đơn hàng nào
         return {
-          found: true,
-          isUserSpecific,
-          shipment: latest,
-          tracking,
+          found: false,
+          isUserSpecific: true,
         };
       }
+
+      // Khách vãng lai (chưa đăng nhập) -> Không trả về đơn của người khác
+      return {
+        found: false,
+        isUserSpecific: false,
+      };
     } catch (err: any) {
       this.logger.warn(`Failed to fetch latest shipment: ${err.message}`);
     }
 
-    const mockCode = '333423979726';
-    const tracking = await this.trackShipment(mockCode);
     return {
-      found: true,
+      found: false,
       isUserSpecific: Boolean(userId),
-      shipment: { code: mockCode },
-      tracking,
     };
   }
 
