@@ -56,6 +56,10 @@ function getStatusBadgeDetails(status?: string): StatusBadgeInfo {
   const st = (status || '').toUpperCase();
   switch (st) {
     case 'CREATED':
+    case 'UPDATED':
+    case 'TASK_ASSIGNED':
+    case 'PICKUP_REQUESTED':
+    case 'PICKUP_ASSIGNED':
       return {
         label: 'Chờ lấy hàng',
         bg: 'bg-amber-50 text-amber-800 border-amber-200',
@@ -85,7 +89,6 @@ function getStatusBadgeDetails(status?: string): StatusBadgeInfo {
       };
     case 'DELIVERING':
     case 'OUT_FOR_DELIVERY':
-    case 'TASK_ASSIGNED':
     case 'READY_FOR_DELIVERY':
       return {
         label: 'Đang giao hàng',
@@ -253,7 +256,10 @@ export function OrdersPage(): React.JSX.Element {
   // KPI Quick Stats
   const stats = {
     total: currentList.length,
-    pendingPickup: currentList.filter((s) => (s.currentStatus || '').toUpperCase() === 'CREATED').length,
+    pendingPickup: currentList.filter((s) => {
+      const st = (s.currentStatus || '').toUpperCase();
+      return ['CREATED', 'UPDATED', 'TASK_ASSIGNED', 'PICKUP_REQUESTED', 'PICKUP_ASSIGNED'].includes(st);
+    }).length,
     inTransit: currentList.filter((s) => {
       const st = (s.currentStatus || '').toUpperCase();
       return (
@@ -263,7 +269,6 @@ export function OrdersPage(): React.JSX.Element {
         st === 'SORTED' ||
         st === 'DELIVERING' ||
         st === 'OUT_FOR_DELIVERY' ||
-        st === 'TASK_ASSIGNED' ||
         st === 'PICKED_UP' ||
         st === 'PICKUP_COMPLETED' ||
         st === 'ARRIVED_HUB' ||
@@ -302,7 +307,11 @@ export function OrdersPage(): React.JSX.Element {
     // 2. Status Filter
     if (statusFilter !== 'ALL') {
       const st = (s.currentStatus || '').toUpperCase();
-      if (statusFilter === 'CREATED' && st !== 'CREATED') return false;
+      if (
+        statusFilter === 'CREATED' &&
+        !['CREATED', 'UPDATED', 'TASK_ASSIGNED', 'PICKUP_REQUESTED', 'PICKUP_ASSIGNED'].includes(st)
+      )
+        return false;
       if (
         statusFilter === 'PICKUP_COMPLETED' &&
         !['PICKED_UP', 'PICKUP_COMPLETED', 'SCAN_PICKUP', 'ARRIVED_ORIGIN_HUB'].includes(st)
@@ -320,7 +329,7 @@ export function OrdersPage(): React.JSX.Element {
         return false;
       if (
         statusFilter === 'DELIVERING' &&
-        !['DELIVERING', 'OUT_FOR_DELIVERY', 'TASK_ASSIGNED', 'READY_FOR_DELIVERY'].includes(st)
+        !['DELIVERING', 'OUT_FOR_DELIVERY', 'READY_FOR_DELIVERY'].includes(st)
       )
         return false;
       if (statusFilter === 'DELIVERED' && !['DELIVERED', 'COMPLETED'].includes(st)) return false;

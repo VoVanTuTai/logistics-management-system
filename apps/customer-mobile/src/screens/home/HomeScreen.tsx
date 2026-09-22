@@ -24,6 +24,7 @@ import { PromoBanner } from './components/PromoBanner';
 import { RateCalculatorCard } from './components/RateCalculatorCard';
 import { RecentOrdersSection } from './components/RecentOrdersSection';
 import { NewsAndHighlightsSection } from './components/NewsAndHighlightsSection';
+import { FloatingAiChatModal } from '../../components/FloatingAiChatModal';
 
 type Props = CompositeScreenProps<
   BottomTabScreenProps<MainTabParamList, 'HomeTab'>,
@@ -96,6 +97,7 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
   const [recentOrders, setRecentOrders] = useState<OrderModel[]>([]);
   const [loadingOrders, setLoadingOrders] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
 
   const fetchRecentShipments = async (showLoading = true) => {
     const token = authStore.getAccessToken();
@@ -206,17 +208,32 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
         <NewsAndHighlightsSection onPressCreateOrder={handleCreateOrder} />
       </ScrollView>
 
-      {/* FLOATING CTA BUTTON */}
+      {/* FLOATING AI CHATBOT CTA BUTTON */}
       <View style={styles.floatingContainer}>
+        {!isChatOpen && (
+          <View style={styles.floatingTag}>
+            <View style={styles.pulsingDot} />
+            <Text style={styles.floatingTagText}>Hỏi Trợ Lý AI</Text>
+          </View>
+        )}
         <TouchableOpacity
-          activeOpacity={0.9}
+          activeOpacity={0.88}
           style={styles.floatingBtn}
-          onPress={handleCreateOrder}
+          onPress={() => setIsChatOpen(true)}
         >
-          <Ionicons name="add-circle" size={22} color={colors.surface} />
-          <Text style={styles.floatingBtnText}>Tạo đơn hàng</Text>
+          <View style={styles.sparkleBadge}>
+            <Text style={styles.sparkleBadgeText}>✨</Text>
+          </View>
+          <Ionicons name="sparkles" size={18} color="#FFFFFF" />
+          <Text style={styles.floatingBtnText}>Trợ Lý AI</Text>
         </TouchableOpacity>
       </View>
+
+      {/* AI CHATBOT POPUP MODAL */}
+      <FloatingAiChatModal
+        visible={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+      />
     </View>
   );
 }
@@ -233,22 +250,61 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 20,
     right: 16,
+    alignItems: 'flex-end',
+    gap: 6,
+  },
+  floatingTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 5,
+    ...shadows.sm,
+  },
+  pulsingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10B981',
+  },
+  floatingTagText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#334155',
   },
   floatingBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm + 2,
-    borderRadius: 30,
+    backgroundColor: '#4F46E5',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 28,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: 'rgba(255, 255, 255, 0.35)',
     ...shadows.lg,
+  },
+  sparkleBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#F59E0B',
+    borderRadius: 10,
+    width: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sparkleBadgeText: {
+    fontSize: 9,
   },
   floatingBtnText: {
     fontSize: 13,
     fontWeight: '800',
-    color: colors.surface,
+    color: '#FFFFFF',
     marginLeft: 6,
   },
 });

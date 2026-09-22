@@ -5,18 +5,31 @@ import { LogisticsToolsService } from '../tools/logistics-tools.service';
 import type { ChatResponseDto, Citation } from '../rag/rag.types';
 import type { ChatRequestDto } from './dto/chat-request.dto';
 
+function normalizeVietnamese(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .trim();
+}
+
 @Injectable()
 export class ChatService {
   private readonly logger = new Logger(ChatService.name);
   private apiKey: string;
   private chatModel: string;
   private temperature: number;
+  private geminiApiKey: string;
+  private geminiModel: string;
 
   constructor(
     private readonly embeddingService: EmbeddingService,
     private readonly vectorStore: VectorStoreService,
     private readonly toolsService: LogisticsToolsService
   ) {
+    this.geminiApiKey = process.env.GEMINI_API_KEY || '';
+    this.geminiModel = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
     this.apiKey = process.env.OPENAI_API_KEY || '';
     this.chatModel = process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini';
     this.temperature = Number(process.env.OPENAI_TEMPERATURE || 0.2);
@@ -29,23 +42,66 @@ export class ChatService {
     const startTime = Date.now();
     const conversationId = dto.conversationId || `conv-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const question = dto.message.trim();
+    const normalizedQ = normalizeVietnamese(question);
     const toolsUsed: string[] = [];
 
     // 1. Phân tích ý định & gọi Tool nếu cần (Function Calling / Intent Routing)
     let toolAugmentedContext = '';
 
-    // Regex tìm mã đơn hàng: NX-XXXX hoặc NX12345
-    const trackingMatch = question.match(/\b(NX[-_]?[A-Z0-9]{4,12})\b/i);
+    // Regex tìm mã đơn hàng: NX-XXXX hoặc mã số vận đơn (10-15 chữ số, ví dụ 333423979726)
+    const trackingMatch =
+      question.match(/\b(NX[-_]?[A-Z0-9]{4,14})\b/i) ||
+      question.match(/\b(333\d{7,10}|\d{10,14})\b/);
+
     if (trackingMatch) {
-      const trackingCode = trackingMatch[1].toUpperCase();
+      const trackingCode = trackingMatch[1] ? trackingMatch[1].toUpperCase() : trackingMatch[0];
       toolsUsed.push(`trackShipment(${trackingCode})`);
       const trackRes = await this.toolsService.trackShipment(trackingCode);
       toolAugmentedContext += `\n[THÔNG TIN TRA CỨU ĐƠN HÀNG THỰC TẾ CHO MÃ ${trackingCode}]:\n` +
+        `- Mã vận đơn: ${trackRes.trackingNumber}\n` +
         `- Trạng thái: ${trackRes.statusText} (${trackRes.status})\n` +
+        (trackRes.itemName ? `- Tên hàng hóa: ${trackRes.itemName}\n` : '') +
+        (trackRes.senderName ? `- Người gửi: ${trackRes.senderName} (${trackRes.senderCity || trackRes.senderAddress || ''})\n` : '') +
+        (trackRes.receiverName ? `- Người nhận: ${trackRes.receiverName} (${trackRes.receiverCity || trackRes.receiverAddress || ''})\n` : '') +
+        (trackRes.codAmount !== undefined ? `- Tiền thu hộ COD: ${trackRes.codAmount.toLocaleString('vi-VN')} VNĐ\n` : '') +
         `- Vị trí hiện tại: ${trackRes.currentLocation}\n` +
         `- Thời gian dự kiến giao: ${trackRes.estimatedDelivery}\n` +
         `- Lịch sử vận chuyển:\n` +
         trackRes.timeline.map((t) => `  * ${t.time}: ${t.description}`).join('\n') + '\n';
+    } else {
+      // Nếu không có mã cụ thể, kiểm tra nếu người dùng hỏi tra cứu đơn hoặc hỏi về đơn của họ
+      const isGeneralTrackingQuery =
+        normalizedQ.includes('tra cuu') ||
+        normalizedQ.includes('kiem tra') ||
+        normalizedQ.includes('xem don') ||
+        normalizedQ.includes('don hang') ||
+        normalizedQ.includes('tinh trang don') ||
+        normalizedQ.includes('hanh trinh') ||
+        normalizedQ.includes('van don') ||
+        normalizedQ.includes('don moi') ||
+        normalizedQ.includes('don gan day') ||
+        normalizedQ.includes('don cua toi') ||
+        (normalizedQ.includes('don') && (normalizedQ.includes('o dau') || normalizedQ.includes('sao roi') || normalizedQ.includes('chua')));
+
+      if (isGeneralTrackingQuery) {
+        const latestRes = await this.toolsService.getLatestShipment(dto.userId);
+        const t = latestRes.tracking;
+        if (t) {
+          toolsUsed.push(`getLatestShipment(${latestRes.isUserSpecific ? `User:${dto.userId}` : 'SystemLatest'})`);
+          toolAugmentedContext += `\n[THÔNG TIN ĐƠN HÀNG MỚI TẠO GẦN NHẤT ${latestRes.isUserSpecific ? `CỦA KHÁCH HÀNG (Tài khoản: ${dto.userId})` : 'TRÊN HỆ THỐNG NEXUS EXPRESS'}]:\n` +
+            `- Ghi chú quan trọng cho AI: Người dùng hỏi tra cứu đơn nhưng chưa cung cấp mã vận đơn cụ thể. Hệ thống đã tự động lấy đơn hàng mới tạo gần nhất để hiển thị chi tiết và hướng dẫn khách hàng. Hãy nói rõ đây là đơn hàng mới nhất trên hệ thống.\n` +
+            `- Mã vận đơn: ${t.trackingNumber}\n` +
+            `- Trạng thái hiện tại: ${t.statusText} (${t.status})\n` +
+            (t.itemName ? `- Tên hàng hóa: ${t.itemName}\n` : '') +
+            (t.senderName ? `- Người gửi: ${t.senderName} (${t.senderCity || t.senderAddress || ''})\n` : '') +
+            (t.receiverName ? `- Người nhận: ${t.receiverName} (${t.receiverCity || t.receiverAddress || ''})\n` : '') +
+            (t.codAmount !== undefined ? `- Tiền thu hộ COD: ${t.codAmount.toLocaleString('vi-VN')} VNĐ\n` : '') +
+            `- Vị trí hiện tại: ${t.currentLocation}\n` +
+            `- Thời gian tạo đơn: ${t.createdAt || 'Gần đây'}\n` +
+            `- Lịch sử vận chuyển:\n` +
+            t.timeline.map((item) => `  * ${item.time}: ${item.description}`).join('\n') + '\n';
+        }
+      }
     }
 
     // Regex tìm mã hồ sơ khiếu nại bồi thường: CLM-XXXX hoặc CLM-202609-001
@@ -91,14 +147,137 @@ export class ChatService {
         `- ${vipRes.explanation}\n`;
     }
 
-    // Kiểm tra ý định tính cước phí bưu gửi
-    const weightMatch = question.match(/(\d+(\.\d+)?)\s*(kg|kí|kilogram)/i);
-    if (weightMatch && (question.includes('cước') || question.includes('phí') || question.includes('tiền'))) {
-      const weight = parseFloat(weightMatch[1]);
-      toolsUsed.push(`calculatePricing(${weight}kg)`);
-      const pricingRes = this.toolsService.calculatePricing(weight, 'STANDARD');
-      toolAugmentedContext += `\n[KẾT QUẢ TÍNH CƯỚC TỰ ĐỘNG CHO TRỌNG LƯỢNG ${weight}KG]:\n` +
-        `- ${pricingRes.breakdown}\n`;
+    // Kiểm tra ý định tính cước / hỏi giá cước / bưu gửi có trọng lượng, kích thước, hoặc tuyến đường
+    const hasWeightOrDimensions =
+      /(\d+(\.\d+)?)\s*(kg|kí|kilogram|g|gram)/i.test(question) ||
+      /(?:dài|dai|rộng|rong|cao|kích thước|kich thuoc|kích cỡ|kich co|cm)/i.test(normalizedQ) ||
+      /\d+\s*(?:x|\*)\s*\d+\s*(?:x|\*)\s*\d+/i.test(question);
+
+    const hasRoute =
+      normalizedQ.includes('tu ') ||
+      normalizedQ.includes('den ') ||
+      normalizedQ.includes('ra ') ||
+      normalizedQ.includes('vao ') ||
+      normalizedQ.includes('di ') ||
+      normalizedQ.includes('ha noi') ||
+      normalizedQ.includes('hcm') ||
+      normalizedQ.includes('sai gon') ||
+      normalizedQ.includes('da nang');
+
+    const hasPricingKeywords =
+      normalizedQ.includes('cuoc') ||
+      normalizedQ.includes('phi') ||
+      normalizedQ.includes('gia') ||
+      normalizedQ.includes('bao nhieu') ||
+      normalizedQ.includes('tien') ||
+      normalizedQ.includes('gui') ||
+      normalizedQ.includes('van chuyen') ||
+      normalizedQ.includes('chuyen phat') ||
+      normalizedQ.includes('tinh') ||
+      normalizedQ.includes('du toan') ||
+      normalizedQ.includes('uoc tinh') ||
+      normalizedQ.includes('bao gia');
+
+    const hasPackageSpecs =
+      normalizedQ.includes('don') ||
+      normalizedQ.includes('kien') ||
+      normalizedQ.includes('goi') ||
+      normalizedQ.includes('hang') ||
+      normalizedQ.includes('thung');
+
+    const isPricingQuery =
+      hasPricingKeywords ||
+      (hasWeightOrDimensions && (hasPackageSpecs || hasRoute)) ||
+      (hasPackageSpecs && hasRoute);
+
+    if (isPricingQuery && !isReturnFeeQuery) {
+      // 1. Trích xuất cân nặng nếu có (ví dụ 10kg, 500g)
+      const weightMatch = question.match(/(\d+(\.\d+)?)\s*(kg|kí|kilogram|g|gram)/i);
+      let weight = 1;
+      let hasExplicitWeight = false;
+
+      if (weightMatch) {
+        hasExplicitWeight = true;
+        let val = parseFloat(weightMatch[1]);
+        if (weightMatch[3].toLowerCase().startsWith('g') && !weightMatch[3].toLowerCase().startsWith('kg')) {
+          val = val / 1000;
+        }
+        weight = Math.max(0.1, val);
+      }
+
+      // Trích xuất kích thước ba chiều (Dài x Rộng x Cao) nếu có
+      let length = 0;
+      let width = 0;
+      let height = 0;
+
+      const lengthMatch = question.match(/(?:dài|dai|length)\s*[:=]?\s*(\d+(?:\.\d+)?)/i);
+      const widthMatch = question.match(/(?:rộng|rong|width)\s*[:=]?\s*(\d+(?:\.\d+)?)/i);
+      const heightMatch = question.match(/(?:cao|height)\s*[:=]?\s*(\d+(?:\.\d+)?)/i);
+
+      if (lengthMatch) length = parseFloat(lengthMatch[1]);
+      if (widthMatch) width = parseFloat(widthMatch[1]);
+      if (heightMatch) height = parseFloat(heightMatch[1]);
+
+      if (!length && !width && !height) {
+        const dimMatch = question.match(/(\d+(?:\.\d+)?)\s*(?:x|\*)\s*(\d+(?:\.\d+)?)\s*(?:x|\*)\s*(\d+(?:\.\d+)?)/i);
+        if (dimMatch) {
+          length = parseFloat(dimMatch[1]);
+          width = parseFloat(dimMatch[2]);
+          height = parseFloat(dimMatch[3]);
+        }
+      }
+
+      const dimensionsCm = length > 0 && width > 0 && height > 0 ? { length, width, height } : undefined;
+
+      // 2. Trích xuất tuyến vận chuyển (Hà Nội, Hồ Chí Minh, Đà Nẵng,...)
+      let fromCity = 'HO CHI MINH';
+      let toCity = 'HA NOI';
+      let hasExplicitRoute = false;
+
+      const routeRegex = /từ\s+([^,–\->\n]+?)\s+(?:ra|đến|đi|tới|sang|vào)\s+([^,–\->\n\?]+)/i;
+      const routeMatch = question.match(routeRegex);
+
+      if (routeMatch) {
+        hasExplicitRoute = true;
+        fromCity = this.normalizeCityName(routeMatch[1].trim());
+        toCity = this.normalizeCityName(routeMatch[2].trim());
+      } else if (normalizedQ.includes('ha noi') && (normalizedQ.includes('hcm') || normalizedQ.includes('sai gon') || normalizedQ.includes('ho chi minh'))) {
+        hasExplicitRoute = true;
+        const hnIdx = normalizedQ.indexOf('ha noi');
+        const hcmIdx = Math.max(normalizedQ.indexOf('hcm'), normalizedQ.indexOf('sai gon'), normalizedQ.indexOf('ho chi minh'));
+        if (hnIdx < hcmIdx) {
+          fromCity = 'HA NOI';
+          toCity = 'HO CHI MINH';
+        } else {
+          fromCity = 'HO CHI MINH';
+          toCity = 'HA NOI';
+        }
+      } else if (normalizedQ.includes('ha noi')) {
+        hasExplicitRoute = true;
+        fromCity = 'HA NOI';
+        toCity = 'HO CHI MINH';
+      } else if (normalizedQ.includes('hcm') || normalizedQ.includes('sai gon') || normalizedQ.includes('ho chi minh')) {
+        hasExplicitRoute = true;
+        fromCity = 'HO CHI MINH';
+        toCity = 'HA NOI';
+      }
+
+      toolsUsed.push(`calculatePricing(${fromCity}->${toCity}:${weight}kg${dimensionsCm ? `:${length}x${width}x${height}cm` : ''})`);
+      const stdPricing = await this.toolsService.calculatePricing(weight, 'STANDARD', fromCity, toCity, 'GUEST', dimensionsCm);
+      const expPricing = await this.toolsService.calculatePricing(weight, 'EXPRESS', fromCity, toCity, 'GUEST', dimensionsCm);
+
+      const volumetricWeight = dimensionsCm ? ((length * width * height) / 6000).toFixed(2) : '0';
+      const chargeableWeight = dimensionsCm ? Math.max(weight, parseFloat(volumetricWeight)).toFixed(2) : weight.toString();
+
+      toolAugmentedContext += `\n[BẢNG BÁO GIÁ CƯỚC THỜI GIAN THỰC TỪ MICROSERVICE PRICING-SERVICE]:\n` +
+        `- Tuyến đường: ${fromCity} ➔ ${toCity} ${hasExplicitRoute ? '' : '(Mặc định ước tính theo trục chính Metro HCM - Hà Nội do khách chưa chỉ định tuyến)'}\n` +
+        `- Cân nặng thực tế: ${weight}kg\n` +
+        (dimensionsCm ? `- Kích thước bưu kiện: Dài ${length}cm x Rộng ${width}cm x Cao ${height}cm\n- Thể tích quy đổi IATA = (${length}x${width}x${height})/6000 = ${volumetricWeight}kg\n- Cân nặng tính cước (Chargeable Weight) = max(Cân thực tế, Thể tích quy đổi) = ${chargeableWeight}kg\n` : '') +
+        `- GÓI TIÊU CHUẨN (Standard Delivery): ${stdPricing.breakdown}\n` +
+        `- GÓI NHANH (Express Delivery): ${expPricing.breakdown}\n` +
+        `- Công thức tính: Cước cơ sở (0.5kg đầu: 18.000đ) + Cước vượt nấc (mỗi 0.5kg tiếp theo +3.500đ với gói chuẩn, +5.000đ với gói nhanh) + Phụ phí vùng miền Metro (+7.000đ).\n` +
+        `- Cước chuyển hoàn bưu gửi: Thu 50% cước chiều đi khi giao không thành công (khách bom hàng).\n` +
+        `- HÃY BÁO GIÁ ĐẦY ĐỦ CẢ HAI GÓI (TIÊU CHUẨN VÀ NHANH), NÊU RÕ CÂN NẶNG TÍNH CƯỚC VÀ CƯỚC CHUYỂN HOÀN DỰ KIẾN CHO KHÁCH HÀNG. TUYỆT ĐỐI KHÔNG NÓI KHÔNG CÓ DỮ LIỆU HOẶC HƯỚNG DẪN GỌI 1900 KHI ĐÃ CÓ BẢNG BÁO GIÁ NÀY.\n`;
     }
 
     // 2. Truy xuất RAG từ Vector Store (Dense Semantic Retrieval)
@@ -178,17 +357,18 @@ export class ChatService {
   }
 
   private async executeLlm(question: string, context: string, citations: Citation[]): Promise<string> {
-    if (!this.apiKey) {
-      return this.generateOfflineDemoAnswer(question, context, citations);
-    }
-
     const systemPrompt = `Bạn là Trợ lý AI CSKH thông minh của hệ sinh thái Nexus Logistics.
 Nhiệm vụ của bạn là hỗ trợ khách hàng và chủ hàng (merchant) tra cứu cước phí, hành trình bưu kiện và giải đáp quy chuẩn bưu chính.
 Quy tắc trả lời:
 1. Ngôn ngữ: Tiếng Việt chuẩn mực, lịch sự, thân thiện, rõ ràng.
 2. Căn cứ: Trả lời DỰA TRÊN NGỮ CẢNH (Context) được cung cấp. Tuyệt đối không tự bịa đặt thông tin.
 3. Khi trả lời về cước phí hoặc đền bù, hãy nêu rõ căn cứ chính sách hoặc công thức bồi thường.
-4. Nếu ngữ cảnh không có thông tin, hãy thẳng thắn thông báo và hướng dẫn khách gọi tổng đài 1900 0000.`;
+4. Nếu ngữ cảnh không có thông tin, hãy thẳng thắn thông báo và hướng dẫn khách gọi tổng đài 1900 0000.
+5. QUY TẮC ĐỊNH DẠNG THẨM MỸ (RẤT QUAN TRỌNG):
+- TUYỆT ĐỐI KHÔNG dùng dấu nháy đơn ngược (backtick \`) bao quanh bất kỳ từ ngữ nào (ví dụ KHÔNG viết \`PICKED_UP\` hay \`30002004\`). Hãy viết thẳng hoặc đặt trong ngoặc đơn thông thường.
+- TUYỆT ĐỐI KHÔNG dùng ba dấu sao (***).
+- TUYỆT ĐỐI KHÔNG xuống dòng lẻ loi ngay sau dấu đầu dòng (không bao giờ để một dòng chỉ có • hoặc - hoặc *). Dấu gạch đầu dòng và nội dung PHẢI nằm trên cùng một dòng: ví dụ "• Mã vận đơn: 333423979726".
+- Sử dụng các icon emoji trực quan (📦, 📍, 👤, 💰, 🚚, ⏰,...) để câu trả lời sinh động, chuyên nghiệp và thân thiện.`;
 
     const userPrompt = `DỮ LIỆU NGỮ CẢNH HỆ THỐNG CUNG CẤP:
 ${context || '(Không tìm thấy tài liệu phù hợp trực tiếp)'}
@@ -198,35 +378,123 @@ ${question}
 
 HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
 
-    try {
-      const resp = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.apiKey}`,
-        },
-        body: JSON.stringify({
-          model: this.chatModel,
-          temperature: this.temperature,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt },
-          ],
-        }),
-      });
+    // 1. Ưu tiên sử dụng Google Gemini API nếu có cấu hình GEMINI_API_KEY
+    if (this.geminiApiKey) {
+      const candidateModels = Array.from(
+        new Set([
+          'gemini-3.1-flash-lite',
+          'gemini-3.6-flash',
+          'gemini-flash-lite-latest',
+          'gemini-3.5-flash-lite',
+          this.geminiModel,
+          'gemini-3.5-flash',
+          'gemini-flash-latest',
+        ].filter(Boolean))
+      );
 
-      if (!resp.ok) {
-        const errText = await resp.text();
-        this.logger.warn(`OpenAI LLM error ${resp.status}: ${errText}`);
-        return this.generateOfflineDemoAnswer(question, context, citations);
+      for (const model of candidateModels) {
+        try {
+          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${this.geminiApiKey}`;
+          const generationConfig: any = {
+            temperature: this.temperature,
+          };
+          if (model.includes('3.6') || model.includes('3.7') || model.includes('3.1')) {
+            generationConfig.thinkingConfig = { thinkingBudget: 0 };
+          }
+
+          const resp = await fetch(geminiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              systemInstruction: {
+                parts: [{ text: systemPrompt }],
+              },
+              contents: [
+                {
+                  parts: [{ text: userPrompt }],
+                },
+              ],
+              generationConfig,
+            }),
+            signal: AbortSignal.timeout(15000),
+          });
+
+          if (resp.ok) {
+            const data = (await resp.json()) as any;
+            const answerText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (answerText) {
+              this.logger.log(`Google Gemini (${model}) generated answer successfully.`);
+              return this.cleanBotFormatting(answerText);
+            }
+          } else {
+            const errText = await resp.text();
+            this.logger.warn(`Google Gemini API error with model ${model} (${resp.status}): ${errText}`);
+          }
+        } catch (err: any) {
+          this.logger.warn(`Google Gemini fetch failed for model ${model}: ${err.message}`);
+        }
       }
-
-      const data = (await resp.json()) as any;
-      return data.choices[0].message.content;
-    } catch (err: any) {
-      this.logger.warn(`OpenAI LLM fetch failed: ${err.message}`);
-      return this.generateOfflineDemoAnswer(question, context, citations);
     }
+
+    // 2. Dự phòng OpenAI API nếu có cấu hình OPENAI_API_KEY
+    if (this.apiKey) {
+      try {
+        const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${this.apiKey}`,
+          },
+          body: JSON.stringify({
+            model: this.chatModel,
+            temperature: this.temperature,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt },
+            ],
+          }),
+        });
+
+        if (resp.ok) {
+          const data = (await resp.json()) as any;
+          return this.cleanBotFormatting(data.choices[0].message.content);
+        } else {
+          const errText = await resp.text();
+          this.logger.warn(`OpenAI LLM error ${resp.status}: ${errText}`);
+        }
+      } catch (err: any) {
+        this.logger.warn(`OpenAI LLM fetch failed: ${err.message}`);
+      }
+    }
+
+    // 3. Chế độ Fallback Offline Semantic Demo nếu không có key hoặc lỗi mạng
+    return this.cleanBotFormatting(this.generateOfflineDemoAnswer(question, context, citations));
+  }
+
+  /**
+   * Tối ưu hóa văn bản định dạng: loại bỏ backtick, dấu sao thừa, gộp bullet rớt dòng
+   */
+  private cleanBotFormatting(text: string): string {
+    if (!text) return '';
+    let cleaned = text;
+
+    // 1. Loại bỏ hoàn toàn dấu backtick (`) bọc quanh các từ hoặc mã
+    cleaned = cleaned.replace(/`([^`]+)`/g, '$1');
+    cleaned = cleaned.replace(/`/g, '');
+
+    // 2. Thay thế ba dấu sao trở lên (***) thành chuẩn ** hoặc loại bỏ
+    cleaned = cleaned.replace(/\*{3,}/g, '**');
+
+    // 3. Khắc phục lỗi bullet bị rớt dòng đơn độc (ví dụ dòng chỉ có "•" hoặc "-" rồi xuống dòng mới ghi text)
+    cleaned = cleaned.replace(/(^|\n)\s*([•\-\*])\s*\n+(\s*)/g, '$1• ');
+
+    // 4. Chuẩn hóa ký tự đầu dòng * hoặc - thành bullet tròn •
+    cleaned = cleaned.replace(/^(\s*)[\*\-]\s+/gm, '$1• ');
+
+    // 5. Chuẩn hóa khoảng trống nhiều dòng trống liên tiếp thành tối đa 1 dòng trống
+    cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+
+    return cleaned.trim();
   }
 
   private generateOfflineDemoAnswer(question: string, context: string, citations: Citation[]): string {
@@ -264,5 +532,15 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
       `- Hệ thống đã trích xuất thành công căn cứ từ tài liệu với độ tương đồng ngữ nghĩa đạt ${topCitation.score}%.\n` +
       `- Chi tiết trích dẫn:\n"${topCitation.snippet}"\n\n` +
       `💡 Bạn có thể nạp OPENAI_API_KEY vào .env để kích hoạt mô hình ${this.chatModel} sinh lời văn tự nhiên hoàn chỉnh.`;
+  }
+
+  private normalizeCityName(raw: string): string {
+    const n = normalizeVietnamese(raw).toLowerCase();
+    if (n.includes('ha noi') || n.includes('hn')) return 'HA NOI';
+    if (n.includes('hcm') || n.includes('sai gon') || n.includes('ho chi minh')) return 'HO CHI MINH';
+    if (n.includes('da nang') || n.includes('dn')) return 'DA NANG';
+    if (n.includes('hai phong')) return 'HAI PHONG';
+    if (n.includes('can tho')) return 'CAN THO';
+    return raw.trim().toUpperCase();
   }
 }

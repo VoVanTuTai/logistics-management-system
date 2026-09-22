@@ -304,16 +304,55 @@ export function AddressSelectorModal({
 
   const matchingHubs = matchedDirectHubs.length > 0 ? matchedDirectHubs : hubList;
 
-  // Auto-pick best matching hub when province changes or initial load
+  // Auto-pick best matching hub when province or ward changes, or initial load
   useEffect(() => {
     if (selectedProvince && matchingHubs.length > 0) {
+      if (selectedWard) {
+        let cleanWard = selectedWard.wardName || selectedWard.name;
+        let cleanDistrict = selectedWard.district || '';
+        if (!cleanDistrict) {
+          const match = selectedWard.name.match(/^(.*?)\s*\((.*?)\)$/);
+          if (match) {
+            cleanWard = match[1].trim();
+            cleanDistrict = match[2].trim();
+          }
+        }
+        const normWard = removeAccents(cleanWard);
+        const normDistrict = removeAccents(cleanDistrict);
+
+        // Find hub matching ward or district
+        const bestHub = matchingHubs.find((h) => {
+          const hWard = removeAccents(h.ward || '');
+          const hDistrict = removeAccents(h.district || '');
+          const hName = removeAccents(h.name || '');
+          if (hWard && normWard && (hWard.includes(normWard) || normWard.includes(hWard))) {
+            return true;
+          }
+          if (hDistrict && normDistrict && (hDistrict.includes(normDistrict) || normDistrict.includes(hDistrict))) {
+            return true;
+          }
+          if (normWard && (hName.includes(normWard) || normWard.includes(hName))) {
+            return true;
+          }
+          if (normDistrict && (hName.includes(normDistrict) || normDistrict.includes(hName))) {
+            return true;
+          }
+          return false;
+        });
+
+        if (bestHub) {
+          setSelectedHub(bestHub);
+          return;
+        }
+      }
+
       // Prioritize existing hub if it already matches
       const currentMatches = selectedHub && matchingHubs.some((h) => h.code === selectedHub.code);
       if (!currentMatches) {
         setSelectedHub(matchingHubs[0]);
       }
     }
-  }, [selectedProvince, hubList]);
+  }, [selectedProvince, selectedWard, hubList]);
 
   const rawAvailableWards = selectedProvince ? getWardsForProvince(selectedProvince) : [];
   const availableWards = selectedWard && !rawAvailableWards.some((w) => w.code === selectedWard.code)

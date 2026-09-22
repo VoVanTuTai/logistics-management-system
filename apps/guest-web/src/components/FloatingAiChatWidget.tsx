@@ -11,11 +11,87 @@ interface ChatMessage {
 }
 
 const QUICK_SUGGESTIONS = [
+  { icon: Package, label: 'Đơn mới tạo gần nhất', query: 'Tra cứu đơn hàng mới tạo gần nhất trên hệ thống' },
   { icon: Package, label: 'Tra cứu đơn NX-88992211', query: 'Tra cứu hành trình vận đơn NX-88992211' },
   { icon: ShieldCheck, label: 'Hồ sơ đền bù CLM-202609-001', query: 'Hồ sơ khiếu nại đền bù đơn hàng bể vỡ CLM-202609-001 của tôi đã được duyệt chi chưa?' },
   { icon: RotateCcw, label: 'Cước hoàn khi bom hàng', query: 'Shop mới mở thì cước hoàn tính thế nào và khi nào được miễn phí?' },
   { icon: Calculator, label: 'Cước kiện 2kg HCM -> HN', query: 'Dự toán cước bưu kiện tiêu chuẩn 2kg từ TP.HCM đi Hà Nội' },
 ];
+
+const FormattedChatMessage: React.FC<{ text: string; isUser: boolean }> = ({ text, isUser }) => {
+  if (isUser) {
+    return <div className="whitespace-pre-wrap">{text}</div>;
+  }
+
+  // Tiền xử lý: loại bỏ các ký tự backticks thừa và dấu sao thô
+  const cleanText = text
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/`/g, '')
+    .replace(/\*{3,}/g, '**')
+    .replace(/(^|\n)\s*([•\-\*])\s*\n+(\s*)/g, '$1• ');
+
+  const rawLines = cleanText.split('\n');
+  const lines: string[] = [];
+  for (const line of rawLines) {
+    if (line.trim() === '' && lines.length > 0 && lines[lines.length - 1].trim() === '') {
+      continue;
+    }
+    lines.push(line);
+  }
+
+  const renderInlineBold = (content: string) => {
+    const parts = content.split(/\*\*(.*?)\*\*/g);
+    return parts.map((part, idx) => {
+      if (idx % 2 === 1) {
+        return (
+          <strong key={idx} className="font-semibold text-slate-900">
+            {part}
+          </strong>
+        );
+      }
+      return <span key={idx}>{part}</span>;
+    });
+  };
+
+  return (
+    <div className="space-y-1 text-slate-800 leading-relaxed font-sans">
+      {lines.map((line, idx) => {
+        const trimmed = line.trim();
+        if (!trimmed) {
+          return <div key={idx} className="h-1.5" />;
+        }
+
+        // 1. Dòng bullet điểm
+        if (trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('*')) {
+          const itemContent = trimmed.replace(/^[•\-\*]\s*/, '');
+          return (
+            <div key={idx} className="flex items-start gap-2 pl-0.5 py-0.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-indigo-600 mt-1.5 shrink-0" />
+              <div className="flex-1 text-[12px]">{renderInlineBold(itemContent)}</div>
+            </div>
+          );
+        }
+
+        // 2. Dòng section/tiêu đề ngắn có emoji
+        const isHeader = /^[📦📍🏷️👤💰🏢⏰🚚📋💡✅❌⚠️]/.test(trimmed) && trimmed.length < 80;
+        if (isHeader) {
+          return (
+            <div key={idx} className="font-medium text-slate-900 text-[12.5px] pt-1">
+              {renderInlineBold(trimmed)}
+            </div>
+          );
+        }
+
+        // 3. Đoạn văn thông thường
+        return (
+          <p key={idx} className="text-[12px]">
+            {renderInlineBold(trimmed)}
+          </p>
+        );
+      })}
+    </div>
+  );
+};
 
 export const FloatingAiChatWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -258,19 +334,7 @@ export const FloatingAiChatWidget: React.FC = () => {
                   )}
 
                   {/* Message content */}
-                  <div className="whitespace-pre-wrap font-sans">
-                    {msg.text.split('\n').map((line, lIdx) => {
-                      if (line.startsWith('• ') || line.startsWith('- ')) {
-                        return (
-                          <div key={lIdx} className="pl-2 py-0.5 flex gap-1">
-                            <span>•</span>
-                            <span>{line.replace(/^[•-]\s*/, '')}</span>
-                          </div>
-                        );
-                      }
-                      return <p key={lIdx} className={lIdx > 0 ? 'mt-1.5' : ''}>{line}</p>;
-                    })}
-                  </div>
+                  <FormattedChatMessage text={msg.text} isUser={msg.sender === 'user'} />
 
                   {/* Citations */}
                   {msg.citations && msg.citations.length > 0 && (
