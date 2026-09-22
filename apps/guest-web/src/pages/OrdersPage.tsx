@@ -667,7 +667,7 @@ export function OrdersPage(): React.JSX.Element {
 
             const weight = pkg.weightKg || meta.weightKg || 1;
             const cod = Number(meta.codAmount || pkg.codAmount || 0);
-            const shippingFee = Number(meta.shippingFee || meta.estimatedFee || 22000);
+            const shippingFee = Number(meta.shippingFee || meta.estimatedFee || 18000);
 
             const pickupType = meta.pickupType || service.pickupType || 'PICKUP';
             const isDropOff = pickupType === 'DROP_OFF';
@@ -1056,7 +1056,7 @@ function OrderDetailModal({
               <div className="p-2.5 bg-white rounded-xl border border-slate-200">
                 <span className="text-[10px] text-slate-400 font-bold uppercase block">Cước vận chuyển</span>
                 <span className="font-mono font-black text-slate-800 text-xs">
-                  {isReceiver ? 'Người gửi trả' : formatVnd(Number(meta.shippingFee || meta.estimatedFee || 22000))}
+                  {isReceiver ? 'Người gửi trả' : formatVnd(Number(meta.shippingFee || meta.estimatedFee || 18000))}
                 </span>
               </div>
             </div>

@@ -263,21 +263,28 @@ export class ChatService {
       }
 
       toolsUsed.push(`calculatePricing(${fromCity}->${toCity}:${weight}kg${dimensionsCm ? `:${length}x${width}x${height}cm` : ''})`);
-      const stdPricing = await this.toolsService.calculatePricing(weight, 'STANDARD', fromCity, toCity, 'GUEST', dimensionsCm);
-      const expPricing = await this.toolsService.calculatePricing(weight, 'EXPRESS', fromCity, toCity, 'GUEST', dimensionsCm);
+      const [stdPricing, expPricing, intraPricing] = await Promise.all([
+        this.toolsService.calculatePricing(weight, 'STANDARD', fromCity, toCity, 'GUEST', dimensionsCm),
+        this.toolsService.calculatePricing(weight, 'EXPRESS', fromCity, toCity, 'GUEST', dimensionsCm),
+        !hasExplicitRoute
+          ? this.toolsService.calculatePricing(weight, 'STANDARD', 'HO CHI MINH', 'HO CHI MINH', 'GUEST', dimensionsCm)
+          : Promise.resolve(null),
+      ]);
 
       const volumetricWeight = dimensionsCm ? ((length * width * height) / 6000).toFixed(2) : '0';
       const chargeableWeight = dimensionsCm ? Math.max(weight, parseFloat(volumetricWeight)).toFixed(2) : weight.toString();
 
       toolAugmentedContext += `\n[BẢNG BÁO GIÁ CƯỚC THỜI GIAN THỰC TỪ MICROSERVICE PRICING-SERVICE]:\n` +
-        `- Tuyến đường: ${fromCity} ➔ ${toCity} ${hasExplicitRoute ? '' : '(Mặc định ước tính theo trục chính Metro HCM - Hà Nội do khách chưa chỉ định tuyến)'}\n` +
+        `- Tuyến đường tham chiếu: ${fromCity} ➔ ${toCity} ${hasExplicitRoute ? '' : '(Trục chính Metro)'}\n` +
         `- Cân nặng thực tế: ${weight}kg\n` +
         (dimensionsCm ? `- Kích thước bưu kiện: Dài ${length}cm x Rộng ${width}cm x Cao ${height}cm\n- Thể tích quy đổi IATA = (${length}x${width}x${height})/6000 = ${volumetricWeight}kg\n- Cân nặng tính cước (Chargeable Weight) = max(Cân thực tế, Thể tích quy đổi) = ${chargeableWeight}kg\n` : '') +
-        `- GÓI TIÊU CHUẨN (Standard Delivery): ${stdPricing.breakdown}\n` +
-        `- GÓI NHANH (Express Delivery): ${expPricing.breakdown}\n` +
-        `- Công thức tính: Cước cơ sở (0.5kg đầu: 18.000đ) + Cước vượt nấc (mỗi 0.5kg tiếp theo +3.500đ với gói chuẩn, +5.000đ với gói nhanh) + Phụ phí vùng miền Metro (+7.000đ).\n` +
+        (intraPricing ? `- MỨC CƯỚC GỬI NỘI THÀNH / NỘI TỈNH (Phụ phí vùng 0đ): Gói Tiêu Chuẩn chỉ từ ${intraPricing.totalFee.toLocaleString('vi-VN')}đ\n` : '') +
+        `- MỨC CƯỚC GỬI LIÊN TỈNH (${fromCity} ➔ ${toCity}):\n` +
+        `  * Gói Tiêu Chuẩn: ${stdPricing.totalFee.toLocaleString('vi-VN')}đ | Chi tiết: ${stdPricing.breakdown}\n` +
+        `  * Gói Nhanh (Express): ${expPricing.totalFee.toLocaleString('vi-VN')}đ | Chi tiết: ${expPricing.breakdown}\n` +
+        `- Công thức tính: Cước cơ sở (0.5kg đầu: 18.000đ Gói Chuẩn, 28.000đ Gói Nhanh, 42.000đ Hỏa Tốc) + Cước vượt nấc (mỗi 0.5kg tiếp theo: +3.500đ Gói Chuẩn, +5.000đ Gói Nhanh) + Phụ phí vùng miền (Nội tỉnh: 0đ, Trục chính Metro: +7.000đ, Liên tỉnh phổ thông: +12.000đ).\n` +
         `- Cước chuyển hoàn bưu gửi: Thu 50% cước chiều đi khi giao không thành công (khách bom hàng).\n` +
-        `- HÃY BÁO GIÁ ĐẦY ĐỦ CẢ HAI GÓI (TIÊU CHUẨN VÀ NHANH), NÊU RÕ CÂN NẶNG TÍNH CƯỚC VÀ CƯỚC CHUYỂN HOÀN DỰ KIẾN CHO KHÁCH HÀNG. TUYỆT ĐỐI KHÔNG NÓI KHÔNG CÓ DỮ LIỆU HOẶC HƯỚNG DẪN GỌI 1900 KHI ĐÃ CÓ BẢNG BÁO GIÁ NÀY.\n`;
+        `- HƯỚNG DẪN AI: Nếu khách hàng chưa nêu rõ tuyến đường, hãy báo rõ cả 2 trường hợp (Gửi Nội thành từ ${intraPricing?.totalFee ? intraPricing.totalFee.toLocaleString('vi-VN') + 'đ' : '21.500đ'} và Gửi Liên tỉnh từ ${stdPricing.totalFee.toLocaleString('vi-VN')}đ) để thông tin minh bạch và khớp chính xác với app khi khách tạo đơn. Nêu rõ cân nặng tính cước và cước chuyển hoàn dự kiến.\n`;
     }
 
     // 2. Truy xuất RAG từ Vector Store (Dense Semantic Retrieval)

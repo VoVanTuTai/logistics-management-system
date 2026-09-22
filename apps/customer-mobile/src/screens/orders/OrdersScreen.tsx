@@ -95,7 +95,7 @@ function mapShipmentToOrderModel(s: ShipmentResponse, targetCategory: OrderCateg
     weightKg: Number(pkg.weightKg) || 0.5,
     declaredValueVnd: Number(pkg.declaredValue) || 0,
     codAmountVnd: Number(meta.codAmount || pkg.codAmount) || 0,
-    shippingFeeVnd: Number(meta.estimatedFee || meta.shippingFee || meta.pricing?.totalFee) || 22000,
+    shippingFeeVnd: Number(meta.estimatedFee || meta.shippingFee || meta.pricing?.totalFee) || 18000,
     status: (s.currentStatus as ShipmentStatus) || 'CREATED',
     createdAt: s.createdAt,
     updatedAt: s.updatedAt,

@@ -21,6 +21,7 @@ import { InputField } from '../../components/InputField';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { StepIndicator } from '../../components/StepIndicator';
 import { MOCK_SHIPPING_SERVICES } from '../../mock/mockServices';
+import { computeFallbackPricing } from '../../utils/pricingCalculator';
 import type { RootStackParamList } from '../../navigation/types';
 import { ApiClientError } from '../../services/api/client';
 import { pricingApi, type PricingQuoteResponse } from '../../services/api/pricing.api';
@@ -46,8 +47,9 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
 
   const [step, setStep] = useState<number>(1);
   const [submitting, setSubmitting] = useState(false);
-  const [liveFee, setLiveFee] = useState<number>(22000);
+  const [liveFee, setLiveFee] = useState<number>(18000);
   const [liveQuote, setLiveQuote] = useState<PricingQuoteResponse | null>(null);
+  const [isCalculatingFee, setIsCalculatingFee] = useState<boolean>(false);
   const [showFormulaHelp, setShowFormulaHelp] = useState<boolean>(false);
 
   // Address Modals state
@@ -222,11 +224,16 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
     }
   }, [route.params]);
 
-  // Calculate pricing quote dynamically from live backend pricing-service
+  // Calculate pricing quote dynamically from live backend pricing-service with debounce
   useEffect(() => {
     let isMounted = true;
-    const fetchQuote = async () => {
-      if (!senderAddress || !receiverAddress) return;
+    setIsCalculatingFee(true);
+
+    const debounceTimer = setTimeout(async () => {
+      if (!senderAddress || !receiverAddress) {
+        if (isMounted) setIsCalculatingFee(false);
+        return;
+      }
 
       try {
         const quote = await pricingApi.calculateQuote({
@@ -256,13 +263,30 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
           setLiveQuote(quote);
         }
       } catch {
-        // Keep current fee fallback
+        const fallback = computeFallbackPricing({
+          serviceType: serviceId,
+          senderProvince: senderAddress?.province,
+          receiverProvince: receiverAddress?.province,
+          weightKg: Number(weightKg) || 0.5,
+          lengthCm: Number(lengthCm) || 10,
+          widthCm: Number(widthCm) || 10,
+          heightCm: Number(heightCm) || 5,
+          codAmount: hasCod ? Number(codAmount) || 0 : 0,
+          declaredValue: Number(declaredValue) || 0,
+        });
+        if (isMounted) {
+          setLiveFee(fallback);
+        }
+      } finally {
+        if (isMounted) {
+          setIsCalculatingFee(false);
+        }
       }
-    };
+    }, 300);
 
-    fetchQuote();
     return () => {
       isMounted = false;
+      clearTimeout(debounceTimer);
     };
   }, [
     serviceId,
@@ -878,7 +902,7 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
                         </Text>
                       </View>
                       <Text style={styles.serviceFee}>
-                        {isSelected ? formatVnd(liveFee) : formatVnd(srv.fee)}
+                        {isSelected ? (isCalculatingFee ? 'Đang tính...' : formatVnd(liveFee)) : formatVnd(srv.fee)}
                       </Text>
                     </View>
                     <Text style={styles.serviceEst}>{srv.estimatedHours}</Text>
@@ -979,7 +1003,9 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
                   <View style={styles.divider} />
                   <View style={styles.summaryRowTotal}>
                     <Text style={styles.summaryLabelTotal}>TỔNG CƯỚC THANH TOÁN:</Text>
-                    <Text style={styles.summaryValTotal}>{formatVnd(liveFee)}</Text>
+                    <Text style={styles.summaryValTotal}>
+                      {isCalculatingFee ? 'Đang tính...' : formatVnd(liveFee)}
+                    </Text>
                   </View>
 
                   {/* Nút thuyết minh công thức tính cước */}
