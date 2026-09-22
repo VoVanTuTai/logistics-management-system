@@ -85,11 +85,10 @@ export class ChatService {
 
       if (isGeneralTrackingQuery) {
         const latestRes = await this.toolsService.getLatestShipment(dto.userId);
-        const t = latestRes.tracking;
-        if (t) {
+        if (latestRes.found && latestRes.tracking) {
+          const t = latestRes.tracking;
           toolsUsed.push(`getLatestShipment(${latestRes.isUserSpecific ? `User:${dto.userId}` : 'SystemLatest'})`);
-          toolAugmentedContext += `\n[THÔNG TIN ĐƠN HÀNG MỚI TẠO GẦN NHẤT ${latestRes.isUserSpecific ? `CỦA KHÁCH HÀNG (Tài khoản: ${dto.userId})` : 'TRÊN HỆ THỐNG NEXUS EXPRESS'}]:\n` +
-            `- Ghi chú quan trọng cho AI: Người dùng hỏi tra cứu đơn nhưng chưa cung cấp mã vận đơn cụ thể. Hệ thống đã tự động lấy đơn hàng mới tạo gần nhất để hiển thị chi tiết và hướng dẫn khách hàng. Hãy nói rõ đây là đơn hàng mới nhất trên hệ thống.\n` +
+          toolAugmentedContext += `\n[THÔNG TIN ĐƠN HÀNG MỚI TẠO GẦN NHẤT CỦA BẠN (Tài khoản: ${dto.userId})]:\n` +
             `- Mã vận đơn: ${t.trackingNumber}\n` +
             `- Trạng thái hiện tại: ${t.statusText} (${t.status})\n` +
             (t.itemName ? `- Tên hàng hóa: ${t.itemName}\n` : '') +
@@ -100,6 +99,10 @@ export class ChatService {
             `- Thời gian tạo đơn: ${t.createdAt || 'Gần đây'}\n` +
             `- Lịch sử vận chuyển:\n` +
             t.timeline.map((item) => `  * ${item.time}: ${item.description}`).join('\n') + '\n';
+        } else if (latestRes.isUserSpecific) {
+          toolAugmentedContext += `\n[KẾT QUẢ TRA CỨU]: Tài khoản ${dto.userId} hiện chưa có đơn hàng nào được tạo trên hệ thống Nexus Logistics. Hãy thông báo lịch sự cho khách hàng rằng tài khoản chưa phát sinh đơn gửi và mời khách hàng gửi mã vận đơn cụ thể để hỗ trợ tra cứu.\n`;
+        } else {
+          toolAugmentedContext += `\n[KẾT QUẢ TRA CỨU]: Bạn chưa đăng nhập tài khoản và chưa cung cấp mã vận đơn. Vui lòng đăng nhập hoặc nhập mã vận đơn (dạng NX-XXXX hoặc dãy số) để hệ thống tra cứu.\n`;
         }
       }
     }
@@ -148,47 +151,23 @@ export class ChatService {
     }
 
     // Kiểm tra ý định tính cước / hỏi giá cước / bưu gửi có trọng lượng, kích thước, hoặc tuyến đường
+    const explicitPricingWords = /\b(?:cuoc|gia|phi|bao nhieu tien|bang gia|du toan|uoc tinh|tinh phi|tinh cuoc|bao gia)\b/i.test(normalizedQ);
+
     const hasWeightOrDimensions =
       /(\d+(\.\d+)?)\s*(kg|kí|kilogram|g|gram)/i.test(question) ||
-      /(?:dài|dai|rộng|rong|cao|kích thước|kich thuoc|kích cỡ|kich co|cm)/i.test(normalizedQ) ||
+      /\b(?:dai|rong|cao|kich thuoc|kich co|cm)\b/i.test(normalizedQ) ||
       /\d+\s*(?:x|\*)\s*\d+\s*(?:x|\*)\s*\d+/i.test(question);
 
-    const hasRoute =
-      normalizedQ.includes('tu ') ||
-      normalizedQ.includes('den ') ||
-      normalizedQ.includes('ra ') ||
-      normalizedQ.includes('vao ') ||
-      normalizedQ.includes('di ') ||
-      normalizedQ.includes('ha noi') ||
-      normalizedQ.includes('hcm') ||
-      normalizedQ.includes('sai gon') ||
-      normalizedQ.includes('da nang');
+    const hasRouteKeyword = /\b(?:tu|den|ra|vao|di|toi|sang)\b/i.test(normalizedQ);
+    const hasMajorCity = /\b(?:ha noi|hcm|sai gon|ho chi minh|da nang|hai phong|can tho)\b/i.test(normalizedQ);
+    const hasRoute = hasMajorCity || (hasRouteKeyword && (hasWeightOrDimensions || explicitPricingWords));
 
-    const hasPricingKeywords =
-      normalizedQ.includes('cuoc') ||
-      normalizedQ.includes('phi') ||
-      normalizedQ.includes('gia') ||
-      normalizedQ.includes('bao nhieu') ||
-      normalizedQ.includes('tien') ||
-      normalizedQ.includes('gui') ||
-      normalizedQ.includes('van chuyen') ||
-      normalizedQ.includes('chuyen phat') ||
-      normalizedQ.includes('tinh') ||
-      normalizedQ.includes('du toan') ||
-      normalizedQ.includes('uoc tinh') ||
-      normalizedQ.includes('bao gia');
+    const hasPackageSpecs = /\b(?:kien|goi|thung|buu kien|kien hang)\b/i.test(normalizedQ);
 
-    const hasPackageSpecs =
-      normalizedQ.includes('don') ||
-      normalizedQ.includes('kien') ||
-      normalizedQ.includes('goi') ||
-      normalizedQ.includes('hang') ||
-      normalizedQ.includes('thung');
-
-    const isPricingQuery =
-      hasPricingKeywords ||
-      (hasWeightOrDimensions && (hasPackageSpecs || hasRoute)) ||
-      (hasPackageSpecs && hasRoute);
+    // Khi đã có mã vận đơn (trackingMatch), TUYỆT ĐỐI KHÔNG tính cước trừ khi khách hỏi giá cụ thể
+    const isPricingQuery = !trackingMatch
+      ? (explicitPricingWords || (hasWeightOrDimensions && (hasRoute || hasPackageSpecs)))
+      : explicitPricingWords;
 
     if (isPricingQuery && !isReturnFeeQuery) {
       // 1. Trích xuất cân nặng nếu có (ví dụ 10kg, 500g)
@@ -369,7 +348,7 @@ Nhiệm vụ của bạn là hỗ trợ khách hàng và chủ hàng (merchant) 
 Quy tắc trả lời:
 1. Ngôn ngữ: Tiếng Việt chuẩn mực, lịch sự, thân thiện, rõ ràng.
 2. Căn cứ: Trả lời DỰA TRÊN NGỮ CẢNH (Context) được cung cấp. Tuyệt đối không tự bịa đặt thông tin.
-3. Khi trả lời về cước phí hoặc đền bù, hãy nêu rõ căn cứ chính sách hoặc công thức bồi thường.
+3. Khi trả lời về cước phí hoặc đền bù, hãy nêu rõ căn cứ chính sách hoặc công thức bồi thường. Nếu có bảng dự toán cước, hãy báo giá đầy đủ cả gói Tiêu chuẩn và Nhanh cùng cước hoàn dự kiến.
 4. Nếu ngữ cảnh không có thông tin, hãy thẳng thắn thông báo và hướng dẫn khách gọi tổng đài 1900 0000.
 5. QUY TẮC ĐỊNH DẠNG THẨM MỸ (RẤT QUAN TRỌNG):
 - TUYỆT ĐỐI KHÔNG dùng dấu nháy đơn ngược (backtick \`) bao quanh bất kỳ từ ngữ nào (ví dụ KHÔNG viết \`PICKED_UP\` hay \`30002004\`). Hãy viết thẳng hoặc đặt trong ngoặc đơn thông thường.
@@ -389,13 +368,11 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
     if (this.geminiApiKey) {
       const candidateModels = Array.from(
         new Set([
-          'gemini-3.1-flash-lite',
-          'gemini-3.6-flash',
-          'gemini-flash-lite-latest',
-          'gemini-3.5-flash-lite',
-          this.geminiModel,
-          'gemini-3.5-flash',
+          'gemini-3-flash-preview',
           'gemini-flash-latest',
+          'gemini-flash-lite-latest',
+          'gemini-3.1-flash-lite-preview',
+          this.geminiModel,
         ].filter(Boolean))
       );
 
@@ -518,14 +495,24 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
     }
 
     if (realtimeSection) {
+      // Làm sạch các chỉ dẫn nội bộ / prompt không để lộ ra giao diện người dùng
+      const cleanSection = realtimeSection
+        .replace(/- Ghi chú quan trọng cho AI:[\s\S]*?\n/g, '')
+        .replace(/- HÃY BÁO GIÁ[\s\S]*?\n/g, '')
+        .replace(/\[THÔNG TIN TRA CỨU ĐƠN HÀNG THỰC TẾ CHO MÃ (.*?)\]:/g, '📦 **Chi tiết hành trình vận đơn $1**:')
+        .replace(/\[THÔNG TIN ĐƠN HÀNG MỚI TẠO GẦN NHẤT CỦA BẠN(.*?)\]:/g, '📦 **Đơn hàng mới tạo gần nhất của bạn**:')
+        .replace(/\[TIẾN ĐỘ XỬ LÝ HỒ SƠ BỒI THƯỜNG MÃ (.*?)\]:/g, '🛡️ **Hồ sơ khiếu nại bồi thường $1**:')
+        .replace(/\[BẢNG BÁO GIÁ CƯỚC THỜI GIAN THỰC TỪ MICROSERVICE PRICING-SERVICE\]:/g, '💰 **Dự toán cước phí vận chuyển**:')
+        .replace(/\[KẾT QUẢ TRA CỨU\]:\s*/g, 'ℹ️ ')
+        .trim();
+
       let citationNote = '';
       if (citations.length > 0) {
-        citationNote = `\n\n📖 Căn cứ chính sách đối soát [${citations[0].file}]:\n"${citations[0].snippet}"`;
+        citationNote = `\n\n📖 Căn cứ quy định đối soát [${citations[0].file}]:\n"${citations[0].snippet}"`;
       }
 
-      return `Dạ chào bạn, Nexus Logistics đã tra cứu dữ liệu thời gian thực cho yêu cầu của bạn:\n\n` +
-        `${realtimeSection}${citationNote}\n\n` +
-        `✅ Dữ liệu được trích xuất trực tiếp từ các microservices nghiệp vụ của Nexus Logistics.`;
+      return `Dạ chào bạn, Nexus Logistics đã hỗ trợ kiểm tra thông tin cho bạn:\n\n` +
+        `${cleanSection}${citationNote}`;
     }
 
     if (!context || citations.length === 0) {
@@ -533,12 +520,9 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
     }
 
     const topCitation = citations[0];
-    return `[Chế độ Demo Tự động - Nexus Logistics AI]:\n` +
-      `Dạ câu hỏi "${question}" của bạn đã được đối soát với tài liệu quy chuẩn [${topCitation.file} - ${topCitation.title}].\n\n` +
-      `Theo quy định hiện hành của hệ thống:\n` +
-      `- Hệ thống đã trích xuất thành công căn cứ từ tài liệu với độ tương đồng ngữ nghĩa đạt ${topCitation.score}%.\n` +
-      `- Chi tiết trích dẫn:\n"${topCitation.snippet}"\n\n` +
-      `💡 Bạn có thể nạp OPENAI_API_KEY vào .env để kích hoạt mô hình ${this.chatModel} sinh lời văn tự nhiên hoàn chỉnh.`;
+    return `Dạ theo quy chuẩn vận hành của Nexus Logistics [${topCitation.file} - ${topCitation.title}]:\n\n` +
+      `• ${topCitation.snippet}\n\n` +
+      `Nếu bạn cần hỗ trợ chi tiết hơn cho từng đơn hàng cụ thể, vui lòng gửi kèm mã vận đơn để hệ thống tra cứu nhé!`;
   }
 
   private normalizeCityName(raw: string): string {

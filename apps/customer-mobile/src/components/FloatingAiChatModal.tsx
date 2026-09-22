@@ -148,6 +148,9 @@ const RenderFormattedMessage: React.FC<FormattedMessageProps> = ({ text, isUser 
 };
 
 export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalProps): React.JSX.Element {
+  const currentUser = authStore.getUser();
+  const currentUserId = currentUser?.id || currentUser?.phone || null;
+
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -158,6 +161,20 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
       time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
+
+  // Reset và phân lập đoạn chat khi đổi tài khoản
+  useEffect(() => {
+    setMessages([
+      {
+        id: 'welcome_' + (currentUserId || 'guest'),
+        sender: 'bot',
+        text: currentUserId
+          ? `Xin chào ${currentUser?.name || currentUser?.phone || ''}! Tôi là Trợ Lý AI Nexus Logistics.\nTôi có thể hỗ trợ bạn tra cứu hành trình bưu gửi thời gian thực, đơn hàng mới nhất của bạn, kiểm tra bồi thường hoặc dự toán cước phí 24/7.`
+          : 'Xin chào! Tôi là Trợ Lý AI Nexus Logistics.\nTôi có thể hỗ trợ bạn tra cứu hành trình bưu gửi thời gian thực, tiến độ hồ sơ bồi thường hàng hóa, dự toán cước phí IATA và giải đáp chính sách bưu chính 24/7.',
+        time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+      },
+    ]);
+  }, [currentUserId]);
 
   const scrollViewRef = useRef<ScrollView>(null);
 
