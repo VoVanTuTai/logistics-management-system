@@ -11,7 +11,8 @@ Thư mục `docs/` được quy hoạch thành các phân nhóm module rõ ràng
 ```
 docs/
 ├── README.md                           # 📖 File này: Mục lục tổng quan toàn bộ tài liệu
-├── PROJECT-OVERVIEW.md                 # 🏗️ [GỐC] Bức tranh tổng thể 15 microservices & 6 client apps (Source of Truth)
+├── BAO-CAO-TONG-QUAN-DO-AN-TOT-NGHIEP.md # 🎓 [CHÍNH] Báo cáo tổng quan đồ án toàn diện cho Giảng viên & Hội đồng
+├── PROJECT-OVERVIEW.md                 # 🏗️ [GỐC] Bức tranh kỹ thuật chi tiết 15 microservices & 6 client apps
 ├── AI-REPORT-HANDOFF.md                # ✍️ [GỐC] Cẩm nang viết báo cáo khóa luận không sai lệch kiến trúc
 ├── demo-script.md                      # 🎬 Kịch bản thực hành demo hệ thống khi bảo vệ
 │
@@ -71,8 +72,9 @@ docs/
 
 | Bạn đang tìm kiếm điều gì? | Hãy xem tài liệu này |
 | :--- | :--- |
-| **Bản vẽ tổng thể 15 microservices & 6 client applications** | [`docs/PROJECT-OVERVIEW.md`](PROJECT-OVERVIEW.md) |
-| **Cẩm nang viết báo cáo tốt nghiệp không sai lệch kiến trúc** | [`docs/AI-REPORT-HANDOFF.md`](AI-REPORT-HANDOFF.md) |
+| **Báo cáo tổng quan đồ án tốt nghiệp trình Thầy Cô** | [**`docs/BAO-CAO-TONG-QUAN-DO-AN-TOT-NGHIEP.md`**](BAO-CAO-TONG-QUAN-DO-AN-TOT-NGHIEP.md) |
+| **Bản vẽ chi tiết 15 microservices & 6 client apps** | [`docs/PROJECT-OVERVIEW.md`](PROJECT-OVERVIEW.md) |
+| **Cẩm nang viết báo cáo khóa luận không sai lệch kiến trúc** | [`docs/AI-REPORT-HANDOFF.md`](AI-REPORT-HANDOFF.md) |
 | **Báo cáo chuyên sâu phân hệ AI Chatbot RAG (Port 3013)** | [`docs/architecture/ai-chatbot-service-architecture.md`](architecture/ai-chatbot-service-architecture.md) |
 | **Động cơ định giá đa nền tảng (Unified Pricing Engine)** | [`docs/PROJECT-OVERVIEW.md#155-chuẩn-hóa-định-giá-đa-nền-tảng-unified-multi-platform-pricing-engine`](PROJECT-OVERVIEW.md) |
 | **Phân tầng khách hàng (3-Tier) & Cước hoàn tự động** | [`docs/business-sop/CHINH-SACH-PHAN-TANG-MERCHANT-VA-CUOC-CHUYEN-HOAN.md`](business-sop/CHINH-SACH-PHAN-TANG-MERCHANT-VA-CUOC-CHUYEN-HOAN.md) |
@@ -80,6 +82,7 @@ docs/
 | **Quy trình tiếp nhận hàng dễ vỡ & bồi thường Điều 25** | [`docs/business-sop/NGHIEP-VU-TIEP-NHAN-HANG-DE-VO-VA-BAO-HIEM.md`](business-sop/NGHIEP-VU-TIEP-NHAN-HANG-DE-VO-VA-BAO-HIEM.md) |
 | **Mạng lưới Hub 4 cấp & Quản lý xe tải Linehaul** | [`docs/PROJECT-OVERVIEW.md#158-mạng-lưới-hub-4-cấp--chuyến-xe-trung-chuyển-linehaul-4-tier-hub-network`](PROJECT-OVERVIEW.md) |
 | **Sơ đồ Mermaid quy trình luồng của từng ứng dụng** | [`docs/architecture/diagrams/`](architecture/diagrams/) |
+| **Kịch bản thực hành demo hệ thống khi bảo vệ** | [`docs/demo-script.md`](demo-script.md) |
 | **Hướng dẫn chạy hệ thống ở máy cá nhân (Local Dev)** | [`docs/runbook/local-dev.md`](runbook/local-dev.md) |
 | **Tài khoản mật khẩu đăng nhập các vai trò (Ops, Merchant, Admin)** | [`docs/runbook/test-accounts.md`](runbook/test-accounts.md) |
 | **Lý thuyết học thuật về RAG (Hybrid Search, RRF, Cross-Encoder)** | [`docs/research/AIO2026-RAG-System-Reading.pdf`](research/AIO2026-RAG-System-Reading.pdf) |

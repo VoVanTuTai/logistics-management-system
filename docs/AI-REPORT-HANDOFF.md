@@ -28,9 +28,10 @@ Hệ thống của tôi là một nền tảng quản lý logistics/chuyển ph�
 
 Trước khi viết, hãy đọc kỹ các tài liệu tôi gửi, ưu tiên theo thứ tự:
 1. docs/AI-REPORT-HANDOFF.md
-2. docs/PROJECT-OVERVIEW.md
-3. docs/architecture/ai-chatbot-service-architecture.md
-4. Các tài liệu business-sop/runbook/contracts/source code mà tôi gửi thêm
+2. docs/BAO-CAO-TONG-QUAN-DO-AN-TOT-NGHIEP.md (Báo cáo tổng quan đồ án trình Thầy Cô)
+3. docs/PROJECT-OVERVIEW.md (Bức tranh kỹ thuật chi tiết)
+4. docs/architecture/ai-chatbot-service-architecture.md
+5. Các tài liệu business-sop/runbook/contracts/source code mà tôi gửi thêm
 
 Nguyên tắc bắt buộc:
 - Không tự bịa service, database, event, API hoặc trạng thái nếu tài liệu không nói rõ.

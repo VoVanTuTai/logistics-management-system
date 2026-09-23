@@ -21,12 +21,13 @@ A student logistics management practice project for shipment creation, pickup, h
 
 | Phân hệ / Tài liệu | Đường dẫn xem chi tiết | Mô tả trọng tâm |
 | :--- | :--- | :--- |
+| 🎓 **BÁO CÁO TỔNG QUAN ĐỒ ÁN (TRÌNH THẦY CÔ)** | [**`docs/BAO-CAO-TONG-QUAN-DO-AN-TOT-NGHIEP.md`**](docs/BAO-CAO-TONG-QUAN-DO-AN-TOT-NGHIEP.md) | **Tài liệu trình Thầy Cô & Hội đồng:** Bức tranh tổng thể 15 services, 6 apps, 4 trụ cột nghiệp vụ, sơ đồ tuần tự và kịch bản demo 5 phút |
 | 🤖 **Kiến Trúc AI Chatbot RAG** | [`docs/architecture/ai-chatbot-service-architecture.md`](docs/architecture/ai-chatbot-service-architecture.md) | **Báo cáo khóa luận chi tiết:** Sơ đồ Mermaid, giải thuật Section-Aware Chunker, Matryoshka MRL, Multi-Model Gemini Fallback |
 | 👥 **Chính Sách Phân Tầng & Cước Hoàn** | [`docs/business-sop/CHINH-SACH-PHAN-TANG-MERCHANT-VA-CUOC-CHUYEN-HOAN.md`](docs/business-sop/CHINH-SACH-PHAN-TANG-MERCHANT-VA-CUOC-CHUYEN-HOAN.md) | **Nghiệp vụ bưu chính khép kín:** Mô hình 3 tầng (Guest, Standard, VIP), quy chuẩn cước hoàn 50% vs 0đ, cấn trừ COD tự động |
 | 💰 **Chuẩn Hóa Định Giá Đa Nền Tảng** | [`docs/knowledge-base/01-pricing-and-iata-weight.md`](docs/knowledge-base/01-pricing-and-iata-weight.md) | Biểu phí 3 phân vùng (Nội tỉnh 0đ, Metro Corridor 7k, Liên tỉnh 12k), quy chuẩn IATA $V/6000$, chống lệch giá Web/Mobile/Chatbot |
 | 📚 **Kho Tri Thức Logistics (KB)** | [`docs/knowledge-base/README.md`](docs/knowledge-base/README.md) | Biểu phí, công thức thể tích IATA, quy trình bồi thường bể vỡ, chuẩn đóng gói SOP, hướng dẫn nạp tri thức |
 | 📦 **SOP Hàng Dễ Vỡ & Bảo Hiểm** | [`docs/business-sop/NGHIEP-VU-TIEP-NHAN-HANG-DE-VO-VA-BAO-HIEM.md`](docs/business-sop/NGHIEP-VU-TIEP-NHAN-HANG-DE-VO-VA-BAO-HIEM.md) | Quy chuẩn tiếp nhận hàng giá trị cao, bồi thường 100% Điều 25 Luật Bưu chính |
-| 🏗️ **Tổng Quan Hệ Thống** | [`docs/PROJECT-OVERVIEW.md`](docs/PROJECT-OVERVIEW.md) | Bức tranh tổng thể 15 microservices, data ownership, event stream RabbitMQ |
+| 🏗️ **Tổng Quan Kỹ Thuật Hệ Thống** | [`docs/PROJECT-OVERVIEW.md`](docs/PROJECT-OVERVIEW.md) | Bức tranh tổng thể 15 microservices, data ownership, event stream RabbitMQ |
 | ⚡ **Sổ Tay Triển Khai (Runbook)** | [`docs/runbook/trial-deploy.md`](docs/runbook/trial-deploy.md) | Hướng dẫn chạy thử nghiệm môi trường local/staging với Docker Compose |
 
 ---
