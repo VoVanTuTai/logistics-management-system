@@ -169,7 +169,7 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
         id: 'welcome_' + (currentUserId || 'guest'),
         sender: 'bot',
         text: currentUserId
-          ? `Xin chào ${currentUser?.name || currentUser?.phone || ''}! Tôi là Trợ Lý AI Nexus Logistics.\nTôi có thể hỗ trợ bạn tra cứu hành trình bưu gửi thời gian thực, đơn hàng mới nhất của bạn, kiểm tra bồi thường hoặc dự toán cước phí 24/7.`
+          ? `Xin chào ${currentUser?.displayName || currentUser?.username || currentUser?.phone || ''}! Tôi là Trợ Lý AI Nexus Logistics.\nTôi có thể hỗ trợ bạn tra cứu hành trình bưu gửi thời gian thực, đơn hàng mới nhất của bạn, kiểm tra bồi thường hoặc dự toán cước phí 24/7.`
           : 'Xin chào! Tôi là Trợ Lý AI Nexus Logistics.\nTôi có thể hỗ trợ bạn tra cứu hành trình bưu gửi thời gian thực, tiến độ hồ sơ bồi thường hàng hóa, dự toán cước phí IATA và giải đáp chính sách bưu chính 24/7.',
         time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
       },
