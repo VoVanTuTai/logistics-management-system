@@ -11,7 +11,6 @@ Thư mục `docs/` được quy hoạch thành các phân nhóm module rõ ràng
 ```
 docs/
 ├── README.md                           # 📖 File này: Mục lục tổng quan toàn bộ tài liệu
-├── BAO-CAO-TONG-QUAN-DO-AN-TOT-NGHIEP.md # 🎓 [CHÍNH] Báo cáo tổng quan đồ án toàn diện cho Giảng viên & Hội đồng
 ├── PROJECT-OVERVIEW.md                 # 🏗️ [GỐC] Bức tranh kỹ thuật chi tiết 15 microservices & 6 client apps
 ├── AI-REPORT-HANDOFF.md                # ✍️ [GỐC] Cẩm nang viết báo cáo khóa luận không sai lệch kiến trúc
 ├── demo-script.md                      # 🎬 Kịch bản thực hành demo hệ thống khi bảo vệ
@@ -72,7 +71,7 @@ docs/
 
 | Bạn đang tìm kiếm điều gì? | Hãy xem tài liệu này |
 | :--- | :--- |
-| **Báo cáo tổng quan đồ án tốt nghiệp trình Thầy Cô** | [**`docs/BAO-CAO-TONG-QUAN-DO-AN-TOT-NGHIEP.md`**](BAO-CAO-TONG-QUAN-DO-AN-TOT-NGHIEP.md) |
+| **Báo cáo tổng quan đồ án tốt nghiệp trình Thầy Cô** | [**`README.md (Trang chủ Repository)`**](../README.md) |
 | **Bản vẽ chi tiết 15 microservices & 6 client apps** | [`docs/PROJECT-OVERVIEW.md`](PROJECT-OVERVIEW.md) |
 | **Cẩm nang viết báo cáo khóa luận không sai lệch kiến trúc** | [`docs/AI-REPORT-HANDOFF.md`](AI-REPORT-HANDOFF.md) |
 | **Báo cáo chuyên sâu phân hệ AI Chatbot RAG (Port 3013)** | [`docs/architecture/ai-chatbot-service-architecture.md`](architecture/ai-chatbot-service-architecture.md) |

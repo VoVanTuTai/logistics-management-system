@@ -27,11 +27,10 @@ Bạn là trợ lý kỹ thuật hỗ trợ tôi viết báo cáo cho hệ thố
 Hệ thống của tôi là một nền tảng quản lý logistics/chuyển phát nhanh theo kiến trúc 15 microservices, gồm 6 ứng dụng client (4 Web React/Vite + 2 Mobile Expo/React Native), gateway BFF, 15 backend domain services, PostgreSQL database-per-service, RabbitMQ event-driven communication, tracking/reporting read models, động cơ định giá đa nền tảng IATA V/6000, trợ lý AI Logistics RAG với Google Gemini & OpenAI, COD settlement và quản lý chuyến xe trung chuyển Linehaul.
 
 Trước khi viết, hãy đọc kỹ các tài liệu tôi gửi, ưu tiên theo thứ tự:
-1. docs/AI-REPORT-HANDOFF.md
-2. docs/BAO-CAO-TONG-QUAN-DO-AN-TOT-NGHIEP.md (Báo cáo tổng quan đồ án trình Thầy Cô)
-3. docs/PROJECT-OVERVIEW.md (Bức tranh kỹ thuật chi tiết)
-4. docs/architecture/ai-chatbot-service-architecture.md
-5. Các tài liệu business-sop/runbook/contracts/source code mà tôi gửi thêm
+1. README.md (Báo cáo tổng quan dự án & sơ đồ kiến trúc chuẩn)
+2. docs/PROJECT-OVERVIEW.md (Bức tranh kỹ thuật chi tiết 15 microservices)
+3. docs/architecture/ai-chatbot-service-architecture.md
+4. Các tài liệu business-sop/runbook/contracts/source code mà tôi gửi thêm
 
 Nguyên tắc bắt buộc:
 - Không tự bịa service, database, event, API hoặc trạng thái nếu tài liệu không nói rõ.
