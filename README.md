@@ -101,7 +101,7 @@ graph TD
             SVC_DISPATCH["dispatch-service (:3004)<br/>Điều phối & phân công Shipper"]
             SVC_MANIFEST["manifest-service (:3005)<br/>Đóng túi bưu gửi & kẹp chì Seal"]
             SVC_SCAN["scan-service (:3006)<br/>Quét mã Inbound/Outbound & Vị trí"]
-            SVC_DELIVERY["delivery-service (:3007)<br/>Phát hàng, ảnh POD, OTP, NDR & Hoàn"]
+            SVC_DELIVERY["delivery-service (:3007)<br/>Phát hàng, ảnh POD, thu COD, NDR & Hoàn"]
             SVC_LINEHAUL["linehaul-service (:3014)<br/>Chuyến xe trung chuyển & Tem xe XT"]
         end
 
@@ -211,7 +211,7 @@ graph TD
 | **`ops-web`** | React 18, Vite 5<br>`Port: 5173` | Nhân viên vận hành Hub / Bưu cục (Ops) | • Dashboard giám sát sản lượng và tỷ lệ phát thành công theo thời gian thực.<br>• Tiếp nhận và duyệt yêu cầu lấy hàng, điều phối gán việc cho Shipper.<br>• Đóng bao bưu gửi (Manifest), kẹp chì Seal an ninh, quét mã Inbound/Outbound.<br>• Xử lý khiếu nại phát thất bại NDR, luồng chuyển hoàn và đối soát giải ngân COD. |
 | **`merchant-web`** | React 18, Vite 5<br>`Port: 5174` | Chủ shop kinh doanh online (Merchant B2B) | • Tạo đơn bưu gửi lẻ hoặc tải lên danh sách Excel hàng loạt.<br>• In phiếu gửi bưu chính chuẩn A6/A7 có sẵn mã vạch Barcode và nhãn cảnh báo.<br>• Đặt lịch hẹn bưu tá đến lấy hàng tận kho.<br>• Theo dõi bảng kê đối soát tiền COD và nhận tiền chuyển khoản tự động. |
 | **`guest-web`** | React 18, Vite 5<br>`Port: 5177` | Khách vãng lai & Người nhận hàng | • Tra cứu timeline hành trình vận đơn công khai theo thời gian thực.<br>• Ước tính cước phí bưu chính IATA đa dịch vụ tức thì.<br>• Tạo đơn gửi hàng lẻ tại bưu cục mà không bắt buộc tạo tài khoản.<br>• Trò chuyện trực tiếp cùng trợ lý ảo AI Logistics RAG hỏi đáp 24/7. |
-| **`courier-mobile`**| Expo 54, React Native<br>`Port: 8081` | Tài xế giao / lấy hàng (Shipper / Courier) | • Danh sách nhiệm vụ lấy và giao hàng thông minh trong ngày.<br>• Quét mã vạch vận đơn bằng Camera điện thoại tốc độ cao.<br>• Chụp ảnh bằng chứng phát hàng (POD) kèm chữ ký số khách hàng.<br>• Xác thực mã OTP 6 số an toàn; lưu trữ Offline Queue khi mất kết nối mạng. |
+| **`courier-mobile`**| Expo 54, React Native<br>`Port: 8081` | Tài xế giao / lấy hàng (Shipper / Courier) | • Danh sách nhiệm vụ lấy và giao hàng thông minh trong ngày.<br>• Quét mã vạch vận đơn bằng Camera điện thoại tốc độ cao.<br>• Chụp ảnh bằng chứng phát hàng (POD) xác nhận hoàn tất giao hàng.<br>• Thu hộ tiền mặt COD hoặc quét mã VietQR; lưu trữ Offline Queue khi mất mạng. |
 | **`customer-mobile`**| Expo 54, React Native<br>`Port: 8082` | Khách hàng cá nhân người gửi (C-End User) | • Ứng dụng di động tính cước tự động và tạo đơn gửi hàng nhanh chóng.<br>• Theo dõi lộ trình bưu phẩm trực quan từng bước.<br>• Quản lý danh bạ sổ địa chỉ người nhận thân quen.<br>• Tích hợp nút trò chuyện nổi (Floating AI Chatbot) tư vấn chính sách. |
 
 ---
@@ -228,7 +228,7 @@ graph TD
 | **6** | `dispatch-service` | `3004` | `dispatch_db` | Điều phối nhiệm vụ tài xế: gán việc lấy/giao theo khu vực, điều chuyển khi quá tải. |
 | **7** | `manifest-service` | `3005` | `manifest_db` | Quản lý bảng kê và túi bưu gửi: gom vận đơn vào bao hàng (mã `MB`), niêm phong kẹp chì seal an ninh. |
 | **8** | `scan-service` | `3006` | `scan_db` | **Nguồn chân lý vị trí vật lý:** ghi nhận các mốc quét barcode (Lấy, Nhập kho, Xuất kho) với cơ chế Idempotency chống trùng. |
-| **9** | `delivery-service` | `3007` | `delivery_db` | Quản lý phát hàng chặng cuối: ký nhận POD, mã xác thực OTP 6 số, biên bản giao thất bại NDR và điều phối chuyển hoàn. |
+| **9** | `delivery-service` | `3007` | `delivery_db` | Quản lý phát hàng chặng cuối: chụp ảnh POD bằng chứng giao hàng, thu COD, biên bản giao thất bại NDR và điều phối chuyển hoàn. |
 | **10** | `payment-service` | `3011` | `payment_db` | **Nguồn chân lý tài chính COD:** quản lý tiền thu hộ, gom phiên đối soát tự động (Batch Settlement), tích hợp SePay/VietQR webhook. |
 | **11** | `pricing-service` | `3012` | *(In-Memory Rules)* | Động cơ định giá chuẩn hóa duy nhất: tính cước theo nấc vượt cân, phụ phí 3 vùng và công thức quy đổi IATA $V/6000$. |
 | **12** | `chatbot-service` | `3013` | Vector Store | Phân hệ trợ lý trí tuệ nhân tạo độc lập: Hybrid RAG, 5 dynamic tools, Google Gemini 3 Flash / OpenAI GPT-4o-mini fallback, SSE streaming. |
@@ -294,7 +294,7 @@ flowchart LR
 
     subgraph S3 ["3. Phát Chặng Cuối & Giải Ngân COD"]
         C1["Shipper giao hàng tận nơi"] --> C2["Thu tiền mặt COD hoặc quét VietQR"]
-        C2 --> C3["Chụp ảnh POD ký nhận + Nhập OTP 6 số"]
+        C2 --> C3["Chụp ảnh bằng chứng giao hàng (POD)"]
         C3 --> C4["Tiền COD vào sổ cái COLLECTED"]
         C4 --> C5["payment-service đối soát Batch & Chuyển khoản Merchant"]
     end
@@ -319,7 +319,7 @@ flowchart TD
     PUSH_TASK --> PICK["Bưu tá có mặt lấy hàng<br/>trong vòng 30 phút"]
     PICK --> BYPASS["BỎ QUA KHÂU ĐÓNG BAO LIÊN TỈNH<br/>(Bypass Manifest & Linehaul Hub)"]
     BYPASS --> DIRECT_ROUTE["Vận chuyển thẳng tới Bưu cục phát nội đô<br/>hoặc giao trực tiếp chặng cuối"]
-    DIRECT_ROUTE --> POD_URGENT["Người nhận ký POD & Xác thực OTP<br/>(Cam kết SLA hoàn tất trong 6h - 12h)"]
+    DIRECT_ROUTE --> POD_URGENT["Chụp ảnh bằng chứng giao hàng (POD)<br/>(Cam kết SLA hoàn tất trong 6h - 12h)"]
 ```
 
 - **Đặc điểm kỹ thuật:** Đơn hàng được gắn cờ `isExpress: true`, hệ thống tự động gán độ ưu tiên cao nhất (`priority: URGENT`) trong hàng đợi Dispatch. Bỏ qua hoàn toàn công đoạn đóng bao bưu gửi đường dài để rút ngắn thời gian xử lý.
@@ -692,8 +692,8 @@ sequenceDiagram
     Note over CourierApp, Receiver: GIAI ĐOẠN 3: GIAO HÀNG CHẶNG CUỐI & BẰNG CHỨNG POD
     OpsWeb->>CourierApp: Phân công tuyến phát cho Shipper chặng cuối
     CourierApp->>Receiver: Shipper mang hàng đến địa chỉ người nhận
-    Receiver->>CourierApp: Kiểm tra hàng, thanh toán tiền mặt COD & đọc mã OTP 6 số
-    CourierApp->>CourierApp: Chụp ảnh kiện hàng kèm chữ ký khách (POD) + Nhập OTP
+    Receiver->>CourierApp: Kiểm tra hàng & thanh toán tiền COD (tiền mặt / VietQR)
+    CourierApp->>CourierApp: Chụp 01 ảnh bằng chứng giao hàng (POD) qua camera
     CourierApp->>GW: Xác nhận giao thành công (delivery.delivered)
     GW->>ShipSvc: Chuyển trạng thái đơn thành DELIVERED
     ShipSvc->>Bus: Publish event: delivery.delivered
@@ -738,7 +738,7 @@ Nhóm đã chuẩn bị kịch bản demo súc tích, ấn tượng thể hiện
    - Ops thực hiện duyệt lấy hàng, quét nhập kho, gom đơn vào túi bưu gửi `MB` và niêm phong kẹp chì seal.
 4. **Phút 4 - Shipper giao hàng trên Mobile App:**
    - Mở `apps/courier-mobile` (`http://localhost:8081`).
-   - Shipper quét mã vạch bằng camera, chụp ảnh ký nhận POD, nhập mã xác thực OTP 6 số.
+   - Shipper quét mã vạch bằng camera, chụp 01 ảnh bằng chứng giao hàng (POD) và xác nhận thu COD.
    - Bấm **Hoàn tất giao hàng**: Giao diện cập nhật ngay lập tức sang trạng thái `DELIVERED`.
 5. **Phút 5 - Xử lý ngoại lệ hoàn hàng & Đối soát COD:**
    - Quay lại `apps/ops-web`, biểu diễn một đơn bị từ chối nhận (NDR) chuyển sang hoàn hàng `RETURN_STARTED`.
