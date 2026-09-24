@@ -18,7 +18,7 @@
 </div>
 
 > 🎓 **TÀI LIỆU BÁO CÁO TỔNG QUAN ĐỒ ÁN (DÀNH CHO GIẢNG VIÊN HƯỚNG DẪN & HỘI ĐỒNG BẢO VỆ):**  
-> Hệ thống mô phỏng và số hóa toàn diện chuỗi cung ứng logistics bưu chính hiện đại với **15 Microservices độc lập**, **6 Ứng dụng Client đa nền tảng** (4 Web React + 2 Mobile Expo/React Native), Động cơ định giá chuẩn hóa quốc tế **IATA $V/6000$**, và Phân hệ **Trợ lý Trí tuệ Nhân tạo AI Logistics RAG** vận hành thời gian thực.
+> Hệ thống mô phỏng và số hóa toàn diện chuỗi cung ứng logistics bưu chính hiện đại với **15 Microservices độc lập**, **6 Ứng dụng Client đa nền tảng** (4 Web React + 2 Mobile Expo/React Native), Động cơ định giá chuẩn hóa quốc tế **IATA $V/6000$**, Quy trình xử lý ngoại lệ chuẩn hóa tuân thủ **Điều 24 & Điều 25 Luật Bưu chính số 49/2010/QH12**, và Phân hệ **Trợ lý Trí tuệ Nhân tạo AI Logistics RAG** vận hành thời gian thực.
 
 ---
 
@@ -31,16 +31,23 @@
    - [3.2. Phân hệ 15 Backend Microservices Độc Lập](#32-phân-hệ-15-backend-microservices-độc-lập)
    - [3.3. Tầng Cơ sở dữ liệu (Database per Service) & MinIO S3](#33-tầng-cơ-sở-dữ-liệu-database-per-service--minio-s3)
    - [3.4. Trục truyền thông sự kiện (RabbitMQ Event Bus)](#34-trục-truyền-thông-sự-kiện-rabbitmq-event-bus)
-4. [4 TRỤ CỘT NGHIỆP VỤ BƯU CHÍNH THỰC CHIẾN (KÈM SƠ ĐỒ TRỰC QUAN)](#4-4-trụ-cột-nghiệp-vụ-bưu-chính-thực-chiến-kèm-sơ-đồ-trực-quan)
-   - [4.1. Động cơ định giá đa nền tảng chuẩn IATA V/6000](#41-động-cơ-định-giá-đa-nền-tảng-chuẩn-iata-v6000)
-   - [4.2. Chính sách phân tầng 3 cấp & Cước hoàn tự động (Reverse Logistics)](#42-chính-sách-phân-tầng-3-cấp--cước-hoàn-tự-động-reverse-logistics)
-   - [4.3. Quy trình tiếp nhận hàng dễ vỡ & Bồi thường 100% (Điều 25 Luật Bưu chính)](#43-quy-trình-tiếp-nhận-hàng-dễ-vỡ--bồi-thường-100-điều-25-luật-bưu-chính)
-   - [4.4. Mạng lưới Hub 4 cấp & Chuyến xe trung chuyển Linehaul](#44-mạng-lưới-hub-4-cấp--chuyến-xe-trung-chuyển-linehaul)
-5. [PHÂN HỆ TRỢ LÝ TRÍ TUỆ NHÂN TẠO (AI LOGISTICS ASSISTANT RAG)](#5-phân-hệ-trợ-lý-trí-tuệ-nhân-tạo-ai-logistics-assistant-rag)
-6. [SƠ ĐỒ VÒNG ĐỜI VẬN ĐƠN TỪ A ĐẾN Z (END-TO-END WORKFLOW)](#6-sơ-đồ-vòng-đời-vận-đơn-từ-a-đến-z-end-to-end-workflow)
-7. [MA TRẬN ĐỐI CHIẾU CÔNG NGHỆ: NEXUS VS ĐỒ ÁN TRUYỀN THỐNG](#7-ma-trận-đối-chiếu-công-nghệ-nexus-vs-đồ-án-truyền-thống)
-8. [KỊCH BẢN DEMO THỰC CHIẾN 5 PHÚT DÀNH CHO THẦY CÔ](#8-kịch-bản-demo-thực-chiến-5-phút-dành-cho-thầy-cô)
-9. [HƯỚNG DẪN KHỞI CHẠY HỆ THỐNG & TÀI KHOẢN KIỂM THỬ](#9-hướng-dẫn-khởi-chạy-hệ-thống--tài-khoản-kiểm-thử)
+4. [ĐẶC TẢ NGHIỆP VỤ & SƠ ĐỒ QUY TRÌNH THEO TỪNG LOẠI ĐƠN HÀNG](#4-đặc-tả-nghiệp-vụ--sơ-đồ-quy-trình-theo-từng-loại-đơn-hàng)
+   - [4.1. Đơn Tiêu Chuẩn Thu Hộ COD (Standard COD Shipment)](#41-đơn-tiêu-chuẩn-thu-hộ-cod-standard-cod-shipment)
+   - [4.2. Đơn Hỏa Tốc / Nội Thành 6h - 12h (Express & Same-Day Service)](#42-đơn-hỏa-tốc--nội-thành-6h---12h-express--same-day-service)
+   - [4.3. Đơn Hàng Cồng Kềnh / Quá Khổ Quy Đổi IATA V/6000 (Bulky Freight)](#43-đơn-hàng-cồng-kềnh--quá-khổ-quy-đổi-iata-v6000-bulky-freight)
+   - [4.4. Đơn Khai Giá Bảo Hiểm 100% (High-Value & Insured Shipment)](#44-đơn-khai-giá-bảo-hiểm-100-high-value--insured-shipment)
+   - [4.5. Đơn Hàng Dễ Vỡ & Quy Chuẩn Đóng Gói SOP (Fragile Goods)](#45-đơn-hàng-dễ-vỡ--quy-chuẩn-đóng-gói-sop-fragile-goods)
+5. [SƠ ĐỒ QUY TRÌNH XỬ LÝ NGOẠI LỆ & SỰ CỐ BƯU CHÍNH](#5-sơ-đồ-quy-trình-xử-lý-ngoại-lệ--sự-cố-bưu-chính)
+   - [5.1. Case 1: Khách từ chối nhận / Không lấy hàng (Customer Refusal & NDR Workflow)](#51-case-1-khách-từ-chối-nhận--không-lấy-hàng-customer-refusal--ndr-workflow)
+   - [5.2. Case 2: Quy trình Chuyển Hoàn & Cơ chế Cấn trừ Cước Hoàn 3 Tầng (Reverse Logistics SOP)](#52-case-2-quy-trình-chuyển-hoàn--cơ-chế-cấn-trừ-cước-hoàn-3-tầng-reverse-logistics-sop)
+   - [5.3. Case 3: Hàng hỏng / Bể vỡ / Mất mát & Thẩm định Bồi thường Điều 25 Luật Bưu chính](#53-case-3-hàng-hỏng--bể-vỡ--mất-mát--thẩm-định-bồi-thường-điều-25-luật-bưu-chính)
+   - [5.4. Case 4: Khách hẹn lại ngày giao / Không liên lạc được & Tự động Tái điều phối](#54-case-4-khách-hẹn-lại-ngày-giao--không-liên-lạc-được--tự-động-tái-điều-phối)
+6. [MẠNG LƯỚI HUB 4 CẤP & CHUYẾN XE TRUNG CHUYỂN LINEHAUL](#6-mạng-lưới-hub-4-cấp--chuyến-xe-trung-chuyển-linehaul)
+7. [PHÂN HỆ TRỢ LÝ TRÍ TUỆ NHÂN TẠO (AI LOGISTICS ASSISTANT RAG)](#7-phân-hệ-trợ-lý-trí-tuệ-nhân-tạo-ai-logistics-assistant-rag)
+8. [SƠ ĐỒ VÒNG ĐỜI VẬN ĐƠN TOÀN TRÌNH TỪ A ĐẾN Z (END-TO-END WORKFLOW)](#8-sơ-đồ-vòng-đời-vận-đơn-toàn-trình-từ-a-đến-z-end-to-end-workflow)
+9. [MA TRẬN ĐỐI CHIẾU CÔNG NGHỆ: NEXUS VS ĐỒ ÁN TRUYỀN THỐNG](#9-ma-trận-đối-chiếu-công-nghệ-nexus-vs-đồ-án-truyền-thống)
+10. [KỊCH BẢN DEMO THỰC CHIẾN 5 PHÚT DÀNH CHO THẦY CÔ](#10-kịch-bản-demo-thực-chiến-5-phút-dành-cho-thầy-cô)
+11. [HƯỚNG DẪN KHỞI CHẠY HỆ THỐNG & TÀI KHOẢN KIỂM THỬ](#11-hướng-dẫn-khởi-chạy-hệ-thống--tài-khoản-kiểm-thử)
 
 ---
 
@@ -50,7 +57,7 @@
 Thị trường logistics bưu chính và giao hàng chặng cuối (Last-mile Delivery) tại Việt Nam đang bùng nổ mạnh mẽ cùng làn sóng Thương mại Điện tử. Tuy nhiên, các doanh nghiệp logistics truyền thống luôn phải đối mặt với các bài toán vận hành hóc búa:
 1. **Nghẽn cổ chai kiến trúc nguyên khối (Monolithic Bottleneck):** Trong các đợt cao điểm khuyến mãi (Mega Sale 11/11, 12/12), lưu lượng quét mã vạch kho và tra cứu vận đơn tăng đột biến từ hàng chục đến hàng trăm lần, làm sập toàn bộ hệ thống dùng chung một CSDL duy nhất.
 2. **Sai lệch biểu phí cước giữa các nền tảng:** Cùng một kiện hàng nhưng Web của người bán tính một giá, App di động của tài xế tính một giá và Bot chăm sóc khách hàng lại tư vấn một giá khác do logic nghiệp vụ bị phân tán, thiếu chuẩn hóa.
-3. **Tranh chấp bồi thường hàng dễ vỡ & Thất thoát cước chuyển hoàn:** Tình trạng "bom hàng" (giao thất bại phải hoàn về) gây lãng phí chi phí xe tải chiều về. Việc thiếu quy chuẩn phân loại hàng dễ vỡ và không bám sát **Điều 25 Luật Bưu chính** dẫn đến xung đột pháp lý kéo dài khi xảy ra sự cố vỡ nát hàng hóa.
+3. **Tranh chấp bồi thường hàng dễ vỡ & Thất thoát cước chuyển hoàn:** Tình trạng "bom hàng" (giao thất bại phải hoàn về) gây lãng phí chi phí xe tải chiều về. Việc thiếu quy chuẩn phân loại hàng dễ vỡ và không bám sát **Điều 24 & Điều 25 Luật Bưu chính** dẫn đến xung đột pháp lý kéo dài khi xảy ra sự cố vỡ nát hàng hóa.
 4. **Áp lực tổng đài hỗ trợ khách hàng:** Hơn 70% các cuộc gọi lên tổng đài chỉ để hỏi các câu hỏi mang tính thủ tục lặp lại (*"Đơn hàng đang ở đâu?"*, *"Cước kiện 3kg vào Sài Gòn bao nhiêu?"*, *"Pin sạc dự phòng có được gửi máy bay không?"*).
 
 ### 1.2. Mục tiêu nghiên cứu và giải pháp của Đồ án
@@ -245,71 +252,320 @@ graph TD
 
 ---
 
-## 4. 4 TRỤ CỘT NGHIỆP VỤ BƯU CHÍNH THỰC CHIẾN (KÈM SƠ ĐỒ TRỰC QUAN)
+## 4. ĐẶC TẢ NGHIỆP VỤ & SƠ ĐỒ QUY TRÌNH THEO TỪNG LOẠI ĐƠN HÀNG
 
-### 4.1. Động cơ định giá đa nền tảng chuẩn IATA V/6000
-
-```mermaid
-flowchart LR
-    INPUT["Kích thước D x R x C (cm)<br/>& Khối lượng thực W_act (kg)"]
-    CALC_VOL["Tính W_vol = (D x R x C) / 6000<br/>(Chuẩn hàng không IATA)"]
-    CHARGE_W["Lấy W_charge = max(W_act, W_vol)"]
-    NORM_ADDR["Bóc tách tiền tố địa chỉ regex<br/>'TP.', 'Tỉnh', 'Thành phố' & Alias Map"]
-    ZONE_CALC["Xác định Tuyến Vùng Cước:<br/>- Nội tỉnh: 0đ<br/>- Trục chính HN-HCM: 7.000đ<br/>- Liên tỉnh: 12.000đ"]
-    TIER_PRICE["Áp dụng biểu phí cơ sở & nấc cân:<br/>- Tiết kiệm: 18k (2kg đầu) + 3.5k/0.5kg<br/>- Tiêu chuẩn: 28k (2kg đầu) + 5k/0.5kg<br/>- Hỏa tốc: 42k (1kg đầu) + 8k/0.5kg"]
-    OUTPUT["Snapshot Cước Phí Duy Nhất<br/>(Đồng bộ Web, Mobile, AI)"]
-
-    INPUT --> CALC_VOL --> CHARGE_W
-    INPUT --> NORM_ADDR --> ZONE_CALC
-    CHARGE_W --> TIER_PRICE
-    ZONE_CALC --> TIER_PRICE
-    TIER_PRICE --> OUTPUT
-```
-
-- **Công thức quy đổi trọng lượng thể tích IATA:** $\text{Trọng lượng thể tích } (kg) = \frac{\text{Dài} \times \text{Rộng} \times \text{Cao}}{6000}$. Trọng lượng tính cước là giá trị lớn nhất giữa cân nặng thực tế và cân nặng quy đổi thể tích.
-- **Tự động bóc tách tiền tố hành chính (Regex Normalization):** Tự động nhận diện *"TP. Hồ Chí Minh"*, *"Tỉnh Bình Dương"*, *"Sài Gòn"* để đối chiếu chính xác tuyến Metro Corridor và cước nội tỉnh.
-- **Tối ưu trải nghiệm (Debounce 300ms):** Ngăn chặn spam API khi người dùng đang nhập kích thước trên form.
-
----
-
-### 4.2. Chính sách phân tầng 3 cấp & Cước hoàn tự động (Reverse Logistics)
+Hệ thống Nexus phân loại và xử lý 5 loại hình đơn bưu gửi với các tham số kỹ thuật, đường đi vật lý và cơ chế tính cước chuyên biệt:
 
 ```mermaid
 flowchart TD
-    FAIL_3["Giao hàng thất bại 3 lần<br/>(DELIVERY_FAILED / NDR)"] --> RETURN_START["Khởi tạo luồng chuyển hoàn<br/>(RETURN_STARTED)"]
-    RETURN_START --> CHECK_TIER{"Kiểm tra Phân tầng Khách hàng?"}
+    START_ORDER["Tiếp nhận Yêu cầu Gửi Hàng<br/>(Web / Mobile / Quầy POS)"] --> CLASSIFY{"Phân loại Tính chất & Yêu cầu Đơn hàng"}
 
-    CHECK_TIER -->|"Khách Vãng Lai (Guest)"| GUEST_FEE["Áp dụng cước hoàn = 50% cước chiều đi.<br/>Shipper thu tiền mặt / VietQR khi phát hoàn."]
-    CHECK_TIER -->|"Chủ Shop Thường (SME)"| SME_FEE["Áp dụng cước hoàn = 50% cước chiều đi.<br/>Khấu trừ tự động vào bảng kê đối soát COD."]
-    CHECK_TIER -->|"Khách Doanh Nghiệp (VIP)"| VIP_FEE["Miễn phí cước hoàn (0đ).<br/>Chăm sóc theo hợp đồng khung cam kết sản lượng."]
+    CLASSIFY -->|"Dưới 5kg, không vỡ, có thu tiền"| TYPE_STD["1. Đơn Tiêu Chuẩn COD<br/>(Standard COD)"]
+    CLASSIFY -->|"Giao gấp nội thành, SLA 6h-12h"| TYPE_EXP["2. Đơn Hỏa Tốc / Nội Thành<br/>(Express & Same-Day)"]
+    CLASSIFY -->|"Thể tích lớn hoặc nặng > 20kg"| TYPE_BULK["3. Đơn Cồng Kềnh / Quá Khổ<br/>(Bulky Freight IATA V/6000)"]
+    CLASSIFY -->|"Giá trị hàng hóa &ge; 1.000.000đ"| TYPE_INS["4. Đơn Khai Giá Bảo Hiểm 100%<br/>(High-Value Insured)"]
+    CLASSIFY -->|"Sứ, thủy tinh, mỹ phẩm lỏng"| TYPE_FRAG["5. Đơn Hàng Dễ Vỡ<br/>(Fragile Goods SOP)"]
 
-    GUEST_FEE --> RETURN_DONE["Hoàn trả hàng về kho người gửi thành công<br/>(RETURN_COMPLETED)"]
-    SME_FEE --> RETURN_DONE
-    VIP_FEE --> RETURN_DONE
+    TYPE_STD --> PROC_STD["Gom bao túi MB, trung chuyển Linehaul, phát T+2/T+3, đối soát COD"]
+    TYPE_EXP --> PROC_EXP["Tuyến xe van / xe máy trực tiếp, giao trong ngày, không qua bao gom liên tỉnh"]
+    TYPE_BULK --> PROC_BULK["Quy đổi W_vol = (DxRxC)/6000, xe tải bửng nâng, bốc dỡ 2 người"]
+    TYPE_INS --> PROC_INS["Thu phí bảo hiểm 0.5%, kiểm định chứng từ, kẹp seal an ninh riêng, đền 100%"]
+    TYPE_FRAG --> PROC_FRAG["Bọc xốp 3-4 lớp xốp khí &ge; 5cm, dán tem FRAGILE, ký packagingWaiver nếu tự gói"]
 ```
 
-- **Khách vãng lai (Guest):** 100% biểu cước chuẩn; thu 50% cước hoàn bằng tiền mặt hoặc mã VietQR khi bưu tá giao trả hàng.
-- **Chủ shop tiêu chuẩn (Standard SME):** Giảm 5% cước gửi; hệ thống **tự động cấn trừ 50% cước hoàn vào kỳ đối soát tiền thu hộ COD** gần nhất, ngăn chặn tình trạng tạo đơn ảo "bom hàng".
-- **Khách doanh nghiệp (VIP Enterprise):** Chiết khấu 15% - 25%; miễn phí 100% cước chuyển hoàn (0đ) theo cam kết sản lượng trong hợp đồng khung.
+---
+
+### 4.1. Đơn Tiêu Chuẩn Thu Hộ COD (Standard COD Shipment)
+
+Đơn hàng thương mại điện tử phổ biến nhất, chiếm trên 70% tổng sản lượng bưu chính. Đặc trưng bởi luồng tiền thu hộ COD hai chiều và chu kỳ đối soát tài chính định kỳ.
+
+```mermaid
+flowchart LR
+    subgraph S1 ["1. Tiếp Nhận & Lấy Hàng"]
+        A1["Merchant tạo đơn COD"] --> A2["Tự động tính cước IATA:<br/>Base 18k + 3.5k/0.5kg"]
+        A2 --> A3["Shipper quét Barcode lấy hàng<br/>(scan.pickup_confirmed)"]
+    end
+
+    subgraph S2 ["2. Khai Thác & Trung Chuyển"]
+        B1["Nhập kho Hub gốc (Inbound)"] --> B2["Đóng bao bưu gửi MB & Kẹp chì Seal"]
+        B2 --> B3["Xe Linehaul chạy liên tỉnh<br/>(Tem xe XT)"]
+        B3 --> B4["Hub Đích cắt seal, chia chọn về Bưu cục phát"]
+    end
+
+    subgraph S3 ["3. Phát Chặng Cuối & Giải Ngân COD"]
+        C1["Shipper giao hàng tận nơi"] --> C2["Thu tiền mặt COD hoặc quét VietQR"]
+        C2 --> C3["Chụp ảnh POD ký nhận + Nhập OTP 6 số"]
+        C3 --> C4["Tiền COD vào sổ cái COLLECTED"]
+        C4 --> C5["payment-service đối soát Batch & Chuyển khoản Merchant"]
+    end
+
+    S1 ==> S2 ==> S3
+```
+
+- **Công thức tính cước:** $\text{Cước gửi} = \text{Cước cơ bản (18.000đ cho 2kg đầu)} + \sum (\text{Nấc vượt } 0.5kg \times 3.500đ) + \text{Phụ phí vùng cước}$.
+- **Cơ chế quản lý tiền COD:** Tiền thu hộ được phong tỏa trong tài khoản trung gian của `payment-service` và tự động giải ngân theo chu kỳ đối soát thứ 2 - thứ 4 - thứ 6 hàng tuần qua cổng thanh toán SePay / VietQR.
 
 ---
 
-### 4.3. Quy trình tiếp nhận hàng dễ vỡ & Bồi thường 100% (Điều 25 Luật Bưu chính)
-1. **Quy cách đóng gói bắt buộc:** Bọc 3 - 4 lớp màng xốp bóng khí (bubble wrap) dày $\ge 5$cm, chèn kín 6 mặt thùng carton và tự động in tem cảnh báo nghiệp vụ:
-   ```text
-   +-------------------------------------------------------+
-   |   [!] CHÚ Ý: HÀNG DỄ VỠ - XIN NHẸ TAY [FRAGILE]       |
-   |   NEXUS EXPRESS - QUY CHUẨN ĐÓNG GÓI BẢO HIỂM 100%    |
-   +-------------------------------------------------------+
-   ```
-2. **Chế tài bồi thường bảo hiểm minh bạch:**
-   - **Có mua bảo hiểm khai giá (0.5% giá trị):** Bồi thường **100% giá trị khai báo** khi xảy ra bể vỡ, thất lạc do lỗi vận chuyển của Nexus.
-   - **Không mua bảo hiểm khai giá:** Bồi thường theo Điều 25 Luật Bưu chính: tối đa 04 lần cước dịch vụ bưu chính đã thu.
-   - **Truy cứu trách nhiệm nội bộ:** Căn cứ lịch sử quét mã vạch và niêm phong kẹp chì seal để xác định chính xác đơn vị gây lỗi, tự động khấu trừ trách nhiệm vật chất.
+### 4.2. Đơn Hỏa Tốc / Nội Thành 6h - 12h (Express & Same-Day Service)
+
+Phục vụ các bưu phẩm tài liệu mật, thuốc men y tế, thực phẩm tươi sống hoặc nhu cầu nhận hàng gấp trong cùng một khu vực đô thị (Hà Nội, TP.HCM, Đà Nẵng).
+
+```mermaid
+flowchart TD
+    CREAT["Khách hàng tạo đơn HỎA TỐC<br/>(Cước: 42.000đ cho 1kg đầu + 8.000đ/0.5kg)"] --> DISP{"dispatch-service kích hoạt<br/>Khu Vực Bán Kính < 15km"}
+
+    DISP --> PUSH_TASK["Bắn Push Task ưu tiên khẩn cấp<br/>về Courier Mobile gần nhất"]
+    PUSH_TASK --> PICK["Bưu tá có mặt lấy hàng<br/>trong vòng 30 phút"]
+    PICK --> BYPASS["BỎ QUA KHÂU ĐÓNG BAO LIÊN TỈNH<br/>(Bypass Manifest & Linehaul Hub)"]
+    BYPASS --> DIRECT_ROUTE["Vận chuyển thẳng tới Bưu cục phát nội đô<br/>hoặc giao trực tiếp chặng cuối"]
+    DIRECT_ROUTE --> POD_URGENT["Người nhận ký POD & Xác thực OTP<br/>(Cam kết SLA hoàn tất trong 6h - 12h)"]
+```
+
+- **Đặc điểm kỹ thuật:** Đơn hàng được gắn cờ `isExpress: true`, hệ thống tự động gán độ ưu tiên cao nhất (`priority: URGENT`) trong hàng đợi Dispatch. Bỏ qua hoàn toàn công đoạn đóng bao bưu gửi đường dài để rút ngắn thời gian xử lý.
 
 ---
 
-### 4.4. Mạng lưới Hub 4 cấp & Chuyến xe trung chuyển Linehaul
+### 4.3. Đơn Hàng Cồng Kềnh / Quá Khổ Quy Đổi IATA V/6000 (Bulky Freight)
+
+Áp dụng cho các mặt hàng chiếm diện tích thể tích lớn (ghế sofa, nệm cao su, xe đạp điện, thùng carton máy móc).
+
+```mermaid
+flowchart TD
+    DIM_INPUT["Nhập thông số kiện hàng:<br/>- Khối lượng cân thực tế W_act (kg)<br/>- Kích thước 3 chiều Dài x Rộng x Cao (cm)"] --> IATA_CALC["Tính Trọng Lượng Quy Đổi Thể Tích IATA:<br/>W_vol = (D x R x C) / 6000"]
+
+    IATA_CALC --> COMPARE{"So sánh W_act và W_vol"}
+    COMPARE -->|"W_act &ge; W_vol"| CHARGE_ACT["Tính cước theo Khối lượng thực: W_charge = W_act"]
+    COMPARE -->|"W_vol > W_act"| CHARGE_VOL["Tính cước theo Thể tích quy đổi: W_charge = W_vol"]
+
+    CHARGE_ACT --> BULK_CHECK{"Kiểm tra điều kiện Quá Khổ:<br/>W_charge > 20kg hoặc cạnh lớn nhất > 100cm?"}
+    CHARGE_VOL --> BULK_CHECK
+
+    BULK_CHECK -- "ĐẠT CHUẨN CỒNG KỀNH" --> SURCHARGE["Áp phụ phí nâng hạ & bốc xếp quá khổ (+50.000đ)<br/>Gán phương tiện: Xe tải bửng nâng chuyên dụng"]
+    BULK_CHECK -- "HÀNG BÌNH THƯỜNG" --> NORMAL_TRUCK["Vận chuyển xe tải van thông thường"]
+
+    SURCHARGE --> SCAN_BULK["Dán tem mã vạch khổ lớn CỒNG KỀNH [HEAVY/BULKY]<br/>Bố trí 2 nhân viên bốc xếp khi giao chặng cuối"]
+```
+
+- **Quy chuẩn IATA $V/6000$:** Tiêu chuẩn quốc tế của Hiệp hội Vận tải Hàng không Quốc tế (IATA) được áp dụng thống nhất trên toàn hệ thống Nexus, ngăn ngừa việc chủ hàng gửi đồ nhẹ nhưng chiếm trọn diện tích thùng xe tải.
+
+---
+
+### 4.4. Đơn Khai Giá Bảo Hiểm 100% (High-Value & Insured Shipment)
+
+Dành cho các bưu kiện giá trị cao từ 1.000.000đ trở lên (điện thoại iPhone, máy tính xách tay, trang sức, đồng hồ xa xỉ).
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Sender as Người Gửi Hàng
+    actor Staff as Nhân Viên Quầy Bưu Cục
+    participant Pricing as pricing-service (:3012)
+    participant CoreSys as shipment-service (:3002)
+    participant Vault as Khu Vực Lưu Trữ An Ninh Cao (Vault)
+
+    Sender->>Staff: Khai báo giá trị hàng hóa (VD: 20.000.000 VNĐ)
+    Staff->>Pricing: Yêu cầu tính phí bảo hiểm khai giá
+    Pricing-->>Staff: Phí bảo hiểm = 0.5% x 20.000.000đ = 100.000 VNĐ
+    Staff->>Sender: Kiểm tra Hóa đơn mua hàng / Chứng từ VAT / Phiếu bảo hành chính hãng
+    Staff->>CoreSys: Chụp ảnh hiện trạng kiện hàng tại quầy (packagePhotoUrl)
+    CoreSys->>CoreSys: Thiết lập insuranceTier = 'COMPREHENSIVE_100'
+    Staff->>Staff: Dán Tem Niêm Phong An Ninh Hologram chống bóc mở
+    Staff->>Vault: Chuyển kiện hàng vào Lồng khóa an ninh riêng (Security Cage)
+    Note over Vault,CoreSys: Vận chuyển xe Linehaul dưới sự giám sát camera & bàn giao seal riêng
+```
+
+- **Quy tắc trích lập Quỹ rủi ro:** 100% khoản thu phí bảo hiểm 0.5% được hạch toán vào Quỹ dự phòng rủi ro bảo hiểm (Risk Reserve Fund) để thực hiện cam kết bồi thường 100% giá trị thực tế trong vòng 03 ngày làm việc khi xảy ra mất mát.
+
+---
+
+### 4.5. Đơn Hàng Dễ Vỡ & Quy Chuẩn Đóng Gói SOP (Fragile Goods)
+
+Mô hình thiết giáp tinh gọn kiểm soát 100% hàng hóa có tính chất nứt vỡ (đồ gốm sứ, chai lọ thủy tinh, màn hình LCD, mỹ phẩm lỏng).
+
+```mermaid
+flowchart TD
+    INSPECT["Nhân viên quầy kiểm tra tính chất hàng:<br/>Gốm sứ, thủy tinh, màn hình điện tử"] --> FLAG["Gắn cờ isFragile = true trên hệ thống"]
+    FLAG --> CHECK_PACK{"Kiểm tra quy cách đóng gói thực tế:<br/>- Bọc 3 đến 4 lớp màng xốp khí (Bubble Wrap) &ge; 5cm?<br/>- Chèn mút xốp cố định kín 6 mặt thùng carton?<br/>- Lắc nhẹ không phát ra tiếng động va đập?"}
+
+    CHECK_PACK -- "ĐẠT CHUẨN ĐÓNG GÓI" --> MET_TRUE["packagingStandardMet = true<br/>Dán tem nghiệp vụ [FRAGILE - LY NỨT]"]
+    CHECK_PACK -- "KHÁCH TỰ GÓI SƠ SÀI & TỪ CHỐI GIA CỐ" --> WAIVER_TRUE["packagingWaiver = true<br/>Khách ký Biên bản miễn trừ bể vỡ do tự đóng gói"]
+
+    MET_TRUE --> PRINT_LABEL["In phiếu gửi bưu phẩm có biểu tượng Ly Nứt<br/>Xếp dỡ tầng trên cùng của thùng xe tải"]
+    WAIVER_TRUE --> PRINT_LABEL
+    
+    MET_TRUE -.-> RULE_1["Khi xảy ra bể vỡ: Bồi hoàn theo quy chế bảo hiểm"]
+    WAIVER_TRUE -.-> RULE_2["Khi xảy ra bể vỡ mà thùng ngoài nguyên vẹn:<br/>MIỄN TRỪ BỒI THƯỜNG 100% (Điều 24 Luật Bưu chính)"]
+```
+
+---
+
+## 5. SƠ ĐỒ QUY TRÌNH XỬ LÝ NGOẠI LỆ & SỰ CỐ BƯU CHÍNH
+
+Xử lý ngoại lệ là thước đo tính chuyên nghiệp và tính hoàn thiện của một đồ án công nghệ logistics thực chiến. Nexus thiết kế 4 quy trình xử lý khép kín cho các tình huống sự cố:
+
+---
+
+### 5.1. Case 1: Khách từ chối nhận / Không lấy hàng (Customer Refusal & NDR Workflow)
+
+Quy trình quản lý giao hàng thất bại (Non-Delivery Report - NDR) theo quy tắc chuẩn ngành bưu chính: **Tối đa 3 lần phát trong 5 ngày lưu kho**.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Courier as Bưu Tá Phát (Courier)
+    actor Receiver as Người Nhận Hàng
+    participant MobileApp as Courier Mobile (:8081)
+    participant DeliverySvc as delivery-service (:3007)
+    participant ShipSvc as shipment-service (:3002)
+    participant HubStorage as Bưu Cục Phát (Kho Lưu Hàng)
+    actor Merchant as Chủ Shop (Merchant)
+
+    Courier->>Receiver: Đến địa chỉ phát hàng & liên hệ người nhận
+    Receiver-->>Courier: Từ chối nhận hàng (Lý do: Không ưng ý, đổi ý, bom hàng...)
+    Courier->>MobileApp: Chọn chức năng Báo Cáo Sự Cố (Scan Issue / NDR)
+    Courier->>MobileApp: Chọn mã lý do: CUSTOMER_REFUSED (Khách từ chối nhận)
+    Courier->>MobileApp: Chụp ảnh định vị trước cửa nhà / hiện trường làm bằng chứng
+    MobileApp->>DeliverySvc: POST /delivery/exception (Lưu biên bản NDR)
+    DeliverySvc->>ShipSvc: Cập nhật currentStatus = 'DELIVERY_FAILED' (Lần 1 / Lần 2)
+    Courier->>HubStorage: Nộp hàng về bưu cục, xếp vào Kệ Lưu Giữ Tạm (Retention Shelf)
+
+    DeliverySvc->>Merchant: Bắn thông báo Realtime Webhook / Notification về merchant-web
+    Note over Merchant,ShipSvc: Chủ Shop có 24h - 48h để xử lý ngoại lệ trên hệ thống
+
+    alt Trường hợp A: Chủ Shop thuyết phục được khách hoặc đổi địa chỉ
+        Merchant->>ShipSvc: Gửi lệnh Phát Lại (Re-delivery) kèm chỉ dẫn mới
+        ShipSvc->>DeliverySvc: Lên lịch phát lại lần tiếp theo cho Bưu tá
+    else Trường hợp B: Đã giao đủ 3 lần thất bại hoặc Shop đồng ý hủy đơn
+        Merchant->>ShipSvc: Xác nhận yêu cầu: CHUYỂN HOÀN VỀ SHOP (Confirm Return)
+        ShipSvc->>ShipSvc: Kích hoạt luồng Chuyển Hoàn (Chuyển sang Case 2)
+    end
+```
+
+#### Bảng danh mục mã lý do giao thất bại (NDR Codes) chuẩn hóa:
+| Mã Lý Do NDR | Tên Gọi Nghiệp Vụ | Giải Pháp Kỹ Thuật & Hành Động Tiếp Theo |
+| :--- | :--- | :--- |
+| `CUSTOMER_REFUSED` | Khách từ chối nhận hàng | Gửi thông báo cho Shop; lưu kho chờ quyết định chuyển hoàn. |
+| `COD_REFUSED` | Không đồng ý thanh toán tiền COD | Bưu tá giải thích số tiền theo phiếu; nếu không nhận thì báo NDR. |
+| `CANNOT_CONTACT` | Thuê bao không nhấc máy (gọi $\ge 3$ cuộc) | Gửi SMS tự động kèm link hẹn giờ; lưu bưu cục phát lại ngày hôm sau. |
+| `ADDRESS_NOT_FOUND`| Sai hoặc thiếu thông tin địa chỉ | Bắn thông báo lên Merchant Web yêu cầu cập nhật lại tọa độ/địa chỉ. |
+| `CUSTOMER_RESCHEDULE`| Khách bận, hẹn giao ngày khác | Hệ thống tự động chuyển ngày phát theo lịch hẹn mà không tính phạt. |
+
+---
+
+### 5.2. Case 2: Quy trình Chuyển Hoàn & Cơ chế Cấn trừ Cước Hoàn 3 Tầng (Reverse Logistics SOP)
+
+Bịt kín lỗ hổng thất thoát chi phí xe tải chiều về và xóa tan vấn nạn nợ xấu cước hoàn thông qua **Cơ chế phân tầng tự động (3-Tier Reverse Pricing Engine)**:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor HubStaff as Ops Bưu Cục Phát
+    participant ManifestSvc as manifest-service (:3005)
+    participant Linehaul as linehaul-service (:3014)
+    actor OriginHub as Ops Hub Gốc (Gần Shop)
+    actor ReturnCourier as Bưu Tá Trả Hàng Hoàn
+    actor Merchant as Chủ Shop (Merchant)
+    participant PaySvc as payment-service (:3011)
+
+    Note over HubStaff,OriginHub: GIAI ĐOẠN 1: ĐÓNG BAO HOÀN & TRUNG CHUYỂN NGƯỢC CHIỀU
+    HubStaff->>ManifestSvc: Gom các đơn hoàn vào Bao Chuyên Dụng (Mã bao MB-RET-xxx)
+    HubStaff->>ManifestSvc: Bấm kẹp chì Seal an ninh túi hoàn
+    HubStaff->>Linehaul: Xếp bao lên Chuyến xe Linehaul chiều về (Reverse Truck)
+    Linehaul->>OriginHub: Xe về tới Hub Gốc -> Cắt chì, quét Inbound kiểm đếm
+    OriginHub->>ReturnCourier: Phân công tuyến bưu tá mang hàng trả lại tận kho Shop
+
+    Note over ReturnCourier,PaySvc: GIAI ĐOẠN 2: THU HỒI CƯỚC HOÀN THEO 3 PHÂN TẦNG KHÁCH HÀNG
+    ReturnCourier->>Merchant: Bàn giao kiện hàng hoàn tận tay
+
+    alt Tầng 1: Khách Vãng Lai (Guest / Walk-in)
+        ReturnCourier->>Merchant: Thu 50% cước gửi chiều đi (Thu tiền mặt hoặc quét VietQR)
+        Merchant-->>ReturnCourier: Thanh toán tiền trực tiếp tại chỗ
+        ReturnCourier->>PaySvc: Nộp tiền hoàn về quỹ bưu cục khi kết ca
+    else Tầng 2: Chủ Shop Tiêu Chuẩn (Standard SME)
+        ReturnCourier->>Merchant: Bàn giao hàng hoàn, KHÔNG THU TIỀN MẶT
+        ReturnCourier->>Merchant: Yêu cầu ký nhận biên bản POD Return điện tử
+        ReturnCourier->>PaySvc: Gửi sự kiện bưu phẩm đã hoàn tất (RETURN_COMPLETED)
+        PaySvc->>PaySvc: TỰ ĐỘNG CẤN TRỪ 50% CƯỚC HOÀN VÀO BẢNG KÊ ĐỐI SOÁT COD TIẾP THEO
+        Note over PaySvc,Merchant: Kỳ thanh toán COD: Tiền thực nhận = Tiền COD thu hộ - 50% Cước hoàn
+    else Tầng 3: Khách VIP Doanh Nghiệp (VIP Enterprise)
+        ReturnCourier->>Merchant: Bàn giao hàng hoàn, ký nhận POD Return
+        Note over PaySvc,Merchant: Áp dụng cước phí hoàn 0 VNĐ (Miễn phí 100% theo hợp đồng khung)
+        PaySvc->>PaySvc: Hạch toán chi phí vào quỹ Marketing chăm sóc khách hàng lớn
+    end
+```
+
+#### Ma trận so sánh chính sách cước chuyển hoàn:
+```text
++--------------------------------------------------------------------------------------------------+
+| PHÂN TẦNG KHÁCH HÀNG  | CƯỚC CHIỀU ĐI  | CƯỚC CHUYỂN HOÀN (RETURN FEE) | CƠ CHẾ THU TIỀN HOÀN    |
++-----------------------+----------------+-------------------------------+-------------------------+
+| Guest (Vãng lai)      | 100% Biểu giá  | 50% Cước chiều đi             | Tiền mặt / VietQR tại quầy|
+| Standard SME (Shop)   | Giảm 5% cước   | 50% Cước chiều đi             | Cấn trừ tự động vào COD |
+| VIP Enterprise        | Giảm 15% - 25% | 0 VNĐ (Miễn phí 100%)         | Miễn thu theo hợp đồng  |
++--------------------------------------------------------------------------------------------------+
+```
+
+---
+
+### 5.3. Case 3: Hàng hỏng / Bể vỡ / Mất mát & Thẩm định Bồi thường Điều 25 Luật Bưu chính
+
+Quy trình giải quyết sự cố hư hại, phân định trách nhiệm khách quan và tự động trích lập bồi hoàn dựa trên căn cứ pháp lý của **Luật Bưu chính Việt Nam số 49/2010/QH12**:
+
+```mermaid
+flowchart TD
+    DISCOVER["Phát hiện sự cố Bưu gửi bị Hư hỏng / Bể vỡ / Thấm ướt<br/>(Lúc chia chọn tại Hub hoặc lúc Shipper đồng kiểm cùng khách)"] --> REPORT_DIR["1. LẬP BIÊN BẢN BẤT THƯỜNG HIỆN TRƯỜNG (MÃ DIR-xxx)<br/>- Ghi nhận mã sự cố: PHYSICAL_DAMAGE, TORN, WET<br/>- Chụp tối thiểu 4 ảnh ngoại quan góc cạnh kiện hàng<br/>- Có chữ ký xác nhận của 2 bên (Bưu tá/Ops + Khách hàng)"]
+
+    REPORT_DIR --> AUDIT_WAIVER{"Kiểm tra Hợp đồng & Hồ sơ Vận đơn:<br/>Đơn hàng có cờ packagingWaiver = true?"}
+
+    AUDIT_WAIVER -- "CÓ (Khách tự gói sơ sài, ký miễn trừ)" --> CHECK_OUTER{"Vỏ thùng carton bên ngoài có bị rách nát,<br/>đè bẹp do tai nạn của phương tiện?"}
+    
+    CHECK_OUTER -- "Vỏ ngoài nguyên vẹn, chỉ vỡ bên trong" --> REJECT_CLAIM["TỪ CHỐI BỒI THƯỜNG BỂ VỠ 100%<br/>Căn cứ Điều 24 Luật Bưu chính (Lỗi do người gửi đóng gói)<br/>Hệ thống xuất thông báo giải trình pháp lý cho khách"]
+    CHECK_OUTER -- "Vỏ ngoài bị đè bẹp móp méo do xe tải" --> LIABILITY_CARRIER["Xác định Lỗi thuộc đơn vị vận chuyển Nexus"]
+
+    AUDIT_WAIVER -- "KHÔNG (Đóng gói đạt chuẩn SOP)" --> LIABILITY_CARRIER
+
+    LIABILITY_CARRIER --> CHECK_INSURANCE{"Đơn hàng có tham gia Gói Khai Giá Bảo Hiểm?<br/>(insuranceTier == 'COMPREHENSIVE_100')"}
+
+    CHECK_INSURANCE -- "CÓ MUA BẢO HIỂM (Phí 0.5%)" --> CLAIM_100["BỒI THƯỜNG 100% GIÁ TRỊ THIỆT HẠI THỰC TẾ<br/>- Khách cung cấp Hóa đơn VAT / Sao kê chuyển khoản hợp lệ<br/>- Mức đền &le; Giá trị khai báo trên vận đơn<br/>- Giải ngân chuyển khoản từ Quỹ rủi ro trong 03 ngày"]
+
+    CHECK_INSURANCE -- "KHÔNG MUA BẢO HIỂM (Gói 0đ)" --> CLAIM_LAW["ÁP DỤNG ĐIỀU 25 KHOẢN 2 LUẬT BƯU CHÍNH<br/>- Mức bồi thường: Tối đa 04 lần cước dịch vụ bưu chính đã thu<br/>- Hạn mức trần tối đa không quá 1.000.000 VNĐ"]
+
+    CLAIM_100 --> INTERNAL_AUDIT["2. TRUY CỨU TRÁCH NHIỆM NỘI BỘ (INTERNAL LIABILITY AUDIT)<br/>- Quét chuỗi Transactional Scan Log + Tem kẹp chì Seal giữa các Hub<br/>- Xác định chính xác bộ phận gây lỗi (Lái xe Linehaul, Bốc xếp, Shipper)<br/>- Tự động trừ điểm KPI an toàn và khấu trừ tiền phạt trách nhiệm vật chất"]
+    CLAIM_LAW --> INTERNAL_AUDIT
+```
+
+#### Ma trận phân định trách nhiệm bồi thường 4 ô (2x2 Decision Matrix):
+| Tình Huống Sự Cố Phát Sinh | Đơn Có Mua Bảo Hiểm 100% (Phí 0.5%) | Đơn Không Mua Bảo Hiểm (Phí 0đ) |
+| :--- | :--- | :--- |
+| **Thất lạc / Mất nguyên kiện** *(Lỗi do Hub hoặc Tài xế)* | **Đền đúng 100% giá trị thực tế** *(Căn cứ Hóa đơn hợp lệ)* | **Đền 04 lần cước gửi** *(Trần tối đa 1.000.000đ)* |
+| **Bể vỡ khi đóng gói đạt chuẩn SOP** *(Xốp 3 lớp)* | **Đền 100% giá trị thực tế** *(Hoặc theo tỷ lệ nứt vỡ)* | **Đền 04 lần cước gửi** *(Theo tỷ lệ hư hại)* |
+| **Bể vỡ khi có biên bản miễn trừ `packagingWaiver`** | **Từ chối bồi thường bể vỡ** *(Thùng ngoài nguyên)* | **Từ chối bồi thường bể vỡ** *(Điều 24 Luật Bưu chính)* |
+
+---
+
+### 5.4. Case 4: Khách hẹn lại ngày giao / Không liên lạc được & Tự động Tái điều phối
+
+Giải quyết tình huống người nhận không có mặt tại địa chỉ hoặc xin hoãn thời gian nhận hàng mà không gây xáo trộn hành trình của tài xế.
+
+```mermaid
+flowchart TD
+    ATTEMPT["Bưu tá liên hệ phát hàng:<br/>- Gọi điện tối thiểu 3 cuộc cách nhau 15 phút không nhấc máy<br/>HOẶC<br/>- Khách nghe máy nhưng báo bận, xin hẹn sang ngày khác"] --> SELECT_REASON["Bưu tá chọn mã ngoại lệ trên Courier Mobile App:<br/>- CUSTOMER_RESCHEDULE (Khách hẹn lại ngày)<br/>- CANNOT_CONTACT (Không liên lạc được)"]
+
+    SELECT_REASON --> INPUT_TIME["Nhập ghi chú thời gian khách hẹn lại<br/>(Ví dụ: Giao lại sau 17h00 ngày mai)"]
+    INPUT_TIME --> HOLD_SCAN["Quét nhập kho Kệ Lưu Trữ Tạm tại Bưu cục phát<br/>(Trạng thái: POSTPONED_IN_HUB)"]
+
+    HOLD_SCAN --> AUTO_SMS["Hệ thống tự động kích hoạt tin nhắn SMS / Zalo ZNS:<br/>'Kiện hàng của bạn đang lưu an toàn tại bưu cục. Bấm link để chọn giờ phát lại'"]
+
+    AUTO_SMS --> NEXT_DAY{"Đến ngày hẹn phát lại?"}
+    NEXT_DAY -- "ĐẾN LỊCH HẸN" --> REDISPATCH["dispatch-service TỰ ĐỘNG TÁI ĐIỀU PHỐI (RE-DISPATCH)<br/>Gán kiện hàng vào Danh sách phát đầu ca của Shipper<br/>Không tính thêm bất kỳ khoản phụ phí nào"]
+```
+
+---
+
+## 6. MẠNG LƯỚI HUB 4 CẤP & CHUYẾN XE TRUNG CHUYỂN LINEHAUL
+
+Nexus Express tổ chức hạ tầng mạng lưới kho bãi theo cấu trúc hình cây 4 cấp tiêu chuẩn quốc tế:
 
 ```mermaid
 graph TD
@@ -345,7 +601,7 @@ graph TD
 
 ---
 
-## 5. PHÂN HỆ TRỢ LÝ TRÍ TUỆ NHÂN TẠO (AI LOGISTICS ASSISTANT RAG)
+## 7. PHÂN HỆ TRỢ LÝ TRÍ TUỆ NHÂN TẠO (AI LOGISTICS ASSISTANT RAG)
 
 Phân hệ `@NEXUS/chatbot-service` (Port 3013) là điểm đột phá ứng dụng AI tạo sinh vào vận hành thực tế:
 
@@ -394,7 +650,7 @@ sequenceDiagram
 
 ---
 
-## 6. SƠ ĐỒ VÒNG ĐỜI VẬN ĐƠN TỪ A ĐẾN Z (END-TO-END WORKFLOW)
+## 8. SƠ ĐỒ VÒNG ĐỜI VẬN ĐƠN TOÀN TRÌNH TỪ A ĐẾN Z (END-TO-END WORKFLOW)
 
 Quy trình tuần tự một vận đơn đi qua đầy đủ chuỗi giá trị logistics trong hệ thống:
 
@@ -451,7 +707,7 @@ sequenceDiagram
 
 ---
 
-## 7. MA TRẬN ĐỐI CHIẾU CÔNG NGHỆ: NEXUS VS ĐỒ ÁN TRUYỀN THỐNG
+## 9. MA TRẬN ĐỐI CHIẾU CÔNG NGHỆ: NEXUS VS ĐỒ ÁN TRUYỀN THỐNG
 
 | Tiêu Chí So Sánh | Đồ Án Sinh Viên Thông Thường | Hệ Thống Nexus Express System | Ý Nghĩa Kỹ Thuật Đạt Được |
 | :--- | :--- | :--- | :--- |
@@ -460,12 +716,13 @@ sequenceDiagram
 | **Giao tiếp giữa các dịch vụ**| Gọi HTTP trực tiếp phụ thuộc lẫn nhau | **Event-Driven qua RabbitMQ + Outbox Pattern** | Phi đồng bộ, chịu lỗi cao, loại bỏ rủi ro mất mát sự kiện (Zero Event Loss). |
 | **Ứng dụng Client** | 1 hoặc 2 Web đơn giản | **6 Ứng dụng (4 Web React + 2 Mobile Expo)** | Bao phủ 100% các bên trong chuỗi cung ứng thực tế (từ Admin, Ops đến Khách lẻ). |
 | **Tính nhất quán giá cước** | Tính toán sơ sài trên frontend | **Unified Pricing Engine chuẩn IATA V/6000** | Đồng nhất 100% kết quả tính cước giữa Web, Mobile và AI Chatbot. |
+| **Quy trình xử lý ngoại lệ** | Chỉ có 2 trạng thái Giao/Hủy | **4 Chu trình ngoại lệ: NDR, Hoàn cấn trừ COD, Bồi thường Điều 25 Luật Bưu chính** | Đóng kín bài toán thất thoát tài chính và pháp lý tranh chấp bưu gửi thực tế. |
 | **Trí tuệ nhân tạo (AI)** | Gọi API OpenAI đơn giản không ngữ cảnh | **Microservice AI riêng biệt + Hybrid RAG + 5 Tools** | Trả lời chính xác 100% nghiệp vụ bưu chính, không bị ảo giác (hallucination). |
 | **Khả năng hoạt động ngoại tuyến** | Mất mạng là app báo lỗi, dừng thao tác | **Offline Queue trên Mobile + Idempotency Record** | Shipper vẫn quét hàng bình thường trong tầng hầm, mạng có lại tự động đồng bộ. |
 
 ---
 
-## 8. KỊCH BẢN DEMO THỰC CHIẾN 5 PHÚT DÀNH CHO THẦY CÔ
+## 10. KỊCH BẢN DEMO THỰC CHIẾN 5 PHÚT DÀNH CHO THẦY CÔ
 
 Nhóm đã chuẩn bị kịch bản demo súc tích, ấn tượng thể hiện trọn vẹn luồng dữ liệu thời gian thực:
 
@@ -483,15 +740,16 @@ Nhóm đã chuẩn bị kịch bản demo súc tích, ấn tượng thể hiện
    - Mở `apps/courier-mobile` (`http://localhost:8081`).
    - Shipper quét mã vạch bằng camera, chụp ảnh ký nhận POD, nhập mã xác thực OTP 6 số.
    - Bấm **Hoàn tất giao hàng**: Giao diện cập nhật ngay lập tức sang trạng thái `DELIVERED`.
-5. **Phút 5 - Đối soát COD & Báo cáo quản trị:**
-   - Quay lại `apps/ops-web`, đơn hàng chuyển sang `DELIVERED`, tiền COD tự động ghi nhận vào sổ cái `COLLECTED`.
+5. **Phút 5 - Xử lý ngoại lệ hoàn hàng & Đối soát COD:**
+   - Quay lại `apps/ops-web`, biểu diễn một đơn bị từ chối nhận (NDR) chuyển sang hoàn hàng `RETURN_STARTED`.
+   - Mở màn hình đối soát trên `merchant-web`, Thầy cô thấy hệ thống **tự động cấn trừ 50% cước hoàn vào tiền thu hộ COD** hoàn toàn minh bạch.
    - Mở `apps/admin-web` (`http://localhost:5175`) xem biểu đồ KPI sản lượng và nhật ký kiểm toán hệ thống.
 
 ---
 
-## 9. HƯỚNG DẪN KHỞI CHẠY HỆ THỐNG & TÀI KHOẢN KIỂM THỬ
+## 11. HƯỚNG DẪN KHỞI CHẠY HỆ THỐNG & TÀI KHOẢN KIỂM THỬ
 
-### 9.1. Khởi động hạ tầng cơ sở (Docker Compose)
+### 11.1. Khởi động hạ tầng cơ sở (Docker Compose)
 
 ```bash
 cd infra/dev
@@ -504,7 +762,7 @@ Hạ tầng bao gồm:
 - Redis: `localhost:6379`
 - MinIO Object Storage: `localhost:9000` (Console: `http://localhost:9001`, user/pass: `minioadmin/minioadmin`)
 
-### 9.2. Khởi chạy toàn bộ hệ thống bằng script tự động
+### 11.2. Khởi chạy toàn bộ hệ thống bằng script tự động
 
 Trên macOS / Linux:
 ```bash
@@ -516,7 +774,7 @@ Trên Windows PowerShell:
 .\run-all.ps1
 ```
 
-### 9.3. Danh mục cổng truy cập ứng dụng
+### 11.3. Danh mục cổng truy cập ứng dụng
 
 | Ứng dụng | Địa chỉ URL truy cập | Ghi chú |
 | :--- | :--- | :--- |
@@ -528,7 +786,7 @@ Trên Windows PowerShell:
 | **Courier Mobile** | `http://localhost:8081` | Ứng dụng bưu tá (Expo Go trên điện thoại) |
 | **Customer Mobile** | `http://localhost:8082` | Ứng dụng khách hàng cá nhân (Expo Go) |
 
-### 9.4. Danh mục tài khoản kiểm thử mặc định
+### 11.4. Danh mục tài khoản kiểm thử mặc định
 
 | Vai trò | Tên đăng nhập | Mật khẩu | Quyền hạn & Hub phân công |
 | :--- | :--- | :--- | :--- |
