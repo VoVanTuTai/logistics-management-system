@@ -1041,6 +1041,7 @@ function MerchantApp(): React.JSX.Element {
   const [passwordSaving, setPasswordSaving] = useState(false);
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [showTopupModal, setShowTopupModal] = useState(false);
 
   const navItems: Array<{ id: ViewId; label: string; icon: string; subtitle: string }> = [
     { id: 'dashboard', label: 'Tổng quan', icon: 'dashboard', subtitle: 'Merchant Portal > Tổng quan' },
@@ -1740,6 +1741,9 @@ function MerchantApp(): React.JSX.Element {
             })
             .join(', ')})`;
 
+    const netBalance = deliveredCod - totalFee;
+    const isNegativeBalanceLocked = netBalance < -500_000;
+
     return {
       dailySeries,
       maxDailyOrders,
@@ -1747,6 +1751,9 @@ function MerchantApp(): React.JSX.Element {
       statusGroups,
       totalFee,
       totalCod,
+      deliveredCod,
+      netBalance,
+      isNegativeBalanceLocked,
       deliveryRate,
       issueRate,
       cashItems,
@@ -1754,6 +1761,8 @@ function MerchantApp(): React.JSX.Element {
       donutGradient,
     };
   }, [shipmentRows, dashboardStats.delivered, dashboardStats.failedOrReturn, pickupByShipmentCode]);
+
+  const insights = dashboardInsights;
 
   useEffect(() => setListPage(1), [listSearch, listStatus, listService, listRegion, listFromDate, listToDate]);
 
@@ -2295,6 +2304,13 @@ function MerchantApp(): React.JSX.Element {
 
   async function submitCreateShipment(withPickup: boolean): Promise<void> {
     if (!session) return;
+    if (insights.isNegativeBalanceLocked) {
+      setCreateError(
+        `Số dư công nợ của tài khoản đang ở mức ${formatCurrency(insights.netBalance)} (vượt hạn mức âm tối đa -500.000đ). Vui lòng thanh toán nợ cước qua VietQR để tiếp tục tạo đơn.`,
+      );
+      setShowTopupModal(true);
+      return;
+    }
     if (hubLocations.length === 0) {
       setCreateError('Chưa có hub hoạt động. Vui lòng cấu hình hub ở trang Admin.');
       return;
@@ -3334,6 +3350,38 @@ function MerchantApp(): React.JSX.Element {
         <main className={`content ${activeView === 'change-requests' ? 'content--change' : ''} ${activeView === 'print' ? 'content--print' : ''} ${activeView === 'returns' ? 'content--returns' : ''} ${activeView === 'account' ? 'content--account' : ''}`}>
           {dataError ? <p className="message error">{dataError}</p> : null}
 
+          {insights.isNegativeBalanceLocked ? (
+            <div className="merchant-debt-warning-banner" style={{ marginBottom: '16px', padding: '16px 20px', borderRadius: '12px', background: '#FEF2F2', border: '1.5px solid #F87171', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '28px', color: '#DC2626' }}>warning</span>
+                <div>
+                  <h4 style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: 800, color: '#991B1B' }}>CẢNH BÁO NỢ CƯỚC VƯỢT HẠN MỨC CHO PHÉP</h4>
+                  <p style={{ margin: 0, fontSize: '13px', color: '#7F1D1D' }}>
+                    Số dư công nợ hiện tại: <strong style={{ color: '#DC2626' }}>{formatCurrency(insights.netBalance)}</strong> (vượt trần nợ âm tối đa -500.000đ). Hệ thống tạm thời khóa quyền tạo đơn mới.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn btn-danger"
+                style={{ whiteSpace: 'nowrap', backgroundColor: '#DC2626', borderColor: '#DC2626', color: '#FFFFFF', padding: '10px 16px', fontWeight: 700, borderRadius: '8px' }}
+                onClick={() => setShowTopupModal(true)}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '18px', marginRight: '6px' }}>qr_code_2</span>
+                <span>Nạp tiền / Thanh toán nợ VietQR</span>
+              </button>
+            </div>
+          ) : null}
+
+          {insights.issueRate > 20 && shipmentRows.length >= 5 ? (
+            <div className="merchant-risk-warning-banner" style={{ marginBottom: '16px', padding: '12px 16px', borderRadius: '10px', background: '#FFFBEB', border: '1px solid #FDE68A', display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13px', color: '#92400E' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '22px', color: '#D97706' }}>shield_with_heart</span>
+              <div>
+                <strong>Cảnh báo rủi ro hoàn hàng ({insights.issueRate}%):</strong> Tỷ lệ giao không thành công hoặc chuyển hoàn của Shop đang cao hơn mức khuyến nghị (20%). Quý khách nên rà soát lại thông tin khách hàng, số điện thoại hoặc yêu cầu đặt cọc cước với các đơn hàng giá trị cao.
+              </div>
+            </div>
+          ) : null}
+
           {activeView === 'dashboard' ? (
             <section className="dashboard-layout">
               <div className="card dashboard-hero">
@@ -4084,7 +4132,7 @@ function MerchantApp(): React.JSX.Element {
                     <button
                       type="button"
                       className="btn btn-primary btn-primary-action"
-                      disabled={createLoading || hubLocations.length === 0 || !lockedSenderHub}
+                      disabled={createLoading || hubLocations.length === 0 || !lockedSenderHub || insights.isNegativeBalanceLocked}
                       onClick={() => {
                         void submitCreateShipment(false);
                       }}
@@ -4100,7 +4148,7 @@ function MerchantApp(): React.JSX.Element {
                         background: 'linear-gradient(135deg, #0052cc 0%, #0c56d0 100%)',
                         boxShadow: '0 4px 14px rgba(0, 82, 204, 0.3)',
                       }}
-                      disabled={createLoading || hubLocations.length === 0 || !lockedSenderHub}
+                      disabled={createLoading || hubLocations.length === 0 || !lockedSenderHub || insights.isNegativeBalanceLocked}
                       onClick={() => {
                         void submitCreateShipment(true);
                       }}
@@ -4110,6 +4158,11 @@ function MerchantApp(): React.JSX.Element {
                     </button>
                   </div>
 
+                  {insights.isNegativeBalanceLocked ? (
+                    <p className="message error" style={{ marginTop: '14px' }}>
+                      Tài khoản đang vượt hạn mức nợ cước ({formatCurrency(insights.netBalance)} &lt; -500.000đ). Vui lòng thanh toán cước qua VietQR để mở khóa tạo đơn.
+                    </p>
+                  ) : null}
                   {quoteError ? <p className="message error" style={{ marginTop: '14px' }}>{quoteError}</p> : null}
                   {createError ? <p className="message error" style={{ marginTop: '14px' }}>{createError}</p> : null}
                   {createSuccess ? <p className="message success" style={{ marginTop: '14px' }}>{createSuccess}</p> : null}
@@ -5592,6 +5645,49 @@ function MerchantApp(): React.JSX.Element {
           </section> : null}
         </main>
       </div>
+
+      {showTopupModal ? (
+        <div className="ops-modal-backdrop" onClick={() => setShowTopupModal(false)}>
+          <div className="ops-modal-card" style={{ maxWidth: '440px', padding: '24px' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: 'var(--stitch-on-surface)' }}>Thanh toán nợ cước VietQR</h3>
+              <button type="button" className="ops-modal-close-btn" onClick={() => setShowTopupModal(false)}>✕</button>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <p className="muted" style={{ fontSize: '13px', margin: '0 0 16px' }}>
+                Quét mã QR bằng App ngân hàng bất kỳ để thanh toán nợ cước và mở khóa tạo đơn tự động.
+              </p>
+              <img
+                src={`https://img.vietqr.io/image/970422-123456789-compact2.png?amount=${Math.max(50000, Math.abs(insights.netBalance))}&addInfo=${encodeURIComponent(`NO CUOC ${session?.user?.username || 'SHOP'}`)}&accountName=${encodeURIComponent('NEXUS LOGISTICS')}`}
+                alt="VietQR Thanh toán nợ cước"
+                style={{ width: '240px', height: '240px', borderRadius: '12px', border: '1px solid #E2E8F0', margin: '0 auto', display: 'block' }}
+              />
+              <div style={{ marginTop: '16px', textAlign: 'left', background: '#F8FAFC', padding: '12px 14px', borderRadius: '8px', fontSize: '13px', lineHeight: '1.6' }}>
+                <div><strong>Ngân hàng thụ hưởng:</strong> MBBank (Ngân hàng Quân Đội)</div>
+                <div><strong>Số tài khoản:</strong> 123456789</div>
+                <div><strong>Chủ tài khoản:</strong> CÔNG TY CỔ PHẦN NEXUS LOGISTICS</div>
+                <div><strong>Số tiền nợ cần thanh toán:</strong> <span style={{ color: '#DC2626', fontWeight: 700 }}>{formatCurrency(Math.max(50000, Math.abs(insights.netBalance)))}</span></div>
+                <div><strong>Nội dung:</strong> NO CUOC {session?.user?.username || 'SHOP'}</div>
+              </div>
+            </div>
+            <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button type="button" className="btn btn-secondary" onClick={() => setShowTopupModal(false)}>
+                Đóng
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => {
+                  setShowTopupModal(false);
+                  alert('Hệ thống đang kiểm tra giao dịch chuyển khoản VietQR tự động. Số dư sẽ được cập nhật trong ít phút!');
+                }}
+              >
+                Đã chuyển khoản
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

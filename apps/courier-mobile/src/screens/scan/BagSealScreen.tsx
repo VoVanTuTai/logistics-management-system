@@ -160,6 +160,20 @@ function readProcessingHubCode(metadata: ShipmentMetadata | null): string | null
   );
 }
 
+function readDestinationHubCode(shipment: ShipmentDto): string | null {
+  return normalizeOptionalCode(
+    readMetadataString(shipment.metadata, [
+      'destinationHubCode',
+      'receiverHubCode',
+      'routing.destinationHubCode',
+      'receiver.hubCode',
+      'delivery.hubCode',
+      'deliveryHubCode',
+      'receiver.address.hubCode',
+    ]),
+  );
+}
+
 function isHomePickupShipment(metadata: ShipmentMetadata | null): boolean {
   const classification = normalizeOptionalCode(
     readMetadataString(metadata, [
@@ -218,6 +232,7 @@ function validateShipmentForBagSeal(
     currentLocation: CurrentLocationDto | null;
     isReturnLabel?: boolean;
     shipmentTasks?: TaskDto[];
+    bagDestinationHub?: string | null;
   },
 ): string | null {
   const shipmentCode = normalizeCode(shipment.code);
@@ -231,6 +246,14 @@ function validateShipmentForBagSeal(
 
   if (status === 'CANCELLED') {
     return `Đơn ${shipmentCode} đã bị hủy, không thể đóng bao.`;
+  }
+
+  // Cảnh báo sai luồng Hub: Ngăn chặn đóng bao sai tuyến đích
+  if (input.bagDestinationHub && !isReturnBagFlow) {
+    const shipmentDestHub = readDestinationHubCode(shipment);
+    if (shipmentDestHub && shipmentDestHub !== input.bagDestinationHub) {
+      return `⚠️ CẢNH BÁO SAI LUỒNG HUB: Đơn ${shipmentCode} thuộc tuyến đích [${shipmentDestHub}], KHÔNG KHỚP với bao đi [${input.bagDestinationHub}]! Vui lòng không đóng vào bao này.`;
+    }
   }
 
   if (BAG_BLOCKED_STATUSES.has(status) && !isReturnBagFlow) {
@@ -313,6 +336,7 @@ export function BagSealScreen(): React.JSX.Element {
   );
 
   const [bagCode, setBagCode] = React.useState('');
+  const [bagDestinationHub, setBagDestinationHub] = React.useState<string | null>(null);
   const [shipmentCodeInput, setShipmentCodeInput] = React.useState('');
   const [shipments, setShipments] = React.useState<SealedShipmentItem[]>([]);
   const [selectedCodes, setSelectedCodes] = React.useState<Set<string>>(
@@ -332,6 +356,30 @@ export function BagSealScreen(): React.JSX.Element {
     normalizedBagCode.length > 0 && !hasValidBagCode
       ? 'Tem bao phải đúng định dạng MB + 10 chữ số.'
       : null;
+
+  React.useEffect(() => {
+    let active = true;
+    if (!accessToken || !isValidBagCode(normalizedBagCode)) {
+      setBagDestinationHub(null);
+      return;
+    }
+
+    void manifestApi.detailByCode(accessToken, normalizedBagCode)
+      .then((manifest) => {
+        if (active && manifest?.destinationHubCode) {
+          const dest = manifest.destinationHubCode.trim().toUpperCase();
+          setBagDestinationHub(dest);
+          setScreenMessage(`Tem bao ${normalizedBagCode} ➔ Luồng tuyến đích: ${dest}`);
+        }
+      })
+      .catch(() => {
+        if (active) setBagDestinationHub(null);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [accessToken, normalizedBagCode]);
 
   React.useEffect(() => {
     return () => {
@@ -398,6 +446,7 @@ export function BagSealScreen(): React.JSX.Element {
           currentLocation,
           isReturnLabel: scanCode.isReturnLabel,
           shipmentTasks,
+          bagDestinationHub,
         });
 
         if (validationError) {
@@ -669,6 +718,14 @@ export function BagSealScreen(): React.JSX.Element {
             autoCapitalize="characters"
           />
           {bagCodeError ? <Text style={styles.errorText}>{bagCodeError}</Text> : null}
+          {bagDestinationHub ? (
+            <View style={styles.routeBadgeRow}>
+              <Ionicons name="navigate-circle" size={16} color="#0052CC" />
+              <Text style={styles.routeBadgeText}>
+                Luồng tuyến đích của bao: <Text style={styles.routeBadgeBold}>{bagDestinationHub}</Text>
+              </Text>
+            </View>
+          ) : null}
         </View>
 
         <View style={styles.fieldRow}>
@@ -1044,5 +1101,25 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 20,
     fontWeight: '700',
+  },
+  routeBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: '#EFF6FF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  routeBadgeText: {
+    fontSize: 12,
+    color: '#1E40AF',
+  },
+  routeBadgeBold: {
+    fontWeight: '800',
+    color: '#1D4ED8',
   },
 });

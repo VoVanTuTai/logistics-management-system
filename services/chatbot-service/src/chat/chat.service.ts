@@ -137,6 +137,35 @@ export class ChatService {
         `- Ngày hoàn tất phán quyết: ${claimRes.adjudicatedAt || '15/09/2026'}\n`;
     }
 
+    // Kiểm tra ý định kết nối chuyên viên CSKH con người (AI Handover)
+    const isEscalationQuery =
+      normalizedQ.includes('gap nhan vien') ||
+      normalizedQ.includes('noi chuyen voi nguoi') ||
+      normalizedQ.includes('tong dai') ||
+      normalizedQ.includes('cskh') ||
+      normalizedQ.includes('dien thoai vien') ||
+      normalizedQ.includes('tu van vien') ||
+      normalizedQ.includes('ho tro truc tiep') ||
+      normalizedQ.includes('gap nguoi that') ||
+      normalizedQ.includes('chuyen dien thoai') ||
+      normalizedQ.includes('khieu nai gap');
+
+    if (isEscalationQuery) {
+      toolsUsed.push('escalateToHumanAgent()');
+      const handover = this.toolsService.escalateToHumanAgent({
+        userId: dto.userId,
+        trackingNumber: trackingMatch ? (trackingMatch[1] ? trackingMatch[1].toUpperCase() : trackingMatch[0]) : undefined,
+        reason: question,
+      });
+      toolAugmentedContext += `\n[KẾT QUẢ ĐIỀU HƯỚNG CHUYỂN TIẾP CHUYÊN VIÊN CSKH CON NGƯỜI]:\n` +
+        `- Mã phiếu yêu cầu hỗ trợ: ${handover.ticketId}\n` +
+        `- Hàng đợi điều phối: ${handover.queue} (Ưu tiên: ${handover.priority})\n` +
+        `- Hotline hỗ trợ: ${handover.hotline}\n` +
+        `- Khung giờ làm việc: ${handover.operatingHours}\n` +
+        `- Thời gian kết nối ước tính: ${handover.estimatedWaitTimeSeconds} giây\n` +
+        `- Thông báo hệ thống: ${handover.message}\n`;
+    }
+
     // Kiểm tra ý định tính cước chuyển hoàn (Return Fee)
     const isReturnFeeQuery =
       (question.includes('hoàn') || question.includes('bom')) &&
@@ -349,7 +378,7 @@ Quy tắc trả lời:
 1. Ngôn ngữ: Tiếng Việt chuẩn mực, lịch sự, thân thiện, rõ ràng.
 2. Căn cứ: Trả lời DỰA TRÊN NGỮ CẢNH (Context) được cung cấp. Tuyệt đối không tự bịa đặt thông tin.
 3. Khi trả lời về cước phí hoặc đền bù, hãy nêu rõ căn cứ chính sách hoặc công thức bồi thường. Nếu có bảng dự toán cước, hãy báo giá đầy đủ cả gói Tiêu chuẩn và Nhanh cùng cước hoàn dự kiến.
-4. Nếu ngữ cảnh không có thông tin, hãy thẳng thắn thông báo và hướng dẫn khách gọi tổng đài 1900 0000.
+4. Nếu khách hàng yêu cầu gặp nhân viên tư vấn, khiếu nại gay gắt hoặc có thông tin chuyển tiếp (Escalate to Human Agent), hãy cung cấp đầy đủ Mã phiếu hỗ trợ (Ticket ID), số tổng đài Hotline 1900-1234 và cam kết kết nối chuyên viên nhanh chóng.
 5. QUY TẮC ĐỊNH DẠNG THẨM MỸ (RẤT QUAN TRỌNG):
 - TUYỆT ĐỐI KHÔNG dùng dấu nháy đơn ngược (backtick \`) bao quanh bất kỳ từ ngữ nào (ví dụ KHÔNG viết \`PICKED_UP\` hay \`30002004\`). Hãy viết thẳng hoặc đặt trong ngoặc đơn thông thường.
 - TUYỆT ĐỐI KHÔNG dùng ba dấu sao (***).

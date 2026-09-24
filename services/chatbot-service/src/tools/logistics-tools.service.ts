@@ -430,4 +430,28 @@ export class LogisticsToolsService {
       adjudicatedAt: '15/09/2026',
     };
   }
+
+  /**
+   * Điều hướng chuyển tiếp sang Chuyên viên CSKH con người (AI Handover to Human Agent)
+   */
+  public escalateToHumanAgent(input: {
+    userId?: string;
+    trackingNumber?: string;
+    reason?: string;
+  }) {
+    const ticketId = `TICKET-${Date.now().toString(36).toUpperCase()}`;
+    this.logger.log(`Tool escalateToHumanAgent invoked: ticketId=${ticketId}, reason=${input.reason}`);
+
+    return {
+      ticketId,
+      queue: 'TIER_2_HUMAN_SUPPORT',
+      priority: 'HIGH',
+      hotline: '1900-1234 (Phím 1: Giao nhận / Khiếu nại; Phím 2: Bồi thường bưu gửi)',
+      operatingHours: '07:30 - 21:00 hàng ngày (kể cả Thứ 7, Chủ Nhật và ngày lễ)',
+      trackingNumber: input.trackingNumber || 'N/A',
+      estimatedWaitTimeSeconds: 45,
+      message: `Hệ thống đã khởi tạo phiếu yêu cầu hỗ trợ trực tiếp [${ticketId}]. Chuyên viên CSKH Nexus Logistics đang được kết nối trong vòng 45 giây. Quý khách cũng có thể liên hệ tổng đài 1900-1234 để được xử lý khẩn cấp.`,
+    };
+  }
 }
+

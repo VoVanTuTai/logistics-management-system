@@ -25,6 +25,7 @@ import { shipmentApi } from '../../features/shipment/shipment.api';
 import type { ShipmentDto, ShipmentMetadata } from '../../features/shipment/shipment.types';
 import { tasksApi } from '../../features/tasks/tasks.api';
 import { useAssignedTasksQuery } from '../../features/tasks/tasks.queries';
+import { useCodRecordsQuery } from '../../features/cod/cod.queries';
 import type { TaskDto, TaskStatus, TaskType } from '../../features/tasks/tasks.types';
 import type { AppNavigatorParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
@@ -296,10 +297,24 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
     accessToken: session?.tokens.accessToken ?? null,
     courierId,
   });
+  const codRecordsQuery = useCodRecordsQuery({
+    courierId,
+    accessToken: session?.tokens.accessToken ?? null,
+  });
   const onRefresh = () => {
     void tasksQuery.refetch();
+    void codRecordsQuery.refetch();
     void refreshMobilePermissions();
   };
+
+  const cashNeedRemit = useMemo(() => {
+    const records = codRecordsQuery.data ?? [];
+    return records
+      .filter((r) => r.paymentMethod === 'COD' && r.status === 'COLLECTED')
+      .reduce((sum, r) => sum + (r.collectedAmount ?? r.codAmount ?? 0), 0);
+  }, [codRecordsQuery.data]);
+
+  const isCashOverLimit = cashNeedRemit >= 15_000_000;
 
   const [taskTypeFilter, setTaskTypeFilter] = useState<TaskType | 'ALL'>(
     route?.params?.initialTaskType ?? 'ALL',
@@ -727,6 +742,21 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
             </Text>
           </Pressable>
         </View>
+
+        {isCashOverLimit ? (
+          <View style={styles.cashWarningBar}>
+            <Ionicons name="warning" size={16} color="#DC2626" />
+            <Text style={styles.cashWarningText}>
+              Đang giữ <Text style={{ fontWeight: '800' }}>{cashNeedRemit.toLocaleString('vi-VN')}đ</Text> COD mặt (vượt trần 15tr). Vui lòng nộp tiền!
+            </Text>
+            <Pressable
+              onPress={() => navigation.navigate('CodStats')}
+              style={styles.cashWarningButton}
+            >
+              <Text style={styles.cashWarningBtnText}>Nộp tiền</Text>
+            </Pressable>
+          </View>
+        ) : null}
       </View>
 
       {offlinePendingCount > 0 ? (
@@ -1429,5 +1459,35 @@ const styles = StyleSheet.create({
     color: '#0369a1',
     fontSize: 11,
     fontWeight: '800',
+  },
+  cashWarningBar: {
+    marginHorizontal: theme.spacing.lg,
+    marginTop: theme.spacing.xs,
+    marginBottom: theme.spacing.xs,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#F87171',
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  cashWarningText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#991B1B',
+  },
+  cashWarningButton: {
+    backgroundColor: '#DC2626',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+  },
+  cashWarningBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
