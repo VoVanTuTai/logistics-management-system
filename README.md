@@ -669,12 +669,17 @@ flowchart TD
     P_TRY --> COLLECT_PAY
 
     COLLECT_PAY --> CHECK_CASH{"Kiểm tra trần tiền mặt bưu tá đang giữ:<br/>accumulatedCodCash > 15.000.000đ?"}
-    CHECK_CASH -- "VƯỢT TRẦN 15 TRIỆU" --> LOCK_TASK["TẠM KHÓA NHẬN ĐƠN MỚI TRÊN APP<br/>Yêu cầu bưu tá nộp tiền về bưu cục hoặc quét VietQR nộp tiền ca"]
+    CHECK_CASH -- "VƯỢT TRẦN 15 TRIỆU" --> LOCK_TASK["CẢNH BÁO VƯỢT TRẦN TIỀN MẶT COD<br/>Yêu cầu bưu tá nộp tiền về bưu cục hoặc quét VietQR nộp tiền ca"]
     CHECK_CASH -- "TRONG HẠN MỨC" --> CONTINUE_TASK["Tiếp tục nhận và phát các đơn tiếp theo"]
+
+    CONTINUE_TASK --> END_SHIFT{"Chốt ca cuối ngày:<br/>Bưu tá có nộp hết COD trong ngày không?"}
+    END_SHIFT -- "ĐÃ NỘP HẾT / ĐỐI SOÁT XONG" --> NEXT_DAY_OK["Mở ca ngày hôm sau bình thường"]
+    END_SHIFT -- "KHÔNG ĐÓNG COD / NỢ QUA NGÀY" --> LOCK_NEXT_DAY["🔒 TỰ ĐỘNG KHÓA TÀI KHOẢN QUA NGÀY HÔM SAU<br/>Chặn truy cập nhiệm vụ & chặn phát hàng mới<br/>Bắt buộc nộp hết COD nợ tồn để tự động mở khóa"]
 ```
 
 - **Quy chế bưu tá:** Nếu bưu tá tự ý cho người nhận bóc seal sản phẩm khi đơn hàng có cờ `NONE` hoặc `VIEW_ONLY` dẫn đến khách từ chối nhận, bưu tá chịu trách nhiệm mua lại đơn hàng.
-- **Trần giữ tiền mặt (Cash Limit):** Khi bưu tá giữ trên 15.000.000đ tiền mặt COD chưa nộp về quỹ, hệ thống `dispatch-service` tự động chặn gán thêm nhiệm vụ phát mới để ngăn ngừa rủi ro tài chính.
+- **Trần giữ tiền mặt (Cash Limit):** Khi bưu tá giữ trên 15.000.000đ tiền mặt COD chưa nộp về quỹ, hệ thống cảnh báo và yêu cầu nộp tiền về bưu cục hoặc quét mã VietQR.
+- **Quy định chốt ca cuối ngày & Khóa tài khoản nợ COD qua ngày:** Cuối ngày làm việc, bưu tá bắt buộc phải hoàn tất đối soát và nộp toàn bộ tiền mặt COD đã thu (`status = COLLECTED`) vào két thủ quỹ bưu cục hoặc chuyển khoản qua mã VietQR định danh. **Nếu cuối ngày không đóng COD, sang ngày hôm sau tài khoản bưu tá sẽ tự động bị KHÓA** (chặn truy cập chi tiết đơn, chặn bắt đầu chặng và nhận/phát hàng mới) cho đến khi nộp hết toàn bộ tiền COD còn tồn đọng từ ca hôm trước.
 
 ---
 
