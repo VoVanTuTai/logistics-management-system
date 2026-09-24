@@ -32,6 +32,7 @@
    - [3.3. Tầng Cơ sở dữ liệu (Database per Service) & MinIO S3](#33-tầng-cơ-sở-dữ-liệu-database-per-service--minio-s3)
    - [3.4. Trục truyền thông sự kiện (RabbitMQ Event Bus)](#34-trục-truyền-thông-sự-kiện-rabbitmq-event-bus)
 4. [ĐẶC TẢ NGHIỆP VỤ & SƠ ĐỒ QUY TRÌNH THEO TỪNG LOẠI ĐƠN HÀNG](#4-đặc-tả-nghiệp-vụ--sơ-đồ-quy-trình-theo-từng-loại-đơn-hàng)
+   - [4.0. Nguồn chân lý 19 Trạng thái Vận đơn & Máy trạng thái chuẩn hóa (The 19 Canonical State Machine)](#40-nguồn-chân-lý-19-trạng-thái-vận-đơn--máy-trạng-thái-chuẩn-hóa-the-19-canonical-state-machine)
    - [4.1. Đơn Tiêu Chuẩn Thu Hộ COD (Standard COD Shipment)](#41-đơn-tiêu-chuẩn-thu-hộ-cod-standard-cod-shipment)
    - [4.2. Đơn Hỏa Tốc / Nội Thành 6h - 12h (Express & Same-Day Service)](#42-đơn-hỏa-tốc--nội-thành-6h---12h-express--same-day-service)
    - [4.3. Đơn Hàng Cồng Kềnh / Quá Khổ Quy Đổi IATA V/6000 (Bulky Freight)](#43-đơn-hàng-cồng-kềnh--quá-khổ-quy-đổi-iata-v6000-bulky-freight)
@@ -279,6 +280,93 @@ flowchart TD
 
 ---
 
+### 4.0. Nguồn chân lý 19 Trạng thái Vận đơn & Máy trạng thái chuẩn hóa (The 19 Canonical State Machine)
+
+Toàn bộ hệ thống Nexus tuân thủ nghiêm ngặt mô hình **Đơn nguyên ghi (Single Source of Truth)**: `shipment-service` là dịch vụ duy nhất có quyền cập nhật trường `currentStatus` trong cơ sở dữ liệu `shipment_db`. Các phân hệ khác (`scan-service`, `manifest-service`, `delivery-service`, `tracking-service`) chỉ phát sinh và tiêu thụ sự kiện nghiệp vụ qua RabbitMQ (`domain.events`).
+
+#### Sơ đồ Máy trạng thái tổng thể 19 Trạng thái (Mermaid State Machine):
+
+```mermaid
+stateDiagram-v2
+    [*] --> CREATED: shipment.created (Chủ shop tạo đơn)
+    CREATED --> UPDATED: pickup.requested (Yêu cầu lấy hàng tận nơi)
+    CREATED --> CANCELLED: cancel (Chủ shop hủy trước lấy)
+    UPDATED --> CANCELLED: cancel (Chủ shop hủy trước lấy)
+
+    UPDATED --> TASK_ASSIGNED: pickup.approved / task.assigned (Phân công bưu tá lấy)
+    TASK_ASSIGNED --> PICKUP_COMPLETED: scan.pickup_confirmed (Bưu tá quét barcode nhận hàng)
+    TASK_ASSIGNED --> CANCELLED: cancel (Hủy trước lấy)
+
+    PICKUP_COMPLETED --> SCAN_INBOUND: scan.inbound (Bưu tá nộp hàng tại Hub Gốc)
+    
+    state "KHAI THÁC HUB & LUÂN CHUYỂN LINEHAUL" as HUB_TRANSIT {
+        SCAN_INBOUND --> MANIFEST_SEALED: manifest.sealed (Đóng bao tải MB, kẹp chì seal)
+        MANIFEST_SEALED --> IN_TRANSIT: scan.outbound (Xuất xe tải Linehaul liên tỉnh)
+        IN_TRANSIT --> MANIFEST_RECEIVED: manifest.received (Xe tải đến Hub Đích)
+        MANIFEST_RECEIVED --> MANIFEST_UNSEALED: manifest.unsealed (Cắt chì, mở bao kiểm đếm)
+        MANIFEST_UNSEALED --> SCAN_INBOUND: scan.inbound (Quét nhận từng kiện vào Hub Đích)
+        SCAN_INBOUND --> INVENTORY_CHECK: scan.inbound [INVENTORY_CHECK] (Kiểm tồn kho bưu cục)
+        INVENTORY_CHECK --> SCAN_OUTBOUND: scan.outbound (Xuất kho bàn giao phát)
+        SCAN_OUTBOUND --> TASK_ASSIGNED: task.assigned (Phân công tuyến phát chặng cuối)
+    }
+
+    state "GIAO HÀNG CHẶNG CUỐI & XỬ LÝ NGOẠI LỆ" as LAST_MILE {
+        TASK_ASSIGNED --> DELIVERED: delivery.delivered (Giao thành công + 01 ảnh POD + Thu COD)
+        TASK_ASSIGNED --> DELIVERY_FAILED: delivery.failed (Giao thất bại lần 1, 2)
+        
+        DELIVERY_FAILED --> NDR_CREATED: ndr.created (Lập biên bản sự cố giao hàng NDR)
+        NDR_CREATED --> INVENTORY_CHECK: Quét lưu kho kệ tạm hẹn phát lại
+        INVENTORY_CHECK --> TASK_ASSIGNED: Tái điều phối phát lại (Lần 2, Lần 3)
+        
+        DELIVERY_FAILED --> EXCEPTION: ndr.created [PHYSICAL_DAMAGE] (Hàng bể vỡ / tranh chấp)
+        TASK_ASSIGNED --> EXCEPTION: ndr.created [PHYSICAL_DAMAGE] (Phát hiện bể vỡ tại chỗ)
+    }
+
+    DELIVERED --> [*]
+
+    state "CHU TRÌNH CHUYỂN HOÀN (REVERSE LOGISTICS)" as REVERSE_FLOW {
+        DELIVERY_FAILED --> RETURN_STARTED: return.started (Shop xác nhận hoàn / Quá 3 lần giao)
+        NDR_CREATED --> RETURN_STARTED: return.started
+        EXCEPTION --> RETURN_STARTED: return.started
+
+        RETURN_STARTED --> SCAN_INBOUND: Quét nhập kho bao hoàn MB-RET
+        SCAN_INBOUND --> IN_TRANSIT: Xe Linehaul chiều về (Reverse Truck)
+        IN_TRANSIT --> SCAN_INBOUND: Xe về tới Hub Gốc (Gần Shop)
+        SCAN_INBOUND --> TASK_ASSIGNED: Phân công bưu tá mang hàng trả lại Shop
+        TASK_ASSIGNED --> RETURN_COMPLETED: return.completed (Ký nhận POD Return & Đối soát cước hoàn)
+        SCAN_INBOUND --> RETURN_COMPLETED: return.completed (Shop tự đến bưu cục nhận lại)
+    }
+
+    RETURN_COMPLETED --> [*]
+    CANCELLED --> [*]
+```
+
+#### Bảng Quy Chuẩn Đối Soát Toàn Diện 19 Trạng Thái Toàn Hệ Thống:
+
+| STT | Database Enum (`ShipmentCurrentStatus`) | Nhãn Merchant Web | Nhãn Ops Web | Nhãn Courier App | Nhãn Tracking Public | Event Kích Hoạt & Service Chủ Quản | Trạng Thái Kế Tiếp Hợp Lệ |
+| :---: | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **1** | `CREATED` | Đã tạo | Mới tạo | Mới tạo | Đã tạo | `shipment.created` (`shipment-service`) | `UPDATED`, `TASK_ASSIGNED`, `PICKUP_COMPLETED`, `CANCELLED` |
+| **2** | `UPDATED` | Chờ lấy hàng *(khi có pickup)* | Đã cập nhật | Đã cập nhật | Chờ lấy hàng | `pickup.requested` (`merchant-web`) | `TASK_ASSIGNED`, `PICKUP_COMPLETED`, `CANCELLED` |
+| **3** | `TASK_ASSIGNED` | Phát hàng / Chờ lấy | Đã phân công giao | Đã phân công | Chờ lấy / Phát hàng | `pickup.approved`, `task.assigned`, `delivery.attempted` | `PICKUP_COMPLETED`, `DELIVERED`, `DELIVERY_FAILED`, `NDR_CREATED`, `EXCEPTION`, `RETURN_COMPLETED`, `CANCELLED` |
+| **4** | `PICKUP_COMPLETED` | Đã nhận hàng | Đã nhận hàng | Nhận hàng | Đã nhận hàng | `scan.pickup_confirmed` (`courier-mobile`) | `SCAN_INBOUND`, `SCAN_OUTBOUND`, `SEND_GOODS`, `MANIFEST_SEALED`, `CANCELLED` |
+| **5** | `SCAN_INBOUND` | Hàng đến | Hàng đến | Hàng đến | Hàng đến | `scan.inbound` (`scan-service`) | `MANIFEST_SEALED`, `INVENTORY_CHECK`, `TASK_ASSIGNED`, `SCAN_OUTBOUND`, `RETURN_COMPLETED`, `CANCELLED` |
+| **6** | `MANIFEST_SEALED` | Đang luân chuyển | Đang luân chuyển | Đã niêm phong bao | Đang luân chuyển | `manifest.sealed` (`manifest-service`) | `IN_TRANSIT`, `MANIFEST_RECEIVED`, `MANIFEST_UNSEALED`, `CANCELLED` |
+| **7** | `SEND_GOODS` | Đã gửi hàng | Đã gửi hàng | Đã gửi hàng | Gửi hàng | `scan.outbound` *(Gửi bao hàng / kiện rời)* | `IN_TRANSIT`, `SCAN_INBOUND`, `MANIFEST_SEALED`, `CANCELLED` |
+| **8** | `IN_TRANSIT` | Đang luân chuyển | Đang luân chuyển | Đang luân chuyển | Đang luân chuyển | `scan.outbound` *(Xe tải xuất bến Linehaul)* | `SCAN_INBOUND`, `MANIFEST_RECEIVED`, `MANIFEST_UNSEALED`, `CANCELLED` |
+| **9** | `MANIFEST_RECEIVED`| Đang luân chuyển | Xe đến | Đã nhận bao | Xe đến | `manifest.received` (`manifest-service`) | `MANIFEST_UNSEALED`, `SCAN_INBOUND`, `INVENTORY_CHECK`, `CANCELLED` |
+| **10**| `MANIFEST_UNSEALED`| Gỡ bao | Gỡ bao | Đã gỡ bao | Gỡ bao | `manifest.unsealed` (`manifest-service`) | `SCAN_INBOUND`, `INVENTORY_CHECK`, `TASK_ASSIGNED`, `CANCELLED` |
+| **11**| `INVENTORY_CHECK` | Kiểm tồn kho | Kiểm tồn kho | Kiểm tra hàng tồn | Quét tồn kho | `scan.inbound` *(Kiểm kê kho bưu cục / Hẹn phát lại)* | `TASK_ASSIGNED`, `SCAN_OUTBOUND`, `RETURN_STARTED`, `RETURN_COMPLETED`, `CANCELLED` |
+| **12**| `SCAN_OUTBOUND` | Gửi hàng | Gửi hàng | Đã quét xuất hub | Gửi hàng | `scan.outbound` *(Bàn giao xuất kho phát)* | `TASK_ASSIGNED`, `SEND_GOODS`, `IN_TRANSIT`, `CANCELLED` |
+| **13**| `DELIVERED` | Ký nhận | Ký nhận | Giao thành công | Ký nhận | `delivery.delivered` (`courier-mobile`) | **Terminal State (Bất biến forward)** |
+| **14**| `DELIVERY_FAILED` | Ghi nhận vấn đề | Ghi nhận vấn đề | Giao thất bại | Ghi nhận vấn đề | `delivery.failed` (`delivery-service`) | `DELIVERED`, `NDR_CREATED`, `EXCEPTION`, `TASK_ASSIGNED`, `INVENTORY_CHECK`, `RETURN_STARTED`, `CANCELLED` |
+| **15**| `NDR_CREATED` | Cần xử lý NDR | Cần xử lý giao thất bại | Cần xử lý giao thất bại | Ghi nhận vấn đề | `ndr.created` (`delivery-service`) | `DELIVERED`, `INVENTORY_CHECK`, `TASK_ASSIGNED`, `RETURN_STARTED`, `CANCELLED` |
+| **16**| `EXCEPTION` | Sự cố ngoại lệ | Sự cố ngoại lệ | Kiện vấn đề | Ghi nhận vấn đề | `ndr.created` *(Sự cố bể vỡ PHYSICAL_DAMAGE)* | `INVENTORY_CHECK`, `TASK_ASSIGNED`, `RETURN_STARTED`, `RETURN_COMPLETED`, `CANCELLED` |
+| **17**| `RETURN_STARTED` | Đang hoàn hàng | Bắt đầu hoàn hàng | Bắt đầu hoàn hàng | Đang hoàn hàng | `return.started` (`delivery-service` / `ndr.service`)| `SCAN_INBOUND`, `SCAN_OUTBOUND`, `IN_TRANSIT`, `MANIFEST_SEALED`, `TASK_ASSIGNED`, `RETURN_COMPLETED`, `CANCELLED` |
+| **18**| `RETURN_COMPLETED` | Đã hoàn hàng | Hoàn hàng thành công | Hoàn hàng thành công | Đã hoàn hàng | `return.completed` (`returns.service`) | **Terminal State (Bất biến hoàn tất)** |
+| **19**| `CANCELLED` | Đã hủy | Đã hủy | Đã hủy | Đơn hàng đã hủy | `POST /shipments/:code/cancel` | **Terminal State (Bất biến hủy)** |
+
+---
+
 ### 4.1. Đơn Tiêu Chuẩn Thu Hộ COD (Standard COD Shipment)
 
 Đơn hàng thương mại điện tử phổ biến nhất, chiếm trên 70% tổng sản lượng bưu chính. Đặc trưng bởi luồng tiền thu hộ COD hai chiều và chu kỳ đối soát tài chính định kỳ.
@@ -442,7 +530,7 @@ sequenceDiagram
         ShipSvc->>DeliverySvc: Lên lịch phát lại lần tiếp theo cho Bưu tá
     else Trường hợp B: Đã giao đủ 3 lần thất bại hoặc Shop đồng ý hủy đơn
         Merchant->>ShipSvc: Xác nhận yêu cầu: CHUYỂN HOÀN VỀ SHOP (Confirm Return)
-        ShipSvc->>ShipSvc: Kích hoạt luồng Chuyển Hoàn (Chuyển sang Mục 5.2)
+        ShipSvc->>ShipSvc: Kích hoạt luồng Chuyển Hoàn (Trạng thái DB: RETURN_STARTED)
     end
 ```
 
@@ -452,7 +540,7 @@ flowchart TD
     ATTEMPT["Bưu tá liên hệ phát hàng:<br/>- Gọi điện tối thiểu 3 cuộc cách nhau 15 phút không nhấc máy<br/>HOẶC<br/>- Khách nghe máy nhưng báo bận, xin hẹn sang ngày khác"] --> SELECT_REASON["Bưu tá chọn mã ngoại lệ trên Courier Mobile App:<br/>- CUSTOMER_RESCHEDULE (Khách hẹn lại ngày)<br/>- CANNOT_CONTACT (Không liên lạc được)"]
 
     SELECT_REASON --> INPUT_TIME["Nhập ghi chú thời gian khách hẹn lại<br/>(Ví dụ: Giao lại sau 17h00 ngày mai)"]
-    INPUT_TIME --> HOLD_SCAN["Quét nhập kho Kệ Lưu Trữ Tạm tại Bưu cục phát<br/>(Trạng thái: POSTPONED_IN_HUB)"]
+    INPUT_TIME --> HOLD_SCAN["Quét nhập kho Kệ Lưu Trữ Tạm tại Bưu cục phát<br/>(Trạng thái DB: INVENTORY_CHECK | Ghi chú: Lưu kho hẹn phát lại)"]
 
     HOLD_SCAN --> AUTO_SMS["Hệ thống tự động kích hoạt tin nhắn SMS / Zalo ZNS:<br/>'Kiện hàng của bạn đang lưu an toàn tại bưu cục. Bấm link để chọn giờ phát lại'"]
 
@@ -520,8 +608,8 @@ flowchart TD
     NOTICE_1 --> NOTICE_2["Lưu kho quá 30 ngày:<br/>Gửi thông báo lần 2 (Văn bản / ZNS)"]
     NOTICE_2 --> NOTICE_3["Lưu kho quá 45 ngày:<br/>Gửi thông báo lần 3 (Hạn chót 15 ngày nhận lại)"]
     NOTICE_3 --> AUCTION{"Hết hạn 60 ngày:<br/>Shop từ chối hoặc không đến nhận?"}
-    AUCTION -- "TỪ CHỐI NHẬN LẠI" --> DISPOSE["KÍCH HOẠT ĐIỀU 19 LUẬT BƯU CHÍNH<br/>- Hội đồng bưu cục kiểm kê lập biên bản<br/>- Bán đấu giá công khai bù đắp chi phí bưu chính<br/>- Tiêu hủy nếu hàng hóa hư hỏng, hết hạn dùng"]
-    AUCTION -- "SHOP ĐẾN NHẬN" --> POD_RET["Ký nhận POD Return & Thanh toán cước lưu kho"]
+    AUCTION -- "TỪ CHỐI NHẬN LẠI" --> DISPOSE["KÍCH HOẠT ĐIỀU 19 LUẬT BƯU CHÍNH<br/>- Hội đồng bưu cục kiểm kê lập biên bản<br/>- Bán đấu giá công khai bù đắp chi phí bưu chính<br/>- Tiêu hủy nếu hàng hóa hư hỏng, hết hạn dùng<br/>(Trạng thái DB: RETURN_COMPLETED kèm cờ thanh lý/tiêu hủy)"]
+    AUCTION -- "SHOP ĐẾN NHẬN" --> POD_RET["Ký nhận POD Return & Thanh toán cước lưu kho<br/>(Trạng thái DB: RETURN_COMPLETED)"]
 ```
 
 - **Chốt chặn chống tráo ruột hàng hoàn (Reverse Handover Inspection):** Khi bưu tá trả hàng hoàn, Shop và bưu tá bắt buộc đồng kiểm hiện trạng niêm phong hộp và chụp ảnh POD Return. Nếu Shop đã ký nhận mà không khiếu nại tại chỗ, Nexus miễn trừ trách nhiệm tranh chấp sau bàn giao.
@@ -534,7 +622,7 @@ Quy trình giải quyết sự cố hư hại, phân định trách nhiệm khá
 
 ```mermaid
 flowchart TD
-    DISCOVER["Phát hiện sự cố Bưu gửi bị Hư hỏng / Bể vỡ / Thấm ướt<br/>(Lúc chia chọn tại Hub hoặc lúc Shipper đồng kiểm cùng khách)"] --> REPORT_DIR["1. LẬP BIÊN BẢN BẤT THƯỜNG HIỆN TRƯỜNG (MÃ DIR-xxx)<br/>- Ghi nhận mã sự cố: PHYSICAL_DAMAGE, TORN, WET<br/>- Chụp tối thiểu 4 ảnh ngoại quan góc cạnh kiện hàng<br/>- Có chữ ký xác nhận của 2 bên (Bưu tá/Ops + Khách hàng)"]
+    DISCOVER["Phát hiện sự cố Bưu gửi bị Hư hỏng / Bể vỡ / Thấm ướt<br/>(Lúc chia chọn tại Hub hoặc lúc Shipper đồng kiểm cùng khách)"] --> REPORT_DIR["1. LẬP BIÊN BẢN BẤT THƯỜNG HIỆN TRƯỜNG (MÃ DIR-xxx)<br/>- Ghi nhận mã sự cố: PHYSICAL_DAMAGE, TORN, WET<br/>- Chụp tối thiểu 4 ảnh ngoại quan góc cạnh kiện hàng<br/>- Kích hoạt sự kiện ndr.created -> Trạng thái DB: EXCEPTION (isLocked = true)<br/>- Có chữ ký xác nhận của 2 bên (Bưu tá/Ops + Khách hàng)"]
 
     REPORT_DIR --> AUDIT_WAIVER{"Kiểm tra Hợp đồng & Hồ sơ Vận đơn:<br/>Đơn hàng có cờ packagingWaiver = true?"}
 

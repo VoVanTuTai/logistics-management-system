@@ -1394,14 +1394,33 @@ function MerchantApp(): React.JSX.Element {
       case 'MANIFEST_SEALED':
       case 'MANIFEST_RECEIVED':
         return 'Đang luân chuyển';
+      case 'MANIFEST_UNSEALED':
+        return 'Gỡ bao';
+      case 'SEND_GOODS':
+        return 'Đã gửi hàng';
       case 'SCAN_INBOUND':
         return 'Hàng đến';
+      case 'SCAN_OUTBOUND':
+        return 'Gửi hàng';
+      case 'INVENTORY_CHECK':
+        return 'Kiểm tồn kho';
+      case 'TASK_ASSIGNED':
       case 'OUT_FOR_DELIVERY':
         return 'Phát hàng';
       case 'DELIVERED':
         return 'Ký nhận';
       case 'DELIVERY_FAILED':
         return 'Ghi nhận vấn đề';
+      case 'NDR_CREATED':
+        return 'Cần xử lý NDR';
+      case 'EXCEPTION':
+        return 'Sự cố ngoại lệ';
+      case 'RETURN_STARTED':
+        return 'Đang hoàn hàng';
+      case 'RETURN_COMPLETED':
+        return 'Đã hoàn hàng';
+      case 'CANCELLED':
+        return 'Đã hủy';
       default:
         return shipment.currentStatus;
     }
@@ -1627,9 +1646,9 @@ function MerchantApp(): React.JSX.Element {
     () => ({
       totalToday: shipments.filter((s) => isToday(s.createdAt)).length,
       waitingPickup: shipments.filter((s) => resolveShipmentStatusCode(s) === 'WAITING_PICKUP').length,
-      inTransit: shipments.filter((s) => ['PICKUP_COMPLETED', 'TASK_ASSIGNED', 'MANIFEST_SEALED', 'MANIFEST_RECEIVED', 'MANIFEST_UNSEALED', 'SEND_GOODS', 'SCAN_INBOUND', 'SCAN_OUTBOUND'].includes(s.currentStatus)).length,
+      inTransit: shipments.filter((s) => ['PICKUP_COMPLETED', 'TASK_ASSIGNED', 'MANIFEST_SEALED', 'MANIFEST_RECEIVED', 'MANIFEST_UNSEALED', 'SEND_GOODS', 'SCAN_INBOUND', 'SCAN_OUTBOUND', 'IN_TRANSIT', 'INVENTORY_CHECK'].includes(s.currentStatus)).length,
       delivered: shipments.filter((s) => s.currentStatus === 'DELIVERED').length,
-      failedOrReturn: shipments.filter((s) => ['DELIVERY_FAILED', 'NDR_CREATED', 'RETURN_STARTED', 'RETURN_COMPLETED', 'CANCELLED'].includes(s.currentStatus)).length,
+      failedOrReturn: shipments.filter((s) => ['DELIVERY_FAILED', 'NDR_CREATED', 'EXCEPTION', 'RETURN_STARTED', 'RETURN_COMPLETED', 'CANCELLED'].includes(s.currentStatus)).length,
     }),
     [shipments, pickupByShipmentCode],
   );
@@ -1650,11 +1669,11 @@ function MerchantApp(): React.JSX.Element {
       const status = resolveShipmentStatusCode(row.shipment);
       if (status === 'WAITING_PICKUP') {
         statusByKey.get('waiting')!.count += 1;
-      } else if (['PICKUP_COMPLETED', 'TASK_ASSIGNED', 'MANIFEST_SEALED', 'MANIFEST_RECEIVED', 'MANIFEST_UNSEALED', 'SEND_GOODS', 'SCAN_INBOUND', 'SCAN_OUTBOUND', 'OUT_FOR_DELIVERY'].includes(status)) {
+      } else if (['PICKUP_COMPLETED', 'TASK_ASSIGNED', 'MANIFEST_SEALED', 'MANIFEST_RECEIVED', 'MANIFEST_UNSEALED', 'SEND_GOODS', 'SCAN_INBOUND', 'SCAN_OUTBOUND', 'IN_TRANSIT', 'INVENTORY_CHECK', 'OUT_FOR_DELIVERY'].includes(status)) {
         statusByKey.get('transit')!.count += 1;
       } else if (status === 'DELIVERED') {
         statusByKey.get('delivered')!.count += 1;
-      } else if (['DELIVERY_FAILED', 'NDR_CREATED', 'RETURN_STARTED', 'RETURN_COMPLETED', 'CANCELLED'].includes(status)) {
+      } else if (['DELIVERY_FAILED', 'NDR_CREATED', 'EXCEPTION', 'RETURN_STARTED', 'RETURN_COMPLETED', 'CANCELLED'].includes(status)) {
         statusByKey.get('issue')!.count += 1;
       } else {
         statusByKey.get('created')!.count += 1;

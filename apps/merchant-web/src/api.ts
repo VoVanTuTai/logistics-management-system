@@ -411,18 +411,18 @@ export function extractShipmentRow(shipment: ShipmentResponse): ShipmentRow {
 }
 
 export function statusClass(status: string): string {
-  if (status === 'CREATED' || status === 'UPDATED') {
+  if (status === 'CREATED' || status === 'UPDATED' || status === 'WAITING_PICKUP') {
     return 'status status-created';
   }
-  if (status === 'DELIVERED' || status === 'COMPLETED') {
+  if (status === 'DELIVERED' || status === 'COMPLETED' || status === 'RETURN_COMPLETED') {
     return 'status status-done';
   }
   if (
     status === 'DELIVERY_FAILED' ||
     status === 'RETURN_STARTED' ||
-    status === 'RETURN_COMPLETED' ||
     status === 'CANCELLED' ||
-    status === 'NDR_CREATED'
+    status === 'NDR_CREATED' ||
+    status === 'EXCEPTION'
   ) {
     return 'status status-fail';
   }

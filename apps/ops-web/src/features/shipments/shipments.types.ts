@@ -61,6 +61,7 @@ export interface ShipmentDetailDto {
   labelReprintReason: string | null;
   isOperationLocked: boolean;
   operationLockReason: string | null;
+  metadata?: Record<string, unknown> | null;
   createdAt: string;
   updatedAt: string;
 }
