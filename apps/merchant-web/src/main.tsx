@@ -3817,6 +3817,27 @@ function MerchantApp(): React.JSX.Element {
                       </select>
                     </div>
 
+                    <div className="form-field-group">
+                      <label className="field-label">
+                        <span>Chính sách đồng kiểm (Quyền xem hàng)</span>
+                        <span className="field-hint">Quy định quyền mở hàng của người nhận</span>
+                      </label>
+                      <select
+                        className="select"
+                        value={createForm.inspectionPolicy ?? 'VIEW_ONLY'}
+                        onChange={(event) =>
+                          setCreateForm((previous) => ({
+                            ...previous,
+                            inspectionPolicy: event.target.value as CreateShipmentForm['inspectionPolicy'],
+                          }))
+                        }
+                      >
+                        <option value="VIEW_ONLY">👁️ Cho xem không cho thử (Mặc định)</option>
+                        <option value="NONE">🚫 Không cho xem hàng (Thu COD trước)</option>
+                        <option value="TRY_ON">✅ Cho thử hàng (Mặc thử/cắm điện 5 phút)</option>
+                      </select>
+                    </div>
+
                     <div className="form-field-group form-field-group--span-2">
                       <label className="field-label">
                         <span>Tiền thu hộ COD (VNĐ)</span>

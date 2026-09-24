@@ -277,6 +277,7 @@ export function buildShipmentMetadata(
     },
     codAmount: asNumber(form.codAmount, 0),
     deliveryNote: form.deliveryNote.trim() || null,
+    inspectionPolicy: form.inspectionPolicy ?? 'VIEW_ONLY',
     estimatedFee,
     routing: {
       originHubCode: form.senderHubCode.trim() || null,

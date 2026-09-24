@@ -37,11 +37,15 @@
    - [4.3. Đơn Hàng Cồng Kềnh / Quá Khổ Quy Đổi IATA V/6000 (Bulky Freight)](#43-đơn-hàng-cồng-kềnh--quá-khổ-quy-đổi-iata-v6000-bulky-freight)
    - [4.4. Đơn Khai Giá Bảo Hiểm 100% (High-Value & Insured Shipment)](#44-đơn-khai-giá-bảo-hiểm-100-high-value--insured-shipment)
    - [4.5. Đơn Hàng Dễ Vỡ & Quy Chuẩn Đóng Gói SOP (Fragile Goods)](#45-đơn-hàng-dễ-vỡ--quy-chuẩn-đóng-gói-sop-fragile-goods)
-5. [SƠ ĐỒ QUY TRÌNH XỬ LÝ NGOẠI LỆ & SỰ CỐ BƯU CHÍNH](#5-sơ-đồ-quy-trình-xử-lý-ngoại-lệ--sự-cố-bưu-chính)
-   - [5.1. Case 1: Khách từ chối nhận / Không lấy hàng (Customer Refusal & NDR Workflow)](#51-case-1-khách-từ-chối-nhận--không-lấy-hàng-customer-refusal--ndr-workflow)
-   - [5.2. Case 2: Quy trình Chuyển Hoàn & Cơ chế Cấn trừ Cước Hoàn 3 Tầng (Reverse Logistics SOP)](#52-case-2-quy-trình-chuyển-hoàn--cơ-chế-cấn-trừ-cước-hoàn-3-tầng-reverse-logistics-sop)
-   - [5.3. Case 3: Hàng hỏng / Bể vỡ / Mất mát & Thẩm định Bồi thường Điều 25 Luật Bưu chính](#53-case-3-hàng-hỏng--bể-vỡ--mất-mát--thẩm-định-bồi-thường-điều-25-luật-bưu-chính)
-   - [5.4. Case 4: Khách hẹn lại ngày giao / Không liên lạc được & Tự động Tái điều phối](#54-case-4-khách-hẹn-lại-ngày-giao--không-liên-lạc-được--tự-động-tái-điều-phối)
+5. [MÔ HÌNH THIẾT GIÁP BỊT KÍN 8 NHÓM LỖ HỔNG VẬN HÀNH & SỰ CỐ BƯU CHÍNH](#5-mô-hình-thiết-giáp-bịt-kín-8-nhóm-lỗ-hổng-vận-hành--sự-cố-bưu-chính)
+   - [5.1. Khách từ chối nhận hàng (NDR) & Tự động Tái điều phối](#51-khách-từ-chối-nhận-hàng-ndr--tự-động-tái-điều-phối)
+   - [5.2. Chuyển hoàn 3 tầng, Chống tráo hàng & Bưu phẩm vô chủ (Điều 19 Luật Bưu chính)](#52-chuyển-hoàn-3-tầng-chống-tráo-hàng--bưu-phẩm-vô-chủ-điều-19-luật-bưu-chính)
+   - [5.3. Hàng hỏng / Bể vỡ / Mất mát & Thẩm định bồi thường (Điều 24 & Điều 25 Luật Bưu chính)](#53-hàng-hỏng--bể-vỡ--mất-mát--thẩm-định-bồi-thường-điều-24--điều-25-luật-bưu-chính)
+   - [5.4. Quyền đồng kiểm (3 cờ kiểm tra) & Hạn mức trần tiền mặt Shipper](#54-quyền-đồng-kiểm-3-cờ-kiểm-tra--hạn-mức-trần-tiền-mặt-shipper)
+   - [5.5. Đổi địa chỉ liên tỉnh (Re-routing Fee) & Khóa in lại tem nhiệt](#55-đổi-địa-chỉ-liên-tỉnh-re-routing-fee--khóa-in-lại-tem-nhiệt)
+   - [5.6. Chênh lệch kiểm đếm mở bao (Manifest Discrepancy) & Cảnh báo sai luồng Hub](#56-chênh-lệch-kiểm-đếm-mở-bao-manifest-discrepancy--cảnh-báo-sai-luồng-hub)
+   - [5.7. Khóa van tài chính khi Dư nợ âm & Ghi nợ thiếu tiền COD](#57-khóa-van-tài-chính-khi-dư-nợ-âm--ghi-nợ-thiếu-tiền-cod)
+   - [5.8. Cảnh báo vùng xa ngoài phục vụ (ODA) & Chuyển tiếp CSKH AI sang người thật](#58-cảnh-báo-vùng-xa-ngoài-phục-vụ-oda--chuyển-tiếp-cskh-ai-sang-người-thật)
 6. [MẠNG LƯỚI HUB 4 CẤP & CHUYẾN XE TRUNG CHUYỂN LINEHAUL](#6-mạng-lưới-hub-4-cấp--chuyến-xe-trung-chuyển-linehaul)
 7. [PHÂN HỆ TRỢ LÝ TRÍ TUỆ NHÂN TẠO (AI LOGISTICS ASSISTANT RAG)](#7-phân-hệ-trợ-lý-trí-tuệ-nhân-tạo-ai-logistics-assistant-rag)
 8. [SƠ ĐỒ VÒNG ĐỜI VẬN ĐƠN TOÀN TRÌNH TỪ A ĐẾN Z (END-TO-END WORKFLOW)](#8-sơ-đồ-vòng-đời-vận-đơn-toàn-trình-từ-a-đến-z-end-to-end-workflow)
@@ -400,13 +404,13 @@ flowchart TD
 
 ---
 
-## 5. SƠ ĐỒ QUY TRÌNH XỬ LÝ NGOẠI LỆ & SỰ CỐ BƯU CHÍNH
+## 5. MÔ HÌNH THIẾT GIÁP BỊT KÍN 8 NHÓM LỖ HỔNG VẬN HÀNH & SỰ CỐ BƯU CHÍNH
 
-Xử lý ngoại lệ là thước đo tính chuyên nghiệp và tính hoàn thiện của một đồ án công nghệ logistics thực chiến. Nexus thiết kế 4 quy trình xử lý khép kín cho các tình huống sự cố:
+Xử lý ngoại lệ là thước đo tính chuyên nghiệp và tính hoàn thiện của một đồ án công nghệ logistics thực chiến. Nexus thiết kế mô hình thiết giáp tinh gọn bịt kín 8 nhóm lỗ hổng vận hành khép kín:
 
 ---
 
-### 5.1. Case 1: Khách từ chối nhận / Không lấy hàng (Customer Refusal & NDR Workflow)
+### 5.1. Khách từ chối nhận hàng (NDR) & Tự động Tái điều phối
 
 Quy trình quản lý giao hàng thất bại (Non-Delivery Report - NDR) theo quy tắc chuẩn ngành bưu chính: **Tối đa 3 lần phát trong 5 ngày lưu kho**.
 
@@ -438,8 +442,22 @@ sequenceDiagram
         ShipSvc->>DeliverySvc: Lên lịch phát lại lần tiếp theo cho Bưu tá
     else Trường hợp B: Đã giao đủ 3 lần thất bại hoặc Shop đồng ý hủy đơn
         Merchant->>ShipSvc: Xác nhận yêu cầu: CHUYỂN HOÀN VỀ SHOP (Confirm Return)
-        ShipSvc->>ShipSvc: Kích hoạt luồng Chuyển Hoàn (Chuyển sang Case 2)
+        ShipSvc->>ShipSvc: Kích hoạt luồng Chuyển Hoàn (Chuyển sang Mục 5.2)
     end
+```
+
+#### Quy trình Tái điều phối tự động khi khách hẹn lại ngày giao:
+```mermaid
+flowchart TD
+    ATTEMPT["Bưu tá liên hệ phát hàng:<br/>- Gọi điện tối thiểu 3 cuộc cách nhau 15 phút không nhấc máy<br/>HOẶC<br/>- Khách nghe máy nhưng báo bận, xin hẹn sang ngày khác"] --> SELECT_REASON["Bưu tá chọn mã ngoại lệ trên Courier Mobile App:<br/>- CUSTOMER_RESCHEDULE (Khách hẹn lại ngày)<br/>- CANNOT_CONTACT (Không liên lạc được)"]
+
+    SELECT_REASON --> INPUT_TIME["Nhập ghi chú thời gian khách hẹn lại<br/>(Ví dụ: Giao lại sau 17h00 ngày mai)"]
+    INPUT_TIME --> HOLD_SCAN["Quét nhập kho Kệ Lưu Trữ Tạm tại Bưu cục phát<br/>(Trạng thái: POSTPONED_IN_HUB)"]
+
+    HOLD_SCAN --> AUTO_SMS["Hệ thống tự động kích hoạt tin nhắn SMS / Zalo ZNS:<br/>'Kiện hàng của bạn đang lưu an toàn tại bưu cục. Bấm link để chọn giờ phát lại'"]
+
+    AUTO_SMS --> NEXT_DAY{"Đến ngày hẹn phát lại?"}
+    NEXT_DAY -- "ĐẾN LỊCH HẸN" --> REDISPATCH["dispatch-service TỰ ĐỘNG TÁI ĐIỀU PHỐI (RE-DISPATCH)<br/>Gán kiện hàng vào Danh sách phát đầu ca của Shipper<br/>Không tính thêm bất kỳ khoản phụ phí nào"]
 ```
 
 #### Bảng danh mục mã lý do giao thất bại (NDR Codes) chuẩn hóa:
@@ -453,7 +471,7 @@ sequenceDiagram
 
 ---
 
-### 5.2. Case 2: Quy trình Chuyển Hoàn & Cơ chế Cấn trừ Cước Hoàn 3 Tầng (Reverse Logistics SOP)
+### 5.2. Chuyển hoàn 3 tầng, Chống tráo hàng & Bưu phẩm vô chủ (Điều 19 Luật Bưu chính)
 
 Bịt kín lỗ hổng thất thoát chi phí xe tải chiều về và xóa tan vấn nạn nợ xấu cước hoàn thông qua **Cơ chế phân tầng tự động (3-Tier Reverse Pricing Engine)**:
 
@@ -495,20 +513,22 @@ sequenceDiagram
     end
 ```
 
-#### Ma trận so sánh chính sách cước chuyển hoàn:
-```text
-+--------------------------------------------------------------------------------------------------+
-| PHÂN TẦNG KHÁCH HÀNG  | CƯỚC CHIỀU ĐI  | CƯỚC CHUYỂN HOÀN (RETURN FEE) | CƠ CHẾ THU TIỀN HOÀN    |
-+-----------------------+----------------+-------------------------------+-------------------------+
-| Guest (Vãng lai)      | 100% Biểu giá  | 50% Cước chiều đi             | Tiền mặt / VietQR tại quầy|
-| Standard SME (Shop)   | Giảm 5% cước   | 50% Cước chiều đi             | Cấn trừ tự động vào COD |
-| VIP Enterprise        | Giảm 15% - 25% | 0 VNĐ (Miễn phí 100%)         | Miễn thu theo hợp đồng  |
-+--------------------------------------------------------------------------------------------------+
+#### Quy trình Xử lý Bưu phẩm hoàn vô chủ / Bị bỏ rơi (Căn cứ Điều 19 Luật Bưu chính):
+```mermaid
+flowchart TD
+    START_RET["Đơn hoàn về bưu cục phát<br/>(Lưu kho bưu phẩm hoàn)"] --> NOTICE_1["Lưu kho quá 15 ngày:<br/>Gửi thông báo lần 1 cho Shop"]
+    NOTICE_1 --> NOTICE_2["Lưu kho quá 30 ngày:<br/>Gửi thông báo lần 2 (Văn bản / ZNS)"]
+    NOTICE_2 --> NOTICE_3["Lưu kho quá 45 ngày:<br/>Gửi thông báo lần 3 (Hạn chót 15 ngày nhận lại)"]
+    NOTICE_3 --> AUCTION{"Hết hạn 60 ngày:<br/>Shop từ chối hoặc không đến nhận?"}
+    AUCTION -- "TỪ CHỐI NHẬN LẠI" --> DISPOSE["KÍCH HOẠT ĐIỀU 19 LUẬT BƯU CHÍNH<br/>- Hội đồng bưu cục kiểm kê lập biên bản<br/>- Bán đấu giá công khai bù đắp chi phí bưu chính<br/>- Tiêu hủy nếu hàng hóa hư hỏng, hết hạn dùng"]
+    AUCTION -- "SHOP ĐẾN NHẬN" --> POD_RET["Ký nhận POD Return & Thanh toán cước lưu kho"]
 ```
+
+- **Chốt chặn chống tráo ruột hàng hoàn (Reverse Handover Inspection):** Khi bưu tá trả hàng hoàn, Shop và bưu tá bắt buộc đồng kiểm hiện trạng niêm phong hộp và chụp ảnh POD Return. Nếu Shop đã ký nhận mà không khiếu nại tại chỗ, Nexus miễn trừ trách nhiệm tranh chấp sau bàn giao.
 
 ---
 
-### 5.3. Case 3: Hàng hỏng / Bể vỡ / Mất mát & Thẩm định Bồi thường Điều 25 Luật Bưu chính
+### 5.3. Hàng hỏng / Bể vỡ / Mất mát & Thẩm định bồi thường (Điều 24 & Điều 25 Luật Bưu chính)
 
 Quy trình giải quyết sự cố hư hại, phân định trách nhiệm khách quan và tự động trích lập bồi hoàn dựa trên căn cứ pháp lý của **Luật Bưu chính Việt Nam số 49/2010/QH12**:
 
@@ -544,21 +564,113 @@ flowchart TD
 
 ---
 
-### 5.4. Case 4: Khách hẹn lại ngày giao / Không liên lạc được & Tự động Tái điều phối
+### 5.4. Quyền đồng kiểm (3 cờ kiểm tra) & Hạn mức trần tiền mặt Shipper
 
-Giải quyết tình huống người nhận không có mặt tại địa chỉ hoặc xin hoãn thời gian nhận hàng mà không gây xáo trộn hành trình của tài xế.
+Giải quyết dứt điểm tranh chấp mở hàng xem thử và rủi ro chiếm dụng tiền mặt bưu tá chặng cuối:
 
 ```mermaid
 flowchart TD
-    ATTEMPT["Bưu tá liên hệ phát hàng:<br/>- Gọi điện tối thiểu 3 cuộc cách nhau 15 phút không nhấc máy<br/>HOẶC<br/>- Khách nghe máy nhưng báo bận, xin hẹn sang ngày khác"] --> SELECT_REASON["Bưu tá chọn mã ngoại lệ trên Courier Mobile App:<br/>- CUSTOMER_RESCHEDULE (Khách hẹn lại ngày)<br/>- CANNOT_CONTACT (Không liên lạc được)"]
+    ARRIVE["Bưu tá giao hàng tới địa chỉ người nhận"] --> CHECK_FLAG{"Kiểm tra Cờ Đồng Kiểm trên Vận Đơn:<br/>inspectionPolicy"}
+    
+    CHECK_FLAG -->|"NONE (Không cho xem hàng)"| P_NONE["KHÔNG CHO XEM HÀNG<br/>Khách thanh toán COD trước mới được nhận bưu phẩm"]
+    CHECK_FLAG -->|"VIEW_ONLY (Cho xem không thử)"| P_VIEW["CHO XEM KHÔNG CHO THỬ<br/>Mở hộp ngoài kiểm tra mẫu mã/số lượng<br/>CẤM xé seal bọc sản phẩm, CẤM cắm điện/thử đồ"]
+    CHECK_FLAG -->|"TRY_ON (Cho thử hàng)"| P_TRY["CHO THỬ HÀNG<br/>Cho phép mặc thử đồ / cắm điện kiểm tra 05 phút"]
 
-    SELECT_REASON --> INPUT_TIME["Nhập ghi chú thời gian khách hẹn lại<br/>(Ví dụ: Giao lại sau 17h00 ngày mai)"]
-    INPUT_TIME --> HOLD_SCAN["Quét nhập kho Kệ Lưu Trữ Tạm tại Bưu cục phát<br/>(Trạng thái: POSTPONED_IN_HUB)"]
+    P_NONE --> COLLECT_PAY["Xác nhận thanh toán COD & Chụp ảnh POD"]
+    P_VIEW --> COLLECT_PAY
+    P_TRY --> COLLECT_PAY
 
-    HOLD_SCAN --> AUTO_SMS["Hệ thống tự động kích hoạt tin nhắn SMS / Zalo ZNS:<br/>'Kiện hàng của bạn đang lưu an toàn tại bưu cục. Bấm link để chọn giờ phát lại'"]
+    COLLECT_PAY --> CHECK_CASH{"Kiểm tra trần tiền mặt bưu tá đang giữ:<br/>accumulatedCodCash > 15.000.000đ?"}
+    CHECK_CASH -- "VƯỢT TRẦN 15 TRIỆU" --> LOCK_TASK["TẠM KHÓA NHẬN ĐƠN MỚI TRÊN APP<br/>Yêu cầu bưu tá nộp tiền về bưu cục hoặc quét VietQR nộp tiền ca"]
+    CHECK_CASH -- "TRONG HẠN MỨC" --> CONTINUE_TASK["Tiếp tục nhận và phát các đơn tiếp theo"]
+```
 
-    AUTO_SMS --> NEXT_DAY{"Đến ngày hẹn phát lại?"}
-    NEXT_DAY -- "ĐẾN LỊCH HẸN" --> REDISPATCH["dispatch-service TỰ ĐỘNG TÁI ĐIỀU PHỐI (RE-DISPATCH)<br/>Gán kiện hàng vào Danh sách phát đầu ca của Shipper<br/>Không tính thêm bất kỳ khoản phụ phí nào"]
+- **Quy chế bưu tá:** Nếu bưu tá tự ý cho người nhận bóc seal sản phẩm khi đơn hàng có cờ `NONE` hoặc `VIEW_ONLY` dẫn đến khách từ chối nhận, bưu tá chịu trách nhiệm mua lại đơn hàng.
+- **Trần giữ tiền mặt (Cash Limit):** Khi bưu tá giữ trên 15.000.000đ tiền mặt COD chưa nộp về quỹ, hệ thống `dispatch-service` tự động chặn gán thêm nhiệm vụ phát mới để ngăn ngừa rủi ro tài chính.
+
+---
+
+### 5.5. Đổi địa chỉ liên tỉnh (Re-routing Fee) & Khóa in lại tem nhiệt
+
+Bảo vệ chi phí xe tải Linehaul và loại bỏ nguy cơ bưu tá giao nhầm địa chỉ cũ:
+
+```mermaid
+flowchart TD
+    REQ["Người nhận / Chủ Shop yêu cầu đổi địa chỉ giao hàng<br/>(Change Request: change.address)"] --> CHECK_STATUS{"Kiểm tra trạng thái đơn hàng?"}
+    
+    CHECK_STATUS -- "ĐÃ GÁN SHIPPER / ĐANG PHÁT" --> REJECT_CHANGE["TỪ CHỐI ĐỔI ĐỊA CHỈ TRÊN WEB<br/>Yêu cầu liên hệ trực tiếp bưu tá đang cầm hàng"]
+    CHECK_STATUS -- "TRƯỚC KHÂU PHÂN CÔNG PHÁT" --> CHECK_HUB{"So sánh Bưu cục phát Cũ vs Mới:<br/>oldHubCode == newHubCode?"}
+
+    CHECK_HUB -- "CÙNG BƯU CỤC (Nội quận/huyện)" --> FREE_CHANGE["Duyệt đổi địa chỉ Miễn Phí (0đ)"]
+    CHECK_HUB -- "KHÁC BƯU CỤC / KHÁC TỈNH" --> FEE_CHANGE["Áp dụng Phụ phí chuyển hướng (Re-routing Fee: +18.000đ)<br/>Cộng vào tiền COD hoặc cấn trừ tài khoản Shop"]
+
+    FREE_CHANGE --> LOCK_REPRINT["KÍCH HOẠT CHỐT CHẶN PHẦN MỀM:<br/>requiresLabelReprint = true<br/>blocksOpsUntilLabelReprint = true"]
+    FEE_CHANGE --> LOCK_REPRINT
+
+    LOCK_REPRINT --> REPRINT["Kho In & Dán đè Tem Nhiệt Mới lên kiện hàng<br/>(Hệ thống tự động Mở khóa điều chuyển tiếp)"]
+```
+
+- **Chốt chặn phần mềm:** Đã tích hợp trực tiếp trong `change-requests.service.ts`: Toàn bộ hoạt động xuất kho bị đóng băng (`blocksOpsUntilLabelReprint = true`) cho đến khi nhân viên kho hoàn tất việc in và dán đè nhãn nhiệt mang địa chỉ mới.
+
+---
+
+### 5.6. Chênh lệch kiểm đếm mở bao (Manifest Discrepancy) & Cảnh báo sai luồng Hub
+
+Quy trình quản lý hàng thừa/hàng thiếu khi cắt chì seal túi gom `MB` và cảnh báo bốc xếp sai tuyến:
+
+```mermaid
+flowchart TD
+    OPEN_BAG["Xe Linehaul đến Hub Đích -> Cắt seal mở bao gom MB"] --> SCAN_ITEMS["Quét Barcode từng kiện hàng bên trong bao MB"]
+    SCAN_ITEMS --> COMPARE_COUNT{"So sánh danh sách quét thực tế<br/>với Bảng kê điện tử bao MB"}
+
+    COMPARE_COUNT -- "TRÙNG KHỚP 100%" --> INBOUND_OK["Nhập kho Hub Đích thành công (SCAN_INBOUND)"]
+    
+    COMPARE_COUNT -- "THIẾU KIỆN (Shortage)" --> SHORTAGE["Lập Biên bản Chênh lệch Thiếu kiện:<br/>- Chuyển đơn thiếu thành STRAY_INVESTIGATION<br/>- Tự động trích xuất camera tại Hub đóng bao để truy vết"]
+
+    COMPARE_COUNT -- "THỪA KIỆN LẠ (Overage)" --> OVERAGE["Lập Biên bản Thừa kiện:<br/>- Gắn cờ UNMANIFESTED_OVERAGE<br/>- Nhập kho tạm và đóng bao chuyển tiếp về đúng Hub Đích"]
+
+    OPEN_BAG -.-> CHECK_ROUTE{"Quét Barcode lên xe Linehaul đi tiếp:<br/>intendedHub == truckHub?"}
+    CHECK_ROUTE -- "SAI TUYẾN" --> ALARM["BẬT ÂM THANH BÁO ĐỘNG LỖI [WRONG_HUB_ROUTE]<br/>Màn hình chớp đỏ cảnh báo nhân viên bốc xếp không ném nhầm xe"]
+```
+
+---
+
+### 5.7. Khóa van tài chính khi Dư nợ âm & Ghi nợ thiếu tiền COD
+
+Xóa tan rủi ro nợ xấu cước vận chuyển và triệt tiêu sai lệch tiền mặt thực tế:
+
+```mermaid
+flowchart TD
+    CALC_BAL["payment-service liên tục cập nhật Số Dư Khả Dụng Merchant:<br/>Số dư = COD chờ thanh toán - Cước chiều đi - Cước hoàn 50%"] --> CHECK_BAL{"Kiểm tra Ngưỡng Trần Âm Công Nợ:<br/>Số dư < -500.000 VNĐ?"}
+
+    CHECK_BAL -- "SỐ DƯ DƯƠNG HOẶC ÂM NHẸ" --> ALLOW_CREATE["Tạo đơn và Yêu cầu lấy hàng bình thường"]
+    
+    CHECK_BAL -- "VƯỢT TRẦN NỢ ÂM (-500.000đ)" --> LOCK_MERCHANT["KÍCH HOẠT VAN KHÓA TÀI CHÍNH TỰ ĐỘNG:<br/>- Khóa quyền tạo đơn mới trên merchant-web & API<br/>- Khóa duyệt yêu cầu bưu tá đến lấy hàng tận nơi"]
+
+    LOCK_MERCHANT --> PAY_QR["merchant-web hiển thị Banner Đỏ cảnh báo nợ âm<br/>Kèm mã QR SePay / VietQR nạp tiền thanh toán nợ tức thì<br/>(Thanh toán xong -> Mở khóa dịch vụ tự động trong 3 giây)"]
+
+    CALC_BAL -.-> COD_COLLECT{"Bưu tá nộp tiền COD kết ca:<br/>Thực nộp < shipment.codAmount?"}
+    COD_COLLECT -- "NỘP THIẾU TIỀN" --> RECORD_DEBT["Tự động trích số tiền thiếu vào sổ nợ cá nhân bưu tá<br/>(Khấu trừ vào kỳ lương/hoa hồng bưu tá cuối tháng)"]
+```
+
+---
+
+### 5.8. Cảnh báo vùng xa ngoài phục vụ (ODA) & Chuyển tiếp CSKH AI sang người thật
+
+Tối ưu phạm vi địa lý phục vụ và đảm bảo trải nghiệm khách hàng ở các ca sự cố phức tạp:
+
+```mermaid
+flowchart TD
+    INPUT_ADDR["Khách hàng nhập địa chỉ nhận hàng"] --> GEO_CHECK["masterdata-service đối chiếu tọa độ ranh giới Polygon xã/phường<br/>(Thuật toán isPointInPolygon)"]
+    
+    GEO_CHECK --> IN_RANGE{"Nằm trong bán kính phục vụ của Hub?"}
+    IN_RANGE -- "TRONG VÙNG PHỤC VỤ" --> NORM_ORDER["Tính cước tiêu chuẩn & Phân bổ bưu cục phát"]
+    IN_RANGE -- "NGOÀI VÙNG (ODA)" --> ODA_ALERT["CẢNH BÁO VÙNG XA NGOÀI PHỤC VỤ (ODA):<br/>- Thông báo thời gian phát SLA +24h đến +48h<br/>- Áp phụ phí kết nối vùng xa (+15.000đ) hoặc kết nối 3PL VNPost"]
+
+    NORM_ORDER -.-> AI_CHAT["Khách trò chuyện cùng AI Assistant RAG"]
+    AI_CHAT --> SENTIMENT{"AI phân tích ý định & cảm xúc khách hàng:<br/>Chửi bới, đòi kiện tụng, khiếu nại vỡ nát đền bù?"}
+    SENTIMENT -- "CÂU HỎI THƯỜNG" --> AI_ANS["AI tự động gọi Tool tra cứu biểu phí/hành trình"]
+    SENTIMENT -- "BỨC XÚC / KHIẾU NẠI NẶNG" --> ESCALATE["KÍCH HOẠT TOOL escalate_to_human_agent:<br/>- Tự động tạo Ticket khiếu nại KHẨN CẤP trên Ops Web<br/>- Cung cấp số Hotline Trưởng bưu cục hỗ trợ trực tiếp 24/7"]
 ```
 
 ---

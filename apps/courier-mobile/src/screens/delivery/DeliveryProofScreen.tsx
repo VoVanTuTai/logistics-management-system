@@ -93,6 +93,38 @@ function readMetadataString(
   return null;
 }
 
+function getInspectionPolicyBadge(policy: string | null | undefined) {
+  const norm = (policy ?? 'VIEW_ONLY').toUpperCase();
+  if (norm === 'NONE' || norm === 'KHONG_CHO_XEM') {
+    return {
+      title: 'KHÔNG CHO XEM HÀNG',
+      desc: 'Bắt buộc thu tiền COD trước khi giao. Tuyệt đối không cho bóc seal ngoài.',
+      color: '#DC2626',
+      bg: '#FEF2F2',
+      border: '#FCA5A5',
+      icon: 'alert-circle-outline' as const,
+    };
+  }
+  if (norm === 'TRY_ON' || norm === 'CHO_THU_HANG') {
+    return {
+      title: 'CHO THỬ HÀNG',
+      desc: 'Cho phép người nhận mặc thử đồ hoặc cắm điện kiểm tra nhanh (5 phút).',
+      color: '#16A34A',
+      bg: '#F0FDF4',
+      border: '#86EFAC',
+      icon: 'checkmark-circle-outline' as const,
+    };
+  }
+  return {
+    title: 'CHO XEM KHÔNG CHO THỬ',
+    desc: 'Mở hộp kiểm tra ngoại quan. CẤM xé tem seal sản phẩm, CẤM thử đồ/cắm điện.',
+    color: '#D97706',
+    bg: '#FFFBEB',
+    border: '#FDE68A',
+    icon: 'eye-outline' as const,
+  };
+}
+
 export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Element {
   const session = useAppStore((state) => state.session);
   const refreshMobilePermissions = useAuthStore(
@@ -136,6 +168,12 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
 
   const codAmount = shipmentQuery.data?.codAmount ?? 0;
   const shipmentMetadata = shipmentQuery.data?.metadata ?? null;
+  const inspectionPolicyRaw = readMetadataString(shipmentMetadata, [
+    'inspectionPolicy',
+    'package.inspectionPolicy',
+    'service.inspectionPolicy',
+  ]);
+  const inspectionBadge = getInspectionPolicyBadge(inspectionPolicyRaw);
 
   const courierId = resolveCourierId(appEnv.courierId, session?.user.username);
   const bankInfoQuery = useCompanyBankInfoQuery({ accessToken: session?.tokens.accessToken ?? null });
@@ -429,6 +467,21 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
             <Text style={styles.sectionHint}>
               Cần chụp 1 tấm hình chứng minh giao hàng trước khi gửi lên hệ thống.
             </Text>
+
+            <View
+              style={[
+                styles.inspectionBanner,
+                { backgroundColor: inspectionBadge.bg, borderColor: inspectionBadge.border },
+              ]}
+            >
+              <View style={styles.inspectionBadgeHeader}>
+                <Ionicons name={inspectionBadge.icon} size={18} color={inspectionBadge.color} />
+                <Text style={[styles.inspectionTitle, { color: inspectionBadge.color }]}>
+                  {inspectionBadge.title}
+                </Text>
+              </View>
+              <Text style={styles.inspectionDesc}>{inspectionBadge.desc}</Text>
+            </View>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Task code</Text>
               <Text style={styles.infoValue}>
@@ -1240,5 +1293,27 @@ const styles = StyleSheet.create({
     ...theme.typography.body.sm,
     color: '#FFFFFF',
     fontWeight: '700',
+  },
+  inspectionBanner: {
+    borderWidth: 1,
+    borderRadius: theme.radius.md,
+    padding: theme.spacing.sm,
+    marginVertical: theme.spacing.sm,
+  },
+  inspectionBadgeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  inspectionTitle: {
+    ...theme.typography.caption.md,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  inspectionDesc: {
+    ...theme.typography.caption.sm,
+    color: '#475569',
+    lineHeight: 18,
   },
 });
