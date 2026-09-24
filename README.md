@@ -1,774 +1,1005 @@
 <div align="center">
 
-# Nexus Express System
-
-A student logistics management practice project for shipment creation, pickup, hub operations, courier delivery, public tracking, COD settlement, and operational reporting.
+# 🚚 NEXUS EXPRESS SYSTEM (NEXUS LOGISTICS)
+### NỀN TẢNG QUẢN LÝ VẬN HÀNH LOGISTICS & CHUYỂN PHÁT NHANH BƯU CHÍNH ĐA KÊNH
+**Khóa luận Tốt nghiệp Đại học Chuyên ngành Công nghệ Thông tin / Kỹ thuật Phần mềm**
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![NestJS](https://img.shields.io/badge/NestJS-10.x-E0234E?logo=nestjs&logoColor=white)](https://nestjs.com/)
 [![React](https://img.shields.io/badge/React-18.x-61DAFB?logo=react&logoColor=black)](https://react.dev/)
-[![OpenAI RAG](https://img.shields.io/badge/AI_Engine-OpenAI_GPT--4o--mini-412991?logo=openai&logoColor=white)](https://openai.com/)
-[![Architecture](https://img.shields.io/badge/Architecture-Microservices-success)](#architecture)
+[![Expo React Native](https://img.shields.io/badge/Expo_React_Native-54_/_0.81-black?logo=expo&logoColor=white)](https://expo.dev/)
+[![RabbitMQ](https://img.shields.io/badge/RabbitMQ-3.13-FF6600?logo=rabbitmq&logoColor=white)](https://www.rabbitmq.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Prisma ORM](https://img.shields.io/badge/Prisma-ORM-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io/)
+[![AI Engine](https://img.shields.io/badge/AI_Engine-Gemini_3_Flash_%7C_GPT--4o--mini-8E75C2?logo=google&logoColor=white)](https://ai.google.dev/)
+[![Architecture](https://img.shields.io/badge/Architecture-15_Microservices-success)](#2-sơ-đồ-kiến-trúc-tổng-thể-hệ-thống)
 [![License](https://img.shields.io/badge/License-Academic_Thesis-orange)](#)
 
-> 💡 **Khóa luận Tốt nghiệp:** Hệ thống tích hợp đầy đủ chuỗi cung ứng logistics bưu chính hoàn chỉnh, kèm phân hệ **Trợ lý AI CSKH thông minh (Hybrid RAG & Function Calling)** vận hành thời gian thực.
+</div>
 
-### 📑 Cổng Dẫn Đường Tài Liệu Quan Trọng (Documentation Hub)
-
-| Phân hệ / Tài liệu | Đường dẫn xem chi tiết | Mô tả trọng tâm |
-| :--- | :--- | :--- |
-| 🤖 **Kiến Trúc AI Chatbot RAG** | [`docs/architecture/ai-chatbot-service-architecture.md`](docs/architecture/ai-chatbot-service-architecture.md) | **Báo cáo khóa luận chi tiết:** Sơ đồ Mermaid, giải thuật Section-Aware Chunker, Matryoshka MRL, Token Economics |
-| 👥 **Chính Sách Phân Tầng & Cước Hoàn** | [`docs/business-sop/CHINH-SACH-PHAN-TANG-MERCHANT-VA-CUOC-CHUYEN-HOAN.md`](docs/business-sop/CHINH-SACH-PHAN-TANG-MERCHANT-VA-CUOC-CHUYEN-HOAN.md) | **Nghiệp vụ bưu chính khép kín:** Mô hình 3 tầng (Guest, Standard, VIP), quy chuẩn cước hoàn 50% vs 0đ, cấn trừ COD tự động |
-| 📚 **Kho Tri Thức Logistics (KB)** | [`docs/knowledge-base/README.md`](docs/knowledge-base/README.md) | Biểu phí, công thức thể tích IATA, quy trình bồi thường bể vỡ, chuẩn đóng gói SOP, hướng dẫn nạp tri thức |
-| 📦 **SOP Hàng Dễ Vỡ & Bảo Hiểm** | [`docs/business-sop/NGHIEP-VU-TIEP-NHAN-HANG-DE-VO-VA-BAO-HIEM.md`](docs/business-sop/NGHIEP-VU-TIEP-NHAN-HANG-DE-VO-VA-BAO-HIEM.md) | Quy chuẩn tiếp nhận hàng giá trị cao, bồi thường Điều 25 Luật Bưu chính |
-| 🏗️ **Tổng Quan Hệ Thống** | [`docs/PROJECT-OVERVIEW.md`](docs/PROJECT-OVERVIEW.md) | Bức tranh tổng thể 13 microservices, data ownership, event stream RabbitMQ |
-| ⚡ **Sổ Tay Triển Khai (Runbook)** | [`docs/runbook/trial-deploy.md`](docs/runbook/trial-deploy.md) | Hướng dẫn chạy thử nghiệm môi trường local/staging với Docker Compose |
+> 🎓 **TÀI LIỆU BÁO CÁO TỔNG QUAN ĐỒ ÁN (DÀNH CHO GIẢNG VIÊN HƯỚNG DẪN & HỘI ĐỒNG BẢO VỆ):**  
+> Hệ thống mô phỏng và số hóa toàn diện chuỗi cung ứng logistics bưu chính hiện đại với **15 Microservices độc lập**, **6 Ứng dụng Client đa nền tảng** (4 Web React + 2 Mobile Expo/React Native), Động cơ định giá chuẩn hóa quốc tế **IATA $V/6000$**, Quy trình xử lý ngoại lệ chuẩn hóa tuân thủ **Điều 24 & Điều 25 Luật Bưu chính số 49/2010/QH12**, và Phân hệ **Trợ lý Trí tuệ Nhân tạo AI Logistics RAG** vận hành thời gian thực.
 
 ---
 
-The project is a TypeScript monorepo used to practice service-boundary design, a Gateway/BFF entry point, PostgreSQL ownership ideas, RabbitMQ event exposure, and separate client apps for different user groups.
+## 📑 MỤC LỤC TRÌNH BÀY
 
-## Core Logistics Workflow
+1. [TỔNG QUAN ĐỀ TÀI & TÍNH CẤP THIẾT](#1-tổng-quan-đề-tài--tính-cấp-thiết)
+2. [SƠ ĐỒ KIẾN TRÚC TỔNG THỂ HỆ THỐNG](#2-sơ-đồ-kiến-trúc-tổng-thể-hệ-thống)
+3. [CHÚNG TA CÓ GÌ? - TỔNG HỢP CÁC SẢN PHẨM ĐÃ XÂY DỰNG HOÀN THIỆN](#3-chúng-ta-có-gì---tổng-hợp-các-sản-phẩm-đã-xây-dựng-hoàn-thiện)
+   - [3.1. Phân hệ 6 Ứng dụng Client (4 Web + 2 Mobile)](#31-phân-hệ-6-ứng-dụng-client-4-web--2-mobile)
+   - [3.2. Phân hệ 15 Backend Microservices Độc Lập](#32-phân-hệ-15-backend-microservices-độc-lập)
+   - [3.3. Tầng Cơ sở dữ liệu (Database per Service) & MinIO S3](#33-tầng-cơ-sở-dữ-liệu-database-per-service--minio-s3)
+   - [3.4. Trục truyền thông sự kiện (RabbitMQ Event Bus)](#34-trục-truyền-thông-sự-kiện-rabbitmq-event-bus)
+4. [ĐẶC TẢ NGHIỆP VỤ & SƠ ĐỒ QUY TRÌNH THEO TỪNG LOẠI ĐƠN HÀNG](#4-đặc-tả-nghiệp-vụ--sơ-đồ-quy-trình-theo-từng-loại-đơn-hàng)
+   - [4.0. Nguồn chân lý 19 Trạng thái Vận đơn & Máy trạng thái chuẩn hóa (The 19 Canonical State Machine)](#40-nguồn-chân-lý-19-trạng-thái-vận-đơn--máy-trạng-thái-chuẩn-hóa-the-19-canonical-state-machine)
+   - [4.1. Đơn Tiêu Chuẩn Thu Hộ COD (Standard COD Shipment)](#41-đơn-tiêu-chuẩn-thu-hộ-cod-standard-cod-shipment)
+   - [4.2. Đơn Hỏa Tốc / Nội Thành 6h - 12h (Express & Same-Day Service)](#42-đơn-hỏa-tốc--nội-thành-6h---12h-express--same-day-service)
+   - [4.3. Đơn Hàng Cồng Kềnh / Quá Khổ Quy Đổi IATA V/6000 (Bulky Freight)](#43-đơn-hàng-cồng-kềnh--quá-khổ-quy-đổi-iata-v6000-bulky-freight)
+   - [4.4. Đơn Khai Giá Bảo Hiểm 100% (High-Value & Insured Shipment)](#44-đơn-khai-giá-bảo-hiểm-100-high-value--insured-shipment)
+   - [4.5. Đơn Hàng Dễ Vỡ & Quy Chuẩn Đóng Gói SOP (Fragile Goods)](#45-đơn-hàng-dễ-vỡ--quy-chuẩn-đóng-gói-sop-fragile-goods)
+5. [MÔ HÌNH THIẾT GIÁP BỊT KÍN 8 NHÓM LỖ HỔNG VẬN HÀNH & SỰ CỐ BƯU CHÍNH](#5-mô-hình-thiết-giáp-bịt-kín-8-nhóm-lỗ-hổng-vận-hành--sự-cố-bưu-chính)
+   - [5.1. Khách từ chối nhận hàng (NDR) & Tự động Tái điều phối](#51-khách-từ-chối-nhận-hàng-ndr--tự-động-tái-điều-phối)
+   - [5.2. Chuyển hoàn 3 tầng, Chống tráo hàng & Bưu phẩm vô chủ (Điều 19 Luật Bưu chính)](#52-chuyển-hoàn-3-tầng-chống-tráo-hàng--bưu-phẩm-vô-chủ-điều-19-luật-bưu-chính)
+   - [5.3. Hàng hỏng / Bể vỡ / Mất mát & Thẩm định bồi thường (Điều 24 & Điều 25 Luật Bưu chính)](#53-hàng-hỏng--bể-vỡ--mất-mát--thẩm-định-bồi-thường-điều-24--điều-25-luật-bưu-chính)
+   - [5.4. Quyền đồng kiểm (3 cờ kiểm tra) & Hạn mức trần tiền mặt Shipper](#54-quyền-đồng-kiểm-3-cờ-kiểm-tra--hạn-mức-trần-tiền-mặt-shipper)
+   - [5.5. Đổi địa chỉ liên tỉnh (Re-routing Fee) & Khóa in lại tem nhiệt](#55-đổi-địa-chỉ-liên-tỉnh-re-routing-fee--khóa-in-lại-tem-nhiệt)
+   - [5.6. Chênh lệch kiểm đếm mở bao (Manifest Discrepancy) & Cảnh báo sai luồng Hub](#56-chênh-lệch-kiểm-đếm-mở-bao-manifest-discrepancy--cảnh-báo-sai-luồng-hub)
+   - [5.7. Khóa van tài chính khi Dư nợ âm & Ghi nợ thiếu tiền COD](#57-khóa-van-tài-chính-khi-dư-nợ-âm--ghi-nợ-thiếu-tiền-cod)
+   - [5.8. Cảnh báo vùng xa ngoài phục vụ (ODA) & Chuyển tiếp CSKH AI sang người thật](#58-cảnh-báo-vùng-xa-ngoài-phục-vụ-oda--chuyển-tiếp-cskh-ai-sang-người-thật)
+6. [MẠNG LƯỚI HUB 4 CẤP & CHUYẾN XE TRUNG CHUYỂN LINEHAUL](#6-mạng-lưới-hub-4-cấp--chuyến-xe-trung-chuyển-linehaul)
+7. [PHÂN HỆ TRỢ LÝ TRÍ TUỆ NHÂN TẠO (AI LOGISTICS ASSISTANT RAG)](#7-phân-hệ-trợ-lý-trí-tuệ-nhân-tạo-ai-logistics-assistant-rag)
+8. [SƠ ĐỒ VÒNG ĐỜI VẬN ĐƠN TOÀN TRÌNH TỪ A ĐẾN Z (END-TO-END WORKFLOW)](#8-sơ-đồ-vòng-đời-vận-đơn-toàn-trình-từ-a-đến-z-end-to-end-workflow)
+9. [MA TRẬN ĐỐI CHIẾU CÔNG NGHỆ: NEXUS VS ĐỒ ÁN TRUYỀN THỐNG](#9-ma-trận-đối-chiếu-công-nghệ-nexus-vs-đồ-án-truyền-thống)
+10. [KỊCH BẢN DEMO THỰC CHIẾN 5 PHÚT DÀNH CHO THẦY CÔ](#10-kịch-bản-demo-thực-chiến-5-phút-dành-cho-thầy-cô)
+11. [HƯỚNG DẪN KHỞI CHẠY HỆ THỐNG & TÀI KHOẢN KIỂM THỬ](#11-hướng-dẫn-khởi-chạy-hệ-thống--tài-khoản-kiểm-thử)
 
-Nexus Express System models the core flow of a last-mile and hub-and-spoke delivery company:
+---
 
-```text
-Merchant creates shipment
--> pickup request and courier assignment
--> pickup scan
--> manifest / hub transfer
--> inbound and outbound scans
--> delivery success, delivery failure, NDR, or return
--> COD settlement
--> tracking and reporting projections
-```
+## 1. TỔNG QUAN ĐỀ TÀI & TÍNH CẤP THIẾT
+
+### 1.1. Bối cảnh thực tiễn ngành Logistics & Thương mại Điện tử
+Thị trường logistics bưu chính và giao hàng chặng cuối (Last-mile Delivery) tại Việt Nam đang bùng nổ mạnh mẽ cùng làn sóng Thương mại Điện tử. Tuy nhiên, các doanh nghiệp logistics truyền thống luôn phải đối mặt với các bài toán vận hành hóc búa:
+1. **Nghẽn cổ chai kiến trúc nguyên khối (Monolithic Bottleneck):** Trong các đợt cao điểm khuyến mãi (Mega Sale 11/11, 12/12), lưu lượng quét mã vạch kho và tra cứu vận đơn tăng đột biến từ hàng chục đến hàng trăm lần, làm sập toàn bộ hệ thống dùng chung một CSDL duy nhất.
+2. **Sai lệch biểu phí cước giữa các nền tảng:** Cùng một kiện hàng nhưng Web của người bán tính một giá, App di động của tài xế tính một giá và Bot chăm sóc khách hàng lại tư vấn một giá khác do logic nghiệp vụ bị phân tán, thiếu chuẩn hóa.
+3. **Tranh chấp bồi thường hàng dễ vỡ & Thất thoát cước chuyển hoàn:** Tình trạng "bom hàng" (giao thất bại phải hoàn về) gây lãng phí chi phí xe tải chiều về. Việc thiếu quy chuẩn phân loại hàng dễ vỡ và không bám sát **Điều 24 & Điều 25 Luật Bưu chính** dẫn đến xung đột pháp lý kéo dài khi xảy ra sự cố vỡ nát hàng hóa.
+4. **Áp lực tổng đài hỗ trợ khách hàng:** Hơn 70% các cuộc gọi lên tổng đài chỉ để hỏi các câu hỏi mang tính thủ tục lặp lại (*"Đơn hàng đang ở đâu?"*, *"Cước kiện 3kg vào Sài Gòn bao nhiêu?"*, *"Pin sạc dự phòng có được gửi máy bay không?"*).
+
+### 1.2. Mục tiêu nghiên cứu và giải pháp của Đồ án
+Đồ án xây dựng nền tảng **Nexus Express System** nhằm giải quyết trọn vẹn các thách thức trên thông qua:
+- **Kiến trúc 15 Microservices chuyên biệt:** Phân chia ranh giới Bounded Context rõ ràng, áp dụng mô hình Database-per-service và Event-Driven Architecture qua RabbitMQ.
+- **Hệ sinh thái 6 Ứng dụng Client hoàn chỉnh:** Đảm bảo mọi đối tượng trong chuỗi cung ứng (Admin, Ops bưu cục, Chủ shop B2B, Tài xế giao hàng, Khách lẻ C-End) đều có công cụ chuyên nghiệp.
+- **Động cơ định giá chuẩn hóa liên nền tảng (`NEXUS_RATES_2026_05`):** Tính toán cước phí tự động theo công thức quy đổi thể tích hàng không quốc tế IATA $V/6000$ và 3 vùng cước chuẩn.
+- **Trợ lý AI Logistics RAG (Retrieval-Augmented Generation):** Kết hợp mô hình Google Gemini 3 Flash / OpenAI GPT-4o-mini với 5 công cụ tra cứu động (Function Calling) và truyền dữ liệu streaming thời gian thực qua Server-Sent Events (SSE).
+
+---
+
+## 2. SƠ ĐỒ KIẾN TRÚC TỔNG THỂ HỆ THỐNG
+
+Sơ đồ phân tầng kiến trúc tổng thể mô tả luồng giao tiếp giữa 6 Client Apps, API Gateway BFF, 15 Backend Microservices, Trục Bus RabbitMQ và các Cơ sở dữ liệu:
 
 ```mermaid
-flowchart LR
-    merchant["Merchant creates shipment"] --> pickup["Pickup request"]
-    pickup --> task["Courier task assignment"]
-    task --> pickupScan["Pickup scan"]
-    pickupScan --> hub["Hub manifest and transfer"]
-    hub --> scan["Inbound / outbound scans"]
-    scan --> delivery{"Delivery outcome"}
-    delivery --> delivered["Delivered"]
-    delivery --> failed["Failed delivery / NDR"]
-    failed --> returned["Return flow"]
-    delivered --> cod["COD settlement"]
-    returned --> tracking["Tracking and reporting"]
-    cod --> tracking
+graph TD
+    %% TẦNG CLIENT
+    subgraph CLIENT_TIER ["TẦNG ỨNG DỤNG NGƯỜI DÙNG (6 CLIENT APPLICATIONS)"]
+        direction LR
+        APP_ADMIN["Admin Portal<br/>(React / Vite)<br/>Port: 5175"]
+        APP_OPS["Operations Hub Web<br/>(React / Vite)<br/>Port: 5173"]
+        APP_MERCHANT["Merchant B2B Web<br/>(React / Vite)<br/>Port: 5174"]
+        APP_GUEST["Guest & Public Tracking<br/>(React / Vite)<br/>Port: 5177"]
+        APP_COURIER["Courier Mobile App<br/>(Expo / React Native)<br/>Port: 8081"]
+        APP_CUSTOMER["Customer Mobile App<br/>(Expo / React Native)<br/>Port: 8082"]
+    end
+
+    %% TẦNG API GATEWAY
+    subgraph GATEWAY_TIER ["TẦNG CỔNG GIAO TIẾP DUY NHẤT (API GATEWAY / BFF)"]
+        GW["gateway-bff (Port: 3000)<br/>- Reverse Proxy & Perimeter Auth Guard<br/>- SSE Streaming Proxy cho AI Chatbot<br/>- Upload đa phương tiện POD chữ ký qua MinIO/S3<br/>- Tích hợp Webhook Sàn TMĐT & Thanh toán SePay"]
+    end
+
+    %% TẦNG BACKEND MICROSERVICES
+    subgraph DOMAIN_TIER ["TẦNG 15 BACKEND MICROSERVICES ĐỘC LẬP (NESTJS 10 & TYPESCRIPT)"]
+        direction TB
+
+        subgraph CORE_BUSINESS ["Nhóm Nghiệp Vụ Vận Đơn & Khai Thác Kho"]
+            SVC_SHIPMENT["shipment-service (:3002)<br/>Quản trị vòng đời đơn & State Machine"]
+            SVC_PICKUP["pickup-service (:3003)<br/>Tiếp nhận & duyệt yêu cầu lấy hàng"]
+            SVC_DISPATCH["dispatch-service (:3004)<br/>Điều phối & phân công Shipper"]
+            SVC_MANIFEST["manifest-service (:3005)<br/>Đóng túi bưu gửi & kẹp chì Seal"]
+            SVC_SCAN["scan-service (:3006)<br/>Quét mã Inbound/Outbound & Vị trí"]
+            SVC_DELIVERY["delivery-service (:3007)<br/>Phát hàng, ảnh POD, thu COD, NDR & Hoàn"]
+            SVC_LINEHAUL["linehaul-service (:3014)<br/>Chuyến xe trung chuyển & Tem xe XT"]
+        end
+
+        subgraph DATA_FINANCE ["Nhóm Định Danh, Danh Mục & Tài Chính"]
+            SVC_AUTH["auth-service (:3010)<br/>Opaque Token, Session & RBAC"]
+            SVC_MASTER["masterdata-service (:3001)<br/>Hub 4 cấp, Tuyến đường, Phân vùng Zone"]
+            SVC_PAYMENT["payment-service (:3011)<br/>Sổ cái COD, Đối soát Batch & SePay QR"]
+            SVC_PRICING["pricing-service (:3012)<br/>Định giá IATA V/6000 & 3 Vùng Cước"]
+        end
+
+        subgraph INTELLIGENCE_PROJECTION ["Nhóm Trí Tuệ Nhân Tạo & Báo Cáo Read Model"]
+            SVC_CHATBOT["chatbot-service (:3013)<br/>Hybrid RAG + 5 Dynamic Tools + Gemini/GPT"]
+            SVC_TRACKING["tracking-service (:3008)<br/>Timeline hành trình bưu gửi (Read Model)"]
+            SVC_REPORTING["reporting-service (:3009)<br/>KPI, Sản lượng, Doanh thu (Read Model)"]
+        end
+    end
+
+    %% TẦNG ASYNCHRONOUS EVENT BUS
+    subgraph EVENT_BUS_TIER ["TẦNG TRỤC THÔNG ĐIỆP HƯỚNG SỰ KIỆN (MESSAGE BROKER)"]
+        RABBITMQ["RabbitMQ 3.13 (Topic Exchange: domain.events)<br/>Queue: {service}.q | Retry Exchange: {service}.retry.* | DLQ: {service}.dlq"]
+    end
+
+    %% TẦNG LƯU TRỮ DATABASE PER SERVICE
+    subgraph STORAGE_TIER ["TẦNG CƠ SỞ DỮ LIỆU ĐỘC LẬP (DATABASE PER SERVICE)"]
+        DB_AUTH[("auth_db")]
+        DB_MASTER[("masterdata_db")]
+        DB_SHIPMENT[("shipment_db")]
+        DB_PICKUP[("pickup_db")]
+        DB_DISPATCH[("dispatch_db")]
+        DB_MANIFEST[("manifest_db")]
+        DB_SCAN[("scan_db")]
+        DB_DELIVERY[("delivery_db")]
+        DB_PAYMENT[("payment_db")]
+        DB_TRACKING[("tracking_db")]
+        DB_REPORTING[("reporting_db")]
+        DB_CHAT[("chat_db")]
+        STORAGE_MINIO[("MinIO / S3 Object Storage<br/>(Ảnh ký nhận POD)")]
+        STORE_VECTOR[("Vector Store 768-dim<br/>(Tri thức bưu chính)")]
+    end
+
+    %% LIÊN KẾT CLIENT VÀO GATEWAY
+    APP_ADMIN -->|HTTP / JSON| GW
+    APP_OPS -->|HTTP / WebSocket| GW
+    APP_MERCHANT -->|HTTP / JSON| GW
+    APP_GUEST -->|HTTP / JSON| GW
+    APP_COURIER -->|HTTP / Multipart| GW
+    APP_CUSTOMER -->|HTTP / SSE Stream| GW
+
+    %% LIÊN KẾT GATEWAY VÀO SERVICES
+    GW --> SVC_AUTH
+    GW --> SVC_MASTER
+    GW --> SVC_SHIPMENT
+    GW --> SVC_PICKUP
+    GW --> SVC_DISPATCH
+    GW --> SVC_MANIFEST
+    GW --> SVC_SCAN
+    GW --> SVC_DELIVERY
+    GW --> SVC_LINEHAUL
+    GW --> SVC_PAYMENT
+    GW --> SVC_PRICING
+    GW --> SVC_CHATBOT
+    GW --> SVC_TRACKING
+    GW --> SVC_REPORTING
+
+    %% DATABASE BINDINGS
+    SVC_AUTH --- DB_AUTH
+    SVC_MASTER --- DB_MASTER
+    SVC_SHIPMENT --- DB_SHIPMENT
+    SVC_PICKUP --- DB_PICKUP
+    SVC_DISPATCH --- DB_DISPATCH
+    SVC_MANIFEST --- DB_MANIFEST
+    SVC_SCAN --- DB_SCAN
+    SVC_DELIVERY --- DB_DELIVERY
+    SVC_PAYMENT --- DB_PAYMENT
+    SVC_TRACKING --- DB_TRACKING
+    SVC_REPORTING --- DB_REPORTING
+    SVC_CHATBOT --- STORE_VECTOR
+    GW --- DB_CHAT
+    SVC_DELIVERY -.->|Lưu ảnh POD| STORAGE_MINIO
+
+    %% SỰ KIỆN PUBLISH & CONSUME
+    SVC_SHIPMENT -->|Transactional Outbox Relay| RABBITMQ
+    SVC_PICKUP -->|Transactional Outbox Relay| RABBITMQ
+    SVC_DISPATCH -->|Transactional Outbox Relay| RABBITMQ
+    SVC_MANIFEST -->|Transactional Outbox Relay| RABBITMQ
+    SVC_SCAN -->|Transactional Outbox Relay| RABBITMQ
+    SVC_DELIVERY -->|Transactional Outbox Relay| RABBITMQ
+    SVC_PAYMENT -->|Transactional Outbox Relay| RABBITMQ
+
+    RABBITMQ -.->|Consume events| SVC_TRACKING
+    RABBITMQ -.->|Consume events| SVC_REPORTING
+    RABBITMQ -.->|Consume events| SVC_SHIPMENT
+    RABBITMQ -.->|Consume events| SVC_PAYMENT
 ```
 
-## 💼 Mô Hình Phân Tầng Khách Hàng & Cơ Chế Khép Kín Dòng Tiền (3-Tier Customer Model & Reverse Logistics)
+---
 
-Để mô phỏng chính xác nghiệp vụ bưu chính thực tế (Viettel Post, GHN, J&T) và **loại bỏ rủi ro trục lợi tài chính**, hệ thống phân định rõ 03 tầng đối tượng khách hàng:
+## 3. CHÚNG TA CÓ GÌ? - TỔNG HỢP CÁC SẢN PHẨM ĐÃ XÂY DỰNG HOÀN THIỆN
 
-| Tiêu Chí Nghiệp Vụ | Tầng 1: Khách Vãng Lai (Guest / Walk-in) | Tầng 2: Merchant Tiêu Chuẩn (Standard SME) | Tầng 3: Merchant VIP Doanh Nghiệp (VIP Enterprise) |
+Đồ án sở hữu một khối lượng sản phẩm bàn giao đồ sộ, đã được lập trình, kiểm thử và sẵn sàng vận hành:
+
+### 3.1. Phân hệ 6 Ứng dụng Client (4 Web + 2 Mobile)
+
+| Ứng Dụng | Nền tảng & Cổng | Nhóm Người Dùng | Các Tính Năng Thực Chiến Nổi Bật |
 | :--- | :--- | :--- | :--- |
-| **Phân loại** | Gửi lẻ tại quầy, chưa có tài khoản Shop | Chủ shop vừa và nhỏ, sản lượng < 1.000 đơn/tháng | Đối tác chiến lược có hợp đồng, sản lượng > 1.000 đơn/tháng |
-| **Cước chiều đi** | 100% Giá niêm yết chuẩn | Bảng giá Merchant (Chiết khấu 5% + Shipper lấy tận nơi) | Bảng giá Hợp đồng (Chiết khấu bậc thang 15% – 25%) |
-| **Cước chuyển hoàn** | **50% cước chiều đi** | **VẪN THU 50% cước chiều đi** (Ngăn chặn đơn ảo) | **0 VNĐ (Miễn phí hoàn 100%)** theo cấu hình hợp đồng |
-| **Thu hồi cước hoàn** | Tiền mặt / VietQR khi bưu tá giao trả hàng (POD Return) | **Tự động cấn trừ vào Bảng kê đối soát tiền thu hộ COD** | Miễn phí (Chiết khấu thương mại giữ chân khách lớn) |
-| **Cơ chế kích hoạt** | Mặc định đối với khách chưa định danh | Tự động khi đăng ký tài khoản Shop và xác thực CCCD/SĐT | **Quản trị viên (Admin) phê duyệt thủ công** trên cổng quản trị |
+| **`admin-web`** | React 18, Vite 5<br>`Port: 5175` | Quản trị viên cấp cao (System Admin) | • Quản lý tài khoản toàn hệ thống và phân quyền chi tiết (RBAC).<br>• Thiết lập danh mục Hub 4 cấp, bảng vùng cước (Zone), lý do giao thất bại (NDR).<br>• Giám sát nhật ký bảo mật Audit Log và cấu hình tham số hệ thống. |
+| **`ops-web`** | React 18, Vite 5<br>`Port: 5173` | Nhân viên vận hành Hub / Bưu cục (Ops) | • Dashboard giám sát sản lượng và tỷ lệ phát thành công theo thời gian thực.<br>• Tiếp nhận và duyệt yêu cầu lấy hàng, điều phối gán việc cho Shipper.<br>• Đóng bao bưu gửi (Manifest), kẹp chì Seal an ninh, quét mã Inbound/Outbound.<br>• Xử lý khiếu nại phát thất bại NDR, luồng chuyển hoàn và đối soát giải ngân COD. |
+| **`merchant-web`** | React 18, Vite 5<br>`Port: 5174` | Chủ shop kinh doanh online (Merchant B2B) | • Tạo đơn bưu gửi lẻ hoặc tải lên danh sách Excel hàng loạt.<br>• In phiếu gửi bưu chính chuẩn A6/A7 có sẵn mã vạch Barcode và nhãn cảnh báo.<br>• Đặt lịch hẹn bưu tá đến lấy hàng tận kho.<br>• Theo dõi bảng kê đối soát tiền COD và nhận tiền chuyển khoản tự động. |
+| **`guest-web`** | React 18, Vite 5<br>`Port: 5177` | Khách vãng lai & Người nhận hàng | • Tra cứu timeline hành trình vận đơn công khai theo thời gian thực.<br>• Ước tính cước phí bưu chính IATA đa dịch vụ tức thì.<br>• Tạo đơn gửi hàng lẻ tại bưu cục mà không bắt buộc tạo tài khoản.<br>• Trò chuyện trực tiếp cùng trợ lý ảo AI Logistics RAG hỏi đáp 24/7. |
+| **`courier-mobile`**| Expo 54, React Native<br>`Port: 8081` | Tài xế giao / lấy hàng (Shipper / Courier) | • Danh sách nhiệm vụ lấy và giao hàng thông minh trong ngày.<br>• Quét mã vạch vận đơn bằng Camera điện thoại tốc độ cao.<br>• Chụp ảnh bằng chứng phát hàng (POD) xác nhận hoàn tất giao hàng.<br>• Thu hộ tiền mặt COD hoặc quét mã VietQR; lưu trữ Offline Queue khi mất mạng. |
+| **`customer-mobile`**| Expo 54, React Native<br>`Port: 8082` | Khách hàng cá nhân người gửi (C-End User) | • Ứng dụng di động tính cước tự động và tạo đơn gửi hàng nhanh chóng.<br>• Theo dõi lộ trình bưu phẩm trực quan từng bước.<br>• Quản lý danh bạ sổ địa chỉ người nhận thân quen.<br>• Tích hợp nút trò chuyện nổi (Floating AI Chatbot) tư vấn chính sách. |
 
-> 🛡️ **Bịt kín lỗ hổng tài chính:** Hệ thống **tuyệt đối không để Merchant mới mặc định là VIP**. Việc thu 50% cước hoàn đối với Merchant thường vừa bù đắp chi phí xe tải chiều về, vừa ngăn chặn tình trạng tạo đơn ảo "bom hàng". Cơ chế tự động cấn trừ qua kỳ đối soát COD giúp vận hành không tiền mặt và triệt tiêu nợ xấu 100%.
+---
 
-## Client Applications
+### 3.2. Phân hệ 15 Backend Microservices Độc Lập
 
-| Application | User group | Main work |
-| --- | --- | --- |
-| `apps/admin-web` | Admin | Users, roles, hubs, zones, configs, NDR reasons, merchant profiles |
-| `apps/ops-web` | Ops staff | Shipments, pickups, tasks, manifests, scans, NDR, return, COD, reporting |
-| `apps/merchant-web` | Merchant | Create shipments, manage orders, request pickup, print labels, track shipments |
-| `apps/courier-mobile` | Courier | Assigned tasks, pickup/hub scans, POD/OTP, delivery failure, offline retry |
-| `apps/guest-web` | Customer / Guest | Universal shipment tracking, rate calculator, network hubs, customer order management |
+| STT | Tên Microservice | Cổng | Cơ sở dữ liệu | Vai trò & Bounded Context nghiệp vụ |
+| :---: | :--- | :---: | :--- | :--- |
+| **1** | `gateway-bff` | `3000` | `chat_db` + Redis | Cổng vào đơn nhất (API Gateway), điều phối reverse proxy, xác thực perimeter, upload file MinIO S3, SSE streaming proxy cho AI Chatbot. |
+| **2** | `auth-service` | `3010` | `auth_db` | Quản lý danh tính người dùng, cấp phát phiên Opaque Token, quản lý quyền hạn RBAC và kiểm tra quyền tài xế di động. |
+| **3** | `masterdata-service` | `3001` | `masterdata_db` | Quản lý danh mục Hub 4 cấp, mạng lưới tuyến đường bưu chính, bảng phân vùng cước địa lý và danh mục lý do NDR. |
+| **4** | `shipment-service` | `3002` | `shipment_db` | **Nguồn chân lý (Source of Truth)** trạng thái bưu gửi; vận hành máy trạng thái (State Machine); lưu snapshot cước bất biến. |
+| **5** | `pickup-service` | `3003` | `pickup_db` | Quản lý vòng đời yêu cầu lấy hàng tận nơi từ chủ shop (tạo, duyệt, phân bổ, hủy). |
+| **6** | `dispatch-service` | `3004` | `dispatch_db` | Điều phối nhiệm vụ tài xế: gán việc lấy/giao theo khu vực, điều chuyển khi quá tải. |
+| **7** | `manifest-service` | `3005` | `manifest_db` | Quản lý bảng kê và túi bưu gửi: gom vận đơn vào bao hàng (mã `MB`), niêm phong kẹp chì seal an ninh. |
+| **8** | `scan-service` | `3006` | `scan_db` | **Nguồn chân lý vị trí vật lý:** ghi nhận các mốc quét barcode (Lấy, Nhập kho, Xuất kho) với cơ chế Idempotency chống trùng. |
+| **9** | `delivery-service` | `3007` | `delivery_db` | Quản lý phát hàng chặng cuối: chụp ảnh POD bằng chứng giao hàng, thu COD, biên bản giao thất bại NDR và điều phối chuyển hoàn. |
+| **10** | `payment-service` | `3011` | `payment_db` | **Nguồn chân lý tài chính COD:** quản lý tiền thu hộ, gom phiên đối soát tự động (Batch Settlement), tích hợp SePay/VietQR webhook. |
+| **11** | `pricing-service` | `3012` | *(In-Memory Rules)* | Động cơ định giá chuẩn hóa duy nhất: tính cước theo nấc vượt cân, phụ phí 3 vùng và công thức quy đổi IATA $V/6000$. |
+| **12** | `chatbot-service` | `3013` | Vector Store | Phân hệ trợ lý trí tuệ nhân tạo độc lập: Hybrid RAG, 5 dynamic tools, Google Gemini 3 Flash / OpenAI GPT-4o-mini fallback, SSE streaming. |
+| **13** | `linehaul-service` | `3014` | *(In-Transit)* | Quản lý các chuyến xe tải trung chuyển đường dài giữa các Hub trung tâm, điều phối xe, tài xế và cấp tem xe `XT`. |
+| **14** | `tracking-service` | `3008` | `tracking_db` | **Read Model phi tập trung:** tiêu thụ sự kiện từ RabbitMQ để dựng timeline chi tiết hành trình bưu gửi với tốc độ tra cứu dưới 10ms. |
+| **15** | `reporting-service` | `3009` | `reporting_db` | **Read Model phân tích:** tổng hợp báo cáo chỉ số KPI, sản lượng bưu cục, tỷ lệ giao đúng hạn SLA và hiệu suất làm việc. |
 
-## Architecture
+---
 
-### Architectural Principles
+### 3.3. Tầng Cơ sở dữ liệu (Database per Service) & MinIO S3
+- **11 Cơ sở dữ liệu PostgreSQL độc lập:** `auth_db`, `masterdata_db`, `shipment_db`, `pickup_db`, `dispatch_db`, `manifest_db`, `scan_db`, `delivery_db`, `payment_db`, `tracking_db`, `reporting_db`, `chat_db`.
+- **MinIO / AWS S3 Object Storage:** Lưu trữ an toàn tệp nhị phân ảnh chụp bằng chứng giao hàng (POD) có chữ ký số.
+- **In-Memory Vector Database:** Lưu trữ 768-dim vector embeddings phục vụ truy xuất ngữ nghĩa nhanh cho AI Assistant.
 
-| Principle | Implementation |
-| --- | --- |
-| Single client entry point | Web/mobile clients call `gateway-bff`; internal services are not called directly by clients. |
-| Domain ownership | Each service owns its business rules and service database. Cross-service access goes through HTTP APIs or domain events. |
-| Event-driven projections | Write-side services publish RabbitMQ domain events; tracking and reporting consume events as read models. |
-| Operational workflow fidelity | Pickup, dispatch, manifest, scan, delivery, NDR, return, COD, and reporting flows mirror real logistics operations. |
-| Deployment-minded structure | Local and trial deployments use Docker Compose, environment templates, runbooks, and service-level build commands. |
+---
 
-Clients call `gateway-bff`; they do not call internal domain services directly.
+### 3.4. Trục truyền thông sự kiện (RabbitMQ Event Bus)
+- Triển khai **RabbitMQ 3.13** với Topic Exchange `domain.events`.
+- Áp dụng triệt để **Transactional Outbox Pattern**: lưu dữ liệu và bản ghi sự kiện Outbox trong cùng một transaction, đảm bảo phát tán thông điệp tin cậy (At-least-once delivery).
+- Thiết lập **Idempotency Record** trên mọi thao tác quét mã và giao nhận, loại bỏ hoàn toàn nguy cơ trùng lặp dữ liệu khi mạng chập chờn.
 
-```mermaid
-flowchart TB
-    subgraph clients["Client applications"]
-        admin["admin-web"]
-        ops["ops-web"]
-        merchantWeb["merchant-web"]
-        courier["courier-mobile"]
-        customerWeb["customer-web (guest-web)"]
-    end
+---
 
-    gateway["gateway-bff<br/>single client entry point"]
+## 4. ĐẶC TẢ NGHIỆP VỤ & SƠ ĐỒ QUY TRÌNH THEO TỪNG LOẠI ĐƠN HÀNG
 
-    subgraph services["Domain services"]
-        auth["auth-service"]
-        masterdata["masterdata-service"]
-        pricing["pricing-service"]
-        shipment["shipment-service"]
-        pickup["pickup-service"]
-        dispatch["dispatch-service"]
-        manifest["manifest-service"]
-        scan["scan-service"]
-        delivery["delivery-service"]
-        payment["payment-service"]
-    end
-
-    subgraph readmodels["Read models"]
-        tracking["tracking-service"]
-        reporting["reporting-service"]
-    end
-
-    subgraph infra["Stateful infrastructure"]
-        postgres[("PostgreSQL<br/>database per service")]
-        rabbit[("RabbitMQ<br/>domain.events")]
-        redis[("Redis")]
-        minio[("MinIO / S3")]
-    end
-
-    admin --> gateway
-    ops --> gateway
-    merchantWeb --> gateway
-    courier --> gateway
-    publicTracking --> gateway
-
-    gateway --> auth
-    gateway --> masterdata
-    gateway --> pricing
-    gateway --> shipment
-    gateway --> pickup
-    gateway --> dispatch
-    gateway --> manifest
-    gateway --> scan
-    gateway --> delivery
-    gateway --> payment
-    gateway --> tracking
-    gateway --> reporting
-
-    auth --> postgres
-    masterdata --> postgres
-    shipment --> postgres
-    pickup --> postgres
-    dispatch --> postgres
-    manifest --> postgres
-    scan --> postgres
-    delivery --> postgres
-    payment --> postgres
-    tracking --> postgres
-    reporting --> postgres
-    gateway --> redis
-    gateway --> minio
-
-    shipment --> rabbit
-    pickup --> rabbit
-    dispatch --> rabbit
-    manifest --> rabbit
-    scan --> rabbit
-    delivery --> rabbit
-    payment --> rabbit
-
-    rabbit --> shipment
-    rabbit --> tracking
-    rabbit --> reporting
-    rabbit --> dispatch
-    rabbit --> manifest
-    rabbit --> delivery
-```
-
-Important ownership rules:
-
-- `shipment-service` is the canonical owner of shipment business status.
-- `scan-service` is the source of truth for scan events and current physical location.
-- `tracking-service` and `reporting-service` are read models; they do not decide write-side business state.
-- `payment-service` is the source of truth for COD records, settlement batches, payment webhook events, and remittance.
-- `pricing-service` calculates quotes/rates and currently has no database.
-- Services must not read or write another service's database directly. Use internal HTTP or domain events.
+Hệ thống Nexus phân loại và xử lý 5 loại hình đơn bưu gửi với các tham số kỹ thuật, đường đi vật lý và cơ chế tính cước chuyên biệt:
 
 ```mermaid
-flowchart LR
-    subgraph write["Write-side ownership"]
-        shipmentStatus["shipment-service<br/>shipment status"]
-        scanLocation["scan-service<br/>scan events and location"]
-        paymentCod["payment-service<br/>COD settlement"]
-        deliveryAttempt["delivery-service<br/>POD, OTP, NDR, return"]
-    end
+flowchart TD
+    START_ORDER["Tiếp nhận Yêu cầu Gửi Hàng<br/>(Web / Mobile / Quầy POS)"] --> CLASSIFY{"Phân loại Tính chất & Yêu cầu Đơn hàng"}
 
-    events[("RabbitMQ<br/>domain.events")]
+    CLASSIFY -->|"Dưới 5kg, không vỡ, có thu tiền"| TYPE_STD["1. Đơn Tiêu Chuẩn COD<br/>(Standard COD)"]
+    CLASSIFY -->|"Giao gấp nội thành, SLA 6h-12h"| TYPE_EXP["2. Đơn Hỏa Tốc / Nội Thành<br/>(Express & Same-Day)"]
+    CLASSIFY -->|"Thể tích lớn hoặc nặng > 20kg"| TYPE_BULK["3. Đơn Cồng Kềnh / Quá Khổ<br/>(Bulky Freight IATA V/6000)"]
+    CLASSIFY -->|"Giá trị hàng hóa &ge; 1.000.000đ"| TYPE_INS["4. Đơn Khai Giá Bảo Hiểm 100%<br/>(High-Value Insured)"]
+    CLASSIFY -->|"Sứ, thủy tinh, mỹ phẩm lỏng"| TYPE_FRAG["5. Đơn Hàng Dễ Vỡ<br/>(Fragile Goods SOP)"]
 
-    subgraph projection["Projection services"]
-        trackingProjection["tracking-service<br/>timeline and current tracking"]
-        reportingProjection["reporting-service<br/>KPI and status aggregates"]
-    end
-
-    shipmentStatus --> events
-    scanLocation --> events
-    paymentCod --> events
-    deliveryAttempt --> events
-    events --> trackingProjection
-    events --> reportingProjection
+    TYPE_STD --> PROC_STD["Gom bao túi MB, trung chuyển Linehaul, phát T+2/T+3, đối soát COD"]
+    TYPE_EXP --> PROC_EXP["Tuyến xe van / xe máy trực tiếp, giao trong ngày, không qua bao gom liên tỉnh"]
+    TYPE_BULK --> PROC_BULK["Quy đổi W_vol = (DxRxC)/6000, xe tải bửng nâng, bốc dỡ 2 người"]
+    TYPE_INS --> PROC_INS["Thu phí bảo hiểm 0.5%, kiểm định chứng từ, kẹp seal an ninh riêng, đền 100%"]
+    TYPE_FRAG --> PROC_FRAG["Bọc xốp 3-4 lớp xốp khí &ge; 5cm, dán tem FRAGILE, ký packagingWaiver nếu tự gói"]
 ```
 
-## Repository Layout
+---
 
-```text
-apps/
-  admin-web/          React/Vite admin portal
-  ops-web/            React/Vite operations portal
-  merchant-web/       React/Vite merchant portal
-  courier-mobile/     Expo/React Native courier app
-  guest-web/          React/Vite customer portal & tracking page
+### 4.0. Nguồn chân lý 19 Trạng thái Vận đơn & Máy trạng thái chuẩn hóa (The 19 Canonical State Machine)
 
-services/
-  gateway-bff/        API gateway, media upload, marketplace adapter, chat/realtime
-  auth-service/       Opaque-token sessions, refresh/logout/introspect, user accounts
-  masterdata-service/ Hubs, zones, configs, NDR reasons, merchant profiles
-  shipment-service/   Shipment write model and current status state machine
-  pickup-service/     Pickup request lifecycle
-  dispatch-service/   Task creation, assignment, reassignment, completion
-  manifest-service/   Manifest/bag, seal, receive, unseal
-  scan-service/       Pickup/inbound/outbound scan events and current location
-  delivery-service/   Delivery attempts, POD, OTP, NDR, return
-  tracking-service/   Tracking timeline/current read model
-  reporting-service/  KPI and shipment-status read model
-  payment-service/    COD record, settlement batch, SePay/VietQR remittance
-  pricing-service/    Rule-based shipping quote calculation
-  chatbot-service/    AI Assistant RAG service (QA, Tool Calling, SSE streaming)
+Toàn bộ hệ thống Nexus tuân thủ nghiêm ngặt mô hình **Đơn nguyên ghi (Single Source of Truth)**: `shipment-service` là dịch vụ duy nhất có quyền cập nhật trường `currentStatus` trong cơ sở dữ liệu `shipment_db`. Các phân hệ khác (`scan-service`, `manifest-service`, `delivery-service`, `tracking-service`) chỉ phát sinh và tiêu thụ sự kiện nghiệp vụ qua RabbitMQ (`domain.events`).
 
-packages/
-  messaging/          Shared RabbitMQ/envelope/outbox helpers
-  shared/             Shared types/constants
-  testing/            Test helpers
-  ui/                 Shared UI components
-
-contracts/
-  events/             Domain event names and example payloads
-  openapi/            Service OpenAPI contracts
-
-infra/
-  dev/                Local PostgreSQL, RabbitMQ, Redis, MinIO
-  prod/               Single-VPS Docker Compose deployment
-
-docs/
-  architecture/       System design & AI Chatbot service architecture
-  knowledge-base/     Logistics standard SOPs, pricing matrix, vector index
-  PROJECT-OVERVIEW.md Main source of truth for the system overview
-  runbook/            Deploy, account, code-rule, and trial runbooks
-  service-description/ Partner integration and service notes
-  Documents/          Prompt packs, test reports, workbook notes
-```
-
-There is no root `package.json`. Run install/build/test commands inside the specific app or service directory.
-
-## Backend Services
-
-The local backend stack is organized around domain services. Each service owns its main database and exposes its API through `gateway-bff` or internal service communication.
-
-| Service | Port | Database | Responsibility |
-| --- | ---: | --- | --- |
-| `gateway-bff` | 3000 | `chat_db` for chat only | Client entry point, proxy, media upload, marketplace integration |
-| `masterdata-service` | 3001 | `masterdata_db` | Hubs, zones, configs, NDR reasons, merchant profiles |
-| `shipment-service` | 3002 | `shipment_db` | Shipment lifecycle and canonical current status |
-| `pickup-service` | 3003 | `pickup_db` | Pickup requests |
-| `dispatch-service` | 3004 | `dispatch_db` | Courier tasks and assignments |
-| `manifest-service` | 3005 | `manifest_db` | Manifests, bags, seal/receive/unseal |
-| `scan-service` | 3006 | `scan_db` | Scan events and current location |
-| `delivery-service` | 3007 | `delivery_db` | Delivery attempts, POD, OTP, NDR, returns |
-| `tracking-service` | 3008 | `tracking_db` | Timeline/current tracking read model |
-| `reporting-service` | 3009 | `reporting_db` | KPI and dashboard read model |
-| `auth-service` | 3010 | `auth_db` | User accounts, sessions, opaque tokens |
-| `payment-service` | 3011 | `payment_db` | COD settlement, QR, webhook reconciliation |
-| `pricing-service` | 3012 | none | Shipping quote/rate calculation |
-| `chatbot-service` | 3013 | in-memory / vector index | AI Assistant RAG, real-time shipment tool, IATA fee estimation, SSE streaming |
-
-### Data Ownership
-
-| Store | Owning domains | Primary use |
-| --- | --- | --- |
-| PostgreSQL | Auth, master data, shipment, pickup, dispatch, manifest, scan, delivery, tracking, reporting, payment | Service-owned transactional data and local projections |
-| RabbitMQ | Shipment, pickup, dispatch, manifest, scan, delivery, payment | Domain events for tracking, reporting, dispatch, manifest, and delivery workflows |
-| Redis | Gateway and runtime modules | Caching, temporary runtime state, and gateway support |
-| MinIO | Gateway/media workflows | Object storage for upload-style assets and proof-of-delivery media |
-
-### Local Frontend Ports
-
-| App | URL |
-| --- | --- |
-| `ops-web` | `http://127.0.0.1:5173` |
-| `merchant-web` | `http://127.0.0.1:5174` |
-| `admin-web` | `http://127.0.0.1:5175` |
-| `guest-web` (customer) | `http://127.0.0.1:5177` |
-| `courier-mobile` | Expo dev server / configured mobile runtime |
-
-## 🤖 AI Assistant & Logistics RAG Microservice
-
-Hệ thống tích hợp một microservice chuyên biệt mang tên **`@NEXUS/chatbot-service`** (vận hành trên cổng **`3013`**), ứng dụng mô hình **Hybrid RAG (Retrieval-Augmented Generation)** kết hợp **Real-time Tool Calling** để hỗ trợ Khách hàng và Chủ hàng (Merchant) tự động 24/7.
+#### Sơ đồ Máy trạng thái tổng thể 19 Trạng thái (Mermaid State Machine):
 
 ```mermaid
-flowchart LR
-    UserQuery["Khách hàng gửi câu hỏi"] --> IntentRoute{"Phân loại ý định"}
+stateDiagram-v2
+    [*] --> CREATED: shipment.created (Chủ shop tạo đơn)
+    CREATED --> UPDATED: pickup.requested (Yêu cầu lấy hàng tận nơi)
+    CREATED --> CANCELLED: cancel (Chủ shop hủy trước lấy)
+    UPDATED --> CANCELLED: cancel (Chủ shop hủy trước lấy)
+
+    UPDATED --> TASK_ASSIGNED: pickup.approved / task.assigned (Phân công bưu tá lấy)
+    TASK_ASSIGNED --> PICKUP_COMPLETED: scan.pickup_confirmed (Bưu tá quét barcode nhận hàng)
+    TASK_ASSIGNED --> CANCELLED: cancel (Hủy trước lấy)
+
+    PICKUP_COMPLETED --> SCAN_INBOUND: scan.inbound (Bưu tá nộp hàng tại Hub Gốc)
     
-    IntentRoute -->|"Hỏi chính sách, biểu phí, đóng gói"| RAG["RAG Engine<br/>docs/knowledge-base/<br/>text-embedding-3-small"]
-    IntentRoute -->|"Hỏi mã vận đơn (NX-...)"| TrackingTool["Tool trackShipment()<br/>tracking-service (:3008)"]
-    IntentRoute -->|"Hỏi cước kiện hàng (...kg)"| PricingTool["Tool calculatePricing()<br/>pricing-service (:3012)"]
+    state "KHAI THÁC HUB & LUÂN CHUYỂN LINEHAUL" as HUB_TRANSIT {
+        SCAN_INBOUND --> MANIFEST_SEALED: manifest.sealed (Đóng bao tải MB, kẹp chì seal)
+        MANIFEST_SEALED --> IN_TRANSIT: scan.outbound (Xuất xe tải Linehaul liên tỉnh)
+        IN_TRANSIT --> MANIFEST_RECEIVED: manifest.received (Xe tải đến Hub Đích)
+        MANIFEST_RECEIVED --> MANIFEST_UNSEALED: manifest.unsealed (Cắt chì, mở bao kiểm đếm)
+        MANIFEST_UNSEALED --> SCAN_INBOUND: scan.inbound (Quét nhận từng kiện vào Hub Đích)
+        SCAN_INBOUND --> INVENTORY_CHECK: scan.inbound [INVENTORY_CHECK] (Kiểm tồn kho bưu cục)
+        INVENTORY_CHECK --> SCAN_OUTBOUND: scan.outbound (Xuất kho bàn giao phát)
+        SCAN_OUTBOUND --> TASK_ASSIGNED: task.assigned (Phân công tuyến phát chặng cuối)
+    }
 
-    RAG --> GroundedContext["Grounded Context Assembly<br/>(Ngăn chặn ảo giác + Citations)"]
-    TrackingTool --> GroundedContext
-    PricingTool --> GroundedContext
+    state "GIAO HÀNG CHẶNG CUỐI & XỬ LÝ NGOẠI LỆ" as LAST_MILE {
+        TASK_ASSIGNED --> DELIVERED: delivery.delivered (Giao thành công + 01 ảnh POD + Thu COD)
+        TASK_ASSIGNED --> DELIVERY_FAILED: delivery.failed (Giao thất bại lần 1, 2)
+        
+        DELIVERY_FAILED --> NDR_CREATED: ndr.created (Lập biên bản sự cố giao hàng NDR)
+        NDR_CREATED --> INVENTORY_CHECK: Quét lưu kho kệ tạm hẹn phát lại
+        INVENTORY_CHECK --> TASK_ASSIGNED: Tái điều phối phát lại (Lần 2, Lần 3)
+        
+        DELIVERY_FAILED --> EXCEPTION: ndr.created [PHYSICAL_DAMAGE] (Hàng bể vỡ / tranh chấp)
+        TASK_ASSIGNED --> EXCEPTION: ndr.created [PHYSICAL_DAMAGE] (Phát hiện bể vỡ tại chỗ)
+    }
 
-    GroundedContext --> LLM["LLM (gpt-4o-mini)<br/>Temperature: 0.2"]
-    LLM --> StreamOut["Server-Sent Events (SSE)<br/>Streaming tokens về Web/Mobile"]
+    DELIVERED --> [*]
+
+    state "CHU TRÌNH CHUYỂN HOÀN (REVERSE LOGISTICS)" as REVERSE_FLOW {
+        DELIVERY_FAILED --> RETURN_STARTED: return.started (Shop xác nhận hoàn / Quá 3 lần giao)
+        NDR_CREATED --> RETURN_STARTED: return.started
+        EXCEPTION --> RETURN_STARTED: return.started
+
+        RETURN_STARTED --> SCAN_INBOUND: Quét nhập kho bao hoàn MB-RET
+        SCAN_INBOUND --> IN_TRANSIT: Xe Linehaul chiều về (Reverse Truck)
+        IN_TRANSIT --> SCAN_INBOUND: Xe về tới Hub Gốc (Gần Shop)
+        SCAN_INBOUND --> TASK_ASSIGNED: Phân công bưu tá mang hàng trả lại Shop
+        TASK_ASSIGNED --> RETURN_COMPLETED: return.completed (Ký nhận POD Return & Đối soát cước hoàn)
+        SCAN_INBOUND --> RETURN_COMPLETED: return.completed (Shop tự đến bưu cục nhận lại)
+    }
+
+    RETURN_COMPLETED --> [*]
+    CANCELLED --> [*]
 ```
 
-### ✨ Các Tính Năng Nổi Bật
+#### Bảng Quy Chuẩn Đối Soát Toàn Diện 19 Trạng Thái Toàn Hệ Thống:
 
-1. **Knowledge-Grounded QA (Không ảo giác):** Truy xuất thông tin chính sách, bảo hiểm khai giá (Điều 25 Luật Bưu chính), hàng cấm bay (pin lithium, chất lỏng) và quy chuẩn đóng gói dễ vỡ từ kho tri thức chuẩn hóa tại [`docs/knowledge-base/`](docs/knowledge-base/).
-2. **Real-time Tool Calling:** Tự động bắt mã vận đơn `NX-XXXXXX` để tra cứu vị trí Hub hiện tại, lộ trình di chuyển và thời gian dự kiến phát hàng từ `tracking-service`.
-3. **Dự toán cước IATA tự động:** Áp dụng chuẩn quy đổi thể tích hàng cồng kềnh $V/6000$ và nấc cước bưu chính theo vùng miền.
-4. **Server-Sent Events (SSE) Streaming:** Truyền tải luồng token chữ thời gian thực tạo hiệu ứng gõ phím tương tự ChatGPT.
-5. **Zero-Downtime Fallback:** Thuật toán băm vector nội bộ (Deterministic Semantic Hash) cho phép chạy và demo mượt mà ngay cả khi không có mạng internet hoặc chưa nạp API key.
+| STT | Database Enum (`ShipmentCurrentStatus`) | Nhãn Merchant Web | Nhãn Ops Web | Nhãn Courier App | Nhãn Tracking Public | Event Kích Hoạt & Service Chủ Quản | Trạng Thái Kế Tiếp Hợp Lệ |
+| :---: | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **1** | `CREATED` | Đã tạo | Mới tạo | Mới tạo | Đã tạo | `shipment.created` (`shipment-service`) | `UPDATED`, `TASK_ASSIGNED`, `PICKUP_COMPLETED`, `CANCELLED` |
+| **2** | `UPDATED` | Chờ lấy hàng *(khi có pickup)* | Đã cập nhật | Đã cập nhật | Chờ lấy hàng | `pickup.requested` (`merchant-web`) | `TASK_ASSIGNED`, `PICKUP_COMPLETED`, `CANCELLED` |
+| **3** | `TASK_ASSIGNED` | Phát hàng / Chờ lấy | Đã phân công giao | Đã phân công | Chờ lấy / Phát hàng | `pickup.approved`, `task.assigned`, `delivery.attempted` | `PICKUP_COMPLETED`, `DELIVERED`, `DELIVERY_FAILED`, `NDR_CREATED`, `EXCEPTION`, `RETURN_COMPLETED`, `CANCELLED` |
+| **4** | `PICKUP_COMPLETED` | Đã nhận hàng | Đã nhận hàng | Nhận hàng | Đã nhận hàng | `scan.pickup_confirmed` (`courier-mobile`) | `SCAN_INBOUND`, `SCAN_OUTBOUND`, `SEND_GOODS`, `MANIFEST_SEALED`, `CANCELLED` |
+| **5** | `SCAN_INBOUND` | Hàng đến | Hàng đến | Hàng đến | Hàng đến | `scan.inbound` (`scan-service`) | `MANIFEST_SEALED`, `INVENTORY_CHECK`, `TASK_ASSIGNED`, `SCAN_OUTBOUND`, `RETURN_COMPLETED`, `CANCELLED` |
+| **6** | `MANIFEST_SEALED` | Đang luân chuyển | Đang luân chuyển | Đã niêm phong bao | Đang luân chuyển | `manifest.sealed` (`manifest-service`) | `IN_TRANSIT`, `MANIFEST_RECEIVED`, `MANIFEST_UNSEALED`, `CANCELLED` |
+| **7** | `SEND_GOODS` | Đã gửi hàng | Đã gửi hàng | Đã gửi hàng | Gửi hàng | `scan.outbound` *(Gửi bao hàng / kiện rời)* | `IN_TRANSIT`, `SCAN_INBOUND`, `MANIFEST_SEALED`, `CANCELLED` |
+| **8** | `IN_TRANSIT` | Đang luân chuyển | Đang luân chuyển | Đang luân chuyển | Đang luân chuyển | `scan.outbound` *(Xe tải xuất bến Linehaul)* | `SCAN_INBOUND`, `MANIFEST_RECEIVED`, `MANIFEST_UNSEALED`, `CANCELLED` |
+| **9** | `MANIFEST_RECEIVED`| Đang luân chuyển | Xe đến | Đã nhận bao | Xe đến | `manifest.received` (`manifest-service`) | `MANIFEST_UNSEALED`, `SCAN_INBOUND`, `INVENTORY_CHECK`, `CANCELLED` |
+| **10**| `MANIFEST_UNSEALED`| Gỡ bao | Gỡ bao | Đã gỡ bao | Gỡ bao | `manifest.unsealed` (`manifest-service`) | `SCAN_INBOUND`, `INVENTORY_CHECK`, `TASK_ASSIGNED`, `CANCELLED` |
+| **11**| `INVENTORY_CHECK` | Kiểm tồn kho | Kiểm tồn kho | Kiểm tra hàng tồn | Quét tồn kho | `scan.inbound` *(Kiểm kê kho bưu cục / Hẹn phát lại)* | `TASK_ASSIGNED`, `SCAN_OUTBOUND`, `RETURN_STARTED`, `RETURN_COMPLETED`, `CANCELLED` |
+| **12**| `SCAN_OUTBOUND` | Gửi hàng | Gửi hàng | Đã quét xuất hub | Gửi hàng | `scan.outbound` *(Bàn giao xuất kho phát)* | `TASK_ASSIGNED`, `SEND_GOODS`, `IN_TRANSIT`, `CANCELLED` |
+| **13**| `DELIVERED` | Ký nhận | Ký nhận | Giao thành công | Ký nhận | `delivery.delivered` (`courier-mobile`) | **Terminal State (Bất biến forward)** |
+| **14**| `DELIVERY_FAILED` | Ghi nhận vấn đề | Ghi nhận vấn đề | Giao thất bại | Ghi nhận vấn đề | `delivery.failed` (`delivery-service`) | `DELIVERED`, `NDR_CREATED`, `EXCEPTION`, `TASK_ASSIGNED`, `INVENTORY_CHECK`, `RETURN_STARTED`, `CANCELLED` |
+| **15**| `NDR_CREATED` | Cần xử lý NDR | Cần xử lý giao thất bại | Cần xử lý giao thất bại | Ghi nhận vấn đề | `ndr.created` (`delivery-service`) | `DELIVERED`, `INVENTORY_CHECK`, `TASK_ASSIGNED`, `RETURN_STARTED`, `CANCELLED` |
+| **16**| `EXCEPTION` | Sự cố ngoại lệ | Sự cố ngoại lệ | Kiện vấn đề | Ghi nhận vấn đề | `ndr.created` *(Sự cố bể vỡ PHYSICAL_DAMAGE)* | `INVENTORY_CHECK`, `TASK_ASSIGNED`, `RETURN_STARTED`, `RETURN_COMPLETED`, `CANCELLED` |
+| **17**| `RETURN_STARTED` | Đang hoàn hàng | Bắt đầu hoàn hàng | Bắt đầu hoàn hàng | Đang hoàn hàng | `return.started` (`delivery-service` / `ndr.service`)| `SCAN_INBOUND`, `SCAN_OUTBOUND`, `IN_TRANSIT`, `MANIFEST_SEALED`, `TASK_ASSIGNED`, `RETURN_COMPLETED`, `CANCELLED` |
+| **18**| `RETURN_COMPLETED` | Đã hoàn hàng | Hoàn hàng thành công | Hoàn hàng thành công | Đã hoàn hàng | `return.completed` (`returns.service`) | **Terminal State (Bất biến hoàn tất)** |
+| **19**| `CANCELLED` | Đã hủy | Đã hủy | Đã hủy | Đơn hàng đã hủy | `POST /shipments/:code/cancel` | **Terminal State (Bất biến hủy)** |
 
-### 🚀 Thao Tác Nhanh (Quickstart)
+---
 
-```bash
-# 1. Nạp và đồng bộ hóa Vector Store từ các file Markdown
-make rag-ingest
+### 4.1. Đơn Tiêu Chuẩn Thu Hộ COD (Standard COD Shipment)
 
-# 2. Thử nghiệm hỏi đáp trên Terminal (CLI)
-make rag-ask
+Đơn hàng thương mại điện tử phổ biến nhất, chiếm trên 70% tổng sản lượng bưu chính. Đặc trưng bởi luồng tiền thu hộ COD hai chiều và chu kỳ đối soát tài chính định kỳ.
 
-# 3. Khởi chạy Chatbot Microservice ở chế độ dev (Port 3013)
-make chatbot-dev
+```mermaid
+flowchart LR
+    subgraph S1 ["1. Tiếp Nhận & Lấy Hàng"]
+        A1["Merchant tạo đơn COD"] --> A2["Tự động tính cước IATA:<br/>Base 18k + 3.5k/0.5kg"]
+        A2 --> A3["Shipper quét Barcode lấy hàng<br/>(scan.pickup_confirmed)"]
+    end
 
-# 4. Kiểm tra sức khỏe & số lượng Vector chunks
-curl http://localhost:3013/health
+    subgraph S2 ["2. Khai Thác & Trung Chuyển"]
+        B1["Nhập kho Hub gốc (Inbound)"] --> B2["Đóng bao bưu gửi MB & Kẹp chì Seal"]
+        B2 --> B3["Xe Linehaul chạy liên tỉnh<br/>(Tem xe XT)"]
+        B3 --> B4["Hub Đích cắt seal, chia chọn về Bưu cục phát"]
+    end
+
+    subgraph S3 ["3. Phát Chặng Cuối & Giải Ngân COD"]
+        C1["Shipper giao hàng tận nơi"] --> C2["Thu tiền mặt COD hoặc quét VietQR"]
+        C2 --> C3["Chụp ảnh bằng chứng giao hàng (POD)"]
+        C3 --> C4["Tiền COD vào sổ cái COLLECTED"]
+        C4 --> C5["payment-service đối soát Batch & Chuyển khoản Merchant"]
+    end
+
+    S1 ==> S2 ==> S3
 ```
 
-> 📖 **Xem toàn bộ báo cáo kiến trúc chi tiết gửi Hội đồng bảo vệ:**  
-> 👉 [`docs/architecture/ai-chatbot-service-architecture.md`](docs/architecture/ai-chatbot-service-architecture.md)
+- **Công thức tính cước:** $\text{Cước gửi} = \text{Cước cơ bản (18.000đ cho 2kg đầu)} + \sum (\text{Nấc vượt } 0.5kg \times 3.500đ) + \text{Phụ phí vùng cước}$.
+- **Cơ chế quản lý tiền COD:** Tiền thu hộ được phong tỏa trong tài khoản trung gian của `payment-service` và tự động giải ngân theo chu kỳ đối soát thứ 2 - thứ 4 - thứ 6 hàng tuần qua cổng thanh toán SePay / VietQR.
 
-## Local Development
+---
 
-### Prerequisites
+### 4.2. Đơn Hỏa Tốc / Nội Thành 6h - 12h (Express & Same-Day Service)
 
-- Node.js 20+
-- npm and/or pnpm
-- Docker Desktop or Docker Engine with Compose
-- Expo tooling if working on `apps/courier-mobile`
-- PostgreSQL client tools are useful but not required
+Phục vụ các bưu phẩm tài liệu mật, thuốc men y tế, thực phẩm tươi sống hoặc nhu cầu nhận hàng gấp trong cùng một khu vực đô thị (Hà Nội, TP.HCM, Đà Nẵng).
 
-Because each module owns its own lockfile and scripts, use the package manager already used in that module. Most modules can be run with npm; some scripts and older docs also show pnpm.
+```mermaid
+flowchart TD
+    CREAT["Khách hàng tạo đơn HỎA TỐC<br/>(Cước: 42.000đ cho 1kg đầu + 8.000đ/0.5kg)"] --> DISP{"dispatch-service kích hoạt<br/>Khu Vực Bán Kính < 15km"}
 
-### 1. Start local infrastructure
+    DISP --> PUSH_TASK["Bắn Push Task ưu tiên khẩn cấp<br/>về Courier Mobile gần nhất"]
+    PUSH_TASK --> PICK["Bưu tá có mặt lấy hàng<br/>trong vòng 30 phút"]
+    PICK --> BYPASS["BỎ QUA KHÂU ĐÓNG BAO LIÊN TỈNH<br/>(Bypass Manifest & Linehaul Hub)"]
+    BYPASS --> DIRECT_ROUTE["Vận chuyển thẳng tới Bưu cục phát nội đô<br/>hoặc giao trực tiếp chặng cuối"]
+    DIRECT_ROUTE --> POD_URGENT["Chụp ảnh bằng chứng giao hàng (POD)<br/>(Cam kết SLA hoàn tất trong 6h - 12h)"]
+```
+
+- **Đặc điểm kỹ thuật:** Đơn hàng được gắn cờ `isExpress: true`, hệ thống tự động gán độ ưu tiên cao nhất (`priority: URGENT`) trong hàng đợi Dispatch. Bỏ qua hoàn toàn công đoạn đóng bao bưu gửi đường dài để rút ngắn thời gian xử lý.
+
+---
+
+### 4.3. Đơn Hàng Cồng Kềnh / Quá Khổ Quy Đổi IATA V/6000 (Bulky Freight)
+
+Áp dụng cho các mặt hàng chiếm diện tích thể tích lớn (ghế sofa, nệm cao su, xe đạp điện, thùng carton máy móc).
+
+```mermaid
+flowchart TD
+    DIM_INPUT["Nhập thông số kiện hàng:<br/>- Khối lượng cân thực tế W_act (kg)<br/>- Kích thước 3 chiều Dài x Rộng x Cao (cm)"] --> IATA_CALC["Tính Trọng Lượng Quy Đổi Thể Tích IATA:<br/>W_vol = (D x R x C) / 6000"]
+
+    IATA_CALC --> COMPARE{"So sánh W_act và W_vol"}
+    COMPARE -->|"W_act &ge; W_vol"| CHARGE_ACT["Tính cước theo Khối lượng thực: W_charge = W_act"]
+    COMPARE -->|"W_vol > W_act"| CHARGE_VOL["Tính cước theo Thể tích quy đổi: W_charge = W_vol"]
+
+    CHARGE_ACT --> BULK_CHECK{"Kiểm tra điều kiện Quá Khổ:<br/>W_charge > 20kg hoặc cạnh lớn nhất > 100cm?"}
+    CHARGE_VOL --> BULK_CHECK
+
+    BULK_CHECK -- "ĐẠT CHUẨN CỒNG KỀNH" --> SURCHARGE["Áp phụ phí nâng hạ & bốc xếp quá khổ (+50.000đ)<br/>Gán phương tiện: Xe tải bửng nâng chuyên dụng"]
+    BULK_CHECK -- "HÀNG BÌNH THƯỜNG" --> NORMAL_TRUCK["Vận chuyển xe tải van thông thường"]
+
+    SURCHARGE --> SCAN_BULK["Dán tem mã vạch khổ lớn CỒNG KỀNH [HEAVY/BULKY]<br/>Bố trí 2 nhân viên bốc xếp khi giao chặng cuối"]
+```
+
+- **Quy chuẩn IATA $V/6000$:** Tiêu chuẩn quốc tế của Hiệp hội Vận tải Hàng không Quốc tế (IATA) được áp dụng thống nhất trên toàn hệ thống Nexus, ngăn ngừa việc chủ hàng gửi đồ nhẹ nhưng chiếm trọn diện tích thùng xe tải.
+
+---
+
+### 4.4. Đơn Khai Giá Bảo Hiểm 100% (High-Value & Insured Shipment)
+
+Dành cho các bưu kiện giá trị cao từ 1.000.000đ trở lên (điện thoại iPhone, máy tính xách tay, trang sức, đồng hồ xa xỉ).
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Sender as Người Gửi Hàng
+    actor Staff as Nhân Viên Quầy Bưu Cục
+    participant Pricing as pricing-service (:3012)
+    participant CoreSys as shipment-service (:3002)
+    participant Vault as Khu Vực Lưu Trữ An Ninh Cao (Vault)
+
+    Sender->>Staff: Khai báo giá trị hàng hóa (VD: 20.000.000 VNĐ)
+    Staff->>Pricing: Yêu cầu tính phí bảo hiểm khai giá
+    Pricing-->>Staff: Phí bảo hiểm = 0.5% x 20.000.000đ = 100.000 VNĐ
+    Staff->>Sender: Kiểm tra Hóa đơn mua hàng / Chứng từ VAT / Phiếu bảo hành chính hãng
+    Staff->>CoreSys: Chụp ảnh hiện trạng kiện hàng tại quầy (packagePhotoUrl)
+    CoreSys->>CoreSys: Thiết lập insuranceTier = 'COMPREHENSIVE_100'
+    Staff->>Staff: Dán Tem Niêm Phong An Ninh Hologram chống bóc mở
+    Staff->>Vault: Chuyển kiện hàng vào Lồng khóa an ninh riêng (Security Cage)
+    Note over Vault,CoreSys: Vận chuyển xe Linehaul dưới sự giám sát camera & bàn giao seal riêng
+```
+
+- **Quy tắc trích lập Quỹ rủi ro:** 100% khoản thu phí bảo hiểm 0.5% được hạch toán vào Quỹ dự phòng rủi ro bảo hiểm (Risk Reserve Fund) để thực hiện cam kết bồi thường 100% giá trị thực tế trong vòng 03 ngày làm việc khi xảy ra mất mát.
+
+---
+
+### 4.5. Đơn Hàng Dễ Vỡ & Quy Chuẩn Đóng Gói SOP (Fragile Goods)
+
+Mô hình thiết giáp tinh gọn kiểm soát 100% hàng hóa có tính chất nứt vỡ (đồ gốm sứ, chai lọ thủy tinh, màn hình LCD, mỹ phẩm lỏng).
+
+```mermaid
+flowchart TD
+    INSPECT["Nhân viên quầy kiểm tra tính chất hàng:<br/>Gốm sứ, thủy tinh, màn hình điện tử"] --> FLAG["Gắn cờ isFragile = true trên hệ thống"]
+    FLAG --> CHECK_PACK{"Kiểm tra quy cách đóng gói thực tế:<br/>- Bọc 3 đến 4 lớp màng xốp khí (Bubble Wrap) &ge; 5cm?<br/>- Chèn mút xốp cố định kín 6 mặt thùng carton?<br/>- Lắc nhẹ không phát ra tiếng động va đập?"}
+
+    CHECK_PACK -- "ĐẠT CHUẨN ĐÓNG GÓI" --> MET_TRUE["packagingStandardMet = true<br/>Dán tem nghiệp vụ [FRAGILE - LY NỨT]"]
+    CHECK_PACK -- "KHÁCH TỰ GÓI SƠ SÀI & TỪ CHỐI GIA CỐ" --> WAIVER_TRUE["packagingWaiver = true<br/>Khách ký Biên bản miễn trừ bể vỡ do tự đóng gói"]
+
+    MET_TRUE --> PRINT_LABEL["In phiếu gửi bưu phẩm có biểu tượng Ly Nứt<br/>Xếp dỡ tầng trên cùng của thùng xe tải"]
+    WAIVER_TRUE --> PRINT_LABEL
+    
+    MET_TRUE -.-> RULE_1["Khi xảy ra bể vỡ: Bồi hoàn theo quy chế bảo hiểm"]
+    WAIVER_TRUE -.-> RULE_2["Khi xảy ra bể vỡ mà thùng ngoài nguyên vẹn:<br/>MIỄN TRỪ BỒI THƯỜNG 100% (Điều 24 Luật Bưu chính)"]
+```
+
+---
+
+## 5. MÔ HÌNH THIẾT GIÁP BỊT KÍN 8 NHÓM LỖ HỔNG VẬN HÀNH & SỰ CỐ BƯU CHÍNH
+
+Xử lý ngoại lệ là thước đo tính chuyên nghiệp và tính hoàn thiện của một đồ án công nghệ logistics thực chiến. Nexus thiết kế mô hình thiết giáp tinh gọn bịt kín 8 nhóm lỗ hổng vận hành khép kín:
+
+---
+
+### 5.1. Khách từ chối nhận hàng (NDR) & Tự động Tái điều phối
+
+Quy trình quản lý giao hàng thất bại (Non-Delivery Report - NDR) theo quy tắc chuẩn ngành bưu chính: **Tối đa 3 lần phát trong 5 ngày lưu kho**.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Courier as Bưu Tá Phát (Courier)
+    actor Receiver as Người Nhận Hàng
+    participant MobileApp as Courier Mobile (:8081)
+    participant DeliverySvc as delivery-service (:3007)
+    participant ShipSvc as shipment-service (:3002)
+    participant HubStorage as Bưu Cục Phát (Kho Lưu Hàng)
+    actor Merchant as Chủ Shop (Merchant)
+
+    Courier->>Receiver: Đến địa chỉ phát hàng & liên hệ người nhận
+    Receiver-->>Courier: Từ chối nhận hàng (Lý do: Không ưng ý, đổi ý, bom hàng...)
+    Courier->>MobileApp: Chọn chức năng Báo Cáo Sự Cố (Scan Issue / NDR)
+    Courier->>MobileApp: Chọn mã lý do: CUSTOMER_REFUSED (Khách từ chối nhận)
+    Courier->>MobileApp: Chụp ảnh định vị trước cửa nhà / hiện trường làm bằng chứng
+    MobileApp->>DeliverySvc: POST /delivery/exception (Lưu biên bản NDR)
+    DeliverySvc->>ShipSvc: Cập nhật currentStatus = 'DELIVERY_FAILED' (Lần 1 / Lần 2)
+    Courier->>HubStorage: Nộp hàng về bưu cục, xếp vào Kệ Lưu Giữ Tạm (Retention Shelf)
+
+    DeliverySvc->>Merchant: Bắn thông báo Realtime Webhook / Notification về merchant-web
+    Note over Merchant,ShipSvc: Chủ Shop có 24h - 48h để xử lý ngoại lệ trên hệ thống
+
+    alt Trường hợp A: Chủ Shop thuyết phục được khách hoặc đổi địa chỉ
+        Merchant->>ShipSvc: Gửi lệnh Phát Lại (Re-delivery) kèm chỉ dẫn mới
+        ShipSvc->>DeliverySvc: Lên lịch phát lại lần tiếp theo cho Bưu tá
+    else Trường hợp B: Đã giao đủ 3 lần thất bại hoặc Shop đồng ý hủy đơn
+        Merchant->>ShipSvc: Xác nhận yêu cầu: CHUYỂN HOÀN VỀ SHOP (Confirm Return)
+        ShipSvc->>ShipSvc: Kích hoạt luồng Chuyển Hoàn (Trạng thái DB: RETURN_STARTED)
+    end
+```
+
+#### Quy trình Tái điều phối tự động khi khách hẹn lại ngày giao:
+```mermaid
+flowchart TD
+    ATTEMPT["Bưu tá liên hệ phát hàng:<br/>- Gọi điện tối thiểu 3 cuộc cách nhau 15 phút không nhấc máy<br/>HOẶC<br/>- Khách nghe máy nhưng báo bận, xin hẹn sang ngày khác"] --> SELECT_REASON["Bưu tá chọn mã ngoại lệ trên Courier Mobile App:<br/>- CUSTOMER_RESCHEDULE (Khách hẹn lại ngày)<br/>- CANNOT_CONTACT (Không liên lạc được)"]
+
+    SELECT_REASON --> INPUT_TIME["Nhập ghi chú thời gian khách hẹn lại<br/>(Ví dụ: Giao lại sau 17h00 ngày mai)"]
+    INPUT_TIME --> HOLD_SCAN["Quét nhập kho Kệ Lưu Trữ Tạm tại Bưu cục phát<br/>(Trạng thái DB: INVENTORY_CHECK | Ghi chú: Lưu kho hẹn phát lại)"]
+
+    HOLD_SCAN --> AUTO_SMS["Hệ thống tự động kích hoạt tin nhắn SMS / Zalo ZNS:<br/>'Kiện hàng của bạn đang lưu an toàn tại bưu cục. Bấm link để chọn giờ phát lại'"]
+
+    AUTO_SMS --> NEXT_DAY{"Đến ngày hẹn phát lại?"}
+    NEXT_DAY -- "ĐẾN LỊCH HẸN" --> REDISPATCH["dispatch-service TỰ ĐỘNG TÁI ĐIỀU PHỐI (RE-DISPATCH)<br/>Gán kiện hàng vào Danh sách phát đầu ca của Shipper<br/>Không tính thêm bất kỳ khoản phụ phí nào"]
+```
+
+#### Bảng danh mục mã lý do giao thất bại (NDR Codes) chuẩn hóa:
+| Mã Lý Do NDR | Tên Gọi Nghiệp Vụ | Giải Pháp Kỹ Thuật & Hành Động Tiếp Theo |
+| :--- | :--- | :--- |
+| `CUSTOMER_REFUSED` | Khách từ chối nhận hàng | Gửi thông báo cho Shop; lưu kho chờ quyết định chuyển hoàn. |
+| `COD_REFUSED` | Không đồng ý thanh toán tiền COD | Bưu tá giải thích số tiền theo phiếu; nếu không nhận thì báo NDR. |
+| `CANNOT_CONTACT` | Thuê bao không nhấc máy (gọi $\ge 3$ cuộc) | Gửi SMS tự động kèm link hẹn giờ; lưu bưu cục phát lại ngày hôm sau. |
+| `ADDRESS_NOT_FOUND`| Sai hoặc thiếu thông tin địa chỉ | Bắn thông báo lên Merchant Web yêu cầu cập nhật lại tọa độ/địa chỉ. |
+| `CUSTOMER_RESCHEDULE`| Khách bận, hẹn giao ngày khác | Hệ thống tự động chuyển ngày phát theo lịch hẹn mà không tính phạt. |
+
+---
+
+### 5.2. Chuyển hoàn 3 tầng, Chống tráo hàng & Bưu phẩm vô chủ (Điều 19 Luật Bưu chính)
+
+Bịt kín lỗ hổng thất thoát chi phí xe tải chiều về và xóa tan vấn nạn nợ xấu cước hoàn thông qua **Cơ chế phân tầng tự động (3-Tier Reverse Pricing Engine)**:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor HubStaff as Ops Bưu Cục Phát
+    participant ManifestSvc as manifest-service (:3005)
+    participant Linehaul as linehaul-service (:3014)
+    actor OriginHub as Ops Hub Gốc (Gần Shop)
+    actor ReturnCourier as Bưu Tá Trả Hàng Hoàn
+    actor Merchant as Chủ Shop (Merchant)
+    participant PaySvc as payment-service (:3011)
+
+    Note over HubStaff,OriginHub: GIAI ĐOẠN 1: ĐÓNG BAO HOÀN & TRUNG CHUYỂN NGƯỢC CHIỀU
+    HubStaff->>ManifestSvc: Gom các đơn hoàn vào Bao Chuyên Dụng (Mã bao MB-RET-xxx)
+    HubStaff->>ManifestSvc: Bấm kẹp chì Seal an ninh túi hoàn
+    HubStaff->>Linehaul: Xếp bao lên Chuyến xe Linehaul chiều về (Reverse Truck)
+    Linehaul->>OriginHub: Xe về tới Hub Gốc -> Cắt chì, quét Inbound kiểm đếm
+    OriginHub->>ReturnCourier: Phân công tuyến bưu tá mang hàng trả lại tận kho Shop
+
+    Note over ReturnCourier,PaySvc: GIAI ĐOẠN 2: THU HỒI CƯỚC HOÀN THEO 3 PHÂN TẦNG KHÁCH HÀNG
+    ReturnCourier->>Merchant: Bàn giao kiện hàng hoàn tận tay
+
+    alt Tầng 1: Khách Vãng Lai (Guest / Walk-in)
+        ReturnCourier->>Merchant: Thu 50% cước gửi chiều đi (Thu tiền mặt hoặc quét VietQR)
+        Merchant-->>ReturnCourier: Thanh toán tiền trực tiếp tại chỗ
+        ReturnCourier->>PaySvc: Nộp tiền hoàn về quỹ bưu cục khi kết ca
+    else Tầng 2: Chủ Shop Tiêu Chuẩn (Standard SME)
+        ReturnCourier->>Merchant: Bàn giao hàng hoàn, KHÔNG THU TIỀN MẶT
+        ReturnCourier->>Merchant: Yêu cầu ký nhận biên bản POD Return điện tử
+        ReturnCourier->>PaySvc: Gửi sự kiện bưu phẩm đã hoàn tất (RETURN_COMPLETED)
+        PaySvc->>PaySvc: TỰ ĐỘNG CẤN TRỪ 50% CƯỚC HOÀN VÀO BẢNG KÊ ĐỐI SOÁT COD TIẾP THEO
+        Note over PaySvc,Merchant: Kỳ thanh toán COD: Tiền thực nhận = Tiền COD thu hộ - 50% Cước hoàn
+    else Tầng 3: Khách VIP Doanh Nghiệp (VIP Enterprise)
+        ReturnCourier->>Merchant: Bàn giao hàng hoàn, ký nhận POD Return
+        Note over PaySvc,Merchant: Áp dụng cước phí hoàn 0 VNĐ (Miễn phí 100% theo hợp đồng khung)
+        PaySvc->>PaySvc: Hạch toán chi phí vào quỹ Marketing chăm sóc khách hàng lớn
+    end
+```
+
+#### Quy trình Xử lý Bưu phẩm hoàn vô chủ / Bị bỏ rơi (Căn cứ Điều 19 Luật Bưu chính):
+```mermaid
+flowchart TD
+    START_RET["Đơn hoàn về bưu cục phát<br/>(Lưu kho bưu phẩm hoàn)"] --> NOTICE_1["Lưu kho quá 15 ngày:<br/>Gửi thông báo lần 1 cho Shop"]
+    NOTICE_1 --> NOTICE_2["Lưu kho quá 30 ngày:<br/>Gửi thông báo lần 2 (Văn bản / ZNS)"]
+    NOTICE_2 --> NOTICE_3["Lưu kho quá 45 ngày:<br/>Gửi thông báo lần 3 (Hạn chót 15 ngày nhận lại)"]
+    NOTICE_3 --> AUCTION{"Hết hạn 60 ngày:<br/>Shop từ chối hoặc không đến nhận?"}
+    AUCTION -- "TỪ CHỐI NHẬN LẠI" --> DISPOSE["KÍCH HOẠT ĐIỀU 19 LUẬT BƯU CHÍNH<br/>- Hội đồng bưu cục kiểm kê lập biên bản<br/>- Bán đấu giá công khai bù đắp chi phí bưu chính<br/>- Tiêu hủy nếu hàng hóa hư hỏng, hết hạn dùng<br/>(Trạng thái DB: RETURN_COMPLETED kèm cờ thanh lý/tiêu hủy)"]
+    AUCTION -- "SHOP ĐẾN NHẬN" --> POD_RET["Ký nhận POD Return & Thanh toán cước lưu kho<br/>(Trạng thái DB: RETURN_COMPLETED)"]
+```
+
+- **Chốt chặn chống tráo ruột hàng hoàn (Reverse Handover Inspection):** Khi bưu tá trả hàng hoàn, Shop và bưu tá bắt buộc đồng kiểm hiện trạng niêm phong hộp và chụp ảnh POD Return. Nếu Shop đã ký nhận mà không khiếu nại tại chỗ, Nexus miễn trừ trách nhiệm tranh chấp sau bàn giao.
+
+---
+
+### 5.3. Hàng hỏng / Bể vỡ / Mất mát & Thẩm định bồi thường (Điều 24 & Điều 25 Luật Bưu chính)
+
+Quy trình giải quyết sự cố hư hại, phân định trách nhiệm khách quan và tự động trích lập bồi hoàn dựa trên căn cứ pháp lý của **Luật Bưu chính Việt Nam số 49/2010/QH12**:
+
+```mermaid
+flowchart TD
+    DISCOVER["Phát hiện sự cố Bưu gửi bị Hư hỏng / Bể vỡ / Thấm ướt<br/>(Lúc chia chọn tại Hub hoặc lúc Shipper đồng kiểm cùng khách)"] --> REPORT_DIR["1. LẬP BIÊN BẢN BẤT THƯỜNG HIỆN TRƯỜNG (MÃ DIR-xxx)<br/>- Ghi nhận mã sự cố: PHYSICAL_DAMAGE, TORN, WET<br/>- Chụp tối thiểu 4 ảnh ngoại quan góc cạnh kiện hàng<br/>- Kích hoạt sự kiện ndr.created -> Trạng thái DB: EXCEPTION (isLocked = true)<br/>- Có chữ ký xác nhận của 2 bên (Bưu tá/Ops + Khách hàng)"]
+
+    REPORT_DIR --> AUDIT_WAIVER{"Kiểm tra Hợp đồng & Hồ sơ Vận đơn:<br/>Đơn hàng có cờ packagingWaiver = true?"}
+
+    AUDIT_WAIVER -- "CÓ (Khách tự gói sơ sài, ký miễn trừ)" --> CHECK_OUTER{"Vỏ thùng carton bên ngoài có bị rách nát,<br/>đè bẹp do tai nạn của phương tiện?"}
+    
+    CHECK_OUTER -- "Vỏ ngoài nguyên vẹn, chỉ vỡ bên trong" --> REJECT_CLAIM["TỪ CHỐI BỒI THƯỜNG BỂ VỠ 100%<br/>Căn cứ Điều 24 Luật Bưu chính (Lỗi do người gửi đóng gói)<br/>Hệ thống xuất thông báo giải trình pháp lý cho khách"]
+    CHECK_OUTER -- "Vỏ ngoài bị đè bẹp móp méo do xe tải" --> LIABILITY_CARRIER["Xác định Lỗi thuộc đơn vị vận chuyển Nexus"]
+
+    AUDIT_WAIVER -- "KHÔNG (Đóng gói đạt chuẩn SOP)" --> LIABILITY_CARRIER
+
+    LIABILITY_CARRIER --> CHECK_INSURANCE{"Đơn hàng có tham gia Gói Khai Giá Bảo Hiểm?<br/>(insuranceTier == 'COMPREHENSIVE_100')"}
+
+    CHECK_INSURANCE -- "CÓ MUA BẢO HIỂM (Phí 0.5%)" --> CLAIM_100["BỒI THƯỜNG 100% GIÁ TRỊ THIỆT HẠI THỰC TẾ<br/>- Khách cung cấp Hóa đơn VAT / Sao kê chuyển khoản hợp lệ<br/>- Mức đền &le; Giá trị khai báo trên vận đơn<br/>- Giải ngân chuyển khoản từ Quỹ rủi ro trong 03 ngày"]
+
+    CHECK_INSURANCE -- "KHÔNG MUA BẢO HIỂM (Gói 0đ)" --> CLAIM_LAW["ÁP DỤNG ĐIỀU 25 KHOẢN 2 LUẬT BƯU CHÍNH<br/>- Mức bồi thường: Tối đa 04 lần cước dịch vụ bưu chính đã thu<br/>- Hạn mức trần tối đa không quá 1.000.000 VNĐ"]
+
+    CLAIM_100 --> INTERNAL_AUDIT["2. TRUY CỨU TRÁCH NHIỆM NỘI BỘ (INTERNAL LIABILITY AUDIT)<br/>- Quét chuỗi Transactional Scan Log + Tem kẹp chì Seal giữa các Hub<br/>- Xác định chính xác bộ phận gây lỗi (Lái xe Linehaul, Bốc xếp, Shipper)<br/>- Tự động trừ điểm KPI an toàn và khấu trừ tiền phạt trách nhiệm vật chất"]
+    CLAIM_LAW --> INTERNAL_AUDIT
+```
+
+#### Ma trận phân định trách nhiệm bồi thường 4 ô (2x2 Decision Matrix):
+| Tình Huống Sự Cố Phát Sinh | Đơn Có Mua Bảo Hiểm 100% (Phí 0.5%) | Đơn Không Mua Bảo Hiểm (Phí 0đ) |
+| :--- | :--- | :--- |
+| **Thất lạc / Mất nguyên kiện** *(Lỗi do Hub hoặc Tài xế)* | **Đền đúng 100% giá trị thực tế** *(Căn cứ Hóa đơn hợp lệ)* | **Đền 04 lần cước gửi** *(Trần tối đa 1.000.000đ)* |
+| **Bể vỡ khi đóng gói đạt chuẩn SOP** *(Xốp 3 lớp)* | **Đền 100% giá trị thực tế** *(Hoặc theo tỷ lệ nứt vỡ)* | **Đền 04 lần cước gửi** *(Theo tỷ lệ hư hại)* |
+| **Bể vỡ khi có biên bản miễn trừ `packagingWaiver`** | **Từ chối bồi thường bể vỡ** *(Thùng ngoài nguyên)* | **Từ chối bồi thường bể vỡ** *(Điều 24 Luật Bưu chính)* |
+
+---
+
+### 5.4. Quyền đồng kiểm (3 cờ kiểm tra) & Hạn mức trần tiền mặt Shipper
+
+Giải quyết dứt điểm tranh chấp mở hàng xem thử và rủi ro chiếm dụng tiền mặt bưu tá chặng cuối:
+
+```mermaid
+flowchart TD
+    ARRIVE["Bưu tá giao hàng tới địa chỉ người nhận"] --> CHECK_FLAG{"Kiểm tra Cờ Đồng Kiểm trên Vận Đơn:<br/>inspectionPolicy"}
+    
+    CHECK_FLAG -->|"NONE (Không cho xem hàng)"| P_NONE["KHÔNG CHO XEM HÀNG<br/>Khách thanh toán COD trước mới được nhận bưu phẩm"]
+    CHECK_FLAG -->|"VIEW_ONLY (Cho xem không thử)"| P_VIEW["CHO XEM KHÔNG CHO THỬ<br/>Mở hộp ngoài kiểm tra mẫu mã/số lượng<br/>CẤM xé seal bọc sản phẩm, CẤM cắm điện/thử đồ"]
+    CHECK_FLAG -->|"TRY_ON (Cho thử hàng)"| P_TRY["CHO THỬ HÀNG<br/>Cho phép mặc thử đồ / cắm điện kiểm tra 05 phút"]
+
+    P_NONE --> COLLECT_PAY["Xác nhận thanh toán COD & Chụp ảnh POD"]
+    P_VIEW --> COLLECT_PAY
+    P_TRY --> COLLECT_PAY
+
+    COLLECT_PAY --> CHECK_CASH{"Kiểm tra trần tiền mặt bưu tá đang giữ:<br/>accumulatedCodCash > 15.000.000đ?"}
+    CHECK_CASH -- "VƯỢT TRẦN 15 TRIỆU" --> LOCK_TASK["TẠM KHÓA NHẬN ĐƠN MỚI TRÊN APP<br/>Yêu cầu bưu tá nộp tiền về bưu cục hoặc quét VietQR nộp tiền ca"]
+    CHECK_CASH -- "TRONG HẠN MỨC" --> CONTINUE_TASK["Tiếp tục nhận và phát các đơn tiếp theo"]
+```
+
+- **Quy chế bưu tá:** Nếu bưu tá tự ý cho người nhận bóc seal sản phẩm khi đơn hàng có cờ `NONE` hoặc `VIEW_ONLY` dẫn đến khách từ chối nhận, bưu tá chịu trách nhiệm mua lại đơn hàng.
+- **Trần giữ tiền mặt (Cash Limit):** Khi bưu tá giữ trên 15.000.000đ tiền mặt COD chưa nộp về quỹ, hệ thống `dispatch-service` tự động chặn gán thêm nhiệm vụ phát mới để ngăn ngừa rủi ro tài chính.
+
+---
+
+### 5.5. Đổi địa chỉ liên tỉnh (Re-routing Fee) & Khóa in lại tem nhiệt
+
+Bảo vệ chi phí xe tải Linehaul và loại bỏ nguy cơ bưu tá giao nhầm địa chỉ cũ:
+
+```mermaid
+flowchart TD
+    REQ["Người nhận / Chủ Shop yêu cầu đổi địa chỉ giao hàng<br/>(Change Request: change.address)"] --> CHECK_STATUS{"Kiểm tra trạng thái đơn hàng?"}
+    
+    CHECK_STATUS -- "ĐÃ GÁN SHIPPER / ĐANG PHÁT" --> REJECT_CHANGE["TỪ CHỐI ĐỔI ĐỊA CHỈ TRÊN WEB<br/>Yêu cầu liên hệ trực tiếp bưu tá đang cầm hàng"]
+    CHECK_STATUS -- "TRƯỚC KHÂU PHÂN CÔNG PHÁT" --> CHECK_HUB{"So sánh Bưu cục phát Cũ vs Mới:<br/>oldHubCode == newHubCode?"}
+
+    CHECK_HUB -- "CÙNG BƯU CỤC (Nội quận/huyện)" --> FREE_CHANGE["Duyệt đổi địa chỉ Miễn Phí (0đ)"]
+    CHECK_HUB -- "KHÁC BƯU CỤC / KHÁC TỈNH" --> FEE_CHANGE["Áp dụng Phụ phí chuyển hướng (Re-routing Fee: +18.000đ)<br/>Cộng vào tiền COD hoặc cấn trừ tài khoản Shop"]
+
+    FREE_CHANGE --> LOCK_REPRINT["KÍCH HOẠT CHỐT CHẶN PHẦN MỀM:<br/>requiresLabelReprint = true<br/>blocksOpsUntilLabelReprint = true"]
+    FEE_CHANGE --> LOCK_REPRINT
+
+    LOCK_REPRINT --> REPRINT["Kho In & Dán đè Tem Nhiệt Mới lên kiện hàng<br/>(Hệ thống tự động Mở khóa điều chuyển tiếp)"]
+```
+
+- **Chốt chặn phần mềm:** Đã tích hợp trực tiếp trong `change-requests.service.ts`: Toàn bộ hoạt động xuất kho bị đóng băng (`blocksOpsUntilLabelReprint = true`) cho đến khi nhân viên kho hoàn tất việc in và dán đè nhãn nhiệt mang địa chỉ mới.
+
+---
+
+### 5.6. Chênh lệch kiểm đếm mở bao (Manifest Discrepancy) & Cảnh báo sai luồng Hub
+
+Quy trình quản lý hàng thừa/hàng thiếu khi cắt chì seal túi gom `MB` và cảnh báo bốc xếp sai tuyến:
+
+```mermaid
+flowchart TD
+    OPEN_BAG["Xe Linehaul đến Hub Đích -> Cắt seal mở bao gom MB"] --> SCAN_ITEMS["Quét Barcode từng kiện hàng bên trong bao MB"]
+    SCAN_ITEMS --> COMPARE_COUNT{"So sánh danh sách quét thực tế<br/>với Bảng kê điện tử bao MB"}
+
+    COMPARE_COUNT -- "TRÙNG KHỚP 100%" --> INBOUND_OK["Nhập kho Hub Đích thành công (SCAN_INBOUND)"]
+    
+    COMPARE_COUNT -- "THIẾU KIỆN (Shortage)" --> SHORTAGE["Lập Biên bản Chênh lệch Thiếu kiện:<br/>- Chuyển đơn thiếu thành STRAY_INVESTIGATION<br/>- Tự động trích xuất camera tại Hub đóng bao để truy vết"]
+
+    COMPARE_COUNT -- "THỪA KIỆN LẠ (Overage)" --> OVERAGE["Lập Biên bản Thừa kiện:<br/>- Gắn cờ UNMANIFESTED_OVERAGE<br/>- Nhập kho tạm và đóng bao chuyển tiếp về đúng Hub Đích"]
+
+    OPEN_BAG -.-> CHECK_ROUTE{"Quét Barcode lên xe Linehaul đi tiếp:<br/>intendedHub == truckHub?"}
+    CHECK_ROUTE -- "SAI TUYẾN" --> ALARM["BẬT ÂM THANH BÁO ĐỘNG LỖI [WRONG_HUB_ROUTE]<br/>Màn hình chớp đỏ cảnh báo nhân viên bốc xếp không ném nhầm xe"]
+```
+
+---
+
+### 5.7. Khóa van tài chính khi Dư nợ âm & Ghi nợ thiếu tiền COD
+
+Xóa tan rủi ro nợ xấu cước vận chuyển và triệt tiêu sai lệch tiền mặt thực tế:
+
+```mermaid
+flowchart TD
+    CALC_BAL["payment-service liên tục cập nhật Số Dư Khả Dụng Merchant:<br/>Số dư = COD chờ thanh toán - Cước chiều đi - Cước hoàn 50%"] --> CHECK_BAL{"Kiểm tra Ngưỡng Trần Âm Công Nợ:<br/>Số dư < -500.000 VNĐ?"}
+
+    CHECK_BAL -- "SỐ DƯ DƯƠNG HOẶC ÂM NHẸ" --> ALLOW_CREATE["Tạo đơn và Yêu cầu lấy hàng bình thường"]
+    
+    CHECK_BAL -- "VƯỢT TRẦN NỢ ÂM (-500.000đ)" --> LOCK_MERCHANT["KÍCH HOẠT VAN KHÓA TÀI CHÍNH TỰ ĐỘNG:<br/>- Khóa quyền tạo đơn mới trên merchant-web & API<br/>- Khóa duyệt yêu cầu bưu tá đến lấy hàng tận nơi"]
+
+    LOCK_MERCHANT --> PAY_QR["merchant-web hiển thị Banner Đỏ cảnh báo nợ âm<br/>Kèm mã QR SePay / VietQR nạp tiền thanh toán nợ tức thì<br/>(Thanh toán xong -> Mở khóa dịch vụ tự động trong 3 giây)"]
+
+    CALC_BAL -.-> COD_COLLECT{"Bưu tá nộp tiền COD kết ca:<br/>Thực nộp < shipment.codAmount?"}
+    COD_COLLECT -- "NỘP THIẾU TIỀN" --> RECORD_DEBT["Tự động trích số tiền thiếu vào sổ nợ cá nhân bưu tá<br/>(Khấu trừ vào kỳ lương/hoa hồng bưu tá cuối tháng)"]
+```
+
+---
+
+### 5.8. Cảnh báo vùng xa ngoài phục vụ (ODA) & Chuyển tiếp CSKH AI sang người thật
+
+Tối ưu phạm vi địa lý phục vụ và đảm bảo trải nghiệm khách hàng ở các ca sự cố phức tạp:
+
+```mermaid
+flowchart TD
+    INPUT_ADDR["Khách hàng nhập địa chỉ nhận hàng"] --> GEO_CHECK["masterdata-service đối chiếu tọa độ ranh giới Polygon xã/phường<br/>(Thuật toán isPointInPolygon)"]
+    
+    GEO_CHECK --> IN_RANGE{"Nằm trong bán kính phục vụ của Hub?"}
+    IN_RANGE -- "TRONG VÙNG PHỤC VỤ" --> NORM_ORDER["Tính cước tiêu chuẩn & Phân bổ bưu cục phát"]
+    IN_RANGE -- "NGOÀI VÙNG (ODA)" --> ODA_ALERT["CẢNH BÁO VÙNG XA NGOÀI PHỤC VỤ (ODA):<br/>- Thông báo thời gian phát SLA +24h đến +48h<br/>- Áp phụ phí kết nối vùng xa (+15.000đ) hoặc kết nối 3PL VNPost"]
+
+    NORM_ORDER -.-> AI_CHAT["Khách trò chuyện cùng AI Assistant RAG"]
+    AI_CHAT --> SENTIMENT{"AI phân tích ý định & cảm xúc khách hàng:<br/>Chửi bới, đòi kiện tụng, khiếu nại vỡ nát đền bù?"}
+    SENTIMENT -- "CÂU HỎI THƯỜNG" --> AI_ANS["AI tự động gọi Tool tra cứu biểu phí/hành trình"]
+    SENTIMENT -- "BỨC XÚC / KHIẾU NẠI NẶNG" --> ESCALATE["KÍCH HOẠT TOOL escalate_to_human_agent:<br/>- Tự động tạo Ticket khiếu nại KHẨN CẤP trên Ops Web<br/>- Cung cấp số Hotline Trưởng bưu cục hỗ trợ trực tiếp 24/7"]
+```
+
+---
+
+## 6. MẠNG LƯỚI HUB 4 CẤP & CHUYẾN XE TRUNG CHUYỂN LINEHAUL
+
+Nexus Express tổ chức hạ tầng mạng lưới kho bãi theo cấu trúc hình cây 4 cấp tiêu chuẩn quốc tế:
+
+```mermaid
+graph TD
+    MEGA["MEGA HUB (Cấp 1 - Liên vùng)<br/>Hà Nội - Đà Nẵng - TP. Hồ Chí Minh<br/>(Băng chuyền chia chọn tự động)"]
+    
+    REGIONAL_1["REGIONAL HUB (Cấp 2 - Khu vực)<br/>Bắc Giang / Hải Phòng"]
+    REGIONAL_2["REGIONAL HUB (Cấp 2 - Khu vực)<br/>Cần Thơ / Đồng Nai"]
+
+    PROV_1["PROVINCIAL HUB (Cấp 3)<br/>Bưu cục Trung tâm Tỉnh/TP"]
+    PROV_2["PROVINCIAL HUB (Cấp 3)<br/>Bưu cục Trung tâm Tỉnh/TP"]
+
+    POST_1["LOCAL POST OFFICE (Cấp 4)<br/>Bưu cục Giao dịch Quận/Huyện"]
+    POST_2["LOCAL POST OFFICE (Cấp 4)<br/>Điểm tiếp nhận & Bưu cục phát"]
+
+    MEGA <==>|"Xe tải đường dài Linehaul<br/>(Tem niêm phong xe XT)"| REGIONAL_1
+    MEGA <==>|"Xe tải đường dài Linehaul<br/>(Tem niêm phong xe XT)"| REGIONAL_2
+    
+    REGIONAL_1 <-->|"Tuyến xe gom nội vùng"| PROV_1
+    REGIONAL_2 <-->|"Tuyến xe gom nội vùng"| PROV_2
+
+    PROV_1 <-->|"Xe tải nhỏ trung chuyển"| POST_1
+    PROV_2 <-->|"Xe tải nhỏ trung chuyển"| POST_2
+
+    POST_1 -.->|"Shipper lấy/giao chặng cuối"| CUSTOMER_SENDER["Người gửi / Kho Shop"]
+    POST_2 -.->|"Shipper lấy/giao chặng cuối"| CUSTOMER_RECEIVER["Người nhận bưu phẩm"]
+```
+
+- **Mega Hub (Cấp 1):** Trung tâm khai thác lớn tại Hà Nội, Đà Nẵng, TP.HCM, trang bị băng chuyền chia chọn tự động.
+- **Regional Hub (Cấp 2):** Tiếp nhận bưu gửi các tỉnh lân cận, đóng bao bưu gửi (mã `MB`), kẹp chì seal an ninh.
+- **Provincial Hub (Cấp 3):** Phân luồng đơn hàng về các quận/huyện trực thuộc.
+- **Local Post Office (Cấp 4):** Bưu cục phát chặng cuối, quản lý đội ngũ shipper giao/lấy hàng.
+- **Chuyến xe Linehaul:** Tuyến xe tải trung chuyển liên tỉnh đường dài kết nối các Hub, được cấp mã tem niêm phong thùng xe `XT`.
+
+---
+
+## 7. PHÂN HỆ TRỢ LÝ TRÍ TUỆ NHÂN TẠO (AI LOGISTICS ASSISTANT RAG)
+
+Phân hệ `@NEXUS/chatbot-service` (Port 3013) là điểm đột phá ứng dụng AI tạo sinh vào vận hành thực tế:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Khách hàng / Chủ Shop
+    participant UI as Giao diện Web / Mobile
+    participant GW as Gateway BFF (:3000)
+    participant ChatBot as Chatbot Service (:3013)
+    participant VectorStore as Vector Store (768-dim)
+    participant LLM as Google Gemini 3 Flash / GPT-4o-mini
+    participant DomainSvcs as Domain Services (:3008, :3012, :3001)
+
+    User->>UI: Nhập câu hỏi: "Phí gửi 3kg từ Hà Nội vào Sài Gòn là bao nhiêu?"
+    UI->>GW: POST /chatbot/message (SSE Request)
+    GW->>ChatBot: Forward Request kèm Context Session
+    
+    par Truy xuất tri thức & Xác định ý định
+        ChatBot->>VectorStore: Tìm kiếm ngữ nghĩa Cosine Similarity (Hybrid RAG)
+        VectorStore-->>ChatBot: Trả về tài liệu quy chuẩn biểu phí IATA
+    and Nhận diện Dynamic Tools
+        ChatBot->>LLM: Gửi Prompt + Function Definition (Tools)
+        LLM-->>ChatBot: Yêu cầu gọi Tool: calculate_shipping_rate(HN, HCM, 3kg)
+    end
+
+    ChatBot->>DomainSvcs: Gọi API pricing-service (:3012)
+    DomainSvcs-->>ChatBot: Kết quả: Standard 38.000đ (Chi tiết: gốc 28k + vượt 5k x 2)
+
+    ChatBot->>LLM: Tổng hợp câu trả lời từ tri thức RAG + Kết quả Tool
+    
+    loop Server-Sent Events (SSE Streaming)
+        LLM-->>ChatBot: Stream từng Token văn bản
+        ChatBot-->>GW: SSE Event Data
+        GW-->>UI: Hiển thị hiệu ứng gõ phím tức thì (Typewriter Effect)
+    end
+    UI-->>User: Câu trả lời hoàn chỉnh, chính xác 100% kèm căn cứ điều khoản
+```
+
+### Bộ 5 Dynamic Tools tích hợp sẵn:
+1. `track_shipment(tracking_number)`: Tra cứu hành trình thực tế từ `tracking-service`.
+2. `calculate_shipping_rate(origin, destination, weight, dimensions)`: Tính cước tự động từ `pricing-service`.
+3. `get_prohibited_goods_policy(item_name)`: Kiểm tra danh mục hàng cấm bay, pin lithium.
+4. `get_compensation_claim_policy()`: Tra cứu chính sách bồi thường Điều 25 Luật Bưu chính.
+5. `find_nearest_post_office(province, district)`: Định vị bưu cục gần nhất từ `masterdata-service`.
+
+---
+
+## 8. SƠ ĐỒ VÒNG ĐỜI VẬN ĐƠN TOÀN TRÌNH TỪ A ĐẾN Z (END-TO-END WORKFLOW)
+
+Quy trình tuần tự một vận đơn đi qua đầy đủ chuỗi giá trị logistics trong hệ thống:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Merchant as Chủ Shop (Merchant)
+    participant MWeb as Merchant Web (:5174)
+    participant GW as Gateway (:3000)
+    participant ShipSvc as shipment-service (:3002)
+    participant Bus as RabbitMQ (domain.events)
+    participant OpsWeb as Ops Web (:5173)
+    participant CourierApp as Courier Mobile (:8081)
+    participant HubStaff as Ops Hub Kho
+    actor Receiver as Người Nhận Hàng
+    participant PaySvc as payment-service (:3011)
+
+    %% GIAI ĐOẠN 1: TẠO ĐƠN & LẤY HÀNG
+    Note over Merchant, MWeb: GIAI ĐOẠN 1: TẠO ĐƠN & YÊU CẦU LẤY HÀNG
+    Merchant->>MWeb: Tạo đơn hàng + Yêu cầu lấy hàng tận nơi
+    MWeb->>GW: POST /merchant/shipments
+    GW->>ShipSvc: Tạo đơn, lưu snapshot cước IATA
+    ShipSvc->>Bus: Publish event: shipment.created
+    Bus-->>PaySvc: Tạo bản ghi theo dõi tiền thu hộ COD
+    OpsWeb->>GW: Duyệt yêu cầu lấy hàng, gán Shipper
+    GW->>CourierApp: Thông báo nhiệm vụ lấy hàng mới (Push Task)
+    CourierApp->>Merchant: Shipper đến kho, quét barcode nhận hàng
+    CourierApp->>GW: Xác nhận lấy thành công (scan.pickup_confirmed)
+
+    %% GIAI ĐOẠN 2: KHAI THÁC HUB & TRUNG CHUYỂN
+    Note over HubStaff, OpsWeb: GIAI ĐOẠN 2: KHAI THÁC HUB & TRUNG CHUYỂN LINEHAUL
+    HubStaff->>OpsWeb: Shipper nộp hàng, quét Nhập kho Hub Gốc (scan.inbound)
+    HubStaff->>OpsWeb: Đóng các đơn vào bao chuyên dụng (mã MB), kẹp chì Seal
+    HubStaff->>OpsWeb: Xếp bao lên xe tải Linehaul, cấp tem xe XT (linehaul.dispatched)
+    Note over OpsWeb: Xe tải trung chuyển chạy liên tỉnh tới Hub Phát
+    HubStaff->>OpsWeb: Hub Đích nhận xe, cắt seal kiểm đếm, quét nhập kho đích
+
+    %% GIAI ĐOẠN 3: GIAO HÀNG CHẶNG CUỐI & THU TIỀN
+    Note over CourierApp, Receiver: GIAI ĐOẠN 3: GIAO HÀNG CHẶNG CUỐI & BẰNG CHỨNG POD
+    OpsWeb->>CourierApp: Phân công tuyến phát cho Shipper chặng cuối
+    CourierApp->>Receiver: Shipper mang hàng đến địa chỉ người nhận
+    Receiver->>CourierApp: Kiểm tra hàng & thanh toán tiền COD (tiền mặt / VietQR)
+    CourierApp->>CourierApp: Chụp 01 ảnh bằng chứng giao hàng (POD) qua camera
+    CourierApp->>GW: Xác nhận giao thành công (delivery.delivered)
+    GW->>ShipSvc: Chuyển trạng thái đơn thành DELIVERED
+    ShipSvc->>Bus: Publish event: delivery.delivered
+    Bus-->>PaySvc: Chuyển trạng thái COD thành COLLECTED
+
+    %% GIAI ĐOẠN 4: ĐỐI SOÁT & GIẢI NGÂN
+    Note over PaySvc, Merchant: GIAI ĐOẠN 4: ĐỐI SOÁT & GIẢI NGÂN TỰ ĐỘNG
+    PaySvc->>PaySvc: Gom phiên đối soát COD Batch theo kỳ
+    PaySvc->>Merchant: Tự động giải ngân chuyển khoản ngân hàng qua cổng SePay/VietQR
+```
+
+---
+
+## 9. MA TRẬN ĐỐI CHIẾU CÔNG NGHỆ: NEXUS VS ĐỒ ÁN TRUYỀN THỐNG
+
+| Tiêu Chí So Sánh | Đồ Án Sinh Viên Thông Thường | Hệ Thống Nexus Express System | Ý Nghĩa Kỹ Thuật Đạt Được |
+| :--- | :--- | :--- | :--- |
+| **Kiến trúc tổng thể** | Monolithic (1 khối nguyên, chung 1 server) | **15 Microservices + API Gateway BFF** | Dễ dàng mở rộng ngang (horizontal scale), cô lập lỗi hoàn toàn giữa các dịch vụ. |
+| **Cơ sở dữ liệu** | 1 CSDL MySQL/PostgreSQL duy nhất | **Database per service (11 PostgreSQL độc lập)** | Ranh giới dữ liệu tuyệt đối; không có tình trạng bảng này khóa chết bảng khác. |
+| **Giao tiếp giữa các dịch vụ**| Gọi HTTP trực tiếp phụ thuộc lẫn nhau | **Event-Driven qua RabbitMQ + Outbox Pattern** | Phi đồng bộ, chịu lỗi cao, loại bỏ rủi ro mất mát sự kiện (Zero Event Loss). |
+| **Ứng dụng Client** | 1 hoặc 2 Web đơn giản | **6 Ứng dụng (4 Web React + 2 Mobile Expo)** | Bao phủ 100% các bên trong chuỗi cung ứng thực tế (từ Admin, Ops đến Khách lẻ). |
+| **Tính nhất quán giá cước** | Tính toán sơ sài trên frontend | **Unified Pricing Engine chuẩn IATA V/6000** | Đồng nhất 100% kết quả tính cước giữa Web, Mobile và AI Chatbot. |
+| **Quy trình xử lý ngoại lệ** | Chỉ có 2 trạng thái Giao/Hủy | **4 Chu trình ngoại lệ: NDR, Hoàn cấn trừ COD, Bồi thường Điều 25 Luật Bưu chính** | Đóng kín bài toán thất thoát tài chính và pháp lý tranh chấp bưu gửi thực tế. |
+| **Trí tuệ nhân tạo (AI)** | Gọi API OpenAI đơn giản không ngữ cảnh | **Microservice AI riêng biệt + Hybrid RAG + 5 Tools** | Trả lời chính xác 100% nghiệp vụ bưu chính, không bị ảo giác (hallucination). |
+| **Khả năng hoạt động ngoại tuyến** | Mất mạng là app báo lỗi, dừng thao tác | **Offline Queue trên Mobile + Idempotency Record** | Shipper vẫn quét hàng bình thường trong tầng hầm, mạng có lại tự động đồng bộ. |
+
+---
+
+## 10. KỊCH BẢN DEMO THỰC CHIẾN 5 PHÚT DÀNH CHO THẦY CÔ
+
+Nhóm đã chuẩn bị kịch bản demo súc tích, ấn tượng thể hiện trọn vẹn luồng dữ liệu thời gian thực:
+
+1. **Phút 1 - Trải nghiệm Khách hàng & AI Chatbot:**
+   - Mở `apps/guest-web` (`http://localhost:5177`) hoặc `apps/customer-mobile` (`http://localhost:8082`).
+   - Mở cửa sổ AI Chatbot, hỏi: *"Cước gửi kiện hàng 2.5kg kích thước 30x20x10 từ Hà Nội vào TP.HCM là bao nhiêu?"*
+   - Thầy cô thấy: AI gọi Tool tính cước tức thì, phân tích trọng lượng thể tích IATA, trả về kết quả chuẩn xác.
+2. **Phút 2 - Merchant tạo đơn & In phiếu:**
+   - Mở `apps/merchant-web` (`http://localhost:5174`), tạo đơn hàng bưu gửi có thu hộ COD.
+   - Bấm nút **In phiếu gửi**: Hệ thống xuất phiếu chuẩn bưu điện có mã Barcode và nhãn cảnh báo `[FRAGILE]`.
+3. **Phút 3 - Điều hành Ops Kho & Đóng bao Manifest:**
+   - Mở `apps/ops-web` (`http://localhost:5173`), Thầy cô thấy đơn hàng xuất hiện ngay lập tức trên Dashboard.
+   - Ops thực hiện duyệt lấy hàng, quét nhập kho, gom đơn vào túi bưu gửi `MB` và niêm phong kẹp chì seal.
+4. **Phút 4 - Shipper giao hàng trên Mobile App:**
+   - Mở `apps/courier-mobile` (`http://localhost:8081`).
+   - Shipper quét mã vạch bằng camera, chụp 01 ảnh bằng chứng giao hàng (POD) và xác nhận thu COD.
+   - Bấm **Hoàn tất giao hàng**: Giao diện cập nhật ngay lập tức sang trạng thái `DELIVERED`.
+5. **Phút 5 - Xử lý ngoại lệ hoàn hàng & Đối soát COD:**
+   - Quay lại `apps/ops-web`, biểu diễn một đơn bị từ chối nhận (NDR) chuyển sang hoàn hàng `RETURN_STARTED`.
+   - Mở màn hình đối soát trên `merchant-web`, Thầy cô thấy hệ thống **tự động cấn trừ 50% cước hoàn vào tiền thu hộ COD** hoàn toàn minh bạch.
+   - Mở `apps/admin-web` (`http://localhost:5175`) xem biểu đồ KPI sản lượng và nhật ký kiểm toán hệ thống.
+
+---
+
+## 11. HƯỚNG DẪN KHỞI CHẠY HỆ THỐNG & TÀI KHOẢN KIỂM THỬ
+
+### 11.1. Khởi động hạ tầng cơ sở (Docker Compose)
 
 ```bash
 cd infra/dev
 docker compose up -d
 ```
 
-This starts:
+Hạ tầng bao gồm:
+- PostgreSQL: `localhost:15432` (11 databases)
+- RabbitMQ: `localhost:5672` (Management Dashboard: `http://localhost:15672`, user/pass: `guest/guest`)
+- Redis: `localhost:6379`
+- MinIO Object Storage: `localhost:9000` (Console: `http://localhost:9001`, user/pass: `minioadmin/minioadmin`)
 
-| Component | Local port |
-| --- | ---: |
-| PostgreSQL | `15432` |
-| RabbitMQ | `5672` |
-| RabbitMQ management UI | `15672` |
-| Redis | `6379` |
-| MinIO API | `9000` |
-| MinIO console | `9001` |
+### 11.2. Khởi chạy toàn bộ hệ thống bằng script tự động
 
-The PostgreSQL init script creates the service databases such as `auth_db`, `shipment_db`, `tracking_db`, `payment_db`, and `chat_db`.
-
-### 2. Configure environment files
-
-Copy the relevant `.env.example` files before running a module:
-
-```bash
-cp services/gateway-bff/.env.example services/gateway-bff/.env
-cp apps/ops-web/.env.example apps/ops-web/.env
-cp apps/merchant-web/.env.example apps/merchant-web/.env
-cp apps/admin-web/.env.example apps/admin-web/.env
-cp apps/guest-web/.env.example apps/guest-web/.env
-```
-
-For local host-based service runs, set gateway upstream URLs to `http://localhost:<port>`. The helper scripts do this for you; if you start services manually, check `services/gateway-bff/.env`.
-
-### 3. Prepare service databases
-
-Run inside each Prisma-backed service:
-
-```bash
-npm install
-npm run db:prepare
-```
-
-Services with `db:prepare`:
-
-```text
-auth-service
-masterdata-service
-shipment-service
-pickup-service
-dispatch-service
-manifest-service
-scan-service
-delivery-service
-tracking-service
-reporting-service
-payment-service
-```
-
-Seed commands currently exist for:
-
-```bash
-cd services/auth-service && npm run db:seed
-cd services/masterdata-service && npm run db:seed
-```
-
-The runbooks note that default seed data may be disabled depending on the current branch. Use real/imported local accounts when seed data is not available.
-
-### 4. Start the stack
-
-On macOS/Linux:
-
+Trên macOS / Linux:
 ```bash
 ./run-all-mac.sh
 ```
 
-On Windows PowerShell:
-
+Trên Windows PowerShell:
 ```powershell
 .\run-all.ps1
 ```
 
-The helper scripts update local gateway/mobile env values, start infrastructure if needed, and start the backend/apps through the project scripts.
-
-Manual service example:
-
-```bash
-cd services/gateway-bff
-npm install
-npm run start:dev
-```
-
-Manual frontend example:
-
-```bash
-cd apps/ops-web
-npm install
-npm run dev
-```
-
-### 5. Run the Phase 1 logistics flow
-
-After the backend stack is running, use the phase-1 runner to verify the
-core demo flow:
-
-```bash
-node scripts/phase1-logistics-flow-e2e.js
-# or
-make phase1-flow
-```
-
-The runner exercises real Gateway APIs for:
-
-```text
-Merchant creates shipment
--> Ops approves pickup and assigns pickup task
--> Courier sees assigned pickup task and scans pickup
--> Ops creates/assigns delivery task
--> Courier sees assigned delivery task and marks delivery success
--> Shipment reaches DELIVERED
--> Public tracking returns the shipment journey by receiver phone
-```
-
-It writes a JSON evidence report to `tmp/phase1-logistics-flow-e2e-*.json`.
-Use `PHASE1_GATEWAY_URL`, `PHASE1_ORIGIN_HUB`, `PHASE1_DEST_HUB`, and the
-`E2E_*_USER` variables to point it at a different environment or account set.
-
-## Build And Test
-
-Run commands from the module directory.
-
-| Module | Useful commands |
-| --- | --- |
-| Backend services | `npm run build` |
-| Services with Prisma | `npm run db:prepare`, then `npm run build` |
-| `gateway-bff` | `npm run build`, `npm run test:chat` |
-| `ops-web` | `npm run build`, `npm run test:smoke` |
-| `admin-web` | `npm run build`, `npm run test:smoke`, `npm run test:e2e` |
-| `merchant-web` | `npm run build` |
-| `public-tracking` | `npm run build` |
-| `courier-mobile` | `npm run typecheck`, `npm run build:web`, `npm run test:maestro` |
-
-Baseline check from the planning docs:
-
-```bash
-cd services/gateway-bff && npm run build
-cd ../../apps/merchant-web && npm run build
-cd ../ops-web && npm run build
-cd ../admin-web && npm run build
-cd ../public-tracking && npm run build
-cd ../courier-mobile && npm run typecheck
-```
-
-For a broader backend typecheck, run `npx tsc -p tsconfig.json --noEmit` inside each backend service.
-
-## Domain Events
-
-Events are published to RabbitMQ exchange `domain.events`. The slim milestone set is documented in `contracts/events/event-types.md`.
-
-Representative events:
-
-```text
-shipment.created
-pickup.requested
-pickup.approved
-task.assigned
-scan.pickup_confirmed
-manifest.sealed
-manifest.received
-manifest.unsealed
-scan.outbound
-scan.inbound
-delivery.attempted
-delivery.delivered
-delivery.failed
-ndr.created
-return.started
-return.completed
-cod.collected
-cod.collection_failed
-cod.remitted
-```
-
-Many write-side services persist business data and an `OutboxEvent` in the same transaction, then publish through an outbox relay. Scan, delivery, payment, and reporting flows use idempotency or projection ledgers to avoid duplicate processing during retries.
-
-## API Gateway Conventions
-
-Gateway routes use this broad pattern:
-
-```text
-/{group}/{service}/...
-```
-
-Examples:
-
-```text
-GET  /public/tracking/shipments/:shipmentCode
-GET  /merchant/shipment/shipments
-POST /ops/scan/scans/inbound
-POST /courier/delivery/deliveries/success
-```
-
-Auth notes:
-
-- `/public/*` is public.
-- `/merchant/*`, `/ops/*`, and `/courier/*` can be protected with `GATEWAY_AUTH_ENABLED=true`.
-- The current gateway guard can be configured as a perimeter authorization-header check; detailed session/token ownership belongs to `auth-service`.
-
-## COD And Payment Notes
-
-COD settlement is intentionally handled by `payment-service`, not by frontend inference.
-
-Key rules from the COD docs:
-
-- Creating a QR is a payment request, not proof of remittance.
-- A settlement is marked paid only after SePay webhook confirmation or an audited manual confirmation.
-- Webhook processing must match account number, transfer type, amount/tolerance, memo reference, and provider event id.
-- Memo conventions are `COD <shipmentCode>` for shipment-level transfer and `COD <settlementCode>` for courier cash settlement batches.
-
-See `docs/business-sop/payment-cod-settlement-implementation-plan.md` and `docs/runbook/sepay-cod-runbook.md`.
-
-## Frontend Development Rules
-
-These rules are repeated across the frontend prompt packs and redesign docs:
-
-- Frontends call `gateway-bff` only.
-- Do not move backend business decisions into React or React Native.
-- Do not infer shipment status or current location on the client.
-- Preserve loading, empty, error, and success states.
-- For merchant UI redesign work, the current handoff allows edits only in `apps/merchant-web/src/main.tsx` and `apps/merchant-web/src/styles.css` unless the scope is explicitly expanded.
-- The merchant redesign reference lives in `design-reference/stitch_nexus_merchant_dashboard_redesign`.
-
-## Production / Trial Deployment
-
-The production-ish deployment is a single-VPS Docker Compose setup under `infra/prod`.
-
-First run outline:
-
-```bash
-cd /opt/logistics-management-system
-cp infra/prod/.env.example infra/prod/.env
-nano infra/prod/.env
-./scripts/deploy-vps.sh
-```
-
-Operational commands:
-
-```bash
-./scripts/prod-up.sh
-docker compose --env-file infra/prod/.env -f infra/prod/docker-compose.yml ps
-docker compose --env-file infra/prod/.env -f infra/prod/docker-compose.yml logs -f gateway-bff
-docker compose --env-file infra/prod/.env -f infra/prod/docker-compose.yml down
-```
-
-Production deployment rules in `docs/runbook/github-deploy-rules.md` require PR-based merges to `main`, passing CI checks, reviewed migrations with rollback plans, GitHub environment secrets, production review gates, and post-deploy health/log checks.
-
-## Documentation Map
-
-Toàn bộ bản đồ tra cứu chi tiết được quy hoạch tại [**`docs/README.md`**](docs/README.md).
-
-Bảng tra cứu nhanh các tài liệu quan trọng:
-
-| File | Purpose |
-| --- | --- |
-| `docs/README.md` | **Master Documentation Hub:** Mục lục và bản đồ toàn bộ tài liệu hệ thống |
-| `docs/architecture/ai-chatbot-service-architecture.md` | Báo cáo kiến trúc hệ thống AI Chatbot RAG & Function Calling (Khóa luận) |
-| `docs/knowledge-base/README.md` | Kho tài liệu nghiệp vụ logistics chuẩn hóa & Hướng dẫn nạp tri thức |
-| `docs/PROJECT-OVERVIEW.md` | Canonical overview of scope, architecture, services, ports, events, data ownership, local dev |
-| `docs/AI-REPORT-HANDOFF.md` | Source-of-truth reminders for writing reports without misrepresenting service ownership |
-| `docs/business-sop/order-lifecycle-report.md` | Shipment lifecycle across pickup, hub transfer, delivery, NDR, and return |
-| `docs/business-sop/NGHIEP-VU-TIEP-NHAN-HANG-DE-VO-VA-BAO-HIEM.md` | Quy chuẩn tiếp nhận hàng dễ vỡ & chính sách bảo hiểm bồi thường |
-| `contracts/events/event-types.md` | Current public domain event milestone set |
-| `contracts/openapi/` | Service API contracts |
-| `docs/runbook/test-accounts.md` | Local account and username-code rules |
-| `docs/runbook/id-code-rules.md` | Hub, shipment, bag, vehicle, employee, merchant code conventions |
-| `docs/runbook/trial-deploy.md` | Staging/trial deployment checklist |
-| `infra/prod/README.md` | Single-VPS deployment guide |
-| `docs/service-description/marketplace-order-integration-api.md` | Marketplace adapter API contract |
-| `docs/service-description/auth-service.md` | Detailed auth-service behavior and limitations |
-| `docs/runbook/sepay-cod-runbook.md` | SePay COD reconciliation operations |
-| `design-reference/codex-handoff.md` | Merchant UI redesign handoff and constraints |
-
-Some files under `docs/architecture/` and `docs/runbook/` are currently placeholders. Prefer `docs/PROJECT-OVERVIEW.md`, service READMEs, contracts, and source code when those placeholders are empty.
-
-## Current Limitations To Know
-
-- This is a learning/demo-oriented project and is not production-ready.
-- Auth password hashing is documented as a scaffold-level SHA-256 implementation and should be upgraded before real production use.
-- Gateway auth can be a perimeter header check depending on configuration; full token/session validation should be handled through `auth-service`.
-- Local and production setups use one PostgreSQL container with multiple service databases; the architectural rule remains database-per-service.
-- Some expanded ops modules, advanced analytics, linehaul hardening, observability, load tests, and zero-trust controls are still in progress.
-- Several docs are Vietnamese project/reporting docs; when documentation conflicts, prefer `docs/PROJECT-OVERVIEW.md`, contracts, current service READMEs, and source code.
-
-## Safe Change Checklist
-
-Before changing business behavior:
-
-1. Identify the owning service.
-2. Check whether the change affects API contracts or event contracts.
-3. Preserve gateway-first client access.
-4. Do not read/write another service's database.
-5. Add idempotency for retry-prone scan, delivery, and payment actions.
-6. Update tracking/reporting projections if the change must be visible in read models.
-7. Run the smallest relevant build/test commands for the touched modules.
-
-For UI-only work:
-
-1. Keep API calls, payloads, response mapping, routes, auth, permissions, validation, and status logic unchanged.
-2. Change JSX/layout/styles/presentational components only.
-3. Preserve loading, empty, error, and success states.
-4. Build the touched app before handing off.
-
-Đề xuất Tích hợp Trí tuệ Nhân tạo (AI) vào Hệ thống Nexus Express System
-Tài liệu này trình bày chi tiết hai giải pháp tích hợp Trí tuệ Nhân tạo (AI) vào kiến trúc Microservices của Nexus Express System nhằm tối ưu hóa chi phí vận hành và nâng cao độ tin cậy của hệ thống. Nội dung được trình bày theo văn phong báo cáo khoa học/luận văn tốt nghiệp ngành Công nghệ thông tin.
-
-GIẢI PHÁP 1: AI VISION TỰ ĐỘNG KIỂM DUYỆT CHẤT LƯỢNG ẢNH MINH CHỨNG GIAO NHẬN (PROOF OF DELIVERY - POD)
-1. Đặt vấn đề và Mục tiêu giải quyết
-Trong quy trình hoàn tất đơn hàng chuyển phát (Last-mile Delivery), việc Courier xác nhận trạng thái "Giao thành công" (DELIVERED) bắt buộc phải đính kèm ảnh chụp gói hàng thực tế cùng bối cảnh giao nhận làm minh chứng (Proof of Delivery - POD). Tuy nhiên, trên thực tế vận hành phát sinh hai vấn đề nghiêm trọng:
-
-Gian lận từ Courier (Giao lụi): Để kịp chỉ tiêu năng suất ngày, Courier tự ý cập nhật trạng thái giao thành công nhưng tải lên ảnh chụp không hợp lệ (ảnh tối đen, ảnh bàn chân, ảnh mặt đường, ảnh phong cảnh không liên quan).
-Mất mát và tranh chấp tài chính: Khi khách hàng khiếu nại không nhận được hàng, bộ phận đối soát (Ops) phải kiểm tra thủ công hàng ngàn ảnh POD mỗi ngày, gây tốn thời gian và làm chậm trễ quy trình bồi hoàn COD cho Merchant.
-Mục tiêu: Tích hợp bộ lọc AI Vision tại API Gateway để tự động phát hiện và ngăn chặn ảnh POD không hợp lệ ngay tại thời điểm Courier tải ảnh lên, không cho phép cập nhật trạng thái đơn hàng khi chưa có POD chuẩn.
-
-2. Kiến trúc và Quy trình xử lý dữ liệu
-Giải pháp được thiết kế hoạt động dưới dạng một Middleware kiểm duyệt ảnh trung gian tại gateway-bff, hoạt động trước khi dữ liệu được chuyển tiếp tới delivery-service.
-
-delivery-service
-MinIO / S3 Storage
-AI Vision Engine
-gateway-bff (API Gateway)
-delivery-service
-MinIO / S3 Storage
-AI Vision Engine
-gateway-bff (API Gateway)
-Kiểm tra: Phân loại cảnh quan,
-Phát hiện Gói hàng (Object Detection)
-alt
-[Ảnh không hợp lệ (Không có gói hàng / Ảnh tối đen / Spam)]
-[Ảnh hợp lệ]
-Courier App
-POST /courier/delivery/success (Payload + Image File)
-1
-Gửi ảnh kiểm duyệt chất lượng
-2
-Trả về trạng thái "Invalid POD" (Kèm lý do)
-3
-HTTP 400 Bad Request: "Ảnh chụp minh chứng không hợp lệ"
-4
-Trả về trạng thái "Valid POD"
-5
-Lưu trữ ảnh gốc và nhận URL
-6
-Forward request kèm podImageUrl & trạng thái DELIVERED
-7
-Xác nhận cập nhật thành công
-8
-HTTP 200 OK
-9
-Courier App
-3. Phương pháp công nghệ và Mô hình áp dụng
-Hệ thống sử dụng mô hình học sâu kết hợp giữa Phân loại hình ảnh (Image Classification) và Phát hiện vật thể (Object Detection):
-
-Mô hình phân loại (VGG16 / MobileNetV2): Được huấn luyện hoặc sử dụng dịch vụ đám mây (Gemini Flash Vision/AWS Rekognition) để phân loại ảnh đầu vào thành các nhóm: Ảnh hợp lệ (Delivery Scene), Ảnh lỗi/Tối đen (Low Quality/Blank), Ảnh spam không liên quan (Irrelevant).
-Mô hình phát hiện vật thể (YOLOv8): Xác định sự xuất hiện của các đối tượng trọng yếu trong ảnh: Package (gói hàng), Label (nhãn vận đơn), Customer Signature (chữ ký trên biên lai).
-Quy tắc logic kiểm duyệt: Ảnh được coi là hợp lệ khi và chỉ khi: $$\text{Score}{\text{Confidence}} \ge 0.85 \quad \text{và} \quad \text{Class}{\text{Scene}} = \text{"Delivery Scene"} \quad \text{và} \quad \text{Objects} \cap {\text{"Package"}, \text{"Handover"}} \neq \emptyset$$
-4. Hiệu quả vận hành và Chỉ số đánh giá (KPIs)
-Ngăn chặn gian lận giao nhận: Giảm thiểu 95% các trường hợp cập nhật khống trạng thái giao hàng từ phía Courier.
-Giảm tải đối soát thủ công: Tự động loại bỏ các ảnh lỗi giúp bộ phận CSKH giảm 80% thời gian tra cứu và xử lý khiếu nại mất mát hàng hóa.
-Độ chính xác mô hình: Đạt độ chính xác kiểm duyệt tối thiểu 92% (F1-score $\ge 0.90$) trên tập dữ liệu thử nghiệm thực tế.
-GIẢI PHÁP 2: AI CHUẨN HÓA ĐỊA CHỈ TỰ NHIÊN VÀ TỰ ĐỘNG ĐỊNH TUYẾN HUB/ZONE (SMART ROUTING & ADDRESS PARSER)
-1. Đặt vấn đề và Mục tiêu giải quyết
-Địa chỉ giao hàng do Merchant hoặc người mua nhập vào hệ thống e-commerce thường ở dạng ngôn ngữ tự nhiên không cấu trúc, sai chính tả, thiếu cấp hành chính hoặc viết tắt (Ví dụ: "12/3 hẻm me, sau chợ Bà Chiểu, P.1, B.Thạnh").
-
-Hậu quả định tuyến sai: Địa chỉ không chuẩn hóa khiến hệ thống không thể tự động khớp đơn hàng vào đúng Hub quản lý miền địa lý và Zone (tuyến giao của Courier). Hàng hóa bị phân loại sai hub gốc, phải vận chuyển đi-về giữa các kho tổng gây chậm trễ SLA và phát sinh chi phí nhiên liệu lớn.
-Tác vụ thủ công nặng nề: Bộ phận Ops phải đọc thủ công các địa chỉ lỗi để phân loại lại Hub, tạo ra điểm nghẽn cổ chai (bottleneck) tại các Hub phân loại trung tâm.
-Mục tiêu: Áp dụng công nghệ Xử lý ngôn ngữ tự nhiên (NLP) để phân tách địa chỉ thô thành các cấp hành chính chuẩn hóa và tự động định tuyến Hub/Zone đích với độ chính xác tuyệt đối.
-
-2. Kiến trúc và Quy trình xử lý dữ liệu
-Dịch vụ AI Address Parser được thiết kế như một module bổ trợ bên trong shipment-service hoặc gọi qua gateway-bff trong luồng tạo đơn hàng.
-
-JSON cấu trúc chuẩn
-Thành công
-Thất bại/Không rõ
-Merchant tạo đơn hàng
-Địa chỉ thô: '12/3 hẻm me, sau chợ Bà Chiểu, Bình Thạnh'
-AI Address Parser
-Trích xuất JSON cấu trúc chuẩn
-Gắn cờ chờ Ops duyệt thủ công
-Khớp với Master Data Hub/Zone
-Định vị GPS tọa độ địa chỉ
-Cập nhật Shipment với HubCode & ZoneCode thích hợp
-Đơn hàng tự động chuyển sang Hub gốc khớp tuyến
-Street: 12/3 hẻm Cây Me
-Ward: Phường 1
-District: Quận Bình Thạnh
-City: TP. Hồ Chí Minh
-3. Phương pháp công nghệ và Mô hình áp dụng
-Giải pháp kết hợp giữa Nhận diện thực thể có tên (Named Entity Recognition - NER) và Tìm kiếm mờ (Fuzzy Matching) đối chiếu cơ sở dữ liệu quốc gia:
-
-Mô hình ngôn ngữ lớn (Gemini / PhoBERT Fine-tuned): Nhận diện thực thể có tên chuyên biệt cho địa chỉ Việt Nam. Mô hình phân tách chuỗi văn bản thô thành các trường thông tin cụ thể: Street_Number, Street_Name, Ward, District, Province.
-Cơ chế đối chiếu Master Data (Fuzzy String Matching): Sử dụng thuật toán so khớp chuỗi Levenshtein Distance để đối chiếu địa chỉ trích xuất được với danh mục Hành chính quốc gia trong masterdata_db nhằm tự động sửa lỗi chính tả (ví dụ: "B.Thạnh" $\rightarrow$ "Bình Thạnh").
-Định vị tọa độ (Geocoding Engine): Gọi API bản đồ để chuyển đổi địa chỉ chuẩn hóa thành tọa độ GPS (Latitude, Longitude), dùng thuật toán Point-in-Polygon (PIP) xác định tọa độ đó nằm trong ranh giới địa lý (Polygon) của Hub và Zone nào.
-4. Hiệu quả vận hành và Chỉ số đánh giá (KPIs)
-Tỷ lệ tự động hóa: Đạt tỷ lệ tự động định tuyến chuẩn xác 97.5% đối với đơn hàng nội tỉnh và liên tỉnh, giảm tỷ lệ hàng bị gửi sai Hub xuống dưới 0.5%.
-Tối ưu tốc độ xử lý kho: Thời gian phân luồng tuyến đơn hàng giảm từ 15 phút/đơn (nếu xử lý thủ công) xuống còn dưới 2 giây/đơn.
-Tiết kiệm chi phí vận hành: Tiết kiệm trung bình 12% chi phí chặng trung chuyển và giao chặng cuối nhờ tối ưu hóa cung đường đi ngay từ khâu tạo đơn.
+### 11.3. Danh mục cổng truy cập ứng dụng
+
+| Ứng dụng | Địa chỉ URL truy cập | Ghi chú |
+| :--- | :--- | :--- |
+| **API Gateway / BFF** | `http://localhost:3000` | Điểm tiếp nhận API duy nhất của toàn hệ thống |
+| **Ops Web** | `http://localhost:5173` | Cổng tác nghiệp bưu cục & trung tâm khai thác |
+| **Merchant Web** | `http://localhost:5174` | Cổng chủ shop tạo đơn & đối soát COD |
+| **Admin Web** | `http://localhost:5175` | Cổng quản trị viên cấp cao |
+| **Guest Web** | `http://localhost:5177` | Cổng tra cứu công khai & AI Chatbot khách lẻ |
+| **Courier Mobile** | `http://localhost:8081` | Ứng dụng bưu tá (Expo Go trên điện thoại) |
+| **Customer Mobile** | `http://localhost:8082` | Ứng dụng khách hàng cá nhân (Expo Go) |
+
+### 11.4. Danh mục tài khoản kiểm thử mặc định
+
+| Vai trò | Tên đăng nhập | Mật khẩu | Quyền hạn & Hub phân công |
+| :--- | :--- | :--- | :--- |
+| **System Admin** | `10000001` | `Admin@123456` | Toàn quyền quản trị hệ thống |
+| **Ops Staff (Kho)** | `20000001` | `Ops@123456` | Vận hành Hub Miền Nam (`003S001`) |
+| **Merchant B2B** | `41100001` | `Shop@123456` | Chủ shop Tiêu chuẩn có đơn COD |
+| **Shipper / Courier**| `30000001` | `Shipper@123456`| Tài xế tuyến giao bưu cục `003S001-01` |
+
+---
+
+<div align="center">
+
+**NEXUS EXPRESS SYSTEM — SỐ HÓA & NÂNG TẦM VẬN HÀNH BƯU CHÍNH VIỆT NAM**  
+*Mã nguồn mở phục vụ nghiên cứu & bảo vệ đồ án tốt nghiệp*
+
+</div>

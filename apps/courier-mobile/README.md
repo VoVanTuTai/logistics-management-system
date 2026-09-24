@@ -8,7 +8,7 @@ Scaffold toi thieu cho app shipper/courier trong monorepo `NEXUS-logistics`.
 - Xem task list va task detail
 - Scan pickup
 - Scan hub inbound/outbound
-- Delivery success voi POD upload qua gateway media endpoint va OTP field
+- Delivery success voi POD upload qua gateway media endpoint
 - Delivery fail voi NDR/next action flag
 - Offline queue retry cho scan va delivery actions co `idempotencyKey`
 

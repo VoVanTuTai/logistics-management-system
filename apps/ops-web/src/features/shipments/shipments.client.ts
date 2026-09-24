@@ -464,6 +464,7 @@ function mapShipmentToDetail(payload: ShipmentApiResponse): ShipmentDetailDto {
     labelReprintReason: resolveLabelReprintReason(metadata),
     isOperationLocked: Boolean(resolveOperationLockReason(metadata, payload.isLocked)),
     operationLockReason: resolveOperationLockReason(metadata, payload.isLocked),
+    metadata,
     createdAt: payload.createdAt,
     updatedAt: payload.updatedAt,
   };

@@ -176,6 +176,7 @@ export interface CreateShipmentForm {
   codAmount: string;
   serviceType: 'STANDARD' | 'EXPRESS' | 'SAME_DAY';
   deliveryNote: string;
+  inspectionPolicy?: 'NONE' | 'VIEW_ONLY' | 'TRY_ON';
 }
 
 export interface ShipmentDraft {
@@ -260,6 +261,7 @@ export const DEFAULT_CREATE_FORM: CreateShipmentForm = {
   codAmount: '',
   serviceType: 'STANDARD',
   deliveryNote: '',
+  inspectionPolicy: 'VIEW_ONLY',
 };
 
 export const DEFAULT_PROFILE: MerchantProfile = {
