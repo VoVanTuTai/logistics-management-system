@@ -149,6 +149,28 @@ export class ChatService {
         `- Ngày hoàn tất phán quyết: ${claimRes.adjudicatedAt || '15/09/2026'}\n`;
     }
 
+    // Kiểm tra ý định hỏi về hàng hỏng, hàng hư, bể vỡ, móp méo, đền bù sự cố
+    const isDamageOrBrokenQuery =
+      normalizedQ.includes('hang hong') ||
+      normalizedQ.includes('hang hu') ||
+      normalizedQ.includes('be vo') ||
+      normalizedQ.includes('mop meo') ||
+      normalizedQ.includes('hu hai') ||
+      normalizedQ.includes('thiet hai') ||
+      (normalizedQ.includes('hong') && (normalizedQ.includes('thi sao') || normalizedQ.includes('den') || normalizedQ.includes('xu ly') || normalizedQ.includes('lam sao')));
+
+    if (isDamageOrBrokenQuery) {
+      toolsUsed.push('getDamageAndClaimPolicy(Fragile Goods & Damage Settlement)');
+      toolAugmentedContext += `\n[QUY TRÌNH NGHIỆP VỤ XỬ LÝ HÀNG HƯ HỎNG / BỂ VỠ (DAMAGE SETTLEMENT SOP)]:\n` +
+        `- Bước 1 (Khi nhận hàng): Người nhận đồng kiểm phát hiện hàng bị nứt vỡ, móp méo, rò rỉ dung dịch -> Yêu cầu bưu tá lập Biên bản bất thường (Irregularity Report) tại chỗ có chữ ký cả hai bên và chụp ảnh sắc nét 4 góc. Người nhận từ chối nhận hàng và KHÔNG phải thanh toán bất kỳ khoản tiền nào (kể cả COD và cước phí).\n` +
+        `- Bước 2 (Hạn mức bồi thường):\n` +
+        `  * Gói Tiêu chuẩn (không mua bảo hiểm): Bồi thường tối đa 04 lần cước vận chuyển thực tế, không vượt quá 1.000.000 VNĐ/đơn hàng (Khoản 3 Điều 25 Luật Bưu chính).\n` +
+        `  * Gói Bảo hiểm khai giá: Bồi thường 100% giá trị thiệt hại thực tế theo hóa đơn VAT/chứng từ, HẠN MỨC TRẦN TỐI ĐA 30.000.000 VNĐ/đơn hàng. Đơn trên 30 triệu phải ký hợp đồng bảo hiểm riêng với PTI/Bảo Việt.\n` +
+        `- Bước 3 (Hư hỏng một phần): Bồi thường toàn bộ chi phí sửa chữa thay thế linh kiện chính hãng theo báo giá trung tâm bảo hành ủy quyền hoặc theo tỷ lệ giám định thực tế.\n` +
+        `- Bước 4 (Điều kiện loại trừ hàng dễ vỡ): Hàng dễ vỡ bắt buộc phải đóng gói đúng quy chuẩn (bọc xốp hơi 3-5 lớp, cách thành thùng 5cm, dán tem Dễ Vỡ). Nếu người gửi tự đóng gói sai quy chuẩn sẽ bị từ chối bồi thường do lỗi chủ quan của người gửi.\n` +
+        `- Bước 5 (Thời hạn xử lý): Thẩm định hồ sơ trong vòng 24h - 48h, hoàn tất chuyển khoản chi trả bồi thường trong 03 - 05 ngày làm việc.\n`;
+    }
+
     // Kiểm tra ý định kết nối chuyên viên CSKH con người hoặc giục giao hàng khẩn cấp (AI Handover & Expedite Delivery)
     const isEscalationQuery =
       normalizedQ.includes('gap nhan vien') ||

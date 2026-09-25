@@ -113,10 +113,37 @@ export class VectorStoreService implements OnModuleInit {
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/đ/g, 'd');
 
-    const keyTerms = normalizedQuery
-      .split(/\s+/)
-      .filter((w) => w.length > 2 && !['cho', 'cua', 'nay', 'voi', 'khi', 'duoc', 'trong'].includes(w));
+    const rawTerms = normalizedQuery
+      .split(/[^a-z0-9]+/)
+      .filter((w) => w.length >= 2 && !['cho', 'cua', 'nay', 'voi', 'khi', 'duoc', 'trong', 'thi', 'sao', 'la', 'nhu'].includes(w));
 
+    // Mở rộng từ điển đồng nghĩa Logistics (Thesaurus Expansion)
+    const SYNONYMS: Record<string, string[]> = {
+      hong: ['hu hong', 'be vo', 'mop meo', 'thiet hai', 'boi thuong', 'den bu', 'dong kiem', 'bien ban bat thuong', 'bao hiem', 'irregularity'],
+      hu: ['hu hong', 'be vo', 'mop meo', 'thiet hai', 'boi thuong', 'den bu'],
+      vo: ['be vo', 'hu hong', 'hang de vo', 'fragile', 'dong goi', 'xop hoi', '5cm', 'boi thuong', 'bien ban'],
+      be: ['be vo', 'hu hong', 'dong kiem', 'boi thuong', 'bien ban'],
+      mop: ['mop meo', 'be vo', 'hu hong', 'bien ban bat thuong'],
+      mat: ['that lac', 'mat hang', 'lost', 'mat tich', 'den bu 100%'],
+      lac: ['that lac', 'mat hang', 'lost'],
+      bom: ['tu choi nhan', 'chuyen hoan', 'cuoc hoan', 'bom hang', 'ndr'],
+      den: ['boi thuong', 'den bu', 'han muc', '100%', '30 trieu', '4 lan cuoc', 'clm'],
+      cuoc: ['cuoc phi', 'bang gia', 'tinh cuoc', 'du toan', 'iata'],
+      kho: ['luu kho', 'ton kho', 'qua han', 'vo chu', 'dieu 18', 'dieu 28'],
+      cod: ['tien thu ho', 'doi soat', 'tran no', '15 trieu', 'khoa app'],
+      bao: ['bao hiem', 'khai gia', 'toan dien', '0.5%', '1.0%', '30 trieu'],
+    };
+
+    const expandedTerms = new Set<string>(rawTerms);
+    for (const t of rawTerms) {
+      if (SYNONYMS[t]) {
+        for (const syn of SYNONYMS[t]) {
+          expandedTerms.add(syn);
+        }
+      }
+    }
+
+    const keyTerms = Array.from(expandedTerms);
     const matches: SearchMatch[] = [];
 
     for (const chunk of this.indexData.chunks) {
@@ -125,9 +152,9 @@ export class VectorStoreService implements OnModuleInit {
       }
       const vectorScore = cosineSimilarity(queryVector, chunk.embedding);
 
-      // Keyword term matching boost
+      // Keyword & Synonym term matching boost
       let keywordBonus = 0;
-      const chunkNorm = (chunk.content + ' ' + chunk.sectionTitle)
+      const chunkNorm = (chunk.content + ' ' + chunk.sectionTitle + ' ' + chunk.sourceFile)
         .toLowerCase()
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
@@ -140,10 +167,10 @@ export class VectorStoreService implements OnModuleInit {
         }
       }
       if (keyTerms.length > 0) {
-        keywordBonus = Math.min(0.25, (termHits / keyTerms.length) * 0.25);
+        keywordBonus = Math.min(0.35, (termHits / keyTerms.length) * 0.35);
       }
 
-      const totalScore = vectorScore * 0.75 + keywordBonus;
+      const totalScore = vectorScore * 0.7 + keywordBonus;
       if (totalScore >= minScore) {
         matches.push({ chunk, score: totalScore });
       }
