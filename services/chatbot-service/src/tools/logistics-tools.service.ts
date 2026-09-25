@@ -9,6 +9,7 @@ export interface TrackingResult {
   senderCity?: string;
   senderAddress?: string;
   receiverName?: string;
+  receiverPhone?: string;
   receiverCity?: string;
   receiverAddress?: string;
   itemName?: string;
@@ -18,6 +19,30 @@ export interface TrackingResult {
   estimatedDelivery?: string;
   createdAt?: string;
   timeline: { time: string; status: string; description: string }[];
+  isMasked?: boolean;
+  notFoundMessage?: string;
+}
+
+function maskVietnameseName(name?: string): string {
+  if (!name) return 'Khách hàng';
+  const parts = name.trim().split(/\s+/);
+  return parts
+    .map((p) => (p.length > 2 ? p[0] + '*'.repeat(p.length - 2) + p[p.length - 1] : p[0] + '*'))
+    .join(' ');
+}
+
+function maskPhone(phone?: string): string {
+  if (!phone) return '';
+  return phone.replace(/(\d{3,4})\d{3,4}(\d{3})/, '$1****$2');
+}
+
+function maskAddress(addr?: string): string {
+  if (!addr) return '';
+  const parts = addr.split(/,\s*/);
+  if (parts.length > 2) {
+    return '***, ' + parts.slice(-2).join(', ');
+  }
+  return '***, ' + addr;
 }
 
 export interface PricingResult {
@@ -51,10 +76,11 @@ export class LogisticsToolsService {
 
   /**
    * Tra cứu hành trình bưu kiện thời gian thực (Real-time Shipment Tracking)
+   * Có cơ chế Privacy Masking cho người dùng vãng lai chưa đăng nhập
    */
-  public async trackShipment(trackingNumber: string): Promise<TrackingResult> {
+  public async trackShipment(trackingNumber: string, isGuest = true): Promise<TrackingResult> {
     const cleanTracking = trackingNumber.trim().toUpperCase();
-    this.logger.log(`Tool trackShipment invoked for: ${cleanTracking}`);
+    this.logger.log(`Tool trackShipment invoked for: ${cleanTracking} (isGuest: ${isGuest})`);
 
     try {
       // 1. Thử lấy thông tin chi tiết từ shipment-service
@@ -87,85 +113,121 @@ export class LogisticsToolsService {
       } catch {}
 
       if (shipData || currentTracking) {
+        const payload = currentTracking?.viewPayload || {};
         const meta = shipData?.metadata || {};
-        const sender = meta.sender || {};
-        const receiver = meta.receiver || {};
-        const pkg = meta.package || {};
+        const sender = payload.sender || meta.sender || {};
+        const receiver = payload.receiver || meta.receiver || {};
+        const pkg = payload.package || meta.package || {};
 
         const status = currentTracking?.currentStatusCode || shipData?.currentStatus || 'IN_TRANSIT';
         const statusText =
           currentTracking?.currentStatus ||
-          currentTracking?.viewPayload?.display?.current_status_label_vi ||
+          payload?.display?.current_status_label_vi ||
           status;
         const currentLocation =
           currentTracking?.currentLocationText ||
-          meta.location?.current ||
-          meta.hub?.currentCode ||
+          payload.location?.current ||
           'Đang cập nhật';
 
-        const timeline =
-          timelineEvents.length > 0
-            ? timelineEvents.map((t: any) => ({
-                time: t.occurredAt ? new Date(t.occurredAt).toLocaleString('vi-VN') : '',
-                status: t.statusAfterEventCode || t.eventTypeCode || '',
-                description: t.note || t.locationText || t.eventTypeName || 'Cập nhật trạng thái',
-              }))
-            : [
-                {
-                  time: shipData?.createdAt
-                    ? new Date(shipData.createdAt).toLocaleString('vi-VN')
-                    : 'Gần đây',
-                  status: 'CREATED',
-                  description: 'Đã tạo đơn hàng thành công trên hệ thống',
-                },
-              ];
+        let timeline: { time: string; status: string; description: string }[] = [];
+        if (payload.timeline && Array.isArray(payload.timeline) && payload.timeline.length > 0) {
+          timeline = payload.timeline.map((t: any) => ({
+            time: t.time ? new Date(t.time).toLocaleString('vi-VN') : '',
+            status: t.type || '',
+            description: t.desc || t.location || 'Cập nhật trạng thái',
+          }));
+        } else if (timelineEvents.length > 0) {
+          timeline = timelineEvents.map((t: any) => ({
+            time: t.occurredAt ? new Date(t.occurredAt).toLocaleString('vi-VN') : '',
+            status: t.statusAfterEventCode || t.eventTypeCode || '',
+            description: t.note || t.locationText || t.eventTypeName || 'Cập nhật trạng thái',
+          }));
+        } else {
+          timeline = [
+            {
+              time: shipData?.createdAt
+                ? new Date(shipData.createdAt).toLocaleString('vi-VN')
+                : 'Gần đây',
+              status: 'CREATED',
+              description: 'Đã tạo đơn hàng thành công trên hệ thống',
+            },
+          ];
+        }
+
+        const senderName = isGuest ? maskVietnameseName(sender.name) : sender.name;
+        const receiverName = isGuest ? maskVietnameseName(receiver.name) : receiver.name;
+        const receiverPhone = isGuest ? maskPhone(receiver.phone) : receiver.phone;
+        const receiverAddress = isGuest
+          ? maskAddress(receiver.address || receiver.addressDetail)
+          : (receiver.address || receiver.addressDetail);
+        const senderAddress = isGuest
+          ? maskAddress(sender.address || sender.addressDetail)
+          : (sender.address || sender.addressDetail);
 
         return {
           found: true,
           trackingNumber: cleanTracking,
           status,
           statusText,
-          senderName: sender.name,
+          senderName,
           senderCity: sender.province,
-          senderAddress: sender.address || sender.addressDetail,
-          receiverName: receiver.name,
+          senderAddress,
+          receiverName,
+          receiverPhone,
           receiverCity: receiver.province,
-          receiverAddress: receiver.address || receiver.addressDetail,
-          itemName: pkg.itemName || pkg.itemType || 'Hàng hóa bưu gửi',
-          weightKg: pkg.weightKg,
-          codAmount: meta.codAmount ?? pkg.codAmount,
+          receiverAddress,
+          itemName: isGuest ? 'Bưu phẩm tiêu chuẩn' : (pkg.itemName || pkg.itemType || 'Hàng hóa bưu gửi'),
+          weightKg: payload.weightKg || pkg.weightKg || 0.5,
+          codAmount: payload.codAmount ?? meta.codAmount ?? pkg.codAmount,
           currentLocation,
           estimatedDelivery: '18:00 Ngày mai',
           createdAt: shipData?.createdAt
             ? new Date(shipData.createdAt).toLocaleString('vi-VN')
             : undefined,
           timeline,
+          isMasked: isGuest,
         };
       }
     } catch (err) {
-      this.logger.warn(`Failed to query microservices: ${(err as Error).message}. Using mock response.`);
+      this.logger.warn(`Failed to query microservices: ${(err as Error).message}`);
     }
 
-    // Mock response fallback khi service offline hoặc là mã demo NX-88992211
+    // Chỉ dùng Mock response khi người dùng tra cứu đúng mã demo hệ thống NX-88992211
+    if (cleanTracking === 'NX-88992211' || cleanTracking === 'DEMO-TRACK') {
+      return {
+        found: true,
+        trackingNumber: cleanTracking,
+        status: 'IN_TRANSIT',
+        statusText: 'Đang trung chuyển qua Hub Đà Nẵng',
+        senderName: isGuest ? 'Shop T*** C***' : 'Shop Thời Trang Coolmate',
+        senderCity: 'TP. Hồ Chí Minh',
+        receiverName: isGuest ? 'A** Hoàng L***' : 'Anh Hoàng Long',
+        receiverPhone: isGuest ? '0909****88' : '0909112288',
+        receiverAddress: isGuest ? '***, Quận Cầu Giấy, Hà Nội' : 'Số 18 Cầu Giấy, Hà Nội',
+        receiverCity: 'Hà Nội',
+        itemName: isGuest ? 'Bưu phẩm tiêu chuẩn' : 'Áo khoác gió cao cấp',
+        codAmount: 250000,
+        currentLocation: 'Hub Đà Nẵng (Quận Liên Chiểu)',
+        estimatedDelivery: '18:00 Ngày mai',
+        timeline: [
+          { time: '14/09 09:30', status: 'PICKED_UP', description: 'Bưu tá đã lấy hàng tại Shop' },
+          { time: '14/09 14:00', status: 'HUB_IN', description: 'Đã nhập Hub Tân Bình' },
+          { time: '14/09 21:00', status: 'LINEHAUL_DISPATCH', description: 'Đang chuyển xe tải liên tỉnh Bắc - Nam' },
+          { time: '15/09 06:15', status: 'HUB_IN', description: 'Đã nhập kho trung chuyển Đà Nẵng' },
+        ],
+        isMasked: isGuest,
+      };
+    }
+
+    // Nếu không tìm thấy mã trong DB và không phải mã demo -> Tuyệt đối không phịa đơn hàng!
     return {
-      found: true,
+      found: false,
       trackingNumber: cleanTracking,
-      status: 'IN_TRANSIT',
-      statusText: 'Đang trung chuyển qua Hub Đà Nẵng',
-      senderName: 'Shop Thời Trang Coolmate',
-      senderCity: 'TP. Hồ Chí Minh',
-      receiverName: 'Anh Hoàng Long',
-      receiverCity: 'Hà Nội',
-      itemName: 'Áo khoác gió cao cấp',
-      codAmount: 250000,
-      currentLocation: 'Hub Đà Nẵng (Quận Liên Chiểu)',
-      estimatedDelivery: '18:00 Ngày mai',
-      timeline: [
-        { time: '14/09 09:30', status: 'PICKED_UP', description: 'Bưu tá đã lấy hàng tại Shop' },
-        { time: '14/09 14:00', status: 'HUB_IN', description: 'Đã nhập Hub Tân Bình' },
-        { time: '14/09 21:00', status: 'LINEHAUL_DISPATCH', description: 'Đang chuyển xe tải liên tỉnh Bắc - Nam' },
-        { time: '15/09 06:15', status: 'HUB_IN', description: 'Đã nhập kho trung chuyển Đà Nẵng' },
-      ],
+      status: 'NOT_FOUND',
+      statusText: 'Không tìm thấy bưu phẩm',
+      currentLocation: 'Không xác định',
+      timeline: [],
+      notFoundMessage: `Hệ thống không tìm thấy bưu phẩm có mã vận đơn "${cleanTracking}". Bạn vui lòng kiểm tra lại tính chính xác của mã vận đơn hoặc liên hệ người gửi/bưu cục gửi hàng để được hỗ trợ.`,
     };
   }
 
@@ -177,46 +239,45 @@ export class LogisticsToolsService {
     isUserSpecific: boolean;
     shipment?: any;
     tracking?: TrackingResult;
+    notFoundMessage?: string;
   }> {
     this.logger.log(`Tool getLatestShipment invoked for userId: ${userId || 'anonymous'}`);
-    try {
-      if (userId) {
-        // Query danh sách đơn gửi của chính khách hàng qua endpoint /shipments/sent
-        const queryUrl = `${this.shipmentServiceUrl}/shipments/sent?limit=1&userId=${encodeURIComponent(userId)}`;
-        const res = await fetch(queryUrl, { signal: AbortSignal.timeout(3000) });
-        if (res.ok) {
-          const data = await res.json();
-          const items = Array.isArray(data) ? data : (data?.items || []);
-          if (items.length > 0) {
-            const latest = items[0];
-            const tracking = await this.trackShipment(latest.code);
-            return {
-              found: true,
-              isUserSpecific: true,
-              shipment: latest,
-              tracking,
-            };
-          }
-        }
-        // Đã đăng nhập nhưng chưa có đơn hàng nào
-        return {
-          found: false,
-          isUserSpecific: true,
-        };
-      }
 
-      // Khách vãng lai (chưa đăng nhập) -> Không trả về đơn của người khác
+    // Khách vãng lai (chưa đăng nhập) -> Tuyệt đối không trả về đơn hàng của người khác!
+    if (!userId || userId === 'anonymous') {
       return {
         found: false,
         isUserSpecific: false,
+        notFoundMessage: 'Bạn chưa đăng nhập tài khoản. Vui lòng đăng nhập hoặc cung cấp mã vận đơn cụ thể để hệ thống tra cứu an toàn.',
       };
+    }
+
+    try {
+      // Query danh sách đơn gửi của chính khách hàng qua endpoint /shipments/sent
+      const queryUrl = `${this.shipmentServiceUrl}/shipments/sent?limit=1&userId=${encodeURIComponent(userId)}`;
+      const res = await fetch(queryUrl, { signal: AbortSignal.timeout(3000) });
+      if (res.ok) {
+        const data = await res.json();
+        const items = Array.isArray(data) ? data : (data?.items || []);
+        if (items.length > 0) {
+          const latest = items[0];
+          const tracking = await this.trackShipment(latest.code, false);
+          return {
+            found: true,
+            isUserSpecific: true,
+            shipment: latest,
+            tracking,
+          };
+        }
+      }
     } catch (err: any) {
-      this.logger.warn(`Failed to fetch latest shipment: ${err.message}`);
+      this.logger.warn(`Failed to fetch latest shipment for user ${userId}: ${err.message}`);
     }
 
     return {
       found: false,
-      isUserSpecific: Boolean(userId),
+      isUserSpecific: true,
+      notFoundMessage: `Tài khoản ${userId} hiện chưa phát sinh đơn gửi nào trên hệ thống Nexus Logistics.`,
     };
   }
 

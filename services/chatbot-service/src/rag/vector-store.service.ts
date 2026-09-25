@@ -81,7 +81,7 @@ export class VectorStoreService implements OnModuleInit {
     this.logger.log(`Persisted ${chunks.length} chunks to ${this.indexPath}`);
   }
 
-  public search(queryVector: number[], topK = 3, minScore = 0.2): SearchMatch[] {
+  public search(queryVector: number[], topK = 5, minScore = 0.18): SearchMatch[] {
     if (!this.indexData.chunks || this.indexData.chunks.length === 0) {
       return [];
     }
@@ -95,6 +95,57 @@ export class VectorStoreService implements OnModuleInit {
       const score = cosineSimilarity(queryVector, chunk.embedding);
       if (score >= minScore) {
         matches.push({ chunk, score });
+      }
+    }
+
+    matches.sort((a, b) => b.score - a.score);
+    return matches.slice(0, topK);
+  }
+
+  public hybridSearch(queryVector: number[], queryText: string, topK = 5, minScore = 0.15): SearchMatch[] {
+    if (!this.indexData.chunks || this.indexData.chunks.length === 0) {
+      return [];
+    }
+
+    const normalizedQuery = queryText
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd');
+
+    const keyTerms = normalizedQuery
+      .split(/\s+/)
+      .filter((w) => w.length > 2 && !['cho', 'cua', 'nay', 'voi', 'khi', 'duoc', 'trong'].includes(w));
+
+    const matches: SearchMatch[] = [];
+
+    for (const chunk of this.indexData.chunks) {
+      if (!chunk.embedding || chunk.embedding.length !== queryVector.length) {
+        continue;
+      }
+      const vectorScore = cosineSimilarity(queryVector, chunk.embedding);
+
+      // Keyword term matching boost
+      let keywordBonus = 0;
+      const chunkNorm = (chunk.content + ' ' + chunk.sectionTitle)
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/g, 'd');
+
+      let termHits = 0;
+      for (const term of keyTerms) {
+        if (chunkNorm.includes(term)) {
+          termHits++;
+        }
+      }
+      if (keyTerms.length > 0) {
+        keywordBonus = Math.min(0.25, (termHits / keyTerms.length) * 0.25);
+      }
+
+      const totalScore = vectorScore * 0.75 + keywordBonus;
+      if (totalScore >= minScore) {
+        matches.push({ chunk, score: totalScore });
       }
     }
 
