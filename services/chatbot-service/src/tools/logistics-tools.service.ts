@@ -453,5 +453,49 @@ export class LogisticsToolsService {
       message: `Hệ thống đã khởi tạo phiếu yêu cầu hỗ trợ trực tiếp [${ticketId}]. Chuyên viên CSKH Nexus Logistics đang được kết nối trong vòng 45 giây. Quý khách cũng có thể liên hệ tổng đài 1900-1234 để được xử lý khẩn cấp.`,
     };
   }
+
+  /**
+   * Tra cứu chính sách thời hạn lưu kho tồn đọng & Quy trình xử lý bưu gửi vô chủ (Điều 18 & 28 Luật Bưu chính)
+   */
+  public getStorageAgingPolicy() {
+    return {
+      legalBasis: 'Điều 18 & Điều 28 Luật Bưu chính Việt Nam số 49/2010/QH12',
+      agingLimits: {
+        sortingHub: 'Tối đa 12 - 24 giờ (Nguyên tắc Zero Backlog, không tồn qua ca)',
+        deliveryHubPending: 'Tối đa 03 - 05 ngày (Tối đa 03 lần phát lại; nếu khách hẹn thì tối đa không quá 07 ngày)',
+        returnHubStaging: 'Tối đa 24 - 48 giờ (Phải đóng bao chuyển hoàn về bưu cục gốc)',
+        originHubReturnHolding: 'Tối đa 07 - 14 ngày (Chờ người gửi nhận lại bưu phẩm hoàn)',
+      },
+      alertMechanisms: {
+        holdingHubAlert: 'Hub đang giữ hàng nhận Cảnh báo Vàng khi tồn >= 48h, Cảnh báo Đỏ vi phạm SLA khi tồn >= 72h trên Ops Web & App Kiểm kê bưu tá',
+        senderNotification: 'Người gửi nhận thông báo đẩy qua Merchant Web, App Customer và Webhook ngay khi giao thất bại lần 1, lần 2 và trước 48h khi bị chuyển hoàn / chuyển kho vô chủ',
+      },
+      overdueAndDeadLetterWorkflow: {
+        step1: 'Sau 14 ngày lưu kho tại Hub gốc mà Shop không nhận hoặc từ chối nhận hoàn -> Chuyển vào Kho bưu gửi vô chủ tập trung (Dead-Letter Depot).',
+        step2: 'Lưu trữ bảo quản pháp lý bắt buộc: 06 THÁNG đối với hàng thông thường; 24 - 48 GIỜ đối với hàng tươi sống mau hỏng.',
+        step3: 'Thành lập Hội đồng xử lý hàng vô chủ (Pháp chế + Kiểm toán + Giám đốc Khai thác) lập biên bản mở niêm phong dưới camera 360.',
+        step4: 'Tiêu hủy đối với hàng cấm/hỏng; Bán đấu giá công khai đối với hàng hóa thương mại còn giá trị.',
+        step5: 'Tiền đấu giá: Khấu trừ phí lưu kho 6 tháng -> Khấu trừ cước nợ chiều đi/về -> Phần tiền dư còn lại nộp vào Ngân sách Nhà nước hoặc Quỹ rủi ro bưu chính sau thời hiệu luật định.',
+      },
+    };
+  }
+
+  /**
+   * Tra cứu quy hoạch dải mã vận đơn & Mã định tuyến 3 đoạn kiểu J&T
+   */
+  public getWaybillFormatPolicy() {
+    return {
+      numberSeries: {
+        merchant101: '101xxxxxxxxx (12 số): Đơn Chủ Shop B2B (tạo từ merchant-web, mã Shop 411xxxxx, có thu COD, đối soát kỳ 2-4-6)',
+        marketplace111: '111xxxxxxxxx (12 số): Đơn Sàn TMĐT / Doanh nghiệp lớn (tích hợp API Shopee, TikTok Shop, bắn webhook realtime)',
+        retail333: '333xxxxxxxxx (12 số): Đơn Khách hàng cá nhân lẻ / Gửi tại quầy (tạo từ customer-mobile, trả trước)',
+        return222: '222xxxxxxxxx (12 số): Đơn Chuyển hoàn / Hàng hoàn (tự động cấn trừ 50% cước hoàn vào công nợ Shop)',
+      },
+      jtRoutingComparison: {
+        jtFormat: 'J&T sử dụng mã vận đơn 12 số (đầu số 84...) hoặc JT... / SPX... / TK... kèm nhãn dịch vụ EZ (Chuẩn), FAST (Nhanh), SUPER (Cao cấp).',
+        threeSegmentRoutingCode: 'Mã định tuyến 3 đoạn in chữ cực to trên tem: [Hub đích] - [Bưu cục phát] - [Mã tuyến bưu tá] (Ví dụ: SGN-01 / TB-02 / 03A) giúp công nhân phân loại siêu tốc trong 0.5s.',
+      },
+    };
+  }
 }
 

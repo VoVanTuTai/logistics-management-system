@@ -248,6 +248,33 @@ export function LoginScreen({ navigation }: Props): React.JSX.Element {
             style={styles.submitBtn}
           />
 
+          {/* QUICK DEMO ACCOUNTS HELPER */}
+          <View style={styles.demoBox}>
+            <Text style={styles.demoTitle}>Tài khoản thử nghiệm có sẵn:</Text>
+            <View style={styles.demoChipsRow}>
+              <TouchableOpacity
+                style={styles.demoChip}
+                onPress={() => {
+                  setPhone('0909000001');
+                  setPassword('password');
+                }}
+              >
+                <Text style={styles.demoChipName}>Khách Hà Nội</Text>
+                <Text style={styles.demoChipPhone}>0909000001</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.demoChip}
+                onPress={() => {
+                  setPhone('0909000002');
+                  setPassword('password');
+                }}
+              >
+                <Text style={styles.demoChipName}>Khách TP.HCM</Text>
+                <Text style={styles.demoChipPhone}>0909000002</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           <View style={styles.registerRow}>
             <Text style={styles.registerText}>Chưa có tài khoản? </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Register')}>
@@ -344,10 +371,48 @@ const styles = StyleSheet.create({
   submitBtn: {
     marginTop: spacing.xs,
   },
+  demoBox: {
+    marginTop: spacing.lg,
+    padding: spacing.sm,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  demoTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748B',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  demoChipsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  demoChip: {
+    backgroundColor: '#EFF6FF',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    alignItems: 'center',
+  },
+  demoChipName: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#1D4ED8',
+  },
+  demoChipPhone: {
+    fontSize: 10,
+    color: '#3B82F6',
+  },
   registerRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: spacing.xl,
+    marginTop: spacing.lg,
   },
   registerText: {
     fontSize: 14,

@@ -137,7 +137,7 @@ export class ChatService {
         `- Ngày hoàn tất phán quyết: ${claimRes.adjudicatedAt || '15/09/2026'}\n`;
     }
 
-    // Kiểm tra ý định kết nối chuyên viên CSKH con người (AI Handover)
+    // Kiểm tra ý định kết nối chuyên viên CSKH con người hoặc giục giao hàng khẩn cấp (AI Handover & Expedite Delivery)
     const isEscalationQuery =
       normalizedQ.includes('gap nhan vien') ||
       normalizedQ.includes('noi chuyen voi nguoi') ||
@@ -148,7 +148,14 @@ export class ChatService {
       normalizedQ.includes('ho tro truc tiep') ||
       normalizedQ.includes('gap nguoi that') ||
       normalizedQ.includes('chuyen dien thoai') ||
-      normalizedQ.includes('khieu nai gap');
+      normalizedQ.includes('khieu nai gap') ||
+      normalizedQ.includes('giuc giao') ||
+      normalizedQ.includes('giuc don') ||
+      normalizedQ.includes('giao gap') ||
+      normalizedQ.includes('giao nhanh') ||
+      normalizedQ.includes('giao som') ||
+      normalizedQ.includes('tro giup') ||
+      normalizedQ.includes('ho tro don');
 
     if (isEscalationQuery) {
       toolsUsed.push('escalateToHumanAgent()');
@@ -157,13 +164,14 @@ export class ChatService {
         trackingNumber: trackingMatch ? (trackingMatch[1] ? trackingMatch[1].toUpperCase() : trackingMatch[0]) : undefined,
         reason: question,
       });
-      toolAugmentedContext += `\n[KẾT QUẢ ĐIỀU HƯỚNG CHUYỂN TIẾP CHUYÊN VIÊN CSKH CON NGƯỜI]:\n` +
+      toolAugmentedContext += `\n[KẾT QUẢ ĐIỀU HƯỚNG CHUYỂN TIẾP CHUYÊN VIÊN CSKH CON NGƯỜI & YÊU CẦU GIỤC ĐƠN KHẨN CẤP]:\n` +
         `- Mã phiếu yêu cầu hỗ trợ: ${handover.ticketId}\n` +
         `- Hàng đợi điều phối: ${handover.queue} (Ưu tiên: ${handover.priority})\n` +
         `- Hotline hỗ trợ: ${handover.hotline}\n` +
         `- Khung giờ làm việc: ${handover.operatingHours}\n` +
         `- Thời gian kết nối ước tính: ${handover.estimatedWaitTimeSeconds} giây\n` +
-        `- Thông báo hệ thống: ${handover.message}\n`;
+        `- Thông báo hệ thống: ${handover.message}\n` +
+        `- Hành động vận hành: Đã gắn cờ [ƯU TIÊN PHÁT GẤP] và gửi thông báo trực tiếp đến Bưu cục phát & Bưu tá phụ trách tuyến.\n`;
     }
 
     // Kiểm tra ý định tính cước chuyển hoàn (Return Fee)
@@ -177,6 +185,63 @@ export class ChatService {
       toolAugmentedContext += `\n[CHÍNH SÁCH CƯỚC CHUYỂN HOÀN RULE-BASED POLICY]:\n` +
         `- ${standardRes.explanation}\n` +
         `- ${vipRes.explanation}\n`;
+    }
+
+    // Kiểm tra ý định hỏi về Thời gian lưu kho, tồn kho, quá hạn, hàng vô chủ (Storage Aging & Dead-Letter Parcel)
+    const isStorageAgingQuery =
+      normalizedQ.includes('ton kho') ||
+      normalizedQ.includes('luu kho') ||
+      normalizedQ.includes('qua han') ||
+      normalizedQ.includes('vo chu') ||
+      normalizedQ.includes('toi da bao lau') ||
+      normalizedQ.includes('giu hang') ||
+      normalizedQ.includes('tieu huy') ||
+      normalizedQ.includes('dau gia') ||
+      normalizedQ.includes('canh bao hub') ||
+      (normalizedQ.includes('hang') && (normalizedQ.includes('ton') || normalizedQ.includes('het han') || normalizedQ.includes('bo quen')));
+
+    if (isStorageAgingQuery) {
+      toolsUsed.push('getStorageAgingPolicy(Articles 18 & 28 Postal Law)');
+      const policy = this.toolsService.getStorageAgingPolicy();
+      toolAugmentedContext += `\n[QUY ĐỊNH THỜI HẠN LƯU KHO & XỬ LÝ HÀNG QUÁ HẠN / VÔ CHỦ - ${policy.legalBasis}]:\n` +
+        `- Thời hạn lưu kho tối đa theo từng mắt xích:\n` +
+        `  * Tại Hub trung chuyển: ${policy.agingLimits.sortingHub}\n` +
+        `  * Tại Bưu cục phát chờ giao lại: ${policy.agingLimits.deliveryHubPending}\n` +
+        `  * Tại Bưu cục gom hàng hoàn: ${policy.agingLimits.returnHubStaging}\n` +
+        `  * Tại Bưu cục trả hàng cho Shop: ${policy.agingLimits.originHubReturnHolding}\n` +
+        `- Cơ chế cảnh báo hai chiều:\n` +
+        `  * Cảnh báo Hub đang giữ hàng: ${policy.alertMechanisms.holdingHubAlert}\n` +
+        `  * Thông báo người gửi (Shop/Khách): ${policy.alertMechanisms.senderNotification}\n` +
+        `- Quy trình 5 bước xử lý hàng quá hạn & vô chủ (Điều 18 & 28 Luật Bưu chính 2010):\n` +
+        `  * Bước 1: ${policy.overdueAndDeadLetterWorkflow.step1}\n` +
+        `  * Bước 2: ${policy.overdueAndDeadLetterWorkflow.step2}\n` +
+        `  * Bước 3: ${policy.overdueAndDeadLetterWorkflow.step3}\n` +
+        `  * Bước 4: ${policy.overdueAndDeadLetterWorkflow.step4}\n` +
+        `  * Bước 5 (Dòng tiền): ${policy.overdueAndDeadLetterWorkflow.step5}\n`;
+    }
+
+    // Kiểm tra ý định hỏi về Dải mã đơn, Phân loại mã vận đơn, Cách phân biệt đơn J&T
+    const isWaybillFormatQuery =
+      normalizedQ.includes('ma don') ||
+      normalizedQ.includes('ma van don') ||
+      normalizedQ.includes('j&t') ||
+      normalizedQ.includes('jt') ||
+      normalizedQ.includes('dai so') ||
+      normalizedQ.includes('phan biet don') ||
+      normalizedQ.includes('dinh tuyen');
+
+    if (isWaybillFormatQuery) {
+      toolsUsed.push('getWaybillFormatPolicy(Waybill Prefix & 3-Segment Routing)');
+      const waybillPolicy = this.toolsService.getWaybillFormatPolicy();
+      toolAugmentedContext += `\n[QUY HOẠCH DẢI MÃ VẬN ĐƠN & MÃ ĐỊNH TUYẾN 3 ĐOẠN (SO SÁNH VỚI J&T)]:\n` +
+        `- Quy hoạch dải 12 chữ số theo kênh người gửi trong hệ sinh thái Nexus:\n` +
+        `  * Đầu 101: ${waybillPolicy.numberSeries.merchant101}\n` +
+        `  * Đầu 111: ${waybillPolicy.numberSeries.marketplace111}\n` +
+        `  * Đầu 333: ${waybillPolicy.numberSeries.retail333}\n` +
+        `  * Đầu 222: ${waybillPolicy.numberSeries.return222}\n` +
+        `- Tiêu chuẩn nhận diện và mã định tuyến kiểu J&T Express:\n` +
+        `  * Nhận diện J&T: ${waybillPolicy.jtRoutingComparison.jtFormat}\n` +
+        `  * Mã định tuyến 3 đoạn: ${waybillPolicy.jtRoutingComparison.threeSegmentRoutingCode}\n`;
     }
 
     // Kiểm tra ý định tính cước / hỏi giá cước / bưu gửi có trọng lượng, kích thước, hoặc tuyến đường
@@ -378,12 +443,14 @@ Quy tắc trả lời:
 1. Ngôn ngữ: Tiếng Việt chuẩn mực, lịch sự, thân thiện, rõ ràng.
 2. Căn cứ: Trả lời DỰA TRÊN NGỮ CẢNH (Context) được cung cấp. Tuyệt đối không tự bịa đặt thông tin.
 3. Khi trả lời về cước phí hoặc đền bù, hãy nêu rõ căn cứ chính sách hoặc công thức bồi thường. Nếu có bảng dự toán cước, hãy báo giá đầy đủ cả gói Tiêu chuẩn và Nhanh cùng cước hoàn dự kiến.
-4. Nếu khách hàng yêu cầu gặp nhân viên tư vấn, khiếu nại gay gắt hoặc có thông tin chuyển tiếp (Escalate to Human Agent), hãy cung cấp đầy đủ Mã phiếu hỗ trợ (Ticket ID), số tổng đài Hotline 1900-1234 và cam kết kết nối chuyên viên nhanh chóng.
-5. QUY TẮC ĐỊNH DẠNG THẨM MỸ (RẤT QUAN TRỌNG):
+4. Khi trả lời về thời gian lưu kho, hàng tồn đọng, quá hạn hoặc bưu gửi vô chủ, hãy căn cứ Điều 18 & Điều 28 Luật Bưu chính 2010 (thời hạn lưu kho tối đa từng loại Hub, 6 tháng lưu kho bảo quản bắt buộc cho bưu gửi vô chủ, quy trình bán đấu giá công khai hoặc tiêu hủy, cấn trừ cước nợ và nộp ngân sách/quỹ rủi ro, cùng cơ chế cảnh báo tự động cho Hub giữ hàng và Người gửi).
+5. Khi trả lời về mã vận đơn và phân biệt đơn kiểu J&T Express, hãy giải thích rõ dải số 12 chữ số (101 Merchant B2B, 111 Sàn TMĐT/API, 333 Khách cá nhân lẻ, 222 Hàng chuyển hoàn) và hệ thống mã định tuyến 3 đoạn (Hub đích - Bưu cục phát - Tuyến bưu tá) giúp phân loại siêu tốc 0.5s.
+6. Nếu khách hàng yêu cầu gặp nhân viên tư vấn, khiếu nại gay gắt hoặc có thông tin chuyển tiếp (Escalate to Human Agent), hãy cung cấp đầy đủ Mã phiếu hỗ trợ (Ticket ID), số tổng đài Hotline 1900-1234 và cam kết kết nối chuyên viên nhanh chóng.
+7. QUY TẮC ĐỊNH DẠNG THẨM MỸ (RẤT QUAN TRỌNG):
 - TUYỆT ĐỐI KHÔNG dùng dấu nháy đơn ngược (backtick \`) bao quanh bất kỳ từ ngữ nào (ví dụ KHÔNG viết \`PICKED_UP\` hay \`30002004\`). Hãy viết thẳng hoặc đặt trong ngoặc đơn thông thường.
 - TUYỆT ĐỐI KHÔNG dùng ba dấu sao (***).
 - TUYỆT ĐỐI KHÔNG xuống dòng lẻ loi ngay sau dấu đầu dòng (không bao giờ để một dòng chỉ có • hoặc - hoặc *). Dấu gạch đầu dòng và nội dung PHẢI nằm trên cùng một dòng: ví dụ "• Mã vận đơn: 333423979726".
-- Sử dụng các icon emoji trực quan (📦, 📍, 👤, 💰, 🚚, ⏰,...) để câu trả lời sinh động, chuyên nghiệp và thân thiện.`;
+- Sử dụng các icon emoji trực quan (📦, 📍, 👤, 💰, 🚚, ⏰, 🏬, ⚖️,...) để câu trả lời sinh động, chuyên nghiệp và thân thiện.`;
 
     const userPrompt = `DỮ LIỆU NGỮ CẢNH HỆ THỐNG CUNG CẤP:
 ${context || '(Không tìm thấy tài liệu phù hợp trực tiếp)'}
@@ -532,6 +599,8 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
         .replace(/\[THÔNG TIN ĐƠN HÀNG MỚI TẠO GẦN NHẤT CỦA BẠN(.*?)\]:/g, '📦 **Đơn hàng mới tạo gần nhất của bạn**:')
         .replace(/\[TIẾN ĐỘ XỬ LÝ HỒ SƠ BỒI THƯỜNG MÃ (.*?)\]:/g, '🛡️ **Hồ sơ khiếu nại bồi thường $1**:')
         .replace(/\[BẢNG BÁO GIÁ CƯỚC THỜI GIAN THỰC TỪ MICROSERVICE PRICING-SERVICE\]:/g, '💰 **Dự toán cước phí vận chuyển**:')
+        .replace(/\[QUY ĐỊNH THỜI HẠN LƯU KHO & XỬ LÝ HÀNG QUÁ HẠN \/ VÔ CHỦ - (.*?)\]:/g, '🏬 **Quy định thời hạn lưu kho & Xử lý hàng quá hạn, vô chủ ($1)**:')
+        .replace(/\[QUY HOẠCH DẢI MÃ VẬN ĐƠN & MÃ ĐỊNH TUYẾN 3 ĐOẠN (.*?)\]:/g, '🏷️ **Quy hoạch dải mã vận đơn & Mã định tuyến 3 đoạn $1**:')
         .replace(/\[KẾT QUẢ TRA CỨU\]:\s*/g, 'ℹ️ ')
         .trim();
 

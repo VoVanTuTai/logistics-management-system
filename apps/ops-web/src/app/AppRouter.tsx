@@ -34,6 +34,7 @@ function lazyRoutePage<T extends React.ComponentType<any>>(
 
 import { SCOPE_OPTIONS, resolveAllowedScopes, resolveOpsTier, useOpsScopeStore, type ScopeLevel } from '../store/opsScopeStore';
 import { canAccessOpsFeature, resolveOpsActor } from '../features/permissions/opsPermissions';
+import { useHubScope } from '../hooks/useHubScope';
 
 const MasterOpsCommandCenterPage = lazy(() =>
   import('../pages/dashboard/MasterOpsCommandCenterPage').then((module) => ({
@@ -560,6 +561,7 @@ function DashboardLayout(): React.JSX.Element {
     || pathMatches(location.pathname, routePaths.analyticsDashboard)
     || location.pathname.startsWith('/app/coming-soon');
 
+  const hubScope = useHubScope();
   const canViewHq = canAccessOpsFeature(session?.user, 'nav.hq-command-center');
   const canViewBranch = canAccessOpsFeature(session?.user, 'nav.branch-business');
   const canViewFleet = canAccessOpsFeature(session?.user, 'nav.linehaul-fleet-control');
@@ -575,6 +577,7 @@ function DashboardLayout(): React.JSX.Element {
     id: string;
     label: string;
     shortLabel: string;
+    colorTheme: 'hq' | 'warehouse' | 'dispatch' | 'linehaul' | 'quality' | 'finance';
     icon: SidebarIconName;
     to: string;
     visible?: boolean;
@@ -585,8 +588,9 @@ function DashboardLayout(): React.JSX.Element {
     () => [
       {
         id: 'hq',
-        label: 'Điều hành & Chỉ huy Vĩ mô',
-        shortLabel: 'Điều hành HQ',
+        label: 'Chỉ huy & Mạng lưới HQ',
+        shortLabel: 'Chỉ huy HQ',
+        colorTheme: 'hq',
         icon: 'hq_command',
         to: routePaths.masterOpsCommandCenter,
         visible: canViewHq,
@@ -618,9 +622,10 @@ function DashboardLayout(): React.JSX.Element {
         ],
       },
       {
-        id: 'branch',
-        label: 'Vận hành Bưu cục & Giao nhận',
-        shortLabel: 'Bưu cục',
+        id: 'branch_warehouse',
+        label: 'Kho & Vận hành Bưu cục',
+        shortLabel: 'Kho & Bưu cục',
+        colorTheme: 'warehouse',
         icon: 'branch_order_management',
         to: routePaths.shipments,
         visible: canViewBranch,
@@ -650,6 +655,29 @@ function DashboardLayout(): React.JSX.Element {
             keywords: 'tao van don tai quay khach le gui hang',
           },
           {
+            label: 'Kiểm kê tồn kho bưu cục',
+            icon: 'metrics_deadline',
+            to: routePaths.opsMetricsDeadlineInventory,
+            keywords: 'kiem ke ton kho buu cuc don ton luu kho',
+          },
+          {
+            label: 'Chốt ca cuối ngày',
+            icon: 'metrics_action',
+            to: routePaths.branchBusinessShiftClosing,
+            keywords: 'chot ca cuoi ngay ban giao ca sang chieu',
+          },
+        ],
+      },
+      {
+        id: 'branch_dispatch',
+        label: 'Điều phối Shipper & Tuyến',
+        shortLabel: 'Điều phối',
+        colorTheme: 'dispatch',
+        icon: 'shipment_dispatch',
+        to: routePaths.operationsPlatformPickupDispatch,
+        visible: canViewBranch,
+        items: [
+          {
             label: 'Điều phối lấy hàng',
             icon: 'shipment_dispatch',
             to: routePaths.operationsPlatformPickupDispatch,
@@ -673,24 +701,13 @@ function DashboardLayout(): React.JSX.Element {
             to: routePaths.courierTaskTransfer,
             keywords: 'chuyen don shipper chuyen giao dieu chuyen',
           },
-          {
-            label: 'Kiểm kê tồn kho bưu cục',
-            icon: 'metrics_deadline',
-            to: routePaths.opsMetricsDeadlineInventory,
-            keywords: 'kiem ke ton kho buu cuc don ton luu kho',
-          },
-          {
-            label: 'Chốt ca cuối ngày',
-            icon: 'metrics_action',
-            to: routePaths.branchBusinessShiftClosing,
-            keywords: 'chot ca cuoi ngay ban giao ca sang chieu',
-          },
         ],
       },
       {
         id: 'linehaul',
-        label: 'Trung chuyển & Tuyến xe',
+        label: 'Tuyến xe & Bao tải',
         shortLabel: 'Tuyến xe',
+        colorTheme: 'linehaul',
         icon: 'linehaul_transport',
         to: routePaths.linehaulTripManagement,
         visible: canViewFleet,
@@ -729,16 +746,23 @@ function DashboardLayout(): React.JSX.Element {
       },
       {
         id: 'quality',
-        label: 'Sự cố & Chất lượng Dịch vụ',
-        shortLabel: 'Chất lượng',
+        label: 'Sự cố & Đền bù / CSKH',
+        shortLabel: 'Sự cố & Đền bù',
+        colorTheme: 'quality',
         icon: 'service_proactive',
-        to: routePaths.serviceQualityProactiveActionBoard,
+        to: routePaths.claimsLiabilityManagement,
         items: [
           {
-            label: 'Radar cảnh báo SLA',
-            icon: 'service_proactive',
-            to: routePaths.serviceQualityProactiveActionBoard,
-            keywords: 'radar canh bao chu dong sla tre han',
+            label: 'Hồ sơ đền bù & Phân định',
+            icon: 'metrics_action',
+            to: routePaths.claimsLiabilityManagement,
+            keywords: 'ho so den bu phan dinh trach nhiem boi thuong hu hong mat kien ai chiu hub nao chiu',
+          },
+          {
+            label: 'Thống kê bồi thường Hub',
+            icon: 'operation_report',
+            to: routePaths.claimsHubStatistics,
+            keywords: 'thong ke boi thuong theo hub bao cao rui ro loss rate che tai',
           },
           {
             label: 'Xử lý giao thất bại (NDR)',
@@ -753,16 +777,16 @@ function DashboardLayout(): React.JSX.Element {
             keywords: 'quan ly chuyen hoan tra hang ve shop',
           },
           {
+            label: 'Radar cảnh báo SLA',
+            icon: 'service_proactive',
+            to: routePaths.serviceQualityProactiveActionBoard,
+            keywords: 'radar canh bao chu dong sla tre han',
+          },
+          {
             label: 'Hàng bất thường & Hư hỏng',
             icon: 'service_abnormal',
             to: routePaths.serviceQualityAbnormalManagement,
             keywords: 'hang bat thuong hu hong be vo bien ban',
-          },
-          {
-            label: 'Giám định đơn lạc & Log',
-            icon: 'metrics_action',
-            to: routePaths.strayShipmentInvestigation,
-            keywords: 'giam dinh don lac phan tich log vet thao tac mat kien cctv giai trinh',
           },
           {
             label: 'Trung tâm CSKH & Khiếu nại',
@@ -771,16 +795,10 @@ function DashboardLayout(): React.JSX.Element {
             keywords: 'cskh khieu nai giuc giao doi dia chi ho tro khach hang ai handover sla 24h 48h',
           },
           {
-            label: 'Hồ sơ đền bù & Phân định',
+            label: 'Giám định đơn lạc & Log',
             icon: 'metrics_action',
-            to: routePaths.claimsLiabilityManagement,
-            keywords: 'ho so den bu phan dinh trach nhiem boi thuong hu hong mat kien ai chiu hub nao chiu',
-          },
-          {
-            label: 'Thống kê bồi thường Hub',
-            icon: 'operation_report',
-            to: routePaths.claimsHubStatistics,
-            keywords: 'thong ke boi thuong theo hub bao cao rui ro loss rate che tai',
+            to: routePaths.strayShipmentInvestigation,
+            keywords: 'giam dinh don lac phan tich log vet thao tac mat kien cctv giai trinh',
           },
           {
             label: 'Tra cứu chất lượng sự cố',
@@ -792,8 +810,9 @@ function DashboardLayout(): React.JSX.Element {
       },
       {
         id: 'finance',
-        label: 'Tài chính & Đối soát',
+        label: 'Tài chính & Đối soát COD',
         shortLabel: 'Tài chính',
+        colorTheme: 'finance',
         icon: 'branch_finance_settlement',
         to: routePaths.branchBusinessFinanceCod,
         items: [
@@ -868,12 +887,20 @@ function DashboardLayout(): React.JSX.Element {
       return 'hq';
     }
     if (
+      pathMatches(location.pathname, routePaths.operationsPlatformPickupDispatch) ||
+      pathMatches(location.pathname, routePaths.operationsPlatformDeliveryDispatch) ||
+      pathMatches(location.pathname, routePaths.courierAreaAssignment) ||
+      pathMatches(location.pathname, routePaths.courierTaskTransfer)
+    ) {
+      return 'branch_dispatch';
+    }
+    if (
       pathMatches(location.pathname, routePaths.shipments) ||
       pathMatches(location.pathname, routePaths.scans) ||
       pathMatches(location.pathname, routePaths.groupBranchBusiness) ||
       pathMatches(location.pathname, routePaths.groupOperationsPlatform)
     ) {
-      return 'branch';
+      return 'branch_warehouse';
     }
     if (
       pathMatches(location.pathname, routePaths.linehaulRoot) ||
@@ -899,7 +926,8 @@ function DashboardLayout(): React.JSX.Element {
 
   const [openClusters, setOpenClusters] = useState<Record<string, boolean>>({
     hq: true,
-    branch: true,
+    branch_warehouse: true,
+    branch_dispatch: true,
     linehaul: true,
     quality: true,
     finance: true,
@@ -939,7 +967,7 @@ function DashboardLayout(): React.JSX.Element {
         ...menuClusters
           .filter((c) => c.visible !== false)
           .map((c) => ({
-            label: `${c.id === 'hq' ? '🌐 ' : c.id === 'branch' ? '🏬 ' : c.id === 'linehaul' ? '🚛 ' : c.id === 'quality' ? '🛡️ ' : '💰 '}${c.shortLabel}`,
+            label: `${c.id === 'hq' ? '🌐 ' : c.id === 'branch_warehouse' ? '🏬 ' : c.id === 'branch_dispatch' ? '🛵 ' : c.id === 'linehaul' ? '🚛 ' : c.id === 'quality' ? '🛡️ ' : '💰 '}${c.shortLabel}`,
             to: c.to,
             isActive: activeClusterId === c.id,
           })),
@@ -956,9 +984,9 @@ function DashboardLayout(): React.JSX.Element {
           isActive: pathMatches(location.pathname, routePaths.shipments),
         },
         {
-          label: 'Tracking',
-          to: routePaths.tracking,
-          isActive: pathMatches(location.pathname, routePaths.tracking),
+          label: 'Báo cáo',
+          to: routePaths.analyticsDashboard,
+          isActive: pathMatches(location.pathname, routePaths.analyticsDashboard),
         },
       ];
 
@@ -1291,6 +1319,35 @@ function DashboardLayout(): React.JSX.Element {
 
       <div className="ops-func-body">
         <aside className="ops-func-sidebar">
+          {/* Active Hub Scope Card */}
+          <div className="ops-func-sidebar-scope-card">
+            <div className="ops-func-sidebar-scope-badge-row">
+              <span className="ops-func-sidebar-scope-pill">
+                <span className="ops-func-sidebar-scope-pulse" />
+                {hubScope.actor === 'HQ_OPS'
+                  ? 'HQ TOÀN QUỐC'
+                  : hubScope.actor === 'REGIONAL_OPS'
+                    ? 'KHU VỰC MIỀN'
+                    : hubScope.actor === 'PROVINCIAL_OPS'
+                      ? 'TỈNH / THÀNH'
+                      : 'BƯU CỤC CƠ SỞ'}
+              </span>
+              <span className="ops-func-sidebar-scope-level">Cấp {hubScope.hubLevel}</span>
+            </div>
+            <div className="ops-func-sidebar-scope-hub" title={hubScope.scopeLabel}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+              <span>{hubScope.scopeLabel}</span>
+            </div>
+            <div className="ops-func-sidebar-scope-hint">
+              {hubScope.isAllSystem
+                ? 'Dữ liệu toàn quốc (51 Hub)'
+                : `Phạm vi: ${hubScope.scopedHubCodes.length || 1} Hub (Bao & Tuyến lọc tự động)`}
+            </div>
+          </div>
+
           <label className="ops-func-sidebar-search">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <circle cx="11" cy="11" r="6.5" />
@@ -1326,7 +1383,7 @@ function DashboardLayout(): React.JSX.Element {
                 const isClusterCurrent = activeClusterId === cluster.id;
 
                 return (
-                  <div key={cluster.id} className="ops-func-cluster">
+                  <div key={cluster.id} className={`ops-func-cluster ops-func-cluster--${cluster.colorTheme}`}>
                     <button
                       type="button"
                       className={`ops-func-cluster-header ${

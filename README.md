@@ -33,6 +33,7 @@
    - [3.4. Trục truyền thông sự kiện (RabbitMQ Event Bus)](#34-trục-truyền-thông-sự-kiện-rabbitmq-event-bus)
 4. [ĐẶC TẢ NGHIỆP VỤ & SƠ ĐỒ QUY TRÌNH THEO TỪNG LOẠI ĐƠN HÀNG](#4-đặc-tả-nghiệp-vụ--sơ-đồ-quy-trình-theo-từng-loại-đơn-hàng)
    - [4.0. Nguồn chân lý 19 Trạng thái Vận đơn & Máy trạng thái chuẩn hóa (The 19 Canonical State Machine)](#40-nguồn-chân-lý-19-trạng-thái-vận-đơn--máy-trạng-thái-chuẩn-hóa-the-19-canonical-state-machine)
+   - [4.0.1. Quy hoạch Dải Mã Vận Đơn (12 Số) & Mã Định Tuyến 3 Đoạn Phân Tuyến Siêu Tốc (Chuẩn J&T Express)](#401-quy-hoạch-dải-mã-vận-đơn-12-số--mã-định-tuyến-3-đoạn-phân-tuyến-siêu-tốc-chuẩn-jt-express)
    - [4.1. Đơn Tiêu Chuẩn Thu Hộ COD (Standard COD Shipment)](#41-đơn-tiêu-chuẩn-thu-hộ-cod-standard-cod-shipment)
    - [4.2. Đơn Hỏa Tốc / Nội Thành 6h - 12h (Express & Same-Day Service)](#42-đơn-hỏa-tốc--nội-thành-6h---12h-express--same-day-service)
    - [4.3. Đơn Hàng Cồng Kềnh / Quá Khổ Quy Đổi IATA V/6000 (Bulky Freight)](#43-đơn-hàng-cồng-kềnh--quá-khổ-quy-đổi-iata-v6000-bulky-freight)
@@ -40,7 +41,7 @@
    - [4.5. Đơn Hàng Dễ Vỡ & Quy Chuẩn Đóng Gói SOP (Fragile Goods)](#45-đơn-hàng-dễ-vỡ--quy-chuẩn-đóng-gói-sop-fragile-goods)
 5. [MÔ HÌNH THIẾT GIÁP BỊT KÍN 8 NHÓM LỖ HỔNG VẬN HÀNH & SỰ CỐ BƯU CHÍNH](#5-mô-hình-thiết-giáp-bịt-kín-8-nhóm-lỗ-hổng-vận-hành--sự-cố-bưu-chính)
    - [5.1. Khách từ chối nhận hàng (NDR) & Tự động Tái điều phối](#51-khách-từ-chối-nhận-hàng-ndr--tự-động-tái-điều-phối)
-   - [5.2. Chuyển hoàn 3 tầng, Chống tráo hàng & Bưu phẩm vô chủ (Điều 19 Luật Bưu chính)](#52-chuyển-hoàn-3-tầng-chống-tráo-hàng--bưu-phẩm-vô-chủ-điều-19-luật-bưu-chính)
+   - [5.2. Chuyển hoàn 3 tầng, Quản lý Tồn kho Tồn đọng (SLA Aging), Cảnh báo Đa kênh & Xử lý Bưu gửi Vô chủ (Điều 18 & 28 Luật Bưu chính)](#52-chuyển-hoàn-3-tầng-quản-lý-tồn-kho-tồn-đọng-sla-aging-cảnh-báo-đa-kênh--xử-lý-bưu-gửi-vô-chủ-điều-18--28-luật-bưu-chính)
    - [5.3. Hàng hỏng / Bể vỡ / Mất mát & Thẩm định bồi thường (Điều 24 & Điều 25 Luật Bưu chính)](#53-hàng-hỏng--bể-vỡ--mất-mát--thẩm-định-bồi-thường-điều-24--điều-25-luật-bưu-chính)
    - [5.4. Quyền đồng kiểm (3 cờ kiểm tra) & Hạn mức trần tiền mặt Shipper](#54-quyền-đồng-kiểm-3-cờ-kiểm-tra--hạn-mức-trần-tiền-mặt-shipper)
    - [5.5. Đổi địa chỉ liên tỉnh (Re-routing Fee) & Khóa in lại tem nhiệt](#55-đổi-địa-chỉ-liên-tỉnh-re-routing-fee--khóa-in-lại-tem-nhiệt)
@@ -367,6 +368,38 @@ stateDiagram-v2
 
 ---
 
+### 4.0.1. Quy hoạch Dải Mã Vận Đơn (12 Số) & Mã Định Tuyến 3 Đoạn Phân Tuyến Siêu Tốc (Chuẩn J&T Express)
+
+Mã vận đơn (Waybill Tracking Code) trong Nexus Logistics được thiết kế theo quy chuẩn bưu chính công nghiệp, loại bỏ hoàn toàn việc sinh mã ngẫu nhiên hỗn loạn. Mỗi mã gồm **12 chữ số cố định** với tiền tố định danh nguồn gốc bưu phẩm, kết hợp cùng **Mã định tuyến 3 đoạn (3-Segment Routing Code)** in chữ lớn trên nhãn nhiệt A6/A7 tương tự tiêu chuẩn của J&T Express:
+
+```mermaid
+graph TD
+    WAYBILL["QUY CHUẨN MÃ VẬN ĐƠN (12 CHỮ SỐ)<br/>Cấu trúc: [TIỀN TỐ 3 CHỮ SỐ] + [9 SỐ TỰ ĐỘNG TUẦN TỰ]"]
+
+    WB_101["Đầu số 101xxxxxxxxx (12 số)<br/>🏪 ĐƠN CHỦ SHOP ONLINE (MERCHANT B2B)<br/>- Tạo từ merchant-web (Shop mã 411xxxxx)<br/>- Thu hộ COD, đối soát kỳ 2-4-6, cấn trừ công nợ tự động"]
+    WB_111["Đầu số 111xxxxxxxxx (12 số)<br/>⚡ ĐƠN SÀN TMĐT & ĐỐI TÁC DOANH NGHIỆP<br/>- Tích hợp qua Open API / Webhook (Shopee, TikTok, KiotViet)<br/>- Bắn trạng thái Realtime Webhook, gom hàng nguyên xe"]
+    WB_333["Đầu số 333xxxxxxxxx (12 số)<br/>📱 ĐƠN KHÁCH HÀNG CÁ NHÂN LẺ (C2C / RETAIL)<br/>- Tạo từ customer-mobile hoặc gửi tại quầy bưu cục<br/>- Thanh toán cước trước, phát theo yêu cầu lẻ từng kiện"]
+    WB_222["Đầu số 222xxxxxxxxx (12 số)<br/>🔄 ĐƠN CHUYỂN HOÀN (RETURN WORKFLOW)<br/>- Tự động sinh khi giao thất bại &ge; 3 lần<br/>- Tự động cấn trừ 50% cước hoàn vào công nợ Shop"]
+
+    WAYBILL --> WB_101
+    WAYBILL --> WB_111
+    WAYBILL --> WB_333
+    WAYBILL --> WB_222
+```
+
+#### So sánh quy chuẩn nhận diện bưu gửi với J&T Express:
+1. **Cấu trúc dải số vận đơn**:
+   - **J&T Express**: Sử dụng dải số 12 số bắt đầu bằng mã quốc gia `84...` (VD: `841234567890`) hoặc tiền tố chữ đối tác sàn `JT...`, `SPX...`, `TK...`.
+   - **Nexus Logistics**: Chuẩn hóa 12 số thuần túy với tiền tố kênh `101...` (Merchant), `111...` (API/TMĐT), `333...` (Khách lẻ), `222...` (Hàng hoàn). Dải số thuần túy giúp máy quét barcode 1D/2D xử lý siêu tốc dưới **50ms** trên băng chuyền tự động, không lo lỗi font tiếng Việt.
+2. **Mã Định Tuyến 3 Đoạn Phân Tuyến Siêu Tốc (3-Segment Routing Code)**:
+   - Trên tem nhiệt A6/A7 của Nexus, hệ thống in **3 ô chữ in hoa rất to** ở vị trí trung tâm (Ví dụ: `SGN-01` | `TB-04` | `02B`):
+     * **Ô 1 (`SGN-01`)**: Mã Trung tâm chia chọn đích (Destination Mega Sorting Hub).
+     * **Ô 2 (`TB-04`)**: Mã Bưu cục phát phụ trách trực tiếp (Delivery Hub Tân Bình 04).
+     * **Ô 3 (`02B`)**: Mã Tuyến giao hàng của bưu tá chặng cuối (Courier Route Code).
+   - *Giá trị thực chiến*: Công nhân chia chọn tại Hub chỉ mất **0.5 giây** nhìn vào 3 chữ cái này để ném bưu phẩm vào đúng bao tải của xe tuyến tương ứng mà không cần đọc địa chỉ chi tiết của người nhận.
+
+---
+
 ### 4.1. Đơn Tiêu Chuẩn Thu Hộ COD (Standard COD Shipment)
 
 Đơn hàng thương mại điện tử phổ biến nhất, chiếm trên 70% tổng sản lượng bưu chính. Đặc trưng bởi luồng tiền thu hộ COD hai chiều và chu kỳ đối soát tài chính định kỳ.
@@ -559,9 +592,9 @@ flowchart TD
 
 ---
 
-### 5.2. Chuyển hoàn 3 tầng, Chống tráo hàng & Bưu phẩm vô chủ (Điều 19 Luật Bưu chính)
+### 5.2. Chuyển hoàn 3 tầng, Quản lý Tồn kho Tồn đọng (SLA Aging), Cảnh báo Đa kênh & Xử lý Bưu gửi Vô chủ (Điều 18 & 28 Luật Bưu chính)
 
-Bịt kín lỗ hổng thất thoát chi phí xe tải chiều về và xóa tan vấn nạn nợ xấu cước hoàn thông qua **Cơ chế phân tầng tự động (3-Tier Reverse Pricing Engine)**:
+Bịt kín lỗ hổng thất thoát chi phí xe tải chiều về, chống ùn tắc kho bãi và loại bỏ tranh chấp pháp lý bưu gửi thông qua **Cơ chế phân tầng tự động (3-Tier Reverse Pricing Engine)**, **Kiểm soát hạn mức lưu kho (Inventory Aging SLA)** và **Quy chuẩn xử lý bưu gửi vô chủ (Dead-Letter Parcel Handling)**:
 
 ```mermaid
 sequenceDiagram
@@ -601,18 +634,56 @@ sequenceDiagram
     end
 ```
 
-#### Quy trình Xử lý Bưu phẩm hoàn vô chủ / Bị bỏ rơi (Căn cứ Điều 19 Luật Bưu chính):
+- **Chốt chặn chống tráo ruột hàng hoàn (Reverse Handover Inspection):** Khi bưu tá trả hàng hoàn, Shop và bưu tá bắt buộc đồng kiểm hiện trạng niêm phong hộp và chụp ảnh POD Return. Nếu Shop đã ký nhận mà không khiếu nại tại chỗ, Nexus miễn trừ trách nhiệm tranh chấp sau bàn giao.
+
+---
+
+#### 1. Ma trận Hạn Mức Thời Gian Lưu Kho Tồn Đọng (Inventory Aging SLA Limits):
+
+| Vị trí kiện hàng / Mắt xích | Thời gian lưu kho tối đa | Ngưỡng cảnh báo tự động | Quy tắc vận hành cưỡng chế (Enforcement Rule) |
+| :--- | :--- | :--- | :--- |
+| **Trung tâm chia chọn (Sorting Hub)** | **12 - 24 giờ** | Tồn $\ge 12\text{h}$: Cảnh báo Vàng trên màn hình điều hành | **Quy tắc Zero Backlog**: Hàng dỡ ca đêm phải xuất chuyến ca sáng; không được để hàng tồn đọng qua ca tiếp theo. |
+| **Bưu cục phát (Chờ phát lại - NDR)** | **03 - 05 ngày** | Tồn $\ge 48\text{h}$: Cảnh báo Vàng<br/>Tồn $\ge 72\text{h}$: Cảnh báo Đỏ vi phạm SLA | Bưu tá phát tối đa **03 lần** (mỗi lần cách nhau 24h). Nếu khách hẹn phát, lưu kho tối đa **không quá 07 ngày** kể từ ngày phát đầu tiên. |
+| **Bưu cục gom hàng hoàn (Return Staging)** | **24 - 48 giờ** | Tồn $\ge 24\text{h}$: Nhắc nhở đóng bao hoàn | Đóng bao chuyên dụng `MB-RET-xxx`, kẹp chì và xếp lên xe tuyến ngược chiều trong vòng 48h. |
+| **Bưu cục trả hàng cho Shop (Origin Hub)** | **07 - 14 ngày** | Ngày thứ 7: Bắn ZNS/Email cảnh báo Shop<br/>Ngày thứ 12: Thông báo hạn chót | Bưu tá phát trả tối đa 03 lần; sau 14 ngày Shop không nhận hoặc từ chối nhận $\rightarrow$ Chuyển vào Kho hàng vô chủ. |
+
+---
+
+#### 2. Hệ Thống Cảnh Báo Hai Chiều (Realtime Multi-Channel Alerts):
+
 ```mermaid
 flowchart TD
-    START_RET["Đơn hoàn về bưu cục phát<br/>(Lưu kho bưu phẩm hoàn)"] --> NOTICE_1["Lưu kho quá 15 ngày:<br/>Gửi thông báo lần 1 cho Shop"]
-    NOTICE_1 --> NOTICE_2["Lưu kho quá 30 ngày:<br/>Gửi thông báo lần 2 (Văn bản / ZNS)"]
-    NOTICE_2 --> NOTICE_3["Lưu kho quá 45 ngày:<br/>Gửi thông báo lần 3 (Hạn chót 15 ngày nhận lại)"]
-    NOTICE_3 --> AUCTION{"Hết hạn 60 ngày:<br/>Shop từ chối hoặc không đến nhận?"}
-    AUCTION -- "TỪ CHỐI NHẬN LẠI" --> DISPOSE["KÍCH HOẠT ĐIỀU 19 LUẬT BƯU CHÍNH<br/>- Hội đồng bưu cục kiểm kê lập biên bản<br/>- Bán đấu giá công khai bù đắp chi phí bưu chính<br/>- Tiêu hủy nếu hàng hóa hư hỏng, hết hạn dùng<br/>(Trạng thái DB: RETURN_COMPLETED kèm cờ thanh lý/tiêu hủy)"]
-    AUCTION -- "SHOP ĐẾN NHẬN" --> POD_RET["Ký nhận POD Return & Thanh toán cước lưu kho<br/>(Trạng thái DB: RETURN_COMPLETED)"]
+    MONITOR["Bộ đếm thời gian lưu kho tự động (Inventory Aging Timer)"] --> CHECK_TIME{"Kiểm tra thời gian lưu bưu kiện tại Hub"}
+    
+    CHECK_TIME -- "Lưu kho >= 48 giờ" --> WARN_YELLOW["⚠️ CẢNH BÁO MỨC VÀNG (WARNING)<br/>- Đổi màu thẻ bưu phẩm sang Vàng trên Ops Web<br/>- Hiện cảnh báo trên App Kiểm kê Bưu tá (Inventory Check)<br/>- Nhắc nhở Trưởng bưu cục điều phối phát lại ngay"]
+    
+    CHECK_TIME -- "Lưu kho >= 72 giờ / Quá 5 ngày" --> WARN_RED["🚨 CẢNH BÁO MỨC ĐỎ (CRITICAL - SLA BREACH)<br/>- Kích hoạt thông báo đẩy (Push Notification) cho Trưởng Hub<br/>- Bắt buộc lập biên bản sự cố DIR hoặc kích hoạt lệnh Chuyển hoàn<br/>- Tự động trừ điểm KPI chất lượng vận hành bưu cục"]
+
+    CHECK_TIME -.-> SENDER_NOTIF["📢 THÔNG BÁO CHO NGƯỜI GỬI (SHOP / MERCHANT)<br/>- Bắn Webhook realtime về merchant-web khi phát thất bại lần 1, 2<br/>- Hiển thị Banner Đỏ cảnh báo kiện hàng sắp hết hạn lưu kho trước 48h<br/>- Gửi tin nhắn ZNS/SMS thông báo trước khi chuyển kho bưu gửi vô chủ"]
 ```
 
-- **Chốt chặn chống tráo ruột hàng hoàn (Reverse Handover Inspection):** Khi bưu tá trả hàng hoàn, Shop và bưu tá bắt buộc đồng kiểm hiện trạng niêm phong hộp và chụp ảnh POD Return. Nếu Shop đã ký nhận mà không khiếu nại tại chỗ, Nexus miễn trừ trách nhiệm tranh chấp sau bàn giao.
+---
+
+#### 3. Quy trình Xử lý Hàng Quá Hạn & Bưu gửi Vô chủ (Căn cứ Điều 18 & Điều 28 Luật Bưu chính):
+
+Trường hợp **Người nhận từ chối nhận $\rightarrow$ Chuyển hoàn về mà Shop cũng từ chối nhận hoặc Shop đã giải thể, không thể liên lạc**:
+
+```mermaid
+flowchart TD
+    OVERDUE["Kiện hàng lưu kho quá 14 ngày tại Hub trả hàng<br/>(Shop không nhận hoặc từ chối nhận hàng hoàn)"] --> MOVE_DEPOT["1. CHUYỂN VỀ KHO BƯU GỬI VÔ CHỦ TẬP TRUNG<br/>- Dán tem nhãn cảnh báo DIR-DEAD-LETTER<br/>- Rút khỏi luồng phát chuyển phát thương phẩm thông thường"]
+
+    MOVE_DEPOT --> CHECK_TYPE{"Phân loại tính chất hàng hóa"}
+
+    CHECK_TYPE -- "Hàng tươi sống / Mau hỏng / Thực phẩm" --> DESTROY_FAST["2A. LƯU GIỮ TỐI ĐA 24 - 48 GIỜ<br/>Nếu có nguy cơ ôi thiu gây ô nhiễm:<br/>Lập biên bản TIÊU HỦY NGAY (phối hợp kiểm dịch y tế)"]
+
+    CHECK_TYPE -- "Hàng hóa thông thường còn giá trị<br/>(Quần áo, đồ gia dụng, linh kiện điện tử...)" --> HOLD_6M["2B. BẢO QUẢN BẮT BUỘC 06 THÁNG<br/>(Căn cứ Điều 18 Luật Bưu chính 2010)<br/>Niêm yết thông báo tìm chủ sở hữu công khai"]
+
+    HOLD_6M --> COUNCIL["3. THÀNH LẬP HỘI ĐỒNG XỬ LÝ HÀNG VÔ CHỦ<br/>- Gồm: Đại diện Pháp chế + Kiểm toán nội bộ + Giám đốc Khai thác<br/>- Mở niêm phong, kiểm kê danh mục tài sản dưới camera 360 độ"]
+
+    COUNCIL --> AUCTION["4. TỔ CHỨC BÁN ĐẤU GIÁ THANH LÝ CÔNG KHAI<br/>(Hoặc tiêu hủy nếu hàng cấm, hàng giả, hàng nhái)"]
+
+    AUCTION --> CASH_FLOW["5. PHÂN BỔ DÒNG TIỀN THANH LÝ ĐẤU GIÁ<br/>- Bước 1: Khấu trừ chi phí lưu kho, bảo quản 06 tháng<br/>- Bước 2: Khấu trừ cước vận chuyển chiều đi & cước hoàn Shop nợ<br/>- Bước 3: Khấu trừ chi phí tổ chức giám định & bán đấu giá<br/>- Bước 4: SỐ TIỀN CÒN DƯ gửi tài khoản tạm giữ. Hết thời hiệu 01 năm<br/>sẽ nộp vào NGÂN SÁCH NHÀ NƯỚC hoặc QUỸ RỦI RO BƯU CHÍNH."]
+```
 
 ---
 
@@ -846,12 +917,29 @@ sequenceDiagram
     UI-->>User: Câu trả lời hoàn chỉnh, chính xác 100% kèm căn cứ điều khoản
 ```
 
-### Bộ 5 Dynamic Tools tích hợp sẵn:
+### 7.1. Bộ 7 Dynamic Tools tích hợp sẵn:
 1. `track_shipment(tracking_number)`: Tra cứu hành trình thực tế từ `tracking-service`.
 2. `calculate_shipping_rate(origin, destination, weight, dimensions)`: Tính cước tự động từ `pricing-service`.
-3. `get_prohibited_goods_policy(item_name)`: Kiểm tra danh mục hàng cấm bay, pin lithium.
-4. `get_compensation_claim_policy()`: Tra cứu chính sách bồi thường Điều 25 Luật Bưu chính.
-5. `find_nearest_post_office(province, district)`: Định vị bưu cục gần nhất từ `masterdata-service`.
+3. `calculate_return_fee(forward_fee, merchant_tier)`: Tính cước chuyển hoàn tự động theo 3 phân tầng khách hàng.
+4. `get_storage_aging_policy()`: Tra cứu thời hạn lưu kho tối đa các cấp Hub, cơ chế cảnh báo tồn đọng hai chiều và quy trình xử lý bưu gửi vô chủ (Điều 18 & 28 Luật Bưu chính 2010).
+5. `get_waybill_format_policy()`: Tra cứu quy hoạch dải mã vận đơn tiền tố 12 chữ số (`101...`, `111...`, `333...`, `222...`) và tiêu chuẩn mã định tuyến 3 đoạn kiểu J&T Express.
+6. `get_compensation_claim_policy()`: Tra cứu chính sách bồi thường Điều 24 & 25 Luật Bưu chính (Ma trận 2x2 + 1).
+7. `escalate_to_human_agent(user_id, tracking_number, reason)`: Khởi tạo phiếu hỗ trợ Ticket ID và điều hướng khẩn cấp sang Chuyên viên CSKH con người qua tổng đài 1900-1234.
+
+### 7.2. Kiến trúc Phân đoạn Tri thức (RAG Data Chunking Mechanism)
+
+> 📖 **Báo cáo Khoa học & Kỹ thuật Chi tiết Phục vụ Bảo vệ Đồ án:**  
+> 👉 [**Kiến Trúc & Cơ Chế Chunking Dữ Liệu Nghiệp Vụ Trong Hệ Thống RAG Logistics (rag-chunking-architecture.md)**](docs/architecture/rag-chunking-architecture.md)
+
+| Thông số kỹ thuật | Giá trị cấu hình | Ý nghĩa & Căn cứ kỹ thuật |
+| :--- | :---: | :--- |
+| **Chiến lược Chunking** | **Heading-Aware Semantic Chunking** | Phân rã theo ranh giới tiêu đề Markdown (`#`, `##`, `###`), bảo toàn nguyên khối các bảng tính cước và ma trận bồi thường không bị cắt gãy. |
+| **Kích thước cửa sổ (Max Words)** | **250 từ** ($\approx 325$ tokens) | Kích thước tối ưu vừa vặn cho một điều khoản bưu chính hoặc một quy chuẩn đóng gói hàng hóa. |
+| **Độ gối đầu (Sliding Overlap)** | **40 từ** (Tỉ lệ 16%) | Bảo toàn liên kết ngữ pháp, tránh mất chủ ngữ hoặc mệnh đề điều kiện ở ranh giới giữa 2 chunks liền kề. |
+| **Làm giàu Ngữ cảnh (Breadcrumbs)** | **Contextual Breadcrumb Enrichment** | Tiêm chuỗi tiêu đề cha vào từng chunk: `[Tên file] > [Mục cha] > [Mục con]` để vector không bị loãng bối cảnh. |
+| **Động cơ Embedding kép (Dual-Engine)** | **OpenAI v3 / Deterministic 512d** | Tự động chuyển đổi giữa `text-embedding-3-small` (1536 dims) và thuật toán băm đa chiều L2-Normalized nội bộ khi chạy offline. |
+| **Bộ tri thức nghiệp vụ hiện hành** | **8 văn bản chuyên sâu (35 chunks)** | Bao quát toàn diện: Biểu phí IATA, Luật Bưu chính, Đóng gói hàng dễ vỡ, Đồng kiểm 3 cấp, Trần nợ COD, Lịch xe Linehaul 3 miền. |
+| **Thời gian Re-index toàn hệ thống** | **18 mili-giây** | Kích hoạt tự động qua REST API: `POST http://localhost:3013/api/v1/chat/ingest`. |
 
 ---
 
@@ -995,10 +1083,13 @@ Trên Windows PowerShell:
 
 | Vai trò | Tên đăng nhập | Mật khẩu | Quyền hạn & Hub phân công |
 | :--- | :--- | :--- | :--- |
-| **System Admin** | `10000001` | `Admin@123456` | Toàn quyền quản trị hệ thống |
-| **Ops Staff (Kho)** | `20000001` | `Ops@123456` | Vận hành Hub Miền Nam (`003S001`) |
-| **Merchant B2B** | `41100001` | `Shop@123456` | Chủ shop Tiêu chuẩn có đơn COD |
-| **Shipper / Courier**| `30000001` | `Shipper@123456`| Tài xế tuyến giao bưu cục `003S001-01` |
+| **System Admin** | `10000001` | `password` / `Admin@123456` | Toàn quyền quản trị hệ thống |
+| **Ops Staff (Kho)** | `20000001` | `password` / `Ops@123456` | Vận hành Hub Miền Bắc (`001N001`) |
+| **Merchant B2B** | `41100001` | `password` / `Shop@123456` | Chủ shop Tiêu chuẩn có đơn COD |
+| **Shipper / Courier**| `30000001` | `password` / `Shipper@123456`| Tài xế tuyến giao bưu cục |
+| **Khách hàng cá nhân (Customer)**| `0909000001` | `password` | Khách gửi/nhận cá nhân Hà Nội |
+| **Khách hàng cá nhân (Customer)**| `0909000002` | `password` | Khách gửi/nhận cá nhân TP.HCM |
+| **Khách hàng cá nhân (Customer)**| `0909000003` | `password` | Khách gửi/nhận cá nhân Đà Nẵng |
 
 ---
 

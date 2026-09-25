@@ -1877,11 +1877,92 @@ th {
   flex: 1;
 }
 
+/* Active Hub Scope Card in Sidebar */
+.ops-func-sidebar-scope-card {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  flex-shrink: 0;
+}
+
+.ops-func-sidebar-scope-badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.ops-func-sidebar-scope-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  color: #0f172a;
+}
+
+.ops-func-sidebar-scope-pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+  animation: opsScopePulse 2s infinite;
+}
+
+@keyframes opsScopePulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5); }
+  70% { transform: scale(1); box-shadow: 0 0 0 4px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.ops-func-sidebar-scope-level {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  background: #e2e8f0;
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.ops-func-sidebar-scope-hub {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #1e293b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ops-func-sidebar-scope-hub svg {
+  flex-shrink: 0;
+  color: #2563eb;
+}
+
+.ops-func-sidebar-scope-hint {
+  font-size: 10.5px;
+  color: #64748b;
+  line-height: 1.3;
+}
+
 /* Cluster Accordion Styles */
 .ops-func-cluster {
   display: flex;
   flex-direction: column;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 }
 
 .ops-func-cluster-header {
@@ -1914,18 +1995,20 @@ th {
 }
 
 .ops-func-cluster-icon {
-  width: 15px;
-  height: 15px;
+  width: 22px;
+  height: 22px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: currentColor;
   flex-shrink: 0;
+  border-radius: 6px;
+  padding: 3px;
 }
 
 .ops-func-cluster-icon svg {
-  width: 15px;
-  height: 15px;
+  width: 14px;
+  height: 14px;
 }
 
 .ops-func-cluster-title {
@@ -1973,40 +2056,152 @@ th {
   transform: rotate(180deg);
 }
 
+/* Cluster Color Variants */
+.ops-func-cluster--hq .ops-func-cluster-icon {
+  background: #eef2ff;
+  color: #4338ca;
+  border: 1px solid #c7d2fe;
+}
+.ops-func-cluster--hq .ops-func-cluster-header:hover {
+  background: #f5f7ff;
+}
+.ops-func-cluster--hq .ops-func-cluster-header--active {
+  color: #3730a3;
+}
+.ops-func-cluster--hq .ops-func-cluster-header--active .ops-func-cluster-badge {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.ops-func-cluster--warehouse .ops-func-cluster-icon {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+.ops-func-cluster--warehouse .ops-func-cluster-header:hover {
+  background: #f0fdf4;
+}
+.ops-func-cluster--warehouse .ops-func-cluster-header--active {
+  color: #047857;
+}
+.ops-func-cluster--warehouse .ops-func-cluster-header--active .ops-func-cluster-badge {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.ops-func-cluster--dispatch .ops-func-cluster-icon {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+}
+.ops-func-cluster--dispatch .ops-func-cluster-header:hover {
+  background: #f0f7ff;
+}
+.ops-func-cluster--dispatch .ops-func-cluster-header--active {
+  color: #1d4ed8;
+}
+.ops-func-cluster--dispatch .ops-func-cluster-header--active .ops-func-cluster-badge {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.ops-func-cluster--linehaul .ops-func-cluster-icon {
+  background: #f5f3ff;
+  color: #7c3aed;
+  border: 1px solid #ddd6fe;
+}
+.ops-func-cluster--linehaul .ops-func-cluster-header:hover {
+  background: #faf5ff;
+}
+.ops-func-cluster--linehaul .ops-func-cluster-header--active {
+  color: #6d28d9;
+}
+.ops-func-cluster--linehaul .ops-func-cluster-header--active .ops-func-cluster-badge {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+.ops-func-cluster--quality .ops-func-cluster-icon {
+  background: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fde68a;
+}
+.ops-func-cluster--quality .ops-func-cluster-header:hover {
+  background: #fffdf5;
+}
+.ops-func-cluster--quality .ops-func-cluster-header--active {
+  color: #b45309;
+}
+.ops-func-cluster--quality .ops-func-cluster-header--active .ops-func-cluster-badge {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.ops-func-cluster--finance .ops-func-cluster-icon {
+  background: #ecfeff;
+  color: #0891b2;
+  border: 1px solid #a5f3fc;
+}
+.ops-func-cluster--finance .ops-func-cluster-header:hover {
+  background: #f0fdfa;
+}
+.ops-func-cluster--finance .ops-func-cluster-header--active {
+  color: #0e7490;
+}
+.ops-func-cluster--finance .ops-func-cluster-header--active .ops-func-cluster-badge {
+  background: #cffafe;
+  color: #155e75;
+}
+
 .ops-func-cluster-items {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding-left: 6px;
-  padding-top: 2px;
-  padding-bottom: 4px;
+  margin-left: 14px;
+  padding-left: 9px;
+  border-left: 2px solid #e2e8f0;
+  margin-top: 3px;
+  margin-bottom: 6px;
 }
 
 .ops-func-sidebar-item {
-  border-radius: 8px;
+  border-radius: 6px;
   color: #475569;
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 6.5px 8px;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  gap: 8px;
+  padding: 5.5px 8px;
+  transition: all 0.15s ease;
   width: 100%;
   border: 0;
   background: transparent;
   text-align: left;
   cursor: pointer;
+  position: relative;
 }
 
 .ops-func-sidebar-item:hover {
-  background: var(--ops-hover-bg, #f1f5f9);
+  background: #f1f5f9;
   color: #0f172a;
   text-decoration: none;
+  padding-left: 10px;
 }
 
 .ops-func-sidebar-item--active {
-  background: var(--ops-primary-soft, #eff6ff);
-  color: var(--ops-primary, #2563eb);
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
   font-weight: 600;
+}
+
+.ops-func-sidebar-item--active::before {
+  content: '';
+  position: absolute;
+  left: -11px;
+  top: 4px;
+  bottom: 4px;
+  width: 3px;
+  border-radius: 999px;
+  background: #2563eb;
 }
 
 .ops-func-sidebar-icon {
@@ -2027,7 +2222,7 @@ th {
   flex: 1;
   min-width: 0;
   max-width: none;
-  font-size: 13px;
+  font-size: 12.5px;
   padding: 0;
   white-space: nowrap;
   overflow: hidden;
