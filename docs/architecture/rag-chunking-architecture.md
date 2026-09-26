@@ -10,16 +10,16 @@
 
 ### 1.1. Thách thức đặc thù của Văn bản Nghiệp vụ Logistics
 Văn bản quy định trong ngành vận chuyển bưu chính sở hữu các đặc điểm cấu trúc rất phức tạp:
-1. **Cấu trúc bảng biểu & Ma trận phân cấp:** Bảng cước lũy tiến (nấc 0.5kg đầu, nấc vượt cân), bảng quy đổi thể tích IATA ($D \times R \times C / 6000$), bảng phân tầng chiết khấu khách hàng (Khách lẻ, Shop Tiêu chuẩn, VIP Doanh nghiệp).
+1. **Cấu trúc bảng biểu & Ma trận phân cấp:** Bảng cước lũy tiến (nấc 0.5kg đầu, nấc vượt cân), bảng quy đổi thể tích IATA (D × R × C / 6000), bảng phân tầng chiết khấu khách hàng (Khách lẻ, Shop Tiêu chuẩn, VIP Doanh nghiệp).
 2. **Tính ràng buộc pháp lý chặt chẽ:** Các điều khoản bồi thường theo Điều 24, Điều 25 Luật Bưu chính 2010 (Mặc định đền 4 lần cước; Bảo hiểm khai giá đền 100% hóa đơn VAT).
 3. **Mệnh đề điều kiện rẽ nhánh:** *"Chỉ được cắm điện thử máy nếu tem ghi `CHO_THU_HANG`, còn `CHO_XEM_KHONG_THU` chỉ được xem mắt, `KHONG_CHO_XEM` tuyệt đối không được bóc hộp"*.
 
 ### 1.2. Thất bại của các Phương pháp Chunking Thông thường
 Nếu áp dụng các kỹ thuật cắt thô (Naive Chunking) phổ biến trong các thư viện mở:
-- **Cắt theo độ dài cố định (Fixed-size Character Chunking - ví dụ 500 ký tự):** Sẽ cắt ngang lưng một bảng tính cước hoặc cắt rời câu điều kiện khỏi mệnh đề chính $\to$ **Mất ngữ cảnh nghiêm trọng (Context Fragmentation)**. Khi người dùng hỏi: *"Đền bù bao nhiêu?"*, mô hình có thể trích đoạn nhầm phần đền bù tối đa 4 lần cước thay vì bảo hiểm 100%, gây **ảo giác (Hallucination)** nguy hiểm trong kinh doanh.
+- **Cắt theo độ dài cố định (Fixed-size Character Chunking - ví dụ 500 ký tự):** Sẽ cắt ngang lưng một bảng tính cước hoặc cắt rời câu điều kiện khỏi mệnh đề chính ➔ **Mất ngữ cảnh nghiêm trọng (Context Fragmentation)**. Khi người dùng hỏi: *"Đền bù bao nhiêu?"*, mô hình có thể trích đoạn nhầm phần đền bù tối đa 4 lần cước thay vì bảo hiểm 100%, gây **ảo giác (Hallucination)** nguy hiểm trong kinh doanh.
 - **Cắt theo từng câu (Sentence-level Chunking):** Kích thước quá ngắn, thiếu bối cảnh về cấp độ khách hàng hoặc loại dịch vụ đang áp dụng.
 
-$\to$ **Giải pháp của hệ thống:** Thiết kế giải thuật độc quyền **Hybrid Section-Aware Semantic Chunking with Sliding Window Overlap** (Phân đoạn ngữ nghĩa theo cấu trúc tiêu đề kết hợp cửa sổ trượt gối đầu).
+➔ **Giải pháp của hệ thống:** Thiết kế giải thuật độc quyền **Hybrid Section-Aware Semantic Chunking with Sliding Window Overlap** (Phân đoạn ngữ nghĩa theo cấu trúc tiêu đề kết hợp cửa sổ trượt gối đầu).
 
 ---
 
@@ -45,7 +45,9 @@ flowchart TD
 
 ### Giai đoạn 1: AST Heading Parser (Phân tách theo ngữ nghĩa tiêu đề)
 - Trình phân tích duyệt qua từng dòng văn bản Markdown bằng biểu thức chính quy:
-  $$\text{Regex: } \wedge(\#\{1,4\})\backslash s+(.+)\$$$
+  ```regex
+  ^(#{1,4})\s+(.+)$
+  ```
 - Khi bắt gặp một tiêu đề Heading, hệ thống xác định đây là một **ranh giới ngữ nghĩa (Semantic Boundary)** đại diện cho một chủ đề độc lập. Mọi nội dung trước đó được đóng gói lại và chuyển sang chủ đề mới.
 
 ### Giai đoạn 2: Contextual Breadcrumb Enrichment (Bảo toàn ngữ cảnh nguồn gốc)
@@ -56,17 +58,21 @@ flowchart TD
   sectionTitle: `${sec.title} (phần ${Math.floor(start / (maxWordsPerChunk - overlapWords)) + 1})`
   ```
 - Khi tiến hành nhúng vector (Embedding), hệ thống ghép cả tiêu đề và nội dung:
-  $$\text{Embedding Input} = \text{Chunk.sectionTitle} + "\backslash n" + \text{Chunk.content}$$
+  ```text
+  Embedding Input = Chunk.sectionTitle + "\n" + Chunk.content
+  ```
   Điều này bảo đảm Vector biểu diễn nắm bắt được cả chủ đề cấp cao lẫn nội dung chi tiết.
 
 ### Giai đoạn 3: Dynamic Window Sizing & Sliding Window Overlap (Cửa sổ trượt có gối đầu)
 - **Tham số tối ưu hóa bưu chính:**
-  * `maxWordsPerChunk = 250` từ ($\approx 325 - 350$ tokens): Kích thước hoàn hảo để chứa trọn vẹn một điều khoản luật hoặc một biểu phí dịch vụ mà không làm loãng thông tin.
-  * `overlapWords = 40` từ ($\approx 52$ tokens, tương đương tỉ lệ gối đầu **16%**):
+  * `maxWordsPerChunk = 250` từ (~325 - 350 tokens): Kích thước hoàn hảo để chứa trọn vẹn một điều khoản luật hoặc một biểu phí dịch vụ mà không làm loãng thông tin.
+  * `overlapWords = 40` từ (~52 tokens, tương đương tỉ lệ gối đầu **16%**):
     - Đảm bảo câu văn ở ranh giới giữa 2 chunk không bị đứt đoạn ngữ pháp.
     - Đại từ thay thế hoặc mệnh đề quan hệ ở đầu chunk sau vẫn liên kết được với chủ ngữ ở cuối chunk trước.
 - **Công thức bước nhảy cửa sổ trượt (Stride):**
-  $$\text{Stride} = \text{maxWordsPerChunk} - \text{overlapWords} = 250 - 40 = 210\text{ từ}$$
+  ```text
+  Stride = maxWordsPerChunk - overlapWords = 250 - 40 = 210 từ
+  ```
 
 ---
 
@@ -112,7 +118,7 @@ Dưới đây là một Chunk thực tế được sinh ra từ file [07-special
 
 $$\text{Cosine Similarity}(Q, D_i) = \frac{Q \cdot D_i}{\|Q\| \|D_i\|} = \frac{\sum_{j=1}^{n} Q_j \times D_{ij}}{\sqrt{\sum_{j=1}^{n} Q_j^2} \times \sqrt{\sum_{j=1}^{n} D_{ij}^2}}$$
 
-- **Top-K Selection:** Hệ thống lấy ra $K = 3$ đoạn tri thức có điểm Cosine cao nhất ($\ge 25.0$).
+- **Top-K Selection:** Hệ thống lấy ra K = 3 đoạn tri thức có điểm Cosine cao nhất (≥ 25.0).
 - **Context Injection:** Ghép 3 đoạn này vào System Prompt gửi sang cho **Google Gemini 3 Flash / OpenAI GPT-4o-mini** để sinh câu trả lời tự nhiên, chính xác và có căn cứ pháp lý.
 
 ---
