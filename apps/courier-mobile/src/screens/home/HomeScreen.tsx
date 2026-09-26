@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
 
 import { theme } from '../../theme';
 import { HomeHeader } from '../../components/home/HomeHeader';
@@ -22,6 +23,7 @@ import { OverdueCard } from '../../components/home/OverdueCard';
 import { AppGrid } from '../../components/home/AppGrid';
 import type { TaskDto, TaskStatus } from '../../features/tasks/tasks.types';
 import { useAssignedTasksQuery } from '../../features/tasks/tasks.queries';
+import { useCodRecordsQuery } from '../../features/cod/cod.queries';
 import type { AppNavigatorParamList } from '../../navigation/types';
 import { useAuthStore } from '../../features/auth/auth.store';
 import { useAppStore } from '../../store/appStore';
@@ -31,6 +33,7 @@ import { getQuickAppItems, navigateToQuickApp } from '../../features/quick-apps/
 import { canAccessCourierFeature } from '../../features/permissions/courier-permissions';
 import { countSlaSummary } from '../../utils/pickupSla';
 
+const CASH_IN_HAND_LIMIT = 15_000_000;
 const WAITING_TASK_STATUSES: ReadonlySet<TaskStatus> = new Set(['CREATED', 'ASSIGNED']);
 
 function mapTaskStatusVariant(
@@ -68,17 +71,54 @@ export function HomeScreen(): React.JSX.Element {
     accessToken: session?.tokens.accessToken ?? null,
     courierId,
   });
+  const codRecordsQuery = useCodRecordsQuery({
+    courierId,
+    accessToken: session?.tokens.accessToken ?? null,
+  });
   const [notificationModalVisible, setNotificationModalVisible] = useState(false);
   const onRefresh = () => {
     void tasksQuery.refetch();
+    void codRecordsQuery.refetch();
     void refreshMobilePermissions();
   };
-  const refreshing = tasksQuery.isRefetching;
+  const refreshing = tasksQuery.isRefetching || codRecordsQuery.isRefetching;
+
+  const cashNeedRemit = useMemo(() => {
+    const records = codRecordsQuery.data ?? [];
+    return records
+      .filter((r) => r.paymentMethod === 'COD' && r.status === 'COLLECTED')
+      .reduce((sum, r) => sum + (r.collectedAmount ?? r.codAmount ?? 0), 0);
+  }, [codRecordsQuery.data]);
+
+  const overdueCashRecords = useMemo(() => {
+    const records = codRecordsQuery.data ?? [];
+    const today = new Date();
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+
+    return records.filter((r) => {
+      if (r.paymentMethod !== 'COD' || r.status !== 'COLLECTED') {
+        return false;
+      }
+      const recordDate = new Date(r.collectedAt || r.createdAt);
+      return !Number.isNaN(recordDate.getTime()) && recordDate.getTime() < todayStart;
+    });
+  }, [codRecordsQuery.data]);
+
+  const overdueCashAmount = useMemo(() => {
+    return overdueCashRecords.reduce(
+      (sum, r) => sum + (r.collectedAmount ?? r.codAmount ?? 0),
+      0,
+    );
+  }, [overdueCashRecords]);
+
+  const isOverdueCodLocked = overdueCashAmount > 0;
+  const isCashOverLimit = cashNeedRemit >= CASH_IN_HAND_LIMIT;
 
   useFocusEffect(
     React.useCallback(() => {
       void refreshMobilePermissions();
-    }, [refreshMobilePermissions]),
+      void codRecordsQuery.refetch();
+    }, [refreshMobilePermissions, codRecordsQuery]),
   );
 
   const canScanPickup = canAccessCourierFeature(session?.user, 'scan.pickup');
@@ -168,6 +208,42 @@ export function HomeScreen(): React.JSX.Element {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
         >
+          {isOverdueCodLocked ? (
+            <View style={styles.overdueLockAlert}>
+              <View style={styles.overdueLockHeader}>
+                <Ionicons name="lock-closed" size={20} color="#B91C1C" />
+                <Text style={styles.overdueLockTitle}>TÀI KHOẢN BỊ KHÓA: NỢ COD QUA NGÀY</Text>
+              </View>
+              <Text style={styles.overdueLockMessage}>
+                Cuối ca hôm trước bạn chưa nộp đóng COD. Tài khoản tạm thời bị <Text style={styles.overdueLockAmount}>KHÓA</Text> chức năng giao nhận đơn mới cho đến khi nộp hết <Text style={styles.overdueLockAmount}>{overdueCashAmount.toLocaleString('vi-VN')}đ</Text> tiền mặt ({overdueCashRecords.length} đơn tồn).
+              </Text>
+              <Pressable
+                style={styles.overdueLockButton}
+                onPress={() => navigation.navigate('CodStats')}
+              >
+                <Ionicons name="qr-code-outline" size={16} color="#FFFFFF" />
+                <Text style={styles.overdueLockButtonText}>Mở khóa tài khoản (Nộp tiền VietQR)</Text>
+              </Pressable>
+            </View>
+          ) : isCashOverLimit ? (
+            <View style={styles.cashLimitAlert}>
+              <View style={styles.cashLimitHeader}>
+                <Ionicons name="warning" size={20} color="#DC2626" />
+                <Text style={styles.cashLimitTitle}>Cảnh báo trần giữ tiền mặt COD</Text>
+              </View>
+              <Text style={styles.cashLimitMessage}>
+                Bạn đang giữ <Text style={styles.cashLimitAmount}>{cashNeedRemit.toLocaleString('vi-VN')}đ</Text> tiền mặt COD (vượt hạn mức 15.000.000đ). Vui lòng nộp tiền ngay qua VietQR hoặc két Hub trước khi tiếp tục giao đơn!
+              </Text>
+              <Pressable
+                style={styles.cashLimitButton}
+                onPress={() => navigation.navigate('CodStats')}
+              >
+                <Ionicons name="qr-code-outline" size={16} color="#FFFFFF" />
+                <Text style={styles.cashLimitButtonText}>Nộp tiền ngay (VietQR)</Text>
+              </Pressable>
+            </View>
+          ) : null}
+
           <NotificationBanner
             title={transferredTasks.length > 0 ? 'Có đơn điều phối mới' : 'Thông báo vận hành'}
             message={
@@ -378,5 +454,94 @@ const styles = StyleSheet.create({
     paddingTop: theme.spacing.xs,
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
+  },
+  cashLimitAlert: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#F87171',
+    borderWidth: 1.5,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.md,
+    gap: theme.spacing.xs,
+    ...theme.shadow.card,
+  },
+  cashLimitHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  cashLimitTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#B91C1C',
+  },
+  cashLimitMessage: {
+    fontSize: 13,
+    color: '#7F1D1D',
+    lineHeight: 18,
+  },
+  cashLimitAmount: {
+    fontWeight: '800',
+    color: '#991B1B',
+  },
+  cashLimitButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#DC2626',
+    borderRadius: theme.radius.md,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginTop: 6,
+  },
+  cashLimitButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  overdueLockAlert: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#DC2626',
+    borderWidth: 2,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.md,
+    gap: theme.spacing.xs,
+    ...theme.shadow.card,
+  },
+  overdueLockHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  overdueLockTitle: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#991B1B',
+    flex: 1,
+  },
+  overdueLockMessage: {
+    fontSize: 13,
+    color: '#7F1D1D',
+    lineHeight: 18,
+  },
+  overdueLockAmount: {
+    fontWeight: '900',
+    color: '#B91C1C',
+  },
+  overdueLockButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#991B1B',
+    borderRadius: theme.radius.md,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginTop: 6,
+  },
+  overdueLockButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
   },
 });

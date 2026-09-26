@@ -288,8 +288,27 @@ export function VehicleOutboundScreen(): React.JSX.Element {
     }
 
     setVehicleLoadRecord(nextLoadRecord);
+
+    if (syncedVehicleInfo.destinationHubCode !== 'UNKNOWN' && nextLoadRecord.bagItems?.length) {
+      for (const bag of nextLoadRecord.bagItems) {
+        try {
+          const bagManifest = await manifestApi.detailByCode(accessToken, bag.bagCode);
+          const bagDest = bagManifest?.destinationHubCode?.trim().toUpperCase();
+          if (bagDest && bagDest !== syncedVehicleInfo.destinationHubCode) {
+            playScanWarningSound();
+            setScreenMessage(
+              `⚠️ CẢNH BÁO SAI TUYẾN LINEHAUL: Bao ${bag.bagCode} có ga đích [${bagDest}], không khớp với tuyến xe đi [${syncedVehicleInfo.destinationHubCode}]!`,
+            );
+            return;
+          }
+        } catch {
+          // ignore lookup failure
+        }
+      }
+    }
+
     setScreenMessage(
-      `Đã nhận tem xe ${syncedVehicleInfo.vehicleCode}. Xe có ${flattenVehicleLoadShipmentCodes(nextLoadRecord).length} đơn đã lên xe.`,
+      `Đã nhận tem xe ${syncedVehicleInfo.vehicleCode}. Tuyến: ${syncedVehicleInfo.originHubCode} ➔ ${syncedVehicleInfo.destinationHubCode}. Xe có ${flattenVehicleLoadShipmentCodes(nextLoadRecord).length} đơn đã lên xe.`,
     );
   }, [accessToken, setGlobalError]);
 

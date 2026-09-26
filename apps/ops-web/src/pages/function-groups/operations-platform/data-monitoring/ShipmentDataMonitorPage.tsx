@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { useHubScope } from '../../../../hooks/useHubScope';
+import { isShipmentInHubScope } from '../../../../utils/hubScopeResolver';
 import { shipmentsClient } from '../../../../features/shipments/shipments.client';
 import type { ShipmentListItemDto } from '../../../../features/shipments/shipments.types';
 import { getErrorMessage } from '../../../../services/api/errors';
@@ -248,6 +250,8 @@ export function ShipmentDataMonitorPage({
   const session = useAuthStore((state) => state.session);
   const accessToken = session?.tokens.accessToken ?? null;
   const scopedHubCodes = session?.user.hubCodes ?? [];
+  const canViewAllHubAreas = session?.user.roles.includes('SYSTEM_ADMIN') ?? false;
+  const hubScope = useHubScope();
 
   const [shipments, setShipments] = useState<ShipmentListItemDto[]>([]);
   const [keyword, setKeyword] = useState('');
@@ -261,6 +265,12 @@ export function ShipmentDataMonitorPage({
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const effectiveHubCodes = useMemo(() => {
+    return hubScope.scopedHubCodes.length > 0 ? hubScope.scopedHubCodes : scopedHubCodes;
+  }, [hubScope.scopedHubCodes, scopedHubCodes]);
+
+  const isAllSystem = canViewAllHubAreas || hubScope.isAllSystem;
 
   const fetchData = useCallback(async () => {
     if (!accessToken) {
@@ -296,10 +306,24 @@ export function ShipmentDataMonitorPage({
   }, [dateFrom, dateTo, hubFilter, keyword, mode, pageSize, receiverFilter, senderFilter, statusFilter]);
 
   const sourceRows = useMemo(() => {
+    const normalizedKeyword = normalize(keyword);
+
     return shipments
       .filter((shipment) => config.defaultStatuses.includes(shipment.currentStatus))
-      .filter((shipment) => (mode === 'arrival' ? isArrivalFromAnotherHub(shipment) : true));
-  }, [config.defaultStatuses, mode, shipments]);
+      .filter((shipment) => (mode === 'arrival' ? isArrivalFromAnotherHub(shipment) : true))
+      .filter((shipment) => {
+        // Nếu nhập mã tra cứu cụ thể -> hiển thị dù ở bất kỳ Hub nào
+        if (normalizedKeyword) {
+          return true;
+        }
+        // Nếu là HQ toàn quốc -> hiển thị tất cả
+        if (isAllSystem) {
+          return true;
+        }
+        // Mặc định lọc theo phạm vi Hub quản lý
+        return isShipmentInHubScope(shipment, effectiveHubCodes);
+      });
+  }, [config.defaultStatuses, effectiveHubCodes, isAllSystem, keyword, mode, shipments]);
 
   const statusOptions = useMemo(
     () => Array.from(new Set(sourceRows.map((shipment) => shipment.currentStatus))).sort(),

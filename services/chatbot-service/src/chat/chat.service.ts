@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { EmbeddingService } from '../rag/embedding.service';
 import { VectorStoreService } from '../rag/vector-store.service';
 import { LogisticsToolsService } from '../tools/logistics-tools.service';
-import type { ChatResponseDto, Citation } from '../rag/rag.types';
+import type { ChatResponseDto, Citation, ShipmentCardDto } from '../rag/rag.types';
 import type { ChatRequestDto } from './dto/chat-request.dto';
 
 function normalizeVietnamese(text: string): string {
@@ -44,30 +44,53 @@ export class ChatService {
     const question = dto.message.trim();
     const normalizedQ = normalizeVietnamese(question);
     const toolsUsed: string[] = [];
+    let shipmentCards: ShipmentCardDto[] | undefined;
+
+    const isGuest = !dto.userId || dto.senderRole === 'GUEST';
 
     // 1. Phân tích ý định & gọi Tool nếu cần (Function Calling / Intent Routing)
     let toolAugmentedContext = '';
 
-    // Regex tìm mã đơn hàng: NX-XXXX hoặc mã số vận đơn (10-15 chữ số, ví dụ 333423979726)
+    // Regex tìm mã đơn hàng: NX-XXXX hoặc mã số vận đơn (10-15 chữ số, ví dụ 101000000001, 333423979726)
     const trackingMatch =
       question.match(/\b(NX[-_]?[A-Z0-9]{4,14})\b/i) ||
-      question.match(/\b(333\d{7,10}|\d{10,14})\b/);
+      question.match(/\b(101\d{9}|111\d{9}|333\d{9}|222\d{9}|\d{10,14})\b/);
 
     if (trackingMatch) {
       const trackingCode = trackingMatch[1] ? trackingMatch[1].toUpperCase() : trackingMatch[0];
-      toolsUsed.push(`trackShipment(${trackingCode})`);
-      const trackRes = await this.toolsService.trackShipment(trackingCode);
-      toolAugmentedContext += `\n[THÔNG TIN TRA CỨU ĐƠN HÀNG THỰC TẾ CHO MÃ ${trackingCode}]:\n` +
-        `- Mã vận đơn: ${trackRes.trackingNumber}\n` +
-        `- Trạng thái: ${trackRes.statusText} (${trackRes.status})\n` +
-        (trackRes.itemName ? `- Tên hàng hóa: ${trackRes.itemName}\n` : '') +
-        (trackRes.senderName ? `- Người gửi: ${trackRes.senderName} (${trackRes.senderCity || trackRes.senderAddress || ''})\n` : '') +
-        (trackRes.receiverName ? `- Người nhận: ${trackRes.receiverName} (${trackRes.receiverCity || trackRes.receiverAddress || ''})\n` : '') +
-        (trackRes.codAmount !== undefined ? `- Tiền thu hộ COD: ${trackRes.codAmount.toLocaleString('vi-VN')} VNĐ\n` : '') +
-        `- Vị trí hiện tại: ${trackRes.currentLocation}\n` +
-        `- Thời gian dự kiến giao: ${trackRes.estimatedDelivery}\n` +
-        `- Lịch sử vận chuyển:\n` +
-        trackRes.timeline.map((t) => `  * ${t.time}: ${t.description}`).join('\n') + '\n';
+      toolsUsed.push(`trackShipment(${trackingCode}, isGuest=${isGuest})`);
+      const trackRes = await this.toolsService.trackShipment(trackingCode, isGuest);
+
+      if (!trackRes.found) {
+        toolAugmentedContext += `\n[KẾT QUẢ TRA CỨU]: ${trackRes.notFoundMessage || `Không tìm thấy mã vận đơn ${trackingCode} trên hệ thống.`}\n`;
+      } else {
+        shipmentCards = [
+          {
+            code: trackRes.trackingNumber,
+            status: trackRes.status,
+            statusText: trackRes.statusText,
+            itemName: trackRes.itemName,
+            receiverCity: trackRes.receiverCity || trackRes.receiverAddress,
+            receiverName: trackRes.receiverName,
+            codAmount: trackRes.codAmount,
+            createdAt: trackRes.createdAt,
+          },
+        ];
+
+        toolAugmentedContext += `\n[THÔNG TIN TRA CỨU ĐƠN HÀNG MÃ ${trackingCode}${isGuest ? ' (CHẾ ĐỘ KHÁCH VÃNG LAI - ĐÃ MÃ HÓA THÔNG TIN CÁ NHÂN PII)' : ''}]:\n` +
+          `- Mã vận đơn: ${trackRes.trackingNumber}\n` +
+          `- Trạng thái: ${trackRes.statusText} (${trackRes.status})\n` +
+          (trackRes.itemName ? `- Tên hàng hóa: ${trackRes.itemName}\n` : '') +
+          (trackRes.senderName ? `- Người gửi: ${trackRes.senderName} (${trackRes.senderCity || trackRes.senderAddress || ''})\n` : '') +
+          (trackRes.receiverName ? `- Người nhận: ${trackRes.receiverName} (${trackRes.receiverCity || trackRes.receiverAddress || ''})\n` : '') +
+          (trackRes.receiverPhone ? `- Số điện thoại người nhận: ${trackRes.receiverPhone}\n` : '') +
+          (trackRes.codAmount !== undefined ? `- Tiền thu hộ COD: ${trackRes.codAmount.toLocaleString('vi-VN')} VNĐ\n` : '') +
+          `- Vị trí hiện tại: ${trackRes.currentLocation}\n` +
+          `- Thời gian dự kiến giao: ${trackRes.estimatedDelivery}\n` +
+          `- Lịch sử vận chuyển:\n` +
+          trackRes.timeline.map((t) => `  * ${t.time}: ${t.description}`).join('\n') +
+          (isGuest ? `\n- LƯU Ý BẢO MẬT: Người dùng tra cứu dạng khách vãng lai (GUEST), thông tin tên họ và địa chỉ đã được che bớt theo tiêu chuẩn an toàn PII. Hãy nhắc khách đăng nhập tài khoản nếu muốn xem toàn bộ chi tiết.\n` : '\n');
+      }
     } else {
       // Nếu không có mã cụ thể, kiểm tra nếu người dùng hỏi tra cứu đơn hoặc hỏi về đơn của họ
       const isGeneralTrackingQuery =
@@ -84,25 +107,55 @@ export class ChatService {
         (normalizedQ.includes('don') && (normalizedQ.includes('o dau') || normalizedQ.includes('sao roi') || normalizedQ.includes('chua')));
 
       if (isGeneralTrackingQuery) {
-        const latestRes = await this.toolsService.getLatestShipment(dto.userId);
-        if (latestRes.found && latestRes.tracking) {
-          const t = latestRes.tracking;
-          toolsUsed.push(`getLatestShipment(${latestRes.isUserSpecific ? `User:${dto.userId}` : 'SystemLatest'})`);
-          toolAugmentedContext += `\n[THÔNG TIN ĐƠN HÀNG MỚI TẠO GẦN NHẤT CỦA BẠN (Tài khoản: ${dto.userId})]:\n` +
-            `- Mã vận đơn: ${t.trackingNumber}\n` +
-            `- Trạng thái hiện tại: ${t.statusText} (${t.status})\n` +
-            (t.itemName ? `- Tên hàng hóa: ${t.itemName}\n` : '') +
-            (t.senderName ? `- Người gửi: ${t.senderName} (${t.senderCity || t.senderAddress || ''})\n` : '') +
-            (t.receiverName ? `- Người nhận: ${t.receiverName} (${t.receiverCity || t.receiverAddress || ''})\n` : '') +
-            (t.codAmount !== undefined ? `- Tiền thu hộ COD: ${t.codAmount.toLocaleString('vi-VN')} VNĐ\n` : '') +
-            `- Vị trí hiện tại: ${t.currentLocation}\n` +
-            `- Thời gian tạo đơn: ${t.createdAt || 'Gần đây'}\n` +
-            `- Lịch sử vận chuyển:\n` +
-            t.timeline.map((item) => `  * ${item.time}: ${item.description}`).join('\n') + '\n';
-        } else if (latestRes.isUserSpecific) {
-          toolAugmentedContext += `\n[KẾT QUẢ TRA CỨU]: Tài khoản ${dto.userId} hiện chưa có đơn hàng nào được tạo trên hệ thống Nexus Logistics. Hãy thông báo lịch sự cho khách hàng rằng tài khoản chưa phát sinh đơn gửi và mời khách hàng gửi mã vận đơn cụ thể để hỗ trợ tra cứu.\n`;
+        if (isGuest) {
+          // KHÁCH VÃNG LAI CHƯA ĐĂNG NHẬP -> TUYỆT ĐỐI KHÔNG HIỂN THỊ ĐƠN BẤT KỲ HOẶC PHỊA RA DỮ LIỆU
+          toolAugmentedContext += `\n[CẢNH BÁO BẢO MẬT - NGƯỜI DÙNG CHƯA ĐĂNG NHẬP]: Khách hàng chưa đăng nhập tài khoản và chưa cung cấp mã vận đơn cụ thể. Hãy thông báo lịch sự cho khách hàng rằng để bảo vệ quyền riêng tư và dữ liệu cá nhân (PII) theo Luật Bưu chính, khách hàng vui lòng: 1) Đăng nhập tài khoản để hệ thống tự động hiển thị danh sách đơn hàng của mình; hoặc 2) Cung cấp Mã vận đơn cụ thể (ví dụ: 101000000001 hoặc NX-...) để tra cứu hành trình.\n`;
         } else {
-          toolAugmentedContext += `\n[KẾT QUẢ TRA CỨU]: Bạn chưa đăng nhập tài khoản và chưa cung cấp mã vận đơn. Vui lòng đăng nhập hoặc nhập mã vận đơn (dạng NX-XXXX hoặc dãy số) để hệ thống tra cứu.\n`;
+          toolsUsed.push(`getUserShipments(User:${dto.userId})`);
+          const userShipments = await this.toolsService.getUserShipments(dto.userId, 5);
+
+          if (!userShipments.found || userShipments.items.length === 0) {
+            toolAugmentedContext += `\n[KẾT QUẢ TRA CỨU]: Tài khoản ${dto.userId} hiện chưa có đơn hàng nào được tạo trên hệ thống Nexus Logistics. Hãy thông báo lịch sự cho khách hàng rằng tài khoản chưa phát sinh đơn gửi và mời khách hàng gửi mã vận đơn cụ thể nếu muốn tra cứu đơn nhận.\n`;
+          } else {
+            // Đính kèm danh sách thẻ đơn hàng shipmentCards vào DTO phản hồi
+            shipmentCards = userShipments.items.map((it) => ({
+              code: it.code,
+              status: it.status,
+              statusText: it.statusText,
+              itemName: it.itemName,
+              receiverCity: it.receiverCity || it.receiverAddress,
+              receiverName: it.receiverName,
+              codAmount: it.codAmount,
+              createdAt: it.createdAt,
+            }));
+
+            if (userShipments.items.length === 1 && userShipments.singleTracking) {
+              // Trường hợp 1: Khách hàng chỉ có duy nhất 1 đơn hàng -> Trả về chi tiết hành trình
+              const t = userShipments.singleTracking;
+              toolAugmentedContext += `\n[THÔNG TIN ĐƠN HÀNG DUY NHẤT CỦA BẠN (Tài khoản: ${dto.userId})]:\n` +
+                `- Mã vận đơn: ${t.trackingNumber}\n` +
+                `- Trạng thái hiện tại: ${t.statusText} (${t.status})\n` +
+                (t.itemName ? `- Tên hàng hóa: ${t.itemName}\n` : '') +
+                (t.senderName ? `- Người gửi: ${t.senderName} (${t.senderCity || t.senderAddress || ''})\n` : '') +
+                (t.receiverName ? `- Người nhận: ${t.receiverName} (${t.receiverCity || t.receiverAddress || ''})\n` : '') +
+                (t.codAmount !== undefined ? `- Tiền thu hộ COD: ${t.codAmount.toLocaleString('vi-VN')} VNĐ\n` : '') +
+                `- Vị trí hiện tại: ${t.currentLocation}\n` +
+                `- Thời gian tạo đơn: ${t.createdAt || 'Gần đây'}\n` +
+                `- Lịch sử vận chuyển:\n` +
+                t.timeline.map((item) => `  * ${item.time}: ${item.description}`).join('\n') + '\n';
+            } else {
+              // Trường hợp 2: Khách hàng có NHIỀU ĐƠN HÀNG (2-5+ đơn) -> Trả về danh sách tóm tắt chuyên nghiệp
+              toolAugmentedContext += `\n[DANH SÁCH CÁC ĐƠN HÀNG GẦN ĐÂY CỦA TÀI KHOẢN ${dto.userId} (Tổng cộng: ${userShipments.total} đơn)]:\n` +
+                userShipments.items.map((it, idx) =>
+                  `  ${idx + 1}. Mã vận đơn: ${it.code} | Hàng hóa: ${it.itemName} | Trạng thái: ${it.statusText} (${it.status}) | Điểm đến: ${it.receiverCity || it.receiverAddress} | Tiền COD: ${it.codAmount ? it.codAmount.toLocaleString('vi-VN') + ' VNĐ' : '0 VNĐ'} | Tạo ngày: ${it.createdAt}`
+                ).join('\n') +
+                `\n\n[HƯỚNG DẪN TRÌNH BÀY CHO AI KHI CÓ NHIỀU ĐƠN]:\n` +
+                `- Thông báo rõ ràng cho khách hàng biết tài khoản đang có ${userShipments.total} đơn hàng trên hệ thống.\n` +
+                `- Trình bày danh sách các đơn hàng một cách trực quan, rõ ràng bằng gạch đầu dòng hoặc bảng ngắn (gồm Mã vận đơn, Tên kiện hàng, Trạng thái hiện tại, Nơi nhận).\n` +
+                `- Gợi ý tương tác (Call to Action): Hỏi khách hàng muốn xem chi tiết hành trình của đơn nào trong số các đơn trên (ví dụ: "Bạn muốn tra cứu hành trình chi tiết của đơn nào? Hãy bấm vào Thẻ đơn hàng bên dưới hoặc gửi mã vận đơn cụ thể nhé").\n` +
+                `- Tuyệt đối không phịa thông tin hành trình của các đơn khác.\n`;
+            }
+          }
         }
       }
     }
@@ -137,6 +190,65 @@ export class ChatService {
         `- Ngày hoàn tất phán quyết: ${claimRes.adjudicatedAt || '15/09/2026'}\n`;
     }
 
+    // Kiểm tra ý định hỏi về hàng hỏng, hàng hư, bể vỡ, móp méo, đền bù sự cố
+    const isDamageOrBrokenQuery =
+      normalizedQ.includes('hang hong') ||
+      normalizedQ.includes('hang hu') ||
+      normalizedQ.includes('be vo') ||
+      normalizedQ.includes('mop meo') ||
+      normalizedQ.includes('hu hai') ||
+      normalizedQ.includes('thiet hai') ||
+      (normalizedQ.includes('hong') && (normalizedQ.includes('thi sao') || normalizedQ.includes('den') || normalizedQ.includes('xu ly') || normalizedQ.includes('lam sao')));
+
+    if (isDamageOrBrokenQuery) {
+      toolsUsed.push('getDamageAndClaimPolicy(Fragile Goods & Damage Settlement)');
+      toolAugmentedContext += `\n[QUY TRÌNH NGHIỆP VỤ XỬ LÝ HÀNG HƯ HỎNG / BỂ VỠ (DAMAGE SETTLEMENT SOP)]:\n` +
+        `- Bước 1 (Khi nhận hàng): Người nhận đồng kiểm phát hiện hàng bị nứt vỡ, móp méo, rò rỉ dung dịch -> Yêu cầu bưu tá lập Biên bản bất thường (Irregularity Report) tại chỗ có chữ ký cả hai bên và chụp ảnh sắc nét 4 góc. Người nhận từ chối nhận hàng và KHÔNG phải thanh toán bất kỳ khoản tiền nào (kể cả COD và cước phí).\n` +
+        `- Bước 2 (Hạn mức bồi thường):\n` +
+        `  * Gói Tiêu chuẩn (không mua bảo hiểm): Bồi thường tối đa 04 lần cước vận chuyển thực tế, không vượt quá 1.000.000 VNĐ/đơn hàng (Khoản 3 Điều 25 Luật Bưu chính).\n` +
+        `  * Gói Bảo hiểm khai giá: Bồi thường 100% giá trị thiệt hại thực tế theo hóa đơn VAT/chứng từ, HẠN MỨC TRẦN TỐI ĐA 30.000.000 VNĐ/đơn hàng. Đơn trên 30 triệu phải ký hợp đồng bảo hiểm riêng với PTI/Bảo Việt.\n` +
+        `- Bước 3 (Hư hỏng một phần): Bồi thường toàn bộ chi phí sửa chữa thay thế linh kiện chính hãng theo báo giá trung tâm bảo hành ủy quyền hoặc theo tỷ lệ giám định thực tế.\n` +
+        `- Bước 4 (Điều kiện loại trừ hàng dễ vỡ): Hàng dễ vỡ bắt buộc phải đóng gói đúng quy chuẩn (bọc xốp hơi 3-5 lớp, cách thành thùng 5cm, dán tem Dễ Vỡ). Nếu người gửi tự đóng gói sai quy chuẩn sẽ bị từ chối bồi thường do lỗi chủ quan của người gửi.\n` +
+        `- Bước 5 (Thời hạn xử lý): Thẩm định hồ sơ trong vòng 24h - 48h, hoàn tất chuyển khoản chi trả bồi thường trong 03 - 05 ngày làm việc.\n`;
+    }
+
+    // Kiểm tra ý định kết nối chuyên viên CSKH con người hoặc giục giao hàng khẩn cấp (AI Handover & Expedite Delivery)
+    const isEscalationQuery =
+      normalizedQ.includes('gap nhan vien') ||
+      normalizedQ.includes('noi chuyen voi nguoi') ||
+      normalizedQ.includes('tong dai') ||
+      normalizedQ.includes('cskh') ||
+      normalizedQ.includes('dien thoai vien') ||
+      normalizedQ.includes('tu van vien') ||
+      normalizedQ.includes('ho tro truc tiep') ||
+      normalizedQ.includes('gap nguoi that') ||
+      normalizedQ.includes('chuyen dien thoai') ||
+      normalizedQ.includes('khieu nai gap') ||
+      normalizedQ.includes('giuc giao') ||
+      normalizedQ.includes('giuc don') ||
+      normalizedQ.includes('giao gap') ||
+      normalizedQ.includes('giao nhanh') ||
+      normalizedQ.includes('giao som') ||
+      normalizedQ.includes('tro giup') ||
+      normalizedQ.includes('ho tro don');
+
+    if (isEscalationQuery) {
+      toolsUsed.push('escalateToHumanAgent()');
+      const handover = this.toolsService.escalateToHumanAgent({
+        userId: dto.userId,
+        trackingNumber: trackingMatch ? (trackingMatch[1] ? trackingMatch[1].toUpperCase() : trackingMatch[0]) : undefined,
+        reason: question,
+      });
+      toolAugmentedContext += `\n[KẾT QUẢ ĐIỀU HƯỚNG CHUYỂN TIẾP CHUYÊN VIÊN CSKH CON NGƯỜI & YÊU CẦU GIỤC ĐƠN KHẨN CẤP]:\n` +
+        `- Mã phiếu yêu cầu hỗ trợ: ${handover.ticketId}\n` +
+        `- Hàng đợi điều phối: ${handover.queue} (Ưu tiên: ${handover.priority})\n` +
+        `- Hotline hỗ trợ: ${handover.hotline}\n` +
+        `- Khung giờ làm việc: ${handover.operatingHours}\n` +
+        `- Thời gian kết nối ước tính: ${handover.estimatedWaitTimeSeconds} giây\n` +
+        `- Thông báo hệ thống: ${handover.message}\n` +
+        `- Hành động vận hành: Đã gắn cờ [ƯU TIÊN PHÁT GẤP] và gửi thông báo trực tiếp đến Bưu cục phát & Bưu tá phụ trách tuyến.\n`;
+    }
+
     // Kiểm tra ý định tính cước chuyển hoàn (Return Fee)
     const isReturnFeeQuery =
       (question.includes('hoàn') || question.includes('bom')) &&
@@ -148,6 +260,63 @@ export class ChatService {
       toolAugmentedContext += `\n[CHÍNH SÁCH CƯỚC CHUYỂN HOÀN RULE-BASED POLICY]:\n` +
         `- ${standardRes.explanation}\n` +
         `- ${vipRes.explanation}\n`;
+    }
+
+    // Kiểm tra ý định hỏi về Thời gian lưu kho, tồn kho, quá hạn, hàng vô chủ (Storage Aging & Dead-Letter Parcel)
+    const isStorageAgingQuery =
+      normalizedQ.includes('ton kho') ||
+      normalizedQ.includes('luu kho') ||
+      normalizedQ.includes('qua han') ||
+      normalizedQ.includes('vo chu') ||
+      normalizedQ.includes('toi da bao lau') ||
+      normalizedQ.includes('giu hang') ||
+      normalizedQ.includes('tieu huy') ||
+      normalizedQ.includes('dau gia') ||
+      normalizedQ.includes('canh bao hub') ||
+      (normalizedQ.includes('hang') && (normalizedQ.includes('ton') || normalizedQ.includes('het han') || normalizedQ.includes('bo quen')));
+
+    if (isStorageAgingQuery) {
+      toolsUsed.push('getStorageAgingPolicy(Articles 18 & 28 Postal Law)');
+      const policy = this.toolsService.getStorageAgingPolicy();
+      toolAugmentedContext += `\n[QUY ĐỊNH THỜI HẠN LƯU KHO & XỬ LÝ HÀNG QUÁ HẠN / VÔ CHỦ - ${policy.legalBasis}]:\n` +
+        `- Thời hạn lưu kho tối đa theo từng mắt xích:\n` +
+        `  * Tại Hub trung chuyển: ${policy.agingLimits.sortingHub}\n` +
+        `  * Tại Bưu cục phát chờ giao lại: ${policy.agingLimits.deliveryHubPending}\n` +
+        `  * Tại Bưu cục gom hàng hoàn: ${policy.agingLimits.returnHubStaging}\n` +
+        `  * Tại Bưu cục trả hàng cho Shop: ${policy.agingLimits.originHubReturnHolding}\n` +
+        `- Cơ chế cảnh báo hai chiều:\n` +
+        `  * Cảnh báo Hub đang giữ hàng: ${policy.alertMechanisms.holdingHubAlert}\n` +
+        `  * Thông báo người gửi (Shop/Khách): ${policy.alertMechanisms.senderNotification}\n` +
+        `- Quy trình 5 bước xử lý hàng quá hạn & vô chủ (Điều 18 & 28 Luật Bưu chính 2010):\n` +
+        `  * Bước 1: ${policy.overdueAndDeadLetterWorkflow.step1}\n` +
+        `  * Bước 2: ${policy.overdueAndDeadLetterWorkflow.step2}\n` +
+        `  * Bước 3: ${policy.overdueAndDeadLetterWorkflow.step3}\n` +
+        `  * Bước 4: ${policy.overdueAndDeadLetterWorkflow.step4}\n` +
+        `  * Bước 5 (Dòng tiền): ${policy.overdueAndDeadLetterWorkflow.step5}\n`;
+    }
+
+    // Kiểm tra ý định hỏi về Dải mã đơn, Phân loại mã vận đơn, Cách phân biệt đơn J&T
+    const isWaybillFormatQuery =
+      normalizedQ.includes('ma don') ||
+      normalizedQ.includes('ma van don') ||
+      normalizedQ.includes('j&t') ||
+      normalizedQ.includes('jt') ||
+      normalizedQ.includes('dai so') ||
+      normalizedQ.includes('phan biet don') ||
+      normalizedQ.includes('dinh tuyen');
+
+    if (isWaybillFormatQuery) {
+      toolsUsed.push('getWaybillFormatPolicy(Waybill Prefix & 3-Segment Routing)');
+      const waybillPolicy = this.toolsService.getWaybillFormatPolicy();
+      toolAugmentedContext += `\n[QUY HOẠCH DẢI MÃ VẬN ĐƠN & MÃ ĐỊNH TUYẾN 3 ĐOẠN (SO SÁNH VỚI J&T)]:\n` +
+        `- Quy hoạch dải 12 chữ số theo kênh người gửi trong hệ sinh thái Nexus:\n` +
+        `  * Đầu 101: ${waybillPolicy.numberSeries.merchant101}\n` +
+        `  * Đầu 111: ${waybillPolicy.numberSeries.marketplace111}\n` +
+        `  * Đầu 333: ${waybillPolicy.numberSeries.retail333}\n` +
+        `  * Đầu 222: ${waybillPolicy.numberSeries.return222}\n` +
+        `- Tiêu chuẩn nhận diện và mã định tuyến kiểu J&T Express:\n` +
+        `  * Nhận diện J&T: ${waybillPolicy.jtRoutingComparison.jtFormat}\n` +
+        `  * Mã định tuyến 3 đoạn: ${waybillPolicy.jtRoutingComparison.threeSegmentRoutingCode}\n`;
     }
 
     // Kiểm tra ý định tính cước / hỏi giá cước / bưu gửi có trọng lượng, kích thước, hoặc tuyến đường
@@ -266,9 +435,9 @@ export class ChatService {
         `- HƯỚNG DẪN AI: Nếu khách hàng chưa nêu rõ tuyến đường, hãy báo rõ cả 2 trường hợp (Gửi Nội thành từ ${intraPricing?.totalFee ? intraPricing.totalFee.toLocaleString('vi-VN') + 'đ' : '21.500đ'} và Gửi Liên tỉnh từ ${stdPricing.totalFee.toLocaleString('vi-VN')}đ) để thông tin minh bạch và khớp chính xác với app khi khách tạo đơn. Nêu rõ cân nặng tính cước và cước chuyển hoàn dự kiến.\n`;
     }
 
-    // 2. Truy xuất RAG từ Vector Store (Dense Semantic Retrieval)
+    // 2. Truy xuất RAG từ Vector Store với Hybrid Search (Dense Semantic + Keyword Scoring)
     const qEmbed = await this.embeddingService.getEmbedding(question);
-    const matches = this.vectorStore.search(qEmbed.embedding, 3, 0.2);
+    const matches = this.vectorStore.hybridSearch(qEmbed.embedding, question, 5, 0.15);
 
     const citations: Citation[] = matches.map((m) => ({
       file: m.chunk.sourceFile,
@@ -292,7 +461,7 @@ export class ChatService {
           .join('\n---\n');
     }
 
-    // 4. Sinh câu trả lời qua LLM (gpt-4o-mini)
+    // 4. Sinh câu trả lời qua LLM (Google Gemini / OpenAI)
     const answer = await this.executeLlm(question, contextText, citations);
 
     const latencyMs = Date.now() - startTime;
@@ -303,6 +472,7 @@ export class ChatService {
       citations,
       toolsUsed,
       latencyMs,
+      shipmentCards,
     };
   }
 
@@ -343,18 +513,41 @@ export class ChatService {
   }
 
   private async executeLlm(question: string, context: string, citations: Citation[]): Promise<string> {
-    const systemPrompt = `Bạn là Trợ lý AI CSKH thông minh của hệ sinh thái Nexus Logistics.
-Nhiệm vụ của bạn là hỗ trợ khách hàng và chủ hàng (merchant) tra cứu cước phí, hành trình bưu kiện và giải đáp quy chuẩn bưu chính.
-Quy tắc trả lời:
-1. Ngôn ngữ: Tiếng Việt chuẩn mực, lịch sự, thân thiện, rõ ràng.
-2. Căn cứ: Trả lời DỰA TRÊN NGỮ CẢNH (Context) được cung cấp. Tuyệt đối không tự bịa đặt thông tin.
-3. Khi trả lời về cước phí hoặc đền bù, hãy nêu rõ căn cứ chính sách hoặc công thức bồi thường. Nếu có bảng dự toán cước, hãy báo giá đầy đủ cả gói Tiêu chuẩn và Nhanh cùng cước hoàn dự kiến.
-4. Nếu ngữ cảnh không có thông tin, hãy thẳng thắn thông báo và hướng dẫn khách gọi tổng đài 1900 0000.
-5. QUY TẮC ĐỊNH DẠNG THẨM MỸ (RẤT QUAN TRỌNG):
-- TUYỆT ĐỐI KHÔNG dùng dấu nháy đơn ngược (backtick \`) bao quanh bất kỳ từ ngữ nào (ví dụ KHÔNG viết \`PICKED_UP\` hay \`30002004\`). Hãy viết thẳng hoặc đặt trong ngoặc đơn thông thường.
-- TUYỆT ĐỐI KHÔNG dùng ba dấu sao (***).
-- TUYỆT ĐỐI KHÔNG xuống dòng lẻ loi ngay sau dấu đầu dòng (không bao giờ để một dòng chỉ có • hoặc - hoặc *). Dấu gạch đầu dòng và nội dung PHẢI nằm trên cùng một dòng: ví dụ "• Mã vận đơn: 333423979726".
-- Sử dụng các icon emoji trực quan (📦, 📍, 👤, 💰, 🚚, ⏰,...) để câu trả lời sinh động, chuyên nghiệp và thân thiện.`;
+    const systemPrompt = `Bạn là Chuyên viên Cao cấp Tư vấn Nghiệp vụ & Vận hành Khách hàng của Hệ thống Bưu chính Logistics Nexus (Nexus Logistics Senior Operations & Customer Specialist).
+Bạn có kiến thức uyên thâm, thấu đáo và toàn diện về toàn bộ chuỗi cung ứng, quy chuẩn bưu chính và pháp lý vận tải:
+
+1. NGUYÊN TẮC BẢO MẬT DỮ LIỆU & QUYỀN RIÊNG TƯ (BẮT BUỘC):
+- Khi người dùng CHƯA ĐĂNG NHẬP hoặc trong ngữ cảnh có ghi chú [CẢNH BÁO BẢO MẬT - NGƯỜI DÙNG CHƯA ĐĂNG NHẬP]:
+  + TUYỆT ĐỐI KHÔNG tự tiện hiển thị đơn hàng của bất kỳ ai và KHÔNG BAO GIỜ bịa đặt mã đơn hay dữ liệu khách hàng.
+  + Hãy giải thích lịch sự rằng vì lý do bảo mật dữ liệu cá nhân theo Luật Bưu chính, khách hàng vui lòng: 1) Đăng nhập tài khoản để xem danh sách đơn cá nhân; hoặc 2) Cung cấp Mã vận đơn cụ thể để hệ thống tra cứu.
+  + Khi người dùng chưa đăng nhập tra cứu một mã vận đơn công khai (Public Tracking), nếu thông tin có dấu hiệu mã hóa (ví dụ: Ng*** V** Anh, *** Quận 1), hãy giải thích rõ đây là cơ chế bảo vệ danh tính PII và mời khách hàng đăng nhập tài khoản sở hữu để xem đầy đủ.
+- Nếu hệ thống thông báo [KẾT QUẢ TRA CỨU]: Không tìm thấy mã vận đơn: Thông báo rõ ràng là không tìm thấy đơn trên hệ thống, mời khách kiểm tra lại mã với người gửi.
+
+2. AM HIỂU NGHIỆP VỤ SÂU SẮC, BIẾT TỰ SUY LUẬN & XÂU CHUỖI ĐA CHIỀU:
+- Hạn mức bồi thường tối đa:
+  + Gói tiêu chuẩn (mặc định): Đền tối đa 04 lần cước vận chuyển, trần tối đa không quá 1.000.000 VNĐ/đơn (Khoản 3 Điều 25 Luật Bưu chính).
+  + Gói Bảo hiểm khai giá toàn diện: Đền 100% giá trị thiệt hại thực tế theo hóa đơn VAT/chứng từ, HẠN MỨC TỐI ĐA CHO MỖI LẦN PHÁT SINH ĐỀN BÙ LÀ 30.000.000 VNĐ/đơn hàng. Đơn trên 30 triệu phải ký hợp đồng bảo hiểm riêng với PTI/Bảo Việt.
+  + Hư hỏng một phần: Bồi thường toàn bộ chi phí sửa chữa thay linh kiện chính hãng hoặc theo tỷ lệ giám định thực tế. Thời hạn giải quyết chi trả: 3 - 5 ngày làm việc.
+- Phân biệt Hàng Giá Trị Cao (High-Value Cargo) vs Hàng Dễ Vỡ (Fragile Goods):
+  + Khác nhau cốt lõi về bản chất rủi ro: Hàng dễ vỡ có nguy cơ vỡ cơ học do rung lắc va đập; Hàng giá trị cao có nguy cơ mất mát, tráo hàng, thất thoát tài sản.
+  + Quy chuẩn đóng gói: Hàng dễ vỡ bắt buộc bọc xốp hơi 3-5 lớp, có vách ngăn, cách thành 5cm, dán tem Hàng Dễ Vỡ; Hàng giá trị cao bắt buộc dán Băng keo an ninh OPEN VOID, đựng trong Bao đỏ an ninh (Red Bag) kẹp chì seal, camera giám sát 24/7 và giao bằng OTP 6 số.
+  + ĐIỀU KIỆN BẢO HIỂM HÀNG DỄ VỠ: Bắt buộc đóng gói đúng chuẩn 5cm và bọc xốp 3-5 lớp. Nếu người gửi tự đóng gói sai quy cách (bỏ trần đồ gốm sứ/thủy tinh vào hộp) thì bảo hiểm sẽ TỪ CHỐI ĐỀN BÙ BỂ VỠ do lỗi của người gửi.
+- Biểu phí mua bảo hiểm khai giá: Từ 1tr - 10tr phí 0.5% (tối thiểu 5.000đ); từ 10tr - 30tr phí 1.0% (bắt buộc hóa đơn VAT).
+- Quy định xử lý 06 kịch bản lỗi / ngoại lệ (Negative Cases):
+  1) Người nhận không nghe máy (NDR): Gọi tối thiểu 2 lần cách nhau 15 phút, phát lại tối đa 3 lần miễn phí, lưu kho bưu cục phát tối đa 5 ngày, quá 5 ngày tự động chuyển hoàn.
+  2) Khách từ chối nhận (Bom hàng / Hủy đơn): Thu cước chuyển hoàn 50% cước chiều đi đối với shop thường, miễn phí 0đ đối với đối tác VIP Enterprise, cấn trừ vào COD hoặc ví cước.
+  3) Bể vỡ khi đồng kiểm: Lập biên bản bất thường Irregularity Report tại chỗ có chữ ký shipper, khách không phải thanh toán tiền, hàng chuyển về Hub giám định và chi trả bồi thường trong 24h - 48h.
+  4) Thất lạc quá 7 ngày trên mạng lưới: Tự động chuyển trạng thái LOST, kích hoạt đền bù 100% theo bảo hiểm mà không cần khách khiếu nại.
+  5) Gian lận trọng lượng kích thước: Cổng cân quét tự động DWS quét lại, nếu lệch >15% thì truy thu cước chênh lệch + phạt 10% vi phạm.
+  6) Hàng cấm bưu chính: Tịch thu bàn giao công an/QLTT, không bồi thường, khóa tài khoản vĩnh viễn.
+- Quản lý COD & Tài chính: Trần giữ tiền mặt bưu tá 15 triệu (cảnh báo đỏ, phải nộp SePay VietQR hoặc nộp két bưu cục), sau 23:59 tự động khóa tài khoản courier nếu nợ qua ngày, đối soát shop Thứ 2-4-6, trần nợ ví shop -500.000đ.
+- Lưu kho & Bưu gửi vô chủ: Hub trung chuyển tối đa 24h, bưu cục phát 5 ngày, hàng vô chủ lưu kho bảo quản bắt buộc 6 tháng (Điều 18 & 28 Luật Bưu chính) trước khi bán đấu giá thanh lý cấn trừ nợ cước.
+
+3. PHONG CÁCH DIỄN ĐẠT:
+- Tự nhiên, thông minh, ân cần, giải thích cặn kẽ và mạch lạc như chuyên viên con người nhiều năm kinh nghiệm trong ngành logistics.
+- Chủ động "mò mẫm" và kết nối các thông tin nghiệp vụ liên quan để tư vấn giải pháp thấu đáo, KHÔNG trả lời cụt ngủn hay rập khuôn máy móc.
+- Sử dụng emoji trực quan (📦, 📍, 🛡️, 💰, 🚚, ⏰, 🏬, ⚖️, ⚠️) để câu trả lời sinh động, chuyên nghiệp.
+- Trình bày định dạng sạch đẹp: không dùng dấu nháy đơn ngược (backtick), không dùng ba dấu sao liên tiếp (***), dấu gạch đầu dòng và nội dung nằm cùng một dòng.`;
 
     const userPrompt = `DỮ LIỆU NGỮ CẢNH HỆ THỐNG CUNG CẤP:
 ${context || '(Không tìm thấy tài liệu phù hợp trực tiếp)'}
@@ -503,6 +696,8 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
         .replace(/\[THÔNG TIN ĐƠN HÀNG MỚI TẠO GẦN NHẤT CỦA BẠN(.*?)\]:/g, '📦 **Đơn hàng mới tạo gần nhất của bạn**:')
         .replace(/\[TIẾN ĐỘ XỬ LÝ HỒ SƠ BỒI THƯỜNG MÃ (.*?)\]:/g, '🛡️ **Hồ sơ khiếu nại bồi thường $1**:')
         .replace(/\[BẢNG BÁO GIÁ CƯỚC THỜI GIAN THỰC TỪ MICROSERVICE PRICING-SERVICE\]:/g, '💰 **Dự toán cước phí vận chuyển**:')
+        .replace(/\[QUY ĐỊNH THỜI HẠN LƯU KHO & XỬ LÝ HÀNG QUÁ HẠN \/ VÔ CHỦ - (.*?)\]:/g, '🏬 **Quy định thời hạn lưu kho & Xử lý hàng quá hạn, vô chủ ($1)**:')
+        .replace(/\[QUY HOẠCH DẢI MÃ VẬN ĐƠN & MÃ ĐỊNH TUYẾN 3 ĐOẠN (.*?)\]:/g, '🏷️ **Quy hoạch dải mã vận đơn & Mã định tuyến 3 đoạn $1**:')
         .replace(/\[KẾT QUẢ TRA CỨU\]:\s*/g, 'ℹ️ ')
         .trim();
 

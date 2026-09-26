@@ -1,6 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, X, Send, Sparkles, Package, ShieldCheck, Calculator, RotateCcw, ChevronDown, User } from 'lucide-react';
+import { Bot, X, Send, Sparkles, Package, ShieldCheck, Calculator, RotateCcw, ChevronDown, User, MapPin, ArrowRight } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
+
+export interface ShipmentCard {
+  code: string;
+  status?: string;
+  statusText?: string;
+  itemName?: string;
+  receiverCity?: string;
+  receiverName?: string;
+  codAmount?: number;
+  createdAt?: string;
+}
 
 interface ChatMessage {
   id: string;
@@ -9,6 +20,7 @@ interface ChatMessage {
   time: string;
   toolsUsed?: string[];
   citations?: { file: string; title: string; score: number }[];
+  shipmentCards?: ShipmentCard[];
 }
 
 const QUICK_SUGGESTIONS = [
@@ -90,6 +102,78 @@ const FormattedChatMessage: React.FC<{ text: string; isUser: boolean }> = ({ tex
           </p>
         );
       })}
+    </div>
+  );
+};
+
+const InteractiveShipmentCards: React.FC<{
+  cards: ShipmentCard[];
+  onSelect: (code: string) => void;
+}> = ({ cards, onSelect }) => {
+  return (
+    <div className="mt-3 pt-2.5 border-t border-slate-100 space-y-2">
+      <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-0.5">
+        <span className="flex items-center gap-1.5 text-indigo-700">
+          <Package className="h-3.5 w-3.5" />
+          Danh sách bưu kiện ({cards.length})
+        </span>
+        <span className="text-[10px] text-slate-400 font-normal lowercase italic">chạm thẻ để xem</span>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        {cards.map((card, idx) => {
+          const isDelivered = card.status === 'DELIVERED';
+          const isDelivering = card.status === 'OUT_FOR_DELIVERY';
+          const isInTransit = card.status === 'IN_TRANSIT' || card.status === 'RECEIVED_ORIGIN_HUB' || card.status === 'RECEIVED_DESTINATION_HUB';
+
+          let badgeClass = 'bg-sky-50 text-sky-700 border-sky-200';
+          if (isDelivered) badgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+          else if (isDelivering) badgeClass = 'bg-amber-50 text-amber-700 border-amber-200';
+          else if (isInTransit) badgeClass = 'bg-indigo-50 text-indigo-700 border-indigo-200';
+
+          return (
+            <div
+              key={card.code || idx}
+              onClick={() => onSelect(card.code)}
+              className="group relative rounded-xl border border-slate-200/90 bg-gradient-to-b from-white to-slate-50/60 hover:from-indigo-50/50 hover:to-white p-3 shadow-xs hover:shadow-md hover:border-indigo-400 transition-all cursor-pointer text-left"
+            >
+              {/* Header: Code & Badge */}
+              <div className="flex items-center justify-between gap-1.5 mb-1.5">
+                <span className="font-mono font-bold text-slate-900 text-xs tracking-tight group-hover:text-indigo-600 transition-colors">
+                  {card.code}
+                </span>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${badgeClass} shrink-0`}>
+                  {card.statusText || card.status || 'Đang xử lý'}
+                </span>
+              </div>
+
+              {/* Item Name */}
+              <div className="text-[12px] font-medium text-slate-800 line-clamp-1 mb-1">
+                📦 {card.itemName || 'Kiện hàng'}
+              </div>
+
+              {/* Sub-info: Destination & COD */}
+              <div className="flex items-center justify-between text-[10.5px] text-slate-500 pt-1 border-t border-slate-100">
+                <div className="truncate flex items-center gap-1">
+                  <MapPin className="h-3 w-3 text-slate-400 shrink-0" />
+                  <span className="text-slate-700 font-normal truncate">{card.receiverCity || card.receiverName || 'Điểm giao'}</span>
+                </div>
+                {card.codAmount !== undefined && (
+                  <div className="text-right shrink-0">
+                    COD: <span className="font-semibold text-slate-700">{card.codAmount.toLocaleString('vi-VN')} đ</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Button */}
+              <div className="mt-2 pt-1.5 border-t border-dashed border-slate-200/70 flex items-center justify-between text-[11px] text-indigo-600 font-medium">
+                <span>Tra cứu hành trình này</span>
+                <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
@@ -187,16 +271,33 @@ export const FloatingAiChatWidget: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Gọi qua Gateway BFF (Port 3000) kèm định danh tài khoản
-      const response = await fetch(`${gatewayUrl}/api/v1/ai-assistant/message`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: query,
-          userId: currentUserId || undefined,
-          senderRole: currentUserId ? 'CUSTOMER' : 'GUEST',
-        }),
-      });
+      // 1. Thử gọi qua Gateway BFF (Port 3000), nếu Gateway chưa proxy kịp thì tự động gọi thẳng Chatbot Service (Port 3013)
+      const requestPayload = {
+        message: query,
+        userId: currentUserId || undefined,
+        senderRole: currentUserId ? 'CUSTOMER' : 'GUEST',
+      };
+
+      let response: globalThis.Response;
+      try {
+        response = await fetch(`${gatewayUrl}/api/v1/ai-assistant/message`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestPayload),
+          signal: AbortSignal.timeout(15000),
+        });
+        if (!response.ok) {
+          throw new Error(`Gateway returned HTTP ${response.status}`);
+        }
+      } catch {
+        // Fallback sang Chatbot Service trực tiếp
+        response = await fetch('http://localhost:3013/api/v1/chat/message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestPayload),
+          signal: AbortSignal.timeout(30000),
+        });
+      }
 
       if (response.ok) {
         const data = await response.json();
@@ -207,6 +308,7 @@ export const FloatingAiChatWidget: React.FC = () => {
           time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
           toolsUsed: data.toolsUsed,
           citations: data.citations,
+          shipmentCards: data.shipmentCards,
         };
         setMessages((prev) => [...prev, botMsg]);
       } else {
@@ -215,13 +317,25 @@ export const FloatingAiChatWidget: React.FC = () => {
     } catch (err) {
       // Fallback thông minh khi chưa bật Gateway BFF để người dùng demo không bị gãy
       const isClaimQuery = /CLM|khiếu nại|bồi thường|đền bù/i.test(query);
-      const isTrackingQuery = /NX-|tra cứu|vận đơn/i.test(query);
+      const isDamageQuery = /hỏng|hư|bể|vỡ|móp|thiệt hại/i.test(query);
+      const isMultiOrderQuery = /nhiều đơn|nhieu don|các đơn|cac don|danh sách đơn|danh sach don|những đơn/i.test(query);
+      const isTrackingQuery = /NX-|tra cứu|vận đơn|đơn hàng|don hang|đơn gần đây|don gan day|đơn của tôi|don cua toi|đơn ở đâu|don o dau|kiem tra don/i.test(query);
       const isReturnQuery = /hoàn|bom|phí hoàn/i.test(query);
 
       let fallbackText = '';
       let toolsUsed: string[] = [];
+      let fallbackShipmentCards: ShipmentCard[] | undefined;
 
-      if (isClaimQuery) {
+      if (isDamageQuery) {
+        toolsUsed = ['getDamageAndClaimPolicy(Fragile Goods & Damage Settlement)'];
+        fallbackText = `Quy trình xử lý sự cố hàng hư hỏng / bể vỡ theo Quy chuẩn Vận hành Nexus Logistics:\n\n` +
+          `1. Khi nhận hàng: Quý khách đồng kiểm với bưu tá, yêu cầu lập Biên bản bất thường tại chỗ (chụp ảnh 4 góc và quay video bưu phẩm nứt vỡ) và từ chối nhận hàng (không thanh toán bất kỳ chi phí nào).\n` +
+          `2. Hạn mức bồi thường:\n` +
+          `• Gói Tiêu chuẩn: Bồi thường tối đa 04 lần cước vận chuyển (không quá 1.000.000 VNĐ/đơn theo Luật Bưu chính).\n` +
+          `• Gói Bảo hiểm khai giá: Đền bù 100% giá trị tổn thất thực tế theo hóa đơn, trần tối đa 30.000.000 VNĐ/đơn.\n` +
+          `3. Thời hạn giải quyết: Thẩm định trong 24h - 48h, hoàn tất chi trả bồi thường trong 03 - 05 ngày làm việc.\n\n` +
+          `📖 Trích dẫn: [02-insurance-and-claim-policy.md & 09-negative-exceptions-and-incident-handling.md]`;
+      } else if (isClaimQuery) {
         toolsUsed = ['trackClaimStatus(CLM-202609-001)'];
         fallbackText = `Dạ chào bạn, Nexus Logistics đã tra cứu dữ liệu thời gian thực:\n\n` +
           `[TIẾN ĐỘ XỬ LÝ HỒ SƠ BỒI THƯỜNG MÃ CLM-202609-001]:\n` +
@@ -239,15 +353,63 @@ export const FloatingAiChatWidget: React.FC = () => {
           `• Với Shop có tài khoản: Hệ thống tự động cấn trừ vào Bảng kê đối soát tiền thu hộ COD (COD Settlement Batch).\n` +
           `2. Đối Tác VIP Doanh Nghiệp (Sản lượng > 1.000 đơn/tháng): Áp dụng 0 VNĐ (Miễn phí chuyển hoàn 100%) theo thỏa thuận hợp đồng.\n\n` +
           `📖 Trích dẫn: [04-delivery-process-and-faq.md - Mục 5]`;
+      } else if (isMultiOrderQuery) {
+        toolsUsed = ['getUserShipments(Multi-order Overview)'];
+        fallbackText = `Hệ thống Nexus Logistics ghi nhận tài khoản của bạn hiện có 03 đơn hàng đang hoạt động. Bạn có thể bấm trực tiếp vào từng Thẻ đơn hàng bên dưới để tra cứu hành trình chi tiết:`;
+        fallbackShipmentCards = [
+          {
+            code: '333011573361',
+            itemName: 'Kiện hàng mẫu',
+            status: 'TASK_ASSIGNED',
+            statusText: 'Đã phân công bưu tá lấy hàng',
+            receiverCity: 'Thành phố Hà Nội',
+            codAmount: 0,
+            createdAt: '26/09/2026',
+          },
+          {
+            code: 'NX-88992211',
+            itemName: 'Linh kiện điện tử cao cấp',
+            status: 'OUT_FOR_DELIVERY',
+            statusText: 'Đang trên đường giao hàng',
+            receiverCity: 'TP. Hồ Chí Minh',
+            codAmount: 1500000,
+            createdAt: '25/09/2026',
+          },
+          {
+            code: 'NX-10293844',
+            itemName: 'Thời trang may mặc',
+            status: 'IN_TRANSIT',
+            statusText: 'Đang trung chuyển qua Hub Đà Nẵng',
+            receiverCity: 'Đà Nẵng',
+            codAmount: 320000,
+            createdAt: '24/09/2026',
+          },
+        ];
       } else if (isTrackingQuery) {
-        toolsUsed = ['trackShipment(NX-88992211)'];
-        fallbackText = `[THÔNG TIN HÀNH TRÌNH VẬN ĐƠN NX-88992211]:\n` +
-          `• Trạng thái: Đang trung chuyển qua Hub Đà Nẵng (IN_TRANSIT)\n` +
-          `• Tuyến đường: TP. Hồ Chí Minh ➔ Hà Nội\n` +
-          `• Dự kiến phát: 18:00 Ngày mai\n` +
-          `• Lịch sử: Shipper lấy hàng (14/09 09:30) ➔ Xuất Hub Tân Bình ➔ Đang bốc xếp lên xe tải liên tỉnh Bắc - Nam.`;
+        toolsUsed = ['trackShipment(333011573361)'];
+        fallbackText = `[THÔNG TIN HÀNH TRÌNH VẬN ĐƠN GẦN NHẤT 333011573361]:\n` +
+          `• Trạng thái: Đã phân công nhân viên điều phối lấy hàng (TASK_ASSIGNED)\n` +
+          `• Hàng hóa: Kiện hàng mẫu (Khối lượng: 1.0 kg - COD: 0 VNĐ)\n` +
+          `• Tuyến đường: Hub Tân Định (TP.HCM) ➔ Hub Ba Đình (Hà Nội)\n` +
+          `• Lịch sử: Đã tạo đơn thành công trên hệ thống ➔ Hệ thống tự động chỉ định bưu cục gốc tiếp nhận.\n\n` +
+          `💡 Mẹo: Bạn có thể chọn Thẻ đơn hàng bên dưới để tra cứu hoặc gửi mã vận đơn cụ thể.`;
+        fallbackShipmentCards = [
+          {
+            code: '333011573361',
+            itemName: 'Kiện hàng mẫu',
+            status: 'TASK_ASSIGNED',
+            statusText: 'Đã phân công bưu tá lấy hàng',
+            receiverCity: 'Thành phố Hà Nội',
+            codAmount: 0,
+            createdAt: '26/09/2026',
+          },
+        ];
       } else {
-        fallbackText = `Hệ thống Nexus Logistics AI đã tiếp nhận câu hỏi "${query}". Bạn có thể hỏi về tra cứu vận đơn NX-, tiến độ bồi thường CLM-, hoặc cách tính cước IATA và chuyển hoàn bưu chính.`;
+        fallbackText = `Dạ chào bạn, tôi là Chuyên viên Trợ lý AI Bưu chính Nexus Logistics. Tôi có thể hỗ trợ bạn:\n` +
+          `1. Tra cứu hành trình bưu phẩm (gửi mã vận đơn NX-... hoặc số bưu gửi).\n` +
+          `2. Kiểm tra tiến độ đền bù khiếu nại (mã CLM-...). \n` +
+          `3. Tư vấn quy trình xử lý hàng hư hỏng, bể vỡ, chính sách chuyển hoàn và tính cước IATA.\n\n` +
+          `Bạn cần hỗ trợ nghiệp vụ nào trên đây ạ?`;
       }
 
       const botMsg: ChatMessage = {
@@ -256,6 +418,7 @@ export const FloatingAiChatWidget: React.FC = () => {
         text: fallbackText,
         time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
         toolsUsed,
+        shipmentCards: fallbackShipmentCards,
       };
       setMessages((prev) => [...prev, botMsg]);
     } finally {
@@ -398,6 +561,14 @@ export const FloatingAiChatWidget: React.FC = () => {
 
                   {/* Message content */}
                   <FormattedChatMessage text={msg.text} isUser={msg.sender === 'user'} />
+
+                  {/* Interactive Shipment Cards */}
+                  {msg.shipmentCards && msg.shipmentCards.length > 0 && (
+                    <InteractiveShipmentCards
+                      cards={msg.shipmentCards}
+                      onSelect={(code) => handleSendMessage(`Tra cứu hành trình đơn ${code}`)}
+                    />
+                  )}
 
                   {/* Citations */}
                   {msg.citations && msg.citations.length > 0 && (

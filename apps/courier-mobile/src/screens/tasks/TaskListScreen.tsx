@@ -25,6 +25,7 @@ import { shipmentApi } from '../../features/shipment/shipment.api';
 import type { ShipmentDto, ShipmentMetadata } from '../../features/shipment/shipment.types';
 import { tasksApi } from '../../features/tasks/tasks.api';
 import { useAssignedTasksQuery } from '../../features/tasks/tasks.queries';
+import { useCodRecordsQuery } from '../../features/cod/cod.queries';
 import type { TaskDto, TaskStatus, TaskType } from '../../features/tasks/tasks.types';
 import type { AppNavigatorParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
@@ -296,9 +297,60 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
     accessToken: session?.tokens.accessToken ?? null,
     courierId,
   });
+  const codRecordsQuery = useCodRecordsQuery({
+    courierId,
+    accessToken: session?.tokens.accessToken ?? null,
+  });
   const onRefresh = () => {
     void tasksQuery.refetch();
+    void codRecordsQuery.refetch();
     void refreshMobilePermissions();
+  };
+
+  const cashNeedRemit = useMemo(() => {
+    const records = codRecordsQuery.data ?? [];
+    return records
+      .filter((r) => r.paymentMethod === 'COD' && r.status === 'COLLECTED')
+      .reduce((sum, r) => sum + (r.collectedAmount ?? r.codAmount ?? 0), 0);
+  }, [codRecordsQuery.data]);
+
+  const overdueCashRecords = useMemo(() => {
+    const records = codRecordsQuery.data ?? [];
+    const today = new Date();
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+
+    return records.filter((r) => {
+      if (r.paymentMethod !== 'COD' || r.status !== 'COLLECTED') {
+        return false;
+      }
+      const recordDate = new Date(r.collectedAt || r.createdAt);
+      return !Number.isNaN(recordDate.getTime()) && recordDate.getTime() < todayStart;
+    });
+  }, [codRecordsQuery.data]);
+
+  const overdueCashAmount = useMemo(() => {
+    return overdueCashRecords.reduce(
+      (sum, r) => sum + (r.collectedAmount ?? r.codAmount ?? 0),
+      0,
+    );
+  }, [overdueCashRecords]);
+
+  const isOverdueCodLocked = overdueCashAmount > 0;
+  const isCashOverLimit = cashNeedRemit >= 15_000_000;
+
+  const handleOpenTask = (taskId: string) => {
+    if (isOverdueCodLocked) {
+      Alert.alert(
+        '🔒 Tài khoản bị khóa',
+        `Bạn có ${overdueCashAmount.toLocaleString('vi-VN')}đ tiền COD thu từ ngày hôm trước chưa nộp. Theo quy định, cuối ngày không đóng COD thì qua ngày sau tài khoản sẽ bị khóa cho đến khi nộp xong.`,
+        [
+          { text: 'Nộp tiền ngay', onPress: () => navigation.navigate('CodStats') },
+          { text: 'Đóng', style: 'cancel' },
+        ],
+      );
+      return;
+    }
+    navigation.navigate('TaskDetail', { taskId });
   };
 
   const [taskTypeFilter, setTaskTypeFilter] = useState<TaskType | 'ALL'>(
@@ -727,6 +779,34 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
             </Text>
           </Pressable>
         </View>
+
+        {isOverdueCodLocked ? (
+          <View style={styles.overdueLockBar}>
+            <Ionicons name="lock-closed" size={16} color="#DC2626" />
+            <Text style={styles.overdueLockText}>
+              <Text style={{ fontWeight: '800' }}>TÀI KHOẢN BỊ KHÓA:</Text> Nợ COD qua ngày {overdueCashAmount.toLocaleString('vi-VN')}đ ({overdueCashRecords.length} đơn). Vui lòng nộp tiền để mở khóa giao hàng!
+            </Text>
+            <Pressable
+              onPress={() => navigation.navigate('CodStats')}
+              style={styles.overdueLockBtn}
+            >
+              <Text style={styles.overdueLockBtnText}>Nộp ngay</Text>
+            </Pressable>
+          </View>
+        ) : isCashOverLimit ? (
+          <View style={styles.cashWarningBar}>
+            <Ionicons name="warning" size={16} color="#DC2626" />
+            <Text style={styles.cashWarningText}>
+              Đang giữ <Text style={{ fontWeight: '800' }}>{cashNeedRemit.toLocaleString('vi-VN')}đ</Text> COD mặt (vượt trần 15tr). Vui lòng nộp tiền!
+            </Text>
+            <Pressable
+              onPress={() => navigation.navigate('CodStats')}
+              style={styles.cashWarningButton}
+            >
+              <Text style={styles.cashWarningBtnText}>Nộp tiền</Text>
+            </Pressable>
+          </View>
+        ) : null}
       </View>
 
       {offlinePendingCount > 0 ? (
@@ -800,7 +880,7 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
             <Card
               key={item.task.id}
               style={[styles.taskCard, index === 0 && { marginTop: theme.spacing.xs }]}
-              onPress={() => navigation.navigate('TaskDetail', { taskId: item.task.id })}
+              onPress={() => handleOpenTask(item.task.id)}
             >
               {isOptimizedRoute && routeStats?.stepOrderMap[item.task.id] ? (
                 <View style={styles.stepBadge}>
@@ -895,7 +975,7 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
                 {group.tasks.map((item) => (
                   <Pressable
                     key={item.task.id}
-                    onPress={() => navigation.navigate('TaskDetail', { taskId: item.task.id })}
+                    onPress={() => handleOpenTask(item.task.id)}
                     style={({ pressed }) => [
                       styles.groupShipmentRow,
                       pressed && styles.groupShipmentRowPressed,
@@ -1428,6 +1508,67 @@ const styles = StyleSheet.create({
   stepBadgeText: {
     color: '#0369a1',
     fontSize: 11,
+    fontWeight: '800',
+  },
+  cashWarningBar: {
+    marginHorizontal: theme.spacing.lg,
+    marginTop: theme.spacing.xs,
+    marginBottom: theme.spacing.xs,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#F87171',
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  cashWarningText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#991B1B',
+  },
+  cashWarningButton: {
+    backgroundColor: '#DC2626',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+  },
+  cashWarningBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  overdueLockBar: {
+    marginHorizontal: theme.spacing.lg,
+    marginTop: theme.spacing.xs,
+    marginBottom: theme.spacing.xs,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1.5,
+    borderColor: '#DC2626',
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  overdueLockText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#7F1D1D',
+    lineHeight: 16,
+  },
+  overdueLockBtn: {
+    backgroundColor: '#991B1B',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+  },
+  overdueLockBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
     fontWeight: '800',
   },
 });
