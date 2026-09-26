@@ -95,13 +95,17 @@ export class ChatService {
       if (isGeneralTrackingQuery) {
         if (isGuest) {
           // KHÁCH VÃNG LAI CHƯA ĐĂNG NHẬP -> TUYỆT ĐỐI KHÔNG HIỂN THỊ ĐƠN BẤT KỲ HOẶC PHỊA RA DỮ LIỆU
-          toolAugmentedContext += `\n[CẢNH BÁO BẢO MẬT - NGƯỜI DÙNG CHƯA ĐĂNG NHẬP]: Khách hàng chưa đăng nhập tài khoản và chưa cung cấp mã vận đơn cụ thể. Hãy thông báo lịch sự cho khách hàng rằng để bảo vệ quyền riêng tư và dữ liệu cá nhân, khách hàng vui lòng: 1) Đăng nhập tài khoản để xem tự động danh sách đơn hàng của mình; hoặc 2) Cung cấp Mã vận đơn cụ thể (ví dụ: 101000000001) để hệ thống tra cứu hành trình.\n`;
+          toolAugmentedContext += `\n[CẢNH BÁO BẢO MẬT - NGƯỜI DÙNG CHƯA ĐĂNG NHẬP]: Khách hàng chưa đăng nhập tài khoản và chưa cung cấp mã vận đơn cụ thể. Hãy thông báo lịch sự cho khách hàng rằng để bảo vệ quyền riêng tư và dữ liệu cá nhân (PII) theo Luật Bưu chính, khách hàng vui lòng: 1) Đăng nhập tài khoản để hệ thống tự động hiển thị danh sách đơn hàng của mình; hoặc 2) Cung cấp Mã vận đơn cụ thể (ví dụ: 101000000001 hoặc NX-...) để tra cứu hành trình.\n`;
         } else {
-          const latestRes = await this.toolsService.getLatestShipment(dto.userId);
-          if (latestRes.found && latestRes.tracking) {
-            const t = latestRes.tracking;
-            toolsUsed.push(`getLatestShipment(User:${dto.userId})`);
-            toolAugmentedContext += `\n[THÔNG TIN ĐƠN HÀNG MỚI TẠO GẦN NHẤT CỦA BẠN (Tài khoản: ${dto.userId})]:\n` +
+          toolsUsed.push(`getUserShipments(User:${dto.userId})`);
+          const userShipments = await this.toolsService.getUserShipments(dto.userId, 5);
+
+          if (!userShipments.found || userShipments.items.length === 0) {
+            toolAugmentedContext += `\n[KẾT QUẢ TRA CỨU]: Tài khoản ${dto.userId} hiện chưa có đơn hàng nào được tạo trên hệ thống Nexus Logistics. Hãy thông báo lịch sự cho khách hàng rằng tài khoản chưa phát sinh đơn gửi và mời khách hàng gửi mã vận đơn cụ thể nếu muốn tra cứu đơn nhận.\n`;
+          } else if (userShipments.items.length === 1 && userShipments.singleTracking) {
+            // Trường hợp 1: Khách hàng chỉ có duy nhất 1 đơn hàng -> Trả về chi tiết hành trình
+            const t = userShipments.singleTracking;
+            toolAugmentedContext += `\n[THÔNG TIN ĐƠN HÀNG DUY NHẤT CỦA BẠN (Tài khoản: ${dto.userId})]:\n` +
               `- Mã vận đơn: ${t.trackingNumber}\n` +
               `- Trạng thái hiện tại: ${t.statusText} (${t.status})\n` +
               (t.itemName ? `- Tên hàng hóa: ${t.itemName}\n` : '') +
@@ -113,7 +117,16 @@ export class ChatService {
               `- Lịch sử vận chuyển:\n` +
               t.timeline.map((item) => `  * ${item.time}: ${item.description}`).join('\n') + '\n';
           } else {
-            toolAugmentedContext += `\n[KẾT QUẢ TRA CỨU]: Tài khoản ${dto.userId} hiện chưa có đơn hàng nào được tạo trên hệ thống Nexus Logistics. Hãy thông báo lịch sự cho khách hàng rằng tài khoản chưa phát sinh đơn gửi và mời khách hàng gửi mã vận đơn cụ thể nếu muốn tra cứu đơn nhận.\n`;
+            // Trường hợp 2: Khách hàng có NHIỀU ĐƠN HÀNG (2-5+ đơn) -> Trả về danh sách tóm tắt chuyên nghiệp
+            toolAugmentedContext += `\n[DANH SÁCH CÁC ĐƠN HÀNG GẦN ĐÂY CỦA TÀI KHOẢN ${dto.userId} (Tổng cộng: ${userShipments.total} đơn)]:\n` +
+              userShipments.items.map((it, idx) =>
+                `  ${idx + 1}. Mã vận đơn: ${it.code} | Hàng hóa: ${it.itemName} | Trạng thái: ${it.statusText} (${it.status}) | Điểm đến: ${it.receiverCity || it.receiverAddress} | Tiền COD: ${it.codAmount ? it.codAmount.toLocaleString('vi-VN') + ' VNĐ' : '0 VNĐ'} | Tạo ngày: ${it.createdAt}`
+              ).join('\n') +
+              `\n\n[HƯỚNG DẪN TRÌNH BÀY CHO AI KHI CÓ NHIỀU ĐƠN]:\n` +
+              `- Thông báo rõ ràng cho khách hàng biết tài khoản đang có ${userShipments.total} đơn hàng trên hệ thống.\n` +
+              `- Trình bày danh sách các đơn hàng một cách trực quan, rõ ràng bằng gạch đầu dòng hoặc bảng ngắn (gồm Mã vận đơn, Tên kiện hàng, Trạng thái hiện tại, Nơi nhận).\n` +
+              `- Gợi ý tương tác (Call to Action): Hỏi khách hàng muốn xem chi tiết hành trình của đơn nào trong số các đơn trên (ví dụ: "Bạn muốn tra cứu hành trình chi tiết của đơn nào? Hãy gửi mã vận đơn cụ thể hoặc gõ số thứ tự đơn nhé").\n` +
+              `- Tuyệt đối không phịa thông tin hành trình của các đơn khác.\n`;
           }
         }
       }

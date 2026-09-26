@@ -45,6 +45,24 @@ function maskAddress(addr?: string): string {
   return '***, ' + addr;
 }
 
+export function formatShipmentStatusVi(status?: string): string {
+  switch (status) {
+    case 'CREATED': return 'Đã tạo đơn hàng thành công';
+    case 'TASK_ASSIGNED': return 'Đã phân công bưu tá lấy hàng';
+    case 'PICKED_UP': return 'Bưu tá đã lấy hàng thành công';
+    case 'RECEIVED_ORIGIN_HUB': return 'Đã nhập kho bưu cục gốc';
+    case 'IN_TRANSIT': return 'Đang trung chuyển liên tỉnh';
+    case 'RECEIVED_DESTINATION_HUB': return 'Đã đến bưu cục phát';
+    case 'OUT_FOR_DELIVERY': return 'Bưu tá đang trên đường giao hàng';
+    case 'DELIVERED': return 'Đã giao hàng thành công';
+    case 'FAILED_ATTEMPT': return 'Giao hàng không thành công (chờ phát lại)';
+    case 'RETURNING': return 'Đang chuyển hoàn về người gửi';
+    case 'RETURNED': return 'Đã chuyển hoàn thành công';
+    case 'CANCELLED': return 'Đã hủy đơn hàng';
+    default: return status || 'Đang cập nhật';
+  }
+}
+
 export interface PricingResult {
   weightKg: number;
   serviceType: string;
@@ -232,7 +250,98 @@ export class LogisticsToolsService {
   }
 
   /**
-   * Lấy đơn hàng mới nhất (theo userId nếu đã đăng nhập)
+  /**
+   * Lấy danh sách các đơn hàng gần đây (theo userId nếu đã đăng nhập)
+   * Hỗ trợ trường hợp khách có 1 đơn hoặc NHIỀU ĐƠN HÀNG (Multiple Shipments)
+   */
+  public async getUserShipments(userId?: string, limit = 5): Promise<{
+    found: boolean;
+    isUserSpecific: boolean;
+    total: number;
+    items: Array<{
+      code: string;
+      status: string;
+      statusText: string;
+      itemName?: string;
+      receiverName?: string;
+      receiverCity?: string;
+      receiverAddress?: string;
+      codAmount?: number;
+      createdAt?: string;
+    }>;
+    singleTracking?: TrackingResult;
+    notFoundMessage?: string;
+  }> {
+    this.logger.log(`Tool getUserShipments invoked for userId: ${userId || 'anonymous'}, limit: ${limit}`);
+
+    // Khách vãng lai (chưa đăng nhập) -> Tuyệt đối không trả về đơn hàng của người khác!
+    if (!userId || userId === 'anonymous') {
+      return {
+        found: false,
+        isUserSpecific: false,
+        total: 0,
+        items: [],
+        notFoundMessage: 'Bạn chưa đăng nhập tài khoản. Vui lòng đăng nhập hoặc cung cấp mã vận đơn cụ thể để hệ thống tra cứu an toàn.',
+      };
+    }
+
+    try {
+      // Query danh sách đơn gửi của chính khách hàng qua endpoint /shipments/sent
+      const queryUrl = `${this.shipmentServiceUrl}/shipments/sent?limit=${limit}&userId=${encodeURIComponent(userId)}`;
+      const res = await fetch(queryUrl, { signal: AbortSignal.timeout(3000) });
+      if (res.ok) {
+        const data = await res.json();
+        const rawItems = Array.isArray(data) ? data : (data?.items || []);
+        const total = data?.pageInfo?.total ?? rawItems.length;
+
+        if (rawItems.length > 0) {
+          const items = rawItems.map((s: any) => {
+            const meta = s.metadata || {};
+            const pkg = meta.package || {};
+            const receiver = meta.receiver || {};
+            return {
+              code: s.code,
+              status: s.currentStatus || 'IN_TRANSIT',
+              statusText: formatShipmentStatusVi(s.currentStatus),
+              itemName: pkg.itemName || s.itemName || 'Kiện hàng',
+              receiverName: receiver.name || s.receiverName || '',
+              receiverCity: receiver.province || receiver.city || '',
+              receiverAddress: [receiver.ward, receiver.district, receiver.province].filter(Boolean).join(', ') || receiver.address || '',
+              codAmount: pkg.codAmount ?? s.codAmount ?? 0,
+              createdAt: s.createdAt ? new Date(s.createdAt).toLocaleString('vi-VN') : '',
+            };
+          });
+
+          // Nếu chỉ có đúng 1 đơn hàng, lấy thêm tracking chi tiết hành trình
+          let singleTracking: TrackingResult | undefined;
+          if (items.length === 1) {
+            singleTracking = await this.trackShipment(items[0].code, false);
+          }
+
+          return {
+            found: true,
+            isUserSpecific: true,
+            total,
+            items,
+            singleTracking,
+          };
+        }
+      }
+    } catch (err: any) {
+      this.logger.warn(`Failed to fetch shipments for user ${userId}: ${err.message}`);
+    }
+
+    return {
+      found: false,
+      isUserSpecific: true,
+      total: 0,
+      items: [],
+      notFoundMessage: `Tài khoản ${userId} hiện chưa phát sinh đơn gửi nào trên hệ thống Nexus Logistics.`,
+    };
+  }
+
+  /**
+   * Tương thích ngược: Lấy đơn hàng mới nhất
    */
   public async getLatestShipment(userId?: string): Promise<{
     found: boolean;
@@ -241,43 +350,13 @@ export class LogisticsToolsService {
     tracking?: TrackingResult;
     notFoundMessage?: string;
   }> {
-    this.logger.log(`Tool getLatestShipment invoked for userId: ${userId || 'anonymous'}`);
-
-    // Khách vãng lai (chưa đăng nhập) -> Tuyệt đối không trả về đơn hàng của người khác!
-    if (!userId || userId === 'anonymous') {
-      return {
-        found: false,
-        isUserSpecific: false,
-        notFoundMessage: 'Bạn chưa đăng nhập tài khoản. Vui lòng đăng nhập hoặc cung cấp mã vận đơn cụ thể để hệ thống tra cứu an toàn.',
-      };
-    }
-
-    try {
-      // Query danh sách đơn gửi của chính khách hàng qua endpoint /shipments/sent
-      const queryUrl = `${this.shipmentServiceUrl}/shipments/sent?limit=1&userId=${encodeURIComponent(userId)}`;
-      const res = await fetch(queryUrl, { signal: AbortSignal.timeout(3000) });
-      if (res.ok) {
-        const data = await res.json();
-        const items = Array.isArray(data) ? data : (data?.items || []);
-        if (items.length > 0) {
-          const latest = items[0];
-          const tracking = await this.trackShipment(latest.code, false);
-          return {
-            found: true,
-            isUserSpecific: true,
-            shipment: latest,
-            tracking,
-          };
-        }
-      }
-    } catch (err: any) {
-      this.logger.warn(`Failed to fetch latest shipment for user ${userId}: ${err.message}`);
-    }
-
+    const res = await this.getUserShipments(userId, 1);
     return {
-      found: false,
-      isUserSpecific: true,
-      notFoundMessage: `Tài khoản ${userId} hiện chưa phát sinh đơn gửi nào trên hệ thống Nexus Logistics.`,
+      found: res.found,
+      isUserSpecific: res.isUserSpecific,
+      shipment: res.items[0],
+      tracking: res.singleTracking,
+      notFoundMessage: res.notFoundMessage,
     };
   }
 
