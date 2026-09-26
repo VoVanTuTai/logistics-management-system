@@ -29,12 +29,12 @@ Giải thuật được cài đặt hoàn chỉnh trong class `ChunkerService` (
 
 ```mermaid
 flowchart TD
-    RawDoc["1. Tài liệu Markdown Nghiệp vụ thô (.md)<br/>(Cước phí, Luật Bưu chính, Đóng gói, Đồng kiểm)"] --> Step1["Giai đoạn 1: AST Heading Parser<br/>Bóc tách phả hệ tiêu đề (# H1, ## H2, ### H3, #### H4)"]
-    Step1 --> Step2["Giai đoạn 2: Contextual Breadcrumb Enrichment<br/>Kế thừa chuỗi tiêu đề cha-con: [Tài liệu] > [Mục lớn] > [Mục con]"]
-    Step2 --> Step3{"Giai đoạn 3: Kiểm tra kích thước<br/>(Words <= 250 từ?)"}
-    Step3 -->|Đúng (Ngắn / Vừa vặn)| Step4A["Giữ nguyên toàn vẹn Section<br/>Bảo toàn 100% bảng biểu & điều khoản"]
-    Step3 -->|Sai (Dài vượt chuẩn)| Step4B["Sliding Window Overlap Engine<br/>Cắt 250 từ/chunk, Gối đầu 40 từ (Overlap 16%)<br/>Đánh số phân đoạn: [Tiêu đề] (phần N)"]
-    Step4A --> Step5["Giai đoạn 4: Metadata Packaging & Vector Injection<br/>Tạo Payload JSON: id, sourceFile, sectionTitle, content, charCount, tokenEstimate"]
+    RawDoc["1. Tài liệu Markdown Nghiệp vụ thô (.md)<br/>Cước phí, Luật Bưu chính, Đóng gói, Đồng kiểm"] --> Step1["Giai đoạn 1: AST Heading Parser<br/>Bóc tách phả hệ tiêu đề H1, H2, H3, H4"]
+    Step1 --> Step2["Giai đoạn 2: Contextual Breadcrumb Enrichment<br/>Kế thừa chuỗi tiêu đề cha - con: Tài liệu > Mục lớn > Mục con"]
+    Step2 --> Step3{"Giai đoạn 3: Kiểm tra kích thước<br/>Độ dài từ nhỏ hơn hoặc bằng 250 từ?"}
+    Step3 -->|"Đúng (Ngắn / Vừa vặn)"| Step4A["Giữ nguyên toàn vẹn Section<br/>Bảo toàn 100% bảng biểu và điều khoản"]
+    Step3 -->|"Sai (Dài vượt chuẩn)"| Step4B["Sliding Window Overlap Engine<br/>Cắt 250 từ/chunk, Gối đầu 40 từ (Overlap 16%)<br/>Đánh số phân đoạn: Tiêu đề (phần N)"]
+    Step4A --> Step5["Giai đoạn 4: Metadata Packaging và Vector Injection<br/>Tạo Payload JSON: id, sourceFile, sectionTitle, content, charCount, tokenEstimate"]
     Step4B --> Step5
     Step5 --> VectorStore[("In-Memory Vector Store<br/>docs/knowledge-base/vector-index.json")]
 ```
