@@ -16,13 +16,25 @@ import { customerApiClient } from '../services/api/client';
 import { authStore } from '../store/authStore';
 import { colors, spacing, shadows, borderRadius } from '../theme';
 
-export interface ChatMessage {
+export interface ShipmentCard {
+  code: string;
+  status?: string;
+  statusText?: string;
+  itemName?: string;
+  receiverCity?: string;
+  receiverName?: string;
+  codAmount?: number;
+  createdAt?: string;
+}
+
+interface ChatMessage {
   id: string;
   sender: 'user' | 'bot';
   text: string;
   time: string;
   toolsUsed?: string[];
   citations?: { file: string; title: string; score: number }[];
+  shipmentCards?: ShipmentCard[];
 }
 
 const QUICK_SUGGESTIONS = [
@@ -242,11 +254,13 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
           time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
           toolsUsed: answerData.toolsUsed,
           citations: answerData.citations,
+          shipmentCards: answerData.shipmentCards,
         };
         setMessages((prev) => [...prev, botMsg]);
       } else {
         throw new Error('No answer received from server');
       }
+    } catch {
       // 2. Fallback thông minh giống 100% Guest Web khi không có kết nối
       const isClaimQuery = /CLM|khiếu nại|bồi thường|đền bù/i.test(query);
       const isDamageQuery = /hỏng|hư|bể|vỡ|móp|thiệt hại/i.test(query);
@@ -432,6 +446,42 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
 
                     {/* Text Body */}
                     <RenderFormattedMessage text={msg.text} isUser={msg.sender === 'user'} />
+
+                    {/* Interactive Shipment Cards */}
+                    {msg.shipmentCards && msg.shipmentCards.length > 0 && (
+                      <View style={styles.shipmentCardsContainer}>
+                        <View style={styles.shipmentCardsHeader}>
+                          <Text style={styles.shipmentCardsTitle}>DANH SÁCH BƯU KIỆN ({msg.shipmentCards.length})</Text>
+                          <Text style={styles.shipmentCardsSub}>Chạm thẻ để tra cứu</Text>
+                        </View>
+                        {msg.shipmentCards.map((card, idx) => (
+                          <TouchableOpacity
+                            key={card.code || idx}
+                            style={styles.shipmentCardItem}
+                            onPress={() => handleSendMessage(`Tra cứu hành trình đơn ${card.code}`)}
+                            activeOpacity={0.7}
+                          >
+                            <View style={styles.shipmentCardRowTop}>
+                              <Text style={styles.shipmentCardCode}>{card.code}</Text>
+                              <View style={styles.shipmentCardBadge}>
+                                <Text style={styles.shipmentCardBadgeText}>
+                                  {card.statusText || card.status || 'Đang xử lý'}
+                                </Text>
+                              </View>
+                            </View>
+                            <Text style={styles.shipmentCardItemName} numberOfLines={1}>
+                              📦 {card.itemName || 'Kiện hàng'}
+                            </Text>
+                            <View style={styles.shipmentCardRowBottom}>
+                              <Text style={styles.shipmentCardDest} numberOfLines={1}>
+                                📍 {card.receiverCity || card.receiverName || 'Điểm giao'}
+                              </Text>
+                              <Text style={styles.shipmentCardAction}>Tra cứu ➔</Text>
+                            </View>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
 
                     {/* Citations */}
                     {msg.citations && msg.citations.length > 0 && (
@@ -815,5 +865,84 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
     textAlign: 'center',
     marginTop: 6,
+  },
+  shipmentCardsContainer: {
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    gap: 6,
+  },
+  shipmentCardsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  shipmentCardsTitle: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#4338CA',
+    letterSpacing: 0.5,
+  },
+  shipmentCardsSub: {
+    fontSize: 9,
+    color: '#94A3B8',
+    fontStyle: 'italic',
+  },
+  shipmentCardItem: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 9,
+    gap: 4,
+  },
+  shipmentCardRowTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  shipmentCardCode: {
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    fontWeight: '700',
+    fontSize: 12,
+    color: '#0F172A',
+  },
+  shipmentCardBadge: {
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+  },
+  shipmentCardBadgeText: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: '#4338CA',
+  },
+  shipmentCardItemName: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#334155',
+  },
+  shipmentCardRowBottom: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: '#EDF2F7',
+  },
+  shipmentCardDest: {
+    fontSize: 10,
+    color: '#64748B',
+    flex: 1,
+  },
+  shipmentCardAction: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#4F46E5',
   },
 });

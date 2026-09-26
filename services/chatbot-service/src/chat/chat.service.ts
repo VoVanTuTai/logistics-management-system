@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { EmbeddingService } from '../rag/embedding.service';
 import { VectorStoreService } from '../rag/vector-store.service';
 import { LogisticsToolsService } from '../tools/logistics-tools.service';
-import type { ChatResponseDto, Citation } from '../rag/rag.types';
+import type { ChatResponseDto, Citation, ShipmentCardDto } from '../rag/rag.types';
 import type { ChatRequestDto } from './dto/chat-request.dto';
 
 function normalizeVietnamese(text: string): string {
@@ -44,6 +44,7 @@ export class ChatService {
     const question = dto.message.trim();
     const normalizedQ = normalizeVietnamese(question);
     const toolsUsed: string[] = [];
+    let shipmentCards: ShipmentCardDto[] | undefined;
 
     const isGuest = !dto.userId || dto.senderRole === 'GUEST';
 
@@ -63,6 +64,19 @@ export class ChatService {
       if (!trackRes.found) {
         toolAugmentedContext += `\n[KẾT QUẢ TRA CỨU]: ${trackRes.notFoundMessage || `Không tìm thấy mã vận đơn ${trackingCode} trên hệ thống.`}\n`;
       } else {
+        shipmentCards = [
+          {
+            code: trackRes.trackingNumber,
+            status: trackRes.status,
+            statusText: trackRes.statusText,
+            itemName: trackRes.itemName,
+            receiverCity: trackRes.receiverCity || trackRes.receiverAddress,
+            receiverName: trackRes.receiverName,
+            codAmount: trackRes.codAmount,
+            createdAt: trackRes.createdAt,
+          },
+        ];
+
         toolAugmentedContext += `\n[THÔNG TIN TRA CỨU ĐƠN HÀNG MÃ ${trackingCode}${isGuest ? ' (CHẾ ĐỘ KHÁCH VÃNG LAI - ĐÃ MÃ HÓA THÔNG TIN CÁ NHÂN PII)' : ''}]:\n` +
           `- Mã vận đơn: ${trackRes.trackingNumber}\n` +
           `- Trạng thái: ${trackRes.statusText} (${trackRes.status})\n` +
@@ -102,31 +116,45 @@ export class ChatService {
 
           if (!userShipments.found || userShipments.items.length === 0) {
             toolAugmentedContext += `\n[KẾT QUẢ TRA CỨU]: Tài khoản ${dto.userId} hiện chưa có đơn hàng nào được tạo trên hệ thống Nexus Logistics. Hãy thông báo lịch sự cho khách hàng rằng tài khoản chưa phát sinh đơn gửi và mời khách hàng gửi mã vận đơn cụ thể nếu muốn tra cứu đơn nhận.\n`;
-          } else if (userShipments.items.length === 1 && userShipments.singleTracking) {
-            // Trường hợp 1: Khách hàng chỉ có duy nhất 1 đơn hàng -> Trả về chi tiết hành trình
-            const t = userShipments.singleTracking;
-            toolAugmentedContext += `\n[THÔNG TIN ĐƠN HÀNG DUY NHẤT CỦA BẠN (Tài khoản: ${dto.userId})]:\n` +
-              `- Mã vận đơn: ${t.trackingNumber}\n` +
-              `- Trạng thái hiện tại: ${t.statusText} (${t.status})\n` +
-              (t.itemName ? `- Tên hàng hóa: ${t.itemName}\n` : '') +
-              (t.senderName ? `- Người gửi: ${t.senderName} (${t.senderCity || t.senderAddress || ''})\n` : '') +
-              (t.receiverName ? `- Người nhận: ${t.receiverName} (${t.receiverCity || t.receiverAddress || ''})\n` : '') +
-              (t.codAmount !== undefined ? `- Tiền thu hộ COD: ${t.codAmount.toLocaleString('vi-VN')} VNĐ\n` : '') +
-              `- Vị trí hiện tại: ${t.currentLocation}\n` +
-              `- Thời gian tạo đơn: ${t.createdAt || 'Gần đây'}\n` +
-              `- Lịch sử vận chuyển:\n` +
-              t.timeline.map((item) => `  * ${item.time}: ${item.description}`).join('\n') + '\n';
           } else {
-            // Trường hợp 2: Khách hàng có NHIỀU ĐƠN HÀNG (2-5+ đơn) -> Trả về danh sách tóm tắt chuyên nghiệp
-            toolAugmentedContext += `\n[DANH SÁCH CÁC ĐƠN HÀNG GẦN ĐÂY CỦA TÀI KHOẢN ${dto.userId} (Tổng cộng: ${userShipments.total} đơn)]:\n` +
-              userShipments.items.map((it, idx) =>
-                `  ${idx + 1}. Mã vận đơn: ${it.code} | Hàng hóa: ${it.itemName} | Trạng thái: ${it.statusText} (${it.status}) | Điểm đến: ${it.receiverCity || it.receiverAddress} | Tiền COD: ${it.codAmount ? it.codAmount.toLocaleString('vi-VN') + ' VNĐ' : '0 VNĐ'} | Tạo ngày: ${it.createdAt}`
-              ).join('\n') +
-              `\n\n[HƯỚNG DẪN TRÌNH BÀY CHO AI KHI CÓ NHIỀU ĐƠN]:\n` +
-              `- Thông báo rõ ràng cho khách hàng biết tài khoản đang có ${userShipments.total} đơn hàng trên hệ thống.\n` +
-              `- Trình bày danh sách các đơn hàng một cách trực quan, rõ ràng bằng gạch đầu dòng hoặc bảng ngắn (gồm Mã vận đơn, Tên kiện hàng, Trạng thái hiện tại, Nơi nhận).\n` +
-              `- Gợi ý tương tác (Call to Action): Hỏi khách hàng muốn xem chi tiết hành trình của đơn nào trong số các đơn trên (ví dụ: "Bạn muốn tra cứu hành trình chi tiết của đơn nào? Hãy gửi mã vận đơn cụ thể hoặc gõ số thứ tự đơn nhé").\n` +
-              `- Tuyệt đối không phịa thông tin hành trình của các đơn khác.\n`;
+            // Đính kèm danh sách thẻ đơn hàng shipmentCards vào DTO phản hồi
+            shipmentCards = userShipments.items.map((it) => ({
+              code: it.code,
+              status: it.status,
+              statusText: it.statusText,
+              itemName: it.itemName,
+              receiverCity: it.receiverCity || it.receiverAddress,
+              receiverName: it.receiverName,
+              codAmount: it.codAmount,
+              createdAt: it.createdAt,
+            }));
+
+            if (userShipments.items.length === 1 && userShipments.singleTracking) {
+              // Trường hợp 1: Khách hàng chỉ có duy nhất 1 đơn hàng -> Trả về chi tiết hành trình
+              const t = userShipments.singleTracking;
+              toolAugmentedContext += `\n[THÔNG TIN ĐƠN HÀNG DUY NHẤT CỦA BẠN (Tài khoản: ${dto.userId})]:\n` +
+                `- Mã vận đơn: ${t.trackingNumber}\n` +
+                `- Trạng thái hiện tại: ${t.statusText} (${t.status})\n` +
+                (t.itemName ? `- Tên hàng hóa: ${t.itemName}\n` : '') +
+                (t.senderName ? `- Người gửi: ${t.senderName} (${t.senderCity || t.senderAddress || ''})\n` : '') +
+                (t.receiverName ? `- Người nhận: ${t.receiverName} (${t.receiverCity || t.receiverAddress || ''})\n` : '') +
+                (t.codAmount !== undefined ? `- Tiền thu hộ COD: ${t.codAmount.toLocaleString('vi-VN')} VNĐ\n` : '') +
+                `- Vị trí hiện tại: ${t.currentLocation}\n` +
+                `- Thời gian tạo đơn: ${t.createdAt || 'Gần đây'}\n` +
+                `- Lịch sử vận chuyển:\n` +
+                t.timeline.map((item) => `  * ${item.time}: ${item.description}`).join('\n') + '\n';
+            } else {
+              // Trường hợp 2: Khách hàng có NHIỀU ĐƠN HÀNG (2-5+ đơn) -> Trả về danh sách tóm tắt chuyên nghiệp
+              toolAugmentedContext += `\n[DANH SÁCH CÁC ĐƠN HÀNG GẦN ĐÂY CỦA TÀI KHOẢN ${dto.userId} (Tổng cộng: ${userShipments.total} đơn)]:\n` +
+                userShipments.items.map((it, idx) =>
+                  `  ${idx + 1}. Mã vận đơn: ${it.code} | Hàng hóa: ${it.itemName} | Trạng thái: ${it.statusText} (${it.status}) | Điểm đến: ${it.receiverCity || it.receiverAddress} | Tiền COD: ${it.codAmount ? it.codAmount.toLocaleString('vi-VN') + ' VNĐ' : '0 VNĐ'} | Tạo ngày: ${it.createdAt}`
+                ).join('\n') +
+                `\n\n[HƯỚNG DẪN TRÌNH BÀY CHO AI KHI CÓ NHIỀU ĐƠN]:\n` +
+                `- Thông báo rõ ràng cho khách hàng biết tài khoản đang có ${userShipments.total} đơn hàng trên hệ thống.\n` +
+                `- Trình bày danh sách các đơn hàng một cách trực quan, rõ ràng bằng gạch đầu dòng hoặc bảng ngắn (gồm Mã vận đơn, Tên kiện hàng, Trạng thái hiện tại, Nơi nhận).\n` +
+                `- Gợi ý tương tác (Call to Action): Hỏi khách hàng muốn xem chi tiết hành trình của đơn nào trong số các đơn trên (ví dụ: "Bạn muốn tra cứu hành trình chi tiết của đơn nào? Hãy bấm vào Thẻ đơn hàng bên dưới hoặc gửi mã vận đơn cụ thể nhé").\n` +
+                `- Tuyệt đối không phịa thông tin hành trình của các đơn khác.\n`;
+            }
           }
         }
       }
@@ -444,6 +472,7 @@ export class ChatService {
       citations,
       toolsUsed,
       latencyMs,
+      shipmentCards,
     };
   }
 
