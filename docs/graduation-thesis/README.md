@@ -15,6 +15,7 @@ Thư mục này được tổ chức thành một báo cáo khoa học hoàn ch�
 | **01** | [Chương 1: Tổng quan Kiến trúc Hệ thống](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/01-tong-quan-kien-truc-ai-chatbot.md) | Phân tích kiến trúc 6 tầng (Clients, API Gateway :3000, AI Orchestrator :3013, Live Microservices Mesh, RAG Knowledge Base, LLM Reasoning & Rich UI Output). |
 | **02** | [Chương 2: Cơ sở Lý thuyết & Giải thuật Phân đoạn RAG](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/02-ly-thuyet-va-giai-thuat-chunking-rag.md) | Phân tích nhược điểm của Fixed-size Chunking; Giải thuật **Hybrid Section-Aware Semantic Splitting**; Công thức Overlap 16%, Stride 210 từ; Vector 768-D và Hybrid Cosine + Lexical Score. |
 | **03** | [Chương 3: Phân tích 5 Kịch bản Nghiệp vụ & Bảo mật PII](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/03-phan-tich-cac-kich-ban-nghiep-vu-va-an-toan-pii.md) | Xử lý 5 ca thực tế: Tra cứu đơn xác định, Xử lý câu hỏi mập mờ qua Interactive Carousel, Che mờ dữ liệu cá nhân PII, Quy trình xử lý hàng bể vỡ BBBT 24h & Dự toán cước IATA. |
+| **04** | [Chương 4: Đặc tả BPM Tự động hóa Khiếu nại Sự cố](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/04-dac-ta-bpm-tu-dong-hoa-khieu-nai-su-co.md) | **Quy trình trọng tâm NCKH theo chỉ dẫn của Thầy:** FR-01 đến FR-05, AC, 7 Cases ngoại lệ chi tiết, I/O Data Contracts, Ma trận ngưỡng định lượng và Human-in-the-Loop (HITL). |
 
 ---
 
@@ -24,9 +25,10 @@ Tất cả các sơ đồ đều được vẽ dưới dạng mã nguồn vector
 
 ```
 docs/graduation-thesis/diagrams-svg/
-├── 01-ai-chatbot-end-to-end-architecture.svg       # Sơ đồ Kiến trúc Tổng thể 6 Tầng
-├── 02-rag-chunking-and-vectorization-pipeline.svg   # Sơ đồ Pipeline Phân đoạn & Vector hóa RAG
-└── 03-multi-case-business-flow.svg                  # Sơ đồ Phân luồng Quyết định 5 Ca Nghiệp vụ & Rich Card UI
+├── 01-ai-chatbot-end-to-end-architecture.svg                 # Sơ đồ Kiến trúc Tổng thể 6 Tầng
+├── 02-rag-chunking-and-vectorization-pipeline.svg             # Sơ đồ Pipeline Phân đoạn & Vector hóa RAG
+├── 03-multi-case-business-flow.svg                            # Sơ đồ Phân luồng Quyết định 5 Ca Nghiệp vụ & Rich Card UI
+└── 04-bpm-incident-claim-resolution-state-machine.svg        # Sơ đồ State Machine 7 Cases Xử lý Sự cố & HITL (Trọng tâm)
 ```
 
 ---

@@ -1,0 +1,414 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1280" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B0F19"/>
+      <stop offset="50%" stop-color="#111827"/>
+      <stop offset="100%" stop-color="#0F172A"/>
+    </linearGradient>
+
+    <!-- Header Gradient -->
+    <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#F59E0B"/>
+      <stop offset="50%" stop-color="#EF4444"/>
+      <stop offset="100%" stop-color="#8B5CF6"/>
+    </linearGradient>
+
+    <!-- Card Background Gradients -->
+    <linearGradient id="cardBgDark" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1F2937" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#111827" stop-opacity="0.95"/>
+    </linearGradient>
+
+    <!-- State Node Gradients -->
+    <linearGradient id="greenNodeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#065F46"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+
+    <linearGradient id="blueNodeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E3A8A"/>
+      <stop offset="100%" stop-color="#2563EB"/>
+    </linearGradient>
+
+    <linearGradient id="amberNodeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#78350F"/>
+      <stop offset="100%" stop-color="#D97706"/>
+    </linearGradient>
+
+    <linearGradient id="purpleNodeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4C1D95"/>
+      <stop offset="100%" stop-color="#7C3AED"/>
+    </linearGradient>
+
+    <linearGradient id="redNodeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7F1D1D"/>
+      <stop offset="100%" stop-color="#DC2626"/>
+    </linearGradient>
+
+    <!-- Drop Shadows -->
+    <filter id="shadowFilter" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+
+    <!-- Markers -->
+    <marker id="arrowGray" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#64748B"/>
+    </marker>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#38BDF8"/>
+    </marker>
+    <marker id="arrowGreen" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#10B981"/>
+    </marker>
+    <marker id="arrowAmber" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#F59E0B"/>
+    </marker>
+    <marker id="arrowRed" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#EF4444"/>
+    </marker>
+    <marker id="arrowPurple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#C084FC"/>
+    </marker>
+  </defs>
+
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    .title-h1 { font-size: 26px; font-weight: 800; fill: #FFFFFF; }
+    .title-sub { font-size: 13.5px; font-weight: 400; fill: #94A3B8; }
+    .col-header { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+    .node-title { font-size: 13.5px; font-weight: 700; fill: #FFFFFF; }
+    .node-desc { font-size: 11px; fill: #CBD5E1; line-height: 1.4; }
+    .code-badge { font-family: "SFMono-Regular", Consolas, Menlo, monospace; font-size: 10.5px; }
+    .label-branch { font-size: 10px; font-weight: 700; fill: #FDE047; }
+  </style>
+
+  <!-- Background -->
+  <rect width="1920" height="1280" fill="url(#bgGrad)"/>
+
+  <!-- ==================== HEADER BAR ==================== -->
+  <g id="Header" transform="translate(60, 35)">
+    <rect x="0" y="0" width="1800" height="85" rx="16" fill="#1E293B" stroke="#334155" stroke-width="1.5" filter="url(#shadowFilter)"/>
+    <rect x="0" y="0" width="8" height="85" rx="4" fill="url(#headerGrad)"/>
+    
+    <text x="35" y="36" class="title-h1">ĐẶC TẢ SƠ ĐỒ TRẠNG THÁI &amp; CÁC CASE NGOẠI LỆ: BPM XỬ LÝ SỰ CỐ &amp; KHIẾU NẠI BỒI THƯỜNG BƯU PHẨM</text>
+    <text x="35" y="63" class="title-sub">Mô hình phân luồng 7 ca nghiệp vụ thực tế: Happy Path, Quá hạn 24h, Thiếu bằng chứng BBBT, Tranh chấp phức tạp (HITL), Khách từ chối nhận, Thất lạc quá hạn 7 ngày &amp; PII Guard</text>
+
+    <g transform="translate(1360, 24)">
+      <rect x="0" y="0" width="190" height="36" rx="8" fill="#78350F" stroke="#F59E0B" stroke-width="1"/>
+      <text x="95" y="22" text-anchor="middle" fill="#FEF3C7" font-size="11.5" font-weight="700">SPECIFIC BPM SCOPE</text>
+    </g>
+    <g transform="translate(1570, 24)">
+      <rect x="0" y="0" width="200" height="36" rx="8" fill="#4C1D95" stroke="#A855F7" stroke-width="1"/>
+      <text x="100" y="22" text-anchor="middle" fill="#EDE9FE" font-size="11.5" font-weight="700">HUMAN-IN-THE-LOOP (HITL)</text>
+    </g>
+  </g>
+
+  <!-- ==================== 5 MAJOR PIPELINE COLUMNS BACKGROUND ==================== -->
+  <!-- Col 1: Intake & Context -->
+  <g id="Col_1_Intake" transform="translate(60, 145)">
+    <rect x="0" y="0" width="330" height="1080" rx="14" fill="url(#cardBgDark)" stroke="#334155" stroke-width="1" filter="url(#shadowFilter)"/>
+    <rect x="0" y="0" width="330" height="38" rx="14" fill="#1E293B"/>
+    <text x="16" y="24" fill="#38BDF8" class="col-header">1. TIẾP NHẬN &amp; TÁCH CONTEXT (FR-01)</text>
+  </g>
+
+  <!-- Col 2: Operational Verification -->
+  <g id="Col_2_Verification" transform="translate(415, 145)">
+    <rect x="0" y="0" width="330" height="1080" rx="14" fill="url(#cardBgDark)" stroke="#334155" stroke-width="1" filter="url(#shadowFilter)"/>
+    <rect x="0" y="0" width="330" height="38" rx="14" fill="#1E293B"/>
+    <text x="16" y="24" fill="#818CF8" class="col-header">2. XÁC MINH VẬN HÀNH &amp; THỜI HIỆU (FR-02)</text>
+  </g>
+
+  <!-- Col 3: Evidence & RAG Policy -->
+  <g id="Col_3_Evidence" transform="translate(770, 145)">
+    <rect x="0" y="0" width="330" height="1080" rx="14" fill="url(#cardBgDark)" stroke="#334155" stroke-width="1" filter="url(#shadowFilter)"/>
+    <rect x="0" y="0" width="330" height="38" rx="14" fill="#1E293B"/>
+    <text x="16" y="24" fill="#34D399" class="col-header">3. BẰNG CHỨNG &amp; RAG CHÍNH SÁCH (FR-03)</text>
+  </g>
+
+  <!-- Col 4: Assessment & Decision -->
+  <g id="Col_4_Decision" transform="translate(1125, 145)">
+    <rect x="0" y="0" width="340" height="1080" rx="14" fill="url(#cardBgDark)" stroke="#334155" stroke-width="1" filter="url(#shadowFilter)"/>
+    <rect x="0" y="0" width="340" height="38" rx="14" fill="#1E293B"/>
+    <text x="16" y="24" fill="#FBBF24" class="col-header">4. ĐỊNH MỨC &amp; RA QUYẾT ĐỊNH (FR-04)</text>
+  </g>
+
+  <!-- Col 5: Resolution & Escalation -->
+  <g id="Col_5_Resolution" transform="translate(1490, 145)">
+    <rect x="0" y="0" width="370" height="1080" rx="14" fill="url(#cardBgDark)" stroke="#334155" stroke-width="1" filter="url(#shadowFilter)"/>
+    <rect x="0" y="0" width="370" height="38" rx="14" fill="#1E293B"/>
+    <text x="16" y="24" fill="#F472B6" class="col-header">5. KẾT QUẢ / HUMAN-IN-THE-LOOP (FR-05)</text>
+  </g>
+
+  <!-- ==================== FLOW NODES & CASES ==================== -->
+
+  <!-- [NODE 1.1] User Prompt Input -->
+  <g id="Node_User_Prompt" transform="translate(80, 205)">
+    <rect x="0" y="0" width="290" height="115" rx="10" fill="#0F172A" stroke="#38BDF8" stroke-width="1.5"/>
+    <text x="14" y="24" class="node-title">Khách hàng phản ánh sự cố</text>
+    <text x="14" y="44" class="node-desc">Nhập câu nói tự do qua Chatbot Web/App:</text>
+    <rect x="10" y="55" width="270" height="48" rx="6" fill="#1E293B"/>
+    <text x="18" y="73" fill="#E2E8F0" font-size="10.5">"Đơn NX-884920489 hôm qua nhận bị vỡ nát"</text>
+    <text x="18" y="91" fill="#E2E8F0" font-size="10.5">hoặc "Bưu tá bỏ đi không cho đồng kiểm"</text>
+  </g>
+
+  <!-- [NODE 1.2] Context Disambiguation Agent -->
+  <g id="Node_Context_Agent" transform="translate(80, 360)">
+    <rect x="0" y="0" width="290" height="165" rx="10" fill="url(#blueNodeGrad)" stroke="#60A5FA" stroke-width="1.5" filter="url(#shadowFilter)"/>
+    <text x="14" y="24" class="node-title">Agent 1: Context Disambiguation</text>
+    <text x="14" y="44" class="node-desc">• Bóc tách Regex: Mã đơn NX-XXXXXX</text>
+    <text x="14" y="62" class="node-desc">• LLM Context Splitting: Tách 3 Slots:</text>
+    <text x="24" y="80" fill="#FDE047" font-size="10.5">1. IncidentType: DAMAGE / LOST / NDR</text>
+    <text x="24" y="96" fill="#FDE047" font-size="10.5">2. UserRole: GUEST / CUSTOMER / SHOP</text>
+    <text x="24" y="112" fill="#FDE047" font-size="10.5">3. MissingInfo: Ảnh hiện trường, BBBT</text>
+    <text x="14" y="132" class="node-desc">• Điểm tự tin nhận diện (Confidence &gt; 0.9)</text>
+  </g>
+
+  <!-- Arrow 1.1 -> 1.2 -->
+  <path d="M 225 320 L 225 360" fill="none" stroke="#38BDF8" stroke-width="2" marker-end="url(#arrowBlue)"/>
+
+  <!-- [CASE 7: GUEST PII GUARD BRANCH] -->
+  <g id="Case_7_Guest" transform="translate(80, 565)">
+    <rect x="0" y="0" width="290" height="105" rx="10" fill="#78350F" stroke="#F59E0B" stroke-width="1.5"/>
+    <text x="14" y="22" fill="#FEF3C7" font-size="12" font-weight="700">CASE 7: KHÁCH VÃNG LAI (GUEST PII GUARD)</text>
+    <text x="14" y="42" class="node-desc">Phát hiện User chưa đăng nhập (GUEST):</text>
+    <text x="14" y="60" fill="#FDE68A" font-size="10.5">✔ Che SĐT: 098***4321</text>
+    <text x="14" y="76" fill="#FDE68A" font-size="10.5">✔ Che Tên: N*** V** A • Địa chỉ: Quận/Huyện</text>
+    <text x="14" y="94" fill="#FFFFFF" font-size="10">→ Yêu cầu đăng nhập để nhận tiền bồi thường</text>
+  </g>
+  <!-- Arrow to Case 7 -->
+  <path d="M 150 525 L 150 565" fill="none" stroke="#F59E0B" stroke-width="1.5" marker-end="url(#arrowAmber)"/>
+
+  <!-- [CASE 6: LOST PARCEL DETECTED BRANCH] -->
+  <g id="Case_6_Lost" transform="translate(80, 705)">
+    <rect x="0" y="0" width="290" height="110" rx="10" fill="#312E81" stroke="#818CF8" stroke-width="1.5"/>
+    <text x="14" y="22" fill="#E0E7FF" font-size="12" font-weight="700">CASE 6: BƯU PHẨM THẤT LẠC &gt; 7 NGÀY (LOST)</text>
+    <text x="14" y="42" class="node-desc">Đơn hàng không có tín hiệu quét Hub &gt; 7 ngày:</text>
+    <text x="14" y="60" fill="#C7D2FE" font-size="10.5">• Trạng thái: INVESTIGATING_LOST</text>
+    <text x="14" y="78" fill="#C7D2FE" font-size="10.5">• Quá 48h không thấy → LOST_IN_TRANSIT</text>
+    <text x="14" y="96" fill="#34D399" font-size="10.5">✔ Tự động bồi thường 100% không cần đơn kiện</text>
+  </g>
+  <path d="M 225 525 L 225 705" fill="none" stroke="#818CF8" stroke-width="1.5" marker-end="url(#arrowBlue)" stroke-dasharray="3 3"/>
+
+  <!-- Arrow 1.2 -> Col 2 -->
+  <path d="M 370 440 L 435 300" fill="none" stroke="#818CF8" stroke-width="2" marker-end="url(#arrowBlue)"/>
+
+  <!-- ==================== COLUMN 2: VERIFICATION ==================== -->
+
+  <!-- [NODE 2.1] Fetch Tracking & Order Mesh -->
+  <g id="Node_2_1_Mesh" transform="translate(435, 205)">
+    <rect x="0" y="0" width="290" height="135" rx="10" fill="#0F172A" stroke="#818CF8" stroke-width="1.5"/>
+    <text x="14" y="24" class="node-title">Truy vấn Trạng thái Vận hành</text>
+    <text x="14" y="44" class="node-desc">Gọi nội bộ Microservices Mesh:</text>
+    <text x="14" y="64" fill="#38BDF8" class="code-badge">GET :3005/orders/track/:orderCode</text>
+    <text x="14" y="82" fill="#38BDF8" class="code-badge">GET :3002/orders/:orderCode</text>
+    <text x="14" y="104" class="node-desc">• Lấy deliveryTimestamp (Thời điểm ký nhận)</text>
+    <text x="14" y="122" class="node-desc">• Lấy currentStatus, hasInsurance, codAmount</text>
+  </g>
+
+  <!-- [NODE 2.2] SLA 24H Decision Diamond / Node -->
+  <g id="Node_2_2_SLA" transform="translate(435, 385)">
+    <rect x="0" y="0" width="290" height="140" rx="10" fill="url(#purpleNodeGrad)" stroke="#C084FC" stroke-width="1.5" filter="url(#shadowFilter)"/>
+    <text x="14" y="24" class="node-title">Kiểm tra Thời hiệu Khiếu nại 24h</text>
+    <text x="14" y="46" class="node-desc">Tính toán độ lệch thời gian thực:</text>
+    <text x="14" y="68" fill="#FDE047" font-weight="700" font-size="12">Δt = CurrentTime - DeliveryTime</text>
+    <text x="14" y="90" class="node-desc">• Nếu Δt ≤ 24 Giờ: Hợp lệ theo quy chế</text>
+    <text x="14" y="108" class="node-desc">• Nếu Δt &gt; 24 Giờ: Quá hạn bưu chính</text>
+    <text x="14" y="126" class="node-desc">• Nếu chưa giao (In-Transit): Khiếu nại ảo</text>
+  </g>
+
+  <!-- Arrow 2.1 -> 2.2 -->
+  <path d="M 580 340 L 580 385" fill="none" stroke="#818CF8" stroke-width="2" marker-end="url(#arrowBlue)"/>
+
+  <!-- [CASE 2: SLA EXPIRED > 24H] -->
+  <g id="Case_2_Expired" transform="translate(435, 565)">
+    <rect x="0" y="0" width="290" height="115" rx="10" fill="#7F1D1D" stroke="#EF4444" stroke-width="1.5"/>
+    <text x="14" y="22" fill="#FEE2E2" font-size="12" font-weight="700">CASE 2: QUÁ HẠN THỜI HIỆU (&gt; 24 GIỜ)</text>
+    <text x="14" y="42" class="node-desc">Khách báo sau 24h kể từ khi ký nhận:</text>
+    <text x="14" y="60" fill="#FCA5A5" font-size="10.5">✖ Từ chối tự động bồi thường 100%</text>
+    <text x="14" y="78" fill="#FCA5A5" font-size="10.5">✔ Đề xuất hỗ trợ Voucher cước 30%</text>
+    <text x="14" y="96" fill="#FCA5A5" font-size="10.5">✔ Quyền khiếu nại lên Hội đồng hòa giải</text>
+  </g>
+  <!-- Arrow to Case 2 -->
+  <path d="M 580 525 L 580 565" fill="none" stroke="#EF4444" stroke-width="2" marker-end="url(#arrowRed)"/>
+  <text x="590" y="550" class="label-branch">Δt &gt; 24h</text>
+
+  <!-- [CASE 5: BOM HÀNG / TỪ CHỐI NHẬN BRANCH] -->
+  <g id="Case_5_Reject" transform="translate(435, 715)">
+    <rect x="0" y="0" width="290" height="120" rx="10" fill="#064E3B" stroke="#10B981" stroke-width="1.5"/>
+    <text x="14" y="22" fill="#D1FAE5" font-size="12" font-weight="700">CASE 5: KHÁCH BOM HÀNG / TỪ CHỐI NHẬN</text>
+    <text x="14" y="42" class="node-desc">Người nhận kiên quyết không nhận hàng:</text>
+    <text x="14" y="60" fill="#A7F3D0" font-size="10.5">• Trạng thái: CUSTOMER_REJECTED</text>
+    <text x="14" y="78" fill="#A7F3D0" font-size="10.5">• Tự động đảo chiều bưu phẩm chuyển hoàn</text>
+    <text x="14" y="96" fill="#FDE047" font-size="10.5">✔ Shop thường: 50% cước • Shop VIP: 0 VNĐ</text>
+  </g>
+
+  <!-- Arrow 2.2 -> Col 3 (Valid SLA) -->
+  <path d="M 725 450 L 790 300" fill="none" stroke="#34D399" stroke-width="2" marker-end="url(#arrowGreen)"/>
+  <text x="735" y="380" class="label-branch" fill="#34D399">Δt ≤ 24h (HỢP LỆ)</text>
+
+  <!-- ==================== COLUMN 3: EVIDENCE & RAG ==================== -->
+
+  <!-- [NODE 3.1] Evidence Assessment (BBBT & Photos) -->
+  <g id="Node_3_1_Evidence" transform="translate(790, 205)">
+    <rect x="0" y="0" width="290" height="155" rx="10" fill="#0F172A" stroke="#34D399" stroke-width="1.5"/>
+    <text x="14" y="24" class="node-title">Kiểm tra Bằng chứng Sự cố</text>
+    <text x="14" y="44" class="node-desc">Đánh giá 2 tiêu chí bắt buộc:</text>
+    <text x="14" y="66" fill="#CBD5E1" font-size="11">1. Biên bản bất thường (BBBT):</text>
+    <text x="24" y="84" fill="#38BDF8" font-size="10.5">Có chữ ký xác nhận của Bưu tá?</text>
+    <text x="14" y="104" fill="#CBD5E1" font-size="11">2. Bộ 3 ảnh hiện trường chụp rõ:</text>
+    <text x="24" y="122" fill="#38BDF8" font-size="10.5">Mặt ngoài thùng, Mã vận đơn, Vết vỡ</text>
+    <text x="14" y="142" class="node-desc">• Tự động phân loại: ĐỦ vs THIẾU</text>
+  </g>
+
+  <!-- [NODE 3.2] Agent 2: RAG Policy Retrieval -->
+  <g id="Node_3_2_RAG" transform="translate(790, 400)">
+    <rect x="0" y="0" width="290" height="150" rx="10" fill="url(#greenNodeGrad)" stroke="#10B981" stroke-width="1.5" filter="url(#shadowFilter)"/>
+    <text x="14" y="24" class="node-title">Agent 2: Policy &amp; SOP Verifier</text>
+    <text x="14" y="44" class="node-desc">Truy xuất Kho Tri thức Doanh nghiệp:</text>
+    <text x="14" y="64" fill="#D1FAE5" class="code-badge">doc: 02-insurance-and-claim-policy.md</text>
+    <text x="14" y="82" fill="#D1FAE5" class="code-badge">doc: 09-negative-exceptions-sop.md</text>
+    <text x="14" y="104" class="node-desc">• Đối chiếu nấc đền bù Khai giá (100%)</text>
+    <text x="14" y="122" class="node-desc">• Tiêu chuẩn miễn trừ trách nhiệm pháp lý</text>
+    <text x="14" y="140" class="node-desc">• Xuất ra: CompensationRule &amp; MaxAmount</text>
+  </g>
+
+  <!-- Arrow 3.1 -> 3.2 -->
+  <path d="M 935 360 L 935 400" fill="none" stroke="#34D399" stroke-width="2" marker-end="url(#arrowGreen)"/>
+
+  <!-- [CASE 3: MISSING EVIDENCE BRANCH] -->
+  <g id="Case_3_Missing" transform="translate(790, 580)">
+    <rect x="0" y="0" width="290" height="120" rx="10" fill="#78350F" stroke="#F59E0B" stroke-width="1.5"/>
+    <text x="14" y="22" fill="#FEF3C7" font-size="12" font-weight="700">CASE 3: THIẾU BẰNG CHỨNG / THIẾU BBBT</text>
+    <text x="14" y="42" class="node-desc">Chưa có ảnh hoặc bưu tá chưa ký xác nhận:</text>
+    <text x="14" y="60" fill="#FDE68A" font-size="10.5">• Trạng thái: PENDING_EVIDENCE (Tạm hoãn)</text>
+    <text x="14" y="78" fill="#FDE68A" font-size="10.5">• Chatbot gửi link Upload ảnh bổ sung</text>
+    <text x="14" y="96" fill="#FDE68A" font-size="10.5">• Hạn nộp bổ sung: 48h trước khi hủy hồ sơ</text>
+  </g>
+  <!-- Arrow to Case 3 -->
+  <path d="M 850 360 L 850 580" fill="none" stroke="#F59E0B" stroke-width="1.5" marker-end="url(#arrowAmber)"/>
+  <text x="860" y="490" class="label-branch" fill="#F59E0B">Thiếu ảnh / BBBT</text>
+
+  <!-- Arrow 3.2 -> Col 4 -->
+  <path d="M 1080 475 L 1145 320" fill="none" stroke="#FBBF24" stroke-width="2" marker-end="url(#arrowAmber)"/>
+
+  <!-- ==================== COLUMN 4: ASSESSMENT & THRESHOLDS ==================== -->
+
+  <!-- [NODE 4.1] Agent 3: Resolution & Thresholds -->
+  <g id="Node_4_1_Decision" transform="translate(1145, 205)">
+    <rect x="0" y="0" width="300" height="175" rx="10" fill="url(#amberNodeGrad)" stroke="#FBBF24" stroke-width="1.5" filter="url(#shadowFilter)"/>
+    <text x="14" y="24" class="node-title">Agent 3: Decision &amp; Dispatcher</text>
+    <text x="14" y="44" class="node-desc">Kiểm tra Ma trận Ngưỡng Định lượng:</text>
+    <text x="14" y="66" fill="#FDE047" font-size="11" font-weight="700">1. Ngưỡng giá trị: ClaimAmount ≤ 2.000.000 đ</text>
+    <text x="14" y="84" fill="#FDE047" font-size="11" font-weight="700">2. Độ tự tin: ConfidenceScore ≥ 0.85</text>
+    <text x="14" y="102" fill="#FDE047" font-size="11" font-weight="700">3. Tranh chấp: DisputeFlag == false</text>
+    <text x="14" y="124" class="node-desc">Phân định 2 nhánh hành động:</text>
+    <text x="24" y="142" fill="#34D399" font-size="11">✔ Đạt 3 điều kiện → TỰ ĐỘNG DUYỆT (Case 1)</text>
+    <text x="24" y="160" fill="#EF4444" font-size="11">✖ Vi phạm bất kỳ điều kiện → HITL (Case 4)</text>
+  </g>
+
+  <!-- [CASE 1: HAPPY PATH AUTO-RESOLVE] -->
+  <g id="Case_1_Happy" transform="translate(1145, 415)">
+    <rect x="0" y="0" width="300" height="165" rx="10" fill="#064E3B" stroke="#10B981" stroke-width="2" filter="url(#shadowFilter)"/>
+    <text x="14" y="24" fill="#A7F3D0" font-size="13" font-weight="800">CASE 1: TỰ ĐỘNG BỒI THƯỜNG (HAPPY PATH)</text>
+    <text x="14" y="46" class="node-desc">Thỏa mãn 100% tiêu chí chuẩn:</text>
+    <text x="14" y="66" fill="#CBD5E1" font-size="10.5">• Gọi Claim Service (:3007) tạo Ticket</text>
+    <text x="14" y="84" fill="#34D399" class="code-badge">POST :3007/claims → Sinh CLM-88219</text>
+    <text x="14" y="104" fill="#CBD5E1" font-size="10.5">• Mức đền bù: 100% Khai giá (≤ 2 Triệu)</text>
+    <text x="14" y="122" fill="#CBD5E1" font-size="10.5">• Tự động chuyển khoản Ví Shop / Khách</text>
+    <text x="14" y="142" fill="#34D399" font-size="11" font-weight="700">SLA Hoàn tất: Dưới 2 Giờ làm việc</text>
+  </g>
+
+  <!-- Arrow 4.1 -> 4.2 Happy Path -->
+  <path d="M 1295 380 L 1295 415" fill="none" stroke="#10B981" stroke-width="2" marker-end="url(#arrowGreen)"/>
+  <text x="1305" y="400" class="label-branch" fill="#34D399">ĐẠT 3 TIÊU CHÍ</text>
+
+  <!-- [CASE 4: DISPUTED & HIGH VALUE HITL] -->
+  <g id="Case_4_HITL" transform="translate(1145, 615)">
+    <rect x="0" y="0" width="300" height="165" rx="10" fill="#7F1D1D" stroke="#EF4444" stroke-width="2" filter="url(#shadowFilter)"/>
+    <text x="14" y="24" fill="#FEE2E2" font-size="13" font-weight="800">CASE 4: TRANH CHẤP / GIÁ TRỊ LỚN (HITL)</text>
+    <text x="14" y="46" class="node-desc">Kích hoạt chuyển giao Người thẩm định:</text>
+    <text x="14" y="66" fill="#FCA5A5" font-size="10.5">• Giá trị &gt; 2.000.000 đ hoặc Nghi vấn tráo hàng</text>
+    <text x="14" y="84" fill="#FCA5A5" font-size="10.5">• Bưu tá phản ánh khách tự làm vỡ sau nhận</text>
+    <text x="14" y="104" fill="#FFFFFF" font-size="10.5">• AI tổng hợp Dossier (Bản tóm tắt sự cố)</text>
+    <text x="14" y="122" fill="#FDE047" font-size="10.5">• Gán Ticket sang Trưởng phòng Vận hành</text>
+    <text x="14" y="142" fill="#FCA5A5" font-size="11" font-weight="700">Chuyên viên trực tiếp gọi giải quyết</text>
+  </g>
+
+  <!-- Arrow 4.1 -> 4.3 HITL -->
+  <path d="M 1420 380 L 1420 615" fill="none" stroke="#EF4444" stroke-width="2" marker-end="url(#arrowRed)"/>
+  <text x="1350" y="595" class="label-branch" fill="#EF4444">VI PHẠM TIÊU CHÍ</text>
+
+  <!-- ==================== COLUMN 5: RESOLUTION UI & MOCKUPS ==================== -->
+
+  <!-- [MOCKUP 1: Auto-Approved Claim Card] -->
+  <g id="Mockup_Approved_Card" transform="translate(1510, 205)">
+    <rect x="0" y="0" width="330" height="230" rx="12" fill="#1E293B" stroke="#10B981" stroke-width="1.5" filter="url(#shadowFilter)"/>
+    <rect x="0" y="0" width="330" height="36" rx="12" fill="#064E3B"/>
+    <text x="14" y="23" fill="#FFFFFF" font-size="12" font-weight="700">🛡️ HỒ SƠ BỒI THƯỜNG TỰ ĐỘNG</text>
+    
+    <g transform="translate(14, 48)">
+      <text x="0" y="15" fill="#94A3B8" font-size="11">Mã hồ sơ:</text>
+      <text x="90" y="15" fill="#34D399" font-size="11" font-weight="700">CLM-202609-88219</text>
+
+      <text x="0" y="38" fill="#94A3B8" font-size="11">Đơn hàng:</text>
+      <text x="90" y="38" fill="#F8FAFC" font-size="11">NX-884920489 (Bình gốm)</text>
+
+      <text x="0" y="61" fill="#94A3B8" font-size="11">Bằng chứng:</text>
+      <text x="90" y="61" fill="#34D399" font-size="11">✔ Đủ BBBT &amp; 3 ảnh vỡ</text>
+
+      <text x="0" y="84" fill="#94A3B8" font-size="11">Số tiền duyệt:</text>
+      <text x="90" y="84" fill="#FDE047" font-size="12" font-weight="800">1.250.000 VNĐ (100%)</text>
+
+      <text x="0" y="107" fill="#94A3B8" font-size="11">Thời gian:</text>
+      <text x="90" y="107" fill="#CBD5E1" font-size="11">Tiền về ví trước 12:00</text>
+    </g>
+
+    <rect x="14" y="180" width="302" height="34" rx="6" fill="#047857"/>
+    <text x="165" y="202" text-anchor="middle" fill="#FFFFFF" font-size="11" font-weight="700">💳 Xác nhận Nhận tiền Bồi thường</text>
+  </g>
+
+  <!-- Arrow Case 1 -> Mockup 1 -->
+  <path d="M 1445 490 L 1510 320" fill="none" stroke="#10B981" stroke-width="2" marker-end="url(#arrowGreen)"/>
+
+  <!-- [MOCKUP 2: HITL Escalation Dossier Card] -->
+  <g id="Mockup_HITL_Card" transform="translate(1510, 480)">
+    <rect x="0" y="0" width="330" height="280" rx="12" fill="#1E293B" stroke="#EF4444" stroke-width="1.5" filter="url(#shadowFilter)"/>
+    <rect x="0" y="0" width="330" height="36" rx="12" fill="#7F1D1D"/>
+    <text x="14" y="23" fill="#FFFFFF" font-size="12" font-weight="700">⚖️ CHUYỂN GIAO THẨM ĐỊNH VIÊN (HITL)</text>
+
+    <g transform="translate(14, 48)">
+      <text x="0" y="15" fill="#94A3B8" font-size="11">Phiếu hòa giải:</text>
+      <text x="90" y="15" fill="#FCA5A5" font-size="11" font-weight="700">ARB-2026-0042</text>
+
+      <text x="0" y="38" fill="#94A3B8" font-size="11">Lý do chuyển:</text>
+      <text x="90" y="38" fill="#FDE047" font-size="10.5">Bưu tá phản hồi khách tự làm rơi</text>
+
+      <text x="0" y="61" fill="#94A3B8" font-size="11">Giá trị yêu cầu:</text>
+      <text x="90" y="61" fill="#F8FAFC" font-size="11" font-weight="700">6.500.000 VNĐ (&gt; 2 Triệu)</text>
+
+      <text x="0" y="84" fill="#94A3B8" font-size="11">Hồ sơ đính kèm:</text>
+      <text x="90" y="84" fill="#CBD5E1" font-size="10.5">Ảnh giao vs Ảnh khiếu nại</text>
+
+      <text x="0" y="107" fill="#94A3B8" font-size="11">Chuyên viên:</text>
+      <text x="90" y="107" fill="#A7F3D0" font-size="11">Trần Minh Hoàng (Trưởng Hub)</text>
+
+      <text x="0" y="130" fill="#94A3B8" font-size="11">Cam kết hỗ trợ:</text>
+      <text x="90" y="130" fill="#FDE047" font-size="11" font-weight="700">Gọi lại trong 2 Giờ làm việc</text>
+    </g>
+
+    <rect x="14" y="225" width="302" height="34" rx="6" fill="#DC2626"/>
+    <text x="165" y="247" text-anchor="middle" fill="#FFFFFF" font-size="11" font-weight="700">📞 Yêu cầu Chuyên viên Gọi lại ngay</text>
+  </g>
+
+  <!-- Arrow Case 4 -> Mockup 2 -->
+  <path d="M 1445 700 L 1510 620" fill="none" stroke="#EF4444" stroke-width="2" marker-end="url(#arrowRed)"/>
+
+  <!-- ==================== FOOTER SUMMARY ==================== -->
+  <g id="Footer" transform="translate(60, 1195)">
+    <rect x="0" y="0" width="1800" height="50" rx="10" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+    <text x="24" y="31" fill="#94A3B8" font-size="12">
+      Ghi chú: Toàn bộ 7 Cases được điều phối bởi <tspan fill="#38BDF8" font-weight="700">State Machine</tspan> trong NestJS Chatbot Orchestrator, kết hợp <tspan fill="#34D399" font-weight="700">RAG Embedding 768-D</tspan> và <tspan fill="#F59E0B" font-weight="700">Claim Microservice (:3007)</tspan>, đảm bảo thời gian xử lý sự cố giảm từ 48 giờ xuống dưới 2 giờ.
+    </text>
+  </g>
+</svg>
