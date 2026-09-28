@@ -1,0 +1,609 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1280" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B0F19"/>
+      <stop offset="50%" stop-color="#111827"/>
+      <stop offset="100%" stop-color="#0F172A"/>
+    </linearGradient>
+
+    <!-- Header Gradient -->
+    <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#6366F1"/>
+      <stop offset="50%" stop-color="#8B5CF6"/>
+      <stop offset="100%" stop-color="#EC4899"/>
+    </linearGradient>
+
+    <!-- Card Background Gradients -->
+    <linearGradient id="cardGradDark" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1F2937" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#111827" stop-opacity="0.95"/>
+    </linearGradient>
+
+    <linearGradient id="case1Grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#06B6D4"/>
+    </linearGradient>
+
+    <linearGradient id="case2Grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#8B5CF6"/>
+      <stop offset="100%" stop-color="#D946EF"/>
+    </linearGradient>
+
+    <linearGradient id="case3Grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#EF4444"/>
+    </linearGradient>
+
+    <linearGradient id="case4Grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+
+    <linearGradient id="case5Grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0284C7"/>
+      <stop offset="100%" stop-color="#2563EB"/>
+    </linearGradient>
+
+    <!-- Drop Shadows -->
+    <filter id="shadowFilter" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+    <filter id="glowCyan" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+
+    <!-- Markers -->
+    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#64748B"/>
+    </marker>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#38BDF8"/>
+    </marker>
+    <marker id="arrowPurple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#A855F7"/>
+    </marker>
+    <marker id="arrowAmber" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#F59E0B"/>
+    </marker>
+    <marker id="arrowGreen" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#10B981"/>
+    </marker>
+  </defs>
+
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    .title-h1 { font-size: 28px; font-weight: 800; fill: #FFFFFF; }
+    .title-sub { font-size: 14px; font-weight: 400; fill: #94A3B8; }
+    .sec-badge { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+    .box-title { font-size: 15px; font-weight: 700; fill: #F8FAFC; }
+    .box-desc { font-size: 12px; fill: #94A3B8; line-height: 1.4; }
+    .code-text { font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; font-size: 11px; fill: #38BDF8; }
+    .tag-text { font-size: 10px; font-weight: 600; }
+  </style>
+
+  <!-- Background -->
+  <rect width="1920" height="1280" fill="url(#bgGrad)"/>
+
+  <!-- Grid lines overlay for tech aesthetic -->
+  <g opacity="0.05" stroke="#94A3B8" stroke-width="1">
+    <pattern id="gridPattern" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M 60 0 L 0 0 0 60"/>
+    </pattern>
+    <rect width="1920" height="1280" fill="url(#gridPattern)"/>
+  </g>
+
+  <!-- ==================== HEADER BAR ==================== -->
+  <g id="Header" transform="translate(60, 40)">
+    <rect x="0" y="0" width="1800" height="85" rx="16" fill="#1E293B" stroke="#334155" stroke-width="1.5" filter="url(#shadowFilter)"/>
+    <rect x="0" y="0" width="8" height="85" rx="4" fill="url(#headerGrad)"/>
+    
+    <text x="35" y="38" class="title-h1">HỆ THỐNG PHÂN PHỐI &amp; ĐIỀU HƯỚNG 5 CA NGHIỆP VỤ LOGISTICS (STATE MACHINE &amp; DECISION TREE)</text>
+    <text x="35" y="65" class="title-sub">Nghiên cứu kiến trúc xử lý đa kịch bản: Intent Extraction, Tra cứu đơn tương tác (Carousel), PII Privacy Masking, SOP Bồi thường &amp; Tính toán cước phí IATA</text>
+
+    <g transform="translate(1420, 24)">
+      <rect x="0" y="0" width="160" height="36" rx="8" fill="#312E81" stroke="#6366F1" stroke-width="1"/>
+      <text x="80" y="22" text-anchor="middle" fill="#C7D2FE" font-size="12" font-weight="600">FIGMA COMPATIBLE</text>
+    </g>
+    <g transform="translate(1600, 24)">
+      <rect x="0" y="0" width="170" height="36" rx="8" fill="#064E3B" stroke="#10B981" stroke-width="1"/>
+      <text x="85" y="22" text-anchor="middle" fill="#A7F3D0" font-size="12" font-weight="600">PRODUCTION READY</text>
+    </g>
+  </g>
+
+  <!-- ==================== STAGE 1: USER INPUT & CLASSIFIER ==================== -->
+  <g id="Stage_1_Intent_Classifier" transform="translate(60, 150)">
+    <!-- Boundary Box -->
+    <rect x="0" y="0" width="340" height="1070" rx="16" fill="url(#cardGradDark)" stroke="#334155" stroke-width="1.5" filter="url(#shadowFilter)"/>
+    <rect x="0" y="0" width="340" height="42" rx="16" fill="#1E293B"/>
+    <text x="20" y="26" fill="#93C5FD" class="sec-badge">GIAI ĐOẠN 1: TIẾP NHẬN &amp; PHÂN LOẠI Ý ĐỊNH</text>
+
+    <!-- Query Inputs Representation -->
+    <g transform="translate(20, 60)">
+      <rect x="0" y="0" width="300" height="160" rx="12" fill="#0F172A" stroke="#475569" stroke-width="1"/>
+      <text x="16" y="26" fill="#F8FAFC" font-size="13" font-weight="700">User Query Input Stream</text>
+      <text x="16" y="48" fill="#64748B" font-size="11">Khách hàng nhập tin nhắn tự do:</text>
+      
+      <rect x="12" y="60" width="276" height="26" rx="6" fill="#1E293B"/>
+      <text x="20" y="77" fill="#E2E8F0" font-size="11">"Đơn NX-884920489 đi tới đâu rồi?"</text>
+      
+      <rect x="12" y="92" width="276" height="26" rx="6" fill="#1E293B"/>
+      <text x="20" y="109" fill="#E2E8F0" font-size="11">"Đơn gần đây của tôi đã giao chưa?"</text>
+
+      <rect x="12" y="124" width="276" height="26" rx="6" fill="#1E293B"/>
+      <text x="20" y="141" fill="#E2E8F0" font-size="11">"Hàng thủy tinh bị vỡ ai bồi thường?"</text>
+    </g>
+
+    <!-- Normalization & Thesaurus -->
+    <g transform="translate(20, 240)">
+      <rect x="0" y="0" width="300" height="140" rx="12" fill="#0F172A" stroke="#475569" stroke-width="1"/>
+      <text x="16" y="26" fill="#38BDF8" font-size="13" font-weight="700">1. Normalization &amp; Thesaurus</text>
+      <text x="16" y="48" fill="#94A3B8" font-size="11">• Regex Extraction: </text>
+      <text x="135" y="48" class="code-text">/(NX|CLM)-\d{6,}/i</text>
+      <text x="16" y="70" fill="#94A3B8" font-size="11">• Remove Stopwords &amp; Accents Folding</text>
+      <text x="16" y="92" fill="#94A3B8" font-size="11">• Logistics Thesaurus Mapping:</text>
+      <text x="26" y="112" fill="#FDE047" font-size="10.5">["vỡ, bể, nát"] → ["hư hỏng, bồi thường"]</text>
+      <text x="26" y="127" fill="#FDE047" font-size="10.5">["hoàn, trả"] → ["chuyển hoàn, phí 50%"]</text>
+    </g>
+
+    <!-- Context & Auth Resolver -->
+    <g transform="translate(20, 400)">
+      <rect x="0" y="0" width="300" height="130" rx="12" fill="#0F172A" stroke="#475569" stroke-width="1"/>
+      <text x="16" y="26" fill="#C084FC" font-size="13" font-weight="700">2. Identity &amp; Role Context</text>
+      <text x="16" y="48" fill="#94A3B8" font-size="11">• JWT Token Decryption &amp; Scope:</text>
+      
+      <g transform="translate(16, 60)">
+        <rect x="0" y="0" width="75" height="22" rx="4" fill="#1E293B" stroke="#64748B"/>
+        <text x="37" y="15" text-anchor="middle" fill="#CBD5E1" font-size="10">GUEST</text>
+        <rect x="85" y="0" width="85" height="22" rx="4" fill="#065F46" stroke="#10B981"/>
+        <text x="127" y="15" text-anchor="middle" fill="#A7F3D0" font-size="10">CUSTOMER</text>
+        <rect x="180" y="0" width="85" height="22" rx="4" fill="#4C1D95" stroke="#8B5CF6"/>
+        <text x="222" y="15" text-anchor="middle" fill="#DDD6FE" font-size="10">MERCHANT</text>
+      </g>
+      <text x="16" y="105" fill="#94A3B8" font-size="11">• User ID, Role, Permissions gắn kèm</text>
+      <text x="16" y="120" fill="#94A3B8" font-size="11">• Session Memory (Lịch sử hội thoại)</text>
+    </g>
+
+    <!-- Intent Classification Decision Matrix -->
+    <g transform="translate(20, 550)">
+      <rect x="0" y="0" width="300" height="490" rx="12" fill="#0F172A" stroke="#6366F1" stroke-width="1.5"/>
+      <text x="16" y="28" fill="#A5B4FC" font-size="14" font-weight="700">3. Intent Classifier Engine</text>
+      <text x="16" y="48" fill="#64748B" font-size="11">Phân định luồng xử lý tự động:</text>
+
+      <!-- Intent Items -->
+      <g transform="translate(14, 62)">
+        <rect x="0" y="0" width="272" height="66" rx="8" fill="#1E293B" stroke="#0284C7"/>
+        <circle cx="16" cy="18" r="6" fill="#38BDF8"/>
+        <text x="32" y="22" fill="#F8FAFC" font-size="12" font-weight="700">INTENT: TRACKING_EXACT</text>
+        <text x="32" y="40" fill="#94A3B8" font-size="10.5">Phát hiện mã NX-XXXXXX cụ thể</text>
+        <text x="32" y="55" fill="#38BDF8" font-size="10">→ Rẽ nhánh CASE 1: Single Tracking</text>
+      </g>
+
+      <g transform="translate(14, 140)">
+        <rect x="0" y="0" width="272" height="66" rx="8" fill="#1E293B" stroke="#9333EA"/>
+        <circle cx="16" cy="18" r="6" fill="#C084FC"/>
+        <text x="32" y="22" fill="#F8FAFC" font-size="12" font-weight="700">INTENT: RECENT_ORDERS</text>
+        <text x="32" y="40" fill="#94A3B8" font-size="10.5">Hỏi chung chung đơn gần đây, mờ hồ</text>
+        <text x="32" y="55" fill="#C084FC" font-size="10">→ Rẽ nhánh CASE 2: Multi-Order Carousel</text>
+      </g>
+
+      <g transform="translate(14, 218)">
+        <rect x="0" y="0" width="272" height="66" rx="8" fill="#1E293B" stroke="#D97706"/>
+        <circle cx="16" cy="18" r="6" fill="#FBBF24"/>
+        <text x="32" y="22" fill="#F8FAFC" font-size="12" font-weight="700">INTENT: GUEST_RESTRICTION</text>
+        <text x="32" y="40" fill="#94A3B8" font-size="10.5">Chưa đăng nhập hỏi thông tin đơn</text>
+        <text x="32" y="55" fill="#FBBF24" font-size="10">→ Rẽ nhánh CASE 3: PII Masking</text>
+      </g>
+
+      <g transform="translate(14, 296)">
+        <rect x="0" y="0" width="272" height="66" rx="8" fill="#1E293B" stroke="#059669"/>
+        <circle cx="16" cy="18" r="6" fill="#34D399"/>
+        <text x="32" y="22" fill="#F8FAFC" font-size="12" font-weight="700">INTENT: DAMAGE_COMPLAINT</text>
+        <text x="32" y="40" fill="#94A3B8" font-size="10.5">Sự cố bể vỡ, hỏng hóc, bồi thường</text>
+        <text x="32" y="55" fill="#34D399" font-size="10">→ Rẽ nhánh CASE 4: SOP &amp; Claim</text>
+      </g>
+
+      <g transform="translate(14, 374)">
+        <rect x="0" y="0" width="272" height="66" rx="8" fill="#1E293B" stroke="#2563EB"/>
+        <circle cx="16" cy="18" r="6" fill="#60A5FA"/>
+        <text x="32" y="22" fill="#F8FAFC" font-size="12" font-weight="700">INTENT: PRICING_CALCULATION</text>
+        <text x="32" y="40" fill="#94A3B8" font-size="10.5">Cước phí, cân nặng IATA, hoàn trả</text>
+        <text x="32" y="55" fill="#60A5FA" font-size="10">→ Rẽ nhánh CASE 5: IATA &amp; Policy</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- ==================== CONNECTING ARROWS FROM STAGE 1 ==================== -->
+  <path d="M 400 740 L 450 250" fill="none" stroke="#38BDF8" stroke-width="2" marker-end="url(#arrowBlue)" stroke-dasharray="4 4"/>
+  <path d="M 400 790 L 450 470" fill="none" stroke="#A855F7" stroke-width="2" marker-end="url(#arrowPurple)" stroke-dasharray="4 4"/>
+  <path d="M 400 870 L 450 690" fill="none" stroke="#F59E0B" stroke-width="2" marker-end="url(#arrowAmber)" stroke-dasharray="4 4"/>
+  <path d="M 400 950 L 450 910" fill="none" stroke="#10B981" stroke-width="2" marker-end="url(#arrowGreen)" stroke-dasharray="4 4"/>
+  <path d="M 400 1020 L 450 1130" fill="none" stroke="#3B82F6" stroke-width="2" marker-end="url(#arrowBlue)" stroke-dasharray="4 4"/>
+
+  <!-- ==================== STAGE 2: 5 BUSINESS CASES DETAILS ==================== -->
+  
+  <!-- CASE 1: Single Tracking Flow -->
+  <g id="Case_1_Container" transform="translate(460, 150)">
+    <rect x="0" y="0" width="860" height="200" rx="14" fill="#1E293B" stroke="#0284C7" stroke-width="1.5" filter="url(#shadowFilter)"/>
+    <rect x="0" y="0" width="860" height="34" rx="14" fill="#0C4A6E"/>
+    <text x="16" y="22" fill="#E0F2FE" font-size="12" font-weight="800">CASE 1: TRA CỨU ĐƠN HÀNG XÁC ĐỊNH (EXACT CODE NX-XXXXXX)</text>
+
+    <!-- Sub-step A -->
+    <g transform="translate(20, 50)">
+      <rect x="0" y="0" width="250" height="130" rx="8" fill="#0F172A" stroke="#38BDF8" stroke-width="1"/>
+      <text x="12" y="24" fill="#38BDF8" font-size="12" font-weight="700">1. Tracking Service Gateway</text>
+      <text x="12" y="46" fill="#94A3B8" font-size="11">Gọi nội bộ Mesh Microservice:</text>
+      <text x="12" y="66" class="code-text">GET :3000/orders/track/:code</text>
+      <text x="12" y="86" fill="#94A3B8" font-size="11">Truy vấn DB PostgreSQL:</text>
+      <text x="12" y="104" fill="#CBD5E1" font-size="10.5">• Bảng `orders`, `tracking_events`</text>
+      <text x="12" y="120" fill="#CBD5E1" font-size="10.5">• Trạng thái thời gian thực</text>
+    </g>
+
+    <!-- Arrow -->
+    <path d="M 275 115 L 305 115" fill="none" stroke="#38BDF8" stroke-width="2" marker-end="url(#arrowBlue)"/>
+
+    <!-- Sub-step B -->
+    <g transform="translate(315, 50)">
+      <rect x="0" y="0" width="250" height="130" rx="8" fill="#0F172A" stroke="#38BDF8" stroke-width="1"/>
+      <text x="12" y="24" fill="#38BDF8" font-size="12" font-weight="700">2. Milestone Synthesis</text>
+      <text x="12" y="46" fill="#94A3B8" font-size="11">Tổng hợp chuỗi sự kiện:</text>
+      <text x="12" y="66" fill="#34D399" font-size="11">✔ Đã tạo đơn (Created)</text>
+      <text x="12" y="84" fill="#34D399" font-size="11">✔ Nhập kho phân loại Tân Bình</text>
+      <text x="12" y="102" fill="#FBBF24" font-size="11">🚚 Đang giao hàng (Out for Delivery)</text>
+      <text x="12" y="120" fill="#94A3B8" font-size="10">Driver: Nguyễn Văn B (090***)</text>
+    </g>
+
+    <!-- Arrow -->
+    <path d="M 570 115 L 600 115" fill="none" stroke="#38BDF8" stroke-width="2" marker-end="url(#arrowBlue)"/>
+
+    <!-- Sub-step C -->
+    <g transform="translate(610, 50)">
+      <rect x="0" y="0" width="230" height="130" rx="8" fill="#082F49" stroke="#0284C7" stroke-width="1"/>
+      <text x="12" y="24" fill="#7DD3FC" font-size="12" font-weight="700">3. Render Single Card</text>
+      <text x="12" y="46" fill="#94A3B8" font-size="11">Đóng gói JSON Schema Rich UI:</text>
+      <text x="12" y="66" class="code-text">type: "ORDER_TRACKING_CARD"</text>
+      <text x="12" y="84" fill="#CBD5E1" font-size="10.5">• Trạng thái: IN_TRANSIT</text>
+      <text x="12" y="100" fill="#CBD5E1" font-size="10.5">• ETA: Hôm nay trước 17:30</text>
+      <text x="12" y="116" fill="#38BDF8" font-size="10.5">• Action: [Theo dõi Live GPS]</text>
+    </g>
+  </g>
+
+  <!-- CASE 2: Multi-Order Ambiguity & Interactive Carousel -->
+  <g id="Case_2_Container" transform="translate(460, 370)">
+    <rect x="0" y="0" width="860" height="200" rx="14" fill="#1E293B" stroke="#8B5CF6" stroke-width="1.5" filter="url(#shadowFilter)"/>
+    <rect x="0" y="0" width="860" height="34" rx="14" fill="#4C1D95"/>
+    <text x="16" y="22" fill="#EDE9FE" font-size="12" font-weight="800">CASE 2: NHIỀU ĐƠN HÀNG GẦN ĐÂY (AMBIGUOUS INTENT &amp; INTERACTIVE CAROUSEL)</text>
+
+    <!-- Sub-step A -->
+    <g transform="translate(20, 50)">
+      <rect x="0" y="0" width="250" height="130" rx="8" fill="#0F172A" stroke="#A855F7" stroke-width="1"/>
+      <text x="12" y="24" fill="#C084FC" font-size="12" font-weight="700">1. Customer Orders Fetch</text>
+      <text x="12" y="46" fill="#94A3B8" font-size="11">Trích xuất ID người dùng đã auth:</text>
+      <text x="12" y="66" class="code-text">GET :3000/orders/my-orders?limit=3</text>
+      <text x="12" y="86" fill="#94A3B8" font-size="11">Kiểm tra kết quả danh sách:</text>
+      <text x="12" y="104" fill="#FDE047" font-size="10.5">• Phát hiện: 3 đơn hàng đang chạy</text>
+      <text x="12" y="120" fill="#94A3B8" font-size="10">→ Tránh hỏi lại làm phiền khách</text>
+    </g>
+
+    <!-- Arrow -->
+    <path d="M 275 115 L 305 115" fill="none" stroke="#A855F7" stroke-width="2" marker-end="url(#arrowPurple)"/>
+
+    <!-- Sub-step B -->
+    <g transform="translate(315, 50)">
+      <rect x="0" y="0" width="250" height="130" rx="8" fill="#0F172A" stroke="#A855F7" stroke-width="1"/>
+      <text x="12" y="24" fill="#C084FC" font-size="12" font-weight="700">2. Carousel Construction</text>
+      <text x="12" y="46" fill="#94A3B8" font-size="11">Sinh tập thẻ thu nhỏ (Mini-cards):</text>
+      <text x="12" y="66" fill="#E2E8F0" font-size="10.5">Card 1: NX-884920489 (Đang giao)</text>
+      <text x="12" y="84" fill="#E2E8F0" font-size="10.5">Card 2: NX-992102144 (Đang lấy hàng)</text>
+      <text x="12" y="102" fill="#E2E8F0" font-size="10.5">Card 3: NX-110294821 (Đã giao hôm qua)</text>
+      <text x="12" y="120" fill="#A855F7" font-size="10.5">Kèm nút bấm tương tác 1 chạm</text>
+    </g>
+
+    <!-- Arrow -->
+    <path d="M 570 115 L 600 115" fill="none" stroke="#A855F7" stroke-width="2" marker-end="url(#arrowPurple)"/>
+
+    <!-- Sub-step C -->
+    <g transform="translate(610, 50)">
+      <rect x="0" y="0" width="230" height="130" rx="8" fill="#2E1065" stroke="#8B5CF6" stroke-width="1"/>
+      <text x="12" y="24" fill="#DDD6FE" font-size="12" font-weight="700">3. Interactive UI Render</text>
+      <text x="12" y="46" fill="#94A3B8" font-size="11">Phản hồi màn hình Chatbot:</text>
+      <text x="12" y="66" fill="#CBD5E1" font-size="10.5">"Bạn có 3 đơn gần đây. Vui lòng</text>
+      <text x="12" y="82" fill="#CBD5E1" font-size="10.5">chọn đơn bạn cần kiểm tra:"</text>
+      <rect x="12" y="96" width="100" height="22" rx="4" fill="#7C3AED"/>
+      <text x="62" y="111" text-anchor="middle" fill="#FFFFFF" font-size="10" font-weight="600">[Chọn Đơn 1]</text>
+      <rect x="118" y="96" width="100" height="22" rx="4" fill="#4B5563"/>
+      <text x="168" y="111" text-anchor="middle" fill="#FFFFFF" font-size="10" font-weight="600">[Chọn Đơn 2]</text>
+    </g>
+  </g>
+
+  <!-- CASE 3: Guest & PII Masking -->
+  <g id="Case_3_Container" transform="translate(460, 590)">
+    <rect x="0" y="0" width="860" height="200" rx="14" fill="#1E293B" stroke="#D97706" stroke-width="1.5" filter="url(#shadowFilter)"/>
+    <rect x="0" y="0" width="860" height="34" rx="14" fill="#78350F"/>
+    <text x="16" y="22" fill="#FEF3C7" font-size="12" font-weight="800">CASE 3: KHÁCH VÃNG LAI &amp; BẢO VỆ DỮ LIỆU NHẠY CẢM (PII DATA MASKING)</text>
+
+    <!-- Sub-step A -->
+    <g transform="translate(20, 50)">
+      <rect x="0" y="0" width="250" height="130" rx="8" fill="#0F172A" stroke="#F59E0B" stroke-width="1"/>
+      <text x="12" y="24" fill="#FBBF24" font-size="12" font-weight="700">1. Public Guest Interception</text>
+      <text x="12" y="46" fill="#94A3B8" font-size="11">Khách vãng lai tra cứu mã NX-:</text>
+      <text x="12" y="66" fill="#CBD5E1" font-size="11">• Không có Bearer Auth Token</text>
+      <text x="12" y="86" fill="#CBD5E1" font-size="11">• Rủi ro rò rỉ thông tin cá nhân:</text>
+      <text x="12" y="104" fill="#EF4444" font-size="10.5">SĐT nhận, Địa chỉ nhà, Giá trị COD</text>
+      <text x="12" y="120" fill="#F59E0B" font-size="10">→ Kích hoạt PII Sanitizer Pipeline</text>
+    </g>
+
+    <!-- Arrow -->
+    <path d="M 275 115 L 305 115" fill="none" stroke="#F59E0B" stroke-width="2" marker-end="url(#arrowAmber)"/>
+
+    <!-- Sub-step B -->
+    <g transform="translate(315, 50)">
+      <rect x="0" y="0" width="250" height="130" rx="8" fill="#0F172A" stroke="#F59E0B" stroke-width="1"/>
+      <text x="12" y="24" fill="#FBBF24" font-size="12" font-weight="700">2. PII Masking Algorithm</text>
+      <text x="12" y="46" fill="#94A3B8" font-size="11">Che giấu theo chuẩn an toàn:</text>
+      <text x="12" y="66" fill="#CBD5E1" font-size="10.5">• SĐT: 0984123456 → </text>
+      <text x="145" y="66" fill="#FBBF24" font-weight="700" font-size="11">098***3456</text>
+      <text x="12" y="86" fill="#CBD5E1" font-size="10.5">• Người nhận: Nguyễn Văn A → </text>
+      <text x="175" y="86" fill="#FBBF24" font-weight="700" font-size="11">N*** V** A</text>
+      <text x="12" y="106" fill="#CBD5E1" font-size="10.5">• Địa chỉ: 123 Lê Duẩn, P. Bến Nghé, Q.1</text>
+      <text x="24" y="122" fill="#FBBF24" font-weight="700" font-size="10.5">→ P. Bến Nghé, Quận 1, TP.HCM</text>
+    </g>
+
+    <!-- Arrow -->
+    <path d="M 570 115 L 600 115" fill="none" stroke="#F59E0B" stroke-width="2" marker-end="url(#arrowAmber)"/>
+
+    <!-- Sub-step C -->
+    <g transform="translate(610, 50)">
+      <rect x="0" y="0" width="230" height="130" rx="8" fill="#451A03" stroke="#D97706" stroke-width="1"/>
+      <text x="12" y="24" fill="#FDE68A" font-size="12" font-weight="700">3. Masked Response Card</text>
+      <text x="12" y="46" fill="#94A3B8" font-size="11">Hiển thị thẻ công khai:</text>
+      <text x="12" y="66" fill="#CBD5E1" font-size="10.5">✔ Trạng thái lộ trình đơn hàng</text>
+      <text x="12" y="84" fill="#CBD5E1" font-size="10.5">✔ Thông tin cá nhân đã che mờ</text>
+      <rect x="12" y="96" width="206" height="24" rx="4" fill="#D97706"/>
+      <text x="115" y="112" text-anchor="middle" fill="#FFFFFF" font-size="10" font-weight="700">🔐 Đăng nhập để xem đầy đủ</text>
+    </g>
+  </g>
+
+  <!-- CASE 4: Damaged / Claim SOP -->
+  <g id="Case_4_Container" transform="translate(460, 810)">
+    <rect x="0" y="0" width="860" height="200" rx="14" fill="#1E293B" stroke="#059669" stroke-width="1.5" filter="url(#shadowFilter)"/>
+    <rect x="0" y="0" width="860" height="34" rx="14" fill="#064E3B"/>
+    <text x="16" y="22" fill="#D1FAE5" font-size="12" font-weight="800">CASE 4: XỬ LÝ HÀNG HƯ HỎNG, BỂ VỠ &amp; KHIẾU NẠI BỒI THƯỜNG (DAMAGE SOP &amp; CLAIM CLM-)</text>
+
+    <!-- Sub-step A -->
+    <g transform="translate(20, 50)">
+      <rect x="0" y="0" width="250" height="130" rx="8" fill="#0F172A" stroke="#10B981" stroke-width="1"/>
+      <text x="12" y="24" fill="#34D399" font-size="12" font-weight="700">1. Damage Exception Match</text>
+      <text x="12" y="46" fill="#94A3B8" font-size="11">Phát hiện khiếu nại bể vỡ/mất hàng:</text>
+      <text x="12" y="66" fill="#CBD5E1" font-size="10.5">• Query RAG Knowledge Base:</text>
+      <text x="24" y="84" class="code-text">02-insurance-and-claim.md</text>
+      <text x="24" y="100" class="code-text">04-delivery-exceptions.md</text>
+      <text x="12" y="120" fill="#94A3B8" font-size="10">• Trích xuất quy định BBBT 24H</text>
+    </g>
+
+    <!-- Arrow -->
+    <path d="M 275 115 L 305 115" fill="none" stroke="#10B981" stroke-width="2" marker-end="url(#arrowGreen)"/>
+
+    <!-- Sub-step B -->
+    <g transform="translate(315, 50)">
+      <rect x="0" y="0" width="250" height="130" rx="8" fill="#0F172A" stroke="#10B981" stroke-width="1"/>
+      <text x="12" y="24" fill="#34D399" font-size="12" font-weight="700">2. SOP Guidance &amp; Claim Query</text>
+      <text x="12" y="46" fill="#94A3B8" font-size="11">Quy chuẩn bồi thường Nexus:</text>
+      <text x="12" y="66" fill="#CBD5E1" font-size="10.5">• Lập Biên bản bất thường (BBBT)</text>
+      <text x="12" y="84" fill="#CBD5E1" font-size="10.5">• Chụp 3 ảnh: Mặt thùng, Mã vạch, Vết vỡ</text>
+      <text x="12" y="104" fill="#34D399" font-size="10.5">• Nếu có mã CLM-9024: Tra cứu API</text>
+      <text x="24" y="120" class="code-text">GET :3000/claims/:claimCode</text>
+    </g>
+
+    <!-- Arrow -->
+    <path d="M 570 115 L 600 115" fill="none" stroke="#10B981" stroke-width="2" marker-end="url(#arrowGreen)"/>
+
+    <!-- Sub-step C -->
+    <g transform="translate(610, 50)">
+      <rect x="0" y="0" width="230" height="130" rx="8" fill="#064E3B" stroke="#059669" stroke-width="1"/>
+      <text x="12" y="24" fill="#A7F3D0" font-size="12" font-weight="700">3. Render Claim Card</text>
+      <text x="12" y="46" fill="#94A3B8" font-size="11">Thẻ trạng thái khiếu nại:</text>
+      <text x="12" y="66" class="code-text">type: "CLAIM_PROGRESS_CARD"</text>
+      <text x="12" y="84" fill="#CBD5E1" font-size="10.5">• Hồ sơ: CLM-88219 (Đang thẩm định)</text>
+      <text x="12" y="100" fill="#CBD5E1" font-size="10.5">• Bồi thường dự kiến: 100% hóa đơn</text>
+      <text x="12" y="118" fill="#FDE047" font-size="10.5">SLA giải quyết: 48 Giờ làm việc</text>
+    </g>
+  </g>
+
+  <!-- CASE 5: IATA Calculation & Policy -->
+  <g id="Case_5_Container" transform="translate(460, 1030)">
+    <rect x="0" y="0" width="860" height="190" rx="14" fill="#1E293B" stroke="#2563EB" stroke-width="1.5" filter="url(#shadowFilter)"/>
+    <rect x="0" y="0" width="860" height="34" rx="14" fill="#1E3A8A"/>
+    <text x="16" y="22" fill="#DBEAFE" font-size="12" font-weight="800">CASE 5: DỰ TOÁN CƯỚC PHÍ, TRỌNG LƯỢNG IATA &amp; CHUYỂN HOÀN (PRICING &amp; RETURN POLICY)</text>
+
+    <!-- Sub-step A -->
+    <g transform="translate(20, 50)">
+      <rect x="0" y="0" width="250" height="120" rx="8" fill="#0F172A" stroke="#3B82F6" stroke-width="1"/>
+      <text x="12" y="24" fill="#60A5FA" font-size="12" font-weight="700">1. Dimension Extraction</text>
+      <text x="12" y="46" fill="#94A3B8" font-size="11">Bóc tách tham số kiện hàng:</text>
+      <text x="12" y="66" fill="#CBD5E1" font-size="10.5">• Dài (L), Rộng (W), Cao (H) (cm)</text>
+      <text x="12" y="86" fill="#CBD5E1" font-size="10.5">• Cân nặng thực tế: W_actual (kg)</text>
+      <text x="12" y="104" fill="#60A5FA" font-size="10">→ Chuyển vào Bộ tính cước tự động</text>
+    </g>
+
+    <!-- Arrow -->
+    <path d="M 275 110 L 305 110" fill="none" stroke="#3B82F6" stroke-width="2" marker-end="url(#arrowBlue)"/>
+
+    <!-- Sub-step B -->
+    <g transform="translate(315, 50)">
+      <rect x="0" y="0" width="250" height="120" rx="8" fill="#0F172A" stroke="#3B82F6" stroke-width="1"/>
+      <text x="12" y="24" fill="#60A5FA" font-size="12" font-weight="700">2. IATA Standard Formula</text>
+      <text x="12" y="46" fill="#94A3B8" font-size="11">Công thức quy đổi thể tích:</text>
+      <text x="12" y="66" fill="#FDE047" font-weight="700" font-size="11">W_dim = (L × W × H) / 5000</text>
+      <text x="12" y="86" fill="#94A3B8" font-size="10.5">W_tính_cước = max(W_act, W_dim)</text>
+      <text x="12" y="106" fill="#CBD5E1" font-size="10">Chuyển hoàn: 50% cước chiều đi</text>
+    </g>
+
+    <!-- Arrow -->
+    <path d="M 570 110 L 600 110" fill="none" stroke="#3B82F6" stroke-width="2" marker-end="url(#arrowBlue)"/>
+
+    <!-- Sub-step C -->
+    <g transform="translate(610, 50)">
+      <rect x="0" y="0" width="230" height="120" rx="8" fill="#172554" stroke="#2563EB" stroke-width="1"/>
+      <text x="12" y="24" fill="#93C5FD" font-size="12" font-weight="700">3. Fee Estimate Breakdown</text>
+      <text x="12" y="46" fill="#94A3B8" font-size="11">Bảng chi tiết cước minh bạch:</text>
+      <text x="12" y="66" fill="#CBD5E1" font-size="10.5">• Cước chính: 45.000 đ</text>
+      <text x="12" y="84" fill="#CBD5E1" font-size="10.5">• Phí cồng kềnh: 15.000 đ</text>
+      <text x="12" y="102" fill="#34D399" font-weight="700" font-size="11">Tổng cộng: 60.000 VNĐ</text>
+    </g>
+  </g>
+
+  <!-- ==================== STAGE 3: FIGMA RICH CARD UI COMPONENTS ==================== -->
+  <g id="Stage_3_UI_Mockups" transform="translate(1360, 150)">
+    <rect x="0" y="0" width="500" height="1070" rx="16" fill="url(#cardGradDark)" stroke="#334155" stroke-width="1.5" filter="url(#shadowFilter)"/>
+    <rect x="0" y="0" width="500" height="42" rx="16" fill="#1E293B"/>
+    <text x="20" y="26" fill="#F472B6" class="sec-badge">GIAI ĐOẠN 3: GIAO DIỆN RICH CARD TRÊN FIGMA (MOCKUP COMPONENT)</text>
+
+    <!-- CARD MOCKUP 1: Single Order Card -->
+    <g id="Mockup_Single_Card" transform="translate(25, 60)">
+      <rect x="0" y="0" width="450" height="240" rx="12" fill="#1E293B" stroke="#0284C7" stroke-width="1.5" filter="url(#shadowFilter)"/>
+      
+      <!-- Card Header -->
+      <path d="M 0 12 Q 0 0 12 0 L 438 0 Q 450 0 450 12 L 450 42 L 0 42 Z" fill="#0C4A6E"/>
+      <text x="16" y="26" fill="#FFFFFF" font-size="13" font-weight="700">📦 Đơn hàng NX-884920489</text>
+      <rect x="330" y="10" width="105" height="22" rx="11" fill="#059669"/>
+      <text x="382" y="25" text-anchor="middle" fill="#FFFFFF" font-size="10" font-weight="700">ĐANG GIAO</text>
+
+      <!-- Status Progress -->
+      <g transform="translate(20, 60)">
+        <line x1="20" y1="12" x2="390" y2="12" stroke="#334155" stroke-width="3"/>
+        <line x1="20" y1="12" x2="260" y2="12" stroke="#38BDF8" stroke-width="3"/>
+        
+        <circle cx="20" cy="12" r="8" fill="#38BDF8"/>
+        <text x="20" y="32" text-anchor="middle" fill="#94A3B8" font-size="9.5">Đã tạo</text>
+
+        <circle cx="140" cy="12" r="8" fill="#38BDF8"/>
+        <text x="140" y="32" text-anchor="middle" fill="#94A3B8" font-size="9.5">Đã lấy</text>
+
+        <circle cx="260" cy="12" r="9" fill="#FBBF24" stroke="#FFFFFF" stroke-width="2"/>
+        <text x="260" y="32" text-anchor="middle" fill="#FBBF24" font-size="9.5" font-weight="700">Đang giao</text>
+
+        <circle cx="390" cy="12" r="8" fill="#475569"/>
+        <text x="390" y="32" text-anchor="middle" fill="#64748B" font-size="9.5">Giao xong</text>
+      </g>
+
+      <!-- Info items -->
+      <g transform="translate(20, 115)">
+        <text x="0" y="15" fill="#94A3B8" font-size="11">Tài xế giao hàng:</text>
+        <text x="110" y="15" fill="#F8FAFC" font-size="11" font-weight="600">Nguyễn Văn Ba (0909***890)</text>
+
+        <text x="0" y="38" fill="#94A3B8" font-size="11">Địa chỉ nhận:</text>
+        <text x="110" y="38" fill="#F8FAFC" font-size="11">142 Võ Văn Tần, P. Võ Thị Sáu, Q.3, TP.HCM</text>
+
+        <text x="0" y="61" fill="#94A3B8" font-size="11">Dự kiến giao:</text>
+        <text x="110" y="61" fill="#34D399" font-size="11" font-weight="700">Hôm nay, trước 17:30</text>
+      </g>
+
+      <!-- Card Action Buttons -->
+      <g transform="translate(20, 195)">
+        <rect x="0" y="0" width="195" height="32" rx="6" fill="#0284C7"/>
+        <text x="97" y="20" text-anchor="middle" fill="#FFFFFF" font-size="11" font-weight="600">📍 Theo dõi vị trí tài xế</text>
+
+        <rect x="215" y="0" width="195" height="32" rx="6" fill="#334155"/>
+        <text x="312" y="20" text-anchor="middle" fill="#E2E8F0" font-size="11" font-weight="600">📞 Gọi hỗ trợ tổng đài</text>
+      </g>
+    </g>
+
+    <!-- CARD MOCKUP 2: Multi-Order Carousel Selector -->
+    <g id="Mockup_Carousel_Card" transform="translate(25, 330)">
+      <rect x="0" y="0" width="450" height="270" rx="12" fill="#1E293B" stroke="#8B5CF6" stroke-width="1.5" filter="url(#shadowFilter)"/>
+      <path d="M 0 12 Q 0 0 12 0 L 438 0 Q 450 0 450 12 L 450 42 L 0 42 Z" fill="#4C1D95"/>
+      <text x="16" y="26" fill="#FFFFFF" font-size="13" font-weight="700">📑 Đơn hàng gần đây của bạn (3 đơn)</text>
+
+      <text x="16" y="65" fill="#C4B5FD" font-size="11.5">Hệ thống tìm thấy 3 đơn hàng gần nhất. Vui lòng bấm chọn:</text>
+
+      <!-- Carousel Item 1 -->
+      <g transform="translate(16, 80)">
+        <rect x="0" y="0" width="418" height="52" rx="8" fill="#0F172A" stroke="#6366F1" stroke-width="1"/>
+        <text x="14" y="24" fill="#FFFFFF" font-size="12" font-weight="700">NX-884920489</text>
+        <text x="14" y="42" fill="#94A3B8" font-size="10.5">Quần áo thể thao • Giao: Q.3, TP.HCM</text>
+        <rect x="235" y="14" width="85" height="24" rx="12" fill="#065F46"/>
+        <text x="277" y="29" text-anchor="middle" fill="#A7F3D0" font-size="10" font-weight="700">ĐANG GIAO</text>
+        <rect x="330" y="14" width="76" height="24" rx="6" fill="#6366F1"/>
+        <text x="368" y="29" text-anchor="middle" fill="#FFFFFF" font-size="10" font-weight="600">Chọn tra cứu</text>
+      </g>
+
+      <!-- Carousel Item 2 -->
+      <g transform="translate(16, 142)">
+        <rect x="0" y="0" width="418" height="52" rx="8" fill="#0F172A" stroke="#475569" stroke-width="1"/>
+        <text x="14" y="24" fill="#FFFFFF" font-size="12" font-weight="700">NX-992102144</text>
+        <text x="14" y="42" fill="#94A3B8" font-size="10.5">Linh kiện điện tử • Lấy tại: Kho Tân Bình</text>
+        <rect x="235" y="14" width="85" height="24" rx="12" fill="#854D0E"/>
+        <text x="277" y="29" text-anchor="middle" fill="#FEF08A" font-size="10" font-weight="700">ĐANG LẤY</text>
+        <rect x="330" y="14" width="76" height="24" rx="6" fill="#334155"/>
+        <text x="368" y="29" text-anchor="middle" fill="#CBD5E1" font-size="10" font-weight="600">Chọn tra cứu</text>
+      </g>
+
+      <!-- Carousel Item 3 -->
+      <g transform="translate(16, 204)">
+        <rect x="0" y="0" width="418" height="52" rx="8" fill="#0F172A" stroke="#475569" stroke-width="1"/>
+        <text x="14" y="24" fill="#FFFFFF" font-size="12" font-weight="700">NX-110294821</text>
+        <text x="14" y="42" fill="#94A3B8" font-size="10.5">Sách vở văn phòng phẩm • Giao: Q.1</text>
+        <rect x="235" y="14" width="85" height="24" rx="12" fill="#1E3A8A"/>
+        <text x="277" y="29" text-anchor="middle" fill="#BFDBFE" font-size="10" font-weight="700">ĐÃ GIAO XONG</text>
+        <rect x="330" y="14" width="76" height="24" rx="6" fill="#334155"/>
+        <text x="368" y="29" text-anchor="middle" fill="#CBD5E1" font-size="10" font-weight="600">Chọn tra cứu</text>
+      </g>
+    </g>
+
+    <!-- CARD MOCKUP 3: Claim Progress & SOP BBBT -->
+    <g id="Mockup_Claim_Card" transform="translate(25, 630)">
+      <rect x="0" y="0" width="450" height="220" rx="12" fill="#1E293B" stroke="#059669" stroke-width="1.5" filter="url(#shadowFilter)"/>
+      <path d="M 0 12 Q 0 0 12 0 L 438 0 Q 450 0 450 12 L 450 42 L 0 42 Z" fill="#064E3B"/>
+      <text x="16" y="26" fill="#FFFFFF" font-size="13" font-weight="700">🛡️ Tiến độ bồi thường: CLM-88219</text>
+      <rect x="310" y="10" width="125" height="22" rx="11" fill="#047857"/>
+      <text x="372" y="25" text-anchor="middle" fill="#ECFDF5" font-size="10" font-weight="700">ĐANG THẨM ĐỊNH</text>
+
+      <g transform="translate(20, 60)">
+        <text x="0" y="15" fill="#94A3B8" font-size="11">Mã đơn liên kết:</text>
+        <text x="110" y="15" fill="#F8FAFC" font-size="11" font-weight="600">NX-773194012 (Gốm sứ bị nứt)</text>
+
+        <text x="0" y="38" fill="#94A3B8" font-size="11">Biên bản BBBT:</text>
+        <text x="110" y="38" fill="#34D399" font-size="11" font-weight="600">✔ Đã tiếp nhận hợp lệ (có 3 ảnh)</text>
+
+        <text x="0" y="61" fill="#94A3B8" font-size="11">Mức bồi thường:</text>
+        <text x="110" y="61" fill="#FDE047" font-size="11" font-weight="700">1.250.000 VNĐ (100% Khai giá)</text>
+
+        <text x="0" y="84" fill="#94A3B8" font-size="11">Thời hạn hoàn tất:</text>
+        <text x="110" y="84" fill="#CBD5E1" font-size="11">Trong vòng 48h (SLA chuẩn Nexus)</text>
+      </g>
+
+      <g transform="translate(20, 160)">
+        <rect x="0" y="0" width="410" height="34" rx="6" fill="#065F46"/>
+        <text x="205" y="21" text-anchor="middle" fill="#FFFFFF" font-size="11" font-weight="600">📄 Xem chi tiết Biên bản Bất thường (PDF)</text>
+      </g>
+    </g>
+
+    <!-- CARD MOCKUP 4: Pricing & IATA Calculator Result -->
+    <g id="Mockup_Pricing_Card" transform="translate(25, 875)">
+      <rect x="0" y="0" width="450" height="170" rx="12" fill="#1E293B" stroke="#2563EB" stroke-width="1.5" filter="url(#shadowFilter)"/>
+      <path d="M 0 12 Q 0 0 12 0 L 438 0 Q 450 0 450 12 L 450 42 L 0 42 Z" fill="#1E3A8A"/>
+      <text x="16" y="26" fill="#FFFFFF" font-size="13" font-weight="700">📐 Bảng dự toán cước phí chuẩn IATA</text>
+
+      <g transform="translate(20, 55)">
+        <text x="0" y="15" fill="#94A3B8" font-size="11">Kích thước (D x R x C):</text>
+        <text x="150" y="15" fill="#F8FAFC" font-size="11">50 × 40 × 30 cm | Thực tế: 3.5 kg</text>
+
+        <text x="0" y="36" fill="#94A3B8" font-size="11">Quy đổi IATA (5000):</text>
+        <text x="150" y="36" fill="#60A5FA" font-size="11" font-weight="700">12.0 kg (Áp dụng tính cước)</text>
+
+        <line x1="0" y1="50" x2="410" y2="50" stroke="#334155" stroke-width="1"/>
+
+        <text x="0" y="70" fill="#CBD5E1" font-size="11">Cước tiêu chuẩn:</text>
+        <text x="340" y="70" fill="#CBD5E1" font-size="11">68.000 đ</text>
+
+        <text x="0" y="90" fill="#CBD5E1" font-size="11">Phụ phí hàng cồng kềnh:</text>
+        <text x="340" y="90" fill="#CBD5E1" font-size="11">24.000 đ</text>
+
+        <text x="0" y="112" fill="#34D399" font-size="13" font-weight="800">TỔNG CƯỚC DỰ TOÁN:</text>
+        <text x="320" y="112" fill="#34D399" font-size="13" font-weight="800">92.000 VNĐ</text>
+      </g>
+    </g>
+  </g>
+</svg>
