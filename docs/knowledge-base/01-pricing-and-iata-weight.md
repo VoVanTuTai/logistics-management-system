@@ -7,7 +7,7 @@ Nexus Logistics áp dụng mô hình định giá lũy tiến theo nấc bưu ch
   - Gói Nhanh (Express Delivery): 28.000 VNĐ.
   - Gói Hỏa Tốc Trong Ngày (Same-day Delivery): 42.000 VNĐ.
 - **Nấc vượt cân (Incremental Weight):** Mỗi 0.5 kg tiếp theo tính thêm:
-  - Gói Tiêu Chuẩn: +3.000 VNĐ / nấc 0.5 kg.
+  - Gói Tiêu Chuẩn: +3.500 VNĐ / nấc 0.5 kg.
   - Gói Nhanh: +5.000 VNĐ / nấc 0.5 kg.
   - Gói Hỏa Tốc: +8.000 VNĐ / nấc 0.5 kg.
 

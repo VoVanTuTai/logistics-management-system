@@ -61,6 +61,8 @@ const SHIPMENT_STATUS_LABELS: LabelMap = {
   CREATED: 'Mới tạo',
   DELIVERED: 'Ký nhận',
   DELIVERY_FAILED: 'Ghi nhận vấn đề',
+  EXCEPTION: 'Sự cố ngoại lệ',
+  INVENTORY_CHECK: 'Kiểm tồn kho',
   IN_TRANSIT: 'Đang luân chuyển',
   MANIFEST_RECEIVED: 'Xe đến',
   MANIFEST_SEALED: 'Đang luân chuyển',
@@ -308,3 +310,17 @@ export function formatAnyCodeLabel(value: string | null | undefined): string {
 
   return translateByTokens(normalizeCode(value));
 }
+
+export function formatInspectionPolicyLabel(policy: unknown): string {
+  switch (policy) {
+    case 'NONE':
+      return 'Không cho xem hàng (Mặc định)';
+    case 'VIEW_ONLY':
+      return 'Cho xem hàng, không cho thử';
+    case 'TRY_ON':
+      return 'Cho thử hàng';
+    default:
+      return 'Không cho xem hàng';
+  }
+}
+

@@ -498,6 +498,7 @@ start_web_app ops-web apps/ops-web 5173
 start_web_app merchant-web apps/merchant-web 5174
 start_web_app admin-web apps/admin-web 5175
 start_web_app guest-web apps/guest-web 5177
+start_service chatbot-service services/chatbot-service 3013
 start_mobile_app
 
 echo "[wait] UI ports"
@@ -505,6 +506,7 @@ wait_port ops-web 5173 30
 wait_port merchant-web 5174 30
 wait_port admin-web 5175 30
 wait_port guest-web 5177 30
+wait_port chatbot-service 3013 30
 
 echo
 echo "=== OPEN URLS ==="
@@ -515,5 +517,6 @@ echo "ops-web:         http://localhost:5173"
 echo "admin-web:       http://localhost:5175"
 echo "customer-web:    http://localhost:5177"
 echo "courier-mobile:  http://localhost:8081"
+echo "chatbot-service: http://localhost:3013"
 echo
 echo "Demo login: merchant 41100001 / password"

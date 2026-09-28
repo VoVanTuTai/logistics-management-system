@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Pencil, Plus, Printer, RefreshCw, Save, X } from 'lucide-react';
 
 import { manifestsClient } from '../../../../features/manifests/manifests.api';
+import { useHubScope } from '../../../../hooks/useHubScope';
 import { routePaths } from '../../../../navigation/routes';
 import { getErrorMessage } from '../../../../services/api/errors';
 import { useAuthStore } from '../../../../store/authStore';
@@ -24,6 +25,7 @@ interface LinehaulTripFilters {
   tripType: string;
   status: string;
   keyword: string;
+  direction?: 'ALL' | 'ORIGIN' | 'DESTINATION';
 }
 
 interface LinehaulTripOperationForm {
@@ -81,6 +83,7 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
     [session?.user.hubCodes],
   );
   const canViewAllHubAreas = session?.user.roles.includes('SYSTEM_ADMIN') ?? false;
+  const hubScope = useHubScope();
   const [trips, setTrips] = useState<LinehaulTrip[]>(readLinehaulTrips);
   const [operationForm, setOperationForm] = useState<LinehaulTripOperationForm>({
     tripId: '',
@@ -93,25 +96,54 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
     tripType: 'ALL',
     status: 'ALL',
     keyword: '',
+    direction: 'ALL',
   });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [operationModalOpen, setOperationModalOpen] = useState(false);
 
+  const effectiveHubCodes = useMemo(() => {
+    const list = hubScope.scopedHubCodes.length > 0 ? hubScope.scopedHubCodes : assignedHubCodes;
+    return list.map(normalizeTripCode).filter(Boolean);
+  }, [hubScope.scopedHubCodes, assignedHubCodes]);
+
+  const isAllSystem = canViewAllHubAreas || hubScope.isAllSystem;
+
+  // Quy tắc phạm vi Hub đối với Tuyến xe / Chuyến xe:
+  // 1. Mặc định chỉ hiển thị chuyến xe mà Hub mình là Hub đi (origin) HOẶC Hub đến (destination)
+  // 2. Các tuyến của các tỉnh khác không liên quan sẽ không hiển thị mặc định
+  // 3. Nếu người dùng tra cứu bằng mã chuyến / biển số cụ thể: tìm kiếm trên toàn hệ thống
   const scopedTrips = useMemo(() => {
-    if (canViewAllHubAreas) {
+    const keyword = normalizeText(filters.keyword);
+    if (keyword) {
+      const matchAll = trips.filter(
+        (trip) =>
+          normalizeText(trip.tripCode).includes(keyword) ||
+          normalizeText(trip.vehiclePlate).includes(keyword) ||
+          normalizeText(trip.driverName).includes(keyword) ||
+          normalizeText(trip.originHubCode).includes(keyword) ||
+          normalizeText(trip.destinationHubCode).includes(keyword),
+      );
+      if (matchAll.length > 0) {
+        return matchAll;
+      }
+    }
+
+    if (isAllSystem) {
       return trips;
     }
 
-    if (assignedHubCodes.length === 0) {
+    if (effectiveHubCodes.length === 0) {
       return [];
     }
 
-    return trips.filter((trip) =>
-      assignedHubCodes.includes(normalizeTripCode(trip.originHubCode)),
-    );
-  }, [assignedHubCodes, canViewAllHubAreas, trips]);
+    return trips.filter((trip) => {
+      const isOrigin = effectiveHubCodes.includes(normalizeTripCode(trip.originHubCode));
+      const isDest = effectiveHubCodes.includes(normalizeTripCode(trip.destinationHubCode));
+      return isOrigin || isDest;
+    });
+  }, [effectiveHubCodes, filters.keyword, isAllSystem, trips]);
 
   const hubOptions = useMemo(() => {
     const hubs = new Set<string>();
@@ -137,14 +169,24 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
         normalizeText(trip.originHubCode).includes(keyword) ||
         normalizeText(trip.destinationHubCode).includes(keyword);
 
+      const directionMatched =
+        !filters.direction ||
+        filters.direction === 'ALL' ||
+        isAllSystem ||
+        (filters.direction === 'ORIGIN' &&
+          effectiveHubCodes.includes(normalizeTripCode(trip.originHubCode))) ||
+        (filters.direction === 'DESTINATION' &&
+          effectiveHubCodes.includes(normalizeTripCode(trip.destinationHubCode)));
+
       return (
         hubMatched &&
+        directionMatched &&
         (filters.tripType === 'ALL' || trip.tripType === filters.tripType) &&
         (filters.status === 'ALL' || status === filters.status) &&
         keywordMatched
       );
     });
-  }, [filters, scopedTrips]);
+  }, [effectiveHubCodes, filters, isAllSystem, scopedTrips]);
 
   useEffect(() => {
     setPage(1);
@@ -314,25 +356,34 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
           <small>LINEHAUL_TRIP_MANAGEMENT</small>
           <h2>Quản lý chuyến xe</h2>
           <p>
-            Danh sách chuyến đã tạo. Chuyến mới chỉ có kế hoạch cơ bản; chỉ in tem xe sau
-            khi đã bổ sung tài xế, biển số và thông tin vận hành.
+            Danh sách chuyến xe tải liên tỉnh. Mặc định chỉ hiển thị các chuyến xuất phát từ hoặc
+            cập bến tại Hub thuộc phạm vi quản lý.
           </p>
         </div>
-        <div className="ops-linehaul-dashboard__actions">
-          <Link className="ops-linehaul-dashboard__primary-link" to={routePaths.linehaulVehicleSeal}>
-            <Plus size={16} />
-            Tạo chuyến xe
-          </Link>
-          <button
-            type="button"
-            onClick={() => {
-              setTrips(readLinehaulTrips());
-              setActionMessage(null);
-            }}
-          >
-            <RefreshCw size={16} />
-            Làm mới
-          </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <div className="ops-thermal-management__hub-badge">
+            <span className="ops-thermal-management__hub-badge-dot" />
+            <span>
+              Phạm vi: <strong>{hubScope.scopeLabel}</strong>
+              {!isAllSystem && effectiveHubCodes.length > 0 ? ` (${effectiveHubCodes.join(', ')})` : ''}
+            </span>
+          </div>
+          <div className="ops-linehaul-dashboard__actions">
+            <Link className="ops-linehaul-dashboard__primary-link" to={routePaths.linehaulVehicleSeal}>
+              <Plus size={16} />
+              Tạo chuyến xe
+            </Link>
+            <button
+              type="button"
+              onClick={() => {
+                setTrips(readLinehaulTrips());
+                setActionMessage(null);
+              }}
+            >
+              <RefreshCw size={16} />
+              Làm mới
+            </button>
+          </div>
         </div>
       </header>
 
@@ -369,6 +420,19 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
       ) : null}
 
       <section className="ops-linehaul-dashboard__filters">
+        {!isAllSystem && (
+          <label>
+            <span>Chiều tuyến</span>
+            <select
+              value={filters.direction ?? 'ALL'}
+              onChange={(event) => updateFilter('direction', event.target.value as any)}
+            >
+              <option value="ALL">Tất cả liên quan</option>
+              <option value="ORIGIN">Chuyến xuất bến (Đi)</option>
+              <option value="DESTINATION">Chuyến cập bến (Đến)</option>
+            </select>
+          </label>
+        )}
         <label>
           <span>Hub</span>
           <select
@@ -416,7 +480,7 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
           <input
             value={filters.keyword}
             onChange={(event) => updateFilter('keyword', event.target.value)}
-            placeholder="Mã chuyến, hub"
+            placeholder="Mã chuyến, biển số, hub (Hỗ trợ tra toàn quốc)"
           />
         </label>
       </section>

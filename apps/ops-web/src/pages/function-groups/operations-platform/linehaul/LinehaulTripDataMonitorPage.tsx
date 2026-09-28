@@ -4,6 +4,7 @@ import { RefreshCw } from 'lucide-react';
 
 import { useManifestsQuery } from '../../../../features/manifests/manifests.api';
 import type { ManifestListItemDto } from '../../../../features/manifests/manifests.types';
+import { useHubScope } from '../../../../hooks/useHubScope';
 import { routePaths } from '../../../../navigation/routes';
 import { getErrorMessage } from '../../../../services/api/errors';
 import { useAuthStore } from '../../../../store/authStore';
@@ -73,6 +74,12 @@ function buildManifestLookup(manifests: ManifestListItemDto[]): Map<string, Mani
 export function LinehaulTripDataMonitorPage(): React.JSX.Element {
   const session = useAuthStore((state) => state.session);
   const accessToken = session?.tokens.accessToken ?? null;
+  const canViewAllHubAreas = session?.user.roles.includes('SYSTEM_ADMIN') ?? false;
+  const assignedHubCodes = useMemo(
+    () => (session?.user.hubCodes ?? []).map(normalizeTripCode).filter(Boolean),
+    [session?.user.hubCodes],
+  );
+  const hubScope = useHubScope();
   const [trips, setTrips] = useState<LinehaulTrip[]>(readLinehaulTrips);
   const [filters, setFilters] = useState<MonitorFilters>({
     hubCode: 'ALL',
@@ -84,6 +91,13 @@ export function LinehaulTripDataMonitorPage(): React.JSX.Element {
 
   const manifestsQuery = useManifestsQuery(accessToken);
   const manifests = manifestsQuery.data ?? [];
+
+  const effectiveHubCodes = useMemo(() => {
+    const list = hubScope.scopedHubCodes.length > 0 ? hubScope.scopedHubCodes : assignedHubCodes;
+    return list.map(normalizeTripCode).filter(Boolean);
+  }, [hubScope.scopedHubCodes, assignedHubCodes]);
+
+  const isAllSystem = canViewAllHubAreas || hubScope.isAllSystem;
 
   const rows = useMemo<LinehaulMonitorRow[]>(() => {
     const manifestLookup = buildManifestLookup(manifests);
@@ -106,21 +120,51 @@ export function LinehaulTripDataMonitorPage(): React.JSX.Element {
     });
   }, [manifests, trips]);
 
+  const scopedRows = useMemo(() => {
+    const keyword = normalizeText(filters.keyword);
+    if (keyword) {
+      const matched = rows.filter(
+        (r) =>
+          normalizeText(r.trip.tripCode).includes(keyword) ||
+          normalizeText(r.trip.vehiclePlate).includes(keyword) ||
+          normalizeText(r.trip.driverName).includes(keyword) ||
+          normalizeText(r.manifest?.manifestCode).includes(keyword),
+      );
+      if (matched.length > 0) {
+        return matched;
+      }
+    }
+
+    if (isAllSystem) {
+      return rows;
+    }
+
+    if (effectiveHubCodes.length === 0) {
+      return [];
+    }
+
+    return rows.filter((r) => {
+      const isOrigin = effectiveHubCodes.includes(normalizeTripCode(r.trip.originHubCode));
+      const isDest = effectiveHubCodes.includes(normalizeTripCode(r.trip.destinationHubCode));
+      return isOrigin || isDest;
+    });
+  }, [effectiveHubCodes, filters.keyword, isAllSystem, rows]);
+
   const hubOptions = useMemo(() => {
     const hubCodes = new Set<string>();
 
-    for (const row of rows) {
+    for (const row of scopedRows) {
       hubCodes.add(row.trip.originHubCode);
       hubCodes.add(row.trip.destinationHubCode);
     }
 
     return Array.from(hubCodes).sort();
-  }, [rows]);
+  }, [scopedRows]);
 
   const filteredRows = useMemo(() => {
     const keyword = normalizeText(filters.keyword);
 
-    return rows.filter((row) => {
+    return scopedRows.filter((row) => {
       const hubMatched =
         filters.hubCode === 'ALL' ||
         row.trip.originHubCode === filters.hubCode ||
@@ -138,7 +182,7 @@ export function LinehaulTripDataMonitorPage(): React.JSX.Element {
 
       return hubMatched && sealMatched && keywordMatched;
     });
-  }, [filters, rows]);
+  }, [filters, scopedRows]);
 
   useEffect(() => {
     setPage(1);

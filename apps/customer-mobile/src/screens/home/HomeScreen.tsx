@@ -82,7 +82,7 @@ function mapShipmentToOrderModel(s: ShipmentResponse): OrderModel {
           meta.shippingFee ||
           meta.service?.fee ||
           meta.pricing?.totalFee
-      ) || 22000,
+      ) || 18000,
     status: (s.currentStatus as ShipmentStatus) || 'CREATED',
     createdAt: s.createdAt,
     updatedAt: s.updatedAt,

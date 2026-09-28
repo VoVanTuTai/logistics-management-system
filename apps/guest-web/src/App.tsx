@@ -69,6 +69,7 @@ import {
   type TimelineEventResponse,
 } from './services/api/tracking.api';
 import { pricingApi, type PricingQuoteResponse } from './services/api/pricing.api';
+import { computeFallbackQuote } from './utils/pricingCalculator';
 import { shipmentApi, type ShipmentResponse } from './services/api/shipment.api';
 import { masterdataApi, type HubRecord } from './services/api/masterdata.api';
 import {
@@ -443,23 +444,13 @@ function TrackingPage() {
       });
       setQuoteResult(res);
     } catch {
-      const isSameProvince = calcOrigin === calcDest;
-      const baseFee = isSameProvince ? 16500 : 32000;
-      const weightFee = Math.max(0, calcWeight - 1) * (isSameProvince ? 3000 : 7000);
-      const serviceMultiplier = calcService === 'EXPRESS' ? 1.4 : calcService === 'CARGO' ? 0.85 : 1.0;
-      const total = Math.round((baseFee + weightFee) * serviceMultiplier);
-      setQuoteResult({
-        quoteId: 'quote-local',
+      const fallback = computeFallbackQuote({
         serviceType: calcService,
-        totalFee: total,
-        actualWeightKg: calcWeight,
-        volumetricWeightKg: calcWeight,
-        chargeableWeightKg: calcWeight,
-        breakdown: [
-          { code: 'BASE_FEE', label: 'Cước cơ bản', amount: Math.round(baseFee * serviceMultiplier), basis: 'Chặng vận chuyển' },
-          { code: 'WEIGHT_FEE', label: 'Cước vượt cân', amount: Math.round(weightFee * serviceMultiplier), basis: `${calcWeight}kg` },
-        ],
+        senderProvince: calcOrigin,
+        receiverProvince: calcDest,
+        weightKg: calcWeight,
       });
+      setQuoteResult(fallback);
     } finally {
       setIsCalculating(false);
     }
@@ -1383,37 +1374,43 @@ function CreateOrderPage() {
     }
   }, [receiverProvince, receiverWards, receiverMatchingHubs]);
 
-  // Real-time Pricing Engine calculation
+  // Real-time Pricing Engine calculation with debounce
   useEffect(() => {
     let active = true;
     setIsCalculatingFee(true);
 
-    pricingApi
-      .calculateQuote({
-        serviceType,
-        sender: { province: senderProvince, hubCode: senderHubCode },
-        receiver: { province: receiverProvince, hubCode: receiverHubCode },
-        package: { weightKg: cargoWeight },
-        codAmount: codAmount,
-      })
-      .then((res) => {
-        if (active && res?.totalFee) {
-          setLiveFee(res.totalFee);
-        }
-      })
-      .catch(() => {
-        const isSame = senderProvince === receiverProvince;
-        const base = isSame ? 16500 : 32000;
-        const extra = Math.max(0, cargoWeight - 1) * (isSame ? 3000 : 7000);
-        const mult = serviceType === 'EXPRESS' ? 1.4 : 1.0;
-        if (active) setLiveFee(Math.round((base + extra) * mult));
-      })
-      .finally(() => {
-        if (active) setIsCalculatingFee(false);
-      });
+    const timer = setTimeout(() => {
+      pricingApi
+        .calculateQuote({
+          serviceType,
+          sender: { province: senderProvince, hubCode: senderHubCode },
+          receiver: { province: receiverProvince, hubCode: receiverHubCode },
+          package: { weightKg: cargoWeight },
+          codAmount: codAmount,
+        })
+        .then((res) => {
+          if (active && res?.totalFee) {
+            setLiveFee(res.totalFee);
+          }
+        })
+        .catch(() => {
+          const fallback = computeFallbackQuote({
+            serviceType,
+            senderProvince,
+            receiverProvince,
+            weightKg: cargoWeight,
+            codAmount,
+          });
+          if (active) setLiveFee(fallback.totalFee);
+        })
+        .finally(() => {
+          if (active) setIsCalculatingFee(false);
+        });
+    }, 300);
 
     return () => {
       active = false;
+      clearTimeout(timer);
     };
   }, [senderProvince, senderHubCode, receiverProvince, receiverHubCode, cargoWeight, serviceType, codAmount]);
 
@@ -1945,7 +1942,7 @@ function CreateOrderPage() {
               <div className="flex items-center justify-between pt-2 border-t border-dashed border-slate-200 text-xs font-extrabold text-blue-800">
                 <span>TỔNG CƯỚC ƯỚC TÍNH:</span>
                 <span className="text-base font-black font-mono text-blue-700">
-                  {formatVnd(liveFee)}
+                  {isCalculatingFee ? 'Đang tính...' : formatVnd(liveFee)}
                 </span>
               </div>
             </div>

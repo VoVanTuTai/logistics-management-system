@@ -17,6 +17,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AddressSelectorModal, type StructuredAddress } from '../../components/AddressSelectorModal';
 import type { RootStackParamList } from '../../navigation/types';
 import { pricingApi } from '../../services/api/pricing.api';
+import { computeFallbackPricing } from '../../utils/pricingCalculator';
 import { authStore } from '../../store/authStore';
 import { colors, shadows, spacing } from '../../theme';
 
@@ -88,63 +89,76 @@ export function PriceCalculatorScreen({ navigation }: Props): React.JSX.Element 
       const weightNum = Number(weightGrams) / 1000 || 0.5;
       const codNum = isCodEnabled ? Number(codAmount) || 0 : 0;
 
-      let baseFee = 22000;
-      let estimatedDays = '1 - 2 ngày làm việc';
-
       const sProv = senderAddress?.province || 'Thành phố Hồ Chí Minh';
       const rProv = receiverAddress?.province || 'Thành phố Hà Nội';
 
       if (shippingScope === 'INTERNATIONAL') {
-        baseFee = 350000 + weightNum * 120000;
-        estimatedDays = '3 - 5 ngày làm việc';
-      } else {
-        if (sProv !== rProv) {
-          baseFee = 32000 + Math.max(0, weightNum - 0.5) * 10000;
-          estimatedDays = '2 - 3 ngày làm việc';
-        } else {
-          baseFee = 22000 + Math.max(0, weightNum - 0.5) * 5000;
-          estimatedDays = 'Trong ngày / 24h';
-        }
-
-        if (packageType === 'DOCUMENT') {
-          baseFee = Math.max(16000, baseFee * 0.8);
-        }
+        const baseFee = 350000 + weightNum * 120000;
+        const estimatedDays = '3 - 5 ngày làm việc';
+        setCalculatedFee({
+          baseFee: Math.round(baseFee),
+          codFee: 0,
+          insuranceFee: 0,
+          totalFee: Math.round(baseFee),
+          estimatedDays,
+        });
+        setResultModalVisible(true);
+        return;
       }
 
-      // Call backend pricing API if available
-      if (shippingScope === 'DOMESTIC') {
-        try {
-          const apiRes = await pricingApi.calculateQuote({
-            serviceType: 'REGULAR',
-            sender: { province: sProv, hubCode: senderAddress?.hubCode },
-            receiver: { province: rProv, hubCode: receiverAddress?.hubCode },
-            package: {
-              weightKg: weightNum,
-              dimensionsCm: {
-                length: Number(lengthCm) || 10,
-                width: Number(widthCm) || 10,
-                height: Number(heightCm) || 10,
-              },
+      // Domestic Shipping
+      let finalTotalFee = 0;
+      let finalBaseFee = 18000;
+      let finalCodFee = 0;
+      let finalInsuranceFee = 0;
+      const isSameProv = sProv === rProv;
+      const estimatedDays = isSameProv ? 'Trong ngày / 24h' : '2 - 3 ngày làm việc';
+
+      try {
+        const apiRes = await pricingApi.calculateQuote({
+          serviceType: 'STANDARD',
+          sender: { province: sProv, hubCode: senderAddress?.hubCode },
+          receiver: { province: rProv, hubCode: receiverAddress?.hubCode },
+          package: {
+            weightKg: weightNum,
+            dimensionsCm: {
+              length: Number(lengthCm) || 10,
+              width: Number(widthCm) || 10,
+              height: Number(heightCm) || 10,
             },
-            codAmount: codNum,
-          });
-          if (apiRes && apiRes.totalFee) {
-            baseFee = Number(apiRes.totalFee);
-          }
-        } catch {
-          // Fallback to local calculation
-        }
-      }
+          },
+          codAmount: codNum,
+        });
 
-      const codFee = isCodEnabled ? Math.max(0, codNum * 0.008) : 0;
-      const insuranceFee = 0;
-      const totalFee = Math.round(baseFee + codFee + insuranceFee);
+        if (apiRes && apiRes.totalFee) {
+          finalTotalFee = apiRes.totalFee;
+          const codItem = apiRes.breakdown?.find((b) => b.code === 'COD');
+          const insItem = apiRes.breakdown?.find((b) => b.code === 'INSURANCE');
+          finalCodFee = codItem?.amount || 0;
+          finalInsuranceFee = insItem?.amount || 0;
+          finalBaseFee = Math.max(0, finalTotalFee - finalCodFee - finalInsuranceFee);
+        }
+      } catch {
+        // Fallback to standard company rates
+        finalTotalFee = computeFallbackPricing({
+          serviceType: 'STANDARD',
+          senderProvince: sProv,
+          receiverProvince: rProv,
+          weightKg: weightNum,
+          lengthCm: Number(lengthCm) || 10,
+          widthCm: Number(widthCm) || 10,
+          heightCm: Number(heightCm) || 10,
+          codAmount: codNum,
+        });
+        finalCodFee = codNum > 0 ? Math.min(Math.max(Math.round(codNum * 0.005), 5000), 35000) : 0;
+        finalBaseFee = Math.max(0, finalTotalFee - finalCodFee);
+      }
 
       setCalculatedFee({
-        baseFee: Math.round(baseFee),
-        codFee: Math.round(codFee),
-        insuranceFee,
-        totalFee,
+        baseFee: Math.round(finalBaseFee),
+        codFee: Math.round(finalCodFee),
+        insuranceFee: finalInsuranceFee,
+        totalFee: Math.round(finalTotalFee),
         estimatedDays,
       });
 

@@ -613,27 +613,72 @@ async function seedUsers() {
     },
   ];
 
+  // =========================================================================
+  // 5. KHÁCH HÀNG CÁ NHÂN MẪU (Role CUSTOMER - Người gửi hàng / Tra cứu cá nhân)
+  // Luôn có sẵn để đăng nhập ngay trên Customer Mobile & Guest Web
+  // =========================================================================
+  const customerUsers = [
+    {
+      id: '0909000001',
+      username: '0909000001',
+      roles: ['CUSTOMER'],
+      displayName: 'Nguyễn Văn Khách (Hà Nội)',
+      phone: '0909000001',
+      hubCodes: [],
+    },
+    {
+      id: '0909000002',
+      username: '0909000002',
+      roles: ['CUSTOMER'],
+      displayName: 'Trần Thị Khách (TP.HCM)',
+      phone: '0909000002',
+      hubCodes: [],
+    },
+    {
+      id: '0909000003',
+      username: '0909000003',
+      roles: ['CUSTOMER'],
+      displayName: 'Lê Hoàng Khách (Đà Nẵng)',
+      phone: '0909000003',
+      hubCodes: [],
+    },
+  ];
+
   const users = [
     ...hqUsers,
     ...regionalUsers,
     ...keyProvincialUsers,
     ...wardAndCourierUsers,
+    ...customerUsers,
   ];
 
   const allowedUsernames = users.map((u) => u.username);
 
-  // Dọn dẹp tài khoản cũ ngoài danh sách tinh gọn (loại bỏ tài khoản 60+ tỉnh thừa)
+  // Dọn dẹp tài khoản cũ ngoài danh sách tinh gọn (loại bỏ tài khoản 60+ tỉnh thừa, BẢO LƯU tất cả tài khoản CUSTOMER)
   await prisma.authSession.deleteMany({
-    where: { user: { username: { notIn: allowedUsernames } } },
+    where: {
+      user: {
+        username: { notIn: allowedUsernames },
+        NOT: { roles: { has: 'CUSTOMER' } },
+      },
+    },
   });
   await prisma.mobilePermissionOverride.deleteMany({
-    where: { user: { username: { notIn: allowedUsernames } } },
+    where: {
+      user: {
+        username: { notIn: allowedUsernames },
+        NOT: { roles: { has: 'CUSTOMER' } },
+      },
+    },
   });
   const deletedOldUsers = await prisma.userAccount.deleteMany({
-    where: { username: { notIn: allowedUsernames } },
+    where: {
+      username: { notIn: allowedUsernames },
+      NOT: { roles: { has: 'CUSTOMER' } },
+    },
   });
   if (deletedOldUsers.count > 0) {
-    console.log(`Đã dọn dẹp ${deletedOldUsers.count} tài khoản tỉnh thừa ngoài danh sách tinh gọn.`);
+    console.log(`Đã dọn dẹp ${deletedOldUsers.count} tài khoản tỉnh thừa ngoài danh sách tinh gọn (bảo lưu tài khoản khách hàng).`);
   }
 
   for (const user of users) {

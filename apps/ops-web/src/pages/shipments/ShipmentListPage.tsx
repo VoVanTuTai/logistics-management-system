@@ -522,6 +522,12 @@ function printWaybill(shipment: ShipmentListItemDto): boolean {
     insuranceTier,
     declaredValueText,
     insuranceFeeText,
+    inspectionPolicy:
+      (typeof shipment.metadata?.inspectionPolicy === 'string'
+        ? shipment.metadata.inspectionPolicy
+        : typeof (shipment.metadata?.package as Record<string, unknown> | undefined)?.inspectionPolicy === 'string'
+          ? (shipment.metadata?.package as Record<string, unknown>).inspectionPolicy as string
+          : undefined),
   });
 
   if (!opened) {

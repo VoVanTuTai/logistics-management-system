@@ -21,6 +21,7 @@ import './BranchBusinessOrderCreatePage.css';
 type ServiceType = 'STANDARD' | 'EXPRESS' | 'SAME_DAY';
 type FragileCategory = 'CERAMICS' | 'GLASS' | 'LIQUID' | 'ELECTRONICS' | 'OTHER';
 type InsuranceTier = 'NONE' | 'COMPREHENSIVE_100';
+type InspectionPolicy = 'NONE' | 'VIEW_ONLY' | 'TRY_ON';
 
 interface BranchOrderFormState {
   manualCode: string;
@@ -41,6 +42,7 @@ interface BranchOrderFormState {
   serviceType: ServiceType;
   codAmount: string;
   deliveryNote: string;
+  inspectionPolicy: InspectionPolicy;
   platform: string;
   pickupLocationCode: string;
   // Kiểm soát Hàng dễ vỡ & Quy chuẩn SOP
@@ -71,6 +73,7 @@ const DEFAULT_FORM: BranchOrderFormState = {
   serviceType: 'STANDARD',
   codAmount: '',
   deliveryNote: '',
+  inspectionPolicy: 'NONE',
   platform: 'OPS_BRANCH',
   pickupLocationCode: '',
   isFragile: false,
@@ -239,8 +242,10 @@ function buildMetadata(
     destinationHubCode: receiverHubCode,
     senderHubCode,
     receiverHubCode,
+    inspectionPolicy: form.inspectionPolicy,
     package: {
       itemType: form.itemType.trim() || null,
+      inspectionPolicy: form.inspectionPolicy,
       weightKg: toPositiveNumber(form.weightKg),
       dimensionsCm: {
         length: toPositiveNumber(form.lengthCm),
@@ -607,6 +612,7 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
         insuranceTier: form.insuranceTier,
         declaredValueText: form.declaredValue ? formatCurrency(Number(form.declaredValue)) : undefined,
         insuranceFeeText: feeBreakdown.insuranceFee > 0 ? formatCurrency(feeBreakdown.insuranceFee) : undefined,
+        inspectionPolicy: form.inspectionPolicy,
       };
 
       setLastCreatedLabel(labelPayload);
@@ -986,6 +992,18 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
               value={form.deliveryNote}
               onChange={(event) => updateForm('deliveryNote', event.target.value)}
             />
+          </label>
+
+          <label className="ops-branch-order-create__field ops-branch-order-create__field--wide">
+            <span>Chính sách đồng kiểm hàng (Quyền xem / thử hàng)</span>
+            <select
+              value={form.inspectionPolicy}
+              onChange={(event) => updateForm('inspectionPolicy', event.target.value as InspectionPolicy)}
+            >
+              <option value="NONE">Không cho xem hàng (Cấm đồng kiểm)</option>
+              <option value="VIEW_ONLY">Cho xem hàng, không cho thử</option>
+              <option value="TRY_ON">Cho thử hàng / Cắm điện kiểm tra</option>
+            </select>
           </label>
 
           {/* KHỐI KIỂM SOÁT HÀNG DỄ VỠ & QUY CHUẨN SOP */}
