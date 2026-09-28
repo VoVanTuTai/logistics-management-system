@@ -1,282 +1,205 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080" style="background:#F8FAFC;">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="1600" height="1000" style="background:#FFFFFF;">
   <defs>
-    <!-- Header Gradient -->
-    <linearGradient id="headerGrad3" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#0F172A" />
-      <stop offset="50%" stop-color="#1E293B" />
-      <stop offset="100%" stop-color="#334155" />
-    </linearGradient>
-
-    <!-- Clean Shadows -->
-    <filter id="cleanShadow3" x="-5%" y="-5%" width="110%" height="115%" filterUnits="userSpaceOnUse">
-      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0F172A" flood-opacity="0.06" />
-      <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="#0F172A" flood-opacity="0.04" />
-    </filter>
-
-    <!-- Markers -->
-    <marker id="arrowGray3" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#64748B" />
-    </marker>
-    <marker id="arrowBlue3" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#0284C7" />
-    </marker>
-    <marker id="arrowPurple3" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#7C3AED" />
-    </marker>
-    <marker id="arrowGreen3" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#059669" />
+    <marker id="arrowB3" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#000000" />
     </marker>
   </defs>
 
   <style>
-    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-    .col-title { font-size: 13.5px; font-weight: 800; fill: #0F172A; text-transform: uppercase; letter-spacing: 1px; }
-    .card-title { font-size: 13px; font-weight: 700; fill: #0F172A; }
-    .card-desc { font-size: 11.5px; fill: #64748B; line-height: 1.4; }
-    .badge-text { font-size: 10px; font-weight: 700; }
+    text { font-family: "Times New Roman", Times, "Segoe UI", -apple-system, serif; }
+    .title-h1 { font-size: 18px; font-weight: bold; fill: #000000; text-anchor: middle; }
+    .title-sub { font-size: 13px; font-style: italic; fill: #333333; text-anchor: middle; }
+    .col-title { font-size: 13px; font-weight: bold; fill: #000000; text-transform: uppercase; }
+    .card-title { font-size: 13px; font-weight: bold; fill: #000000; }
+    .card-sub { font-size: 11px; fill: #222222; }
   </style>
 
-  <!-- ==================== HEADER BAR ==================== -->
-  <g id="Header" transform="translate(60, 30)">
-    <rect x="0" y="0" width="1800" height="75" rx="12" fill="url(#headerGrad3)" filter="url(#cleanShadow3)"/>
-    <rect x="0" y="0" width="6" height="75" rx="3" fill="#0284C7"/>
-    
-    <text x="30" y="32" font-size="20" font-weight="800" fill="#FFFFFF">PHÂN LOẠI Ý ĐỊNH &amp; THÀNH PHẦN GIAO DIỆN TƯƠNG TÁC (INTERACTIVE RICH UI)</text>
-    <text x="30" y="56" font-size="13" font-weight="400" fill="#94A3B8">Liên kết giữa Tiền xử lý Ý định (Intent Classifier), 5 Ca Nghiệp vụ và Mockup Thành phần Thẻ trực quan trên Figma</text>
+  <!-- ==================== HEADER ==================== -->
+  <g id="Header" transform="translate(0, 30)">
+    <text x="800" y="25" class="title-h1">HÌNH 3.1: PHÂN ĐỊNH 5 CA NGHIỆP VỤ &amp; CẤU TRÚC GIAO DIỆN TƯƠNG TÁC (DECISION FLOW)</text>
+    <text x="800" y="48" class="title-sub">Bóc tách ý định người dùng, ánh xạ điều phối microservices và cấu trúc dữ liệu phản hồi dạng thẻ (Rich UI Cards)</text>
+    <line x1="80" y1="65" x2="1520" y2="65" stroke="#000000" stroke-width="1.5"/>
+  </g>
 
-    <g transform="translate(1550, 24)">
-      <rect x="0" y="0" width="220" height="30" rx="6" fill="rgba(255,255,255,0.1)"/>
-      <text x="110" y="20" text-anchor="middle" font-size="11.5" font-weight="700" fill="#E2E8F0">FIGMA UI COMPATIBLE</text>
+  <!-- ==================== 3 COLUMNS (MONOCHROME) ==================== -->
+
+  <!-- COL 1: INTENT CLASSIFICATION (x: 80, width: 420) -->
+  <g id="Col_1" transform="translate(80, 110)">
+    <rect x="0" y="0" width="420" height="800" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <rect x="0" y="0" width="420" height="35" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+    <text x="15" y="23" class="col-title">1. TIẾP NHẬN &amp; PHÂN LOẠI Ý ĐỊNH</text>
+
+    <!-- Intent 1 -->
+    <g transform="translate(15, 50)">
+      <rect x="0" y="0" width="390" height="120" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="card-title">Ý định 1: Tra cứu đơn lẻ (TRACKING_EXACT)</text>
+      <text x="12" y="42" class="card-sub">• Mẫu câu: "Đơn NX-884920489 đi tới đâu rồi?"</text>
+      <text x="12" y="60" class="card-sub">• Regex bóc tách: /(NX|CLM)-\d{6,}/i</text>
+      <text x="12" y="78" class="card-sub">• Cơ chế: Gọi thẳng Tracking Service, bỏ qua LLM</text>
+    </g>
+
+    <!-- Intent 2 -->
+    <g transform="translate(15, 195)">
+      <rect x="0" y="0" width="390" height="120" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="card-title">Ý định 2: Tra cứu nhiều đơn (RECENT_ORDERS)</text>
+      <text x="12" y="42" class="card-sub">• Mẫu câu: "Đơn hàng gần đây của tôi đã giao chưa?"</text>
+      <text x="12" y="60" class="card-sub">• Không có mã đơn: Khách không nhớ mã dài 12 ký tự</text>
+      <text x="12" y="78" class="card-sub">• Cơ chế: Đọc JWT Token, lấy 3 đơn gần nhất</text>
+    </g>
+
+    <!-- Intent 3 -->
+    <g transform="translate(15, 340)">
+      <rect x="0" y="0" width="390" height="120" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="card-title">Ý định 3: Sự cố hàng bể vỡ (DAMAGE_CLAIM)</text>
+      <text x="12" y="42" class="card-sub">• Mẫu câu: "Hàng gốm sứ bị vỡ nát ai đền tiền?"</text>
+      <text x="12" y="60" class="card-sub">• Từ khóa đồng nghĩa: ["vỡ, bể, nát"] → ["hư hỏng"]</text>
+      <text x="12" y="78" class="card-sub">• Cơ chế: RAG quy định BBBT trong 24 giờ</text>
+    </g>
+
+    <!-- Intent 4 -->
+    <g transform="translate(15, 485)">
+      <rect x="0" y="0" width="390" height="120" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="card-title">Ý định 4: Dự toán cước quy đổi (PRICING_IATA)</text>
+      <text x="12" y="42" class="card-sub">• Mẫu câu: "Thùng 50x40x30 nặng 3kg cước bao nhiêu?"</text>
+      <text x="12" y="60" class="card-sub">• Bóc tách 3 chiều Dài, Rộng, Cao (cm)</text>
+      <text x="12" y="78" class="card-sub">• Cơ chế: Áp dụng công thức IATA quốc tế</text>
+    </g>
+
+    <!-- Intent 5 -->
+    <g transform="translate(15, 630)">
+      <rect x="0" y="0" width="390" height="120" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="card-title">Ý định 5: Khách vãng lai (GUEST_GUARD)</text>
+      <text x="12" y="42" class="card-sub">• Mẫu câu: Tra cứu mã NX- khi chưa đăng nhập</text>
+      <text x="12" y="60" class="card-sub">• Nguy cơ: Kẻ xấu dò quét SĐT, địa chỉ nhà riêng</text>
+      <text x="12" y="78" class="card-sub">• Cơ chế: Tự động che mờ dữ liệu cá nhân PII</text>
     </g>
   </g>
 
-  <!-- ==================== 3 MAIN COLUMNS ==================== -->
+  <!-- Connect Col 1 -> Col 2 -->
+  <path d="M 500 500 L 540 500" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowB3)"/>
 
-  <!-- ==================== COL 1: INTENT CLASSIFICATION (x: 60) ==================== -->
-  <g id="Col_1_Intents" transform="translate(60, 125)">
-    <rect x="0" y="0" width="460" height="910" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5" filter="url(#cleanShadow3)"/>
-    <rect x="0" y="0" width="460" height="50" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
-    <text x="20" y="31" class="col-title">1. TIẾP NHẬN &amp; PHÂN LOẠI Ý ĐỊNH</text>
+  <!-- COL 2: BUSINESS ORCHESTRATION (x: 540, width: 480) -->
+  <g id="Col_2" transform="translate(540, 110)">
+    <rect x="0" y="0" width="480" height="800" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <rect x="0" y="0" width="480" height="35" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+    <text x="15" y="23" class="col-title">2. ĐIỀU PHỐI LOGIC NGHIỆP VỤ</text>
 
-    <!-- Intent 1: Exact Tracking -->
-    <g transform="translate(20, 75)">
-      <rect x="0" y="0" width="420" height="135" rx="8" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5"/>
-      <rect x="12" y="12" width="130" height="22" rx="4" fill="#E0F2FE"/>
-      <text x="77" y="27" text-anchor="middle" fill="#0369A1" class="badge-text">TRACKING_EXACT</text>
-      <text x="155" y="27" class="card-title">Tra cứu 1 đơn xác định</text>
-      <text x="14" y="56" class="card-desc">• Phát hiện mã vận đơn qua Regex: NX-\d{6,}</text>
-      <text x="14" y="76" class="card-desc">• Câu hỏi mẫu: "Đơn NX-884920489 đi tới đâu rồi?"</text>
-      <text x="14" y="98" font-size="11" font-weight="700" fill="#0284C7">→ Rẽ luồng: Tra cứu tức thì qua Tracking Service</text>
+    <!-- Logic 1 -->
+    <g transform="translate(15, 50)">
+      <rect x="0" y="0" width="450" height="120" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="card-title">Xử lý Ca 1: Truy vấn Vận đơn Thời gian thực</text>
+      <text x="12" y="42" class="card-sub">• Gọi nội bộ: GET :3005/orders/track/:orderCode</text>
+      <text x="12" y="60" class="card-sub">• Tổng hợp timeline: Đã tạo → Đã lấy → Đang giao</text>
+      <text x="12" y="78" class="card-sub">• Lấy tên &amp; SĐT tài xế giao hàng nếu đang phát</text>
     </g>
 
-    <!-- Intent 2: Recent Multi Orders -->
-    <g transform="translate(20, 230)">
-      <rect x="0" y="0" width="420" height="135" rx="8" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5"/>
-      <rect x="12" y="12" width="130" height="22" rx="4" fill="#F3E8FF"/>
-      <text x="77" y="27" text-anchor="middle" fill="#7E22CE" class="badge-text">RECENT_ORDERS</text>
-      <text x="155" y="27" class="card-title">Tra cứu nhiều đơn gần đây</text>
-      <text x="14" y="56" class="card-desc">• Câu hỏi mập mờ, không kèm mã đơn cụ thể</text>
-      <text x="14" y="76" class="card-desc">• Câu hỏi mẫu: "Đơn hàng gần đây của tôi đã giao chưa?"</text>
-      <text x="14" y="98" font-size="11" font-weight="700" fill="#7C3AED">→ Rẽ luồng: Tự động tải 3 đơn và tạo Carousel</text>
+    <!-- Logic 2 -->
+    <g transform="translate(15, 195)">
+      <rect x="0" y="0" width="450" height="120" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="card-title">Xử lý Ca 2: Xây dựng Danh sách Thẻ Tương tác</text>
+      <text x="12" y="42" class="card-sub">• Truy vấn Order Service: GET :3002/orders/my-orders</text>
+      <text x="12" y="60" class="card-sub">• Tạo danh sách thẻ Carousel đính kèm nút bấm 1 chạm</text>
+      <text x="12" y="78" class="card-sub">• Khách chọn 1 đơn → Chuyển tiếp tức thì vào Ca 1</text>
     </g>
 
-    <!-- Intent 3: Damage & Claims -->
-    <g transform="translate(20, 385)">
-      <rect x="0" y="0" width="420" height="135" rx="8" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5"/>
-      <rect x="12" y="12" width="130" height="22" rx="4" fill="#ECFDF5"/>
-      <text x="77" y="27" text-anchor="middle" fill="#047857" class="badge-text">DAMAGE_CLAIM</text>
-      <text x="155" y="27" class="card-title">Bể vỡ, hư hỏng &amp; Bồi thường</text>
-      <text x="14" y="56" class="card-desc">• Khớp từ khóa: "vỡ, bể, nát, đền bù, hỏng"</text>
-      <text x="14" y="76" class="card-desc">• Câu hỏi mẫu: "Hàng gốm sứ bị nứt ai bồi thường?"</text>
-      <text x="14" y="98" font-size="11" font-weight="700" fill="#059669">→ Rẽ luồng: RAG chính sách bảo hiểm &amp; BBBT 24h</text>
+    <!-- Logic 3 -->
+    <g transform="translate(15, 340)">
+      <rect x="0" y="0" width="450" height="120" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="card-title">Xử lý Ca 3: Thẩm định Bồi thường &amp; BBBT</text>
+      <text x="12" y="42" class="card-sub">• Kiểm tra thời hiệu: Δt = t_hiện_tại - t_ký_nhận ≤ 24h</text>
+      <text x="12" y="60" class="card-sub">• Nếu đủ BBBT &amp; Giá trị ≤ 2 Triệu: Duyệt đền bù 100%</text>
+      <text x="12" y="78" class="card-sub">• Nếu &gt; 2 Triệu hoặc tranh chấp: Chuyển giao HITL</text>
     </g>
 
-    <!-- Intent 4: IATA Volumetric -->
-    <g transform="translate(20, 540)">
-      <rect x="0" y="0" width="420" height="135" rx="8" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5"/>
-      <rect x="12" y="12" width="130" height="22" rx="4" fill="#FEF3C7"/>
-      <text x="77" y="27" text-anchor="middle" fill="#B45309" class="badge-text">PRICING_IATA</text>
-      <text x="155" y="27" class="card-title">Dự toán cước cồng kềnh</text>
-      <text x="14" y="56" class="card-desc">• Bóc tách 3 chiều Dài x Rộng x Cao (cm)</text>
-      <text x="14" y="76" class="card-desc">• Câu hỏi mẫu: "Thùng 50x40x30 nặng 3kg cước bao nhiêu?"</text>
-      <text x="14" y="98" font-size="11" font-weight="700" fill="#D97706">→ Rẽ luồng: Công thức IATA W_dim = (DxRxC)/5000</text>
+    <!-- Logic 4 -->
+    <g transform="translate(15, 485)">
+      <rect x="0" y="0" width="450" height="120" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="card-title">Xử lý Ca 4: Tính toán Quy đổi Thể tích IATA</text>
+      <text x="12" y="42" class="card-sub">• Đường bộ: W_dim = (D x R x C) / 5000 (kg)</text>
+      <text x="12" y="60" class="card-sub">• Đường bay: W_dim = (D x R x C) / 6000 (kg)</text>
+      <text x="12" y="78" class="card-sub">• Trọng lượng tính cước: W = max(W_thực_tế, W_dim)</text>
     </g>
 
-    <!-- Intent 5: Guest PII Guard -->
-    <g transform="translate(20, 695)">
-      <rect x="0" y="0" width="420" height="135" rx="8" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5"/>
-      <rect x="12" y="12" width="130" height="22" rx="4" fill="#FFF1F2"/>
-      <text x="77" y="27" text-anchor="middle" fill="#BE123C" class="badge-text">GUEST_GUARD</text>
-      <text x="155" y="27" class="card-title">Khách vãng lai tra cứu</text>
-      <text x="14" y="56" class="card-desc">• Yêu cầu không có Bearer Auth Token</text>
-      <text x="14" y="76" class="card-desc">• Ngăn chặn lộ thông tin cá nhân (PII Sanitizer)</text>
-      <text x="14" y="98" font-size="11" font-weight="700" fill="#E11D48">→ Rẽ luồng: Che giấu SĐT, địa chỉ nhà riêng</text>
+    <!-- Logic 5 -->
+    <g transform="translate(15, 630)">
+      <rect x="0" y="0" width="450" height="120" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="card-title">Xử lý Ca 5: Khử định danh Thông tin Cá nhân</text>
+      <text x="12" y="42" class="card-sub">• Số điện thoại: 0984123456 → 098***3456</text>
+      <text x="12" y="60" class="card-sub">• Người nhận: Nguyễn Văn An → N*** V** A</text>
+      <text x="12" y="78" class="card-sub">• Địa chỉ: Cắt bỏ số nhà, chỉ hiển thị Quận/Huyện</text>
     </g>
   </g>
 
-  <!-- Connectors Col 1 -> Col 2 -->
-  <path d="M 520 210 L 590 210" fill="none" stroke="#0284C7" stroke-width="2" marker-end="url(#arrowBlue3)"/>
-  <path d="M 520 365 L 590 365" fill="none" stroke="#7C3AED" stroke-width="2" marker-end="url(#arrowPurple3)"/>
-  <path d="M 520 520 L 590 520" fill="none" stroke="#059669" stroke-width="2" marker-end="url(#arrowGreen3)"/>
-  <path d="M 520 675 L 590 675" fill="none" stroke="#D97706" stroke-width="2" marker-end="url(#arrowGray3)"/>
-  <path d="M 520 830 L 590 830" fill="none" stroke="#64748B" stroke-width="2" marker-end="url(#arrowGray3)"/>
+  <!-- Connect Col 2 -> Col 3 -->
+  <path d="M 1020 500 L 1060 500" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowB3)"/>
 
-  <!-- ==================== COL 2: BUSINESS PROCESS LOGIC (x: 590) ==================== -->
-  <g id="Col_2_Cases" transform="translate(590, 125)">
-    <rect x="0" y="0" width="580" height="910" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5" filter="url(#cleanShadow3)"/>
-    <rect x="0" y="0" width="580" height="50" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
-    <text x="20" y="31" class="col-title">2. ĐIỀU PHỐI LOGIC NGHIỆP VỤ (BUSINESS ORCHESTRATION)</text>
+  <!-- COL 3: UI RESPONSE STRUCTURE (x: 1060, width: 460) -->
+  <g id="Col_3" transform="translate(1060, 110)">
+    <rect x="0" y="0" width="460" height="800" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <rect x="0" y="0" width="460" height="35" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+    <text x="15" y="23" class="col-title">3. CẤU TRÚC GIAO DIỆN PHẢN HỒI (CARDS)</text>
 
-    <!-- Case 1 Logic -->
-    <g transform="translate(20, 75)">
-      <rect x="0" y="0" width="540" height="135" rx="8" fill="#F0F9FF" stroke="#BAE6FD" stroke-width="1.5"/>
-      <text x="16" y="26" class="card-title" fill="#0369A1">Quy trình Tra cứu Đơn lẻ (Direct API)</text>
-      <text x="16" y="52" class="card-desc">1. Bỏ qua bước gọi LLM phân loại để tối ưu độ trễ (&lt; 50ms)</text>
-      <text x="16" y="74" class="card-desc">2. Gọi Tracking Service: GET :3005/orders/track/:orderCode</text>
-      <text x="16" y="96" class="card-desc">3. Tổng hợp 4 mốc: Đã tạo → Đã lấy → Đang giao → Giao xong</text>
-      <text x="16" y="118" font-size="11" font-weight="700" fill="#0284C7">Output: Đóng gói JSON Schema ORDER_TRACKING_CARD</text>
+    <!-- Card 1 -->
+    <g transform="translate(15, 50)">
+      <rect x="0" y="0" width="430" height="120" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+      <rect x="0" y="0" width="430" height="24" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+      <text x="10" y="16" class="card-title">ORDER_TRACKING_CARD</text>
+      <text x="10" y="46" class="card-sub">• Đơn hàng: NX-884920489 [ĐANG GIAO]</text>
+      <text x="10" y="64" class="card-sub">• Tài xế: Nguyễn Văn Ba (0909***890)</text>
+      <text x="10" y="82" class="card-sub">• Dự kiến giao: Trước 17:30 hôm nay</text>
+      <text x="10" y="102" font-size="10" font-weight="bold">[ Nút: Theo dõi GPS ] [ Nút: Gọi hỗ trợ ]</text>
     </g>
 
-    <!-- Case 2 Logic -->
-    <g transform="translate(20, 230)">
-      <rect x="0" y="0" width="540" height="135" rx="8" fill="#FAF5FF" stroke="#E9D5FF" stroke-width="1.5"/>
-      <text x="16" y="26" class="card-title" fill="#6B21A8">Quy trình Giải quyết Mập mờ (Carousel Disambiguation)</text>
-      <text x="16" y="52" class="card-desc">1. Đọc userId từ JWT Token, truy vấn Order Service lấy 3 đơn gần nhất</text>
-      <text x="16" y="74" class="card-desc">2. Nếu có nhiều đơn: Tạo danh sách các thẻ mini có nút bấm 1 chạm</text>
-      <text x="16" y="96" class="card-desc">3. Khách chạm chọn 1 đơn → Chuyển tiếp tức thì vào Case 1</text>
-      <text x="16" y="118" font-size="11" font-weight="700" fill="#7C3AED">Output: Đóng gói JSON Schema ORDER_CAROUSEL_CARD</text>
+    <!-- Card 2 -->
+    <g transform="translate(15, 195)">
+      <rect x="0" y="0" width="430" height="120" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+      <rect x="0" y="0" width="430" height="24" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+      <text x="10" y="16" class="card-title">ORDER_CAROUSEL_CARD</text>
+      <text x="10" y="46" class="card-sub">• Item 1: NX-884920489 (Đang giao) [Chọn]</text>
+      <text x="10" y="64" class="card-sub">• Item 2: NX-992102144 (Đang lấy) [Chọn]</text>
+      <text x="10" y="82" class="card-sub">• Item 3: NX-110294821 (Đã giao) [Chọn]</text>
+      <text x="10" y="102" font-size="10" font-style="italic">Tương tác 1 chạm không cần gõ chữ</text>
     </g>
 
-    <!-- Case 3 Logic -->
-    <g transform="translate(20, 385)">
-      <rect x="0" y="0" width="540" height="135" rx="8" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1.5"/>
-      <text x="16" y="26" class="card-title" fill="#065F46">Quy trình Bồi thường &amp; BBBT (Claim Automation)</text>
-      <text x="16" y="52" class="card-desc">1. RAG trích xuất điều kiện: Biên bản bất thường (BBBT) trong 24h</text>
-      <text x="16" y="74" class="card-desc">2. Đánh giá ngưỡng: Nếu ≤ 2.000.000 đ &amp; Đủ ảnh → Tự động duyệt</text>
-      <text x="16" y="96" class="card-desc">3. Nếu &gt; 2.000.000 đ hoặc tranh chấp → Chuyển giao Human-in-the-Loop</text>
-      <text x="16" y="118" font-size="11" font-weight="700" fill="#059669">Output: Sinh mã hồ sơ CLM-202609-XXXXX</text>
+    <!-- Card 3 -->
+    <g transform="translate(15, 340)">
+      <rect x="0" y="0" width="430" height="120" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+      <rect x="0" y="0" width="430" height="24" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+      <text x="10" y="16" class="card-title">CLAIM_PROGRESS_CARD</text>
+      <text x="10" y="46" class="card-sub">• Mã bồi thường: CLM-88219 [ĐÃ DUYỆT 100%]</text>
+      <text x="10" y="64" class="card-sub">• Số tiền duyệt: 1.250.000 VNĐ (Khai giá)</text>
+      <text x="10" y="82" class="card-sub">• Biên bản: Đã tiếp nhận BBBT có chữ ký bưu tá</text>
+      <text x="10" y="102" font-size="10" font-weight="bold">[ Nút: Xác nhận nhận tiền qua ví ]</text>
     </g>
 
-    <!-- Case 4 Logic -->
-    <g transform="translate(20, 540)">
-      <rect x="0" y="0" width="540" height="135" rx="8" fill="#FFFBEB" stroke="#FDE68A" stroke-width="1.5"/>
-      <text x="16" y="26" class="card-title" fill="#92400E">Quy trình Tính toán Quy chuẩn IATA</text>
-      <text x="16" y="52" class="card-desc">1. Tính W_dim = (D x R x C) / 5000 (Đường bộ) hoặc 6000 (Hàng không)</text>
-      <text x="16" y="74" class="card-desc">2. Lấy W_chargeable = max(W_actual, W_dim)</text>
-      <text x="16" y="96" class="card-desc">3. Tính phụ phí hàng cồng kềnh và áp dụng chính sách hoàn 50% cước</text>
-      <text x="16" y="118" font-size="11" font-weight="700" fill="#D97706">Output: Đóng gói JSON Schema IATA_PRICING_CARD</text>
+    <!-- Card 4 -->
+    <g transform="translate(15, 485)">
+      <rect x="0" y="0" width="430" height="120" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+      <rect x="0" y="0" width="430" height="24" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+      <text x="10" y="16" class="card-title">IATA_PRICING_CARD</text>
+      <text x="10" y="46" class="card-sub">• Kích thước: 50x40x30 cm | Cân nặng: 3.5 kg</text>
+      <text x="10" y="64" class="card-sub">• Quy đổi IATA (5000): 12.0 kg tính cước</text>
+      <text x="10" y="82" class="card-sub">• Cước chính: 68.000 đ | Phụ phí: 24.000 đ</text>
+      <text x="10" y="102" font-size="10" font-weight="bold">Tổng cộng dự toán: 92.000 VNĐ</text>
     </g>
 
-    <!-- Case 5 Logic -->
-    <g transform="translate(20, 695)">
-      <rect x="0" y="0" width="540" height="135" rx="8" fill="#FFF1F2" stroke="#FECDD3" stroke-width="1.5"/>
-      <text x="16" y="26" class="card-title" fill="#9F1239">Quy trình Khử định danh PII (Privacy Guard)</text>
-      <text x="16" y="52" class="card-desc">1. Kiểm tra JWT: Không có token → Áp dụng PII Sanitizer</text>
-      <text x="16" y="74" class="card-desc">2. Masking: SĐT (098***3456), Tên (N*** V** A), Địa chỉ (Chỉ hiện Quận)</text>
-      <text x="16" y="96" class="card-desc">3. Đính kèm nút "Đăng nhập để xem đầy đủ thông tin"</text>
-      <text x="16" y="118" font-size="11" font-weight="700" fill="#E11D48">Output: Đóng gói JSON Schema MASKED_PUBLIC_CARD</text>
+    <!-- Card 5 -->
+    <g transform="translate(15, 630)">
+      <rect x="0" y="0" width="430" height="120" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+      <rect x="0" y="0" width="430" height="24" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+      <text x="10" y="16" class="card-title">MASKED_PUBLIC_CARD</text>
+      <text x="10" y="46" class="card-sub">• Trạng thái lộ trình: Hiển thị đầy đủ</text>
+      <text x="10" y="64" class="card-sub">• Người nhận: N*** V** A (098***3456)</text>
+      <text x="10" y="82" class="card-sub">• Địa chỉ: P. Bến Nghé, Quận 1, TP.HCM</text>
+      <text x="10" y="102" font-size="10" font-weight="bold">[ Nút: Đăng nhập để xem đầy đủ ]</text>
     </g>
   </g>
 
-  <!-- Connectors Col 2 -> Col 3 -->
-  <path d="M 1170 210 L 1230 210" fill="none" stroke="#0284C7" stroke-width="2" marker-end="url(#arrowBlue3)"/>
-  <path d="M 1170 365 L 1230 365" fill="none" stroke="#7C3AED" stroke-width="2" marker-end="url(#arrowPurple3)"/>
-  <path d="M 1170 520 L 1230 520" fill="none" stroke="#059669" stroke-width="2" marker-end="url(#arrowGreen3)"/>
-  <path d="M 1170 675 L 1230 675" fill="none" stroke="#D97706" stroke-width="2" marker-end="url(#arrowGray3)"/>
-  <path d="M 1170 830 L 1230 830" fill="none" stroke="#64748B" stroke-width="2" marker-end="url(#arrowGray3)"/>
-
-  <!-- ==================== COL 3: FIGMA RICH CARD UI COMPONENTS (x: 1230) ==================== -->
-  <g id="Col_3_UI_Mockups" transform="translate(1230, 125)">
-    <rect x="0" y="0" width="630" height="910" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5" filter="url(#cleanShadow3)"/>
-    <rect x="0" y="0" width="630" height="50" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
-    <text x="20" y="31" class="col-title">3. GIAO DIỆN RICH CARD TRÊN FIGMA (MOCKUP COMPONENTS)</text>
-
-    <!-- Card 1: Single Tracking UI -->
-    <g transform="translate(20, 75)">
-      <rect x="0" y="0" width="590" height="135" rx="8" fill="#FFFFFF" stroke="#BAE6FD" stroke-width="1.5" filter="url(#cleanShadow3)"/>
-      <rect x="0" y="0" width="590" height="32" rx="8" fill="#0284C7"/>
-      <text x="14" y="21" fill="#FFFFFF" font-size="12" font-weight="700">📦 ĐƠN HÀNG: NX-884920489</text>
-      <rect x="495" y="6" width="80" height="20" rx="10" fill="#059669"/>
-      <text x="535" y="19" text-anchor="middle" fill="#FFFFFF" font-size="9.5" font-weight="700">ĐANG GIAO</text>
-      
-      <text x="14" y="60" font-size="11" fill="#64748B">Tài xế giao hàng:</text>
-      <text x="120" y="60" font-size="11" font-weight="700" fill="#0F172A">Nguyễn Văn Ba (0909***890)</text>
-
-      <text x="14" y="82" font-size="11" fill="#64748B">Dự kiến giao:</text>
-      <text x="120" y="82" font-size="11" font-weight="700" fill="#059669">Hôm nay, trước 17:30</text>
-
-      <rect x="14" y="98" width="130" height="26" rx="4" fill="#0284C7"/>
-      <text x="79" y="115" text-anchor="middle" fill="#FFFFFF" font-size="10.5" font-weight="600">📍 Theo dõi vị trí</text>
-    </g>
-
-    <!-- Card 2: Interactive Carousel UI -->
-    <g transform="translate(20, 230)">
-      <rect x="0" y="0" width="590" height="135" rx="8" fill="#FFFFFF" stroke="#E9D5FF" stroke-width="1.5" filter="url(#cleanShadow3)"/>
-      <rect x="0" y="0" width="590" height="32" rx="8" fill="#7C3AED"/>
-      <text x="14" y="21" fill="#FFFFFF" font-size="12" font-weight="700">📑 ĐƠN GẦN ĐÂY CỦA BẠN (3 ĐƠN)</text>
-      
-      <!-- Mini Item 1 -->
-      <rect x="14" y="44" width="270" height="36" rx="6" fill="#F8FAFC" stroke="#E2E8F0"/>
-      <text x="24" y="62" font-size="11" font-weight="700" fill="#0F172A">NX-884920489 (Đang giao)</text>
-      <rect x="195" y="50" width="80" height="24" rx="4" fill="#7C3AED"/>
-      <text x="235" y="66" text-anchor="middle" fill="#FFFFFF" font-size="10" font-weight="600">Chọn tra cứu</text>
-
-      <!-- Mini Item 2 -->
-      <rect x="300" y="44" width="276" height="36" rx="6" fill="#F8FAFC" stroke="#E2E8F0"/>
-      <text x="310" y="62" font-size="11" font-weight="700" fill="#0F172A">NX-992102144 (Đang lấy)</text>
-      <rect x="485" y="50" width="80" height="24" rx="4" fill="#64748B"/>
-      <text x="525" y="66" text-anchor="middle" fill="#FFFFFF" font-size="10" font-weight="600">Chọn tra cứu</text>
-
-      <text x="14" y="112" font-size="11" fill="#7C3AED">✔ Chạm để chọn đơn cần kiểm tra ngay lập tức</text>
-    </g>
-
-    <!-- Card 3: Claim Progress UI -->
-    <g transform="translate(20, 385)">
-      <rect x="0" y="0" width="590" height="135" rx="8" fill="#FFFFFF" stroke="#A7F3D0" stroke-width="1.5" filter="url(#cleanShadow3)"/>
-      <rect x="0" y="0" width="590" height="32" rx="8" fill="#059669"/>
-      <text x="14" y="21" fill="#FFFFFF" font-size="12" font-weight="700">🛡️ TIẾN ĐỘ BỒI THƯỜNG: CLM-88219</text>
-      <rect x="475" y="6" width="100" height="20" rx="10" fill="#047857"/>
-      <text x="525" y="19" text-anchor="middle" fill="#ECFDF5" font-size="9.5" font-weight="700">ĐÃ DUYỆT 100%</text>
-
-      <text x="14" y="60" font-size="11" fill="#64748B">Số tiền bồi thường:</text>
-      <text x="140" y="60" font-size="11.5" font-weight="800" fill="#059669">1.250.000 VNĐ (Khai giá)</text>
-
-      <text x="14" y="82" font-size="11" fill="#64748B">Biên bản BBBT:</text>
-      <text x="140" y="82" font-size="11" font-weight="700" fill="#0F172A">✔ Đã tiếp nhận hợp lệ (3 ảnh)</text>
-
-      <rect x="14" y="98" width="160" height="26" rx="4" fill="#059669"/>
-      <text x="94" y="115" text-anchor="middle" fill="#FFFFFF" font-size="10.5" font-weight="600">💳 Xác nhận nhận tiền</text>
-    </g>
-
-    <!-- Card 4: IATA Pricing UI -->
-    <g transform="translate(20, 540)">
-      <rect x="0" y="0" width="590" height="135" rx="8" fill="#FFFFFF" stroke="#FDE68A" stroke-width="1.5" filter="url(#cleanShadow3)"/>
-      <rect x="0" y="0" width="590" height="32" rx="8" fill="#D97706"/>
-      <text x="14" y="21" fill="#FFFFFF" font-size="12" font-weight="700">📐 BẢNG DỰ TOÁN CƯỚC CHUẨN IATA</text>
-
-      <text x="14" y="60" font-size="11" fill="#64748B">Kích thước 3 chiều:</text>
-      <text x="130" y="60" font-size="11" font-weight="700" fill="#0F172A">50 × 40 × 30 cm (Thực tế: 3.5 kg)</text>
-
-      <text x="14" y="82" font-size="11" fill="#64748B">Quy đổi IATA (5000):</text>
-      <text x="130" y="82" font-size="11.5" font-weight="800" fill="#D97706">12.0 kg (Áp dụng tính cước)</text>
-
-      <text x="14" y="112" font-size="12" font-weight="800" fill="#0F172A">TỔNG CƯỚC DỰ KIẾN: <tspan fill="#059669">92.000 VNĐ</tspan></text>
-    </g>
-
-    <!-- Card 5: Guest PII UI -->
-    <g transform="translate(20, 695)">
-      <rect x="0" y="0" width="590" height="135" rx="8" fill="#FFFFFF" stroke="#FECDD3" stroke-width="1.5" filter="url(#cleanShadow3)"/>
-      <rect x="0" y="0" width="590" height="32" rx="8" fill="#E11D48"/>
-      <text x="14" y="21" fill="#FFFFFF" font-size="12" font-weight="700">🔐 BẢO MẬT THÔNG TIN CÁ NHÂN (PII)</text>
-
-      <text x="14" y="60" font-size="11" fill="#64748B">Số điện thoại nhận:</text>
-      <text x="130" y="60" font-size="11" font-weight="700" fill="#E11D48">098***3456</text>
-
-      <text x="14" y="82" font-size="11" fill="#64748B">Địa chỉ giao hàng:</text>
-      <text x="130" y="82" font-size="11" font-weight="700" fill="#0F172A">P. Bến Nghé, Quận 1, TP.HCM</text>
-
-      <rect x="14" y="98" width="180" height="26" rx="4" fill="#E11D48"/>
-      <text x="104" y="115" text-anchor="middle" fill="#FFFFFF" font-size="10.5" font-weight="600">🔑 Đăng nhập để xem đầy đủ</text>
-    </g>
+  <!-- ==================== FOOTER ==================== -->
+  <g id="Footer" transform="translate(80, 930)">
+    <line x1="0" y1="0" x2="1440" y2="0" stroke="#000000" stroke-width="1"/>
+    <text x="0" y="22" font-size="11" font-style="italic" fill="#333333">
+      Ghi chú: Sơ đồ phân nhánh quyết định (Decision Flowchart). Chuẩn in ấn đen trắng cho thuyết minh luận văn tốt nghiệp kỹ sư.
+    </text>
   </g>
 </svg>

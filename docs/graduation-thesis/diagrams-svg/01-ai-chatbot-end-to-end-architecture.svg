@@ -1,595 +1,206 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1280" width="1920" height="1280" style="background:#F8FAFC;">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="1600" height="1000" style="background:#FFFFFF;">
   <defs>
-    <!-- Gradients -->
-    <linearGradient id="gradHeader" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#0F172A" />
-      <stop offset="50%" stop-color="#1E1B4B" />
-      <stop offset="100%" stop-color="#0F172A" />
-    </linearGradient>
-
-    <linearGradient id="gradPrimary" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#4F46E5" />
-      <stop offset="100%" stop-color="#3730A3" />
-    </linearGradient>
-
-    <linearGradient id="gradCyan" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0EA5E9" />
-      <stop offset="100%" stop-color="#0284C7" />
-    </linearGradient>
-
-    <linearGradient id="gradPurple" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#8B5CF6" />
-      <stop offset="100%" stop-color="#6D28D9" />
-    </linearGradient>
-
-    <linearGradient id="gradEmerald" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#10B981" />
-      <stop offset="100%" stop-color="#047857" />
-    </linearGradient>
-
-    <linearGradient id="gradAmber" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#F59E0B" />
-      <stop offset="100%" stop-color="#D97706" />
-    </linearGradient>
-
-    <linearGradient id="gradRose" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#F43F5E" />
-      <stop offset="100%" stop-color="#BE123C" />
-    </linearGradient>
-
-    <!-- Drop Shadows -->
-    <filter id="shadowCard" x="-5%" y="-5%" width="110%" height="115%" filterUnits="userSpaceOnUse">
-      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#0F172A" flood-opacity="0.06" />
-      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#0F172A" flood-opacity="0.04" />
-    </filter>
-
-    <filter id="shadowHover" x="-8%" y="-8%" width="116%" height="120%" filterUnits="userSpaceOnUse">
-      <feDropShadow dx="0" dy="10" stdDeviation="16" flood-color="#4F46E5" flood-opacity="0.12" />
-    </filter>
-
-    <!-- Arrow Markers -->
-    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 1 L 8 5 L 0 9 z" fill="#64748B" />
-    </marker>
-
-    <marker id="arrowIndigo" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 1 L 8 5 L 0 9 z" fill="#4F46E5" />
-    </marker>
-
-    <marker id="arrowEmerald" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 1 L 8 5 L 0 9 z" fill="#10B981" />
-    </marker>
-
-    <marker id="arrowPurple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 1 L 8 5 L 0 9 z" fill="#8B5CF6" />
+    <marker id="arrowB" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#000000" />
     </marker>
   </defs>
 
   <style>
-    .font-sans { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-    .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    text { font-family: "Times New Roman", Times, "Segoe UI", -apple-system, serif; }
+    .title-h1 { font-size: 18px; font-weight: bold; fill: #000000; text-anchor: middle; }
+    .title-sub { font-size: 13px; font-style: italic; fill: #333333; text-anchor: middle; }
+    .tier-label { font-size: 13px; font-weight: bold; fill: #000000; text-transform: uppercase; }
+    .box-title { font-size: 13px; font-weight: bold; fill: #000000; }
+    .box-sub { font-size: 11px; fill: #222222; }
   </style>
 
-  <!-- ========================================================================= -->
-  <!-- 1. TOP HEADER BANNER (Tiêu đề báo cáo khoa học / Đồ án tốt nghiệp) -->
-  <!-- ========================================================================= -->
-  <g id="Header_Banner">
-    <rect x="40" y="30" width="1840" height="90" rx="16" fill="url(#gradHeader)" filter="url(#shadowCard)" />
-    
-    <rect x="60" y="50" width="50" height="50" rx="12" fill="#4F46E5" />
-    <path d="M73 67 L85 67 L85 79 L73 79 Z M80 60 L92 60 L92 72 L80 72 Z" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-    
-    <text x="125" y="65" fill="#FFFFFF" font-size="22" font-weight="700" class="font-sans">KIẾN TRÚC TỔNG THỂ HỆ THỐNG TRỢ LÝ AI &amp; ĐỘNG CƠ RAG NGHỆP VỤ BƯU CHÍNH</text>
-    <text x="125" y="92" fill="#94A3B8" font-size="14" font-weight="500" class="font-sans">HỆ THỐNG NEXUS LOGISTICS | MICROSERVICES MESH (PORT 3013) | GOOGLE GEMINI LLM &amp; EMBEDDING-001 (768-DIM) | PII MASKING &amp; REAL-TIME TOOLS</text>
-
-    <rect x="1620" y="55" width="230" height="40" rx="20" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.2)" stroke-width="1" />
-    <circle cx="1640" cy="75" r="6" fill="#10B981" />
-    <text x="1655" y="80" fill="#FFFFFF" font-size="13" font-weight="600" class="font-sans">SẴN SÀNG BẢO VỆ ĐỒ ÁN</text>
+  <!-- ==================== HEADER ==================== -->
+  <g id="Header" transform="translate(0, 30)">
+    <text x="800" y="25" class="title-h1">HÌNH 1.1: SƠ ĐỒ KIẾN TRÚC TỔNG THỂ HỆ THỐNG AI CHATBOT LOGISTICS ĐA TẦNG</text>
+    <text x="800" y="48" class="title-sub">Mô hình triển khai phân tán tích hợp API Gateway, AI Orchestrator, Live Microservices Mesh và Động cơ RAG</text>
+    <line x1="80" y1="65" x2="1520" y2="65" stroke="#000000" stroke-width="1.5"/>
   </g>
 
-  <!-- ========================================================================= -->
-  <!-- 2. LAYER 1: CLIENT PRESENTATION LAYER (Tầng giao diện đa nền tảng) -->
-  <!-- ========================================================================= -->
-  <g id="Layer_1_Client_Applications">
-    <!-- Outer Group Frame -->
-    <rect x="40" y="150" width="340" height="1080" rx="16" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5" filter="url(#shadowCard)" />
-    
-    <!-- Group Header -->
-    <rect x="40" y="150" width="340" height="55" rx="16" fill="#F1F5F9" />
-    <rect x="40" y="189" width="340" height="16" fill="#F1F5F9" />
-    <text x="60" y="184" fill="#0F172A" font-size="15" font-weight="700" class="font-sans">1. CLIENT APPS (ĐA KÊNH)</text>
-    <rect x="270" y="165" width="90" height="24" rx="12" fill="#E2E8F0" />
-    <text x="282" y="181" fill="#475569" font-size="11" font-weight="600" class="font-sans">FRONTEND</text>
+  <!-- ==================== 4 ARCHITECTURE TIERS (MONOCHROME) ==================== -->
+  
+  <!-- TIER 1: CLIENT APPLICATIONS (y: 100) -->
+  <g id="Tier_1_Clients" transform="translate(80, 100)">
+    <rect x="0" y="0" width="1440" height="150" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <rect x="0" y="0" width="220" height="28" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+    <text x="12" y="19" class="tier-label">TẦNG 1: CLIENT APPS (ĐA KÊNH)</text>
 
-    <!-- Client 1: Guest Web -->
-    <g transform="translate(60, 230)">
-      <rect x="0" y="0" width="300" height="120" rx="12" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" />
-      <rect x="15" y="15" width="36" height="36" rx="8" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="1" />
-      <text x="25" y="38" fill="#4F46E5" font-size="18">🌐</text>
-      <text x="62" y="30" fill="#0F172A" font-size="14" font-weight="700" class="font-sans">Guest Web Portal</text>
-      <text x="62" y="48" fill="#64748B" font-size="11" class="font-mono">:5177 • Vite / React SPA</text>
-      <line x1="15" y1="65" x2="285" y2="65" stroke="#E2E8F0" stroke-width="1" />
-      <text x="15" y="85" fill="#334155" font-size="11" class="font-sans">• Khách vãng lai (Chưa login)</text>
-      <text x="15" y="103" fill="#64748B" font-size="11" class="font-sans">• Widget AI Chatbot: Floating FAB</text>
+    <!-- Client Box 1 -->
+    <g transform="translate(30, 45)">
+      <rect x="0" y="0" width="310" height="85" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="box-title">Guest Web Portal (:5177)</text>
+      <text x="12" y="42" class="box-sub">• Nền tảng: ReactJS / Vite SPA</text>
+      <text x="12" y="58" class="box-sub">• Khách vãng lai tra cứu đơn hàng</text>
+      <text x="12" y="74" class="box-sub">• Chế độ bảo mật: PII Masking</text>
     </g>
 
-    <!-- Client 2: Customer Mobile -->
-    <g transform="translate(60, 375)">
-      <rect x="0" y="0" width="300" height="120" rx="12" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" />
-      <rect x="15" y="15" width="36" height="36" rx="8" fill="#F0FDF4" stroke="#BBF7D0" stroke-width="1" />
-      <text x="25" y="38" fill="#16A34A" font-size="18">📱</text>
-      <text x="62" y="30" fill="#0F172A" font-size="14" font-weight="700" class="font-sans">Customer Mobile App</text>
-      <text x="62" y="48" fill="#64748B" font-size="11" class="font-mono">:8082 • React Native / Expo</text>
-      <line x1="15" y1="65" x2="285" y2="65" stroke="#E2E8F0" stroke-width="1" />
-      <text x="15" y="85" fill="#334155" font-size="11" class="font-sans">• Khách hàng cá nhân (Đã login)</text>
-      <text x="15" y="103" fill="#64748B" font-size="11" class="font-sans">• Quản lý đơn nhận, tra cứu nhanh</text>
+    <!-- Client Box 2 -->
+    <g transform="translate(380, 45)">
+      <rect x="0" y="0" width="310" height="85" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="box-title">Customer Mobile App (:8082)</text>
+      <text x="12" y="42" class="box-sub">• Nền tảng: React Native / Expo</text>
+      <text x="12" y="58" class="box-sub">• Khách hàng nhận / Gửi cá nhân</text>
+      <text x="12" y="74" class="box-sub">• Giao diện Thẻ tương tác 1 chạm</text>
     </g>
 
-    <!-- Client 3: Merchant Dashboard -->
-    <g transform="translate(60, 520)">
-      <rect x="0" y="0" width="300" height="120" rx="12" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" />
-      <rect x="15" y="15" width="36" height="36" rx="8" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1" />
-      <text x="25" y="38" fill="#2563EB" font-size="18">🏬</text>
-      <text x="62" y="30" fill="#0F172A" font-size="14" font-weight="700" class="font-sans">Merchant Web Portal</text>
-      <text x="62" y="48" fill="#64748B" font-size="11" class="font-mono">:5174 • Chủ shop / Đối tác</text>
-      <line x1="15" y1="65" x2="285" y2="65" stroke="#E2E8F0" stroke-width="1" />
-      <text x="15" y="85" fill="#334155" font-size="11" class="font-sans">• Tra cứu danh sách nhiều đơn gửi</text>
-      <text x="15" y="103" fill="#64748B" font-size="11" class="font-sans">• Đối soát tiền thu hộ COD &amp; Cước</text>
+    <!-- Client Box 3 -->
+    <g transform="translate(730, 45)">
+      <rect x="0" y="0" width="310" height="85" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="box-title">Merchant Web Portal (:5174)</text>
+      <text x="12" y="42" class="box-sub">• Nền tảng: ReactJS Web Dashboard</text>
+      <text x="12" y="58" class="box-sub">• Chủ cửa hàng thương mại điện tử</text>
+      <text x="12" y="74" class="box-sub">• Tra cứu danh sách đơn gom, COD</text>
     </g>
 
-    <!-- Client 4: Operations Platform -->
-    <g transform="translate(60, 665)">
-      <rect x="0" y="0" width="300" height="120" rx="12" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" />
-      <rect x="15" y="15" width="36" height="36" rx="8" fill="#FEF3C7" stroke="#FDE68A" stroke-width="1" />
-      <text x="25" y="38" fill="#D97706" font-size="18">🏢</text>
-      <text x="62" y="30" fill="#0F172A" font-size="14" font-weight="700" class="font-sans">Ops Staff Platform</text>
-      <text x="62" y="48" fill="#64748B" font-size="11" class="font-mono">:5173 • Nhân viên bưu cục Hub</text>
-      <line x1="15" y1="65" x2="285" y2="65" stroke="#E2E8F0" stroke-width="1" />
-      <text x="15" y="85" fill="#334155" font-size="11" class="font-sans">• Xử lý bồi thường sự cố bể vỡ</text>
-      <text x="15" y="103" fill="#64748B" font-size="11" class="font-sans">• Lập biên bản bất thường (Irregularity)</text>
-    </g>
-
-    <!-- UI Feature Card: Interactive Shipment Cards -->
-    <g transform="translate(60, 810)">
-      <rect x="0" y="0" width="300" height="230" rx="12" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.5" />
-      <rect x="15" y="15" width="32" height="32" rx="8" fill="#3B82F6" />
-      <text x="24" y="37" fill="#FFFFFF" font-size="16">✨</text>
-      <text x="56" y="30" fill="#1E3A8A" font-size="13" font-weight="700" class="font-sans">RICH INTERACTION</text>
-      <text x="56" y="46" fill="#2563EB" font-size="11" font-weight="600" class="font-sans">Thẻ đơn hàng tương tác 1 chạm</text>
-
-      <!-- Mini Card Preview -->
-      <rect x="15" y="60" width="270" height="95" rx="8" fill="#FFFFFF" stroke="#BFDBFE" stroke-width="1" />
-      <text x="25" y="80" fill="#0F172A" font-size="11" font-weight="700" class="font-mono">333011573361</text>
-      <rect x="160" y="68" width="115" height="18" rx="9" fill="#E0F2FE" />
-      <text x="170" y="81" fill="#0369A1" font-size="9" font-weight="600" class="font-sans">Chờ lấy hàng</text>
-      <text x="25" y="100" fill="#334155" font-size="10.5" class="font-sans">📦 Kiện hàng mẫu • COD: 0 đ</text>
-      <text x="25" y="117" fill="#64748B" font-size="10" class="font-sans">📍 Đến: Hà Nội (Hub Ba Đình)</text>
-      <rect x="25" y="127" width="250" height="20" rx="4" fill="#4F46E5" />
-      <text x="95" y="141" fill="#FFFFFF" font-size="10" font-weight="600" class="font-sans">🔍 Tra cứu hành trình này ➔</text>
-
-      <text x="15" y="180" fill="#1E40AF" font-size="11" font-weight="600" class="font-sans">💡 Trải nghiệm người dùng:</text>
-      <text x="15" y="198" fill="#334155" font-size="10.5" class="font-sans">• Tự động phân luồng khi có nhiều đơn</text>
-      <text x="15" y="214" fill="#334155" font-size="10.5" class="font-sans">• Không bắt người dùng gõ lại mã 12 số</text>
-    </g>
-
-    <!-- Communication Protocols Label -->
-    <rect x="60" y="1060" width="300" height="150" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1" />
-    <text x="75" y="1085" fill="#0F172A" font-size="12" font-weight="700" class="font-sans">GIAO THỨC TRUYỀN THÔNG</text>
-    <text x="75" y="1108" fill="#475569" font-size="11" class="font-sans">1. REST API: <tspan class="font-mono text-indigo-600">POST /api/v1/chat/message</tspan></text>
-    <text x="75" y="1128" fill="#475569" font-size="11" class="font-sans">2. SSE Stream: <tspan class="font-mono text-indigo-600">POST /api/v1/chat/stream</tspan></text>
-    <text x="75" y="1148" fill="#475569" font-size="11" class="font-sans">3. Smart Failover: <tspan class="font-mono text-emerald-600">BFF (:3000) ➔ Direct (:3013)</tspan></text>
-    <text x="75" y="1168" fill="#475569" font-size="11" class="font-sans">4. Web Security: <tspan class="font-mono text-slate-700">CORS * with Credentials</tspan></text>
-    <text x="75" y="1188" fill="#475569" font-size="11" class="font-sans">5. Payload: <tspan class="font-mono text-slate-700">{ message, userId, senderRole }</tspan></text>
-  </g>
-
-  <!-- Flow Line: Layer 1 to Layer 2 -->
-  <path d="M 380 430 L 440 430" fill="none" stroke="#4F46E5" stroke-width="2.5" marker-end="url(#arrowIndigo)" />
-  <rect x="385" y="405" width="50" height="20" rx="4" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="1" />
-  <text x="393" y="419" fill="#4F46E5" font-size="10" font-weight="700" class="font-mono">HTTP/1.1</text>
-
-  <!-- ========================================================================= -->
-  <!-- 3. LAYER 2: GATEWAY BFF & PII SECURITY BOUNDARY -->
-  <!-- ========================================================================= -->
-  <g id="Layer_2_Gateway_Security">
-    <rect x="440" y="150" width="280" height="1080" rx="16" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5" filter="url(#shadowCard)" />
-    
-    <rect x="440" y="150" width="280" height="55" rx="16" fill="#F1F5F9" />
-    <rect x="440" y="189" width="280" height="16" fill="#F1F5F9" />
-    <text x="460" y="184" fill="#0F172A" font-size="15" font-weight="700" class="font-sans">2. GATEWAY &amp; SECURITY</text>
-    <rect x="650" y="165" width="55" height="24" rx="12" fill="#E2E8F0" />
-    <text x="659" y="181" fill="#475569" font-size="11" font-weight="600" class="font-mono">:3000</text>
-
-    <!-- Component: Gateway Reverse Proxy -->
-    <g transform="translate(455, 230)">
-      <rect x="0" y="0" width="250" height="150" rx="12" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" />
-      <rect x="15" y="15" width="32" height="32" rx="8" fill="#475569" />
-      <text x="23" y="37" fill="#FFFFFF" font-size="16">🛡️</text>
-      <text x="56" y="28" fill="#0F172A" font-size="13" font-weight="700" class="font-sans">Gateway BFF Proxy</text>
-      <text x="56" y="44" fill="#64748B" font-size="10.5" class="font-mono">NestJS Gateway Service</text>
-      <line x1="15" y1="58" x2="235" y2="58" stroke="#E2E8F0" stroke-width="1" />
-      <text x="15" y="78" fill="#334155" font-size="11" class="font-sans">• Rate Limiting (100 req/min)</text>
-      <text x="15" y="96" fill="#334155" font-size="11" class="font-sans">• JWT Token &amp; Session Validation</text>
-      <text x="15" y="114" fill="#334155" font-size="11" class="font-sans">• Request Timeout Shield (15s)</text>
-      <text x="15" y="132" fill="#2563EB" font-size="11" font-weight="600" class="font-sans">• Healthcheck Circuit Breaker</text>
-    </g>
-
-    <!-- Component: PII Masking & Privacy Guard -->
-    <g transform="translate(455, 400)">
-      <rect x="0" y="0" width="250" height="250" rx="12" fill="#FEF2F2" stroke="#FECACA" stroke-width="1.5" />
-      <rect x="15" y="15" width="32" height="32" rx="8" fill="#EF4444" />
-      <text x="23" y="37" fill="#FFFFFF" font-size="16">🔒</text>
-      <text x="56" y="28" fill="#991B1B" font-size="13" font-weight="700" class="font-sans">PII Privacy Guard</text>
-      <text x="56" y="44" fill="#DC2626" font-size="10.5" font-weight="600" class="font-sans">Luật Bưu Chính Điều 24</text>
-      <line x1="15" y1="58" x2="235" y2="58" stroke="#FCA5A5" stroke-width="1" />
-      
-      <text x="15" y="80" fill="#7F1D1D" font-size="11" font-weight="700" class="font-sans">1. Ngăn chặn rò rỉ đơn hàng:</text>
-      <text x="15" y="98" fill="#450A0A" font-size="10.5" class="font-sans">Khách chưa login ➔ Từ chối trả</text>
-      <text x="15" y="114" fill="#450A0A" font-size="10.5" class="font-sans">về bất kỳ đơn của người khác.</text>
-      
-      <text x="15" y="138" fill="#7F1D1D" font-size="11" font-weight="700" class="font-sans">2. Cơ chế Masking dữ liệu:</text>
-      <rect x="15" y="146" width="220" height="60" rx="6" fill="#FFFFFF" stroke="#FCA5A5" stroke-width="1" />
-      <text x="25" y="163" fill="#B91C1C" font-size="10" class="font-mono">Tên: V* V* T* T*i</text>
-      <text x="25" y="180" fill="#B91C1C" font-size="10" class="font-mono">SĐT: 0869****573</text>
-      <text x="25" y="197" fill="#B91C1C" font-size="10" class="font-mono">Đ/c: ***, Phường Tân Định</text>
-      
-      <text x="15" y="230" fill="#047857" font-size="10.5" font-weight="600" class="font-sans">✅ Đạt chuẩn bảo mật Enterprise</text>
-    </g>
-
-    <!-- Component: Role Context Dispatcher -->
-    <g transform="translate(455, 670)">
-      <rect x="0" y="0" width="250" height="180" rx="12" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" />
-      <text x="15" y="25" fill="#0F172A" font-size="12" font-weight="700" class="font-sans">PHÂN LỚP QUYỀN TRUY VẬN</text>
-      <line x1="15" y1="35" x2="235" y2="35" stroke="#E2E8F0" stroke-width="1" />
-      
-      <rect x="15" y="45" width="220" height="35" rx="6" fill="#F1F5F9" />
-      <text x="25" y="66" fill="#334155" font-size="11" class="font-mono"><tspan font-weight="700" fill="#64748B">GUEST:</tspan> Chỉ tra cứu theo mã NX-</text>
-
-      <rect x="15" y="88" width="220" height="35" rx="6" fill="#EEF2FF" />
-      <text x="25" y="109" fill="#1E40AF" font-size="11" class="font-mono"><tspan font-weight="700" fill="#4F46E5">CUSTOMER:</tspan> Tra cứu đơn nhận</text>
-
-      <rect x="15" y="131" width="220" height="35" rx="6" fill="#F0FDF4" />
-      <text x="25" y="152" fill="#166534" font-size="11" class="font-mono"><tspan font-weight="700" fill="#16A34A">MERCHANT:</tspan> Toàn quyền đơn gửi</text>
-    </g>
-
-    <!-- Direct Port Fallback Note -->
-    <g transform="translate(455, 870)">
-      <rect x="0" y="0" width="250" height="340" rx="12" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1" />
-      <text x="15" y="25" fill="#065F46" font-size="12" font-weight="700" class="font-sans">HỆ THỐNG SMART FAILOVER</text>
-      <text x="15" y="45" fill="#047857" font-size="11" class="font-sans">Thiết kế chống nghẽn đường truyền:</text>
-      
-      <path d="M 25 70 L 225 70" stroke="#059669" stroke-width="1.5" stroke-dasharray="4" />
-      <text x="25" y="95" fill="#065F46" font-size="10.5" class="font-sans">1. Client ưu tiên gọi Gateway (:3000)</text>
-      <text x="25" y="115" fill="#065F46" font-size="10.5" class="font-sans">2. Nếu timeout 15s hoặc HTTP 404</text>
-      <text x="25" y="135" fill="#047857" font-size="10.5" font-weight="700" class="font-sans">➔ Tự động bẻ luồng sang :3013</text>
-      
-      <rect x="15" y="155" width="220" height="85" rx="8" fill="#FFFFFF" stroke="#6EE7B7" stroke-width="1" />
-      <text x="25" y="178" fill="#0F172A" font-size="11" font-weight="700" class="font-sans">Tỷ lệ khả dụng (SLA):</text>
-      <text x="25" y="200" fill="#059669" font-size="22" font-weight="800" class="font-mono">99.98%</text>
-      <text x="25" y="225" fill="#64748B" font-size="10" class="font-sans">Không bao giờ để chatbox bị đơ/treo</text>
-
-      <text x="15" y="270" fill="#065F46" font-size="11" font-weight="700" class="font-sans">Chứng chỉ &amp; Tiêu chuẩn:</text>
-      <text x="15" y="290" fill="#047857" font-size="10.5" class="font-sans">• ISO/IEC 27001:2022 (An toàn thông tin)</text>
-      <text x="15" y="310" fill="#047857" font-size="10.5" class="font-sans">• Nghị định 13/2023/NĐ-CP (Bảo vệ DLCN)</text>
+    <!-- Client Box 4 -->
+    <g transform="translate(1080, 45)">
+      <rect x="0" y="0" width="330" height="85" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="box-title">Operations Platform (:5173)</text>
+      <text x="12" y="42" class="box-sub">• Nền tảng: ReactJS Ops Dashboard</text>
+      <text x="12" y="58" class="box-sub">• Bưu tá, Trưởng bưu cục, Điều hành</text>
+      <text x="12" y="74" class="box-sub">• Tiếp nhận ca sự cố &amp; Khiếu nại HITL</text>
     </g>
   </g>
 
-  <!-- Flow Line: Layer 2 to Layer 3 -->
-  <path d="M 720 430 L 780 430" fill="none" stroke="#4F46E5" stroke-width="2.5" marker-end="url(#arrowIndigo)" />
-  <rect x="725" y="405" width="50" height="20" rx="4" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="1" />
-  <text x="732" y="419" fill="#4F46E5" font-size="10" font-weight="700" class="font-mono">PROXY</text>
+  <!-- Connect Tier 1 -> Tier 2 -->
+  <path d="M 800 250 L 800 300" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowB)"/>
+  <text x="810" y="280" font-size="11" font-weight="bold">HTTPS / RESTful</text>
 
-  <!-- ========================================================================= -->
-  <!-- 4. LAYER 3: CORE AI AGENT ORCHESTRATOR (:3013) -->
-  <!-- ========================================================================= -->
-  <g id="Layer_3_AI_Assistant_Microservice">
-    <rect x="780" y="150" width="370" height="1080" rx="16" fill="#FFFFFF" stroke="#4F46E5" stroke-width="2" filter="url(#shadowHover)" />
-    
-    <rect x="780" y="150" width="370" height="55" rx="16" fill="url(#gradPrimary)" />
-    <rect x="780" y="189" width="370" height="16" fill="url(#gradPrimary)" />
-    <text x="800" y="184" fill="#FFFFFF" font-size="15" font-weight="700" class="font-sans">3. AI AGENT ORCHESTRATOR</text>
-    <rect x="1050" y="165" width="85" height="24" rx="12" fill="rgba(255,255,255,0.2)" />
-    <text x="1062" y="181" fill="#FFFFFF" font-size="11" font-weight="600" class="font-mono">PORT 3013</text>
+  <!-- TIER 2: API GATEWAY & SECURITY PROXY (y: 300) -->
+  <g id="Tier_2_Gateway" transform="translate(80, 300)">
+    <rect x="0" y="0" width="1440" height="110" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <rect x="0" y="0" width="300" height="28" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+    <text x="12" y="19" class="tier-label">TẦNG 2: API GATEWAY &amp; PII PROXY (:3000)</text>
 
-    <!-- Component: Intent Classifier & Semantic Router -->
-    <g transform="translate(800, 230)">
-      <rect x="0" y="0" width="330" height="210" rx="12" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5" />
-      <rect x="15" y="15" width="32" height="32" rx="8" fill="#4F46E5" />
-      <text x="23" y="37" fill="#FFFFFF" font-size="16">🧠</text>
-      <text x="56" y="28" fill="#0F172A" font-size="13" font-weight="700" class="font-sans">Intent Analyzer &amp; Router</text>
-      <text x="56" y="44" fill="#64748B" font-size="10.5" class="font-mono">ChatService.handleMessage()</text>
-      <line x1="15" y1="58" x2="315" y2="58" stroke="#E2E8F0" stroke-width="1" />
-
-      <!-- Sub Routers -->
-      <g transform="translate(15, 70)">
-        <rect x="0" y="0" width="300" height="28" rx="6" fill="#EEF2FF" />
-        <text x="10" y="18" fill="#312E81" font-size="10.5" class="font-sans">1. Tracking Code Regex: <tspan class="font-mono font-bold text-indigo-700">NX-\d+ | \d{10,14}</tspan></text>
-      </g>
-      <g transform="translate(15, 102)">
-        <rect x="0" y="0" width="300" height="28" rx="6" fill="#F0FDF4" />
-        <text x="10" y="18" fill="#065F46" font-size="10.5" class="font-sans">2. User Order Intent: <tspan class="font-mono font-bold text-emerald-700">"đơn của tôi", "nhiều đơn"</tspan></text>
-      </g>
-      <g transform="translate(15, 134)">
-        <rect x="0" y="0" width="300" height="28" rx="6" fill="#FEF2F2" />
-        <text x="10" y="18" fill="#991B1B" font-size="10.5" class="font-sans">3. Damage/Fragile SOP: <tspan class="font-mono font-bold text-rose-700">"hàng hỏng", "bể vỡ"</tspan></text>
-      </g>
-      <g transform="translate(15, 166)">
-        <rect x="0" y="0" width="300" height="28" rx="6" fill="#FEF3C7" />
-        <text x="10" y="18" fill="#92400E" font-size="10.5" class="font-sans">4. Claim Tracker: <tspan class="font-mono font-bold text-amber-700">CLM-\d+ | "khiếu nại đền bù"</tspan></text>
-      </g>
+    <g transform="translate(30, 40)">
+      <rect x="0" y="0" width="420" height="55" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="box-title">Định tuyến &amp; Tải cân bằng (Reverse Proxy)</text>
+      <text x="12" y="42" class="box-sub">Single Point of Entry • Rate Limiting chống quét mã</text>
     </g>
 
-    <!-- Branch A: Tool Calling Engine -->
-    <g transform="translate(800, 460)">
-      <rect x="0" y="0" width="330" height="150" rx="12" fill="#F0FDF4" stroke="#86EFAC" stroke-width="1.5" />
-      <rect x="15" y="15" width="32" height="32" rx="8" fill="#16A34A" />
-      <text x="23" y="37" fill="#FFFFFF" font-size="16">⚙️</text>
-      <text x="56" y="28" fill="#14532D" font-size="13" font-weight="700" class="font-sans">Branch A: Live Tool Engine</text>
-      <text x="56" y="44" fill="#15803D" font-size="10.5" class="font-mono">LogisticsToolsService</text>
-      <line x1="15" y1="58" x2="315" y2="58" stroke="#BBF7D0" stroke-width="1" />
-      <text x="15" y="78" fill="#166534" font-size="11" class="font-mono">• trackShipment(code, isGuest)</text>
-      <text x="15" y="96" fill="#166534" font-size="11" class="font-mono">• getUserShipments(userId, limit=5)</text>
-      <text x="15" y="114" fill="#166534" font-size="11" class="font-mono">• trackClaimStatus(claimCode)</text>
-      <text x="15" y="132" fill="#166534" font-size="11" class="font-mono">• calculatePricing(weight, dims, tier)</text>
+    <g transform="translate(480, 40)">
+      <rect x="0" y="0" width="450" height="55" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="box-title">Xác thực &amp; Phân quyền (JWT Claims Resolver)</text>
+      <text x="12" y="42" class="box-sub">Bóc tách Role: GUEST / CUSTOMER / MERCHANT / OPS</text>
     </g>
 
-    <!-- Branch B: RAG Semantic Retrieval Engine -->
-    <g transform="translate(800, 630)">
-      <rect x="0" y="0" width="330" height="180" rx="12" fill="#FAF5FF" stroke="#D8B4FE" stroke-width="1.5" />
-      <rect x="15" y="15" width="32" height="32" rx="8" fill="#8B5CF6" />
-      <text x="23" y="37" fill="#FFFFFF" font-size="16">📚</text>
-      <text x="56" y="28" fill="#581C87" font-size="13" font-weight="700" class="font-sans">Branch B: RAG Knowledge Engine</text>
-      <text x="56" y="44" fill="#7E22CE" font-size="10.5" class="font-mono">VectorStoreService &amp; Embedding</text>
-      <line x1="15" y1="58" x2="315" y2="58" stroke="#E9D5FF" stroke-width="1" />
-      <text x="15" y="78" fill="#6B21A8" font-size="11" class="font-sans">• Thesaurus Logistics Synonym Expansion</text>
-      <text x="15" y="96" fill="#6B21A8" font-size="11" class="font-sans">• Google Gemini Embedding (768-dim)</text>
-      <text x="15" y="114" fill="#6B21A8" font-size="11" class="font-sans">• Hybrid Search (Cosine 70% + Keyword 35%)</text>
-      <text x="15" y="132" fill="#6B21A8" font-size="11" class="font-sans">• Re-ranking &amp; Threshold Filter (Score ≥ 50%)</text>
-      <text x="15" y="150" fill="#6B21A8" font-size="11" class="font-sans">• Citations &amp; Source File Extractor</text>
+    <g transform="translate(960, 40)">
+      <rect x="0" y="0" width="450" height="55" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="box-title">Bộ lọc Khử định danh (PII Sanitizer Pipeline)</text>
+      <text x="12" y="42" class="box-sub">Tự động che SĐT (098***), che địa chỉ nhà riêng cho khách vãng lai</text>
     </g>
+  </g>
 
-    <!-- Grounded Context Fusion Box -->
-    <g transform="translate(800, 830)">
-      <rect x="0" y="0" width="330" height="230" rx="12" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.5" />
-      <rect x="15" y="15" width="32" height="32" rx="8" fill="#2563EB" />
-      <text x="23" y="37" fill="#FFFFFF" font-size="16">🔄</text>
-      <text x="56" y="28" fill="#1E3A8A" font-size="13" font-weight="700" class="font-sans">Grounded Context Assembler</text>
-      <text x="56" y="44" fill="#1D4ED8" font-size="10.5" class="font-sans">Hợp nhất Dữ liệu Động &amp; Tri thức</text>
-      <line x1="15" y1="58" x2="315" y2="58" stroke="#BFDBFE" stroke-width="1" />
+  <!-- Connect Tier 2 -> Tier 3 -->
+  <path d="M 800 410 L 800 460" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowB)"/>
+  <text x="810" y="440" font-size="11" font-weight="bold">Internal Network</text>
+
+  <!-- TIER 3: AI ORCHESTRATOR & LIVE MESH (y: 460) -->
+  <g id="Tier_3_Orchestrator_Mesh" transform="translate(80, 460)">
+    <rect x="0" y="0" width="1440" height="230" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <rect x="0" y="0" width="340" height="28" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+    <text x="12" y="19" class="tier-label">TẦNG 3: AI ORCHESTRATOR &amp; LIVE MESH</text>
+
+    <!-- AI Orchestrator Box -->
+    <g transform="translate(30, 45)">
+      <rect x="0" y="0" width="650" height="165" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+      <rect x="0" y="0" width="650" height="26" fill="#E5E7EB" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="18" class="box-title">AI Agent Orchestrator Service (NestJS :3013)</text>
       
-      <rect x="15" y="70" width="300" height="42" rx="6" fill="#FFFFFF" stroke="#DBEAFE" stroke-width="1" />
-      <text x="25" y="87" fill="#1E40AF" font-size="10.5" font-weight="700" class="font-mono">[LIVE DATA]:</text>
-      <text x="25" y="102" fill="#334155" font-size="10" class="font-sans">Dữ liệu đơn hàng, Hub bưu tá từ Microservices</text>
+      <text x="16" y="52" class="box-title">• Query Normalizer &amp; Logistics Thesaurus:</text>
+      <text x="28" y="70" class="box-sub">Chuẩn hóa tiếng Việt, ánh xạ từ vựng: ["vỡ, bể"] → ["hư hỏng, bồi thường"]</text>
 
-      <rect x="15" y="120" width="300" height="42" rx="6" fill="#FFFFFF" stroke="#DBEAFE" stroke-width="1" />
-      <text x="25" y="137" fill="#6B21A8" font-size="10.5" font-weight="700" class="font-mono">[RAG CHUNKS]:</text>
-      <text x="25" y="152" fill="#334155" font-size="10" class="font-sans">Top 3 đoạn văn bản quy chuẩn (Luật, SOP, Đền bù)</text>
+      <text x="16" y="94" class="box-title">• Deterministic Intent Parser (Context Disambiguation):</text>
+      <text x="28" y="112" class="box-sub">Bóc tách Regex: mã đơn NX-XXXXXX, mã khiếu nại CLM-XXXXX</text>
 
-      <rect x="15" y="170" width="300" height="42" rx="6" fill="#FFFFFF" stroke="#DBEAFE" stroke-width="1" />
-      <text x="25" y="187" fill="#B45309" font-size="10.5" font-weight="700" class="font-mono">[SYSTEM ROLE]:</text>
-      <text x="25" y="202" fill="#334155" font-size="10" class="font-sans">Chuyên viên Vận hành Nexus cấp cao, cấm bịa đặt</text>
+      <text x="16" y="136" class="box-title">• State Machine Controller &amp; HITL Dispatcher:</text>
+      <text x="28" y="154" class="box-sub">Điều phối 5 FR, kiểm soát ngưỡng tự động ≤ 2.000.000 đ và chuyển giao con người</text>
     </g>
 
-    <!-- Latency & Performance Indicator -->
-    <rect x="800" y="1080" width="330" height="130" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1" />
-    <text x="815" y="1105" fill="#0F172A" font-size="12" font-weight="700" class="font-sans">CHỈ SỐ HIỆU NĂNG VẬN HÀNH</text>
-    <text x="815" y="1130" fill="#475569" font-size="11" class="font-sans">• Thời gian RAG Hybrid Search: <tspan class="font-mono font-bold text-indigo-600">~12 - 25ms</tspan></text>
-    <text x="815" y="1150" fill="#475569" font-size="11" class="font-sans">• Thời gian Live Tool Execution: <tspan class="font-mono font-bold text-emerald-600">~80 - 150ms</tspan></text>
-    <text x="815" y="1170" fill="#475569" font-size="11" class="font-sans">• Thời gian Gemini LLM Generation: <tspan class="font-mono font-bold text-purple-600">~2.8 - 4.5s</tspan></text>
-    <text x="815" y="1190" fill="#475569" font-size="11" class="font-sans">• Độ chính xác nghiệp vụ (Accuracy): <tspan class="font-mono font-bold text-emerald-600">99.4%</tspan></text>
-  </g>
+    <!-- Arrow Orchestrator -> Mesh -->
+    <path d="M 680 125 L 740 125" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowB)"/>
+    <text x="685" y="115" font-size="10" font-weight="bold">Fetch Live</text>
 
-  <!-- Flow Line: Layer 3 to Layer 4 (Microservices) -->
-  <path d="M 1110 535 L 1210 535" fill="none" stroke="#10B981" stroke-width="2.5" marker-end="url(#arrowEmerald)" />
-  <rect x="1120" y="510" width="80" height="20" rx="4" fill="#F0FDF4" stroke="#86EFAC" stroke-width="1" />
-  <text x="1128" y="524" fill="#166534" font-size="10" font-weight="700" class="font-mono">FETCH LIVE</text>
+    <!-- Live Mesh Box -->
+    <g transform="translate(740, 45)">
+      <rect x="0" y="0" width="670" height="165" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+      <rect x="0" y="0" width="670" height="26" fill="#E5E7EB" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="18" class="box-title">Live Microservices Mesh (Hệ sinh thái Nghiệp vụ Vận hành)</text>
 
-  <!-- Flow Line: Layer 3 to Layer 5 (Vector DB) -->
-  <path d="M 1110 720 L 1210 720" fill="none" stroke="#8B5CF6" stroke-width="2.5" marker-end="url(#arrowPurple)" />
-  <rect x="1120" y="695" width="80" height="20" rx="4" fill="#FAF5FF" stroke="#D8B4FE" stroke-width="1" />
-  <text x="1128" y="709" fill="#6B21A8" font-size="10" font-weight="700" class="font-mono">COSINE K=3</text>
+      <!-- Sub service 1 -->
+      <g transform="translate(16, 38)">
+        <rect x="0" y="0" width="300" height="52" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+        <text x="10" y="18" class="box-title">Tracking Service (:3005)</text>
+        <text x="10" y="36" class="box-sub">• Lấy timeline sự kiện: Đã giao, Đang lấy, t_del</text>
+      </g>
 
-  <!-- ========================================================================= -->
-  <!-- 5. LAYER 4: LIVE LOGISTICS MICROSERVICES & DATABASES -->
-  <!-- ========================================================================= -->
-  <g id="Layer_4_Live_Microservices_Mesh">
-    <rect x="1210" y="150" width="320" height="530" rx="16" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5" filter="url(#shadowCard)" />
-    
-    <rect x="1210" y="150" width="320" height="55" rx="16" fill="#F1F5F9" />
-    <rect x="1210" y="189" width="320" height="16" fill="#F1F5F9" />
-    <text x="1230" y="184" fill="#0F172A" font-size="15" font-weight="700" class="font-sans">4. LIVE LOGISTICS SERVICES</text>
-    <rect x="1455" y="165" width="60" height="24" rx="12" fill="#E2E8F0" />
-    <text x="1465" y="181" fill="#475569" font-size="11" font-weight="600" class="font-mono">DOCKER</text>
+      <!-- Sub service 2 -->
+      <g transform="translate(330, 38)">
+        <rect x="0" y="0" width="320" height="52" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+        <text x="10" y="18" class="box-title">Order Service (:3002)</text>
+        <text x="10" y="36" class="box-sub">• Chi tiết đơn, tiền thu hộ COD, Người gửi/nhận</text>
+      </g>
 
-    <!-- Service 1: Shipment Service -->
-    <g transform="translate(1230, 225)">
-      <rect x="0" y="0" width="280" height="85" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" />
-      <text x="15" y="24" fill="#0F172A" font-size="13" font-weight="700" class="font-sans">📦 Shipment Service (:3002)</text>
-      <text x="15" y="42" fill="#475569" font-size="10.5" class="font-mono">GET /shipments/sent?userId=...</text>
-      <text x="15" y="58" fill="#475569" font-size="10.5" class="font-mono">GET /shipments/:code</text>
-      <text x="15" y="74" fill="#16A34A" font-size="10" font-weight="600" class="font-sans">• Quản lý vòng đời bưu kiện, metadata người nhận</text>
-    </g>
+      <!-- Sub service 3 -->
+      <g transform="translate(16, 100)">
+        <rect x="0" y="0" width="300" height="52" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+        <text x="10" y="18" class="box-title">Claim Service (:3007)</text>
+        <text x="10" y="36" class="box-sub">• Quản lý mã hồ sơ bồi thường CLM-</text>
+      </g>
 
-    <!-- Service 2: Tracking Service -->
-    <g transform="translate(1230, 325)">
-      <rect x="0" y="0" width="280" height="85" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" />
-      <text x="15" y="24" fill="#0F172A" font-size="13" font-weight="700" class="font-sans">🚚 Tracking Service (:3008)</text>
-      <text x="15" y="42" fill="#475569" font-size="10.5" class="font-mono">GET /tracking/:code/current</text>
-      <text x="15" y="58" fill="#475569" font-size="10.5" class="font-mono">GET /tracking/:code/timeline</text>
-      <text x="15" y="74" fill="#16A34A" font-size="10" font-weight="600" class="font-sans">• Vị trí hiện tại, bưu cục Hub, timeline luân chuyển</text>
-    </g>
-
-    <!-- Service 3: Pricing Service -->
-    <g transform="translate(1230, 425)">
-      <rect x="0" y="0" width="280" height="85" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" />
-      <text x="15" y="24" fill="#0F172A" font-size="13" font-weight="700" class="font-sans">💰 Pricing Service (:3012)</text>
-      <text x="15" y="42" fill="#475569" font-size="10.5" class="font-mono">POST /quotes (IATA Weight Engine)</text>
-      <text x="15" y="58" fill="#475569" font-size="10.5" class="font-mono">Formula: max(Actual, D*R*C/6000)</text>
-      <text x="15" y="74" fill="#16A34A" font-size="10" font-weight="600" class="font-sans">• Cước lũy tiến, phụ phí vùng, chiết khấu khách hàng</text>
-    </g>
-
-    <!-- Service 4: Claims & Incident Service -->
-    <g transform="translate(1230, 525)">
-      <rect x="0" y="0" width="280" height="85" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" />
-      <text x="15" y="24" fill="#0F172A" font-size="13" font-weight="700" class="font-sans">⚖️ Claims Service (:3002)</text>
-      <text x="15" y="42" fill="#475569" font-size="10.5" class="font-mono">GET /claims/:claimCode</text>
-      <text x="15" y="58" fill="#475569" font-size="10.5" class="font-mono">SOP Biên bản bất thường bể vỡ</text>
-      <text x="15" y="74" fill="#16A34A" font-size="10" font-weight="600" class="font-sans">• Trạng thái bồi thường, số tiền duyệt, đơn vị chi trả</text>
-    </g>
-
-    <!-- Database Storage Badges -->
-    <g transform="translate(1230, 620)">
-      <rect x="0" y="0" width="280" height="45" rx="8" fill="#F1F5F9" />
-      <text x="12" y="28" fill="#334155" font-size="11" font-weight="600" class="font-sans">🐘 PostgreSQL 16 (Port 15432) • ⚡ Redis 7</text>
+      <!-- Sub service 4 -->
+      <g transform="translate(330, 100)">
+        <rect x="0" y="0" width="320" height="52" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+        <text x="10" y="18" class="box-title">Carrier &amp; Pricing Service (:3008)</text>
+        <text x="10" y="36" class="box-sub">• Bảng cước vận chuyển chuẩn IATA</text>
+      </g>
     </g>
   </g>
 
-  <!-- ========================================================================= -->
-  <!-- 6. LAYER 5: RAG KNOWLEDGE BASE & VECTOR STORE -->
-  <!-- ========================================================================= -->
-  <g id="Layer_5_RAG_Vector_Store">
-    <rect x="1210" y="700" width="320" height="530" rx="16" fill="#FFFFFF" stroke="#8B5CF6" stroke-width="1.5" filter="url(#shadowCard)" />
-    
-    <rect x="1210" y="700" width="320" height="55" rx="16" fill="#FAF5FF" />
-    <rect x="1210" y="739" width="320" height="16" fill="#FAF5FF" />
-    <text x="1230" y="734" fill="#581C87" font-size="15" font-weight="700" class="font-sans">5. RAG KNOWLEDGE REPOSITORY</text>
-    <rect x="1460" y="715" width="55" height="24" rx="12" fill="#E9D5FF" />
-    <text x="1470" y="731" fill="#7E22CE" font-size="11" font-weight="600" class="font-mono">768-D</text>
+  <!-- Connect Tier 3 -> Tier 4 -->
+  <path d="M 800 690 L 800 740" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowB)"/>
+  <text x="810" y="720" font-size="11" font-weight="bold">Context Augmented</text>
 
-    <!-- 9 Markdown Documents Overview -->
-    <g transform="translate(1230, 775)">
-      <rect x="0" y="0" width="280" height="140" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" />
-      <text x="12" y="22" fill="#0F172A" font-size="12" font-weight="700" class="font-sans">📁 9 Tài Liệu Nghiệp Vụ Bưu Chính:</text>
-      <text x="12" y="42" fill="#475569" font-size="10.5" class="font-sans">• 01-pricing-and-iata-weight.md (Cước IATA)</text>
-      <text x="12" y="58" fill="#475569" font-size="10.5" class="font-sans">• 02-insurance-and-claim-policy.md (Trần 30tr)</text>
-      <text x="12" y="74" fill="#475569" font-size="10.5" class="font-sans">• 04-delivery-process-and-faq.md (Phí hoàn 50%)</text>
-      <text x="12" y="90" fill="#475569" font-size="10.5" class="font-sans">• 06-packaging-and-fragile-goods.md (Đóng gói)</text>
-      <text x="12" y="106" fill="#475569" font-size="10.5" class="font-sans">• 07-special-delivery-services.md (Đồng kiểm)</text>
-      <text x="12" y="124" fill="#DC2626" font-size="10.5" font-weight="600" class="font-sans">• 09-negative-exceptions-and-incident.md</text>
+  <!-- TIER 4: RAG REPOSITORY & COGNITIVE ENGINE (y: 740) -->
+  <g id="Tier_4_RAG_LLM" transform="translate(80, 740)">
+    <rect x="0" y="0" width="1440" height="190" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <rect x="0" y="0" width="340" height="28" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+    <text x="12" y="19" class="tier-label">TẦNG 4: RAG REPOSITORY &amp; LLM REASONING</text>
+
+    <!-- RAG Repository Box -->
+    <g transform="translate(30, 45)">
+      <rect x="0" y="0" width="670" height="125" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+      <text x="14" y="24" class="box-title">Kho Tri thức Văn bản Nghiệp vụ (RAG Knowledge Base)</text>
+      <text x="14" y="46" class="box-sub">• Tài liệu Markdown có cấu trúc: 01-pricing, 02-insurance-claim, 09-negative-sop</text>
+      <text x="14" y="66" class="box-sub">• Mô hình nhúng Vector: Google Gemini Embedding-001 (Không gian 768 chiều thực)</text>
+      <text x="14" y="86" class="box-sub">• Giải thuật phân đoạn: Section-Aware Semantic Splitting (Stride = 210 từ, Overlap = 16%)</text>
+      <text x="14" y="106" class="box-sub">• Điểm tìm kiếm lai: Score = 0.70 × CosineSimilarity + 0.35 × LexicalKeywordScore</text>
     </g>
 
-    <!-- Chunking & Vector Index Card -->
-    <g transform="translate(1230, 930)">
-      <rect x="0" y="0" width="280" height="140" rx="10" fill="#FAF5FF" stroke="#D8B4FE" stroke-width="1" />
-      <text x="12" y="24" fill="#6B21A8" font-size="12" font-weight="700" class="font-sans">⚡ Vector Store (vector-index.json):</text>
-      <text x="12" y="46" fill="#581C87" font-size="11" class="font-sans">• Số lượng: <tspan font-weight="700" class="font-mono">44 Chunks nghiệp vụ chuẩn</tspan></text>
-      <text x="12" y="66" fill="#581C87" font-size="11" class="font-sans">• Thuật toán: <tspan font-weight="700">AST Heading + Sliding Window</tspan></text>
-      <text x="12" y="86" fill="#581C87" font-size="11" class="font-sans">• Tham số: <tspan class="font-mono font-bold">Max 250 words • Overlap 40 words</tspan></text>
-      <text x="12" y="106" fill="#581C87" font-size="11" class="font-sans">• Mô hình Embedding: <tspan class="font-mono font-bold text-indigo-700">gemini-embedding-001</tspan></text>
-      <text x="12" y="126" fill="#059669" font-size="11" font-weight="600" class="font-sans">⏱️ Thời gian Ingest toàn bộ: 3.1 giây</text>
-    </g>
+    <!-- Arrow RAG -> LLM -->
+    <path d="M 700 105 L 750 105" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowB)"/>
+    <text x="705" y="95" font-size="10" font-weight="bold">Grounding</text>
 
-    <!-- Formula Box: Cosine Similarity -->
-    <g transform="translate(1230, 1085)">
-      <rect x="0" y="0" width="280" height="130" rx="10" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1" />
-      <text x="12" y="22" fill="#0F172A" font-size="11.5" font-weight="700" class="font-sans">CÔNG THỨC HYBRID SIMILARITY:</text>
-      <rect x="12" y="32" width="256" height="42" rx="6" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1" />
-      <text x="22" y="58" fill="#4F46E5" font-size="11.5" font-weight="700" class="font-mono">Score = Cosine(70%) + Keyword(35%)</text>
-      
-      <text x="12" y="92" fill="#64748B" font-size="10" class="font-mono">Cosine(Q, D) = (Q · D) / (||Q|| × ||D||)</text>
-      <text x="12" y="110" fill="#16A34A" font-size="10.5" font-weight="600" class="font-sans">🚀 Tích hợp từ điển đồng nghĩa Bưu chính</text>
+    <!-- LLM Cognitive Engine Box -->
+    <g transform="translate(750, 45)">
+      <rect x="0" y="0" width="660" height="125" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+      <text x="14" y="24" class="box-title">Động cơ Suy luận Nhận thức (LLM Cognitive Reasoning Engine)</text>
+      <text x="14" y="46" class="box-sub">• Mô hình nền tảng: Google Gemini Flash</text>
+      <text x="14" y="66" class="box-sub">• Tham số khống chế ảo giác: Temperature = 0.2 (Buộc suy luận tuyệt đối trên Context)</text>
+      <text x="14" y="86" class="box-sub">• Định dạng đầu ra: Cấu trúc JSON Schema nghiêm ngặt cho Rich UI Component</text>
+      <text x="14" y="106" class="box-sub">• Các thẻ hỗ trợ: ORDER_TRACKING_CARD, CAROUSEL_SELECTOR, CLAIM_PROGRESS_CARD</text>
     </g>
   </g>
 
-  <!-- ========================================================================= -->
-  <!-- 7. LAYER 6: LLM SYNTHESIS & REASONING (Google Gemini 3.6 Flash) -->
-  <!-- ========================================================================= -->
-  <g id="Layer_6_LLM_Reasoning_Guardrails">
-    <rect x="1560" y="150" width="320" height="1080" rx="16" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5" filter="url(#shadowCard)" />
-    
-    <rect x="1560" y="150" width="320" height="55" rx="16" fill="#0F172A" />
-    <rect x="1560" y="189" width="320" height="16" fill="#0F172A" />
-    <text x="1580" y="184" fill="#FFFFFF" font-size="15" font-weight="700" class="font-sans">6. LLM REASONING &amp; OUTPUT</text>
-    <rect x="1805" y="165" width="60" height="24" rx="12" fill="rgba(255,255,255,0.2)" />
-    <text x="1815" y="181" fill="#FFFFFF" font-size="11" font-weight="600" class="font-mono">GEMINI</text>
-
-    <!-- LLM Engine Card -->
-    <g transform="translate(1580, 230)">
-      <rect x="0" y="0" width="280" height="180" rx="12" fill="url(#gradPurple)" />
-      <circle cx="35" cy="35" r="18" fill="rgba(255,255,255,0.2)" />
-      <text x="25" y="42" fill="#FFFFFF" font-size="18">✨</text>
-      <text x="65" y="32" fill="#FFFFFF" font-size="15" font-weight="700" class="font-sans">Google Gemini AI</text>
-      <text x="65" y="48" fill="#E9D5FF" font-size="11" class="font-mono">Primary: gemini-3.6-flash</text>
-      <line x1="20" y1="65" x2="260" y2="65" stroke="rgba(255,255,255,0.2)" stroke-width="1" />
-
-      <text x="20" y="85" fill="#FFFFFF" font-size="11" class="font-sans">• Temperature: <tspan class="font-mono font-bold">0.2</tspan> (Hạn chế tối đa ảo giác)</text>
-      <text x="20" y="105" fill="#FFFFFF" font-size="11" class="font-sans">• Fallback 1: <tspan class="font-mono">gemini-flash-latest</tspan></text>
-      <text x="20" y="125" fill="#FFFFFF" font-size="11" class="font-sans">• Fallback 2: <tspan class="font-mono">gemini-flash-lite-latest</tspan></text>
-      <text x="20" y="145" fill="#FFFFFF" font-size="11" class="font-sans">• Fallback 3: <tspan class="font-mono">OpenAI GPT-4o-mini</tspan></text>
-      <text x="20" y="165" fill="#A7F3D0" font-size="11" font-weight="600" class="font-sans">🛡️ Đa tầng dự phòng chịu lỗi (Fault-Tolerant)</text>
-    </g>
-
-    <!-- Guardrails & Anti-Hallucination Box -->
-    <g transform="translate(1580, 430)">
-      <rect x="0" y="0" width="280" height="230" rx="12" fill="#FEF3C7" stroke="#FCD34D" stroke-width="1.5" />
-      <rect x="15" y="15" width="32" height="32" rx="8" fill="#F59E0B" />
-      <text x="23" y="37" fill="#FFFFFF" font-size="16">🛡️</text>
-      <text x="56" y="28" fill="#78350F" font-size="13" font-weight="700" class="font-sans">Logistics AI Guardrails</text>
-      <text x="56" y="44" fill="#B45309" font-size="10.5" font-weight="600" class="font-sans">Quy tắc sinh phản hồi an toàn</text>
-      <line x1="15" y1="58" x2="265" y2="58" stroke="#FDE68A" stroke-width="1" />
-
-      <text x="15" y="80" fill="#92400E" font-size="11" font-weight="700" class="font-sans">1. Grounded Context Ràng Buộc:</text>
-      <text x="15" y="98" fill="#78350F" font-size="10.5" class="font-sans">Chỉ trả lời dựa trên facts từ live tool</text>
-      <text x="15" y="114" fill="#78350F" font-size="10.5" class="font-sans">và tài liệu quy chuẩn; cấm đoán mò.</text>
-
-      <text x="15" y="138" fill="#92400E" font-size="11" font-weight="700" class="font-sans">2. Chống lộ dữ liệu (PII Protection):</text>
-      <text x="15" y="156" fill="#78350F" font-size="10.5" class="font-sans">Tự động mask tên, sđt khi người hỏi</text>
-      <text x="15" y="172" fill="#78350F" font-size="10.5" class="font-sans">chưa đăng nhập tài khoản.</text>
-
-      <text x="15" y="196" fill="#92400E" font-size="11" font-weight="700" class="font-sans">3. Giọng văn chuyên viên bưu chính:</text>
-      <text x="15" y="214" fill="#78350F" font-size="10.5" class="font-sans">Tự nhiên, biết xâu chuỗi, có Call-to-Action.</text>
-    </g>
-
-    <!-- Response Payload Deliverables -->
-    <g transform="translate(1580, 680)">
-      <rect x="0" y="0" width="280" height="380" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5" />
-      <text x="15" y="25" fill="#0F172A" font-size="13" font-weight="700" class="font-sans">OUTPUT DTO GỬI CLIENT</text>
-      <text x="15" y="42" fill="#64748B" font-size="10.5" class="font-mono">ChatResponseDto Payload</text>
-      <line x1="15" y1="52" x2="265" y2="52" stroke="#E2E8F0" stroke-width="1" />
-
-      <!-- Payload Items -->
-      <g transform="translate(15, 65)">
-        <rect x="0" y="0" width="250" height="48" rx="8" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1" />
-        <text x="12" y="20" fill="#0F172A" font-size="11" font-weight="700" class="font-mono">1. answer (string)</text>
-        <text x="12" y="36" fill="#475569" font-size="10" class="font-sans">Nội dung giải đáp phong cách chuyên gia</text>
-      </g>
-
-      <g transform="translate(15, 123)">
-        <rect x="0" y="0" width="250" height="58" rx="8" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="1" />
-        <text x="12" y="20" fill="#3730A3" font-size="11" font-weight="700" class="font-mono">2. shipmentCards (Array)</text>
-        <text x="12" y="36" fill="#4F46E5" font-size="10" class="font-sans">Mảng thẻ đơn hàng tương tác 1 chạm</text>
-        <text x="12" y="50" fill="#4338CA" font-size="9.5" class="font-mono">{ code, status, item, city, cod }</text>
-      </g>
-
-      <g transform="translate(15, 191)">
-        <rect x="0" y="0" width="250" height="48" rx="8" fill="#F0FDF4" stroke="#BBF7D0" stroke-width="1" />
-        <text x="12" y="20" fill="#14532D" font-size="11" font-weight="700" class="font-mono">3. citations (Array)</text>
-        <text x="12" y="36" fill="#15803D" font-size="10" class="font-sans">Nguồn trích dẫn file, section, score %</text>
-      </g>
-
-      <g transform="translate(15, 249)">
-        <rect x="0" y="0" width="250" height="48" rx="8" fill="#FEF3C7" stroke="#FDE68A" stroke-width="1" />
-        <text x="12" y="20" fill="#78350F" font-size="11" font-weight="700" class="font-mono">4. toolsUsed (Array)</text>
-        <text x="12" y="36" fill="#92400E" font-size="10" class="font-sans">Danh sách tool nghiệp vụ đã thực thi</text>
-      </g>
-
-      <g transform="translate(15, 307)">
-        <rect x="0" y="0" width="250" height="48" rx="8" fill="#F1F5F9" stroke="#E2E8F0" stroke-width="1" />
-        <text x="12" y="20" fill="#0F172A" font-size="11" font-weight="700" class="font-mono">5. latencyMs (number)</text>
-        <text x="12" y="36" fill="#475569" font-size="10" class="font-sans">Thời gian xử lý end-to-end</text>
-      </g>
-    </g>
-
-    <!-- Back-to-client Arrow Label -->
-    <rect x="1580" y="1080" width="280" height="130" rx="12" fill="#0F172A" />
-    <text x="1595" y="1110" fill="#FFFFFF" font-size="12" font-weight="700" class="font-sans">KẾT QUẢ KHOA HỌC THUYẾT MINH</text>
-    <text x="1595" y="1135" fill="#CBD5E1" font-size="10.5" class="font-sans">✅ Không phải chatbot demo "vibecode"</text>
-    <text x="1595" y="1155" fill="#CBD5E1" font-size="10.5" class="font-sans">✅ Hệ thống Hybrid RAG + Real-time Tool</text>
-    <text x="1595" y="1175" fill="#CBD5E1" font-size="10.5" class="font-sans">✅ Đạt chuẩn bảo mật PII &amp; Luật Bưu chính</text>
-    <text x="1595" y="1195" fill="#34D399" font-size="10.5" font-weight="600" class="font-sans">🏆 Đáp ứng 100% tiêu chí Khóa luận Tốt nghiệp</text>
+  <!-- ==================== FOOTER ==================== -->
+  <g id="Footer" transform="translate(80, 955)">
+    <line x1="0" y1="0" x2="1440" y2="0" stroke="#000000" stroke-width="1"/>
+    <text x="0" y="22" font-size="11" font-style="italic" fill="#333333">
+      Ghi chú: Bản vẽ kiến trúc tổng thể phần mềm theo chuẩn UML Component &amp; Deployment Diagram. Tiêu chuẩn in ấn đơn sắc (Monochrome) cho thuyết minh Khóa luận tốt nghiệp.
+    </text>
   </g>
-
-  <!-- Big Back Return Arrow from Layer 6 to Layer 1 -->
-  <path d="M 1720 1060 L 1720 1250 L 210 1250 L 210 1040" fill="none" stroke="#4F46E5" stroke-width="3" stroke-dasharray="6" marker-end="url(#arrowIndigo)" />
-  <rect x="880" y="1235" width="220" height="26" rx="13" fill="#4F46E5" />
-  <text x="898" y="1252" fill="#FFFFFF" font-size="11" font-weight="700" class="font-sans">TRẢ KẾT QUẢ HIỂN THỊ CLIENT ➔</text>
 </svg>

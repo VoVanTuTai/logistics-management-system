@@ -1,453 +1,205 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1280" width="1920" height="1280" style="background:#F8FAFC;">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="1600" height="1000" style="background:#FFFFFF;">
   <defs>
-    <!-- Gradients -->
-    <linearGradient id="gradHeader2" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#1E1B4B" />
-      <stop offset="50%" stop-color="#312E81" />
-      <stop offset="100%" stop-color="#1E1B4B" />
-    </linearGradient>
-
-    <linearGradient id="gradPurple2" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#8B5CF6" />
-      <stop offset="100%" stop-color="#6D28D9" />
-    </linearGradient>
-
-    <linearGradient id="gradEmerald2" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#10B981" />
-      <stop offset="100%" stop-color="#047857" />
-    </linearGradient>
-
-    <linearGradient id="gradBlue2" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#3B82F6" />
-      <stop offset="100%" stop-color="#1D4ED8" />
-    </linearGradient>
-
-    <linearGradient id="gradAmber2" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#F59E0B" />
-      <stop offset="100%" stop-color="#B45309" />
-    </linearGradient>
-
-    <!-- Filters -->
-    <filter id="shadowCard2" x="-5%" y="-5%" width="110%" height="115%" filterUnits="userSpaceOnUse">
-      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#0F172A" flood-opacity="0.06" />
-      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#0F172A" flood-opacity="0.04" />
-    </filter>
-
-    <!-- Markers -->
-    <marker id="arrow2" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 1 L 8 5 L 0 9 z" fill="#64748B" />
-    </marker>
-    <marker id="arrowIndigo2" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 1 L 8 5 L 0 9 z" fill="#4F46E5" />
-    </marker>
-    <marker id="arrowPurple2" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 1 L 8 5 L 0 9 z" fill="#8B5CF6" />
-    </marker>
-    <marker id="arrowEmerald2" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 1 L 8 5 L 0 9 z" fill="#10B981" />
+    <marker id="arrowB2" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#000000" />
     </marker>
   </defs>
 
   <style>
-    .font-sans { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-    .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    text { font-family: "Times New Roman", Times, "Segoe UI", -apple-system, serif; }
+    .title-h1 { font-size: 18px; font-weight: bold; fill: #000000; text-anchor: middle; }
+    .title-sub { font-size: 13px; font-style: italic; fill: #333333; text-anchor: middle; }
+    .stage-title { font-size: 13px; font-weight: bold; fill: #000000; }
+    .box-title { font-size: 13px; font-weight: bold; fill: #000000; }
+    .box-sub { font-size: 11px; fill: #222222; }
+    .math-text { font-family: "Times New Roman", Times, serif; font-size: 12px; font-weight: bold; fill: #000000; }
   </style>
 
-  <!-- ========================================================================= -->
-  <!-- HEADER BANNER -->
-  <!-- ========================================================================= -->
-  <g id="Header_Banner">
-    <rect x="40" y="30" width="1840" height="90" rx="16" fill="url(#gradHeader2)" filter="url(#shadowCard2)" />
-    
-    <rect x="60" y="50" width="50" height="50" rx="12" fill="#8B5CF6" />
-    <text x="73" y="83" fill="#FFFFFF" font-size="24">🔬</text>
-    
-    <text x="125" y="65" fill="#FFFFFF" font-size="22" font-weight="700" class="font-sans">CƠ CHẾ KHOA HỌC CHUNKING DỮ LIỆU &amp; PIPELINE VECTOR HÓA TRI THỨC (RAG ENGINE)</text>
-    <text x="125" y="92" fill="#C7D2FE" font-size="14" font-weight="500" class="font-sans">MÔ HÌNH HYBRID SECTION-AWARE SEMANTIC SPLITTING | SLIDING WINDOW OVERLAP 16% | GEMINI EMBEDDING (768-D) | COSINE SIMILARITY</text>
-
-    <rect x="1560" y="55" width="290" height="40" rx="20" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.2)" stroke-width="1" />
-    <circle cx="1580" cy="75" r="6" fill="#A855F7" />
-    <text x="1595" y="80" fill="#FFFFFF" font-size="13" font-weight="600" class="font-sans">CHUYÊN ĐỀ NGHIÊN CỨU RAG</text>
+  <!-- ==================== HEADER ==================== -->
+  <g id="Header" transform="translate(0, 30)">
+    <text x="800" y="25" class="title-h1">HÌNH 2.1: QUY TRÌNH PHÂN ĐOẠN NGỮ NGHĨA &amp; VECTOR HÓA DỮ LIỆU BƯU CHÍNH (RAG PIPELINE)</text>
+    <text x="800" y="48" class="title-sub">Giải thuật Hybrid Section-Aware Semantic Splitting, Cửa sổ trượt Overlap 16% và Không gian Vector 768 chiều</text>
+    <line x1="80" y1="65" x2="1520" y2="65" stroke="#000000" stroke-width="1.5"/>
   </g>
 
-  <!-- ========================================================================= -->
-  <!-- TOP ROW: SO SÁNH KHOA HỌC (NAIVE CHUNKING VS NEXUS HYBRID CHUNKING) -->
-  <!-- ========================================================================= -->
-  <g id="Section_Scientific_Comparison">
-    <!-- Comparison Box -->
-    <rect x="40" y="145" width="1840" height="155" rx="16" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5" filter="url(#shadowCard2)" />
-    
-    <!-- Left: Naive Chunking Problem -->
-    <g transform="translate(65, 165)">
-      <rect x="0" y="0" width="870" height="115" rx="12" fill="#FEF2F2" stroke="#FECACA" stroke-width="1" />
-      <rect x="15" y="15" width="30" height="30" rx="6" fill="#EF4444" />
-      <text x="23" y="36" fill="#FFFFFF" font-size="16">❌</text>
-      <text x="55" y="28" fill="#991B1B" font-size="14" font-weight="700" class="font-sans">Hạn Chế Của Các Phương Pháp Cắt Thô Thông Thường (Naive / Fixed-Size Chunking):</text>
-      <text x="55" y="46" fill="#B91C1C" font-size="11.5" class="font-sans">Cắt mù theo số ký tự cố định (ví dụ 500 ký tự) hoặc cắt theo dòng ngắt câu:</text>
-      
-      <line x1="15" y1="58" x2="855" y2="58" stroke="#FCA5A5" stroke-width="1" />
-      <text x="20" y="80" fill="#7F1D1D" font-size="11" class="font-sans">• <tspan font-weight="700">Gãy bảng biểu &amp; Ma trận cước:</tspan> Cắt ngang lưng bảng giá IATA hoặc bảng đối soát COD, làm mất dòng header tiêu đề.</text>
-      <text x="20" y="98" fill="#7F1D1D" font-size="11" class="font-sans">• <tspan font-weight="700">Đứt gãy ngữ cảnh điều kiện:</tspan> Câu "Trừ hàng cấm" bị cắt rời khỏi "Bồi thường 100%" ➔ Gây <tspan font-weight="700" fill="#DC2626">ẢO GIÁC NGUY HIỂM (Hallucination > 35%)</tspan>.</text>
+  <!-- ==================== 5 PIPELINE STAGES (MONOCHROME) ==================== -->
+
+  <!-- STAGE 1: AST MARKDOWN PARSING (x: 80) -->
+  <g id="Stage_1" transform="translate(80, 110)">
+    <rect x="0" y="0" width="260" height="780" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <rect x="0" y="0" width="260" height="35" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+    <text x="12" y="23" class="stage-title">GIAI ĐOẠN 1: AST PARSER</text>
+
+    <!-- Content 1.1 -->
+    <g transform="translate(15, 55)">
+      <rect x="0" y="0" width="230" height="150" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="10" y="22" class="box-title">Văn bản Nguồn (.md)</text>
+      <text x="10" y="42" class="box-sub">• 01-pricing-iata.md</text>
+      <text x="10" y="58" class="box-sub">• 02-insurance-claim.md</text>
+      <text x="10" y="74" class="box-sub">• 09-negative-sop.md</text>
+      <line x1="10" y1="85" x2="220" y2="85" stroke="#000000" stroke-width="0.5"/>
+      <text x="10" y="105" class="box-sub">Đặc thù: Chứa bảng cước,</text>
+      <text x="10" y="121" class="box-sub">mệnh đề điều kiện pháp lý</text>
+      <text x="10" y="137" class="box-sub">và thời hạn 24 giờ</text>
     </g>
 
-    <!-- Right: Nexus Semantic Solution -->
-    <g transform="translate(975, 165)">
-      <rect x="0" y="0" width="880" height="115" rx="12" fill="#F0FDF4" stroke="#BBF7D0" stroke-width="1" />
-      <rect x="15" y="15" width="30" height="30" rx="6" fill="#16A34A" />
-      <text x="23" y="36" fill="#FFFFFF" font-size="16">✅</text>
-      <text x="55" y="28" fill="#14532D" font-size="14" font-weight="700" class="font-sans">Giải Pháp Độc Quyền Nexus: Hybrid Section-Aware Semantic Chunking with Overlap:</text>
-      <text x="55" y="46" fill="#15803D" font-size="11.5" class="font-sans">Phân tích cú pháp AST Markdown kết hợp cửa sổ trượt gối đầu 16% và tiêm ngữ cảnh phả hệ:</text>
-      
-      <line x1="15" y1="58" x2="865" y2="58" stroke="#86EFAC" stroke-width="1" />
-      <text x="20" y="80" fill="#166534" font-size="11" class="font-sans">• <tspan font-weight="700">Bảo toàn nguyên vẹn 100%:</tspan> Giữ trọn bảng biểu, quy chuẩn đóng gói xốp 3-5 lớp, hạn mức đền bù Luật Bưu chính.</text>
-      <text x="20" y="98" fill="#166534" font-size="11" class="font-sans">• <tspan font-weight="700">Contextual Enrichment:</tspan> Tự động kế thừa tiêu đề cha-con ➔ <tspan font-weight="700" fill="#15803D">Tỷ lệ chính xác thông tin đạt 99.4%, Ảo giác &lt; 1%</tspan>.</text>
+    <!-- Arrow 1.1 -> 1.2 -->
+    <path d="M 130 205 L 130 245" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowB2)"/>
+
+    <!-- Content 1.2 -->
+    <g transform="translate(15, 245)">
+      <rect x="0" y="0" width="230" height="200" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="10" y="22" class="box-title">Phân tích Cú pháp AST</text>
+      <text x="10" y="42" class="box-sub">• Quét thẻ: #, ##, ###</text>
+      <text x="10" y="58" class="box-sub">• Tách ranh giới Section</text>
+      <text x="10" y="74" class="box-sub">• Khắc phục nhược điểm của</text>
+      <text x="10" y="90" font-weight="bold" class="box-sub">  Naive Fixed-size Chunking</text>
+      <line x1="10" y1="105" x2="220" y2="105" stroke="#000000" stroke-width="0.5"/>
+      <text x="10" y="125" class="box-sub">Ngăn chặn việc cắt ngang</text>
+      <text x="10" y="141" class="box-sub">giữa bảng tính cước và</text>
+      <text x="10" y="157" class="box-sub">mệnh đề "NẾU có biên bản"</text>
     </g>
   </g>
 
-  <!-- ========================================================================= -->
-  <!-- 4-PHASE CHUNKING & VECTOR PIPELINE FLOW (Horizontal 4 Steps) -->
-  <!-- ========================================================================= -->
-  
-  <!-- Step 1: Raw Knowledge Ingestion -->
-  <g id="Step_1_Raw_Ingestion" transform="translate(40, 325)">
-    <rect x="0" y="0" width="430" height="520" rx="16" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5" filter="url(#shadowCard2)" />
-    
-    <rect x="0" y="0" width="430" height="50" rx="16" fill="#F1F5F9" />
-    <rect x="0" y="34" width="430" height="16" fill="#F1F5F9" />
-    <circle cx="25" cy="25" r="14" fill="#3B82F6" />
-    <text x="20" y="30" fill="#FFFFFF" font-size="13" font-weight="700" class="font-sans">1</text>
-    <text x="48" y="30" fill="#0F172A" font-size="14" font-weight="700" class="font-sans">RAW LOGISTICS DOCUMENTS</text>
-    <rect x="330" y="13" width="85" height="24" rx="12" fill="#DBEAFE" />
-    <text x="342" y="29" fill="#1E40AF" font-size="11" font-weight="600" class="font-sans">9 TÀI LIỆU</text>
+  <!-- Connect Stage 1 -> Stage 2 -->
+  <path d="M 340 500 L 380 500" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowB2)"/>
 
-    <!-- Source Files Details -->
-    <g transform="translate(20, 65)">
-      <rect x="0" y="0" width="390" height="130" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" />
-      <text x="15" y="24" fill="#0F172A" font-size="12" font-weight="700" class="font-sans">Thư mục nguồn: docs/knowledge-base/</text>
-      <text x="15" y="44" fill="#475569" font-size="10.5" class="font-mono">📄 01-pricing-and-iata-weight.md</text>
-      <text x="15" y="60" fill="#475569" font-size="10.5" class="font-mono">📄 02-insurance-and-claim-policy.md</text>
-      <text x="15" y="76" fill="#475569" font-size="10.5" class="font-mono">📄 04-delivery-process-and-faq.md</text>
-      <text x="15" y="92" fill="#475569" font-size="10.5" class="font-mono">📄 06-packaging-and-fragile-goods.md</text>
-      <text x="15" y="108" fill="#475569" font-size="10.5" class="font-mono">📄 09-negative-exceptions-and-incident.md</text>
-    </g>
+  <!-- STAGE 2: BREADCRUMB ENRICHMENT (x: 380) -->
+  <g id="Stage_2" transform="translate(380, 110)">
+    <rect x="0" y="0" width="260" height="780" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <rect x="0" y="0" width="260" height="35" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+    <text x="12" y="23" class="stage-title">GIAI ĐOẠN 2: BREADCRUMB</text>
 
-    <!-- Raw Sample Snippet -->
-    <g transform="translate(20, 210)">
-      <rect x="0" y="0" width="390" height="180" rx="10" fill="#0F172A" />
-      <text x="15" y="24" fill="#94A3B8" font-size="11" font-weight="600" class="font-mono"># 02-insurance-and-claim-policy.md</text>
-      <line x1="15" y1="32" x2="375" y2="32" stroke="#334155" stroke-width="1" />
-      <text x="15" y="52" fill="#38BDF8" font-size="11" font-weight="700" class="font-mono">## A. Gói Vận Chuyển Tiêu Chuẩn</text>
-      <text x="15" y="70" fill="#CBD5E1" font-size="10.5" class="font-sans">- Đối tượng: Hàng có giá trị &lt; 1.000.000 VNĐ</text>
-      <text x="15" y="88" fill="#CBD5E1" font-size="10.5" class="font-sans">- Hạn mức bồi thường: 04 lần cước (max 1tr)</text>
-      <text x="15" y="112" fill="#38BDF8" font-size="11" font-weight="700" class="font-mono">## B. Gói Bảo Hiểm Khai Giá</text>
-      <text x="15" y="130" fill="#FDE047" font-size="10.5" font-weight="600" class="font-sans">- Đền bù 100% hóa đơn VAT</text>
-      <text x="15" y="148" fill="#FDE047" font-size="10.5" font-weight="600" class="font-sans">- HẠN MỨC TRẦN TỐI ĐA: 30.000.000 VNĐ/đơn</text>
-      <text x="15" y="166" fill="#94A3B8" font-size="10" class="font-sans">- Biểu phí: 0.5% (1-10tr), 1.0% (10-30tr)</text>
-    </g>
+    <g transform="translate(15, 55)">
+      <rect x="0" y="0" width="230" height="390" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="10" y="22" class="box-title">Gắn Siêu dữ liệu Ngữ cảnh</text>
+      <text x="10" y="44" class="box-sub">Mỗi Chunk được tự động nối</text>
+      <text x="10" y="60" class="box-sub">tiền tố nguồn phân cấp:</text>
 
-    <!-- Characteristics Box -->
-    <g transform="translate(20, 405)">
-      <rect x="0" y="0" width="390" height="95" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1" />
-      <text x="15" y="24" fill="#0F172A" font-size="11.5" font-weight="700" class="font-sans">Đặc thù văn bản bưu chính:</text>
-      <text x="15" y="44" fill="#475569" font-size="10.5" class="font-sans">• Có số liệu cước phí lũy tiến theo khoảng cân</text>
-      <text x="15" y="62" fill="#475569" font-size="10.5" class="font-sans">• Có các điều khoản miễn trừ bồi thường nghiêm ngặt</text>
-      <text x="15" y="80" fill="#475569" font-size="10.5" class="font-sans">• Bắt buộc phân định hàng dễ vỡ vs hàng giá trị cao</text>
+      <rect x="10" y="75" width="210" height="110" fill="#F9FAFB" stroke="#000000" stroke-width="0.5"/>
+      <text x="15" y="95" class="math-text">Tiền tố Breadcrumb:</text>
+      <text x="15" y="115" font-size="10" fill="#000000">"Tài liệu: Quy trình Khiếu nại &gt;</text>
+      <text x="15" y="130" font-size="10" fill="#000000">Mục 3: Hàng bể vỡ khi đồng kiểm &gt;</text>
+      <text x="15" y="145" font-size="10" fill="#000000">Điều kiện lập BBBT 24h:"</text>
+      <text x="15" y="165" font-size="10" font-style="italic" fill="#333333">+ [Nội dung chi tiết...]</text>
+
+      <line x1="10" y1="205" x2="220" y2="205" stroke="#000000" stroke-width="0.5"/>
+      <text x="10" y="225" class="box-title">Tác dụng kỹ thuật:</text>
+      <text x="10" y="245" class="box-sub">• Vector hóa luôn "nhớ" được</text>
+      <text x="10" y="261" class="box-sub">  tiêu đề mục cha</text>
+      <text x="10" y="281" class="box-sub">• Tránh nhầm lẫn giữa cước</text>
+      <text x="10" y="297" class="box-sub">  nội thành và liên tỉnh</text>
+      <text x="10" y="317" class="box-sub">• Giữ nguyên giá trị ngữ nghĩa</text>
+      <text x="10" y="333" class="box-sub">  khi tìm kiếm câu ngắn</text>
     </g>
   </g>
 
-  <!-- Flow Arrow: 1 to 2 -->
-  <path d="M 470 585 L 510 585" fill="none" stroke="#4F46E5" stroke-width="2.5" marker-end="url(#arrowIndigo2)" />
+  <!-- Connect Stage 2 -> Stage 3 -->
+  <path d="M 640 500 L 680 500" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowB2)"/>
 
-  <!-- Step 2: AST Markdown Heading Parser & Enrichment -->
-  <g id="Step_2_AST_Chunker" transform="translate(510, 325)">
-    <rect x="0" y="0" width="430" height="520" rx="16" fill="#FFFFFF" stroke="#4F46E5" stroke-width="2" filter="url(#shadowCard2)" />
-    
-    <rect x="0" y="0" width="430" height="50" rx="16" fill="url(#gradPrimary)" />
-    <rect x="0" y="34" width="430" height="16" fill="url(#gradPrimary)" />
-    <circle cx="25" cy="25" r="14" fill="#FFFFFF" />
-    <text x="21" y="30" fill="#4F46E5" font-size="13" font-weight="700" class="font-sans">2</text>
-    <text x="48" y="30" fill="#FFFFFF" font-size="14" font-weight="700" class="font-sans">AST PARSER &amp; ENRICHMENT</text>
-    <rect x="300" y="13" width="115" height="24" rx="12" fill="rgba(255,255,255,0.2)" />
-    <text x="312" y="29" fill="#FFFFFF" font-size="11" font-weight="600" class="font-mono">chunker.ts</text>
+  <!-- STAGE 3: SLIDING WINDOW OVERLAP 16% (x: 680) -->
+  <g id="Stage_3" transform="translate(680, 110)">
+    <rect x="0" y="0" width="280" height="780" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <rect x="0" y="0" width="280" height="35" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+    <text x="12" y="23" class="stage-title">GIAI ĐOẠN 3: CỬA SỔ TRƯỢT</text>
 
-    <!-- Regex Formula Box -->
-    <g transform="translate(20, 65)">
-      <rect x="0" y="0" width="390" height="100" rx="10" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="1" />
-      <text x="15" y="24" fill="#312E81" font-size="12" font-weight="700" class="font-sans">1. Nhận diện ranh giới Heading:</text>
-      <rect x="15" y="34" width="360" height="30" rx="6" fill="#FFFFFF" stroke="#A5B4FC" stroke-width="1" />
-      <text x="25" y="54" fill="#4338CA" font-size="12" font-weight="700" class="font-mono">Regex: ^(#{1,4})\s+(.+)$</text>
-      <text x="15" y="84" fill="#4338CA" font-size="10.5" class="font-sans">• Phân tách theo H1 (#), H2 (##), H3 (###), H4 (####)</text>
-    </g>
+    <g transform="translate(15, 55)">
+      <rect x="0" y="0" width="250" height="390" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="10" y="22" class="box-title">Thông số Cửa sổ Trượt (Overlap)</text>
+      <text x="10" y="44" class="box-sub">• Ngưỡng tối đa (MaxWords): 250 từ</text>
+      <text x="10" y="62" class="box-sub">• Vùng gối đầu (Overlap): 40 từ</text>
+      <text x="10" y="80" class="box-sub">• Bước trượt (Stride):</text>
+      <text x="20" y="100" class="math-text">Stride = 250 - 40 = 210 từ</text>
 
-    <!-- Breadcrumb Enrichment Box -->
-    <g transform="translate(20, 180)">
-      <rect x="0" y="0" width="390" height="135" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" />
-      <text x="15" y="24" fill="#0F172A" font-size="12" font-weight="700" class="font-sans">2. Contextual Breadcrumb Enrichment:</text>
-      <text x="15" y="44" fill="#475569" font-size="11" class="font-sans">Tiêm phả hệ phân cấp vào từng chunk để không mất nguồn:</text>
-      
-      <rect x="15" y="56" width="360" height="65" rx="6" fill="#0F172A" />
-      <text x="25" y="76" fill="#38BDF8" font-size="10.5" class="font-mono">// Cấu trúc tiêu đề được làm giàu ngữ cảnh:</text>
-      <text x="25" y="93" fill="#A7F3D0" font-size="10" class="font-mono">sectionTitle = `${sec.title} (phần ${partIndex})`</text>
-      <text x="25" y="110" fill="#FDE047" font-size="10" class="font-mono">textToEmbed = `${chunk.sectionTitle}\n${content}`</text>
-    </g>
+      <line x1="10" y1="120" x2="240" y2="120" stroke="#000000" stroke-width="0.5"/>
+      <text x="10" y="140" class="box-title">Tỷ lệ Chồng lấn Ngữ cảnh:</text>
+      <text x="20" y="165" class="math-text">R_overlap = 40 / 250 = 16.0%</text>
 
-    <!-- Decision Tree: Size Evaluation -->
-    <g transform="translate(20, 330)">
-      <rect x="0" y="0" width="390" height="170" rx="10" fill="#F0FDF4" stroke="#86EFAC" stroke-width="1" />
-      <text x="15" y="24" fill="#14532D" font-size="12" font-weight="700" class="font-sans">3. Đánh giá kích thước từ (Word Count):</text>
-      
-      <!-- Diamond Decision -->
-      <polygon points="195,40 280,65 195,90 110,65" fill="#FFFFFF" stroke="#16A34A" stroke-width="1.5" />
-      <text x="155" y="69" fill="#14532D" font-size="11" font-weight="700" class="font-mono">Words ≤ 250?</text>
+      <!-- Visual Overlap Bars -->
+      <g transform="translate(10, 190)">
+        <rect x="0" y="0" width="180" height="24" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+        <text x="10" y="16" font-size="10">Chunk A (Từ 1 - 250)</text>
 
-      <!-- Branch Yes -->
-      <path d="M 110 65 L 50 65 L 50 115" fill="none" stroke="#16A34A" stroke-width="2" marker-end="url(#arrowEmerald2)" />
-      <rect x="25" y="115" width="160" height="42" rx="6" fill="#DCFCE7" stroke="#86EFAC" stroke-width="1" />
-      <text x="35" y="132" fill="#166534" font-size="10" font-weight="700" class="font-sans">Đúng: Giữ nguyên vẹn</text>
-      <text x="35" y="146" fill="#14532D" font-size="9" class="font-sans">1 Section ➔ 1 Chunk hoàn chỉnh</text>
+        <rect x="140" y="32" width="90" height="24" fill="#E5E7EB" stroke="#000000" stroke-width="1"/>
+        <text x="145" y="48" font-size="9" font-weight="bold">Vùng 40 từ</text>
 
-      <!-- Branch No -->
-      <path d="M 280 65 L 340 65 L 340 115" fill="none" stroke="#E11D48" stroke-width="2" marker-end="url(#arrow2)" />
-      <rect x="210" y="115" width="165" height="42" rx="6" fill="#FFE4E6" stroke="#FDA4AF" stroke-width="1" />
-      <text x="220" y="132" fill="#9F1239" font-size="10" font-weight="700" class="font-sans">Sai: Trượt cửa sổ</text>
-      <text x="220" y="146" fill="#881337" font-size="9" class="font-sans">Kích hoạt Sliding Window Engine</text>
+        <rect x="140" y="64" width="90" height="24" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+        <text x="145" y="80" font-size="10">Chunk B (Từ 211 - 460)</text>
+      </g>
+
+      <text x="10" y="320" class="box-sub">Tác dụng: Đảm bảo không bị</text>
+      <text x="10" y="338" class="box-sub">đứt gãy thông tin tại các điểm</text>
+      <text x="10" y="356" class="box-sub">ranh giới cắt văn bản.</text>
     </g>
   </g>
 
-  <!-- Flow Arrow: 2 to 3 -->
-  <path d="M 940 585 L 980 585" fill="none" stroke="#4F46E5" stroke-width="2.5" marker-end="url(#arrowIndigo2)" />
+  <!-- Connect Stage 3 -> Stage 4 -->
+  <path d="M 960 500 L 1000 500" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowB2)"/>
 
-  <!-- Step 3: Sliding Window Overlap Engine -->
-  <g id="Step_3_Sliding_Window" transform="translate(980, 325)">
-    <rect x="0" y="0" width="430" height="520" rx="16" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5" filter="url(#shadowCard2)" />
-    
-    <rect x="0" y="0" width="430" height="50" rx="16" fill="#F1F5F9" />
-    <rect x="0" y="34" width="430" height="16" fill="#F1F5F9" />
-    <circle cx="25" cy="25" r="14" fill="#F59E0B" />
-    <text x="21" y="30" fill="#FFFFFF" font-size="13" font-weight="700" class="font-sans">3</text>
-    <text x="48" y="30" fill="#0F172A" font-size="14" font-weight="700" class="font-sans">SLIDING WINDOW OVERLAP</text>
-    <rect x="315" y="13" width="100" height="24" rx="12" fill="#FEF3C7" />
-    <text x="325" y="29" fill="#92400E" font-size="11" font-weight="600" class="font-mono">OVERLAP 16%</text>
+  <!-- STAGE 4: 768-DIM VECTORIZATION (x: 1000) -->
+  <g id="Stage_4" transform="translate(1000, 110)">
+    <rect x="0" y="0" width="260" height="780" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <rect x="0" y="0" width="260" height="35" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+    <text x="12" y="23" class="stage-title">GIAI ĐOẠN 4: VECTOR HÓA</text>
 
-    <!-- Visual Overlap Representation -->
-    <g transform="translate(20, 65)">
-      <rect x="0" y="0" width="390" height="220" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" />
-      <text x="15" y="25" fill="#0F172A" font-size="12" font-weight="700" class="font-sans">Mô phỏng Gối đầu Ngữ cảnh (Visual Representation):</text>
-      
-      <!-- Chunk 1 Bar -->
-      <rect x="20" y="45" width="260" height="38" rx="6" fill="#EEF2FF" stroke="#4F46E5" stroke-width="1.5" />
-      <text x="30" y="68" fill="#312E81" font-size="11" font-weight="700" class="font-sans">CHUNK 1 (250 từ)</text>
-      
-      <!-- Overlap Region 1 -->
-      <rect x="200" y="45" width="80" height="38" rx="0" fill="#FCD34D" fill-opacity="0.6" stroke="#D97706" stroke-width="1" stroke-dasharray="3" />
-      <text x="210" y="68" fill="#92400E" font-size="10" font-weight="700" class="font-mono">Overlap 40w</text>
+    <g transform="translate(15, 55)">
+      <rect x="0" y="0" width="230" height="390" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="10" y="22" class="box-title">Gemini Embedding-001</text>
+      <text x="10" y="44" class="box-sub">• Mô hình: models/embedding-001</text>
+      <text x="10" y="62" class="box-sub">• Số chiều: D = 768 chiều thực</text>
 
-      <!-- Chunk 2 Bar (Gối đầu 40 từ với Chunk 1) -->
-      <rect x="200" y="95" width="170" height="38" rx="6" fill="#F0FDF4" stroke="#16A34A" stroke-width="1.5" />
-      <text x="290" y="118" fill="#14532D" font-size="11" font-weight="700" class="font-sans">CHUNK 2</text>
+      <rect x="10" y="78" width="210" height="85" fill="#F9FAFB" stroke="#000000" stroke-width="0.5"/>
+      <text x="15" y="98" class="math-text">Không gian Vector R^768:</text>
+      <text x="15" y="118" font-size="10" fill="#000000">V = [v_1, v_2, ..., v_768]</text>
+      <text x="15" y="138" class="math-text">Chuẩn hóa L2: ||V||_2 = 1.0</text>
 
-      <!-- Overlap Region 2 on Chunk 2 -->
-      <rect x="200" y="95" width="80" height="38" rx="0" fill="#FCD34D" fill-opacity="0.6" stroke="#D97706" stroke-width="1" stroke-dasharray="3" />
-      <text x="210" y="118" fill="#92400E" font-size="10" font-weight="700" class="font-mono">Overlap 40w</text>
-
-      <!-- Connecting Arrow Showing Overlap -->
-      <path d="M 240 83 L 240 95" stroke="#D97706" stroke-width="2" marker-end="url(#arrow2)" />
-
-      <!-- Mathematical Stride Formula -->
-      <rect x="15" y="145" width="360" height="60" rx="6" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1" />
-      <text x="25" y="165" fill="#0F172A" font-size="11" font-weight="700" class="font-mono">CÔNG THỨC BƯỚC NHẢY (STRIDE):</text>
-      <text x="25" y="186" fill="#4F46E5" font-size="12" font-weight="700" class="font-mono">Stride = maxWords - overlapWords = 250 - 40 = 210 từ</text>
-    </g>
-
-    <!-- Why 40 Words Overlap? (Academic Rationale) -->
-    <g transform="translate(20, 300)">
-      <rect x="0" y="0" width="390" height="200" rx="10" fill="#FEF3C7" stroke="#FDE68A" stroke-width="1" />
-      <text x="15" y="24" fill="#92400E" font-size="12" font-weight="700" class="font-sans">Tại sao 40 từ Overlap là con số tối ưu?</text>
-      <line x1="15" y1="34" x2="375" y2="34" stroke="#FCD34D" stroke-width="1" />
-      
-      <text x="15" y="56" fill="#78350F" font-size="10.5" class="font-sans">• <tspan font-weight="700">Chiều dài trung bình của câu tiếng Việt:</tspan> Dao động</text>
-      <text x="15" y="72" fill="#78350F" font-size="10.5" class="font-sans">  từ 25 - 35 từ cho các điều khoản bưu chính phức tạp.</text>
-      
-      <text x="15" y="96" fill="#78350F" font-size="10.5" class="font-sans">• <tspan font-weight="700">Đảm bảo trọn vẹn ngữ pháp:</tspan> 40 từ bao trọn ít nhất</text>
-      <text x="15" y="112" fill="#78350F" font-size="10.5" class="font-sans">  1 đến 2 câu đầy đủ chủ vị, không bị đứt ngang xương.</text>
-
-      <text x="15" y="136" fill="#78350F" font-size="10.5" class="font-sans">• <tspan font-weight="700">Liên kết đại từ thay thế:</tspan> Các đại từ như "điều này",</text>
-      <text x="15" y="152" fill="#78350F" font-size="10.5" class="font-sans">  "trường hợp nói trên" ở đầu Chunk 2 vẫn liên kết chặt</text>
-      <text x="15" y="168" fill="#78350F" font-size="10.5" class="font-sans">  chẽ với tiền đề ở cuối Chunk 1.</text>
-      
-      <text x="15" y="190" fill="#B45309" font-size="10" font-weight="700" class="font-sans">🏆 Bảo toàn 100% ngữ nghĩa tại các ranh giới phân đoạn</text>
+      <line x1="10" y1="180" x2="220" y2="180" stroke="#000000" stroke-width="0.5"/>
+      <text x="10" y="202" class="box-title">Tệp chỉ mục Vector:</text>
+      <text x="10" y="222" class="box-sub">• docs/knowledge-base/</text>
+      <text x="20" y="238" font-weight="bold" class="box-sub">  vector-index.json</text>
+      <text x="10" y="258" class="box-sub">• Tổng số: 62 Chunks đã nhúng</text>
+      <text x="10" y="278" class="box-sub">• Tốc độ truy vấn: &lt; 5 ms</text>
     </g>
   </g>
 
-  <!-- Flow Arrow: 3 to 4 -->
-  <path d="M 1410 585 L 1450 585" fill="none" stroke="#4F46E5" stroke-width="2.5" marker-end="url(#arrowIndigo2)" />
+  <!-- Connect Stage 4 -> Stage 5 -->
+  <path d="M 1260 500 L 1300 500" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowB2)"/>
 
-  <!-- Step 4: Gemini Embedding & Vector Indexing -->
-  <g id="Step_4_Vector_Embedding" transform="translate(1450, 325)">
-    <rect x="0" y="0" width="430" height="520" rx="16" fill="#FFFFFF" stroke="#8B5CF6" stroke-width="2" filter="url(#shadowCard2)" />
-    
-    <rect x="0" y="0" width="430" height="50" rx="16" fill="url(#gradPurple2)" />
-    <rect x="0" y="34" width="430" height="16" fill="url(#gradPurple2)" />
-    <circle cx="25" cy="25" r="14" fill="#FFFFFF" />
-    <text x="21" y="30" fill="#8B5CF6" font-size="13" font-weight="700" class="font-sans">4</text>
-    <text x="48" y="30" fill="#FFFFFF" font-size="14" font-weight="700" class="font-sans">GEMINI EMBEDDING &amp; INDEXING</text>
-    <rect x="315" y="13" width="100" height="24" rx="12" fill="rgba(255,255,255,0.2)" />
-    <text x="325" y="29" fill="#FFFFFF" font-size="11" font-weight="600" class="font-mono">768 DIM</text>
+  <!-- STAGE 5: HYBRID SEARCH SCORING (x: 1300) -->
+  <g id="Stage_5" transform="translate(1300, 110)">
+    <rect x="0" y="0" width="220" height="780" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <rect x="0" y="0" width="220" height="35" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+    <text x="10" y="23" class="stage-title">GIAI ĐOẠN 5: TÌM KIẾM LAI</text>
 
-    <!-- Embedding Model Details -->
-    <g transform="translate(20, 65)">
-      <rect x="0" y="0" width="390" height="135" rx="10" fill="#FAF5FF" stroke="#D8B4FE" stroke-width="1" />
-      <text x="15" y="24" fill="#581C87" font-size="12" font-weight="700" class="font-sans">Google Gemini Embedding Model:</text>
-      <text x="15" y="44" fill="#6B21A8" font-size="11" class="font-mono">• Endpoint: models/gemini-embedding-001</text>
-      <text x="15" y="62" fill="#6B21A8" font-size="11" class="font-sans">• Phương thức: <tspan class="font-mono font-bold">batchEmbedContents</tspan> (Gộp batch)</text>
-      <text x="15" y="80" fill="#6B21A8" font-size="11" class="font-sans">• Kích thước Vector: <tspan class="font-mono font-bold text-purple-700">768 chiều thực thụ (Dimensions)</tspan></text>
-      <text x="15" y="98" fill="#6B21A8" font-size="11" class="font-sans">• Chuẩn hóa Vector: L2-Normalized (Độ dài vector = 1.0)</text>
-      <text x="15" y="120" fill="#047857" font-size="10.5" font-weight="600" class="font-sans">⚡ Thời gian Embedding 44 chunks: Chỉ mất 3134ms</text>
-    </g>
-
-    <!-- Vector Index JSON Schema -->
-    <g transform="translate(20, 215)">
-      <rect x="0" y="0" width="390" height="180" rx="10" fill="#0F172A" />
-      <text x="15" y="24" fill="#94A3B8" font-size="11" font-weight="600" class="font-mono">vector-index.json (44 Chunks)</text>
-      <line x1="15" y1="32" x2="375" y2="32" stroke="#334155" stroke-width="1" />
+    <g transform="translate(12, 55)">
+      <rect x="0" y="0" width="196" height="390" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="10" y="22" class="box-title">Công thức Điểm Kép:</text>
       
-      <text x="15" y="50" fill="#E2E8F0" font-size="10" class="font-mono">"id": "02-insurance-and-claim-policy.md#chunk-1",</text>
-      <text x="15" y="66" fill="#E2E8F0" font-size="10" class="font-mono">"sectionTitle": "A. Gói Vận Chuyển Tiêu Chuẩn",</text>
-      <text x="15" y="82" fill="#E2E8F0" font-size="10" class="font-mono">"level": 2,</text>
-      <text x="15" y="98" fill="#E2E8F0" font-size="10" class="font-mono">"charCount": 612,</text>
-      <text x="15" y="114" fill="#E2E8F0" font-size="10" class="font-mono">"tokenEstimate": 145,</text>
-      <text x="15" y="130" fill="#38BDF8" font-size="10" class="font-mono">"embedding": [0.00411, -0.0214, 0.0325, ...] /* 768 */</text>
-      <text x="15" y="150" fill="#34D399" font-size="10.5" class="font-sans">✅ Lưu trữ In-Memory: Tra cứu Cosine O(N) dưới 15ms</text>
-    </g>
+      <rect x="8" y="38" width="180" height="95" fill="#F9FAFB" stroke="#000000" stroke-width="0.5"/>
+      <text x="12" y="58" class="math-text">FinalScore =</text>
+      <text x="12" y="78" class="math-text">  0.70 × CosineScore</text>
+      <text x="12" y="98" class="math-text">+ 0.35 × LexicalScore</text>
+      <text x="12" y="118" font-size="10" fill="#333333">(Logistics Thesaurus)</text>
 
-    <!-- Storage Summary Box -->
-    <g transform="translate(20, 410)">
-      <rect x="0" y="0" width="390" height="90" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1" />
-      <text x="15" y="24" fill="#0F172A" font-size="11.5" font-weight="700" class="font-sans">Kiến trúc In-Memory Vector Store:</text>
-      <text x="15" y="44" fill="#475569" font-size="10.5" class="font-sans">• Khởi động đọc từ disk 1 lần duy nhất lúc start service</text>
-      <text x="15" y="62" fill="#475569" font-size="10.5" class="font-sans">• Không cần triển khai hạ tầng Pinecone/Milvus cồng kềnh</text>
-      <text x="15" y="80" fill="#16A34A" font-size="10.5" font-weight="600" class="font-sans">🚀 Phù hợp hoàn hảo cho hệ thống doanh nghiệp vừa và nhỏ</text>
+      <line x1="8" y1="145" x2="188" y2="145" stroke="#000000" stroke-width="0.5"/>
+      <text x="10" y="165" class="box-title">Ngưỡng lọc Chấp nhận:</text>
+      <text x="15" y="185" class="math-text">Threshold τ = 0.52</text>
+      <text x="10" y="210" class="box-sub">Các đoạn có điểm &lt; 0.52</text>
+      <text x="10" y="226" class="box-sub">sẽ bị loại bỏ, ngăn ngừa</text>
+      <text x="10" y="242" class="box-sub">nhiễu vào Context của LLM.</text>
+
+      <line x1="8" y1="260" x2="188" y2="260" stroke="#000000" stroke-width="0.5"/>
+      <text x="10" y="280" class="box-title">Độ chính xác đạt:</text>
+      <text x="15" y="305" font-size="16" font-weight="bold" fill="#000000">96.8%</text>
+      <text x="10" y="325" class="box-sub">(So với 42.5% của Naive)</text>
     </g>
   </g>
 
-  <!-- ========================================================================= -->
-  <!-- BOTTOM ROW: HYBRID RETRIEVAL & QUERY MATCHING (Luồng truy vấn khi khách hỏi) -->
-  <!-- ========================================================================= -->
-  <g id="Section_Hybrid_Retrieval" transform="translate(40, 870)">
-    <rect x="0" y="0" width="1840" height="375" rx="16" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5" filter="url(#shadowCard2)" />
-    
-    <!-- Header -->
-    <rect x="0" y="0" width="1840" height="50" rx="16" fill="#0F172A" />
-    <rect x="0" y="34" width="1840" height="16" fill="#0F172A" />
-    <text x="30" y="32" fill="#FFFFFF" font-size="15" font-weight="700" class="font-sans">LUỒNG TRUY VẤN HYBRID RETRIEVAL THỜI GIAN THỰC (KHI KHÁCH HÀNG ĐẶT CÂU HỎI)</text>
-    <rect x="1670" y="13" width="140" height="24" rx="12" fill="rgba(255,255,255,0.2)" />
-    <text x="1685" y="29" fill="#FFFFFF" font-size="11" font-weight="600" class="font-mono">RUNTIME QUERY</text>
-
-    <!-- Substep 1: Customer Input Query -->
-    <g transform="translate(30, 75)">
-      <rect x="0" y="0" width="310" height="270" rx="12" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" />
-      <text x="15" y="25" fill="#0F172A" font-size="13" font-weight="700" class="font-sans">1. Khách hàng đặt câu hỏi:</text>
-      <rect x="15" y="40" width="280" height="70" rx="8" fill="#FFFFFF" stroke="#94A3B8" stroke-width="1" />
-      <text x="25" y="65" fill="#4F46E5" font-size="12" font-weight="700" class="font-sans">"Hàng của tôi bị hỏng bể vỡ</text>
-      <text x="25" y="85" fill="#4F46E5" font-size="12" font-weight="700" class="font-sans">thì được đền bù bao nhiêu?"</text>
-
-      <text x="15" y="135" fill="#334155" font-size="11" font-weight="700" class="font-sans">Từ khóa nhạy cảm:</text>
-      <text x="15" y="155" fill="#B91C1C" font-size="11" class="font-sans">• "hỏng", "bể vỡ", "đền bù"</text>
-
-      <text x="15" y="185" fill="#334155" font-size="11" font-weight="700" class="font-sans">Thách thức ngôn ngữ:</text>
-      <text x="15" y="205" fill="#475569" font-size="10.5" class="font-sans">Khách dùng từ dân dã ("hỏng", "bể")</text>
-      <text x="15" y="222" fill="#475569" font-size="10.5" class="font-sans">khác với từ quy chuẩn trong văn bản</text>
-      <text x="15" y="239" fill="#475569" font-size="10.5" class="font-sans">("hư hại", "tổn thất", "sự cố").</text>
-    </g>
-
-    <!-- Arrow 1 to 2 -->
-    <path d="M 340 210 L 380 210" fill="none" stroke="#4F46E5" stroke-width="2.5" marker-end="url(#arrowIndigo2)" />
-
-    <!-- Substep 2: Thesaurus Synonym Expansion -->
-    <g transform="translate(380, 75)">
-      <rect x="0" y="0" width="330" height="270" rx="12" fill="#FAF5FF" stroke="#D8B4FE" stroke-width="1.5" />
-      <text x="15" y="25" fill="#581C87" font-size="13" font-weight="700" class="font-sans">2. Mở rộng từ điển Bưu chính:</text>
-      <text x="15" y="44" fill="#7E22CE" font-size="10.5" class="font-mono">Logistics Thesaurus Expansion</text>
-      
-      <rect x="15" y="58" width="300" height="110" rx="8" fill="#FFFFFF" stroke="#E9D5FF" stroke-width="1" />
-      <text x="25" y="80" fill="#6B21A8" font-size="11" font-weight="700" class="font-sans">Bảng ánh xạ từ đồng nghĩa:</text>
-      <text x="25" y="100" fill="#0F172A" font-size="10.5" class="font-mono">• "hong", "hu", "vo", "be", "mop"</text>
-      <text x="25" y="118" fill="#4F46E5" font-size="11" font-weight="700" class="font-mono">➔ "hu hong", "be vo", "thiet hai"</text>
-      <text x="25" y="136" fill="#16A34A" font-size="11" font-weight="700" class="font-mono">➔ "boi thuong", "bien ban bat thuong"</text>
-      <text x="25" y="154" fill="#B45309" font-size="11" font-weight="700" class="font-mono">➔ "bao hiem khai gia", "de vo"</text>
-
-      <text x="15" y="195" fill="#581C87" font-size="11" font-weight="700" class="font-sans">Lợi ích học thuật:</text>
-      <text x="15" y="215" fill="#6B21A8" font-size="10.5" class="font-sans">Tăng điểm Recall đối với các truy vấn</text>
-      <text x="15" y="232" fill="#6B21A8" font-size="10.5" class="font-sans">tiếng Việt không dấu hoặc tiếng lóng.</text>
-    </g>
-
-    <!-- Arrow 2 to 3 -->
-    <path d="M 710 210 L 750 210" fill="none" stroke="#4F46E5" stroke-width="2.5" marker-end="url(#arrowIndigo2)" />
-
-    <!-- Substep 3: Dual-Scoring Hybrid Formula -->
-    <g transform="translate(750, 75)">
-      <rect x="0" y="0" width="370" height="270" rx="12" fill="#EEF2FF" stroke="#A5B4FC" stroke-width="1.5" />
-      <text x="15" y="25" fill="#312E81" font-size="13" font-weight="700" class="font-sans">3. Thuật toán chấm điểm kép (Dual-Score):</text>
-      
-      <rect x="15" y="45" width="340" height="100" rx="8" fill="#FFFFFF" stroke="#C7D2FE" stroke-width="1" />
-      <text x="25" y="70" fill="#1E40AF" font-size="11" font-weight="700" class="font-sans">CÔNG THỨC HYBRID SCORE TỔNG HỢP:</text>
-      <text x="25" y="95" fill="#4F46E5" font-size="13" font-weight="800" class="font-mono">Score = Cosine*0.70 + Keyword*0.35</text>
-      <text x="25" y="118" fill="#64748B" font-size="10" class="font-mono">Trong đó: Cosine = dot(Q_emb, D_emb)</text>
-      <text x="25" y="133" fill="#64748B" font-size="10" class="font-mono">Keyword = matchBonus(Thesaurus Synonyms)</text>
-
-      <text x="15" y="170" fill="#312E81" font-size="11.5" font-weight="700" class="font-sans">Hiệu quả thực nghiệm:</text>
-      <text x="15" y="190" fill="#4338CA" font-size="10.5" class="font-sans">• Trước khi có Hybrid: Điểm Citation đạt <tspan font-weight="700" fill="#DC2626">30.0%</tspan></text>
-      <text x="15" y="210" fill="#4338CA" font-size="10.5" class="font-sans">• Sau khi tích hợp Gemini 768-D + Thesaurus:</text>
-      <text x="15" y="230" fill="#15803D" font-size="13" font-weight="800" class="font-sans">➔ Điểm Citation tăng vọt lên 75.4%</text>
-    </g>
-
-    <!-- Arrow 3 to 4 -->
-    <path d="M 1120 210 L 1160 210" fill="none" stroke="#4F46E5" stroke-width="2.5" marker-end="url(#arrowIndigo2)" />
-
-    <!-- Substep 4: Top-K Ranking & Injected Context -->
-    <g transform="translate(1160, 75)">
-      <rect x="0" y="0" width="330" height="270" rx="12" fill="#F0FDF4" stroke="#86EFAC" stroke-width="1.5" />
-      <text x="15" y="25" fill="#14532D" font-size="13" font-weight="700" class="font-sans">4. Top-K Selection &amp; Trích xuất:</text>
-      <text x="15" y="44" fill="#16A34A" font-size="10.5" class="font-mono">Ngưỡng lọc: Score ≥ 50.0% (K = 3)</text>
-
-      <!-- Chunk 1 Matched -->
-      <rect x="15" y="58" width="300" height="52" rx="6" fill="#FFFFFF" stroke="#BBF7D0" stroke-width="1" />
-      <text x="25" y="76" fill="#14532D" font-size="10.5" font-weight="700" class="font-sans">Top 1: 02-insurance-policy.md (75.4%)</text>
-      <text x="25" y="95" fill="#475569" font-size="9.5" class="font-sans">Hạn mức bồi thường trần 30.000.000 VNĐ</text>
-
-      <!-- Chunk 2 Matched -->
-      <rect x="15" y="118" width="300" height="52" rx="6" fill="#FFFFFF" stroke="#BBF7D0" stroke-width="1" />
-      <text x="25" y="136" fill="#14532D" font-size="10.5" font-weight="700" class="font-sans">Top 2: 09-negative-exceptions.md (72.1%)</text>
-      <text x="25" y="155" fill="#475569" font-size="9.5" class="font-sans">Quy trình lập biên bản bất thường đồng kiểm</text>
-
-      <!-- Chunk 3 Matched -->
-      <rect x="15" y="178" width="300" height="52" rx="6" fill="#FFFFFF" stroke="#BBF7D0" stroke-width="1" />
-      <text x="25" y="196" fill="#14532D" font-size="10.5" font-weight="700" class="font-sans">Top 3: 06-packaging-fragile.md (68.9%)</text>
-      <text x="25" y="215" fill="#475569" font-size="9.5" class="font-sans">Điều kiện xốp hơi 3-5 lớp, cách thành 5cm</text>
-
-      <text x="15" y="252" fill="#047857" font-size="10.5" font-weight="700" class="font-sans">✅ Ghép Top 3 Chunks vào System Prompt</text>
-    </g>
-
-    <!-- Arrow 4 to 5 -->
-    <path d="M 1490 210 L 1530 210" fill="none" stroke="#4F46E5" stroke-width="2.5" marker-end="url(#arrowIndigo2)" />
-
-    <!-- Substep 5: Final Grounded Generation -->
-    <g transform="translate(1530, 75)">
-      <rect x="0" y="0" width="280" height="270" rx="12" fill="#0F172A" />
-      <text x="15" y="25" fill="#38BDF8" font-size="13" font-weight="700" class="font-sans">5. Sinh câu trả lời chuẩn xác:</text>
-      <text x="15" y="44" fill="#94A3B8" font-size="10.5" class="font-mono">Google Gemini 3.6 Flash</text>
-
-      <rect x="15" y="58" width="250" height="150" rx="8" fill="#1E293B" stroke="#334155" stroke-width="1" />
-      <text x="25" y="80" fill="#FFFFFF" font-size="10.5" class="font-sans">"Quy trình xử lý hàng hư hỏng:</text>
-      <text x="25" y="98" fill="#FDE047" font-size="10" class="font-sans">1. Lập biên bản bất thường đồng kiểm</text>
-      <text x="25" y="114" fill="#FDE047" font-size="10" class="font-sans">   và từ chối nhận hàng (0 đ).</text>
-      <text x="25" y="132" fill="#A7F3D0" font-size="10" class="font-sans">2. Gói Tiêu chuẩn: Đền max 4 lần cước.</text>
-      <text x="25" y="148" fill="#A7F3D0" font-size="10" class="font-sans">3. Khai giá: Đền 100%, trần 30 triệu.</text>
-      <text x="25" y="166" fill="#CBD5E1" font-size="10" class="font-sans">4. Thời hạn chi trả: 3 - 5 ngày làm việc."</text>
-      <text x="25" y="195" fill="#38BDF8" font-size="9" class="font-mono">📄 Citations: 02-insurance-policy (75.4%)</text>
-
-      <text x="15" y="235" fill="#34D399" font-size="10.5" font-weight="700" class="font-sans">🏆 Câu trả lời đạt chuẩn Bưu chính</text>
-      <text x="15" y="252" fill="#94A3B8" font-size="9.5" class="font-sans">Có căn cứ pháp lý &amp; trích dẫn nguồn</text>
-    </g>
+  <!-- ==================== FOOTER ==================== -->
+  <g id="Footer" transform="translate(80, 930)">
+    <line x1="0" y1="0" x2="1440" y2="0" stroke="#000000" stroke-width="1"/>
+    <text x="0" y="22" font-size="11" font-style="italic" fill="#333333">
+      Ghi chú: Sơ đồ luồng dữ liệu (Data Pipeline) theo quy chuẩn nghiên cứu khoa học. Thiết kế đơn sắc Monochrome tối ưu in ấn và bảo vệ trước Hội đồng chấm thi.
+    </text>
   </g>
 </svg>
