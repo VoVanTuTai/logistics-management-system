@@ -4,18 +4,13 @@ generate-chatbot-subsystem-architecture.py
 Academic-Grade System Architecture Diagram for the AI Chatbot Subsystem (Nexus AI Assistant).
 Designed for Graduation Thesis (Đồ án tốt nghiệp / Báo cáo khoa học) & Figma Page 1 (Section 1.4A).
 
-Key Design Specifications:
-- Exact Standard A4 Portrait Aspect Ratio: Width 2000px, Height 2830px (1 : 1.4142).
-- Generous Inter-Tier Spacing (80px - 90px) to give prominent visual highways for connecting arrows and protocol labels.
-- Balanced Multi-Tier Architectural Hierarchy (Presentation -> Gateway -> Core AI -> Persistence & Foundation Models).
-- Authoritative System Brand Blue Palette:
-  - Primary System Navy: #003D9B
-  - Action Accent Blue: #0052CC
-  - Deep Tech Blue: #1D4ED8
-  - Soft Blueprint Fills: #F8FAFC, #EFF6FF, #F0F7FF
-  - Crisp Structural Borders: #003D9B, #0052CC, #CBD5E1, #BFDBFE
-- 100% Native Vector Figma Compatible: Inline vectors (<rect>, <polygon>, <circle>, <ellipse>, <path>, <text>),
-  ZERO SVG <marker> tags.
+Design Principles:
+- Strict Human-Architected Engineering Blueprint: No weird icons, no diagonal slash ribbons, no AI gimmicks.
+- Standard A4 Portrait Aspect Ratio: Width 2000px, Height 2830px (1 : 1.4142).
+- Clean rectangular containers with unified header bars (Title on left, English spec on right).
+- Spacious, clear inter-tier visual highways (80px - 90px gaps) for prominent directional connecting arrows.
+- Standard engineering color palette: System Navy (#003D9B), Action Blue (#0052CC), Slate Grays (#0F172A, #334155, #CBD5E1), Soft Blueprint Fills (#F8FAFC, #EFF6FF).
+- 100% Native Vector Figma Compatible: ZERO SVG <marker> tags, 100% inline vectors.
 
 Outputs:
   docs/graduation-thesis/figma-page-1-system-and-data/diagrams/04-architecture-ai-chatbot-subsystem.svg
@@ -31,7 +26,6 @@ def escape(text):
     return html.escape(str(text))
 
 def build_architecture_svg():
-    # Exact A4 Portrait Dimensions (1 : 1.4142)
     width = 2000
     height = 2830
     lines = []
@@ -52,22 +46,21 @@ def build_architecture_svg():
     .hdr-sub {{ font-size: 13px; font-weight: 500; fill: #DAE2FF; }}
     .hdr-meta-lbl {{ font-size: 11px; font-weight: 700; fill: #FFFFFF; font-family: ui-monospace, Menlo, monospace; letter-spacing: 0.5px; }}
     
-    .tier-title {{ font-size: 15px; font-weight: 800; fill: #003D9B; letter-spacing: 0.8px; text-transform: uppercase; }}
+    .tier-title {{ font-size: 14.5px; font-weight: 800; fill: #003D9B; letter-spacing: 0.6px; text-transform: uppercase; }}
     .tier-sub {{ font-size: 11px; font-weight: 600; fill: #475569; font-family: ui-monospace, Menlo, monospace; }}
     
-    .comp-title {{ font-size: 14.5px; font-weight: 700; fill: #0F172A; letter-spacing: -0.2px; }}
+    .comp-title {{ font-size: 14px; font-weight: 700; fill: #0F172A; letter-spacing: -0.2px; }}
     .comp-stereo {{ font-size: 11px; font-weight: 600; fill: #0052CC; font-family: ui-monospace, Menlo, monospace; }}
     .comp-txt {{ font-size: 12px; font-weight: 400; fill: #334155; line-height: 1.45; }}
     .comp-txt-bold {{ font-size: 12px; font-weight: 700; fill: #0F172A; }}
     .comp-code {{ font-size: 11px; font-weight: 600; fill: #0052CC; font-family: ui-monospace, Menlo, monospace; }}
     
-    .tag-rect {{ fill: #EFF6FF; stroke: #BFDBFE; stroke-width: 1; rx: 4px; }}
+    .tag-rect {{ fill: #F1F5F9; stroke: #CBD5E1; stroke-width: 1; rx: 4px; }}
     .tag-txt {{ font-size: 10.5px; font-weight: 600; fill: #003D9B; font-family: ui-monospace, Menlo, monospace; }}
     
-    .math-formula {{ font-size: 13px; font-weight: 700; fill: #003D9B; font-family: ui-monospace, Menlo, monospace; }}
+    .math-formula {{ font-size: 12.5px; font-weight: 700; fill: #003D9B; font-family: ui-monospace, Menlo, monospace; }}
     .guard-text {{ font-size: 11.5px; font-weight: 700; fill: #003D9B; font-family: ui-monospace, Menlo, monospace; }}
     
-    .port-label {{ font-size: 11px; font-weight: 700; fill: #003D9B; font-family: ui-monospace, Menlo, monospace; }}
     .flow-badge {{ font-size: 12px; font-weight: 800; fill: #FFFFFF; font-family: ui-monospace, Menlo, monospace; }}
     .flow-arrow-lbl {{ font-size: 11.5px; font-weight: 700; fill: #003D9B; font-family: ui-monospace, Menlo, monospace; }}
     
@@ -79,58 +72,9 @@ def build_architecture_svg():
   </style>
 ''')
 
-    # Utility Functions for Geometric Symbols
-    def draw_uml_component_glyph(gx, gy):
-        """Draws the official UML 2.0 Component symbol."""
-        return f'''
-      <g transform="translate({gx}, {gy})">
-        <rect x="0" y="0" width="20" height="15" fill="#FFFFFF" stroke="#0052CC" stroke-width="1.3" rx="1.5"/>
-        <rect x="-4" y="2.5" width="7" height="3.5" fill="#EFF6FF" stroke="#0052CC" stroke-width="1.2" rx="0.8"/>
-        <rect x="-4" y="9" width="7" height="3.5" fill="#EFF6FF" stroke="#0052CC" stroke-width="1.2" rx="0.8"/>
-      </g>'''
-
-    def draw_port_square(px, py):
-        """Draws a standard UML boundary port box."""
-        return f'<rect x="{px}" y="{py}" width="12" height="12" fill="#FFFFFF" stroke="#003D9B" stroke-width="2"/>'
-
-    def draw_interface_lollipop(lx, ly, label):
-        """Draws a standard UML provided interface lollipop inside headers."""
-        return f'''
-      <g transform="translate({lx}, {ly})">
-        <line x1="0" y1="0" x2="14" y2="0" stroke="#0052CC" stroke-width="1.4"/>
-        <circle cx="20" cy="0" r="5.5" fill="#EFF6FF" stroke="#0052CC" stroke-width="1.5"/>
-        <text x="30" y="4" class="comp-code">{escape(label)}</text>
-      </g>'''
-
-    def draw_database_cylinder(cx, cy, cw, ch, title, sub_stereo, bullet_lines):
-        """Draws an academic 3D platter database cylinder."""
-        ry = 11
-        h_body = ch - ry * 2
-        d_svg = []
-        d_svg.append(f'''
-      <g transform="translate({cx}, {cy})">
-        <!-- Body Path -->
-        <path d="M 0 {ry} A {cw//2} {ry} 0 0 0 {cw} {ry} L {cw} {ry + h_body} A {cw//2} {ry} 0 0 1 0 {ry + h_body} Z"
-              fill="#F8FAFC" stroke="#0052CC" stroke-width="1.5"/>
-        <!-- Platter Track -->
-        <path d="M 0 {ry + h_body * 0.45} A {cw//2} {ry} 0 0 0 {cw} {ry + h_body * 0.45}"
-              fill="none" stroke="#CBD5E1" stroke-width="1.1" stroke-dasharray="3,3"/>
-        <!-- Top Ellipse -->
-        <ellipse cx="{cw//2}" cy="{ry}" rx="{cw//2}" ry="{ry}" fill="#EFF6FF" stroke="#0052CC" stroke-width="1.6"/>
-        <!-- UML Glyph -->
-        {draw_uml_component_glyph(cw - 26, 5)}
-        <!-- Title & Stereotype -->
-        <text x="18" y="{ry + 22}" class="comp-stereo">{escape(sub_stereo)}</text>
-        <text x="18" y="{ry + 42}" class="comp-title" style="fill:#003D9B; font-size:13.5px;">{escape(title)}</text>''')
-        cur_y = ry + 66
-        for line in bullet_lines:
-            d_svg.append(f'<text x="18" y="{cur_y}" class="comp-txt">{escape(line)}</text>')
-            cur_y += 21
-        d_svg.append('      </g>')
-        return '\n'.join(d_svg)
-
-    def draw_arrow_head(x2, y2, direction="right", color="#0052CC", size=6):
-        """Draws pure vector arrowhead (no SVG markers)."""
+    # Utility Functions
+    def draw_arrow_head(x2, y2, direction="right", color="#003D9B", size=6):
+        """Draws standard vector arrowhead."""
         if direction == "right":
             return f'<polygon points="{x2},{y2} {x2-size*1.6},{y2-size} {x2-size*1.6},{y2+size}" fill="{color}"/>'
         elif direction == "left":
@@ -142,16 +86,32 @@ def build_architecture_svg():
         return ''
 
     def draw_flow_badge(bx, by, number):
-        """Draws numbered circle badge indicating architectural workflow sequence."""
+        """Draws numbered circle badge indicating architectural sequence."""
         return f'''
       <g transform="translate({bx}, {by})">
         <circle cx="0" cy="0" r="13" fill="#003D9B" stroke="#FFFFFF" stroke-width="2"/>
         <text x="0" y="4.5" text-anchor="middle" class="flow-badge">{number}</text>
       </g>'''
 
+    def draw_store_box(cx, cy, cw, ch, title, sub_stereo, bullet_lines):
+        """Draws a clean, standard architectural data store card."""
+        d_svg = []
+        d_svg.append(f'''
+      <g transform="translate({cx}, {cy})">
+        <rect width="{cw}" height="{ch}" rx="6" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.2"/>
+        <rect width="{cw}" height="28" rx="6" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1"/>
+        <text x="14" y="19" class="comp-stereo">{escape(sub_stereo)}</text>
+        <text x="14" y="48" class="comp-title" style="color:#003D9B; font-size:13px;">{escape(title)}</text>''')
+        cur_y = 70
+        for line in bullet_lines:
+            d_svg.append(f'<text x="14" y="{cur_y}" class="comp-txt">{escape(line)}</text>')
+            cur_y += 20
+        d_svg.append('      </g>')
+        return '\n'.join(d_svg)
+
     # Layout Dimensions
     margin_x = 55
-    content_w = 1840  # 1840px width allows 50px right gutter for SSE stream return line
+    content_w = 1840  # Leaves 50px on right for clean return SSE stream
 
     # =========================================================================
     # HEADER BAR (y: 45, h: 76)
@@ -178,7 +138,7 @@ def build_architecture_svg():
     </g>
   </g>''')
 
-    # Common Card Width for 3 Columns
+    # Common Column Sizing
     col_gap = 20
     box_w = (content_w - 48 - col_gap * 2) // 3  # (1840 - 88) // 3 = 584px
 
@@ -192,61 +152,58 @@ def build_architecture_svg():
   <g id="Tier1_Presentation" transform="translate({margin_x}, {t1_y})">
     <!-- Tier Boundary Container -->
     <rect width="{content_w}" height="{t1_h}" rx="8" fill="#F8FAFC" stroke="#003D9B" stroke-width="1.8"/>
-    <!-- Tier Header Banner -->
-    <path d="M 0 8 A 8 8 0 0 1 8 0 L 390 0 L 415 32 L 0 32 Z" fill="#EFF6FF" stroke="#003D9B" stroke-width="1.2"/>
-    <text x="20" y="21" class="tier-title">TẦNG 1: TRÌNH DIỄN &amp; ỨNG DỤNG CLIENT</text>
-    <text x="435" y="21" class="tier-sub">[TIER 1: PRESENTATION &amp; CLIENT APPLICATIONS - PROTOCOL: HTTPS / REST / SSE STREAM]</text>''')
+    <!-- Clean Horizontal Header Bar -->
+    <rect width="{content_w}" height="36" rx="8" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1"/>
+    <text x="20" y="23" class="tier-title">TẦNG 1: TRÌNH DIỄN &amp; ỨNG DỤNG CLIENT</text>
+    <text x="{content_w - 20}" y="23" text-anchor="end" class="tier-sub">[TIER 1: PRESENTATION &amp; CLIENT APPLICATIONS - PROTOCOL: HTTPS / REST / SSE STREAM]</text>''')
 
     # 1.1 Merchant Web Portal
     lines.append(f'''
     <!-- 1.1 Merchant Web Portal -->
-    <g transform="translate(24, 44)">
-      <rect width="{box_w}" height="142" rx="6" fill="#FFFFFF" stroke="#0052CC" stroke-width="1.4"/>
-      {draw_uml_component_glyph(box_w - 28, 10)}
-      <text x="18" y="26" class="comp-stereo">«Client Application · Next.js 14»</text>
-      <text x="18" y="48" class="comp-title">Cổng Thương Nhân (Merchant Web)</text>
-      <text x="18" y="72" class="comp-txt">• Trợ lý đàm thoại thông minh phục vụ chủ shop tra cứu vận đơn, cước phí.</text>
-      <text x="18" y="92" class="comp-txt">• Render thẻ giao diện động (Dynamic Shipment Card, Bảng kê chi phí).</text>
-      <g transform="translate(18, 108)">
-        <rect width="200" height="20" class="tag-rect"/>
+    <g transform="translate(24, 46)">
+      <rect width="{box_w}" height="140" rx="6" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.2"/>
+      <text x="18" y="24" class="comp-stereo">«Client Application · Next.js 14»</text>
+      <text x="18" y="46" class="comp-title">Cổng Thương Nhân (Merchant Web)</text>
+      <text x="18" y="70" class="comp-txt">• Trợ lý đàm thoại tra cứu trạng thái vận đơn, cước phí, tạo đơn tức thời.</text>
+      <text x="18" y="90" class="comp-txt">• Render thẻ giao diện động (Dynamic Shipment Card, Bảng kê chi phí).</text>
+      <g transform="translate(18, 106)">
+        <rect width="190" height="20" class="tag-rect"/>
         <text x="10" y="14" class="tag-txt">HTTPS POST /api/v1/chat</text>
-        <rect x="210" y="0" width="170" height="20" class="tag-rect"/>
-        <text x="220" y="14" class="tag-txt">EventSource SSE Stream</text>
+        <rect x="200" y="0" width="160" height="20" class="tag-rect"/>
+        <text x="210" y="14" class="tag-txt">EventSource SSE Stream</text>
       </g>
     </g>''')
 
     # 1.2 Courier Mobile App
     lines.append(f'''
     <!-- 1.2 Courier Mobile App -->
-    <g transform="translate({24 + box_w + col_gap}, 44)">
-      <rect width="{box_w}" height="142" rx="6" fill="#FFFFFF" stroke="#0052CC" stroke-width="1.4"/>
-      {draw_uml_component_glyph(box_w - 28, 10)}
-      <text x="18" y="26" class="comp-stereo">«Mobile Application · React Native»</text>
-      <text x="18" y="48" class="comp-title">Ứng Dụng Bưu Tá (Courier Mobile)</text>
-      <text x="18" y="72" class="comp-txt">• Hỗ trợ tra cứu quy trình giao phát và hướng dẫn xử lý khiếu nại hiện trường.</text>
-      <text x="18" y="92" class="comp-txt">• Khởi tạo biên bản sự cố giao nhận hàng hư hỏng/mất mát nhanh chóng.</text>
-      <g transform="translate(18, 108)">
-        <rect width="180" height="20" class="tag-rect"/>
+    <g transform="translate({24 + box_w + col_gap}, 46)">
+      <rect width="{box_w}" height="140" rx="6" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.2"/>
+      <text x="18" y="24" class="comp-stereo">«Mobile Application · React Native»</text>
+      <text x="18" y="46" class="comp-title">Ứng Dụng Bưu Tá (Courier Mobile)</text>
+      <text x="18" y="70" class="comp-txt">• Hỗ trợ tra cứu quy trình giao phát và hướng dẫn xử lý sự cố hiện trường.</text>
+      <text x="18" y="90" class="comp-txt">• Khởi tạo biên bản sự cố bưu phẩm (hư hỏng/mất mát) đính kèm ảnh chụp.</text>
+      <g transform="translate(18, 106)">
+        <rect width="170" height="20" class="tag-rect"/>
         <text x="10" y="14" class="tag-txt">HTTPS REST JSON (TLS 1.3)</text>
-        <rect x="190" y="0" width="170" height="20" class="tag-rect"/>
-        <text x="200" y="14" class="tag-txt">JWT Authenticated Session</text>
+        <rect x="180" y="0" width="160" height="20" class="tag-rect"/>
+        <text x="190" y="14" class="tag-txt">JWT Authenticated Session</text>
       </g>
     </g>''')
 
     # 1.3 Operations & CSKH Portal
     lines.append(f'''
     <!-- 1.3 Operations & CSKH Portal -->
-    <g transform="translate({24 + (box_w + col_gap)*2}, 44)">
-      <rect width="{box_w}" height="142" rx="6" fill="#FFFFFF" stroke="#0052CC" stroke-width="1.4"/>
-      {draw_uml_component_glyph(box_w - 28, 10)}
-      <text x="18" y="26" class="comp-stereo">«SPA Web Application · React»</text>
-      <text x="18" y="48" class="comp-title">Cổng Điều Hành (Operations Console)</text>
-      <text x="18" y="72" class="comp-txt">• Giám sát nhật ký phản hồi; chuyển tiếp tư vấn viên (Human-in-the-loop).</text>
-      <text x="18" y="92" class="comp-txt">• Quản trị kho tài liệu quy chuẩn SOP, kích hoạt Chunking &amp; nhúng véc-tơ.</text>
-      <g transform="translate(18, 108)">
+    <g transform="translate({24 + (box_w + col_gap)*2}, 46)">
+      <rect width="{box_w}" height="140" rx="6" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.2"/>
+      <text x="18" y="24" class="comp-stereo">«SPA Web Application · React»</text>
+      <text x="18" y="46" class="comp-title">Cổng Điều Hành (Operations Console)</text>
+      <text x="18" y="70" class="comp-txt">• Giám sát nhật ký hội thoại &amp; can thiệp tư vấn viên (Human-in-the-loop).</text>
+      <text x="18" y="90" class="comp-txt">• Quản trị kho tài liệu quy chuẩn SOP bưu chính và kích hoạt nhúng véc-tơ.</text>
+      <g transform="translate(18, 106)">
         <rect width="150" height="20" class="tag-rect"/>
         <text x="10" y="14" class="tag-txt">RESTful Admin APIs</text>
-        <rect x="160" y="0" width="180" height="20" class="tag-rect"/>
+        <rect x="160" y="0" width="170" height="20" class="tag-rect"/>
         <text x="170" y="14" class="tag-txt">WebSocket Event Monitor</text>
       </g>
     </g>''')
@@ -263,15 +220,13 @@ def build_architecture_svg():
 
     lines.append(f'''
   <!-- Spacious Connector Tier 1 -> Tier 2 (Highlighting Arrow Flow) -->
-  {draw_port_square(flow_1_x - 6, arrow_1_start - 6)}
-  <line x1="{flow_1_x}" y1="{arrow_1_start + 6}" x2="{flow_1_x}" y2="{arrow_1_end - 6}" stroke="#003D9B" stroke-width="2.6"/>
-  {draw_arrow_head(flow_1_x, arrow_1_end - 6, direction="down", color="#003D9B", size=8)}
-  {draw_port_square(flow_1_x - 6, arrow_1_end - 6)}
+  <line x1="{flow_1_x}" y1="{arrow_1_start}" x2="{flow_1_x}" y2="{arrow_1_end}" stroke="#003D9B" stroke-width="2.6"/>
+  {draw_arrow_head(flow_1_x, arrow_1_end, direction="down", color="#003D9B", size=8)}
   {draw_flow_badge(flow_1_x - 38, arrow_1_start + t1_to_t2_gap // 2, "1")}
   
   <!-- Flow 1 Protocol Badge -->
   <g transform="translate({flow_1_x + 18}, {arrow_1_start + t1_to_t2_gap // 2 - 14})">
-    <rect width="450" height="28" rx="4" fill="#FFFFFF" stroke="#BFDBFE" stroke-width="1.2"/>
+    <rect width="450" height="28" rx="4" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.2"/>
     <text x="12" y="18" class="flow-arrow-lbl">ChatRequestDTO [POST :3009 (Ingress) / HTTPS REST &amp; SSE Stream]</text>
   </g>''')
 
@@ -285,25 +240,24 @@ def build_architecture_svg():
   <g id="Tier2_GatewaySecurity" transform="translate({margin_x}, {t2_y})">
     <!-- Tier Boundary Container -->
     <rect width="{content_w}" height="{t2_h}" rx="8" fill="#F8FAFC" stroke="#003D9B" stroke-width="1.8"/>
-    <!-- Tier Header Banner -->
-    <path d="M 0 8 A 8 8 0 0 1 8 0 L 490 0 L 515 32 L 0 32 Z" fill="#EFF6FF" stroke="#003D9B" stroke-width="1.2"/>
-    <text x="20" y="21" class="tier-title">TẦNG 2: CỔNG DỊCH VỤ, BẢO MẬT &amp; QUẢN LÝ PHIÊN</text>
-    <text x="535" y="21" class="tier-sub">[TIER 2: API GATEWAY, SECURITY GUARDRAILS &amp; CONTEXT BUFFER]</text>''')
+    <!-- Clean Horizontal Header Bar -->
+    <rect width="{content_w}" height="36" rx="8" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1"/>
+    <text x="20" y="23" class="tier-title">TẦNG 2: CỔNG DỊCH VỤ, BẢO MẬT &amp; QUẢN LÝ PHIÊN</text>
+    <text x="{content_w - 20}" y="23" text-anchor="end" class="tier-sub">[TIER 2: API GATEWAY, SECURITY GUARDRAILS &amp; CONTEXT BUFFER]</text>''')
 
     # 2.1 Ingress API Controller
     lines.append(f'''
     <!-- 2.1 Ingress API Controller -->
-    <g transform="translate(24, 44)">
-      <rect width="{box_w}" height="142" rx="6" fill="#FFFFFF" stroke="#0052CC" stroke-width="1.4"/>
-      {draw_uml_component_glyph(box_w - 28, 10)}
-      <text x="18" y="26" class="comp-stereo">«REST / SSE Controller · Port :3009»</text>
-      <text x="18" y="48" class="comp-title">Bộ Điều Khiển Cổng (API Controller)</text>
-      <text x="18" y="72" class="comp-txt">• Tiếp nhận payload HTTP POST ChatRequestDTO; quản lý kết nối EventSource SSE.</text>
-      <text x="18" y="92" class="comp-txt">• Xác thực chữ ký số JWT Token; phân quyền truy cập theo vai trò (RBAC).</text>
-      <g transform="translate(18, 108)">
+    <g transform="translate(24, 46)">
+      <rect width="{box_w}" height="140" rx="6" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.2"/>
+      <text x="18" y="24" class="comp-stereo">«REST / SSE Controller · Port :3009»</text>
+      <text x="18" y="46" class="comp-title">Bộ Điều Khiển Cổng (API Controller)</text>
+      <text x="18" y="70" class="comp-txt">• Tiếp nhận payload HTTP POST ChatRequestDTO; quản lý kết nối EventSource SSE.</text>
+      <text x="18" y="90" class="comp-txt">• Xác thực chữ ký số JWT Token; phân quyền truy cập theo vai trò (RBAC).</text>
+      <g transform="translate(18, 106)">
         <rect width="160" height="20" class="tag-rect"/>
         <text x="10" y="14" class="tag-txt">Rate Limit: 60 req/phút</text>
-        <rect x="170" y="0" width="180" height="20" class="tag-rect"/>
+        <rect x="170" y="0" width="170" height="20" class="tag-rect"/>
         <text x="180" y="14" class="tag-txt">Input Schema Validation</text>
       </g>
     </g>''')
@@ -311,17 +265,16 @@ def build_architecture_svg():
     # 2.2 Security Guardrails & PII Sanitizer
     lines.append(f'''
     <!-- 2.2 Security Guardrails & PII Sanitizer -->
-    <g transform="translate({24 + box_w + col_gap}, 44)">
-      <rect width="{box_w}" height="142" rx="6" fill="#FFFFFF" stroke="#0052CC" stroke-width="1.4"/>
-      {draw_uml_component_glyph(box_w - 28, 10)}
-      <text x="18" y="26" class="comp-stereo">«Security Guardrail · Preprocessing Filter»</text>
-      <text x="18" y="48" class="comp-title">Hàng Rào Bảo Mật &amp; Khử Dữ Liệu PII</text>
-      <text x="18" y="72" class="comp-txt">• Khử thông tin nhận dạng cá nhân (PII Masking): Che giấu số điện thoại, CCCD qua Regex.</text>
-      <text x="18" y="92" class="comp-txt">• Phòng vệ tiêm nhiễm lệnh (Prompt Injection Defense): Chặn câu lệnh thao túng.</text>
-      <g transform="translate(18, 108)">
+    <g transform="translate({24 + box_w + col_gap}, 46)">
+      <rect width="{box_w}" height="140" rx="6" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.2"/>
+      <text x="18" y="24" class="comp-stereo">«Security Guardrail · Preprocessing Filter»</text>
+      <text x="18" y="46" class="comp-title">Hàng Rào Bảo Mật &amp; Khử Dữ Liệu PII</text>
+      <text x="18" y="70" class="comp-txt">• Khử thông tin nhận dạng cá nhân (PII Masking): Che giấu số điện thoại, CCCD qua Regex.</text>
+      <text x="18" y="90" class="comp-txt">• Phòng vệ tiêm nhiễm lệnh (Prompt Injection Defense): Chặn câu lệnh thao túng.</text>
+      <g transform="translate(18, 106)">
         <rect width="170" height="20" class="tag-rect"/>
         <text x="10" y="14" class="tag-txt">Regex Rule-Based Filter</text>
-        <rect x="180" y="0" width="180" height="20" class="tag-rect"/>
+        <rect x="180" y="0" width="170" height="20" class="tag-rect"/>
         <text x="190" y="14" class="tag-txt">Unicode Normalization</text>
       </g>
     </g>''')
@@ -329,14 +282,13 @@ def build_architecture_svg():
     # 2.3 Session Buffer & Context Manager
     lines.append(f'''
     <!-- 2.3 Session Buffer & Context Manager -->
-    <g transform="translate({24 + (box_w + col_gap)*2}, 44)">
-      <rect width="{box_w}" height="142" rx="6" fill="#FFFFFF" stroke="#0052CC" stroke-width="1.4"/>
-      {draw_uml_component_glyph(box_w - 28, 10)}
-      <text x="18" y="26" class="comp-stereo">«Stateful Context Buffer · Redis / In-Memory»</text>
-      <text x="18" y="48" class="comp-title">Quản Lý Phiên &amp; Bộ Đệm Ngữ Cảnh</text>
-      <text x="18" y="72" class="comp-txt">• Cửa sổ trượt ngữ cảnh (Sliding Window K=6 lượt): Lưu vết hội thoại liền trước.</text>
-      <text x="18" y="92" class="comp-txt">• Khử hiện tượng mất ngữ cảnh: Duy trì mã đơn hàng và thực thể đang đàm thoại.</text>
-      <g transform="translate(18, 108)">
+    <g transform="translate({24 + (box_w + col_gap)*2}, 46)">
+      <rect width="{box_w}" height="140" rx="6" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.2"/>
+      <text x="18" y="24" class="comp-stereo">«Stateful Context Buffer · Redis / In-Memory»</text>
+      <text x="18" y="46" class="comp-title">Quản Lý Phiên &amp; Bộ Đệm Ngữ Cảnh</text>
+      <text x="18" y="70" class="comp-txt">• Cửa sổ trượt ngữ cảnh (Sliding Window K=6 lượt): Lưu vết hội thoại liền trước.</text>
+      <text x="18" y="90" class="comp-txt">• Khử hiện tượng mất ngữ cảnh: Duy trì mã đơn hàng và thực thể đang đàm thoại.</text>
+      <g transform="translate(18, 106)">
         <rect width="170" height="20" class="tag-rect"/>
         <text x="10" y="14" class="tag-txt">Sliding Window K=6 turns</text>
         <rect x="180" y="0" width="160" height="20" class="tag-rect"/>
@@ -356,15 +308,13 @@ def build_architecture_svg():
 
     lines.append(f'''
   <!-- Spacious Connector Tier 2 -> Tier 3 (Highlighting Arrow Flow) -->
-  {draw_port_square(flow_2_x - 6, arrow_2_start - 6)}
-  <line x1="{flow_2_x}" y1="{arrow_2_start + 6}" x2="{flow_2_x}" y2="{arrow_2_end - 6}" stroke="#003D9B" stroke-width="2.6"/>
-  {draw_arrow_head(flow_2_x, arrow_2_end - 6, direction="down", color="#003D9B", size=8)}
-  {draw_port_square(flow_2_x - 6, arrow_2_end - 6)}
+  <line x1="{flow_2_x}" y1="{arrow_2_start}" x2="{flow_2_x}" y2="{arrow_2_end}" stroke="#003D9B" stroke-width="2.6"/>
+  {draw_arrow_head(flow_2_x, arrow_2_end, direction="down", color="#003D9B", size=8)}
   {draw_flow_badge(flow_2_x - 38, arrow_2_start + t2_to_t3_gap // 2, "2")}
   
   <!-- Flow 2 Ingress Payload Badge -->
   <g transform="translate({flow_2_x + 18}, {arrow_2_start + t2_to_t3_gap // 2 - 14})">
-    <rect width="520" height="28" rx="4" fill="#FFFFFF" stroke="#BFDBFE" stroke-width="1.2"/>
+    <rect width="520" height="28" rx="4" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.2"/>
     <text x="12" y="18" class="flow-arrow-lbl">SanitizedMessage + ContextArray[role, text] -> [AI PIPELINE INGRESS BUS]</text>
   </g>''')
 
@@ -378,10 +328,10 @@ def build_architecture_svg():
   <g id="Tier3_AICore" transform="translate({margin_x}, {t3_y})">
     <!-- Tier Boundary Container -->
     <rect width="{content_w}" height="{t3_h}" rx="8" fill="#F8FAFC" stroke="#003D9B" stroke-width="2"/>
-    <!-- Tier Header Banner -->
-    <path d="M 0 8 A 8 8 0 0 1 8 0 L 630 0 L 655 32 L 0 32 Z" fill="#EFF6FF" stroke="#003D9B" stroke-width="1.2"/>
-    <text x="20" y="21" class="tier-title">TẦNG 3: LÕI ĐIỀU PHỐI SUY LUẬN, TRUY XUẤT RAG &amp; CÔNG CỤ</text>
-    <text x="675" y="21" class="tier-sub">[TIER 3: CORE AI ORCHESTRATION - INTENT ROUTER, HYBRID RAG &amp; TOOL CALLING ENGINE]</text>''')
+    <!-- Clean Horizontal Header Bar -->
+    <rect width="{content_w}" height="36" rx="8" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1"/>
+    <text x="20" y="23" class="tier-title">TẦNG 3: LÕI ĐIỀU PHỐI SUY LUẬN, TRUY XUẤT RAG &amp; CÔNG CỤ</text>
+    <text x="{content_w - 20}" y="23" text-anchor="end" class="tier-sub">[TIER 3: CORE AI ORCHESTRATION - INTENT ROUTER, HYBRID RAG &amp; TOOL CALLING ENGINE]</text>''')
 
     c3_w = box_w  # 584px
     c3a_x = 24
@@ -393,44 +343,43 @@ def build_architecture_svg():
     # -------------------------------------------------------------------------
     lines.append(f'''
     <!-- 3A: Phân loại ý định & Định tuyến NLU -->
-    <g transform="translate({c3a_x}, 44)">
-      <rect width="{c3_w}" height="{t3_h - 64}" rx="6" fill="#FFFFFF" stroke="#0052CC" stroke-width="1.4"/>
-      {draw_uml_component_glyph(c3_w - 28, 10)}
-      <text x="18" y="26" class="comp-stereo">«Decision &amp; NLU Router»</text>
-      <text x="18" y="48" class="comp-title">1. Phân Tích &amp; Định Tuyến Ý Định</text>
+    <g transform="translate({c3a_x}, 46)">
+      <rect width="{c3_w}" height="{t3_h - 66}" rx="6" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.2"/>
+      <text x="18" y="24" class="comp-stereo">«Decision &amp; NLU Router»</text>
+      <text x="18" y="46" class="comp-title">1. Phân Tích &amp; Định Tuyến Ý Định</text>
       
-      <text x="18" y="74" class="comp-txt">• Chuẩn hóa câu hỏi, bóc tách thực thể: Mã vận đơn <tspan class="comp-code">NX-XXXX</tspan>, Mã sự cố.</text>
-      <text x="18" y="94" class="comp-txt">• Xác định mục tiêu: Tra cứu quy trình SOP hay Thao tác dữ liệu nghiệp vụ.</text>
+      <text x="18" y="70" class="comp-txt">• Chuẩn hóa câu hỏi, bóc tách thực thể: Mã vận đơn <tspan class="comp-code">NX-XXXX</tspan>, Mã sự cố.</text>
+      <text x="18" y="90" class="comp-txt">• Xác định mục tiêu: Tra cứu quy trình SOP hay Thao tác dữ liệu nghiệp vụ.</text>
 
-      <!-- Formal UML Decision Diamond -->
-      <g transform="translate({c3_w//2}, 235)">
+      <!-- Standard Decision Diamond -->
+      <g transform="translate({c3_w//2}, 230)">
         <!-- Diamond Shape -->
-        <polygon points="0,-50 130,0 0,50 -130,0" fill="#EFF6FF" stroke="#003D9B" stroke-width="2"/>
-        <text x="0" y="-6" text-anchor="middle" class="comp-title" style="fill:#003D9B; font-size:13px;">PHÂN LOẠI Ý ĐỊNH</text>
-        <text x="0" y="12" text-anchor="middle" class="comp-stereo">(INTENT DECISION)</text>
+        <polygon points="0,-48 125,0 0,48 -125,0" fill="#EFF6FF" stroke="#003D9B" stroke-width="1.8"/>
+        <text x="0" y="-6" text-anchor="middle" class="comp-title" style="fill:#003D9B; font-size:12.5px;">PHÂN LOẠI Ý ĐỊNH</text>
+        <text x="0" y="12" text-anchor="middle" class="comp-stereo">(INTENT ROUTER)</text>
 
         <!-- Branch 1: Policy SOP Query (To RAG) -->
-        <line x1="130" y1="0" x2="{c3_w//2 - 12}" y2="0" stroke="#003D9B" stroke-width="2"/>
+        <line x1="125" y1="0" x2="{c3_w//2 - 12}" y2="0" stroke="#003D9B" stroke-width="2"/>
         {draw_arrow_head(c3_w//2 - 12, 0, direction="right", color="#003D9B", size=6)}
         <text x="135" y="-8" class="guard-text">[policy_sop]</text>
         <text x="135" y="14" class="comp-txt" style="font-size:10.5px; fill:#475569;">Nhánh RAG</text>
 
         <!-- Branch 2: Live Tool Call (To Tool Orchestrator) -->
-        <path d="M 0 50 L 0 115 L {c3_w//2 - 12} 115" fill="none" stroke="#003D9B" stroke-width="2"/>
-        {draw_arrow_head(c3_w//2 - 12, 115, direction="right", color="#003D9B", size=6)}
-        <text x="15" y="108" class="guard-text">[live_tool]</text>
-        <text x="15" y="132" class="comp-txt" style="font-size:10.5px; fill:#475569;">Nhánh Tool API</text>
+        <path d="M 0 48 L 0 110 L {c3_w//2 - 12} 110" fill="none" stroke="#003D9B" stroke-width="2"/>
+        {draw_arrow_head(c3_w//2 - 12, 110, direction="right", color="#003D9B", size=6)}
+        <text x="15" y="103" class="guard-text">[live_tool]</text>
+        <text x="15" y="126" class="comp-txt" style="font-size:10.5px; fill:#475569;">Nhánh Tool API</text>
 
         <!-- Branch 3: Hybrid RAG + Tool Call -->
-        <path d="M 0 -50 L 0 -95 L {c3_w//2 - 12} -95" fill="none" stroke="#003D9B" stroke-width="2"/>
-        {draw_arrow_head(c3_w//2 - 12, -95, direction="right", color="#003D9B", size=6)}
-        <text x="15" y="-103" class="guard-text">[hybrid_task]</text>
-        <text x="15" y="-80" class="comp-txt" style="font-size:10.5px; fill:#475569;">Song song RAG &amp; Tool</text>
+        <path d="M 0 -48 L 0 -90 L {c3_w//2 - 12} -90" fill="none" stroke="#003D9B" stroke-width="2"/>
+        {draw_arrow_head(c3_w//2 - 12, -90, direction="right", color="#003D9B", size=6)}
+        <text x="15" y="-98" class="guard-text">[hybrid_task]</text>
+        <text x="15" y="-76" class="comp-txt" style="font-size:10.5px; fill:#475569;">Song song RAG &amp; Tool</text>
       </g>
 
       <!-- Technical Rule Specifications Box -->
-      <g transform="translate(18, 410)">
-        <rect width="{c3_w - 36}" height="340" rx="6" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.2"/>
+      <g transform="translate(18, 405)">
+        <rect width="{c3_w - 36}" height="350" rx="6" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.2"/>
         <text x="16" y="24" class="comp-title" style="font-size:13px; fill:#003D9B;">Quy Tắc Định Tuyến &amp; Bóc Tách Thực Thể:</text>
         
         <text x="16" y="50" class="comp-txt-bold">1. Nhánh Policy SOP (Quy chuẩn):</text>
@@ -449,37 +398,35 @@ def build_architecture_svg():
         <text x="16" y="266" class="comp-txt">• Tự động chuyển tiếp câu hỏi mở sang mô hình LLM.</text>
         <text x="16" y="284" class="comp-txt">• Áp dụng chỉ thị an toàn nghiêm ngặt, chặn ảo giác.</text>
 
-        <line x1="16" y1="302" x2="{c3_w - 52}" y2="302" stroke="#E2E8F0" stroke-width="1"/>
-        <text x="16" y="322" class="comp-code">Hiệu năng định tuyến: Latency &lt; 8ms (Non-blocking)</text>
+        <line x1="16" y1="305" x2="{c3_w - 52}" y2="305" stroke="#E2E8F0" stroke-width="1"/>
+        <text x="16" y="328" class="comp-code">Hiệu năng định tuyến: Latency &lt; 8ms (Non-blocking)</text>
       </g>
     </g>''')
 
     # Flow Badge 3
     lines.append(f'''
-    {draw_flow_badge(c3a_x + c3_w - 18, 280, "3")}''')
+    {draw_flow_badge(c3a_x + c3_w - 18, 275, "3")}''')
 
     # -------------------------------------------------------------------------
     # KHỐI 3B: BỘ TRUY XUẤT TRI THỨC LAI (HYBRID RAG RETRIEVAL ENGINE) (c3b_x)
     # -------------------------------------------------------------------------
     lines.append(f'''
     <!-- 3B: Bộ Truy Xuất Tri Thức Lai (Hybrid RAG) -->
-    <g transform="translate({c3b_x}, 44)">
-      <rect width="{c3_w}" height="{t3_h - 64}" rx="6" fill="#FFFFFF" stroke="#0052CC" stroke-width="1.4"/>
-      {draw_uml_component_glyph(c3_w - 28, 10)}
-      <text x="18" y="26" class="comp-stereo">«Hybrid Retrieval Subsystem · Dense + Sparse»</text>
-      <text x="18" y="48" class="comp-title">2. Bộ Truy Xuất Tri Thức Lai (Hybrid RAG)</text>
-      {draw_interface_lollipop(c3_w - 200, 22, "IVectorSearch")}
+    <g transform="translate({c3b_x}, 46)">
+      <rect width="{c3_w}" height="{t3_h - 66}" rx="6" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.2"/>
+      <text x="18" y="24" class="comp-stereo">«Hybrid Retrieval Subsystem · Dense + Sparse»</text>
+      <text x="18" y="46" class="comp-title">2. Bộ Truy Xuất Tri Thức Lai (Hybrid RAG)</text>
 
       <!-- Academic Hybrid Formula Card -->
-      <g transform="translate(18, 68)">
-        <rect width="{c3_w - 36}" height="88" rx="6" fill="#EFF6FF" stroke="#003D9B" stroke-width="1.3"/>
+      <g transform="translate(18, 66)">
+        <rect width="{c3_w - 36}" height="88" rx="6" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1.2"/>
         <text x="14" y="22" class="comp-title" style="font-size:11.5px; fill:#003D9B;">CÔNG THỨC ĐIỂM SỐ TRUY XUẤT LAI (HYBRID SCORE):</text>
         <text x="14" y="48" class="math-formula">Score(q, d) = α · CosineSim(vq, vd) + (1 - α) · BM25(q, d)</text>
         <text x="14" y="72" class="comp-txt" style="font-size:11px; fill:#003D9B;">Trọng số tối ưu: α = 0.70 (Ngữ nghĩa) và (1 - α) = 0.30 (Từ khóa)</text>
       </g>
 
       <!-- Step 2.1: Dual Search -->
-      <g transform="translate(18, 168)">
+      <g transform="translate(18, 166)">
         <rect width="{c3_w - 36}" height="175" rx="6" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.2"/>
         <text x="14" y="22" class="comp-title" style="font-size:12.5px; fill:#0F172A;">Thuật toán Tìm kiếm Song song (Dual Search):</text>
         <text x="14" y="46" class="comp-txt-bold">• Nhánh 1: Truy xuất Ngữ nghĩa Véc-tơ (Dense):</text>
@@ -490,7 +437,7 @@ def build_architecture_svg():
       </g>
 
       <!-- Step 2.2: Re-ranking & Threshold Filter -->
-      <g transform="translate(18, 355)">
+      <g transform="translate(18, 353)">
         <rect width="{c3_w - 36}" height="215" rx="6" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.2"/>
         <text x="14" y="22" class="comp-title" style="font-size:12.5px; fill:#0F172A;">Lọc Ngưỡng &amp; Tái Xếp Hạng (Re-ranking):</text>
         <text x="14" y="46" class="comp-txt-bold">• Lọc Ngưỡng Tương Đồng Tuyệt Đối:</text>
@@ -504,8 +451,8 @@ def build_architecture_svg():
       </g>
 
       <!-- Step 2.3: Grounding Reference -->
-      <g transform="translate(18, 582)">
-        <rect width="{c3_w - 36}" height="175" rx="6" fill="#EFF6FF" stroke="#0052CC" stroke-width="1.2"/>
+      <g transform="translate(18, 580)">
+        <rect width="{c3_w - 36}" height="175" rx="6" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1.2"/>
         <text x="14" y="22" class="comp-title" style="font-size:12.5px; fill:#003D9B;">Cơ sở Ngữ liệu Tri thức Quy chuẩn (Knowledge):</text>
         <text x="14" y="44" class="comp-txt">• 9 văn bản SOP nghiệp vụ (SOP-01 đến 09) bưu chính.</text>
         <text x="14" y="64" class="comp-txt">• Phân tách thành 62 Chunks chuẩn hóa ngữ cảnh.</text>
@@ -521,15 +468,13 @@ def build_architecture_svg():
     # -------------------------------------------------------------------------
     lines.append(f'''
     <!-- 3C: Điều phối công cụ & Lắp ráp Prompt -->
-    <g transform="translate({c3c_x}, 44)">
-      <rect width="{c3_w}" height="{t3_h - 64}" rx="6" fill="#FFFFFF" stroke="#0052CC" stroke-width="1.4"/>
-      {draw_uml_component_glyph(c3_w - 28, 10)}
-      <text x="18" y="26" class="comp-stereo">«Tool Orchestration &amp; Prompt Assembly»</text>
-      <text x="18" y="48" class="comp-title">3. Điều Phối Công Cụ &amp; Lắp Ráp Ngữ Cảnh</text>
-      {draw_interface_lollipop(c3_w - 200, 22, "IToolDispatcher")}
+    <g transform="translate({c3c_x}, 46)">
+      <rect width="{c3_w}" height="{t3_h - 66}" rx="6" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.2"/>
+      <text x="18" y="24" class="comp-stereo">«Tool Orchestration &amp; Prompt Assembly»</text>
+      <text x="18" y="46" class="comp-title">3. Điều Phối Công Cụ &amp; Lắp Ráp Ngữ Cảnh</text>
 
       <!-- 3.1 Tool Calling Dispatcher -->
-      <g transform="translate(18, 68)">
+      <g transform="translate(18, 66)">
         <rect width="{c3_w - 36}" height="175" rx="6" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.2"/>
         <text x="14" y="22" class="comp-title" style="font-size:12.5px; fill:#0F172A;">Điều Phối Công Cụ Thời Gian Thực (Tool Dispatcher):</text>
         <text x="14" y="44" class="comp-txt">• Thực thi Function Calling: Map câu hỏi sang API Microservices.</text>
@@ -540,44 +485,44 @@ def build_architecture_svg():
         <text x="14" y="156" class="comp-code" style="fill:#003D9B;">Circuit Breaker: Timeout 2000ms bảo vệ an toàn hệ thống</text>
       </g>
 
-      <!-- 3.2 4-Tier Stacked Context Sandwich Prompt Assembler -->
-      <g transform="translate(18, 255)">
-        <rect width="{c3_w - 36}" height="305" rx="6" fill="#FFFFFF" stroke="#003D9B" stroke-width="1.4"/>
+      <!-- 3.2 Context Sandwich Prompt Assembler (Clean Light Rows, No Rainbow Stacks) -->
+      <g transform="translate(18, 253)">
+        <rect width="{c3_w - 36}" height="305" rx="6" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.2"/>
         <text x="14" y="22" class="comp-title" style="font-size:12.5px; fill:#003D9B;">Lắp Ráp Ngữ Cảnh 4 Tầng (Context Sandwich Prompt):</text>
         
-        <!-- Tier 1 Sandwich -->
+        <!-- Tier 1 Sandwich Row -->
         <g transform="translate(12, 32)">
-          <rect width="{c3_w - 60}" height="52" rx="4" fill="#001848"/>
-          <text x="10" y="18" class="comp-title" style="fill:#FFFFFF; font-size:11px;">TẦNG 1: CHỈ THỊ HỆ THỐNG VÀ ĐỊNH DANH (SYSTEM DIRECTIVES)</text>
-          <text x="10" y="36" class="comp-txt" style="fill:#DAE2FF; font-size:10px;">Định danh Trợ lý Nexus; Giọng văn khách quan; Cấm bịa đặt; Ràng buộc JSON Schema.</text>
+          <rect width="{c3_w - 60}" height="52" rx="4" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>
+          <text x="10" y="18" class="comp-title" style="fill:#003D9B; font-size:11px;">TẦNG 1: CHỈ THỊ HỆ THỐNG VÀ ĐỊNH DANH (SYSTEM DIRECTIVES)</text>
+          <text x="10" y="36" class="comp-txt" style="font-size:10.5px;">Định danh Trợ lý Nexus; Giọng văn khách quan; Cấm bịa đặt; Ràng buộc JSON Schema.</text>
         </g>
 
-        <!-- Tier 2 Sandwich -->
+        <!-- Tier 2 Sandwich Row -->
         <g transform="translate(12, 92)">
-          <rect width="{c3_w - 60}" height="52" rx="4" fill="#003D9B"/>
-          <text x="10" y="18" class="comp-title" style="fill:#FFFFFF; font-size:11px;">TẦNG 2: TRI THỨC TRÍCH DẪN TỪ VECTOR STORE (TOP-5 RETRIEVED CHUNKS)</text>
-          <text x="10" y="36" class="comp-txt" style="fill:#DAE2FF; font-size:10px;">5 đoạn tài liệu SOP có điểm tương đồng cao nhất; Căn cứ pháp lý &amp; điều khoản bồi thường.</text>
+          <rect width="{c3_w - 60}" height="52" rx="4" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>
+          <text x="10" y="18" class="comp-title" style="fill:#003D9B; font-size:11px;">TẦNG 2: TRI THỨC TRÍCH DẪN TỪ VECTOR STORE (TOP-5 RETRIEVED CHUNKS)</text>
+          <text x="10" y="36" class="comp-txt" style="font-size:10.5px;">5 đoạn tài liệu SOP có điểm tương đồng cao nhất; Căn cứ pháp lý &amp; điều khoản bồi thường.</text>
         </g>
 
-        <!-- Tier 3 Sandwich -->
+        <!-- Tier 3 Sandwich Row -->
         <g transform="translate(12, 152)">
-          <rect width="{c3_w - 60}" height="52" rx="4" fill="#0052CC"/>
-          <text x="10" y="18" class="comp-title" style="fill:#FFFFFF; font-size:11px;">TẦNG 3: DỮ LIỆU THỰC TẾ TỪ LIVE SERVICES (LIVE DTO PAYLOAD)</text>
-          <text x="10" y="36" class="comp-txt" style="fill:#DAE2FF; font-size:10px;">Dữ liệu vận đơn thực tế, vị trí bưu tá, cước phí được trả về từ Microservices nội bộ.</text>
+          <rect width="{c3_w - 60}" height="52" rx="4" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>
+          <text x="10" y="18" class="comp-title" style="fill:#003D9B; font-size:11px;">TẦNG 3: DỮ LIỆU THỰC TẾ TỪ LIVE SERVICES (LIVE DTO PAYLOAD)</text>
+          <text x="10" y="36" class="comp-txt" style="font-size:10.5px;">Dữ liệu vận đơn thực tế, vị trí bưu tá, cước phí được trả về từ Microservices nội bộ.</text>
         </g>
 
-        <!-- Tier 4 Sandwich -->
+        <!-- Tier 4 Sandwich Row -->
         <g transform="translate(12, 212)">
-          <rect width="{c3_w - 60}" height="52" rx="4" fill="#1D4ED8"/>
-          <text x="10" y="18" class="comp-title" style="fill:#FFFFFF; font-size:11px;">TẦNG 4: LỊCH SỬ HỘI THOẠI ĐA LƯỢT (SLIDING CONVERSATION BUFFER)</text>
-          <text x="10" y="36" class="comp-txt" style="fill:#DAE2FF; font-size:10px;">Mảng 6 lượt tương tác gần nhất giữa Người dùng và Trợ lý ảo để giữ trọn vẹn ngữ cảnh.</text>
+          <rect width="{c3_w - 60}" height="52" rx="4" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>
+          <text x="10" y="18" class="comp-title" style="fill:#003D9B; font-size:11px;">TẦNG 4: LỊCH SỬ HỘI THOẠI ĐA LƯỢT (SLIDING CONVERSATION BUFFER)</text>
+          <text x="10" y="36" class="comp-txt" style="font-size:10.5px;">Mảng 6 lượt tương tác gần nhất giữa Người dùng và Trợ lý ảo để giữ trọn vẹn ngữ cảnh.</text>
         </g>
 
         <text x="14" y="288" class="comp-code" style="fill:#003D9B;">Cấu hình suy luận: Temperature = 0.2 (Triệt tiêu hoàn toàn ảo giác AI)</text>
       </g>
 
       <!-- 3.3 SSE Streaming Serializer -->
-      <g transform="translate(18, 572)">
+      <g transform="translate(18, 570)">
         <rect width="{c3_w - 36}" height="185" rx="6" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.2"/>
         <text x="14" y="22" class="comp-title" style="font-size:12.5px; fill:#0F172A;">Bộ Phát Luồng Phản Hồi (SSE Stream Publisher):</text>
         <text x="14" y="44" class="comp-txt">• <tspan class="comp-txt-bold">Nhận Luồng Token từ LLM:</tspan> Tiếp nhận từng chunk ký tự từ LLM.</text>
@@ -610,38 +555,32 @@ def build_architecture_svg():
     lines.append(f'''
   <!-- Spacious Connectors Tier 3 -> Tier 4 (Highlighting 3-way Downward Arrows) -->
   <!-- Left Arrow: Vector Retrieval Flow (To Column 4A) -->
-  {draw_port_square(conn_left_x - 6, arrow_3_start - 6)}
-  <line x1="{conn_left_x}" y1="{arrow_3_start + 6}" x2="{conn_left_x}" y2="{arrow_3_end - 6}" stroke="#003D9B" stroke-width="2.6"/>
-  {draw_arrow_head(conn_left_x, arrow_3_end - 6, direction="down", color="#003D9B", size=8)}
-  {draw_port_square(conn_left_x - 6, arrow_3_end - 6)}
+  <line x1="{conn_left_x}" y1="{arrow_3_start}" x2="{conn_left_x}" y2="{arrow_3_end}" stroke="#003D9B" stroke-width="2.6"/>
+  {draw_arrow_head(conn_left_x, arrow_3_end, direction="down", color="#003D9B", size=8)}
   {draw_flow_badge(conn_left_x - 36, arrow_3_start + t3_to_t4_gap // 2, "4a")}
   
   <g transform="translate({conn_left_x + 16}, {arrow_3_start + t3_to_t4_gap // 2 - 14})">
-    <rect width="250" height="28" rx="4" fill="#FFFFFF" stroke="#BFDBFE" stroke-width="1.2"/>
+    <rect width="250" height="28" rx="4" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.2"/>
     <text x="12" y="18" class="flow-arrow-lbl">Query Vector &amp; SOP Chunks</text>
   </g>
 
   <!-- Center Arrow: Microservices API Call Flow (To Column 4B) -->
-  {draw_port_square(conn_mid_x - 6, arrow_3_start - 6)}
-  <line x1="{conn_mid_x}" y1="{arrow_3_start + 6}" x2="{conn_mid_x}" y2="{arrow_3_end - 6}" stroke="#003D9B" stroke-width="2.6"/>
-  {draw_arrow_head(conn_mid_x, arrow_3_end - 6, direction="down", color="#003D9B", size=8)}
-  {draw_port_square(conn_mid_x - 6, arrow_3_end - 6)}
+  <line x1="{conn_mid_x}" y1="{arrow_3_start}" x2="{conn_mid_x}" y2="{arrow_3_end}" stroke="#003D9B" stroke-width="2.6"/>
+  {draw_arrow_head(conn_mid_x, arrow_3_end, direction="down", color="#003D9B", size=8)}
   {draw_flow_badge(conn_mid_x - 36, arrow_3_start + t3_to_t4_gap // 2, "4b")}
   
   <g transform="translate({conn_mid_x + 16}, {arrow_3_start + t3_to_t4_gap // 2 - 14})">
-    <rect width="260" height="28" rx="4" fill="#FFFFFF" stroke="#BFDBFE" stroke-width="1.2"/>
+    <rect width="260" height="28" rx="4" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.2"/>
     <text x="12" y="18" class="flow-arrow-lbl">Live Order DTO Calls (:3000)</text>
   </g>
 
   <!-- Right Arrow: LLM Inference Request Flow (To Column 4C) -->
-  {draw_port_square(conn_right_x - 6, arrow_3_start - 6)}
-  <line x1="{conn_right_x}" y1="{arrow_3_start + 6}" x2="{conn_right_x}" y2="{arrow_3_end - 6}" stroke="#003D9B" stroke-width="2.6"/>
-  {draw_arrow_head(conn_right_x, arrow_3_end - 6, direction="down", color="#003D9B", size=8)}
-  {draw_port_square(conn_right_x - 6, arrow_3_end - 6)}
+  <line x1="{conn_right_x}" y1="{arrow_3_start}" x2="{conn_right_x}" y2="{arrow_3_end}" stroke="#003D9B" stroke-width="2.6"/>
+  {draw_arrow_head(conn_right_x, arrow_3_end, direction="down", color="#003D9B", size=8)}
   {draw_flow_badge(conn_right_x - 36, arrow_3_start + t3_to_t4_gap // 2, "6")}
   
   <g transform="translate({conn_right_x + 16}, {arrow_3_start + t3_to_t4_gap // 2 - 14})">
-    <rect width="250" height="28" rx="4" fill="#FFFFFF" stroke="#BFDBFE" stroke-width="1.2"/>
+    <rect width="250" height="28" rx="4" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.2"/>
     <text x="12" y="18" class="flow-arrow-lbl">Context Sandwich Prompt [TLS 1.3]</text>
   </g>''')
 
@@ -655,33 +594,31 @@ def build_architecture_svg():
   <g id="Tier4_DataServicesModels" transform="translate({margin_x}, {t4_y})">
     <!-- Tier Boundary Container -->
     <rect width="{content_w}" height="{t4_h}" rx="8" fill="#F8FAFC" stroke="#003D9B" stroke-width="1.8"/>
-    <!-- Tier Header Banner -->
-    <path d="M 0 8 A 8 8 0 0 1 8 0 L 750 0 L 775 32 L 0 32 Z" fill="#EFF6FF" stroke="#003D9B" stroke-width="1.2"/>
-    <text x="20" y="21" class="tier-title">TẦNG 4: LƯU TRỮ TRI THỨC, DỊCH VỤ NGHIỆP VỤ &amp; MÔ HÌNH NỀN TẢNG</text>
-    <text x="795" y="21" class="tier-sub">[TIER 4: KNOWLEDGE PERSISTENCE, BACKEND MICROSERVICES &amp; FOUNDATION LLMS]</text>''')
-
-    p_w = c3_w  # 584px
+    <!-- Clean Horizontal Header Bar -->
+    <rect width="{content_w}" height="36" rx="8" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1"/>
+    <text x="20" y="23" class="tier-title">TẦNG 4: LƯU TRỮ TRI THỨC, DỊCH VỤ NGHIỆP VỤ &amp; MÔ HÌNH NỀN TẢNG</text>
+    <text x="{content_w - 20}" y="23" text-anchor="end" class="tier-sub">[TIER 4: KNOWLEDGE PERSISTENCE, BACKEND MICROSERVICES &amp; FOUNDATION LLMS]</text>''')
 
     # -------------------------------------------------------------------------
-    # PHÂN VÙNG 4A: KHO TRI THỨC & DỮ LIỆU (Database Platter Cylinders)
+    # PHÂN VÙNG 4A: KHO TRI THỨC & DỮ LIỆU (Clean Standard Store Cards)
     # -------------------------------------------------------------------------
     lines.append(f'''
     <!-- 4A: Knowledge & Data Stores -->
-    <g transform="translate(24, 44)">
-      <rect width="{p_w}" height="{t4_h - 60}" rx="6" fill="#FFFFFF" stroke="#0052CC" stroke-width="1.4"/>
-      <text x="18" y="26" class="comp-stereo">«Data Persistence &amp; Vector Stores»</text>
-      <text x="18" y="48" class="comp-title">A. Kho Tri Thức &amp; Cơ Sở Dữ Liệu</text>
+    <g transform="translate(24, 46)">
+      <rect width="{p_w}" height="{t4_h - 62}" rx="6" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.2"/>
+      <text x="18" y="24" class="comp-stereo">«Data Persistence &amp; Vector Stores»</text>
+      <text x="18" y="46" class="comp-title">A. Kho Tri Thức &amp; Cơ Sở Dữ Liệu</text>
       
-      <!-- Cylinder 1: Vector Knowledge Cache -->
-      {draw_database_cylinder(18, 62, p_w - 36, 192, "1. Kho Véc-tơ Tri Thức (Vector Cache)", "«In-Memory Vector Cache · 768-dim»", [
+      <!-- Store 1: Vector Knowledge Cache -->
+      {draw_store_box(18, 62, p_w - 36, 195, "1. Kho Véc-tơ Tri Thức (Vector Cache)", "«In-Memory Vector Cache · 768-dim»", [
           "• Cấu trúc: 62 vector embeddings chuẩn 768 chiều tương ứng 62 chunks SOP.",
           "• Tốc độ: Toàn bộ nạp sẵn vào RAM (In-Memory), độ trễ tìm kiếm < 5ms.",
           "• Thuật toán khớp: Cosine Similarity ma trận véc-tơ; Tự động giải phóng khi restart.",
           "• Nạp lại: API POST /ingest cho phép Admin cập nhật tri thức mới tức thời."
       ])}
 
-      <!-- Cylinder 2: SOP Document Repository -->
-      {draw_database_cylinder(18, 268, p_w - 36, 192, "2. Kho Tài Liệu Quy Chuẩn SOP Bưu Chính", "«Document Store · AST Markdown Repo»", [
+      <!-- Store 2: SOP Document Repository -->
+      {draw_store_box(18, 270, p_w - 36, 195, "2. Kho Tài Liệu Quy Chuẩn SOP Bưu Chính", "«Document Store · AST Markdown Repo»", [
           "• 9 văn bản SOP: SOP-01 Đóng gói, SOP-02 Biểu cước, SOP-04 Khiếu nại...",
           "• Định dạng: AST Markdown Header Level, giữ nguyên cấu trúc điều khoản luật.",
           "• Pháp lý: Quy chiếu trực tiếp Điều 18 & 25 Luật Bưu chính Việt Nam.",
@@ -694,15 +631,14 @@ def build_architecture_svg():
     # -------------------------------------------------------------------------
     lines.append(f'''
     <!-- 4B: Logistics Backend Microservices Mesh -->
-    <g transform="translate({24 + p_w + col_gap}, 44)">
-      <rect width="{p_w}" height="{t4_h - 60}" rx="6" fill="#FFFFFF" stroke="#0052CC" stroke-width="1.4"/>
-      <text x="18" y="26" class="comp-stereo">«Domain Microservices · Node.js / Express»</text>
-      <text x="18" y="48" class="comp-title">B. Lưới Dịch Vụ Nghiệp Vụ Logistics</text>
+    <g transform="translate({24 + p_w + col_gap}, 46)">
+      <rect width="{p_w}" height="{t4_h - 62}" rx="6" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.2"/>
+      <text x="18" y="24" class="comp-stereo">«Domain Microservices · Node.js / Express»</text>
+      <text x="18" y="46" class="comp-title">B. Lưới Dịch Vụ Nghiệp Vụ Logistics</text>
 
       <!-- Microservice Card 1: ShipmentService -->
       <g transform="translate(18, 62)">
         <rect width="{p_w - 36}" height="90" rx="6" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.2"/>
-        {draw_uml_component_glyph(p_w - 64, 8)}
         <text x="16" y="22" class="comp-stereo">«Microservice · Port :3002»</text>
         <text x="16" y="42" class="comp-title" style="font-size:13px;">ShipmentService: Vận Đơn &amp; Lộ Trình</text>
         <text x="16" y="62" class="comp-txt">• Tra cứu trạng thái kiện hàng theo mã <tspan class="comp-code">NX-XXXX</tspan>, bưu tá phát.</text>
@@ -712,7 +648,6 @@ def build_architecture_svg():
       <!-- Microservice Card 2: PricingService -->
       <g transform="translate(18, 162)">
         <rect width="{p_w - 36}" height="90" rx="6" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.2"/>
-        {draw_uml_component_glyph(p_w - 64, 8)}
         <text x="16" y="22" class="comp-stereo">«Microservice · Port :3003»</text>
         <text x="16" y="42" class="comp-title" style="font-size:13px;">PricingService: Cước Phí Vận Chuyển</text>
         <text x="16" y="62" class="comp-txt">• Bảng cước chuẩn IATA, công thức thể tích <tspan class="comp-code">(D×R×C)/5000</tspan>, phụ phí.</text>
@@ -722,7 +657,6 @@ def build_architecture_svg():
       <!-- Microservice Card 3: IncidentService -->
       <g transform="translate(18, 262)">
         <rect width="{p_w - 36}" height="90" rx="6" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.2"/>
-        {draw_uml_component_glyph(p_w - 64, 8)}
         <text x="16" y="22" class="comp-stereo">«Microservice · Port :3008»</text>
         <text x="16" y="42" class="comp-title" style="font-size:13px;">IncidentService: Xử Lý Khiếu Nại &amp; Sự Cố</text>
         <text x="16" y="62" class="comp-txt">• Tiếp nhận báo cáo bưu phẩm vỡ, rách bao bì; Khởi tạo hồ sơ bồi thường.</text>
@@ -732,7 +666,6 @@ def build_architecture_svg():
       <!-- Microservice Card 4: HubService -->
       <g transform="translate(18, 362)">
         <rect width="{p_w - 36}" height="90" rx="6" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.2"/>
-        {draw_uml_component_glyph(p_w - 64, 8)}
         <text x="16" y="22" class="comp-stereo">«Microservice · Port :3004»</text>
         <text x="16" y="42" class="comp-title" style="font-size:13px;">HubService: Kiểm Soát Tồn Kho Trung Chuyển</text>
         <text x="16" y="62" class="comp-txt">• Cảnh báo kiện hàng tồn kho quá 30 ngày (SOP-08); Phối hợp điều hướng.</text>
@@ -745,23 +678,22 @@ def build_architecture_svg():
     # -------------------------------------------------------------------------
     lines.append(f'''
     <!-- 4C: Foundation LLM & Inference Models -->
-    <g transform="translate({24 + (p_w + col_gap)*2}, 44)">
-      <rect width="{p_w}" height="{t4_h - 60}" rx="6" fill="#FFFFFF" stroke="#0052CC" stroke-width="1.4"/>
-      <text x="18" y="26" class="comp-stereo">«External Cloud AI &amp; Local Embedder»</text>
-      <text x="18" y="48" class="comp-title">C. Mô Hình Ngôn Ngữ Lớn &amp; Suy Luận</text>
+    <g transform="translate({24 + (p_w + col_gap)*2}, 46)">
+      <rect width="{p_w}" height="{t4_h - 62}" rx="6" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.2"/>
+      <text x="18" y="24" class="comp-stereo">«External Cloud AI &amp; Local Embedder»</text>
+      <text x="18" y="46" class="comp-title">C. Mô Hình Ngôn Ngữ Lớn &amp; Suy Luận</text>
 
       <!-- LLM 1: Primary Model (Gemini 2.0 / 1.5 Flash) -->
       <g transform="translate(18, 62)">
-        <rect width="{p_w - 36}" height="120" rx="6" fill="#EFF6FF" stroke="#003D9B" stroke-width="1.4"/>
-        {draw_uml_component_glyph(p_w - 64, 10)}
+        <rect width="{p_w - 36}" height="120" rx="6" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1.2"/>
         <text x="16" y="22" class="comp-stereo" style="fill:#003D9B;">«Primary Cloud LLM · Google AI Studio»</text>
         <text x="16" y="42" class="comp-title" style="font-size:13px;">1. Mô Hình Suy Luận: Gemini 1.5 / 2.0 Flash</text>
         <text x="16" y="64" class="comp-txt">• Hỗ trợ Function Calling native; Sinh tham số gọi hàm chuẩn xác.</text>
         <text x="16" y="84" class="comp-txt">• Cửa sổ ngữ cảnh cực lớn (1M tokens), xử lý mượt tài liệu quy chuẩn.</text>
         <g transform="translate(16, 94)">
-          <rect width="160" height="18" class="tag-rect" style="fill:#DBEAFE; stroke:#93C5FD;"/>
+          <rect width="160" height="18" class="tag-rect"/>
           <text x="8" y="13" class="tag-txt">Model: gemini-1.5-flash</text>
-          <rect x="170" y="0" width="140" height="18" class="tag-rect" style="fill:#DBEAFE; stroke:#93C5FD;"/>
+          <rect x="170" y="0" width="140" height="18" class="tag-rect"/>
           <text x="178" y="13" class="tag-txt">Temperature = 0.2</text>
         </g>
       </g>
@@ -769,7 +701,6 @@ def build_architecture_svg():
       <!-- LLM 2: Fallback Model (OpenAI GPT-4o-mini) -->
       <g transform="translate(18, 195)">
         <rect width="{p_w - 36}" height="120" rx="6" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.2"/>
-        {draw_uml_component_glyph(p_w - 64, 10)}
         <text x="16" y="22" class="comp-stereo">«Secondary Fallback LLM · OpenAI API»</text>
         <text x="16" y="42" class="comp-title" style="font-size:13px;">2. Mô Hình Dự Phòng: GPT-4o-mini</text>
         <text x="16" y="64" class="comp-txt">• Tự động chuyển tiếp khi Primary LLM gặp sự cố hoặc vượt Rate Limit.</text>
@@ -785,7 +716,6 @@ def build_architecture_svg():
       <!-- LLM 3: Text Vectorizer (Local / Cloud Embedder) -->
       <g transform="translate(18, 328)">
         <rect width="{p_w - 36}" height="120" rx="6" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.2"/>
-        {draw_uml_component_glyph(p_w - 64, 10)}
         <text x="16" y="22" class="comp-stereo">«Text Embedding Model · Vectorizer»</text>
         <text x="16" y="42" class="comp-title" style="font-size:13px;">3. Vector Hóa: Text-Embedding-004</text>
         <text x="16" y="64" class="comp-txt">• Thuật toán nhúng véc-tơ chuyển đổi văn bản sang không gian 768 chiều.</text>
@@ -803,23 +733,23 @@ def build_architecture_svg():
 
     # =========================================================================
     # RETURN STREAM FLOW (Tier 4 LLM / SSE Publisher back to Tier 1 Client)
-    # Runs cleanly along the 55px right corridor without overlapping any element
+    # Runs cleanly along the 50px right corridor with a clean horizontal pill
     # =========================================================================
-    return_x = width - 45
+    return_x = width - 42
     t1_return_y = t1_y + 115
     t4_return_y = t4_y + 120
 
     lines.append(f'''
   <!-- Return Stream Flow Line from Tier 4 (LLM/SSE) back to Tier 1 Client -->
   <path d="M {margin_x + content_w} {t4_return_y} L {return_x} {t4_return_y} L {return_x} {t1_return_y} L {margin_x + content_w} {t1_return_y}"
-        fill="none" stroke="#0052CC" stroke-width="2.4" stroke-dasharray="7,5"/>
+        fill="none" stroke="#0052CC" stroke-width="2.2" stroke-dasharray="6,4"/>
   {draw_arrow_head(margin_x + content_w, t1_return_y, direction="left", color="#0052CC", size=7)}
-  {draw_flow_badge(return_x, (t4_return_y + t1_return_y) // 2, "7")}
+  {draw_flow_badge(return_x, (t4_return_y + t1_return_y) // 2 - 20, "7")}
   
-  <!-- Vertical Label for Return SSE Stream (Rotated 90 deg along the line) -->
-  <g transform="translate({return_x - 14}, {(t4_return_y + t1_return_y) // 2 + 30}) rotate(-90)">
-    <rect x="-240" y="-12" width="480" height="24" rx="4" fill="#FFFFFF" stroke="#BFDBFE" stroke-width="1.2"/>
-    <text x="0" y="4" text-anchor="middle" class="comp-code" style="fill:#003D9B; font-weight:700;">SSE STREAM PHẢN HỒI THỜI GIAN THỰC VỀ CLIENT (TTFT &lt; 500MS)</text>
+  <!-- Clean Horizontal Badge on the Return Corridor (Positioned in Inter-Tier Gap 1->2) -->
+  <g transform="translate({margin_x + content_w - 390}, {arrow_1_start + t1_to_t2_gap // 2 - 14})">
+    <rect width="380" height="28" rx="4" fill="#EFF6FF" stroke="#0052CC" stroke-width="1.2"/>
+    <text x="12" y="18" class="comp-code" style="fill:#003D9B; font-weight:700;">⑦ SSE STREAM PHẢN HỒI REALTIME (TTFT &lt; 500MS)</text>
   </g>''')
 
     # =========================================================================
@@ -888,7 +818,7 @@ def build_architecture_svg():
           <text x="170" y="48" class="footer-val">Phân hệ Trợ lý AI Đàm thoại (Chatbot Subsystem · Port :3009)</text>
 
           <text x="0" y="76" class="footer-title">Tiêu Chuẩn Kiến Trúc:</text>
-          <text x="170" y="76" class="footer-val">ISO/IEC 42010 · 4-Tier Layered Architecture · UML 2.0 Notation</text>
+          <text x="170" y="76" class="footer-val">ISO/IEC 42010 · 4-Tier Layered Architecture · Engineering Blueprint</text>
         </g>
 
         <!-- Col 2 -->
@@ -900,7 +830,7 @@ def build_architecture_svg():
           <text x="170" y="48" class="footer-val">Server-Sent Events (SSE Stream) · Low Latency (TTFT &lt; 500ms)</text>
 
           <text x="0" y="76" class="footer-title">Mã Bản Vẽ &amp; Bản Quyền:</text>
-          <text x="170" y="76" class="footer-val" style="fill:#003D9B; font-weight:800;">ARCH-LMS-CB-04A · Phiên bản v6.0 (Chuẩn Khổ A4 Dọc Đồ Án)</text>
+          <text x="170" y="76" class="footer-val" style="fill:#003D9B; font-weight:800;">ARCH-LMS-CB-04A · Phiên bản v7.0 (Chuẩn Khổ A4 Dọc Đồ Án)</text>
         </g>
       </g>
     </g>
@@ -916,7 +846,7 @@ def build_architecture_svg():
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
         f.write(full_svg)
 
-    print(f"Generating A4-Portrait Academic 4-Tier System Architecture Diagram for AI Chatbot Subsystem...")
+    print(f"Generating Clean Academic A4-Portrait Architecture Diagram for AI Chatbot Subsystem...")
     print(f"Successfully generated: {OUTPUT_FILE}")
     print(f"File size: {len(full_svg):,} bytes")
 
