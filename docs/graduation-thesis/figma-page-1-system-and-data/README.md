@@ -11,19 +11,20 @@
 Trên trang Figma này, bạn hãy tạo **4 Sections lớn** để phân định rõ ràng các tầng kiến trúc, luồng dữ liệu và mô hình AI:
 
 ```
-┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                           🏛️ FIGMA PAGE 1: SYSTEM & DATA BLUEPRINT                                     │
-├───────────────────────────────┬─────────────────────────────────┬───────────────────────────────────────┬──────────────┤
-│   SECTION 1.1 (Shift + S)     │     SECTION 1.2 (Shift + S)     │        SECTION 1.3 (Shift + S)        │  SECTION 1.4 │
-│   UML USE CASE DIAGRAM        │     5-TIER ARCHITECTURE         │        MICROSERVICES ERD SUITE        │  AI RAG CHAT │
-│                               │                                 │                                       │              │
-│   [01-use-case-general-       │     [02-architecture-           │        [01..13 Microservices          │  [04-rag-ai- │
-│    system.svg]                │      deployment-4-tier.svg]     │         Database ERDs]                │   pipeline]  │
-│                               │                                 │                                       │              │
-│   • 9 Tác nhân (Actors)       │     • 5 Tầng độc lập            │        • 13 Schema Prisma chuẩn hóa   │  • AST Chunk │
-│   • 6 Phân hệ chức năng       │     • Gateway & PII Masking     │        • Quan hệ Crow's Foot          │  • Cosine    │
-│   • 53 Use Cases thực tế      │     • 13 Services & RabbitMQ    │        • Chỉ số hiệu năng chuyên sâu  │  • 4 Cases   │
-└───────────────────────────────┴─────────────────────────────────┴───────────────────────────────────────┴──────────────┘
+┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                           🏛️ FIGMA PAGE 1: SYSTEM & DATA BLUEPRINT                                                    │
+├───────────────────────────────┬─────────────────────────────────┬───────────────────────────────────────┬─────────────────────────────┤
+│   SECTION 1.1 (Shift + S)     │     SECTION 1.2 (Shift + S)     │        SECTION 1.3 (Shift + S)        │  SECTION 1.4 (Shift + S)    │
+│   UML USE CASE DIAGRAM        │     5-TIER ARCHITECTURE         │        MICROSERVICES ERD SUITE        │  AI CHATBOT SUBSYSTEM       │
+│                               │                                 │                                       │                             │
+│   [01-use-case-general-       │     [02-architecture-           │        [01..13 Microservices          │  Part A: Component Topology │
+│    system.svg]                │      deployment-4-tier.svg]     │         Database ERDs]                │  [04-architecture-ai-       │
+│                               │                                 │                                       │   chatbot-subsystem.svg]    │
+│   • 9 Tác nhân (Actors)       │     • 5 Tầng độc lập            │        • 13 Schema Prisma chuẩn hóa   │                             │
+│   • 6 Phân hệ chức năng       │     • Gateway & PII Masking     │        • Quan hệ Crow's Foot          │  Part B: RAG Pipeline       │
+│   • 53 Use Cases thực tế      │     • 13 Services & RabbitMQ    │        • Chỉ số hiệu năng chuyên sâu  │  [04-rag-ai-chatbot-        │
+│                               │                                 │                                       │   pipeline.svg]             │
+└───────────────────────────────┴─────────────────────────────────┴───────────────────────────────────────┴─────────────────────────────┘
 ```
 
 ---
@@ -38,7 +39,8 @@ Toàn bộ sơ đồ vector SVG được lưu trữ tại thư mục:
 | **01** | `01-use-case-general-system.svg` | **Section 1.1: Use Case Diagram** | $3600 \times 2520\text{ px}$ | Chuẩn UML 2.5 với Cây kế thừa Tác nhân 3 tầng (6 Tác nhân cụ thể + 3 Tác nhân trừu tượng), 6 phân hệ lớn cân đối dạng lưới 2 cột x 3 hàng ánh xạ 1:1 codebase thực tế: Đơn hàng, Kho trung chuyển & Giao hàng, Sự cố & Khiếu nại, Tài chính & COD, Truy vết & AI RAG, Quản trị hệ thống (53 Use Cases triển khai thực tế, 2 Generalizations, 11 Include/Extend, 100% không vẽ khống). |
 | **02** | `02-architecture-deployment-4-tier.svg` | **Section 1.2: System Architecture** | $3600 \times 3000\text{ px}$ | Kiến trúc triển khai 5 tầng toàn diện chuẩn Enterprise (bố cục siêu thoáng, dãn cách lớn, không nhồi nhét, 100% mũi tên vector inline tương thích hoàn hảo Figma): 4 Client Apps, API Gateway & PII Sanitizer (:3000), 13 Microservices Business Mesh (4 Domain Clusters), Trục Sự kiện RabbitMQ Outbox Saga & 11 Cơ sở dữ liệu phân tán PostgreSQL 16 / Redis Cache. |
 | **03** | `erd/` (Bộ 13 tệp SVG độc lập từ `01` đến `13`) | **Section 1.3: Microservices ERD Suite** | $2000 \times 1300\text{ px}$ / file | Mô hình ERD chuẩn kỹ thuật Đen - Trắng (Monochrome Technical Blueprint) cho từng dịch vụ riêng biệt. Ánh xạ chính xác 100% các Model, Trường dữ liệu, Khóa PK/FK/DIST từ schema.prisma thực tế, kèm Panel thuyết minh quy tắc nghiệp vụ, cơ chế Saga phân tán và chỉ số hiệu năng chuyên sâu. |
-| **04** | `04-rag-ai-chatbot-pipeline.svg` | **Section 1.4: RAG AI Chatbot Pipeline** | $3600 \times 2600\text{ px}$ | Kiến trúc phân hệ RAG & Điều hướng AI Chatbot Logistics (Nexus AI Assistant) chuẩn học thuật: Phân đoạn Markdown Heading AST & Cửa sổ trượt 250 từ / 40 từ overlap, Tìm kiếm tri thức lai Dense Cosine (0.7) + Mở rộng từ điển Logistics (0.35), Lọc ngưỡng Top-5 Citations, Định tuyến gọi Live Tools (Tra cứu đơn, Tính cước IATA, Hồ sơ bồi thường, Cảnh báo lưu kho Điều 18 & 28, AI Handover tổng đài), Hàng rào bảo mật dữ liệu PII cho khách vãng lai và Ma trận 4 trường hợp Input/Output thực tế kèm giao diện Thẻ đơn hàng. |
+| **04A** | `04-architecture-ai-chatbot-subsystem.svg` | **Section 1.4A: AI Chatbot Component Architecture** | $3600 \times 2550\text{ px}$ | **Sơ đồ Kiến trúc Thành phần (Structural Topology & Component Architecture):** Thể hiện trực quan 5 tầng cấu trúc bao gồm các khối thành phần tĩnh, giao diện, module và cơ sở dữ liệu: Tầng Trình diễn (Presentation Clients), Tầng Bộ điều khiển & Bảo mật (Security & Session Layer), Tầng Lõi nhận thức & Tích hợp Nghiệp vụ (Cognitive Core & Logistics Tools Engine), Tầng Cơ sở Tri thức & Vector Store 3D (Knowledge & Vector Storage Layer), và Tầng Hạ tầng Tích hợp (Internal Microservices Mesh & External AI Providers). Sử dụng các biểu tượng (Icon badges), khối bo góc, hình trụ database chuẩn và bus kết nối phân tầng rõ ràng. |
+| **04B** | `04-rag-ai-chatbot-pipeline.svg` | **Section 1.4B: RAG Processing Pipeline & Lifecycle Matrix** | $3600 \times 2600\text{ px}$ | **Sơ đồ Quy trình Vận hành & Vòng đời Dữ liệu (Operational Flow & RAG Pipeline):** Thể hiện chi tiết 4 giai đoạn xử lý nghiệp vụ động: Phân đoạn Markdown Heading AST & Cửa sổ trượt (250 từ / 40 từ overlap), Tìm kiếm tri thức lai Dense Cosine (0.7) + Mở rộng từ điển Logistics (0.35), Định tuyến gọi Live Tools (Tra cứu đơn, Tính cước IATA, Khiếu nại, Cảnh báo lưu kho Điều 18 & 28, AI Handover tổng đài), Hàng rào bảo mật PII theo NĐ 13/2023 và Ma trận 4 trường hợp Input/Output thực tế kèm mockup giao diện thẻ đơn hàng. |
 
 ---
 
@@ -48,18 +50,20 @@ Toàn bộ sơ đồ vector SVG được lưu trữ tại thư mục:
    - Click nút `+` ở thanh danh sách Pages bên trái màn hình Figma.
    - Đổi tên thành: `🏛️ 01_SYSTEM_AND_DATA_BLUEPRINT`.
 2. **Bước 2: Tạo các Section (`Shift + S`)**
-   - Nhấn phím tắt `Shift + S`, vẽ 4 Section lần lượt đặt tên:
+   - Nhấn phím tắt `Shift + S`, vẽ các Section lần lượt đặt tên:
      - `Section 1.1: Enterprise UML Use Case System` (X: `0`, Y: `0`, W: `3680`, H: `2600`).
      - `Section 1.2: Enterprise 5-Tier Architecture` (X: `3800`, Y: `0`, W: `3680`, H: `3100`).
      - `Section 1.3: Microservices Database-per-Service ERD Suite` (X: `7600`, Y: `0`, W: `6500`, H: `4800`).
-     - `Section 1.4: AI Chatbot RAG Pipeline & Multi-Turn Lifecycle Architecture` (X: `3800`, Y: `3200`, W: `3680`, H: `2700` - đặt ngay dưới Section 1.2 hoặc bên cạnh Section 1.3).
+     - `Section 1.4A: AI Chatbot Subsystem Component Topology` (X: `0`, Y: `2700`, W: `3680`, H: `2650`).
+     - `Section 1.4B: AI Chatbot RAG Pipeline & Multi-Turn Lifecycle` (X: `3800`, Y: `3200`, W: `3680`, H: `2700`).
 3. **Bước 3: Kéo thả các file SVG vào từng Section**
    - Kéo file `01-use-case-general-system.svg` thả vào `Section 1.1`.
    - Kéo file `02-architecture-deployment-4-tier.svg` thả vào `Section 1.2`.
    - Kéo toàn bộ 13 file SVG trong thư mục `diagrams/erd/` thả vào `Section 1.3` (xếp theo lưới grid 3 cột x 5 hàng hoặc theo thứ tự phân hệ).
-   - Kéo file `04-rag-ai-chatbot-pipeline.svg` thả vào `Section 1.4`.
+   - Kéo file `04-architecture-ai-chatbot-subsystem.svg` thả vào `Section 1.4A`.
+   - Kéo file `04-rag-ai-chatbot-pipeline.svg` thả vào `Section 1.4B`.
 4. **Bước 4: Kiểm tra khả năng hiển thị**
-   - Phong cách Technical Blueprint sắc nét, định dạng vector phóng to không vỡ nét, 100% mũi tên hình học inline (`<polygon>`), tương thích tuyệt đối Figma không mất nét.
+   - Phong cách Technical Blueprint sắc nét, định dạng vector phóng to không vỡ nét, 100% mũi tên hình học inline (`<polygon>`), không dùng thẻ `<marker>`, tương thích tuyệt đối Figma không mất nét.
 
 ---
 
