@@ -24,6 +24,7 @@ Outputs to:
 import xml.etree.ElementTree as ET
 import html
 import os
+import re
 import textwrap
 
 OUTPUT_DIR = "docs/graduation-thesis/figma-page-1-system-and-data/diagrams/erd"
@@ -129,25 +130,106 @@ def render_explanation_panel(px, py, pw, ph, title, badge_text, sections, stats_
     out.append('</g>')
     return "\n".join(out)
 
+def process_connector_match(match):
+    full_tag = match.group(0)
+    
+    # Extract d
+    m_d = re.search(r'd="([^"]+)"', full_tag)
+    if not m_d:
+        return full_tag
+    d_str = m_d.group(1)
+    
+    # Extract marker-start and marker-end
+    m_start = re.search(r'marker-start="url\(#([^)]+)\)"', full_tag)
+    m_end = re.search(r'marker-end="url\(#([^)]+)\)"', full_tag)
+    
+    start_type = m_start.group(1) if m_start else None
+    end_type = m_end.group(1) if m_end else None
+    
+    # Parse points from d_str
+    tokens = d_str.strip().split()
+    pts = []
+    i = 0
+    while i < len(tokens):
+        cmd = tokens[i]
+        if cmd in ('M', 'L'):
+            x = float(tokens[i+1])
+            y = float(tokens[i+2])
+            pts.append((x, y))
+            i += 3
+        else:
+            i += 1
+            
+    if len(pts) < 2:
+        return full_tag
+        
+    out = []
+    # Base connector line (without marker attributes so Figma won't drop anything)
+    out.append(f'  <path d="{d_str}" stroke="#000000" stroke-width="1.8" fill="none"/>')
+    
+    # 1. Process START endpoint (crow-many, crow-one, 1, N)
+    x0, y0 = pts[0]
+    x1, y1 = pts[1]
+    dx0 = 1 if x1 > x0 else -1
+    
+    if start_type in ("crow-many", "many", "N"):
+        x_base = x0 + 13 * dx0
+        out.append(f'  <path d="M {x_base} {y0} L {x0} {y0 - 7} M {x_base} {y0} L {x0} {y0 + 7}" stroke="#000000" stroke-width="1.8" fill="none"/>')
+        x_bar = x0 + 17 * dx0
+        out.append(f'  <line x1="{x_bar}" y1="{y0 - 6}" x2="{x_bar}" y2="{y0 + 6}" stroke="#000000" stroke-width="1.8"/>')
+        lbl_x = x0 + 26 * dx0
+        anchor = "start" if dx0 > 0 else "end"
+        out.append(f'  <text x="{lbl_x}" y="{y0 - 5}" font-size="11" font-weight="700" fill="#000000" text-anchor="{anchor}">N</text>')
+    elif start_type in ("crow-one", "one", "1"):
+        b1 = x0 + 7 * dx0
+        b2 = x0 + 13 * dx0
+        out.append(f'  <line x1="{b1}" y1="{y0 - 6}" x2="{b1}" y2="{y0 + 6}" stroke="#000000" stroke-width="1.8"/>')
+        out.append(f'  <line x1="{b2}" y1="{y0 - 6}" x2="{b2}" y2="{y0 + 6}" stroke="#000000" stroke-width="1.8"/>')
+        lbl_x = x0 + 22 * dx0
+        anchor = "start" if dx0 > 0 else "end"
+        out.append(f'  <text x="{lbl_x}" y="{y0 - 5}" font-size="11" font-weight="700" fill="#000000" text-anchor="{anchor}">1</text>')
+
+    # 2. Process END endpoint (crow-many, crow-one, 1, N)
+    xe, ye = pts[-1]
+    xp, yp = pts[-2]
+    dxe = 1 if xe > xp else -1
+    
+    if end_type in ("crow-many", "many", "N"):
+        x_base = xe - 13 * dxe
+        out.append(f'  <path d="M {x_base} {ye} L {xe} {ye - 7} M {x_base} {ye} L {xe} {ye + 7}" stroke="#000000" stroke-width="1.8" fill="none"/>')
+        x_bar = xe - 17 * dxe
+        out.append(f'  <line x1="{x_bar}" y1="{ye - 6}" x2="{x_bar}" y2="{ye + 6}" stroke="#000000" stroke-width="1.8"/>')
+        lbl_x = xe - 26 * dxe
+        anchor = "end" if dxe > 0 else "start"
+        out.append(f'  <text x="{lbl_x}" y="{ye - 5}" font-size="11" font-weight="700" fill="#000000" text-anchor="{anchor}">N</text>')
+    elif end_type in ("crow-one", "one", "1"):
+        b1 = xe - 7 * dxe
+        b2 = xe - 13 * dxe
+        out.append(f'  <line x1="{b1}" y1="{ye - 6}" x2="{b1}" y2="{ye + 6}" stroke="#000000" stroke-width="1.8"/>')
+        out.append(f'  <line x1="{b2}" y1="{ye - 6}" x2="{b2}" y2="{ye + 6}" stroke="#000000" stroke-width="1.8"/>')
+        lbl_x = xe - 22 * dxe
+        anchor = "end" if dxe > 0 else "start"
+        out.append(f'  <text x="{lbl_x}" y="{ye - 5}" font-size="11" font-weight="700" fill="#000000" text-anchor="{anchor}">1</text>')
+        
+    return "\n".join(out)
+
+def convert_svg_connectors_for_figma(svg_text):
+    """
+    Replaces SVG <path ... marker-.../> with explicit inline vector shapes:
+    - Three-pronged Crow's foot (<path>) + mandatory vertical bar (<line>)
+    - Double vertical ticks (<line> + <line>) for '1'
+    - Cardinality text labels '1' and 'N'
+    This guarantees 100% vector fidelity in Figma (which discards <marker>).
+    """
+    pattern = re.compile(r'<path\b[^>]*?(?:marker-start|marker-end)[^>]*?/>', re.DOTALL)
+    return pattern.sub(process_connector_match, svg_text)
+
 def build_standalone_svg(filename, width, height, svc_name, port_str, db_str, desc_str, 
                          tables_markup, connectors_markup, panel_title, badge_text, sections, stats_footer,
                          saga_footer_text):
     lines = []
     lines.append(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="100%" height="100%" style="background:#FFFFFF;">')
     lines.append(f'''
-  <defs>
-    <marker id="crow-many" markerWidth="14" markerHeight="14" refX="10" refY="7" orient="auto">
-      <path d="M 0 0 L 10 7 L 0 14 M 10 0 L 10 14" stroke="#000000" stroke-width="1.8" fill="none"/>
-    </marker>
-    <marker id="crow-one" markerWidth="14" markerHeight="14" refX="10" refY="7" orient="auto">
-      <line x1="5" y1="2" x2="5" y2="12" stroke="#000000" stroke-width="1.8"/>
-      <line x1="9" y1="2" x2="9" y2="12" stroke="#000000" stroke-width="1.8"/>
-    </marker>
-    <marker id="arrow-dist" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto">
-      <path d="M 0 1 L 9 6 L 0 11 z" fill="#000000"/>
-    </marker>
-  </defs>
-
   <!-- Technical Blueprint Double Frame -->
   <rect width="100%" height="100%" fill="#FFFFFF"/>
   <rect x="15" y="15" width="{width - 30}" height="{height - 30}" fill="none" stroke="#000000" stroke-width="2"/>
@@ -207,9 +289,9 @@ def build_standalone_svg(filename, width, height, svc_name, port_str, db_str, de
     <rect width="{width - 80}" height="{container_h}" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.6"/>
 ''')
 
-    # Tables & Connectors
+    # Tables & Connectors (Converted to Figma-compatible inline vectors)
     lines.append(tables_markup)
-    lines.append(connectors_markup)
+    lines.append(convert_svg_connectors_for_figma(connectors_markup))
 
     # Explanation Panel (Fixed Width = 700px per user requirement)
     panel_w = 700
