@@ -1,15 +1,34 @@
 #!/usr/bin/env python3
 """
-Definitive Enterprise UML Use Case Diagram Generator for Nexus Logistics Platform
+Standardized Enterprise UML Use Case Diagram Generator for Nexus Express System
 STRICTLY GROUNDED IN DEPLOYED REPOSITORY IMPLEMENTATION (NO SPECULATIVE / INVENTED FEATURES)
-Audited 1:1 against 15 backend microservice controllers and 6 frontend applications.
-Features:
-- Exactly 6 Roles: GUEST, CUSTOMER, MERCHANT, COURIER, OPS, SYSTEM_ADMIN
-- Exactly 53 Implemented Use Cases across 7 Packages
-- 3-tier Actor Inheritance Hierarchy (System User -> Customer/Internal Staff -> 6 Concrete Actors)
-- 2 Implemented Use Case Generalizations (UC-01 Create Shipment, UC-25 Collect COD)
-- Strictly orthogonal non-overlapping routing with dedicated gutter channels
-- Explicit polygon arrowheads (No SVG <marker> tags) for 100% Figma import compatibility
+Audited 1:1 against 15 backend microservices and 6 client applications.
+
+Layout:
+- Perfectly balanced 2-Column x 3-Row Grid inside System Boundary
+  Column 1 (Left):
+    Row 1: Phân hệ 1: Tiếp nhận & Quản lý Đơn hàng (7 UCs) — shipment • pricing • pickup • gateway
+    Row 2: Phân hệ 3: Xử lý Sự cố & Bồi thường Bưu chính (6 UCs) — shipment (claims, investigations)
+    Row 3: Phân hệ 5: Truy vết Hành trình & Trợ lý AI RAG (11 UCs) — tracking • chatbot • scan • gateway
+  Column 2 (Right):
+    Row 1: Phân hệ 2: Kho Trung chuyển & Giao hàng (11 UCs) — scan • manifest • dispatch • delivery
+    Row 2: Phân hệ 4: Đối soát Tài chính & Thu hộ COD (6 UCs) — payment • reporting
+    Row 3: Phân hệ 6: Quản trị Hệ thống & Cấu hình (12 UCs) — auth • masterdata
+- Total: Exactly 53 Implemented Use Cases
+- Actors: Exactly 6 Concrete Roles + 3 Abstract Hierarchy Levels
+  Left Side: External Users (Khách hàng)
+    - Root: System User (Abstract)
+    - Sub-Root: Khách hàng (Customer - Abstract)
+    - GUEST (Khách vãng lai, guest-web :5174)
+    - MERCHANT (Chủ shop B2B, merchant-web :5176)
+    - CUSTOMER (Người nhận hàng, customer-mobile :8082)
+  Right Side: Internal Staff (Nhân sự Nội bộ)
+    - Sub-Root: Nhân sự Nội bộ (Internal Staff - Abstract)
+    - COURIER (Bưu tá giao nhận chặng cuối, courier-mobile :8081)
+    - OPS (Nhân viên Vận hành Bưu cục & Kho, ops-web :5175)
+    - SYSTEM_ADMIN (Quản trị viên Hệ thống, admin-web :5173)
+- Fully Orthogonal Non-overlapping Routing with dedicated Gutter Channels
+- Explicit Polygon Arrowheads (No SVG <marker> tags) for 100% Figma import compatibility
 """
 
 import sys
@@ -20,7 +39,7 @@ def generate_svg():
     height = 2520
 
     lines = []
-    lines.append(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="{width}" height="{height}">')
+    lines.append(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="100%" height="100%">')
     lines.append('  <defs>')
     lines.append('    <style>')
     lines.append('      /* ===== FOUNDATIONS ===== */')
@@ -76,29 +95,29 @@ def generate_svg():
     # HEADER
     lines.append('  <!-- ==================== HEADER ==================== -->')
     lines.append('  <g id="Header">')
-    lines.append(f'    <rect x="40" y="40" width="{width-80}" height="86" fill="#FFFFFF" stroke="#000000" stroke-width="1.6"/>')
-    lines.append('    <text x="65" y="76" class="t-main">SƠ ĐỒ USE CASE TỔNG QUÁT HỆ THỐNG NEXUS LOGISTICS — ÁNH XẠ 1:1 CODEBASE ĐÃ TRIỂN KHAI</text>')
-    lines.append('    <text x="65" y="105" class="t-sub">53 Trường hợp sử dụng thực tế từ 15 Microservices Backend &amp; 6 Ứng dụng Frontend • Cây kế thừa Tác nhân 3 tầng chuẩn UML 2.5 • Định tuyến vuông góc chuẩn xác</text>')
-    lines.append(f'    <rect x="{width-420}" y="52" width="380" height="62" fill="#F8F9FA" stroke="#000000" stroke-width="1.1"/>')
-    lines.append(f'    <text x="{width-405}" y="74" font-family="Arial" font-size="12.5" font-weight="bold" fill="#000000">MÃ BẢN VẼ: UC-SYS-REAL-01 (REV.6)</text>')
-    lines.append(f'    <text x="{width-405}" y="95" font-family="Arial" font-size="11" fill="#444444">TIÊU CHUẨN: IEEE 830 • UML 2.5 OMG</text>')
+    lines.append(f'    <rect x="40" y="38" width="{width-80}" height="84" fill="#FFFFFF" stroke="#000000" stroke-width="1.6"/>')
+    lines.append('    <text x="65" y="74" class="t-main">SƠ ĐỒ USE CASE TỔNG QUÁT HỆ THỐNG NEXUS LOGISTICS (CHUẨN HOÁ HỆ THỐNG THỰC TẾ)</text>')
+    lines.append('    <text x="65" y="103" class="t-sub">53 Use Cases thực tế từ 15 Backend Microservices &amp; 6 Client Applications • Chuẩn UML 2.5 OMG • Cây kế thừa Tác nhân &amp; Định tuyến vuông góc chuẩn xác</text>')
+    lines.append(f'    <rect x="{width-430}" y="48" width="390" height="64" fill="#F8F9FA" stroke="#000000" stroke-width="1.1"/>')
+    lines.append(f'    <text x="{width-415}" y="73" font-family="Arial" font-size="12.5" font-weight="bold" fill="#000000">MÃ BẢN VẼ: UC-SYS-REAL-01 (REV.7)</text>')
+    lines.append(f'    <text x="{width-415}" y="95" font-family="Arial" font-size="11" fill="#444444">TIÊU CHUẨN: IEEE 830 • UML 2.5 OMG</text>')
     lines.append('  </g>')
     lines.append('')
 
     # SYSTEM BOUNDARY
-    sb_x = 560
+    sb_x = 520
     sb_y = 150
-    sb_w = 2480
+    sb_w = 2560
     sb_h = 2050
     lines.append('  <!-- ==================== SYSTEM BOUNDARY ==================== -->')
     lines.append('  <g id="System_Boundary">')
     lines.append(f'    <rect x="{sb_x}" y="{sb_y}" width="{sb_w}" height="{sb_h}" class="sys-border"/>')
-    lines.append(f'    <rect x="{sb_x}" y="{sb_y}" width="800" height="34" class="pkg-header"/>')
+    lines.append(f'    <rect x="{sb_x}" y="{sb_y}" width="900" height="34" class="pkg-header"/>')
     lines.append(f'    <text x="{sb_x+20}" y="{sb_y+23}" class="t-boundary">RANH GIỚI HỆ THỐNG: NEXUS LOGISTICS PLATFORM (15 BACKEND MICROSERVICES)</text>')
     lines.append('  </g>')
     lines.append('')
 
-    # HELPER FUNCTIONS FOR SVG
+    # HELPER FUNCTIONS
     def uc(cx, cy, rx, ry, ucid, title, uctype="uc"):
         res = []
         res.append(f'    <ellipse cx="{cx}" cy="{cy}" rx="{rx}" ry="{ry}" class="{uctype}"/>')
@@ -160,312 +179,261 @@ def generate_svg():
         return f'    <path d="{d_str}" class="{stroke_class}"/>'
 
     # ==================== PACKAGE 1: TIẾP NHẬN & QUẢN LÝ ĐƠN HÀNG ====================
+    # Top Left: X: 540, Y: 200, W: 1230, H: 590
     lines.append('  <!-- ========================================================= -->')
-    lines.append('  <!-- PACKAGE 1: TIẾP NHẬN & QUẢN LÝ ĐƠN HÀNG (7 USE CASES)    -->')
+    lines.append('  <!-- PACKAGE 1: TIẾP NHẬN & QUẢN LÝ ĐƠN HÀNG (7 UCs)          -->')
     lines.append('  <!-- ========================================================= -->')
     lines.append('  <g id="Pkg1_Shipment_Management">')
-    lines.append('    <rect x="580" y="180" width="1180" height="570" class="pkg-border"/>')
-    lines.append('    <rect x="580" y="180" width="760" height="28" class="pkg-header"/>')
-    lines.append('    <text x="595" y="199" class="t-pkg">PHÂN HỆ 1: TIẾP NHẬN &amp; QUẢN LÝ ĐƠN HÀNG — shipment-service • pickup • pricing • gateway</text>')
+    lines.append('    <rect x="540" y="200" width="1230" height="590" class="pkg-border"/>')
+    lines.append('    <rect x="540" y="200" width="820" height="28" class="pkg-header"/>')
+    lines.append('    <text x="555" y="219" class="t-pkg">PHÂN HỆ 1: TIẾP NHẬN &amp; QUẢN LÝ ĐƠN HÀNG — shipment • pricing • pickup • gateway</text>')
 
-    # Row 1: UC-01 (Tạo đơn - Generalization Parent) and UC-02 (Tính cước IATA - Include)
-    lines.append(uc(950, 250, 115, 28, "UC-01", "Tạo đơn gửi hàng", "uc-abstract"))
-    lines.append(uc(1450, 250, 110, 24, "UC-02", "Tính cước quy đổi IATA", "uc-core"))
-    lines.append(dep_arrow(1065, 250, 1340, 250, "<<include>>", (1200, 240)))
+    # Row 1: UC-01 (Generalization Parent) and UC-02 (Include)
+    lines.append(uc(850, 270, 115, 26, "UC-01", "Tạo đơn gửi hàng", "uc-abstract"))
+    lines.append(uc(1350, 270, 115, 24, "UC-02", "Tính cước quy đổi IATA", "uc-core"))
+    lines.append(dep_arrow(965, 270, 1235, 270, "<<include>>", (1100, 260)))
 
-    # Row 2: Children UC-01a, UC-01b and UC-03 (In nhãn Barcode)
-    lines.append(uc(780, 360, 110, 24, "UC-01a", "Tạo đơn trên Portal", "uc"))
-    lines.append(uc(1120, 360, 115, 24, "UC-01b", "Đồng bộ Webhook Sàn TMĐT", "uc"))
-    lines.append(uc(1450, 360, 110, 24, "UC-03", "In nhãn Barcode / Phiếu gửi", "uc"))
+    # Row 2: Children UC-01a, UC-01b and UC-03
+    lines.append(uc(710, 390, 110, 24, "UC-01a", "Tạo đơn trên Portal", "uc-core"))
+    lines.append(uc(1010, 390, 115, 24, "UC-01b", "Đồng bộ Webhook Sàn TMĐT", "uc-core"))
+    lines.append(uc(1350, 390, 115, 24, "UC-03", "In phiếu gửi Barcode / QR", "uc"))
 
     # Generalization arrows up to UC-01
-    lines.append(gen_arrow(780, 336, 910, 278, "up"))
-    lines.append(gen_arrow(1120, 336, 990, 278, "up"))
+    lines.append(gen_arrow(710, 366, 810, 296, "up"))
+    lines.append(gen_arrow(1010, 366, 890, 296, "up"))
 
     # Include UC-01 -> UC-03
-    lines.append(polyline_path([(1050, 265), (1280, 265), (1280, 360), (1340, 360)], "dep-line"))
-    lines.append('    <polygon points="1340,360 1330,356 1330,364" class="dep-arrow"/>')
-    lines.append('    <text x="1250" y="325" class="t-rel">&lt;&lt;include&gt;&gt;</text>')
+    lines.append(polyline_path([(965, 280), (1190, 280), (1190, 390), (1235, 390)], "dep-line"))
+    lines.append('    <polygon points="1235,390 1225,386 1225,394" class="dep-arrow"/>')
+    lines.append('    <text x="1160" y="340" class="t-rel">&lt;&lt;include&gt;&gt;</text>')
 
     # Row 3: UC-04, UC-05, UC-06, UC-07
-    lines.append(uc(690, 500, 100, 24, "UC-04", "Yêu cầu bưu tá lấy hàng", "uc-core"))
-    lines.append(uc(910, 500, 105, 24, "UC-05", "Đổi địa chỉ / SĐT / COD", "uc"))
-    lines.append(uc(1140, 500, 95, 24, "UC-06", "Hủy đơn gửi hàng", "uc"))
-    lines.append(uc(1380, 500, 115, 24, "UC-07", "Tra cứu danh sách &amp; Lọc đơn", "uc"))
+    lines.append(uc(670, 530, 110, 24, "UC-04", "Yêu cầu bưu tá lấy hàng", "uc-core"))
+    lines.append(uc(940, 530, 105, 24, "UC-05", "Đổi địa chỉ / SĐT / COD", "uc"))
+    lines.append(uc(1200, 530, 100, 24, "UC-06", "Hủy đơn gửi hàng", "uc"))
+    lines.append(uc(1480, 530, 115, 24, "UC-07", "Tra cứu danh sách &amp; Lọc đơn", "uc"))
 
     lines.append('  </g>')
     lines.append('')
 
     # ==================== PACKAGE 2: KHO TRUNG CHUYỂN, PHÂN TUYẾN & GIAO HÀNG ====================
+    # Top Right: X: 1830, Y: 200, W: 1230, H: 590
     lines.append('  <!-- ========================================================= -->')
     lines.append('  <!-- PACKAGE 2: KHO TRUNG CHUYỂN, PHÂN TUYẾN & GIAO HÀNG (11 UCs) -->')
     lines.append('  <!-- ========================================================= -->')
     lines.append('  <g id="Pkg2_Hub_Dispatch_Delivery">')
-    lines.append('    <rect x="1800" y="180" width="1220" height="570" class="pkg-border"/>')
-    lines.append('    <rect x="1800" y="180" width="840" height="28" class="pkg-header"/>')
-    lines.append('    <text x="1815" y="199" class="t-pkg">PHÂN HỆ 2: KHO TRUNG CHUYỂN, PHÂN TUYẾN &amp; GIAO HÀNG — scan • manifest • dispatch • delivery</text>')
+    lines.append('    <rect x="1830" y="200" width="1230" height="590" class="pkg-border"/>')
+    lines.append('    <rect x="1830" y="200" width="870" height="28" class="pkg-header"/>')
+    lines.append('    <text x="1845" y="219" class="t-pkg">PHÂN HỆ 2: KHO TRUNG CHUYỂN, PHÂN TUYẾN &amp; GIAO HÀNG — scan • manifest • dispatch • delivery</text>')
 
     # Row 1: Hub Scanning UCs (UC-08, UC-09, UC-10, UC-11)
-    lines.append(uc(1940, 250, 105, 24, "UC-08", "Quét tiếp nhận gom hàng", "uc"))
-    lines.append(uc(2200, 250, 105, 24, "UC-09", "Quét mã nhập kho (Inbound)", "uc"))
-    lines.append(uc(2460, 250, 105, 24, "UC-10", "Quét mã xuất kho (Outbound)", "uc"))
-    lines.append(uc(2740, 250, 115, 24, "UC-11", "Đóng bao Manifest &amp; Niêm chì", "uc"))
+    lines.append(uc(1970, 270, 105, 24, "UC-08", "Quét tiếp nhận gom hàng", "uc"))
+    lines.append(uc(2230, 270, 105, 24, "UC-09", "Quét mã nhập kho Inbound", "uc"))
+    lines.append(uc(2490, 270, 105, 24, "UC-10", "Quét mã xuất kho Outbound", "uc"))
+    lines.append(uc(2770, 270, 115, 24, "UC-11", "Đóng bao Manifest &amp; Niêm chì", "uc"))
 
     # Row 2: Manifest & Dispatch (UC-12, UC-13)
-    lines.append(uc(2060, 380, 115, 24, "UC-12", "Tiếp nhận bao tải đầu tuyến", "uc"))
-    lines.append(uc(2400, 380, 125, 24, "UC-13", "Phân công task &amp; Tối ưu tuyến", "uc-core"))
+    lines.append(uc(2090, 390, 115, 24, "UC-12", "Tiếp nhận bao tải đầu tuyến", "uc"))
+    lines.append(uc(2430, 390, 125, 24, "UC-13", "Phân công task &amp; Tối ưu tuyến", "uc-core"))
 
     # Row 3: Delivery Execution & Exceptions (UC-14, UC-15, UC-16, UC-17, UC-18)
-    lines.append(uc(2160, 530, 115, 26, "UC-14", "Thực hiện chuyến phát", "uc-core"))
-    lines.append(uc(2500, 530, 110, 24, "UC-15", "Ký nhận điện tử e-POD", "uc"))
-    lines.append(uc(2820, 530, 110, 24, "UC-16", "Báo phát thất bại NDR", "uc"))
-    lines.append(uc(2680, 650, 105, 24, "UC-17", "Hẹn lại ngày phát", "uc"))
-    lines.append(uc(2920, 650, 105, 24, "UC-18", "Xử lý chuyển hoàn (RTS)", "uc"))
+    lines.append(uc(2180, 530, 115, 26, "UC-14", "Thực hiện chuyến phát", "uc-core"))
+    lines.append(uc(2520, 530, 110, 24, "UC-15", "Ký nhận điện tử e-POD &amp; OTP", "uc"))
+    lines.append(uc(2840, 530, 110, 24, "UC-16", "Báo phát thất bại NDR", "uc"))
+    lines.append(uc(2700, 660, 105, 24, "UC-17", "Hẹn lại ngày phát", "uc"))
+    lines.append(uc(2940, 660, 105, 24, "UC-18", "Xử lý chuyển hoàn (RTS)", "uc"))
 
     # Include UC-14 -> UC-15 (e-POD)
-    lines.append(dep_arrow(2275, 530, 2390, 530, "<<include>>", (2335, 518)))
+    lines.append(dep_arrow(2295, 530, 2410, 530, "<<include>>", (2355, 518)))
 
     # Extend UC-16 -> UC-14 (arched line above UC-15)
-    lines.append(polyline_path([(2820, 506), (2820, 465), (2160, 465), (2160, 504)], "dep-line"))
-    lines.append('    <polygon points="2160,504 2156,494 2164,494" class="dep-arrow"/>')
-    lines.append('    <text x="2490" y="455" class="t-rel">&lt;&lt;extend&gt;&gt;</text>')
+    lines.append(polyline_path([(2840, 506), (2840, 465), (2180, 465), (2180, 504)], "dep-line"))
+    lines.append('    <polygon points="2180,504 2176,494 2184,494" class="dep-arrow"/>')
+    lines.append('    <text x="2510" y="455" class="t-rel">&lt;&lt;extend&gt;&gt;</text>')
 
     # Extend UC-17 -> UC-16 & UC-18 -> UC-16
-    lines.append(dep_arrow(2680, 626, 2780, 554, "<<extend>>", (2710, 595)))
-    lines.append(dep_arrow(2920, 626, 2860, 554, "<<extend>>", (2910, 595)))
+    lines.append(dep_arrow(2700, 636, 2800, 554, "<<extend>>", (2730, 600)))
+    lines.append(dep_arrow(2940, 636, 2880, 554, "<<extend>>", (2930, 600)))
 
     lines.append('  </g>')
     lines.append('')
 
-    # ==================== PACKAGE 3: XỬ LÝ SỰ CỐ, KHIẾU NẠI & ĐIỀU TRA ====================
+    # ==================== PACKAGE 3: XỬ LÝ SỰ CỐ & BỒI THƯỜNG BƯU CHÍNH ====================
+    # Middle Left: X: 540, Y: 840, W: 1230, H: 590
     lines.append('  <!-- ========================================================= -->')
-    lines.append('  <!-- PACKAGE 3: XỬ LÝ SỰ CỐ, KHIẾU NẠI & ĐIỀU TRA (6 UCs)     -->')
+    lines.append('  <!-- PACKAGE 3: XỬ LÝ SỰ CỐ & BỒI THƯỜNG BƯU CHÍNH (6 UCs)    -->')
     lines.append('  <!-- ========================================================= -->')
     lines.append('  <g id="Pkg3_Claims_Incident">')
-    lines.append('    <rect x="580" y="790" width="1180" height="625" class="pkg-border"/>')
-    lines.append('    <rect x="580" y="790" width="760" height="28" class="pkg-header"/>')
-    lines.append('    <text x="595" y="809" class="t-pkg">PHÂN HỆ 3: XỬ LÝ SỰ CỐ, KHIẾU NẠI &amp; ĐIỀU TRA — shipment-service (claims, investigations)</text>')
+    lines.append('    <rect x="540" y="840" width="1230" height="590" class="pkg-border"/>')
+    lines.append('    <rect x="540" y="840" width="800" height="28" class="pkg-header"/>')
+    lines.append('    <text x="555" y="859" class="t-pkg">PHÂN HỆ 3: XỬ LÝ SỰ CỐ &amp; BỒI THƯỜNG BƯU CHÍNH — shipment-service (claims, investigations)</text>')
 
     # Row 1: UC-19 and UC-21
-    lines.append(uc(750, 870, 125, 26, "UC-19", "Khởi tạo khiếu nại sự cố", "uc-core"))
-    lines.append(uc(1450, 870, 125, 24, "UC-21", "Thẩm định sự cố (≤ 500k)", "uc-core"))
-    lines.append(dep_arrow(875, 870, 1325, 870, "<<include>>", (1100, 858)))
+    lines.append(uc(740, 920, 125, 26, "UC-19", "Khởi tạo khiếu nại sự cố", "uc-core"))
+    lines.append(uc(1440, 920, 125, 24, "UC-21", "Thẩm định sự cố (≤ 500k)", "uc-core"))
+    lines.append(dep_arrow(865, 920, 1315, 920, "<<include>>", (1090, 908)))
 
     # Row 2: UC-20 (Include from UC-19) and UC-22 (Extend to UC-21)
-    lines.append(uc(750, 1010, 125, 24, "UC-20", "Bưu tá đồng kiểm &amp; Ký số", "uc"))
-    lines.append(dep_arrow(750, 896, 750, 986, "<<include>>", (800, 945)))
+    lines.append(uc(740, 1060, 125, 24, "UC-20", "Bưu tá đồng kiểm &amp; Ký số", "uc"))
+    lines.append(dep_arrow(740, 946, 740, 1036, "<<include>>", (790, 995)))
 
-    lines.append(uc(1450, 1010, 120, 24, "UC-22", "Phê duyệt bồi thường (> 500k)", "uc"))
-    lines.append(dep_arrow(1450, 986, 1450, 894, "<<extend>>", (1505, 945)))
+    lines.append(uc(1440, 1060, 125, 24, "UC-22", "Phê duyệt bồi thường (> 500k)", "uc"))
+    lines.append(dep_arrow(1440, 1036, 1440, 944, "<<extend>>", (1495, 995)))
 
     # Row 3: UC-23 (Include from UC-22) and UC-24 (Extend to UC-21)
-    lines.append(uc(1450, 1150, 120, 24, "UC-23", "Cấn trừ tiền bồi thường", "uc"))
-    lines.append(dep_arrow(1450, 1034, 1450, 1126, "<<include>>", (1505, 1080)))
+    lines.append(uc(1440, 1200, 120, 24, "UC-23", "Cấn trừ tiền bồi thường", "uc"))
+    lines.append(dep_arrow(1440, 1084, 1440, 1176, "<<include>>", (1495, 1130)))
 
-    lines.append(uc(1150, 1010, 120, 24, "UC-24", "Điều tra &amp; Hòa giải tranh chấp", "uc"))
-    lines.append(dep_arrow(1210, 986, 1370, 894, "<<extend>>", (1270, 930)))
+    lines.append(uc(1140, 1060, 120, 24, "UC-24", "Điều tra &amp; Hòa giải tranh chấp", "uc"))
+    lines.append(dep_arrow(1200, 1036, 1360, 944, "<<extend>>", (1260, 980)))
 
     lines.append('  </g>')
     lines.append('')
 
-    # ==================== PACKAGE 4: ĐỐI SOÁT TÀI CHÍNH & THU TIỀN COD ====================
+    # ==================== PACKAGE 4: ĐỐI SOÁT TÀI CHÍNH & THU HỘ COD ====================
+    # Middle Right: X: 1830, Y: 840, W: 1230, H: 590
     lines.append('  <!-- ========================================================= -->')
-    lines.append('  <!-- PACKAGE 4: ĐỐI SOÁT TÀI CHÍNH & THU TIỀN COD (6 UCs)     -->')
+    lines.append('  <!-- PACKAGE 4: ĐỐI SOÁT TÀI CHÍNH & THU HỘ COD (6 UCs)       -->')
     lines.append('  <!-- ========================================================= -->')
     lines.append('  <g id="Pkg4_Finance_COD">')
-    lines.append('    <rect x="1800" y="790" width="1220" height="625" class="pkg-border"/>')
-    lines.append('    <rect x="1800" y="790" width="760" height="28" class="pkg-header"/>')
-    lines.append('    <text x="1815" y="809" class="t-pkg">PHÂN HỆ 4: ĐỐI SOÁT TÀI CHÍNH &amp; THU TIỀN COD — payment-service • reporting-service</text>')
+    lines.append('    <rect x="1830" y="840" width="1230" height="590" class="pkg-border"/>')
+    lines.append('    <rect x="1830" y="840" width="800" height="28" class="pkg-header"/>')
+    lines.append('    <text x="1845" y="859" class="t-pkg">PHÂN HỆ 4: ĐỐI SOÁT TÀI CHÍNH &amp; THU HỘ COD — payment-service • reporting-service</text>')
 
     # Row 1: UC-25 (Generalization Parent) and UC-26 (Shift Remittance)
-    lines.append(uc(2160, 860, 125, 28, "UC-25", "Thu tiền COD bưu phẩm", "uc-abstract"))
-    lines.append(uc(2700, 860, 115, 24, "UC-26", "Quyết toán ca nộp tiền bưu tá", "uc-core"))
+    lines.append(uc(2180, 910, 125, 28, "UC-25", "Thu hộ tiền COD bưu phẩm", "uc-abstract"))
+    lines.append(uc(2730, 910, 120, 24, "UC-26", "Quyết toán ca nộp tiền bưu tá", "uc-core"))
 
     # Row 2: Children UC-25a, UC-25b and UC-27 (SePay Webhook)
-    lines.append(uc(2010, 970, 110, 24, "UC-25a", "Thu tiền mặt trực tiếp", "uc-core"))
-    lines.append(uc(2290, 970, 115, 24, "UC-25b", "Thanh toán VietQR SePay", "uc-core"))
-    lines.append(uc(2700, 970, 120, 24, "UC-27", "Đối soát tự động SePay", "uc"))
+    lines.append(uc(2020, 1030, 110, 24, "UC-25a", "Thu tiền mặt trực tiếp", "uc-core"))
+    lines.append(uc(2330, 1030, 115, 24, "UC-25b", "Thanh toán VietQR SePay", "uc-core"))
+    lines.append(uc(2730, 1030, 120, 24, "UC-27", "Đối soát tự động SePay", "uc"))
 
     # Generalization arrows up to UC-25
-    lines.append(gen_arrow(2010, 946, 2110, 888, "up"))
-    lines.append(gen_arrow(2290, 946, 2210, 888, "up"))
+    lines.append(gen_arrow(2020, 1006, 2130, 938, "up"))
+    lines.append(gen_arrow(2330, 1006, 2230, 938, "up"))
 
     # Row 3: UC-28 (Lập bảng kê) and UC-29 (Xác nhận chốt sổ)
-    lines.append(uc(2160, 1110, 120, 24, "UC-28", "Lập bảng kê đối soát COD", "uc-core"))
-    lines.append(uc(2520, 1110, 120, 24, "UC-29", "Xác nhận đối soát &amp; Chốt sổ", "uc"))
+    lines.append(uc(2180, 1170, 120, 24, "UC-28", "Lập bảng kê đối soát COD", "uc-core"))
+    lines.append(uc(2550, 1170, 120, 24, "UC-29", "Xác nhận đối soát &amp; Chốt sổ", "uc"))
 
     # Row 4: UC-30 (Báo cáo tài chính)
-    lines.append(uc(2160, 1240, 125, 24, "UC-30", "Báo cáo dòng tiền &amp; Doanh thu", "uc"))
+    lines.append(uc(2180, 1300, 125, 24, "UC-30", "Báo cáo dòng tiền &amp; Doanh thu", "uc"))
 
     lines.append('  </g>')
     lines.append('')
 
-    # ==================== PACKAGE 5: TRUY VẾT & VIỄN TRẮC HÀNH TRÌNH ====================
+    # ==================== PACKAGE 5: TRUY VẾT HÀNH TRÌNH & TRỢ LÝ AI RAG ====================
+    # Bottom Left: X: 540, Y: 1480, W: 1230, H: 700
     lines.append('  <!-- ========================================================= -->')
-    lines.append('  <!-- PACKAGE 5: TRUY VẾT & VIỄN TRẮC HÀNH TRÌNH (4 UCs)       -->')
+    lines.append('  <!-- PACKAGE 5: TRUY VẾT HÀNH TRÌNH & TRỢ LÝ AI RAG (11 UCs)   -->')
     lines.append('  <!-- ========================================================= -->')
-    lines.append('  <g id="Pkg5_Telemetry_Tracking">')
-    lines.append('    <rect x="580" y="1450" width="720" height="725" class="pkg-border"/>')
-    lines.append('    <rect x="580" y="1450" width="620" height="28" class="pkg-header"/>')
-    lines.append('    <text x="595" y="1469" class="t-pkg">PHÂN HỆ 5: TRUY VẾT &amp; VIỄN TRẮC HÀNH TRÌNH — tracking-service • scan</text>')
+    lines.append('  <g id="Pkg5_Telemetry_AI_RAG">')
+    lines.append('    <rect x="540" y="1480" width="1230" height="700" class="pkg-border"/>')
+    lines.append('    <rect x="540" y="1480" width="870" height="28" class="pkg-header"/>')
+    lines.append('    <text x="555" y="1499" class="t-pkg">PHÂN HỆ 5: TRUY VẾT HÀNH TRÌNH &amp; TRỢ LÝ AI RAG — tracking • chatbot • scan • gateway</text>')
 
-    # Row 1: UC-31 and UC-33
-    lines.append(uc(780, 1560, 110, 26, "UC-31", "Tra cứu lộ trình công khai", "uc"))
-    lines.append(uc(1100, 1560, 110, 26, "UC-33", "Tra cứu viễn trắc nội bộ", "uc"))
+    # Tracking Group: UC-31, UC-32, UC-33, UC-34
+    lines.append(uc(740, 1560, 110, 26, "UC-31", "Tra cứu lộ trình công khai", "uc"))
+    lines.append(uc(740, 1720, 110, 24, "UC-32", "Khử định danh PII Masking", "uc"))
+    lines.append(dep_arrow(740, 1586, 740, 1696, "<<include>>", (795, 1640)))
 
-    # Row 2: Included UC-32 (PII Masking) and UC-34 (Realtime GPS)
-    lines.append(uc(780, 1750, 110, 24, "UC-32", "Khử định danh PII Masking", "uc"))
-    lines.append(dep_arrow(780, 1586, 780, 1726, "<<include>>", (835, 1660)))
+    lines.append(uc(1020, 1560, 110, 26, "UC-33", "Tra cứu viễn trắc nội bộ", "uc"))
+    lines.append(uc(1020, 1720, 115, 24, "UC-34", "Định vị GPS thời gian thực", "uc"))
+    lines.append(dep_arrow(1020, 1586, 1020, 1696, "<<include>>", (1075, 1640)))
 
-    lines.append(uc(1100, 1750, 115, 24, "UC-34", "Định vị GPS thời gian thực", "uc"))
-    lines.append(dep_arrow(1100, 1586, 1100, 1726, "<<include>>", (1155, 1660)))
+    # AI Group: UC-35, UC-40, UC-36, UC-37, UC-38, UC-39, UC-41
+    lines.append(uc(1380, 1560, 125, 26, "UC-35", "Hội thoại tự nhiên với Trợ lý AI", "uc-core"))
+    lines.append(uc(1640, 1560, 110, 24, "UC-40", "Sinh thẻ trực quan (Rich Card)", "uc-ext"))
+    lines.append(dep_arrow(1530, 1560, 1505, 1560, "<<extend>>", (1515, 1548)))
+
+    lines.append(uc(1380, 1700, 110, 24, "UC-36", "Bóc tách Ý định &amp; Thực thể", "uc"))
+    lines.append(dep_arrow(1380, 1586, 1380, 1676, "<<include>>", (1430, 1630)))
+
+    lines.append(uc(1380, 1840, 120, 24, "UC-37", "Truy xuất RAG 768-D Vectors", "uc-core"))
+    lines.append(dep_arrow(1380, 1724, 1380, 1816, "<<include>>", (1430, 1770)))
+
+    # Tools row: UC-38, UC-39, UC-41
+    lines.append(uc(1180, 2000, 115, 24, "UC-38", "Tư vấn cước IATA tự động", "uc"))
+    lines.append(uc(1430, 2000, 115, 24, "UC-39", "Hướng dẫn lập khiếu nại AI", "uc"))
+    lines.append(uc(1670, 2000, 115, 24, "UC-41", "Điều chuyển nhân viên hỗ trợ", "uc"))
 
     lines.append('  </g>')
     lines.append('')
 
-    # ==================== PACKAGE 6: TRỢ LÝ ẢO AI & ĐỘNG CƠ TRI THỨC RAG ====================
+    # ==================== PACKAGE 6: QUẢN TRỊ HỆ THỐNG, DANH MỤC & PHÂN QUYỀN ====================
+    # Bottom Right: X: 1830, Y: 1480, W: 1230, H: 700
     lines.append('  <!-- ========================================================= -->')
-    lines.append('  <!-- PACKAGE 6: TRỢ LÝ ẢO AI & ĐỘNG CƠ TRI THỨC RAG (7 UCs)   -->')
+    lines.append('  <!-- PACKAGE 6: QUẢN TRỊ HỆ THỐNG & CẤU HÌNH (12 UCs)         -->')
     lines.append('  <!-- ========================================================= -->')
-    lines.append('  <g id="Pkg6_AI_RAG">')
-    lines.append('    <rect x="1330" y="1450" width="850" height="725" class="pkg-border"/>')
-    lines.append('    <rect x="1330" y="1450" width="680" height="28" class="pkg-header"/>')
-    lines.append('    <text x="1345" y="1469" class="t-pkg">PHÂN HỆ 6: TRỢ LÝ ẢO AI &amp; ĐỘNG CƠ TRI THỨC RAG — chatbot-service • gateway-bff</text>')
-
-    # Row 1: UC-35 (Chat AI) and UC-40 (Rich Card)
-    lines.append(uc(1600, 1540, 125, 26, "UC-35", "Hội thoại tự nhiên với Trợ lý AI", "uc-core"))
-    lines.append(uc(1980, 1540, 115, 24, "UC-40", "Sinh thẻ trực quan (Rich Card)", "uc-ext"))
-    lines.append(dep_arrow(1865, 1540, 1725, 1540, "<<extend>>", (1795, 1528)))
-
-    # Row 2: UC-36 (Intent/Entity)
-    lines.append(uc(1600, 1680, 110, 24, "UC-36", "Bóc tách Ý định &amp; Thực thể", "uc"))
-    lines.append(dep_arrow(1600, 1566, 1600, 1656, "<<include>>", (1650, 1610)))
-
-    # Row 3: UC-37 (Semantic RAG 768-D)
-    lines.append(uc(1600, 1820, 120, 24, "UC-37", "Truy xuất RAG 768-D Vectors", "uc-core"))
-    lines.append(dep_arrow(1600, 1704, 1600, 1796, "<<include>>", (1650, 1750)))
-
-    # Row 4: AI Tools UC-38, UC-39 and Human Handoff UC-41
-    lines.append(uc(1500, 1980, 115, 24, "UC-38", "Tư vấn cước IATA tự động", "uc"))
-    lines.append(uc(1750, 1980, 115, 24, "UC-39", "Hướng dẫn lập khiếu nại AI", "uc"))
-    lines.append(uc(2010, 1980, 115, 24, "UC-41", "Điều chuyển nhân viên hỗ trợ", "uc"))
-
-    lines.append('  </g>')
-    lines.append('')
-
-    # ==================== PACKAGE 7: QUẢN TRỊ HỆ THỐNG, DANH MỤC & PHÂN QUYỀN ====================
-    lines.append('  <!-- ========================================================= -->')
-    lines.append('  <!-- PACKAGE 7: QUẢN TRỊ HỆ THỐNG &amp; CẤU HÌNH (12 UCs)     -->')
-    lines.append('  <!-- ========================================================= -->')
-    lines.append('  <g id="Pkg7_Admin_Masterdata">')
-    lines.append('    <rect x="2210" y="1450" width="810" height="725" class="pkg-border"/>')
-    lines.append('    <rect x="2210" y="1450" width="700" height="28" class="pkg-header"/>')
-    lines.append('    <text x="2225" y="1469" class="t-pkg">PHÂN HỆ 7: QUẢN TRỊ HỆ THỐNG &amp; CẤU HÌNH — auth-service • masterdata-service</text>')
+    lines.append('  <g id="Pkg6_Admin_Masterdata">')
+    lines.append('    <rect x="1830" y="1480" width="1230" height="700" class="pkg-border"/>')
+    lines.append('    <rect x="1830" y="1480" width="870" height="28" class="pkg-header"/>')
+    lines.append('    <text x="1845" y="1499" class="t-pkg">PHÂN HỆ 6: QUẢN TRỊ HỆ THỐNG, DANH MỤC &amp; PHÂN QUYỀN — auth-service • masterdata-service</text>')
 
     # Row 1: Auth & User Management (UC-42, UC-43, UC-44)
-    lines.append(uc(2350, 1540, 100, 24, "UC-42", "Đăng nhập hệ thống", "uc-core"))
-    lines.append(uc(2580, 1540, 105, 24, "UC-43", "Đăng ký tài khoản khách", "uc"))
-    lines.append(uc(2830, 1540, 110, 24, "UC-44", "Hồ sơ cá nhân &amp; Mật khẩu", "uc"))
+    lines.append(uc(2020, 1560, 105, 24, "UC-42", "Đăng nhập hệ thống", "uc-core"))
+    lines.append(uc(2300, 1560, 110, 24, "UC-43", "Đăng ký tài khoản khách", "uc"))
+    lines.append(uc(2600, 1560, 115, 24, "UC-44", "Hồ sơ cá nhân &amp; Mật khẩu", "uc"))
 
     # Row 2: User Accounts, RBAC, Audit (UC-45, UC-46, UC-47)
-    lines.append(uc(2350, 1670, 105, 24, "UC-45", "Quản trị người dùng", "uc-core"))
-    lines.append(uc(2580, 1670, 105, 24, "UC-46", "Phân quyền RBAC Matrix", "uc-core"))
-    lines.append(uc(2830, 1670, 110, 24, "UC-47", "Nhật ký kiểm toán bảo mật", "uc"))
+    lines.append(uc(2020, 1700, 110, 24, "UC-45", "Quản trị người dùng", "uc-core"))
+    lines.append(uc(2300, 1700, 110, 24, "UC-46", "Phân quyền RBAC Matrix", "uc-core"))
+    lines.append(uc(2600, 1700, 115, 24, "UC-47", "Nhật ký kiểm toán bảo mật", "uc"))
 
     # Row 3: Hubs, Zones, SLA (UC-48, UC-49, UC-50)
-    lines.append(uc(2350, 1800, 105, 24, "UC-48", "Quản lý Hubs &amp; Bưu cục", "uc"))
-    lines.append(uc(2580, 1800, 105, 24, "UC-49", "Quản lý phân vùng địa lý", "uc"))
-    lines.append(uc(2830, 1800, 110, 24, "UC-50", "Cấu hình hệ thống &amp; SLA", "uc-core"))
+    lines.append(uc(2020, 1840, 110, 24, "UC-48", "Quản trị Hubs 4 cấp", "uc"))
+    lines.append(uc(2300, 1840, 110, 24, "UC-49", "Quản lý phân vùng địa lý", "uc"))
+    lines.append(uc(2600, 1840, 115, 24, "UC-50", "Cấu hình hệ thống &amp; SLA", "uc-core"))
 
     # Row 4: CMS, Merchant Profiles, NDR Reasons (UC-51, UC-52, UC-53)
-    lines.append(uc(2350, 1930, 105, 24, "UC-51", "CMS Quản trị bài viết", "uc"))
-    lines.append(uc(2580, 1930, 105, 24, "UC-52", "Hồ sơ đối tác Merchant", "uc"))
-    lines.append(uc(2830, 1930, 110, 24, "UC-53", "Danh mục lý do giao NDR", "uc"))
+    lines.append(uc(2020, 1980, 110, 24, "UC-51", "CMS Quản trị bài viết", "uc"))
+    lines.append(uc(2300, 1980, 110, 24, "UC-52", "Hồ sơ đối tác Merchant", "uc"))
+    lines.append(uc(2600, 1980, 115, 24, "UC-53", "Danh mục lý do giao NDR", "uc"))
 
     lines.append('  </g>')
     lines.append('')
 
-    # ==================== ACTOR INHERITANCE TREES (EXACTLY 6 ROLES) ====================
+    # ==================== ACTOR INHERITANCE TREES ====================
     lines.append('  <!-- ========================================================= -->')
-    lines.append('  <!-- ACTOR GENERALIZATION TREES (ORTHOGONAL BUS ROUTING)      -->')
+    lines.append('  <!-- ACTOR GENERALIZATION TREES & ALIGNED COLUMNS              -->')
     lines.append('  <!-- ========================================================= -->')
 
-    # ROOT ACTOR: System User (X: 280, Y: 220)
-    lines.append('  <g id="Actor_System_User" transform="translate(230, 180)">')
-    lines.append('    <circle cx="50" cy="25" r="16" class="actor-head-abs"/>')
-    lines.append('    <line x1="50" y1="41" x2="50" y2="85" class="actor-body-abs"/>')
-    lines.append('    <line x1="22" y1="58" x2="78" y2="58" class="actor-body-abs"/>')
-    lines.append('    <line x1="50" y1="85" x2="28" y2="120" class="actor-body-abs"/>')
-    lines.append('    <line x1="50" y1="85" x2="72" y2="120" class="actor-body-abs"/>')
-    lines.append('    <text x="50" y="138" class="t-rel">&lt;&lt;abstract&gt;&gt;</text>')
-    lines.append('    <text x="50" y="152" class="t-actor-abs">Người dùng Hệ thống</text>')
-    lines.append('    <text x="50" y="167" class="t-role">(System User / Base Actor)</text>')
+    # TOP CENTER: Root System User (X: 1800, Y: 100)
+    lines.append('  <g id="Actor_System_User" transform="translate(1750, 48)">')
+    lines.append('    <circle cx="50" cy="22" r="14" class="actor-head-abs"/>')
+    lines.append('    <line x1="50" y1="36" x2="50" y2="70" class="actor-body-abs"/>')
+    lines.append('    <line x1="26" y1="48" x2="74" y2="48" class="actor-body-abs"/>')
+    lines.append('    <line x1="50" y1="70" x2="30" y2="98" class="actor-body-abs"/>')
+    lines.append('    <line x1="50" y1="70" x2="70" y2="98" class="actor-body-abs"/>')
+    lines.append('    <text x="50" y="112" class="t-rel">&lt;&lt;abstract&gt;&gt;</text>')
+    lines.append('    <text x="50" y="125" class="t-actor-abs">Người dùng Hệ thống (System User)</text>')
     lines.append('  </g>')
 
-    # SUB-ROOT 1: Customer (X: 280, Y: 430)
-    lines.append('  <g id="Actor_Customer" transform="translate(230, 420)">')
-    lines.append('    <circle cx="50" cy="25" r="16" class="actor-head-abs"/>')
-    lines.append('    <line x1="50" y1="41" x2="50" y2="85" class="actor-body-abs"/>')
-    lines.append('    <line x1="22" y1="58" x2="78" y2="58" class="actor-body-abs"/>')
-    lines.append('    <line x1="50" y1="85" x2="28" y2="120" class="actor-body-abs"/>')
-    lines.append('    <line x1="50" y1="85" x2="72" y2="120" class="actor-body-abs"/>')
-    lines.append('    <text x="50" y="138" class="t-rel">&lt;&lt;abstract&gt;&gt;</text>')
-    lines.append('    <text x="50" y="152" class="t-actor-abs">Khách hàng</text>')
-    lines.append('    <text x="50" y="167" class="t-role">(Customer / External User)</text>')
-    lines.append('  </g>')
-    # Generalization Customer -> System User
-    lines.append(gen_arrow(280, 420, 280, 360, "up"))
-
-    # T-BUS FOR GUEST & AUTH USER UNDER CUSTOMER:
-    lines.append(gen_arrow(280, 560, 280, 500, "up"))
-    lines.append(polyline_path([(140, 560), (420, 560)], "gen-line"))
-    lines.append(polyline_path([(140, 560), (140, 680)], "gen-line"))
-    lines.append(polyline_path([(420, 560), (420, 680)], "gen-line"))
-
-    # 1. GUEST (X: 140, Y: 680)
-    lines.append('  <g id="Actor_Guest" transform="translate(90, 680)">')
-    lines.append('    <circle cx="50" cy="25" r="16" class="actor-head"/>')
-    lines.append('    <line x1="50" y1="41" x2="50" y2="85" class="actor-body"/>')
-    lines.append('    <line x1="22" y1="58" x2="78" y2="58" class="actor-body"/>')
-    lines.append('    <line x1="50" y1="85" x2="28" y2="120" class="actor-body"/>')
-    lines.append('    <line x1="50" y1="85" x2="72" y2="120" class="actor-body"/>')
-    lines.append('    <text x="50" y="140" class="t-actor">Khách vãng lai</text>')
-    lines.append('    <text x="50" y="155" class="t-role">(GUEST / Anonymous)</text>')
-    lines.append('    <text x="50" y="169" class="t-app">guest-web :5177</text>')
+    # LEFT ACTOR COLUMN (X: 250)
+    # Sub-Root: Khách hàng (Customer - Abstract, Y: 190)
+    lines.append('  <g id="Actor_Customer" transform="translate(200, 180)">')
+    lines.append('    <circle cx="50" cy="22" r="14" class="actor-head-abs"/>')
+    lines.append('    <line x1="50" y1="36" x2="50" y2="70" class="actor-body-abs"/>')
+    lines.append('    <line x1="26" y1="48" x2="74" y2="48" class="actor-body-abs"/>')
+    lines.append('    <line x1="50" y1="70" x2="30" y2="98" class="actor-body-abs"/>')
+    lines.append('    <line x1="50" y1="70" x2="70" y2="98" class="actor-body-abs"/>')
+    lines.append('    <text x="50" y="112" class="t-rel">&lt;&lt;abstract&gt;&gt;</text>')
+    lines.append('    <text x="50" y="125" class="t-actor-abs">Khách hàng (Customer)</text>')
     lines.append('  </g>')
 
-    # SUB-CHILD 1.2: Authenticated User (X: 420, Y: 680)
-    lines.append('  <g id="Actor_Auth_User" transform="translate(370, 680)">')
-    lines.append('    <circle cx="50" cy="25" r="16" class="actor-head-abs"/>')
-    lines.append('    <line x1="50" y1="41" x2="50" y2="85" class="actor-body-abs"/>')
-    lines.append('    <line x1="22" y1="58" x2="78" y2="58" class="actor-body-abs"/>')
-    lines.append('    <line x1="50" y1="85" x2="28" y2="120" class="actor-body-abs"/>')
-    lines.append('    <line x1="50" y1="85" x2="72" y2="120" class="actor-body-abs"/>')
-    lines.append('    <text x="50" y="138" class="t-rel">&lt;&lt;abstract&gt;&gt;</text>')
-    lines.append('    <text x="50" y="152" class="t-actor-abs">User Đã định danh</text>')
-    lines.append('    <text x="50" y="167" class="t-role">(Authenticated User)</text>')
-    lines.append('  </g>')
+    # Generalization Customer -> System User (via top perimeter)
+    lines.append(polyline_path([(250, 180), (250, 140), (1740, 140), (1740, 110)], "gen-line"))
+    lines.append('    <polygon points="1733,110 1740,96 1747,110" class="gen-arrow"/>')
 
-    # T-BUS FOR CUSTOMER & MERCHANT UNDER AUTH USER:
-    lines.append(gen_arrow(420, 890, 420, 850, "up"))
-    lines.append(polyline_path([(240, 890), (420, 890)], "gen-line"))
-    lines.append(polyline_path([(240, 890), (240, 1020)], "gen-line"))
-    lines.append(polyline_path([(360, 890), (360, 1360), (240, 1360), (240, 1380)], "gen-line"))
+    # Left Vertical Generalization Bus at X: 110
+    lines.append(polyline_path([(250, 310), (250, 340), (110, 340), (110, 1820)], "gen-line"))
+    lines.append(polyline_path([(110, 520), (200, 520)], "gen-line"))
+    lines.append(polyline_path([(110, 1100), (200, 1100)], "gen-line"))
+    lines.append(polyline_path([(110, 1820), (200, 1820)], "gen-line"))
 
-    # 2. CUSTOMER (Người nhận hàng, X: 240, Y: 1020)
-    lines.append('  <g id="Actor_Recipient" transform="translate(190, 1020)">')
-    lines.append('    <circle cx="50" cy="25" r="16" class="actor-head"/>')
-    lines.append('    <line x1="50" y1="41" x2="50" y2="85" class="actor-body"/>')
-    lines.append('    <line x1="22" y1="58" x2="78" y2="58" class="actor-body"/>')
-    lines.append('    <line x1="50" y1="85" x2="28" y2="120" class="actor-body"/>')
-    lines.append('    <line x1="50" y1="85" x2="72" y2="120" class="actor-body"/>')
-    lines.append('    <text x="50" y="140" class="t-actor">Người nhận hàng</text>')
-    lines.append('    <text x="50" y="155" class="t-role">(CUSTOMER / Recipient)</text>')
-    lines.append('    <text x="50" y="169" class="t-app">customer-mobile</text>')
-    lines.append('  </g>')
-
-    # 3. MERCHANT (Chủ Shop / Người gửi, X: 240, Y: 1380)
-    lines.append('  <g id="Actor_Merchant" transform="translate(190, 1380)">')
+    # 1. MERCHANT (Chủ shop B2B, X: 250, Y: 460 — Aligned with Pkg 1)
+    lines.append('  <g id="Actor_Merchant" transform="translate(200, 460)">')
     lines.append('    <circle cx="50" cy="25" r="16" class="actor-head"/>')
     lines.append('    <line x1="50" y1="41" x2="50" y2="85" class="actor-body"/>')
     lines.append('    <line x1="22" y1="58" x2="78" y2="58" class="actor-body"/>')
@@ -473,36 +441,57 @@ def generate_svg():
     lines.append('    <line x1="50" y1="85" x2="72" y2="120" class="actor-body"/>')
     lines.append('    <text x="50" y="140" class="t-actor">Chủ Shop / Người gửi</text>')
     lines.append('    <text x="50" y="155" class="t-role">(MERCHANT)</text>')
-    lines.append('    <text x="50" y="169" class="t-app">merchant-web :5174</text>')
+    lines.append('    <text x="50" y="169" class="t-app">merchant-web :5176</text>')
     lines.append('  </g>')
 
-    # ==================== RIGHT SIDE: STAFF ACTOR TREE ====================
-    # SUB-ROOT 2: Internal Staff (X: 3320, Y: 220)
-    lines.append('  <g id="Actor_Internal_Staff" transform="translate(3270, 180)">')
-    lines.append('    <circle cx="50" cy="25" r="16" class="actor-head-abs"/>')
-    lines.append('    <line x1="50" y1="41" x2="50" y2="85" class="actor-body-abs"/>')
-    lines.append('    <line x1="22" y1="58" x2="78" y2="58" class="actor-body-abs"/>')
-    lines.append('    <line x1="50" y1="85" x2="28" y2="120" class="actor-body-abs"/>')
-    lines.append('    <line x1="50" y1="85" x2="72" y2="120" class="actor-body-abs"/>')
-    lines.append('    <text x="50" y="138" class="t-rel">&lt;&lt;abstract&gt;&gt;</text>')
-    lines.append('    <text x="50" y="152" class="t-actor-abs">Nhân sự Nội bộ</text>')
-    lines.append('    <text x="50" y="167" class="t-role">(Internal Staff)</text>')
+    # 2. CUSTOMER (Người nhận hàng, X: 250, Y: 1040 — Aligned with Pkg 3)
+    lines.append('  <g id="Actor_Recipient" transform="translate(200, 1040)">')
+    lines.append('    <circle cx="50" cy="25" r="16" class="actor-head"/>')
+    lines.append('    <line x1="50" y1="41" x2="50" y2="85" class="actor-body"/>')
+    lines.append('    <line x1="22" y1="58" x2="78" y2="58" class="actor-body"/>')
+    lines.append('    <line x1="50" y1="85" x2="28" y2="120" class="actor-body"/>')
+    lines.append('    <line x1="50" y1="85" x2="72" y2="120" class="actor-body"/>')
+    lines.append('    <text x="50" y="140" class="t-actor">Người nhận hàng</text>')
+    lines.append('    <text x="50" y="155" class="t-role">(CUSTOMER / Recipient)</text>')
+    lines.append('    <text x="50" y="169" class="t-app">customer-mobile :8082</text>')
     lines.append('  </g>')
 
-    # Generalization Internal Staff -> System User (Top perimeter at Y: 130)
-    lines.append(polyline_path([(3320, 180), (3320, 130), (280, 130), (280, 160)], "gen-line"))
-    lines.append('    <polygon points="273,160 280,174 287,160" class="gen-arrow"/>')
+    # 3. GUEST (Khách vãng lai, X: 250, Y: 1760 — Aligned with Pkg 5)
+    lines.append('  <g id="Actor_Guest" transform="translate(200, 1760)">')
+    lines.append('    <circle cx="50" cy="25" r="16" class="actor-head"/>')
+    lines.append('    <line x1="50" y1="41" x2="50" y2="85" class="actor-body"/>')
+    lines.append('    <line x1="22" y1="58" x2="78" y2="58" class="actor-body"/>')
+    lines.append('    <line x1="50" y1="85" x2="28" y2="120" class="actor-body"/>')
+    lines.append('    <line x1="50" y1="85" x2="72" y2="120" class="actor-body"/>')
+    lines.append('    <text x="50" y="140" class="t-actor">Khách vãng lai</text>')
+    lines.append('    <text x="50" y="155" class="t-role">(GUEST / Anonymous)</text>')
+    lines.append('    <text x="50" y="169" class="t-app">guest-web :5174</text>')
+    lines.append('  </g>')
 
-    # MULTI-TAP VERTICAL BUS ON RIGHT MARGIN AT X: 3480
-    lines.append(polyline_path([(3480, 350), (3334, 350)], "gen-line"))
-    lines.append('    <polygon points="3334,343 3320,350 3334,357" class="gen-arrow"/>')
-    lines.append(polyline_path([(3480, 350), (3480, 1460)], "gen-line"))
-    lines.append(polyline_path([(3370, 620), (3480, 620)], "gen-line"))
-    lines.append(polyline_path([(3370, 1020), (3480, 1020)], "gen-line"))
-    lines.append(polyline_path([(3370, 1460), (3480, 1460)], "gen-line"))
+    # RIGHT ACTOR COLUMN (X: 3350)
+    # Sub-Root: Nhân sự Nội bộ (Internal Staff - Abstract, Y: 190)
+    lines.append('  <g id="Actor_Internal_Staff" transform="translate(3300, 180)">')
+    lines.append('    <circle cx="50" cy="22" r="14" class="actor-head-abs"/>')
+    lines.append('    <line x1="50" y1="36" x2="50" y2="70" class="actor-body-abs"/>')
+    lines.append('    <line x1="26" y1="48" x2="74" y2="48" class="actor-body-abs"/>')
+    lines.append('    <line x1="50" y1="70" x2="30" y2="98" class="actor-body-abs"/>')
+    lines.append('    <line x1="50" y1="70" x2="70" y2="98" class="actor-body-abs"/>')
+    lines.append('    <text x="50" y="112" class="t-rel">&lt;&lt;abstract&gt;&gt;</text>')
+    lines.append('    <text x="50" y="125" class="t-actor-abs">Nhân sự Nội bộ (Internal Staff)</text>')
+    lines.append('  </g>')
 
-    # 4. COURIER (Bưu tá giao nhận duy nhất, X: 3320, Y: 580)
-    lines.append('  <g id="Actor_Courier" transform="translate(3270, 580)">')
+    # Generalization Internal Staff -> System User (via top perimeter)
+    lines.append(polyline_path([(3350, 180), (3350, 140), (1860, 140), (1860, 110)], "gen-line"))
+    lines.append('    <polygon points="1853,110 1860,96 1867,110" class="gen-arrow"/>')
+
+    # Right Vertical Generalization Bus at X: 3490
+    lines.append(polyline_path([(3350, 310), (3350, 340), (3490, 340), (3490, 1820)], "gen-line"))
+    lines.append(polyline_path([(3400, 520), (3490, 520)], "gen-line"))
+    lines.append(polyline_path([(3400, 1100), (3490, 1100)], "gen-line"))
+    lines.append(polyline_path([(3400, 1820), (3490, 1820)], "gen-line"))
+
+    # 4. COURIER (Bưu tá giao nhận, X: 3350, Y: 460 — Aligned with Pkg 2)
+    lines.append('  <g id="Actor_Courier" transform="translate(3300, 460)">')
     lines.append('    <circle cx="50" cy="25" r="16" class="actor-head"/>')
     lines.append('    <line x1="50" y1="41" x2="50" y2="85" class="actor-body"/>')
     lines.append('    <line x1="22" y1="58" x2="78" y2="58" class="actor-body"/>')
@@ -510,11 +499,11 @@ def generate_svg():
     lines.append('    <line x1="50" y1="85" x2="72" y2="120" class="actor-body"/>')
     lines.append('    <text x="50" y="140" class="t-actor">Bưu tá giao nhận</text>')
     lines.append('    <text x="50" y="155" class="t-role">(COURIER)</text>')
-    lines.append('    <text x="50" y="169" class="t-app">courier-mobile</text>')
+    lines.append('    <text x="50" y="169" class="t-app">courier-mobile :8081</text>')
     lines.append('  </g>')
 
-    # 5. OPS (Vận hành Bưu cục & Kho, X: 3320, Y: 980)
-    lines.append('  <g id="Actor_Ops" transform="translate(3270, 980)">')
+    # 5. OPS (Vận hành Bưu cục & Kho, X: 3350, Y: 1040 — Aligned with Pkg 4)
+    lines.append('  <g id="Actor_Ops" transform="translate(3300, 1040)">')
     lines.append('    <circle cx="50" cy="25" r="16" class="actor-head"/>')
     lines.append('    <line x1="50" y1="41" x2="50" y2="85" class="actor-body"/>')
     lines.append('    <line x1="22" y1="58" x2="78" y2="58" class="actor-body"/>')
@@ -522,11 +511,11 @@ def generate_svg():
     lines.append('    <line x1="50" y1="85" x2="72" y2="120" class="actor-body"/>')
     lines.append('    <text x="50" y="140" class="t-actor">Vận hành Bưu cục &amp; Kho</text>')
     lines.append('    <text x="50" y="155" class="t-role">(OPS / Hub Ops)</text>')
-    lines.append('    <text x="50" y="169" class="t-app">ops-web :5173</text>')
+    lines.append('    <text x="50" y="169" class="t-app">ops-web :5175</text>')
     lines.append('  </g>')
 
-    # 6. SYSTEM_ADMIN (Quản trị viên Hệ thống, X: 3320, Y: 1420)
-    lines.append('  <g id="Actor_Admin" transform="translate(3270, 1420)">')
+    # 6. SYSTEM_ADMIN (Quản trị viên Hệ thống, X: 3350, Y: 1760 — Aligned with Pkg 6)
+    lines.append('  <g id="Actor_Admin" transform="translate(3300, 1760)">')
     lines.append('    <circle cx="50" cy="25" r="16" class="actor-head"/>')
     lines.append('    <line x1="50" y1="41" x2="50" y2="85" class="actor-body"/>')
     lines.append('    <line x1="22" y1="58" x2="78" y2="58" class="actor-body"/>')
@@ -534,68 +523,67 @@ def generate_svg():
     lines.append('    <line x1="50" y1="85" x2="72" y2="120" class="actor-body"/>')
     lines.append('    <text x="50" y="140" class="t-actor">Quản trị Hệ thống</text>')
     lines.append('    <text x="50" y="155" class="t-role">(SYSTEM_ADMIN)</text>')
-    lines.append('    <text x="50" y="169" class="t-app">admin-web :5175</text>')
+    lines.append('    <text x="50" y="169" class="t-app">admin-web :5173</text>')
     lines.append('  </g>')
 
-    # ==================== ORTHOGONAL ASSOCIATIONS (ZERO OVERLAPS) ====================
+    # ==================== ORTHOGONAL ASSOCIATIONS (ZERO CLASHES) ====================
     lines.append('  <!-- ========================================================= -->')
-    lines.append('  <!-- ASSOCIATIONS WITH DEDICATED GUTTER CHANNELS (ORTHOGONAL)  -->')
+    lines.append('  <!-- ASSOCIATIONS (ALIGNED CHANNELS & CLEAN CROSSINGS)        -->')
     lines.append('  <!-- ========================================================= -->')
 
-    # 1. System User (Tracking UC-31 & AI Assistant UC-35)
-    lines.append(polyline_path([(330, 220), (520, 220), (520, 1435), (780, 1435), (780, 1534)], "assoc"))
-    lines.append(polyline_path([(780, 1435), (1600, 1435), (1600, 1514)], "assoc"))
+    # 1. MERCHANT (X: 300, Y: 520) -> Direct connections to Pkg 1
+    # Channel X: 480
+    lines.append(polyline_path([(300, 520), (480, 520), (480, 270), (735, 270)], "assoc"))  # to UC-01
+    lines.append(polyline_path([(480, 390), (600, 390)], "assoc"))  # to UC-01a
+    lines.append(polyline_path([(480, 530), (560, 530)], "assoc"))  # to UC-04
+    # Merchant to UC-19 (Khiếu nại) in Pkg 3
+    lines.append(polyline_path([(480, 520), (480, 920), (615, 920)], "assoc"))
+    # Merchant to UC-28 (Bảng kê COD) via Gutter 1 at Y: 810
+    lines.append(polyline_path([(480, 520), (480, 810), (2180, 810), (2180, 1146)], "assoc"))
 
-    # 2. GUEST (UC-31 Tra cứu công khai & UC-38 AI Rate Advisor)
-    lines.append(polyline_path([(140, 850), (90, 850), (90, 1560), (670, 1560)], "assoc"))
-    lines.append(polyline_path([(90, 1560), (90, 2140), (1500, 2140), (1500, 2004)], "assoc"))
+    # 2. CUSTOMER (X: 300, Y: 1100) -> Direct connections to Pkg 3 & Pkg 5
+    # Channel X: 460
+    lines.append(polyline_path([(300, 1100), (460, 1100), (460, 920), (615, 920)], "assoc"))  # to UC-19
+    lines.append(polyline_path([(460, 1100), (460, 1560), (630, 1560)], "assoc"))  # to UC-31 (Tracking)
+    lines.append(polyline_path([(460, 1560), (460, 1620), (1255, 1620), (1255, 1560)], "assoc"))  # to UC-35 (AI)
+    # Customer to UC-14 (Nhận hàng) & UC-25b (VietQR) via Gutter 1 at Y: 825
+    lines.append(polyline_path([(460, 1100), (460, 825), (2065, 825), (2065, 530)], "assoc"))  # to UC-14
+    lines.append(polyline_path([(2065, 825), (2330, 825), (2330, 1006)], "assoc"))  # to UC-25b
 
-    # 3. CUSTOMER (Người nhận hàng)
-    # Direct horizontal to UC-19 (Khiếu nại sự cố)
-    lines.append(polyline_path([(290, 1020), (490, 1020), (490, 870), (625, 870)], "assoc"))
-    # To UC-14 (Giao hàng/e-POD) via Gutter A at Y: 775
-    lines.append(polyline_path([(290, 1040), (505, 1040), (505, 775), (2160, 775), (2160, 556)], "assoc"))
-    # To UC-25b (Thanh toán VietQR SePay)
-    lines.append(polyline_path([(2160, 775), (2290, 775), (2290, 946)], "assoc"))
-    # To UC-17 (Hẹn lại ngày phát)
-    lines.append(polyline_path([(2160, 775), (2680, 775), (2680, 674)], "assoc"))
+    # 3. GUEST (X: 300, Y: 1820) -> Direct connections to Pkg 5
+    # Channel X: 440
+    lines.append(polyline_path([(300, 1820), (440, 1820), (440, 1560), (630, 1560)], "assoc"))  # to UC-31
+    lines.append(polyline_path([(440, 1820), (440, 2000), (1065, 2000)], "assoc"))  # to UC-38 (Rate Advisor)
+    lines.append(polyline_path([(440, 1820), (1255, 1820), (1255, 1586)], "assoc"))  # to UC-35 (AI Chat)
 
-    # 4. MERCHANT (Chủ Shop / Người gửi)
-    # Dedicated vertical channel at X: 470
-    lines.append(polyline_path([(290, 1380), (470, 1380), (470, 250), (835, 250)], "assoc"))  # to UC-01
-    lines.append(polyline_path([(470, 500), (590, 500)], "assoc"))  # to UC-04 (Pickup)
-    lines.append(polyline_path([(470, 870), (625, 870)], "assoc"))  # to UC-19 (Khiếu nại)
-    # To Package 4 (UC-28 Đối soát COD) via Gutter B at Y: 1445
-    lines.append(polyline_path([(470, 1380), (470, 1445), (2160, 1445), (2160, 1134)], "assoc"))
+    # 4. COURIER (X: 3300, Y: 520) -> Direct connections to Pkg 2 & Pkg 4
+    # Channel X: 3120
+    lines.append(polyline_path([(3300, 520), (3120, 520), (3120, 270), (2885, 270)], "assoc"))  # to UC-11 & UC-08
+    lines.append(polyline_path([(3120, 520), (2950, 520)], "assoc"))  # to UC-16 & UC-14
+    lines.append(polyline_path([(3120, 520), (3120, 910), (2850, 910)], "assoc"))  # to UC-26 (Remittance)
+    lines.append(polyline_path([(3120, 910), (3120, 1030), (2850, 1030)], "assoc"))  # to UC-27 & UC-25a
+    # Courier to UC-20 (BBBT hiện trường) via Gutter 1 at Y: 795
+    lines.append(polyline_path([(3120, 520), (3120, 795), (865, 795), (865, 1060)], "assoc"))
 
-    # 5. COURIER (Bưu tá giao nhận)
-    # Dedicated vertical channel at X: 3070
-    lines.append(polyline_path([(3270, 580), (3070, 580), (3070, 250), (2855, 250)], "assoc"))  # to UC-11 & UC-08
-    lines.append(polyline_path([(3070, 530), (2930, 530)], "assoc"))  # to UC-16 (NDR) & UC-14
-    lines.append(polyline_path([(3070, 580), (3070, 860), (2815, 860)], "assoc"))  # to UC-26 (Quyết toán ca)
-    lines.append(polyline_path([(3070, 860), (3070, 970), (2405, 970)], "assoc"))  # to UC-25a (Thu tiền mặt)
-    # To UC-20 (Bưu tá ký số BBBT hiện trường) via Gutter A at Y: 765 & Center Gutter X: 1780
-    lines.append(polyline_path([(3070, 580), (3070, 765), (1780, 765), (1780, 1010), (875, 1010)], "assoc"))
+    # 5. OPS (X: 3300, Y: 1100) -> Direct connections to Pkg 2, Pkg 3, Pkg 4
+    # Channel X: 3140
+    lines.append(polyline_path([(3300, 1100), (3140, 1100), (3140, 390), (2555, 390)], "assoc"))  # to UC-13 & UC-12
+    lines.append(polyline_path([(3140, 390), (3140, 270), (2595, 270)], "assoc"))  # to UC-09 & UC-10
+    lines.append(polyline_path([(3140, 1100), (3140, 1170), (2670, 1170)], "assoc"))  # to UC-28 & UC-29
+    # Ops to UC-21 (Thẩm định sự cố <= 500k) & UC-24 via Gutter 2 at Y: 835
+    lines.append(polyline_path([(3140, 1100), (3140, 835), (1565, 835), (1565, 920)], "assoc"))
 
-    # 6. OPS (Vận hành Bưu cục & Kho)
-    # Dedicated vertical channel at X: 3090
-    lines.append(polyline_path([(3270, 980), (3090, 980), (3090, 250), (2305, 250)], "assoc"))  # to UC-09 & UC-10
-    lines.append(polyline_path([(3090, 380), (2525, 380)], "assoc"))  # to UC-13 & UC-12
-    # To UC-21 (Thẩm định ≤ 500k) & UC-24 (Hòa giải) in Package 3
-    lines.append(polyline_path([(3090, 870), (1575, 870)], "assoc"))  # straight to UC-21
-    lines.append(polyline_path([(3090, 980), (3090, 1010), (1270, 1010)], "assoc"))  # to UC-24
-
-    # 7. SYSTEM_ADMIN (Quản trị viên Hệ thống)
-    # Dedicated vertical channel at X: 3110
-    # To Package 7 (Masterdata, RBAC, Configs, CMS)
-    lines.append(polyline_path([(3270, 1420), (3110, 1420), (3110, 1670), (2940, 1670)], "assoc"))  # to UC-45, 46, 47
-    lines.append(polyline_path([(3110, 1670), (3110, 1800), (2940, 1800)], "assoc"))  # to UC-48, 49, 50
-    lines.append(polyline_path([(3110, 1800), (3110, 1930), (2940, 1930)], "assoc"))  # to UC-51, 52, 53
-    # To Package 4 (SePay Webhook UC-27, Bảng kê UC-28, Báo cáo UC-30)
-    lines.append(polyline_path([(3110, 1420), (3110, 970), (2820, 970)], "assoc"))  # to UC-27
-    lines.append(polyline_path([(3110, 1240), (2285, 1240)], "assoc"))  # to UC-30
-    # To UC-22 (Duyệt chi > 500k) via Gutter B at Y: 1430
-    lines.append(polyline_path([(3110, 1420), (3110, 1430), (1780, 1430), (1780, 1010), (1570, 1010)], "assoc"))
+    # 6. SYSTEM_ADMIN (X: 3300, Y: 1820) -> Direct connections to Pkg 6 & Pkg 3, Pkg 4
+    # Channel X: 3160
+    lines.append(polyline_path([(3300, 1820), (3160, 1820), (3160, 1560), (2715, 1560)], "assoc"))  # to UC-44
+    lines.append(polyline_path([(3160, 1700), (2715, 1700)], "assoc"))  # to UC-45, 46, 47
+    lines.append(polyline_path([(3160, 1840), (2715, 1840)], "assoc"))  # to UC-48, 49, 50
+    lines.append(polyline_path([(3160, 1980), (2715, 1980)], "assoc"))  # to UC-51, 52, 53
+    # System Admin to UC-27 (SePay) & UC-30 (Báo cáo) in Pkg 4
+    lines.append(polyline_path([(3160, 1560), (3160, 1030), (2850, 1030)], "assoc"))  # to UC-27
+    lines.append(polyline_path([(3160, 1300), (2305, 1300)], "assoc"))  # to UC-30
+    # System Admin to UC-22 (Duyệt bồi thường > 500k) via Gutter 2 at Y: 1455
+    lines.append(polyline_path([(3160, 1820), (3160, 1455), (1565, 1455), (1565, 1060)], "assoc"))
 
     # ==================== LEGEND (BOTTOM LEFT) ====================
     lines.append('  <!-- ========================================================= -->')
@@ -641,20 +629,20 @@ def generate_svg():
     lines.append('  <!-- ========================================================= -->')
     lines.append('  <g id="Traceability_Matrix" transform="translate(1160, 2220)">')
     lines.append('    <rect x="0" y="0" width="2380" height="240" class="legend-box"/>')
-    lines.append('    <text x="20" y="26" class="t-note">BẢNG ÁNH XẠ 1:1 TỪ 15 MICROSERVICES &amp; 6 FRONTEND APPS → 7 PHÂN HỆ USE CASE (TRACEABILITY MATRIX):</text>')
+    lines.append('    <text x="20" y="26" class="t-note">BẢNG ÁNH XẠ 1:1 TỪ 15 MICROSERVICES &amp; 6 FRONTEND APPS → 6 PHÂN HỆ USE CASE (TRACEABILITY MATRIX):</text>')
 
     lines.append('    <text x="20" y="55" class="t-legend">• <tspan font-weight="bold">Phân hệ 1 (Đơn hàng - 7 UCs):</tspan> shipment-service (shipment.controller, change-request.controller) + pickup-service (pickups) + pricing-service (quotes) + gateway-bff (merchant integrations)</text>')
     lines.append('    <text x="20" y="77" class="t-legend">• <tspan font-weight="bold">Phân hệ 2 (Kho &amp; Vận hành - 11 UCs):</tspan> scan-service (inbound/outbound/pickup) + manifest-service (bagging/seal/receive) + dispatch-service (tasks/routing) + delivery-service (NDR/returns)</text>')
     lines.append('    <text x="20" y="99" class="t-legend">• <tspan font-weight="bold">Phân hệ 3 (Sự cố &amp; Khiếu nại - 6 UCs):</tspan> shipment-service (claims.controller — lập khiếu nại, thẩm định ≤500k, duyệt chi &gt;500k, cấn trừ tiền) + investigations.controller (hòa giải tranh chấp)</text>')
     lines.append('    <text x="20" y="121" class="t-legend">• <tspan font-weight="bold">Phân hệ 4 (Tài chính &amp; COD - 6 UCs):</tspan> payment-service (cod.controller — thu tiền mặt, VietQR SePay dynamic QR, webhook ngân hàng SePay, bảng kê COD định kỳ) + reporting-service</text>')
-    lines.append('    <text x="20" y="143" class="t-legend">• <tspan font-weight="bold">Phân hệ 5 (Truy vết &amp; Viễn trắc - 4 UCs):</tspan> tracking-service (public-tracking khử PII masking + internal-tracking full telemetry) + scan-service (locations GPS realtime)</text>')
-    lines.append('    <text x="20" y="165" class="t-legend">• <tspan font-weight="bold">Phân hệ 6 (Trợ lý AI &amp; RAG - 7 UCs):</tspan> chatbot-service (chat.service — intent classification, 768-D semantic retrieval) + gateway-bff (ai-assistant.controller, chat.controller HITL handoff)</text>')
-    lines.append('    <text x="20" y="187" class="t-legend">• <tspan font-weight="bold">Phân hệ 7 (Quản trị &amp; Cấu hình - 12 UCs):</tspan> auth-service (login, users, mobile-permissions, admin-audit) + masterdata-service (hubs, zones, configs, policies, merchant-profiles, ndr-reasons)</text>')
+    lines.append('    <text x="20" y="143" class="t-legend">• <tspan font-weight="bold">Phân hệ 5 (Truy vết &amp; AI RAG - 11 UCs):</tspan> tracking-service (public-tracking khử PII + internal-tracking) + scan-service (GPS) + chatbot-service (RAG 768-D) + gateway-bff (HITL)</text>')
+    lines.append('    <text x="20" y="165" class="t-legend">• <tspan font-weight="bold">Phân hệ 6 (Quản trị &amp; Cấu hình - 12 UCs):</tspan> auth-service (login, users, mobile-permissions, admin-audit) + masterdata-service (hubs, zones, configs, policies, merchant-profiles, ndr-reasons)</text>')
 
-    lines.append('    <text x="20" y="217" class="t-legend" font-style="italic" fill="#555555">Đúng 6 Ứng dụng triển khai: merchant-web (:5174) • ops-web (:5173) • admin-web (:5175) • guest-web (:5177) • courier-mobile • customer-mobile</text>')
+    lines.append('    <text x="20" y="200" class="t-legend" font-style="italic" fill="#555555">Chuẩn hoá 6 Client Applications: admin-web (:5173) • guest-web (:5174) • ops-web (:5175) • merchant-web (:5176) • courier-mobile (:8081) • customer-mobile (:8082)</text>')
 
     lines.append('  </g>')
     lines.append('')
+
     lines.append('</svg>')
 
     return "\n".join(lines)

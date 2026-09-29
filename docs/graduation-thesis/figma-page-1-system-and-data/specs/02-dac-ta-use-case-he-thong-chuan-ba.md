@@ -28,12 +28,12 @@ Hệ thống **Nexus Enterprise Logistics Platform** là giải pháp nền tả
   14. `chatbot-service (:3013)`: Động cơ phân loại ý định (Intent), trích xuất thực thể, RAG 768-D Semantic pgvector và sinh thẻ Rich Card.
   15. `notification-service (:3014)`: Quản lý thông báo đa kênh thời gian thực.
 - **06 Ứng dụng Client (Frontend / Mobile)** phục vụ từng nhóm tác nhân chuyên biệt:
-  1. `guest-web (:5177)`: Cổng tra cứu công khai và hỏi đáp AI dành cho khách vãng lai.
-  2. `customer-mobile`: Ứng dụng di động dành cho Người nhận hàng (tra cứu, ký e-POD, hẹn lại ngày giao, khiếu nại sự cố 24h).
-  3. `merchant-web (:5174)`: Cổng thông tin dành cho Chủ Shop / Doanh nghiệp gửi hàng (tạo đơn, Webhook sàn TMĐT, in mã vạch, theo dõi khiếu nại, đối soát COD).
-  4. `courier-mobile`: Ứng dụng dành cho Bưu tá giao nhận chặng cuối (quét gom, giao hàng, thu COD mặt/VietQR, ký BBBT hiện trường, quyết toán ca nộp tiền).
-  5. `ops-web (:5173)`: Cổng điều hành dành cho Nhân sự Bưu cục & Kho trung chuyển (quét Inbound/Outbound, đóng/tiếp nhận Manifest bao tải, phân tuyến bưu tá, thẩm định bồi thường $\le 500\text{k}$).
-  6. `admin-web (:5175)`: Cổng quản trị dành cho Quản trị viên hệ thống (RBAC Matrix, danh mục Hubs/Zones, cấu hình SLA, duyệt bồi thường $> 500\text{k}$, đối soát SePay tự động, CMS bài viết).
+  1. `guest-web (:5174)`: Cổng tra cứu công khai và hỏi đáp AI dành cho khách vãng lai.
+  2. `customer-mobile (:8082)`: Ứng dụng di động dành cho Người nhận hàng (tra cứu, ký e-POD, hẹn lại ngày giao, khiếu nại sự cố 24h).
+  3. `merchant-web (:5176)`: Cổng thông tin dành cho Chủ Shop / Doanh nghiệp gửi hàng (tạo đơn, Webhook sàn TMĐT, in mã vạch, theo dõi khiếu nại, đối soát COD).
+  4. `courier-mobile (:8081)`: Ứng dụng dành cho Bưu tá giao nhận chặng cuối (quét gom, giao hàng, thu COD mặt/VietQR, ký BBBT hiện trường, quyết toán ca nộp tiền).
+  5. `ops-web (:5175)`: Cổng điều hành dành cho Nhân sự Bưu cục & Kho trung chuyển (quét Inbound/Outbound, đóng/tiếp nhận Manifest bao tải, phân tuyến bưu tá, thẩm định bồi thường $\le 500\text{k}$).
+  6. `admin-web (:5173)`: Cổng quản trị dành cho Quản trị viên hệ thống (RBAC Matrix, danh mục Hubs/Zones, cấu hình SLA, duyệt bồi thường $> 500\text{k}$, đối soát SePay tự động, CMS bài viết).
 
 ---
 
@@ -49,28 +49,16 @@ Hệ thống tuân thủ nghiêm ngặt chuẩn **UML 2.5 (OMG)**, mô hình hó
            │                                                          │
   [ Khách hàng ]                                          [ Nhân sự Vận hành Nội bộ ]
 (Customer - Abstract)                                      (Internal Staff - Abstract)
-     ▲          ▲                                              ▲          ▲          ▲
-     │          │                                              │          │          │
-┌────┴───┐  ┌───┴────────────────┐                             │          │          │
-│ Khách  │  │ User Đã định danh  │                             │          │          │
-│vãng lai│  │(Auth User-Abstract)│                             │          │          │
-└────────┘  └────▲───────────────┘                             │          │          │
-                 │                                             │          │          │
-         ┌───────┴───────┐                                     │          │          │
-         │               │                                     │          │          │
-┌────────┴───────┐ ┌─────┴──────────┐                          │          │          │
-│Người nhận hàng │ │Chủ Shop/Người gửi│                  ┌───────┴─────┐  │          │
-│  (CUSTOMER)    │ │  (MERCHANT)    │                  │  Bưu tá     │  │          │
-└────────────────┘ └────────────────┘                  │  (COURIER)  │  │          │
-                                                       └─────────────┘  │          │
-                                                                 ┌──────┴─────┐    │
-                                                                 │ Nhân sự OPS│    │
-                                                                 │ (Hub / Kho)│    │
-                                                                 └────────────┘    │
-                                                                            ┌──────┴──────┐
-                                                                            │Quản trị viên│
-                                                                            │SYSTEM_ADMIN │
-                                                                            └─────────────┘
+     ▲     ▲     ▲                                             ▲          ▲          ▲
+     │     │     │                                             │          │          │
+┌────┴───┐ │ ┌───┴──────────┐                            ┌─────┴───────┐  │  ┌───────┴──────┐
+│ Khách  │ │ │  Chủ Shop    │                            │   Bưu tá    │  │  │Quản trị viên │
+│vãng lai│ │ │  (MERCHANT)  │                            │  (COURIER)  │  │  │ SYSTEM_ADMIN │
+└────────┘ │ └──────────────┘                            └─────────────┘  │  └──────────────┘
+    ┌──────┴─────────┐                                              ┌─────┴──────┐
+    │ Người nhận hàng│                                              │ Nhân sự OPS│
+    │  (CUSTOMER)    │                                              │ (Hub / Kho)│
+    └────────────────┘                                              └────────────┘
 ```
 
 ### Bảng Phân Tích Bản Chất Kế Thừa Của 6 Tác Nhân Triển Khai Thực Tế
@@ -79,56 +67,60 @@ Hệ thống tuân thủ nghiêm ngặt chuẩn **UML 2.5 (OMG)**, mô hình hó
 | :--- | :---: | :---: | :---: | :--- |
 | **Người dùng Hệ thống** *(System User)* | *Trừu tượng* | *Root* | Toàn bộ Client | Tác nhân gốc đại diện cho mọi cá nhân tương tác với hệ thống. Thừa hưởng 2 năng lực nền tảng: Tra cứu lộ trình bưu gửi (`UC-31`) và Hội thoại tự nhiên với Trợ lý AI (`UC-35`). |
 | **Khách hàng** *(Customer)* | *Trừu tượng* | `System User` | Web & Mobile | Khách hàng bên ngoài hệ thống logistics, thừa hưởng các tính năng tra cứu cước IATA (`UC-02`), theo dõi hành trình đơn hàng. |
-| **Khách vãng lai** *(GUEST)* | **Cụ thể** | `Customer` | `guest-web :5177` | Khách truy cập ẩn danh không cần tài khoản. Được phép tra cứu lộ trình (bị khử PII Masking `UC-32` che số điện thoại/địa chỉ) và hỏi đáp AI tư vấn cước. |
-| **User Đã định danh** *(Auth User)* | *Trừu tượng* | `Customer` | Web & Mobile | Người dùng đã đăng ký và xác thực tài khoản qua `auth-service`. Thừa hưởng đăng nhập (`UC-42`), quản lý hồ sơ và đổi mật khẩu (`UC-44`). |
-| **Người nhận hàng** *(CUSTOMER)* | **Cụ thể** | `Auth User` | `customer-mobile` | Khách hàng đầu nhận bưu kiện. Có quyền nhận hàng ký e-POD (`UC-15`), thanh toán VietQR SePay (`UC-25b`), hẹn lại ngày phát (`UC-17`), và khởi tạo khiếu nại sự cố trong 24h (`UC-19`). |
-| **Chủ Shop / Người gửi** *(MERCHANT)* | **Cụ thể** | `Auth User` | `merchant-web :5174` | Đối tác kinh doanh gửi hàng. Thực hiện tạo đơn Portal (`UC-01a`), đồng bộ Webhook sàn TMĐT (`UC-01b`), yêu cầu lấy hàng (`UC-04`), sửa đổi thông tin đơn (`UC-05`), hủy đơn (`UC-06`), nộp khiếu nại (`UC-19`), và đối soát COD (`UC-28`, `UC-29`). |
+| **Khách vãng lai** *(GUEST)* | **Cụ thể** | `Customer` | `guest-web :5174` | Khách truy cập ẩn danh không cần tài khoản. Được phép tra cứu lộ trình (bị khử PII Masking `UC-32` che số điện thoại/địa chỉ) và hỏi đáp AI tư vấn cước. |
+| **Người nhận hàng** *(CUSTOMER)* | **Cụ thể** | `Customer` | `customer-mobile :8082` | Khách hàng đầu nhận bưu kiện. Có quyền nhận hàng ký e-POD (`UC-15`), thanh toán VietQR SePay (`UC-25b`), hẹn lại ngày phát (`UC-17`), và khởi tạo khiếu nại sự cố trong 24h (`UC-19`). |
+| **Chủ Shop / Người gửi** *(MERCHANT)* | **Cụ thể** | `Customer` | `merchant-web :5176` | Đối tác kinh doanh gửi hàng. Thực hiện tạo đơn Portal (`UC-01a`), đồng bộ Webhook sàn TMĐT (`UC-01b`), yêu cầu lấy hàng (`UC-04`), sửa đổi thông tin đơn (`UC-05`), hủy đơn (`UC-06`), nộp khiếu nại (`UC-19`), và đối soát COD (`UC-28`, `UC-29`). |
 | **Nhân sự Nội bộ** *(Internal Staff)* | *Trừu tượng* | `System User` | Web & Mobile | Toàn thể nhân viên biên chế công ty logistics. Thừa hưởng quyền tra cứu viễn trắc nội bộ (`UC-33`), giám sát định vị GPS (`UC-34`), và đăng nhập nghiệp vụ. |
-| **Bưu tá giao nhận** *(COURIER)* | **Cụ thể** | `Internal Staff` | `courier-mobile` | Nhân sự hiện trường chặng đầu và chặng cuối duy nhất. Thực hiện quét gom hàng (`UC-08`), phát hàng (`UC-14`), chụp ảnh ký e-POD (`UC-15`), báo phát thất bại NDR (`UC-16`), thu tiền mặt COD (`UC-25a`), ký số BBBT hiện trường (`UC-20`), và quyết toán ca nộp tiền (`UC-26`). |
-| **Vận hành Bưu cục & Kho** *(OPS)* | **Cụ thể** | `Internal Staff` | `ops-web :5173` | Toàn bộ các cấp vận hành kho trung chuyển (`HUB_OPS`, `DISPATCHER`, `SORTER`, `INVENTORY_CLERK`, `OPS_MANAGER`). Quét Inbound (`UC-09`), Outbound (`UC-10`), đóng bao Manifest niêm chì (`UC-11`), nhận bao đầu tuyến (`UC-12`), phân tuyến bưu tá (`UC-13`), thẩm định khiếu nại $\le 500\text{k}$ (`UC-21`), và điều tra hòa giải (`UC-24`). |
-| **Quản trị Hệ thống** *(SYSTEM_ADMIN)* | **Cụ thể** | `Internal Staff` | `admin-web :5175` | Quản trị viên cấp cao. Quản trị tài khoản người dùng (`UC-45`), phân quyền RBAC Matrix (`UC-46`), xem audit logs (`UC-47`), quản lý Hubs (`UC-48`), Zones (`UC-49`), cấu hình SLA (`UC-50`), CMS bài viết chính sách (`UC-51`), hồ sơ Merchant (`UC-52`), lý do NDR (`UC-53`), phê duyệt bồi thường $> 500\text{k}$ (`UC-22`), cấn trừ bồi thường (`UC-23`), và đối soát SePay tự động (`UC-27`). |
+| **Bưu tá giao nhận** *(COURIER)* | **Cụ thể** | `Internal Staff` | `courier-mobile :8081` | Nhân sự hiện trường chặng đầu và chặng cuối duy nhất. Thực hiện quét gom hàng (`UC-08`), phát hàng (`UC-14`), chụp ảnh ký e-POD (`UC-15`), báo phát thất bại NDR (`UC-16`), thu tiền mặt COD (`UC-25a`), ký số BBBT hiện trường (`UC-20`), và quyết toán ca nộp tiền (`UC-26`). |
+| **Vận hành Bưu cục & Kho** *(OPS)* | **Cụ thể** | `Internal Staff` | `ops-web :5175` | Toàn bộ các cấp vận hành kho trung chuyển (`HUB_OPS`, `DISPATCHER`, `SORTER`, `INVENTORY_CLERK`, `OPS_MANAGER`). Quét Inbound (`UC-09`), Outbound (`UC-10`), đóng bao Manifest niêm chì (`UC-11`), nhận bao đầu tuyến (`UC-12`), phân tuyến bưu tá (`UC-13`), thẩm định khiếu nại $\le 500\text{k}$ (`UC-21`), và điều tra hòa giải (`UC-24`). |
+| **Quản trị Hệ thống** *(SYSTEM_ADMIN)* | **Cụ thể** | `Internal Staff` | `admin-web :5173` | Quản trị viên cấp cao. Quản trị tài khoản người dùng (`UC-45`), phân quyền RBAC Matrix (`UC-46`), xem audit logs (`UC-47`), quản lý Hubs (`UC-48`), Zones (`UC-49`), cấu hình SLA (`UC-50`), CMS bài viết chính sách (`UC-51`), hồ sơ Merchant (`UC-52`), lý do NDR (`UC-53`), phê duyệt bồi thường $> 500\text{k}$ (`UC-22`), cấn trừ bồi thường (`UC-23`), và đối soát SePay tự động (`UC-27`). |
 
 ---
 
-## 3. DANH MỤC 53 TRƯỜNG HỢP SỬ DỤNG THEO 7 PHÂN HỆ NGHIỆP VỤ (USE CASE CATALOG)
+## 3. DANH MỤC 53 TRƯỜNG HỢP SỬ DỤNG THEO 6 PHÂN HỆ NGHIỆP VỤ (USE CASE CATALOG)
 
-Hệ thống được tổ chức thành **7 Phân hệ chức năng (Packages)** với đúng **53 Trường hợp sử dụng thực tế** (gồm 2 Use Case cha trừu tượng làm gốc kế thừa nghiệp vụ và 51 Use Case triển khai cụ thể):
+Hệ thống được tổ chức thành **6 Phân hệ chức năng (Packages)** theo lưới 2 cột $\times$ 3 hàng cân đối hoàn hảo với đúng **53 Trường hợp sử dụng thực tế** (gồm 2 Use Case cha trừu tượng làm gốc kế thừa nghiệp vụ và 51 Use Case triển khai cụ thể):
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │                      HỆ THỐNG QUẢN TRỊ & VẬN HÀNH LOGISTICS ĐA KÊNH NEXUS ENTERPRISE                   │
-├───────────────────────────────────┬───────────────────────────────────┬────────────────────────────────┤
-│ 1. TIẾP NHẬN & QUẢN LÝ ĐƠN HÀNG   │ 2. KHO TRUNG CHUYỂN & GIAO HÀNG   │ 3. XỬ LÝ SỰ CỐ & BỒI THƯỜNG    │
-│  [UC-01] Tạo đơn gửi hàng (Gen)   │  • UC-08: Quét tiếp nhận gom hàng │  • UC-19: Khởi tạo khiếu nại   │
-│   ├── UC-01a: Tạo đơn trên Portal │  • UC-09: Quét mã nhập Inbound    │  • UC-20: Bưu tá ký số BBBT    │
-│   └── UC-01b: Webhook Sàn TMĐT    │  • UC-10: Quét mã xuất Outbound   │  • UC-21: Thẩm định (<= 500k)  │
-│  • UC-02: Tính cước quy đổi IATA  │  • UC-11: Đóng bao Manifest & Chì │  • UC-22: Phê duyệt (> 500k)   │
-│  • UC-03: In nhãn Barcode/Phiếu   │  • UC-12: Nhận bao tải đầu tuyến  │  • UC-23: Cấn trừ bồi thường   │
-│  • UC-04: Yêu cầu bưu tá lấy hàng │  • UC-13: Phân task & Tối ưu tuyến│  • UC-24: Điều tra & Hòa giải  │
-│  • UC-05: Đổi địa chỉ/SĐT/COD     │  • UC-14: Thực hiện chuyến phát   │                                │
-│  • UC-06: Hủy đơn gửi hàng        │  • UC-15: Ký nhận điện tử e-POD   │                                │
-│  • UC-07: Tra cứu & Lọc danh sách │  • UC-16: Báo phát thất bại NDR   │                                │
-│                                   │  • UC-17: Hẹn lại ngày phát       │                                │
-│                                   │  • UC-18: Xử lý chuyển hoàn (RTS) │                                │
-├───────────────────────────────────┼───────────────────────────────────┼────────────────────────────────┤
-│ 4. ĐỐI SOÁT TÀI CHÍNH & THU COD   │ 5. TRUY VẾT & VIỄN TRẮC HÀNH TRÌNH│ 6. TRỢ LÝ ẢO AI & ĐỘNG CƠ RAG  │
-│  [UC-25] Thu tiền COD (Gen)       │  • UC-31: Tra cứu lộ trình public │  • UC-35: Hội thoại tự nhiên AI│
-│   ├── UC-25a: Thu tiền mặt COD    │  • UC-32: Khử định danh PII Mask  │  • UC-36: Bóc tách Ý định/Entity│
-│   └── UC-25b: Thanh toán VietQR   │  • UC-33: Tra cứu viễn trắc nội bộ│  • UC-37: RAG 768-D Semantic   │
-│  • UC-26: Quyết toán ca nộp tiền  │  • UC-34: Định vị GPS thời gian   │  • UC-38: Tư vấn cước tự động  │
-│  • UC-27: Đối soát tự động SePay  │          thực phương tiện         │  • UC-39: Hướng dẫn khiếu nại  │
-│  • UC-28: Lập bảng kê COD định kỳ │                                   │  • UC-40: Sinh thẻ Rich Card   │
-│  • UC-29: Xác nhận chốt sổ đối soát                                  │  • UC-41: Điều chuyển hỗ trợ   │
-│  • UC-30: Báo cáo dòng tiền, DT   │                                   │                                │
-├───────────────────────────────────┴───────────────────────────────────┴────────────────────────────────┤
-│ 7. QUẢN TRỊ HỆ THỐNG, DANH MỤC & PHÂN QUYỀN (auth-service • masterdata-service)                       │
-│  • UC-42: Đăng nhập hệ thống                  • UC-48: Quản trị Hubs & Bưu cục                         │
-│  • UC-43: Đăng ký tài khoản khách             • UC-49: Quản trị Phân vùng địa lý Tuyến phát            │
-│  • UC-44: Hồ sơ cá nhân & Đổi mật khẩu        • UC-50: Cấu hình Hệ thống & SLA                         │
-│  • UC-45: Quản trị tài khoản người dùng       • UC-51: CMS Quản trị bài viết chính sách                │
-│  • UC-46: Phân quyền RBAC Matrix              • UC-52: Hồ sơ đối tác Merchant                          │
-│  • UC-47: Nhật ký kiểm toán bảo mật           • UC-53: Danh mục lý do giao thất bại (NDR)              │
-└────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+├───────────────────────────────────┬────────────────────────────────────────────────────────────────────┤
+│ CỘT 1: ĐỐI TÁC NGOẠI VI (KHÁCH HÀNG / MERCHANT)│ CỘT 2: NỘI BỘ VẬN HÀNH (COURIER / OPS / SYSTEM_ADMIN) │
+├───────────────────────────────────┼────────────────────────────────────────────────────────────────────┤
+│ 1. TIẾP NHẬN & QUẢN LÝ ĐƠN HÀNG   │ 2. KHO TRUNG CHUYỂN, PHÂN TUYẾN & GIAO HÀNG                        │
+│  [UC-01] Tạo đơn gửi hàng (Gen)   │  • UC-08: Quét tiếp nhận gom hàng   • UC-14: Thực hiện chuyến phát │
+│   ├── UC-01a: Tạo đơn trên Portal │  • UC-09: Quét mã nhập Inbound      • UC-15: Ký nhận e-POD & OTP   │
+│   └── UC-01b: Webhook Sàn TMĐT    │  • UC-10: Quét mã xuất Outbound     • UC-16: Báo phát thất bại NDR │
+│  • UC-02: Tính cước quy đổi IATA  │  • UC-11: Đóng bao Manifest & Chì   • UC-17: Hẹn lại ngày phát     │
+│  • UC-03: In phiếu gửi Barcode/QR │  • UC-12: Nhận bao tải đầu tuyến    • UC-18: Chuyển hoàn (RTS)     │
+│  • UC-04: Yêu cầu bưu tá lấy hàng │  • UC-13: Phân task & Tối ưu tuyến                                 │
+│  • UC-05: Đổi địa chỉ/SĐT/COD     │                                                                    │
+│  • UC-06: Hủy đơn gửi hàng        │                                                                    │
+│  • UC-07: Tra cứu & Lọc danh sách │                                                                    │
+├───────────────────────────────────┼────────────────────────────────────────────────────────────────────┤
+│ 3. XỬ LÝ SỰ CỐ & BỒI THƯỜNG       │ 4. ĐỐI SOÁT TÀI CHÍNH & THU HỘ COD                                 │
+│  • UC-19: Khởi tạo khiếu nại      │  [UC-25] Thu hộ tiền COD (Gen)                                     │
+│  • UC-20: Bưu tá đồng kiểm & Ký số│   ├── UC-25a: Thu tiền mặt COD tại điểm phát                       │
+│  • UC-21: Thẩm định (<= 500k)     │   └── UC-25b: Thanh toán VietQR SePay động                         │
+│  • UC-22: Phê duyệt (> 500k)      │  • UC-26: Quyết toán ca nộp tiền bưu tá                            │
+│  • UC-23: Cấn trừ bồi thường      │  • UC-27: Đối soát tự động SePay Webhook                           │
+│  • UC-24: Điều tra & Hòa giải     │  • UC-28: Lập bảng kê COD định kỳ                                  │
+│                                   │  • UC-29: Xác nhận đối soát & Chốt sổ                              │
+│                                   │  • UC-30: Báo cáo dòng tiền & Doanh thu                            │
+├───────────────────────────────────┼────────────────────────────────────────────────────────────────────┤
+│ 5. TRUY VẾT & TRỢ LÝ AI RAG       │ 6. QUẢN TRỊ HỆ THỐNG, DANH MỤC & PHÂN QUYỀN                        │
+│  • UC-31: Tra cứu lộ trình public │  • UC-42: Đăng nhập hệ thống        • UC-48: Quản trị Hubs 4 cấp   │
+│  • UC-32: Khử định danh PII Mask  │  • UC-43: Đăng ký tài khoản khách   • UC-49: Phân vùng địa lý Zone │
+│  • UC-33: Tra cứu viễn trắc nội bộ│  • UC-44: Hồ sơ & Đổi mật khẩu      • UC-50: Cấu hình SLA          │
+│  • UC-34: Định vị GPS thời gian   │  • UC-45: Quản trị người dùng       • UC-51: CMS Quản trị bài viết │
+│  • UC-35: Hội thoại tự nhiên AI   │  • UC-46: Phân quyền RBAC Matrix    • UC-52: Hồ sơ đối tác Merchant│
+│  • UC-36: Bóc tách Ý định/Entity  │  • UC-47: Nhật ký kiểm toán bảo mật • UC-53: Danh mục lý do NDR    │
+│  • UC-37: RAG 768-D Semantic      │                                                                    │
+│  • UC-38: Tư vấn cước tự động     │                                                                    │
+│  • UC-39: Hướng dẫn khiếu nại AI  │                                                                    │
+│  • UC-40: Sinh thẻ Rich Card      │                                                                    │
+│  • UC-41: Điều chuyển nhân viên   │                                                                    │
+└───────────────────────────────────┴────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
