@@ -1,32 +1,66 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 1300" width="100%" height="100%" style="background:#FFFFFF;">
+#!/usr/bin/env python3
+"""
+generate-architecture-diagram.py
+Generates the comprehensive Enterprise Architecture & Deployment Diagram (5-Tier)
+for the Nexus Logistics Management System graduation thesis.
 
+Outputs to:
+  docs/graduation-thesis/figma-page-1-system-and-data/diagrams/02-architecture-deployment-4-tier.svg
+Standardized Dimensions:
+  Width: 2000px, Height: 1300px
+Style:
+  Monochrome Technical Blueprint (Trắng - Đen - Xám chuẩn kỹ thuật, Figma 100% vector-safe)
+"""
+
+import xml.etree.ElementTree as ET
+import html
+import os
+
+OUTPUT_FILE = "docs/graduation-thesis/figma-page-1-system-and-data/diagrams/02-architecture-deployment-4-tier.svg"
+
+def escape(text):
+    return html.escape(str(text))
+
+def build_architecture_svg():
+    width = 2000
+    height = 1300
+    lines = []
+
+    lines.append(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="100%" height="100%" style="background:#FFFFFF;">')
+
+    # Double Blueprint Frame
+    lines.append(f'''
   <!-- Double Frame -->
   <rect width="100%" height="100%" fill="#FFFFFF"/>
-  <rect x="15" y="15" width="1970" height="1270" fill="none" stroke="#000000" stroke-width="2"/>
-  <rect x="20" y="20" width="1960" height="1260" fill="none" stroke="#000000" stroke-width="0.8"/>
+  <rect x="15" y="15" width="{width - 30}" height="{height - 30}" fill="none" stroke="#000000" stroke-width="2"/>
+  <rect x="20" y="20" width="{width - 40}" height="{height - 40}" fill="none" stroke="#000000" stroke-width="0.8"/>
 
   <style>
-    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
-    .hdr-badge { font-size: 11px; font-weight: 700; fill: #FFFFFF; letter-spacing: 1.2px; text-transform: uppercase; }
-    .hdr-title { font-size: 20px; font-weight: 800; fill: #000000; letter-spacing: -0.4px; }
-    .hdr-sub { font-size: 12px; font-weight: 500; fill: #374151; }
+    text {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }}
+    .hdr-badge {{ font-size: 11px; font-weight: 700; fill: #FFFFFF; letter-spacing: 1.2px; text-transform: uppercase; }}
+    .hdr-title {{ font-size: 20px; font-weight: 800; fill: #000000; letter-spacing: -0.4px; }}
+    .hdr-sub {{ font-size: 12px; font-weight: 500; fill: #374151; }}
     
-    .tier-header { font-size: 12px; font-weight: 800; fill: #000000; letter-spacing: 0.8px; text-transform: uppercase; }
-    .tier-badge { font-size: 10px; font-weight: 700; fill: #000000; text-transform: uppercase; }
+    .tier-header {{ font-size: 12px; font-weight: 800; fill: #000000; letter-spacing: 0.8px; text-transform: uppercase; }}
+    .tier-badge {{ font-size: 10px; font-weight: 700; fill: #000000; text-transform: uppercase; }}
     
-    .card-title { font-size: 12.5px; font-weight: 700; fill: #000000; }
-    .card-meta { font-size: 10px; font-weight: 600; fill: #4B5563; font-family: ui-monospace, Menlo, monospace; }
-    .card-body { font-size: 10.5px; font-weight: 400; fill: #1F2937; line-height: 1.4; }
-    .card-bullet { font-size: 10px; font-weight: 500; fill: #374151; }
+    .card-title {{ font-size: 12.5px; font-weight: 700; fill: #000000; }}
+    .card-meta {{ font-size: 10px; font-weight: 600; fill: #4B5563; font-family: ui-monospace, Menlo, monospace; }}
+    .card-body {{ font-size: 10.5px; font-weight: 400; fill: #1F2937; line-height: 1.4; }}
+    .card-bullet {{ font-size: 10px; font-weight: 500; fill: #374151; }}
     
-    .flow-label { font-size: 10px; font-weight: 700; fill: #000000; letter-spacing: 0.5px; text-transform: uppercase; }
-    .chip-text { font-size: 9.5px; font-weight: 700; fill: #000000; font-family: ui-monospace, Menlo, monospace; }
+    .flow-label {{ font-size: 10px; font-weight: 700; fill: #000000; letter-spacing: 0.5px; text-transform: uppercase; }}
+    .chip-text {{ font-size: 9.5px; font-weight: 700; fill: #000000; font-family: ui-monospace, Menlo, monospace; }}
   </style>
+''')
 
-
+    # =========================================================================
+    # HEADER (y: 30 to 105, h: 75)
+    # =========================================================================
+    lines.append(f'''
   <!-- HEADER BAR -->
   <g id="HeaderBar" transform="translate(40, 30)">
-    <rect width="1920" height="75" rx="6" fill="#F9FAFB" stroke="#000000" stroke-width="1.6"/>
+    <rect width="{width - 80}" height="75" rx="6" fill="#F9FAFB" stroke="#000000" stroke-width="1.6"/>
     
     <!-- Left Meta Badge -->
     <rect x="20" y="12" width="310" height="20" rx="3" fill="#000000"/>
@@ -37,7 +71,7 @@
     <text x="20" y="65" class="hdr-sub">Kiến trúc Triển khai Toàn diện: 4 Client Apps, API Gateway &amp; PII Sanitizer, 13 Microservices, Trục Sự kiện RabbitMQ Saga &amp; 11 Cơ sở Dữ liệu Độc lập</text>
     
     <!-- Right Tech Specs Chips -->
-    <g transform="translate(1470, 14)">
+    <g transform="translate({width - 80 - 450}, 14)">
       <!-- Arch Chip -->
       <rect x="0" y="0" width="135" height="24" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
       <circle cx="12" cy="12" r="3.5" fill="#000000"/>
@@ -55,15 +89,19 @@
       <text x="440" y="44" font-size="10" font-weight="600" fill="#4B5563" text-anchor="end">Decoupled Database-per-Service &amp; Distributed Saga Keys</text>
     </g>
   </g>
+''')
 
-
+    # =========================================================================
+    # TẦNG 1: MULTI-CHANNEL CLIENT APPS (y: 120 to 255, h: 135)
+    # =========================================================================
+    lines.append(f'''
   <!-- TIER 1: CLIENT APPS -->
   <g id="Tier_1_Clients" transform="translate(40, 120)">
-    <rect width="1920" height="135" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
-    <rect width="1920" height="30" rx="6" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+    <rect width="{width - 80}" height="135" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <rect width="{width - 80}" height="30" rx="6" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
     <rect x="14" y="8" width="5" height="14" rx="1" fill="#000000"/>
     <text x="26" y="20" class="tier-header">TẦNG 1: MULTI-CHANNEL CLIENT APPLICATIONS (GIAO DIỆN NGƯỜI DÙNG ĐA KÊNH)</text>
-    <text x="1902" y="20" class="tier-badge" text-anchor="end">EDGE CLIENT PROTOCOLS: HTTPS / RESTFUL API / WEBSOCKET EVENT STREAM</text>
+    <text x="{width - 80 - 18}" y="20" class="tier-badge" text-anchor="end">EDGE CLIENT PROTOCOLS: HTTPS / RESTFUL API / WEBSOCKET EVENT STREAM</text>
     
     <!-- 4 Client Cards -->
     <!-- Card 1: Merchant Web -->
@@ -110,8 +148,12 @@
       <text x="12" y="72" class="card-bullet">• Bảo mật PII: Tự động che mờ SĐT (098***) và địa chỉ nhà để chống rò rỉ dữ liệu cá nhân</text>
     </g>
   </g>
+''')
 
-
+    # =========================================================================
+    # CONNECTOR: TIER 1 -> TIER 2 (y: 255 to 285, gap = 30)
+    # =========================================================================
+    lines.append(f'''
   <!-- CONNECTOR BUS: TIER 1 -> TIER 2 -->
   <g id="Bus_1_to_2">
     <line x1="260" y1="255" x2="260" y2="285" stroke="#000000" stroke-width="1.5"/>
@@ -128,15 +170,19 @@
     <path d="M 1000 280 L 1000 285" stroke="#000000" stroke-width="1.5"/>
     <polygon points="996,285 1000,292 1004,285" fill="#000000"/>
   </g>
+''')
 
-
+    # =========================================================================
+    # TẦNG 2: EDGE INGRESS, API GATEWAY & SECURITY (y: 295 to 400, h: 105)
+    # =========================================================================
+    lines.append(f'''
   <!-- TIER 2: API GATEWAY & SECURITY -->
   <g id="Tier_2_Gateway" transform="translate(40, 295)">
-    <rect width="1920" height="105" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
-    <rect width="1920" height="28" rx="6" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+    <rect width="{width - 80}" height="105" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <rect width="{width - 80}" height="28" rx="6" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
     <rect x="14" y="7" width="5" height="14" rx="1" fill="#000000"/>
     <text x="26" y="19" class="tier-header">TẦNG 2: EDGE INGRESS, API GATEWAY &amp; SECURITY PROXY (:3000)</text>
-    <text x="1902" y="19" class="tier-badge" text-anchor="end">SINGLE ENTRYPOINT • REVERSE PROXY • AUTH &amp; PII PIPELINE</text>
+    <text x="{width - 80 - 18}" y="19" class="tier-badge" text-anchor="end">SINGLE ENTRYPOINT • REVERSE PROXY • AUTH &amp; PII PIPELINE</text>
     
     <!-- 4 Functional Gateway Blocks -->
     <!-- Block 1 -->
@@ -171,8 +217,12 @@
       <text x="12" y="52" class="card-bullet">• CORS Whitelist, WAF cơ bản, Helmet Security Headers, Chống DoS API</text>
     </g>
   </g>
+''')
 
-
+    # =========================================================================
+    # CONNECTOR: TIER 2 -> TIER 3 (y: 400 to 425, gap = 25)
+    # =========================================================================
+    lines.append(f'''
   <!-- CONNECTOR BUS: TIER 2 -> TIER 3 -->
   <g id="Bus_2_to_3">
     <line x1="260" y1="400" x2="260" y2="425" stroke="#000000" stroke-width="1.5"/>
@@ -189,15 +239,19 @@
     <polygon points="1196,425 1200,432 1204,425" fill="#000000"/>
     <polygon points="1676,425 1680,432 1684,425" fill="#000000"/>
   </g>
+''')
 
-
+    # =========================================================================
+    # TẦNG 3: 13 MICROSERVICES BUSINESS DOMAIN MESH (y: 435 to 870, h: 435)
+    # =========================================================================
+    lines.append(f'''
   <!-- TIER 3: MICROSERVICES MESH -->
   <g id="Tier_3_Microservices" transform="translate(40, 435)">
-    <rect width="1920" height="435" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
-    <rect width="1920" height="30" rx="6" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+    <rect width="{width - 80}" height="435" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <rect width="{width - 80}" height="30" rx="6" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
     <rect x="14" y="8" width="5" height="14" rx="1" fill="#000000"/>
     <text x="26" y="20" class="tier-header">TẦNG 3: 13 MICROSERVICES BUSINESS DOMAIN MESH (LÕI NGHIỆP VỤ VẬN HÀNH PHÂN TÁN)</text>
-    <text x="1902" y="20" class="tier-badge" text-anchor="end">ISOLATED BOUNDED CONTEXTS • NESTJS &amp; EXPRESS FRAMEWORKS • 100% PRISMA ORM</text>
+    <text x="{width - 80 - 18}" y="20" class="tier-badge" text-anchor="end">ISOLATED BOUNDED CONTEXTS • NESTJS &amp; EXPRESS FRAMEWORKS • 100% PRISMA ORM</text>
     
     <!-- 4 DOMAIN CLUSTERS -->
     
@@ -373,8 +427,12 @@
       </g>
     </g>
   </g>
+''')
 
-
+    # =========================================================================
+    # CONNECTOR: TIER 3 -> TIERS 4 & 5 (y: 870 to 905, gap = 35)
+    # =========================================================================
+    lines.append(f'''
   <!-- CONNECTOR BUS: TIER 3 -> TIERS 4 & 5 -->
   <g id="Bus_3_to_4_and_5">
     <!-- Left Branch to RabbitMQ -->
@@ -389,8 +447,12 @@
     <rect x="1270" y="880" width="460" height="18" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
     <text x="1500" y="893" class="flow-label" text-anchor="middle">Isolated TCP Connections • Prisma Connection Pool • Redis Pipeline</text>
   </g>
+''')
 
-
+    # =========================================================================
+    # TẦNG 4 & TẦNG 5: DUAL INFRASTRUCTURE TIER (y: 915 to 1215, h: 300)
+    # =========================================================================
+    lines.append(f'''
   <!-- TIER 4: EVENT-DRIVEN MESSAGE BROKER (LEFT HALF, w: 940) -->
   <g id="Tier_4_RabbitMQ" transform="translate(40, 915)">
     <rect width="940" height="300" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
@@ -513,14 +575,31 @@
       <text x="12" y="70" class="card-bullet">• RateLimitRegistry: Đồng hồ đếm tần suất truy cập API Gateway theo IP và Token chống cào dữ liệu đơn hàng trái phép</text>
     </g>
   </g>
+''')
 
-
+    # =========================================================================
+    # FOOTER BAR (y: 1225 to 1275, h: 50)
+    # =========================================================================
+    lines.append(f'''
   <!-- FOOTER -->
   <g id="FooterBar" transform="translate(40, 1225)">
-    <rect width="1920" height="45" rx="6" fill="#F9FAFB" stroke="#000000" stroke-width="1.4"/>
+    <rect width="{width - 80}" height="45" rx="6" fill="#F9FAFB" stroke="#000000" stroke-width="1.4"/>
     <circle cx="22" cy="22" r="4.5" fill="#000000"/>
     <text x="36" y="26" font-size="11" font-weight="700" fill="#000000">GHI CHÚ KỸ THUẬT KIẾN TRÚC:</text>
     <text x="235" y="26" font-size="10.5" fill="#1F2937">Bản vẽ kiến trúc hệ thống tổng thể theo chuẩn UML Component &amp; Deployment Blueprint • Ánh xạ 100% dịch vụ và cơ sở dữ liệu thực tế trong mã nguồn dự án</text>
-    <text x="1900" y="26" font-size="11" font-weight="600" fill="#4B5563" text-anchor="end">Nexus Express Software Engineering Thesis • Section 1.2</text>
+    <text x="{width - 80 - 20}" y="26" font-size="11" font-weight="600" fill="#4B5563" text-anchor="end">Nexus Express Software Engineering Thesis • Section 1.2</text>
   </g>
 </svg>
+''')
+
+    full_svg = "\n".join(lines)
+    os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
+    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+        f.write(full_svg)
+
+    # Validate XML
+    ET.fromstring(full_svg)
+    print(f"Generated and validated: {OUTPUT_FILE} ({len(full_svg)} bytes)")
+
+if __name__ == "__main__":
+    build_architecture_svg()
