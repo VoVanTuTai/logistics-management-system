@@ -75,7 +75,7 @@
     <line x1="60" y1="100" x2="88" y2="145" class="actor-body"/>
     <text x="60" y="172" class="t-actor">Merchant (Chủ Shop)</text>
     <text x="60" y="191" class="t-role">(MERCHANT)</text>
-    <text x="60" y="209" class="t-app">merchant-web :5176</text>
+    <text x="60" y="209" class="t-app">merchant-web :5174</text>
   </g>
   <g id="Actor_Customer" transform="translate(160, 1420)">
     <circle cx="60" cy="30" r="18" class="actor-head"/>
@@ -95,7 +95,7 @@
     <line x1="60" y1="100" x2="88" y2="145" class="actor-body"/>
     <text x="60" y="172" class="t-actor">Khách vãng lai</text>
     <text x="60" y="191" class="t-role">(GUEST)</text>
-    <text x="60" y="209" class="t-app">guest-web :5174</text>
+    <text x="60" y="209" class="t-app">guest-web :5177</text>
   </g>
   <!-- ACTOR GENERALIZATION 1: CUSTOMER ──▷ GUEST -->
   <g id="Actor_Gen_Customer_Guest">
@@ -123,7 +123,7 @@
     <line x1="60" y1="100" x2="88" y2="145" class="actor-body"/>
     <text x="60" y="172" class="t-actor">Ops (Admin Bưu Cục)</text>
     <text x="60" y="191" class="t-role">(OPS / BRANCH_ADMIN)</text>
-    <text x="60" y="209" class="t-app">ops-web :5175 &amp; courier-mobile</text>
+    <text x="60" y="209" class="t-app">ops-web :5173 &amp; courier-mobile</text>
   </g>
   <!-- ACTOR GENERALIZATION 2: OPS (Admin Bưu Cục) ──▷ COURIER -->
   <g id="Actor_Gen_Ops_Courier">
@@ -141,7 +141,7 @@
     <line x1="60" y1="100" x2="88" y2="145" class="actor-body"/>
     <text x="60" y="172" class="t-actor">System Admin</text>
     <text x="60" y="191" class="t-role">(SYSTEM_ADMIN)</text>
-    <text x="60" y="209" class="t-app">admin-web :5173</text>
+    <text x="60" y="209" class="t-app">admin-web :5175</text>
   </g>
   <!-- ========================================================= -->
   <!-- PACKAGE 1: TIẾP NHẬN & QUẢN LÝ ĐƠN HÀNG (7 UCs)          -->

@@ -48,13 +48,13 @@ Hệ thống tuân thủ nghiêm ngặt nguyên tắc **bám sát 100% mã ngu�
 │ NHÓM ĐỐI TÁC & NGƯỜI DÙNG NGOẠI VI (EXTERNAL)      │ NHÓM VẬN HÀNH & QUẢN TRỊ NỘI BỘ (INTERNAL)        │
 ├────────────────────────────────────────────────────┼───────────────────────────────────────────────────┤
 │ 1. Khách vãng lai (GUEST)                          │ 4. Courier (Bưu tá giao nhận) (COURIER)           │
-│    • Client: guest-web (:5174)                     │    • Client: courier-mobile (:8081)               │
+│    • Client: guest-web (:5177)                     │    • Client: courier-mobile (:8081)               │
 │                                                    │                         ▲                         │
 │ 2. Khách hàng (CUSTOMER) ──<<generalizes>>──▷ GUEST│ 5. Ops các cấp ─────────┴──<<generalizes>>──▷ COURIER│
-│    • Client: customer-mobile (:8082)               │    • Client: ops-web (:5175) & courier-mobile    │
+│    • Client: customer-mobile (:8082)               │    • Client: ops-web (:5173) & courier-mobile    │
 │                                                    │                                                   │
 │ 3. Merchant (Chủ Shop / Người gửi) (MERCHANT)      │ 6. System Admin (Quản trị viên) (SYSTEM_ADMIN)   │
-│    • Client: merchant-web (:5176)                  │    • Client: admin-web (:5173)                    │
+│    • Client: merchant-web (:5174)                  │    • Client: admin-web (:5175)                    │
 └────────────────────────────────────────────────────┴───────────────────────────────────────────────────┘
 ```
 
@@ -62,12 +62,12 @@ Hệ thống tuân thủ nghiêm ngặt nguyên tắc **bám sát 100% mã ngu�
 
 | Tác nhân (Actor) | Mã Role Codebase | Ứng dụng Client & Port | Trách nhiệm & Quyền hạn nghiệp vụ thực tế trong Codebase |
 | :--- | :---: | :---: | :--- |
-| **Khách vãng lai** | `GUEST` | `guest-web :5174` | Khách truy cập ẩn danh không cần tài khoản. Được phép tra cứu lộ trình công khai (`UC-32`), hỏi đáp AI Chatbot (`UC-34`), nhận tư vấn cước IATA tự động (`UC-38`), và đăng ký tài khoản khách (`UC-43`). |
+| **Khách vãng lai** | `GUEST` | `guest-web :5177` | Khách truy cập ẩn danh không cần tài khoản. Được phép tra cứu lộ trình công khai (`UC-32`), hỏi đáp AI Chatbot (`UC-34`), nhận tư vấn cước IATA tự động (`UC-38`), và đăng ký tài khoản khách (`UC-43`). |
 | **Khách hàng** | `CUSTOMER` | `customer-mobile :8082` | Khách hàng đầu nhận bưu kiện. Kế thừa toàn bộ tính năng công khai của `GUEST` (`CUSTOMER ──▷ GUEST`). Ngoài ra có quyền tra cứu tiến trình nội bộ (`UC-33`), định vị GPS thời gian thực (`UC-36`), ký nhận điện tử e-POD (`UC-14a`), thanh toán VietQR SePay (`UC-23b`), và khởi tạo khiếu nại sự cố trong 24h (`UC-19`). |
-| **Merchant** *(Chủ Shop / Người gửi)* | `MERCHANT` | `merchant-web :5176` | Đối tác kinh doanh gửi hàng. Thực hiện tạo đơn trên Portal (`UC-01a`), đồng bộ đơn Webhook sàn TMĐT (`UC-01b`), tra cứu danh sách đơn (`UC-02`), yêu cầu lấy hàng (`UC-04`), sửa đổi thông tin đơn (`UC-05`), hủy đơn (`UC-06`), in phiếu Barcode/QR (`UC-07`). |
+| **Merchant** *(Chủ Shop / Người gửi)* | `MERCHANT` | `merchant-web :5174` | Đối tác kinh doanh gửi hàng. Thực hiện tạo đơn trên Portal (`UC-01a`), đồng bộ đơn Webhook sàn TMĐT (`UC-01b`), tra cứu danh sách đơn (`UC-02`), yêu cầu lấy hàng (`UC-04`), sửa đổi thông tin đơn (`UC-05`), hủy đơn (`UC-06`), in phiếu Barcode/QR (`UC-07`). |
 | **Courier** *(Bưu tá giao nhận)* | `COURIER` | `courier-mobile :8081` | Nhân sự hiện trường chặng đầu và chặng cuối. Thực hiện quét gom hàng (`UC-08`), thực hiện chuyến phát (`UC-14`), xác thực e-POD & OTP (`UC-14a`), báo phát thất bại NDR (`UC-15`), thu tiền mặt COD (`UC-23a`), nộp tiền quyết toán ca (`UC-24`). |
-| **Ops các cấp** *(Admin bưu cục / Hub / Kho / Dispatch)* | `OPS` | `ops-web :5175` & `courier-mobile :8081` | Quản trị và vận hành toàn diện bưu cục, kho trung chuyển, phân tuyến điều phối và linehaul. Quản lý nghiệp vụ tại quầy & in tem nhiệt (`UC-08a`), tồn kho bưu cục & chốt ca (`UC-08b`), quét Inbound nhập kho (`UC-09`), quét Outbound (`UC-10`), đóng bao Manifest niêm chì (`UC-11`), nhận bao đầu tuyến (`UC-12`), phân công task & tối ưu tuyến (`UC-13`), bàn giao & chuyển đơn bưu tá (`UC-13a`), chat điều phối với bưu tá (`UC-13b`), quản lý xe Linehaul & tem chì (`UC-13c`), xử lý hàng bất thường & lạc tuyến (`UC-18`), quyết toán ca bưu tá (`UC-24`), xác nhận đối soát chốt sổ (`UC-27`), báo cáo doanh thu (`UC-28`). **Đặc biệt: Kế thừa toàn bộ quyền hạn hiện trường của Courier (`OPS ──▷ COURIER`) qua ứng dụng `courier-mobile` khi trực tiếp gom/phát hàng.** |
-| **System Admin** *(Quản trị viên hệ thống)* | `SYSTEM_ADMIN` | `admin-web :5173` | Quản trị viên cấp cao nhất. Hồ sơ cá nhân (`UC-44`), quản trị tài khoản người dùng (`UC-45`), phân quyền RBAC Matrix (`UC-46`), nhật ký kiểm toán bảo mật (`UC-47`), quản trị Hubs 4 cấp (`UC-48`), Zones địa lý (`UC-49`), cấu hình SLA (`UC-50`), CMS bài viết chính sách (`UC-51`), hồ sơ đối tác Merchant (`UC-52`), danh mục lý do NDR (`UC-53`). |
+| **Ops các cấp** *(Admin bưu cục / Hub / Kho / Dispatch)* | `OPS` | `ops-web :5173` & `courier-mobile :8081` | Quản trị và vận hành toàn diện bưu cục, kho trung chuyển, phân tuyến điều phối và linehaul. Quản lý nghiệp vụ tại quầy & in tem nhiệt (`UC-08a`), tồn kho bưu cục & chốt ca (`UC-08b`), quét Inbound nhập kho (`UC-09`), quét Outbound (`UC-10`), đóng bao Manifest niêm chì (`UC-11`), nhận bao đầu tuyến (`UC-12`), phân công task & tối ưu tuyến (`UC-13`), bàn giao & chuyển đơn bưu tá (`UC-13a`), chat điều phối với bưu tá (`UC-13b`), quản lý xe Linehaul & tem chì (`UC-13c`), xử lý hàng bất thường & lạc tuyến (`UC-18`), quyết toán ca bưu tá (`UC-24`), xác nhận đối soát chốt sổ (`UC-27`), báo cáo doanh thu (`UC-28`). **Đặc biệt: Kế thừa toàn bộ quyền hạn hiện trường của Courier (`OPS ──▷ COURIER`) qua ứng dụng `courier-mobile` khi trực tiếp gom/phát hàng.** |
+| **System Admin** *(Quản trị viên hệ thống)* | `SYSTEM_ADMIN` | `admin-web :5175` | Quản trị viên cấp cao nhất. Hồ sơ cá nhân (`UC-44`), quản trị tài khoản người dùng (`UC-45`), phân quyền RBAC Matrix (`UC-46`), nhật ký kiểm toán bảo mật (`UC-47`), quản trị Hubs 4 cấp (`UC-48`), Zones địa lý (`UC-49`), cấu hình SLA (`UC-50`), CMS bài viết chính sách (`UC-51`), hồ sơ đối tác Merchant (`UC-52`), danh mục lý do NDR (`UC-53`). |
 
 ---
 

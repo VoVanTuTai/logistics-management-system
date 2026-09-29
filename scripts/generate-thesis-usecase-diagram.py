@@ -225,7 +225,7 @@ def generate_svg():
     # =========================================================================
     lines.append('  <!-- ==================== 6 REAL CODEBASE ROLES ==================== -->')
     # 1. MERCHANT (Left, Row 1, Center: 220, 500)
-    lines.append(actor_stick(160, 480, "Actor_Merchant", "Merchant (Chủ Shop)", "MERCHANT", "merchant-web :5176"))
+    lines.append(actor_stick(160, 480, "Actor_Merchant", "Merchant (Chủ Shop)", "MERCHANT", "merchant-web :5174"))
     m_hand = (252, 548)
 
     # 2. CUSTOMER (Left, Row 2, Center: 220, 1460)
@@ -233,7 +233,7 @@ def generate_svg():
     c_hand = (252, 1488)
 
     # 3. GUEST (Left, Row 3, Center: 220, 2460)
-    lines.append(actor_stick(160, 2420, "Actor_Guest", "Khách vãng lai", "GUEST", "guest-web :5174"))
+    lines.append(actor_stick(160, 2420, "Actor_Guest", "Khách vãng lai", "GUEST", "guest-web :5177"))
     g_hand = (252, 2488)
 
     # ACTOR GENERALIZATION 1: CUSTOMER ──▷ GUEST
@@ -251,7 +251,7 @@ def generate_svg():
     courier_hand = (4928, 548)
 
     # 5. OPS (Right, Row 2, Center: 4960, 1420)
-    lines.append(actor_stick(4900, 1420, "Actor_Ops", "Ops (Admin Bưu Cục)", "OPS / BRANCH_ADMIN", "ops-web :5175 &amp; courier-mobile"))
+    lines.append(actor_stick(4900, 1420, "Actor_Ops", "Ops (Admin Bưu Cục)", "OPS / BRANCH_ADMIN", "ops-web :5173 &amp; courier-mobile"))
     ops_hand = (4928, 1488)
 
     # ACTOR GENERALIZATION 2: OPS ──▷ COURIER
@@ -265,7 +265,7 @@ def generate_svg():
     lines.append('  </g>')
 
     # 6. SYSTEM_ADMIN (Right, Row 3, Center: 4960, 2420)
-    lines.append(actor_stick(4900, 2420, "Actor_Admin", "System Admin", "SYSTEM_ADMIN", "admin-web :5173"))
+    lines.append(actor_stick(4900, 2420, "Actor_Admin", "System Admin", "SYSTEM_ADMIN", "admin-web :5175"))
     admin_hand = (4928, 2488)
 
     # =========================================================================
