@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 750" width="100%" height="100%" style="background:#FFFFFF;">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 920" width="100%" height="100%" style="background:#FFFFFF;">
 
   <defs>
     <marker id="crow-many" markerWidth="14" markerHeight="14" refX="10" refY="7" orient="auto">
@@ -13,10 +13,10 @@
     </marker>
   </defs>
 
-  <!-- Technical Blueprint Frame -->
+  <!-- Technical Blueprint Double Frame -->
   <rect width="100%" height="100%" fill="#FFFFFF"/>
-  <rect x="15" y="15" width="1970" height="720" fill="none" stroke="#000000" stroke-width="2"/>
-  <rect x="20" y="20" width="1960" height="710" fill="none" stroke="#000000" stroke-width="0.8"/>
+  <rect x="15" y="15" width="1970" height="890" fill="none" stroke="#000000" stroke-width="2"/>
+  <rect x="20" y="20" width="1960" height="880" fill="none" stroke="#000000" stroke-width="0.8"/>
 
   <style>
     text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
@@ -49,99 +49,141 @@
     <rect width="1920" height="100" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.8"/>
     <line x1="0" y1="32" x2="1920" y2="32" stroke="#E5E7EB" stroke-width="1"/>
     <text x="24" y="22" class="doc-badge">NEXUS LOGISTICS SYSTEM ARCHITECTURE • DATABASE-PER-SERVICE SPECIFICATION</text>
-    <text x="24" y="58" class="doc-title">12. PRICING-SERVICE (CÔNG CỤ TÍNH CƯỚC QUY ĐỔI HÀNG KHÔNG IATA)</text>
-    <text x="24" y="82" class="doc-subtitle">Công cụ tính cước quy đổi IATA 1:5000, tính cước nấc lũy tiến &amp; phí bảo hiểm khai giá</text>
+    <text x="24" y="58" class="doc-title">12. PRICING-SERVICE (ĐỘNG CƠ TÍNH CƯỚC TỰ ĐỘNG CHUẨN QUỐC TẾ IATA)</text>
+    <text x="24" y="82" class="doc-subtitle">Tính cước thời gian thực, quy đổi thể tích hàng không IATA, phụ phí nhiên liệu &amp; dịch vụ cộng thêm</text>
     
     <!-- Badges -->
     <rect x="1570" y="32" width="160" height="36" rx="4" fill="#F3F4F6" stroke="#000000" stroke-width="1.2"/>
     <text x="1650" y="55" font-size="12.5" font-weight="700" fill="#000000" text-anchor="middle">PORT :3012</text>
 
     <rect x="1750" y="32" width="170" height="36" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-    <text x="1835" y="55" font-size="12.5" font-weight="700" fill="#000000" text-anchor="middle">DB: in-memory</text>
+    <text x="1835" y="55" font-size="12.5" font-weight="700" fill="#000000" text-anchor="middle">DB: pricing_engine</text>
   </g>
 
 
   <!-- MAIN SERVICE CONTAINER -->
   <g id="ServiceBody" transform="translate(40, 150)">
-    <rect width="1920" height="510" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.6"/>
+    <rect width="1920" height="680" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.6"/>
 
-<g transform="translate(20, 20)">
-  <rect width="470" height="236" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+<g transform="translate(24, 20)">
+  <rect width="470" height="164" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
   <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
-  <text x="14" y="23" class="tbl-header">PricingQuote (Entity)</text>
-  <text x="456" y="23" class="tbl-tag" text-anchor="end">CÔNG THỨC IATA</text>
-  <circle cx="18" cy="50" r="1.8" fill="#000000"/>
-  <text x="30" y="54" class="tbl-field-normal">originZoneCode</text>
-  <text x="458" y="54" class="tbl-type" text-anchor="end">VARCHAR(32) VÙNG GỬI</text>
-  <circle cx="18" cy="74" r="1.8" fill="#000000"/>
-  <text x="30" y="78" class="tbl-field-normal">destZoneCode</text>
-  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(32) VÙNG NHẬN</text>
+  <text x="14" y="23" class="tbl-header">TariffMatrix</text>
+  <text x="456" y="23" class="tbl-tag" text-anchor="end">TARIFF_MATRICES (BẢNG GIÁ THEO...</text>
+  <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
+  <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
+  <text x="42" y="54" class="tbl-field-pk">id</text>
+  <text x="458" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) ID MA TRẬN CƯỚC</text>
+  <rect x="8" y="67" width="28" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1" stroke-dasharray="2 1.5"/>
+  <text x="22" y="78" class="badge-dist" text-anchor="middle">DIST</text>
+  <text x="42" y="78" class="tbl-field-dist">originZone / destZone</text>
+  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(32) VÙNG ĐI / VÙNG Đ</text>
   <circle cx="18" cy="98" r="1.8" fill="#000000"/>
-  <text x="30" y="102" class="tbl-field-normal">actualWeightKg</text>
-  <text x="458" y="102" class="tbl-type" text-anchor="end">FLOAT CÂN NẶNG THỰC TẾ</text>
+  <text x="30" y="102" class="tbl-field-normal">baseWeightKg / basePriceVnd</text>
+  <text x="458" y="102" class="tbl-type" text-anchor="end">FLOAT CÂN NẶNG &amp; CƯỚC CƠ BẢN</text>
   <circle cx="18" cy="122" r="1.8" fill="#000000"/>
-  <text x="30" y="126" class="tbl-field-normal">length / width / height</text>
-  <text x="458" y="126" class="tbl-type" text-anchor="end">FLOAT (cm) KÍCH THƯỚC 3 CHIỀU</text>
+  <text x="30" y="126" class="tbl-field-normal">stepWeightKg / stepPriceVnd</text>
+  <text x="458" y="126" class="tbl-type" text-anchor="end">FLOAT CƯỚC CỘNG THÊM MỖI NẤC</text>
   <circle cx="18" cy="146" r="1.8" fill="#000000"/>
-  <text x="30" y="150" class="tbl-field-normal">volumetricWeightKg</text>
-  <text x="458" y="150" class="tbl-type" text-anchor="end">FLOAT (L*W*H)/5000 IATA</text>
-  <circle cx="18" cy="170" r="1.8" fill="#000000"/>
-  <text x="30" y="174" class="tbl-field-normal">chargeableWeightKg</text>
-  <text x="458" y="174" class="tbl-type" text-anchor="end">FLOAT MAX(Actual, Volumetric)</text>
-  <circle cx="18" cy="194" r="1.8" fill="#000000"/>
-  <text x="30" y="198" class="tbl-field-normal">baseFee / vatAmount</text>
-  <text x="458" y="198" class="tbl-type" text-anchor="end">DECIMAL CƯỚC CƠ BẢN + VAT 8%</text>
-  <circle cx="18" cy="218" r="1.8" fill="#000000"/>
-  <text x="30" y="222" class="tbl-field-normal">insuranceFee</text>
-  <text x="458" y="222" class="tbl-type" text-anchor="end">DECIMAL 0.5% GIÁ TRỊ KHAI GIÁ</text>
+  <text x="30" y="150" class="tbl-field-normal">transitDaysMin / transitDaysMax</text>
+  <text x="458" y="150" class="tbl-type" text-anchor="end">INT THỜI GIAN CAM KẾT VẬN CH</text>
 </g>
-<g transform="translate(510, 20)">
+<g transform="translate(514, 20)">
+  <rect width="470" height="164" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+  <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
+  <text x="14" y="23" class="tbl-header">DimensionalRule</text>
+  <text x="456" y="23" class="tbl-tag" text-anchor="end">DIMENSIONAL_RULES (CÔNG THỨC Q...</text>
+  <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
+  <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
+  <text x="42" y="54" class="tbl-field-pk">id</text>
+  <text x="458" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) QUY CHUẨN THỂ TÍ</text>
+  <circle cx="18" cy="74" r="1.8" fill="#000000"/>
+  <text x="30" y="78" class="tbl-field-normal">formula</text>
+  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(64) (DÀI * RỘNG * CA</text>
+  <circle cx="18" cy="98" r="1.8" fill="#000000"/>
+  <text x="30" y="102" class="tbl-field-normal">applyThresholdKg</text>
+  <text x="458" y="102" class="tbl-type" text-anchor="end">FLOAT NGƯỠNG ÁP DỤNG QUY ĐỔI</text>
+  <circle cx="18" cy="122" r="1.8" fill="#000000"/>
+  <text x="30" y="126" class="tbl-field-normal">dimensionalDivisor</text>
+  <text x="458" y="126" class="tbl-type" text-anchor="end">INT HỆ SỐ HÀNG KHÔNG 5000</text>
+  <circle cx="18" cy="146" r="1.8" fill="#000000"/>
+  <text x="30" y="150" class="tbl-field-normal">maxDimensionsCm</text>
+  <text x="458" y="150" class="tbl-type" text-anchor="end">VARCHAR(32) KÍCH THƯỚC TỐI Đ</text>
+</g>
+<g transform="translate(24, 204)">
+  <rect width="470" height="164" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+  <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
+  <text x="14" y="23" class="tbl-header">FuelSurchargeRule</text>
+  <text x="456" y="23" class="tbl-tag" text-anchor="end">FUEL_RULES (PHỤ PHÍ XĂNG DẦU)</text>
+  <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
+  <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
+  <text x="42" y="54" class="tbl-field-pk">id</text>
+  <text x="458" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) QUY TẮC PHỤ PHÍ</text>
+  <circle cx="18" cy="74" r="1.8" fill="#000000"/>
+  <text x="30" y="78" class="tbl-field-normal">effectiveDate</text>
+  <text x="458" y="78" class="tbl-type" text-anchor="end">TIMESTAMP NGÀY ÁP DỤNG HIỆU</text>
+  <circle cx="18" cy="98" r="1.8" fill="#000000"/>
+  <text x="30" y="102" class="tbl-field-normal">surchargePercent</text>
+  <text x="458" y="102" class="tbl-type" text-anchor="end">FLOAT TỶ LỆ PHỤ PHÍ (%) (VD:</text>
+  <circle cx="18" cy="122" r="1.8" fill="#000000"/>
+  <text x="30" y="126" class="tbl-field-normal">brentIndexThreshold</text>
+  <text x="458" y="126" class="tbl-type" text-anchor="end">FLOAT NGƯỠNG GIÁ DẦU THẾ GIỚ</text>
+  <circle cx="18" cy="146" r="1.8" fill="#000000"/>
+  <text x="30" y="150" class="tbl-field-normal">isActive</text>
+  <text x="458" y="150" class="tbl-type" text-anchor="end">BOOLEAN TRẠNG THÁI HIỆU LỰC</text>
+</g>
+<g transform="translate(514, 204)">
   <rect width="470" height="140" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
   <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
-  <text x="14" y="23" class="tbl-header">TieredRateMatrix</text>
-  <text x="456" y="23" class="tbl-tag" text-anchor="end">BẢNG CƯỚC NẤC LŨY TIẾN</text>
-  <circle cx="18" cy="50" r="1.8" fill="#000000"/>
-  <text x="30" y="54" class="tbl-field-normal">routeType</text>
-  <text x="458" y="54" class="tbl-type" text-anchor="end">ENUM INTRA_PROVINCE, INTER_ZONE...</text>
+  <text x="14" y="23" class="tbl-header">VasCatalog</text>
+  <text x="456" y="23" class="tbl-tag" text-anchor="end">VAS_CATALOG (DỊCH VỤ GIÁ TRỊ G...</text>
+  <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
+  <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
+  <text x="42" y="54" class="tbl-field-pk">id</text>
+  <text x="458" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) MÃ DỊCH VỤ CỘNG</text>
   <circle cx="18" cy="74" r="1.8" fill="#000000"/>
-  <text x="30" y="78" class="tbl-field-normal">weightStepKg</text>
-  <text x="458" y="78" class="tbl-type" text-anchor="end">FLOAT NẤC CÂN NẶNG ĐẦU TIÊN (0.5kg)</text>
+  <text x="30" y="78" class="tbl-field-normal">code</text>
+  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(32) INSURANCE, COD_F</text>
   <circle cx="18" cy="98" r="1.8" fill="#000000"/>
-  <text x="30" y="102" class="tbl-field-normal">firstStepPrice</text>
-  <text x="458" y="102" class="tbl-type" text-anchor="end">DECIMAL GIÁ NẤC ĐẦU (VNĐ)</text>
+  <text x="30" y="102" class="tbl-field-normal">feeType</text>
+  <text x="458" y="102" class="tbl-type" text-anchor="end">ENUM PERCENT, FLAT</text>
   <circle cx="18" cy="122" r="1.8" fill="#000000"/>
-  <text x="30" y="126" class="tbl-field-normal">additionalKgPrice</text>
-  <text x="458" y="126" class="tbl-type" text-anchor="end">DECIMAL GIÁ MỖI 0.5KG TIẾP THEO</text>
+  <text x="30" y="126" class="tbl-field-normal">feeRate / minFeeVnd</text>
+  <text x="458" y="126" class="tbl-type" text-anchor="end">FLOAT MỨC PHÍ &amp; PHÍ TỐI THIỂ</text>
 </g>
 
+    <path d="M 494 60 L 514 60" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
+    <path d="M 259 184 L 259 204" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
+    
 <g transform="translate(1010, 20)">
-  <rect width="890" height="470" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+  <rect width="890" height="640" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
   <rect x="0" y="0" width="890" height="42" rx="6" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
   <rect x="14" y="12" width="6" height="18" rx="1" fill="#000000"/>
   <text x="28" y="26" class="panel-header">GIẢI THÍCH SƠ BỘ &amp; QUY TẮC DỮ LIỆU: PRICING-SERVICE</text>
-  <rect x="710" y="9" width="166" height="24" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
-  <text x="793" y="25" font-size="11" font-weight="700" fill="#000000" text-anchor="middle">PRICING ENGINE</text>
-  <text x="18" y="66" class="panel-sec-title">▶ CÔNG THỨC TÍNH CƯỚC BƯU CHÍNH QUỐC TẾ (IATA AIRFREIGHT STANDARD)</text>
-  <circle cx="25" cy="82" r="2" fill="#000000"/>
-  <text x="36" y="86" class="panel-body"><tspan class="panel-bold">Quy đổi thể tích:</tspan> Áp dụng chuẩn IATA: <tspan class="panel-code">Khối lượng quy đổi = (Dài × Rộng × Cao) / 5000</tspan>.</text>
-  <circle cx="25" cy="102" r="2" fill="#000000"/>
-  <text x="36" y="106" class="panel-body"><tspan class="panel-bold">Khối lượng tính cước:</tspan> Lấy giá trị lớn nhất: <tspan class="panel-code">Chargeable Weight = MAX(Cân nặng thực tế, Cân nặng quy đổi)</tspan>.</text>
+  <rect x="677" y="9" width="199" height="24" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+  <text x="776.5" y="25" font-size="10" font-weight="700" fill="#000000" text-anchor="middle">IATA STANDARD CALCULATION</text>
+  <text x="18" y="68" class="panel-sec-title">▶ ĐỘNG CƠ TÍNH CƯỚC TỐC ĐỘ CAO (IN-MEMORY PRICING ENGINE)</text>
+  <circle cx="25" cy="84" r="2" fill="#000000"/>
+  <text x="36" y="88" class="panel-body">Kiến trúc không trạng thái (Stateless Engine): pricing-service tải ma trận bảng</text>
+  <text x="36" y="106" class="panel-body">cước và quy tắc phụ phí lên bộ nhớ RAM để tính toán siêu tốc (&lt; 5ms).</text>
   <circle cx="25" cy="122" r="2" fill="#000000"/>
-  <text x="36" y="126" class="panel-body"><tspan class="panel-bold">Bảo hiểm &amp; Phụ phí:</tspan> Tự động tính phí bảo hiểm 0.5% đối với hàng có khai giá trị cao trên 1.000.000 VNĐ.</text>
-  <text x="18" y="154" class="panel-sec-title">▶ KIẾN TRÚC KHÔNG LƯU TRẠNG THÁI (STATELESS CALCULATION ENGINE)</text>
-  <circle cx="25" cy="170" r="2" fill="#000000"/>
-  <text x="36" y="174" class="panel-body"><tspan class="panel-bold">Hiệu năng cực đại:</tspan> Xử lý tính cước trực tiếp trong bộ nhớ (In-memory) trong thời gian dưới 5ms, phục vụ tra cứu cước tức thì trên Web Shop và Chatbot.</text>
-  <rect x="14" y="432" width="862" height="26" rx="4" fill="#F9FAFB" stroke="#000000" stroke-width="1"/>
-  <text x="445.0" y="449" font-size="11" font-weight="600" fill="#111827" text-anchor="middle">Engine: In-Memory Stateless | Formula: (L*W*H)/5000 IATA Standard | Latency: Sub-5ms Execution</text>
+  <text x="36" y="126" class="panel-body">Quy chuẩn cước hàng không IATA: Tự động so sánh giữa trọng lượng thực tế (Gross</text>
+  <text x="36" y="144" class="panel-body">Weight) và trọng lượng quy đổi thể tích (Volumetric Weight = L x W x H / 5000),</text>
+  <text x="36" y="162" class="panel-body">lấy giá trị lớn hơn để tính cước.</text>
+  <circle cx="25" cy="178" r="2" fill="#000000"/>
+  <text x="36" y="182" class="panel-body">Dịch vụ giá trị gia tăng (VAS): Tự động tính phí bảo hiểm bưu gửi và phí thu hộ</text>
+  <text x="36" y="200" class="panel-body">COD theo tỷ lệ lũy tiến.</text>
+  <rect x="14" y="602" width="862" height="26" rx="4" fill="#F9FAFB" stroke="#000000" stroke-width="1"/>
+  <text x="445.0" y="619" font-size="11" font-weight="600" fill="#111827" text-anchor="middle">Engine: In-Memory Rule Engine (TypeScript) | Standards: IATA Cargo Dimensional Rules | Latency: &lt; 5ms</text>
 </g>
   </g>
 
   <!-- SAGA CONTEXT FOOTER -->
-  <g id="FooterSaga" transform="translate(40, 680)">
+  <g id="FooterSaga" transform="translate(40, 850)">
     <rect width="1920" height="50" rx="6" fill="#F9FAFB" stroke="#000000" stroke-width="1.4"/>
     <circle cx="25" cy="25" r="5" fill="#000000"/>
     <text x="42" y="29" font-size="12" font-weight="700" fill="#000000">CƠ CHẾ LIÊN KẾT PHÂN TÁN (SAGA):</text>
-    <text x="310" y="29" font-size="11.5" fill="#1F2937">Cung cấp API tính cước tức thời cho shipment-service khi tạo đơn và chatbot-service khi tư vấn giá</text>
+    <text x="310" y="29" font-size="11.5" fill="#1F2937">Cung cấp REST API tính cước bưu kiện thời gian thực cho Portal và Mobile App</text>
     <text x="1900" y="29" font-size="11" font-weight="600" fill="#4B5563" text-anchor="end">Nexus Software Engineering Thesis</text>
   </g>
 </svg>

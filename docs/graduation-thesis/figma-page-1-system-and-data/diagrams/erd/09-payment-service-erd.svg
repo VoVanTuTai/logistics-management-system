@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 1050" width="100%" height="100%" style="background:#FFFFFF;">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 1200" width="100%" height="100%" style="background:#FFFFFF;">
 
   <defs>
     <marker id="crow-many" markerWidth="14" markerHeight="14" refX="10" refY="7" orient="auto">
@@ -13,10 +13,10 @@
     </marker>
   </defs>
 
-  <!-- Technical Blueprint Frame -->
+  <!-- Technical Blueprint Double Frame -->
   <rect width="100%" height="100%" fill="#FFFFFF"/>
-  <rect x="15" y="15" width="1970" height="1020" fill="none" stroke="#000000" stroke-width="2"/>
-  <rect x="20" y="20" width="1960" height="1010" fill="none" stroke="#000000" stroke-width="0.8"/>
+  <rect x="15" y="15" width="1970" height="1170" fill="none" stroke="#000000" stroke-width="2"/>
+  <rect x="20" y="20" width="1960" height="1160" fill="none" stroke="#000000" stroke-width="0.8"/>
 
   <style>
     text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
@@ -49,8 +49,8 @@
     <rect width="1920" height="100" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.8"/>
     <line x1="0" y1="32" x2="1920" y2="32" stroke="#E5E7EB" stroke-width="1"/>
     <text x="24" y="22" class="doc-badge">NEXUS LOGISTICS SYSTEM ARCHITECTURE • DATABASE-PER-SERVICE SPECIFICATION</text>
-    <text x="24" y="58" class="doc-title">9. PAYMENT-SERVICE (DỊCH VỤ THANH TOÁN, ĐỐI SOÁT COD &amp; QUYẾT TOÁN TỰ ĐỘNG)</text>
-    <text x="24" y="82" class="doc-subtitle">Quản lý tiền thu hộ COD, đối soát phiên nộp tiền Courier &amp; quyết toán tự động qua VietQR PayOS</text>
+    <text x="24" y="58" class="doc-title">9. PAYMENT-SERVICE (DỊCH VỤ QUẢN LÝ DÒNG TIỀN COD &amp; ĐỐI SOÁT TỰ ĐỘNG)</text>
+    <text x="24" y="82" class="doc-subtitle">Theo dõi tiền thu hộ COD, quyết toán phiên nộp tiền bưu tá, tích hợp VietQR động &amp; gạch nợ tự động</text>
     
     <!-- Badges -->
     <rect x="1570" y="32" width="160" height="36" rx="4" fill="#F3F4F6" stroke="#000000" stroke-width="1.2"/>
@@ -63,187 +63,254 @@
 
   <!-- MAIN SERVICE CONTAINER -->
   <g id="ServiceBody" transform="translate(40, 150)">
-    <rect width="1920" height="810" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.6"/>
+    <rect width="1920" height="960" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.6"/>
 
-<g transform="translate(20, 20)">
-  <rect width="470" height="260" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+<g transform="translate(24, 20)">
+  <rect width="470" height="404" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
   <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
-  <text x="14" y="23" class="tbl-header">CodRecord (cod_records)</text>
-  <text x="456" y="23" class="tbl-tag" text-anchor="end">HỒ SƠ THU HỘ COD</text>
+  <text x="14" y="23" class="tbl-header">CodRecord</text>
+  <text x="456" y="23" class="tbl-tag" text-anchor="end">COD_RECORDS (THEO DÕI THU HỘ T...</text>
   <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
-  <text x="458" y="54" class="tbl-type" text-anchor="end">CUID NOT NULL</text>
+  <text x="458" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) CUID NOT NULL</text>
   <rect x="8" y="67" width="28" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1" stroke-dasharray="2 1.5"/>
   <text x="22" y="78" class="badge-dist" text-anchor="middle">DIST</text>
   <text x="42" y="78" class="tbl-field-dist">shipmentCode</text>
-  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(32) UNIQUE (FK-dist shipment)</text>
+  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(32) UNIQUE (NX-12345</text>
   <rect x="8" y="91" width="28" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1" stroke-dasharray="2 1.5"/>
   <text x="22" y="102" class="badge-dist" text-anchor="middle">DIST</text>
   <text x="42" y="102" class="tbl-field-dist">merchantId</text>
-  <text x="458" y="102" class="tbl-type" text-anchor="end">VARCHAR(64) FK-dist masterdata</text>
+  <text x="458" y="102" class="tbl-type" text-anchor="end">VARCHAR(64) CHỦ SHOP HƯỞNG C</text>
   <circle cx="18" cy="122" r="1.8" fill="#000000"/>
   <text x="30" y="126" class="tbl-field-normal">codAmount</text>
-  <text x="458" y="126" class="tbl-type" text-anchor="end">FLOAT TIỀN HÀNG CẦN THU</text>
+  <text x="458" y="126" class="tbl-type" text-anchor="end">FLOAT TIỀN CẦN THU (VND)</text>
   <circle cx="18" cy="146" r="1.8" fill="#000000"/>
-  <text x="30" y="150" class="tbl-field-normal">paymentMethod</text>
-  <text x="458" y="150" class="tbl-type" text-anchor="end">ENUM COD, BANK_TRANSFER, PREPAID</text>
+  <text x="30" y="150" class="tbl-field-normal">currency</text>
+  <text x="458" y="150" class="tbl-type" text-anchor="end">VARCHAR(8) DEFAULT &#x27;VND&#x27;</text>
   <circle cx="18" cy="170" r="1.8" fill="#000000"/>
-  <text x="30" y="174" class="tbl-field-normal">status</text>
-  <text x="458" y="174" class="tbl-type" text-anchor="end">ENUM PENDING, COLLECTED, REMITTED</text>
-  <rect x="8" y="187" width="28" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1" stroke-dasharray="2 1.5"/>
-  <text x="22" y="198" class="badge-dist" text-anchor="middle">DIST</text>
-  <text x="42" y="198" class="tbl-field-dist">hubCode / courierId</text>
-  <text x="458" y="198" class="tbl-type" text-anchor="end">VARCHAR BƯU CỤC &amp; TÀI XẾ THU</text>
-  <circle cx="18" cy="218" r="1.8" fill="#000000"/>
-  <text x="30" y="222" class="tbl-field-normal">collectedAt / Amount</text>
-  <text x="458" y="222" class="tbl-type" text-anchor="end">TIME / FLOAT TIỀN THỰC THU TỪ KHÁCH</text>
-  <circle cx="18" cy="242" r="1.8" fill="#000000"/>
-  <text x="30" y="246" class="tbl-field-normal">remittedAt / remittedBy</text>
-  <text x="458" y="246" class="tbl-type" text-anchor="end">TIME / VARCHAR ĐỐI SOÁT VỀ TỔNG CÔNG TY</text>
+  <text x="30" y="174" class="tbl-field-normal">paymentMethod</text>
+  <text x="458" y="174" class="tbl-type" text-anchor="end">ENUM COD, BANK, VIETQR</text>
+  <circle cx="18" cy="194" r="1.8" fill="#000000"/>
+  <text x="30" y="198" class="tbl-field-normal">status</text>
+  <text x="458" y="198" class="tbl-type" text-anchor="end">ENUM PENDING, COLLECTED</text>
+  <rect x="8" y="211" width="28" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1" stroke-dasharray="2 1.5"/>
+  <text x="22" y="222" class="badge-dist" text-anchor="middle">DIST</text>
+  <text x="42" y="222" class="tbl-field-dist">hubCode</text>
+  <text x="458" y="222" class="tbl-type" text-anchor="end">VARCHAR(32) BƯU CỤC THU TIỀN</text>
+  <rect x="8" y="235" width="28" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1" stroke-dasharray="2 1.5"/>
+  <text x="22" y="246" class="badge-dist" text-anchor="middle">DIST</text>
+  <text x="42" y="246" class="tbl-field-dist">courierId</text>
+  <text x="458" y="246" class="tbl-type" text-anchor="end">VARCHAR(64) TÀI XẾ THU TIỀN</text>
+  <circle cx="18" cy="266" r="1.8" fill="#000000"/>
+  <text x="30" y="270" class="tbl-field-normal">collectedAmount</text>
+  <text x="458" y="270" class="tbl-type" text-anchor="end">FLOAT TIỀN THỰC THU</text>
+  <circle cx="18" cy="290" r="1.8" fill="#000000"/>
+  <text x="30" y="294" class="tbl-field-normal">collectedAt</text>
+  <text x="458" y="294" class="tbl-type" text-anchor="end">TIMESTAMP THỜI ĐIỂM THU</text>
+  <circle cx="18" cy="314" r="1.8" fill="#000000"/>
+  <text x="30" y="318" class="tbl-field-normal">remittedAmount</text>
+  <text x="458" y="318" class="tbl-type" text-anchor="end">FLOAT TIỀN NỘP BƯU CỤC</text>
+  <circle cx="18" cy="338" r="1.8" fill="#000000"/>
+  <text x="30" y="342" class="tbl-field-normal">remittedAt</text>
+  <text x="458" y="342" class="tbl-type" text-anchor="end">TIMESTAMP THỜI ĐIỂM NỘP</text>
+  <circle cx="18" cy="362" r="1.8" fill="#000000"/>
+  <text x="30" y="366" class="tbl-field-normal">remittedBy</text>
+  <text x="458" y="366" class="tbl-type" text-anchor="end">VARCHAR(64) TÀI XẾ NỘP TIỀN</text>
+  <circle cx="18" cy="386" r="1.8" fill="#000000"/>
+  <text x="30" y="390" class="tbl-field-normal">note</text>
+  <text x="458" y="390" class="tbl-type" text-anchor="end">TEXT GHI CHÚ ĐỐI SOÁT</text>
 </g>
-<g transform="translate(510, 20)">
-  <rect width="470" height="260" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+<g transform="translate(514, 20)">
+  <rect width="470" height="308" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
   <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
   <text x="14" y="23" class="tbl-header">CodSettlementBatch</text>
-  <text x="456" y="23" class="tbl-tag" text-anchor="end">PHIÊN KẾT TOÁN TIỀN TÀI XẾ</text>
+  <text x="456" y="23" class="tbl-tag" text-anchor="end">COD_BATCHES (PHIÊN NỘP TIỀN CA...</text>
   <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
-  <text x="458" y="54" class="tbl-type" text-anchor="end">CUID NOT NULL</text>
+  <text x="458" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) CUID NOT NULL</text>
   <circle cx="18" cy="74" r="1.8" fill="#000000"/>
   <text x="30" y="78" class="tbl-field-normal">settlementCode</text>
-  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(32) UNIQUE (SETTLE-2026-001)</text>
+  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(32) UNIQUE (STL-1234</text>
   <circle cx="18" cy="98" r="1.8" fill="#000000"/>
   <text x="30" y="102" class="tbl-field-normal">reportDate</text>
-  <text x="458" y="102" class="tbl-type" text-anchor="end">DATE NGÀY ĐỐI SOÁT PHIÊN</text>
+  <text x="458" y="102" class="tbl-type" text-anchor="end">TIMESTAMP NGÀY NỘP BÁO CÁO</text>
   <rect x="8" y="115" width="28" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1" stroke-dasharray="2 1.5"/>
   <text x="22" y="126" class="badge-dist" text-anchor="middle">DIST</text>
-  <text x="42" y="126" class="tbl-field-dist">hubCode / courierId</text>
-  <text x="458" y="126" class="tbl-type" text-anchor="end">VARCHAR FK-dist masterdata / auth</text>
-  <circle cx="18" cy="146" r="1.8" fill="#000000"/>
-  <text x="30" y="150" class="tbl-field-normal">totalAmount</text>
-  <text x="458" y="150" class="tbl-type" text-anchor="end">FLOAT TỔNG TIỀN COURIER PHẢI NỘP</text>
+  <text x="42" y="126" class="tbl-field-dist">hubCode</text>
+  <text x="458" y="126" class="tbl-type" text-anchor="end">VARCHAR(32) BƯU CỤC NỘP TIỀN</text>
+  <rect x="8" y="139" width="28" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1" stroke-dasharray="2 1.5"/>
+  <text x="22" y="150" class="badge-dist" text-anchor="middle">DIST</text>
+  <text x="42" y="150" class="tbl-field-dist">courierId</text>
+  <text x="458" y="150" class="tbl-type" text-anchor="end">VARCHAR(64) TÀI XẾ NỘP TIỀN</text>
   <circle cx="18" cy="170" r="1.8" fill="#000000"/>
-  <text x="30" y="174" class="tbl-field-normal">status</text>
-  <text x="458" y="174" class="tbl-type" text-anchor="end">ENUM WAITING_PAYMENT, PAID...</text>
+  <text x="30" y="174" class="tbl-field-normal">totalAmount</text>
+  <text x="458" y="174" class="tbl-type" text-anchor="end">FLOAT TỔNG TIỀN NỘP CA</text>
   <circle cx="18" cy="194" r="1.8" fill="#000000"/>
-  <text x="30" y="198" class="tbl-field-normal">qrUrl</text>
-  <text x="458" y="198" class="tbl-type" text-anchor="end">TEXT LINK VIETQR CHUYỂN KHOẢN</text>
+  <text x="30" y="198" class="tbl-field-normal">status</text>
+  <text x="458" y="198" class="tbl-type" text-anchor="end">ENUM WAITING, PAID, CONFIRME</text>
   <circle cx="18" cy="218" r="1.8" fill="#000000"/>
-  <text x="30" y="222" class="tbl-field-normal">transferMemo</text>
-  <text x="458" y="222" class="tbl-type" text-anchor="end">VARCHAR(64) CÚ PHÁP ĐỐI SOÁT DUY NHẤT</text>
+  <text x="30" y="222" class="tbl-field-normal">qrUrl</text>
+  <text x="458" y="222" class="tbl-type" text-anchor="end">VARCHAR(255) MÃ VIETQR ĐỘNG</text>
   <circle cx="18" cy="242" r="1.8" fill="#000000"/>
-  <text x="30" y="246" class="tbl-field-normal">confirmedAt / confirmedBy</text>
-  <text x="458" y="246" class="tbl-type" text-anchor="end">TIME / VARCHAR KẾ TOÁN XÁC NHẬN</text>
+  <text x="30" y="246" class="tbl-field-normal">transferMemo</text>
+  <text x="458" y="246" class="tbl-type" text-anchor="end">VARCHAR(64) CÚ PHÁP DUY NHẤT</text>
+  <circle cx="18" cy="266" r="1.8" fill="#000000"/>
+  <text x="30" y="270" class="tbl-field-normal">confirmedBy</text>
+  <text x="458" y="270" class="tbl-type" text-anchor="end">VARCHAR(64) KẾ TOÁN BƯU CỤC</text>
+  <circle cx="18" cy="290" r="1.8" fill="#000000"/>
+  <text x="30" y="294" class="tbl-field-normal">confirmedAt</text>
+  <text x="458" y="294" class="tbl-type" text-anchor="end">TIMESTAMP THỜI ĐIỂM DUYỆT</text>
 </g>
-<g transform="translate(510, 300)">
+<g transform="translate(514, 348)">
   <rect width="470" height="164" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
   <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
   <text x="14" y="23" class="tbl-header">CodSettlementItem</text>
-  <text x="456" y="23" class="tbl-tag" text-anchor="end">CHI TIẾT VẬN ĐƠN NỘP TIỀN</text>
+  <text x="456" y="23" class="tbl-tag" text-anchor="end">COD_ITEMS (DANH SÁCH ĐƠN TRONG...</text>
   <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
-  <text x="458" y="54" class="tbl-type" text-anchor="end">CUID NOT NULL</text>
+  <text x="458" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) CUID NOT NULL</text>
   <rect x="10" y="67" width="20" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
   <text x="20" y="78" class="badge-fk" text-anchor="middle">FK</text>
   <text x="42" y="78" class="tbl-field-fk">batchId</text>
-  <text x="458" y="78" class="tbl-type" text-anchor="end">CUID FK -&gt; CodSettlementBatch</text>
-  <rect x="10" y="91" width="20" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
-  <text x="20" y="102" class="badge-fk" text-anchor="middle">FK</text>
-  <text x="42" y="102" class="tbl-field-fk">codRecordId</text>
-  <text x="458" y="102" class="tbl-type" text-anchor="end">CUID UNIQUE FK -&gt; CodRecord</text>
+  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(64) FK -&gt; Batch.id</text>
+  <rect x="8" y="91" width="28" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1" stroke-dasharray="2 1.5"/>
+  <text x="22" y="102" class="badge-dist" text-anchor="middle">DIST</text>
+  <text x="42" y="102" class="tbl-field-dist">codRecordId</text>
+  <text x="458" y="102" class="tbl-type" text-anchor="end">VARCHAR(64) FK-dist CodRecor</text>
   <rect x="8" y="115" width="28" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1" stroke-dasharray="2 1.5"/>
   <text x="22" y="126" class="badge-dist" text-anchor="middle">DIST</text>
   <text x="42" y="126" class="tbl-field-dist">shipmentCode</text>
-  <text x="458" y="126" class="tbl-type" text-anchor="end">VARCHAR(32) FK-dist shipment.code</text>
+  <text x="458" y="126" class="tbl-type" text-anchor="end">VARCHAR(32) MÃ VẬN ĐƠN CA</text>
   <circle cx="18" cy="146" r="1.8" fill="#000000"/>
   <text x="30" y="150" class="tbl-field-normal">amount</text>
-  <text x="458" y="150" class="tbl-type" text-anchor="end">FLOAT TIỀN TỪNG ĐƠN</text>
+  <text x="458" y="150" class="tbl-type" text-anchor="end">FLOAT SỐ TIỀN KHỚP ĐƠN</text>
 </g>
-<g transform="translate(20, 325)">
-  <rect width="470" height="188" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+<g transform="translate(24, 444)">
+  <rect width="470" height="260" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
   <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
   <text x="14" y="23" class="tbl-header">CodSettlementPaymentEvent</text>
-  <text x="456" y="23" class="tbl-tag" text-anchor="end">WEBHOOK BIẾN ĐỘNG SỐ DƯ</text>
+  <text x="456" y="23" class="tbl-tag" text-anchor="end">PAYMENT_EVENTS (WEBHOOK NGÂN H...</text>
   <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
-  <text x="458" y="54" class="tbl-type" text-anchor="end">CUID NOT NULL</text>
+  <text x="458" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) CUID NOT NULL</text>
   <circle cx="18" cy="74" r="1.8" fill="#000000"/>
-  <text x="30" y="78" class="tbl-field-normal">provider / providerEventId</text>
-  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR UNIQUE (PAYOS_WEBHOOK)</text>
+  <text x="30" y="78" class="tbl-field-normal">provider</text>
+  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(32) VIETQR / PAYOS</text>
   <circle cx="18" cy="98" r="1.8" fill="#000000"/>
-  <text x="30" y="102" class="tbl-field-normal">settlementCode / BatchId</text>
-  <text x="458" y="102" class="tbl-type" text-anchor="end">VARCHAR MÃ PHIÊN NỘP TIỀN</text>
-  <circle cx="18" cy="122" r="1.8" fill="#000000"/>
-  <text x="30" y="126" class="tbl-field-normal">amount / accountNumber</text>
-  <text x="458" y="126" class="tbl-type" text-anchor="end">FLOAT / STR SỐ TIỀN &amp; STK NGÂN HÀNG</text>
+  <text x="30" y="102" class="tbl-field-normal">providerEventId</text>
+  <text x="458" y="102" class="tbl-type" text-anchor="end">VARCHAR(128) MÃ GD NGÂN HÀNG</text>
+  <rect x="8" y="115" width="28" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1" stroke-dasharray="2 1.5"/>
+  <text x="22" y="126" class="badge-dist" text-anchor="middle">DIST</text>
+  <text x="42" y="126" class="tbl-field-dist">settlementBatchId</text>
+  <text x="458" y="126" class="tbl-type" text-anchor="end">VARCHAR(64) ÁNH XẠ ĐỢT NỘP C</text>
   <circle cx="18" cy="146" r="1.8" fill="#000000"/>
-  <text x="30" y="150" class="tbl-field-normal">referenceCode / memo</text>
-  <text x="458" y="150" class="tbl-type" text-anchor="end">VARCHAR NỘI DUNG CHUYỂN KHOẢN</text>
+  <text x="30" y="150" class="tbl-field-normal">amount</text>
+  <text x="458" y="150" class="tbl-type" text-anchor="end">FLOAT SỐ TIỀN GD</text>
   <circle cx="18" cy="170" r="1.8" fill="#000000"/>
-  <text x="30" y="174" class="tbl-field-normal">processingStatus</text>
-  <text x="458" y="174" class="tbl-type" text-anchor="end">VARCHAR PROCESSED, DUPLICATE...</text>
+  <text x="30" y="174" class="tbl-field-normal">accountNumber</text>
+  <text x="458" y="174" class="tbl-type" text-anchor="end">VARCHAR(32) SỐ TÀI KHOẢN NHẬ</text>
+  <circle cx="18" cy="194" r="1.8" fill="#000000"/>
+  <text x="30" y="198" class="tbl-field-normal">referenceCode</text>
+  <text x="458" y="198" class="tbl-type" text-anchor="end">VARCHAR(64) MÃ THAM CHIẾU GD</text>
+  <circle cx="18" cy="218" r="1.8" fill="#000000"/>
+  <text x="30" y="222" class="tbl-field-normal">processingStatus</text>
+  <text x="458" y="222" class="tbl-type" text-anchor="end">VARCHAR(32) SUCCESS, PROCESS</text>
+  <circle cx="18" cy="242" r="1.8" fill="#000000"/>
+  <text x="30" y="246" class="tbl-field-normal">rawPayload</text>
+  <text x="458" y="246" class="tbl-type" text-anchor="end">JSONB WEBHOOK GỐC NGÂN HÀNG</text>
 </g>
-<g transform="translate(510, 475)">
+<g transform="translate(24, 724)">
+  <rect width="470" height="140" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+  <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
+  <text x="14" y="23" class="tbl-header">IdempotencyRecord (Pay)</text>
+  <text x="456" y="23" class="tbl-tag" text-anchor="end">IDEMPOTENCY_RECORDS</text>
+  <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
+  <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
+  <text x="42" y="54" class="tbl-field-pk">id</text>
+  <text x="458" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) CUID NOT NULL</text>
+  <circle cx="18" cy="74" r="1.8" fill="#000000"/>
+  <text x="30" y="78" class="tbl-field-normal">idempotencyKey</text>
+  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(128) UNIQUE CHỐNG TR</text>
+  <circle cx="18" cy="98" r="1.8" fill="#000000"/>
+  <text x="30" y="102" class="tbl-field-normal">scope</text>
+  <text x="458" y="102" class="tbl-type" text-anchor="end">VARCHAR(64) SETTLEMENT_WEBHO</text>
+  <circle cx="18" cy="122" r="1.8" fill="#000000"/>
+  <text x="30" y="126" class="tbl-field-normal">responsePayload</text>
+  <text x="458" y="126" class="tbl-type" text-anchor="end">JSONB KẾT QUẢ CACHED</text>
+</g>
+<g transform="translate(514, 532)">
   <rect width="470" height="164" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
   <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
   <text x="14" y="23" class="tbl-header">OutboxEvent (Payment)</text>
-  <text x="456" y="23" class="tbl-tag" text-anchor="end">outbox_events</text>
+  <text x="456" y="23" class="tbl-tag" text-anchor="end">OUTBOX_EVENTS</text>
   <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
-  <text x="458" y="54" class="tbl-type" text-anchor="end">CUID NOT NULL</text>
+  <text x="458" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) CUID NOT NULL</text>
   <circle cx="18" cy="74" r="1.8" fill="#000000"/>
   <text x="30" y="78" class="tbl-field-normal">eventId</text>
   <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(64) UNIQUE</text>
   <circle cx="18" cy="98" r="1.8" fill="#000000"/>
-  <text x="30" y="102" class="tbl-field-normal">eventType / routingKey</text>
-  <text x="458" y="102" class="tbl-type" text-anchor="end">VARCHAR(64) COD.SETTLED, ...</text>
+  <text x="30" y="102" class="tbl-field-normal">eventType</text>
+  <text x="458" y="102" class="tbl-type" text-anchor="end">VARCHAR(64) PAYMENT.COD_SETT</text>
   <circle cx="18" cy="122" r="1.8" fill="#000000"/>
-  <text x="30" y="126" class="tbl-field-normal">aggregateType / aggregateId</text>
-  <text x="458" y="126" class="tbl-type" text-anchor="end">VARCHAR(64) CodSettlementBatch / id</text>
+  <text x="30" y="126" class="tbl-field-normal">routingKey</text>
+  <text x="458" y="126" class="tbl-type" text-anchor="end">VARCHAR(64) payment.settled</text>
   <circle cx="18" cy="146" r="1.8" fill="#000000"/>
   <text x="30" y="150" class="tbl-field-normal">payload</text>
-  <text x="458" y="150" class="tbl-type" text-anchor="end">JSONB DATA QUYẾT TOÁN CHO SHOP</text>
+  <text x="458" y="150" class="tbl-type" text-anchor="end">JSONB QUYẾT TOÁN TÀI CHÍNH</text>
 </g>
 
-    <path d="M 745 270 L 745 300" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
-    <path d="M 490 145 L 500 145 L 500 335 L 510 335" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
+    <!-- CodRecord (1) -> CodSettlementItem (N) via Center Channel -->
+    <path d="M 494 60 L 504 60 L 504 398 L 514 398" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <!-- CodSettlementBatch (1) -> CodSettlementItem (N) via Right Alley -->
+    <path d="M 984 80 L 996 80 L 996 398 L 984 398" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <!-- CodSettlementPaymentEvent (N) -> CodSettlementBatch (1) via Center Channel -->
+    <path d="M 494 494 L 504 494 L 504 140 L 514 140" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-many)" marker-end="url(#crow-one)"/>
     
 <g transform="translate(1010, 20)">
-  <rect width="890" height="770" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+  <rect width="890" height="920" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
   <rect x="0" y="0" width="890" height="42" rx="6" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
   <rect x="14" y="12" width="6" height="18" rx="1" fill="#000000"/>
   <text x="28" y="26" class="panel-header">GIẢI THÍCH SƠ BỘ &amp; QUY TẮC DỮ LIỆU: PAYMENT-SERVICE</text>
-  <rect x="710" y="9" width="166" height="24" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
-  <text x="793" y="25" font-size="11" font-weight="700" fill="#000000" text-anchor="middle">FINANCIAL SETTLEMENT</text>
-  <text x="18" y="66" class="panel-sec-title">▶ VAI TRÒ QUẢN LÝ DÒNG TIỀN THU HỘ (CASH-ON-DELIVERY FINANCIAL MESH)</text>
-  <circle cx="25" cy="82" r="2" fill="#000000"/>
-  <text x="36" y="86" class="panel-body"><tspan class="panel-bold">Thu tiền mặt chặng cuối:</tspan> Khi phát hàng thành công, bản ghi <tspan class="panel-code">CodRecord</tspan> ghi nhận số tiền Courier thu hộ từ người nhận.</text>
-  <circle cx="25" cy="102" r="2" fill="#000000"/>
-  <text x="36" y="106" class="panel-body"><tspan class="panel-bold">Chốt ca nộp tiền cuối ngày:</tspan> Điều phối viên bưu cục tổng hợp toàn bộ tiền mặt các đơn giao trong ngày vào một phiên <tspan class="panel-code">CodSettlementBatch</tspan>.</text>
-  <text x="18" y="134" class="panel-sec-title">▶ CÔNG NGHỆ QUYẾT TOÁN TỰ ĐỘNG VIETQR &amp; PAYOS WEBHOOK</text>
-  <circle cx="25" cy="150" r="2" fill="#000000"/>
-  <text x="36" y="154" class="panel-body"><tspan class="panel-bold">Tạo mã VietQR động:</tspan> Hệ thống nhúng chính xác số tiền và cú pháp <tspan class="panel-code">transferMemo</tspan> vào mã QR chuẩn ngân hàng NAPAS.</text>
-  <circle cx="25" cy="170" r="2" fill="#000000"/>
-  <text x="36" y="174" class="panel-body"><tspan class="panel-bold">Khớp lệnh tự động (Zero-latency):</tspan> Webhook ngân hàng bắn vào <tspan class="panel-code">cod_settlement_payment_events</tspan>, hệ thống tự động đối chiếu memo để gạch nợ cho Courier trong vòng 2 giây.</text>
-  <text x="18" y="202" class="panel-sec-title">▶ CƠ CHẾ LIÊN KẾT PHÂN TÁN (SAGA LINKAGE)</text>
-  <circle cx="25" cy="218" r="2" fill="#000000"/>
-  <text x="36" y="222" class="panel-body"><tspan class="panel-code">COD.SETTLED Event</tspan>: Bắn sang ví điện tử của Merchant, kích hoạt chuyển tiền về tài khoản ngân hàng của chủ shop.</text>
-  <rect x="14" y="732" width="862" height="26" rx="4" fill="#F9FAFB" stroke="#000000" stroke-width="1"/>
-  <text x="445.0" y="749" font-size="11" font-weight="600" fill="#111827" text-anchor="middle">Engine: payment_db (PostgreSQL 16) | Payment Gateway: VietQR PayOS Webhook | Settlement: Zero-Touch Auto Match</text>
+  <rect x="572" y="9" width="304" height="24" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+  <text x="724.0" y="25" font-size="10" font-weight="700" fill="#000000" text-anchor="middle">FINANCIAL INTEGRITY &amp; COD RECONCILIATION</text>
+  <text x="18" y="68" class="panel-sec-title">▶ QUẢN TRỊ DÒNG TIỀN COD &amp; NỘP TIỀN CA PHÁT</text>
+  <circle cx="25" cy="84" r="2" fill="#000000"/>
+  <text x="36" y="88" class="panel-body">Ghi nhận công nợ đơn hàng: CodRecord theo dõi chính xác từng đồng tiền mặt COD cần</text>
+  <text x="36" y="106" class="panel-body">thu, số tiền thực tế tài xế nhận và thời điểm nộp.</text>
+  <circle cx="25" cy="122" r="2" fill="#000000"/>
+  <text x="36" y="126" class="panel-body">Phiên nộp tiền ca (CodSettlementBatch): Hết ca phát, bưu tá tổng hợp toàn bộ tiền</text>
+  <text x="36" y="144" class="panel-body">mặt thu được vào một phiên nộp duy nhất.</text>
+  <circle cx="25" cy="160" r="2" fill="#000000"/>
+  <text x="36" y="164" class="panel-body">Tích hợp VietQR động: Tự động sinh mã VietQR chuẩn NAPAS với transferMemo định</text>
+  <text x="36" y="182" class="panel-body">danh duy nhất (VD: STL123456) giúp tài xế quét chuyển khoản ngay trên app.</text>
+  <text x="18" y="210" class="panel-sec-title">▶ TỰ ĐỘNG GẠCH NỢ QUA WEBHOOK (AUTOMATED RECONCILIATION)</text>
+  <circle cx="25" cy="226" r="2" fill="#000000"/>
+  <text x="36" y="230" class="panel-body">Nhận biến động số dư qua Webhook PayOS/VietQR lưu vào CodSettlementPaymentEvent.</text>
+  <circle cx="25" cy="246" r="2" fill="#000000"/>
+  <text x="36" y="250" class="panel-body">Cơ chế Idempotency: Kiểm tra khóa trùng giao dịch (providerEventId), gạch nợ tức</text>
+  <text x="36" y="268" class="panel-body">thời phiên nộp tiền và tự động cộng số dư ví cho Shop.</text>
+  <text x="18" y="296" class="panel-sec-title">▶ CƠ CHẾ LIÊN KẾT PHÂN TÁN (SAGA LINKAGE)</text>
+  <circle cx="25" cy="312" r="2" fill="#000000"/>
+  <text x="36" y="316" class="panel-body">shipmentCode: Ánh xạ chuẩn xác tới đơn hàng trên shipment-service.</text>
+  <circle cx="25" cy="332" r="2" fill="#000000"/>
+  <text x="36" y="336" class="panel-body">courierId / hubCode: Đối soát công nợ bưu tá với thủ quỹ bưu cục.</text>
+  <rect x="14" y="882" width="862" height="26" rx="4" fill="#F9FAFB" stroke="#000000" stroke-width="1"/>
+  <text x="445.0" y="899" font-size="11" font-weight="600" fill="#111827" text-anchor="middle">Engine: payment_db (PostgreSQL 16) | Gateway: VietQR / PayOS Webhook | Reconciliation: Automated Dynamic QR Matching</text>
 </g>
   </g>
 
   <!-- SAGA CONTEXT FOOTER -->
-  <g id="FooterSaga" transform="translate(40, 980)">
+  <g id="FooterSaga" transform="translate(40, 1130)">
     <rect width="1920" height="50" rx="6" fill="#F9FAFB" stroke="#000000" stroke-width="1.4"/>
     <circle cx="25" cy="25" r="5" fill="#000000"/>
     <text x="42" y="29" font-size="12" font-weight="700" fill="#000000">CƠ CHẾ LIÊN KẾT PHÂN TÁN (SAGA):</text>
-    <text x="310" y="29" font-size="11.5" fill="#1F2937">Bắn sự kiện COD.SETTLED kích hoạt giải ngân số dư ví điện tử của Merchant và gửi tin nhắn sao kê</text>
+    <text x="310" y="29" font-size="11.5" fill="#1F2937">Phát hành sự kiện PAYMENT.COD_SETTLED, WALLET_CREDITED qua RabbitMQ tới reporting-service</text>
     <text x="1900" y="29" font-size="11" font-weight="600" fill="#4B5563" text-anchor="end">Nexus Software Engineering Thesis</text>
   </g>
 </svg>

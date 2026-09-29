@@ -2,8 +2,7 @@
 
 > **Tài liệu nghiên cứu khoa học & Khóa luận tốt nghiệp Kỹ sư ngành Công nghệ Thông tin / Kỹ thuật Phần mềm**  
 > **Dự án:** Hệ thống Quản lý Vận tải & Logistics Đa kênh Nexus (Nexus Logistics Management System)  
-> **Module:** Mô hình Dữ liệu Thực thể Quan hệ (ERD), Cơ chế Bất biến Dòng sự kiện & Quyết toán Tài chính COD Phân tán  
-> **Sơ đồ Vector trực quan (Figma 1:1):** `docs/graduation-thesis/figma-page-1-system-and-data/diagrams/03-erd-data-model-and-money-flow.svg`
+> **Sơ đồ Vector trực quan (Figma 1:1):** Bộ 13 sơ đồ ERD độc lập tại thư mục `docs/graduation-thesis/figma-page-1-system-and-data/diagrams/erd/` (từ `01-auth-service-erd.svg` đến `13-chatbot-service-erd.svg`).
 
 ---
 

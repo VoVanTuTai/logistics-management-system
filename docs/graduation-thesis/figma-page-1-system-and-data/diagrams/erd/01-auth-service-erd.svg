@@ -13,7 +13,7 @@
     </marker>
   </defs>
 
-  <!-- Technical Blueprint Frame -->
+  <!-- Technical Blueprint Double Frame -->
   <rect width="100%" height="100%" fill="#FFFFFF"/>
   <rect x="15" y="15" width="1970" height="1070" fill="none" stroke="#000000" stroke-width="2"/>
   <rect x="20" y="20" width="1960" height="1060" fill="none" stroke="#000000" stroke-width="0.8"/>
@@ -65,15 +65,15 @@
   <g id="ServiceBody" transform="translate(40, 150)">
     <rect width="1920" height="860" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.6"/>
 
-<g transform="translate(20, 20)">
+<g transform="translate(24, 20)">
   <rect width="470" height="284" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
   <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
   <text x="14" y="23" class="tbl-header">UserAccount</text>
-  <text x="456" y="23" class="tbl-tag" text-anchor="end">users</text>
+  <text x="456" y="23" class="tbl-tag" text-anchor="end">USERS</text>
   <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
-  <text x="458" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) NOT NULL</text>
+  <text x="458" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) NOT NULL (CUID)</text>
   <circle cx="18" cy="74" r="1.8" fill="#000000"/>
   <text x="30" y="78" class="tbl-field-normal">username</text>
   <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(64) UNIQUE</text>
@@ -85,7 +85,7 @@
   <text x="458" y="126" class="tbl-type" text-anchor="end">ENUM ACTIVE, DISABLED</text>
   <circle cx="18" cy="146" r="1.8" fill="#000000"/>
   <text x="30" y="150" class="tbl-field-normal">roles</text>
-  <text x="458" y="150" class="tbl-type" text-anchor="end">TEXT[] ADMIN, COURIER, OPS...</text>
+  <text x="458" y="150" class="tbl-type" text-anchor="end">TEXT[] ADMIN, COURIER, OPS..</text>
   <circle cx="18" cy="170" r="1.8" fill="#000000"/>
   <text x="30" y="174" class="tbl-field-normal">displayName</text>
   <text x="458" y="174" class="tbl-type" text-anchor="end">VARCHAR(128) NULLABLE</text>
@@ -95,7 +95,7 @@
   <rect x="8" y="211" width="28" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1" stroke-dasharray="2 1.5"/>
   <text x="22" y="222" class="badge-dist" text-anchor="middle">DIST</text>
   <text x="42" y="222" class="tbl-field-dist">hubCodes</text>
-  <text x="458" y="222" class="tbl-type" text-anchor="end">TEXT[] FK-dist masterdata.hubs</text>
+  <text x="458" y="222" class="tbl-type" text-anchor="end">TEXT[] FK-dist masterdata.hu</text>
   <circle cx="18" cy="242" r="1.8" fill="#000000"/>
   <text x="30" y="246" class="tbl-field-normal">createdAt</text>
   <text x="458" y="246" class="tbl-type" text-anchor="end">TIMESTAMP DEFAULT NOW()</text>
@@ -103,19 +103,19 @@
   <text x="30" y="270" class="tbl-field-normal">updatedAt</text>
   <text x="458" y="270" class="tbl-type" text-anchor="end">TIMESTAMP ON UPDATE</text>
 </g>
-<g transform="translate(510, 20)">
+<g transform="translate(514, 20)">
   <rect width="470" height="308" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
   <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
   <text x="14" y="23" class="tbl-header">AuthSession</text>
-  <text x="456" y="23" class="tbl-tag" text-anchor="end">auth_sessions</text>
+  <text x="456" y="23" class="tbl-tag" text-anchor="end">AUTH_SESSIONS</text>
   <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
-  <text x="458" y="54" class="tbl-type" text-anchor="end">CUID NOT NULL</text>
+  <text x="458" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) CUID NOT NULL</text>
   <rect x="10" y="67" width="20" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
   <text x="20" y="78" class="badge-fk" text-anchor="middle">FK</text>
   <text x="42" y="78" class="tbl-field-fk">userId</text>
-  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(64) FK -&gt; UserAccount.id</text>
+  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(64) FK -&gt; UserAccoun</text>
   <circle cx="18" cy="98" r="1.8" fill="#000000"/>
   <text x="30" y="102" class="tbl-field-normal">accessTokenHash</text>
   <text x="458" y="102" class="tbl-type" text-anchor="end">VARCHAR(128) UNIQUE</text>
@@ -144,18 +144,18 @@
   <text x="30" y="294" class="tbl-field-normal">revokeReason</text>
   <text x="458" y="294" class="tbl-type" text-anchor="end">VARCHAR(128) NULLABLE</text>
 </g>
-<g transform="translate(20, 340)">
+<g transform="translate(24, 324)">
   <rect width="470" height="164" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
   <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
   <text x="14" y="23" class="tbl-header">MobilePermissionProfile</text>
-  <text x="456" y="23" class="tbl-tag" text-anchor="end">mobile_profiles</text>
+  <text x="456" y="23" class="tbl-tag" text-anchor="end">MOBILE_PROFILES</text>
   <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
-  <text x="458" y="54" class="tbl-type" text-anchor="end">CUID NOT NULL</text>
+  <text x="458" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) CUID NOT NULL</text>
   <circle cx="18" cy="74" r="1.8" fill="#000000"/>
   <text x="30" y="78" class="tbl-field-normal">actor</text>
-  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(32) UNIQUE (COURIER/OPS)</text>
+  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(32) UNIQUE (COURIER/</text>
   <circle cx="18" cy="98" r="1.8" fill="#000000"/>
   <text x="30" y="102" class="tbl-field-normal">permissions</text>
   <text x="458" y="102" class="tbl-type" text-anchor="end">JSONB ALLOWED ACTIONS</text>
@@ -166,19 +166,19 @@
   <text x="30" y="150" class="tbl-field-normal">updatedAt</text>
   <text x="458" y="150" class="tbl-type" text-anchor="end">TIMESTAMP ON UPDATE</text>
 </g>
-<g transform="translate(510, 340)">
+<g transform="translate(514, 348)">
   <rect width="470" height="164" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
   <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
   <text x="14" y="23" class="tbl-header">MobilePermissionOverride</text>
-  <text x="456" y="23" class="tbl-tag" text-anchor="end">perm_overrides</text>
+  <text x="456" y="23" class="tbl-tag" text-anchor="end">PERM_OVERRIDES</text>
   <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
-  <text x="458" y="54" class="tbl-type" text-anchor="end">CUID NOT NULL</text>
+  <text x="458" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) CUID NOT NULL</text>
   <rect x="10" y="67" width="20" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
   <text x="20" y="78" class="badge-fk" text-anchor="middle">FK</text>
   <text x="42" y="78" class="tbl-field-fk">userId</text>
-  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(64) UNIQUE FK -&gt; UserAccount</text>
+  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(64) UNIQUE FK -&gt; Use</text>
   <circle cx="18" cy="98" r="1.8" fill="#000000"/>
   <text x="30" y="102" class="tbl-field-normal">permissions</text>
   <text x="458" y="102" class="tbl-type" text-anchor="end">JSONB OVERRIDE ACTIONS</text>
@@ -189,87 +189,112 @@
   <text x="30" y="150" class="tbl-field-normal">updatedAt</text>
   <text x="458" y="150" class="tbl-type" text-anchor="end">TIMESTAMP ON UPDATE</text>
 </g>
-<g transform="translate(20, 540)">
-  <rect width="470" height="188" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+<g transform="translate(24, 508)">
+  <rect width="470" height="284" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
   <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
   <text x="14" y="23" class="tbl-header">AdminAuditLog</text>
-  <text x="456" y="23" class="tbl-tag" text-anchor="end">admin_audit_logs</text>
+  <text x="456" y="23" class="tbl-tag" text-anchor="end">ADMIN_AUDIT_LOGS</text>
   <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
-  <text x="458" y="54" class="tbl-type" text-anchor="end">CUID NOT NULL</text>
+  <text x="458" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) CUID NOT NULL</text>
   <circle cx="18" cy="74" r="1.8" fill="#000000"/>
-  <text x="30" y="78" class="tbl-field-normal">actorId / actorUsername</text>
-  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(64) INDEX</text>
+  <text x="30" y="78" class="tbl-field-normal">actorId</text>
+  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(64) ID TÁC NHÂN</text>
   <circle cx="18" cy="98" r="1.8" fill="#000000"/>
-  <text x="30" y="102" class="tbl-field-normal">action / targetType</text>
-  <text x="458" y="102" class="tbl-type" text-anchor="end">VARCHAR(64) LOGIN, GRANT, REVOKE</text>
+  <text x="30" y="102" class="tbl-field-normal">actorUsername</text>
+  <text x="458" y="102" class="tbl-type" text-anchor="end">VARCHAR(64) TÊN ĐĂNG NHẬP</text>
   <circle cx="18" cy="122" r="1.8" fill="#000000"/>
-  <text x="30" y="126" class="tbl-field-normal">targetId / ipAddress</text>
-  <text x="458" y="126" class="tbl-type" text-anchor="end">VARCHAR(64) NULLABLE</text>
+  <text x="30" y="126" class="tbl-field-normal">action</text>
+  <text x="458" y="126" class="tbl-type" text-anchor="end">VARCHAR(64) LOGIN, GRANT, RE</text>
   <circle cx="18" cy="146" r="1.8" fill="#000000"/>
-  <text x="30" y="150" class="tbl-field-normal">before / after</text>
-  <text x="458" y="150" class="tbl-type" text-anchor="end">JSONB AUDIT DIFF</text>
+  <text x="30" y="150" class="tbl-field-normal">targetType</text>
+  <text x="458" y="150" class="tbl-type" text-anchor="end">VARCHAR(64) LOẠI ĐỐI TƯỢNG</text>
   <circle cx="18" cy="170" r="1.8" fill="#000000"/>
-  <text x="30" y="174" class="tbl-field-normal">createdAt</text>
-  <text x="458" y="174" class="tbl-type" text-anchor="end">TIMESTAMP INDEX</text>
+  <text x="30" y="174" class="tbl-field-normal">targetId</text>
+  <text x="458" y="174" class="tbl-type" text-anchor="end">VARCHAR(64) ID ĐỐI TƯỢNG</text>
+  <circle cx="18" cy="194" r="1.8" fill="#000000"/>
+  <text x="30" y="198" class="tbl-field-normal">ipAddress</text>
+  <text x="458" y="198" class="tbl-type" text-anchor="end">VARCHAR(45) IP CLIENT</text>
+  <circle cx="18" cy="218" r="1.8" fill="#000000"/>
+  <text x="30" y="222" class="tbl-field-normal">before</text>
+  <text x="458" y="222" class="tbl-type" text-anchor="end">JSONB TRƯỚC THAY ĐỔI</text>
+  <circle cx="18" cy="242" r="1.8" fill="#000000"/>
+  <text x="30" y="246" class="tbl-field-normal">after</text>
+  <text x="458" y="246" class="tbl-type" text-anchor="end">JSONB SAU THAY ĐỔI</text>
+  <circle cx="18" cy="266" r="1.8" fill="#000000"/>
+  <text x="30" y="270" class="tbl-field-normal">createdAt</text>
+  <text x="458" y="270" class="tbl-type" text-anchor="end">TIMESTAMP THỜI ĐIỂM GHI</text>
 </g>
-<g transform="translate(510, 560)">
-  <rect width="470" height="212" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+<g transform="translate(514, 532)">
+  <rect width="470" height="260" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
   <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
   <text x="14" y="23" class="tbl-header">OutboxEvent (Auth)</text>
-  <text x="456" y="23" class="tbl-tag" text-anchor="end">outbox_events</text>
+  <text x="456" y="23" class="tbl-tag" text-anchor="end">OUTBOX_EVENTS</text>
   <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
-  <text x="458" y="54" class="tbl-type" text-anchor="end">CUID NOT NULL</text>
+  <text x="458" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) CUID NOT NULL</text>
   <circle cx="18" cy="74" r="1.8" fill="#000000"/>
   <text x="30" y="78" class="tbl-field-normal">eventId</text>
   <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(64) UNIQUE</text>
   <circle cx="18" cy="98" r="1.8" fill="#000000"/>
-  <text x="30" y="102" class="tbl-field-normal">eventType / routingKey</text>
-  <text x="458" y="102" class="tbl-type" text-anchor="end">VARCHAR(64) USER.CREATED, ...</text>
+  <text x="30" y="102" class="tbl-field-normal">eventType</text>
+  <text x="458" y="102" class="tbl-type" text-anchor="end">VARCHAR(64) USER.CREATED, ..</text>
   <circle cx="18" cy="122" r="1.8" fill="#000000"/>
-  <text x="30" y="126" class="tbl-field-normal">aggregateType / aggregateId</text>
-  <text x="458" y="126" class="tbl-type" text-anchor="end">VARCHAR(64) UserAccount / id</text>
+  <text x="30" y="126" class="tbl-field-normal">aggregateType</text>
+  <text x="458" y="126" class="tbl-type" text-anchor="end">VARCHAR(64) UserAccount</text>
   <circle cx="18" cy="146" r="1.8" fill="#000000"/>
-  <text x="30" y="150" class="tbl-field-normal">payload</text>
-  <text x="458" y="150" class="tbl-type" text-anchor="end">JSONB EVENT PAYLOAD</text>
+  <text x="30" y="150" class="tbl-field-normal">aggregateId</text>
+  <text x="458" y="150" class="tbl-type" text-anchor="end">VARCHAR(64) ID TÀI KHOẢN</text>
   <circle cx="18" cy="170" r="1.8" fill="#000000"/>
-  <text x="30" y="174" class="tbl-field-normal">status</text>
-  <text x="458" y="174" class="tbl-type" text-anchor="end">ENUM PENDING, PUBLISHED</text>
+  <text x="30" y="174" class="tbl-field-normal">payload</text>
+  <text x="458" y="174" class="tbl-type" text-anchor="end">JSONB EVENT PAYLOAD</text>
   <circle cx="18" cy="194" r="1.8" fill="#000000"/>
-  <text x="30" y="198" class="tbl-field-normal">retryCount / occurredAt</text>
-  <text x="458" y="198" class="tbl-type" text-anchor="end">INT / TIME SLA RESILIENT</text>
+  <text x="30" y="198" class="tbl-field-normal">status</text>
+  <text x="458" y="198" class="tbl-type" text-anchor="end">ENUM PENDING, PUBLISHED</text>
+  <circle cx="18" cy="218" r="1.8" fill="#000000"/>
+  <text x="30" y="222" class="tbl-field-normal">retryCount</text>
+  <text x="458" y="222" class="tbl-type" text-anchor="end">INT SỐ LẦN THỬ LẠI</text>
+  <circle cx="18" cy="242" r="1.8" fill="#000000"/>
+  <text x="30" y="246" class="tbl-field-normal">occurredAt</text>
+  <text x="458" y="246" class="tbl-type" text-anchor="end">TIMESTAMP THỜI ĐIỂM PHÁT SIN</text>
 </g>
 
-    <path d="M 490 60 L 510 60" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
-    <path d="M 450 290 L 450 385 L 510 385" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
+    <path d="M 494 60 L 514 60" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <path d="M 494 140 L 504 140 L 504 378 L 514 378" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
     
 <g transform="translate(1010, 20)">
   <rect width="890" height="820" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
   <rect x="0" y="0" width="890" height="42" rx="6" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
   <rect x="14" y="12" width="6" height="18" rx="1" fill="#000000"/>
   <text x="28" y="26" class="panel-header">GIẢI THÍCH SƠ BỘ &amp; QUY TẮC DỮ LIỆU: AUTH-SERVICE</text>
-  <rect x="710" y="9" width="166" height="24" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
-  <text x="793" y="25" font-size="11" font-weight="700" fill="#000000" text-anchor="middle">SECURITY BOUNDARY</text>
-  <text x="18" y="66" class="panel-sec-title">▶ VAI TRÒ &amp; TRÁCH NHIỆM DỮ LIỆU</text>
-  <circle cx="25" cy="82" r="2" fill="#000000"/>
-  <text x="36" y="86" class="panel-body"><tspan class="panel-bold">Trung tâm định danh:</tspan> Lưu trữ tài khoản, mật khẩu băm Argon2id và quản lý phiên đăng nhập tại <tspan class="panel-code">auth_sessions</tspan>.</text>
-  <circle cx="25" cy="102" r="2" fill="#000000"/>
-  <text x="36" y="106" class="panel-body"><tspan class="panel-bold">Phân quyền 2 lớp (Dual Authorization):</tspan> RBAC cho Web kết hợp phân quyền chi tiết (Granular Mobile Permissions) cho tài xế và nhân viên bưu cục trên app di động.</text>
+  <rect x="706" y="9" width="170" height="24" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+  <text x="791.0" y="25" font-size="10" font-weight="700" fill="#000000" text-anchor="middle">SECURITY BOUNDARY</text>
+  <text x="18" y="68" class="panel-sec-title">▶ VAI TRÒ &amp; TRÁCH NHIỆM DỮ LIỆU</text>
+  <circle cx="25" cy="84" r="2" fill="#000000"/>
+  <text x="36" y="88" class="panel-body">Trung tâm định danh: Lưu trữ tài khoản, mật khẩu băm Argon2id và quản lý phiên</text>
+  <text x="36" y="106" class="panel-body">đăng nhập tại auth_sessions.</text>
   <circle cx="25" cy="122" r="2" fill="#000000"/>
-  <text x="36" y="126" class="panel-body"><tspan class="panel-bold">Nhật ký an ninh (Audit Trail):</tspan> Bảng <tspan class="panel-code">admin_audit_logs</tspan> ghi nhận chính xác vết diff (before/after) mọi thay đổi quyền hạn.</text>
-  <text x="18" y="154" class="panel-sec-title">▶ CƠ CHẾ LIÊN KẾT PHÂN TÁN (SAGA LINKAGE)</text>
-  <circle cx="25" cy="170" r="2" fill="#000000"/>
-  <text x="36" y="174" class="panel-body"><tspan class="panel-code">hubCodes</tspan>: Mảng mã bưu cục gắn cho nhân sự, ánh xạ sang <tspan class="panel-code">masterdata.hubs.code</tspan> để kiểm soát phạm vi tác nghiệp.</text>
-  <circle cx="25" cy="190" r="2" fill="#000000"/>
-  <text x="36" y="194" class="panel-body"><tspan class="panel-code">userId</tspan>: Khóa định danh nhúng trong JWT claims, dùng đối soát quyền tại tất cả các Microservices khác.</text>
-  <text x="18" y="222" class="panel-sec-title">▶ QUY TẮC TOÀN VẸN &amp; BẢO MẬT</text>
-  <circle cx="25" cy="238" r="2" fill="#000000"/>
-  <text x="36" y="242" class="panel-body"><tspan class="panel-bold">Thu hồi phiên tức thì:</tspan> Khi phát hiện gian lận hoặc đăng xuất, cờ <tspan class="panel-code">status = REVOKED</tspan> được kích hoạt ngay lập tức.</text>
-  <circle cx="25" cy="258" r="2" fill="#000000"/>
-  <text x="36" y="262" class="panel-body"><tspan class="panel-bold">Transactional Outbox:</tspan> Sự kiện tài khoản được lưu đồng thời cùng transaction DB, luồng Outbox Publisher đảm bảo đồng bộ 100% sang RabbitMQ.</text>
+  <text x="36" y="126" class="panel-body">Phân quyền 2 lớp (Dual Authorization): RBAC cho Web kết hợp phân quyền chi tiết</text>
+  <text x="36" y="144" class="panel-body">(Granular Mobile Permissions) cho tài xế và nhân viên bưu cục trên app.</text>
+  <circle cx="25" cy="160" r="2" fill="#000000"/>
+  <text x="36" y="164" class="panel-body">Nhật ký an ninh (Audit Trail): Bảng admin_audit_logs ghi nhận chính xác vết diff</text>
+  <text x="36" y="182" class="panel-body">(before/after) mọi thay đổi quyền hạn.</text>
+  <text x="18" y="210" class="panel-sec-title">▶ CƠ CHẾ LIÊN KẾT PHÂN TÁN (SAGA LINKAGE)</text>
+  <circle cx="25" cy="226" r="2" fill="#000000"/>
+  <text x="36" y="230" class="panel-body">hubCodes: Mảng mã bưu cục gắn cho nhân sự, ánh xạ sang masterdata.hubs.code để</text>
+  <text x="36" y="248" class="panel-body">kiểm soát phạm vi tác nghiệp.</text>
+  <circle cx="25" cy="264" r="2" fill="#000000"/>
+  <text x="36" y="268" class="panel-body">userId: Khóa định danh nhúng trong JWT claims, dùng đối soát quyền tại tất cả các</text>
+  <text x="36" y="286" class="panel-body">Microservices khác.</text>
+  <text x="18" y="314" class="panel-sec-title">▶ QUY TẮC TOÀN VẸN &amp; BẢO MẬT</text>
+  <circle cx="25" cy="330" r="2" fill="#000000"/>
+  <text x="36" y="334" class="panel-body">Thu hồi phiên tức thì: Khi phát hiện gian lận hoặc đăng xuất, cờ status = REVOKED</text>
+  <text x="36" y="352" class="panel-body">được kích hoạt ngay lập tức.</text>
+  <circle cx="25" cy="368" r="2" fill="#000000"/>
+  <text x="36" y="372" class="panel-body">Transactional Outbox: Sự kiện tài khoản được lưu đồng thời cùng transaction DB,</text>
+  <text x="36" y="390" class="panel-body">luồng Outbox Publisher đảm bảo đồng bộ 100% sang RabbitMQ.</text>
   <rect x="14" y="782" width="862" height="26" rx="4" fill="#F9FAFB" stroke="#000000" stroke-width="1"/>
   <text x="445.0" y="799" font-size="11" font-weight="600" fill="#111827" text-anchor="middle">Engine: PostgreSQL 16 | Isolation: Read Committed | Password: Argon2id | Auth: Dual JWT Bearer</text>
 </g>
