@@ -1,218 +1,184 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 880" width="100%" height="100%" style="background:#F8FAFC;">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 880" width="100%" height="100%" style="background:#FFFFFF;">
 
   <defs>
-    <filter id="card-shadow" x="-2%" y="-1.5%" width="104%" height="104%" filterUnits="userSpaceOnUse">
-      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0F172A" flood-opacity="0.06"/>
-    </filter>
-    <filter id="table-shadow" x="-3%" y="-3%" width="106%" height="108%" filterUnits="userSpaceOnUse">
-      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#0F172A" flood-opacity="0.04"/>
-    </filter>
     <marker id="crow-many" markerWidth="14" markerHeight="14" refX="10" refY="7" orient="auto">
-      <path d="M 0 0 L 10 7 L 0 14 M 10 0 L 10 14" stroke="#475569" stroke-width="1.8" fill="none"/>
+      <path d="M 0 0 L 10 7 L 0 14 M 10 0 L 10 14" stroke="#000000" stroke-width="1.8" fill="none"/>
     </marker>
     <marker id="crow-one" markerWidth="14" markerHeight="14" refX="10" refY="7" orient="auto">
-      <line x1="5" y1="2" x2="5" y2="12" stroke="#475569" stroke-width="1.8"/>
-      <line x1="9" y1="2" x2="9" y2="12" stroke="#475569" stroke-width="1.8"/>
+      <line x1="5" y1="2" x2="5" y2="12" stroke="#000000" stroke-width="1.8"/>
+      <line x1="9" y1="2" x2="9" y2="12" stroke="#000000" stroke-width="1.8"/>
     </marker>
     <marker id="arrow-dist" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto">
-      <path d="M 0 1 L 9 6 L 0 11 z" fill="#0284C7"/>
+      <path d="M 0 1 L 9 6 L 0 11 z" fill="#000000"/>
     </marker>
-    <linearGradient id="header-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#0F172A"/>
-      <stop offset="55%" stop-color="#1E293B"/>
-      <stop offset="100%" stop-color="#334155"/>
-    </linearGradient>
-    <pattern id="grid-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
-      <circle cx="2" cy="2" r="1.2" fill="#E2E8F0"/>
-    </pattern>
   </defs>
 
-  <rect width="100%" height="100%" fill="url(#grid-pattern)" />
+  <!-- Technical Blueprint Frame -->
+  <rect width="100%" height="100%" fill="#FFFFFF"/>
+  <rect x="15" y="15" width="1970" height="850" fill="none" stroke="#000000" stroke-width="2"/>
+  <rect x="20" y="20" width="1960" height="840" fill="none" stroke="#000000" stroke-width="0.8"/>
 
   <style>
     text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
-    .doc-badge { font-size: 12.5px; font-weight: 700; fill: #38BDF8; letter-spacing: 1.5px; text-transform: uppercase; }
-    .doc-title { font-size: 24px; font-weight: 800; fill: #FFFFFF; letter-spacing: -0.5px; }
-    .doc-subtitle { font-size: 13.5px; font-weight: 400; fill: #CBD5E1; }
-    .meta-tag { font-size: 11.5px; font-weight: 600; fill: #E2E8F0; }
+    .doc-badge { font-size: 11.5px; font-weight: 700; fill: #000000; letter-spacing: 1.2px; text-transform: uppercase; }
+    .doc-title { font-size: 23px; font-weight: 800; fill: #000000; letter-spacing: -0.5px; }
+    .doc-subtitle { font-size: 13px; font-weight: 400; fill: #374151; }
     
-    .svc-title { font-size: 18px; font-weight: 800; fill: #0F172A; }
-    .svc-sub { font-size: 12.5px; font-weight: 500; fill: #64748B; }
-    .svc-port { font-size: 12px; font-weight: 700; font-family: ui-monospace, Menlo, monospace; fill: #0284C7; }
+    .tbl-header { font-size: 13.5px; font-weight: 700; fill: #000000; }
+    .tbl-tag { font-size: 10.5px; font-weight: 600; fill: #4B5563; text-transform: uppercase; }
+    .tbl-field-pk { font-size: 11.5px; font-weight: 700; fill: #000000; font-family: ui-monospace, Menlo, monospace; }
+    .tbl-field-fk { font-size: 11.5px; font-weight: 600; fill: #000000; font-family: ui-monospace, Menlo, monospace; }
+    .tbl-field-dist { font-size: 11.5px; font-weight: 600; fill: #000000; font-style: italic; font-family: ui-monospace, Menlo, monospace; }
+    .tbl-field-normal { font-size: 11.5px; font-weight: 500; fill: #1F2937; font-family: ui-monospace, Menlo, monospace; }
+    .tbl-type { font-size: 11px; font-weight: 500; fill: #4B5563; }
 
-    .tbl-header { font-size: 13.5px; font-weight: 700; fill: #FFFFFF; }
-    .tbl-tag { font-size: 10.5px; font-weight: 600; fill: #CBD5E1; text-transform: uppercase; }
-    .tbl-field-pk { font-size: 11.5px; font-weight: 700; fill: #0F172A; font-family: ui-monospace, Menlo, monospace; }
-    .tbl-field-fk { font-size: 11.5px; font-weight: 600; fill: #1D4ED8; font-family: ui-monospace, Menlo, monospace; }
-    .tbl-field-dist { font-size: 11.5px; font-weight: 600; fill: #6D28D9; font-family: ui-monospace, Menlo, monospace; }
-    .tbl-field-normal { font-size: 11.5px; font-weight: 500; fill: #334155; font-family: ui-monospace, Menlo, monospace; }
-    .tbl-type { font-size: 11px; font-weight: 500; fill: #64748B; }
+    .badge-pk { font-size: 9.5px; font-weight: 800; fill: #FFFFFF; }
+    .badge-fk { font-size: 9.5px; font-weight: 800; fill: #000000; }
+    .badge-dist { font-size: 9.5px; font-weight: 800; fill: #000000; }
 
-    .badge-pk { font-size: 9.5px; font-weight: 800; fill: #B91C1C; }
-    .badge-fk { font-size: 9.5px; font-weight: 800; fill: #1D4ED8; }
-    .badge-dist { font-size: 9.5px; font-weight: 800; fill: #6D28D9; }
-
-    .panel-header { font-size: 13.5px; font-weight: 800; fill: #0F172A; text-transform: uppercase; letter-spacing: 0.5px; }
-    .panel-sec-title { font-size: 12px; font-weight: 700; fill: #1E293B; }
-    .panel-body { font-size: 11.5px; font-weight: 400; fill: #334155; }
-    .panel-bold { font-weight: 700; fill: #0F172A; }
-    .panel-code { font-family: ui-monospace, Menlo, monospace; font-size: 11px; font-weight: 700; fill: #0284C7; }
+    .panel-header { font-size: 13.5px; font-weight: 800; fill: #000000; text-transform: uppercase; letter-spacing: 0.5px; }
+    .panel-sec-title { font-size: 12px; font-weight: 700; fill: #000000; }
+    .panel-body { font-size: 11.5px; font-weight: 400; fill: #1F2937; }
+    .panel-bold { font-weight: 700; fill: #000000; }
+    .panel-code { font-family: ui-monospace, Menlo, monospace; font-size: 11px; font-weight: 700; fill: #000000; }
   </style>
 
 
   <!-- HEADER -->
-  <g id="Header" transform="translate(40, 30)">
-    <rect width="1920" height="105" rx="12" fill="url(#header-grad)" filter="url(#card-shadow)"/>
-    <text x="30" y="32" class="doc-badge">NEXUS LOGISTICS SYSTEM ARCHITECTURE | DATABASE-PER-SERVICE SPECIFICATION</text>
-    <text x="30" y="65" class="doc-title">4. PICKUP-SERVICE (DỊCH VỤ THU GOM HÀNG ĐẦU VÀO)</text>
-    <text x="30" y="90" class="doc-subtitle">Tiếp nhận yêu cầu gom hàng theo lô từ Merchant &amp; điều phối Courier lấy hàng tận nơi</text>
+  <g id="Header" transform="translate(40, 32)">
+    <rect width="1920" height="100" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.8"/>
+    <line x1="0" y1="32" x2="1920" y2="32" stroke="#E5E7EB" stroke-width="1"/>
+    <text x="24" y="22" class="doc-badge">NEXUS LOGISTICS SYSTEM ARCHITECTURE • DATABASE-PER-SERVICE SPECIFICATION</text>
+    <text x="24" y="58" class="doc-title">4. PICKUP-SERVICE (DỊCH VỤ THU GOM HÀNG ĐẦU VÀO)</text>
+    <text x="24" y="82" class="doc-subtitle">Tiếp nhận yêu cầu gom hàng theo lô từ Merchant &amp; điều phối Courier lấy hàng tận nơi</text>
     
     <!-- Badges -->
-    <rect x="1560" y="36" width="160" height="34" rx="6" fill="#1E293B" stroke="#38BDF8" stroke-width="1.2"/>
-    <text x="1640" y="58" font-size="13" font-weight="700" fill="#38BDF8" text-anchor="middle">PORT :3003</text>
+    <rect x="1570" y="32" width="160" height="36" rx="4" fill="#F3F4F6" stroke="#000000" stroke-width="1.2"/>
+    <text x="1650" y="55" font-size="12.5" font-weight="700" fill="#000000" text-anchor="middle">PORT :3003</text>
 
-    <rect x="1740" y="36" width="180" height="34" rx="6" fill="#1E293B" stroke="#D97706" stroke-width="1.2"/>
-    <text x="1830" y="58" font-size="13" font-weight="700" fill="#D97706" text-anchor="middle">DB: pickup_db</text>
+    <rect x="1750" y="32" width="170" height="36" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+    <text x="1835" y="55" font-size="12.5" font-weight="700" fill="#000000" text-anchor="middle">DB: pickup_db</text>
   </g>
 
 
   <!-- MAIN SERVICE CONTAINER -->
-  <g id="ServiceBody" transform="translate(40, 155)">
-    <rect width="1920" height="630" rx="12" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.6" filter="url(#card-shadow)"/>
+  <g id="ServiceBody" transform="translate(40, 150)">
+    <rect width="1920" height="640" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.6"/>
 
 <g transform="translate(20, 20)">
-  <rect width="470" height="260" rx="8" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.4" filter="url(#table-shadow)"/>
-  <path d="M 0 8 Q 0 0 8 0 L 462 0 Q 470 0 470 8 L 470 36 L 0 36 Z" fill="#B45309"/>
+  <rect width="470" height="260" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+  <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
   <text x="14" y="23" class="tbl-header">PickupRequest</text>
   <text x="456" y="23" class="tbl-tag" text-anchor="end">PHIẾU YÊU CẦU GOM</text>
-  <rect x="1" y="36" width="468" height="24" fill="#FFFFFF"/>
-  <rect x="10" y="43" width="20" height="14" rx="3" fill="#FEE2E2"/>
+  <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
   <text x="458" y="54" class="tbl-type" text-anchor="end">CUID NOT NULL</text>
-  <rect x="1" y="60" width="468" height="24" fill="#F8FAFC"/>
-  <circle cx="18" cy="74" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="74" r="1.8" fill="#000000"/>
   <text x="30" y="78" class="tbl-field-normal">pickupCode</text>
   <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(32) UNIQUE (PKP-001)</text>
-  <rect x="1" y="84" width="468" height="24" fill="#FFFFFF"/>
-  <circle cx="18" cy="98" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="98" r="1.8" fill="#000000"/>
   <text x="30" y="102" class="tbl-field-normal">status</text>
   <text x="458" y="102" class="tbl-type" text-anchor="end">ENUM REQUESTED, APPROVED...</text>
-  <rect x="1" y="108" width="468" height="24" fill="#F8FAFC"/>
-  <circle cx="18" cy="122" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="122" r="1.8" fill="#000000"/>
   <text x="30" y="126" class="tbl-field-normal">requesterName</text>
   <text x="458" y="126" class="tbl-type" text-anchor="end">VARCHAR(128) TÊN CHỦ SHOP</text>
-  <rect x="1" y="132" width="468" height="24" fill="#FFFFFF"/>
-  <circle cx="18" cy="146" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="146" r="1.8" fill="#000000"/>
   <text x="30" y="150" class="tbl-field-normal">contactPhone</text>
   <text x="458" y="150" class="tbl-type" text-anchor="end">VARCHAR(20) SĐT LIÊN HỆ [PII]</text>
-  <rect x="1" y="156" width="468" height="24" fill="#F8FAFC"/>
-  <circle cx="18" cy="170" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="170" r="1.8" fill="#000000"/>
   <text x="30" y="174" class="tbl-field-normal">pickupAddress</text>
   <text x="458" y="174" class="tbl-type" text-anchor="end">TEXT ĐỊA CHỈ KHO GOM</text>
-  <rect x="1" y="180" width="468" height="24" fill="#FFFFFF"/>
-  <circle cx="18" cy="194" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="194" r="1.8" fill="#000000"/>
   <text x="30" y="198" class="tbl-field-normal">pickupLatitude / Longitude</text>
   <text x="458" y="198" class="tbl-type" text-anchor="end">FLOAT GPS VỊ TRÍ GOM</text>
-  <rect x="1" y="204" width="468" height="24" fill="#F8FAFC"/>
-  <rect x="8" y="211" width="26" height="14" rx="3" fill="#EDE9FE"/>
-  <text x="21" y="222" class="badge-dist" text-anchor="middle">DIST</text>
+  <rect x="8" y="211" width="28" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1" stroke-dasharray="2 1.5"/>
+  <text x="22" y="222" class="badge-dist" text-anchor="middle">DIST</text>
   <text x="42" y="222" class="tbl-field-dist">approvedBy</text>
   <text x="458" y="222" class="tbl-type" text-anchor="end">VARCHAR(64) FK-dist auth.users</text>
-  <rect x="1" y="228" width="468" height="24" fill="#FFFFFF"/>
-  <circle cx="18" cy="242" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="242" r="1.8" fill="#000000"/>
   <text x="30" y="246" class="tbl-field-normal">approvedAt / completedAt</text>
   <text x="458" y="246" class="tbl-type" text-anchor="end">TIMESTAMP MỐC THỜI GIAN</text>
 </g>
 <g transform="translate(510, 20)">
-  <rect width="470" height="164" rx="8" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.4" filter="url(#table-shadow)"/>
-  <path d="M 0 8 Q 0 0 8 0 L 462 0 Q 470 0 470 8 L 470 36 L 0 36 Z" fill="#B45309"/>
+  <rect width="470" height="164" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+  <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
   <text x="14" y="23" class="tbl-header">PickupItem</text>
   <text x="456" y="23" class="tbl-tag" text-anchor="end">KIỆN HÀNG CẦN GOM</text>
-  <rect x="1" y="36" width="468" height="24" fill="#FFFFFF"/>
-  <rect x="10" y="43" width="20" height="14" rx="3" fill="#FEE2E2"/>
+  <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
   <text x="458" y="54" class="tbl-type" text-anchor="end">CUID NOT NULL</text>
-  <rect x="1" y="60" width="468" height="24" fill="#F8FAFC"/>
-  <rect x="10" y="67" width="20" height="14" rx="3" fill="#DBEAFE"/>
+  <rect x="10" y="67" width="20" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
   <text x="20" y="78" class="badge-fk" text-anchor="middle">FK</text>
   <text x="42" y="78" class="tbl-field-fk">pickupRequestId</text>
   <text x="458" y="78" class="tbl-type" text-anchor="end">CUID FK -&gt; pickup_requests.id</text>
-  <rect x="1" y="84" width="468" height="24" fill="#FFFFFF"/>
-  <rect x="8" y="91" width="26" height="14" rx="3" fill="#EDE9FE"/>
-  <text x="21" y="102" class="badge-dist" text-anchor="middle">DIST</text>
+  <rect x="8" y="91" width="28" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1" stroke-dasharray="2 1.5"/>
+  <text x="22" y="102" class="badge-dist" text-anchor="middle">DIST</text>
   <text x="42" y="102" class="tbl-field-dist">shipmentCode</text>
   <text x="458" y="102" class="tbl-type" text-anchor="end">VARCHAR(32) FK-dist shipment.code</text>
-  <rect x="1" y="108" width="468" height="24" fill="#F8FAFC"/>
-  <circle cx="18" cy="122" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="122" r="1.8" fill="#000000"/>
   <text x="30" y="126" class="tbl-field-normal">quantity</text>
   <text x="458" y="126" class="tbl-type" text-anchor="end">INT SỐ LƯỢNG GOM</text>
-  <rect x="1" y="132" width="468" height="24" fill="#FFFFFF"/>
-  <circle cx="18" cy="146" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="146" r="1.8" fill="#000000"/>
   <text x="30" y="150" class="tbl-field-normal">createdAt</text>
   <text x="458" y="150" class="tbl-type" text-anchor="end">TIMESTAMP DEFAULT NOW()</text>
 </g>
 <g transform="translate(510, 210)">
-  <rect width="470" height="164" rx="8" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.4" filter="url(#table-shadow)"/>
-  <path d="M 0 8 Q 0 0 8 0 L 462 0 Q 470 0 470 8 L 470 36 L 0 36 Z" fill="#475569"/>
+  <rect width="470" height="164" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+  <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
   <text x="14" y="23" class="tbl-header">OutboxEvent (Pickup)</text>
   <text x="456" y="23" class="tbl-tag" text-anchor="end">outbox_events</text>
-  <rect x="1" y="36" width="468" height="24" fill="#FFFFFF"/>
-  <rect x="10" y="43" width="20" height="14" rx="3" fill="#FEE2E2"/>
+  <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
   <text x="458" y="54" class="tbl-type" text-anchor="end">CUID NOT NULL</text>
-  <rect x="1" y="60" width="468" height="24" fill="#F8FAFC"/>
-  <circle cx="18" cy="74" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="74" r="1.8" fill="#000000"/>
   <text x="30" y="78" class="tbl-field-normal">eventId</text>
   <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(64) UNIQUE</text>
-  <rect x="1" y="84" width="468" height="24" fill="#FFFFFF"/>
-  <circle cx="18" cy="98" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="98" r="1.8" fill="#000000"/>
   <text x="30" y="102" class="tbl-field-normal">eventType / routingKey</text>
   <text x="458" y="102" class="tbl-type" text-anchor="end">VARCHAR(64) PICKUP.APPROVED, ...</text>
-  <rect x="1" y="108" width="468" height="24" fill="#F8FAFC"/>
-  <circle cx="18" cy="122" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="122" r="1.8" fill="#000000"/>
   <text x="30" y="126" class="tbl-field-normal">aggregateType / aggregateId</text>
   <text x="458" y="126" class="tbl-type" text-anchor="end">VARCHAR(64) PickupRequest / id</text>
-  <rect x="1" y="132" width="468" height="24" fill="#FFFFFF"/>
-  <circle cx="18" cy="146" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="146" r="1.8" fill="#000000"/>
   <text x="30" y="150" class="tbl-field-normal">payload</text>
   <text x="458" y="150" class="tbl-type" text-anchor="end">JSONB DATA GOM HÀNG</text>
 </g>
 
-    <path d="M 490 60 L 510 60" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <path d="M 490 60 L 510 60" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
     
 <g transform="translate(1010, 20)">
-  <rect width="890" height="590" rx="10" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5" filter="url(#table-shadow)"/>
-  <rect x="0" y="0" width="890" height="44" rx="10" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
-  <rect x="14" y="13" width="7" height="18" rx="2" fill="#D97706"/>
-  <text x="28" y="27" class="panel-header">GIẢI THÍCH SƠ BỘ &amp; QUY TẮC DỮ LIỆU: PICKUP-SERVICE</text>
-  <rect x="710" y="10" width="166" height="24" rx="5" fill="#D9770618" stroke="#D97706" stroke-width="1"/>
-  <text x="793" y="26" font-size="11" font-weight="700" fill="#D97706" text-anchor="middle">FIRST-MILE PICKUP</text>
-  <text x="18" y="68" class="panel-sec-title">▶ VAI TRÒ &amp; QUY TRÌNH GOM HÀNG ĐẦU VÀO (FIRST-MILE PICKUP)</text>
-  <circle cx="25" cy="84" r="2.2" fill="#D97706"/>
-  <text x="36" y="88" class="panel-body"><tspan class="panel-bold">Tiếp nhận yêu cầu gom:</tspan> Merchant gom hàng chục bưu kiện thành 1 yêu cầu gom mang mã <tspan class="panel-code">pickupCode</tspan>.</text>
-  <circle cx="25" cy="104" r="2.2" fill="#D97706"/>
-  <text x="36" y="108" class="panel-body"><tspan class="panel-bold">Phê duyệt điều phối:</tspan> Khi điều phối viên duyệt đơn gom, trạng thái chuyển <tspan class="panel-code">APPROVED</tspan> và bắn sự kiện tạo nhiệm vụ sang dispatch-service.</text>
-  <circle cx="25" cy="124" r="2.2" fill="#D97706"/>
-  <text x="36" y="128" class="panel-body"><tspan class="panel-bold">Hoàn tất gom tận nơi:</tspan> Tài xế đến kho shop quét nhận mã từng kiện, hoàn thành gom hàng chuyển sang <tspan class="panel-code">COMPLETED</tspan>.</text>
-  <text x="18" y="156" class="panel-sec-title">▶ CƠ CHẾ LIÊN KẾT PHÂN TÁN (SAGA LINKAGE)</text>
-  <circle cx="25" cy="172" r="2.2" fill="#D97706"/>
-  <text x="36" y="176" class="panel-body"><tspan class="panel-code">shipmentCode</tspan>: Danh mục các mã vận đơn cấu thành lô gom trong bảng <tspan class="panel-code">pickup_items</tspan>.</text>
-  <circle cx="25" cy="192" r="2.2" fill="#D97706"/>
-  <text x="36" y="196" class="panel-body"><tspan class="panel-code">pickupRequestId</tspan>: Khóa tham chiếu để <tspan class="panel-code">dispatch-service</tspan> giao việc cho tài xế đến lấy.</text>
-  <rect x="14" y="550" width="862" height="28" rx="5" fill="#F1F5F9" stroke="#E2E8F0" stroke-width="1"/>
-  <text x="445.0" y="568" font-size="11" font-weight="600" fill="#475569" text-anchor="middle">Engine: pickup_db (PostgreSQL 16) | Pattern: Batch Aggregation | Events: PICKUP.APPROVED, PICKUP.COMPLETED</text>
+  <rect width="890" height="600" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+  <rect x="0" y="0" width="890" height="42" rx="6" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+  <rect x="14" y="12" width="6" height="18" rx="1" fill="#000000"/>
+  <text x="28" y="26" class="panel-header">GIẢI THÍCH SƠ BỘ &amp; QUY TẮC DỮ LIỆU: PICKUP-SERVICE</text>
+  <rect x="710" y="9" width="166" height="24" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+  <text x="793" y="25" font-size="11" font-weight="700" fill="#000000" text-anchor="middle">FIRST-MILE PICKUP</text>
+  <text x="18" y="66" class="panel-sec-title">▶ VAI TRÒ &amp; QUY TRÌNH GOM HÀNG ĐẦU VÀO (FIRST-MILE PICKUP)</text>
+  <circle cx="25" cy="82" r="2" fill="#000000"/>
+  <text x="36" y="86" class="panel-body"><tspan class="panel-bold">Tiếp nhận yêu cầu gom:</tspan> Merchant gom hàng chục bưu kiện thành 1 yêu cầu gom mang mã <tspan class="panel-code">pickupCode</tspan>.</text>
+  <circle cx="25" cy="102" r="2" fill="#000000"/>
+  <text x="36" y="106" class="panel-body"><tspan class="panel-bold">Phê duyệt điều phối:</tspan> Khi điều phối viên duyệt đơn gom, trạng thái chuyển <tspan class="panel-code">APPROVED</tspan> và bắn sự kiện tạo nhiệm vụ sang dispatch-service.</text>
+  <circle cx="25" cy="122" r="2" fill="#000000"/>
+  <text x="36" y="126" class="panel-body"><tspan class="panel-bold">Hoàn tất gom tận nơi:</tspan> Tài xế đến kho shop quét nhận mã từng kiện, hoàn thành gom hàng chuyển sang <tspan class="panel-code">COMPLETED</tspan>.</text>
+  <text x="18" y="154" class="panel-sec-title">▶ CƠ CHẾ LIÊN KẾT PHÂN TÁN (SAGA LINKAGE)</text>
+  <circle cx="25" cy="170" r="2" fill="#000000"/>
+  <text x="36" y="174" class="panel-body"><tspan class="panel-code">shipmentCode</tspan>: Danh mục các mã vận đơn cấu thành lô gom trong bảng <tspan class="panel-code">pickup_items</tspan>.</text>
+  <circle cx="25" cy="190" r="2" fill="#000000"/>
+  <text x="36" y="194" class="panel-body"><tspan class="panel-code">pickupRequestId</tspan>: Khóa tham chiếu để <tspan class="panel-code">dispatch-service</tspan> giao việc cho tài xế đến lấy.</text>
+  <rect x="14" y="562" width="862" height="26" rx="4" fill="#F9FAFB" stroke="#000000" stroke-width="1"/>
+  <text x="445.0" y="579" font-size="11" font-weight="600" fill="#111827" text-anchor="middle">Engine: pickup_db (PostgreSQL 16) | Pattern: Batch Aggregation | Events: PICKUP.APPROVED, PICKUP.COMPLETED</text>
 </g>
   </g>
 
   <!-- SAGA CONTEXT FOOTER -->
-  <g id="FooterSaga" transform="translate(40, 805)">
-    <rect width="1920" height="55" rx="8" fill="#0F172A" stroke="#334155" stroke-width="1.2"/>
-    <circle cx="25" cy="28" r="6" fill="#38BDF8"/>
-    <text x="42" y="32" font-size="12" font-weight="700" fill="#38BDF8">CƠ CHẾ LIÊN KẾT PHÂN TÁN (SAGA):</text>
-    <text x="310" y="32" font-size="11.5" fill="#E2E8F0">Bắn sự kiện PICKUP.APPROVED sang dispatch-service để tự động phân bổ tài xế theo khu vực</text>
-    <text x="1900" y="32" font-size="11" font-weight="600" fill="#94A3B8" text-anchor="end">Nexus Software Engineering Thesis</text>
+  <g id="FooterSaga" transform="translate(40, 810)">
+    <rect width="1920" height="50" rx="6" fill="#F9FAFB" stroke="#000000" stroke-width="1.4"/>
+    <circle cx="25" cy="25" r="5" fill="#000000"/>
+    <text x="42" y="29" font-size="12" font-weight="700" fill="#000000">CƠ CHẾ LIÊN KẾT PHÂN TÁN (SAGA):</text>
+    <text x="310" y="29" font-size="11.5" fill="#1F2937">Bắn sự kiện PICKUP.APPROVED sang dispatch-service để tự động phân bổ tài xế theo khu vực</text>
+    <text x="1900" y="29" font-size="11" font-weight="600" fill="#4B5563" text-anchor="end">Nexus Software Engineering Thesis</text>
   </g>
 </svg>

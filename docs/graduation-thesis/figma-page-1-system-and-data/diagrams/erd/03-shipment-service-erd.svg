@@ -1,422 +1,348 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 1350" width="100%" height="100%" style="background:#F8FAFC;">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 1350" width="100%" height="100%" style="background:#FFFFFF;">
 
   <defs>
-    <filter id="card-shadow" x="-2%" y="-1.5%" width="104%" height="104%" filterUnits="userSpaceOnUse">
-      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0F172A" flood-opacity="0.06"/>
-    </filter>
-    <filter id="table-shadow" x="-3%" y="-3%" width="106%" height="108%" filterUnits="userSpaceOnUse">
-      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#0F172A" flood-opacity="0.04"/>
-    </filter>
     <marker id="crow-many" markerWidth="14" markerHeight="14" refX="10" refY="7" orient="auto">
-      <path d="M 0 0 L 10 7 L 0 14 M 10 0 L 10 14" stroke="#475569" stroke-width="1.8" fill="none"/>
+      <path d="M 0 0 L 10 7 L 0 14 M 10 0 L 10 14" stroke="#000000" stroke-width="1.8" fill="none"/>
     </marker>
     <marker id="crow-one" markerWidth="14" markerHeight="14" refX="10" refY="7" orient="auto">
-      <line x1="5" y1="2" x2="5" y2="12" stroke="#475569" stroke-width="1.8"/>
-      <line x1="9" y1="2" x2="9" y2="12" stroke="#475569" stroke-width="1.8"/>
+      <line x1="5" y1="2" x2="5" y2="12" stroke="#000000" stroke-width="1.8"/>
+      <line x1="9" y1="2" x2="9" y2="12" stroke="#000000" stroke-width="1.8"/>
     </marker>
     <marker id="arrow-dist" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto">
-      <path d="M 0 1 L 9 6 L 0 11 z" fill="#0284C7"/>
+      <path d="M 0 1 L 9 6 L 0 11 z" fill="#000000"/>
     </marker>
-    <linearGradient id="header-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#0F172A"/>
-      <stop offset="55%" stop-color="#1E293B"/>
-      <stop offset="100%" stop-color="#334155"/>
-    </linearGradient>
-    <pattern id="grid-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
-      <circle cx="2" cy="2" r="1.2" fill="#E2E8F0"/>
-    </pattern>
   </defs>
 
-  <rect width="100%" height="100%" fill="url(#grid-pattern)" />
+  <!-- Technical Blueprint Frame -->
+  <rect width="100%" height="100%" fill="#FFFFFF"/>
+  <rect x="15" y="15" width="1970" height="1320" fill="none" stroke="#000000" stroke-width="2"/>
+  <rect x="20" y="20" width="1960" height="1310" fill="none" stroke="#000000" stroke-width="0.8"/>
 
   <style>
     text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
-    .doc-badge { font-size: 12.5px; font-weight: 700; fill: #38BDF8; letter-spacing: 1.5px; text-transform: uppercase; }
-    .doc-title { font-size: 24px; font-weight: 800; fill: #FFFFFF; letter-spacing: -0.5px; }
-    .doc-subtitle { font-size: 13.5px; font-weight: 400; fill: #CBD5E1; }
-    .meta-tag { font-size: 11.5px; font-weight: 600; fill: #E2E8F0; }
+    .doc-badge { font-size: 11.5px; font-weight: 700; fill: #000000; letter-spacing: 1.2px; text-transform: uppercase; }
+    .doc-title { font-size: 23px; font-weight: 800; fill: #000000; letter-spacing: -0.5px; }
+    .doc-subtitle { font-size: 13px; font-weight: 400; fill: #374151; }
     
-    .svc-title { font-size: 18px; font-weight: 800; fill: #0F172A; }
-    .svc-sub { font-size: 12.5px; font-weight: 500; fill: #64748B; }
-    .svc-port { font-size: 12px; font-weight: 700; font-family: ui-monospace, Menlo, monospace; fill: #0284C7; }
+    .tbl-header { font-size: 13.5px; font-weight: 700; fill: #000000; }
+    .tbl-tag { font-size: 10.5px; font-weight: 600; fill: #4B5563; text-transform: uppercase; }
+    .tbl-field-pk { font-size: 11.5px; font-weight: 700; fill: #000000; font-family: ui-monospace, Menlo, monospace; }
+    .tbl-field-fk { font-size: 11.5px; font-weight: 600; fill: #000000; font-family: ui-monospace, Menlo, monospace; }
+    .tbl-field-dist { font-size: 11.5px; font-weight: 600; fill: #000000; font-style: italic; font-family: ui-monospace, Menlo, monospace; }
+    .tbl-field-normal { font-size: 11.5px; font-weight: 500; fill: #1F2937; font-family: ui-monospace, Menlo, monospace; }
+    .tbl-type { font-size: 11px; font-weight: 500; fill: #4B5563; }
 
-    .tbl-header { font-size: 13.5px; font-weight: 700; fill: #FFFFFF; }
-    .tbl-tag { font-size: 10.5px; font-weight: 600; fill: #CBD5E1; text-transform: uppercase; }
-    .tbl-field-pk { font-size: 11.5px; font-weight: 700; fill: #0F172A; font-family: ui-monospace, Menlo, monospace; }
-    .tbl-field-fk { font-size: 11.5px; font-weight: 600; fill: #1D4ED8; font-family: ui-monospace, Menlo, monospace; }
-    .tbl-field-dist { font-size: 11.5px; font-weight: 600; fill: #6D28D9; font-family: ui-monospace, Menlo, monospace; }
-    .tbl-field-normal { font-size: 11.5px; font-weight: 500; fill: #334155; font-family: ui-monospace, Menlo, monospace; }
-    .tbl-type { font-size: 11px; font-weight: 500; fill: #64748B; }
+    .badge-pk { font-size: 9.5px; font-weight: 800; fill: #FFFFFF; }
+    .badge-fk { font-size: 9.5px; font-weight: 800; fill: #000000; }
+    .badge-dist { font-size: 9.5px; font-weight: 800; fill: #000000; }
 
-    .badge-pk { font-size: 9.5px; font-weight: 800; fill: #B91C1C; }
-    .badge-fk { font-size: 9.5px; font-weight: 800; fill: #1D4ED8; }
-    .badge-dist { font-size: 9.5px; font-weight: 800; fill: #6D28D9; }
-
-    .panel-header { font-size: 13.5px; font-weight: 800; fill: #0F172A; text-transform: uppercase; letter-spacing: 0.5px; }
-    .panel-sec-title { font-size: 12px; font-weight: 700; fill: #1E293B; }
-    .panel-body { font-size: 11.5px; font-weight: 400; fill: #334155; }
-    .panel-bold { font-weight: 700; fill: #0F172A; }
-    .panel-code { font-family: ui-monospace, Menlo, monospace; font-size: 11px; font-weight: 700; fill: #0284C7; }
+    .panel-header { font-size: 13.5px; font-weight: 800; fill: #000000; text-transform: uppercase; letter-spacing: 0.5px; }
+    .panel-sec-title { font-size: 12px; font-weight: 700; fill: #000000; }
+    .panel-body { font-size: 11.5px; font-weight: 400; fill: #1F2937; }
+    .panel-bold { font-weight: 700; fill: #000000; }
+    .panel-code { font-family: ui-monospace, Menlo, monospace; font-size: 11px; font-weight: 700; fill: #000000; }
   </style>
 
 
   <!-- HEADER -->
-  <g id="Header" transform="translate(40, 30)">
-    <rect width="1920" height="105" rx="12" fill="url(#header-grad)" filter="url(#card-shadow)"/>
-    <text x="30" y="32" class="doc-badge">NEXUS LOGISTICS SYSTEM ARCHITECTURE | DATABASE-PER-SERVICE SPECIFICATION</text>
-    <text x="30" y="65" class="doc-title">3. SHIPMENT-SERVICE (DỊCH VỤ VẬN ĐƠN, KHIẾU NẠI &amp; ĐIỀU TRA SỰ CỐ)</text>
-    <text x="30" y="90" class="doc-subtitle">Trọng tâm nghiệp vụ: Máy trạng thái 19 bước FSM, Điều tra thất lạc điểm gãy &amp; Quyết toán bồi thường</text>
+  <g id="Header" transform="translate(40, 32)">
+    <rect width="1920" height="100" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.8"/>
+    <line x1="0" y1="32" x2="1920" y2="32" stroke="#E5E7EB" stroke-width="1"/>
+    <text x="24" y="22" class="doc-badge">NEXUS LOGISTICS SYSTEM ARCHITECTURE • DATABASE-PER-SERVICE SPECIFICATION</text>
+    <text x="24" y="58" class="doc-title">3. SHIPMENT-SERVICE (DỊCH VỤ VẬN ĐƠN, KHIẾU NẠI &amp; ĐIỀU TRA SỰ CỐ)</text>
+    <text x="24" y="82" class="doc-subtitle">Trọng tâm nghiệp vụ: Máy trạng thái 19 bước FSM, Điều tra thất lạc điểm gãy &amp; Quyết toán bồi thường</text>
     
     <!-- Badges -->
-    <rect x="1560" y="36" width="160" height="34" rx="6" fill="#1E293B" stroke="#38BDF8" stroke-width="1.2"/>
-    <text x="1640" y="58" font-size="13" font-weight="700" fill="#38BDF8" text-anchor="middle">PORT :3002</text>
+    <rect x="1570" y="32" width="160" height="36" rx="4" fill="#F3F4F6" stroke="#000000" stroke-width="1.2"/>
+    <text x="1650" y="55" font-size="12.5" font-weight="700" fill="#000000" text-anchor="middle">PORT :3002</text>
 
-    <rect x="1740" y="36" width="180" height="34" rx="6" fill="#1E293B" stroke="#059669" stroke-width="1.2"/>
-    <text x="1830" y="58" font-size="13" font-weight="700" fill="#059669" text-anchor="middle">DB: shipment_db</text>
+    <rect x="1750" y="32" width="170" height="36" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+    <text x="1835" y="55" font-size="12.5" font-weight="700" fill="#000000" text-anchor="middle">DB: shipment_db</text>
   </g>
 
 
   <!-- MAIN SERVICE CONTAINER -->
-  <g id="ServiceBody" transform="translate(40, 155)">
-    <rect width="1920" height="1100" rx="12" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.6" filter="url(#card-shadow)"/>
+  <g id="ServiceBody" transform="translate(40, 150)">
+    <rect width="1920" height="1110" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.6"/>
 
 <g transform="translate(20, 20)">
-  <rect width="470" height="332" rx="8" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.4" filter="url(#table-shadow)"/>
-  <path d="M 0 8 Q 0 0 8 0 L 462 0 Q 470 0 470 8 L 470 36 L 0 36 Z" fill="#065F46"/>
+  <rect width="470" height="332" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+  <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
   <text x="14" y="23" class="tbl-header">Shipment (shipments)</text>
   <text x="456" y="23" class="tbl-tag" text-anchor="end">VẬN ĐƠN BƯU CHÍNH</text>
-  <rect x="1" y="36" width="468" height="24" fill="#FFFFFF"/>
-  <rect x="10" y="43" width="20" height="14" rx="3" fill="#FEE2E2"/>
+  <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
   <text x="458" y="54" class="tbl-type" text-anchor="end">CUID NOT NULL</text>
-  <rect x="1" y="60" width="468" height="24" fill="#F8FAFC"/>
-  <circle cx="18" cy="74" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="74" r="1.8" fill="#000000"/>
   <text x="30" y="78" class="tbl-field-normal">code</text>
   <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(32) UNIQUE (NX-123456)</text>
-  <rect x="1" y="84" width="468" height="24" fill="#FFFFFF"/>
-  <circle cx="18" cy="98" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="98" r="1.8" fill="#000000"/>
   <text x="30" y="102" class="tbl-field-normal">currentStatus</text>
   <text x="458" y="102" class="tbl-type" text-anchor="end">ENUM 19 STATUSES (CANONICAL OWNER)</text>
-  <rect x="1" y="108" width="468" height="24" fill="#F8FAFC"/>
-  <circle cx="18" cy="122" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="122" r="1.8" fill="#000000"/>
   <text x="30" y="126" class="tbl-field-normal">isLocked</text>
   <text x="458" y="126" class="tbl-type" text-anchor="end">BOOLEAN KHÓA ĐƠN TRÁNH ĐUA LỆNH</text>
-  <rect x="1" y="132" width="468" height="24" fill="#FFFFFF"/>
-  <rect x="8" y="139" width="26" height="14" rx="3" fill="#EDE9FE"/>
-  <text x="21" y="150" class="badge-dist" text-anchor="middle">DIST</text>
+  <rect x="8" y="139" width="28" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1" stroke-dasharray="2 1.5"/>
+  <text x="22" y="150" class="badge-dist" text-anchor="middle">DIST</text>
   <text x="42" y="150" class="tbl-field-dist">createdByUserId</text>
   <text x="458" y="150" class="tbl-type" text-anchor="end">VARCHAR(64) FK-dist auth.users</text>
-  <rect x="1" y="156" width="468" height="24" fill="#F8FAFC"/>
-  <circle cx="18" cy="170" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="170" r="1.8" fill="#000000"/>
   <text x="30" y="174" class="tbl-field-normal">createdByType</text>
   <text x="458" y="174" class="tbl-type" text-anchor="end">VARCHAR(32) MERCHANT / GUEST</text>
-  <rect x="1" y="180" width="468" height="24" fill="#FFFFFF"/>
-  <circle cx="18" cy="194" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="194" r="1.8" fill="#000000"/>
   <text x="30" y="198" class="tbl-field-normal">receiverPhone</text>
   <text x="458" y="198" class="tbl-type" text-anchor="end">VARCHAR(20) INDEX [PII]</text>
-  <rect x="1" y="204" width="468" height="24" fill="#F8FAFC"/>
-  <circle cx="18" cy="218" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="218" r="1.8" fill="#000000"/>
   <text x="30" y="222" class="tbl-field-normal">pickupLat / pickupLng</text>
   <text x="458" y="222" class="tbl-type" text-anchor="end">FLOAT GPS ĐIỂM GỬI</text>
-  <rect x="1" y="228" width="468" height="24" fill="#FFFFFF"/>
-  <circle cx="18" cy="242" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="242" r="1.8" fill="#000000"/>
   <text x="30" y="246" class="tbl-field-normal">deliveryLat / deliveryLng</text>
   <text x="458" y="246" class="tbl-type" text-anchor="end">FLOAT GPS ĐIỂM GIAO</text>
-  <rect x="1" y="252" width="468" height="24" fill="#F8FAFC"/>
-  <circle cx="18" cy="266" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="266" r="1.8" fill="#000000"/>
   <text x="30" y="270" class="tbl-field-normal">metadata</text>
   <text x="458" y="270" class="tbl-type" text-anchor="end">JSONB ITEMS, WEIGHT, DIMS, COD</text>
-  <rect x="1" y="276" width="468" height="24" fill="#FFFFFF"/>
-  <circle cx="18" cy="290" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="290" r="1.8" fill="#000000"/>
   <text x="30" y="294" class="tbl-field-normal">cancellationReason</text>
   <text x="458" y="294" class="tbl-type" text-anchor="end">TEXT LÝ DO HỦY ĐƠN</text>
-  <rect x="1" y="300" width="468" height="24" fill="#F8FAFC"/>
-  <circle cx="18" cy="314" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="314" r="1.8" fill="#000000"/>
   <text x="30" y="318" class="tbl-field-normal">createdAt / updatedAt</text>
   <text x="458" y="318" class="tbl-type" text-anchor="end">TIMESTAMP INDEX</text>
 </g>
 <g transform="translate(510, 20)">
-  <rect width="470" height="212" rx="8" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.4" filter="url(#table-shadow)"/>
-  <path d="M 0 8 Q 0 0 8 0 L 462 0 Q 470 0 470 8 L 470 36 L 0 36 Z" fill="#047857"/>
+  <rect width="470" height="212" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+  <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
   <text x="14" y="23" class="tbl-header">ChangeRequest</text>
   <text x="456" y="23" class="tbl-tag" text-anchor="end">YÊU CẦU ĐỔI ĐỊA CHỈ/COD</text>
-  <rect x="1" y="36" width="468" height="24" fill="#FFFFFF"/>
-  <rect x="10" y="43" width="20" height="14" rx="3" fill="#FEE2E2"/>
+  <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
   <text x="458" y="54" class="tbl-type" text-anchor="end">CUID NOT NULL</text>
-  <rect x="1" y="60" width="468" height="24" fill="#F8FAFC"/>
-  <rect x="10" y="67" width="20" height="14" rx="3" fill="#DBEAFE"/>
+  <rect x="10" y="67" width="20" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
   <text x="20" y="78" class="badge-fk" text-anchor="middle">FK</text>
   <text x="42" y="78" class="tbl-field-fk">shipmentCode</text>
   <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(32) FK -&gt; shipments.code</text>
-  <rect x="1" y="84" width="468" height="24" fill="#FFFFFF"/>
-  <circle cx="18" cy="98" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="98" r="1.8" fill="#000000"/>
   <text x="30" y="102" class="tbl-field-normal">requestType</text>
   <text x="458" y="102" class="tbl-type" text-anchor="end">VARCHAR(64) CHANGE_ADDRESS, COD...</text>
-  <rect x="1" y="108" width="468" height="24" fill="#F8FAFC"/>
-  <circle cx="18" cy="122" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="122" r="1.8" fill="#000000"/>
   <text x="30" y="126" class="tbl-field-normal">payload</text>
   <text x="458" y="126" class="tbl-type" text-anchor="end">JSONB DỮ LIỆU ĐỀ XUẤT ĐỔI</text>
-  <rect x="1" y="132" width="468" height="24" fill="#FFFFFF"/>
-  <circle cx="18" cy="146" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="146" r="1.8" fill="#000000"/>
   <text x="30" y="150" class="tbl-field-normal">status</text>
   <text x="458" y="150" class="tbl-type" text-anchor="end">ENUM PENDING, APPROVED...</text>
-  <rect x="1" y="156" width="468" height="24" fill="#F8FAFC"/>
-  <rect x="8" y="163" width="26" height="14" rx="3" fill="#EDE9FE"/>
-  <text x="21" y="174" class="badge-dist" text-anchor="middle">DIST</text>
+  <rect x="8" y="163" width="28" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1" stroke-dasharray="2 1.5"/>
+  <text x="22" y="174" class="badge-dist" text-anchor="middle">DIST</text>
   <text x="42" y="174" class="tbl-field-dist">requestedBy / approvedBy</text>
   <text x="458" y="174" class="tbl-type" text-anchor="end">VARCHAR FK-dist auth.users</text>
-  <rect x="1" y="180" width="468" height="24" fill="#FFFFFF"/>
-  <circle cx="18" cy="194" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="194" r="1.8" fill="#000000"/>
   <text x="30" y="198" class="tbl-field-normal">approvedAt</text>
   <text x="458" y="198" class="tbl-type" text-anchor="end">TIMESTAMP THỜI ĐIỂM DUYỆT</text>
 </g>
 <g transform="translate(20, 365)">
-  <rect width="470" height="308" rx="8" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.4" filter="url(#table-shadow)"/>
-  <path d="M 0 8 Q 0 0 8 0 L 462 0 Q 470 0 470 8 L 470 36 L 0 36 Z" fill="#064E3B"/>
+  <rect width="470" height="308" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+  <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
   <text x="14" y="23" class="tbl-header">InvestigationCase</text>
   <text x="456" y="23" class="tbl-tag" text-anchor="end">HỒ SƠ ĐIỀU TRA SỰ CỐ</text>
-  <rect x="1" y="36" width="468" height="24" fill="#FFFFFF"/>
-  <rect x="10" y="43" width="20" height="14" rx="3" fill="#FEE2E2"/>
+  <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
   <text x="458" y="54" class="tbl-type" text-anchor="end">CUID NOT NULL</text>
-  <rect x="1" y="60" width="468" height="24" fill="#F8FAFC"/>
-  <circle cx="18" cy="74" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="74" r="1.8" fill="#000000"/>
   <text x="30" y="78" class="tbl-field-normal">investigationCode</text>
   <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(32) UNIQUE (INV-2026-001)</text>
-  <rect x="1" y="84" width="468" height="24" fill="#FFFFFF"/>
-  <rect x="10" y="91" width="20" height="14" rx="3" fill="#DBEAFE"/>
+  <rect x="10" y="91" width="20" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
   <text x="20" y="102" class="badge-fk" text-anchor="middle">FK</text>
   <text x="42" y="102" class="tbl-field-fk">shipmentCode</text>
   <text x="458" y="102" class="tbl-type" text-anchor="end">VARCHAR(32) FK -&gt; shipments.code</text>
-  <rect x="1" y="108" width="468" height="24" fill="#F8FAFC"/>
-  <rect x="8" y="115" width="26" height="14" rx="3" fill="#EDE9FE"/>
-  <text x="21" y="126" class="badge-dist" text-anchor="middle">DIST</text>
+  <rect x="8" y="115" width="28" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1" stroke-dasharray="2 1.5"/>
+  <text x="22" y="126" class="badge-dist" text-anchor="middle">DIST</text>
   <text x="42" y="126" class="tbl-field-dist">originHubCode / destHubCode</text>
   <text x="458" y="126" class="tbl-type" text-anchor="end">VARCHAR FK-dist masterdata</text>
-  <rect x="1" y="132" width="468" height="24" fill="#FFFFFF"/>
-  <circle cx="18" cy="146" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="146" r="1.8" fill="#000000"/>
   <text x="30" y="150" class="tbl-field-normal">declaredValue / WeightKg</text>
   <text x="458" y="150" class="tbl-type" text-anchor="end">FLOAT GIÁ TRỊ &amp; CÂN NẶNG</text>
-  <rect x="1" y="156" width="468" height="24" fill="#F8FAFC"/>
-  <circle cx="18" cy="170" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="170" r="1.8" fill="#000000"/>
   <text x="30" y="174" class="tbl-field-normal">status</text>
   <text x="458" y="174" class="tbl-type" text-anchor="end">ENUM ANALYZING, IN_HEARING...</text>
-  <rect x="1" y="180" width="468" height="24" fill="#FFFFFF"/>
-  <circle cx="18" cy="194" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="194" r="1.8" fill="#000000"/>
   <text x="30" y="198" class="tbl-field-normal">priority / breakPointType</text>
   <text x="458" y="198" class="tbl-type" text-anchor="end">ENUM CRITICAL, LOSS...</text>
-  <rect x="1" y="204" width="468" height="24" fill="#F8FAFC"/>
-  <circle cx="18" cy="218" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="218" r="1.8" fill="#000000"/>
   <text x="30" y="222" class="tbl-field-normal">suspectPartyType / Name</text>
   <text x="458" y="222" class="tbl-type" text-anchor="end">VARCHAR ĐỐI TƯỢNG NGHI VẤN</text>
-  <rect x="1" y="228" width="468" height="24" fill="#FFFFFF"/>
-  <circle cx="18" cy="242" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="242" r="1.8" fill="#000000"/>
   <text x="30" y="246" class="tbl-field-normal">confidenceScorePercent</text>
   <text x="458" y="246" class="tbl-type" text-anchor="end">INT ĐỘ TIN CẬY AI (%)</text>
-  <rect x="1" y="252" width="468" height="24" fill="#F8FAFC"/>
-  <circle cx="18" cy="266" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="266" r="1.8" fill="#000000"/>
   <text x="30" y="270" class="tbl-field-normal">suggestedRootCause</text>
   <text x="458" y="270" class="tbl-type" text-anchor="end">ENUM NGUYÊN NHÂN GỐC</text>
-  <rect x="1" y="276" width="468" height="24" fill="#FFFFFF"/>
-  <circle cx="18" cy="290" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="290" r="1.8" fill="#000000"/>
   <text x="30" y="294" class="tbl-field-normal">suggestedCompensationAmount</text>
   <text x="458" y="294" class="tbl-type" text-anchor="end">FLOAT ĐỀ XUẤT ĐỀN BÙ</text>
 </g>
 <g transform="translate(510, 280)">
-  <rect width="470" height="188" rx="8" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.4" filter="url(#table-shadow)"/>
-  <path d="M 0 8 Q 0 0 8 0 L 462 0 Q 470 0 470 8 L 470 36 L 0 36 Z" fill="#047857"/>
+  <rect width="470" height="188" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+  <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
   <text x="14" y="23" class="tbl-header">InvestigationAuditScan</text>
   <text x="456" y="23" class="tbl-tag" text-anchor="end">VẾT QUÉT ĐIỀU TRA</text>
-  <rect x="1" y="36" width="468" height="24" fill="#FFFFFF"/>
-  <rect x="10" y="43" width="20" height="14" rx="3" fill="#FEE2E2"/>
+  <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
   <text x="458" y="54" class="tbl-type" text-anchor="end">CUID NOT NULL</text>
-  <rect x="1" y="60" width="468" height="24" fill="#F8FAFC"/>
-  <rect x="10" y="67" width="20" height="14" rx="3" fill="#DBEAFE"/>
+  <rect x="10" y="67" width="20" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
   <text x="20" y="78" class="badge-fk" text-anchor="middle">FK</text>
   <text x="42" y="78" class="tbl-field-fk">investigationCaseId</text>
   <text x="458" y="78" class="tbl-type" text-anchor="end">CUID FK -&gt; investigations</text>
-  <rect x="1" y="84" width="468" height="24" fill="#FFFFFF"/>
-  <circle cx="18" cy="98" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="98" r="1.8" fill="#000000"/>
   <text x="30" y="102" class="tbl-field-normal">timestamp / locationCode</text>
   <text x="458" y="102" class="tbl-type" text-anchor="end">TIME / VARCHAR ĐỊA ĐIỂM QUÉT</text>
-  <rect x="1" y="108" width="468" height="24" fill="#F8FAFC"/>
-  <circle cx="18" cy="122" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="122" r="1.8" fill="#000000"/>
   <text x="30" y="126" class="tbl-field-normal">action / operator</text>
   <text x="458" y="126" class="tbl-type" text-anchor="end">VARCHAR THAO TÁC / NHÂN SỰ</text>
-  <rect x="1" y="132" width="468" height="24" fill="#FFFFFF"/>
-  <circle cx="18" cy="146" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="146" r="1.8" fill="#000000"/>
   <text x="30" y="150" class="tbl-field-normal">recordedWeightKg / DeltaKg</text>
   <text x="458" y="150" class="tbl-type" text-anchor="end">FLOAT ĐỘ LỆCH CÂN NẶNG</text>
-  <rect x="1" y="156" width="468" height="24" fill="#F8FAFC"/>
-  <circle cx="18" cy="170" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="170" r="1.8" fill="#000000"/>
   <text x="30" y="174" class="tbl-field-normal">isBreakPoint / anomalyNote</text>
   <text x="458" y="174" class="tbl-type" text-anchor="end">BOOL / TEXT ĐIỂM GÃY BƯU GỬI</text>
 </g>
 <g transform="translate(510, 500)">
-  <rect width="470" height="188" rx="8" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.4" filter="url(#table-shadow)"/>
-  <path d="M 0 8 Q 0 0 8 0 L 462 0 Q 470 0 470 8 L 470 36 L 0 36 Z" fill="#047857"/>
+  <rect width="470" height="188" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+  <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
   <text x="14" y="23" class="tbl-header">InvestigationDispute</text>
   <text x="456" y="23" class="tbl-tag" text-anchor="end">BẰNG CHỨNG GIẢI TRÌNH</text>
-  <rect x="1" y="36" width="468" height="24" fill="#FFFFFF"/>
-  <rect x="10" y="43" width="20" height="14" rx="3" fill="#FEE2E2"/>
+  <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
   <text x="458" y="54" class="tbl-type" text-anchor="end">CUID NOT NULL</text>
-  <rect x="1" y="60" width="468" height="24" fill="#F8FAFC"/>
-  <rect x="10" y="67" width="20" height="14" rx="3" fill="#DBEAFE"/>
+  <rect x="10" y="67" width="20" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
   <text x="20" y="78" class="badge-fk" text-anchor="middle">FK</text>
   <text x="42" y="78" class="tbl-field-fk">investigationCaseId</text>
   <text x="458" y="78" class="tbl-type" text-anchor="end">CUID FK -&gt; investigations</text>
-  <rect x="1" y="84" width="468" height="24" fill="#FFFFFF"/>
-  <circle cx="18" cy="98" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="98" r="1.8" fill="#000000"/>
   <text x="30" y="102" class="tbl-field-normal">submittedBy / partyName</text>
   <text x="458" y="102" class="tbl-type" text-anchor="end">VARCHAR BƯU CỤC GIẢI TRÌNH</text>
-  <rect x="1" y="108" width="468" height="24" fill="#F8FAFC"/>
-  <circle cx="18" cy="122" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="122" r="1.8" fill="#000000"/>
   <text x="30" y="126" class="tbl-field-normal">cctvVideoUrl / timestamp</text>
   <text x="458" y="126" class="tbl-type" text-anchor="end">VARCHAR / RANGE BẰNG CHỨNG CAMERA</text>
-  <rect x="1" y="132" width="468" height="24" fill="#FFFFFF"/>
-  <circle cx="18" cy="146" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="146" r="1.8" fill="#000000"/>
   <text x="30" y="150" class="tbl-field-normal">handoverSlipUrl / notes</text>
   <text x="458" y="150" class="tbl-type" text-anchor="end">VARCHAR / TEXT BIÊN BẢN BÀN GIAO</text>
-  <rect x="1" y="156" width="468" height="24" fill="#F8FAFC"/>
-  <circle cx="18" cy="170" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="170" r="1.8" fill="#000000"/>
   <text x="30" y="174" class="tbl-field-normal">status</text>
   <text x="458" y="174" class="tbl-type" text-anchor="end">ENUM PENDING, ACCEPTED...</text>
 </g>
 <g transform="translate(20, 720)">
-  <rect width="470" height="332" rx="8" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.4" filter="url(#table-shadow)"/>
-  <path d="M 0 8 Q 0 0 8 0 L 462 0 Q 470 0 470 8 L 470 36 L 0 36 Z" fill="#065F46"/>
+  <rect width="470" height="332" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+  <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
   <text x="14" y="23" class="tbl-header">CompensationClaim</text>
   <text x="456" y="23" class="tbl-tag" text-anchor="end">HỒ SƠ BỒI THƯỜNG</text>
-  <rect x="1" y="36" width="468" height="24" fill="#FFFFFF"/>
-  <rect x="10" y="43" width="20" height="14" rx="3" fill="#FEE2E2"/>
+  <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
   <text x="458" y="54" class="tbl-type" text-anchor="end">CUID NOT NULL</text>
-  <rect x="1" y="60" width="468" height="24" fill="#F8FAFC"/>
-  <circle cx="18" cy="74" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="74" r="1.8" fill="#000000"/>
   <text x="30" y="78" class="tbl-field-normal">claimCode</text>
   <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(32) UNIQUE (CLM-2026-001)</text>
-  <rect x="1" y="84" width="468" height="24" fill="#FFFFFF"/>
-  <rect x="10" y="91" width="20" height="14" rx="3" fill="#DBEAFE"/>
+  <rect x="10" y="91" width="20" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
   <text x="20" y="102" class="badge-fk" text-anchor="middle">FK</text>
   <text x="42" y="102" class="tbl-field-fk">shipmentCode</text>
   <text x="458" y="102" class="tbl-type" text-anchor="end">VARCHAR(32) FK -&gt; shipments.code</text>
-  <rect x="1" y="108" width="468" height="24" fill="#F8FAFC"/>
-  <circle cx="18" cy="122" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="122" r="1.8" fill="#000000"/>
   <text x="30" y="126" class="tbl-field-normal">incidentType</text>
   <text x="458" y="126" class="tbl-type" text-anchor="end">ENUM DAMAGED, LOST...</text>
-  <rect x="1" y="132" width="468" height="24" fill="#FFFFFF"/>
-  <circle cx="18" cy="146" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="146" r="1.8" fill="#000000"/>
   <text x="30" y="150" class="tbl-field-normal">declaredValue / codAmount</text>
   <text x="458" y="150" class="tbl-type" text-anchor="end">FLOAT GIÁ TRỊ ĐƠN HÀNG</text>
-  <rect x="1" y="156" width="468" height="24" fill="#F8FAFC"/>
-  <circle cx="18" cy="170" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="170" r="1.8" fill="#000000"/>
   <text x="30" y="174" class="tbl-field-normal">claimRequestedAmount</text>
   <text x="458" y="174" class="tbl-type" text-anchor="end">FLOAT SỐ TIỀN KHÁCH ĐÒI</text>
-  <rect x="1" y="180" width="468" height="24" fill="#FFFFFF"/>
-  <circle cx="18" cy="194" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="194" r="1.8" fill="#000000"/>
   <text x="30" y="198" class="tbl-field-normal">approvedCompensationAmount</text>
   <text x="458" y="198" class="tbl-type" text-anchor="end">FLOAT SỐ TIỀN DUYỆT ĐỀN</text>
-  <rect x="1" y="204" width="468" height="24" fill="#F8FAFC"/>
-  <circle cx="18" cy="218" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="218" r="1.8" fill="#000000"/>
   <text x="30" y="222" class="tbl-field-normal">penaltyAmount</text>
   <text x="458" y="222" class="tbl-type" text-anchor="end">FLOAT TIỀN PHẠT ĐƠN VỊ LỖI</text>
-  <rect x="1" y="228" width="468" height="24" fill="#FFFFFF"/>
-  <circle cx="18" cy="242" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="242" r="1.8" fill="#000000"/>
   <text x="30" y="246" class="tbl-field-normal">status</text>
   <text x="458" y="246" class="tbl-type" text-anchor="end">ENUM LIABILITY_DETERMINED...</text>
-  <rect x="1" y="252" width="468" height="24" fill="#F8FAFC"/>
-  <circle cx="18" cy="266" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="266" r="1.8" fill="#000000"/>
   <text x="30" y="270" class="tbl-field-normal">responsibleParty / Entity</text>
   <text x="458" y="270" class="tbl-type" text-anchor="end">VARCHAR BÊN CHỊU TRÁCH NHIỆM</text>
-  <rect x="1" y="276" width="468" height="24" fill="#FFFFFF"/>
-  <circle cx="18" cy="290" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="290" r="1.8" fill="#000000"/>
   <text x="30" y="294" class="tbl-field-normal">liabilityRatioPercent</text>
   <text x="458" y="294" class="tbl-type" text-anchor="end">INT TỶ LỆ LỖI (%)</text>
-  <rect x="1" y="300" width="468" height="24" fill="#F8FAFC"/>
-  <circle cx="18" cy="314" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="314" r="1.8" fill="#000000"/>
   <text x="30" y="318" class="tbl-field-normal">rootCause</text>
   <text x="458" y="318" class="tbl-type" text-anchor="end">ENUM NGUYÊN NHÂN SỰ CỐ</text>
 </g>
 <g transform="translate(510, 740)">
-  <rect width="470" height="164" rx="8" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.4" filter="url(#table-shadow)"/>
-  <path d="M 0 8 Q 0 0 8 0 L 462 0 Q 470 0 470 8 L 470 36 L 0 36 Z" fill="#475569"/>
+  <rect width="470" height="164" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+  <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
   <text x="14" y="23" class="tbl-header">OutboxEvent (Shipment)</text>
   <text x="456" y="23" class="tbl-tag" text-anchor="end">outbox_events</text>
-  <rect x="1" y="36" width="468" height="24" fill="#FFFFFF"/>
-  <rect x="10" y="43" width="20" height="14" rx="3" fill="#FEE2E2"/>
+  <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
   <text x="458" y="54" class="tbl-type" text-anchor="end">CUID NOT NULL</text>
-  <rect x="1" y="60" width="468" height="24" fill="#F8FAFC"/>
-  <circle cx="18" cy="74" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="74" r="1.8" fill="#000000"/>
   <text x="30" y="78" class="tbl-field-normal">eventId</text>
   <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(64) UNIQUE</text>
-  <rect x="1" y="84" width="468" height="24" fill="#FFFFFF"/>
-  <circle cx="18" cy="98" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="98" r="1.8" fill="#000000"/>
   <text x="30" y="102" class="tbl-field-normal">eventType / routingKey</text>
   <text x="458" y="102" class="tbl-type" text-anchor="end">VARCHAR SHIPMENT.CREATED, ...</text>
-  <rect x="1" y="108" width="468" height="24" fill="#F8FAFC"/>
-  <circle cx="18" cy="122" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="122" r="1.8" fill="#000000"/>
   <text x="30" y="126" class="tbl-field-normal">aggregateType / aggregateId</text>
   <text x="458" y="126" class="tbl-type" text-anchor="end">VARCHAR Shipment / code</text>
-  <rect x="1" y="132" width="468" height="24" fill="#FFFFFF"/>
-  <circle cx="18" cy="146" r="2" fill="#94A3B8"/>
+  <circle cx="18" cy="146" r="1.8" fill="#000000"/>
   <text x="30" y="150" class="tbl-field-normal">payload</text>
   <text x="458" y="150" class="tbl-type" text-anchor="end">JSONB SNAPSHOT ĐƠN HÀNG</text>
 </g>
 
-    <path d="M 490 60 L 510 60" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
-    <path d="M 250 340 L 250 365" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
-    <path d="M 490 395 L 510 395" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
-    <path d="M 490 495 L 500 495 L 500 555 L 510 555" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
-    <path d="M 250 685 L 250 720" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <path d="M 490 60 L 510 60" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <path d="M 250 340 L 250 365" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <path d="M 490 395 L 510 395" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <path d="M 490 495 L 500 495 L 500 555 L 510 555" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <path d="M 250 685 L 250 720" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
     
 <g transform="translate(1010, 20)">
-  <rect width="890" height="1060" rx="10" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5" filter="url(#table-shadow)"/>
-  <rect x="0" y="0" width="890" height="44" rx="10" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
-  <rect x="14" y="13" width="7" height="18" rx="2" fill="#059669"/>
-  <text x="28" y="27" class="panel-header">GIẢI THÍCH SƠ BỘ &amp; QUY TẮC DỮ LIỆU: SHIPMENT-SERVICE</text>
-  <rect x="710" y="10" width="166" height="24" rx="5" fill="#05966918" stroke="#059669" stroke-width="1"/>
-  <text x="793" y="26" font-size="11" font-weight="700" fill="#059669" text-anchor="middle">CORE AGGREGATE ROOT</text>
-  <text x="18" y="68" class="panel-sec-title">▶ VAI TRÒ &amp; QUYỀN SỞ HỮU TRẠNG THÁI VẬN ĐƠN (CANONICAL STATUS OWNER)</text>
-  <circle cx="25" cy="84" r="2.2" fill="#059669"/>
-  <text x="36" y="88" class="panel-body"><tspan class="panel-bold">Chủ quyền trạng thái duy nhất:</tspan> <tspan class="panel-code">shipment-service</tspan> là nơi duy nhất giữ chân lý (Single Source of Truth) cho trạng thái đơn qua 19 trạng thái máy FSM.</text>
-  <circle cx="25" cy="104" r="2.2" fill="#059669"/>
-  <text x="36" y="108" class="panel-body"><tspan class="panel-bold">Khóa bi quan (Pessimistic Lock):</tspan> Cờ <tspan class="panel-code">isLocked = true</tspan> tự động kích hoạt khi có yêu cầu đổi địa chỉ hoặc điều tra sự cố để ngăn chặn tài xế tiếp tục phát hàng.</text>
-  <circle cx="25" cy="124" r="2.2" fill="#059669"/>
-  <text x="36" y="128" class="panel-body"><tspan class="panel-bold">Xử lý yêu cầu thay đổi (ChangeRequest):</tspan> Cho phép Shop đổi SĐT, địa chỉ nhận hoặc tiền COD trước khi bưu kiện xuất kho giao chặng cuối.</text>
-  <text x="18" y="156" class="panel-sec-title">▶ QUY TRÌNH ĐIỀU TRA ĐIỂM GÃY (BREAKPOINT ANALYSIS) &amp; BỒI THƯỜNG</text>
-  <circle cx="25" cy="172" r="2.2" fill="#059669"/>
-  <text x="36" y="176" class="panel-body"><tspan class="panel-bold">Xác định điểm gãy:</tspan> Khi phát hiện bưu kiện chênh lệch cân nặng hoặc thất lạc, tạo <tspan class="panel-code">InvestigationCase</tspan> quét ngược toàn bộ lịch sử quét qua <tspan class="panel-code">investigation_audit_scans</tspan>.</text>
-  <circle cx="25" cy="192" r="2.2" fill="#059669"/>
-  <text x="36" y="196" class="panel-body"><tspan class="panel-bold">Cơ chế đối tụng nội bộ (Dispute Hearing):</tspan> Các đơn vị liên quan (Bưu cục gửi, Đội xe Linehaul, Bưu cục phát) nộp video camera và biên bản bàn giao giải trình.</text>
-  <circle cx="25" cy="212" r="2.2" fill="#059669"/>
-  <text x="36" y="216" class="panel-body"><tspan class="panel-bold">Xử lý khiếu nại bồi thường:</tspan> Bảng <tspan class="panel-code">compensation_claims</tspan> phân bổ tỷ lệ lỗi và phạt trừ trực tiếp vào tài khoản bưu cục vi phạm.</text>
-  <text x="18" y="244" class="panel-sec-title">▶ CƠ CHẾ LIÊN KẾT PHÂN TÁN (SAGA LINKAGE)</text>
-  <circle cx="25" cy="260" r="2.2" fill="#059669"/>
-  <text x="36" y="264" class="panel-body"><tspan class="panel-code">shipmentCode</tspan>: Khóa phân tán xuyên suốt toàn hệ thống liên kết tới 10 microservice còn lại.</text>
-  <circle cx="25" cy="280" r="2.2" fill="#059669"/>
-  <text x="36" y="284" class="panel-body"><tspan class="panel-code">createdByUserId</tspan>: Ánh xạ chủ đơn sang tài khoản <tspan class="panel-code">auth.users</tspan> để đối chiếu quyền hạn.</text>
-  <rect x="14" y="1020" width="862" height="28" rx="5" fill="#F1F5F9" stroke="#E2E8F0" stroke-width="1"/>
-  <text x="445.0" y="1038" font-size="11" font-weight="600" fill="#475569" text-anchor="middle">Engine: shipment_db (PostgreSQL) | Canonical State Machine: 19 Statuses | Lock: Pessimistic Concurrency</text>
+  <rect width="890" height="1070" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+  <rect x="0" y="0" width="890" height="42" rx="6" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+  <rect x="14" y="12" width="6" height="18" rx="1" fill="#000000"/>
+  <text x="28" y="26" class="panel-header">GIẢI THÍCH SƠ BỘ &amp; QUY TẮC DỮ LIỆU: SHIPMENT-SERVICE</text>
+  <rect x="710" y="9" width="166" height="24" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+  <text x="793" y="25" font-size="11" font-weight="700" fill="#000000" text-anchor="middle">CORE AGGREGATE ROOT</text>
+  <text x="18" y="66" class="panel-sec-title">▶ VAI TRÒ &amp; QUYỀN SỞ HỮU TRẠNG THÁI VẬN ĐƠN (CANONICAL STATUS OWNER)</text>
+  <circle cx="25" cy="82" r="2" fill="#000000"/>
+  <text x="36" y="86" class="panel-body"><tspan class="panel-bold">Chủ quyền trạng thái duy nhất:</tspan> <tspan class="panel-code">shipment-service</tspan> là nơi duy nhất giữ chân lý (Single Source of Truth) cho trạng thái đơn qua 19 trạng thái máy FSM.</text>
+  <circle cx="25" cy="102" r="2" fill="#000000"/>
+  <text x="36" y="106" class="panel-body"><tspan class="panel-bold">Khóa bi quan (Pessimistic Lock):</tspan> Cờ <tspan class="panel-code">isLocked = true</tspan> tự động kích hoạt khi có yêu cầu đổi địa chỉ hoặc điều tra sự cố để ngăn chặn tài xế tiếp tục phát hàng.</text>
+  <circle cx="25" cy="122" r="2" fill="#000000"/>
+  <text x="36" y="126" class="panel-body"><tspan class="panel-bold">Xử lý yêu cầu thay đổi (ChangeRequest):</tspan> Cho phép Shop đổi SĐT, địa chỉ nhận hoặc tiền COD trước khi bưu kiện xuất kho giao chặng cuối.</text>
+  <text x="18" y="154" class="panel-sec-title">▶ QUY TRÌNH ĐIỀU TRA ĐIỂM GÃY (BREAKPOINT ANALYSIS) &amp; BỒI THƯỜNG</text>
+  <circle cx="25" cy="170" r="2" fill="#000000"/>
+  <text x="36" y="174" class="panel-body"><tspan class="panel-bold">Xác định điểm gãy:</tspan> Khi phát hiện bưu kiện chênh lệch cân nặng hoặc thất lạc, tạo <tspan class="panel-code">InvestigationCase</tspan> quét ngược toàn bộ lịch sử quét qua <tspan class="panel-code">investigation_audit_scans</tspan>.</text>
+  <circle cx="25" cy="190" r="2" fill="#000000"/>
+  <text x="36" y="194" class="panel-body"><tspan class="panel-bold">Cơ chế đối tụng nội bộ (Dispute Hearing):</tspan> Các đơn vị liên quan (Bưu cục gửi, Đội xe Linehaul, Bưu cục phát) nộp video camera và biên bản bàn giao giải trình.</text>
+  <circle cx="25" cy="210" r="2" fill="#000000"/>
+  <text x="36" y="214" class="panel-body"><tspan class="panel-bold">Xử lý khiếu nại bồi thường:</tspan> Bảng <tspan class="panel-code">compensation_claims</tspan> phân bổ tỷ lệ lỗi và phạt trừ trực tiếp vào tài khoản bưu cục vi phạm.</text>
+  <text x="18" y="242" class="panel-sec-title">▶ CƠ CHẾ LIÊN KẾT PHÂN TÁN (SAGA LINKAGE)</text>
+  <circle cx="25" cy="258" r="2" fill="#000000"/>
+  <text x="36" y="262" class="panel-body"><tspan class="panel-code">shipmentCode</tspan>: Khóa phân tán xuyên suốt toàn hệ thống liên kết tới 10 microservice còn lại.</text>
+  <circle cx="25" cy="278" r="2" fill="#000000"/>
+  <text x="36" y="282" class="panel-body"><tspan class="panel-code">createdByUserId</tspan>: Ánh xạ chủ đơn sang tài khoản <tspan class="panel-code">auth.users</tspan> để đối chiếu quyền hạn.</text>
+  <rect x="14" y="1032" width="862" height="26" rx="4" fill="#F9FAFB" stroke="#000000" stroke-width="1"/>
+  <text x="445.0" y="1049" font-size="11" font-weight="600" fill="#111827" text-anchor="middle">Engine: shipment_db (PostgreSQL) | Canonical State Machine: 19 Statuses | Lock: Pessimistic Concurrency</text>
 </g>
   </g>
 
   <!-- SAGA CONTEXT FOOTER -->
-  <g id="FooterSaga" transform="translate(40, 1275)">
-    <rect width="1920" height="55" rx="8" fill="#0F172A" stroke="#334155" stroke-width="1.2"/>
-    <circle cx="25" cy="28" r="6" fill="#38BDF8"/>
-    <text x="42" y="32" font-size="12" font-weight="700" fill="#38BDF8">CƠ CHẾ LIÊN KẾT PHÂN TÁN (SAGA):</text>
-    <text x="310" y="32" font-size="11.5" fill="#E2E8F0">Phát sinh khóa nghiệp vụ trung tâm shipmentCode kết nối toàn bộ luồng gom, vận chuyển, giao hàng và đối soát tiền</text>
-    <text x="1900" y="32" font-size="11" font-weight="600" fill="#94A3B8" text-anchor="end">Nexus Software Engineering Thesis</text>
+  <g id="FooterSaga" transform="translate(40, 1280)">
+    <rect width="1920" height="50" rx="6" fill="#F9FAFB" stroke="#000000" stroke-width="1.4"/>
+    <circle cx="25" cy="25" r="5" fill="#000000"/>
+    <text x="42" y="29" font-size="12" font-weight="700" fill="#000000">CƠ CHẾ LIÊN KẾT PHÂN TÁN (SAGA):</text>
+    <text x="310" y="29" font-size="11.5" fill="#1F2937">Phát sinh khóa nghiệp vụ trung tâm shipmentCode kết nối toàn bộ luồng gom, vận chuyển, giao hàng và đối soát tiền</text>
+    <text x="1900" y="29" font-size="11" font-weight="600" fill="#4B5563" text-anchor="end">Nexus Software Engineering Thesis</text>
   </g>
 </svg>

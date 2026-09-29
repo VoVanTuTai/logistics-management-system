@@ -36,15 +36,16 @@ def escape(text):
 def sanitize_xml_text(s):
     return re.sub(r'&(?!(?:amp|lt|gt|quot|apos);)', '&amp;', str(s))
 
-def render_table(tx, ty, tw, tname, entity_label, columns, header_color="#1E293B"):
+def render_table(tx, ty, tw, tname, entity_label, columns, header_color=None):
     row_height = 24
     header_height = 36
     th = header_height + len(columns) * row_height + 8
     out = []
     out.append(f'<g transform="translate({tx}, {ty})">')
-    out.append(f'  <rect width="{tw}" height="{th}" rx="8" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.4" filter="url(#table-shadow)"/>')
-    # Header
-    out.append(f'  <path d="M 0 8 Q 0 0 8 0 L {tw-8} 0 Q {tw} 0 {tw} 8 L {tw} {header_height} L 0 {header_height} Z" fill="{header_color}"/>')
+    # Table Box - Pure white, crisp black stroke
+    out.append(f'  <rect width="{tw}" height="{th}" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>')
+    # Table Header - NO background fill (per user requirement), just clean divider line
+    out.append(f'  <line x1="0" y1="{header_height}" x2="{tw}" y2="{header_height}" stroke="#000000" stroke-width="1.2"/>')
     out.append(f'  <text x="14" y="23" class="tbl-header">{escape(tname)}</text>')
     if entity_label:
         out.append(f'  <text x="{tw - 14}" y="23" class="tbl-tag" text-anchor="end">{escape(entity_label)}</text>')
@@ -52,25 +53,23 @@ def render_table(tx, ty, tw, tname, entity_label, columns, header_color="#1E293B
     # Columns
     for i, col in enumerate(columns):
         cy = header_height + 18 + i * row_height
-        bg_fill = "#F8FAFC" if i % 2 == 1 else "#FFFFFF"
-        out.append(f'  <rect x="1" y="{header_height + i * row_height}" width="{tw - 2}" height="{row_height}" fill="{bg_fill}"/>')
         
-        # Key indicator
+        # Key indicator in Monochrome
         ktype = col.get("key", "")
         if ktype == "PK":
-            out.append(f'  <rect x="10" y="{cy - 11}" width="20" height="14" rx="3" fill="#FEE2E2"/>')
+            out.append(f'  <rect x="10" y="{cy - 11}" width="20" height="14" rx="2" fill="#000000"/>')
             out.append(f'  <text x="20" y="{cy}" class="badge-pk" text-anchor="middle">PK</text>')
             name_class = "tbl-field-pk"
         elif ktype == "FK":
-            out.append(f'  <rect x="10" y="{cy - 11}" width="20" height="14" rx="3" fill="#DBEAFE"/>')
+            out.append(f'  <rect x="10" y="{cy - 11}" width="20" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>')
             out.append(f'  <text x="20" y="{cy}" class="badge-fk" text-anchor="middle">FK</text>')
             name_class = "tbl-field-fk"
         elif ktype == "DIST":
-            out.append(f'  <rect x="8" y="{cy - 11}" width="26" height="14" rx="3" fill="#EDE9FE"/>')
-            out.append(f'  <text x="21" y="{cy}" class="badge-dist" text-anchor="middle">DIST</text>')
+            out.append(f'  <rect x="8" y="{cy - 11}" width="28" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1" stroke-dasharray="2 1.5"/>')
+            out.append(f'  <text x="22" y="{cy}" class="badge-dist" text-anchor="middle">DIST</text>')
             name_class = "tbl-field-dist"
         else:
-            out.append(f'  <circle cx="18" cy="{cy - 4}" r="2" fill="#94A3B8"/>')
+            out.append(f'  <circle cx="18" cy="{cy - 4}" r="1.8" fill="#000000"/>')
             name_class = "tbl-field-normal"
         
         col_x = 42 if ktype else 30
@@ -87,21 +86,22 @@ def render_table(tx, ty, tw, tname, entity_label, columns, header_color="#1E293B
 def render_explanation_panel(px, py, pw, ph, title, badge_text, badge_color, sections, stats_footer=None):
     out = []
     out.append(f'<g transform="translate({px}, {py})">')
-    out.append(f'  <rect width="{pw}" height="{ph}" rx="10" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5" filter="url(#table-shadow)"/>')
+    # Panel box
+    out.append(f'  <rect width="{pw}" height="{ph}" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>')
     # Header bar
-    out.append(f'  <rect x="0" y="0" width="{pw}" height="44" rx="10" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>')
-    out.append(f'  <rect x="14" y="13" width="7" height="18" rx="2" fill="{badge_color}"/>')
-    out.append(f'  <text x="28" y="27" class="panel-header">{escape(title)}</text>')
-    out.append(f'  <rect x="{pw - 180}" y="10" width="166" height="24" rx="5" fill="{badge_color}18" stroke="{badge_color}" stroke-width="1"/>')
-    out.append(f'  <text x="{pw - 97}" y="26" font-size="11" font-weight="700" fill="{badge_color}" text-anchor="middle">{escape(badge_text)}</text>')
+    out.append(f'  <rect x="0" y="0" width="{pw}" height="42" rx="6" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>')
+    out.append(f'  <rect x="14" y="12" width="6" height="18" rx="1" fill="#000000"/>')
+    out.append(f'  <text x="28" y="26" class="panel-header">{escape(title)}</text>')
+    out.append(f'  <rect x="{pw - 180}" y="9" width="166" height="24" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>')
+    out.append(f'  <text x="{pw - 97}" y="25" font-size="11" font-weight="700" fill="#000000" text-anchor="middle">{escape(badge_text)}</text>')
     
     # Sections
-    curr_y = 68
+    curr_y = 66
     for sec in sections:
         out.append(f'  <text x="18" y="{curr_y}" class="panel-sec-title">▶ {escape(sec["title"])}</text>')
         curr_y += 20
         for bullet in sec["bullets"]:
-            out.append(f'  <circle cx="25" cy="{curr_y - 4}" r="2.2" fill="{badge_color}"/>')
+            out.append(f'  <circle cx="25" cy="{curr_y - 4}" r="2" fill="#000000"/>')
             b_text = sanitize_xml_text(bullet)
             out.append(f'  <text x="36" y="{curr_y}" class="panel-body">{b_text}</text>')
             curr_y += 20
@@ -109,8 +109,8 @@ def render_explanation_panel(px, py, pw, ph, title, badge_text, badge_color, sec
     
     # Stats footer chip
     if stats_footer:
-        out.append(f'  <rect x="14" y="{ph - 40}" width="{pw - 28}" height="28" rx="5" fill="#F1F5F9" stroke="#E2E8F0" stroke-width="1"/>')
-        out.append(f'  <text x="{pw/2}" y="{ph - 22}" font-size="11" font-weight="600" fill="#475569" text-anchor="middle">{escape(stats_footer)}</text>')
+        out.append(f'  <rect x="14" y="{ph - 38}" width="{pw - 28}" height="26" rx="4" fill="#F9FAFB" stroke="#000000" stroke-width="1"/>')
+        out.append(f'  <text x="{pw/2}" y="{ph - 21}" font-size="11" font-weight="600" fill="#111827" text-anchor="middle">{escape(stats_footer)}</text>')
         
     out.append('</g>')
     return "\n".join(out)
@@ -119,94 +119,79 @@ def build_standalone_svg(filename, width, height, svc_name, port_str, db_str, de
                          tables_markup, connectors_markup, panel_title, badge_text, sections, stats_footer,
                          saga_footer_text):
     lines = []
-    lines.append(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="100%" height="100%" style="background:#F8FAFC;">')
-    lines.append('''
+    lines.append(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="100%" height="100%" style="background:#FFFFFF;">')
+    lines.append(f'''
   <defs>
-    <filter id="card-shadow" x="-2%" y="-1.5%" width="104%" height="104%" filterUnits="userSpaceOnUse">
-      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0F172A" flood-opacity="0.06"/>
-    </filter>
-    <filter id="table-shadow" x="-3%" y="-3%" width="106%" height="108%" filterUnits="userSpaceOnUse">
-      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#0F172A" flood-opacity="0.04"/>
-    </filter>
     <marker id="crow-many" markerWidth="14" markerHeight="14" refX="10" refY="7" orient="auto">
-      <path d="M 0 0 L 10 7 L 0 14 M 10 0 L 10 14" stroke="#475569" stroke-width="1.8" fill="none"/>
+      <path d="M 0 0 L 10 7 L 0 14 M 10 0 L 10 14" stroke="#000000" stroke-width="1.8" fill="none"/>
     </marker>
     <marker id="crow-one" markerWidth="14" markerHeight="14" refX="10" refY="7" orient="auto">
-      <line x1="5" y1="2" x2="5" y2="12" stroke="#475569" stroke-width="1.8"/>
-      <line x1="9" y1="2" x2="9" y2="12" stroke="#475569" stroke-width="1.8"/>
+      <line x1="5" y1="2" x2="5" y2="12" stroke="#000000" stroke-width="1.8"/>
+      <line x1="9" y1="2" x2="9" y2="12" stroke="#000000" stroke-width="1.8"/>
     </marker>
     <marker id="arrow-dist" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto">
-      <path d="M 0 1 L 9 6 L 0 11 z" fill="#0284C7"/>
+      <path d="M 0 1 L 9 6 L 0 11 z" fill="#000000"/>
     </marker>
-    <linearGradient id="header-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#0F172A"/>
-      <stop offset="55%" stop-color="#1E293B"/>
-      <stop offset="100%" stop-color="#334155"/>
-    </linearGradient>
-    <pattern id="grid-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
-      <circle cx="2" cy="2" r="1.2" fill="#E2E8F0"/>
-    </pattern>
   </defs>
 
-  <rect width="100%" height="100%" fill="url(#grid-pattern)" />
+  <!-- Technical Blueprint Frame -->
+  <rect width="100%" height="100%" fill="#FFFFFF"/>
+  <rect x="15" y="15" width="{width - 30}" height="{height - 30}" fill="none" stroke="#000000" stroke-width="2"/>
+  <rect x="20" y="20" width="{width - 40}" height="{height - 40}" fill="none" stroke="#000000" stroke-width="0.8"/>
 
   <style>
-    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
-    .doc-badge { font-size: 12.5px; font-weight: 700; fill: #38BDF8; letter-spacing: 1.5px; text-transform: uppercase; }
-    .doc-title { font-size: 24px; font-weight: 800; fill: #FFFFFF; letter-spacing: -0.5px; }
-    .doc-subtitle { font-size: 13.5px; font-weight: 400; fill: #CBD5E1; }
-    .meta-tag { font-size: 11.5px; font-weight: 600; fill: #E2E8F0; }
+    text {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }}
+    .doc-badge {{ font-size: 11.5px; font-weight: 700; fill: #000000; letter-spacing: 1.2px; text-transform: uppercase; }}
+    .doc-title {{ font-size: 23px; font-weight: 800; fill: #000000; letter-spacing: -0.5px; }}
+    .doc-subtitle {{ font-size: 13px; font-weight: 400; fill: #374151; }}
     
-    .svc-title { font-size: 18px; font-weight: 800; fill: #0F172A; }
-    .svc-sub { font-size: 12.5px; font-weight: 500; fill: #64748B; }
-    .svc-port { font-size: 12px; font-weight: 700; font-family: ui-monospace, Menlo, monospace; fill: #0284C7; }
+    .tbl-header {{ font-size: 13.5px; font-weight: 700; fill: #000000; }}
+    .tbl-tag {{ font-size: 10.5px; font-weight: 600; fill: #4B5563; text-transform: uppercase; }}
+    .tbl-field-pk {{ font-size: 11.5px; font-weight: 700; fill: #000000; font-family: ui-monospace, Menlo, monospace; }}
+    .tbl-field-fk {{ font-size: 11.5px; font-weight: 600; fill: #000000; font-family: ui-monospace, Menlo, monospace; }}
+    .tbl-field-dist {{ font-size: 11.5px; font-weight: 600; fill: #000000; font-style: italic; font-family: ui-monospace, Menlo, monospace; }}
+    .tbl-field-normal {{ font-size: 11.5px; font-weight: 500; fill: #1F2937; font-family: ui-monospace, Menlo, monospace; }}
+    .tbl-type {{ font-size: 11px; font-weight: 500; fill: #4B5563; }}
 
-    .tbl-header { font-size: 13.5px; font-weight: 700; fill: #FFFFFF; }
-    .tbl-tag { font-size: 10.5px; font-weight: 600; fill: #CBD5E1; text-transform: uppercase; }
-    .tbl-field-pk { font-size: 11.5px; font-weight: 700; fill: #0F172A; font-family: ui-monospace, Menlo, monospace; }
-    .tbl-field-fk { font-size: 11.5px; font-weight: 600; fill: #1D4ED8; font-family: ui-monospace, Menlo, monospace; }
-    .tbl-field-dist { font-size: 11.5px; font-weight: 600; fill: #6D28D9; font-family: ui-monospace, Menlo, monospace; }
-    .tbl-field-normal { font-size: 11.5px; font-weight: 500; fill: #334155; font-family: ui-monospace, Menlo, monospace; }
-    .tbl-type { font-size: 11px; font-weight: 500; fill: #64748B; }
+    .badge-pk {{ font-size: 9.5px; font-weight: 800; fill: #FFFFFF; }}
+    .badge-fk {{ font-size: 9.5px; font-weight: 800; fill: #000000; }}
+    .badge-dist {{ font-size: 9.5px; font-weight: 800; fill: #000000; }}
 
-    .badge-pk { font-size: 9.5px; font-weight: 800; fill: #B91C1C; }
-    .badge-fk { font-size: 9.5px; font-weight: 800; fill: #1D4ED8; }
-    .badge-dist { font-size: 9.5px; font-weight: 800; fill: #6D28D9; }
-
-    .panel-header { font-size: 13.5px; font-weight: 800; fill: #0F172A; text-transform: uppercase; letter-spacing: 0.5px; }
-    .panel-sec-title { font-size: 12px; font-weight: 700; fill: #1E293B; }
-    .panel-body { font-size: 11.5px; font-weight: 400; fill: #334155; }
-    .panel-bold { font-weight: 700; fill: #0F172A; }
-    .panel-code { font-family: ui-monospace, Menlo, monospace; font-size: 11px; font-weight: 700; fill: #0284C7; }
+    .panel-header {{ font-size: 13.5px; font-weight: 800; fill: #000000; text-transform: uppercase; letter-spacing: 0.5px; }}
+    .panel-sec-title {{ font-size: 12px; font-weight: 700; fill: #000000; }}
+    .panel-body {{ font-size: 11.5px; font-weight: 400; fill: #1F2937; }}
+    .panel-bold {{ font-weight: 700; fill: #000000; }}
+    .panel-code {{ font-family: ui-monospace, Menlo, monospace; font-size: 11px; font-weight: 700; fill: #000000; }}
   </style>
 ''')
 
     # Grand Service Header
     lines.append(f'''
   <!-- HEADER -->
-  <g id="Header" transform="translate(40, 30)">
-    <rect width="{width - 80}" height="105" rx="12" fill="url(#header-grad)" filter="url(#card-shadow)"/>
-    <text x="30" y="32" class="doc-badge">NEXUS LOGISTICS SYSTEM ARCHITECTURE | DATABASE-PER-SERVICE SPECIFICATION</text>
-    <text x="30" y="65" class="doc-title">{escape(svc_name)}</text>
-    <text x="30" y="90" class="doc-subtitle">{escape(desc_str)}</text>
+  <g id="Header" transform="translate(40, 32)">
+    <rect width="{width - 80}" height="100" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.8"/>
+    <line x1="0" y1="32" x2="{width - 80}" y2="32" stroke="#E5E7EB" stroke-width="1"/>
+    <text x="24" y="22" class="doc-badge">NEXUS LOGISTICS SYSTEM ARCHITECTURE • DATABASE-PER-SERVICE SPECIFICATION</text>
+    <text x="24" y="58" class="doc-title">{escape(svc_name)}</text>
+    <text x="24" y="82" class="doc-subtitle">{escape(desc_str)}</text>
     
     <!-- Badges -->
-    <rect x="{width - 440}" y="36" width="160" height="34" rx="6" fill="#1E293B" stroke="#38BDF8" stroke-width="1.2"/>
-    <text x="{width - 360}" y="58" font-size="13" font-weight="700" fill="#38BDF8" text-anchor="middle">PORT :{escape(port_str)}</text>
+    <rect x="{width - 430}" y="32" width="160" height="36" rx="4" fill="#F3F4F6" stroke="#000000" stroke-width="1.2"/>
+    <text x="{width - 350}" y="55" font-size="12.5" font-weight="700" fill="#000000" text-anchor="middle">PORT :{escape(port_str)}</text>
 
-    <rect x="{width - 260}" y="36" width="180" height="34" rx="6" fill="#1E293B" stroke="{color_accent}" stroke-width="1.2"/>
-    <text x="{width - 170}" y="58" font-size="13" font-weight="700" fill="{color_accent}" text-anchor="middle">DB: {escape(db_str)}</text>
+    <rect x="{width - 250}" y="32" width="170" height="36" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+    <text x="{width - 165}" y="55" font-size="12.5" font-weight="700" fill="#000000" text-anchor="middle">DB: {escape(db_str)}</text>
   </g>
 ''')
 
     # Main Content Area
-    content_y = 155
+    content_y = 150
     # Big Container Card
-    container_h = height - content_y - 95
+    container_h = height - content_y - 90
     lines.append(f'''
   <!-- MAIN SERVICE CONTAINER -->
   <g id="ServiceBody" transform="translate(40, {content_y})">
-    <rect width="{width - 80}" height="{container_h}" rx="12" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.6" filter="url(#card-shadow)"/>
+    <rect width="{width - 80}" height="{container_h}" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.6"/>
 ''')
 
     # Tables & Connectors
@@ -223,15 +208,15 @@ def build_standalone_svg(filename, width, height, svc_name, port_str, db_str, de
     lines.append('  </g>')
 
     # Bottom Saga Context Banner
-    banner_y = height - 75
+    banner_y = height - 70
     lines.append(f'''
   <!-- SAGA CONTEXT FOOTER -->
   <g id="FooterSaga" transform="translate(40, {banner_y})">
-    <rect width="{width - 80}" height="55" rx="8" fill="#0F172A" stroke="#334155" stroke-width="1.2"/>
-    <circle cx="25" cy="28" r="6" fill="#38BDF8"/>
-    <text x="42" y="32" font-size="12" font-weight="700" fill="#38BDF8">CƠ CHẾ LIÊN KẾT PHÂN TÁN (SAGA):</text>
-    <text x="310" y="32" font-size="11.5" fill="#E2E8F0">{escape(saga_footer_text)}</text>
-    <text x="{width - 100}" y="32" font-size="11" font-weight="600" fill="#94A3B8" text-anchor="end">Nexus Software Engineering Thesis</text>
+    <rect width="{width - 80}" height="50" rx="6" fill="#F9FAFB" stroke="#000000" stroke-width="1.4"/>
+    <circle cx="25" cy="25" r="5" fill="#000000"/>
+    <text x="42" y="29" font-size="12" font-weight="700" fill="#000000">CƠ CHẾ LIÊN KẾT PHÂN TÁN (SAGA):</text>
+    <text x="310" y="29" font-size="11.5" fill="#1F2937">{escape(saga_footer_text)}</text>
+    <text x="{width - 100}" y="29" font-size="11" font-weight="600" fill="#4B5563" text-anchor="end">Nexus Software Engineering Thesis</text>
   </g>
 </svg>
 ''')
@@ -320,8 +305,8 @@ def generate_all_individual_erds():
     t6, _ = render_table(510, 560, 470, "OutboxEvent (Auth)", "outbox_events", outbox_cols, "#475569")
 
     auth_connectors = '''
-    <path d="M 490 60 L 510 60" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
-    <path d="M 450 290 L 450 385 L 510 385" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
+    <path d="M 490 60 L 510 60" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <path d="M 450 290 L 450 385 L 510 385" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
     '''
 
     auth_sections = [
@@ -459,9 +444,9 @@ def generate_all_individual_erds():
     t_cfg, _ = render_table(510, 790, 470, "Config (configs)", "CẤU HÌNH ĐIỀU HÀNH", cfg_cols, "#475569")
 
     md_connectors = '''
-    <path d="M 490 60 L 510 60" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-many)" marker-end="url(#crow-one)"/>
-    <path d="M 490 645 L 510 645" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
-    <path d="M 490 105 L 500 105 L 500 220 L 510 220" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <path d="M 490 60 L 510 60" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-many)" marker-end="url(#crow-one)"/>
+    <path d="M 490 645 L 510 645" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <path d="M 490 105 L 500 105 L 500 220 L 510 220" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
     '''
 
     md_sections = [
@@ -597,11 +582,11 @@ def generate_all_individual_erds():
     t_sout, _ = render_table(510, 740, 470, "OutboxEvent (Shipment)", "outbox_events", s_outbox_cols, "#475569")
 
     shp_connectors = '''
-    <path d="M 490 60 L 510 60" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
-    <path d="M 250 340 L 250 365" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
-    <path d="M 490 395 L 510 395" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
-    <path d="M 490 495 L 500 495 L 500 555 L 510 555" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
-    <path d="M 250 685 L 250 720" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <path d="M 490 60 L 510 60" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <path d="M 250 340 L 250 365" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <path d="M 490 395 L 510 395" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <path d="M 490 495 L 500 495 L 500 555 L 510 555" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <path d="M 250 685 L 250 720" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
     '''
 
     shp_sections = [
@@ -681,7 +666,7 @@ def generate_all_individual_erds():
     t_pout, _ = render_table(510, 210, 470, "OutboxEvent (Pickup)", "outbox_events", p_outbox_cols, "#475569")
 
     pck_connectors = '''
-    <path d="M 490 60 L 510 60" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <path d="M 490 60 L 510 60" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
     '''
 
     pck_sections = [
@@ -762,7 +747,7 @@ def generate_all_individual_erds():
     t_dout2, _ = render_table(510, 220, 470, "OutboxEvent (Dispatch)", "outbox_events", d_outbox_cols, "#475569")
 
     dsp_connectors = '''
-    <path d="M 490 60 L 510 60" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <path d="M 490 60 L 510 60" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
     '''
 
     dsp_sections = [
@@ -849,9 +834,9 @@ def generate_all_individual_erds():
     t_mout, _ = render_table(510, 395, 470, "OutboxEvent (Manifest)", "outbox_events", m_outbox_cols, "#475569")
 
     mnf_connectors = '''
-    <path d="M 490 60 L 510 60" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
-    <path d="M 250 245 L 250 280" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
-    <path d="M 490 120 L 500 120 L 500 230 L 510 230" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
+    <path d="M 490 60 L 510 60" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <path d="M 250 245 L 250 280" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
+    <path d="M 490 120 L 500 120 L 500 230 L 510 230" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
     '''
 
     mnf_sections = [
@@ -1032,9 +1017,9 @@ def generate_all_individual_erds():
     t_dout, _ = render_table(510, 530, 470, "OutboxEvent (Delivery)", "outbox_events", d_outbox_cols, "#475569")
 
     dlv_connectors = '''
-    <path d="M 490 60 L 510 60" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
-    <path d="M 250 245 L 250 275" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
-    <path d="M 490 395 L 510 395" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
+    <path d="M 490 60 L 510 60" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
+    <path d="M 250 245 L 250 275" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <path d="M 490 395 L 510 395" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
     '''
 
     dlv_sections = [
@@ -1134,8 +1119,8 @@ def generate_all_individual_erds():
     t_pout2, _ = render_table(510, 475, 470, "OutboxEvent (Payment)", "outbox_events", p_out_cols, "#475569")
 
     pay_connectors = '''
-    <path d="M 745 270 L 745 300" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
-    <path d="M 490 145 L 500 145 L 500 335 L 510 335" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
+    <path d="M 745 270 L 745 300" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <path d="M 490 145 L 500 145 L 500 335 L 510 335" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
     '''
 
     pay_sections = [

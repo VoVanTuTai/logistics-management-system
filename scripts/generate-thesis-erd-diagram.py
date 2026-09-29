@@ -32,67 +32,56 @@ def sanitize_xml_text(s):
 
 def generate_svg():
     lines = []
-    lines.append(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {CANVAS_WIDTH} {CANVAS_HEIGHT}" width="{CANVAS_WIDTH}" height="{CANVAS_HEIGHT}" style="background:#F8FAFC;">')
+    lines.append(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {CANVAS_WIDTH} {CANVAS_HEIGHT}" width="100%" height="100%" style="background:#FFFFFF;">')
     
     # CSS & Definitions
-    lines.append('''
+    lines.append(f'''
   <defs>
-    <filter id="card-shadow" x="-2%" y="-1.5%" width="104%" height="104%" filterUnits="userSpaceOnUse">
-      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0F172A" flood-opacity="0.06"/>
-    </filter>
-    <filter id="table-shadow" x="-3%" y="-3%" width="106%" height="108%" filterUnits="userSpaceOnUse">
-      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#0F172A" flood-opacity="0.04"/>
-    </filter>
     <marker id="crow-many" markerWidth="14" markerHeight="14" refX="10" refY="7" orient="auto">
-      <path d="M 0 0 L 10 7 L 0 14 M 10 0 L 10 14" stroke="#475569" stroke-width="1.8" fill="none"/>
+      <path d="M 0 0 L 10 7 L 0 14 M 10 0 L 10 14" stroke="#000000" stroke-width="1.8" fill="none"/>
     </marker>
     <marker id="crow-one" markerWidth="14" markerHeight="14" refX="10" refY="7" orient="auto">
-      <line x1="5" y1="2" x2="5" y2="12" stroke="#475569" stroke-width="1.8"/>
-      <line x1="9" y1="2" x2="9" y2="12" stroke="#475569" stroke-width="1.8"/>
+      <line x1="5" y1="2" x2="5" y2="12" stroke="#000000" stroke-width="1.8"/>
+      <line x1="9" y1="2" x2="9" y2="12" stroke="#000000" stroke-width="1.8"/>
     </marker>
     <marker id="arrow-dist" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto">
-      <path d="M 0 1 L 9 6 L 0 11 z" fill="#0284C7"/>
+      <path d="M 0 1 L 9 6 L 0 11 z" fill="#000000"/>
     </marker>
-    <linearGradient id="header-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#0F172A"/>
-      <stop offset="55%" stop-color="#1E293B"/>
-      <stop offset="100%" stop-color="#334155"/>
-    </linearGradient>
-    <pattern id="grid-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
-      <circle cx="2" cy="2" r="1.2" fill="#E2E8F0"/>
-    </pattern>
   </defs>
 
-  <rect width="100%" height="100%" fill="url(#grid-pattern)" />
+  <!-- Technical Blueprint Frame -->
+  <rect width="100%" height="100%" fill="#FFFFFF"/>
+  <rect x="20" y="20" width="{CANVAS_WIDTH - 40}" height="{CANVAS_HEIGHT - 40}" fill="none" stroke="#000000" stroke-width="2.4"/>
+  <rect x="25" y="25" width="{CANVAS_WIDTH - 50}" height="{CANVAS_HEIGHT - 50}" fill="none" stroke="#000000" stroke-width="1.1"/>
 
   <style>
-    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
-    .doc-badge { font-size: 13.5px; font-weight: 700; fill: #38BDF8; letter-spacing: 1.5px; text-transform: uppercase; }
-    .doc-title { font-size: 30px; font-weight: 800; fill: #FFFFFF; letter-spacing: -0.5px; }
-    .doc-subtitle { font-size: 15px; font-weight: 400; fill: #CBD5E1; }
-    .meta-tag { font-size: 12px; font-weight: 600; fill: #E2E8F0; }
+    text {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }}
+    .doc-badge {{ font-size: 13px; font-weight: 700; fill: #000000; letter-spacing: 1.5px; text-transform: uppercase; }}
+    .doc-title {{ font-size: 28px; font-weight: 800; fill: #000000; letter-spacing: -0.5px; }}
+    .doc-subtitle {{ font-size: 14.5px; font-weight: 400; fill: #374151; }}
+    .meta-tag {{ font-size: 12px; font-weight: 600; fill: #000000; }}
     
-    .svc-title { font-size: 19px; font-weight: 800; fill: #0F172A; }
-    .svc-sub { font-size: 12.5px; font-weight: 500; fill: #64748B; }
-    .svc-port { font-size: 12px; font-weight: 700; font-family: ui-monospace, Menlo, monospace; fill: #0284C7; }
+    .svc-title {{ font-size: 18px; font-weight: 800; fill: #000000; }}
+    .svc-sub {{ font-size: 12px; font-weight: 500; fill: #4B5563; }}
+    .svc-port {{ font-size: 12px; font-weight: 700; font-family: ui-monospace, Menlo, monospace; fill: #000000; }}
 
-    .tbl-header { font-size: 13.5px; font-weight: 700; fill: #FFFFFF; }
-    .tbl-tag { font-size: 10.5px; font-weight: 600; fill: #CBD5E1; text-transform: uppercase; }
-    .tbl-field-pk { font-size: 11.5px; font-weight: 700; fill: #0F172A; font-family: ui-monospace, Menlo, monospace; }
-    .tbl-field-fk { font-size: 11.5px; font-weight: 600; fill: #1D4ED8; font-family: ui-monospace, Menlo, monospace; }
-    .tbl-field-dist { font-size: 11.5px; font-weight: 600; fill: #6D28D9; font-family: ui-monospace, Menlo, monospace; }
-    .tbl-field-normal { font-size: 11.5px; font-weight: 500; fill: #334155; font-family: ui-monospace, Menlo, monospace; }
-    .tbl-type { font-size: 11px; font-weight: 500; fill: #64748B; }
+    .tbl-header {{ font-size: 13.5px; font-weight: 700; fill: #000000; }}
+    .tbl-tag {{ font-size: 10.5px; font-weight: 600; fill: #4B5563; text-transform: uppercase; }}
+    .tbl-field-pk {{ font-size: 11.5px; font-weight: 700; fill: #000000; font-family: ui-monospace, Menlo, monospace; }}
+    .tbl-field-fk {{ font-size: 11.5px; font-weight: 600; fill: #000000; font-family: ui-monospace, Menlo, monospace; }}
+    .tbl-field-dist {{ font-size: 11.5px; font-weight: 600; fill: #000000; font-style: italic; font-family: ui-monospace, Menlo, monospace; }}
+    .tbl-field-normal {{ font-size: 11.5px; font-weight: 500; fill: #1F2937; font-family: ui-monospace, Menlo, monospace; }}
+    .tbl-type {{ font-size: 11px; font-weight: 500; fill: #4B5563; }}
 
-    .badge-pk { font-size: 9.5px; font-weight: 800; fill: #B91C1C; }
-    .badge-fk { font-size: 9.5px; font-weight: 800; fill: #1D4ED8; }
-    .badge-dist { font-size: 9.5px; font-weight: 800; fill: #6D28D9; }
+    .badge-pk {{ font-size: 9.5px; font-weight: 800; fill: #FFFFFF; }}
+    .badge-fk {{ font-size: 9.5px; font-weight: 800; fill: #000000; }}
+    .badge-dist {{ font-size: 9.5px; font-weight: 800; fill: #000000; }}
 
-    .panel-header { font-size: 14px; font-weight: 800; fill: #0F172A; text-transform: uppercase; letter-spacing: 0.5px; }
-    .panel-sec-title { font-size: 12px; font-weight: 700; fill: #1E293B; }
-    .panel-body { font-size: 11.5px; font-weight: 400; fill: #334155; }
-    .panel-bold { font-weight: 700; fill: #0F172A; }
-    .panel-code { font-family: ui-monospace, Menlo, monospace; font-size: 11px; font-weight: 700; fill: #0284C7; }
+    .panel-header {{ font-size: 14px; font-weight: 800; fill: #000000; text-transform: uppercase; letter-spacing: 0.5px; }}
+    .panel-sec-title {{ font-size: 12px; font-weight: 700; fill: #000000; }}
+    .panel-body {{ font-size: 11.5px; font-weight: 400; fill: #1F2937; }}
+    .panel-bold {{ font-weight: 700; fill: #000000; }}
+    .panel-code {{ font-family: ui-monospace, Menlo, monospace; font-size: 11px; font-weight: 700; fill: #000000; }}
   </style>
 ''')
 
@@ -100,42 +89,44 @@ def generate_svg():
     lines.append(f'''
   <!-- HEADER BANNER -->
   <g id="GrandHeader">
-    <rect x="60" y="35" width="{CANVAS_WIDTH - 120}" height="145" rx="14" fill="url(#header-grad)" filter="url(#card-shadow)"/>
+    <rect x="60" y="45" width="{CANVAS_WIDTH - 120}" height="135" rx="8" fill="#FFFFFF" stroke="#000000" stroke-width="2.2"/>
+    <line x1="60" y1="85" x2="{CANVAS_WIDTH - 60}" y2="85" stroke="#E5E7EB" stroke-width="1"/>
     <text x="95" y="74" class="doc-badge">HỌC VIỆN CÔNG NGHỆ / ĐỒ ÁN TỐT NGHIỆP KỸ SƯ CNTT - HỆ THỐNG QUẢN LÝ VẬN TẢI LOGISTICS NEXUS</text>
-    <text x="95" y="112" class="doc-title">HÌNH 1.3: ĐẶC TẢ LƯỢC ĐỒ CƠ SỞ DỮ LIỆU MICROSERVICES TOÀN HỆ THỐNG (DATABASE-PER-SERVICE ERD)</text>
-    <text x="95" y="145" class="doc-subtitle">Kiến trúc 11 Cơ sở dữ liệu phân tán (PostgreSQL 16) độc lập, quan hệ nội bộ chuẩn Crow's Foot và cơ chế liên kết khóa nghiệp vụ phân tán (Distributed Saga Linkage via RabbitMQ)</text>
+    <text x="95" y="116" class="doc-title">HÌNH 1.3: ĐẶC TẢ LƯỢC ĐỒ CƠ SỞ DỮ LIỆU MICROSERVICES TOÀN HỆ THỐNG (DATABASE-PER-SERVICE ERD)</text>
+    <text x="95" y="148" class="doc-subtitle">Kiến trúc 11 Cơ sở dữ liệu phân tán (PostgreSQL 16) độc lập, quan hệ nội bộ chuẩn Crow's Foot và cơ chế liên kết khóa nghiệp vụ phân tán (Distributed Saga Linkage via RabbitMQ)</text>
     
     <!-- Meta badges on the right -->
-    <rect x="{CANVAS_WIDTH - 1050}" y="65" width="950" height="85" rx="8" fill="#1E293B" stroke="#475569" stroke-width="1"/>
-    <g transform="translate({CANVAS_WIDTH - 1030}, 92)">
-      <circle cx="10" cy="10" r="5" fill="#10B981"/>
+    <rect x="{CANVAS_WIDTH - 1050}" y="65" width="950" height="95" rx="6" fill="#F9FAFB" stroke="#000000" stroke-width="1.2"/>
+    <g transform="translate({CANVAS_WIDTH - 1030}, 95)">
+      <circle cx="10" cy="10" r="5" fill="#000000"/>
       <text x="24" y="14" class="meta-tag">11 ISOLATED DATABASES</text>
       
-      <circle cx="230" cy="10" r="5" fill="#38BDF8"/>
+      <circle cx="230" cy="10" r="5" fill="#000000"/>
       <text x="244" y="14" class="meta-tag">PRISMA ORM / POSTGRESQL</text>
 
-      <circle cx="480" cy="10" r="5" fill="#A855F7"/>
+      <circle cx="480" cy="10" r="5" fill="#000000"/>
       <text x="494" y="14" class="meta-tag">TRANSACTIONAL OUTBOX PATTERN</text>
 
-      <circle cx="750" cy="10" r="5" fill="#F59E0B"/>
+      <circle cx="750" cy="10" r="5" fill="#000000"/>
       <text x="764" y="14" class="meta-tag">EVENTUAL CONSISTENCY</text>
     </g>
-    <g transform="translate({CANVAS_WIDTH - 1030}, 125)">
-      <text x="10" y="12" font-size="11.5" fill="#94A3B8">Khóa phân tán cốt lõi (Saga Keys): <tspan fill="#38BDF8" font-weight="700">shipmentCode</tspan> (Vận đơn), <tspan fill="#38BDF8" font-weight="700">hubCode</tspan> (Bưu cục), <tspan fill="#38BDF8" font-weight="700">courierId</tspan> (Tài xế), <tspan fill="#38BDF8" font-weight="700">merchantId</tspan> (Chủ shop)</text>
+    <g transform="translate({CANVAS_WIDTH - 1030}, 135)">
+      <text x="10" y="12" font-size="12" fill="#1F2937">Khóa phân tán cốt lõi (Saga Keys): <tspan fill="#000000" font-weight="700">shipmentCode</tspan> (Vận đơn), <tspan fill="#000000" font-weight="700">hubCode</tspan> (Bưu cục), <tspan fill="#000000" font-weight="700">courierId</tspan> (Tài xế), <tspan fill="#000000" font-weight="700">merchantId</tspan> (Chủ shop)</text>
     </g>
   </g>
 ''')
 
     # ==================== RENDERING HELPERS ====================
-    def render_table(tx, ty, tw, tname, entity_label, columns, header_color="#1E293B"):
+    def render_table(tx, ty, tw, tname, entity_label, columns, header_color=None):
         row_height = 24
         header_height = 36
         th = header_height + len(columns) * row_height + 8
         out = []
         out.append(f'<g transform="translate({tx}, {ty})">')
-        out.append(f'  <rect width="{tw}" height="{th}" rx="8" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.4" filter="url(#table-shadow)"/>')
-        # Header
-        out.append(f'  <path d="M 0 8 Q 0 0 8 0 L {tw-8} 0 Q {tw} 0 {tw} 8 L {tw} {header_height} L 0 {header_height} Z" fill="{header_color}"/>')
+        # Table Box - Pure white, crisp black stroke
+        out.append(f'  <rect width="{tw}" height="{th}" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>')
+        # Table Header - NO background fill (per user requirement), just clean divider line
+        out.append(f'  <line x1="0" y1="{header_height}" x2="{tw}" y2="{header_height}" stroke="#000000" stroke-width="1.2"/>')
         out.append(f'  <text x="14" y="23" class="tbl-header">{escape(tname)}</text>')
         if entity_label:
             out.append(f'  <text x="{tw - 14}" y="23" class="tbl-tag" text-anchor="end">{escape(entity_label)}</text>')
@@ -143,25 +134,23 @@ def generate_svg():
         # Columns
         for i, col in enumerate(columns):
             cy = header_height + 18 + i * row_height
-            bg_fill = "#F8FAFC" if i % 2 == 1 else "#FFFFFF"
-            out.append(f'  <rect x="1" y="{header_height + i * row_height}" width="{tw - 2}" height="{row_height}" fill="{bg_fill}"/>')
             
             # Key indicator
             ktype = col.get("key", "")
             if ktype == "PK":
-                out.append(f'  <rect x="10" y="{cy - 11}" width="20" height="14" rx="3" fill="#FEE2E2"/>')
+                out.append(f'  <rect x="10" y="{cy - 11}" width="20" height="14" rx="2" fill="#000000"/>')
                 out.append(f'  <text x="20" y="{cy}" class="badge-pk" text-anchor="middle">PK</text>')
                 name_class = "tbl-field-pk"
             elif ktype == "FK":
-                out.append(f'  <rect x="10" y="{cy - 11}" width="20" height="14" rx="3" fill="#DBEAFE"/>')
+                out.append(f'  <rect x="10" y="{cy - 11}" width="20" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>')
                 out.append(f'  <text x="20" y="{cy}" class="badge-fk" text-anchor="middle">FK</text>')
                 name_class = "tbl-field-fk"
             elif ktype == "DIST":
-                out.append(f'  <rect x="8" y="{cy - 11}" width="26" height="14" rx="3" fill="#EDE9FE"/>')
-                out.append(f'  <text x="21" y="{cy}" class="badge-dist" text-anchor="middle">DIST</text>')
+                out.append(f'  <rect x="8" y="{cy - 11}" width="28" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1" stroke-dasharray="2 1.5"/>')
+                out.append(f'  <text x="22" y="{cy}" class="badge-dist" text-anchor="middle">DIST</text>')
                 name_class = "tbl-field-dist"
             else:
-                out.append(f'  <circle cx="18" cy="{cy - 4}" r="2" fill="#94A3B8"/>')
+                out.append(f'  <circle cx="18" cy="{cy - 4}" r="1.8" fill="#000000"/>')
                 name_class = "tbl-field-normal"
             
             # Field name (Left aligned)
@@ -180,21 +169,21 @@ def generate_svg():
     def render_explanation_panel(px, py, pw, ph, title, badge_text, badge_color, sections, stats_footer=None):
         out = []
         out.append(f'<g transform="translate({px}, {py})">')
-        out.append(f'  <rect width="{pw}" height="{ph}" rx="10" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5" filter="url(#table-shadow)"/>')
+        out.append(f'  <rect width="{pw}" height="{ph}" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>')
         # Header bar
-        out.append(f'  <rect x="0" y="0" width="{pw}" height="44" rx="10" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>')
-        out.append(f'  <rect x="14" y="13" width="7" height="18" rx="2" fill="{badge_color}"/>')
-        out.append(f'  <text x="28" y="27" class="panel-header">{escape(title)}</text>')
-        out.append(f'  <rect x="{pw - 170}" y="10" width="156" height="24" rx="5" fill="{badge_color}18" stroke="{badge_color}" stroke-width="1"/>')
-        out.append(f'  <text x="{pw - 92}" y="26" font-size="11" font-weight="700" fill="{badge_color}" text-anchor="middle">{escape(badge_text)}</text>')
+        out.append(f'  <rect x="0" y="0" width="{pw}" height="42" rx="6" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>')
+        out.append(f'  <rect x="14" y="12" width="6" height="18" rx="1" fill="#000000"/>')
+        out.append(f'  <text x="28" y="26" class="panel-header">{escape(title)}</text>')
+        out.append(f'  <rect x="{pw - 170}" y="9" width="156" height="24" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>')
+        out.append(f'  <text x="{pw - 92}" y="25" font-size="11" font-weight="700" fill="#000000" text-anchor="middle">{escape(badge_text)}</text>')
         
         # Sections
-        curr_y = 68
+        curr_y = 66
         for sec in sections:
             out.append(f'  <text x="18" y="{curr_y}" class="panel-sec-title">▶ {escape(sec["title"])}</text>')
             curr_y += 20
             for bullet in sec["bullets"]:
-                out.append(f'  <circle cx="25" cy="{curr_y - 4}" r="2.2" fill="{badge_color}"/>')
+                out.append(f'  <circle cx="25" cy="{curr_y - 4}" r="2" fill="#000000"/>')
                 b_text = sanitize_xml_text(bullet)
                 out.append(f'  <text x="36" y="{curr_y}" class="panel-body">{b_text}</text>')
                 curr_y += 20
@@ -202,29 +191,29 @@ def generate_svg():
         
         # Stats footer chip
         if stats_footer:
-            out.append(f'  <rect x="14" y="{ph - 38}" width="{pw - 28}" height="26" rx="4" fill="#F1F5F9" stroke="#E2E8F0" stroke-width="1"/>')
-            out.append(f'  <text x="{pw/2}" y="{ph - 21}" font-size="10.5" font-weight="600" fill="#475569" text-anchor="middle">{escape(stats_footer)}</text>')
+            out.append(f'  <rect x="14" y="{ph - 38}" width="{pw - 28}" height="26" rx="4" fill="#F9FAFB" stroke="#000000" stroke-width="1"/>')
+            out.append(f'  <text x="{pw/2}" y="{ph - 21}" font-size="10.5" font-weight="600" fill="#111827" text-anchor="middle">{escape(stats_footer)}</text>')
             
         out.append('</g>')
         return "\n".join(out)
 
-    def render_service_container(sx, sy, sw, sh, svc_name, port_str, db_str, desc_str, color_accent):
+    def render_service_container(sx, sy, sw, sh, svc_name, port_str, db_str, desc_str, color_accent=None):
         out = []
         out.append(f'<g transform="translate({sx}, {sy})">')
-        out.append(f'  <rect width="{sw}" height="{sh}" rx="14" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.8" filter="url(#card-shadow)"/>')
+        out.append(f'  <rect width="{sw}" height="{sh}" rx="8" fill="#FFFFFF" stroke="#000000" stroke-width="1.6"/>')
         # Service top banner
-        out.append(f'  <path d="M 0 14 Q 0 0 14 0 L {sw-14} 0 Q {sw} 0 {sw} 14 L {sw} 56 L 0 56 Z" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>')
-        out.append(f'  <rect x="0" y="0" width="8" height="56" rx="3" fill="{color_accent}"/>')
+        out.append(f'  <path d="M 0 8 Q 0 0 8 0 L {sw-8} 0 Q {sw} 0 {sw} 8 L {sw} 52 L 0 52 Z" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>')
+        out.append(f'  <rect x="0" y="0" width="8" height="52" rx="2" fill="#000000"/>')
         
-        out.append(f'  <text x="24" y="27" class="svc-title">{escape(svc_name)}</text>')
-        out.append(f'  <text x="24" y="46" class="svc-sub">{escape(desc_str)}</text>')
+        out.append(f'  <text x="24" y="26" class="svc-title">{escape(svc_name)}</text>')
+        out.append(f'  <text x="24" y="44" class="svc-sub">{escape(desc_str)}</text>')
         
         # Port & DB badges
-        out.append(f'  <rect x="{sw - 330}" y="14" width="140" height="28" rx="6" fill="#E0F2FE" stroke="#38BDF8" stroke-width="1"/>')
-        out.append(f'  <text x="{sw - 260}" y="32" class="svc-port" text-anchor="middle">PORT :{escape(port_str)}</text>')
+        out.append(f'  <rect x="{sw - 330}" y="12" width="140" height="28" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>')
+        out.append(f'  <text x="{sw - 260}" y="30" class="svc-port" text-anchor="middle">PORT :{escape(port_str)}</text>')
         
-        out.append(f'  <rect x="{sw - 175}" y="14" width="155" height="28" rx="6" fill="{color_accent}15" stroke="{color_accent}" stroke-width="1"/>')
-        out.append(f'  <text x="{sw - 97}" y="32" font-size="11.5" font-weight="700" fill="{color_accent}" text-anchor="middle">DB: {escape(db_str)}</text>')
+        out.append(f'  <rect x="{sw - 175}" y="12" width="155" height="28" rx="4" fill="#F9FAFB" stroke="#000000" stroke-width="1"/>')
+        out.append(f'  <text x="{sw - 97}" y="30" font-size="11.5" font-weight="700" fill="#000000" text-anchor="middle">DB: {escape(db_str)}</text>')
         out.append('</g>')
         return "\n".join(out)
 
@@ -339,9 +328,9 @@ def generate_svg():
 
     # Intra-Auth Crow's Foot Connector Lines
     # UserAccount (1) -> (N) AuthSession
-    lines.append(f'<path d="M {c1_x + 490} {auth_y + 115} L {c1_x + 510} {auth_y + 115}" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>')
+    lines.append(f'<path d="M {c1_x + 490} {auth_y + 115} L {c1_x + 510} {auth_y + 115}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>')
     # UserAccount (1) -> (1) MobilePermissionOverride
-    lines.append(f'<path d="M {c1_x + 450} {auth_y + 345} L {c1_x + 450} {auth_y + 440} L {c1_x + 510} {auth_y + 440}" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>')
+    lines.append(f'<path d="M {c1_x + 450} {auth_y + 345} L {c1_x + 450} {auth_y + 440} L {c1_x + 510} {auth_y + 440}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>')
 
     # Side Explanation Panel for Auth (x: 1000, w: 875)
     auth_panel_sections = [
@@ -491,9 +480,9 @@ def generate_svg():
     lines.append(t_cfg)
 
     # Masterdata Relations
-    lines.append(f'<path d="M {c1_x + 490} {md_y + 115} L {c1_x + 510} {md_y + 115}" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-many)" marker-end="url(#crow-one)"/>')
-    lines.append(f'<path d="M {c1_x + 490} {md_y + 700} L {c1_x + 510} {md_y + 700}" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>')
-    lines.append(f'<path d="M {c1_x + 490} {md_y + 160} L {c1_x + 500} {md_y + 160} L {c1_x + 500} {md_y + 275} L {c1_x + 510} {md_y + 275}" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>')
+    lines.append(f'<path d="M {c1_x + 490} {md_y + 115} L {c1_x + 510} {md_y + 115}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-many)" marker-end="url(#crow-one)"/>')
+    lines.append(f'<path d="M {c1_x + 490} {md_y + 700} L {c1_x + 510} {md_y + 700}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>')
+    lines.append(f'<path d="M {c1_x + 490} {md_y + 160} L {c1_x + 500} {md_y + 160} L {c1_x + 500} {md_y + 275} L {c1_x + 510} {md_y + 275}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>')
 
     # Side Explanation Panel for Masterdata
     md_panel_sections = [
@@ -589,7 +578,7 @@ def generate_svg():
     lines.append(t_price)
 
     # Pickup Relations
-    lines.append(f'<path d="M {c1_x + 490} {pck_y + 115} L {c1_x + 510} {pck_y + 115}" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>')
+    lines.append(f'<path d="M {c1_x + 490} {pck_y + 115} L {c1_x + 510} {pck_y + 115}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>')
 
     # Side Explanation Panel for Pickup & Pricing
     pck_panel_sections = [
@@ -734,11 +723,11 @@ def generate_svg():
     lines.append(t_sout)
 
     # Shipment Relations
-    lines.append(f'<path d="M {c2_x + 490} {shp_y + 115} L {c2_x + 510} {shp_y + 115}" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>')
-    lines.append(f'<path d="M {c2_x + 250} {shp_y + 395} L {c2_x + 250} {shp_y + 420}" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>')
-    lines.append(f'<path d="M {c2_x + 490} {shp_y + 450} L {c2_x + 510} {shp_y + 450}" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>')
-    lines.append(f'<path d="M {c2_x + 490} {shp_y + 550} L {c2_x + 500} {shp_y + 550} L {c2_x + 500} {shp_y + 610} L {c2_x + 510} {shp_y + 610}" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>')
-    lines.append(f'<path d="M {c2_x + 250} {shp_y + 740} L {c2_x + 250} {shp_y + 775}" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>')
+    lines.append(f'<path d="M {c2_x + 490} {shp_y + 115} L {c2_x + 510} {shp_y + 115}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>')
+    lines.append(f'<path d="M {c2_x + 250} {shp_y + 395} L {c2_x + 250} {shp_y + 420}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>')
+    lines.append(f'<path d="M {c2_x + 490} {shp_y + 450} L {c2_x + 510} {shp_y + 450}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>')
+    lines.append(f'<path d="M {c2_x + 490} {shp_y + 550} L {c2_x + 500} {shp_y + 550} L {c2_x + 500} {shp_y + 610} L {c2_x + 510} {shp_y + 610}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>')
+    lines.append(f'<path d="M {c2_x + 250} {shp_y + 740} L {c2_x + 250} {shp_y + 775}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>')
 
     # Side Explanation Panel for Shipment
     shp_panel_sections = [
@@ -840,9 +829,9 @@ def generate_svg():
     lines.append(t_mout)
 
     # Manifest Relations
-    lines.append(f'<path d="M {c2_x + 490} {mnf_y + 115} L {c2_x + 510} {mnf_y + 115}" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>')
-    lines.append(f'<path d="M {c2_x + 250} {mnf_y + 325} L {c2_x + 250} {mnf_y + 355}" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>')
-    lines.append(f'<path d="M {c2_x + 490} {mnf_y + 200} L {c2_x + 500} {mnf_y + 200} L {c2_x + 500} {mnf_y + 310} L {c2_x + 510} {mnf_y + 310}" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>')
+    lines.append(f'<path d="M {c2_x + 490} {mnf_y + 115} L {c2_x + 510} {mnf_y + 115}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>')
+    lines.append(f'<path d="M {c2_x + 250} {mnf_y + 325} L {c2_x + 250} {mnf_y + 355}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>')
+    lines.append(f'<path d="M {c2_x + 490} {mnf_y + 200} L {c2_x + 500} {mnf_y + 200} L {c2_x + 500} {mnf_y + 310} L {c2_x + 510} {mnf_y + 310}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>')
 
     # Side Explanation Panel for Manifest
     mnf_panel_sections = [
@@ -945,7 +934,7 @@ def generate_svg():
     lines.append(t_cloc)
 
     # Dispatch Relations
-    lines.append(f'<path d="M {c2_x + 490} {dsp_y + 115} L {c2_x + 510} {dsp_y + 115}" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>')
+    lines.append(f'<path d="M {c2_x + 490} {dsp_y + 115} L {c2_x + 510} {dsp_y + 115}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>')
 
     # Side Explanation Panel for Dispatch & Scan
     dsp_panel_sections = [
@@ -1060,9 +1049,9 @@ def generate_svg():
     lines.append(t_dout)
 
     # Delivery Relations
-    lines.append(f'<path d="M {c3_x + 490} {dlv_y + 115} L {c3_x + 510} {dlv_y + 115}" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>')
-    lines.append(f'<path d="M {c3_x + 250} {dlv_y + 325} L {c3_x + 250} {dlv_y + 355}" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>')
-    lines.append(f'<path d="M {c3_x + 490} {dlv_y + 460} L {c3_x + 510} {dlv_y + 460}" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>')
+    lines.append(f'<path d="M {c3_x + 490} {dlv_y + 115} L {c3_x + 510} {dlv_y + 115}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>')
+    lines.append(f'<path d="M {c3_x + 250} {dlv_y + 325} L {c3_x + 250} {dlv_y + 355}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>')
+    lines.append(f'<path d="M {c3_x + 490} {dlv_y + 460} L {c3_x + 510} {dlv_y + 460}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>')
 
     # Side Explanation Panel for Delivery
     dlv_panel_sections = [
@@ -1168,8 +1157,8 @@ def generate_svg():
     lines.append(t_pout2)
 
     # Payment Relations
-    lines.append(f'<path d="M {c3_x + 745} {pay_y + 325} L {c3_x + 745} {pay_y + 355}" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>')
-    lines.append(f'<path d="M {c3_x + 490} {pay_y + 200} L {c3_x + 500} {pay_y + 200} L {c3_x + 500} {pay_y + 390} L {c3_x + 510} {pay_y + 390}" stroke="#475569" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>')
+    lines.append(f'<path d="M {c3_x + 745} {pay_y + 325} L {c3_x + 745} {pay_y + 355}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>')
+    lines.append(f'<path d="M {c3_x + 490} {pay_y + 200} L {c3_x + 500} {pay_y + 200} L {c3_x + 500} {pay_y + 390} L {c3_x + 510} {pay_y + 390}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>')
 
     # Side Explanation Panel for Payment
     pay_panel_sections = [
@@ -1303,91 +1292,91 @@ def generate_svg():
     lines.append(f'''
   <!-- GRAND BOTTOM ARCHITECTURE & LEGEND BANNER -->
   <g id="GrandBottomBanner" transform="translate(60, {bot_y})">
-    <rect width="{CANVAS_WIDTH - 120}" height="{bot_h}" rx="12" fill="#0F172A" stroke="#334155" stroke-width="1.5" filter="url(#card-shadow)"/>
+    <rect width="{CANVAS_WIDTH - 120}" height="{bot_h}" rx="8" fill="#FFFFFF" stroke="#000000" stroke-width="1.8"/>
     
     <!-- Title -->
-    <text x="35" y="38" font-size="17" font-weight="800" fill="#38BDF8" letter-spacing="0.5px">CƠ CHẾ ĐẢM BẢO TÍNH TOÀN VẸN DỮ LIỆU PHÂN TÁN (DISTRIBUTED SAGA &amp; TRANSACTIONAL OUTBOX PATTERN)</text>
-    <text x="35" y="62" font-size="12.5" fill="#CBD5E1">Trong kiến trúc Database-per-Service, tuyệt đối không dùng Foreign Key cứng giữa các Database. Mọi giao dịch phân tán được điều phối hướng sự kiện qua RabbitMQ Event Mesh với tính nhất quán cuối cùng (Eventual Consistency).</text>
+    <text x="35" y="38" font-size="16" font-weight="800" fill="#000000" letter-spacing="0.5px">CƠ CHẾ ĐẢM BẢO TÍNH TOÀN VẸN DỮ LIỆU PHÂN TÁN (DISTRIBUTED SAGA &amp; TRANSACTIONAL OUTBOX PATTERN)</text>
+    <text x="35" y="62" font-size="12.5" fill="#374151">Trong kiến trúc Database-per-Service, tuyệt đối không dùng Foreign Key cứng giữa các Database. Mọi giao dịch phân tán được điều phối hướng sự kiện qua RabbitMQ Event Mesh với tính nhất quán cuối cùng (Eventual Consistency).</text>
 
     <!-- Visual Saga Flow Nodes -->
     <g transform="translate(35, 95)">
       <!-- Step 1 -->
-      <rect x="0" y="0" width="320" height="85" rx="8" fill="#1E293B" stroke="#059669" stroke-width="1.8"/>
-      <text x="16" y="26" font-size="12.5" font-weight="800" fill="#34D399">1. KHỞI TẠO VẬN ĐƠN</text>
-      <text x="16" y="48" font-size="11" fill="#E2E8F0">shipment-service (Status: CREATED)</text>
-      <text x="16" y="68" font-size="10.5" fill="#94A3B8">Lưu DB + Ghi Transactional Outbox Event</text>
+      <rect x="0" y="0" width="320" height="85" rx="6" fill="#F9FAFB" stroke="#000000" stroke-width="1.4"/>
+      <text x="16" y="26" font-size="12.5" font-weight="800" fill="#000000">1. KHỞI TẠO VẬN ĐƠN</text>
+      <text x="16" y="48" font-size="11" fill="#1F2937">shipment-service (Status: CREATED)</text>
+      <text x="16" y="68" font-size="10.5" fill="#4B5563">Lưu DB + Ghi Transactional Outbox Event</text>
 
-      <path d="M 325 42 L 360 42" stroke="#38BDF8" stroke-width="2.2" marker-end="url(#arrow-dist)"/>
+      <path d="M 325 42 L 360 42" stroke="#000000" stroke-width="2" marker-end="url(#arrow-dist)"/>
 
       <!-- Step 2 -->
-      <rect x="365" y="0" width="320" height="85" rx="8" fill="#1E293B" stroke="#D97706" stroke-width="1.8"/>
-      <text x="381" y="26" font-size="12.5" font-weight="800" fill="#FBBF24">2. ĐIỀU PHỐI GOM HÀNG</text>
-      <text x="381" y="48" font-size="11" fill="#E2E8F0">pickup-service &amp; dispatch-service</text>
-      <text x="381" y="68" font-size="10.5" fill="#94A3B8">Gán Courier thu gom tại địa chỉ kho Shop</text>
+      <rect x="365" y="0" width="320" height="85" rx="6" fill="#F9FAFB" stroke="#000000" stroke-width="1.4"/>
+      <text x="381" y="26" font-size="12.5" font-weight="800" fill="#000000">2. ĐIỀU PHỐI GOM HÀNG</text>
+      <text x="381" y="48" font-size="11" fill="#1F2937">pickup-service &amp; dispatch-service</text>
+      <text x="381" y="68" font-size="10.5" fill="#4B5563">Gán Courier thu gom tại địa chỉ kho Shop</text>
 
-      <path d="M 690 42 L 725 42" stroke="#38BDF8" stroke-width="2.2" marker-end="url(#arrow-dist)"/>
+      <path d="M 690 42 L 725 42" stroke="#000000" stroke-width="2" marker-end="url(#arrow-dist)"/>
 
       <!-- Step 3 -->
-      <rect x="730" y="0" width="320" height="85" rx="8" fill="#1E293B" stroke="#0891B2" stroke-width="1.8"/>
-      <text x="746" y="26" font-size="12.5" font-weight="800" fill="#22D3EE">3. KHAI THÁC &amp; ĐƯỜNG TRỤC</text>
-      <text x="746" y="48" font-size="11" fill="#E2E8F0">scan-service &amp; manifest-service</text>
-      <text x="746" y="68" font-size="10.5" fill="#94A3B8">Quét Inbound/Outbound, kẹp chì Seal xe tải</text>
+      <rect x="730" y="0" width="320" height="85" rx="6" fill="#F9FAFB" stroke="#000000" stroke-width="1.4"/>
+      <text x="746" y="26" font-size="12.5" font-weight="800" fill="#000000">3. KHAI THÁC &amp; ĐƯỜNG TRỤC</text>
+      <text x="746" y="48" font-size="11" fill="#1F2937">scan-service &amp; manifest-service</text>
+      <text x="746" y="68" font-size="10.5" fill="#4B5563">Quét Inbound/Outbound, kẹp chì Seal xe tải</text>
 
-      <path d="M 1055 42 L 1090 42" stroke="#38BDF8" stroke-width="2.2" marker-end="url(#arrow-dist)"/>
+      <path d="M 1055 42 L 1090 42" stroke="#000000" stroke-width="2" marker-end="url(#arrow-dist)"/>
 
       <!-- Step 4 -->
-      <rect x="1095" y="0" width="320" height="85" rx="8" fill="#1E293B" stroke="#E11D48" stroke-width="1.8"/>
-      <text x="1111" y="26" font-size="12.5" font-weight="800" fill="#FB7185">4. PHÁT HÀNG CHẶNG CUỐI</text>
-      <text x="1111" y="48" font-size="11" fill="#E2E8F0">delivery-service (Last-mile)</text>
-      <text x="1111" y="68" font-size="10.5" fill="#94A3B8">Chụp ảnh POD / OTP, lập biên bản NDR nếu lỗi</text>
+      <rect x="1095" y="0" width="320" height="85" rx="6" fill="#F9FAFB" stroke="#000000" stroke-width="1.4"/>
+      <text x="1111" y="26" font-size="12.5" font-weight="800" fill="#000000">4. PHÁT HÀNG CHẶNG CUỐI</text>
+      <text x="1111" y="48" font-size="11" fill="#1F2937">delivery-service (Last-mile)</text>
+      <text x="1111" y="68" font-size="10.5" fill="#4B5563">Chụp ảnh POD / OTP, lập biên bản NDR nếu lỗi</text>
 
-      <path d="M 1420 42 L 1455 42" stroke="#38BDF8" stroke-width="2.2" marker-end="url(#arrow-dist)"/>
+      <path d="M 1420 42 L 1455 42" stroke="#000000" stroke-width="2" marker-end="url(#arrow-dist)"/>
 
       <!-- Step 5 -->
-      <rect x="1460" y="0" width="320" height="85" rx="8" fill="#1E293B" stroke="#16A34A" stroke-width="1.8"/>
-      <text x="1476" y="26" font-size="12.5" font-weight="800" fill="#4ADE80">5. KẾT TOÁN COD &amp; ĐỐI SOÁT</text>
-      <text x="1476" y="48" font-size="11" fill="#E2E8F0">payment-service (VietQR / PayOS)</text>
-      <text x="1476" y="68" font-size="10.5" fill="#94A3B8">Tài xế nộp tiền ca, tự động gạch nợ ví Shop</text>
+      <rect x="1460" y="0" width="320" height="85" rx="6" fill="#F9FAFB" stroke="#000000" stroke-width="1.4"/>
+      <text x="1476" y="26" font-size="12.5" font-weight="800" fill="#000000">5. KẾT TOÁN COD &amp; ĐỐI SOÁT</text>
+      <text x="1476" y="48" font-size="11" fill="#1F2937">payment-service (VietQR / PayOS)</text>
+      <text x="1476" y="68" font-size="10.5" fill="#4B5563">Tài xế nộp tiền ca, tự động gạch nợ ví Shop</text>
 
-      <path d="M 1785 42 L 1820 42" stroke="#38BDF8" stroke-width="2.2" marker-end="url(#arrow-dist)"/>
+      <path d="M 1785 42 L 1820 42" stroke="#000000" stroke-width="2" marker-end="url(#arrow-dist)"/>
 
       <!-- Step 6 -->
-      <rect x="1825" y="0" width="320" height="85" rx="8" fill="#1E293B" stroke="#2563EB" stroke-width="1.8"/>
-      <text x="1841" y="26" font-size="12.5" font-weight="800" fill="#60A5FA">6. DÒNG THỜI GIAN &amp; BÁO CÁO BI</text>
-      <text x="1841" y="48" font-size="11" fill="#E2E8F0">tracking-service &amp; reporting-service</text>
-      <text x="1841" y="68" font-size="10.5" fill="#94A3B8">Event Sourcing lịch trình &amp; KPI đa chiều</text>
+      <rect x="1825" y="0" width="320" height="85" rx="6" fill="#F9FAFB" stroke="#000000" stroke-width="1.4"/>
+      <text x="1841" y="26" font-size="12.5" font-weight="800" fill="#000000">6. DÒNG THỜI GIAN &amp; BÁO CÁO BI</text>
+      <text x="1841" y="48" font-size="11" fill="#1F2937">tracking-service &amp; reporting-service</text>
+      <text x="1841" y="68" font-size="10.5" fill="#4B5563">Event Sourcing lịch trình &amp; KPI đa chiều</text>
     </g>
 
     <!-- Legend box on the right -->
     <g transform="translate({CANVAS_WIDTH - 1620}, 25)">
-      <rect width="1520" height="190" rx="8" fill="#1E293B" stroke="#475569" stroke-width="1"/>
-      <text x="25" y="32" font-size="13" font-weight="800" fill="#FFFFFF">KÝ HIỆU LƯỢC ĐỒ (ERD &amp; SAGA LEGEND):</text>
+      <rect width="1520" height="190" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+      <text x="25" y="32" font-size="13" font-weight="800" fill="#000000">KÝ HIỆU LƯỢC ĐỒ (ERD &amp; SAGA LEGEND):</text>
       
       <!-- Row 1 -->
-      <rect x="25" y="52" width="24" height="16" rx="3" fill="#FEE2E2"/>
+      <rect x="25" y="52" width="24" height="16" rx="2" fill="#000000"/>
       <text x="37" y="64" class="badge-pk" text-anchor="middle">PK</text>
-      <text x="56" y="64" font-size="11.5" fill="#E2E8F0">Primary Key (Khóa chính bảng nội bộ)</text>
+      <text x="56" y="64" font-size="11.5" fill="#1F2937">Primary Key (Khóa chính bảng nội bộ)</text>
 
-      <rect x="330" y="52" width="24" height="16" rx="3" fill="#DBEAFE"/>
+      <rect x="330" y="52" width="24" height="16" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
       <text x="342" y="64" class="badge-fk" text-anchor="middle">FK</text>
-      <text x="362" y="64" font-size="11.5" fill="#E2E8F0">Foreign Key (Khóa ngoại nội bộ Database dịch vụ)</text>
+      <text x="362" y="64" font-size="11.5" fill="#1F2937">Foreign Key (Khóa ngoại nội bộ Database dịch vụ)</text>
 
-      <rect x="700" y="52" width="30" height="16" rx="3" fill="#EDE9FE"/>
+      <rect x="700" y="52" width="30" height="16" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1" stroke-dasharray="2 1.5"/>
       <text x="715" y="64" class="badge-dist" text-anchor="middle">DIST</text>
-      <text x="738" y="64" font-size="11.5" fill="#E2E8F0">Distributed Saga Key (Khóa nghiệp vụ liên kết liên dịch vụ)</text>
+      <text x="738" y="64" font-size="11.5" fill="#1F2937">Distributed Saga Key (Khóa nghiệp vụ liên kết liên dịch vụ)</text>
 
       <!-- Row 2 -->
-      <line x1="25" y1="108" x2="95" y2="108" stroke="#475569" stroke-width="2.2" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
-      <text x="110" y="112" font-size="11.5" fill="#E2E8F0">Quan hệ Crow's Foot: 1 Cha liên kết Nhiều Con (1 : N)</text>
+      <line x1="25" y1="108" x2="95" y2="108" stroke="#000000" stroke-width="2" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+      <text x="110" y="112" font-size="11.5" fill="#1F2937">Quan hệ Crow's Foot: 1 Cha liên kết Nhiều Con (1 : N)</text>
 
-      <line x1="500" y1="108" x2="570" y2="108" stroke="#475569" stroke-width="2.2" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
-      <text x="585" y="112" font-size="11.5" fill="#E2E8F0">Quan hệ Crow's Foot: 1 Cha liên kết Duy nhất 1 Con (1 : 1)</text>
+      <line x1="500" y1="108" x2="570" y2="108" stroke="#000000" stroke-width="2" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
+      <text x="585" y="112" font-size="11.5" fill="#1F2937">Quan hệ Crow's Foot: 1 Cha liên kết Duy nhất 1 Con (1 : 1)</text>
 
-      <line x1="960" y1="108" x2="1030" y2="108" stroke="#38BDF8" stroke-width="2.2" stroke-dasharray="4,4" marker-end="url(#arrow-dist)"/>
-      <text x="1045" y="112" font-size="11.5" fill="#E2E8F0">Luồng sự kiện RabbitMQ Outbox Eventual Consistency</text>
+      <line x1="960" y1="108" x2="1030" y2="108" stroke="#000000" stroke-width="2" stroke-dasharray="4,4" marker-end="url(#arrow-dist)"/>
+      <text x="1045" y="112" font-size="11.5" fill="#1F2937">Luồng sự kiện RabbitMQ Outbox Eventual Consistency</text>
 
-      <line x1="25" y1="145" x2="1490" y2="145" stroke="#334155" stroke-width="1"/>
-      <text x="25" y="168" font-size="11" fill="#94A3B8">Chuẩn hóa thiết kế: Antigravity AI Engineering Team | Định dạng Vector SVG 1:1 tương thích Figma Canvas &amp; LaTeX Thesis Publication</text>
+      <line x1="25" y1="145" x2="1490" y2="145" stroke="#E5E7EB" stroke-width="1"/>
+      <text x="25" y="168" font-size="11" fill="#4B5563">Chuẩn hóa thiết kế: Antigravity AI Engineering Team | Định dạng Vector SVG 1:1 tương thích Figma Canvas &amp; LaTeX Thesis Publication</text>
     </g>
   </g>
 ''')
