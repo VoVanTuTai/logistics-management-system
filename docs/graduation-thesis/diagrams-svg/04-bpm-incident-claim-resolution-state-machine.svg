@@ -1,254 +1,232 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1650 960" width="1650" height="960" style="background:#FFFFFF;">
-  <defs>
-    <!-- Sharp Black Arrow Marker -->
-    <marker id="arrowM" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#000000" />
-    </marker>
-  </defs>
-
   <style>
-    text { font-family: "Times New Roman", Times, serif; }
+    text { font-family: Arial, "Times New Roman", sans-serif; }
     .doc-title { font-size: 17px; font-weight: bold; fill: #000000; text-anchor: middle; }
     .doc-sub { font-size: 12.5px; font-style: italic; fill: #333333; text-anchor: middle; }
     .lane-text { font-size: 11.5px; font-weight: bold; fill: #000000; text-transform: uppercase; letter-spacing: 1px; }
     .box-title { font-size: 12.5px; font-weight: bold; fill: #000000; }
     .box-sub { font-size: 11px; fill: #222222; }
     .gw-text { font-size: 10.5px; font-weight: bold; fill: #000000; text-anchor: middle; }
-    .branch-text { font-size: 10.5px; font-weight: bold; fill: #000000; }
+    .branch-text { font-size: 11px; font-weight: bold; fill: #000000; }
   </style>
 
-  <!-- ==================== HEADER BÁO CÁO ==================== -->
-  <g id="Header" transform="translate(0, 25)">
-    <text x="825" y="22" class="doc-title">HÌNH 4.1: SƠ ĐỒ TIẾN TRÌNH NGHIỆP VỤ (BPMN 2.0) XỬ LÝ SỰ CỐ &amp; KHIẾU NẠI BƯU PHẨM</text>
-    <text x="825" y="42" class="doc-sub">Quy chuẩn luồng trực giao 90°: Phân định 4 làn trách nhiệm, các điểm kiểm soát điều kiện và cơ chế Human-in-the-Loop</text>
-    <line x1="80" y1="58" x2="1570" y2="58" stroke="#000000" stroke-width="1.2"/>
+  <!-- ==================== HEADER (CHUẨN BÁO CÁO KHÓA LUẬN) ==================== -->
+  <g id="Header">
+    <text x="825" y="45" class="doc-title">HÌNH 4.1: SƠ ĐỒ TIẾN TRÌNH NGHIỆP VỤ (BPMN 2.0) XỬ LÝ SỰ CỐ &amp; KHIẾU NẠI BƯU PHẨM</text>
+    <text x="825" y="65" class="doc-sub">Quy chuẩn luồng trực giao 90°: Phân định 4 làn trách nhiệm, các điểm kiểm soát điều kiện và cơ chế Human-in-the-Loop</text>
+    <line x1="80" y1="80" x2="1570" y2="80" stroke="#000000" stroke-width="1.2"/>
   </g>
 
   <!-- ==================== 4 SWIMLANES POOL ==================== -->
-  <g id="Pool" transform="translate(80, 85)">
-    <!-- Outer Border -->
-    <rect x="0" y="0" width="1490" height="800" fill="#FFFFFF" stroke="#000000" stroke-width="1.8"/>
+  <g id="Pool">
+    <!-- Khung bao ngoài toàn bộ bể bơi -->
+    <rect x="80" y="100" width="1490" height="800" fill="#FFFFFF" stroke="#000000" stroke-width="1.8"/>
 
-    <!-- Lane 1: Khách hàng / Giao diện (Height: 180) -->
-    <g id="Lane_1">
-      <line x1="0" y1="180" x2="1490" y2="180" stroke="#000000" stroke-width="1.2"/>
-      <rect x="0" y="0" width="40" height="180" fill="#F9FAFB" stroke="#000000" stroke-width="1"/>
-      <text x="-90" y="25" transform="rotate(-90)" class="lane-text" text-anchor="middle">LÀN 1: KHÁCH HÀNG / GIAO DIỆN</text>
-    </g>
+    <!-- LÀN 1: KHÁCH HÀNG / GIAO DIỆN (y: 100 -> 280, cao 180, tâm y: 190) -->
+    <line x1="80" y1="280" x2="1570" y2="280" stroke="#000000" stroke-width="1.2"/>
+    <rect x="80" y="100" width="40" height="180" fill="#F9FAFB" stroke="#000000" stroke-width="1"/>
+    <text x="-190" y="105" transform="rotate(-90)" class="lane-text" text-anchor="middle">LÀN 1: KHÁCH HÀNG / GIAO DIỆN</text>
 
-    <!-- Lane 2: AI Orchestrator (Height: 200) -->
-    <g id="Lane_2" transform="translate(0, 180)">
-      <line x1="0" y1="200" x2="1490" y2="200" stroke="#000000" stroke-width="1.2"/>
-      <rect x="0" y="0" width="40" height="200" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
-      <text x="-100" y="25" transform="rotate(-90)" class="lane-text" text-anchor="middle">LÀN 2: AI ORCHESTRATOR (:3013)</text>
-    </g>
+    <!-- LÀN 2: AI ORCHESTRATOR (y: 280 -> 480, cao 200, tâm y: 380) -->
+    <line x1="80" y1="480" x2="1570" y2="480" stroke="#000000" stroke-width="1.2"/>
+    <rect x="80" y="280" width="40" height="200" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+    <text x="-380" y="105" transform="rotate(-90)" class="lane-text" text-anchor="middle">LÀN 2: AI ORCHESTRATOR (:3013)</text>
 
-    <!-- Lane 3: Hệ thống Lõi & RAG (Height: 220) -->
-    <g id="Lane_3" transform="translate(0, 380)">
-      <line x1="0" y1="220" x2="1490" y2="220" stroke="#000000" stroke-width="1.2"/>
-      <rect x="0" y="0" width="40" height="220" fill="#F9FAFB" stroke="#000000" stroke-width="1"/>
-      <text x="-110" y="25" transform="rotate(-90)" class="lane-text" text-anchor="middle">LÀN 3: HỆ THỐNG LÕI &amp; RAG</text>
-    </g>
+    <!-- LÀN 3: HỆ THỐNG LÕI & RAG (y: 480 -> 700, cao 220, tâm y: 590) -->
+    <line x1="80" y1="700" x2="1570" y2="700" stroke="#000000" stroke-width="1.2"/>
+    <rect x="80" y="480" width="40" height="220" fill="#F9FAFB" stroke="#000000" stroke-width="1"/>
+    <text x="-590" y="105" transform="rotate(-90)" class="lane-text" text-anchor="middle">LÀN 3: HỆ THỐNG LÕI &amp; RAG</text>
 
-    <!-- Lane 4: Con người (HITL) (Height: 200) -->
-    <g id="Lane_4" transform="translate(0, 600)">
-      <rect x="0" y="0" width="40" height="200" fill="#E5E7EB" stroke="#000000" stroke-width="1"/>
-      <text x="-100" y="25" transform="rotate(-90)" class="lane-text" text-anchor="middle">LÀN 4: CON NGƯỜI (HITL)</text>
-    </g>
+    <!-- LÀN 4: CON NGƯỜI (HITL) (y: 700 -> 900, cao 200, tâm y: 800) -->
+    <rect x="80" y="700" width="40" height="200" fill="#E5E7EB" stroke="#000000" stroke-width="1"/>
+    <text x="-800" y="105" transform="rotate(-90)" class="lane-text" text-anchor="middle">LÀN 4: CON NGƯỜI (HITL)</text>
   </g>
 
-  <!-- ==================== FLOW NODES & CONNECTORS ==================== -->
+  <!-- ==================== CÁC NÚT TÁC VỤ (NODES & TASKS) - TỌA ĐỘ TUYỆT ĐỐI ==================== -->
 
-  <!-- [START EVENT] (Lane 1: Center y = 175) -->
-  <g id="Node_Start" transform="translate(145, 155)">
-    <circle cx="20" cy="20" r="18" fill="#FFFFFF" stroke="#000000" stroke-width="2"/>
-    <text x="20" y="52" text-anchor="middle" font-size="11" font-weight="bold">Bắt đầu</text>
+  <!-- [BẮT ĐẦU] (Làn 1, tâm y = 190) -->
+  <g id="Start_Node">
+    <circle cx="165" cy="190" r="18" fill="#FFFFFF" stroke="#000000" stroke-width="2"/>
+    <text x="165" y="222" text-anchor="middle" font-size="11" font-weight="bold">Bắt đầu</text>
   </g>
 
-  <!-- Connector: Start -> Task 1 -->
-  <path d="M 185 175 L 215 175" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowM)"/>
+  <!-- Mũi tên: Bắt đầu -> Tác vụ 1 -->
+  <line x1="185" y1="190" x2="220" y2="190" stroke="#000000" stroke-width="1.5"/>
+  <polygon points="220,186 228,190 220,194" fill="#000000"/>
 
-  <!-- [TASK 1: USER INPUT] (Lane 1) -->
-  <!-- Box: x=215, y=145, w=155, h=60, Center=(292, 175) -->
-  <g id="Task_1" transform="translate(215, 145)">
-    <rect x="0" y="0" width="155" height="60" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
-    <text x="10" y="22" class="box-title">1. Nhập phản ánh</text>
-    <text x="10" y="40" class="box-sub">• Khách báo hàng hỏng</text>
-    <text x="10" y="53" class="box-sub">• Nhập: "Đơn NX-... bị vỡ"</text>
+  <!-- [TÁC VỤ 1: NHẬP PHẢN ÁNH] (Làn 1, x: 230 -> 390, y: 160 -> 220) -->
+  <g id="Task_1">
+    <rect x="230" y="160" width="160" height="60" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <text x="242" y="182" class="box-title">1. Nhập phản ánh</text>
+    <text x="242" y="198" class="box-sub">• Khách báo hàng hỏng</text>
+    <text x="242" y="211" class="box-sub">• "Đơn NX-... bị vỡ nát"</text>
   </g>
 
-  <!-- Connector: Task 1 Bottom -> Task 2 Left (Channel x=292, Clear of boxes) -->
-  <path d="M 292 205 L 292 365 L 340 365" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowM)"/>
+  <!-- Mũi tên: Tác vụ 1 Đáy (x: 310, y: 220) -> Tác vụ 2 Trái (x: 360, y: 380) -->
+  <polyline points="310,220 310,380 352,380" fill="none" stroke="#000000" stroke-width="1.5"/>
+  <polygon points="352,376 360,380 352,384" fill="#000000"/>
 
-  <!-- [TASK 2: CONTEXT DISAMBIGUATION] (Lane 2: Center y = 365) -->
-  <!-- Box: x=340, y=335, w=155, h=60, Center=(417, 365) -->
-  <g id="Task_2" transform="translate(340, 335)">
-    <rect x="0" y="0" width="155" height="60" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
-    <text x="10" y="22" class="box-title">2. Tách Context</text>
-    <text x="10" y="40" class="box-sub">• Trích xuất mã: NX-...</text>
-    <text x="10" y="53" class="box-sub">• Bóc tách loại: Bể vỡ</text>
+  <!-- [TÁC VỤ 2: TÁCH CONTEXT] (Làn 2, x: 360 -> 520, y: 350 -> 410) -->
+  <g id="Task_2">
+    <rect x="360" y="350" width="160" height="60" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <text x="372" y="372" class="box-title">2. Tách Context</text>
+    <text x="372" y="388" class="box-sub">• Trích xuất mã: NX-...</text>
+    <text x="372" y="401" class="box-sub">• Bóc tách loại: Bể vỡ</text>
   </g>
 
-  <!-- Connector: Task 2 Right -> Gateway 1 Left -->
-  <path d="M 495 365 L 530 365" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowM)"/>
+  <!-- Mũi tên: Tác vụ 2 Phải (520, 380) -> Gateway 1 Trái (560, 380) -->
+  <line x1="520" y1="380" x2="552" y2="380" stroke="#000000" stroke-width="1.5"/>
+  <polygon points="552,376 560,380 552,384" fill="#000000"/>
 
-  <!-- [GATEWAY 1: ĐÃ ĐĂNG NHẬP?] (Lane 2) -->
-  <!-- Diamond: Center=(555, 365), d=25, Top=(555, 340), Bottom=(555, 390), Right=(580, 365) -->
-  <g id="GW_1" transform="translate(530, 340)">
-    <polygon points="25,0 50,25 25,50 0,25" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
-    <text x="25" y="22" class="gw-text">Đã đăng</text>
-    <text x="25" y="34" class="gw-text">nhập?</text>
+  <!-- [GATEWAY 1: ĐÃ ĐĂNG NHẬP?] (Làn 2, Tâm: 585, 380) -->
+  <g id="GW_1">
+    <polygon points="585,355 610,380 585,405 560,380" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <text x="585" y="377" class="gw-text">Đã đăng</text>
+    <text x="585" y="389" class="gw-text">nhập?</text>
   </g>
 
-  <!-- Connector: GW 1 Top -> Case 7 Left (Branch [Không], Channel x=555) -->
-  <path d="M 555 340 L 555 175 L 610 175" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowM)"/>
-  <text x="562" y="260" class="branch-text">[Không]</text>
+  <!-- Nhánh [Không]: GW 1 Đỉnh trên (585, 355) -> Lên Làn 1 (585, 190) -> Case 7 Trái (640, 190) -->
+  <polyline points="585,355 585,190 632,190" fill="none" stroke="#000000" stroke-width="1.5"/>
+  <polygon points="632,186 640,190 632,194" fill="#000000"/>
+  <text x="593" y="275" class="branch-text">[Không]</text>
 
-  <!-- [CASE 7: GUEST GUARD] (Lane 1: Center y = 175) -->
-  <!-- Box: x=610, y=145, w=155, h=60 -->
-  <g id="Case_7" transform="translate(610, 145)">
-    <rect x="0" y="0" width="155" height="60" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
-    <text x="10" y="20" class="box-title">CASE 7: GUEST GUARD</text>
-    <text x="10" y="38" class="box-sub">• Che SĐT: 098***3456</text>
-    <text x="10" y="52" class="box-sub">• Yêu cầu Đăng nhập</text>
+  <!-- [CASE 7: GUEST GUARD] (Làn 1, x: 640 -> 800, y: 160 -> 220) -->
+  <g id="Case_7">
+    <rect x="640" y="160" width="160" height="60" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <text x="652" y="180" class="box-title">CASE 7: GUEST GUARD</text>
+    <text x="652" y="196" class="box-sub">• Che SĐT: 098***3456</text>
+    <text x="652" y="209" class="box-sub">• Yêu cầu Đăng nhập</text>
   </g>
 
-  <!-- Connector: GW 1 Bottom -> Task 3 Left (Branch [Có], Channel x=555) -->
-  <path d="M 555 390 L 555 575 L 610 575" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowM)"/>
-  <text x="562" y="485" class="branch-text">[Có]</text>
+  <!-- Nhánh [Có]: GW 1 Đỉnh dưới (585, 405) -> Xuống Làn 3 (585, 590) -> Tác vụ 3 Trái (640, 590) -->
+  <polyline points="585,405 585,590 632,590" fill="none" stroke="#000000" stroke-width="1.5"/>
+  <polygon points="632,586 640,590 632,594" fill="#000000"/>
+  <text x="593" y="500" class="branch-text">[Có]</text>
 
-  <!-- [TASK 3: FETCH LIVE OPS] (Lane 3: Center y = 575) -->
-  <!-- Box: x=610, y=545, w=155, h=60, Center=(687, 575) -->
-  <g id="Task_3" transform="translate(610, 545)">
-    <rect x="0" y="0" width="155" height="60" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
-    <text x="10" y="22" class="box-title">3. Truy vấn Vận hành</text>
-    <text x="10" y="40" class="box-sub">• Lấy trạng thái: DELIVERED</text>
-    <text x="10" y="53" class="box-sub">• Lấy giờ ký nhận (t_del)</text>
+  <!-- [TÁC VỤ 3: TRUY VẤN VẬN HÀNH] (Làn 3, x: 640 -> 800, y: 560 -> 620) -->
+  <g id="Task_3">
+    <rect x="640" y="560" width="160" height="60" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <text x="652" y="582" class="box-title">3. Truy vấn Vận hành</text>
+    <text x="652" y="598" class="box-sub">• Trạng thái: DELIVERED</text>
+    <text x="652" y="611" class="box-sub">• Giờ ký nhận (t_del)</text>
   </g>
 
-  <!-- Connector: Task 3 Right -> Gateway 2 Left -->
-  <path d="M 765 575 L 800 575" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowM)"/>
+  <!-- Mũi tên: Tác vụ 3 Phải (800, 590) -> Gateway 2 Trái (840, 590) -->
+  <line x1="800" y1="590" x2="832" y2="590" stroke="#000000" stroke-width="1.5"/>
+  <polygon points="832,586 840,590 832,594" fill="#000000"/>
 
-  <!-- [GATEWAY 2: THỜI HIỆU 24H?] (Lane 3) -->
-  <!-- Diamond: Center=(825, 575), d=25, Top=(825, 550), Bottom=(825, 600), Right=(850, 575) -->
-  <g id="GW_2" transform="translate(800, 550)">
-    <polygon points="25,0 50,25 25,50 0,25" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
-    <text x="25" y="22" class="gw-text">Trong</text>
-    <text x="25" y="34" class="gw-text">24 giờ?</text>
+  <!-- [GATEWAY 2: THỜI HIỆU 24H?] (Làn 3, Tâm: 865, 590) -->
+  <g id="GW_2">
+    <polygon points="865,565 890,590 865,615 840,590" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <text x="865" y="587" class="gw-text">Trong</text>
+    <text x="865" y="599" class="gw-text">24 giờ?</text>
   </g>
 
-  <!-- Connector: GW 2 Top -> Case 2 Left (Branch [> 24h], Channel x=825) -->
-  <path d="M 825 550 L 825 365 L 880 365" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowM)"/>
-  <text x="832" y="460" class="branch-text">[&gt; 24h]</text>
+  <!-- Nhánh [> 24h]: GW 2 Đỉnh trên (865, 565) -> Lên Làn 2 (865, 380) -> Case 2 Trái (920, 380) -->
+  <polyline points="865,565 865,380 912,380" fill="none" stroke="#000000" stroke-width="1.5"/>
+  <polygon points="912,376 920,380 912,384" fill="#000000"/>
+  <text x="873" y="475" class="branch-text">[&gt; 24h]</text>
 
-  <!-- [CASE 2: SLA EXPIRED] (Lane 2: Center y = 365) -->
-  <!-- Box: x=880, y=335, w=155, h=60 -->
-  <g id="Case_2" transform="translate(880, 335)">
-    <rect x="0" y="0" width="155" height="60" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
-    <text x="10" y="20" class="box-title">CASE 2: QUÁ HẠN 24H</text>
-    <text x="10" y="38" class="box-sub">• Từ chối tự động đền 100%</text>
-    <text x="10" y="52" class="box-sub">• Tặng Voucher cước 30%</text>
+  <!-- [CASE 2: SLA EXPIRED] (Làn 2, x: 920 -> 1080, y: 350 -> 410) -->
+  <g id="Case_2">
+    <rect x="920" y="350" width="160" height="60" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <text x="932" y="370" class="box-title">CASE 2: QUÁ HẠN 24H</text>
+    <text x="932" y="386" class="box-sub">• Từ chối tự động đền 100%</text>
+    <text x="932" y="399" class="box-sub">• Tặng Voucher cước 30%</text>
   </g>
 
-  <!-- Connector: GW 2 Right -> Task 4 Left (Branch [≤ 24h]) -->
-  <path d="M 850 575 L 880 575" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowM)"/>
-  <text x="852" y="565" class="branch-text">[≤ 24h]</text>
+  <!-- Nhánh [≤ 24h]: GW 2 Đỉnh phải (890, 590) -> Tác vụ 4 Trái (920, 590) -->
+  <line x1="890" y1="590" x2="912" y2="590" stroke="#000000" stroke-width="1.5"/>
+  <polygon points="912,586 920,590 912,594" fill="#000000"/>
+  <text x="893" y="580" class="branch-text">[≤ 24h]</text>
 
-  <!-- [TASK 4: RAG POLICY] (Lane 3: Center y = 575) -->
-  <!-- Box: x=880, y=545, w=155, h=60, Center=(957, 575) -->
-  <g id="Task_4" transform="translate(880, 545)">
-    <rect x="0" y="0" width="155" height="60" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
-    <text x="10" y="22" class="box-title">4. RAG Chính sách</text>
-    <text x="10" y="40" class="box-sub">• Đối chiếu quy chuẩn BBBT</text>
-    <text x="10" y="53" class="box-sub">• Lấy hạn mức Khai giá</text>
+  <!-- [TÁC VỤ 4: RAG POLICY] (Làn 3, x: 920 -> 1080, y: 560 -> 620) -->
+  <g id="Task_4">
+    <rect x="920" y="560" width="160" height="60" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <text x="932" y="582" class="box-title">4. RAG Chính sách</text>
+    <text x="932" y="598" class="box-sub">• Quy chuẩn BBBT 24h</text>
+    <text x="932" y="611" class="box-sub">• Hạn mức Khai giá</text>
   </g>
 
-  <!-- Connector: Task 4 Right -> Gateway 3 Left -->
-  <path d="M 1035 575 L 1070 575" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowM)"/>
+  <!-- Mũi tên: Tác vụ 4 Phải (1080, 590) -> Gateway 3 Trái (1120, 590) -->
+  <line x1="1080" y1="590" x2="1112" y2="590" stroke="#000000" stroke-width="1.5"/>
+  <polygon points="1112,586 1120,590 1112,594" fill="#000000"/>
 
-  <!-- [GATEWAY 3: ĐỦ BẰNG CHỨNG?] (Lane 3) -->
-  <!-- Diamond: Center=(1095, 575), d=25, Top=(1095, 550), Right=(1120, 575) -->
-  <g id="GW_3" transform="translate(1070, 550)">
-    <polygon points="25,0 50,25 25,50 0,25" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
-    <text x="25" y="22" class="gw-text">Đủ ảnh &amp;</text>
-    <text x="25" y="34" class="gw-text">BBBT?</text>
+  <!-- [GATEWAY 3: ĐỦ BẰNG CHỨNG?] (Làn 3, Tâm: 1145, 590) -->
+  <g id="GW_3">
+    <polygon points="1145,565 1170,590 1145,615 1120,590" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <text x="1145" y="587" class="gw-text">Đủ ảnh &amp;</text>
+    <text x="1145" y="599" class="gw-text">BBBT?</text>
   </g>
 
-  <!-- Connector: GW 3 Top -> Case 3 Left (Branch [Thiếu], Channel x=1095) -->
-  <path d="M 1095 550 L 1095 365 L 1150 365" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowM)"/>
-  <text x="1102" y="460" class="branch-text">[Thiếu]</text>
+  <!-- Nhánh [Thiếu]: GW 3 Đỉnh trên (1145, 565) -> Lên Làn 2 (1145, 380) -> Case 3 Trái (1200, 380) -->
+  <polyline points="1145,565 1145,380 1192,380" fill="none" stroke="#000000" stroke-width="1.5"/>
+  <polygon points="1192,376 1200,380 1192,384" fill="#000000"/>
+  <text x="1153" y="475" class="branch-text">[Thiếu]</text>
 
-  <!-- [CASE 3: PENDING EVIDENCE] (Lane 2: Center y = 365) -->
-  <!-- Box: x=1150, y=335, w=155, h=60 -->
-  <g id="Case_3" transform="translate(1150, 335)">
-    <rect x="0" y="0" width="155" height="60" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
-    <text x="10" y="20" class="box-title">CASE 3: CHỜ BỔ SUNG</text>
-    <text x="10" y="38" class="box-sub">• Gửi link tải ảnh vỡ</text>
-    <text x="10" y="52" class="box-sub">• Thời hạn: 48 giờ</text>
+  <!-- [CASE 3: CHỜ BỔ SUNG] (Làn 2, x: 1200 -> 1360, y: 350 -> 410) -->
+  <g id="Case_3">
+    <rect x="1200" y="350" width="160" height="60" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <text x="1212" y="370" class="box-title">CASE 3: CHỜ BỔ SUNG</text>
+    <text x="1212" y="386" class="box-sub">• Gửi link tải ảnh vỡ</text>
+    <text x="1212" y="399" class="box-sub">• Thời hạn: 48 giờ</text>
   </g>
 
-  <!-- Connector: GW 3 Right -> Gateway 4 Left (Branch [Đủ]) -->
-  <path d="M 1120 575 L 1170 575" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowM)"/>
-  <text x="1125" y="565" class="branch-text">[Đủ]</text>
+  <!-- Nhánh [Đủ]: GW 3 Đỉnh phải (1170, 590) -> Gateway 4 Trái (1220, 590) -->
+  <line x1="1170" y1="590" x2="1212" y2="590" stroke="#000000" stroke-width="1.5"/>
+  <polygon points="1212,586 1220,590 1212,594" fill="#000000"/>
+  <text x="1175" y="580" class="branch-text">[Đủ]</text>
 
-  <!-- [GATEWAY 4: DUYỆT TỰ ĐỘNG?] (Lane 3) -->
-  <!-- Diamond: Center=(1195, 575), d=25, Top=(1195, 550), Bottom=(1195, 600) -->
-  <g id="GW_4" transform="translate(1170, 550)">
-    <polygon points="25,0 50,25 25,50 0,25" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
-    <text x="25" y="20" class="gw-text">≤ 2 Triệu</text>
-    <text x="25" y="32" class="gw-text">&amp; Không</text>
-    <text x="25" y="44" class="gw-text">tranh chấp?</text>
+  <!-- [GATEWAY 4: DUYỆT TỰ ĐỘNG?] (Làn 3, Tâm: 1245, 590) -->
+  <g id="GW_4">
+    <polygon points="1245,565 1270,590 1245,615 1220,590" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <text x="1245" y="585" class="gw-text">≤ 2 Triệu &amp;</text>
+    <text x="1245" y="597" class="gw-text">Hợp lệ?</text>
   </g>
 
-  <!-- Connector: GW 4 Top -> Final 1 Left (Branch [Đạt], Channel x=1195) -->
-  <path d="M 1195 550 L 1195 175 L 1260 175" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowM)"/>
-  <text x="1202" y="260" class="branch-text">[Đạt]</text>
+  <!-- Nhánh [Đạt]: GW 4 Đỉnh trên (1245, 565) -> Lên Làn 1 (1245, 190) -> Final 1 Trái (1310, 190) -->
+  <polyline points="1245,565 1245,190 1302,190" fill="none" stroke="#000000" stroke-width="1.5"/>
+  <polygon points="1302,186 1310,190 1302,194" fill="#000000"/>
+  <text x="1253" y="275" class="branch-text">[Đạt]</text>
 
-  <!-- [FINAL 1: AUTO RESOLUTION] (Lane 1: Center y = 175) -->
-  <!-- Box: x=1260, y=145, w=185, h=60 -->
-  <g id="Final_1" transform="translate(1260, 145)">
-    <rect x="0" y="0" width="185" height="60" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="2"/>
-    <text x="10" y="20" class="box-title">CASE 1: TỰ ĐỘNG DUYỆT</text>
-    <text x="10" y="38" class="box-sub">• Sinh mã Ticket: CLM-88219</text>
-    <text x="10" y="52" class="box-sub">• Chuyển tiền Ví trong 2h</text>
+  <!-- [CASE 1: TỰ ĐỘNG DUYỆT] (Làn 1, x: 1310 -> 1490, y: 160 -> 220) -->
+  <g id="Final_1">
+    <rect x="1310" y="160" width="180" height="60" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="2"/>
+    <text x="1322" y="180" class="box-title">CASE 1: TỰ ĐỘNG DUYỆT</text>
+    <text x="1322" y="196" class="box-sub">• Sinh mã: CLM-88219</text>
+    <text x="1322" y="209" class="box-sub">• Chuyển tiền Ví trong 2h</text>
   </g>
 
-  <!-- Connector: Final 1 Right -> End 1 -->
-  <path d="M 1445 175 L 1485 175" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowM)"/>
+  <!-- Mũi tên: Final 1 Phải (1490, 190) -> Kết thúc 1 (1525, 190) -->
+  <line x1="1490" y1="190" x2="1515" y2="190" stroke="#000000" stroke-width="1.5"/>
+  <polygon points="1515,186 1523,190 1515,194" fill="#000000"/>
+  <circle cx="1535" cy="190" r="12" fill="#FFFFFF" stroke="#000000" stroke-width="2.5"/>
+  <circle cx="1535" cy="190" r="7" fill="#000000"/>
 
-  <!-- [END EVENT 1] -->
-  <g id="End_1" transform="translate(1485, 160)">
-    <circle cx="15" cy="15" r="15" fill="#FFFFFF" stroke="#000000" stroke-width="3"/>
-    <circle cx="15" cy="15" r="10" fill="#000000"/>
+  <!-- Nhánh [Vượt ngưỡng / HITL]: GW 4 Đỉnh dưới (1245, 615) -> Xuống Làn 4 (1245, 800) -> Task 5 Trái (1310, 800) -->
+  <polyline points="1245,615 1245,800 1302,800" fill="none" stroke="#000000" stroke-width="1.5"/>
+  <polygon points="1302,796 1310,800 1302,804" fill="#000000"/>
+  <text x="1253" y="710" class="branch-text">[&gt; 2M / HITL]</text>
+
+  <!-- [CASE 4: CHUYỂN GIAO HITL] (Làn 4, x: 1310 -> 1490, y: 770 -> 830) -->
+  <g id="Task_5_HITL">
+    <rect x="1310" y="770" width="180" height="60" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="2"/>
+    <text x="1322" y="790" class="box-title">CASE 4: CHUYỂN GIAO (HITL)</text>
+    <text x="1322" y="806" class="box-sub">• Đóng gói Dossier sự cố</text>
+    <text x="1322" y="819" class="box-sub">• Gán cho Trưởng bưu cục</text>
   </g>
 
-  <!-- Connector: GW 4 Bottom -> Task 5 Left (Branch [Không đạt / Vượt ngưỡng], Channel x=1195) -->
-  <path d="M 1195 600 L 1195 785 L 1260 785" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowM)"/>
-  <text x="1202" y="700" class="branch-text">[&gt; 2M / Tranh chấp]</text>
-
-  <!-- [TASK 5: HITL DISPATCHING] (Lane 4: Center y = 785) -->
-  <!-- Box: x=1260, y=755, w=185, h=60 -->
-  <g id="Task_5_HITL" transform="translate(1260, 755)">
-    <rect x="0" y="0" width="185" height="60" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="2"/>
-    <text x="10" y="20" class="box-title">CASE 4: CHUYỂN GIAO (HITL)</text>
-    <text x="10" y="38" class="box-sub">• Đóng gói Dossier hồ sơ sự cố</text>
-    <text x="10" y="52" class="box-sub">• Gán cho Trưởng bưu cục xử lý</text>
-  </g>
-
-  <!-- Connector: Task 5 Right -> End 2 -->
-  <path d="M 1445 785 L 1485 785" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowM)"/>
-
-  <!-- [END EVENT 2] -->
-  <g id="End_2" transform="translate(1485, 770)">
-    <circle cx="15" cy="15" r="15" fill="#FFFFFF" stroke="#000000" stroke-width="3"/>
-    <circle cx="15" cy="15" r="10" fill="#000000"/>
-  </g>
+  <!-- Mũi tên: Task 5 Phải (1490, 800) -> Kết thúc 2 (1525, 800) -->
+  <line x1="1490" y1="800" x2="1515" y2="800" stroke="#000000" stroke-width="1.5"/>
+  <polygon points="1515,796 1523,800 1515,804" fill="#000000"/>
+  <circle cx="1535" cy="800" r="12" fill="#FFFFFF" stroke="#000000" stroke-width="2.5"/>
+  <circle cx="1535" cy="800" r="7" fill="#000000"/>
 
   <!-- ==================== FOOTER ==================== -->
-  <g id="Footer" transform="translate(80, 915)">
-    <line x1="0" y1="0" x2="1490" y2="0" stroke="#000000" stroke-width="1"/>
-    <text x="0" y="20" font-size="11" font-style="italic" fill="#333333">
-      Ghi chú: Sơ đồ thiết kế chuẩn BPMN 2.0 (Business Process Model and Notation). Khoảng cách định tuyến vuông góc đảm bảo không chồng chéo đường dẫn và tối ưu in ấn đơn sắc A4.
+  <g id="Footer">
+    <line x1="80" y1="920" x2="1570" y2="920" stroke="#000000" stroke-width="1"/>
+    <text x="80" y="940" font-size="11" font-style="italic" fill="#333333">
+      Ghi chú: Sơ đồ vẽ theo chuẩn BPMN 2.0 (Business Process Model and Notation). Sử dụng mũi tên đa giác tuyệt đối (Explicit Polygons) tương thích 100% với Figma SVG Parser.
     </text>
   </g>
 </svg>
