@@ -37,43 +37,37 @@ Hệ thống **Nexus Enterprise Logistics Platform** là giải pháp nền tả
 
 ---
 
-## 2. CÂY PHÂN CẤP KẾ THỪA TÁC NHÂN (ACTOR GENERALIZATION HIERARCHY)
+## 2. DANH MỤC 6 TÁC NHÂN THỰC TẾ TRÊN HỆ THỐNG (6 REAL ACTORS)
 
-Hệ thống tuân thủ nghiêm ngặt chuẩn **UML 2.5 (OMG)**, mô hình hóa cấu trúc phân quyền thông qua **Cây kế thừa Tác nhân 3 tầng**. Mối quan hệ kế thừa được thể hiện bằng mũi tên tam giác rỗng hướng về phía Tác nhân cha (`──▷`), giúp tác nhân con tự động thừa hưởng toàn bộ Use Case chung mà không làm rối sơ đồ:
+Hệ thống tuân thủ nghiêm ngặt nguyên tắc **bám sát 100% mã nguồn thực tế đã triển khai**, không sử dụng các tác nhân trừu tượng, chung chung (như "Nhân sự nội bộ" hay "Người dùng hệ thống"). Toàn bộ các tương tác trên sơ đồ và tài liệu đặc tả được ánh xạ trực tiếp đến **đúng 6 Roles thực tế** tương ứng với 6 ứng dụng Client (Frontend Web & Mobile App):
 
 ```
-                              [ Người dùng Hệ thống ]
-                             (System User - Abstract)
-                             ▲                      ▲
-           ┌─────────────────┘                      └─────────────────┐
-           │                                                          │
-  [ Khách hàng ]                                          [ Nhân sự Vận hành Nội bộ ]
-(Customer - Abstract)                                      (Internal Staff - Abstract)
-     ▲     ▲     ▲                                             ▲          ▲          ▲
-     │     │     │                                             │          │          │
-┌────┴───┐ │ ┌───┴──────────┐                            ┌─────┴───────┐  │  ┌───────┴──────┐
-│ Khách  │ │ │  Chủ Shop    │                            │   Bưu tá    │  │  │Quản trị viên │
-│vãng lai│ │ │  (MERCHANT)  │                            │  (COURIER)  │  │  │ SYSTEM_ADMIN │
-└────────┘ │ └──────────────┘                            └─────────────┘  │  └──────────────┘
-    ┌──────┴─────────┐                                              ┌─────┴──────┐
-    │ Người nhận hàng│                                              │ Nhân sự OPS│
-    │  (CUSTOMER)    │                                              │ (Hub / Kho)│
-    └────────────────┘                                              └────────────┘
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                              6 ROLES THỰC TẾ TRÊN HỆ THỐNG NEXUS ENTERPRISE                           │
+├────────────────────────────────────────────────────┬───────────────────────────────────────────────────┤
+│ NHÓM ĐỐI TÁC & NGƯỜI DÙNG NGOẠI VI (EXTERNAL)      │ NHÓM VẬN HÀNH & QUẢN TRỊ NỘI BỘ (INTERNAL)        │
+├────────────────────────────────────────────────────┼───────────────────────────────────────────────────┤
+│ 1. Khách vãng lai (GUEST)                          │ 4. Courier (Bưu tá giao nhận) (COURIER)           │
+│    • Client: guest-web (:5174)                     │    • Client: courier-mobile (:8081)               │
+│                                                    │                                                   │
+│ 2. Khách hàng (CUSTOMER)                           │ 5. Ops các cấp (OPS (Hub/Dispatch/Kho))           │
+│    • Client: customer-mobile (:8082)               │    • Client: ops-web (:5175)                      │
+│                                                    │                                                   │
+│ 3. Merchant (Chủ Shop / Người gửi) (MERCHANT)      │ 6. System Admin (Quản trị viên) (SYSTEM_ADMIN)   │
+│    • Client: merchant-web (:5176)                  │    • Client: admin-web (:5173)                    │
+└────────────────────────────────────────────────────┴───────────────────────────────────────────────────┘
 ```
 
-### Bảng Phân Tích Bản Chất Kế Thừa Của 6 Tác Nhân Triển Khai Thực Tế
+### Bảng Phân Tích Chi Tiết 6 Tác Nhân Triển Khai Thực Tế
 
-| Tác nhân (Actor) | Bản chất | Kế thừa từ | Ứng dụng Client | Trách nhiệm & Quyền hạn nghiệp vụ trong Codebase |
-| :--- | :---: | :---: | :---: | :--- |
-| **Người dùng Hệ thống** *(System User)* | *Trừu tượng* | *Root* | Toàn bộ Client | Tác nhân gốc đại diện cho mọi cá nhân tương tác với hệ thống. Thừa hưởng 2 năng lực nền tảng: Tra cứu lộ trình bưu gửi (`UC-31`) và Hội thoại tự nhiên với Trợ lý AI (`UC-35`). |
-| **Khách hàng** *(Customer)* | *Trừu tượng* | `System User` | Web & Mobile | Khách hàng bên ngoài hệ thống logistics, thừa hưởng các tính năng tra cứu cước IATA (`UC-02`), theo dõi hành trình đơn hàng. |
-| **Khách vãng lai** *(GUEST)* | **Cụ thể** | `Customer` | `guest-web :5174` | Khách truy cập ẩn danh không cần tài khoản. Được phép tra cứu lộ trình (bị khử PII Masking `UC-32` che số điện thoại/địa chỉ) và hỏi đáp AI tư vấn cước. |
-| **Người nhận hàng** *(CUSTOMER)* | **Cụ thể** | `Customer` | `customer-mobile :8082` | Khách hàng đầu nhận bưu kiện. Có quyền nhận hàng ký e-POD (`UC-15`), thanh toán VietQR SePay (`UC-25b`), hẹn lại ngày phát (`UC-17`), và khởi tạo khiếu nại sự cố trong 24h (`UC-19`). |
-| **Chủ Shop / Người gửi** *(MERCHANT)* | **Cụ thể** | `Customer` | `merchant-web :5176` | Đối tác kinh doanh gửi hàng. Thực hiện tạo đơn Portal (`UC-01a`), đồng bộ Webhook sàn TMĐT (`UC-01b`), yêu cầu lấy hàng (`UC-04`), sửa đổi thông tin đơn (`UC-05`), hủy đơn (`UC-06`), nộp khiếu nại (`UC-19`), và đối soát COD (`UC-28`, `UC-29`). |
-| **Nhân sự Nội bộ** *(Internal Staff)* | *Trừu tượng* | `System User` | Web & Mobile | Toàn thể nhân viên biên chế công ty logistics. Thừa hưởng quyền tra cứu viễn trắc nội bộ (`UC-33`), giám sát định vị GPS (`UC-34`), và đăng nhập nghiệp vụ. |
-| **Bưu tá giao nhận** *(COURIER)* | **Cụ thể** | `Internal Staff` | `courier-mobile :8081` | Nhân sự hiện trường chặng đầu và chặng cuối duy nhất. Thực hiện quét gom hàng (`UC-08`), phát hàng (`UC-14`), chụp ảnh ký e-POD (`UC-15`), báo phát thất bại NDR (`UC-16`), thu tiền mặt COD (`UC-25a`), ký số BBBT hiện trường (`UC-20`), và quyết toán ca nộp tiền (`UC-26`). |
-| **Vận hành Bưu cục & Kho** *(OPS)* | **Cụ thể** | `Internal Staff` | `ops-web :5175` | Toàn bộ các cấp vận hành kho trung chuyển (`HUB_OPS`, `DISPATCHER`, `SORTER`, `INVENTORY_CLERK`, `OPS_MANAGER`). Quét Inbound (`UC-09`), Outbound (`UC-10`), đóng bao Manifest niêm chì (`UC-11`), nhận bao đầu tuyến (`UC-12`), phân tuyến bưu tá (`UC-13`), thẩm định khiếu nại $\le 500\text{k}$ (`UC-21`), và điều tra hòa giải (`UC-24`). |
-| **Quản trị Hệ thống** *(SYSTEM_ADMIN)* | **Cụ thể** | `Internal Staff` | `admin-web :5173` | Quản trị viên cấp cao. Quản trị tài khoản người dùng (`UC-45`), phân quyền RBAC Matrix (`UC-46`), xem audit logs (`UC-47`), quản lý Hubs (`UC-48`), Zones (`UC-49`), cấu hình SLA (`UC-50`), CMS bài viết chính sách (`UC-51`), hồ sơ Merchant (`UC-52`), lý do NDR (`UC-53`), phê duyệt bồi thường $> 500\text{k}$ (`UC-22`), cấn trừ bồi thường (`UC-23`), và đối soát SePay tự động (`UC-27`). |
+| Tác nhân (Actor) | Mã Role Codebase | Ứng dụng Client & Port | Trách nhiệm & Quyền hạn nghiệp vụ thực tế trong Codebase |
+| :--- | :---: | :---: | :--- |
+| **Khách vãng lai** | `GUEST` | `guest-web :5174` | Khách truy cập ẩn danh không cần tài khoản. Được phép tra cứu lộ trình bưu gửi công khai (bị khử định danh PII Masking `UC-32` che số điện thoại/địa chỉ), hỏi đáp với Trợ lý AI (`UC-35`), và nhận tư vấn cước IATA tự động (`UC-38`). |
+| **Khách hàng** | `CUSTOMER` | `customer-mobile :8082` | Khách hàng đầu nhận bưu kiện (người nhận). Có quyền tra cứu hành trình (`UC-31`), hội thoại hỏi đáp AI (`UC-35`), nhận hàng & ký nhận điện tử e-POD qua OTP (`UC-14`, `UC-15`), thanh toán VietQR SePay động (`UC-25b`), hẹn lại ngày phát (`UC-17`), và khởi tạo khiếu nại sự cố trong 24h (`UC-19`). |
+| **Merchant** *(Chủ Shop / Người gửi)* | `MERCHANT` | `merchant-web :5176` | Đối tác kinh doanh gửi hàng. Thực hiện tạo đơn trên Portal (`UC-01a`), đồng bộ đơn Webhook sàn TMĐT (`UC-01b`), tự động tính cước IATA (`UC-02`), in phiếu gửi kèm mã vạch/QR (`UC-03`), yêu cầu bưu tá lấy hàng (`UC-04`), sửa đổi thông tin đơn (`UC-05`), hủy đơn (`UC-06`), tra cứu danh sách (`UC-07`), nộp khiếu nại bồi thường (`UC-19`), và đối soát bảng kê COD (`UC-28`, `UC-29`). |
+| **Courier** *(Bưu tá giao nhận)* | `COURIER` | `courier-mobile :8081` | Nhân sự hiện trường chặng đầu và chặng cuối duy nhất. Thực hiện quét gom hàng (`UC-08`), đóng bao bưu tá (`UC-11`), thực hiện chuyến phát (`UC-14`), xác thực ký nhận e-POD & OTP (`UC-15`), báo phát thất bại NDR (`UC-16`), hẹn lại ngày phát (`UC-17`), xử lý chuyển hoàn (`UC-18`), thu tiền mặt COD (`UC-25a`), quyết toán ca nộp tiền (`UC-26`), và lập/ký số biên bản sự cố BBBT hiện trường (`UC-20`). |
+| **Ops các cấp** *(Hub / Dispatch / Kho)* | `OPS` | `ops-web :5175` | Toàn bộ các cấp vận hành kho trung chuyển và điều phối (`HUB_OPS`, `DISPATCHER`, `SORTER`, `INVENTORY_CLERK`, `OPS_MANAGER`). Quét mã Inbound nhập kho (`UC-09`), quét Outbound xuất kho (`UC-10`), đóng bao Manifest niêm chì điện tử (`UC-11`), tiếp nhận bao tải đầu tuyến (`UC-12`), phân công task & tối ưu tuyến (`UC-13`), thẩm định khiếu nại bồi thường $\le 500\text{k}$ (`UC-21`), điều tra hòa giải tranh chấp (`UC-24`), xác nhận bảng kê đối soát COD chốt sổ (`UC-29`), tra cứu viễn trắc nội bộ (`UC-33`), giám sát GPS (`UC-34`), và điều chuyển nhân viên hỗ trợ từ Chatbot (`UC-41`). |
+| **System Admin** *(Quản trị viên hệ thống)* | `SYSTEM_ADMIN` | `admin-web :5173` | Quản trị viên cấp cao nhất. Đăng nhập hệ thống (`UC-42`), hồ sơ cá nhân (`UC-44`), quản trị tài khoản người dùng (`UC-45`), phân quyền RBAC Matrix (`UC-46`), xem nhật ký kiểm toán bảo mật (`UC-47`), quản trị Hubs 4 cấp (`UC-48`), Zones địa lý (`UC-49`), cấu hình SLA và phí dịch vụ (`UC-50`), CMS bài viết chính sách (`UC-51`), hồ sơ đối tác Merchant (`UC-52`), danh mục lý do NDR (`UC-53`), phê duyệt bồi thường $> 500\text{k}$ (`UC-22`), cấn trừ bồi thường (`UC-23`), đối soát SePay tự động (`UC-27`), và báo cáo dòng tiền doanh thu (`UC-30`). |
 
 ---
 
