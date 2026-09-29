@@ -8,8 +8,10 @@ Key Design Specifications:
 - 100% Monochrome Technical Line-Art: Trắng - Đen - Xám chuẩn kỹ thuật đồ án.
 - Không tô màu nền tiêu đề (No Header Background Fill): Tiêu đề dùng text đen trên nền trắng với đường phân cách thanh mảnh.
 - Phong cách thủ công kỹ thuật (Handcrafted Engineering): Các khối hộp tối giản, đường nét rõ ràng, phân cấp mạch lạc.
+- Hiển thị tường minh CƠ CHẾ PHÂN ĐOẠN DỮ LIỆU (AST Markdown Heading + Sliding Window Overlap 16% + Vectorization 768-D).
+- Hiển thị hoàn chỉnh KIẾN TRÚC ĐIỀU PHỐI AI CHATBOT (Client -> Gateway/PII -> Intent Router -> Hybrid RAG -> Tools -> Context Sandwich -> LLM Streaming).
 - Standard A4 Portrait Aspect Ratio: Rộng 2000px, Cao 2830px (Tỷ lệ 1 : 1.4142).
-- Không gian liên tầng rộng rãi (80px - 90px): Tôn vinh các xa lộ mũi tên điều phối dữ liệu.
+- Không gian liên tầng rộng rãi, tôn vinh các xa lộ mũi tên điều phối dữ liệu.
 - 100% Native Vector Figma Compatible: ZERO SVG <marker> tags, 100% inline vectors.
 
 Outputs:
@@ -32,7 +34,7 @@ def build_architecture_svg():
 
     lines.append(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="100%" height="100%" style="background:#FFFFFF;">')
 
-    # Double Technical Monochrome Border
+    # Double Technical Monochrome Border (A4 Portrait)
     lines.append(f'''
   <!-- Academic Blueprint Double Border (A4 Portrait Format - Monochrome) -->
   <rect width="100%" height="100%" fill="#FFFFFF"/>
@@ -42,39 +44,31 @@ def build_architecture_svg():
   <style>
     text {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }}
     
-    .hdr-title {{ font-size: 21px; font-weight: 800; fill: #000000; letter-spacing: -0.3px; }}
+    .hdr-title {{ font-size: 20px; font-weight: 800; fill: #000000; letter-spacing: -0.3px; }}
     .hdr-sub {{ font-size: 13px; font-weight: 500; fill: #374151; }}
     .hdr-meta-lbl {{ font-size: 11px; font-weight: 700; fill: #000000; font-family: ui-monospace, Menlo, monospace; letter-spacing: 0.5px; }}
     
-    .tier-title {{ font-size: 14.5px; font-weight: 800; fill: #000000; letter-spacing: 0.6px; text-transform: uppercase; }}
-    .tier-sub {{ font-size: 11px; font-weight: 600; fill: #4B5563; font-family: ui-monospace, Menlo, monospace; }}
+    .sec-title {{ font-size: 14.5px; font-weight: 800; fill: #000000; letter-spacing: 0.6px; text-transform: uppercase; }}
+    .sec-sub {{ font-size: 11px; font-weight: 600; fill: #4B5563; font-family: ui-monospace, Menlo, monospace; }}
     
-    .comp-title {{ font-size: 14px; font-weight: 700; fill: #000000; letter-spacing: -0.2px; }}
+    .comp-title {{ font-size: 13.5px; font-weight: 700; fill: #000000; letter-spacing: -0.2px; }}
     .comp-stereo {{ font-size: 11px; font-weight: 600; fill: #4B5563; font-family: ui-monospace, Menlo, monospace; }}
     .comp-txt {{ font-size: 12px; font-weight: 400; fill: #1F2937; line-height: 1.45; }}
     .comp-txt-bold {{ font-size: 12px; font-weight: 700; fill: #000000; }}
     .comp-code {{ font-size: 11px; font-weight: 600; fill: #000000; font-family: ui-monospace, Menlo, monospace; }}
     
-    .tag-rect {{ fill: #FFFFFF; stroke: #4B5563; stroke-width: 1; rx: 3px; }}
-    .tag-txt {{ font-size: 10.5px; font-weight: 600; fill: #000000; font-family: ui-monospace, Menlo, monospace; }}
-    
-    .math-formula {{ font-size: 12.5px; font-weight: 700; fill: #000000; font-family: ui-monospace, Menlo, monospace; }}
-    .guard-text {{ font-size: 11.5px; font-weight: 700; fill: #000000; font-family: ui-monospace, Menlo, monospace; }}
-    
+    .math-formula {{ font-size: 12px; font-weight: 700; fill: #000000; font-family: ui-monospace, Menlo, monospace; }}
     .flow-badge {{ font-size: 12px; font-weight: 800; fill: #FFFFFF; font-family: ui-monospace, Menlo, monospace; }}
-    .flow-arrow-lbl {{ font-size: 11.5px; font-weight: 700; fill: #000000; font-family: ui-monospace, Menlo, monospace; }}
+    .flow-arrow-lbl {{ font-size: 11px; font-weight: 700; fill: #000000; font-family: ui-monospace, Menlo, monospace; }}
     
-    .flow-step-title {{ font-size: 12px; font-weight: 700; fill: #000000; }}
-    .flow-step-desc {{ font-size: 11px; font-weight: 500; fill: #374151; }}
-    
-    .footer-title {{ font-size: 11.5px; font-weight: 800; fill: #000000; text-transform: uppercase; letter-spacing: 0.5px; }}
-    .footer-val {{ font-size: 11.5px; font-weight: 600; fill: #111827; font-family: ui-monospace, Menlo, monospace; }}
+    .footer-title {{ font-size: 12px; font-weight: 800; fill: #000000; text-transform: uppercase; letter-spacing: 0.5px; }}
+    .footer-val {{ font-size: 11px; font-weight: 600; fill: #111827; font-family: ui-monospace, Menlo, monospace; }}
   </style>
 ''')
 
     # Utility Functions
     def draw_arrow_head(x2, y2, direction="right", color="#000000", size=6):
-        """Draws clean vector arrowhead."""
+        """Draws clean vector arrowhead without SVG marker tags."""
         if direction == "right":
             return f'<polygon points="{x2},{y2} {x2-size*1.6},{y2-size} {x2-size*1.6},{y2+size}" fill="{color}"/>'
         elif direction == "left":
@@ -85,777 +79,884 @@ def build_architecture_svg():
             return f'<polygon points="{x2},{y2} {x2-size},{y2+size*1.6} {x2+size},{y2+size*1.6}" fill="{color}"/>'
         return ''
 
-    def draw_flow_badge(bx, by, number):
-        """Draws numbered circle badge indicating architectural sequence (Solid Black with White Text)."""
+    def draw_flow_badge(bx, by, label):
+        """Draws numbered circle badge indicating sequence."""
         return f'''
       <g transform="translate({bx}, {by})">
         <circle cx="0" cy="0" r="13" fill="#000000" stroke="#000000" stroke-width="1.5"/>
-        <text x="0" y="4.5" text-anchor="middle" class="flow-badge">{number}</text>
+        <text x="0" y="4.5" text-anchor="middle" class="flow-badge">{label}</text>
       </g>'''
 
-    def draw_store_box(cx, cy, cw, ch, title, sub_stereo, bullet_lines):
-        """Draws a clean, standard architectural data store card in monochrome."""
-        d_svg = []
-        d_svg.append(f'''
-      <g transform="translate({cx}, {cy})">
-        <rect width="{cw}" height="{ch}" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-        <line x1="0" y1="28" x2="{cw}" y2="28" stroke="#000000" stroke-width="1"/>
-        <text x="14" y="19" class="comp-stereo">{escape(sub_stereo)}</text>
-        <text x="14" y="48" class="comp-title" style="font-size:13px;">{escape(title)}</text>''')
-        cur_y = 70
-        for line in bullet_lines:
-            d_svg.append(f'<text x="14" y="{cur_y}" class="comp-txt">{escape(line)}</text>')
-            cur_y += 20
-        d_svg.append('      </g>')
-        return '\n'.join(d_svg)
-
-    # Layout Dimensions
     margin_x = 55
-    content_w = 1840  # Leaves 50px right gutter for clean SSE stream line
+    content_w = width - margin_x * 2  # 1890px
 
     # =========================================================================
-    # HEADER BAR (y: 45, h: 76) - Clean Outline, No Background Fill
+    # HEADER BAR (y: 45 to 130, h: 85) - NO BACKGROUND FILL
     # =========================================================================
     lines.append(f'''
-  <!-- HEADER BAR (MONOCHROME TECHNICAL BLUEPRINT - NO BACKGROUND FILL) -->
+  <!-- HEADER BAR -->
   <g id="HeaderBar" transform="translate({margin_x}, 45)">
-    <rect width="{content_w}" height="76" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.8"/>
+    <text x="0" y="24" class="hdr-title">HÌNH 1.4: KIẾN TRÚC PHÂN HỆ AI CHATBOT VÀ CƠ CHẾ PHÂN ĐOẠN DỮ LIỆU TRI THỨC (RAG)</text>
+    <text x="0" y="48" class="hdr-sub">Hệ thống Trợ lý ảo Nexus Logistics • Cơ chế tiền xử lý Heading AST &amp; Cửa sổ trượt Overlap 16% (Ngoại tuyến) • Điều phối RAG Lai &amp; Gọi công cụ (Trực tuyến)</text>
     
-    <text x="24" y="32" class="hdr-title">HÌNH 1.4A: KIẾN TRÚC PHÂN TẦNG VÀ ĐIỀU PHỐI PHÂN HỆ AI CHATBOT (NEXUS AI ASSISTANT)</text>
-    <text x="24" y="56" class="hdr-sub">Mô hình kiến trúc phân tầng chuẩn học thuật (4-Tier Layered Architecture) • Bản vẽ kỹ thuật chuẩn khổ A4 dọc Đồ án tốt nghiệp</text>
-    
-    <!-- Academic Specification Badges -->
-    <g transform="translate({content_w - 530}, 20)">
-      <rect x="0" y="0" width="160" height="36" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-      <text x="80" y="22" text-anchor="middle" class="hdr-meta-lbl">A4 PORTRAIT SPEC</text>
-      
-      <rect x="175" y="0" width="170" height="36" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-      <text x="260" y="22" text-anchor="middle" class="hdr-meta-lbl">4-TIER MULTI-LAYER</text>
-      
-      <rect x="360" y="0" width="160" height="36" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-      <text x="440" y="22" text-anchor="middle" class="hdr-meta-lbl">HYBRID RAG + TOOLS</text>
+    <!-- Meta Box Right -->
+    <g transform="translate({content_w - 380}, 6)">
+      <rect x="0" y="0" width="380" height="48" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+      <text x="14" y="20" class="hdr-meta-lbl">PHONG CÁCH: MONOCHROME BLUEPRINT</text>
+      <text x="14" y="38" class="hdr-meta-lbl" style="font-size:10px; font-weight:500; fill:#4B5563;">TIÊU CHUẨN A4 ĐỨNG (2000×2830px) • FIGMA 100%</text>
     </g>
-  </g>''')
 
-    # Common Column Sizing
-    col_gap = 20
-    box_w = (content_w - 48 - col_gap * 2) // 3  # (1840 - 88) // 3 = 584px
+    <!-- Clean Horizontal Line Under Header -->
+    <line x1="0" y1="72" x2="{content_w}" y2="72" stroke="#000000" stroke-width="1.4"/>
+  </g>
+''')
 
     # =========================================================================
-    # TIER 1: TẦNG TRÌNH DIỄN & ỨNG DỤNG CLIENT (y: 145, h: 200)
+    # SECTION 1: CƠ CHẾ TIỀN XỬ LÝ & PHÂN ĐOẠN TRI THỨC (OFFLINE CHUNKING)
+    # y: 135 to 815, h: 680
     # =========================================================================
-    t1_y = 145
-    t1_h = 200
+    s1_y = 135
+    s1_h = 680
+    col_w_s1 = 430
+    gap_s1 = (content_w - 48 - col_w_s1 * 4) // 3  # (1890 - 48 - 1720) // 3 = 122 // 3 = 40px
+
     lines.append(f'''
-  <!-- ================= TIER 1: CLIENT & PRESENTATION LAYER ================= -->
-  <g id="Tier1_Presentation" transform="translate({margin_x}, {t1_y})">
-    <!-- Tier Boundary Container -->
-    <rect width="{content_w}" height="{t1_h}" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.8"/>
+  <!-- ================= SECTION 1: KNOWLEDGE INGESTION & DATA CHUNKING PIPELINE ================= -->
+  <g id="Section1_KnowledgeChunkingPipeline" transform="translate({margin_x}, {s1_y})">
+    <!-- Section Outer Container -->
+    <rect width="{content_w}" height="{s1_h}" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.8"/>
     <!-- Clean Horizontal Divider Line (No Background Fill) -->
     <line x1="0" y1="36" x2="{content_w}" y2="36" stroke="#000000" stroke-width="1.2"/>
-    <text x="20" y="23" class="tier-title">TẦNG 1: TRÌNH DIỄN &amp; ỨNG DỤNG CLIENT</text>
-    <text x="{content_w - 20}" y="23" text-anchor="end" class="tier-sub">[TIER 1: PRESENTATION &amp; CLIENT APPLICATIONS - PROTOCOL: HTTPS / REST / SSE STREAM]</text>''')
+    <text x="20" y="23" class="sec-title">PHẦN I: KIẾN TRÚC TIỀN XỬ LÝ &amp; CƠ CHẾ PHÂN ĐOẠN DỮ LIỆU TRI THỨC (OFFLINE CHUNKING PIPELINE)</text>
+    <text x="{content_w - 20}" y="23" text-anchor="end" class="sec-sub">[PHASE 1: AST MARKDOWN HEADING PARSER • SLIDING WINDOW OVERLAP • 768-D VECTORIZATION]</text>
+''')
 
-    # 1.1 Merchant Web Portal
+    # Column 1.1: Source Documents (Markdown SOPs)
+    c1_1_x = 24
     lines.append(f'''
-    <!-- 1.1 Merchant Web Portal -->
-    <g transform="translate(24, 46)">
-      <rect width="{box_w}" height="140" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
-      <text x="18" y="24" class="comp-stereo">«Client Application · Next.js 14»</text>
-      <text x="18" y="46" class="comp-title">Cổng Thương Nhân (Merchant Web)</text>
-      <text x="18" y="70" class="comp-txt">• Trợ lý đàm thoại tra cứu trạng thái vận đơn, cước phí, tạo đơn tức thời.</text>
-      <text x="18" y="90" class="comp-txt">• Render thẻ giao diện động (Dynamic Shipment Card, Bảng kê chi phí).</text>
-      <g transform="translate(18, 106)">
-        <rect width="190" height="20" class="tag-rect"/>
-        <text x="10" y="14" class="tag-txt">HTTPS POST /api/v1/chat</text>
-        <rect x="200" y="0" width="160" height="20" class="tag-rect"/>
-        <text x="210" y="14" class="tag-txt">EventSource SSE Stream</text>
-      </g>
-    </g>''')
+    <!-- Step 1.1: Raw Knowledge Base Corpus -->
+    <g transform="translate({c1_1_x}, 52)">
+      <rect width="{col_w_s1}" height="{s1_h - 72}" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+      <text x="16" y="24" class="comp-stereo">«Corpus Store · docs/knowledge-base/»</text>
+      <text x="16" y="46" class="comp-title">1. Tài Liệu Nguồn SOP Bưu Chính</text>
+      <line x1="16" y1="56" x2="{col_w_s1 - 16}" y2="56" stroke="#9CA3AF" stroke-width="0.8"/>
 
-    # 1.2 Courier Mobile App
-    lines.append(f'''
-    <!-- 1.2 Courier Mobile App -->
-    <g transform="translate({24 + box_w + col_gap}, 46)">
-      <rect width="{box_w}" height="140" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
-      <text x="18" y="24" class="comp-stereo">«Mobile Application · React Native»</text>
-      <text x="18" y="46" class="comp-title">Ứng Dụng Bưu Tá (Courier Mobile)</text>
-      <text x="18" y="70" class="comp-txt">• Hỗ trợ tra cứu quy trình giao phát và hướng dẫn xử lý sự cố hiện trường.</text>
-      <text x="18" y="90" class="comp-txt">• Khởi tạo biên bản sự cố bưu phẩm (hư hỏng/mất mát) đính kèm ảnh chụp.</text>
-      <g transform="translate(18, 106)">
-        <rect width="170" height="20" class="tag-rect"/>
-        <text x="10" y="14" class="tag-txt">HTTPS REST JSON (TLS 1.3)</text>
-        <rect x="180" y="0" width="160" height="20" class="tag-rect"/>
-        <text x="190" y="14" class="tag-txt">JWT Authenticated Session</text>
-      </g>
-    </g>''')
+      <text x="16" y="78" class="comp-txt">• 9 văn kiện chính sách chuẩn hóa ngành logistics:</text>
 
-    # 1.3 Operations & CSKH Portal
-    lines.append(f'''
-    <!-- 1.3 Operations & CSKH Portal -->
-    <g transform="translate({24 + (box_w + col_gap)*2}, 46)">
-      <rect width="{box_w}" height="140" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
-      <text x="18" y="24" class="comp-stereo">«SPA Web Application · React»</text>
-      <text x="18" y="46" class="comp-title">Cổng Điều Hành (Operations Console)</text>
-      <text x="18" y="70" class="comp-txt">• Giám sát nhật ký hội thoại &amp; can thiệp tư vấn viên (Human-in-the-loop).</text>
-      <text x="18" y="90" class="comp-txt">• Quản trị kho tài liệu quy chuẩn SOP bưu chính và kích hoạt nhúng véc-tơ.</text>
-      <g transform="translate(18, 106)">
-        <rect width="150" height="20" class="tag-rect"/>
-        <text x="10" y="14" class="tag-txt">RESTful Admin APIs</text>
-        <rect x="160" y="0" width="170" height="20" class="tag-rect"/>
-        <text x="170" y="14" class="tag-txt">WebSocket Event Monitor</text>
-      </g>
-    </g>''')
-
-    lines.append('  </g>')
-
-    # =========================================================================
-    # SPACIOUS CONNECTOR TIER 1 -> TIER 2 (Gap: 80px)
-    # =========================================================================
-    t1_to_t2_gap = 80
-    flow_1_x = margin_x + content_w // 2
-    arrow_1_start = t1_y + t1_h
-    arrow_1_end = arrow_1_start + t1_to_t2_gap
-
-    lines.append(f'''
-  <!-- Spacious Connector Tier 1 -> Tier 2 (Highlighting Arrow Flow) -->
-  <line x1="{flow_1_x}" y1="{arrow_1_start}" x2="{flow_1_x}" y2="{arrow_1_end}" stroke="#000000" stroke-width="2.4"/>
-  {draw_arrow_head(flow_1_x, arrow_1_end, direction="down", color="#000000", size=8)}
-  {draw_flow_badge(flow_1_x - 38, arrow_1_start + t1_to_t2_gap // 2, "1")}
-  
-  <!-- Flow 1 Protocol Badge -->
-  <g transform="translate({flow_1_x + 18}, {arrow_1_start + t1_to_t2_gap // 2 - 14})">
-    <rect width="450" height="28" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-    <text x="12" y="18" class="flow-arrow-lbl">ChatRequestDTO [POST :3009 (Ingress) / HTTPS REST &amp; SSE Stream]</text>
-  </g>''')
-
-    # =========================================================================
-    # TIER 2: TẦNG CỔNG DỊCH VỤ, BẢO MẬT & QUẢN LÝ PHIÊN (y: 425, h: 200)
-    # =========================================================================
-    t2_y = arrow_1_end
-    t2_h = 200
-    lines.append(f'''
-  <!-- ================= TIER 2: GATEWAY, GUARDRAILS & SESSION ================= -->
-  <g id="Tier2_GatewaySecurity" transform="translate({margin_x}, {t2_y})">
-    <!-- Tier Boundary Container -->
-    <rect width="{content_w}" height="{t2_h}" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.8"/>
-    <!-- Clean Horizontal Divider Line (No Background Fill) -->
-    <line x1="0" y1="36" x2="{content_w}" y2="36" stroke="#000000" stroke-width="1.2"/>
-    <text x="20" y="23" class="tier-title">TẦNG 2: CỔNG DỊCH VỤ, BẢO MẬT &amp; QUẢN LÝ PHIÊN</text>
-    <text x="{content_w - 20}" y="23" text-anchor="end" class="tier-sub">[TIER 2: API GATEWAY, SECURITY GUARDRAILS &amp; CONTEXT BUFFER]</text>''')
-
-    # 2.1 Ingress API Controller
-    lines.append(f'''
-    <!-- 2.1 Ingress API Controller -->
-    <g transform="translate(24, 46)">
-      <rect width="{box_w}" height="140" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
-      <text x="18" y="24" class="comp-stereo">«REST / SSE Controller · Port :3009»</text>
-      <text x="18" y="46" class="comp-title">Bộ Điều Khiển Cổng (API Controller)</text>
-      <text x="18" y="70" class="comp-txt">• Tiếp nhận payload HTTP POST ChatRequestDTO; quản lý kết nối EventSource SSE.</text>
-      <text x="18" y="90" class="comp-txt">• Xác thực chữ ký số JWT Token; phân quyền truy cập theo vai trò (RBAC).</text>
-      <g transform="translate(18, 106)">
-        <rect width="160" height="20" class="tag-rect"/>
-        <text x="10" y="14" class="tag-txt">Rate Limit: 60 req/phút</text>
-        <rect x="170" y="0" width="170" height="20" class="tag-rect"/>
-        <text x="180" y="14" class="tag-txt">Input Schema Validation</text>
-      </g>
-    </g>''')
-
-    # 2.2 Security Guardrails & PII Sanitizer
-    lines.append(f'''
-    <!-- 2.2 Security Guardrails & PII Sanitizer -->
-    <g transform="translate({24 + box_w + col_gap}, 46)">
-      <rect width="{box_w}" height="140" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
-      <text x="18" y="24" class="comp-stereo">«Security Guardrail · Preprocessing Filter»</text>
-      <text x="18" y="46" class="comp-title">Hàng Rào Bảo Mật &amp; Khử Dữ Liệu PII</text>
-      <text x="18" y="70" class="comp-txt">• Khử thông tin nhận dạng cá nhân (PII Masking): Che giấu số điện thoại, CCCD qua Regex.</text>
-      <text x="18" y="90" class="comp-txt">• Phòng vệ tiêm nhiễm lệnh (Prompt Injection Defense): Chặn câu lệnh thao túng.</text>
-      <g transform="translate(18, 106)">
-        <rect width="170" height="20" class="tag-rect"/>
-        <text x="10" y="14" class="tag-txt">Regex Rule-Based Filter</text>
-        <rect x="180" y="0" width="170" height="20" class="tag-rect"/>
-        <text x="190" y="14" class="tag-txt">Unicode Normalization</text>
-      </g>
-    </g>''')
-
-    # 2.3 Session Buffer & Context Manager
-    lines.append(f'''
-    <!-- 2.3 Session Buffer & Context Manager -->
-    <g transform="translate({24 + (box_w + col_gap)*2}, 46)">
-      <rect width="{box_w}" height="140" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
-      <text x="18" y="24" class="comp-stereo">«Stateful Context Buffer · Redis / In-Memory»</text>
-      <text x="18" y="46" class="comp-title">Quản Lý Phiên &amp; Bộ Đệm Ngữ Cảnh</text>
-      <text x="18" y="70" class="comp-txt">• Cửa sổ trượt ngữ cảnh (Sliding Window K=6 lượt): Lưu vết hội thoại liền trước.</text>
-      <text x="18" y="90" class="comp-txt">• Khử hiện tượng mất ngữ cảnh: Duy trì mã đơn hàng và thực thể đang đàm thoại.</text>
-      <g transform="translate(18, 106)">
-        <rect width="170" height="20" class="tag-rect"/>
-        <text x="10" y="14" class="tag-txt">Sliding Window K=6 turns</text>
-        <rect x="180" y="0" width="160" height="20" class="tag-rect"/>
-        <text x="190" y="14" class="tag-txt">Session TTL: 30 phút</text>
-      </g>
-    </g>''')
-
-    lines.append('  </g>')
-
-    # =========================================================================
-    # SPACIOUS CONNECTOR TIER 2 -> TIER 3 (Gap: 85px)
-    # =========================================================================
-    t2_to_t3_gap = 85
-    flow_2_x = margin_x + content_w // 2
-    arrow_2_start = t2_y + t2_h
-    arrow_2_end = arrow_2_start + t2_to_t3_gap
-
-    lines.append(f'''
-  <!-- Spacious Connector Tier 2 -> Tier 3 (Highlighting Arrow Flow) -->
-  <line x1="{flow_2_x}" y1="{arrow_2_start}" x2="{flow_2_x}" y2="{arrow_2_end}" stroke="#000000" stroke-width="2.4"/>
-  {draw_arrow_head(flow_2_x, arrow_2_end, direction="down", color="#000000", size=8)}
-  {draw_flow_badge(flow_2_x - 38, arrow_2_start + t2_to_t3_gap // 2, "2")}
-  
-  <!-- Flow 2 Ingress Payload Badge -->
-  <g transform="translate({flow_2_x + 18}, {arrow_2_start + t2_to_t3_gap // 2 - 14})">
-    <rect width="520" height="28" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-    <text x="12" y="18" class="flow-arrow-lbl">SanitizedMessage + ContextArray[role, text] -> [AI PIPELINE INGRESS BUS]</text>
-  </g>''')
-
-    # =========================================================================
-    # TIER 3: TẦNG ĐIỀU PHỐI SUY LUẬN, TRUY XUẤT RAG & CÔNG CỤ (y: 710, h: 840)
-    # =========================================================================
-    t3_y = arrow_2_end
-    t3_h = 840
-    lines.append(f'''
-  <!-- ================= TIER 3: AI CORE ORCHESTRATION, RAG & TOOLING ================= -->
-  <g id="Tier3_AICore" transform="translate({margin_x}, {t3_y})">
-    <!-- Tier Boundary Container -->
-    <rect width="{content_w}" height="{t3_h}" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="2"/>
-    <!-- Clean Horizontal Divider Line (No Background Fill) -->
-    <line x1="0" y1="36" x2="{content_w}" y2="36" stroke="#000000" stroke-width="1.2"/>
-    <text x="20" y="23" class="tier-title">TẦNG 3: LÕI ĐIỀU PHỐI SUY LUẬN, TRUY XUẤT RAG &amp; CÔNG CỤ</text>
-    <text x="{content_w - 20}" y="23" text-anchor="end" class="tier-sub">[TIER 3: CORE AI ORCHESTRATION - INTENT ROUTER, HYBRID RAG &amp; TOOL CALLING ENGINE]</text>''')
-
-    c3_w = box_w  # 584px
-    c3a_x = 24
-    c3b_x = 24 + c3_w + col_gap
-    c3c_x = c3b_x + c3_w + col_gap
-
-    # -------------------------------------------------------------------------
-    # KHỐI 3A: ĐỊNH TUYẾN Ý ĐỊNH & PHÂN LUỒNG QUYẾT ĐỊNH (c3a_x)
-    # -------------------------------------------------------------------------
-    lines.append(f'''
-    <!-- 3A: Phân loại ý định & Định tuyến NLU -->
-    <g transform="translate({c3a_x}, 46)">
-      <rect width="{c3_w}" height="{t3_h - 66}" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-      <text x="18" y="24" class="comp-stereo">«Decision &amp; NLU Router»</text>
-      <text x="18" y="46" class="comp-title">1. Phân Tích &amp; Định Tuyến Ý Định</text>
-      
-      <text x="18" y="70" class="comp-txt">• Chuẩn hóa câu hỏi, bóc tách thực thể: Mã vận đơn <tspan class="comp-code">NX-XXXX</tspan>, Mã sự cố.</text>
-      <text x="18" y="90" class="comp-txt">• Xác định mục tiêu: Tra cứu quy trình SOP hay Thao tác dữ liệu nghiệp vụ.</text>
-
-      <!-- Standard Decision Diamond (Monochrome) -->
-      <g transform="translate({c3_w//2}, 230)">
-        <!-- Diamond Shape -->
-        <polygon points="0,-48 125,0 0,48 -125,0" fill="#FFFFFF" stroke="#000000" stroke-width="1.8"/>
-        <text x="0" y="-6" text-anchor="middle" class="comp-title" style="font-size:12.5px;">PHÂN LOẠI Ý ĐỊNH</text>
-        <text x="0" y="12" text-anchor="middle" class="comp-stereo">(INTENT ROUTER)</text>
-
-        <!-- Branch 1: Policy SOP Query (To RAG) -->
-        <line x1="125" y1="0" x2="{c3_w//2 - 12}" y2="0" stroke="#000000" stroke-width="2"/>
-        {draw_arrow_head(c3_w//2 - 12, 0, direction="right", color="#000000", size=6)}
-        <text x="135" y="-8" class="guard-text">[policy_sop]</text>
-        <text x="135" y="14" class="comp-txt" style="font-size:10.5px; fill:#4B5563;">Nhánh RAG</text>
-
-        <!-- Branch 2: Live Tool Call (To Tool Orchestrator) -->
-        <path d="M 0 48 L 0 110 L {c3_w//2 - 12} 110" fill="none" stroke="#000000" stroke-width="2"/>
-        {draw_arrow_head(c3_w//2 - 12, 110, direction="right", color="#000000", size=6)}
-        <text x="15" y="103" class="guard-text">[live_tool]</text>
-        <text x="15" y="126" class="comp-txt" style="font-size:10.5px; fill:#4B5563;">Nhánh Tool API</text>
-
-        <!-- Branch 3: Hybrid RAG + Tool Call -->
-        <path d="M 0 -48 L 0 -90 L {c3_w//2 - 12} -90" fill="none" stroke="#000000" stroke-width="2"/>
-        {draw_arrow_head(c3_w//2 - 12, -90, direction="right", color="#000000", size=6)}
-        <text x="15" y="-98" class="guard-text">[hybrid_task]</text>
-        <text x="15" y="-76" class="comp-txt" style="font-size:10.5px; fill:#4B5563;">Song song RAG &amp; Tool</text>
-      </g>
-
-      <!-- Technical Rule Specifications Box -->
-      <g transform="translate(18, 405)">
-        <rect width="{c3_w - 36}" height="350" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
-        <text x="16" y="24" class="comp-title" style="font-size:13px;">Quy Tắc Định Tuyến &amp; Bóc Tách Thực Thể:</text>
+      <!-- Mini Document List Box -->
+      <g transform="translate(14, 90)">
+        <rect width="{col_w_s1 - 28}" height="280" rx="3" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
+        <text x="10" y="22" class="comp-code">01-pricing-and-iata-weight.md (Bảng cước)</text>
+        <text x="10" y="44" class="comp-code">02-insurance-and-claim-policy.md (Bồi thường)</text>
+        <text x="10" y="66" class="comp-code">03-prohibited-and-restricted.md (Hàng cấm)</text>
+        <text x="10" y="88" class="comp-code">04-delivery-process-and-faq.md (Giao nhận)</text>
+        <text x="10" y="110" class="comp-code">05-cod-policy-and-finance.md (Thu hộ COD)</text>
+        <text x="10" y="132" class="comp-code">06-packaging-and-fragile-goods.md (Đóng gói)</text>
+        <text x="10" y="154" class="comp-code">07-special-delivery-services.md (Đồng kiểm)</text>
+        <text x="10" y="176" class="comp-code">08-sla-leadtime-and-commitment.md (SLA)</text>
+        <text x="10" y="198" class="comp-code">09-incident-handling-guidelines.md (Sự cố)</text>
         
-        <text x="16" y="50" class="comp-txt-bold">1. Nhánh Policy SOP (Quy chuẩn):</text>
-        <text x="16" y="68" class="comp-txt">• Hỏi đáp quy định bưu gửi, quy cách đóng gói chất lỏng.</text>
-        <text x="16" y="86" class="comp-txt">• Thời hiệu khiếu nại và mức bồi thường (Luật Bưu chính).</text>
-
-        <text x="16" y="116" class="comp-txt-bold">2. Nhánh Live Tool (Công cụ thời gian thực):</text>
-        <text x="16" y="134" class="comp-txt">• Tra cứu tiến độ vận đơn <tspan class="comp-code">NX-XXXX</tspan>, tính cước IATA.</text>
-        <text x="16" y="152" class="comp-txt">• Khởi tạo biên bản sự cố và cảnh báo hàng lưu kho.</text>
-
-        <text x="16" y="182" class="comp-txt-bold">3. Nhánh Hỗn Hợp (Hybrid Task):</text>
-        <text x="16" y="200" class="comp-txt">• Tra cứu trạng thái kiện hàng thời gian thực.</text>
-        <text x="16" y="218" class="comp-txt">• Đồng thời trích xuất điều khoản bồi thường theo SOP.</text>
-
-        <text x="16" y="248" class="comp-txt-bold">4. Cơ chế Dự phòng (Fallback):</text>
-        <text x="16" y="266" class="comp-txt">• Tự động chuyển tiếp câu hỏi mở sang mô hình LLM.</text>
-        <text x="16" y="284" class="comp-txt">• Áp dụng chỉ thị an toàn nghiêm ngặt, chặn ảo giác.</text>
-
-        <line x1="16" y1="305" x2="{c3_w - 52}" y2="305" stroke="#9CA3AF" stroke-width="1"/>
-        <text x="16" y="328" class="comp-code">Hiệu năng định tuyến: Latency &lt; 8ms (Non-blocking)</text>
+        <line x1="10" y1="216" x2="{col_w_s1 - 38}" y2="216" stroke="#9CA3AF" stroke-width="0.8"/>
+        <text x="10" y="236" class="comp-txt" style="font-size:11.5px;">• Tổng dung lượng: ~48.000 từ chuyên ngành.</text>
+        <text x="10" y="256" class="comp-txt" style="font-size:11.5px;">• Chứa ma trận bảng cước đa nấc thang IATA.</text>
+        <text x="10" y="274" class="comp-txt" style="font-size:11.5px;">• Mệnh đề điều kiện bắt buộc BBBT trong 24 giờ.</text>
       </g>
-    </g>''')
 
-    # Flow Badge 3
+      <!-- Challenge Note -->
+      <g transform="translate(14, 385)">
+        <rect width="{col_w_s1 - 28}" height="145" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+        <text x="12" y="22" class="comp-title" style="font-size:12px;">Thách Thức Của Naive Chunking:</text>
+        <text x="12" y="44" class="comp-txt">• Cắt đôi cố định theo 500 ký tự (Fixed-size) sẽ:</text>
+        <text x="18" y="66" class="comp-txt">- Làm đứt dòng tiêu đề bảng giá khỏi số cước.</text>
+        <text x="18" y="86" class="comp-txt">- Cắt đứt mệnh đề: "Đền 100% NẾU có BBBT 24h".</text>
+        <text x="18" y="106" class="comp-txt">- Mất tiêu đề mục cha (Breadcrumbs Loss).</text>
+        <line x1="12" y1="120" x2="{col_w_s1 - 40}" y2="120" stroke="#9CA3AF" stroke-width="0.8"/>
+        <text x="12" y="136" class="comp-code">Hậu quả: LLM trả lời sai pháp lý bưu chính!</text>
+      </g>
+
+      <text x="16" y="555" class="comp-code">Trạng thái: 100% tài liệu văn bản chuẩn</text>
+      <text x="16" y="575" class="comp-txt" style="font-size:11px; fill:#4B5563;">Kích hoạt: Tự động chạy khi Re-index / Ingest</text>
+    </g>
+''')
+
+    # Arrow 1.1 -> 1.2
+    arr_1_x1 = c1_1_x + col_w_s1
+    arr_1_x2 = arr_1_x1 + gap_s1
+    arr_1_y = 52 + (s1_h - 72) // 2
     lines.append(f'''
-    {draw_flow_badge(c3a_x + c3_w - 18, 275, "3")}''')
+    <!-- Connector 1.1 -> 1.2 -->
+    <line x1="{arr_1_x1}" y1="{arr_1_y}" x2="{arr_1_x2}" y2="{arr_1_y}" stroke="#000000" stroke-width="2"/>
+    {draw_arrow_head(arr_1_x2, arr_1_y, direction="right", color="#000000", size=7)}
+    {draw_flow_badge((arr_1_x1 + arr_1_x2)//2, arr_1_y - 24, "1")}
+''')
 
-    # -------------------------------------------------------------------------
-    # KHỐI 3B: BỘ TRUY XUẤT TRI THỨC LAI (HYBRID RAG RETRIEVAL ENGINE) (c3b_x)
-    # -------------------------------------------------------------------------
+    # Column 1.2: AST Heading Parser (Bóc tách cú pháp)
+    c1_2_x = c1_1_x + col_w_s1 + gap_s1
     lines.append(f'''
-    <!-- 3B: Bộ Truy Xuất Tri Thức Lai (Hybrid RAG) -->
-    <g transform="translate({c3b_x}, 46)">
-      <rect width="{c3_w}" height="{t3_h - 66}" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-      <text x="18" y="24" class="comp-stereo">«Hybrid Retrieval Subsystem · Dense + Sparse»</text>
-      <text x="18" y="46" class="comp-title">2. Bộ Truy Xuất Tri Thức Lai (Hybrid RAG)</text>
+    <!-- Step 1.2: AST Heading Parser -->
+    <g transform="translate({c1_2_x}, 52)">
+      <rect width="{col_w_s1}" height="{s1_h - 72}" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+      <text x="16" y="24" class="comp-stereo">«Syntax Parser · ChunkerService.ts»</text>
+      <text x="16" y="46" class="comp-title">2. Bộ Bóc Tách Cấu Trúc AST</text>
+      <line x1="16" y1="56" x2="{col_w_s1 - 16}" y2="56" stroke="#9CA3AF" stroke-width="0.8"/>
 
-      <!-- Academic Hybrid Formula Card (Monochrome Line-Art) -->
-      <g transform="translate(18, 66)">
-        <rect width="{c3_w - 36}" height="88" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-        <text x="14" y="22" class="comp-title" style="font-size:11.5px;">CÔNG THỨC ĐIỂM SỐ TRUY XUẤT LAI (HYBRID SCORE):</text>
-        <text x="14" y="48" class="math-formula">Score(q, d) = α · CosineSim(vq, vd) + (1 - α) · BM25(q, d)</text>
-        <text x="14" y="72" class="comp-txt" style="font-size:11px;">Trọng số tối ưu: α = 0.70 (Ngữ nghĩa) và (1 - α) = 0.30 (Từ khóa)</text>
+      <text x="16" y="78" class="comp-txt">• Bóc tách ranh giới văn bản theo cấp bậc tiêu đề:</text>
+
+      <!-- Code Regex Box -->
+      <g transform="translate(14, 90)">
+        <rect width="{col_w_s1 - 28}" height="70" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+        <text x="10" y="20" class="comp-title" style="font-size:11px;">Biểu Thức Chính Quy Nhận Diện Boundary:</text>
+        <text x="10" y="42" class="comp-code" style="font-size:10px;">const match = line.match(/^(#{{1,4}})\\s+(.+)$/);</text>
+        <text x="10" y="60" class="comp-code" style="font-size:10px;">level = match[1].length; title = match[2];</text>
       </g>
 
-      <!-- Step 2.1: Dual Search -->
-      <g transform="translate(18, 166)">
-        <rect width="{c3_w - 36}" height="175" rx="4" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
-        <text x="14" y="22" class="comp-title" style="font-size:12.5px;">Thuật toán Tìm kiếm Song song (Dual Search):</text>
-        <text x="14" y="46" class="comp-txt-bold">• Nhánh 1: Truy xuất Ngữ nghĩa Véc-tơ (Dense):</text>
-        <text x="22" y="66" class="comp-txt">Vector hóa câu hỏi 768 chiều; Cosine Sim trên 62 chunks SOP.</text>
-        <text x="14" y="96" class="comp-txt-bold">• Nhánh 2: Khớp Từ Khóa Chính Xác (Sparse BM25):</text>
-        <text x="22" y="116" class="comp-txt">Quét từ khóa chuyên ngành: <tspan class="comp-code">hàng vỡ</tspan>, <tspan class="comp-code">cồng kềnh</tspan>, <tspan class="comp-code">đồng kiểm</tspan>.</text>
-        <text x="14" y="150" class="comp-code">Thực thi song song bất đồng bộ hoàn thành trong &lt; 5ms</text>
-      </g>
-
-      <!-- Step 2.2: Re-ranking & Threshold Filter -->
-      <g transform="translate(18, 353)">
-        <rect width="{c3_w - 36}" height="215" rx="4" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
-        <text x="14" y="22" class="comp-title" style="font-size:12.5px;">Lọc Ngưỡng &amp; Tái Xếp Hạng (Re-ranking):</text>
-        <text x="14" y="46" class="comp-txt-bold">• Lọc Ngưỡng Tương Đồng Tuyệt Đối:</text>
-        <text x="22" y="66" class="comp-txt">Loại bỏ toàn bộ tài liệu có điểm <tspan class="comp-code">Score &lt; 0.58</tspan>.</text>
-        <text x="22" y="86" class="comp-txt">Ngăn chặn triệt để hiện tượng mô hình bịa đặt (Zero Hallucination).</text>
-        <text x="14" y="114" class="comp-txt-bold">• Chiến Lược Chọn Lọc Top-K:</text>
-        <text x="22" y="134" class="comp-txt">Lấy tối đa 5 đoạn tri thức SOP có điểm tương đồng cao nhất.</text>
-        <text x="14" y="162" class="comp-txt-bold">• Bảo Toàn Thứ Tự Trích Dẫn:</text>
-        <text x="22" y="182" class="comp-txt">Giữ nguyên số thứ tự văn bản SOP và điều khoản luật định.</text>
-        <text x="14" y="202" class="comp-code">Đầu ra RAG: 5 Chunks SOP tối ưu nhất đóng gói vào Prompt</text>
-      </g>
-
-      <!-- Step 2.3: Grounding Reference -->
-      <g transform="translate(18, 580)">
-        <rect width="{c3_w - 36}" height="175" rx="4" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
-        <text x="14" y="22" class="comp-title" style="font-size:12.5px;">Cơ sở Ngữ liệu Tri thức Quy chuẩn (Knowledge):</text>
-        <text x="14" y="44" class="comp-txt">• 9 văn bản SOP nghiệp vụ (SOP-01 đến 09) bưu chính.</text>
-        <text x="14" y="64" class="comp-txt">• Phân tách thành 62 Chunks chuẩn hóa ngữ cảnh.</text>
-        <text x="14" y="88" class="comp-txt">• Bộ quy tắc quy đổi cước IATA: <tspan class="comp-code">(D×R×C)/5000</tspan> và biểu phí.</text>
-        <text x="14" y="112" class="comp-txt">• Căn cứ pháp lý: Bồi thường 100% (Luật Bưu chính).</text>
-        <line x1="14" y1="134" x2="{c3_w - 52}" y2="134" stroke="#9CA3AF" stroke-width="1"/>
-        <text x="14" y="156" class="comp-code">Độ tin cậy: 100% khớp văn bản quy chuẩn chính thức</text>
-      </g>
-    </g>''')
-
-    # -------------------------------------------------------------------------
-    # KHỐI 3C: BỘ ĐIỀU PHỐI CÔNG CỤ & TỔNG HỢP NGỮ CẢNH (c3c_x)
-    # -------------------------------------------------------------------------
-    lines.append(f'''
-    <!-- 3C: Điều phối công cụ & Lắp ráp Prompt -->
-    <g transform="translate({c3c_x}, 46)">
-      <rect width="{c3_w}" height="{t3_h - 66}" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-      <text x="18" y="24" class="comp-stereo">«Tool Orchestration &amp; Prompt Assembly»</text>
-      <text x="18" y="46" class="comp-title">3. Điều Phối Công Cụ &amp; Lắp Ráp Ngữ Cảnh</text>
-
-      <!-- 3.1 Tool Calling Dispatcher -->
-      <g transform="translate(18, 66)">
-        <rect width="{c3_w - 36}" height="175" rx="4" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
-        <text x="14" y="22" class="comp-title" style="font-size:12.5px;">Điều Phối Công Cụ Thời Gian Thực (Tool Dispatcher):</text>
-        <text x="14" y="44" class="comp-txt">• Thực thi Function Calling: Map câu hỏi sang API Microservices.</text>
-        <text x="14" y="66" class="comp-txt">• <tspan class="comp-code">trackShipment(code):</tspan> Lấy trạng thái &amp; vị trí đơn hàng (:3002).</text>
-        <text x="14" y="88" class="comp-txt">• <tspan class="comp-code">calculateShippingFee(d,r,c,w):</tspan> Tính cước IATA (:3003).</text>
-        <text x="14" y="110" class="comp-txt">• <tspan class="comp-code">reportIncident(id, reason):</tspan> Khởi tạo hồ sơ sự cố (:3008).</text>
-        <text x="14" y="132" class="comp-txt">• <tspan class="comp-code">checkStorageAgeing():</tspan> Cảnh báo hàng tồn kho &gt; 30 ngày (:3004).</text>
-        <text x="14" y="156" class="comp-code">Circuit Breaker: Timeout 2000ms bảo vệ an toàn hệ thống</text>
-      </g>
-
-      <!-- 3.2 Context Sandwich Prompt Assembler (Clean Light Rows - Monochrome) -->
-      <g transform="translate(18, 253)">
-        <rect width="{c3_w - 36}" height="305" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
-        <text x="14" y="22" class="comp-title" style="font-size:12.5px;">Lắp Ráp Ngữ Cảnh 4 Tầng (Context Sandwich Prompt):</text>
+      <!-- Structural Features Box -->
+      <g transform="translate(14, 175)">
+        <rect width="{col_w_s1 - 28}" height="235" rx="3" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
+        <text x="12" y="22" class="comp-title" style="font-size:12px;">Nguyên Lý Bóc Tách Cấu Trúc:</text>
         
-        <!-- Tier 1 Sandwich Row -->
-        <g transform="translate(12, 32)">
-          <rect width="{c3_w - 60}" height="52" rx="3" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
-          <text x="10" y="18" class="comp-title" style="font-size:11px;">TẦNG 1: CHỈ THỊ HỆ THỐNG VÀ ĐỊNH DANH (SYSTEM DIRECTIVES)</text>
-          <text x="10" y="36" class="comp-txt" style="font-size:10.5px;">Định danh Trợ lý Nexus; Giọng văn khách quan; Cấm bịa đặt; Ràng buộc JSON Schema.</text>
+        <text x="12" y="46" class="comp-txt-bold">1. Phân cấp Header Semantic Level:</text>
+        <text x="18" y="66" class="comp-txt">• Cấp 1 (#): Tên tài liệu &amp; Quy chế chung.</text>
+        <text x="18" y="86" class="comp-txt">• Cấp 2 (##): Chương mục nghiệp vụ chuyên biệt.</text>
+        <text x="18" y="106" class="comp-txt">• Cấp 3 (###): Điều khoản &amp; Bảng biểu cước.</text>
+        
+        <text x="12" y="132" class="comp-txt-bold">2. Gắn Siêu Dữ Liệu Ngữ Cảnh (Breadcrumb):</text>
+        <text x="18" y="152" class="comp-txt">• Tự động ghép tiền tố phân cấp vào nội dung:</text>
+        <text x="18" y="172" class="comp-code" style="font-size:10px;">`${{fileName}} &gt; ${{parentTitle}} &gt; ${{subTitle}}`</text>
+        <text x="18" y="192" class="comp-txt">• Đảm bảo khi tìm kiếm câu ngắn, vector</text>
+        <text x="18" y="212" class="comp-txt">  vẫn mang đầy đủ ngữ cảnh của toàn chương.</text>
+      </g>
+
+      <!-- Section Buffer Flushing -->
+      <g transform="translate(14, 425)">
+        <rect width="{col_w_s1 - 28}" height="105" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+        <text x="12" y="22" class="comp-title" style="font-size:12px;">Cơ Chế Xả Đệm An Toàn (Buffer Flush):</text>
+        <text x="12" y="44" class="comp-txt">• Gom các dòng văn bản phụ thuộc vào bộ đệm.</text>
+        <text x="12" y="64" class="comp-txt">• Khi gặp Heading mới → Flush bộ đệm cũ sang</text>
+        <text x="12" y="84" class="comp-txt">  khâu phân đoạn trượt; bảo đảm tính độc lập.</text>
+      </g>
+
+      <text x="16" y="555" class="comp-code">Bảo toàn: 100% toàn vẹn bảng cước &amp; điều kiện</text>
+      <text x="16" y="575" class="comp-txt" style="font-size:11px; fill:#4B5563;">Đầu ra: Mảng Section chuẩn có Title, Level, Text</text>
+    </g>
+''')
+
+    # Arrow 1.2 -> 1.3
+    arr_2_x1 = c1_2_x + col_w_s1
+    arr_2_x2 = arr_2_x1 + gap_s1
+    lines.append(f'''
+    <!-- Connector 1.2 -> 1.3 -->
+    <line x1="{arr_2_x1}" y1="{arr_1_y}" x2="{arr_2_x2}" y2="{arr_1_y}" stroke="#000000" stroke-width="2"/>
+    {draw_arrow_head(arr_2_x2, arr_1_y, direction="right", color="#000000", size=7)}
+    {draw_flow_badge((arr_2_x1 + arr_2_x2)//2, arr_1_y - 24, "2")}
+''')
+
+    # Column 1.3: Sliding Window Word Chunking Algorithm
+    c1_3_x = c1_2_x + col_w_s1 + gap_s1
+    lines.append(f'''
+    <!-- Step 1.3: Sliding Window Chunker Engine -->
+    <g transform="translate({c1_3_x}, 52)">
+      <rect width="{col_w_s1}" height="{s1_h - 72}" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+      <text x="16" y="24" class="comp-stereo">«Algorithm · Sliding Window Overlap»</text>
+      <text x="16" y="46" class="comp-title">3. Thuật Toán Cửa Sổ Trượt</text>
+      <line x1="16" y1="56" x2="{col_w_s1 - 16}" y2="56" stroke="#9CA3AF" stroke-width="0.8"/>
+
+      <text x="16" y="78" class="comp-txt">• Cơ chế phân đoạn nhận biết độ dài từ:</text>
+
+      <!-- VISUAL SLIDING WINDOW DIAGRAM -->
+      <g transform="translate(14, 90)">
+        <rect width="{col_w_s1 - 28}" height="155" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+        <text x="12" y="20" class="comp-title" style="font-size:11.5px;">SƠ ĐỒ TRỰC QUAN CỬA SỔ TRƯỢT OVERLAP:</text>
+        
+        <!-- Full Section Bar -->
+        <rect x="12" y="32" width="{col_w_s1 - 52}" height="20" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
+        <text x="18" y="46" class="comp-code" style="font-size:10px;">Toàn bộ đoạn văn bản Section (N từ &gt; 250 từ)</text>
+        
+        <!-- Chunk 1 Bar -->
+        <g transform="translate(12, 60)">
+          <rect width="210" height="24" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+          <text x="10" y="16" class="comp-code" style="font-size:10px;">Chunk 1: [0 ... 250 từ]</text>
         </g>
 
-        <!-- Tier 2 Sandwich Row -->
-        <g transform="translate(12, 92)">
-          <rect width="{c3_w - 60}" height="52" rx="3" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
-          <text x="10" y="18" class="comp-title" style="font-size:11px;">TẦNG 2: TRI THỨC TRÍCH DẪN TỪ VECTOR STORE (TOP-5 RETRIEVED CHUNKS)</text>
-          <text x="10" y="36" class="comp-txt" style="font-size:10.5px;">5 đoạn tài liệu SOP có điểm tương đồng cao nhất; Căn cứ pháp lý &amp; điều khoản bồi thường.</text>
+        <!-- Overlap Region (Solid Black block) -->
+        <g transform="translate(180, 60)">
+          <rect width="42" height="24" rx="2" fill="#000000" stroke="#000000" stroke-width="1.2"/>
+          <text x="6" y="16" class="comp-code" style="font-size:9px; fill:#FFFFFF; font-weight:800;">40 TỪ</text>
+        </g>
+        
+        <!-- Chunk 2 Bar -->
+        <g transform="translate(180, 92)">
+          <rect width="190" height="24" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1.2" stroke-dasharray="3,2"/>
+          <text x="10" y="16" class="comp-code" style="font-size:10px;">Chunk 2: [210 ... 460 từ]</text>
+        </g>
+
+        <!-- Overlap Label Bottom -->
+        <line x1="180" y1="124" x2="222" y2="124" stroke="#000000" stroke-width="1.4"/>
+        <text x="14" y="142" class="comp-code" style="font-size:10px;">Vùng gối đầu Overlap: 40 từ (Tỷ lệ 16.0%)</text>
+      </g>
+
+      <!-- Technical Hyperparameters Box -->
+      <g transform="translate(14, 260)">
+        <rect width="{col_w_s1 - 28}" height="175" rx="3" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
+        <text x="12" y="22" class="comp-title" style="font-size:12px;">Tham Số Kỹ Thuật Thực Nghiệm:</text>
+        
+        <text x="12" y="46" class="comp-txt"><tspan class="comp-txt-bold">• MaxWords:</tspan> 250 từ / chunk (~325 tokens).</text>
+        <text x="18" y="66" class="comp-txt">Phù hợp kích thước cửa sổ Attention của LLM.</text>
+
+        <text x="12" y="90" class="comp-txt"><tspan class="comp-txt-bold">• OverlapWords:</tspan> 40 từ (Gối đầu 16.0%).</text>
+        <text x="18" y="110" class="comp-txt">Triệt tiêu hoàn toàn hiện tượng đứt gãy ngữ cảnh.</text>
+
+        <text x="12" y="134" class="comp-txt"><tspan class="comp-txt-bold">• Bước nhảy (Stride):</tspan> MaxWords - Overlap = 210 từ.</text>
+        
+        <text x="12" y="158" class="comp-txt"><tspan class="comp-txt-bold">• Token Estimate:</tspan> Math.round(words.length × 1.3).</text>
+      </g>
+
+      <!-- Single vs Multi Chunk Logic -->
+      <g transform="translate(14, 450)">
+        <rect width="{col_w_s1 - 28}" height="80" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+        <text x="12" y="22" class="comp-title" style="font-size:12px;">Logic Xử Lý Phân Nhánh:</text>
+        <text x="12" y="44" class="comp-txt">• Nếu Section ≤ 250 từ: Giữ nguyên 1 Chunk độc lập.</text>
+        <text x="12" y="64" class="comp-txt">• Nếu Section &gt; 250 từ: Trượt gối đầu kèm gắn hậu tố (phần N).</text>
+      </g>
+
+      <text x="16" y="555" class="comp-code">Hiệu quả: Triệt tiêu 100% đứt gãy lập luận</text>
+      <text x="16" y="575" class="comp-txt" style="font-size:11px; fill:#4B5563;">Đầu ra: 62 Chunks tiêu chuẩn, gắn seq ID đầy đủ</text>
+    </g>
+''')
+
+    # Arrow 1.3 -> 1.4
+    arr_3_x1 = c1_3_x + col_w_s1
+    arr_3_x2 = arr_3_x1 + gap_s1
+    lines.append(f'''
+    <!-- Connector 1.3 -> 1.4 -->
+    <line x1="{arr_3_x1}" y1="{arr_1_y}" x2="{arr_3_x2}" y2="{arr_1_y}" stroke="#000000" stroke-width="2"/>
+    {draw_arrow_head(arr_3_x2, arr_1_y, direction="right", color="#000000", size=7)}
+    {draw_flow_badge((arr_3_x1 + arr_3_x2)//2, arr_1_y - 24, "3")}
+''')
+
+    # Column 1.4: Chunk Data Contract & Vectorization (768-D)
+    c1_4_x = c1_3_x + col_w_s1 + gap_s1
+    lines.append(f'''
+    <!-- Step 1.4: Vectorization & Storage -->
+    <g transform="translate({c1_4_x}, 52)">
+      <rect width="{col_w_s1}" height="{s1_h - 72}" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+      <text x="16" y="24" class="comp-stereo">«Vector Store · text-embedding-004»</text>
+      <text x="16" y="46" class="comp-title">4. Kho 62 Chunks &amp; Véc-tơ Hóa</text>
+      <line x1="16" y1="56" x2="{col_w_s1 - 16}" y2="56" stroke="#9CA3AF" stroke-width="0.8"/>
+
+      <text x="16" y="78" class="comp-txt">• Cấu trúc DTO chuẩn của 1 KnowledgeChunk:</text>
+
+      <!-- JSON Chunk DTO Snippet Box -->
+      <g transform="translate(14, 90)">
+        <rect width="{col_w_s1 - 28}" height="175" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+        <text x="10" y="20" class="comp-code" style="font-size:10px;">{'{'}</text>
+        <text x="22" y="38" class="comp-code" style="font-size:10px;">"id": "06-packaging.md#chunk-2",</text>
+        <text x="22" y="56" class="comp-code" style="font-size:10px;">"sourceFile": "06-packaging.md",</text>
+        <text x="22" y="74" class="comp-code" style="font-size:10px;">"sectionTitle": "Đóng gói hàng dễ vỡ (phần 1)",</text>
+        <text x="22" y="92" class="comp-code" style="font-size:10px;">"level": 2,</text>
+        <text x="22" y="110" class="comp-code" style="font-size:10px;">"charCount": 1140, "tokenEstimate": 315,</text>
+        <text x="22" y="128" class="comp-code" style="font-size:10px;">"content": "Bọc tối thiểu 3-5 lớp xốp hơi...",</text>
+        <text x="22" y="146" class="comp-code" style="font-size:10px;">"embedding": [ 0.0182, -0.0412, ... 768 dims ]</text>
+        <text x="10" y="164" class="comp-code" style="font-size:10px;">{'}'}</text>
+      </g>
+
+      <!-- Dual Storage Mechanism -->
+      <g transform="translate(14, 280)">
+        <rect width="{col_w_s1 - 28}" height="155" rx="3" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
+        <text x="12" y="22" class="comp-title" style="font-size:12px;">Cơ Chế Lưu Trữ Kép (Dual-Store):</text>
+        
+        <text x="12" y="46" class="comp-txt-bold">1. In-Memory Vector Cache (RAM):</text>
+        <text x="18" y="66" class="comp-txt">• Nạp toàn bộ 62 embeddings 768 chiều vào RAM.</text>
+        <text x="18" y="86" class="comp-txt">• Độ trễ tìm kiếm Cosine đạt &lt; 5ms cực tốc.</text>
+
+        <text x="12" y="112" class="comp-txt-bold">2. Persistent JSON Index (Disk):</text>
+        <text x="18" y="132" class="comp-txt">• Lưu chỉ mục tại docs/knowledge-base/vector-index.json.</text>
+        <text x="18" y="150" class="comp-txt">• Khởi động lại service không cần embed lại.</text>
+      </g>
+
+      <!-- Normalization Box -->
+      <g transform="translate(14, 450)">
+        <rect width="{col_w_s1 - 28}" height="80" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+        <text x="12" y="22" class="comp-title" style="font-size:12px;">Chuẩn Hóa L2-Normalized:</text>
+        <text x="12" y="44" class="math-formula">||V||₂ = √(∑ vᵢ²) = 1.0  (i=1..768)</text>
+        <text x="12" y="66" class="comp-txt">Rút gọn Cosine Similarity thành phép tính tích vô hướng!</text>
+      </g>
+
+      <text x="16" y="555" class="comp-code">Quy mô: 62 Chunks phủ 100% tình huống nghiệp vụ</text>
+      <text x="16" y="575" class="comp-txt" style="font-size:11px; fill:#4B5563;">Sẵn sàng: Phục vụ truy vấn trực tuyến tại Phần II</text>
+    </g>
+''')
+
+    lines.append('  </g>')
+
+    # =========================================================================
+    # HIGHWAY CONNECTOR: SECTION 1 -> SECTION 2
+    # Pre-loaded Knowledge Chunks & Embeddings Feed Online RAG Engine
+    # =========================================================================
+    s1_to_s2_gap = 65
+    c_down_x = margin_x + c1_4_x + col_w_s1 // 2
+    c_down_y1 = s1_y + s1_h
+    c_down_y2 = c_down_y1 + s1_to_s2_gap
+
+    lines.append(f'''
+  <!-- Connector: Pre-loaded Knowledge Chunks & Embeddings Feed Online RAG Engine -->
+  <line x1="{c_down_x}" y1="{c_down_y1}" x2="{c_down_x}" y2="{c_down_y2}" stroke="#000000" stroke-width="2.2" stroke-dasharray="6,4"/>
+  {draw_arrow_head(c_down_x, c_down_y2, direction="down", color="#000000", size=7)}
+  
+  <g transform="translate({c_down_x - 390}, {c_down_y1 + 18})">
+    <rect width="380" height="28" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+    <text x="12" y="18" class="flow-arrow-lbl">Nạp sẵn 62 Véc-tơ SOP vào RAM cho RAG Lai trực tuyến</text>
+  </g>
+''')
+
+    # =========================================================================
+    # SECTION 2: KIẾN TRÚC ĐIỀU PHỐI TRUY VẤN & HỒI XUẤT RAG TRỰC TUYẾN
+    # y: 880 to 2260, h: 1380
+    # =========================================================================
+    s2_y = c_down_y2
+    s2_h = 1380
+
+    lines.append(f'''
+  <!-- ================= SECTION 2: RUNTIME QUERY ORCHESTRATION & INFERENCE ================= -->
+  <g id="Section2_RuntimeOrchestration" transform="translate({margin_x}, {s2_y})">
+    <!-- Section Outer Container -->
+    <rect width="{content_w}" height="{s2_h}" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.8"/>
+    <!-- Clean Horizontal Divider Line (No Background Fill) -->
+    <line x1="0" y1="36" x2="{content_w}" y2="36" stroke="#000000" stroke-width="1.2"/>
+    <text x="20" y="23" class="sec-title">PHẦN II: KIẾN TRÚC ĐIỀU PHỐI TRUY VẤN &amp; SUY LUẬN RAG TRỰC TUYẾN (RUNTIME INFERENCE ARCHITECTURE)</text>
+    <text x="{content_w - 20}" y="23" text-anchor="end" class="sec-sub">[PHASE 2: CLIENT CHANNELS • GATEWAY &amp; PII • INTENT ROUTER • HYBRID RAG • TOOLS • SSE STREAM]</text>
+''')
+
+    # -------------------------------------------------------------------------
+    # TIER 2.1: CLIENT CHANNELS (y: 48, h: 80)
+    # -------------------------------------------------------------------------
+    c_card_w = (content_w - 48 - 35 * 2) // 3  # 590px
+    c_card_gap = 35
+
+    lines.append(f'''
+    <!-- Tier 2.1: Client Channels -->
+    <g transform="translate(24, 46)">
+      <!-- Client 1: Merchant Web Portal -->
+      <g transform="translate(0, 0)">
+        <rect width="{c_card_w}" height="80" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+        <text x="16" y="22" class="comp-stereo">«Web Client · ReactJS / Vite / Ant Design»</text>
+        <text x="16" y="42" class="comp-title">1. Cổng Thông Tin Chủ Hàng (Merchant Portal)</text>
+        <text x="16" y="62" class="comp-txt">Tra cứu vận đơn, tính cước ước tính, giải quyết bồi thường BBBT.</text>
+      </g>
+
+      <!-- Client 2: Shipper Mobile App -->
+      <g transform="translate({c_card_w + c_card_gap}, 0)">
+        <rect width="{c_card_w}" height="80" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+        <text x="16" y="22" class="comp-stereo">«Mobile Client · React Native / Expo»</text>
+        <text x="16" y="42" class="comp-title">2. Ứng Dụng Bưu Tá (Shipper Mobile App)</text>
+        <text x="16" y="62" class="comp-txt">Cập nhật sự cố tại hiện trường, chụp ảnh hàng vỡ, hướng dẫn bọc lót.</text>
+      </g>
+
+      <!-- Client 3: Public Tracking Widget -->
+      <g transform="translate({(c_card_w + c_card_gap) * 2}, 0)">
+        <rect width="{c_card_w}" height="80" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+        <text x="16" y="22" class="comp-stereo">«Public Portal · Anonymous Tracking»</text>
+        <text x="16" y="42" class="comp-title">3. Widget Tra Cứu Công Cộng (Public Tracking)</text>
+        <text x="16" y="62" class="comp-txt">Khách người nhận tra cứu trạng thái đơn hàng NX-XXXX không cần login.</text>
+      </g>
+    </g>
+''')
+
+    # Arrow Down from Tier 2.1 -> Tier 2.2 (Gateway)
+    arr_c_y1 = 46 + 80
+    arr_c_y2 = arr_c_y1 + 40
+    lines.append(f'''
+    <!-- Connector Tier 2.1 -> Tier 2.2 -->
+    <line x1="{content_w // 2}" y1="{arr_c_y1}" x2="{content_w // 2}" y2="{arr_c_y2}" stroke="#000000" stroke-width="2"/>
+    {draw_arrow_head(content_w // 2, arr_c_y2, direction="down", color="#000000", size=6)}
+    {draw_flow_badge(content_w // 2 - 34, arr_c_y1 + 20, "5")}
+    
+    <g transform="translate({content_w // 2 + 16}, {arr_c_y1 + 6})">
+      <rect width="280" height="26" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="17" class="flow-arrow-lbl">HTTPS POST /api/v1/chat/stream</text>
+    </g>
+''')
+
+    # -------------------------------------------------------------------------
+    # TIER 2.2: INGRESS GATEWAY & SECURITY GUARDRAILS (y: 166, h: 120)
+    # -------------------------------------------------------------------------
+    g_y = arr_c_y2
+    g_h = 120
+    lines.append(f'''
+    <!-- Tier 2.2: Ingress Gateway & Security Guardrails -->
+    <g transform="translate(24, {g_y})">
+      <rect width="{content_w - 48}" height="{g_h}" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+      <text x="18" y="24" class="comp-stereo">«API Gateway &amp; Defensive Guardrails · NestJS Core»</text>
+      <text x="18" y="44" class="comp-title">Cổng Tiếp Nhận &amp; Hàng Rào An Toàn Thông Tin (Ingress Gateway &amp; PII Sanitizer)</text>
+      <line x1="18" y1="54" x2="{content_w - 66}" y2="54" stroke="#9CA3AF" stroke-width="0.8"/>
+
+      <!-- Guard 1: Rate Limiter -->
+      <g transform="translate(18, 64)">
+        <rect width="{(content_w - 90)//3}" height="44" rx="3" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
+        <text x="12" y="18" class="comp-title" style="font-size:12px;">Bộ Giới Hạn Tần Suất (Rate Limiter):</text>
+        <text x="12" y="34" class="comp-txt" style="font-size:11px;">20 req/phút/IP (Token Bucket), chống DoS và cạn kiệt Token LLM.</text>
+      </g>
+
+      <!-- Guard 2: PII Redaction -->
+      <g transform="translate({18 + (content_w - 90)//3 + 12}, 64)">
+        <rect width="{(content_w - 90)//3}" height="44" rx="3" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
+        <text x="12" y="18" class="comp-title" style="font-size:12px;">Che Chắn PII (Data Sanitizer):</text>
+        <text x="12" y="34" class="comp-txt" style="font-size:11px;">Che chắn tự động: SĐT (090***123), CCCD (079***456) trước khi gửi LLM.</text>
+      </g>
+
+      <!-- Guard 3: Conversation Memory -->
+      <g transform="translate({18 + ((content_w - 90)//3 + 12) * 2}, 64)">
+        <rect width="{(content_w - 90)//3}" height="44" rx="3" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
+        <text x="12" y="18" class="comp-title" style="font-size:12px;">Quản Lý Bộ Nhớ Phiên (Session Memory):</text>
+        <text x="12" y="34" class="comp-txt" style="font-size:11px;">Cửa sổ trượt lưu giữ 6 lượt tương tác gần nhất trong đệm hội thoại.</text>
+      </g>
+    </g>
+''')
+
+    # Arrow Down from Tier 2.2 -> Tier 2.3 (AI Orchestrator)
+    arr_g_y1 = g_y + g_h
+    arr_g_y2 = arr_g_y1 + 40
+    lines.append(f'''
+    <!-- Connector Tier 2.2 -> Tier 2.3 -->
+    <line x1="{content_w // 2}" y1="{arr_g_y1}" x2="{content_w // 2}" y2="{arr_g_y2}" stroke="#000000" stroke-width="2"/>
+    {draw_arrow_head(content_w // 2, arr_g_y2, direction="down", color="#000000", size=6)}
+    {draw_flow_badge(content_w // 2 - 34, arr_g_y1 + 20, "6")}
+    
+    <g transform="translate({content_w // 2 + 16}, {arr_g_y1 + 6})">
+      <rect width="290" height="26" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="17" class="flow-arrow-lbl">Sanitized Query + Conversation Buffer</text>
+    </g>
+''')
+
+    # -------------------------------------------------------------------------
+    # TIER 2.3: CORE AI ORCHESTRATOR (3 Columns: Intent, Hybrid RAG, Tools)
+    # y: 326, h: 560
+    # -------------------------------------------------------------------------
+    o_y = arr_g_y2
+    o_h = 560
+    c3_w = (content_w - 48 - 35 * 2) // 3  # 590px
+
+    lines.append(f'''
+    <!-- Tier 2.3: Core AI Orchestrator Container -->
+    <g transform="translate(24, {o_y})">
+      <!-- Outer Border of Tier 2.3 -->
+      <rect width="{content_w - 48}" height="{o_h}" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+      <text x="18" y="24" class="comp-stereo">«Core Agentic Engine · NestJS AI Orchestration Hub»</text>
+      <text x="18" y="44" class="comp-title">Lõi Điều Phối AI Chatbot, Hồi Xuất Tri Thức Lai &amp; Điều Động Công Cụ Microservices</text>
+      <line x1="18" y1="54" x2="{content_w - 66}" y2="54" stroke="#9CA3AF" stroke-width="0.8"/>
+''')
+
+    # Column 2.3A: Intent Classifier & Router
+    lines.append(f'''
+      <!-- Column 2.3A: Intent Classifier & Semantic Router -->
+      <g transform="translate(18, 66)">
+        <rect width="{c3_w}" height="{o_h - 84}" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+        <text x="16" y="22" class="comp-stereo">«Intent Classifier &amp; Regex Router»</text>
+        <text x="16" y="44" class="comp-title">A. Bộ Phân Loại Ý Định &amp; Định Tuyến</text>
+        <line x1="16" y1="54" x2="{c3_w - 16}" y2="54" stroke="#9CA3AF" stroke-width="0.8"/>
+
+        <text x="16" y="74" class="comp-txt">• Bóc tách thực thể và điều hướng truy vấn:</text>
+
+        <!-- Intent Case 1 -->
+        <g transform="translate(14, 86)">
+          <rect width="{c3_w - 28}" height="76" rx="3" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
+          <text x="12" y="18" class="comp-title" style="font-size:11.5px;">1. QA_POLICY_SOP (Hỏi Đáp Chính Sách):</text>
+          <text x="12" y="36" class="comp-txt">Hỏi quy chuẩn đóng gói, bồi thường, hàng cấm, thời gian toàn trình SLA.</text>
+          <text x="12" y="56" class="comp-code">→ Kích hoạt Khối Hồi Xuất RAG Lai (Cột B)</text>
+        </g>
+
+        <!-- Intent Case 2 -->
+        <g transform="translate(14, 172)">
+          <rect width="{c3_w - 28}" height="76" rx="3" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
+          <text x="12" y="18" class="comp-title" style="font-size:11.5px;">2. TRACK_SHIPMENT (Tra Cứu Vận Đơn):</text>
+          <text x="12" y="36" class="comp-txt">Phát hiện mã vận đơn Regex: <tspan class="comp-code">/NX-[0-9]{{6,10}}/i</tspan>.</text>
+          <text x="12" y="56" class="comp-code">→ Kích hoạt Tool trackShipment(:3002) (Cột C)</text>
+        </g>
+
+        <!-- Intent Case 3 -->
+        <g transform="translate(14, 258)">
+          <rect width="{c3_w - 28}" height="76" rx="3" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
+          <text x="12" y="18" class="comp-title" style="font-size:11.5px;">3. ESTIMATE_FEE (Dự Toán Cước Phí):</text>
+          <text x="12" y="36" class="comp-txt">Phát hiện trọng lượng (kg) &amp; kích thước 3 chiều (D×R×C cm).</text>
+          <text x="12" y="56" class="comp-code">→ Kích hoạt Tool calculateFee(:3003) (Cột C)</text>
+        </g>
+
+        <!-- Intent Case 4 -->
+        <g transform="translate(14, 344)">
+          <rect width="{c3_w - 28}" height="76" rx="3" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
+          <text x="12" y="18" class="comp-title" style="font-size:11.5px;">4. REPORT_INCIDENT (Khởi Tạo Sự Cố):</text>
+          <text x="12" y="36" class="comp-txt">Từ khóa: bể vỡ, móp méo, mất hàng, lập biên bản bất thường.</text>
+          <text x="12" y="56" class="comp-code">→ Kích hoạt Tool reportIncident(:3008) (Cột C)</text>
+        </g>
+
+        <line x1="16" y1="432" x2="{c3_w - 16}" y2="432" stroke="#9CA3AF" stroke-width="0.8"/>
+        <text x="16" y="452" class="comp-code">Độ trễ phân loại: &lt; 2ms (Regex / Local Rules)</text>
+        <text x="16" y="468" class="comp-txt" style="font-size:11px; fill:#4B5563;">Fallback: Tự động gom ngữ cảnh nạp vào RAG Lai</text>
+      </g>
+''')
+
+    # Column 2.3B: Hybrid Retrieval Engine (Dense + Sparse)
+    c3b_x = 18 + c3_w + c_card_gap
+    lines.append(f'''
+      <!-- Column 2.3B: Hybrid Retrieval Engine (Connected directly from Part I) -->
+      <g transform="translate({c3b_x}, 66)">
+        <rect width="{c3_w}" height="{o_h - 84}" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+        <text x="16" y="22" class="comp-stereo">«RAG Core · Dense + Sparse Hybrid Search»</text>
+        <text x="16" y="44" class="comp-title">B. Công Cụ Hồi Xuất Tri Thức Lai (Hybrid RAG)</text>
+        <line x1="16" y1="54" x2="{c3_w - 16}" y2="54" stroke="#9CA3AF" stroke-width="0.8"/>
+
+        <text x="16" y="74" class="comp-txt">• Truy vấn đồng thời 2 không gian tìm kiếm từ 62 Chunks:</text>
+
+        <!-- Sub-block 1: Dense Vector Cosine -->
+        <g transform="translate(14, 86)">
+          <rect width="{c3_w - 28}" height="100" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+          <text x="12" y="20" class="comp-title" style="font-size:11.5px;">1. Tìm Kiếm Dày Đặc (Dense Cosine Similarity):</text>
+          <text x="12" y="40" class="comp-txt">• Vector hóa Query Q → Không gian thực 768 chiều.</text>
+          <text x="12" y="60" class="math-formula">Sim_Cosine(Q, D) = Q · D = ∑ (Qᵢ × Dᵢ)  (i=1..768)</text>
+          <text x="12" y="80" class="comp-txt">• Quét nhanh trên 62 vectors SOP nạp sẵn trong RAM.</text>
+          <text x="12" y="94" class="comp-code">Độ trễ đo đạc: &lt; 5ms trên bộ nhớ In-Memory</text>
+        </g>
+
+        <!-- Sub-block 2: Sparse BM25 + Thesaurus -->
+        <g transform="translate(14, 196)">
+          <rect width="{c3_w - 28}" height="100" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+          <text x="12" y="20" class="comp-title" style="font-size:11.5px;">2. Tìm Kiếm Thưa &amp; Từ Điển Bưu Chính (Logistics Thesaurus):</text>
+          <text x="12" y="40" class="comp-txt">• Chấm điểm tần suất từ BM25 trên 62 chunks văn bản thô.</text>
+          <text x="12" y="60" class="comp-txt">• Khớp từ vựng địa phương &amp; tiếng lóng bưu chính:</text>
+          <text x="12" y="78" class="comp-code">"cấn móp", "bể vỡ" → Quy chế bồi thường hàng dễ vỡ (SOP-06)</text>
+          <text x="12" y="94" class="comp-code">"đền tiền" → Lập BBBT trong 24 giờ &amp; Điều 25 Luật BC</text>
+        </g>
+
+        <!-- Sub-block 3: Hybrid Score & Top-5 Selection -->
+        <g transform="translate(14, 306)">
+          <rect width="{c3_w - 28}" height="115" rx="3" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
+          <text x="12" y="20" class="comp-title" style="font-size:11.5px;">3. Hợp Nhất Điểm Kép &amp; Trích Xuất Top-5 Chunks:</text>
+          <text x="12" y="40" class="math-formula">Score_Hybrid = 0.7 × Score_Dense + 0.3 × Score_Sparse</text>
+          <text x="12" y="62" class="comp-txt">• Sắp xếp giảm dần, trích xuất Top-5 Chunks liên quan nhất.</text>
+          <text x="12" y="80" class="comp-txt">• Cung cấp trích dẫn nguồn minh bạch (Grounding Citations):</text>
+          <text x="12" y="98" class="comp-code">File, Mục quy chuẩn, Điểm tương đồng (%)</text>
+        </g>
+
+        <line x1="16" y1="432" x2="{c3_w - 16}" y2="432" stroke="#9CA3AF" stroke-width="0.8"/>
+        <text x="16" y="452" class="comp-code">Độ chuẩn xác: 100% trích dẫn căn cứ SOP chính thống</text>
+        <text x="16" y="468" class="comp-txt" style="font-size:11px; fill:#4B5563;">Đầu ra: Top-5 Chunks phục vụ lắp ráp Tầng 2 Prompt</text>
+      </g>
+''')
+
+    # Column 2.3C: Tool Dispatcher & Microservices Mesh
+    c3c_x = c3b_x + c3_w + c_card_gap
+    lines.append(f'''
+      <!-- Column 2.3C: Microservices Tool Dispatcher -->
+      <g transform="translate({c3c_x}, 66)">
+        <rect width="{c3_w}" height="{o_h - 84}" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+        <text x="16" y="22" class="comp-stereo">«Microservices Mesh · Tool Calling Execution»</text>
+        <text x="16" y="44" class="comp-title">C. Điều Phối Công Cụ &amp; Lưới Dịch Vụ</text>
+        <line x1="16" y1="54" x2="{c3_w - 16}" y2="54" stroke="#9CA3AF" stroke-width="0.8"/>
+
+        <text x="16" y="74" class="comp-txt">• Thực thi Function Calling kết nối Live Microservices:</text>
+
+        <!-- Service 1: Shipment -->
+        <g transform="translate(14, 86)">
+          <rect width="{c3_w - 28}" height="76" rx="3" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
+          <text x="12" y="18" class="comp-stereo">«Port :3002 · GET /api/v1/shipments/:code»</text>
+          <text x="12" y="38" class="comp-title" style="font-size:11.5px;">trackShipment(code):</text>
+          <text x="12" y="56" class="comp-txt">Lấy trạng thái thực tế kiện hàng, bưu tá giao, vị trí hiện tại.</text>
+          <text x="12" y="70" class="comp-code">Trả về: DTO JSON vận đơn chuẩn hóa</text>
+        </g>
+
+        <!-- Service 2: Pricing -->
+        <g transform="translate(14, 172)">
+          <rect width="{c3_w - 28}" height="76" rx="3" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
+          <text x="12" y="18" class="comp-stereo">«Port :3003 · POST /api/v1/pricing/calculate»</text>
+          <text x="12" y="38" class="comp-title" style="font-size:11.5px;">calculateShippingFee(d, r, c, w, type):</text>
+          <text x="12" y="56" class="comp-txt">Quy đổi IATA: (D×R×C)/5000 so sánh trọng lượng thực.</text>
+          <text x="12" y="70" class="comp-code">Trả về: Cước chính + Phụ phí vùng sâu + VAT</text>
+        </g>
+
+        <!-- Service 3: Incident & Claim -->
+        <g transform="translate(14, 258)">
+          <rect width="{c3_w - 28}" height="76" rx="3" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
+          <text x="12" y="18" class="comp-stereo">«Port :3008 · POST /api/v1/incidents»</text>
+          <text x="12" y="38" class="comp-title" style="font-size:11.5px;">reportIncident(shipmentId, reason, note):</text>
+          <text x="12" y="56" class="comp-txt">Khởi tạo biên bản sự cố BBBT, đính kèm bằng chứng ảnh.</text>
+          <text x="12" y="70" class="comp-code">Ràng buộc: Bắt buộc kích hoạt trong vòng 24 giờ</text>
+        </g>
+
+        <!-- Circuit Breaker -->
+        <g transform="translate(14, 344)">
+          <rect width="{c3_w - 28}" height="76" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+          <text x="12" y="18" class="comp-title" style="font-size:11.5px;">Hàng Rào Ngắt Mạch (Circuit Breaker):</text>
+          <text x="12" y="36" class="comp-txt">Ngưỡng Timeout 2000ms. Nếu API đối tác chết → Tự động chuyển</text>
+          <text x="12" y="54" class="comp-txt">sang thông báo thân thiện, không làm treo phiên chat.</text>
+          <text x="12" y="68" class="comp-code">Fallback an toàn: Tránh thắt cổ chai hệ thống</text>
+        </g>
+
+        <line x1="16" y1="432" x2="{c3_w - 16}" y2="432" stroke="#9CA3AF" stroke-width="0.8"/>
+        <text x="16" y="452" class="comp-code">Độ trễ API nội bộ: &lt; 180ms qua mạng nội bộ Docker</text>
+        <text x="16" y="468" class="comp-txt" style="font-size:11px; fill:#4B5563;">Đầu ra: Live DTO phục vụ lắp ráp Tầng 3 Prompt</text>
+      </g>
+    </g>
+''')
+
+    # Arrow Down from Tier 2.3 -> Tier 2.4 (Context Sandwich & LLM)
+    arr_o_y1 = o_y + o_h
+    arr_o_y2 = arr_o_y1 + 40
+    lines.append(f'''
+    <!-- Connector Tier 2.3 -> Tier 2.4 -->
+    <line x1="{content_w // 2}" y1="{arr_o_y1}" x2="{content_w // 2}" y2="{arr_o_y2}" stroke="#000000" stroke-width="2"/>
+    {draw_arrow_head(content_w // 2, arr_o_y2, direction="down", color="#000000", size=6)}
+    {draw_flow_badge(content_w // 2 - 34, arr_o_y1 + 20, "7")}
+    
+    <g transform="translate({content_w // 2 + 16}, {arr_o_y1 + 6})">
+      <rect width="320" height="26" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="17" class="flow-arrow-lbl">Top-5 Chunks + Live DTO + Directives</text>
+    </g>
+''')
+
+    # -------------------------------------------------------------------------
+    # TIER 2.4: CONTEXT SANDWICH PROMPT & LLM STREAMING
+    # y: 966, h: 390
+    # -------------------------------------------------------------------------
+    sw_y = arr_o_y2
+    sw_h = 390
+    sw_left_w = 1120
+    sw_right_w = content_w - 48 - sw_left_w - 30  # 692px
+
+    lines.append(f'''
+    <!-- Tier 2.4: Context Sandwich Assembler & Foundation LLM Engine -->
+    <g transform="translate(24, {sw_y})">
+      <rect width="{content_w - 48}" height="{sw_h}" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+      <text x="18" y="24" class="comp-stereo">«Prompt Engineering &amp; Foundation Models · Zero Hallucination»</text>
+      <text x="18" y="44" class="comp-title">Bộ Lắp Ráp Ngữ Cảnh 4 Tầng (Context Sandwich Prompt) &amp; Mô Hình Ngôn Ngữ Lớn</text>
+      <line x1="18" y1="54" x2="{content_w - 66}" y2="54" stroke="#9CA3AF" stroke-width="0.8"/>
+
+      <!-- Left Column: Context Sandwich 4 Tiers -->
+      <g transform="translate(18, 66)">
+        <rect width="{sw_left_w}" height="{sw_h - 84}" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+        <text x="16" y="22" class="comp-stereo">«Prompt Assembly · 4-Tier Context Sandwich Architecture»</text>
+        <text x="16" y="42" class="comp-title">Cấu Trúc Bánh Mì Kẹp Ngữ Cảnh (Context Sandwich Prompt)</text>
+        <line x1="16" y1="50" x2="{sw_left_w - 16}" y2="50" stroke="#9CA3AF" stroke-width="0.8"/>
+
+        <!-- Tier 1 Sandwich Row -->
+        <g transform="translate(14, 58)">
+          <rect width="{sw_left_w - 28}" height="54" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+          <text x="12" y="18" class="comp-title" style="font-size:11px;">TẦNG 1: CHỈ THỊ HỆ THỐNG VÀ ĐỊNH DANH (SYSTEM DIRECTIVES)</text>
+          <text x="12" y="36" class="comp-txt" style="font-size:10.5px;">Định danh Trợ lý Nexus; Giọng văn khách quan; Tuyệt đối cấm bịa đặt ngoài tài liệu; Ràng buộc cấu trúc JSON Schema.</text>
+        </g>
+
+        <!-- Tier 2 Sandwich Row (From Section 1 Chunks) -->
+        <g transform="translate(14, 120)">
+          <rect width="{sw_left_w - 28}" height="54" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+          <text x="12" y="18" class="comp-title" style="font-size:11px;">TẦNG 2: TRI THỨC TRÍCH DẪN TỪ KHO VÉC-TƠ (TOP-5 RETRIEVED SOP CHUNKS TỪ PHẦN I)</text>
+          <text x="12" y="36" class="comp-txt" style="font-size:10.5px;">5 đoạn tài liệu SOP có điểm Cosine cao nhất từ 62 chunks đã phân đoạn; Kèm đường dẫn Breadcrumb &amp; căn cứ pháp lý.</text>
         </g>
 
         <!-- Tier 3 Sandwich Row -->
-        <g transform="translate(12, 152)">
-          <rect width="{c3_w - 60}" height="52" rx="3" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
-          <text x="10" y="18" class="comp-title" style="font-size:11px;">TẦNG 3: DỮ LIỆU THỰC TẾ TỪ LIVE SERVICES (LIVE DTO PAYLOAD)</text>
-          <text x="10" y="36" class="comp-txt" style="font-size:10.5px;">Dữ liệu vận đơn thực tế, vị trí bưu tá, cước phí được trả về từ Microservices nội bộ.</text>
+        <g transform="translate(14, 182)">
+          <rect width="{sw_left_w - 28}" height="54" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+          <text x="12" y="18" class="comp-title" style="font-size:11px;">TẦNG 3: DỮ LIỆU THỰC TẾ TỪ LIVE MICROSERVICES (LIVE DTO PAYLOAD TỪ CỘT C)</text>
+          <text x="12" y="36" class="comp-txt" style="font-size:10.5px;">Dữ liệu vận đơn thực tế, vị trí bưu tá, cước phí được trả về từ ShipmentService (:3002) và PricingService (:3003).</text>
         </g>
 
         <!-- Tier 4 Sandwich Row -->
-        <g transform="translate(12, 212)">
-          <rect width="{c3_w - 60}" height="52" rx="3" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
-          <text x="10" y="18" class="comp-title" style="font-size:11px;">TẦNG 4: LỊCH SỬ HỘI THOẠI ĐA LƯỢT (SLIDING CONVERSATION BUFFER)</text>
-          <text x="10" y="36" class="comp-txt" style="font-size:10.5px;">Mảng 6 lượt tương tác gần nhất giữa Người dùng và Trợ lý ảo để giữ trọn vẹn ngữ cảnh.</text>
+        <g transform="translate(14, 244)">
+          <rect width="{sw_left_w - 28}" height="46" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+          <text x="12" y="18" class="comp-title" style="font-size:11px;">TẦNG 4: LỊCH SỬ HỘI THOẠI ĐA LƯỢT (SLIDING CONVERSATION BUFFER)</text>
+          <text x="12" y="34" class="comp-txt" style="font-size:10.5px;">Mảng 6 lượt tương tác gần nhất giữa Người dùng và Trợ lý ảo để giữ trọn vẹn ngữ cảnh đàm thoại.</text>
         </g>
 
-        <text x="14" y="288" class="comp-code">Cấu hình suy luận: Temperature = 0.2 (Triệt tiêu hoàn toàn ảo giác AI)</text>
+        <text x="16" y="318" class="comp-code">Cấu hình suy luận: Temperature = 0.2 (Triệt tiêu hoàn toàn hiện tượng ảo giác AI)</text>
       </g>
 
-      <!-- 3.3 SSE Streaming Serializer -->
-      <g transform="translate(18, 570)">
-        <rect width="{c3_w - 36}" height="185" rx="4" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
-        <text x="14" y="22" class="comp-title" style="font-size:12.5px;">Bộ Phát Luồng Phản Hồi (SSE Stream Publisher):</text>
-        <text x="14" y="44" class="comp-txt">• <tspan class="comp-txt-bold">Nhận Luồng Token từ LLM:</tspan> Tiếp nhận từng chunk ký tự từ LLM.</text>
-        <text x="14" y="72" class="comp-txt">• <tspan class="comp-txt-bold">Đẩy Tức Thì Về Client:</tspan> Truyền qua SSE với độ trễ TTFT &lt; 500ms.</text>
-        <text x="14" y="100" class="comp-txt">• <tspan class="comp-txt-bold">JSON DTO Packing:</tspan> Chuyển đổi Function Call sang DTO hợp lệ.</text>
-        <text x="14" y="128" class="comp-txt">• <tspan class="comp-txt-bold">Đóng Ngắt An Toàn:</tspan> Phát sự kiện <tspan class="comp-code">[DONE]</tspan> khi hoàn tất phiên.</text>
-        <text x="14" y="162" class="comp-code">Giao thức luồng: text/event-stream • Tối ưu hóa trải nghiệm</text>
+      <!-- Right Column: Foundation LLM Engine & SSE Streaming -->
+      <g transform="translate({18 + sw_left_w + 24}, 66)">
+        <rect width="{sw_right_w}" height="{sw_h - 84}" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+        <text x="16" y="22" class="comp-stereo">«Foundation LLM &amp; Streaming Response»</text>
+        <text x="16" y="42" class="comp-title">Mô Hình Nền Tảng &amp; Phát Luồng SSE</text>
+        <line x1="16" y1="50" x2="{sw_right_w - 16}" y2="50" stroke="#9CA3AF" stroke-width="0.8"/>
+
+        <!-- LLM Model Box -->
+        <g transform="translate(14, 58)">
+          <rect width="{sw_right_w - 28}" height="110" rx="3" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
+          <text x="12" y="20" class="comp-title" style="font-size:12px;">Mô Hình Ngôn Ngữ Lớn (LLM):</text>
+          <text x="12" y="40" class="comp-txt">• Google Gemini 1.5 Flash / Pro.</text>
+          <text x="12" y="60" class="comp-txt">• Cửa sổ ngữ cảnh: 1M Tokens siêu lớn.</text>
+          <text x="12" y="80" class="comp-txt">• Hỗ trợ Function Calling &amp; Strict JSON Schema.</text>
+          <text x="12" y="98" class="comp-code">Độ trễ ký tự đầu (TTFT): &lt; 500ms</text>
+        </g>
+
+        <!-- SSE Stream Publisher Box -->
+        <g transform="translate(14, 178)">
+          <rect width="{sw_right_w - 28}" height="116" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+          <text x="12" y="20" class="comp-title" style="font-size:12px;">Bộ Phát Luồng (SSE Publisher):</text>
+          <text x="12" y="38" class="comp-txt">• Giao thức: <tspan class="comp-code">text/event-stream</tspan>.</text>
+          <text x="12" y="56" class="comp-txt">• Bắn từng token về Client không gây gián đoạn.</text>
+          <text x="12" y="74" class="comp-txt">• Đóng gói DTO thẻ tương tác (Rich Card UI).</text>
+          <text x="12" y="92" class="comp-txt">• Phát sự kiện <tspan class="comp-code">[DONE]</tspan> khi hoàn tất phiên phản hồi.</text>
+          <text x="12" y="108" class="comp-code">Trải nghiệm: Người dùng thấy chữ xuất hiện tức thì</text>
+        </g>
+
+        <text x="16" y="318" class="comp-code">Bảo mật luồng: TLS 1.3 End-to-End</text>
       </g>
-    </g>''')
+    </g>
+''')
 
     lines.append('  </g>')
 
     # =========================================================================
-    # SPACIOUS CONNECTORS TIER 3 -> TIER 4 (Gap: 90px)
-    # Aligned directly with Centers of Column 4A, Column 4B, and Column 4C
+    # SECTION 3: BẢNG THÔNG SỐ KỸ THUẬT & CHUẨN ĐỐI CHIẾU THỰC NGHIỆM
+    # y: 2285 to 2715, h: 430
     # =========================================================================
-    t3_to_t4_gap = 90
-    arrow_3_start = t3_y + t3_h
-    arrow_3_end = arrow_3_start + t3_to_t4_gap
-
-    p_w = c3_w  # 584px
-
-    # Left Connector: Exactly aligned with center of Column 4A
-    conn_left_x = margin_x + 24 + p_w // 2
-    # Center Connector: Exactly aligned with center of Column 4B
-    conn_mid_x = margin_x + 24 + p_w + col_gap + p_w // 2
-    # Right Connector: Exactly aligned with center of Column 4C
-    conn_right_x = margin_x + 24 + (p_w + col_gap) * 2 + p_w // 2
+    s3_y = s2_y + s2_h + 35
+    s3_h = 430
 
     lines.append(f'''
-  <!-- Spacious Connectors Tier 3 -> Tier 4 (Highlighting 3-way Downward Arrows) -->
-  <!-- Left Arrow: Vector Retrieval Flow (To Column 4A) -->
-  <line x1="{conn_left_x}" y1="{arrow_3_start}" x2="{conn_left_x}" y2="{arrow_3_end}" stroke="#000000" stroke-width="2.4"/>
-  {draw_arrow_head(conn_left_x, arrow_3_end, direction="down", color="#000000", size=8)}
-  {draw_flow_badge(conn_left_x - 36, arrow_3_start + t3_to_t4_gap // 2, "4a")}
-  
-  <g transform="translate({conn_left_x + 16}, {arrow_3_start + t3_to_t4_gap // 2 - 14})">
-    <rect width="250" height="28" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-    <text x="12" y="18" class="flow-arrow-lbl">Query Vector &amp; SOP Chunks</text>
-  </g>
-
-  <!-- Center Arrow: Microservices API Call Flow (To Column 4B) -->
-  <line x1="{conn_mid_x}" y1="{arrow_3_start}" x2="{conn_mid_x}" y2="{arrow_3_end}" stroke="#000000" stroke-width="2.4"/>
-  {draw_arrow_head(conn_mid_x, arrow_3_end, direction="down", color="#000000", size=8)}
-  {draw_flow_badge(conn_mid_x - 36, arrow_3_start + t3_to_t4_gap // 2, "4b")}
-  
-  <g transform="translate({conn_mid_x + 16}, {arrow_3_start + t3_to_t4_gap // 2 - 14})">
-    <rect width="260" height="28" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-    <text x="12" y="18" class="flow-arrow-lbl">Live Order DTO Calls (:3000)</text>
-  </g>
-
-  <!-- Right Arrow: LLM Inference Request Flow (To Column 4C) -->
-  <line x1="{conn_right_x}" y1="{arrow_3_start}" x2="{conn_right_x}" y2="{arrow_3_end}" stroke="#000000" stroke-width="2.4"/>
-  {draw_arrow_head(conn_right_x, arrow_3_end, direction="down", color="#000000", size=8)}
-  {draw_flow_badge(conn_right_x - 36, arrow_3_start + t3_to_t4_gap // 2, "6")}
-  
-  <g transform="translate({conn_right_x + 16}, {arrow_3_start + t3_to_t4_gap // 2 - 14})">
-    <rect width="250" height="28" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-    <text x="12" y="18" class="flow-arrow-lbl">Context Sandwich Prompt [TLS 1.3]</text>
-  </g>''')
-
-    # =========================================================================
-    # TIER 4: TẦNG DỮ LIỆU, DỊCH VỤ NGHIỆP VỤ & NỀN TẢNG LLM (y: 1640, h: 540)
-    # =========================================================================
-    t4_y = arrow_3_end
-    t4_h = 540
-    lines.append(f'''
-  <!-- ================= TIER 4: DATA, SERVICES & FOUNDATION MODELS ================= -->
-  <g id="Tier4_DataServicesModels" transform="translate({margin_x}, {t4_y})">
-    <!-- Tier Boundary Container -->
-    <rect width="{content_w}" height="{t4_h}" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.8"/>
+  <!-- ================= SECTION 3: ENGINEERING BENCHMARKS & SPECIFICATIONS ================= -->
+  <g id="Section3_Specifications" transform="translate({margin_x}, {s3_y})">
+    <rect width="{content_w}" height="{s3_h}" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.8"/>
     <!-- Clean Horizontal Divider Line (No Background Fill) -->
     <line x1="0" y1="36" x2="{content_w}" y2="36" stroke="#000000" stroke-width="1.2"/>
-    <text x="20" y="23" class="tier-title">TẦNG 4: LƯU TRỮ TRI THỨC, DỊCH VỤ NGHIỆP VỤ &amp; MÔ HÌNH NỀN TẢNG</text>
-    <text x="{content_w - 20}" y="23" text-anchor="end" class="tier-sub">[TIER 4: KNOWLEDGE PERSISTENCE, BACKEND MICROSERVICES &amp; FOUNDATION LLMS]</text>''')
+    <text x="20" y="23" class="sec-title">PHẦN III: BẢNG THÔNG SỐ KỸ THUẬT KIẾN TRÚC &amp; CHUẨN ĐỐI CHIẾU THỰC NGHIỆM</text>
+    <text x="{content_w - 20}" y="23" text-anchor="end" class="sec-sub">[PHASE 3: CHUNKING BENCHMARKS • LATENCY SLAs • SECURITY GUARDRAILS • REGULATORY COMPLIANCE]</text>
+''')
 
-    # -------------------------------------------------------------------------
-    # PHÂN VÙNG 4A: KHO TRI THỨC & DỮ LIỆU (Clean Standard Store Cards)
-    # -------------------------------------------------------------------------
+    # 4 Columns of Specifications matching Section 1 width
+    spec_col_w = col_w_s1
+    spec_gap = gap_s1
+
+    # Spec Col 1: Chunking Specs
     lines.append(f'''
-    <!-- 4A: Knowledge & Data Stores -->
-    <g transform="translate(24, 46)">
-      <rect width="{p_w}" height="{t4_h - 62}" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-      <text x="18" y="24" class="comp-stereo">«Data Persistence &amp; Vector Stores»</text>
-      <text x="18" y="46" class="comp-title">A. Kho Tri Thức &amp; Cơ Sở Dữ Liệu</text>
-      
-      <!-- Store 1: Vector Knowledge Cache -->
-      {draw_store_box(18, 62, p_w - 36, 195, "1. Kho Véc-tơ Tri Thức (Vector Cache)", "«In-Memory Vector Cache · 768-dim»", [
-          "• Cấu trúc: 62 vector embeddings chuẩn 768 chiều tương ứng 62 chunks SOP.",
-          "• Tốc độ: Toàn bộ nạp sẵn vào RAM (In-Memory), độ trễ tìm kiếm < 5ms.",
-          "• Thuật toán khớp: Cosine Similarity ma trận véc-tơ; Tự động giải phóng khi restart.",
-          "• Nạp lại: API POST /ingest cho phép Admin cập nhật tri thức mới tức thời."
-      ])}
+    <!-- Spec 1: Chunking Benchmarks -->
+    <g transform="translate(24, 50)">
+      <rect width="{spec_col_w}" height="{s3_h - 70}" rx="4" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
+      <text x="16" y="22" class="footer-title">1. Thông Số Phân Đoạn (Chunking):</text>
+      <line x1="16" y1="32" x2="{spec_col_w - 16}" y2="32" stroke="#9CA3AF" stroke-width="0.8"/>
 
-      <!-- Store 2: SOP Document Repository -->
-      {draw_store_box(18, 270, p_w - 36, 195, "2. Kho Tài Liệu Quy Chuẩn SOP Bưu Chính", "«Document Store · AST Markdown Repo»", [
-          "• 9 văn bản SOP: SOP-01 Đóng gói, SOP-02 Biểu cước, SOP-04 Khiếu nại...",
-          "• Định dạng: AST Markdown Header Level, giữ nguyên cấu trúc điều khoản luật.",
-          "• Pháp lý: Quy chiếu trực tiếp Điều 18 & 25 Luật Bưu chính Việt Nam.",
-          "• Phân đoạn: 62 chunks có độ dài trung bình 240 từ, bảo toàn ngữ cảnh."
-      ])}
-    </g>''')
+      <text x="16" y="54" class="comp-txt"><tspan class="comp-txt-bold">• Giải thuật:</tspan> Heading AST + Sliding Window</text>
+      <text x="16" y="76" class="comp-txt"><tspan class="comp-txt-bold">• Kích thước khối (MaxWords):</tspan> 250 từ / chunk</text>
+      <text x="16" y="98" class="comp-txt"><tspan class="comp-txt-bold">• Tương đương Token:</tspan> ~325 tokens tiếng Việt</text>
+      <text x="16" y="120" class="comp-txt"><tspan class="comp-txt-bold">• Vùng gối đầu (Overlap):</tspan> 40 từ (16.0%)</text>
+      <text x="16" y="142" class="comp-txt"><tspan class="comp-txt-bold">• Bước nhảy (Stride):</tspan> 210 từ</text>
+      <text x="16" y="164" class="comp-txt"><tspan class="comp-txt-bold">• Quy mô tri thức:</tspan> 62 Chunks từ 9 tài liệu SOP</text>
+      <text x="16" y="186" class="comp-txt"><tspan class="comp-txt-bold">• Không gian Vector:</tspan> 768 chiều (L2-Normalized)</text>
+      <text x="16" y="208" class="comp-txt"><tspan class="comp-txt-bold">• Độ phủ ngữ nghĩa:</tspan> 100% tình huống bưu chính</text>
+      <text x="16" y="230" class="comp-txt"><tspan class="comp-txt-bold">• Bộ nhớ đệm RAM:</tspan> ~2.4 MB (Cực kỳ nhẹ)</text>
+      <text x="16" y="252" class="comp-txt"><tspan class="comp-txt-bold">• Chỉ mục đĩa cứng:</tspan> vector-index.json</text>
+      <text x="16" y="274" class="comp-txt"><tspan class="comp-txt-bold">• Re-index trigger:</tspan> POST /api/v1/chat/ingest</text>
+      <text x="16" y="296" class="comp-txt"><tspan class="comp-txt-bold">• Xử lý bảng biểu:</tspan> Không bị đứt hàng/cột cước</text>
+      <line x1="16" y1="312" x2="{spec_col_w - 16}" y2="312" stroke="#9CA3AF" stroke-width="0.8"/>
+      <text x="16" y="332" class="footer-val">Đánh giá: Cân bằng tối ưu giữa độ mịn và ngữ cảnh</text>
+    </g>
+''')
 
-    # -------------------------------------------------------------------------
-    # PHÂN VÙNG 4B: LƯỚI DỊCH VỤ NGHIỆP VỤ LOGISTICS (Microservices Backend)
-    # -------------------------------------------------------------------------
+    # Spec Col 2: Latency & Performance SLAs
     lines.append(f'''
-    <!-- 4B: Logistics Backend Microservices Mesh -->
-    <g transform="translate({24 + p_w + col_gap}, 46)">
-      <rect width="{p_w}" height="{t4_h - 62}" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-      <text x="18" y="24" class="comp-stereo">«Domain Microservices · Node.js / Express»</text>
-      <text x="18" y="46" class="comp-title">B. Lưới Dịch Vụ Nghiệp Vụ Logistics</text>
+    <!-- Spec 2: Latency & Performance -->
+    <g transform="translate({24 + spec_col_w + spec_gap}, 50)">
+      <rect width="{spec_col_w}" height="{s3_h - 70}" rx="4" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
+      <text x="16" y="22" class="footer-title">2. Hiệu Năng &amp; Độ Trễ (SLAs):</text>
+      <line x1="16" y1="32" x2="{spec_col_w - 16}" y2="32" stroke="#9CA3AF" stroke-width="0.8"/>
 
-      <!-- Microservice Card 1: ShipmentService -->
-      <g transform="translate(18, 62)">
-        <rect width="{p_w - 36}" height="90" rx="4" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
-        <text x="16" y="22" class="comp-stereo">«Microservice · Port :3002»</text>
-        <text x="16" y="42" class="comp-title" style="font-size:13px;">ShipmentService: Vận Đơn &amp; Lộ Trình</text>
-        <text x="16" y="62" class="comp-txt">• Tra cứu trạng thái kiện hàng theo mã <tspan class="comp-code">NX-XXXX</tspan>, bưu tá phát.</text>
-        <text x="16" y="78" class="comp-code">API Endpoint: GET /api/v1/shipments/:code • DB: PostgreSQL</text>
-      </g>
+      <text x="16" y="54" class="comp-txt"><tspan class="comp-txt-bold">• Ký tự đầu tiên (TTFT):</tspan> &lt; 500ms (SSE Stream)</text>
+      <text x="16" y="76" class="comp-txt"><tspan class="comp-txt-bold">• Truy vấn Cosine RAM:</tspan> &lt; 5ms (In-Memory Dot)</text>
+      <text x="16" y="98" class="comp-txt"><tspan class="comp-txt-bold">• Khớp BM25 Từ điển:</tspan> &lt; 8ms trên 62 chunks</text>
+      <text x="16" y="120" class="comp-txt"><tspan class="comp-txt-bold">• Phân loại ý định Regex:</tspan> &lt; 2ms</text>
+      <text x="16" y="142" class="comp-txt"><tspan class="comp-txt-bold">• Gọi Tool Microservices:</tspan> &lt; 180ms nội bộ</text>
+      <text x="16" y="164" class="comp-txt"><tspan class="comp-txt-bold">• Lắp ráp Context Prompt:</tspan> &lt; 10ms</text>
+      <text x="16" y="186" class="comp-txt"><tspan class="comp-txt-bold">• Circuit Breaker Timeout:</tspan> 2000ms ngắt an toàn</text>
+      <text x="16" y="208" class="comp-txt"><tspan class="comp-txt-bold">• Cửa sổ đệm hội thoại:</tspan> 6 lượt tương tác gần nhất</text>
+      <text x="16" y="230" class="comp-txt"><tspan class="comp-txt-bold">• Băng thông mạng SSE:</tspan> Giảm 85% tải so với Poll</text>
+      <text x="16" y="252" class="comp-txt"><tspan class="comp-txt-bold">• Tải đồng thời chịu lỗi:</tspan> &gt; 100 phiên chat active</text>
+      <text x="16" y="274" class="comp-txt"><tspan class="comp-txt-bold">• Tỷ lệ ngắt kết nối an toàn:</tspan> 100% [DONE] event</text>
+      <text x="16" y="296" class="comp-txt"><tspan class="comp-txt-bold">• Tốc độ sinh Token:</tspan> 45 - 60 tokens/giây</text>
+      <line x1="16" y1="312" x2="{spec_col_w - 16}" y2="312" stroke="#9CA3AF" stroke-width="0.8"/>
+      <text x="16" y="332" class="footer-val">Đánh giá: Đạt chuẩn trải nghiệm người dùng tức thì</text>
+    </g>
+''')
 
-      <!-- Microservice Card 2: PricingService -->
-      <g transform="translate(18, 162)">
-        <rect width="{p_w - 36}" height="90" rx="4" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
-        <text x="16" y="22" class="comp-stereo">«Microservice · Port :3003»</text>
-        <text x="16" y="42" class="comp-title" style="font-size:13px;">PricingService: Cước Phí Vận Chuyển</text>
-        <text x="16" y="62" class="comp-txt">• Bảng cước chuẩn IATA, công thức thể tích <tspan class="comp-code">(D×R×C)/5000</tspan>, phụ phí.</text>
-        <text x="16" y="78" class="comp-code">API Endpoint: POST /api/v1/pricing/calculate • Latency &lt; 15ms</text>
-      </g>
-
-      <!-- Microservice Card 3: IncidentService -->
-      <g transform="translate(18, 262)">
-        <rect width="{p_w - 36}" height="90" rx="4" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
-        <text x="16" y="22" class="comp-stereo">«Microservice · Port :3008»</text>
-        <text x="16" y="42" class="comp-title" style="font-size:13px;">IncidentService: Xử Lý Khiếu Nại &amp; Sự Cố</text>
-        <text x="16" y="62" class="comp-txt">• Tiếp nhận báo cáo bưu phẩm vỡ, rách bao bì; Khởi tạo hồ sơ bồi thường.</text>
-        <text x="16" y="78" class="comp-code">API Endpoint: POST /api/v1/incidents/create • Gắn mã CLM</text>
-      </g>
-
-      <!-- Microservice Card 4: HubService -->
-      <g transform="translate(18, 362)">
-        <rect width="{p_w - 36}" height="90" rx="4" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
-        <text x="16" y="22" class="comp-stereo">«Microservice · Port :3004»</text>
-        <text x="16" y="42" class="comp-title" style="font-size:13px;">HubService: Kiểm Soát Tồn Kho Trung Chuyển</text>
-        <text x="16" y="62" class="comp-txt">• Cảnh báo kiện hàng tồn kho quá 30 ngày (SOP-08); Phối hợp điều hướng.</text>
-        <text x="16" y="78" class="comp-code">API Endpoint: GET /api/v1/hubs/storage-ageing • Kho trung chuyển</text>
-      </g>
-    </g>''')
-
-    # -------------------------------------------------------------------------
-    # PHÂN VÙNG 4C: MÔ HÌNH NỀN TẢNG ĐA TẦNG (Foundation LLM & Embedder)
-    # -------------------------------------------------------------------------
+    # Spec Col 3: Security & PII Guardrails
     lines.append(f'''
-    <!-- 4C: Foundation LLM & Inference Models -->
-    <g transform="translate({24 + (p_w + col_gap)*2}, 46)">
-      <rect width="{p_w}" height="{t4_h - 62}" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-      <text x="18" y="24" class="comp-stereo">«External Cloud AI &amp; Local Embedder»</text>
-      <text x="18" y="46" class="comp-title">C. Mô Hình Ngôn Ngữ Lớn &amp; Suy Luận</text>
+    <!-- Spec 3: Security Guardrails -->
+    <g transform="translate({24 + (spec_col_w + spec_gap) * 2}, 50)">
+      <rect width="{spec_col_w}" height="{s3_h - 70}" rx="4" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
+      <text x="16" y="22" class="footer-title">3. An Toàn Dữ Liệu &amp; Bảo Mật PII:</text>
+      <line x1="16" y1="32" x2="{spec_col_w - 16}" y2="32" stroke="#9CA3AF" stroke-width="0.8"/>
 
-      <!-- LLM 1: Primary Model (Gemini 2.0 / 1.5 Flash) -->
-      <g transform="translate(18, 62)">
-        <rect width="{p_w - 36}" height="120" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-        <text x="16" y="22" class="comp-stereo">«Primary Cloud LLM · Google AI Studio»</text>
-        <text x="16" y="42" class="comp-title" style="font-size:13px;">1. Mô Hình Suy Luận: Gemini 1.5 / 2.0 Flash</text>
-        <text x="16" y="64" class="comp-txt">• Hỗ trợ Function Calling native; Sinh tham số gọi hàm chuẩn xác.</text>
-        <text x="16" y="84" class="comp-txt">• Cửa sổ ngữ cảnh cực lớn (1M tokens), xử lý mượt tài liệu quy chuẩn.</text>
-        <g transform="translate(16, 94)">
-          <rect width="160" height="18" class="tag-rect"/>
-          <text x="8" y="13" class="tag-txt">Model: gemini-1.5-flash</text>
-          <rect x="170" y="0" width="140" height="18" class="tag-rect"/>
-          <text x="178" y="13" class="tag-txt">Temperature = 0.2</text>
-        </g>
-      </g>
+      <text x="16" y="54" class="comp-txt"><tspan class="comp-txt-bold">• Che chắn SĐT:</tspan> 100% dạng 090***123</text>
+      <text x="16" y="76" class="comp-txt"><tspan class="comp-txt-bold">• Che chắn CCCD:</tspan> 100% dạng 079***456</text>
+      <text x="16" y="98" class="comp-txt"><tspan class="comp-txt-bold">• Che chắn Email:</tspan> 100% dạng a***@domain.com</text>
+      <text x="16" y="120" class="comp-txt"><tspan class="comp-txt-bold">• Giới hạn tần suất:</tspan> 20 req/phút/IP (Anti-Spam)</text>
+      <text x="16" y="142" class="comp-txt"><tspan class="comp-txt-bold">• Nhiệt độ suy luận (Temp):</tspan> 0.2 (Chống ảo giác AI)</text>
+      <text x="16" y="164" class="comp-txt"><tspan class="comp-txt-bold">• Chống Prompt Injection:</tspan> Lọc từ khóa nguy hiểm</text>
+      <text x="16" y="186" class="comp-txt"><tspan class="comp-txt-bold">• Ràng buộc Schema:</tspan> JSON DTO Strict Mode</text>
+      <text x="16" y="208" class="comp-txt"><tspan class="comp-txt-bold">• Xác thực phiên:</tspan> JWT Bearer Token đăng nhập</text>
+      <text x="16" y="230" class="comp-txt"><tspan class="comp-txt-bold">• Phân quyền RBAC:</tspan> MERCHANT / SHIPPER / GUEST</text>
+      <text x="16" y="252" class="comp-txt"><tspan class="comp-txt-bold">• Giao thức bảo vệ:</tspan> HTTPS / TLS 1.3</text>
+      <text x="16" y="274" class="comp-txt"><tspan class="comp-txt-bold">• Nhật ký kiểm toán:</tspan> Ghi vết Audit Log đầy đủ</text>
+      <text x="16" y="296" class="comp-txt"><tspan class="comp-txt-bold">• Tuân thủ quyền riêng tư:</tspan> Nghị định 13/2023/NĐ-CP</text>
+      <line x1="16" y1="312" x2="{spec_col_w - 16}" y2="312" stroke="#9CA3AF" stroke-width="0.8"/>
+      <text x="16" y="332" class="footer-val">Đánh giá: Bảo vệ an toàn dữ liệu khách hàng 100%</text>
+    </g>
+''')
 
-      <!-- LLM 2: Fallback Model (OpenAI GPT-4o-mini) -->
-      <g transform="translate(18, 195)">
-        <rect width="{p_w - 36}" height="120" rx="4" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
-        <text x="16" y="22" class="comp-stereo">«Secondary Fallback LLM · OpenAI API»</text>
-        <text x="16" y="42" class="comp-title" style="font-size:13px;">2. Mô Hình Dự Phòng: GPT-4o-mini</text>
-        <text x="16" y="64" class="comp-txt">• Tự động chuyển tiếp khi Primary LLM gặp sự cố hoặc vượt Rate Limit.</text>
-        <text x="16" y="84" class="comp-txt">• Đảm bảo độ sẵn sàng của hệ thống trợ lý ảo đạt 99.9% liên tục 24/7.</text>
-        <g transform="translate(16, 94)">
-          <rect width="140" height="18" class="tag-rect"/>
-          <text x="8" y="13" class="tag-txt">Model: gpt-4o-mini</text>
-          <rect x="150" y="0" width="180" height="18" class="tag-rect"/>
-          <text x="158" y="13" class="tag-txt">Failover Circuit Breaker</text>
-        </g>
-      </g>
+    # Spec Col 4: Regulatory & Business Compliance
+    lines.append(f'''
+    <!-- Spec 4: Regulatory Compliance -->
+    <g transform="translate({24 + (spec_col_w + spec_gap) * 3}, 50)">
+      <rect width="{spec_col_w}" height="{s3_h - 70}" rx="4" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
+      <text x="16" y="22" class="footer-title">4. Pháp Lý &amp; Nghiệp Vụ Bưu Chính:</text>
+      <line x1="16" y1="32" x2="{spec_col_w - 16}" y2="32" stroke="#9CA3AF" stroke-width="0.8"/>
 
-      <!-- LLM 3: Text Vectorizer (Local / Cloud Embedder) -->
-      <g transform="translate(18, 328)">
-        <rect width="{p_w - 36}" height="120" rx="4" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
-        <text x="16" y="22" class="comp-stereo">«Text Embedding Model · Vectorizer»</text>
-        <text x="16" y="42" class="comp-title" style="font-size:13px;">3. Vector Hóa: Text-Embedding-004</text>
-        <text x="16" y="64" class="comp-txt">• Thuật toán nhúng véc-tơ chuyển đổi văn bản sang không gian 768 chiều.</text>
-        <text x="16" y="84" class="comp-txt">• Tối ưu hóa cho ngữ nghĩa tiếng Việt chuyên ngành logistics &amp; bưu chính.</text>
-        <g transform="translate(16, 94)">
-          <rect width="180" height="18" class="tag-rect"/>
-          <text x="8" y="13" class="tag-txt">text-embedding-004 (768-dim)</text>
-          <rect x="190" y="0" width="160" height="18" class="tag-rect"/>
-          <text x="198" y="13" class="tag-txt">Cosine Match &lt; 5ms</text>
-        </g>
-      </g>
-    </g>''')
+      <text x="16" y="54" class="comp-txt"><tspan class="comp-txt-bold">• Luật Bưu chính 2010:</tspan> Quy chiếu Điều 18 &amp; 25</text>
+      <text x="16" y="76" class="comp-txt"><tspan class="comp-txt-bold">• Nguyên tắc đền bù:</tspan> 100% giá trị khai giá</text>
+      <text x="16" y="98" class="comp-txt"><tspan class="comp-txt-bold">• Điều kiện bắt buộc:</tspan> Lập BBBT trong 24 giờ</text>
+      <text x="16" y="120" class="comp-txt"><tspan class="comp-txt-bold">• Chuẩn cước IATA:</tspan> Quy đổi thể tích (D×R×C)/5000</text>
+      <text x="16" y="142" class="comp-txt"><tspan class="comp-txt-bold">• Nấc thang cước:</tspan> 0.5kg, 1.0kg, mỗi 0.5kg tiếp theo</text>
+      <text x="16" y="164" class="comp-txt"><tspan class="comp-txt-bold">• Chính sách COD:</tspan> Miễn phí thu hộ dưới 1 triệu VNĐ</text>
+      <text x="16" y="186" class="comp-txt"><tspan class="comp-txt-bold">• Phí chuyển hoàn:</tspan> 50% cước chiều đi khi hủy phát</text>
+      <text x="16" y="208" class="comp-txt"><tspan class="comp-txt-bold">• SLA giao nội thành:</tspan> Cam kết phát trong 24 giờ</text>
+      <text x="16" y="230" class="comp-txt"><tspan class="comp-txt-bold">• SLA giao liên tỉnh:</tspan> Cam kết phát trong 48 - 72 giờ</text>
+      <text x="16" y="252" class="comp-txt"><tspan class="comp-txt-bold">• Hàng cấm bưu chính:</tspan> Pin, vũ khí, chất cháy nổ</text>
+      <text x="16" y="274" class="comp-txt"><tspan class="comp-txt-bold">• Hàng dễ vỡ:</tspan> Bắt buộc bọc xốp 3 lớp &amp; dán nhãn</text>
+      <text x="16" y="296" class="comp-txt"><tspan class="comp-txt-bold">• Quy trình HITL:</tspan> Khiếu nại &gt; 500k chuyển Admin duyệt</text>
+      <line x1="16" y1="312" x2="{spec_col_w - 16}" y2="312" stroke="#9CA3AF" stroke-width="0.8"/>
+      <text x="16" y="332" class="footer-val">Đánh giá: Chuẩn hóa 100% văn kiện pháp quy thực tế</text>
+    </g>
+''')
 
     lines.append('  </g>')
 
     # =========================================================================
-    # RETURN STREAM FLOW (Tier 4 LLM / SSE Publisher back to Tier 1 Client)
-    # Runs cleanly along the 50px right corridor with a clean horizontal pill
+    # FOOTER METADATA BAR (y: 2780)
     # =========================================================================
-    return_x = width - 42
-    t1_return_y = t1_y + 115
-    t4_return_y = t4_y + 120
-
     lines.append(f'''
-  <!-- Return Stream Flow Line from Tier 4 (LLM/SSE) back to Tier 1 Client -->
-  <path d="M {margin_x + content_w} {t4_return_y} L {return_x} {t4_return_y} L {return_x} {t1_return_y} L {margin_x + content_w} {t1_return_y}"
-        fill="none" stroke="#000000" stroke-width="2.2" stroke-dasharray="6,4"/>
-  {draw_arrow_head(margin_x + content_w, t1_return_y, direction="left", color="#000000", size=7)}
-  {draw_flow_badge(return_x, (t4_return_y + t1_return_y) // 2 - 20, "7")}
-  
-  <!-- Clean Horizontal Badge on the Return Corridor (Positioned in Inter-Tier Gap 1->2) -->
-  <g transform="translate({margin_x + content_w - 390}, {arrow_1_start + t1_to_t2_gap // 2 - 14})">
-    <rect width="380" height="28" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-    <text x="12" y="18" class="comp-code" style="font-weight:700;">⑦ SSE STREAM PHẢN HỒI REALTIME (TTFT &lt; 500MS)</text>
-  </g>''')
-
-    # =========================================================================
-    # FOOTER BAR & ACADEMIC METADATA BLUEPRINT (y: 2360, h: 410)
-    # =========================================================================
-    ft_y = 2360
-    ft_h = 410
-    lines.append(f'''
-  <!-- ================= FOOTER: 7-STEP WORKFLOW & BLUEPRINT METADATA ================= -->
-  <g id="Footer_Specification" transform="translate({margin_x}, {ft_y})">
-    <!-- Outer Container -->
-    <rect width="{content_w}" height="{ft_h}" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.8"/>
-    
-    <!-- Top Box: 7-Step Architectural Execution Sequence (Academic Flow) -->
-    <g transform="translate(20, 16)">
-      <rect width="{content_w - 40}" height="205" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-      <text x="20" y="24" class="footer-title">CHU TRÌNH THỰC THI 7 BƯỚC CỦA HỆ THỐNG TRỢ LÝ ẢO (7-STEP INTERACTION LIFECYCLE):</text>
-      
-      <!-- 7 Steps Table Grid (3 Balanced Columns) -->
-      <g transform="translate(20, 36)">
-        <!-- Col 1: Steps 1 & 2 -->
-        <g transform="translate(0, 0)">
-          <text x="0" y="18" class="flow-step-title"><tspan style="font-weight:800;">① Khởi tạo yêu cầu:</tspan> Client gửi payload qua HTTPS Ingress <tspan class="comp-code">:3009</tspan>.</text>
-          <text x="0" y="38" class="flow-step-desc">Payload chứa nội dung tin nhắn, conversationId và token xác thực JWT hợp lệ.</text>
-
-          <text x="0" y="80" class="flow-step-title"><tspan style="font-weight:800;">② Bảo mật &amp; Phiên:</tspan> Khử PII bằng Regex, ngăn Prompt Injection.</text>
-          <text x="0" y="100" class="flow-step-desc">Che giấu số điện thoại khách hàng, bóc tách thực thể và khôi phục ngữ cảnh 6 lượt.</text>
-        </g>
-
-        <!-- Col 2: Steps 3 & 4 -->
-        <g transform="translate(600, 0)">
-          <text x="0" y="18" class="flow-step-title"><tspan style="font-weight:800;">③ Phân luồng NLU:</tspan> Cây quyết định định tuyến ý định (Policy / Tool / Hỗn hợp).</text>
-          <text x="0" y="38" class="flow-step-desc">Tối ưu hóa tài nguyên, không gọi API Microservices dư thừa khi chỉ hỏi đáp chính sách.</text>
-
-          <text x="0" y="80" class="flow-step-title"><tspan style="font-weight:800;">④ Truy xuất song song:</tspan> Tìm kiếm RAG lai (Dense + Sparse) &amp; Gọi API Tool.</text>
-          <text x="0" y="100" class="flow-step-desc">Lọc tài liệu theo ngưỡng Score ≥ 0.58 và lấy dữ liệu vận đơn thực tế từ cổng <tspan class="comp-code">:3000</tspan>.</text>
-        </g>
-
-        <!-- Col 3: Steps 5, 6 & 7 -->
-        <g transform="translate(1200, 0)">
-          <text x="0" y="18" class="flow-step-title"><tspan style="font-weight:800;">⑤ Ghép Prompt 4 Tầng:</tspan> Context Sandwich (Directives + SOP + DTO + History).</text>
-          <text x="0" y="38" class="flow-step-desc">Khóa Temperature = 0.2 triệt tiêu ảo giác, bảo đảm chuẩn xác theo văn bản quy chuẩn.</text>
-
-          <text x="0" y="80" class="flow-step-title"><tspan style="font-weight:800;">⑥ Suy luận AI &amp; ⑦ SSE Stream:</tspan> LLM sinh token đẩy thời gian thực về Client.</text>
-          <text x="0" y="100" class="flow-step-desc">Người dùng thấy phản hồi xuất hiện tức thì (&lt; 500ms); Đóng ngắt luồng [DONE] an toàn.</text>
-        </g>
-      </g>
-    </g>
-
-    <!-- Bottom Box: Academic Thesis Blueprint Metadata Table (No Background Fill) -->
-    <g transform="translate(20, 238)">
-      <rect width="{content_w - 40}" height="152" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
-      
-      <!-- Table Header (Divider Line Only, No Background Fill) -->
-      <line x1="0" y1="32" x2="{content_w - 40}" y2="32" stroke="#000000" stroke-width="1.2"/>
-      <text x="20" y="21" class="hdr-meta-lbl">THÔNG TIN BẢN VẼ KIẾN TRÚC ĐỒ ÁN TỐT NGHIỆP (ACADEMIC THESIS SPECIFICATION - A4 PORTRAIT)</text>
-
-      <!-- Metadata Grid: 2 Columns -->
-      <g transform="translate(20, 46)">
-        <!-- Col 1 -->
-        <g transform="translate(0, 0)">
-          <text x="0" y="20" class="footer-title">Đề Tài Tốt Nghiệp:</text>
-          <text x="170" y="20" class="footer-val">HỆ THỐNG QUẢN LÝ VẬN TẢI &amp; LOGISTICS TOÀN TRÌNH (NEXUS LMS)</text>
-
-          <text x="0" y="48" class="footer-title">Phân Hệ Thiết Kế:</text>
-          <text x="170" y="48" class="footer-val">Phân hệ Trợ lý AI Đàm thoại (Chatbot Subsystem · Port :3009)</text>
-
-          <text x="0" y="76" class="footer-title">Tiêu Chuẩn Kiến Trúc:</text>
-          <text x="170" y="76" class="footer-val">ISO/IEC 42010 · 4-Tier Layered Architecture · Engineering Blueprint</text>
-        </g>
-
-        <!-- Col 2 -->
-        <g transform="translate(900, 0)">
-          <text x="0" y="20" class="footer-title">Thuật Toán Cốt Lõi:</text>
-          <text x="170" y="20" class="footer-val">Hybrid Search (Dense Cosine + Sparse BM25) · Tool Calling Dispatcher</text>
-
-          <text x="0" y="48" class="footer-title">Cơ Chế Phản Hồi:</text>
-          <text x="170" y="48" class="footer-val">Server-Sent Events (SSE Stream) · Low Latency (TTFT &lt; 500ms)</text>
-
-          <text x="0" y="76" class="footer-title">Mã Bản Vẽ &amp; Bản Quyền:</text>
-          <text x="170" y="76" class="footer-val" style="font-weight:800;">ARCH-LMS-CB-04A · Phiên bản v8.0 (Bản Vẽ Kỹ Thuật Đồ Án)</text>
-        </g>
-      </g>
-    </g>
-  </g>''')
+  <!-- FOOTER METADATA (NO BACKGROUND FILL) -->
+  <g id="FooterMeta" transform="translate({margin_x}, 2780)">
+    <text x="0" y="0" class="footer-val" style="font-size:10.5px; fill:#000000; font-weight:700;">ĐỒ ÁN TỐT NGHIỆP KỸ SƯ • ĐỀ TÀI: HỆ THỐNG QUẢN TRỊ LOGISTICS &amp; TRỢ LÝ AI ĐA KÊNH NEXUS • PHÂN HỆ AI CHATBOT VÀ RAG PIPELINE</text>
+    <text x="{content_w}" y="0" text-anchor="end" class="footer-val" style="font-size:10px; fill:#4B5563;">MONOCHROME BLUEPRINT • A4 PORTRAIT (2000×2830px) • ZERO SVG MARKERS • FIGMA 100% NATIVE COMPATIBLE</text>
+  </g>
+''')
 
     lines.append('</svg>')
+    return '\n'.join(lines)
 
-    full_svg = '\n'.join(lines)
-
-    # Ensure output directory exists
+def main():
     os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
+    svg_content = build_architecture_svg()
 
-    with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
-        f.write(full_svg)
-
-    print(f"Generating Handcrafted Academic Monochrome A4-Portrait Architecture Diagram...")
-    print(f"Successfully generated: {OUTPUT_FILE}")
-    print(f"File size: {len(full_svg):,} bytes")
-
-    # XML Validation
+    # Validate XML
     try:
-        ET.fromstring(full_svg)
-        print("SVG XML Validation: PASSED (Well-formed XML)")
+        ET.fromstring(svg_content)
+        print("✓ XML Validation PASSED: Sơ đồ hoàn toàn hợp lệ!")
     except ET.ParseError as e:
-        print(f"SVG XML Validation: FAILED - {e}")
-        raise e
+        print(f"✗ XML Validation FAILED: {e}")
+        return
+
+    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+        f.write(svg_content)
+
+    file_size_kb = os.path.getsize(OUTPUT_FILE) / 1024
+    print(f"✓ Saved successfully to: {OUTPUT_FILE} ({file_size_kb:.2f} KB)")
 
 if __name__ == "__main__":
-    build_architecture_svg()
+    main()
