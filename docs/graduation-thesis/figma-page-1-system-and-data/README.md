@@ -35,7 +35,7 @@ Toàn bộ sơ đồ vector SVG được lưu trữ tại thư mục:
 
 | STT | Tên tệp vector SVG | Tên Section tương ứng trên Figma | Kích thước đề xuất | Mô tả kỹ thuật |
 | :---: | :--- | :--- | :---: | :--- |
-| **01** | `01-use-case-general-system.svg` | **Section 1.1: Use Case Diagram** | $2400 \times 1600\text{ px}$ | Chuẩn UML 2.5 với 6 Actors (Guest, Recipient, Merchant, Courier, Ops, Admin) và 6 phân hệ lớn: Tiếp nhận đơn, Kho bãi & Giao hàng, Sự cố bồi thường, Trợ lý AI, Đối soát COD, Quản trị hệ thống (35 Use Cases chuẩn BA/SRS). |
+| **01** | `01-use-case-general-system.svg` | **Section 1.1: Use Case Diagram** | $3600 \times 2520\text{ px}$ | Chuẩn UML 2.5 với Cây kế thừa Tác nhân 3 tầng (10 Actors), 7 phân hệ lớn: Tiếp nhận đơn, Kho bãi & Giao hàng, Sự cố bồi thường, Tài chính & COD, Truy vết viễn trắc, Trợ lý AI RAG, Quản trị hệ thống (60 Use Cases chuẩn BA/SRS, 5 Generalizations, 17 Include/Extend). |
 | **02** | `02-architecture-deployment-4-tier.svg` | **Section 1.2: System Architecture** | $1920 \times 1280\text{ px}$ | Kiến trúc triển khai 4 tầng phân lập: Client Apps, API Gateway & PII Sanitizer (:3000), AI Orchestrator (:3013), Mesh Services & RAG Vector Engine. |
 | **03** | `03-erd-data-model-and-money-flow.svg` | **Section 1.3: ERD & Money Flow** | $1920 \times 1280\text{ px}$ | Mô hình ERD chuẩn Crow's Foot Notation (6 thực thể dữ liệu quan trọng) tích hợp sơ đồ luồng tiền thanh toán COD và chi trả bồi thường bưu chính. |
 
@@ -48,9 +48,9 @@ Toàn bộ sơ đồ vector SVG được lưu trữ tại thư mục:
    - Đổi tên thành: `🏛️ 01_SYSTEM_AND_DATA_BLUEPRINT`.
 2. **Bước 2: Tạo các Section (`Shift + S`)**
    - Nhấn phím tắt `Shift + S`, vẽ 3 Section lần lượt đặt tên:
-     - `Section 1.1: Enterprise UML Use Case System` (X: `0`, Y: `0`, W: `2480`, H: `1680`).
-     - `Section 1.2: 4-Tier Architecture & Security` (X: `2600`, Y: `0`, W: `2000`, H: `1680`).
-     - `Section 1.3: ERD Data Model & Settlement Flow` (X: `4800`, Y: `0`, W: `2000`, H: `1680`).
+     - `Section 1.1: Enterprise UML Use Case System` (X: `0`, Y: `0`, W: `3680`, H: `2600`).
+     - `Section 1.2: 4-Tier Architecture & Security` (X: `3800`, Y: `0`, W: `2000`, H: `2600`).
+     - `Section 1.3: ERD Data Model & Settlement Flow` (X: `5900`, Y: `0`, W: `2000`, H: `2600`).
 3. **Bước 3: Kéo thả các file SVG vào từng Section**
    - Kéo file `01-use-case-general-system.svg` thả vào `Section 1.1`.
    - Kéo file `02-architecture-deployment-4-tier.svg` thả vào `Section 1.2`.
