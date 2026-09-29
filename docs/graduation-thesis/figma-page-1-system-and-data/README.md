@@ -36,7 +36,7 @@ Toàn bộ sơ đồ vector SVG được lưu trữ tại thư mục:
 | STT | Tên tệp vector SVG | Tên Section tương ứng trên Figma | Kích thước đề xuất | Mô tả kỹ thuật |
 | :---: | :--- | :--- | :---: | :--- |
 | **01** | `01-use-case-general-system.svg` | **Section 1.1: Use Case Diagram** | $3600 \times 2520\text{ px}$ | Chuẩn UML 2.5 với Cây kế thừa Tác nhân 3 tầng (6 Tác nhân cụ thể + 3 Tác nhân trừu tượng), 6 phân hệ lớn cân đối dạng lưới 2 cột x 3 hàng ánh xạ 1:1 codebase thực tế: Đơn hàng, Kho trung chuyển & Giao hàng, Sự cố & Khiếu nại, Tài chính & COD, Truy vết & AI RAG, Quản trị hệ thống (53 Use Cases triển khai thực tế, 2 Generalizations, 11 Include/Extend, 100% không vẽ khống). |
-| **02** | `02-architecture-deployment-4-tier.svg` | **Section 1.2: System Architecture** | $3200 \times 2500\text{ px}$ | Kiến trúc triển khai 5 tầng toàn diện chuẩn Enterprise (bố cục siêu thoáng, dãn cách lớn, không nhồi nhét): 4 Client Apps, API Gateway & PII Sanitizer (:3000), 13 Microservices Business Mesh (4 Domain Clusters), Trục Sự kiện RabbitMQ Outbox Saga & 11 Cơ sở dữ liệu phân tán PostgreSQL 16 / Redis Cache. |
+| **02** | `02-architecture-deployment-4-tier.svg` | **Section 1.2: System Architecture** | $3600 \times 3000\text{ px}$ | Kiến trúc triển khai 5 tầng toàn diện chuẩn Enterprise (bố cục siêu thoáng, dãn cách lớn, không nhồi nhét, 100% mũi tên vector inline tương thích hoàn hảo Figma): 4 Client Apps, API Gateway & PII Sanitizer (:3000), 13 Microservices Business Mesh (4 Domain Clusters), Trục Sự kiện RabbitMQ Outbox Saga & 11 Cơ sở dữ liệu phân tán PostgreSQL 16 / Redis Cache. |
 | **03** | `erd/` (Bộ 13 tệp SVG độc lập từ `01` đến `13`) | **Section 1.3: Microservices ERD Suite** | $2000 \times 1300\text{ px}$ / file | Mô hình ERD chuẩn kỹ thuật Đen - Trắng (Monochrome Technical Blueprint) cho từng dịch vụ riêng biệt. Ánh xạ chính xác 100% các Model, Trường dữ liệu, Khóa PK/FK/DIST từ schema.prisma thực tế, kèm Panel thuyết minh quy tắc nghiệp vụ, cơ chế Saga phân tán và chỉ số hiệu năng chuyên sâu. |
 
 ---
@@ -49,8 +49,8 @@ Toàn bộ sơ đồ vector SVG được lưu trữ tại thư mục:
 2. **Bước 2: Tạo các Section (`Shift + S`)**
    - Nhấn phím tắt `Shift + S`, vẽ 3 Section lần lượt đặt tên:
      - `Section 1.1: Enterprise UML Use Case System` (X: `0`, Y: `0`, W: `3680`, H: `2600`).
-     - `Section 1.2: Enterprise 5-Tier Architecture` (X: `3800`, Y: `0`, W: `3280`, H: `2600`).
-     - `Section 1.3: Microservices Database-per-Service ERD Suite` (X: `7200`, Y: `0`, W: `6500`, H: `4800`).
+     - `Section 1.2: Enterprise 5-Tier Architecture` (X: `3800`, Y: `0`, W: `3680`, H: `3100`).
+     - `Section 1.3: Microservices Database-per-Service ERD Suite` (X: `7600`, Y: `0`, W: `6500`, H: `4800`).
 3. **Bước 3: Kéo thả các file SVG vào từng Section**
    - Kéo file `01-use-case-general-system.svg` thả vào `Section 1.1`.
    - Kéo file `02-architecture-deployment-4-tier.svg` thả vào `Section 1.2`.
