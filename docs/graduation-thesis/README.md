@@ -1,84 +1,96 @@
-# BỘ TÀI LIỆU KHÓA LUẬN TỐT NGHIỆP: NGHIÊN CỨU & PHÁT TRIỂN HỆ THỐNG AI CHATBOT LOGISTICS ĐA KÊNH
+# TỔNG HÀNH DINH HỒ SƠ KHÓA LUẬN TỐT NGHIỆP: HỆ THỐNG TRỢ LÝ AI LOGISTICS ĐA KÊNH
 
 > **Chuyên ngành:** Kỹ thuật Phần mềm / Công nghệ Thông tin  
 > **Đề tài:** Hệ thống Quản trị & Vận hành Logistics Đa kênh Nexus (Nexus Logistics Management System)  
-> **Module nghiên cứu trọng tâm:** Trợ lý ảo AI thông minh tích hợp Kiến trúc Microservices & RAG Hybrid Retrieval
+> **Module nghiên cứu trọng tâm:** Trợ lý ảo AI thông minh tích hợp Kiến trúc Microservices & RAG Hybrid Retrieval  
+> **Quy hoạch thiết kế:** Tối ưu hóa 100% cho **Figma Starter / Free Plan (3 Pages giới hạn)**, phân chia theo **Figma Sections (`Shift + S`)**  
+> **Phong cách đồ họa kỹ thuật:** **Monochrome Blueprint (Đen - Trắng đơn sắc)** - Tuyệt đối không màu mè AI hóa, đảm bảo chuẩn mực in ấn A4/A3 sắc nét và bảo vệ tự tin trước Hội đồng chấm thi.
 
 ---
 
-## 1. MỤC LỤC TÀI LIỆU KHÓA LUẬN
+## 1. BẢN ĐỒ TỔNG THỂ 3 TRANG FIGMA (FIGMA 3-PAGE ARCHITECTURE MAP)
 
-Thư mục này được tổ chức thành một báo cáo khoa học hoàn chỉnh, phục vụ cho việc viết thuyết minh đồ án và bảo vệ trước Hội đồng chấm thi:
-
-| STT | Tài liệu thuyết minh | Nội dung chính |
-| :---: | :--- | :--- |
-| **01** | [Chương 1: Tổng quan Kiến trúc Hệ thống](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/01-tong-quan-kien-truc-ai-chatbot.md) | Phân tích kiến trúc 6 tầng (Clients, API Gateway :3000, AI Orchestrator :3013, Live Microservices Mesh, RAG Knowledge Base, LLM Reasoning & Rich UI Output). |
-| **02** | [Chương 2: Cơ sở Lý thuyết & Giải thuật Phân đoạn RAG](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/02-ly-thuyet-va-giai-thuat-chunking-rag.md) | Phân tích nhược điểm của Fixed-size Chunking; Giải thuật **Hybrid Section-Aware Semantic Splitting**; Công thức Overlap 16%, Stride 210 từ; Vector 768-D và Hybrid Cosine + Lexical Score. |
-| **03** | [Chương 3: Phân tích 5 Kịch bản Nghiệp vụ & Bảo mật PII](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/03-phan-tich-cac-kich-ban-nghiep-vu-va-an-toan-pii.md) | Xử lý 5 ca thực tế: Tra cứu đơn xác định, Xử lý câu hỏi mập mờ qua Interactive Carousel, Che mờ dữ liệu cá nhân PII, Quy trình xử lý hàng bể vỡ BBBT 24h & Dự toán cước IATA. |
-| **04** | [Chương 4: Đặc tả BPM Tự động hóa Khiếu nại Sự cố](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/04-dac-ta-bpm-tu-dong-hoa-khieu-nai-su-co.md) | **Quy trình trọng tâm NCKH theo chỉ dẫn của Thầy:** FR-01 đến FR-05, AC, 7 Cases ngoại lệ chi tiết, I/O Data Contracts, Ma trận ngưỡng định lượng và Human-in-the-Loop (HITL). |
-
----
-
-## 2. DANH MỤC SƠ ĐỒ VECTOR SVG CHUẨN FIGMA
-
-Tất cả các sơ đồ đều được vẽ dưới dạng mã nguồn vector SVG chuẩn XML, kích thước lớn ($1920 \times 1280\text{ px}$), sử dụng hệ màu tối cao cấp (Dark Mode Indigo/Cyan/Emerald), tương thích 100% khi import vào **Figma**:
+Hệ thống được quy hoạch tinh gọn thành đúng **3 Trang độc lập** trên Figma, mỗi trang sử dụng các **Sections (`Shift + S`)** để phân định ranh giới nghiệp vụ:
 
 ```
-docs/graduation-thesis/diagrams-svg/
-├── 01-ai-chatbot-end-to-end-architecture.svg                 # Sơ đồ Kiến trúc Tổng thể 6 Tầng
-├── 02-rag-chunking-and-vectorization-pipeline.svg             # Sơ đồ Pipeline Phân đoạn & Vector hóa RAG
-├── 03-multi-case-business-flow.svg                            # Sơ đồ Phân luồng Quyết định 5 Ca Nghiệp vụ & Rich Card UI
-└── 04-bpm-incident-claim-resolution-state-machine.svg        # Sơ đồ State Machine 7 Cases Xử lý Sự cố & HITL (Trọng tâm)
+                     ┌─────────────────────────────────────────────────────────────────┐
+                     │          HỆ THỐNG THIẾT KẾ ĐỒ ÁN NEXUS LOGISTICS (FIGMA)        │
+                     └────────────────────────────────┬────────────────────────────────┘
+                                                      │
+         ┌────────────────────────────────────────────┼────────────────────────────────────────────┐
+         │                                            │                                            │
+         ▼                                            ▼                                            ▼
+┌─────────────────────────────────┐      ┌─────────────────────────────────┐      ┌─────────────────────────────────┐
+│  🏛️ FIGMA PAGE 1: SYSTEM & DATA │      │  ⚙️ FIGMA PAGE 2: AUTOMATION   │      │  🎨 FIGMA PAGE 3: UI & DEFENSE  │
+├─────────────────────────────────┤      ├─────────────────────────────────┤      ├─────────────────────────────────┤
+│ • Section 1.1: Use Case Diagram │      │ • Section 2.1: BPMN 2.0 Sự cố   │      │ • Section 3.1: Rich Card Library│
+│ • Section 1.2: Kiến trúc 4 tầng │      │ • Section 2.2: Ma trận 5 Kịch bản│     │ • Section 3.2: Khung Slide 16:9 │
+│ • Section 1.3: ERD & Luồng tiền │      │ • Section 2.3: Pipeline RAG AI  │      │ • Kịch bản 15p & 10 câu hỏi vặn │
+└─────────────────────────────────┘      └─────────────────────────────────┘      └─────────────────────────────────┘
 ```
 
 ---
 
-## 3. HƯỚNG DẪN IMPORT VÀO FIGMA
+## 2. BẢNG TRA CỨU CHÉO TÀI LIỆU & SƠ ĐỒ VECTOR (CROSS-REFERENCE MATRIX)
 
-Để đưa các sơ đồ này vào file thiết kế Figma của bạn:
-
-1. **Cách 1: Kéo thả trực tiếp (Khuyên dùng - Nhanh nhất)**
-   - Mở dự án hoặc file thiết kế trên Figma (Desktop App hoặc Web App).
-   - Mở thư mục `docs/graduation-thesis/diagrams-svg/` trong Finder (macOS) hoặc File Explorer.
-   - Kéo trực tiếp từng file `.svg` và thả vào khoảng trống trên Canvas của Figma.
-2. **Cách 2: Sử dụng menu Place Image của Figma**
-   - Trên Figma, nhấn tổ hợp phím `Shift + Cmd + K` (macOS) hoặc `Shift + Ctrl + K` (Windows).
-   - Chọn các file `.svg` trong thư mục trên và click chuột lên Canvas để đặt sơ đồ.
-3. **Hiệu chỉnh trên Figma:**
-   - Mỗi sơ đồ đã được cấu trúc thành các thẻ nhóm `<g id="...">` tương ứng với các Layer và Frame riêng biệt trong Figma (`Header`, `Stage_1_...`, `Case_1_...`, `Stage_3_UI_Mockups`).
-   - Bạn có thể nhấn tổ hợp `Cmd + Shift + G` (macOS) hoặc `Ctrl + Shift + G` (Windows) để rã nhóm (Ungroup) và tự do tùy chỉnh lại màu sắc, độ đậm font chữ, kích thước theo tone màu của slide bảo vệ khóa luận.
+| STT | Phân vùng Figma Page | Mã Sơ đồ Vector SVG | File Thuyết minh Khóa luận tương ứng | Vai trò trong Đồ án tốt nghiệp |
+| :---: | :--- | :--- | :--- | :--- |
+| **P1.1** | **Page 1: System & Data** | [`01-use-case-general-system.svg`](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/figma-page-1-system-and-data/diagrams/01-use-case-general-system.svg) | [Chương 1: Kiến trúc & Dữ liệu](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/figma-page-1-system-and-data/specs/01-tong-quan-kien-truc-va-co-so-du-lieu.md) | Đặc tả 5 Actors, 4 Phân hệ & Ma trận phân quyền RBAC |
+| **P1.2** | **Page 1: System & Data** | [`02-architecture-deployment-4-tier.svg`](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/figma-page-1-system-and-data/diagrams/02-architecture-deployment-4-tier.svg) | [Chương 1: Kiến trúc & Dữ liệu](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/figma-page-1-system-and-data/specs/01-tong-quan-kien-truc-va-co-so-du-lieu.md) | Phân tầng Clients, Gateway, AI Orchestrator, Mesh & RAG |
+| **P1.3** | **Page 1: System & Data** | [`03-erd-data-model-and-money-flow.svg`](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/figma-page-1-system-and-data/diagrams/03-erd-data-model-and-money-flow.svg) | [Chương 1: Kiến trúc & Dữ liệu](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/figma-page-1-system-and-data/specs/01-tong-quan-kien-truc-va-co-so-du-lieu.md) | Mô hình thực thể Crow's Foot & Luồng tiền COD / Bồi thường |
+| **P2.1** | **Page 2: Automation & RAG** | [`01-bpmn-incident-claim-resolution.svg`](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/figma-page-2-process-and-ai-pipeline/diagrams/01-bpmn-incident-claim-resolution.svg) | [Chương 4: Đặc tả BPM Sự cố](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/figma-page-2-process-and-ai-pipeline/specs/01-dac-ta-bpm-tu-dong-hoa-khieu-nai-su-co.md) | **Quy trình trọng tâm NCKH:** 4 Làn bơi, BBBT 24h & HITL |
+| **P2.2** | **Page 2: Automation & RAG** | [`02-sequence-and-decision-matrix.svg`](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/figma-page-2-process-and-ai-pipeline/diagrams/02-sequence-and-decision-matrix.svg) | [Chương 3: 5 Kịch bản & PII](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/figma-page-3-ui-and-defense/specs/01-phan-tich-cac-kich-ban-nghiep-vu-va-an-toan-pii.md) | Ma trận phân luồng quyết định 5 Ca nghiệp vụ thực tế |
+| **P2.3** | **Page 2: Automation & RAG** | [`03-rag-chunking-and-vectorization.svg`](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/figma-page-2-process-and-ai-pipeline/diagrams/03-rag-chunking-and-vectorization.svg) | [Chương 2: Giải thuật RAG](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/figma-page-2-process-and-ai-pipeline/specs/02-ly-thuyet-va-giai-thuat-chunking-rag.md) | Thuật toán Semantic Splitting, Overlap 16% & Hybrid Score |
+| **P3.1** | **Page 3: UI & Defense** | [`01-rich-card-component-library.svg`](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/figma-page-3-ui-and-defense/diagrams/01-rich-card-component-library.svg) | [Chương 5: Đặc tả Rich Cards](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/figma-page-3-ui-and-defense/specs/02-dac-ta-rich-card-ui-ux.md) | Thư viện Design System 5 Thẻ Tương tác trực quan |
+| **P3.2** | **Page 3: UI & Defense** | [`02-slide-deck-16-9-templates.svg`](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/figma-page-3-ui-and-defense/diagrams/02-slide-deck-16-9-templates.svg) | [Cẩm nang Kịch bản Bảo vệ](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/figma-page-3-ui-and-defense/specs/03-kich-ban-thuyet-trinh-bao-ve-hoi-dong.md) | Bộ 4 Slide 16:9 + Kịch bản 15 phút & 10 câu hỏi vặn |
 
 ---
 
-## 4. KỊCH BẢN THUYẾT TRÌNH BẢO VỆ TRƯỚC HỘI ĐỒNG (Q&A DEFENSE GUIDE)
+## 3. CẤU TRÚC THƯ MỤC CHUẨN ĐÃ QUY HOẠCH
 
-Dưới đây là 4 câu hỏi trọng tâm mà Hội đồng chấm khóa luận tốt nghiệp thường chất vấn, kèm câu trả lời chuẩn mực dựa trên nền tảng kỹ thuật của đề tài:
-
-### Câu hỏi 1: "Tại sao nhóm không dùng trực tiếp Chatbot OpenAI/ChatGPT thông qua Prompt đơn giản mà lại phải xây dựng kiến trúc RAG và Microservices phức tạp?"
-- **Trả lời:**
-  > *"Thưa Hội đồng, trong lĩnh vực Logistics bưu chính, nếu chỉ dùng một Prompt gọi LLM đơn thuần sẽ gặp phải 2 giới hạn chí mạng:*  
-  > *1. **Dữ liệu động thời gian thực (Live Operational Data):** LLM không thể tự biết một kiện hàng thực tế đang nằm ở kho trung chuyển nào hay tài xế nào đang đi giao. Bắt buộc phải có tầng kết nối nội bộ với Microservices (Tracking Service :3005) để lấy trạng thái theo thời gian thực.*  
-  > *2. **Hiện tượng ảo giác (Hallucination) về chính sách bồi thường:** LLM công cộng không nắm được chính sách bảo hiểm đặc thù của bưu chính Việt Nam (như điều kiện lập Biên bản bất thường BBBT trong 24 giờ). Việc áp dụng kiến trúc RAG giúp cô lập nguồn tri thức, buộc LLM chỉ trả lời dựa trên tài liệu nghiệp vụ đã được kiểm chứng với tham số nhiệt độ thấp ($T = 0.2$), đảm bảo tính pháp lý cho doanh nghiệp."*
+```
+docs/graduation-thesis/
+├── README.md                                                  # File này (Master Directory & Index)
+│
+├── figma-page-1-system-and-data/                             # 🏛️ PAGE 1: SYSTEM & DATA BLUEPRINT
+│   ├── README.md                                             # Hướng dẫn setup Sections 1.1, 1.2, 1.3 trên Figma
+│   ├── diagrams/
+│   │   ├── 01-use-case-general-system.svg                    # Section 1.1: UML Use Case 5 Actors
+│   │   ├── 02-architecture-deployment-4-tier.svg             # Section 1.2: Kiến trúc 4 tầng & Security
+│   │   └── 03-erd-data-model-and-money-flow.svg              # Section 1.3: ERD & Luồng tiền quyết toán
+│   └── specs/
+│       └── 01-tong-quan-kien-truc-va-co-so-du-lieu.md        # Thuyết minh Chương 1
+│
+├── figma-page-2-process-and-ai-pipeline/                     # ⚙️ PAGE 2: PROCESS AUTOMATION & RAG
+│   ├── README.md                                             # Hướng dẫn setup Sections 2.1, 2.2, 2.3 trên Figma
+│   ├── diagrams/
+│   │   ├── 01-bpmn-incident-claim-resolution.svg             # Section 2.1: BPMN 2.0 Sự cố & 7 States FSM
+│   │   ├── 02-sequence-and-decision-matrix.svg               # Section 2.2: Ma trận quyết định 5 Ca thực tế
+│   │   └── 03-rag-chunking-and-vectorization.svg             # Section 2.3: Pipeline 5 giai đoạn RAG AI
+│   └── specs/
+│       ├── 01-dac-ta-bpm-tu-dong-hoa-khieu-nai-su-co.md      # Thuyết minh Chương 4 (Trọng tâm NCKH)
+│       └── 02-ly-thuyet-va-giai-thuat-chunking-rag.md        # Thuyết minh Chương 2 (Toán & Thuật toán)
+│
+└── figma-page-3-ui-and-defense/                              # 🎨 PAGE 3: UI/UX & THESIS DEFENSE
+    ├── README.md                                             # Hướng dẫn setup Sections 3.1, 3.2 & Presentation Mode
+    ├── diagrams/
+    │   ├── 01-rich-card-component-library.svg                # Section 3.1: Thư viện Thẻ Tương tác Trực quan
+    │   └── 02-slide-deck-16-9-templates.svg                  # Section 3.2: Bộ 4 Slide 16:9 thuyết trình
+    └── specs/
+        ├── 01-phan-tich-cac-kich-ban-nghiep-vu-va-an-toan-pii.md # Thuyết minh Chương 3
+        ├── 02-dac-ta-rich-card-ui-ux.md                      # Thuyết minh Chương 5 (Giao diện & Data Contract)
+        └── 03-kich-ban-thuyet-trinh-bao-ve-hoi-dong.md       # Cẩm nang Kịch bản bảo vệ 15 phút & 10 câu hỏi vặn
+```
 
 ---
 
-### Câu hỏi 2: "Tại sao nhóm không phân đoạn văn bản (chunking) theo kích thước ký tự cố định cho đơn giản mà lại đề xuất thuật toán Semantic Splitting?"
-- **Trả lời:**
-  > *"Thưa Thầy/Cô, phương pháp cắt cứng theo số ký tự (Naive Fixed-size Chunking) hoạt động rất kém đối với văn bản quy chuẩn kỹ thuật Logistics. Cụ thể:*  
-  > *1. Nó làm **gãy đôi bảng biểu giá cước IATA**, khiến dòng số liệu bị tách rời khỏi tiêu đề nấc cân nặng.*  
-  > *2. Nó làm **đứt gãy mệnh đề điều kiện pháp lý** (ví dụ câu 'Được đền 100% NẾU lập biên bản trong 24h' bị cắt đôi ngay tại chữ NẾU).*  
-  > *Do đó, nhóm đã xây dựng giải thuật **Hybrid Section-Aware Semantic Splitting** dựa trên AST Heading kết hợp bổ sung siêu dữ liệu Breadcrumb và cơ chế cửa sổ trượt Overlap 16% (Bước nhảy 210 từ, Gối đầu 40 từ). Kết quả thực nghiệm cho thấy phương pháp này giúp tăng độ chính xác truy vấn cước từ 42.5% lên **96.8%** và giảm 94.7% hiện tượng trả lời sai của mô hình."*
+## 4. HƯỚNG DẪN IMPORT VÀO FIGMA NHANH NHẤT (QUICK START)
 
----
-
-### Câu hỏi 3: "Khi người dùng hỏi câu hỏi mơ hồ như 'Đơn hàng gần đây của tôi ở đâu?', hệ thống xử lý như thế nào để tối ưu trải nghiệm?"
-- **Trả lời:**
-  > *"Thưa Hội đồng, các chatbot thông thường sẽ bắt bẻ khách hàng bằng câu hỏi lại: 'Bạn vui lòng nhập mã vận đơn'. Điều này gây khó chịu vì khách hàng không nhớ mã đơn dài.*  
-  > *Hệ thống của nhóm xử lý thông minh bằng cách: Trích xuất danh tính khách hàng từ JWT Token $\implies$ Truy vấn Order Service lấy 3 đơn gần nhất $\implies$ Sinh ra một **Interactive Carousel UI (Băng chuyền thẻ tương tác)**. Khách hàng chỉ cần nhìn thấy tóm tắt kiện hàng và bấm nút 'Chọn tra cứu' là hệ thống tự động hiển thị chi tiết hành trình mà không cần gõ bất kỳ ký tự nào."*
-
----
-
-### Câu hỏi 4: "Hệ thống bảo vệ dữ liệu cá nhân của người nhận hàng (PII) như thế nào trước nguy cơ bị dò quét mã đơn?"
-- **Trả lời:**
-  > *"Thưa Hội đồng, hệ thống tuân thủ nghiêm ngặt **Nghị định 13/2023/NĐ-CP** về bảo vệ dữ liệu cá nhân:*  
-  > *Tại tầng API Gateway, nếu phát hiện truy vấn từ người dùng chưa đăng nhập (Guest), bộ lọc Sanitizer sẽ tự động che giấu thông tin nhạy cảm trước khi trả về: Số điện thoại bị che 3 số giữa (`098***3456`), tên người nhận chỉ giữ lại ký tự đầu (`N*** V** A`), và địa chỉ nhà bị ẩn hoàn toàn số nhà ngõ ngách, chỉ hiển thị cấp Phường/Xã và Quận/Huyện. Đồng thời cung cấp nút 'Đăng nhập' nếu chính chủ muốn xem thông tin đầy đủ."*
+1. Mở file thiết kế của bạn trên Figma.
+2. Tạo 3 Pages tương ứng:
+   - `🏛️ 01_SYSTEM_AND_DATA_BLUEPRINT`
+   - `⚙️ 02_PROCESS_AUTOMATION_AND_RAG`
+   - `🎨 03_UI_UX_AND_THESIS_DEFENSE`
+3. Mở từng thư mục `figma-page-X-.../README.md` để xem tọa độ và tên các Section (`Shift + S`).
+4. Kéo các file SVG trong thư mục `diagrams/` tương ứng thả vào các Section. Toàn bộ sơ đồ đã được tính toán đầu mũi tên tuyệt đối (`<polygon>`), đảm bảo không bị đè chữ, không bị vỡ layout khi phóng to thu nhỏ.
+5. In ấn ra tài liệu thuyết minh A4/A3 hoặc mở chế độ Presentation (`Cmd + Opt + Enter`) để bắt đầu buổi bảo vệ khóa luận thành công rực rỡ!

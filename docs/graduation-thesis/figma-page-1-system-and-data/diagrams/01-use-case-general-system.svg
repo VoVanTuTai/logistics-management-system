@@ -1,0 +1,215 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1650 960" width="1650" height="960" style="background:#FFFFFF;">
+  <style>
+    text { font-family: Arial, "Times New Roman", sans-serif; }
+    .doc-title { font-size: 17px; font-weight: bold; fill: #000000; text-anchor: middle; }
+    .doc-sub { font-size: 12.5px; font-style: italic; fill: #333333; text-anchor: middle; }
+    .boundary-title { font-size: 13px; font-weight: bold; fill: #000000; text-transform: uppercase; letter-spacing: 1px; }
+    .pkg-title { font-size: 11.5px; font-weight: bold; fill: #000000; text-transform: uppercase; }
+    .uc-title { font-size: 11.5px; font-weight: bold; fill: #000000; text-anchor: middle; }
+    .actor-title { font-size: 11.5px; font-weight: bold; fill: #000000; text-anchor: middle; }
+    .rel-text { font-size: 10px; font-style: italic; fill: #333333; text-anchor: middle; }
+  </style>
+
+  <!-- ==================== HEADER ==================== -->
+  <g id="Header">
+    <text x="825" y="45" class="doc-title">HÌNH 1.0: SƠ ĐỒ USE CASE TỔNG QUÁT HỆ THỐNG NEXUS LOGISTICS &amp; AI ASSISTANT</text>
+    <text x="825" y="65" class="doc-sub">Phân định 5 Tác nhân (Actors), Ranh giới hệ sinh thái cốt lõi và các gói trường hợp sử dụng (Use Case Packages)</text>
+    <line x1="80" y1="80" x2="1570" y2="80" stroke="#000000" stroke-width="1.2"/>
+  </g>
+
+  <!-- ==================== SYSTEM BOUNDARY (x: 320 -> 1330, width: 1010) ==================== -->
+  <rect x="320" y="100" width="1010" height="800" fill="#FFFFFF" stroke="#000000" stroke-width="1.8"/>
+  <rect x="320" y="100" width="420" height="32" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+  <text x="335" y="122" class="boundary-title">HỆ SINH THÁI NEXUS LOGISTICS (SYSTEM BOUNDARY)</text>
+
+  <!-- ==================== 4 PACKAGES INSIDE SYSTEM ==================== -->
+  
+  <!-- PACKAGE 1: QUẢN LÝ ĐƠN HÀNG & GIAO NHẬN (y: 150 -> 480, x: 345 -> 790, w: 445, h: 330) -->
+  <rect x="345" y="150" width="445" height="330" fill="#FFFFFF" stroke="#000000" stroke-width="1" stroke-dasharray="4 4"/>
+  <text x="360" y="172" class="pkg-title">PHÂN HỆ 1: VẬN HÀNH ĐƠN HÀNG &amp; VẬN TẢI</text>
+
+  <!-- UC 1.1: Tạo đơn hàng -->
+  <ellipse cx="460" cy="215" rx="90" ry="24" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+  <text x="460" y="219" class="uc-title">Tạo đơn vận chuyển</text>
+
+  <!-- UC 1.2: Gom đơn & In mã barcode -->
+  <ellipse cx="680" cy="215" rx="85" ry="24" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+  <text x="680" y="219" class="uc-title">In vận đơn Barcode</text>
+
+  <!-- UC 1.3: Quét mã chia chọn tại Hub -->
+  <ellipse cx="460" cy="300" rx="95" ry="24" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+  <text x="460" y="304" class="uc-title">Quét mã Hub trung chuyển</text>
+
+  <!-- UC 1.4: Cập nhật giao nhận -->
+  <ellipse cx="680" cy="300" rx="85" ry="24" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+  <text x="680" y="304" class="uc-title">Giao hàng &amp; Thu COD</text>
+
+  <!-- UC 1.5: Tra cứu hành trình đơn -->
+  <ellipse cx="570" cy="385" rx="100" ry="25" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+  <text x="570" y="389" class="uc-title">Tra cứu lộ trình đơn hàng</text>
+
+  <!-- UC 1.6: PII Masking (Extend of Tra cứu) -->
+  <ellipse cx="570" cy="450" rx="95" ry="20" fill="#F9FAFB" stroke="#000000" stroke-width="1"/>
+  <text x="570" y="454" class="uc-title">Khử định danh PII</text>
+  <line x1="570" y1="410" x2="570" y2="430" stroke="#000000" stroke-width="1" stroke-dasharray="2 2"/>
+  <polygon points="567,422 570,414 573,422" fill="#000000"/>
+  <text x="615" y="425" class="rel-text">&lt;&lt;extend&gt;&gt;</text>
+
+  <!-- PACKAGE 2: SỰ CỐ & KHIẾU NẠI BỒI THƯỜNG (y: 150 -> 480, x: 815 -> 1305, w: 490, h: 330) -->
+  <rect x="815" y="150" width="490" height="330" fill="#FFFFFF" stroke="#000000" stroke-width="1" stroke-dasharray="4 4"/>
+  <text x="830" y="172" class="pkg-title">PHÂN HỆ 2: SỰ CỐ &amp; KHIẾU NẠI BỒI THƯỜNG (BPM TRỌNG TÂM)</text>
+
+  <!-- UC 2.1: Phản ánh hàng bể vỡ -->
+  <ellipse cx="940" cy="220" rx="105" ry="25" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+  <text x="940" y="224" class="uc-title">Phản ánh hàng bể vỡ / móp</text>
+
+  <!-- UC 2.2: Lập biên bản BBBT -->
+  <ellipse cx="1180" cy="220" rx="95" ry="24" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+  <text x="1180" y="224" class="uc-title">Lập Biên bản BBBT 24h</text>
+
+  <!-- UC 2.3: Thẩm định tự động RAG -->
+  <ellipse cx="940" cy="320" rx="105" ry="25" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+  <text x="940" y="324" class="uc-title">Thẩm định điều kiện bồi thường</text>
+
+  <!-- UC 2.4: Phê duyệt giải ngân Ví -->
+  <ellipse cx="1180" cy="320" rx="95" ry="24" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+  <text x="1180" y="324" class="uc-title">Tự động chi trả Ví bưu chính</text>
+
+  <!-- UC 2.5: Hòa giải Human-in-the-Loop -->
+  <ellipse cx="1060" cy="420" rx="110" ry="25" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+  <text x="1060" y="424" class="uc-title">Hòa giải sự cố (HITL)</text>
+
+  <line x1="940" y1="245" x2="940" y2="295" stroke="#000000" stroke-width="1" stroke-dasharray="2 2"/>
+  <polygon points="937,287 940,295 943,287" fill="#000000"/>
+  <text x="975" y="275" class="rel-text">&lt;&lt;include&gt;&gt;</text>
+
+  <line x1="1045" y1="320" x2="1085" y2="320" stroke="#000000" stroke-width="1" stroke-dasharray="2 2"/>
+  <polygon points="1077,317 1085,320 1077,323" fill="#000000"/>
+  <text x="1065" y="312" class="rel-text">&lt;&lt;include&gt;&gt;</text>
+
+  <!-- PACKAGE 3: TRỢ LÝ ẢO AI & RAG ENGINE (y: 510 -> 870, x: 345 -> 790, w: 445, h: 360) -->
+  <rect x="345" y="510" width="445" height="360" fill="#FFFFFF" stroke="#000000" stroke-width="1" stroke-dasharray="4 4"/>
+  <text x="360" y="532" class="pkg-title">PHÂN HỆ 3: TRỢ LÝ ẢO AI &amp; ĐỘNG CƠ RAG</text>
+
+  <!-- UC 3.1: Hội thoại tự nhiên -->
+  <ellipse cx="560" cy="580" rx="100" ry="25" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+  <text x="560" y="584" class="uc-title">Hội thoại CSKH Tự nhiên</text>
+
+  <!-- UC 3.2: Tách ngữ cảnh Intent -->
+  <ellipse cx="460" cy="670" rx="90" ry="24" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+  <text x="460" y="674" class="uc-title">Tách Context &amp; Entity</text>
+
+  <!-- UC 3.3: Tra cứu chính sách IATA -->
+  <ellipse cx="670" cy="670" rx="90" ry="24" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+  <text x="670" y="674" class="uc-title">Dự toán cước thể tích IATA</text>
+
+  <!-- UC 3.4: Sinh thẻ tương tác Carousel -->
+  <ellipse cx="560" cy="760" rx="105" ry="25" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+  <text x="560" y="764" class="uc-title">Sinh thẻ Rich Actionable Card</text>
+
+  <!-- UC 3.5: Cập nhật tri thức RAG -->
+  <ellipse cx="560" cy="835" rx="95" ry="22" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+  <text x="560" y="839" class="uc-title">Nhúng Vector tri thức 768-D</text>
+
+  <!-- PACKAGE 4: TÀI CHÍNH COD & ĐỐI SOÁT (y: 510 -> 870, x: 815 -> 1305, w: 490, h: 360) -->
+  <rect x="815" y="510" width="490" height="360" fill="#FFFFFF" stroke="#000000" stroke-width="1" stroke-dasharray="4 4"/>
+  <text x="830" y="532" class="pkg-title">PHÂN HỆ 4: TÀI CHÍNH COD &amp; ĐỐI SOÁT</text>
+
+  <!-- UC 4.1: Đối soát cước phí -->
+  <ellipse cx="940" cy="590" rx="95" ry="24" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+  <text x="940" y="594" class="uc-title">Đối soát tiền thu hộ COD</text>
+
+  <!-- UC 4.2: Quyết toán tiền nộp Shipper -->
+  <ellipse cx="1180" cy="590" rx="95" ry="24" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+  <text x="1180" y="594" class="uc-title">Xác nhận nộp tiền mặt</text>
+
+  <!-- UC 4.3: Rút tiền ví Shop -->
+  <ellipse cx="940" cy="690" rx="95" ry="24" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+  <text x="940" y="694" class="uc-title">Rút tiền về Ngân hàng</text>
+
+  <!-- UC 4.4: Truy thu gian lận cước -->
+  <ellipse cx="1180" cy="690" rx="95" ry="24" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+  <text x="1180" y="694" class="uc-title">Xử lý chênh lệch cân nặng</text>
+
+  <!-- UC 4.5: Báo cáo tài chính doanh nghiệp -->
+  <ellipse cx="1060" cy="790" rx="110" ry="25" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+  <text x="1060" y="794" class="uc-title">Báo cáo doanh thu &amp; Phí hoàn</text>
+
+  <!-- ==================== 5 ACTORS (STICK FIGURES) ==================== -->
+
+  <!-- ACTOR 1: KHÁCH VÃNG LAI (GUEST) (x: 180, y: 385) -->
+  <g id="Actor_Guest" transform="translate(180, 340)">
+    <circle cx="20" cy="20" r="14" fill="#FFFFFF" stroke="#000000" stroke-width="1.8"/>
+    <line x1="20" y1="34" x2="20" y2="70" stroke="#000000" stroke-width="1.8"/>
+    <line x1="0" y1="48" x2="40" y2="48" stroke="#000000" stroke-width="1.8"/>
+    <line x1="20" y1="70" x2="5" y2="105" stroke="#000000" stroke-width="1.8"/>
+    <line x1="20" y1="70" x2="35" y2="105" stroke="#000000" stroke-width="1.8"/>
+    <text x="20" y="125" class="actor-title">Khách vãng lai</text>
+    <text x="20" y="138" font-size="10" fill="#666" text-anchor="middle">(Guest)</text>
+  </g>
+  <!-- Line Guest -> UC Tra cuu & UC Chat -->
+  <line x1="220" y1="410" x2="470" y2="390" stroke="#000000" stroke-width="1.2"/>
+  <line x1="220" y1="420" x2="460" y2="580" stroke="#000000" stroke-width="1.2"/>
+
+  <!-- ACTOR 2: NGƯỜI NHẬN (RECIPIENT) (x: 180, y: 180) -->
+  <g id="Actor_Recipient" transform="translate(180, 160)">
+    <circle cx="20" cy="20" r="14" fill="#FFFFFF" stroke="#000000" stroke-width="1.8"/>
+    <line x1="20" y1="34" x2="20" y2="70" stroke="#000000" stroke-width="1.8"/>
+    <line x1="0" y1="48" x2="40" y2="48" stroke="#000000" stroke-width="1.8"/>
+    <line x1="20" y1="70" x2="5" y2="105" stroke="#000000" stroke-width="1.8"/>
+    <line x1="20" y1="70" x2="35" y2="105" stroke="#000000" stroke-width="1.8"/>
+    <text x="20" y="125" class="actor-title">Người nhận</text>
+    <text x="20" y="138" font-size="10" fill="#666" text-anchor="middle">(Customer)</text>
+  </g>
+  <line x1="220" y1="210" x2="470" y2="380" stroke="#000000" stroke-width="1.2"/>
+  <line x1="220" y1="220" x2="835" y2="220" stroke="#000000" stroke-width="1.2"/>
+
+  <!-- ACTOR 3: CHỦ SHOP (MERCHANT) (x: 180, y: 640) -->
+  <g id="Actor_Merchant" transform="translate(180, 620)">
+    <circle cx="20" cy="20" r="14" fill="#FFFFFF" stroke="#000000" stroke-width="1.8"/>
+    <line x1="20" y1="34" x2="20" y2="70" stroke="#000000" stroke-width="1.8"/>
+    <line x1="0" y1="48" x2="40" y2="48" stroke="#000000" stroke-width="1.8"/>
+    <line x1="20" y1="70" x2="5" y2="105" stroke="#000000" stroke-width="1.8"/>
+    <line x1="20" y1="70" x2="35" y2="105" stroke="#000000" stroke-width="1.8"/>
+    <text x="20" y="125" class="actor-title">Chủ shop</text>
+    <text x="20" y="138" font-size="10" fill="#666" text-anchor="middle">(Merchant)</text>
+  </g>
+  <line x1="220" y1="670" x2="370" y2="225" stroke="#000000" stroke-width="1.2"/>
+  <line x1="220" y1="680" x2="845" y2="590" stroke="#000000" stroke-width="1.2"/>
+  <line x1="220" y1="690" x2="845" y2="690" stroke="#000000" stroke-width="1.2"/>
+
+  <!-- ACTOR 4: BƯU TÁ / TRƯỞNG HUB (OPS) (x: 1440, y: 220) -->
+  <g id="Actor_Ops" transform="translate(1440, 200)">
+    <circle cx="20" cy="20" r="14" fill="#FFFFFF" stroke="#000000" stroke-width="1.8"/>
+    <line x1="20" y1="34" x2="20" y2="70" stroke="#000000" stroke-width="1.8"/>
+    <line x1="0" y1="48" x2="40" y2="48" stroke="#000000" stroke-width="1.8"/>
+    <line x1="20" y1="70" x2="5" y2="105" stroke="#000000" stroke-width="1.8"/>
+    <line x1="20" y1="70" x2="35" y2="105" stroke="#000000" stroke-width="1.8"/>
+    <text x="20" y="125" class="actor-title">Bưu tá / Trưởng Hub</text>
+    <text x="20" y="138" font-size="10" fill="#666" text-anchor="middle">(Courier / Ops)</text>
+  </g>
+  <line x1="1440" y1="260" x2="765" y2="300" stroke="#000000" stroke-width="1.2"/>
+  <line x1="1440" y1="270" x2="1275" y2="220" stroke="#000000" stroke-width="1.2"/>
+  <line x1="1440" y1="280" x2="1170" y2="420" stroke="#000000" stroke-width="1.2"/>
+
+  <!-- ACTOR 5: QUẢN TRỊ VIÊN (ADMIN) (x: 1440, y: 640) -->
+  <g id="Actor_Admin" transform="translate(1440, 620)">
+    <circle cx="20" cy="20" r="14" fill="#FFFFFF" stroke="#000000" stroke-width="1.8"/>
+    <line x1="20" y1="34" x2="20" y2="70" stroke="#000000" stroke-width="1.8"/>
+    <line x1="0" y1="48" x2="40" y2="48" stroke="#000000" stroke-width="1.8"/>
+    <line x1="20" y1="70" x2="5" y2="105" stroke="#000000" stroke-width="1.8"/>
+    <line x1="20" y1="70" x2="35" y2="105" stroke="#000000" stroke-width="1.8"/>
+    <text x="20" y="125" class="actor-title">Quản trị viên</text>
+    <text x="20" y="138" font-size="10" fill="#666" text-anchor="middle">(System Admin)</text>
+  </g>
+  <line x1="1440" y1="670" x2="1170" y2="790" stroke="#000000" stroke-width="1.2"/>
+  <line x1="1440" y1="680" x2="655" y2="835" stroke="#000000" stroke-width="1.2"/>
+
+  <!-- ==================== FOOTER ==================== -->
+  <g id="Footer">
+    <line x1="80" y1="920" x2="1570" y2="920" stroke="#000000" stroke-width="1"/>
+    <text x="80" y="940" font-size="11" font-style="italic" fill="#333333">
+      Ghi chú: Bản vẽ Use Case Diagram chuẩn UML 2.5 theo góc nhìn phân tích nghiệp vụ (BA Perspective). Phân rã 4 phân hệ chính và 5 tác nhân tương tác.
+    </text>
+  </g>
+</svg>

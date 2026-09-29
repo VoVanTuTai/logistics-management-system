@@ -1,0 +1,232 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1280" width="1920" height="1280">
+  <defs>
+    <style>
+      .bg-canvas { fill: #FFFFFF; }
+      .border-main { stroke: #000000; stroke-width: 2; fill: none; }
+      .border-thin { stroke: #000000; stroke-width: 1; fill: none; }
+      .border-dashed { stroke: #000000; stroke-width: 1.5; stroke-dasharray: 5 3; fill: none; }
+      .card-fill { fill: #FFFFFF; stroke: #000000; stroke-width: 1.5; }
+      .card-fill-subtle { fill: #F9F9F9; stroke: #000000; stroke-width: 1; }
+      .text-title { font-family: "Times New Roman", Times, serif; font-size: 26px; font-weight: bold; fill: #000000; }
+      .text-slide-title { font-family: "Times New Roman", Times, serif; font-size: 18px; font-weight: bold; fill: #000000; }
+      .text-section { font-family: Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #000000; }
+      .text-body { font-family: Arial, sans-serif; font-size: 12px; fill: #000000; line-height: 1.4; }
+      .text-body-bold { font-family: Arial, sans-serif; font-size: 12px; font-weight: bold; fill: #000000; }
+      .text-body-muted { font-family: Arial, sans-serif; font-size: 11px; fill: #555555; }
+      .text-code { font-family: "Courier New", monospace; font-size: 11px; font-weight: bold; fill: #000000; }
+      .badge-black { fill: #000000; }
+      .text-badge { font-family: Arial, sans-serif; font-size: 11px; font-weight: bold; fill: #FFFFFF; }
+    </style>
+  </defs>
+
+  <!-- NỀN CANVAS CHÍNH -->
+  <rect width="1920" height="1280" class="bg-canvas"/>
+  <rect x="20" y="20" width="1880" height="1240" class="border-main"/>
+  <rect x="24" y="24" width="1872" height="1232" class="border-thin"/>
+
+  <!-- TIÊU ĐỀ BẢN VẼ -->
+  <g id="Header_Technical">
+    <rect x="40" y="40" width="1840" height="80" class="card-fill"/>
+    <text x="60" y="75" class="text-title">BỘ KHUNG SLIDE TRÌNH CHIẾU BẢO VỆ ĐỒ ÁN TRƯỚC HỘI ĐỒNG (16:9 THESIS DEFENSE DECK)</text>
+    <text x="60" y="102" class="text-body-muted">TIÊU CHUẨN TRÌNH CHIẾU KHOA HỌC • TỶ LỆ 16:9 • ĐỒ HỌA KỸ THUẬT ĐƠN SẮC (MONOCHROME BLUEPRINT) • FIGMA PAGE 3 (SECTION 3.2)</text>
+    <rect x="1560" y="55" width="300" height="50" class="card-fill-subtle"/>
+    <text x="1575" y="75" class="text-body-bold">MÃ BẢN VẼ: SLIDE-DEF-02</text>
+    <text x="1575" y="95" class="text-body-muted">4 SLIDES TRỌNG TÂM • HỘI ĐỒNG</text>
+  </g>
+
+  <!-- SLIDE 1 (TOP-LEFT): ĐẶT VẤN ĐỀ VÀ MỤC TIÊU NGHIÊN CỨU -->
+  <g id="Slide_1_Problem_Statement">
+    <!-- Khung slide 16:9 (880 x 495) -->
+    <rect x="50" y="140" width="880" height="495" rx="8" class="card-fill"/>
+    <!-- Header slide -->
+    <rect x="50" y="140" width="880" height="55" rx="8" class="card-fill-subtle"/>
+    <rect x="70" y="153" width="80" height="28" rx="4" class="badge-black"/>
+    <text x="82" y="172" class="text-badge">SLIDE 01</text>
+    <text x="165" y="174" class="text-slide-title">ĐẶT VẤN ĐỀ, THÁCH THỨC VÀ MỤC TIÊU NGHIÊN CỨU</text>
+    <line x1="50" y1="195" x2="930" y2="195" class="border-thin"/>
+
+    <!-- Nội dung 3 cột vấn đề -->
+    <rect x="75" y="215" width="260" height="340" class="card-fill-subtle"/>
+    <text x="90" y="240" class="text-section">1. TẢI VẬN HÀNH CAO</text>
+    <text x="90" y="265" class="text-body">• Hơn 75% yêu cầu CSKH lặp lại:</text>
+    <text x="90" y="285" class="text-body-muted">  - "Đơn hàng của tôi ở đâu?"</text>
+    <text x="90" y="305" class="text-body-muted">  - "Cách tính cước theo IATA?"</text>
+    <text x="90" y="325" class="text-body-muted">  - "Quy định bồi thường hàng vỡ"</text>
+    <text x="90" y="355" class="text-body">• CSKH truyền thống quá tải.</text>
+    <text x="90" y="380" class="text-body">• Thời gian phản hồi chậm (&gt;15p).</text>
+    <text x="90" y="415" class="text-body-bold">Hậu quả:</text>
+    <text x="90" y="435" class="text-body">Tỷ lệ hủy đơn và khiếu nại tăng vọt.</text>
+
+    <rect x="360" y="215" width="260" height="340" class="card-fill-subtle"/>
+    <text x="375" y="240" class="text-section">2. NGUY CƠ ẢO GIÁC &amp; PII</text>
+    <text x="375" y="265" class="text-body">• LLM phổ thông bị ảo giác:</text>
+    <text x="375" y="285" class="text-body-muted">  - Tự bịa thông tin bồi thường.</text>
+    <text x="375" y="305" class="text-body-muted">  - Bỏ sót quy chế BBBT 24 giờ.</text>
+    <text x="375" y="335" class="text-body">• Rò rỉ thông tin cá nhân PII:</text>
+    <text x="375" y="355" class="text-body-muted">  - Kẻ gian dò mã bưu gửi để</text>
+    <text x="375" y="375" class="text-body-muted">    lấy SĐT, địa chỉ, số tiền COD.</text>
+    <text x="375" y="415" class="text-body-bold">Yêu cầu:</text>
+    <text x="375" y="435" class="text-body">Khử ảo giác &amp; Che mờ PII thời gian thực.</text>
+
+    <rect x="645" y="215" width="260" height="340" class="card-fill"/>
+    <text x="660" y="240" class="text-section">3. MỤC TIÊU ĐỀ TÀI</text>
+    <text x="660" y="265" class="text-body-bold">✓ Kiến trúc Hybrid Microservices:</text>
+    <text x="660" y="285" class="text-body">  Kết nối dữ liệu Live DB thời gian thực.</text>
+    <text x="660" y="315" class="text-body-bold">✓ RAG Semantic Chunking:</text>
+    <text x="660" y="335" class="text-body">  Chia nhỏ chính sách theo AST Heading.</text>
+    <text x="660" y="365" class="text-body-bold">✓ Tự động hóa BPM Sự cố:</text>
+    <text x="660" y="385" class="text-body">  Máy trạng thái khiếu nại + HITL.</text>
+    <text x="660" y="415" class="text-body-bold">✓ Giao diện Rich Card UI:</text>
+    <text x="660" y="435" class="text-body">  Trải nghiệm 1 chạm Zero-Typing.</text>
+
+    <!-- Footer slide -->
+    <rect x="50" y="580" width="880" height="55" class="card-fill-subtle"/>
+    <text x="75" y="612" class="text-body-bold">TÓM TẮT ĐÓNG GÓP:</text>
+    <text x="235" y="612" class="text-body">Giải quyết bài toán cân bằng giữa Trí tuệ Nhân tạo tổng quát (GenAI) và Quy chuẩn Nghiệp vụ Chặt chẽ (Deterministic).</text>
+  </g>
+
+  <!-- SLIDE 2 (TOP-RIGHT): KIẾN TRÚC TỔNG THỂ HỆ THỐNG -->
+  <g id="Slide_2_System_Architecture">
+    <rect x="990" y="140" width="880" height="495" rx="8" class="card-fill"/>
+    <rect x="990" y="140" width="880" height="55" rx="8" class="card-fill-subtle"/>
+    <rect x="1010" y="153" width="80" height="28" rx="4" class="badge-black"/>
+    <text x="1022" y="172" class="text-badge">SLIDE 02</text>
+    <text x="1105" y="174" class="text-slide-title">KIẾN TRÚC TỔNG THỂ 4 TẦNG &amp; CƠ CHẾ BẢO MẬT PII</text>
+    <line x1="990" y1="195" x2="1870" y2="195" class="border-thin"/>
+
+    <!-- Tầng 1: Clients -->
+    <rect x="1015" y="215" width="830" height="55" class="card-fill-subtle"/>
+    <text x="1030" y="238" class="text-body-bold">TẦNG 1: MULTI-PLATFORM CLIENT APPS</text>
+    <text x="1030" y="256" class="text-body-muted">Merchant Web Portal (:5174) • Customer Mobile App (:8082) • Guest Tracking Web (:5177)</text>
+
+    <!-- Tầng 2: Gateway & PII -->
+    <rect x="1015" y="285" width="830" height="65" class="card-fill"/>
+    <text x="1030" y="308" class="text-body-bold">TẦNG 2: API GATEWAY &amp; PII SECURITY PROXY (:3000)</text>
+    <text x="1030" y="326" class="text-body">• JWT Authentication &amp; RBAC Token Validation • Reverse Proxy &amp; Rate Limiter</text>
+    <text x="1030" y="342" class="text-code">• PII Data Sanitizer: Regex che số điện thoại 098****321, họ tên Ng***** V** A**</text>
+
+    <!-- Tầng 3: AI Orchestrator -->
+    <rect x="1015" y="365" width="830" height="70" class="card-fill-subtle"/>
+    <text x="1030" y="388" class="text-body-bold">TẦNG 3: AI AGENT ORCHESTRATOR SERVICE (NestJS :3013)</text>
+    <text x="1030" y="406" class="text-body">• Intent Router: EXACT_ORDER, RECENT_ORDERS, CARRIER_SOP, IATA_PRICING, CLAIM_INCIDENT</text>
+    <text x="1030" y="424" class="text-body">• Session Memory Buffer (Sliding Window 5 Turns) • Rich Card Schema Mapper</text>
+
+    <!-- Tầng 4: Phân nhánh Mesh & RAG -->
+    <rect x="1015" y="450" width="405" height="110" class="card-fill"/>
+    <text x="1030" y="473" class="text-body-bold">TẦNG 4A: LIVE SERVICES MESH</text>
+    <text x="1030" y="493" class="text-body">• Order Service (:3002) - PostgreSQL</text>
+    <text x="1030" y="513" class="text-body">• Tracking Service (:3005) - Trạng thái</text>
+    <text x="1030" y="533" class="text-body">• Claim Service (:3007) - Xử lý bồi thường</text>
+
+    <rect x="1440" y="450" width="405" height="110" class="card-fill"/>
+    <text x="1455" y="473" class="text-body-bold">TẦNG 4B: RAG KNOWLEDGE BASE</text>
+    <text x="1455" y="493" class="text-body">• Embedding-001 (768 chiều không gian)</text>
+    <text x="1455" y="513" class="text-body">• Hybrid Cosine + BM25 Lexical Score</text>
+    <text x="1455" y="533" class="text-body">• Kho tri thức bưu chính: IATA, SOP, BBBT</text>
+
+    <rect x="990" y="580" width="880" height="55" class="card-fill-subtle"/>
+    <text x="1015" y="612" class="text-body-bold">ĐIỂM NỔI BẬT:</text>
+    <text x="1145" y="612" class="text-body">Kiến trúc tách bạch giữa Dữ liệu động (Live Operational Data) và Tri thức tĩnh (Knowledge Base).</text>
+  </g>
+
+  <!-- SLIDE 3 (BOTTOM-LEFT): GIẢI THUẬT RAG & TỰ ĐỘNG HÓA BPM -->
+  <g id="Slide_3_Algorithms_And_BPM">
+    <rect x="50" y="660" width="880" height="495" rx="8" class="card-fill"/>
+    <rect x="50" y="660" width="880" height="55" rx="8" class="card-fill-subtle"/>
+    <rect x="70" y="673" width="80" height="28" rx="4" class="badge-black"/>
+    <text x="82" y="692" class="text-badge">SLIDE 03</text>
+    <text x="165" y="694" class="text-slide-title">GIẢI THUẬT PHÂN ĐOẠN RAG &amp; MÁY TRẠNG THÁI BPM SỰ CỐ</text>
+    <line x1="50" y1="715" x2="930" y2="715" class="border-thin"/>
+
+    <!-- Bên trái: Thuật toán RAG -->
+    <rect x="75" y="735" width="415" height="330" class="card-fill-subtle"/>
+    <text x="90" y="760" class="text-section">1. RAG SEMANTIC CHUNKING</text>
+    <text x="90" y="785" class="text-body">• Giải thuật: <tspan font-weight="bold">Hybrid Section-Aware Splitting</tspan></text>
+    <text x="90" y="805" class="text-body">• Cắt đoạn theo AST Heading (#, ##, ###)</text>
+    <text x="90" y="825" class="text-body">• Cửa sổ trượt với Overlap 16% (40 từ / 250 từ)</text>
+    <text x="90" y="845" class="text-body">• Bảo toàn nguyên vẹn Bảng cước IATA</text>
+    <rect x="90" y="865" width="385" height="70" class="card-fill"/>
+    <text x="105" y="890" class="text-code">Chunk_k = Concat(Breadcrumb_Header,</text>
+    <text x="215" y="910" class="text-code">SlidingWindow(Section_Body, 250, 40))</text>
+    <text x="90" y="960" class="text-body">• Kết quả:</text>
+    <text x="90" y="980" class="text-body-bold">  - Tăng độ chính xác từ 42.5% ➔ 96.8%</text>
+    <text x="90" y="1000" class="text-body-bold">  - Giảm 94.7% hiện tượng cắt cụt mệnh đề</text>
+
+    <!-- Bên phải: Máy trạng thái BPM Sự cố -->
+    <rect x="510" y="735" width="400" height="330" class="card-fill"/>
+    <text x="525" y="760" class="text-section">2. BPM INCIDENT CLAIM WORKFLOW</text>
+    <text x="525" y="785" class="text-body">• Quy trình 4 làn bơi (4 Swimlanes):</text>
+    <text x="525" y="805" class="text-body-muted">  User / Recipient ➔ AI Chatbot ➔ Ops / Carrier ➔ Admin</text>
+    <text x="525" y="830" class="text-body">• Cổng kiểm soát nghiệp vụ (Gateways):</text>
+    <text x="525" y="850" class="text-body">  - Hạn chót lập BBBT: $\Delta t \le 24\text{ giờ}$</text>
+    <text x="525" y="870" class="text-body">  - Ngưỡng tự động duyệt: $\le 500,000\text{ đ}$</text>
+    <text x="525" y="890" class="text-body">  - Bắt buộc kiểm tra chéo: Human-in-the-Loop</text>
+    <rect x="525" y="915" width="370" height="60" class="card-fill-subtle"/>
+    <text x="540" y="940" class="text-body-bold">7 TRẠNG THÁI CLAIM (FINITE STATE MACHINE):</text>
+    <text x="540" y="960" class="text-code">SUBMITTED ➔ IN_REVIEW ➔ APPROVED ➔ REFUNDED</text>
+    <text x="525" y="1000" class="text-body">• Giảm 65% thời gian xử lý thủ công của bưu cục.</text>
+
+    <rect x="50" y="1080" width="880" height="55" class="card-fill-subtle"/>
+    <text x="75" y="1112" class="text-body-bold">KẾT LUẬN CƠ SỞ:</text>
+    <text x="215" y="1112" class="text-body">Mô hình đã chứng minh được tính khả thi và đáp ứng hoàn hảo tiêu chuẩn vận tải bưu chính quốc gia.</text>
+  </g>
+
+  <!-- SLIDE 4 (BOTTOM-RIGHT): KẾT QUẢ THỰC NGHIỆM VÀ HƯỚNG PHÁT TRIỂN -->
+  <g id="Slide_4_Results_And_Conclusion">
+    <rect x="990" y="660" width="880" height="495" rx="8" class="card-fill"/>
+    <rect x="990" y="660" width="880" height="55" rx="8" class="card-fill-subtle"/>
+    <rect x="1010" y="673" width="80" height="28" rx="4" class="badge-black"/>
+    <text x="1022" y="692" class="text-badge">SLIDE 04</text>
+    <text x="1105" y="694" class="text-slide-title">KẾT QUẢ THỰC NGHIỆM, ĐÓNG GÓP &amp; HƯỚNG MỞ RỘNG</text>
+    <line x1="990" y1="715" x2="1870" y2="715" class="border-thin"/>
+
+    <!-- Bảng so sánh kết quả thực nghiệm -->
+    <rect x="1015" y="735" width="830" height="150" class="card-fill-subtle"/>
+    <text x="1030" y="760" class="text-section">1. KẾT QUẢ THỰC NGHIỆM ĐỊNH LƯỢNG (TESTED ON 1,000 QUERIES)</text>
+    
+    <!-- Table Header -->
+    <rect x="1030" y="775" width="800" height="26" class="card-fill"/>
+    <text x="1040" y="792" class="text-body-bold">TIÊU CHÍ ĐÁNH GIÁ</text>
+    <text x="1260" y="792" class="text-body-bold">LLM ĐƠN THUẦN</text>
+    <text x="1440" y="792" class="text-body-bold">RAG CỐ ĐỊNH (FIXED)</text>
+    <text x="1640" y="792" class="text-body-bold">HỆ THỐNG NEXUS (PROPOSED)</text>
+
+    <!-- Table Rows -->
+    <line x1="1030" y1="825" x2="1830" y2="825" class="border-thin"/>
+    <text x="1040" y="820" class="text-body">Độ chính xác truy vấn IATA</text>
+    <text x="1260" y="820" class="text-body">12.4% (Ảo giác)</text>
+    <text x="1440" y="820" class="text-body">42.5% (Cắt gãy bảng)</text>
+    <text x="1640" y="820" class="text-body-bold">96.8% (Tuyệt đối)</text>
+
+    <line x1="1030" y1="850" x2="1830" y2="850" class="border-thin"/>
+    <text x="1040" y="845" class="text-body">Thời gian phản hồi P95 (Latency)</text>
+    <text x="1260" y="845" class="text-body">2,400 ms</text>
+    <text x="1440" y="845" class="text-body">1,850 ms</text>
+    <text x="1640" y="845" class="text-body-bold">850 ms (Cache &amp; Hybrid)</text>
+
+    <text x="1040" y="872" class="text-body">Mức độ hài lòng người dùng (CSAT)</text>
+    <text x="1260" y="872" class="text-body">2.1 / 5.0</text>
+    <text x="1440" y="872" class="text-body">3.4 / 5.0</text>
+    <text x="1640" y="872" class="text-body-bold">4.8 / 5.0 (Rich Card UI)</text>
+
+    <!-- Cột Đóng góp & Hướng phát triển -->
+    <rect x="1015" y="900" width="405" height="165" class="card-fill"/>
+    <text x="1030" y="925" class="text-section">2. ĐÓNG GÓP KHOA HỌC</text>
+    <text x="1030" y="950" class="text-body">• Hoàn thiện mô hình RAG Hybrid cho Logistics.</text>
+    <text x="1030" y="975" class="text-body">• Chuẩn hóa quy trình xử lý biên bản bồi thường.</text>
+    <text x="1030" y="1000" class="text-body">• Cơ chế che chắn dữ liệu PII tuân thủ luật an ninh mạng.</text>
+    <text x="1030" y="1025" class="text-body">• Bộ thẻ tương tác trực quan Zero-Typing cho di động.</text>
+
+    <rect x="1440" y="900" width="405" height="165" class="card-fill"/>
+    <text x="1455" y="925" class="text-section">3. HƯỚNG PHÁT TRIỂN TƯƠNG LAI</text>
+    <text x="1455" y="950" class="text-body">• Tích hợp Computer Vision nhận diện ảnh hàng vỡ.</text>
+    <text x="1455" y="975" class="text-body">• AI Voice Assistant (Trợ lý giọng nói qua tổng đài).</text>
+    <text x="1455" y="1000" class="text-body">• Tối ưu hóa điều phối tuyến đường giao hàng thông minh.</text>
+    <text x="1455" y="1025" class="text-body">• Mở rộng đa ngôn ngữ phục vụ thương mại xuyên biên giới.</text>
+
+    <rect x="990" y="1080" width="880" height="55" class="card-fill-subtle"/>
+    <text x="1015" y="1112" class="text-body-bold">LỜI CẢM ƠN:</text>
+    <text x="1130" y="1112" class="text-body">Kính gửi lời cảm ơn chân thành đến Quý Thầy/Cô trong Hội đồng chấm khóa luận tốt nghiệp!</text>
+  </g>
+
+</svg>

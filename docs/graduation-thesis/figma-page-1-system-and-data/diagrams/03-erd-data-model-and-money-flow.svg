@@ -1,0 +1,188 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1650 960" width="1650" height="960" style="background:#FFFFFF;">
+  <style>
+    text { font-family: Arial, "Times New Roman", sans-serif; }
+    .doc-title { font-size: 17px; font-weight: bold; fill: #000000; text-anchor: middle; }
+    .doc-sub { font-size: 12.5px; font-style: italic; fill: #333333; text-anchor: middle; }
+    .sec-title { font-size: 12.5px; font-weight: bold; fill: #000000; text-transform: uppercase; letter-spacing: 0.5px; }
+    .tbl-header { font-size: 11.5px; font-weight: bold; fill: #FFFFFF; }
+    .tbl-cell-pk { font-size: 10.5px; font-weight: bold; fill: #000000; font-family: monospace; }
+    .tbl-cell-fk { font-size: 10.5px; font-style: italic; fill: #333333; font-family: monospace; }
+    .tbl-cell { font-size: 10.5px; fill: #000000; font-family: monospace; }
+    .tbl-type { font-size: 10px; fill: #555555; }
+    .flow-title { font-size: 12px; font-weight: bold; fill: #000000; }
+    .flow-desc { font-size: 10.5px; fill: #333333; }
+  </style>
+
+  <!-- ==================== HEADER ==================== -->
+  <g id="Header">
+    <text x="825" y="45" class="doc-title">HÌNH 1.3: MÔ HÌNH DỮ LIỆU THỰC THỂ QUAN HỆ (ERD) &amp; LUỒNG QUYẾT TOÁN TÀI CHÍNH COD</text>
+    <text x="825" y="65" class="doc-sub">Cấu trúc quan hệ cơ sở dữ liệu phân tán (Crow's Foot) và cơ chế đối soát dòng tiền đa kênh Nexus Logistics</text>
+    <line x1="80" y1="80" x2="1570" y2="80" stroke="#000000" stroke-width="1.2"/>
+  </g>
+
+  <!-- ==================== 2 MAIN SECTIONS ==================== -->
+
+  <!-- SECTION A: ERD DATABASE SCHEMA (x: 80 -> 1060, w: 980, h: 810) -->
+  <rect x="80" y="100" width="980" height="810" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+  <rect x="80" y="100" width="980" height="32" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+  <text x="95" y="122" class="sec-title">A. CẤU TRÚC BẢNG CƠ SỞ DỮ LIỆU CỐT LÕI (POSTGRESQL ENTITY RELATIONSHIP)</text>
+
+  <!-- TABLE 1: MERCHANTS (x: 105, y: 155, w: 250, h: 175) -->
+  <rect x="105" y="155" width="250" height="175" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+  <rect x="105" y="155" width="250" height="24" fill="#000000"/>
+  <text x="230" y="172" class="tbl-header" text-anchor="middle">merchants (Chủ shop)</text>
+  <text x="115" y="196" class="tbl-cell-pk">PK id</text><text x="270" y="196" class="tbl-type">UUID</text>
+  <text x="115" y="214" class="tbl-cell">   merchant_code</text><text x="270" y="214" class="tbl-type">VARCHAR(32)</text>
+  <text x="115" y="232" class="tbl-cell">   business_name</text><text x="270" y="232" class="tbl-type">VARCHAR(128)</text>
+  <text x="115" y="250" class="tbl-cell">   tier_level</text><text x="270" y="250" class="tbl-type">ENUM(STD,VIP)</text>
+  <text x="115" y="268" class="tbl-cell">   wallet_balance</text><text x="270" y="268" class="tbl-type">DECIMAL(15,2)</text>
+  <text x="115" y="286" class="tbl-cell">   bank_account_no</text><text x="270" y="286" class="tbl-type">VARCHAR(32)</text>
+  <text x="115" y="304" class="tbl-cell">   created_at</text><text x="270" y="304" class="tbl-type">TIMESTAMP</text>
+
+  <!-- TABLE 2: ORDERS (x: 420, y: 155, w: 300, h: 260) -->
+  <rect x="420" y="155" width="300" height="260" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+  <rect x="420" y="155" width="300" height="24" fill="#000000"/>
+  <text x="570" y="172" class="tbl-header" text-anchor="middle">orders (Vận đơn bưu chính)</text>
+  <text x="430" y="196" class="tbl-cell-pk">PK id</text><text x="630" y="196" class="tbl-type">UUID</text>
+  <text x="430" y="214" class="tbl-cell">   order_code</text><text x="630" y="214" class="tbl-type">VARCHAR(32) UNIQUE</text>
+  <text x="430" y="232" class="tbl-cell-fk">FK merchant_id</text><text x="630" y="232" class="tbl-type">UUID</text>
+  <text x="430" y="250" class="tbl-cell">   status</text><text x="630" y="250" class="tbl-type">ENUM(OrderStatus)</text>
+  <text x="430" y="268" class="tbl-cell">   cod_amount</text><text x="630" y="268" class="tbl-type">DECIMAL(12,2)</text>
+  <text x="430" y="286" class="tbl-cell">   shipping_fee</text><text x="630" y="286" class="tbl-type">DECIMAL(10,2)</text>
+  <text x="430" y="304" class="tbl-cell">   has_insurance</text><text x="630" y="304" class="tbl-type">BOOLEAN</text>
+  <text x="430" y="322" class="tbl-cell">   declared_value</text><text x="630" y="322" class="tbl-type">DECIMAL(12,2)</text>
+  <text x="430" y="340" class="tbl-cell">   weight_kg</text><text x="630" y="340" class="tbl-type">DECIMAL(6,2)</text>
+  <text x="430" y="358" class="tbl-cell">   recipient_phone</text><text x="630" y="358" class="tbl-type">VARCHAR(20) [PII]</text>
+  <text x="430" y="376" class="tbl-cell">   recipient_address</text><text x="630" y="376" class="tbl-type">TEXT [PII]</text>
+  <text x="430" y="394" class="tbl-cell">   delivered_at</text><text x="630" y="394" class="tbl-type">TIMESTAMP</text>
+
+  <!-- TABLE 3: TRACKING_EVENTS (x: 780, y: 155, w: 260, h: 200) -->
+  <rect x="780" y="155" width="260" height="200" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+  <rect x="780" y="155" width="260" height="24" fill="#000000"/>
+  <text x="910" y="172" class="tbl-header" text-anchor="middle">tracking_events (Lịch trình)</text>
+  <text x="790" y="196" class="tbl-cell-pk">PK id</text><text x="960" y="196" class="tbl-type">BIGSERIAL</text>
+  <text x="790" y="214" class="tbl-cell-fk">FK order_id</text><text x="960" y="214" class="tbl-type">UUID</text>
+  <text x="790" y="232" class="tbl-cell">   status_milestone</text><text x="960" y="232" class="tbl-type">VARCHAR(32)</text>
+  <text x="790" y="250" class="tbl-cell">   hub_location</text><text x="960" y="250" class="tbl-type">VARCHAR(64)</text>
+  <text x="790" y="268" class="tbl-cell">   courier_name</text><text x="960" y="268" class="tbl-type">VARCHAR(64)</text>
+  <text x="790" y="286" class="tbl-cell">   courier_phone</text><text x="960" y="286" class="tbl-type">VARCHAR(20)</text>
+  <text x="790" y="304" class="tbl-cell">   note</text><text x="960" y="304" class="tbl-type">TEXT</text>
+  <text x="790" y="322" class="tbl-cell">   event_timestamp</text><text x="960" y="322" class="tbl-type">TIMESTAMP</text>
+
+  <!-- TABLE 4: CLAIMS (x: 420, y: 480, w: 300, h: 240) -->
+  <rect x="420" y="480" width="300" height="240" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+  <rect x="420" y="480" width="300" height="24" fill="#000000"/>
+  <text x="570" y="497" class="tbl-header" text-anchor="middle">claims (Hồ sơ bồi thường sự cố)</text>
+  <text x="430" y="521" class="tbl-cell-pk">PK id</text><text x="630" y="521" class="tbl-type">UUID</text>
+  <text x="430" y="539" class="tbl-cell">   claim_code</text><text x="630" y="539" class="tbl-type">VARCHAR(32) UNIQUE</text>
+  <text x="430" y="557" class="tbl-cell-fk">FK order_id</text><text x="630" y="557" class="tbl-type">UUID</text>
+  <text x="430" y="575" class="tbl-cell">   incident_type</text><text x="630" y="575" class="tbl-type">ENUM(DAMAGE,LOST)</text>
+  <text x="430" y="593" class="tbl-cell">   status</text><text x="630" y="593" class="tbl-type">ENUM(ClaimStatus)</text>
+  <text x="430" y="611" class="tbl-cell">   claimed_amount</text><text x="630" y="611" class="tbl-type">DECIMAL(12,2)</text>
+  <text x="430" y="629" class="tbl-cell">   approved_amount</text><text x="630" y="629" class="tbl-type">DECIMAL(12,2)</text>
+  <text x="430" y="647" class="tbl-cell">   hitl_escalated</text><text x="630" y="647" class="tbl-type">BOOLEAN</text>
+  <text x="430" y="665" class="tbl-cell">   assigned_officer</text><text x="630" y="665" class="tbl-type">VARCHAR(64)</text>
+  <text x="430" y="683" class="tbl-cell">   sla_deadline</text><text x="630" y="683" class="tbl-type">TIMESTAMP</text>
+
+  <!-- TABLE 5: CLAIM_EVIDENCE (x: 780, y: 480, w: 260, h: 180) -->
+  <rect x="780" y="480" width="260" height="180" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+  <rect x="780" y="480" width="260" height="24" fill="#000000"/>
+  <text x="910" y="497" class="tbl-header" text-anchor="middle">claim_evidence (Bằng chứng)</text>
+  <text x="790" y="521" class="tbl-cell-pk">PK id</text><text x="960" y="521" class="tbl-type">BIGSERIAL</text>
+  <text x="790" y="539" class="tbl-cell-fk">FK claim_id</text><text x="960" y="539" class="tbl-type">UUID</text>
+  <text x="790" y="557" class="tbl-cell">   has_bbbt_report</text><text x="960" y="557" class="tbl-type">BOOLEAN</text>
+  <text x="790" y="575" class="tbl-cell">   photo_urls</text><text x="960" y="575" class="tbl-type">TEXT[] (Min 3)</text>
+  <text x="790" y="593" class="tbl-cell">   bbbt_document_url</text><text x="960" y="593" class="tbl-type">VARCHAR(256)</text>
+  <text x="790" y="611" class="tbl-cell">   verification_score</text><text x="960" y="611" class="tbl-type">DECIMAL(3,2)</text>
+  <text x="790" y="629" class="tbl-cell">   uploaded_at</text><text x="960" y="629" class="tbl-type">TIMESTAMP</text>
+
+  <!-- TABLE 6: RAG_CHUNKS (x: 105, y: 480, w: 250, h: 200) -->
+  <rect x="105" y="480" width="250" height="200" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+  <rect x="105" y="480" width="250" height="24" fill="#000000"/>
+  <text x="230" y="497" class="tbl-header" text-anchor="middle">rag_chunks (Vector tri thức)</text>
+  <text x="115" y="521" class="tbl-cell-pk">PK chunk_id</text><text x="270" y="521" class="tbl-type">VARCHAR(64)</text>
+  <text x="115" y="539" class="tbl-cell">   doc_source</text><text x="270" y="539" class="tbl-type">VARCHAR(128)</text>
+  <text x="115" y="557" class="tbl-cell">   breadcrumb</text><text x="270" y="557" class="tbl-type">VARCHAR(256)</text>
+  <text x="115" y="575" class="tbl-cell">   content_text</text><text x="270" y="575" class="tbl-type">TEXT</text>
+  <text x="115" y="593" class="tbl-cell">   token_count</text><text x="270" y="593" class="tbl-type">INT (Max 250)</text>
+  <text x="115" y="611" class="tbl-cell">   embedding_vector</text><text x="270" y="611" class="tbl-type">VECTOR(768)</text>
+  <text x="115" y="629" class="tbl-cell">   thesaurus_tags</text><text x="270" y="629" class="tbl-type">VARCHAR[]</text>
+
+  <!-- RELATIONSHIP LINES (CROW'S FOOT NOTATION) -->
+  <!-- 1. merchants (1) -> orders (N) -->
+  <line x1="355" y1="230" x2="420" y2="230" stroke="#000000" stroke-width="1.5"/>
+  <line x1="365" y1="223" x2="365" y2="237" stroke="#000000" stroke-width="1.5"/>
+  <line x1="410" y1="223" x2="420" y2="230" stroke="#000000" stroke-width="1.5"/>
+  <line x1="410" y1="237" x2="420" y2="230" stroke="#000000" stroke-width="1.5"/>
+
+  <!-- 2. orders (1) -> tracking_events (N) -->
+  <line x1="720" y1="230" x2="780" y2="230" stroke="#000000" stroke-width="1.5"/>
+  <line x1="730" y1="223" x2="730" y2="237" stroke="#000000" stroke-width="1.5"/>
+  <line x1="770" y1="223" x2="780" y2="230" stroke="#000000" stroke-width="1.5"/>
+  <line x1="770" y1="237" x2="780" y2="230" stroke="#000000" stroke-width="1.5"/>
+
+  <!-- 3. orders (1) -> claims (0..1) -->
+  <line x1="570" y1="415" x2="570" y2="480" stroke="#000000" stroke-width="1.5"/>
+  <line x1="563" y1="425" x2="577" y2="425" stroke="#000000" stroke-width="1.5"/>
+  <circle cx="570" cy="465" r="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+
+  <!-- 4. claims (1) -> claim_evidence (1..N) -->
+  <line x1="720" y1="560" x2="780" y2="560" stroke="#000000" stroke-width="1.5"/>
+  <line x1="730" y1="553" x2="730" y2="567" stroke="#000000" stroke-width="1.5"/>
+  <line x1="770" y1="553" x2="780" y2="560" stroke="#000000" stroke-width="1.5"/>
+  <line x1="770" y1="567" x2="780" y2="560" stroke="#000000" stroke-width="1.5"/>
+
+  <!-- SECTION B: COD MONEY FLOW & SETTLEMENT (x: 1080 -> 1570, w: 490, h: 810) -->
+  <rect x="1080" y="100" width="490" height="810" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+  <rect x="1080" y="100" width="490" height="32" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+  <text x="1095" y="122" class="sec-title">B. LUỒNG TIỀN VÀ QUYẾT TOÁN COD (MONEY FLOW)</text>
+
+  <!-- Step 1: Nguồn đơn & Số tiền cần thu -->
+  <rect x="1105" y="155" width="440" height="110" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+  <text x="1115" y="177" class="flow-title">1. Xác định Số tiền cần thu (codAmount)</text>
+  <text x="1115" y="197" class="flow-desc">• Nguồn đơn nội bộ: Nexus tự tính cước nấc thang IATA</text>
+  <text x="1115" y="213" class="flow-desc">• Nguồn đơn từ sàn (Marketplace): Sàn truyền số tiền codAmount</text>
+  <text x="1115" y="233" class="flow-desc" font-weight="bold">→ codAmount = Tiền hàng + Cước vận chuyển (nếu có)</text>
+
+  <!-- Step 2: Thu tiền tại hiện trường -->
+  <rect x="1105" y="285" width="440" height="135" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+  <text x="1115" y="307" class="flow-title">2. Thu tiền tại điểm phát (Collection Stage)</text>
+  <text x="1115" y="327" class="flow-desc">• Kênh A: Tiền mặt → Khách giao bưu tá → Bưu tá nộp về Hub</text>
+  <text x="1115" y="347" class="flow-desc">• Kênh B: Chuyển khoản QR SePay → Tiền vào thẳng TK công ty</text>
+  <text x="1115" y="367" class="flow-desc">• Kiểm tra đồng kiểm: Nếu vỡ → Lập BBBT 24h, khách KHÔNG trả tiền</text>
+  <text x="1115" y="387" class="flow-desc" font-weight="bold">→ Cập nhật trạng thái: COLLECTED_CASH hoặc BANK_CONFIRMED</text>
+
+  <!-- Step 3: Công ty đối soát & ghi có ví -->
+  <rect x="1105" y="440" width="440" height="135" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+  <text x="1115" y="462" class="flow-title">3. Đối soát Doanh thu &amp; Ghi có Ví (Settlement)</text>
+  <text x="1115" y="482" class="flow-desc">• Công thức thực nhận của Shop: </text>
+  <text x="1125" y="502" class="flow-desc" font-weight="bold">NetPayout = codAmount - shippingFee - insuranceFee</text>
+  <text x="1115" y="522" class="flow-desc">• Ghi có tự động vào wallet_balance của bảng `merchants`</text>
+  <text x="1115" y="542" class="flow-desc">• Nếu bom hàng: Trừ 50% cước (Shop thường) hoặc 0đ (Shop VIP)</text>
+
+  <!-- Step 4: Xử lý Bồi thường Bưu phẩm -->
+  <rect x="1105" y="595" width="440" height="145" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+  <text x="1115" y="617" class="flow-title">4. Chi trả Bồi thường Sự cố (Compensation Payout)</text>
+  <text x="1115" y="637" class="flow-desc">• Đơn có bảo hiểm: Đền 100% declared_value</text>
+  <text x="1115" y="653" class="flow-desc">• Đơn không bảo hiểm: Đền tối đa 4 lần cước vận chuyển</text>
+  <text x="1115" y="673" class="flow-desc">• Thẩm định tự động: Giải ngân vào Ví Shop trong 2 giờ</text>
+  <text x="1115" y="693" class="flow-desc">• Ca tranh chấp (HITL): Hòa giải và giải ngân theo phán quyết</text>
+
+  <!-- Arrows in Flow -->
+  <line x1="1325" y1="265" x2="1325" y2="280" stroke="#000000" stroke-width="1.5"/>
+  <polygon points="1321,280 1325,285 1329,280" fill="#000000"/>
+
+  <line x1="1325" y1="420" x2="1325" y2="435" stroke="#000000" stroke-width="1.5"/>
+  <polygon points="1321,435 1325,440 1329,435" fill="#000000"/>
+
+  <line x1="1325" y1="575" x2="1325" y2="590" stroke="#000000" stroke-width="1.5"/>
+  <polygon points="1321,590 1325,595 1329,590" fill="#000000"/>
+
+  <!-- ==================== FOOTER ==================== -->
+  <g id="Footer">
+    <line x1="80" y1="920" x2="1570" y2="920" stroke="#000000" stroke-width="1"/>
+    <text x="80" y="940" font-size="11" font-style="italic" fill="#333333">
+      Ghi chú: Bản vẽ tích hợp ERD (Crow's Foot Notation) và Quy chế đối soát tài chính COD theo đúng vận hành của hệ thống Nexus Logistics.
+    </text>
+  </g>
+</svg>
