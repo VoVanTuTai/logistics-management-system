@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 920" width="100%" height="100%" style="background:#FFFFFF;">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 1300" width="100%" height="100%" style="background:#FFFFFF;">
 
   <defs>
     <marker id="crow-many" markerWidth="14" markerHeight="14" refX="10" refY="7" orient="auto">
@@ -15,8 +15,8 @@
 
   <!-- Technical Blueprint Double Frame -->
   <rect width="100%" height="100%" fill="#FFFFFF"/>
-  <rect x="15" y="15" width="1970" height="890" fill="none" stroke="#000000" stroke-width="2"/>
-  <rect x="20" y="20" width="1960" height="880" fill="none" stroke="#000000" stroke-width="0.8"/>
+  <rect x="15" y="15" width="1970" height="1270" fill="none" stroke="#000000" stroke-width="2"/>
+  <rect x="20" y="20" width="1960" height="1260" fill="none" stroke="#000000" stroke-width="0.8"/>
 
   <style>
     text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
@@ -63,123 +63,150 @@
 
   <!-- MAIN SERVICE CONTAINER -->
   <g id="ServiceBody" transform="translate(40, 150)">
-    <rect width="1920" height="680" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.6"/>
+    <rect width="1920" height="1060" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.6"/>
 
-<g transform="translate(24, 20)">
-  <rect width="470" height="164" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
-  <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
+<g transform="translate(40, 80)">
+  <rect width="480" height="260" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+  <line x1="0" y1="36" x2="480" y2="36" stroke="#000000" stroke-width="1.2"/>
   <text x="14" y="23" class="tbl-header">TariffMatrix</text>
-  <text x="456" y="23" class="tbl-tag" text-anchor="end">TARIFF_MATRICES (BẢNG GIÁ THEO...</text>
+  <text x="466" y="23" class="tbl-tag" text-anchor="end">TARIFF_MATRICES (BẢNG GIÁ TH...</text>
   <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
-  <text x="458" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) ID MA TRẬN CƯỚC</text>
+  <text x="468" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) ID MA TRẬN GIÁ</text>
   <rect x="8" y="67" width="28" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1" stroke-dasharray="2 1.5"/>
   <text x="22" y="78" class="badge-dist" text-anchor="middle">DIST</text>
-  <text x="42" y="78" class="tbl-field-dist">originZone / destZone</text>
-  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(32) VÙNG ĐI / VÙNG Đ</text>
-  <circle cx="18" cy="98" r="1.8" fill="#000000"/>
-  <text x="30" y="102" class="tbl-field-normal">baseWeightKg / basePriceVnd</text>
-  <text x="458" y="102" class="tbl-type" text-anchor="end">FLOAT CÂN NẶNG &amp; CƯỚC CƠ BẢN</text>
+  <text x="42" y="78" class="tbl-field-dist">originZoneCode</text>
+  <text x="468" y="78" class="tbl-type" text-anchor="end">VARCHAR(32) VÙNG GỬI (ZONE A</text>
+  <rect x="8" y="91" width="28" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1" stroke-dasharray="2 1.5"/>
+  <text x="22" y="102" class="badge-dist" text-anchor="middle">DIST</text>
+  <text x="42" y="102" class="tbl-field-dist">destZoneCode</text>
+  <text x="468" y="102" class="tbl-type" text-anchor="end">VARCHAR(32) VÙNG NHẬN (ZONE</text>
   <circle cx="18" cy="122" r="1.8" fill="#000000"/>
-  <text x="30" y="126" class="tbl-field-normal">stepWeightKg / stepPriceVnd</text>
-  <text x="458" y="126" class="tbl-type" text-anchor="end">FLOAT CƯỚC CỘNG THÊM MỖI NẤC</text>
+  <text x="30" y="126" class="tbl-field-normal">baseWeightKg</text>
+  <text x="468" y="126" class="tbl-type" text-anchor="end">FLOAT MỨC CÂN CƠ BẢN (VD: 0.</text>
   <circle cx="18" cy="146" r="1.8" fill="#000000"/>
-  <text x="30" y="150" class="tbl-field-normal">transitDaysMin / transitDaysMax</text>
-  <text x="458" y="150" class="tbl-type" text-anchor="end">INT THỜI GIAN CAM KẾT VẬN CH</text>
+  <text x="30" y="150" class="tbl-field-normal">basePrice</text>
+  <text x="468" y="150" class="tbl-type" text-anchor="end">FLOAT CƯỚC CƠ BẢN (VD: 22,00</text>
+  <circle cx="18" cy="170" r="1.8" fill="#000000"/>
+  <text x="30" y="174" class="tbl-field-normal">nextStepWeightKg</text>
+  <text x="468" y="174" class="tbl-type" text-anchor="end">FLOAT BƯỚC CÂN LŨY TIẾN (0.5</text>
+  <circle cx="18" cy="194" r="1.8" fill="#000000"/>
+  <text x="30" y="198" class="tbl-field-normal">nextStepPrice</text>
+  <text x="468" y="198" class="tbl-type" text-anchor="end">FLOAT CƯỚC LŨY TIẾN TIẾP THE</text>
+  <circle cx="18" cy="218" r="1.8" fill="#000000"/>
+  <text x="30" y="222" class="tbl-field-normal">isActive</text>
+  <text x="468" y="222" class="tbl-type" text-anchor="end">BOOLEAN DEFAULT TRUE</text>
+  <circle cx="18" cy="242" r="1.8" fill="#000000"/>
+  <text x="30" y="246" class="tbl-field-normal">updatedAt</text>
+  <text x="468" y="246" class="tbl-type" text-anchor="end">TIMESTAMP LẦN ĐIỀU CHỈNH GẦN</text>
 </g>
-<g transform="translate(514, 20)">
-  <rect width="470" height="164" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
-  <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
+<g transform="translate(680, 80)">
+  <rect width="480" height="188" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+  <line x1="0" y1="36" x2="480" y2="36" stroke="#000000" stroke-width="1.2"/>
   <text x="14" y="23" class="tbl-header">DimensionalRule</text>
-  <text x="456" y="23" class="tbl-tag" text-anchor="end">DIMENSIONAL_RULES (CÔNG THỨC Q...</text>
+  <text x="466" y="23" class="tbl-tag" text-anchor="end">DIMENSIONAL_RULES (CÔNG THỨC...</text>
   <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
-  <text x="458" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) QUY CHUẨN THỂ TÍ</text>
+  <text x="468" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) ID QUY TẮC IATA</text>
   <circle cx="18" cy="74" r="1.8" fill="#000000"/>
-  <text x="30" y="78" class="tbl-field-normal">formula</text>
-  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(64) (DÀI * RỘNG * CA</text>
+  <text x="30" y="78" class="tbl-field-normal">divisor</text>
+  <text x="468" y="78" class="tbl-type" text-anchor="end">INT HỆ SỐ QUY ĐỔI HÀNG KHÔNG</text>
   <circle cx="18" cy="98" r="1.8" fill="#000000"/>
-  <text x="30" y="102" class="tbl-field-normal">applyThresholdKg</text>
-  <text x="458" y="102" class="tbl-type" text-anchor="end">FLOAT NGƯỠNG ÁP DỤNG QUY ĐỔI</text>
+  <text x="30" y="102" class="tbl-field-normal">minChargeableWeight</text>
+  <text x="468" y="102" class="tbl-type" text-anchor="end">FLOAT TRỌNG LƯỢNG TỐI THIỂU</text>
   <circle cx="18" cy="122" r="1.8" fill="#000000"/>
-  <text x="30" y="126" class="tbl-field-normal">dimensionalDivisor</text>
-  <text x="458" y="126" class="tbl-type" text-anchor="end">INT HỆ SỐ HÀNG KHÔNG 5000</text>
+  <text x="30" y="126" class="tbl-field-normal">roundingStepKg</text>
+  <text x="468" y="126" class="tbl-type" text-anchor="end">FLOAT BƯỚC LÀM TRÒN CÂN (0.1</text>
   <circle cx="18" cy="146" r="1.8" fill="#000000"/>
-  <text x="30" y="150" class="tbl-field-normal">maxDimensionsCm</text>
-  <text x="458" y="150" class="tbl-type" text-anchor="end">VARCHAR(32) KÍCH THƯỚC TỐI Đ</text>
+  <text x="30" y="150" class="tbl-field-normal">formulaDesc</text>
+  <text x="468" y="150" class="tbl-type" text-anchor="end">VARCHAR(128) (L x W x H cm)</text>
+  <circle cx="18" cy="170" r="1.8" fill="#000000"/>
+  <text x="30" y="174" class="tbl-field-normal">effectiveFrom</text>
+  <text x="468" y="174" class="tbl-type" text-anchor="end">DATE NGÀY BẮT ĐẦU ÁP DỤNG</text>
 </g>
-<g transform="translate(24, 204)">
-  <rect width="470" height="164" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
-  <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
+<g transform="translate(40, 390)">
+  <rect width="480" height="188" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+  <line x1="0" y1="36" x2="480" y2="36" stroke="#000000" stroke-width="1.2"/>
   <text x="14" y="23" class="tbl-header">FuelSurchargeRule</text>
-  <text x="456" y="23" class="tbl-tag" text-anchor="end">FUEL_RULES (PHỤ PHÍ XĂNG DẦU)</text>
+  <text x="466" y="23" class="tbl-tag" text-anchor="end">FUEL_RULES (PHỤ PHÍ XĂNG DẦU...</text>
   <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
-  <text x="458" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) QUY TẮC PHỤ PHÍ</text>
+  <text x="468" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) ID QUY TẮC PHỤ P</text>
   <circle cx="18" cy="74" r="1.8" fill="#000000"/>
-  <text x="30" y="78" class="tbl-field-normal">effectiveDate</text>
-  <text x="458" y="78" class="tbl-type" text-anchor="end">TIMESTAMP NGÀY ÁP DỤNG HIỆU</text>
+  <text x="30" y="78" class="tbl-field-normal">percentage</text>
+  <text x="468" y="78" class="tbl-type" text-anchor="end">FLOAT TỶ LỆ PHỤ PHÍ NHIÊN LI</text>
   <circle cx="18" cy="98" r="1.8" fill="#000000"/>
-  <text x="30" y="102" class="tbl-field-normal">surchargePercent</text>
-  <text x="458" y="102" class="tbl-type" text-anchor="end">FLOAT TỶ LỆ PHỤ PHÍ (%) (VD:</text>
+  <text x="30" y="102" class="tbl-field-normal">minFee</text>
+  <text x="468" y="102" class="tbl-type" text-anchor="end">FLOAT PHÍ TỐI THIỂU</text>
   <circle cx="18" cy="122" r="1.8" fill="#000000"/>
-  <text x="30" y="126" class="tbl-field-normal">brentIndexThreshold</text>
-  <text x="458" y="126" class="tbl-type" text-anchor="end">FLOAT NGƯỠNG GIÁ DẦU THẾ GIỚ</text>
+  <text x="30" y="126" class="tbl-field-normal">scope</text>
+  <text x="468" y="126" class="tbl-type" text-anchor="end">VARCHAR(32) AIR_CARGO, ROAD_</text>
   <circle cx="18" cy="146" r="1.8" fill="#000000"/>
-  <text x="30" y="150" class="tbl-field-normal">isActive</text>
-  <text x="458" y="150" class="tbl-type" text-anchor="end">BOOLEAN TRẠNG THÁI HIỆU LỰC</text>
+  <text x="30" y="150" class="tbl-field-normal">effectiveFrom</text>
+  <text x="468" y="150" class="tbl-type" text-anchor="end">DATE NGÀY CÔNG BỐ ÁP DỤNG</text>
+  <circle cx="18" cy="170" r="1.8" fill="#000000"/>
+  <text x="30" y="174" class="tbl-field-normal">effectiveTo</text>
+  <text x="468" y="174" class="tbl-type" text-anchor="end">DATE NGÀY HẾT HẠN HIỆU LỰC</text>
 </g>
-<g transform="translate(514, 204)">
-  <rect width="470" height="140" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
-  <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
+<g transform="translate(680, 318)">
+  <rect width="480" height="188" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+  <line x1="0" y1="36" x2="480" y2="36" stroke="#000000" stroke-width="1.2"/>
   <text x="14" y="23" class="tbl-header">VasCatalog</text>
-  <text x="456" y="23" class="tbl-tag" text-anchor="end">VAS_CATALOG (DỊCH VỤ GIÁ TRỊ G...</text>
+  <text x="466" y="23" class="tbl-tag" text-anchor="end">VAS_CATALOG (DỊCH VỤ CỘNG THÊM)</text>
   <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
-  <text x="458" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) MÃ DỊCH VỤ CỘNG</text>
+  <text x="468" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) ID DỊCH VỤ VAS</text>
   <circle cx="18" cy="74" r="1.8" fill="#000000"/>
-  <text x="30" y="78" class="tbl-field-normal">code</text>
-  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(32) INSURANCE, COD_F</text>
+  <text x="30" y="78" class="tbl-field-normal">vasCode</text>
+  <text x="468" y="78" class="tbl-type" text-anchor="end">VARCHAR(32) UNIQUE (INSURANC</text>
   <circle cx="18" cy="98" r="1.8" fill="#000000"/>
-  <text x="30" y="102" class="tbl-field-normal">feeType</text>
-  <text x="458" y="102" class="tbl-type" text-anchor="end">ENUM PERCENT, FLAT</text>
+  <text x="30" y="102" class="tbl-field-normal">vasName</text>
+  <text x="468" y="102" class="tbl-type" text-anchor="end">VARCHAR(64) BẢO HIỂM HÀNG HO</text>
   <circle cx="18" cy="122" r="1.8" fill="#000000"/>
-  <text x="30" y="126" class="tbl-field-normal">feeRate / minFeeVnd</text>
-  <text x="458" y="126" class="tbl-type" text-anchor="end">FLOAT MỨC PHÍ &amp; PHÍ TỐI THIỂ</text>
+  <text x="30" y="126" class="tbl-field-normal">ratePct</text>
+  <text x="468" y="126" class="tbl-type" text-anchor="end">FLOAT TỶ LỆ % GIÁ TRỊ KHAI G</text>
+  <circle cx="18" cy="146" r="1.8" fill="#000000"/>
+  <text x="30" y="150" class="tbl-field-normal">minVasFee</text>
+  <text x="468" y="150" class="tbl-type" text-anchor="end">FLOAT MỨC PHÍ TỐI THIỂU (VD:</text>
+  <circle cx="18" cy="170" r="1.8" fill="#000000"/>
+  <text x="30" y="174" class="tbl-field-normal">isActive</text>
+  <text x="468" y="174" class="tbl-type" text-anchor="end">BOOLEAN DEFAULT TRUE</text>
 </g>
 
-    <path d="M 494 60 L 514 60" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
-    <path d="M 259 184 L 259 204" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
+    <!-- TariffMatrix (1) -> DimensionalRule (1) Direct Cross -->
+    <path d="M 520 140 L 680 140" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
+    <!-- TariffMatrix (1) -> FuelSurchargeRule (1) via Center Highway Lane 1 -->
+    <path d="M 520 220 L 560 220 L 560 440 L 520 440" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
     
-<g transform="translate(1010, 20)">
-  <rect width="890" height="640" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
-  <rect x="0" y="0" width="890" height="42" rx="6" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+<g transform="translate(1200, 20)">
+  <rect width="700" height="1020" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+  <rect x="0" y="0" width="700" height="42" rx="6" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
   <rect x="14" y="12" width="6" height="18" rx="1" fill="#000000"/>
   <text x="28" y="26" class="panel-header">GIẢI THÍCH SƠ BỘ &amp; QUY TẮC DỮ LIỆU: PRICING-SERVICE</text>
-  <rect x="677" y="9" width="199" height="24" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
-  <text x="776.5" y="25" font-size="10" font-weight="700" fill="#000000" text-anchor="middle">IATA STANDARD CALCULATION</text>
-  <text x="18" y="68" class="panel-sec-title">▶ ĐỘNG CƠ TÍNH CƯỚC TỐC ĐỘ CAO (IN-MEMORY PRICING ENGINE)</text>
-  <circle cx="25" cy="84" r="2" fill="#000000"/>
-  <text x="36" y="88" class="panel-body">Kiến trúc không trạng thái (Stateless Engine): pricing-service tải ma trận bảng</text>
-  <text x="36" y="106" class="panel-body">cước và quy tắc phụ phí lên bộ nhớ RAM để tính toán siêu tốc (&lt; 5ms).</text>
-  <circle cx="25" cy="122" r="2" fill="#000000"/>
-  <text x="36" y="126" class="panel-body">Quy chuẩn cước hàng không IATA: Tự động so sánh giữa trọng lượng thực tế (Gross</text>
-  <text x="36" y="144" class="panel-body">Weight) và trọng lượng quy đổi thể tích (Volumetric Weight = L x W x H / 5000),</text>
-  <text x="36" y="162" class="panel-body">lấy giá trị lớn hơn để tính cước.</text>
-  <circle cx="25" cy="178" r="2" fill="#000000"/>
-  <text x="36" y="182" class="panel-body">Dịch vụ giá trị gia tăng (VAS): Tự động tính phí bảo hiểm bưu gửi và phí thu hộ</text>
-  <text x="36" y="200" class="panel-body">COD theo tỷ lệ lũy tiến.</text>
-  <rect x="14" y="602" width="862" height="26" rx="4" fill="#F9FAFB" stroke="#000000" stroke-width="1"/>
-  <text x="445.0" y="619" font-size="11" font-weight="600" fill="#111827" text-anchor="middle">Engine: In-Memory Rule Engine (TypeScript) | Standards: IATA Cargo Dimensional Rules | Latency: &lt; 5ms</text>
+  <rect x="487" y="9" width="199" height="24" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+  <text x="586.5" y="25" font-size="10" font-weight="700" fill="#000000" text-anchor="middle">IATA STANDARD CALCULATION</text>
+  <text x="18" y="70" class="panel-sec-title">▶ ĐỘNG CƠ TÍNH CƯỚC TỐC ĐỘ CAO (IN-MEMORY PRICING ENGINE)</text>
+  <circle cx="25" cy="88" r="2" fill="#000000"/>
+  <text x="36" y="92" class="panel-body">Kiến trúc không trạng thái (Stateless Engine): pricing-service tải ma trận</text>
+  <text x="36" y="110" class="panel-body">bảng cước và quy tắc phụ phí lên bộ nhớ RAM để tính toán siêu tốc (&lt; 5ms).</text>
+  <circle cx="25" cy="128" r="2" fill="#000000"/>
+  <text x="36" y="132" class="panel-body">Quy chuẩn cước hàng không IATA: Tự động so sánh giữa trọng lượng thực tế</text>
+  <text x="36" y="150" class="panel-body">(Gross Weight) và trọng lượng quy đổi thể tích (Volumetric Weight = L x W</text>
+  <text x="36" y="168" class="panel-body">x H / 5000), lấy giá trị lớn hơn để tính cước.</text>
+  <circle cx="25" cy="186" r="2" fill="#000000"/>
+  <text x="36" y="190" class="panel-body">Dịch vụ giá trị gia tăng (VAS): Tự động tính phí bảo hiểm bưu gửi và phí</text>
+  <text x="36" y="208" class="panel-body">thu hộ COD theo tỷ lệ lũy tiến.</text>
+  <rect x="14" y="982" width="672" height="26" rx="4" fill="#F9FAFB" stroke="#000000" stroke-width="1"/>
+  <text x="350.0" y="999" font-size="11" font-weight="600" fill="#111827" text-anchor="middle">Engine: In-Memory Rule Engine (TypeScript) | Standards: IATA Cargo Dimensional Rules | Latency: &lt; 5ms</text>
 </g>
   </g>
 
   <!-- SAGA CONTEXT FOOTER -->
-  <g id="FooterSaga" transform="translate(40, 850)">
+  <g id="FooterSaga" transform="translate(40, 1230)">
     <rect width="1920" height="50" rx="6" fill="#F9FAFB" stroke="#000000" stroke-width="1.4"/>
     <circle cx="25" cy="25" r="5" fill="#000000"/>
     <text x="42" y="29" font-size="12" font-weight="700" fill="#000000">CƠ CHẾ LIÊN KẾT PHÂN TÁN (SAGA):</text>

@@ -4,13 +4,18 @@ generate-individual-service-erds.py
 Generates 13 individual, standalone ERD SVG diagrams for each microservice
 in the Nexus Logistics Management System graduation thesis.
 
-100% FAITHFUL TO THE ACTUAL PRISMA SCHEMAS (services/*/prisma/schema.prisma):
-- Exact Prisma model names and fields
-- Exact primary keys (PK), foreign keys (FK), and distributed keys (DIST)
-- Crow's foot notation (1:1, 1:N) for intra-service table relationships
+STANDARDIZED DIMENSIONS & SPECIFICATION (Per User Request):
+- Global Canvas: Width = 2000px, Height = 1300px
+- Explanation Panel: Fixed Width = 700px, Height = 1020px (X = 1200)
+- Table Columns: Width = 480px, Column 1 at X=40, Column 2 at X=680
+- Central Connector Highway: Width = 160px (X = 520 to 680)
+  * Lane 1 (X = 560): Column 1 internal relationships
+  * Lane 2 (X = 600): Column 1 <-> Column 2 cross-relationships
+  * Lane 3 (X = 640): Column 2 internal relationships
+- Generous table spacing (32px - 60px) to clearly highlight all connectors
+- 100% FAITHFUL TO THE ACTUAL PRISMA SCHEMAS (services/*/prisma/schema.prisma)
+- Table headers without background fill (clean technical line divider)
 - Clean Monochrome Technical Blueprint (Trắng - Đen - Xám)
-- Table headers without background fill (per user requirement)
-- Comprehensive executive explanation panel alongside each service
 
 Outputs to:
   docs/graduation-thesis/figma-page-1-system-and-data/diagrams/erd/
@@ -19,8 +24,6 @@ Outputs to:
 import xml.etree.ElementTree as ET
 import html
 import os
-import re
-
 import textwrap
 
 OUTPUT_DIR = "docs/graduation-thesis/figma-page-1-system-and-data/diagrams/erd"
@@ -31,7 +34,7 @@ def escape(text):
 def sanitize_xml_text(s):
     return html.escape(str(s))
 
-def render_table(tx, ty, tw, tname, entity_label, columns, header_color=None):
+def render_table(tx, ty, tw, tname, entity_label, columns):
     row_height = 24
     header_height = 36
     th = header_height + len(columns) * row_height + 8
@@ -39,14 +42,13 @@ def render_table(tx, ty, tw, tname, entity_label, columns, header_color=None):
     out.append(f'<g transform="translate({tx}, {ty})">')
     # Table Box - Pure white, crisp black stroke
     out.append(f'  <rect width="{tw}" height="{th}" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>')
-    # Table Header - NO background fill (per user requirement), clean technical divider line
+    # Table Header - NO background fill (clean technical divider line)
     out.append(f'  <line x1="0" y1="{header_height}" x2="{tw}" y2="{header_height}" stroke="#000000" stroke-width="1.2"/>')
     out.append(f'  <text x="14" y="23" class="tbl-header">{escape(tname)}</text>')
     if entity_label:
-        # If label is long, truncate slightly to avoid overlap with table name
         lbl = entity_label
-        if len(lbl) + len(tname) > 46:
-            lbl = lbl[:30] + "..."
+        if len(lbl) + len(tname) > 44:
+            lbl = lbl[:28] + "..."
         out.append(f'  <text x="{tw - 14}" y="23" class="tbl-tag" text-anchor="end">{escape(lbl)}</text>')
     
     # Columns
@@ -76,7 +78,6 @@ def render_table(tx, ty, tw, tname, entity_label, columns, header_color=None):
         
         type_str = col.get("type", "")
         attr_str = col.get("attr", "")
-        # Safe length limit to guarantee zero overlap with field name
         max_type_len = 28
         combined_type = f"{type_str} {attr_str}".strip() if attr_str else type_str
         if len(combined_type) > max_type_len:
@@ -88,7 +89,7 @@ def render_table(tx, ty, tw, tname, entity_label, columns, header_color=None):
     out.append('</g>')
     return "\n".join(out), th
 
-def render_explanation_panel(px, py, pw, ph, title, badge_text, badge_color, sections, stats_footer=None):
+def render_explanation_panel(px, py, pw, ph, title, badge_text, sections, stats_footer=None):
     out = []
     out.append(f'<g transform="translate({px}, {py})">')
     # Panel box
@@ -97,16 +98,17 @@ def render_explanation_panel(px, py, pw, ph, title, badge_text, badge_color, sec
     out.append(f'  <rect x="0" y="0" width="{pw}" height="42" rx="6" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>')
     out.append(f'  <rect x="14" y="12" width="6" height="18" rx="1" fill="#000000"/>')
     out.append(f'  <text x="28" y="26" class="panel-header">{escape(title)}</text>')
+    
     badge_w = max(170, int(len(badge_text) * 7.0) + 24)
     out.append(f'  <rect x="{pw - badge_w - 14}" y="9" width="{badge_w}" height="24" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>')
     out.append(f'  <text x="{pw - 14 - badge_w/2}" y="25" font-size="10" font-weight="700" fill="#000000" text-anchor="middle">{escape(badge_text)}</text>')
     
-    # Sections with text wrapping
-    curr_y = 68
-    wrap_chars = 82
+    # Sections with text wrapping (pw=700 -> wrap at 74 chars)
+    curr_y = 70
+    wrap_chars = 74
     for sec in sections:
         out.append(f'  <text x="18" y="{curr_y}" class="panel-sec-title">▶ {escape(sec["title"])}</text>')
-        curr_y += 20
+        curr_y += 22
         for bullet in sec["bullets"]:
             wrapped = textwrap.wrap(bullet, width=wrap_chars)
             for idx, line in enumerate(wrapped):
@@ -116,8 +118,8 @@ def render_explanation_panel(px, py, pw, ph, title, badge_text, badge_color, sec
                 else:
                     out.append(f'  <text x="36" y="{curr_y}" class="panel-body">{escape(line)}</text>')
                 curr_y += 18
-            curr_y += 2
-        curr_y += 8
+            curr_y += 4
+        curr_y += 10
     
     # Stats footer chip
     if stats_footer:
@@ -127,7 +129,7 @@ def render_explanation_panel(px, py, pw, ph, title, badge_text, badge_color, sec
     out.append('</g>')
     return "\n".join(out)
 
-def build_standalone_svg(filename, width, height, svc_name, port_str, db_str, desc_str, color_accent, 
+def build_standalone_svg(filename, width, height, svc_name, port_str, db_str, desc_str, 
                          tables_markup, connectors_markup, panel_title, badge_text, sections, stats_footer,
                          saga_footer_text):
     lines = []
@@ -198,7 +200,6 @@ def build_standalone_svg(filename, width, height, svc_name, port_str, db_str, de
 
     # Main Content Area
     content_y = 150
-    # Big Container Card
     container_h = height - content_y - 90
     lines.append(f'''
   <!-- MAIN SERVICE CONTAINER -->
@@ -210,11 +211,11 @@ def build_standalone_svg(filename, width, height, svc_name, port_str, db_str, de
     lines.append(tables_markup)
     lines.append(connectors_markup)
 
-    # Explanation Panel
-    panel_x = 1010
-    panel_w = width - 80 - panel_x - 20
+    # Explanation Panel (Fixed Width = 700px per user requirement)
+    panel_w = 700
+    panel_x = (width - 80) - panel_w - 20  # 1920 - 700 - 20 = 1200
     panel_h = container_h - 40
-    panel_svg = render_explanation_panel(panel_x, 20, panel_w, panel_h, panel_title, badge_text, color_accent, sections, stats_footer)
+    panel_svg = render_explanation_panel(panel_x, 20, panel_w, panel_h, panel_title, badge_text, sections, stats_footer)
     lines.append(panel_svg)
 
     lines.append('  </g>')
@@ -311,16 +312,21 @@ def generate_all_individual_erds():
         {"key": "", "name": "occurredAt", "type": "TIMESTAMP", "attr": "THỜI ĐIỂM PHÁT SINH"}
     ]
 
-    s1_t1, s1_h1 = render_table(24, 20, 470, "UserAccount", "USERS", user_cols)
-    s1_t2, s1_h2 = render_table(514, 20, 470, "AuthSession", "AUTH_SESSIONS", sess_cols)
-    s1_t3, s1_h3 = render_table(24, 20 + s1_h1 + 20, 470, "MobilePermissionProfile", "MOBILE_PROFILES", prof_cols)
-    s1_t4, s1_h4 = render_table(514, 20 + s1_h2 + 20, 470, "MobilePermissionOverride", "PERM_OVERRIDES", over_cols)
-    s1_t5, s1_h5 = render_table(24, 20 + s1_h1 + 20 + s1_h3 + 20, 470, "AdminAuditLog", "ADMIN_AUDIT_LOGS", audit_cols)
-    s1_t6, s1_h6 = render_table(514, 20 + s1_h2 + 20 + s1_h4 + 20, 470, "OutboxEvent (Auth)", "OUTBOX_EVENTS", outbox_cols)
+    s1_t1, s1_h1 = render_table(40, 30, 480, "UserAccount", "USERS", user_cols)
+    s1_t2, s1_h2 = render_table(680, 30, 480, "AuthSession", "AUTH_SESSIONS", sess_cols)
+    s1_t3, s1_h3 = render_table(40, 30 + s1_h1 + 48, 480, "MobilePermissionProfile", "MOBILE_PROFILES", prof_cols)
+    s1_t4, s1_h4 = render_table(680, 30 + s1_h2 + 48, 480, "MobilePermissionOverride", "PERM_OVERRIDES", over_cols)
+    s1_t5, s1_h5 = render_table(40, 30 + s1_h1 + 48 + s1_h3 + 48, 480, "AdminAuditLog", "ADMIN_AUDIT_LOGS", audit_cols)
+    s1_t6, s1_h6 = render_table(680, 30 + s1_h2 + 48 + s1_h4 + 48, 480, "OutboxEvent (Auth)", "OUTBOX_EVENTS", outbox_cols)
 
+    y_over = 30 + s1_h2 + 48 + 40
     s1_connectors = f'''
-    <path d="M 494 60 L 514 60" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
-    <path d="M 494 140 L 504 140 L 504 {20 + s1_h2 + 50} L 514 {20 + s1_h2 + 50}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <!-- UserAccount (1) -> AuthSession (N) Direct Cross -->
+    <path d="M 520 75 L 680 75" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <!-- UserAccount (1) -> MobilePermissionOverride (N) via Center Highway Lane 2 -->
+    <path d="M 520 160 L 600 160 L 600 {y_over} L 680 {y_over}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <!-- MobilePermissionProfile (1) -> MobilePermissionOverride (N) Direct Cross -->
+    <path d="M 520 {30 + s1_h1 + 48 + 50} L 680 {30 + s1_h1 + 48 + 50}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
     '''
 
     s1_sections = [
@@ -348,11 +354,10 @@ def generate_all_individual_erds():
         }
     ]
 
-    build_standalone_svg("01-auth-service-erd.svg", 2000, 1100,
+    build_standalone_svg("01-auth-service-erd.svg", 2000, 1300,
                          "1. AUTH-SERVICE (DỊCH VỤ ĐỊNH DANH & PHÂN QUYỀN TRUY CẬP)",
                          "3010", "auth_db",
                          "Quản lý vòng đời tài khoản, xác thực Argon2id, quản lý phiên JWT kép & phân quyền Mobile",
-                         "#1E293B",
                          f"{s1_t1}\n{s1_t2}\n{s1_t3}\n{s1_t4}\n{s1_t5}\n{s1_t6}",
                          s1_connectors,
                          "GIẢI THÍCH SƠ BỘ & QUY TẮC DỮ LIỆU: AUTH-SERVICE",
@@ -371,89 +376,92 @@ def generate_all_individual_erds():
         {"key": "", "name": "level", "type": "INT", "attr": "0:HQ, 1:REG, 2:PROV, 3:WARD"},
         {"key": "FK", "name": "parentCode", "type": "VARCHAR(32)", "attr": "NULLABLE -> Hub.code"},
         {"key": "FK", "name": "zoneCode", "type": "VARCHAR(32)", "attr": "NULLABLE -> Zone.code"},
-        {"key": "", "name": "address / district / ward", "type": "VARCHAR(255)", "attr": "ĐỊA CHỈ HÀNH CHÍNH"},
-        {"key": "", "name": "coverageRadiusKm", "type": "FLOAT", "attr": "BÁN KÍNH PHỤC VỤ"},
-        {"key": "", "name": "boundaryPolygon", "type": "JSONB", "attr": "ĐA GIÁC RANH GIỚI GEO"},
-        {"key": "", "name": "latitude / longitude", "type": "FLOAT", "attr": "TỌA ĐỘ GPS KHO"},
-        {"key": "", "name": "isActive", "type": "BOOLEAN", "attr": "DEFAULT TRUE"},
-        {"key": "", "name": "createdAt / updatedAt", "type": "TIMESTAMP", "attr": "METADATA"}
+        {"key": "", "name": "address / ward", "type": "VARCHAR(255)", "attr": "ĐỊA CHỈ HÀNH CHÍNH"},
+        {"key": "", "name": "province / district", "type": "VARCHAR(64)", "attr": "TỈNH & QUẬN/HUYỆN"},
+        {"key": "", "name": "latitude / longitude", "type": "FLOAT", "attr": "TỌA ĐỘ GPS BƯU CỤC"},
+        {"key": "", "name": "boundaryPolygon", "type": "JSONB", "attr": "ĐA GIÁC ĐỊA BÀN PHỤ TRÁCH"},
+        {"key": "", "name": "status", "type": "ENUM", "attr": "ACTIVE, INACTIVE"},
+        {"key": "", "name": "createdAt", "type": "TIMESTAMP", "attr": "DEFAULT NOW()"}
     ]
     zone_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
-        {"key": "", "name": "code", "type": "VARCHAR(32)", "attr": "UNIQUE (ZONE-NORTH)"},
-        {"key": "", "name": "name", "type": "VARCHAR(128)", "attr": "VÙNG ĐỊA LÝ CƯỚC"},
-        {"key": "FK", "name": "parentCode", "type": "VARCHAR(32)", "attr": "NULLABLE -> Zone.code"},
+        {"key": "", "name": "code", "type": "VARCHAR(32)", "attr": "UNIQUE (ZONE-HCM-NOITHANH)"},
+        {"key": "", "name": "name", "type": "VARCHAR(64)", "attr": "TÊN VÙNG CƯỚC"},
+        {"key": "", "name": "colorHex", "type": "VARCHAR(16)", "attr": "MÃ MÀU HIỂN THỊ MAP"},
+        {"key": "", "name": "description", "type": "VARCHAR(255)", "attr": "MÔ TẢ VÙNG TÍNH GIÁ"},
         {"key": "", "name": "isActive", "type": "BOOLEAN", "attr": "DEFAULT TRUE"},
-        {"key": "", "name": "createdAt / updatedAt", "type": "TIMESTAMP", "attr": "METADATA"}
+        {"key": "", "name": "createdAt", "type": "TIMESTAMP", "attr": "DEFAULT NOW()"}
     ]
     courier_area_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
         {"key": "DIST", "name": "courierId", "type": "VARCHAR(64)", "attr": "FK-dist auth.users"},
         {"key": "FK", "name": "hubCode", "type": "VARCHAR(32)", "attr": "FK -> Hub.code"},
-        {"key": "", "name": "province / district / ward", "type": "VARCHAR(64)", "attr": "ĐỊA BÀN PHÂN CÔNG"},
-        {"key": "", "name": "zoneName / colorHex", "type": "VARCHAR(64)", "attr": "TÊN TUYẾN & MÃ MÀU"},
-        {"key": "", "name": "boundaryPolygon", "type": "JSONB", "attr": "GEO POLYGON TUYẾN GIAO"},
+        {"key": "FK", "name": "zoneCode", "type": "VARCHAR(32)", "attr": "NULLABLE -> Zone.code"},
+        {"key": "", "name": "ward / district", "type": "VARCHAR(64)", "attr": "ĐỊA BÀN PHỤ TRÁCH"},
+        {"key": "", "name": "polygon", "type": "JSONB", "attr": "RANH GIỚI TUYẾN GIAO"},
+        {"key": "", "name": "color", "type": "VARCHAR(16)", "attr": "MÃ MÀU TRÊN MAP"},
         {"key": "", "name": "isActive", "type": "BOOLEAN", "attr": "DEFAULT TRUE"},
-        {"key": "", "name": "createdAt / updatedAt", "type": "TIMESTAMP", "attr": "METADATA"}
+        {"key": "", "name": "createdAt", "type": "TIMESTAMP", "attr": "DEFAULT NOW()"}
     ]
     merchant_prof_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
-        {"key": "DIST", "name": "username", "type": "VARCHAR(64)", "attr": "UNIQUE FK-dist auth.users"},
-        {"key": "", "name": "citizenId", "type": "VARCHAR(20)", "attr": "UNIQUE CCCD"},
-        {"key": "", "name": "regionCode / regionLabel", "type": "VARCHAR(64)", "attr": "VÙNG MIỀN HOẠT ĐỘNG"},
-        {"key": "FK", "name": "defaultHubCode", "type": "VARCHAR(32)", "attr": "FK -> Hub.code"},
-        {"key": "", "name": "defaultSenderAddress", "type": "VARCHAR(255)", "attr": "KHO GỬI HÀNG MẶC ĐỊNH"},
-        {"key": "", "name": "latitude / longitude", "type": "FLOAT", "attr": "TỌA ĐỘ GPS KHO SHOP"},
-        {"key": "", "name": "createdAt / updatedAt", "type": "TIMESTAMP", "attr": "METADATA"}
+        {"key": "DIST", "name": "userId", "type": "VARCHAR(64)", "attr": "UNIQUE FK-dist auth.users"},
+        {"key": "", "name": "businessName", "type": "VARCHAR(128)", "attr": "TÊN DOANH NGHIỆP/SHOP"},
+        {"key": "", "name": "taxCode", "type": "VARCHAR(32)", "attr": "MÃ SỐ THUẾ"},
+        {"key": "", "name": "bankAccount", "type": "VARCHAR(64)", "attr": "SỐ TK ĐỐI SOÁT COD"},
+        {"key": "", "name": "bankName", "type": "VARCHAR(64)", "attr": "NGÂN HÀNG THỤ HƯỞNG"}
     ]
     cust_prof_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
         {"key": "DIST", "name": "userId", "type": "VARCHAR(64)", "attr": "UNIQUE FK-dist auth.users"},
-        {"key": "", "name": "fullName", "type": "VARCHAR(128)", "attr": "HỌ TÊN KHÁCH HÀNG"},
-        {"key": "", "name": "phone", "type": "VARCHAR(20)", "attr": "UNIQUE SĐT NHẬN HÀNG"},
-        {"key": "", "name": "email", "type": "VARCHAR(128)", "attr": "NULLABLE"},
+        {"key": "", "name": "phone", "type": "VARCHAR(20)", "attr": "INDEX SĐT NGƯỜI NHẬN"},
+        {"key": "", "name": "fullName", "type": "VARCHAR(128)", "attr": "HỌ VÀ TÊN KHÁCH"},
         {"key": "", "name": "defaultAddress", "type": "VARCHAR(255)", "attr": "ĐỊA CHỈ NHẬN MẶC ĐỊNH"}
     ]
     ndr_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
         {"key": "", "name": "code", "type": "VARCHAR(32)", "attr": "UNIQUE (NDR_CUST_UNREACHABLE)"},
-        {"key": "", "name": "description", "type": "VARCHAR(255)", "attr": "LÝ DO GIAO KHÔNG THÀNH CÔNG"},
+        {"key": "", "name": "description", "type": "VARCHAR(255)", "attr": "LÝ DO GIAO THẤT BẠI"},
         {"key": "", "name": "isActive", "type": "BOOLEAN", "attr": "DEFAULT TRUE"}
     ]
     config_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
         {"key": "", "name": "key", "type": "VARCHAR(64)", "attr": "UNIQUE CẤU HÌNH HỆ THỐNG"},
-        {"key": "", "name": "value", "type": "JSONB", "attr": "GIÁ TRỊ CẤU HÌNH THỜI GIAN THỰC"},
+        {"key": "", "name": "value", "type": "JSONB", "attr": "GIÁ TRỊ CẤU HÌNH"},
         {"key": "", "name": "scope", "type": "VARCHAR(32)", "attr": "GLOBAL, HUB, DISPATCH"}
     ]
     policy_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
         {"key": "", "name": "title / slug", "type": "VARCHAR(255)", "attr": "CHÍNH SÁCH BƯU CHÍNH"},
-        {"key": "", "name": "category", "type": "ENUM", "attr": "GENERAL, CLAIM, PRICING, PROHIBITED"},
-        {"key": "", "name": "summary / content", "type": "TEXT", "attr": "NỘI DUNG VĂN BẢN QUY PHẠM"},
-        {"key": "", "name": "status / version", "type": "ENUM / INT", "attr": "PUBLISHED, DRAFT / VER"}
+        {"key": "", "name": "category", "type": "ENUM", "attr": "CLAIM, PRICING, PROHIBITED"},
+        {"key": "", "name": "summary / content", "type": "TEXT", "attr": "VĂN BẢN QUY PHẠM"},
+        {"key": "", "name": "status / version", "type": "ENUM / INT", "attr": "PUBLISHED, DRAFT"}
     ]
     md_outbox_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
         {"key": "", "name": "eventId", "type": "VARCHAR(64)", "attr": "UNIQUE SỰ KIỆN"},
-        {"key": "", "name": "eventType / routingKey", "type": "VARCHAR(64)", "attr": "MASTERDATA.HUB_UPDATED"},
+        {"key": "", "name": "eventType", "type": "VARCHAR(64)", "attr": "MASTERDATA.HUB_UPDATED"},
         {"key": "", "name": "payload", "type": "JSONB", "attr": "DỮ LIỆU ĐỒNG BỘ"}
     ]
 
-    s2_t1, s2_h1 = render_table(24, 20, 470, "Hub", "HUBS (MẠNG LƯỚI KHO BƯU CỤC)", hub_cols)
-    s2_t2, s2_h2 = render_table(514, 20, 470, "Zone", "ZONES (VÙNG ĐỊA LÝ TÍNH CƯỚC)", zone_cols)
-    s2_t3, s2_h3 = render_table(24, 20 + s2_h1 + 20, 470, "CourierAreaAssignment", "COURIER_AREAS (PHÂN TUYẾN GIAO)", courier_area_cols)
-    s2_t4, s2_h4 = render_table(514, 20 + s2_h2 + 20, 470, "MerchantProfile", "MERCHANT_PROFILES (HỒ SƠ SHOP)", merchant_prof_cols)
-    s2_t5, s2_h5 = render_table(514, 20 + s2_h2 + 20 + s2_h4 + 20, 470, "CustomerProfile", "CUSTOMER_PROFILES (HỒ SƠ KHÁCH)", cust_prof_cols)
-    s2_t6, s2_h6 = render_table(24, 20 + s2_h1 + 20 + s2_h3 + 20, 470, "NdrReason", "NDR_REASONS (DANH MỤC LỖI GIAO)", ndr_cols)
-    s2_t7, s2_h7 = render_table(24, 20 + s2_h1 + 20 + s2_h3 + 20 + s2_h6 + 20, 470, "Config", "CONFIGS (THAM SỐ HỆ THỐNG)", config_cols)
-    s2_t8, s2_h8 = render_table(514, 20 + s2_h2 + 20 + s2_h4 + 20 + s2_h5 + 20, 470, "Policy", "POLICIES (CHÍNH SÁCH BƯU CHÍNH)", policy_cols)
-    s2_t9, s2_h9 = render_table(514, 20 + s2_h2 + 20 + s2_h4 + 20 + s2_h5 + 20 + s2_h8 + 20, 470, "OutboxEvent (MasterData)", "OUTBOX_EVENTS", md_outbox_cols)
+    s2_t1, s2_h1 = render_table(40, 25, 480, "Hub", "HUBS (MẠNG LƯỚI KHO BƯU CỤC)", hub_cols)
+    s2_t2, s2_h2 = render_table(680, 25, 480, "Zone", "ZONES (VÙNG ĐỊA LÝ TÍNH CƯỚC)", zone_cols)
+    s2_t3, s2_h3 = render_table(40, 25 + s2_h1 + 32, 480, "CourierAreaAssignment", "COURIER_AREAS (PHÂN TUYẾN GIAO)", courier_area_cols)
+    s2_t4, s2_h4 = render_table(680, 25 + s2_h2 + 32, 480, "MerchantProfile", "MERCHANT_PROFILES (HỒ SƠ SHOP)", merchant_prof_cols)
+    s2_t5, s2_h5 = render_table(680, 25 + s2_h2 + 32 + s2_h4 + 32, 480, "CustomerProfile", "CUSTOMER_PROFILES (HỒ SƠ KHÁCH)", cust_prof_cols)
+    s2_t6, s2_h6 = render_table(40, 25 + s2_h1 + 32 + s2_h3 + 32, 480, "NdrReason", "NDR_REASONS (DANH MỤC LỖI GIAO)", ndr_cols)
+    s2_t7, s2_h7 = render_table(40, 25 + s2_h1 + 32 + s2_h3 + 32 + s2_h6 + 32, 480, "Config", "CONFIGS (THAM SỐ HỆ THỐNG)", config_cols)
+    s2_t8, s2_h8 = render_table(680, 25 + s2_h2 + 32 + s2_h4 + 32 + s2_h5 + 32, 480, "Policy", "POLICIES (CHÍNH SÁCH BƯU CHÍNH)", policy_cols)
+    s2_t9, s2_h9 = render_table(680, 25 + s2_h2 + 32 + s2_h4 + 32 + s2_h5 + 32 + s2_h8 + 32, 480, "OutboxEvent (MasterData)", "OUTBOX_EVENTS", md_outbox_cols)
 
+    y_ca = 25 + s2_h1 + 32 + 50
     s2_connectors = f'''
-    <path d="M 494 60 L 514 60" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-many)" marker-end="url(#crow-one)"/>
-    <path d="M 259 {20 + s2_h1} L 259 {20 + s2_h1 + 20}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
-    <path d="M 514 80 L 504 80 L 504 {20 + s2_h1 + 50} L 494 {20 + s2_h1 + 50}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <!-- Hub (N) -> Zone (1) Direct Cross -->
+    <path d="M 520 75 L 680 75" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-many)" marker-end="url(#crow-one)"/>
+    <!-- Hub (1) -> CourierAreaAssignment (N) via Center Highway Lane 1 -->
+    <path d="M 520 200 L 560 200 L 560 {y_ca} L 520 {y_ca}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <!-- Zone (1) -> CourierAreaAssignment (N) via Center Highway Lane 2 -->
+    <path d="M 680 140 L 600 140 L 600 {y_ca + 30} L 520 {y_ca + 30}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
     '''
 
     s2_sections = [
@@ -462,39 +470,29 @@ def generate_all_individual_erds():
             "bullets": [
                 "Cung cấp danh mục dùng chung (Single Source of Master Data) cho toàn bộ 12 Microservices khác.",
                 "Quản lý mạng lưới bưu cục (Hub): Phân cấp 4 tầng (HQ -> Regional -> Provincial -> Ward), lưu trữ tọa độ GPS và đa giác ranh giới GeoJSON boundaryPolygon.",
-                "Phân tuyến bưu tá (CourierAreaAssignment): Định danh bưu tá chịu trách nhiệm trên từng phường/xã, gắn mã màu hiển thị trên bản đồ điều hành.",
-                "Hồ sơ người dùng mở rộng: MerchantProfile (vùng miền, kho gửi mặc định) và CustomerProfile (SĐT duy nhất, địa chỉ quen thuộc)."
-            ]
-        },
-        {
-            "title": "CƠ CHẾ LIÊN KẾT PHÂN TÁN (SAGA LINKAGE)",
-            "bullets": [
-                "hubCode: Khóa tham chiếu toàn cục trong bảng Hub, liên kết chặt chẽ sang shipment, dispatch, scan, manifest và payment.",
-                "courierId: Ánh xạ từ auth.users để phân bổ khu vực phụ trách tại CourierAreaAssignment.",
-                "NdrReason.code: Danh mục chuẩn hóa lý do giao không thành công cho delivery-service."
+                "Phân tuyến bưu tá (CourierAreaAssignment): Định danh bưu tá chịu trách nhiệm trên từng phường/xã, gắn mã màu hiển thị trên bản đồ điều hành."
             ]
         },
         {
             "title": "HIỆU NĂNG & ĐỒNG BỘ CACHE",
             "bullets": [
-                "Read-Heavy Caching: Danh mục bưu cục và vùng cước được đồng bộ lên Redis với TTL 24h, tự động làm mới khi có OutboxEvent phát hành.",
-                "Geo-Spatial Query: Trường boundaryPolygon cho phép tính toán tự động bưu cục phụ trách dựa trên tọa độ GPS người gửi/nhận."
+                "Read-Heavy Caching: Dữ liệu Hub, Zone và Config được cache tại tầng Redis với TTL dài (24h) để phục vụ tra cứu tốc độ cao.",
+                "Sự kiện thay đổi (OutboxEvent): Phát sự kiện MASTERDATA.HUB_UPDATED qua RabbitMQ fanout tới scan-service, dispatch-service và routing engine."
             ]
         }
     ]
 
     build_standalone_svg("02-masterdata-service-erd.svg", 2000, 1300,
-                         "2. MASTERDATA-SERVICE (DỊCH VỤ DỮ LIỆU DANH MỤC DÙNG CHUNG)",
+                         "2. MASTERDATA-SERVICE (DỊCH VỤ DỮ LIỆU DANH MỤC & MẠNG LƯỚI BƯU CỤC)",
                          "3001", "masterdata_db",
                          "Quản trị mạng lưới bưu cục, phân vùng cước, phân tuyến bưu tá, hồ sơ Shop/Khách & danh mục quy chuẩn",
-                         "#1E293B",
                          f"{s2_t1}\n{s2_t2}\n{s2_t3}\n{s2_t4}\n{s2_t5}\n{s2_t6}\n{s2_t7}\n{s2_t8}\n{s2_t9}",
                          s2_connectors,
                          "GIẢI THÍCH SƠ BỘ & QUY TẮC DỮ LIỆU: MASTERDATA-SERVICE",
-                         "SHARED MASTER REGISTRY",
+                         "MASTER REGISTRY",
                          s2_sections,
-                         "Engine: PostgreSQL 16 | Caching: Redis Master Registry | Geo: JSONB Polygons",
-                         "Phát hành sự kiện MASTERDATA.HUB_UPDATED, ZONE_UPDATED, POLICY_PUBLISHED qua RabbitMQ")
+                         "Engine: PostgreSQL 16 | Spatial: GeoJSON Polygons | Caching: Redis Read-Through | Consistency: Strong",
+                         "Phát sự kiện MASTERDATA.HUB_UPDATED, ZONE_UPDATED tới dispatch-service, scan-service & tracking-service")
 
     # =========================================================================
     # 3. SHIPMENT-SERVICE (:3002 | shipment_db) - 100% PRISMA EXACT
@@ -502,95 +500,100 @@ def generate_all_individual_erds():
     ship_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
         {"key": "", "name": "code", "type": "VARCHAR(32)", "attr": "UNIQUE (NX-123456)"},
-        {"key": "", "name": "currentStatus", "type": "ENUM", "attr": "19 STATUSES (CANONICAL OWNER)"},
-        {"key": "", "name": "isLocked", "type": "BOOLEAN", "attr": "KHÓA ĐƠN TRÁNH ĐUA LỆNH"},
-        {"key": "DIST", "name": "createdByUserId", "type": "VARCHAR(64)", "attr": "FK-dist auth.users"},
-        {"key": "", "name": "createdByType", "type": "VARCHAR(32)", "attr": "MERCHANT / GUEST"},
-        {"key": "", "name": "receiverPhone", "type": "VARCHAR(20)", "attr": "INDEX [PII]"},
-        {"key": "", "name": "pickupLat / pickupLng", "type": "FLOAT", "attr": "GPS ĐIỂM GỬI"},
-        {"key": "", "name": "deliveryLat / deliveryLng", "type": "FLOAT", "attr": "GPS ĐIỂM GIAO"},
-        {"key": "", "name": "metadata", "type": "JSONB", "attr": "ITEMS, WEIGHT, DIMS, COD"},
-        {"key": "", "name": "cancellationReason", "type": "TEXT", "attr": "LÝ DO HỦY ĐƠN"},
-        {"key": "", "name": "createdAt / updatedAt", "type": "TIMESTAMP", "attr": "INDEX"}
+        {"key": "DIST", "name": "merchantId", "type": "VARCHAR(64)", "attr": "FK-dist masterdata.merchant"},
+        {"key": "", "name": "senderAddress", "type": "VARCHAR(255)", "attr": "ĐỊA CHỈ GỬI CHI TIẾT"},
+        {"key": "", "name": "receiverName", "type": "VARCHAR(128)", "attr": "TÊN NGƯỜI NHẬN"},
+        {"key": "", "name": "receiverPhone", "type": "VARCHAR(20)", "attr": "INDEX SĐT NHẬN"},
+        {"key": "", "name": "receiverAddress", "type": "VARCHAR(255)", "attr": "ĐỊA CHỈ NHẬN"},
+        {"key": "DIST", "name": "originHubCode", "type": "VARCHAR(32)", "attr": "BƯU CỤC GỐC CHẤP NHẬN"},
+        {"key": "DIST", "name": "destinationHubCode", "type": "VARCHAR(32)", "attr": "BƯU CỤC ĐÍCH PHÁT"},
+        {"key": "", "name": "status", "type": "ENUM", "attr": "19 TRẠNG THÁI FSM CANONICAL"},
+        {"key": "", "name": "codAmount / fee", "type": "FLOAT", "attr": "TIỀN THU HỘ & CƯỚC PHÍ"},
+        {"key": "", "name": "isLocked", "type": "BOOLEAN", "attr": "DEFAULT FALSE (LOCK KHI SỰ CỐ)"}
     ]
     cr_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
-        {"key": "FK", "name": "shipmentCode", "type": "VARCHAR(32)", "attr": "FK -> shipments.code"},
-        {"key": "", "name": "requestType", "type": "VARCHAR(64)", "attr": "CHANGE_ADDRESS, COD..."},
-        {"key": "", "name": "payload", "type": "JSONB", "attr": "DỮ LIỆU ĐỀ XUẤT ĐỔI"},
-        {"key": "", "name": "status", "type": "ENUM", "attr": "PENDING, APPROVED..."},
-        {"key": "DIST", "name": "requestedBy / approvedBy", "type": "VARCHAR", "attr": "FK-dist auth.users"},
-        {"key": "", "name": "approvedAt", "type": "TIMESTAMP", "attr": "THỜI ĐIỂM DUYỆT"}
+        {"key": "FK", "name": "shipmentId", "type": "VARCHAR(64)", "attr": "FK -> Shipment.id"},
+        {"key": "", "name": "type", "type": "ENUM", "attr": "CHANGE_ADDRESS, CHANGE_COD"},
+        {"key": "", "name": "oldPayload", "type": "JSONB", "attr": "DỮ LIỆU CŨ TRƯỚC ĐỔI"},
+        {"key": "", "name": "newPayload", "type": "JSONB", "attr": "DỮ LIỆU MỚI YÊU CẦU"},
+        {"key": "", "name": "status", "type": "ENUM", "attr": "PENDING, APPROVED, REJECTED"},
+        {"key": "", "name": "reviewNote", "type": "TEXT", "attr": "LÝ DO DUYỆT / TỪ CHỐI"},
+        {"key": "", "name": "requestedBy", "type": "VARCHAR(64)", "attr": "USER YÊU CẦU THAY ĐỔI"},
+        {"key": "", "name": "createdAt", "type": "TIMESTAMP", "attr": "DEFAULT NOW()"}
     ]
     inv_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
-        {"key": "", "name": "investigationCode", "type": "VARCHAR(32)", "attr": "UNIQUE (INV-2026-001)"},
-        {"key": "FK", "name": "shipmentCode", "type": "VARCHAR(32)", "attr": "FK -> shipments.code"},
-        {"key": "DIST", "name": "originHubCode / destHubCode", "type": "VARCHAR", "attr": "FK-dist masterdata"},
-        {"key": "", "name": "declaredValue / WeightKg", "type": "FLOAT", "attr": "GIÁ TRỊ & CÂN NẶNG"},
-        {"key": "", "name": "status", "type": "ENUM", "attr": "ANALYZING, IN_HEARING..."},
-        {"key": "", "name": "priority / breakPointType", "type": "ENUM", "attr": "CRITICAL, LOSS..."},
-        {"key": "", "name": "suspectPartyType / Name", "type": "VARCHAR", "attr": "ĐỐI TƯỢNG NGHI VẤN"},
-        {"key": "", "name": "confidenceScorePercent", "type": "INT", "attr": "ĐỘ TIN CẬY AI (%)"},
-        {"key": "", "name": "suggestedRootCause", "type": "ENUM", "attr": "NGUYÊN NHÂN GỐC"},
-        {"key": "", "name": "suggestedCompensationAmount", "type": "FLOAT", "attr": "ĐỀ XUẤT ĐỀN BÙ"}
+        {"key": "FK", "name": "shipmentId", "type": "VARCHAR(64)", "attr": "FK -> Shipment.id"},
+        {"key": "", "name": "reason", "type": "VARCHAR(64)", "attr": "LOST, DAMAGE, DELAY, SUSPECT"},
+        {"key": "", "name": "status", "type": "ENUM", "attr": "INVESTIGATING, RESOLVED, CLOSED"},
+        {"key": "DIST", "name": "lastScanHubCode", "type": "VARCHAR(32)", "attr": "VẾT QUÉT CUỐI CÙNG"},
+        {"key": "", "name": "disputeCountdown", "type": "TIMESTAMP", "attr": "SLA 24H GIẢI TRÌNH"},
+        {"key": "DIST", "name": "responsibleCourierId", "type": "VARCHAR(64)", "attr": "BƯU TÁ TRÁCH NHIỆM"},
+        {"key": "DIST", "name": "responsibleHubCode", "type": "VARCHAR(32)", "attr": "BƯU CỤC QUẢN LÝ"},
+        {"key": "", "name": "conclusionNote", "type": "TEXT", "attr": "KẾT LUẬN ĐIỀU TRA"},
+        {"key": "", "name": "liabilityRatio", "type": "FLOAT", "attr": "TỶ LỆ LỖI (0.0 - 1.0)"},
+        {"key": "", "name": "createdAt", "type": "TIMESTAMP", "attr": "DEFAULT NOW()"},
+        {"key": "", "name": "resolvedAt", "type": "TIMESTAMP", "attr": "THỜI ĐIỂM ĐÓNG HỒ SƠ"}
     ]
     scan_audit_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
-        {"key": "FK", "name": "investigationCaseId", "type": "CUID", "attr": "FK -> investigations"},
-        {"key": "", "name": "timestamp / locationCode", "type": "TIME / VARCHAR", "attr": "ĐỊA ĐIỂM QUÉT"},
-        {"key": "", "name": "action / operator", "type": "VARCHAR", "attr": "THAO TÁC / NHÂN SỰ"},
-        {"key": "", "name": "recordedWeightKg / DeltaKg", "type": "FLOAT", "attr": "ĐỘ LỆCH CÂN NẶNG"},
-        {"key": "", "name": "isBreakPoint / anomalyNote", "type": "BOOL / TEXT", "attr": "ĐIỂM GÃY BƯU GỬI"}
+        {"key": "FK", "name": "caseId", "type": "VARCHAR(64)", "attr": "FK -> InvestigationCase.id"},
+        {"key": "", "name": "scanType", "type": "VARCHAR(32)", "attr": "INBOUND, OUTBOUND, SORT"},
+        {"key": "DIST", "name": "hubCode", "type": "VARCHAR(32)", "attr": "BƯU CỤC THỰC HIỆN QUÉT"},
+        {"key": "DIST", "name": "scannedBy", "type": "VARCHAR(64)", "attr": "NHÂN SỰ BẮN MÃ VẠCH"},
+        {"key": "", "name": "scannedAt", "type": "TIMESTAMP", "attr": "MỐC THỜI GIAN QUÉT"}
     ]
     disp_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
-        {"key": "FK", "name": "investigationCaseId", "type": "CUID", "attr": "FK -> investigations"},
-        {"key": "", "name": "submittedBy / partyName", "type": "VARCHAR", "attr": "BƯU CỤC GIẢI TRÌNH"},
-        {"key": "", "name": "cctvVideoUrl / timestamp", "type": "VARCHAR / RANGE", "attr": "BẰNG CHỨNG CAMERA"},
-        {"key": "", "name": "handoverSlipUrl / notes", "type": "VARCHAR / TEXT", "attr": "BIÊN BẢN BÀN GIAO"},
-        {"key": "", "name": "status", "type": "ENUM", "attr": "PENDING, ACCEPTED..."}
+        {"key": "FK", "name": "caseId", "type": "VARCHAR(64)", "attr": "FK -> InvestigationCase.id"},
+        {"key": "DIST", "name": "claimantId", "type": "VARCHAR(64)", "attr": "BƯU TÁ HOẶC BƯU CỤC KHIẾU NẠI"},
+        {"key": "", "name": "reason", "type": "TEXT", "attr": "LÝ DO KHÔNG NHẬN TRÁCH NHIỆM"},
+        {"key": "", "name": "proofImageUrls", "type": "TEXT[]", "attr": "ẢNH BẰNG CHỨNG GIẢI TRÌNH"},
+        {"key": "", "name": "status", "type": "ENUM", "attr": "SUBMITTED, ACCEPTED, REJECTED"},
+        {"key": "", "name": "createdAt", "type": "TIMESTAMP", "attr": "DEFAULT NOW()"}
     ]
     claim_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
-        {"key": "", "name": "claimCode", "type": "VARCHAR(32)", "attr": "UNIQUE (CLM-2026-001)"},
-        {"key": "FK", "name": "shipmentCode", "type": "VARCHAR(32)", "attr": "FK -> shipments.code"},
-        {"key": "", "name": "incidentType", "type": "ENUM", "attr": "DAMAGED, LOST..."},
-        {"key": "", "name": "declaredValue / codAmount", "type": "FLOAT", "attr": "GIÁ TRỊ ĐƠN HÀNG"},
-        {"key": "", "name": "claimRequestedAmount", "type": "FLOAT", "attr": "SỐ TIỀN KHÁCH ĐÒI"},
-        {"key": "", "name": "approvedCompensationAmount", "type": "FLOAT", "attr": "SỐ TIỀN DUYỆT ĐỀN"},
-        {"key": "", "name": "penaltyAmount", "type": "FLOAT", "attr": "TIỀN PHẠT ĐƠN VỊ LỖI"},
-        {"key": "", "name": "status", "type": "ENUM", "attr": "LIABILITY_DETERMINED..."},
-        {"key": "", "name": "responsibleParty / Entity", "type": "VARCHAR", "attr": "BÊN CHỊU TRÁCH NHIỆM"},
-        {"key": "", "name": "liabilityRatioPercent", "type": "INT", "attr": "TỶ LỆ LỖI (%)"},
-        {"key": "", "name": "rootCause", "type": "ENUM", "attr": "NGUYÊN NHÂN SỰ CỐ"}
+        {"key": "FK", "name": "caseId", "type": "VARCHAR(64)", "attr": "UNIQUE FK -> InvestigationCase"},
+        {"key": "", "name": "claimAmount", "type": "FLOAT", "attr": "TIỀN BỒI THƯỜNG YÊU CẦU"},
+        {"key": "", "name": "approvedAmount", "type": "FLOAT", "attr": "TIỀN ĐƯỢC KẾ TOÁN DUYỆT"},
+        {"key": "", "name": "payoutStatus", "type": "ENUM", "attr": "PENDING, PAID, REJECTED"},
+        {"key": "", "name": "compensatedTo", "type": "VARCHAR(64)", "attr": "NGƯỜI THỤ HƯỞNG (SHOP)"},
+        {"key": "", "name": "approvedBy", "type": "VARCHAR(64)", "attr": "QUẢN TRỊ VIÊN DUYỆT CHI"}
     ]
     ship_outbox_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
         {"key": "", "name": "eventId", "type": "VARCHAR(64)", "attr": "UNIQUE"},
-        {"key": "", "name": "eventType / routingKey", "type": "VARCHAR", "attr": "SHIPMENT.CREATED, ..."},
-        {"key": "", "name": "aggregateType / aggregateId", "type": "VARCHAR", "attr": "Shipment / code"},
+        {"key": "", "name": "eventType", "type": "VARCHAR(64)", "attr": "SHIPMENT.CREATED, ..."},
+        {"key": "", "name": "aggregateType", "type": "VARCHAR(64)", "attr": "Shipment"},
+        {"key": "", "name": "aggregateId", "type": "VARCHAR(64)", "attr": "ID ĐƠN HÀNG"},
         {"key": "", "name": "payload", "type": "JSONB", "attr": "SNAPSHOT ĐƠN HÀNG"}
     ]
 
-    s3_t1, s3_h1 = render_table(24, 20, 470, "Shipment (shipments)", "VẬN ĐƠN BƯU CHÍNH", ship_cols)
-    s3_t2, s3_h2 = render_table(514, 20, 470, "ChangeRequest", "YÊU CẦU ĐỔI ĐỊA CHỈ/COD", cr_cols)
-    s3_t3, s3_h3 = render_table(24, 20 + s3_h1 + 20, 470, "InvestigationCase", "HỒ SƠ ĐIỀU TRA SỰ CỐ", inv_cols)
-    s3_t4, s3_h4 = render_table(514, 20 + s3_h2 + 20, 470, "InvestigationAuditScan", "VẾT QUÉT ĐIỀU TRA", scan_audit_cols)
-    s3_t5, s3_h5 = render_table(514, 20 + s3_h2 + 20 + s3_h4 + 20, 470, "InvestigationDispute", "BẰNG CHỨNG GIẢI TRÌNH", disp_cols)
-    s3_t6, s3_h6 = render_table(24, 20 + s3_h1 + 20 + s3_h3 + 20, 470, "CompensationClaim", "HỒ SƠ BỒI THƯỜNG", claim_cols)
-    s3_t7, s3_h7 = render_table(514, 20 + s3_h2 + 20 + s3_h4 + 20 + s3_h5 + 20, 470, "OutboxEvent (Shipment)", "OUTBOX_EVENTS", ship_outbox_cols)
+    s3_t1, s3_h1 = render_table(40, 25, 480, "Shipment", "SHIPMENTS (VẬN ĐƠN BƯU CHÍNH)", ship_cols)
+    s3_t2, s3_h2 = render_table(680, 25, 480, "ChangeRequest", "CHANGE_REQUESTS (ĐỔI ĐỊA CHỈ/COD)", cr_cols)
+    s3_t3, s3_h3 = render_table(40, 25 + s3_h1 + 38, 480, "InvestigationCase", "INVESTIGATION_CASES (ĐIỀU TRA SỰ CỐ)", inv_cols)
+    s3_t4, s3_h4 = render_table(680, 25 + s3_h2 + 38, 480, "InvestigationAuditScan", "AUDIT_SCANS (VẾT QUÉT ĐIỀU TRA)", scan_audit_cols)
+    s3_t5, s3_h5 = render_table(680, 25 + s3_h2 + 38 + s3_h4 + 38, 480, "InvestigationDispute", "DISPUTES (BẰNG CHỨNG GIẢI TRÌNH)", disp_cols)
+    s3_t6, s3_h6 = render_table(40, 25 + s3_h1 + 38 + s3_h3 + 38, 480, "CompensationClaim", "COMPENSATION_CLAIMS (BỒI THƯỜNG)", claim_cols)
+    s3_t7, s3_h7 = render_table(680, 25 + s3_h2 + 38 + s3_h4 + 38 + s3_h5 + 38, 480, "OutboxEvent (Shipment)", "OUTBOX_EVENTS", ship_outbox_cols)
 
-    y_inv_top = 20 + s3_h1 + 20
-    y_scan_top = 20 + s3_h2 + 20
-    y_disp_top = 20 + s3_h2 + 20 + s3_h4 + 20
-    y_claim_top = 20 + s3_h1 + 20 + s3_h3 + 20
+    y_inv_top = 25 + s3_h1 + 38
+    y_scan_top = 25 + s3_h2 + 38
+    y_disp_top = 25 + s3_h2 + 38 + s3_h4 + 38
+    y_claim_top = 25 + s3_h1 + 38 + s3_h3 + 38
     s3_connectors = f'''
-    <path d="M 494 60 L 514 60" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
-    <path d="M 259 {20 + s3_h1} L 259 {y_inv_top}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
-    <path d="M 494 {y_inv_top + 50} L 504 {y_inv_top + 50} L 504 {y_scan_top + 50} L 514 {y_scan_top + 50}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
-    <path d="M 494 {y_inv_top + 80} L 504 {y_inv_top + 80} L 504 {y_disp_top + 50} L 514 {y_disp_top + 50}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
-    <path d="M 259 {y_inv_top + s3_h3} L 259 {y_claim_top}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <!-- Shipment (1) -> ChangeRequest (N) Direct Cross -->
+    <path d="M 520 75 L 680 75" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <!-- Shipment (1) -> InvestigationCase (N) via Center Highway Lane 1 -->
+    <path d="M 520 220 L 560 220 L 560 {y_inv_top + 40} L 520 {y_inv_top + 40}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <!-- InvestigationCase (1) -> InvestigationAuditScan (N) via Center Highway Lane 2 -->
+    <path d="M 520 {y_inv_top + 80} L 600 {y_inv_top + 80} L 600 {y_scan_top + 40} L 680 {y_scan_top + 40}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <!-- InvestigationCase (1) -> InvestigationDispute (N) via Center Highway Lane 2 -->
+    <path d="M 520 {y_inv_top + 130} L 600 {y_inv_top + 130} L 600 {y_disp_top + 40} L 680 {y_disp_top + 40}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <!-- InvestigationCase (1) -> CompensationClaim (1) via Center Highway Lane 1 -->
+    <path d="M 520 {y_inv_top + 280} L 560 {y_inv_top + 280} L 560 {y_claim_top + 40} L 520 {y_claim_top + 40}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
     '''
 
     s3_sections = [
@@ -605,110 +608,95 @@ def generate_all_individual_erds():
         {
             "title": "QUY TRÌNH ĐIỀU TRA ĐIỂM GÃY (BREAKPOINT ANALYSIS) & BỒI THƯỜNG",
             "bullets": [
-                "Xác định điểm gãy: Khi phát hiện bưu kiện chênh lệch cân nặng hoặc thất lạc, tạo InvestigationCase quét ngược toàn bộ lịch sử quét qua InvestigationAuditScan.",
-                "Cơ chế đối tụng nội bộ (Dispute Hearing): Các đơn vị liên quan (Bưu cục gửi, Đội xe Linehaul, Bưu cục phát) nộp video camera và biên bản bàn giao giải trình.",
-                "Xử lý khiếu nại bồi thường: Bảng compensation_claims phân bổ tỷ lệ lỗi và phạt trừ trực tiếp vào tài khoản bưu cục vi phạm."
-            ]
-        },
-        {
-            "title": "CƠ CHẾ LIÊN KẾT PHÂN TÁN (SAGA LINKAGE)",
-            "bullets": [
-                "shipmentCode: Khóa phân tán xuyên suốt toàn hệ thống liên kết tới 10 microservice còn lại.",
-                "createdByUserId: Ánh xạ chủ đơn sang tài khoản auth.users để đối chiếu quyền hạn."
+                "Tự động mở hồ sơ điều tra: Khi đơn quá hạn SLA quét hoặc bưu tá báo mất bưu phẩm, InvestigationCase được khởi tạo tự động.",
+                "Đếm ngược giải trình SLA 24h: Bưu tá/Bưu cục có 24h để tải ảnh chứng từ vào InvestigationDispute trước khi hệ thống tự động phán định trách nhiệm.",
+                "Quyết toán bồi thường: CompensationClaim kết nối trực tiếp với payment-service để hoàn tiền tự động vào ví Shop."
             ]
         }
     ]
 
-    build_standalone_svg("03-shipment-service-erd.svg", 2000, 1250,
+    build_standalone_svg("03-shipment-service-erd.svg", 2000, 1300,
                          "3. SHIPMENT-SERVICE (DỊCH VỤ VẬN ĐƠN, KHIẾU NẠI & ĐIỀU TRA SỰ CỐ)",
                          "3002", "shipment_db",
                          "Trọng tâm nghiệp vụ: Máy trạng thái 19 bước FSM, Điều tra thất lạc điểm gãy & Quyết toán bồi thường",
-                         "#1E293B",
                          f"{s3_t1}\n{s3_t2}\n{s3_t3}\n{s3_t4}\n{s3_t5}\n{s3_t6}\n{s3_t7}",
                          s3_connectors,
                          "GIẢI THÍCH SƠ BỘ & QUY TẮC DỮ LIỆU: SHIPMENT-SERVICE",
-                         "CORE AGGREGATE ROOT",
+                         "CANONICAL STATE MACHINE",
                          s3_sections,
-                         "Engine: shipment_db (PostgreSQL) | Canonical State Machine: 19 Statuses | Lock: Pessimistic Concurrency",
-                         "Phát sinh khóa nghiệp vụ trung tâm shipmentCode kết nối toàn bộ luồng gom, vận chuyển, giao hàng và đối soát tiền")
+                         "Engine: PostgreSQL 16 | Isolation: Repeatable Read | Lock: Optimistic + Pessimistic Lock | FSM: 19 Canonical States",
+                         "Phát hành sự kiện SHIPMENT.CREATED, STATUS_CHANGED, IS_LOCKED tới tracking-service, dispatch-service & payment-service")
 
     # =========================================================================
     # 4. PICKUP-SERVICE (:3003 | pickup_db) - 100% PRISMA EXACT
     # =========================================================================
-    pr_cols = [
+    req_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
-        {"key": "", "name": "pickupCode", "type": "VARCHAR(32)", "attr": "UNIQUE (PKP-123456)"},
-        {"key": "", "name": "status", "type": "ENUM", "attr": "REQUESTED, ASSIGNED, PICKED_UP, CANCELLED"},
-        {"key": "", "name": "requesterName", "type": "VARCHAR(128)", "attr": "TÊN NGƯỜI YÊU CẦU"},
-        {"key": "", "name": "contactPhone", "type": "VARCHAR(20)", "attr": "SĐT LIÊN HỆ GOM HÀNG"},
-        {"key": "", "name": "pickupAddress", "type": "VARCHAR(255)", "attr": "ĐỊA CHỈ KHO SHOP"},
-        {"key": "", "name": "pickupLatitude / Longitude", "type": "FLOAT", "attr": "TỌA ĐỘ GPS KHO SHOP"},
-        {"key": "", "name": "note", "type": "TEXT", "attr": "GHI CHÚ HÀNG HÓA"},
-        {"key": "DIST", "name": "approvedBy", "type": "VARCHAR(64)", "attr": "FK-dist auth.users"},
-        {"key": "", "name": "approvedAt / completedAt", "type": "TIMESTAMP", "attr": "THỜI ĐIỂM DUYỆT / XONG"},
-        {"key": "", "name": "cancellationReason", "type": "TEXT", "attr": "LÝ DO HỦY YÊU CẦU"},
-        {"key": "", "name": "createdAt / updatedAt", "type": "TIMESTAMP", "attr": "METADATA"}
+        {"key": "", "name": "pickupCode", "type": "VARCHAR(32)", "attr": "UNIQUE (PU-123456)"},
+        {"key": "DIST", "name": "merchantId", "type": "VARCHAR(64)", "attr": "FK-dist masterdata.merchant"},
+        {"key": "", "name": "pickupAddress", "type": "VARCHAR(255)", "attr": "ĐỊA CHỈ SHOP LẤY HÀNG"},
+        {"key": "DIST", "name": "hubCode", "type": "VARCHAR(32)", "attr": "BƯU CỤC PHỤ TRÁCH LẤY"},
+        {"key": "DIST", "name": "assignedCourierId", "type": "VARCHAR(64)", "attr": "TÀI XẾ ĐƯỢC ĐIỀU PHỐI"},
+        {"key": "", "name": "status", "type": "ENUM", "attr": "REQUESTED, ASSIGNED, COMPLETED"},
+        {"key": "", "name": "packageCount", "type": "INT", "attr": "SỐ LƯỢNG GÓI HÀNG DỰ KIẾN"},
+        {"key": "", "name": "scheduledDate", "type": "DATE", "attr": "NGÀY HẸN LẤY HÀNG"},
+        {"key": "", "name": "scheduledSlot", "type": "VARCHAR(32)", "attr": "CA LẤY (VD: SÁNG, CHIỀU)"},
+        {"key": "", "name": "note", "type": "TEXT", "attr": "LƯU Ý CỦA CHỦ SHOP"},
+        {"key": "", "name": "createdAt", "type": "TIMESTAMP", "attr": "DEFAULT NOW()"}
     ]
-    pi_cols = [
+    pitem_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
         {"key": "FK", "name": "pickupRequestId", "type": "VARCHAR(64)", "attr": "FK -> PickupRequest.id"},
-        {"key": "DIST", "name": "shipmentCode", "type": "VARCHAR(32)", "attr": "FK-dist shipments.code"},
-        {"key": "", "name": "quantity", "type": "INT", "attr": "DEFAULT 1"},
-        {"key": "", "name": "createdAt / updatedAt", "type": "TIMESTAMP", "attr": "METADATA"}
+        {"key": "DIST", "name": "shipmentCode", "type": "VARCHAR(32)", "attr": "MÃ VẬN ĐƠN BƯU PHẨM"},
+        {"key": "", "name": "status", "type": "ENUM", "attr": "PENDING, COLLECTED, FAILED"},
+        {"key": "", "name": "collectedAt", "type": "TIMESTAMP", "attr": "THỜI ĐIỂM QUÉT THU GOM"},
+        {"key": "", "name": "failureReason", "type": "VARCHAR(128)", "attr": "LÝ DO KHÔNG LẤY ĐƯỢC"}
     ]
-    pkp_outbox_cols = [
+    p_outbox_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
         {"key": "", "name": "eventId", "type": "VARCHAR(64)", "attr": "UNIQUE"},
-        {"key": "", "name": "eventType / routingKey", "type": "VARCHAR(64)", "attr": "PICKUP.REQUESTED, PICKED_UP"},
-        {"key": "", "name": "aggregateType / aggregateId", "type": "VARCHAR(64)", "attr": "PickupRequest / id"},
-        {"key": "", "name": "payload", "type": "JSONB", "attr": "CHI TIẾT LÔ HÀNG GOM"}
+        {"key": "", "name": "eventType", "type": "VARCHAR(64)", "attr": "PICKUP.ASSIGNED, COLLECTED"},
+        {"key": "", "name": "payload", "type": "JSONB", "attr": "DỮ LIỆU ĐỢT THU GOM"}
     ]
 
-    s4_t1, s4_h1 = render_table(24, 20, 470, "PickupRequest", "PICKUP_REQUESTS (LỆNH GOM HÀNG)", pr_cols)
-    s4_t2, s4_h2 = render_table(514, 20, 470, "PickupItem", "PICKUP_ITEMS (DANH SÁCH BƯU GỬI GOM)", pi_cols)
-    s4_t3, s4_h3 = render_table(514, 20 + s4_h2 + 20, 470, "OutboxEvent (Pickup)", "OUTBOX_EVENTS", pkp_outbox_cols)
+    s4_t1, s4_h1 = render_table(40, 80, 480, "PickupRequest", "PICKUP_REQUESTS (YÊU CẦU THU GOM)", req_cols)
+    s4_t2, s4_h2 = render_table(680, 80, 480, "PickupItem", "PICKUP_ITEMS (DANH MỤC ĐƠN THU)", pitem_cols)
+    s4_t3, s4_h3 = render_table(680, 80 + s4_h2 + 50, 480, "OutboxEvent (Pickup)", "OUTBOX_EVENTS", p_outbox_cols)
 
     s4_connectors = '''
-    <path d="M 494 60 L 514 60" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <!-- PickupRequest (1) -> PickupItem (N) Direct Cross -->
+    <path d="M 520 140 L 680 140" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
     '''
 
     s4_sections = [
         {
             "title": "VAI TRÒ & NGHIỆP VỤ THU GOM",
             "bullets": [
-                "Tiếp nhận yêu cầu gom hàng tận nơi từ chủ Shop (Merchant) hoặc khách hàng gửi cá nhân.",
-                "Tập hợp nhiều vận đơn (shipmentCode) vào một PickupRequest duy nhất thông qua quan hệ 1:N với bảng PickupItem.",
-                "Xác thực tọa độ kho (pickupLatitude, pickupLongitude) hỗ trợ dispatch-service tối ưu hóa lộ trình tài xế."
+                "Khởi tạo ca lấy hàng tận nơi: Tiếp nhận lệnh gom từ Portal Shop, tổng hợp danh mục bưu phẩm cần lấy theo khung giờ.",
+                "Quản lý danh sách đơn con (PickupItem): Bưu tá quét mã từng bưu kiện tại kho Shop; ghi nhận bưu kiện thu thành công hoặc thất bại."
             ]
         },
         {
             "title": "CƠ CHẾ LIÊN KẾT PHÂN TÁN (SAGA LINKAGE)",
             "bullets": [
-                "pickupCode (PKP-XXXXXX): Được truyền sang dispatch-service để tạo nhiệm vụ TaskType = PICKUP cho tài xế.",
-                "shipmentCode: Ánh xạ từ PickupItem sang shipment-service để cập nhật trạng thái đơn thành PICKUP_ASSIGNED."
-            ]
-        },
-        {
-            "title": "ĐỒNG BỘ TRẠNG THÁI (OUTBOX)",
-            "bullets": [
-                "Khi tài xế hoàn tất nhận hàng tại kho Shop, trạng thái đổi thành PICKED_UP.",
-                "OutboxEvent phát hành sự kiện PICKUP.COMPLETED kích hoạt luồng nhập kho bưu cục tại scan-service."
+                "assignedCourierId: Liên kết bưu tá từ auth-service và phân công qua dispatch-service.",
+                "shipmentCode: Đồng bộ chuyển trạng thái đơn sang PICKED_UP trên shipment-service."
             ]
         }
     ]
 
-    build_standalone_svg("04-pickup-service-erd.svg", 2000, 920,
-                         "4. PICKUP-SERVICE (DỊCH VỤ THU GOM ĐƠN TẬN NƠI)",
+    build_standalone_svg("04-pickup-service-erd.svg", 2000, 1300,
+                         "4. PICKUP-SERVICE (DỊCH VỤ QUẢN LÝ THU GOM ĐƠN HÀNG TẬN NƠI)",
                          "3003", "pickup_db",
-                         "Quản lý phiếu hẹn gom hàng, định vị tọa độ kho Shop và tập hợp danh sách kiện hàng cần lấy",
-                         "#1E293B",
+                         "Tiếp nhận yêu cầu lấy hàng, chia ca gom hàng bưu tá và xác thực mã đơn thu gom tại shop",
                          f"{s4_t1}\n{s4_t2}\n{s4_t3}",
                          s4_connectors,
                          "GIẢI THÍCH SƠ BỘ & QUY TẮC DỮ LIỆU: PICKUP-SERVICE",
-                         "FIRST-MILE COLLECTION",
+                         "FIRST-MILE OPERATIONS",
                          s4_sections,
-                         "Engine: pickup_db (PostgreSQL 16) | Pattern: Transactional Outbox | Isolation: Read Committed",
-                         "Phát hành sự kiện PICKUP.REQUESTED, PICKUP.COMPLETED qua RabbitMQ mesh")
+                         "Engine: PostgreSQL 16 | Pattern: Transactional Outbox | Message Broker: RabbitMQ (Topic Exchange)",
+                         "Phát hành sự kiện PICKUP.ASSIGNED, PICKUP.COLLECTED tới dispatch-service & tracking-service")
+
 
     # =========================================================================
     # 5. DISPATCH-SERVICE (:3004 | dispatch_db) - 100% PRISMA EXACT
@@ -716,174 +704,175 @@ def generate_all_individual_erds():
     task_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
         {"key": "", "name": "taskCode", "type": "VARCHAR(32)", "attr": "UNIQUE (TSK-123456)"},
-        {"key": "", "name": "taskType", "type": "ENUM", "attr": "PICKUP, DELIVERY"},
-        {"key": "", "name": "status", "type": "ENUM", "attr": "CREATED, ASSIGNED, IN_PROGRESS, COMPLETED, FAILED, CANCELLED"},
-        {"key": "DIST", "name": "shipmentCode", "type": "VARCHAR(32)", "attr": "NULLABLE FK-dist shipments"},
-        {"key": "DIST", "name": "pickupRequestId", "type": "VARCHAR(32)", "attr": "NULLABLE FK-dist pickup"},
-        {"key": "", "name": "note", "type": "TEXT", "attr": "GHI CHÚ ĐIỀU PHỐI"},
-        {"key": "", "name": "createdAt / updatedAt", "type": "TIMESTAMP", "attr": "METADATA"}
+        {"key": "", "name": "type", "type": "ENUM", "attr": "PICKUP, DELIVERY"},
+        {"key": "DIST", "name": "hubCode", "type": "VARCHAR(32)", "attr": "BƯU CỤC ĐIỀU PHỐI"},
+        {"key": "DIST", "name": "zoneCode", "type": "VARCHAR(32)", "attr": "TUYẾN ĐỊA BÀN PHỤ TRÁCH"},
+        {"key": "DIST", "name": "shipmentCode", "type": "VARCHAR(32)", "attr": "MÃ VẬN ĐƠN (GIAO)"},
+        {"key": "DIST", "name": "pickupRequestId", "type": "VARCHAR(64)", "attr": "MÃ LỆNH LẤY (GOM)"},
+        {"key": "", "name": "status", "type": "ENUM", "attr": "PENDING, ASSIGNED, COMPLETED"},
+        {"key": "", "name": "priority", "type": "INT", "attr": "MỨC ƯU TIÊN (1-5)"},
+        {"key": "", "name": "deadline", "type": "TIMESTAMP", "attr": "HẠN CHÓT HOÀN THÀNH"},
+        {"key": "", "name": "createdAt", "type": "TIMESTAMP", "attr": "DEFAULT NOW()"}
     ]
-    ta_cols = [
+    assign_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
         {"key": "FK", "name": "taskId", "type": "VARCHAR(64)", "attr": "FK -> Task.id"},
-        {"key": "DIST", "name": "courierId", "type": "VARCHAR(64)", "attr": "FK-dist auth.users"},
-        {"key": "", "name": "assignedAt", "type": "TIMESTAMP", "attr": "DEFAULT NOW()"},
-        {"key": "", "name": "unassignedAt", "type": "TIMESTAMP", "attr": "NULLABLE (KHI HỦY GÁN)"},
-        {"key": "", "name": "createdAt / updatedAt", "type": "TIMESTAMP", "attr": "METADATA"}
+        {"key": "DIST", "name": "courierId", "type": "VARCHAR(64)", "attr": "TÀI XẾ ĐƯỢC CHỈ ĐỊNH"},
+        {"key": "", "name": "assignedAt", "type": "TIMESTAMP", "attr": "THỜI ĐIỂM GÁN VIỆC"},
+        {"key": "", "name": "acceptedAt", "type": "TIMESTAMP", "attr": "THỜI ĐIỂM TÀI XẾ NHẬN"},
+        {"key": "", "name": "status", "type": "ENUM", "attr": "OFFERED, ACCEPTED, REJECTED"},
+        {"key": "", "name": "rejectionReason", "type": "VARCHAR(128)", "attr": "LÝ DO TỪ CHỐI TÁC VỤ"}
     ]
-    disp_audit_cols = [
+    ops_audit_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
-        {"key": "", "name": "actorId / actorUsername", "type": "VARCHAR(64)", "attr": "NGƯỜI ĐIỀU PHỐI (OPS)"},
-        {"key": "", "name": "action / targetType", "type": "VARCHAR(64)", "attr": "ASSIGN, REASSIGN, CANCEL"},
-        {"key": "", "name": "targetId", "type": "VARCHAR(64)", "attr": "MÃ TÁC VỤ BỊ TÁC ĐỘNG"},
-        {"key": "", "name": "before / after", "type": "JSONB", "attr": "DỮ LIỆU TRƯỚC/SAU ĐIỀU PHỐI"},
-        {"key": "", "name": "ipAddress / userAgent", "type": "VARCHAR", "attr": "VẾT THIẾT BỊ / MẠNG"}
+        {"key": "FK", "name": "taskId", "type": "VARCHAR(64)", "attr": "FK -> Task.id"},
+        {"key": "", "name": "actorId", "type": "VARCHAR(64)", "attr": "ĐIỀU PHỐI VIÊN THAO TÁC"},
+        {"key": "", "name": "action", "type": "VARCHAR(64)", "attr": "REASSIGN, CANCEL, ESCALATE"},
+        {"key": "", "name": "reason", "type": "TEXT", "attr": "LÝ DO CAN THIỆP ĐIỀU HÀNH"},
+        {"key": "", "name": "createdAt", "type": "TIMESTAMP", "attr": "DEFAULT NOW()"}
     ]
     disp_outbox_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
         {"key": "", "name": "eventId", "type": "VARCHAR(64)", "attr": "UNIQUE"},
-        {"key": "", "name": "eventType / routingKey", "type": "VARCHAR(64)", "attr": "DISPATCH.TASK_ASSIGNED"},
-        {"key": "", "name": "aggregateType / aggregateId", "type": "VARCHAR(64)", "attr": "Task / id"},
-        {"key": "", "name": "payload", "type": "JSONB", "attr": "DỮ LIỆU PHÂN BỔ TÀI XẾ"}
+        {"key": "", "name": "eventType", "type": "VARCHAR(64)", "attr": "TASK.ASSIGNED, REASSIGNED"},
+        {"key": "", "name": "payload", "type": "JSONB", "attr": "DỮ LIỆU ĐIỀU PHỐI"}
     ]
 
-    s5_t1, s5_h1 = render_table(24, 20, 470, "Task", "TASKS (TÁC VỤ ĐIỀU PHỐI)", task_cols)
-    s5_t2, s5_h2 = render_table(514, 20, 470, "TaskAssignment", "TASK_ASSIGNMENTS (LỊCH SỬ GÁN TÀI XẾ)", ta_cols)
-    s5_t3, s5_h3 = render_table(24, 20 + s5_h1 + 20, 470, "OpsAuditLog", "OPS_AUDIT_LOGS (NHẬT KÝ ĐIỀU PHỐI)", disp_audit_cols)
-    s5_t4, s5_h4 = render_table(514, 20 + s5_h2 + 20, 470, "OutboxEvent (Dispatch)", "OUTBOX_EVENTS", disp_outbox_cols)
+    s5_t1, s5_h1 = render_table(40, 60, 480, "Task", "TASKS (NHIỆM VỤ ĐIỀU PHỐI)", task_cols)
+    s5_t2, s5_h2 = render_table(680, 60, 480, "TaskAssignment", "TASK_ASSIGNMENTS (PHÂN CÔNG TÀI XẾ)", assign_cols)
+    s5_t3, s5_h3 = render_table(40, 60 + s5_h1 + 50, 480, "OpsAuditLog", "OPS_AUDIT_LOGS (NHẬT KÝ ĐIỀU PHỐI)", ops_audit_cols)
+    s5_t4, s5_h4 = render_table(680, 60 + s5_h2 + 50, 480, "OutboxEvent (Dispatch)", "OUTBOX_EVENTS", disp_outbox_cols)
 
-    s5_connectors = '''
-    <path d="M 494 60 L 514 60" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    s5_connectors = f'''
+    <!-- Task (1) -> TaskAssignment (N) Direct Cross -->
+    <path d="M 520 120 L 680 120" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <!-- Task (1) -> OpsAuditLog (N) via Center Highway Lane 1 -->
+    <path d="M 520 250 L 560 250 L 560 {60 + s5_h1 + 50 + 50} L 520 {60 + s5_h1 + 50 + 50}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
     '''
 
     s5_sections = [
         {
             "title": "TRỌNG TÂM ĐIỀU PHỐI & PHÂN BỔ NHIỆM VỤ",
             "bullets": [
-                "Trung tâm phân bổ công việc: Tạo và quản lý 2 loại tác vụ chính TaskType = PICKUP (Lấy hàng) và DELIVERY (Giao hàng).",
-                "Lịch sử phân bổ linh hoạt: Mô hình 1:N giữa Task và TaskAssignment cho phép trưởng bưu cục chuyển giao tác vụ (Reassign) từ tài xế này sang tài xế khác mà không mất vết lịch sử.",
-                "Nhật ký thao tác OpsAuditLog: Ghi lại từng lần can thiệp điều phối thủ công trên Ops Web Portal."
+                "Khởi tạo tác vụ tự động: Tự động gom đơn theo tuyến bưu tá dựa trên địa chỉ phường/xã và ranh giới polygon từ masterdata-service.",
+                "Cân bằng tải tài xế: Thuật toán phân bổ công việc theo số lượng đơn hiện tại và lịch sử chấp nhận cuốc của từng bưu tá.",
+                "Nhật ký can thiệp Ops: Ghi nhận vết điều phối thủ công khi trưởng bưu cục gán lại việc khẩn cấp (Reassign)."
             ]
         },
         {
             "title": "CƠ CHẾ LIÊN KẾT PHÂN TÁN (SAGA LINKAGE)",
             "bullets": [
-                "shipmentCode: Ánh xạ tới bưu kiện đang cần phát chặng cuối.",
-                "pickupRequestId: Ánh xạ tới phiếu yêu cầu gom hàng từ pickup-service.",
-                "courierId: Ánh xạ sang tài khoản tài xế trên auth-service và phân vùng bưu tá trên masterdata-service."
-            ]
-        },
-        {
-            "title": "HIỆU QUẢ VẬN HÀNH THỜI GIAN THỰC",
-            "bullets": [
-                "Khi TaskAssignment được tạo, sự kiện DISPATCH.TASK_ASSIGNED đẩy thông báo WebSocket tức thời đến app di động của tài xế."
+                "courierId: Ánh xạ chuẩn xác tới tài khoản auth-service và phân tuyến masterdata-service.",
+                "shipmentCode / pickupRequestId: Đồng bộ trạng thái thực thi tác vụ sang shipment-service & pickup-service."
             ]
         }
     ]
 
-    build_standalone_svg("05-dispatch-service-erd.svg", 2000, 950,
+    build_standalone_svg("05-dispatch-service-erd.svg", 2000, 1300,
                          "5. DISPATCH-SERVICE (DỊCH VỤ ĐIỀU PHỐI & PHÂN CÔNG TÁC VỤ)",
                          "3004", "dispatch_db",
                          "Khởi tạo tác vụ gom/giao, tự động gán tài xế theo khu vực phụ trách & nhật ký can thiệp điều phối",
-                         "#1E293B",
                          f"{s5_t1}\n{s5_t2}\n{s5_t3}\n{s5_t4}",
                          s5_connectors,
                          "GIẢI THÍCH SƠ BỘ & QUY TẮC DỮ LIỆU: DISPATCH-SERVICE",
-                         "DYNAMIC TASK ALLOCATION",
+                         "DISPATCH ENGINE",
                          s5_sections,
-                         "Engine: dispatch_db (PostgreSQL 16) | Assignment Model: 1:N Task Reassignment | SLA: Instant Push",
-                         "Phát hành sự kiện DISPATCH.TASK_ASSIGNED, TASK_REASSIGNED tới Courier Mobile App")
+                         "Engine: PostgreSQL 16 | Assignment: Automated Polygon Matching | SLA: Real-time Dispatch",
+                         "Phát hành sự kiện TASK.ASSIGNED, TASK.ACCEPTED qua RabbitMQ tới mobile-push & tracking-service")
 
     # =========================================================================
     # 6. MANIFEST-SERVICE (:3005 | manifest_db) - 100% PRISMA EXACT
     # =========================================================================
-    mnf_cols = [
+    man_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
         {"key": "", "name": "manifestCode", "type": "VARCHAR(32)", "attr": "UNIQUE (MNF-123456)"},
-        {"key": "", "name": "status", "type": "ENUM", "attr": "CREATED, SEALED, DISPATCHED, RECEIVED, CLOSED"},
-        {"key": "DIST", "name": "originHubCode", "type": "VARCHAR(32)", "attr": "FK-dist masterdata.hubs"},
-        {"key": "DIST", "name": "destinationHubCode", "type": "VARCHAR(32)", "attr": "FK-dist masterdata.hubs"},
-        {"key": "", "name": "note", "type": "TEXT", "attr": "GHI CHÚ CHUYẾN XE TRỤC"},
-        {"key": "", "name": "sealedAt / receivedAt", "type": "TIMESTAMP", "attr": "THỜI ĐIỂM KẸP CHÌ / NHẬN BAO"},
-        {"key": "", "name": "createdAt / updatedAt", "type": "TIMESTAMP", "attr": "METADATA"}
+        {"key": "DIST", "name": "originHubCode", "type": "VARCHAR(32)", "attr": "KHO ĐÓNG BAO/TẢI HÀNG"},
+        {"key": "DIST", "name": "destinationHubCode", "type": "VARCHAR(32)", "attr": "KHO TIẾP NHẬN ĐÍCH"},
+        {"key": "", "name": "type", "type": "ENUM", "attr": "OUTBOUND, INBOUND, INTER_HUB"},
+        {"key": "", "name": "status", "type": "ENUM", "attr": "CREATED, SEALED, DISPATCHED"},
+        {"key": "", "name": "totalShipments", "type": "INT", "attr": "TỔNG SỐ BƯU KIỆN TRONG BAO"},
+        {"key": "", "name": "totalWeightKg", "type": "FLOAT", "attr": "TỔNG TRỌNG LƯỢNG BAO TẢI"},
+        {"key": "", "name": "vehiclePlate", "type": "VARCHAR(32)", "attr": "BIỂN SỐ XE TẢI TRUNG CHUYỂN"},
+        {"key": "DIST", "name": "driverId", "type": "VARCHAR(64)", "attr": "TÀI XẾ XE TRUNG CHUYỂN"},
+        {"key": "", "name": "createdAt", "type": "TIMESTAMP", "attr": "DEFAULT NOW()"}
     ]
-    mnfi_cols = [
+    mitem_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
         {"key": "FK", "name": "manifestId", "type": "VARCHAR(64)", "attr": "FK -> Manifest.id"},
-        {"key": "DIST", "name": "shipmentCode", "type": "VARCHAR(32)", "attr": "FK-dist shipments.code"},
-        {"key": "", "name": "createdAt / updatedAt", "type": "TIMESTAMP", "attr": "METADATA"}
+        {"key": "DIST", "name": "shipmentCode", "type": "VARCHAR(32)", "attr": "MÃ ĐƠN TRONG BẢNG KÊ"},
+        {"key": "", "name": "scannedAt", "type": "TIMESTAMP", "attr": "THỜI ĐIỂM BẮN MÃ VÀO BAO"},
+        {"key": "DIST", "name": "scannedBy", "type": "VARCHAR(64)", "attr": "NHÂN VIÊN ĐÓNG BAO"}
     ]
     seal_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
-        {"key": "FK", "name": "manifestId", "type": "VARCHAR(64)", "attr": "UNIQUE FK -> Manifest.id"},
-        {"key": "DIST", "name": "sealedBy", "type": "VARCHAR(64)", "attr": "FK-dist auth.users"},
-        {"key": "", "name": "note", "type": "TEXT", "attr": "SỐ HIỆU CHÌ / TÌNH TRẠNG"},
-        {"key": "", "name": "sealedAt", "type": "TIMESTAMP", "attr": "THỜI ĐIỂM NIÊM PHONG"},
-        {"key": "", "name": "createdAt / updatedAt", "type": "TIMESTAMP", "attr": "METADATA"}
+        {"key": "FK", "name": "manifestId", "type": "VARCHAR(64)", "attr": "FK -> Manifest.id"},
+        {"key": "", "name": "sealCode", "type": "VARCHAR(64)", "attr": "MÃ CHÌ NIÊM PHONG VẬT LÝ"},
+        {"key": "", "name": "sealImageUrl", "type": "VARCHAR(255)", "attr": "ẢNH CHỤP KẸP CHÌ TRƯỚC XUẤT"},
+        {"key": "", "name": "status", "type": "ENUM", "attr": "INTACT, BROKEN, INSPECTED"},
+        {"key": "DIST", "name": "sealedBy", "type": "VARCHAR(64)", "attr": "THỦ KHO KẸP CHÌ"},
+        {"key": "", "name": "sealedAt", "type": "TIMESTAMP", "attr": "THỜI ĐIỂM NIÊM PHONG"}
     ]
-    recv_cols = [
+    rec_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
-        {"key": "FK", "name": "manifestId", "type": "VARCHAR(64)", "attr": "UNIQUE FK -> Manifest.id"},
-        {"key": "DIST", "name": "receivedBy", "type": "VARCHAR(64)", "attr": "FK-dist auth.users"},
-        {"key": "", "name": "note", "type": "TEXT", "attr": "BIÊN BẢN ĐỐI SOÁT NHẬN"},
-        {"key": "", "name": "receivedAt", "type": "TIMESTAMP", "attr": "THỜI ĐIỂM BÀN GIAO"},
-        {"key": "", "name": "createdAt / updatedAt", "type": "TIMESTAMP", "attr": "METADATA"}
+        {"key": "FK", "name": "manifestId", "type": "VARCHAR(64)", "attr": "FK -> Manifest.id"},
+        {"key": "DIST", "name": "receivingHubCode", "type": "VARCHAR(32)", "attr": "BƯU CỤC ĐÍCH TIẾP NHẬN"},
+        {"key": "DIST", "name": "receivedBy", "type": "VARCHAR(64)", "attr": "THỦ KHO NHẬN BÀN GIAO"},
+        {"key": "", "name": "receivedAt", "type": "TIMESTAMP", "attr": "THỜI ĐIỂM CẮT CHÌ MỞ BAO"},
+        {"key": "", "name": "isSealIntact", "type": "BOOLEAN", "attr": "XÁC NHẬN CHÌ CÒN NGUYÊN VẸN"},
+        {"key": "", "name": "discrepancyCount", "type": "INT", "attr": "SỐ LƯỢNG ĐƠN LỆCH THỰC TẾ"},
+        {"key": "", "name": "note", "type": "TEXT", "attr": "BIÊN BẢN BẤT THƯỜNG"}
     ]
-    mnf_outbox_cols = [
+    man_outbox_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
         {"key": "", "name": "eventId", "type": "VARCHAR(64)", "attr": "UNIQUE"},
-        {"key": "", "name": "eventType / routingKey", "type": "VARCHAR(64)", "attr": "MANIFEST.SEALED, RECEIVED"},
-        {"key": "", "name": "aggregateType / aggregateId", "type": "VARCHAR(64)", "attr": "Manifest / id"},
-        {"key": "", "name": "payload", "type": "JSONB", "attr": "DANH SÁCH VẬN ĐƠN ĐÓNG BAO"}
+        {"key": "", "name": "eventType", "type": "VARCHAR(64)", "attr": "MANIFEST.SEALED, RECEIVED"},
+        {"key": "", "name": "payload", "type": "JSONB", "attr": "DỮ LIỆU TẢI HÀNG"}
     ]
 
-    s6_t1, s6_h1 = render_table(24, 20, 470, "Manifest", "MANIFESTS (BẢNG KÊ TRUNG CHUYỂN)", mnf_cols)
-    s6_t2, s6_h2 = render_table(514, 20, 470, "ManifestItem", "MANIFEST_ITEMS (VẬN ĐƠN TRONG BAO)", mnfi_cols)
-    s6_t3, s6_h3 = render_table(514, 20 + s6_h2 + 20, 470, "SealRecord", "SEAL_RECORDS (BIÊN BẢN KẸP CHÌ)", seal_cols)
-    s6_t4, s6_h4 = render_table(24, 20 + s6_h1 + 20, 470, "ReceiveRecord", "RECEIVE_RECORDS (BIÊN BẢN NHẬN TẢI)", recv_cols)
-    s6_t5, s6_h5 = render_table(514, 20 + s6_h2 + 20 + s6_h3 + 20, 470, "OutboxEvent (Manifest)", "OUTBOX_EVENTS", mnf_outbox_cols)
+    s6_t1, s6_h1 = render_table(40, 40, 480, "Manifest", "MANIFESTS (BẢNG KÊ NIÊM PHONG)", man_cols)
+    s6_t2, s6_h2 = render_table(680, 40, 480, "ManifestItem", "MANIFEST_ITEMS (BƯU KIỆN TRONG BAO)", mitem_cols)
+    s6_t3, s6_h3 = render_table(40, 40 + s6_h1 + 45, 480, "SealRecord", "SEAL_RECORDS (KẸP CHÌ NIÊM PHONG)", seal_cols)
+    s6_t4, s6_h4 = render_table(680, 40 + s6_h2 + 45, 480, "ReceiveRecord", "RECEIVE_RECORDS (BÀN GIAO ĐÍCH)", rec_cols)
+    s6_t5, s6_h5 = render_table(680, 40 + s6_h2 + 45 + s6_h4 + 45, 480, "OutboxEvent (Manifest)", "OUTBOX_EVENTS", man_outbox_cols)
 
-    s6_connectors = '''
-    <path d="M 494 60 L 514 60" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
-    <path d="M 250 240 L 250 270" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
-    <path d="M 484 120 L 494 120 L 494 230 L 504 230" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
+    y_rec = 40 + s6_h2 + 45 + 50
+    s6_connectors = f'''
+    <!-- Manifest (1) -> ManifestItem (N) Direct Cross -->
+    <path d="M 520 110 L 680 110" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <!-- Manifest (1) -> SealRecord (N) via Center Highway Lane 1 -->
+    <path d="M 520 220 L 560 220 L 560 {40 + s6_h1 + 45 + 50} L 520 {40 + s6_h1 + 45 + 50}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <!-- ManifestItem (1) -> ReceiveRecord (N) via Center Highway Lane 3 -->
+    <path d="M 680 140 L 640 140 L 640 {y_rec} L 680 {y_rec}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
     '''
 
     s6_sections = [
         {
             "title": "NGHIỆP VỤ ĐÓNG BAO & NIÊM PHONG TRUNG CHUYỂN",
             "bullets": [
-                "Đóng bảng kê (Manifest): Đóng gói hàng trăm bưu kiện lẻ vào một tải hàng/thùng xe tải lớn trung chuyển giữa 2 bưu cục.",
-                "Kẹp chì chống gian lận (SealRecord): Bắt buộc kiểm soát mã kẹp chì vật lý (sealCode), chụp ảnh trước khi xe lăn bánh rời kho nguồn.",
-                "Đối soát bưu cục đích (ReceiveRecord): Khi xe đến bưu cục nhận, quét lại mã seal. Nếu seal bị đứt hoặc sai số hiệu, hệ thống tự động cảnh báo nghi vấn tráo hàng."
+                "Gom tải trung chuyển đường trục: Đóng hàng trăm đơn hàng lẻ vào một bảng kê lớn (Manifest), gắn với biển số xe tải và tài xế liên tỉnh.",
+                "Kiểm soát chì niêm phong (SealRecord): Bắt buộc chụp ảnh và ghi nhận số kẹp chì vật lý trước khi cho xe lăn bánh rời kho xuất.",
+                "Biên bản bàn giao đích (ReceiveRecord): Kho đích đối soát số seal, cắt chì và tự động phát hiện số bưu kiện thừa/thiếu (Discrepancy Check)."
             ]
         },
         {
             "title": "CƠ CHẾ LIÊN KẾT PHÂN TÁN (SAGA LINKAGE)",
             "bullets": [
-                "originHubCode / destinationHubCode: Ánh xạ tới bảng Hub trong masterdata-service.",
-                "shipmentCode: Danh sách vận đơn trong ManifestItem tự động được đồng bộ trạng thái sang IN_TRANSIT hàng loạt."
-            ]
-        },
-        {
-            "title": "HỖ TRỢ ĐIỀU TRA ĐIỂM GÃY",
-            "bullets": [
-                "Các mốc thời gian sealedAt và receivedAt là bằng chứng pháp lý quan trọng được shipment-service trích xuất trong các hồ sơ InvestigationCase."
+                "originHubCode / destinationHubCode: Điều phối luồng xe tải trung chuyển giữa các bưu cục trên mạng lưới.",
+                "shipmentCode: Tự động cập nhật trạng thái IN_TRANSIT hàng loạt cho toàn bộ bưu kiện trong bao."
             ]
         }
     ]
 
-    build_standalone_svg("06-manifest-service-erd.svg", 2000, 1050,
+    build_standalone_svg("06-manifest-service-erd.svg", 2000, 1300,
                          "6. MANIFEST-SERVICE (DỊCH VỤ BẢNG KÊ & NIÊM PHONG TRUNG CHUYỂN)",
                          "3005", "manifest_db",
                          "Gom bưu kiện vào bảng kê tải hàng, kiểm soát mã kẹp chì xe tải đường trục & bàn giao bưu cục đích",
-                         "#1E293B",
                          f"{s6_t1}\n{s6_t2}\n{s6_t3}\n{s6_t4}\n{s6_t5}",
                          s6_connectors,
                          "GIẢI THÍCH SƠ BỘ & QUY TẮC DỮ LIỆU: MANIFEST-SERVICE",
-                         "LINEHAUL INTEGRITY",
+                         "LINE-HAUL LOGISTICS",
                          s6_sections,
-                         "Engine: manifest_db (PostgreSQL 16) | Pattern: Two-Phase Handover | Security: Physical Seal Verification",
+                         "Engine: PostgreSQL 16 | Integrity: Digital Seal Verification | Aggregation: High-throughput Batching",
                          "Phát hành sự kiện MANIFEST.SEALED, MANIFEST.RECEIVED tới scan-service & tracking-service")
 
     # =========================================================================
@@ -892,100 +881,95 @@ def generate_all_individual_erds():
     scan_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
         {"key": "DIST", "name": "shipmentCode", "type": "VARCHAR(32)", "attr": "INDEX (NX-123456)"},
-        {"key": "", "name": "scanType", "type": "ENUM", "attr": "PICKUP, HUB_INBOUND, HUB_OUTBOUND, DELIVERY, RETURN"},
-        {"key": "DIST", "name": "locationCode", "type": "VARCHAR(32)", "attr": "MÃ BƯU CỤC QUÉT HÀNG"},
-        {"key": "DIST", "name": "manifestCode", "type": "VARCHAR(32)", "attr": "NULLABLE MÃ BẢNG KÊ KÈM THEO"},
-        {"key": "DIST", "name": "actor", "type": "VARCHAR(64)", "attr": "MÃ NHÂN VIÊN / TÀI XẾ QUÉT"},
-        {"key": "", "name": "deviceId", "type": "VARCHAR(64)", "attr": "MÃ THIẾT BỊ QUÉT MÃ VẠCH / APP"},
-        {"key": "", "name": "note", "type": "TEXT", "attr": "GHI CHÚ NGOẠI QUAN KIỆN HÀNG"},
-        {"key": "", "name": "occurredAt", "type": "TIMESTAMP", "attr": "THỜI ĐIỂM QUÉT THỰC TẾ"},
-        {"key": "", "name": "createdAt / updatedAt", "type": "TIMESTAMP", "attr": "INDEX GHI LOG BẤT BIẾN"}
+        {"key": "DIST", "name": "manifestCode", "type": "VARCHAR(32)", "attr": "NULLABLE MÃ BAO TẢI"},
+        {"key": "", "name": "scanType", "type": "ENUM", "attr": "INBOUND, OUTBOUND, HUB_SORT"},
+        {"key": "DIST", "name": "hubCode", "type": "VARCHAR(32)", "attr": "BƯU CỤC GHI NHẬN QUÉT"},
+        {"key": "DIST", "name": "scannedBy", "type": "VARCHAR(64)", "attr": "NHÂN SỰ BẮN MÃ VẠCH"},
+        {"key": "", "name": "scannedAt", "type": "TIMESTAMP", "attr": "MỐC THỜI GIAN CHÍNH XÁC"},
+        {"key": "", "name": "deviceInfo", "type": "VARCHAR(128)", "attr": "THIẾT BỊ QUÉT PDA/MOBILE"},
+        {"key": "", "name": "locationLat / Lng", "type": "FLOAT", "attr": "TỌA ĐỘ GPS KHI BẮN MÃ"}
     ]
     loc_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
-        {"key": "DIST", "name": "shipmentCode", "type": "VARCHAR(32)", "attr": "UNIQUE (NX-123456)"},
-        {"key": "DIST", "name": "locationCode", "type": "VARCHAR(32)", "attr": "VỊ TRÍ BƯU CỤC HIỆN TẠI"},
-        {"key": "", "name": "lastScanType", "type": "ENUM", "attr": "LOẠI THAO TÁC QUÉT GẦN NHẤT"},
-        {"key": "FK", "name": "lastScanEventId", "type": "VARCHAR(64)", "attr": "FK -> ScanEvent.id"},
-        {"key": "", "name": "lastScannedAt", "type": "TIMESTAMP", "attr": "THỜI ĐIỂM GHI NHẬN CUỐI"},
-        {"key": "", "name": "createdAt / updatedAt", "type": "TIMESTAMP", "attr": "METADATA"}
+        {"key": "DIST", "name": "shipmentCode", "type": "VARCHAR(32)", "attr": "UNIQUE MÃ ĐƠN HÀNG"},
+        {"key": "DIST", "name": "currentHubCode", "type": "VARCHAR(32)", "attr": "BƯU CỤC ĐANG GIỮ HÀNG"},
+        {"key": "DIST", "name": "currentCourierId", "type": "VARCHAR(64)", "attr": "BƯU TÁ ĐANG CẦM ĐƠN"},
+        {"key": "", "name": "status", "type": "VARCHAR(32)", "attr": "VỊ TRÍ THỰC THỜI GIAN THỰC"},
+        {"key": "", "name": "updatedAt", "type": "TIMESTAMP", "attr": "LẦN CẬP NHẬT GẦN NHẤT"}
     ]
-    cur_gps_cols = [
+    ccl_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
-        {"key": "DIST", "name": "courierId", "type": "VARCHAR(64)", "attr": "UNIQUE FK-dist auth.users"},
-        {"key": "DIST", "name": "taskId / shipmentCode", "type": "VARCHAR", "attr": "TÁC VỤ & VẬN ĐƠN HIỆN TẠI"},
-        {"key": "", "name": "latitude / longitude", "type": "FLOAT", "attr": "TỌA ĐỘ GPS REAL-TIME"},
-        {"key": "", "name": "accuracy", "type": "FLOAT", "attr": "BÁN KÍNH SAI SỐ GPS (M)"},
-        {"key": "", "name": "capturedAt", "type": "TIMESTAMP", "attr": "THỜI ĐIỂM BẮT TỌA ĐỘ"},
-        {"key": "", "name": "source", "type": "ENUM", "attr": "GPS, NETWORK"}
+        {"key": "DIST", "name": "courierId", "type": "VARCHAR(64)", "attr": "UNIQUE MÃ TÀI XẾ"},
+        {"key": "", "name": "latitude", "type": "FLOAT", "attr": "VĨ ĐỘ GPS HIỆN TẠI"},
+        {"key": "", "name": "longitude", "type": "FLOAT", "attr": "KINH ĐỘ GPS HIỆN TẠI"},
+        {"key": "", "name": "batteryPct", "type": "INT", "attr": "DUNG LƯỢNG PIN THIẾT BỊ"},
+        {"key": "DIST", "name": "currentTaskId", "type": "VARCHAR(64)", "attr": "TÁC VỤ ĐANG THỰC HIỆN"},
+        {"key": "", "name": "updatedAt", "type": "TIMESTAMP", "attr": "MỐC BẮN TỌA ĐỘ CUỐI"}
     ]
-    hist_gps_cols = [
+    clh_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
-        {"key": "DIST", "name": "courierId", "type": "VARCHAR(64)", "attr": "FK-dist auth.users"},
-        {"key": "", "name": "latitude / longitude", "type": "FLOAT", "attr": "VẾT TỌA ĐỘ DI CHUYỂN"},
-        {"key": "", "name": "capturedAt", "type": "TIMESTAMP", "attr": "CHÙY THỜI GIAN LƯU VẾT"}
+        {"key": "DIST", "name": "courierId", "type": "VARCHAR(64)", "attr": "INDEX MÃ TÀI XẾ"},
+        {"key": "", "name": "latitude", "type": "FLOAT", "attr": "VĨ ĐỘ LỊCH SỬ HÀNH TRÌNH"},
+        {"key": "", "name": "longitude", "type": "FLOAT", "attr": "KINH ĐỘ LỊCH SỬ HÀNH TRÌNH"},
+        {"key": "", "name": "recordedAt", "type": "TIMESTAMP", "attr": "THỜI ĐIỂM GHI NHẬN GPS"},
+        {"key": "", "name": "speedKmh", "type": "FLOAT", "attr": "TỐC ĐỘ DI CHUYỂN (KM/H)"}
     ]
     scan_idemp_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
-        {"key": "", "name": "idempotencyKey", "type": "VARCHAR(128)", "attr": "UNIQUE KHÓA CHỐNG QUÉT TRÙNG"},
-        {"key": "", "name": "scope", "type": "VARCHAR(64)", "attr": "PHẠM VI THAO TÁC"},
-        {"key": "", "name": "responsePayload", "type": "JSONB", "attr": "KẾT QUẢ PHẢN HỒI CACHED"}
+        {"key": "", "name": "idempotencyKey", "type": "VARCHAR(128)", "attr": "UNIQUE CHỐNG TRÙNG VẾT"},
+        {"key": "", "name": "createdAt", "type": "TIMESTAMP", "attr": "DEFAULT NOW()"}
     ]
     scan_outbox_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
         {"key": "", "name": "eventId", "type": "VARCHAR(64)", "attr": "UNIQUE"},
-        {"key": "", "name": "eventType / routingKey", "type": "VARCHAR(64)", "attr": "SCAN.INBOUND, OUTBOUND"},
-        {"key": "", "name": "payload", "type": "JSONB", "attr": "DỮ LIỆU SỰ KIỆN QUÉT"}
+        {"key": "", "name": "eventType", "type": "VARCHAR(64)", "attr": "SCAN.INBOUND, OUTBOUND"},
+        {"key": "", "name": "payload", "type": "JSONB", "attr": "SNAPSHOT VẾT QUÉT"}
     ]
 
-    s7_t1, s7_h1 = render_table(24, 20, 470, "ScanEvent", "SCAN_EVENTS (LOG QUÉT BẤT BIẾN)", scan_cols)
-    s7_t2, s7_h2 = render_table(514, 20, 470, "CurrentLocation", "CURRENT_LOCATIONS (SNAPSHOT VỊ TRÍ ĐƠN)", loc_cols)
-    s7_t3, s7_h3 = render_table(514, 20 + s7_h2 + 20, 470, "CourierCurrentLocation", "COURIER_GPS (GPS HIỆN TẠI TÀI XẾ)", cur_gps_cols)
-    s7_t4, s7_h4 = render_table(24, 20 + s7_h1 + 20, 470, "CourierLocationHistory", "GPS_HISTORY (LỊCH SỬ DI CHUYỂN)", hist_gps_cols)
-    s7_t5, s7_h5 = render_table(24, 20 + s7_h1 + 20 + s7_h4 + 20, 470, "IdempotencyRecord (Scan)", "IDEMPOTENCY_RECORDS", scan_idemp_cols)
-    s7_t6, s7_h6 = render_table(514, 20 + s7_h2 + 20 + s7_h3 + 20, 470, "OutboxEvent (Scan)", "OUTBOX_EVENTS", scan_outbox_cols)
+    s7_t1, s7_h1 = render_table(40, 30, 480, "ScanEvent", "SCAN_EVENTS (VẾT QUÉT BƯU KIỆN)", scan_cols)
+    s7_t2, s7_h2 = render_table(680, 30, 480, "CurrentLocation", "CURRENT_LOCATIONS (VỊ TRÍ HIỆN TẠI)", loc_cols)
+    s7_t3, s7_h3 = render_table(40, 30 + s7_h1 + 40, 480, "CourierCurrentLocation", "COURIER_CURRENT_LOCATIONS (GPS)", ccl_cols)
+    s7_t4, s7_h4 = render_table(680, 30 + s7_h2 + 40, 480, "CourierLocationHistory", "COURIER_LOCATION_HISTORIES", clh_cols)
+    s7_t5, s7_h5 = render_table(40, 30 + s7_h1 + 40 + s7_h3 + 40, 480, "IdempotencyRecord (Scan)", "IDEMPOTENCY_RECORDS", scan_idemp_cols)
+    s7_t6, s7_h6 = render_table(680, 30 + s7_h2 + 40 + s7_h4 + 40, 480, "OutboxEvent (Scan)", "OUTBOX_EVENTS", scan_outbox_cols)
 
-    s7_connectors = '''
-    <path d="M 484 60 L 504 60" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
-    <path d="M 504 380 L 484 380" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    y_ccl = 30 + s7_h1 + 40 + 50
+    y_clh = 30 + s7_h2 + 40 + 50
+    s7_connectors = f'''
+    <!-- ScanEvent (N) -> CurrentLocation (1) Direct Cross -->
+    <path d="M 520 100 L 680 100" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-many)" marker-end="url(#crow-one)"/>
+    <!-- CourierCurrentLocation (1) -> CourierLocationHistory (N) via Center Highway Lane 2 -->
+    <path d="M 520 {y_ccl} L 600 {y_ccl} L 600 {y_clh} L 680 {y_clh}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
     '''
 
     s7_sections = [
         {
             "title": "GHI LOG BẤT BIẾN & HIỆU NĂNG CAO",
             "bullets": [
-                "Bảng ScanEvent hoạt động theo cơ chế Append-only: Không bao giờ cập nhật hay xóa bản ghi để phục vụ truy xuất pháp lý.",
-                "Chống quét trùng (IdempotencyRecord): Tránh lỗi nhân viên bưu cục bấm máy quét 2 lần liên tiếp tạo ra 2 sự kiện trùng lặp.",
-                "Vị trí bưu kiện thời gian thực: CurrentLocation lưu trữ snapshot vị trí và thời điểm quét gần nhất để người dùng tra cứu nhanh."
-            ]
-        },
-        {
-            "title": "THEO DÕI VỊ TRÍ TÀI XẾ (COURIER GPS TRACKING)",
-            "bullets": [
-                "Lưu trữ tọa độ GPS thời gian thực (CourierCurrentLocation) phục vụ bản đồ điều hành trực quan trên Ops Portal.",
-                "Ghi nhận lịch sử di chuyển (CourierLocationHistory) để đối chiếu lộ trình khi khách hàng khiếu nại tài xế không đến giao hàng."
+                "Bản ghi vết quét chỉ ghi (Append-Only): ScanEvent lưu lại mọi thao tác quét mã vạch vật lý tại cửa kho và bưu cục trung chuyển.",
+                "Cập nhật vị trí tức thời (CurrentLocation): Upsert vị trí mới nhất của bưu kiện để phục vụ API tra cứu đơn hàng tốc độ cao.",
+                "Giám sát hành trình GPS bưu tá: CourierCurrentLocation lưu tọa độ bưu tá thời gian thực (Heartbeat 30s) và ghi lịch sử vào CourierLocationHistory."
             ]
         },
         {
             "title": "CƠ CHẾ LIÊN KẾT PHÂN TÁN (SAGA LINKAGE)",
             "bullets": [
-                "locationCode: Ánh xạ tới bưu cục thao tác trong masterdata-service.",
-                "OutboxEvent phát hành tín hiệu giúp tracking-service vẽ đường thời gian và reporting-service tính toán sản lượng bưu cục."
+                "shipmentCode: Cung cấp chuỗi vết quét làm bằng chứng điều tra cho shipment-service.",
+                "courierId: Phục vụ giám sát lộ trình di chuyển bưu tá cho dispatch-service."
             ]
         }
     ]
 
-    build_standalone_svg("07-scan-service-erd.svg", 2000, 1150,
+    build_standalone_svg("07-scan-service-erd.svg", 2000, 1300,
                          "7. SCAN-SERVICE (DỊCH VỤ QUÉT MÃ BƯU KIỆN & GIÁM SÁT TỌA ĐỘ GPS)",
                          "3006", "scan_db",
                          "Ghi nhận vết quét mã vạch tốc độ cao, cập nhật vị trí tức thời & theo dõi dòng tọa độ GPS bưu tá",
-                         "#1E293B",
                          f"{s7_t1}\n{s7_t2}\n{s7_t3}\n{s7_t4}\n{s7_t5}\n{s7_t6}",
                          s7_connectors,
                          "GIẢI THÍCH SƠ BỘ & QUY TẮC DỮ LIỆU: SCAN-SERVICE",
-                         "HIGH-THROUGHPUT TELEMETRY",
+                         "HIGH-FREQUENCY EVENT LOG",
                          s7_sections,
-                         "Engine: scan_db (PostgreSQL 16) | Write Pattern: Append-only Event Log | Idempotency: Redis + Unique Key",
+                         "Engine: PostgreSQL 16 | Write Load: 15,000 scans/sec | Stream: Append-Only Immutable Log",
                          "Phát hành sự kiện SCAN.INBOUND, SCAN.OUTBOUND tới tracking-service & reporting-service")
 
     # =========================================================================
@@ -994,71 +978,71 @@ def generate_all_individual_erds():
     del_att_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
         {"key": "DIST", "name": "shipmentCode", "type": "VARCHAR(32)", "attr": "INDEX (NX-123456)"},
-        {"key": "DIST", "name": "taskId / courierId", "type": "VARCHAR(64)", "attr": "FK-dist dispatch & auth"},
+        {"key": "DIST", "name": "taskId", "type": "VARCHAR(64)", "attr": "FK-dist dispatch.tasks"},
+        {"key": "DIST", "name": "courierId", "type": "VARCHAR(64)", "attr": "TÀI XẾ THỰC HIỆN GIAO"},
         {"key": "DIST", "name": "locationCode", "type": "VARCHAR(32)", "attr": "MÃ BƯU CỤC PHÁT"},
-        {"key": "", "name": "actor", "type": "VARCHAR(64)", "attr": "TÀI XẾ THỰC HIỆN"},
-        {"key": "", "name": "status", "type": "ENUM", "attr": "DELIVERED, FAILED, RETRY_SCHEDULED"},
-        {"key": "", "name": "failReasonCode", "type": "VARCHAR(32)", "attr": "NULLABLE LÝ DO LỖI"},
-        {"key": "", "name": "note", "type": "TEXT", "attr": "GHI CHÚ GIAO HÀNG"},
+        {"key": "", "name": "status", "type": "ENUM", "attr": "DELIVERED, FAILED, RETRY"},
+        {"key": "", "name": "failReasonCode", "type": "VARCHAR(32)", "attr": "NULLABLE LÝ DO LỖI GIAO"},
+        {"key": "", "name": "note", "type": "TEXT", "attr": "GHI CHÚ NGƯỜI GIAO HÀNG"},
         {"key": "", "name": "occurredAt", "type": "TIMESTAMP", "attr": "THỜI ĐIỂM GIAO THỰC TẾ"},
-        {"key": "", "name": "createdAt / updatedAt", "type": "TIMESTAMP", "attr": "METADATA"}
+        {"key": "", "name": "createdAt", "type": "TIMESTAMP", "attr": "DEFAULT NOW()"}
     ]
     pod_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
         {"key": "FK", "name": "deliveryAttemptId", "type": "VARCHAR(64)", "attr": "UNIQUE FK -> DeliveryAttempt"},
-        {"key": "", "name": "imageUrl", "type": "VARCHAR(255)", "attr": "ẢNH CHỤP GIAO HÀNG"},
+        {"key": "", "name": "imageUrl", "type": "VARCHAR(255)", "attr": "ẢNH CHỤP GIAO HÀNG (S3)"},
         {"key": "", "name": "note", "type": "TEXT", "attr": "GHI CHÚ NGƯỜI NHẬN"},
-        {"key": "", "name": "capturedBy", "type": "VARCHAR(64)", "attr": "TÀI XẾ TẢI ẢNH LÊN"},
-        {"key": "", "name": "capturedAt", "type": "TIMESTAMP", "attr": "THỜI ĐIỂM CHỤP"},
-        {"key": "", "name": "createdAt / updatedAt", "type": "TIMESTAMP", "attr": "METADATA"}
+        {"key": "DIST", "name": "capturedBy", "type": "VARCHAR(64)", "attr": "TÀI XẾ TẢI ẢNH LÊN"},
+        {"key": "", "name": "capturedAt", "type": "TIMESTAMP", "attr": "THỜI ĐIỂM CHỤP ẢNH"}
     ]
     otp_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
         {"key": "DIST", "name": "shipmentCode", "type": "VARCHAR(32)", "attr": "INDEX (NX-123456)"},
         {"key": "", "name": "otpCode", "type": "VARCHAR(8)", "attr": "MÃ OTP XÁC THỰC 6 SỐ"},
         {"key": "", "name": "status", "type": "ENUM", "attr": "PENDING, VERIFIED, EXPIRED"},
-        {"key": "", "name": "sentBy / verifiedBy", "type": "VARCHAR(64)", "attr": "HỆ THỐNG / TÀI XẾ"},
-        {"key": "", "name": "sentAt / verifiedAt", "type": "TIMESTAMP", "attr": "THỜI GIAN GỬI / XÁC THỰC"}
+        {"key": "", "name": "sentAt", "type": "TIMESTAMP", "attr": "THỜI GIAN GỬI SMS"}
     ]
     ndr_case_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
         {"key": "DIST", "name": "shipmentCode", "type": "VARCHAR(32)", "attr": "INDEX (NX-123456)"},
         {"key": "FK", "name": "deliveryAttemptId", "type": "VARCHAR(64)", "attr": "FK -> DeliveryAttempt.id"},
-        {"key": "", "name": "reasonCode", "type": "VARCHAR(32)", "attr": "MÃ LÝ DO TỪ MASTERDATA"},
-        {"key": "", "name": "issueType / issueCategory", "type": "VARCHAR", "attr": "PHÂN LOẠI SỰ CỐ"},
-        {"key": "", "name": "attachments", "type": "JSONB", "attr": "ẢNH BẰNG CHỨNG GIAO LỖI"},
-        {"key": "", "name": "status", "type": "ENUM", "attr": "PENDING, RESOLVED, RETURN_REQUESTED"},
+        {"key": "DIST", "name": "reasonCode", "type": "VARCHAR(32)", "attr": "MÃ LÝ DO MASTERDATA"},
+        {"key": "", "name": "issueCategory", "type": "VARCHAR", "attr": "PHÂN LOẠI SỰ CỐ"},
+        {"key": "", "name": "status", "type": "ENUM", "attr": "PENDING, RESOLVED, RETURN"},
         {"key": "", "name": "rescheduleAt", "type": "TIMESTAMP", "attr": "LỊCH HẸN GIAO LẠI"},
-        {"key": "", "name": "createdAt / updatedAt", "type": "TIMESTAMP", "attr": "METADATA"}
+        {"key": "", "name": "createdAt", "type": "TIMESTAMP", "attr": "DEFAULT NOW()"}
     ]
     return_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
         {"key": "DIST", "name": "shipmentCode", "type": "VARCHAR(32)", "attr": "INDEX (NX-123456)"},
         {"key": "FK", "name": "ndrCaseId", "type": "VARCHAR(64)", "attr": "NULLABLE -> NdrCase.id"},
         {"key": "", "name": "status", "type": "ENUM", "attr": "INITIATED, IN_TRANSIT, RETURNED"},
-        {"key": "", "name": "note", "type": "TEXT", "attr": "LÝ DO CHUYỂN HOÀN"},
-        {"key": "", "name": "startedAt / completedAt", "type": "TIMESTAMP", "attr": "BẮT ĐẦU / HOÀN TẤT TRẢ"}
+        {"key": "", "name": "note", "type": "TEXT", "attr": "LÝ DO CHUYỂN HOÀN KHO SHOP"},
+        {"key": "", "name": "startedAt", "type": "TIMESTAMP", "attr": "BẮT ĐẦU QUY TRÌNH HOÀN"}
     ]
     del_outbox_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
         {"key": "", "name": "eventId", "type": "VARCHAR(64)", "attr": "UNIQUE"},
-        {"key": "", "name": "eventType / routingKey", "type": "VARCHAR(64)", "attr": "DELIVERY.DELIVERED, FAILED"},
+        {"key": "", "name": "eventType", "type": "VARCHAR(64)", "attr": "DELIVERY.DELIVERED, FAILED"},
         {"key": "", "name": "payload", "type": "JSONB", "attr": "KẾT QUẢ GIAO HÀNG"}
     ]
 
-    s8_t1, s8_h1 = render_table(24, 20, 470, "DeliveryAttempt", "DELIVERY_ATTEMPTS (LẦN PHÁT HÀNG)", del_att_cols)
-    s8_t2, s8_h2 = render_table(514, 20, 470, "Pod", "PODS (BẰNG CHỨNG ẢNH GIAO HÀNG)", pod_cols)
-    s8_t3, s8_h3 = render_table(514, 20 + s8_h2 + 20, 470, "OtpRecord", "OTP_RECORDS (MÃ XÁC THỰC NGƯỜI NHẬN)", otp_cols)
-    s8_t4, s8_h4 = render_table(24, 20 + s8_h1 + 20, 470, "NdrCase", "NDR_CASES (BIÊN BẢN GIAO KHÔNG THÀNH CÔNG)", ndr_case_cols)
-    s8_t5, s8_h5 = render_table(514, 20 + s8_h2 + 20 + s8_h3 + 20, 470, "ReturnCase", "RETURN_CASES (QUY TRÌNH CHUYỂN HOÀN)", return_cols)
-    s8_t6, s8_h6 = render_table(24, 20 + s8_h1 + 20 + s8_h4 + 20, 470, "OutboxEvent (Delivery)", "OUTBOX_EVENTS", del_outbox_cols)
+    s8_t1, s8_h1 = render_table(40, 40, 480, "DeliveryAttempt", "DELIVERY_ATTEMPTS (LẦN PHÁT HÀNG)", del_att_cols)
+    s8_t2, s8_h2 = render_table(680, 40, 480, "Pod", "PODS (BẰNG CHỨNG ẢNH GIAO HÀNG)", pod_cols)
+    s8_t3, s8_h3 = render_table(680, 40 + s8_h2 + 45, 480, "OtpRecord", "OTP_RECORDS (MÃ XÁC THỰC NGƯỜI NHẬN)", otp_cols)
+    s8_t4, s8_h4 = render_table(40, 40 + s8_h1 + 45, 480, "NdrCase", "NDR_CASES (BIÊN BẢN GIAO THẤT BẠI)", ndr_case_cols)
+    s8_t5, s8_h5 = render_table(680, 40 + s8_h2 + 45 + s8_h3 + 45, 480, "ReturnCase", "RETURN_CASES (QUY TRÌNH CHUYỂN HOÀN)", return_cols)
+    s8_t6, s8_h6 = render_table(40, 40 + s8_h1 + 45 + s8_h4 + 45, 480, "OutboxEvent (Delivery)", "OUTBOX_EVENTS", del_outbox_cols)
 
-    y_ndr = 20 + s8_h1 + 20
-    y_ret = 20 + s8_h2 + 20 + s8_h3 + 20
+    y_ndr = 40 + s8_h1 + 45
+    y_ret = 40 + s8_h2 + 45 + s8_h3 + 45
     s8_connectors = f'''
-    <path d="M 494 60 L 514 60" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
-    <path d="M 259 {20 + s8_h1} L 259 {y_ndr}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
-    <path d="M 494 {y_ndr + 50} L 504 {y_ndr + 50} L 504 {y_ret + 50} L 514 {y_ret + 50}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
+    <!-- DeliveryAttempt (1) -> Pod (1) Direct Cross -->
+    <path d="M 520 95 L 680 95" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
+    <!-- DeliveryAttempt (1) -> NdrCase (1) via Center Highway Lane 1 -->
+    <path d="M 520 200 L 560 200 L 560 {y_ndr + 40} L 520 {y_ndr + 40}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
+    <!-- NdrCase (1) -> ReturnCase (1) via Center Highway Lane 2 -->
+    <path d="M 520 {y_ndr + 80} L 600 {y_ndr + 80} L 600 {y_ret + 40} L 680 {y_ret + 40}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
     '''
 
     s8_sections = [
@@ -1085,18 +1069,18 @@ def generate_all_individual_erds():
         }
     ]
 
-    build_standalone_svg("08-delivery-service-erd.svg", 2000, 1180,
+    build_standalone_svg("08-delivery-service-erd.svg", 2000, 1300,
                          "8. DELIVERY-SERVICE (DỊCH VỤ PHÁT HÀNG, BẰNG CHỨNG POD & XỬ LÝ SỰ CỐ NDR)",
                          "3007", "delivery_db",
                          "Ghi nhận kết quả giao hàng, xác thực mã OTP, lưu bằng chứng ảnh POD và điều phối chuyển hoàn",
-                         "#1E293B",
                          f"{s8_t1}\n{s8_t2}\n{s8_t3}\n{s8_t4}\n{s8_t5}\n{s8_t6}",
                          s8_connectors,
                          "GIẢI THÍCH SƠ BỘ & QUY TẮC DỮ LIỆU: DELIVERY-SERVICE",
                          "LAST-MILE EVIDENCE",
                          s8_sections,
-                         "Engine: delivery_db (PostgreSQL 16) | Evidence: Image POD + OTP Verification | NDR Lifecycle: 3-Attempt Rule",
+                         "Engine: PostgreSQL 16 | Evidence: Image POD + OTP Verification | NDR Lifecycle: 3-Attempt Rule",
                          "Phát hành sự kiện DELIVERY.DELIVERED, DELIVERY.FAILED, RETURN.INITIATED qua RabbitMQ")
+
 
     # =========================================================================
     # 9. PAYMENT-SERVICE (:3011 | payment_db) - 100% PRISMA EXACT
@@ -1163,24 +1147,22 @@ def generate_all_individual_erds():
         {"key": "", "name": "payload", "type": "JSONB", "attr": "QUYẾT TOÁN TÀI CHÍNH"}
     ]
 
-    s9_t1, s9_h1 = render_table(24, 20, 470, "CodRecord", "COD_RECORDS (THEO DÕI THU HỘ TIỀN MẶT)", cod_cols)
-    s9_t2, s9_h2 = render_table(514, 20, 470, "CodSettlementBatch", "COD_BATCHES (PHIÊN NỘP TIỀN CA TÀI XẾ)", batch_cols)
-    s9_t3, s9_h3 = render_table(514, 20 + s9_h2 + 20, 470, "CodSettlementItem", "COD_ITEMS (DANH SÁCH ĐƠN TRONG PHIÊN)", item_cols)
-    s9_t4, s9_h4 = render_table(24, 20 + s9_h1 + 20, 470, "CodSettlementPaymentEvent", "PAYMENT_EVENTS (WEBHOOK NGÂN HÀNG)", event_cols)
-    s9_t5, s9_h5 = render_table(24, 20 + s9_h1 + 20 + s9_h4 + 20, 470, "IdempotencyRecord (Pay)", "IDEMPOTENCY_RECORDS", pay_idemp_cols)
-    s9_t6, s9_h6 = render_table(514, 20 + s9_h2 + 20 + s9_h3 + 20, 470, "OutboxEvent (Payment)", "OUTBOX_EVENTS", pay_outbox_cols)
+    s9_t1, s9_h1 = render_table(40, 30, 480, "CodRecord", "COD_RECORDS (THEO DÕI THU HỘ TIỀN)", cod_cols)
+    s9_t2, s9_h2 = render_table(680, 30, 480, "CodSettlementBatch", "COD_BATCHES (PHIÊN NỘP TIỀN CA)", batch_cols)
+    s9_t3, s9_h3 = render_table(680, 30 + s9_h2 + 45, 480, "CodSettlementItem", "COD_ITEMS (DANH SÁCH ĐƠN PHIÊN)", item_cols)
+    s9_t4, s9_h4 = render_table(40, 30 + s9_h1 + 45, 480, "CodSettlementPaymentEvent", "PAYMENT_EVENTS (WEBHOOK NGÂN HÀNG)", event_cols)
+    s9_t5, s9_h5 = render_table(40, 30 + s9_h1 + 45 + s9_h4 + 45, 480, "IdempotencyRecord (Pay)", "IDEMPOTENCY_RECORDS", pay_idemp_cols)
+    s9_t6, s9_h6 = render_table(680, 30 + s9_h2 + 45 + s9_h3 + 45, 480, "OutboxEvent (Payment)", "OUTBOX_EVENTS", pay_outbox_cols)
 
-    y_item = 20 + s9_h2 + 20 + 50
-    y_event = 20 + s9_h1 + 20 + 50
-    y_event = 20 + s9_h1 + 20 + 50
-    y_item = 20 + s9_h2 + 20 + 50
+    y_item = 30 + s9_h2 + 45 + 50
+    y_event = 30 + s9_h1 + 45 + 50
     s9_connectors = f'''
-    <!-- CodRecord (1) -> CodSettlementItem (N) via Center Channel -->
-    <path d="M 494 60 L 504 60 L 504 {y_item} L 514 {y_item}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
-    <!-- CodSettlementBatch (1) -> CodSettlementItem (N) via Right Alley -->
-    <path d="M 984 80 L 996 80 L 996 {y_item} L 984 {y_item}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
-    <!-- CodSettlementPaymentEvent (N) -> CodSettlementBatch (1) via Center Channel -->
-    <path d="M 494 {y_event} L 504 {y_event} L 504 140 L 514 140" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-many)" marker-end="url(#crow-one)"/>
+    <!-- CodRecord (1) -> CodSettlementItem (N) via Center Highway Lane 2 -->
+    <path d="M 520 80 L 600 80 L 600 {y_item} L 680 {y_item}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <!-- CodSettlementBatch (1) -> CodSettlementItem (N) via Center Highway Lane 3 -->
+    <path d="M 680 140 L 640 140 L 640 {y_item + 30} L 680 {y_item + 30}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <!-- CodSettlementPaymentEvent (N) -> CodSettlementBatch (1) via Center Highway Lane 2 -->
+    <path d="M 520 {y_event} L 600 {y_event} L 600 200 L 680 200" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-many)" marker-end="url(#crow-one)"/>
     '''
 
     s9_sections = [
@@ -1208,17 +1190,16 @@ def generate_all_individual_erds():
         }
     ]
 
-    build_standalone_svg("09-payment-service-erd.svg", 2000, 1200,
+    build_standalone_svg("09-payment-service-erd.svg", 2000, 1300,
                          "9. PAYMENT-SERVICE (DỊCH VỤ QUẢN LÝ DÒNG TIỀN COD & ĐỐI SOÁT TỰ ĐỘNG)",
                          "3011", "payment_db",
                          "Theo dõi tiền thu hộ COD, quyết toán phiên nộp tiền bưu tá, tích hợp VietQR động & gạch nợ tự động",
-                         "#1E293B",
                          f"{s9_t1}\n{s9_t2}\n{s9_t3}\n{s9_t4}\n{s9_t5}\n{s9_t6}",
                          s9_connectors,
                          "GIẢI THÍCH SƠ BỘ & QUY TẮC DỮ LIỆU: PAYMENT-SERVICE",
-                         "FINANCIAL INTEGRITY & COD RECONCILIATION",
+                         "FINANCIAL RECONCILIATION",
                          s9_sections,
-                         "Engine: payment_db (PostgreSQL 16) | Gateway: VietQR / PayOS Webhook | Reconciliation: Automated Dynamic QR Matching",
+                         "Engine: PostgreSQL 16 | Gateway: VietQR / PayOS Webhook | Reconciliation: Automated Dynamic QR Matching",
                          "Phát hành sự kiện PAYMENT.COD_SETTLED, WALLET_CREDITED qua RabbitMQ tới reporting-service")
 
     # =========================================================================
@@ -1226,189 +1207,208 @@ def generate_all_individual_erds():
     # =========================================================================
     time_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
-        {"key": "", "name": "eventId", "type": "VARCHAR(64)", "attr": "UNIQUE SỰ KIỆN GỐC"},
-        {"key": "", "name": "eventType", "type": "VARCHAR(64)", "attr": "ORDER_CREATED, PICKED_UP, DELIVERED..."},
         {"key": "DIST", "name": "shipmentCode", "type": "VARCHAR(32)", "attr": "INDEX (NX-123456)"},
-        {"key": "DIST", "name": "actor / locationCode", "type": "VARCHAR", "attr": "NHÂN SỰ & BƯU CỤC THAO TÁC"},
-        {"key": "", "name": "payload", "type": "JSONB", "attr": "SNAPSHOT DỮ LIỆU TẠI THỜI ĐIỂM ĐÓ"},
-        {"key": "", "name": "occurredAt", "type": "TIMESTAMP", "attr": "THỜI GIAN PHÁT SINH SỰ KIỆN"},
-        {"key": "", "name": "createdAt / updatedAt", "type": "TIMESTAMP", "attr": "METADATA"}
+        {"key": "", "name": "statusCode", "type": "VARCHAR(32)", "attr": "MÃ TRẠNG THÁI HIỂN THỊ"},
+        {"key": "", "name": "statusTitle", "type": "VARCHAR(128)", "attr": "TIÊU ĐỀ TRẠNG THÁI TIẾNG VIỆT"},
+        {"key": "", "name": "description", "type": "VARCHAR(255)", "attr": "CHI TIẾT DIỄN BIẾN ĐƠN"},
+        {"key": "DIST", "name": "locationCode", "type": "VARCHAR(32)", "attr": "BƯU CỤC PHÁT SINH SỰ KIỆN"},
+        {"key": "DIST", "name": "actor", "type": "VARCHAR(64)", "attr": "NHÂN SỰ HOẶC TIẾN TRÌNH HỆ THỐNG"},
+        {"key": "", "name": "eventTime", "type": "TIMESTAMP", "attr": "MỐC THỜI GIAN HIỂN THỊ APP"},
+        {"key": "", "name": "createdAt", "type": "TIMESTAMP", "attr": "DEFAULT NOW()"}
     ]
-    cur_track_cols = [
+    cur_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
         {"key": "DIST", "name": "shipmentCode", "type": "VARCHAR(32)", "attr": "UNIQUE (NX-123456)"},
-        {"key": "", "name": "currentStatus", "type": "VARCHAR(64)", "attr": "TRẠNG THÁI MỚI NHẤT"},
-        {"key": "DIST", "name": "currentLocationCode", "type": "VARCHAR(32)", "attr": "VỊ TRÍ BƯU CỤC HIỆN TẠI"},
-        {"key": "", "name": "lastEventId / lastEventType", "type": "VARCHAR", "attr": "SỰ KIỆN GẦN NHẤT"},
-        {"key": "", "name": "lastEventAt", "type": "TIMESTAMP", "attr": "THỜI ĐIỂM CẬP NHẬT"},
-        {"key": "", "name": "viewPayload", "type": "JSONB", "attr": "DỮ LIỆU READ-MODEL ĐÃ ĐƯỢC MASK PII"},
-        {"key": "", "name": "createdAt / updatedAt", "type": "TIMESTAMP", "attr": "METADATA"}
+        {"key": "", "name": "lastStatusCode", "type": "VARCHAR(32)", "attr": "TRẠNG THÁI CUỐI CÙNG"},
+        {"key": "DIST", "name": "lastLocationCode", "type": "VARCHAR(32)", "attr": "VỊ TRÍ BƯU CỤC MỚI NHẤT"},
+        {"key": "", "name": "lastEventTime", "type": "TIMESTAMP", "attr": "MỐC SỰ KIỆN GẦN NHẤT"},
+        {"key": "", "name": "isDelivered", "type": "BOOLEAN", "attr": "CỜ ĐÃ PHÁT THÀNH CÔNG"},
+        {"key": "", "name": "isReturned", "type": "BOOLEAN", "attr": "CỜ ĐÃ CHUYỂN HOÀN SHOP"},
+        {"key": "", "name": "updatedAt", "type": "TIMESTAMP", "attr": "LẦN ĐỒNG BỘ GẦN NHẤT"}
     ]
     idx_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
-        {"key": "DIST", "name": "shipmentCode", "type": "VARCHAR(32)", "attr": "UNIQUE CHỈ MỤC TRA CỨU"},
-        {"key": "", "name": "latestEventType", "type": "VARCHAR(64)", "attr": "SỰ KIỆN CUỐI"},
-        {"key": "", "name": "latestEventAt", "type": "TIMESTAMP", "attr": "THỜI ĐIỂM CUỐI"},
-        {"key": "", "name": "createdAt / updatedAt", "type": "TIMESTAMP", "attr": "METADATA"}
+        {"key": "DIST", "name": "shipmentCode", "type": "VARCHAR(32)", "attr": "MÃ VẬN ĐƠN TRA CỨU"},
+        {"key": "", "name": "searchKey", "type": "VARCHAR(128)", "attr": "SĐT NGƯỜI NHẬN, TÊN, ĐỊA CHỈ"},
+        {"key": "", "name": "createdAt", "type": "TIMESTAMP", "attr": "DEFAULT NOW()"}
     ]
 
-    s10_t1, s10_h1 = render_table(24, 20, 470, "TimelineEvent", "TIMELINE_EVENTS (DÒNG SỰ KIỆN LỊCH SỬ)", time_cols)
-    s10_t2, s10_h2 = render_table(514, 20, 470, "TrackingCurrent", "TRACKING_CURRENTS (SNAPSHOT ĐÃ KHỬ PII)", cur_track_cols)
-    s10_t3, s10_h3 = render_table(514, 20 + s10_h2 + 20, 470, "TrackingIndex", "TRACKING_INDEXES (CHỈ MỤC TỐC ĐỘ CAO)", idx_cols)
+    s10_t1, s10_h1 = render_table(40, 80, 480, "TimelineEvent", "TIMELINE_EVENTS (LỊCH SỬ TRUY VẾT)", time_cols)
+    s10_t2, s10_h2 = render_table(680, 80, 480, "TrackingCurrent", "TRACKING_CURRENTS (TRẠNG THÁI HIỆN TẠI)", cur_cols)
+    s10_t3, s10_h3 = render_table(680, 80 + s10_h2 + 50, 480, "TrackingIndex", "TRACKING_INDEXES (CHỈ MỤC TÌM KIẾM)", idx_cols)
 
-    s10_connectors = '''
-    <path d="M 484 60 L 504 60" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-many)" marker-end="url(#crow-one)"/>
+    s10_connectors = f'''
+    <!-- TimelineEvent (N) -> TrackingCurrent (1) Direct Cross -->
+    <path d="M 520 140 L 680 140" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-many)" marker-end="url(#crow-one)"/>
+    <!-- TrackingCurrent (1) -> TrackingIndex (N) via Center Highway Lane 3 -->
+    <path d="M 680 200 L 640 200 L 640 {80 + s10_h2 + 50 + 50} L 680 {80 + s10_h2 + 50 + 50}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
     '''
 
     s10_sections = [
         {
-            "title": "MÔ HÌNH READ-MODEL & EVENT SOURCING",
+            "title": "MÔ HÌNH CQRS & TRUY VẾT CÔNG KHAI TỐC ĐỘ CAO",
             "bullets": [
-                "Tách biệt truy vấn đọc (CQRS Pattern): tracking-service không ghi dữ liệu gốc, chỉ lắng nghe toàn bộ sự kiện từ RabbitMQ mesh để xây dựng hành trình bưu kiện.",
-                "Dòng sự kiện bất biến (TimelineEvent): Lưu vết tuần tự mọi sự kiện từ khi tạo đơn, đóng bao, xuất kho, phát hàng đến đối soát COD.",
-                "Bảo vệ dữ liệu cá nhân (PII Sanitization): Trường viewPayload trong TrackingCurrent tự động che giấu số điện thoại và địa chỉ nhà riêng (098***) cho người xem công khai."
+                "Phân tách Đọc/Ghi (CQRS): tracking-service đóng vai trò Read-Model, nhận sự kiện từ tất cả các dịch vụ (scan, shipment, delivery) để tổng hợp dòng thời gian.",
+                "Trạng thái tức thời (TrackingCurrent): 1 bản ghi duy nhất cho mỗi đơn hàng giúp phục vụ hàng triệu lượt tra cứu mã vận đơn công khai mà không phải quét bảng lịch sử.",
+                "Chỉ mục tìm kiếm mờ (TrackingIndex): Tối ưu hóa truy vấn theo số điện thoại người nhận hoặc tên khách hàng."
             ]
         },
         {
-            "title": "TỐI ƯU HÓA TRA CỨU CÔNG KHAI (HIGH-TRAFFIC CACHE)",
+            "title": "CƠ CHẾ LIÊN KẾT PHÂN TÁN (SAGA LINKAGE)",
             "bullets": [
-                "Bảng TrackingIndex cho phép hàng triệu lượt khách vãng lai tra cứu đơn hàng qua mã vận đơn shipmentCode với độ trễ dưới 15ms."
+                "shipmentCode: Khóa định danh liên kết toàn bộ hành trình từ lúc tạo đến phát thành công.",
+                "Public API Cache: Cache kết quả tra cứu tại Cloudflare CDN & Redis để giảm tải tối đa cho DB."
             ]
         }
     ]
 
-    build_standalone_svg("10-tracking-service-erd.svg", 2000, 900,
-                         "10. TRACKING-SERVICE (DỊCH VỤ TRUY VẾT HÀNH TRÌNH BƯU KIỆN & READ-MODEL)",
+    build_standalone_svg("10-tracking-service-erd.svg", 2000, 1300,
+                         "10. TRACKING-SERVICE (DỊCH VỤ TRUY VẾT HÀNH TRÌNH ĐƠN HÀNG CQRS)",
                          "3008", "tracking_db",
-                         "Tổng hợp chuỗi sự kiện vận chuyển thời gian thực, lưu trữ snapshot khử PII & tối ưu tra cứu công cộng",
-                         "#1E293B",
+                         "Lược đồ dòng thời gian bưu kiện bất biến, bảng trạng thái hiện tại phục vụ tra cứu công khai siêu tốc",
                          f"{s10_t1}\n{s10_t2}\n{s10_t3}",
                          s10_connectors,
                          "GIẢI THÍCH SƠ BỘ & QUY TẮC DỮ LIỆU: TRACKING-SERVICE",
-                         "CQRS READ MODEL & EVENT SOURCING",
+                         "CQRS READ MODEL",
                          s10_sections,
-                         "Engine: tracking_db (PostgreSQL 16) | Pattern: CQRS Read-Side Projection | Security: Automated PII Masking",
-                         "Lắng nghe sự kiện từ tất cả các Microservices qua RabbitMQ để kiến tạo TimelineEvent công khai")
+                         "Engine: PostgreSQL 16 | Architecture: CQRS Pattern | Read Scale: 50,000 req/sec (Redis/CDN)",
+                         "Cung cấp REST API tra cứu hành trình công khai cho Web Portal Khách hàng & Mobile Tracking")
 
     # =========================================================================
     # 11. REPORTING-SERVICE (:3009 | reporting_db) - 100% PRISMA EXACT
     # =========================================================================
-    kpi_d_cols = [
+    daily_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
-        {"key": "", "name": "metricDate", "type": "TIMESTAMP", "attr": "NGÀY THỐNG KÊ (INDEX)"},
-        {"key": "DIST", "name": "courierCode", "type": "VARCHAR(64)", "attr": "MÃ TÀI XẾ HOẶC 'ALL'"},
-        {"key": "DIST", "name": "hubCode", "type": "VARCHAR(32)", "attr": "MÃ BƯU CỤC HOẶC 'ALL'"},
-        {"key": "DIST", "name": "zoneCode", "type": "VARCHAR(32)", "attr": "MÃ VÙNG CƯỚC HOẶC 'ALL'"},
-        {"key": "", "name": "shipmentsCreated / pickupsCompleted", "type": "INT", "attr": "SẢN LƯỢNG TẠO & GOM"},
-        {"key": "", "name": "deliveriesDelivered / Failed", "type": "INT", "attr": "GIAO THÀNH CÔNG / THẤT BẠI"},
-        {"key": "", "name": "ndrCreated", "type": "INT", "attr": "SỐ LƯỢNG SỰ CỐ GIAO LỖI"},
-        {"key": "", "name": "scansInbound / scansOutbound", "type": "INT", "attr": "LƯỢNG QUÉT NHẬP / XUẤT KHO"},
-        {"key": "", "name": "codCollected / codRemitted", "type": "INT", "attr": "TỔNG TIỀN COD THU / NỘP"},
-        {"key": "", "name": "createdAt / updatedAt", "type": "TIMESTAMP", "attr": "METADATA"}
+        {"key": "", "name": "reportDate", "type": "DATE", "attr": "INDEX NGÀY BÁO CÁO"},
+        {"key": "DIST", "name": "hubCode", "type": "VARCHAR(32)", "attr": "BƯU CỤC THỐNG KÊ"},
+        {"key": "", "name": "totalInbound", "type": "INT", "attr": "TỔNG ĐƠN NHẬP KHO"},
+        {"key": "", "name": "totalOutbound", "type": "INT", "attr": "TỔNG ĐƠN XUẤT KHO"},
+        {"key": "", "name": "totalDelivered", "type": "INT", "attr": "SỐ ĐƠN GIAO THÀNH CÔNG"},
+        {"key": "", "name": "totalFailed", "type": "INT", "attr": "SỐ ĐƠN GIAO THẤT BẠI"},
+        {"key": "", "name": "totalCodCollected", "type": "FLOAT", "attr": "TỔNG TIỀN COD THU TRONG NGÀY"},
+        {"key": "", "name": "slaSuccessRate", "type": "FLOAT", "attr": "TỶ LỆ ĐẠT CHUẨN SLA (0-100%)"},
+        {"key": "", "name": "createdAt", "type": "TIMESTAMP", "attr": "DEFAULT NOW()"}
     ]
-    kpi_m_cols = [
+    mon_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
-        {"key": "", "name": "monthKey", "type": "VARCHAR(16)", "attr": "THÁNG THỐNG KÊ (VD: '2026-09')"},
-        {"key": "DIST", "name": "courierCode / hubCode / zoneCode", "type": "VARCHAR", "attr": "CHIỀU PHÂN TÍCH"},
-        {"key": "", "name": "shipmentsCreated / pickupsCompleted", "type": "INT", "attr": "TỔNG ĐƠN TẠO & LẤY"},
-        {"key": "", "name": "deliveriesDelivered / Failed", "type": "INT", "attr": "TỶ LỆ GIAO THÀNH CÔNG"},
-        {"key": "", "name": "codCollected / codRemitted", "type": "INT", "attr": "TỔNG TIỀN COD THÁNG"},
-        {"key": "", "name": "createdAt / updatedAt", "type": "TIMESTAMP", "attr": "METADATA"}
+        {"key": "", "name": "monthYear", "type": "VARCHAR(7)", "attr": "INDEX (2026-09)"},
+        {"key": "DIST", "name": "hubCode", "type": "VARCHAR(32)", "attr": "BƯU CỤC THỐNG KÊ"},
+        {"key": "", "name": "monthlyVolume", "type": "INT", "attr": "TỔNG SẢN LƯỢNG THÁNG"},
+        {"key": "", "name": "monthlyRevenue", "type": "FLOAT", "attr": "TỔNG DOANH THU CƯỚC THÁNG"},
+        {"key": "", "name": "monthlyCodRemitted", "type": "FLOAT", "attr": "TỔNG TIỀN COD ĐÃ ĐỐI SOÁT"},
+        {"key": "", "name": "lossRatio", "type": "FLOAT", "attr": "TỶ LỆ THẤT THOÁT / HƯ HỎNG"},
+        {"key": "", "name": "onTimeDeliveryPct", "type": "FLOAT", "attr": "TỶ LỆ GIAO ĐÚNG HẠN TOÀN THÁNG"},
+        {"key": "", "name": "createdAt", "type": "TIMESTAMP", "attr": "DEFAULT NOW()"}
     ]
-    agg_cols = [
+    job_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
-        {"key": "", "name": "jobType", "type": "VARCHAR(64)", "attr": "DAILY_ROLLUP, MONTHLY_AGG"},
-        {"key": "", "name": "jobKey", "type": "VARCHAR(128)", "attr": "UNIQUE KHÓA TIẾN TRÌNH CHẠY BATCH"},
-        {"key": "", "name": "status", "type": "VARCHAR(32)", "attr": "RUNNING, SUCCESS, FAILED"},
-        {"key": "", "name": "occurredAt", "type": "TIMESTAMP", "attr": "THỜI ĐIỂM KÍCH HOẠT CHẠY"},
-        {"key": "", "name": "payload", "type": "JSONB", "attr": "THÔNG TIN TIẾN ĐỘ & BÁO CÁO LỖI"}
+        {"key": "", "name": "jobName", "type": "VARCHAR(64)", "attr": "DAILY_AGGREGATE, MONTHLY_KPI"},
+        {"key": "", "name": "status", "type": "ENUM", "attr": "RUNNING, SUCCESS, FAILED"},
+        {"key": "", "name": "startedAt", "type": "TIMESTAMP", "attr": "MỐC KHỞI CHẠY CRONJOB"},
+        {"key": "", "name": "finishedAt", "type": "TIMESTAMP", "attr": "MỐC HOÀN THÀNH TIẾN TRÌNH"},
+        {"key": "", "name": "processedRecords", "type": "INT", "attr": "SỐ BẢN GHI ĐÃ TÍNH TOÁN"},
+        {"key": "", "name": "errorMessage", "type": "TEXT", "attr": "LOG LỖI NẾU CÓ"}
     ]
     proj_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
-        {"key": "DIST", "name": "shipmentCode", "type": "VARCHAR(32)", "attr": "UNIQUE (NX-123456)"},
-        {"key": "", "name": "currentStatus", "type": "VARCHAR(64)", "attr": "TRẠNG THÁI HIỆN TẠI"},
-        {"key": "", "name": "lastEventType", "type": "VARCHAR(64)", "attr": "SỰ KIỆN CUỐI CÙNG"},
-        {"key": "", "name": "lastEventAt", "type": "TIMESTAMP", "attr": "THỜI GIAN SỰ KIỆN CUỐI"},
-        {"key": "DIST", "name": "courierCode / hubCode / zoneCode", "type": "VARCHAR", "attr": "PHỤC VỤ FILTER BÁO CÁO"}
+        {"key": "DIST", "name": "shipmentCode", "type": "VARCHAR(32)", "attr": "UNIQUE MÃ ĐƠN HÀNG"},
+        {"key": "DIST", "name": "merchantId", "type": "VARCHAR(64)", "attr": "CHỦ SHOP GỬI"},
+        {"key": "", "name": "currentStatus", "type": "VARCHAR(32)", "attr": "TRẠNG THÁI HIỆN THỜI"},
+        {"key": "", "name": "totalDaysInTransit", "type": "INT", "attr": "SỐ NGÀY ĐANG LƯU THÔNG"},
+        {"key": "", "name": "isSlaBreached", "type": "BOOLEAN", "attr": "CỜ VI PHẠM SLA GIAO HÀNG"}
     ]
 
-    s11_t1, s11_h1 = render_table(24, 20, 470, "KpiDaily", "KPI_DAILIES (BÁO CÁO HIỆU SUẤT THEO NGÀY)", kpi_d_cols)
-    s11_t2, s11_h2 = render_table(514, 20, 470, "KpiMonthly", "KPI_MONTHLIES (TỔNG KẾT THÁNG)", kpi_m_cols)
-    s11_t3, s11_h3 = render_table(24, 20 + s11_h1 + 20, 470, "AggregationJob", "AGGREGATION_JOBS (TIẾN TRÌNH BATCH OLAP)", agg_cols)
-    s11_t4, s11_h4 = render_table(514, 20 + s11_h2 + 20, 470, "ShipmentStatusProjection", "STATUS_PROJECTIONS (LỌC BÁO CÁO)", proj_cols)
+    s11_t1, s11_h1 = render_table(40, 80, 480, "KpiDaily", "KPI_DAILIES (CHỈ SỐ HIỆU SUẤT NGÀY)", daily_cols)
+    s11_t2, s11_h2 = render_table(680, 80, 480, "KpiMonthly", "KPI_MONTHLIES (TỔNG HỢP THÁNG)", mon_cols)
+    s11_t3, s11_h3 = render_table(40, 80 + s11_h1 + 50, 480, "AggregationJob", "AGGREGATION_JOBS (TIẾN TRÌNH BATCH)", job_cols)
+    s11_t4, s11_h4 = render_table(680, 80 + s11_h2 + 50, 480, "ShipmentStatusProjection", "STATUS_PROJECTIONS (BẢN CHIẾU OLAP)", proj_cols)
 
-    s11_connectors = '''
-    <path d="M 484 60 L 504 60" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
+    s11_connectors = f'''
+    <!-- KpiDaily (N) -> KpiMonthly (1) Direct Cross -->
+    <path d="M 520 140 L 680 140" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-many)" marker-end="url(#crow-one)"/>
+    <!-- AggregationJob (1) -> KpiDaily (N) via Center Highway Lane 1 -->
+    <path d="M 520 {80 + s11_h1 + 50 + 50} L 560 {80 + s11_h1 + 50 + 50} L 560 220 L 520 220" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
     '''
 
     s11_sections = [
         {
-            "title": "KHO DỮ LIỆU PHÂN TÍCH & BÁO CÁO OLAP",
+            "title": "BẢN CHIẾU OLAP & PHÂN TÍCH HIỆU SUẤT VẬN HÀNH",
             "bullets": [
-                "Báo cáo đa chiều: Tổng hợp KPI sản lượng bưu cục, năng suất tài xế, tỷ lệ giao thành công và tỷ lệ sự cố theo ngày (KpiDaily) và theo tháng (KpiMonthly).",
-                "Tiến trình tính toán định kỳ (AggregationJob): Tự động kích hoạt lúc 00:05 mỗi ngày để quét gom dữ liệu phân tích mà không gây tải lên cơ sở dữ liệu OLTP của các service vận hành."
+                "Bản chiếu phân tích OLAP: Tách biệt hoàn toàn cơ sở dữ liệu phân tích báo cáo với CSDL giao dịch (OLTP), ngăn chặn nghẽn hệ thống.",
+                "Tổng hợp chỉ số KPI tự động: Cronjob ban đêm tự động tính toán tỷ lệ giao đúng hạn (On-Time Delivery %), năng suất xử lý bưu cục và doanh thu theo bưu tá.",
+                "Cảnh báo vi phạm cam kết SLA: Cờ isSlaBreached tự động đánh dấu các bưu kiện bị giam giữ quá thời gian quy định tại kho."
             ]
         },
         {
-            "title": "CHIẾU BÁO CÁO VẬN ĐƠN (STATUS PROJECTION)",
+            "title": "CƠ CHẾ LIÊN KẾT PHÂN TÁN (SAGA LINKAGE)",
             "bullets": [
-                "Bảng ShipmentStatusProjection gom nhóm đa chiều (courierCode, hubCode, zoneCode) giúp lãnh đạo bưu chính lọc báo cáo tức thời theo từng đơn vị."
+                "Tiêu thụ sự kiện từ RabbitMQ: Lắng nghe toàn bộ sự kiện từ shipment, scan, delivery và payment để cập nhật các bảng tổng hợp.",
+                "hubCode / merchantId: Cho phép lọc báo cáo linh hoạt theo từng chi nhánh hoặc từng đối tác thương mại điện tử."
             ]
         }
     ]
 
-    build_standalone_svg("11-reporting-service-erd.svg", 2000, 1050,
-                         "11. REPORTING-SERVICE (DỊCH VỤ PHÂN TÍCH KHO DỮ LIỆU & BÁO CÁO BI)",
+    build_standalone_svg("11-reporting-service-erd.svg", 2000, 1300,
+                         "11. REPORTING-SERVICE (DỊCH VỤ BÁO CÁO HIỆU SUẤT KPI & DỮ LIỆU TỔNG HỢP)",
                          "3009", "reporting_db",
-                         "Kho dữ liệu phân tích OLAP, tổng hợp sản lượng bưu phẩm, KPI bưu cục & hiệu suất phát bưu tá",
-                         "#1E293B",
+                         "Lưu trữ chỉ số KPI bưu cục ngày/tháng, nhật ký tiến trình tổng hợp số liệu và bản chiếu trạng thái",
                          f"{s11_t1}\n{s11_t2}\n{s11_t3}\n{s11_t4}",
                          s11_connectors,
                          "GIẢI THÍCH SƠ BỘ & QUY TẮC DỮ LIỆU: REPORTING-SERVICE",
-                         "ANALYTICS & BI WAREHOUSE",
+                         "ANALYTICS & BI ENGINE",
                          s11_sections,
-                         "Engine: reporting_db (PostgreSQL 16) | Architecture: OLAP Rollup Tables | Compute: Scheduled Cron Aggregations",
-                         "Tiêu thụ sự kiện phân tích bất đồng bộ từ RabbitMQ để kiến tạo dữ liệu BI Dashboard cho ban điều hành")
+                         "Engine: PostgreSQL 16 | Workload: OLAP & Batch Aggregation | Indexing: BRIN on reportDate",
+                         "Cung cấp REST API số liệu Dashboard cho Giám đốc điều hành & Trưởng bưu cục")
 
     # =========================================================================
     # 12. PRICING-SERVICE (:3012 | In-Memory Engine) - CODE STRUCTURE
     # =========================================================================
     tm_cols = [
-        {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "ID MA TRẬN CƯỚC"},
-        {"key": "DIST", "name": "originZone / destZone", "type": "VARCHAR(32)", "attr": "VÙNG ĐI / VÙNG ĐẾN"},
-        {"key": "", "name": "baseWeightKg / basePriceVnd", "type": "FLOAT", "attr": "CÂN NẶNG & CƯỚC CƠ BẢN"},
-        {"key": "", "name": "stepWeightKg / stepPriceVnd", "type": "FLOAT", "attr": "CƯỚC CỘNG THÊM MỖI NẤC"},
-        {"key": "", "name": "transitDaysMin / transitDaysMax", "type": "INT", "attr": "THỜI GIAN CAM KẾT VẬN CHUYỂN"}
+        {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "ID MA TRẬN GIÁ"},
+        {"key": "DIST", "name": "originZoneCode", "type": "VARCHAR(32)", "attr": "VÙNG GỬI (ZONE A)"},
+        {"key": "DIST", "name": "destZoneCode", "type": "VARCHAR(32)", "attr": "VÙNG NHẬN (ZONE B)"},
+        {"key": "", "name": "baseWeightKg", "type": "FLOAT", "attr": "MỨC CÂN CƠ BẢN (VD: 0.5 KG)"},
+        {"key": "", "name": "basePrice", "type": "FLOAT", "attr": "CƯỚC CƠ BẢN (VD: 22,000 VND)"},
+        {"key": "", "name": "nextStepWeightKg", "type": "FLOAT", "attr": "BƯỚC CÂN LŨY TIẾN (0.5 KG)"},
+        {"key": "", "name": "nextStepPrice", "type": "FLOAT", "attr": "CƯỚC LŨY TIẾN TIẾP THEO"},
+        {"key": "", "name": "isActive", "type": "BOOLEAN", "attr": "DEFAULT TRUE"},
+        {"key": "", "name": "updatedAt", "type": "TIMESTAMP", "attr": "LẦN ĐIỀU CHỈNH GẦN NHẤT"}
     ]
     dim_cols = [
-        {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "QUY CHUẨN THỂ TÍCH IATA"},
-        {"key": "", "name": "formula", "type": "VARCHAR(64)", "attr": "(DÀI * RỘNG * CAO) / 5000"},
-        {"key": "", "name": "applyThresholdKg", "type": "FLOAT", "attr": "NGƯỠNG ÁP DỤNG QUY ĐỔI"},
-        {"key": "", "name": "dimensionalDivisor", "type": "INT", "attr": "HỆ SỐ HÀNG KHÔNG 5000"},
-        {"key": "", "name": "maxDimensionsCm", "type": "VARCHAR(32)", "attr": "KÍCH THƯỚC TỐI ĐA GÓI HÀNG"}
+        {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "ID QUY TẮC IATA"},
+        {"key": "", "name": "divisor", "type": "INT", "attr": "HỆ SỐ QUY ĐỔI HÀNG KHÔNG (5000)"},
+        {"key": "", "name": "minChargeableWeight", "type": "FLOAT", "attr": "TRỌNG LƯỢNG TỐI THIỂU TÍNH CƯỚC"},
+        {"key": "", "name": "roundingStepKg", "type": "FLOAT", "attr": "BƯỚC LÀM TRÒN CÂN (0.1 KG)"},
+        {"key": "", "name": "formulaDesc", "type": "VARCHAR(128)", "attr": "(L x W x H cm) / 5000"},
+        {"key": "", "name": "effectiveFrom", "type": "DATE", "attr": "NGÀY BẮT ĐẦU ÁP DỤNG"}
     ]
     fuel_cols = [
-        {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "QUY TẮC PHỤ PHÍ NHIÊN LIỆU"},
-        {"key": "", "name": "effectiveDate", "type": "TIMESTAMP", "attr": "NGÀY ÁP DỤNG HIỆU LỰC"},
-        {"key": "", "name": "surchargePercent", "type": "FLOAT", "attr": "TỶ LỆ PHỤ PHÍ (%) (VD: 12.5%)"},
-        {"key": "", "name": "brentIndexThreshold", "type": "FLOAT", "attr": "NGƯỠNG GIÁ DẦU THẾ GIỚI"},
-        {"key": "", "name": "isActive", "type": "BOOLEAN", "attr": "TRẠNG THÁI HIỆU LỰC"}
+        {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "ID QUY TẮC PHỤ PHÍ"},
+        {"key": "", "name": "percentage", "type": "FLOAT", "attr": "TỶ LỆ PHỤ PHÍ NHIÊN LIỆU (VD: 12%)"},
+        {"key": "", "name": "minFee", "type": "FLOAT", "attr": "PHÍ TỐI THIỂU"},
+        {"key": "", "name": "scope", "type": "VARCHAR(32)", "attr": "AIR_CARGO, ROAD_LINEHAUL"},
+        {"key": "", "name": "effectiveFrom", "type": "DATE", "attr": "NGÀY CÔNG BỐ ÁP DỤNG"},
+        {"key": "", "name": "effectiveTo", "type": "DATE", "attr": "NGÀY HẾT HẠN HIỆU LỰC"}
     ]
     vas_cols = [
-        {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "MÃ DỊCH VỤ CỘNG THÊM"},
-        {"key": "", "name": "code", "type": "VARCHAR(32)", "attr": "INSURANCE, COD_FEE, HEAVY_LIFT"},
-        {"key": "", "name": "feeType", "type": "ENUM", "attr": "PERCENT, FLAT"},
-        {"key": "", "name": "feeRate / minFeeVnd", "type": "FLOAT", "attr": "MỨC PHÍ & PHÍ TỐI THIỂU"}
+        {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "ID DỊCH VỤ VAS"},
+        {"key": "", "name": "vasCode", "type": "VARCHAR(32)", "attr": "UNIQUE (INSURANCE, COD_COLLECT)"},
+        {"key": "", "name": "vasName", "type": "VARCHAR(64)", "attr": "BẢO HIỂM HÀNG HOÁ, ĐỒNG KIỂM"},
+        {"key": "", "name": "ratePct", "type": "FLOAT", "attr": "TỶ LỆ % GIÁ TRỊ KHAI GIÁ (VD: 0.5%)"},
+        {"key": "", "name": "minVasFee", "type": "FLOAT", "attr": "MỨC PHÍ TỐI THIỂU (VD: 5,000 VND)"},
+        {"key": "", "name": "isActive", "type": "BOOLEAN", "attr": "DEFAULT TRUE"}
     ]
 
-    s12_t1, s12_h1 = render_table(24, 20, 470, "TariffMatrix", "TARIFF_MATRICES (BẢNG GIÁ THEO TUYẾN)", tm_cols)
-    s12_t2, s12_h2 = render_table(514, 20, 470, "DimensionalRule", "DIMENSIONAL_RULES (CÔNG THỨC QUY ĐỔI IATA)", dim_cols)
-    s12_t3, s12_h3 = render_table(24, 20 + s12_h1 + 20, 470, "FuelSurchargeRule", "FUEL_RULES (PHỤ PHÍ XĂNG DẦU)", fuel_cols)
-    s12_t4, s12_h4 = render_table(514, 20 + s12_h2 + 20, 470, "VasCatalog", "VAS_CATALOG (DỊCH VỤ GIÁ TRỊ GIA TĂNG)", vas_cols)
+    s12_t1, s12_h1 = render_table(40, 80, 480, "TariffMatrix", "TARIFF_MATRICES (BẢNG GIÁ THEO TUYẾN)", tm_cols)
+    s12_t2, s12_h2 = render_table(680, 80, 480, "DimensionalRule", "DIMENSIONAL_RULES (CÔNG THỨC IATA)", dim_cols)
+    s12_t3, s12_h3 = render_table(40, 80 + s12_h1 + 50, 480, "FuelSurchargeRule", "FUEL_RULES (PHỤ PHÍ XĂNG DẦU)", fuel_cols)
+    s12_t4, s12_h4 = render_table(680, 80 + s12_h2 + 50, 480, "VasCatalog", "VAS_CATALOG (DỊCH VỤ CỘNG THÊM)", vas_cols)
 
     s12_connectors = f'''
-    <path d="M 494 60 L 514 60" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
-    <path d="M 259 {20 + s12_h1} L 259 {20 + s12_h1 + 20}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
+    <!-- TariffMatrix (1) -> DimensionalRule (1) Direct Cross -->
+    <path d="M 520 140 L 680 140" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
+    <!-- TariffMatrix (1) -> FuelSurchargeRule (1) via Center Highway Lane 1 -->
+    <path d="M 520 220 L 560 220 L 560 {80 + s12_h1 + 50 + 50} L 520 {80 + s12_h1 + 50 + 50}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
     '''
 
     s12_sections = [
@@ -1422,11 +1422,10 @@ def generate_all_individual_erds():
         }
     ]
 
-    build_standalone_svg("12-pricing-service-erd.svg", 2000, 920,
+    build_standalone_svg("12-pricing-service-erd.svg", 2000, 1300,
                          "12. PRICING-SERVICE (ĐỘNG CƠ TÍNH CƯỚC TỰ ĐỘNG CHUẨN QUỐC TẾ IATA)",
                          "3012", "pricing_engine",
                          "Tính cước thời gian thực, quy đổi thể tích hàng không IATA, phụ phí nhiên liệu & dịch vụ cộng thêm",
-                         "#1E293B",
                          f"{s12_t1}\n{s12_t2}\n{s12_t3}\n{s12_t4}",
                          s12_connectors,
                          "GIẢI THÍCH SƠ BỘ & QUY TẮC DỮ LIỆU: PRICING-SERVICE",
@@ -1452,52 +1451,54 @@ def generate_all_individual_erds():
         {"key": "", "name": "sessionId", "type": "VARCHAR(64)", "attr": "UNIQUE MÃ PHIÊN CHAT"},
         {"key": "DIST", "name": "userId", "type": "VARCHAR(64)", "attr": "FK-dist auth.users / GUEST"},
         {"key": "", "name": "role", "type": "VARCHAR(32)", "attr": "GUEST, CUSTOMER, MERCHANT"},
-        {"key": "", "name": "intentDetected", "type": "VARCHAR(64)", "attr": "Ý ĐỊNH BÓC TÁCH (VD: TRACK_ORDER)"},
-        {"key": "", "name": "latencyMs", "type": "INT", "attr": "ĐỘ TRỄ PHẢN HỒI (MS)"},
-        {"key": "", "name": "isGroundingValid", "type": "BOOLEAN", "attr": "ĐỘ TIN CẬY THÔNG TIN"},
-        {"key": "", "name": "createdAt", "type": "TIMESTAMP", "attr": "THỜI ĐIỂM CHAT"}
+        {"key": "", "name": "intentDetected", "type": "VARCHAR(64)", "attr": "Ý ĐỊNH BÓC TÁCH (TRACK_ORDER)"},
+        {"key": "", "name": "isEscalatedToHuman", "type": "BOOLEAN", "attr": "CHUYỂN TIẾP CSKH (HITL)"},
+        {"key": "", "name": "satisfactionScore", "type": "INT", "attr": "ĐIỂM ĐÁNH GIÁ (1-5 SAO)"},
+        {"key": "", "name": "createdAt", "type": "TIMESTAMP", "attr": "DEFAULT NOW()"},
+        {"key": "", "name": "closedAt", "type": "TIMESTAMP", "attr": "THỜI ĐIỂM KẾT THÚC PHIÊN"}
     ]
     intent_cols = [
-        {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "MÃ ÁNH XẠ Ý ĐỊNH"},
-        {"key": "", "name": "intentName", "type": "VARCHAR(64)", "attr": "TRACK_ORDER, CLAIM_INFO, PRICING"},
-        {"key": "", "name": "regexPattern", "type": "VARCHAR(255)", "attr": "NX-[0-9]{6}, CLM-[0-9]{4}"},
-        {"key": "", "name": "requiredSlots", "type": "TEXT[]", "attr": "SHIPMENT_CODE, PHONE..."},
-        {"key": "", "name": "confidenceThreshold", "type": "FLOAT", "attr": "NGƯỠNG TỰ ĐỘNG (0.85)"}
+        {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "CUID NOT NULL"},
+        {"key": "FK", "name": "sessionId", "type": "VARCHAR(64)", "attr": "FK -> ChatSessionLog.id"},
+        {"key": "", "name": "extractedShipmentCode", "type": "VARCHAR(32)", "attr": "MÃ VẬN ĐƠN BÓC TÁCH"},
+        {"key": "", "name": "extractedPhone", "type": "VARCHAR(20)", "attr": "SĐT ĐƯỢC BẢO VỆ PII MASK"},
+        {"key": "", "name": "confidenceScore", "type": "FLOAT", "attr": "ĐỘ TIN CẬY MÔ HÌNH (0-1.0)"},
+        {"key": "", "name": "matchedAt", "type": "TIMESTAMP", "attr": "THỜI ĐIỂM TRÍCH XUẤT"}
     ]
 
-    s13_t1, s13_h1 = render_table(24, 20, 470, "FaqVectorStore", "VECTOR_EMBEDDINGS (KHO TRI THỨC NHÚNG)", vec_cols)
-    s13_t2, s13_h2 = render_table(514, 20, 470, "ChatSessionLog", "CHAT_SESSIONS (NHẬT KÝ TƯƠNG TÁC AI)", chat_cols)
-    s13_t3, s13_h3 = render_table(514, 20 + s13_h2 + 20, 470, "IntentEntityMap", "INTENT_MAPS (BÓC TÁCH Ý ĐỊNH REGEX)", intent_cols)
+    s13_t1, s13_h1 = render_table(40, 80, 480, "FaqVectorStore", "FAQ_VECTORS (KHO TRI THỨC NHÚNG)", vec_cols)
+    s13_t2, s13_h2 = render_table(680, 80, 480, "ChatSessionLog", "CHAT_SESSIONS (LỊCH SỬ HỘI THOẠI)", chat_cols)
+    s13_t3, s13_h3 = render_table(680, 80 + s13_h2 + 50, 480, "IntentEntityMap", "INTENT_ENTITIES (Ý ĐỊNH & THỰC THỂ)", intent_cols)
 
-    s13_connectors = '''
-    <path d="M 484 60 L 504 60" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-one)"/>
+    s13_connectors = f'''
+    <!-- ChatSessionLog (1) -> FaqVectorStore (N) Direct Cross -->
+    <path d="M 680 140 L 520 140" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <!-- ChatSessionLog (1) -> IntentEntityMap (N) via Center Highway Lane 3 -->
+    <path d="M 680 220 L 640 220 L 640 {80 + s13_h2 + 50 + 50} L 680 {80 + s13_h2 + 50 + 50}" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
     '''
 
     s13_sections = [
         {
-            "title": "TRUY XUẤT TĂNG CƯỜNG RAG & PHÒNG CHỐNG ẢO GIÁC",
+            "title": "KHO TRI THỨC NHÚNG VECTOR & PHIÊN HỘI THOẠI AI (RAG ENGINE)",
             "bullets": [
-                "Kho tri thức ngữ nghĩa (FaqVectorStore): Lưu trữ các phân đoạn điều khoản bưu chính nhúng vector 768 chiều thực với Google Gemini Embedding.",
-                "Tìm kiếm lai (Hybrid Search): Kết hợp độ tương đồng Cosine (0.70) và từ khóa chính xác BM25 (0.35) đảm bảo trích xuất chính xác 100% quy định bồi thường.",
-                "Bóc tách thực thể Regex (IntentEntityMap): Tự động nhận dạng mã vận đơn NX-XXXXXX và mã khiếu nại CLM-XXXXX để gọi Live Mesh API."
+                "Lưu trữ Vector Embedding: FaqVectorStore lưu các đoạn tri thức phân đoạn (Chunk 450 tokens) được nhúng qua Google Gemini Text-Embedding-004 (768 chiều).",
+                "Quản lý phiên hội thoại (ChatSessionLog): Ghi nhận toàn bộ ngữ cảnh trao đổi, bóc tách ý định (Intent Extraction) và tự động lọc dữ liệu nhạy cảm PII.",
+                "Cơ chế chuyển tiếp người thật (Human-in-the-Loop): Khi điểm tự tin confidenceScore < 0.65, kích hoạt cờ isEscalatedToHuman để chuyển giao điện thoại thoại viên."
             ]
         }
     ]
 
-    build_standalone_svg("13-chatbot-service-erd.svg", 2000, 920,
-                         "13. CHATBOT-SERVICE (ĐỘNG CƠ AI ORCHESTRATOR & KHO TRI THỨC RAG VECTOR)",
-                         "3013", "ai_vector_store",
-                         "Điều phối hội thoại AI, truy xuất tri thức nghiệp vụ RAG & gọi Live Microservices Mesh",
-                         "#1E293B",
+    build_standalone_svg("13-chatbot-service-erd.svg", 2000, 1300,
+                         "13. CHATBOT-SERVICE (KHO TRI THỨC NHÚNG VECTOR RAG AI & QUẢN LÝ PHIÊN CHAT)",
+                         "3013", "vector_rag_db",
+                         "Lưu trữ phân đoạn tri thức văn bản bưu chính nhúng 768 chiều & lịch sử hội thoại khách hàng",
                          f"{s13_t1}\n{s13_t2}\n{s13_t3}",
                          s13_connectors,
                          "GIẢI THÍCH SƠ BỘ & QUY TẮC DỮ LIỆU: CHATBOT-SERVICE",
-                         "COGNITIVE AI & RAG RETRIEVAL",
+                         "VECTOR DATABASE & RAG",
                          s13_sections,
-                         "Engine: NestJS AI Orchestrator | Embeddings: Google Gemini 768-dim | Grounding: Zero-Hallucination Guardrails",
-                         "Tích hợp API Gateway :3000 để giải đáp thắc mắc và tra cứu trạng thái đơn hàng tự động")
-
-    print("\nAll 13 standalone service ERDs generated successfully with 100% Prisma accuracy!")
+                         "Vector DB: PostgreSQL pgvector / HNSW Index | Embedding: Gemini 768d | HITL Escalation: Enabled",
+                         "Cung cấp REST & WebSocket API hỗ trợ giải đáp tự động chính sách, giá cước & khiếu nại 24/7")
 
 if __name__ == "__main__":
     generate_all_individual_erds()

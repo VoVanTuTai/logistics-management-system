@@ -49,7 +49,7 @@
     <rect width="1920" height="100" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.8"/>
     <line x1="0" y1="32" x2="1920" y2="32" stroke="#E5E7EB" stroke-width="1"/>
     <text x="24" y="22" class="doc-badge">NEXUS LOGISTICS SYSTEM ARCHITECTURE • DATABASE-PER-SERVICE SPECIFICATION</text>
-    <text x="24" y="58" class="doc-title">2. MASTERDATA-SERVICE (DỊCH VỤ DỮ LIỆU DANH MỤC DÙNG CHUNG)</text>
+    <text x="24" y="58" class="doc-title">2. MASTERDATA-SERVICE (DỊCH VỤ DỮ LIỆU DANH MỤC &amp; MẠNG LƯỚI BƯU CỤC)</text>
     <text x="24" y="82" class="doc-subtitle">Quản trị mạng lưới bưu cục, phân vùng cước, phân tuyến bưu tá, hồ sơ Shop/Khách &amp; danh mục quy chuẩn</text>
     
     <!-- Badges -->
@@ -65,292 +65,279 @@
   <g id="ServiceBody" transform="translate(40, 150)">
     <rect width="1920" height="1060" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.6"/>
 
-<g transform="translate(24, 20)">
-  <rect width="470" height="332" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
-  <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
+<g transform="translate(40, 25)">
+  <rect width="480" height="332" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+  <line x1="0" y1="36" x2="480" y2="36" stroke="#000000" stroke-width="1.2"/>
   <text x="14" y="23" class="tbl-header">Hub</text>
-  <text x="456" y="23" class="tbl-tag" text-anchor="end">HUBS (MẠNG LƯỚI KHO BƯU CỤC)</text>
+  <text x="466" y="23" class="tbl-tag" text-anchor="end">HUBS (MẠNG LƯỚI KHO BƯU CỤC)</text>
   <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
-  <text x="458" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) CUID NOT NULL</text>
+  <text x="468" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) CUID NOT NULL</text>
   <circle cx="18" cy="74" r="1.8" fill="#000000"/>
   <text x="30" y="78" class="tbl-field-normal">code</text>
-  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(32) UNIQUE (HUB-SGN-</text>
+  <text x="468" y="78" class="tbl-type" text-anchor="end">VARCHAR(32) UNIQUE (HUB-SGN-</text>
   <circle cx="18" cy="98" r="1.8" fill="#000000"/>
   <text x="30" y="102" class="tbl-field-normal">name</text>
-  <text x="458" y="102" class="tbl-type" text-anchor="end">VARCHAR(128) TÊN BƯU CỤC/KHO</text>
+  <text x="468" y="102" class="tbl-type" text-anchor="end">VARCHAR(128) TÊN BƯU CỤC/KHO</text>
   <circle cx="18" cy="122" r="1.8" fill="#000000"/>
   <text x="30" y="126" class="tbl-field-normal">level</text>
-  <text x="458" y="126" class="tbl-type" text-anchor="end">INT 0:HQ, 1:REG, 2:PROV, 3:W</text>
+  <text x="468" y="126" class="tbl-type" text-anchor="end">INT 0:HQ, 1:REG, 2:PROV, 3:W</text>
   <rect x="10" y="139" width="20" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
   <text x="20" y="150" class="badge-fk" text-anchor="middle">FK</text>
   <text x="42" y="150" class="tbl-field-fk">parentCode</text>
-  <text x="458" y="150" class="tbl-type" text-anchor="end">VARCHAR(32) NULLABLE -&gt; Hub.</text>
+  <text x="468" y="150" class="tbl-type" text-anchor="end">VARCHAR(32) NULLABLE -&gt; Hub.</text>
   <rect x="10" y="163" width="20" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
   <text x="20" y="174" class="badge-fk" text-anchor="middle">FK</text>
   <text x="42" y="174" class="tbl-field-fk">zoneCode</text>
-  <text x="458" y="174" class="tbl-type" text-anchor="end">VARCHAR(32) NULLABLE -&gt; Zone</text>
+  <text x="468" y="174" class="tbl-type" text-anchor="end">VARCHAR(32) NULLABLE -&gt; Zone</text>
   <circle cx="18" cy="194" r="1.8" fill="#000000"/>
-  <text x="30" y="198" class="tbl-field-normal">address / district / ward</text>
-  <text x="458" y="198" class="tbl-type" text-anchor="end">VARCHAR(255) ĐỊA CHỈ HÀNH CH</text>
+  <text x="30" y="198" class="tbl-field-normal">address / ward</text>
+  <text x="468" y="198" class="tbl-type" text-anchor="end">VARCHAR(255) ĐỊA CHỈ HÀNH CH</text>
   <circle cx="18" cy="218" r="1.8" fill="#000000"/>
-  <text x="30" y="222" class="tbl-field-normal">coverageRadiusKm</text>
-  <text x="458" y="222" class="tbl-type" text-anchor="end">FLOAT BÁN KÍNH PHỤC VỤ</text>
+  <text x="30" y="222" class="tbl-field-normal">province / district</text>
+  <text x="468" y="222" class="tbl-type" text-anchor="end">VARCHAR(64) TỈNH &amp; QUẬN/HUYỆ</text>
   <circle cx="18" cy="242" r="1.8" fill="#000000"/>
-  <text x="30" y="246" class="tbl-field-normal">boundaryPolygon</text>
-  <text x="458" y="246" class="tbl-type" text-anchor="end">JSONB ĐA GIÁC RANH GIỚI GEO</text>
+  <text x="30" y="246" class="tbl-field-normal">latitude / longitude</text>
+  <text x="468" y="246" class="tbl-type" text-anchor="end">FLOAT TỌA ĐỘ GPS BƯU CỤC</text>
   <circle cx="18" cy="266" r="1.8" fill="#000000"/>
-  <text x="30" y="270" class="tbl-field-normal">latitude / longitude</text>
-  <text x="458" y="270" class="tbl-type" text-anchor="end">FLOAT TỌA ĐỘ GPS KHO</text>
+  <text x="30" y="270" class="tbl-field-normal">boundaryPolygon</text>
+  <text x="468" y="270" class="tbl-type" text-anchor="end">JSONB ĐA GIÁC ĐỊA BÀN PHỤ TR</text>
   <circle cx="18" cy="290" r="1.8" fill="#000000"/>
-  <text x="30" y="294" class="tbl-field-normal">isActive</text>
-  <text x="458" y="294" class="tbl-type" text-anchor="end">BOOLEAN DEFAULT TRUE</text>
+  <text x="30" y="294" class="tbl-field-normal">status</text>
+  <text x="468" y="294" class="tbl-type" text-anchor="end">ENUM ACTIVE, INACTIVE</text>
   <circle cx="18" cy="314" r="1.8" fill="#000000"/>
-  <text x="30" y="318" class="tbl-field-normal">createdAt / updatedAt</text>
-  <text x="458" y="318" class="tbl-type" text-anchor="end">TIMESTAMP METADATA</text>
+  <text x="30" y="318" class="tbl-field-normal">createdAt</text>
+  <text x="468" y="318" class="tbl-type" text-anchor="end">TIMESTAMP DEFAULT NOW()</text>
 </g>
-<g transform="translate(514, 20)">
-  <rect width="470" height="188" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
-  <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
+<g transform="translate(680, 25)">
+  <rect width="480" height="212" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+  <line x1="0" y1="36" x2="480" y2="36" stroke="#000000" stroke-width="1.2"/>
   <text x="14" y="23" class="tbl-header">Zone</text>
-  <text x="456" y="23" class="tbl-tag" text-anchor="end">ZONES (VÙNG ĐỊA LÝ TÍNH CƯỚC)</text>
+  <text x="466" y="23" class="tbl-tag" text-anchor="end">ZONES (VÙNG ĐỊA LÝ TÍNH CƯỚC)</text>
   <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
-  <text x="458" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) CUID NOT NULL</text>
+  <text x="468" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) CUID NOT NULL</text>
   <circle cx="18" cy="74" r="1.8" fill="#000000"/>
   <text x="30" y="78" class="tbl-field-normal">code</text>
-  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(32) UNIQUE (ZONE-NOR</text>
+  <text x="468" y="78" class="tbl-type" text-anchor="end">VARCHAR(32) UNIQUE (ZONE-HCM</text>
   <circle cx="18" cy="98" r="1.8" fill="#000000"/>
   <text x="30" y="102" class="tbl-field-normal">name</text>
-  <text x="458" y="102" class="tbl-type" text-anchor="end">VARCHAR(128) VÙNG ĐỊA LÝ CƯỚ</text>
-  <rect x="10" y="115" width="20" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
-  <text x="20" y="126" class="badge-fk" text-anchor="middle">FK</text>
-  <text x="42" y="126" class="tbl-field-fk">parentCode</text>
-  <text x="458" y="126" class="tbl-type" text-anchor="end">VARCHAR(32) NULLABLE -&gt; Zone</text>
+  <text x="468" y="102" class="tbl-type" text-anchor="end">VARCHAR(64) TÊN VÙNG CƯỚC</text>
+  <circle cx="18" cy="122" r="1.8" fill="#000000"/>
+  <text x="30" y="126" class="tbl-field-normal">colorHex</text>
+  <text x="468" y="126" class="tbl-type" text-anchor="end">VARCHAR(16) MÃ MÀU HIỂN THỊ</text>
   <circle cx="18" cy="146" r="1.8" fill="#000000"/>
-  <text x="30" y="150" class="tbl-field-normal">isActive</text>
-  <text x="458" y="150" class="tbl-type" text-anchor="end">BOOLEAN DEFAULT TRUE</text>
+  <text x="30" y="150" class="tbl-field-normal">description</text>
+  <text x="468" y="150" class="tbl-type" text-anchor="end">VARCHAR(255) MÔ TẢ VÙNG TÍNH</text>
   <circle cx="18" cy="170" r="1.8" fill="#000000"/>
-  <text x="30" y="174" class="tbl-field-normal">createdAt / updatedAt</text>
-  <text x="458" y="174" class="tbl-type" text-anchor="end">TIMESTAMP METADATA</text>
+  <text x="30" y="174" class="tbl-field-normal">isActive</text>
+  <text x="468" y="174" class="tbl-type" text-anchor="end">BOOLEAN DEFAULT TRUE</text>
+  <circle cx="18" cy="194" r="1.8" fill="#000000"/>
+  <text x="30" y="198" class="tbl-field-normal">createdAt</text>
+  <text x="468" y="198" class="tbl-type" text-anchor="end">TIMESTAMP DEFAULT NOW()</text>
 </g>
-<g transform="translate(24, 372)">
-  <rect width="470" height="236" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
-  <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
+<g transform="translate(40, 389)">
+  <rect width="480" height="260" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+  <line x1="0" y1="36" x2="480" y2="36" stroke="#000000" stroke-width="1.2"/>
   <text x="14" y="23" class="tbl-header">CourierAreaAssignment</text>
-  <text x="456" y="23" class="tbl-tag" text-anchor="end">COURIER_AREAS (PHÂN TUYẾN GIAO...</text>
+  <text x="466" y="23" class="tbl-tag" text-anchor="end">COURIER_AREAS (PHÂN TUYẾN GI...</text>
   <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
-  <text x="458" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) CUID NOT NULL</text>
+  <text x="468" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) CUID NOT NULL</text>
   <rect x="8" y="67" width="28" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1" stroke-dasharray="2 1.5"/>
   <text x="22" y="78" class="badge-dist" text-anchor="middle">DIST</text>
   <text x="42" y="78" class="tbl-field-dist">courierId</text>
-  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(64) FK-dist auth.use</text>
+  <text x="468" y="78" class="tbl-type" text-anchor="end">VARCHAR(64) FK-dist auth.use</text>
   <rect x="10" y="91" width="20" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
   <text x="20" y="102" class="badge-fk" text-anchor="middle">FK</text>
   <text x="42" y="102" class="tbl-field-fk">hubCode</text>
-  <text x="458" y="102" class="tbl-type" text-anchor="end">VARCHAR(32) FK -&gt; Hub.code</text>
-  <circle cx="18" cy="122" r="1.8" fill="#000000"/>
-  <text x="30" y="126" class="tbl-field-normal">province / district / ward</text>
-  <text x="458" y="126" class="tbl-type" text-anchor="end">VARCHAR(64) ĐỊA BÀN PHÂN CÔN</text>
+  <text x="468" y="102" class="tbl-type" text-anchor="end">VARCHAR(32) FK -&gt; Hub.code</text>
+  <rect x="10" y="115" width="20" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+  <text x="20" y="126" class="badge-fk" text-anchor="middle">FK</text>
+  <text x="42" y="126" class="tbl-field-fk">zoneCode</text>
+  <text x="468" y="126" class="tbl-type" text-anchor="end">VARCHAR(32) NULLABLE -&gt; Zone</text>
   <circle cx="18" cy="146" r="1.8" fill="#000000"/>
-  <text x="30" y="150" class="tbl-field-normal">zoneName / colorHex</text>
-  <text x="458" y="150" class="tbl-type" text-anchor="end">VARCHAR(64) TÊN TUYẾN &amp; MÃ M</text>
+  <text x="30" y="150" class="tbl-field-normal">ward / district</text>
+  <text x="468" y="150" class="tbl-type" text-anchor="end">VARCHAR(64) ĐỊA BÀN PHỤ TRÁC</text>
   <circle cx="18" cy="170" r="1.8" fill="#000000"/>
-  <text x="30" y="174" class="tbl-field-normal">boundaryPolygon</text>
-  <text x="458" y="174" class="tbl-type" text-anchor="end">JSONB GEO POLYGON TUYẾN GIAO</text>
+  <text x="30" y="174" class="tbl-field-normal">polygon</text>
+  <text x="468" y="174" class="tbl-type" text-anchor="end">JSONB RANH GIỚI TUYẾN GIAO</text>
   <circle cx="18" cy="194" r="1.8" fill="#000000"/>
-  <text x="30" y="198" class="tbl-field-normal">isActive</text>
-  <text x="458" y="198" class="tbl-type" text-anchor="end">BOOLEAN DEFAULT TRUE</text>
+  <text x="30" y="198" class="tbl-field-normal">color</text>
+  <text x="468" y="198" class="tbl-type" text-anchor="end">VARCHAR(16) MÃ MÀU TRÊN MAP</text>
   <circle cx="18" cy="218" r="1.8" fill="#000000"/>
-  <text x="30" y="222" class="tbl-field-normal">createdAt / updatedAt</text>
-  <text x="458" y="222" class="tbl-type" text-anchor="end">TIMESTAMP METADATA</text>
+  <text x="30" y="222" class="tbl-field-normal">isActive</text>
+  <text x="468" y="222" class="tbl-type" text-anchor="end">BOOLEAN DEFAULT TRUE</text>
+  <circle cx="18" cy="242" r="1.8" fill="#000000"/>
+  <text x="30" y="246" class="tbl-field-normal">createdAt</text>
+  <text x="468" y="246" class="tbl-type" text-anchor="end">TIMESTAMP DEFAULT NOW()</text>
 </g>
-<g transform="translate(514, 228)">
-  <rect width="470" height="236" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
-  <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
+<g transform="translate(680, 269)">
+  <rect width="480" height="188" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+  <line x1="0" y1="36" x2="480" y2="36" stroke="#000000" stroke-width="1.2"/>
   <text x="14" y="23" class="tbl-header">MerchantProfile</text>
-  <text x="456" y="23" class="tbl-tag" text-anchor="end">MERCHANT_PROFILES (HỒ SƠ SHOP)</text>
+  <text x="466" y="23" class="tbl-tag" text-anchor="end">MERCHANT_PROFILES (HỒ SƠ SHO...</text>
   <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
-  <text x="458" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) CUID NOT NULL</text>
-  <rect x="8" y="67" width="28" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1" stroke-dasharray="2 1.5"/>
-  <text x="22" y="78" class="badge-dist" text-anchor="middle">DIST</text>
-  <text x="42" y="78" class="tbl-field-dist">username</text>
-  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(64) UNIQUE FK-dist a</text>
-  <circle cx="18" cy="98" r="1.8" fill="#000000"/>
-  <text x="30" y="102" class="tbl-field-normal">citizenId</text>
-  <text x="458" y="102" class="tbl-type" text-anchor="end">VARCHAR(20) UNIQUE CCCD</text>
-  <circle cx="18" cy="122" r="1.8" fill="#000000"/>
-  <text x="30" y="126" class="tbl-field-normal">regionCode / regionLabel</text>
-  <text x="458" y="126" class="tbl-type" text-anchor="end">VARCHAR(64) VÙNG MIỀN HOẠT Đ</text>
-  <rect x="10" y="139" width="20" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
-  <text x="20" y="150" class="badge-fk" text-anchor="middle">FK</text>
-  <text x="42" y="150" class="tbl-field-fk">defaultHubCode</text>
-  <text x="458" y="150" class="tbl-type" text-anchor="end">VARCHAR(32) FK -&gt; Hub.code</text>
-  <circle cx="18" cy="170" r="1.8" fill="#000000"/>
-  <text x="30" y="174" class="tbl-field-normal">defaultSenderAddress</text>
-  <text x="458" y="174" class="tbl-type" text-anchor="end">VARCHAR(255) KHO GỬI HÀNG MẶ</text>
-  <circle cx="18" cy="194" r="1.8" fill="#000000"/>
-  <text x="30" y="198" class="tbl-field-normal">latitude / longitude</text>
-  <text x="458" y="198" class="tbl-type" text-anchor="end">FLOAT TỌA ĐỘ GPS KHO SHOP</text>
-  <circle cx="18" cy="218" r="1.8" fill="#000000"/>
-  <text x="30" y="222" class="tbl-field-normal">createdAt / updatedAt</text>
-  <text x="458" y="222" class="tbl-type" text-anchor="end">TIMESTAMP METADATA</text>
-</g>
-<g transform="translate(514, 484)">
-  <rect width="470" height="188" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
-  <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
-  <text x="14" y="23" class="tbl-header">CustomerProfile</text>
-  <text x="456" y="23" class="tbl-tag" text-anchor="end">CUSTOMER_PROFILES (HỒ SƠ KHÁCH)</text>
-  <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
-  <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
-  <text x="42" y="54" class="tbl-field-pk">id</text>
-  <text x="458" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) CUID NOT NULL</text>
+  <text x="468" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) CUID NOT NULL</text>
   <rect x="8" y="67" width="28" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1" stroke-dasharray="2 1.5"/>
   <text x="22" y="78" class="badge-dist" text-anchor="middle">DIST</text>
   <text x="42" y="78" class="tbl-field-dist">userId</text>
-  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(64) UNIQUE FK-dist a</text>
+  <text x="468" y="78" class="tbl-type" text-anchor="end">VARCHAR(64) UNIQUE FK-dist a</text>
   <circle cx="18" cy="98" r="1.8" fill="#000000"/>
-  <text x="30" y="102" class="tbl-field-normal">fullName</text>
-  <text x="458" y="102" class="tbl-type" text-anchor="end">VARCHAR(128) HỌ TÊN KHÁCH HÀ</text>
+  <text x="30" y="102" class="tbl-field-normal">businessName</text>
+  <text x="468" y="102" class="tbl-type" text-anchor="end">VARCHAR(128) TÊN DOANH NGHIỆ</text>
   <circle cx="18" cy="122" r="1.8" fill="#000000"/>
-  <text x="30" y="126" class="tbl-field-normal">phone</text>
-  <text x="458" y="126" class="tbl-type" text-anchor="end">VARCHAR(20) UNIQUE SĐT NHẬN</text>
+  <text x="30" y="126" class="tbl-field-normal">taxCode</text>
+  <text x="468" y="126" class="tbl-type" text-anchor="end">VARCHAR(32) MÃ SỐ THUẾ</text>
   <circle cx="18" cy="146" r="1.8" fill="#000000"/>
-  <text x="30" y="150" class="tbl-field-normal">email</text>
-  <text x="458" y="150" class="tbl-type" text-anchor="end">VARCHAR(128) NULLABLE</text>
+  <text x="30" y="150" class="tbl-field-normal">bankAccount</text>
+  <text x="468" y="150" class="tbl-type" text-anchor="end">VARCHAR(64) SỐ TK ĐỐI SOÁT C</text>
   <circle cx="18" cy="170" r="1.8" fill="#000000"/>
-  <text x="30" y="174" class="tbl-field-normal">defaultAddress</text>
-  <text x="458" y="174" class="tbl-type" text-anchor="end">VARCHAR(255) ĐỊA CHỈ NHẬN MẶ</text>
+  <text x="30" y="174" class="tbl-field-normal">bankName</text>
+  <text x="468" y="174" class="tbl-type" text-anchor="end">VARCHAR(64) NGÂN HÀNG THỤ HƯ</text>
 </g>
-<g transform="translate(24, 628)">
-  <rect width="470" height="140" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
-  <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
-  <text x="14" y="23" class="tbl-header">NdrReason</text>
-  <text x="456" y="23" class="tbl-tag" text-anchor="end">NDR_REASONS (DANH MỤC LỖI GIAO)</text>
+<g transform="translate(680, 489)">
+  <rect width="480" height="164" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+  <line x1="0" y1="36" x2="480" y2="36" stroke="#000000" stroke-width="1.2"/>
+  <text x="14" y="23" class="tbl-header">CustomerProfile</text>
+  <text x="466" y="23" class="tbl-tag" text-anchor="end">CUSTOMER_PROFILES (HỒ SƠ KHÁ...</text>
   <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
-  <text x="458" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) CUID NOT NULL</text>
+  <text x="468" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) CUID NOT NULL</text>
+  <rect x="8" y="67" width="28" height="14" rx="2" fill="#FFFFFF" stroke="#000000" stroke-width="1" stroke-dasharray="2 1.5"/>
+  <text x="22" y="78" class="badge-dist" text-anchor="middle">DIST</text>
+  <text x="42" y="78" class="tbl-field-dist">userId</text>
+  <text x="468" y="78" class="tbl-type" text-anchor="end">VARCHAR(64) UNIQUE FK-dist a</text>
+  <circle cx="18" cy="98" r="1.8" fill="#000000"/>
+  <text x="30" y="102" class="tbl-field-normal">phone</text>
+  <text x="468" y="102" class="tbl-type" text-anchor="end">VARCHAR(20) INDEX SĐT NGƯỜI</text>
+  <circle cx="18" cy="122" r="1.8" fill="#000000"/>
+  <text x="30" y="126" class="tbl-field-normal">fullName</text>
+  <text x="468" y="126" class="tbl-type" text-anchor="end">VARCHAR(128) HỌ VÀ TÊN KHÁCH</text>
+  <circle cx="18" cy="146" r="1.8" fill="#000000"/>
+  <text x="30" y="150" class="tbl-field-normal">defaultAddress</text>
+  <text x="468" y="150" class="tbl-type" text-anchor="end">VARCHAR(255) ĐỊA CHỈ NHẬN MẶ</text>
+</g>
+<g transform="translate(40, 681)">
+  <rect width="480" height="140" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+  <line x1="0" y1="36" x2="480" y2="36" stroke="#000000" stroke-width="1.2"/>
+  <text x="14" y="23" class="tbl-header">NdrReason</text>
+  <text x="466" y="23" class="tbl-tag" text-anchor="end">NDR_REASONS (DANH MỤC LỖI GIAO)</text>
+  <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
+  <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
+  <text x="42" y="54" class="tbl-field-pk">id</text>
+  <text x="468" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) CUID NOT NULL</text>
   <circle cx="18" cy="74" r="1.8" fill="#000000"/>
   <text x="30" y="78" class="tbl-field-normal">code</text>
-  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(32) UNIQUE (NDR_CUST</text>
+  <text x="468" y="78" class="tbl-type" text-anchor="end">VARCHAR(32) UNIQUE (NDR_CUST</text>
   <circle cx="18" cy="98" r="1.8" fill="#000000"/>
   <text x="30" y="102" class="tbl-field-normal">description</text>
-  <text x="458" y="102" class="tbl-type" text-anchor="end">VARCHAR(255) LÝ DO GIAO KHÔN</text>
+  <text x="468" y="102" class="tbl-type" text-anchor="end">VARCHAR(255) LÝ DO GIAO THẤT</text>
   <circle cx="18" cy="122" r="1.8" fill="#000000"/>
   <text x="30" y="126" class="tbl-field-normal">isActive</text>
-  <text x="458" y="126" class="tbl-type" text-anchor="end">BOOLEAN DEFAULT TRUE</text>
+  <text x="468" y="126" class="tbl-type" text-anchor="end">BOOLEAN DEFAULT TRUE</text>
 </g>
-<g transform="translate(24, 788)">
-  <rect width="470" height="140" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
-  <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
+<g transform="translate(40, 853)">
+  <rect width="480" height="140" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+  <line x1="0" y1="36" x2="480" y2="36" stroke="#000000" stroke-width="1.2"/>
   <text x="14" y="23" class="tbl-header">Config</text>
-  <text x="456" y="23" class="tbl-tag" text-anchor="end">CONFIGS (THAM SỐ HỆ THỐNG)</text>
+  <text x="466" y="23" class="tbl-tag" text-anchor="end">CONFIGS (THAM SỐ HỆ THỐNG)</text>
   <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
-  <text x="458" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) CUID NOT NULL</text>
+  <text x="468" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) CUID NOT NULL</text>
   <circle cx="18" cy="74" r="1.8" fill="#000000"/>
   <text x="30" y="78" class="tbl-field-normal">key</text>
-  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(64) UNIQUE CẤU HÌNH</text>
+  <text x="468" y="78" class="tbl-type" text-anchor="end">VARCHAR(64) UNIQUE CẤU HÌNH</text>
   <circle cx="18" cy="98" r="1.8" fill="#000000"/>
   <text x="30" y="102" class="tbl-field-normal">value</text>
-  <text x="458" y="102" class="tbl-type" text-anchor="end">JSONB GIÁ TRỊ CẤU HÌNH THỜI</text>
+  <text x="468" y="102" class="tbl-type" text-anchor="end">JSONB GIÁ TRỊ CẤU HÌNH</text>
   <circle cx="18" cy="122" r="1.8" fill="#000000"/>
   <text x="30" y="126" class="tbl-field-normal">scope</text>
-  <text x="458" y="126" class="tbl-type" text-anchor="end">VARCHAR(32) GLOBAL, HUB, DIS</text>
+  <text x="468" y="126" class="tbl-type" text-anchor="end">VARCHAR(32) GLOBAL, HUB, DIS</text>
 </g>
-<g transform="translate(514, 692)">
-  <rect width="470" height="164" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
-  <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
+<g transform="translate(680, 685)">
+  <rect width="480" height="164" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+  <line x1="0" y1="36" x2="480" y2="36" stroke="#000000" stroke-width="1.2"/>
   <text x="14" y="23" class="tbl-header">Policy</text>
-  <text x="456" y="23" class="tbl-tag" text-anchor="end">POLICIES (CHÍNH SÁCH BƯU CHÍNH)</text>
+  <text x="466" y="23" class="tbl-tag" text-anchor="end">POLICIES (CHÍNH SÁCH BƯU CHÍNH)</text>
   <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
-  <text x="458" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) CUID NOT NULL</text>
+  <text x="468" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) CUID NOT NULL</text>
   <circle cx="18" cy="74" r="1.8" fill="#000000"/>
   <text x="30" y="78" class="tbl-field-normal">title / slug</text>
-  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(255) CHÍNH SÁCH BƯU</text>
+  <text x="468" y="78" class="tbl-type" text-anchor="end">VARCHAR(255) CHÍNH SÁCH BƯU</text>
   <circle cx="18" cy="98" r="1.8" fill="#000000"/>
   <text x="30" y="102" class="tbl-field-normal">category</text>
-  <text x="458" y="102" class="tbl-type" text-anchor="end">ENUM GENERAL, CLAIM, PRICING</text>
+  <text x="468" y="102" class="tbl-type" text-anchor="end">ENUM CLAIM, PRICING, PROHIBI</text>
   <circle cx="18" cy="122" r="1.8" fill="#000000"/>
   <text x="30" y="126" class="tbl-field-normal">summary / content</text>
-  <text x="458" y="126" class="tbl-type" text-anchor="end">TEXT NỘI DUNG VĂN BẢN QUY PH</text>
+  <text x="468" y="126" class="tbl-type" text-anchor="end">TEXT VĂN BẢN QUY PHẠM</text>
   <circle cx="18" cy="146" r="1.8" fill="#000000"/>
   <text x="30" y="150" class="tbl-field-normal">status / version</text>
-  <text x="458" y="150" class="tbl-type" text-anchor="end">ENUM / INT PUBLISHED, DRAFT</text>
+  <text x="468" y="150" class="tbl-type" text-anchor="end">ENUM / INT PUBLISHED, DRAFT</text>
 </g>
-<g transform="translate(514, 876)">
-  <rect width="470" height="140" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
-  <line x1="0" y1="36" x2="470" y2="36" stroke="#000000" stroke-width="1.2"/>
+<g transform="translate(680, 881)">
+  <rect width="480" height="140" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+  <line x1="0" y1="36" x2="480" y2="36" stroke="#000000" stroke-width="1.2"/>
   <text x="14" y="23" class="tbl-header">OutboxEvent (MasterData)</text>
-  <text x="456" y="23" class="tbl-tag" text-anchor="end">OUTBOX_EVENTS</text>
+  <text x="466" y="23" class="tbl-tag" text-anchor="end">OUTBOX_EVENTS</text>
   <rect x="10" y="43" width="20" height="14" rx="2" fill="#000000"/>
   <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
   <text x="42" y="54" class="tbl-field-pk">id</text>
-  <text x="458" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) CUID NOT NULL</text>
+  <text x="468" y="54" class="tbl-type" text-anchor="end">VARCHAR(64) CUID NOT NULL</text>
   <circle cx="18" cy="74" r="1.8" fill="#000000"/>
   <text x="30" y="78" class="tbl-field-normal">eventId</text>
-  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(64) UNIQUE SỰ KIỆN</text>
+  <text x="468" y="78" class="tbl-type" text-anchor="end">VARCHAR(64) UNIQUE SỰ KIỆN</text>
   <circle cx="18" cy="98" r="1.8" fill="#000000"/>
-  <text x="30" y="102" class="tbl-field-normal">eventType / routingKey</text>
-  <text x="458" y="102" class="tbl-type" text-anchor="end">VARCHAR(64) MASTERDATA.HUB_U</text>
+  <text x="30" y="102" class="tbl-field-normal">eventType</text>
+  <text x="468" y="102" class="tbl-type" text-anchor="end">VARCHAR(64) MASTERDATA.HUB_U</text>
   <circle cx="18" cy="122" r="1.8" fill="#000000"/>
   <text x="30" y="126" class="tbl-field-normal">payload</text>
-  <text x="458" y="126" class="tbl-type" text-anchor="end">JSONB DỮ LIỆU ĐỒNG BỘ</text>
+  <text x="468" y="126" class="tbl-type" text-anchor="end">JSONB DỮ LIỆU ĐỒNG BỘ</text>
 </g>
 
-    <path d="M 494 60 L 514 60" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-many)" marker-end="url(#crow-one)"/>
-    <path d="M 259 352 L 259 372" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
-    <path d="M 514 80 L 504 80 L 504 402 L 494 402" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <!-- Hub (N) -> Zone (1) Direct Cross -->
+    <path d="M 520 75 L 680 75" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-many)" marker-end="url(#crow-one)"/>
+    <!-- Hub (1) -> CourierAreaAssignment (N) via Center Highway Lane 1 -->
+    <path d="M 520 200 L 560 200 L 560 439 L 520 439" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+    <!-- Zone (1) -> CourierAreaAssignment (N) via Center Highway Lane 2 -->
+    <path d="M 680 140 L 600 140 L 600 469 L 520 469" stroke="#000000" stroke-width="1.8" fill="none" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
     
-<g transform="translate(1010, 20)">
-  <rect width="890" height="1020" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
-  <rect x="0" y="0" width="890" height="42" rx="6" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+<g transform="translate(1200, 20)">
+  <rect width="700" height="1020" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+  <rect x="0" y="0" width="700" height="42" rx="6" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
   <rect x="14" y="12" width="6" height="18" rx="1" fill="#000000"/>
   <text x="28" y="26" class="panel-header">GIẢI THÍCH SƠ BỘ &amp; QUY TẮC DỮ LIỆU: MASTERDATA-SERVICE</text>
-  <rect x="698" y="9" width="178" height="24" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
-  <text x="787.0" y="25" font-size="10" font-weight="700" fill="#000000" text-anchor="middle">SHARED MASTER REGISTRY</text>
-  <text x="18" y="68" class="panel-sec-title">▶ VAI TRÒ &amp; TRÁCH NHIỆM DỮ LIỆU CỐT LÕI</text>
-  <circle cx="25" cy="84" r="2" fill="#000000"/>
-  <text x="36" y="88" class="panel-body">Cung cấp danh mục dùng chung (Single Source of Master Data) cho toàn bộ 12</text>
-  <text x="36" y="106" class="panel-body">Microservices khác.</text>
-  <circle cx="25" cy="122" r="2" fill="#000000"/>
-  <text x="36" y="126" class="panel-body">Quản lý mạng lưới bưu cục (Hub): Phân cấp 4 tầng (HQ -&gt; Regional -&gt; Provincial -&gt;</text>
-  <text x="36" y="144" class="panel-body">Ward), lưu trữ tọa độ GPS và đa giác ranh giới GeoJSON boundaryPolygon.</text>
-  <circle cx="25" cy="160" r="2" fill="#000000"/>
-  <text x="36" y="164" class="panel-body">Phân tuyến bưu tá (CourierAreaAssignment): Định danh bưu tá chịu trách nhiệm trên</text>
-  <text x="36" y="182" class="panel-body">từng phường/xã, gắn mã màu hiển thị trên bản đồ điều hành.</text>
-  <circle cx="25" cy="198" r="2" fill="#000000"/>
-  <text x="36" y="202" class="panel-body">Hồ sơ người dùng mở rộng: MerchantProfile (vùng miền, kho gửi mặc định) và</text>
-  <text x="36" y="220" class="panel-body">CustomerProfile (SĐT duy nhất, địa chỉ quen thuộc).</text>
-  <text x="18" y="248" class="panel-sec-title">▶ CƠ CHẾ LIÊN KẾT PHÂN TÁN (SAGA LINKAGE)</text>
-  <circle cx="25" cy="264" r="2" fill="#000000"/>
-  <text x="36" y="268" class="panel-body">hubCode: Khóa tham chiếu toàn cục trong bảng Hub, liên kết chặt chẽ sang shipment,</text>
-  <text x="36" y="286" class="panel-body">dispatch, scan, manifest và payment.</text>
-  <circle cx="25" cy="302" r="2" fill="#000000"/>
-  <text x="36" y="306" class="panel-body">courierId: Ánh xạ từ auth.users để phân bổ khu vực phụ trách tại</text>
-  <text x="36" y="324" class="panel-body">CourierAreaAssignment.</text>
-  <circle cx="25" cy="340" r="2" fill="#000000"/>
-  <text x="36" y="344" class="panel-body">NdrReason.code: Danh mục chuẩn hóa lý do giao không thành công cho delivery-</text>
-  <text x="36" y="362" class="panel-body">service.</text>
-  <text x="18" y="390" class="panel-sec-title">▶ HIỆU NĂNG &amp; ĐỒNG BỘ CACHE</text>
-  <circle cx="25" cy="406" r="2" fill="#000000"/>
-  <text x="36" y="410" class="panel-body">Read-Heavy Caching: Danh mục bưu cục và vùng cước được đồng bộ lên Redis với TTL</text>
-  <text x="36" y="428" class="panel-body">24h, tự động làm mới khi có OutboxEvent phát hành.</text>
-  <circle cx="25" cy="444" r="2" fill="#000000"/>
-  <text x="36" y="448" class="panel-body">Geo-Spatial Query: Trường boundaryPolygon cho phép tính toán tự động bưu cục phụ</text>
-  <text x="36" y="466" class="panel-body">trách dựa trên tọa độ GPS người gửi/nhận.</text>
-  <rect x="14" y="982" width="862" height="26" rx="4" fill="#F9FAFB" stroke="#000000" stroke-width="1"/>
-  <text x="445.0" y="999" font-size="11" font-weight="600" fill="#111827" text-anchor="middle">Engine: PostgreSQL 16 | Caching: Redis Master Registry | Geo: JSONB Polygons</text>
+  <rect x="516" y="9" width="170" height="24" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+  <text x="601.0" y="25" font-size="10" font-weight="700" fill="#000000" text-anchor="middle">MASTER REGISTRY</text>
+  <text x="18" y="70" class="panel-sec-title">▶ VAI TRÒ &amp; TRÁCH NHIỆM DỮ LIỆU CỐT LÕI</text>
+  <circle cx="25" cy="88" r="2" fill="#000000"/>
+  <text x="36" y="92" class="panel-body">Cung cấp danh mục dùng chung (Single Source of Master Data) cho toàn bộ 12</text>
+  <text x="36" y="110" class="panel-body">Microservices khác.</text>
+  <circle cx="25" cy="128" r="2" fill="#000000"/>
+  <text x="36" y="132" class="panel-body">Quản lý mạng lưới bưu cục (Hub): Phân cấp 4 tầng (HQ -&gt; Regional -&gt;</text>
+  <text x="36" y="150" class="panel-body">Provincial -&gt; Ward), lưu trữ tọa độ GPS và đa giác ranh giới GeoJSON</text>
+  <text x="36" y="168" class="panel-body">boundaryPolygon.</text>
+  <circle cx="25" cy="186" r="2" fill="#000000"/>
+  <text x="36" y="190" class="panel-body">Phân tuyến bưu tá (CourierAreaAssignment): Định danh bưu tá chịu trách</text>
+  <text x="36" y="208" class="panel-body">nhiệm trên từng phường/xã, gắn mã màu hiển thị trên bản đồ điều hành.</text>
+  <text x="18" y="240" class="panel-sec-title">▶ HIỆU NĂNG &amp; ĐỒNG BỘ CACHE</text>
+  <circle cx="25" cy="258" r="2" fill="#000000"/>
+  <text x="36" y="262" class="panel-body">Read-Heavy Caching: Dữ liệu Hub, Zone và Config được cache tại tầng Redis</text>
+  <text x="36" y="280" class="panel-body">với TTL dài (24h) để phục vụ tra cứu tốc độ cao.</text>
+  <circle cx="25" cy="298" r="2" fill="#000000"/>
+  <text x="36" y="302" class="panel-body">Sự kiện thay đổi (OutboxEvent): Phát sự kiện MASTERDATA.HUB_UPDATED qua</text>
+  <text x="36" y="320" class="panel-body">RabbitMQ fanout tới scan-service, dispatch-service và routing engine.</text>
+  <rect x="14" y="982" width="672" height="26" rx="4" fill="#F9FAFB" stroke="#000000" stroke-width="1"/>
+  <text x="350.0" y="999" font-size="11" font-weight="600" fill="#111827" text-anchor="middle">Engine: PostgreSQL 16 | Spatial: GeoJSON Polygons | Caching: Redis Read-Through | Consistency: Strong</text>
 </g>
   </g>
 
@@ -359,7 +346,7 @@
     <rect width="1920" height="50" rx="6" fill="#F9FAFB" stroke="#000000" stroke-width="1.4"/>
     <circle cx="25" cy="25" r="5" fill="#000000"/>
     <text x="42" y="29" font-size="12" font-weight="700" fill="#000000">CƠ CHẾ LIÊN KẾT PHÂN TÁN (SAGA):</text>
-    <text x="310" y="29" font-size="11.5" fill="#1F2937">Phát hành sự kiện MASTERDATA.HUB_UPDATED, ZONE_UPDATED, POLICY_PUBLISHED qua RabbitMQ</text>
+    <text x="310" y="29" font-size="11.5" fill="#1F2937">Phát sự kiện MASTERDATA.HUB_UPDATED, ZONE_UPDATED tới dispatch-service, scan-service &amp; tracking-service</text>
     <text x="1900" y="29" font-size="11" font-weight="600" fill="#4B5563" text-anchor="end">Nexus Software Engineering Thesis</text>
   </g>
 </svg>
