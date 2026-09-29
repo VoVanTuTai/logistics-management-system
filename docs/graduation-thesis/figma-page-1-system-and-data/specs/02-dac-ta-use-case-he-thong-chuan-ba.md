@@ -52,16 +52,15 @@ Trong chuẩn **UML 2.5**, Tác nhân (Actor) có thể kế thừa từ một T
          │               │                                     │          │          │
 ┌────────┴───────┐ ┌─────┴──────────┐                          │          │          │
 │Người nhận hàng │ │Chủ Shop/Người gửi│                  ┌───────┴─────┐  │          │
-│  (Recipient)   │ │  (Merchant)    │                  │  Bưu tá     │  │          │
-└────────────────┘ └────────────────┘                  │ (Courier)   │  │          │
-                                                       └─────────────┘  │          │
+│  (Recipient)   │ │  (Merchant)    │                  │ (COURIER)   │  │          │
+└────────────────┘ └────────────────┘                  └─────────────┘  │          │
                                                                  ┌──────┴─────┐    │
-                                                                 │Điều phối Hub│   │
-                                                                 │  (Hub Ops) │    │
+                                                                 │ Nhân sự OPS│    │
+                                                                 │ (Hub / Kho)│    │
                                                                  └────────────┘    │
                                                                             ┌──────┴──────┐
-                                                                            │Quản trị &   │
-                                                                            │Kế toán Admin│
+                                                                            │Quản trị viên│
+                                                                            │SYSTEM_ADMIN │
                                                                             └─────────────┘
 ```
 
@@ -71,14 +70,14 @@ Trong chuẩn **UML 2.5**, Tác nhân (Actor) có thể kế thừa từ một T
 | :---: | :--- | :---: | :---: | :--- |
 | **Gốc** | **Người dùng Hệ thống** *(System User)* | Trừu tượng *(Abstract)* | *None (Root)* | Đại diện cho bất kỳ cá nhân nào tương tác với hệ thống. Thừa hưởng chung 2 tính năng cơ bản: Tra cứu lộ trình bưu gửi (`UC-G04`) và Hỏi đáp tự nhiên với Trợ lý AI (`UC-39`). |
 | **Tầng 1** | **Khách hàng** *(Customer)* | Trừu tượng *(Abstract)* | `System User` | Đối tác ngoại vi sử dụng dịch vụ bưu chính. Thừa hưởng toàn bộ quyền của `System User`, đồng thời có quyền khiếu nại bưu gửi và gửi phản hồi chất lượng. |
-| **Tầng 2** | **Khách vãng lai** *(Guest / Anonymous)* | Cụ thể *(Concrete)* | `Customer` | Khách truy cập web chưa đăng nhập tài khoản (`guest-web :5177`). Thừa hưởng tra cứu công khai nhưng bị áp dụng Khử định danh PII Masking (`UC-37`) để bảo mật thông tin người nhận. |
+| **Tầng 2** | **Khách vãng lai** *(GUEST / Anonymous)* | Cụ thể *(Concrete)* | `Customer` | Khách truy cập web chưa đăng nhập tài khoản (`guest-web :5177`). Thừa hưởng tra cứu công khai nhưng bị áp dụng Khử định danh PII Masking (`UC-37`) để bảo mật thông tin người nhận. |
 | **Tầng 2** | **Người dùng Đã định danh** *(Authenticated User)* | Trừu tượng *(Abstract)* | `Customer` | Người dùng đã xác thực danh tính qua hệ thống xác thực tập trung (`auth-service`). Thừa hưởng toàn bộ Use Case xác thực (`UC-G05`), quản lý hồ sơ và nhận thông báo cá nhân. |
-| **Tầng 3** | **Người nhận hàng** *(Consignee / Recipient)* | Cụ thể *(Concrete)* | `Authenticated User` | Khách hàng nhận bưu phẩm, đăng nhập qua `customer-mobile` bằng SĐT/OTP. Thừa hưởng quyền nhận hàng (`UC-16`), thanh toán VietQR (`UC-28`), hẹn lại giờ giao (`UC-19`), và lập Biên bản Bất thường (BBBT) trong 24h (`UC-20`). |
-| **Tầng 3** | **Chủ Shop / Người gửi** *(Merchant / Shipper)* | Cụ thể *(Concrete)* | `Authenticated User` | Đối tác kinh doanh ký hợp đồng bưu chính, sử dụng `merchant-web :5174`. Thừa hưởng quyền Tạo đơn (`UC-G01`), yêu cầu lấy hàng (`UC-06`), đối soát COD định kỳ (`UC-32`), rút tiền Ví COD (`UC-33`), và nộp khiếu nại bồi thường (`UC-G02`). |
+| **Tầng 3** | **Người nhận hàng** *(CUSTOMER / Recipient)* | Cụ thể *(Concrete)* | `Authenticated User` | Khách hàng nhận bưu phẩm, đăng nhập qua `customer-mobile` bằng SĐT/OTP. Thừa hưởng quyền nhận hàng (`UC-16`), thanh toán VietQR (`UC-28`), hẹn lại giờ giao (`UC-19`), và lập Biên bản Bất thường (BBBT) trong 24h (`UC-20`). |
+| **Tầng 3** | **Chủ Shop / Người gửi** *(MERCHANT)* | Cụ thể *(Concrete)* | `Authenticated User` | Đối tác kinh doanh ký hợp đồng bưu chính, sử dụng `merchant-web :5174`. Thừa hưởng quyền Tạo đơn (`UC-G01`), yêu cầu lấy hàng (`UC-06`), đối soát COD định kỳ (`UC-32`), rút tiền Ví COD (`UC-33`), và nộp khiếu nại bồi thường (`UC-G02`). |
 | **Tầng 1** | **Nhân sự Vận hành Nội bộ** *(Internal Staff)* | Trừu tượng *(Abstract)* | `System User` | Cán bộ công nhân viên thuộc tổ chức logistics. Thừa hưởng quyền đăng nhập nghiệp vụ, điểm danh ca làm việc, tra cứu viễn trắc nội bộ (`UC-36`), và định vị GPS (`UC-38`). |
-| **Tầng 2** | **Bưu tá giao nhận** *(Courier / Driver)* | Cụ thể *(Concrete)* | `Internal Staff` | Nhân viên giao nhận hiện trường sử dụng `courier-mobile`. Thực hiện gom hàng (`UC-10`), phát hàng (`UC-16`), thu COD mặt (`UC-27`), báo NDR (`UC-18`), ký xác nhận BBBT hiện trường (`UC-23`), và nộp quyết toán ca (`UC-30`). |
-| **Tầng 2** | **Điều phối viên Bưu cục** *(Hub Ops Coordinator)* | Cụ thể *(Concrete)* | `Internal Staff` | Trưởng ca hoặc nhân viên kho sử dụng `ops-web :5173`. Thực hiện quét Inbound/Outbound (`UC-11`, `UC-12`), đóng/tiếp nhận Manifest bao tải (`UC-13`, `UC-14`), phân tuyến bưu tá (`UC-15`), và thẩm định bồi thường $\le 500\text{k}$ (`UC-24`). |
-| **Tầng 2** | **Quản trị & Kế toán trưởng** *(Admin & Chief Accountant)* | Cụ thể *(Concrete)* | `Internal Staff` | Cán bộ cấp cao sử dụng `admin-web :5175`. Quản trị phân quyền RBAC (`UC-48`), cấu hình bảng cước IATA (`UC-50`), phê duyệt bồi thường $> 500\text{k}$ (`UC-25`), đối soát ngân hàng SePay (`UC-31`), và CMS tri thức RAG (`UC-54`). |
+| **Tầng 2** | **Bưu tá giao nhận** *(COURIER)* | Cụ thể *(Concrete)* | `Internal Staff` | Nhân viên giao nhận hiện trường duy nhất, sử dụng `courier-mobile`. Thực hiện gom hàng (`UC-10`), phát hàng (`UC-16`), thu COD mặt (`UC-27`), báo NDR (`UC-18`), ký xác nhận BBBT hiện trường (`UC-23`), và nộp quyết toán ca (`UC-30`). |
+| **Tầng 2** | **Nhân sự Vận hành Kho & Bưu cục** *(OPS)* | Cụ thể *(Concrete)* | `Internal Staff` | Các cấp nhân sự vận hành (`HUB_OPS`, `DISPATCHER`, `SORTER`, `INVENTORY_CLERK`, `OPS_MANAGER`, `HQ_OPS`) sử dụng `ops-web :5173`. Thực hiện quét Inbound/Outbound (`UC-11`, `UC-12`), đóng/tiếp nhận Manifest bao tải (`UC-13`, `UC-14`), phân tuyến bưu tá (`UC-15`), và thẩm định bồi thường $\le 500\text{k}$ (`UC-24`). |
+| **Tầng 2** | **Quản trị viên Hệ thống** *(SYSTEM_ADMIN)* | Cụ thể *(Concrete)* | `Internal Staff` | Cán bộ quản trị cấp cao sử dụng `admin-web :5175`. Quản trị phân quyền RBAC (`UC-48`), cấu hình bảng cước IATA (`UC-50`), phê duyệt bồi thường $> 500\text{k}$ (`UC-25`), đối soát ngân hàng SePay (`UC-31`), và CMS tri thức RAG (`UC-54`). |
 
 ---
 
@@ -223,7 +222,7 @@ Ký hiệu quyền:
 - **D** *(Delete)*: Hủy bỏ / Xóa dữ liệu.
 - **-**: Không có quyền truy cập.
 
-| Mã UC | Tên Trường hợp Sử dụng (Use Case Name) | Khách vãng lai | Người nhận | Chủ Shop | Bưu tá | Điều phối Hub | Admin & Kế toán |
+| Mã UC | Tên Trường hợp Sử dụng (Use Case Name) | GUEST | CUSTOMER | MERCHANT | COURIER | OPS | SYSTEM_ADMIN |
 | :---: | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
 | **UC-01** | Tạo đơn lẻ thủ công | - | - | **C** | - | **C** | **C** |
 | **UC-02** | Tạo đơn tệp Excel hàng loạt (Bulk) | - | - | **C** | - | - | **C** |

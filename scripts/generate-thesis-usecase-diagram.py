@@ -498,7 +498,7 @@ def generate_svg():
     lines.append('    <line x1="50" y1="85" x2="28" y2="120" class="actor-body"/>')
     lines.append('    <line x1="50" y1="85" x2="72" y2="120" class="actor-body"/>')
     lines.append('    <text x="50" y="140" class="t-actor">Người nhận hàng</text>')
-    lines.append('    <text x="50" y="155" class="t-role">(Consignee / Recipient)</text>')
+    lines.append('    <text x="50" y="155" class="t-role">(CUSTOMER / Recipient)</text>')
     lines.append('    <text x="50" y="169" class="t-app">customer-mobile</text>')
     lines.append('  </g>')
 
@@ -510,7 +510,7 @@ def generate_svg():
     lines.append('    <line x1="50" y1="85" x2="28" y2="120" class="actor-body"/>')
     lines.append('    <line x1="50" y1="85" x2="72" y2="120" class="actor-body"/>')
     lines.append('    <text x="50" y="140" class="t-actor">Chủ Shop / Người gửi</text>')
-    lines.append('    <text x="50" y="155" class="t-role">(Merchant / Shipper)</text>')
+    lines.append('    <text x="50" y="155" class="t-role">(MERCHANT)</text>')
     lines.append('    <text x="50" y="169" class="t-app">merchant-web :5174</text>')
     lines.append('  </g>')
 
@@ -552,7 +552,7 @@ def generate_svg():
     lines.append('    <line x1="50" y1="85" x2="28" y2="120" class="actor-body"/>')
     lines.append('    <line x1="50" y1="85" x2="72" y2="120" class="actor-body"/>')
     lines.append('    <text x="50" y="140" class="t-actor">Bưu tá giao nhận</text>')
-    lines.append('    <text x="50" y="155" class="t-role">(Courier / Driver)</text>')
+    lines.append('    <text x="50" y="155" class="t-role">(COURIER)</text>')
     lines.append('    <text x="50" y="169" class="t-app">courier-mobile</text>')
     lines.append('  </g>')
 
@@ -563,8 +563,8 @@ def generate_svg():
     lines.append('    <line x1="22" y1="58" x2="78" y2="58" class="actor-body"/>')
     lines.append('    <line x1="50" y1="85" x2="28" y2="120" class="actor-body"/>')
     lines.append('    <line x1="50" y1="85" x2="72" y2="120" class="actor-body"/>')
-    lines.append('    <text x="50" y="140" class="t-actor">Điều phối Bưu cục</text>')
-    lines.append('    <text x="50" y="155" class="t-role">(Hub Ops Coordinator)</text>')
+    lines.append('    <text x="50" y="140" class="t-actor">Vận hành Bưu cục &amp; Kho</text>')
+    lines.append('    <text x="50" y="155" class="t-role">(OPS / Hub Ops)</text>')
     lines.append('    <text x="50" y="169" class="t-app">ops-web :5173</text>')
     lines.append('  </g>')
 
@@ -575,8 +575,8 @@ def generate_svg():
     lines.append('    <line x1="22" y1="58" x2="78" y2="58" class="actor-body"/>')
     lines.append('    <line x1="50" y1="85" x2="28" y2="120" class="actor-body"/>')
     lines.append('    <line x1="50" y1="85" x2="72" y2="120" class="actor-body"/>')
-    lines.append('    <text x="50" y="140" class="t-actor">Quản trị &amp; Kế toán</text>')
-    lines.append('    <text x="50" y="155" class="t-role">(Admin / Accountant)</text>')
+    lines.append('    <text x="50" y="140" class="t-actor">Quản trị Hệ thống</text>')
+    lines.append('    <text x="50" y="155" class="t-role">(SYSTEM_ADMIN)</text>')
     lines.append('    <text x="50" y="169" class="t-app">admin-web :5175</text>')
     lines.append('  </g>')
 

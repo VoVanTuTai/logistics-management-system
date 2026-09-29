@@ -450,7 +450,7 @@
     <line x1="50" y1="85" x2="28" y2="120" class="actor-body"/>
     <line x1="50" y1="85" x2="72" y2="120" class="actor-body"/>
     <text x="50" y="140" class="t-actor">Người nhận hàng</text>
-    <text x="50" y="155" class="t-role">(Consignee / Recipient)</text>
+    <text x="50" y="155" class="t-role">(CUSTOMER / Recipient)</text>
     <text x="50" y="169" class="t-app">customer-mobile</text>
   </g>
   <g id="Actor_Merchant" transform="translate(190, 1380)">
@@ -460,7 +460,7 @@
     <line x1="50" y1="85" x2="28" y2="120" class="actor-body"/>
     <line x1="50" y1="85" x2="72" y2="120" class="actor-body"/>
     <text x="50" y="140" class="t-actor">Chủ Shop / Người gửi</text>
-    <text x="50" y="155" class="t-role">(Merchant / Shipper)</text>
+    <text x="50" y="155" class="t-role">(MERCHANT)</text>
     <text x="50" y="169" class="t-app">merchant-web :5174</text>
   </g>
   <g id="Actor_Internal_Staff" transform="translate(3270, 180)">
@@ -488,7 +488,7 @@
     <line x1="50" y1="85" x2="28" y2="120" class="actor-body"/>
     <line x1="50" y1="85" x2="72" y2="120" class="actor-body"/>
     <text x="50" y="140" class="t-actor">Bưu tá giao nhận</text>
-    <text x="50" y="155" class="t-role">(Courier / Driver)</text>
+    <text x="50" y="155" class="t-role">(COURIER)</text>
     <text x="50" y="169" class="t-app">courier-mobile</text>
   </g>
   <g id="Actor_Ops" transform="translate(3270, 980)">
@@ -497,8 +497,8 @@
     <line x1="22" y1="58" x2="78" y2="58" class="actor-body"/>
     <line x1="50" y1="85" x2="28" y2="120" class="actor-body"/>
     <line x1="50" y1="85" x2="72" y2="120" class="actor-body"/>
-    <text x="50" y="140" class="t-actor">Điều phối Bưu cục</text>
-    <text x="50" y="155" class="t-role">(Hub Ops Coordinator)</text>
+    <text x="50" y="140" class="t-actor">Vận hành Bưu cục &amp; Kho</text>
+    <text x="50" y="155" class="t-role">(OPS / Hub Ops)</text>
     <text x="50" y="169" class="t-app">ops-web :5173</text>
   </g>
   <g id="Actor_Admin" transform="translate(3270, 1420)">
@@ -507,8 +507,8 @@
     <line x1="22" y1="58" x2="78" y2="58" class="actor-body"/>
     <line x1="50" y1="85" x2="28" y2="120" class="actor-body"/>
     <line x1="50" y1="85" x2="72" y2="120" class="actor-body"/>
-    <text x="50" y="140" class="t-actor">Quản trị &amp; Kế toán</text>
-    <text x="50" y="155" class="t-role">(Admin / Accountant)</text>
+    <text x="50" y="140" class="t-actor">Quản trị Hệ thống</text>
+    <text x="50" y="155" class="t-role">(SYSTEM_ADMIN)</text>
     <text x="50" y="169" class="t-app">admin-web :5175</text>
   </g>
   <!-- ========================================================= -->
