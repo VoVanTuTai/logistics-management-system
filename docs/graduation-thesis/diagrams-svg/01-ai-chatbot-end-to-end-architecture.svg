@@ -1,0 +1,206 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="1600" height="1000" style="background:#FFFFFF;">
+  <defs>
+    <marker id="arrowB" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#000000" />
+    </marker>
+  </defs>
+
+  <style>
+    text { font-family: "Times New Roman", Times, "Segoe UI", -apple-system, serif; }
+    .title-h1 { font-size: 18px; font-weight: bold; fill: #000000; text-anchor: middle; }
+    .title-sub { font-size: 13px; font-style: italic; fill: #333333; text-anchor: middle; }
+    .tier-label { font-size: 13px; font-weight: bold; fill: #000000; text-transform: uppercase; }
+    .box-title { font-size: 13px; font-weight: bold; fill: #000000; }
+    .box-sub { font-size: 11px; fill: #222222; }
+  </style>
+
+  <!-- ==================== HEADER ==================== -->
+  <g id="Header" transform="translate(0, 30)">
+    <text x="800" y="25" class="title-h1">HÌNH 1.1: SƠ ĐỒ KIẾN TRÚC TỔNG THỂ HỆ THỐNG AI CHATBOT LOGISTICS ĐA TẦNG</text>
+    <text x="800" y="48" class="title-sub">Mô hình triển khai phân tán tích hợp API Gateway, AI Orchestrator, Live Microservices Mesh và Động cơ RAG</text>
+    <line x1="80" y1="65" x2="1520" y2="65" stroke="#000000" stroke-width="1.5"/>
+  </g>
+
+  <!-- ==================== 4 ARCHITECTURE TIERS (MONOCHROME) ==================== -->
+  
+  <!-- TIER 1: CLIENT APPLICATIONS (y: 100) -->
+  <g id="Tier_1_Clients" transform="translate(80, 100)">
+    <rect x="0" y="0" width="1440" height="150" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <rect x="0" y="0" width="220" height="28" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+    <text x="12" y="19" class="tier-label">TẦNG 1: CLIENT APPS (ĐA KÊNH)</text>
+
+    <!-- Client Box 1 -->
+    <g transform="translate(30, 45)">
+      <rect x="0" y="0" width="310" height="85" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="box-title">Guest Web Portal (:5177)</text>
+      <text x="12" y="42" class="box-sub">• Nền tảng: ReactJS / Vite SPA</text>
+      <text x="12" y="58" class="box-sub">• Khách vãng lai tra cứu đơn hàng</text>
+      <text x="12" y="74" class="box-sub">• Chế độ bảo mật: PII Masking</text>
+    </g>
+
+    <!-- Client Box 2 -->
+    <g transform="translate(380, 45)">
+      <rect x="0" y="0" width="310" height="85" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="box-title">Customer Mobile App (:8082)</text>
+      <text x="12" y="42" class="box-sub">• Nền tảng: React Native / Expo</text>
+      <text x="12" y="58" class="box-sub">• Khách hàng nhận / Gửi cá nhân</text>
+      <text x="12" y="74" class="box-sub">• Giao diện Thẻ tương tác 1 chạm</text>
+    </g>
+
+    <!-- Client Box 3 -->
+    <g transform="translate(730, 45)">
+      <rect x="0" y="0" width="310" height="85" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="box-title">Merchant Web Portal (:5174)</text>
+      <text x="12" y="42" class="box-sub">• Nền tảng: ReactJS Web Dashboard</text>
+      <text x="12" y="58" class="box-sub">• Chủ cửa hàng thương mại điện tử</text>
+      <text x="12" y="74" class="box-sub">• Tra cứu danh sách đơn gom, COD</text>
+    </g>
+
+    <!-- Client Box 4 -->
+    <g transform="translate(1080, 45)">
+      <rect x="0" y="0" width="330" height="85" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="box-title">Operations Platform (:5173)</text>
+      <text x="12" y="42" class="box-sub">• Nền tảng: ReactJS Ops Dashboard</text>
+      <text x="12" y="58" class="box-sub">• Bưu tá, Trưởng bưu cục, Điều hành</text>
+      <text x="12" y="74" class="box-sub">• Tiếp nhận ca sự cố &amp; Khiếu nại HITL</text>
+    </g>
+  </g>
+
+  <!-- Connect Tier 1 -> Tier 2 -->
+  <path d="M 800 250 L 800 300" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowB)"/>
+  <text x="810" y="280" font-size="11" font-weight="bold">HTTPS / RESTful</text>
+
+  <!-- TIER 2: API GATEWAY & SECURITY PROXY (y: 300) -->
+  <g id="Tier_2_Gateway" transform="translate(80, 300)">
+    <rect x="0" y="0" width="1440" height="110" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <rect x="0" y="0" width="300" height="28" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+    <text x="12" y="19" class="tier-label">TẦNG 2: API GATEWAY &amp; PII PROXY (:3000)</text>
+
+    <g transform="translate(30, 40)">
+      <rect x="0" y="0" width="420" height="55" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="box-title">Định tuyến &amp; Tải cân bằng (Reverse Proxy)</text>
+      <text x="12" y="42" class="box-sub">Single Point of Entry • Rate Limiting chống quét mã</text>
+    </g>
+
+    <g transform="translate(480, 40)">
+      <rect x="0" y="0" width="450" height="55" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="box-title">Xác thực &amp; Phân quyền (JWT Claims Resolver)</text>
+      <text x="12" y="42" class="box-sub">Bóc tách Role: GUEST / CUSTOMER / MERCHANT / OPS</text>
+    </g>
+
+    <g transform="translate(960, 40)">
+      <rect x="0" y="0" width="450" height="55" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="box-title">Bộ lọc Khử định danh (PII Sanitizer Pipeline)</text>
+      <text x="12" y="42" class="box-sub">Tự động che SĐT (098***), che địa chỉ nhà riêng cho khách vãng lai</text>
+    </g>
+  </g>
+
+  <!-- Connect Tier 2 -> Tier 3 -->
+  <path d="M 800 410 L 800 460" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowB)"/>
+  <text x="810" y="440" font-size="11" font-weight="bold">Internal Network</text>
+
+  <!-- TIER 3: AI ORCHESTRATOR & LIVE MESH (y: 460) -->
+  <g id="Tier_3_Orchestrator_Mesh" transform="translate(80, 460)">
+    <rect x="0" y="0" width="1440" height="230" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <rect x="0" y="0" width="340" height="28" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+    <text x="12" y="19" class="tier-label">TẦNG 3: AI ORCHESTRATOR &amp; LIVE MESH</text>
+
+    <!-- AI Orchestrator Box -->
+    <g transform="translate(30, 45)">
+      <rect x="0" y="0" width="650" height="165" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+      <rect x="0" y="0" width="650" height="26" fill="#E5E7EB" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="18" class="box-title">AI Agent Orchestrator Service (NestJS :3013)</text>
+      
+      <text x="16" y="52" class="box-title">• Query Normalizer &amp; Logistics Thesaurus:</text>
+      <text x="28" y="70" class="box-sub">Chuẩn hóa tiếng Việt, ánh xạ từ vựng: ["vỡ, bể"] → ["hư hỏng, bồi thường"]</text>
+
+      <text x="16" y="94" class="box-title">• Deterministic Intent Parser (Context Disambiguation):</text>
+      <text x="28" y="112" class="box-sub">Bóc tách Regex: mã đơn NX-XXXXXX, mã khiếu nại CLM-XXXXX</text>
+
+      <text x="16" y="136" class="box-title">• State Machine Controller &amp; HITL Dispatcher:</text>
+      <text x="28" y="154" class="box-sub">Điều phối 5 FR, kiểm soát ngưỡng tự động ≤ 2.000.000 đ và chuyển giao con người</text>
+    </g>
+
+    <!-- Arrow Orchestrator -> Mesh -->
+    <path d="M 680 125 L 740 125" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowB)"/>
+    <text x="685" y="115" font-size="10" font-weight="bold">Fetch Live</text>
+
+    <!-- Live Mesh Box -->
+    <g transform="translate(740, 45)">
+      <rect x="0" y="0" width="670" height="165" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+      <rect x="0" y="0" width="670" height="26" fill="#E5E7EB" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="18" class="box-title">Live Microservices Mesh (Hệ sinh thái Nghiệp vụ Vận hành)</text>
+
+      <!-- Sub service 1 -->
+      <g transform="translate(16, 38)">
+        <rect x="0" y="0" width="300" height="52" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+        <text x="10" y="18" class="box-title">Tracking Service (:3005)</text>
+        <text x="10" y="36" class="box-sub">• Lấy timeline sự kiện: Đã giao, Đang lấy, t_del</text>
+      </g>
+
+      <!-- Sub service 2 -->
+      <g transform="translate(330, 38)">
+        <rect x="0" y="0" width="320" height="52" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+        <text x="10" y="18" class="box-title">Order Service (:3002)</text>
+        <text x="10" y="36" class="box-sub">• Chi tiết đơn, tiền thu hộ COD, Người gửi/nhận</text>
+      </g>
+
+      <!-- Sub service 3 -->
+      <g transform="translate(16, 100)">
+        <rect x="0" y="0" width="300" height="52" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+        <text x="10" y="18" class="box-title">Claim Service (:3007)</text>
+        <text x="10" y="36" class="box-sub">• Quản lý mã hồ sơ bồi thường CLM-</text>
+      </g>
+
+      <!-- Sub service 4 -->
+      <g transform="translate(330, 100)">
+        <rect x="0" y="0" width="320" height="52" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+        <text x="10" y="18" class="box-title">Carrier &amp; Pricing Service (:3008)</text>
+        <text x="10" y="36" class="box-sub">• Bảng cước vận chuyển chuẩn IATA</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Connect Tier 3 -> Tier 4 -->
+  <path d="M 800 690 L 800 740" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowB)"/>
+  <text x="810" y="720" font-size="11" font-weight="bold">Context Augmented</text>
+
+  <!-- TIER 4: RAG REPOSITORY & COGNITIVE ENGINE (y: 740) -->
+  <g id="Tier_4_RAG_LLM" transform="translate(80, 740)">
+    <rect x="0" y="0" width="1440" height="190" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <rect x="0" y="0" width="340" height="28" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+    <text x="12" y="19" class="tier-label">TẦNG 4: RAG REPOSITORY &amp; LLM REASONING</text>
+
+    <!-- RAG Repository Box -->
+    <g transform="translate(30, 45)">
+      <rect x="0" y="0" width="670" height="125" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+      <text x="14" y="24" class="box-title">Kho Tri thức Văn bản Nghiệp vụ (RAG Knowledge Base)</text>
+      <text x="14" y="46" class="box-sub">• Tài liệu Markdown có cấu trúc: 01-pricing, 02-insurance-claim, 09-negative-sop</text>
+      <text x="14" y="66" class="box-sub">• Mô hình nhúng Vector: Google Gemini Embedding-001 (Không gian 768 chiều thực)</text>
+      <text x="14" y="86" class="box-sub">• Giải thuật phân đoạn: Section-Aware Semantic Splitting (Stride = 210 từ, Overlap = 16%)</text>
+      <text x="14" y="106" class="box-sub">• Điểm tìm kiếm lai: Score = 0.70 × CosineSimilarity + 0.35 × LexicalKeywordScore</text>
+    </g>
+
+    <!-- Arrow RAG -> LLM -->
+    <path d="M 700 105 L 750 105" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowB)"/>
+    <text x="705" y="95" font-size="10" font-weight="bold">Grounding</text>
+
+    <!-- LLM Cognitive Engine Box -->
+    <g transform="translate(750, 45)">
+      <rect x="0" y="0" width="660" height="125" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
+      <text x="14" y="24" class="box-title">Động cơ Suy luận Nhận thức (LLM Cognitive Reasoning Engine)</text>
+      <text x="14" y="46" class="box-sub">• Mô hình nền tảng: Google Gemini Flash</text>
+      <text x="14" y="66" class="box-sub">• Tham số khống chế ảo giác: Temperature = 0.2 (Buộc suy luận tuyệt đối trên Context)</text>
+      <text x="14" y="86" class="box-sub">• Định dạng đầu ra: Cấu trúc JSON Schema nghiêm ngặt cho Rich UI Component</text>
+      <text x="14" y="106" class="box-sub">• Các thẻ hỗ trợ: ORDER_TRACKING_CARD, CAROUSEL_SELECTOR, CLAIM_PROGRESS_CARD</text>
+    </g>
+  </g>
+
+  <!-- ==================== FOOTER ==================== -->
+  <g id="Footer" transform="translate(80, 955)">
+    <line x1="0" y1="0" x2="1440" y2="0" stroke="#000000" stroke-width="1"/>
+    <text x="0" y="22" font-size="11" font-style="italic" fill="#333333">
+      Ghi chú: Bản vẽ kiến trúc tổng thể phần mềm theo chuẩn UML Component &amp; Deployment Diagram. Tiêu chuẩn in ấn đơn sắc (Monochrome) cho thuyết minh Khóa luận tốt nghiệp.
+    </text>
+  </g>
+</svg>

@@ -1,0 +1,231 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1650 960" width="1650" height="960" style="background:#FFFFFF;">
+  <defs>
+    <!-- Sharp Black Arrow Marker -->
+    <marker id="arrowM3" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#000000" />
+    </marker>
+  </defs>
+
+  <style>
+    text { font-family: "Times New Roman", Times, serif; }
+    .doc-title { font-size: 17px; font-weight: bold; fill: #000000; text-anchor: middle; }
+    .doc-sub { font-size: 12.5px; font-style: italic; fill: #333333; text-anchor: middle; }
+    .col-title { font-size: 12px; font-weight: bold; fill: #000000; text-transform: uppercase; letter-spacing: 0.5px; }
+    .card-title { font-size: 12.5px; font-weight: bold; fill: #000000; }
+    .card-sub { font-size: 11px; fill: #222222; line-height: 1.35; }
+  </style>
+
+  <!-- ==================== HEADER ==================== -->
+  <g id="Header" transform="translate(0, 25)">
+    <text x="825" y="22" class="doc-title">HÌNH 3.1: MA TRẬN ĐIỀU PHỐI 5 CA NGHIỆP VỤ &amp; CẤU TRÚC PHẢN HỒI GIAO DIỆN (RICH UI)</text>
+    <text x="825" y="42" class="doc-sub">Liên kết 1-1 theo 5 hàng ngang giữa Phân loại Ý định, Quy trình Xử lý Microservices và Cấu trúc Thẻ tương tác</text>
+    <line x1="80" y1="58" x2="1570" y2="58" stroke="#000000" stroke-width="1.2"/>
+  </g>
+
+  <!-- ==================== 3 COLUMNS CONTAINER (y: 85, height: 790) ==================== -->
+  
+  <!-- COL 1: INTENT RECOGNITION (x: 80, width: 440) -->
+  <g id="Col_1" transform="translate(80, 85)">
+    <rect x="0" y="0" width="440" height="790" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <rect x="0" y="0" width="440" height="35" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+    <text x="15" y="23" class="col-title">1. TIẾP NHẬN &amp; PHÂN LOẠI Ý ĐỊNH</text>
+
+    <!-- Row 1: Intent 1 (y: 45, h: 125, Center y: 107.5) -->
+    <g transform="translate(15, 45)">
+      <rect x="0" y="0" width="410" height="125" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="card-title">Ý định 1: Tra cứu đơn lẻ (TRACKING_EXACT)</text>
+      <text x="12" y="44" class="card-sub">• Mẫu câu: "Đơn NX-884920489 đi tới đâu rồi?"</text>
+      <text x="12" y="64" class="card-sub">• Bóc tách Regex: /(NX|CLM)-\d{6,}/i</text>
+      <text x="12" y="84" class="card-sub">• Đặc thù: Khách đã có mã đơn xác định</text>
+      <text x="12" y="104" font-weight="bold" class="card-sub">→ Trích xuất mã và bỏ qua bước phân loại LLM</text>
+    </g>
+
+    <!-- Row 2: Intent 2 (y: 195, h: 125, Center y: 257.5) -->
+    <g transform="translate(15, 195)">
+      <rect x="0" y="0" width="410" height="125" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="card-title">Ý định 2: Nhiều đơn gần đây (RECENT_ORDERS)</text>
+      <text x="12" y="44" class="card-sub">• Mẫu câu: "Đơn hàng gần đây của tôi đã giao chưa?"</text>
+      <text x="12" y="64" class="card-sub">• Câu hỏi mập mờ, không cung cấp mã cụ thể</text>
+      <text x="12" y="84" class="card-sub">• Khách hàng thường không nhớ mã 12 ký tự</text>
+      <text x="12" y="104" font-weight="bold" class="card-sub">→ Tự động kích hoạt cơ chế bóc tách danh sách</text>
+    </g>
+
+    <!-- Row 3: Intent 3 (y: 345, h: 125, Center y: 407.5) -->
+    <g transform="translate(15, 345)">
+      <rect x="0" y="0" width="410" height="125" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="card-title">Ý định 3: Hàng bể vỡ, hỏng (DAMAGE_CLAIM)</text>
+      <text x="12" y="44" class="card-sub">• Mẫu câu: "Hàng gốm sứ bị vỡ nát ai bồi thường?"</text>
+      <text x="12" y="64" class="card-sub">• Từ khóa Thesaurus: ["vỡ, bể, nát"] → ["hư hỏng"]</text>
+      <text x="12" y="84" class="card-sub">• Nhận diện khiếu nại sự cố vận chuyển</text>
+      <text x="12" y="104" font-weight="bold" class="card-sub">→ Kích hoạt luồng đối chiếu quy định bồi thường</text>
+    </g>
+
+    <!-- Row 4: Intent 4 (y: 495, h: 125, Center y: 557.5) -->
+    <g transform="translate(15, 495)">
+      <rect x="0" y="0" width="410" height="125" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="card-title">Ý định 4: Dự toán cước quy đổi (PRICING_IATA)</text>
+      <text x="12" y="44" class="card-sub">• Mẫu câu: "Thùng 50x40x30 nặng 3kg cước bao nhiêu?"</text>
+      <text x="12" y="64" class="card-sub">• Bóc tách 3 chiều: Dài, Rộng, Cao (cm) và Cân nặng</text>
+      <text x="12" y="84" class="card-sub">• Đặc thù: Hàng hóa nhẹ nhưng chiếm thể tích lớn</text>
+      <text x="12" y="104" font-weight="bold" class="card-sub">→ Áp dụng công thức quy đổi quốc tế IATA</text>
+    </g>
+
+    <!-- Row 5: Intent 5 (y: 645, h: 125, Center y: 707.5) -->
+    <g transform="translate(15, 645)">
+      <rect x="0" y="0" width="410" height="125" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="card-title">Ý định 5: Khách vãng lai (GUEST_GUARD)</text>
+      <text x="12" y="44" class="card-sub">• Mẫu câu: Tra cứu mã đơn trên cổng công khai</text>
+      <text x="12" y="64" class="card-sub">• Yêu cầu không có Bearer Auth Token</text>
+      <text x="12" y="84" class="card-sub">• Nguy cơ: Kẻ xấu dò quét SĐT và địa chỉ nhà riêng</text>
+      <text x="12" y="104" font-weight="bold" class="card-sub">→ Kích hoạt bộ lọc khử định danh dữ liệu PII</text>
+    </g>
+  </g>
+
+  <!-- COL 2: PROCESS ORCHESTRATION (x: 580, width: 480) -->
+  <g id="Col_2" transform="translate(580, 85)">
+    <rect x="0" y="0" width="480" height="790" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <rect x="0" y="0" width="480" height="35" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+    <text x="15" y="23" class="col-title">2. ĐIỀU PHỐI LOGIC NGHIỆP VỤ</text>
+
+    <!-- Row 1: Logic 1 -->
+    <g transform="translate(15, 45)">
+      <rect x="0" y="0" width="450" height="125" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="card-title">Xử lý Ca 1: Truy vấn Vận đơn Trực tiếp</text>
+      <text x="12" y="44" class="card-sub">• Gọi nội bộ: GET :3005/orders/track/:orderCode</text>
+      <text x="12" y="64" class="card-sub">• Tổng hợp chuỗi sự kiện: Đã tạo → Đã lấy → Đang giao</text>
+      <text x="12" y="84" class="card-sub">• Trích xuất thông tin tài xế và thời gian dự kiến (ETA)</text>
+      <text x="12" y="104" font-weight="bold" class="card-sub">Đầu ra: Đóng gói JSON Schema ORDER_TRACKING_CARD</text>
+    </g>
+
+    <!-- Row 2: Logic 2 -->
+    <g transform="translate(15, 195)">
+      <rect x="0" y="0" width="450" height="125" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="card-title">Xử lý Ca 2: Xây dựng Tập Thẻ Tương tác</text>
+      <text x="12" y="44" class="card-sub">• Đọc userId từ JWT, gọi: GET :3002/orders/my-orders?limit=3</text>
+      <text x="12" y="64" class="card-sub">• Trả về 3 đơn hàng gần nhất có gắn nút bấm chọn</text>
+      <text x="12" y="84" class="card-sub">• Khách chạm chọn 1 đơn → Tự động chuyển tiếp vào Ca 1</text>
+      <text x="12" y="104" font-weight="bold" class="card-sub">Đầu ra: Đóng gói JSON Schema ORDER_CAROUSEL_CARD</text>
+    </g>
+
+    <!-- Row 3: Logic 3 -->
+    <g transform="translate(15, 345)">
+      <rect x="0" y="0" width="450" height="125" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="card-title">Xử lý Ca 3: Thẩm định Bồi thường &amp; BBBT</text>
+      <text x="12" y="44" class="card-sub">• RAG trích xuất điều kiện: Lập Biên bản bất thường ≤ 24h</text>
+      <text x="12" y="64" class="card-sub">• Nếu đủ BBBT &amp; Giá trị ≤ 2.000.000 đ: Duyệt đền bù 100%</text>
+      <text x="12" y="84" class="card-sub">• Nếu quá 24h hoặc tranh chấp: Chuyển giao Human-in-the-Loop</text>
+      <text x="12" y="104" font-weight="bold" class="card-sub">Đầu ra: Tự động tạo hồ sơ CLM-202609-XXXXX</text>
+    </g>
+
+    <!-- Row 4: Logic 4 -->
+    <g transform="translate(15, 495)">
+      <rect x="0" y="0" width="450" height="125" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="card-title">Xử lý Ca 4: Tính toán Quy chuẩn IATA</text>
+      <text x="12" y="44" class="card-sub">• Công thức đường bộ: W_dim = (D x R x C) / 5000 (kg)</text>
+      <text x="12" y="64" class="card-sub">• So sánh: W_tính_cước = max(W_thực_tế, W_dim)</text>
+      <text x="12" y="84" class="card-sub">• Tính phụ phí cồng kềnh và áp dụng chính sách hoàn 50% cước</text>
+      <text x="12" y="104" font-weight="bold" class="card-sub">Đầu ra: Đóng gói JSON Schema IATA_PRICING_CARD</text>
+    </g>
+
+    <!-- Row 5: Logic 5 -->
+    <g transform="translate(15, 645)">
+      <rect x="0" y="0" width="450" height="125" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="12" y="22" class="card-title">Xử lý Ca 5: Khử định danh Thông tin Cá nhân</text>
+      <text x="12" y="44" class="card-sub">• SĐT người nhận: 0984123456 → 098***3456</text>
+      <text x="12" y="64" class="card-sub">• Tên khách hàng: Nguyễn Văn An → N*** V** A</text>
+      <text x="12" y="84" class="card-sub">• Địa chỉ: Cắt bỏ số nhà ngõ ngách, chỉ giữ lại Quận/Huyện</text>
+      <text x="12" y="104" font-weight="bold" class="card-sub">Đầu ra: Đóng gói JSON Schema MASKED_PUBLIC_CARD</text>
+    </g>
+  </g>
+
+  <!-- COL 3: UI RESPONSE STRUCTURE (x: 1120, width: 450) -->
+  <g id="Col_3" transform="translate(1120, 85)">
+    <rect x="0" y="0" width="450" height="790" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <rect x="0" y="0" width="450" height="35" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+    <text x="15" y="23" class="col-title">3. CẤU TRÚC GIAO DIỆN PHẢN HỒI (CARDS)</text>
+
+    <!-- Row 1: Card 1 -->
+    <g transform="translate(15, 45)">
+      <rect x="0" y="0" width="420" height="125" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+      <rect x="0" y="0" width="420" height="24" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+      <text x="10" y="16" class="card-title">ORDER_TRACKING_CARD</text>
+      <text x="10" y="44" class="card-sub">• Đơn hàng: NX-884920489 [ĐANG GIAO HÀNG]</text>
+      <text x="10" y="64" class="card-sub">• Tài xế: Nguyễn Văn Ba (0909***890)</text>
+      <text x="10" y="84" class="card-sub">• Dự kiến giao: Hôm nay, trước 17:30</text>
+      <text x="10" y="108" font-size="10.5" font-weight="bold">[ Nút: Theo dõi GPS ]   [ Nút: Gọi hỗ trợ ]</text>
+    </g>
+
+    <!-- Row 2: Card 2 -->
+    <g transform="translate(15, 195)">
+      <rect x="0" y="0" width="420" height="125" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+      <rect x="0" y="0" width="420" height="24" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+      <text x="10" y="16" class="card-title">ORDER_CAROUSEL_CARD</text>
+      <text x="10" y="44" class="card-sub">• Thẻ 1: NX-884920489 (Đang giao) [Chọn tra cứu]</text>
+      <text x="10" y="64" class="card-sub">• Thẻ 2: NX-992102144 (Đang lấy) [Chọn tra cứu]</text>
+      <text x="10" y="84" class="card-sub">• Thẻ 3: NX-110294821 (Đã giao) [Chọn tra cứu]</text>
+      <text x="10" y="108" font-size="10" font-style="italic">Tương tác 1 chạm, loại bỏ thao tác gõ mã thủ công</text>
+    </g>
+
+    <!-- Row 3: Card 3 -->
+    <g transform="translate(15, 345)">
+      <rect x="0" y="0" width="420" height="125" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+      <rect x="0" y="0" width="420" height="24" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+      <text x="10" y="16" class="card-title">CLAIM_PROGRESS_CARD</text>
+      <text x="10" y="44" class="card-sub">• Mã hồ sơ: CLM-88219 [ĐÃ DUYỆT 100%]</text>
+      <text x="10" y="64" class="card-sub">• Số tiền bồi thường: 1.250.000 VNĐ (Khai giá)</text>
+      <text x="10" y="84" class="card-sub">• Biên bản BBBT: Đã tiếp nhận có chữ ký bưu tá</text>
+      <text x="10" y="108" font-size="10.5" font-weight="bold">[ Nút: Xác nhận nhận tiền qua ví ]</text>
+    </g>
+
+    <!-- Row 4: Card 4 -->
+    <g transform="translate(15, 495)">
+      <rect x="0" y="0" width="420" height="125" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+      <rect x="0" y="0" width="420" height="24" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+      <text x="10" y="16" class="card-title">IATA_PRICING_CARD</text>
+      <text x="10" y="44" class="card-sub">• Kích thước: 50x40x30 cm | Thực tế: 3.5 kg</text>
+      <text x="10" y="64" class="card-sub">• Trọng lượng quy đổi IATA (5000): 12.0 kg</text>
+      <text x="10" y="84" class="card-sub">• Cước tiêu chuẩn: 68.000 đ | Phụ phí: 24.000 đ</text>
+      <text x="10" y="108" font-size="11" font-weight="bold">Tổng cộng dự toán cước: 92.000 VNĐ</text>
+    </g>
+
+    <!-- Row 5: Card 5 -->
+    <g transform="translate(15, 645)">
+      <rect x="0" y="0" width="420" height="125" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+      <rect x="0" y="0" width="420" height="24" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+      <text x="10" y="16" class="card-title">MASKED_PUBLIC_CARD</text>
+      <text x="10" y="44" class="card-sub">• Trạng thái lộ trình kiện hàng: Hiển thị đầy đủ</text>
+      <text x="10" y="64" class="card-sub">• Người nhận: N*** V** A (098***3456)</text>
+      <text x="10" y="84" class="card-sub">• Địa chỉ nhận: P. Bến Nghé, Quận 1, TP.HCM</text>
+      <text x="10" y="108" font-size="10.5" font-weight="bold">[ Nút: Đăng nhập để xem thông tin chi tiết ]</text>
+    </g>
+  </g>
+
+  <!-- ==================== 5 PARALLEL HORIZONTAL CONNECTORS (NO OVERLAPS) ==================== -->
+  <!-- Row 1: y = 85 + 45 + 62.5 = 192.5 -->
+  <path d="M 520 192.5 L 580 192.5" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowM3)"/>
+  <path d="M 1060 192.5 L 1120 192.5" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowM3)"/>
+
+  <!-- Row 2: y = 85 + 195 + 62.5 = 342.5 -->
+  <path d="M 520 342.5 L 580 342.5" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowM3)"/>
+  <path d="M 1060 342.5 L 1120 342.5" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowM3)"/>
+
+  <!-- Row 3: y = 85 + 345 + 62.5 = 492.5 -->
+  <path d="M 520 492.5 L 580 492.5" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowM3)"/>
+  <path d="M 1060 492.5 L 1120 492.5" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowM3)"/>
+
+  <!-- Row 4: y = 85 + 495 + 62.5 = 642.5 -->
+  <path d="M 520 642.5 L 580 642.5" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowM3)"/>
+  <path d="M 1060 642.5 L 1120 642.5" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowM3)"/>
+
+  <!-- Row 5: y = 85 + 645 + 62.5 = 792.5 -->
+  <path d="M 520 792.5 L 580 792.5" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowM3)"/>
+  <path d="M 1060 792.5 L 1120 792.5" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowM3)"/>
+
+  <!-- ==================== FOOTER ==================== -->
+  <g id="Footer" transform="translate(80, 910)">
+    <line x1="0" y1="0" x2="1490" y2="0" stroke="#000000" stroke-width="1"/>
+    <text x="0" y="20" font-size="11" font-style="italic" fill="#333333">
+      Ghi chú: Sơ đồ ma trận điều phối trực giao (Orthogonal Process Mapping). Bố cục 5 hàng song song đảm bảo không có đường nối cắt ngang và tối ưu in ấn đơn sắc.
+    </text>
+  </g>
+</svg>

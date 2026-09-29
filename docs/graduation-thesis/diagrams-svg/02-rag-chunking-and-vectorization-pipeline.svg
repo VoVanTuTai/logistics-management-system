@@ -1,0 +1,205 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="1600" height="1000" style="background:#FFFFFF;">
+  <defs>
+    <marker id="arrowB2" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#000000" />
+    </marker>
+  </defs>
+
+  <style>
+    text { font-family: "Times New Roman", Times, "Segoe UI", -apple-system, serif; }
+    .title-h1 { font-size: 18px; font-weight: bold; fill: #000000; text-anchor: middle; }
+    .title-sub { font-size: 13px; font-style: italic; fill: #333333; text-anchor: middle; }
+    .stage-title { font-size: 13px; font-weight: bold; fill: #000000; }
+    .box-title { font-size: 13px; font-weight: bold; fill: #000000; }
+    .box-sub { font-size: 11px; fill: #222222; }
+    .math-text { font-family: "Times New Roman", Times, serif; font-size: 12px; font-weight: bold; fill: #000000; }
+  </style>
+
+  <!-- ==================== HEADER ==================== -->
+  <g id="Header" transform="translate(0, 30)">
+    <text x="800" y="25" class="title-h1">HÌNH 2.1: QUY TRÌNH PHÂN ĐOẠN NGỮ NGHĨA &amp; VECTOR HÓA DỮ LIỆU BƯU CHÍNH (RAG PIPELINE)</text>
+    <text x="800" y="48" class="title-sub">Giải thuật Hybrid Section-Aware Semantic Splitting, Cửa sổ trượt Overlap 16% và Không gian Vector 768 chiều</text>
+    <line x1="80" y1="65" x2="1520" y2="65" stroke="#000000" stroke-width="1.5"/>
+  </g>
+
+  <!-- ==================== 5 PIPELINE STAGES (MONOCHROME) ==================== -->
+
+  <!-- STAGE 1: AST MARKDOWN PARSING (x: 80) -->
+  <g id="Stage_1" transform="translate(80, 110)">
+    <rect x="0" y="0" width="260" height="780" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <rect x="0" y="0" width="260" height="35" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+    <text x="12" y="23" class="stage-title">GIAI ĐOẠN 1: AST PARSER</text>
+
+    <!-- Content 1.1 -->
+    <g transform="translate(15, 55)">
+      <rect x="0" y="0" width="230" height="150" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="10" y="22" class="box-title">Văn bản Nguồn (.md)</text>
+      <text x="10" y="42" class="box-sub">• 01-pricing-iata.md</text>
+      <text x="10" y="58" class="box-sub">• 02-insurance-claim.md</text>
+      <text x="10" y="74" class="box-sub">• 09-negative-sop.md</text>
+      <line x1="10" y1="85" x2="220" y2="85" stroke="#000000" stroke-width="0.5"/>
+      <text x="10" y="105" class="box-sub">Đặc thù: Chứa bảng cước,</text>
+      <text x="10" y="121" class="box-sub">mệnh đề điều kiện pháp lý</text>
+      <text x="10" y="137" class="box-sub">và thời hạn 24 giờ</text>
+    </g>
+
+    <!-- Arrow 1.1 -> 1.2 -->
+    <path d="M 130 205 L 130 245" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowB2)"/>
+
+    <!-- Content 1.2 -->
+    <g transform="translate(15, 245)">
+      <rect x="0" y="0" width="230" height="200" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="10" y="22" class="box-title">Phân tích Cú pháp AST</text>
+      <text x="10" y="42" class="box-sub">• Quét thẻ: #, ##, ###</text>
+      <text x="10" y="58" class="box-sub">• Tách ranh giới Section</text>
+      <text x="10" y="74" class="box-sub">• Khắc phục nhược điểm của</text>
+      <text x="10" y="90" font-weight="bold" class="box-sub">  Naive Fixed-size Chunking</text>
+      <line x1="10" y1="105" x2="220" y2="105" stroke="#000000" stroke-width="0.5"/>
+      <text x="10" y="125" class="box-sub">Ngăn chặn việc cắt ngang</text>
+      <text x="10" y="141" class="box-sub">giữa bảng tính cước và</text>
+      <text x="10" y="157" class="box-sub">mệnh đề "NẾU có biên bản"</text>
+    </g>
+  </g>
+
+  <!-- Connect Stage 1 -> Stage 2 -->
+  <path d="M 340 500 L 380 500" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowB2)"/>
+
+  <!-- STAGE 2: BREADCRUMB ENRICHMENT (x: 380) -->
+  <g id="Stage_2" transform="translate(380, 110)">
+    <rect x="0" y="0" width="260" height="780" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <rect x="0" y="0" width="260" height="35" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+    <text x="12" y="23" class="stage-title">GIAI ĐOẠN 2: BREADCRUMB</text>
+
+    <g transform="translate(15, 55)">
+      <rect x="0" y="0" width="230" height="390" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="10" y="22" class="box-title">Gắn Siêu dữ liệu Ngữ cảnh</text>
+      <text x="10" y="44" class="box-sub">Mỗi Chunk được tự động nối</text>
+      <text x="10" y="60" class="box-sub">tiền tố nguồn phân cấp:</text>
+
+      <rect x="10" y="75" width="210" height="110" fill="#F9FAFB" stroke="#000000" stroke-width="0.5"/>
+      <text x="15" y="95" class="math-text">Tiền tố Breadcrumb:</text>
+      <text x="15" y="115" font-size="10" fill="#000000">"Tài liệu: Quy trình Khiếu nại &gt;</text>
+      <text x="15" y="130" font-size="10" fill="#000000">Mục 3: Hàng bể vỡ khi đồng kiểm &gt;</text>
+      <text x="15" y="145" font-size="10" fill="#000000">Điều kiện lập BBBT 24h:"</text>
+      <text x="15" y="165" font-size="10" font-style="italic" fill="#333333">+ [Nội dung chi tiết...]</text>
+
+      <line x1="10" y1="205" x2="220" y2="205" stroke="#000000" stroke-width="0.5"/>
+      <text x="10" y="225" class="box-title">Tác dụng kỹ thuật:</text>
+      <text x="10" y="245" class="box-sub">• Vector hóa luôn "nhớ" được</text>
+      <text x="10" y="261" class="box-sub">  tiêu đề mục cha</text>
+      <text x="10" y="281" class="box-sub">• Tránh nhầm lẫn giữa cước</text>
+      <text x="10" y="297" class="box-sub">  nội thành và liên tỉnh</text>
+      <text x="10" y="317" class="box-sub">• Giữ nguyên giá trị ngữ nghĩa</text>
+      <text x="10" y="333" class="box-sub">  khi tìm kiếm câu ngắn</text>
+    </g>
+  </g>
+
+  <!-- Connect Stage 2 -> Stage 3 -->
+  <path d="M 640 500 L 680 500" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowB2)"/>
+
+  <!-- STAGE 3: SLIDING WINDOW OVERLAP 16% (x: 680) -->
+  <g id="Stage_3" transform="translate(680, 110)">
+    <rect x="0" y="0" width="280" height="780" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <rect x="0" y="0" width="280" height="35" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+    <text x="12" y="23" class="stage-title">GIAI ĐOẠN 3: CỬA SỔ TRƯỢT</text>
+
+    <g transform="translate(15, 55)">
+      <rect x="0" y="0" width="250" height="390" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="10" y="22" class="box-title">Thông số Cửa sổ Trượt (Overlap)</text>
+      <text x="10" y="44" class="box-sub">• Ngưỡng tối đa (MaxWords): 250 từ</text>
+      <text x="10" y="62" class="box-sub">• Vùng gối đầu (Overlap): 40 từ</text>
+      <text x="10" y="80" class="box-sub">• Bước trượt (Stride):</text>
+      <text x="20" y="100" class="math-text">Stride = 250 - 40 = 210 từ</text>
+
+      <line x1="10" y1="120" x2="240" y2="120" stroke="#000000" stroke-width="0.5"/>
+      <text x="10" y="140" class="box-title">Tỷ lệ Chồng lấn Ngữ cảnh:</text>
+      <text x="20" y="165" class="math-text">R_overlap = 40 / 250 = 16.0%</text>
+
+      <!-- Visual Overlap Bars -->
+      <g transform="translate(10, 190)">
+        <rect x="0" y="0" width="180" height="24" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+        <text x="10" y="16" font-size="10">Chunk A (Từ 1 - 250)</text>
+
+        <rect x="140" y="32" width="90" height="24" fill="#E5E7EB" stroke="#000000" stroke-width="1"/>
+        <text x="145" y="48" font-size="9" font-weight="bold">Vùng 40 từ</text>
+
+        <rect x="140" y="64" width="90" height="24" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+        <text x="145" y="80" font-size="10">Chunk B (Từ 211 - 460)</text>
+      </g>
+
+      <text x="10" y="320" class="box-sub">Tác dụng: Đảm bảo không bị</text>
+      <text x="10" y="338" class="box-sub">đứt gãy thông tin tại các điểm</text>
+      <text x="10" y="356" class="box-sub">ranh giới cắt văn bản.</text>
+    </g>
+  </g>
+
+  <!-- Connect Stage 3 -> Stage 4 -->
+  <path d="M 960 500 L 1000 500" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowB2)"/>
+
+  <!-- STAGE 4: 768-DIM VECTORIZATION (x: 1000) -->
+  <g id="Stage_4" transform="translate(1000, 110)">
+    <rect x="0" y="0" width="260" height="780" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <rect x="0" y="0" width="260" height="35" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+    <text x="12" y="23" class="stage-title">GIAI ĐOẠN 4: VECTOR HÓA</text>
+
+    <g transform="translate(15, 55)">
+      <rect x="0" y="0" width="230" height="390" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="10" y="22" class="box-title">Gemini Embedding-001</text>
+      <text x="10" y="44" class="box-sub">• Mô hình: models/embedding-001</text>
+      <text x="10" y="62" class="box-sub">• Số chiều: D = 768 chiều thực</text>
+
+      <rect x="10" y="78" width="210" height="85" fill="#F9FAFB" stroke="#000000" stroke-width="0.5"/>
+      <text x="15" y="98" class="math-text">Không gian Vector R^768:</text>
+      <text x="15" y="118" font-size="10" fill="#000000">V = [v_1, v_2, ..., v_768]</text>
+      <text x="15" y="138" class="math-text">Chuẩn hóa L2: ||V||_2 = 1.0</text>
+
+      <line x1="10" y1="180" x2="220" y2="180" stroke="#000000" stroke-width="0.5"/>
+      <text x="10" y="202" class="box-title">Tệp chỉ mục Vector:</text>
+      <text x="10" y="222" class="box-sub">• docs/knowledge-base/</text>
+      <text x="20" y="238" font-weight="bold" class="box-sub">  vector-index.json</text>
+      <text x="10" y="258" class="box-sub">• Tổng số: 62 Chunks đã nhúng</text>
+      <text x="10" y="278" class="box-sub">• Tốc độ truy vấn: &lt; 5 ms</text>
+    </g>
+  </g>
+
+  <!-- Connect Stage 4 -> Stage 5 -->
+  <path d="M 1260 500 L 1300 500" fill="none" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowB2)"/>
+
+  <!-- STAGE 5: HYBRID SEARCH SCORING (x: 1300) -->
+  <g id="Stage_5" transform="translate(1300, 110)">
+    <rect x="0" y="0" width="220" height="780" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+    <rect x="0" y="0" width="220" height="35" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
+    <text x="10" y="23" class="stage-title">GIAI ĐOẠN 5: TÌM KIẾM LAI</text>
+
+    <g transform="translate(12, 55)">
+      <rect x="0" y="0" width="196" height="390" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+      <text x="10" y="22" class="box-title">Công thức Điểm Kép:</text>
+      
+      <rect x="8" y="38" width="180" height="95" fill="#F9FAFB" stroke="#000000" stroke-width="0.5"/>
+      <text x="12" y="58" class="math-text">FinalScore =</text>
+      <text x="12" y="78" class="math-text">  0.70 × CosineScore</text>
+      <text x="12" y="98" class="math-text">+ 0.35 × LexicalScore</text>
+      <text x="12" y="118" font-size="10" fill="#333333">(Logistics Thesaurus)</text>
+
+      <line x1="8" y1="145" x2="188" y2="145" stroke="#000000" stroke-width="0.5"/>
+      <text x="10" y="165" class="box-title">Ngưỡng lọc Chấp nhận:</text>
+      <text x="15" y="185" class="math-text">Threshold τ = 0.52</text>
+      <text x="10" y="210" class="box-sub">Các đoạn có điểm &lt; 0.52</text>
+      <text x="10" y="226" class="box-sub">sẽ bị loại bỏ, ngăn ngừa</text>
+      <text x="10" y="242" class="box-sub">nhiễu vào Context của LLM.</text>
+
+      <line x1="8" y1="260" x2="188" y2="260" stroke="#000000" stroke-width="0.5"/>
+      <text x="10" y="280" class="box-title">Độ chính xác đạt:</text>
+      <text x="15" y="305" font-size="16" font-weight="bold" fill="#000000">96.8%</text>
+      <text x="10" y="325" class="box-sub">(So với 42.5% của Naive)</text>
+    </g>
+  </g>
+
+  <!-- ==================== FOOTER ==================== -->
+  <g id="Footer" transform="translate(80, 930)">
+    <line x1="0" y1="0" x2="1440" y2="0" stroke="#000000" stroke-width="1"/>
+    <text x="0" y="22" font-size="11" font-style="italic" fill="#333333">
+      Ghi chú: Sơ đồ luồng dữ liệu (Data Pipeline) theo quy chuẩn nghiên cứu khoa học. Thiết kế đơn sắc Monochrome tối ưu in ấn và bảo vệ trước Hội đồng chấm thi.
+    </text>
+  </g>
+</svg>
