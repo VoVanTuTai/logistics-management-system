@@ -71,15 +71,19 @@ Hệ thống tuân thủ nghiêm ngặt nguyên tắc **bám sát 100% mã ngu�
 
 ---
 
-## 3. DANH MỤC 53 TRƯỜNG HỢP SỬ DỤNG THEO 6 PHÂN HỆ NGHIỆP VỤ (USE CASE CATALOG)
+## 3. DANH MỤC 53 TRƯỜNG HỢP SỬ DỤNG & CỔNG XÁC THỰC BẢO MẬT (USE CASE CATALOG)
 
-Hệ thống được tổ chức thành **6 Phân hệ chức năng (Packages)** theo lưới 2 cột $\times$ 3 hàng cân đối hoàn hảo với đúng **53 Trường hợp sử dụng thực tế** (gồm 2 Use Case cha trừu tượng làm gốc kế thừa nghiệp vụ và 51 Use Case triển khai cụ thể):
+Hệ thống được tổ chức theo kiến trúc **Hub-and-Spoke Authentication**, bao gồm **Cổng Xác thực & Bảo mật Trung tâm (auth-service & gateway-bff)** và **6 Phân hệ chức năng nghiệp vụ (Packages)** với đúng **53 Trường hợp sử dụng thực tế**:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │                      HỆ THỐNG QUẢN TRỊ & VẬN HÀNH LOGISTICS ĐA KÊNH NEXUS ENTERPRISE                   │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                   ★ CỔNG XÁC THỰC & BẢO MẬT HỆ THỐNG (auth-service :3001 • gateway-bff :3000)          │
+│   • [UC-42] Đăng nhập hệ thống (Opaque Token & RBAC Matrix - Core Auth Hub)                            │
+│   • [UC-43] Đăng ký tài khoản khách (Merchant & Khách hàng) ──<<extend>>──▷ UC-42 Đăng nhập           │
 ├───────────────────────────────────┬────────────────────────────────────────────────────────────────────┤
-│ CỘT 1: ĐỐI TÁC NGOẠI VI (KHÁCH HÀNG / MERCHANT)│ CỘT 2: NỘI BỘ VẬN HÀNH (COURIER / OPS / SYSTEM_ADMIN) │
+│ CỘT 1: NGOẠI VI (MERCHANT / KHÁCH)│ CỘT 2: VẬN HÀNH NỘI BỘ (COURIER / OPS / ADMIN)                     │
 ├───────────────────────────────────┼────────────────────────────────────────────────────────────────────┤
 │ 1. TIẾP NHẬN & QUẢN LÝ ĐƠN HÀNG   │ 2. KHO TRUNG CHUYỂN, PHÂN TUYẾN & GIAO HÀNG                        │
 │  [UC-01] Tạo đơn gửi hàng (Gen)   │  • UC-08: Quét tiếp nhận gom hàng   • UC-14: Thực hiện chuyến phát │
@@ -88,9 +92,10 @@ Hệ thống được tổ chức thành **6 Phân hệ chức năng (Packages)*
 │  • UC-02: Tính cước quy đổi IATA  │  • UC-11: Đóng bao Manifest & Chì   • UC-17: Hẹn lại ngày phát     │
 │  • UC-03: In phiếu gửi Barcode/QR │  • UC-12: Nhận bao tải đầu tuyến    • UC-18: Chuyển hoàn (RTS)     │
 │  • UC-04: Yêu cầu bưu tá lấy hàng │  • UC-13: Phân task & Tối ưu tuyến                                 │
-│  • UC-05: Đổi địa chỉ/SĐT/COD     │                                                                    │
+│  • UC-05: Đổi địa chỉ/SĐT/COD     │  (UC-14 bắt buộc <<include>> UC-42 Đăng nhập hệ thống)             │
 │  • UC-06: Hủy đơn gửi hàng        │                                                                    │
 │  • UC-07: Tra cứu & Lọc danh sách │                                                                    │
+│  (UC-01 bắt buộc <<include>> UC-42)│                                                                    │
 ├───────────────────────────────────┼────────────────────────────────────────────────────────────────────┤
 │ 3. XỬ LÝ SỰ CỐ & BỒI THƯỜNG       │ 4. ĐỐI SOÁT TÀI CHÍNH & THU HỘ COD                                 │
 │  • UC-19: Khởi tạo khiếu nại      │  [UC-25] Thu hộ tiền COD (Gen)                                     │
@@ -99,23 +104,33 @@ Hệ thống được tổ chức thành **6 Phân hệ chức năng (Packages)*
 │  • UC-22: Phê duyệt (> 500k)      │  • UC-26: Quyết toán ca nộp tiền bưu tá                            │
 │  • UC-23: Cấn trừ bồi thường      │  • UC-27: Đối soát tự động SePay Webhook                           │
 │  • UC-24: Điều tra & Hòa giải     │  • UC-28: Lập bảng kê COD định kỳ                                  │
-│                                   │  • UC-29: Xác nhận đối soát & Chốt sổ                              │
+│  (UC-19 bắt buộc <<include>> UC-42)│  • UC-29: Xác nhận đối soát & Chốt sổ                              │
 │                                   │  • UC-30: Báo cáo dòng tiền & Doanh thu                            │
+│                                   │  (UC-28 bắt buộc <<include>> UC-42 Đăng nhập hệ thống)             │
 ├───────────────────────────────────┼────────────────────────────────────────────────────────────────────┤
 │ 5. TRUY VẾT & TRỢ LÝ AI RAG       │ 6. QUẢN TRỊ HỆ THỐNG, DANH MỤC & PHÂN QUYỀN                        │
-│  • UC-31: Tra cứu lộ trình public │  • UC-42: Đăng nhập hệ thống        • UC-48: Quản trị Hubs 4 cấp   │
-│  • UC-32: Khử định danh PII Mask  │  • UC-43: Đăng ký tài khoản khách   • UC-49: Phân vùng địa lý Zone │
-│  • UC-33: Tra cứu viễn trắc nội bộ│  • UC-44: Hồ sơ & Đổi mật khẩu      • UC-50: Cấu hình SLA          │
-│  • UC-34: Định vị GPS thời gian   │  • UC-45: Quản trị người dùng       • UC-51: CMS Quản trị bài viết │
-│  • UC-35: Hội thoại tự nhiên AI   │  • UC-46: Phân quyền RBAC Matrix    • UC-52: Hồ sơ đối tác Merchant│
-│  • UC-36: Bóc tách Ý định/Entity  │  • UC-47: Nhật ký kiểm toán bảo mật • UC-53: Danh mục lý do NDR    │
+│  • UC-31: Tra cứu lộ trình public │  • UC-44: Hồ sơ & Đổi mật khẩu      • UC-49: Phân vùng địa lý Zone │
+│  • UC-32: Khử định danh PII Mask  │  • UC-45: Quản trị người dùng       • UC-50: Cấu hình SLA          │
+│  • UC-33: Tra cứu viễn trắc nội bộ│  • UC-46: Phân quyền RBAC Matrix    • UC-51: CMS Quản trị bài viết │
+│  • UC-34: Định vị GPS thời gian   │  • UC-47: Nhật ký kiểm toán bảo mật • UC-52: Hồ sơ đối tác Merchant│
+│  • UC-35: Hội thoại tự nhiên AI   │  • UC-48: Quản trị Hubs 4 cấp       • UC-53: Danh mục lý do NDR    │
+│  • UC-36: Bóc tách Ý định/Entity  │  (UC-45 bắt buộc <<include>> UC-42 Đăng nhập hệ thống)             │
 │  • UC-37: RAG 768-D Semantic      │                                                                    │
 │  • UC-38: Tư vấn cước tự động     │                                                                    │
 │  • UC-39: Hướng dẫn khiếu nại AI  │                                                                    │
 │  • UC-40: Sinh thẻ Rich Card      │                                                                    │
 │  • UC-41: Điều chuyển nhân viên   │                                                                    │
+│  (UC-33 bắt buộc <<include>> UC-42)│                                                                    │
 └───────────────────────────────────┴────────────────────────────────────────────────────────────────────┘
 ```
+
+### Kiến Trúc Xác Thực & Phân Tách Public vs Protected Use Cases:
+1. **Quan hệ `<<include>>` bắt buộc đến `UC-42: Đăng nhập hệ thống`:**
+   - Mọi chức năng nghiệp vụ truy cập tài nguyên bảo mật (`UC-01` Tạo đơn, `UC-14` Giao hàng, `UC-19` Khiếu nại, `UC-28` Đối soát COD, `UC-33` Viễn trắc GPS nội bộ, `UC-45` Quản trị người dùng) bắt buộc phải `<<include>>` `UC-42`. Request phải đính kèm Opaque Bearer token hợp lệ và vượt qua RBAC Guard của `gateway-bff (:3000)`.
+2. **Nhóm tính năng Công khai (Public Unauthenticated):**
+   - Dành cho `Khách vãng lai` (`GUEST`): `UC-31` (Tra cứu công khai - tự động kích hoạt `UC-32` khử PII), `UC-35` (Hỏi đáp AI Chatbot), `UC-38` (Tư vấn cước IATA). Các tính năng này **KHÔNG include Đăng nhập**, cho phép khách truy cập tự do.
+3. **Quy trình Đăng ký tài khoản (`UC-43`):**
+   - Khách vãng lai thực hiện `UC-43` để khởi tạo tài khoản. Sau khi đăng ký thành công, quan hệ `<<extend>>` cho phép người dùng tự động chuyển hướng đăng nhập vào `UC-42`.
 
 ---
 
