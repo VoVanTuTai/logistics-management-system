@@ -1,0 +1,238 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 880" width="100%" height="100%" style="background:#F8FAFC;">
+
+  <defs>
+    <filter id="card-shadow" x="-2%" y="-1.5%" width="104%" height="104%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0F172A" flood-opacity="0.06"/>
+    </filter>
+    <filter id="table-shadow" x="-3%" y="-3%" width="106%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#0F172A" flood-opacity="0.04"/>
+    </filter>
+    <marker id="crow-many" markerWidth="14" markerHeight="14" refX="10" refY="7" orient="auto">
+      <path d="M 0 0 L 10 7 L 0 14 M 10 0 L 10 14" stroke="#475569" stroke-width="1.8" fill="none"/>
+    </marker>
+    <marker id="crow-one" markerWidth="14" markerHeight="14" refX="10" refY="7" orient="auto">
+      <line x1="5" y1="2" x2="5" y2="12" stroke="#475569" stroke-width="1.8"/>
+      <line x1="9" y1="2" x2="9" y2="12" stroke="#475569" stroke-width="1.8"/>
+    </marker>
+    <marker id="arrow-dist" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto">
+      <path d="M 0 1 L 9 6 L 0 11 z" fill="#0284C7"/>
+    </marker>
+    <linearGradient id="header-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0F172A"/>
+      <stop offset="55%" stop-color="#1E293B"/>
+      <stop offset="100%" stop-color="#334155"/>
+    </linearGradient>
+    <pattern id="grid-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.2" fill="#E2E8F0"/>
+    </pattern>
+  </defs>
+
+  <rect width="100%" height="100%" fill="url(#grid-pattern)" />
+
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+    .doc-badge { font-size: 12.5px; font-weight: 700; fill: #38BDF8; letter-spacing: 1.5px; text-transform: uppercase; }
+    .doc-title { font-size: 24px; font-weight: 800; fill: #FFFFFF; letter-spacing: -0.5px; }
+    .doc-subtitle { font-size: 13.5px; font-weight: 400; fill: #CBD5E1; }
+    .meta-tag { font-size: 11.5px; font-weight: 600; fill: #E2E8F0; }
+    
+    .svc-title { font-size: 18px; font-weight: 800; fill: #0F172A; }
+    .svc-sub { font-size: 12.5px; font-weight: 500; fill: #64748B; }
+    .svc-port { font-size: 12px; font-weight: 700; font-family: ui-monospace, Menlo, monospace; fill: #0284C7; }
+
+    .tbl-header { font-size: 13.5px; font-weight: 700; fill: #FFFFFF; }
+    .tbl-tag { font-size: 10.5px; font-weight: 600; fill: #CBD5E1; text-transform: uppercase; }
+    .tbl-field-pk { font-size: 11.5px; font-weight: 700; fill: #0F172A; font-family: ui-monospace, Menlo, monospace; }
+    .tbl-field-fk { font-size: 11.5px; font-weight: 600; fill: #1D4ED8; font-family: ui-monospace, Menlo, monospace; }
+    .tbl-field-dist { font-size: 11.5px; font-weight: 600; fill: #6D28D9; font-family: ui-monospace, Menlo, monospace; }
+    .tbl-field-normal { font-size: 11.5px; font-weight: 500; fill: #334155; font-family: ui-monospace, Menlo, monospace; }
+    .tbl-type { font-size: 11px; font-weight: 500; fill: #64748B; }
+
+    .badge-pk { font-size: 9.5px; font-weight: 800; fill: #B91C1C; }
+    .badge-fk { font-size: 9.5px; font-weight: 800; fill: #1D4ED8; }
+    .badge-dist { font-size: 9.5px; font-weight: 800; fill: #6D28D9; }
+
+    .panel-header { font-size: 13.5px; font-weight: 800; fill: #0F172A; text-transform: uppercase; letter-spacing: 0.5px; }
+    .panel-sec-title { font-size: 12px; font-weight: 700; fill: #1E293B; }
+    .panel-body { font-size: 11.5px; font-weight: 400; fill: #334155; }
+    .panel-bold { font-weight: 700; fill: #0F172A; }
+    .panel-code { font-family: ui-monospace, Menlo, monospace; font-size: 11px; font-weight: 700; fill: #0284C7; }
+  </style>
+
+
+  <!-- HEADER -->
+  <g id="Header" transform="translate(40, 30)">
+    <rect width="1920" height="105" rx="12" fill="url(#header-grad)" filter="url(#card-shadow)"/>
+    <text x="30" y="32" class="doc-badge">NEXUS LOGISTICS SYSTEM ARCHITECTURE | DATABASE-PER-SERVICE SPECIFICATION</text>
+    <text x="30" y="65" class="doc-title">7. SCAN-SERVICE (DỊCH VỤ QUÉT MÃ BĂM NHỎ &amp; ĐỊNH VỊ REALTIME)</text>
+    <text x="30" y="90" class="doc-subtitle">Ghi nhận sự kiện quét bưu kiện tại bưu cục &amp; theo dõi tọa độ GPS di chuyển thời gian thực</text>
+    
+    <!-- Badges -->
+    <rect x="1560" y="36" width="160" height="34" rx="6" fill="#1E293B" stroke="#38BDF8" stroke-width="1.2"/>
+    <text x="1640" y="58" font-size="13" font-weight="700" fill="#38BDF8" text-anchor="middle">PORT :3006</text>
+
+    <rect x="1740" y="36" width="180" height="34" rx="6" fill="#1E293B" stroke="#0D9488" stroke-width="1.2"/>
+    <text x="1830" y="58" font-size="13" font-weight="700" fill="#0D9488" text-anchor="middle">DB: scan_db</text>
+  </g>
+
+
+  <!-- MAIN SERVICE CONTAINER -->
+  <g id="ServiceBody" transform="translate(40, 155)">
+    <rect width="1920" height="630" rx="12" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.6" filter="url(#card-shadow)"/>
+
+<g transform="translate(20, 20)">
+  <rect width="470" height="212" rx="8" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.4" filter="url(#table-shadow)"/>
+  <path d="M 0 8 Q 0 0 8 0 L 462 0 Q 470 0 470 8 L 470 36 L 0 36 Z" fill="#0D9488"/>
+  <text x="14" y="23" class="tbl-header">ScanEvent</text>
+  <text x="456" y="23" class="tbl-tag" text-anchor="end">SỰ KIỆN QUÉT BƯU PHẨM</text>
+  <rect x="1" y="36" width="468" height="24" fill="#FFFFFF"/>
+  <rect x="10" y="43" width="20" height="14" rx="3" fill="#FEE2E2"/>
+  <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
+  <text x="42" y="54" class="tbl-field-pk">id</text>
+  <text x="458" y="54" class="tbl-type" text-anchor="end">CUID NOT NULL</text>
+  <rect x="1" y="60" width="468" height="24" fill="#F8FAFC"/>
+  <rect x="8" y="67" width="26" height="14" rx="3" fill="#EDE9FE"/>
+  <text x="21" y="78" class="badge-dist" text-anchor="middle">DIST</text>
+  <text x="42" y="78" class="tbl-field-dist">shipmentCode</text>
+  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(32) FK-dist shipment.code</text>
+  <rect x="1" y="84" width="468" height="24" fill="#FFFFFF"/>
+  <circle cx="18" cy="98" r="2" fill="#94A3B8"/>
+  <text x="30" y="102" class="tbl-field-normal">scanType</text>
+  <text x="458" y="102" class="tbl-type" text-anchor="end">ENUM PICKUP, INBOUND, OUTBOUND</text>
+  <rect x="1" y="108" width="468" height="24" fill="#F8FAFC"/>
+  <rect x="8" y="115" width="26" height="14" rx="3" fill="#EDE9FE"/>
+  <text x="21" y="126" class="badge-dist" text-anchor="middle">DIST</text>
+  <text x="42" y="126" class="tbl-field-dist">locationCode</text>
+  <text x="458" y="126" class="tbl-type" text-anchor="end">VARCHAR(32) FK-dist masterdata.hubs</text>
+  <rect x="1" y="132" width="468" height="24" fill="#FFFFFF"/>
+  <rect x="8" y="139" width="26" height="14" rx="3" fill="#EDE9FE"/>
+  <text x="21" y="150" class="badge-dist" text-anchor="middle">DIST</text>
+  <text x="42" y="150" class="tbl-field-dist">manifestCode</text>
+  <text x="458" y="150" class="tbl-type" text-anchor="end">VARCHAR(32) FK-dist manifests</text>
+  <rect x="1" y="156" width="468" height="24" fill="#F8FAFC"/>
+  <circle cx="18" cy="170" r="2" fill="#94A3B8"/>
+  <text x="30" y="174" class="tbl-field-normal">idempotencyKey</text>
+  <text x="458" y="174" class="tbl-type" text-anchor="end">VARCHAR(64) UNIQUE (CHỐNG TRÙNG)</text>
+  <rect x="1" y="180" width="468" height="24" fill="#FFFFFF"/>
+  <circle cx="18" cy="194" r="2" fill="#94A3B8"/>
+  <text x="30" y="198" class="tbl-field-normal">occurredAt</text>
+  <text x="458" y="198" class="tbl-type" text-anchor="end">TIMESTAMP THỜI ĐIỂM QUÉT</text>
+</g>
+<g transform="translate(510, 20)">
+  <rect width="470" height="188" rx="8" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.4" filter="url(#table-shadow)"/>
+  <path d="M 0 8 Q 0 0 8 0 L 462 0 Q 470 0 470 8 L 470 36 L 0 36 Z" fill="#0D9488"/>
+  <text x="14" y="23" class="tbl-header">CurrentLocation</text>
+  <text x="456" y="23" class="tbl-tag" text-anchor="end">VỊ TRÍ BƯU KIỆN REALTIME</text>
+  <rect x="1" y="36" width="468" height="24" fill="#FFFFFF"/>
+  <rect x="10" y="43" width="20" height="14" rx="3" fill="#FEE2E2"/>
+  <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
+  <text x="42" y="54" class="tbl-field-pk">id</text>
+  <text x="458" y="54" class="tbl-type" text-anchor="end">CUID NOT NULL</text>
+  <rect x="1" y="60" width="468" height="24" fill="#F8FAFC"/>
+  <rect x="8" y="67" width="26" height="14" rx="3" fill="#EDE9FE"/>
+  <text x="21" y="78" class="badge-dist" text-anchor="middle">DIST</text>
+  <text x="42" y="78" class="tbl-field-dist">shipmentCode</text>
+  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(32) UNIQUE (VỊ TRÍ HIỆN TẠI)</text>
+  <rect x="1" y="84" width="468" height="24" fill="#FFFFFF"/>
+  <circle cx="18" cy="98" r="2" fill="#94A3B8"/>
+  <text x="30" y="102" class="tbl-field-normal">locationCode / lastScanType</text>
+  <text x="458" y="102" class="tbl-type" text-anchor="end">VARCHAR / ENUM BƯU CỤC MỚI NHẤT</text>
+  <rect x="1" y="108" width="468" height="24" fill="#F8FAFC"/>
+  <rect x="8" y="115" width="26" height="14" rx="3" fill="#EDE9FE"/>
+  <text x="21" y="126" class="badge-dist" text-anchor="middle">DIST</text>
+  <text x="42" y="126" class="tbl-field-dist">courierId / taskId</text>
+  <text x="458" y="126" class="tbl-type" text-anchor="end">VARCHAR TÀI XẾ ĐANG GIỮ</text>
+  <rect x="1" y="132" width="468" height="24" fill="#FFFFFF"/>
+  <circle cx="18" cy="146" r="2" fill="#94A3B8"/>
+  <text x="30" y="150" class="tbl-field-normal">latitude / longitude</text>
+  <text x="458" y="150" class="tbl-type" text-anchor="end">FLOAT TỌA ĐỘ GPS WGS84</text>
+  <rect x="1" y="156" width="468" height="24" fill="#F8FAFC"/>
+  <circle cx="18" cy="170" r="2" fill="#94A3B8"/>
+  <text x="30" y="174" class="tbl-field-normal">source</text>
+  <text x="458" y="174" class="tbl-type" text-anchor="end">ENUM GPS, SCAN, MANUAL</text>
+</g>
+<g transform="translate(20, 250)">
+  <rect width="470" height="164" rx="8" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.4" filter="url(#table-shadow)"/>
+  <path d="M 0 8 Q 0 0 8 0 L 462 0 Q 470 0 470 8 L 470 36 L 0 36 Z" fill="#0F766E"/>
+  <text x="14" y="23" class="tbl-header">CourierCurrentLocation</text>
+  <text x="456" y="23" class="tbl-tag" text-anchor="end">GPS TÀI XẾ TRỰC TIẾP</text>
+  <rect x="1" y="36" width="468" height="24" fill="#FFFFFF"/>
+  <rect x="10" y="43" width="20" height="14" rx="3" fill="#FEE2E2"/>
+  <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
+  <text x="42" y="54" class="tbl-field-pk">id</text>
+  <text x="458" y="54" class="tbl-type" text-anchor="end">CUID NOT NULL</text>
+  <rect x="1" y="60" width="468" height="24" fill="#F8FAFC"/>
+  <rect x="8" y="67" width="26" height="14" rx="3" fill="#EDE9FE"/>
+  <text x="21" y="78" class="badge-dist" text-anchor="middle">DIST</text>
+  <text x="42" y="78" class="tbl-field-dist">courierId</text>
+  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(64) UNIQUE (GPS TÀI XẾ)</text>
+  <rect x="1" y="84" width="468" height="24" fill="#FFFFFF"/>
+  <rect x="8" y="91" width="26" height="14" rx="3" fill="#EDE9FE"/>
+  <text x="21" y="102" class="badge-dist" text-anchor="middle">DIST</text>
+  <text x="42" y="102" class="tbl-field-dist">taskId / shipmentCode</text>
+  <text x="458" y="102" class="tbl-type" text-anchor="end">VARCHAR ĐANG GIAO ĐƠN NÀO</text>
+  <rect x="1" y="108" width="468" height="24" fill="#F8FAFC"/>
+  <circle cx="18" cy="122" r="2" fill="#94A3B8"/>
+  <text x="30" y="126" class="tbl-field-normal">latitude / longitude / accuracy</text>
+  <text x="458" y="126" class="tbl-type" text-anchor="end">FLOAT GPS &amp; ĐỘ CHÍNH XÁC (M)</text>
+  <rect x="1" y="132" width="468" height="24" fill="#FFFFFF"/>
+  <circle cx="18" cy="146" r="2" fill="#94A3B8"/>
+  <text x="30" y="150" class="tbl-field-normal">capturedAt</text>
+  <text x="458" y="150" class="tbl-type" text-anchor="end">TIMESTAMP THỜI GIAN NHẬN GPS</text>
+</g>
+<g transform="translate(510, 230)">
+  <rect width="470" height="140" rx="8" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.4" filter="url(#table-shadow)"/>
+  <path d="M 0 8 Q 0 0 8 0 L 462 0 Q 470 0 470 8 L 470 36 L 0 36 Z" fill="#0F766E"/>
+  <text x="14" y="23" class="tbl-header">CourierLocationHistory</text>
+  <text x="456" y="23" class="tbl-tag" text-anchor="end">LỊCH SỬ TUYẾN DI CHUYỂN</text>
+  <rect x="1" y="36" width="468" height="24" fill="#FFFFFF"/>
+  <rect x="10" y="43" width="20" height="14" rx="3" fill="#FEE2E2"/>
+  <text x="20" y="54" class="badge-pk" text-anchor="middle">PK</text>
+  <text x="42" y="54" class="tbl-field-pk">id</text>
+  <text x="458" y="54" class="tbl-type" text-anchor="end">CUID NOT NULL</text>
+  <rect x="1" y="60" width="468" height="24" fill="#F8FAFC"/>
+  <rect x="8" y="67" width="26" height="14" rx="3" fill="#EDE9FE"/>
+  <text x="21" y="78" class="badge-dist" text-anchor="middle">DIST</text>
+  <text x="42" y="78" class="tbl-field-dist">courierId</text>
+  <text x="458" y="78" class="tbl-type" text-anchor="end">VARCHAR(64) INDEX (TÀI XẾ)</text>
+  <rect x="1" y="84" width="468" height="24" fill="#FFFFFF"/>
+  <circle cx="18" cy="98" r="2" fill="#94A3B8"/>
+  <text x="30" y="102" class="tbl-field-normal">latitude / longitude</text>
+  <text x="458" y="102" class="tbl-type" text-anchor="end">FLOAT VẾT GPS DI CHUYỂN</text>
+  <rect x="1" y="108" width="468" height="24" fill="#F8FAFC"/>
+  <circle cx="18" cy="122" r="2" fill="#94A3B8"/>
+  <text x="30" y="126" class="tbl-field-normal">capturedAt</text>
+  <text x="458" y="126" class="tbl-type" text-anchor="end">TIMESTAMP INDEX THỜI GIAN</text>
+</g>
+
+<g transform="translate(1010, 20)">
+  <rect width="890" height="590" rx="10" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5" filter="url(#table-shadow)"/>
+  <rect x="0" y="0" width="890" height="44" rx="10" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+  <rect x="14" y="13" width="7" height="18" rx="2" fill="#0D9488"/>
+  <text x="28" y="27" class="panel-header">GIẢI THÍCH SƠ BỘ &amp; QUY TẮC DỮ LIỆU: SCAN-SERVICE</text>
+  <rect x="710" y="10" width="166" height="24" rx="5" fill="#0D948818" stroke="#0D9488" stroke-width="1"/>
+  <text x="793" y="26" font-size="11" font-weight="700" fill="#0D9488" text-anchor="middle">SCAN &amp; GPS ENGINE</text>
+  <text x="18" y="68" class="panel-sec-title">▶ HỆ THỐNG QUÉT MÃ BĂM NHỎ &amp; ĐỊNH VỊ REALTIME (SCAN-SERVICE)</text>
+  <circle cx="25" cy="84" r="2.2" fill="#0D9488"/>
+  <text x="36" y="88" class="panel-body"><tspan class="panel-bold">Chống trùng lặp tuyệt đối (Idempotency):</tspan> Sử dụng <tspan class="panel-code">idempotencyKey</tspan> duy nhất trong mỗi sự kiện quét. Ngăn chặn việc nhân viên bấm quét 2 lần liên tiếp làm sai lệch dòng trạng thái.</text>
+  <circle cx="25" cy="104" r="2.2" fill="#0D9488"/>
+  <text x="36" y="108" class="panel-body"><tspan class="panel-bold">Vị trí tức thời (Read-optimized):</tspan> Bảng <tspan class="panel-code">CurrentLocation</tspan> được cập nhật mỗi khi phát sinh quét mã hoặc tín hiệu GPS từ điện thoại Courier để phục vụ bản đồ theo dõi Live Tracking.</text>
+  <text x="18" y="136" class="panel-sec-title">▶ CƠ CHẾ LIÊN KẾT PHÂN TÁN (SAGA LINKAGE)</text>
+  <circle cx="25" cy="152" r="2.2" fill="#0D9488"/>
+  <text x="36" y="156" class="panel-body"><tspan class="panel-code">courierId</tspan>: Khóa liên kết tài xế nhận việc và phát tín hiệu GPS trực tiếp.</text>
+  <circle cx="25" cy="172" r="2.2" fill="#0D9488"/>
+  <text x="36" y="176" class="panel-body"><tspan class="panel-code">locationCode</tspan>: Mã bưu cục quét kiểm nhập/xuất kho liên kết sang <tspan class="panel-code">masterdata.hubs</tspan>.</text>
+  <rect x="14" y="550" width="862" height="28" rx="5" fill="#F1F5F9" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="445.0" y="568" font-size="11" font-weight="600" fill="#475569" text-anchor="middle">Engine: scan_db (PostgreSQL 16) | Idempotency: Unique UUID | Location: Realtime WGS84 GPS</text>
+</g>
+  </g>
+
+  <!-- SAGA CONTEXT FOOTER -->
+  <g id="FooterSaga" transform="translate(40, 805)">
+    <rect width="1920" height="55" rx="8" fill="#0F172A" stroke="#334155" stroke-width="1.2"/>
+    <circle cx="25" cy="28" r="6" fill="#38BDF8"/>
+    <text x="42" y="32" font-size="12" font-weight="700" fill="#38BDF8">CƠ CHẾ LIÊN KẾT PHÂN TÁN (SAGA):</text>
+    <text x="310" y="32" font-size="11.5" fill="#E2E8F0">Bắn sự kiện SCAN.INBOUND / SCAN.OUTBOUND tới tracking-service để ghi vết dòng thời gian kiện hàng</text>
+    <text x="1900" y="32" font-size="11" font-weight="600" fill="#94A3B8" text-anchor="end">Nexus Software Engineering Thesis</text>
+  </g>
+</svg>
