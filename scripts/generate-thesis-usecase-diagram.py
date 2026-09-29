@@ -210,6 +210,15 @@ def generate_svg():
     lines.append(actor_stick(160, 2360, "Actor_Guest", "Khách vãng lai", "GUEST", "guest-web :5174"))
     g_hand = (242, 2428)
 
+    # ACTOR GENERALIZATION: CUSTOMER ──▷ GUEST
+    lines.append('  <!-- ACTOR GENERALIZATION: CUSTOMER ──▷ GUEST -->')
+    lines.append('  <g id="Actor_Gen_Customer_Guest">')
+    lines.append('    <line x1="210" y1="1640" x2="210" y2="2354" class="gen-line"/>')
+    lines.append('    <polygon points="210,2372 202,2354 218,2354" class="gen-arrow"/>')
+    lines.append('    <text x="225" y="1995" class="t-rel" text-anchor="start" font-size="12" font-weight="bold">&lt;&lt;generalizes&gt;&gt;</text>')
+    lines.append('    <text x="225" y="2014" font-family="Arial" font-size="11" fill="#4B5563" text-anchor="start">(Khách hàng kế thừa Khách vãng lai)</text>')
+    lines.append('  </g>')
+
     # 4. COURIER (Right, Row 1, Center: 4518, 548)
     lines.append(actor_stick(4500, 480, "Actor_Courier", "Courier (Bưu tá)", "COURIER", "courier-mobile :8081"))
     courier_hand = (4518, 548)
@@ -503,8 +512,7 @@ def generate_svg():
     # 2. CUSTOMER (c_hand = 242, 1488) -> Package 3 & Package 5
     lines.append(direct_line(c_hand[0], c_hand[1], 860, 1300, 135, 28, "assoc")) # UC-19
     lines.append(direct_line(c_hand[0], c_hand[1], 860, 1580, 135, 26, "assoc")) # UC-19a
-    lines.append(direct_line(c_hand[0], c_hand[1], 860, 2300, 125, 28, "assoc")) # UC-33
-    lines.append(direct_line(c_hand[0], c_hand[1], 860, 2440, 135, 28, "assoc")) # UC-34
+    lines.append(direct_line(c_hand[0], c_hand[1], 860, 2300, 125, 28, "assoc")) # UC-33 (Kế thừa UC-32, 34, 38 từ GUEST)
 
     # 3. GUEST (g_hand = 242, 2428) -> Package 5 & Central Auth Gateway
     lines.append(direct_line(g_hand[0], g_hand[1], 860, 2160, 125, 26, "assoc")) # UC-32
@@ -553,7 +561,7 @@ def generate_svg():
     # 2. Generalization
     lines.append('    <line x1="70" y1="3035" x2="140" y2="3035" class="gen-line"/>')
     lines.append('    <polygon points="160,3035 140,3027 140,3043" class="gen-arrow"/>')
-    lines.append('    <text x="180" y="3039" class="t-legend"><tspan font-weight="bold">Use Case Generalization (Chuyên biệt hoá đa hình):</tspan> Nghiệp vụ cụ thể kế thừa Base (Tạo đơn Portal/TMĐT ──▷; Thu COD Tiền mặt/VietQR ──▷).</text>')
+    lines.append('    <text x="180" y="3039" class="t-legend"><tspan font-weight="bold">Generalization (Kế thừa Đa hình &amp; Tác nhân):</tspan> Base Use Case (Tạo đơn, Thu COD ──▷); Actor: Khách hàng (CUSTOMER) ──▷ Khách vãng lai (GUEST).</text>')
 
     # 3. Include
     lines.append('    <line x1="70" y1="3070" x2="145" y2="3070" class="dep-line"/>')

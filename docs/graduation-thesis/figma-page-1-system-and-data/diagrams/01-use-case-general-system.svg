@@ -97,6 +97,13 @@
     <text x="50" y="191" class="t-role">(GUEST)</text>
     <text x="50" y="209" class="t-app">guest-web :5174</text>
   </g>
+  <!-- ACTOR GENERALIZATION: CUSTOMER ──▷ GUEST -->
+  <g id="Actor_Gen_Customer_Guest">
+    <line x1="210" y1="1640" x2="210" y2="2354" class="gen-line"/>
+    <polygon points="210,2372 202,2354 218,2354" class="gen-arrow"/>
+    <text x="225" y="1995" class="t-rel" text-anchor="start" font-size="12" font-weight="bold">&lt;&lt;generalizes&gt;&gt;</text>
+    <text x="225" y="2014" font-family="Arial" font-size="11" fill="#4B5563" text-anchor="start">(Khách hàng kế thừa Khách vãng lai)</text>
+  </g>
   <g id="Actor_Courier" transform="translate(4500, 480)">
     <circle cx="50" cy="30" r="18" class="actor-head"/>
     <line x1="50" y1="48" x2="50" y2="100" class="actor-body"/>
@@ -479,7 +486,6 @@
     <line x1="242.0" y1="1488.0" x2="730.8" y2="1308.1" class="assoc"/>
     <line x1="242.0" y1="1488.0" x2="726.5" y2="1576.2" class="assoc"/>
     <line x1="242.0" y1="1488.0" x2="784.3" y2="2277.7" class="assoc"/>
-    <line x1="242.0" y1="1488.0" x2="786.5" y2="2416.5" class="assoc"/>
     <line x1="242.0" y1="2428.0" x2="745.3" y2="2170.3" class="assoc"/>
     <line x1="242.0" y1="2428.0" x2="725.0" y2="2439.5" class="assoc"/>
     <line x1="242.0" y1="2428.0" x2="741.8" y2="2631.6" class="assoc"/>
@@ -512,7 +518,7 @@
     <text x="180" y="3004" class="t-legend"><tspan font-weight="bold">Association (Tia thẳng trực tiếp):</tspan> Nối thẳng từ 6 Roles đến các Use Case khởi tạo trực tiếp (Không rẽ nhánh gấp khúc).</text>
     <line x1="70" y1="3035" x2="140" y2="3035" class="gen-line"/>
     <polygon points="160,3035 140,3027 140,3043" class="gen-arrow"/>
-    <text x="180" y="3039" class="t-legend"><tspan font-weight="bold">Use Case Generalization (Chuyên biệt hoá đa hình):</tspan> Nghiệp vụ cụ thể kế thừa Base (Tạo đơn Portal/TMĐT ──▷; Thu COD Tiền mặt/VietQR ──▷).</text>
+    <text x="180" y="3039" class="t-legend"><tspan font-weight="bold">Generalization (Kế thừa Đa hình &amp; Tác nhân):</tspan> Base Use Case (Tạo đơn, Thu COD ──▷); Actor: Khách hàng (CUSTOMER) ──▷ Khách vãng lai (GUEST).</text>
     <line x1="70" y1="3070" x2="145" y2="3070" class="dep-line"/>
     <polygon points="160,3070 148,3065 148,3075" class="dep-arrow"/>
     <text x="180" y="3074" class="t-legend"><tspan font-weight="bold">&lt;&lt;include&gt;&gt; (Quan hệ Bao hàm Bắt buộc):</tspan> 6 phân hệ nghiệp vụ bắt buộc &lt;&lt;include&gt;&gt; Đăng nhập trung tâm UC-42; Tạo đơn include Tính cước IATA.</text>

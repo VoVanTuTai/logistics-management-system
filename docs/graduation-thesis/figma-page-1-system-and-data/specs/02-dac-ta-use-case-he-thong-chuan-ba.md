@@ -138,6 +138,9 @@ Hệ thống được tổ chức theo kiến trúc **Hub-and-Spoke Authenticati
    - 6 Use Case nghiệp vụ chính của 6 phân hệ có mũi tên nét đứt `<<include>>` chĩa thẳng vào `UC-42: Đăng nhập hệ thống`.
    - `Khách vãng lai` nối thẳng vào `UC-43: Đăng ký tài khoản khách` qua hành lang trống rộng 200px.
    - `UC-43` có quan hệ `<<extend>>` chuyển tiếp sang `UC-42`.
+4. **Kế thừa Tác nhân (Actor Generalization: `CUSTOMER ──▷ GUEST`):**
+   - Áp dụng nguyên lý hướng đối tượng chuẩn UML 2.5: **Khách hàng (`CUSTOMER`)** là tác nhân chuyên biệt kế thừa toàn bộ tính năng công khai của **Khách vãng lai (`GUEST`)** (`UC-32` Tra cứu công khai, `UC-34` Chatbot AI, `UC-38` Tư vấn cước IATA).
+   - Nhờ mối quan hệ kế thừa này, trên sơ đồ không cần vẽ các đường nối trùng lặp từ Khách hàng đến các Use Case công khai của Guest, giúp sơ đồ thanh thoát, giảm thiểu tối đa các đường giao cắt.
 
 ---
 
@@ -305,6 +308,13 @@ Ký hiệu quyền:
 > Để bảo mật hệ thống theo tiêu chuẩn Zero Trust, các phân hệ nghiệp vụ không tự ý xử lý đăng nhập cục bộ mà đều phụ thuộc vào Cổng Xác thực Trung tâm (Central Auth Gateway) đặt tại vị trí trung tâm đại lộ của sơ đồ:  
 > - 6 Use Case nghiệp vụ chính của 6 phân hệ bắt buộc phải có quan hệ `<<include>>` đến `UC-42: Đăng nhập hệ thống`. Để gọi API, client phải gửi kèm Opaque Bearer Token và qua RBAC Guard của `gateway-bff`.  
 > - Khách vãng lai (`GUEST`) có thể tự đăng ký tài khoản tại `UC-43: Đăng ký tài khoản khách`. Sau khi đăng ký thành công, mối quan hệ `<<extend>>` cho phép người dùng tự động chuyển hướng đăng nhập vào `UC-42`."*
+
+### Câu hỏi 5: Tại sao trên sơ đồ có quan hệ Kế thừa Tác nhân giữa Khách hàng và Khách vãng lai (CUSTOMER ──▷ GUEST)?
+> **Trả lời chuẩn của Tác giả:**  
+> *"Dạ kính thưa Thầy/Cô:  
+> Trong mô hình hóa hướng đối tượng UML 2.5, quan hệ Kế thừa Tác nhân (Actor Generalization) được áp dụng khi một tác nhân chuyên biệt thừa hưởng toàn bộ khả năng tương tác của một tác nhân tổng quát:  
+> 1. Khách hàng (`CUSTOMER`) là người dùng đã xác thực, đương nhiên sở hữu mọi khả năng tương tác công khai của Khách vãng lai (`GUEST`) như tra cứu lộ trình bưu gửi (`UC-32`), hội thoại tự nhiên với Trợ lý AI (`UC-34`) và nhận tư vấn cước IATA (`UC-38`).  
+> 2. Việc định nghĩa mũi tên kế thừa `CUSTOMER ──▷ GUEST` giúp sơ đồ tối ưu hóa về mặt thị giác, không cần vẽ các đường liên kết trùng lặp từ Khách hàng đến các tính năng công khai, giúp sơ đồ giữ được độ thoáng đãng cao mà vẫn bảo đảm đầy đủ tính kế thừa nghiệp vụ chuẩn mực."*
 
 ---
 
