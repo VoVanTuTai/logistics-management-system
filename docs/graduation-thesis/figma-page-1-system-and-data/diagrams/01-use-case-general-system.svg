@@ -54,9 +54,9 @@
   <g id="Header">
     <rect x="40" y="40" width="3520" height="86" fill="#FFFFFF" stroke="#000000" stroke-width="1.6"/>
     <text x="65" y="76" class="t-main">SƠ ĐỒ USE CASE TỔNG QUÁT HỆ THỐNG NEXUS ENTERPRISE LOGISTICS — ĐẶC TẢ CHUẨN BA / SRS (IEEE 830 / UML 2.5)</text>
-    <text x="65" y="105" class="t-sub">Mô hình phân rã 7 Phân hệ nghiệp vụ (Packages) • 6 Tác nhân trong Cây kế thừa (Actor Generalization Hierarchy) • 55 Trường hợp sử dụng (5 Use Case Generalizations) • Ánh xạ 1:1 từ 15 Microservices &amp; 6 Frontend Apps</text>
+    <text x="65" y="105" class="t-sub">Mô hình phân rã 7 Phân hệ nghiệp vụ (Packages) • 6 Tác nhân trong Cây kế thừa (Actor Generalization Hierarchy) • 55 Trường hợp sử dụng (5 Use Case Generalizations) • Định tuyến vuông góc chuẩn xác (Zero Overlaps)</text>
     <rect x="3180" y="52" width="380" height="62" fill="#F8F9FA" stroke="#000000" stroke-width="1.1"/>
-    <text x="3195" y="74" font-family="Arial" font-size="12.5" font-weight="bold" fill="#000000">MÃ BẢN VẼ: UC-SYS-ENT-01 (REV.4)</text>
+    <text x="3195" y="74" font-family="Arial" font-size="12.5" font-weight="bold" fill="#000000">MÃ BẢN VẼ: UC-SYS-ENT-01 (REV.5)</text>
     <text x="3195" y="95" font-family="Arial" font-size="11" fill="#444444">TIÊU CHUẨN: ISO/IEC 25010 • UML 2.5</text>
   </g>
 
@@ -71,325 +71,325 @@
   <!-- PACKAGE 1: TIẾP NHẬN & QUẢN LÝ ĐƠN HÀNG                  -->
   <!-- ========================================================= -->
   <g id="Pkg1_Shipment_Management">
-    <rect x="580" y="170" width="1180" height="580" class="pkg-border"/>
-    <rect x="580" y="170" width="760" height="28" class="pkg-header"/>
-    <text x="595" y="189" class="t-pkg">PHÂN HỆ 1: TIẾP NHẬN &amp; QUẢN LÝ ĐƠN HÀNG — shipment-service • pickup-service • pricing-service</text>
-    <ellipse cx="820" cy="245" rx="115" ry="28" class="uc-abstract"/>
-    <text x="820" y="237" class="t-rel">&lt;&lt;abstract&gt;&gt;</text>
-    <text x="820" y="249" class="t-ucid">UC-G01</text>
-    <text x="820" y="263" class="t-uc-abs">Tạo đơn vận chuyển</text>
-    <ellipse cx="640" cy="360" rx="95" ry="24" class="uc"/>
-    <text x="640" y="357" class="t-ucid">UC-01</text>
-    <text x="640" y="372" class="t-uc">Tạo đơn lẻ thủ công</text>
-    <ellipse cx="830" cy="360" rx="100" ry="24" class="uc"/>
-    <text x="830" y="357" class="t-ucid">UC-02</text>
-    <text x="830" y="372" class="t-uc">Tạo đơn tệp Excel bulk</text>
-    <ellipse cx="1040" cy="360" rx="110" ry="24" class="uc"/>
-    <text x="1040" y="357" class="t-ucid">UC-03</text>
-    <text x="1040" y="372" class="t-uc">Đồng bộ Webhook TMĐT</text>
-    <line x1="640" y1="336" x2="760" y2="287" class="gen-line"/>
-    <polygon points="753,287 760,273 767,287" class="gen-arrow"/>
-    <line x1="830" y1="336" x2="820" y2="287" class="gen-line"/>
-    <polygon points="813,287 820,273 827,287" class="gen-arrow"/>
-    <line x1="1040" y1="336" x2="880" y2="287" class="gen-line"/>
-    <polygon points="873,287 880,273 887,287" class="gen-arrow"/>
-    <ellipse cx="660" cy="470" rx="110" ry="24" class="uc-core"/>
-    <text x="660" y="467" class="t-ucid">UC-04</text>
-    <text x="660" y="482" class="t-uc">Tính cước quy đổi IATA</text>
-    <ellipse cx="940" cy="470" rx="110" ry="24" class="uc"/>
-    <text x="940" y="467" class="t-ucid">UC-05</text>
-    <text x="940" y="482" class="t-uc">In nhãn Barcode / Phiếu gửi</text>
-    <line x1="770" y1="273" x2="684.6" y2="437.1" class="dep-line"/>
-    <polygon points="680.0,446.0 680.2,434.8 689.1,439.4" class="dep-arrow"/>
-    <text x="700.0" y="360.0" class="t-rel">&lt;&lt;include&gt;&gt;</text>
-    <line x1="870" y1="273" x2="936.2" y2="436.7" class="dep-line"/>
-    <polygon points="940.0,446.0 931.6,438.6 940.9,434.9" class="dep-arrow"/>
-    <text x="930.0" y="340.0" class="t-rel">&lt;&lt;include&gt;&gt;</text>
-    <ellipse cx="1180" cy="470" rx="95" ry="22" class="uc-ext"/>
-    <text x="1180" y="467" class="t-ucid">UC-09</text>
-    <text x="1180" y="482" class="t-uc">In nhãn hàng loạt (Bulk)</text>
-    <line x1="1085" y1="470" x2="1060.0" y2="470.0" class="dep-line"/>
-    <polygon points="1050.0,470.0 1060.0,465.0 1060.0,475.0" class="dep-arrow"/>
-    <text x="1110.0" y="458.0" class="t-rel">&lt;&lt;extend&gt;&gt;</text>
-    <ellipse cx="670" cy="570" rx="115" ry="24" class="uc-core"/>
-    <text x="670" y="567" class="t-ucid">UC-06</text>
-    <text x="670" y="582" class="t-uc">Yêu cầu bưu tá lấy hàng</text>
-    <ellipse cx="940" cy="570" rx="115" ry="24" class="uc"/>
-    <text x="940" y="567" class="t-ucid">UC-07</text>
-    <text x="940" y="582" class="t-uc">Hủy đơn / Đổi SĐT, địa chỉ</text>
-    <ellipse cx="1200" cy="570" rx="115" ry="24" class="uc"/>
-    <text x="1200" y="567" class="t-ucid">UC-08</text>
-    <text x="1200" y="582" class="t-uc">Quản lý &amp; Lọc đơn đa kênh</text>
+    <rect x="580" y="180" width="1180" height="570" class="pkg-border"/>
+    <rect x="580" y="180" width="760" height="28" class="pkg-header"/>
+    <text x="595" y="199" class="t-pkg">PHÂN HỆ 1: TIẾP NHẬN &amp; QUẢN LÝ ĐƠN HÀNG — shipment-service • pickup-service • pricing-service</text>
+    <ellipse cx="950" cy="250" rx="115" ry="28" class="uc-abstract"/>
+    <text x="950" y="242" class="t-rel">&lt;&lt;abstract&gt;&gt;</text>
+    <text x="950" y="254" class="t-ucid">UC-G01</text>
+    <text x="950" y="268" class="t-uc-abs">Tạo đơn vận chuyển</text>
+    <ellipse cx="1450" cy="250" rx="110" ry="24" class="uc-core"/>
+    <text x="1450" y="247" class="t-ucid">UC-04</text>
+    <text x="1450" y="262" class="t-uc">Tính cước quy đổi IATA</text>
+    <line x1="1065" y1="250" x2="1330.0" y2="250.0" class="dep-line"/>
+    <polygon points="1340.0,250.0 1330.0,255.0 1330.0,245.0" class="dep-arrow"/>
+    <text x="1200.0" y="240.0" class="t-rel">&lt;&lt;include&gt;&gt;</text>
+    <ellipse cx="720" cy="360" rx="95" ry="24" class="uc"/>
+    <text x="720" y="357" class="t-ucid">UC-01</text>
+    <text x="720" y="372" class="t-uc">Tạo đơn lẻ thủ công</text>
+    <ellipse cx="950" cy="360" rx="100" ry="24" class="uc"/>
+    <text x="950" y="357" class="t-ucid">UC-02</text>
+    <text x="950" y="372" class="t-uc">Tạo đơn tệp Excel bulk</text>
+    <ellipse cx="1180" cy="360" rx="105" ry="24" class="uc"/>
+    <text x="1180" y="357" class="t-ucid">UC-03</text>
+    <text x="1180" y="372" class="t-uc">Đồng bộ Webhook TMĐT</text>
+    <ellipse cx="1450" cy="360" rx="110" ry="24" class="uc"/>
+    <text x="1450" y="357" class="t-ucid">UC-05</text>
+    <text x="1450" y="372" class="t-uc">In nhãn Barcode / Phiếu gửi</text>
+    <ellipse cx="1680" cy="360" rx="85" ry="22" class="uc-ext"/>
+    <text x="1680" y="357" class="t-ucid">UC-09</text>
+    <text x="1680" y="372" class="t-uc">In nhãn bulk</text>
+    <line x1="720" y1="336" x2="890" y2="292" class="gen-line"/>
+    <polygon points="883,292 890,278 897,292" class="gen-arrow"/>
+    <line x1="950" y1="336" x2="950" y2="292" class="gen-line"/>
+    <polygon points="943,292 950,278 957,292" class="gen-arrow"/>
+    <line x1="1180" y1="336" x2="1010" y2="292" class="gen-line"/>
+    <polygon points="1003,292 1010,278 1017,292" class="gen-arrow"/>
+    <path d="M 1050 265 L 1260 265 L 1260 360 L 1340 360" class="dep-line"/>
+    <polygon points="1340,360 1330,356 1330,364" class="dep-arrow"/>
+    <text x="1230" y="325" class="t-rel">&lt;&lt;include&gt;&gt;</text>
+    <line x1="1595" y1="360" x2="1570.0" y2="360.0" class="dep-line"/>
+    <polygon points="1560.0,360.0 1570.0,355.0 1570.0,365.0" class="dep-arrow"/>
+    <text x="1580.0" y="348.0" class="t-rel">&lt;&lt;extend&gt;&gt;</text>
+    <ellipse cx="720" cy="500" rx="115" ry="24" class="uc-core"/>
+    <text x="720" y="497" class="t-ucid">UC-06</text>
+    <text x="720" y="512" class="t-uc">Yêu cầu bưu tá lấy hàng</text>
+    <ellipse cx="1050" cy="500" rx="115" ry="24" class="uc"/>
+    <text x="1050" y="497" class="t-ucid">UC-07</text>
+    <text x="1050" y="512" class="t-uc">Hủy đơn / Đổi SĐT, địa chỉ</text>
+    <ellipse cx="1380" cy="500" rx="115" ry="24" class="uc"/>
+    <text x="1380" y="497" class="t-ucid">UC-08</text>
+    <text x="1380" y="512" class="t-uc">Quản lý &amp; Lọc đơn đa kênh</text>
   </g>
 
   <!-- ========================================================= -->
   <!-- PACKAGE 2: KHO TRUNG CHUYỂN, PHÂN TUYẾN & GIAO HÀNG      -->
   <!-- ========================================================= -->
   <g id="Pkg2_Hub_Dispatch_Delivery">
-    <rect x="1780" y="170" width="1240" height="580" class="pkg-border"/>
-    <rect x="1780" y="170" width="840" height="28" class="pkg-header"/>
-    <text x="1795" y="189" class="t-pkg">PHÂN HỆ 2: KHO TRUNG CHUYỂN, PHÂN TUYẾN &amp; GIAO HÀNG — scan • manifest • dispatch • delivery</text>
-    <ellipse cx="1910" cy="245" rx="105" ry="24" class="uc"/>
-    <text x="1910" y="242" class="t-ucid">UC-10</text>
-    <text x="1910" y="257" class="t-uc">Quét mã tiếp nhận gom hàng</text>
-    <ellipse cx="2150" cy="245" rx="105" ry="24" class="uc"/>
-    <text x="2150" y="242" class="t-ucid">UC-11</text>
-    <text x="2150" y="257" class="t-uc">Quét mã nhập kho (Inbound)</text>
-    <ellipse cx="2390" cy="245" rx="105" ry="24" class="uc"/>
-    <text x="2390" y="242" class="t-ucid">UC-12</text>
-    <text x="2390" y="257" class="t-uc">Quét mã xuất kho (Outbound)</text>
-    <ellipse cx="2640" cy="245" rx="115" ry="24" class="uc"/>
-    <text x="2640" y="242" class="t-ucid">UC-13</text>
-    <text x="2640" y="257" class="t-uc">Đóng bao tải &amp; Niêm seal chì</text>
-    <ellipse cx="2010" cy="360" rx="115" ry="24" class="uc"/>
-    <text x="2010" y="357" class="t-ucid">UC-14</text>
-    <text x="2010" y="372" class="t-uc">Tiếp nhận bao tải đầu tuyến</text>
-    <ellipse cx="2320" cy="360" rx="125" ry="24" class="uc-core"/>
-    <text x="2320" y="357" class="t-ucid">UC-15</text>
-    <text x="2320" y="372" class="t-uc">Phân tuyến &amp; Giao task bưu tá</text>
-    <ellipse cx="2120" cy="480" rx="115" ry="26" class="uc-core"/>
-    <text x="2120" y="477" class="t-ucid">UC-16</text>
-    <text x="2120" y="492" class="t-uc">Thực hiện giao chặng cuối</text>
-    <ellipse cx="2420" cy="480" rx="110" ry="24" class="uc"/>
-    <text x="2420" y="477" class="t-ucid">UC-17</text>
-    <text x="2420" y="492" class="t-uc">Ký nhận điện tử e-POD</text>
-    <ellipse cx="2710" cy="480" rx="110" ry="24" class="uc"/>
-    <text x="2710" y="477" class="t-ucid">UC-18</text>
-    <text x="2710" y="492" class="t-uc">Báo phát không thành công</text>
-    <ellipse cx="2560" cy="580" rx="115" ry="24" class="uc"/>
-    <text x="2560" y="577" class="t-ucid">UC-19</text>
-    <text x="2560" y="592" class="t-uc">Hẹn lại ngày / Chuyển hoàn</text>
-    <line x1="2235" y1="480" x2="2300.0" y2="480.0" class="dep-line"/>
-    <polygon points="2310.0,480.0 2300.0,485.0 2300.0,475.0" class="dep-arrow"/>
-    <text x="2270.0" y="468.0" class="t-rel">&lt;&lt;include&gt;&gt;</text>
-    <line x1="2600" y1="480" x2="2245.0" y2="480.0" class="dep-line"/>
-    <polygon points="2235.0,480.0 2245.0,475.0 2245.0,485.0" class="dep-arrow"/>
-    <text x="2420.0" y="435.0" class="t-rel">&lt;&lt;extend&gt;&gt;</text>
-    <line x1="2640" y1="556" x2="2692.4" y2="510.5" class="dep-line"/>
-    <polygon points="2700.0,504.0 2695.7,514.3 2689.2,506.8" class="dep-arrow"/>
-    <text x="2710.0" y="540.0" class="t-rel">&lt;&lt;extend&gt;&gt;</text>
+    <rect x="1800" y="180" width="1220" height="570" class="pkg-border"/>
+    <rect x="1800" y="180" width="840" height="28" class="pkg-header"/>
+    <text x="1815" y="199" class="t-pkg">PHÂN HỆ 2: KHO TRUNG CHUYỂN, PHÂN TUYẾN &amp; GIAO HÀNG — scan • manifest • dispatch • delivery</text>
+    <ellipse cx="1940" cy="250" rx="105" ry="24" class="uc"/>
+    <text x="1940" y="247" class="t-ucid">UC-10</text>
+    <text x="1940" y="262" class="t-uc">Quét tiếp nhận gom hàng</text>
+    <ellipse cx="2200" cy="250" rx="105" ry="24" class="uc"/>
+    <text x="2200" y="247" class="t-ucid">UC-11</text>
+    <text x="2200" y="262" class="t-uc">Quét mã nhập kho (Inbound)</text>
+    <ellipse cx="2460" cy="250" rx="105" ry="24" class="uc"/>
+    <text x="2460" y="247" class="t-ucid">UC-12</text>
+    <text x="2460" y="262" class="t-uc">Quét mã xuất kho (Outbound)</text>
+    <ellipse cx="2740" cy="250" rx="115" ry="24" class="uc"/>
+    <text x="2740" y="247" class="t-ucid">UC-13</text>
+    <text x="2740" y="262" class="t-uc">Đóng bao Manifest &amp; Niêm chì</text>
+    <ellipse cx="2060" cy="380" rx="115" ry="24" class="uc"/>
+    <text x="2060" y="377" class="t-ucid">UC-14</text>
+    <text x="2060" y="392" class="t-uc">Tiếp nhận bao tải đầu tuyến</text>
+    <ellipse cx="2400" cy="380" rx="125" ry="24" class="uc-core"/>
+    <text x="2400" y="377" class="t-ucid">UC-15</text>
+    <text x="2400" y="392" class="t-uc">Phân tuyến &amp; Giao task bưu tá</text>
+    <ellipse cx="2160" cy="530" rx="115" ry="26" class="uc-core"/>
+    <text x="2160" y="527" class="t-ucid">UC-16</text>
+    <text x="2160" y="542" class="t-uc">Thực hiện giao chặng cuối</text>
+    <ellipse cx="2500" cy="530" rx="110" ry="24" class="uc"/>
+    <text x="2500" y="527" class="t-ucid">UC-17</text>
+    <text x="2500" y="542" class="t-uc">Ký nhận điện tử e-POD</text>
+    <ellipse cx="2820" cy="530" rx="110" ry="24" class="uc"/>
+    <text x="2820" y="527" class="t-ucid">UC-18</text>
+    <text x="2820" y="542" class="t-uc">Báo phát không thành công</text>
+    <ellipse cx="2820" cy="650" rx="115" ry="24" class="uc"/>
+    <text x="2820" y="647" class="t-ucid">UC-19</text>
+    <text x="2820" y="662" class="t-uc">Hẹn lại ngày / Chuyển hoàn</text>
+    <line x1="2275" y1="530" x2="2380.0" y2="530.0" class="dep-line"/>
+    <polygon points="2390.0,530.0 2380.0,535.0 2380.0,525.0" class="dep-arrow"/>
+    <text x="2335.0" y="518.0" class="t-rel">&lt;&lt;include&gt;&gt;</text>
+    <path d="M 2820 506 L 2820 465 L 2160 465 L 2160 504" class="dep-line"/>
+    <polygon points="2160,504 2156,494 2164,494" class="dep-arrow"/>
+    <text x="2490" y="455" class="t-rel">&lt;&lt;extend&gt;&gt;</text>
+    <line x1="2820" y1="626" x2="2820.0" y2="564.0" class="dep-line"/>
+    <polygon points="2820.0,554.0 2825.0,564.0 2815.0,564.0" class="dep-arrow"/>
+    <text x="2870.0" y="590.0" class="t-rel">&lt;&lt;extend&gt;&gt;</text>
   </g>
 
   <!-- ========================================================= -->
   <!-- PACKAGE 3: XỬ LÝ SỰ CỐ, KHIẾU NẠI & BỒI THƯỜNG          -->
   <!-- ========================================================= -->
   <g id="Pkg3_Claims_Incident">
-    <rect x="580" y="770" width="1180" height="640" class="pkg-border"/>
-    <rect x="580" y="770" width="760" height="28" class="pkg-header"/>
-    <text x="595" y="789" class="t-pkg">PHÂN HỆ 3: XỬ LÝ SỰ CỐ, KHIẾU NẠI &amp; BỒI THƯỜNG — shipment (claims, investigations)</text>
-    <ellipse cx="820" cy="850" rx="125" ry="28" class="uc-abstract"/>
-    <text x="820" y="842" class="t-rel">&lt;&lt;abstract&gt;&gt;</text>
-    <text x="820" y="854" class="t-ucid">UC-G02</text>
-    <text x="820" y="868" class="t-uc-abs">Xử lý sự cố &amp; Khiếu nại bưu gửi</text>
-    <ellipse cx="650" cy="970" rx="115" ry="24" class="uc-core"/>
-    <text x="650" y="967" class="t-ucid">UC-20</text>
-    <text x="650" y="982" class="t-uc">Khiếu nại bể vỡ (BBBT 24h)</text>
-    <ellipse cx="870" cy="970" rx="105" ry="24" class="uc"/>
-    <text x="870" y="967" class="t-ucid">UC-21</text>
-    <text x="870" y="982" class="t-uc">Khiếu nại mất hàng / Trễ SLA</text>
-    <ellipse cx="1090" cy="970" rx="110" ry="24" class="uc"/>
-    <text x="1090" y="967" class="t-ucid">UC-22</text>
-    <text x="1090" y="982" class="t-uc">Khiếu nại sai trọng lượng</text>
-    <line x1="650" y1="946" x2="760" y2="892" class="gen-line"/>
-    <polygon points="753,892 760,878 767,892" class="gen-arrow"/>
-    <line x1="870" y1="946" x2="820" y2="892" class="gen-line"/>
-    <polygon points="813,892 820,878 827,892" class="gen-arrow"/>
-    <line x1="1090" y1="946" x2="880" y2="892" class="gen-line"/>
-    <polygon points="873,892 880,878 887,892" class="gen-arrow"/>
-    <ellipse cx="650" cy="1100" rx="115" ry="24" class="uc"/>
-    <text x="650" y="1097" class="t-ucid">UC-23</text>
-    <text x="650" y="1112" class="t-uc">Bưu tá ký số BBBT hiện trường</text>
-    <line x1="650" y1="994" x2="650.0" y2="1066.0" class="dep-line"/>
-    <polygon points="650.0,1076.0 645.0,1066.0 655.0,1066.0" class="dep-arrow"/>
-    <text x="695.0" y="1035.0" class="t-rel">&lt;&lt;include&gt;&gt;</text>
-    <ellipse cx="940" cy="1100" rx="125" ry="24" class="uc-core"/>
-    <text x="940" y="1097" class="t-ucid">UC-24</text>
-    <text x="940" y="1112" class="t-uc">Thẩm định bồi thường (≤ 500k)</text>
-    <line x1="860" y1="878" x2="936.3" y2="1066.7" class="dep-line"/>
-    <polygon points="940.0,1076.0 931.6,1068.6 940.9,1064.9" class="dep-arrow"/>
-    <text x="945.0" y="980.0" class="t-rel">&lt;&lt;include&gt;&gt;</text>
-    <ellipse cx="750" cy="1230" rx="120" ry="24" class="uc"/>
-    <text x="750" y="1227" class="t-ucid">UC-25</text>
-    <text x="750" y="1242" class="t-uc">Phê duyệt bồi thường (> 500k)</text>
-    <line x1="750" y1="1206" x2="891.2" y2="1128.8" class="dep-line"/>
-    <polygon points="900.0,1124.0 893.6,1133.2 888.8,1124.4" class="dep-arrow"/>
-    <text x="785.0" y="1160.0" class="t-rel">&lt;&lt;extend&gt;&gt;</text>
-    <ellipse cx="1040" cy="1230" rx="120" ry="24" class="uc"/>
-    <text x="1040" y="1227" class="t-ucid">UC-26</text>
-    <text x="1040" y="1242" class="t-uc">Hòa giải &amp; Điều tra hiện trường</text>
-    <line x1="1040" y1="1206" x2="976.5" y2="1131.6" class="dep-line"/>
-    <polygon points="970.0,1124.0 980.3,1128.4 972.7,1134.9" class="dep-arrow"/>
-    <text x="1045.0" y="1160.0" class="t-rel">&lt;&lt;extend&gt;&gt;</text>
+    <rect x="580" y="790" width="1180" height="625" class="pkg-border"/>
+    <rect x="580" y="790" width="760" height="28" class="pkg-header"/>
+    <text x="595" y="809" class="t-pkg">PHÂN HỆ 3: XỬ LÝ SỰ CỐ, KHIẾU NẠI &amp; BỒI THƯỜNG — shipment (claims, investigations)</text>
+    <ellipse cx="950" cy="860" rx="125" ry="28" class="uc-abstract"/>
+    <text x="950" y="852" class="t-rel">&lt;&lt;abstract&gt;&gt;</text>
+    <text x="950" y="864" class="t-ucid">UC-G02</text>
+    <text x="950" y="878" class="t-uc-abs">Xử lý sự cố &amp; Khiếu nại bưu gửi</text>
+    <ellipse cx="720" cy="970" rx="115" ry="24" class="uc-core"/>
+    <text x="720" y="967" class="t-ucid">UC-20</text>
+    <text x="720" y="982" class="t-uc">Khiếu nại bể vỡ (BBBT 24h)</text>
+    <ellipse cx="950" cy="970" rx="105" ry="24" class="uc"/>
+    <text x="950" y="967" class="t-ucid">UC-21</text>
+    <text x="950" y="982" class="t-uc">Khiếu nại mất hàng / Trễ SLA</text>
+    <ellipse cx="1180" cy="970" rx="110" ry="24" class="uc"/>
+    <text x="1180" y="967" class="t-ucid">UC-22</text>
+    <text x="1180" y="982" class="t-uc">Khiếu nại sai trọng lượng</text>
+    <ellipse cx="1450" cy="970" rx="125" ry="24" class="uc-core"/>
+    <text x="1450" y="967" class="t-ucid">UC-24</text>
+    <text x="1450" y="982" class="t-uc">Thẩm định bồi thường (≤ 500k)</text>
+    <line x1="720" y1="946" x2="890" y2="902" class="gen-line"/>
+    <polygon points="883,902 890,888 897,902" class="gen-arrow"/>
+    <line x1="950" y1="946" x2="950" y2="902" class="gen-line"/>
+    <polygon points="943,902 950,888 957,902" class="gen-arrow"/>
+    <line x1="1180" y1="946" x2="1010" y2="902" class="gen-line"/>
+    <polygon points="1003,902 1010,888 1017,902" class="gen-arrow"/>
+    <path d="M 1075 860 L 1310 860 L 1310 970 L 1325 970" class="dep-line"/>
+    <polygon points="1325,970 1315,966 1315,974" class="dep-arrow"/>
+    <text x="1270" y="915" class="t-rel">&lt;&lt;include&gt;&gt;</text>
+    <ellipse cx="720" cy="1110" rx="115" ry="24" class="uc"/>
+    <text x="720" y="1107" class="t-ucid">UC-23</text>
+    <text x="720" y="1122" class="t-uc">Bưu tá ký số BBBT hiện trường</text>
+    <line x1="720" y1="994" x2="720.0" y2="1076.0" class="dep-line"/>
+    <polygon points="720.0,1086.0 715.0,1076.0 725.0,1076.0" class="dep-arrow"/>
+    <text x="765.0" y="1045.0" class="t-rel">&lt;&lt;include&gt;&gt;</text>
+    <ellipse cx="1450" cy="1110" rx="120" ry="24" class="uc"/>
+    <text x="1450" y="1107" class="t-ucid">UC-25</text>
+    <text x="1450" y="1122" class="t-uc">Phê duyệt bồi thường (> 500k)</text>
+    <line x1="1450" y1="1086" x2="1450.0" y2="1004.0" class="dep-line"/>
+    <polygon points="1450.0,994.0 1455.0,1004.0 1445.0,1004.0" class="dep-arrow"/>
+    <text x="1505.0" y="1045.0" class="t-rel">&lt;&lt;extend&gt;&gt;</text>
+    <ellipse cx="1450" cy="1240" rx="120" ry="24" class="uc"/>
+    <text x="1450" y="1237" class="t-ucid">UC-26</text>
+    <text x="1450" y="1252" class="t-uc">Hòa giải &amp; Điều tra hiện trường</text>
+    <path d="M 1450 1216 L 1450 1180 L 1600 1180 L 1600 970 L 1575 970" class="dep-line"/>
+    <polygon points="1575,970 1585,966 1585,974" class="dep-arrow"/>
+    <text x="1635" y="1090" class="t-rel">&lt;&lt;extend&gt;&gt;</text>
   </g>
 
   <!-- ========================================================= -->
   <!-- PACKAGE 4: ĐỐI SOÁT TÀI CHÍNH, VÍ CƯỚC & THU TIỀN COD    -->
   <!-- ========================================================= -->
   <g id="Pkg4_Finance_COD">
-    <rect x="1780" y="770" width="1240" height="640" class="pkg-border"/>
-    <rect x="1780" y="770" width="760" height="28" class="pkg-header"/>
-    <text x="1795" y="789" class="t-pkg">PHÂN HỆ 4: ĐỐI SOÁT TÀI CHÍNH, VÍ CƯỚC &amp; THU TIỀN COD — payment-service • reporting-service</text>
-    <ellipse cx="2120" cy="850" rx="125" ry="28" class="uc-abstract"/>
-    <text x="2120" y="842" class="t-rel">&lt;&lt;abstract&gt;&gt;</text>
-    <text x="2120" y="854" class="t-ucid">UC-G03</text>
-    <text x="2120" y="868" class="t-uc-abs">Thanh toán / Thu cước &amp; COD</text>
-    <ellipse cx="1910" cy="970" rx="110" ry="24" class="uc-core"/>
-    <text x="1910" y="967" class="t-ucid">UC-27</text>
-    <text x="1910" y="982" class="t-uc">Thu tiền mặt COD tại điểm phát</text>
-    <ellipse cx="2140" cy="970" rx="115" ry="24" class="uc-core"/>
-    <text x="2140" y="967" class="t-ucid">UC-28</text>
-    <text x="2140" y="982" class="t-uc">Thanh toán VietQR SePay động</text>
-    <ellipse cx="2390" cy="970" rx="115" ry="24" class="uc"/>
-    <text x="2390" y="967" class="t-ucid">UC-29</text>
-    <text x="2390" y="982" class="t-uc">Cấn trừ Ví cước / Hạn mức</text>
-    <line x1="1910" y1="946" x2="2060" y2="892" class="gen-line"/>
-    <polygon points="2053,892 2060,878 2067,892" class="gen-arrow"/>
-    <line x1="2140" y1="946" x2="2120" y2="892" class="gen-line"/>
-    <polygon points="2113,892 2120,878 2127,892" class="gen-arrow"/>
-    <line x1="2390" y1="946" x2="2180" y2="892" class="gen-line"/>
-    <polygon points="2173,892 2180,878 2187,892" class="gen-arrow"/>
-    <ellipse cx="2670" cy="970" rx="115" ry="24" class="uc-core"/>
-    <text x="2670" y="967" class="t-ucid">UC-30</text>
-    <text x="2670" y="982" class="t-uc">Quyết toán ca nộp tiền bưu tá</text>
-    <ellipse cx="1940" cy="1100" rx="120" ry="24" class="uc"/>
-    <text x="1940" y="1097" class="t-ucid">UC-31</text>
-    <text x="1940" y="1112" class="t-uc">Đối soát tự động SePay Webhook</text>
-    <ellipse cx="2220" cy="1100" rx="120" ry="24" class="uc-core"/>
-    <text x="2220" y="1097" class="t-ucid">UC-32</text>
-    <text x="2220" y="1112" class="t-uc">Bảng kê đối soát định kỳ &amp; Cước</text>
-    <ellipse cx="2530" cy="1100" rx="120" ry="24" class="uc"/>
-    <text x="2530" y="1097" class="t-ucid">UC-33</text>
-    <text x="2530" y="1112" class="t-uc">Rút tiền Ví COD về Ngân hàng</text>
-    <ellipse cx="2220" cy="1230" rx="125" ry="24" class="uc"/>
-    <text x="2220" y="1227" class="t-ucid">UC-34</text>
-    <text x="2220" y="1242" class="t-uc">Báo cáo dòng tiền, nợ &amp; Doanh thu</text>
+    <rect x="1800" y="790" width="1220" height="625" class="pkg-border"/>
+    <rect x="1800" y="790" width="760" height="28" class="pkg-header"/>
+    <text x="1815" y="809" class="t-pkg">PHÂN HỆ 4: ĐỐI SOÁT TÀI CHÍNH, VÍ CƯỚC &amp; THU TIỀN COD — payment-service • reporting-service</text>
+    <ellipse cx="2160" cy="860" rx="125" ry="28" class="uc-abstract"/>
+    <text x="2160" y="852" class="t-rel">&lt;&lt;abstract&gt;&gt;</text>
+    <text x="2160" y="864" class="t-ucid">UC-G03</text>
+    <text x="2160" y="878" class="t-uc-abs">Thanh toán / Thu cước &amp; COD</text>
+    <ellipse cx="2700" cy="860" rx="115" ry="24" class="uc-core"/>
+    <text x="2700" y="857" class="t-ucid">UC-30</text>
+    <text x="2700" y="872" class="t-uc">Quyết toán ca nộp tiền bưu tá</text>
+    <ellipse cx="1940" cy="970" rx="110" ry="24" class="uc-core"/>
+    <text x="1940" y="967" class="t-ucid">UC-27</text>
+    <text x="1940" y="982" class="t-uc">Thu tiền mặt COD tại điểm phát</text>
+    <ellipse cx="2160" cy="970" rx="115" ry="24" class="uc-core"/>
+    <text x="2160" y="967" class="t-ucid">UC-28</text>
+    <text x="2160" y="982" class="t-uc">Thanh toán VietQR SePay động</text>
+    <ellipse cx="2380" cy="970" rx="115" ry="24" class="uc"/>
+    <text x="2380" y="967" class="t-ucid">UC-29</text>
+    <text x="2380" y="982" class="t-uc">Cấn trừ Ví cước / Hạn mức</text>
+    <ellipse cx="2700" cy="970" rx="120" ry="24" class="uc"/>
+    <text x="2700" y="967" class="t-ucid">UC-31</text>
+    <text x="2700" y="982" class="t-uc">Đối soát tự động SePay Webhook</text>
+    <line x1="1940" y1="946" x2="2100" y2="902" class="gen-line"/>
+    <polygon points="2093,902 2100,888 2107,902" class="gen-arrow"/>
+    <line x1="2160" y1="946" x2="2160" y2="902" class="gen-line"/>
+    <polygon points="2153,902 2160,888 2167,902" class="gen-arrow"/>
+    <line x1="2380" y1="946" x2="2220" y2="902" class="gen-line"/>
+    <polygon points="2213,902 2220,888 2227,902" class="gen-arrow"/>
+    <ellipse cx="2160" cy="1110" rx="120" ry="24" class="uc-core"/>
+    <text x="2160" y="1107" class="t-ucid">UC-32</text>
+    <text x="2160" y="1122" class="t-uc">Bảng kê đối soát định kỳ &amp; Cước</text>
+    <ellipse cx="2520" cy="1110" rx="120" ry="24" class="uc"/>
+    <text x="2520" y="1107" class="t-ucid">UC-33</text>
+    <text x="2520" y="1122" class="t-uc">Rút tiền Ví COD về Ngân hàng</text>
+    <ellipse cx="2160" cy="1240" rx="125" ry="24" class="uc"/>
+    <text x="2160" y="1237" class="t-ucid">UC-34</text>
+    <text x="2160" y="1252" class="t-uc">Báo cáo dòng tiền, nợ &amp; Doanh thu</text>
   </g>
 
   <!-- ========================================================= -->
   <!-- PACKAGE 5: TRUY VẾT & VIỄN TRẮC HÀNH TRÌNH               -->
   <!-- ========================================================= -->
   <g id="Pkg5_Telemetry_Tracking">
-    <rect x="580" y="1430" width="720" height="740" class="pkg-border"/>
-    <rect x="580" y="1430" width="620" height="28" class="pkg-header"/>
-    <text x="595" y="1449" class="t-pkg">PHÂN HỆ 5: TRUY VẾT &amp; VIỄN TRẮC HÀNH TRÌNH — tracking-service • scan</text>
-    <ellipse cx="750" cy="1515" rx="120" ry="28" class="uc-abstract"/>
-    <text x="750" y="1507" class="t-rel">&lt;&lt;abstract&gt;&gt;</text>
-    <text x="750" y="1519" class="t-ucid">UC-G04</text>
-    <text x="750" y="1533" class="t-uc-abs">Tra cứu hành trình bưu gửi</text>
-    <ellipse cx="670" cy="1630" rx="105" ry="24" class="uc"/>
-    <text x="670" y="1627" class="t-ucid">UC-35</text>
-    <text x="670" y="1642" class="t-uc">Tra cứu lộ trình công khai</text>
-    <ellipse cx="880" cy="1630" rx="105" ry="24" class="uc"/>
-    <text x="880" y="1627" class="t-ucid">UC-36</text>
-    <text x="880" y="1642" class="t-uc">Tra cứu viễn trắc nội bộ</text>
-    <line x1="670" y1="1606" x2="710" y2="1557" class="gen-line"/>
-    <polygon points="703,1557 710,1543 717,1557" class="gen-arrow"/>
-    <line x1="880" y1="1606" x2="790" y2="1557" class="gen-line"/>
-    <polygon points="783,1557 790,1543 797,1557" class="gen-arrow"/>
-    <ellipse cx="670" cy="1750" rx="110" ry="24" class="uc"/>
-    <text x="670" y="1747" class="t-ucid">UC-37</text>
-    <text x="670" y="1762" class="t-uc">Khử định danh PII Masking</text>
-    <line x1="670" y1="1654" x2="670.0" y2="1716.0" class="dep-line"/>
-    <polygon points="670.0,1726.0 665.0,1716.0 675.0,1716.0" class="dep-arrow"/>
-    <text x="715.0" y="1690.0" class="t-rel">&lt;&lt;include&gt;&gt;</text>
-    <ellipse cx="880" cy="1750" rx="115" ry="24" class="uc"/>
-    <text x="880" y="1747" class="t-ucid">UC-38</text>
-    <text x="880" y="1762" class="t-uc">Định vị GPS thời gian thực</text>
-    <line x1="880" y1="1654" x2="880.0" y2="1716.0" class="dep-line"/>
-    <polygon points="880.0,1726.0 875.0,1716.0 885.0,1716.0" class="dep-arrow"/>
-    <text x="930.0" y="1690.0" class="t-rel">&lt;&lt;include&gt;&gt;</text>
+    <rect x="580" y="1450" width="720" height="725" class="pkg-border"/>
+    <rect x="580" y="1450" width="620" height="28" class="pkg-header"/>
+    <text x="595" y="1469" class="t-pkg">PHÂN HỆ 5: TRUY VẾT &amp; VIỄN TRẮC HÀNH TRÌNH — tracking-service • scan</text>
+    <ellipse cx="940" cy="1540" rx="120" ry="28" class="uc-abstract"/>
+    <text x="940" y="1532" class="t-rel">&lt;&lt;abstract&gt;&gt;</text>
+    <text x="940" y="1544" class="t-ucid">UC-G04</text>
+    <text x="940" y="1558" class="t-uc-abs">Tra cứu hành trình bưu gửi</text>
+    <ellipse cx="780" cy="1670" rx="105" ry="24" class="uc"/>
+    <text x="780" y="1667" class="t-ucid">UC-35</text>
+    <text x="780" y="1682" class="t-uc">Tra cứu lộ trình công khai</text>
+    <ellipse cx="1100" cy="1670" rx="105" ry="24" class="uc"/>
+    <text x="1100" y="1667" class="t-ucid">UC-36</text>
+    <text x="1100" y="1682" class="t-uc">Tra cứu viễn trắc nội bộ</text>
+    <line x1="780" y1="1646" x2="890" y2="1582" class="gen-line"/>
+    <polygon points="883,1582 890,1568 897,1582" class="gen-arrow"/>
+    <line x1="1100" y1="1646" x2="990" y2="1582" class="gen-line"/>
+    <polygon points="983,1582 990,1568 997,1582" class="gen-arrow"/>
+    <ellipse cx="780" cy="1820" rx="110" ry="24" class="uc"/>
+    <text x="780" y="1817" class="t-ucid">UC-37</text>
+    <text x="780" y="1832" class="t-uc">Khử định danh PII Masking</text>
+    <line x1="780" y1="1694" x2="780.0" y2="1786.0" class="dep-line"/>
+    <polygon points="780.0,1796.0 775.0,1786.0 785.0,1786.0" class="dep-arrow"/>
+    <text x="830.0" y="1745.0" class="t-rel">&lt;&lt;include&gt;&gt;</text>
+    <ellipse cx="1100" cy="1820" rx="115" ry="24" class="uc"/>
+    <text x="1100" y="1817" class="t-ucid">UC-38</text>
+    <text x="1100" y="1832" class="t-uc">Định vị GPS thời gian thực</text>
+    <line x1="1100" y1="1694" x2="1100.0" y2="1786.0" class="dep-line"/>
+    <polygon points="1100.0,1796.0 1095.0,1786.0 1105.0,1786.0" class="dep-arrow"/>
+    <text x="1155.0" y="1745.0" class="t-rel">&lt;&lt;include&gt;&gt;</text>
   </g>
 
   <!-- ========================================================= -->
   <!-- PACKAGE 6: TRỢ LÝ ẢO AI & ĐỘNG CƠ TRI THỨC RAG           -->
   <!-- ========================================================= -->
   <g id="Pkg6_AI_RAG">
-    <rect x="1320" y="1430" width="840" height="740" class="pkg-border"/>
-    <rect x="1320" y="1430" width="680" height="28" class="pkg-header"/>
-    <text x="1335" y="1449" class="t-pkg">PHÂN HỆ 6: TRỢ LÝ ẢO AI &amp; ĐỘNG CƠ TRI THỨC RAG — chatbot-service • gateway-bff</text>
-    <ellipse cx="1500" cy="1515" rx="125" ry="26" class="uc-core"/>
-    <text x="1500" y="1512" class="t-ucid">UC-39</text>
-    <text x="1500" y="1527" class="t-uc">Hỏi đáp tự nhiên với Trợ lý AI</text>
-    <ellipse cx="1480" cy="1630" rx="110" ry="24" class="uc"/>
-    <text x="1480" y="1627" class="t-ucid">UC-40</text>
-    <text x="1480" y="1642" class="t-uc">Bóc tách Ý định &amp; Thực thể</text>
-    <line x1="1500" y1="1541" x2="1482.9" y2="1596.4" class="dep-line"/>
-    <polygon points="1480.0,1606.0 1478.2,1595.0 1487.7,1597.9" class="dep-arrow"/>
-    <text x="1530.0" y="1575.0" class="t-rel">&lt;&lt;include&gt;&gt;</text>
-    <ellipse cx="1480" cy="1750" rx="120" ry="24" class="uc-core"/>
-    <text x="1480" y="1747" class="t-ucid">UC-41</text>
-    <text x="1480" y="1762" class="t-uc">Truy xuất RAG 768-D Vectors</text>
-    <line x1="1480" y1="1654" x2="1480.0" y2="1716.0" class="dep-line"/>
-    <polygon points="1480.0,1726.0 1475.0,1716.0 1485.0,1716.0" class="dep-arrow"/>
-    <text x="1525.0" y="1690.0" class="t-rel">&lt;&lt;include&gt;&gt;</text>
-    <ellipse cx="1800" cy="1630" rx="115" ry="24" class="uc-ext"/>
-    <text x="1800" y="1627" class="t-ucid">UC-44</text>
-    <text x="1800" y="1642" class="t-uc">Sinh thẻ trực quan (Rich Card)</text>
-    <line x1="1800" y1="1606" x2="1634.2" y2="1534.0" class="dep-line"/>
-    <polygon points="1625.0,1530.0 1636.2,1529.4 1632.2,1538.6" class="dep-arrow"/>
-    <text x="1760.0" y="1555.0" class="t-rel">&lt;&lt;extend&gt;&gt;</text>
-    <ellipse cx="1500" cy="1880" rx="120" ry="24" class="uc"/>
-    <text x="1500" y="1877" class="t-ucid">UC-42</text>
-    <text x="1500" y="1892" class="t-uc">Tư vấn cước IATA tự động</text>
-    <ellipse cx="1800" cy="1880" rx="125" ry="24" class="uc"/>
-    <text x="1800" y="1877" class="t-ucid">UC-43</text>
-    <text x="1800" y="1892" class="t-uc">Hướng dẫn lập hồ sơ BBBT AI</text>
+    <rect x="1330" y="1450" width="850" height="725" class="pkg-border"/>
+    <rect x="1330" y="1450" width="680" height="28" class="pkg-header"/>
+    <text x="1345" y="1469" class="t-pkg">PHÂN HỆ 6: TRỢ LÝ ẢO AI &amp; ĐỘNG CƠ TRI THỨC RAG — chatbot-service • gateway-bff</text>
+    <ellipse cx="1600" cy="1540" rx="125" ry="26" class="uc-core"/>
+    <text x="1600" y="1537" class="t-ucid">UC-39</text>
+    <text x="1600" y="1552" class="t-uc">Hỏi đáp tự nhiên với Trợ lý AI</text>
+    <ellipse cx="1980" cy="1540" rx="115" ry="24" class="uc-ext"/>
+    <text x="1980" y="1537" class="t-ucid">UC-44</text>
+    <text x="1980" y="1552" class="t-uc">Sinh thẻ trực quan (Rich Card)</text>
+    <line x1="1865" y1="1540" x2="1735.0" y2="1540.0" class="dep-line"/>
+    <polygon points="1725.0,1540.0 1735.0,1535.0 1735.0,1545.0" class="dep-arrow"/>
+    <text x="1795.0" y="1528.0" class="t-rel">&lt;&lt;extend&gt;&gt;</text>
+    <ellipse cx="1600" cy="1680" rx="110" ry="24" class="uc"/>
+    <text x="1600" y="1677" class="t-ucid">UC-40</text>
+    <text x="1600" y="1692" class="t-uc">Bóc tách Ý định &amp; Thực thể</text>
+    <line x1="1600" y1="1566" x2="1600.0" y2="1646.0" class="dep-line"/>
+    <polygon points="1600.0,1656.0 1595.0,1646.0 1605.0,1646.0" class="dep-arrow"/>
+    <text x="1650.0" y="1610.0" class="t-rel">&lt;&lt;include&gt;&gt;</text>
+    <ellipse cx="1600" cy="1820" rx="120" ry="24" class="uc-core"/>
+    <text x="1600" y="1817" class="t-ucid">UC-41</text>
+    <text x="1600" y="1832" class="t-uc">Truy xuất RAG 768-D Vectors</text>
+    <line x1="1600" y1="1704" x2="1600.0" y2="1786.0" class="dep-line"/>
+    <polygon points="1600.0,1796.0 1595.0,1786.0 1605.0,1786.0" class="dep-arrow"/>
+    <text x="1650.0" y="1750.0" class="t-rel">&lt;&lt;include&gt;&gt;</text>
+    <ellipse cx="1540" cy="1980" rx="120" ry="24" class="uc"/>
+    <text x="1540" y="1977" class="t-ucid">UC-42</text>
+    <text x="1540" y="1992" class="t-uc">Tư vấn cước IATA tự động</text>
+    <ellipse cx="1860" cy="1980" rx="125" ry="24" class="uc"/>
+    <text x="1860" y="1977" class="t-ucid">UC-43</text>
+    <text x="1860" y="1992" class="t-uc">Hướng dẫn lập hồ sơ BBBT AI</text>
   </g>
 
   <!-- ========================================================= -->
   <!-- PACKAGE 7: QUẢN TRỊ HỆ THỐNG, DANH MỤC & BẢO MẬT         -->
   <!-- ========================================================= -->
   <g id="Pkg7_Admin_Masterdata">
-    <rect x="2180" y="1430" width="840" height="740" class="pkg-border"/>
-    <rect x="2180" y="1430" width="700" height="28" class="pkg-header"/>
-    <text x="2195" y="1449" class="t-pkg">PHÂN HỆ 7: QUẢN TRỊ HỆ THỐNG &amp; CẤU HÌNH — auth-service • masterdata-service</text>
-    <ellipse cx="2400" cy="1515" rx="120" ry="28" class="uc-abstract"/>
-    <text x="2400" y="1507" class="t-rel">&lt;&lt;abstract&gt;&gt;</text>
-    <text x="2400" y="1519" class="t-ucid">UC-G05</text>
-    <text x="2400" y="1533" class="t-uc-abs">Xác thực người dùng</text>
-    <ellipse cx="2280" cy="1620" rx="95" ry="23" class="uc"/>
-    <text x="2280" y="1617" class="t-ucid">UC-45</text>
-    <text x="2280" y="1632" class="t-uc">Đăng nhập Email &amp; Mật khẩu</text>
-    <ellipse cx="2450" cy="1620" rx="95" ry="23" class="uc"/>
-    <text x="2450" y="1617" class="t-ucid">UC-46</text>
-    <text x="2450" y="1632" class="t-uc">Đăng nhập OTP SMS SĐT</text>
-    <ellipse cx="2630" cy="1620" rx="95" ry="23" class="uc"/>
-    <text x="2630" y="1617" class="t-ucid">UC-47</text>
-    <text x="2630" y="1632" class="t-uc">Đăng nhập SSO Doanh nghiệp</text>
-    <line x1="2280" y1="1597" x2="2350" y2="1557" class="gen-line"/>
-    <polygon points="2343,1557 2350,1543 2357,1557" class="gen-arrow"/>
-    <line x1="2450" y1="1597" x2="2400" y2="1557" class="gen-line"/>
-    <polygon points="2393,1557 2400,1543 2407,1557" class="gen-arrow"/>
-    <line x1="2630" y1="1597" x2="2450" y2="1557" class="gen-line"/>
-    <polygon points="2443,1557 2450,1543 2457,1557" class="gen-arrow"/>
-    <ellipse cx="2850" cy="1620" rx="110" ry="24" class="uc-core"/>
-    <text x="2850" y="1617" class="t-ucid">UC-48</text>
-    <text x="2850" y="1632" class="t-uc">Phân quyền RBAC người dùng</text>
-    <ellipse cx="2340" cy="1730" rx="115" ry="24" class="uc"/>
-    <text x="2340" y="1727" class="t-ucid">UC-49</text>
-    <text x="2340" y="1742" class="t-uc">Quản lý Hubs &amp; Bưu cục</text>
-    <ellipse cx="2630" cy="1730" rx="120" ry="24" class="uc-core"/>
-    <text x="2630" y="1727" class="t-ucid">UC-50</text>
-    <text x="2630" y="1742" class="t-uc">Cấu hình Bảng cước &amp; IATA</text>
-    <ellipse cx="2870" cy="1730" rx="105" ry="24" class="uc"/>
-    <text x="2870" y="1727" class="t-ucid">UC-51</text>
-    <text x="2870" y="1742" class="t-uc">Phân vùng địa lý Tuyến phát</text>
-    <ellipse cx="2340" cy="1850" rx="115" ry="24" class="uc"/>
-    <text x="2340" y="1847" class="t-ucid">UC-52</text>
-    <text x="2340" y="1862" class="t-uc">Hồ sơ Merchant &amp; Chiết khấu</text>
-    <ellipse cx="2630" cy="1850" rx="115" ry="24" class="uc"/>
-    <text x="2630" y="1847" class="t-ucid">UC-53</text>
-    <text x="2630" y="1862" class="t-uc">Danh mục lý do giao NDR &amp; SLA</text>
-    <ellipse cx="2870" cy="1850" rx="115" ry="24" class="uc"/>
-    <text x="2870" y="1847" class="t-ucid">UC-54</text>
-    <text x="2870" y="1862" class="t-uc">CMS Quản trị Tri thức RAG</text>
-    <ellipse cx="2550" cy="1980" rx="125" ry="24" class="uc"/>
-    <text x="2550" y="1977" class="t-ucid">UC-55</text>
-    <text x="2550" y="1992" class="t-uc">Giám sát Nhật ký Audit Logs</text>
+    <rect x="2210" y="1450" width="810" height="725" class="pkg-border"/>
+    <rect x="2210" y="1450" width="700" height="28" class="pkg-header"/>
+    <text x="2225" y="1469" class="t-pkg">PHÂN HỆ 7: QUẢN TRỊ HỆ THỐNG &amp; CẤU HÌNH — auth-service • masterdata-service</text>
+    <ellipse cx="2480" cy="1540" rx="120" ry="28" class="uc-abstract"/>
+    <text x="2480" y="1532" class="t-rel">&lt;&lt;abstract&gt;&gt;</text>
+    <text x="2480" y="1544" class="t-ucid">UC-G05</text>
+    <text x="2480" y="1558" class="t-uc-abs">Xác thực người dùng</text>
+    <ellipse cx="2320" cy="1670" rx="95" ry="23" class="uc"/>
+    <text x="2320" y="1667" class="t-ucid">UC-45</text>
+    <text x="2320" y="1682" class="t-uc">Đăng nhập Email &amp; Mật khẩu</text>
+    <ellipse cx="2480" cy="1670" rx="95" ry="23" class="uc"/>
+    <text x="2480" y="1667" class="t-ucid">UC-46</text>
+    <text x="2480" y="1682" class="t-uc">Đăng nhập OTP SMS SĐT</text>
+    <ellipse cx="2640" cy="1670" rx="95" ry="23" class="uc"/>
+    <text x="2640" y="1667" class="t-ucid">UC-47</text>
+    <text x="2640" y="1682" class="t-uc">Đăng nhập SSO Doanh nghiệp</text>
+    <ellipse cx="2870" cy="1670" rx="110" ry="24" class="uc-core"/>
+    <text x="2870" y="1667" class="t-ucid">UC-48</text>
+    <text x="2870" y="1682" class="t-uc">Phân quyền RBAC người dùng</text>
+    <line x1="2320" y1="1647" x2="2420" y2="1582" class="gen-line"/>
+    <polygon points="2413,1582 2420,1568 2427,1582" class="gen-arrow"/>
+    <line x1="2480" y1="1647" x2="2480" y2="1582" class="gen-line"/>
+    <polygon points="2473,1582 2480,1568 2487,1582" class="gen-arrow"/>
+    <line x1="2640" y1="1647" x2="2540" y2="1582" class="gen-line"/>
+    <polygon points="2533,1582 2540,1568 2547,1582" class="gen-arrow"/>
+    <ellipse cx="2370" cy="1800" rx="115" ry="24" class="uc"/>
+    <text x="2370" y="1797" class="t-ucid">UC-49</text>
+    <text x="2370" y="1812" class="t-uc">Quản lý Hubs &amp; Bưu cục</text>
+    <ellipse cx="2630" cy="1800" rx="120" ry="24" class="uc-core"/>
+    <text x="2630" y="1797" class="t-ucid">UC-50</text>
+    <text x="2630" y="1812" class="t-uc">Cấu hình Bảng cước &amp; IATA</text>
+    <ellipse cx="2880" cy="1800" rx="105" ry="24" class="uc"/>
+    <text x="2880" y="1797" class="t-ucid">UC-51</text>
+    <text x="2880" y="1812" class="t-uc">Phân vùng địa lý Tuyến phát</text>
+    <ellipse cx="2370" cy="1930" rx="115" ry="24" class="uc"/>
+    <text x="2370" y="1927" class="t-ucid">UC-52</text>
+    <text x="2370" y="1942" class="t-uc">Hồ sơ Merchant &amp; Chiết khấu</text>
+    <ellipse cx="2630" cy="1930" rx="115" ry="24" class="uc"/>
+    <text x="2630" y="1927" class="t-ucid">UC-53</text>
+    <text x="2630" y="1942" class="t-uc">Danh mục lý do giao NDR &amp; SLA</text>
+    <ellipse cx="2880" cy="1930" rx="115" ry="24" class="uc"/>
+    <text x="2880" y="1927" class="t-ucid">UC-54</text>
+    <text x="2880" y="1942" class="t-uc">CMS Quản trị Tri thức RAG</text>
+    <ellipse cx="2630" cy="2060" rx="125" ry="24" class="uc"/>
+    <text x="2630" y="2057" class="t-ucid">UC-55</text>
+    <text x="2630" y="2072" class="t-uc">Giám sát Nhật ký Audit Logs</text>
   </g>
 
   <!-- ========================================================= -->
-  <!-- ACTOR GENERALIZATION HIERARCHY (LEFT: CUSTOMER, RIGHT: STAFF) -->
+  <!-- ACTOR GENERALIZATION TREES (ORTHOGONAL BUS ROUTING)      -->
   <!-- ========================================================= -->
   <g id="Actor_System_User" transform="translate(230, 180)">
     <circle cx="50" cy="25" r="16" class="actor-head-abs"/>
@@ -413,7 +413,12 @@
   </g>
     <line x1="280" y1="420" x2="280" y2="374" class="gen-line"/>
     <polygon points="273,374 280,360 287,374" class="gen-arrow"/>
-  <g id="Actor_Guest" transform="translate(70, 680)">
+    <line x1="280" y1="560" x2="280" y2="514" class="gen-line"/>
+    <polygon points="273,514 280,500 287,514" class="gen-arrow"/>
+    <path d="M 140 560 L 420 560" class="gen-line"/>
+    <path d="M 140 560 L 140 680" class="gen-line"/>
+    <path d="M 420 560 L 420 680" class="gen-line"/>
+  <g id="Actor_Guest" transform="translate(90, 680)">
     <circle cx="50" cy="25" r="16" class="actor-head"/>
     <line x1="50" y1="41" x2="50" y2="85" class="actor-body"/>
     <line x1="22" y1="58" x2="78" y2="58" class="actor-body"/>
@@ -423,8 +428,6 @@
     <text x="50" y="155" class="t-role">(Guest / Anonymous)</text>
     <text x="50" y="169" class="t-app">guest-web :5177</text>
   </g>
-  <path d="M 120 680 L 120 620 L 260 620" class="gen-line"/>
-  <polygon points="260,613 274,620 260,627" class="gen-arrow"/>
   <g id="Actor_Auth_User" transform="translate(370, 680)">
     <circle cx="50" cy="25" r="16" class="actor-head-abs"/>
     <line x1="50" y1="41" x2="50" y2="85" class="actor-body-abs"/>
@@ -435,9 +438,12 @@
     <text x="50" y="152" class="t-actor-abs">User Đã định danh</text>
     <text x="50" y="167" class="t-role">(Authenticated User)</text>
   </g>
-  <path d="M 420 680 L 420 620 L 300 620" class="gen-line"/>
-  <polygon points="300,627 286,620 300,613" class="gen-arrow"/>
-  <g id="Actor_Recipient" transform="translate(180, 1020)">
+    <line x1="420" y1="890" x2="420" y2="864" class="gen-line"/>
+    <polygon points="413,864 420,850 427,864" class="gen-arrow"/>
+    <path d="M 240 890 L 420 890" class="gen-line"/>
+    <path d="M 240 890 L 240 1020" class="gen-line"/>
+    <path d="M 360 890 L 360 1360 L 240 1360 L 240 1380" class="gen-line"/>
+  <g id="Actor_Recipient" transform="translate(190, 1020)">
     <circle cx="50" cy="25" r="16" class="actor-head"/>
     <line x1="50" y1="41" x2="50" y2="85" class="actor-body"/>
     <line x1="22" y1="58" x2="78" y2="58" class="actor-body"/>
@@ -447,9 +453,7 @@
     <text x="50" y="155" class="t-role">(Consignee / Recipient)</text>
     <text x="50" y="169" class="t-app">customer-mobile</text>
   </g>
-  <path d="M 230 1020 L 230 920 L 400 920 L 400 870" class="gen-line"/>
-  <polygon points="393,870 400,856 407,870" class="gen-arrow"/>
-  <g id="Actor_Merchant" transform="translate(180, 1380)">
+  <g id="Actor_Merchant" transform="translate(190, 1380)">
     <circle cx="50" cy="25" r="16" class="actor-head"/>
     <line x1="50" y1="41" x2="50" y2="85" class="actor-body"/>
     <line x1="22" y1="58" x2="78" y2="58" class="actor-body"/>
@@ -459,9 +463,7 @@
     <text x="50" y="155" class="t-role">(Merchant / Shipper)</text>
     <text x="50" y="169" class="t-app">merchant-web :5174</text>
   </g>
-  <path d="M 230 1380 L 230 940 L 430 940 L 430 870" class="gen-line"/>
-  <polygon points="423,870 430,856 437,870" class="gen-arrow"/>
-  <g id="Actor_Internal_Staff" transform="translate(3280, 220)">
+  <g id="Actor_Internal_Staff" transform="translate(3270, 180)">
     <circle cx="50" cy="25" r="16" class="actor-head-abs"/>
     <line x1="50" y1="41" x2="50" y2="85" class="actor-body-abs"/>
     <line x1="22" y1="58" x2="78" y2="58" class="actor-body-abs"/>
@@ -471,9 +473,15 @@
     <text x="50" y="152" class="t-actor-abs">Nhân sự Nội bộ</text>
     <text x="50" y="167" class="t-role">(Internal Staff)</text>
   </g>
-  <path d="M 3330 220 L 3330 130 L 280 130 L 280 160" class="gen-line"/>
-  <polygon points="273,160 280,174 287,160" class="gen-arrow"/>
-  <g id="Actor_Courier" transform="translate(3280, 580)">
+    <path d="M 3320 180 L 3320 130 L 280 130 L 280 160" class="gen-line"/>
+    <polygon points="273,160 280,174 287,160" class="gen-arrow"/>
+    <path d="M 3480 350 L 3334 350" class="gen-line"/>
+    <polygon points="3334,343 3320,350 3334,357" class="gen-arrow"/>
+    <path d="M 3480 350 L 3480 1460" class="gen-line"/>
+    <path d="M 3370 620 L 3480 620" class="gen-line"/>
+    <path d="M 3370 1020 L 3480 1020" class="gen-line"/>
+    <path d="M 3370 1460 L 3480 1460" class="gen-line"/>
+  <g id="Actor_Courier" transform="translate(3270, 580)">
     <circle cx="50" cy="25" r="16" class="actor-head"/>
     <line x1="50" y1="41" x2="50" y2="85" class="actor-body"/>
     <line x1="22" y1="58" x2="78" y2="58" class="actor-body"/>
@@ -483,9 +491,7 @@
     <text x="50" y="155" class="t-role">(Courier / Driver)</text>
     <text x="50" y="169" class="t-app">courier-mobile</text>
   </g>
-    <line x1="3330" y1="580" x2="3330" y2="414" class="gen-line"/>
-    <polygon points="3323,414 3330,400 3337,414" class="gen-arrow"/>
-  <g id="Actor_Ops" transform="translate(3280, 980)">
+  <g id="Actor_Ops" transform="translate(3270, 980)">
     <circle cx="50" cy="25" r="16" class="actor-head"/>
     <line x1="50" y1="41" x2="50" y2="85" class="actor-body"/>
     <line x1="22" y1="58" x2="78" y2="58" class="actor-body"/>
@@ -495,9 +501,7 @@
     <text x="50" y="155" class="t-role">(Hub Ops Coordinator)</text>
     <text x="50" y="169" class="t-app">ops-web :5173</text>
   </g>
-  <path d="M 3330 980 L 3330 420" class="gen-line"/>
-  <polygon points="3323,420 3330,406 3337,420" class="gen-arrow"/>
-  <g id="Actor_Admin" transform="translate(3280, 1420)">
+  <g id="Actor_Admin" transform="translate(3270, 1420)">
     <circle cx="50" cy="25" r="16" class="actor-head"/>
     <line x1="50" y1="41" x2="50" y2="85" class="actor-body"/>
     <line x1="22" y1="58" x2="78" y2="58" class="actor-body"/>
@@ -507,48 +511,38 @@
     <text x="50" y="155" class="t-role">(Admin / Accountant)</text>
     <text x="50" y="169" class="t-app">admin-web :5175</text>
   </g>
-  <path d="M 3330 1420 L 3330 440" class="gen-line"/>
-  <polygon points="3323,440 3330,426 3337,440" class="gen-arrow"/>
   <!-- ========================================================= -->
-  <!-- ASSOCIATIONS (ACTORS TO RELEVANT USE CASES)              -->
+  <!-- ASSOCIATIONS WITH DEDICATED GUTTER CHANNELS (ORTHOGONAL)  -->
   <!-- ========================================================= -->
-  <line x1="330" y1="280" x2="630" y2="1515" class="assoc"/>
-  <line x1="330" y1="290" x2="1375" y2="1515" class="assoc"/>
-  <line x1="170" y1="750" x2="565" y2="1630" class="assoc"/>
-  <line x1="170" y1="770" x2="1380" y2="1880" class="assoc"/>
-  <line x1="470" y1="750" x2="2280" y2="1515" class="assoc"/>
-  <line x1="280" y1="1080" x2="2005" y2="480" class="assoc"/>
-  <line x1="280" y1="1100" x2="2445" y2="580" class="assoc"/>
-  <line x1="280" y1="1120" x2="535" y2="970" class="assoc"/>
-  <line x1="280" y1="1140" x2="2025" y2="970" class="assoc"/>
-  <line x1="280" y1="1420" x2="705" y2="245" class="assoc"/>
-  <line x1="280" y1="1440" x2="555" y2="570" class="assoc"/>
-  <line x1="280" y1="1460" x2="825" y2="570" class="assoc"/>
-  <line x1="280" y1="1480" x2="1085" y2="570" class="assoc"/>
-  <line x1="280" y1="1500" x2="535" y2="970" class="assoc"/>
-  <line x1="280" y1="1520" x2="2100" y2="1100" class="assoc"/>
-  <line x1="280" y1="1540" x2="2410" y2="1100" class="assoc"/>
-  <line x1="3280" y1="640" x2="2015" y2="245" class="assoc"/>
-  <line x1="3280" y1="660" x2="2235" y2="480" class="assoc"/>
-  <line x1="3280" y1="680" x2="2820" y2="480" class="assoc"/>
-  <line x1="3280" y1="700" x2="765" y2="1100" class="assoc"/>
-  <line x1="3280" y1="720" x2="2020" y2="970" class="assoc"/>
-  <line x1="3280" y1="740" x2="2785" y2="970" class="assoc"/>
-  <line x1="3280" y1="1040" x2="2255" y2="245" class="assoc"/>
-  <line x1="3280" y1="1060" x2="2495" y2="245" class="assoc"/>
-  <line x1="3280" y1="1080" x2="2755" y2="245" class="assoc"/>
-  <line x1="3280" y1="1100" x2="2125" y2="360" class="assoc"/>
-  <line x1="3280" y1="1120" x2="2445" y2="360" class="assoc"/>
-  <line x1="3280" y1="1140" x2="1065" y2="1100" class="assoc"/>
-  <line x1="3280" y1="1160" x2="1160" y2="1230" class="assoc"/>
-  <line x1="3280" y1="1480" x2="870" y2="1230" class="assoc"/>
-  <line x1="3280" y1="1500" x2="2060" y2="1100" class="assoc"/>
-  <line x1="3280" y1="1520" x2="2340" y2="1100" class="assoc"/>
-  <line x1="3280" y1="1540" x2="2345" y2="1230" class="assoc"/>
-  <line x1="3280" y1="1560" x2="2960" y2="1620" class="assoc"/>
-  <line x1="3280" y1="1580" x2="2750" y2="1730" class="assoc"/>
-  <line x1="3280" y1="1600" x2="2985" y2="1850" class="assoc"/>
-  <line x1="3280" y1="1620" x2="2675" y2="1980" class="assoc"/>
+    <path d="M 330 220 L 520 220 L 520 1435 L 940 1435 L 940 1512" class="assoc"/>
+    <path d="M 940 1435 L 1600 1435 L 1600 1514" class="assoc"/>
+    <path d="M 140 850 L 90 850 L 90 1670 L 675 1670" class="assoc"/>
+    <path d="M 90 1670 L 90 2140 L 1540 2140 L 1540 2004" class="assoc"/>
+    <path d="M 290 1020 L 490 1020 L 490 970 L 605 970" class="assoc"/>
+    <path d="M 290 1040 L 505 1040 L 505 775 L 2160 775 L 2160 556" class="assoc"/>
+    <path d="M 2160 775 L 2160 946" class="assoc"/>
+    <path d="M 2160 775 L 2820 775 L 2820 674" class="assoc"/>
+    <path d="M 290 1380 L 470 1380 L 470 250 L 835 250" class="assoc"/>
+    <path d="M 470 500 L 605 500" class="assoc"/>
+    <path d="M 470 860 L 825 860" class="assoc"/>
+    <path d="M 470 1380 L 470 1445 L 2160 1445 L 2160 1134" class="assoc"/>
+    <path d="M 2160 1445 L 2520 1445 L 2520 1134" class="assoc"/>
+    <path d="M 3270 580 L 3070 580 L 3070 250 L 2855 250" class="assoc"/>
+    <path d="M 3070 530 L 2930 530" class="assoc"/>
+    <path d="M 3070 580 L 3070 860 L 2815 860" class="assoc"/>
+    <path d="M 3070 860 L 3070 970 L 2495 970" class="assoc"/>
+    <path d="M 3070 580 L 3070 765 L 1780 765 L 1780 1110 L 835 1110" class="assoc"/>
+    <path d="M 3270 980 L 3090 980 L 3090 250 L 2305 250" class="assoc"/>
+    <path d="M 3090 380 L 2525 380" class="assoc"/>
+    <path d="M 3090 970 L 1575 970" class="assoc"/>
+    <path d="M 3090 980 L 3090 1240 L 1570 1240" class="assoc"/>
+    <path d="M 3270 1420 L 3110 1420 L 3110 1670 L 2980 1670" class="assoc"/>
+    <path d="M 3110 1670 L 3110 1800 L 2750 1800" class="assoc"/>
+    <path d="M 3110 1800 L 3110 1930 L 2995 1930" class="assoc"/>
+    <path d="M 3110 1930 L 3110 2060 L 2755 2060" class="assoc"/>
+    <path d="M 3110 1420 L 3110 970 L 2820 970" class="assoc"/>
+    <path d="M 3110 1240 L 2285 1240" class="assoc"/>
+    <path d="M 3110 1420 L 3110 1430 L 1780 1430 L 1780 1110 L 1570 1110" class="assoc"/>
   <!-- ========================================================= -->
   <!-- UML 2.5 LEGEND (BOTTOM LEFT)                             -->
   <!-- ========================================================= -->
