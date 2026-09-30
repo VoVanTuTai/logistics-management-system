@@ -3,339 +3,340 @@
 > **Tài liệu Phân tích Nghiệp vụ Phần mềm (Business Analysis & System Requirements Specification - BA/SRS)**  
 > **Dự án:** Hệ thống Quản trị & Vận hành Logistics Đa kênh Nexus Enterprise (Nexus Enterprise Logistics Platform)  
 > **Tiêu chuẩn chất lượng phần mềm:** IEEE 830 / ISO/IEC 25010 / UML 2.5 Specification (Object Management Group - OMG)  
-> **Sơ đồ Vector Blueprint tham chiếu:** [`01-use-case-general-system.svg`](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/figma-page-1-system-and-data/diagrams/01-use-case-general-system.svg)  
-> **Phiên bản:** 6.0 (Definitive Production Alignment — Ánh xạ 1:1 chuẩn xác 100% với Codebase đã triển khai & Sơ đồ REV.11)
+> **Cơ sở dữ liệu kiểm chứng:** File đặc tả chức năng thực tế [`Danh_sach_chuc_nang_theo_Actor.xlsx`](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/figma-page-1-system-and-data/diagrams/Danh_sach_chuc_nang_theo_Actor.xlsx) (Sheet `Danh sach chuc nang`)  
+> **Sơ đồ Vector Blueprint tham chiếu:** [`01-use-case-general-system.svg`](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/figma-page-1-system-and-data/diagrams/01-use-case-general-system.svg) (Bản vẽ REV.16)  
+> **Phiên bản tài liệu:** 7.0 (Definitive Production Alignment — Khớp chuẩn 1:1 toàn bộ 80 chức năng thực có, 7 Tác nhân, 6 Phân hệ nghiệp vụ & Cổng Xác thực Trung tâm)
 
 ---
 
 ## 1. CƠ SỞ KHOA HỌC & KIẾN TRÚC PHẦN MỀM TỔNG THỂ
 
 Hệ thống **Nexus Enterprise Logistics Platform** là giải pháp nền tảng phục vụ chuỗi cung ứng thương mại điện tử đa kênh và chuyển phát bưu chính liên tỉnh. Toàn bộ các chức năng và tác nhân được thiết kế, kiểm thử và ánh xạ 1:1 với hiện trạng mã nguồn thực tế:
-- **15 Backend Microservices** vận hành trên nền tảng NestJS, Prisma ORM, cơ sở dữ liệu PostgreSQL, message broker RabbitMQ và bộ đệm Redis:
-  1. `gateway-bff (:3000)`: API Gateway trung tâm, điều phối xác thực, PII Sanitizer và AI streaming.
-  2. `auth-service (:3001)`: Quản lý phiên làm việc Opaque Bearer token, RBAC, tài khoản và audit logs.
-  3. `masterdata-service (:3002)`: Danh mục bưu cục Hubs, phân vùng zones, cấu hình hệ thống, bài viết chính sách CMS, hồ sơ merchant và lý do NDR.
-  4. `pricing-service (:3003)`: Động cơ tính cước IATA, thể tích quy đổi $VW = (D \times R \times C)/5000$, phụ phí và bảo hiểm.
-  5. `shipment-service (:3004)`: Vòng đời vận đơn, yêu cầu thay đổi (change requests), khiếu nại bồi thường (claims) và điều tra tranh chấp (investigations).
-  6. `pickup-service (:3005)`: Quản lý lịch hẹn lấy hàng tận nơi từ người gửi / Merchant.
-  7. `scan-service (:3006)`: Quét mã vạch tiếp nhận gom hàng, Inbound, Outbound và viễn trắc GPS thời gian thực.
-  8. `manifest-service (:3007)`: Đóng gói bao tải trung chuyển Manifest, niêm chì điện tử và đối kiểm đầu tuyến.
-  9. `dispatch-service (:3008)`: Phân chia task vận chuyển theo ca và thuật toán tối ưu hóa tuyến đường giao.
-  10. `delivery-service (:3010)`: Vận hành giao hàng chặng cuối (last-mile), e-POD, báo thất bại NDR, hẹn lại ngày và chuyển hoàn RTS.
-  11. `payment-service (:3009)`: Thu hộ COD mặt, tạo mã VietQR động, webhook ngân hàng SePay, quyết toán ca và bảng kê settlement.
-  12. `tracking-service (:3011)`: Lộ trình bưu gửi công khai (khử PII Masking) và viễn trắc nội bộ (full telemetry audit).
-  13. `reporting-service (:3012)`: Báo cáo dòng tiền, báo cáo vận hành kho bãi và hiệu suất giao hàng.
-  14. `chatbot-service (:3013)`: Động cơ phân loại ý định (Intent), trích xuất thực thể, RAG 768-D Semantic pgvector và sinh thẻ Rich Card.
-  15. `notification-service (:3014)`: Quản lý thông báo đa kênh thời gian thực.
-- **06 Ứng dụng Client (Frontend / Mobile)** phục vụ từng nhóm tác nhân chuyên biệt:
-  1. `guest-web (:5174)`: Cổng tra cứu công khai, hỏi đáp AI và đăng ký tài khoản khách.
-  2. `customer-mobile (:8082)`: Ứng dụng di động dành cho Khách hàng (tra cứu, ký e-POD, thanh toán VietQR SePay, khiếu nại sự cố 24h).
-  3. `merchant-web (:5176)`: Cổng thông tin dành cho Chủ Shop / Người gửi (tạo đơn Portal/Webhook, in mã vạch, quản lý đơn, yêu cầu pickup).
-  4. `courier-mobile (:8081)`: Ứng dụng dành cho Bưu tá giao nhận (quét gom, giao hàng e-POD, thu tiền mặt COD, quyết toán ca nộp tiền).
-  5. `ops-web (:5175)`: Cổng điều hành dành cho Nhân sự Bưu cục & Kho (quét Inbound/Outbound, đóng Manifest, phân tuyến, đối soát COD).
-  6. `admin-web (:5173)`: Cổng quản trị dành cho System Admin (RBAC Matrix, danh mục Hubs/Zones, cấu hình SLA, audit logs, CMS bài viết).
+
+### 1.1. Mạng lưới 15 Backend Microservices
+1. `gateway-bff (:3000)`: API Gateway trung tâm, điều phối xác thực, PII Sanitizer và AI streaming.
+2. `auth-service (:3001)`: Quản lý phiên làm việc Opaque Bearer token, RBAC, tài khoản và audit logs.
+3. `masterdata-service (:3002)`: Danh mục bưu cục Hubs 4 cấp, phân vùng zones, cấu hình hệ thống, hồ sơ merchant và danh mục lý do NDR.
+4. `pricing-service (:3003)`: Động cơ tính cước IATA, thể tích quy đổi $VW = (D \times R \times C)/6000$, phụ phí và bảo hiểm.
+5. `shipment-service (:3004)`: Vòng đời vận đơn, yêu cầu sửa đổi thông tin (change requests), hủy đơn, và in phiếu gửi A6/A7/hàng loạt.
+6. `pickup-service (:3005)`: Quản lý lịch hẹn lấy hàng tận nơi từ người gửi / Merchant.
+7. `scan-service (:3006)`: Quét mã vạch tiếp nhận gom hàng, Inbound, Outbound và viễn trắc GPS thời gian thực.
+8. `manifest-service (:3007)`: Đóng gói bao tải trung chuyển Manifest, niêm kẹp chì an ninh và cấp tem niêm phong xe tải `XT`.
+9. `dispatch-service (:3008)`: Phân công ca vận chuyển, gán việc shipper lấy & phát, và tối ưu hóa tuyến đường giao.
+10. `delivery-service (:3010)`: Vận hành giao hàng chặng cuối (last-mile), e-POD, chụp ảnh & chữ ký số, xác thực OTP 6 số, báo thất bại NDR và chuyển hoàn RTS.
+11. `payment-service (:3009)`: Thu hộ COD tiền mặt, nộp tiền VietQR động, webhook ngân hàng SePay, quyết toán ca và giải ngân đối soát.
+12. `tracking-service (:3011)`: Lộ trình bưu gửi công khai (khử PII Masking) và viễn trắc nội bộ (full telemetry audit).
+13. `reporting-service (:3012)`: Báo cáo dòng tiền, lịch sử đối soát SePay/VietQR, khấu trừ cước hoàn phân tầng và hiệu suất vận hành.
+14. `chatbot-service (:3013)`: Động cơ phân loại ý định (Intent), trích xuất thực thể, Hybrid RAG 768-D Vector Embeddings, 5 Dynamic Tools, Fallback Google Gemini 3 Flash / OpenAI GPT-4o-mini, và SSE Streaming.
+15. `notification-service (:3014)`: Quản lý thông báo đa kênh thời gian thực qua Webhook và SSE.
+
+### 1.2. Mạng lưới 06 Ứng dụng Client (Frontend / Mobile)
+1. `guest-web (:5177)`: Cổng tra cứu công khai, ước tính cước IATA, hỏi đáp AI Chatbot và tạo đơn vãng lai.
+2. `customer-mobile (:8082)`: Ứng dụng di động dành cho Khách hàng cá nhân C-End (tạo đơn gửi lẻ, quản lý sổ địa chỉ, tra cứu realtime, xác thực OTP 6 số).
+3. `merchant-web (:5174)`: Cổng thông tin dành cho Chủ Shop B2B (tạo đơn Web Portal, in phiếu A6/A7, in hàng loạt, quản lý đơn, đặt pickup, đối soát COD).
+4. `courier-mobile (:8081)`: Ứng dụng dành cho Bưu tá giao nhận (quản lý nhiệm vụ ngày, scan pickup, liên hệ người nhận, xác thực OTP, chụp ảnh POD & chữ ký, xác nhận giao thành công, báo cáo NDR, thu COD tiền mặt, nộp tiền VietQR).
+5. `ops-web (:5173)`: Cổng điều hành dành cho Nhân sự Bưu cục & Hub (Dashboard thời gian thực, tra cứu nội bộ, tạo đơn tại quầy, duyệt pickup, gán việc shipper, manifest & đóng bao, seal kẹp chì, xe Linehaul, tem XT, xuất kho Outbound, nhập kho Inbound, gỡ bao chia chọn, handoff bưu tá, xử lý NDR, đối soát giải ngân COD, duyệt quyết toán thủ công).
+6. `admin-web (:5175)`: Cổng quản trị dành cho System Admin (quản trị tài khoản toàn hệ thống, phân công nhân sự & tuyến, RBAC Matrix, permission override mobile, Hubs 4 cấp, Zones địa lý, danh mục lý do NDR, cấu hình tham số hệ thống, kiểm toán nhật ký Audit Log).
 
 ---
 
-## 2. DANH MỤC 6 TÁC NHÂN THỰC TẾ TRÊN HỆ THỐNG (6 REAL ACTORS)
+## 2. DANH MỤC 7 TÁC NHÂN THỰC TẾ TRÊN HỆ THỐNG (7 REAL ACTORS)
 
-Hệ thống tuân thủ nghiêm ngặt nguyên tắc **bám sát 100% mã nguồn thực tế đã triển khai**, không sử dụng các tác nhân trừu tượng, chung chung:
-
-```
-┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                              6 ROLES THỰC TẾ TRÊN HỆ THỐNG NEXUS ENTERPRISE                           │
-├────────────────────────────────────────────────────┬───────────────────────────────────────────────────┤
-│ NHÓM ĐỐI TÁC & NGƯỜI DÙNG NGOẠI VI (EXTERNAL)      │ NHÓM VẬN HÀNH & QUẢN TRỊ NỘI BỘ (INTERNAL)        │
-├────────────────────────────────────────────────────┼───────────────────────────────────────────────────┤
-│ 1. Khách vãng lai (GUEST)                          │ 4. Courier (Bưu tá giao nhận) (COURIER)           │
-│    • Client: guest-web (:5177)                     │    • Client: courier-mobile (:8081)               │
-│                                                    │                         ▲                         │
-│ 2. Khách hàng (CUSTOMER) ──<<generalizes>>──▷ GUEST│ 5. Ops các cấp ─────────┴──<<generalizes>>──▷ COURIER│
-│    • Client: customer-mobile (:8082)               │    • Client: ops-web (:5173) & courier-mobile    │
-│                                                    │                                                   │
-│ 3. Merchant (Chủ Shop / Người gửi) (MERCHANT)      │ 6. System Admin (Quản trị viên) (SYSTEM_ADMIN)   │
-│    • Client: merchant-web (:5174)                  │    • Client: admin-web (:5175)                    │
-└────────────────────────────────────────────────────┴───────────────────────────────────────────────────┘
-```
-
-### Bảng Phân Tích Chi Tiết 6 Tác Nhân Triển Khai Thực Tế
-
-| Tác nhân (Actor) | Mã Role Codebase | Ứng dụng Client & Port | Trách nhiệm & Quyền hạn nghiệp vụ thực tế trong Codebase |
-| :--- | :---: | :---: | :--- |
-| **Khách vãng lai** | `GUEST` | `guest-web :5177` | Khách truy cập ẩn danh không cần tài khoản. Được phép tra cứu lộ trình công khai (`UC-32`), hỏi đáp AI Chatbot (`UC-34`), nhận tư vấn cước IATA tự động (`UC-38`), và đăng ký tài khoản khách (`UC-43`). |
-| **Khách hàng** | `CUSTOMER` | `customer-mobile :8082` | Khách hàng đầu nhận bưu kiện. Kế thừa toàn bộ tính năng công khai của `GUEST` (`CUSTOMER ──▷ GUEST`). Ngoài ra có quyền tra cứu tiến trình nội bộ (`UC-33`), định vị GPS thời gian thực (`UC-36`), ký nhận điện tử e-POD (`UC-14a`), thanh toán VietQR SePay (`UC-23b`), và khởi tạo khiếu nại sự cố trong 24h (`UC-19`). |
-| **Merchant** *(Chủ Shop / Người gửi)* | `MERCHANT` | `merchant-web :5174` | Đối tác kinh doanh gửi hàng. Thực hiện tạo đơn trên Portal (`UC-01a`), đồng bộ đơn Webhook sàn TMĐT (`UC-01b`), tra cứu danh sách đơn (`UC-02`), yêu cầu lấy hàng (`UC-04`), sửa đổi thông tin đơn (`UC-05`), hủy đơn (`UC-06`), in phiếu Barcode/QR (`UC-07`). |
-| **Courier** *(Bưu tá giao nhận)* | `COURIER` | `courier-mobile :8081` | Nhân sự hiện trường chặng đầu và chặng cuối. Thực hiện quét gom hàng (`UC-08`), thực hiện chuyến phát (`UC-14`), xác thực e-POD & OTP (`UC-14a`), báo phát thất bại NDR (`UC-15`), thu tiền mặt COD (`UC-23a`), nộp tiền quyết toán ca (`UC-24`). |
-| **Ops các cấp** *(Admin bưu cục / Hub / Kho / Dispatch)* | `OPS` | `ops-web :5173` & `courier-mobile :8081` | Quản trị và vận hành toàn diện bưu cục, kho trung chuyển, phân tuyến điều phối và linehaul. Quản lý nghiệp vụ tại quầy & in tem nhiệt (`UC-08a`), tồn kho bưu cục & chốt ca (`UC-08b`), quét Inbound nhập kho (`UC-09`), quét Outbound (`UC-10`), đóng bao Manifest niêm chì (`UC-11`), nhận bao đầu tuyến (`UC-12`), phân công task & tối ưu tuyến (`UC-13`), bàn giao & chuyển đơn bưu tá (`UC-13a`), chat điều phối với bưu tá (`UC-13b`), quản lý xe Linehaul & tem chì (`UC-13c`), xử lý hàng bất thường & lạc tuyến (`UC-18`), quyết toán ca bưu tá (`UC-24`), xác nhận đối soát chốt sổ (`UC-27`), báo cáo doanh thu (`UC-28`). **Đặc biệt: Kế thừa toàn bộ quyền hạn hiện trường của Courier (`OPS ──▷ COURIER`) qua ứng dụng `courier-mobile` khi trực tiếp gom/phát hàng.** |
-| **System Admin** *(Quản trị viên hệ thống)* | `SYSTEM_ADMIN` | `admin-web :5175` | Quản trị viên cấp cao nhất. Hồ sơ cá nhân (`UC-44`), quản trị tài khoản người dùng (`UC-45`), phân quyền RBAC Matrix (`UC-46`), nhật ký kiểm toán bảo mật (`UC-47`), quản trị Hubs 4 cấp (`UC-48`), Zones địa lý (`UC-49`), cấu hình SLA (`UC-50`), CMS bài viết chính sách (`UC-51`), hồ sơ đối tác Merchant (`UC-52`), danh mục lý do NDR (`UC-53`). |
-
----
-
-## 3. DANH MỤC 59 TRƯỜNG HỢP SỬ DỤNG & CỔNG XÁC THỰC BẢO MẬT (USE CASE CATALOG)
-
-Hệ thống được tổ chức theo kiến trúc **Hub-and-Spoke Authentication**, bao gồm **Cổng Xác thực & Bảo mật Trung tâm (auth-service & gateway-bff)** và **6 Phân hệ chức năng nghiệp vụ (Packages)** với đúng **59 Trường hợp sử dụng thực tế** (phản ánh trọn vẹn nghiệp vụ của `ops-web` và các microservices):
+Hệ thống tuân thủ nghiêm ngặt nguyên tắc **bám sát 100% dữ liệu từ file Excel `Danh_sach_chuc_nang_theo_Actor.xlsx`**, chia thành 7 tác nhân với trách nhiệm và quyền hạn độc lập:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                 HỆ THỐNG QUẢN TRỊ & VẬN HÀNH LOGISTICS ĐA KÊNH NEXUS ENTERPRISE                        │
+│                                       7 TÁC NHÂN THỰC TẾ TRÊN HỆ THỐNG NEXUS LOGISTICS                                  │
+├────────────────────────────────────────────────────────┬───────────────────────────────────────────────────────────────┤
+│ NHÓM ĐỐI TÁC NGOẠI VI & NGƯỜI DÙNG CUỐI                │ NHÓM VẬN HÀNH, QUẢN TRỊ NỘI BỘ & HỆ THỐNG NỀN TẢNG            │
+├────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────┤
+│ 1. Khách Vãng Lai (GUEST)                              │ 4. Nhân Viên Vận Hành (OPS STAFF - Bưu Cục & Hub)              │
+│    • Ứng dụng: guest-web :5177                         │    • Ứng dụng: ops-web :5173 & courier-mobile                 │
+│    • Số chức năng: 9 UCs                               │    • Số chức năng: 19 UCs                                     │
+│                         ▲                              │                         │                                     │
+│                         │ <<generalizes>>              │                         ▼ <<generalizes>>                     │
+│ 2. Khách Hàng Cá Nhân (CUSTOMER C-End)                 │ 5. Nhân Viên Giao Hàng (SHIPPER - Chặng Cuối)                 │
+│    • Ứng dụng: customer-mobile :8082                   │    • Ứng dụng: courier-mobile :8081                           │
+│    • Số chức năng: 6 UCs                               │    • Số chức năng: 11 UCs                                     │
+│                                                        ├───────────────────────────────────────────────────────────────┤
+│ 3. Người Gửi Hàng (MERCHANT - Chủ Shop B2B)            │ 6. Quản Trị Viên (SYSTEM ADMIN)                               │
+│    • Ứng dụng: merchant-web :5174                      │    • Ứng dụng: admin-web :5175                                 │
+│    • Số chức năng: 15 UCs                              │    • Số chức năng: 11 UCs                                     │
+│                                                        ├───────────────────────────────────────────────────────────────┤
+│                                                        │ 7. Trợ Lý AI & Hệ Thống (SYSTEM & AI ENGINE)                  │
+│                                                        │    • Nền tảng: chatbot-service & microservices nền            │
+│                                                        │    • Số chức năng: 9 UCs                                      │
+└────────────────────────────────────────────────────────┴───────────────────────────────────────────────────────────────┘
+```
+
+### Bảng Phân Tích Chi Tiết 7 Tác Nhân
+
+| STT | Tác nhân (Actor) | Mã Role / Client App | Số UC trong Excel | Trách nhiệm & Quyền hạn nghiệp vụ thực tế |
+| :---: | :--- | :---: | :---: | :--- |
+| **1** | **Khách Vãng Lai** | `GUEST`<br>`guest-web :5177` | **9** | Người dùng vãng lai truy cập tự do không cần đăng nhập. Tra cứu trạng thái bưu kiện công khai (`UC-AI-01a`), ước tính cước phí IATA (`UC-AI-02`), tạo đơn hàng vãng lai (`UC-ORD-01c`), trò chuyện trợ lý AI 24/7 (`UC-AI-04`), thực thi 5 Dynamic Tools AI (`UC-AI-05`). |
+| **2** | **Khách Hàng Cá Nhân** | `CUSTOMER`<br>`customer-mobile :8082` | **6** | Người dùng cá nhân cài app di động. **Kế thừa toàn bộ quyền của Khách Vãng Lai (`CUSTOMER ──▷ GUEST`)**. Thực hiện tạo đơn gửi lẻ (`UC-ORD-01b`), quản lý sổ địa chỉ (`UC-ORD-08`), tra cứu hành trình realtime (`UC-AI-01b`), xác thực mã OTP 6 số nhận hàng (`UC-DEL-03`), đăng nhập bảo mật (`UC-AUTH-01`). |
+| **3** | **Người Gửi Hàng (Merchant)** | `MERCHANT`<br>`merchant-web :5174` | **15** | Chủ shop kinh doanh B2B. Đăng nhập/xuất (`UC-AUTH-01`, `UC-AUTH-02`), quản lý tài khoản (`UC-AUTH-03`), tạo đơn Web Portal (`UC-ORD-01a`), in vận đơn hàng loạt (`UC-ORD-06`), quản lý/lọc đơn (`UC-ORD-02`), sửa thông tin đơn (`UC-ORD-03`), hủy đơn (`UC-ORD-04`), đặt lịch hẹn pickup (`UC-ORD-09`), tra cứu tiến độ (`UC-AI-01c`), in phiếu A6/A7 (`UC-ORD-05`), gắn tem Dễ Vỡ (`UC-ORD-07`), theo dõi chuyển hoàn RTS (`UC-DEL-08`), lịch sử đối soát SePay/VietQR (`UC-FIN-05`), khấu trừ cước hoàn phân tầng (`UC-FIN-07`). |
+| **4** | **Nhân Viên Giao Hàng (Shipper)** | `SHIPPER`<br>`courier-mobile :8081` | **11** | Bưu tá chặng cuối tại hiện trường. Đăng nhập/xuất (`UC-AUTH-01`, `UC-AUTH-02`), quản lý danh sách nhiệm vụ ngày (`UC-DEL-01`), xác nhận lấy hàng Scan Pickup (`UC-HUB-02c`), liên hệ người nhận (`UC-DEL-02`), xác thực OTP 6 số (`UC-DEL-03`), chụp ảnh POD & chữ ký số (`UC-DEL-04`), xác nhận giao thành công (`UC-DEL-05`), cập nhật sự cố NDR (`UC-DEL-06`), thu COD tiền mặt (`UC-FIN-01`), nộp tiền COD VietQR (`UC-FIN-02`). |
+| **5** | **Nhân Viên Vận Hành (Ops Staff)** | `OPS`<br>`ops-web :5173` | **19** | Nhân sự điều hành tại bưu cục và kho trung chuyển Hub. **Kế thừa quyền bưu tá hiện trường (`OPS ──▷ SHIPPER`)**. Giám sát Dashboard thời gian thực (`UC-HUB-01`), tra cứu hành trình nội bộ (`UC-HUB-01a`), tạo đơn tại quầy Walk-in (`UC-HUB-01b`), duyệt yêu cầu lấy hàng (`UC-HUB-02a`), gán việc shipper lấy & phát (`UC-HUB-02b`), bảng kê manifest & đóng bao (`UC-HUB-02`), đóng seal niêm kẹp chì (`UC-HUB-03`), quản lý xe Linehaul (`UC-HUB-04`), cấp tem xe tải XT (`UC-HUB-05`), xuất kho Outbound (`UC-HUB-06`), nhập kho Inbound (`UC-HUB-07`), gỡ bao chia chọn (`UC-HUB-08`), handoff bưu tá (`UC-HUB-09`), xử lý sự cố NDR (`UC-DEL-07`), tạo chuyển hoàn RTS (`UC-DEL-08`), đối soát giải ngân COD & VietQR (`UC-FIN-04`), duyệt quyết toán COD thủ công (`UC-FIN-03`). |
+| **6** | **Quản Trị Viên (System Admin)** | `SYSTEM_ADMIN`<br>`admin-web :5175` | **11** | Quản trị viên cấp cao toàn hệ thống. Quản trị tài khoản toàn hệ thống (`UC-ADM-01`), phân công nhân sự & tuyến (`UC-ADM-02`), quản trị phân quyền RBAC Matrix (`UC-ADM-03`), phân quyền mobile override (`UC-ADM-04`), quản lý danh mục Hub 4 cấp (`UC-ADM-05`), quản lý khu vực / Zone địa lý (`UC-ADM-06`), quản lý danh mục lý do NDR (`UC-ADM-07`), cấu hình tham số hệ thống (`UC-ADM-08`), kiểm toán nhật ký hệ thống Audit Log (`UC-ADM-09`), đăng nhập/xuất (`UC-AUTH-01`, `UC-AUTH-02`). |
+| **7** | **Trợ Lý AI & Hệ Thống (System & AI Engine)** | `SYSTEM_AI`<br>`chatbot & backend` | **9** | Tác nhân hỗ trợ tự động hóa (Supporting System Actor). Động cơ định giá chuẩn hóa IATA $V/6000$ (`UC-AI-03`), truy xuất tri thức bưu chính Hybrid RAG (`UC-AI-06`), thực thi 5 Dynamic Tools (`UC-AI-05`), cơ chế Fallback Gemini Flash / GPT-4o-mini, SSE Streaming & cách ly session (`UC-AI-07`), chuyển giao sự kiện Outbox Relay & RabbitMQ (`UC-ADM-10`), chiếu dữ liệu Read Model Timeline & KPI (`UC-ADM-11`), khớp nối SePay tự động & khấu trừ cước hoàn (`UC-FIN-06`). |
+
+---
+
+## 3. CẤU TRÚC 6 PHÂN HỆ NGHIỆP VỤ & CỔNG XÁC THỰC BẢO MẬT (PACKAGES)
+
+Hệ thống được tổ chức khoa học theo 6 Business Packages cộng với Central Authentication & Security Gateway:
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                             RANH GIỚI HỆ THỐNG: NEXUS ENTERPRISE LOGISTICS PLATFORM                                     │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│                          ★ CỔNG XÁC THỰC & BẢO MẬT HỆ THỐNG (auth-service :3001 • gateway-bff :3000)                   │
-│   • [UC-42] Đăng nhập hệ thống (Opaque Token & RBAC Matrix - Core Auth Hub) ◀── 100% Protected Use Cases <<include>>    │
-│   • [UC-43] Đăng ký tài khoản khách (Self-registration) ──<<extend>>──▷ UC-42                                          │
-├──────────────────────────────────────────┬─────────────────────────────────────────────────────────────────────────────┤
-│ CỘT 1: NGOẠI VI (MERCHANT / KHÁCH)       │ CỘT 2: VẬN HÀNH NỘI BỘ (COURIER / OPS / ADMIN)                              │
-├──────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────┤
-│ 1. TIẾP NHẬN & QUẢN LÝ ĐƠN HÀNG (7 UCs)  │ 2. ĐIỀU HÀNH BƯU CỤC, KHO & LINEHAUL (16 UCs - Chuẩn hóa ops-web)           │
-│  [UC-01] Tạo đơn gửi hàng (Gen)          │  • UC-08: Quét tiếp nhận gom hàng        • UC-13a: Bàn giao & Chuyển đơn    │
-│   ├── UC-01a: Tạo đơn trên Portal        │  • UC-08a: Nhận đơn tại quầy & In tem    • UC-13b: Chat điều phối bưu tá    │
-│   └── UC-01b: Webhook Sàn TMĐT           │  • UC-08b: Quản lý tồn bưu cục & Chốt ca • UC-13c: Quản lý xe Linehaul & Chì│
-│  • UC-02: Tra cứu & Lọc danh sách đơn    │  • UC-09: Quét mã nhập Inbound           • UC-14: Thực hiện chuyến phát     │
-│  • UC-03: Tính cước quy đổi IATA         │  • UC-10: Quét mã xuất Outbound          • UC-14a: Ký nhận e-POD & OTP      │
-│  • UC-04: Yêu cầu bưu tá lấy hàng        │  • UC-11: Đóng bao Manifest & Chì        • UC-15: Báo phát thất bại NDR     │
-│  • UC-05: Đổi địa chỉ/SĐT/COD            │  • UC-12: Tiếp nhận bao tải đầu tuyến    • UC-16: Hẹn lại ngày phát         │
-│  • UC-06: Hủy đơn gửi hàng               │  • UC-13: Phân công task & Tối ưu tuyến  • UC-17: Xử lý chuyển hoàn (RTS)   │
-│  • UC-07: In phiếu gửi Barcode/QR        │                                          • UC-18: Xử lý bất thường & Lạc    │
-│  (UC-01, UC-02, UC-04 <<include>> UC-42) │  (UC-08a, UC-09, UC-13, UC-14 bắt buộc <<include>> UC-42 Đăng nhập)        │
-├──────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────┤
-│ 3. XỬ LÝ SỰ CỐ & BỒI THƯỜNG (6 UCs)      │ 4. ĐỐI SOÁT TÀI CHÍNH & THU HỘ COD (6 UCs)                                  │
-│  • UC-19: Khởi tạo khiếu nại sự cố       │  [UC-23] Thu hộ tiền COD bưu phẩm (Gen)                                     │
-│  • UC-19a: Bưu tá đồng kiểm & Ký số      │   ├── UC-23a: Thu tiền mặt tại điểm phát                                    │
-│  • UC-20: Thẩm định sự cố (<= 500k)      │   └── UC-23b: Thanh toán VietQR SePay động                                  │
-│  • UC-21: Phê duyệt bồi thường (> 500k)  │  • UC-24: Quyết toán ca nộp tiền bưu tá                                     │
-│  • UC-21a: Điều tra & Hòa giải           │  • UC-25: Đối soát tự động SePay Webhook                                    │
-│  • UC-22: Cấn trừ tiền bồi thường        │  • UC-26: Lập bảng kê đối soát COD                                          │
-│  (UC-19, UC-20 bắt buộc <<include>> UC-42│  • UC-27: Xác nhận đối soát & Chốt sổ                                       │
-│                                          │  • UC-28: Báo cáo dòng tiền & Doanh thu                                     │
-│                                          │  (UC-24, UC-26, UC-27 bắt buộc <<include>> UC-42 Đăng nhập)                 │
-├──────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────┤
-│ 5. TRUY VẾT & TRỢ LÝ AI RAG (11 UCs)     │ 6. QUẢN TRỊ HỆ THỐNG, DANH MỤC & PHÂN QUYỀN (10 UCs)                        │
-│  • UC-32: Tra cứu lộ trình public        │  • UC-44: Hồ sơ & Đổi mật khẩu           • UC-49: Phân vùng địa lý Zone     │
-│  • UC-33: Tra cứu tiến trình nội bộ      │  • UC-45: Quản trị người dùng & Tài khoản • UC-50: Cấu hình SLA             │
-│  • UC-34: Hội thoại tự nhiên AI          │  • UC-46: Phân quyền RBAC Matrix         • UC-51: CMS Quản trị bài viết     │
-│  • UC-34a: Sinh thẻ Rich Card            │  • UC-47: Nhật ký kiểm toán bảo mật      • UC-52: Hồ sơ đối tác Merchant    │
-│  • UC-35: Khử định danh PII Masking      │  • UC-48: Quản trị Hubs 4 cấp            • UC-53: Danh mục lý do NDR        │
-│  • UC-36: Định vị GPS thời gian thực     │  (UC-44, UC-45, UC-48, UC-50 bắt buộc <<include>> UC-42 Đăng nhập)         │
-│  • UC-37: Bóc tách Ý định/Entity         │                                                                             │
-│  • UC-37a: RAG 768-D Vectors             │                                                                             │
-│  • UC-38: Tư vấn cước tự động            │                                                                             │
-│  • UC-39: Hướng dẫn khiếu nại AI         │                                                                             │
-│  • UC-41: Điều chuyển nhân viên hỗ trợ   │                                                                             │
-│  (UC-33 bắt buộc <<include>> UC-42)      │                                                                             │
+│                          ★ CỔNG XÁC THỰC & BẢO MẬT HỆ THỐNG (auth-service • gateway-bff)                                │
+│   • UC-AUTH-01: Đăng nhập hệ thống (Core Auth Hub)                                                                     │
+│   • UC-AUTH-02: Đăng xuất hệ thống ──<<extend>>──▷ UC-AUTH-01                                                          │
+│   • UC-AUTH-03: Quản lý thông tin tài khoản ──<<include>>──▷ UC-AUTH-01                                                 │
+├──────────────────────────────────────────┬──────────────────────────────────────────┬──────────────────────────────────┤
+│ CỘT TRÁI (LEFT COLUMN)                   │ CỘT TRUNG TÂM (CENTER COLUMN)            │ CỘT PHẢI (RIGHT COLUMN)          │
+├──────────────────────────────────────────┼──────────────────────────────────────────┼──────────────────────────────────┤
+│ PHÂN HỆ 1: TIẾP NHẬN & QUẢN LÝ ĐƠN HÀNG  │ PHÂN HỆ 4: TÀI CHÍNH, THU HỘ COD         │ PHÂN HỆ 2: BƯU CỤC, ĐIỀU PHỐI &  │
+│ (shipment-service • pickup-service)      │ & ĐỐI SOÁT                               │ TRUNG CHUYỂN                     │
+│  [UC-ORD-01] Tạo đơn gửi (<<abstract>>)  │ (payment-service • reporting-service)    │ (scan • manifest • dispatch)     │
+│   ├── UC-ORD-01a: Tạo đơn Web Portal     │  • UC-FIN-01: Thu hộ tiền mặt COD        │  • UC-HUB-01: Dashboard vận hành │
+│   ├── UC-ORD-01b: Tạo đơn gửi hàng lẻ    │  • UC-FIN-02: Nộp COD qua VietQR         │  • UC-HUB-01a: Tra cứu nội bộ    │
+│   └── UC-ORD-01c: Tạo đơn vãng lai       │  • UC-FIN-03: Duyệt quyết toán thủ công  │  • UC-HUB-01b: Tạo đơn tại quầy  │
+│  • UC-ORD-02: Quản lý & Lọc đơn          │  • UC-FIN-04: Đối soát giải ngân VietQR  │  • UC-HUB-02a: Duyệt pickup      │
+│  • UC-ORD-03: Yêu cầu đổi thông tin giao │  • UC-FIN-05: Lịch sử đối soát SePay     │  • UC-HUB-02b: Gán việc shipper  │
+│  • UC-ORD-04: Hủy đơn hàng               │  • UC-FIN-06: Khớp nối SePay tự động     │  • UC-HUB-02c: Xác nhận lấy hàng │
+│  • UC-ORD-05: In phiếu gửi A6/A7         │  • UC-FIN-07: Khấu trừ hoàn phân tầng    │  • UC-HUB-02: Bảng kê manifest   │
+│  • UC-ORD-06: In vận đơn hàng loạt       │                                          │  • UC-HUB-03: Đóng seal niêm chì │
+│  • UC-ORD-07: Gắn tem Hàng Dễ Vỡ         │                                          │  • UC-HUB-04: Tuyến Linehaul     │
+│  • UC-ORD-08: Quản lý sổ địa chỉ         │                                          │  • UC-HUB-05: Cấp tem niêm xe XT │
+│  • UC-ORD-09: Đặt lịch hẹn lấy hàng      │                                          │  • UC-HUB-06: Xuất kho Outbound  │
+│                                          │                                          │  • UC-HUB-07: Nhập kho Inbound   │
+│                                          │                                          │  • UC-HUB-08: Gỡ bao chia chọn   │
+│                                          │                                          │  • UC-HUB-09: Handoff bưu tá     │
+├──────────────────────────────────────────┼──────────────────────────────────────────┼──────────────────────────────────┤
+│ PHÂN HỆ 5: TRỢ LÝ AI LOGISTICS RAG       │                                          │ PHÂN HỆ 3: GIAO HÀNG CHẶNG CUỐI  │
+│ & TRA CỨU HÀNH TRÌNH                     │                                          │ & XỬ LÝ SỰ CỐ                    │
+│ (chatbot-service • tracking-service)     │                                          │ (delivery-service • shipment)    │
+│  [UC-AI-01] Tra cứu hành trình (Abs)     │                                          │  • UC-DEL-01: Quản lý nhiệm vụ   │
+│   ├── UC-AI-01a: Tra cứu công khai       │                                          │  • UC-DEL-02: Liên hệ người nhận │
+│   ├── UC-AI-01b: Tra cứu realtime        │                                          │  • UC-DEL-03: Xác thực OTP 6 số  │
+│   └── UC-AI-01c: Tra cứu Merchant        │                                          │  • UC-DEL-04: Chụp ảnh POD & Ký  │
+│  • UC-AI-02: Ước tính cước phí IATA      │                                          │  • UC-DEL-05: Giao thành công    │
+│  • UC-AI-03: Động cơ IATA V/6000         │                                          │  • UC-DEL-06: Báo sự cố NDR      │
+│  • UC-AI-04: Trò chuyện AI 24/7          │                                          │  • UC-DEL-07: Xử lý sự cố NDR    │
+│  • UC-AI-05: Thực thi 5 Dynamic Tools    │                                          │  • UC-DEL-08: Tạo chuyển hoàn RTS│
+│  • UC-AI-06: Truy xuất Hybrid RAG        ├──────────────────────────────────────────┴──────────────────────────────────┤
+│  • UC-AI-07: SSE Streaming & Session     │ PHÂN HỆ 6: QUẢN TRỊ HỆ THỐNG, RBAC & CẤU HÌNH (masterdata • auth-service)   │
+│                                          │  • UC-ADM-01: Quản trị tài khoản toàn hệ thống  • UC-ADM-06: Quản lý khu vực Zone           │
+│                                          │  • UC-ADM-02: Phân công nhân sự & Tuyến         • UC-ADM-07: Danh mục lý do NDR             │
+│                                          │  • UC-ADM-03: Quản trị phân quyền RBAC Matrix   • UC-ADM-08: Cấu hình tham số hệ thống      │
+│                                          │  • UC-ADM-04: Phân quyền mobile override        • UC-ADM-09: Kiểm toán nhật ký hệ thống     │
+│                                          │  • UC-ADM-05: Quản lý danh mục Hub 4 cấp        • UC-ADM-10: Outbox Relay & RabbitMQ        │
+│                                          │                                                 • UC-ADM-11: Read Model Timeline & KPI      │
 └──────────────────────────────────────────┴─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Bố cục Hình học & Quy chuẩn Đường nối (Tia thẳng chéo trực tiếp):
-1. **Khoảng cách phân hệ cực rộng (Generous Package Gutters):**
-   - Kích thước Canvas mở rộng: **$5200 \times 3500\text{px}$** (đáp ứng trọn vẹn số lượng use case thực tế của hệ thống).
-   - Khoảng cách ngang (Đại lộ trung tâm giữa 2 cột): **1000px** ($X: 2060 - 3060$).
-   - Chiều rộng Phân hệ 2: **1500px** (bố trí 3 cột use case cân đối, thoáng đãng).
-   - Khoảng cách dọc giữa các hàng phân hệ: **200px** ($Y: 1040 - 1240$ và $Y: 2020 - 2220$).
-   - Khoảng cách từ Role tới Phân hệ: **400px - 500px**.
-2. **Quy tắc tia thẳng chéo trực tiếp (Zero Folding - Zero Overlap):**
-   - 100% đường liên kết là tia thẳng / chéo trực tiếp fanning out từ Role đến các Use Case khởi tạo trực tiếp.
-   - Sử dụng giải thuật lượng giác $\theta = \text{atan2}(dy, dx)$ để tiếp xúc chính xác tại mép viền elip ($cx + rx \cdot \cos\theta, cy + ry \cdot \sin\theta$), không vẽ đè lên chữ.
-   - Tuyệt đối không có đường gấp khúc 90 độ, không có đường nối cắt ngang qua elip khác.
-3. **Cổng Xác thực Trung tâm & 100% Login Include Coverage:**
-   - Tọa lạc tại trung tâm đại lộ ($X = 2560, Y = 1510$).
-   - 15 Use Case cửa ngõ (Entry Points) đại diện cho toàn bộ các chức năng yêu cầu bảo mật của 6 phân hệ có mũi tên nét đứt `<<include>>` chĩa thẳng vào `UC-42: Đăng nhập hệ thống`.
-   - Các điểm tiếp xúc mũi tên trên chu vi elip `UC-42` được tính toán phân bổ đều theo góc lượng giác ($\theta \in [0^\circ, 360^\circ]$), đảm bảo từng đầu mũi tên tiếp xúc tại một tọa độ độc lập, hoàn toàn không chồng đè.
-   - Nhãn `<<include>>` được bố trí tại đại lộ thông thoáng (cách tâm Auth Gateway 180-200px), không đè lên bất kỳ viền khối hay chữ nào.
-   - `Khách vãng lai` nối thẳng vào `UC-43: Đăng ký tài khoản khách` qua hành lang trống.
-   - `UC-43` có quan hệ `<<extend>>` chuyển tiếp sang `UC-42`.
-4. **Kế thừa Tác nhân Đối xứng Kép (Dual Actor Generalization):**
-   - **Cột Ngoại vi:** `CUSTOMER ──▷ GUEST` (Khách hàng là tác nhân chuyên biệt kế thừa toàn bộ tính năng tra cứu và tư vấn công khai của Khách vãng lai).
-   - **Cột Nội bộ:** `OPS ──▷ COURIER` (Admin bưu cục / Điều hành là tác nhân chuyên biệt kế thừa toàn bộ tính năng và quyền hạn hiện trường của Bưu tá, dùng chung ứng dụng `courier-mobile` khi cần trực tiếp gom/phát hàng).
-   - Nhờ mối quan hệ kế thừa này, sơ đồ không cần vẽ các đường nối trùng lặp từ `CUSTOMER` đến các Use Case của `GUEST`, cũng như từ `OPS` đến các Use Case của `COURIER`, giúp sơ đồ cực kỳ thanh thoát và chuẩn mực theo UML 2.5.
+---
+
+## 4. BẢNG ÁNH XẠ 1:1 TOÀN BỘ 80 CHỨC NĂNG THỰC TẾ (TRACEABILITY MATRIX)
+
+Toàn bộ 80 chức năng trong file Excel `Danh_sach_chuc_nang_theo_Actor.xlsx` được mô hình hóa thành các Use Cases chuẩn UML 2.5 với quan hệ kết hợp (Association) tường minh:
+
+### 4.1. Khách Vãng Lai (Guest) — 9 Chức năng
+| STT Excel | Tên chức năng trong Excel | Mã Use Case | Phân hệ (Package) | Mối quan hệ trong UML 2.5 |
+| :---: | :--- | :---: | :---: | :--- |
+| **#1** | Tra cứu bưu kiện công khai | `UC-AI-01a` | P5: AI & Tracking | Kế thừa từ `UC-AI-01: Tra cứu hành trình bưu phẩm` |
+| **#2** | Tính cước tự động chuẩn IATA | `UC-AI-02` | P5: AI & Tracking | `<<include>>` sang `UC-AI-03: Động cơ cước IATA V/6000` |
+| **#3** | Tạo đơn hàng khách vãng lai | `UC-ORD-01c` | P1: Đơn hàng | Kế thừa từ `UC-ORD-01: Tạo đơn gửi bưu phẩm` |
+| **#4** | Cửa sổ trò chuyện trợ lý AI | `UC-AI-04` | P5: AI & Tracking | `<<include>>` sang `UC-AI-05: Thực thi 5 Dynamic Tools AI` |
+| **#5** | Tool tra cứu bưu kiện AI | `UC-AI-05` | P5: AI & Tracking | Dynamic Tool: `track_shipment` |
+| **#6** | Tool ước tính cước phí AI | `UC-AI-05` | P5: AI & Tracking | Dynamic Tool: `calculate_shipping_rate` |
+| **#7** | Tool tra cứu hàng cấm gửi AI | `UC-AI-05` | P5: AI & Tracking | Dynamic Tool: `get_prohibited_goods_policy` |
+| **#8** | Tool chính sách bồi thường AI | `UC-AI-05` | P5: AI & Tracking | Dynamic Tool: `get_compensation_claim_policy` |
+| **#9** | Tool tìm bưu cục gần nhất AI | `UC-AI-05` | P5: AI & Tracking | Dynamic Tool: `find_nearest_post_office` |
+
+### 4.2. Khách Hàng Cá Nhân (Customer C-End) — 6 Chức năng
+| STT Excel | Tên chức năng trong Excel | Mã Use Case | Phân hệ (Package) | Mối quan hệ trong UML 2.5 |
+| :---: | :--- | :---: | :---: | :--- |
+| **-** | *(Kế thừa tính năng Khách Vãng Lai)* | `CUSTOMER ──▷ GUEST` | Toàn hệ thống | Kế thừa toàn bộ quyền tra cứu và tư vấn công khai |
+| **#1** | Tạo đơn gửi hàng lẻ | `UC-ORD-01b` | P1: Đơn hàng | Kế thừa từ `UC-ORD-01: Tạo đơn gửi bưu phẩm` |
+| **#2** | Tính cước tự động chuẩn IATA | `UC-AI-02` | P5: AI & Tracking | Kế thừa qua `CUSTOMER ──▷ GUEST` |
+| **#3** | Tra cứu hành trình realtime | `UC-AI-01b` | P5: AI & Tracking | Kế thừa từ `UC-AI-01: Tra cứu hành trình bưu phẩm` |
+| **#4** | Quản lý sổ địa chỉ | `UC-ORD-08` | P1: Đơn hàng | Association trực tiếp từ `Khách Hàng Cá Nhân` |
+| **#5** | Cửa sổ chat nổi trợ lý AI | `UC-AI-04` | P5: AI & Tracking | Kế thừa qua `CUSTOMER ──▷ GUEST` |
+| **#6** | Xác thực nhận hàng OTP 6 số | `UC-DEL-03` | P3: Giao hàng & NDR | Được `UC-DEL-05: Xác nhận giao thành công` `<<include>>` |
+
+### 4.3. Người Gửi Hàng (Merchant / Chủ Shop B2B) — 15 Chức năng
+| STT Excel | Tên chức năng trong Excel | Mã Use Case | Phân hệ (Package) | Mối quan hệ trong UML 2.5 |
+| :---: | :--- | :---: | :---: | :--- |
+| **#1** | Đăng nhập hệ thống | `UC-AUTH-01` | Auth Gateway | Core Hub, kết nối qua hành lang bảo mật |
+| **#2** | Đăng xuất hệ thống | `UC-AUTH-02` | Auth Gateway | `<<extend>>` sang `UC-AUTH-01` |
+| **#3** | Quản lý thông tin tài khoản | `UC-AUTH-03` | Auth Gateway | `<<include>>` sang `UC-AUTH-01` |
+| **#4** | Tạo đơn hàng (Portal Web) | `UC-ORD-01a` | P1: Đơn hàng | Kế thừa từ `UC-ORD-01: Tạo đơn gửi bưu phẩm` |
+| **#5** | In vận đơn hàng loạt | `UC-ORD-06` | P1: Đơn hàng | `<<extend>>` sang `UC-ORD-02: Quản lý danh sách & Lọc đơn` |
+| **#6** | Quản lý & Lọc danh sách đơn | `UC-ORD-02` | P1: Đơn hàng | Association trực tiếp từ `Merchant` |
+| **#7** | Sửa thông tin giao hàng | `UC-ORD-03` | P1: Đơn hàng | Association trực tiếp từ `Merchant` |
+| **#8** | Hủy đơn hàng | `UC-ORD-04` | P1: Đơn hàng | Association trực tiếp từ `Merchant` |
+| **#9** | Đặt lịch hẹn lấy hàng Pickup | `UC-ORD-09` | P1: Đơn hàng | Association trực tiếp từ `Merchant` |
+| **#10**| Tra cứu tiến độ (Merchant) | `UC-AI-01c` | P5: AI & Tracking | Kế thừa từ `UC-AI-01: Tra cứu hành trình bưu phẩm` |
+| **#11**| In phiếu gửi chuẩn A6/A7 | `UC-ORD-05` | P1: Đơn hàng | `<<include>>` từ `UC-ORD-01: Tạo đơn gửi bưu phẩm` |
+| **#12**| Gắn tem Hàng Dễ Vỡ | `UC-ORD-07` | P1: Đơn hàng | `<<extend>>` sang `UC-ORD-01: Tạo đơn gửi bưu phẩm` |
+| **#13**| Quản lý & Theo dõi chuyển hoàn | `UC-DEL-08` | P3: Giao hàng & NDR | Được `UC-DEL-07: Xử lý sự cố NDR` `<<include>>` |
+| **#14**| Lịch sử đối soát SePay/VietQR | `UC-FIN-05` | P4: Tài chính & COD | Association trực tiếp từ `Merchant` |
+| **#15**| Khấu trừ cước hoàn phân tầng | `UC-FIN-07` | P4: Tài chính & COD | `<<extend>>` sang `UC-FIN-05` |
+
+### 4.4. Nhân Viên Giao Hàng (Shipper / Chặng Cuối) — 11 Chức năng
+| STT Excel | Tên chức năng trong Excel | Mã Use Case | Phân hệ (Package) | Mối quan hệ trong UML 2.5 |
+| :---: | :--- | :---: | :---: | :--- |
+| **#1** | Đăng nhập hệ thống | `UC-AUTH-01` | Auth Gateway | Core Hub, kết nối qua hành lang bảo mật |
+| **#2** | Đăng xuất hệ thống | `UC-AUTH-02` | Auth Gateway | `<<extend>>` sang `UC-AUTH-01` |
+| **#3** | Quản lý nhiệm vụ lấy/giao | `UC-DEL-01` | P3: Giao hàng & NDR | Association trực tiếp từ `Shipper` |
+| **#5** | Xác nhận lấy hàng (Scan Pickup) | `UC-HUB-02c` | P2: Bưu cục & Hub | `<<include>>` sang `UC-HUB-02b: Gán việc shipper` |
+| **#6** | Liên hệ người nhận | `UC-DEL-02` | P3: Giao hàng & NDR | Association trực tiếp từ `Shipper` |
+| **#7** | Xác thực mã OTP 6 chữ số | `UC-DEL-03` | P3: Giao hàng & NDR | `<<include>>` từ `UC-DEL-05: Xác nhận giao thành công` |
+| **#8** | Chụp ảnh POD & Chữ ký số | `UC-DEL-04` | P3: Giao hàng & NDR | `<<include>>` từ `UC-DEL-05: Xác nhận giao thành công` |
+| **#9** | Xác nhận đã giao thành công | `UC-DEL-05` | P3: Giao hàng & NDR | Core Hub của P3, kết nối trực tiếp |
+| **#10**| Cập nhật NDR / Báo sự cố | `UC-DEL-06` | P3: Giao hàng & NDR | `<<extend>>` sang `UC-DEL-05` |
+| **#12**| Thu hộ tiền mặt COD | `UC-FIN-01` | P4: Tài chính & COD | Association trực tiếp từ `Shipper` |
+| **#13**| Nộp tiền COD qua VietQR | `UC-FIN-02` | P4: Tài chính & COD | `<<include>>` sang `UC-FIN-01` |
+
+### 4.5. Nhân Viên Vận Hành (Ops Staff - Bưu Cục & Hub) — 19 Chức năng
+| STT Excel | Tên chức năng trong Excel | Mã Use Case | Phân hệ (Package) | Mối quan hệ trong UML 2.5 |
+| :---: | :--- | :---: | :---: | :--- |
+| **-** | *(Kế thừa quyền Bưu tá gom/phát)* | `OPS ──▷ SHIPPER` | Hiện trường | Kế thừa quyền gom/phát trên `courier-mobile` |
+| **#1** | Đăng nhập hệ thống | `UC-AUTH-01` | Auth Gateway | Core Hub, kết nối qua hành lang bảo mật |
+| **#2** | Đăng xuất hệ thống | `UC-AUTH-02` | Auth Gateway | `<<extend>>` sang `UC-AUTH-01` |
+| **#3** | Giám sát Dashboard thời gian thực | `UC-HUB-01` | P2: Bưu cục & Hub | Association trực tiếp từ `Ops Staff` |
+| **#4** | Tra cứu hành trình nội bộ | `UC-HUB-01a` | P2: Bưu cục & Hub | Association trực tiếp từ `Ops Staff` |
+| **#5** | Tạo đơn hàng tại quầy (Walk-in) | `UC-HUB-01b` | P2: Bưu cục & Hub | Association trực tiếp từ `Ops Staff` |
+| **#6** | Duyệt yêu cầu lấy hàng Pickup | `UC-HUB-02a` | P2: Bưu cục & Hub | `<<include>>` sang `UC-HUB-02b` |
+| **#7** | Gán việc shipper lấy & phát | `UC-HUB-02b` | P2: Bưu cục & Hub | Association trực tiếp từ `Ops Staff` |
+| **#8** | Bảng kê manifest & Đóng bao | `UC-HUB-02` | P2: Bưu cục & Hub | Được `UC-HUB-06` và `UC-HUB-07` `<<include>>` |
+| **#9** | Đóng seal niêm kẹp chì an ninh | `UC-HUB-03` | P2: Bưu cục & Hub | `<<include>>` từ `UC-HUB-02: Bảng kê manifest` |
+| **#10**| Quản lý chuyến xe Linehaul | `UC-HUB-04` | P2: Bưu cục & Hub | Kết nối qua hành lang khe trống giữa Hàng 3 & 4 |
+| **#11**| Cấp tem niêm phong xe tải (XT) | `UC-HUB-05` | P2: Bưu cục & Hub | `<<include>>` từ `UC-HUB-04: Tuyến Linehaul` |
+| **#12**| Quét xuất kho Outbound | `UC-HUB-06` | P2: Bưu cục & Hub | `<<include>>` sang `UC-HUB-02` |
+| **#13**| Quét nhập kho Inbound | `UC-HUB-07` | P2: Bưu cục & Hub | `<<include>>` sang `UC-HUB-02` và `UC-HUB-09` |
+| **#14**| Gỡ bao & Kiểm đếm chia chọn | `UC-HUB-08` | P2: Bưu cục & Hub | `<<include>>` từ `UC-HUB-09: Handoff bưu tá` |
+| **#15**| Quét bàn giao bưu kiện (handoff) | `UC-HUB-09` | P2: Bưu cục & Hub | Kết nối qua hành lang khe trống giữa Hàng 6 & 7 |
+| **#16**| Xử lý sự cố phát thất bại (NDR) | `UC-DEL-07` | P3: Giao hàng & NDR | Kết nối qua hành lang ngang giữa P2 và P3 |
+| **#17**| Quản lý & Tạo chuyển hoàn RTS | `UC-DEL-08` | P3: Giao hàng & NDR | `<<include>>` từ `UC-DEL-07: Xử lý sự cố NDR` |
+| **#18**| Đối soát giải ngân COD & VietQR | `UC-FIN-04` | P4: Tài chính & COD | Kết nối qua hành lang ngang vào Cột 2 của P4 |
+| **#19**| Phê duyệt quyết toán COD thủ công| `UC-FIN-03` | P4: Tài chính & COD | Kết nối qua hành lang phải của P4 vào Hàng 3 |
+
+### 4.6. Quản Trị Viên (System Admin) — 11 Chức năng
+| STT Excel | Tên chức năng trong Excel | Mã Use Case | Phân hệ (Package) | Mối quan hệ trong UML 2.5 |
+| :---: | :--- | :---: | :---: | :--- |
+| **#1** | Đăng nhập hệ thống | `UC-AUTH-01` | Auth Gateway | Core Hub, kết nối qua hành lang bảo mật |
+| **#2** | Đăng xuất hệ thống | `UC-AUTH-02` | Auth Gateway | `<<extend>>` sang `UC-AUTH-01` |
+| **#3** | Quản trị tài khoản toàn hệ thống | `UC-ADM-01` | P6: Quản trị & RBAC | Association trực tiếp từ `System Admin` |
+| **#4** | Phân công nhân sự & Tuyến | `UC-ADM-02` | P6: Quản trị & RBAC | `<<include>>` từ `UC-ADM-01` |
+| **#5** | Quản trị phân quyền RBAC Matrix | `UC-ADM-03` | P6: Quản trị & RBAC | `<<include>>` từ `UC-ADM-01` |
+| **#6** | Phân quyền mobile override | `UC-ADM-04` | P6: Quản trị & RBAC | `<<extend>>` sang `UC-ADM-03` |
+| **#7** | Quản lý danh mục Hub 4 cấp | `UC-ADM-05` | P6: Quản trị & RBAC | Association trực tiếp từ `System Admin` |
+| **#8** | Quản lý khu vực / Zone địa lý | `UC-ADM-06` | P6: Quản trị & RBAC | `<<include>>` từ `UC-ADM-05` |
+| **#9** | Danh mục lý do giao NDR | `UC-ADM-07` | P6: Quản trị & RBAC | Association trực tiếp từ `System Admin` |
+| **#10**| Cấu hình tham số hệ thống | `UC-ADM-08` | P6: Quản trị & RBAC | Association trực tiếp từ `System Admin` |
+| **#11**| Kiểm toán nhật ký hệ thống | `UC-ADM-09` | P6: Quản trị & RBAC | Association trực tiếp từ `System Admin` |
+
+### 4.7. Trợ Lý AI & Hệ Thống (System & AI Engine) — 9 Chức năng
+| STT Excel | Tên chức năng trong Excel | Mã Use Case | Phân hệ (Package) | Mối quan hệ trong UML 2.5 |
+| :---: | :--- | :---: | :---: | :--- |
+| **#1** | Động cơ định giá chuẩn IATA | `UC-AI-03` | P5: AI & Tracking | Association từ `Supporting System` qua hành lang đáy |
+| **#2** | Truy xuất tri thức Hybrid RAG | `UC-AI-06` | P5: AI & Tracking | `<<include>>` từ `UC-AI-05: Thực thi 5 Dynamic Tools` |
+| **#3** | Thực thi 5 Dynamic Tools AI | `UC-AI-05` | P5: AI & Tracking | Association từ `Supporting System` qua hành lang đáy |
+| **#4** | Fallback mô hình ngôn ngữ LLM | `UC-AI-06` | P5: AI & Tracking | Tích hợp bên trong khối RAG & Fallback |
+| **#5** | Phản hồi dạng dòng SSE Streaming | `UC-AI-07` | P5: AI & Tracking | `<<include>>` từ `UC-AI-05` |
+| **#6** | Cách ly phiên trò chuyện an toàn | `UC-AI-07` | P5: AI & Tracking | Tích hợp bên trong cơ chế quản lý Session |
+| **#7** | Chuyển giao Outbox Relay RabbitMQ| `UC-ADM-10` | P6: Quản trị & RBAC | Association từ `Supporting System` qua hành lang đáy |
+| **#8** | Chiếu Read Model Timeline & KPI | `UC-ADM-11` | P6: Quản trị & RBAC | `<<include>>` từ `UC-ADM-10` |
+| **#9** | Khớp nối SePay & Khấu trừ hoàn | `UC-FIN-06` | P4: Tài chính & COD | Association từ `Supporting System` qua hành lang đáy |
 
 ---
 
-## 4. BẢNG TRUY XUẤT 1:1 TỪ USE CASE ĐẾN BACKEND CONTROLLER & DỊCH VỤ
+## 5. BẢNG TRUY XUẤT CONTROLLER & ENDPOINT MICROSERVICES
 
-Toàn bộ 53 Use Cases đều có mã nguồn cụ thể tương ứng tại các controller của 15 microservices:
-
-| Mã UC | Tên Use Case | Phân hệ (Package) | Backend Service / Controller Phụ Trách | Endpoint & HTTP Method |
+| Mã UC | Tên Trường hợp Sử dụng (Use Case) | Microservice Phụ Trách | Controller / Service | Endpoint & HTTP Method |
 | :---: | :--- | :---: | :--- | :--- |
-| **UC-01** | Tạo đơn gửi hàng (`<<abstract>>`) | P1: Đơn hàng | `shipment-service` | Contract trừu tượng |
-| **UC-01a**| Tạo đơn trên Portal | P1: Đơn hàng | `shipment-service` (`shipment.controller.ts`) | `POST /shipments` |
-| **UC-01b**| Đồng bộ Webhook Sàn TMĐT | P1: Đơn hàng | `gateway-bff` (`merchant-integrations.controller.ts`) | `POST /merchant/integrations/orders/webhook` |
-| **UC-02** | Tra cứu danh sách & Lọc đơn | P1: Đơn hàng | `shipment-service` (`shipment.controller.ts`) | `GET /shipments` |
-| **UC-03** | Tính cước quy đổi IATA | P1: Đơn hàng | `pricing-service` (`pricing.controller.ts`) | `POST /quotes` |
-| **UC-04** | Yêu cầu bưu tá lấy hàng | P1: Đơn hàng | `pickup-service` (`pickup.controller.ts`) | `POST /pickups` |
-| **UC-05** | Đổi địa chỉ / SĐT / COD | P1: Đơn hàng | `shipment-service` (`change-request.controller.ts`) | `POST /change-requests` |
-| **UC-06** | Hủy đơn gửi hàng | P1: Đơn hàng | `shipment-service` (`shipment.controller.ts`) | `POST /shipments/:id/cancel` |
-| **UC-07** | In phiếu gửi Barcode / QR | P1: Đơn hàng | `gateway-bff` (`merchant-integrations.controller.ts`) | `POST /merchant/integrations/labels/print` |
-| **UC-08** | Quét tiếp nhận gom hàng | P2: Bưu cục & Kho | `scan-service` (`scan.controller.ts`) | `POST /scans/pickup` |
-| **UC-08a**| Nhận đơn tại quầy & In tem nhiệt | P2: Bưu cục & Kho | `ops-web` & `shipment-service` (`shipment.controller.ts`) | `POST /shipments/counter` |
-| **UC-08b**| Quản lý tồn bưu cục & Chốt ca | P2: Bưu cục & Kho | `ops-web` & `gateway-bff` (`branch.controller.ts`) | `GET /branch/inventory`, `POST /branch/shift-closing` |
-| **UC-09** | Quét mã nhập kho (Inbound) | P2: Bưu cục & Kho | `scan-service` (`scan.controller.ts`) | `POST /scans/inbound` |
-| **UC-10** | Quét mã xuất kho (Outbound) | P2: Bưu cục & Kho | `scan-service` (`scan.controller.ts`) | `POST /scans/outbound` |
-| **UC-11** | Đóng bao Manifest & Niêm chì | P2: Bưu cục & Kho | `manifest-service` (`manifest.controller.ts`) | `POST /manifests/bagging` |
-| **UC-12** | Tiếp nhận bao tải đầu tuyến | P2: Bưu cục & Kho | `manifest-service` (`manifest.controller.ts`) | `POST /manifests/receive` |
-| **UC-13** | Phân công task & Tối ưu tuyến | P2: Bưu cục & Kho | `dispatch-service` (`dispatch.controller.ts`) | `POST /dispatch/tasks`, `POST /dispatch/optimize` |
-| **UC-13a**| Bàn giao & Chuyển đơn bưu tá | P2: Bưu cục & Kho | `ops-web` & `dispatch-service` (`dispatch.controller.ts`) | `POST /dispatch/handoff`, `POST /dispatch/transfer` |
-| **UC-13b**| Chat điều phối với bưu tá | P2: Bưu cục & Kho | `ops-web` & `gateway-bff` (`chat.controller.ts`) | `POST /chat/dispatch-courier` |
-| **UC-13c**| Quản lý xe Linehaul & Tem chì | P2: Bưu cục & Kho | `ops-web` & `manifest-service` (`manifest.controller.ts`) | `GET/POST /linehaul/trips`, `POST /linehaul/vehicle-seal` |
-| **UC-14** | Thực hiện chuyến phát | P2: Bưu cục & Kho | `delivery-service` (`delivery.controller.ts`) | `POST /delivery/attempts` |
-| **UC-14a**| Ký nhận điện tử e-POD & OTP | P2: Bưu cục & Kho | `delivery-service` (`delivery.controller.ts`) | `POST /delivery/success` |
-| **UC-15** | Báo phát thất bại NDR | P2: Bưu cục & Kho | `delivery-service` (`delivery.controller.ts`) | `POST /delivery/fail` |
-| **UC-16** | Hẹn lại ngày phát | P2: Bưu cục & Kho | `delivery-service` (`delivery.controller.ts`) | `POST /delivery/reschedule` |
-| **UC-17** | Xử lý chuyển hoàn (RTS) | P2: Bưu cục & Kho | `delivery-service` (`delivery.controller.ts`) | `POST /delivery/rts` |
-| **UC-18** | Xử lý hàng bất thường & Lạc tuyến | P2: Bưu cục & Kho | `ops-web` & `shipment-service` (`shipment.controller.ts`) | `GET/POST /service-quality/abnormal`, `POST /service-quality/stray` |
-| **UC-19** | Khởi tạo khiếu nại sự cố | P3: Sự cố | `shipment-service` (`claims.controller.ts`) | `POST /claims` |
-| **UC-19a**| Bưu tá đồng kiểm & Ký số | P3: Sự cố | `shipment-service` (`claims.controller.ts`) | `POST /claims/:id/co-inspect` |
-| **UC-20** | Thẩm định sự cố ($\le 500\text{k}$) | P3: Sự cố | `shipment-service` (`claims.controller.ts`) | `POST /claims/:id/evaluate` |
-| **UC-21** | Phê duyệt bồi thường ($> 500\text{k}$) | P3: Sự cố | `shipment-service` (`claims.controller.ts`) | `POST /claims/:id/approve` |
-| **UC-21a**| Điều tra & Hòa giải tranh chấp | P3: Sự cố | `shipment-service` (`investigations.controller.ts`) | `POST /investigations` |
-| **UC-22** | Cấn trừ tiền bồi thường | P3: Sự cố | `shipment-service` (`claims.controller.ts`) | `POST /claims/:id/settle` |
-| **UC-23** | Thu hộ tiền COD bưu phẩm (`<<abstract>>`) | P4: Tài chính | `payment-service` | Contract trừu tượng |
-| **UC-23a**| Thu tiền mặt tại điểm phát | P4: Tài chính | `payment-service` (`cod.controller.ts`) | `POST /cod/collect-cash` |
-| **UC-23b**| Thanh toán VietQR SePay động | P4: Tài chính | `payment-service` (`cod.controller.ts`) | `POST /cod/generate-qr` |
-| **UC-24** | Quyết toán ca nộp tiền bưu tá | P4: Tài chính | `payment-service` (`cod.controller.ts`) | `POST /cod/courier-remittance` |
-| **UC-25** | Đối soát tự động SePay Webhook | P4: Tài chính | `payment-service` (`sepay-webhook.controller.ts`) | `POST /webhooks/sepay` |
-| **UC-26** | Lập bảng kê đối soát COD | P4: Tài chính | `payment-service` (`cod.controller.ts`) | `POST /cod/settlements/statements` |
-| **UC-27** | Xác nhận đối soát & Chốt sổ | P4: Tài chính | `payment-service` (`cod.controller.ts`) | `POST /cod/settlements/confirm` |
-| **UC-28** | Báo cáo dòng tiền & Doanh thu | P4: Tài chính | `reporting-service` (`reporting.controller.ts`) | `GET /reports/financial` |
-| **UC-32** | Tra cứu lộ trình công khai | P5: Truy vết | `tracking-service` (`tracking.controller.ts`) | `GET /tracking/public/:code` |
-| **UC-33** | Tra cứu tiến trình nội bộ | P5: Truy vết | `tracking-service` (`tracking.controller.ts`) | `GET /tracking/internal/:code` |
-| **UC-34** | Hội thoại tự nhiên với Trợ lý AI | P5: AI RAG | `chatbot-service` & `gateway-bff` | `POST /chat`, `POST /ai-assistant/chat/stream` |
-| **UC-34a**| Sinh thẻ trực quan (Rich Card) | P5: AI RAG | `chatbot-service` (`rich-card.renderer.ts`) | Render payload JSON Card |
-| **UC-35** | Khử định danh PII Masking | P5: Truy vết | `tracking-service` (`pii-masking.interceptor.ts`) | Xử lý nội bộ dữ liệu trước khi trả về |
-| **UC-36** | Định vị GPS thời gian thực | P5: Truy vết | `scan-service` (`location.controller.ts`) | `POST /locations`, `GET /locations/:courierId` |
-| **UC-37** | Bóc tách Ý định & Thực thể | P5: AI RAG | `chatbot-service` (`chat.service.ts`) | Xử lý NLP nội bộ |
-| **UC-37a**| Truy xuất RAG 768-D Vectors | P5: AI RAG | `chatbot-service` (`rag.service.ts`) | `SELECT ... ORDER BY embedding <=> query_vector` |
-| **UC-38** | Tư vấn cước IATA tự động | P5: AI RAG | `chatbot-service` (`tools/rate-advisor.tool.ts`) | Gọi sang `pricing-service` |
-| **UC-39** | Hướng dẫn lập khiếu nại AI | P5: AI RAG | `chatbot-service` (`tools/claim-guide.tool.ts`) | RAG truy xuất chính sách BBBT 24h |
-| **UC-41** | Điều chuyển nhân viên hỗ trợ | P5: AI RAG | `gateway-bff` (`chat.controller.ts`) | `POST /chat/handoff` |
-| **UC-42** | Đăng nhập hệ thống (Core Auth Hub) | Auth Gateway | `auth-service` (`auth.controller.ts`) | `POST /auth/login` |
-| **UC-43** | Đăng ký tài khoản khách | Auth Gateway | `auth-service` (`auth.controller.ts`) | `POST /auth/register-customer` |
-| **UC-44** | Hồ sơ cá nhân & Mật khẩu | P6: Quản trị | `auth-service` (`auth.controller.ts`) | `POST /auth/change-password`, `GET/PUT /auth/own-profile` |
-| **UC-45** | Quản trị người dùng & Tài khoản | P6: Quản trị | `auth-service` (`auth.controller.ts`) | `GET/POST/PUT /users` |
-| **UC-46** | Phân quyền RBAC Matrix | P6: Quản trị | `auth-service` (`mobile-permissions.controller.ts`) | `GET /auth/mobile-permissions` |
-| **UC-47** | Nhật ký kiểm toán bảo mật | P6: Quản trị | `auth-service` (`admin-audit.controller.ts`) | `GET /auth/admin-audit` |
-| **UC-48** | Quản trị Hubs 4 cấp | P6: Quản trị | `masterdata-service` (`hub.controller.ts`) | `GET/POST/PUT /masterdata/hubs` |
-| **UC-49** | Quản lý phân vùng địa lý | P6: Quản trị | `masterdata-service` (`zone.controller.ts`) | `GET/POST/PUT /masterdata/zones` |
-| **UC-50** | Cấu hình hệ thống & SLA | P6: Quản trị | `masterdata-service` (`config.controller.ts`) | `GET/POST/PUT /masterdata/configs` |
-| **UC-51** | CMS Quản trị bài viết | P6: Quản trị | `masterdata-service` (`policy.controller.ts`) | `GET/POST/PUT /masterdata/policies` |
-| **UC-52** | Hồ sơ đối tác Merchant | P6: Quản trị | `masterdata-service` (`merchant-profile.controller.ts`) | `GET/POST/PUT /masterdata/merchant-profiles` |
-| **UC-53** | Danh mục lý do giao NDR | P6: Quản trị | `masterdata-service` (`ndr-reason.controller.ts`) | `GET/POST/PUT /masterdata/ndr-reasons` |
+| `UC-AUTH-01` | Đăng nhập hệ thống | `auth-service (:3001)` | `auth.controller.ts` | `POST /auth/login` |
+| `UC-AUTH-02` | Đăng xuất hệ thống | `auth-service (:3001)` | `auth.controller.ts` | `POST /auth/logout` |
+| `UC-AUTH-03` | Quản lý thông tin tài khoản | `auth-service (:3001)` | `auth.controller.ts` | `GET/PUT /auth/own-profile` |
+| `UC-ORD-01a` | Tạo đơn Web Portal | `shipment-service (:3004)` | `shipment.controller.ts` | `POST /shipments` |
+| `UC-ORD-01b` | Tạo đơn gửi hàng lẻ | `shipment-service (:3004)` | `shipment.controller.ts` | `POST /shipments/retail` |
+| `UC-ORD-01c` | Tạo đơn khách vãng lai | `shipment-service (:3004)` | `shipment.controller.ts` | `POST /shipments/guest` |
+| `UC-ORD-02` | Quản lý danh sách & Lọc đơn | `shipment-service (:3004)` | `shipment.controller.ts` | `GET /shipments` |
+| `UC-ORD-03` | Yêu cầu đổi thông tin giao | `shipment-service (:3004)` | `change-request.controller.ts`| `POST /change-requests` |
+| `UC-ORD-04` | Hủy đơn hàng | `shipment-service (:3004)` | `shipment.controller.ts` | `POST /shipments/:id/cancel` |
+| `UC-ORD-05` | In phiếu gửi chuẩn A6/A7 | `gateway-bff (:3000)` | `merchant-integrations.ts` | `POST /merchant/labels/print` |
+| `UC-ORD-06` | In vận đơn hàng loạt | `gateway-bff (:3000)` | `merchant-integrations.ts` | `POST /merchant/labels/bulk` |
+| `UC-ORD-07` | Gắn tem Hàng Dễ Vỡ | `shipment-service (:3004)` | `shipment.controller.ts` | `PATCH /shipments/:id/fragile` |
+| `UC-ORD-08` | Quản lý sổ địa chỉ | `shipment-service (:3004)` | `address-book.controller.ts` | `GET/POST /addresses` |
+| `UC-ORD-09` | Đặt lịch hẹn lấy hàng Pickup | `pickup-service (:3005)` | `pickup.controller.ts` | `POST /pickups` |
+| `UC-HUB-01` | Giám sát Dashboard vận hành | `gateway-bff (:3000)` | `ops-dashboard.controller.ts` | `GET /ops/dashboard/realtime` |
+| `UC-HUB-01a`| Tra cứu hành trình nội bộ | `tracking-service (:3011)` | `tracking.controller.ts` | `GET /tracking/internal/:code` |
+| `UC-HUB-01b`| Tạo đơn tại quầy (Walk-in) | `shipment-service (:3004)` | `shipment.controller.ts` | `POST /shipments/walk-in` |
+| `UC-HUB-02` | Bảng kê manifest & Đóng bao | `manifest-service (:3007)` | `manifest.controller.ts` | `POST /manifests/bagging` |
+| `UC-HUB-02a`| Phê duyệt yêu cầu lấy hàng | `pickup-service (:3005)` | `pickup.controller.ts` | `PATCH /pickups/:id/approve` |
+| `UC-HUB-02b`| Gán việc shipper lấy & phát | `dispatch-service (:3008)` | `dispatch.controller.ts` | `POST /dispatch/assign` |
+| `UC-HUB-02c`| Xác nhận lấy (Scan Pickup) | `scan-service (:3006)` | `scan.controller.ts` | `POST /scans/pickup` |
+| `UC-HUB-03` | Đóng seal niêm kẹp chì | `manifest-service (:3007)` | `manifest.controller.ts` | `POST /manifests/seal` |
+| `UC-HUB-04` | Quản lý chuyến xe Linehaul | `manifest-service (:3007)` | `linehaul.controller.ts` | `GET/POST /linehaul/trips` |
+| `UC-HUB-05` | Cấp tem niêm phong xe (XT) | `manifest-service (:3007)` | `linehaul.controller.ts` | `POST /linehaul/vehicle-seal` |
+| `UC-HUB-06` | Quét xuất kho Outbound | `scan-service (:3006)` | `scan.controller.ts` | `POST /scans/outbound` |
+| `UC-HUB-07` | Quét nhập kho Inbound | `scan-service (:3006)` | `scan.controller.ts` | `POST /scans/inbound` |
+| `UC-HUB-08` | Gỡ bao & Kiểm đếm chia chọn | `manifest-service (:3007)` | `manifest.controller.ts` | `POST /manifests/unbag` |
+| `UC-HUB-09` | Bàn giao bưu tá (handoff) | `dispatch-service (:3008)` | `dispatch.controller.ts` | `POST /dispatch/handoff` |
+| `UC-DEL-01` | Quản lý danh sách nhiệm vụ | `delivery-service (:3010)` | `delivery.controller.ts` | `GET /delivery/tasks/today` |
+| `UC-DEL-02` | Liên hệ người nhận | `delivery-service (:3010)` | `delivery.controller.ts` | `POST /delivery/call-mask` |
+| `UC-DEL-03` | Xác thực mã OTP 6 chữ số | `delivery-service (:3010)` | `delivery.controller.ts` | `POST /delivery/verify-otp` |
+| `UC-DEL-04` | Chụp ảnh POD & Chữ ký số | `delivery-service (:3010)` | `delivery.controller.ts` | `POST /delivery/upload-pod` |
+| `UC-DEL-05` | Xác nhận giao thành công | `delivery-service (:3010)` | `delivery.controller.ts` | `POST /delivery/success` |
+| `UC-DEL-06` | Cập nhật sự cố thất bại NDR | `delivery-service (:3010)` | `delivery.controller.ts` | `POST /delivery/fail` |
+| `UC-DEL-07` | Xử lý sự cố phát thất bại | `delivery-service (:3010)` | `ndr-resolution.ts` | `PATCH /delivery/ndr/:id/resolve` |
+| `UC-DEL-08` | Quản lý & Tạo chuyển hoàn RTS | `delivery-service (:3010)` | `rts.controller.ts` | `POST /delivery/rts` |
+| `UC-FIN-01` | Thu hộ tiền mặt COD | `payment-service (:3009)` | `cod.controller.ts` | `POST /cod/collect-cash` |
+| `UC-FIN-02` | Nộp tiền COD qua VietQR | `payment-service (:3009)` | `cod.controller.ts` | `POST /cod/generate-qr` |
+| `UC-FIN-03` | Duyệt quyết toán COD thủ công | `payment-service (:3009)` | `cod.controller.ts` | `POST /cod/remittance/approve` |
+| `UC-FIN-04` | Đối soát giải ngân & VietQR | `payment-service (:3009)` | `cod.controller.ts` | `POST /cod/settlements/disburse` |
+| `UC-FIN-05` | Lịch sử đối soát SePay/VietQR | `payment-service (:3009)` | `statement.controller.ts` | `GET /cod/statements/history` |
+| `UC-FIN-06` | Khớp nối SePay tự động | `payment-service (:3009)` | `sepay-webhook.controller.ts` | `POST /webhooks/sepay` |
+| `UC-FIN-07` | Khấu trừ cước hoàn phân tầng | `reporting-service (:3012)` | `settlement.controller.ts` | `POST /settlement/rts-deduct` |
+| `UC-AI-01a` | Tra cứu trạng thái bưu kiện | `tracking-service (:3011)` | `tracking.controller.ts` | `GET /tracking/public/:code` |
+| `UC-AI-01b` | Tra cứu hành trình realtime | `tracking-service (:3011)` | `tracking.controller.ts` | `GET /tracking/realtime/:code` |
+| `UC-AI-01c` | Tra cứu tiến độ (Merchant) | `tracking-service (:3011)` | `tracking.controller.ts` | `GET /tracking/merchant/:code` |
+| `UC-AI-02` | Ước tính cước phí IATA | `pricing-service (:3003)` | `pricing.controller.ts` | `POST /quotes` |
+| `UC-AI-03` | Động cơ cước IATA V/6000 | `pricing-service (:3003)` | `pricing.engine.ts` | $\max(W_{\text{act}}, \frac{D \cdot R \cdot C}{6000})$ |
+| `UC-AI-04` | Trò chuyện trợ lý AI 24/7 | `chatbot-service (:3013)` | `chat.controller.ts` | `POST /ai-assistant/chat/stream` |
+| `UC-AI-05` | Thực thi 5 Dynamic Tools AI | `chatbot-service (:3013)` | `tools/` | Function Calling execution |
+| `UC-AI-06` | Truy xuất RAG & Fallback LLM | `chatbot-service (:3013)` | `rag.service.ts` | Vector Embeddings Cosine Search |
+| `UC-AI-07` | SSE Streaming & Session | `chatbot-service (:3013)` | `stream.service.ts` | Server-Sent Events Pipe |
+| `UC-ADM-01` | Quản trị tài khoản toàn hệ thống| `auth-service (:3001)` | `users.controller.ts` | `GET/POST/PUT /users` |
+| `UC-ADM-02` | Phân công nhân sự & Tuyến | `masterdata-service (:3002)` | `staff.controller.ts` | `POST /masterdata/staff/assign` |
+| `UC-ADM-03` | Quản trị phân quyền RBAC | `auth-service (:3001)` | `rbac.controller.ts` | `GET/PUT /auth/rbac-matrix` |
+| `UC-ADM-04` | Phân quyền mobile override | `auth-service (:3001)` | `mobile-override.ts` | `POST /auth/mobile-override` |
+| `UC-ADM-05` | Quản lý danh mục Hub 4 cấp | `masterdata-service (:3002)` | `hub.controller.ts` | `GET/POST/PUT /masterdata/hubs` |
+| `UC-ADM-06` | Quản lý khu vực / Zone | `masterdata-service (:3002)` | `zone.controller.ts` | `GET/POST/PUT /masterdata/zones` |
+| `UC-ADM-07` | Danh mục lý do giao NDR | `masterdata-service (:3002)` | `ndr-reason.controller.ts` | `GET/POST/PUT /masterdata/ndr` |
+| `UC-ADM-08` | Cấu hình tham số hệ thống | `masterdata-service (:3002)` | `config.controller.ts` | `GET/PUT /masterdata/configs` |
+| `UC-ADM-09` | Kiểm toán nhật ký hệ thống | `auth-service (:3001)` | `audit.controller.ts` | `GET /auth/admin-audit` |
+| `UC-ADM-10` | Outbox Relay & RabbitMQ | `backend background` | `outbox-relay.worker.ts` | At-least-once message dispatch |
+| `UC-ADM-11` | Read Model Timeline & KPI | `backend background` | `read-model.consumer.ts` | CQRS Projection Update |
 
 ---
 
-## 5. MA TRẬN PHÂN QUYỀN TRUY CẬP RBAC ĐẦY ĐỦ (COMPLETE RBAC ACCESS MATRIX)
+## 6. KẾT LUẬN & ĐÁNH GIÁ CHUẨN MỰC TÀI LIỆU BA
 
-Ký hiệu quyền:
-- **C** *(Create)*: Khởi tạo dữ liệu mới.
-- **R** *(Read)*: Xem / Tra cứu thông tin.
-- **U** *(Update)*: Cập nhật / Chỉnh sửa trạng thái.
-- **D** *(Delete)*: Hủy bỏ / Xóa dữ liệu.
-- **-**: Không có quyền truy cập.
-
-| Mã UC | Tên Trường hợp Sử dụng (Use Case Name) | GUEST | CUSTOMER | MERCHANT | COURIER | OPS | SYSTEM_ADMIN |
-| :---: | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **UC-01a**| Tạo đơn trên Portal | - | - | **C** | - | **C** | **C** |
-| **UC-01b**| Đồng bộ Webhook Sàn TMĐT | - | - | **C/U** | - | - | **C/U** |
-| **UC-02** | Tra cứu danh sách & Lọc đơn | - | - | **R** | - | **R** | **R** |
-| **UC-03** | Tính cước quy đổi IATA | **R** | **R** | **R** | **R** | **R** | **R/U** |
-| **UC-04** | Yêu cầu bưu tá lấy hàng | - | - | **C/R** | **R/U** | **R/U** | **R/U** |
-| **UC-05** | Đổi địa chỉ / SĐT / COD | - | - | **U** | - | **U** | **U** |
-| **UC-06** | Hủy đơn gửi hàng | - | - | **U/D** | - | - | **U/D** |
-| **UC-07** | In phiếu gửi Barcode / QR | - | - | **R** | **R** | **R** | **R** |
-| **UC-08** | Quét tiếp nhận gom hàng | - | - | - | **C/U** | **C/U** | **R** |
-| **UC-08a**| Nhận đơn tại quầy & In tem nhiệt | - | - | - | - | **C/U** | **R/U** |
-| **UC-08b**| Quản lý tồn bưu cục & Chốt ca | - | - | - | - | **C/U** | **R/U** |
-| **UC-09** | Quét mã nhập kho (Inbound) | - | - | - | - | **C/U** | **R** |
-| **UC-10** | Quét mã xuất kho (Outbound) | - | - | - | - | **C/U** | **R** |
-| **UC-11** | Đóng bao Manifest & Niêm chì | - | - | - | - | **C/U** | **R** |
-| **UC-12** | Tiếp nhận bao tải đầu tuyến | - | - | - | - | **C/U** | **R** |
-| **UC-13** | Phân công task & Tối ưu tuyến | - | - | - | - | **C/U** | **R/U** |
-| **UC-13a**| Bàn giao & Chuyển đơn bưu tá | - | - | - | - | **C/U** | **R/U** |
-| **UC-13b**| Chat điều phối với bưu tá | - | - | - | **R/U** | **C/U** | **R/U** |
-| **UC-13c**| Quản lý xe Linehaul & Tem chì | - | - | - | - | **C/U** | **R/U** |
-| **UC-14** | Thực hiện chuyến phát | - | **R** | **R** | **C/U** | **C/U** | **R** |
-| **UC-14a**| Ký nhận điện tử e-POD & OTP | - | **U** | **R** | **C/U** | **C/U** | **R** |
-| **UC-15** | Báo phát thất bại NDR | - | **R** | **R** | **C/U** | **C/U** | **R** |
-| **UC-16** | Hẹn lại ngày phát | - | **U** | **U** | **R** | **C/U** | **R** |
-| **UC-17** | Xử lý chuyển hoàn (RTS) | - | **R** | **U** | **R** | **C/U** | **R** |
-| **UC-18** | Xử lý hàng bất thường & Lạc tuyến | - | - | - | - | **C/U** | **R/U** |
-| **UC-19** | Khởi tạo khiếu nại sự cố | - | **C/R** | **C/R** | - | **R** | **R** |
-| **UC-19a**| Bưu tá đồng kiểm & Ký số | - | **U** | - | **C/U** | **R** | **R** |
-| **UC-20** | Thẩm định sự cố ($\le 500\text{k}$) | - | - | - | - | **C/U** | **R** |
-| **UC-21** | Phê duyệt bồi thường ($> 500\text{k}$) | - | - | - | - | - | **C/U** |
-| **UC-21a**| Điều tra & Hòa giải tranh chấp | - | **R** | **R** | **R** | **U** | **C/U** |
-| **UC-22** | Cấn trừ tiền bồi thường | - | - | - | - | - | **C/U** |
-| **UC-23a**| Thu tiền mặt tại điểm phát | - | **U** | - | **C/U** | **R** | **R** |
-| **UC-23b**| Thanh toán VietQR SePay động | - | **C** | - | **R** | **R** | **R** |
-| **UC-24** | Quyết toán ca nộp tiền bưu tá | - | - | - | **C** | **U** | **R/U** |
-| **UC-25** | Đối soát tự động SePay Webhook | - | - | - | - | - | **C/U** |
-| **UC-26** | Lập bảng kê đối soát COD | - | - | **R** | - | - | **C/U** |
-| **UC-27** | Xác nhận đối soát & Chốt sổ | - | - | **U** | - | - | **C/U** |
-| **UC-28** | Báo cáo dòng tiền & Doanh thu | - | - | **R** | - | **R** | **C/R/U** |
-| **UC-32** | Tra cứu lộ trình công khai | **R** | **R** | **R** | **R** | **R** | **R** |
-| **UC-33** | Tra cứu tiến trình nội bộ | - | - | - | **R** | **R** | **R** |
-| **UC-34** | Hội thoại tự nhiên với Trợ lý AI | **R** | **R** | **R** | **R** | **R** | **R** |
-| **UC-34a**| Sinh thẻ trực quan (Rich Card) | **R** | **R** | **R** | **R** | **R** | **R** |
-| **UC-35** | Khử định danh PII Masking | **R** | **R** | - | - | - | - |
-| **UC-36** | Định vị GPS thời gian thực | - | **R** | **R** | **R/U** | **R** | **R** |
-| **UC-37** | Bóc tách Ý định & Thực thể | **R** | **R** | **R** | **R** | **R** | **R** |
-| **UC-37a**| Truy xuất RAG 768-D Vectors | **R** | **R** | **R** | **R** | **R** | **R** |
-| **UC-38** | Tư vấn cước IATA tự động | **R** | **R** | **R** | **R** | **R** | **R** |
-| **UC-39** | Hướng dẫn lập khiếu nại AI | - | **C/R** | **C/R** | - | - | - |
-| **UC-41** | Điều chuyển nhân viên hỗ trợ | - | **R** | **R** | - | **R/U** | **R/U** |
-| **UC-42** | Đăng nhập hệ thống (Core Auth Hub) | - | **R** | **R** | **R** | **R** | **R** |
-| **UC-43** | Đăng ký tài khoản khách | **C** | - | - | - | - | - |
-| **UC-44** | Hồ sơ cá nhân & Mật khẩu | - | **R/U** | **R/U** | **R/U** | **R/U** | **R/U** |
-| **UC-45** | Quản trị người dùng & Tài khoản | - | - | - | - | - | **C/R/U/D** |
-| **UC-46** | Phân quyền RBAC Matrix | - | - | - | - | - | **C/R/U/D** |
-| **UC-47** | Nhật ký kiểm toán bảo mật | - | - | - | - | **R** | **R/D** |
-| **UC-48** | Quản trị Hubs 4 cấp | - | - | - | - | **R** | **C/R/U/D** |
-| **UC-49** | Quản lý phân vùng địa lý | - | - | - | - | **R/U** | **C/R/U/D** |
-| **UC-50** | Cấu hình hệ thống & SLA | - | - | - | - | **R** | **C/R/U/D** |
-| **UC-51** | CMS Quản trị bài viết | - | - | - | - | - | **C/R/U/D** |
-| **UC-52** | Hồ sơ đối tác Merchant | - | - | **R/U** | - | **R** | **C/R/U/D** |
-| **UC-53** | Danh mục lý do giao NDR | - | - | - | **R** | **R** | **C/R/U/D** |
-
----
-
-## 6. HƯỚNG DẪN TRẢ LỜI PHẢN BIỆN HỘI ĐỒNG CHẤM KHÓA LUẬN (DEFENSE FAQ)
-
-### Câu hỏi 1: Tại sao sơ đồ Use Case lại có đúng 59 trường hợp sử dụng và phân rã thành 6 Phân hệ + Cổng Xác thực Trung tâm? Có tính năng nào "vẽ khống" (hallucinated) không?
-> **Trả lời chuẩn của Tác giả:**  
-> *"Dạ kính thưa Thầy/Cô trong Hội đồng, sơ đồ Use Case này hoàn toàn không có bất kỳ tính năng lý thuyết nào được vẽ thêm, mà là sự phản ánh chính xác 1:1 từ mã nguồn của 15 Backend Microservices và 6 Ứng dụng Client hiện hành trong kho mã nguồn của Dự án Nexus.  
-> Toàn bộ 59 trường hợp sử dụng đều tương ứng với mã nguồn và màn hình thực tế, đặc biệt là phân hệ Phân hệ 2 đã phản ánh toàn diện các module của `ops-web :5175` như Nghiệp vụ tại quầy (`UC-08a`), Quản lý tồn bưu cục & chốt ca (`UC-08b`), Bàn giao & chuyển đơn bưu tá (`UC-13a`), Chat điều phối bưu tá (`UC-13b`), Quản lý xe Linehaul & tem chì (`UC-13c`), Xử lý hàng bất thường & lạc tuyến (`UC-18`).  
-> Mỗi Use Case đều có endpoint RESTful hoặc WebSocket cụ thể, controller xử lý, DTO kiểm tra hợp lệ, entity cơ sở dữ liệu và màn hình giao diện người dùng tương ứng."*
-
-### Câu hỏi 2: Tại sao hệ thống lại quy định đúng 6 Vai trò Tác nhân cụ thể (GUEST, CUSTOMER, MERCHANT, COURIER, OPS, SYSTEM_ADMIN)? Mối liên hệ giữa OPS và COURIER là gì?
-> **Trả lời chuẩn của Tác giả:**  
-> *"Dạ thưa Thầy/Cô:  
-> 1. Trong phân hệ giao nhận hiện trường, bưu tá thực địa là `COURIER` (sử dụng ứng dụng `courier-mobile :8081`).  
-> 2. Trong bưu cục và kho trung chuyển, các vai trò vận hành (`HUB_OPS`, `DISPATCHER`, `SORTER`, `INVENTORY_CLERK`, `BRANCH_ADMIN`) được chuẩn hóa chung dưới tác nhân `OPS` (sử dụng `ops-web :5175`).  
-> 3. **Mối quan hệ OPS ──▷ COURIER:** Trong thực tế vận hành logistics bưu chính, Admin bưu cục / Nhân viên điều hành bưu cục dùng chung ứng dụng `courier-mobile :8081` để trực tiếp đi gom hoặc phát hàng khi địa bàn thiếu nhân sự bưu tá. Do đó, `OPS` là tác nhân chuyên biệt kế thừa toàn bộ tính năng và quyền hạn hiện trường của `COURIER`.  
-> 4. Khách hàng bên ngoài gồm khách vãng lai `GUEST` (sử dụng `guest-web :5174`), người nhận hàng `CUSTOMER` (sử dụng `customer-mobile :8082`), và chủ shop gửi hàng `MERCHANT` (sử dụng `merchant-web :5176`).  
-> 5. Quản trị hệ thống cấp cao nhất là `SYSTEM_ADMIN` (sử dụng `admin-web :5173`).  
-> Nhờ cấu trúc này, ma trận RBAC phản ánh chính xác 100% cấu hình phân quyền trong `auth-service`."*
-
-### Câu hỏi 3: Bản chất của quan hệ Kế thừa Use Case tại `UC-01` và `UC-23` được hiện thực ra sao trong mã nguồn?
-> **Trả lời chuẩn của Tác giả:**  
-> *"Dạ thưa Thầy/Cô:  
-> - Tại `UC-01: Tạo đơn gửi hàng`, nghiệp vụ tạo đơn có 2 hình thức triển khai đa hình (Polymorphism): `UC-01a` (nhập form thủ công trên Portal Merchant qua `shipment-service`) và `UC-01b` (đồng bộ tự động qua webhook sàn TMĐT Shopee/Lazada qua `gateway-bff`). Cả hai hình thức đều thừa hưởng logic tính cước quy đổi IATA (`UC-03`) và sinh nhãn in barcode (`UC-07`).  
-> - Tại `UC-23: Thu tiền COD bưu phẩm`, khách hàng có thể chọn trả bằng tiền mặt cho bưu tá (`UC-23a` qua `POST /cod/collect-cash`) hoặc quét mã VietQR động SePay (`UC-23b` qua `POST /cod/generate-qr`). Khi khách quét mã QR thành công, cổng SePay bắn webhook về `payment-service` (`UC-25`) để tự động gạch nợ đơn hàng trong 2 giây mà không cần bưu tá đếm tiền hay nộp ca thủ công."*
-
-### Câu hỏi 4: Kiến trúc xác thực Đăng nhập & Đăng ký (100% Include Coverage) được biểu diễn thế nào trên sơ đồ và mã nguồn?
-> **Trả lời chuẩn của Tác giả:**  
-> *"Dạ thưa Thầy/Cô:  
-> Để bảo mật hệ thống theo tiêu chuẩn Zero Trust, các phân hệ nghiệp vụ không tự ý xử lý đăng nhập cục bộ mà đều phụ thuộc vào Cổng Xác thực Trung tâm (Central Auth Gateway) đặt tại vị trí trung tâm đại lộ của sơ đồ:  
-> - 100% các chức năng nghiệp vụ yêu cầu bảo mật đều phải qua đăng nhập: Sơ đồ thể hiện 15 mũi tên nét đứt `<<include>>` tỏa tròn từ Cổng Xác thực Trung tâm (`UC-42: Đăng nhập hệ thống`) đến các Use Case cửa ngõ của toàn bộ 6 phân hệ chức năng. Để gọi API, client bắt buộc phải gửi kèm Opaque Bearer Token và qua RBAC Guard của `gateway-bff`.  
-> - Các chức năng nghiệp vụ con bên trong từng phân hệ thừa hưởng phiên làm việc đã xác thực này qua các quan hệ `<<include>>` và `<<extend>>` phân tầng.  
-> - Khách vãng lai (`GUEST`) có thể tự đăng ký tài khoản tại `UC-43: Đăng ký tài khoản khách`. Sau khi đăng ký thành công, mối quan hệ `<<extend>>` cho phép người dùng tự động chuyển hướng đăng nhập vào `UC-42`."*
-
-### Câu hỏi 5: Tại sao trên sơ đồ áp dụng Mô hình Kế thừa Tác nhân Đối xứng Kép (CUSTOMER ──▷ GUEST và OPS ──▷ COURIER)?
-> **Trả lời chuẩn của Tác giả:**  
-> *"Dạ kính thưa Thầy/Cô:  
-> Trong mô hình hóa hướng đối tượng UML 2.5, quan hệ Kế thừa Tác nhân (Actor Generalization) được áp dụng khi một tác nhân chuyên biệt thừa hưởng toàn bộ khả năng tương tác của một tác nhân tổng quát:  
-> 1. **Cột Ngoại vi (`CUSTOMER ──▷ GUEST`):** Khách hàng là người dùng đã xác thực, đương nhiên sở hữu mọi khả năng tương tác công khai của Khách vãng lai như tra cứu lộ trình bưu gửi (`UC-32`), hội thoại tự nhiên với Trợ lý AI (`UC-34`) và nhận tư vấn cước IATA (`UC-38`).  
-> 2. **Cột Nội bộ (`OPS ──▷ COURIER`):** Admin bưu cục / Điều hành là tác nhân quản trị tại bưu cục nhưng dùng chung app `courier-mobile :8081` và có đầy đủ quyền hạn thực hiện các nhiệm vụ gom/phát thực địa của bưu tá (`UC-08`, `UC-14`, `UC-14a`, `UC-15`, `UC-23a`, `UC-24`).  
-> 3. Mô hình kế thừa đối xứng kép này giúp sơ đồ đạt độ tinh gọn và chuẩn mực cao nhất, loại bỏ hoàn toàn các đường liên kết thừa thãi, đồng thời phản ánh chân thực nghiệp vụ phân quyền thực tế của doanh nghiệp."*
-
----
-
-> **Kết luận:** Tài liệu đặc tả này cùng bản vẽ vector [`01-use-case-general-system.svg`](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/figma-page-1-system-and-data/diagrams/01-use-case-general-system.svg) tạo thành một khối thống nhất, bảo đảm độ tin cậy khoa học cao nhất trước Hội đồng Khóa luận Tốt nghiệp.
+1. **Chuẩn mực OMG UML 2.5:**
+   - Phân biệt rõ ràng quan hệ Association, Generalization (thực chất qua cây kế thừa đa hình), Dependency `<<include>>` (bước con bắt buộc) và `<<extend>>` (bước mở rộng có điều kiện).
+   - Tuyệt đối không lạm dụng "Login Spaghetti": Phân quyền bảo mật được quản trị tại Central Auth Gateway kết hợp tiền điều kiện (Pre-conditions) trong hồ sơ đặc tả chức năng.
+2. **Chuẩn mực Bản vẽ Kỹ thuật Công nghiệp (Industrial Line Art):**
+   - Không sử dụng màu mè AI (AI hallucinated gradient/icons).
+   - Đường nét đen trắng kỹ thuật cao monochrome, viền nét rõ ràng, phân cấp trực quan theo độ dày stroke: Phân hệ (1.4px dash), Use Case Core (2.4px), Use Case Chuẩn (1.3px), Use Case Mở rộng (1.2px dash), Use Case Abstract (nền xám nhẹ `<<abstract>>`).
+3. **Chuẩn mực Vector Tương thích 100% Figma:**
+   - Loại bỏ hoàn toàn thẻ `<marker>` (thường bị lỗi mất đầu mũi tên khi import vào Figma).
+   - Thay thế toàn bộ bằng thẻ `<polygon>` vector hình học tọa độ thực, đảm bảo hiển thị hoàn hảo trên mọi phần mềm đồ họa vector chuyên nghiệp (Figma, Adobe Illustrator, Inkscape).
+4. **Bảo đảm Zero-Crossing (Không Giao Cắt Lộn Xộn):**
+   - Áp dụng triệt để định tuyến hành lang vuông góc (Orthogonal Corridor Routing) và sắp xếp Use Case theo ái lực miền tác nhân (Domain Affinity Ordering).
+   - 100% đường liên kết không cắt ngang qua bất kỳ hình elip hay phân hệ nào khác.
