@@ -1,16 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Nexus Logistics Platform - Master Use Case Diagram Generator (REV.19)
+Generator for Nexus Master UML Use Case Diagram in Visual Paradigm Modern Enterprise Style.
 Standard: OMG UML 2.5 / IEEE 830 / ISO/IEC 25010
-Canvas: 7500 x 4600 px (Super-Expanded Industrial Layout)
-Horizontal Gutters: 300 px
-Vertical Middle Highway: 260 px
-P3-P6 Gap Highway: 200 px
-Runway Margins: 450 px
-Fillet Radius: R = 24 px
-Traceability: 100% 82 Functional Requirements mapped 1:1 to Excel Specification
-Figma Compatibility: 100% Native Vector Shapes (Zero <marker> tags)
+Theme: Visual Paradigm Modern Enterprise (Soft Sky Blue Gradients, 2.5D Elevation Shadows, Folder-Tab Packages, Guillemets «include»/«extend», Zero <marker> tags)
+Canvas: 7500 x 4600 px
 """
 
 import os
@@ -24,48 +18,87 @@ def generate_svg():
     lines.append('<?xml version="1.0" encoding="UTF-8"?>')
     lines.append(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="100%" height="100%">')
     lines.append('  <defs>')
-    lines.append('    <style>')
-    lines.append('      /* ===== TYPOGRAPHY ===== */')
-    lines.append('      .t-main { font-family: Arial, sans-serif; font-size: 26px; font-weight: bold; fill: #000000; letter-spacing: 0.5px; }')
-    lines.append('      .t-sub { font-family: Arial, sans-serif; font-size: 14px; fill: #444444; }')
-    lines.append('      .t-boundary { font-family: Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #111827; letter-spacing: 0.8px; }')
-    lines.append('      .t-pkg { font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; fill: #000000; }')
-    lines.append('      .t-uc { font-family: Arial, sans-serif; font-size: 12.5px; font-weight: bold; fill: #000000; text-anchor: middle; }')
-    lines.append('      .t-uc-abs { font-family: Arial, sans-serif; font-size: 12.5px; font-weight: bold; font-style: italic; fill: #000000; text-anchor: middle; }')
-    lines.append('      .t-ucid { font-family: "Courier New", monospace; font-size: 11px; font-weight: bold; fill: #222222; text-anchor: middle; }')
-    lines.append('      .t-actor { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; fill: #000000; text-anchor: middle; }')
-    lines.append('      .t-role { font-family: Arial, sans-serif; font-size: 13px; font-style: italic; fill: #444444; text-anchor: middle; }')
-    lines.append('      .t-app { font-family: "Courier New", monospace; font-size: 12px; font-weight: bold; fill: #111827; text-anchor: middle; }')
-    lines.append('      .t-rel { font-family: Arial, sans-serif; font-size: 11px; font-style: italic; fill: #000000; text-anchor: middle; }')
-    lines.append('      .t-legend { font-family: Arial, sans-serif; font-size: 13px; fill: #222222; }')
-    lines.append('      .t-note { font-family: Arial, sans-serif; font-size: 14.5px; font-weight: bold; fill: #000000; }')
+    # Pure Vector Definitions (100% Native Figma Compatible - Zero Filters)
+    lines.append('    <!-- Gradients: Modern Enterprise VP Palette -->')
+    lines.append('    <linearGradient id="vp-grad-core" x1="0%" y1="0%" x2="0%" y2="100%">')
+    lines.append('      <stop offset="0%" stop-color="#FFFFFF"/>')
+    lines.append('      <stop offset="100%" stop-color="#E2EEF8"/>')
+    lines.append('    </linearGradient>')
+    lines.append('    <linearGradient id="vp-grad-std" x1="0%" y1="0%" x2="0%" y2="100%">')
+    lines.append('      <stop offset="0%" stop-color="#FFFFFF"/>')
+    lines.append('      <stop offset="100%" stop-color="#EDF4FA"/>')
+    lines.append('    </linearGradient>')
+    lines.append('    <linearGradient id="vp-grad-abs" x1="0%" y1="0%" x2="0%" y2="100%">')
+    lines.append('      <stop offset="0%" stop-color="#F8FAFC"/>')
+    lines.append('      <stop offset="100%" stop-color="#E2E8F0"/>')
+    lines.append('    </linearGradient>')
+    lines.append('    <linearGradient id="vp-grad-ext" x1="0%" y1="0%" x2="0%" y2="100%">')
+    lines.append('      <stop offset="0%" stop-color="#FFFFFF"/>')
+    lines.append('      <stop offset="100%" stop-color="#F1F5F9"/>')
+    lines.append('    </linearGradient>')
+    lines.append('    <linearGradient id="vp-pkg-tab-grad" x1="0%" y1="0%" x2="0%" y2="100%">')
+    lines.append('      <stop offset="0%" stop-color="#E6F0FA"/>')
+    lines.append('      <stop offset="100%" stop-color="#CFE2F2"/>')
+    lines.append('    </linearGradient>')
+    lines.append('    <linearGradient id="vp-sys-header-grad" x1="0%" y1="0%" x2="0%" y2="100%">')
+    lines.append('      <stop offset="0%" stop-color="#EDF4FA"/>')
+    lines.append('      <stop offset="100%" stop-color="#D5E4F3"/>')
+    lines.append('    </linearGradient>')
+    lines.append('    <linearGradient id="vp-badge-grad" x1="0%" y1="0%" x2="0%" y2="100%">')
+    lines.append('      <stop offset="0%" stop-color="#FFFFFF"/>')
+    lines.append('      <stop offset="100%" stop-color="#EDF4FA"/>')
+    lines.append('    </linearGradient>')
     lines.append('')
-    lines.append('      /* ===== SHAPES ===== */')
-    lines.append('      .bg { fill: #FFFFFF; }')
-    lines.append('      .frame { fill: none; stroke: #000000; stroke-width: 2.4; }')
-    lines.append('      .frame-inner { fill: none; stroke: #000000; stroke-width: 0.9; }')
-    lines.append('      .sys-border { fill: #FFFFFF; stroke: #000000; stroke-width: 2.6; }')
-    lines.append('      .pkg-border { fill: none; stroke: #000000; stroke-width: 1.5; stroke-dasharray: 8 5; }')
-    lines.append('      .pkg-header { fill: #F3F4F6; stroke: #000000; stroke-width: 1.2; }')
-    lines.append('      .gateway-border { fill: #FAFAFA; stroke: #000000; stroke-width: 2.4; stroke-dasharray: 6 4; }')
-    lines.append('      .gateway-header { fill: #E5E7EB; stroke: #000000; stroke-width: 1.4; }')
-    lines.append('      .uc-abstract { fill: #F3F4F6; stroke: #000000; stroke-width: 2.2; }')
-    lines.append('      .uc-core { fill: #FFFFFF; stroke: #000000; stroke-width: 2.5; }')
-    lines.append('      .uc { fill: #FFFFFF; stroke: #000000; stroke-width: 1.4; }')
-    lines.append('      .uc-ext { fill: #F9FAFB; stroke: #000000; stroke-width: 1.3; stroke-dasharray: 6 3; }')
-    lines.append('      .actor-body { stroke: #000000; stroke-width: 2.4; fill: none; }')
-    lines.append('      .actor-head { fill: #FFFFFF; stroke: #000000; stroke-width: 2.4; }')
-    lines.append('      .sys-actor-box { fill: #FFFFFF; stroke: #000000; stroke-width: 2.4; }')
-    lines.append('      .legend-box { fill: #F8F9FA; stroke: #000000; stroke-width: 1.2; }')
+    lines.append('    <style><![CDATA[')
+    lines.append('      /* ===== TYPOGRAPHY (VISUAL PARADIGM ENTERPRISE) ===== */')
+    lines.append('      .t-main { font-family: "Segoe UI", Arial, sans-serif; font-size: 26px; font-weight: bold; fill: #0F2942; letter-spacing: 0.5px; }')
+    lines.append('      .t-sub { font-family: "Segoe UI", Arial, sans-serif; font-size: 14px; fill: #475569; }')
+    lines.append('      .t-boundary { font-family: "Segoe UI", Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #1E3A5F; letter-spacing: 0.8px; }')
+    lines.append('      .t-pkg { font-family: "Segoe UI", Arial, sans-serif; font-size: 13.5px; font-weight: bold; fill: #1E3A5F; letter-spacing: 0.3px; }')
+    lines.append('      .t-actor { font-family: "Segoe UI", Arial, sans-serif; font-size: 16px; font-weight: bold; fill: #0F2942; text-anchor: middle; }')
+    lines.append('      .t-role { font-family: "Segoe UI", Arial, sans-serif; font-size: 12.5px; font-weight: 500; fill: #475569; text-anchor: middle; }')
+    lines.append('      .t-app { font-family: "Courier New", monospace; font-size: 11.5px; font-weight: bold; fill: #2B4C6F; text-anchor: middle; }')
+    lines.append('      ')
+    lines.append('      .t-ucid { font-family: "Segoe UI", Arial, sans-serif; font-size: 11.5px; font-weight: bold; fill: #244B7A; text-anchor: middle; }')
+    lines.append('      .t-uc { font-family: "Segoe UI", Arial, sans-serif; font-size: 12.5px; font-weight: 600; fill: #0F172A; text-anchor: middle; }')
+    lines.append('      .t-uc-abs { font-family: "Segoe UI", Arial, sans-serif; font-size: 12px; font-weight: bold; font-style: italic; fill: #334155; text-anchor: middle; }')
+    lines.append('      .t-rel { font-family: "Segoe UI", Arial, sans-serif; font-size: 11px; font-style: italic; font-weight: bold; fill: #1E3A5F; text-anchor: middle; }')
+    lines.append('      .t-badge { font-family: "Segoe UI", Arial, sans-serif; font-size: 11.5px; font-weight: bold; fill: #1E3A5F; text-anchor: middle; }')
+    lines.append('      .t-legend { font-family: "Segoe UI", Arial, sans-serif; font-size: 12.5px; fill: #1E293B; }')
+    lines.append('      .t-note { font-family: "Segoe UI", Arial, sans-serif; font-size: 14px; font-weight: bold; fill: #0F2942; }')
     lines.append('')
-    lines.append('      /* ===== LINES AND CONNECTORS ===== */')
-    lines.append('      .assoc { stroke: #000000; stroke-width: 1.3; fill: none; }')
-    lines.append('      .assoc-corr { stroke: #000000; stroke-width: 1.3; fill: none; stroke-linejoin: round; }')
-    lines.append('      .gen-line { stroke: #000000; stroke-width: 1.6; fill: none; stroke-linejoin: round; }')
-    lines.append('      .gen-arrow { fill: #FFFFFF; stroke: #000000; stroke-width: 1.6; }')
-    lines.append('      .dep-line { stroke: #000000; stroke-width: 1.2; stroke-dasharray: 6 4; fill: none; stroke-linejoin: round; }')
-    lines.append('      .dep-arrow { fill: #000000; stroke: #000000; stroke-width: 0.6; }')
-    lines.append('    </style>')
+    lines.append('      /* ===== SHAPES & STROKES ===== */')
+    lines.append('      .bg { fill: #FBFCFE; }')
+    lines.append('      .frame { fill: none; stroke: #335A88; stroke-width: 2.2; }')
+    lines.append('      .frame-inner { fill: none; stroke: #94A3B8; stroke-width: 0.8; }')
+    lines.append('      .sys-border { fill: #FFFFFF; stroke: #2D4A70; stroke-width: 2.2; }')
+    lines.append('      .sys-header { fill: url(#vp-sys-header-grad); stroke: #2D4A70; stroke-width: 1.6; }')
+    lines.append('      .pkg-body { fill: #F8FAFD; stroke: #4C769E; stroke-width: 1.4; }')
+    lines.append('      .pkg-tab { fill: url(#vp-pkg-tab-grad); stroke: #4C769E; stroke-width: 1.4; }')
+    lines.append('      .gateway-body { fill: #F6F9FD; stroke: #2D5B88; stroke-width: 1.8; stroke-dasharray: 6 3.5; }')
+    lines.append('      .gateway-tab { fill: #DCE8F4; stroke: #2D5B88; stroke-width: 1.6; }')
+    lines.append('')
+    lines.append('      /* Use Cases (Visual Paradigm 2.5D Shading - Pure Vector Native) */')
+    lines.append('      .uc-core { fill: url(#vp-grad-core); stroke: #204B76; stroke-width: 2.2; }')
+    lines.append('      .uc { fill: url(#vp-grad-std); stroke: #4C769E; stroke-width: 1.4; }')
+    lines.append('      .uc-abstract { fill: url(#vp-grad-abs); stroke: #475569; stroke-width: 1.6; stroke-dasharray: 5 3; }')
+    lines.append('      .uc-ext { fill: url(#vp-grad-ext); stroke: #4C769E; stroke-width: 1.4; stroke-dasharray: 5 3; }')
+    lines.append('')
+    lines.append('      /* Actors */')
+    lines.append('      .actor-head { fill: #FFFFFF; stroke: #0F2942; stroke-width: 2.2; }')
+    lines.append('      .actor-body { stroke: #0F2942; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }')
+    lines.append('      .sys-actor-box { fill: #EDF4FA; stroke: #2E5B88; stroke-width: 1.8; rx: 6px; }')
+    lines.append('')
+    lines.append('      /* Connectors & Arrows */')
+    lines.append('      .assoc { stroke: #243B53; stroke-width: 1.4; fill: none; }')
+    lines.append('      .assoc-corr { stroke: #243B53; stroke-width: 1.4; fill: none; stroke-linejoin: round; }')
+    lines.append('      .gen-line { stroke: #243B53; stroke-width: 1.6; fill: none; stroke-linejoin: round; }')
+    lines.append('      .gen-arrow { fill: #FFFFFF; stroke: #243B53; stroke-width: 1.6; }')
+    lines.append('      .dep-line { stroke: #334E68; stroke-width: 1.3; stroke-dasharray: 6 3.5; fill: none; stroke-linejoin: round; }')
+    lines.append('      .dep-arrow { fill: #334E68; stroke: #334E68; stroke-width: 0.5; }')
+    lines.append('      .badge-rect { fill: url(#vp-badge-grad); stroke: #4C769E; stroke-width: 0.9; rx: 5px; }')
+    lines.append('      .pill-plate { fill: #FFFFFF; stroke: #94A3B8; stroke-width: 0.8; rx: 4px; }')
+    lines.append('    ]]></style>')
     lines.append('  </defs>')
     lines.append('')
     lines.append('  <!-- CANVAS BACKGROUND & DOUBLE BORDER -->')
@@ -77,12 +110,13 @@ def generate_svg():
     # HEADER BLOCK
     lines.append('  <!-- ==================== HEADER ==================== -->')
     lines.append('  <g id="Header">')
-    lines.append(f'    <rect x="40" y="40" width="{width-80}" height="102" fill="#FFFFFF" stroke="#000000" stroke-width="1.8"/>')
-    lines.append('    <text x="70" y="80" class="t-main">SƠ ĐỒ USE CASE TỔNG QUÁT HỆ THỐNG NEXUS LOGISTICS (CHUẨN TÀI LIỆU BA / SRS)</text>')
-    lines.append('    <text x="70" y="116" class="t-sub">Mô hình hóa Toàn diện 82 Yêu cầu Nghiệp vụ Thực có • 7 Tác nhân • 6 Phân hệ • Đại lộ khoảng cách 300px • Bo góc cong R=24px • OMG UML 2.5</text>')
-    lines.append(f'    <rect x="{width-520}" y="52" width="470" height="78" fill="#F8F9FA" stroke="#000000" stroke-width="1.2"/>')
-    lines.append(f'    <text x="{width-500}" y="82" font-family="Arial" font-size="14.5" font-weight="bold" fill="#000000">MÃ BẢN VẼ: UC-SYS-REAL-01 (REV.19)</text>')
-    lines.append(f'    <text x="{width-500}" y="110" font-family="Arial" font-size="12" fill="#444444">TIÊU CHUẨN: IEEE 830 • ISO/IEC 25010 • UML 2.5</text>')
+    lines.append(f'    <rect x="43" y="43" width="{width-80}" height="102" fill="#0F2438" fill-opacity="0.04" rx="4"/>')
+    lines.append(f'    <rect x="40" y="40" width="{width-80}" height="102" fill="#FFFFFF" stroke="#335A88" stroke-width="1.8"/>')
+    lines.append('    <text x="70" y="80" class="t-main">SƠ ĐỒ USE CASE TỔNG QUÁT HỆ THỐNG NEXUS LOGISTICS (CHUẨN VISUAL PARADIGM &amp; BA / SRS)</text>')
+    lines.append('    <text x="70" y="116" class="t-sub">Mô hình hóa Toàn diện 82 Yêu cầu Nghiệp vụ Thực có • 7 Tác nhân • 6 Phân hệ Folder-Tab • Đại lộ 300px • Bo góc Bezier R=24px • Phong cách Visual Paradigm Modern Enterprise</text>')
+    lines.append(f'    <rect x="{width-540}" y="52" width="490" height="78" fill="url(#vp-sys-header-grad)" stroke="#335A88" stroke-width="1.2"/>')
+    lines.append(f'    <text x="{width-520}" y="82" font-family="\'Segoe UI\', Arial" font-size="14.5" font-weight="bold" fill="#0F2942">MÃ BẢN VẼ: UC-SYS-REAL-01 (REV.20-VP)</text>')
+    lines.append(f'    <text x="{width-520}" y="110" font-family="\'Segoe UI\', Arial" font-size="12" fill="#334E68">TIÊU CHUẨN: OMG UML 2.5 • VISUAL PARADIGM ENTERPRISE</text>')
     lines.append('  </g>')
     lines.append('')
 
@@ -93,19 +127,22 @@ def generate_svg():
     sb_h = 3980
     lines.append('  <!-- ==================== SYSTEM BOUNDARY ==================== -->')
     lines.append('  <g id="System_Boundary">')
+    lines.append(f'    <rect x="{sb_x+4}" y="{sb_y+4}" width="{sb_w}" height="{sb_h}" rx="8" fill="#0F2438" fill-opacity="0.03"/>')
     lines.append(f'    <rect x="{sb_x}" y="{sb_y}" width="{sb_w}" height="{sb_h}" class="sys-border"/>')
-    lines.append(f'    <rect x="{sb_x}" y="{sb_y}" width="1800" height="42" class="pkg-header"/>')
-    lines.append(f'    <text x="{sb_x+30}" y="{sb_y+28}" class="t-boundary">RANH GIỚI HỆ THỐNG: NEXUS ENTERPRISE LOGISTICS PLATFORM (15 BACKEND MICROSERVICES &amp; 6 CLIENT APPS)</text>')
+    lines.append(f'    <rect x="{sb_x}" y="{sb_y}" width="2100" height="42" class="sys-header"/>')
+    lines.append(f'    <text x="{sb_x+30}" y="{sb_y+28}" class="t-boundary">«system» RANH GIỚI HỆ THỐNG: NEXUS ENTERPRISE LOGISTICS PLATFORM (15 BACKEND MICROSERVICES &amp; 6 CLIENT APPS)</text>')
     lines.append('  </g>')
     lines.append('')
 
     # HELPER FUNCTIONS
     def uc(cx, cy, rx, ry, ucid, title, uctype="uc"):
         res = []
+        # Pure Vector 2.5D Elevation Shadow (Visual Paradigm signature, 100% Figma vector native)
+        res.append(f'    <ellipse cx="{cx+3:.1f}" cy="{cy+3.5:.1f}" rx="{rx}" ry="{ry}" fill="#0F2438" fill-opacity="0.08"/>')
         res.append(f'    <ellipse cx="{cx}" cy="{cy}" rx="{rx}" ry="{ry}" class="{uctype}"/>')
         safe_title = title.replace('&amp;', '&').replace('&', '&amp;')
         if uctype == "uc-abstract":
-            res.append(f'    <text x="{cx}" y="{cy-14}" class="t-rel">&lt;&lt;abstract&gt;&gt;</text>')
+            res.append(f'    <text x="{cx}" y="{cy-14}" class="t-rel">«abstract»</text>')
             res.append(f'    <text x="{cx}" y="{cy+2}" class="t-ucid">{ucid}</text>')
             res.append(f'    <text x="{cx}" y="{cy+19}" class="t-uc-abs">{safe_title}</text>')
         else:
@@ -139,23 +176,23 @@ def generate_svg():
             
             dx1 = p_curr[0] - p_prev[0]
             dy1 = p_curr[1] - p_prev[1]
-            len1 = math.hypot(dx1, dy1)
+            d1 = math.hypot(dx1, dy1)
             
             dx2 = p_next[0] - p_curr[0]
             dy2 = p_next[1] - p_curr[1]
-            len2 = math.hypot(dx2, dy2)
+            d2 = math.hypot(dx2, dy2)
             
-            if len1 == 0 or len2 == 0:
+            if d1 == 0 or d2 == 0:
+                d.append(f"L {p_curr[0]:.1f} {p_curr[1]:.1f}")
                 continue
                 
-            u1 = (dx1 / len1, dy1 / len1)
-            u2 = (dx2 / len2, dy2 / len2)
+            r = min(radius, d1 / 2.0, d2 / 2.0)
             
-            r = min(radius, len1 / 2.0, len2 / 2.0)
-            start_x = p_curr[0] - r * u1[0]
-            start_y = p_curr[1] - r * u1[1]
-            end_x = p_curr[0] + r * u2[0]
-            end_y = p_curr[1] + r * u2[1]
+            start_x = p_curr[0] - (dx1 / d1) * r
+            start_y = p_curr[1] - (dy1 / d1) * r
+            
+            end_x = p_curr[0] + (dx2 / d2) * r
+            end_y = p_curr[1] + (dy2 / d2) * r
             
             d.append(f"L {start_x:.1f} {start_y:.1f}")
             d.append(f"Q {p_curr[0]:.1f} {p_curr[1]:.1f} {end_x:.1f} {end_y:.1f}")
@@ -163,40 +200,25 @@ def generate_svg():
         d.append(f"L {points[-1][0]:.1f} {points[-1][1]:.1f}")
         return " ".join(d)
 
-    def path_to_ellipse(points, cx, cy, rx, ry, stroke_class="assoc-corr", radius=24, label=None, label_idx=None):
-        if len(points) < 1:
+    def path_to_ellipse(points, cx, cy, rx, ry, stroke_class="assoc-corr", radius=24, label=None, label_idx=1):
+        if not points:
             return ""
-        prev_x, prev_y = points[-1]
-        x2, y2 = ellipse_point(cx, cy, rx, ry, prev_x, prev_y)
+        last_x, last_y = points[-1]
+        x2, y2 = ellipse_point(cx, cy, rx, ry, last_x, last_y)
         all_pts = points + [(x2, y2)]
         d_str = rounded_path_d(all_pts, radius=radius)
         res = [f'    <path d="{d_str}" class="{stroke_class}"/>']
-        
-        if label:
-            if label_idx is not None and label_idx < len(all_pts) - 1:
-                p1 = all_pts[label_idx]
-                p2 = all_pts[label_idx + 1]
-            else:
-                best_len = 0
-                best_idx = 0
-                for i in range(len(all_pts) - 1):
-                    seg_len = math.hypot(all_pts[i+1][0] - all_pts[i][0], all_pts[i+1][1] - all_pts[i][1])
-                    if seg_len > best_len:
-                        best_len = seg_len
-                        best_idx = i
-                p1 = all_pts[best_idx]
-                p2 = all_pts[best_idx + 1]
-                
-            mid_x = (p1[0] + p2[0]) / 2.0
-            mid_y = (p1[1] + p2[1]) / 2.0
-            lw = len(label) * 7.2 + 14
-            res.append(f'    <rect x="{mid_x - lw/2:.1f}" y="{mid_y - 9:.1f}" width="{lw:.1f}" height="18" fill="#FFFFFF" stroke="#000000" stroke-width="0.8" rx="4"/>')
-            safe_lbl = label.replace('&amp;', '&').replace('&', '&amp;')
-            res.append(f'    <text x="{mid_x:.1f}" y="{mid_y + 4.5:.1f}" font-family="Arial" font-size="10.5px" font-weight="bold" fill="#000000" text-anchor="middle">{safe_lbl}</text>')
-            
+        if label and 0 <= label_idx < len(points):
+            badge_x, badge_y = points[label_idx]
+            safe_label = label.replace('&amp;', '&').replace('&', '&amp;')
+            b_w = len(label) * 9.5 + 24
+            b_h = 24
+            res.append(f'    <rect x="{badge_x - b_w/2 + 1.5:.1f}" y="{badge_y - b_h/2 + 1.5:.1f}" width="{b_w:.1f}" height="{b_h}" rx="5" ry="5" fill="#0F2438" fill-opacity="0.06"/>')
+            res.append(f'    <rect x="{badge_x - b_w/2:.1f}" y="{badge_y - b_h/2:.1f}" width="{b_w:.1f}" height="{b_h}" rx="5" ry="5" class="badge-rect"/>')
+            res.append(f'    <text x="{badge_x:.1f}" y="{badge_y + 4.5:.1f}" class="t-badge">[{safe_label}]</text>')
         return "\n".join(res)
 
-    def direct_dep_arrow(cx1, cy1, rx1, ry1, cx2, cy2, rx2, ry2, label="<<include>>", label_offset=0):
+    def direct_dep_arrow(cx1, cy1, rx1, ry1, cx2, cy2, rx2, ry2, label="«include»", label_offset=18):
         x1, y1 = ellipse_point(cx1, cy1, rx1, ry1, cx2, cy2)
         x2, y2 = ellipse_point(cx2, cy2, rx2, ry2, cx1, cy1)
         dx = x2 - x1
@@ -215,16 +237,22 @@ def generate_svg():
         p2_x = base_x + uy * 6.5
         p2_y = base_y - ux * 6.5
 
+        mid_x = (x1 + x2) / 2
+        mid_y = (y1 + y2) / 2
+        lbl_x = mid_x - uy * label_offset
+        lbl_y = mid_y + ux * label_offset
+
+        clean_label = label.replace('<<', '«').replace('>>', '»')
+
         res = []
         res.append(f'    <line x1="{x1:.1f}" y1="{y1:.1f}" x2="{base_x:.1f}" y2="{base_y:.1f}" class="dep-line"/>')
         res.append(f'    <polygon points="{tip_x:.1f},{tip_y:.1f} {p1_x:.1f},{p1_y:.1f} {p2_x:.1f},{p2_y:.1f}" class="dep-arrow"/>')
-        if label:
-            lx = (x1 + x2) / 2 - uy * label_offset
-            ly = (y1 + y2) / 2 + ux * label_offset - 4
-            safe_label = label.replace('<', '&lt;').replace('>', '&gt;')
-            lw = len(label) * 7.0
-            res.append(f'    <rect x="{lx - lw/2:.1f}" y="{ly - 10:.1f}" width="{lw:.1f}" height="15" fill="#FFFFFF" fill-opacity="0.95"/>')
-            res.append(f'    <text x="{lx:.1f}" y="{ly + 1:.1f}" class="t-rel">{safe_label}</text>')
+        if clean_label:
+            pill_w = len(clean_label) * 8.5 + 16
+            pill_h = 22
+            res.append(f'    <rect x="{lbl_x - pill_w/2 + 1.5:.1f}" y="{lbl_y - pill_h/2 - 0.5:.1f}" width="{pill_w:.1f}" height="{pill_h}" rx="4" ry="4" fill="#0F2438" fill-opacity="0.06"/>')
+            res.append(f'    <rect x="{lbl_x - pill_w/2:.1f}" y="{lbl_y - pill_h/2 - 2:.1f}" width="{pill_w:.1f}" height="{pill_h}" rx="4" ry="4" class="pill-plate"/>')
+            res.append(f'    <text x="{lbl_x:.1f}" y="{lbl_y+4.5:.1f}" class="t-rel">{clean_label}</text>')
         return "\n".join(res)
 
     def direct_gen_arrow(cx1, cy1, rx1, ry1, cx2, cy2, rx2, ry2):
@@ -258,6 +286,7 @@ def generate_svg():
         res = []
         safe_id = name.replace(" ", "_").replace("&", "_").replace("(", "").replace(")", "").replace("__", "_")
         res.append(f'  <g id="Actor_{safe_id}">')
+        res.append(f'    <circle cx="{cx+2}" cy="{cy-42}" r="22" fill="#0F2438" fill-opacity="0.08"/>')
         res.append(f'    <circle cx="{cx}" cy="{cy-44}" r="22" class="actor-head"/>')
         res.append(f'    <line x1="{cx}" y1="{cy-22}" x2="{cx}" y2="{cy+24}" class="actor-body"/>')
         res.append(f'    <line x1="{cx-36}" y1="{cy-4}" x2="{cx+36}" y2="{cy-4}" class="actor-body"/>')
@@ -274,8 +303,23 @@ def generate_svg():
         res.append('  </g>')
         return "\n".join(res)
 
+    def pkg_folder(x, y, w, h, tab_w, title, pkg_id, is_gateway=False):
+        tab_h = 38
+        res = []
+        res.append(f'  <g id="{pkg_id}">')
+        body_class = "gateway-body" if is_gateway else "pkg-body"
+        tab_class = "gateway-tab" if is_gateway else "pkg-tab"
+        # Pure Vector 2.5D Soft Shadow for folder container
+        res.append(f'    <rect x="{x+3}" y="{y+tab_h+3}" width="{w}" height="{h-tab_h}" rx="6" ry="6" fill="#0F2438" fill-opacity="0.04"/>')
+        res.append(f'    <rect x="{x}" y="{y+tab_h}" width="{w}" height="{h-tab_h}" rx="6" ry="6" class="{body_class}"/>')
+        # Folder tab at top-left with angled cut
+        res.append(f'    <path d="M {x},{y+tab_h} L {x},{y+6} Q {x},{y} {x+6},{y} L {x+tab_w-22},{y} L {x+tab_w},{y+tab_h} Z" class="{tab_class}"/>')
+        safe_title = title.replace('&amp;', '&').replace('&', '&amp;')
+        res.append(f'    <text x="{x+25}" y="{y+24}" class="t-pkg">{safe_title}</text>')
+        return "\n".join(res)
+
     # =========================================================================
-    # PACKAGES & USE CASES
+    # PACKAGES & USE CASES (VISUAL PARADIGM FOLDER-TAB SUBSYSTEMS)
     # =========================================================================
 
     # -------------------------------------------------------------------------
@@ -285,17 +329,12 @@ def generate_svg():
     lines.append('  <!-- ========================================================= -->')
     lines.append('  <!-- CENTRAL AUTHENTICATION & SECURITY GATEWAY                 -->')
     lines.append('  <!-- ========================================================= -->')
-    lines.append('  <g id="Pkg_Central_Auth_Gateway">')
-    lines.append('    <rect x="3060" y="190" width="1400" height="570" class="gateway-border"/>')
-    lines.append('    <rect x="3060" y="190" width="1400" height="38" class="gateway-header"/>')
-    lines.append('    <text x="3760" y="215" class="t-pkg" text-anchor="middle">CỔNG XÁC THỰC &amp; BẢO MẬT HỆ THỐNG (auth-service • gateway-bff)</text>')
-
+    lines.append(pkg_folder(3060, 190, 1400, 570, 720, "CỔNG XÁC THỰC & BẢO MẬT HỆ THỐNG (auth-service • gateway-bff)", "Pkg_Central_Auth_Gateway", is_gateway=True))
     lines.append(uc(3760, 390, 165, 36, "UC-AUTH-01", "Đăng nhập hệ thống (Core Auth Hub)", "uc-core"))
     lines.append(uc(3360, 620, 145, 28, "UC-AUTH-02", "Đăng xuất hệ thống", "uc-ext"))
     lines.append(uc(4160, 620, 155, 28, "UC-AUTH-03", "Quản lý thông tin tài khoản", "uc-core"))
-
-    lines.append(direct_dep_arrow(3360, 620, 145, 28, 3760, 390, 165, 36, "<<extend>>", -16))
-    lines.append(direct_dep_arrow(3760, 390, 165, 36, 4160, 620, 155, 28, "<<include>>", 16))
+    lines.append(direct_dep_arrow(3360, 620, 145, 28, 3760, 390, 165, 36, "«extend»", -16))
+    lines.append(direct_dep_arrow(3760, 390, 165, 36, 4160, 620, 155, 28, "«include»", 16))
     lines.append('  </g>')
     lines.append('')
 
@@ -306,10 +345,7 @@ def generate_svg():
     lines.append('  <!-- ========================================================= -->')
     lines.append('  <!-- PHÂN HỆ 1: TIẾP NHẬN & QUẢN LÝ ĐƠN HÀNG                   -->')
     lines.append('  <!-- ========================================================= -->')
-    lines.append('  <g id="Pkg_1_Order_Management">')
-    lines.append('    <rect x="760" y="190" width="1800" height="1490" class="pkg-border"/>')
-    lines.append('    <rect x="760" y="190" width="850" height="38" class="pkg-header"/>')
-    lines.append('    <text x="780" y="215" class="t-pkg">PHÂN HỆ 1: TIẾP NHẬN &amp; QUẢN LÝ ĐƠN HÀNG — shipment-service • pickup-service</text>')
+    lines.append(pkg_folder(760, 190, 1800, 1490, 760, "PHÂN HỆ 1: TIẾP NHẬN & QUẢN LÝ ĐƠN HÀNG — shipment-service • pickup-service", "Pkg_1_Order_Management"))
 
     # Column 1 (X: 1040, Facing Merchant & Customer):
     lines.append(uc(1040, 310, 145, 27, "UC-ORD-01a", "Tạo đơn hàng Web Portal", "uc-core"))
@@ -331,9 +367,9 @@ def generate_svg():
     lines.append(direct_gen_arrow(1040, 310, 145, 27, 1660, 470, 155, 30))
     lines.append(direct_gen_arrow(1040, 1050, 140, 27, 1660, 470, 155, 30))
     lines.append(direct_gen_arrow(1040, 1350, 140, 27, 1660, 470, 155, 30))
-    lines.append(direct_dep_arrow(1660, 470, 155, 30, 1660, 630, 140, 27, "<<include>>", 18))
-    lines.append(direct_dep_arrow(1660, 790, 145, 27, 1660, 630, 140, 27, "<<extend>>", 18))
-    lines.append(direct_dep_arrow(1660, 310, 150, 27, 1040, 450, 145, 27, "<<extend>>", -16))
+    lines.append(direct_dep_arrow(1660, 470, 155, 30, 1660, 630, 140, 27, "«include»", 18))
+    lines.append(direct_dep_arrow(1660, 790, 145, 27, 1660, 630, 140, 27, "«extend»", 18))
+    lines.append(direct_dep_arrow(1660, 310, 150, 27, 1040, 450, 145, 27, "«extend»", -16))
     lines.append('  </g>')
     lines.append('')
 
@@ -344,10 +380,7 @@ def generate_svg():
     lines.append('  <!-- ========================================================= -->')
     lines.append('  <!-- PHÂN HỆ 5: TRỢ LÝ AI LOGISTICS RAG & TRA CỨU HÀNH TRÌNH   -->')
     lines.append('  <!-- ========================================================= -->')
-    lines.append('  <g id="Pkg_5_AI_RAG_Tracking">')
-    lines.append('    <rect x="760" y="1940" width="1800" height="2160" class="pkg-border"/>')
-    lines.append('    <rect x="760" y="1940" width="850" height="38" class="pkg-header"/>')
-    lines.append('    <text x="780" y="1965" class="t-pkg">PHÂN HỆ 5: TRỢ LÝ AI LOGISTICS RAG &amp; TRA CỨU HÀNH TRÌNH — chatbot-service • tracking</text>')
+    lines.append(pkg_folder(760, 1940, 1800, 2160, 780, "PHÂN HỆ 5: TRỢ LÝ AI LOGISTICS RAG & TRA CỨU HÀNH TRÌNH — chatbot-service • tracking", "Pkg_5_AI_RAG_Tracking"))
 
     # Column 1 (X: 1040, Facing Customer & Guest):
     lines.append(uc(1040, 2080, 145, 27, "UC-AI-01b", "Tra cứu hành trình realtime", "uc-core"))
@@ -375,31 +408,28 @@ def generate_svg():
     lines.append(direct_gen_arrow(1040, 2080, 145, 27, 1660, 2220, 155, 30))
     lines.append(direct_gen_arrow(1040, 2220, 145, 27, 1660, 2220, 155, 30))
     lines.append(direct_gen_arrow(1040, 2360, 145, 27, 1660, 2220, 155, 30))
-    lines.append(direct_dep_arrow(1040, 2520, 150, 28, 1660, 2520, 155, 28, "<<include>>", -16))
-    lines.append(direct_dep_arrow(1040, 2700, 150, 30, 1660, 2700, 155, 28, "<<include>>", -16))
-    lines.append(direct_dep_arrow(1660, 2700, 155, 28, 1660, 2860, 150, 27, "<<include>>", 18))
-    lines.append(direct_dep_arrow(1040, 2700, 150, 30, 1660, 3020, 150, 28, "<<include>>", -16))
-    lines.append(direct_dep_arrow(1660, 3020, 150, 28, 1660, 3180, 150, 27, "<<include>>", 18))
-    # AI Chatbot includes all 5 dynamic tools:
-    lines.append(direct_dep_arrow(1040, 2700, 150, 30, 2280, 2520, 155, 27, "<<include>>", -12))
-    lines.append(direct_dep_arrow(1040, 2700, 150, 30, 2280, 2660, 155, 27, "<<include>>", -8))
-    lines.append(direct_dep_arrow(1040, 2700, 150, 30, 2280, 2800, 155, 27, "<<include>>", 8))
-    lines.append(direct_dep_arrow(1040, 2700, 150, 30, 2280, 2940, 155, 27, "<<include>>", 12))
-    lines.append(direct_dep_arrow(1040, 2700, 150, 30, 2280, 3080, 155, 27, "<<include>>", 16))
+    lines.append(direct_dep_arrow(1040, 2520, 150, 28, 1660, 2520, 155, 28, "«include»", -16))
+    lines.append(direct_dep_arrow(1040, 2700, 150, 30, 1660, 2700, 155, 28, "«include»", -16))
+    lines.append(direct_dep_arrow(1660, 2700, 155, 28, 1660, 2860, 150, 27, "«include»", 18))
+    lines.append(direct_dep_arrow(1040, 2700, 150, 30, 1660, 3020, 150, 28, "«include»", -16))
+    lines.append(direct_dep_arrow(1660, 3020, 150, 28, 1660, 3180, 150, 27, "«include»", 18))
+    # Hybrid RAG Orchestrator (UC-AI-06) includes all 5 dynamic function calling tools:
+    lines.append(direct_dep_arrow(1660, 2700, 155, 28, 2280, 2520, 155, 27, "«include»", 16))
+    lines.append(direct_dep_arrow(1660, 2700, 155, 28, 2280, 2660, 155, 27, "«include»", 14))
+    lines.append(direct_dep_arrow(1660, 2700, 155, 28, 2280, 2800, 155, 27, "«include»", 14))
+    lines.append(direct_dep_arrow(1660, 2700, 155, 28, 2280, 2940, 155, 27, "«include»", 16))
+    lines.append(direct_dep_arrow(1660, 2700, 155, 28, 2280, 3080, 155, 27, "«include»", 18))
     lines.append('  </g>')
     lines.append('')
 
     # -------------------------------------------------------------------------
     # PACKAGE 4: TÀI CHÍNH, THU HỘ COD & ĐỐI SOÁT (Column 2 Bottom)
-    # X: 2860 to 4660, Y: 1940 to 4100 (W: 1800, H: 2160)
+    # X: 2860 to 4660, Y: 1940 to 3240 (W: 1800, H: 1300)
     # -------------------------------------------------------------------------
     lines.append('  <!-- ========================================================= -->')
     lines.append('  <!-- PHÂN HỆ 4: TÀI CHÍNH, THU HỘ COD & ĐỐI SOÁT               -->')
     lines.append('  <!-- ========================================================= -->')
-    lines.append('  <g id="Pkg_4_Finance_COD">')
-    lines.append('    <rect x="2860" y="1940" width="1800" height="2160" class="pkg-border"/>')
-    lines.append('    <rect x="2860" y="1940" width="850" height="38" class="pkg-header"/>')
-    lines.append('    <text x="2880" y="1965" class="t-pkg">PHÂN HỆ 4: TÀI CHÍNH, THU HỘ COD &amp; ĐỐI SOÁT — payment-service • reporting</text>')
+    lines.append(pkg_folder(2860, 1940, 1800, 1300, 740, "PHÂN HỆ 4: TÀI CHÍNH, THU HỘ COD & ĐỐI SOÁT — payment-service • reporting", "Pkg_4_Finance_COD"))
 
     # Column 1 (X: 3260, Facing Merchant & Ops Staff):
     lines.append(uc(3260, 2200, 150, 28, "UC-FIN-05", "Lịch sử đối soát SePay/VietQR", "uc-core"))
@@ -412,11 +442,11 @@ def generate_svg():
     lines.append(uc(4260, 2460, 145, 27, "UC-FIN-02", "Nộp tiền COD qua VietQR", "uc-core"))
     lines.append(uc(4260, 2760, 155, 28, "UC-FIN-06", "Khớp nối SePay &amp; Khấu trừ tự động", "uc-core"))
 
-    # Relationships in Pkg 4:
-    lines.append(direct_dep_arrow(3260, 2460, 150, 28, 3260, 2200, 150, 28, "<<extend>>", 18))
-    lines.append(direct_dep_arrow(4260, 2460, 145, 27, 4260, 2200, 145, 27, "<<include>>", 18))
-    lines.append(direct_dep_arrow(3260, 3040, 155, 28, 3260, 2760, 155, 28, "<<extend>>", 18))
-    lines.append(direct_dep_arrow(4260, 2760, 155, 28, 3260, 2760, 155, 28, "<<include>>", -16))
+    # Relationships in Pkg 4 (Strictly vertical & horizontal - Zero crossings):
+    lines.append(direct_dep_arrow(3260, 2460, 150, 28, 3260, 2200, 150, 28, "«extend»", 18))
+    lines.append(direct_dep_arrow(4260, 2460, 145, 27, 4260, 2200, 145, 27, "«include»", 18))
+    lines.append(direct_dep_arrow(3260, 3040, 155, 28, 3260, 2760, 155, 28, "«extend»", 18))
+    lines.append(direct_dep_arrow(4260, 2760, 155, 28, 3260, 2760, 155, 28, "«include»", -16))
     lines.append('  </g>')
     lines.append('')
 
@@ -427,10 +457,7 @@ def generate_svg():
     lines.append('  <!-- ========================================================= -->')
     lines.append('  <!-- PHÂN HỆ 2: BƯU CỤC, ĐIỀU PHỐI & TRUNG CHUYỂN              -->')
     lines.append('  <!-- ========================================================= -->')
-    lines.append('  <g id="Pkg_2_Hub_Sortation">')
-    lines.append('    <rect x="4960" y="190" width="1780" height="1490" class="pkg-border"/>')
-    lines.append('    <rect x="4960" y="190" width="850" height="38" class="pkg-header"/>')
-    lines.append('    <text x="4980" y="215" class="t-pkg">PHÂN HỆ 2: BƯU CỤC, ĐIỀU PHỐI &amp; TRUNG CHUYỂN — scan • manifest • dispatch</text>')
+    lines.append(pkg_folder(4960, 190, 1780, 1490, 750, "PHÂN HỆ 2: BƯU CỤC, ĐIỀU PHỐI & TRUNG CHUYỂN — scan • manifest • dispatch", "Pkg_2_Hub_Sortation"))
 
     # Column 3 (X: 6440, Facing Ops Staff Directly):
     lines.append(uc(6440, 280, 145, 27, "UC-HUB-01", "Giám sát Dashboard thời gian thực", "uc-core"))
@@ -453,14 +480,14 @@ def generate_svg():
     lines.append(uc(5260, 1120, 150, 27, "UC-HUB-09", "Quét bàn giao bưu tá (handoff)", "uc-core"))
 
     # Relationships in Pkg 2:
-    lines.append(direct_dep_arrow(6440, 640, 150, 27, 6440, 760, 150, 27, "<<include>>", 18))
-    lines.append(direct_dep_arrow(6440, 880, 145, 27, 6440, 760, 150, 27, "<<include>>", 18))
-    lines.append(direct_dep_arrow(5860, 640, 150, 28, 5260, 640, 150, 27, "<<include>>", -16))
-    lines.append(direct_dep_arrow(5860, 640, 150, 28, 5860, 880, 155, 28, "<<include>>", 18))
-    lines.append(direct_dep_arrow(5860, 880, 155, 28, 5260, 880, 150, 27, "<<include>>", -16))
-    lines.append(direct_dep_arrow(6440, 1000, 140, 27, 5860, 880, 155, 28, "<<include>>", 16))
-    lines.append(direct_dep_arrow(6440, 1120, 140, 27, 5860, 1120, 150, 27, "<<include>>", -16))
-    lines.append(direct_dep_arrow(5860, 1120, 150, 27, 5260, 1120, 150, 27, "<<include>>", -16))
+    lines.append(direct_dep_arrow(6440, 640, 150, 27, 6440, 760, 150, 27, "«include»", 18))
+    lines.append(direct_dep_arrow(6440, 880, 145, 27, 6440, 760, 150, 27, "«include»", 18))
+    lines.append(direct_dep_arrow(5860, 640, 150, 28, 5260, 640, 150, 27, "«include»", -16))
+    lines.append(direct_dep_arrow(5860, 640, 150, 28, 5860, 880, 155, 28, "«include»", 18))
+    lines.append(direct_dep_arrow(5860, 880, 155, 28, 5260, 880, 150, 27, "«include»", -16))
+    lines.append(direct_dep_arrow(6440, 1000, 140, 27, 5860, 880, 155, 28, "«include»", 16))
+    lines.append(direct_dep_arrow(6440, 1120, 140, 27, 5860, 1120, 150, 27, "«include»", -16))
+    lines.append(direct_dep_arrow(5860, 1120, 150, 27, 5260, 1120, 150, 27, "«include»", -16))
     lines.append('  </g>')
     lines.append('')
 
@@ -471,10 +498,7 @@ def generate_svg():
     lines.append('  <!-- ========================================================= -->')
     lines.append('  <!-- PHÂN HỆ 3: GIAO HÀNG CHẶNG CUỐI & XỬ LÝ SỰ CỐ            -->')
     lines.append('  <!-- ========================================================= -->')
-    lines.append('  <g id="Pkg_3_Delivery_NDR">')
-    lines.append('    <rect x="4960" y="1940" width="1780" height="1100" class="pkg-border"/>')
-    lines.append('    <rect x="4960" y="1940" width="850" height="38" class="pkg-header"/>')
-    lines.append('    <text x="4980" y="1965" class="t-pkg">PHÂN HỆ 3: GIAO HÀNG CHẶNG CUỐI &amp; SỰ CỐ — delivery-service • shipment</text>')
+    lines.append(pkg_folder(4960, 1940, 1780, 1100, 740, "PHÂN HỆ 3: GIAO HÀNG CHẶNG CUỐI & SỰ CỐ — delivery-service • shipment", "Pkg_3_Delivery_NDR"))
 
     # Column 1 (X: 5260, Facing Ops Staff NDR from Corridor):
     lines.append(uc(5260, 2160, 150, 28, "UC-DEL-07", "Xử lý sự cố phát thất bại (NDR)", "uc-core"))
@@ -493,12 +517,12 @@ def generate_svg():
     lines.append(uc(6440, 2640, 145, 27, "UC-DEL-06a", "Hẹn lại ngày phát (Reschedule)", "uc-ext"))
 
     # Relationships in Pkg 3:
-    lines.append(direct_dep_arrow(6440, 2160, 145, 27, 6440, 2040, 145, 27, "<<extend>>", 18))
-    lines.append(direct_dep_arrow(6440, 2400, 150, 28, 5860, 2160, 145, 27, "<<include>>", -16))
-    lines.append(direct_dep_arrow(6440, 2400, 150, 28, 5860, 2380, 145, 27, "<<include>>", 16))
-    lines.append(direct_dep_arrow(6440, 2520, 145, 27, 6440, 2400, 150, 28, "<<extend>>", 18))
-    lines.append(direct_dep_arrow(6440, 2640, 145, 27, 6440, 2520, 145, 27, "<<extend>>", 18))
-    lines.append(direct_dep_arrow(5260, 2160, 150, 28, 5260, 2380, 150, 28, "<<include>>", 18))
+    lines.append(direct_dep_arrow(6440, 2160, 145, 27, 6440, 2040, 145, 27, "«extend»", 18))
+    lines.append(direct_dep_arrow(6440, 2400, 150, 28, 5860, 2160, 145, 27, "«include»", -16))
+    lines.append(direct_dep_arrow(6440, 2400, 150, 28, 5860, 2380, 145, 27, "«include»", 16))
+    lines.append(direct_dep_arrow(6440, 2520, 145, 27, 6440, 2400, 150, 28, "«extend»", 18))
+    lines.append(direct_dep_arrow(6440, 2640, 145, 27, 6440, 2520, 145, 27, "«extend»", 18))
+    lines.append(direct_dep_arrow(5260, 2160, 150, 28, 5260, 2380, 150, 28, "«include»", 18))
     lines.append('  </g>')
     lines.append('')
 
@@ -509,10 +533,7 @@ def generate_svg():
     lines.append('  <!-- ========================================================= -->')
     lines.append('  <!-- PHÂN HỆ 6: QUẢN TRỊ HỆ THỐNG, RBAC & CẤU HÌNH             -->')
     lines.append('  <!-- ========================================================= -->')
-    lines.append('  <g id="Pkg_6_Admin_RBAC">')
-    lines.append('    <rect x="4960" y="3240" width="1780" height="860" class="pkg-border"/>')
-    lines.append('    <rect x="4960" y="3240" width="850" height="38" class="pkg-header"/>')
-    lines.append('    <text x="4980" y="3265" class="t-pkg">PHÂN HỆ 6: QUẢN TRỊ HỆ THỐNG, RBAC &amp; CẤU HÌNH — masterdata • auth-service</text>')
+    lines.append(pkg_folder(4960, 3240, 1780, 860, 750, "PHÂN HỆ 6: QUẢN TRỊ HỆ THỐNG, RBAC & CẤU HÌNH — masterdata • auth-service", "Pkg_6_Admin_RBAC"))
 
     # Column 3 (X: 6440, Facing Admin Directly - 6 UCs):
     lines.append(uc(6440, 3360, 145, 27, "UC-ADM-01", "Quản lý tài khoản toàn hệ thống", "uc-core"))
@@ -532,10 +553,10 @@ def generate_svg():
     lines.append(uc(5260, 3880, 150, 27, "UC-ADM-11", "Chiếu Read Model Timeline &amp; KPI", "uc-core"))
 
     # Relationships in Pkg 6:
-    lines.append(direct_dep_arrow(6440, 3360, 145, 27, 5860, 3360, 145, 27, "<<include>>", -16))
-    lines.append(direct_dep_arrow(6440, 3490, 145, 27, 5860, 3490, 145, 27, "<<include>>", -16))
-    lines.append(direct_dep_arrow(5860, 3620, 145, 27, 6440, 3620, 150, 27, "<<extend>>", 16))
-    lines.append(direct_dep_arrow(5260, 3750, 150, 27, 5260, 3880, 150, 27, "<<include>>", 18))
+    lines.append(direct_dep_arrow(6440, 3360, 145, 27, 5860, 3360, 145, 27, "«include»", -16))
+    lines.append(direct_dep_arrow(6440, 3490, 145, 27, 5860, 3490, 145, 27, "«include»", -16))
+    lines.append(direct_dep_arrow(5860, 3620, 145, 27, 6440, 3620, 150, 27, "«extend»", 16))
+    lines.append(direct_dep_arrow(5260, 3750, 150, 27, 5260, 3880, 150, 27, "«include»", 18))
     lines.append('  </g>')
     lines.append('')
 
@@ -555,8 +576,8 @@ def generate_svg():
     lines.append('  <g id="Gen_Customer_Guest">')
     lines.append('    <line x1="180" y1="1750" x2="180" y2="2580" class="gen-line"/>')
     lines.append('    <polygon points="180,2595 171,2575 189,2575" class="gen-arrow"/>')
-    lines.append('    <rect x="80" y="2150" width="200" height="28" fill="#FFFFFF" stroke="#000000" stroke-width="0.8" rx="4"/>')
-    lines.append('    <text x="180" y="2169" class="t-rel">&lt;&lt;generalizes&gt;&gt; (Kế thừa tra cứu công khai)</text>')
+    lines.append('    <rect x="70" y="2150" width="220" height="28" class="pill-plate"/>')
+    lines.append('    <text x="180" y="2169" class="t-rel">«generalizes» (Kế thừa tra cứu)</text>')
     lines.append('  </g>')
 
     # Right Actors: X = 7320
@@ -568,14 +589,15 @@ def generate_svg():
     lines.append('  <g id="Gen_Ops_Shipper">')
     lines.append('    <line x1="7320" y1="870" x2="7320" y2="2080" class="gen-line"/>')
     lines.append('    <polygon points="7320,2095 7311,2075 7329,2075" class="gen-arrow"/>')
-    lines.append('    <rect x="7180" y="1465" width="280" height="28" fill="#FFFFFF" stroke="#000000" stroke-width="0.8" rx="4"/>')
-    lines.append('    <text x="7320" y="1484" class="t-rel">&lt;&lt;generalizes&gt;&gt; (Kế thừa gom/phát hiện trường)</text>')
+    lines.append('    <rect x="7170" y="1465" width="300" height="28" class="pill-plate"/>')
+    lines.append('    <text x="7320" y="1484" class="t-rel">«generalizes» (Kế thừa bưu tá hiện trường)</text>')
     lines.append('  </g>')
 
     # Supporting System Actor (Bottom Right):
     lines.append('  <g id="Actor_System_AI">')
+    lines.append('    <rect x="7143" y="4153" width="310" height="96" rx="6" fill="#0F2438" fill-opacity="0.08"/>')
     lines.append('    <rect x="7140" y="4150" width="310" height="96" class="sys-actor-box"/>')
-    lines.append('    <text x="7295" y="4178" class="t-rel">&lt;&lt;supporting system actor&gt;&gt;</text>')
+    lines.append('    <text x="7295" y="4178" class="t-rel">«supporting system actor»</text>')
     lines.append('    <text x="7295" y="4202" class="t-actor">Trợ Lý AI &amp; Hệ Thống</text>')
     lines.append('    <text x="7295" y="4222" class="t-role">chatbot-service • outbox relay</text>')
     lines.append('    <text x="7295" y="4238" class="t-app">Event Bus &amp; Read Model Projections</text>')
@@ -586,59 +608,52 @@ def generate_svg():
     # ASSOCIATIONS (SPACIOUS MULTI-TRACK HIGHWAYS - R=24px FILLETS)
     # =========================================================================
     lines.append('  <!-- ========================================================= -->')
-    lines.append('  <!-- ACTOR ASSOCIATIONS (SPACIOUS 80px MULTI-TRACK HIGHWAYS)   -->')
+    lines.append('  <!-- ACTOR ASSOCIATIONS (SPACIOUS MULTI-TRACK HIGHWAYS)        -->')
     lines.append('  <!-- ========================================================= -->')
 
-    m_hand = (270, 680)
-    c_hand = (270, 1600)
-    g_hand = (270, 2700)
+    # Hands coordinates
+    merch_hand = (270, 680)
+    cust_hand = (270, 1600)
+    guest_hand = (270, 2700)
     ops_hand = (7230, 720)
     shipper_hand = (7230, 2200)
     admin_hand = (7230, 3550)
     sys_hand = (7140, 4200)
 
-    # 1. MERCHANT (m_hand = 270, 680)
-    # Local Package 1 Direct Rays:
-    lines.append(direct_line(m_hand[0], m_hand[1], 1040, 310, 145, 27, "assoc")) # UC-ORD-01a
-    lines.append(direct_line(m_hand[0], m_hand[1], 1040, 450, 145, 27, "assoc")) # UC-ORD-02
-    lines.append(direct_line(m_hand[0], m_hand[1], 1040, 590, 145, 27, "assoc")) # UC-ORD-03
-    lines.append(direct_line(m_hand[0], m_hand[1], 1040, 730, 135, 27, "assoc")) # UC-ORD-04
-    lines.append(direct_line(m_hand[0], m_hand[1], 1040, 870, 150, 28, "assoc")) # UC-ORD-09
+    # 1. MERCHANT (merch_hand = 270, 680)
+    lines.append(direct_line(merch_hand[0], merch_hand[1], 1040, 310, 145, 27, "assoc")) # UC-ORD-01a
+    lines.append(direct_line(merch_hand[0], merch_hand[1], 1040, 450, 145, 27, "assoc")) # UC-ORD-02
+    lines.append(direct_line(merch_hand[0], merch_hand[1], 1040, 590, 145, 27, "assoc")) # UC-ORD-03
+    lines.append(direct_line(merch_hand[0], merch_hand[1], 1040, 730, 135, 27, "assoc")) # UC-ORD-04
+    lines.append(direct_line(merch_hand[0], merch_hand[1], 1040, 870, 150, 28, "assoc")) # UC-ORD-09
 
-    # Merchant -> Central Auth Gateway (Lane X=680, Ceiling Y=230):
-    lines.append(path_to_ellipse([(m_hand[0], m_hand[1]), (680, 680), (680, 230), (3650, 230)], 3760, 390, 165, 36, radius=24, label="Merchant", label_idx=2)) # UC-AUTH-01
+    # Merchant -> Central Auth Gateway (Lane X=350, Ceiling Y=230):
+    lines.append(path_to_ellipse([(merch_hand[0], merch_hand[1]), (350, 680), (350, 230), (3650, 230)], 3760, 390, 165, 36, radius=24, label="Merchant", label_idx=2)) # UC-AUTH-01
 
-    # Merchant -> Package 4 (Finance: UC-FIN-05, UC-FIN-07) via Middle Highway:
-    # Lane X=560 -> Highway Y=1720 -> UC-FIN-05 (3260, 2200)
-    lines.append(path_to_ellipse([(m_hand[0], m_hand[1]), (560, 680), (560, 1720), (3260, 1720)], 3260, 2200, 150, 28, radius=24, label="Merchant", label_idx=2)) # UC-FIN-05
-    # Lane X=480 -> Highway Y=1765 -> Channel X=3180 -> UC-FIN-07 (3260, 2460)
-    lines.append(path_to_ellipse([(m_hand[0], m_hand[1]), (480, 680), (480, 1765), (3180, 1765), (3180, 2460)], 3260, 2460, 150, 28, radius=24, label="Merchant", label_idx=1)) # UC-FIN-07
+    # Merchant -> Package 5 (Tracking UC-AI-01c) via Lane X=430 -> Highway Y=1720:
+    lines.append(path_to_ellipse([(merch_hand[0], merch_hand[1]), (430, 680), (430, 1720), (510, 1720), (510, 2220)], 1040, 2220, 145, 27, radius=24, label="Merchant", label_idx=2)) # UC-AI-01c
 
-    # Merchant -> Package 5 (Tracking: UC-AI-01c) via Lane X=400 -> Y=2220:
-    lines.append(path_to_ellipse([(m_hand[0], m_hand[1]), (400, 680), (400, 2220)], 1040, 2220, 145, 27, radius=24, label="Merchant", label_idx=1)) # UC-AI-01c
+    # Merchant -> Package 4 (Finance: UC-FIN-05 Statement) via Lane X=510 -> Highway Y=1760:
+    lines.append(path_to_ellipse([(merch_hand[0], merch_hand[1]), (510, 680), (510, 1760), (3260, 1760)], 3260, 2200, 150, 28, radius=24, label="Merchant", label_idx=2)) # UC-FIN-05
 
-    # 2. CUSTOMER C-END (c_hand = 270, 1600)
-    # Customer -> Package 1:
-    lines.append(direct_line(c_hand[0], c_hand[1], 1040, 1050, 140, 27, "assoc")) # UC-ORD-01b
-    lines.append(direct_line(c_hand[0], c_hand[1], 1040, 1190, 135, 26, "assoc")) # UC-ORD-08
+    # 2. CUSTOMER C-END (cust_hand = 270, 1600)
+    lines.append(direct_line(cust_hand[0], cust_hand[1], 1040, 1050, 140, 27, "assoc")) # UC-ORD-01b
+    lines.append(direct_line(cust_hand[0], cust_hand[1], 1040, 1190, 135, 26, "assoc")) # UC-ORD-08
+    lines.append(direct_line(cust_hand[0], cust_hand[1], 1040, 2080, 145, 27, "assoc")) # UC-AI-01b
 
-    # Customer -> Package 5 (Direct rays with zero crossing):
-    lines.append(direct_line(c_hand[0], c_hand[1], 1040, 2080, 145, 27, "assoc")) # UC-AI-01b
+    # Customer -> Central Auth Gateway (Lane X=290, Ceiling Y=255):
+    lines.append(path_to_ellipse([(cust_hand[0], cust_hand[1]), (290, 1600), (290, 255), (3700, 255)], 3760, 390, 165, 36, radius=24, label="Customer", label_idx=2)) # UC-AUTH-01
 
-    # Customer -> Central Auth Gateway (Lane X=640, Ceiling Y=290):
-    lines.append(path_to_ellipse([(c_hand[0], c_hand[1]), (640, 1600), (640, 290), (3700, 290)], 3760, 390, 165, 36, radius=24, label="Customer", label_idx=2)) # UC-AUTH-01
+    # Customer -> Package 3 (OTP Verification: UC-DEL-03) via Lane X=370 -> Highway Y=1795:
+    lines.append(path_to_ellipse([(cust_hand[0], cust_hand[1]), (370, 1600), (370, 1795), (5860, 1795)], 5860, 2160, 145, 27, radius=24, label="Customer", label_idx=2)) # UC-DEL-03
 
-    # 3. GUEST (g_hand = 270, 2700)
-    # Guest -> Package 1 (UC-ORD-01c) via Lane X=320 -> Y=1350:
-    lines.append(path_to_ellipse([(g_hand[0], g_hand[1]), (320, 2700), (320, 1350)], 1040, 1350, 140, 27, radius=24, label="Guest", label_idx=1)) # UC-ORD-01c
-
-    # Guest -> Package 5 (Direct rays):
-    lines.append(direct_line(g_hand[0], g_hand[1], 1040, 2360, 145, 27, "assoc")) # UC-AI-01a
-    lines.append(direct_line(g_hand[0], g_hand[1], 1040, 2520, 150, 28, "assoc")) # UC-AI-02
-    lines.append(direct_line(g_hand[0], g_hand[1], 1040, 2700, 150, 30, "assoc")) # UC-AI-04
+    # 3. GUEST USER (guest_hand = 270, 2700)
+    lines.append(direct_line(guest_hand[0], guest_hand[1], 1040, 1350, 140, 27, "assoc")) # UC-ORD-01c
+    lines.append(direct_line(guest_hand[0], guest_hand[1], 1040, 2360, 145, 27, "assoc")) # UC-AI-01a
+    lines.append(direct_line(guest_hand[0], guest_hand[1], 1040, 2520, 150, 28, "assoc")) # UC-AI-02
+    lines.append(direct_line(guest_hand[0], guest_hand[1], 1040, 2700, 150, 30, "assoc")) # UC-AI-04
 
     # 4. OPS STAFF (ops_hand = 7230, 720)
-    # Ops Staff -> Package 2 Column 3 Direct:
     lines.append(direct_line(ops_hand[0], ops_hand[1], 6440, 280, 145, 27, "assoc")) # UC-HUB-01
     lines.append(direct_line(ops_hand[0], ops_hand[1], 6440, 400, 145, 27, "assoc")) # UC-HUB-01a
     lines.append(direct_line(ops_hand[0], ops_hand[1], 6440, 520, 145, 27, "assoc")) # UC-HUB-01b
@@ -663,16 +678,15 @@ def generate_svg():
     lines.append(path_to_ellipse([(ops_hand[0], ops_hand[1]), (6950, 720), (6950, 3140), (3260, 3140)], 3260, 3040, 155, 28, radius=24, label="Ops Staff", label_idx=2)) # UC-FIN-03
 
     # 5. SHIPPER (shipper_hand = 7230, 2200)
-    # Shipper -> Package 2 (Scan Pickup: UC-HUB-02c) via Lane X=6830 -> Y=880:
-    lines.append(path_to_ellipse([(shipper_hand[0], shipper_hand[1]), (6830, 2200), (6830, 880)], 6440, 880, 145, 27, radius=24, label="Shipper", label_idx=1)) # UC-HUB-02c
-
-    # Shipper -> Package 3 (6 clean direct rays):
     lines.append(direct_line(shipper_hand[0], shipper_hand[1], 6440, 2040, 145, 27, "assoc")) # UC-DEL-01
     lines.append(direct_line(shipper_hand[0], shipper_hand[1], 6440, 2160, 145, 27, "assoc")) # UC-DEL-01a
     lines.append(direct_line(shipper_hand[0], shipper_hand[1], 6440, 2280, 140, 26, "assoc")) # UC-DEL-02
     lines.append(direct_line(shipper_hand[0], shipper_hand[1], 6440, 2400, 150, 28, "assoc")) # UC-DEL-05
     lines.append(direct_line(shipper_hand[0], shipper_hand[1], 6440, 2520, 145, 27, "assoc")) # UC-DEL-06
     lines.append(direct_line(shipper_hand[0], shipper_hand[1], 6440, 2640, 145, 27, "assoc")) # UC-DEL-06a
+
+    # Shipper -> Package 2 (Scan Pickup: UC-HUB-02c) via Lane X=6950 -> Gap Y=880:
+    lines.append(path_to_ellipse([(shipper_hand[0], shipper_hand[1]), (6950, 2200), (6950, 880)], 6440, 880, 145, 27, radius=20, label="Shipper", label_idx=1)) # UC-HUB-02c
 
     # Shipper -> Package 4 (Finance: UC-FIN-01 Cash COD) via Lane X=7010 -> Highway Y=1850:
     lines.append(path_to_ellipse([(shipper_hand[0], shipper_hand[1]), (7010, 2200), (7010, 1850), (4260, 1850)], 4260, 2200, 145, 27, radius=24, label="Shipper", label_idx=2)) # UC-FIN-01
@@ -684,7 +698,6 @@ def generate_svg():
     lines.append(path_to_ellipse([(shipper_hand[0], shipper_hand[1]), (7160, 2200), (7160, 260), (3800, 260)], 3760, 390, 165, 36, radius=24, label="Shipper", label_idx=2)) # UC-AUTH-01
 
     # 6. SYSTEM ADMIN (admin_hand = 7230, 3550)
-    # Admin -> Package 6 (All 6 directly triggered UCs are in Column 3 with direct rays!):
     lines.append(direct_line(admin_hand[0], admin_hand[1], 6440, 3360, 145, 27, "assoc")) # UC-ADM-01
     lines.append(direct_line(admin_hand[0], admin_hand[1], 6440, 3490, 145, 27, "assoc")) # UC-ADM-05
     lines.append(direct_line(admin_hand[0], admin_hand[1], 6440, 3620, 150, 27, "assoc")) # UC-ADM-03
@@ -705,76 +718,67 @@ def generate_svg():
 
     # System -> Package 5 (IATA pricing, RAG, SSE Streaming) via Bottom Corridor Y=4190 & 4215:
     lines.append(path_to_ellipse([(sys_hand[0], sys_hand[1]), (6720, 4200), (6720, 4190), (1660, 4190)], 1660, 2520, 155, 28, radius=24, label="System & AI", label_idx=2)) # UC-AI-03
-    lines.append(path_to_ellipse([(sys_hand[0], sys_hand[1]), (6720, 4200), (6720, 4190), (1740, 4190), (1740, 2700)], 1660, 2700, 155, 28, radius=24)) # UC-AI-06
     lines.append(path_to_ellipse([(sys_hand[0], sys_hand[1]), (6720, 4200), (6720, 4215), (1660, 4215)], 1660, 3020, 150, 28, radius=24, label="System & AI", label_idx=2)) # UC-AI-07
 
-    # =========================================================================
     # LEGEND & TRACEABILITY MATRIX (BOTTOM AREA)
-    # =========================================================================
     lines.append('  <!-- ========================================================= -->')
-    lines.append('  <!-- UML 2.5 LEGEND (BOTTOM LEFT)                             -->')
+    lines.append('  <!-- LEGEND & ARCHITECTURAL TRACEABILITY MATRIX                -->')
     lines.append('  <!-- ========================================================= -->')
-    lines.append('  <g id="UML_Legend">')
-    lines.append(f'    <rect x="40" y="{height-380}" width="1500" height="340" class="legend-box"/>')
-    lines.append(f'    <text x="60" y="{height-348}" class="t-note">CHÚ GIẢI KÝ HIỆU CHUẨN UML 2.5 &amp; ĐẶC TẢ KIẾN TRÚC HỆ THỐNG (REV.19):</text>')
+    lines.append('  <g id="Legend_Matrix">')
+    lines.append(f'    <rect x="43" y="{height-377}" width="1500" height="340" rx="6" fill="#0F2438" fill-opacity="0.04"/>')
+    lines.append(f'    <rect x="40" y="{height-380}" width="1500" height="340" fill="#FFFFFF" stroke="#335A88" stroke-width="1.4" rx="6"/>')
+    lines.append(f'    <path d="M 40,{height-342} L 40,{height-374} Q 40,{height-380} 46,{height-380} L 600,{height-380} L 620,{height-342} Z" fill="url(#vp-pkg-tab-grad)" stroke="#335A88" stroke-width="1.2"/>')
+    lines.append(f'    <text x="60" y="{height-356}" class="t-note">CHÚ GIẢI KÝ HIỆU CHUẨN VISUAL PARADIGM &amp; UML 2.5 (REV.20):</text>')
+    
+    # Legend symbols:
+    lines.append(f'    <line x1="60" y1="{height-300}" x2="160" y2="{height-300}" class="assoc"/>')
+    lines.append(f'    <text x="180" y="{height-295}" class="t-legend"><tspan font-weight="bold">Association (Quan hệ kết hợp trực tiếp):</tspan> Đường nối liền nét từ 7 Tác nhân đến Use Case được phân quyền kích hoạt trực tiếp.</text>')
 
-    # 1. Association
-    lines.append(f'    <line x1="70" y1="{height-312}" x2="160" y2="{height-312}" class="assoc"/>')
-    lines.append(f'    <text x="180" y="{height-308}" class="t-legend"><tspan font-weight="bold">Association (Quan hệ kết hợp trực tiếp):</tspan> Đường nối liền nét từ 7 Tác nhân đến Use Case được phân quyền kích hoạt trực tiếp.</text>')
+    lines.append(f'    <line x1="60" y1="{height-260}" x2="140" y2="{height-260}" class="gen-line"/>')
+    lines.append(f'    <polygon points="160,{height-260} 140,{height-265} 140,{height-255}" class="gen-arrow"/>')
+    lines.append(f'    <text x="180" y="{height-255}" class="t-legend"><tspan font-weight="bold">Generalization (Kế thừa Đa hình):</tspan> Use Case [Tạo đơn, Tra cứu ──▷]; Actor: CUSTOMER ──▷ GUEST; OPS STAFF ──▷ SHIPPER.</text>')
 
-    # 2. Generalization
-    lines.append(f'    <line x1="70" y1="{height-275}" x2="140" y2="{height-275}" class="gen-line"/>')
-    lines.append(f'    <polygon points="160,{height-275} 140,{height-283} 140,{height-267}" class="gen-arrow"/>')
-    lines.append(f'    <text x="180" y="{height-271}" class="t-legend"><tspan font-weight="bold">Generalization (Kế thừa Đa hình):</tspan> Use Case (Tạo đơn, Tra cứu ──▷); Actor: CUSTOMER ──▷ GUEST; OPS STAFF ──▷ SHIPPER.</text>')
+    lines.append(f'    <line x1="60" y1="{height-220}" x2="145" y2="{height-220}" class="dep-line"/>')
+    lines.append(f'    <polygon points="160,{height-220} 145,{height-225} 145,{height-215}" class="dep-arrow"/>')
+    lines.append(f'    <text x="180" y="{height-215}" class="t-legend"><tspan font-weight="bold">«include» (Quan hệ Bao hàm Bắt buộc):</tspan> Bước thực thi bắt buộc (Giao hàng include POD &amp; OTP; Manifest include Niêm chì; Chat AI include 5 Dynamic Tools).</text>')
 
-    # 3. Include
-    lines.append(f'    <line x1="70" y1="{height-238}" x2="145" y2="{height-238}" class="dep-line"/>')
-    lines.append(f'    <polygon points="160,{height-238} 148,{height-243} 148,{height-233}" class="dep-arrow"/>')
-    lines.append(f'    <text x="180" y="{height-234}" class="t-legend"><tspan font-weight="bold">&lt;&lt;include&gt;&gt; (Quan hệ Bao hàm Bắt buộc):</tspan> Bước thực thi bắt buộc (Giao hàng include POD &amp; OTP; Manifest include Niêm chì; Chat AI include 5 Dynamic Tools).</text>')
+    lines.append(f'    <line x1="60" y1="{height-180}" x2="145" y2="{height-180}" class="dep-line"/>')
+    lines.append(f'    <polygon points="160,{height-180} 145,{height-185} 145,{height-175}" class="dep-arrow"/>')
+    lines.append(f'    <text x="180" y="{height-175}" class="t-legend"><tspan font-weight="bold">«extend» (Quan hệ Mở rộng có Điều kiện):</tspan> Tem FRAGILE mở rộng Tạo đơn; NDR/Reschedule mở rộng Giao hàng; Quyết toán thủ công mở rộng Nộp COD.</text>')
 
-    # 4. Extend
-    lines.append(f'    <line x1="70" y1="{height-201}" x2="145" y2="{height-201}" class="dep-line"/>')
-    lines.append(f'    <polygon points="160,{height-201} 148,{height-206} 148,{height-196}" class="dep-arrow"/>')
-    lines.append(f'    <text x="180" y="{height-197}" class="t-legend"><tspan font-weight="bold">&lt;&lt;extend&gt;&gt; (Quan hệ Mở rộng có Điều kiện):</tspan> Tem FRAGILE mở rộng Tạo đơn; NDR/Reschedule mở rộng Giao hàng; Quyết toán thủ công mở rộng Nộp COD.</text>')
+    # Ellipse types in VP theme (Pure Vector Shadows):
+    lines.append(f'    <ellipse cx="78" cy="{height-102}" rx="32" ry="16" fill="#0F2438" fill-opacity="0.08"/>')
+    lines.append(f'    <ellipse cx="75" cy="{height-105}" rx="32" ry="16" class="uc-abstract"/>')
+    lines.append(f'    <ellipse cx="158" cy="{height-102}" rx="32" ry="16" fill="#0F2438" fill-opacity="0.08"/>')
+    lines.append(f'    <ellipse cx="155" cy="{height-105}" rx="32" ry="16" class="uc-core"/>')
+    lines.append(f'    <ellipse cx="238" cy="{height-102}" rx="32" ry="16" fill="#0F2438" fill-opacity="0.08"/>')
+    lines.append(f'    <ellipse cx="235" cy="{height-105}" rx="32" ry="16" class="uc"/>')
+    lines.append(f'    <ellipse cx="318" cy="{height-102}" rx="32" ry="16" fill="#0F2438" fill-opacity="0.08"/>')
+    lines.append(f'    <ellipse cx="315" cy="{height-105}" rx="32" ry="16" class="uc-ext"/>')
+    lines.append(f'    <text x="365" y="{height-100}" class="t-legend"><tspan font-weight="bold">Phân loại hình khối VP:</tspan> [Xám: «abstract» Gốc] • [Viền xanh đậm 2.2px: Cốt lõi/Core/Auth Hub] • [Viền 1.4px: Chuẩn] • [Nét đứt: Extended/Tùy chọn]</text>')
 
-    # 5. Symbols
-    lines.append(f'    <ellipse cx="85" cy="{height-125}" rx="30" ry="16" class="uc-abstract"/>')
-    lines.append(f'    <ellipse cx="165" cy="{height-125}" rx="30" ry="16" class="uc-core"/>')
-    lines.append(f'    <ellipse cx="245" cy="{height-125}" rx="30" ry="16" class="uc"/>')
-    lines.append(f'    <ellipse cx="325" cy="{height-125}" rx="30" ry="16" class="uc-ext"/>')
-    lines.append(f'    <text x="380" y="{height-120}" class="t-legend"><tspan font-weight="bold">Phân loại hình khối:</tspan> [Xám: &lt;&lt;abstract&gt;&gt; Gốc] • [Viền đậm 2.5px: Cốt lõi/Core/Auth Hub] • [Viền 1.4px: Chuẩn] • [Nét đứt: Extended/Tùy chọn]</text>')
+    # Traceability Matrix Box (Right):
+    lines.append(f'    <rect x="1573" y="{height-377}" width="5480" height="340" rx="6" fill="#0F2438" fill-opacity="0.04"/>')
+    lines.append(f'    <rect x="1570" y="{height-380}" width="5480" height="340" fill="#FFFFFF" stroke="#335A88" stroke-width="1.4" rx="6"/>')
+    lines.append(f'    <path d="M 1570,{height-342} L 1570,{height-374} Q 1570,{height-380} 1576,{height-380} L 2400,{height-380} L 2420,{height-342} Z" fill="url(#vp-pkg-tab-grad)" stroke="#335A88" stroke-width="1.2"/>')
+    lines.append(f'    <text x="1595" y="{height-356}" class="t-note">BẢNG ÁNH XẠ 1:1 TOÀN BỘ 82 YÊU CẦU CHỨC NĂNG THỰC CÓ (KHỚP HOÀN TOÀN FILE DANH_SACH_CHUC_NANG_THEO_ACTOR.XLSX):</text>')
+    
+    lines.append(f'    <text x="1600" y="{height-308}" class="t-legend">• <tspan font-weight="bold">Khách Vãng Lai (9 UCs):</tspan> Tra cứu bưu kiện công khai (UC-AI-01a), Cước IATA (UC-AI-02), Đơn vãng lai (UC-ORD-01c), Chat AI 24/7 (UC-AI-04), 5 Dynamic Tools AI riêng biệt (UC-AI-05a: track_shipment, UC-AI-05b: calculate_rate, UC-AI-05c: prohibited_goods, UC-AI-05d: compensation_claim, UC-AI-05e: nearest_post_office).</text>')
+    lines.append(f'    <text x="1600" y="{height-278}" class="t-legend">• <tspan font-weight="bold">Khách Hàng Cá Nhân (6 UCs):</tspan> Kế thừa Khách vãng lai; Tạo đơn gửi lẻ (UC-ORD-01b), Quản lý sổ địa chỉ (UC-ORD-08), Tra cứu realtime (UC-AI-01b), Chat AI nổi (UC-AI-04), Xác thực OTP 6 số nhận hàng (UC-DEL-03).</text>')
+    lines.append(f'    <text x="1600" y="{height-248}" class="t-legend">• <tspan font-weight="bold">Người Gửi Hàng - Merchant (15 UCs):</tspan> Đăng nhập/xuất (UC-AUTH-01,02), Tài khoản (UC-AUTH-03), Tạo đơn Web (UC-ORD-01a), Bulk print (UC-ORD-06), Quản lý/Lọc đơn (UC-ORD-02), Sửa (UC-ORD-03), Hủy (UC-ORD-04), Đặt Pickup (UC-ORD-09), Tiến độ (UC-AI-01c), In A6/A7 (UC-ORD-05), Tem FRAGILE (UC-ORD-07), Hoàn hàng RTS (UC-DEL-08), Đối soát COD (UC-FIN-05), Khấu trừ cước hoàn (UC-FIN-07).</text>')
+    lines.append(f'    <text x="1600" y="{height-218}" class="t-legend">• <tspan font-weight="bold">Nhân Viên Giao Hàng - Shipper (13 UCs):</tspan> Đăng nhập/xuất (UC-AUTH-01,02), Nhiệm vụ ngày (UC-DEL-01), Bản đồ GPS (UC-DEL-01a), Scan Pickup (UC-HUB-02c), Liên hệ khách (UC-DEL-02), Xác thực OTP (UC-DEL-03), Chụp POD &amp; Ký số (UC-DEL-04), Giao thành công (UC-DEL-05), Báo NDR (UC-DEL-06), Hẹn lại ngày phát (UC-DEL-06a), Thu COD tiền mặt (UC-FIN-01), Nộp tiền VietQR (UC-FIN-02).</text>')
+    lines.append(f'    <text x="1600" y="{height-188}" class="t-legend">• <tspan font-weight="bold">Nhân Viên Vận Hành - Ops Staff (19 UCs):</tspan> Dashboard (UC-HUB-01), Tra cứu nội bộ (UC-HUB-01a), Đơn tại quầy (UC-HUB-01b), Duyệt pickup (UC-HUB-02a), Gán việc shipper (UC-HUB-02b), Đóng bao (UC-HUB-02), Niêm chì (UC-HUB-03), Linehaul (UC-HUB-04), Tem XT (UC-HUB-05), Xuất kho (UC-HUB-06), Nhập kho (UC-HUB-07), Gỡ bao (UC-HUB-08), Handoff bưu tá (UC-HUB-09), Xử lý NDR (UC-DEL-07), Hoàn hàng RTS (UC-DEL-08), Đối soát VietQR (UC-FIN-04), Quyết toán thủ công (UC-FIN-03).</text>')
+    lines.append(f'    <text x="1600" y="{height-158}" class="t-legend">• <tspan font-weight="bold">Quản Trị Viên - Admin (11 UCs):</tspan> Quản trị user (UC-ADM-01), Phân công (UC-ADM-02), RBAC Matrix (UC-ADM-03), Mobile override (UC-ADM-04), Hubs 4 cấp (UC-ADM-05), Zones (UC-ADM-06), Danh mục NDR (UC-ADM-07), System Config (UC-ADM-08), Audit Log (UC-ADM-09).</text>')
+    lines.append(f'    <text x="1600" y="{height-128}" class="t-legend">• <tspan font-weight="bold">Trợ Lý AI &amp; Hệ Thống (9 UCs):</tspan> Động cơ IATA V/6000 (UC-AI-03), Hybrid RAG (UC-AI-06), Fallback LLM (UC-AI-06a), SSE Streaming (UC-AI-07), Session Isolation (UC-AI-07a), Outbox Relay RabbitMQ (UC-ADM-10), Read Model Timeline/KPI (UC-ADM-11), Khớp nối SePay VietQR tự động (UC-FIN-06).</text>')
     lines.append('  </g>')
-    lines.append('')
-
-    # TRACEABILITY MATRIX
-    lines.append('  <!-- ========================================================= -->')
-    lines.append('  <!-- TRACEABILITY MATRIX (BOTTOM RIGHT)                       -->')
-    lines.append('  <!-- ========================================================= -->')
-    lines.append('  <g id="Traceability_Matrix">')
-    lines.append(f'    <rect x="1580" y="{height-380}" width="{width-1620}" height="340" class="legend-box"/>')
-    lines.append(f'    <text x="1600" y="{height-348}" class="t-note">BẢNG ÁNH XẠ 1:1 TOÀN BỘ 82 YÊU CẦU CHỨC NĂNG THỰC CÓ (KHỚP HOÀN TOÀN FILE DANH_SACH_CHUC_NANG_THEO_ACTOR.XLSX):</text>')
-    lines.append(f'    <text x="1600" y="{height-318}" class="t-legend">• <tspan font-weight="bold">Khách Vãng Lai (9 UCs):</tspan> Tra cứu bưu kiện công khai (UC-AI-01a), Cước IATA (UC-AI-02), Đơn vãng lai (UC-ORD-01c), Chat AI 24/7 (UC-AI-04), 5 Dynamic Tools AI riêng biệt (UC-AI-05a: track_shipment, UC-AI-05b: calculate_rate, UC-AI-05c: prohibited_goods, UC-AI-05d: compensation_claim, UC-AI-05e: nearest_post_office).</text>')
-    lines.append(f'    <text x="1600" y="{height-288}" class="t-legend">• <tspan font-weight="bold">Khách Hàng Cá Nhân (6 UCs):</tspan> Kế thừa Khách vãng lai; Tạo đơn gửi lẻ (UC-ORD-01b), Quản lý sổ địa chỉ (UC-ORD-08), Tra cứu realtime (UC-AI-01b), Chat AI nổi (UC-AI-04), Xác thực OTP 6 số nhận hàng (UC-DEL-03).</text>')
-    lines.append(f'    <text x="1600" y="{height-258}" class="t-legend">• <tspan font-weight="bold">Người Gửi Hàng - Merchant (15 UCs):</tspan> Đăng nhập/xuất (UC-AUTH-01,02), Tài khoản (UC-AUTH-03), Tạo đơn Web (UC-ORD-01a), Bulk print (UC-ORD-06), Quản lý/Lọc đơn (UC-ORD-02), Sửa (UC-ORD-03), Hủy (UC-ORD-04), Đặt Pickup (UC-ORD-09), Tiến độ (UC-AI-01c), In A6/A7 (UC-ORD-05), Tem FRAGILE (UC-ORD-07), Hoàn hàng RTS (UC-DEL-08), Đối soát COD (UC-FIN-05), Khấu trừ cước hoàn (UC-FIN-07).</text>')
-    lines.append(f'    <text x="1600" y="{height-228}" class="t-legend">• <tspan font-weight="bold">Nhân Viên Giao Hàng - Shipper (13 UCs):</tspan> Đăng nhập/xuất (UC-AUTH-01,02), Nhiệm vụ ngày (UC-DEL-01), Bản đồ GPS (UC-DEL-01a), Scan Pickup (UC-HUB-02c), Liên hệ khách (UC-DEL-02), Xác thực OTP (UC-DEL-03), Chụp POD &amp; Ký số (UC-DEL-04), Giao thành công (UC-DEL-05), Báo NDR (UC-DEL-06), Hẹn lại ngày phát (UC-DEL-06a), Thu COD tiền mặt (UC-FIN-01), Nộp tiền VietQR (UC-FIN-02).</text>')
-    lines.append(f'    <text x="1600" y="{height-198}" class="t-legend">• <tspan font-weight="bold">Nhân Viên Vận Hành - Ops Staff (19 UCs):</tspan> Dashboard (UC-HUB-01), Tra cứu nội bộ (UC-HUB-01a), Đơn tại quầy (UC-HUB-01b), Duyệt pickup (UC-HUB-02a), Gán việc shipper (UC-HUB-02b), Đóng bao (UC-HUB-02), Niêm chì (UC-HUB-03), Linehaul (UC-HUB-04), Tem XT (UC-HUB-05), Xuất kho (UC-HUB-06), Nhập kho (UC-HUB-07), Gỡ bao (UC-HUB-08), Handoff bưu tá (UC-HUB-09), Xử lý NDR (UC-DEL-07), Hoàn hàng RTS (UC-DEL-08), Đối soát VietQR (UC-FIN-04), Quyết toán thủ công (UC-FIN-03).</text>')
-    lines.append(f'    <text x="1600" y="{height-168}" class="t-legend">• <tspan font-weight="bold">Quản Trị Viên - Admin (11 UCs):</tspan> Quản trị user (UC-ADM-01), Phân công (UC-ADM-02), RBAC Matrix (UC-ADM-03), Mobile override (UC-ADM-04), Hubs 4 cấp (UC-ADM-05), Zones (UC-ADM-06), Danh mục NDR (UC-ADM-07), System Config (UC-ADM-08), Audit Log (UC-ADM-09).</text>')
-    lines.append(f'    <text x="1600" y="{height-138}" class="t-legend">• <tspan font-weight="bold">Trợ Lý AI &amp; Hệ Thống (9 UCs):</tspan> Động cơ IATA V/6000 (UC-AI-03), Hybrid RAG (UC-AI-06), Fallback LLM (UC-AI-06a), SSE Streaming (UC-AI-07), Session Isolation (UC-AI-07a), Outbox Relay RabbitMQ (UC-ADM-10), Read Model Timeline/KPI (UC-ADM-11), Khớp nối SePay VietQR tự động (UC-FIN-06).</text>')
-    lines.append('  </g>')
-    lines.append('')
 
     lines.append('</svg>')
     return "\n".join(lines)
 
-def main():
-    target_path = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "../docs/graduation-thesis/figma-page-1-system-and-data/diagrams/01-use-case-general-system.svg")
-    )
+if __name__ == "__main__":
     svg_content = generate_svg()
+    target_path = os.path.abspath("docs/graduation-thesis/figma-page-1-system-and-data/diagrams/01-use-case-general-system.svg")
     os.makedirs(os.path.dirname(target_path), exist_ok=True)
     with open(target_path, "w", encoding="utf-8") as f:
         f.write(svg_content)
-    print(f"Generated successfully: {target_path} ({len(svg_content)} bytes)")
-
-if __name__ == "__main__":
-    main()
+    print(f"Generated successfully: {target_path} ({len(svg_content.encode('utf-8'))} bytes)")

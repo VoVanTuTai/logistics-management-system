@@ -4,8 +4,8 @@
 > **Dự án:** Hệ thống Quản trị & Vận hành Logistics Đa kênh Nexus Enterprise (Nexus Enterprise Logistics Platform)  
 > **Tiêu chuẩn chất lượng phần mềm:** IEEE 830 / ISO/IEC 25010 / UML 2.5 Specification (Object Management Group - OMG)  
 > **Cơ sở dữ liệu kiểm chứng:** File đặc tả chức năng thực tế [`Danh_sach_chuc_nang_theo_Actor.xlsx`](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/figma-page-1-system-and-data/diagrams/Danh_sach_chuc_nang_theo_Actor.xlsx) (Cả 2 sheet `Danh sach chuc nang` và `Tong quan` — 100% khớp toàn diện 82 chức năng)  
-> **Sơ đồ Vector Blueprint tham chiếu:** [`01-use-case-general-system.svg`](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/figma-page-1-system-and-data/diagrams/01-use-case-general-system.svg) (Bản vẽ REV.19 — Super-Expanded Canvas $7500 \times 4600\text{ px}$, Khoảng cách phân hệ $\ge 300\text{ px}$, Bo góc R=24px Bezier, Tách làn 80px)  
-> **Phiên bản tài liệu:** 9.0 (Definitive Production Alignment — Khớp chuẩn 1:1 toàn bộ 82 chức năng thực có, 7 Tác nhân, 6 Phân hệ nghiệp vụ & Cổng Xác thực Trung tâm)
+> **Sơ đồ Vector Blueprint tham chiếu:** [`01-use-case-general-system.svg`](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/figma-page-1-system-and-data/diagrams/01-use-case-general-system.svg) (Bản vẽ REV.20-VP — Chuẩn Visual Paradigm Modern Enterprise: 100% Native Figma Pure Vector, Zero `<marker>`, Zero `<filter>`, Hộp phân hệ Folder-Tab, Đổ bóng 2.5D Vector Elevation, Gradient Xanh Biển Nhẹ, French Guillemets «include»/«extend», Canvas $7500 \times 4600\text{ px}$, Bo góc R=24px Bezier, Đại lộ tách làn $\ge 260\text{ px}$)  
+> **Phiên bản tài liệu:** 10.0 (Visual Paradigm Enterprise Edition — Khớp chuẩn 1:1 toàn bộ 82 chức năng thực có, 7 Tác nhân, 6 Phân hệ nghiệp vụ Folder-Tab & Cổng Xác thực Trung tâm)
 
 ---
 
