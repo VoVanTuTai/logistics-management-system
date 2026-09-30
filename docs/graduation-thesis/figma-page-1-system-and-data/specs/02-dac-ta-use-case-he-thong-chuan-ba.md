@@ -3,9 +3,9 @@
 > **Tài liệu Phân tích Nghiệp vụ Phần mềm (Business Analysis & System Requirements Specification - BA/SRS)**  
 > **Dự án:** Hệ thống Quản trị & Vận hành Logistics Đa kênh Nexus Enterprise (Nexus Enterprise Logistics Platform)  
 > **Tiêu chuẩn chất lượng phần mềm:** IEEE 830 / ISO/IEC 25010 / UML 2.5 Specification (Object Management Group - OMG)  
-> **Cơ sở dữ liệu kiểm chứng:** File đặc tả chức năng thực tế [`Danh_sach_chuc_nang_theo_Actor.xlsx`](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/figma-page-1-system-and-data/diagrams/Danh_sach_chuc_nang_theo_Actor.xlsx) (Cả 2 sheet `Danh sach chuc nang` và `Tong quan`)  
-> **Sơ đồ Vector Blueprint tham chiếu:** [`01-use-case-general-system.svg`](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/figma-page-1-system-and-data/diagrams/01-use-case-general-system.svg) (Bản vẽ REV.18 — Expanded Layout $6000 \times 3900\text{ px}$, Khoảng cách phân hệ $\ge 180\text{ px}$)  
-> **Phiên bản tài liệu:** 8.0 (Definitive Production Alignment — Khớp chuẩn 1:1 toàn bộ 82 chức năng thực có, 7 Tác nhân, 6 Phân hệ nghiệp vụ & Cổng Xác thực Trung tâm)
+> **Cơ sở dữ liệu kiểm chứng:** File đặc tả chức năng thực tế [`Danh_sach_chuc_nang_theo_Actor.xlsx`](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/figma-page-1-system-and-data/diagrams/Danh_sach_chuc_nang_theo_Actor.xlsx) (Cả 2 sheet `Danh sach chuc nang` và `Tong quan` — 100% khớp toàn diện 82 chức năng)  
+> **Sơ đồ Vector Blueprint tham chiếu:** [`01-use-case-general-system.svg`](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/figma-page-1-system-and-data/diagrams/01-use-case-general-system.svg) (Bản vẽ REV.19 — Super-Expanded Canvas $7500 \times 4600\text{ px}$, Khoảng cách phân hệ $\ge 300\text{ px}$, Bo góc R=24px Bezier, Tách làn 80px)  
+> **Phiên bản tài liệu:** 9.0 (Definitive Production Alignment — Khớp chuẩn 1:1 toàn bộ 82 chức năng thực có, 7 Tác nhân, 6 Phân hệ nghiệp vụ & Cổng Xác thực Trung tâm)
 
 ---
 
@@ -346,13 +346,14 @@ Toàn bộ 82 chức năng trong file Excel `Danh_sach_chuc_nang_theo_Actor.xlsx
 4. **Bảo đảm Zero-Crossing (Không Giao Cắt Lộn Xộn):**
    - Áp dụng triệt để định tuyến hành lang vuông góc (Orthogonal Corridor Routing) và sắp xếp Use Case theo ái lực miền tác nhân (Domain Affinity Ordering).
    - 100% đường liên kết không cắt ngang qua bất kỳ hình elip hay phân hệ nào khác.
-5. **Bố Cục Không Gian Thoáng Đạt & Khoảng Cách Phân Hệ Rộng Rãi ($\ge 180\text{ px}$):**
-   - Kích thước canvas mở rộng lên $6000 \times 3900\text{ px}$ (ranh giới hệ thống $4880 \times 3300\text{ px}$).
-   - Khoảng cách giữa các cột phân hệ (Horizontal Gutters): **$180\text{ px}$** (Cột 1 sang Cột 2 $X \in [2140, 2320]$, Cột 2 sang Cột 3 $X \in [3420, 3600]$).
-   - Khoảng cách giữa các tầng phân hệ (Vertical Gutters): **$180\text{ px}$** tại đại lộ ngang trung tâm ($Y \in [1360, 1540]$) và **$160\text{ px}$** giữa Phân hệ 3 và Phân hệ 6 ($Y \in [2400, 2560]$).
-6. **Kỹ Thuật Bo Góc Cong (Fillets) & Giãn Cách Làn Tuyến Rời Rạc ($\ge 40\text{--}60\text{ px}$):**
-   - Thay thế hoàn toàn các góc vuông 90 độ sắc nhọn (vốn tạo cảm giác bậc thang chằng chịt khi chạy song song) bằng đường cong bo góc kỹ thuật cao (Quadratic Bezier Fillets, bán kính uốn $R = 20\text{ px}$).
-   - Mở rộng khoảng cách giữa các làn dây song song lên **$45\text{--}60\text{ px}$**, trải đều không gian hành lang biên trái ($X \in [260, 540]$) và hành lang biên phải ($X \in [5450, 5680]$).
-   - Tận dụng hành lang $160\text{ px}$ giữa Phân hệ 3 và Phân hệ 6 ($Y = 2480$) làm luồng dẫn riêng cho tuyến quyết toán thủ công (`UC-FIN-03`) của Nhân viên Vận hành, giải tỏa áp lực dây cho đại lộ ngang trung tâm.
+5. **Bố Cục Không Gian Siêu Thoáng Đạt & Đại Lộ Khoảng Cách Phân Hệ Lớn ($\ge 300\text{ px}$):**
+   - Kích thước canvas đại công nghiệp mở rộng lên **$7500 \times 4600\text{ px}$** (ranh giới hệ thống $6060 \times 3980\text{ px}$), cung cấp mật độ điểm ảnh siêu mịn khi zoom vào từng Use Case nhỏ.
+   - Khoảng cách giữa các cột phân hệ (Horizontal Gutters): **$300\text{ px}$** (Cột 1 sang Cột 2 $X \in [2560, 2860]$, Cột 2 sang Cột 3 $X \in [4660, 4960]$).
+   - Khoảng cách giữa các tầng phân hệ (Vertical Gutters): **$260\text{ px}$** tại đại lộ ngang trung tâm ($Y \in [1680, 1940]$) và **$200\text{ px}$** giữa Phân hệ 3 và Phân hệ 6 ($Y \in [3040, 3240]$).
+6. **Kỹ Thuật Bo Góc Cong Tròn (Bezier Fillets $R=24\text{ px}$) & Giãn Cách Làn Tuyến Song Song ($\ge 60\text{--}80\text{ px}$):**
+   - Thay thế hoàn toàn các góc gấp khúc 90 độ sắc nhọn bằng đường cong bo góc kỹ thuật cao (Quadratic Bezier Fillets, bán kính uốn chuẩn công nghiệp $R = 24\text{ px}$).
+   - Mở rộng khoảng cách giữa các làn dây song song lên **$60\text{--}80\text{ px}$** trên các hành lang cất cánh dọc hai biên ($X \in [270, 510]$ ở bên trái và $X \in [6830, 7210]$ ở bên phải), triệt tiêu hoàn toàn hiện tượng dính đường hoặc nhìn nhầm tuyến.
+   - Tách riêng hành lang $200\text{ px}$ giữa Phân hệ 3 và Phân hệ 6 ($Y = 3140$) làm đường dẫn chuyên dụng cho tuyến phê duyệt quyết toán COD thủ công (`UC-FIN-03`) của Nhân viên Vận hành, giữ cho đại lộ trung tâm luôn thông thoáng tuyệt đối.
+   - Hiển thị đầy đủ **5 Công cụ AI Động (Dynamic Tools: `UC-AI-05a` đến `UC-AI-05e`)** thành từng hình elip riêng biệt, kết nối từ Use Case `UC-AI-04` qua các mũi tên quan hệ `<<include>>` độc lập.
    - Gắn nhãn nhận diện tuyến đường (Corridor Route Badges: `[Merchant]`, `[Customer]`, `[Guest]`, `[Ops Staff]`, `[Shipper]`, `[Admin]`, `[System & AI]`), giúp người xem nhận biết tức thì tác nhân kích hoạt mà không cần phải dò ngược lại điểm xuất phát.
 
