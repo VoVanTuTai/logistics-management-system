@@ -582,15 +582,27 @@
     <line x1="232.0" y1="548.0" x2="725.4" y2="501.9" class="assoc"/>
     <line x1="232.0" y1="548.0" x2="735.6" y2="607.5" class="assoc"/>
     <line x1="232.0" y1="548.0" x2="725.0" y2="713.1" class="assoc"/>
-    <path d="M 232.0 548.0 L 500.0 548.0 L 500.0 175.0 L 2810.0 175.0 L 2809.1 280.8" class="assoc-corr"/>
-    <path d="M 232.0 548.0 L 480.0 548.0 L 480.0 1420.0 L 2500.0 1420.0 L 2500.0 1773.0" class="assoc-corr"/>
-    <path d="M 232.0 548.0 L 460.0 548.0 L 460.0 1460.0 L 2440.0 1460.0 L 2440.0 2050.0 L 2360.0 2050.0" class="assoc-corr"/>
-    <path d="M 232.0 548.0 L 440.0 548.0 L 440.0 1820.0 L 725.0 1820.0" class="assoc-corr"/>
+    <path d="M 232.0 548.0 L 513.0 548.0 Q 535.0 548.0 535.0 526.0 L 535.0 187.0 Q 535.0 165.0 557.0 165.0 L 2788.0 165.0 Q 2810.0 165.0 2810.5 187.0 L 2812.6 280.4" class="assoc-corr"/>
+    <rect x="1639.3" y="157.0" width="66.4" height="16" fill="#FFFFFF" stroke="#000000" stroke-width="0.8" rx="4"/>
+    <text x="1672.5" y="169.0" font-family="Arial" font-size="9.5px" font-weight="bold" fill="#000000" text-anchor="middle">Merchant</text>
+    <path d="M 232.0 548.0 L 448.0 548.0 Q 470.0 548.0 470.0 570.0 L 470.0 1368.0 Q 470.0 1390.0 492.0 1390.0 L 2478.0 1390.0 Q 2500.0 1390.0 2500.0 1412.0 L 2500.0 1773.0" class="assoc-corr"/>
+    <rect x="1451.8" y="1382.0" width="66.4" height="16" fill="#FFFFFF" stroke="#000000" stroke-width="0.8" rx="4"/>
+    <text x="1485.0" y="1394.0" font-family="Arial" font-size="9.5px" font-weight="bold" fill="#000000" text-anchor="middle">Merchant</text>
+    <path d="M 232.0 548.0 L 388.0 548.0 Q 410.0 548.0 410.0 570.0 L 410.0 1403.0 Q 410.0 1425.0 432.0 1425.0 L 2418.0 1425.0 Q 2440.0 1425.0 2440.0 1447.0 L 2440.0 2028.0 Q 2440.0 2050.0 2418.0 2050.0 L 2360.0 2050.0" class="assoc-corr"/>
+    <rect x="376.8" y="978.5" width="66.4" height="16" fill="#FFFFFF" stroke="#000000" stroke-width="0.8" rx="4"/>
+    <text x="410.0" y="990.5" font-family="Arial" font-size="9.5px" font-weight="bold" fill="#000000" text-anchor="middle">Merchant</text>
+    <path d="M 232.0 548.0 L 328.0 548.0 Q 350.0 548.0 350.0 570.0 L 350.0 1798.0 Q 350.0 1820.0 372.0 1820.0 L 725.0 1820.0" class="assoc-corr"/>
+    <rect x="316.8" y="1176.0" width="66.4" height="16" fill="#FFFFFF" stroke="#000000" stroke-width="0.8" rx="4"/>
+    <text x="350.0" y="1188.0" font-family="Arial" font-size="9.5px" font-weight="bold" fill="#000000" text-anchor="middle">Merchant</text>
     <line x1="232.0" y1="1288.0" x2="753.4" y2="864.3" class="assoc"/>
     <line x1="232.0" y1="1288.0" x2="749.2" y2="971.1" class="assoc"/>
     <line x1="232.0" y1="1288.0" x2="745.5" y2="1666.8" class="assoc"/>
-    <path d="M 232.0 1288.0 L 400.0 1288.0 L 400.0 175.0 L 2835.0 175.0 L 2832.4 279.0" class="assoc-corr"/>
-    <path d="M 232.0 2168.0 L 420.0 2168.0 L 420.0 1080.0 L 730.0 1080.0" class="assoc-corr"/>
+    <path d="M 232.0 1288.0 L 488.0 1288.0 Q 510.0 1288.0 510.0 1266.0 L 510.0 227.0 Q 510.0 205.0 532.0 205.0 L 2818.0 205.0 Q 2840.0 205.0 2836.7 226.8 L 2828.8 279.2" class="assoc-corr"/>
+    <rect x="1641.8" y="197.0" width="66.4" height="16" fill="#FFFFFF" stroke="#000000" stroke-width="0.8" rx="4"/>
+    <text x="1675.0" y="209.0" font-family="Arial" font-size="9.5px" font-weight="bold" fill="#000000" text-anchor="middle">Customer</text>
+    <path d="M 232.0 2168.0 L 268.0 2168.0 Q 290.0 2168.0 290.0 2146.0 L 290.0 1102.0 Q 290.0 1080.0 312.0 1080.0 L 730.0 1080.0" class="assoc-corr"/>
+    <rect x="267.0" y="1616.0" width="46.0" height="16" fill="#FFFFFF" stroke="#000000" stroke-width="0.8" rx="4"/>
+    <text x="290.0" y="1628.0" font-family="Arial" font-size="9.5px" font-weight="bold" fill="#000000" text-anchor="middle">Guest</text>
     <line x1="232.0" y1="2168.0" x2="727.9" y2="2294.9" class="assoc"/>
     <line x1="232.0" y1="2168.0" x2="720.1" y2="2141.2" class="assoc"/>
     <line x1="232.0" y1="2168.0" x2="725.9" y2="1987.7" class="assoc"/>
@@ -601,35 +613,61 @@
     <line x1="5688.0" y1="588.0" x2="5018.7" y2="696.6" class="assoc"/>
     <line x1="5688.0" y1="588.0" x2="5000.2" y2="910.5" class="assoc"/>
     <line x1="5688.0" y1="588.0" x2="4994.1" y2="1018.0" class="assoc"/>
-    <path d="M 5688.0 588.0 L 5100.0 588.0 L 5100.0 535.0 L 4600.0 535.0 L 4600.0 500.0 L 4480.0 500.0" class="assoc-corr"/>
-    <path d="M 5688.0 588.0 L 5100.0 588.0 L 5100.0 975.0 L 4600.0 975.0 L 4600.0 980.0 L 4475.0 980.0" class="assoc-corr"/>
-    <path d="M 5688.0 588.0 L 5500.0 588.0 L 5500.0 175.0 L 2860.0 175.0 L 2858.9 278.1" class="assoc-corr"/>
-    <path d="M 5688.0 588.0 L 5480.0 588.0 L 5480.0 1420.0 L 3820.0 1420.0 L 3820.0 1734.0" class="assoc-corr"/>
-    <path d="M 5688.0 588.0 L 5460.0 588.0 L 5460.0 1450.0 L 2870.0 1450.0 L 2870.0 1773.0" class="assoc-corr"/>
-    <path d="M 5688.0 588.0 L 5460.0 588.0 L 5460.0 1480.0 L 3380.0 1480.0 L 3380.0 2300.0 L 3010.0 2300.0" class="assoc-corr"/>
-    <path d="M 5688.0 1708.0 L 5520.0 1708.0 L 5520.0 810.0 L 5015.0 810.0" class="assoc-corr"/>
+    <path d="M 5688.0 588.0 L 5168.0 551.3 Q 5150.0 550.0 5132.0 550.0 L 4638.0 550.0 Q 4620.0 550.0 4620.0 532.0 L 4620.0 518.0 Q 4620.0 500.0 4602.0 500.0 L 4480.0 500.0" class="assoc-corr"/>
+    <path d="M 5688.0 588.0 L 5164.6 964.5 Q 5150.0 975.0 5132.0 975.0 L 4622.5 975.0 Q 4620.0 975.0 4620.0 977.5 L 4620.0 977.5 Q 4620.0 980.0 4617.5 980.0 L 4475.0 980.0" class="assoc-corr"/>
+    <path d="M 5688.0 588.0 L 5582.0 588.0 Q 5560.0 588.0 5560.0 566.0 L 5560.0 247.0 Q 5560.0 225.0 5538.0 225.0 L 2892.0 225.0 Q 2870.0 225.0 2870.0 247.0 L 2870.0 278.0" class="assoc-corr"/>
+    <rect x="4178.4" y="217.0" width="73.2" height="16" fill="#FFFFFF" stroke="#000000" stroke-width="0.8" rx="4"/>
+    <text x="4215.0" y="229.0" font-family="Arial" font-size="9.5px" font-weight="bold" fill="#000000" text-anchor="middle">Ops Staff</text>
+    <path d="M 5688.0 588.0 L 5482.0 588.0 Q 5460.0 588.0 5460.0 610.0 L 5460.0 1428.0 Q 5460.0 1450.0 5438.0 1450.0 L 3842.0 1450.0 Q 3820.0 1450.0 3820.0 1472.0 L 3820.0 1734.0" class="assoc-corr"/>
+    <rect x="4603.4" y="1442.0" width="73.2" height="16" fill="#FFFFFF" stroke="#000000" stroke-width="0.8" rx="4"/>
+    <text x="4640.0" y="1454.0" font-family="Arial" font-size="9.5px" font-weight="bold" fill="#000000" text-anchor="middle">Ops Staff</text>
+    <path d="M 5688.0 588.0 L 5532.0 588.0 Q 5510.0 588.0 5510.0 610.0 L 5510.0 1468.0 Q 5510.0 1490.0 5488.0 1490.0 L 2892.0 1490.0 Q 2870.0 1490.0 2870.0 1512.0 L 2870.0 1773.0" class="assoc-corr"/>
+    <rect x="4153.4" y="1482.0" width="73.2" height="16" fill="#FFFFFF" stroke="#000000" stroke-width="0.8" rx="4"/>
+    <text x="4190.0" y="1494.0" font-family="Arial" font-size="9.5px" font-weight="bold" fill="#000000" text-anchor="middle">Ops Staff</text>
+    <path d="M 5688.0 588.0 L 5507.0 588.0 Q 5485.0 588.0 5485.0 610.0 L 5485.0 2458.0 Q 5485.0 2480.0 5463.0 2480.0 L 2892.0 2480.0 Q 2870.0 2480.0 2870.0 2458.0 L 2870.0 2327.0" class="assoc-corr"/>
+    <rect x="4140.9" y="2472.0" width="73.2" height="16" fill="#FFFFFF" stroke="#000000" stroke-width="0.8" rx="4"/>
+    <text x="4177.5" y="2484.0" font-family="Arial" font-size="9.5px" font-weight="bold" fill="#000000" text-anchor="middle">Ops Staff</text>
+    <path d="M 5688.0 1708.0 L 5482.0 1708.0 Q 5460.0 1708.0 5460.0 1686.0 L 5460.0 832.0 Q 5460.0 810.0 5438.0 810.0 L 5015.0 810.0" class="assoc-corr"/>
+    <rect x="5430.2" y="1251.0" width="59.6" height="16" fill="#FFFFFF" stroke="#000000" stroke-width="0.8" rx="4"/>
+    <text x="5460.0" y="1263.0" font-family="Arial" font-size="9.5px" font-weight="bold" fill="#000000" text-anchor="middle">Shipper</text>
     <line x1="5688.0" y1="1708.0" x2="5014.4" y2="1632.4" class="assoc"/>
     <line x1="5688.0" y1="1708.0" x2="5014.8" y2="1748.7" class="assoc"/>
     <line x1="5688.0" y1="1708.0" x2="5007.5" y2="1865.3" class="assoc"/>
     <line x1="5688.0" y1="1708.0" x2="5012.2" y2="1981.4" class="assoc"/>
     <line x1="5688.0" y1="1708.0" x2="5000.9" y2="2098.9" class="assoc"/>
     <line x1="5688.0" y1="1708.0" x2="4993.4" y2="2216.4" class="assoc"/>
-    <path d="M 5688.0 1708.0 L 5500.0 1708.0 L 5500.0 1450.0 L 3220.0 1450.0 L 3220.0 1774.0" class="assoc-corr"/>
-    <path d="M 5688.0 1708.0 L 5500.0 1708.0 L 5500.0 1480.0 L 3280.0 1480.0 L 3280.0 2050.0 L 3355.0 2050.0" class="assoc-corr"/>
-    <path d="M 5688.0 1708.0 L 5540.0 1708.0 L 5540.0 175.0 L 2885.0 175.0 L 2886.6 278.2" class="assoc-corr"/>
+    <path d="M 5688.0 1708.0 L 5532.0 1708.0 Q 5510.0 1708.0 5510.0 1686.0 L 5510.0 1492.0 Q 5510.0 1470.0 5488.0 1470.0 L 3242.0 1470.0 Q 3220.0 1470.0 3220.0 1492.0 L 3220.0 1774.0" class="assoc-corr"/>
+    <rect x="4335.2" y="1462.0" width="59.6" height="16" fill="#FFFFFF" stroke="#000000" stroke-width="0.8" rx="4"/>
+    <text x="4365.0" y="1474.0" font-family="Arial" font-size="9.5px" font-weight="bold" fill="#000000" text-anchor="middle">Shipper</text>
+    <path d="M 5688.0 1708.0 L 5582.0 1708.0 Q 5560.0 1708.0 5560.0 1686.0 L 5560.0 1532.0 Q 5560.0 1510.0 5538.0 1510.0 L 3302.0 1510.0 Q 3280.0 1510.0 3280.0 1532.0 L 3280.0 2028.0 Q 3280.0 2050.0 3302.0 2050.0 L 3355.0 2050.0" class="assoc-corr"/>
+    <rect x="4390.2" y="1502.0" width="59.6" height="16" fill="#FFFFFF" stroke="#000000" stroke-width="0.8" rx="4"/>
+    <text x="4420.0" y="1514.0" font-family="Arial" font-size="9.5px" font-weight="bold" fill="#000000" text-anchor="middle">Shipper</text>
+    <path d="M 5688.0 1708.0 L 5632.0 1708.0 Q 5610.0 1708.0 5610.0 1686.0 L 5610.0 207.0 Q 5610.0 185.0 5588.0 185.0 L 2922.0 185.0 Q 2900.0 185.0 2901.2 207.0 L 2905.0 278.9" class="assoc-corr"/>
+    <rect x="4225.2" y="177.0" width="59.6" height="16" fill="#FFFFFF" stroke="#000000" stroke-width="0.8" rx="4"/>
+    <text x="4255.0" y="189.0" font-family="Arial" font-size="9.5px" font-weight="bold" fill="#000000" text-anchor="middle">Shipper</text>
     <line x1="5688.0" y1="2708.0" x2="5019.6" y2="2651.9" class="assoc"/>
     <line x1="5688.0" y1="2708.0" x2="5014.6" y2="2768.1" class="assoc"/>
     <line x1="5688.0" y1="2708.0" x2="5011.7" y2="2884.5" class="assoc"/>
     <line x1="5688.0" y1="2708.0" x2="5011.1" y2="3000.9" class="assoc"/>
     <line x1="5688.0" y1="2708.0" x2="5004.1" y2="3118.0" class="assoc"/>
-    <path d="M 5688.0 2708.0 L 5560.0 2708.0 L 5560.0 175.0 L 2910.0 175.0 L 2912.6 279.3" class="assoc-corr"/>
-    <path d="M 5540.0 3210.0 L 5500.0 3210.0 L 5500.0 3430.0 L 3650.0 3430.0 L 3650.0 3010.0 L 3680.0 3010.0" class="assoc-corr"/>
-    <path d="M 5540.0 3210.0 L 5500.0 3210.0 L 5500.0 3430.0 L 3650.0 3430.0 L 3650.0 3130.0 L 3680.0 3130.0" class="assoc-corr"/>
-    <path d="M 5540.0 3210.0 L 5500.0 3210.0 L 5500.0 3430.0 L 2710.0 3430.0 L 2710.0 2050.0 L 2730.0 2050.0" class="assoc-corr"/>
-    <path d="M 5540.0 3210.0 L 5500.0 3210.0 L 5500.0 3430.0 L 1420.0 3430.0 L 1420.0 2007.0" class="assoc-corr"/>
-    <path d="M 5540.0 3210.0 L 5500.0 3210.0 L 5500.0 3430.0 L 1490.0 3430.0 L 1490.0 2140.0 L 1565.0 2140.0" class="assoc-corr"/>
-    <path d="M 5540.0 3210.0 L 5500.0 3210.0 L 5500.0 3430.0 L 1900.0 3430.0 L 1900.0 2106.0" class="assoc-corr"/>
-    <path d="M 5540.0 3210.0 L 5500.0 3210.0 L 5500.0 3430.0 L 1960.0 3430.0 L 1960.0 2200.0 L 2040.0 2200.0" class="assoc-corr"/>
+    <path d="M 5688.0 2708.0 L 5674.0 2708.0 Q 5660.0 2708.0 5660.0 2694.0 L 5660.0 167.0 Q 5660.0 145.0 5638.0 145.0 L 2952.0 145.0 Q 2930.0 145.0 2928.6 167.0 L 2921.3 279.9" class="assoc-corr"/>
+    <rect x="4272.0" y="137.0" width="46.0" height="16" fill="#FFFFFF" stroke="#000000" stroke-width="0.8" rx="4"/>
+    <text x="4295.0" y="149.0" font-family="Arial" font-size="9.5px" font-weight="bold" fill="#000000" text-anchor="middle">Admin</text>
+    <path d="M 5540.0 3210.0 L 5500.0 3210.0 Q 5480.0 3210.0 5480.0 3230.0 L 5480.0 3425.0 Q 5480.0 3445.0 5460.0 3445.0 L 3670.0 3445.0 Q 3650.0 3445.0 3650.0 3425.0 L 3650.0 3025.0 Q 3650.0 3010.0 3665.0 3010.0 L 3680.0 3010.0" class="assoc-corr"/>
+    <rect x="4538.6" y="3437.0" width="52.8" height="16" fill="#FFFFFF" stroke="#000000" stroke-width="0.8" rx="4"/>
+    <text x="4565.0" y="3449.0" font-family="Arial" font-size="9.5px" font-weight="bold" fill="#000000" text-anchor="middle">System</text>
+    <path d="M 5540.0 3210.0 L 5500.0 3210.0 Q 5480.0 3210.0 5480.0 3230.0 L 5480.0 3425.0 Q 5480.0 3445.0 5460.0 3445.0 L 3670.0 3445.0 Q 3650.0 3445.0 3650.0 3425.0 L 3650.0 3145.0 Q 3650.0 3130.0 3665.0 3130.0 L 3680.0 3130.0" class="assoc-corr"/>
+    <path d="M 5540.0 3210.0 L 5525.0 3210.0 Q 5510.0 3210.0 5510.0 3225.0 L 5510.0 3460.0 Q 5510.0 3480.0 5490.0 3480.0 L 2730.0 3480.0 Q 2710.0 3480.0 2710.0 3460.0 L 2710.0 2060.0 Q 2710.0 2050.0 2720.0 2050.0 L 2730.0 2050.0" class="assoc-corr"/>
+    <rect x="4083.6" y="3472.0" width="52.8" height="16" fill="#FFFFFF" stroke="#000000" stroke-width="0.8" rx="4"/>
+    <text x="4110.0" y="3484.0" font-family="Arial" font-size="9.5px" font-weight="bold" fill="#000000" text-anchor="middle">System</text>
+    <path d="M 5540.0 3210.0 L 5540.0 3495.0 Q 5540.0 3515.0 5520.0 3515.0 L 1440.0 3515.0 Q 1420.0 3515.0 1420.0 3495.0 L 1420.0 2007.0" class="assoc-corr"/>
+    <rect x="3436.6" y="3507.0" width="86.8" height="16" fill="#FFFFFF" stroke="#000000" stroke-width="0.8" rx="4"/>
+    <text x="3480.0" y="3519.0" font-family="Arial" font-size="9.5px" font-weight="bold" fill="#000000" text-anchor="middle">System &amp; AI</text>
+    <path d="M 5540.0 3210.0 L 5540.0 3495.0 Q 5540.0 3515.0 5520.0 3515.0 L 1540.0 3515.0 Q 1520.0 3515.0 1520.0 3495.0 L 1520.0 2160.0 Q 1520.0 2140.0 1540.0 2140.0 L 1565.0 2140.0" class="assoc-corr"/>
+    <path d="M 5540.0 3210.0 L 5540.0 3530.0 Q 5540.0 3550.0 5520.0 3550.0 L 1880.0 3550.0 Q 1860.0 3550.0 1860.5 3530.0 L 1896.2 2106.0" class="assoc-corr"/>
+    <rect x="3656.6" y="3542.0" width="86.8" height="16" fill="#FFFFFF" stroke="#000000" stroke-width="0.8" rx="4"/>
+    <text x="3700.0" y="3554.0" font-family="Arial" font-size="9.5px" font-weight="bold" fill="#000000" text-anchor="middle">System &amp; AI</text>
+    <path d="M 5540.0 3210.0 L 5540.0 3530.0 Q 5540.0 3550.0 5520.0 3550.0 L 1980.0 3550.0 Q 1960.0 3550.0 1960.0 3530.0 L 1960.0 2220.0 Q 1960.0 2200.0 1980.0 2200.0 L 2040.0 2200.0" class="assoc-corr"/>
   <!-- ========================================================= -->
   <!-- UML 2.5 LEGEND (BOTTOM LEFT)                             -->
   <!-- ========================================================= -->

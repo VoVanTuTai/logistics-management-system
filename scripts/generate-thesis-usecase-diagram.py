@@ -123,14 +123,76 @@ def generate_svg():
         x2, y2 = ellipse_point(cx, cy, rx, ry, x1, y1)
         return f'    <line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" class="{stroke_class}"/>'
 
-    def path_to_ellipse(points, cx, cy, rx, ry, stroke_class="assoc-corr"):
+    def rounded_path_d(points, radius=20):
+        if len(points) < 2:
+            return ""
+        if len(points) == 2:
+            return f"M {points[0][0]:.1f} {points[0][1]:.1f} L {points[1][0]:.1f} {points[1][1]:.1f}"
+        
+        d = [f"M {points[0][0]:.1f} {points[0][1]:.1f}"]
+        for i in range(1, len(points) - 1):
+            p_prev = points[i-1]
+            p_curr = points[i]
+            p_next = points[i+1]
+            
+            dx1 = p_curr[0] - p_prev[0]
+            dy1 = p_curr[1] - p_prev[1]
+            len1 = math.hypot(dx1, dy1)
+            
+            dx2 = p_next[0] - p_curr[0]
+            dy2 = p_next[1] - p_curr[1]
+            len2 = math.hypot(dx2, dy2)
+            
+            if len1 == 0 or len2 == 0:
+                continue
+                
+            u1 = (dx1 / len1, dy1 / len1)
+            u2 = (dx2 / len2, dy2 / len2)
+            
+            r = min(radius, len1 / 2.0, len2 / 2.0)
+            start_x = p_curr[0] - r * u1[0]
+            start_y = p_curr[1] - r * u1[1]
+            end_x = p_curr[0] + r * u2[0]
+            end_y = p_curr[1] + r * u2[1]
+            
+            d.append(f"L {start_x:.1f} {start_y:.1f}")
+            d.append(f"Q {p_curr[0]:.1f} {p_curr[1]:.1f} {end_x:.1f} {end_y:.1f}")
+            
+        d.append(f"L {points[-1][0]:.1f} {points[-1][1]:.1f}")
+        return " ".join(d)
+
+    def path_to_ellipse(points, cx, cy, rx, ry, stroke_class="assoc-corr", radius=20, label=None, label_idx=None):
         if len(points) < 1:
             return ""
         prev_x, prev_y = points[-1]
         x2, y2 = ellipse_point(cx, cy, rx, ry, prev_x, prev_y)
         all_pts = points + [(x2, y2)]
-        d_str = "M " + " L ".join([f"{p[0]:.1f} {p[1]:.1f}" for p in all_pts])
-        return f'    <path d="{d_str}" class="{stroke_class}"/>'
+        d_str = rounded_path_d(all_pts, radius=radius)
+        res = [f'    <path d="{d_str}" class="{stroke_class}"/>']
+        
+        if label:
+            if label_idx is not None and label_idx < len(all_pts) - 1:
+                p1 = all_pts[label_idx]
+                p2 = all_pts[label_idx + 1]
+            else:
+                best_len = 0
+                best_idx = 0
+                for i in range(len(all_pts) - 1):
+                    seg_len = math.hypot(all_pts[i+1][0] - all_pts[i][0], all_pts[i+1][1] - all_pts[i][1])
+                    if seg_len > best_len:
+                        best_len = seg_len
+                        best_idx = i
+                p1 = all_pts[best_idx]
+                p2 = all_pts[best_idx + 1]
+                
+            mid_x = (p1[0] + p2[0]) / 2.0
+            mid_y = (p1[1] + p2[1]) / 2.0
+            lw = len(label) * 6.8 + 12
+            res.append(f'    <rect x="{mid_x - lw/2:.1f}" y="{mid_y - 8:.1f}" width="{lw:.1f}" height="16" fill="#FFFFFF" stroke="#000000" stroke-width="0.8" rx="4"/>')
+            safe_lbl = label.replace("&amp;", "&").replace("&", "&amp;")
+            res.append(f'    <text x="{mid_x:.1f}" y="{mid_y + 4:.1f}" font-family="Arial" font-size="9.5px" font-weight="bold" fill="#000000" text-anchor="middle">{safe_lbl}</text>')
+            
+        return "\n".join(res)
 
     def direct_dep_arrow(cx1, cy1, rx1, ry1, cx2, cy2, rx2, ry2, label="<<include>>", label_offset=0):
         x1, y1 = ellipse_point(cx1, cy1, rx1, ry1, cx2, cy2)
@@ -546,32 +608,34 @@ def generate_svg():
     lines.append(direct_line(m_hand[0], m_hand[1], 860, 610, 125, 25, "assoc")) # UC-ORD-04
     lines.append(direct_line(m_hand[0], m_hand[1], 860, 720, 140, 26, "assoc")) # UC-ORD-09
 
-    # Merchant -> Central Auth Gateway:
-    lines.append(path_to_ellipse([(m_hand[0], m_hand[1]), (500, 548), (500, 175), (2810, 175)], 2870, 310, 150, 32)) # UC-AUTH-01
+    # Merchant -> Central Auth Gateway (Lane X=535, Ceiling Y=165):
+    lines.append(path_to_ellipse([(m_hand[0], m_hand[1]), (535, 548), (535, 165), (2810, 165)], 2870, 310, 150, 32, radius=22, label="Merchant", label_idx=2)) # UC-AUTH-01
 
-    # Merchant -> Package 4 (Finance: UC-FIN-05, UC-FIN-07) via Middle Horizontal Corridor (Y = 1420 & 1460):
-    lines.append(path_to_ellipse([(m_hand[0], m_hand[1]), (480, 548), (480, 1420), (2500, 1420)], 2500, 1800, 140, 27)) # UC-FIN-05
-    lines.append(path_to_ellipse([(m_hand[0], m_hand[1]), (460, 548), (460, 1460), (2440, 1460), (2440, 2050)], 2500, 2050, 140, 27)) # UC-FIN-07
+    # Merchant -> Package 4 (Finance) via Middle Corridor:
+    # Lane X=470 -> Corridor Y=1390 -> UC-FIN-05 (2500, 1800)
+    lines.append(path_to_ellipse([(m_hand[0], m_hand[1]), (470, 548), (470, 1390), (2500, 1390)], 2500, 1800, 140, 27, radius=22, label="Merchant", label_idx=2)) # UC-FIN-05
+    # Lane X=410 -> Corridor Y=1425 -> Channel X=2440 -> UC-FIN-07 (2500, 2050)
+    lines.append(path_to_ellipse([(m_hand[0], m_hand[1]), (410, 548), (410, 1425), (2440, 1425), (2440, 2050)], 2500, 2050, 140, 27, radius=22, label="Merchant", label_idx=1)) # UC-FIN-07
 
-    # Merchant -> Package 5 (Tracking: UC-AI-01c) via Left Margin Corridor:
-    lines.append(path_to_ellipse([(m_hand[0], m_hand[1]), (440, 548), (440, 1820)], 860, 1820, 135, 25)) # UC-AI-01c
+    # Merchant -> Package 5 (Tracking: UC-AI-01c) via Lane X=350 -> Y=1820:
+    lines.append(path_to_ellipse([(m_hand[0], m_hand[1]), (350, 548), (350, 1820)], 860, 1820, 135, 25, radius=22, label="Merchant", label_idx=1)) # UC-AI-01c
 
     # 2. CUSTOMER C-END (c_hand = 232, 1288)
     # Customer -> Package 1:
     lines.append(direct_line(c_hand[0], c_hand[1], 860, 850, 130, 25, "assoc")) # UC-ORD-01b
     lines.append(direct_line(c_hand[0], c_hand[1], 860, 960, 125, 24, "assoc")) # UC-ORD-08
 
-    # Customer -> Package 5 (Direct rays with zero crossing - inherits 02 and 04 from Guest):
+    # Customer -> Package 5 (Direct rays with zero crossing):
     lines.append(direct_line(c_hand[0], c_hand[1], 860, 1680, 135, 25, "assoc")) # UC-AI-01b
 
-    # Customer -> Central Auth Gateway:
-    lines.append(path_to_ellipse([(c_hand[0], c_hand[1]), (400, 1288), (400, 175), (2835, 175)], 2870, 310, 150, 32)) # UC-AUTH-01
+    # Customer -> Central Auth Gateway (Lane X=510, Ceiling Y=205):
+    lines.append(path_to_ellipse([(c_hand[0], c_hand[1]), (510, 1288), (510, 205), (2840, 205)], 2870, 310, 150, 32, radius=22, label="Customer", label_idx=2)) # UC-AUTH-01
 
     # 3. GUEST (g_hand = 232, 2168)
-    # Guest -> Package 1 (UC-ORD-01c) via Left Corridor:
-    lines.append(path_to_ellipse([(g_hand[0], g_hand[1]), (420, 2168), (420, 1080)], 860, 1080, 130, 25)) # UC-ORD-01c
+    # Guest -> Package 1 (UC-ORD-01c) via Lane X=290 -> Y=1080:
+    lines.append(path_to_ellipse([(g_hand[0], g_hand[1]), (290, 2168), (290, 1080)], 860, 1080, 130, 25, radius=22, label="Guest", label_idx=1)) # UC-ORD-01c
 
-    # Guest -> Package 5 (01a, 04, 02 are adjacent to Guest with ZERO line intersection):
+    # Guest -> Package 5 (Direct rays):
     lines.append(direct_line(g_hand[0], g_hand[1], 860, 2300, 135, 25, "assoc")) # UC-AI-01a
     lines.append(direct_line(g_hand[0], g_hand[1], 860, 2140, 140, 28, "assoc")) # UC-AI-04
     lines.append(direct_line(g_hand[0], g_hand[1], 860, 1980, 140, 27, "assoc")) # UC-AI-02
@@ -586,23 +650,25 @@ def generate_svg():
     lines.append(direct_line(ops_hand[0], ops_hand[1], 4880, 920, 130, 25, "assoc")) # UC-HUB-06
     lines.append(direct_line(ops_hand[0], ops_hand[1], 4880, 1030, 130, 25, "assoc")) # UC-HUB-07
 
-    # Ops Staff -> Package 2 Column 2 (Linehaul & Handoff via horizontal inter-row gaps):
-    lines.append(path_to_ellipse([(ops_hand[0], ops_hand[1]), (5100, 588), (5100, 535), (4600, 535), (4600, 500)], 4340, 500, 140, 26)) # UC-HUB-04
-    lines.append(path_to_ellipse([(ops_hand[0], ops_hand[1]), (5100, 588), (5100, 975), (4600, 975), (4600, 980)], 4340, 980, 135, 25)) # UC-HUB-09
+    # Ops Staff -> Package 2 Column 2 (Linehaul & Handoff via inter-row gaps):
+    lines.append(path_to_ellipse([(ops_hand[0], ops_hand[1]), (5150, 550), (4620, 550), (4620, 500)], 4340, 500, 140, 26, radius=18)) # UC-HUB-04
+    lines.append(path_to_ellipse([(ops_hand[0], ops_hand[1]), (5150, 975), (4620, 975), (4620, 980)], 4340, 980, 135, 25, radius=18)) # UC-HUB-09
 
-    # Ops Staff -> Central Auth Gateway:
-    lines.append(path_to_ellipse([(ops_hand[0], ops_hand[1]), (5500, 588), (5500, 175), (2860, 175)], 2870, 310, 150, 32)) # UC-AUTH-01
+    # Ops Staff -> Central Auth Gateway (Lane X=5560, Ceiling Y=225):
+    lines.append(path_to_ellipse([(ops_hand[0], ops_hand[1]), (5560, 588), (5560, 225), (2870, 225)], 2870, 310, 150, 32, radius=22, label="Ops Staff", label_idx=2)) # UC-AUTH-01
 
-    # Ops Staff -> Package 3 (NDR: UC-DEL-07, which includes UC-DEL-08) via Middle Corridor:
-    lines.append(path_to_ellipse([(ops_hand[0], ops_hand[1]), (5480, 588), (5480, 1420), (3820, 1420)], 3820, 1760, 140, 26)) # UC-DEL-07
+    # Ops Staff -> Package 3 (NDR: UC-DEL-07) via Lane X=5460 -> Corridor Y=1450:
+    lines.append(path_to_ellipse([(ops_hand[0], ops_hand[1]), (5460, 588), (5460, 1450), (3820, 1450)], 3820, 1760, 140, 26, radius=22, label="Ops Staff", label_idx=2)) # UC-DEL-07
 
-    # Ops Staff -> Package 4 (Finance: UC-FIN-03, UC-FIN-04) via Middle Corridor:
-    lines.append(path_to_ellipse([(ops_hand[0], ops_hand[1]), (5460, 588), (5460, 1450), (2870, 1450)], 2870, 1800, 145, 27)) # UC-FIN-04
-    lines.append(path_to_ellipse([(ops_hand[0], ops_hand[1]), (5460, 588), (5460, 1480), (3380, 1480), (3380, 2300)], 2870, 2300, 140, 27)) # UC-FIN-03
+    # Ops Staff -> Package 4 (Finance: UC-FIN-04 Settlement) via Lane X=5510 -> Corridor Y=1490:
+    lines.append(path_to_ellipse([(ops_hand[0], ops_hand[1]), (5510, 588), (5510, 1490), (2870, 1490)], 2870, 1800, 145, 27, radius=22, label="Ops Staff", label_idx=2)) # UC-FIN-04
+
+    # Ops Staff -> Package 4 (Finance: UC-FIN-03 Manual Settlement) via Outer Lane X=5485 -> Gap between P3 & P6 Y=2480:
+    lines.append(path_to_ellipse([(ops_hand[0], ops_hand[1]), (5485, 588), (5485, 2480), (2870, 2480)], 2870, 2300, 140, 27, radius=22, label="Ops Staff", label_idx=2)) # UC-FIN-03
 
     # 5. SHIPPER (shipper_hand = 5688, 1708)
-    # Shipper -> Package 2:
-    lines.append(path_to_ellipse([(shipper_hand[0], shipper_hand[1]), (5520, 1708), (5520, 810)], 4880, 810, 135, 25)) # UC-HUB-02c
+    # Shipper -> Package 2 (Scan Pickup: UC-HUB-02c) via Lane X=5460 -> Y=810:
+    lines.append(path_to_ellipse([(shipper_hand[0], shipper_hand[1]), (5460, 1708), (5460, 810)], 4880, 810, 135, 25, radius=22, label="Shipper", label_idx=1)) # UC-HUB-02c
 
     # Shipper -> Package 3 (6 clean direct rays, including 01a Map routing and 06a Reschedule):
     lines.append(direct_line(shipper_hand[0], shipper_hand[1], 4880, 1630, 135, 25, "assoc")) # UC-DEL-01
@@ -612,12 +678,14 @@ def generate_svg():
     lines.append(direct_line(shipper_hand[0], shipper_hand[1], 4880, 2110, 135, 25, "assoc")) # UC-DEL-06
     lines.append(direct_line(shipper_hand[0], shipper_hand[1], 4880, 2230, 135, 25, "assoc")) # UC-DEL-06a
 
-    # Shipper -> Package 4 (Finance: UC-FIN-01, UC-FIN-02) via Middle Corridor:
-    lines.append(path_to_ellipse([(shipper_hand[0], shipper_hand[1]), (5500, 1708), (5500, 1450), (3220, 1450)], 3220, 1800, 135, 26)) # UC-FIN-01
-    lines.append(path_to_ellipse([(shipper_hand[0], shipper_hand[1]), (5500, 1708), (5500, 1480), (3280, 1480), (3280, 2050)], 3220, 2050, 135, 26)) # UC-FIN-02
+    # Shipper -> Package 4 (Finance: UC-FIN-01 Cash COD) via Lane X=5510 -> Corridor Y=1470:
+    lines.append(path_to_ellipse([(shipper_hand[0], shipper_hand[1]), (5510, 1708), (5510, 1470), (3220, 1470)], 3220, 1800, 135, 26, radius=22, label="Shipper", label_idx=2)) # UC-FIN-01
 
-    # Shipper -> Central Auth Gateway:
-    lines.append(path_to_ellipse([(shipper_hand[0], shipper_hand[1]), (5540, 1708), (5540, 175), (2885, 175)], 2870, 310, 150, 32)) # UC-AUTH-01
+    # Shipper -> Package 4 (Finance: UC-FIN-02 QR COD) via Lane X=5560 -> Corridor Y=1510:
+    lines.append(path_to_ellipse([(shipper_hand[0], shipper_hand[1]), (5560, 1708), (5560, 1510), (3280, 1510), (3280, 2050)], 3220, 2050, 135, 26, radius=22, label="Shipper", label_idx=2)) # UC-FIN-02
+
+    # Shipper -> Central Auth Gateway (Lane X=5610, Ceiling Y=185):
+    lines.append(path_to_ellipse([(shipper_hand[0], shipper_hand[1]), (5610, 1708), (5610, 185), (2900, 185)], 2870, 310, 150, 32, radius=22, label="Shipper", label_idx=2)) # UC-AUTH-01
 
     # 6. SYSTEM ADMIN (admin_hand = 5688, 2708)
     # Admin -> Package 6 (All 5 directly triggered UCs are in Column 3 with direct rays!):
@@ -627,22 +695,22 @@ def generate_svg():
     lines.append(direct_line(admin_hand[0], admin_hand[1], 4880, 3010, 140, 26, "assoc")) # UC-ADM-08
     lines.append(direct_line(admin_hand[0], admin_hand[1], 4880, 3130, 140, 26, "assoc")) # UC-ADM-09
 
-    # Admin -> Central Auth Gateway:
-    lines.append(path_to_ellipse([(admin_hand[0], admin_hand[1]), (5560, 2708), (5560, 175), (2910, 175)], 2870, 310, 150, 32)) # UC-AUTH-01
+    # Admin -> Central Auth Gateway (Lane X=5660, Ceiling Y=145):
+    lines.append(path_to_ellipse([(admin_hand[0], admin_hand[1]), (5660, 2708), (5660, 145), (2930, 145)], 2870, 310, 150, 32, radius=22, label="Admin", label_idx=2)) # UC-AUTH-01
 
     # 7. SYSTEM & AI ENGINE (sys_hand = 5540, 3210)
-    # System -> Package 6 (Outbox Relay & RabbitMQ via clear bottom corridor & west channel):
-    lines.append(path_to_ellipse([(sys_hand[0], sys_hand[1]), (5500, 3210), (5500, 3430), (3650, 3430), (3650, 3010)], 3820, 3010, 140, 26)) # UC-ADM-10
-    lines.append(path_to_ellipse([(sys_hand[0], sys_hand[1]), (5500, 3210), (5500, 3430), (3650, 3430), (3650, 3130)], 3820, 3130, 140, 26)) # UC-ADM-11
+    # System -> Package 6 (Outbox Relay & RabbitMQ via bottom corridor Y=3445):
+    lines.append(path_to_ellipse([(sys_hand[0], sys_hand[1]), (5480, 3210), (5480, 3445), (3650, 3445), (3650, 3010)], 3820, 3010, 140, 26, radius=20, label="System", label_idx=2)) # UC-ADM-10
+    lines.append(path_to_ellipse([(sys_hand[0], sys_hand[1]), (5480, 3210), (5480, 3445), (3650, 3445), (3650, 3130)], 3820, 3130, 140, 26, radius=20)) # UC-ADM-11
 
-    # System -> Package 4 (SePay Khớp nối tự động via bottom corridor & channel between Col 1-2):
-    lines.append(path_to_ellipse([(sys_hand[0], sys_hand[1]), (5500, 3210), (5500, 3430), (2710, 3430), (2710, 2050)], 2870, 2050, 140, 27)) # UC-FIN-06
+    # System -> Package 4 (SePay Khớp nối tự động via bottom corridor Y=3480):
+    lines.append(path_to_ellipse([(sys_hand[0], sys_hand[1]), (5510, 3210), (5510, 3480), (2710, 3480), (2710, 2050)], 2870, 2050, 140, 27, radius=20, label="System", label_idx=2)) # UC-FIN-06
 
-    # System -> Package 5 (IATA pricing, 5 tools, RAG, Streaming) via Bottom Corridor:
-    lines.append(path_to_ellipse([(sys_hand[0], sys_hand[1]), (5500, 3210), (5500, 3430), (1420, 3430)], 1420, 1980, 145, 27)) # UC-AI-03
-    lines.append(path_to_ellipse([(sys_hand[0], sys_hand[1]), (5500, 3210), (5500, 3430), (1490, 3430), (1490, 2140)], 1420, 2140, 145, 27)) # UC-AI-05
-    lines.append(path_to_ellipse([(sys_hand[0], sys_hand[1]), (5500, 3210), (5500, 3430), (1900, 3430)], 1900, 2080, 140, 26)) # UC-AI-06
-    lines.append(path_to_ellipse([(sys_hand[0], sys_hand[1]), (5500, 3210), (5500, 3430), (1960, 3430), (1960, 2200)], 1900, 2200, 140, 26)) # UC-AI-07
+    # System -> Package 5 (IATA pricing, 5 tools, RAG, Streaming) via Bottom Corridor Y=3515 & 3550:
+    lines.append(path_to_ellipse([(sys_hand[0], sys_hand[1]), (5540, 3515), (1420, 3515)], 1420, 1980, 145, 27, radius=20, label="System & AI", label_idx=1)) # UC-AI-03
+    lines.append(path_to_ellipse([(sys_hand[0], sys_hand[1]), (5540, 3515), (1520, 3515), (1520, 2140)], 1420, 2140, 145, 27, radius=20)) # UC-AI-05
+    lines.append(path_to_ellipse([(sys_hand[0], sys_hand[1]), (5540, 3550), (1860, 3550)], 1900, 2080, 140, 26, radius=20, label="System & AI", label_idx=1)) # UC-AI-06
+    lines.append(path_to_ellipse([(sys_hand[0], sys_hand[1]), (5540, 3550), (1960, 3550), (1960, 2200)], 1900, 2200, 140, 26, radius=20)) # UC-AI-07
 
     # =========================================================================
     # LEGEND & TRACEABILITY MATRIX (BOTTOM AREA)

@@ -350,4 +350,9 @@ Toàn bộ 82 chức năng trong file Excel `Danh_sach_chuc_nang_theo_Actor.xlsx
    - Kích thước canvas mở rộng lên $6000 \times 3900\text{ px}$ (ranh giới hệ thống $4880 \times 3300\text{ px}$).
    - Khoảng cách giữa các cột phân hệ (Horizontal Gutters): **$180\text{ px}$** (Cột 1 sang Cột 2 $X \in [2140, 2320]$, Cột 2 sang Cột 3 $X \in [3420, 3600]$).
    - Khoảng cách giữa các tầng phân hệ (Vertical Gutters): **$180\text{ px}$** tại đại lộ ngang trung tâm ($Y \in [1360, 1540]$) và **$160\text{ px}$** giữa Phân hệ 3 và Phân hệ 6 ($Y \in [2400, 2560]$).
-   - Các tuyến liên kết song song được cấp luồng di chuyển cách nhau $20\text{--}40\text{ px}$, không chồng chéo, đáp ứng hoàn hảo tiêu chuẩn in ấn khổ lớn (A0/A1) và trình bày trong luận văn tốt nghiệp.
+6. **Kỹ Thuật Bo Góc Cong (Fillets) & Giãn Cách Làn Tuyến Rời Rạc ($\ge 40\text{--}60\text{ px}$):**
+   - Thay thế hoàn toàn các góc vuông 90 độ sắc nhọn (vốn tạo cảm giác bậc thang chằng chịt khi chạy song song) bằng đường cong bo góc kỹ thuật cao (Quadratic Bezier Fillets, bán kính uốn $R = 20\text{ px}$).
+   - Mở rộng khoảng cách giữa các làn dây song song lên **$45\text{--}60\text{ px}$**, trải đều không gian hành lang biên trái ($X \in [260, 540]$) và hành lang biên phải ($X \in [5450, 5680]$).
+   - Tận dụng hành lang $160\text{ px}$ giữa Phân hệ 3 và Phân hệ 6 ($Y = 2480$) làm luồng dẫn riêng cho tuyến quyết toán thủ công (`UC-FIN-03`) của Nhân viên Vận hành, giải tỏa áp lực dây cho đại lộ ngang trung tâm.
+   - Gắn nhãn nhận diện tuyến đường (Corridor Route Badges: `[Merchant]`, `[Customer]`, `[Guest]`, `[Ops Staff]`, `[Shipper]`, `[Admin]`, `[System & AI]`), giúp người xem nhận biết tức thì tác nhân kích hoạt mà không cần phải dò ngược lại điểm xuất phát.
+
