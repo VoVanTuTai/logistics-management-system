@@ -873,13 +873,19 @@ def build_architecture_svg():
 ''')
 
     full_svg = "\n".join(lines)
-    os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        f.write(full_svg)
+    target_files = [
+        OUTPUT_FILE,
+        "docs/graduation-thesis/diagrams/architecture/01-architecture-deployment-4-tier.svg"
+    ]
+
+    for out_path in target_files:
+        os.makedirs(os.path.dirname(out_path), exist_ok=True)
+        with open(out_path, "w", encoding="utf-8") as f:
+            f.write(full_svg)
+        print(f"Generated and validated: {out_path} ({len(full_svg)} bytes)")
 
     # Validate XML
     ET.fromstring(full_svg)
-    print(f"Generated and validated: {OUTPUT_FILE} ({len(full_svg)} bytes)")
 
 if __name__ == "__main__":
     build_architecture_svg()
