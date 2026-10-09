@@ -1,6 +1,7 @@
 /**
- * Ultra-Lean Multi-App Static Web Server
- * Serves all compiled production web apps using pure Node.js native HTTP.
+ * Ultra-Lean Multi-App Static Web Server & API Reverse Proxy
+ * - Serves all compiled production web apps using pure Node.js native HTTP.
+ * - Proxies API calls (/ops/*, /admin/*, /merchant/*, /public/*, /api/*, /chat/*, /ws/*) directly to Gateway BFF (port 3000).
  * Memory footprint: ~15MB total for all 5 web apps combined.
  */
 
@@ -12,6 +13,61 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '..');
+
+const GATEWAY_HOST = '127.0.0.1';
+const GATEWAY_PORT = 3000;
+
+const API_PREFIXES = [
+  '/ops/',
+  '/admin/',
+  '/merchant/',
+  '/public/',
+  '/api/',
+  '/chat/',
+  '/tasks/',
+  '/locations/',
+  '/health',
+  '/metrics',
+  '/ws/',
+];
+
+function isApiRequest(pathname) {
+  return (
+    API_PREFIXES.some((prefix) => pathname.startsWith(prefix)) ||
+    pathname === '/health' ||
+    pathname === '/metrics'
+  );
+}
+
+function proxyToGateway(req, res) {
+  const options = {
+    hostname: GATEWAY_HOST,
+    port: GATEWAY_PORT,
+    path: req.url,
+    method: req.method,
+    headers: {
+      ...req.headers,
+      host: `${GATEWAY_HOST}:${GATEWAY_PORT}`,
+      'x-forwarded-for': req.socket.remoteAddress || '127.0.0.1',
+      'x-forwarded-proto': req.headers['x-forwarded-proto'] || 'http',
+    },
+  };
+
+  const proxyReq = http.request(options, (proxyRes) => {
+    res.writeHead(proxyRes.statusCode || 500, proxyRes.headers);
+    proxyRes.pipe(res);
+  });
+
+  proxyReq.on('error', (err) => {
+    console.error(`[Proxy Error] ${req.method} ${req.url} -> Gateway BFF:`, err.message);
+    if (!res.headersSent) {
+      res.writeHead(502, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Gateway BFF is unreachable', error: 'Bad Gateway' }));
+    }
+  });
+
+  req.pipe(proxyReq);
+}
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -47,7 +103,16 @@ function createStaticAppServer(appConfig) {
   }
 
   const server = http.createServer((req, res) => {
-    // CORS headers
+    const parsedUrl = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
+    const pathname = decodeURIComponent(parsedUrl.pathname);
+
+    // 1. API Reverse Proxy check: Route all API prefixes to Gateway BFF
+    if (isApiRequest(pathname)) {
+      proxyToGateway(req, res);
+      return;
+    }
+
+    // 2. CORS headers for static assets
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', '*');
@@ -63,9 +128,6 @@ function createStaticAppServer(appConfig) {
       res.end('Method Not Allowed');
       return;
     }
-
-    const parsedUrl = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
-    let pathname = decodeURIComponent(parsedUrl.pathname);
 
     // Prevent directory traversal
     const safePath = path.normalize(pathname).replace(/^(\.\.[\/\\])+/, '');
@@ -119,13 +181,45 @@ function createStaticAppServer(appConfig) {
     res.end(`404 Not Found: ${name} dist is not built yet.`);
   });
 
+  // Handle WebSocket upgrades
+  server.on('upgrade', (req, socket, head) => {
+    const proxyReq = http.request({
+      hostname: GATEWAY_HOST,
+      port: GATEWAY_PORT,
+      path: req.url,
+      method: req.method,
+      headers: {
+        ...req.headers,
+        host: `${GATEWAY_HOST}:${GATEWAY_PORT}`,
+      },
+    });
+
+    proxyReq.on('upgrade', (proxyRes, proxySocket) => {
+      socket.write(
+        `HTTP/1.1 101 Switching Protocols\r\n` +
+          Object.entries(proxyRes.headers)
+            .map(([k, v]) => `${k}: ${v}\r\n`)
+            .join('') +
+          '\r\n',
+      );
+      proxySocket.pipe(socket);
+      socket.pipe(proxySocket);
+    });
+
+    proxyReq.on('error', () => {
+      socket.destroy();
+    });
+
+    proxyReq.end();
+  });
+
   server.listen(port, '0.0.0.0', () => {
-    console.log(`🚀 [Static App] ${name.padEnd(16)} -> http://localhost:${port}`);
+    console.log(`🚀 [Static App + API Proxy] ${name.padEnd(16)} -> http://localhost:${port}`);
   });
 
   server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
-      console.error(`❌ [${name}] Cổng ${port} đang bị chiếm dụng. Vui lòng đóng ứng dụng đang dùng cổng này.`);
+      console.error(`❌ [${name}] Cổng ${port} đang bị chiếm dụng.`);
     } else {
       console.error(`❌ [${name}] Lỗi máy chủ:`, err.message);
     }
@@ -135,7 +229,7 @@ function createStaticAppServer(appConfig) {
 }
 
 console.log('================================================================');
-console.log('🌐 KHỞI ĐỘNG CỤM MÁY CHỦ WEB TĨNH SIÊU NHẸ (PURE NODE.JS)');
+console.log('🌐 KHỞI ĐỘNG CỤM MÁY CHỦ WEB TĨNH & API REVERSE PROXY');
 console.log('================================================================');
 
 for (const app of APPS_CONFIG) {
