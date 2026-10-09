@@ -23,6 +23,7 @@ const SERVICES = [
   'reporting-service',
   'payment-service',
   'pricing-service',
+  'chatbot-service',
   'gateway-bff',
 ];
 
